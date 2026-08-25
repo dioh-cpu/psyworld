@@ -171,12 +171,54 @@ body { background:#000; overflow:hidden; color:#fff; }
 .shop-item button { width:70px; padding:5px; background:#334; border:1px solid #556; color:#fff; border-radius:4px; cursor:pointer; font-size:11px; }
 .shop-item button:hover { background:#4a4a8a; }
 .shop-close { width:100%; padding:10px; margin-top:12px; background:#6a1515; border:none; color:#fff; border-radius:5px; cursor:pointer; font-weight:bold; }
-
 #notif { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.88); border:1px solid #ffd700; color:#ffd700; padding:8px 22px; border-radius:20px; font-size:13px; display:none; z-index:999; pointer-events:none; white-space:nowrap; }
 
 /* === TIER AURA - QUADRADINHO PEGANDO FOGO === */
 .aura-premier { animation:rainbowAura 1.5s linear infinite!important; }
 
+/* === TELA DE EVOLUÇÃO === */
+#evo-screen{
+  display:none; position:fixed; inset:0; background:#000; z-index:9999999;
+  align-items:center; justify-content:center; flex-direction:column;
+  overflow:hidden;
+}
+#evo-screen.active{ display:flex; animation:evoBg 2.5s ease forwards; }
+@keyframes evoBg{
+  0%{ background:#000; }
+  40%{ background:radial-gradient(circle, #fff 0%, #7c3aed 20%, #000 70%); }
+  100%{ background:#000; }
+}
+#evo-text{
+  color:#ffd700; font-weight:900; font-size:18px; text-align:center;
+  text-shadow:0 0 15px #ffd700, 0 0 30px #ff00ff;
+  animation:evoTextPulse 0.6s infinite alternate;
+  letter-spacing:2px; margin-bottom:20px; padding:0 10px;
+  font-family:'Arial Black',sans-serif;
+}
+@keyframes evoTextPulse{ 0%{transform:scale(1)} 100%{transform:scale(1.08)} }
+#evo-poke-wrap{
+  position:relative; width:200px; height:200px; display:flex; align-items:center; justify-content:center;
+}
+#evo-poke{
+  width:150px; height:150px; image-rendering:pixelated;
+  position:absolute; bottom:-100px; opacity:0;
+  filter:drop-shadow(0 0 20px #fff) brightness(1.5);
+}
+#evo-poke.rise{ animation:pokeRise 2.2s cubic-bezier(.18,1.2,.5,1) forwards; }
+@keyframes pokeRise{
+  0%{ bottom:-100px; opacity:0; transform:scale(0.5); filter:brightness(0) drop-shadow(0 0 0 #fff); }
+  30%{ opacity:1; transform:scale(1.3); filter:brightness(2) drop-shadow(0 0 30px #fff); }
+  70%{ bottom:40px; transform:scale(1); filter:brightness(1.2) drop-shadow(0 0 20px #7c3aed); }
+  100%{ bottom:40px; opacity:1; transform:scale(1.1); filter:brightness(1) drop-shadow(0 0 40px #00ffff); }
+}
+.evo-particle{
+  position:absolute; width:8px; height:8px; background:#fff; border-radius:50%;
+  animation:particleFloat 2s ease-out forwards;
+}
+@keyframes particleFloat{
+  0%{ transform:translateY(0) scale(0); opacity:1; }
+  100%{ transform:translateY(-200px) scale(1.5); opacity:0; }
+}
 .tier-badge{position:absolute;top:2px;left:2px;font-size:8px;font-weight:900;padding:2px 6px;border-radius:5px;background:#000;color:#fff;border:1px solid #fff;z-index:10;}
 .tier-badge.E{background:#222;border-color:#888;color:#888;}
 .tier-badge.D{background:#002200;border-color:#44ff44;color:#44ff44;}
@@ -1020,6 +1062,13 @@ window.getImgFallback = function(id){
 <!-- NOVOS -->
 <button onclick="curarTimeCity()" style="background:linear-gradient(#00ff88,#00aa44); color:#000; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">💚 CURAR</button>
 <button onclick="openShop()" style="background:linear-gradient(#4488ff,#0044aa); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🏪 LOJA</button>
+</div>
+
+<!-- TELA DE EVOLUÇÃO - ANIMADA -->
+<div id="evo-screen">
+  <div id="evo-text">AVISO!! SEU POKEMON ESTÁ EVOLUINDO E REESCREVENDO SEU DESTINO!</div>
+  <div id="evo-poke-wrap"><img id="evo-poke" src=""></div>
+  <div id="evo-new-name" style="color:#fff; font-weight:900; font-size:22px; margin-top:15px; text-shadow:0 0 10px #000;"></div>
 </div>
 
 <div id="notif" style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.88); border:1px solid #ffd700; color:#ffd700; padding:8px 22px; border-radius:20px; font-size:13px; display:none; z-index:9999; pointer-events:none; white-space:nowrap;"></div>
@@ -3310,31 +3359,92 @@ function tryEvolve(pokemon, stoneName){
     let evo = null;
     if(SPECIAL_EVOLUTIONS[pokemon.id] && SPECIAL_EVOLUTIONS[pokemon.id][stoneName]) evo = SPECIAL_EVOLUTIONS[pokemon.id][stoneName];
     else if(EVOLUTION_MAP[pokemon.id] && EVOLUTION_MAP[pokemon.id].stone === stoneName) evo = EVOLUTION_MAP[pokemon.id];
-    if(!evo){ notif(`❌ ${pokemon.name} não evolui com ${stoneName}!`); return false; }
-    let qtdNeed = evo.qtd || 10;
-    if(pokemon.level < evo.minLevel){ notif(`🔒 Precisa Lv.${evo.minLevel} (ta Lv.${pokemon.level})`); return false; }
-    if((P.inventory[stoneName]||0) < qtdNeed){ notif(`❌ Precisa ${qtdNeed}x ${stoneName} (tem ${P.inventory[stoneName]||0})`); return false; }
 
+    if(!evo){ notif(`❌ ${pokemon.name} não evolui com ${stoneName}!`); return false; }
+
+    let qtdNeed = evo.qtd || 10;
+    if(pokemon.level < evo.minLevel){
+      notif(`🔒 Precisa Lv.${evo.minLevel} (ta Lv.${pokemon.level})`, 3500);
+      spawnFloat(`PRECISA LV.${evo.minLevel}!`, "#ff4444");
+      return false;
+    }
+    if((P.inventory[stoneName]||0) < qtdNeed){
+      notif(`❌ ITENS DE EVOLUÇÃO INSUFICIENTES! Precisa ${qtdNeed}x ${stoneName} (tem ${P.inventory[stoneName]||0})`, 4000);
+      spawnFloat(`ITENS INSUFICIENTES!`, "#ff2222");
+      return false;
+    }
+
+    // TEM TUDO - GUARDA E VAI PRA ANIMAÇÃO
+    let oldName = pokemon.name;
+    let oldId = pokemon.id;
+    let newId = evo.to;
+    let newName = getPokeName(newId);
+
+    // NÃO remove item ainda, só remove depois da animação pra não bugar se fechar
+    playEvolutionAnimation(pokemon, oldId, newId, oldName, newName, stoneName, qtdNeed);
+    return true;
+}
+
+function playEvolutionAnimation(pokeObj, oldId, newId, oldName, newName, stoneName, qtdNeed){
+  let screen = document.getElementById('evo-screen');
+  let img = document.getElementById('evo-poke');
+  let nameEl = document.getElementById('evo-new-name');
+  let wrap = document.getElementById('evo-poke-wrap');
+  if(!screen ||!img) { // fallback se não colou HTML
+    doEvolveFinal(pokeObj, newId, oldName, stoneName, qtdNeed);
+    return;
+  }
+
+  wrap.querySelectorAll('.evo-particle').forEach(e=>e.remove());
+  img.src = getPokeAnim({id: newId, shiny: pokeObj.shiny, isMega: false});
+  img.classList.remove('rise');
+  void img.offsetWidth;
+  nameEl.textContent = "";
+  screen.classList.add('active');
+
+  // particulas
+  for(let i=0;i<22;i++){
+    setTimeout(()=>{
+      let p = document.createElement('div');
+      p.className='evo-particle';
+      p.style.left = (Math.random()*180+10)+'px';
+      p.style.bottom = '20px';
+      p.style.background = `hsl(${280+Math.random()*50},100%,70%)`;
+      p.style.boxShadow = `0 0 8px ${p.style.background}`;
+      wrap.appendChild(p);
+      setTimeout(()=>p.remove(),2000);
+    }, i*90);
+  }
+
+  setTimeout(()=> img.classList.add('rise'), 120);
+  setTimeout(()=>{
+    nameEl.innerHTML = `<span style="color:#888">${oldName}</span> ➡ <span class="shiny-name">${newName}</span>`;
+    spawnFloat(`✨ ${oldName} -> ${newName}`, "#ffd700");
+  }, 1700);
+
+  setTimeout(()=>{
+    screen.classList.remove('active');
+    doEvolveFinal(pokeObj, newId, oldName, stoneName, qtdNeed);
+  }, 3300);
+}
+
+function doEvolveFinal(pokemon, newId, oldName, stoneName, qtdNeed){
     P.inventory[stoneName] -= qtdNeed;
     if(P.inventory[stoneName]<=0) delete P.inventory[stoneName];
 
-    let oldName = pokemon.name;
     let oldRarity = pokemon.rarity;
     let oldShiny = pokemon.shiny;
     let oldResets = pokemon.resets||0;
-
-    // calcula novo HP usando seu sistema novo, não o calcHp quebrado
-    const goingToSecond =!!EVOLUTION_MAP[evo.to];
+    const goingToSecond =!!EVOLUTION_MAP[newId];
     const multStage = goingToSecond? 1.4 : 1.6;
 
-    pokemon.id = evo.to;
-    pokemon.name = getPokeName(evo.to);
-    pokemon.type = TYPE_BY_ID_ALL[evo.to] || TYPE_BY_ID_FULL[evo.to] || pokemon.type;
+    pokemon.id = newId;
+    pokemon.name = getPokeName(newId);
+    pokemon.type = TYPE_BY_ID_ALL[newId] || TYPE_BY_ID_FULL[newId] || pokemon.type;
     pokemon.rarity = oldRarity;
     pokemon.shiny = oldShiny;
     pokemon.resets = oldResets;
 
-    // volta pro Lv1 mas com HP de evolução
     ensurePokeBase(pokemon);
     let baseHp1 = calcBaseHpV14(1, pokemon.rarity?.mult||1, pokemon.shiny, false, pokemon.id);
     let baseAtk1 = calcBaseAtkV14(1, pokemon.rarity?.mult||1, pokemon.shiny, false, pokemon.id);
@@ -3345,9 +3455,8 @@ function tryEvolve(pokemon, stoneName){
     pokemon.movePool = getFullMoveList(pokemon.id, 1);
     recalcPoke(pokemon);
 
-    spawnFloat(`✨ ${oldName} -> ${pokemon.name} +${goingToSecond?40:60}%`, "#ffd700");
     notif(`✨ ${oldName} -> ${pokemon.name} Lv.1! HP ${pokemon.maxHp}`,4000);
-    autoSave(); updateHUD(); closeBag(); renderTeam(); return true;
+    autoSave(); updateHUD(); closeBag(); renderTeam(); closePokeDetail();
 }
 
 function checkEvoStone(stoneName){
@@ -3369,12 +3478,13 @@ function checkEvoStone(stoneName){
     found.forEach(f=>{
         let tem=P.inventory[stoneName]||0;
         let pode=tem>=f.req.qtd && f.p.level>=f.req.minLevel;
+        let nomeNovo = getPokeName(f.req.to);
         html+=`<div style="background:#1a1a2e; border:2px solid ${pode?'#7c3aed':'#444'}; border-radius:12px; padding:8px; text-align:center;">
           <img src="${getPokeAnim(f.p)}" style="width:50px;height:50px;">
-          <div style="color:#fff;font-size:10px;font-weight:900;">${f.p.name} Lv.${f.p.level} → ${getPokeName(f.req.to)}</div>
+          <div style="color:#fff;font-size:10px;font-weight:900;">${f.p.name} Lv.${f.p.level} → ${nomeNovo}</div>
           <div style="color:${tem>=f.req.qtd?'#0f0':'#f00'};font-size:9px;">${f.req.qtd}x (tem ${tem}) | Lv.${f.req.minLevel}</div>
           <div style="font-size:8px;color:#888;">${f.isTeam?'TIME':'BOX'}</div>
-          <button onclick="tryEvolve(${f.isTeam?'P.team':'P.box'}[${f.idx}],'${stoneName}')" style="width:100%;margin-top:5px;background:${pode?'#7c3aed':'#333'};color:#fff;border:none;padding:6px;border-radius:6px;font-weight:900;" ${!pode?'disabled':''}>${pode?'✨ EVOLUIR':'🔒'}</button>
+          <button onclick="tryEvolve(${f.isTeam?'P.team':'P.box'}[${f.idx}],'${stoneName}')" style="width:100%;margin-top:5px;background:${pode?'#7c3aed':'#333'};color:#fff;border:none;padding:6px;border-radius:6px;font-weight:900;" ${!pode?'disabled':''}>${pode?'✨ EVOLUIR':'🔒 ITENS INSUFICIENTES'}</button>
         </div>`;
     });
     html+=`<div style="grid-column:1/-1;"><button onclick="openBag()" style="width:100%;background:#333;color:#fff;border:none;padding:10px;border-radius:8px;margin-top:8px;">⬅ VOLTAR</button></div>`;
@@ -5889,15 +5999,67 @@ window.openPokeDetail = function(idx,isBox){
   let content=document.getElementById('detail-poke-content'); if(!content) return;
   if(document.getElementById('poke-boost-info')) document.getElementById('poke-boost-info').remove();
   let poke=isBox?P.box[idx]:P.team[idx]; if(!poke) return;
+
+  // --- LÓGICA NOVA DE EVOLUÇÃO ---
+  let evos = [];
+  if (typeof EVOLUTION_MAP!== 'undefined' && EVOLUTION_MAP[poke.id]) evos.push(EVOLUTION_MAP[poke.id]);
+  if (typeof SPECIAL_EVOLUTIONS!== 'undefined' && SPECIAL_EVOLUTIONS[poke.id]) {
+    for(let stone in SPECIAL_EVOLUTIONS[poke.id]) evos.push({...SPECIAL_EVOLUTIONS[poke.id][stone], stone: stone});
+  }
+  let hasEvo = evos.length > 0;
+  let txtEvo = hasEvo? `⬆ EVOLUIR para ${evos[0].toName || evos[0].to || '???'}` : '❌ SEM EVOLUÇÃO';
+
   let div=document.createElement('div'); div.id='poke-boost-info';
   div.style.cssText='background:#000;padding:8px;border-radius:8px;margin:8px 0;border:1px solid #00ffff;';
-  div.innerHTML=`<div style="color:#00ffff;font-size:11px;font-weight:900;">💪 BOOST: ${poke.boost||0}/999 ${poke.shiny&&poke.isMega?'| SHINY MEGA 3x':''}</div>
+
+  div.innerHTML=`
+  <div style="color:#00ffff;font-size:11px;font-weight:900;">💪 BOOST: ${poke.boost||0}/999 ${poke.shiny&&poke.isMega?'| SHINY MEGA 3x':''}</div>
+
+  ${hasEvo? `<button onclick="evoluirDiretoNoDetalhe(${idx},${isBox})" style="width:100%;background:linear-gradient(90deg,#7c3aed,#4a00e0);color:#fff;border:2px solid #a855f7;padding:10px;border-radius:6px;font-weight:900;margin-top:6px;">${txtEvo}</button>` : ''}
+
   <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
     <button onclick="useBoostStone(${idx},${isBox})" style="flex:1;background:#00ffff;color:#000;border:none;padding:8px;border-radius:6px;font-weight:900;">💪 BOOST (${P.inventory["Boost Stone"]||0})</button>
     <button onclick="useShinyStone(${idx},${isBox})" style="flex:1;background:#ff00ff;color:#fff;border:none;padding:8px;border-radius:6px;font-weight:900;">✨ SHINY (${P.inventory["Shiny Stone"]||0})</button>
     <button onclick="useMegaStone(${idx},${isBox})" style="flex:1;background:#00aaff;color:#fff;border:none;padding:8px;border-radius:6px;font-weight:900;">🔷 MEGA (${P.inventory["Fragmento Mega Stone"]||0}/50)</button>
   </div>`;
   content.prepend(div);
+}
+
+window.evoluirDiretoNoDetalhe = function(idx, isBox){
+  let poke = isBox? P.box[idx] : P.team[idx];
+  if(!poke) return;
+
+  // tenta achar qual stone evolui ele
+  let tentativas = [];
+  if(EVOLUTION_MAP[poke.id]) tentativas.push(EVOLUTION_MAP[poke.id].stone);
+  if(SPECIAL_EVOLUTIONS[poke.id]){
+    for(let s in SPECIAL_EVOLUTIONS[poke.id]) tentativas.push(s);
+  }
+
+  if(tentativas.length==0){
+    notif(`❌ ${poke.name} não evolui!`);
+    return false;
+  }
+
+  // tenta evoluir com cada stone possível
+  for(let stoneName of tentativas){
+    let tem = P.inventory[stoneName]||0;
+    // Se tem a stone, tenta (o tryEvolve já cuida de mostrar ITENS INSUFICIENTES)
+    if(tryEvolve(poke, stoneName)){
+      // Evoluiu -> reabre o detalhe DEPOIS da animação (3.5s)
+      setTimeout(()=>{
+        try{
+          // o poke já evoluiu, então reabre
+          if((isBox? P.box[idx] : P.team[idx])) openPokeDetail(idx, isBox);
+        }catch(e){}
+      }, 3600);
+      return true;
+    } else {
+      // Se falhou por falta de item, já mostrou a mensagem no tryEvolve
+      // continua pro próximo stone, se tiver
+    }
+  }
+  return false;
 }
 // AUTO FIX MOVES - roda uma vez
 setTimeout(()=>{
