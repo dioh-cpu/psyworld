@@ -3850,7 +3850,7 @@ function update(dt) {
             }
         }
     } else {
-        const speed=4, tx=P.tx*TILE, ty=P.ty*TILE;
+        const speed=6, tx=P.tx*TILE, ty=P.ty*TILE;
         if(P.px<tx) P.px=Math.min(P.px+speed,tx); else if(P.px>tx) P.px=Math.max(P.px-speed,tx);
         if(P.py<ty) P.py=Math.min(P.py+speed,ty); else if(P.py>ty) P.py=Math.max(P.py-speed,ty);
         if(P.px===tx && P.py===ty){ P.x=P.tx; P.y=P.ty; P.moving=false; }
@@ -7270,8 +7270,8 @@ function cgRenderCollection(c){
     return `<div class="cg-card ${sel?'selected':''}" onclick="cgToggleDeck(${card.id})"><div class="stars">${'★'.repeat(card.stars)}${'☆'.repeat(5-card.stars)}</div><img src="${getRealSprite({id:card.id})}"><div style="font-size:10px;font-weight:900">${getPokeName(card.id)}</div><div style="font-size:9px;color:#a5b4fc">PWR ${cgCardPower(card)} • Lv${card.level}</div><div style="font-size:8px;color:#777">cópias ${card.copies}</div></div>`;
   }).join('')}</div>`;
 }
-window.cgToggleDeck=function(id){ensureCardData();let k=String(id),d=P.cardGame.deck;let i=d.indexOf(k);if(i>=0)d.splice(i,1);else if(d.length<8)d.push(k);else return notif('Deck máximo: 8 cartas');autoSave();renderCardTab('collection');};
-window.cgAutoDeck=function(){let a=Object.values(P.cardGame.collection).sort((x,y)=>cgCardPower(y)-cgCardPower(x)).slice(0,8);P.cardGame.deck=a.map(x=>String(x.id));autoSave();renderCardTab('collection');};
+window.cgToggleDeck=function(id){ensureCardData();let k=String(id),d=P.cardGame.deck;let i=d.indexOf(k);if(i>=0)d.splice(i,1);else if(d.length<20)d.push(k);else return notif('Deck máximo: 20 cartas');autoSave();renderCardTab('collection');};
+window.cgAutoDeck=function(){let a=Object.values(P.cardGame.collection).sort((x,y)=>cgCardPower(y)-cgCardPower(x)).slice(0,20);P.cardGame.deck=a.map(x=>String(x.id));autoSave();renderCardTab('collection');};
 function cgRollStars(){
   const r=Math.random()*100;return r<1?5:r<6?4:r<20?3:r<50?2:1;
 }
@@ -10142,6 +10142,91 @@ window.renderMarket5=async function(tab){
 
 
 /* ============================================================
+   PSYWORLD V6 — ONLINE SAVE / AFK / HUNTS / CAPTURE / CARDS UX
+   ============================================================ */
+(function(){
+const $=id=>document.getElementById(id);
+window.PSY_V6=true;
+function v6Ensure(){
+  P.meta=P.meta||{}; P.meta.afk=P.meta.afk||{enabled:false,since:0,last:Date.now(),gold:0,xp:0,drops:0,packs:0,history:[]};
+  P.cardGame=P.cardGame||{};P.cardGame.pullHistory=P.cardGame.pullHistory||[];P.cardGame.collection=P.cardGame.collection||{};
+  P.cardGame.deck=P.cardGame.deck||[];P.cardGame.packs=P.cardGame.packs||{};
+  if(!P.levelCap||P.levelCap<20)P.levelCap=20;
+}
+// City movement: 50% faster, snap tiny remainder so the avatar never crawls into center.
+const v6RAF=window.requestAnimationFrame.bind(window); window.PSY_CITY_SPEED=6;
+// Patch the literal city speed used by the old renderer without changing WORLD speed.
+try{ /* marker used by diagnostics */ }catch(e){}
+
+// Trainer level-up always fully heals the active team.
+const oldCheck=window.checkLevelUp;
+window.checkLevelUp=function(){const before=(P.team||[]).map(x=>x.level);const r=oldCheck?.apply(this,arguments);(P.team||[]).forEach((pk,i)=>{if((pk.level||1)>(before[i]||pk.level))pk.hp=pk.maxHp;});return r};
+
+// Final capture table. These are absolute caps after ball/HP modifiers.
+window.PSY_CAPTURE_CAPS={E:40,D:30,C:22,B:14,A:8,S:5,SS:2.5,SSS:1.5,UR:1,'UR+':.8,'UR++':.6};
+window.psyTierCaptureBase=t=>({E:6.5,D:4.8,C:3.4,B:2.25,A:1.35,S:.72,SS:.36,SSS:.20,UR:.10,'UR+':.07,'UR++':.05}[t]||.5);
+window.tryCaptureBattle=function(ballName){
+  if((P.inventory[ballName]||0)<=0)return notif('Sem Balls!'); const wild=battleData?.wild;if(!wild)return;
+  if(wild.psyduckDungeon||window.isDungeonBoss||window.isDungeonMega)return notif('❌ Este encontro não pode ser capturado.');
+  P.inventory[ballName]--;if(P.inventory[ballName]<=0)delete P.inventory[ballName];$('screen-bag').style.display='none';window.bagBattleMode=null;
+  const tier=getTier(wild.id,wild.shiny,wild.isMega,wild.isBoss),hpPct=Math.max(0,battleData.wildHp/battleData.wildMaxHp);
+  let power=BALL_DATA[ballName]?.chance||1;const elem=typeof psyElement==='function'?psyElement(wild.id):null;
+  if(elem&&ballName===elem.ball)power=(BALL_DATA['Ultra Ball']?.chance||3)*2;
+  const hpFactor=.32+(1-hpPct)*.68,rar=Math.sqrt(Math.max(1,wild.rarity?.mult||1));
+  let chance=psyTierCaptureBase(tier)*power*hpFactor/rar; const cap=wild.shiny?1:(PSY_CAPTURE_CAPS[tier]||5); chance=Math.max(.01,Math.min(cap,chance));
+  if(typeof psyEnsurePity==='function')psyEnsurePity();const key=typeof psyPityKey==='function'?psyPityKey(wild):`${wild.id}:${wild.shiny?1:0}`;
+  P.meta.capturePity=P.meta.capturePity||{};const entry=P.meta.capturePity[key]||(P.meta.capturePity[key]={ultraFails:0,allFails:0});
+  const isUltra=/Ultra Ball/i.test(ballName),pity=typeof psyPityTarget==='function'?psyPityTarget(wild):60,forced=isUltra&&entry.ultraFails>=pity;
+  if(forced||Math.random()*100<chance){const pk=createCapturedPoke(wild.id,wild.rarity,wild.shiny,false,wild.isMega);P.box.push(pk);delete P.meta.capturePity[key];P.meta.captures=(P.meta.captures||0)+1;notif(forced?`✅ PITY! ${pk.name} capturado!`:`✅ ${pk.name} capturado!`,3000);endBattle(true);autoSave();renderTeam();return;}
+  entry.allFails++;if(isUltra)entry.ultraFails++;notif('❌ O Pokémon escapou!',1800);autoSave();
+  // Capture is an action: enemy gets its turn.
+  setTimeout(()=>{if(!battleData?.wild||!P.team?.[0]||P.team[0].hp<=0)return;const w=battleData.wild;const dmg=Math.max(5,Math.floor((w.atk||w.level*3||10)*.42));P.team[0].hp=Math.max(0,P.team[0].hp-dmg);$('battle-log').textContent=`A tentativa gastou seu turno. ${w.name||getPokeName(w.id)} atacou: -${dmg} HP`;updateBattleHP();updateHUD();if(P.team[0].hp<=0)setTimeout(()=>endBattle(false),500)},280);
+};
+
+// Hunts are gated by the actual Pokémon level cap, not merely a visual overlay.
+function huntRangeFromKey(key){const m=String(key).match(/_t(\d+)$/);const t=Number(m?.[1]||1);return t===1?[1,10]:t===2?[10,20]:t===3?[20,30]:[40,60]}
+const oldEnterHunt=window.enterHunt;
+window.enterHunt=function(key){const [lo,hi]=huntRangeFromKey(key),cap=P.levelCap||20;if(lo>=cap)return notif(`🔒 Hunt Lv.${lo}-${hi} bloqueada. Seu CAP é ${cap}. Vença o próximo Ginásio.`,3500);return oldEnterHunt?.apply(this,arguments)};
+const oldOpenH=window.openHunts;window.openHunts=function(){const r=oldOpenH?.apply(this,arguments);setTimeout(()=>{[...($('hunt-list')?.children||[])].forEach(card=>{const txt=card.textContent||'',m=txt.match(/Lv\s*(\d+)-(\d+)/i);if(!m)return;const locked=Number(m[1])>=(P.levelCap||20);if(locked){card.style.filter='grayscale(.8) brightness(.55)';card.style.pointerEvents='auto';card.onclick=()=>notif(`🔒 Essa Hunt exige CAP acima de ${m[1]}. Vá aos Ginásios.`,3000)}else card.style.filter='';});},100);return r};
+
+// Standalone AFK, including closed-browser catch-up (max 12h per settlement).
+function afkReward(seconds,offline=false){v6Ensure();const a=P.meta.afk;if(!a.enabled||seconds<10)return;seconds=Math.min(seconds,43200);const mins=seconds/60,lv=P.trainerLevel||1;
+ const gold=Math.floor(mins*(1350+lv*75)*(1+(getTotalBuff('gold')||0)/100));const xp=Math.max(1,Math.floor(mins*(18+lv*1.7)*(1+(getTotalBuff('xp')||0)/100));
+ P.gold+=gold;a.gold+=gold;a.xp+=xp;const pk=P.team?.[0];if(pk){pk.exp=(pk.exp||0)+xp;try{checkLevelUp()}catch(e){}}
+ let drops=0,packs=[];for(let i=0;i<Math.floor(mins);i++){if(Math.random()<.035){drops++;a.drops++;}const r=Math.random();if(r<.0007){P.cardGame.packs.epic=(P.cardGame.packs.epic||0)+1;packs.push('Épico')}else if(r<.003){P.cardGame.packs.rare=(P.cardGame.packs.rare||0)+1;packs.push('Raro')}else if(r<.009){P.cardGame.packs.normal=(P.cardGame.packs.normal||0)+1;packs.push('Normal')}}
+ if(drops)P.inventory['Fragmento AFK']=(P.inventory['Fragmento AFK']||0)+drops;a.packs+=packs.length;a.history.unshift({at:Date.now(),seconds:Math.floor(seconds),gold,xp,drops,packs,offline});a.history=a.history.slice(0,20);a.last=Date.now();autoSave();updateHUD();
+}
+window.openAfkV6=function(){v6Ensure();let d=$('screen-afk-v6');if(!d){d=document.createElement('div');d.id='screen-afk-v6';d.className='psy-v6-overlay';document.body.appendChild(d)}const a=P.meta.afk,elapsed=a.enabled?Math.floor((Date.now()-a.since)/1000):0;d.innerHTML=`<div class="psy-v6-panel"><button class="psy-close-x" onclick="this.closest('.psy-v6-overlay').style.display='none'">×</button><h2 class="psy-title-glint">🌙 EXPEDIÇÃO AFK</h2><div class="afk-hero"><div class="afk-moon">🌙</div><div><b>${a.enabled?'EXPEDIÇÃO ATIVA':'EXPEDIÇÃO PAUSADA'}</b><div id="v6-afk-clock">${fmtTime(elapsed)}</div><small>Continua calculando enquanto o jogo estiver fechado • máximo 12h por coleta • sem capturas.</small></div></div><div class="afk-stats"><b>💰 ${a.gold.toLocaleString()} Gold</b><b>⭐ ${a.xp.toLocaleString()} XP</b><b>🎁 ${a.packs} Packs</b><b>📦 ${a.drops} Drops</b></div><button class="v6-primary" onclick="toggleAfkV6()">${a.enabled?'⏸ PAUSAR E COLETAR':'▶ INICIAR EXPEDIÇÃO'}</button><h3>Últimas recompensas</h3><div class="afk-history">${a.history.length?a.history.map(h=>`<div><b>${h.offline?'📴 OFFLINE':'🌙 AFK'} • ${fmtTime(h.seconds)}</b><span>+${h.gold.toLocaleString()}G • +${h.xp}XP ${h.drops?'• 📦'+h.drops:''} ${h.packs?.length?'• 🎴 '+h.packs.join(', '):''}</span></div>`).join(''):'<small>Nenhuma recompensa coletada ainda.</small>'}</div></div>`;d.style.display='flex'};
+window.toggleAfkV6=function(){v6Ensure();const a=P.meta.afk;if(a.enabled){afkReward((Date.now()-a.last)/1000,false);a.enabled=false}else{a.enabled=true;a.since=Date.now();a.last=Date.now()}autoSave();openAfkV6()};
+function fmtTime(s){s=Math.max(0,Math.floor(s||0));return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
+setInterval(()=>{const a=P?.meta?.afk;if(a?.enabled&&Date.now()-a.last>60000){afkReward((Date.now()-a.last)/1000,false);if($('screen-afk-v6')?.style.display!=='none')openAfkV6()}},60000);
+
+// Gacha UX/history + extended packs.
+window.CG_PACKS={normal:{name:'Pack Normal',count:3,color:'#94a3b8',maxTier:'B',art:'📦'},rare:{name:'Pack Raro',count:5,color:'#3b82f6',maxTier:'A',art:'💠'},epic:{name:'Pack Épico',count:10,color:'#a855f7',maxTier:'S',art:'🔮'},sss:{name:'Pack SSS',count:10,color:'#ff7a00',maxTier:'SSS',art:'🔥',diamond:220},ur:{name:'Pack UR',count:10,color:'#ff2bd6',maxTier:'UR',art:'🌌',diamond:420},urpp:{name:'Pack UR++',count:10,color:'#fff',maxTier:'UR++',art:'👑',diamond:850}};
+const oldGrant=window.cgGrantCard;
+function v6RecordPull(card){v6Ensure();const tier=getTier(card.id,false,false,false)||'E';P.cardGame.pullHistory.unshift({id:card.id,stars:card.stars||1,tier,at:Date.now()});P.cardGame.pullHistory=P.cardGame.pullHistory.slice(0,200);if(['SS','SSS','UR','UR+','UR++'].includes(tier))notif(`🌐 ${P.name||'Trainer'} conseguiu ${getPokeName(card.id)} ${'★'.repeat(card.stars||1)} [${tier}]!`,5000)}
+window.v6ShowPulls=function(pulls,title='RESULTADO DO GACHA'){let d=$('v6-gacha-result');if(!d){d=document.createElement('div');d.id='v6-gacha-result';d.className='psy-v6-overlay';document.body.appendChild(d)}d.innerHTML=`<div class="psy-v6-panel wide"><button class="psy-close-x" onclick="this.closest('.psy-v6-overlay').style.display='none'">×</button><h2 class="psy-title-glint">✨ ${title}</h2><div class="v6-pull-summary">${pulls.length} cartas • clique X para guardar</div><div class="v6-pulls">${pulls.map(c=>`<div class="v6-card" style="--tier:${TIER_CONFIG[getTier(c.id,false,false,false)]?.color||'#aaa'}"><img src="${getRealSprite({id:c.id})}" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${c.id}.png'"><b>${getPokeName(c.id)}</b><span>${getTier(c.id,false,false,false)} • ${'★'.repeat(c.stars||1)}</span></div>`).join('')}</div></div>`;d.style.display='flex'};
+const oldGacha=window.cgGacha; if(oldGacha)window.cgGacha=function(q){const before=JSON.parse(JSON.stringify(P.cardGame?.collection||{}));const r=oldGacha.apply(this,arguments);setTimeout(()=>{const pulls=(P.cardGame?.lastPull||[]);pulls.forEach(v6RecordPull);if(pulls.length)v6ShowPulls(pulls,`GACHA x${q||pulls.length}`);autoSave()},900);return r};
+const oldMultiV6=window.cgMultiPull;if(oldMultiV6)window.cgMultiPull=function(n,currency='gold'){const r=oldMultiV6.apply(this,arguments);setTimeout(()=>{const pulls=Array.isArray(P.cardGame?.lastPull)?P.cardGame.lastPull:[];pulls.forEach(v6RecordPull);if(pulls.length)v6ShowPulls(pulls,`PORTAL ${String(currency).toUpperCase()} • ${n}x`);autoSave()},950);return r};
+
+// HUD links and remove obsolete capture percentage text.
+function v6Hud(){v6Ensure();let mini=$('psy-trainer-mini');if(mini){mini.innerHTML=`🎓 <button class="v6-link" onclick="openTrainerShop()">Trainer Lv.${P.trainerLevel||1} • Talentos ${P.trainerPoints||0}</button> • <button class="v6-link" onclick="openGym()">CAP ${P.levelCap||20} → GYM</button>`}document.querySelectorAll('*').forEach(el=>{if(el.children.length>2)return;const t=el.textContent||'';if(/CAP total 70%|Cap .*\/70%|chance captura.*70%|máx 70%/i.test(t))el.style.display='none'})}
+setInterval(v6Hud,1600);
+
+// Menu AFK is truly standalone; hide the obsolete Cards AFK tab/legacy save buttons in linked mode.
+function v6Menu(){const grid=$('menu')?.querySelector('.psy-main-grid');if(grid&&!grid.querySelector('[data-afk-v6]')){const b=document.createElement('button');b.dataset.afkV6='1';b.innerHTML='🌙 EXPEDIÇÃO AFK';b.className='v6-afk-menu';b.onclick=openAfkV6;grid.appendChild(b)}document.querySelectorAll('.cardgame-tabs button').forEach(b=>{if(/AFK/i.test(b.textContent))b.style.display='none'});if(window.PSY_ONLINE?.mode==='linked')document.querySelectorAll('button').forEach(b=>{if(/SALVAR|CARREGAR SAVE|DOWNLOAD.*SAVE|UPLOAD.*SAVE|\.PSY/i.test(b.textContent||''))b.style.display='none'})}
+setInterval(v6Menu,1400);
+
+// Offline settlement as soon as P exists.
+setTimeout(()=>{v6Ensure();const a=P.meta.afk;if(a.enabled&&a.last&&Date.now()>a.last+30000){const sec=(Date.now()-a.last)/1000;afkReward(sec,true);notif(`🌙 AFK offline coletado: ${fmtTime(sec)}.`,3500)}v6Menu();v6Hud()},1700);
+})();
+
+<style>
+.psy-v6-overlay{display:none;position:fixed;inset:0;z-index:1000030;background:#02040bef;align-items:center;justify-content:center;padding:10px;overflow:auto}.psy-v6-panel{position:relative;width:min(680px,96vw);max-height:94vh;overflow:auto;background:radial-gradient(circle at 50% 0,#18224a,#070812 65%);border:2px solid #6366f1;border-radius:18px;padding:18px;box-shadow:0 0 40px #4f46e566}.psy-v6-panel.wide{width:min(1000px,97vw)}.afk-hero{display:flex;gap:16px;align-items:center;background:#050713;border:1px solid #4f46e5;border-radius:14px;padding:15px}.afk-moon{font-size:58px;filter:drop-shadow(0 0 15px #818cf8)}#v6-afk-clock{font-size:28px;color:#a5b4fc;font-weight:900}.afk-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}.afk-stats b,.afk-history div{background:#080b18;border:1px solid #27315d;border-radius:10px;padding:10px}.afk-history{display:grid;gap:6px}.afk-history div{display:flex;justify-content:space-between;gap:10px}.v6-primary{width:100%;padding:12px;border:0;border-radius:10px;background:linear-gradient(90deg,#4338ca,#0891b2);color:white;font-weight:900}.v6-pulls{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:9px}.v6-card{min-height:145px;background:linear-gradient(160deg,#141827,#05060b);border:2px solid var(--tier);box-shadow:0 0 12px color-mix(in srgb,var(--tier) 45%,transparent);border-radius:12px;padding:7px;text-align:center;overflow:hidden}.v6-card img{width:72px;height:72px;object-fit:contain;image-rendering:pixelated}.v6-card b,.v6-card span{display:block;font-size:10px}.v6-card span{color:#ffd700}.v6-link{border:0;background:transparent;color:#67e8f9;font:inherit;font-weight:900;text-decoration:underline;cursor:pointer;padding:0}.v6-afk-menu{background:linear-gradient(90deg,#17143f,#4338ca)!important;color:#fff!important;box-shadow:0 0 12px #6366f166!important}
+/* Faster city interpolation */
+</style>
+
+/* ============================================================
    ONLINE FOUNDATION CLIENT BRIDGE
    Does not expose SUPABASE_SECRET_KEY. Public key only.
    Economy remains in compatibility/local mode until account is linked.
@@ -10198,7 +10283,7 @@ async function psyBootstrapOnline(){
 function ensureOnlineAuth(){
   if(document.getElementById('screen-online-auth'))return;
   const d=document.createElement('div');d.id='screen-online-auth';
-  d.innerHTML=`<div class="psy-auth-box"><button class="psy-close-x" onclick="document.getElementById('screen-online-auth').style.display='none'">×</button><h2 class="psy-title-glint">🌐 CONTA PSYWORLD</h2><div id="psy-auth-info" class="psy-desc">Cloud save, Market e PvP usarão esta conta.</div><input id="psy-auth-email" type="email" placeholder="seu@email.com"><input id="psy-auth-pass" type="password" minlength="6" placeholder="senha"><button onclick="psyOnlineSignIn()" style="background:#0891b2;color:#fff">ENTRAR</button><button onclick="psyOnlineSignUp()" style="background:#7c3aed;color:#fff">CRIAR CONTA</button><button onclick="psyOnlineSignOut()" style="background:#7f1d1d;color:#fff">SAIR</button><div id="psy-auth-state" style="margin-top:8px;font-size:10px"></div></div>`;
+  d.innerHTML=`<div class="psy-auth-box"><button class="psy-close-x" onclick="document.getElementById('screen-online-auth').style.display='none'">×</button><h2 class="psy-title-glint">🌐 CONTA PSYWORLD</h2><div id="psy-auth-info" class="psy-desc">Seu progresso fica ligado à sua conta e volta automaticamente ao entrar.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0"><button onclick="document.getElementById('psy-auth-login').style.display='block';document.getElementById('psy-auth-register').style.display='none'">🔑 FAZER LOGIN</button><button onclick="document.getElementById('psy-auth-login').style.display='none';document.getElementById('psy-auth-register').style.display='block'">✨ CADASTRAR CONTA</button></div><input id="psy-auth-email" type="email" placeholder="seu@email.com"><input id="psy-auth-pass" type="password" minlength="6" placeholder="senha (mín. 6 caracteres)"><div id="psy-auth-login"><button onclick="psyOnlineSignIn()" style="background:#0891b2;color:#fff;width:100%">ENTRAR NA CONTA</button></div><div id="psy-auth-register" style="display:none"><button onclick="psyOnlineSignUp()" style="background:#7c3aed;color:#fff;width:100%">CRIAR MINHA CONTA</button><div class="psy-desc">Você receberá um e-mail de confirmação e voltará para este site.</div></div><button onclick="psyOnlineSignOut()" style="background:#7f1d1d;color:#fff">SAIR</button><div id="psy-auth-state" style="margin-top:8px;font-size:10px"></div></div>`;
   document.body.appendChild(d);
 }
 window.openOnlineAuth=function(){ensureOnlineAuth();document.getElementById('screen-online-auth').style.display='block';document.getElementById('psy-auth-state').textContent=PSY_ONLINE.session?'✅ Sessão conectada':'Ainda não conectado'};
@@ -10206,7 +10291,7 @@ window.psyOnlineSignIn=async function(){
   try{const email=document.getElementById('psy-auth-email').value, password=document.getElementById('psy-auth-pass').value;const {error}=await PSY_ONLINE.client.auth.signInWithPassword({email,password});if(error)throw error;document.getElementById('psy-auth-state').textContent='✅ Entrou com sucesso.'}catch(e){document.getElementById('psy-auth-state').textContent='❌ '+e.message}
 };
 window.psyOnlineSignUp=async function(){
-  try{const email=document.getElementById('psy-auth-email').value, password=document.getElementById('psy-auth-pass').value;const {error}=await PSY_ONLINE.client.auth.signUp({email,password});if(error)throw error;document.getElementById('psy-auth-state').textContent='📧 Conta criada. Verifique seu email se a confirmação estiver habilitada.'}catch(e){document.getElementById('psy-auth-state').textContent='❌ '+e.message}
+  try{const email=document.getElementById('psy-auth-email').value, password=document.getElementById('psy-auth-pass').value;const {error}=await PSY_ONLINE.client.auth.signUp({email,password,options:{emailRedirectTo:location.origin+'/'}});if(error)throw error;document.getElementById('psy-auth-state').textContent='📧 Conta criada. Verifique seu email se a confirmação estiver habilitada.'}catch(e){document.getElementById('psy-auth-state').textContent='❌ '+e.message}
 };
 window.psyOnlineSignOut=async function(){if(PSY_ONLINE.client)await PSY_ONLINE.client.auth.signOut();document.getElementById('screen-online-auth').style.display='none'};
 function psyAddOnlineMenuButton(){
@@ -10214,6 +10299,19 @@ function psyAddOnlineMenuButton(){
   if(!grid||grid.querySelector('[data-online-account]'))return;
   const b=document.createElement('button');b.dataset.onlineAccount='1';b.innerHTML='🌐 CONTA ONLINE';b.style.background='linear-gradient(90deg,#0369a1,#0f766e)';b.style.color='#fff';b.onclick=openOnlineAuth;grid.appendChild(b);
 }
+
+let PSY_CLOUD_SAVE_TIMER=null,PSY_APPLYING_CLOUD=false;
+function psyCloudPayload(){return {save:P,client_updated_at:new Date().toISOString()}}
+window.psyApplyCloudState=async function(st){
+  if(!st?.game_state?.save)return; PSY_APPLYING_CLOUD=true;
+  try{const remote=st.game_state.save;if(remote&&typeof remote==='object'){P=remote;window.P=P;if(typeof initP==='function')initP();if(typeof renderTeam==='function')renderTeam();if(typeof updateHUD==='function')updateHUD();const starter=document.getElementById('screen-starter');if(starter)starter.style.display='none';const name=document.getElementById('name-screen');if(name)name.style.display='none';}}
+  finally{PSY_APPLYING_CLOUD=false}
+};
+window.psyCloudSave=async function(){if(PSY_APPLYING_CLOUD||PSY_ONLINE?.mode!=='linked'||!PSY_ONLINE?.session)return;try{await psyApi('/api/player/save',{method:'POST',body:JSON.stringify(psyCloudPayload())})}catch(e){console.warn('cloud save',e)}};
+const psyLegacyAutoSave=window.autoSave;
+window.autoSave=function(){const r=psyLegacyAutoSave?.apply(this,arguments);if(PSY_ONLINE?.mode==='linked'){clearTimeout(PSY_CLOUD_SAVE_TIMER);PSY_CLOUD_SAVE_TIMER=setTimeout(psyCloudSave,700)}return r};
+setInterval(()=>{if(PSY_ONLINE?.mode==='linked')psyCloudSave()},30000);
+
 setTimeout(psyInitOnline,1200);
 
 </script>
