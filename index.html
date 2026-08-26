@@ -4790,25 +4790,34 @@ window.renderTeam = function(){
     return a.p.id - b.p.id;
   });
 
-  let toShow = filtered.slice(0, 80);
-  let hb="";
-  toShow.forEach(o=>{
-    let p=o.p, i=o.originalIdx;
-    let stats = calcDetailedStats(p);
-    let tier = getTier(p.id, p.shiny, p.isMega, false);
-    let imgSrc = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.shiny?'shiny/':''}${p.id}.png`;
-    hb+=`<div onclick="openPokeDetail(${i}, true)" style="background:#1a1a2e; border:2px solid ${p.rarity.color}; border-radius:10px; padding:6px 4px; text-align:center; cursor:pointer; position:relative">
-      <span class="tier-badge ${tier}" style="font-size:7px">${tier}</span>
-      <img src="${imgSrc}" style="width:56px; height:56px;">
-      <div style="font-size:10px; color:#fff; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.shiny?'<span class="shiny-tag">Shiny '+p.name+'</span>':p.name}</div>
-      <div style="font-size:9px; color:#888;">Lv${p.level} | ${tier} | ATK ${stats.finalAtk}</div>
-    </div>`;
-  });
-  if(filtered.length > 80){
-    hb+=`<div style="grid-column:1/-1; text-align:center; color:#888; font-size:10px; padding:8px;">Mostrando 80 de ${filtered.length} | Use busca/filtro</div>`;
-  }
-  if(bl) bl.innerHTML=hb||"<p style='color:#666; grid-column:1/-1; text-align:center; padding:20px;'>Nenhum Pokémon</p>";
+let toShow = filtered.slice(0, 80);
+let hb = "";
+
+toShow.forEach(o=>{
+  let p = o.p, i = o.originalIdx;
+  let stats = calcDetailedStats(p);
+  let tier = getTier(p.id, p.shiny, p.isMega, false);
+
+  let showdownName = getShowdownName(p.id);
+  let folder = p.shiny ? 'ani-shiny' : 'ani';
+  let imgSrc = `https://play.pokemonshowdown.com/sprites/${folder}/${showdownName}.gif`;
+  let fallbackSrc = `https://play.pokemonshowdown.com/sprites/dex/${showdownName}.png`;
+
+  hb += `<div onclick="openPokeDetail(${i}, true)" style="background:#1a1a2e; border:2px solid ${p.rarity.color}; border-radius:10px; padding:6px 4px; text-align:center; cursor:pointer; position:relative">
+    <span class="tier-badge ${tier}" style="font-size:7px">${tier}</span>
+    <img src="${imgSrc}" style="width:56px; height:56px; image-rendering:pixelated;" onerror="this.onerror=null;this.src='${fallbackSrc}'">
+    <div style="font-size:10px; color:#fff; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.shiny?'<span class="shiny-tag">Shiny '+p.name+'</span>':p.name}</div>
+    <div style="font-size:9px; color:#888;">Lv${p.level} | ${tier} | ATK ${stats.finalAtk}</div>
+  </div>`;
+});
+
+if(filtered.length > 80){
+  hb += `<div style="grid-column:1/-1; text-align:center; color:#888; font-size:10px; padding:8px;">Mostrando 80 de ${filtered.length} | Use busca/filtro</div>`;
+}
+
+if(bl) bl.innerHTML = hb || "<p style='color:#666; grid-column:1/-1; text-align:center; padding:20px;'>Nenhum Pokémon</p>";
 };
+
 // ===== V18 + V20 FINAL - FIX COMPLETO + DUNGEON V21 =====
 console.log('✅ V21 DUNGEON - BOSS MEGA + SHINY 50K');
 
