@@ -1,0 +1,17 @@
+PSYWORLD V10 LOCAL COMPLETE
+
+Principais mudanças:
+- Sem save online/conta cloud. Save local V9 preservado.
+- Cidade: movimento aumentado para 10; hidratação PokeAPI pesada removida do carregamento inicial.
+- AFK: contadores ao vivo, settlement automático a cada 30s, escala por Trainer Lv/CAP, essências, stones, eggs e packs.
+- Ginásio: ao vencer um líder a batalha permanece aberta com botão PRÓXIMO LÍDER.
+- Fast Encounter fixo acima da batalha.
+- Cards: Pokémon principal + deck auxiliar de até 20, mão 5, tipagens estratégicas, 50 capítulos x 10 fases = 500, boss por capítulo.
+- Bag: venda direta de Stones normais e Essências.
+- Eggs removidos da Poké Shop padrão. Egg Center com Mystery, 9 regionais e 18 Eggs de tipo específicos com preços reduzidos.
+- Conquistas: repetíveis acumuláveis por kills/capturas/eggs/cards e 18 caçadas por tipo.
+- Roleta de Jornada: 1 giro por 30 minutos com jogo aberto; tempo e giros acumulam; Gold/Diamantes/buffs/essências/packs moderados.
+- Psyduck Supremo: atalho próprio, 9 Provações, PsyStone, ascensões, marcos SSS/UR/UR+/UR++ e Mega no reset 50; maior teto de poder do jogo.
+
+Validação:
+- Todos os blocos JavaScript passaram em node --check.
