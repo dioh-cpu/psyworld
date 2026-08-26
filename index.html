@@ -1568,7 +1568,17 @@ const P = {
     team: [], box: [],
     x:25, y:25, px:25*32, py:25*32,
     tx:25, ty:25, moving:false,
-    inventory: { "Pokéball": 15, "Great Ball": 5, "Poção 50": 5 },
+    inventory: { 
+      "Pokéball": 15, 
+      "Great Ball": 5, 
+      "Poção 50": 5,
+      "Boost Stone": 1000,
+      "Shiny Stone": 1000,
+      "Fragmento Mega Stone": 1000,
+      "Mega Stone": 1000,
+      "Ultra Ball": 1000,
+      "Premier Ball": 1000
+    },
     defeatedCount:0,
     currentHunt: "kanto_planta_t1",
     levelCap:20, gymsDefeated:0, gymProgress:[],
@@ -4664,8 +4674,8 @@ window.openPokeDetail = function(idx, isBox){
     <div style="background:#0a0a12; border-radius:8px; padding:8px; margin-bottom:8px;">
       <div style="color:#aaa; font-size:10px; letter-spacing:1px; margin-bottom:6px;">📊 CÁLCULO DETALHADO</div>
       <div style="font-size:10px; color:#ccc; line-height:1.6;">
-        <div>❤ <b>HP:</b> Base ${stats.baseHp} × (1+${stats.hpBuff}%/100) = <b style="color:#00ff88;">${stats.finalHp}</b></div>
-        <div>⚔ <b>ATK:</b> Base ${stats.baseAtk} × (1+${stats.dmgBuff}%/100) = <b style="color:#ff4444;">${stats.finalAtk}</b></div>
+       <div>❤ <b>HP:</b> Base ${stats.baseHp} × ${stats.boost}% boost × ${stats.resets*5}% reset = <b style="color:#00ff88;">${stats.finalHp}</b></div>
+<div>⚔ <b>ATK:</b> Base ${stats.baseAtk} × ${stats.boost}% boost × ${stats.resets*5}% reset = <b style="color:#ff4444;">${stats.finalAtk}</b></div>
         <div>🔴 <b>CAP:</b> Base 10% + ${stats.capBuff}% = ${10+stats.capBuff}% (máx 70%)</div>
         <div>✨ <b>SHINY:</b> Base 0.5% + ${stats.shinyBuff*0.1}% = ${(0.5+stats.shinyBuff*0.1).toFixed(2)}%</div>
       </div>
@@ -5724,24 +5734,77 @@ window.getPokeAnimMegaFix = function(id){
   return `https://play.pokemonshowdown.com/sprites/ani/${name}-mega.gif`;
 }
 
-// FIX DO LOOP - RECALC LIMPO SEM _recalcPokeOld
+// FIX BOOST STONE - ATK E DEF ATUALIZANDO
 window.recalcPoke = function(p){
   if(!p) return;
   if(typeof p.boost==='undefined') p.boost=0;
+  if(typeof p.resets==='undefined') p.resets=0;
   if(p.boost>999) p.boost=999;
-  let hpBuff = typeof getTotalBuff==='function'?getTotalBuff('hp'):0;
-  let dmgBuff = typeof getTotalBuff==='function'?getTotalBuff('dmg'):0;
-  let baseHp = calcBaseHpV14(p.level, p.rarity?.mult||1, p.shiny, p.isMega, p.id);
-  let baseAtk = calcBaseAtkV14(p.level, p.rarity?.mult||1, p.shiny, p.isMega, p.id);
-  let boostMult = 1 + (p.boost||0)/100;
+
+  let mult = p.rarity?.mult||1;
+  let baseHp = calcBaseHpV14(p.level, mult, p.shiny, p.isMega, p.id);
+  let baseAtk = calcBaseAtkV14(p.level, mult, p.shiny, p.isMega, p.id);
+
+  let boostMult = 1 + p.boost/100;
+  let resetMult = 1 + p.resets*0.05;
   let formMult = (p.shiny && p.isMega)? 3 : 1;
-  p.baseMaxHp = Math.floor(baseHp * boostMult * formMult);
-  p.baseMaxAtk = Math.floor(baseAtk * boostMult * formMult);
+
+  p.baseMaxHp = Math.floor(baseHp * boostMult * resetMult * formMult);
+  p.baseMaxAtk = Math.floor(baseAtk * boostMult * resetMult * formMult);
+
+  let hpBuff = getTotalBuff('hp');
+  let dmgBuff = getTotalBuff('dmg');
+
   p.maxHp = Math.floor(p.baseMaxHp * (1+hpBuff/100));
   p.atk = Math.floor(p.baseMaxAtk * (1+dmgBuff/100));
-  p.hp = Math.min(p.maxHp, p.hp||p.maxHp);
-}
+  // DEF segue o ATK
+  p.baseMaxDef = Math.floor(p.baseMaxAtk * 0.65);
+  p.def = Math.floor(p.baseMaxDef * (1+dmgBuff/100));
 
+  if(!p.hp || p.hp > p.maxHp) p.hp = p.maxHp;
+};
+
+window.calcDetailedStats = function(poke){
+  if(typeof ensureTrainerData==='function') ensureTrainerData();
+  poke = poke || {};
+  let lvl = poke.level || 1;
+  let mult = poke.rarity?.mult || 1;
+  let boost = poke.boost||0;
+  let resets = poke.resets||0;
+
+  let realBaseHp = calcBaseHpV14(lvl, mult, poke.shiny, poke.isMega, poke.id);
+  let realBaseAtk = calcBaseAtkV14(lvl, mult, poke.shiny, poke.isMega, poke.id);
+
+  let hpBuff = getTotalBuff('hp');
+  let dmgBuff = getTotalBuff('dmg');
+
+  let boostMult = 1 + boost/100;
+  let resetMult = 1 + resets*0.05;
+  let formMult = (poke.shiny && poke.isMega)? 3 : 1;
+
+  let afterBoostHp = Math.floor(realBaseHp * boostMult * resetMult * formMult);
+  let afterBoostAtk = Math.floor(realBaseAtk * boostMult * resetMult * formMult);
+
+  let finalHp = Math.floor(afterBoostHp * (1+hpBuff/100));
+  let finalAtk = Math.floor(afterBoostAtk * (1+dmgBuff/100));
+
+  let baseDef = Math.floor(realBaseAtk * 0.65);
+  let finalDef = Math.floor(finalAtk * 0.65);
+
+  return {
+    baseHp: realBaseHp, afterBoostHp, finalHp, hpBuff,
+    baseAtk: realBaseAtk, afterBoostAtk, finalAtk, dmgBuff,
+    baseDef, finalDef,
+    baseCrit:5, finalCrit:5+(getTotalBuff('crit')||0),
+    critBuff:getTotalBuff('crit')||0,
+    capBuff:getTotalBuff('cap')||0,
+    goldBuff:getTotalBuff('gold')||0,
+    xpBuff:getTotalBuff('xp')||0,
+    dropBuff:getTotalBuff('drop')||0,
+    shinyBuff:getTotalBuff('shiny')||0,
+    boost, resets, boostMult, resetMult
+  };
+};
 function tryGlobalDrops(wildPoke){
   ensureTrainerData();
   let dropBuff = getTotalBuff('drop');
