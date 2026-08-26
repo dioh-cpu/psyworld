@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>PSYWORLD</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://play.pokemonshowdown.com" crossorigin>
+<link rel="dns-prefetch" href="https://play.pokemonshowdown.com">
 <!-- PSYWORLD corrigido: sprites Mega X/Y + shiny + player GIF animado + sprite helpers unificados -->
 <style>
 #eff-popup {
@@ -1644,14 +1647,6 @@ html,body{width:100%;min-height:100%;overflow:hidden}
 .psy-balance-note{font-size:8px;color:#94a3b8;margin-top:4px}
 
 
-/* ONLINE FOUNDATION UI */
-#psy-online-status{position:fixed;left:12px;bottom:10px;z-index:999998;background:#07111fe8;border:1px solid #475569;border-radius:9px;padding:5px 8px;color:#94a3b8;font:9px Tahoma,sans-serif;pointer-events:none}
-#psy-online-status.on{border-color:#22c55e;color:#86efac;box-shadow:0 0 9px #22c55e33}
-#psy-online-status.warn{border-color:#f59e0b;color:#fde68a}
-#screen-online-auth{display:none;position:fixed;inset:0;background:#000e;z-index:10000040;overflow:auto;padding:12px}
-#screen-online-auth .psy-auth-box{max-width:420px;margin:8vh auto;background:radial-gradient(circle at 50% 0,#172554,#080b12 65%);border:2px solid #22d3ee;border-radius:15px;padding:15px;color:#fff;position:relative}
-#screen-online-auth input{width:100%;box-sizing:border-box;margin:5px 0;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff}
-#screen-online-auth button{margin:5px 3px;padding:9px 12px;border:0;border-radius:8px;font-weight:900}
 
 </style>
 
@@ -1770,6 +1765,27 @@ window.confirmMegaChoice = function(idx,isBox,choiceIdx,cost){
 }
 window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_XY[p.id]?.length>1) openMegaChoice(i,b,p.shiny?500:50); else useMegaStone(i,b); }
 </script>
+
+<style id="psy-v9-style">
+/* PSYWORLD V9 UI */
+.psy-v9-overlay{display:none;position:fixed;inset:0;z-index:10000050;background:#02040bef;align-items:center;justify-content:center;padding:10px;overflow:auto}
+.psy-v9-panel{position:relative;width:min(720px,96vw);max-height:94vh;overflow:auto;background:radial-gradient(circle at 50% 0,#172554,#070913 64%);border:2px solid #6366f1;border-radius:18px;padding:16px;box-shadow:0 0 40px #4f46e566;color:#fff}.psy-v9-panel.wide{width:min(1120px,98vw)}
+.psy-v9-click{pointer-events:auto!important;cursor:pointer!important;user-select:none}.psy-v9-click:hover{filter:brightness(1.25);transform:translateY(-1px)}
+.psy-v9-hunt-locked{filter:grayscale(.9) brightness(.48)!important;position:relative!important;cursor:not-allowed!important}.psy-v9-hunt-locked::after{content:'🔒 CAP';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#05070dcc;color:#fca5a5;font-weight:900;font-size:10px;border-radius:9px}
+.psy-afk-menu-btn{background:linear-gradient(90deg,#111827,#4338ca)!important;color:#fff!important;border-color:#818cf8!important;box-shadow:0 0 13px #6366f155!important}
+.psy-afk-head{display:grid;grid-template-columns:95px 1fr;gap:15px;align-items:center;background:#080b18;border:1px solid #4338ca;border-radius:14px;padding:14px}.psy-afk-orb{font-size:64px;text-align:center;filter:drop-shadow(0 0 18px #818cf8);animation:psyAfkFloat 2.4s ease-in-out infinite}.psy-afk-head h2{margin:0}.psy-afk-head small{display:block;color:#94a3b8;margin-top:4px}.psy-afk-head #psy-afk-clock{font-size:28px;color:#a5b4fc;font-weight:900;margin:4px 0}
+@keyframes psyAfkFloat{50%{transform:translateY(-7px)}}.psy-afk-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.psy-afk-stats>div{background:#0b1020;border:1px solid #334155;border-radius:10px;padding:9px;text-align:center;font-size:9px;color:#94a3b8}.psy-afk-stats b{display:block;color:#fff;font-size:14px;margin-top:4px}.psy-afk-main{width:100%;padding:12px;border:0;border-radius:10px;background:linear-gradient(90deg,#4338ca,#0891b2);color:#fff;font-weight:900}.psy-afk-history{display:grid;gap:6px}.psy-afk-history>div{display:flex;justify-content:space-between;gap:10px;background:#080b18;border:1px solid #27315d;border-radius:9px;padding:8px;font-size:9px}.psy-afk-history span{color:#94a3b8}.psy-afk-history b{color:#fff;text-align:right}
+#psy-global-card-banner{display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:10000080;background:linear-gradient(90deg,#111827,#581c87,#111827);border:2px solid #facc15;border-radius:12px;padding:11px 18px;color:#fff;font-size:12px;box-shadow:0 0 28px #facc1566;text-align:center;max-width:90vw}
+.psy-gacha-hero{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:center;background:radial-gradient(circle at 20% 50%,#312e81,#0a0b16 58%);border:2px solid #7c3aed;border-radius:16px;padding:16px;margin-bottom:12px;overflow:hidden}.psy-gacha-pokes{height:180px;position:relative}.psy-gacha-pokes span{position:absolute}.psy-gacha-pokes span:nth-child(1){left:88px;top:38px}.psy-gacha-pokes span:nth-child(2){left:5px;top:65px}.psy-gacha-pokes span:nth-child(3){right:0;top:68px}.psy-gacha-pokes img{width:92px;height:92px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 9px #a78bfa)}.psy-gacha-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.psy-gacha-actions button{background:linear-gradient(90deg,#92400e,#d97706);color:#fff;border:1px solid #fbbf24;border-radius:9px;padding:9px;font-weight:900}.psy-gacha-actions button.dia{background:linear-gradient(90deg,#164e63,#7c3aed);border-color:#67e8f9}.psy-gacha-actions small{color:#e2e8f0}
+.psy-pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:9px}.psy-pack-card{display:grid;grid-template-columns:105px 1fr;gap:9px;align-items:center;background:#090b13;border:2px solid var(--pack);border-radius:13px;padding:8px;box-shadow:0 0 12px color-mix(in srgb,var(--pack) 35%,transparent)}.psy-pack-art{height:115px;position:relative;border-radius:11px;background:radial-gradient(circle,var(--pack),#111827 62%,#03050a);overflow:hidden}.pack-symbol{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:50px;filter:drop-shadow(0 0 14px #fff)}.pack-poke{position:absolute}.pack-poke img{width:44px;height:44px;object-fit:contain;image-rendering:pixelated}.pack-poke.p0{left:3px;bottom:3px}.pack-poke.p1{right:2px;bottom:2px}.pack-poke.p2{right:29px;top:0}.pack-info{display:grid;gap:5px}.pack-info>b{font-size:12px}.pack-info small{color:#94a3b8}.pack-info strong{font-size:17px;color:var(--pack)}.pack-info button{padding:6px 8px;margin-right:4px;border:0;border-radius:7px;background:#334155;color:#fff;font-weight:900}
+.psy-pull-summary{text-align:center;color:#94a3b8;margin:5px 0 10px}.psy-pull-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px}.psy-pull-card{position:relative;min-height:150px;background:linear-gradient(155deg,#151827,#05060b);border:2px solid var(--tier);box-shadow:0 0 11px color-mix(in srgb,var(--tier) 45%,transparent);border-radius:11px;padding:7px;text-align:center;overflow:hidden}.psy-pull-card img{width:72px;height:72px;object-fit:contain;image-rendering:pixelated}.psy-pull-card b,.psy-pull-card small,.psy-pull-card .stars{display:block}.psy-pull-card small{font-size:8px;color:#94a3b8}.psy-pull-card .stars{color:#facc15}.psy-pull-card .tier,.psy-collection-card .tier,.psy-hand-card .tier{position:absolute;top:5px;left:5px;background:#000d;border:1px solid var(--tier);border-radius:6px;padding:2px 5px;color:var(--tier);font-size:8px;font-weight:900}.effect-ico{font-size:46px;margin:20px 0 8px;filter:drop-shadow(0 0 10px var(--tier))}
+.psy-deck-head{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#0b1020;border:1px solid #334155;border-radius:10px;padding:9px}.psy-deck-head small{display:block;color:#94a3b8;font-size:8px}.psy-deck-head button{background:#2563eb;color:#fff;border:0;border-radius:8px;padding:8px;font-weight:900}.psy-deck-strip{display:flex;gap:5px;overflow-x:auto;padding:8px 2px;margin-bottom:6px}.psy-deck-strip>span{min-width:48px;height:48px;border:2px solid var(--tier);border-radius:9px;background:#0a0b12;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 7px color-mix(in srgb,var(--tier) 40%,transparent)}.psy-deck-strip img{width:42px;height:42px;object-fit:contain}.psy-card-filters{display:grid;grid-template-columns:1.5fr repeat(4,1fr);gap:6px;margin:7px 0}.psy-card-filters input,.psy-card-filters select{background:#080b12;border:1px solid #334155;color:#fff;border-radius:7px;padding:8px}.psy-card-pagebar{display:flex;justify-content:center;align-items:center;gap:10px;margin:7px 0}.psy-card-pagebar button{background:#334155;color:#fff;border:0;border-radius:7px;padding:6px 10px}.psy-collection-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px}.psy-collection-card,.psy-hand-card{position:relative;background:linear-gradient(155deg,#141827,#070811);border:2px solid var(--tier);border-radius:12px;color:#fff;padding:8px;text-align:center;min-height:175px;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}.psy-collection-card img,.psy-hand-card img{width:78px;height:78px;object-fit:contain;image-rendering:pixelated}.psy-collection-card b,.psy-collection-card small,.psy-collection-card em,.psy-hand-card b,.psy-hand-card small,.psy-hand-card em{display:block}.psy-collection-card small,.psy-hand-card small{font-size:8px;color:#94a3b8}.psy-collection-card em,.psy-hand-card em{font-style:normal;color:#67e8f9;font-size:9px;margin-top:4px}.psy-collection-card .stars,.psy-hand-card .stars{color:#facc15;font-size:9px}.psy-collection-card.selected,.psy-hand-card.selected{transform:translateY(-10px) scale(1.035);box-shadow:0 0 14px var(--tier),0 0 28px color-mix(in srgb,var(--tier) 55%,transparent);filter:brightness(1.18);z-index:3}.psy-collection-card.effect{min-height:175px}
+.psy-history-head{text-align:center}.psy-pull-history{display:grid;gap:5px}.psy-pull-history>div{display:grid;grid-template-columns:55px 1fr auto auto;gap:8px;align-items:center;background:#0a0c14;border:1px solid #263044;border-radius:8px;padding:7px}.psy-pull-history small{color:#64748b;font-size:8px}.psy-pull-history .stars{color:#facc15}
+.psy-card-campaign{background:#080a12;border:1px solid #4338ca;border-radius:14px;padding:12px}.campaign-hero{text-align:center}.campaign-hero p,.campaign-rules{color:#94a3b8;font-size:9px}.psy-stage-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:12px 0}.psy-stage{background:#111827;border:2px solid #334155;color:#fff;border-radius:9px;padding:10px 5px}.psy-stage span,.psy-stage small{display:block;font-size:8px}.psy-stage.current{border-color:#22d3ee;box-shadow:0 0 12px #22d3ee66}.psy-stage.boss{border-color:#facc15;background:linear-gradient(155deg,#3b2204,#111827)}
+.psy-card-arena{min-height:650px;position:relative;border:2px solid #7c3aed;border-radius:16px;padding:10px;background:radial-gradient(circle at 50% 10%,#1e3a8a 0,#0f5132 30%,#385b16 55%,#10131d 100%);overflow:hidden}.psy-arena-top{display:flex;justify-content:space-between;align-items:center;background:#070b14dd;border-radius:9px;padding:7px;position:relative;z-index:2}.psy-arena-top button{background:#334155;color:#fff;border:0;border-radius:7px;padding:6px}.psy-arena-enemy{text-align:center;margin:15px auto 5px}.psy-arena-enemy>img{width:125px;height:125px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 12px #fff5)}.psy-arena-player{text-align:center;margin:2px auto 6px}.psy-hpbox{width:min(360px,90%);margin:auto;background:#07111fe8;border:1px solid #334155;border-radius:9px;padding:7px}.psy-hpbox>div{height:9px;background:#1f2937;border-radius:99px;overflow:hidden;margin:4px 0}.psy-hpbox i{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#86efac)}.psy-status-line{min-height:18px;font-size:9px;color:#c4b5fd;margin-top:5px}.psy-hand-title{text-align:center;font-weight:900;margin:6px 0;color:#e9d5ff}.psy-card-hand{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;align-items:end}.psy-hand-card{min-height:165px}.psy-use-card{display:block;width:min(480px,96%);margin:12px auto 0;padding:11px;background:linear-gradient(90deg,#7c3aed,#0891b2);color:#fff;border:0;border-radius:9px;font-weight:900}
+@media(max-width:760px){.psy-afk-stats{grid-template-columns:1fr 1fr}.psy-gacha-hero{grid-template-columns:1fr}.psy-gacha-pokes{height:115px}.psy-card-filters{grid-template-columns:1fr 1fr}.psy-card-hand{grid-template-columns:repeat(2,1fr)}.psy-stage-grid{grid-template-columns:repeat(2,1fr)}.psy-pull-history>div{grid-template-columns:45px 1fr}.psy-pull-history small{grid-column:1/-1}.psy-pack-grid{grid-template-columns:1fr}}
+</style>
+
 </head>
 <body>
 <!-- LOGIN -->
@@ -2536,7 +2552,7 @@ const SPECIAL_EVOLUTIONS = {
 
 const P = {
     name:"", level:1, hp:50, maxHp:50,
-    exp:0, maxExp:100, gold:10000000,
+    exp:0, maxExp:100, gold:25000,
     team: [], box: [],
     x:25, y:25, px:25*32, py:25*32,
     tx:25, ty:25, moving:false,
@@ -3325,7 +3341,9 @@ async function loadFullTypes(){
     window.TYPE_BY_ID_EXT = window.TYPE_BY_ID_FULL;
   }catch(e){ console.warn('loadFullTypes falhou', e); }
 }
-loadFullTypes();
+// PSYWORLD V9: tipos 152-1025 não são mais baixados em 874 requests no carregamento.
+// Hunts já carregam o tipo pela própria zona; o restante pode ser obtido sob demanda.
+window.PSY_TYPES_LAZY = true;
 
 const WILD_ZONES_GEN1 = {
   normal_t1: [{id:16,name:"Pidgey"},{id:19,name:"Rattata"},{id:21,name:"Spearow"},{id:52,name:"Meowth"},{id:84,name:"Doduo"},{id:108,name:"Lickitung"}],
@@ -3719,6 +3737,8 @@ function checkLevelUp() {
     } updateHUD();
 }
 function initEngine() {
+    if(window.__psyEngineStarted) return;
+    window.__psyEngineStarted = true;
     inBattle = false; battleData = null;
     let el = document.getElementById('battle-screen'); if(el) el.style.display = 'none';
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -3850,7 +3870,7 @@ function update(dt) {
             }
         }
     } else {
-        const speed=4, tx=P.tx*TILE, ty=P.ty*TILE;
+        const speed=8, tx=P.tx*TILE, ty=P.ty*TILE;
         if(P.px<tx) P.px=Math.min(P.px+speed,tx); else if(P.px>tx) P.px=Math.max(P.px-speed,tx);
         if(P.py<ty) P.py=Math.min(P.py+speed,ty); else if(P.py>ty) P.py=Math.max(P.py-speed,ty);
         if(P.px===tx && P.py===ty){ P.x=P.tx; P.y=P.ty; P.moving=false; }
@@ -4570,7 +4590,7 @@ function openTrainerShop(){
   }
   scr.innerHTML=`<div style="max-width:600px; margin:0 auto; background:#111; border:2px solid #00d0ff; border-radius:12px; padding:15px;">
     <div style="display:flex; justify-content:space-between; align-items:center;"><h3 style="color:#00d0ff; margin:0;">🧑🏫 TALENTOS DO TREINADOR</h3><button onclick="document.getElementById('screen-trainer').style.display='none'" style="background:#833; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold;">X</button></div>
-    <div style="color:#aaa; font-size:10px; margin:6px 0;">Cada level = 1 ponto. XP = 10% do XP que seus pokemons ganham. Sem limite de drop, cap de captura 70% total.</div>
+    <div style="color:#aaa; font-size:10px; margin:6px 0;">Cada level = 1 ponto. XP = 10% do XP que seus pokemons ganham. Captura usa limite por Tier: E até 40%, S até 5% e Shiny até 1%.</div>
     <div id="trainer-buffs-list"></div>
     <div style="margin-top:10px; background:#222; padding:8px; border-radius:8px; font-size:10px; color:#aaa;">
       <div>Buffs totais (World + Treinador):</div>
@@ -4903,7 +4923,7 @@ function renderWorldShop(){
   let html=`
   <div style="background:linear-gradient(135deg,#000,#111); border:1px solid #00d08444; border-radius:12px; padding:10px; text-align:center; margin-bottom:12px">
     <div style="color:#00d084; font-weight:900; font-size:13px; letter-spacing:1px">🛒 WORLD BUFFS • GOLD SHOP</div>
-    <div style="color:#555; font-size:10px; margin-top:2px">Preço +5% por nível • CAP total 70% captura</div>
+    <div style="color:#555; font-size:10px; margin-top:2px">Preço +5% por nível • captura limitada por Tier</div>
     <div style="color:#ffd700; font-weight:900; font-size:13px; margin-top:6px; background:#1a1a00; border-radius:6px; padding:4px">💰 ${fmt(P.gold)} Gold</div>
   </div>`;
 
@@ -5153,7 +5173,7 @@ function drawWorldFP(){
     wCtx.fillStyle="#00d084"; wCtx.font="bold 12px Arial";
     let regName = worldRegion? WORLD_REGIONS[worldRegion].name : "???";
     let tier=getWorldTier();
-    wCtx.fillText(`🌍 ${regName} | ${tier.name} | ${worldWilds.length}/${WORLD_MAX_POKES} pokes | T.Lv${P.trainerLevel} Drop ${getTotalBuff('drop')}% Cap ${getTotalBuff('cap')}%/70%`, 14, 22);
+    wCtx.fillText(`🌍 ${regName} | ${tier.name} | ${worldWilds.length}/${WORLD_MAX_POKES} pokes | T.Lv${P.trainerLevel} Drop ${getTotalBuff('drop')}% • Captura por Tier`, 14, 22);
   }catch(e){ console.log("draw erro", e); }
 }
 function attackWorldTarget(t){
@@ -5191,8 +5211,8 @@ function handleWorldKill(t){
     let np={id:t.id,name:t.name,level:t.lvl,hp:100,maxHp:100,rarity:rollRarity(),type:TYPE_BY_ID_ALL[t.id]||"Normal",moves:getMovesForLevel(t.id,t.lvl)};
     let totalShiny=getTotalBuff('shiny');
     if(Math.random()*100<(0.1+totalShiny*0.1)) np.isShiny=true;
-    P.box.push(np); notif(`Capturou ${t.name} Lv${t.lvl} [${WORLD_REGIONS[t.region]?.name}] ${finalChance.toFixed(1)}%/70% +${finalGold}G +${finalXp}XP`,3500);
-  } else { notif(`Derrotou ${t.name} Lv${t.lvl} +${finalGold}G +${finalXp}XP (Cap ${finalChance.toFixed(1)}%/70%)`,2500); }
+    P.box.push(np); notif(`Capturou ${t.name} Lv${t.lvl} [${WORLD_REGIONS[t.region]?.name}] ${finalChance.toFixed(1)}% +${finalGold}G +${finalXp}XP`,3500);
+  } else { notif(`Derrotou ${t.name} Lv${t.lvl} +${finalGold}G +${finalXp}XP (Cap ${finalChance.toFixed(1)}%)`,2500); }
   let wasHorde = t.isHorde;
   worldWilds.splice(worldWilds.indexOf(t),1);
   if(!wasHorde) triggerHorde();
@@ -5366,7 +5386,7 @@ updateHUD = function(){
       hud.appendChild(div);
     }
     let tLine=document.getElementById('trainer-hud-line');
-    if(tLine) tLine.innerHTML=`🧑🏫 Lv.${P.trainerLevel} | ${P.trainerExp}/${P.trainerMaxExp} XP | ${P.trainerPoints} pts | Drop ${getTotalBuff('drop')}% Cap ${getTotalBuff('cap')}%/70%`;
+    if(tLine) tLine.innerHTML=`🧑🏫 Lv.${P.trainerLevel} | ${P.trainerExp}/${P.trainerMaxExp} XP | ${P.trainerPoints} pts | Drop ${getTotalBuff('drop')}% • Captura por Tier`;
   }catch(e){}
 };
 
@@ -5651,7 +5671,7 @@ window.openPokeDetail = function(idx, isBox){
         </div>
         <div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px;">
           <div onclick="showBuffOrigin('cap')" style="background:#1a1a2e; padding:6px; border-radius:6px; text-align:center; cursor:pointer; border:1px solid #333;">
-            <div style="color:#888; font-size:8px;">🔴 CAP</div><div style="color:${stats.capBuff>0?'#00ff88':'#666'}; font-weight:bold; font-size:11px;">${stats.capBuff}%/70%</div>
+            <div style="color:#888; font-size:8px;">🔴 CAP</div><div style="color:${stats.capBuff>0?'#00ff88':'#666'}; font-weight:bold; font-size:11px;">${stats.capBuff}% buff</div>
           </div>
           <div onclick="showBuffOrigin('gold')" style="background:#1a1a2e; padding:6px; border-radius:6px; text-align:center; cursor:pointer; border:1px solid #333;">
             <div style="color:#888; font-size:8px;">💰 GOLD</div><div style="color:${stats.goldBuff>0?'#ffd700':'#666'}; font-weight:bold; font-size:11px;">${stats.goldBuff}%</div>
@@ -5670,7 +5690,7 @@ window.openPokeDetail = function(idx, isBox){
       <div style="font-size:10px; color:#ccc; line-height:1.6;">
        <div>❤ <b>HP:</b> Base ${stats.baseHp} × ${stats.boost}% boost × ${stats.resets*5}% reset = <b style="color:#00ff88;">${stats.finalHp}</b></div>
 <div>⚔ <b>ATK:</b> Base ${stats.baseAtk} × ${stats.boost}% boost × ${stats.resets*5}% reset = <b style="color:#ff4444;">${stats.finalAtk}</b></div>
-        <div>🔴 <b>CAP:</b> Base 10% + ${stats.capBuff}% = ${10+stats.capBuff}% (máx 70%)</div>
+        <div>🔴 <b>CAP:</b> Buff de captura ${stats.capBuff}% • limite final depende do Tier</div>
         <div>✨ <b>SHINY:</b> Base 0.5% + ${stats.shinyBuff*0.1}% = ${(0.5+stats.shinyBuff*0.1).toFixed(2)}%</div>
       </div>
     </div>
@@ -7514,7 +7534,7 @@ window.recalcLevelCap=function(){
     }
     if(next)break;
   }
-  P.levelCap=next?Math.max(15,Math.min(100,(next.level||10)+5)):100;
+  P.levelCap=next?Math.max(20,Math.min(100,(next.level||10)+5)):100;
   return P.levelCap;
 };
 
@@ -8084,7 +8104,7 @@ window.ensureCardScreen=function(){
    ============================================================ */
 window.PSY_TUTORIAL_STEPS=[
  {icon:'🎮',title:'Bem-vindo ao PSYWORLD',body:'Explore a cidade, monte seu time e avance pelos Ginásios. WORLD, Dungeons e Poké Cards são modos alternativos que usam a mesma economia.'},
- {icon:'🐾',title:'Captura e raridades',body:'Capturar é difícil: a chance normal tem teto de 0,5%. Abaixe o HP e use Balls melhores. Tier e raridade aumentam muito HP e ATK. Shiny é raro e recebe Pika das Galáxias.'},
+ {icon:'🐾',title:'Captura e raridades',body:'A captura é limitada por Tier: E pode chegar a 40%, enquanto S chega a no máximo 5%. Shiny nunca passa de 1%. Abaixe o HP e use Balls melhores.'},
  {icon:'✨',title:'Shiny, Mega e formas',body:'Shiny recebe raridade Pika das Galáxias. Mega recebe DEUS. Shiny Mega recebe CRIADOR. Mega exige Trainer Lv.50 e Shiny Mega Lv.70.'},
  {icon:'🏆',title:'Ginásios e Level Cap',body:'Seu level cap acompanha o próximo Ginásio. Vencer líderes abre espaço para evoluir e progredir. Bosses exigem Trainer Lv.100 e Lendários Lv.200.'},
  {icon:'🥚',title:'Eggs',body:'Eggs chocam após 300 Pokémon derrotados. Mystery Egg pode trazer qualquer geração, sem Boss/Lendário/Mega, com 1% Shiny e qualidade até S. Eggs premium também precisam incubar.'},
@@ -8982,7 +9002,7 @@ function psyBuildHudPretty(){
         <div class="psy-hud-sub">Treinador em progresso</div>
         <div class="psy-hud-badges">
           <span class="psy-hud-badge trainer">🎓 T.Lv <b id="psy-hud-trainer-lv">1</b></span>
-          <span class="psy-hud-badge cap">🔓 Cap <b id="psy-hud-cap">15</b></span>
+          <span class="psy-hud-badge cap">🏆 Cap <b id="psy-hud-cap">20</b></span>
         </div>
       </div>
     </div>
@@ -9017,7 +9037,7 @@ function psyRefreshPrettyHud(){
   const n=document.getElementById('psy-hud-poke-name'); if(n)n.textContent=getPokeName(p.id);
   const l=document.getElementById('psy-hud-poke-lv'); if(l)l.textContent=p.level||1;
   const tl=document.getElementById('psy-hud-trainer-lv'); if(tl)tl.textContent=P.trainerLevel||1;
-  const cp=document.getElementById('psy-hud-cap'); if(cp)cp.textContent=P.levelCap||15;
+  const cp=document.getElementById('psy-hud-cap'); if(cp)cp.textContent=P.levelCap||20;
   const av=document.getElementById('psy-hud-avatar-img');
   if(av) psySetPokeImgSmooth(av,p);
   const st=document.getElementById('psy-hud-mini-stats');
@@ -9602,8 +9622,8 @@ window.PSY_TUTORIAL_STEPS=[
  {icon:'⚡',title:'Fast Encounter',body:'Fast Encounter reduz o intervalo entre encontros para facilitar farm. Ele não transforma encontros comuns em raros e não substitui a progressão de Hunts e Ginásios.'},
  {icon:'🌍',title:'WORLD',body:'WORLD é um modo alternativo com exploração e buffs próprios. Seu Pokémon, Gold, XP, Diamantes e vários bônus continuam conectados ao restante do PSYWORLD.'},
  {icon:'🥚',title:'Eggs',body:'Eggs ficam na incubadora e progridem derrotando Pokémon. Existem Eggs de Gold, regionais, por tipo e recompensas. Pokémon proibidos de Eggs continuam fora do pool.'},
- {icon:'🃏',title:'Poké Cards',body:'Escolha um Pokémon da sua coleção e use os moves próprios dele em batalhas por energia. Packs, habilidades, coleção e AFK aprofundam esse modo sem substituir o jogo principal.'},
- {icon:'🌙',title:'AFK',body:'O AFK dos Cards permite ganhos reduzidos enquanto você continua usando outros modos. Ele concede Gold, XP, alguns itens e raramente Packs, mas não captura Pokémon.'}
+ {icon:'🃏',title:'Poké Cards',body:'Monte um Deck de até 20 cartas. Em batalha, 5 opções são sorteadas por turno; Packs, efeitos, estrelas e a campanha aprofundam o modo sem substituir o jogo principal.'},
+ {icon:'🌙',title:'AFK',body:'A Expedição AFK fica no menu principal, tem contador e histórico e continua contando mesmo com o jogo fechado. Ela concede Gold, XP, itens e raramente Packs, mas não captura Pokémon.'}
 ];
 
 /* Remove any stale capture-probability wording rendered by an old tutorial instance. */
@@ -10141,80 +10161,336 @@ window.renderMarket5=async function(tab){
 
 
 
-/* ============================================================
-   ONLINE FOUNDATION CLIENT BRIDGE
-   Does not expose SUPABASE_SECRET_KEY. Public key only.
-   Economy remains in compatibility/local mode until account is linked.
-   ============================================================ */
-window.PSY_ONLINE={configured:false,client:null,session:null,state:null,mode:'local'};
 
-async function psyLoadSupabaseJs(){
-  if(window.supabase?.createClient)return window.supabase;
-  await new Promise((ok,fail)=>{
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-    s.onload=ok;s.onerror=fail;document.head.appendChild(s);
-  });
-  return window.supabase;
+/* ============================================================
+   PSYWORLD V9 — LOCAL STABLE / BALANCE / AFK / CARDS / CAPTURE
+   IMPORTANT: no Supabase account/cloud-save initialization.
+   ============================================================ */
+(function(){
+'use strict';
+window.PSY_V9=true;
+
+/* ---------- SAFE LOCAL SAVE: current + backup, no account ---------- */
+const PSY_LOCAL_KEY='psyWorldSave';
+const PSY_LOCAL_V9_KEY='psyWorldSave_v9';
+const PSY_LOCAL_BACKUP_KEY='psyWorldSave_backup';
+function psyV9Parse(raw){try{return raw?JSON.parse(raw):null}catch(e){return null}}
+function psyV9Valid(data){
+  const p=data?.player||data;
+  return !!(p && Array.isArray(p.team) && p.team.length>0 && p.team[0]?.id);
 }
-function psyOnlineStatus(text,kind=''){
-  let d=document.getElementById('psy-online-status');
-  if(!d){d=document.createElement('div');d.id='psy-online-status';document.body.appendChild(d)}
-  d.className=kind;d.textContent=text;
+function psyV9Snapshot(){
+  return {version:9,savedAt:Date.now(),player:P,map:{x:P.x,y:P.y,px:P.px,py:P.py}};
 }
-async function psyApi(path,opt={}){
-  const token=PSY_ONLINE.session?.access_token;
-  const r=await fetch(path,{...opt,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{}) ,...(opt.headers||{})}});
-  const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);
-  return d;
-}
-async function psyInitOnline(){
+function psyV9WriteLocal(){
   try{
-    const cfg=await fetch('/api/config').then(r=>r.json());
-    if(!cfg.onlineConfigured){psyOnlineStatus('🟡 ONLINE ainda não configurado','warn');return}
-    const sdk=await psyLoadSupabaseJs();
-    PSY_ONLINE.client=sdk.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-    PSY_ONLINE.configured=true;
-    const {data}=await PSY_ONLINE.client.auth.getSession();
-    PSY_ONLINE.session=data.session||null;
-    if(PSY_ONLINE.session){
-      await psyBootstrapOnline();
-    }else psyOnlineStatus('⚪ Conta online não conectada');
-    PSY_ONLINE.client.auth.onAuthStateChange(async(_,session)=>{
-      PSY_ONLINE.session=session;
-      if(session)await psyBootstrapOnline();
-      else{PSY_ONLINE.mode='local';PSY_ONLINE.state=null;psyOnlineStatus('⚪ Modo local')}
-    });
-    psyAddOnlineMenuButton();
-  }catch(e){console.warn(e);psyOnlineStatus('🔴 ONLINE indisponível')}
+    if(!P?.team?.length || !P.team[0]?.id) return false;
+    const raw=JSON.stringify(psyV9Snapshot());
+    const current=localStorage.getItem(PSY_LOCAL_KEY);
+    if(current && current!==raw && psyV9Valid(psyV9Parse(current))) localStorage.setItem(PSY_LOCAL_BACKUP_KEY,current);
+    localStorage.setItem(PSY_LOCAL_KEY,raw);
+    localStorage.setItem(PSY_LOCAL_V9_KEY,raw);
+    return true;
+  }catch(e){console.warn('local save',e);return false}
 }
-async function psyBootstrapOnline(){
-  await psyApi('/api/player/bootstrap',{method:'POST',body:JSON.stringify({trainer_name:P?.name||'Trainer'})});
-  const st=await psyApi('/api/player/state');
-  PSY_ONLINE.state=st;PSY_ONLINE.mode='linked';
-  psyOnlineStatus(`🟢 ONLINE • ${st.player.trainer_name}`,'on');
+function psyV9LoadLocal(){
+  try{
+    const candidates=[PSY_LOCAL_KEY,PSY_LOCAL_V9_KEY,PSY_LOCAL_BACKUP_KEY].map(k=>psyV9Parse(localStorage.getItem(k))).filter(psyV9Valid);
+    if(!candidates.length)return false;
+    candidates.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+    const data=candidates[0],pd=data.player||data;
+    Object.assign(P,pd);
+    P.team=Array.isArray(pd.team)?pd.team:[];P.box=Array.isArray(pd.box)?pd.box:[];
+    P.inventory=pd.inventory||{};
+    P.levelCap=Math.max(20,Number(pd.levelCap||20));
+    if(data.map){P.x=data.map.x??P.x;P.y=data.map.y??P.y;P.px=data.map.px??P.px;P.py=data.map.py??P.py;P.tx=P.x;P.ty=P.y;P.moving=false}
+    try{P.team.forEach(migratePoke);P.box.forEach(migratePoke)}catch(e){}
+    if(P.team[0]){P.pokemon=P.team[0];P.hp=P.team[0].hp;P.maxHp=P.team[0].maxHp}
+    return true;
+  }catch(e){console.warn('local load',e);return false}
 }
-function ensureOnlineAuth(){
-  if(document.getElementById('screen-online-auth'))return;
-  const d=document.createElement('div');d.id='screen-online-auth';
-  d.innerHTML=`<div class="psy-auth-box"><button class="psy-close-x" onclick="document.getElementById('screen-online-auth').style.display='none'">×</button><h2 class="psy-title-glint">🌐 CONTA PSYWORLD</h2><div id="psy-auth-info" class="psy-desc">Cloud save, Market e PvP usarão esta conta.</div><input id="psy-auth-email" type="email" placeholder="seu@email.com"><input id="psy-auth-pass" type="password" minlength="6" placeholder="senha"><button onclick="psyOnlineSignIn()" style="background:#0891b2;color:#fff">ENTRAR</button><button onclick="psyOnlineSignUp()" style="background:#7c3aed;color:#fff">CRIAR CONTA</button><button onclick="psyOnlineSignOut()" style="background:#7f1d1d;color:#fff">SAIR</button><div id="psy-auth-state" style="margin-top:8px;font-size:10px"></div></div>`;
-  document.body.appendChild(d);
+window.autoSave=autoSave=psyV9WriteLocal;
+window.autoLoad=autoLoad=psyV9LoadLocal;
+window.psyV9HasLocalSave=()=>[PSY_LOCAL_KEY,PSY_LOCAL_V9_KEY,PSY_LOCAL_BACKUP_KEY].some(k=>psyV9Valid(psyV9Parse(localStorage.getItem(k))));
+
+function psyV9EnterSavedGame(){
+  if(!psyV9LoadLocal())return false;
+  const login=document.getElementById('screen-login'),starter=document.getElementById('screen-starter'),game=document.getElementById('game-wrap');
+  if(login)login.style.display='none';if(starter)starter.style.display='none';if(game)game.style.display='block';
+  try{updateHUD();renderTeam();loadMoveButtons();initEngine()}catch(e){console.warn('resume local',e)}
+  return true;
 }
-window.openOnlineAuth=function(){ensureOnlineAuth();document.getElementById('screen-online-auth').style.display='block';document.getElementById('psy-auth-state').textContent=PSY_ONLINE.session?'✅ Sessão conectada':'Ainda não conectado'};
-window.psyOnlineSignIn=async function(){
-  try{const email=document.getElementById('psy-auth-email').value, password=document.getElementById('psy-auth-pass').value;const {error}=await PSY_ONLINE.client.auth.signInWithPassword({email,password});if(error)throw error;document.getElementById('psy-auth-state').textContent='✅ Entrou com sucesso.'}catch(e){document.getElementById('psy-auth-state').textContent='❌ '+e.message}
+const psyV9GoStarterOld=window.goStarter;
+window.goStarter=function(){
+  if(window.psyV9HasLocalSave() && psyV9EnterSavedGame()){notif(`✅ Save local carregado. Bem-vindo de volta, ${P.name||'Treinador'}!`,2600);return}
+  return psyV9GoStarterOld?.apply(this,arguments);
 };
-window.psyOnlineSignUp=async function(){
-  try{const email=document.getElementById('psy-auth-email').value, password=document.getElementById('psy-auth-pass').value;const {error}=await PSY_ONLINE.client.auth.signUp({email,password});if(error)throw error;document.getElementById('psy-auth-state').textContent='📧 Conta criada. Verifique seu email se a confirmação estiver habilitada.'}catch(e){document.getElementById('psy-auth-state').textContent='❌ '+e.message}
+window.loadOnLogin=function(){if(!psyV9EnterSavedGame())notif('❌ Nenhum save local válido encontrado.');};
+window.addEventListener('beforeunload',()=>{try{psyV9WriteLocal()}catch(e){}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')psyV9WriteLocal()});
+setInterval(()=>{if(P?.team?.length)psyV9WriteLocal()},20000);
+try{navigator.storage?.persist?.().catch(()=>{})}catch(e){}
+
+/* Do not force starter again when a valid save exists. */
+setTimeout(()=>{
+  if(window.psyV9HasLocalSave()){
+    const login=document.getElementById('screen-login');
+    if(login && getComputedStyle(login).display!=='none') psyV9EnterSavedGame();
+  }
+},350);
+
+/* ---------- No online account/save. Market stays local to avoid auth/API errors. ---------- */
+window.PSY_ONLINE=undefined;
+try{
+  psyMarketFetch=window.psyMarketFetch=async()=>null;
+  if(typeof psyOpenMarketBackendOld!=='undefined')window.openMarket5=function(){return psyOpenMarketBackendOld.apply(this,arguments)};
+  if(typeof psyRenderMarketBackendOld!=='undefined')window.renderMarket5=psyRenderMarketBackendOld;
+  window.psyMarketPostListing=async function(listing){P.marketLocal=P.marketLocal||[];P.marketLocal.unshift({...listing,id:'local_'+Date.now()});autoSave();return {local:true}};
+  window.psyMarketBuy=async function(i){
+    P.marketLocal=P.marketLocal||[];const x=P.marketLocal[i];if(!x)return;const bal=x.currency==='gold'?P.gold:(P.diamonds||0);if(bal<Number(x.price))return notif('Saldo insuficiente.');
+    if(x.currency==='gold')P.gold-=Number(x.price);else P.diamonds-=Number(x.price);
+    if(x.kind==='item')P.inventory[x.name]=(P.inventory[x.name]||0)+Number(x.qty||1);
+    if(x.kind==='pokemon'&&x.pokemon)P.box.push(x.pokemon);
+    if(x.kind==='diamonds')P.diamonds=(P.diamonds||0)+Number(x.qty||0);
+    P.marketLocal.splice(i,1);autoSave();updateHUD();renderTeam();renderMarket5('browse');notif('✅ Compra local concluída.',2200);
+  };
+}catch(e){console.warn('market local patch',e)}
+
+/* ---------- Level-up: active Pokémon always leaves level-up at full HP. ---------- */
+window.checkLevelUp=checkLevelUp=function(){
+  const p=P?.team?.[0];if(!p)return;let ups=0;
+  while((p.exp||0)>=(p.maxExp||100) && (p.level||1)<(P.levelCap||20)){
+    p.exp-=p.maxExp;p.level++;p.maxExp=Math.floor(p.maxExp*1.3);ups++;
+    try{ensurePokeBase(p);p.baseMaxHp=(p.baseMaxHp||p.maxHp||50)+20;recalcPoke(p)}catch(e){p.maxHp=(p.maxHp||50)+20}
+    p.hp=p.maxHp;P.hp=p.hp;P.maxHp=p.maxHp;
+  }
+  if(ups){
+    try{if(typeof worldPlayer!=='undefined'){worldPlayer.maxHp=Math.max(worldPlayer.maxHp||0,p.maxHp);worldPlayer.hp=worldPlayer.maxHp}}catch(e){}
+    notif(`⭐ ${p.name||getPokeName(p.id)} subiu ${ups>1?ups+' níveis':'de nível'} e recuperou todo o HP!`,3200);updateHUD();try{renderTeam()}catch(e){}autoSave();
+  }
 };
-window.psyOnlineSignOut=async function(){if(PSY_ONLINE.client)await PSY_ONLINE.client.auth.signOut();document.getElementById('screen-online-auth').style.display='none'};
-function psyAddOnlineMenuButton(){
-  const menu=document.getElementById('menu'),grid=menu?.querySelector('.psy-main-grid');
-  if(!grid||grid.querySelector('[data-online-account]'))return;
-  const b=document.createElement('button');b.dataset.onlineAccount='1';b.innerHTML='🌐 CONTA ONLINE';b.style.background='linear-gradient(90deg,#0369a1,#0f766e)';b.style.color='#fff';b.onclick=openOnlineAuth;grid.appendChild(b);
+
+/* WORLD has its own level-up loop; make the full-heal rule apply there too. */
+try{
+  const psyV9WorldKillOld=window.handleWorldKill;
+  if(psyV9WorldKillOld)window.handleWorldKill=handleWorldKill=function(t){const before=P.team?.[0]?.level||0;const r=psyV9WorldKillOld.apply(this,arguments);const p=P.team?.[0];if(p&&(p.level||0)>before){p.hp=p.maxHp;P.hp=p.hp;P.maxHp=p.maxHp;try{if(typeof worldPlayer!=='undefined'){worldPlayer.maxHp=Math.max(worldPlayer.maxHp||0,p.maxHp);worldPlayer.hp=worldPlayer.maxHp}}catch(e){}autoSave();updateHUD()}return r};
+}catch(e){}
+
+/* ---------- Final capture curve + enemy turn on failed capture ---------- */
+window.PSY_CAPTURE_CAPS={E:40,D:30,C:22,B:14,A:8,S:5};
+window.PSY_CAPTURE_BASE={E:8,D:5.8,C:4,B:2.6,A:1.55,S:.85};
+function psyV9EnemyTurnAfterCapture(){
+  if(!battleData?.wild||!P.team?.[0]||P.team[0].hp<=0)return;
+  const w=battleData.wild,p=P.team[0];
+  let def=0;try{def=calcDetailedStats(p).finalDef||0}catch(e){def=p.def||0}
+  const enemyAtk=Math.max(12,Math.floor((w.level||5)*3.5+(battleData.wildMaxHp||100)*.025));
+  const dmg=Math.max(3,Math.floor(enemyAtk*(100/(100+def*.16))));
+  p.hp=Math.max(0,p.hp-dmg);P.hp=p.hp;
+  const log=document.getElementById('battle-log');if(log)log.textContent=`A tentativa de captura gastou seu turno. ${w.name||getPokeName(w.id)} atacou: -${dmg} HP.`;
+  try{setPlayerBlink();showDmgPopup(dmg,false,false)}catch(e){}updateBattleHP();updateHUD();
+  if(p.hp<=0)setTimeout(()=>endBattle(false),650);
 }
-setTimeout(psyInitOnline,1200);
+window.tryCaptureBattle=function(ballName){
+  if((P.inventory?.[ballName]||0)<=0)return notif('❌ Sem Balls!');
+  const wild=battleData?.wild;if(!wild)return;
+  if(wild.psyduckDungeon||window.isDungeonBoss||window.isDungeonMega||wild.isBoss)return notif('❌ Este encontro não pode ser capturado.',2600);
+  const tier=getTier(wild.id,!!wild.shiny,!!wild.isMega,!!wild.isBoss)||'E';
+  if(!wild.shiny && (CG_TIER_RANK?.[tier]??0)>(CG_TIER_RANK?.S??5))return notif('🔒 Pokémon Tier SS+ não pode ser capturado em encontro normal.',3000);
+  P.inventory[ballName]--;if(P.inventory[ballName]<=0)delete P.inventory[ballName];
+  const bag=document.getElementById('screen-bag');if(bag)bag.style.display='none';window.bagBattleMode=null;
+  const hpPct=Math.max(0,Math.min(1,(battleData.wildHp||1)/(battleData.wildMaxHp||1)));
+  const hpFactor=.34+(1-hpPct)*.66;
+  let ball=Math.max(.8,Number(BALL_DATA?.[ballName]?.chance||1));
+  const rarityPenalty=1/Math.sqrt(Math.max(1,Number(wild.rarity?.mult||1)));
+  const buff=1+Math.max(0,Number(getTotalBuff?.('cap')||0))/100;
+  let chance;
+  if(wild.shiny){chance=.075*ball*hpFactor*rarityPenalty*buff;chance=Math.min(1,chance)}
+  else{const base=PSY_CAPTURE_BASE[tier]??.5,cap=PSY_CAPTURE_CAPS[tier]??5;chance=Math.min(cap,base*ball*hpFactor*rarityPenalty*buff)}
+  chance=Math.max(.01,chance);
+  const ok=Math.random()*100<chance;
+  if(ok){
+    const pk=createCapturedPoke(wild.id,wild.rarity,!!wild.shiny,false,!!wild.isMega);P.box.push(pk);P.meta=P.meta||{};P.meta.captures=(P.meta.captures||0)+1;
+    psySfx?.('capture');notif(`✅ ${pk.name||getPokeName(pk.id)} capturado!`,3000);autoSave();renderTeam();endBattle(true);return;
+  }
+  notif(`❌ ${wild.name||getPokeName(wild.id)} escapou! A tentativa gastou seu turno.`,2300);autoSave();setTimeout(psyV9EnemyTurnAfterCapture,280);
+};
+
+/* ---------- Hunt hard level-cap gate, not only visual. ---------- */
+function psyV9HuntRange(key){const m=String(key).match(/_t(\d+)$/);const t=Number(m?.[1]||1);return t===1?[1,10]:t===2?[10,20]:t===3?[20,30]:[40,60]}
+const psyV9EnterHuntOld=window.enterHunt;
+window.enterHunt=function(key){const [lo,hi]=psyV9HuntRange(key),cap=Math.max(20,Number(P.levelCap||20));if(lo>=cap)return notif(`🔒 Hunt Lv.${lo}-${hi} bloqueada. Seu CAP é ${cap}. Vença o próximo Ginásio.`,3600);return psyV9EnterHuntOld.apply(this,arguments)};
+const psyV9OpenHuntsOld=window.openHunts;
+window.openHunts=function(){const r=psyV9OpenHuntsOld.apply(this,arguments);setTimeout(()=>{
+  const cap=Math.max(20,Number(P.levelCap||20));document.querySelectorAll('#hunt-list > *').forEach(card=>{const m=(card.textContent||'').match(/Lv\s*(\d+)\s*-\s*(\d+)/i);if(!m)return;const lo=Number(m[1]);if(lo>=cap){card.classList.add('psy-v9-hunt-locked');card.title=`CAP ${cap}: vença Ginásios para liberar Lv.${lo}-${m[2]}`;card.onclick=()=>notif(`🔒 Hunt Lv.${lo}-${m[2]} bloqueada pelo CAP ${cap}.`,3000)}});
+},130);return r};
+
+/* ---------- Clickable Trainer Talent / CAP HUD. ---------- */
+function psyV9HudLinks(){
+  P.levelCap=Math.max(20,Number(P.levelCap||20));
+  const tb=document.querySelector('.psy-hud-badge.trainer');if(tb){tb.classList.add('psy-v9-click');tb.title='Abrir árvore de Talentos';tb.onclick=()=>openTrainerShop();tb.innerHTML=`🎓 Talentos Lv.<b id="psy-hud-trainer-lv">${P.trainerLevel||1}</b>`}
+  const cb=document.querySelector('.psy-hud-badge.cap');if(cb){cb.classList.add('psy-v9-click');cb.title='Abrir Ginásios';cb.onclick=()=>openGyms();cb.innerHTML=`🏆 CAP <b id="psy-hud-cap">${P.levelCap||20}</b> → GYM`}
+  const mini=document.querySelector('.psy-trainer-mini');if(mini){mini.classList.add('psy-v9-click');mini.onclick=()=>openTrainerShop();mini.innerHTML=`🎓 Talentos Lv.${P.trainerLevel||1} • <span onclick="event.stopPropagation();openGyms()">🏆 CAP ${P.levelCap||20}</span>`}
+}
+setInterval(psyV9HudLinks,1200);setTimeout(psyV9HudLinks,500);
+
+/* ---------- Standalone AFK: offline catch-up + timer + history ---------- */
+function psyAfkEnsure(){
+  P.meta=P.meta||{};
+  P.meta.afk=P.meta.afk||{enabled:false,startedAt:0,lastSettlementAt:Date.now(),gold:0,xp:0,drops:0,packs:0,history:[]};
+  const a=P.meta.afk;a.history=Array.isArray(a.history)?a.history:[];a.gold=Number(a.gold||0);a.xp=Number(a.xp||0);a.drops=Number(a.drops||0);a.packs=Number(a.packs||0);
+  if(P.cardGame?.afk)P.cardGame.afk.enabled=false;
+  return a;
+}
+function psyFmtTime(sec){sec=Math.max(0,Math.floor(sec||0));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+function psyAfkReward(seconds,offline=false){
+  psyCardsEnsure();const a=psyAfkEnsure();if(!a.enabled||seconds<10)return null;seconds=Math.min(seconds,43200);
+  const mins=seconds/60,lv=Math.max(1,Number(P.trainerLevel||1));
+  const gold=Math.floor(mins*(300+lv*18)*(1+(Number(getTotalBuff?.('gold')||0)/100)));
+  const xp=Math.max(1,Math.floor(mins*(24+lv*2.2)*(1+(Number(getTotalBuff?.('xp')||0)/100))));
+  P.gold=(P.gold||0)+gold;a.gold+=gold;a.xp+=xp;
+  const poke=P.team?.[0];if(poke){poke.exp=(poke.exp||0)+xp;try{checkLevelUp()}catch(e){}}
+  let drops=0,packs=[];const whole=Math.floor(mins);
+  for(let i=0;i<whole;i++){
+    if(Math.random()<.028){const stones=['Fire Stone','Water Stone','Leaf Stone','Thunder Stone','Ice Stone','Normal Stone'];const st=stones[Math.floor(Math.random()*stones.length)];P.inventory[st]=(P.inventory[st]||0)+1;drops++}
+    const r=Math.random();if(r<.00002){P.cardGame.packs.ss=(P.cardGame.packs.ss||0)+1;packs.push('SS Global')}else if(r<.00014){P.cardGame.packs.epic=(P.cardGame.packs.epic||0)+1;packs.push('Épico')}else if(r<.00065){P.cardGame.packs.rare=(P.cardGame.packs.rare||0)+1;packs.push('Raro')}else if(r<.0028){P.cardGame.packs.normal=(P.cardGame.packs.normal||0)+1;packs.push('Normal')}
+  }
+  a.drops+=drops;a.packs+=packs.length;a.lastSettlementAt=Date.now();a.history.unshift({at:Date.now(),seconds:Math.floor(seconds),gold,xp,drops,packs,offline});a.history=a.history.slice(0,20);autoSave();updateHUD();return {gold,xp,drops,packs};
+}
+function psyAfkSettleNow(offline=false,force=false){const a=psyAfkEnsure();if(!a.enabled)return;const now=Date.now(),last=Number(a.lastSettlementAt||a.startedAt||now),sec=(now-last)/1000;if(force||sec>=10)psyAfkReward(sec,offline)}
+function psyEnsureAfkScreen(){
+  let d=document.getElementById('screen-afk-v9');if(d)return d;d=document.createElement('div');d.id='screen-afk-v9';d.className='psy-v9-overlay';document.body.appendChild(d);return d;
+}
+window.openAfkV9=function(){
+  const a=psyAfkEnsure(),d=psyEnsureAfkScreen(),elapsed=a.enabled?Math.floor((Date.now()-(a.startedAt||Date.now()))/1000):0;
+  d.innerHTML=`<div class="psy-v9-panel"><button class="psy-close-x" onclick="document.getElementById('screen-afk-v9').style.display='none'">×</button><div class="psy-afk-head"><div class="psy-afk-orb">🌙</div><div><h2 class="psy-title-glint">EXPEDIÇÃO AFK</h2><b>${a.enabled?'ATIVA':'PAUSADA'}</b><div id="psy-afk-clock">${psyFmtTime(elapsed)}</div><small>Funciona com o jogo fechado. Ao voltar, calcula até 12h por coleta. Não captura Pokémon.</small></div></div><div class="psy-afk-stats"><div>💰 Gold<b>${a.gold.toLocaleString()}</b></div><div>⭐ XP<b>${a.xp.toLocaleString()}</b></div><div>📦 Drops<b>${a.drops}</b></div><div>🎴 Packs<b>${a.packs}</b></div></div><button class="psy-afk-main" onclick="toggleAfkV9()">${a.enabled?'⏸ PAUSAR E COLETAR':'▶ INICIAR EXPEDIÇÃO'}</button><h3>Últimas recompensas</h3><div class="psy-afk-history">${a.history.length?a.history.map(h=>`<div><span>${h.offline?'📴 OFFLINE':'🌙 AFK'} • ${new Date(h.at).toLocaleString()}</span><b>${psyFmtTime(h.seconds)} • +${Number(h.gold||0).toLocaleString()}G • +${h.xp||0}XP${h.drops?' • 📦'+h.drops:''}${h.packs?.length?' • 🎴 '+h.packs.join(', '):''}</b></div>`).join(''):'<div class="empty">Nenhuma coleta ainda.</div>'}</div></div>`;
+  d.style.display='flex';
+};
+window.toggleAfkV9=function(){const a=psyAfkEnsure();if(a.enabled){psyAfkSettleNow(false,true);a.enabled=false}else{a.enabled=true;a.startedAt=Date.now();a.lastSettlementAt=Date.now()}autoSave();openAfkV9()};
+setInterval(()=>{const a=psyAfkEnsure();if(a.enabled){const clk=document.getElementById('psy-afk-clock');if(clk)clk.textContent=psyFmtTime((Date.now()-a.startedAt)/1000);if(Date.now()-(a.lastSettlementAt||Date.now())>=300000)psyAfkSettleNow(false)}},1000);
+function psyAddAfkButton(){const grid=document.querySelector('#menu .psy-main-grid');if(!grid)return;grid.querySelectorAll('[data-afk-shortcut]').forEach(b=>b.remove());if(grid.querySelector('[data-psy-afk-v9]'))return;const b=document.createElement('button');b.dataset.psyAfkV9='1';b.className='psy-afk-menu-btn';b.innerHTML='🌙 EXPEDIÇÃO AFK';b.onclick=()=>{document.getElementById('menu').style.display='none';openAfkV9()};grid.appendChild(b)}
+setInterval(psyAddAfkButton,1500);setTimeout(psyAddAfkButton,700);
+
+/* ---------- CARDS V9: 20-card deck, effects, 5-card random hand, 60 stages ---------- */
+window.CG_TIER_RANK={E:0,D:1,C:2,B:3,A:4,S:5,SS:6,SSS:7,UR:8,'UR+':9,'UR++':10};
+window.CG_TIER_COLOR={E:'#94a3b8',D:'#4ade80',C:'#60a5fa',B:'#c084fc',A:'#f59e0b',S:'#ef4444',SS:'#facc15',SSS:'#22d3ee',UR:'#f472b6','UR+':'#e879f9','UR++':'#fff'};
+window.PSY_EFFECT_CARDS={
+  energy:{id:'energy',name:'Carga Relâmpago',icon:'⚡',tier:'B',cost:0,desc:'+2 Energia imediatamente.',effect:'energy',value:2},
+  heal:{id:'heal',name:'Pulso de Cura',icon:'💚',tier:'C',cost:1,desc:'Recupera 26% do HP máximo.',effect:'heal',value:.26},
+  shield:{id:'shield',name:'Barreira Prisma',icon:'🛡️',tier:'B',cost:1,desc:'Reduz 50% do próximo ataque inimigo.',effect:'shield',value:.5},
+  poison:{id:'poison',name:'Névoa Tóxica',icon:'☠️',tier:'A',cost:2,desc:'Causa 6% do HP do inimigo por 3 turnos.',effect:'poison',value:.06},
+  weaken:{id:'weaken',name:'Intimidação',icon:'🔻',tier:'B',cost:1,desc:'Inimigo causa -28% dano por 2 turnos.',effect:'weaken',value:.28},
+  focus:{id:'focus',name:'Foco Absoluto',icon:'🎯',tier:'A',cost:2,desc:'Próximo Pokémon causa +65% dano.',effect:'focus',value:.65},
+  stun:{id:'stun',name:'Choque Temporal',icon:'⏳',tier:'S',cost:3,desc:'55% de chance de impedir o próximo contra-ataque.',effect:'stun',value:.55},
+  drain:{id:'drain',name:'Dreno Arcano',icon:'🌀',tier:'S',cost:2,desc:'Drena 10% do HP inimigo e cura metade.',effect:'drain',value:.10}
+};
+window.CG_PACKS={
+  normal:{name:'Pack Normal',count:5,color:'#64748b',art:'📦',currency:'gold',price:90000,tiers:{E:40,D:32,C:20,B:8}},
+  rare:{name:'Pack Raro',count:7,color:'#3b82f6',art:'💠',currency:'gold',price:260000,tiers:{D:28,C:32,B:25,A:12,S:3}},
+  epic:{name:'Pack Épico',count:10,color:'#a855f7',art:'🔮',currency:'gold',price:650000,tiers:{C:20,B:30,A:32,S:18}},
+  s:{name:'Pack S',count:10,color:'#ef4444',art:'🔥',currency:'gold',price:1250000,tiers:{B:15,A:45,S:40}},
+  ss:{name:'Pack SS GLOBAL',count:10,color:'#facc15',art:'🌟',globalOnly:true,tiers:{S:68,SS:32}},
+  sss:{name:'Pack SSS',count:10,color:'#22d3ee',art:'❄️',currency:'diamond',price:80,tiers:{SSS:72,UR:20,'UR+':7,'UR++':1}},
+  ur:{name:'Pack UR',count:10,color:'#f472b6',art:'🌌',currency:'diamond',price:150,tiers:{SSS:28,UR:55,'UR+':14,'UR++':3}},
+  urp:{name:'Pack UR+',count:10,color:'#e879f9',art:'💫',currency:'diamond',price:260,tiers:{UR:28,'UR+':62,'UR++':10}},
+  urpp:{name:'Pack UR++',count:10,color:'#fff',art:'👑',currency:'diamond',price:450,tiers:{'UR+':35,'UR++':65}}
+};
+function psyCardsEnsure(){
+  if(typeof P.diamonds!=='number')P.diamonds=0;P.cardGame=P.cardGame||{};const c=P.cardGame;
+  c.collection=c.collection||{};c.effectCollection=c.effectCollection||{};c.pullHistory=Array.isArray(c.pullHistory)?c.pullHistory:[];c.packs=c.packs||{};c.starRewards=c.starRewards||{};c.deck=Array.isArray(c.deck)?c.deck:[];
+  Object.keys(CG_PACKS).forEach(k=>c.packs[k]=Number(c.packs[k]||0));
+  c.stage=Math.max(1,Math.min(60,Number(c.stage||1)));c.best=Math.max(0,Number(c.best||0));
+  c.deck=c.deck.map(k=>String(k).startsWith('p:')||String(k).startsWith('e:')?String(k):`p:${k}`).filter((k,i,a)=>a.indexOf(k)===i).slice(0,20);
+  Object.values(c.collection).forEach(card=>{card.cardTier=card.cardTier||card.tier||getTier(card.id,false,false,false)||'E';card.stars=Math.max(1,Math.min(5,Number(card.stars||1)));card.level=Math.max(1,Number(card.level||1));card.copies=Math.max(1,Number(card.copies||1));if(c.starRewards[String(card.id)]==null)c.starRewards[String(card.id)]=card.stars});
+  return c;
+}
+ensureCardData=window.ensureCardData=psyCardsEnsure;
+function psyCardTier(card){return card?.cardTier||card?.tier||getTier(card?.id,false,false,false)||'E'}
+window.cgCardTier=psyCardTier;
+function psyTierRoll(weights){let total=Object.values(weights).reduce((a,b)=>a+b,0),r=Math.random()*total;for(const [k,v] of Object.entries(weights)){r-=v;if(r<=0)return k}return Object.keys(weights)[0]}
+function psyRollStars(premium=false){const r=Math.random()*100;if(premium)return r<2?5:r<10?4:r<30?3:r<65?2:1;return r<.7?5:r<4.5?4:r<17?3:r<47?2:1}
+window.cgRollStars=psyRollStars;
+function psyCardPower(card){const mult={E:1,D:1.15,C:1.35,B:1.65,A:2,S:2.5,SS:3.15,SSS:4.1,UR:5.3,'UR+':6.8,'UR++':8.7}[psyCardTier(card)]||1;return Math.floor((45+(Number(card.id||1)%70))*mult*(1+(card.level-1)*.08)*(1+(card.stars-1)*.16))}
+window.cg2Power=window.cgCardPower=psyCardPower;
+function psyCardSprite(id){const u=getRealSprite({id:Number(id)}),fallback=`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${Number(id)}.png`;return `<img loading="lazy" src="${u}" onerror="this.onerror=null;this.src='${fallback}'">`}
+function psyStarRewards(card,oldStars,newStars){
+  const c=psyCardsEnsure(),key=String(card.id),claimed=Math.max(Number(c.starRewards[key]??oldStars??0),Number(oldStars||0)),target=Math.max(claimed,Number(newStars||1));if(target<=claimed)return;
+  const goldBy={1:2000,2:6000,3:16000,4:40000,5:90000};let gold=0,dia=0;for(let s=claimed+1;s<=target;s++){gold+=goldBy[s]||0;if(s===5)dia+=3}
+  if(gold)P.gold+=gold;if(dia)P.diamonds+=dia;c.starRewards[key]=target;notif(`⭐ ${getPokeName(card.id)} chegou a ${target}★: +${gold.toLocaleString()} Gold${dia?' +'+dia+' 💎':''}`,3800);
+}
+function psyGrantPokemonCard(id,tier,stars,source){
+  const c=psyCardsEnsure(),k=String(id),existing=c.collection[k],oldStars=existing?.stars||0,oldTier=existing?psyCardTier(existing):'E';let card;
+  if(existing){existing.copies=(existing.copies||1)+1;if(existing.copies%4===0)existing.level=(existing.level||1)+1;const copyStars=Math.min(5,1+Math.floor((existing.copies-1)/3));existing.stars=Math.max(existing.stars||1,stars,copyStars);if((CG_TIER_RANK[tier]||0)>(CG_TIER_RANK[oldTier]||0))existing.cardTier=tier;card=existing}
+  else{card=c.collection[k]={id:Number(id),stars,level:1,copies:1,cardTier:tier};c.starRewards[k]=0}
+  psyStarRewards(card,oldStars,card.stars);psyRecordPull({kind:'pokemon',id:card.id,tier:psyCardTier(card),stars:card.stars,source});return {...card,kind:'pokemon'};
+}
+function psyGrantEffectCard(id,source){const c=psyCardsEnsure(),def=PSY_EFFECT_CARDS[id];if(!def)return null;let x=c.effectCollection[id];if(x){x.copies=(x.copies||1)+1;x.level=1+Math.floor((x.copies-1)/4)}else x=c.effectCollection[id]={id,copies:1,level:1,tier:def.tier};psyRecordPull({kind:'effect',id,tier:def.tier,stars:0,source});return {...x,kind:'effect'}}
+function psyRecordPull(entry){const c=psyCardsEnsure();const e={...entry,at:Date.now()};c.pullHistory.unshift(e);c.pullHistory=c.pullHistory.slice(0,300);if((CG_TIER_RANK[e.tier]||0)>=CG_TIER_RANK.SS)psyRareCardAnnounce(e)}
+let psyGlobalChannel=null;try{psyGlobalChannel=new BroadcastChannel('psyworld-card-global');psyGlobalChannel.onmessage=e=>psyShowGlobalBanner(e.data)}catch(e){}
+function psyShowGlobalBanner(e){let d=document.getElementById('psy-global-card-banner');if(!d){d=document.createElement('div');d.id='psy-global-card-banner';document.body.appendChild(d)}const nm=e.kind==='effect'?(PSY_EFFECT_CARDS[e.id]?.name||e.id):getPokeName(e.id);d.innerHTML=`🌐 <b>${e.player||'Trainer'}</b> conseguiu <b>[${e.tier}] ${nm}</b>${e.stars?' '+ '★'.repeat(e.stars):''}!`;d.style.display='block';clearTimeout(d._t);d._t=setTimeout(()=>d.style.display='none',5200)}
+function psyRareCardAnnounce(e){const x={...e,player:P.name||'Trainer'};psyShowGlobalBanner(x);try{psyGlobalChannel?.postMessage(x)}catch(err){}}
+function psyRollPokemonId(){const ids=Object.keys(ALL_POKE_NAMES||{}).map(Number).filter(id=>id&&ALL_POKE_NAMES[id]&&Number(id)!==54);return ids[Math.floor(Math.random()*ids.length)]||25}
+function psyRollOne(tierWeights,source,premium=false){if(Math.random()<.18){const maxRank=Math.max(...Object.keys(tierWeights).map(t=>CG_TIER_RANK[t]??0)),effects=Object.keys(PSY_EFFECT_CARDS).filter(id=>(CG_TIER_RANK[PSY_EFFECT_CARDS[id].tier]??0)<=maxRank),id=effects[Math.floor(Math.random()*effects.length)]||'energy';return psyGrantEffectCard(id,source)}const tier=psyTierRoll(tierWeights),id=psyRollPokemonId(),stars=psyRollStars(premium);return psyGrantPokemonCard(id,tier,stars,source)}
+function psyShowPullPopup(pulls,title){let d=document.getElementById('psy-pull-popup');if(!d){d=document.createElement('div');d.id='psy-pull-popup';d.className='psy-v9-overlay';document.body.appendChild(d)}d.innerHTML=`<div class="psy-v9-panel wide"><button class="psy-close-x" onclick="document.getElementById('psy-pull-popup').style.display='none'">×</button><h2 class="psy-title-glint">${title}</h2><div class="psy-pull-summary">${pulls.length} cartas obtidas • resultados também salvos no Histórico</div><div class="psy-pull-grid">${pulls.map(psyPullHtml).join('')}</div></div>`;d.style.display='flex'}
+function psyPullHtml(x){const col=CG_TIER_COLOR[x.tier]||'#aaa';if(x.kind==='effect'){const e=PSY_EFFECT_CARDS[x.id];return `<div class="psy-pull-card effect" style="--tier:${col}"><span class="tier">${x.tier}</span><div class="effect-ico">${e.icon}</div><b>${e.name}</b><small>${e.desc}</small></div>`}return `<div class="psy-pull-card" style="--tier:${col}"><span class="tier">${x.tier}</span>${psyCardSprite(x.id)}<b>${getPokeName(x.id)}</b><span class="stars">${'★'.repeat(x.stars||1)}</span></div>`}
+window.psyBuyPack=function(kind){const c=psyCardsEnsure(),p=CG_PACKS[kind];if(!p||p.globalOnly)return notif('🌐 Pack SS só pode cair globalmente em batalhas/AFK.');const bal=p.currency==='gold'?P.gold:P.diamonds;if(bal<p.price)return notif(`❌ Precisa ${p.price.toLocaleString()} ${p.currency==='gold'?'Gold':'💎'}`);if(p.currency==='gold')P.gold-=p.price;else P.diamonds-=p.price;c.packs[kind]++;autoSave();renderCardTab('gacha')};
+window.cgOpenPack=function(kind){const c=psyCardsEnsure(),p=CG_PACKS[kind];if(!p||c.packs[kind]<=0)return notif('Você não possui esse Pack.');c.packs[kind]--;const pulls=[];for(let i=0;i<p.count;i++)pulls.push(psyRollOne(p.tiers,`Pack ${p.name}`,p.currency==='diamond'));autoSave();updateHUD();psySfx?.('gacha');psyShowPullPopup(pulls,`🎁 ${p.name.toUpperCase()}`);renderCardTab('gacha')};
+window.cgMultiPull=function(n,currency='gold'){const c=psyCardsEnsure();n=Math.max(1,Math.min(100,Number(n)||1));const costEach=currency==='diamond'?6:45000,cost=costEach*n;if(currency==='diamond'){if(P.diamonds<cost)return notif(`Precisa ${cost} 💎`);P.diamonds-=cost}else{if(P.gold<cost)return notif(`Precisa ${cost.toLocaleString()} Gold`);P.gold-=cost}const weights=currency==='diamond'?{SSS:65,UR:25,'UR+':8,'UR++':2}:{E:25,D:25,C:22,B:16,A:9,S:3};const pulls=[];for(let i=0;i<n;i++)pulls.push(psyRollOne(weights,currency==='diamond'?'Portal Diamante':'Portal Gold',currency==='diamond'));autoSave();updateHUD();psySfx?.('gacha');psyShowPullPopup(pulls,`✨ PORTAL ${currency==='diamond'?'DIAMANTE':'GOLD'} x${n}`);renderCardTab('gacha')};
+
+function psyPackArt(kind,p){const ids=kind==='urpp'?[150,384,493]:kind==='sss'?[94,149,282]:kind==='s'?[6,248,376]:[25,7,4];return `<div class="psy-pack-art" style="--pack:${p.color}"><span class="pack-symbol">${p.art}</span>${ids.map((id,i)=>`<span class="pack-poke p${i}">${psyCardSprite(id)}</span>`).join('')}</div>`}
+window.cgRenderGacha=function(c){const cg=psyCardsEnsure();c.innerHTML=`<div class="psy-gacha-hero"><div class="psy-gacha-pokes"><span>${psyCardSprite(25)}</span><span>${psyCardSprite(6)}</span><span>${psyCardSprite(94)}</span></div><div><h2 class="psy-title-glint">✨ PORTAL PSYWORLD</h2><p>Gold pode chegar até <b>Tier S</b>. Portais de Diamante começam no <b>SSS</b>. <b>SS não é vendido:</b> somente drop global.</p><div class="psy-gacha-actions"><button onclick="cgMultiPull(10,'gold')">💰 10x GOLD<br><small>450.000</small></button><button onclick="cgMultiPull(100,'gold')">💰 100x GOLD<br><small>4.500.000</small></button><button class="dia" onclick="cgMultiPull(10,'diamond')">💎 10x DIAMANTE<br><small>60 💎</small></button><button class="dia" onclick="cgMultiPull(100,'diamond')">💎 100x DIAMANTE<br><small>600 💎</small></button></div></div></div><h3 class="psy-title-glint">PACKS</h3><div class="psy-pack-grid">${Object.entries(CG_PACKS).map(([k,p])=>`<div class="psy-pack-card" style="--pack:${p.color}">${psyPackArt(k,p)}<div class="pack-info"><b>${p.name}</b><small>${p.count} cartas • ${p.globalOnly?'DROP GLOBAL':p.currency==='gold'?p.price.toLocaleString()+' Gold':p.price+' 💎'}</small><strong>${cg.packs[k]||0}x</strong><div>${p.globalOnly?'':`<button onclick="psyBuyPack('${k}')">COMPRAR</button>`}<button ${cg.packs[k]<=0?'disabled':''} onclick="cgOpenPack('${k}')">ABRIR</button></div></div></div>`).join('')}</div>`};
+
+window.PSY_CARD_UI={page:1,per:24,search:'',tier:'all',stars:'all',kind:'all',sort:'power'};
+function psyDeckItem(key){const c=psyCardsEnsure();if(key.startsWith('p:')){const x=c.collection[key.slice(2)];return x?{kind:'pokemon',key,...x}:null}const x=c.effectCollection[key.slice(2)],d=PSY_EFFECT_CARDS[key.slice(2)];return x&&d?{kind:'effect',key,...x,...d,tier:d.tier}:null}
+function psyCollectionItems(){const c=psyCardsEnsure(),arr=[];Object.values(c.collection).forEach(x=>arr.push({kind:'pokemon',key:`p:${x.id}`,...x,tier:psyCardTier(x)}));Object.values(c.effectCollection).forEach(x=>{const d=PSY_EFFECT_CARDS[x.id];if(d)arr.push({kind:'effect',key:`e:${x.id}`,...x,...d,tier:d.tier})});return arr}
+window.psyCardFilter=function(k,v){PSY_CARD_UI[k]=v;PSY_CARD_UI.page=1;renderCardTab('collection')};window.psyCardPage=function(d){PSY_CARD_UI.page=Math.max(1,PSY_CARD_UI.page+d);renderCardTab('collection')};
+window.cgToggleDeck=function(key){const c=psyCardsEnsure();key=String(key);if(!key.includes(':'))key=`p:${key}`;const i=c.deck.indexOf(key);if(i>=0)c.deck.splice(i,1);else{if(c.deck.length>=20)return notif('Deck máximo: 20 cartas.');c.deck.push(key)}autoSave();renderCardTab('collection')};
+window.cgAutoDeck=function(){const c=psyCardsEnsure(),p=Object.values(c.collection).sort((a,b)=>psyCardPower(b)-psyCardPower(a)).slice(0,14).map(x=>`p:${x.id}`),e=Object.keys(c.effectCollection).slice(0,6).map(x=>`e:${x}`);c.deck=[...p,...e].slice(0,20);autoSave();renderCardTab('collection')};
+function psyCollectionCardHtml(x){const selected=psyCardsEnsure().deck.includes(x.key),col=CG_TIER_COLOR[x.tier]||'#aaa';if(x.kind==='effect')return `<button class="psy-collection-card effect ${selected?'selected':''}" style="--tier:${col}" onclick="cgToggleDeck('${x.key}')"><span class="tier">${x.tier}</span><div class="effect-ico">${x.icon}</div><b>${x.name}</b><small>${x.desc}</small><em>cópias ${x.copies||1}</em></button>`;return `<button class="psy-collection-card ${selected?'selected':''}" style="--tier:${col}" onclick="cgToggleDeck('${x.key}')"><span class="tier">${x.tier}</span><span class="stars">${'★'.repeat(x.stars||1)}${'☆'.repeat(5-(x.stars||1))}</span>${psyCardSprite(x.id)}<b>${getPokeName(x.id)}</b><small>Card Lv.${x.level||1} • PWR ${psyCardPower(x).toLocaleString()}</small><em>cópias ${x.copies||1}</em></button>`}
+window.cgRenderCollection=function(c){const ui=PSY_CARD_UI;let arr=psyCollectionItems();const q=ui.search.trim().toLowerCase();if(q)arr=arr.filter(x=>(x.kind==='pokemon'?getPokeName(x.id):x.name).toLowerCase().includes(q));if(ui.tier!=='all')arr=arr.filter(x=>x.tier===ui.tier);if(ui.stars!=='all')arr=arr.filter(x=>x.kind==='pokemon'&&Number(x.stars)===Number(ui.stars));if(ui.kind!=='all')arr=arr.filter(x=>x.kind===ui.kind);arr.sort((a,b)=>ui.sort==='name'?String(a.kind==='pokemon'?getPokeName(a.id):a.name).localeCompare(String(b.kind==='pokemon'?getPokeName(b.id):b.name)):ui.sort==='stars'?(b.stars||0)-(a.stars||0):(b.kind==='pokemon'?psyCardPower(b):CG_TIER_RANK[b.tier]*100)-(a.kind==='pokemon'?psyCardPower(a):CG_TIER_RANK[a.tier]*100));const pages=Math.max(1,Math.ceil(arr.length/ui.perPage));ui.page=Math.min(ui.page,pages);const list=arr.slice((ui.page-1)*ui.perPage,ui.page*ui.perPage),deck=psyCardsEnsure().deck.map(psyDeckItem).filter(Boolean);c.innerHTML=`<div class="psy-deck-head"><div><b>DECK ${deck.length}/20</b><small>Em batalha: 5 opções aleatórias por turno. A carta usada não volta imediatamente na próxima mão.</small></div><button onclick="cgAutoDeck()">AUTO DECK</button></div><div class="psy-deck-strip">${deck.map(x=>`<span style="--tier:${CG_TIER_COLOR[x.tier]||'#aaa'}" title="${x.kind==='pokemon'?getPokeName(x.id):x.name}" onclick="cgToggleDeck('${x.key}')">${x.kind==='pokemon'?psyCardSprite(x.id):x.icon}</span>`).join('')||'<i>Selecione cartas abaixo.</i>'}</div><div class="psy-card-filters"><input placeholder="🔎 Buscar" value="${ui.search.replace(/"/g,'&quot;')}" oninput="PSY_CARD_UI.search=this.value" onkeydown="if(event.key==='Enter'){PSY_CARD_UI.page=1;renderCardTab('collection')}"><select onchange="psyCardFilter('kind',this.value)"><option value="all">Tudo</option><option value="pokemon" ${ui.kind==='pokemon'?'selected':''}>Pokémon</option><option value="effect" ${ui.kind==='effect'?'selected':''}>Efeitos</option></select><select onchange="psyCardFilter('tier',this.value)"><option value="all">Todos Tiers</option>${Object.keys(CG_TIER_RANK).map(t=>`<option ${ui.tier===t?'selected':''}>${t}</option>`).join('')}</select><select onchange="psyCardFilter('stars',this.value)"><option value="all">Todas ★</option>${[1,2,3,4,5].map(s=>`<option value="${s}" ${String(ui.stars)===String(s)?'selected':''}>${s}★</option>`).join('')}</select><select onchange="psyCardFilter('sort',this.value)"><option value="power">Poder</option><option value="stars" ${ui.sort==='stars'?'selected':''}>Estrelas</option><option value="name" ${ui.sort==='name'?'selected':''}>Nome</option></select></div><div class="psy-card-pagebar"><button onclick="psyCardPage(-1)" ${ui.page<=1?'disabled':''}>◀</button><b>Página ${ui.page}/${pages} • ${arr.length} cartas</b><button onclick="psyCardPage(1)" ${ui.page>=pages?'disabled':''}>▶</button></div><div class="psy-collection-grid">${list.map(psyCollectionCardHtml).join('')||'<div class="empty">Nenhuma carta neste filtro.</div>'}</div>`};
+
+window.cgRenderHistory=function(c){const h=psyCardsEnsure().pullHistory;c.innerHTML=`<div class="psy-history-head"><h3 class="psy-title-glint">📜 HISTÓRICO DE CARTAS</h3><small>Últimas ${Math.min(300,h.length)} obtenções</small></div><div class="psy-pull-history">${h.length?h.map(x=>{const nm=x.kind==='effect'?(PSY_EFFECT_CARDS[x.id]?.name||x.id):getPokeName(x.id);return `<div><span style="color:${CG_TIER_COLOR[x.tier]||'#aaa'}">[${x.tier}]</span><b>${nm}</b>${x.stars?`<span class="stars">${'★'.repeat(x.stars)}</span>`:''}<small>${x.source||''} • ${new Date(x.at).toLocaleString()}</small></div>`}).join(''):'Nenhuma carta obtida ainda.'}</div>`};
+
+function psyStageTier(stage){return stage>=60?'UR++':stage>=56?'UR+':stage>=51?'UR':stage>=41?'SSS':stage>=31?'SS':stage>=21?'S':stage>=16?'A':stage>=11?'B':stage>=6?'C':'D'}
+function psyStageBoss(stage){return stage%5===0}
+window.cgRenderBattleMenu=function(c){const cg=psyCardsEnsure(),st=cg.stage||1,best=cg.best||0,start=Math.max(1,Math.floor((st-1)/10)*10+1),end=Math.min(60,start+9);c.innerHTML=`<div class="psy-card-campaign"><div class="campaign-hero"><h2 class="psy-title-glint">⚔ CAMPANHA DE CARTAS</h2><p>60 fases • 6 capítulos • Boss a cada 5 fases</p><b>Atual: ${st} • Melhor: ${best}</b></div><div class="psy-stage-grid">${Array.from({length:end-start+1},(_,i)=>start+i).map(n=>{const open=n<=Math.max(1,best+1),boss=psyStageBoss(n);return `<button class="psy-stage ${boss?'boss':''} ${n===st?'current':''}" ${!open?'disabled':''} onclick="P.cardGame.stage=${n};cgStartStage()"><b>${boss?'👑 BOSS ':'FASE '}${n}</b><span>${psyStageTier(n)}</span><small>${open?'JOGAR':'🔒'}</small></button>`}).join('')}</div><div class="campaign-rules">Deck até 20 • mão aleatória de 5 • 1 carta por turno • +2 Energia/turno • a carta usada não pode vir na mão seguinte.</div></div>`};
+function psyDrawHand(state){const pool=state.deck.filter(k=>k!==state.lastUsedKey);const src=pool.length?pool:state.deck.slice();const shuffled=src.slice().sort(()=>Math.random()-.5);state.hand=shuffled.slice(0,Math.min(5,shuffled.length));state.selectedKey=null}
+function psyPokemonCost(card){const r=CG_TIER_RANK[psyCardTier(card)]||0;return r<=1?1:r<=3?2:r<=5?3:r<=7?4:5}
+window.cgStartStage=function(){const cg=psyCardsEnsure();if(cg.deck.length<5)return notif('Monte um deck com pelo menos 5 cartas.');const stage=cg.stage||1,tier=psyStageTier(stage),boss=psyStageBoss(stage),enemyId=psyRollPokemonId(),rank=CG_TIER_RANK[tier]||1,enemyHp=Math.floor(950*Math.pow(1.105,stage-1)*(1+rank*.13)*(boss?1.65:1)),deck=cg.deck.map(String),power=deck.map(psyDeckItem).filter(x=>x?.kind==='pokemon').reduce((s,x)=>s+psyCardPower(x),0),playerHp=Math.floor(1400+power*.20);window.cgBattleState={stage,tier,boss,enemyId,enemyHp,enemyMax:enemyHp,playerHp,playerMax:playerHp,energy:4,maxEnergy:6,turn:1,deck,hand:[],selectedKey:null,lastUsedKey:null,shield:0,poisonTurns:0,poisonPct:0,weakenTurns:0,weaken:0,focus:0,stun:false};psyDrawHand(cgBattleState);cgDrawBattle()};
+window.psySelectHandCard=function(key){const s=window.cgBattleState;if(!s||!s.hand.includes(key))return;s.selectedKey=s.selectedKey===key?null:key;cgDrawBattle()};
+function psyBattleHandHtml(key,s){const x=psyDeckItem(key);if(!x)return '';const col=CG_TIER_COLOR[x.tier]||'#aaa',sel=s.selectedKey===key;if(x.kind==='effect'){return `<button class="psy-hand-card effect ${sel?'selected':''}" style="--tier:${col}" onclick="psySelectHandCard('${key}')"><span class="tier">${x.tier}</span><div class="effect-ico">${x.icon}</div><b>${x.name}</b><small>${x.desc}</small><em>⚡${x.cost}</em></button>`}const cost=psyPokemonCost(x);return `<button class="psy-hand-card ${sel?'selected':''}" style="--tier:${col}" onclick="psySelectHandCard('${key}')"><span class="tier">${x.tier}</span><span class="stars">${'★'.repeat(x.stars||1)}</span>${psyCardSprite(x.id)}<b>${getPokeName(x.id)}</b><small>PWR ${psyCardPower(x).toLocaleString()}</small><em>⚡${cost}</em></button>`}
+window.cgDrawBattle=function(){const s=window.cgBattleState,c=document.getElementById('cg-content');if(!s||!c)return;const ep=Math.max(0,s.enemyHp/s.enemyMax*100),pp=Math.max(0,s.playerHp/s.playerMax*100);c.innerHTML=`<div class="psy-card-arena"><div class="psy-arena-top"><button onclick="window.cgBattleState=null;renderCardTab('battle')">← FASES</button><b>Turno ${s.turn} • ⚡ ${s.energy}/${s.maxEnergy}</b><span>${s.boss?'👑 BOSS ':''}${s.tier}</span></div><div class="psy-arena-enemy"><div class="psy-hpbox"><b>${getPokeName(s.enemyId)} [${s.tier}]</b><div><i style="width:${ep}%"></i></div><small>${Math.max(0,s.enemyHp).toLocaleString()} / ${s.enemyMax.toLocaleString()}</small></div>${psyCardSprite(s.enemyId)}</div><div class="psy-arena-player"><div class="psy-hpbox"><b>Seu Nexus</b><div><i style="width:${pp}%"></i></div><small>${Math.max(0,s.playerHp).toLocaleString()} / ${s.playerMax.toLocaleString()}</small></div><div class="psy-status-line">${s.shield?'🛡️ Escudo '+Math.round(s.shield*100)+'%':''} ${s.focus?'🎯 Foco +'+Math.round(s.focus*100)+'%':''} ${s.poisonTurns?'☠️ Veneno '+s.poisonTurns+'t':''}</div></div><div class="psy-hand-title">MÃO — escolha 1 das 5 cartas</div><div class="psy-card-hand">${s.hand.map(k=>psyBattleHandHtml(k,s)).join('')}</div><button class="psy-use-card" onclick="psyUseSelectedCard()" ${!s.selectedKey?'disabled':''}>USAR CARTA SELECIONADA</button></div>`};
+window.psyUseSelectedCard=function(){const s=window.cgBattleState;if(!s||!s.selectedKey)return;const key=s.selectedKey,x=psyDeckItem(key);if(!x)return;const cost=x.kind==='effect'?Number(x.cost||0):psyPokemonCost(x);if(cost>s.energy)return notif(`⚡ Precisa ${cost} de Energia.`);s.energy-=cost;s.lastUsedKey=key;
+  if(x.kind==='pokemon'){let dmg=psyCardPower(x)*(1.05+Math.random()*.18)*(1+(s.focus||0));s.focus=0;if(s.boss)dmg*=.93;s.enemyHp-=Math.floor(dmg);psySfx?.('attack')}
+  else{const d=PSY_EFFECT_CARDS[x.id];if(d.effect==='energy')s.energy=Math.min(s.maxEnergy,s.energy+d.value);if(d.effect==='heal')s.playerHp=Math.min(s.playerMax,s.playerHp+Math.floor(s.playerMax*d.value));if(d.effect==='shield')s.shield=Math.max(s.shield,d.value);if(d.effect==='poison'){s.poisonTurns=3;s.poisonPct=d.value}if(d.effect==='weaken'){s.weakenTurns=2;s.weaken=d.value}if(d.effect==='focus')s.focus=d.value;if(d.effect==='stun')s.stun=Math.random()<d.value;if(d.effect==='drain'){const dmg=Math.floor(s.enemyMax*d.value);s.enemyHp-=dmg;s.playerHp=Math.min(s.playerMax,s.playerHp+Math.floor(dmg*.5))}psySfx?.('buff')}
+  if(s.enemyHp<=0)return psyCardStageWin();
+  if(s.poisonTurns>0){s.enemyHp-=Math.floor(s.enemyMax*s.poisonPct);s.poisonTurns--;if(s.enemyHp<=0)return psyCardStageWin()}
+  if(!s.stun){let dmg=Math.floor(38*Math.pow(1.075,s.stage-1)*(1+(CG_TIER_RANK[s.tier]||0)*.12)*(s.boss?1.35:1));if(s.weakenTurns>0){dmg=Math.floor(dmg*(1-s.weaken));s.weakenTurns--}if(s.shield){dmg=Math.floor(dmg*(1-s.shield));s.shield=0}s.playerHp=Math.max(0,s.playerHp-Math.max(5,dmg))}else{s.stun=false;notif('⏳ Inimigo perdeu o contra-ataque!',1800)}
+  if(s.playerHp<=0)return psyCardStageLose();s.turn++;s.energy=Math.min(s.maxEnergy,s.energy+2);psyDrawHand(s);cgDrawBattle();
+};
+function psyCardStageWin(){const s=window.cgBattleState,cg=psyCardsEnsure(),first=s.stage>cg.best;cg.best=Math.max(cg.best,s.stage);if(first)cg.skillPoints=(cg.skillPoints||0)+1;if(s.stage<60)cg.stage=s.stage+1;const gold=Math.floor(3500*s.stage*(1+s.stage*.04)*(s.boss?1.6:1)),dia=s.boss?Math.min(6,1+Math.floor(s.stage/15)):0;P.gold+=gold;P.diamonds+=dia;if(s.boss&&Math.random()<.06){cg.packs.ss++;notif('🌐 DROP GLOBAL: Pack SS!',4500)}window.cgBattleState=null;autoSave();updateHUD();notif(`🏆 Fase ${s.stage}! +${gold.toLocaleString()} Gold${dia?' +'+dia+' 💎':''}`,3500);renderCardTab('battle')}
+function psyCardStageLose(){window.cgBattleState=null;notif('💀 Nexus derrotado. Ajuste o Deck e tente novamente.',3000);renderCardTab('battle')}
+window.cgWinStage=psyCardStageWin;window.cgLoseStage=psyCardStageLose;
+
+/* Global SS pack drop can also happen in normal victories, very rarely. */
+function psyTryGlobalCardDrop(){const c=psyCardsEnsure();if(Math.random()<.0005){c.packs.ss++;autoSave();notif('🌐 DROP GLOBAL RARÍSSIMO: você encontrou um Pack SS!',5000)}}
+try{const endOldV9=window.endBattle;window.endBattle=endBattle=function(won){const r=endOldV9.apply(this,arguments);if(won)setTimeout(psyTryGlobalCardDrop,100);return r}}catch(e){}
+
+/* Rebalance Card talents: +4% ATK no longer starts around 125k+. */
+if(window.CG_SKILLS){CG_SKILLS.power.gold=[45000,90000,180000,360000,720000];CG_SKILLS.vitality.gold=[50000,100000,200000,400000,800000];CG_SKILLS.tactics.gold=[70000,140000,280000,560000,1120000];CG_SKILLS.status.gold=[55000,110000,220000,440000,880000];CG_SKILLS.fortune.gold=[80000,160000,320000,640000,1280000]}
+
+function psyInstallCardTabs(){const s=document.getElementById('screen-card-mode');if(!s)return;const bar=s.querySelector('.cardgame-tabs');if(!bar)return;bar.innerHTML=`<button onclick="renderCardTab('collection')">📚 COLEÇÃO / DECK</button><button onclick="renderCardTab('gacha')">✨ GACHA / PACKS</button><button onclick="renderCardTab('history')">📜 HISTÓRICO</button><button onclick="renderCardTab('skills')">🌟 HABILIDADES</button><button onclick="renderCardTab('battle')">⚔ 60 FASES</button>`}
+window.renderCardTab=function(tab){psyCardsEnsure();psyInstallCardTabs();try{cgUpdateMoney()}catch(e){}const c=document.getElementById('cg-content');if(!c)return;c.dataset.tab=tab;if(tab==='collection')return cgRenderCollection(c);if(tab==='gacha')return cgRenderGacha(c);if(tab==='history')return cgRenderHistory(c);if(tab==='skills')return cgRenderSkills(c);return cgRenderBattleMenu(c)};
+const psyOpenCardsOld=window.openCardMode;window.openCardMode=function(){psyCardsEnsure();let s=document.getElementById('screen-card-mode');if(!s){psyOpenCardsOld?.apply(this,arguments);s=document.getElementById('screen-card-mode')}else{s.style.display='block';const m=document.getElementById('menu');if(m)m.style.display='none'}psyInstallCardTabs();renderCardTab('collection')};
+
+/* Ensure at least a starter card collection without overwriting player collection. */
+function psySeedStarterCards(){const c=psyCardsEnsure();if(Object.keys(c.collection).length)return;const ids=(P.team||[]).slice(0,5).map(x=>x.id);while(ids.length<5)ids.push([1,4,7,25,133][ids.length]);ids.forEach(id=>{c.collection[String(id)]={id,stars:1,level:1,copies:1,cardTier:getTier(id,false,false,false)||'E'};c.starRewards[String(id)]=1});c.effectCollection.energy={id:'energy',copies:1,level:1,tier:'B'};c.deck=[...ids.map(id=>`p:${id}`),'e:energy'].slice(0,20);autoSave()}
+setTimeout(()=>{psyCardsEnsure();psySeedStarterCards();psyInstallCardTabs();const a=psyAfkEnsure();if(a.enabled&&Date.now()-(a.lastSettlementAt||Date.now())>30000){const sec=(Date.now()-(a.lastSettlementAt||Date.now()))/1000;const r=psyAfkReward(sec,true);if(r)notif(`🌙 AFK offline: +${r.gold.toLocaleString()}G • +${r.xp}XP`,4200)}},900);
+
+/* Remove obsolete AFK tab from Cards if another patch recreates it. */
+setInterval(()=>document.querySelectorAll('#screen-card-mode .cardgame-tabs button').forEach(b=>{if(/^\s*🌙?\s*AFK/i.test(b.textContent||''))b.remove()}),1600);
+
+console.log('✅ PSYWORLD V9 LOCAL: save local, AFK offline, capture tiers, hunts CAP, Cards V9 carregados');
+})();
 
 </script>
 </body>
