@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:,">
 <title>PSYWORLD</title>
 <!-- PSYWORLD corrigido: sprites Mega X/Y + shiny + player GIF animado + sprite helpers unificados -->
 <style>
@@ -10191,7 +10192,7 @@ const oldOpenH=window.openHunts;window.openHunts=function(){const r=oldOpenH?.ap
 
 // Standalone AFK, including closed-browser catch-up (max 12h per settlement).
 function afkReward(seconds,offline=false){v6Ensure();const a=P.meta.afk;if(!a.enabled||seconds<10)return;seconds=Math.min(seconds,43200);const mins=seconds/60,lv=P.trainerLevel||1;
- const gold=Math.floor(mins*(1350+lv*75)*(1+(getTotalBuff('gold')||0)/100));const xp=Math.max(1,Math.floor(mins*(18+lv*1.7)*(1+(getTotalBuff('xp')||0)/100));
+ const gold=Math.floor(mins*(1350+lv*75)*(1+(getTotalBuff('gold')||0)/100));const xp=Math.max(1,Math.floor(mins*(18+lv*1.7)*(1+(getTotalBuff('xp')||0)/100)));
  P.gold+=gold;a.gold+=gold;a.xp+=xp;const pk=P.team?.[0];if(pk){pk.exp=(pk.exp||0)+xp;try{checkLevelUp()}catch(e){}}
  let drops=0,packs=[];for(let i=0;i<Math.floor(mins);i++){if(Math.random()<.035){drops++;a.drops++;}const r=Math.random();if(r<.0007){P.cardGame.packs.epic=(P.cardGame.packs.epic||0)+1;packs.push('Épico')}else if(r<.003){P.cardGame.packs.rare=(P.cardGame.packs.rare||0)+1;packs.push('Raro')}else if(r<.009){P.cardGame.packs.normal=(P.cardGame.packs.normal||0)+1;packs.push('Normal')}}
  if(drops)P.inventory['Fragmento AFK']=(P.inventory['Fragmento AFK']||0)+drops;a.packs+=packs.length;a.history.unshift({at:Date.now(),seconds:Math.floor(seconds),gold,xp,drops,packs,offline});a.history=a.history.slice(0,20);a.last=Date.now();autoSave();updateHUD();
@@ -10220,12 +10221,14 @@ setInterval(v6Menu,1400);
 // Offline settlement as soon as P exists.
 setTimeout(()=>{v6Ensure();const a=P.meta.afk;if(a.enabled&&a.last&&Date.now()>a.last+30000){const sec=(Date.now()-a.last)/1000;afkReward(sec,true);notif(`🌙 AFK offline coletado: ${fmtTime(sec)}.`,3500)}v6Menu();v6Hud()},1700);
 })();
+</script>
 
 <style>
 .psy-v6-overlay{display:none;position:fixed;inset:0;z-index:1000030;background:#02040bef;align-items:center;justify-content:center;padding:10px;overflow:auto}.psy-v6-panel{position:relative;width:min(680px,96vw);max-height:94vh;overflow:auto;background:radial-gradient(circle at 50% 0,#18224a,#070812 65%);border:2px solid #6366f1;border-radius:18px;padding:18px;box-shadow:0 0 40px #4f46e566}.psy-v6-panel.wide{width:min(1000px,97vw)}.afk-hero{display:flex;gap:16px;align-items:center;background:#050713;border:1px solid #4f46e5;border-radius:14px;padding:15px}.afk-moon{font-size:58px;filter:drop-shadow(0 0 15px #818cf8)}#v6-afk-clock{font-size:28px;color:#a5b4fc;font-weight:900}.afk-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}.afk-stats b,.afk-history div{background:#080b18;border:1px solid #27315d;border-radius:10px;padding:10px}.afk-history{display:grid;gap:6px}.afk-history div{display:flex;justify-content:space-between;gap:10px}.v6-primary{width:100%;padding:12px;border:0;border-radius:10px;background:linear-gradient(90deg,#4338ca,#0891b2);color:white;font-weight:900}.v6-pulls{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:9px}.v6-card{min-height:145px;background:linear-gradient(160deg,#141827,#05060b);border:2px solid var(--tier);box-shadow:0 0 12px color-mix(in srgb,var(--tier) 45%,transparent);border-radius:12px;padding:7px;text-align:center;overflow:hidden}.v6-card img{width:72px;height:72px;object-fit:contain;image-rendering:pixelated}.v6-card b,.v6-card span{display:block;font-size:10px}.v6-card span{color:#ffd700}.v6-link{border:0;background:transparent;color:#67e8f9;font:inherit;font-weight:900;text-decoration:underline;cursor:pointer;padding:0}.v6-afk-menu{background:linear-gradient(90deg,#17143f,#4338ca)!important;color:#fff!important;box-shadow:0 0 12px #6366f166!important}
 /* Faster city interpolation */
 </style>
 
+<script>
 /* ============================================================
    ONLINE FOUNDATION CLIENT BRIDGE
    Does not expose SUPABASE_SECRET_KEY. Public key only.
