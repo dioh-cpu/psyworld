@@ -1,0 +1,11 @@
+PSYWORLD — SAVE LOCAL V7
+
+- Conta online/cloud save removidos do carregamento do jogo.
+- Save automático local a cada 15 segundos.
+- Save também em pagehide/aba oculta.
+- 3 backups rotativos no localStorage.
+- Cópia redundante em IndexedDB.
+- Auto-resume: se existir save válido, F5 volta direto ao jogo e NÃO pede starter novamente.
+- Importar/exportar .psy continua disponível como backup manual.
+
+IMPORTANTE: nenhum save 100% local sobrevive se o usuário apagar todos os dados do site/navegador. Para proteção total, exporte um .psy periodicamente.
