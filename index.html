@@ -2,7 +2,6 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="data:,">
 <title>PSYWORLD</title>
 <!-- PSYWORLD corrigido: sprites Mega X/Y + shiny + player GIF animado + sprite helpers unificados -->
 <style>
@@ -1645,6 +1644,15 @@ html,body{width:100%;min-height:100%;overflow:hidden}
 .psy-balance-note{font-size:8px;color:#94a3b8;margin-top:4px}
 
 
+/* ONLINE FOUNDATION UI */
+#psy-online-status{position:fixed;left:12px;bottom:10px;z-index:999998;background:#07111fe8;border:1px solid #475569;border-radius:9px;padding:5px 8px;color:#94a3b8;font:9px Tahoma,sans-serif;pointer-events:none}
+#psy-online-status.on{border-color:#22c55e;color:#86efac;box-shadow:0 0 9px #22c55e33}
+#psy-online-status.warn{border-color:#f59e0b;color:#fde68a}
+#screen-online-auth{display:none;position:fixed;inset:0;background:#000e;z-index:10000040;overflow:auto;padding:12px}
+#screen-online-auth .psy-auth-box{max-width:420px;margin:8vh auto;background:radial-gradient(circle at 50% 0,#172554,#080b12 65%);border:2px solid #22d3ee;border-radius:15px;padding:15px;color:#fff;position:relative}
+#screen-online-auth input{width:100%;box-sizing:border-box;margin:5px 0;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff}
+#screen-online-auth button{margin:5px 3px;padding:9px 12px;border:0;border-radius:8px;font-weight:900}
+
 </style>
 
 <script>
@@ -2725,154 +2733,207 @@ window.renderMoveSwap=function(){
 // BLOQUEIA LENDARIO EM TODO CANTO
 window.LEGENDARY_BLOCK = new Set([144,145,146,150,151,243,244,245,249,250,251,377,378,379,380,381,382,383,384,385,386,480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,638,639,640,641,642,643,644,645,646,647,648,649,716,717,718,719,720,721,785,786,787,788,789,790,791,792,800,888,889,890,898,1007,1008,1001,1002,1003,1004,1014,1015,1016,1017,1024,1025]);
 
-// ===== SAVE LOCAL V7 — AUTO-RESUME + BACKUPS =====
-const SAVE_KEY = 'psyWorldSave_v7';
-const SAVE_BACKUP_KEYS = ['psyWorldSave_v7_b1','psyWorldSave_v7_b2','psyWorldSave_v7_b3'];
-const SAVE_LEGACY_KEYS = ['psyWorldSave_v2','psyWorldSave_backup','psyWorldSave'];
-const SAVE_DB_NAME = 'PSYWORLD_LOCAL_SAVE';
-const SAVE_DB_STORE = 'saves';
-let PSY_ENGINE_STARTED = false;
-let PSY_SAVE_BUSY = false;
+// ===== SAVE V2 - NÃO APAGA NUNCA MAIS =====
+const SAVE_KEY = 'psyWorldSave_v2';
+const SAVE_BACKUP_KEY = 'psyWorldSave_backup';
 
-function safeStringify(obj){ try{return JSON.stringify(obj)}catch(e){console.warn('save stringify',e);return null} }
-function psyValidSaveObject(data){
-  const pd=data?.player||data;
-  return !!(pd && Array.isArray(pd.team) && (pd.team.length>0 || (Array.isArray(pd.box)&&pd.box.length>0)));
-}
-function psyBuildSave(){
-  return {v:7,player:P,map:{x:P.x,y:P.y,px:P.px,py:P.py,tx:P.tx,ty:P.ty},time:Date.now()};
-}
+function safeStringify(obj){ try{ return JSON.stringify(obj); }catch(e){ return null; } }
+
 function migratePoke(p){
-  if(!p)return;
-  if(typeof p.resets==='undefined')p.resets=0;
-  if(typeof p.boost==='undefined')p.boost=0;
-  if(typeof p.level==='undefined')p.level=1;
-  if(!p.rarity)p.rarity={n:'Lixo',color:'#888',mult:1};
-  try{
-    if(typeof ensurePokeBase==='function')ensurePokeBase(p);
-    if(typeof recalcPoke==='function'){
-      const ratio=p.maxHp?Math.max(0,Math.min(1,p.hp/p.maxHp)):1;
-      recalcPoke(p);
-      p.hp=Math.max(0,Math.min(p.maxHp,Math.round(p.maxHp*ratio)));
-    }
-  }catch(e){console.warn('migrate poke',e)}
-}
-function psyOpenSaveDB(){
-  return new Promise((resolve,reject)=>{
-    if(!window.indexedDB)return reject(new Error('IndexedDB indisponível'));
-    const req=indexedDB.open(SAVE_DB_NAME,1);
-    req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(SAVE_DB_STORE))db.createObjectStore(SAVE_DB_STORE)};
-    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
-  });
-}
-async function psyIDBPut(str){
-  try{const db=await psyOpenSaveDB();await new Promise((ok,fail)=>{const tx=db.transaction(SAVE_DB_STORE,'readwrite');tx.objectStore(SAVE_DB_STORE).put(str,'latest');tx.oncomplete=ok;tx.onerror=()=>fail(tx.error)});db.close()}catch(e){console.warn('IndexedDB save',e)}
-}
-async function psyIDBGet(){
-  try{const db=await psyOpenSaveDB();const v=await new Promise((ok,fail)=>{const tx=db.transaction(SAVE_DB_STORE,'readonly');const r=tx.objectStore(SAVE_DB_STORE).get('latest');r.onsuccess=()=>ok(r.result||null);r.onerror=()=>fail(r.error)});db.close();return v}catch(e){return null}
-}
-function psyRotateLocalBackups(current){
-  try{
-    const b1=localStorage.getItem(SAVE_BACKUP_KEYS[0]);
-    const b2=localStorage.getItem(SAVE_BACKUP_KEYS[1]);
-    if(b2)localStorage.setItem(SAVE_BACKUP_KEYS[2],b2);
-    if(b1)localStorage.setItem(SAVE_BACKUP_KEYS[1],b1);
-    if(current)localStorage.setItem(SAVE_BACKUP_KEYS[0],current);
-  }catch(e){console.warn('backup rotation',e)}
-}
-function autoSave(){
-  if(PSY_SAVE_BUSY)return false;
-  try{
-    // Nunca sobrescreve um save válido com o estado inicial vazio.
-    if(!P?.team?.length && !P?.box?.length){
-      const existing=localStorage.getItem(SAVE_KEY)||SAVE_LEGACY_KEYS.map(k=>localStorage.getItem(k)).find(Boolean);
-      if(existing)return false;
-    }
-    PSY_SAVE_BUSY=true;
-    const str=safeStringify(psyBuildSave());if(!str)return false;
-    const old=localStorage.getItem(SAVE_KEY);
-    if(old && old!==str)psyRotateLocalBackups(old);
-    localStorage.setItem(SAVE_KEY,str);
-    // Compatibilidade: mantém uma cópia que versões antigas também entendem.
-    localStorage.setItem('psyWorldSave_v2',str);
-    localStorage.setItem('psyWorldSave_backup',str);
-    localStorage.setItem('psyWorldSave',str);
-    psyIDBPut(str);
-    localStorage.setItem('psyWorldSave_last_ok',String(Date.now()));
-    return true;
-  }catch(e){console.warn('autoSave erro',e);return false}
-  finally{PSY_SAVE_BUSY=false}
-}
-function psyReadBestLocalSave(){
-  const keys=[SAVE_KEY,...SAVE_BACKUP_KEYS,...SAVE_LEGACY_KEYS];
-  let best=null,bestTime=-1;
-  for(const key of keys){
+    if(!p) return;
+    if(typeof p.resets==='undefined') p.resets = 0;
+    if(typeof p.boost==='undefined') p.boost = 0;
+    if(typeof p.level==='undefined') p.level = 1;
+    if(!p.rarity) p.rarity = {n:"Lixo", color:"#888", mult:1};
     try{
-      const raw=localStorage.getItem(key);if(!raw)continue;
-      const data=JSON.parse(raw);if(!psyValidSaveObject(data))continue;
-      const t=Number(data.time||0);
-      if(!best || t>=bestTime){best=data;bestTime=t}
+        if(typeof ensurePokeBase==='function') ensurePokeBase(p);
+        if(typeof recalcPoke==='function'){
+            let ratio = p.maxHp? (p.hp / p.maxHp) : 1;
+            recalcPoke(p);
+            if(ratio < 0.99) p.hp = Math.floor(p.maxHp * ratio);
+        }
     }catch(e){}
-  }
-  return best;
 }
-function psyApplyLocalSave(data){
-  if(!psyValidSaveObject(data))return false;
-  const pd=data.player||data;
-  // P é const, então preservamos a referência e restauramos suas propriedades.
-  Object.keys(P).forEach(k=>{if(!(k in pd) && !['x','y','px','py','tx','ty'].includes(k)){} });
-  Object.assign(P,pd);
-  P.team=Array.isArray(P.team)?P.team:[];
-  P.box=Array.isArray(P.box)?P.box:[];
-  P.inventory=P.inventory||{};
-  const map=data.map||{};
-  P.x=map.x??P.x??25;P.y=map.y??P.y??25;
-  P.px=map.px??P.px??P.x*32;P.py=map.py??P.py??P.y*32;
-  P.tx=map.tx??P.tx??P.x;P.ty=map.ty??P.ty??P.y;
-  P.team.forEach(migratePoke);P.box.forEach(migratePoke);
-  if(P.team[0]){P.pokemon=P.team[0];P.hp=P.team[0].hp;P.maxHp=P.team[0].maxHp}
-  return true;
-}
-function autoLoad(){
-  try{const data=psyReadBestLocalSave();return data?psyApplyLocalSave(data):false}catch(e){console.warn('autoLoad erro',e);return false}
-}
-async function psyRecoverIndexedDB(){
-  if(autoLoad())return true;
-  const raw=await psyIDBGet();if(!raw)return false;
-  try{const data=JSON.parse(raw);if(!psyApplyLocalSave(data))return false;localStorage.setItem(SAVE_KEY,raw);return true}catch(e){return false}
-}
-function psyEnterLoadedGame(message=true){
-  if(!P.team?.length)return false;
-  const login=document.getElementById('screen-login');if(login)login.style.display='none';
-  const starter=document.getElementById('screen-starter');if(starter)starter.style.display='none';
-  const game=document.getElementById('game-wrap');if(game)game.style.display='block';
-  try{updateHUD()}catch(e){}try{renderTeam()}catch(e){}try{loadMoveButtons()}catch(e){}
-  if(!PSY_ENGINE_STARTED){PSY_ENGINE_STARTED=true;try{initEngine()}catch(e){PSY_ENGINE_STARTED=false;console.error('initEngine',e)}}
-  if(message)notif(`✅ Bem-vindo de volta, ${P.name||'Treinador'}!`,2200);
-  return true;
-}
-function saveGame(){autoSave();notif('💾 Save local atualizado.',1400)}
-function loadGame(){if(autoLoad()){psyEnterLoadedGame();notif('✅ Backup local carregado.',1800)}else notif('❌ Nenhum save local encontrado!')}
-function downloadSave(){
-  autoSave();const raw=localStorage.getItem(SAVE_KEY);if(!raw)return notif('❌ Nenhum save para exportar!');
-  const blob=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download=`${P.name||'player'}_PSYWORLD_backup_${new Date().toISOString().slice(0,10)}.psy`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);notif('✅ Backup .psy baixado!',1800);
-}
-function psyImportSaveText(text){
-  const data=JSON.parse(text);if(!psyValidSaveObject(data))throw new Error('Save sem Pokémon');
-  const str=JSON.stringify(data);localStorage.setItem(SAVE_KEY,str);psyRotateLocalBackups(str);localStorage.setItem('psyWorldSave_v2',str);localStorage.setItem('psyWorldSave_backup',str);localStorage.setItem('psyWorldSave',str);psyIDBPut(str);psyApplyLocalSave(data);autoSave();return true;
-}
-function uploadSave(event){
-  const file=event.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{psyImportSaveText(e.target.result);psyEnterLoadedGame();const menu=document.getElementById('menu');if(menu)menu.style.display='none';notif('✅ Backup importado!',2200)}catch(err){notif('❌ Arquivo .psy inválido!')}};reader.readAsText(file);event.target.value='';
-}
-function uploadSaveLogin(event){uploadSave(event)}
-function loadOnLogin(){if(autoLoad())psyEnterLoadedGame();else notif('❌ Nenhum save local encontrado!')}
 
-// Autosave defensivo: periódico + ao sair da aba/jogo.
-setInterval(()=>{if(P?.team?.length)autoSave()},15000);
-window.addEventListener('pagehide',()=>{if(P?.team?.length)autoSave()});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&P?.team?.length)autoSave()});
+function autoSave() {
+    try{
+        const saveData = { v:2, player: P, map: { x: P.x, y: P.y, px: P.px, py: P.py }, time: Date.now() };
+        const str = safeStringify(saveData); if(!str) return;
+        localStorage.setItem(SAVE_KEY, str);
+        localStorage.setItem(SAVE_BACKUP_KEY, str);
+        localStorage.setItem('psyWorldSave', str); // compat
+    }catch(e){ console.warn(e); }
+}
 
+function autoLoad() {
+    try{
+        let raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(SAVE_BACKUP_KEY) || localStorage.getItem('psyWorldSave');
+        if(!raw) return false;
+        const data = JSON.parse(raw);
+        const pd = data.player || data;
+        if(!pd.team || (pd.team.length===0 && pd.box?.length===0)) return false;
+
+        P.name = pd.name || P.name;
+        P.gold = pd.gold?? P.gold;
+        P.team = pd.team || [];
+        P.box = pd.box || [];
+        P.inventory = pd.inventory || P.inventory;
+        P.levelCap = pd.levelCap?? P.levelCap;
+        P.gymProgress = pd.gymProgress || [];
+        P.trainerLevel = pd.trainerLevel || 1;
+        P.trainerExp = pd.trainerExp || 0;
+        P.trainerMaxExp = pd.trainerMaxExp || 100;
+        P.trainerPoints = pd.trainerPoints || 0;
+        P.trainerBuffs = pd.trainerBuffs || P.trainerBuffs;
+        P.worldBuffs = pd.worldBuffs || P.worldBuffs;
+        P.currentHunt = pd.currentHunt || P.currentHunt;
+
+        P.x = data.map?.x?? 25; P.y = data.map?.y?? 25;
+        P.px = data.map?.px?? P.x*32; P.py = data.map?.py?? P.y*32;
+
+        P.team.forEach(migratePoke);
+        P.box.forEach(migratePoke);
+        if(P.team[0]){
+            P.pokemon = P.team[0];
+            P.hp = P.team[0].hp; P.maxHp = P.team[0].maxHp;
+        }
+        return true;
+    }catch(e){
+        console.warn("autoLoad erro", e);
+        return false;
+    }
+}
+
+function saveGame() {
+    if(confirm(`💾 SALVAR? Team: ${P.team.length} Box: ${P.box.length}`)){
+        autoSave(); notif(`💾 Salvo! Team ${P.team.length}`, 1500);
+    }
+}
+function loadGame() {
+    if(confirm("📂 CARREGAR save?")){
+        const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem('psyWorldSave');
+        if(!raw){ notif('❌ Nenhum save!'); return; }
+        if(autoLoad()){
+            updateHUD(); renderTeam();
+            if(P.team[0]){ P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level); loadMoveButtons(); }
+            document.getElementById('menu').style.display = 'none';
+            notif(`✅ Carregado! Team: ${P.team.length}`, 2000);
+        }
+    }
+}
+function downloadSave() {
+    if(!confirm(`⬇ BAIXAR SAVE v2? Team: ${P.team.length}`)) return;
+    autoSave();
+    const raw = localStorage.getItem(SAVE_KEY);
+    const blob = new Blob([raw], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `${P.name||'player'}_PSYWORLD_v2_${P.team.length}p.psy`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    notif('✅.psy v2 baixado!', 2000);
+}
+function uploadSave(event) {
+    const file = event.target.files[0]; if(!file) return;
+    if(!confirm("⬆ Carregar esse.psy? Vai substituir o atual!")){ event.target.value=''; return; }
+    const reader = new FileReader();
+    reader.onload = e=>{
+        try{
+            const data = JSON.parse(e.target.result);
+            const str = JSON.stringify(data);
+            localStorage.setItem(SAVE_KEY, str);
+            localStorage.setItem(SAVE_BACKUP_KEY, str);
+            localStorage.setItem('psyWorldSave', str);
+            autoLoad(); updateHUD(); renderTeam(); if(P.team[0]) loadMoveButtons();
+            document.getElementById('menu').style.display='none';
+            notif(`✅ Arquivo OK! Team ${P.team.length}`, 3000);
+        }catch(err){ notif('❌.psy inválido!'); }
+    };
+    reader.readAsText(file); event.target.value='';
+}
+function uploadSaveLogin(event){
+    const file = event.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e=>{
+        try{
+            const data = JSON.parse(e.target.result);
+            const str = JSON.stringify(data);
+            localStorage.setItem(SAVE_KEY, str);
+            localStorage.setItem(SAVE_BACKUP_KEY, str);
+            localStorage.setItem('psyWorldSave', str);
+            if(autoLoad()){
+                document.getElementById('screen-login').style.display='none';
+                document.getElementById('game-wrap').style.display='block';
+                updateHUD(); initEngine(); loadMoveButtons();
+                notif(`✅ Bem vindo ${P.name}!`, 3000);
+            }
+        }catch(err){ notif('❌ Arquivo inválido!'); }
+    };
+    reader.readAsText(file); event.target.value='';
+}
+function loadOnLogin(){
+    if(autoLoad()){
+        document.getElementById('screen-login').style.display='none';
+        document.getElementById('game-wrap').style.display='block';
+        updateHUD(); initEngine(); loadMoveButtons();
+        notif(`✅ Bem vindo ${P.name}! Team ${P.team.length}`, 3000);
+    }else notif('❌ Nenhum save v2 encontrado!');
+}
+/* ══════════════
+   PASSO 4: AUTO SAVE
+══════════════ */
+// SALVAR AUTOMATICO SILENCIOSO
+function autoSave() {
+    const saveData = {
+        player: P,
+        map: { x: P.x, y: P.y, px: P.px, py: P.py }
+    };
+    localStorage.setItem('psyWorldSave', JSON.stringify(saveData));
+}
+
+// CARREGAR AUTOMATICO AO ENTRAR
+function autoLoad() {
+    const saveData = localStorage.getItem('psyWorldSave');
+    if(!saveData) return false; // não tem save
+
+    const data = JSON.parse(saveData);
+    Object.assign(P, data.player);
+    P.x = data.map.x; P.y = data.map.y;
+    P.px = data.map.px; P.py = data.map.py;
+
+    if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+    return true; // carregou com sucesso
+}
+
+// CARREGAR SAVE DE UM ARQUIVO
+function uploadSave(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+
+    if(confirm("⬆️ Deseja CARREGAR esse arquivo?\nSeu progresso atual será perdido!")){
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                Object.assign(P, data.player);
+                P.x = data.map.x; P.y = data.map.y;
+                P.px = data.map.px; P.py = data.map.py;
+
+                updateHUD();
+                if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+                loadMoveButtons();
+                document.getElementById('menu').style.display = 'none';
+
+                notif('✅ Save do arquivo carregado!', 2000);
+            } catch(err) {
+                notif('❌ Arquivo inválido!');
+            }
+        };
+        reader.readAsText(file);
+    }
+    event.target.value = '';
+}
+
+// DEPOIS CONTINUA O RESTO DO TEU CODIGO: ESTADO DO JOGADOR, SPRITES, ETC...
 
 let chosenPoke = null;
 const imgCache = {}
@@ -2925,8 +2986,6 @@ function notif(msg, ms=2500) {
    LOGIN → STARTER
 ══════════════════════════════ */
 function goStarter() {
-    // Se já existe progresso, nunca volta para a escolha de inicial.
-    if(autoLoad() && P.team?.length){ psyEnterLoadedGame(); return; }
     const nick = document.getElementById('nick-input').value.trim();
     if(nick.length < 2) { notif('❌ Nick muito curto!'); return; }
     P.name = nick;
@@ -2936,7 +2995,55 @@ function goStarter() {
     document.getElementById('screen-starter').style.display = 'flex';
 }
 
-// Save local V7 já fornece loadOnLogin/uploadSaveLogin acima.
+// ====== FUNÇÕES NOVAS PRA CARREGAR ======
+// CARREGAR SAVE DA TELA DE LOGIN
+function loadOnLogin() {
+    const saveData = localStorage.getItem('psyWorldSave');
+    if(!saveData) { notif('❌ Nenhum save encontrado!'); return; }
+
+    if(autoLoad()){
+        document.getElementById('screen-login').style.display = 'none';
+        document.getElementById('game-wrap').style.display = 'block';
+        updateHUD();
+        initEngine();
+        loadMoveButtons();
+        notif(`✅ Bem vindo de volta, ${P.name}!`, 3000);
+    }
+}
+
+// CARREGAR ARQUIVO DA TELA DE LOGIN
+function uploadSaveLogin(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            Object.assign(P, data.player);
+            P.x = data.map.x; P.y = data.map.y;
+            P.px = data.map.px; P.py = data.map.py;
+
+            if(P.team[0]) { // seta o poke
+                P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+                P.pokemon = P.team[0];
+                P.hp = P.pokemon.hp;
+                P.maxHp = P.pokemon.maxHp;
+            }
+
+            document.getElementById('screen-login').style.display = 'none';
+            document.getElementById('game-wrap').style.display = 'block';
+            updateHUD();
+            initEngine();
+            loadMoveButtons();
+            notif(`✅ Save do arquivo carregado!`, 2000);
+        } catch(err) {
+            notif('❌ Arquivo inválido!');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
 function buildStarterScreen() {
     const container = document.getElementById('starter-list');
     container.innerHTML = '';
@@ -2976,7 +3083,12 @@ function confirmStarter() {
 
     // 1. Se já tem save v2/v1/backup, NUNCA apaga. Só entra.
     if(autoLoad() && P.team && P.team.length > 0){
-        psyEnterLoadedGame();
+        document.getElementById('screen-starter').style.display = 'none';
+        document.getElementById('game-wrap').style.display = 'block';
+        updateHUD();
+        initEngine();
+        loadMoveButtons();
+        notif(`✅ Bem vindo de volta, ${P.name}! Team: ${P.team.length}`, 3000);
         return;
     }
 
@@ -3011,8 +3123,8 @@ function confirmStarter() {
 
     document.getElementById('game-wrap').style.display = 'block';
     updateHUD();
-    if(!PSY_ENGINE_STARTED){PSY_ENGINE_STARTED=true;initEngine();}
-    autoSave(); // save local V7 + backups
+    initEngine();
+    autoSave(); // já salva em v2 + backup + v1
     notif(`${P.name} escolheu ${chosenPoke.name}! Boa aventura! 🎉`, 3000);
 }
 /* ══════════════════════════════
@@ -3738,7 +3850,7 @@ function update(dt) {
             }
         }
     } else {
-        const speed=6, tx=P.tx*TILE, ty=P.ty*TILE;
+        const speed=4, tx=P.tx*TILE, ty=P.ty*TILE;
         if(P.px<tx) P.px=Math.min(P.px+speed,tx); else if(P.px>tx) P.px=Math.max(P.px-speed,tx);
         if(P.py<ty) P.py=Math.min(P.py+speed,ty); else if(P.py>ty) P.py=Math.max(P.py-speed,ty);
         if(P.px===tx && P.py===ty){ P.x=P.tx; P.y=P.ty; P.moving=false; }
@@ -7158,8 +7270,8 @@ function cgRenderCollection(c){
     return `<div class="cg-card ${sel?'selected':''}" onclick="cgToggleDeck(${card.id})"><div class="stars">${'★'.repeat(card.stars)}${'☆'.repeat(5-card.stars)}</div><img src="${getRealSprite({id:card.id})}"><div style="font-size:10px;font-weight:900">${getPokeName(card.id)}</div><div style="font-size:9px;color:#a5b4fc">PWR ${cgCardPower(card)} • Lv${card.level}</div><div style="font-size:8px;color:#777">cópias ${card.copies}</div></div>`;
   }).join('')}</div>`;
 }
-window.cgToggleDeck=function(id){ensureCardData();let k=String(id),d=P.cardGame.deck;let i=d.indexOf(k);if(i>=0)d.splice(i,1);else if(d.length<20)d.push(k);else return notif('Deck máximo: 20 cartas');autoSave();renderCardTab('collection');};
-window.cgAutoDeck=function(){let a=Object.values(P.cardGame.collection).sort((x,y)=>cgCardPower(y)-cgCardPower(x)).slice(0,20);P.cardGame.deck=a.map(x=>String(x.id));autoSave();renderCardTab('collection');};
+window.cgToggleDeck=function(id){ensureCardData();let k=String(id),d=P.cardGame.deck;let i=d.indexOf(k);if(i>=0)d.splice(i,1);else if(d.length<8)d.push(k);else return notif('Deck máximo: 8 cartas');autoSave();renderCardTab('collection');};
+window.cgAutoDeck=function(){let a=Object.values(P.cardGame.collection).sort((x,y)=>cgCardPower(y)-cgCardPower(x)).slice(0,8);P.cardGame.deck=a.map(x=>String(x.id));autoSave();renderCardTab('collection');};
 function cgRollStars(){
   const r=Math.random()*100;return r<1?5:r<6?4:r<20?3:r<50?2:1;
 }
@@ -10030,106 +10142,80 @@ window.renderMarket5=async function(tab){
 
 
 /* ============================================================
-   PSYWORLD V6 — ONLINE SAVE / AFK / HUNTS / CAPTURE / CARDS UX
+   ONLINE FOUNDATION CLIENT BRIDGE
+   Does not expose SUPABASE_SECRET_KEY. Public key only.
+   Economy remains in compatibility/local mode until account is linked.
    ============================================================ */
-(function(){
-const $=id=>document.getElementById(id);
-window.PSY_V6=true;
-function v6Ensure(){
-  P.meta=P.meta||{}; P.meta.afk=P.meta.afk||{enabled:false,since:0,last:Date.now(),gold:0,xp:0,drops:0,packs:0,history:[]};
-  P.cardGame=P.cardGame||{};P.cardGame.pullHistory=P.cardGame.pullHistory||[];P.cardGame.collection=P.cardGame.collection||{};
-  P.cardGame.deck=P.cardGame.deck||[];P.cardGame.packs=P.cardGame.packs||{};
-  if(!P.levelCap||P.levelCap<20)P.levelCap=20;
+window.PSY_ONLINE={configured:false,client:null,session:null,state:null,mode:'local'};
+
+async function psyLoadSupabaseJs(){
+  if(window.supabase?.createClient)return window.supabase;
+  await new Promise((ok,fail)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.onload=ok;s.onerror=fail;document.head.appendChild(s);
+  });
+  return window.supabase;
 }
-// City movement: 50% faster, snap tiny remainder so the avatar never crawls into center.
-const v6RAF=window.requestAnimationFrame.bind(window); window.PSY_CITY_SPEED=6;
-// Patch the literal city speed used by the old renderer without changing WORLD speed.
-try{ /* marker used by diagnostics */ }catch(e){}
-
-// Trainer level-up always fully heals the active team.
-const oldCheck=window.checkLevelUp;
-window.checkLevelUp=function(){const before=(P.team||[]).map(x=>x.level);const r=oldCheck?.apply(this,arguments);(P.team||[]).forEach((pk,i)=>{if((pk.level||1)>(before[i]||pk.level))pk.hp=pk.maxHp;});return r};
-
-// Final capture table. These are absolute caps after ball/HP modifiers.
-window.PSY_CAPTURE_CAPS={E:40,D:30,C:22,B:14,A:8,S:5,SS:2.5,SSS:1.5,UR:1,'UR+':.8,'UR++':.6};
-window.psyTierCaptureBase=t=>({E:6.5,D:4.8,C:3.4,B:2.25,A:1.35,S:.72,SS:.36,SSS:.20,UR:.10,'UR+':.07,'UR++':.05}[t]||.5);
-window.tryCaptureBattle=function(ballName){
-  if((P.inventory[ballName]||0)<=0)return notif('Sem Balls!'); const wild=battleData?.wild;if(!wild)return;
-  if(wild.psyduckDungeon||window.isDungeonBoss||window.isDungeonMega)return notif('❌ Este encontro não pode ser capturado.');
-  P.inventory[ballName]--;if(P.inventory[ballName]<=0)delete P.inventory[ballName];$('screen-bag').style.display='none';window.bagBattleMode=null;
-  const tier=getTier(wild.id,wild.shiny,wild.isMega,wild.isBoss),hpPct=Math.max(0,battleData.wildHp/battleData.wildMaxHp);
-  let power=BALL_DATA[ballName]?.chance||1;const elem=typeof psyElement==='function'?psyElement(wild.id):null;
-  if(elem&&ballName===elem.ball)power=(BALL_DATA['Ultra Ball']?.chance||3)*2;
-  const hpFactor=.32+(1-hpPct)*.68,rar=Math.sqrt(Math.max(1,wild.rarity?.mult||1));
-  let chance=psyTierCaptureBase(tier)*power*hpFactor/rar; const cap=wild.shiny?1:(PSY_CAPTURE_CAPS[tier]||5); chance=Math.max(.01,Math.min(cap,chance));
-  if(typeof psyEnsurePity==='function')psyEnsurePity();const key=typeof psyPityKey==='function'?psyPityKey(wild):`${wild.id}:${wild.shiny?1:0}`;
-  P.meta.capturePity=P.meta.capturePity||{};const entry=P.meta.capturePity[key]||(P.meta.capturePity[key]={ultraFails:0,allFails:0});
-  const isUltra=/Ultra Ball/i.test(ballName),pity=typeof psyPityTarget==='function'?psyPityTarget(wild):60,forced=isUltra&&entry.ultraFails>=pity;
-  if(forced||Math.random()*100<chance){const pk=createCapturedPoke(wild.id,wild.rarity,wild.shiny,false,wild.isMega);P.box.push(pk);delete P.meta.capturePity[key];P.meta.captures=(P.meta.captures||0)+1;notif(forced?`✅ PITY! ${pk.name} capturado!`:`✅ ${pk.name} capturado!`,3000);endBattle(true);autoSave();renderTeam();return;}
-  entry.allFails++;if(isUltra)entry.ultraFails++;notif('❌ O Pokémon escapou!',1800);autoSave();
-  // Capture is an action: enemy gets its turn.
-  setTimeout(()=>{if(!battleData?.wild||!P.team?.[0]||P.team[0].hp<=0)return;const w=battleData.wild;const dmg=Math.max(5,Math.floor((w.atk||w.level*3||10)*.42));P.team[0].hp=Math.max(0,P.team[0].hp-dmg);$('battle-log').textContent=`A tentativa gastou seu turno. ${w.name||getPokeName(w.id)} atacou: -${dmg} HP`;updateBattleHP();updateHUD();if(P.team[0].hp<=0)setTimeout(()=>endBattle(false),500)},280);
-};
-
-// Hunts are gated by the actual Pokémon level cap, not merely a visual overlay.
-function huntRangeFromKey(key){const m=String(key).match(/_t(\d+)$/);const t=Number(m?.[1]||1);return t===1?[1,10]:t===2?[10,20]:t===3?[20,30]:[40,60]}
-const oldEnterHunt=window.enterHunt;
-window.enterHunt=function(key){const [lo,hi]=huntRangeFromKey(key),cap=P.levelCap||20;if(lo>=cap)return notif(`🔒 Hunt Lv.${lo}-${hi} bloqueada. Seu CAP é ${cap}. Vença o próximo Ginásio.`,3500);return oldEnterHunt?.apply(this,arguments)};
-const oldOpenH=window.openHunts;window.openHunts=function(){const r=oldOpenH?.apply(this,arguments);setTimeout(()=>{[...($('hunt-list')?.children||[])].forEach(card=>{const txt=card.textContent||'',m=txt.match(/Lv\s*(\d+)-(\d+)/i);if(!m)return;const locked=Number(m[1])>=(P.levelCap||20);if(locked){card.style.filter='grayscale(.8) brightness(.55)';card.style.pointerEvents='auto';card.onclick=()=>notif(`🔒 Essa Hunt exige CAP acima de ${m[1]}. Vá aos Ginásios.`,3000)}else card.style.filter='';});},100);return r};
-
-// Standalone AFK, including closed-browser catch-up (max 12h per settlement).
-function afkReward(seconds,offline=false){v6Ensure();const a=P.meta.afk;if(!a.enabled||seconds<10)return;seconds=Math.min(seconds,43200);const mins=seconds/60,lv=P.trainerLevel||1;
- const gold=Math.floor(mins*(1350+lv*75)*(1+(getTotalBuff('gold')||0)/100));const xp=Math.max(1,Math.floor(mins*(18+lv*1.7)*(1+(getTotalBuff('xp')||0)/100)));
- P.gold+=gold;a.gold+=gold;a.xp+=xp;const pk=P.team?.[0];if(pk){pk.exp=(pk.exp||0)+xp;try{checkLevelUp()}catch(e){}}
- let drops=0,packs=[];for(let i=0;i<Math.floor(mins);i++){if(Math.random()<.035){drops++;a.drops++;}const r=Math.random();if(r<.0007){P.cardGame.packs.epic=(P.cardGame.packs.epic||0)+1;packs.push('Épico')}else if(r<.003){P.cardGame.packs.rare=(P.cardGame.packs.rare||0)+1;packs.push('Raro')}else if(r<.009){P.cardGame.packs.normal=(P.cardGame.packs.normal||0)+1;packs.push('Normal')}}
- if(drops)P.inventory['Fragmento AFK']=(P.inventory['Fragmento AFK']||0)+drops;a.packs+=packs.length;a.history.unshift({at:Date.now(),seconds:Math.floor(seconds),gold,xp,drops,packs,offline});a.history=a.history.slice(0,20);a.last=Date.now();autoSave();updateHUD();
+function psyOnlineStatus(text,kind=''){
+  let d=document.getElementById('psy-online-status');
+  if(!d){d=document.createElement('div');d.id='psy-online-status';document.body.appendChild(d)}
+  d.className=kind;d.textContent=text;
 }
-window.openAfkV6=function(){v6Ensure();let d=$('screen-afk-v6');if(!d){d=document.createElement('div');d.id='screen-afk-v6';d.className='psy-v6-overlay';document.body.appendChild(d)}const a=P.meta.afk,elapsed=a.enabled?Math.floor((Date.now()-a.since)/1000):0;d.innerHTML=`<div class="psy-v6-panel"><button class="psy-close-x" onclick="this.closest('.psy-v6-overlay').style.display='none'">×</button><h2 class="psy-title-glint">🌙 EXPEDIÇÃO AFK</h2><div class="afk-hero"><div class="afk-moon">🌙</div><div><b>${a.enabled?'EXPEDIÇÃO ATIVA':'EXPEDIÇÃO PAUSADA'}</b><div id="v6-afk-clock">${fmtTime(elapsed)}</div><small>Continua calculando enquanto o jogo estiver fechado • máximo 12h por coleta • sem capturas.</small></div></div><div class="afk-stats"><b>💰 ${a.gold.toLocaleString()} Gold</b><b>⭐ ${a.xp.toLocaleString()} XP</b><b>🎁 ${a.packs} Packs</b><b>📦 ${a.drops} Drops</b></div><button class="v6-primary" onclick="toggleAfkV6()">${a.enabled?'⏸ PAUSAR E COLETAR':'▶ INICIAR EXPEDIÇÃO'}</button><h3>Últimas recompensas</h3><div class="afk-history">${a.history.length?a.history.map(h=>`<div><b>${h.offline?'📴 OFFLINE':'🌙 AFK'} • ${fmtTime(h.seconds)}</b><span>+${h.gold.toLocaleString()}G • +${h.xp}XP ${h.drops?'• 📦'+h.drops:''} ${h.packs?.length?'• 🎴 '+h.packs.join(', '):''}</span></div>`).join(''):'<small>Nenhuma recompensa coletada ainda.</small>'}</div></div>`;d.style.display='flex'};
-window.toggleAfkV6=function(){v6Ensure();const a=P.meta.afk;if(a.enabled){afkReward((Date.now()-a.last)/1000,false);a.enabled=false}else{a.enabled=true;a.since=Date.now();a.last=Date.now()}autoSave();openAfkV6()};
-function fmtTime(s){s=Math.max(0,Math.floor(s||0));return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
-setInterval(()=>{const a=P?.meta?.afk;if(a?.enabled&&Date.now()-a.last>60000){afkReward((Date.now()-a.last)/1000,false);if($('screen-afk-v6')?.style.display!=='none')openAfkV6()}},60000);
-
-// Gacha UX/history + extended packs.
-window.CG_PACKS={normal:{name:'Pack Normal',count:3,color:'#94a3b8',maxTier:'B',art:'📦'},rare:{name:'Pack Raro',count:5,color:'#3b82f6',maxTier:'A',art:'💠'},epic:{name:'Pack Épico',count:10,color:'#a855f7',maxTier:'S',art:'🔮'},sss:{name:'Pack SSS',count:10,color:'#ff7a00',maxTier:'SSS',art:'🔥',diamond:220},ur:{name:'Pack UR',count:10,color:'#ff2bd6',maxTier:'UR',art:'🌌',diamond:420},urpp:{name:'Pack UR++',count:10,color:'#fff',maxTier:'UR++',art:'👑',diamond:850}};
-const oldGrant=window.cgGrantCard;
-function v6RecordPull(card){v6Ensure();const tier=getTier(card.id,false,false,false)||'E';P.cardGame.pullHistory.unshift({id:card.id,stars:card.stars||1,tier,at:Date.now()});P.cardGame.pullHistory=P.cardGame.pullHistory.slice(0,200);if(['SS','SSS','UR','UR+','UR++'].includes(tier))notif(`🌐 ${P.name||'Trainer'} conseguiu ${getPokeName(card.id)} ${'★'.repeat(card.stars||1)} [${tier}]!`,5000)}
-window.v6ShowPulls=function(pulls,title='RESULTADO DO GACHA'){let d=$('v6-gacha-result');if(!d){d=document.createElement('div');d.id='v6-gacha-result';d.className='psy-v6-overlay';document.body.appendChild(d)}d.innerHTML=`<div class="psy-v6-panel wide"><button class="psy-close-x" onclick="this.closest('.psy-v6-overlay').style.display='none'">×</button><h2 class="psy-title-glint">✨ ${title}</h2><div class="v6-pull-summary">${pulls.length} cartas • clique X para guardar</div><div class="v6-pulls">${pulls.map(c=>`<div class="v6-card" style="--tier:${TIER_CONFIG[getTier(c.id,false,false,false)]?.color||'#aaa'}"><img src="${getRealSprite({id:c.id})}" onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${c.id}.png'"><b>${getPokeName(c.id)}</b><span>${getTier(c.id,false,false,false)} • ${'★'.repeat(c.stars||1)}</span></div>`).join('')}</div></div>`;d.style.display='flex'};
-const oldGacha=window.cgGacha; if(oldGacha)window.cgGacha=function(q){const before=JSON.parse(JSON.stringify(P.cardGame?.collection||{}));const r=oldGacha.apply(this,arguments);setTimeout(()=>{const pulls=(P.cardGame?.lastPull||[]);pulls.forEach(v6RecordPull);if(pulls.length)v6ShowPulls(pulls,`GACHA x${q||pulls.length}`);autoSave()},900);return r};
-const oldMultiV6=window.cgMultiPull;if(oldMultiV6)window.cgMultiPull=function(n,currency='gold'){const r=oldMultiV6.apply(this,arguments);setTimeout(()=>{const pulls=Array.isArray(P.cardGame?.lastPull)?P.cardGame.lastPull:[];pulls.forEach(v6RecordPull);if(pulls.length)v6ShowPulls(pulls,`PORTAL ${String(currency).toUpperCase()} • ${n}x`);autoSave()},950);return r};
-
-// HUD links and remove obsolete capture percentage text.
-function v6Hud(){v6Ensure();let mini=$('psy-trainer-mini');if(mini){mini.innerHTML=`🎓 <button class="v6-link" onclick="openTrainerShop()">Trainer Lv.${P.trainerLevel||1} • Talentos ${P.trainerPoints||0}</button> • <button class="v6-link" onclick="openGym()">CAP ${P.levelCap||20} → GYM</button>`}document.querySelectorAll('*').forEach(el=>{if(el.children.length>2)return;const t=el.textContent||'';if(/CAP total 70%|Cap .*\/70%|chance captura.*70%|máx 70%/i.test(t))el.style.display='none'})}
-setInterval(v6Hud,1600);
-
-// Menu AFK is truly standalone; hide the obsolete Cards AFK tab/legacy save buttons in linked mode.
-function v6Menu(){const grid=$('menu')?.querySelector('.psy-main-grid');if(grid&&!grid.querySelector('[data-afk-v6]')){const b=document.createElement('button');b.dataset.afkV6='1';b.innerHTML='🌙 EXPEDIÇÃO AFK';b.className='v6-afk-menu';b.onclick=openAfkV6;grid.appendChild(b)}document.querySelectorAll('.cardgame-tabs button').forEach(b=>{if(/AFK/i.test(b.textContent))b.style.display='none'})}
-setInterval(v6Menu,1400);
-
-// Offline settlement as soon as P exists.
-setTimeout(()=>{v6Ensure();const a=P.meta.afk;if(a.enabled&&a.last&&Date.now()>a.last+30000){const sec=(Date.now()-a.last)/1000;afkReward(sec,true);notif(`🌙 AFK offline coletado: ${fmtTime(sec)}.`,3500)}v6Menu();v6Hud()},1700);
-})();
-</script>
-
-<style>
-.psy-v6-overlay{display:none;position:fixed;inset:0;z-index:1000030;background:#02040bef;align-items:center;justify-content:center;padding:10px;overflow:auto}.psy-v6-panel{position:relative;width:min(680px,96vw);max-height:94vh;overflow:auto;background:radial-gradient(circle at 50% 0,#18224a,#070812 65%);border:2px solid #6366f1;border-radius:18px;padding:18px;box-shadow:0 0 40px #4f46e566}.psy-v6-panel.wide{width:min(1000px,97vw)}.afk-hero{display:flex;gap:16px;align-items:center;background:#050713;border:1px solid #4f46e5;border-radius:14px;padding:15px}.afk-moon{font-size:58px;filter:drop-shadow(0 0 15px #818cf8)}#v6-afk-clock{font-size:28px;color:#a5b4fc;font-weight:900}.afk-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}.afk-stats b,.afk-history div{background:#080b18;border:1px solid #27315d;border-radius:10px;padding:10px}.afk-history{display:grid;gap:6px}.afk-history div{display:flex;justify-content:space-between;gap:10px}.v6-primary{width:100%;padding:12px;border:0;border-radius:10px;background:linear-gradient(90deg,#4338ca,#0891b2);color:white;font-weight:900}.v6-pulls{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:9px}.v6-card{min-height:145px;background:linear-gradient(160deg,#141827,#05060b);border:2px solid var(--tier);box-shadow:0 0 12px color-mix(in srgb,var(--tier) 45%,transparent);border-radius:12px;padding:7px;text-align:center;overflow:hidden}.v6-card img{width:72px;height:72px;object-fit:contain;image-rendering:pixelated}.v6-card b,.v6-card span{display:block;font-size:10px}.v6-card span{color:#ffd700}.v6-link{border:0;background:transparent;color:#67e8f9;font:inherit;font-weight:900;text-decoration:underline;cursor:pointer;padding:0}.v6-afk-menu{background:linear-gradient(90deg,#17143f,#4338ca)!important;color:#fff!important;box-shadow:0 0 12px #6366f166!important}
-/* Faster city interpolation */
-</style>
-
-<script>
-/* ============================================================
-   PSYWORLD LOCAL-ONLY STARTUP
-   Sem conta online/Supabase. Restaura automaticamente o save.
-   ============================================================ */
-(async function(){
+async function psyApi(path,opt={}){
+  const token=PSY_ONLINE.session?.access_token;
+  const r=await fetch(path,{...opt,headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{}) ,...(opt.headers||{})}});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||`HTTP ${r.status}`);
+  return d;
+}
+async function psyInitOnline(){
   try{
-    let ok=autoLoad();
-    if(!ok)ok=await psyRecoverIndexedDB();
-    if(ok&&P.team?.length){
-      psyEnterLoadedGame(false);
-      setTimeout(()=>notif(`💾 Save local restaurado • ${P.name||'Treinador'}`,2200),350);
-    }
-  }catch(e){console.warn('local resume',e)}
-})();
+    const cfg=await fetch('/api/config').then(r=>r.json());
+    if(!cfg.onlineConfigured){psyOnlineStatus('🟡 ONLINE ainda não configurado','warn');return}
+    const sdk=await psyLoadSupabaseJs();
+    PSY_ONLINE.client=sdk.createClient(cfg.supabaseUrl,cfg.supabasePublishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    PSY_ONLINE.configured=true;
+    const {data}=await PSY_ONLINE.client.auth.getSession();
+    PSY_ONLINE.session=data.session||null;
+    if(PSY_ONLINE.session){
+      await psyBootstrapOnline();
+    }else psyOnlineStatus('⚪ Conta online não conectada');
+    PSY_ONLINE.client.auth.onAuthStateChange(async(_,session)=>{
+      PSY_ONLINE.session=session;
+      if(session)await psyBootstrapOnline();
+      else{PSY_ONLINE.mode='local';PSY_ONLINE.state=null;psyOnlineStatus('⚪ Modo local')}
+    });
+    psyAddOnlineMenuButton();
+  }catch(e){console.warn(e);psyOnlineStatus('🔴 ONLINE indisponível')}
+}
+async function psyBootstrapOnline(){
+  await psyApi('/api/player/bootstrap',{method:'POST',body:JSON.stringify({trainer_name:P?.name||'Trainer'})});
+  const st=await psyApi('/api/player/state');
+  PSY_ONLINE.state=st;PSY_ONLINE.mode='linked';
+  psyOnlineStatus(`🟢 ONLINE • ${st.player.trainer_name}`,'on');
+}
+function ensureOnlineAuth(){
+  if(document.getElementById('screen-online-auth'))return;
+  const d=document.createElement('div');d.id='screen-online-auth';
+  d.innerHTML=`<div class="psy-auth-box"><button class="psy-close-x" onclick="document.getElementById('screen-online-auth').style.display='none'">×</button><h2 class="psy-title-glint">🌐 CONTA PSYWORLD</h2><div id="psy-auth-info" class="psy-desc">Cloud save, Market e PvP usarão esta conta.</div><input id="psy-auth-email" type="email" placeholder="seu@email.com"><input id="psy-auth-pass" type="password" minlength="6" placeholder="senha"><button onclick="psyOnlineSignIn()" style="background:#0891b2;color:#fff">ENTRAR</button><button onclick="psyOnlineSignUp()" style="background:#7c3aed;color:#fff">CRIAR CONTA</button><button onclick="psyOnlineSignOut()" style="background:#7f1d1d;color:#fff">SAIR</button><div id="psy-auth-state" style="margin-top:8px;font-size:10px"></div></div>`;
+  document.body.appendChild(d);
+}
+window.openOnlineAuth=function(){ensureOnlineAuth();document.getElementById('screen-online-auth').style.display='block';document.getElementById('psy-auth-state').textContent=PSY_ONLINE.session?'✅ Sessão conectada':'Ainda não conectado'};
+window.psyOnlineSignIn=async function(){
+  try{const email=document.getElementById('psy-auth-email').value, password=document.getElementById('psy-auth-pass').value;const {error}=await PSY_ONLINE.client.auth.signInWithPassword({email,password});if(error)throw error;document.getElementById('psy-auth-state').textContent='✅ Entrou com sucesso.'}catch(e){document.getElementById('psy-auth-state').textContent='❌ '+e.message}
+};
+window.psyOnlineSignUp=async function(){
+  try{const email=document.getElementById('psy-auth-email').value, password=document.getElementById('psy-auth-pass').value;const {error}=await PSY_ONLINE.client.auth.signUp({email,password});if(error)throw error;document.getElementById('psy-auth-state').textContent='📧 Conta criada. Verifique seu email se a confirmação estiver habilitada.'}catch(e){document.getElementById('psy-auth-state').textContent='❌ '+e.message}
+};
+window.psyOnlineSignOut=async function(){if(PSY_ONLINE.client)await PSY_ONLINE.client.auth.signOut();document.getElementById('screen-online-auth').style.display='none'};
+function psyAddOnlineMenuButton(){
+  const menu=document.getElementById('menu'),grid=menu?.querySelector('.psy-main-grid');
+  if(!grid||grid.querySelector('[data-online-account]'))return;
+  const b=document.createElement('button');b.dataset.onlineAccount='1';b.innerHTML='🌐 CONTA ONLINE';b.style.background='linear-gradient(90deg,#0369a1,#0f766e)';b.style.color='#fff';b.onclick=openOnlineAuth;grid.appendChild(b);
+}
+setTimeout(psyInitOnline,1200);
+
 </script>
 </body>
 </html>
