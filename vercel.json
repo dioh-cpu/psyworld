@@ -1,21 +1,22 @@
 {
   "functions": {
-    "api/**/*.js": {
+    "api/*.js": {
       "maxDuration": 10
     }
   },
+  "rewrites": [
+    { "source": "/api/player/:action", "destination": "/api/player?action=:action" },
+    { "source": "/api/economy/:action", "destination": "/api/economy?action=:action" },
+    { "source": "/api/market/buy/:id", "destination": "/api/market?action=buy&id=:id" },
+    { "source": "/api/market/:action", "destination": "/api/market?action=:action" },
+    { "source": "/api/market", "destination": "/api/market?action=list" }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        }
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }
   ]

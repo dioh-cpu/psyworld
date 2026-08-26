@@ -1,0 +1,16 @@
+PSYWORLD V6.2 - CORRECAO VERCEL HOBBY
+
+Esta versao consolida as Serverless Functions para somente 4:
+- api/config.js
+- api/player.js
+- api/economy.js
+- api/market.js
+
+IMPORTANTE AO SUBSTITUIR UMA VERSAO ANTIGA:
+1) Extraia TODO o conteudo deste ZIP dentro da pasta do repositorio psyworld, substituindo os arquivos.
+2) Depois execute CLEAN_OLD_API.bat uma unica vez. Ele apaga somente as pastas antigas api/economy, api/market, api/player, api/health e api/_lib.
+3) Abra o GitHub Desktop. Ele deve mostrar os arquivos antigos dessas pastas como DELETED e os novos api/player.js, api/economy.js e api/market.js como adicionados.
+4) Commit e Push.
+
+Nao apague lib/supabase.js.
+Nao rode novamente migrations SQL que ja foram aplicadas.

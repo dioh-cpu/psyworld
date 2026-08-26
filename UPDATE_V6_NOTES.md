@@ -21,3 +21,9 @@
 - Removed the legacy one-time `/api/player/import-local` endpoint (online save is now the supported path).
 - Removed the optional `/api/health` diagnostic endpoint.
 - Active Serverless Functions reduced to 11, below the Vercel Hobby limit of 12.
+
+## V6.2 — Vercel Hobby function consolidation
+- Consolidated API routes into 4 Vercel Functions: config, player, economy, market.
+- Added Vercel rewrites so existing frontend URLs continue working.
+- Removed obsolete nested API handlers and legacy claims implementation.
+- IMPORTANT when installing over an older checkout: run CLEAN_OLD_API.bat once after extraction so stale /api subfolders are deleted from Git.
