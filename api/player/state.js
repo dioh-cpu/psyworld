@@ -1,5 +1,5 @@
 
-import { requireUser, jsonError, method } from '../_lib/supabase.js';
+import { requireUser, jsonError, method } from '../../lib/supabase.js';
 
 export default async function handler(req,res){
   if(!method(req,res,['GET'])) return;

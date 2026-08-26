@@ -1,4 +1,4 @@
-import { requireUser, jsonError, method } from '../_lib/supabase.js';
+import { requireUser, jsonError, method } from '../../lib/supabase.js';
 
 function sanitize(value, depth=0){
   if(depth>16) return null;

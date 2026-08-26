@@ -15,3 +15,9 @@
 - Movimento da cidade acelerado.
 - Gacha mostra popup de resultados e mantém histórico; deck máximo 20.
 - HUD leva Talentos e Cap/Gym por clique e esconde textos antigos de 70%.
+
+## V6.1 — Vercel Hobby deployment fix
+- Server helper moved out of `/api` so it is not counted as a Serverless Function.
+- Removed the legacy one-time `/api/player/import-local` endpoint (online save is now the supported path).
+- Removed the optional `/api/health` diagnostic endpoint.
+- Active Serverless Functions reduced to 11, below the Vercel Hobby limit of 12.
