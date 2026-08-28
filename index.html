@@ -12089,13 +12089,15 @@ function survPowerIcon(u,s=null,targetMax=false){
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${u.poke||54}.png`
 }
 function survShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function survShowLevelUp(s,title='RUN LEVEL UP!',subtitle='ESCOLHA UM APRIMORAMENTO'){
+function survShowLevelUp(s,title='RUN LEVEL UP!',subtitle='ESCOLHA UM APRIMORAMENTO',restoredOfferIds=null){
   if(s.levelUpOpen||s.done)return;
   const all=survShuffle(survRunAvail(s).slice()),helperAvail=all.filter(u=>u.helperKey),g=$('psy-clean-surv-upgrid'),ov=$('psy-clean-surv-up');
   if(!g||!ov)return;
-  let avail=all.slice(0,5);
+  const availableIds=new Set(all.map(u=>u.id));
+  let avail=Array.isArray(restoredOfferIds)?restoredOfferIds.map(id=>SURV_RUN_UPS.find(u=>u.id===id)).filter(u=>u&&availableIds.has(u.id)).slice(0,5):all.slice(0,5);
+  if(!avail.length)avail=all.slice(0,5);
   if(helperAvail.length&&!(avail.some(u=>u.helperKey))&&(s.helperIds?.length||0)<SURV_HELPER_CAP)avail[avail.length-1]=helperAvail[Math.floor(Math.random()*helperAvail.length)];
-  s.levelUpOpen=true;s.paused=true;g.style.gridTemplateColumns='repeat(5,minmax(125px,1fr))';const titleEl=ov.querySelector('.psy-surv-level-title span'),subEl=ov.querySelector('.psy-surv-level-title b');if(titleEl)titleEl.textContent=title;if(subEl)subEl.textContent=subtitle;
+  s.levelUpOpen=true;s.paused=true;s.rewardMode='levelup';s.rewardOfferIds=avail.map(u=>u.id);g.style.gridTemplateColumns='repeat(5,minmax(125px,1fr))';const titleEl=ov.querySelector('.psy-surv-level-title span'),subEl=ov.querySelector('.psy-surv-level-title b');if(titleEl)titleEl.textContent=title;if(subEl)subEl.textContent=subtitle;
   g.innerHTML=avail.length?avail.map(u=>{const lv=survRunUpLv(s,u.id),isMaxOffer=lv>=u.max&&!survRunMaxed(s,u.id);return`<button type="button" class="psy-surv-upcard ${isMaxOffer?'max':''}" data-surv-upgrade="${u.id}"><span class="psy-surv-upkind">${u.kind}</span><div class="psy-surv-upimg"><img src="${survPowerIcon(u,s,isMaxOffer)}" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${u.poke}.png'"></div><h3>${u.name}</h3><p>${isMaxOffer?u.maxDesc:u.desc}</p><b>${isMaxOffer?'APRIMORAR PARA MAX':`Lv.${lv} → ${lv+1}/${u.max}`}</b></button>`}).join(''):'<div class="psy20-card">Todos os power-ups desta run estão completos.</div>';
   /* Power-Up selection uses delegated pointer handling so every card, including Rajada,
      remains selectable in local-file Chrome and on touch devices. */
@@ -12110,7 +12112,7 @@ function survShowLevelUp(s,title='RUN LEVEL UP!',subtitle='ESCOLHA UM APRIMORAME
   g.onpointerup=pickUpgrade;
   g.onclick=pickUpgrade;
   g.querySelectorAll('[data-surv-upgrade]').forEach(btn=>{btn.style.pointerEvents='auto';btn.style.cursor='pointer';btn.style.touchAction='manipulation'});
-  ov.style.display='flex'
+  ov.style.display='flex';psySurvSaveResume(true)
 }
 function survAddHelper(s,key){s.helperIds=s.helperIds||[];if(!key||s.helperIds.includes(key))return;if(s.helperIds.length>=SURV_HELPER_CAP){toast(`Limite de ${SURV_HELPER_CAP} ajudantes por run.`);return}const pick=SURV_HELPERS.find(h=>h.key===key);if(!pick)return;s.helperIds.push(key);survHelperState(s,key,s.helperIds.length-1);s.texts.push({x:s.x,y:s.y-70,text:`🤝 ${pick.name} entrou na equipe!`,life:95,color:pick.color,big:true});s.helpers=s.helperIds.length}
 function survApplyUpgrade(s,u){
@@ -12124,7 +12126,7 @@ function survApplyUpgrade(s,u){
   else if(lv<u.max){s.upgradeLevels[id]=lv+1;if(id==='rate')s.fireRate=Math.max(135,s.fireRate*.92);if(id==='multi')s.multi=Math.min(6,s.multi+1);if(id==='pierce')s.pierce=Math.min(6,s.pierce+1);if(id==='speed')s.speed*=1.06;if(id==='nova')s.nova++;if(id==='vortex')s.vortex++;if(id==='rain')s.rain++;if(id==='regen'){const hpSteps=[0,.03,.05,.07,.10,.15],oldPct=hpSteps[lv]||0,newPct=hpSteps[Math.min(5,lv+1)]||oldPct,oldMax=s.maxHp;s.maxHp*=((1+newPct)/(1+oldPct));s.hp=Math.min(s.maxHp,s.hp+(s.maxHp-oldMax));s.regen+=.0025}}else return false;
   return true
 }
-function survCloseRewardOverlay(s){const ov=$('psy-clean-surv-up');if(ov)ov.style.display='none';s.levelUpOpen=false;s.paused=false;if(!s.finalBossDead)survRunLevel(s)}
+function survCloseRewardOverlay(s){const ov=$('psy-clean-surv-up');if(ov)ov.style.display='none';s.levelUpOpen=false;s.paused=false;s.rewardMode='';s.rewardOfferIds=[];if(!s.finalBossDead)survRunLevel(s);psySurvSaveResume(true)}
 W.psySurvChooseUpgrade=function(id){
   const s=W.PSY_CLEAN_SURV,u=SURV_RUN_UPS.find(x=>x.id===id);if(!s||!u||s.done)return;
   const lv=survRunUpLv(s,id),maxOffer=lv>=u.max&&!survRunMaxed(s,id);
@@ -12135,8 +12137,8 @@ W.psySurvChooseUpgrade=function(id){
 function survOwnedUpgradeable(s){return SURV_RUN_UPS.filter(u=>{const lv=survRunUpLv(s,u.id);if(lv<=0&&!survRunMaxed(s,u.id))return false;if(survRunMaxed(s,u.id))return false;if(lv<u.max)return true;if(u.helperKey)return lv>=u.max&&(!u.maxReq||survRunUpLv(s,u.maxReq)>=5);return lv>=u.max&&['pierce','nova','vortex','rain'].includes(u.id)})}
 function survApplyEliteStatBonus(s,e){let pct=0;if(e?.shiny)pct+=.002;if(e?.mega)pct+=.005;if(pct<=0)return;s.specialStatBonus=Number(s.specialStatBonus||0)+pct;s.power*=1+pct;s.basePower*=1+pct;const old=s.maxHp;s.maxHp*=1+pct;s.hp=Math.min(s.maxHp,s.hp+(s.maxHp-old))}
 function survShowEliteReward(s){
-  if(s.levelUpOpen||s.done)return;const g=$('psy-clean-surv-upgrid'),ov=$('psy-clean-surv-up');if(!g||!ov)return;s.levelUpOpen=true;s.paused=true;g.style.gridTemplateColumns='repeat(4,minmax(150px,1fr))';const titleEl=ov.querySelector('.psy-surv-level-title span'),subEl=ov.querySelector('.psy-surv-level-title b');if(titleEl)titleEl.textContent='ELITE DERROTADO!';if(subEl)subEl.textContent='ESCOLHA UMA RECOMPENSA';
-  g.innerHTML=`<button class="psy-surv-upcard" onclick="psySurvEliteReward('atk')"><span class="psy-surv-upkind">BÔNUS</span><div class="psy-surv-upimg"><img src="${survPowerIcon({poke:68})}"></div><h3>Força Crescente</h3><p>Aumenta seu poder ofensivo.</p><b>+10% ATK</b></button><button class="psy-surv-upcard" onclick="psySurvEliteReward('hp')"><span class="psy-surv-upkind">BÔNUS</span><div class="psy-surv-upimg"><img src="${survPowerIcon({poke:113})}"></div><h3>Vitalidade</h3><p>Aumenta a vida máxima e recupera a diferença.</p><b>+10% VIDA</b></button><button class="psy-surv-upcard" onclick="psySurvEliteReward('loot')"><span class="psy-surv-upkind">BÔNUS</span><div class="psy-surv-upimg"><img src="${survPowerIcon({poke:52})}"></div><h3>Instinto de Caça</h3><p>Melhora suas próximas recompensas de drop.</p><b>+5% LOOT</b></button><button class="psy-surv-upcard" onclick="psySurvEliteReward('random')"><span class="psy-surv-upkind">ROLETA</span><div class="psy-surv-upimg"><img src="${survPowerIcon({poke:201})}"></div><h3>Eco de Poder</h3><p>Aprimora aleatoriamente algo que você já escolheu.</p><b>GIRAR HABILIDADE</b></button>`;ov.style.display='flex'
+  if(s.levelUpOpen||s.done)return;const g=$('psy-clean-surv-upgrid'),ov=$('psy-clean-surv-up');if(!g||!ov)return;s.levelUpOpen=true;s.paused=true;s.rewardMode='elite';s.rewardOfferIds=[];g.style.gridTemplateColumns='repeat(4,minmax(150px,1fr))';const titleEl=ov.querySelector('.psy-surv-level-title span'),subEl=ov.querySelector('.psy-surv-level-title b');if(titleEl)titleEl.textContent='ELITE DERROTADO!';if(subEl)subEl.textContent='ESCOLHA UMA RECOMPENSA';
+  g.innerHTML=`<button class="psy-surv-upcard" onclick="psySurvEliteReward('atk')"><span class="psy-surv-upkind">BÔNUS</span><div class="psy-surv-upimg"><img src="${survPowerIcon({poke:68})}"></div><h3>Força Crescente</h3><p>Aumenta seu poder ofensivo.</p><b>+10% ATK</b></button><button class="psy-surv-upcard" onclick="psySurvEliteReward('hp')"><span class="psy-surv-upkind">BÔNUS</span><div class="psy-surv-upimg"><img src="${survPowerIcon({poke:113})}"></div><h3>Vitalidade</h3><p>Aumenta a vida máxima e recupera a diferença.</p><b>+10% VIDA</b></button><button class="psy-surv-upcard" onclick="psySurvEliteReward('loot')"><span class="psy-surv-upkind">BÔNUS</span><div class="psy-surv-upimg"><img src="${survPowerIcon({poke:52})}"></div><h3>Instinto de Caça</h3><p>Melhora suas próximas recompensas de drop.</p><b>+5% LOOT</b></button><button class="psy-surv-upcard" onclick="psySurvEliteReward('random')"><span class="psy-surv-upkind">ROLETA</span><div class="psy-surv-upimg"><img src="${survPowerIcon({poke:201})}"></div><h3>Eco de Poder</h3><p>Aprimora aleatoriamente algo que você já escolheu.</p><b>GIRAR HABILIDADE</b></button>`;ov.style.display='flex';psySurvSaveResume(true)
 }
 W.psySurvEliteReward=function(kind){const s=W.PSY_CLEAN_SURV;if(!s||s.done||!s.levelUpOpen)return;if(kind==='atk'){s.power*=1.10;s.basePower*=1.10;s.eliteAtkBonus=Number(s.eliteAtkBonus||0)+10;survCloseRewardOverlay(s);return}if(kind==='hp'){const old=s.maxHp;s.maxHp*=1.10;s.hp=Math.min(s.maxHp,s.hp+(s.maxHp-old));s.eliteHpBonus=Number(s.eliteHpBonus||0)+10;survCloseRewardOverlay(s);return}if(kind==='loot'){s.survLootBonus=Number(s.survLootBonus||0)+5;survCloseRewardOverlay(s);return}if(kind!=='random')return;const pool=survOwnedUpgradeable(s),g=$('psy-clean-surv-upgrid');if(!pool.length){s.power*=1.10;s.basePower*=1.10;s.eliteAtkBonus=Number(s.eliteAtkBonus||0)+10;toast('Nenhum aprimoramento anterior disponível; recebeu +10% ATK.');survCloseRewardOverlay(s);return}if(g){g.style.gridTemplateColumns='1fr';g.innerHTML='<div class="psy-surv-upcard" style="min-height:210px;display:grid;place-items:center"><div><span class="psy-surv-upkind">ROLETA</span><h3 id="psy-elite-roll-name" style="font-size:28px">...</h3><p>Escolhendo entre seus aprimoramentos...</p></div></div>'}let ticks=0;const timer=setInterval(()=>{if(W.PSY_CLEAN_SURV!==s||s.done){clearInterval(timer);return}const u=pool[Math.floor(Math.random()*pool.length)],el=$('psy-elite-roll-name');if(el)el.textContent=u.name;if(++ticks>=14){clearInterval(timer);const pick=pool[Math.floor(Math.random()*pool.length)];survApplyUpgrade(s,pick);const el2=$('psy-elite-roll-name');if(el2)el2.textContent=`✨ ${pick.name}!`;setTimeout(()=>{if(W.PSY_CLEAN_SURV===s&&!s.done)survCloseRewardOverlay(s)},650)}},85)};
 function survRunLevel(s){
@@ -12442,7 +12444,7 @@ function survDraw(s){
 }
 function survLoop(ts){
   const s=W.PSY_CLEAN_SURV;if(!s||s.done)return;requestAnimationFrame(survLoop);const rawDt=Math.max(0,ts-(s.last||ts)),dt=Math.min(34,rawDt);s.last=ts;if(s.perf){s.perf.avgDt=s.perf.avgDt*.94+Math.min(60,rawDt||16.7)*.06;s.perf.frameCount++;if((s.perf.frameCount%45)===0){s.perf.vfxQuality=s.perf.avgDt>29?.50:s.perf.avgDt>24?.66:s.perf.low?.66:s.perf.mobile?.84:1}}if(s.paused){survDraw(s);return}
-  s.elapsed+=dt;s.hp=Math.min(s.maxHp,s.hp+s.maxHp*s.regen*dt/1000);
+  s.elapsed+=dt;s.hp=Math.min(s.maxHp,s.hp+s.maxHp*s.regen*dt/1000);if(Date.now()-PSY_SURV_AUTOSAVE_AT>=5000)psySurvSaveResume(true);
   const liveDmgMult=1+Math.max(0,Number(getTotalBuff?.('dmg')||0))/100;if(Number.isFinite(s.globalDmgMult)&&Math.abs(liveDmgMult-s.globalDmgMult)>.0001){const ratio=liveDmgMult/Math.max(.0001,s.globalDmgMult);s.power*=ratio;s.basePower*=ratio;s.globalDmgMult=liveDmgMult}s.globalBuffs={dmg:(liveDmgMult-1)*100,gold:Number(getTotalBuff?.('gold')||0),xp:Number(getTotalBuff?.('xp')||0),drop:Number(getTotalBuff?.('drop')||0)};
   const k=W.V12_KEYS||{},g=(typeof keys!=='undefined'&&keys)||{},left=!!(k.left||g.ArrowLeft||g.KeyA||g.a||g.A),right=!!(k.right||g.ArrowRight||g.KeyD||g.d||g.D),up=!!(k.up||g.ArrowUp||g.KeyW||g.w||g.W),down=!!(k.down||g.ArrowDown||g.KeyS||g.s||g.S),dx=(right?1:0)-(left?1:0),dy=(down?1:0)-(up?1:0),m=Math.hypot(dx,dy)||1,edge=58;s.x=Math.max(edge,Math.min((s.worldW||s.w)-edge,s.x+dx/m*s.speed*dt/16));s.y=Math.max(edge,Math.min((s.worldH||s.h)-edge,s.y+dy/m*s.speed*dt/16));
   if(s.elapsed>=240000)survSpawnBoss(s,4,false);if(s.elapsed>=480000)survSpawnBoss(s,8,false);if(s.elapsed>=720000)survSpawnBoss(s,12,false);if(s.elapsed>=960000)survSpawnBoss(s,16,false);if(s.elapsed>=1200000&&!s.finalSpawned){s.finalSpawned=true;survSpawnBoss(s,20,true)}
@@ -12469,16 +12471,70 @@ function survLoop(ts){
   for(const fx of s.effects){if(fx.type==='burst'||fx.type==='impact'||fx.type==='cast'||fx.type==='helperAura'||fx.type==='thunderSeal'||fx.type==='waterCast'||fx.type==='windCast'||fx.type==='meteorWarning'||fx.type==='voidOpen')fx.r+=(Number(fx.max||fx.r)-fx.r)*.22;if(fx.type==='particle'||fx.type==='bubble'){fx.x+=Number(fx.vx||0);fx.y+=Number(fx.vy||0);fx.vy=Number(fx.vy||0)+Number(fx.gravity||0);fx.vx*=Number(fx.drag||.96);fx.vy*=Number(fx.drag||.96)}fx.life--}s.effects=s.effects.filter(f=>f.life>0);for(const t of s.texts)t.life--;s.texts=s.texts.filter(t=>t.life>0);for(const a of (s.dropAlerts||[]))a.life-=dt;s.dropAlerts=(s.dropAlerts||[]).filter(a=>a.life>0);s.enemies=s.enemies.filter(e=>!e.dead);s.bullets=s.bullets.filter(b=>!b.dead).slice(-Number(s.perf?.bulletCap||260));s.enemyBullets=s.enemyBullets.filter(b=>!b.dead).slice(-Number(s.perf?.enemyBulletCap||220));if(s.texts.length>Number(s.perf?.textCap||100))s.texts.splice(0,s.texts.length-Number(s.perf?.textCap||100));survCollect(s);
   if(s.finalSpawned&&s.finalBossDead&&!s.levelUpOpen)return W.psyCleanEnd(true,false);survDraw(s)
 }
+const PSY_SURV_RESUME_KEY='psyworld_survivor_run_v1';
+const PSY_SURV_RESUME_VERSION=1;
+let PSY_SURV_RESTORING=false,PSY_SURV_AUTOSAVE_AT=0;
+function psySurvClearResume(){try{localStorage.removeItem(PSY_SURV_RESUME_KEY)}catch(_){ }}
+function psySurvSnapshotState(s){
+  const omit=new Set(['c','ctx','psyImg','spriteCache','perf','last','effects','texts','bullets','enemyBullets','bossHazards','dropAlerts','_vignette']);
+  return JSON.parse(JSON.stringify(s,(key,value)=>{
+    if(omit.has(key)||typeof value==='function')return undefined;
+    if((key==='target'||key==='source')&&value&&typeof value==='object')return undefined;
+    if(value instanceof Set)return[...value];
+    if(value instanceof Map)return[...value.entries()];
+    return value
+  }))
+}
+function psySurvReadResume(){
+  try{
+    const snap=JSON.parse(localStorage.getItem(PSY_SURV_RESUME_KEY)||'null'),s=snap?.state;
+    if(Number(snap?.version)!==PSY_SURV_RESUME_VERSION||!s||s.done||Number(s.phase)<1||Number(s.phase)>200||Number(s.hp)<=0){if(snap)psySurvClearResume();return null}
+    return snap
+  }catch(_){psySurvClearResume();return null}
+}
+function psySurvSaveResume(force=false){
+  const s=W.PSY_CLEAN_SURV;if(!s||s.done)return false;
+  if(!force&&Date.now()-Number(PSY_SURV_AUTOSAVE_AT||0)<4500)return false;
+  try{localStorage.setItem(PSY_SURV_RESUME_KEY,JSON.stringify({version:PSY_SURV_RESUME_VERSION,savedAt:Date.now(),state:psySurvSnapshotState(s)}));PSY_SURV_AUTOSAVE_AT=Date.now();return true}catch(e){console.warn('Survivor autosave falhou',e);return false}
+}
+function psySurvResumeSummary(s){
+  const sec=Math.max(0,Math.floor(Number(s.elapsed||0)/1000)),mm=Math.floor(sec/60),ss=sec%60;
+  return `Fase <b>${Number(s.phase||1)}</b> • Run Lv.<b>${Number(s.runLevel||1)}</b> • ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} • ${Number(s.kills||0)} KOs`
+}
+W.psySurvDiscardSaved=function(){psySurvClearResume();const m=$('psy-surv-resume-modal');if(m)m.remove();toast('Run salva do Survivor descartada.')};
+W.psySurvResumeSaved=function(){
+  const snap=psySurvReadResume();if(!snap)return W.psySurvDiscardSaved();
+  const saved=snap.state,rewardMode=String(saved.rewardMode||''),rewardOfferIds=Array.isArray(saved.rewardOfferIds)?saved.rewardOfferIds.slice():[],trialCfg=saved.trialMode?{trialNumber:Number(saved.trialNumber||0),trialDifficulty:Math.max(1,Number(saved.trialDifficulty||1)),trialLabel:String(saved.trialLabel||'')}:null;
+  $('psy-surv-resume-modal')?.remove();
+  PSY_SURV_RESTORING=true;
+  try{W.v12StartSurvivor(Math.max(0,Number(saved.phase||1)-1),trialCfg)}finally{PSY_SURV_RESTORING=false}
+  const run=W.PSY_CLEAN_SURV;if(!run)return toast('Não foi possível restaurar a run do Survivor.');
+  const runtime={c:run.c,ctx:run.ctx,viewW:run.viewW,viewH:run.viewH,worldW:run.worldW,worldH:run.worldH,w:run.w,h:run.h,psyImg:run.psyImg};
+  Object.assign(run,saved,runtime,{perf:survPerfProfile(),spriteCache:{},last:0,paused:false,done:false,levelUpOpen:false,effects:[],texts:[{x:Number(saved.x||runtime.worldW/2),y:Number(saved.y||runtime.worldH/2)-82,text:'Run do Survivor restaurada!',life:150,color:'#67e8f9',big:true}],bullets:[],enemyBullets:[],bossHazards:[],dropAlerts:[]});
+  run.enemies=Array.isArray(saved.enemies)?saved.enemies:[];run.pickups=Array.isArray(saved.pickups)?saved.pickups:[];run.respawnQueue=Array.isArray(saved.respawnQueue)?saved.respawnQueue:[];run.normalSlots=Array.isArray(saved.normalSlots)?saved.normalSlots:[];run.fields=(Array.isArray(saved.fields)?saved.fields:[]).map(f=>({...f,hitSet:new Set()}));run.bossMarks=new Set(Array.isArray(saved.bossMarks)?saved.bossMarks:[]);run.helperState=run.helperState&&typeof run.helperState==='object'?run.helperState:{};for(const h of Object.values(run.helperState))if(h&&typeof h==='object')h.target=null;
+  PSY_SURV_AUTOSAVE_AT=0;
+  if(rewardMode==='elite')survShowEliteReward(run);else if(rewardMode==='levelup')survShowLevelUp(run,'RUN LEVEL UP!','ESCOLHA UM APRIMORAMENTO',rewardOfferIds);else{run.paused=false;W.psyCleanPause()}
+  psySurvSaveResume(true);toast('Survivor restaurado. Continue quando estiver pronto.',3200)
+};
+W.psySurvOfferResume=function(){
+  if(W.PSY_CLEAN_SURV||$('psy-surv-resume-modal'))return;const snap=psySurvReadResume();if(!snap)return;
+  const m=D.createElement('div');m.id='psy-surv-resume-modal';m.className='psy-clean-result';m.style.zIndex='1003000';m.innerHTML=`<div class="psy20-card" style="width:min(600px,92vw);text-align:center;border-color:#38bdf8;box-shadow:0 0 34px #38bdf833"><div style="font-size:48px">🦆</div><h2 style="color:#facc15">Você deseja retornar à fase em andamento do Survivor?</h2><p class="psy20-sub">${psySurvResumeSummary(snap.state)}</p><p>Todo o progresso salvo da run será restaurado.</p><div style="display:flex;gap:10px;justify-content:center;margin-top:16px"><button class="psy20-btn green" type="button" onclick="psySurvResumeSaved()">SIM</button><button class="psy20-btn" type="button" style="background:#991b1b" onclick="psySurvDiscardSaved()">NÃO</button></div></div>`;D.body.appendChild(m)
+};
+window.addEventListener('beforeunload',()=>psySurvSaveResume(true));
+window.addEventListener('pagehide',()=>psySurvSaveResume(true));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')psySurvSaveResume(true)});
+if(document.readyState==='complete')setTimeout(()=>W.psySurvOfferResume(),500);else window.addEventListener('load',()=>setTimeout(()=>W.psySurvOfferResume(),500),{once:true});
 W.v12StartSurvivor=function(index=0,trialCfg=null){
   const st=psyState(),phase=Math.max(1,Math.min(200,Number(index)+1));if(!trialCfg&&phase>Number(st.survivorBest||0)+1)return toast('Conclua a fase anterior.');
+  if(!PSY_SURV_RESTORING)psySurvClearResume();
   const sc=survScreen(),c=$('psy-clean-surv-canvas'),portrait=innerHeight>innerWidth,cssW=Math.max(480,portrait?innerHeight:innerWidth),cssH=Math.max(250,portrait?innerWidth:innerHeight),topH=54,canvasCssH=Math.max(230,cssH-topH),viewW=1000,viewH=Math.max(390,Math.min(560,Math.round(viewW*canvasCssH/cssW)));
   c.width=viewW;c.height=viewH;c.style.cssText=`position:absolute;left:0;top:${topH}px;width:100%;height:calc(100% - ${topH}px);touch-action:none;image-rendering:auto`;
   try{const fs=sc.requestFullscreen?.();if(fs?.then)fs.then(()=>screen.orientation?.lock?.('landscape')).catch(()=>{});else screen.orientation?.lock?.('landscape').catch(()=>{})}catch(_){ }
   const ctx=c.getContext('2d',{alpha:false,desynchronized:true})||c.getContext('2d'),psyImg=new Image();try{ctx.imageSmoothingEnabled=false}catch(_){ }psyImg.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png';const psyPoke=psyDuckPoke();let psyStats={};try{psyStats=W.calcDetailedStats?.(psyPoke)||{}}catch(_){ }const intrinsicHp=Math.max(0,Number(psyStats.afterBoostHp||psyPoke.maxHp||0)),intrinsicAtk=Math.max(0,Number(psyStats.afterBoostAtk||psyPoke.atk||0)),psyHpBonus=Math.floor(intrinsicHp*.10),psyAtkBonus=Math.floor(intrinsicAtk*.05),globalDmgPct=Math.max(0,Number(getTotalBuff?.('dmg')||0)),psyAtkScale=Math.max(1,(18+psyAtkBonus)/18),max=Math.max(125,Math.floor(125+psyHpBonus)),basePower=(1+globalDmgPct/100)*psyAtkScale,worldW=3600,worldH=2200,startX=worldW/2,startY=worldH/2;
   {const bh=$('psy22-buffs');if(bh){bh.innerHTML='';bh.style.setProperty('display','none','important')}}
-  W.PSY_CLEAN_SURV={c,ctx,viewW,viewH,worldW,worldH,w:worldW,h:worldH,trialMode:!!trialCfg,trialNumber:Number(trialCfg?.trialNumber||0),trialDifficulty:Math.max(1,Number(trialCfg?.trialDifficulty||1)),trialLabel:String(trialCfg?.trialLabel||''),x:startX,y:startY,camX:startX-viewW/2,camY:startY-viewH/2,attackRange:SURV_ATTACK_RANGE,phase,hp:max,maxHp:max,speed:6.6,skills:{},basePower,power:basePower,psyHpBonus,psyAtkBonus,globalDmgMult:1+globalDmgPct/100,globalBuffs:{dmg:globalDmgPct,gold:Number(getTotalBuff?.('gold')||0),xp:Number(getTotalBuff?.('xp')||0),drop:Number(getTotalBuff?.('drop')||0)},fireRate:500,multi:1,chain:0,chainMul:0,pierce:0,helpers:0,helperIds:[],helperForms:{},helperState:{},helperTimers:{},helperSpecialTimers:{},nova:1,vortex:0,rain:0,vortexMax:false,rainMax:false,magnet:78,crit:.05,regen:0,enemies:[],bullets:[],enemyBullets:[],pickups:[],fields:[],bossHazards:[],effects:[],texts:[{x:startX,y:startY-82,text:`Psyduck Sync: +${psyHpBonus} HP • +${psyAtkBonus} ATK`,life:150,color:'#67e8f9',big:true}],spawn:0,fire:0,novaAcc:0,vortexAcc:0,rainAcc:0,orbitAcc:0,kills:0,bossKills:0,gold:0,runXp:0,runLevel:1,runXpNext:60,realXp:0,loot:{},packLoot:{normal:0,rare:0,epic:0,s:0,ss:0,sss:0,ur:0,urp:0,urpp:0},cardPacks:0,perf:survPerfProfile(),elapsed:0,last:0,paused:false,done:false,finalSpawned:false,finalBossDead:false,bossMarks:new Set(),upgradeLevels:{},upgradeMaxed:{},levelUpOpen:false,survLootBonus:0,eliteAtkBonus:0,eliteHpBonus:0,specialStatBonus:0,psyImg,spriteCache:{},respawnQueue:[],dropHistory:[],dropAlerts:[],nextElite:SURV_ELITE_INTERVAL,nextSpecial:16500+Math.random()*7500,normalSlots:[]};
+  W.PSY_CLEAN_SURV={c,ctx,viewW,viewH,worldW,worldH,w:worldW,h:worldH,trialMode:!!trialCfg,trialNumber:Number(trialCfg?.trialNumber||0),trialDifficulty:Math.max(1,Number(trialCfg?.trialDifficulty||1)),trialLabel:String(trialCfg?.trialLabel||''),x:startX,y:startY,camX:startX-viewW/2,camY:startY-viewH/2,attackRange:SURV_ATTACK_RANGE,phase,hp:max,maxHp:max,speed:6.6,skills:{},basePower,power:basePower,psyHpBonus,psyAtkBonus,globalDmgMult:1+globalDmgPct/100,globalBuffs:{dmg:globalDmgPct,gold:Number(getTotalBuff?.('gold')||0),xp:Number(getTotalBuff?.('xp')||0),drop:Number(getTotalBuff?.('drop')||0)},fireRate:500,multi:1,chain:0,chainMul:0,pierce:0,helpers:0,helperIds:[],helperForms:{},helperState:{},helperTimers:{},helperSpecialTimers:{},nova:1,vortex:0,rain:0,vortexMax:false,rainMax:false,magnet:78,crit:.05,regen:0,enemies:[],bullets:[],enemyBullets:[],pickups:[],fields:[],bossHazards:[],effects:[],texts:[{x:startX,y:startY-82,text:`Psyduck Sync: +${psyHpBonus} HP • +${psyAtkBonus} ATK`,life:150,color:'#67e8f9',big:true}],spawn:0,fire:0,novaAcc:0,vortexAcc:0,rainAcc:0,orbitAcc:0,kills:0,bossKills:0,gold:0,runXp:0,runLevel:1,runXpNext:60,realXp:0,loot:{},packLoot:{normal:0,rare:0,epic:0,s:0,ss:0,sss:0,ur:0,urp:0,urpp:0},cardPacks:0,perf:survPerfProfile(),elapsed:0,last:0,paused:false,done:false,finalSpawned:false,finalBossDead:false,bossMarks:new Set(),upgradeLevels:{},upgradeMaxed:{},levelUpOpen:false,rewardMode:'',rewardOfferIds:[],survLootBonus:0,eliteAtkBonus:0,eliteHpBonus:0,specialStatBonus:0,psyImg,spriteCache:{},respawnQueue:[],dropHistory:[],dropAlerts:[],nextElite:SURV_ELITE_INTERVAL,nextSpecial:16500+Math.random()*7500,normalSlots:[]};
   survMilestoneEnsure();const run=W.PSY_CLEAN_SURV;for(let i=0;i<SURV_NORMAL_POP;i++){const slot={id:i,spawnSide:i%4,spawnT:.08+(((i*0.61803398875)%1)*.84)};run.normalSlots.push(slot);run.enemies.push(survEnemy(run,{slotId:slot.id,spawnSide:slot.spawnSide,spawnT:slot.spawnT,allowVariant:false,allowStrong:false}))}
-  const ps=$('screen-psyduck-v12');if(ps)ps.style.display='none';installSurvivorJoy();requestAnimationFrame(survLoop)
+  const ps=$('screen-psyduck-v12');if(ps)ps.style.display='none';installSurvivorJoy();if(!PSY_SURV_RESTORING)psySurvSaveResume(true);requestAnimationFrame(survLoop)
 };
 W.psyCleanPause=function(force){
   const s=W.PSY_CLEAN_SURV;if(!s||s.done)return;s.paused=force===false?false:!s.paused;const p=$('psy-clean-surv-pause');if(p)p.style.display=s.paused?'flex':'none';const g=$('psy-clean-surv-current');if(g&&s.paused){
@@ -12486,19 +12542,19 @@ W.psyCleanPause=function(force){
     const cards=chosen.map(u=>{const lv=survRunUpLv(s,u.id),maxed=survRunMaxed(s,u.id),img=survPowerIcon(u,s,maxed),tag=maxed?'MAX':`Lv.${lv}/${u.max}`;return `<div class="psy-surv-pause-power ${maxed?'max':''}"><img src="${esc(img)}" alt=""><div class="psy-surv-pause-power-copy"><small>${esc(u.kind||'POWER-UP')}</small><b>${esc(u.name)}</b><span>${esc(maxed&&u.maxDesc?u.maxDesc:u.desc||'')}</span></div><em>${tag}</em></div>`}).join('');
     const history=`<section class="psy-surv-pause-history"><div class="psy-surv-pause-section-title"><b>📦 DROPS DA FASE</b><small>${hist.length} registros recentes</small></div><div class="psy-surv-pause-history-list">${hist.length?hist.map(x=>{const sec=Math.floor(Number(x.time||0)/1000),m=Math.floor(sec/60),ss=sec%60;return `<span><b>${x.rarity==='epic'?'🎁':'★'} ${x.qty}x ${esc(x.name)}</b><small>${m}:${String(ss).padStart(2,'0')} • ${esc(x.source||'Pokémon')}</small></span>`}).join(''):'<small>Nenhum item raro caiu nesta fase ainda.</small>'}</div></section>`;
     g.innerHTML=`<div class="psy-surv-pause-summary sync"><small>🔗 SYNC PSYDUCK</small><b>+${fmt(s.psyHpBonus||0)} HP</b><b>+${fmt(s.psyAtkBonus||0)} ATK</b></div><div class="psy-surv-pause-summary buffs"><small>✨ BÔNUS ATIVOS</small><span>⚔ ${Number(s.globalBuffs?.dmg||0).toFixed(0)}%</span><span>🪙 ${Number(s.globalBuffs?.gold||0).toFixed(0)}%</span><span>⭐ ${Number(s.globalBuffs?.xp||0).toFixed(0)}%</span><span>🎁 ${Number(s.globalBuffs?.drop||0).toFixed(0)}%</span></div><div class="psy-surv-pause-summary run"><small>📈 EXP DA RUN</small><b>Treino Intensivo +${survRunUpLv(s,'runxp')*10}%</b></div><div class="psy-surv-pause-summary team"><small>🧠 EQUIPE</small><b>${helpers.length}/${SURV_HELPER_CAP} ajudantes</b><b>${abilityCount}/${SURV_PSY_ABILITY_CAP} habilidades</b></div><section class="psy-surv-pause-powers"><div class="psy-surv-pause-section-title"><b>⚡ POWER-UPS DA RUN</b><small>${chosen.length} aprimoramentos ativos</small></div><div class="psy-surv-pause-powergrid">${cards||'<div class="psy-surv-pause-empty">Nenhum Power-Up escolhido ainda.</div>'}</div></section>${helpers.length?`<section class="psy-surv-pause-helperline"><b>🤝 AJUDANTES</b><span>${helpers.join(' • ')}</span></section>`:''}${history}`
-  }
+  }psySurvSaveResume(true)
 };
 W.psyReturnFromSurvivor=function(){
   const sc=$('screen-survivor-v12');
   try{if(document.fullscreenElement)document.exitFullscreen?.().catch?.(()=>{})}catch(_){ }
   try{screen.orientation?.unlock?.()}catch(_){ }
   try{W.V12_KEYS=W.V12_KEYS||{};W.V12_KEYS.left=W.V12_KEYS.right=W.V12_KEYS.up=W.V12_KEYS.down=false}catch(_){ }
-  W.PSY_CLEAN_SURV=null;if(sc){sc.style.display='none';sc.innerHTML=''}
+  psySurvClearResume();W.PSY_CLEAN_SURV=null;if(sc){sc.style.display='none';sc.innerHTML=''}
   {const bh=$('psy22-buffs');if(bh)bh.style.removeProperty('display')}try{psy22BuffStrip?.()}catch(_){ }
   try{W.openPsyduckDungeon5?.();setTimeout(()=>W.v12PsyTab?.('survivor'),40)}catch(e){console.error(e);toast('Não foi possível voltar ao Psyduck.')}
 };try{psyReturnFromSurvivor=W.psyReturnFromSurvivor}catch(e){}
 W.psyCleanEnd=function(completed,manual){
-  const s=W.PSY_CLEAN_SURV;if(!s||s.done)return;s.done=true;
+  const s=W.PSY_CLEAN_SURV;if(!s||s.done)return;s.done=true;psySurvClearResume();
   const st=psyState(),p=psyDuckPoke();P.gold=Number(P.gold||0)+s.gold;for(const [n,q] of Object.entries(s.loot||{}))P.inventory[n]=Number(P.inventory[n]||0)+Number(q||0);const runPacks={...(s.packLoot||{})};if(!Number(runPacks.normal||0)&&Number(s.cardPacks||0))runPacks.normal=Number(s.cardPacks||0);P.cardGame=P.cardGame||{};P.cardGame.packs=P.cardGame.packs||{};for(const [k,q] of Object.entries(runPacks)){if(Number(q)>0)P.cardGame.packs[k]=Number(P.cardGame.packs[k]||0)+Number(q)}
   p.exp=Number(p.exp||0)+Number(s.realXp||0);p.maxExp=Number(p.maxExp||100);while(p.exp>=p.maxExp&&Number(p.level||1)<100){p.exp-=p.maxExp;p.level=Number(p.level||1)+1;p.maxExp=Math.floor(p.maxExp*1.14+20)}
   let first=false,trialCleared=false;if(s.trialMode){if(completed&&s.trialNumber){psyAscCompleteTrial(s.trialNumber);trialCleared=true}}else{first=completed&&s.phase>Number(st.survivorBest||0);if(first)st.survivorBest=s.phase}
