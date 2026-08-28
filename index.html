@@ -5322,6 +5322,10 @@ battleAction = function(action, moveData){
   const log = document.getElementById('battle-log');
   if (action === 'move') {
     const move = moveData;
+    const moveKey=String(move?.name||'').toLowerCase().trim();
+    const isStatusMove=Number(move?.power||0)<=0||String(move?.type||'').toLowerCase()==='status';
+    battleData.statusFx=battleData.statusFx||{enemyAtk:0,enemyAtkTurns:0,enemyDef:0,enemyDefTurns:0,myAtk:0,myAtkTurns:0,myDef:0,myDefTurns:0,protect:0};
+    const fx=battleData.statusFx;
     let wildType = battleData.wild.type || "Normal";
     if (["Lixo","Comum","Raro"].includes(wildType)) wildType = TYPE_BY_ID_ALL[battleData.wild.id] || "Normal";
 
@@ -5329,11 +5333,43 @@ battleAction = function(action, moveData){
     let isCrit = Math.random() < (0.12 + getTotalBuff('crit')/100);
 
     let stats = calcDetailedStats(P.team[0]);
-    let myAtk = stats.finalAtk; // AQUI entra seu 1738
-    let wildDef = Math.floor(battleData.wildMaxHp * 0.18);
+    let myAtk = Math.floor(stats.finalAtk*(1+(fx.myAtk||0)/100));
+    let wildDef = Math.floor(battleData.wildMaxHp * 0.18*(1+(fx.enemyDef||0)/100));
+
+    /* Status moves never deal fallback damage. They alter combat state and still consume the turn. */
+    if(isStatusMove){
+      let statusText='Efeito de status aplicado.';
+      if(moveKey==='growl'){fx.enemyAtk=Math.max(-60,(fx.enemyAtk||0)-20);fx.enemyAtkTurns=2;statusText='ATK do inimigo -20% por 2 turnos.'}
+      else if(moveKey==='tail whip'){fx.enemyDef=Math.max(-60,(fx.enemyDef||0)-18);fx.enemyDefTurns=2;statusText='DEF do inimigo -18% por 2 turnos.'}
+      else if(moveKey==='leer'){fx.enemyDef=Math.max(-60,(fx.enemyDef||0)-15);fx.enemyDefTurns=2;statusText='DEF do inimigo -15% por 2 turnos.'}
+      else if(moveKey==='harden'||moveKey==='defense curl'){fx.myDef=Math.min(100,(fx.myDef||0)+20);fx.myDefTurns=3;statusText='DEF +20% por 3 turnos.'}
+      else if(moveKey==='swords dance'){fx.myAtk=Math.min(120,(fx.myAtk||0)+40);fx.myAtkTurns=3;statusText='ATK +40% por 3 turnos.'}
+      else if(moveKey==='howl'){fx.myAtk=Math.min(120,(fx.myAtk||0)+20);fx.myAtkTurns=3;statusText='ATK +20% por 3 turnos.'}
+      else if(moveKey==='calm mind'){fx.myAtk=Math.min(120,(fx.myAtk||0)+20);fx.myDef=Math.min(100,(fx.myDef||0)+20);fx.myAtkTurns=3;fx.myDefTurns=3;statusText='ATK e DEF +20% por 3 turnos.'}
+      else if(moveKey==='protect'){fx.protect=1;statusText='Protege contra o próximo ataque.'}
+      if(log)log.textContent=`✨ ${P.team[0].name} usou ${move.name}! ${statusText}`;
+      attackAnimation('player');
+      setTimeout(() => {
+        attackAnimation('enemy');
+        let eff2 = getEffectiveness(wildType.split('/')[0], P.team[0].type||"Normal");
+        let enemyAtk = Math.floor((20 + battleData.wild.level*4 + battleData.wildMaxHp*0.04)*(1+(fx.enemyAtk||0)/100));
+        let myDef = Math.floor(stats.finalDef*(1+(fx.myDef||0)/100));
+        let eDmg = fx.protect?0:Math.floor(enemyAtk * 0.85 * eff2 * (100/(100+myDef*0.15)));
+        if(!fx.protect&&eDmg<3)eDmg=3;
+        if(fx.protect){fx.protect=0;if(log)log.textContent+=` 🛡️ O ataque de ${battleData.wild.name} foi bloqueado!`}
+        else{P.team[0].hp=Math.max(0,P.team[0].hp-eDmg);showDmgPopup(eDmg,false,false);if(log)log.textContent+=` 💢 ${battleData.wild.name} revidou: ${eDmg} dmg.`;setPlayerBlink()}
+        if(fx.enemyAtkTurns>0&&--fx.enemyAtkTurns<=0)fx.enemyAtk=0;
+        if(fx.enemyDefTurns>0&&--fx.enemyDefTurns<=0)fx.enemyDef=0;
+        if(fx.myAtkTurns>0&&--fx.myAtkTurns<=0)fx.myAtk=0;
+        if(fx.myDefTurns>0&&--fx.myDefTurns<=0)fx.myDef=0;
+        updateBattleHP();updateHUD();
+        if(P.team[0].hp<=0)setTimeout(()=>{P.team[0].hp=Math.floor(P.team[0].maxHp*0.3);endBattle(false)},1200);
+      },900);
+      return;
+    }
 
     let dmgBuff = getTotalBuff('dmg');
-    let base = Math.floor((myAtk * (move.power||40) / 55) + (P.team[0].level * 3));
+    let base = Math.floor((myAtk * Number(move.power||0) / 55) + (P.team[0].level * 3));
     base = Math.floor(base * (1+dmgBuff/100));
 
     let dmg = eff===0?0:Math.floor(base * eff * (isCrit?1.9:1) * (100/(100+wildDef*0.15)));
@@ -5368,14 +5404,20 @@ battleAction = function(action, moveData){
     setTimeout(() => {
       attackAnimation('enemy');
       let eff2 = getEffectiveness(wildType.split('/')[0], P.team[0].type||"Normal");
-      let enemyAtk = Math.floor(20 + battleData.wild.level*4 + battleData.wildMaxHp*0.04);
-      let myDef = stats.finalDef;
-      let eDmg = Math.floor(enemyAtk * 0.85 * eff2 * (100/(100+myDef*0.15)));
-      if(eDmg<3) eDmg=3;
+      let enemyAtk = Math.floor((20 + battleData.wild.level*4 + battleData.wildMaxHp*0.04)*(1+(fx.enemyAtk||0)/100));
+      let myDef = Math.floor(stats.finalDef*(1+(fx.myDef||0)/100));
+      let eDmg = fx.protect?0:Math.floor(enemyAtk * 0.85 * eff2 * (100/(100+myDef*0.15)));
+      if(!fx.protect&&eDmg<3) eDmg=3;
+      if(fx.protect)fx.protect=0;
       P.team[0].hp = Math.max(0, P.team[0].hp - eDmg);
       showDmgPopup(eDmg, false, false);
       if(log) log.textContent = `💢 ${battleData.wild.name} revidou! ${eDmg} dmg!`;
-      setPlayerBlink(); updateBattleHP(); updateHUD();
+      setPlayerBlink();
+      if(fx.enemyAtkTurns>0&&--fx.enemyAtkTurns<=0)fx.enemyAtk=0;
+      if(fx.enemyDefTurns>0&&--fx.enemyDefTurns<=0)fx.enemyDef=0;
+      if(fx.myAtkTurns>0&&--fx.myAtkTurns<=0)fx.myAtk=0;
+      if(fx.myDefTurns>0&&--fx.myDefTurns<=0)fx.myDef=0;
+      updateBattleHP(); updateHUD();
       if (P.team[0].hp <= 0) { setTimeout(() => { P.team[0].hp = Math.floor(P.team[0].maxHp*0.3); endBattle(false); }, 1200); }
     }, 900);
   } else if (action === 'heal') { openBagSelector('potion'); }
