@@ -133,8 +133,9 @@ const SURV_ATTACK_RANGE=SURV_SQM*10;
 const SURV_HELPER_CAP=3;
 const SURV_PSY_ABILITY_CAP=3;
 const SURV_PSY_ABILITY_IDS=new Set(['nova','vortex','rain']);
-const SURV_NORMAL_POP=14;
+const SURV_NORMAL_POP=40;
 const SURV_SPECIAL_MAX=10;
+const SURV_SPECIAL_INTERVAL=15000;
 const SURV_ELITE_INTERVAL=90000;
 const SURV_RESPAWN_MIN=2200;
 const SURV_RESPAWN_MAX=3400;
@@ -163,7 +164,7 @@ function survPsyAbilityActive(s,id){return id==='nova'||survRunUpLv(s,id)>0||sur
 function survPsyAbilityCount(s){return [...SURV_PSY_ABILITY_IDS].filter(id=>survPsyAbilityActive(s,id)).length}
 function survPerfProfile(){
   const coarse=!!(W.matchMedia?.('(pointer:coarse)')?.matches),cores=Number(navigator.hardwareConcurrency||0),mem=Number(navigator.deviceMemory||0),low=coarse&&((cores>0&&cores<=4)||(mem>0&&mem<=4));
-  return{mobile:coarse,low,vfxQuality:low?.62:coarse?.82:1,fxCap:low?125:coarse?180:280,particleCap:low?6:coarse?10:14,enemyCap:64,bulletCap:low?145:coarse?190:260,enemyBulletCap:low?110:coarse?155:220,textCap:low?58:coarse?82:120,fieldCap:low?72:coarse?96:130,avgDt:16.7,frameCount:0};
+  return{mobile:coarse,low,vfxQuality:low?.62:coarse?.82:1,fxCap:low?125:coarse?180:280,particleCap:low?6:coarse?10:14,enemyCap:72,bulletCap:low?145:coarse?190:260,enemyBulletCap:low?110:coarse?155:220,textCap:low?58:coarse?82:120,fieldCap:low?72:coarse?96:130,avgDt:16.7,frameCount:0};
 }
 function survInView(s,x,y,pad=120){if(!Number.isFinite(x)||!Number.isFinite(y))return true;const cx=Number(s.camX||0),cy=Number(s.camY||0),vw=Number(s.viewW||s.c?.width||1000),vh=Number(s.viewH||s.c?.height||500);return x>=cx-pad&&x<=cx+vw+pad&&y>=cy-pad&&y<=cy+vh+pad}
 const SURV_COMMON_STONES=['Fire Stone','Water Stone','Leaf Stone','Thunder Stone','Ice Stone','Punch Stone','Venom Stone','Earth Stone','Feather Stone','Enigma Stone','Cocoon Stone','Rock Stone','Crystal Stone','Darkness Stone','Metal Stone','Heart Stone'];
@@ -178,7 +179,7 @@ const SURV_RUN_UPS=[
   {id:'rate',name:'Jato Rápido',kind:'OFENSIVO',poke:7,desc:'-8% no intervalo de tiro por nível',max:5},
   {id:'runxp',name:'Treino Intensivo',kind:'PROGRESSÃO',poke:531,desc:'+10% EXP da RUN por nível • só acelera o Run Level',max:5},
   {id:'multi',name:'Rajada',kind:'OFENSIVO',poke:121,desc:'+1 projétil do Psyduck e +1 golpe por ativação de cada ajudante por nível',max:5},
-  {id:'pierce',name:'Perfuração',kind:'OFENSIVO',poke:130,desc:'+1 alvo atravessado por nível',max:5,maxDesc:'MAX: +3 perfurações extras'},
+  {id:'pierce',name:'Perfuração',kind:'OFENSIVO',poke:130,desc:'+1 alvo atravessado por nível • também afeta ataques perfuráveis dos Ajudantes',max:5,maxDesc:'MAX: +3 perfurações extras para Psyduck e Ajudantes'},
   {id:'speed',name:'Passo Fluido',kind:'MOBILIDADE',poke:134,desc:'+6% velocidade por nível',max:5},
   {id:'helper_pikachu',helperKey:'pikachu',maxReq:'rain',maxReqName:'Chuva Psíquica',name:'Pikachu',kind:'AJUDANTE',poke:25,desc:'3 / 5 / 7 / 10 / 15 raios em alvos aleatórios • MAX requer Chuva Psíquica 5/5',max:5,maxDesc:'MAX: raios maiores, dano elevado e impacto em 1 SQM'},
   {id:'helper_charizard',helperKey:'charizard',maxReq:'rate',maxReqName:'Jato Rápido',name:'Charizard',kind:'AJUDANTE',poke:6,desc:'1 / 2 / 4 / 6 / 10 meteoros com impacto em 2 SQM • MAX requer Jato Rápido 5/5',max:5,maxDesc:'MAX: +3 meteoros gigantes a cada 5s, cobrindo 10 SQM'},
@@ -186,7 +187,7 @@ const SURV_RUN_UPS=[
   {id:'helper_gengar',helperKey:'gengar',maxReq:'multi',maxReqName:'Rajada',name:'Gengar',kind:'AJUDANTE',poke:94,desc:'1 / 2 / 3 / 4 / 5 buracos negros; cada inimigo recebe 1 impacto por área • MAX requer Rajada 5/5',max:5,maxDesc:'MAX: buraco negro magnético de 10 SQM a cada 10s'},
   {id:'helper_lapras',helperKey:'lapras',maxReq:'regen',maxReqName:'Água Restauradora',name:'Lapras',kind:'AJUDANTE',poke:131,desc:'1 / 2 / 3 / 4 / 5 cones de gelo que reduzem velocidade • MAX requer Água Restauradora 5/5 • Santuário MAX: cura, escudo e corações gigantes',max:5,maxDesc:'MAX: 5 cones maiores, mais alcance e lentidão intensa'},
   {id:'helper_dragonite',helperKey:'dragonite',maxReq:'runxp',maxReqName:'Treino Intensivo',name:'Dragonite',kind:'AJUDANTE',poke:149,desc:'1 / 2 / 3 / 4 / 5 tornados perseguidores com impacto em 3 SQM • MAX requer Treino Intensivo 5/5',max:5,maxDesc:'MAX: 10 tornados gigantes, perfurantes e com área de impacto único'},
-  {id:'helper_blissey',helperKey:'blissey',maxReq:'regen',maxReqName:'Água Restauradora',name:'Blissey',kind:'AJUDANTE',poke:242,desc:'1 / 2 / 3 / 4 / 5 corações perseguidores (+ Rajada); +50% dano; explosão de 3 SQM cura aliados e empurra inimigos • Lv.3 Shiny • Lv.5 Shiny 2x maior • MAX requer Água Restauradora 5/5',max:5,maxDesc:'MAX: Blissey Shiny fica 3x maior e cria o Santuário com cura, escudo e corações gigantes'},
+  {id:'helper_blissey',helperKey:'blissey',maxReq:'regen',maxReqName:'Água Restauradora',name:'Blissey',kind:'AJUDANTE',poke:242,desc:'1 / 2 / 3 / 4 / 5 corações perseguidores (+ Rajada); +50% dano; ataque e explosão curam TODOS os aliados em 1% do HP, sem limite de distância • Lv.3 Shiny • Lv.5 Shiny 2x maior • MAX requer Água Restauradora 5/5',max:5,maxDesc:'MAX: Blissey Shiny fica 3x maior e cria o Santuário com cura, escudo e corações gigantes'},
   {id:'nova',name:'Psy Nova',kind:'ÁREA',poke:150,desc:'Explosão psíquica maior e mais frequente',max:5,maxDesc:'MAX: dupla explosão'},
   {id:'vortex',name:'Vórtice Mental',kind:'ÁREA',poke:196,desc:'Pulso em área que danifica inimigos próximos',max:5,maxDesc:'MAX: também puxa inimigos para o centro'},
   {id:'rain',name:'Chuva Psíquica',kind:'ÁREA',poke:151,desc:'Golpeia alvos aleatórios próximos periodicamente',max:5,maxDesc:'MAX: cada alvo recebe uma segunda descarga'},
@@ -382,7 +383,16 @@ function survShowEliteReward(s){
 W.psySurvEliteReward=function(kind){const s=W.PSY_CLEAN_SURV;if(!s||s.done||!s.levelUpOpen)return;if(kind==='atk'){s.power*=1.10;s.basePower*=1.10;s.eliteAtkBonus=Number(s.eliteAtkBonus||0)+10;survCloseRewardOverlay(s);return}if(kind==='hp'){const old=s.maxHp;s.maxHp*=1.10;s.hp=Math.min(s.maxHp,s.hp+(s.maxHp-old));s.eliteHpBonus=Number(s.eliteHpBonus||0)+10;survCloseRewardOverlay(s);return}if(kind==='loot'){s.survLootBonus=Number(s.survLootBonus||0)+5;survCloseRewardOverlay(s);return}if(kind!=='random')return;const pool=survOwnedUpgradeable(s),g=$('psy-clean-surv-upgrid');if(!pool.length){s.power*=1.10;s.basePower*=1.10;s.eliteAtkBonus=Number(s.eliteAtkBonus||0)+10;toast('Nenhum aprimoramento anterior disponível; recebeu +10% ATK.');survCloseRewardOverlay(s);return}if(g){g.style.gridTemplateColumns='1fr';g.innerHTML='<div class="psy-surv-upcard" style="min-height:210px;display:grid;place-items:center"><div><span class="psy-surv-upkind">ROLETA</span><h3 id="psy-elite-roll-name" style="font-size:28px">...</h3><p>Escolhendo entre seus aprimoramentos...</p></div></div>'}let ticks=0;const timer=setInterval(()=>{if(W.PSY_CLEAN_SURV!==s||s.done){clearInterval(timer);return}const u=pool[Math.floor(Math.random()*pool.length)],el=$('psy-elite-roll-name');if(el)el.textContent=u.name;if(++ticks>=14){clearInterval(timer);const pick=pool[Math.floor(Math.random()*pool.length)];survApplyUpgrade(s,pick);const el2=$('psy-elite-roll-name');if(el2)el2.textContent=`✨ ${pick.name}!`;setTimeout(()=>{if(W.PSY_CLEAN_SURV===s&&!s.done)survCloseRewardOverlay(s)},650)}},85)};
 function survRunLevel(s){
   if(s.levelUpOpen)return;
-  if(s.runXp>=s.runXpNext){s.runXp-=s.runXpNext;s.runLevel++;s.runXpNext=Math.floor(s.runXpNext*1.14+15);survShowLevelUp(s)}
+  if(s.runXp>=s.runXpNext){
+    s.runXp-=s.runXpNext;
+    s.runLevel++;
+    s.runLevelAtkBonus=Number(s.runLevelAtkBonus||0)+2;
+    s.power*=1.02;
+    s.basePower*=1.02;
+    s.runXpNext=Math.floor(s.runXpNext*1.14+15);
+    s.texts?.push?.({x:s.x,y:s.y-74,text:'+2% ATK • RUN LEVEL',life:80,color:'#fde047',big:true});
+    survShowLevelUp(s)
+  }
 }
 function survDropPickup(s,e,type,v,name,visual=''){
   if(type==='gold'){s.gold+=Number(v||0);return null}
@@ -459,6 +469,70 @@ function survQueueBossSkill(s,e,kind){
     for(let i=0;i<count;i++){const a=i*Math.PI*2/count+Math.random()*.5,rr=i===0?70:90+Math.random()*180,x=Math.max(rad,Math.min(s.worldW-rad,s.x+Math.cos(a)*rr)),y=Math.max(rad,Math.min(s.worldH-rad,s.y+Math.sin(a)*rr));survBossHazardPush(s,{kind:'bossTrap',x,y,r:rad,delay:warn+i*45,maxDelay:warn+i*45,duration:final?5200:4400,dmg:s.maxHp*(final?.065:.045),tickEvery:720,source:e})}
   }
 }
+
+function survVariantBullet(s,e,a,spd,dmg,color,radius=6,targetHelperKey=''){
+  if(!s||!e)return;
+  s.enemyBullets=s.enemyBullets||[];
+  s.enemyBullets.push({
+    x:e.x,y:e.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg,
+    radius,color,life:3000,targetHelperKey,variantSpecial:true
+  });
+}
+function survCastVariantSkill(s,e){
+  if(!s||!e||e.dead||e.boss||(!e.shiny&&!e.mega))return;
+  const tar=survEnemyTarget(s,e,0),tx=Number(tar?.x??s.x),ty=Number(tar?.y??s.y);
+  const aim=Math.atan2(ty-e.y,tx-e.x),helperKey=tar?.kind==='helper'?String(tar.key||''):'';
+  const cycle=Number(e.variantSkillCycle||0);e.variantSkillCycle=cycle+1;
+
+  if(e.mega&&e.shiny){
+    // MEGA SHINY — alterna rajada prismática e anel de energia.
+    if(cycle%2===0){
+      const count=5,spread=.16;
+      for(let i=0;i<count;i++){
+        const a=aim+(i-(count-1)/2)*spread;
+        survVariantBullet(s,e,a,5.8,s.maxHp*.020,'#d946ef',8,helperKey);
+      }
+    }else{
+      const count=8,offset=(cycle*.41)%Math.PI;
+      for(let i=0;i<count;i++){
+        const a=offset+i*Math.PI*2/count;
+        survVariantBullet(s,e,a,5.0,s.maxHp*.018,i%2?'#22d3ee':'#c084fc',7,'');
+      }
+    }
+    survFxPush(s,{type:'burst',x:e.x,y:e.y,r:8,max:64,life:20,color:'#d946ef'});
+    survFxParticles(s,e.x,e.y,'#67e8f9',9,4.2,4,18,.01);
+    e.variantSkillCd=3000+Math.random()*900;
+  }else if(e.mega){
+    // MEGA — alterna soco de energia direcionado e onda radial.
+    if(cycle%2===0){
+      for(let i=-1;i<=1;i++)survVariantBullet(s,e,aim+i*.12,5.2,s.maxHp*.024,'#a855f7',9,helperKey);
+    }else{
+      const count=6,offset=(cycle*.33)%Math.PI;
+      for(let i=0;i<count;i++)survVariantBullet(s,e,offset+i*Math.PI*2/count,4.7,s.maxHp*.020,'#8b5cf6',8,'');
+    }
+    survFxPush(s,{type:'burst',x:e.x,y:e.y,r:10,max:58,life:18,color:'#8b5cf6'});
+    e.variantSkillCd=3600+Math.random()*1000;
+  }else if(e.shiny){
+    // SHINY — pequena rajada de cristais em leque.
+    const count=3,spread=.18;
+    for(let i=0;i<count;i++){
+      const a=aim+(i-(count-1)/2)*spread;
+      survVariantBullet(s,e,a,5.5,s.maxHp*.016,'#22d3ee',6,helperKey);
+    }
+    survFxPush(s,{type:'burst',x:e.x,y:e.y,r:7,max:46,life:16,color:'#22d3ee'});
+    survFxParticles(s,e.x,e.y,'#a5f3fc',6,3.5,3,16,.01);
+    e.variantSkillCd=3300+Math.random()*1100;
+  }
+}
+function survUpdateVariantSkills(s,dt){
+  for(const e of (s.enemies||[])){
+    if(!e||e.dead||e.boss||(!e.shiny&&!e.mega))continue;
+    if(!Number.isFinite(Number(e.variantSkillCd)))e.variantSkillCd=900+Math.random()*1400;
+    e.variantSkillCd-=dt;
+    if(e.variantSkillCd<=0)survCastVariantSkill(s,e);
+  }
+}
+
 function survUpdateBossSkills(s,dt){
   s.bossHazards=s.bossHazards||[];
   for(const e of s.enemies){
@@ -505,7 +579,7 @@ function survBullet(s,o={}){s.bullets.push({x:o.x,y:o.y,vx:o.vx,vy:o.vy,dmg:o.dm
 function survShoot(s,originX=s.x,originY=s.y,helper=false){
   if(!s.enemies.length)return;const limit=Number(s.attackRange||SURV_ATTACK_RANGE),targets=s.enemies.slice().filter(e=>!e.dead&&Math.hypot(e.x-originX,e.y-originY)<=limit).sort((a,b)=>Math.hypot(a.x-originX,a.y-originY)-Math.hypot(b.x-originX,b.y-originY));if(!targets.length)return;
   const count=helper?1:s.multi,aim=targets[0]?Math.atan2(targets[0].y-originY,targets[0].x-originX):0;if(!helper){s.psyFacing=Math.cos(aim)<0?-1:1;survPsyAnimTrigger(s,'attack',410)}
-  for(let k=0;k<count;k++){const t=targets[k%targets.length],a=Math.atan2(t.y-originY,t.x-originX)+(helper?0:(k-(count-1)/2)*.075);survBullet(s,{x:originX,y:originY,vx:Math.cos(a)*8.8,vy:Math.sin(a)*8.8,dmg:(helper?10:18)*s.power,pierce:helper?0:s.pierce,chain:0,chainMul:0,crit:Math.random()<s.crit,helper,kind:'psy',color:'#67e8f9',radius:helper?5:7,maxRange:limit})}
+  for(let k=0;k<count;k++){const t=targets[k%targets.length],a=Math.atan2(t.y-originY,t.x-originX)+(helper?0:(k-(count-1)/2)*.075);survBullet(s,{x:originX,y:originY,vx:Math.cos(a)*8.8,vy:Math.sin(a)*8.8,dmg:(helper?10:18)*s.power,pierce:Math.max(0,Number(s.pierce||0)),chain:0,chainMul:0,crit:Math.random()<s.crit,helper,kind:'psy',color:'#67e8f9',radius:helper?5:7,maxRange:limit})}
 }
 function survDamageEnemy(s,e,dmg,color,slow=0){if(!e||e.dead)return false;e.hp-=dmg;if(slow)e.slow=Math.max(e.slow,slow);if(survInView(s,e.x,e.y,80)&&((s.texts?.length||0)<Number(s.perf?.textCap||90)||e.boss))s.texts.push({x:e.x,y:e.y,text:`-${Math.max(1,Math.floor(dmg))}`,life:24,color:color||'#fff'});if(e.hp<=0&&!e.dead){e.dead=true;survKill(s,e);return true}return false}
 function survAreaDamage(s,x,y,range,dmg,color,exclude=null,slow=0){for(const e of s.enemies){if(e.dead||e===exclude)continue;if(Math.hypot(e.x-x,e.y-y)<=range)survDamageEnemy(s,e,dmg,color,slow)}survFxPush(s,{type:'burst',x,y,r:8,max:range,life:22,color})}
@@ -532,8 +606,13 @@ function survHelperState(s,key,index=0){
 }
 function survHelperPos(s,index){const key=s.helperIds?.[index],h=key?survHelperState(s,key,index):null;if(h)return{x:h.x,y:h.y};const n=Math.max(1,s.helperIds?.length||1),a=s.elapsed/780+index*Math.PI*2/n,rad=92;return{x:s.x+Math.cos(a)*rad,y:s.y+Math.sin(a)*rad}}
 function survHealAllies(s,x,y,range,pct=.01){
-  if(Math.hypot(s.x-x,s.y-y)<=range)s.hp=Math.min(s.maxHp,s.hp+s.maxHp*pct);
-  for(let i=0;i<(s.helperIds?.length||0);i++){const key=s.helperIds[i],h=survHelperState(s,key,i);if(Math.hypot(h.x-x,h.y-y)<=range)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*pct)}
+  // Blissey heals the whole team regardless of distance.
+  const healPct=Math.max(0,Number(pct||.01));
+  s.hp=Math.min(s.maxHp,s.hp+s.maxHp*healPct);
+  for(let i=0;i<(s.helperIds?.length||0);i++){
+    const key=s.helperIds[i],h=survHelperState(s,key,i);
+    h.hp=Math.min(h.maxHp,h.hp+h.maxHp*healPct);
+  }
 }
 function survBlisseyPulse(s,x,y,damage=0,sqm=3){const r=SURV_SQM*sqm;survHealAllies(s,x,y,r,.01);for(const e of s.enemies){if(e.dead)continue;const dx=e.x-x,dy=e.y-y,d=Math.hypot(dx,dy)||1;if(d<=r+e.size*.20){if(damage>0)survDamageEnemy(s,e,damage,'#f9a8d4');if(!e.dead){const push=26;e.x+=dx/d*push;e.y+=dy/d*push}}}survFxPush(s,{type:'heartBurst',x,y,r:12,max:r,life:24,color:'#f9a8d4'})}
 function survBlisseySanctuary(s,h,now){
@@ -576,10 +655,10 @@ function survHelperAttack(s,key,hx,hy){
     for(let i=0;i<count&&pool.length;i++){const t=pool[i%pool.length];survAddField(s,{kind:'blackhole',x:t.x,y:t.y,radius:rad,dmg,color:'#c084fc',life:1800,tickEvery:300,impact:(14+lv*2)*s.power*dm,maxPull:0,magnet:false,maxed})}survFxPush(s,{type:'shadowClaw',x:hx,y:hy,a:Math.atan2(pool[0].y-hy,pool[0].x-hx),color:'#c084fc',life:17})
   }else if(key==='dragonite'){
     const count=(maxed?10:lv)+rajada,pool=randomTargets(),dmg=(17+lv*2.1)*s.power*dm;
-    for(let i=0;i<count&&pool.length;i++){const t=pool[i%pool.length],a=Math.atan2(t.y-hy,t.x-hx),spd=maxed?7.2:6.6;survBullet(s,{x:hx,y:hy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg,pierce:maxed?6:0,helper:true,kind:'tornado',color:'#a78bfa',radius:maxed?15:10,aoe:SURV_SQM*3,life:2600,maxRange:limit,homing:true,target:t,impactField:maxed?{kind:'tornadozone',radius:SURV_SQM*2,life:2000,tickEvery:300,dmg:dmg*.38,color:'#c4b5fd'}:null})}survFxPush(s,{type:'windCast',x:hx,y:hy,color:'#c4b5fd',life:20,r:16,max:55,maxed})
+    for(let i=0;i<count&&pool.length;i++){const t=pool[i%pool.length],a=Math.atan2(t.y-hy,t.x-hx),spd=maxed?7.2:6.6;survBullet(s,{x:hx,y:hy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg,pierce:(maxed?6:0)+Math.max(0,Number(s.pierce||0)),helper:true,kind:'tornado',color:'#a78bfa',radius:maxed?15:10,aoe:SURV_SQM*3,life:2600,maxRange:limit,homing:true,target:t,impactField:maxed?{kind:'tornadozone',radius:SURV_SQM*2,life:2000,tickEvery:300,dmg:dmg*.38,color:'#c4b5fd'}:null})}survFxPush(s,{type:'windCast',x:hx,y:hy,color:'#c4b5fd',life:20,r:16,max:55,maxed})
   }else if(key==='blissey'){
     const hs=s.helperIds?.includes(key)?survHelperState(s,key,s.helperIds.indexOf(key)):null,inSanct=maxed&&hs&&Number(s.elapsed||0)<Number(hs.sanctuaryUntil||0),count=(inSanct?10:lv)+rajada,pool=randomTargets(),dmg=(15+lv*2.0)*s.power*dm*1.50;survBlisseyPulse(s,hx,hy,dmg*.35);
-    for(let i=0;i<count&&pool.length;i++){const t=pool[i%pool.length],a=Math.atan2(t.y-hy,t.x-hx),spd=6.4;survBullet(s,{x:hx,y:hy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg,helper:true,kind:'heart',color:'#f9a8d4',radius:inSanct?18:maxed?13:9,life:2700,maxRange:limit,homing:true,target:t,onHit:inSanct?'blisseyHeartMax':'blisseyHeart'})}survFxPush(s,{type:'heartBurst',x:hx,y:hy,r:10,max:SURV_SQM*3,life:22,color:'#f9a8d4'})
+    for(let i=0;i<count&&pool.length;i++){const t=pool[i%pool.length],a=Math.atan2(t.y-hy,t.x-hx),spd=6.4;survBullet(s,{x:hx,y:hy,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,dmg,pierce:Math.max(0,Number(s.pierce||0)),helper:true,kind:'heart',color:'#f9a8d4',radius:inSanct?18:maxed?13:9,life:2700,maxRange:limit,homing:true,target:t,onHit:inSanct?'blisseyHeartMax':'blisseyHeart'})}survFxPush(s,{type:'heartBurst',x:hx,y:hy,r:10,max:SURV_SQM*3,life:22,color:'#f9a8d4'})
   }
 }
 function survUpdateHelpers(s,dt){
@@ -646,7 +725,7 @@ function survDraw(s){
     }
   }
   for(const e of s.enemies){if(!survInView(s,e.x,e.y,e.size+90))continue;const im=survEnemySprite(s,e);if(e.shiny||e.mega){ctx.strokeStyle=e.mega?'#c084fc':'#fde047';ctx.lineWidth=e.mega?5:3;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(e.x,e.y,e.size*.58+(e.mega?7:3),0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1}if(e.champion){ctx.strokeStyle='#fb7185';ctx.lineWidth=3;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(e.x,e.y,e.size*.56,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1}if(e.ranged&&!e.boss){ctx.fillStyle='#f59e0b';ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(e.x+e.size*.32,e.y-e.size*.32,5,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}if(im.complete&&im.naturalWidth)ctx.drawImage(im,e.x-e.size/2,e.y-e.size/2,e.size,e.size);if(e.boss||e.elite){ctx.fillStyle='#0f172a';ctx.fillRect(e.x-e.size/2,e.y-e.size/2-12,e.size,7);ctx.fillStyle=e.finalBoss?'#f43f5e':e.boss?'#ef4444':e.champion?'#fb7185':'#facc15';ctx.fillRect(e.x-e.size/2,e.y-e.size/2-12,e.size*Math.max(0,e.hp/e.max),7);if(e.finalBoss){ctx.fillStyle='#fde047';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText('CHEFE FINAL',e.x,e.y-e.size/2-18);ctx.textAlign='left'}}}
-  for(const b of s.enemyBullets){if(!survInView(s,b.x,b.y,50))continue;ctx.fillStyle=b.color||'#fb7185';ctx.shadowColor=b.color||'#fb7185';ctx.shadowBlur=b.bossSpecial?16:8;if(b.bossSpecial){const sp=Math.max(.1,Math.hypot(b.vx,b.vy)),ux=b.vx/sp,uy=b.vy/sp;ctx.strokeStyle='#ef4444';ctx.globalAlpha=.35;ctx.lineWidth=(b.radius||7)*1.35;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(b.x-ux*34,b.y-uy*34);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.globalAlpha=1;ctx.lineCap='butt'}ctx.beginPath();ctx.arc(b.x,b.y,b.radius||5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
+  for(const b of s.enemyBullets){if(!survInView(s,b.x,b.y,50))continue;ctx.fillStyle=b.color||'#fb7185';ctx.shadowColor=b.color||'#fb7185';ctx.shadowBlur=(b.bossSpecial||b.variantSpecial)?16:8;if(b.bossSpecial||b.variantSpecial){const sp=Math.max(.1,Math.hypot(b.vx,b.vy)),ux=b.vx/sp,uy=b.vy/sp;ctx.strokeStyle=b.color||'#ef4444';ctx.globalAlpha=.35;ctx.lineWidth=(b.radius||7)*1.35;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(b.x-ux*34,b.y-uy*34);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.globalAlpha=1;ctx.lineCap='butt'}ctx.beginPath();ctx.arc(b.x,b.y,b.radius||5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
   for(const b of s.bullets){
     if(!survInView(s,b.x,b.y,70))continue;const col=b.color||'#67e8f9',spd=Math.max(.01,Math.hypot(b.vx,b.vy)),ux=b.vx/spd,uy=b.vy/spd;ctx.save();ctx.shadowColor=col;ctx.shadowBlur=b.kind==='tornado'?20:15;
     if(b.kind==='heart'){ctx.translate(b.x,b.y);ctx.rotate(Math.atan2(b.vy,b.vx)+Math.PI/2);ctx.fillStyle='#f9a8d4';ctx.globalAlpha=.95;ctx.beginPath();ctx.moveTo(0,8);ctx.bezierCurveTo(-15,-3,-10,-16,0,-8);ctx.bezierCurveTo(10,-16,15,-3,0,8);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.restore();continue}if(b.kind==='tornado'){ctx.translate(b.x,b.y);ctx.rotate(s.elapsed/160);ctx.strokeStyle='#e0e7ff';ctx.lineCap='round';for(let j=0;j<4;j++){ctx.globalAlpha=.85-j*.13;ctx.lineWidth=Math.max(2,6-j);ctx.beginPath();ctx.arc(0,0,(b.radius||10)*(1+j*.45),j*.7,j*.7+Math.PI*1.45);ctx.stroke()}ctx.globalAlpha=1;ctx.restore();continue}
@@ -690,10 +769,11 @@ function survLoop(ts){
   if(!s._buffRefreshAt||ts-s._buffRefreshAt>=300){s._buffRefreshAt=ts;const liveDmgMult=1+Math.max(0,Number(getTotalBuff?.('dmg')||0))/100;if(Number.isFinite(s.globalDmgMult)&&Math.abs(liveDmgMult-s.globalDmgMult)>.0001){const ratio=liveDmgMult/Math.max(.0001,s.globalDmgMult);s.power*=ratio;s.basePower*=ratio;s.globalDmgMult=liveDmgMult}s.globalBuffs={dmg:(liveDmgMult-1)*100,gold:Number(getTotalBuff?.('gold')||0),xp:Number(getTotalBuff?.('xp')||0),drop:Number(getTotalBuff?.('drop')||0)}};
   const k=W.V12_KEYS||{},g=(typeof keys!=='undefined'&&keys)||{},left=!!(k.left||g.ArrowLeft||g.KeyA||g.a||g.A),right=!!(k.right||g.ArrowRight||g.KeyD||g.d||g.D),up=!!(k.up||g.ArrowUp||g.KeyW||g.w||g.W),down=!!(k.down||g.ArrowDown||g.KeyS||g.s||g.S),dx=(right?1:0)-(left?1:0),dy=(down?1:0)-(up?1:0),m=Math.hypot(dx,dy)||1,edge=58;s.psyMoving=!!(dx||dy);if(dx)s.psyFacing=dx<0?-1:1;s.x=Math.max(edge,Math.min((s.worldW||s.w)-edge,s.x+dx/m*s.speed*dt/16));s.y=Math.max(edge,Math.min((s.worldH||s.h)-edge,s.y+dy/m*s.speed*dt/16));
   if(s.elapsed>=240000)survSpawnBoss(s,4,false);if(s.elapsed>=480000)survSpawnBoss(s,8,false);if(s.elapsed>=720000)survSpawnBoss(s,12,false);if(s.elapsed>=960000)survSpawnBoss(s,16,false);if(s.elapsed>=1200000&&!s.finalSpawned){s.finalSpawned=true;survSpawnBoss(s,20,true)}
-  while(s.elapsed>=Number(s.nextElite||SURV_ELITE_INTERVAL)){survSpawnTimedElite(s);s.nextElite=Number(s.nextElite||SURV_ELITE_INTERVAL)+SURV_ELITE_INTERVAL}if(s.elapsed>=Number(s.nextSpecial||18000)){survSpawnVariantSpecial(s);s.nextSpecial=s.elapsed+15000+Math.random()*10500}
+  while(s.elapsed>=Number(s.nextElite||SURV_ELITE_INTERVAL)){survSpawnTimedElite(s);s.nextElite=Number(s.nextElite||SURV_ELITE_INTERVAL)+SURV_ELITE_INTERVAL}
+  if(s.elapsed>=Number(s.nextSpecial||SURV_SPECIAL_INTERVAL)){survSpawnVariantSpecial(s);s.nextSpecial=Number(s.nextSpecial||SURV_SPECIAL_INTERVAL)+SURV_SPECIAL_INTERVAL}
   survProcessRespawns(s);
   {const cap=Number(s.perf?.enemyCap||64);if(s.enemies.length>cap){const keep=s.enemies.filter(e=>!e.dead&&(e.boss||e.slotId!=null)),extra=s.enemies.filter(e=>!e.dead&&!e.boss&&e.slotId==null).slice(-Math.max(0,cap-keep.length));s.enemies=keep.concat(extra)}}
-  s.fire+=dt;if(s.fire>s.fireRate&&s.enemies.length){s.fire=0;survShoot(s)}survUpdateHelpers(s,dt);survApplyBlisseySanctuary(s,dt);survUpdateFields(s,dt);survUpdateBossSkills(s,dt);
+  s.fire+=dt;if(s.fire>s.fireRate&&s.enemies.length){s.fire=0;survShoot(s)}survUpdateHelpers(s,dt);survApplyBlisseySanctuary(s,dt);survUpdateFields(s,dt);survUpdateVariantSkills(s,dt);survUpdateBossSkills(s,dt);
   s.novaAcc+=dt;if(s.novaAcc>Math.max(1450,5200/(1+s.nova*.25))){s.novaAcc=0;survNova(s)}s.vortexAcc+=dt;if(s.vortex&&s.vortexAcc>Math.max(1250,4200-s.vortex*360)){s.vortexAcc=0;survVortex(s)}s.rainAcc+=dt;if(s.rain&&s.rainAcc>Math.max(1100,3600-s.rain*300)){s.rainAcc=0;survPsyRain(s)}
   for(const e of s.enemies){
     if(e.dead)continue;const tar=survEnemyTarget(s,e,dt);let vx=tar.x-e.x,vy=tar.y-e.y,dist=Math.hypot(vx,vy)||1,a=Math.atan2(vy,vx),slowMul=e.slow>0?.60:1;e.slow=Math.max(0,e.slow-dt/1000*.11);
@@ -755,7 +835,15 @@ W.psySurvResumeSaved=function(){
   Object.assign(run,saved,runtime,{perf:survPerfProfile(),spriteCache:{},last:0,paused:false,done:false,levelUpOpen:false,effects:[],texts:[{x:Number(saved.x||runtime.worldW/2),y:Number(saved.y||runtime.worldH/2)-82,text:'Run do Survivor restaurada!',life:150,color:'#67e8f9',big:true}],bullets:[],enemyBullets:[],bossHazards:[],dropAlerts:[]});
   run.psyFormImgs={normal:run.psyImg};
   survEnsurePsyFormImages(run);
-  run.enemies=Array.isArray(saved.enemies)?saved.enemies:[];run.pickups=Array.isArray(saved.pickups)?saved.pickups:[];run.respawnQueue=Array.isArray(saved.respawnQueue)?saved.respawnQueue:[];run.normalSlots=Array.isArray(saved.normalSlots)?saved.normalSlots:[];run.fields=(Array.isArray(saved.fields)?saved.fields:[]).map(f=>({...f,hitSet:new Set()}));run.bossMarks=new Set(Array.isArray(saved.bossMarks)?saved.bossMarks:[]);run.helperState=run.helperState&&typeof run.helperState==='object'?run.helperState:{};for(const h of Object.values(run.helperState))if(h&&typeof h==='object')h.target=null;
+  run.enemies=Array.isArray(saved.enemies)?saved.enemies:[];run.pickups=Array.isArray(saved.pickups)?saved.pickups:[];run.respawnQueue=Array.isArray(saved.respawnQueue)?saved.respawnQueue:[];run.normalSlots=Array.isArray(saved.normalSlots)?saved.normalSlots:[];
+  for(let i=run.normalSlots.length;i<SURV_NORMAL_POP;i++){
+    const slot={id:i,spawnSide:i%4,spawnT:.08+(((i*.61803398875)%1)*.84)};
+    run.normalSlots.push(slot);
+    if(!run.enemies.some(e=>!e.dead&&e.slotId===slot.id))run.enemies.push(survEnemy(run,{slotId:slot.id,spawnSide:slot.spawnSide,spawnT:slot.spawnT,allowVariant:false,allowStrong:false}));
+  }
+  run.nextSpecial=(Math.floor(Math.max(0,Number(run.elapsed||0))/SURV_SPECIAL_INTERVAL)+1)*SURV_SPECIAL_INTERVAL;
+  run.runLevelAtkBonus=Number(run.runLevelAtkBonus||Math.max(0,(Number(run.runLevel||1)-1)*2));
+  run.fields=(Array.isArray(saved.fields)?saved.fields:[]).map(f=>({...f,hitSet:new Set()}));run.bossMarks=new Set(Array.isArray(saved.bossMarks)?saved.bossMarks:[]);run.helperState=run.helperState&&typeof run.helperState==='object'?run.helperState:{};for(const h of Object.values(run.helperState))if(h&&typeof h==='object')h.target=null;
   PSY_SURV_AUTOSAVE_AT=0;
   if(rewardMode==='elite')survShowEliteReward(run);else if(rewardMode==='levelup')survShowLevelUp(run,'RUN LEVEL UP!','ESCOLHA UM APRIMORAMENTO',rewardOfferIds);else{run.paused=false;W.psyCleanPause()}
   psySurvSaveResume(true);toast('Survivor restaurado. Continue quando estiver pronto.',3200)
@@ -776,7 +864,7 @@ W.v12StartSurvivor=function(index=0,trialCfg=null){
   try{const fs=sc.requestFullscreen?.();if(fs?.then)fs.then(()=>screen.orientation?.lock?.('landscape')).catch(()=>{});else screen.orientation?.lock?.('landscape').catch(()=>{})}catch(_){ }
   const ctx=c.getContext('2d',{alpha:false,desynchronized:true})||c.getContext('2d'),psyImg=new Image();try{ctx.imageSmoothingEnabled=false}catch(_){ }psyImg._survAnimeSheet=true;psyImg.onerror=function(){this.onerror=null;this._survAnimeSheet=false;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png'};psyImg.src=SURV_PSYDUCK_ANIME_SHEET;const psyPoke=psyDuckPoke();let psyStats={};try{psyStats=W.calcDetailedStats?.(psyPoke)||{}}catch(_){ }const intrinsicHp=Math.max(0,Number(psyStats.afterBoostHp||psyPoke.maxHp||0)),intrinsicAtk=Math.max(0,Number(psyStats.afterBoostAtk||psyPoke.atk||0)),psyHpBonus=Math.floor(intrinsicHp*.10),psyAtkBonus=Math.floor(intrinsicAtk*.05),globalDmgPct=Math.max(0,Number(getTotalBuff?.('dmg')||0)),psyAtkScale=Math.max(1,(18+psyAtkBonus)/18),max=Math.max(125,Math.floor(125+psyHpBonus)),basePower=(1+globalDmgPct/100)*psyAtkScale,worldW=3600,worldH=2200,startX=worldW/2,startY=worldH/2;
   {const bh=$('psy22-buffs');if(bh){bh.innerHTML='';bh.style.setProperty('display','none','important')}}
-  W.PSY_CLEAN_SURV={c,ctx,viewW,viewH,worldW,worldH,w:worldW,h:worldH,trialMode:!!trialCfg,trialNumber:Number(trialCfg?.trialNumber||0),trialDifficulty:Math.max(1,Number(trialCfg?.trialDifficulty||1)),trialLabel:String(trialCfg?.trialLabel||''),x:startX,y:startY,camX:startX-viewW/2,camY:startY-viewH/2,attackRange:SURV_ATTACK_RANGE,phase,hp:max,maxHp:max,speed:6.6,skills:{},basePower,power:basePower,psyHpBonus,psyAtkBonus,globalDmgMult:1+globalDmgPct/100,globalBuffs:{dmg:globalDmgPct,gold:Number(getTotalBuff?.('gold')||0),xp:Number(getTotalBuff?.('xp')||0),drop:Number(getTotalBuff?.('drop')||0)},fireRate:500,multi:1,chain:0,chainMul:0,pierce:0,helpers:0,helperIds:[],helperForms:{},helperState:{},helperTimers:{},helperSpecialTimers:{},nova:1,vortex:0,rain:0,vortexMax:false,rainMax:false,magnet:78,crit:.05,regen:0,enemies:[],bullets:[],enemyBullets:[],pickups:[],fields:[],bossHazards:[],effects:[],texts:[{x:startX,y:startY-82,text:`Psyduck Sync: +${psyHpBonus} HP • +${psyAtkBonus} ATK`,life:150,color:'#67e8f9',big:true}],spawn:0,fire:0,novaAcc:0,vortexAcc:0,rainAcc:0,orbitAcc:0,kills:0,bossKills:0,gold:0,runXp:0,runLevel:1,runXpNext:60,realXp:0,loot:{},packLoot:{normal:0,rare:0,epic:0,s:0,ss:0,sss:0,ur:0,urp:0,urpp:0},cardPacks:0,perf:survPerfProfile(),elapsed:0,last:0,paused:false,done:false,finalSpawned:false,finalBossDead:false,bossMarks:new Set(),upgradeLevels:{},upgradeMaxed:{},levelUpOpen:false,rewardMode:'',rewardOfferIds:[],survLootBonus:0,eliteAtkBonus:0,eliteHpBonus:0,specialStatBonus:0,psyImg,psyForm:'normal',psyFormImgs:{normal:psyImg},psyFacing:1,psyMoving:false,psyAnimState:'idle',psyAnimStart:0,psyAnimUntil:0,spriteCache:{},respawnQueue:[],dropHistory:[],dropAlerts:[],nextElite:SURV_ELITE_INTERVAL,nextSpecial:16500+Math.random()*7500,normalSlots:[]};
+  W.PSY_CLEAN_SURV={c,ctx,viewW,viewH,worldW,worldH,w:worldW,h:worldH,trialMode:!!trialCfg,trialNumber:Number(trialCfg?.trialNumber||0),trialDifficulty:Math.max(1,Number(trialCfg?.trialDifficulty||1)),trialLabel:String(trialCfg?.trialLabel||''),x:startX,y:startY,camX:startX-viewW/2,camY:startY-viewH/2,attackRange:SURV_ATTACK_RANGE,phase,hp:max,maxHp:max,speed:6.6,skills:{},basePower,power:basePower,psyHpBonus,psyAtkBonus,globalDmgMult:1+globalDmgPct/100,globalBuffs:{dmg:globalDmgPct,gold:Number(getTotalBuff?.('gold')||0),xp:Number(getTotalBuff?.('xp')||0),drop:Number(getTotalBuff?.('drop')||0)},fireRate:500,multi:1,chain:0,chainMul:0,pierce:0,helpers:0,helperIds:[],helperForms:{},helperState:{},helperTimers:{},helperSpecialTimers:{},nova:1,vortex:0,rain:0,vortexMax:false,rainMax:false,magnet:78,crit:.05,regen:0,enemies:[],bullets:[],enemyBullets:[],pickups:[],fields:[],bossHazards:[],effects:[],texts:[{x:startX,y:startY-82,text:`Psyduck Sync: +${psyHpBonus} HP • +${psyAtkBonus} ATK`,life:150,color:'#67e8f9',big:true}],spawn:0,fire:0,novaAcc:0,vortexAcc:0,rainAcc:0,orbitAcc:0,kills:0,bossKills:0,gold:0,runXp:0,runLevel:1,runXpNext:60,realXp:0,loot:{},packLoot:{normal:0,rare:0,epic:0,s:0,ss:0,sss:0,ur:0,urp:0,urpp:0},cardPacks:0,perf:survPerfProfile(),elapsed:0,last:0,paused:false,done:false,finalSpawned:false,finalBossDead:false,bossMarks:new Set(),upgradeLevels:{},upgradeMaxed:{},levelUpOpen:false,rewardMode:'',rewardOfferIds:[],survLootBonus:0,eliteAtkBonus:0,eliteHpBonus:0,specialStatBonus:0,runLevelAtkBonus:0,psyImg,psyForm:'normal',psyFormImgs:{normal:psyImg},psyFacing:1,psyMoving:false,psyAnimState:'idle',psyAnimStart:0,psyAnimUntil:0,spriteCache:{},respawnQueue:[],dropHistory:[],dropAlerts:[],nextElite:SURV_ELITE_INTERVAL,nextSpecial:SURV_SPECIAL_INTERVAL,normalSlots:[]};
   survMilestoneEnsure();const run=W.PSY_CLEAN_SURV;for(let i=0;i<SURV_NORMAL_POP;i++){const slot={id:i,spawnSide:i%4,spawnT:.08+(((i*0.61803398875)%1)*.84)};run.normalSlots.push(slot);run.enemies.push(survEnemy(run,{slotId:slot.id,spawnSide:slot.spawnSide,spawnT:slot.spawnT,allowVariant:false,allowStrong:false}))}
   const ps=$('screen-psyduck-v12');if(ps)ps.style.display='none';installSurvivorJoy();if(!PSY_SURV_RESTORING)psySurvSaveResume(true);requestAnimationFrame(survLoop)
 };
@@ -785,7 +873,7 @@ W.psyCleanPause=function(force){
     const chosen=SURV_RUN_UPS.filter(u=>survRunUpLv(s,u.id)||survRunMaxed(s,u.id)),helpers=(s.helperIds||[]).map(k=>SURV_HELPERS.find(h=>h.key===k)?.name).filter(Boolean),abilityCount=survPsyAbilityCount(s),hist=(s.dropHistory||[]).slice(0,40);
     const cards=chosen.map(u=>{const lv=survRunUpLv(s,u.id),maxed=survRunMaxed(s,u.id),img=survPowerIcon(u,s,maxed),tag=maxed?'MAX':`Lv.${lv}/${u.max}`;return `<div class="psy-surv-pause-power ${maxed?'max':''}"><img src="${esc(img)}" alt=""><div class="psy-surv-pause-power-copy"><small>${esc(u.kind||'POWER-UP')}</small><b>${esc(u.name)}</b><span>${esc(maxed&&u.maxDesc?u.maxDesc:u.desc||'')}</span></div><em>${tag}</em></div>`}).join('');
     const history=`<section class="psy-surv-pause-history"><div class="psy-surv-pause-section-title"><b>📦 DROPS DA FASE</b><small>${hist.length} registros recentes</small></div><div class="psy-surv-pause-history-list">${hist.length?hist.map(x=>{const sec=Math.floor(Number(x.time||0)/1000),m=Math.floor(sec/60),ss=sec%60;return `<span><b>${x.rarity==='epic'?'🎁':'★'} ${x.qty}x ${esc(x.name)}</b><small>${m}:${String(ss).padStart(2,'0')} • ${esc(x.source||'Pokémon')}</small></span>`}).join(''):'<small>Nenhum item raro caiu nesta fase ainda.</small>'}</div></section>`;
-    g.innerHTML=`<div class="psy-surv-pause-summary sync"><small>🔗 SYNC PSYDUCK</small><b>+${fmt(s.psyHpBonus||0)} HP</b><b>+${fmt(s.psyAtkBonus||0)} ATK</b></div><div class="psy-surv-pause-summary buffs"><small>✨ BÔNUS ATIVOS</small><span>⚔ ${Number(s.globalBuffs?.dmg||0).toFixed(0)}%</span><span>🪙 ${Number(s.globalBuffs?.gold||0).toFixed(0)}%</span><span>⭐ ${Number(s.globalBuffs?.xp||0).toFixed(0)}%</span><span>🎁 ${Number(s.globalBuffs?.drop||0).toFixed(0)}%</span></div><div class="psy-surv-pause-summary run"><small>📈 EXP DA RUN</small><b>Treino Intensivo +${survRunUpLv(s,'runxp')*10}%</b></div><div class="psy-surv-pause-summary team"><small>🧠 EQUIPE</small><b>${helpers.length}/${SURV_HELPER_CAP} ajudantes</b><b>${abilityCount}/${SURV_PSY_ABILITY_CAP} habilidades</b></div><section class="psy-surv-pause-powers"><div class="psy-surv-pause-section-title"><b>⚡ POWER-UPS DA RUN</b><small>${chosen.length} aprimoramentos ativos</small></div><div class="psy-surv-pause-powergrid">${cards||'<div class="psy-surv-pause-empty">Nenhum Power-Up escolhido ainda.</div>'}</div></section>${helpers.length?`<section class="psy-surv-pause-helperline"><b>🤝 AJUDANTES</b><span>${helpers.join(' • ')}</span></section>`:''}${history}`
+    g.innerHTML=`<div class="psy-surv-pause-summary sync"><small>🔗 SYNC PSYDUCK</small><b>+${fmt(s.psyHpBonus||0)} HP</b><b>+${fmt(s.psyAtkBonus||0)} ATK</b></div><div class="psy-surv-pause-summary buffs"><small>✨ BÔNUS ATIVOS</small><span>⚔ ${Number(s.globalBuffs?.dmg||0).toFixed(0)}%</span><span>🪙 ${Number(s.globalBuffs?.gold||0).toFixed(0)}%</span><span>⭐ ${Number(s.globalBuffs?.xp||0).toFixed(0)}%</span><span>🎁 ${Number(s.globalBuffs?.drop||0).toFixed(0)}%</span></div><div class="psy-surv-pause-summary run"><small>📈 RUN LEVEL</small><b>ATK +${Number(s.runLevelAtkBonus||0).toFixed(0)}%</b><span>Treino Intensivo +${survRunUpLv(s,'runxp')*10}% EXP</span></div><div class="psy-surv-pause-summary team"><small>🧠 EQUIPE</small><b>${helpers.length}/${SURV_HELPER_CAP} ajudantes</b><b>${abilityCount}/${SURV_PSY_ABILITY_CAP} habilidades</b></div><section class="psy-surv-pause-powers"><div class="psy-surv-pause-section-title"><b>⚡ POWER-UPS DA RUN</b><small>${chosen.length} aprimoramentos ativos</small></div><div class="psy-surv-pause-powergrid">${cards||'<div class="psy-surv-pause-empty">Nenhum Power-Up escolhido ainda.</div>'}</div></section>${helpers.length?`<section class="psy-surv-pause-helperline"><b>🤝 AJUDANTES</b><span>${helpers.join(' • ')}</span></section>`:''}${history}`
   }psySurvSaveResume(true)
 };
 W.psyReturnFromSurvivor=function(){
