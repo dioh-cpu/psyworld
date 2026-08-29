@@ -1,0 +1,8 @@
+/* PSYWORLD physical module: gyms */
+window.PSY.registerModePackage("gyms", {
+  icon:"🏆",
+  name:"GYMS",
+  desc:"Progressão regional de Ginásios e Level Cap.",
+  entry:["openGyms"],
+  deps:["bundles/v15-album-gym.js", "bundles/v19-consolidated.js", "bundles/v20-systems.js", "bundles/v47-survivor-hunts.js", "bundles/v50-compat.js"]
+});
