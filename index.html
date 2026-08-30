@@ -4,20 +4,29 @@
 <!-- PSYWORLD PERFORMANCE PASS 2026-08-28: shared sprite sheets, cached minimap/HUD, adaptive world rays, throttled hidden UI -->
 
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>PSYWORLD</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://play.pokemonshowdown.com" crossorigin>
 <link rel="dns-prefetch" href="https://play.pokemonshowdown.com">
 <!-- PSYWORLD corrigido: sprites Mega X/Y + shiny + player GIF animado + sprite helpers unificados -->
-<link rel="stylesheet" href="css/game.css">
+<link rel="stylesheet" href="css/game.css?build=AVENTURA_SURVIVOR_RETOMADA_V9">
 
-<script src="core/prelude.js"></script>
-
-
-
+<script src="core/prelude.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
+<script src="core/survivor-resume-guard-v9.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
 
 
-<meta name="psyworld-build" content="modular-test-physical-v1">
+
+
+
+<meta name="psyworld-build" content="modular-items-pxg-v1">
+<meta name="theme-color" content="#050814">
+
+<style id="PSYWORLD_ANDROID_SAFE_AREA">
+:root{--psy-safe-top:env(safe-area-inset-top,0px);--psy-safe-right:env(safe-area-inset-right,0px);--psy-safe-bottom:env(safe-area-inset-bottom,0px);--psy-safe-left:env(safe-area-inset-left,0px)}
+html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
+</style>
 </head>
 <body>
 <!-- LOGIN -->
@@ -58,10 +67,11 @@
 
 <!-- LOJA -->
 <div id="screen-shop" class="screen">
-    <div class="shop-box dungeon-style" style="width:860px;max-width:97vw;max-height:92vh;overflow-y:auto;">
-        <h2 class="shiny-name" style="text-align:center">🏪 POKÉ SHOP</h2>
+    <div class="shop-box dungeon-style psy-inventory-panel">
+        <div class="psy-inventory-head"><div><span class="psy-kicker">CENTRO COMERCIAL</span><h2 class="shiny-name">🏪 POKÉ SHOP</h2><p>Balls, curas e pedras de evolução.</p></div><div class="psy-wallet">💰 <span id="shop-wallet-gold">0</span> Gold</div></div>
+        <div id="shop-filters" class="psy-item-filters"><button class="active" onclick="psySetShopFilter('all',this)">TODOS</button><button onclick="psySetShopFilter('ball',this)">BALLS</button><button onclick="psySetShopFilter('potion',this)">CURAS</button><button onclick="psySetShopFilter('stone',this)">STONES</button></div>
         <div id="shop-grid" class="dungeon-grid-mini"></div>
-        <div style="background:#0a0a12;border:2px solid #333;border-radius:10px;padding:10px;margin-top:10px;display:flex;gap:8px;align-items:center">
+        <div class="psy-purchase-bar">
             <div id="shop-detail" style="flex:2;color:#888;font-size:11px">Clique num quadradinho ↑</div>
             <input id="shop-qty" type="number" value="1" min="1" max="99" style="width:70px;background:#000;border:1px solid #444;color:#fff;padding:8px;border-radius:6px;text-align:center">
             <button id="btn-buy" onclick="buyMulti()" style="flex:1;background:#ff0055;border:none;color:#fff;padding:10px;border-radius:8px;font-weight:900">COMPRAR</button>
@@ -72,9 +82,11 @@
 
 <!-- BAG - SELETOR -->
 <div id="screen-bag" class="screen" style="display:none; background:rgba(0,0,0,0.95); z-index:99999;">
-    <div class="shop-box dungeon-style" style="width:560px; max-height:92vh; overflow-y:auto;">
-        <h2 id="bag-title" class="shiny-name" style="text-align:center;">🎒 MOCHILA</h2>
-        <div id="bag-list" class="dungeon-grid-mini" style="grid-template-columns:repeat(4,1fr);"></div>
+    <div class="shop-box dungeon-style psy-inventory-panel psy-bag-panel">
+        <div class="psy-inventory-head"><div><span class="psy-kicker">INVENTÁRIO</span><h2 id="bag-title" class="shiny-name">🎒 MOCHILA</h2><p>Seus itens organizados por função.</p></div><div id="bag-item-count" class="psy-wallet">0 ITENS</div></div>
+        <div id="bag-actions" class="psy-tabbar5"></div>
+        <div id="bag-filters" class="psy-item-filters"><button class="active" onclick="psySetBagFilter('all',this)">TODOS</button><button onclick="psySetBagFilter('ball',this)">BALLS</button><button onclick="psySetBagFilter('potion',this)">CURAS</button><button onclick="psySetBagFilter('stone',this)">STONES</button><button onclick="psySetBagFilter('craft',this)">CRAFT</button><button onclick="psySetBagFilter('quest',this)">QUEST</button><button onclick="psySetBagFilter('other',this)">OUTROS</button></div>
+        <div id="bag-list" class="dungeon-grid-mini psy-item-grid"></div>
         <button onclick="closeBag()" style="width:100%; margin-top:12px; background:#6a1515; border:none; color:#fff; padding:10px; border-radius:8px; font-weight:bold;">✖ FECHAR</button>
     </div>
 </div>
@@ -252,7 +264,9 @@
 
 <div id="notif" style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.88); border:1px solid #ffd700; color:#ffd700; padding:8px 22px; border-radius:20px; font-size:13px; display:none; z-index:9999; pointer-events:none; white-space:nowrap;"></div>
 
-<script src="core/legacy-runtime.js"></script>
+<script src="core/items.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
+
+<script src="core/legacy-runtime.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
 
 
 
@@ -264,19 +278,19 @@
 
 
 
-<script src="core/performance.js"></script>
+<script src="core/performance.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
 
 
 
 
-<script src="core/module-loader.js"></script>
+<script src="core/module-loader.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
 
 
 
 
 
 
-<script src="core/city-content.js"></script>
+<script src="core/city-content.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
 
 </body>
 </html>

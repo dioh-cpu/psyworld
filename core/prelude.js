@@ -111,3 +111,65 @@ window.confirmMegaChoice = function(idx,isBox,choiceIdx,cost){
   autoSave(); renderTeam(); openPokeDetail(idx,isBox);
 }
 window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_XY[p.id]?.length>1) openMegaChoice(i,b,p.shiny?150:50); else useMegaStone(i,b); }
+
+
+/* PSYWORLD SURVIVOR RESUME GUARD V8 */
+(function(){
+  'use strict';
+  const W=window,D=document;
+  W.PSYWORLD_BUILD='AVENTURA_SURVIVOR_RETOMADA_V9';
+
+  function laterFallback(){
+    const m=D.getElementById('psy-surv-resume-modal');
+    if(m)m.remove();
+    try{
+      const msg='Run do Survivor mantida. Você pode continuar depois pelo menu do Survivor.';
+      if(typeof W.notif==='function')W.notif(msg,3600);
+      else if(typeof W.toast==='function')W.toast(msg,3600);
+    }catch(_){ }
+  }
+
+  function ensureLaterButton(){
+    const modal=D.getElementById('psy-surv-resume-modal');
+    if(!modal)return false;
+    if(typeof W.psySurvLater!=='function')W.psySurvLater=laterFallback;
+    if(modal.querySelector('[data-psy-surv-later="1"]'))return true;
+
+    // Find the action row used by both the legacy 2-button modal and the current modal.
+    const buttons=[...modal.querySelectorAll('button')];
+    const yes=buttons.find(b=>/^\s*SIM\s*$/i.test(b.textContent||''));
+    const no=buttons.find(b=>/^\s*N[ÃA]O\s*$/i.test(b.textContent||''));
+    if(!yes||!no||yes.parentElement!==no.parentElement)return false;
+
+    const b=D.createElement('button');
+    b.type='button';
+    b.className=no.className||'psy20-btn';
+    b.dataset.psySurvLater='1';
+    b.textContent='DEPOIS';
+    b.style.background='#0369a1';
+    b.style.color='#fff';
+    b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();(W.psySurvLater||laterFallback)();};
+    no.parentElement.insertBefore(b,no);
+
+    const paragraphs=[...modal.querySelectorAll('p')];
+    const info=paragraphs.find(x=>/progresso salvo|run será restaurado/i.test(x.textContent||''));
+    if(info&&!/DEPOIS/i.test(info.textContent||'')){
+      info.insertAdjacentHTML('beforeend','<br><b style="color:#7dd3fc">DEPOIS</b> fecha esta tela e mantém a run salva para continuar mais tarde.');
+    }
+    return true;
+  }
+
+  W.psyEnsureSurvivorLaterButton=ensureLaterButton;
+  const start=()=>{
+    ensureLaterButton();
+    const target=D.body||D.documentElement;
+    if(!target)return setTimeout(start,0);
+    const mo=new MutationObserver(()=>ensureLaterButton());
+    mo.observe(target,{childList:true,subtree:true});
+    // Extra checks cover modals whose HTML is replaced without a new outer node.
+    setTimeout(ensureLaterButton,500);
+    setTimeout(ensureLaterButton,1500);
+    setTimeout(ensureLaterButton,3500);
+  };
+  if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();

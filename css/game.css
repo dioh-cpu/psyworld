@@ -1711,6 +1711,22 @@ body:has(#screen-survivor-v12[style*="display:block"]) .psy22-buffs{display:none
 
 
 #screen-world,#screen-survivor-v12,#battle-screen,#screen-card-mode,#screen-pokedex,#screen-bag,#screen-team,#screen-shop,#screen-hunts{contain:paint}
+
+/* Item UI — one visual language for Shop, Bag, Craft, Vendor and Quest loot */
+.psy-inventory-panel{width:min(1120px,97vw)!important;max-height:94vh!important;padding:18px!important;background:radial-gradient(circle at 12% 0,#172554 0,transparent 30%),linear-gradient(180deg,#0a1222,#030711 75%)!important;border:1px solid #315b8d!important;border-radius:22px!important;box-shadow:0 24px 80px #000d,0 0 0 1px #ffffff0a inset!important}
+.psy-bag-panel{width:min(940px,97vw)!important}
+.psy-inventory-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:3px 52px 12px 2px;border-bottom:1px solid #263d60}
+.psy-inventory-head h2{margin:2px 0!important;text-align:left!important;font-size:24px!important;letter-spacing:.07em}.psy-inventory-head p{margin:0;color:#7891b2;font-size:11px}.psy-kicker{color:#67e8f9;font-size:9px;font-weight:1000;letter-spacing:.22em}.psy-wallet{padding:8px 12px;border:1px solid #3d5f8c;border-radius:999px;background:#071426;color:#facc15;font-size:11px;font-weight:1000;white-space:nowrap}
+.psy-item-filters{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:10px 1px 8px;scrollbar-width:thin}.psy-item-filters button,.psy-tabbar5 button{min-width:max-content;border:1px solid #304966!important;border-radius:9px!important;padding:8px 12px!important;background:#0a1424!important;color:#9fb4cd!important;font-size:10px!important;font-weight:1000!important;letter-spacing:.04em}.psy-item-filters button.active,.psy-item-filters button:hover,.psy-tabbar5 button:hover{border-color:#38bdf8!important;background:#0b2740!important;color:#e0f2fe!important;box-shadow:0 0 12px #38bdf82c}
+.psy-item-grid{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(142px,1fr))!important;gap:9px!important;max-height:57vh!important;overflow:auto!important;padding:5px 4px 10px!important}
+.psy-item-card{position:relative;min-width:0;min-height:188px;padding:22px 9px 9px;border:1px solid color-mix(in srgb,var(--item) 62%,#334155);border-radius:14px;background:radial-gradient(circle at 50% 31%,color-mix(in srgb,var(--item) 14%,transparent),transparent 35%),linear-gradient(180deg,#10192a,#070c16);box-shadow:0 0 0 1px #ffffff06 inset;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;transition:.14s}.psy-item-card:hover,.psy-item-card.selected{transform:translateY(-2px);border-color:var(--item);box-shadow:0 9px 22px #0008,0 0 14px color-mix(in srgb,var(--item) 28%,transparent)}
+.psy-item-tag{position:absolute;left:7px;top:7px;padding:2px 6px;border:1px solid color-mix(in srgb,var(--item) 70%,white);border-radius:999px;color:var(--item);background:#030711;font-size:7px;font-weight:1000;letter-spacing:.09em}.psy-item-art{height:58px;display:grid;place-items:center;color:var(--item)}.psy-item-art .psy-item-sprite{width:54px;height:54px}.psy-item-name{min-height:27px;display:grid;place-items:center;color:#f8fafc;font-size:11px;line-height:1.15;font-weight:1000}.psy-item-info{color:var(--item);font-size:8px;min-height:20px;line-height:1.2}.psy-item-owned,.psy-item-stock{width:100%;margin:5px 0;padding:3px 7px;border-radius:999px;background:#02050b;color:#facc15;font-size:10px;font-weight:1000}.psy-item-stock{color:#8298b5;font-size:8px}.psy-item-card>button{width:100%;margin-top:auto;border:1px solid color-mix(in srgb,var(--item) 70%,white);border-radius:8px;padding:7px 5px;background:color-mix(in srgb,var(--item) 72%,#111827);color:#fff;font-size:8px;font-weight:1000}.psy-shop-price{color:#facc15;font-size:11px;font-weight:1000}
+.psy-purchase-bar{position:sticky;bottom:0;z-index:4;margin-top:8px;padding:10px;display:grid;grid-template-columns:1fr 76px minmax(180px,.4fr);gap:9px;align-items:center;background:#040711f2;border:1px solid #314663;border-radius:13px;backdrop-filter:blur(8px)}#shop-detail{display:flex!important;flex-direction:column;gap:2px;color:#8196b3!important;font-size:10px!important}#shop-detail b{color:#fff;font-size:12px}#shop-detail span{color:#8aa0bd}#shop-qty{width:100%!important;height:38px!important}#btn-buy{height:40px!important}
+.psy-craft5{grid-template-columns:170px 1fr 120px!important;padding:12px!important;border-color:color-mix(in srgb,var(--c) 58%,#334155)!important;background:radial-gradient(circle at 10% 50%,color-mix(in srgb,var(--c) 13%,transparent),transparent 28%),#09111f!important}.psy-craft-flow{display:grid;grid-template-columns:54px auto 20px 54px auto;gap:5px;align-items:center}.psy-craft-flow span{width:54px;height:54px;display:grid;place-items:center;border-radius:12px;background:#020611;border:1px solid #ffffff17}.psy-craft-flow i{color:var(--c);font-style:normal;font-size:18px}.psy-craft-flow b{color:#fff;font-size:9px}.psy-craft5 h3{margin:0 0 4px;color:#fff}.psy-craft-stock{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}.psy-craft-stock span{padding:4px 7px;border:1px solid #29425e;border-radius:999px;color:#91a7c0;font-size:9px}.psy-craft5>button{border:1px solid color-mix(in srgb,var(--c) 72%,white);border-radius:9px;padding:10px;background:color-mix(in srgb,var(--c) 70%,#0f172a);color:#fff;font-weight:1000}.psy-craft5>button:disabled{filter:grayscale(1);opacity:.35}
+.psy-v10-sell-panel{max-width:1040px!important;background:linear-gradient(180deg,#101827,#050811)!important;border-color:#f59e0b!important;border-radius:20px!important}.psy-v10-sell-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))!important}.psy-v10-sell-card{display:grid;grid-template-columns:66px 1fr;gap:9px;align-items:center;padding:10px!important;border-color:#3d4b60!important;background:#0b1422!important}.psy-v10-sell-card .psy-item-art{grid-row:1/3;height:64px}.psy-sell-copy b{display:block!important}.psy-sell-copy small,.psy-sell-copy strong{display:block;margin-top:3px}.psy-sell-copy strong{color:#facc15;font-size:10px}.psy-sell-actions{grid-column:1/-1;display:flex;gap:5px}.psy-sell-actions button{flex:0 0 auto!important;background:#92400e!important}.psy-sell-actions .all{flex:1!important;background:#b45309!important}
+.psy20-ach .psy-item-sprite{width:48px!important;height:48px!important;padding:5px;border:1px solid #ffffff16;border-radius:10px;background:#030711}.psy20-ach>div:has(.psy-item-sprite){background:#07111f;border-radius:10px;padding:5px}
+@media(max-width:700px){.psy-inventory-panel{padding:10px!important}.psy-inventory-head{padding-right:42px}.psy-inventory-head h2{font-size:19px!important}.psy-item-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}.psy-item-card{min-height:170px;padding-inline:5px}.psy-item-name{font-size:9px}.psy-purchase-bar{grid-template-columns:1fr 64px}.psy-purchase-bar #btn-buy{grid-column:1/-1}.psy-craft5{grid-template-columns:1fr!important}.psy-craft-flow{justify-content:center}.psy-v10-sell-grid{grid-template-columns:1fr!important}}
+@media(max-width:430px){.psy-item-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.psy-wallet{font-size:9px;padding:6px 8px}}
 #psy-clean-surv-canvas,#worldCanvas,#gameCanvas{transform:translateZ(0);backface-visibility:hidden}
 .dex-card,.psy15-sticker,.psy22-zone,.psy20-ach,.dungeon-card,.psy19-hunt,.psy22-pull,.psy-surv-upcard{content-visibility:auto;contain-intrinsic-size:140px 140px}
 @media (prefers-reduced-motion: reduce){.dex-card img,.psy-egg,.psy22-node img{animation-duration:4s!important}}
@@ -1829,4 +1845,223 @@ button[data-psy-module][data-psy-installed="1"]::after{
 }
 @media(max-width:600px){
   #btn-city-content-toggle{min-width:138px;font-size:10px!important;padding:8px 10px!important}
+}
+
+
+/* ============================================================
+   PSYWORLD ANDROID — SURVIVOR RESPONSIVE PAUSE / SAFE VIEWPORT
+   Keeps CONTINUAR / SAIR DA FASE always reachable on landscape.
+   ============================================================ */
+#screen-survivor-v12 .psy-clean-surv{
+  width:100dvw !important;
+  height:100dvh !important;
+  max-width:100dvw !important;
+  max-height:100dvh !important;
+}
+
+#screen-survivor-v12 .psy-clean-surv-pause{
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+  padding:
+    clamp(5px,1.4dvh,12px)
+    max(clamp(6px,1.3dvw,14px),env(safe-area-inset-right,0px))
+    max(clamp(5px,1.4dvh,12px),env(safe-area-inset-bottom,0px))
+    max(clamp(6px,1.3dvw,14px),env(safe-area-inset-left,0px)) !important;
+}
+
+#screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog{
+  box-sizing:border-box !important;
+  width:min(860px,100%) !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  min-height:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+  padding:clamp(8px,1.8dvh,18px) !important;
+}
+
+#screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog h2{
+  flex:0 0 auto !important;
+  margin:0 0 clamp(5px,1.2dvh,12px) !important;
+  line-height:1.05 !important;
+  font-size:clamp(15px,3.8dvh,23px) !important;
+}
+
+#screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-list{
+  flex:1 1 auto !important;
+  min-height:0 !important;
+  max-height:none !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  overscroll-behavior:contain !important;
+  -webkit-overflow-scrolling:touch !important;
+  touch-action:pan-y !important;
+  padding-right:5px !important;
+  padding-bottom:8px !important;
+}
+
+#screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog-actions{
+  flex:0 0 auto !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:8px !important;
+  margin:0 !important;
+  padding:8px 0 0 !important;
+  background:linear-gradient(180deg,transparent,#07111f 25%) !important;
+  position:relative !important;
+  z-index:5 !important;
+}
+
+#screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog-actions button{
+  min-width:0 !important;
+  width:100% !important;
+  min-height:40px !important;
+  padding:8px 10px !important;
+  font-size:clamp(10px,2.7dvh,13px) !important;
+  white-space:nowrap !important;
+}
+
+@media (orientation:landscape) and (max-height:520px){
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog{
+    padding:7px 9px !important;
+    border-radius:12px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog h2{
+    font-size:15px !important;
+    margin-bottom:4px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-list{
+    gap:5px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-summary{
+    min-height:48px !important;
+    padding:5px 7px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-summary small{
+    font-size:7px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-summary b,
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-summary span{
+    font-size:9px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-powergrid{
+    gap:5px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-power{
+    min-height:56px !important;
+    grid-template-columns:38px 1fr !important;
+    padding:5px !important;
+    gap:5px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-power img{
+    width:36px !important;
+    height:36px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-power-copy b{
+    font-size:10px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-power-copy span{
+    font-size:7px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-history-list{
+    max-height:72px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog-actions{
+    padding-top:5px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog-actions button{
+    min-height:36px !important;
+    padding:6px 8px !important;
+    font-size:10px !important;
+  }
+}
+
+@media (orientation:landscape) and (max-height:390px){
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog h2{
+    font-size:13px !important;
+    margin-bottom:3px !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-list{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-pause-powergrid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  #screen-survivor-v12 .psy-clean-surv-pause .psy-surv-dialog-actions button{
+    min-height:34px !important;
+  }
+}
+
+#screen-survivor-v12 .psy-clean-surv-top{
+  box-sizing:border-box !important;
+  padding-left:max(6px,env(safe-area-inset-left,0px)) !important;
+  padding-right:max(6px,env(safe-area-inset-right,0px)) !important;
+}
+
+
+/* ============================================================
+   PSYWORLD ANDROID — SAFE POSITION FOR MENU + FAST ENCOUNTER
+   Moves the top utility buttons inward so they stay clickable
+   on fullscreen / notch / gesture-navigation phones.
+   ============================================================ */
+html body #menuBtn{
+  position:fixed!important;
+  left:auto!important;
+  top:max(10px, calc(env(safe-area-inset-top, 0px) + 8px))!important;
+  right:calc(max(12px, env(safe-area-inset-right, 0px)) + 58px)!important;
+  z-index:1000201!important;
+  min-height:32px!important;
+  height:32px!important;
+  padding:5px 10px!important;
+  font-size:10px!important;
+  border-width:2px!important;
+  border-radius:10px!important;
+  white-space:nowrap!important;
+}
+html body #fastEncounterBtn{
+  position:fixed!important;
+  top:max(10px, calc(env(safe-area-inset-top, 0px) + 10px))!important;
+  right:max(16px, calc(env(safe-area-inset-right, 0px) + 10px))!important;
+  z-index:1000202!important;
+  width:30px!important;
+  height:30px!important;
+  min-width:30px!important;
+  max-width:30px!important;
+  border-width:3px!important;
+}
+html body #world-btn-float{
+  top:max(58px, calc(env(safe-area-inset-top, 0px) + 54px))!important;
+  right:max(10px, calc(env(safe-area-inset-right, 0px) + 6px))!important;
+}
+@media (orientation:landscape) and (max-height:700px){
+  html body #menuBtn{
+    top:max(8px, calc(env(safe-area-inset-top, 0px) + 6px))!important;
+    right:calc(max(12px, env(safe-area-inset-right, 0px)) + 54px)!important;
+    min-height:30px!important;
+    height:30px!important;
+    padding:4px 9px!important;
+    font-size:9px!important;
+  }
+  html body #fastEncounterBtn{
+    top:max(8px, calc(env(safe-area-inset-top, 0px) + 8px))!important;
+    right:max(14px, calc(env(safe-area-inset-right, 0px) + 8px))!important;
+    width:28px!important;
+    height:28px!important;
+    min-width:28px!important;
+    max-width:28px!important;
+  }
+  html body #world-btn-float{
+    top:max(52px, calc(env(safe-area-inset-top, 0px) + 48px))!important;
+  }
+}
+@media (max-width:760px){
+  html body #menuBtn{
+    right:calc(max(12px, env(safe-area-inset-right, 0px)) + 52px)!important;
+  }
+  html body #fastEncounterBtn{
+    right:max(14px, calc(env(safe-area-inset-right, 0px) + 8px))!important;
+  }
 }

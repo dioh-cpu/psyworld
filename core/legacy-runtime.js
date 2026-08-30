@@ -1996,6 +1996,7 @@ function getPokeAnim(p){
   return getRealSprite(p);
 }
 function getItemIcon(name){
+  if(window.PSY_ITEMS) return window.PSY_ITEMS.html(name,name);
   if(name.includes("Pokéball")) return "🔴";
   if(name.includes("Great")) return "🔵";
   if(name.includes("Super")) return "🟡";
@@ -2033,55 +2034,55 @@ function getCuraValue(poke, name){
 
 function openBag(){
   window.bagBattleMode=null;
+  window.psyBagFilter='all';
   document.getElementById('bag-title').innerText="🎒 MOCHILA";
   renderBag();
   document.getElementById('screen-bag').style.display='flex';
   document.getElementById('menu').style.display='none';
 }
 
+window.psyBagFilter='all';
+window.psySetBagFilter=function(filter,button){window.psyBagFilter=filter;document.querySelectorAll('#bag-filters button').forEach(b=>b.classList.toggle('active',b===button));renderBag()};
 function renderBag(){
   const bl=document.getElementById('bag-list');
   if(!bl) return;
+  if(window.PSY_ITEMS?.migrateInventory?.())try{autoSave()}catch(e){}
 
   let items=Object.entries(P.inventory).filter(([n,q])=>q>0);
   if(window.bagBattleMode==='potion') items=items.filter(([n])=>n.includes("Poção"));
   if(window.bagBattleMode==='ball') items=items.filter(([n])=>n.includes("Ball"));
   if(window.bagBattleMode==='stone') items=items.filter(([n])=>n.includes("Stone"));
 
-  // ordena: ball > potion > stone
-  items.sort((a,b)=>{
-    let order = t => t[0].includes("Ball")?0 : t[0].includes("Poção")?1 : 2;
-    return order(a)-order(b);
-  });
+  const itemCategory=name=>window.PSY_ITEMS?.category(name)||(name.includes('Ball')?'ball':name.includes('Poção')?'potion':name.includes('Stone')?'stone':'item');
+  if(!window.bagBattleMode&&window.psyBagFilter!=='all')items=items.filter(([n])=>window.psyBagFilter==='other'?!['ball','potion','stone','craft','quest'].includes(itemCategory(n)):itemCategory(n)===window.psyBagFilter);
+  const order={ball:0,potion:1,stone:2,craft:3,quest:4,egg:5,pack:6,tm:7,currency:8,item:9};
+  items.sort((a,b)=>(order[itemCategory(a[0])]??9)-(order[itemCategory(b[0])]??9)||a[0].localeCompare(b[0]));
+  const count=document.getElementById('bag-item-count');if(count)count.textContent=`${items.reduce((s,x)=>s+Number(x[1]||0),0).toLocaleString('pt-BR')} ITENS`;
 
   let html="";
   items.forEach(([name,qtd])=>{
-    let isStone=name.includes("Stone");
-    let isPotion=name.includes("Poção");
-    let isBall=name.includes("Ball");
-
-    let borderColor = isBall?"#ffd700" : isPotion?"#00ff88" : "#7c3aed";
-    let btnText=isStone?"EVOLUIR":isPotion?"CURAR":"CAPTURAR";
-    let btnColor=isStone?"#7c3aed":isPotion?"#00aa44":"#d4a017";
+    const cat=itemCategory(name),isStone=cat==='stone',isPotion=cat==='potion',isBall=cat==='ball';
+    const colors={ball:'#facc15',potion:'#34d399',stone:'#a78bfa',craft:'#38bdf8',quest:'#fb923c',egg:'#f472b6',pack:'#c084fc',tm:'#60a5fa',currency:'#fbbf24',item:'#94a3b8'};
+    const borderColor=colors[cat]||colors.item;
+    let btnText=isStone?'EVOLUIR':isPotion?'USAR':isBall?'USAR NA BATALHA':'DETALHES';
 
     // info extra
     let info = "";
     if(POTION_DATA[name]?.pct) info = `${POTION_DATA[name].pct}% HP`;
     else if(POTION_DATA[name]?.cura) info = `+${POTION_DATA[name].cura}`;
     else if(BALL_DATA[name]) info = `${BALL_DATA[name].chance}x`;
-    else info = "+0";
+    else info = window.PSY_ITEMS?.detail(name)||'Item especial';
 
-    let action = window.bagBattleMode==='potion'?`usePotionBattle('${name}')`:window.bagBattleMode==='ball'?`tryCaptureBattle('${name}')`:`useItemFromBag('${name}')`;
+    const encoded=encodeURIComponent(name);
+    let action = window.bagBattleMode==='potion'?`usePotionBattle(decodeURIComponent('${encoded}'))`:window.bagBattleMode==='ball'?`tryCaptureBattle(decodeURIComponent('${encoded}'))`:(isStone||isPotion||isBall)?`useItemFromBag(decodeURIComponent('${encoded}'))`:`notif(decodeURIComponent('${encodeURIComponent(name+' • '+info)}'),2200)`;
 
-    html+=`<div style="background:#1a1a2e; border:2px solid ${borderColor}; border-radius:12px; padding:8px 4px; text-align:center; position:relative; transition:.15s; box-shadow:0 0 8px ${borderColor}44;"
-      onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 15px ${borderColor}99'"
-      onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 8px ${borderColor}44'">
-      <div style="position:absolute; top:2px; left:2px; font-size:7px; font-weight:900; padding:2px 5px; border-radius:4px; background:#000; border:1px solid ${borderColor}; color:${borderColor};">${isBall?'BALL':isPotion?'POTION':'STONE'}</div>
-      <div style="font-size:32px; margin-top:12px; filter:drop-shadow(0 0 6px ${borderColor});">${getItemIcon(name)}</div>
-      <div style="font-size:10px; color:#fff; font-weight:900; margin:4px 0; line-height:1.1; height:22px; overflow:hidden;">${name}</div>
-      <div style="font-size:10px; color:${borderColor}; font-weight:bold;">${info}</div>
-      <div style="font-size:12px; color:#ffd700; font-weight:900; background:#000; border-radius:10px; margin:4px 0;">x${qtd}</div>
-      <button onclick="${action}" style="width:100%; background:${btnColor}; border:none; color:#fff; padding:6px; border-radius:6px; font-size:10px; font-weight:900; cursor:pointer;">${btnText}</button>
+    html+=`<div class="psy-item-card" style="--item:${borderColor}">
+      <div class="psy-item-tag">${window.PSY_ITEMS?.label(name)||cat.toUpperCase()}</div>
+      <div class="psy-item-art">${getItemIcon(name)}</div>
+      <div class="psy-item-name">${name}</div>
+      <div class="psy-item-info">${info}</div>
+      <div class="psy-item-owned">x${Number(qtd).toLocaleString('pt-BR')}</div>
+      <button onclick="${action}">${btnText}</button>
     </div>`;
   });
 
@@ -2467,10 +2468,10 @@ if(typeof P.worldBuffs==='undefined') P.worldBuffs={cap:0,gold:0,xp:0,dmg:0,hp:0
 // ==================== SISTEMA TREINADOR + DROP + HORDA V10 CORRIGIDO ====================
 const TYPE_TO_STONE = {
   "Fogo":"Fire Stone","Agua":"Water Stone","Planta":"Leaf Stone","Eletrico":"Thunder Stone",
-  "Gelo":"Ice Stone","Lutador":"Fighting Stone","Venenoso":"Poison Stone","Veneno":"Poison Stone",
-  "Terra":"Ground Stone","Voador":"Flying Stone","Psiquico":"Psychic Stone","Inseto":"Bug Stone",
-  "Pedra":"Rock Stone","Fantasma":"Ghost Stone","Dragao":"Dragon Stone","Noturno":"Dark Stone",
-  "Sombrio":"Dark Stone","Aco":"Metal Stone","Metal":"Metal Stone","Fada":"Fairy Stone","Normal":"Normal Stone"
+  "Gelo":"Ice Stone","Lutador":"Punch Stone","Venenoso":"Venom Stone","Veneno":"Venom Stone",
+  "Terra":"Earth Stone","Voador":"Feather Stone","Psiquico":"Enigma Stone","Inseto":"Cocoon Stone",
+  "Pedra":"Rock Stone","Fantasma":"Darkness Stone","Dragao":"Crystal Stone","Noturno":"Darkness Stone",
+  "Sombrio":"Darkness Stone","Aco":"Metal Stone","Metal":"Metal Stone","Fada":"Heart Stone","Normal":"Heart Stone"
 };
 
 function psyTrainerXpNeed(level){
@@ -4144,39 +4145,42 @@ const SHOP_DG = [
   {n:"Leaf Stone",p:20000,t:"stone",i:"🍃",d:"Planta"},
   {n:"Thunder Stone",p:20000,t:"stone",i:"⚡",d:"Elétrico"},
   {n:"Ice Stone",p:20000,t:"stone",i:"❄",d:"Gelo"},
-  {n:"Fighting Stone",p:20000,t:"stone",i:"👊",d:"Lutador"},
-  {n:"Poison Stone",p:20000,t:"stone",i:"☠",d:"Venenoso"},
-  {n:"Ground Stone",p:20000,t:"stone",i:"⛰",d:"Terra"},
-  {n:"Flying Stone",p:20000,t:"stone",i:"🕊",d:"Voador"},
-  {n:"Psychic Stone",p:20000,t:"stone",i:"🔮",d:"Psíquico"},
-  {n:"Bug Stone",p:20000,t:"stone",i:"🐛",d:"Inseto"},
+  {n:"Punch Stone",p:20000,t:"stone",i:"👊",d:"Lutador"},
+  {n:"Venom Stone",p:20000,t:"stone",i:"☠",d:"Veneno"},
+  {n:"Earth Stone",p:20000,t:"stone",i:"⛰",d:"Terra"},
+  {n:"Feather Stone",p:20000,t:"stone",i:"🕊",d:"Voador"},
+  {n:"Enigma Stone",p:20000,t:"stone",i:"🔮",d:"Psíquico"},
+  {n:"Cocoon Stone",p:20000,t:"stone",i:"🐛",d:"Inseto"},
   {n:"Rock Stone",p:20000,t:"stone",i:"🪨",d:"Pedra"},
-  {n:"Ghost Stone",p:20000,t:"stone",i:"👻",d:"Fantasma"},
-  {n:"Dragon Stone",p:20000,t:"stone",i:"🐉",d:"Dragão"},
-  {n:"Dark Stone",p:20000,t:"stone",i:"🌙",d:"Sombrio"},
+  {n:"Crystal Stone",p:20000,t:"stone",i:"🐉",d:"Dragão / Fada"},
+  {n:"Darkness Stone",p:20000,t:"stone",i:"👻",d:"Fantasma / Sombrio"},
   {n:"Metal Stone",p:20000,t:"stone",i:"⚙",d:"Metálico"},
-  {n:"Fairy Stone",p:20000,t:"stone",i:"🧚",d:"Fada"},
-  {n:"Normal Stone",p:20000,t:"stone",i:"⚪",d:"Normal"},
+  {n:"Heart Stone",p:20000,t:"stone",i:"💗",d:"Normal / Fada"},
   {n:"Mystery Egg",p:750000,t:"egg",i:"🥚",d:"Qualquer geração • 1% Shiny • qualidade E-S",eggOpts:{}},
   {n:"Regional Egg",p:1000000,t:"egg",i:"🗺️",d:"Região aleatória • 1% Shiny • qualidade E-S",eggRandomRegion:true},
   {n:"Type Egg",p:850000,t:"egg",i:"🧬",d:"Tipo aleatório • 1% Shiny • qualidade E-S",eggRandomType:true},
 ];
 let selShop=null;
+window.psyShopFilter='all';
+window.psySetShopFilter=function(filter,button){window.psyShopFilter=filter;document.querySelectorAll('#shop-filters button').forEach(b=>b.classList.toggle('active',b===button));selShop=null;openShop()};
 
 openShop=function(){
+  if(Array.isArray(SHOP_DG)){for(let i=SHOP_DG.length-1;i>=0;i--){const it=SHOP_DG[i];if(it?.t==='cardpack'||it?.n==='Pack Cards Normal'||it?.n==='Pack Cards Raro')SHOP_DG.splice(i,1)}}
+  if(window.PSY_ITEMS?.migrateInventory?.())try{autoSave()}catch(e){}
   document.getElementById('screen-shop').style.display='flex';
+  const wallet=document.getElementById('shop-wallet-gold');if(wallet)wallet.textContent=Number(P.gold||0).toLocaleString('pt-BR');
   let g=document.getElementById('shop-grid');
-  g.className='';
-  g.style.cssText='display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-height:62vh; overflow:auto; padding:8px;';
-  g.innerHTML=SHOP_DG.map((it,idx)=>{
+  g.className='psy-item-grid psy-shop-grid';g.style.cssText='';
+  g.innerHTML=SHOP_DG.map((it,idx)=>({it,idx})).filter(({it})=>it?.t!=='cardpack'&&it?.n!=='Pack Cards Normal'&&it?.n!=='Pack Cards Raro').filter(({it})=>window.psyShopFilter==='all'||it.t===window.psyShopFilter).map(({it,idx})=>{
     let qtd=P.inventory[it.n]||0;
-    let bColor=it.t=='ball'?'#ffd700':it.t=='potion'?'#00ff88':'#7c3aed';
-    return `<div onclick="selShop=${idx}; window.updateShopTotal()" 
-    style="background:#1a1a2e; border:2px solid ${bColor}; border-radius:12px; padding:8px 4px; text-align:center; cursor:pointer;">
-      <div style="font-size:26px;">${it.i}</div>
-      <div style="font-size:10px; color:#fff; font-weight:bold;">${it.n}</div>
-      <div style="font-size:9px; color:#ffd700;">💰 ${it.p}</div>
-      <div style="font-size:8px; color:#888;">tem ${qtd}</div>
+    let bColor=it.t==='ball'?'#facc15':it.t==='potion'?'#34d399':'#a78bfa';
+    return `<div class="psy-item-card psy-shop-card ${selShop===idx?'selected':''}" data-shop-index="${idx}" onclick="selShop=${idx}; window.updateShopTotal()" style="--item:${bColor}">
+      <div class="psy-item-tag">${it.t==='ball'?'BALL':it.t==='potion'?'CURA':'STONE'}</div>
+      <div class="psy-item-art">${getItemIcon(it.n)}</div>
+      <div class="psy-item-name">${it.n}</div>
+      <div class="psy-item-info">${it.d}</div>
+      <div class="psy-shop-price">💰 ${Number(it.p).toLocaleString('pt-BR')}</div>
+      <div class="psy-item-stock">NA BOLSA: <b>${Number(qtd).toLocaleString('pt-BR')}</b></div>
     </div>`;
   }).join('');
   let qtyInput=document.getElementById('shop-qty');
@@ -4187,7 +4191,7 @@ window.updateShopTotal=function(){
   let qty=Math.max(1,Math.min(99,parseInt(document.getElementById('shop-qty').value)||1));
   document.getElementById('shop-qty').value=qty;
   if(selShop==null){
-    document.getElementById('shop-detail').innerHTML="Clique num quadradinho ↑";
+    document.getElementById('shop-detail').innerHTML="Selecione um item para ver o total.";
     document.getElementById('btn-buy').textContent=`COMPRAR x${qty}`;
     return;
   }
@@ -4195,13 +4199,15 @@ window.updateShopTotal=function(){
   let total=it.p*qty;
   let tem=P.inventory[it.n]||0;
   let pode=P.gold>=total;
-  document.getElementById('shop-detail').innerHTML=`<b style=color:#fff>${it.n}</b> - ${it.d}<br><span style="color:${pode?'#00ff88':'#ff4444'}">💰 ${it.p} x ${qty} = ${total.toLocaleString()} | Gold: ${P.gold.toLocaleString()}</span><br><span style=color:#888>Tem: ${tem}</span>`;
-  document.getElementById('btn-buy').textContent=`COMPRAR x${qty} - ${total.toLocaleString()}`;
+  document.querySelectorAll('#shop-grid .psy-shop-card').forEach(c=>c.classList.toggle('selected',Number(c.dataset.shopIndex)===selShop));
+  document.getElementById('shop-detail').innerHTML=`<b>${it.n}</b><span>${it.d} • Na bolsa: ${Number(tem).toLocaleString('pt-BR')}</span><strong style="color:${pode?'#86efac':'#fb7185'}">${Number(it.p).toLocaleString('pt-BR')} × ${qty} = ${total.toLocaleString('pt-BR')} Gold</strong>`;
+  document.getElementById('btn-buy').textContent=`COMPRAR x${qty}`;
   document.getElementById('btn-buy').style.background=pode?'#ff0055':'#444';
 }
 function buyMulti(){
   if(selShop==null){notif('Selecione um item');return;}
   let it=SHOP_DG[selShop];
+  if(it?.t==='cardpack'||it?.n==='Pack Cards Normal'||it?.n==='Pack Cards Raro'){selShop=null;openShop();return notif('Este Pack não é vendido na Poké Shop.');}
   let q=Math.max(1,Math.min(99,parseInt(document.getElementById('shop-qty').value)||1));
   let tot=it.p*q;
   if(P.gold<tot){notif('❌ Sem Gold!');return;}
@@ -4666,15 +4672,20 @@ function curarTimeCity(){
 }
 
 console.log('🔥 PATCH MEGA V3 FIX REAL');
-const TIER_SHINY_COST = {E:10,D:20,C:30,B:40,A:50,S:60,SS:70,SSS:80,UR:200,"UR+":200};
+const TIER_SHINY_COST = Object.freeze({E:10,D:20,C:30,B:40,A:50,S:60,SS:70,SSS:80,UR:200,"UR+":300});
 if(!P.inventory["Boost Stone"]) P.inventory["Boost Stone"]=0;
 if(!P.inventory["Shiny Stone"]) P.inventory["Shiny Stone"]=0;
 if(!P.inventory["Fragmento Mega Stone"]) P.inventory["Fragmento Mega Stone"]=0;
 if(!P.inventory["Ultra Ball"]) P.inventory["Ultra Ball"]=0;
 function getTierCost(pokeId){
-  let tier = typeof getTier==='function'?getTier(pokeId,false,false,false):'E';
-  return TIER_SHINY_COST[tier]||10;
+  const id=Number(pokeId?.id ?? pokeId);
+  const tier = typeof getTier==='function'?getTier(id,false,false,false):'E';
+  return Number(TIER_SHINY_COST[tier]??10);
 }
+/* Fonte única para custo de Shiny Stone no Time/Box e nas evoluções Shiny. */
+window.TIER_SHINY_COST=TIER_SHINY_COST;
+window.getTierCost=getTierCost;
+window.getShinyStoneCost=function(pokeOrId){return getTierCost(pokeOrId);};
 
 window.calcDetailedStats = function(poke){
   if(typeof ensureTrainerData==='function') ensureTrainerData();
@@ -5252,7 +5263,8 @@ async function psyRenderEvolutionTree(idx,isBox){
     });
     chain+='</div>';
   });
-  const shinyCost=typeof getShinyStoneCost==='function'?getShinyStoneCost(p.id):1;
+  const shinyCost=typeof window.getShinyStoneCost==='function'?window.getShinyStoneCost(p):(typeof getTierCost==='function'?getTierCost(p.id):10);
+  const shinyBaseTier=typeof getTier==='function'?getTier(p.id,false,false,false):'E';
   const shinyHave=Number(P.inventory["Shiny Stone"]||0);
   const canShiny=!p.shiny && shinyHave>=shinyCost;
   const shinyReq=p.shiny&&typeof shinyEvoReq==='function'?shinyEvoReq(p):null;
@@ -5270,7 +5282,7 @@ async function psyRenderEvolutionTree(idx,isBox){
       <div class="psy-form-card ${canShiny?'':'locked'}">
         <img class="poke-aura-shiny" src="${getRealSprite({id:p.id,shiny:true,isMega:false})}">
         <div style="font-size:9px;font-weight:900">✨ SHINY</div>
-        <div style="font-size:7px;color:#aaa">${shinyCost} Shiny Stone • tem ${shinyHave}</div>
+        <div style="font-size:7px;color:#aaa">Tier ${shinyBaseTier} • <b>${shinyCost} Shiny Stone</b> • tem ${shinyHave}</div>
         <button ${canShiny?'':'disabled'} onclick="psyTreeMakeShiny(${idx},${isBox})" style="background:${canShiny?'#e600d7':'#333'};color:#fff">${canShiny?'DESBLOQUEAR':'🔒'}</button>
       </div>`;
   }else if(shinyReq){
@@ -5280,7 +5292,7 @@ async function psyRenderEvolutionTree(idx,isBox){
       <div class="psy-form-card ${canShinyEvolve?'':'locked'}">
         <img class="poke-aura-shiny" src="${getRealSprite({id:shinyNextId,shiny:true,isMega:false})}">
         <div style="font-size:9px;font-weight:900;color:#f0abfc">✨ SHINY ${nextName}</div>
-        <div style="font-size:7px;color:#ddd;line-height:1.35">Próxima evolução Shiny<br><b>Lv.${shinyReq.min}</b> • <b>${shinyReq.cost} Shiny Stone</b><br>tem ${shinyHave}</div>
+        <div style="font-size:7px;color:#ddd;line-height:1.35">Próxima evolução Shiny • Tier <b>${shinyReq.tier||'—'}</b><br><b>Lv.${shinyReq.min}</b> • <b>${shinyReq.cost} Shiny Stone</b><br>tem ${shinyHave}</div>
         <button ${canShinyEvolve?'':'disabled'} onclick="psyTreeMakeShiny(${idx},${isBox})" style="background:${canShinyEvolve?'linear-gradient(90deg,#d946ef,#7c3aed)':'#333'};color:#fff">${reason}</button>
       </div>`;
   }else{
@@ -6768,7 +6780,7 @@ window.psyRarityForPokemon=function(id,shiny=false,mega=false,isBoss=false){
 window.useShinyStone=function(idx,isBox){
   const poke=isBox?P.box[idx]:P.team[idx];if(!poke)return;
   if(poke.shiny)return notif('✨ Este Pokémon já é Shiny. Evoluções Shiny usam a árvore.');
-  const baseCost=Math.max(30,typeof getTierCost==='function'?Number(getTierCost(poke.id)||30):30);
+  const baseCost=typeof window.getShinyStoneCost==='function'?Number(window.getShinyStoneCost(poke)||10):(typeof getTierCost==='function'?Number(getTierCost(poke.id)||10):10);
   const have=P.inventory["Shiny Stone"]||0;if(have<baseCost)return notif(`❌ Precisa ${baseCost} Shiny Stone (tem ${have})`,3200);
   P.inventory["Shiny Stone"]-=baseCost;if(P.inventory["Shiny Stone"]<=0)delete P.inventory["Shiny Stone"];
   poke.shiny=true;poke.rarity={...psyRarityForPokemon(poke.id,true,!!poke.isMega,false)};poke.tier=getTier(poke.id,true,!!poke.isMega,false);recalcPoke(poke);
@@ -6899,6 +6911,7 @@ window.PSY_SHOP_META={
 };
 function psyBeautifyShop(){
   const grid=document.getElementById('shop-grid');if(!grid)return;
+  if(grid.classList.contains('psy-shop-grid'))return;
   [...grid.children].forEach(card=>{
     const tx=card.textContent||'';let found=null;
     for(const k of Object.keys(PSY_SHOP_META))if(tx.includes(k)){found=k;break}
@@ -7096,7 +7109,7 @@ function psyBuildHudPretty(){
       <img src="https://play.pokemonshowdown.com/sprites/ani/psyduck.gif" alt="Psyduck">
       <span class="psy-hud-psyduck-copy">
         <b>PSYDUCK SUPREMO</b>
-        <small id="psy-hud-psyduck-progress">Fase 0/200 • Reset 0/1000</small>
+        <small id="psy-hud-psyduck-progress">Fase 0/400 • Reset 0/1000</small>
         <em>🎮 Abrir fases do Survivor</em>
       </span>
       <span class="psy-hud-psyduck-arrow">›</span>
@@ -7128,7 +7141,7 @@ function psyRefreshPrettyHud(){
     const psy=psyPool.find(x=>Number(x?.id)===54&&x?.psyduckChosen)||psyPool.find(x=>Number(x?.id)===54);
     const best=Number(P?.psyduck?.survivorBest||P?.meta?.psyTree?.survivorBest||P?.psyTree?.survivorBest||0);
     const resets=Number(psy?.resets||0);
-    psyProgress.textContent=`Fase ${best}/200 • Reset ${resets}/1000`;
+    psyProgress.textContent=`Fase ${best}/400 • Reset ${resets}/1000`;
   }
 }
 
@@ -7182,6 +7195,7 @@ window.openShop=function(){
   const r=psyOpenShopEggOld.apply(this,arguments);
   setTimeout(()=>{
     const g=document.getElementById('shop-grid');if(!g)return;
+    if(g.classList.contains('psy-shop-grid'))return;
     [...g.children].forEach((card,idx)=>{
       const it=SHOP_DG[idx];if(!it)return;
       if(it.t==='egg')card.classList.add('dungeon-card-mini','psy-egg-shop-card');
@@ -7218,7 +7232,7 @@ window.updateShopTotal=function(){
     const qty=Math.max(1,Math.min(20,parseInt(document.getElementById('shop-qty').value)||1));
     const total=it.p*qty,can=P.gold>=total;
     document.getElementById('shop-detail').innerHTML=
-      `<b style="color:#c4b5fd">${it.i} ${it.n}</b><br><span style="color:#aaa">${it.d}</span><br>`+
+      `<b style="color:#c4b5fd">${getItemIcon(it.n)} ${it.n}</b><br><span style="color:#aaa">${it.d}</span><br>`+
       `<span style="color:${can?'#00ff88':'#ff4444'}">💰 ${it.p.toLocaleString()} x ${qty} = ${total.toLocaleString()}</span><br>`+
       `<span style="color:#888">Cada Egg precisa de 300 derrotas para chocar.</span>`;
     document.getElementById('btn-buy').textContent=`COMPRAR ${qty} EGG${qty>1?'S':''} • ${total.toLocaleString()}`;
@@ -7529,20 +7543,16 @@ window.cgRenderPacks=function(c){
   <div class="cg-pack-grid">${Object.entries(CG_PACKS).map(([k,p])=>`<div class="cg-pack ${k}"><div class="pack-art">🎴</div><b>${p.name}</b><div class="psy-desc">${p.count} cartas • no máximo Tier ${p.maxTier}. Packs AFK nunca passam de Épico.</div><div style="color:${p.color};font-size:18px;font-weight:900">${P.cardGame.packs[k]||0}x</div><button ${(P.cardGame.packs[k]||0)<=0?'disabled':''} onclick="window.cgOpenPack('${k}')">ABRIR</button></div>`).join('')}</div>`;
 };
 
-/* gold shop pack items */
-if(!SHOP_DG.some(x=>x.t==='cardpack')){
-  SHOP_DG.push(
-    {n:'Pack Cards Normal',p:450000,t:'cardpack',i:'🎴',d:'3 cartas • até Tier B',pack:'normal'},
-    {n:'Pack Cards Raro',p:1400000,t:'cardpack',i:'💠',d:'5 cartas • até Tier S',pack:'rare'}
-  );
+/* Legacy card packs are no longer sold in the Poke Shop. */
+if(Array.isArray(SHOP_DG)){
+  for(let i=SHOP_DG.length-1;i>=0;i--){
+    const it=SHOP_DG[i];
+    if(it?.t==='cardpack'||it?.n==='Pack Cards Normal'||it?.n==='Pack Cards Raro')SHOP_DG.splice(i,1);
+  }
 }
 const cgBuyPackOld=window.buyMulti;
 window.buyMulti=function(){
-  if(selShop!=null&&SHOP_DG[selShop]?.t==='cardpack'){
-    cgEnsure4();const it=SHOP_DG[selShop],q=Math.max(1,Math.min(10,parseInt(document.getElementById('shop-qty').value)||1)),total=it.p*q;
-    if(P.gold<total)return notif('❌ Sem Gold suficiente!');
-    P.gold-=total;P.cardGame.packs[it.pack]=(P.cardGame.packs[it.pack]||0)+q;autoSave();updateHUD();notif(`🎴 +${q} ${it.n}!`,2600);openShop();return;
-  }
+  if(selShop!=null){const it=SHOP_DG[selShop];if(it?.t==='cardpack'||it?.n==='Pack Cards Normal'||it?.n==='Pack Cards Raro'){selShop=null;openShop();return notif('Este Pack não é vendido na Poké Shop.');}}
   return cgBuyPackOld.apply(this,arguments);
 };
 
@@ -7710,7 +7720,7 @@ window.PSY_TUTORIAL_STEPS=[
  {icon:'🏆',title:'Ginásios, Level Cap e Trainer',body:'A progressão dos Ginásios respeita o Level Cap e o Pokémon mais forte da conta. O Trainer Level não possui limite e concede pontos de talento. Mega exige Trainer Lv.100, Boss Lv.150, Shiny Mega Lv.200, Lendário Lv.250 e Lendário Shiny Lv.300.'},
  {icon:'🗺️',title:'Hunts e Fast Encounter',body:'Hunts definem região, tipo e faixa de encontro. Regiões posteriores exigem a progressão dos Ginásios anteriores. O Fast Encounter usa a última Hunt selecionada e pode ser desligado ao trocar de zona.'},
  {icon:'🌍',title:'WORLD',body:'WORLD é a exploração alternativa do PSYWORLD. Gold, XP, Drop, Dano e buffs temporários/permanentes compatíveis continuam compartilhados com os sistemas globais. Pokémon e recursos obtidos continuam pertencendo à mesma conta.'},
- {icon:'🦆',title:'Psyduck Survivor',body:'O Survivor possui 200 fases e progressão por Power-Ups dentro de cada run. Há limite de 3 ajudantes e 3 habilidades do Psyduck. Elites, Shiny, Mega e Bosses tornam a run mais perigosa e podem gerar escolhas e recompensas especiais. Abra o Tutorial do Psyduck para ver os detalhes completos.'},
+ {icon:'🦆',title:'Psyduck Survivor',body:'O Survivor possui 400 fases de 10 minutos e progressão por Power-Ups dentro de cada run. Há limite de 3 ajudantes e 3 habilidades do Psyduck. Elites, Shiny, Mega e Bosses tornam a run mais perigosa e podem gerar escolhas e recompensas especiais. Abra o Tutorial do Psyduck para ver os detalhes completos.'},
  {icon:'🥚',title:'Egg Center',body:'Eggs dropáveis usam incubação em tempo real. Eggs comprados diretamente chocam imediatamente e mostram o Pokémon recebido. Eggs de Tier respeitam o Tier fixo do Pokémon; Eggs especiais possuem requisitos e economia próprios. Psyduck especial não pode ser obtido por Eggs.'},
  {icon:'📚',title:'Álbum e Packs',body:'Packs entregam figurinhas para o Álbum. Categorias como Pokémon, Shiny, Mega, Mega Shiny, Boss, Lendário e Psyduck possuem filtros próprios. Cinco cópias repetidas da mesma raridade podem ser fundidas em uma figurinha da raridade seguinte, sem consumir a primeira cópia única.'},
  {icon:'🎟️',title:'Passe, missões e roleta',body:'O Passe possui trilhas Free e Premium ao longo de 100 níveis. Missões atuais usam objetivos como Survivor, tipos e Eggs. Missões repetíveis acumulam ciclos. A Roleta da Jornada anima antes de entregar Gold, Diamantes ou buffs temporários.'},
@@ -8019,7 +8029,7 @@ function ensureCraft5(){
 window.openCraft5=function(){ensureCraft5().style.display='block';renderCraft5()};
 window.renderCraft5=function(){
   const el=document.getElementById('craft5-list');if(!el)return;
-  const seen=new Set();el.innerHTML=Object.entries(PSY_ELEMENT_DATA).filter(([k,e])=>{if(seen.has(e.ess))return false;seen.add(e.ess);return true}).map(([k,e])=>`<div class="psy-craft5" style="--c:${e.color}"><div class="ball">${e.ico}</div><div><b>${e.ball}</b><div class="psy-desc">10x ${e.ess} → 1 ${e.ball}. Contra Pokémon do mesmo elemento: 2x a força da Ultra Ball.</div><div>Você tem: <b>${P.inventory[e.ess]||0}</b> essências • <b>${P.inventory[e.ball]||0}</b> balls</div></div><button onclick="psyCraftElementBall('${k}')">CRAFT</button></div>`).join('');
+  const seen=new Set();el.innerHTML=Object.entries(PSY_ELEMENT_DATA).filter(([k,e])=>{if(seen.has(e.ess))return false;seen.add(e.ess);return true}).map(([k,e])=>`<div class="psy-craft5" style="--c:${e.color}"><div class="psy-craft-flow"><span>${window.psyV11ItemIcon?.(e.ess)||e.ico}</span><b>10x</b><i>→</i><span>${window.psyV11ItemIcon?.(e.ball)||e.ico}</span><b>1x</b></div><div><h3>${e.ball}</h3><div class="psy-desc">Use 10 ${e.ess} para fabricar 1 ${e.ball}.</div><div class="psy-craft-stock"><span>Material <b>${P.inventory[e.ess]||0}/10</b></span><span>Na bolsa <b>${P.inventory[e.ball]||0}</b></span></div></div><button ${Number(P.inventory[e.ess]||0)<10?'disabled':''} onclick="psyCraftElementBall('${k}')">FABRICAR</button></div>`).join('');
 };
 
 /* ---------- shop selling normal stones only ---------- */
@@ -8037,10 +8047,11 @@ window.updateShopTotal=function(){
   }return r;
 };
 
-/* ---------- Bag tabs / TM / Craft / Market buttons ---------- */
+/* ---------- Bag actions: Craft / TMs / Vendor ---------- */
 function psyBagEnhance(){
-  const s=document.getElementById('screen-bag'),panel=s?.querySelector('.shop-box');if(!panel||panel.querySelector('.psy-tabbar5'))return;
-  const bar=document.createElement('div');bar.className='psy-tabbar5';bar.innerHTML=`<button onclick="openCraft5()">🛠 CRAFT</button><button onclick="openTM5()">📀 TMs</button><button onclick="openMarket5()">🌐 MARKET</button>`;panel.insertBefore(bar,panel.children[1]||null);
+  const s=document.getElementById('screen-bag'),panel=s?.querySelector('.shop-box');if(!panel)return;
+  let bar=document.getElementById('bag-actions');if(!bar){bar=document.createElement('div');bar.id='bag-actions';bar.className='psy-tabbar5';panel.insertBefore(bar,panel.children[1]||null)}
+  bar.innerHTML=`<button onclick="openCraft5()">🛠 CRAFT</button><button onclick="openTM5()">📀 TMs</button><button data-v10-sell="1" onclick="openBagSellV10()">💰 VENDER</button>`;
 }
 const psyOpenBag5Old=window.openBag;
 window.openBag=function(){const r=psyOpenBag5Old.apply(this,arguments);setTimeout(psyBagEnhance,50);return r};
@@ -8754,9 +8765,9 @@ setInterval(()=>{const a=psyAfkEnsure();if(!a.enabled)return;const open=document
 /* ---------- Bag: direct selling of normal stones and essences ---------- */
 function psyV10SellPrice(name){const it=SHOP_DG.find(x=>x.n===name);if(it?.t==='stone'&&!/Shiny Stone|PsyStone/i.test(name))return Math.max(1,Math.floor(it.p*.32));if(/^Essência /.test(name))return 550;return 0}
 function psyV10Sellables(){return Object.entries(P.inventory||{}).filter(([n,q])=>q>0&&psyV10SellPrice(n)>0).sort((a,b)=>a[0].localeCompare(b[0]))}
-function psyV10SellScreen(){let d=document.getElementById('psy-v10-sell');if(d)return d;d=document.createElement('div');d.id='psy-v10-sell';d.className='psy-v10-sell';d.innerHTML=`<div class="psy-v10-sell-panel"><button class="psy-close-x" onclick="document.getElementById('psy-v10-sell').style.display='none'">×</button><h2 class="psy-title-glint">💰 VENDER ITENS DA BOLSA</h2><p class="psy-desc">Stones elementais vendem por 32% do preço da loja. Essências vendem por 550 Gold. Shiny Stone e PsyStone não podem ser vendidas.</p><div id="psy-v10-sell-grid" class="psy-v10-sell-grid"></div></div>`;document.body.appendChild(d);return d}
+function psyV10SellScreen(){let d=document.getElementById('psy-v10-sell');if(d)return d;d=document.createElement('div');d.id='psy-v10-sell';d.className='psy-v10-sell';d.innerHTML=`<div class="psy-v10-sell-panel"><button class="psy-close-x" onclick="document.getElementById('psy-v10-sell').style.display='none'">×</button><span class="psy-kicker">VENDOR NPC</span><h2 class="psy-title-glint">💰 VENDER ITENS</h2><p class="psy-desc">Revise a quantidade e o valor antes de vender. Itens protegidos não aparecem aqui.</p><div id="psy-v10-sell-grid" class="psy-v10-sell-grid"></div></div>`;document.body.appendChild(d);return d}
 window.openBagSellV10=function(){const d=psyV10SellScreen();d.style.display='block';psyV10RenderSell()};
-window.psyV10RenderSell=function(){const g=document.getElementById('psy-v10-sell-grid');if(!g)return;const arr=psyV10Sellables();g.innerHTML=arr.length?arr.map(([n,q])=>{const p=psyV10SellPrice(n);return `<div class="psy-v10-sell-card"><b>${getItemIcon?.(n)||'📦'} ${n}</b><small>Você tem ${q} • ${p.toLocaleString()}G cada</small><button onclick="psySellBagV10('${n.replace(/'/g,"\\'")}',1)">VENDER 1</button>${q>=10?`<button onclick="psySellBagV10('${n.replace(/'/g,"\\'")}',10)">VENDER 10</button>`:''}<button onclick="psySellBagV10('${n.replace(/'/g,"\\'")}',${q})">TODOS</button></div>`}).join(''):'<div class="empty">Nenhuma Stone/Essência vendável.</div>'};
+window.psyV10RenderSell=function(){const g=document.getElementById('psy-v10-sell-grid');if(!g)return;const arr=psyV10Sellables();g.innerHTML=arr.length?arr.map(([n,q])=>{const p=psyV10SellPrice(n),code=encodeURIComponent(n);return `<div class="psy-v10-sell-card" style="--item:#f59e0b"><div class="psy-item-art">${getItemIcon?.(n)||'📦'}</div><div class="psy-sell-copy"><b>${n}</b><small>Na bolsa: ${Number(q).toLocaleString('pt-BR')}</small><strong>💰 ${Number(p).toLocaleString('pt-BR')} cada</strong></div><div class="psy-sell-actions"><button onclick="psySellBagV10(decodeURIComponent('${code}'),1)">1x</button>${q>=10?`<button onclick="psySellBagV10(decodeURIComponent('${code}'),10)">10x</button>`:''}<button class="all" onclick="psySellBagV10(decodeURIComponent('${code}'),${q})">VENDER TODOS</button></div></div>`}).join(''):'<div class="empty">Nenhum item vendável na mochila.</div>'};
 window.psySellBagV10=function(name,qty){const own=Number(P.inventory?.[name]||0),p=psyV10SellPrice(name);qty=Math.max(1,Math.min(own,Number(qty)||1));if(!p||!own)return;const gain=p*qty;P.inventory[name]-=qty;if(P.inventory[name]<=0)delete P.inventory[name];P.gold+=gain;autoSave();updateHUD();psyV10RenderSell();try{renderBag()}catch(e){}notif(`💰 ${qty}x ${name}: +${gain.toLocaleString()} Gold`,2200)};
 function psyV10InstallBagSell(){const panel=document.querySelector('#screen-bag .shop-box');if(!panel)return;let bar=panel.querySelector('.psy-tabbar5');if(!bar){try{psyBagEnhance()}catch(e){}bar=panel.querySelector('.psy-tabbar5')}if(bar&&!bar.querySelector('[data-v10-sell]')){const b=document.createElement('button');b.dataset.v10Sell='1';b.textContent='💰 VENDER';b.onclick=openBagSellV10;bar.appendChild(b)}}
 setInterval(()=>{if(!document.hidden)psyV10InstallBagSell()},3000);

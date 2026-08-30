@@ -29,3 +29,14 @@
     restoreCityContentState();
   }
 })();
+
+
+/* PSYWORLD Audio System V1 — carregamento global */
+(function psyLoadAudioSystem(){
+  if(document.getElementById('psy-audio-system-script'))return;
+  const s=document.createElement('script');
+  s.id='psy-audio-system-script';
+  s.src='core/audio.js?v=1';
+  s.async=true;
+  document.head.appendChild(s);
+})();

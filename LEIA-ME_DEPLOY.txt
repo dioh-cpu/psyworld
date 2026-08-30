@@ -1,0 +1,6 @@
+PSYWORLD — GITHUB / VERCEL — AVENTURA + SURVIVOR V9
+
+Build: AVENTURA_SURVIVOR_RETOMADA_V9
+- index.html fica na raiz deste pacote.
+- Envie todo o conteúdo para a raiz do repositório/site estático.
+- Preserva Aventura, Survivor Retomada V9, áudio, Eggs e correções acumuladas.

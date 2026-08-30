@@ -5,8 +5,11 @@
 (function(){
 'use strict';
 const W=window,D=document;
+const PHYSICAL_BUILD='AVENTURA_SURVIVOR_RETOMADA_V9';
+function versionedSrc(src){const sep=String(src).includes('?')?'&':'?';return String(src)+sep+'build='+encodeURIComponent(PHYSICAL_BUILD)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
+  adventure:{icon:'🌲',name:'AVENTURA',desc:'Mapa contínuo com exploração, ovos, loots e combates.',entry:['openAdventureMode']},
   world:{icon:'🌍',name:'WORLD',desc:'Exploração em primeira pessoa, Pokémon no mapa e combate World.',entry:['enterWorldMode']},
   hunts:{icon:'🗺️',name:'HUNTS',desc:'Hunts por região, nível e tipo.',entry:['openHunts']},
   dungeons:{icon:'🏰',name:'DUNGEONS',desc:'Bosses e desafios especiais.',entry:['openDungeons']},
@@ -34,19 +37,20 @@ W.PSY={
 };
 
 function loadScript(src){
-  if(loadedFiles.has(src))return Promise.resolve();
-  if(loadingFiles.has(src))return loadingFiles.get(src);
+  const resolved=versionedSrc(src);
+  if(loadedFiles.has(resolved))return Promise.resolve();
+  if(loadingFiles.has(resolved))return loadingFiles.get(resolved);
   const p=new Promise((resolve,reject)=>{
-    const s=D.createElement('script');s.src=src;s.async=false;s.dataset.psyPhysical='1';
-    s.onload=()=>{loadedFiles.add(src);loadingFiles.delete(src);refreshGates();resolve()};
-    s.onerror=()=>{loadingFiles.delete(src);reject(new Error('Falha ao carregar '+src))};
+    const s=D.createElement('script');s.src=resolved;s.async=false;s.dataset.psyPhysical='1';s.dataset.psyBuild=PHYSICAL_BUILD;
+    s.onload=()=>{loadedFiles.add(resolved);loadingFiles.delete(resolved);refreshGates();resolve()};
+    s.onerror=()=>{loadingFiles.delete(resolved);reject(new Error('Falha ao carregar '+resolved))};
     D.head.appendChild(s);
   });
-  loadingFiles.set(src,p);return p;
+  loadingFiles.set(resolved,p);return p;
 }
 async function ensureManifest(k){
   if(PACKAGES[k])return PACKAGES[k];
-  await loadScript('modes/'+k+'.js');
+  await loadScript(k==='survivor'?'modes/survivor-v9.js':'modes/'+k+'.js');
   if(!PACKAGES[k])throw new Error('Manifesto do modo não registrado: '+k);
   return PACKAGES[k];
 }
