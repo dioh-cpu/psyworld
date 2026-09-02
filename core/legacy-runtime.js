@@ -8558,12 +8558,27 @@ function psyV9EnemyTurnAfterCapture(){
   try{setPlayerBlink();showDmgPopup(dmg,false,false)}catch(e){}updateBattleHP();updateHUD();
   if(p.hp<=0){window.psyHandleBattleFaint?.();}
 }
+function psyV22IsElementalBall(ballName){
+  try{return Object.values(window.PSY_ELEMENT_DATA||{}).some(e=>e?.ball===ballName)}catch(e){return false}
+}
+function psyV22ElementalBallMatches(ballName,wild){
+  if(!psyV22IsElementalBall(ballName)||!wild?.id)return false;
+  const raw=String(window.TYPE_BY_ID_ALL?.[wild.id]||window.TYPE_BY_ID_FULL?.[wild.id]||window.TYPE_BY_ID_EXT?.[wild.id]||'Normal');
+  const types=raw.split(/[\/|,;]+/).map(x=>x.trim()).filter(Boolean);
+  return types.some(t=>window.PSY_ELEMENT_DATA?.[t]?.ball===ballName);
+}
+window.psyElementalBallMatches=psyV22ElementalBallMatches;
+window.psyCaptureBallMultiplier=function(ballName,wildArg){
+  const wild=wildArg||battleData?.wild;
+  if(psyV22IsElementalBall(ballName))return psyV22ElementalBallMatches(ballName,wild)?6:1;
+  return Math.max(.8,Number(BALL_DATA?.[ballName]?.chance||1));
+};
 window.psyCaptureChancePct=function(ballName,wildArg){
   const wild=wildArg||battleData?.wild;if(!wild||typeof BALL_DATA==='undefined'||!BALL_DATA?.[ballName])return 0;
   const tier=getTier(wild.id,!!wild.shiny,!!wild.isMega,!!wild.isBoss)||'E';
   const hpPct=Math.max(0,Math.min(1,(battleData?.wildHp||wild.hp||1)/(battleData?.wildMaxHp||wild.maxHp||1)));
   const hpFactor=.34+(1-hpPct)*.66;
-  const ball=Math.max(.8,Number(BALL_DATA?.[ballName]?.chance||1));
+  const ball=window.psyCaptureBallMultiplier(ballName,wild);
   const rarityPenalty=1/Math.sqrt(Math.max(1,Number(wild.rarity?.mult||1)));
   const buff=1+Math.max(0,Number(getTotalBuff?.('cap')||0))/100;
   let chance;

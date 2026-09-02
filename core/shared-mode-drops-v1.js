@@ -13,7 +13,7 @@
   W.__PSYWORLD_SHARED_MODE_DROPS_V2__=true;
   W.__PSYWORLD_SHARED_MODE_DROPS_V1__=true; // compatibilidade com guards antigos
 
-  const BUILD='SHARED_MODE_DROPS_V10_HUNT_CRAFT';
+  const BUILD='SHARED_MODE_DROPS_V11_WORLD_PACKS';
   try{if(typeof P!=='undefined'&&P)W.P=P}catch(e){}
 
   const TYPES=['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
@@ -69,7 +69,10 @@
        Isso impede farm infinito no Survivor/World quando o jogador passa a
        matar centenas de inimigos por minuto. */
     const materialBoost=Math.min(2,1+d/300);
-    return{drop:d,globalDrop:buff('drop'),equipmentDrop:eq,materialBoost}
+    /* Packs usam uma curva separada. V21 ainda referenciava cs.quest, campo
+       inexistente, transformando a chance em NaN e anulando o drop. */
+    const packBoost=Math.min(3,1+d/100);
+    return{drop:d,globalDrop:buff('drop'),equipmentDrop:eq,materialBoost,packBoost}
   }
 
   function eventAlreadyAwarded(enemy,mode){
@@ -176,7 +179,7 @@
 
     const boss=(enemy?.boss||enemy?.isBoss)?4.5:1,shiny=enemy?.shiny?1.35:1,mega=(enemy?.mega||enemy?.isMega)?1.8:1;
     const packBase=mode==='adventure'?.012:.0005;
-    if(Math.random()<rs*packBase*Math.min(3,cs.quest)*boss*shiny*mega){const k=packKey(enemy),packName='Pack '+(k==='rare'?'Raro':k==='epic'?'Épico':k==='normal'?'Normal':k.toUpperCase());addPack(p,k);got.push(packName);if(mode==='survivor')survivorVisualDrop(enemy,packName,'pack',1)}
+    if(Math.random()<rs*packBase*cs.packBoost*boss*shiny*mega){const k=packKey(enemy),packName='Pack '+(k==='rare'?'Raro':k==='epic'?'Épico':k==='normal'?'Normal':k.toUpperCase());addPack(p,k);got.push(packName);if(mode==='survivor')survivorVisualDrop(enemy,packName,'pack',1)}
 
     p.meta.sharedDropV2=p.meta.sharedDropV2&&typeof p.meta.sharedDropV2==='object'?p.meta.sharedDropV2:{};
     p.meta.sharedDropV2.kills=num(p.meta.sharedDropV2.kills,0)+1;
@@ -224,5 +227,5 @@
   W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'0,60% base; World/Survivor/Idle = 0,15%; bônus de Drop até 2x',questCommon:'1,20% base; World/Survivor/Idle = 0,30%; bônus de Drop até 2x',questRare:'0,25% base; World/Survivor/Idle = 0,0625%; bônus de Drop até 2x',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor/World/Idle: 25% da taxa cheia + teto 15/700; Fast Encounter: 40% da taxa cheia + teto 15/700; Wild/Hunt: taxa cheia + teto 30/700'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
 
   installEndBattle();installWorldKill();installCardContext();
-  console.log('✅ PSYWORLD Shared Drops V10: rolls independentes de craft/quest em Wild/Hunt/Fast; paridade World/Idle preservada.');
+  console.log('✅ PSYWORLD Shared Drops V11: materiais + Packs válidos; World usa Packs e não Cards diretas.');
 })(window);
