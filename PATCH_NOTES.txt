@@ -1,36 +1,55 @@
-PSYWORLD — V23 ONLINE / CLOUD SAVE + INÍCIO ONLINE AUTORITATIVO
+PSYWORLD — V24 ONLINE 100 / AUTORIDADE DE CONTA (BRANCH DE TESTE)
 
 ALTERAÇÕES CONCLUÍDAS
-- Conta online por e-mail/senha via Supabase Auth reativada.
-- Cloud save completo por conta via /api/player/save.
-- Save Local continua como backup/fallback.
-- Conflito Local x Nuvem só reaparece quando existir conflito real novo.
-- Antes de restaurar da nuvem, o save local recebe backup adicional.
-- Cadastro agora usa redirect fixo para https://psyworld-murex.vercel.app/ em vez do domínio variável de Preview.
-- Callback de confirmação por hash é capturado pelo cliente e o token é removido da URL após uso.
-- Menu recebe ações manuais SALVAR NA NUVEM e CARREGAR DA NUVEM quando a conta está conectada.
-- Fast Encounter recebeu suporte de arrastar/mover mesmo sem Hunt ativa e salva a posição no aparelho.
-- MODOS / DOWNLOADS é reposicionado junto da área da Expedição AFK.
-- Botão de ÁUDIO é normalizado para o tamanho dos demais botões e o Audio System V1 é carregado pelo bootstrap online quando necessário.
-- Adicionada API somente-leitura /api/online-state para expor wallet, inventário, Pokémon e ledger autoritativos do servidor para a próxima fase.
+- Login e cadastro por e-mail/senha via Supabase Auth.
+- Cloud save completo por conta, mantendo Save Local como backup.
+- Conflito Local x Nuvem só aparece quando existe divergência real nova.
+- Redirect de confirmação de e-mail fixado em https://psyworld-murex.vercel.app/.
+- Callback de confirmação por hash é tratado e o token sensível é removido da URL após leitura.
+- Menu possui SALVAR NA NUVEM e CARREGAR DA NUVEM quando conectado.
+- Fast Encounter pode ser arrastado mesmo sem Hunt ativa e memoriza a posição.
+- Botão ÁUDIO normalizado; Audio System V1 preservado em core/audio-v1-base.js.
+- MODOS / DOWNLOADS reposicionado junto da área da Expedição AFK.
+- Criada branch online-100-v24 a partir da V23 aprovada, sem mexer na main/produção.
 
-VALIDAÇÕES JÁ FEITAS PELO TESTE
-- Cadastro/login por e-mail e senha funcionou no Preview.
-- Recuperação do estado salvo pela nuvem funcionou.
-- Repetição do modal de conflito após F5 foi corrigida e retestada com sucesso.
-- Branch de teste: online-cloud-save-v23. Produção/main ainda não foi promovida.
+SERVIDOR / SUPABASE
+- Migration full_authority_import_v24 aplicada com sucesso no Supabase real.
+- Players agora possui PsyCoin, authority_version e authority_activated_at.
+- Wallet ledger aceita Gold, Diamonds e PsyCoin.
+- Criada importação única import_full_legacy_save_once().
+- A importação migra Trainer, Gold, Diamonds, PsyCoin, inventário, Time e Box/Pokémon para tabelas autoritativas.
+- A importação não pode ser repetida para sobrescrever a conta depois de authority_version >= 1.
+- Criada API autenticada /api/authority para leitura do estado servidor e importação única.
+- Criado cliente core/online-authority-v24.js para iniciar a migração após login e exibir o estado do servidor no menu.
+- Service Role permanece somente no servidor e usa SUPABASE_SERVICE_ROLE_KEY com fallback de compatibilidade.
+- APIs de Shop/Craft/Market existentes continuam protegidas por Bearer token e RPCs server-side.
+- Market permanece sem ativação pública automática nesta build de teste; isso evita comercializar ativos antes da validação final da migração de cada conta.
 
-CAMINHO PARA 100% ONLINE / SERVER-AUTHORITATIVE
-1. V23: fechar login, cloud save, redirect fixo e interface de gerenciamento de save.
-2. V24: importar uma única vez Gold, Diamonds, Trainer Level, inventário e Pokémon do save legado para as tabelas autoritativas.
-3. V24/V25: servidor passa a decidir compras, vendas, craft, moedas, inventário, captura e recompensas.
-4. V25+: migrar Eggs, Packs, Achievements, Battle Pass, AFK, drops e progressão para transações servidoras idempotentes.
-5. Depois: ativar Market entre jogadores apenas quando todos os ativos comercializados forem server-authoritative.
-6. Acrescentar rate limit, recibos/idempotência, auditoria, detecção de divergência e proteção anti-cheat.
+ÁUDIO
+- O arquivo core/audio.js agora é um bootstrap leve.
+- O Audio System V1 completo foi preservado em core/audio-v1-base.js.
+- Após o Audio V1, o bootstrap carrega a autoridade online V24, reduzindo risco de tela branca durante a inicialização principal.
 
-AINDA PRECISA CORRIGIR / VALIDAR
-- Testar no Preview atual: Fast Encounter arrastável, botões Cloud no menu, botão Áudio e MODOS / DOWNLOADS na posição desejada.
-- Testar confirmação de uma conta nova e confirmar que o e-mail retorna sempre para https://psyworld-murex.vercel.app/.
-- Verificar na produção que SUPABASE_URL, SUPABASE_ANON_KEY/PUBLISHABLE_KEY e SUPABASE_SERVICE_ROLE_KEY continuam configuradas.
-- Migration 003_cloud_game_state.sql já foi executada; migrations 001/002 precisam ser confirmadas antes de ativar economia autoritativa real.
-- Market real permanece bloqueado até a migração completa da economia e ownership para o servidor.
+VALIDAÇÕES
+- Supabase conectado ao projeto otwgavwvjxuwtgncjbiq e ACTIVE_HEALTHY.
+- Tabelas players, player_game_state, wallet_ledger, player_inventory, player_pokemon e market_listings_v2 existem no banco.
+- Migration V24 registrada no Supabase como full_authority_import_v24.
+- Colunas psycoin, authority_version e authority_activated_at confirmadas no banco.
+- Vercel informou status SUCCESS para o commit mais recente da branch online-100-v24.
+- Produção/main ainda não foi promovida.
+
+IMPORTANTE SOBRE "100% ONLINE"
+- Conta, autenticação, confirmação, cloud save e persistência entre dispositivos estão online.
+- Gold/Diamonds/PsyCoin, inventário e ownership de Pokémon já possuem fundação autoritativa e migração única no servidor.
+- A simulação completa de toda batalha ainda roda no cliente legado. Portanto esta branch NÃO deve ser chamada de anti-cheat 100% server-side até cada modo de combate/recompensa ser convertido para sessões e validação de servidor.
+- Não liberar Market público antes dessa etapa evita transformar uma possível alteração local do cliente em economia negociável.
+
+AINDA PRECISA VALIDAR NO PREVIEW
+- Entrar com a conta de teste existente e confirmar que aparece "SERVIDOR ATIVO" no painel PSYWORLD ONLINE.
+- Conferir Gold, Diamonds, PsyCoin, quantidade de itens e Pokémon após a migração única.
+- Conferir Time e Box após atualizar/reabrir.
+- Testar ÁUDIO (música + SFX + sliders).
+- Testar Fast Encounter arrastável.
+- Testar Salvar/Carregar Nuvem pelo menu.
+- Criar uma conta nova e confirmar que o link do e-mail termina no domínio oficial psyworld-murex.vercel.app.
+- Depois dos testes, converter recompensas/batalhas modo a modo para autoridade total antes de ativar Market público.
