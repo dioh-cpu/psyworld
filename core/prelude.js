@@ -24,7 +24,6 @@ function getRealSprite(p){
   return `https://play.pokemonshowdown.com/sprites/${folder}/${base}.gif`;
 }
 
-// FIX SEM PISCAR - substitui o getSpriteUrl da linha 3041
 window.getSpriteUrl = function(id, shiny, isMega, megaForm){
   let active = window.P?.team?.[0];
   if(active && active.id===id){
@@ -135,7 +134,6 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
     if(typeof W.psySurvLater!=='function')W.psySurvLater=laterFallback;
     if(modal.querySelector('[data-psy-surv-later="1"]'))return true;
 
-    // Find the action row used by both the legacy 2-button modal and the current modal.
     const buttons=[...modal.querySelectorAll('button')];
     const yes=buttons.find(b=>/^\s*SIM\s*$/i.test(b.textContent||''));
     const no=buttons.find(b=>/^\s*N[ÃA]O\s*$/i.test(b.textContent||''));
@@ -166,7 +164,6 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
     if(!target)return setTimeout(start,0);
     const mo=new MutationObserver(()=>ensureLaterButton());
     mo.observe(target,{childList:true,subtree:true});
-    // Extra checks cover modals whose HTML is replaced without a new outer node.
     setTimeout(ensureLaterButton,500);
     setTimeout(ensureLaterButton,1500);
     setTimeout(ensureLaterButton,3500);
@@ -177,7 +174,7 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
 /* PSYWORLD V26 — autoridade online global, sem alterar a main/produção. */
 try{
   const oa=document.createElement('script');
-  oa.src='core/online-authority-v26.js?build=ONLINE_AUTHORITY_V26_20260902_C';
+  oa.src='core/online-authority-v26.js?build=ONLINE_AUTHORITY_V26_20260902_D';
   oa.async=false;
   document.head.appendChild(oa);
 }catch(e){console.warn('online authority v26 loader',e)}
