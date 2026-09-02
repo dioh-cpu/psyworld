@@ -58,7 +58,10 @@ export default async function handler(req,res){
     const idempotency=idem(req.body?.idempotency_key,action);
     if(GENERIC.has(action)){
       const payload=obj(req.body?.payload||req.body);
-      const {data,error}=await supabase.rpc('psy_v26_action',{p_user:user.id,p_action:action,p_payload:payload,p_idempotency:idempotency});if(error)throw error;return res.status(200).json(data);
+      const {data,error}=await supabase.rpc('psy_v26_action',{p_user:user.id,p_action:action,p_payload:payload,p_idempotency:idempotency});
+      if(error)throw error;
+      const snap=await snapshot(supabase,user.id);
+      return res.status(200).json({...obj(data),...snap,action:data?.action||action});
     }
     if(action==='capture-attempt'){
       const b=obj(req.body),types=(Array.isArray(b.target_types)?b.target_types:[]).slice(0,2).map(x=>txt(x,20).toLowerCase());
