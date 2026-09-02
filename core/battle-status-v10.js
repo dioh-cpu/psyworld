@@ -305,7 +305,7 @@
     if(action!=='move'){
       /* Keep bag/capture/flee behavior from the existing engine. */
       if(action==='heal')return openBagSelector('potion');
-      if(action==='capture')return openBagSelector('ball');
+      if(action==='capture'){if((typeof gymBattle!=='undefined'&&!!gymBattle)||document.getElementById('gym-progress')?.style.display==='block')return notif('🚫 Não é permitido capturar Pokémon em Ginásios.',3000);return (typeof window.openBattleBallSelector==='function'?window.openBattleBallSelector():openBagSelector('ball'));}
       if(action==='flee'){try{gymBattle=null}catch(e){}battleData.state='fled';setTimeout(()=>endBattle(false),350);return}
       return;
     }

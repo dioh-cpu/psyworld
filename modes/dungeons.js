@@ -4,5 +4,5 @@ window.PSY.registerModePackage("dungeons", {
   name:"DUNGEONS",
   desc:"Bosses, Shiny Dungeon, Mega Dungeon e desafios especiais.",
   entry:["openDungeons"],
-  deps:["bundles/v15-album-gym.js", "bundles/v19-consolidated.js", "bundles/v20-systems.js?v=QUEST_UNICO_V20_20260902", "bundles/v47-survivor-hunts.js", "bundles/v50-compat.js"]
+  deps:["bundles/v15-album-gym.js", "bundles/v19-consolidated.js?v=CAPTURE_GYM_CHANCE_V21_20260902", "bundles/v20-systems.js?v=QUEST_UNICO_V20_20260902", "bundles/v47-survivor-hunts.js", "bundles/v50-compat.js"]
 });

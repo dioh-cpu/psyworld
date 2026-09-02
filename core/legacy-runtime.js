@@ -8558,30 +8558,40 @@ function psyV9EnemyTurnAfterCapture(){
   try{setPlayerBlink();showDmgPopup(dmg,false,false)}catch(e){}updateBattleHP();updateHUD();
   if(p.hp<=0){window.psyHandleBattleFaint?.();}
 }
+window.psyCaptureChancePct=function(ballName,wildArg){
+  const wild=wildArg||battleData?.wild;if(!wild||typeof BALL_DATA==='undefined'||!BALL_DATA?.[ballName])return 0;
+  const tier=getTier(wild.id,!!wild.shiny,!!wild.isMega,!!wild.isBoss)||'E';
+  const hpPct=Math.max(0,Math.min(1,(battleData?.wildHp||wild.hp||1)/(battleData?.wildMaxHp||wild.maxHp||1)));
+  const hpFactor=.34+(1-hpPct)*.66;
+  const ball=Math.max(.8,Number(BALL_DATA?.[ballName]?.chance||1));
+  const rarityPenalty=1/Math.sqrt(Math.max(1,Number(wild.rarity?.mult||1)));
+  const buff=1+Math.max(0,Number(getTotalBuff?.('cap')||0))/100;
+  let chance;
+  if(wild.shiny){chance=.075*ball*hpFactor*rarityPenalty*buff;chance=Math.min(1,chance)}
+  else{const base=PSY_CAPTURE_BASE[tier]??.5,cap=PSY_CAPTURE_CAPS[tier]??5;chance=Math.min(cap,base*ball*hpFactor*rarityPenalty*buff)}
+  return Math.max(.01,Number(chance||0));
+};
 window.tryCaptureBattle=function(ballName){
+  const inGym=(typeof gymBattle!=='undefined'&&!!gymBattle)||document.getElementById('gym-progress')?.style.display==='block';
+  if(inGym)return notif('🚫 Não é permitido capturar Pokémon em Ginásios.',3000);
   if(typeof BALL_DATA==='undefined'||!Object.prototype.hasOwnProperty.call(BALL_DATA,ballName)||window.PSY_ITEMS?.category?.(ballName)!=='ball')return notif('❌ Este item não é uma Ball de captura.',2600);
   if((P.inventory?.[ballName]||0)<=0)return notif('❌ Sem Balls!');
   const wild=battleData?.wild;if(!wild)return;
   if(wild.psyduckDungeon||window.isDungeonBoss||window.isDungeonMega||wild.isBoss)return notif('❌ Este encontro não pode ser capturado.',2600);
   const tier=getTier(wild.id,!!wild.shiny,!!wild.isMega,!!wild.isBoss)||'E';
   if(!wild.shiny && (CG_TIER_RANK?.[tier]??0)>(CG_TIER_RANK?.S??5))return notif('🔒 Pokémon Tier SS+ não pode ser capturado em encontro normal.',3000);
+  const chance=window.psyCaptureChancePct(ballName,wild);
   P.inventory[ballName]--;if(P.inventory[ballName]<=0)delete P.inventory[ballName];
   const bag=document.getElementById('screen-bag');if(bag)bag.style.display='none';window.bagBattleMode=null;
-  const hpPct=Math.max(0,Math.min(1,(battleData.wildHp||1)/(battleData.wildMaxHp||1)));
-  const hpFactor=.34+(1-hpPct)*.66;
-  let ball=Math.max(.8,Number(BALL_DATA?.[ballName]?.chance||1));
-  const rarityPenalty=1/Math.sqrt(Math.max(1,Number(wild.rarity?.mult||1)));
-  const buff=1+Math.max(0,Number(getTotalBuff?.('cap')||0))/100;
-  let chance;
-  if(wild.shiny){chance=.075*ball*hpFactor*rarityPenalty*buff;chance=Math.min(1,chance)}
-  else{const base=PSY_CAPTURE_BASE[tier]??.5,cap=PSY_CAPTURE_CAPS[tier]??5;chance=Math.min(cap,base*ball*hpFactor*rarityPenalty*buff)}
-  chance=Math.max(.01,chance);
   const ok=Math.random()*100<chance;
+  const chanceTxt=chance<1?chance.toFixed(2):chance.toFixed(1);
   if(ok){
     const pk=createCapturedPoke(wild.id,wild.rarity,!!wild.shiny,false,!!wild.isMega);P.box.push(pk);P.meta=P.meta||{};P.meta.captures=(P.meta.captures||0)+1;
-    psySfx?.('capture');notif(`✅ ${pk.name||getPokeName(pk.id)} capturado!`,3000);autoSave();renderTeam();endBattle(true);return;
+    const log=document.getElementById('battle-log');if(log)log.textContent=`🎯 Chance de captura: ${chanceTxt}% • ${pk.name||getPokeName(pk.id)} capturado!`;
+    psySfx?.('capture');notif(`✅ ${pk.name||getPokeName(pk.id)} capturado! • Chance: ${chanceTxt}%`,3200);autoSave();renderTeam();endBattle(true);return;
   }
-  notif(`❌ ${wild.name||getPokeName(wild.id)} escapou! A tentativa gastou seu turno.`,2300);autoSave();setTimeout(psyV9EnemyTurnAfterCapture,280);
+  const log=document.getElementById('battle-log');if(log)log.textContent=`🎯 Chance de captura: ${chanceTxt}% • ${wild.name||getPokeName(wild.id)} escapou. A tentativa gastou seu turno.`;
+  notif(`❌ ${wild.name||getPokeName(wild.id)} escapou! • Chance: ${chanceTxt}%`,3000);autoSave();setTimeout(psyV9EnemyTurnAfterCapture,280);
 };
 
 /* ---------- Hunt hard level-cap gate, not only visual. ---------- */
