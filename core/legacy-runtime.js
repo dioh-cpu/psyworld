@@ -2107,10 +2107,10 @@ function renderBag(){
 
   let items=Object.entries(P.inventory).filter(([n,q])=>q>0);
   if(window.bagBattleMode==='potion') items=items.filter(([n])=>n.includes("Poção")||n==='Revive');
-  if(window.bagBattleMode==='ball') items=items.filter(([n])=>n.includes("Ball")&&!['Rubber Ball','Earth Ball'].includes(n));
+  if(window.bagBattleMode==='ball') items=items.filter(([n])=>Object.prototype.hasOwnProperty.call(BALL_DATA,n)&&window.PSY_ITEMS?.category?.(n)==='ball');
   if(window.bagBattleMode==='stone') items=items.filter(([n])=>n.includes("Stone"));
 
-  const itemCategory=name=>name==='Revive'?'potion':window.PSY_ITEMS?.category(name)||(name.includes('Ball')&&!['Rubber Ball','Earth Ball'].includes(name)?'ball':name.includes('Poção')?'potion':name.includes('Stone')?'stone':'item');
+  const itemCategory=name=>name==='Revive'?'potion':window.PSY_ITEMS?.category(name)||(Object.prototype.hasOwnProperty.call(BALL_DATA,name)?'ball':name.includes('Poção')?'potion':name.includes('Stone')?'stone':'item');
   if(!window.bagBattleMode&&window.psyBagFilter!=='all')items=items.filter(([n])=>window.psyBagFilter==='other'?!['ball','potion','stone','craft','quest'].includes(itemCategory(n)):itemCategory(n)===window.psyBagFilter);
   const order={ball:0,potion:1,stone:2,craft:3,quest:4,egg:5,pack:6,tm:7,currency:8,item:9};
   items.sort((a,b)=>(order[itemCategory(a[0])]??9)-(order[itemCategory(b[0])]??9)||a[0].localeCompare(b[0]));
@@ -6563,7 +6563,7 @@ function psyBuildCompactMainMenu(){
   const allButtons=[...menu.querySelectorAll(':scope > button, :scope > div > button')];
 
   const featureMatchers=[
-    'BOLSA','TIME / BOX','POKÉ CARDS','CONQUISTAS','EGG CENTER','CASH SHOP','TALENTOS DO TREINADOR'
+    'BOLSA','TIME / BOX','POKÉ CARDS','CONQUISTAS','QUESTS','EGG CENTER','CASH SHOP','TALENTOS DO TREINADOR'
   ];
   const featureButtons=[];
   for(const label of featureMatchers){
@@ -8559,6 +8559,7 @@ function psyV9EnemyTurnAfterCapture(){
   if(p.hp<=0){window.psyHandleBattleFaint?.();}
 }
 window.tryCaptureBattle=function(ballName){
+  if(typeof BALL_DATA==='undefined'||!Object.prototype.hasOwnProperty.call(BALL_DATA,ballName)||window.PSY_ITEMS?.category?.(ballName)!=='ball')return notif('❌ Este item não é uma Ball de captura.',2600);
   if((P.inventory?.[ballName]||0)<=0)return notif('❌ Sem Balls!');
   const wild=battleData?.wild;if(!wild)return;
   if(wild.psyduckDungeon||window.isDungeonBoss||window.isDungeonMega||wild.isBoss)return notif('❌ Este encontro não pode ser capturado.',2600);
