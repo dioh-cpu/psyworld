@@ -173,3 +173,11 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
   };
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
+
+/* PSYWORLD V26 — autoridade online global, sem alterar a main/produção. */
+try{
+  const oa=document.createElement('script');
+  oa.src='core/online-authority-v26.js?build=ONLINE_AUTHORITY_V26_20260902_C';
+  oa.async=false;
+  document.head.appendChild(oa);
+}catch(e){console.warn('online authority v26 loader',e)}
