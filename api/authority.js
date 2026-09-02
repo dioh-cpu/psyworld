@@ -11,9 +11,9 @@ function cleanInventory(x){
   }
   return out;
 }
-function cleanPokemon(list){
+function cleanPokemon(list,group){
   if(!Array.isArray(list))return [];
-  return list.slice(0,3000).map(p=>{
+  return list.slice(0,3000).map((p,index)=>{
     if(!p||typeof p!=='object')return null;
     const q={...p};
     q.id=num(p.id??p.species_id,1,100000);
@@ -22,6 +22,8 @@ function cleanPokemon(list){
     q.resets=num(p.resets,0,9999);
     q.shiny=!!p.shiny;
     q.tier=text(p.tier||'E',16)||'E';
+    q.__online_group=group;
+    q.__online_order=index;
     if(typeof p.rarity==='object')q.rarity={...p.rarity,n:text(p.rarity?.n||'Lixo',32)};
     else q.rarity=text(p.rarity||'Lixo',32)||'Lixo';
     if(p.megaForm!=null)q.megaForm=text(p.megaForm,80);
@@ -52,7 +54,7 @@ export default async function handler(req,res){
       if(!method(req,res,['POST']))return;
       const save=req.body?.save||{};const p=save.player||save.P||save;
       const team=Array.isArray(p?.team)?p.team:[];const box=Array.isArray(p?.box)?p.box:[];
-      const pokemon=cleanPokemon([...team,...box]);
+      const pokemon=[...cleanPokemon(team,'team'),...cleanPokemon(box,'box')];
       const inventory=cleanInventory(p?.inventory||save.inventory||{});
       const trainerName=text(p?.name||p?.nickname||req.body?.trainer_name||'Trainer',32)||'Trainer';
       const trainerLevel=num(p?.trainerLevel??p?.trainer_level??1,1,10000);
