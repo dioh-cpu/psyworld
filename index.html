@@ -10,10 +10,11 @@
 <link rel="preconnect" href="https://play.pokemonshowdown.com" crossorigin>
 <link rel="dns-prefetch" href="https://play.pokemonshowdown.com">
 <!-- PSYWORLD corrigido: sprites Mega X/Y + shiny + player GIF animado + sprite helpers unificados -->
-<link rel="stylesheet" href="css/game.css?build=AVENTURA_SURVIVOR_RETOMADA_V9">
+<link rel="stylesheet" href="css/game.css?build=COMBATE_STATUS_V11">
+<link rel="stylesheet" href="css/psy-responsive.css?build=RESPONSIVE_V2">
 
-<script src="core/prelude.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
-<script src="core/survivor-resume-guard-v9.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
+<script src="core/prelude.js?build=SURVIVOR_WOBBUFFET_METER_PERF_V16"></script>
+<script src="core/survivor-resume-guard-v9.js?build=COMBATE_STATUS_V10"></script>
 
 
 
@@ -167,7 +168,6 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
     <button onclick="openAchievements()" style="background:linear-gradient(90deg,#059669,#22c55e); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">🏆 CONQUISTAS</button>
     <button data-psy-quests-main="1" onclick="window.openQuestsV11()" style="background:linear-gradient(90deg,#0e7490,#164e63); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">📜 QUESTS</button>
     <button onclick="openEggCenter()" style="background:linear-gradient(90deg,#7c3aed,#06b6d4); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">🥚 EGG CENTER</button>
-    <button onclick="openCashShop()" style="background:linear-gradient(90deg,#0284c7,#7c3aed); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">💎 CASH SHOP</button>
 
         <button onclick="openTrainerShop()" style="background:linear-gradient(90deg,#00d0ff,#0066ff); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">🧑🏫 TALENTOS DO TREINADOR</button>
 
@@ -264,12 +264,10 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 
 <div id="notif" style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.88); border:1px solid #ffd700; color:#ffd700; padding:8px 22px; border-radius:20px; font-size:13px; display:none; z-index:9999; pointer-events:none; white-space:nowrap;"></div>
 
-<script src="core/items.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
+<script src="core/items.js?build=ITEMS_PSY_TEAM_V3"></script>
 
-<script src="core/legacy-runtime.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
-
-
-
+<script src="core/legacy-runtime.js?build=LEGACY_PSY_TEAM_GLOBAL_XP_V6_20260901"></script>
+<script src="core/battle-status-v10.js?build=COMBATE_STATUS_GLOBAL_XP_V12"></script>
 
 
 
@@ -278,19 +276,26 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 
 
 
-<script src="core/performance.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
+
+
+
+<script src="core/performance.js?build=COMBATE_STATUS_V10"></script>
 
 
 
 
-<script src="core/module-loader.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
+<script src="core/module-loader.js?build=PSYWORLD_SURVIVOR_WOBBUFFET_METER_PERF_V16_20260901"></script>
 
 
 
 
 
 
-<script src="core/city-content.js?build=AVENTURA_SURVIVOR_RETOMADA_V9"></script>
+<script src="core/city-content.js?build=COMBATE_STATUS_V10"></script>
+<script src="core/npc-voice.js?build=NPC_VOICE_V1"></script>
+<script src="core/global-hub-v1.js?build=GLOBAL_HUB_CARDS_LANG_HOTKEYS_V5_20260901"></script>
+<script src="core/shared-mode-drops-v1.js?build=SHARED_MODE_DROPS_V10_HUNT_CRAFT"></script>
+<script src="core/psy-responsive.js?build=RESPONSIVE_V2"></script>
 
 </body>
 </html>

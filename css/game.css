@@ -1723,7 +1723,7 @@ body:has(#screen-survivor-v12[style*="display:block"]) .psy22-buffs{display:none
 .psy-item-tag{position:absolute;left:7px;top:7px;padding:2px 6px;border:1px solid color-mix(in srgb,var(--item) 70%,white);border-radius:999px;color:var(--item);background:#030711;font-size:7px;font-weight:1000;letter-spacing:.09em}.psy-item-art{height:58px;display:grid;place-items:center;color:var(--item)}.psy-item-art .psy-item-sprite{width:54px;height:54px}.psy-item-name{min-height:27px;display:grid;place-items:center;color:#f8fafc;font-size:11px;line-height:1.15;font-weight:1000}.psy-item-info{color:var(--item);font-size:8px;min-height:20px;line-height:1.2}.psy-item-owned,.psy-item-stock{width:100%;margin:5px 0;padding:3px 7px;border-radius:999px;background:#02050b;color:#facc15;font-size:10px;font-weight:1000}.psy-item-stock{color:#8298b5;font-size:8px}.psy-item-card>button{width:100%;margin-top:auto;border:1px solid color-mix(in srgb,var(--item) 70%,white);border-radius:8px;padding:7px 5px;background:color-mix(in srgb,var(--item) 72%,#111827);color:#fff;font-size:8px;font-weight:1000}.psy-shop-price{color:#facc15;font-size:11px;font-weight:1000}
 .psy-purchase-bar{position:sticky;bottom:0;z-index:4;margin-top:8px;padding:10px;display:grid;grid-template-columns:1fr 76px minmax(180px,.4fr);gap:9px;align-items:center;background:#040711f2;border:1px solid #314663;border-radius:13px;backdrop-filter:blur(8px)}#shop-detail{display:flex!important;flex-direction:column;gap:2px;color:#8196b3!important;font-size:10px!important}#shop-detail b{color:#fff;font-size:12px}#shop-detail span{color:#8aa0bd}#shop-qty{width:100%!important;height:38px!important}#btn-buy{height:40px!important}
 .psy-craft5{grid-template-columns:170px 1fr 120px!important;padding:12px!important;border-color:color-mix(in srgb,var(--c) 58%,#334155)!important;background:radial-gradient(circle at 10% 50%,color-mix(in srgb,var(--c) 13%,transparent),transparent 28%),#09111f!important}.psy-craft-flow{display:grid;grid-template-columns:54px auto 20px 54px auto;gap:5px;align-items:center}.psy-craft-flow span{width:54px;height:54px;display:grid;place-items:center;border-radius:12px;background:#020611;border:1px solid #ffffff17}.psy-craft-flow i{color:var(--c);font-style:normal;font-size:18px}.psy-craft-flow b{color:#fff;font-size:9px}.psy-craft5 h3{margin:0 0 4px;color:#fff}.psy-craft-stock{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}.psy-craft-stock span{padding:4px 7px;border:1px solid #29425e;border-radius:999px;color:#91a7c0;font-size:9px}.psy-craft5>button{border:1px solid color-mix(in srgb,var(--c) 72%,white);border-radius:9px;padding:10px;background:color-mix(in srgb,var(--c) 70%,#0f172a);color:#fff;font-weight:1000}.psy-craft5>button:disabled{filter:grayscale(1);opacity:.35}
-.psy-v10-sell-panel{max-width:1040px!important;background:linear-gradient(180deg,#101827,#050811)!important;border-color:#f59e0b!important;border-radius:20px!important}.psy-v10-sell-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))!important}.psy-v10-sell-card{display:grid;grid-template-columns:66px 1fr;gap:9px;align-items:center;padding:10px!important;border-color:#3d4b60!important;background:#0b1422!important}.psy-v10-sell-card .psy-item-art{grid-row:1/3;height:64px}.psy-sell-copy b{display:block!important}.psy-sell-copy small,.psy-sell-copy strong{display:block;margin-top:3px}.psy-sell-copy strong{color:#facc15;font-size:10px}.psy-sell-actions{grid-column:1/-1;display:flex;gap:5px}.psy-sell-actions button{flex:0 0 auto!important;background:#92400e!important}.psy-sell-actions .all{flex:1!important;background:#b45309!important}
+.psy-v10-sell-panel{max-width:1040px!important;background:linear-gradient(180deg,#101827,#050811)!important;border-color:#f59e0b!important;border-radius:20px!important}.psy-v10-sell-wallet{margin:10px 0;padding:9px 12px;border:1px solid #f59e0b66;border-radius:10px;background:linear-gradient(90deg,#422006,#1c1917);color:#fde68a;font-weight:900}.psy-v10-sell-feedback{display:none;margin:8px 0;padding:9px 12px;border:1px solid #34d39988;border-radius:10px;background:#064e3b;color:#d1fae5;font-weight:800}.psy-v10-sell-feedback.show{display:block}.psy-v10-sell-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))!important}.psy-v10-sell-card{display:grid;grid-template-columns:66px 1fr;gap:9px;align-items:center;padding:10px!important;border-color:#3d4b60!important;background:#0b1422!important}.psy-v10-sell-card .psy-item-art{grid-row:1/3;height:64px}.psy-sell-copy b{display:block!important}.psy-sell-copy small,.psy-sell-copy strong{display:block;margin-top:3px}.psy-sell-copy strong{color:#facc15;font-size:10px}.psy-sell-actions{grid-column:1/-1;display:flex;gap:5px}.psy-sell-actions button{flex:0 0 auto!important;background:#92400e!important}.psy-sell-actions .all{flex:1!important;background:#b45309!important}
 .psy20-ach .psy-item-sprite{width:48px!important;height:48px!important;padding:5px;border:1px solid #ffffff16;border-radius:10px;background:#030711}.psy20-ach>div:has(.psy-item-sprite){background:#07111f;border-radius:10px;padding:5px}
 @media(max-width:700px){.psy-inventory-panel{padding:10px!important}.psy-inventory-head{padding-right:42px}.psy-inventory-head h2{font-size:19px!important}.psy-item-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}.psy-item-card{min-height:170px;padding-inline:5px}.psy-item-name{font-size:9px}.psy-purchase-bar{grid-template-columns:1fr 64px}.psy-purchase-bar #btn-buy{grid-column:1/-1}.psy-craft5{grid-template-columns:1fr!important}.psy-craft-flow{justify-content:center}.psy-v10-sell-grid{grid-template-columns:1fr!important}}
 @media(max-width:430px){.psy-item-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.psy-wallet{font-size:9px;padding:6px 8px}}
@@ -2023,8 +2023,10 @@ html body #menuBtn{
 }
 html body #fastEncounterBtn{
   position:fixed!important;
-  top:max(10px, calc(env(safe-area-inset-top, 0px) + 10px))!important;
-  right:max(16px, calc(env(safe-area-inset-right, 0px) + 10px))!important;
+  top:50%!important;
+  left:50%!important;
+  right:auto!important;
+  transform:translate(-50%,-50%)!important;
   z-index:1000202!important;
   width:30px!important;
   height:30px!important;
@@ -2046,8 +2048,10 @@ html body #world-btn-float{
     font-size:9px!important;
   }
   html body #fastEncounterBtn{
-    top:max(8px, calc(env(safe-area-inset-top, 0px) + 8px))!important;
-    right:max(14px, calc(env(safe-area-inset-right, 0px) + 8px))!important;
+    top:50%!important;
+    left:50%!important;
+    right:auto!important;
+    transform:translate(-50%,-50%)!important;
     width:28px!important;
     height:28px!important;
     min-width:28px!important;
@@ -2062,6 +2066,61 @@ html body #world-btn-float{
     right:calc(max(12px, env(safe-area-inset-right, 0px)) + 52px)!important;
   }
   html body #fastEncounterBtn{
-    right:max(14px, calc(env(safe-area-inset-right, 0px) + 8px))!important;
+    left:50%!important;
+    right:auto!important;
   }
 }
+
+/* PSYWORLD AVENTURA V50 — acabamento MOBA, escopado ao modo Aventura. */
+#psy-adventure{--a-cyan:#67e8f9;--a-gold:#facc15;overflow:hidden!important;background:radial-gradient(circle at 50% 18%,#123b58,#061321 62%,#02070d)!important;color:#eaf7ff!important;isolation:isolate}
+#psy-adventure>div:first-child{min-width:0;min-height:0}
+#psy-adventure>div:first-child>header{height:64px!important;box-sizing:border-box!important;padding:10px 18px!important;background:linear-gradient(115deg,#061522f5,#0d3450f2 58%,#092239f2)!important;border-bottom:1px solid #38bdf8aa!important;box-shadow:0 6px 24px #000b,0 1px 0 #7dd3fc33 inset!important;z-index:70!important}
+#psy-adventure #a-title{letter-spacing:.02em!important;text-shadow:0 0 16px #67e8f955!important}
+#psy-adventure>div:first-child>header>span{display:flex!important;align-items:center!important;gap:8px!important}
+#psy-adventure>div:first-child>header button,#psy-adventure #a-top-tools button,#psy-adventure #a-tools-drawer button,#psy-adventure #a-hud-editor button{box-sizing:border-box!important;min-height:36px!important;border:1px solid #67e8f9bb!important;border-radius:10px!important;background:linear-gradient(145deg,#134866,#0b263d)!important;color:#e0f2fe!important;font-weight:900!important;letter-spacing:.035em!important;box-shadow:0 5px 14px #0008,0 0 0 1px #ffffff0b inset!important}
+#psy-adventure #a-mode{display:none!important}
+#psy-adventure>div:first-child>div[style*="position:relative"]{min-width:0!important;min-height:0!important;overflow:hidden!important;background:#06111b!important;isolation:isolate!important}
+#psy-adventure #a-canvas{display:block!important;width:100%!important;height:100%!important;image-rendering:auto!important;background:linear-gradient(180deg,#0a1d32,#06111b)!important}
+#psy-adventure #a-top-tools{position:fixed!important;top:76px!important;left:18px!important;right:18px!important;display:flex!important;align-items:center!important;gap:8px!important;min-height:38px!important;padding:0 0 4px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;z-index:72!important;pointer-events:none!important}
+#psy-adventure #a-top-tools::-webkit-scrollbar{display:none!important}
+#psy-adventure #a-top-tools>*{pointer-events:auto!important;position:static!important;flex:0 0 auto!important;transform:none!important}
+#psy-adventure #a-top-tools>#a-eggs{background:linear-gradient(145deg,#9a5b09,#5b2d0b)!important;border-color:#fbbf24!important}
+#psy-adventure #a-top-tools>#a-team{background:linear-gradient(145deg,#075985,#0c4a6e)!important}
+#psy-adventure #a-top-tools>#a-afk{background:linear-gradient(145deg,#166534,#14532d)!important;border-color:#86efac!important}
+#psy-adventure #a-top-tools>#a-menu-toggle{background:linear-gradient(145deg,#155e75,#0e7490)!important}
+#psy-adventure #a-hud{position:fixed!important;top:126px!important;left:18px!important;right:auto!important;width:min(330px,calc(100vw - 36px))!important;box-sizing:border-box!important;padding:13px 15px!important;border:1px solid #67e8f9aa!important;border-radius:16px!important;background:linear-gradient(145deg,#061526e8,#103856d9)!important;box-shadow:0 14px 34px #000a,0 0 24px #22d3ee22 inset!important;backdrop-filter:blur(12px)!important;z-index:40!important;pointer-events:none!important}
+#psy-adventure #a-hud:before{content:'ADVENTURE HUD';display:block;margin-bottom:7px;color:#67e8f9;font-size:9px;letter-spacing:.18em;font-weight:1000;opacity:.8}
+#psy-adventure #a-tools-drawer{display:none!important;position:fixed!important;top:124px!important;left:18px!important;width:min(360px,calc(100vw - 36px))!important;max-height:calc(100vh - 146px)!important;overflow:auto!important;box-sizing:border-box!important;padding:14px!important;border:1px solid #67e8f9aa!important;border-radius:18px!important;background:linear-gradient(145deg,#061526f7,#0d304bf2)!important;box-shadow:0 20px 55px #000d,0 0 30px #22d3ee1c inset!important;backdrop-filter:blur(14px)!important;z-index:75!important}
+#psy-adventure.a-menu-open #a-tools-drawer{display:block!important}
+#psy-adventure .a-drawer-head{display:flex!important;align-items:center!important;justify-content:space-between!important;margin-bottom:11px!important;padding-bottom:9px!important;border-bottom:1px solid #2b6680!important;color:#a5f3fc!important;letter-spacing:.08em!important}
+#psy-adventure .a-drawer-buttons{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+#psy-adventure #a-tools-drawer .a-drawer-buttons>button{width:100%!important;min-height:42px!important;padding:8px 7px!important;font-size:11px!important;white-space:normal!important;position:static!important;display:flex!important}
+#psy-adventure #a-tools-drawer #a-eggs,#psy-adventure #a-tools-drawer #a-team,#psy-adventure #a-tools-drawer #a-afk,#psy-adventure #a-tools-drawer #a-menu-toggle{display:none!important}
+#psy-adventure #a-potion,#psy-adventure #a-switch,#psy-adventure #a-jump{position:fixed!important;z-index:65!important;box-shadow:0 10px 24px #000b,0 0 18px #ffffff12 inset!important}
+#psy-adventure #a-potion{right:278px!important;bottom:160px!important;top:auto!important;background:linear-gradient(145deg,#15803d,#14532d)!important;border-color:#86efac!important}
+#psy-adventure #a-switch{right:276px!important;bottom:22px!important;left:auto!important;background:linear-gradient(145deg,#9a3412,#7c2d12)!important;border-color:#fdba74!important}
+#psy-adventure #a-jump{right:22px!important;bottom:154px!important;min-width:112px!important;background:linear-gradient(145deg,#0e7490,#155e75)!important;border-color:#a5f3fc!important}
+#psy-adventure #a-skills{position:fixed!important;right:24px!important;bottom:14px!important;left:auto!important;width:244px!important;height:194px!important;display:block!important;transform:none!important;z-index:64!important}
+#psy-adventure #a-skills button{position:absolute!important;width:78px!important;height:58px!important;min-width:0!important;padding:6px 4px!important;border-radius:50%!important;border-width:2px!important;font-size:10px!important;line-height:1.08!important;box-shadow:0 8px 20px #000b,0 0 18px #22d3ee33 inset!important}
+#psy-adventure #a-skills button:nth-child(1){right:82px!important;bottom:15px!important;background:radial-gradient(circle at 32% 28%,#f59e0b,#7c2d12 72%)!important;border-color:#fde68a!important}
+#psy-adventure #a-skills button:nth-child(2){right:134px!important;bottom:103px!important;background:radial-gradient(circle at 32% 28%,#38bdf8,#164e63 72%)!important}
+#psy-adventure #a-skills button:nth-child(3){right:30px!important;bottom:111px!important;background:radial-gradient(circle at 32% 28%,#22d3ee,#155e75 72%)!important}
+#psy-adventure #a-skills button:nth-child(4){right:0!important;bottom:15px!important;background:radial-gradient(circle at 32% 28%,#c084fc,#4c1d95 72%)!important;border-color:#e9d5ff!important}
+#psy-adventure #a-touch-move{position:fixed!important;left:20px!important;bottom:22px!important;z-index:66!important;opacity:.12!important;transition:opacity .2s!important}
+#psy-adventure #a-touch-move:active,#psy-adventure #a-touch-move:focus-within{opacity:.8!important}
+#psy-adventure #a-touch-move button{width:58px!important;height:58px!important;border-radius:50%!important;background:linear-gradient(145deg,#173a59cc,#071a2dcc)!important;border-color:#7dd3fcaa!important;color:#bae6fd!important}
+#psy-adventure [id$="-panel"]:not(#a-hud-editor){box-sizing:border-box!important;border:1px solid #67e8f9aa!important;border-radius:18px!important;background:linear-gradient(145deg,#061526f5,#0d304bf2)!important;box-shadow:0 20px 55px #000d,0 0 26px #22d3ee1a inset!important;backdrop-filter:blur(14px)!important}
+#psy-adventure .a-panel-head{color:#a5f3fc!important;letter-spacing:.04em!important}
+#psy-adventure #a-drop-popups,#psy-adventure #a-popup-stack{z-index:88!important;gap:12px!important;max-width:calc(100vw - 32px)!important}
+#psy-adventure .a-hud-editor-hidden-v50{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+#psy-adventure.a-hud-editing #a-canvas{filter:brightness(.72) saturate(.85)!important}
+#psy-adventure.a-hud-editing #a-touch-invisible{pointer-events:none!important}
+#psy-adventure #a-hud-editor{position:fixed!important;inset:0!important;z-index:100!important;pointer-events:none!important;background:#0206171a!important}
+#psy-adventure #a-hud-editor .a-hud-editor-panel{pointer-events:auto!important;width:min(470px,calc(100vw - 24px))!important;border:1px solid #facc15!important;border-radius:18px!important;background:linear-gradient(145deg,#081827fa,#173b52fa)!important;box-shadow:0 22px 60px #000e!important;padding:14px!important}
+#psy-adventure #a-hud-editor .a-hud-editor-panel>b{color:#fde68a!important;font-size:16px!important}
+#psy-adventure #a-hud-editor .a-hud-editor-panel>small{color:#cbd5e1!important;line-height:1.35!important}
+#psy-adventure #a-hud-editor .a-hud-editor-list{gap:7px!important;max-height:132px!important}
+#psy-adventure #a-hud-editor .a-hud-editor-choice{min-height:34px!important;background:linear-gradient(145deg,#155e75,#0e7490)!important}
+#psy-adventure #a-hud-editor .a-hud-edit-item{outline:2px dashed #facc15!important;outline-offset:6px!important;box-shadow:0 0 24px #facc1577!important;cursor:grab!important}
+#psy-adventure #a-hud-editor .a-hud-edit-item.selected{outline:3px solid #22d3ee!important;outline-offset:7px!important;box-shadow:0 0 30px #22d3eeaa!important}
+@media(max-width:720px){#psy-adventure>div:first-child>header{padding:8px 10px!important}#psy-adventure #a-title{font-size:15px!important}#psy-adventure #a-top-tools{left:10px!important;right:10px!important;top:70px!important;gap:5px!important}#psy-adventure #a-top-tools button{min-height:32px!important;padding:6px 7px!important;font-size:10px!important}#psy-adventure #a-hud{top:112px!important;left:10px!important;width:min(270px,calc(100vw - 20px))!important;padding:10px!important}#psy-adventure #a-skills{right:8px!important;bottom:8px!important;width:214px!important;height:174px!important}#psy-adventure #a-skills button{width:66px!important;height:50px!important}#psy-adventure #a-skills button:nth-child(1){right:72px!important}#psy-adventure #a-skills button:nth-child(2){right:116px!important;bottom:92px!important}#psy-adventure #a-skills button:nth-child(3){right:26px!important;bottom:99px!important}#psy-adventure #a-jump{right:10px!important;bottom:128px!important;min-width:88px!important}#psy-adventure #a-potion{right:104px!important;bottom:148px!important}#psy-adventure #a-switch{right:238px!important;bottom:18px!important;min-width:72px!important}#psy-adventure #a-touch-move{left:10px!important;bottom:14px!important}}

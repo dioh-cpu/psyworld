@@ -1,0 +1,17 @@
+PSYWORLD — pacote HTML5 público V15
+
+Envie este ZIP como build HTML5; o index.html está na raiz.
+O jogo se adapta a desktop, itch.io, navegador móvel e telas com recorte/notch.
+Use o botão ⛶ para solicitar tela cheia. Em navegadores que não autorizarem a
+API nativa, o modo de encaixe ocupa o espaço disponível.
+
+Esta versão pública não inclui os assistentes virtuais enquanto a integração
+online estiver em revisão.
+
+Os modos World, Hunts, Dungeons, Ginásios, Álbum, Ovos, Pokédex, Quests,
+Conquistas, AFK, Survivor, Battle Pass, VIP e Talentos estão disponíveis.
+O Modo Aventura e o World Idle Realista permanecem reservados para uma futura
+versão de testes.
+
+Para melhor visualização em telas pequenas, use o aparelho na horizontal nos
+modos de batalha e Survivor.

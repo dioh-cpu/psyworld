@@ -5,11 +5,11 @@
 (function(){
 'use strict';
 const W=window,D=document;
-const PHYSICAL_BUILD='AVENTURA_SURVIVOR_RETOMADA_V9';
+  // V36: invalida o cache do itch.io após os ajustes de economia e câmera.
+const PHYSICAL_BUILD='PSYWORLD_SURVIVOR_WOBBUFFET_METER_PERF_V16_20260901';
 function versionedSrc(src){const sep=String(src).includes('?')?'&':'?';return String(src)+sep+'build='+encodeURIComponent(PHYSICAL_BUILD)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
-  adventure:{icon:'🌲',name:'AVENTURA',desc:'Mapa contínuo com exploração, ovos, loots e combates.',entry:['openAdventureMode']},
   world:{icon:'🌍',name:'WORLD',desc:'Exploração em primeira pessoa, Pokémon no mapa e combate World.',entry:['enterWorldMode']},
   hunts:{icon:'🗺️',name:'HUNTS',desc:'Hunts por região, nível e tipo.',entry:['openHunts']},
   dungeons:{icon:'🏰',name:'DUNGEONS',desc:'Bosses e desafios especiais.',entry:['openDungeons']},
@@ -24,7 +24,6 @@ const MODES={
   battlepass:{icon:'🎫',name:'BATTLE PASS',desc:'100 níveis e missões.',entry:['openBattlePass']},
   vip:{icon:'⭐',name:'VIP',desc:'Planos e bônus VIP.',entry:['openVIP']},
   trainer:{icon:'🧑‍🏫',name:'TALENTOS',desc:'Talentos do Treinador.',entry:['openTrainerShop']},
-  cashshop:{icon:'💎',name:'CASH SHOP',desc:'Loja premium.',entry:['openCashShop']}
 };
 const PACKAGES={}, loadedFiles=new Set(), loadingFiles=new Map(), sessionLoaded=new Set();
 let state={};try{state=JSON.parse(localStorage.getItem(STORE)||'{}')||{}}catch(e){state={}}
@@ -55,7 +54,7 @@ async function ensureManifest(k){
   return PACKAGES[k];
 }
 async function physicalLoad(k,onProgress){
-  const pkg=await ensureManifest(k),deps=pkg.deps||[];
+const pkg=await ensureManifest(k),deps=[...(pkg.deps||[])];
   for(let i=0;i<deps.length;i++){
     onProgress?.(Math.round(((i+0.35)/(deps.length+1))*100));
     await loadScript(deps[i]);
@@ -148,13 +147,13 @@ function modeFromButton(b){
   const oc=String(b.getAttribute?.('onclick')||'');
   for(const [k,m] of Object.entries(MODES))if(m.entry.some(fn=>oc.includes(fn+'(')||oc.includes('window.'+fn+'(')))return k;
   const t=String(b.textContent||'').toUpperCase();
-  if(/\bWORLD\b/.test(t))return'world'; if(t.includes('HUNTS'))return'hunts';
+  if(t.includes('WORLD IDLE')||t.includes('IDLE REALISTA'))return'idleworld'; if(/\bWORLD\b/.test(t))return'world'; if(t.includes('HUNTS'))return'hunts';
   if(t.includes('DUNGEON'))return'dungeons'; if(t.includes('GYM')||t.includes('GINÁSIO'))return'gyms';
   if(t.includes('CARDS')||t.includes('ÁLBUM'))return'cards'; if(t.includes('SURVIVOR')||t.includes('PSYDUCK SUPREMO'))return'survivor';
   if(t.includes('POKÉDEX'))return'pokedex'; if(t.includes('EGG CENTER'))return'eggs'; if(t.includes('QUEST'))return'quests';
   if(t.includes('CONQUISTA')||t.includes('ROLETA'))return'achievements'; if(t.includes('MODO AFK')||t.includes('EXPEDIÇÃO AFK'))return'afk';
   if(t.includes('BATTLE PASS')||t.includes('PASSE'))return'battlepass'; if(/\bVIP\b/.test(t))return'vip';
-  if(t.includes('TALENTOS'))return'trainer'; if(t.includes('CASH SHOP'))return'cashshop';
+  if(t.includes('TALENTOS'))return'trainer';
   return null;
 }
 function decorateButtons(){

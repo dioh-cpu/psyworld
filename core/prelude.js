@@ -117,7 +117,7 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
 (function(){
   'use strict';
   const W=window,D=document;
-  W.PSYWORLD_BUILD='AVENTURA_SURVIVOR_RETOMADA_V9';
+  W.PSYWORLD_BUILD='SURVIVOR_WOBBUFFET_METER_PERF_V16';
 
   function laterFallback(){
     const m=D.getElementById('psy-surv-resume-modal');
