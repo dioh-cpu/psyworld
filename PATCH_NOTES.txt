@@ -1,36 +1,47 @@
-PSYWORLD — V23 ONLINE / CLOUD SAVE + INÍCIO ONLINE AUTORITATIVO
+PSYWORLD — V25 ECONOMIA ONLINE AUTORITATIVA
 
 ALTERAÇÕES CONCLUÍDAS
-- Conta online por e-mail/senha via Supabase Auth reativada.
-- Cloud save completo por conta via /api/player/save.
-- Save Local continua como backup/fallback.
-- Conflito Local x Nuvem só reaparece quando existir conflito real novo.
-- Antes de restaurar da nuvem, o save local recebe backup adicional.
-- Cadastro agora usa redirect fixo para https://psyworld-murex.vercel.app/ em vez do domínio variável de Preview.
-- Callback de confirmação por hash é capturado pelo cliente e o token é removido da URL após uso.
-- Menu recebe ações manuais SALVAR NA NUVEM e CARREGAR DA NUVEM quando a conta está conectada.
-- Fast Encounter recebeu suporte de arrastar/mover mesmo sem Hunt ativa e salva a posição no aparelho.
-- MODOS / DOWNLOADS é reposicionado junto da área da Expedição AFK.
-- Botão de ÁUDIO é normalizado para o tamanho dos demais botões e o Audio System V1 é carregado pelo bootstrap online quando necessário.
-- Adicionada API somente-leitura /api/online-state para expor wallet, inventário, Pokémon e ledger autoritativos do servidor para a próxima fase.
+- Conta online por e-mail/senha via Supabase Auth permanece ativa.
+- Cloud save completo por conta permanece disponível, com Save Local como backup/fallback.
+- Estado autoritativo do servidor já expõe Gold, Diamonds, Trainer Level, inventário, Pokémon e ledger.
+- Poké Shop online agora envia compras autenticadas para /api/economy; o navegador não desconta Gold nem entrega item antes da confirmação do servidor.
+- Craft de Balls elementais online passa pelo servidor e exige 10 Essências autoritativas.
+- Venda de Stones pela Poké Shop online passa pelo servidor.
+- Compras, vendas e craft usam idempotência de operação para impedir duplicação por clique duplo, retry ou repetição da mesma requisição.
+- Corrigida brecha em que uma repetição da mesma chave poderia evitar nova cobrança e ainda entregar item novamente.
+- O cliente recebe Gold e inventário novamente do servidor após cada operação e atualiza o estado local a partir dessa resposta.
+- Catálogo autoritativo da Poké Shop foi alinhado aos itens realmente vendidos no jogo: Balls comuns, Poções/Revive e Stones normais.
+- Itens antigos/ocultos não permanecem compráveis apenas chamando a API manualmente.
+- Ghost Stone e Dark Stone do inventário online foram consolidados em Darkness Stone.
+- APIs /api/economy e /api/online-state usam o helper seguro api/_lib/supabase.js e a Service Role somente no servidor.
+- Market permanece desativado.
 
-VALIDAÇÕES JÁ FEITAS PELO TESTE
-- Cadastro/login por e-mail e senha funcionou no Preview.
-- Recuperação do estado salvo pela nuvem funcionou.
-- Repetição do modal de conflito após F5 foi corrigida e retestada com sucesso.
-- Branch de teste: online-cloud-save-v23. Produção/main ainda não foi promovida.
+MIGRATIONS APLICADAS NO SUPABASE
+- 004_economy_hardening_v25.sql
+  - economy_operations com RLS.
+  - idempotência transacional para shop-buy, shop-sell e craft.
+  - migração Ghost/Dark Stone -> Darkness Stone.
+- 005_authoritative_shop_catalog_v25.sql
+  - catálogo da Poké Shop reconstruído com a lista atual e preços autoritativos.
 
-CAMINHO PARA 100% ONLINE / SERVER-AUTHORITATIVE
-1. V23: fechar login, cloud save, redirect fixo e interface de gerenciamento de save.
-2. V24: importar uma única vez Gold, Diamonds, Trainer Level, inventário e Pokémon do save legado para as tabelas autoritativas.
-3. V24/V25: servidor passa a decidir compras, vendas, craft, moedas, inventário, captura e recompensas.
-4. V25+: migrar Eggs, Packs, Achievements, Battle Pass, AFK, drops e progressão para transações servidoras idempotentes.
-5. Depois: ativar Market entre jogadores apenas quando todos os ativos comercializados forem server-authoritative.
-6. Acrescentar rate limit, recibos/idempotência, auditoria, detecção de divergência e proteção anti-cheat.
+VALIDAÇÕES RELEVANTES
+- Supabase alvo confirmado como projeto ativo em sa-east-1.
+- Migration 004 aplicada com sucesso pelo gerenciador do Supabase.
+- Migration 005 aplicada com sucesso pelo gerenciador do Supabase.
+- Catálogo foi consultado após a primeira migration antes do realinhamento e a inconsistência foi identificada/corrigida.
+- Branch de teste continua online-cloud-save-v23; produção/main não foi promovida.
+- A V24 anterior já foi testada pelo usuário com SERVIDOR ATIVO e estado autoritativo visível no jogo.
 
-AINDA PRECISA CORRIGIR / VALIDAR
-- Testar no Preview atual: Fast Encounter arrastável, botões Cloud no menu, botão Áudio e MODOS / DOWNLOADS na posição desejada.
-- Testar confirmação de uma conta nova e confirmar que o e-mail retorna sempre para https://psyworld-murex.vercel.app/.
-- Verificar na produção que SUPABASE_URL, SUPABASE_ANON_KEY/PUBLISHABLE_KEY e SUPABASE_SERVICE_ROLE_KEY continuam configuradas.
-- Migration 003_cloud_game_state.sql já foi executada; migrations 001/002 precisam ser confirmadas antes de ativar economia autoritativa real.
-- Market real permanece bloqueado até a migração completa da economia e ownership para o servidor.
+PRÓXIMAS ETAPAS
+1. Testar no Preview uma compra, uma venda de Stone e um craft online, verificando saldo/quantidade após F5.
+2. Migrar recompensas de batalha, Gold/XP, captura e drops para endpoints transacionais do servidor.
+3. Migrar Eggs, Packs, Achievements, Battle Pass, AFK e Survivor.
+4. Adicionar rate limit, recibos/auditoria e detecção de divergência.
+5. Liberar Market somente depois que todos os ativos comercializáveis forem server-authoritative.
+
+AINDA PRECISA CORRIGIR
+- Venda pelo Vendor da Bag ainda possui fluxos legados que precisam ser migrados/limitados antes de ser considerada 100% autoritativa.
+- Recompensas de batalha, captura e drops ainda são decididas pelo cliente e são o próximo bloco de segurança.
+- Eggs, Packs, Achievements, Battle Pass, AFK e Survivor ainda precisam de transações servidoras próprias.
+- Market real continua bloqueado até concluir autoridade, ownership e anti-cheat.
+- Antes de qualquer merge na main, testar a V25 no Preview e confirmar que não ocorre tela branca nem regressão do Save Local.
