@@ -1,4 +1,4 @@
-import { requireUser, jsonError, method } from '../lib/supabase.js';
+import { requireUser, jsonError, method } from './_lib/supabase.js';
 
 function sanitize(value,depth=0){
   if(depth>18)return null;
@@ -31,7 +31,7 @@ export default async function handler(req,res){
       const {user,supabase}=await requireUser(req);
       await ensurePlayer(supabase,user);
       const [p,game]=await Promise.all([
-        supabase.from('players').select('user_id,trainer_name,trainer_level,trainer_xp,created_at,updated_at').eq('user_id',user.id).maybeSingle(),
+        supabase.from('players').select('user_id,trainer_name,trainer_level,trainer_xp,gold,diamonds,psycoin,authority_version,created_at,updated_at').eq('user_id',user.id).maybeSingle(),
         supabase.from('player_game_state').select('save,updated_at,client_updated_at').eq('user_id',user.id).maybeSingle()
       ]);
       if(p.error)throw p.error;
