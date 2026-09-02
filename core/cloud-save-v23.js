@@ -5,7 +5,7 @@ const SYNC_KEY='psyworld_cloud_sync_v23';
 const LOCAL_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
 const PROD_ORIGIN='https://psyworld-murex.vercel.app';
 const FAST_POS_KEY='psyworld_fast_encounter_pos_v24';
-let config=null,session=null,syncEnabled=false,syncTimer=0;
+let config=null,session=null,syncEnabled=false,syncTimer=0,economyBusy=false;
 const $=id=>D.getElementById(id);
 function toast(msg,ms=3200){try{W.notif?.(msg,ms)}catch(_){console.log(msg)}}
 function parse(s){try{return s?JSON.parse(s):null}catch(_){return null}}
@@ -47,7 +47,7 @@ function modal(title,body,buttons){let m=$('psy-cloud-modal');if(!m){m=D.createE
 async function signup(){const email=$('psy-online-email')?.value.trim(),password=$('psy-online-pass')?.value||'';if(!email||password.length<6)return toast('Informe e-mail e senha de pelo menos 6 caracteres.');try{const d=await authFetch('signup',{method:'POST',body:JSON.stringify({email,password,options:{emailRedirectTo:PROD_ORIGIN+'/'}})});if(d.access_token){acceptAuth(d);await afterAuth()}else toast('📧 Conta criada. Confirme o e-mail e depois clique em ENTRAR.',5000)}catch(e){toast('❌ Cadastro: '+friendly(e.message),4500)}}
 async function login(){const email=$('psy-online-email')?.value.trim(),password=$('psy-online-pass')?.value||'';if(!email||!password)return toast('Informe e-mail e senha.');try{const d=await authFetch('token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});acceptAuth(d);await afterAuth()}catch(e){toast('❌ Login: '+friendly(e.message),4500)}}
 function acceptAuth(d){saveSession({...d,user:d.user||session?.user,expires_at:Date.now()+Number(d.expires_in||3600)*1000});renderStatus()}
-function friendly(s){return ({online_not_configured:'Servidor online ainda não configurado na Vercel.',invalid_credentials:'E-mail ou senha inválidos.'}[s]||String(s).replaceAll('_',' '))}
+function friendly(s){return ({online_not_configured:'Servidor online ainda não configurado na Vercel.',invalid_credentials:'E-mail ou senha inválidos.',item_not_buyable:'Item indisponível na Poké Shop online.',insufficient_balance:'Gold insuficiente no servidor.',insufficient_item:'Itens insuficientes no servidor.'}[s]||String(s).replaceAll('_',' '))}
 async function afterAuth(){try{const state=await api('/api/player');await resolveConflict(state.game_state);renderStatus()}catch(e){toast('❌ Cloud save: '+friendly(e.message),5000)}}
 async function resolveConflict(game){
   const local=bestLocal(),cloud=game?.save&&validSave(game.save)?game.save:null;
@@ -86,6 +86,63 @@ async function loadNow(){
 }
 function queueSync(){if(!syncEnabled||!session?.access_token)return;if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncTimer=0;const s=bestLocal();if(s)upload(s,false,false)},2500)}
 function patchSave(){const old=W.autoSave;if(typeof old==='function'&&!old.__cloudV23){const f=function(){const r=old.apply(this,arguments);queueSync();return r};f.__cloudV23=true;W.autoSave=f;try{autoSave=f}catch(_){}}}
+
+function idem(prefix){try{return prefix+':'+crypto.randomUUID()}catch(_){return prefix+':'+Date.now()+':'+Math.random().toString(36).slice(2)}}
+function onlineEconomyActive(){readSession();return !!session?.access_token}
+async function economy(action,payload={}){
+  if(!await ensureToken())throw new Error('Faça login primeiro.');
+  return api('/api/economy?action='+encodeURIComponent(action),{method:'POST',body:JSON.stringify(payload)});
+}
+function applyEconomyState(d){
+  const p=W.P;if(!p)return;
+  if(d?.player&&Number.isFinite(Number(d.player.gold)))p.gold=Number(d.player.gold);
+  if(Array.isArray(d?.inventory)){
+    const inv={};for(const row of d.inventory){const q=Math.max(0,Number(row?.quantity||0));if(q>0)inv[String(row.item_key)]=q}
+    p.inventory=inv;
+  }
+  try{W.updateHUD?.()}catch(_){}
+  try{const wallet=$('shop-wallet-gold');if(wallet)wallet.textContent=Number(p.gold||0).toLocaleString('pt-BR')}catch(_){}
+}
+async function runEconomy(action,payload,success){
+  if(economyBusy)return toast('⏳ Aguarde a operação anterior.');
+  economyBusy=true;
+  try{const d=await economy(action,payload);applyEconomyState(d);try{W.autoSave?.()}catch(_){}success?.(d);return d}
+  catch(e){console.warn('online economy',action,e);toast('❌ Servidor: '+friendly(e.message),4200);return null}
+  finally{economyBusy=false}
+}
+function installEconomyHooks(){
+  const curBuy=W.buyMulti;
+  if(typeof curBuy==='function'&&!curBuy.__psyEconomyV25){
+    const old=curBuy;
+    const f=async function(){
+      if(!onlineEconomyActive())return old.apply(this,arguments);
+      const card=D.querySelector('#shop-grid .psy-shop-card.selected'),name=card?.querySelector('.psy-item-name')?.textContent?.trim();
+      if(!name)return toast('Selecione um item.');
+      const qty=Math.max(1,Math.min(99,parseInt($('shop-qty')?.value)||1));
+      if(typeof W.confirm==='function'&&!W.confirm(`Confirmar compra online?\n\n${qty}x ${name}\n\nO preço e o saldo serão validados pelo servidor.`))return;
+      return runEconomy('shop-buy',{item:name,qty,idempotency_key:idem('shop-buy')},()=>{try{W.questProgress?.('buy',qty)}catch(_){}try{W.openShop?.()}catch(_){}toast(`✅ Compra confirmada pelo servidor: ${qty}x ${name}`,2600)});
+    };f.__psyEconomyV25=true;f.__offlineOriginal=old;W.buyMulti=f;try{buyMulti=f}catch(_){}
+  }
+  const curCraft=W.psyCraftElementBall;
+  if(typeof curCraft==='function'&&!curCraft.__psyEconomyV25){
+    const old=curCraft;
+    const f=async function(type){
+      if(!onlineEconomyActive())return old.apply(this,arguments);
+      const el=String(type||'').trim().toLowerCase();if(!el)return;
+      return runEconomy('craft',{element:el,idempotency_key:idem('craft')},()=>{try{W.renderCraft5?.()}catch(_){}toast('✅ Ball elemental fabricada e validada pelo servidor.',2600)});
+    };f.__psyEconomyV25=true;f.__offlineOriginal=old;W.psyCraftElementBall=f;
+  }
+  const curSell=W.psySellStone;
+  if(typeof curSell==='function'&&!curSell.__psyEconomyV25){
+    const old=curSell;
+    const f=async function(name,qty=1){
+      if(!onlineEconomyActive())return old.apply(this,arguments);
+      const q=Math.max(1,Math.min(100,Number(qty)||1));
+      return runEconomy('shop-sell',{item:String(name||''),qty:q,idempotency_key:idem('shop-sell')},()=>{try{W.openShop?.()}catch(_){}toast(`💰 Venda confirmada pelo servidor: ${q}x ${name}`,2600)});
+    };f.__psyEconomyV25=true;f.__offlineOriginal=old;W.psySellStone=f;
+  }
+}
+
 function loadAudioSystem(){
   if(W.psyAudio||D.querySelector('script[data-psy-audio-v24]'))return;
   const s=D.createElement('script');s.src='core/audio.js?build=AUDIO_V24_20260902';s.async=false;s.dataset.psyAudioV24='1';s.onload=()=>console.log('🔊 Audio V1 carregado no bootstrap online');s.onerror=()=>console.warn('Falha ao carregar core/audio.js');D.head.appendChild(s);
@@ -120,8 +177,8 @@ function styleMenu(){
   }
   cloud.style.display=session?.access_token?'grid':'none';
 }
-function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem()}
+function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem();installEconomyHooks()}
 async function bootstrap(){captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');await resolveConflict(state.game_state)}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();setInterval(()=>{patchSave();installGlobalUI();if(syncEnabled&&session?.access_token){const s=bestLocal(),meta=readSync();if(s&&localStamp(s)>Number(meta?.saveStamp||0)+1500)queueSync()}},4000)}
-W.psyCloudV23={login,signup,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;renderStatus();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:async()=>upload(bestLocal(),true,true),loadNow};
+W.psyCloudV23={login,signup,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;renderStatus();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:async()=>upload(bestLocal(),true,true),loadNow,economy};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});
 })(window,document);
