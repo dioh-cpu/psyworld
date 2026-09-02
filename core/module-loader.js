@@ -6,7 +6,7 @@
 'use strict';
 const W=window,D=document;
   // V36: invalida o cache do itch.io após os ajustes de economia e câmera.
-const PHYSICAL_BUILD='PSYWORLD_SURVIVOR_WOBBUFFET_METER_PERF_V16_20260901';
+const PHYSICAL_BUILD='PSYWORLD_SURVIVOR_CORRECOES_INTEGRIDADE_V18_20260902';
 function versionedSrc(src){const sep=String(src).includes('?')?'&':'?';return String(src)+sep+'build='+encodeURIComponent(PHYSICAL_BUILD)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
