@@ -233,5 +233,12 @@ const oldConfirm=W.confirmStarter;if(typeof oldConfirm==='function'){W.confirmSt
 
 refreshGates();ensureUI();addMenuButton();decorateButtons();setTimeout(()=>{refreshGates();addMenuButton();maybeIntro()},700);
 const mo=new MutationObserver(()=>{addMenuButton();decorateButtons()});mo.observe(D.body,{childList:true,subtree:true});
+// V23: conta online/cloud save é um módulo leve e global, carregado junto ao bootstrap.
+try{
+  const cs=D.createElement('script');
+  cs.src='core/cloud-save-v23.js?build=CLOUD_SAVE_V23_20260902';
+  cs.async=false;
+  D.head.appendChild(cs);
+}catch(e){console.warn('cloud save loader',e)}
 console.log('✅ PSYWORLD physical module loader ready');
 })();
