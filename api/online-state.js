@@ -5,7 +5,7 @@ export default async function handler(req,res){
   try{
     const {user,supabase}=await requireUser(req);
     const [playerR,inventoryR,pokemonR,ledgerR]=await Promise.all([
-      supabase.from('players').select('trainer_name,trainer_level,trainer_xp,gold,diamonds,updated_at,legacy_imported_at').eq('user_id',user.id).maybeSingle(),
+      supabase.from('players').select('trainer_name,trainer_level,trainer_xp,gold,diamonds,psycoin,authority_version,legacy_imported_at,system_imported_at,authority_activated_at,updated_at').eq('user_id',user.id).maybeSingle(),
       supabase.from('player_inventory').select('item_key,quantity,updated_at').eq('user_id',user.id).order('item_key'),
       supabase.from('player_pokemon').select('pokemon_uid,species_id,level,xp,shiny,mega_form,tier,rarity,resets,data,locked_reason,updated_at').eq('owner_id',user.id).order('created_at'),
       supabase.from('wallet_ledger').select('currency,amount,reason,reference_id,balance_after,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(50)
@@ -15,10 +15,16 @@ export default async function handler(req,res){
       ok:true,
       user_id:user.id,
       authoritative:true,
+      market_enabled:false,
       player:playerR.data||null,
       inventory:inventoryR.data||[],
       pokemon:pokemonR.data||[],
       recent_ledger:ledgerR.data||[],
+      counts:{
+        item_types:(inventoryR.data||[]).filter(x=>Number(x.quantity||0)>0).length,
+        pokemon:(pokemonR.data||[]).length,
+        ledger:(ledgerR.data||[]).length
+      },
       server_time:new Date().toISOString()
     });
   }catch(e){ return jsonError(res,e); }
