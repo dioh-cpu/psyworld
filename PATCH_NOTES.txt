@@ -1,24 +1,36 @@
-PSYWORLD — V23 ONLINE / CLOUD SAVE (TESTE EM BRANCH)
+PSYWORLD — V23 ONLINE / CLOUD SAVE + INÍCIO ONLINE AUTORITATIVO
 
-ALTERAÇÕES
-- Reativada a fundação de conta online por e-mail/senha usando Supabase Auth.
-- Reativado cloud save completo por conta através da API /api/player/save.
-- Save Local V7/V9 continua ativo e é preservado como fallback.
-- Quando existe save local e save na nuvem, o jogo NÃO sobrescreve automaticamente: o jogador escolhe qual usar.
-- Antes de restaurar um save da nuvem, o save local atual recebe um backup adicional.
-- Sincronização automática só começa depois que o jogador escolhe qual save é autoritativo naquele dispositivo.
-- Market online permanece DESATIVADO nesta etapa.
+ALTERAÇÕES CONCLUÍDAS
+- Conta online por e-mail/senha via Supabase Auth reativada.
+- Cloud save completo por conta via /api/player/save.
+- Save Local continua como backup/fallback.
+- Conflito Local x Nuvem só reaparece quando existir conflito real novo.
+- Antes de restaurar da nuvem, o save local recebe backup adicional.
+- Cadastro agora usa redirect fixo para https://psyworld-murex.vercel.app/ em vez do domínio variável de Preview.
+- Callback de confirmação por hash é capturado pelo cliente e o token é removido da URL após uso.
+- Menu recebe ações manuais SALVAR NA NUVEM e CARREGAR DA NUVEM quando a conta está conectada.
+- Fast Encounter recebeu suporte de arrastar/mover mesmo sem Hunt ativa e salva a posição no aparelho.
+- MODOS / DOWNLOADS é reposicionado junto da área da Expedição AFK.
+- Botão de ÁUDIO é normalizado para o tamanho dos demais botões e o Audio System V1 é carregado pelo bootstrap online quando necessário.
+- Adicionada API somente-leitura /api/online-state para expor wallet, inventário, Pokémon e ledger autoritativos do servidor para a próxima fase.
 
-VALIDAÇÕES
-- Implementação feita em branch separada online-cloud-save-v23.
-- APIs continuam exigindo Bearer token validado pelo Supabase no servidor.
-- SUPABASE_SECRET_KEY não é enviada ao navegador.
-- Cliente usa somente SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY/SUPABASE_ANON_KEY.
-- Limite e sanitização do payload de cloud save aplicados no servidor.
+VALIDAÇÕES JÁ FEITAS PELO TESTE
+- Cadastro/login por e-mail e senha funcionou no Preview.
+- Recuperação do estado salvo pela nuvem funcionou.
+- Repetição do modal de conflito após F5 foi corrigida e retestada com sucesso.
+- Branch de teste: online-cloud-save-v23. Produção/main ainda não foi promovida.
+
+CAMINHO PARA 100% ONLINE / SERVER-AUTHORITATIVE
+1. V23: fechar login, cloud save, redirect fixo e interface de gerenciamento de save.
+2. V24: importar uma única vez Gold, Diamonds, Trainer Level, inventário e Pokémon do save legado para as tabelas autoritativas.
+3. V24/V25: servidor passa a decidir compras, vendas, craft, moedas, inventário, captura e recompensas.
+4. V25+: migrar Eggs, Packs, Achievements, Battle Pass, AFK, drops e progressão para transações servidoras idempotentes.
+5. Depois: ativar Market entre jogadores apenas quando todos os ativos comercializados forem server-authoritative.
+6. Acrescentar rate limit, recibos/idempotência, auditoria, detecção de divergência e proteção anti-cheat.
 
 AINDA PRECISA CORRIGIR / VALIDAR
-- Confirmar na Vercel as variáveis SUPABASE_URL, SUPABASE_SECRET_KEY e SUPABASE_PUBLISHABLE_KEY (ou SUPABASE_ANON_KEY).
-- Confirmar que a migration supabase/migrations/003_cloud_game_state.sql já foi executada no projeto Supabase.
-- Confirmar Site URL e Redirect URLs do Supabase para https://psyworld-murex.vercel.app.
-- Testar criação de conta, confirmação de e-mail, login, upload, download e conflito em Preview antes de mesclar na main.
-- Market real continua bloqueado até as migrações server-authoritative pendentes.
+- Testar no Preview atual: Fast Encounter arrastável, botões Cloud no menu, botão Áudio e MODOS / DOWNLOADS na posição desejada.
+- Testar confirmação de uma conta nova e confirmar que o e-mail retorna sempre para https://psyworld-murex.vercel.app/.
+- Verificar na produção que SUPABASE_URL, SUPABASE_ANON_KEY/PUBLISHABLE_KEY e SUPABASE_SERVICE_ROLE_KEY continuam configuradas.
+- Migration 003_cloud_game_state.sql já foi executada; migrations 001/002 precisam ser confirmadas antes de ativar economia autoritativa real.
+- Market real permanece bloqueado até a migração completa da economia e ownership para o servidor.
