@@ -1,0 +1,24 @@
+PSYWORLD — V23 ONLINE / CLOUD SAVE (TESTE EM BRANCH)
+
+ALTERAÇÕES
+- Reativada a fundação de conta online por e-mail/senha usando Supabase Auth.
+- Reativado cloud save completo por conta através da API /api/player/save.
+- Save Local V7/V9 continua ativo e é preservado como fallback.
+- Quando existe save local e save na nuvem, o jogo NÃO sobrescreve automaticamente: o jogador escolhe qual usar.
+- Antes de restaurar um save da nuvem, o save local atual recebe um backup adicional.
+- Sincronização automática só começa depois que o jogador escolhe qual save é autoritativo naquele dispositivo.
+- Market online permanece DESATIVADO nesta etapa.
+
+VALIDAÇÕES
+- Implementação feita em branch separada online-cloud-save-v23.
+- APIs continuam exigindo Bearer token validado pelo Supabase no servidor.
+- SUPABASE_SECRET_KEY não é enviada ao navegador.
+- Cliente usa somente SUPABASE_URL + SUPABASE_PUBLISHABLE_KEY/SUPABASE_ANON_KEY.
+- Limite e sanitização do payload de cloud save aplicados no servidor.
+
+AINDA PRECISA CORRIGIR / VALIDAR
+- Confirmar na Vercel as variáveis SUPABASE_URL, SUPABASE_SECRET_KEY e SUPABASE_PUBLISHABLE_KEY (ou SUPABASE_ANON_KEY).
+- Confirmar que a migration supabase/migrations/003_cloud_game_state.sql já foi executada no projeto Supabase.
+- Confirmar Site URL e Redirect URLs do Supabase para https://psyworld-murex.vercel.app.
+- Testar criação de conta, confirmação de e-mail, login, upload, download e conflito em Preview antes de mesclar na main.
+- Market real continua bloqueado até as migrações server-authoritative pendentes.
