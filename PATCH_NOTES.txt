@@ -3,10 +3,19 @@ PSYWORLD — V26 AUTORIDADE ONLINE / PREVIEW
 ALTERAÇÕES CONCLUÍDAS
 - Conta online por e-mail/senha e Cloud Save V23 permanecem ativos, mantendo Save Local como backup/fallback.
 - A produção/main continua intocada. Todo este bloco está somente na branch online-cloud-save-v23 até aprovação do teste.
+- Confirmação de e-mail usa como retorno oficial https://psyworld-murex.vercel.app/ mesmo quando a conta é criada pelo Preview.
 - Criada a API única autenticada /api/game para ações online da economia e progressão.
 - Importação inicial do save legado para o estado autoritativo ocorre uma única vez por conta.
 - Gold, Diamonds, PsyCoin, inventário e Pokémon importados passam a ter estado persistido no Supabase.
-- A API agora devolve um snapshot autoritativo após ações genéricas para o cliente atualizar saldo e estado com o valor real do servidor.
+- A API devolve snapshot autoritativo após ações para o cliente atualizar saldo e estado com o valor real do servidor.
+- Painel visual 🌐 PSYWORLD ONLINE / SERVIDOR ATIVO foi restaurado no MENU após regressão da primeira V26.
+- O painel mostra Gold, Diamonds, PsyCoin, quantidade de tipos de itens e Pokémon diretamente do servidor e possui botão ↻ SINCRONIZAR COM SERVIDOR.
+- O painel informa a última confirmação e mantém explícito que a autoridade V26 está ativa e o Market bloqueado.
+- Botões SALVAR NA NUVEM e CARREGAR DA NUVEM permanecem no MENU.
+- Botão Fast Encounter continua móvel e mantém a posição salva, inclusive sem Hunt atual aplicada.
+- MODOS / DOWNLOADS agora é reposicionado junto da EXPEDIÇÃO AFK mesmo quando o loader criou o botão antes da grade visual do menu.
+- Botão ÁUDIO é normalizado para o mesmo tamanho dos demais botões do grupo.
+- Audio System V1 permanece carregado no bootstrap; os assets de tema, UI, batalha, tipos, Survivor e helpers foram conferidos no pacote da branch.
 - VIP é comprado no servidor e usa os preços oficiais: 5d/3, 7d/5, 30d/10, 60d/15 e 90d/25 PsyCoin.
 - Compra de XP e ativação Premium do Battle Pass passam pelo servidor.
 - Quests de troca passam pelo servidor: 18 materiais comuns + 3 raros -> 42.000 Gold + 1 Ball elemental correspondente.
@@ -40,6 +49,9 @@ CORREÇÕES ENCONTRADAS NA VALIDAÇÃO
 - A rolagem de Pack no AFK passou a usar uma única rolagem cumulativa por ciclo.
 - A função de normalização recebeu search_path fixo após o security advisor do Supabase.
 - A API /api/game passou a anexar snapshot atualizado após operações genéricas para evitar saldo visual desatualizado após VIP/Passe e outras compras.
+- Corrigida regressão da V26 que havia removido do MENU o painel PSYWORLD ONLINE existente na V24.
+- Corrigida condição de layout que deixava MODOS / DOWNLOADS em uma faixa inteira quando o botão era criado antes da grade do menu.
+- /api/online-state agora inclui PsyCoin, authority_version e contadores para o painel visual usar o estado real do servidor.
 
 VALIDAÇÕES RELEVANTES
 - Supabase alvo confirmado ACTIVE_HEALTHY em sa-east-1.
@@ -50,13 +62,26 @@ VALIDAÇÕES RELEVANTES
 - Teste de batalha confirmou normalização Elétrico -> Electric e recompensa calculada.
 - RLS verificado como ativo em player_system_state e game_action_receipts.
 - RPC genérica V26 e RPCs de captura/AFK verificadas sem permissão EXECUTE direta para authenticated/anon.
-- core/online-authority-v26.js foi validado com node --check antes da integração.
+- O catálogo assets/audio da branch contém o tema principal e os arquivos de SFX usados por core/audio.js.
 - A camada V26 é carregada globalmente pelo core/prelude.js.
-- O último Preview Vercel observado após a integração do cliente concluiu deployment com status SUCCESS.
 - Nenhum merge foi feito na main.
 
+CHECKLIST OBRIGATÓRIO DO PRÓXIMO PREVIEW
+1. Login e recuperação do save sem tela branca.
+2. F5 não deve repetir conflito de save já resolvido.
+3. MENU deve mostrar SALVAR NA NUVEM e CARREGAR DA NUVEM.
+4. MENU deve mostrar 🌐 PSYWORLD ONLINE com SERVIDOR ATIVO, valores e botão de sincronização.
+5. MODOS / DOWNLOADS deve ficar ao lado de EXPEDIÇÃO AFK, não em faixa inteira separada.
+6. ÁUDIO deve ter tamanho coerente e abrir o painel; música/SFX devem responder aos controles após interação do usuário.
+7. Fast Encounter deve continuar arrastável e lembrar posição, independentemente de Hunt atual.
+8. Compra/Craft/Venda online devem persistir após F5.
+9. Batalha/captura devem refletir Gold/itens/Balls do servidor após sincronizar e após F5.
+10. Electric Ball 6x em alvo Electric e 1x fora do tipo; Ultra Ball 3x.
+11. Captura em Gym continua bloqueada antes de consumir Ball.
+12. AFK/VIP/Passe/Quest/Pack testados ao menos uma vez quando houver saldo/itens disponíveis.
+13. Site oficial psyworld-murex.vercel.app não deve mudar antes da aprovação explícita do Preview.
+
 AINDA PRECISA CORRIGIR
-- Antes de qualquer merge na main, o jogador precisa fazer o teste funcional completo no Preview V26 em navegador real.
 - Conteúdo sorteado dentro do Pack ainda usa o motor legado do cliente depois que o servidor autoriza/consome o Pack; o consumo é protegido, mas o conteúdo ainda não é 100% RNG server-side.
 - Eggs já têm compra/entitlement server-side, porém o Pokémon final do Egg ainda precisa migrar completamente para geração/ownership autoritativos antes de liberar economia entre jogadores.
 - Survivor continua com combate em tempo real no cliente; seus pagamentos complexos possuem infraestrutura de recibo/transição, mas a simulação inteira ainda não é server-authoritative.
