@@ -6,7 +6,7 @@
 'use strict';
 if(W.__PSYWORLD_SURVIVOR_PSYDUCK_V28__)return;
 W.__PSYWORLD_SURVIVOR_PSYDUCK_V28__=true;
-const BUILD='SURVIVOR_PSYDUCK_V28_20260903';
+const BUILD='SURVIVOR_PSYDUCK_V28_20260903_B';
 const norm=s=>String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const allPokes=()=>{try{return [...(W.P?.team||[]),...(W.P?.box||[])]}catch(_){return[]}};
 
@@ -92,6 +92,7 @@ if(typeof oldRealSprite==='function'){
     }
     return oldRealSprite.apply(this,arguments);
   };
+  try{getRealSprite=W.getRealSprite}catch(_){ }
 }
 
 /* ---------- Instinto de Caca is already used by the loot formula; expose it in Pause ---------- */
@@ -165,7 +166,7 @@ function eliteAttack(s,e){
   s.effects=s.effects||[];s.effects.push({type:'burst',x:e.x,y:e.y,r:8,max:58,life:18,maxLife:18,color:'#fb7185'});
 }
 function survivorMaintenance(){
-  patchHuntPool();migrateSupreme();const s=W.PSY_CLEAN_SURV;if(!s||s.done)return;preserveVfx(s);decoratePause();if(s.paused||D.hidden)return;
+  const s=W.PSY_CLEAN_SURV;if(!s||s.done)return;preserveVfx(s);decoratePause();if(s.paused||D.hidden)return;
   const now=Number(s.elapsed||0);
   for(const e of (s.enemies||[])){
     if(!e||e.dead||e.boss)continue;
@@ -178,6 +179,6 @@ function survivorMaintenance(){
 const maintenance=setInterval(survivorMaintenance,180);
 W.addEventListener('pagehide',()=>clearInterval(maintenance),{once:true});
 setTimeout(()=>{patchHuntPool();migrateSupreme();survivorMaintenance()},80);
-setTimeout(()=>{patchHuntPool();migrateSupreme()},1400);
+setTimeout(()=>{patchHuntPool()},1400);
 console.log('✅ PSYWORLD Survivor/Psyduck V28 ativo: runtime único, VFX preservado, Wobbuffet/HUD/Elite/Instinto/Psyduck corrigidos',BUILD);
 })(window,document);
