@@ -114,11 +114,11 @@ function boot(){installCss();install();[100,300,800,1500,3000,6000].forEach(ms=>
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 console.log('✅ PSYWORLD V33B ativo: novas contas sem Psyduck no time + LOG OUT retorna ao login',BUILD);
 
-/* V34 is intentionally loaded from V33 so the stable prelude does not need another large edit. */
+/* V35 é carregada a partir da V33 para manter o prelude estável. */
 try{
   const s=D.createElement('script');
-  s.src='core/account-menu-v34.js?build=ACCOUNT_MENU_V34_20260903_A';
+  s.src='core/account-menu-v34.js?build=ACCOUNT_MENU_V35_20260903_A';
   s.async=false;
   D.head.appendChild(s);
-}catch(e){console.warn('account menu v34 loader',e)}
+}catch(e){console.warn('account menu v35 loader',e)}
 })(window,document);
