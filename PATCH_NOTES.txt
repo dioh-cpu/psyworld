@@ -1,59 +1,69 @@
-PSYWORLD — V30 TROCA OBRIGATÓRIA / PSYDUCK EXCLUSIVO / VIP VERIFICADO
+PSYWORLD — V31 KO / ROSTER / PSYDUCK + V29/V28 — ONLINE PREVIEW
 
 STATUS
 - Branch de teste: online-cloud-save-v23.
 - Produção/main continua intocada até aprovação explícita.
-- Conta online, Cloud Save, autoridade online V26, captura server-side, Tier/Raridade V27 e Survivor/Psyduck V28 permanecem preservados.
+- Conta online, Cloud Save, autoridade online V26, captura server-side e balanceamento Tier/Raridade V27 permanecem ativos.
 - Market continua bloqueado.
 
-ALTERAÇÕES V30 — BATALHA / KO
-- HP 0 continua sendo estado de derrotado e não volta para 1 após recálculo de atributos.
-- O botão CURAR recalcula o HP máximo vigente e depois cura o time exatamente até o máximo usado pela batalha.
-- Quando o Pokémon ativo chega a 0 HP, a batalha NÃO fecha automaticamente.
-- A tela “POKÉMON DERROTADO — TROCA OBRIGATÓRIA” bloqueia a continuação até selecionar outro Pokémon vivo do time.
-- Revive não é oferecido como continuação automática após KO.
-- Se não houver outro Pokémon vivo, aparece “TIME DERROTADO” e o jogador precisa encerrar a batalha manualmente.
-- Chamadas legadas de endBattle(false) são bloqueadas enquanto a troca obrigatória estiver pendente.
-- A regra também vale para Ginásios: um Pokémon derrotado não pode reviver sozinho nem permitir progressão indevida.
+ALTERAÇÕES V31 — KO / LEVEL UP / ROSTER
+- Adicionada core/battle-roster-integrity-v31.js como camada final de integridade, com reinstalação automática caso bundles tardios sobrescrevam recalcPoke, checkLevelUp, battleAction ou endBattle.
+- Corrigida a causa estrutural da regressão: V29/V30 podiam carregar antes de v50-compat, que depois redefinia recalcPoke e removia a proteção de HP zero.
+- Corrigida uma segunda causa concreta de revive: checkLevelUp legado fazia hp=maxHp ao subir de nível. Agora level-up preserva a porcentagem de HP do Pokémon vivo; um Pokémon derrotado permanece em 0 HP.
+- Pokémon derrotado recebe trava persistente de KO durante a batalha. Se qualquer camada tentar restaurar seu HP, a V31 força novamente 0 até cura/Revive intencional.
+- battleAction é protegido novamente após qualquer sobrescrita tardia: Pokémon derrotado não pode atacar, capturar ou continuar o turno.
+- A troca obrigatória permanece dona da batalha enquanto o ativo está derrotado. Outro Pokémon vivo precisa ser escolhido para continuar.
+- addToTeam não cura mais implicitamente um Pokémon derrotado ao mover Box -> Time.
+- CURAR e uso intencional de Revive limpam corretamente a trava de derrotado.
+- handleWorldKill/level-up do World preserva HP em vez de curar o Pokémon por subir de nível.
+- Aplicada uma reparação única de roster: Pokémon antigos são recalculados com a fórmula atual de Tier/Raridade, mantendo a porcentagem de HP dos vivos e mantendo derrotados em 0.
 
-ALTERAÇÕES V30 — PSYDUCK EXCLUSIVO
-- Psyduck (#54) deixa de aparecer em Wild, Hunts e World.
-- Pools carregadas tardiamente também são filtradas para impedir regressão por bundles antigos.
-- Encontros antigos/stale de Psyduck fora do Survivor são bloqueados antes de iniciar a batalha.
-- Psyduck fica reservado ao ecossistema Psyduck Supremo / Survivor.
-- Nenhum Psyduck já existente no save do jogador é apagado automaticamente.
+ALTERAÇÕES V31 — PSYDUCK EXCLUSIVO
+- Psyduck normal #54 é removido das listas WILD_ZONES_GEN1 e demais pools acessíveis de Wild/Hunt.
+- getPokesForHunt/getWorldPool/psyCleanHuntPool/getHuntPool são filtrados contra Psyduck caso sejam recriados por bundle tardio.
+- Psyduck existente em worldWilds é removido.
+- startBattle bloqueia qualquer encontro normal de Psyduck como proteção final.
+- Psyduck normal já capturado antes desta regra sai do TIME/BOX e é arquivado em P.meta.psyduckExclusiveArchive em vez de ser apagado. Psyduck Supremo/Survivor não é arquivado.
+- Se um perfil tivesse somente Psyduck e nenhum outro Pokémon, a migração não remove o último Pokémon para evitar quebrar o perfil.
 
-VIP — VERIFICAÇÃO
-- Benefícios oficiais permanecem: +20% captura, +50% Loot e +50% XP.
-- XP de batalha usa getTotalBuff('xp'), portanto recebe +50% com VIP ativo.
-- A autoridade online também aplica +50% XP e +50% chance de Loot diretamente pelo vip_until no servidor.
-- VIP NÃO concede bônus direto de Gold. Buffs de Gold são separados, como os bônus do Treinador.
-- O cliente remove o bônus VIP dos parâmetros enviados ao servidor para evitar duplicação; o servidor reaplica o VIP de forma autoritativa.
+ALTERAÇÕES V29/V30 PRESERVADAS
+- CURAR usa maxHP real e sincroniza Cidade/Batalha.
+- HP zero persiste em recálculos.
+- KO exige troca obrigatória e Revive não continua a batalha automaticamente.
+- Cidade fica isolada enquanto World/Aventura/Survivor controlam o jogador.
+- Psyduck é bloqueado de encontros normais.
 
-CONTROLES / MODOS
-- Cidade continua congelada enquanto Aventura, World ou Survivor estão ativos.
-- Ao sair desses modos, movimento/joystick da Cidade é liberado sem carregar teclas pressionadas do modo anterior.
+ALTERAÇÕES V28 — SURVIVOR PRESERVADAS
+- Um único runtime V47 hard-pinned.
+- Wobbuffet com sprite válida; helpers sem rótulos/barras indevidas.
+- Instinto de Caça aparece em BÔNUS ATIVOS e entra no loot.
+- Elites/Mega/Shiny/Mega Shiny mantêm ataques especiais.
+- Psy Nova, Vórtice Mental, Chuva Psíquica, Blissey/Santuário e VFX permanecem completos.
+- Otimizações usam spatial grid, camera culling, limites de simulação, colisão reduzida e draw throttle; não reduzem gráficos.
 
 VALIDAÇÕES RELEVANTES
-- A V30 foi isolada em core/battle-input-integrity-v30.js.
-- O guard global foi atualizado para carregar a V30 em vez da V29.
+- Vídeo de teste mostrou Spearow quase/totalmente derrotado voltando para HP cheio após continuar o combate; a causa hp=maxHp do level-up foi localizada no runtime legado.
+- WILD_ZONES_GEN1 ainda continha explicitamente {id:54,name:"Psyduck"} em Água; V31 remove esse conteúdo diretamente e também aplica guards de função.
+- V31 é carregada pelo guard global e se auto-reinstala após módulos tardios para evitar nova regressão por ordem de carregamento.
+- Vercel Preview do commit V31 concluiu com status SUCCESS.
 - Produção/main não foi alterada.
 
-CHECKLIST DE TESTE V30
-1. Abrir o Preview com Ctrl+F5 e confirmar no console: “PSYWORLD V30 ativo”.
-2. Usar CURAR e confirmar HP cheio; entrar em batalha e verificar o mesmo HP máximo.
-3. Deixar o Pokémon ativo morrer tendo outro Pokémon vivo no time: a batalha deve permanecer aberta e mostrar TROCAR.
-4. Tentar clicar em golpes enquanto a troca estiver pendente: nada deve continuar até escolher outro Pokémon.
-5. Em Ginásio, repetir o KO e confirmar que não há revive automático nem avanço indevido.
-6. Com todo o time derrotado, confirmar que aparece TIME DERROTADO e ENCERRAR BATALHA, sem fechamento automático.
-7. Procurar Psyduck em Wild, Hunt Kanto/Água e World: não deve aparecer.
-8. Confirmar que o sistema Psyduck Supremo / Survivor continua funcionando normalmente.
+CHECKLIST DE TESTE V31
+1. Ctrl+F5 e confirmar no console: "PSYWORLD V31 carregado: KO definitivo, level-up sem cura, roster reparado e Psyduck exclusivo Survivor".
+2. Deixar Pokémon chegar a 0 HP: não pode atacar novamente nem recuperar HP sozinho.
+3. Com outro Pokémon vivo, a troca obrigatória deve permanecer aberta até escolher outro.
+4. Subir de nível com HP baixo: manter aproximadamente a mesma porcentagem de HP, sem cura total.
+5. Pokémon em 0 HP que receba XP por evento simultâneo deve continuar em 0.
+6. CURAR deve restaurar normalmente o Pokémon derrotado e liberar sua trava.
+7. Mover Pokémon derrotado Box -> Time não deve curá-lo.
+8. Abrir TIME/BOX: Psyduck normal antigo deve ter saído; o registro fica arquivado internamente.
+9. Wild/Hunt/World não devem gerar Psyduck #54.
+10. Psyduck Supremo/Survivor continua funcionando normalmente.
 
 AINDA PRECISA CORRIGIR / VALIDAR
-- Confirmar em teste real todos os cenários da troca obrigatória em Wild, Hunt e Ginásio.
-- Confirmar em sessão longa que nenhum bundle tardio volta a inserir Psyduck em pools externas ao Survivor.
-- Confirmar em teste real que a remoção do runtime V47 duplicado elimina o lag observado após alguns minutos de Survivor.
-- Ajustar dano/cadência de Elite se o teste prático mostrar dificuldade excessiva ou baixa.
-- Survivor ainda é uma simulação em tempo real no cliente; tornar sua simulação totalmente server-authoritative continua sendo etapa futura.
-- Conteúdo final de Packs e Pokémon final de Eggs ainda possuem partes legadas client-side e precisam migrar completamente antes de liberar Market real.
+- Confirmar no navegador real o fluxo V31 de KO e troca em Wild, Hunt e Ginásio.
+- Confirmar que nenhum pool tardio de algum modo específico recria Psyduck após alguns minutos; V31 mantém filtro periódico como proteção.
+- Confirmar visualmente que a reparação única de roster corrigiu Pokémon antigos sem alterar nível/raridade/progresso.
+- Validar Survivor por sessão prolongada para confirmar ganho de performance após unificação do runtime V47.
+- Survivor ainda é simulação em tempo real no cliente; autoridade total da simulação continua etapa futura.
 - Market permanece BLOQUEADO até ownership/Pack/Egg/Survivor e testes anti-cheat estarem fechados server-side.
