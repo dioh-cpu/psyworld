@@ -1,92 +1,66 @@
-PSYWORLD — V26 AUTORIDADE ONLINE / PREVIEW
+PSYWORLD — V28 SURVIVOR / PSYDUCK / ONLINE PREVIEW
 
-ALTERAÇÕES CONCLUÍDAS
-- Conta online por e-mail/senha e Cloud Save V23 permanecem ativos, mantendo Save Local como backup/fallback.
-- A produção/main continua intocada. Todo este bloco está somente na branch online-cloud-save-v23 até aprovação do teste.
-- Confirmação de e-mail usa como retorno oficial https://psyworld-murex.vercel.app/ mesmo quando a conta é criada pelo Preview.
-- Criada a API única autenticada /api/game para ações online da economia e progressão.
-- Importação inicial do save legado para o estado autoritativo ocorre uma única vez por conta.
-- Gold, Diamonds, PsyCoin, inventário e Pokémon importados passam a ter estado persistido no Supabase.
-- A API devolve snapshot autoritativo após ações para o cliente atualizar saldo e estado com o valor real do servidor.
-- Painel visual 🌐 PSYWORLD ONLINE / SERVIDOR ATIVO foi restaurado no MENU após regressão da primeira V26.
-- O painel mostra Gold, Diamonds, PsyCoin, quantidade de tipos de itens e Pokémon diretamente do servidor e possui botão ↻ SINCRONIZAR COM SERVIDOR.
-- O painel informa a última confirmação e mantém explícito que a autoridade V26 está ativa e o Market bloqueado.
-- Botões SALVAR NA NUVEM e CARREGAR DA NUVEM permanecem no MENU.
-- Botão Fast Encounter continua móvel e mantém a posição salva, inclusive sem Hunt atual aplicada.
-- MODOS / DOWNLOADS agora é reposicionado junto da EXPEDIÇÃO AFK mesmo quando o loader criou o botão antes da grade visual do menu.
-- Botão ÁUDIO é normalizado para o mesmo tamanho dos demais botões do grupo.
-- Audio System V1 permanece carregado no bootstrap; os assets de tema, UI, batalha, tipos, Survivor e helpers foram conferidos no pacote da branch.
-- VIP é comprado no servidor e usa os preços oficiais: 5d/3, 7d/5, 30d/10, 60d/15 e 90d/25 PsyCoin.
-- Compra de XP e ativação Premium do Battle Pass passam pelo servidor.
-- Quests de troca passam pelo servidor: 18 materiais comuns + 3 raros -> 42.000 Gold + 1 Ball elemental correspondente.
-- Claims principais de Achievements e repetíveis V20 possuem ação server-side/idempotente.
-- Roleta possui heartbeat/progresso e seleção do prêmio no servidor.
-- Compra e abertura/autorização de Packs possuem estado e recibos server-side.
-- Compra/autorização de Eggs possui estado server-side preparado para a evolução do sistema.
-- Reset do Psyduck, skills do Psyduck e skills dos ajudantes possuem consumo server-side.
-- Captura online usa RNG do servidor, consome a Ball no servidor e registra a captura em player_pokemon.
-- Balls elementais usam 6x apenas quando correspondem a pelo menos um tipo real do alvo; tipos PT/EN são normalizados no servidor.
-- Captura em Gym/Boss continua bloqueada e Tier SS+ normal continua bloqueado em encontro normal.
-- Recompensa de batalha online confirma Gold, progresso de kills/type kills e loot de Quest no servidor.
-- WORLD usa a curva reduzida própria; Wild/Hunt/Fast usam a curva normal.
-- AFK online usa relógio do servidor para início/coleta/parada, reduzindo manipulação de relógio local.
-- AFK entrega Gold e rola Essências/Stones/Packs/Egg entitlement no servidor.
-- Foram criados recibos/idempotência para impedir pagamento/consumo repetido pela mesma operação.
-- RLS permanece habilitado nos novos estados/recibos e RPCs privilegiadas não são executáveis diretamente por anon/authenticated; passam pela API autenticada da Vercel.
-- Market continua explicitamente desativado.
+STATUS
+- Branch de teste: online-cloud-save-v23.
+- Produção/main continua intocada até aprovação explícita.
+- Conta online, Cloud Save, autoridade online V26, captura server-side e balanceamento Tier/Raridade V27 permanecem ativos.
+- Market continua bloqueado.
 
-MIGRATIONS V26 APLICADAS NO SUPABASE
-- full_online_authority_v26_schema
-- full_online_authority_v26_actions
-- battle_capture_afk_authority_v26
-- v26_smoke_fixes
-- v26_security_lint
+ALTERAÇÕES V28 — SURVIVOR
+- Corrigida a regressão que permitia carregar dois runtimes V47 diferentes na mesma sessão. Os manifestos principais agora usam o mesmo hard-pin v47-survivor-hunts-v9.js.
+- v50-compat usa a mesma identificação V27 nos modos atualizados, evitando wrappers duplicados por URLs diferentes.
+- Adicionada a camada core/survivor-psyduck-v28.js depois do Survivor V9/V50.
+- Wobbuffet deixa de tentar usar uma forma Mega inexistente; Lv.5/MAX usa sprite válida Shiny/Reflect.
+- Removidos do campo de batalha dos AJUDANTES os rótulos de forma (MEGA/SHINY/REFLECT/MAX) e suas barras/textos de HP. Isso não remove barras de HP dos inimigos especiais.
+- Instinto de Caça continua entrando na fórmula real de loot do Survivor e agora aparece separadamente em BÔNUS ATIVOS quando estiver ativo.
+- Elites temporizados receberam ataque especial próprio: rajada direcionada e pulso radial alternados.
+- Mega, Shiny e Mega Shiny mantêm o sistema nativo de habilidades especiais do Survivor V9; a V28 garante que o timer dessas habilidades seja armado corretamente.
+- Os efeitos aprovados de Psy Nova, Vórtice Mental, Chuva Psíquica, Blissey/Santuário, Wobbuffet Reflect e ajudantes foram preservados.
+- A qualidade visual dinâmica foi travada em qualidade completa. A otimização permanece baseada em spatial grid, culling por câmera, limites de simulação, busca de colisão reduzida e draw throttle — não em remover os efeitos visuais.
+- A manutenção V28 não recalcula mais o Psyduck continuamente durante a run.
 
-CORREÇÕES ENCONTRADAS NA VALIDAÇÃO
-- Smoke test inicial encontrou ambiguidade SQL em capture/battle/AFK ao ler o campo result dos recibos.
-- A ambiguidade foi corrigida qualificando game_action_receipts.result.
-- Tipos em português/inglês foram normalizados para que Electric Ball continue 6x contra alvos elétricos mesmo quando a tipagem interna está como Eletrico/Elétrico.
-- A rolagem de Pack no AFK passou a usar uma única rolagem cumulativa por ciclo.
-- A função de normalização recebeu search_path fixo após o security advisor do Supabase.
-- A API /api/game passou a anexar snapshot atualizado após operações genéricas para evitar saldo visual desatualizado após VIP/Passe e outras compras.
-- Corrigida regressão da V26 que havia removido do MENU o painel PSYWORLD ONLINE existente na V24.
-- Corrigida condição de layout que deixava MODOS / DOWNLOADS em uma faixa inteira quando o botão era criado antes da grade do menu.
-- /api/online-state agora inclui PsyCoin, authority_version e contadores para o painel visual usar o estado real do servidor.
+ALTERAÇÕES V28 — PSYDUCK
+- Psyduck normal passa a ter Tier base E.
+- Psyduck Supremo não usa mais o Tier automático da cadeia Psyduck -> Golduck.
+- Progressão do Supremo passa a obedecer exclusivamente às Provações concluídas:
+  Provação 1 (Reset 9) E -> D; depois as Provações de Tier continuam D -> C -> B -> A -> S -> SS -> SSS -> UR -> UR+ -> UR++ -> SP.
+- Qualidade do Supremo também é restaurada pela sequência de Provações, começando em Lixo no estado inicial.
+- Saves antigos do Supremo são migrados para a Tier/Qualidade correspondente às Provações realmente concluídas.
+- Psyduck NORMAL volta a aparecer nas Hunts Kanto/Água. A exclusividade permanece apenas para o Psyduck Supremo marcado pelo sistema.
+- Ao abrir o sistema Supremo, ele usa um Psyduck dedicado e não deve transformar um Psyduck normal de Hunt em Supremo por acidente.
+
+ALTERAÇÕES V27 PRESERVADAS
+- Tier e Raridade são autoritativos para HP/ATK do Pokémon.
+- Evolução não recebe multiplicador oculto duplicado; a evolução altera a identidade/Tier da espécie.
+- Inimigos Wild/Hunt usam ATK calculado com Tier, Raridade, nível e potência real do golpe.
+- Captura online V26F continua consumindo Ball no servidor e usando RNG autoritativo.
+- Contra-ataque após falha de captura usa o motor de turno atual.
 
 VALIDAÇÕES RELEVANTES
-- Supabase alvo confirmado ACTIVE_HEALTHY em sa-east-1.
-- Todas as migrations V26 acima foram aplicadas com sucesso no Supabase real.
-- Smoke tests foram executados usando subtransações com rollback, sem alterar permanentemente o save/saldo do jogador.
-- PASSARAM: snapshot, VIP, compra de Pack, Quest, heartbeat da Roleta, batalha, captura elemental e início do AFK.
-- Teste de captura confirmou multiplicador 6x com tipagem portuguesa Elétrico.
-- Teste de batalha confirmou normalização Elétrico -> Electric e recompensa calculada.
-- RLS verificado como ativo em player_system_state e game_action_receipts.
-- RPC genérica V26 e RPCs de captura/AFK verificadas sem permissão EXECUTE direta para authenticated/anon.
-- O catálogo assets/audio da branch contém o tema principal e os arquivos de SFX usados por core/audio.js.
-- A camada V26 é carregada globalmente pelo core/prelude.js.
-- Nenhum merge foi feito na main.
+- A produção não foi alterada.
+- O Preview continua sendo implantado automaticamente pela Vercel a partir da branch online-cloud-save-v23.
+- O hard-pin V9 já contém spatial grid, camera culling, draw throttling, limites de efeitos/projéteis, VFX avançados e habilidades especiais de Mega/Shiny.
+- O código V28 foi isolado em arquivo pequeno para reduzir risco de regressão no bundle grande do Survivor.
 
-CHECKLIST OBRIGATÓRIO DO PRÓXIMO PREVIEW
-1. Login e recuperação do save sem tela branca.
-2. F5 não deve repetir conflito de save já resolvido.
-3. MENU deve mostrar SALVAR NA NUVEM e CARREGAR DA NUVEM.
-4. MENU deve mostrar 🌐 PSYWORLD ONLINE com SERVIDOR ATIVO, valores e botão de sincronização.
-5. MODOS / DOWNLOADS deve ficar ao lado de EXPEDIÇÃO AFK, não em faixa inteira separada.
-6. ÁUDIO deve ter tamanho coerente e abrir o painel; música/SFX devem responder aos controles após interação do usuário.
-7. Fast Encounter deve continuar arrastável e lembrar posição, independentemente de Hunt atual.
-8. Compra/Craft/Venda online devem persistir após F5.
-9. Batalha/captura devem refletir Gold/itens/Balls do servidor após sincronizar e após F5.
-10. Electric Ball 6x em alvo Electric e 1x fora do tipo; Ultra Ball 3x.
-11. Captura em Gym continua bloqueada antes de consumir Ball.
-12. AFK/VIP/Passe/Quest/Pack testados ao menos uma vez quando houver saldo/itens disponíveis.
-13. Site oficial psyworld-murex.vercel.app não deve mudar antes da aprovação explícita do Preview.
+CHECKLIST DE TESTE V28
+1. Abrir o Preview com Ctrl+F5 e confirmar no console: "PSYWORLD Survivor/Psyduck V28 ativo".
+2. O console não deve carregar v47-survivor-hunts.js antigo junto com v47-survivor-hunts-v9.js em uma sessão nova.
+3. Wobbuffet Lv.5/MAX precisa mostrar sprite no Power-Up/Pause.
+4. Ajudantes não devem mostrar MEGA/SHINY/REFLECT/MAX nem barra/texto de HP sobre a sprite.
+5. Inimigos Mega/Shiny/Mega Shiny continuam com seus ataques especiais; Elite deve disparar rajada/pulso próprios.
+6. Selecionar Instinto de Caça e abrir Pause: deve aparecer "Instinto de Caça +5% Loot" (ou valor acumulado).
+7. Psy Nova, Vórtice Mental, Blissey/Santuário e demais VFX devem continuar visualmente completos.
+8. Jogar alguns minutos e observar FPS/engasgos; a V28 não reduz VFX para tentar ganhar performance.
+9. Psyduck Supremo Reset 0/sem Provação deve aparecer Tier E e Qualidade Lixo.
+10. Após Provação 1 concluída no marco Reset 9, o Supremo deve aparecer Tier D.
+11. Hunt Kanto/Água deve incluir Psyduck normal.
+12. Capturar Psyduck normal não deve convertê-lo em Psyduck Supremo.
 
-AINDA PRECISA CORRIGIR
-- Conteúdo sorteado dentro do Pack ainda usa o motor legado do cliente depois que o servidor autoriza/consome o Pack; o consumo é protegido, mas o conteúdo ainda não é 100% RNG server-side.
-- Eggs já têm compra/entitlement server-side, porém o Pokémon final do Egg ainda precisa migrar completamente para geração/ownership autoritativos antes de liberar economia entre jogadores.
-- Survivor continua com combate em tempo real no cliente; seus pagamentos complexos possuem infraestrutura de recibo/transição, mas a simulação inteira ainda não é server-authoritative.
-- XP/status completo de cada Pokémon durante todo combate ainda depende do motor local + Cloud Save; a economia principal já é reconciliada pelo servidor.
-- Fluxos legados secundários do Vendor/Bag ainda devem ser revisados antes de considerar toda venda 100% autoritativa.
-- Leaked Password Protection do Supabase Auth aparece desativado no security advisor e deve ser habilitado nas configurações de Auth antes de uma abertura pública maior.
-- shop_catalog permanece com RLS sem policy pública de propósito: o catálogo autoritativo é server-only nesta etapa.
-- Market real continua BLOQUEADO até Pack/Egg/Survivor/ownership estarem fechados server-side e os testes de divergência/anti-cheat passarem.
+AINDA PRECISA CORRIGIR / VALIDAR
+- Confirmar em teste real que a remoção do runtime V47 duplicado elimina o lag observado após alguns minutos de Survivor.
+- Confirmar visualmente em todos os níveis/MAX de ajudantes que nenhuma barra/rótulo de helper escapou do filtro V28.
+- Ajustar dano/cadência do novo ataque de Elite caso o teste prático mostre dificuldade excessiva ou baixa.
+- Survivor ainda é uma simulação em tempo real no cliente; tornar sua simulação totalmente server-authoritative continua sendo uma etapa futura.
+- Conteúdo final de Packs e Pokémon final de Eggs ainda possuem partes legadas client-side e precisam migrar completamente antes de liberar Market real.
+- XP/status completo durante todo combate ainda depende do motor local + Cloud Save; economia principal já é reconciliada pelo servidor.
+- Market permanece BLOQUEADO até ownership/Pack/Egg/Survivor e testes anti-cheat estarem fechados server-side.
