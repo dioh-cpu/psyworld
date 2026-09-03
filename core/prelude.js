@@ -213,3 +213,11 @@ try{
   ch.async=false;
   document.head.appendChild(ch);
 }catch(e){console.warn('capture hotfix v26e loader',e)}
+
+/* PSYWORLD V32 — Psyduck exclusivo do Survivor + sprites reais do Passe. */
+try{
+  const v32=document.createElement('script');
+  v32.src='core/psyduck-pass-v32.js?build=PSYDUCK_PASS_V32_20260903_A';
+  v32.async=false;
+  document.head.appendChild(v32);
+}catch(e){console.warn('psyduck/pass v32 loader',e)}
