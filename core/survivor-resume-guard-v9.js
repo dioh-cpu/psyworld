@@ -131,15 +131,15 @@ function ensurePause(){
 function patch(){ensureResume();ensurePause()}
 W.psyEnsureSurvivorLaterButton=ensureResume;
 W.psyEnsureSurvivorCityButton=ensurePause;
-function loadIntegrityV29(){
-  if(W.__PSYWORLD_BATTLE_INPUT_INTEGRITY_V29__||D.querySelector('script[data-psy-integrity-v29]'))return;
-  const s=D.createElement('script');s.dataset.psyIntegrityV29='1';s.async=false;
-  s.src='core/battle-input-integrity-v29.js?build=BATTLE_INPUT_INTEGRITY_V29_20260903_A';
-  s.onerror=()=>console.error('❌ Falha ao carregar Battle/Input Integrity V29');
+function loadIntegrityV30(){
+  if(W.__PSYWORLD_BATTLE_INPUT_INTEGRITY_V30__||D.querySelector('script[data-psy-integrity-v30]'))return;
+  const s=D.createElement('script');s.dataset.psyIntegrityV30='1';s.async=false;
+  s.src='core/battle-input-integrity-v30.js?build=BATTLE_INPUT_INTEGRITY_V30_20260903_A';
+  s.onerror=()=>console.error('❌ Falha ao carregar Battle/Input Integrity V30');
   (D.head||D.documentElement).appendChild(s);
 }
 const start=()=>{
-  loadIntegrityV29();
+  loadIntegrityV30();
   patch();
   const root=D.body||D.documentElement;if(!root)return setTimeout(start,0);
   let queued=false;
