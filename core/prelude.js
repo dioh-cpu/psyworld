@@ -171,6 +171,33 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 
+/* PSYWORLD V26 — preflight do menu Cloud Save para evitar corrida de DOM. */
+(function(){
+  'use strict';
+  const W=window,D=document;
+  function ensureCloudMenu(){
+    const menu=D.getElementById('menu');if(!menu)return false;
+    let cloud=D.getElementById('psy-cloud-menu-actions');
+    if(!cloud){
+      cloud=D.createElement('div');cloud.id='psy-cloud-menu-actions';
+      cloud.style.cssText='width:min(700px,90%);margin:8px auto;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;';
+      cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button>';
+      menu.appendChild(cloud);
+    }
+    const save=cloud.querySelector('#psy-cloud-save-now'),load=cloud.querySelector('#psy-cloud-load-now');
+    if(save&&!save.dataset.psyCloudGuard){save.dataset.psyCloudGuard='1';save.onclick=()=>W.psyCloudV23?.uploadNow?.()}
+    if(load&&!load.dataset.psyCloudGuard){load.dataset.psyCloudGuard='1';load.onclick=()=>W.psyCloudV23?.loadNow?.()}
+    return !!(save&&load)
+  }
+  const start=()=>{
+    ensureCloudMenu();
+    const target=D.body||D.documentElement;if(!target)return;
+    const mo=new MutationObserver(()=>ensureCloudMenu());mo.observe(target,{childList:true,subtree:true});
+    setTimeout(ensureCloudMenu,60);setTimeout(ensureCloudMenu,250);setTimeout(ensureCloudMenu,1000);
+  };
+  if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+
 /* PSYWORLD V26 — autoridade online global, sem alterar a main/produção. */
 try{
   const oa=document.createElement('script');
