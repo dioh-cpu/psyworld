@@ -213,3 +213,11 @@ try{
   ch.async=false;
   document.head.appendChild(ch);
 }catch(e){console.warn('capture hotfix v26e loader',e)}
+
+/* PSYWORLD V33 — novas contas sem Psyduck no time normal + LOG OUT. */
+try{
+  const v33=document.createElement('script');
+  v33.src='core/new-account-logout-v33.js?build=NEW_ACCOUNT_LOGOUT_V33_20260903_A';
+  v33.async=false;
+  document.head.appendChild(v33);
+}catch(e){console.warn('new account/logout v33 loader',e)}
