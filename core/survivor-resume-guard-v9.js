@@ -138,13 +138,22 @@ function loadIntegrityV30(){
   s.onerror=()=>console.error('❌ Falha ao carregar Battle/Input Integrity V30');
   (D.head||D.documentElement).appendChild(s);
 }
+function loadIntegrityV31(){
+  if(W.__PSYWORLD_BATTLE_ROSTER_INTEGRITY_V31__||D.querySelector('script[data-psy-integrity-v31]'))return;
+  const s=D.createElement('script');s.dataset.psyIntegrityV31='1';s.async=false;
+  s.src='core/battle-roster-integrity-v31.js?build=BATTLE_ROSTER_INTEGRITY_V31_20260903_A';
+  s.onerror=()=>console.error('❌ Falha ao carregar Battle/Roster Integrity V31');
+  (D.head||D.documentElement).appendChild(s);
+}
 const start=()=>{
   loadIntegrityV30();
+  setTimeout(loadIntegrityV31,80);
   patch();
   const root=D.body||D.documentElement;if(!root)return setTimeout(start,0);
   let queued=false;
   new MutationObserver(()=>{if(queued)return;queued=true;queueMicrotask(()=>{queued=false;patch()})}).observe(root,{childList:true,subtree:true});
   for(const ms of [100,300,700,1500,3000,6000])setTimeout(patch,ms);
+  for(const ms of [300,900,1800,3500,7000])setTimeout(loadIntegrityV31,ms);
   setInterval(patch,2000);
 };
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
