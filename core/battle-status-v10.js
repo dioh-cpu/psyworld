@@ -1,10 +1,11 @@
-/* PSYWORLD — Battle Status System V10
+/* PSYWORLD — Battle Status System V10 / Tier-Rarity V27
    Applies major status conditions consistently to Wild/Hunt/Fast Encounter/Gym battles.
    Loaded after legacy-runtime so it becomes the authoritative turn handler. */
 (function(){
   'use strict';
   const W=window,D=document;
-  const BUILD='BATTLE_STATUS_GLOBAL_XP_V12';
+  const BUILD='BATTLE_STATUS_TIER_RARITY_V27';
+  const PVE_ENEMY_DAMAGE_SCALE=.72;
 
   const STATUS_META={
     sleep:{label:'SONO',icon:'💤',color:'#818cf8',bg:'#1e1b4b'},
@@ -180,6 +181,25 @@
     return m;
   }
 
+  function tierOf(w){
+    try{return String((W.getTier||getTier)(Number(w?.id||1),!!w?.shiny,!!w?.isMega,!!w?.isBoss)||'E')}catch(_){return 'E'}
+  }
+  function ensureWildRarity(w){
+    if(!w||!w.id)return {n:'Lixo',mult:1};
+    if(w.rarity&&Number(w.rarity.mult||0)>0)return w.rarity;
+    const tier=tierOf(w);
+    try{w.rarity=(W.rollRarity||rollRarity)(tier)}catch(_){w.rarity={n:'Lixo',mult:1}}
+    return w.rarity;
+  }
+  function wildBaseAtk(w){
+    if(!w)return 1;
+    const rarity=ensureWildRarity(w),lv=Math.max(1,Number(w.level||w.lvl||1));
+    let atk=20+lv*7;
+    try{const fn=W.calcBaseAtkV14||calcBaseAtkV14;atk=Number(fn(lv,Number(rarity.mult||1),!!w.shiny,!!w.isMega,Number(w.id||1)))||atk}catch(_){}
+    return Math.max(1,Math.floor(atk));
+  }
+  W.psyBattleWildBaseAtkV27=wildBaseAtk;
+
   function appendLog(text){const l=D.getElementById('battle-log');if(l&&text)l.textContent=(l.textContent?l.textContent+' ':'')+text}
   function setLog(text){const l=D.getElementById('battle-log');if(l)l.textContent=text}
 
@@ -257,15 +277,19 @@
         const txt=enemyStatusMoveEffect(em);
         appendLog(`✨ ${w.name} usou ${em.name}! ${txt}`);
       }else{
-        const f=battleData.statusFx||{},stats=calcDetailedStats(p),atk=Math.floor((20+Number(w.level||1)*4+Number(battleData.wildMaxHp||100)*.04)*(1+(f.enemyAtk||0)/100));
+        const f=battleData.statusFx||{},stats=calcDetailedStats(p);
+        const atk=Math.floor(wildBaseAtk(w)*(1+(f.enemyAtk||0)/100));
+        battleData.wildAtk=atk;w.atk=atk;w.tier=tierOf(w);
         const myDef=Math.floor(Number(stats.finalDef||0)*(1+(f.myDef||0)/100));
         const eff=getEffectiveness(String(em.type||w.type||'Normal').split('/')[0],typeof psyResolvePokemonTypes==='function'?psyResolvePokemonTypes(p):(p.type||'Normal'));
-        let dmg=f.protect?0:Math.floor(atk*.85*eff*(100/(100+myDef*.15)));
+        const power=Math.max(1,Number(em.power||40));
+        let base=Math.floor((atk*power/55)+(Number(w.level||1)*3));
+        let dmg=f.protect?0:Math.floor(base*PVE_ENEMY_DAMAGE_SCALE*eff*(100/(100+myDef*.15)));
         if(!f.protect&&dmg<3)dmg=3;
         if(f.protect){f.protect=0;appendLog(`🛡️ O ataque de ${w.name} foi bloqueado!`)}
         else{
           p.hp=Math.max(0,Number(p.hp||0)-dmg);try{showDmgPopup(dmg,false,false);setPlayerBlink()}catch(e){}
-          appendLog(`💢 ${w.name} usou ${em.name}: ${dmg} dmg!`);
+          appendLog(`💢 ${w.name} usou ${em.name}: ${dmg} dmg! ATK ${atk}`);
           if(info.secondary&&Math.random()<=info.secondary.chance){const r=applyStatus('player',info.secondary.status,em.name);if(r.text)appendLog(r.text)}
         }
       }
@@ -291,7 +315,22 @@
 
   const oldStart=W.startBattle;
   if(typeof oldStart==='function'){
-    W.startBattle=startBattle=function(wild){const r=oldStart.apply(this,arguments);try{if(battleData){battleData.majorStatus={enemy:null,player:null};battleData.turnLock=false;renderStatus()}}catch(e){}return r};
+    W.startBattle=startBattle=function(wild){
+      try{
+        if(wild?.id){wild.tier=tierOf(wild);ensureWildRarity(wild);
+          const inGym=typeof gymBattle!=='undefined'&&!!gymBattle;
+          const special=!!(wild.isBoss||wild.psyduckDungeon||wild.eeveeDungeon||W.isDungeonBoss||W.isDungeonMega||W.isDungeonShiny);
+          if(inGym&&!special){
+            const hpFn=W.calcBaseHpV14||calcBaseHpV14;
+            const hp=Math.max(1,Math.floor(Number(hpFn(Number(wild.level||wild.lvl||1),Number(wild.rarity?.mult||1),!!wild.shiny,!!wild.isMega,Number(wild.id)))||1));
+            wild.maxHp=hp;wild.hp=hp;
+          }
+        }
+      }catch(e){console.warn('[PSYWORLD V27] wild pre-balance',e)}
+      const r=oldStart.apply(this,arguments);
+      try{if(battleData){battleData.majorStatus={enemy:null,player:null};battleData.turnLock=false;if(battleData.wild){ensureWildRarity(battleData.wild);battleData.wild.tier=tierOf(battleData.wild);battleData.wildAtk=wildBaseAtk(battleData.wild);battleData.wild.atk=battleData.wildAtk;}renderStatus()}}catch(e){}
+      return r
+    };
   }
 
   const oldUpdateHP=W.updateBattleHP||((typeof updateBattleHP==='function')?updateBattleHP:null);
@@ -340,7 +379,7 @@
     if(f.enemyProtect){f.enemyProtect=0;dmg=0;appendLog(`🛡️ ${battleData.wild.name} bloqueou o golpe com Protect!`)}
     battleData.wildHp=Math.max(0,Number(battleData.wildHp||0)-dmg);
     const effTxt=crit?' ⭐ CRÍTICO!':eff===0?' 😴 IMUNE!':eff>=2?' 🔥 SUPER EFETIVO!':eff<=.5?' 💧 NÃO MUITO...':'';
-    setLog(`💥 ${P.team[0].name} usou ${move.name}! ${dmg} dmg!${effTxt}`);
+    setLog(`💥 ${P.team[0].name} usou ${move.name}! ${dmg} dmg! ATK ${myAtk}${effTxt}`);
     if(info.secondary&&dmg>0&&Math.random()<=info.secondary.chance){const r=applyStatus('enemy',info.secondary.status,move.name);if(r.text)appendLog(r.text)}
     try{updateBattleHP();updateHUD()}catch(e){}renderStatus();
     if(Number(battleData.wildHp||0)<=0){battleData.turnLock=false;return finishWildWin()}
@@ -377,5 +416,5 @@
     .psy-stat-status{--sc:#93c5fd;--sbg:#0c1c35}
     #battle-enemy:has(.psy-major-status),#battle-player:has(.psy-major-status){filter:drop-shadow(0 0 5px #ffffff22)}
   `;D.head.appendChild(css);
-  console.log('[PSYWORLD]',BUILD,'ativo: Sleep/Paralysis/Poison/Burn + indicadores + turnos.');
+  console.log('[PSYWORLD]',BUILD,'ativo: status + Tier/Raridade em HP/ATK/dano inimigo.');
 })();
