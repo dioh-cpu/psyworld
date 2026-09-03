@@ -1,80 +1,59 @@
-PSYWORLD — V29 HP / KO / CONTROLES + V28 SURVIVOR — ONLINE PREVIEW
+PSYWORLD — V30 TROCA OBRIGATÓRIA / PSYDUCK EXCLUSIVO / VIP VERIFICADO
 
 STATUS
 - Branch de teste: online-cloud-save-v23.
 - Produção/main continua intocada até aprovação explícita.
-- Conta online, Cloud Save, autoridade online V26, captura server-side e balanceamento Tier/Raridade V27 permanecem ativos.
+- Conta online, Cloud Save, autoridade online V26, captura server-side, Tier/Raridade V27 e Survivor/Psyduck V28 permanecem preservados.
 - Market continua bloqueado.
 
-ALTERAÇÕES V29 — HP / CURA / BATALHA
-- Corrigida a causa de Pokémon derrotado voltar sozinho: o recálculo legado forçava HP mínimo 1. Agora um Pokémon com 0 HP permanece com 0 HP durante qualquer recálculo de stats.
-- O botão CURAR recalcula primeiro os stats/Tier/Raridade vigentes e depois define HP = maxHp no objeto real do time.
-- CURAR faz uma segunda confirmação no mesmo ciclo de interface para impedir divergência caso outra camada de stats termine o recálculo logo depois do clique.
-- O HP/maxHP exibido na Cidade e usado ao iniciar Wild/Hunt usam o mesmo Pokémon real do slot ativo.
-- A entrada em batalha não cura nem ressuscita automaticamente o Pokémon.
-- Quando o Pokémon ativo chega a 0 HP, a batalha fica bloqueada e exige escolher outro Pokémon vivo.
-- A tela obrigatória de troca não oferece mais Revive como forma de continuar imediatamente após um KO.
-- Se não existir outro Pokémon vivo no time, a batalha termina em derrota mesmo que exista Revive na mochila.
-- Revive permanece como item do jogo, mas não substitui a regra de troca obrigatória causada por derrota do Pokémon ativo.
-- A regra de KO/troca é compartilhada pelo motor de batalha e portanto também vale para Ginásios.
+ALTERAÇÕES V30 — BATALHA / KO
+- HP 0 continua sendo estado de derrotado e não volta para 1 após recálculo de atributos.
+- O botão CURAR recalcula o HP máximo vigente e depois cura o time exatamente até o máximo usado pela batalha.
+- Quando o Pokémon ativo chega a 0 HP, a batalha NÃO fecha automaticamente.
+- A tela “POKÉMON DERROTADO — TROCA OBRIGATÓRIA” bloqueia a continuação até selecionar outro Pokémon vivo do time.
+- Revive não é oferecido como continuação automática após KO.
+- Se não houver outro Pokémon vivo, aparece “TIME DERROTADO” e o jogador precisa encerrar a batalha manualmente.
+- Chamadas legadas de endBattle(false) são bloqueadas enquanto a troca obrigatória estiver pendente.
+- A regra também vale para Ginásios: um Pokémon derrotado não pode reviver sozinho nem permitir progressão indevida.
 
-ALTERAÇÕES V29 — ISOLAMENTO DE CONTROLES
-- Cidade/Mundo Pokémon agora fica congelado enquanto Survivor, Aventura ou World possuem o controle do jogador.
-- Survivor e Aventura ocultam a camada da Cidade durante o modo, evitando atualização/movimento do mapa de fundo e trabalho desnecessário do loop da Cidade.
-- World continua usando seu worldPlayer próprio; a posição da Cidade fica preservada durante a sessão.
-- Ao sair de World/Aventura/Survivor, as teclas/joystick de movimento são liberadas antes de devolver controle à Cidade, evitando movimento residual por tecla presa.
-- A posição da Cidade é restaurada ao valor anterior ao modo como proteção adicional contra vazamento de input.
+ALTERAÇÕES V30 — PSYDUCK EXCLUSIVO
+- Psyduck (#54) deixa de aparecer em Wild, Hunts e World.
+- Pools carregadas tardiamente também são filtradas para impedir regressão por bundles antigos.
+- Encontros antigos/stale de Psyduck fora do Survivor são bloqueados antes de iniciar a batalha.
+- Psyduck fica reservado ao ecossistema Psyduck Supremo / Survivor.
+- Nenhum Psyduck já existente no save do jogador é apagado automaticamente.
 
-ALTERAÇÕES V28 — SURVIVOR
-- Corrigida a regressão que permitia carregar dois runtimes V47 diferentes na mesma sessão. Os manifestos principais usam o mesmo hard-pin v47-survivor-hunts-v9.js.
-- Wobbuffet deixa de tentar usar uma forma Mega inexistente; Lv.5/MAX usa sprite válida Shiny/Reflect.
-- Removidos do campo dos AJUDANTES os rótulos MEGA/SHINY/REFLECT/MAX e suas barras/textos de HP, sem remover barras dos inimigos especiais.
-- Instinto de Caça continua entrando na fórmula real de loot e aparece em BÔNUS ATIVOS.
-- Elites temporizados possuem rajada direcionada/pulso radial próprios.
-- Mega, Shiny e Mega Shiny mantêm as habilidades especiais nativas do Survivor V9.
-- Psy Nova, Vórtice Mental, Chuva Psíquica, Blissey/Santuário, Wobbuffet Reflect e demais VFX foram preservados.
-- A otimização continua baseada em spatial grid, camera culling, limites de simulação, busca de colisão reduzida e draw throttle; não remove os efeitos aprovados.
+VIP — VERIFICAÇÃO
+- Benefícios oficiais permanecem: +20% captura, +50% Loot e +50% XP.
+- XP de batalha usa getTotalBuff('xp'), portanto recebe +50% com VIP ativo.
+- A autoridade online também aplica +50% XP e +50% chance de Loot diretamente pelo vip_until no servidor.
+- VIP NÃO concede bônus direto de Gold. Buffs de Gold são separados, como os bônus do Treinador.
+- O cliente remove o bônus VIP dos parâmetros enviados ao servidor para evitar duplicação; o servidor reaplica o VIP de forma autoritativa.
 
-ALTERAÇÕES V28 — PSYDUCK
-- Psyduck normal tem Tier base E.
-- Psyduck Supremo não usa Tier automático da cadeia Psyduck -> Golduck.
-- Provação 1 no Reset 9 promove E -> D; os demais Tiers/Qualidades continuam obedecendo exclusivamente às Provações concluídas.
-- Saves antigos do Supremo são migrados para Tier/Qualidade correspondente às Provações realmente concluídas.
-- Psyduck NORMAL volta às Hunts Kanto/Água; a exclusividade permanece apenas para o Psyduck Supremo marcado pelo sistema.
+CONTROLES / MODOS
+- Cidade continua congelada enquanto Aventura, World ou Survivor estão ativos.
+- Ao sair desses modos, movimento/joystick da Cidade é liberado sem carregar teclas pressionadas do modo anterior.
 
 VALIDAÇÕES RELEVANTES
-- A causa do auto-revive foi localizada no recalcPoke legado: Math.max(1, ...) sobre o HP recalculado.
-- O fluxo legado de KO também foi localizado oferecendo Revive dentro da seleção obrigatória; a V29 o força a usar seleção sem Revive.
-- O loop da Cidade usa o mesmo estado global de teclas que outros modos; a V29 isola a Cidade enquanto esses modos estão ativos.
-- A V29 foi colocada em core/battle-input-integrity-v29.js e é carregada pelo guard global após DOMContentLoaded, quando o runtime de batalha já existe.
-- Produção não foi alterada; somente a Preview branch recebeu a V29.
+- A V30 foi isolada em core/battle-input-integrity-v30.js.
+- O guard global foi atualizado para carregar a V30 em vez da V29.
+- Produção/main não foi alterada.
 
-CHECKLIST DE TESTE V29
-1. Ctrl+F5 no Preview e confirmar no console: "PSYWORLD V29 HP/KO/Input ativo".
-2. Danificar Psyduck, clicar CURAR e confirmar HP atual = HP máximo no HUD.
-3. Entrar imediatamente em Wild/Hunt: o HP deve ser exatamente o mesmo valor visto na Cidade.
-4. Deixar o Pokémon ativo chegar a 0 HP com outro Pokémon vivo: deve abrir TROCA obrigatória e não permitir continuar antes da escolha.
-5. Na troca obrigatória não deve existir opção de Revive para o Pokémon derrotado.
-6. Com todos os Pokémon em 0 HP, a batalha deve terminar em derrota; possuir Revive não deve ressuscitar automaticamente o time.
-7. Repetir o teste de KO em Ginásio; não deve ser possível avançar por revive automático.
-8. Anotar a posição do personagem na Cidade, entrar no Survivor, mover bastante, sair para Cidade: posição da Cidade deve ser a mesma.
-9. Repetir o teste de posição com Aventura e World.
-10. Ao sair de qualquer um desses modos, o personagem da Cidade não deve continuar andando sozinho por tecla/joystick preso.
-
-CHECKLIST V28 AINDA RELEVANTE
-- Wobbuffet Lv.5/MAX mostra sprite.
-- Ajudantes não mostram rótulos/barra de HP sobre a sprite.
-- Mega/Shiny/Mega Shiny e Elite executam ataques especiais.
-- Instinto de Caça aparece no Pause e influencia loot.
-- Psy Nova/Vórtice/Blissey e VFX continuam completos.
-- Psyduck Supremo sem Provação 1 fica Tier E; Hunt Kanto/Água inclui Psyduck normal.
-- Observar FPS/engasgos após alguns minutos de Survivor.
+CHECKLIST DE TESTE V30
+1. Abrir o Preview com Ctrl+F5 e confirmar no console: “PSYWORLD V30 ativo”.
+2. Usar CURAR e confirmar HP cheio; entrar em batalha e verificar o mesmo HP máximo.
+3. Deixar o Pokémon ativo morrer tendo outro Pokémon vivo no time: a batalha deve permanecer aberta e mostrar TROCAR.
+4. Tentar clicar em golpes enquanto a troca estiver pendente: nada deve continuar até escolher outro Pokémon.
+5. Em Ginásio, repetir o KO e confirmar que não há revive automático nem avanço indevido.
+6. Com todo o time derrotado, confirmar que aparece TIME DERROTADO e ENCERRAR BATALHA, sem fechamento automático.
+7. Procurar Psyduck em Wild, Hunt Kanto/Água e World: não deve aparecer.
+8. Confirmar que o sistema Psyduck Supremo / Survivor continua funcionando normalmente.
 
 AINDA PRECISA CORRIGIR / VALIDAR
-- Validar no navegador real todos os itens do checklist V29, principalmente KO em Gym e transição de controles entre modos.
-- Confirmar em teste prolongado que a remoção do runtime V47 duplicado elimina o lag observado no Survivor.
-- Ajustar dano/cadência do ataque de Elite caso o teste prático mostre dificuldade excessiva ou baixa.
-- Survivor ainda é uma simulação em tempo real no cliente; tornar sua simulação totalmente server-authoritative é etapa futura.
-- Conteúdo final de Packs e Pokémon final de Eggs ainda possuem partes client-side antes de liberar Market real.
-- XP/status completo durante todo combate ainda depende do motor local + Cloud Save; economia principal já é reconciliada pelo servidor.
+- Confirmar em teste real todos os cenários da troca obrigatória em Wild, Hunt e Ginásio.
+- Confirmar em sessão longa que nenhum bundle tardio volta a inserir Psyduck em pools externas ao Survivor.
+- Confirmar em teste real que a remoção do runtime V47 duplicado elimina o lag observado após alguns minutos de Survivor.
+- Ajustar dano/cadência de Elite se o teste prático mostrar dificuldade excessiva ou baixa.
+- Survivor ainda é uma simulação em tempo real no cliente; tornar sua simulação totalmente server-authoritative continua sendo etapa futura.
+- Conteúdo final de Packs e Pokémon final de Eggs ainda possuem partes legadas client-side e precisam migrar completamente antes de liberar Market real.
 - Market permanece BLOQUEADO até ownership/Pack/Egg/Survivor e testes anti-cheat estarem fechados server-side.
