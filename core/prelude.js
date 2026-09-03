@@ -205,3 +205,11 @@ try{
   oa.async=false;
   document.head.appendChild(oa);
 }catch(e){console.warn('online authority v26 loader',e)}
+
+/* PSYWORLD V26E — hotfix da captura online, carregado depois da autoridade. */
+try{
+  const ch=document.createElement('script');
+  ch.src='core/capture-hotfix-v26e.js?build=CAPTURE_HOTFIX_V26E_20260902';
+  ch.async=false;
+  document.head.appendChild(ch);
+}catch(e){console.warn('capture hotfix v26e loader',e)}
