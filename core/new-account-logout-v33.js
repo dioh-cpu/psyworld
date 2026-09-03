@@ -3,13 +3,14 @@
    - does NOT migrate or edit existing profiles;
    - only marks profiles created after this patch;
    - new profiles cannot use Psyduck #54 in the normal team;
-   - adds LOG OUT beside cloud save controls.
+   - adds LOG OUT beside cloud save controls;
+   - LOG OUT now disconnects the online account and returns to the login screen without deleting local saves.
 */
 (function(W,D){
 'use strict';
 if(W.__PSYWORLD_NEW_ACCOUNT_LOGOUT_V33__)return;
 W.__PSYWORLD_NEW_ACCOUNT_LOGOUT_V33__=true;
-const BUILD='NEW_ACCOUNT_LOGOUT_V33_20260903_A';
+const BUILD='NEW_ACCOUNT_LOGOUT_V33_20260903_B';
 const SESSION_KEY='psyworld_online_session_v23';
 const SAVE_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
 const isPsy=p=>Number(p?.id??p?.species_id??p)===54;
@@ -66,6 +67,19 @@ function installSetActiveGuard(){
   f.__psyNewAccountV33=true;f.__psyOriginal=cur;assignFn('setActive',f);
 }
 function loggedIn(){try{return !!JSON.parse(localStorage.getItem(SESSION_KEY)||'null')?.access_token}catch(_){return false}}
+function returnToLogin(){
+  try{W.autoSave?.()}catch(_){}
+  try{W.joyX=0;W.joyY=0;if(W.V12_KEYS)for(const k of Object.keys(W.V12_KEYS))W.V12_KEYS[k]=false}catch(_){}
+  try{D.getElementById('psy-cloud-modal')?.remove()}catch(_){}
+  try{D.getElementById('psy-battle-switch-required')?.remove()}catch(_){}
+  try{D.querySelectorAll('[id^="screen-"]').forEach(el=>{el.style.display='none'})}catch(_){}
+  const menu=D.getElementById('menu');if(menu)menu.style.display='none';
+  const game=D.getElementById('game-wrap');if(game)game.style.display='none';
+  const starter=D.getElementById('screen-starter');if(starter)starter.style.display='none';
+  const login=D.getElementById('screen-login');if(login){login.style.display='flex';login.style.zIndex='2147483600'}
+  setTimeout(()=>{const form=D.getElementById('psy-online-form');if(form)form.style.display='block';const email=D.getElementById('psy-online-email');try{email?.focus()}catch(_){}},60);
+  try{W.scrollTo(0,0)}catch(_){}
+}
 function ensureLogoutButton(){
   const cloud=D.getElementById('psy-cloud-menu-actions');if(!cloud)return false;
   let b=D.getElementById('psy-cloud-logout');
@@ -73,9 +87,10 @@ function ensureLogoutButton(){
     b=D.createElement('button');b.id='psy-cloud-logout';b.type='button';b.textContent='🚪 LOG OUT';
     b.style.cssText='padding:11px;border:1px solid #f87171;border-radius:8px;background:#991b1b;color:#fff;font-weight:900;cursor:pointer;';
     b.onclick=async()=>{
-      if(!confirm('Sair da conta online? O save local será mantido.'))return;
+      if(!confirm('Sair da conta online e voltar para a tela de login? O save local será mantido.'))return;
+      try{W.autoSave?.()}catch(_){}
       try{await W.psyCloudV23?.logout?.()}catch(e){console.warn('logout v33',e)}
-      ensureLogoutButton();
+      returnToLogin();
     };
     cloud.appendChild(b);
   }
@@ -97,5 +112,5 @@ function installMenuHook(){
 function install(){installStarterGuard();installAddTeamGuard();installSetActiveGuard();installMenuHook();ensureLogoutButton()}
 function boot(){installCss();install();[100,300,800,1500,3000,6000].forEach(ms=>setTimeout(install,ms))}
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-console.log('✅ PSYWORLD V33 ativo: novas contas sem Psyduck no time + LOG OUT no menu',BUILD);
+console.log('✅ PSYWORLD V33B ativo: novas contas sem Psyduck no time + LOG OUT retorna ao login',BUILD);
 })(window,document);
