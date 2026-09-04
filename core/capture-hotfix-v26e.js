@@ -2,9 +2,9 @@
 'use strict';
 if(W.__PSYWORLD_CAPTURE_HOTFIX_V26F__)return;
 W.__PSYWORLD_CAPTURE_HOTFIX_V26F__=true;
-const BUILD='CAPTURE_HOTFIX_V26F_TIER_RARITY_V27_20260903';
-let captureBusy=false;
-const toast=(m,t=3200)=>{try{W.notif?.(m,t)}catch(_){console.log('[V26F]',m)}};
+const BUILD='CAPTURE_HOTFIX_V39_MODAL_CLOSE_20260904';
+let captureBusy=false,suppressBallMenuUntil=0;
+const toast=(m,t=3200)=>{try{W.notif?.(m,t)}catch(_){console.log('[V39]',m)}};
 const online=()=>!!W.psyOnlineAuthorityV26?.online?.();
 const idem=()=>{try{return 'capture:'+crypto.randomUUID()}catch(_){return 'capture:'+Date.now()+':'+Math.random().toString(36).slice(2)}};
 function activeBattle(){try{if(typeof battleData!=='undefined'&&battleData)return battleData}catch(_){}return W.battleData||null}
@@ -14,15 +14,24 @@ function tierOf(w){try{const fn=W.getTier||(typeof getTier==='function'?getTier:
 function nonVipCap(){let n=0;try{n=Number(W.getTotalBuff?.('cap')||0)}catch(_){}const P0=player();if(Number(P0?.meta?.vipUntil||0)>Date.now())n-=20;return Math.max(0,n)}
 function refreshBattle(){try{if(typeof updateBattleHP==='function')updateBattleHP();else W.updateBattleHP?.()}catch(_){}try{W.updateHUD?.()}catch(_){}}
 function finishBattle(won){try{if(typeof endBattle==='function')return endBattle(won)}catch(_){}return W.endBattle?.(won)}
+function closeBallMenu(){
+  try{W.psy19CloseBalls?.()}catch(_){}
+  const el=D.getElementById('psy19-ball-screen');
+  if(el){el.style.display='none';el.style.pointerEvents='none';el.setAttribute('aria-hidden','true')}
+}
+function suppressBallMenu(ms=1800){suppressBallMenuUntil=Math.max(suppressBallMenuUntil,Date.now()+ms);closeBallMenu()}
+function installBallSelectorGuard(){
+  const cur=W.openBattleBallSelector;
+  if(typeof cur!=='function'||cur.__psyCaptureModalV39)return;
+  const f=function(){if(Date.now()<suppressBallMenuUntil){closeBallMenu();return}const r=cur.apply(this,arguments);const el=D.getElementById('psy19-ball-screen');if(el){el.style.pointerEvents='';el.removeAttribute('aria-hidden')}return r};
+  f.__psyCaptureModalV39=true;f.__psyOriginal=cur;W.openBattleBallSelector=f;try{openBattleBallSelector=f}catch(_){}
+}
 function applyServerState(d){const P0=player();if(!P0||!d)return;if(d.player){for(const k of ['gold','diamonds','psycoin'])if(Number.isFinite(Number(d.player[k])))P0[k]=Number(d.player[k])}if(d.inventory&&typeof d.inventory==='object'&&!Array.isArray(d.inventory)){P0.inventory={};for(const [k,v] of Object.entries(d.inventory)){const q=Math.max(0,Number(v)||0);if(q>0)P0.inventory[k]=q}}try{W.updateHUD?.()}catch(_){}try{W.autoSave?.()}catch(_){}setTimeout(()=>{try{W.psyOnlineAuthorityV26?.syncServer?.(false)}catch(_){}},120)}
 function enemyCounter(){
-  /* V27: captura falha consome o turno no MESMO handler autoritativo do combate.
-     Assim Tier, Raridade, move power, efetividade, status, Sono e Paralisia são iguais
-     ao contra-ataque de um turno normal. */
+  /* V27: captura falha consome o turno no MESMO handler autoritativo do combate. */
   try{
     if(typeof W.psyV9EnemyTurnAfterCapture==='function')return W.psyV9EnemyTurnAfterCapture();
-  }catch(e){console.warn('[V26F counter authoritative]',e)}
-  /* Fallback somente para builds sem Battle Status V27. */
+  }catch(e){console.warn('[V39 counter authoritative]',e)}
   try{
     const bd=activeBattle(),P0=player(),w=bd?.wild,me=P0?.team?.[0];
     if(!w||!me||Number(me.hp||0)<=0)return;
@@ -34,10 +43,32 @@ function enemyCounter(){
     me.hp=Math.max(0,Number(me.hp||0)-dmg);
     const log=D.getElementById('battle-log');if(log)log.textContent=`A tentativa gastou seu turno. ${w.name||'O inimigo'} atacou: -${dmg} HP.`;
     refreshBattle();if(me.hp<=0)W.psyHandleBattleFaint?.();
-  }catch(e){console.warn('[V26F counter fallback]',e)}
+  }catch(e){console.warn('[V39 counter fallback]',e)}
 }
 function buildPayload(ballName){const bd=activeBattle(),P0=player(),wild=bd?.wild;if(!bd||!P0||!wild)throw new Error('Nenhum encontro ativo para capturar.');if(gymActive())throw new Error('Não é permitido capturar Pokémon em Ginásios.');if((P0.inventory?.[ballName]||0)<=0)throw new Error('Você não possui esta Ball.');if(wild.psyduckDungeon||W.isDungeonBoss||W.isDungeonMega||wild.isBoss)throw new Error('Este encontro não pode ser capturado.');const tier=tierOf(wild);if(!wild.shiny&&['SS','SSS','UR','UR+','UR++'].includes(tier))throw new Error('Pokémon Tier SS+ não pode ser capturado em encontro normal.');let raw='';try{raw=String(W.TYPE_BY_ID_ALL?.[wild.id]||W.TYPE_BY_ID_FULL?.[wild.id]||W.TYPE_BY_ID_EXT?.[wild.id]||wild.type||'Normal')}catch(_){raw=String(wild.type||'Normal')}const types=raw.split(/[\/|,;]+/).map(x=>x.trim().toLowerCase()).filter(Boolean).slice(0,2);const hp=Math.max(0,Math.min(1,Number(bd.wildHp??1)/Math.max(1,Number(bd.wildMaxHp||1))));const rar=wild.rarity||{n:'Lixo',mult:1};return{wild,rar,payload:{species:Number(wild.id),level:Number(wild.level||wild.lvl||1),shiny:!!wild.shiny,mega:!!wild.isMega,boss:!!wild.isBoss,tier,rarity:rar.n||'Lixo',rarity_mult:Number(rar.mult||1),hp_pct:hp,ball:String(ballName),target_types:types,cap_buff:nonVipCap(),pokemon_data:{id:Number(wild.id),name:wild.name,level:Number(wild.level||wild.lvl||1),shiny:!!wild.shiny,isMega:!!wild.isMega,megaForm:wild.megaForm||'',tier,rarity:rar}}}}
-function install(){const cur=W.tryCaptureBattle;if(typeof cur!=='function'||cur.__psyCaptureHotfixV26F)return;const offline=cur.__offlineOriginal||cur.__psyV26Original||cur;const fixed=async function(ballName){if(!online())return offline.apply(this,arguments);if(captureBusy)return toast('⏳ Uma tentativa de captura já está em andamento.');captureBusy=true;W.__psyCaptureBusyV26F=true;try{const {wild,rar,payload}=buildPayload(ballName);const api=W.psyOnlineAuthorityV26?.request;if(typeof api!=='function')throw new Error('Autoridade online ainda não está pronta.');const key=idem();console.log('[V26F capture] enviando',{ball:ballName,species:wild.id,level:payload.level,hp_pct:payload.hp_pct,tier:payload.tier,rarity:payload.rarity});const d=await api('capture-attempt',payload,key);if(!d)throw new Error('Servidor não retornou a tentativa.');console.log('[V26F capture] retorno',{captured:!!d.captured,chance:Number(d.chance||0),remaining:Number(d.ball_remaining??-1),mult:Number(d.ball_multiplier??1)});applyServerState(d);const chance=Number(d.chance||0),txt=chance<1?chance.toFixed(2):chance.toFixed(1);if(d.captured){const P0=player();let pk;try{pk=W.createCapturedPoke?.(wild.id,rar,!!wild.shiny,false,!!wild.isMega)}catch(_){}if(!pk)pk={id:wild.id,name:wild.name||('Pokémon '+wild.id),level:1,shiny:!!wild.shiny,isMega:!!wild.isMega,rarity:rar};if(d.pokemon_uid)pk.pokemon_uid=d.pokemon_uid;P0.box=P0.box||[];P0.box.push(pk);P0.meta=P0.meta||{};P0.meta.captures=Math.max(Number(P0.meta.captures||0)+1,Number(d?.system?.progress?.captures||0));const log=D.getElementById('battle-log');if(log)log.textContent=`🎯 Chance de captura: ${txt}% • ${pk.name} capturado!`;toast(`✅ ${pk.name} capturado! • Chance: ${txt}%`,3200);try{W.renderTeam?.();W.autoSave?.()}catch(_){}setTimeout(()=>W.psyOnlineAuthorityV26?.syncServer?.(false),150);finishBattle(true)}else{const log=D.getElementById('battle-log');if(log)log.textContent=`🎯 Chance de captura: ${txt}% • ${wild.name||'Pokémon'} escapou.`;toast(`❌ Escapou! • Chance: ${txt}%`,2800);setTimeout(enemyCounter,280)}}catch(e){console.error('[V26F capture]',e);toast('❌ Captura online: '+String(e?.message||e).replaceAll('_',' '),4200);try{if(activeBattle()?.wild)setTimeout(()=>W.openBattleBallSelector?.(),250)}catch(_){}}finally{captureBusy=false;W.__psyCaptureBusyV26F=false}};fixed.__psyCaptureHotfixV26E=true;fixed.__psyCaptureHotfixV26F=true;fixed.__psyV26=true;fixed.__psyV26Original=offline;fixed.__offlineOriginal=offline;W.tryCaptureBattle=fixed;try{tryCaptureBattle=fixed}catch(_){}console.log('🎯 PSYWORLD Capture Hotfix V26F instalado • Tier/Raridade V27')}
+function install(){
+  installBallSelectorGuard();
+  const cur=W.tryCaptureBattle;if(typeof cur!=='function'||cur.__psyCaptureHotfixV26F)return;
+  const offline=cur.__offlineOriginal||cur.__psyV26Original||cur;
+  const fixed=async function(ballName){
+    suppressBallMenu(2200);
+    if(!online()){try{return await offline.apply(this,arguments)}finally{closeBallMenu()}}
+    if(captureBusy){closeBallMenu();return toast('⏳ Uma tentativa de captura já está em andamento.')}
+    captureBusy=true;W.__psyCaptureBusyV26F=true;
+    try{
+      const {wild,rar,payload}=buildPayload(ballName);const api=W.psyOnlineAuthorityV26?.request;if(typeof api!=='function')throw new Error('Autoridade online ainda não está pronta.');
+      const key=idem();console.log('[V39 capture] enviando',{ball:ballName,species:wild.id,level:payload.level,hp_pct:payload.hp_pct,tier:payload.tier,rarity:payload.rarity});
+      const d=await api('capture-attempt',payload,key);if(!d)throw new Error('Servidor não retornou a tentativa.');
+      closeBallMenu();
+      console.log('[V39 capture] retorno',{captured:!!d.captured,chance:Number(d.chance||0),remaining:Number(d.ball_remaining??-1),mult:Number(d.ball_multiplier??1)});
+      applyServerState(d);const chance=Number(d.chance||0),txt=chance<1?chance.toFixed(2):chance.toFixed(1);
+      if(d.captured){const P0=player();let pk;try{pk=W.createCapturedPoke?.(wild.id,rar,!!wild.shiny,false,!!wild.isMega)}catch(_){}if(!pk)pk={id:wild.id,name:wild.name||('Pokémon '+wild.id),level:1,shiny:!!wild.shiny,isMega:!!wild.isMega,rarity:rar};if(d.pokemon_uid)pk.pokemon_uid=d.pokemon_uid;P0.box=P0.box||[];P0.box.push(pk);P0.meta=P0.meta||{};P0.meta.captures=Math.max(Number(P0.meta.captures||0)+1,Number(d?.system?.progress?.captures||0));const log=D.getElementById('battle-log');if(log)log.textContent=`🎯 Chance de captura: ${txt}% • ${pk.name} capturado!`;toast(`✅ ${pk.name} capturado! • Chance: ${txt}%`,3200);try{W.renderTeam?.();W.autoSave?.()}catch(_){}setTimeout(()=>W.psyOnlineAuthorityV26?.syncServer?.(false),150);finishBattle(true)}
+      else{const log=D.getElementById('battle-log');if(log)log.textContent=`🎯 Chance de captura: ${txt}% • ${wild.name||'Pokémon'} escapou.`;toast(`❌ Escapou! • Chance: ${txt}%`,2800);setTimeout(enemyCounter,280)}
+    }catch(e){console.error('[V39 capture]',e);toast('❌ Captura online: '+String(e?.message||e).replaceAll('_',' '),4200)}
+    finally{captureBusy=false;W.__psyCaptureBusyV26F=false;suppressBallMenu(900);[0,80,250,600].forEach(ms=>setTimeout(closeBallMenu,ms))}
+  };
+  fixed.__psyCaptureHotfixV26E=true;fixed.__psyCaptureHotfixV26F=true;fixed.__psyCaptureModalV39=true;fixed.__psyV26=true;fixed.__psyV26Original=offline;fixed.__offlineOriginal=offline;W.tryCaptureBattle=fixed;try{tryCaptureBattle=fixed}catch(_){}console.log('🎯 PSYWORLD Capture V39 instalado • seletor fecha após uso da Ball')
+}
 setInterval(install,1200);setTimeout(install,60);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='visible')install()});
-console.log('🎯 PSYWORLD Capture Hotfix V26F carregado',BUILD);
+console.log('🎯 PSYWORLD Capture V39 carregado',BUILD);
 })(window,document);
