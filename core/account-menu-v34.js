@@ -124,4 +124,12 @@ function boot(){
 }
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 console.log('✅ PSYWORLD V36 ativo: saída local persiste após F5 e bloqueia auto-load',BUILD);
+
+/* V37: login online com perfil local fechado deve abrir o save da nuvem da conta. */
+try{
+  const v37=D.createElement('script');
+  v37.src='core/online-profile-entry-v37.js?build=ONLINE_PROFILE_ENTRY_V37_20260904_A';
+  v37.async=false;
+  D.head.appendChild(v37);
+}catch(e){console.warn('online profile entry v37 loader',e)}
 })(window,document);
