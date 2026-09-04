@@ -1,15 +1,15 @@
-/* PSYWORLD V36 — Menu de perfil local + conta online
+/* PSYWORLD V36B — Menu de perfil local + conta online
    - SAIR DO PERFIL LOCAL persiste após F5 e bloqueia auto-load;
    - o save local continua preservado;
-   - CARREGAR local, novo perfil ou login online bem-sucedido liberam a entrada novamente;
+   - CARREGAR local ou personagem online escolhido liberam a entrada novamente;
    - perfil local e sessão online continuam independentes;
-   - não altera TIME/BOX nem conteúdo do save.
+   - V38 controla a seleção/criação de personagens por nickname.
 */
 (function(W,D){
 'use strict';
 if(W.__PSYWORLD_ACCOUNT_MENU_V36__)return;
 W.__PSYWORLD_ACCOUNT_MENU_V36__=true;
-const BUILD='ACCOUNT_MENU_V36_20260903_A';
+const BUILD='ACCOUNT_MENU_V36B_20260904';
 const SESSION_KEY='psyworld_online_session_v23';
 const LOCAL_EXIT_KEY='psyworld_local_profile_signed_out_v36';
 const $=id=>D.getElementById(id);
@@ -78,7 +78,8 @@ function installAutoLoadGuard(){
     f.__psyV36=true;f.__psyOriginal=enter;assignFn('psyV9EnterSavedGame',f);
   }
   const cloud=W.psyCloudV23;
-  if(cloud&&typeof cloud.login==='function'&&!cloud.login.__psyV36){
+  // V38 precisa manter o perfil local fechado até o usuário escolher/criar um personagem.
+  if(cloud&&typeof cloud.login==='function'&&!cloud.login.__psyV36&&!cloud.login.__psyCharactersV38){
     const old=cloud.login;
     const f=async function(){const r=await old.apply(this,arguments);if(loggedIn())clearLocalExit();return r};
     f.__psyV36=true;cloud.login=f;
@@ -123,13 +124,13 @@ function boot(){
   setInterval(()=>{installAutoLoadGuard();if(localExitLocked())enforceStartWhenLocked();else render()},1800);
 }
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-console.log('✅ PSYWORLD V36 ativo: saída local persiste após F5 e bloqueia auto-load',BUILD);
+console.log('✅ PSYWORLD V36B ativo: saída local persistente + seletor online V38',BUILD);
 
-/* V37: login online com perfil local fechado deve abrir o save da nuvem da conta. */
+/* V38B: conta online pode selecionar ou criar personagens por nickname. */
 try{
-  const v37=D.createElement('script');
-  v37.src='core/online-profile-entry-v37.js?build=ONLINE_PROFILE_ENTRY_V37_20260904_A';
-  v37.async=false;
-  D.head.appendChild(v37);
-}catch(e){console.warn('online profile entry v37 loader',e)}
+  const v38=D.createElement('script');
+  v38.src='core/online-profile-entry-v37.js?build=ONLINE_CHARACTERS_V38B_20260904';
+  v38.async=false;
+  D.head.appendChild(v38);
+}catch(e){console.warn('online characters v38 loader',e)}
 })(window,document);
