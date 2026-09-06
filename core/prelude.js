@@ -206,13 +206,13 @@ try{
   document.head.appendChild(oa);
 }catch(e){console.warn('online authority v26 loader',e)}
 
-/* PSYWORLD V26E — hotfix da captura online, carregado depois da autoridade. */
+/* PSYWORLD V62 — captura por qualidade/evolução/força, bônus aditivo, teto 30%. */
 try{
   const ch=document.createElement('script');
-  ch.src='core/capture-hotfix-v26e.js?build=CAPTURE_HOTFIX_V26E_20260902';
+  ch.src='core/capture-hotfix-v26e.js?build=CAPTURE_V62_TALENT_BONUS_REWORK_20260906';
   ch.async=false;
   document.head.appendChild(ch);
-}catch(e){console.warn('capture hotfix v26e loader',e)}
+}catch(e){console.warn('capture v62 loader',e)}
 
 /* PSYWORLD V33 — novas contas sem Psyduck no time normal + LOG OUT. */
 try{
