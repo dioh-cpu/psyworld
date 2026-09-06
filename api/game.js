@@ -18,7 +18,7 @@ function num(v,min,max,def=min){const n=Number(v);return Number.isFinite(n)?Math
 function bool(v){return v===true||v==='true'||v===1||v==='1'}
 function obj(v){return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}
 function safeMap(v,maxKeys=160,maxQty=100000){const out={};for(const [k,val] of Object.entries(obj(v)).slice(0,maxKeys)){const key=txt(k,120);const q=int(val,0,maxQty,0);if(key&&q)out[key]=q}return out}
-function safePokemon(p){const x=obj(p);return {id:int(x.id??x.species_id,1,2000,1),name:txt(x.name,80),level:int(x.level,1,10000,1),xp:int(x.exp??x.xp,0,2_000_000_000,0),shiny:bool(x.shiny),isMega:bool(x.isMega),megaForm:txt(x.megaForm,40),tier:txt(x.tier||'E',16),rarity:typeof x.rarity==='object'?{n:txt(x.rarity?.n||'Lixo',32),mult:num(x.rarity?.mult,1,100000,1)}:txt(x.rarity||'Lixo',32),resets:int(x.resets,0,9999,0),psyduckChosen:bool(x.psyduckChosen),maxHp:int(x.maxHp,1,2_000_000_000,1),atk:int(x.atk,0,2_000_000_000,0)}}
+function safePokemon(p){const x=obj(p);return {id:int(x.id??x.species_id,1,2000,1),name:txt(x.name,80),level:int(x.level,1,10000,1),xp:int(x.exp??x.xp,0,2_000_000_000,0),shiny:bool(x.shiny),isMega:bool(x.isMega),megaForm:txt(x.megaForm,40),tier:txt(x.tier||'E',16),rarity:typeof x.rarity==='object'?{n:txt(x.rarity?.n||'Lixo',32),mult:num(x.rarity?.mult,1,100000,1)}:txt(x.rarity||'Lixo',32),evolutionStage:int(x.evolutionStage??x.evolution_stage,1,3,1),resets:int(x.resets,0,9999,0),psyduckChosen:bool(x.psyduckChosen),maxHp:int(x.maxHp,1,2_000_000_000,1),atk:int(x.atk,0,2_000_000_000,0)}}
 function legacyParts(save){
   const root=obj(save),p=obj(root.player||root),meta=obj(p.meta),rw=obj(meta.rewardsV10||meta.rewards||{}),cards=obj(p.cardGame),bp=obj(meta.battlePass),psy=obj(p.psyduck);
   const team=Array.isArray(p.team)?p.team:[],box=Array.isArray(p.box)?p.box:[];
@@ -65,7 +65,7 @@ export default async function handler(req,res){
     }
     if(action==='capture-attempt'){
       const b=obj(req.body),types=(Array.isArray(b.target_types)?b.target_types:[]).slice(0,2).map(x=>txt(x,20).toLowerCase());
-      const {data,error}=await supabase.rpc('psy_v26_capture_attempt',{p_user:user.id,p_species:int(b.species,1,2000,1),p_level:int(b.level,1,10000,1),p_shiny:bool(b.shiny),p_mega:bool(b.mega),p_boss:bool(b.boss),p_tier:txt(b.tier||'E',12),p_rarity:txt(b.rarity||'Lixo',64),p_rarity_mult:num(b.rarity_mult,1,100000,1),p_hp_pct:num(b.hp_pct,0,1,1),p_ball:txt(b.ball,40),p_target_types:types,p_cap_buff:num(b.cap_buff,0,200,0),p_pokemon_data:safePokemon(obj(b.pokemon_data)),p_idempotency:idempotency});
+      const {data,error}=await supabase.rpc('psy_v40_capture_attempt',{p_user:user.id,p_species:int(b.species,1,2000,1),p_level:int(b.level,1,10000,1),p_shiny:bool(b.shiny),p_mega:bool(b.mega),p_boss:bool(b.boss),p_tier:txt(b.tier||'E',12),p_rarity:txt(b.rarity||'Lixo',64),p_rarity_mult:num(b.rarity_mult,1,100000,1),p_hp_pct:num(b.hp_pct,0,1,1),p_ball:txt(b.ball,40),p_target_types:types,p_cap_buff:num(b.cap_buff,0,200,0),p_pokemon_data:safePokemon(obj(b.pokemon_data)),p_idempotency:idempotency});
       if(error)throw error;return res.status(200).json(data);
     }
     if(action==='battle-win'){
