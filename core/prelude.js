@@ -111,63 +111,20 @@ window.confirmMegaChoice = function(idx,isBox,choiceIdx,cost){
 }
 window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_XY[p.id]?.length>1) openMegaChoice(i,b,p.shiny?150:50); else useMegaStone(i,b); }
 
-
 /* PSYWORLD SURVIVOR RESUME GUARD V8 */
 (function(){
   'use strict';
   const W=window,D=document;
   W.PSYWORLD_BUILD='SURVIVOR_WOBBUFFET_METER_PERF_V16';
-
-  function laterFallback(){
-    const m=D.getElementById('psy-surv-resume-modal');
-    if(m)m.remove();
-    try{
-      const msg='Run do Survivor mantida. Você pode continuar depois pelo menu do Survivor.';
-      if(typeof W.notif==='function')W.notif(msg,3600);
-      else if(typeof W.toast==='function')W.toast(msg,3600);
-    }catch(_){ }
-  }
-
+  function laterFallback(){const m=D.getElementById('psy-surv-resume-modal');if(m)m.remove();try{const msg='Run do Survivor mantida. Você pode continuar depois pelo menu do Survivor.';if(typeof W.notif==='function')W.notif(msg,3600);else if(typeof W.toast==='function')W.toast(msg,3600)}catch(_){}}
   function ensureLaterButton(){
-    const modal=D.getElementById('psy-surv-resume-modal');
-    if(!modal)return false;
-    if(typeof W.psySurvLater!=='function')W.psySurvLater=laterFallback;
-    if(modal.querySelector('[data-psy-surv-later="1"]'))return true;
-
-    const buttons=[...modal.querySelectorAll('button')];
-    const yes=buttons.find(b=>/^\s*SIM\s*$/i.test(b.textContent||''));
-    const no=buttons.find(b=>/^\s*N[ÃA]O\s*$/i.test(b.textContent||''));
-    if(!yes||!no||yes.parentElement!==no.parentElement)return false;
-
-    const b=D.createElement('button');
-    b.type='button';
-    b.className=no.className||'psy20-btn';
-    b.dataset.psySurvLater='1';
-    b.textContent='DEPOIS';
-    b.style.background='#0369a1';
-    b.style.color='#fff';
-    b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();(W.psySurvLater||laterFallback)();};
-    no.parentElement.insertBefore(b,no);
-
-    const paragraphs=[...modal.querySelectorAll('p')];
-    const info=paragraphs.find(x=>/progresso salvo|run será restaurado/i.test(x.textContent||''));
-    if(info&&!/DEPOIS/i.test(info.textContent||'')){
-      info.insertAdjacentHTML('beforeend','<br><b style="color:#7dd3fc">DEPOIS</b> fecha esta tela e mantém a run salva para continuar mais tarde.');
-    }
-    return true;
+    const modal=D.getElementById('psy-surv-resume-modal');if(!modal)return false;if(typeof W.psySurvLater!=='function')W.psySurvLater=laterFallback;if(modal.querySelector('[data-psy-surv-later="1"]'))return true;
+    const buttons=[...modal.querySelectorAll('button')],yes=buttons.find(b=>/^\s*SIM\s*$/i.test(b.textContent||'')),no=buttons.find(b=>/^\s*N[ÃA]O\s*$/i.test(b.textContent||''));if(!yes||!no||yes.parentElement!==no.parentElement)return false;
+    const b=D.createElement('button');b.type='button';b.className=no.className||'psy20-btn';b.dataset.psySurvLater='1';b.textContent='DEPOIS';b.style.background='#0369a1';b.style.color='#fff';b.onclick=function(ev){ev.preventDefault();ev.stopPropagation();(W.psySurvLater||laterFallback)()};no.parentElement.insertBefore(b,no);
+    const paragraphs=[...modal.querySelectorAll('p')],info=paragraphs.find(x=>/progresso salvo|run será restaurado/i.test(x.textContent||''));if(info&&!/DEPOIS/i.test(info.textContent||''))info.insertAdjacentHTML('beforeend','<br><b style="color:#7dd3fc">DEPOIS</b> fecha esta tela e mantém a run salva para continuar mais tarde.');return true;
   }
-
   W.psyEnsureSurvivorLaterButton=ensureLaterButton;
-  const start=()=>{
-    ensureLaterButton();
-    const target=D.body||D.documentElement;
-    if(!target)return setTimeout(start,0);
-    const mo=new MutationObserver(()=>ensureLaterButton());
-    mo.observe(target,{childList:true,subtree:true});
-    setTimeout(ensureLaterButton,500);
-    setTimeout(ensureLaterButton,1500);
-    setTimeout(ensureLaterButton,3500);
-  };
+  const start=()=>{ensureLaterButton();const target=D.body||D.documentElement;if(!target)return setTimeout(start,0);const mo=new MutationObserver(()=>ensureLaterButton());mo.observe(target,{childList:true,subtree:true});setTimeout(ensureLaterButton,500);setTimeout(ensureLaterButton,1500);setTimeout(ensureLaterButton,3500)};
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 
@@ -176,29 +133,15 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
   'use strict';
   const W=window,D=document;
   function ensureCloudMenu(){
-    const menu=D.getElementById('menu');if(!menu)return false;
-    let cloud=D.getElementById('psy-cloud-menu-actions');
-    if(!cloud){
-      cloud=D.createElement('div');cloud.id='psy-cloud-menu-actions';
-      cloud.style.cssText='width:min(700px,90%);margin:8px auto;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;';
-      cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button>';
-      menu.appendChild(cloud);
-    }
-    const save=cloud.querySelector('#psy-cloud-save-now'),load=cloud.querySelector('#psy-cloud-load-now');
-    if(save&&!save.dataset.psyCloudGuard){save.dataset.psyCloudGuard='1';save.onclick=()=>W.psyCloudV23?.uploadNow?.()}
-    if(load&&!load.dataset.psyCloudGuard){load.dataset.psyCloudGuard='1';load.onclick=()=>W.psyCloudV23?.loadNow?.()}
-    return !!(save&&load)
+    const menu=D.getElementById('menu');if(!menu)return false;let cloud=D.getElementById('psy-cloud-menu-actions');
+    if(!cloud){cloud=D.createElement('div');cloud.id='psy-cloud-menu-actions';cloud.style.cssText='width:min(700px,90%);margin:8px auto;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;';cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button>';menu.appendChild(cloud)}
+    const save=cloud.querySelector('#psy-cloud-save-now'),load=cloud.querySelector('#psy-cloud-load-now');if(save&&!save.dataset.psyCloudGuard){save.dataset.psyCloudGuard='1';save.onclick=()=>W.psyCloudV23?.uploadNow?.()}if(load&&!load.dataset.psyCloudGuard){load.dataset.psyCloudGuard='1';load.onclick=()=>W.psyCloudV23?.loadNow?.()}return !!(save&&load)
   }
-  const start=()=>{
-    ensureCloudMenu();
-    const target=D.body||D.documentElement;if(!target)return;
-    const mo=new MutationObserver(()=>ensureCloudMenu());mo.observe(target,{childList:true,subtree:true});
-    setTimeout(ensureCloudMenu,60);setTimeout(ensureCloudMenu,250);setTimeout(ensureCloudMenu,1000);
-  };
+  const start=()=>{ensureCloudMenu();const target=D.body||D.documentElement;if(!target)return;const mo=new MutationObserver(()=>ensureCloudMenu());mo.observe(target,{childList:true,subtree:true});setTimeout(ensureCloudMenu,60);setTimeout(ensureCloudMenu,250);setTimeout(ensureCloudMenu,1000)};
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 
-/* PSYWORLD V26 — autoridade online global, sem alterar a main/produção. */
+/* PSYWORLD V26 — autoridade online global. */
 try{
   const oa=document.createElement('script');
   oa.src='core/online-authority-v26.js?build=ONLINE_AUTHORITY_V26_20260902_D';
@@ -206,13 +149,13 @@ try{
   document.head.appendChild(oa);
 }catch(e){console.warn('online authority v26 loader',e)}
 
-/* PSYWORLD V26E — hotfix da captura online, carregado depois da autoridade. */
+/* PSYWORLD V40 — captura por qualidade/evolução/força, bônus aditivo, teto 30%. */
 try{
   const ch=document.createElement('script');
-  ch.src='core/capture-hotfix-v26e.js?build=CAPTURE_HOTFIX_V26E_20260902';
+  ch.src='core/capture-hotfix-v26e.js?build=CAPTURE_V40_QUALITY_EVOLUTION_BONUS_20260906';
   ch.async=false;
   document.head.appendChild(ch);
-}catch(e){console.warn('capture hotfix v26e loader',e)}
+}catch(e){console.warn('capture v40 loader',e)}
 
 /* PSYWORLD V33 — novas contas sem Psyduck no time normal + LOG OUT. */
 try{
