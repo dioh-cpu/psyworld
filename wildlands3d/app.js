@@ -2318,7 +2318,7 @@ window.PSY_WILDLANDS_3D_V145 = {
     respawnReady: state.respawnReady,
     respawnTimer: state.respawnTimer,
     joystick: { x: state.input.joyX, y: state.input.joyY, active: state.input.joyActive },
-    cameraDistance: cameraRig.distance,
+    cameraDistance: state.camera.distance,
     projectiles: state.projectiles.length,
     wildCreatures: state.wild.filter((creature) => !creature.dead).length,
     npcs: state.npcs.length,
