@@ -1,304 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<!-- PSYWORLD PERFORMANCE PASS 2026-08-28: shared sprite sheets, cached minimap/HUD, adaptive world rays, throttled hidden UI -->
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>PSYWORLD</title>
-<link rel="icon" href="data:,">
-<link rel="preconnect" href="https://play.pokemonshowdown.com" crossorigin>
-<link rel="dns-prefetch" href="https://play.pokemonshowdown.com">
-<!-- PSYWORLD corrigido: sprites Mega X/Y + shiny + player GIF animado + sprite helpers unificados -->
-<link rel="stylesheet" href="css/game.css?build=COMBATE_STATUS_V11">
-<link rel="stylesheet" href="css/psy-responsive.css?build=RESPONSIVE_V2">
-
-<script src="core/prelude.js?build=SURVIVOR_WOBBUFFET_METER_PERF_V16"></script>
-<script src="core/survivor-resume-guard-v9.js?build=COMBATE_STATUS_V10"></script>
-
-
-
-
-
-<meta name="psyworld-build" content="modular-items-pxg-v1">
-<meta name="theme-color" content="#050814">
-
-<style id="PSYWORLD_ANDROID_SAFE_AREA">
-:root{--psy-safe-top:env(safe-area-inset-top,0px);--psy-safe-right:env(safe-area-inset-right,0px);--psy-safe-bottom:env(safe-area-inset-bottom,0px);--psy-safe-left:env(safe-area-inset-left,0px)}
-html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
-body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
-</style>
-
-<style id="psy-capture-gym-v21">#battle-screen:has(#gym-progress[style*="display: block"]) #battle-ball-btn{display:none!important}</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061117">
+  <title>PSYWORLD • Wildlands 3D V143</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:#05090d;color:#e8fbff}
+    body{min-height:100vh;overflow:hidden}
+    #launch-screen{min-height:100vh;display:grid;place-items:center;padding:28px;background:radial-gradient(circle at 50% 36%,rgba(38,185,184,.18),transparent 34rem),linear-gradient(145deg,#07131a,#03070c 65%,#0a1720)}
+    .card{width:min(620px,92vw);padding:34px;border:1px solid rgba(115,229,239,.45);border-radius:26px;background:rgba(5,20,28,.88);box-shadow:0 22px 80px rgba(0,0,0,.45),0 0 60px rgba(43,218,219,.08);text-align:center}
+    .eyebrow{margin:0 0 10px;color:#7fe8f2;font-size:12px;letter-spacing:.22em;text-transform:uppercase}
+    h1{margin:0;font-size:clamp(28px,6vw,54px);letter-spacing:.03em}
+    p{margin:16px auto 0;max-width:480px;color:#b3d0d7;line-height:1.6}
+    button{margin-top:28px;border:1px solid #87f1f6;border-radius:999px;padding:14px 24px;background:linear-gradient(135deg,#1c8495,#1750a4);color:#fff;font-weight:800;letter-spacing:.08em;cursor:pointer;box-shadow:0 8px 28px rgba(28,164,190,.26)}
+    button:hover{filter:brightness(1.12)}
+    small{display:block;margin-top:14px;color:#76949d}
+  </style>
 </head>
 <body>
-<!-- LOGIN -->
-<div id="screen-login" class="screen">
-    <div id="login-box">
-        <h1>PSYWORLD</h1>
-        <p>A sua aventura começa aqui.</p>
-        <input type="text" id="nick-input" placeholder="Digite seu nickname" maxlength="14" onkeydown="if(event.key==='Enter') goStarter()">
-        <button onclick="goStarter()">▶ COMEÇAR</button>
-        <button onclick="loadOnLogin()" style="background:#24a; margin-top:8px; width:100%; padding:13px; border:none; color:#fff; cursor:pointer; font-weight:bold; border-radius:5px; font-size:14px; letter-spacing:2px;">📂 CARREGAR SAVE</button>
-        <input type="file" id="fileInputLogin" style="display:none;" onchange="uploadSaveLogin(event)">
-        <button onclick="document.getElementById('fileInputLogin').click()" style="background:#a24; margin-top:8px; width:100%; padding:13px; border:none; color:#fff; cursor:pointer; font-weight:bold; border-radius:5px; font-size:14px; letter-spacing:2px;">⬆ CARREGAR ARQUIVO.PSY</button>
-    </div>
-
-</div>
-<div id="screen-gyms" class="screen">
-<div class="gym-box">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="color:#ffd700">🏆 GINÁSIOS - 9 REGIÕES (72)</h2><button onclick="closeGyms()" style="background:#a22;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:bold;">X</button></div>
-<div style="background:#111;border:1px solid #333;border-radius:8px;padding:8px;margin-bottom:10px;text-align:center"><span style="color:#888;font-size:11px">CAP ATUAL: </span><span id="gym-cap-display" style="color:#ff4444;font-weight:900;font-size:18px">20</span><span style="color:#888;font-size:11px"> | PRÓXIMO: </span><span id="gym-next-cap" style="color:#00ff41;font-weight:900">30</span></div>
-<div id="gyms-list"></div>
-</div>
-</div>
-
-<!-- STARTER -->
-<div id="screen-starter">
-    <div id="starter-header">
-        <h1>⚡ ESCOLHA SEU INICIAL ⚡</h1>
-        <p>Escolha seu companheiro, <span id="trainer-name-label">Treinador</span>!</p>
-    </div>
-    <div id="starter-scroll">
-        <div id="starter-list"></div>
-    </div>
-    <div id="starter-footer">
-        <button id="btn-confirm" onclick="confirmStarter()">✔ CONFIRMAR ESCOLHA</button>
-        <p id="chosen-label" style="color:#888; font-size:11px; margin-top:5px;"></p>
-    </div>
-</div>
-
-<!-- LOJA -->
-<div id="screen-shop" class="screen">
-    <div class="shop-box dungeon-style psy-inventory-panel">
-        <div class="psy-inventory-head"><div><span class="psy-kicker">CENTRO COMERCIAL</span><h2 class="shiny-name">🏪 POKÉ SHOP</h2><p>Balls, curas e pedras de evolução.</p></div><div class="psy-wallet">💰 <span id="shop-wallet-gold">0</span> Gold</div></div>
-        <div id="shop-filters" class="psy-item-filters"><button class="active" onclick="psySetShopFilter('all',this)">TODOS</button><button onclick="psySetShopFilter('ball',this)">BALLS</button><button onclick="psySetShopFilter('potion',this)">CURAS</button><button onclick="psySetShopFilter('stone',this)">STONES</button></div>
-        <div id="shop-grid" class="dungeon-grid-mini"></div>
-        <div class="psy-purchase-bar">
-            <div id="shop-detail" style="flex:2;color:#888;font-size:11px">Clique num quadradinho ↑</div>
-            <input id="shop-qty" type="number" value="1" min="1" max="99" style="width:70px;background:#000;border:1px solid #444;color:#fff;padding:8px;border-radius:6px;text-align:center">
-            <button id="btn-buy" onclick="buyMulti()" style="flex:1;background:#ff0055;border:none;color:#fff;padding:10px;border-radius:8px;font-weight:900">COMPRAR</button>
-        </div>
-        <button class="shop-close" onclick="closeShop()" style="width:100%;margin-top:10px;background:#6a1515;border:none;color:#fff;padding:10px;border-radius:5px;font-weight:bold;cursor:pointer;">✖ FECHAR LOJA</button>
-    </div>
-</div>
-
-<!-- BAG - SELETOR -->
-<div id="screen-bag" class="screen" style="display:none; background:rgba(0,0,0,0.95); z-index:99999;">
-    <div class="shop-box dungeon-style psy-inventory-panel psy-bag-panel">
-        <div class="psy-inventory-head"><div><span class="psy-kicker">INVENTÁRIO</span><h2 id="bag-title" class="shiny-name">🎒 MOCHILA</h2><p>Seus itens organizados por função.</p></div><div id="bag-item-count" class="psy-wallet">0 ITENS</div></div>
-        <div id="bag-actions" class="psy-tabbar5"></div>
-        <div id="bag-filters" class="psy-item-filters"><button class="active" onclick="psySetBagFilter('all',this)">TODOS</button><button onclick="psySetBagFilter('ball',this)">BALLS</button><button onclick="psySetBagFilter('potion',this)">CURAS</button><button onclick="psySetBagFilter('stone',this)">STONES</button><button onclick="psySetBagFilter('craft',this)">CRAFT</button><button onclick="psySetBagFilter('quest',this)">QUEST</button><button onclick="psySetBagFilter('other',this)">OUTROS</button></div>
-        <div id="bag-list" class="dungeon-grid-mini psy-item-grid"></div>
-        <button onclick="closeBag()" style="width:100%; margin-top:12px; background:#6a1515; border:none; color:#fff; padding:10px; border-radius:8px; font-weight:bold;">✖ FECHAR</button>
-    </div>
-</div>
-
-<!-- TIME / BOX -->
-<div id="screen-team" class="screen" style="display:none; background:rgba(0,0,0,0.95); z-index:99999!important; position:fixed!important; inset:0!important;">
-    <div class="shop-box dungeon-style" style="width:560px; max-height:92vh; overflow-y:auto;">
-        <h2 class="shiny-name" style="text-align:center;">👥 SEU TIME</h2>
-        <div id="team-list"></div>
-        <div style="margin-top:14px; border-top:2px solid #334; padding-top:10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
-                <div style="color:#aaa; font-size:10px; letter-spacing:2px;">📦 BOX - CAPTURADOS (<span id="box-count">0</span>)</div>
-                <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
-<input id="box-search" oninput="renderTeam()" onclick="event.stopPropagation()" placeholder="🔍 Buscar..." style="background:#0a0a12;border:1px solid #445;color:#fff;padding:8px;border-radius:5px;width:90px;font-size:12px">
-<select id="box-filter-shiny" onchange="renderTeam()" style="background:#000;color:#fff;border:1px solid #445;padding:6px;border-radius:5px;font-size:11px"><option value="all">Todos</option><option value="shiny">Shiny</option><option value="normal">Normal</option></select>
-<select id="box-filter-tier" onchange="renderTeam()" style="background:#000;color:#fff;border:1px solid #445;padding:6px;border-radius:5px;font-size:11px"><option value="all">Tier</option><option value="E">E</option><option value="D">D</option><option value="C">C</option><option value="B">B</option><option value="A">A</option><option value="S">S</option><option value="SS">SS</option><option value="SSS">SSS</option><option value="UR">UR</option><option value="UR+">UR+</option><option value="UR++">UR++</option></select>
-<select id="box-sort" onchange="renderTeam()" style="background:#000;color:#fff;border:1px solid #445;padding:6px;border-radius:5px;font-size:11px"><option value="id">ID</option><option value="level_desc">Lv↑</option><option value="atk_desc">ATK↑</option></select>
-</div>
-            </div>
-            <div id="box-list" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; max-height:38vh; overflow-y:auto; padding:4px;"></div>
-        </div>
-        <button onclick="closeTeam()" style="width:100%; margin-top:12px; background:#6a1515; border:none; color:#fff; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer;">✖ FECHAR</button>
-    </div>
-</div>
-
-<!-- POKÉDEX -->
-<div id="screen-pokedex" class="screen" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.96); z-index:99999!important; align-items:center; justify-content:center;">
-    <div class="dex-box">
-        <h2 class="shiny-name">📘 POKÉDEX</h2>
-        <div class="dex-topbar">
-            <input id="dex-search" type="text" placeholder="🔍 Buscar Pokémon por nome, número ou tipo..." oninput="renderPokedex()" autocomplete="off" autocorrect="off" spellcheck="false">
-        </div>
-        <div class="dex-body">
-            <div id="dex-grid-wrap">
-                <div id="dex-grid"></div>
-            </div>
-            <div id="dex-detail-panel">
-                <div class="dex-detail-empty">Clique em um Pokémon para ver os detalhes.</div>
-            </div>
-        </div>
-        <button class="dex-close-btn" onclick="closePokedex()">✖ FECHAR POKÉDEX</button>
-    </div>
-</div>
-
-<div id="game-wrap">
-    <canvas id="gameCanvas"></canvas>
-    <img id="player-poke-sprite" src="" alt="" draggable="false">
-    <div id="hud-player">
-        <b id="hud-name">---</b> <small>Lv.<span id="hud-lv">1</span></small>
-        <div class="bar"><div class="hp-fill" id="hp-fill"></div></div>
-        <div style="font-size:10px;color:#555;display:flex;justify-content:space-between;">
-            <span>HP</span><span id="hp-txt">50/50</span>
-        </div>
-        <div class="bar"><div class="exp-fill" id="exp-fill"></div></div>
-        <div style="font-size:10px;color:#555;display:flex;justify-content:space-between;">
-            <span>EXP</span><span id="exp-txt">0/100</span>
-        </div>
-        <div class="gold">💰 <span id="hud-gold">0</span> PokéCoins</div>
-    </div>
-    <button id="menuBtn" onclick="toggleMenu()">🎒 MENU</button>
-    <button id="fastEncounterBtn" onclick="toggleFastEncounter()" aria-label="Fast Encounter desligado" title="Fast Encounter: desligado" style="position:absolute;top:50px;right:10px;z-index:20;width:28px;height:28px;min-width:28px;padding:0;background:#cc2222;border:3px solid #fff;border-radius:50%;cursor:pointer;box-shadow:0 0 10px #0008,0 0 10px #ef444466;"></button>
-    <div id="hud-minimap">
-        <canvas id="mmCanvas" width="150" height="150"></canvas>
-    </div>
-</div>
-<!-- JOYSTICK MOBA -->
-<div id="joystick">
-    <div id="joy-base"></div>
-    <div id="joy-stick"></div>
-</div>
-<!-- TELA DE MENU -->
-<div id="menu">
-    <h2>🎒 MENU PSYWORLD</h2>
-    <div id="boxPokemon"></div>
-    <button onclick="openBag()" style="background:#c48a2c; width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">🎒 BOLSA</button>
-    <button onclick="openTeam()" style="background:#3a7bd5; width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">👥 TIME / BOX</button>
-    <button onclick="openCardMode()" style="background:linear-gradient(90deg,#7c3aed,#db2777); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">🃏 POKÉ CARDS</button>
-    <button onclick="openAchievements()" style="background:linear-gradient(90deg,#059669,#22c55e); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">🏆 CONQUISTAS</button>
-    <button data-psy-quests-main="1" onclick="window.openQuestsV11()" style="background:linear-gradient(90deg,#0e7490,#164e63); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">📜 QUESTS</button>
-    <button onclick="openEggCenter()" style="background:linear-gradient(90deg,#7c3aed,#06b6d4); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">🥚 EGG CENTER</button>
-
-        <button onclick="openTrainerShop()" style="background:linear-gradient(90deg,#00d0ff,#0066ff); width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">🧑🏫 TALENTOS DO TREINADOR</button>
-
-    <div style="margin:20px 0; border-top:1px solid #444; padding-top:15px;">
-        <button onclick="saveGame()" style="background:#2a4; width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">💾 SALVAR</button>
-        <button onclick="loadGame()" style="background:#24a; width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">📂 CARREGAR</button>
-    </div>
-    <div style="margin:10px 0; border-top:1px solid #333; padding-top:15px;">
-        <button onclick="downloadSave()" style="background:#d40; width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">⬇ BAIXAR SAVE.PSY</button>
-        <input type="file" id="fileInput" style="display:none;" onchange="uploadSave(event)">
-        <button onclick="document.getElementById('fileInput').click()" style="background:#a24; width:90%; margin:5px; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">⬆ CARREGAR ARQUIVO.PSY</button>
-    </div>
-    <button onclick="toggleMenu()" style="background:#a22; width:90%; padding:12px; border:none; color:#fff; border-radius:8px; font-weight:bold;">FECHAR</button>
-</div>
-
-
-<div id="screen-hunts" class="screen" style="display:none; background:rgba(0,0,0,0.95); z-index:700;">
-    <div class="shop-box dungeon-style" style="width:920px;max-width:98vw; max-height:92vh; overflow-y:auto;">
-        <h2 class="shiny-name" style="text-align:center">🗺 HUNTS - 648 ZONAS</h2>
-        <div style="color:#aaa; font-size:10px; text-align:center; margin-bottom:8px;">9 REGIÕES x 18 TIPOS x 4 TIERS</div>
-        <div id="hunt-list" class="dungeon-grid-mini" style="grid-template-columns:repeat(4,1fr);"></div>
-        <button onclick="closeHunts()" style="width:100%; margin-top:12px; background:#222;border:none;color:#fff;padding:10px;border-radius:8px">✖ FECHAR</button>
-    </div>
-</div>
-
-<!-- BATALHA -->
-<div id="battle-screen">
-    <div class="battle-hud" style="width:800px; height:600px; border:2px solid #4a4a8a; border-radius:12px; position:relative; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; flex-direction:column;">
-        <div id="battle-log" style="position:absolute;top:8px;left:0;right:0;text-align:center;color:#ffd700;font-size:11px">Um selvagem apareceu!</div>
-        <div id="eff-popup"></div>
-        <div id="dmg-popup"></div>
-        <div id="battle-enemy" style="position:absolute; top:35px; right:40px; text-align:center"><div id="enemy-name-tag" class="name-tag" style="font-size:10px; background:#000; padding:2px 6px; border-radius:4px; color:#fff;">???</div><img id="enemy-img" width="150" style="image-rendering:pixelated"><div style="width:90px;height:6px;background:#222;border-radius:4px;margin:2px auto"><div id="enemy-hp-bar" style="height:100%;background:#00ff41;width:100%"></div></div><div id="enemy-hp-txt" style="font-size:8px;color:#aaa"></div></div>
-        <div id="battle-player" style="position:absolute; top:35px; left:40px; text-align:center"><div id="player-name-tag" class="name-tag" style="font-size:10px; background:#000; padding:2px 6px; border-radius:4px; color:#fff;">???</div><img id="player-img" width="150" style="image-rendering:pixelated"><div style="width:90px;height:6px;background:#222;border-radius:4px;margin:2px auto"><div id="player-hp-bar" style="height:100%;background:#00ff41;width:100%"></div></div><div id="player-hp-txt" style="font-size:8px;color:#aaa"></div></div>
-        <div id="battle-controls" style="position:absolute; bottom:20px; left:12px; right:12px; display:flex; flex-direction:column; gap:6px">
-            <div id="move-buttons" style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:8px;"></div>
-            <div style="display:flex; gap:6px; justify-content:center;">
-                <button id="battle-ball-btn" style="background:#2d6a2d; padding:10px 14px; border:none; color:#fff; border-radius:8px; font-size:12px; font-weight:bold; flex:1; max-width:80px;" onclick="battleAction('capture')">BALL</button>
-                <button style="background:#3a7d44; padding:10px 14px; border:none; color:#fff; border-radius:8px; font-size:12px; font-weight:bold; flex:1; max-width:80px;" onclick="battleAction('heal')">POT</button>
-                <button style="background:#5a5; padding:10px 14px; border:none; color:#fff; border-radius:8px; font-size:12px; font-weight:bold; flex:1; max-width:80px;" onclick="openTeam(true)">TROCAR</button>
-                <button style="background:#8a3a3a; padding:10px 14px; border:none; color:#fff; border-radius:8px; font-size:12px; font-weight:bold; flex:1; max-width:80px;" onclick="battleAction('flee')">FUGIR</button>
-<div class="gym-progress" id="gym-progress" style="display:none"></div>
-<div class="trainer-side" id="trainer-side" style="display:none"><img id="trainer-img" src=""><div id="trainer-name" style="background:#000;color:#ffd700;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:900"></div></div>
-
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- MODO WORLD V4 -->
-<div id="screen-world" style="display:none; position:fixed; inset:0; z-index:800; background:#0a0a0a;">
-    <canvas id="worldCanvas"></canvas>
-    <div style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.9); padding:8px 12px; border-radius:10px; border:1px solid #00d084;">
-        <div style="color:#00d084; font-size:13px; font-weight:900;">🌍 WORLD | SAFE ZONE</div>
-        <div style="color:#fff; font-size:11px;">💰 <span id="world-gold">0</span> | LV <span id="world-lv">1</span> | ❤ <span id="world-hp">100/100</span></div>
-        <div style="display:flex; gap:4px; margin-top:6px;">
-            <button onclick="exitWorldMode()" style="background:#633; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:10px;">⬅ SAIR</button>
-            <button onclick="openWorldDetails()" style="background:#1a4a6a; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:10px;">📖 DETALHES</button>
-            <button onclick="openWorldShop()" style="background:#6a4a00; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:10px;">🛒 LOJA</button>
-        </div>
-    </div>
-    <div id="world-team" style="position:absolute; bottom:10px; left:50%; transform:translateX(-50%); display:flex; gap:6px; background:rgba(0,0,0,0.95); padding:6px; border-radius:12px; border:2px solid #333;"></div>
-    <div style="position:absolute; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; align-items:center;">
-        <div style="background:rgba(0,0,0,0.8); padding:6px; border-radius:8px; width:100px; text-align:center;">
-            <label style="color:#fff; font-size:9px;"><input type="checkbox" id="auto-battle-check" onchange="toggleAutoBattle()"> AUTO</label>
-            <div style="display:flex; gap:2px; margin-top:4px;"><span style="color:#fff; font-size:8px;">POT EM:</span><select id="auto-pot-pct" style="font-size:9px; width:45px;"><option value="50">50%</option><option value="40" selected>40%</option><option value="30">30%</option><option value="70">70%</option></select></div>
-        </div>
-        <button id="world-heal" style="width:60px; height:60px; border-radius:50%; background:radial-gradient(#44ff88,#006622); border:3px solid #fff; color:#fff; font-weight:900; font-size:18px;">🧪</button>
-        <button id="world-skill" style="width:80px; height:80px; border-radius:50%; background:radial-gradient(#4444ff,#000088); border:3px solid #fff; color:#fff; font-weight:900; font-size:11px;">SKILL<br><span id="skill-cd" style="font-size:9px;">PRONTO</span></button>
-        <button id="world-atk" style="width:90px; height:90px; border-radius:50%; background:radial-gradient(#ff4444,#880000); border:3px solid #fff; color:#fff; font-weight:900; font-size:13px;">ATACAR</button>
-    </div>
-    <div id="world-shop" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.92); z-index:900; overflow:auto; padding:20px;"><div style="max-width:600px; margin:0 auto; background:#111; border:2px solid #00d084; border-radius:12px; padding:15px;"><div style="display:flex; justify-content:space-between;"><h3 style="color:#00d084; margin:0;">🛒 LOJA WORLD</h3><button onclick="document.getElementById('world-shop').style.display='none'" style="background:#833; color:#fff; border:none; padding:4px 10px; border-radius:6px;">X</button></div><div id="world-buffs-list"></div></div></div>
-    <div id="world-details" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.92); z-index:901; padding:20px;"><div style="max-width:500px; margin:30px auto; background:#111; border:2px solid #ffd700; border-radius:12px; padding:15px; color:#fff; font-size:12px;"><h3 style="color:#ffd700;">📖 WORLD</h3><p>• Captura automática -50%<br>• XP/GOLD -50%<br>• Dano/Vida puxam do poke mais forte<br>• Morreu = SAFE ZONE cinza</p><button onclick="document.getElementById('world-details').style.display='none'" style="width:100%; background:#ffd700; color:#000; border:none; padding:10px; border-radius:8px; font-weight:bold;">ENTENDI</button></div></div>
-</div>
-
-<!-- ACESSOS RÁPIDOS DA CIDADE -->
-<div id="world-btn-float" style="position:absolute; top:170px; right:10px; z-index:20; display:flex; flex-direction:column; gap:6px;">
-<button id="btn-city-content-toggle" onclick="toggleCityGameContent()" style="background:linear-gradient(90deg,#111827,#334155); color:#fff; border:3px solid #67e8f9; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px; box-shadow:0 0 12px #22d3ee66;">📦 CONTEÚDO DO JOGO ▼</button>
-<div id="city-game-content-buttons" style="display:flex; flex-direction:column; gap:6px;">
-<button onclick="enterWorldMode()" style="background:linear-gradient(#00d084,#00a060); color:#000; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🌍 WORLD</button>
-<button id="btn-bag-float" onclick="openBag()" style="background:linear-gradient(#d59a35,#8a5a12); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🎒 BOLSA</button>
-<button id="btn-team-float" onclick="openTeam()" style="background:linear-gradient(#3b82f6,#1d4ed8); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">👥 TIME / BOX</button>
-<button id="btn-card-float" onclick="openCardMode()" style="background:linear-gradient(#7c3aed,#db2777); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🃏 CARDS</button>
-<button id="btn-quests-float" data-psy-quests-city="1" onclick="window.openQuestsV11()" style="background:linear-gradient(#0e7490,#164e63); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">📜 QUESTS</button>
-<button id="btn-eggcenter-float" onclick="openEggCenter()" style="background:linear-gradient(#7c3aed,#06b6d4); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🥚 EGG CENTER</button>
-<button id="btn-afk-float" onclick="openAfkV9()" style="background:linear-gradient(#312e81,#111827); color:#fff; border:3px solid #c4b5fd; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🌙 MODO AFK</button>
-<button id="btn-vip-float" data-psy20-vip="1" onclick="openVIP()" style="background:linear-gradient(#facc15,#a16207); color:#111; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">⭐ VIP</button>
-<button id="btn-dungeon-float" onclick="openDungeons()" style="background:linear-gradient(#ff0055,#880022); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🏰 DUNGEONS</button>
-<button onclick="openHunts()" style="background:linear-gradient(#ff6a00,#ffaa00); color:#000; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🗺 HUNTS</button>
-<button onclick="openPokedex()" style="background:linear-gradient(#00aaff,#0044ff); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">📘 POKÉDEX</button>
-<button onclick="openGyms()" style="background:linear-gradient(#ffd700,#ff8800);color:#000;border:3px solid #fff;padding:10px 16px;border-radius:12px;font-weight:900;font-size:12px;">🏆 GYMS</button>
-<button onclick="curarTimeCity()" style="background:linear-gradient(#00ff88,#00aa44); color:#000; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">💚 CURAR</button>
-<button onclick="openShop()" style="background:linear-gradient(#4488ff,#0044aa); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🏪 LOJA</button>
-</div>
-</div>
-
-<div id="notif" style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.88); border:1px solid #ffd700; color:#ffd700; padding:8px 22px; border-radius:20px; font-size:13px; display:none; z-index:9999; pointer-events:none; white-space:nowrap;"></div>
-
-<script src="core/items.js?build=ITEMS_REVIVE_V22_20260902"></script>
-
-<script src="core/legacy-runtime.js?build=CAPTURE_ELEMENTAL_V22_20260902"></script>
-<script src="core/battle-status-v10.js?build=CAPTURE_ELEMENTAL_V22_20260902"></script>
-
-
-
-
-
-
-
-
-
-
-
-<script src="core/performance.js?build=COMBATE_STATUS_V10"></script>
-
-
-
-
-<script src="core/module-loader.js?build=PSYWORLD_SURVIVOR_CORRECOES_INTEGRIDADE_V18_20260902"></script>
-
-
-
-
-
-
-<script src="core/city-content.js?build=COMBATE_STATUS_V10"></script>
-<script src="core/npc-voice.js?build=NPC_VOICE_V1"></script>
-<script src="core/global-hub-v1.js?build=GLOBAL_HUB_WORLD_PACKS_V22_20260902"></script>
-<script src="core/shared-mode-drops-v1.js?build=SHARED_MODE_DROPS_V11_WORLD_PACKS"></script>
-<script src="core/psy-responsive.js?build=RESPONSIVE_V2"></script>
-
+  <main id="launch-screen">
+    <section class="card" aria-label="Teste do modo Wildlands 3D">
+      <p class="eyebrow">PSYWORLD • versão de teste</p>
+      <h1>Wildlands 3D</h1>
+      <p>Modo sobrevivência em terceira pessoa: explore um mundo contínuo, colete recursos, construa sua base, capture monstrinhos e atribua tarefas ao seu aliado.</p>
+      <button id="launch-button" type="button">ENTRAR NA FRONTEIRA ÍRIS</button>
+      <small>WASD/setas ou joystick • mouse/toque para câmera • J ataque • E interagir • B construir</small>
+    </section>
+  </main>
+  <script src="./modes/mystery3d-assets.js?build=WILDLANDS_3D_V143_RECONSTRUCTED_SURVIVAL_20260914"></script>
+  <script src="./modes/mystery3d-runtime.js?build=WILDLANDS_3D_V143_RECONSTRUCTED_SURVIVAL_20260914"></script>
+  <script>
+    (() => {
+      const screen = document.getElementById('launch-screen');
+      const button = document.getElementById('launch-button');
+      const launch = () => {
+        if (!screen || !document.body.contains(screen)) return;
+        screen.remove();
+        if (typeof window.openWildlands3D === 'function') window.openWildlands3D();
+        else document.body.insertAdjacentHTML('beforeend','<p style="padding:24px;color:#fff">Falha ao carregar o modo 3D. Recarregue a página.</p>');
+      };
+      button.addEventListener('click', launch);
+      window.setTimeout(launch, 250);
+    })();
+  </script>
 </body>
 </html>
