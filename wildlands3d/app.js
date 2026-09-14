@@ -159,6 +159,7 @@ let water;
 let waterTexture;
 let worldLabels;
 let minimapContext;
+let mapLargeContext;
 let lastTime = performance.now();
 let saveTimer = 0;
 let survivalTimer = 0;
@@ -369,6 +370,8 @@ function createScene() {
 
   worldLabels = $('#world-labels');
   minimapContext = $('#minimap').getContext('2d');
+  const largeMap = $('#map-large');
+  mapLargeContext = largeMap ? largeMap.getContext('2d') : null;
   createTerrain();
   createLandmarks();
   createResources();
@@ -1744,8 +1747,15 @@ function togglePause() {
 }
 
 function closeModals() {
-  ['dialogue', 'build-modal', 'craft-modal'].forEach((id) => $('#' + id).classList.add('hidden'));
+  ['menu-modal', 'map-modal', 'dialogue', 'build-modal', 'craft-modal', 'inventory-modal', 'progression-modal', 'pause-modal'].forEach((id) => {
+    const element = $('#' + id);
+    if (element) element.classList.add('hidden');
+  });
   state.dialogue = null;
+  if (state.paused) {
+    state.paused = false;
+    $('#pause-button').textContent = 'Ⅱ';
+  }
 }
 
 function resetSave() {
@@ -1771,6 +1781,9 @@ function handleAction(action) {
   if (action === 'build') showBuild();
   if (action === 'craft') showCraft();
   if (action === 'companion') toggleCompanion();
+  if (action === 'menu') showMenu();
+  if (action === 'map') showMap();
+  if (action === 'pause') togglePause();
   if (action === 'inventory') showInventory();
   if (action === 'progression' || action === 'attributes' || action === 'skills') showProgression();
 }
@@ -1819,12 +1832,15 @@ function bindInput() {
     const actions = {
       Numpad1: 'attack', Digit1: 'attack', KeyJ: 'attack', Digit2: 'pulse', Digit3: 'void', Digit4: 'prism',
       Space: 'dodge', KeyE: 'interact', KeyF: 'eat', KeyC: 'capture', KeyB: 'build', KeyK: 'craft', KeyR: 'companion',
-      Escape: 'close', KeyI: 'inventory', KeyP: 'progression', Enter: 'respawn'
+      Tab: 'menu', KeyI: 'inventory', KeyM: 'map', KeyP: 'progression', KeyT: 'progression', Enter: 'respawn', Escape: 'close'
     };
     if (actions[event.code]) {
       if (actions[event.code] === 'close') {
+        if (state.dead) return;
+        const hasModal = Boolean(document.querySelector('.modal:not(.hidden)'));
         if (state.paused) togglePause();
-        else closeModals();
+        else if (hasModal) closeModals();
+        else showMenu();
       } else handleAction(actions[event.code]);
       event.preventDefault();
     }
@@ -1848,6 +1864,15 @@ function bindInput() {
     button.addEventListener('pointerdown', (event) => {
       event.preventDefault();
       craft(button.getAttribute('data-craft'));
+    }, { passive: false });
+  });
+  document.querySelectorAll('[data-menu-action]').forEach((button) => {
+    button.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const action = button.getAttribute('data-menu-action');
+      closeModals();
+      handleAction(action);
     }, { passive: false });
   });
   const attributeOptions = $('#attribute-options');
@@ -2138,6 +2163,19 @@ function upgradeSkill(key) {
   saveGame();
 }
 
+function showMenu() {
+  if (!canAct()) return;
+  updateInventoryModal();
+  updateProgressionUI();
+  $('#menu-modal').classList.remove('hidden');
+}
+
+function showMap() {
+  if (!canAct()) return;
+  drawMinimap();
+  $('#map-modal').classList.remove('hidden');
+}
+
 function showInventory() {
   if (!state.player) return;
   updateInventoryModal();
@@ -2198,9 +2236,8 @@ function updateUI() {
   if (!$('#inventory-modal')?.classList.contains('hidden')) updateInventoryModal();
   if (!$('#progression-modal')?.classList.contains('hidden')) updateProgressionUI();
 }
-function drawMinimap() {
-  const ctx = minimapContext;
-  const canvas = $('#minimap');
+function drawMapCanvas(ctx, canvas) {
+  if (!ctx || !canvas || !state.player) return;
   const width = canvas.width;
   const height = canvas.height;
   const sx = width / (WORLD.maxX - WORLD.minX);
@@ -2215,7 +2252,7 @@ function drawMinimap() {
   ctx.fillStyle = '#70452f';
   ctx.fillRect(mapX(34), mapZ(8), 46 * sx, 49 * sz);
   ctx.strokeStyle = 'rgba(146,238,216,.23)';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = Math.max(2, width / 74);
   ctx.beginPath();
   ctx.moveTo(mapX(-88), mapZ(14));
   ctx.lineTo(mapX(24), mapZ(14));
@@ -2223,27 +2260,35 @@ function drawMinimap() {
   state.resources.forEach((resource) => {
     if (resource.collected) return;
     ctx.fillStyle = resource.kind === 'crystal' ? '#7cf3ff' : resource.kind === 'ore' ? '#ff9a6e' : '#8fd88a';
-    ctx.fillRect(mapX(resource.group.position.x) - 1.5, mapZ(resource.group.position.z) - 1.5, 3, 3);
+    const size = Math.max(3, width / 145);
+    ctx.fillRect(mapX(resource.group.position.x) - size / 2, mapZ(resource.group.position.z) - size / 2, size, size);
   });
   state.npcs.forEach((npc) => {
     ctx.fillStyle = '#ffe18b';
-    ctx.fillRect(mapX(npc.x) - 2, mapZ(npc.z) - 2, 4, 4);
+    const size = Math.max(5, width / 105);
+    ctx.fillRect(mapX(npc.x) - size / 2, mapZ(npc.z) - size / 2, size, size);
   });
   state.structures.forEach((structure) => {
     ctx.fillStyle = '#c0a4ff';
-    ctx.fillRect(mapX(structure.x) - 2, mapZ(structure.z) - 2, 4, 4);
+    const size = Math.max(5, width / 105);
+    ctx.fillRect(mapX(structure.x) - size / 2, mapZ(structure.z) - size / 2, size, size);
   });
   state.wild.forEach((wild) => {
     if (wild.dead || wild.captured || !wild.group.visible) return;
     ctx.fillStyle = wild.role === 'boss' ? '#77ffcf' : '#ff749b';
     ctx.beginPath();
-    ctx.arc(mapX(wild.group.position.x), mapZ(wild.group.position.z), wild.role === 'boss' ? 4 : 2.3, 0, TAU);
+    ctx.arc(mapX(wild.group.position.x), mapZ(wild.group.position.z), wild.role === 'boss' ? Math.max(6, width / 60) : Math.max(3, width / 102), 0, TAU);
     ctx.fill();
   });
   ctx.fillStyle = '#e9ffff';
   ctx.beginPath();
-  ctx.arc(mapX(state.player.group.position.x), mapZ(state.player.group.position.z), 4, 0, TAU);
+  ctx.arc(mapX(state.player.group.position.x), mapZ(state.player.group.position.z), Math.max(6, width / 58), 0, TAU);
   ctx.fill();
+}
+
+function drawMinimap() {
+  drawMapCanvas(minimapContext, $('#minimap'));
+  drawMapCanvas(mapLargeContext, $('#map-large'));
 }
 
 
@@ -2337,8 +2382,8 @@ function start() {
   requestAnimationFrame(frame);
 }
 
-window.PSY_WILDLANDS_3D_V146 = {
-  version: 'WILDLANDS_3D_V146',
+window.PSY_WILDLANDS_3D_V147 = {
+  version: 'WILDLANDS_3D_V147',
   state,
   actions: {
     basicAttack, pulseAttack, voidAttack, prismAttack, capture, dodge,
@@ -2346,7 +2391,7 @@ window.PSY_WILDLANDS_3D_V146 = {
     showBuild, showCraft
   },
   snapshot: () => ({
-    version: 'WILDLANDS_3D_V146',
+    version: 'WILDLANDS_3D_V147',
     rendererReady: Boolean(renderer),
     playerReady: Boolean(state.player),
     dead: state.dead,
