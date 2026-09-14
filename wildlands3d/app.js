@@ -15,31 +15,31 @@ const tempD = new THREE.Vector3();
 
 const SPECIES = {
   lumion: {
-    name: 'Lúmion', rig: 'lumion', role: 'player', color: 0x42b9e7, accent: 0xa7f5ff,
+    name: 'Lúmion', icon: '✦', rig: 'lumion', role: 'player', color: 0x42b9e7, accent: 0xa7f5ff,
     hp: 320, attack: 34, speed: 5.6, radius: .78, xp: 0
   },
   oriel: {
-    name: 'Oriel', rig: 'oriel', role: 'ally', color: 0x6b66d9, accent: 0xffa8eb,
+    name: 'Oriel', icon: '◈', rig: 'oriel', role: 'player', color: 0x6b66d9, accent: 0xffa8eb,
     hp: 230, attack: 24, speed: 5.0, radius: .70, xp: 0
   },
   embermite: {
-    name: 'Embermite', rig: 'embermite', role: 'wild', color: 0xc84b24, accent: 0xffb02f,
+    name: 'Embermite', icon: '🔥', rig: 'embermite', role: 'wild', color: 0xc84b24, accent: 0xffb02f,
     hp: 125, attack: 16, speed: 3.2, radius: .75, xp: 32
   },
   mossclaw: {
-    name: 'Mossclaw', rig: 'mossclaw', role: 'wild', color: 0x3a754e, accent: 0x9ce45e,
+    name: 'Mossclaw', icon: '🌿', rig: 'mossclaw', role: 'wild', color: 0x3a754e, accent: 0x9ce45e,
     hp: 220, attack: 23, speed: 2.15, radius: 1.0, xp: 58
   },
   gloomfin: {
-    name: 'Gloomfin', rig: 'gloomfin', role: 'wild', color: 0x35217a, accent: 0xb87bff,
+    name: 'Gloomfin', icon: '◉', rig: 'gloomfin', role: 'wild', color: 0x35217a, accent: 0xb87bff,
     hp: 145, attack: 18, speed: 2.8, radius: .72, xp: 42
   },
   glintling: {
-    name: 'Glintling', rig: 'glintling', role: 'wild', color: 0x482b91, accent: 0xff75e8,
+    name: 'Glintling', icon: '✧', rig: 'glintling', role: 'wild', color: 0x482b91, accent: 0xff75e8,
     hp: 98, attack: 14, speed: 4.0, radius: .62, xp: 28
   },
   ironroot: {
-    name: 'Ironroot', rig: 'ironroot', role: 'boss', color: 0x17474b, accent: 0x72ffe0,
+    name: 'Ironroot', icon: '◆', rig: 'ironroot', role: 'boss', color: 0x17474b, accent: 0x72ffe0,
     hp: 1450, attack: 38, speed: 1.45, radius: 1.65, xp: 420
   }
 };
@@ -68,6 +68,45 @@ const CRAFT_DATA = {
   repair: { label: 'Kit de reparo', cost: { wood: 8, stone: 5, ore: 2 }, give: { repair: 1 } }
 };
 
+
+const TEAM_LIMIT = 6;
+const DEFAULT_TEAM = ['lumion', 'oriel', 'embermite', 'mossclaw', 'gloomfin', 'glintling'];
+
+function teamSpeciesId(entry) {
+  if (typeof entry === 'string') return entry;
+  if (!entry || typeof entry !== 'object') return null;
+  return entry.speciesId || entry.species || entry.rig || entry.id || null;
+}
+
+function isTeamSpecies(speciesId) {
+  const spec = SPECIES[speciesId];
+  return Boolean(spec && spec.role !== 'boss');
+}
+
+function makeTeamSlot(speciesId, source) {
+  const spec = SPECIES[speciesId] || SPECIES.lumion;
+  const data = source && typeof source === 'object' ? source : {};
+  return {
+    speciesId,
+    level: Math.max(1, Math.floor(Number(data.level) || 1)),
+    xp: Math.max(0, Number(data.xp) || 0),
+    hp: Math.max(1, Number(data.hp) || spec.hp)
+  };
+}
+
+function normalizeTeamSlots(raw) {
+  const slots = [];
+  const used = new Set();
+  const add = (entry, fallbackId) => {
+    const speciesId = teamSpeciesId(entry) || fallbackId;
+    if (!isTeamSpecies(speciesId) || used.has(speciesId) || slots.length >= TEAM_LIMIT) return;
+    used.add(speciesId);
+    slots.push(makeTeamSlot(speciesId, entry));
+  };
+  if (Array.isArray(raw)) raw.forEach((entry) => add(entry));
+  DEFAULT_TEAM.forEach((speciesId) => add(null, speciesId));
+  return slots.slice(0, TEAM_LIMIT);
+}
 
 const ITEM_WEIGHTS = {
   wood: .4, stone: .6, fiber: .2, ore: 1.1, crystal: .7, berry: .15,
@@ -118,7 +157,7 @@ const NPC_DATA = [
     lines: [
       'Ironroot protege o caminho antigo. Ele não ataca sem motivo, mas não esquece quem o desafia.',
       'O mapa é maior do que parece. Não siga sempre pelo centro; o mundo recompensa a exploração.',
-      'Se um aliado tiver talento, atribua uma tarefa na base. Sobrevivência também é organização.'
+      'Se uma criatura do seu time tiver talento, atribua uma tarefa na base. Sobrevivência também é organização.'
     ]
   }
 ];
@@ -128,7 +167,8 @@ function loadSave() {
     x: 0, z: 12, day: 1, dayClock: .26, level: 1, xp: 0,
     hp: 320, hunger: 100, water: 100, energy: 100,
     inventory: { wood: 40, stone: 24, fiber: 20, ore: 0, crystal: 0, berry: 8, capsules: 5, food: 3, repair: 0 },
-    structures: [], captured: [], attributePoints: 0, skillPoints: 0,
+    structures: [], captured: [], team: normalizeTeamSlots(), activeTeamIndex: 0,
+    attributePoints: 0, skillPoints: 0,
     attributes: Object.assign({}, DEFAULT_ATTRIBUTES), skills: Object.assign({}, DEFAULT_SKILLS)
   };
   try {
@@ -137,6 +177,12 @@ function loadSave() {
     base.structures = Array.isArray(stored.structures) ? stored.structures : [];
     base.captured = Array.isArray(stored.captured) ? stored.captured : [];
     Object.assign(base, stored);
+    base.inventory = Object.assign({
+      wood: 40, stone: 24, fiber: 20, ore: 0, crystal: 0, berry: 8, capsules: 5, food: 3, repair: 0
+    }, base.inventory || {});
+    base.team = normalizeTeamSlots(stored.team);
+    base.activeTeamIndex = Math.max(0, Math.min(TEAM_LIMIT - 1, Math.floor(Number(stored.activeTeamIndex) || 0)));
+    base.legacyTeam = !Array.isArray(stored.team);
     base.attributes = Object.assign({}, DEFAULT_ATTRIBUTES, stored.attributes || {});
     base.skills = Object.assign({}, DEFAULT_SKILLS, stored.skills || {});
     base.attributePoints = Math.max(0, Number(base.attributePoints) || 0);
@@ -180,6 +226,8 @@ const state = {
   skillPoints: Math.max(0, Number(saved.skillPoints) || 0),
   attributes: Object.assign({}, DEFAULT_ATTRIBUTES, saved.attributes || {}),
   skills: Object.assign({}, DEFAULT_SKILLS, saved.skills || {}),
+  team: normalizeTeamSlots(saved.team),
+  activeTeamIndex: clamp(Math.floor(Number(saved.activeTeamIndex) || 0), 0, TEAM_LIMIT - 1),
   dead: false,
   respawnTimer: 0,
   respawnReady: false,
@@ -187,7 +235,6 @@ const state = {
   crafting: null,
   inventory: Object.assign({}, saved.inventory),
   player: null,
-  ally: null,
   wild: [],
   npcs: [],
   resources: [],
@@ -198,7 +245,6 @@ const state = {
   labels: [],
   feed: [],
   paused: false,
-  activeAlly: true,
   cooldowns: { attack: 0, pulse: 0, void: 0, prism: 0, dodge: 0 },
   input: { keys: new Set(), joyX: 0, joyY: 0, joyActive: false, pointerId: null },
   camera: { yaw: 0.55, pitch: .48, distance: 18.5, looking: false, pointerId: null, x: 0, y: 0 },
@@ -216,8 +262,17 @@ function skillLevel(key) {
   return Math.max(0, Math.floor(Number(state.skills[key]) || 0));
 }
 
+function activeSpecies() {
+  return state.player?.spec || SPECIES.lumion;
+}
+
+function playerMaxHpForSpec(spec) {
+  const baseHp = Number(spec?.hp) || SPECIES.lumion.hp;
+  return Math.max(1, Math.round(baseHp + attributeLevel('vitality') * 36));
+}
+
 function maxPlayerHp() {
-  return 320 + attributeLevel('vitality') * 36;
+  return playerMaxHpForSpec(activeSpecies());
 }
 
 function carryCapacity() {
@@ -229,7 +284,7 @@ function inventoryWeight() {
 }
 
 function playerMoveSpeed() {
-  return SPECIES.lumion.speed * (1 + attributeLevel('agility') * .045);
+  return (Number(activeSpecies().speed) || SPECIES.lumion.speed) * (1 + attributeLevel('agility') * .045);
 }
 
 function gatherDuration() {
@@ -251,11 +306,84 @@ function canAct() {
 
 function syncPlayerStats(heal) {
   if (!state.player) return;
-  const oldMax = state.player.maxHp || 320;
+  const oldMax = state.player.maxHp || playerMaxHpForSpec(state.player.spec);
   state.player.maxHp = maxPlayerHp();
   if (heal) state.player.hp = Math.min(state.player.maxHp, state.player.hp + (state.player.maxHp - oldMax) + 24);
   state.player.hp = clamp(state.player.hp, 1, state.player.maxHp);
   state.hp = state.player.hp;
+  syncActiveTeamSlot();
+}
+
+function activeTeamSlot() {
+  return state.team[state.activeTeamIndex] || null;
+}
+
+function syncActiveTeamSlot() {
+  const slot = activeTeamSlot();
+  if (!slot || !state.player) return;
+  slot.hp = Math.max(1, Math.min(state.player.maxHp, Number(state.player.hp) || 1));
+  slot.level = state.level;
+}
+
+function createTeamPlayer(index, x, z, rotation) {
+  const slot = state.team[index] || state.team[0] || makeTeamSlot('lumion');
+  const spec = SPECIES[slot.speciesId] || SPECIES.lumion;
+  const creature = new Creature(spec, 'player', x, z);
+  creature.teamSlotIndex = index;
+  creature.maxHp = playerMaxHpForSpec(spec);
+  const sourceHp = saved.legacyTeam && index === 0 ? saved.hp : slot.hp;
+  creature.hp = clamp(Number(sourceHp) || creature.maxHp, 1, creature.maxHp);
+  if (Number.isFinite(Number(rotation))) creature.group.rotation.y = Number(rotation);
+  if (creature.label) creature.label.sub.textContent = 'HP ' + Math.ceil(creature.hp) + '/' + creature.maxHp;
+  return creature;
+}
+
+function switchTeam(index) {
+  if (!canAct()) return false;
+  const nextIndex = Math.floor(Number(index));
+  const nextSlot = state.team[nextIndex];
+  if (!nextSlot || !isTeamSpecies(nextSlot.speciesId)) return false;
+  if (nextIndex === state.activeTeamIndex) {
+    updateInventoryModal();
+    return true;
+  }
+  const position = state.player.group.position.clone();
+  const rotation = state.player.group.rotation.y;
+  syncActiveTeamSlot();
+  clearTransientCombat();
+  state.player.dispose();
+  state.activeTeamIndex = nextIndex;
+  state.player = createTeamPlayer(nextIndex, position.x, position.z, rotation);
+  state.hp = state.player.hp;
+  Object.keys(state.cooldowns).forEach((key) => { state.cooldowns[key] = 0; });
+  feed('Você agora controla ' + state.player.spec.name + '.');
+  updateUI();
+  updateInventoryModal();
+  saveGame();
+  return true;
+}
+
+function addBoxCreatureToTeam(boxIndex) {
+  if (!canAct()) return;
+  const index = Math.floor(Number(boxIndex));
+  const speciesId = teamSpeciesId(state.roster[index]);
+  if (!isTeamSpecies(speciesId)) return;
+  if (state.team.some((slot) => slot.speciesId === speciesId)) {
+    feed((SPECIES[speciesId]?.name || speciesId) + ' já está no time.');
+    return;
+  }
+  const replacementIndex = state.team.map((_, slotIndex) => slotIndex).reverse().find((slotIndex) => slotIndex !== state.activeTeamIndex);
+  if (replacementIndex === undefined) {
+    feed('Não há slot disponível para essa criatura.');
+    return;
+  }
+  const replacement = state.team[replacementIndex];
+  state.roster.splice(index, 1);
+  state.roster.push(replacement.speciesId);
+  state.team[replacementIndex] = makeTeamSlot(speciesId);
+  feed((SPECIES[speciesId]?.name || speciesId) + ' entrou no time.');
+  updateInventoryModal();
+  saveGame();
 }
 
 function uiText(id, value) {
@@ -681,10 +809,7 @@ function handlePlayerDeath() {
   state.player.moving = false;
   state.player.group.visible = true;
   state.player.play('death');
-  if (state.ally) {
-    state.ally.moving = false;
-    state.ally.group.visible = false;
-  }
+  uiText('death-title', state.player.spec.name + ' caiu');
   const modal = $('#death-modal');
   if (modal) modal.classList.remove('hidden');
   const button = $('#respawn-button');
@@ -696,11 +821,12 @@ function handlePlayerDeath() {
 function updateDeathUI() {
   const button = $('#respawn-button');
   const countdown = $('#death-countdown');
+  const name = state.player?.spec?.name || 'Criatura';
   if (button) {
     button.disabled = !state.respawnReady;
     button.textContent = state.respawnReady ? 'VOLTAR À BASE' : 'AGUARDE ' + Math.ceil(state.respawnTimer) + 's';
   }
-  if (countdown) countdown.textContent = state.respawnReady ? 'Lúmion pode retornar com 65% do HP.' : 'A queda foi registrada. Preparando o retorno…';
+  if (countdown) countdown.textContent = state.respawnReady ? name + ' pode retornar com 65% do HP.' : 'A queda foi registrada. Preparando o retorno…';
 }
 
 function updateDeathState(dt) {
@@ -733,18 +859,13 @@ function respawn() {
   syncPlayerStats(false);
   state.player.hp = Math.max(1, Math.round(state.player.maxHp * .65));
   state.hp = state.player.hp;
+  syncActiveTeamSlot();
   state.hunger = Math.max(35, state.hunger);
   state.water = Math.max(35, state.water);
   state.energy = 100;
   Object.keys(state.cooldowns).forEach((key) => { state.cooldowns[key] = 0; });
-  if (state.ally) {
-    state.ally.dead = false;
-    state.ally.group.visible = true;
-    state.ally.group.position.set(state.player.group.position.x - 2.4, 0, state.player.group.position.z + 2.1);
-    state.activeAlly = true;
-  }
   $('#death-modal')?.classList.add('hidden');
-  feed('Lúmion voltou à base. Prepare-se para a próxima expedição.');
+  feed(state.player.spec.name + ' voltou à base. Prepare-se para a próxima expedição.');
   updateUI();
   saveGame();
 }
@@ -779,7 +900,7 @@ class Creature {
     this.buildRig();
     scene.add(this.group);
     this.shadow = makeShadow(this.group, spec.radius * .8);
-    const labelKind = role === 'player' ? 'player' : role === 'ally' ? 'ally' : role === 'boss' ? 'boss' : 'wild';
+    const labelKind = role === 'player' ? 'player' : role === 'boss' ? 'boss' : 'wild';
     this.label = addLabel(spec.name, labelKind, this.group, role === 'boss' ? 'CHEFE' : 'HP ' + this.hp + '/' + this.maxHp);
   }
 
@@ -792,9 +913,9 @@ class Creature {
     else this.buildIronroot();
   }
 
-  buildFox(ally) {
+  buildFox(variant) {
     const bodyMat = material(this.spec.color, .66, .05, this.spec.color, .08);
-    const lightMat = material(ally ? 0xd9d6ff : 0xd2f7ff, .6, .02);
+    const lightMat = material(variant ? 0xd9d6ff : 0xd2f7ff, .6, .02);
     const accentMat = material(this.spec.accent, .35, .04, this.spec.accent, .42);
     this.parts.body = meshPart(this.model, smoothSphere(.92, 24, 16), bodyMat, 0, 1.03, 0, .86, .72, 1.16, 'body');
     meshPart(this.model, smoothSphere(.58, 18, 12), lightMat, 0, 1.34, .61, .92, .86, .56, 'chest');
@@ -817,7 +938,7 @@ class Creature {
       this.legs.push(leg);
     });
     let tailParent = this.model;
-    for (let i = 0; i < (ally ? 3 : 4); i += 1) {
+    for (let i = 0; i < (variant ? 3 : 4); i += 1) {
       const tail = new THREE.Group();
       tail.position.set(0, 1.04 + i * .2, -.84 - i * .35);
       tailParent.add(tail);
@@ -1046,7 +1167,7 @@ class Creature {
   }
 
   dispose() {
-    if (this.label) this.label.element.remove();
+    if (this.label) { this.label.visible = false; this.label.element.remove(); }
     scene.remove(this.group);
   }
 }
@@ -1055,14 +1176,11 @@ class Creature {
 function createCreatures() {
   const spawnList = [
     ['embermite', -16, -1], ['mossclaw', 18, -7], ['gloomfin', 29, -27],
-    ['glintling', -37, 17], ['embermite', 48, 4], ['mossclaw', 65, 13],
-    ['gloomfin', 73, -37], ['embermite', 38, 43], ['ironroot', 73, 43]
+    ['glintling', -37, 17], ['oriel', -58, -12], ['embermite', 48, 4],
+    ['mossclaw', 65, 13], ['gloomfin', 73, -37], ['embermite', 38, 43], ['ironroot', 73, 43]
   ];
-  state.player = new Creature(SPECIES.lumion, 'player', Number(saved.x) || 0, Number(saved.z) || 12);
-  state.player.maxHp = maxPlayerHp();
-  state.player.hp = clamp(state.hp, 1, state.player.maxHp);
+  state.player = createTeamPlayer(state.activeTeamIndex, Number(saved.x) || 0, Number(saved.z) || 12, Math.PI);
   state.hp = state.player.hp;
-  state.ally = new Creature(SPECIES.oriel, 'ally', state.player.group.position.x - 3, state.player.group.position.z + 2);
   spawnList.forEach((entry) => {
     const creature = new Creature(SPECIES[entry[0]], entry[0] === 'ironroot' ? 'boss' : 'wild', entry[1], entry[2]);
     creature.anchor.copy(creature.group.position);
@@ -1176,34 +1294,6 @@ function updatePlayer(dt) {
   state.hp = state.player.hp;
 }
 
-function updateAlly(dt) {
-  if (!state.ally || state.dead) return;
-  if (!state.activeAlly) {
-    state.ally.group.visible = false;
-    return;
-  }
-  state.ally.group.visible = true;
-  const playerPos = state.player.group.position;
-  const followTarget = tempA.set(playerPos.x + 2.2, 0, playerPos.z + 1.9);
-  const target = nearestWild(9.5);
-  if (target && distance2D(state.ally.group.position, target.group.position) < 8.5) {
-    state.ally.attackCooldown -= dt;
-    const attackDir = tempB.subVectors(target.group.position, state.ally.group.position);
-    if (state.ally.attackCooldown <= 0) {
-      state.ally.play('attack');
-      spawnProjectile(state.ally, '#ff9df0', 22, combatDamage(SPECIES.oriel.attack, 'attack'), attackDir);
-      state.ally.attackCooldown = 1.25;
-    } else if (attackDir.length() > 3.2) {
-      state.ally.move(attackDir, SPECIES.oriel.speed, dt);
-    } else {
-      state.ally.moving = false;
-      state.ally.group.rotation.y = Math.atan2(attackDir.x, attackDir.z);
-    }
-  } else {
-    const followDir = tempB.subVectors(followTarget, state.ally.group.position);
-    state.ally.move(followDir, SPECIES.oriel.speed, dt);
-  }
-}
 function updateWild(wild, dt) {
   if (wild.dead || !wild.group.visible) return;
   wild.roamTime -= dt;
@@ -1251,7 +1341,7 @@ function nearestWild(maxDistance) {
 }
 
 function spawnProjectile(owner, color, speed, damage, direction, options) {
-  const isPlayer = owner === state.player || owner === state.ally;
+  const isPlayer = owner === state.player;
   const start = owner.group.position.clone().add(new THREE.Vector3(0, owner.role === 'boss' ? 2 : 1.25, 0));
   const dir = direction.clone();
   dir.y = 0;
@@ -1315,7 +1405,8 @@ function basicAttack() {
   if (!canAct() || state.cooldowns.attack > 0) return;
   const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(state.player.group.quaternion);
   state.player.play('attack');
-  spawnProjectile(state.player, '#6ceeff', 19 * (1 + attributeLevel('agility') * .018), combatDamage(35 + state.level * 2, 'attack'), direction, { radius: .62, life: 1.1 });
+  const shotColor = '#' + new THREE.Color(state.player.spec.accent || 0x6ceeff).getHexString();
+  spawnProjectile(state.player, shotColor, 19 * (1 + attributeLevel('agility') * .018), combatDamage((Number(state.player.spec.attack) || 35) + state.level * 2, 'attack'), direction, { radius: .62, life: 1.1 });
   state.cooldowns.attack = Math.max(.18, .28 - attributeLevel('agility') * .008);
 }
 
@@ -1674,13 +1765,6 @@ function craft(type) {
   feed('Fabricando ' + data.label + '… ' + state.crafting.remaining.toFixed(1) + 's');
   saveGame();
 }
-function toggleCompanion() {
-  if (!canAct() || !state.ally) return;
-  state.activeAlly = !state.activeAlly;
-  state.ally.group.visible = state.activeAlly;
-  feed(state.activeAlly ? 'Oriel voltou para acompanhar Lúmion.' : 'Oriel aguarda na base.');
-}
-
 function capture() {
   if (!canAct()) return;
   const target = nearestWild(5.2);
@@ -1726,8 +1810,8 @@ function capture() {
           target.dead = true;
           target.group.visible = false;
           state.roster.push(target.spec.rig);
-          feed(target.spec.name + ' capturado! Agora pode fazer parte da sua base.');
-          state.objective = 'Volte até Nara para registrar seu novo aliado.';
+          feed(target.spec.name + ' capturado! Foi enviado para a Caixa de Criaturas.');
+          state.objective = 'Volte até Nara para registrar sua nova criatura.';
         } else {
           feed(target.spec.name + ' escapou da cápsula.');
           target.takeDamage(8, 'player');
@@ -1770,6 +1854,10 @@ function handleAction(action) {
     return;
   }
   if (state.dead || !state.player) return;
+  if (typeof action === 'string' && action.startsWith('team-')) {
+    switchTeam(Number(action.slice(5)));
+    return;
+  }
   if (action === 'attack') basicAttack();
   if (action === 'pulse') pulseAttack();
   if (action === 'void') voidAttack();
@@ -1780,13 +1868,14 @@ function handleAction(action) {
   if (action === 'capture') capture();
   if (action === 'build') showBuild();
   if (action === 'craft') showCraft();
-  if (action === 'companion') toggleCompanion();
+  if (action === 'team') showInventory(true);
   if (action === 'menu') showMenu();
   if (action === 'map') showMap();
   if (action === 'pause') togglePause();
-  if (action === 'inventory') showInventory();
+  if (action === 'inventory') showInventory(false);
   if (action === 'progression' || action === 'attributes' || action === 'skills') showProgression();
 }
+
 function updateOrientationLock() {
   const portrait = typeof matchMedia === 'function' && matchMedia('(orientation: portrait)').matches;
   const lock = $('#orientation-lock');
@@ -1831,8 +1920,10 @@ function bindInput() {
     if (event.repeat) return;
     const actions = {
       Numpad1: 'attack', Digit1: 'attack', KeyJ: 'attack', Digit2: 'pulse', Digit3: 'void', Digit4: 'prism',
-      Space: 'dodge', KeyE: 'interact', KeyF: 'eat', KeyC: 'capture', KeyB: 'build', KeyK: 'craft', KeyR: 'companion',
-      Tab: 'menu', KeyI: 'inventory', KeyM: 'map', KeyP: 'progression', KeyT: 'progression', Enter: 'respawn', Escape: 'close'
+      Space: 'dodge', KeyE: 'interact', KeyF: 'eat', KeyC: 'capture', KeyB: 'build', KeyK: 'craft', KeyR: 'team',
+      Tab: 'menu', KeyI: 'inventory', KeyM: 'map', KeyP: 'progression', KeyT: 'progression',
+      F1: 'team-0', F2: 'team-1', F3: 'team-2', F4: 'team-3', F5: 'team-4', F6: 'team-5',
+      Enter: 'respawn', Escape: 'close'
     };
     if (actions[event.code]) {
       if (actions[event.code] === 'close') {
@@ -1875,6 +1966,23 @@ function bindInput() {
       handleAction(action);
     }, { passive: false });
   });
+  const inventoryModal = $('#inventory-modal');
+  if (inventoryModal) {
+    inventoryModal.addEventListener('pointerdown', (event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const teamButton = target?.closest('[data-team-slot]');
+      const boxButton = target?.closest('[data-box-creature]');
+      if (teamButton) {
+        event.preventDefault();
+        switchTeam(teamButton.getAttribute('data-team-slot'));
+        return;
+      }
+      if (boxButton) {
+        event.preventDefault();
+        addBoxCreatureToTeam(boxButton.getAttribute('data-box-creature'));
+      }
+    }, { passive: false });
+  }
   const attributeOptions = $('#attribute-options');
   if (attributeOptions) {
     attributeOptions.addEventListener('pointerdown', (event) => {
@@ -2107,17 +2215,51 @@ function feed(message) {
 
 function updateInventoryModal() {
   const grid = $('#inventory-grid');
-  if (!grid) return;
+  const teamGrid = $('#team-grid');
+  const boxGrid = $('#box-grid');
+  const activeSpec = activeSpecies();
+  uiText('inventory-kicker', 'INVENTÁRIO DE ' + activeSpec.name.toUpperCase());
+  uiText('team-count', state.team.length + ' / ' + TEAM_LIMIT);
+  const boxEntries = state.roster.map((entry, index) => ({ entry, index, speciesId: teamSpeciesId(entry) })).filter((item) => isTeamSpecies(item.speciesId));
+  uiText('box-count', boxEntries.length);
+  if (teamGrid) {
+    teamGrid.innerHTML = state.team.map((slot, index) => {
+      const spec = SPECIES[slot.speciesId] || SPECIES.lumion;
+      const activeSlot = index === state.activeTeamIndex;
+      const maxHp = playerMaxHpForSpec(spec);
+      const hp = activeSlot && state.player ? state.player.hp : clamp(Number(slot.hp) || spec.hp, 1, maxHp);
+      const ratio = clamp(hp / maxHp, 0, 1);
+      const accent = '#' + new THREE.Color(spec.accent || spec.color).getHexString();
+      return '<button type="button" class="team-slot' + (activeSlot ? ' active' : '') + '" data-team-slot="' + index + '" style="--team-accent:' + accent + '"' + (state.dead ? ' disabled' : '') + '>' +
+        '<span class="team-slot-index">F' + (index + 1) + '</span>' +
+        '<span class="team-slot-icon">' + (spec.icon || '✦') + '</span>' +
+        '<span class="team-slot-copy"><strong>' + spec.name + '</strong><small>' + (activeSlot ? 'ATIVO AGORA' : 'CLIQUE PARA CONTROLAR') + '</small><i><em style="width:' + (ratio * 100) + '%"></em></i><b>HP ' + Math.ceil(hp) + ' / ' + maxHp + '</b></span>' +
+        '</button>';
+    }).join('');
+  }
+  if (boxGrid) {
+    boxGrid.innerHTML = boxEntries.length ? boxEntries.map((item) => {
+      const spec = SPECIES[item.speciesId];
+      const accent = '#' + new THREE.Color(spec.accent || spec.color).getHexString();
+      return '<button type="button" class="box-creature" data-box-creature="' + item.index + '" style="--team-accent:' + accent + '">' +
+        '<span class="box-creature-icon">' + (spec.icon || '✦') + '</span><strong>' + spec.name + '</strong><small>CLIQUE PARA ENTRAR NO TIME</small></button>';
+    }).join('') : '';
+  }
+  const empty = $('#box-empty');
+  if (empty) empty.textContent = boxEntries.length ? 'Clique em uma captura para trocar com o último slot não ativo.' : 'Nenhuma captura extra. Enfraqueça um monstrinho e use CAPTURAR.';
   const entries = [
     ['wood', '🪵', 'Madeira'], ['stone', '🪨', 'Pedra'], ['fiber', '🌿', 'Fibra'],
     ['ore', '⛓', 'Minério'], ['crystal', '◇', 'Cristal'], ['berry', '🍓', 'Frutas'],
     ['capsules', '◉', 'Cápsulas'], ['food', '🍲', 'Refeições'], ['repair', '⚒', 'Reparos']
   ];
-  grid.innerHTML = entries.map((entry) => '<div class="inventory-slot"><strong>' + entry[1] + '</strong><span>' + entry[2] + '</span><b>' + Math.floor(state.inventory[entry[0]] || 0) + '</b></div>').join('');
+  if (grid) grid.innerHTML = entries.map((entry) => '<div class="inventory-slot"><strong>' + entry[1] + '</strong><span>' + entry[2] + '</span><b>' + Math.floor(state.inventory[entry[0]] || 0) + '</b></div>').join('');
   uiText('inventory-weight-modal', inventoryWeight().toFixed(1) + ' / ' + carryCapacity() + ' kg');
 }
 
 function updateProgressionUI() {
+  const currentName = activeSpecies().name;
+  uiText('progression-kicker', 'PROGRESSÃO DE ' + currentName.toUpperCase());
+  uiText('progression-description', 'Cada nível concede 1 ponto de atributo e 1 ponto de técnica. Escolha como ' + currentName + ' vai sobreviver.');
   const attributes = $('#attribute-options');
   const skills = $('#skill-options');
   uiText('attribute-points-modal', state.attributePoints + ' pontos de atributo');
@@ -2176,10 +2318,17 @@ function showMap() {
   $('#map-modal').classList.remove('hidden');
 }
 
-function showInventory() {
+function showInventory(focusTeam) {
   if (!state.player) return;
+  const modal = $('#inventory-modal');
+  if (!modal) return;
+  if (!modal.classList.contains('hidden') && !focusTeam) {
+    modal.classList.add('hidden');
+    return;
+  }
   updateInventoryModal();
-  $('#inventory-modal').classList.remove('hidden');
+  modal.classList.remove('hidden');
+  if (focusTeam) setTimeout(() => $('#team-panel')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
 }
 
 function showProgression() {
@@ -2192,6 +2341,9 @@ function updateUI() {
   if (!state.player) return;
   const hp = clamp(state.player.hp / state.player.maxHp, 0, 1);
   const xpRequired = 100 + state.level * 45;
+  uiText('status-name', state.player.spec.name);
+  uiText('status-form', (state.activeTeamIndex === 0 ? 'FORMA BASE' : 'FORMA DE EQUIPE') + ' • ATIVO');
+  uiText('inventory-kicker', 'INVENTÁRIO DE ' + state.player.spec.name.toUpperCase());
   uiText('level-text', 'Lv.' + state.level);
   uiText('hp-text', Math.ceil(state.player.hp) + ' / ' + Math.ceil(state.player.maxHp));
   uiText('hunger-text', Math.ceil(state.hunger) + '%');
@@ -2211,7 +2363,7 @@ function updateUI() {
   Object.keys(state.inventory).forEach((key) => uiText('inv-' + key, Math.floor(state.inventory[key] || 0)));
   const biome = state.player.group.position.x > 22 && state.player.group.position.z < -5 ? 'Costa Turquesa' : state.player.group.position.x > 22 ? 'Ruínas Incandescentes' : 'Vale Verde';
   uiText('biome-name', biome);
-  if (state.dead) uiText('interact-label', 'LÚMION CAÍDO');
+  if (state.dead) uiText('interact-label', state.player.spec.name.toUpperCase() + ' CAÍDO');
   else updateInteractHint();
   const skillButtons = document.querySelectorAll('#skills button');
   if (skillButtons[0]) {
@@ -2293,6 +2445,7 @@ function drawMinimap() {
 
 
 function saveGame() {
+  syncActiveTeamSlot();
   const data = {
     x: state.player ? state.player.group.position.x : 0,
     z: state.player ? state.player.group.position.z : 12,
@@ -2303,6 +2456,8 @@ function saveGame() {
     skillPoints: state.skillPoints,
     attributes: state.attributes,
     skills: state.skills,
+    team: state.team,
+    activeTeamIndex: state.activeTeamIndex,
     inventory: state.inventory,
     structures: state.structures.map((structure) => ({ type: structure.type, x: structure.x, z: structure.z, rotation: structure.rotation })),
     captured: state.roster
@@ -2320,10 +2475,8 @@ function update(dt) {
   if (state.paused) return;
   updateCooldowns(dt);
   updatePlayer(dt);
-  updateAlly(dt);
   state.wild.forEach((wild) => updateWild(wild, dt));
   state.player.update(dt);
-  if (state.ally) state.ally.update(dt);
   state.wild.forEach((wild) => wild.update(dt));
   updateProjectiles(dt);
   updateEffects(dt);
@@ -2382,8 +2535,8 @@ function start() {
   requestAnimationFrame(frame);
 }
 
-window.PSY_WILDLANDS_3D_V147 = {
-  version: 'WILDLANDS_3D_V147',
+window.PSY_WILDLANDS_3D_V148 = {
+  version: 'WILDLANDS_3D_V148',
   state,
   actions: {
     basicAttack, pulseAttack, voidAttack, prismAttack, capture, dodge,
@@ -2391,7 +2544,7 @@ window.PSY_WILDLANDS_3D_V147 = {
     showBuild, showCraft
   },
   snapshot: () => ({
-    version: 'WILDLANDS_3D_V147',
+    version: 'WILDLANDS_3D_V148',
     rendererReady: Boolean(renderer),
     playerReady: Boolean(state.player),
     dead: state.dead,
