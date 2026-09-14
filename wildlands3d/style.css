@@ -774,3 +774,57 @@ button{font:inherit}
   .field-menu-grid{gap:7px}
   .field-menu-grid button small{font-size:8px}
 }
+
+
+/* V148 — equipe de seis e caixa dentro do inventário */
+.inventory-box{width:min(920px,calc(100vw - 32px))}
+.inventory-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.inventory-title-row p{max-width:650px}
+.active-badge{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:8px 10px;border:1px solid rgba(255,214,105,.58);border-radius:10px;color:#ffe18a;font-size:9px;font-weight:950;letter-spacing:.08em;white-space:nowrap}
+.inventory-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:18px 0 9px}
+.inventory-section-heading>div{display:grid;gap:3px}
+.inventory-section-heading strong{color:#8cecf2;font-size:11px;letter-spacing:.14em}
+.inventory-section-heading small{color:#8eafb4;font-size:9px}
+.inventory-section-heading>b{color:#ffe18a;font-size:12px}
+.team-panel{padding:12px 13px 13px;border:1px solid rgba(105,216,226,.32);border-radius:16px;background:linear-gradient(145deg,rgba(5,35,45,.85),rgba(4,22,31,.82))}
+.team-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.team-slot{position:relative;display:grid;grid-template-columns:28px 28px 1fr;align-items:center;gap:7px;min-width:0;min-height:82px;padding:10px;text-align:left;border:1px solid color-mix(in srgb,var(--team-accent,#65d9e4) 62%,transparent);border-radius:13px;background:linear-gradient(145deg,rgba(12,52,66,.95),rgba(4,27,38,.94));color:#eaffff}
+.team-slot:hover{border-color:var(--team-accent,#a7f5ff);transform:translateY(-1px)}
+.team-slot.active{border-color:var(--team-accent,#ffe18a);box-shadow:0 0 0 1px var(--team-accent,#ffe18a),0 0 20px color-mix(in srgb,var(--team-accent,#ffe18a) 26%,transparent);background:linear-gradient(145deg,rgba(28,69,80,.98),rgba(6,36,45,.96))}
+.team-slot:disabled{opacity:.58;cursor:not-allowed;transform:none}
+.team-slot-index{align-self:start;color:#a9cbd0;font-size:9px;font-weight:950}
+.team-slot-icon{display:grid;place-items:center;width:27px;height:27px;border-radius:9px;background:color-mix(in srgb,var(--team-accent,#65d9e4) 22%,#061a23);color:var(--team-accent,#a7f5ff);font-size:18px}
+.team-slot-copy{display:grid;min-width:0;gap:3px}
+.team-slot-copy strong{overflow:hidden;color:#ecffff;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.team-slot-copy small{overflow:hidden;color:#9fc5ca;font-size:8px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
+.team-slot-copy i{display:block;height:5px;border-radius:999px;background:rgba(1,13,20,.9);overflow:hidden}
+.team-slot-copy i em{display:block;height:100%;border-radius:999px;background:var(--team-accent,#65d9e4);box-shadow:0 0 8px var(--team-accent,#65d9e4)}
+.team-slot-copy b{color:#c5e2e5;font-size:8px}
+.inventory-materials{margin-top:3px;padding-top:2px}
+.box-panel{margin-top:17px;padding-top:3px;border-top:1px solid rgba(105,216,226,.22)}
+.box-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.box-creature{display:grid;grid-template-columns:28px 1fr;align-items:center;gap:2px 7px;min-width:0;padding:9px;text-align:left;border:1px solid color-mix(in srgb,var(--team-accent,#65d9e4) 48%,transparent);border-radius:12px;background:rgba(4,26,36,.82)}
+.box-creature:hover{border-color:var(--team-accent,#a7f5ff);background:rgba(11,52,63,.95)}
+.box-creature-icon{grid-row:1 / span 2;display:grid;place-items:center;width:27px;height:27px;border-radius:8px;color:var(--team-accent,#a7f5ff);font-size:17px}
+.box-creature strong{overflow:hidden;color:#e8ffff;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.box-creature small{overflow:hidden;color:#8fb6bb;font-size:7px;font-weight:850;text-overflow:ellipsis;white-space:nowrap}
+.team-empty{margin:10px 2px 2px!important;color:#87aeb3!important;font-size:10px!important}
+@media (max-width:900px){
+  .team-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .box-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:620px){
+  .inventory-title-row{display:block}
+  .active-badge{margin-top:0}
+  .team-grid,.box-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .inventory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .team-slot{grid-template-columns:22px 25px 1fr;padding:8px;gap:5px}
+  .team-slot-copy strong{font-size:9px}
+  .team-slot-copy small{font-size:7px}
+}
+@media (orientation:landscape) and (max-height:560px){
+  .inventory-box{max-height:calc(100vh - 18px);padding:16px}
+  .team-slot{min-height:68px;padding:7px}
+  .team-panel{padding:8px 10px 9px}
+  .inventory-section-heading{margin:11px 0 7px}
+}
