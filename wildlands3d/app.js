@@ -1099,7 +1099,7 @@ function updateProjectiles(dt) {
 }
 
 function basicAttack() {
-  if (state.paused || state.cooldowns.attack > 0 || state.player.dead) return;
+  if (!state.player || !scene || state.paused || state.cooldowns.attack > 0 || state.player.dead) return;
   const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(state.player.group.quaternion);
   state.player.play('attack');
   spawnProjectile(state.player, '#6ceeff', 19, 35 + state.level * 2, direction, { radius: .62, life: 1.1 });
@@ -1107,7 +1107,7 @@ function basicAttack() {
 }
 
 function pulseAttack() {
-  if (state.paused || state.cooldowns.pulse > 0) return;
+  if (!state.player || !scene || state.paused || state.cooldowns.pulse > 0) return;
   state.player.play('cast');
   const center = state.player.group.position.clone();
   addRingEffect(center, 4.8, '#76eaff', 1.0);
@@ -1118,7 +1118,7 @@ function pulseAttack() {
 }
 
 function voidAttack() {
-  if (state.paused || state.cooldowns.void > 0) return;
+  if (!state.player || !scene || state.paused || state.cooldowns.void > 0) return;
   state.player.play('cast');
   const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(state.player.group.quaternion);
   const center = state.player.group.position.clone().addScaledVector(direction, 5);
@@ -1127,7 +1127,7 @@ function voidAttack() {
 }
 
 function prismAttack() {
-  if (state.paused || state.cooldowns.prism > 0) return;
+  if (!state.player || !scene || state.paused || state.cooldowns.prism > 0) return;
   state.player.play('cast');
   const base = new THREE.Vector3(0, 0, 1).applyQuaternion(state.player.group.quaternion);
   [-.34, -.17, 0, .17, .34].forEach((angle) => {
@@ -1138,7 +1138,7 @@ function prismAttack() {
 }
 
 function dodge() {
-  if (state.paused || state.cooldowns.dodge > 0) return;
+  if (!state.player || state.paused || state.cooldowns.dodge > 0) return;
   const direction = moveInput();
   if (direction.lengthSq() < .01) direction.set(0, 0, 1).applyQuaternion(state.player.group.quaternion);
   state.player.play('dodge');
@@ -1507,6 +1507,7 @@ function resetSave() {
 }
 
 function handleAction(action) {
+  if (!state.player && action !== 'close') return;
   if (action === 'attack') basicAttack();
   if (action === 'pulse') pulseAttack();
   if (action === 'void') voidAttack();
@@ -1874,6 +1875,7 @@ function update(dt) {
 }
 
 function resize() {
+  if (!renderer || !camera) return;
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight, false);
@@ -1889,7 +1891,19 @@ function frame(time) {
 }
 
 function start() {
-  createScene();
+  try {
+    createScene();
+  } catch (error) {
+    bindInput();
+    const loading = $('#loading');
+    if (loading) loading.classList.add('done');
+    const fallback = document.createElement('div');
+    fallback.className = 'runtime-fallback';
+    fallback.innerHTML = '<strong>WebGL não está disponível neste navegador.</strong><span>Abra no Chrome/Edge com aceleração gráfica ativada para jogar a Fronteira Íris 3D.</span>';
+    $('#game-root').appendChild(fallback);
+    console.warn('Wildlands 3D aguardando um navegador com WebGL.', error);
+    return;
+  }
   bindInput();
   feed('Fronteira aberta. Explore, colete, capture e construa seu abrigo.');
   feed('Ataque básico: botão ATACAR, J, 1 ou NUM1.');
@@ -1900,5 +1914,25 @@ function start() {
   setTimeout(() => $('#loading').classList.add('done'), 480);
   requestAnimationFrame(frame);
 }
+
+window.PSY_WILDLANDS_3D_V144 = {
+  version: 'WILDLANDS_3D_V144',
+  state,
+  actions: { basicAttack, pulseAttack, voidAttack, prismAttack, capture, dodge, showBuild, showCraft },
+  snapshot: () => ({
+    version: 'WILDLANDS_3D_V144',
+    rendererReady: Boolean(renderer),
+    playerReady: Boolean(state.player),
+    joystick: { x: state.input.joyX, y: state.input.joyY, active: state.input.joyActive },
+    projectiles: state.projectiles.length,
+    wildCreatures: state.wild.filter((creature) => !creature.dead).length,
+    npcs: state.npcs.length,
+    structures: state.structures.length,
+    inventory: { ...state.inventory },
+    level: state.level,
+    hp: state.hp,
+    objective: state.objective
+  })
+};
 
 start();

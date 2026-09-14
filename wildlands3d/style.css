@@ -103,6 +103,9 @@ button{font:inherit}
 .pause-box button{margin-top:9px}
 #loading{position:absolute;z-index:120;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#123742,#030b11 70%);transition:opacity .45s ease}
 #loading.done{opacity:0;pointer-events:none}
+.runtime-fallback{position:fixed;z-index:140;left:50%;top:50%;width:min(430px,calc(100vw - 32px));transform:translate(-50%,-50%);display:grid;gap:8px;padding:22px;border:1px solid rgba(119,222,231,.58);border-radius:18px;background:rgba(4,24,33,.95);box-shadow:var(--shadow);color:#e5feff;text-align:center;pointer-events:none}
+.runtime-fallback strong{font-size:16px;letter-spacing:.04em}
+.runtime-fallback span{color:#9ac4c9;font-size:12px;line-height:1.45}
 .loading-card{width:min(470px,calc(100vw - 32px));padding:30px;border:1px solid rgba(119,222,231,.52);border-radius:24px;background:rgba(4,24,33,.88);text-align:center;box-shadow:var(--shadow)}
 .loading-mark{color:#7ceaf3;font-size:38px;text-shadow:0 0 24px #49eaf4}
 .loading-card h2{margin:8px 0;color:#e5feff;font-size:18px;letter-spacing:.08em}
