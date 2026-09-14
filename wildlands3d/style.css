@@ -346,3 +346,301 @@ button{font:inherit}
     gap:5px;
   }
 }
+
+/* V146 landscape-only presentation */
+#orientation-lock{
+  display:none;
+  position:absolute;
+  inset:0;
+  z-index:240;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  background:radial-gradient(circle at 50% 34%,rgba(11,74,83,.96),rgba(2,13,21,.99) 70%);
+  color:#e9ffff;
+  text-align:center;
+  pointer-events:auto;
+}
+.orientation-lock-card{
+  width:min(430px,calc(100vw - 36px));
+  padding:28px 24px 24px;
+  border:1px solid rgba(116,235,238,.68);
+  border-radius:24px;
+  background:linear-gradient(145deg,rgba(8,42,54,.98),rgba(3,19,29,.98));
+  box-shadow:0 24px 100px rgba(0,0,0,.64),0 0 42px rgba(77,225,232,.12);
+}
+.orientation-symbol{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:72px;
+  height:72px;
+  margin-bottom:12px;
+  border:2px solid #7ce9ef;
+  border-radius:20px;
+  color:#ffe07b;
+  font-size:53px;
+  line-height:1;
+  transform:rotate(-90deg);
+  animation:orientation-pulse 1.8s ease-in-out infinite;
+}
+.orientation-kicker{
+  color:#ffd86b;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.18em;
+}
+.orientation-lock-card h1{
+  margin:8px 0 0;
+  color:#b4f8f8;
+  font-size:clamp(25px,6vw,36px);
+}
+.orientation-lock-card p{
+  margin:12px auto 18px;
+  max-width:350px;
+  color:#c5e1e4;
+  font-size:14px;
+  line-height:1.5;
+}
+.orientation-lock-card button{
+  width:100%;
+  min-height:52px;
+  border:1px solid #ffe07b;
+  border-radius:14px;
+  background:linear-gradient(145deg,#806b25,#4a3d16);
+  color:#fff2b7;
+  font-weight:950;
+  letter-spacing:.08em;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.orientation-lock-card small{
+  display:block;
+  margin-top:12px;
+  color:#8fbcc1;
+  font-size:10px;
+  line-height:1.4;
+}
+@keyframes orientation-pulse{
+  0%,100%{box-shadow:0 0 0 rgba(124,233,239,0);opacity:.84}
+  50%{box-shadow:0 0 24px rgba(124,233,239,.38);opacity:1}
+}
+@media (orientation:portrait){
+  #orientation-lock{display:flex}
+}
+@media (orientation:landscape){
+  #orientation-lock{display:none}
+  #topbar{
+    min-height:58px;
+    padding:8px 18px;
+  }
+  #game-title{font-size:clamp(16px,2.15vw,26px)}
+  #game-subtitle{font-size:clamp(7px,.68vw,10px)}
+  #status-card{
+    left:14px;
+    top:62px;
+    width:min(330px,29vw);
+    min-width:280px;
+    max-height:calc(100vh - 76px);
+    overflow:auto;
+    padding:13px 15px;
+  }
+  #status-card #objective{display:none}
+  #map-card{
+    right:14px;
+    top:62px;
+    width:min(190px,17vw);
+    min-width:150px;
+    transform:none;
+  }
+  #inventory-card{display:none}
+  #quick-interactions{
+    left:calc(min(330px,29vw) + 28px);
+    right:auto;
+    top:68px;
+    bottom:auto;
+    gap:6px;
+  }
+  #quick-interactions button{
+    min-width:108px;
+    min-height:42px;
+    padding:6px 9px;
+  }
+  #system-actions{
+    right:calc(min(190px,17vw) + 30px);
+    top:68px;
+    gap:6px;
+  }
+  #system-actions button{
+    min-width:88px;
+    min-height:42px;
+  }
+  #skills{
+    right:14px;
+    left:auto;
+    bottom:clamp(134px,22vh,166px);
+    width:min(380px,31vw);
+    justify-content:stretch;
+    gap:6px;
+  }
+  #skills button{
+    flex:1;
+    min-width:0;
+    min-height:46px;
+    padding:6px 5px;
+  }
+  #actions{
+    right:14px;
+    bottom:max(12px,env(safe-area-inset-bottom));
+    width:min(410px,34vw);
+    min-width:360px;
+    grid-template-columns:repeat(3,1fr);
+    gap:7px;
+  }
+  #actions button{
+    min-height:58px;
+    padding:7px 4px;
+  }
+  #joystick{
+    left:14px;
+    bottom:max(12px,env(safe-area-inset-bottom));
+    width:clamp(126px,10vw,154px);
+    height:clamp(126px,10vw,154px);
+  }
+  #joystick-knob{
+    width:clamp(58px,4.4vw,68px);
+    height:clamp(58px,4.4vw,68px);
+    margin:calc(clamp(58px,4.4vw,68px) / -2);
+  }
+  #feed{
+    left:14px;
+    bottom:clamp(148px,22vh,184px);
+    width:min(340px,27vw);
+  }
+  #camera-touch-zone{
+    left:29%;
+    right:22%;
+    top:10%;
+    bottom:24%;
+  }
+}
+@media (max-width:980px) and (orientation:landscape){
+  #topbar{
+    min-height:50px;
+    padding:7px 10px;
+  }
+  #game-title{font-size:clamp(14px,2.8vw,19px)}
+  #game-subtitle{font-size:7px}
+  #status-card{
+    left:10px;
+    top:54px;
+    width:240px;
+    min-width:240px;
+    max-height:calc(100vh - 62px);
+    padding:9px 11px;
+  }
+  #status-card #objective{display:none}
+  #status-card .status-heading{margin-bottom:7px}
+  #status-card .status-heading h1{font-size:17px}
+  #status-card .status-heading p{font-size:7px}
+  #status-card .bar-row{
+    grid-template-columns:38px 48px 1fr;
+    gap:5px;
+    margin:4px 0;
+    font-size:8px;
+  }
+  #status-card .bar-row b{font-size:8px}
+  #map-card{
+    right:10px;
+    top:54px;
+    width:130px;
+    min-width:130px;
+    padding:5px;
+    transform:none;
+  }
+  #map-card>small{font-size:6px}
+  #quick-interactions{
+    left:258px;
+    right:auto;
+    top:57px;
+    bottom:auto;
+    gap:4px;
+  }
+  #quick-interactions button{
+    min-width:82px;
+    min-height:38px;
+    padding:4px 5px;
+  }
+  #quick-interactions strong{font-size:8px}
+  #quick-interactions small{font-size:6px}
+  #system-actions{
+    left:258px;
+    right:auto;
+    top:102px;
+    width:168px;
+    display:flex;
+    gap:4px;
+  }
+  #system-actions button{
+    flex:1;
+    min-width:0;
+    min-height:38px;
+    padding:3px 2px;
+    border-radius:9px;
+  }
+  #system-actions strong{font-size:7px}
+  #system-actions small{font-size:6px}
+  #skills{
+    right:10px;
+    bottom:119px;
+    width:310px;
+    gap:4px;
+  }
+  #skills button{
+    flex:1;
+    min-width:0;
+    min-height:40px;
+    padding:4px 3px;
+  }
+  #skills button strong{font-size:10px}
+  #skills button span{font-size:7px}
+  #actions{
+    right:10px;
+    bottom:7px;
+    width:310px;
+    min-width:310px;
+    grid-template-columns:repeat(3,1fr);
+    gap:4px;
+  }
+  #actions button{
+    min-height:47px;
+    padding:5px 3px;
+  }
+  #actions strong{font-size:9px}
+  #actions small{font-size:6px}
+  #joystick{
+    left:10px;
+    bottom:8px;
+    width:108px;
+    height:108px;
+  }
+  #joystick-knob{
+    width:48px;
+    height:48px;
+    margin:-24px;
+  }
+  #joystick-ring{inset:20px}
+  #feed{
+    left:10px;
+    bottom:123px;
+    width:230px;
+    max-height:74px;
+    overflow:hidden;
+  }
+  #camera-touch-zone{
+    left:28%;
+    right:23%;
+    top:9%;
+    bottom:28%;
+  }
+}
