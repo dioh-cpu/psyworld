@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061117">
+  <title>PSYWORLD • Wildlands 3D V143</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:#05090d;color:#e8fbff}
+    body{min-height:100vh;overflow:hidden}
+    #launch-screen{min-height:100vh;display:grid;place-items:center;padding:28px;background:radial-gradient(circle at 50% 36%,rgba(38,185,184,.18),transparent 34rem),linear-gradient(145deg,#07131a,#03070c 65%,#0a1720)}
+    .card{width:min(620px,92vw);padding:34px;border:1px solid rgba(115,229,239,.45);border-radius:26px;background:rgba(5,20,28,.88);box-shadow:0 22px 80px rgba(0,0,0,.45),0 0 60px rgba(43,218,219,.08);text-align:center}
+    .eyebrow{margin:0 0 10px;color:#7fe8f2;font-size:12px;letter-spacing:.22em;text-transform:uppercase}
+    h1{margin:0;font-size:clamp(28px,6vw,54px);letter-spacing:.03em}
+    p{margin:16px auto 0;max-width:480px;color:#b3d0d7;line-height:1.6}
+    button{margin-top:28px;border:1px solid #87f1f6;border-radius:999px;padding:14px 24px;background:linear-gradient(135deg,#1c8495,#1750a4);color:#fff;font-weight:800;letter-spacing:.08em;cursor:pointer;box-shadow:0 8px 28px rgba(28,164,190,.26)}
+    button:hover{filter:brightness(1.12)}
+    small{display:block;margin-top:14px;color:#76949d}
+  </style>
+</head>
+<body>
+  <main id="launch-screen">
+    <section class="card" aria-label="Teste do modo Wildlands 3D">
+      <p class="eyebrow">PSYWORLD • versão de teste</p>
+      <h1>Wildlands 3D</h1>
+      <p>Modo sobrevivência em terceira pessoa: explore um mundo contínuo, colete recursos, construa sua base, capture monstrinhos e atribua tarefas ao seu aliado.</p>
+      <button id="launch-button" type="button">ENTRAR NA FRONTEIRA ÍRIS</button>
+      <small>WASD/setas ou joystick • mouse/toque para câmera • J ataque • E interagir • B construir</small>
+    </section>
+  </main>
+  <script src="./modes/mystery3d-assets.js?build=WILDLANDS_3D_V143_RECONSTRUCTED_SURVIVAL_20260914"></script>
+  <script src="./modes/mystery3d-runtime.js?build=WILDLANDS_3D_V143_RECONSTRUCTED_SURVIVAL_20260914"></script>
+  <script>
+    (() => {
+      const screen = document.getElementById('launch-screen');
+      const button = document.getElementById('launch-button');
+      const launch = () => {
+        if (!screen || !document.body.contains(screen)) return;
+        screen.remove();
+        if (typeof window.openWildlands3D === 'function') window.openWildlands3D();
+        else document.body.insertAdjacentHTML('beforeend','<p style="padding:24px;color:#fff">Falha ao carregar o modo 3D. Recarregue a página.</p>');
+      };
+      button.addEventListener('click', launch);
+      window.setTimeout(launch, 250);
+    })();
+  </script>
+</body>
+</html>
