@@ -184,3 +184,165 @@ button{font:inherit}
   #actions strong{font-size:9px}
   #skills{bottom:160px}
 }
+
+
+/* V145 UX / progression pass */
+#topbar{padding:clamp(10px,1.5vw,18px) clamp(12px,2.2vw,28px);min-height:66px}
+#game-title{font-size:clamp(17px,2.35vw,28px)}
+#game-subtitle{font-size:clamp(8px,0.72vw,11px);letter-spacing:.1em}
+#status-card{left:clamp(12px,2vw,24px);top:clamp(70px,8vh,88px);width:min(380px,calc(100vw - 420px));min-width:310px}
+#map-card{right:clamp(12px,2vw,24px);top:clamp(70px,8vh,88px);width:min(220px,18vw)}
+#inventory-card{left:clamp(12px,2vw,24px);top:clamp(365px,39vh,430px);width:min(325px,24vw)}
+#camera-touch-zone{left:38%;right:0;top:14%;bottom:30%}
+#system-actions{position:absolute;z-index:36;right:clamp(12px,2vw,24px);top:clamp(205px,25vh,270px);display:flex;gap:8px;pointer-events:auto}
+#system-actions button{min-width:94px;min-height:48px;padding:7px 9px;border:1px solid rgba(108,221,232,.58);border-radius:13px;background:linear-gradient(145deg,rgba(8,47,60,.94),rgba(4,25,35,.96));box-shadow:0 8px 22px rgba(0,0,0,.28);color:#e8ffff;cursor:pointer;touch-action:manipulation}
+#system-actions strong{display:block;font-size:10px;letter-spacing:.06em}
+#system-actions small{display:block;margin-top:3px;color:#9bc9ce;font-size:8px}
+#points-strip{display:flex;justify-content:space-between;gap:8px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(104,195,205,.22);color:#bde0e3;font-size:9px;font-weight:900;letter-spacing:.04em}
+#points-strip span:first-child{color:#ffd86b}
+#points-strip span:last-child{color:#b9a2ff}
+#crafting-status{min-height:15px;margin-top:6px;color:#7deaf3;font-size:9px;font-weight:900;letter-spacing:.08em}
+.inventory-weight{display:flex;justify-content:space-between;margin-top:4px;padding-top:4px;border-top:1px solid rgba(104,195,205,.18);color:#9fcbd0;font-size:9px;font-weight:900}
+#joystick{left:clamp(14px,2vw,28px);bottom:max(14px,env(safe-area-inset-bottom));width:clamp(126px,10vw,158px);height:clamp(126px,10vw,158px)}
+#joystick-knob{width:clamp(58px,4.4vw,68px);height:clamp(58px,4.4vw,68px);margin:calc(clamp(58px,4.4vw,68px) / -2)}
+#quick-interactions{right:clamp(12px,2vw,24px);bottom:clamp(160px,18vh,210px)}
+#skills{right:clamp(12px,2vw,24px);left:auto;bottom:clamp(88px,11vh,132px);transform:none;display:flex}
+#skills button{min-width:106px}
+#actions{right:clamp(12px,2vw,24px);bottom:max(14px,env(safe-area-inset-bottom));width:min(390px,30vw)}
+#actions button{min-height:58px}
+#game-root.player-dead #actions,#game-root.player-dead #skills,#game-root.player-dead #quick-interactions,#game-root.player-dead #system-actions{filter:grayscale(.65);opacity:.62}
+#game-root.player-dead #joystick{filter:grayscale(.7);opacity:.52}
+.disabled-action{cursor:not-allowed!important}
+.system-box{width:min(760px,calc(100vw - 32px))}
+.system-box h3{margin:20px 0 9px;color:#8cecf2;font-size:11px;letter-spacing:.16em}
+.inventory-modal-summary,.progression-points{display:flex;justify-content:space-between;gap:12px;margin:14px 0;padding:11px 13px;border:1px solid rgba(105,216,226,.26);border-radius:12px;background:rgba(3,19,28,.55);color:#b8dce0;font-size:11px}
+.inventory-modal-summary b,.progression-points b{color:#ffe18a}
+.inventory-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.inventory-slot{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:7px;min-height:54px;padding:8px 10px;border:1px solid rgba(98,193,204,.35);border-radius:13px;background:rgba(5,29,39,.7)}
+.inventory-slot strong{font-size:22px}
+.inventory-slot span{color:#b7d8dc;font-size:10px;font-weight:800}
+.inventory-slot b{color:#fff;font-size:14px}
+.attribute-grid,.skill-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.attribute-grid button,.skill-grid button{display:grid;grid-template-columns:1fr auto;gap:5px;padding:12px;text-align:left}
+.attribute-grid button strong,.skill-grid button strong{color:#eaffff;font-size:11px}
+.attribute-grid button b,.skill-grid button b{color:#ffd86c;font-size:11px}
+.attribute-grid button small,.skill-grid button small{grid-column:1/-1;min-height:30px;color:#a7cfd3;font-size:10px;line-height:1.35}
+.attribute-grid button em,.skill-grid button em{grid-column:1/-1;color:#86f2d0;font-size:10px;font-style:normal;font-weight:950}
+.skill-grid button:nth-child(2){border-color:#b48cff}
+.skill-grid button:nth-child(3){border-color:#7dd7ff}
+.skill-grid button:nth-child(4){border-color:#d48cff}
+.skill-grid button:nth-child(5){border-color:#86e59b}
+.death-box{text-align:center;width:min(440px,calc(100vw - 32px));border-color:rgba(255,110,143,.72)}
+.death-box h2{color:#ff9ab4}
+#death-countdown{margin:14px 0;color:#bcd9dd;font-size:12px}
+#respawn-button:disabled{cursor:not-allowed;opacity:.45;filter:none}
+#respawn-button{border-color:#ff9ab4!important;background:linear-gradient(145deg,rgba(89,34,53,.96),rgba(42,18,29,.96))!important;color:#ffe3ea!important}
+@media (max-width:980px){
+  #status-card{left:12px;top:66px;width:min(360px,calc(100vw - 24px));min-width:0}
+  #map-card{right:12px;top:66px;width:min(190px,22vw)}
+  #inventory-card{display:none}
+  #system-actions{right:12px;top:calc(66px + min(190px,22vw) * .78 + 14px);gap:5px}
+  #system-actions button{min-width:78px;min-height:42px;padding:5px 6px}
+  #system-actions strong{font-size:8px}
+  #system-actions small{font-size:7px}
+  #quick-interactions{right:12px;bottom:clamp(215px,25vh,260px)}
+  #quick-interactions button{min-width:105px;min-height:48px}
+  #skills{right:12px;bottom:clamp(185px,22vh,230px);gap:5px}
+  #skills button{min-width:0;min-height:44px;padding:6px 8px}
+  #skills button span{font-size:8px}
+  #actions{right:12px;bottom:max(12px,env(safe-area-inset-bottom));width:min(46vw,330px);min-width:224px;grid-template-columns:repeat(2,1fr);gap:6px}
+  #actions button{min-height:52px}
+  #joystick{left:14px;bottom:max(12px,env(safe-area-inset-bottom));width:132px;height:132px}
+  #joystick-knob{width:58px;height:58px;margin:-29px}
+  #camera-touch-zone{left:34%;top:18%;bottom:31%}
+}
+@media (max-width:520px){
+  #topbar{padding:9px 10px}
+  #game-title{font-size:16px}
+  #game-subtitle{font-size:7px}
+  #status-card{top:56px;width:calc(100vw - 176px);min-width:204px;padding:11px 12px}
+  #map-card{top:55px;right:10px;width:146px;padding:6px}
+  #system-actions{right:10px;top:170px;display:grid;grid-template-columns:repeat(3,1fr);width:146px}
+  #system-actions button{min-width:0;min-height:40px}
+  #system-actions button:nth-child(3){display:none}
+  #quick-interactions{right:10px;bottom:auto;top:222px;gap:5px}
+  #quick-interactions button{min-width:70px;width:70px;min-height:44px;padding:5px 4px}
+  #quick-interactions strong{font-size:8px}
+  #quick-interactions small{font-size:6px}
+  #skills{right:10px;bottom:190px;width:calc(100vw - 224px);min-width:204px;justify-content:stretch}
+  #skills button{flex:1;min-width:0;padding:5px 3px}
+  #skills button strong{font-size:10px}
+  #skills button span{font-size:6px}
+  #actions{right:10px;width:calc(100vw - 224px);min-width:204px}
+  #actions button{min-height:49px;padding:6px 3px}
+  #actions strong{font-size:9px}
+  #actions small{font-size:7px}
+  #joystick{left:10px;bottom:10px;width:124px;height:124px}
+  #joystick-knob{width:54px;height:54px;margin:-27px}
+  #feed{left:10px;bottom:175px;width:calc(100vw - 236px);min-width:190px}
+  #camera-hint{display:none}
+  .inventory-grid{grid-template-columns:repeat(2,1fr)}
+  .attribute-grid,.skill-grid{grid-template-columns:1fr}
+  .system-box{padding:17px}
+  .inventory-slot{grid-template-columns:28px 1fr auto;padding:7px}
+  .inventory-slot strong{font-size:18px}
+}
+@media (max-width:680px) and (orientation:landscape){
+  #status-card{top:53px;width:270px}
+  #map-card{top:53px;width:150px}
+  #system-actions{top:143px;right:10px;width:150px;display:flex}
+  #system-actions button{min-width:47px;min-height:36px}
+  #system-actions button:nth-child(3){display:none}
+  #quick-interactions{top:188px;bottom:auto;right:10px}
+  #quick-interactions button{min-width:72px;min-height:38px}
+  #skills{right:10px;bottom:108px;width:320px}
+  #actions{right:10px;bottom:7px;width:320px;min-width:320px;grid-template-columns:repeat(3,1fr)}
+  #actions button{min-height:47px}
+  #joystick{left:12px;bottom:8px;width:116px;height:116px}
+  #joystick-knob{width:52px;height:52px;margin:-26px}
+  #camera-touch-zone{left:28%;top:10%;bottom:22%}
+}
+
+/* V145 narrow portrait safe zone */
+@media (max-width:350px) and (orientation:portrait){
+  #skills{
+    right:8px;
+    bottom:190px;
+    width:190px;
+    min-width:190px;
+  }
+  #skills button{
+    min-height:42px;
+  }
+  #actions{
+    right:8px;
+    width:190px;
+    min-width:190px;
+    grid-template-columns:repeat(2,1fr);
+    gap:6px;
+  }
+  #actions button{
+    min-height:46px;
+  }
+  #joystick{
+    left:8px;
+    bottom:8px;
+    width:100px;
+    height:100px;
+  }
+  #joystick-knob{
+    width:46px;
+    height:46px;
+    margin:-23px;
+  }
+  #feed{
+    left:8px;
+    bottom:150px;
+    width:calc(100vw - 210px);
+    min-width:0;
+  }
+  #quick-interactions{
+    right:8px;
+    gap:5px;
+  }
+}
