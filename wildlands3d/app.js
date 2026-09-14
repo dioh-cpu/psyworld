@@ -68,6 +68,34 @@ const CRAFT_DATA = {
   repair: { label: 'Kit de reparo', cost: { wood: 8, stone: 5, ore: 2 }, give: { repair: 1 } }
 };
 
+
+const ITEM_WEIGHTS = {
+  wood: .4, stone: .6, fiber: .2, ore: 1.1, crystal: .7, berry: .15,
+  capsules: .35, food: .45, repair: .8
+};
+
+const ATTRIBUTE_DATA = {
+  strength: { label: 'FORÇA', icon: '⚔', description: '+7% de dano por nível.' },
+  vitality: { label: 'VITALIDADE', icon: '❤', description: '+36 HP máximo por nível.' },
+  capacity: { label: 'CARGA', icon: '▣', description: '+25 kg de capacidade por nível.' },
+  gathering: { label: 'COLETA', icon: '⛏', description: 'Coleta de recursos mais rápida.' },
+  agility: { label: 'AGILIDADE', icon: '➤', description: 'Mais velocidade e esquiva.' },
+  crafting: { label: 'OFÍCIO', icon: '⚒', description: 'Fabricação mais rápida.' }
+};
+
+const SKILL_DATA = {
+  attack: { label: 'Disparo Prismático', icon: '✦', description: 'Aumenta dano e cadência do ataque básico.', max: 5 },
+  pulse: { label: 'Pulso Íris', icon: '◎', description: 'Amplia o raio e o dano da habilidade 2.', max: 5 },
+  void: { label: 'Vórtice Mental', icon: '◉', description: 'Aumenta o alcance e a pressão do vórtice.', max: 5 },
+  prism: { label: 'Rajada Prismática', icon: '◇', description: 'Adiciona projéteis ao leque prismático.', max: 5 },
+  survival: { label: 'Instinto Silvestre', icon: '✚', description: 'Reduz o consumo de fome e água.', max: 5 }
+};
+
+const DEFAULT_ATTRIBUTES = {
+  strength: 0, vitality: 0, capacity: 0, gathering: 0, agility: 0, crafting: 0
+};
+const DEFAULT_SKILLS = { attack: 1, pulse: 1, void: 1, prism: 1, survival: 0 };
+
 const NPC_DATA = [
   {
     id: 'nara', name: 'Nara', role: 'Cartógrafa', x: -8, z: 5, color: 0x2fc1c7, accent: 0xffdf8d,
@@ -100,7 +128,8 @@ function loadSave() {
     x: 0, z: 12, day: 1, dayClock: .26, level: 1, xp: 0,
     hp: 320, hunger: 100, water: 100, energy: 100,
     inventory: { wood: 40, stone: 24, fiber: 20, ore: 0, crystal: 0, berry: 8, capsules: 5, food: 3, repair: 0 },
-    structures: [], captured: []
+    structures: [], captured: [], attributePoints: 0, skillPoints: 0,
+    attributes: Object.assign({}, DEFAULT_ATTRIBUTES), skills: Object.assign({}, DEFAULT_SKILLS)
   };
   try {
     const stored = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
@@ -108,6 +137,12 @@ function loadSave() {
     base.structures = Array.isArray(stored.structures) ? stored.structures : [];
     base.captured = Array.isArray(stored.captured) ? stored.captured : [];
     Object.assign(base, stored);
+    base.attributes = Object.assign({}, DEFAULT_ATTRIBUTES, stored.attributes || {});
+    base.skills = Object.assign({}, DEFAULT_SKILLS, stored.skills || {});
+    base.attributePoints = Math.max(0, Number(base.attributePoints) || 0);
+    base.skillPoints = Math.max(0, Number(base.skillPoints) || 0);
+    base.hp = Math.max(1, Number(base.hp) || 320);
+    base.dead = false;
   } catch (error) {
     console.warn('save unavailable', error);
   }
@@ -140,6 +175,15 @@ const state = {
   hunger: clamp(Number(saved.hunger) || 100, 0, 100),
   water: clamp(Number(saved.water) || 100, 0, 100),
   energy: clamp(Number(saved.energy) || 100, 0, 100),
+  attributePoints: Math.max(0, Number(saved.attributePoints) || 0),
+  skillPoints: Math.max(0, Number(saved.skillPoints) || 0),
+  attributes: Object.assign({}, DEFAULT_ATTRIBUTES, saved.attributes || {}),
+  skills: Object.assign({}, DEFAULT_SKILLS, saved.skills || {}),
+  dead: false,
+  respawnTimer: 0,
+  respawnReady: false,
+  gathering: null,
+  crafting: null,
   inventory: Object.assign({}, saved.inventory),
   player: null,
   ally: null,
@@ -156,11 +200,72 @@ const state = {
   activeAlly: true,
   cooldowns: { attack: 0, pulse: 0, void: 0, prism: 0, dodge: 0 },
   input: { keys: new Set(), joyX: 0, joyY: 0, joyActive: false, pointerId: null },
-  camera: { yaw: 0.55, pitch: .48, distance: 9, looking: false, pointerId: null, x: 0, y: 0 },
+  camera: { yaw: 0.55, pitch: .48, distance: 13.2, looking: false, pointerId: null, x: 0, y: 0 },
   dialogue: null,
   objective: 'Fale com Nara e construa um Núcleo de Base.',
   roster: Array.isArray(saved.captured) ? saved.captured : []
 };
+
+
+function attributeLevel(key) {
+  return Math.max(0, Math.floor(Number(state.attributes[key]) || 0));
+}
+
+function skillLevel(key) {
+  return Math.max(0, Math.floor(Number(state.skills[key]) || 0));
+}
+
+function maxPlayerHp() {
+  return 320 + attributeLevel('vitality') * 36;
+}
+
+function carryCapacity() {
+  return 100 + attributeLevel('capacity') * 25;
+}
+
+function inventoryWeight() {
+  return Object.entries(state.inventory).reduce((total, entry) => total + (Number(entry[1]) || 0) * (ITEM_WEIGHTS[entry[0]] || 0), 0);
+}
+
+function playerMoveSpeed() {
+  return SPECIES.lumion.speed * (1 + attributeLevel('agility') * .045);
+}
+
+function gatherDuration() {
+  return Math.max(.35, 1.5 / (1 + attributeLevel('gathering') * .14));
+}
+
+function craftDuration() {
+  return Math.max(.45, 2.4 / (1 + attributeLevel('crafting') * .14));
+}
+
+function combatDamage(base, skillKey) {
+  const skillBonus = skillKey ? 1 + Math.max(0, skillLevel(skillKey) - 1) * .08 : 1;
+  return Math.round(base * (1 + attributeLevel('strength') * .07) * skillBonus);
+}
+
+function canAct() {
+  return Boolean(state.player && state.player.group && state.player.group.visible && !state.player.dead && !state.dead && !state.paused);
+}
+
+function syncPlayerStats(heal) {
+  if (!state.player) return;
+  const oldMax = state.player.maxHp || 320;
+  state.player.maxHp = maxPlayerHp();
+  if (heal) state.player.hp = Math.min(state.player.maxHp, state.player.hp + (state.player.maxHp - oldMax) + 24);
+  state.player.hp = clamp(state.player.hp, 1, state.player.maxHp);
+  state.hp = state.player.hp;
+}
+
+function uiText(id, value) {
+  const element = $('#' + id);
+  if (element) element.textContent = value;
+}
+
+function uiBar(id, value) {
+  const element = $('#' + id);
+  if (element) element.style.width = (clamp(value, 0, 1) * 100) + '%';
+}
 
 function material(color, roughness, metalness, emissive, emissiveIntensity) {
   return new THREE.MeshStandardMaterial({
@@ -235,7 +340,7 @@ function createScene() {
   scene.background = new THREE.Color(0x07151d);
   scene.fog = new THREE.Fog(0x0a252c, 38, 150);
   camera = new THREE.PerspectiveCamera(56, innerWidth / innerHeight, .1, 240);
-  camera.position.set(0, 7, 9);
+  camera.position.set(0, 8.5, 13.2);
 
   renderer = new THREE.WebGLRenderer({ canvas: $('#world-canvas'), antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.85));
@@ -548,6 +653,99 @@ function makeShadow(parent, radius) {
   return shadow;
 }
 
+
+function clearTransientCombat() {
+  state.projectiles.forEach((projectile) => { if (scene && projectile.group) scene.remove(projectile.group); });
+  state.projectiles.length = 0;
+  state.effects.forEach((effect) => { if (scene && effect.group) scene.remove(effect.group); });
+  state.effects.length = 0;
+}
+
+function handlePlayerDeath() {
+  if (state.dead || !state.player) return;
+  state.dead = true;
+  state.respawnTimer = 2.2;
+  state.respawnReady = false;
+  state.input.keys.clear();
+  state.input.joyActive = false;
+  state.input.pointerId = null;
+  state.input.joyX = 0;
+  state.input.joyY = 0;
+  if (state.gathering && state.gathering.resource) state.gathering.resource.gathering = false;
+  state.gathering = null;
+  state.crafting = null;
+  clearTransientCombat();
+  state.player.moving = false;
+  state.player.group.visible = true;
+  state.player.play('death');
+  if (state.ally) {
+    state.ally.moving = false;
+    state.ally.group.visible = false;
+  }
+  const modal = $('#death-modal');
+  if (modal) modal.classList.remove('hidden');
+  const button = $('#respawn-button');
+  if (button) button.disabled = true;
+  updateDeathUI();
+  saveGame();
+}
+
+function updateDeathUI() {
+  const button = $('#respawn-button');
+  const countdown = $('#death-countdown');
+  if (button) {
+    button.disabled = !state.respawnReady;
+    button.textContent = state.respawnReady ? 'VOLTAR À BASE' : 'AGUARDE ' + Math.ceil(state.respawnTimer) + 's';
+  }
+  if (countdown) countdown.textContent = state.respawnReady ? 'Lúmion pode retornar com 65% do HP.' : 'A queda foi registrada. Preparando o retorno…';
+}
+
+function updateDeathState(dt) {
+  state.respawnTimer = Math.max(0, state.respawnTimer - dt);
+  if (!state.respawnReady && state.respawnTimer <= 0) {
+    state.respawnReady = true;
+    updateDeathUI();
+  }
+  if (state.player) {
+    state.player.moving = false;
+    state.player.update(dt);
+  }
+}
+
+function respawn() {
+  if (!state.dead || !state.respawnReady || !state.player) return;
+  state.dead = false;
+  state.respawnTimer = 0;
+  state.respawnReady = false;
+  state.player.dead = false;
+  state.player.captured = false;
+  state.player.group.visible = true;
+  state.player.model.visible = true;
+  state.player.model.position.set(0, 0, 0);
+  state.player.model.rotation.set(0, 0, 0);
+  state.player.action = 'idle';
+  state.player.actionTime = 0;
+  state.player.actionDuration = 0;
+  state.player.group.position.set(0, 0, 12);
+  syncPlayerStats(false);
+  state.player.hp = Math.max(1, Math.round(state.player.maxHp * .65));
+  state.hp = state.player.hp;
+  state.hunger = Math.max(35, state.hunger);
+  state.water = Math.max(35, state.water);
+  state.energy = 100;
+  Object.keys(state.cooldowns).forEach((key) => { state.cooldowns[key] = 0; });
+  if (state.ally) {
+    state.ally.dead = false;
+    state.ally.group.visible = true;
+    state.ally.group.position.set(state.player.group.position.x - 2.4, 0, state.player.group.position.z + 2.1);
+    state.activeAlly = true;
+  }
+  $('#death-modal')?.classList.add('hidden');
+  feed('Lúmion voltou à base. Prepare-se para a próxima expedição.');
+  updateUI();
+  saveGame();
+}
+
 class Creature {
   constructor(spec, role, x, z) {
     this.spec = spec;
@@ -837,8 +1035,10 @@ class Creature {
     floatingText(this.group.position.clone().add(new THREE.Vector3(0, 2.5, 0)), '-' + Math.round(amount), source === 'player' ? '#ffe17a' : '#ff83ad');
     if (this.hp <= 0) {
       this.dead = true;
+      this.moving = false;
       this.play('death');
-      if (this.role === 'wild' || this.role === 'boss') onCreatureDefeated(this);
+      if (this.role === 'player') handlePlayerDeath();
+      else if (this.role === 'wild' || this.role === 'boss') onCreatureDefeated(this);
     }
   }
 
@@ -848,6 +1048,7 @@ class Creature {
   }
 }
 
+
 function createCreatures() {
   const spawnList = [
     ['embermite', -16, -1], ['mossclaw', 18, -7], ['gloomfin', 29, -27],
@@ -855,7 +1056,9 @@ function createCreatures() {
     ['gloomfin', 73, -37], ['embermite', 38, 43], ['ironroot', 73, 43]
   ];
   state.player = new Creature(SPECIES.lumion, 'player', Number(saved.x) || 0, Number(saved.z) || 12);
-  state.player.hp = state.hp;
+  state.player.maxHp = maxPlayerHp();
+  state.player.hp = clamp(state.hp, 1, state.player.maxHp);
+  state.hp = state.player.hp;
   state.ally = new Creature(SPECIES.oriel, 'ally', state.player.group.position.x - 3, state.player.group.position.z + 2);
   spawnList.forEach((entry) => {
     const creature = new Creature(SPECIES[entry[0]], entry[0] === 'ironroot' ? 'boss' : 'wild', entry[1], entry[2]);
@@ -863,7 +1066,6 @@ function createCreatures() {
     state.wild.push(creature);
   });
 }
-
 function restoreStructures() {
   (saved.structures || []).forEach((entry) => {
     if (!BUILD_DATA[entry.type]) return;
@@ -953,10 +1155,13 @@ function moveInput() {
   return result;
 }
 
+
 function updatePlayer(dt) {
+  if (!canAct()) return;
   const direction = moveInput();
   const running = state.input.keys.has('ShiftLeft') || state.input.keys.has('ShiftRight');
-  const speed = running && state.energy > 2 ? 7.8 : SPECIES.lumion.speed;
+  const baseSpeed = playerMoveSpeed();
+  const speed = running && state.energy > 2 ? baseSpeed * 1.39 : baseSpeed;
   if (direction.lengthSq() > 0) {
     state.player.move(direction, speed, dt);
     resolveAgainstColliders(state.player.group.position, .46);
@@ -969,7 +1174,11 @@ function updatePlayer(dt) {
 }
 
 function updateAlly(dt) {
-  if (!state.ally || !state.activeAlly) return;
+  if (!state.ally || state.dead) return;
+  if (!state.activeAlly) {
+    state.ally.group.visible = false;
+    return;
+  }
   state.ally.group.visible = true;
   const playerPos = state.player.group.position;
   const followTarget = tempA.set(playerPos.x + 2.2, 0, playerPos.z + 1.9);
@@ -979,7 +1188,7 @@ function updateAlly(dt) {
     const attackDir = tempB.subVectors(target.group.position, state.ally.group.position);
     if (state.ally.attackCooldown <= 0) {
       state.ally.play('attack');
-      spawnProjectile(state.ally, '#ff9df0', 22, Math.round(SPECIES.oriel.attack * 1.1), attackDir);
+      spawnProjectile(state.ally, '#ff9df0', 22, combatDamage(SPECIES.oriel.attack, 'attack'), attackDir);
       state.ally.attackCooldown = 1.25;
     } else if (attackDir.length() > 3.2) {
       state.ally.move(attackDir, SPECIES.oriel.speed, dt);
@@ -992,7 +1201,6 @@ function updateAlly(dt) {
     state.ally.move(followDir, SPECIES.oriel.speed, dt);
   }
 }
-
 function updateWild(wild, dt) {
   if (wild.dead || !wild.group.visible) return;
   wild.roamTime -= dt;
@@ -1069,6 +1277,7 @@ function spawnProjectile(owner, color, speed, damage, direction, options) {
 }
 
 function updateProjectiles(dt) {
+  if (state.dead) return;
   for (let i = state.projectiles.length - 1; i >= 0; i -= 1) {
     const projectile = state.projectiles[i];
     projectile.life -= dt;
@@ -1098,56 +1307,58 @@ function updateProjectiles(dt) {
   }
 }
 
+
 function basicAttack() {
-  if (!state.player || !scene || state.paused || state.cooldowns.attack > 0 || state.player.dead) return;
+  if (!canAct() || state.cooldowns.attack > 0) return;
   const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(state.player.group.quaternion);
   state.player.play('attack');
-  spawnProjectile(state.player, '#6ceeff', 19, 35 + state.level * 2, direction, { radius: .62, life: 1.1 });
-  state.cooldowns.attack = .28;
+  spawnProjectile(state.player, '#6ceeff', 19 * (1 + attributeLevel('agility') * .018), combatDamage(35 + state.level * 2, 'attack'), direction, { radius: .62, life: 1.1 });
+  state.cooldowns.attack = Math.max(.18, .28 - attributeLevel('agility') * .008);
 }
 
 function pulseAttack() {
-  if (!state.player || !scene || state.paused || state.cooldowns.pulse > 0) return;
+  if (!canAct() || state.cooldowns.pulse > 0) return;
   state.player.play('cast');
   const center = state.player.group.position.clone();
-  addRingEffect(center, 4.8, '#76eaff', 1.0);
+  const radius = 4.8 * (1 + Math.max(0, skillLevel('pulse') - 1) * .08);
+  addRingEffect(center, radius, '#76eaff', 1.0);
   state.wild.forEach((wild) => {
-    if (!wild.dead && distance2D(center, wild.group.position) < 5.2) wild.takeDamage(48 + state.level * 3, 'player');
+    if (!wild.dead && distance2D(center, wild.group.position) < radius + .4) wild.takeDamage(combatDamage(48 + state.level * 3, 'pulse'), 'player');
   });
   state.cooldowns.pulse = 3.2;
 }
 
 function voidAttack() {
-  if (!state.player || !scene || state.paused || state.cooldowns.void > 0) return;
+  if (!canAct() || state.cooldowns.void > 0) return;
   state.player.play('cast');
   const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(state.player.group.quaternion);
-  const center = state.player.group.position.clone().addScaledVector(direction, 5);
+  const center = state.player.group.position.clone().addScaledVector(direction, 5 + Math.max(0, skillLevel('void') - 1) * .55);
   addVoidEffect(center);
   state.cooldowns.void = 6;
 }
 
 function prismAttack() {
-  if (!state.player || !scene || state.paused || state.cooldowns.prism > 0) return;
+  if (!canAct() || state.cooldowns.prism > 0) return;
   state.player.play('cast');
   const base = new THREE.Vector3(0, 0, 1).applyQuaternion(state.player.group.quaternion);
-  [-.34, -.17, 0, .17, .34].forEach((angle) => {
+  const count = 4 + skillLevel('prism');
+  Array.from({ length: count }, (_, index) => (index - (count - 1) / 2) * .17).forEach((angle) => {
     const direction = base.clone().applyAxisAngle(UP, angle);
-    spawnProjectile(state.player, '#b9a0ff', 16, 28 + state.level * 2, direction, { radius: .48, life: 1.25 });
+    spawnProjectile(state.player, '#b9a0ff', 16, combatDamage(28 + state.level * 2, 'prism'), direction, { radius: .48, life: 1.25 });
   });
   state.cooldowns.prism = 4.4;
 }
 
 function dodge() {
-  if (!state.player || state.paused || state.cooldowns.dodge > 0) return;
+  if (!canAct() || state.cooldowns.dodge > 0) return;
   const direction = moveInput();
   if (direction.lengthSq() < .01) direction.set(0, 0, 1).applyQuaternion(state.player.group.quaternion);
   state.player.play('dodge');
-  state.player.group.position.addScaledVector(direction.normalize(), 3.2);
+  state.player.group.position.addScaledVector(direction.normalize(), 3.2 * (1 + attributeLevel('agility') * .05));
   state.player.group.position.x = clamp(state.player.group.position.x, WORLD.minX, WORLD.maxX);
   state.player.group.position.z = clamp(state.player.group.position.z, WORLD.minZ, WORLD.maxZ);
-  state.cooldowns.dodge = 1.25;
+  state.cooldowns.dodge = Math.max(.72, 1.25 - attributeLevel('agility') * .055);
 }
-
 function addRingEffect(center, radius, color, life) {
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(.4, .56, 48),
@@ -1249,25 +1460,25 @@ function onCreatureDefeated(creature) {
   }
 }
 
+
 function addXp(amount) {
   state.xp += amount;
   let required = 100 + state.level * 45;
   while (state.xp >= required) {
     state.xp -= required;
     state.level += 1;
-    required = 100 + state.level * 45;
-    state.player.maxHp += 14;
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + 35);
+    state.attributePoints += 1;
+    state.skillPoints += 1;
+    syncPlayerStats(true);
     floatingText(state.player.group.position.clone().add(new THREE.Vector3(0, 3, 0)), 'NÍVEL ' + state.level, '#ffe27c');
-    feed('Lúmion alcançou o nível ' + state.level + '.');
+    feed('Nível ' + state.level + ': +1 ponto de atributo e +1 ponto de técnica.');
   }
 }
-
 function nearestResource(maxDistance) {
   let best = null;
   let bestDistance = maxDistance || Infinity;
   state.resources.forEach((resource) => {
-    if (resource.collected || !resource.group.visible) return;
+    if (resource.collected || resource.gathering || !resource.group.visible) return;
     const d = distance2D(resource.group.position, state.player.group.position);
     if (d < bestDistance) {
       best = resource;
@@ -1303,7 +1514,7 @@ function updateInteractHint() {
 }
 
 function interact() {
-  if (state.paused) return;
+  if (!canAct()) return;
   const npc = nearestNpc(3.5);
   const resource = nearestResource(3.0);
   if (npc && (!resource || distance2D(npc.group.position, state.player.group.position) < distance2D(resource.group.position, state.player.group.position))) {
@@ -1317,7 +1528,23 @@ function interact() {
   feed('Nada interativo por perto.');
 }
 
+
 function collectResource(resource) {
+  if (!canAct() || !resource || resource.collected || resource.gathering) return;
+  const amountWeight = Object.entries(resource.data.amount).reduce((total, entry) => total + entry[1] * (ITEM_WEIGHTS[entry[0]] || 0), 0);
+  if (inventoryWeight() + amountWeight > carryCapacity()) {
+    feed('Mochila cheia. Aumente CARGA ou fabrique/guarde itens.');
+    return;
+  }
+  const duration = gatherDuration();
+  resource.gathering = true;
+  state.gathering = { resource, remaining: duration };
+  state.player.play('attack');
+  feed('Coletando ' + resource.data.label + '… ' + duration.toFixed(1) + 's');
+}
+function completeGathering(task) {
+  const resource = task.resource;
+  resource.gathering = false;
   resource.collected = true;
   resource.group.visible = false;
   resource.respawn = 35;
@@ -1329,10 +1556,22 @@ function collectResource(resource) {
   if (state.inventory.wood >= 20 && state.inventory.stone >= 12 && !state.structures.some((item) => item.type === 'core')) {
     state.objective = 'Abra CONSTRUIR e coloque o Núcleo no terreno.';
   }
+  state.gathering = null;
   saveGame();
 }
 
 function updateResources(dt) {
+  if (state.gathering) {
+    const task = state.gathering;
+    if (!task.resource || task.resource.collected || distance2D(task.resource.group.position, state.player.group.position) > 3.8) {
+      if (task.resource) task.resource.gathering = false;
+      state.gathering = null;
+      feed('Coleta cancelada: fique perto do recurso.');
+    } else {
+      task.remaining -= dt;
+      if (task.remaining <= 0) completeGathering(task);
+    }
+  }
   state.resources.forEach((resource) => {
     if (resource.collected) {
       resource.respawn -= dt;
@@ -1346,7 +1585,6 @@ function updateResources(dt) {
     }
   });
 }
-
 function openDialogue(npc) {
   if (state.dialogue && state.dialogue.npc === npc) {
     state.dialogue.index += 1;
@@ -1368,6 +1606,7 @@ function openDialogue(npc) {
 }
 
 function eat() {
+  if (!canAct()) return;
   if (state.inventory.food <= 0) {
     feed('Você não tem refeições.');
     return;
@@ -1381,11 +1620,12 @@ function eat() {
 }
 
 function showBuild() {
-  if (state.paused) return;
+  if (!canAct()) return;
   $('#build-modal').classList.remove('hidden');
 }
 
 function placeBuild(type) {
+  if (!canAct()) return;
   const data = BUILD_DATA[type];
   if (!data) return;
   const missing = Object.keys(data.cost).find((key) => (state.inventory[key] || 0) < data.cost[key]);
@@ -1408,11 +1648,17 @@ function placeBuild(type) {
 }
 
 function showCraft() {
-  if (state.paused) return;
+  if (!canAct()) return;
   $('#craft-modal').classList.remove('hidden');
 }
 
+
 function craft(type) {
+  if (!canAct()) return;
+  if (state.crafting) {
+    feed('A bancada já está fabricando um item.');
+    return;
+  }
   const data = CRAFT_DATA[type];
   if (!data) return;
   const missing = Object.keys(data.cost).find((key) => (state.inventory[key] || 0) < data.cost[key]);
@@ -1421,19 +1667,19 @@ function craft(type) {
     return;
   }
   Object.keys(data.cost).forEach((key) => { state.inventory[key] -= data.cost[key]; });
-  Object.keys(data.give).forEach((key) => { state.inventory[key] = (state.inventory[key] || 0) + data.give[key]; });
-  feed(data.label + ' fabricado.');
+  state.crafting = { type, data, remaining: craftDuration() };
+  feed('Fabricando ' + data.label + '… ' + state.crafting.remaining.toFixed(1) + 's');
   saveGame();
 }
-
 function toggleCompanion() {
+  if (!canAct() || !state.ally) return;
   state.activeAlly = !state.activeAlly;
   state.ally.group.visible = state.activeAlly;
   feed(state.activeAlly ? 'Oriel voltou para acompanhar Lúmion.' : 'Oriel aguarda na base.');
 }
 
 function capture() {
-  if (state.paused) return;
+  if (!canAct()) return;
   const target = nearestWild(5.2);
   if (!target) {
     feed('Aproxime-se de um monstrinho para capturá-lo.');
@@ -1491,6 +1737,7 @@ function capture() {
 }
 
 function togglePause() {
+  if (state.dead) return;
   state.paused = !state.paused;
   $('#pause-modal').classList.toggle('hidden', !state.paused);
   $('#pause-button').textContent = state.paused ? '▶' : 'Ⅱ';
@@ -1506,8 +1753,13 @@ function resetSave() {
   location.reload();
 }
 
+
 function handleAction(action) {
-  if (!state.player && action !== 'close') return;
+  if (action === 'respawn') {
+    respawn();
+    return;
+  }
+  if (state.dead || !state.player) return;
   if (action === 'attack') basicAttack();
   if (action === 'pulse') pulseAttack();
   if (action === 'void') voidAttack();
@@ -1519,8 +1771,9 @@ function handleAction(action) {
   if (action === 'build') showBuild();
   if (action === 'craft') showCraft();
   if (action === 'companion') toggleCompanion();
+  if (action === 'inventory') showInventory();
+  if (action === 'progression' || action === 'attributes' || action === 'skills') showProgression();
 }
-
 function bindInput() {
   const movementCodes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'];
   window.addEventListener('keydown', (event) => {
@@ -1532,7 +1785,7 @@ function bindInput() {
     const actions = {
       Numpad1: 'attack', Digit1: 'attack', KeyJ: 'attack', Digit2: 'pulse', Digit3: 'void', Digit4: 'prism',
       Space: 'dodge', KeyE: 'interact', KeyF: 'eat', KeyC: 'capture', KeyB: 'build', KeyK: 'craft', KeyR: 'companion',
-      Escape: 'close'
+      Escape: 'close', KeyI: 'inventory', KeyP: 'progression', Enter: 'respawn'
     };
     if (actions[event.code]) {
       if (actions[event.code] === 'close') {
@@ -1563,6 +1816,25 @@ function bindInput() {
       craft(button.getAttribute('data-craft'));
     }, { passive: false });
   });
+  const attributeOptions = $('#attribute-options');
+  if (attributeOptions) {
+    attributeOptions.addEventListener('pointerdown', (event) => {
+      const button = event.target.closest('[data-attribute]');
+      if (!button) return;
+      event.preventDefault();
+      spendAttribute(button.getAttribute('data-attribute'));
+    }, { passive: false });
+  }
+  const skillOptions = $('#skill-options');
+  if (skillOptions) {
+    skillOptions.addEventListener('pointerdown', (event) => {
+      const button = event.target.closest('[data-skill]');
+      if (!button) return;
+      event.preventDefault();
+      upgradeSkill(button.getAttribute('data-skill'));
+    }, { passive: false });
+  }
+
   document.querySelectorAll('[data-close]').forEach((button) => {
     button.addEventListener('pointerdown', (event) => {
       event.preventDefault();
@@ -1685,23 +1957,34 @@ function updateDayNight(dt) {
   if (waterTexture) waterTexture.offset.x = (waterTexture.offset.x + dt * .007) % 1;
 }
 
+
 function updateSurvival(dt) {
   survivalTimer += dt;
-  if (survivalTimer < 5) return;
+  if (survivalTimer < 5 || !canAct()) return;
   survivalTimer = 0;
-  state.hunger = clamp(state.hunger - .55, 0, 100);
-  state.water = clamp(state.water - .82, 0, 100);
+  const survivalFactor = 1 - skillLevel('survival') * .06;
+  state.hunger = clamp(state.hunger - .55 * survivalFactor, 0, 100);
+  state.water = clamp(state.water - .82 * survivalFactor, 0, 100);
   if (state.hunger < 12 || state.water < 12) {
     state.player.takeDamage(4, 'survival');
     state.hp = state.player.hp;
     feed(state.hunger < 12 ? 'A fome está crítica.' : 'A água está crítica.');
   }
 }
+function updateCrafting(dt) {
+  if (!state.crafting) return;
+  state.crafting.remaining -= dt;
+  if (state.crafting.remaining > 0) return;
+  const task = state.crafting;
+  Object.keys(task.data.give).forEach((key) => { state.inventory[key] = (state.inventory[key] || 0) + task.data.give[key]; });
+  state.crafting = null;
+  feed(task.data.label + ' pronto.');
+  saveGame();
+}
 
 function updateCooldowns(dt) {
   Object.keys(state.cooldowns).forEach((key) => { state.cooldowns[key] = Math.max(0, state.cooldowns[key] - dt); });
 }
-
 function updateLabels() {
   state.labels.forEach((record) => {
     if (!record.object || !record.element) return;
@@ -1762,33 +2045,125 @@ function feed(message) {
   });
 }
 
-function updateUI() {
-  const hp = clamp(state.player.hp / state.player.maxHp, 0, 1);
-  const xpRequired = 100 + state.level * 45;
-  const setText = (id, value) => { const element = $('#' + id); if (element) element.textContent = value; };
-  const setBar = (id, value) => { const element = $('#' + id); if (element) element.style.width = (clamp(value, 0, 1) * 100) + '%'; };
-  setText('level-text', 'Lv.' + state.level);
-  setText('hp-text', Math.ceil(state.player.hp) + ' / ' + Math.ceil(state.player.maxHp));
-  setText('hunger-text', Math.ceil(state.hunger) + '%');
-  setText('water-text', Math.ceil(state.water) + '%');
-  setText('energy-text', Math.ceil(state.energy) + '%');
-  setText('xp-text', 'XP ' + Math.floor(state.xp) + ' / ' + xpRequired);
-  setBar('hp-bar', hp);
-  setBar('hunger-bar', state.hunger / 100);
-  setBar('water-bar', state.water / 100);
-  setBar('energy-bar', state.energy / 100);
-  setBar('xp-bar', state.xp / xpRequired);
-  setText('objective-text', state.objective);
-  Object.keys(state.inventory).forEach((key) => setText('inv-' + key, Math.floor(state.inventory[key] || 0)));
-  const biome = state.player.group.position.x > 22 && state.player.group.position.z < -5 ? 'Costa Turquesa' : state.player.group.position.x > 22 ? 'Ruínas Incandescentes' : 'Vale Verde';
-  setText('biome-name', biome);
-  updateInteractHint();
-  const buttons = document.querySelectorAll('#skills button');
-  buttons[0].style.opacity = state.cooldowns.pulse > 0 ? '.5' : '1';
-  buttons[1].style.opacity = state.cooldowns.void > 0 ? '.5' : '1';
-  buttons[2].style.opacity = state.cooldowns.prism > 0 ? '.5' : '1';
+
+function updateInventoryModal() {
+  const grid = $('#inventory-grid');
+  if (!grid) return;
+  const entries = [
+    ['wood', '🪵', 'Madeira'], ['stone', '🪨', 'Pedra'], ['fiber', '🌿', 'Fibra'],
+    ['ore', '⛓', 'Minério'], ['crystal', '◇', 'Cristal'], ['berry', '🍓', 'Frutas'],
+    ['capsules', '◉', 'Cápsulas'], ['food', '🍲', 'Refeições'], ['repair', '⚒', 'Reparos']
+  ];
+  grid.innerHTML = entries.map((entry) => '<div class="inventory-slot"><strong>' + entry[1] + '</strong><span>' + entry[2] + '</span><b>' + Math.floor(state.inventory[entry[0]] || 0) + '</b></div>').join('');
+  uiText('inventory-weight-modal', inventoryWeight().toFixed(1) + ' / ' + carryCapacity() + ' kg');
 }
 
+function updateProgressionUI() {
+  const attributes = $('#attribute-options');
+  const skills = $('#skill-options');
+  uiText('attribute-points-modal', state.attributePoints + ' pontos de atributo');
+  uiText('skill-points-modal', state.skillPoints + ' pontos de técnica');
+  if (attributes) {
+    attributes.innerHTML = Object.entries(ATTRIBUTE_DATA).map(([key, data]) => {
+      const level = attributeLevel(key);
+      return '<button type="button" data-attribute="' + key + '"><strong>' + data.icon + ' ' + data.label + '</strong><b>Lv.' + level + '</b><small>' + data.description + '</small><em>＋1</em></button>';
+    }).join('');
+  }
+  if (skills) {
+    skills.innerHTML = Object.entries(SKILL_DATA).map(([key, data]) => {
+      const level = skillLevel(key);
+      const maxed = level >= data.max;
+      return '<button type="button" data-skill="' + key + '"><strong>' + data.icon + ' ' + data.label + '</strong><b>Lv.' + level + '/' + data.max + '</b><small>' + data.description + '</small><em>' + (maxed ? 'MÁXIMO' : '＋1 nível') + '</em></button>';
+    }).join('');
+  }
+}
+
+function spendAttribute(key) {
+  if (!canAct() || !ATTRIBUTE_DATA[key] || state.attributePoints <= 0) return;
+  state.attributePoints -= 1;
+  state.attributes[key] = attributeLevel(key) + 1;
+  syncPlayerStats(key === 'vitality');
+  feed(ATTRIBUTE_DATA[key].label + ' aumentada para Lv.' + state.attributes[key] + '.');
+  updateProgressionUI();
+  updateUI();
+  saveGame();
+}
+
+function upgradeSkill(key) {
+  if (!canAct() || !SKILL_DATA[key] || state.skillPoints <= 0) return;
+  const current = skillLevel(key);
+  if (current >= SKILL_DATA[key].max) {
+    feed(SKILL_DATA[key].label + ' já está no máximo.');
+    return;
+  }
+  state.skillPoints -= 1;
+  state.skills[key] = current + 1;
+  feed(SKILL_DATA[key].label + ' agora está no Lv.' + state.skills[key] + '.');
+  updateProgressionUI();
+  updateUI();
+  saveGame();
+}
+
+function showInventory() {
+  if (!state.player) return;
+  updateInventoryModal();
+  $('#inventory-modal').classList.remove('hidden');
+}
+
+function showProgression() {
+  if (!canAct()) return;
+  updateProgressionUI();
+  $('#progression-modal').classList.remove('hidden');
+}
+
+function updateUI() {
+  if (!state.player) return;
+  const hp = clamp(state.player.hp / state.player.maxHp, 0, 1);
+  const xpRequired = 100 + state.level * 45;
+  uiText('level-text', 'Lv.' + state.level);
+  uiText('hp-text', Math.ceil(state.player.hp) + ' / ' + Math.ceil(state.player.maxHp));
+  uiText('hunger-text', Math.ceil(state.hunger) + '%');
+  uiText('water-text', Math.ceil(state.water) + '%');
+  uiText('energy-text', Math.ceil(state.energy) + '%');
+  uiText('xp-text', 'XP ' + Math.floor(state.xp) + ' / ' + xpRequired);
+  uiText('attribute-points-text', state.attributePoints);
+  uiText('skill-points-text', state.skillPoints);
+  uiText('inventory-weight', inventoryWeight().toFixed(1) + ' / ' + carryCapacity() + ' kg');
+  uiText('crafting-status', state.gathering ? 'COLETANDO: ' + state.gathering.remaining.toFixed(1) + 's' : state.crafting ? 'FABRICANDO: ' + state.crafting.remaining.toFixed(1) + 's' : '');
+  uiBar('hp-bar', hp);
+  uiBar('hunger-bar', state.hunger / 100);
+  uiBar('water-bar', state.water / 100);
+  uiBar('energy-bar', state.energy / 100);
+  uiBar('xp-bar', state.xp / xpRequired);
+  uiText('objective-text', state.objective);
+  Object.keys(state.inventory).forEach((key) => uiText('inv-' + key, Math.floor(state.inventory[key] || 0)));
+  const biome = state.player.group.position.x > 22 && state.player.group.position.z < -5 ? 'Costa Turquesa' : state.player.group.position.x > 22 ? 'Ruínas Incandescentes' : 'Vale Verde';
+  uiText('biome-name', biome);
+  if (state.dead) uiText('interact-label', 'LÚMION CAÍDO');
+  else updateInteractHint();
+  const skillButtons = document.querySelectorAll('#skills button');
+  if (skillButtons[0]) {
+    skillButtons[0].style.opacity = state.cooldowns.pulse > 0 ? '.5' : '1';
+    skillButtons[0].querySelector('span').textContent = 'PULSO · Lv.' + skillLevel('pulse');
+  }
+  if (skillButtons[1]) {
+    skillButtons[1].style.opacity = state.cooldowns.void > 0 ? '.5' : '1';
+    skillButtons[1].querySelector('span').textContent = 'VÓRTICE · Lv.' + skillLevel('void');
+  }
+  if (skillButtons[2]) {
+    skillButtons[2].style.opacity = state.cooldowns.prism > 0 ? '.5' : '1';
+    skillButtons[2].querySelector('span').textContent = 'PRISMA · Lv.' + skillLevel('prism');
+  }
+  const root = $('#game-root');
+  if (root) root.classList.toggle('player-dead', state.dead);
+  document.querySelectorAll('[data-action]').forEach((button) => {
+    const action = button.getAttribute('data-action');
+    button.disabled = state.dead && action !== 'respawn';
+    button.classList.toggle('disabled-action', button.disabled);
+  });
+  if (!$('#inventory-modal')?.classList.contains('hidden')) updateInventoryModal();
+  if (!$('#progression-modal')?.classList.contains('hidden')) updateProgressionUI();
+}
 function drawMinimap() {
   const ctx = minimapContext;
   const canvas = $('#minimap');
@@ -1837,12 +2212,18 @@ function drawMinimap() {
   ctx.fill();
 }
 
+
 function saveGame() {
   const data = {
     x: state.player ? state.player.group.position.x : 0,
     z: state.player ? state.player.group.position.z : 12,
     day: state.day, dayClock: state.dayClock, level: state.level, xp: state.xp,
-    hp: state.player ? state.player.hp : 320, hunger: state.hunger, water: state.water, energy: state.energy,
+    hp: state.player ? Math.max(1, state.player.hp) : 320,
+    hunger: state.hunger, water: state.water, energy: state.energy,
+    attributePoints: state.attributePoints,
+    skillPoints: state.skillPoints,
+    attributes: state.attributes,
+    skills: state.skills,
     inventory: state.inventory,
     structures: state.structures.map((structure) => ({ type: structure.type, x: structure.x, z: structure.z, rotation: structure.rotation })),
     captured: state.roster
@@ -1851,6 +2232,12 @@ function saveGame() {
 }
 
 function update(dt) {
+  if (state.dead) {
+    updateCooldowns(dt);
+    updateDeathState(dt);
+    return;
+  }
+  if (state.dead) return;
   if (state.paused) return;
   updateCooldowns(dt);
   updatePlayer(dt);
@@ -1862,6 +2249,7 @@ function update(dt) {
   updateProjectiles(dt);
   updateEffects(dt);
   updateResources(dt);
+  updateCrafting(dt);
   updateSurvival(dt);
   updateDayNight(dt);
   updateCamera(dt);
@@ -1873,7 +2261,6 @@ function update(dt) {
     saveGame();
   }
 }
-
 function resize() {
   if (!renderer || !camera) return;
   camera.aspect = innerWidth / innerHeight;
@@ -1915,22 +2302,40 @@ function start() {
   requestAnimationFrame(frame);
 }
 
-window.PSY_WILDLANDS_3D_V144 = {
-  version: 'WILDLANDS_3D_V144',
+window.PSY_WILDLANDS_3D_V145 = {
+  version: 'WILDLANDS_3D_V145',
   state,
-  actions: { basicAttack, pulseAttack, voidAttack, prismAttack, capture, dodge, showBuild, showCraft },
+  actions: {
+    basicAttack, pulseAttack, voidAttack, prismAttack, capture, dodge,
+    respawn, showInventory, showProgression, spendAttribute, upgradeSkill,
+    showBuild, showCraft
+  },
   snapshot: () => ({
-    version: 'WILDLANDS_3D_V144',
+    version: 'WILDLANDS_3D_V145',
     rendererReady: Boolean(renderer),
     playerReady: Boolean(state.player),
+    dead: state.dead,
+    respawnReady: state.respawnReady,
+    respawnTimer: state.respawnTimer,
     joystick: { x: state.input.joyX, y: state.input.joyY, active: state.input.joyActive },
+    cameraDistance: cameraRig.distance,
     projectiles: state.projectiles.length,
     wildCreatures: state.wild.filter((creature) => !creature.dead).length,
     npcs: state.npcs.length,
     structures: state.structures.length,
     inventory: { ...state.inventory },
+    inventoryWeight: inventoryWeight(),
+    carryCapacity: carryCapacity(),
     level: state.level,
+    xp: state.xp,
     hp: state.hp,
+    maxHp: state.player ? state.player.maxHp : 0,
+    attributePoints: state.attributePoints,
+    skillPoints: state.skillPoints,
+    attributes: { ...state.attributes },
+    skills: { ...state.skills },
+    gathering: state.gathering ? { type: state.gathering.resource.type, remaining: state.gathering.remaining } : null,
+    crafting: state.crafting ? { type: state.crafting.recipe.id, remaining: state.crafting.remaining } : null,
     objective: state.objective
   })
 };
