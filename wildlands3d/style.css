@@ -467,7 +467,7 @@ button{font:inherit}
     padding:6px 9px;
   }
   #system-actions{
-    right:calc(min(190px,17vw) + 30px);
+    right:calc(min(190px,17vw) + 20px);
     top:68px;
     gap:6px;
   }
