@@ -200,7 +200,7 @@ const state = {
   activeAlly: true,
   cooldowns: { attack: 0, pulse: 0, void: 0, prism: 0, dodge: 0 },
   input: { keys: new Set(), joyX: 0, joyY: 0, joyActive: false, pointerId: null },
-  camera: { yaw: 0.55, pitch: .48, distance: 13.2, looking: false, pointerId: null, x: 0, y: 0 },
+  camera: { yaw: 0.55, pitch: .48, distance: 18.5, looking: false, pointerId: null, x: 0, y: 0 },
   dialogue: null,
   objective: 'Fale com Nara e construa um Núcleo de Base.',
   roster: Array.isArray(saved.captured) ? saved.captured : []
@@ -340,7 +340,7 @@ function createScene() {
   scene.background = new THREE.Color(0x07151d);
   scene.fog = new THREE.Fog(0x0a252c, 38, 150);
   camera = new THREE.PerspectiveCamera(56, innerWidth / innerHeight, .1, 240);
-  camera.position.set(0, 8.5, 13.2);
+  camera.position.set(0, 11.2, 18.5);
 
   renderer = new THREE.WebGLRenderer({ canvas: $('#world-canvas'), antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.85));
@@ -1774,7 +1774,41 @@ function handleAction(action) {
   if (action === 'inventory') showInventory();
   if (action === 'progression' || action === 'attributes' || action === 'skills') showProgression();
 }
+function updateOrientationLock() {
+  const portrait = typeof matchMedia === 'function' && matchMedia('(orientation: portrait)').matches;
+  const lock = $('#orientation-lock');
+  const root = $('#game-root');
+  if (lock) lock.setAttribute('aria-hidden', portrait ? 'false' : 'true');
+  if (root) root.classList.toggle('portrait-blocked', portrait);
+}
+
+async function requestLandscape() {
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    }
+  } catch (error) {
+    console.info('Tela cheia não autorizada pelo navegador.', error);
+  }
+  try {
+    if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.lock) {
+      await screen.orientation.lock('landscape');
+    }
+  } catch (error) {
+    console.info('Rotação automática não disponível neste navegador.', error);
+  }
+  updateOrientationLock();
+}
+
 function bindInput() {
+  const orientationButton = $('#orientation-fullscreen');
+  if (orientationButton) {
+    orientationButton.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      requestLandscape();
+    }, { passive: false });
+  }
+  updateOrientationLock();
   const movementCodes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'];
   window.addEventListener('keydown', (event) => {
     if (movementCodes.indexOf(event.code) >= 0) {
@@ -1918,7 +1952,7 @@ function bindInput() {
   lookZone.addEventListener('pointermove', moveLook, { passive: false });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((eventName) => lookZone.addEventListener(eventName, endLook));
   window.addEventListener('wheel', (event) => {
-    state.camera.distance = clamp(state.camera.distance + (event.deltaY > 0 ? .55 : -.55), 5.5, 14);
+    state.camera.distance = clamp(state.camera.distance + (event.deltaY > 0 ? .7 : -.7), 8, 22);
   }, { passive: true });
   $('#world-canvas').addEventListener('pointerdown', (event) => {
     if (event.pointerType === 'mouse' && event.button === 0 && event.clientX > innerWidth * .38) basicAttack();
@@ -2296,14 +2330,15 @@ function start() {
   feed('Ataque básico: botão ATACAR, J, 1 ou NUM1.');
   updateUI();
   drawMinimap();
-  addEventListener('resize', resize);
+  addEventListener('resize', () => { resize(); updateOrientationLock(); });
+  addEventListener('orientationchange', updateOrientationLock);
   addEventListener('beforeunload', saveGame);
   setTimeout(() => $('#loading').classList.add('done'), 480);
   requestAnimationFrame(frame);
 }
 
-window.PSY_WILDLANDS_3D_V145 = {
-  version: 'WILDLANDS_3D_V145',
+window.PSY_WILDLANDS_3D_V146 = {
+  version: 'WILDLANDS_3D_V146',
   state,
   actions: {
     basicAttack, pulseAttack, voidAttack, prismAttack, capture, dodge,
@@ -2311,7 +2346,7 @@ window.PSY_WILDLANDS_3D_V145 = {
     showBuild, showCraft
   },
   snapshot: () => ({
-    version: 'WILDLANDS_3D_V145',
+    version: 'WILDLANDS_3D_V146',
     rendererReady: Boolean(renderer),
     playerReady: Boolean(state.player),
     dead: state.dead,
