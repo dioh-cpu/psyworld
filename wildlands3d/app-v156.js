@@ -26,7 +26,7 @@ const environmentAtlasLoader = new THREE.TextureLoader();
 environmentAtlasLoader.load('./assets/environment/frontier-iris-environment-atlas-v2.png', (texture) => {
   texture.colorSpace = THREE.SRGBColorSpace;
   environmentAtlasTexture = texture;
-  upgradeEnvironmentArtwork();
+  if (scene) upgradeEnvironmentArtwork();
 });
 
 function atlasSprite(texture, column, row, width, height) {
@@ -57,6 +57,12 @@ function upgradeEnvironmentArtwork() {
     } else if (type === 'npc') {
       sprite = atlasSprite(environmentAtlasTexture, 1, 3, 1.8, 2.8);
       sprite.position.y = 1.4;
+    } else if (type === 'house') {
+      sprite = atlasSprite(environmentAtlasTexture, 2, 3, 4.8, 3.8);
+      sprite.position.y = 1.85;
+    } else if (type === 'watchtower') {
+      sprite = atlasSprite(environmentAtlasTexture, 3, 3, 2.8, 4.5);
+      sprite.position.y = 2.25;
     } else if (object.userData.resourceKind) {
       const resource = object.userData.resourceKind;
       const crops = { tree:[3,0], rock:[0,1], ore:[3,1], crystal:[2,1], berry:[0,2], aurora:[1,2], spore:[2,2], tide:[2,1], fiber:[1,2] };
@@ -982,7 +988,9 @@ function createScene() {
   createNpcs();
   createCreatures();
   restoreStructures();
-  loadWorldAssetPack();
+  // A arte 2.5D local deve ser aplicada depois que todos os objetos existem.
+  // O antigo pacote GLB remoto era apenas fallback e deixava os meshes de teste visíveis.
+  upgradeEnvironmentArtwork();
 }
 
 function createRegionVisuals() {
@@ -1133,8 +1141,7 @@ function addHouse(x, z, scale, roofColor) {
   group.position.set(x, 0, z);
   group.scale.setScalar(scale || 1);
   group.userData.proceduralLandscape = true;
-  group.userData.environmentType = 'rock';
-  group.userData.environmentVariant = Math.abs(Math.floor(x + z)) % 2;
+  group.userData.environmentType = 'house';
   meshPart(group, new THREE.BoxGeometry(5.4, 2.7, 4.4), material(0x9d7651, .95), 0, 1.35, 0, 1, 1, 1, 'house');
   const roof = meshPart(group, new THREE.ConeGeometry(3.9, 2.5, 4), material(roofColor || 0x456c32, .84), 0, 3.85, 0, 1, 1, 1, 'roof');
   roof.rotation.y = Math.PI / 4;
@@ -1150,6 +1157,8 @@ function addHouse(x, z, scale, roofColor) {
 function addWatchtower(x, z) {
   const group = new THREE.Group();
   group.position.set(x, 0, z);
+  group.userData.environmentType = 'watchtower';
+  group.userData.proceduralLandscape = true;
   meshPart(group, new THREE.CylinderGeometry(.7, .95, 6.4, 8), material(0x5d4a38, .95), 0, 3.2, 0);
   meshPart(group, new THREE.ConeGeometry(2.2, 1.7, 6), material(0x3d5e83, .86), 0, 6.8, 0);
   const light = new THREE.PointLight(0xffc46e, 1.6, 9);
@@ -1164,6 +1173,8 @@ function addRockFormation(x, z, scale) {
   group.position.set(x, 0, z);
   group.scale.setScalar(scale || 1);
   group.userData.proceduralLandscape = true;
+  group.userData.environmentType = 'rock';
+  group.userData.environmentVariant = Math.abs(Math.floor(x + z)) % 2;
   meshPart(group, new THREE.DodecahedronGeometry(1.4, 1), material(0x65767a, .92, .06), 0, 1.1, 0);
   meshPart(group, new THREE.DodecahedronGeometry(.95, 1), material(0x84979a, .9, .04), 1.2, .7, -.2);
   meshPart(group, new THREE.DodecahedronGeometry(.8, 1), material(0x526567, .92, .04), -1.15, .55, .25);
