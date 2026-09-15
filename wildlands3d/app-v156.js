@@ -17,17 +17,18 @@ const tempD = new THREE.Vector3();
 let creatureAtlasTexture = null;
 let environmentAtlasTexture = null;
 const creatureAtlasLoader = new THREE.TextureLoader();
-creatureAtlasLoader.load('./assets/creatures/region1-creatures-atlas-v2.png', (texture) => {
+const ARTWORK_BASE_URL = 'https://raw.githubusercontent.com/dioh-cpu/psyworld/test/wildlands-v143/wildlands3d/assets/';
+creatureAtlasLoader.load(ARTWORK_BASE_URL + 'creatures/region1-creatures-atlas-v2.png?v=157', (texture) => {
   texture.colorSpace = THREE.SRGBColorSpace;
   creatureAtlasTexture = texture;
   state.wild?.forEach((creature) => creature.applyCreatureArtwork?.());
-});
+}, undefined, (error) => console.warn('Creature atlas unavailable', error));
 const environmentAtlasLoader = new THREE.TextureLoader();
-environmentAtlasLoader.load('./assets/environment/frontier-iris-environment-atlas-v2.png', (texture) => {
+environmentAtlasLoader.load(ARTWORK_BASE_URL + 'environment/frontier-iris-environment-atlas-v2.png?v=157', (texture) => {
   texture.colorSpace = THREE.SRGBColorSpace;
   environmentAtlasTexture = texture;
   if (scene) upgradeEnvironmentArtwork();
-});
+}, undefined, (error) => console.warn('Environment atlas unavailable', error));
 
 function atlasSprite(texture, column, row, width, height) {
   const map = texture.clone();
