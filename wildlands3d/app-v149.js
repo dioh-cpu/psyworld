@@ -981,7 +981,7 @@ class Creature {
     const eyeMat = material(0x07131c, .3, .05, 0x07131c, .2);
     meshPart(this.model, smoothSphere(.085, 12, 8), eyeMat, -.23, 1.92, 1.04, 1, 1.25, .65, 'eyeL');
     meshPart(this.model, smoothSphere(.085, 12, 8), eyeMat, .23, 1.92, 1.04, 1, 1.25, .65, 'eyeR');
-    const legMat = material(ally ? 0x4d4b9a : 0x1e6588, .76);
+    const legMat = material(variant ? 0x4d4b9a : 0x1e6588, .76);
     [[-.45, .48], [.45, .48], [-.45, -.44], [.45, -.44]].forEach((pos, index) => {
       const leg = new THREE.Group();
       leg.position.set(pos[0], .72, pos[1]);
