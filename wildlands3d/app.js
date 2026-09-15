@@ -493,26 +493,29 @@ function getWebGLDiagnostics() {
 }
 
 function createRendererCompat() {
-  const diagnosis = getWebGLDiagnostics();
-  if (!diagnosis.available) {
-    const error = new Error('WEBGL_UNAVAILABLE');
-    error.webgl = diagnosis;
-    throw error;
-  }
   const canvas = $('#world-canvas');
   const attempts = [
-    { antialias: true, powerPreference: 'high-performance' },
     { antialias: false, powerPreference: 'default' },
-    { antialias: false, powerPreference: 'low-power' }
+    { antialias: false, powerPreference: 'low-power' },
+    { antialias: true, powerPreference: 'high-performance' }
   ];
   let lastError = null;
-  for (const options of attempts) {
+  for (let index = 0; index < attempts.length; index += 1) {
+    const options = attempts[index];
     try {
       return new THREE.WebGLRenderer({ canvas, ...options });
     } catch (error) {
       lastError = error;
+      if (index === 0) {
+        const diagnosis = getWebGLDiagnostics();
+        if (!diagnosis.available) {
+          error.webgl = diagnosis;
+          throw error;
+        }
+      }
     }
   }
+  const diagnosis = getWebGLDiagnostics();
   if (lastError) lastError.webgl = diagnosis;
   throw lastError || new Error('WEBGL_RENDERER_FAILED');
 }
@@ -2582,11 +2585,11 @@ function start() {
     } else {
       title.textContent = 'A cena 3D encontrou um erro ao iniciar.';
       message.textContent = 'O WebGL está disponível, mas outro componente falhou. O erro foi separado do diagnóstico gráfico para podermos corrigi-lo corretamente.';
-      detail.textContent = 'Diagnóstico: WebGL 2 detectado.';
+      detail.textContent = 'Diagnóstico: WebGL 2 detectado. Erro: ' + ((error && error.message) ? error.message : String(error));
     }
     fallback.append(title, message, detail);
     $('#game-root').appendChild(fallback);
-    console.warn('Wildlands 3D initialization failed.', { error, diagnosis });
+    console.error('Wildlands 3D initialization failed.', { error, diagnosis });
     return;
   }
   bindInput();
