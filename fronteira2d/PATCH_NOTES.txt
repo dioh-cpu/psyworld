@@ -1,0 +1,23 @@
+FRONTEIRA ÍRIS — RECONSTRUÇÃO 2D
+Data: 2026-09-15
+
+O modo 3D anterior foi retirado da entrada ativa. Esta pasta é uma reconstrução independente em Canvas 2D, sem Three.js e sem dependência de servidor para jogar.
+
+ENTREGUE NESTA VERSÃO
+- mapa 2D jogável com Vale Verde e Costa Aurora;
+- transição de região pelo Portão Aurora após 15 missões;
+- 24 criaturas originais desenhadas em atlas 2D;
+- árvores, pedras, cristais, minério, ervas, cogumelos, fogueira, casas, ruínas, farol, NPCs e portão em atlas 2D;
+- 40 missões de diário, 20 por região;
+- três níveis de captura: Cápsula Íris, Cápsula Prisma e Selo Aurora;
+- Selo Aurora desbloqueado ao concluir 15 missões;
+- exploração, movimento WASD/setas, joystick touch, esquiva, ataque, captura, interação e diálogo;
+- coleta de materiais, craft, comida, inventário, XP, nível, atributos e técnicas;
+- minimapa, mapa ampliado, HUD responsivo e salvamento automático local.
+
+COMANDOS
+WASD/setas mover · Shift correr · J/1 atacar · C capturar · E interagir · Espaço esquivar · 2/3 selecionar captura · B craft · M mapa · Esc fechar
+
+VALIDAÇÃO LOCAL
+- JavaScript validado com `node --check fronteira2d/game.js`.
+- Os dois PNGs são originais e ficam em `fronteira2d/assets/`.

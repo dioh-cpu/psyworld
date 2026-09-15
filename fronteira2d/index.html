@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07151b" />
+    <meta name="description" content="Fronteira Íris — aventura 2D de exploração, captura, craft e sobrevivência." />
+    <title>Fronteira Íris — Modo 2D</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main id="gameShell" aria-label="Fronteira Íris">
+      <canvas id="gameCanvas" aria-label="Mundo jogável"></canvas>
+
+      <header class="topbar glass">
+        <div class="brand">
+          <div class="brand-mark">✦</div>
+          <div>
+            <h1>FRONTEIRA ÍRIS</h1>
+            <p>aventura 2D · captura · craft · bases</p>
+          </div>
+        </div>
+        <div class="top-actions">
+          <span id="regionBadge" class="pill accent">VALE VERDE</span>
+          <span id="clockBadge" class="pill">DIA 1 · 08:00</span>
+          <button id="mapButton" class="icon-button" type="button" title="Abrir mapa">MAPA</button>
+          <button id="menuButton" class="icon-button" type="button" title="Abrir menu">MENU</button>
+        </div>
+      </header>
+
+      <section class="left-column">
+        <div class="player-card glass">
+          <div class="player-title"><span>LÚMION</span><strong id="levelLabel">Lv. 1</strong></div>
+          <div class="player-subtitle">FORMA BASE · EXPLORADOR</div>
+          <div class="stat-row"><span>VIDA</span><b id="hpLabel">100 / 100</b></div>
+          <div class="bar"><i id="hpBar" class="hp"></i></div>
+          <div class="stat-row"><span>FOME</span><b id="hungerLabel">100%</b></div>
+          <div class="bar"><i id="hungerBar" class="hunger"></i></div>
+          <div class="stat-row"><span>ÁGUA</span><b id="waterLabel">100%</b></div>
+          <div class="bar"><i id="waterBar" class="water"></i></div>
+          <div class="stat-row"><span>ENERGIA</span><b id="energyLabel">100%</b></div>
+          <div class="bar"><i id="energyBar" class="energy"></i></div>
+          <div class="xp-line"><span>XP <b id="xpLabel">0 / 120</b></span><div class="bar"><i id="xpBar" class="xp"></i></div></div>
+          <div class="points"><span>✕ <b id="attributePoints">0</b> ATRIBUTOS</span><span>✦ <b id="techPoints">0</b> TÉCNICAS</span></div>
+        </div>
+
+        <div class="objective-card glass">
+          <div class="section-heading"><span>DIÁRIO DE EXPEDIÇÃO</span><button id="questButton" type="button">ABRIR</button></div>
+          <div id="activeQuestList" class="quest-list"></div>
+        </div>
+
+        <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+      </section>
+
+      <aside class="right-column">
+        <div class="minimap-card glass">
+          <canvas id="miniMap" width="240" height="148"></canvas>
+          <div class="mini-caption">MAPA DA FRONTEIRA <span id="areaLabel">Campinas do Véu</span></div>
+        </div>
+
+        <div class="target-card glass" id="targetCard">
+          <div class="target-kicker">ALVO MAIS PRÓXIMO</div>
+          <div class="target-main"><span id="targetName">Nenhum alvo</span><b id="targetLevel">—</b></div>
+          <div class="target-hp"><i id="targetHpBar"></i></div>
+          <div id="targetHint" class="target-hint">Explore e aproxime-se de um monstrinho.</div>
+        </div>
+
+        <div class="capsule-card glass">
+          <div class="section-heading"><span>CAPTURA</span><span id="capsuleHint">C · selecionar</span></div>
+          <div id="capsuleButtons" class="capsule-buttons"></div>
+        </div>
+
+        <div class="inventory-card glass">
+          <div class="section-heading"><span>MOCHILA</span><button id="craftButton" type="button">CRAFT</button></div>
+          <div id="inventoryList" class="inventory-list"></div>
+        </div>
+      </aside>
+
+      <div class="area-banner" id="areaBanner"><span>ÁREA DESCOBERTA</span><b id="areaBannerName">Campinas do Véu</b></div>
+      <div class="interaction-hint glass" id="interactionHint">WASD para mover · E interagir · C capturar</div>
+
+      <div class="mobile-controls" aria-label="Controles touch">
+        <div id="joystick" class="joystick"><div id="stick" class="stick"></div><span>MOVER</span></div>
+        <div class="touch-actions">
+          <button data-action="attack" type="button">ATACAR<small>J · 1</small></button>
+          <button data-action="capture" type="button">CAPTURAR<small>C</small></button>
+          <button data-action="interact" type="button">INTERAGIR<small>E</small></button>
+          <button data-action="dodge" type="button">ESQUIVA<small>ESPAÇO</small></button>
+        </div>
+      </div>
+
+      <div id="dialogModal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="dialog-panel glass"><button class="close-button" data-close="dialogModal" type="button">×</button><div id="dialogContent"></div></div>
+      </div>
+      <div id="craftModal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal-panel glass"><button class="close-button" data-close="craftModal" type="button">×</button><h2>Oficina de campo</h2><p class="muted">Use materiais encontrados para preparar sua próxima expedição.</p><div id="craftList" class="craft-list"></div></div>
+      </div>
+      <div id="mapModal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal-panel map-panel glass"><button class="close-button" data-close="mapModal" type="button">×</button><h2>Mapa da Fronteira</h2><canvas id="bigMap" width="760" height="400"></canvas><div id="mapLegend" class="map-legend"></div></div>
+      </div>
+      <div id="menuModal" class="modal hidden" role="dialog" aria-modal="true">
+        <div class="modal-panel glass"><button class="close-button" data-close="menuModal" type="button">×</button><h2>Menu</h2><div class="menu-actions"><button id="saveButton" type="button">SALVAR AGORA</button><button id="resetButton" class="danger" type="button">NOVO JOGO</button></div><p class="muted">Seu progresso fica salvo neste navegador.</p><p class="version">Fronteira Íris 2D · versão de reconstrução</p></div>
+      </div>
+
+      <div id="loadingScreen" class="loading-screen"><div class="loading-mark">✦</div><h2>FRONTEIRA ÍRIS</h2><p>preparando o mapa 2D…</p><div class="loading-track"><i id="loadingBar"></i></div></div>
+    </main>
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>
