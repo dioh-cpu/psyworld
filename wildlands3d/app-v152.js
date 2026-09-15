@@ -70,6 +70,7 @@ const CRAFT_DATA = {
 
 
 const TEAM_LIMIT = 6;
+const RESPAWN_DELAY = 3;
 const DEFAULT_TEAM = ['lumion', 'oriel', 'embermite', 'mossclaw', 'gloomfin', 'glintling'];
 
 function teamSpeciesId(entry) {
@@ -231,6 +232,8 @@ const state = {
   dead: false,
   respawnTimer: 0,
   respawnReady: false,
+  respawnDeadline: 0,
+  respawnTimeout: null,
   gathering: null,
   crafting: null,
   inventory: Object.assign({}, saved.inventory),
@@ -851,8 +854,17 @@ function clearTransientCombat() {
 function handlePlayerDeath() {
   if (state.dead || !state.player) return;
   state.dead = true;
-  state.respawnTimer = 2.2;
+  state.respawnTimer = RESPAWN_DELAY;
+  state.respawnDeadline = performance.now() + RESPAWN_DELAY * 1000;
   state.respawnReady = false;
+  if (state.respawnTimeout) clearTimeout(state.respawnTimeout);
+  state.respawnTimeout = setTimeout(() => {
+    if (!state.dead) return;
+    state.respawnTimer = 0;
+    state.respawnReady = true;
+    state.respawnTimeout = null;
+    updateDeathUI();
+  }, RESPAWN_DELAY * 1000);
   state.input.keys.clear();
   state.input.joyActive = false;
   state.input.pointerId = null;
@@ -866,7 +878,6 @@ function handlePlayerDeath() {
   state.player.group.visible = true;
   state.player.play('death');
   uiText('death-title', state.player.spec.name + ' caiu');
-  const modal = $('#death-modal');
   openModal('death-modal');
   const button = $('#respawn-button');
   if (button) button.disabled = true;
@@ -882,13 +893,23 @@ function updateDeathUI() {
     button.disabled = !state.respawnReady;
     button.textContent = state.respawnReady ? 'VOLTAR À BASE' : 'AGUARDE ' + Math.ceil(state.respawnTimer) + 's';
   }
-  if (countdown) countdown.textContent = state.respawnReady ? name + ' pode retornar com 65% do HP.' : 'A queda foi registrada. Preparando o retorno…';
+  if (countdown) countdown.textContent = state.respawnReady ? name + ' pode retornar com 65% do HP.' : 'Retorno disponível em ' + Math.ceil(state.respawnTimer) + 's.';
 }
 
 function updateDeathState(dt) {
-  state.respawnTimer = Math.max(0, state.respawnTimer - dt);
-  if (!state.respawnReady && state.respawnTimer <= 0) {
+  const deadline = Number(state.respawnDeadline) || 0;
+  const remaining = deadline > 0
+    ? Math.max(0, (deadline - performance.now()) / 1000)
+    : Math.max(0, state.respawnTimer - dt);
+  state.respawnTimer = remaining;
+  if (!state.respawnReady && remaining <= 0) {
     state.respawnReady = true;
+    if (state.respawnTimeout) {
+      clearTimeout(state.respawnTimeout);
+      state.respawnTimeout = null;
+    }
+    updateDeathUI();
+  } else if (!state.respawnReady) {
     updateDeathUI();
   }
   if (state.player) {
@@ -901,7 +922,12 @@ function respawn() {
   if (!state.dead || !state.respawnReady || !state.player) return;
   state.dead = false;
   state.respawnTimer = 0;
+  state.respawnDeadline = 0;
   state.respawnReady = false;
+  if (state.respawnTimeout) {
+    clearTimeout(state.respawnTimeout);
+    state.respawnTimeout = null;
+  }
   state.player.dead = false;
   state.player.captured = false;
   state.player.group.visible = true;
