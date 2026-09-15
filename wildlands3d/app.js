@@ -867,7 +867,7 @@ function handlePlayerDeath() {
   state.player.play('death');
   uiText('death-title', state.player.spec.name + ' caiu');
   const modal = $('#death-modal');
-  if (modal) modal.classList.remove('hidden');
+  openModal('death-modal');
   const button = $('#respawn-button');
   if (button) button.disabled = true;
   updateDeathUI();
@@ -920,7 +920,7 @@ function respawn() {
   state.water = Math.max(35, state.water);
   state.energy = 100;
   Object.keys(state.cooldowns).forEach((key) => { state.cooldowns[key] = 0; });
-  $('#death-modal')?.classList.add('hidden');
+  closeModal('death-modal');
   feed(state.player.spec.name + ' voltou à base. Prepare-se para a próxima expedição.');
   updateUI();
   saveGame();
@@ -1232,7 +1232,7 @@ class Creature {
 function createCreatures() {
   const spawnList = [
     ['embermite', -16, -1], ['mossclaw', 18, -7], ['gloomfin', 29, -27],
-    ['glintling', -37, 17], ['oriel', -58, -12], ['embermite', 48, 4],
+    ['glintling', -37, 17], ['embermite', 48, 4],
     ['mossclaw', 65, 13], ['gloomfin', 73, -37], ['embermite', 38, 43], ['ironroot', 73, 43]
   ];
   state.player = createTeamPlayer(state.activeTeamIndex, Number(saved.x) || 0, Number(saved.z) || 12, Math.PI);
@@ -1742,7 +1742,7 @@ function openDialogue(npc) {
     state.dialogue = { npc, index: 0 };
   }
   if (state.dialogue.index >= npc.lines.length) {
-    $('#dialogue').classList.add('hidden');
+    closeModal('dialogue');
     state.dialogue = null;
     if (npc.id === 'nara') {
       state.objective = state.structures.some((item) => item.type === 'core') ? 'Explore a fronteira e capture um monstrinho enfraquecido.' : 'Colete materiais e construa um Núcleo de Base.';
@@ -1751,7 +1751,7 @@ function openDialogue(npc) {
   }
   $('#dialogue-name').textContent = npc.name + ' • ' + npc.role;
   $('#dialogue-text').textContent = npc.lines[state.dialogue.index];
-  $('#dialogue').classList.remove('hidden');
+  openModal('dialogue');
   if (npc.id === 'nara') state.objective = 'Colete madeira e pedra para o Núcleo de Base.';
 }
 
@@ -1771,7 +1771,7 @@ function eat() {
 
 function showBuild() {
   if (!canAct()) return;
-  $('#build-modal').classList.remove('hidden');
+  openModal('build-modal');
 }
 
 function placeBuild(type) {
@@ -1794,12 +1794,12 @@ function placeBuild(type) {
   }
   Object.keys(data.cost).forEach((key) => { state.inventory[key] -= data.cost[key]; });
   createStructure(type, position.x, position.z, state.player.group.rotation.y, false);
-  $('#build-modal').classList.add('hidden');
+  closeModal('build-modal');
 }
 
 function showCraft() {
   if (!canAct()) return;
-  $('#craft-modal').classList.remove('hidden');
+  openModal('craft-modal');
 }
 
 
@@ -1879,15 +1879,52 @@ function capture() {
   saveGame();
 }
 
+const MODAL_IDS = ['menu-modal', 'map-modal', 'dialogue', 'build-modal', 'craft-modal', 'inventory-modal', 'progression-modal', 'pause-modal', 'death-modal'];
+
+function syncModalLayer() {
+  const root = $('#game-root');
+  if (root) root.classList.toggle('modal-open', Boolean(document.querySelector('.modal:not(.hidden)')));
+}
+
+function openModal(id) {
+  MODAL_IDS.forEach((modalId) => {
+    if (modalId === id) return;
+    const element = $('#' + modalId);
+    if (element) element.classList.add('hidden');
+  });
+  if (id !== 'dialogue') state.dialogue = null;
+  const element = $('#' + id);
+  if (element) element.classList.remove('hidden');
+  syncModalLayer();
+}
+
+function closeModal(id) {
+  const element = $('#' + id);
+  if (element) element.classList.add('hidden');
+  if (id === 'dialogue') state.dialogue = null;
+  if (id === 'pause-modal' && state.paused) {
+    state.paused = false;
+    $('#pause-button').textContent = 'Ⅱ';
+  }
+  syncModalLayer();
+}
+
 function togglePause() {
   if (state.dead) return;
-  state.paused = !state.paused;
-  $('#pause-modal').classList.toggle('hidden', !state.paused);
-  $('#pause-button').textContent = state.paused ? '▶' : 'Ⅱ';
+  if (state.paused) {
+    state.paused = false;
+    closeModal('pause-modal');
+    $('#pause-button').textContent = 'Ⅱ';
+    return;
+  }
+  closeModals();
+  state.paused = true;
+  openModal('pause-modal');
+  $('#pause-button').textContent = '▶';
 }
 
 function closeModals() {
-  ['menu-modal', 'map-modal', 'dialogue', 'build-modal', 'craft-modal', 'inventory-modal', 'progression-modal', 'pause-modal'].forEach((id) => {
+  MODAL_IDS.forEach((id) => {
     const element = $('#' + id);
     if (element) element.classList.add('hidden');
   });
@@ -1896,6 +1933,7 @@ function closeModals() {
     state.paused = false;
     $('#pause-button').textContent = 'Ⅱ';
   }
+  syncModalLayer();
 }
 
 function resetSave() {
@@ -2061,7 +2099,7 @@ function bindInput() {
   document.querySelectorAll('[data-close]').forEach((button) => {
     button.addEventListener('pointerdown', (event) => {
       event.preventDefault();
-      $('#' + button.getAttribute('data-close')).classList.add('hidden');
+      closeModal(button.getAttribute('data-close'));
     }, { passive: false });
   });
   $('#dialogue-next').addEventListener('pointerdown', (event) => {
@@ -2365,13 +2403,13 @@ function showMenu() {
   if (!canAct()) return;
   updateInventoryModal();
   updateProgressionUI();
-  $('#menu-modal').classList.remove('hidden');
+  openModal('menu-modal');
 }
 
 function showMap() {
   if (!canAct()) return;
   drawMinimap();
-  $('#map-modal').classList.remove('hidden');
+  openModal('map-modal');
 }
 
 function showInventory(focusTeam) {
@@ -2379,18 +2417,18 @@ function showInventory(focusTeam) {
   const modal = $('#inventory-modal');
   if (!modal) return;
   if (!modal.classList.contains('hidden') && !focusTeam) {
-    modal.classList.add('hidden');
+    closeModal('inventory-modal');
     return;
   }
   updateInventoryModal();
-  modal.classList.remove('hidden');
+  openModal('inventory-modal');
   if (focusTeam) setTimeout(() => $('#team-panel')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
 }
 
 function showProgression() {
   if (!canAct()) return;
   updateProgressionUI();
-  $('#progression-modal').classList.remove('hidden');
+  openModal('progression-modal');
 }
 
 function updateUI() {
@@ -2604,8 +2642,8 @@ function start() {
   requestAnimationFrame(frame);
 }
 
-window.PSY_WILDLANDS_3D_V149 = {
-  version: 'WILDLANDS_3D_V149',
+window.PSY_WILDLANDS_3D_V152 = {
+  version: 'WILDLANDS_3D_V152',
   state,
   actions: {
     basicAttack, pulseAttack, voidAttack, prismAttack, capture, dodge,
@@ -2613,7 +2651,7 @@ window.PSY_WILDLANDS_3D_V149 = {
     showBuild, showCraft
   },
   snapshot: () => ({
-    version: 'WILDLANDS_3D_V149',
+    version: 'WILDLANDS_3D_V152',
     rendererReady: Boolean(renderer),
     playerReady: Boolean(state.player),
     dead: state.dead,
