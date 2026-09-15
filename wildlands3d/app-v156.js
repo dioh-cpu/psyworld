@@ -15,12 +15,61 @@ const tempB = new THREE.Vector3();
 const tempC = new THREE.Vector3();
 const tempD = new THREE.Vector3();
 let creatureAtlasTexture = null;
+let environmentAtlasTexture = null;
 const creatureAtlasLoader = new THREE.TextureLoader();
-creatureAtlasLoader.load('https://raw.githubusercontent.com/dioh-cpu/psyworld/test/wildlands-v143/wildlands3d/assets/creatures/region1-creatures-atlas-v1.png', (texture) => {
+creatureAtlasLoader.load('https://raw.githubusercontent.com/dioh-cpu/psyworld/test/wildlands-v143/wildlands3d/assets/creatures/region1-creatures-atlas-v2.png', (texture) => {
   texture.colorSpace = THREE.SRGBColorSpace;
   creatureAtlasTexture = texture;
   state.wild?.forEach((creature) => creature.applyCreatureArtwork?.());
 });
+const environmentAtlasLoader = new THREE.TextureLoader();
+environmentAtlasLoader.load('https://raw.githubusercontent.com/dioh-cpu/psyworld/test/wildlands-v143/wildlands3d/assets/environment/frontier-iris-environment-atlas-v2.png', (texture) => {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  environmentAtlasTexture = texture;
+  upgradeEnvironmentArtwork();
+});
+
+function atlasSprite(texture, column, row, width, height) {
+  const map = texture.clone();
+  map.needsUpdate = true;
+  map.repeat.set(.25, .25);
+  map.offset.set(column * .25, (3 - row) * .25);
+  map.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map, transparent: true, depthWrite: false, depthTest: true }));
+  sprite.scale.set(width, height, 1);
+  return sprite;
+}
+
+function upgradeEnvironmentArtwork() {
+  if (!environmentAtlasTexture || !scene) return;
+  scene.traverse((object) => {
+    if ((!object.userData?.environmentType && !object.userData?.resourceKind) || object.userData.environmentArtwork) return;
+    const type = object.userData.environmentType;
+    let sprite;
+    if (type === 'tree') {
+      const variant = Number(object.userData.environmentVariant || 0) % 3;
+      sprite = atlasSprite(environmentAtlasTexture, variant, 0, 3.8, 4.8);
+      sprite.position.y = 2.35;
+    } else if (type === 'rock') {
+      const variant = Number(object.userData.environmentVariant || 0) % 2;
+      sprite = atlasSprite(environmentAtlasTexture, variant, 1, 3.6, 2.7);
+      sprite.position.y = 1.25;
+    } else if (type === 'npc') {
+      sprite = atlasSprite(environmentAtlasTexture, 1, 3, 1.8, 2.8);
+      sprite.position.y = 1.4;
+    } else if (object.userData.resourceKind) {
+      const resource = object.userData.resourceKind;
+      const crops = { tree:[3,0], rock:[0,1], ore:[3,1], crystal:[2,1], berry:[0,2], aurora:[1,2], spore:[2,2], tide:[2,1], fiber:[1,2] };
+      const crop = crops[resource] || [0,1];
+      sprite = atlasSprite(environmentAtlasTexture, crop[0], crop[1], 1.55, 1.55);
+      sprite.position.y = .82;
+    }
+    if (!sprite) return;
+    object.traverse((child) => { if (child.isMesh) child.visible = false; });
+    object.add(sprite);
+    object.userData.environmentArtwork = sprite;
+  });
+}
 
 const SPECIES = {
   lumion: {
@@ -1065,6 +1114,8 @@ function addTree(x, z, scale, harvestable) {
   group.position.set(x, 0, z);
   group.scale.setScalar(scale || 1);
   group.userData.proceduralLandscape = true;
+  group.userData.environmentType = 'tree';
+  group.userData.environmentVariant = Math.abs(Math.floor(x * 3 + z)) % 3;
   const trunk = meshPart(group, new THREE.CylinderGeometry(.27, .42, 2.4, 10), material(0x6a3c25, 1), 0, 1.2, 0, 1, 1, 1, 'trunk');
   trunk.castShadow = true;
   const root = meshPart(group, new THREE.ConeGeometry(.82, 1.6, 7), material(0x4f7c38, .94), 0, 2.15, 0, 1, 1, 1, 'crown');
@@ -1082,6 +1133,8 @@ function addHouse(x, z, scale, roofColor) {
   group.position.set(x, 0, z);
   group.scale.setScalar(scale || 1);
   group.userData.proceduralLandscape = true;
+  group.userData.environmentType = 'rock';
+  group.userData.environmentVariant = Math.abs(Math.floor(x + z)) % 2;
   meshPart(group, new THREE.BoxGeometry(5.4, 2.7, 4.4), material(0x9d7651, .95), 0, 1.35, 0, 1, 1, 1, 'house');
   const roof = meshPart(group, new THREE.ConeGeometry(3.9, 2.5, 4), material(roofColor || 0x456c32, .84), 0, 3.85, 0, 1, 1, 1, 'roof');
   roof.rotation.y = Math.PI / 4;
@@ -1135,6 +1188,7 @@ function addFence(x, z, width, depth) {
 function makeResourceMesh(kind) {
   const data = RESOURCE_DATA[kind];
   const group = new THREE.Group();
+  group.userData.resourceKind = kind;
   if (kind === 'tree') {
     meshPart(group, new THREE.CylinderGeometry(.18, .28, 1.5, 8), material(0x62351f), 0, .75, 0);
     meshPart(group, new THREE.ConeGeometry(.7, 1.25, 6), material(0x4b9c45), 0, 1.55, 0);
@@ -1215,6 +1269,7 @@ function makeNpcModel(color, accent) {
 function createNpcs() {
   NPC_DATA.forEach((data) => {
     const group = makeNpcModel(data.color, data.accent);
+    group.userData.environmentType = 'npc';
     group.position.set(data.x, 0, data.z);
     scene.add(group);
     const npc = Object.assign({}, data, { group, label: addLabel(data.name, 'npc', group, data.role) });
@@ -1408,7 +1463,7 @@ class Creature {
 
   applyCreatureArtwork() {
     if (!creatureAtlasTexture || this.role === 'player') return;
-    const crop = this.spec.rig === 'mossclaw' ? [0.5, 0.5] : this.spec.rig === 'embermite' ? [0, 0.5] : this.spec.rig === 'gloomfin' || this.spec.rig === 'glintling' ? [0.5, 0.5] : [0, 0];
+    const crop = this.spec.rig === 'mossclaw' ? [0.5, 0.5] : this.spec.rig === 'embermite' ? [0, 0.5] : this.spec.rig === 'gloomfin' ? [0.5, 0.5] : [0, 0];
     if (!this.visualSprite) {
       const map = creatureAtlasTexture.clone();
       map.needsUpdate = true;
