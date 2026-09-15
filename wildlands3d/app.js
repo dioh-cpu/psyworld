@@ -464,6 +464,59 @@ function makeTexture(baseColor, accentColor, seed) {
   return texture;
 }
 
+
+function getWebGLDiagnostics() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const attributes = { alpha: false, antialias: false, powerPreference: 'default' };
+  let gl = null;
+  let reason = '';
+  try {
+    gl = canvas.getContext('webgl2', attributes);
+  } catch (error) {
+    reason = error && error.message ? error.message : String(error);
+  }
+  if (!gl) {
+    return { available: false, webgl2: false, vendor: 'Disabled', renderer: 'Disabled', reason };
+  }
+  let vendor = 'WebGL 2';
+  let rendererName = 'WebGL 2';
+  try {
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    vendor = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR);
+    rendererName = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  } catch (error) {
+    reason = error && error.message ? error.message : String(error);
+  }
+  return { available: true, webgl2: true, vendor, renderer: rendererName, reason };
+}
+
+function createRendererCompat() {
+  const diagnosis = getWebGLDiagnostics();
+  if (!diagnosis.available) {
+    const error = new Error('WEBGL_UNAVAILABLE');
+    error.webgl = diagnosis;
+    throw error;
+  }
+  const canvas = $('#world-canvas');
+  const attempts = [
+    { antialias: true, powerPreference: 'high-performance' },
+    { antialias: false, powerPreference: 'default' },
+    { antialias: false, powerPreference: 'low-power' }
+  ];
+  let lastError = null;
+  for (const options of attempts) {
+    try {
+      return new THREE.WebGLRenderer({ canvas, ...options });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastError) lastError.webgl = diagnosis;
+  throw lastError || new Error('WEBGL_RENDERER_FAILED');
+}
+
 function createScene() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07151d);
@@ -471,7 +524,7 @@ function createScene() {
   camera = new THREE.PerspectiveCamera(56, innerWidth / innerHeight, .1, 240);
   camera.position.set(0, 11.2, 18.5);
 
-  renderer = new THREE.WebGLRenderer({ canvas: $('#world-canvas'), antialias: true, powerPreference: 'high-performance' });
+  renderer = createRendererCompat();
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.85));
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.shadowMap.enabled = true;
@@ -2516,11 +2569,24 @@ function start() {
     bindInput();
     const loading = $('#loading');
     if (loading) loading.classList.add('done');
+    const diagnosis = error && error.webgl ? error.webgl : getWebGLDiagnostics();
     const fallback = document.createElement('div');
     fallback.className = 'runtime-fallback';
-    fallback.innerHTML = '<strong>WebGL não está disponível neste navegador.</strong><span>Abra no Chrome/Edge com aceleração gráfica ativada para jogar a Fronteira Íris 3D.</span>';
+    const title = document.createElement('strong');
+    const message = document.createElement('span');
+    const detail = document.createElement('small');
+    if (!diagnosis.available) {
+      title.textContent = 'WebGL 2 está bloqueado neste ambiente.';
+      message.textContent = 'A Fronteira Íris 3D precisa de WebGL 2 ativo. Abra a página diretamente no Chrome ou Edge, fora de uma prévia incorporada, e recarregue.';
+      detail.textContent = 'Diagnóstico: o navegador não criou um contexto gráfico.';
+    } else {
+      title.textContent = 'A cena 3D encontrou um erro ao iniciar.';
+      message.textContent = 'O WebGL está disponível, mas outro componente falhou. O erro foi separado do diagnóstico gráfico para podermos corrigi-lo corretamente.';
+      detail.textContent = 'Diagnóstico: WebGL 2 detectado.';
+    }
+    fallback.append(title, message, detail);
     $('#game-root').appendChild(fallback);
-    console.warn('Wildlands 3D aguardando um navegador com WebGL.', error);
+    console.warn('Wildlands 3D initialization failed.', { error, diagnosis });
     return;
   }
   bindInput();
@@ -2535,8 +2601,8 @@ function start() {
   requestAnimationFrame(frame);
 }
 
-window.PSY_WILDLANDS_3D_V148 = {
-  version: 'WILDLANDS_3D_V148',
+window.PSY_WILDLANDS_3D_V149 = {
+  version: 'WILDLANDS_3D_V149',
   state,
   actions: {
     basicAttack, pulseAttack, voidAttack, prismAttack, capture, dodge,
@@ -2544,7 +2610,7 @@ window.PSY_WILDLANDS_3D_V148 = {
     showBuild, showCraft
   },
   snapshot: () => ({
-    version: 'WILDLANDS_3D_V148',
+    version: 'WILDLANDS_3D_V149',
     rendererReady: Boolean(renderer),
     playerReady: Boolean(state.player),
     dead: state.dead,
