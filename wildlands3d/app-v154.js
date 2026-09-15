@@ -604,15 +604,19 @@ function fitAssetToHeight(root, height) {
 
 function animationClipFor(clips, action) {
   const aliases = {
-    idle: ['idle', 'stand', 'breath'],
-    walk: ['walk', 'run', 'move'],
-    attack: ['attack', 'atk', 'bite', 'hit'],
-    cast: ['cast', 'attack', 'skill'],
-    hit: ['hit', 'hurt', 'damage'],
+    idle: ['idle', 'stand', 'breath', 'flying_idle'],
+    walk: ['walk', 'run', 'move', 'fast_flying', 'flying'],
+    attack: ['attack', 'atk', 'bite', 'punch', 'headbutt', 'hitreact', 'hit'],
+    cast: ['cast', 'skill', 'punch', 'headbutt', 'attack'],
+    hit: ['hitreact', 'hit', 'hurt', 'damage'],
     death: ['death', 'die', 'faint']
   }[action] || ['idle'];
-  const normalized = (value) => String(value || '').toLowerCase();
-  return (clips || []).find((clip) => aliases.some((alias) => normalized(clip.name).includes(alias))) || (clips || [])[0] || null;
+  const normalized = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const list = clips || [];
+  const match = list.find((clip) => aliases.some((alias) => normalized(clip.name).includes(normalized(alias))));
+  if (match) return match;
+  const safeIdle = list.find((clip) => ['idle', 'stand', 'flying'].some((alias) => normalized(clip.name).includes(alias)));
+  return safeIdle || (action === 'death' ? null : list[0]) || null;
 }
 
 async function mountCreatureAsset(creature, key) {
