@@ -24,14 +24,21 @@
     try {
       const loaderModule = await import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js');
       const loader = new loaderModule.GLTFLoader();
-      const asset = WILDLANDS_ASSETS.creatures.lumion;
-      const gltf = await new Promise((resolve, reject) => loader.load(asset.modelUrl, resolve, undefined, reject));
+      const creatureReport = [];
+      for (const [key, asset] of Object.entries(WILDLANDS_ASSETS.creatures)) {
+        const gltf = await new Promise((resolve, reject) => loader.load(asset.modelUrl, resolve, undefined, reject));
+        creatureReport.push(key + ': ' + (gltf.animations || []).length + ' animações');
+      }
+      const environmentReport = [];
+      for (const [key, asset] of Object.entries(WILDLANDS_ASSETS.environment).slice(0, 3)) {
+        const gltf = await new Promise((resolve, reject) => loader.load(asset.modelUrl, resolve, undefined, reject));
+        environmentReport.push(key + ': ' + gltf.scene.children.length + ' nós');
+      }
       status.textContent = [
-        'OK • GLB carregado',
-        'Fonte: ' + asset.sourceUrl,
-        'Animações: ' + (gltf.animations || []).map((clip) => clip.name).join(', '),
-        'Nós: ' + gltf.scene.children.length
-      ].join('\n');
+        'OK • 7 criaturas e 3 assets do mundo carregados',
+        creatureReport.join('\\n'),
+        environmentReport.join('\\n')
+      ].join('\\n');
     } catch (error) {
       status.textContent = 'FALHA • ' + (error && error.message ? error.message : String(error));
       console.error(error);
