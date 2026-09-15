@@ -17,13 +17,13 @@ const tempD = new THREE.Vector3();
 let creatureAtlasTexture = null;
 let environmentAtlasTexture = null;
 const creatureAtlasLoader = new THREE.TextureLoader();
-creatureAtlasLoader.load('https://raw.githubusercontent.com/dioh-cpu/psyworld/test/wildlands-v143/wildlands3d/assets/creatures/region1-creatures-atlas-v2.png', (texture) => {
+creatureAtlasLoader.load('./assets/creatures/region1-creatures-atlas-v2.png', (texture) => {
   texture.colorSpace = THREE.SRGBColorSpace;
   creatureAtlasTexture = texture;
   state.wild?.forEach((creature) => creature.applyCreatureArtwork?.());
 });
 const environmentAtlasLoader = new THREE.TextureLoader();
-environmentAtlasLoader.load('https://raw.githubusercontent.com/dioh-cpu/psyworld/test/wildlands-v143/wildlands3d/assets/environment/frontier-iris-environment-atlas-v2.png', (texture) => {
+environmentAtlasLoader.load('./assets/environment/frontier-iris-environment-atlas-v2.png', (texture) => {
   texture.colorSpace = THREE.SRGBColorSpace;
   environmentAtlasTexture = texture;
   upgradeEnvironmentArtwork();
