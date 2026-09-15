@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 34539)
-Total output lines: 3216
-
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { WILDLANDS_ASSETS } from './assets-v154.js';
 import { REGIONS, QUESTS, ALL_CREATURES, CAPTURE_ITEMS, captureChance, isCaptureUnlocked } from './region-content-v1.js';
@@ -17,6 +14,13 @@ const tempA = new THREE.Vector3();
 const tempB = new THREE.Vector3();
 const tempC = new THREE.Vector3();
 const tempD = new THREE.Vector3();
+let creatureAtlasTexture = null;
+const creatureAtlasLoader = new THREE.TextureLoader();
+creatureAtlasLoader.load('https://raw.githubusercontent.com/dioh-cpu/psyworld/test/wildlands-v143/wildlands3d/assets/creatures/region1-creatures-atlas-v1.png', (texture) => {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  creatureAtlasTexture = texture;
+  state.wild?.forEach((creature) => creature.applyCreatureArtwork?.());
+});
 
 const SPECIES = {
   lumion: {
@@ -936,28 +940,15 @@ function createRegionVisuals() {
   REGION_DATA.zones.forEach((zone) => {
     const group = new THREE.Group();
     group.position.set(zone.x, .035, zone.z);
+    group.userData.zoneId = zone.id;
     group.userData.proceduralLandscape = true;
     group.userData.keepVisible = true;
     const patch = new THREE.Mesh(
       new THREE.CircleGeometry(zone.radius, 64),
-      new THREE.MeshBasicMaterial({ color: zone.color, transparent: true, opacity: .055, depthWrite: false })
+      new THREE.MeshBasicMaterial({ color: zone.color, transparent: true, opacity: .018, depthWrite: false })
     );
     patch.rotation.x = -Math.PI / 2;
     group.add(patch);
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(zone.radius * .96, .055, 8, 72),
-      new THREE.MeshBasicMaterial({ color: zone.color, transparent: true, opacity: .3, depthWrite: false })
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = .025;
-    group.add(ring);
-    const inner = new THREE.Mesh(
-      new THREE.RingGeometry(zone.radius * .72, zone.radius * .725, 64),
-      new THREE.MeshBasicMaterial({ color: zone.color, transparent: true, opacity: .16, side: THREE.DoubleSide, depthWrite: false })
-    );
-    inner.rotation.x = -Math.PI / 2;
-    inner.position.y = .03;
-    group.add(inner);
     scene.add(group);
     addLabel(zone.name, 'zone', group, zone.subtitle + (zone.levels ? ' • ' + zone.levels : ''));
   });
@@ -1400,7 +1391,371 @@ class Creature {
     this.captured = false;
     this.maxHp = spec.hp;
     this.hp = spec.hp;
-    …4539 tokens truncated…eometry(.68, 1), gold, 0, 1.05, 0);
+    this.attackCooldown = .4 + Math.random();
+    this.roamTime = 0;
+    this.anchor = new THREE.Vector3(x, 0, z);
+    this.target = new THREE.Vector3(x, 0, z);
+    this.label = null;
+    this.shadow = null;
+    this.visualSprite = null;
+    this.buildRig();
+    scene.add(this.group);
+    this.shadow = makeShadow(this.group, spec.radius * .8);
+    const labelKind = role === 'player' ? 'player' : role === 'boss' ? 'boss' : 'wild';
+    this.label = addLabel(spec.name, labelKind, this.group, role === 'boss' ? 'CHEFE' : 'HP ' + this.hp + '/' + this.maxHp);
+    this.applyCreatureArtwork();
+  }
+
+  applyCreatureArtwork() {
+    if (!creatureAtlasTexture || this.role === 'player') return;
+    const crop = this.spec.rig === 'mossclaw' ? [0.5, 0.5] : this.spec.rig === 'embermite' ? [0, 0.5] : this.spec.rig === 'gloomfin' || this.spec.rig === 'glintling' ? [0.5, 0.5] : [0, 0];
+    if (!this.visualSprite) {
+      const map = creatureAtlasTexture.clone();
+      map.needsUpdate = true;
+      map.repeat.set(.5, .5);
+      map.offset.set(crop[0], crop[1]);
+      map.colorSpace = THREE.SRGBColorSpace;
+      this.visualSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map, transparent: true, depthWrite: false, depthTest: true }));
+      this.visualSprite.position.set(0, 1.25, .12);
+      this.visualSprite.scale.set(2.35, 1.72, 1);
+      this.group.add(this.visualSprite);
+      this.model.visible = false;
+    }
+  }
+
+  buildRig() {
+    if (this.spec.rig === 'lumion') this.buildFox(false);
+    else if (this.spec.rig === 'oriel') this.buildFox(true);
+    else if (this.spec.rig === 'embermite') this.buildBeetle();
+    else if (this.spec.rig === 'mossclaw') this.buildMossclaw();
+    else if (this.spec.rig === 'gloomfin' || this.spec.rig === 'glintling') this.buildGloomfin();
+    else this.buildIronroot();
+  }
+
+  buildFox(variant) {
+    const bodyMat = material(this.spec.color, .66, .05, this.spec.color, .08);
+    const lightMat = material(variant ? 0xd9d6ff : 0xd2f7ff, .6, .02);
+    const accentMat = material(this.spec.accent, .35, .04, this.spec.accent, .42);
+    this.parts.body = meshPart(this.model, smoothSphere(.92, 24, 16), bodyMat, 0, 1.03, 0, .86, .72, 1.16, 'body');
+    meshPart(this.model, smoothSphere(.58, 18, 12), lightMat, 0, 1.34, .61, .92, .86, .56, 'chest');
+    this.parts.head = meshPart(this.model, smoothSphere(.64, 22, 16), bodyMat, 0, 1.82, .46, 1.03, .94, .95, 'head');
+    meshPart(this.model, smoothSphere(.31, 16, 10), lightMat, 0, 1.68, .98, 1.08, .8, .76, 'muzzle');
+    const earL = meshPart(this.model, new THREE.ConeGeometry(.27, .82, 5), accentMat, -.39, 2.47, .42, 1, 1, 1, 'earL');
+    const earR = meshPart(this.model, new THREE.ConeGeometry(.27, .82, 5), accentMat, .39, 2.47, .42, 1, 1, 1, 'earR');
+    earL.rotation.z = -.14;
+    earR.rotation.z = .14;
+    const eyeMat = material(0x07131c, .3, .05, 0x07131c, .2);
+    meshPart(this.model, smoothSphere(.085, 12, 8), eyeMat, -.23, 1.92, 1.04, 1, 1.25, .65, 'eyeL');
+    meshPart(this.model, smoothSphere(.085, 12, 8), eyeMat, .23, 1.92, 1.04, 1, 1.25, .65, 'eyeR');
+    const legMat = material(variant ? 0x4d4b9a : 0x1e6588, .76);
+    [[-.45, .48], [.45, .48], [-.45, -.44], [.45, -.44]].forEach((pos, index) => {
+      const leg = new THREE.Group();
+      leg.position.set(pos[0], .72, pos[1]);
+      this.model.add(leg);
+      meshPart(leg, smoothSphere(.27, 14, 10), legMat, 0, -.28, 0, .75, 1.2, .82, 'leg');
+      meshPart(leg, smoothSphere(.28, 14, 10), lightMat, 0, -.58, .15, .9, .45, 1.15, 'paw');
+      this.legs.push(leg);
+    });
+    let tailParent = this.model;
+    for (let i = 0; i < (variant ? 3 : 4); i += 1) {
+      const tail = new THREE.Group();
+      tail.position.set(0, 1.04 + i * .2, -.84 - i * .35);
+      tailParent.add(tail);
+      meshPart(tail, smoothSphere(.45 - i * .065, 16, 11), accentMat, 0, .12, -.13, 1, 1.25, 1.12, 'tail');
+      tailParent = tail;
+    }
+    this.parts.aura = new THREE.Mesh(
+      new THREE.TorusGeometry(1.03, .035, 8, 36),
+      new THREE.MeshBasicMaterial({ color: this.spec.accent, transparent: true, opacity: .55 })
+    );
+    this.parts.aura.rotation.x = Math.PI / 2;
+    this.parts.aura.position.y = .08;
+    this.model.add(this.parts.aura);
+    const glow = new THREE.PointLight(this.spec.accent, .7, 4.2);
+    glow.position.y = 1.25;
+    this.model.add(glow);
+  }
+
+  buildBeetle() {
+    const shellMat = material(this.spec.color, .48, .14, 0x54160d, .28);
+    const shellLight = material(this.spec.accent, .32, .16, 0x9e2d13, .5);
+    const dark = material(0x1a1c22, .72);
+    this.parts.body = meshPart(this.model, smoothSphere(.9, 24, 16), shellMat, 0, .82, 0, 1.1, .55, 1.2, 'shell');
+    meshPart(this.model, smoothSphere(.66, 20, 14), shellLight, -.38, .92, -.08, .62, .48, 1.12, 'wingL');
+    meshPart(this.model, smoothSphere(.66, 20, 14), shellLight, .38, .92, -.08, .62, .48, 1.12, 'wingR');
+    meshPart(this.model, smoothSphere(.45, 16, 12), shellMat, 0, 1.02, .82, 1, .9, .9, 'head');
+    const hornL = meshPart(this.model, new THREE.ConeGeometry(.11, .68, 7), shellLight, -.24, 1.35, 1.05, 1, 1, 1, 'hornL');
+    const hornR = meshPart(this.model, new THREE.ConeGeometry(.11, .68, 7), shellLight, .24, 1.35, 1.05, 1, 1, 1, 'hornR');
+    hornL.rotation.x = -.45;
+    hornR.rotation.x = -.45;
+    meshPart(this.model, smoothSphere(.08, 10, 8), material(0xffd37b, .35, 0, 0xffa033, 1.5), -.17, 1.08, 1.2);
+    meshPart(this.model, smoothSphere(.08, 10, 8), material(0xffd37b, .35, 0, 0xffa033, 1.5), .17, 1.08, 1.2);
+    for (let i = 0; i < 3; i += 1) {
+      [-1, 1].forEach((side) => {
+        const leg = new THREE.Group();
+        leg.position.set(side * .65, .78, .5 - i * .48);
+        leg.rotation.z = side * .48;
+        this.model.add(leg);
+        meshPart(leg, new THREE.CylinderGeometry(.075, .09, 1.02, 8), dark, side * .32, -.04, 0, 1, 1, 1);
+        meshPart(leg, new THREE.SphereGeometry(.12, 10, 8), shellLight, side * .62, -.48, .06, 1, 1, 1);
+        this.legs.push(leg);
+      });
+    }
+    const aura = new THREE.Mesh(new THREE.TorusGeometry(1.1, .025, 6, 30), new THREE.MeshBasicMaterial({ color: this.spec.accent, transparent: true, opacity: .36 }));
+    aura.rotation.x = Math.PI / 2;
+    aura.position.y = .04;
+    this.model.add(aura);
+    this.parts.aura = aura;
+  }
+
+  buildMossclaw() {
+    const bodyMat = material(this.spec.color, .9, 0, 0x102719, .18);
+    const mossMat = material(this.spec.accent, .75, 0, 0x4b8b2b, .3);
+    const dark = material(0x17352c, .85);
+    this.parts.body = meshPart(this.model, smoothSphere(1.14, 24, 16), bodyMat, 0, 1.12, 0, 1.12, .98, 1.02, 'body');
+    meshPart(this.model, smoothSphere(.76, 20, 14), bodyMat, 0, 1.94, .42, 1.0, .92, .88, 'head');
+    meshPart(this.model, smoothSphere(.46, 16, 10), mossMat, 0, 1.78, 1.03, 1.1, .76, .75, 'muzzle');
+    const hornL = meshPart(this.model, new THREE.ConeGeometry(.2, .75, 6), mossMat, -.48, 2.58, .35, 1, 1, 1, 'hornL');
+    const hornR = meshPart(this.model, new THREE.ConeGeometry(.2, .75, 6), mossMat, .48, 2.58, .35, 1, 1, 1, 'hornR');
+    hornL.rotation.z = -.28;
+    hornR.rotation.z = .28;
+    meshPart(this.model, smoothSphere(.12, 12, 8), material(0xe6ff94, .36, 0, 0xb5f64e, 1.4), -.28, 2.06, 1.18);
+    meshPart(this.model, smoothSphere(.12, 12, 8), material(0xe6ff94, .36, 0, 0xb5f64e, 1.4), .28, 2.06, 1.18);
+    [[-.68, .56], [.68, .56], [-.68, -.5], [.68, -.5]].forEach((pos) => {
+      const leg = new THREE.Group();
+      leg.position.set(pos[0], .8, pos[1]);
+      this.model.add(leg);
+      meshPart(leg, smoothSphere(.34, 16, 10), dark, 0, -.38, 0, 1, 1.28, 1, 'leg');
+      const claw = meshPart(leg, new THREE.ConeGeometry(.22, .54, 5), mossMat, 0, -.9, .12, 1, 1, 1, 'claw');
+      claw.rotation.x = Math.PI;
+      this.legs.push(leg);
+    });
+    const vines = new THREE.Mesh(new THREE.TorusGeometry(1.24, .07, 8, 36), new THREE.MeshBasicMaterial({ color: this.spec.accent, transparent: true, opacity: .45 }));
+    vines.rotation.x = Math.PI / 2;
+    vines.position.y = .25;
+    this.model.add(vines);
+    this.parts.aura = vines;
+  }
+
+  buildGloomfin() {
+    const bodyMat = material(this.spec.color, .52, .12, 0x120c42, .7);
+    const accentMat = material(this.spec.accent, .35, .08, this.spec.accent, .55);
+    const dark = material(0x110b2c, .64);
+    this.parts.body = meshPart(this.model, smoothSphere(.86, 24, 16), bodyMat, 0, 1.25, 0, 1.28, .58, 1.12, 'body');
+    const finL = meshPart(this.model, new THREE.ConeGeometry(.54, 1.35, 5), accentMat, -.92, 1.32, .12, 1, 1, 1, 'finL');
+    const finR = meshPart(this.model, new THREE.ConeGeometry(.54, 1.35, 5), accentMat, .92, 1.32, .12, 1, 1, 1, 'finR');
+    finL.rotation.z = -Math.PI / 2;
+    finR.rotation.z = Math.PI / 2;
+    meshPart(this.model, new THREE.SphereGeometry(.37, 16, 10), accentMat, 0, 1.3, .93, 1, .8, .7, 'face');
+    meshPart(this.model, smoothSphere(.085, 10, 8), material(0xf0dcff, .3, 0, 0xd794ff, 1.5), -.21, 1.4, 1.24);
+    meshPart(this.model, smoothSphere(.085, 10, 8), material(0xf0dcff, .3, 0, 0xd794ff, 1.5), .21, 1.4, 1.24);
+    const tail = new THREE.Group();
+    tail.position.set(0, 1.18, -.96);
+    this.model.add(tail);
+    meshPart(tail, smoothSphere(.38, 16, 10), dark, 0, 0, -.22, 1.1, .7, 1.6);
+    meshPart(tail, new THREE.ConeGeometry(.25, .9, 5), accentMat, 0, .02, -.9, 1, 1, 1);
+    const aura = new THREE.Mesh(new THREE.TorusGeometry(1.18, .035, 8, 38), new THREE.MeshBasicMaterial({ color: this.spec.accent, transparent: true, opacity: .5 }));
+    aura.rotation.x = Math.PI / 2;
+    aura.position.y = .22;
+    this.model.add(aura);
+    this.parts.aura = aura;
+    this.parts.finL = finL;
+    this.parts.finR = finR;
+  }
+
+  buildIronroot() {
+    const bodyMat = material(this.spec.color, .84, .16, 0x071f21, .48);
+    const accentMat = material(this.spec.accent, .25, .2, this.spec.accent, 1.1);
+    const rootMat = material(0x5b3d2b, .95);
+    this.parts.body = meshPart(this.model, new THREE.DodecahedronGeometry(1.35, 1), bodyMat, 0, 1.68, 0, 1.16, 1.35, .9, 'core-body');
+    meshPart(this.model, smoothSphere(.48, 18, 12), accentMat, 0, 1.72, 1.12, 1, 1, .7, 'core');
+    meshPart(this.model, new THREE.CylinderGeometry(.45, .6, 1.1, 8), bodyMat, 0, 3.05, .05, 1, 1, 1, 'head');
+    const crown = [-.65, 0, .65];
+    crown.forEach((x, index) => {
+      const spike = meshPart(this.model, new THREE.ConeGeometry(.22, 1.0, 5), accentMat, x, 3.9, .05, 1, 1, 1, 'crown-' + index);
+      spike.rotation.z = x * .2;
+    });
+    [-1, 1].forEach((side) => {
+      const shoulder = meshPart(this.model, smoothSphere(.54, 18, 12), bodyMat, side * 1.45, 2.32, 0, 1, 1, 1, 'shoulder');
+      const arm = new THREE.Group();
+      arm.position.set(side * 1.58, 1.95, .1);
+      this.model.add(arm);
+      meshPart(arm, new THREE.CylinderGeometry(.27, .34, 1.55, 10), bodyMat, 0, -.72, 0, 1, 1, 1, 'arm');
+      meshPart(arm, new THREE.DodecahedronGeometry(.45, 1), rootMat, 0, -1.55, .1, 1, 1, 1, 'fist');
+      arm.rotation.z = side * .12;
+      this.arms.push(arm);
+      shoulder.castShadow = true;
+    });
+    [-1, 1].forEach((side) => {
+      const root = new THREE.Group();
+      root.position.set(side * .7, .58, 0);
+      this.model.add(root);
+      meshPart(root, new THREE.CylinderGeometry(.28, .4, 1.5, 8), rootMat, 0, -.6, 0, 1, 1, 1, 'root');
+      meshPart(root, new THREE.ConeGeometry(.35, .8, 6), rootMat, side * .18, -1.45, .1, 1, 1, 1, 'root-tip');
+      this.legs.push(root);
+    });
+    const aura = new THREE.Mesh(new THREE.TorusGeometry(1.75, .045, 8, 42), new THREE.MeshBasicMaterial({ color: this.spec.accent, transparent: true, opacity: .62 }));
+    aura.rotation.x = Math.PI / 2;
+    aura.position.y = .18;
+    this.model.add(aura);
+    this.parts.aura = aura;
+    const glow = new THREE.PointLight(this.spec.accent, 1.5, 8);
+    glow.position.set(0, 2, 1);
+    this.model.add(glow);
+  }
+
+  playExternalAnimation(action) {
+    if (!this.assetMixer || !this.assetClips.length) return;
+    const clip = animationClipFor(this.assetClips, action);
+    if (!clip) return;
+    if (this.assetActionName === action && this.assetAction && this.assetAction.isRunning()) return;
+    if (this.assetAction) this.assetAction.fadeOut(.12);
+    const nextAction = this.assetMixer.clipAction(clip);
+    nextAction.reset().fadeIn(.12);
+    const looping = action === 'idle' || action === 'walk';
+    nextAction.setLoop(looping ? THREE.LoopRepeat : THREE.LoopOnce, looping ? Infinity : 1);
+    nextAction.clampWhenFinished = !looping;
+    nextAction.play();
+    this.assetAction = nextAction;
+    this.assetActionName = action;
+  }
+
+  play(action) {
+    if (this.dead && action !== 'death') return;
+    this.action = action;
+    this.actionTime = 0;
+    this.actionDuration = action === 'attack' ? .42 : action === 'cast' ? .7 : action === 'hit' ? .22 : action === 'dodge' ? .42 : action === 'death' ? .8 : 0;
+    this.playExternalAnimation(action);
+  }
+
+  update(dt) {
+    this.attackCooldown -= dt;
+    if (this.assetMixer) this.assetMixer.update(dt);
+    this.animClock += dt * (this.moving ? 8.5 : 3.2);
+    if (this.actionDuration > 0) {
+      this.actionTime += dt;
+      if (this.actionTime >= this.actionDuration) {
+        if (this.action === 'death') this.group.visible = false;
+        else this.action = 'idle';
+      }
+    }
+    const movingBob = this.moving ? Math.abs(Math.sin(this.animClock)) * .075 : Math.sin(this.animClock) * .035;
+    const visualModel = this.assetModel || this.model;
+    if (this.visualSprite) {
+      this.visualSprite.visible = this.group.visible && !this.dead;
+      this.visualSprite.position.y = 1.25 + movingBob;
+      this.visualSprite.scale.set(2.35 * (this.moving ? 1.03 : 1), 1.72 * (this.moving ? 1.03 : 1), 1);
+    }
+    if (this.assetModel && (this.action === 'idle' || this.action === 'walk')) this.playExternalAnimation(this.moving ? 'walk' : 'idle');
+    visualModel.position.y = movingBob;
+    const stride = Math.sin(this.animClock) * (this.moving ? .48 : .06);
+    this.legs.forEach((leg, index) => {
+      if (this.spec.rig === 'embermite') leg.rotation.z = (index % 2 ? -1 : 1) * stride * .55;
+      else leg.rotation.x = (index % 2 ? -1 : 1) * stride;
+    });
+    this.arms.forEach((arm, index) => {
+      arm.rotation.x = this.action === 'attack' ? -1.0 + Math.sin(this.actionTime * 30) * .35 : Math.sin(this.animClock + index) * (this.moving ? .13 : .035);
+    });
+    if (this.parts.aura) {
+      this.parts.aura.rotation.z += dt * (this.moving ? 1.4 : .45);
+      this.parts.aura.scale.setScalar(1 + Math.sin(this.animClock * .7) * .035);
+    }
+    if (this.parts.finL) {
+      this.parts.finL.rotation.y = Math.sin(this.animClock * .7) * .18;
+      this.parts.finR.rotation.y = -Math.sin(this.animClock * .7) * .18;
+    }
+    if (this.action === 'attack') {
+      visualModel.rotation.x = Math.sin(clamp(this.actionTime / Math.max(.01, this.actionDuration), 0, 1) * Math.PI) * -.12;
+    } else {
+      visualModel.rotation.x *= .86;
+    }
+    if (this.dead && this.group.visible) {
+      const fall = clamp(this.actionTime / .8, 0, 1);
+      visualModel.rotation.z = fall * (this.role === 'boss' ? -.25 : -.5);
+      visualModel.position.y = -fall * .3;
+    }
+    if (this.label) {
+      this.label.sub.textContent = this.role === 'boss' ? 'CHEFE • HP ' + Math.max(0, Math.ceil(this.hp)) : 'HP ' + Math.max(0, Math.ceil(this.hp)) + '/' + this.maxHp;
+      this.label.visible = this.group.visible && !this.captured;
+    }
+  }
+
+  move(dir, speed, dt) {
+    if (this.dead || !this.group.visible) return;
+    const len = dir.length();
+    if (len < .001) {
+      this.moving = false;
+      return;
+    }
+    this.moving = true;
+    tempA.copy(dir).normalize();
+    this.group.position.addScaledVector(tempA, speed * dt);
+    this.group.position.x = clamp(this.group.position.x, WORLD.minX, WORLD.maxX);
+    this.group.position.z = clamp(this.group.position.z, WORLD.minZ, WORLD.maxZ);
+    if (this !== state.player) resolveAgainstColliders(this.group.position, this.spec.radius * .45);
+    this.group.rotation.y = Math.atan2(tempA.x, tempA.z);
+  }
+
+  takeDamage(amount, source) {
+    if (this.dead) return;
+    this.hp = Math.max(0, this.hp - amount);
+    this.play('hit');
+    floatingText(this.group.position.clone().add(new THREE.Vector3(0, 2.5, 0)), '-' + Math.round(amount), source === 'player' ? '#ffe17a' : '#ff83ad');
+    if (this.hp <= 0) {
+      this.dead = true;
+      this.moving = false;
+      this.play('death');
+      if (this.role === 'player') handlePlayerDeath();
+      else if (this.role === 'wild' || this.role === 'boss') onCreatureDefeated(this);
+    }
+  }
+
+  dispose() {
+    if (this.label) { this.label.visible = false; this.label.element.remove(); }
+    scene.remove(this.group);
+  }
+}
+
+
+function createCreatures() {
+  const spawnList = [
+    ['embermite', -16, -1, 'clareira-aurora'], ['glintling', -37, -10, 'clareira-aurora'], ['glintling', -22, -18, 'clareira-aurora'],
+    ['mossclaw', 18, -7, 'brejo-ecos'], ['gloomfin', 29, -27, 'brejo-ecos'], ['gloomfin', 35, -15, 'brejo-ecos'],
+    ['glintling', -37, 17, 'bosque-bravio'], ['embermite', -51, 33, 'bosque-bravio'], ['mossclaw', -42, 38, 'bosque-bravio'],
+    ['embermite', 48, 4, 'costa-turquesa'], ['gloomfin', 73, -37, 'costa-turquesa'], ['gloomfin', 57, -44, 'costa-turquesa'],
+    ['mossclaw', 65, 13, 'ruinas-incandescentes'], ['embermite', 38, 43, 'ruinas-incandescentes'], ['ironroot', 73, 43, 'ruinas-incandescentes'],
+    ['gloomfin', 96, -43, 'costa-aurora-praia'], ['glintling', 112, -52, 'costa-aurora-praia'], ['mossclaw', 126, -39, 'costa-aurora-praia'],
+    ['gloomfin', 139, -11, 'costa-aurora-recife'], ['embermite', 121, -3, 'costa-aurora-recife'], ['glintling', 145, 2, 'costa-aurora-recife'],
+    ['embermite', 98, 35, 'costa-aurora-penhasco'], ['mossclaw', 116, 45, 'costa-aurora-penhasco'], ['gloomfin', 133, 31, 'costa-aurora-penhasco'],
+    ['gloomfin', 137, 48, 'costa-aurora-ruinas'], ['embermite', 153, 36, 'costa-aurora-ruinas'], ['ironroot', 157, 54, 'costa-aurora-ruinas']
+  ];
+  state.player = createTeamPlayer(state.activeTeamIndex, Number(saved.x) || 0, Number(saved.z) || 12, Math.PI);
+  state.hp = state.player.hp;
+  spawnList.forEach((entry) => {
+    const creature = new Creature(SPECIES[entry[0]], entry[0] === 'ironroot' ? 'boss' : 'wild', entry[1], entry[2]);
+    creature.zoneId = entry[3] || 'vila-iris';
+    if (creature.label && creature.role !== 'boss') creature.label.sub.textContent = 'Lv.' + (creature.zoneId === 'clareira-aurora' ? '1–3' : creature.zoneId === 'bosque-bravio' ? '3–6' : '2–7') + ' • HP ' + creature.hp + '/' + creature.maxHp;
+    creature.anchor.copy(creature.group.position);
+    state.wild.push(creature);
+  });
+}
+function restoreStructures() {
+  (saved.structures || []).forEach((entry) => {
+    if (!BUILD_DATA[entry.type]) return;
+    createStructure(entry.type, entry.x, entry.z, entry.rotation || 0, true);
+  });
+}
+
+function createStructure(type, x, z, rotation, silent) {
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  group.rotation.y = rotation || 0;
+  const wood = material(0x93603b, .86);
+  const stone = material(0x71878a, .9);
+  const gold = material(0xffcc62, .3, .1, 0xff8a32, .9);
+  if (type === 'core') {
+    meshPart(group, new THREE.CylinderGeometry(1.45, 1.65, .3, 8), stone, 0, .15, 0);
+    meshPart(group, new THREE.OctahedronGeometry(.68, 1), gold, 0, 1.05, 0);
     const ring = meshPart(group, new THREE.TorusGeometry(1.1, .035, 8, 32), gold, 0, .42, 0);
     ring.rotation.x = Math.PI / 2;
     const light = new THREE.PointLight(0xffb75d, 1.25, 8);
@@ -2402,6 +2757,12 @@ function updateCooldowns(dt) {
 function updateLabels() {
   state.labels.forEach((record) => {
     if (!record.object || !record.element) return;
+    if (record.kind === 'zone') {
+      record.visible = record.object.userData.zoneId === state.zoneId;
+    } else if (record.kind === 'wild') {
+      const distance = state.player ? distance2D(record.object.position, state.player.group.position) : 999;
+      record.visible = record.object.userData.boss || distance < 13;
+    }
     if (!record.visible || !record.object.visible) {
       record.element.style.display = 'none';
       return;
