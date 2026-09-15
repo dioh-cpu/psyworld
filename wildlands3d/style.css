@@ -828,3 +828,48 @@ button{font:inherit}
   .team-panel{padding:8px 10px 9px}
   .inventory-section-heading{margin:11px 0 7px}
 }
+
+/* V152 — modal layer and input isolation */
+.modal{
+  position:absolute;
+  z-index:100 !important;
+  isolation:isolate;
+  pointer-events:auto;
+  overscroll-behavior:contain;
+  background:rgba(0,8,13,.94);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+.modal.hidden{display:none !important}
+.modal:not(.hidden) > .modal-box{
+  position:relative;
+  z-index:101;
+  max-height:calc(100dvh - 28px);
+  overscroll-behavior:contain;
+}
+#game-root.modal-open > #topbar,
+#game-root.modal-open > #status-card,
+#game-root.modal-open > #map-card,
+#game-root.modal-open > #inventory-card,
+#game-root.modal-open > #world-labels,
+#game-root.modal-open > #crosshair,
+#game-root.modal-open > #camera-hint,
+#game-root.modal-open > #feed,
+#game-root.modal-open > #joystick,
+#game-root.modal-open > #quick-interactions,
+#game-root.modal-open > #skills,
+#game-root.modal-open > #actions{
+  visibility:hidden;
+  pointer-events:none;
+}
+#game-root.modal-open .modal:not(.hidden){
+  visibility:visible;
+  pointer-events:auto;
+}
+@media (max-width:680px){
+  .modal{padding:12px}
+  .modal:not(.hidden) > .modal-box{max-height:calc(100dvh - 20px)}
+}
+@media (orientation:landscape) and (max-height:560px){
+  .modal:not(.hidden) > .modal-box{max-height:calc(100dvh - 16px)}
+}
