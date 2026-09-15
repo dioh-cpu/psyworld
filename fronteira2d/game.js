@@ -11,16 +11,19 @@ const TAU = Math.PI * 2;
 
 const assets = {
   creatures: loadImage('./assets/creatures-atlas.png'),
+  creatureSides: loadImage('./assets/creatures-sides-atlas.png'),
   environment: loadImage('./assets/environment-atlas.png'),
+  npcDirections: loadImage('./assets/npc-directions.png'),
 };
 let loadedAssets = 0;
+const assetCount = Object.keys(assets).length;
 const loadingBar = document.querySelector('#loadingBar');
 for (const image of Object.values(assets)) {
   image.addEventListener('load', () => {
     loadedAssets += 1;
-    loadingBar.style.width = `${Math.round((loadedAssets / 2) * 100)}%`;
+    loadingBar.style.width = `${Math.round((loadedAssets / assetCount) * 100)}%`;
   });
-  if (image.complete && image.naturalWidth) { loadedAssets += 1; loadingBar.style.width = `${Math.round((loadedAssets / 2) * 100)}%`; }
+  if (image.complete && image.naturalWidth) { loadedAssets += 1; loadingBar.style.width = `${Math.round((loadedAssets / assetCount) * 100)}%`; }
 }
 
 function loadImage(src) {
@@ -101,7 +104,7 @@ const state = {
   region: 1,
   day: 1,
   time: 8 * 60,
-  player: { x: 440, y: 870, hp: 100, maxHp: 100, hunger: 100, water: 100, energy: 100, level: 1, xp: 0, attribute: 0, technique: 0, dirX: 1, dirY: 0, dodge: 0 },
+  player: { x: 440, y: 870, hp: 100, maxHp: 100, hunger: 100, water: 100, energy: 100, level: 1, xp: 0, attribute: 0, technique: 0, dirX: 1, dirY: 0, facing: 'east', dodge: 0 },
   inventory: { fibra: 10, mineral: 4, cristal: 0, água: 4, aurora: 0, fungo: 0, meal: 1, capsule: 5, prism: 0, auroraSeal: 0 },
   team: [], selectedCapsule: 'capsule',
   counters: { collected: {}, captured: {}, defeated: {}, crafted: {}, talked: {}, explored: {}, interacted: {}, defeatedRegion: {} },
@@ -112,7 +115,7 @@ const state = {
 
 function makeCreature(index, region, x, y, speciesIndex, temperament = 'calm') {
   const data = species[speciesIndex % species.length];
-  return { id: `${region}-${index}-${data.id}`, species: data.id, region, x, y, hp: data.maxHp, maxHp: data.maxHp, level: data.level + (region === 2 ? 2 : 0), state: 'idle', temperament, phase: Math.random() * TAU, hitFlash: 0, captured: false, respawn: 0 };
+  return { id: `${region}-${index}-${data.id}`, species: data.id, region, x, y, hp: data.maxHp, maxHp: data.maxHp, level: data.level + (region === 2 ? 2 : 0), state: 'idle', facing: 'south', temperament, phase: Math.random() * TAU, hitFlash: 0, captured: false, respawn: 0 };
 }
 
 state.creatures = [
@@ -244,14 +247,14 @@ function loop(now) {
 }
 
 function update(dt) {
-  if (loadedAssets >= 2) document.querySelector('#loadingScreen').classList.add('ready');
+  if (loadedAssets >= assetCount) document.querySelector('#loadingScreen').classList.add('ready');
   const p = state.player;
   attackCooldown = Math.max(0, attackCooldown - dt); captureCooldown = Math.max(0, captureCooldown - dt); interactCooldown = Math.max(0, interactCooldown - dt); p.dodge = Math.max(0, p.dodge - dt);
   let dx = (input.right ? 1 : 0) - (input.left ? 1 : 0) + touch.x;
   let dy = (input.down ? 1 : 0) - (input.up ? 1 : 0) + touch.y;
   const length = Math.hypot(dx, dy);
   if (length > .08) {
-    dx /= length; dy /= length; p.dirX = dx; p.dirY = dy;
+    dx /= length; dy /= length; p.dirX = dx; p.dirY = dy; p.facing = directionFromVector(dx, dy);
     const speed = (input.sprint || touch.active && Math.hypot(touch.x, touch.y) > .86) ? 280 : 185;
     p.x = clamp(p.x + dx * speed * dt, 60, WORLD.width - 60); p.y = clamp(p.y + dy * speed * dt, 110, WORLD.height - 70);
     p.energy = clamp(p.energy - (speed > 200 ? 8 : 3) * dt, 0, 100);
@@ -273,8 +276,8 @@ function updateCreatures(dt) {
     creature.phase += dt * (creature.temperament === 'alert' ? 1.9 : 1.2);
     const distance = Math.hypot(p.x - creature.x, p.y - creature.y);
     const wander = creature.temperament === 'shy' && distance < 200 ? -1 : 1;
-    if (creature.state === 'enraged' && distance < 260) { const vx = (p.x - creature.x) / Math.max(distance, 1); const vy = (p.y - creature.y) / Math.max(distance, 1); creature.x += vx * dt * 45; creature.y += vy * dt * 45; }
-    else if (Math.random() < dt * .55) { const angle = creature.phase + creature.id.length; creature.x += Math.cos(angle) * dt * 14 * wander; creature.y += Math.sin(angle) * dt * 14 * wander; }
+    if (creature.state === 'enraged' && distance < 260) { const vx = (p.x - creature.x) / Math.max(distance, 1); const vy = (p.y - creature.y) / Math.max(distance, 1); creature.facing = directionFromVector(vx, vy); creature.x += vx * dt * 45; creature.y += vy * dt * 45; }
+    else if (Math.random() < dt * .55) { const angle = creature.phase + creature.id.length; const vx = Math.cos(angle) * wander; const vy = Math.sin(angle) * wander; creature.facing = directionFromVector(vx, vy); creature.x += vx * dt * 14; creature.y += vy * dt * 14; }
     creature.x = clamp(creature.x, creature.region === 1 ? 100 : WORLD.split + 70, creature.region === 1 ? WORLD.split - 80 : WORLD.width - 70);
     creature.y = clamp(creature.y, 150, WORLD.height - 100);
     if (creature.state === 'enraged' && distance < 55 && Math.random() < dt * .35) { p.hp = clamp(p.hp - 7, 1, p.maxHp); toast(`${speciesById(creature.species).name} revidou!`, 'danger'); }
@@ -332,15 +335,15 @@ function drawProp(prop) {
   const cell = envCell(prop.type); if (!cell || !assets.environment.complete) return;
   const sizes = { tree: 118, pine: 108, flowerTree: 122, log: 98, rock: 88, stone: 90, crystal: 88, ore: 88, berry: 72, aurora: 80, mushroom: 72, campfire: 82, sign: 70, cabin: 175, gate: 180, lighthouse: 160, ruins: 190, shelter: 160, cliffs: 190 };
   const size = sizes[prop.type] || 80; const bob = prop.type === 'aurora' || prop.type === 'campfire' ? Math.sin(performance.now() / 400 + prop.phase) * 3 : 0;
-  drawAtlas(assets.environment, 4, 4, cell[0], cell[1], prop.x, prop.y + bob, size, size, false, prop.type === 'aurora' ? .92 : 1);
+  drawAtlas(assets.environment, 4, 4, cell[0], cell[1], prop.x, prop.y + bob, size, size, false, prop.type === 'aurora' ? .92 : 1, .08);
   if (prop.resource && !['campfire', 'gate', 'ruinas', 'lighthouse', 'shelter2'].includes(prop.resource)) { ctx.save(); ctx.fillStyle = '#e9fbf5'; ctx.globalAlpha = .7; ctx.font = '700 10px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`+${prop.amount}`, prop.x, prop.y - size * .35); ctx.restore(); }
 }
-function drawNpc(npc) { drawAtlas(assets.environment, 4, 4, 1, 3, npc.x, npc.y, 76, 76, false, 1); label(npc.x, npc.y - 54, npc.name, npc.role, '#f1c45e'); }
-function drawCreature(creature) { const data = speciesById(creature.species); const bob = Math.sin(creature.phase) * 3; const size = creature.level >= 9 ? 108 : 92; ctx.save(); ctx.globalAlpha = .32; ctx.fillStyle = '#061b1e'; ctx.beginPath(); ctx.ellipse(creature.x, creature.y + 30, size * .31, size * .11, 0, 0, TAU); ctx.fill(); ctx.restore(); drawAtlas(assets.creatures, 4, 3, data.atlas[0], data.atlas[1], creature.x, creature.y - bob, size, size, creature.hitFlash > 0, 1); label(creature.x, creature.y - size * .55, data.name, `Lv. ${creature.level} · ${data.element}`, data.color); if (creature.hp < creature.maxHp) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(creature.x - 32, creature.y + 39, 64, 5); ctx.fillStyle = '#ff8090'; ctx.fillRect(creature.x - 32, creature.y + 39, 64 * Math.max(0, creature.hp / creature.maxHp), 5); } }
-function drawPlayer() { const p = state.player; const bob = Math.sin(performance.now() / 180) * 2; ctx.save(); ctx.globalAlpha = .34; ctx.fillStyle = '#031417'; ctx.beginPath(); ctx.ellipse(p.x, p.y + 32, 31, 10, 0, 0, TAU); ctx.fill(); ctx.restore(); drawAtlas(assets.creatures, 4, 3, 0, 0, p.x, p.y - bob, 108, 108, false, 1); label(p.x, p.y - 70, 'Lúmion', `HP ${Math.ceil(p.hp)}/${p.maxHp}`, '#64e7d5'); if (state.team.length) { ctx.save(); ctx.strokeStyle = 'rgba(100,231,213,.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y + 2, 43, 0, TAU); ctx.stroke(); ctx.restore(); } }
+function drawNpc(npc) { const facing = directionFromVector(state.player.x - npc.x, state.player.y - npc.y); const column = { south: 0, east: 1, north: 2, west: 3 }[facing]; drawAtlas(assets.npcDirections, 4, 1, column, 0, npc.x, npc.y - 52, 78, 104, false, 1, .035); label(npc.x, npc.y - 112, npc.name, npc.role, '#f1c45e'); }
+function drawCreature(creature) { const data = speciesById(creature.species); const bob = Math.sin(creature.phase) * 3; const size = creature.level >= 9 ? 108 : 92; const side = creature.facing === 'east' || creature.facing === 'west'; ctx.save(); ctx.globalAlpha = .32; ctx.fillStyle = '#061b1e'; ctx.beginPath(); ctx.ellipse(creature.x, creature.y + 30, size * .31, size * .11, 0, 0, TAU); ctx.fill(); ctx.restore(); drawAtlas(side ? assets.creatureSides : assets.creatures, 4, 3, data.atlas[0], data.atlas[1], creature.x, creature.y - bob, size, size, creature.hitFlash > 0, 1, .035, creature.facing === 'west'); label(creature.x, creature.y - size * .55, data.name, `Lv. ${creature.level} · ${data.element}`, data.color); if (creature.hp < creature.maxHp) { ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(creature.x - 32, creature.y + 39, 64, 5); ctx.fillStyle = '#ff8090'; ctx.fillRect(creature.x - 32, creature.y + 39, 64 * Math.max(0, creature.hp / creature.maxHp), 5); } }
+function drawPlayer() { const p = state.player; const bob = Math.sin(performance.now() / 180) * 2; const side = p.facing === 'east' || p.facing === 'west'; ctx.save(); ctx.globalAlpha = .34; ctx.fillStyle = '#031417'; ctx.beginPath(); ctx.ellipse(p.x, p.y + 32, 31, 10, 0, 0, TAU); ctx.fill(); ctx.restore(); drawAtlas(side ? assets.creatureSides : assets.creatures, 4, 3, 0, 0, p.x, p.y - bob, 108, 108, false, 1, .035, p.facing === 'west'); label(p.x, p.y - 70, 'Lúmion', `HP ${Math.ceil(p.hp)}/${p.maxHp}`, '#64e7d5'); if (state.team.length) { ctx.save(); ctx.strokeStyle = 'rgba(100,231,213,.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y + 2, 43, 0, TAU); ctx.stroke(); ctx.restore(); } }
 function drawEffects() { effects.forEach((effect) => { const progress = 1 - effect.life / effect.max; ctx.save(); ctx.globalAlpha = Math.max(0, effect.life / effect.max); ctx.strokeStyle = effect.color; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(effect.x, effect.y, 20 + progress * 65, 0, TAU); ctx.stroke(); ctx.restore(); }); }
 function drawGateHint() { const gate = props.find((prop) => prop.type === 'gate'); if (!gate) return; const distance = Math.hypot(state.player.x - gate.x, state.player.y - gate.y); if (distance < 230) { ctx.save(); ctx.fillStyle = '#f1c45e'; ctx.font = '900 12px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`PORTÃO · ${Math.max(0, 15 - state.completed.length)} missões restantes`, gate.x, gate.y - 115); ctx.restore(); } }
-function drawAtlas(image, cols, rows, col, row, x, y, width, height, flash = false, alpha = 1) { if (!image.complete || !image.naturalWidth) return; const sw = image.naturalWidth / cols; const sh = image.naturalHeight / rows; ctx.save(); ctx.translate(x, y); ctx.globalAlpha = alpha; if (flash) ctx.filter = 'brightness(2) saturate(.4)'; ctx.drawImage(image, col * sw, row * sh, sw, sh, -width / 2, -height / 2, width, height); ctx.restore(); }
+function drawAtlas(image, cols, rows, col, row, x, y, width, height, flash = false, alpha = 1, inset = 0, flip = false) { if (!image.complete || !image.naturalWidth) return; const cellWidth = image.naturalWidth / cols; const cellHeight = image.naturalHeight / rows; const sourceInsetX = cellWidth * inset; const sourceInsetY = cellHeight * inset; const sourceX = col * cellWidth + sourceInsetX; const sourceY = row * cellHeight + sourceInsetY; const sourceWidth = cellWidth - sourceInsetX * 2; const sourceHeight = cellHeight - sourceInsetY * 2; ctx.save(); ctx.translate(x, y); ctx.scale(flip ? -1 : 1, 1); ctx.globalAlpha = alpha; if (flash) ctx.filter = 'brightness(2) saturate(.4)'; ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, -width / 2, -height / 2, width, height); ctx.restore(); }
 function label(x, y, title, subtitle, color) { ctx.save(); ctx.textAlign = 'center'; ctx.font = '900 12px Inter, sans-serif'; const titleWidth = ctx.measureText(title).width; ctx.font = '700 9px Inter, sans-serif'; const subtitleWidth = ctx.measureText(subtitle).width; const width = Math.max(titleWidth, subtitleWidth) + 18; ctx.fillStyle = 'rgba(5,22,27,.86)'; roundedRect(ctx, x - width / 2, y - 22, width, 34, 9); ctx.fill(); ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = color; ctx.font = '900 12px Inter, sans-serif'; ctx.fillText(title, x, y - 8); ctx.fillStyle = '#c4e8df'; ctx.font = '700 9px Inter, sans-serif'; ctx.fillText(subtitle, x, y + 7); ctx.restore(); }
 function roundedRect(context, x, y, width, height, radius) { context.beginPath(); context.roundRect(x, y, width, height, radius); }
 function envCell(type) { const cells = { tree: [0, 0], pine: [1, 0], flowerTree: [2, 0], log: [3, 0], rock: [0, 1], stone: [1, 1], crystal: [2, 1], ore: [3, 1], berry: [0, 2], aurora: [1, 2], mushroom: [2, 2], campfire: [3, 2], sign: [0, 3], cabin: [2, 3], gate: [3, 3], lighthouse: [3, 3], ruins: [1, 3], shelter: [2, 3], cliffs: [1, 3] }; return cells[type]; }
@@ -398,7 +401,9 @@ function closeAllModals() { document.querySelectorAll('.modal').forEach((modal) 
 function drawMiniMap() { const w = miniMap.width; const h = miniMap.height; miniCtx.clearRect(0, 0, w, h); miniCtx.fillStyle = '#0c302f'; miniCtx.fillRect(0, 0, w, h); miniCtx.fillStyle = '#184b42'; miniCtx.fillRect(0, 0, w / 2, h); miniCtx.fillStyle = '#17455b'; miniCtx.fillRect(w / 2, 0, w / 2, h); miniCtx.strokeStyle = 'rgba(176,246,224,.25)'; miniCtx.lineWidth = 2; miniCtx.setLineDash([5, 7]); miniCtx.beginPath(); miniCtx.moveTo(w / 2, 0); miniCtx.lineTo(w / 2, h); miniCtx.stroke(); miniCtx.setLineDash([]); areas.forEach((area) => { miniCtx.fillStyle = area.region === 1 ? '#e7c75e' : '#71d6e3'; miniCtx.globalAlpha = state.discoveredAreas.includes(area.id) ? .8 : .22; miniCtx.beginPath(); miniCtx.arc(area.x / WORLD.width * w, area.y / WORLD.height * h, 4, 0, TAU); miniCtx.fill(); }); miniCtx.globalAlpha = 1; state.creatures.filter((creature) => !creature.captured).forEach((creature) => { miniCtx.fillStyle = '#ed91c4'; miniCtx.beginPath(); miniCtx.arc(creature.x / WORLD.width * w, creature.y / WORLD.height * h, 2.4, 0, TAU); miniCtx.fill(); }); miniCtx.fillStyle = '#f8f4d1'; miniCtx.beginPath(); miniCtx.arc(state.player.x / WORLD.width * w, state.player.y / WORLD.height * h, 4, 0, TAU); miniCtx.fill(); }
 function drawBigMap() { const w = bigMap.width; const h = bigMap.height; bigCtx.clearRect(0, 0, w, h); bigCtx.fillStyle = '#0c302f'; bigCtx.fillRect(0, 0, w, h); bigCtx.fillStyle = '#1c5546'; bigCtx.fillRect(0, 0, w / 2, h); bigCtx.fillStyle = '#18576a'; bigCtx.fillRect(w / 2, 0, w / 2, h); bigCtx.fillStyle = 'rgba(227,201,110,.12)'; bigCtx.fillRect(0, 0, w / 2, h); bigCtx.fillStyle = 'rgba(109,231,245,.12)'; bigCtx.fillRect(w / 2, 0, w / 2, h); bigCtx.strokeStyle = 'rgba(206,249,229,.24)'; bigCtx.lineWidth = 3; bigCtx.setLineDash([8, 12]); bigCtx.beginPath(); bigCtx.moveTo(w / 2, 0); bigCtx.lineTo(w / 2, h); bigCtx.stroke(); bigCtx.setLineDash([]); bigCtx.font = '900 20px Inter, sans-serif'; bigCtx.fillStyle = '#c8f9e7'; bigCtx.fillText('VALE VERDE', 25, 38); bigCtx.fillText('COSTA AURORA', w / 2 + 25, 38); areas.forEach((area) => { const x = area.x / WORLD.width * w; const y = area.y / WORLD.height * h; bigCtx.fillStyle = state.discoveredAreas.includes(area.id) ? '#f1c45e' : 'rgba(241,196,94,.3)'; bigCtx.beginPath(); bigCtx.arc(x, y, 8, 0, TAU); bigCtx.fill(); bigCtx.font = '600 13px Inter, sans-serif'; bigCtx.fillText(area.name, x + 14, y + 5); }); bigCtx.fillStyle = '#fff8dc'; bigCtx.beginPath(); bigCtx.arc(state.player.x / WORLD.width * w, state.player.y / WORLD.height * h, 9, 0, TAU); bigCtx.fill(); document.querySelector('#mapLegend').innerHTML = '<span>áreas descobertas</span><span>monstrinhos</span><span>você</span>'; }
 
-function saveGame() { const payload = { ...state, creatures: state.creatures.map(({ id, species, region, x, y, hp, maxHp, state: creatureState, temperament, phase, captured, respawn }) => ({ id, species, region, x, y, hp, maxHp, creatureState, temperament, phase, captured, respawn })) }; localStorage.setItem(SAVE_KEY, JSON.stringify(payload)); }
+function saveGame() { const payload = { ...state, creatures: state.creatures.map(({ id, species, region, x, y, hp, maxHp, state: creatureState, facing, temperament, phase, captured, respawn }) => ({ id, species, region, x, y, hp, maxHp, creatureState, facing, temperament, phase, captured, respawn })) }; localStorage.setItem(SAVE_KEY, JSON.stringify(payload)); }
 function loadSave() { try { const saved = JSON.parse(localStorage.getItem(SAVE_KEY)); if (!saved) return; if (saved.player) Object.assign(state.player, saved.player); if (saved.inventory) Object.assign(state.inventory, saved.inventory); if (Array.isArray(saved.team)) state.team = saved.team; if (Array.isArray(saved.completed)) state.completed = saved.completed; if (Array.isArray(saved.discoveredAreas)) state.discoveredAreas = saved.discoveredAreas; if (saved.counters) state.counters = saved.counters; if (saved.region) state.region = saved.region; if (saved.day) state.day = saved.day; if (saved.time) state.time = saved.time; if (Array.isArray(saved.creatures)) saved.creatures.forEach((savedCreature) => { const current = state.creatures.find((creature) => creature.id === savedCreature.id); if (current) Object.assign(current, savedCreature, { state: savedCreature.creatureState || savedCreature.state || 'idle' }); }); } catch (error) { console.warn('Save inválido ignorado', error); } }
 setInterval(saveGame, 5000);
 setInterval(() => { if (state.inventory.meal > 0 && (state.player.hunger < 25 || state.player.water < 20)) eat(); }, 8000);
+
+function directionFromVector(x, y) { if (Math.abs(x) > Math.abs(y)) return x >= 0 ? 'east' : 'west'; return y >= 0 ? 'south' : 'north'; }

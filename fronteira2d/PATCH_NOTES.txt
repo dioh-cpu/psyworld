@@ -3,6 +3,13 @@ Data: 2026-09-15
 
 O modo 3D anterior foi retirado da entrada ativa. Esta pasta é uma reconstrução independente em Canvas 2D, sem Three.js e sem dependência de servidor para jogar.
 
+HOTFIX VISUAL 2D
+- recorte das células de atlas com margem interna para impedir pedaços de sprites vizinhos;
+- atlas lateral novo para os 12 monstrinhos, com perfil leste/oeste e espelhamento correto;
+- folha direcional limpa do NPC explorador com sul/leste/norte/oeste;
+- personagem e criaturas agora mudam a orientação conforme o movimento;
+- sprites passaram a preservar melhor a proporção e os pés ficam ancorados no chão.
+
 ENTREGUE NESTA VERSÃO
 - mapa 2D jogável com Vale Verde e Costa Aurora;
 - transição de região pelo Portão Aurora após 15 missões;
@@ -21,3 +28,4 @@ WASD/setas mover · Shift correr · J/1 atacar · C capturar · E interagir · E
 VALIDAÇÃO LOCAL
 - JavaScript validado com `node --check fronteira2d/game.js`.
 - Os dois PNGs são originais e ficam em `fronteira2d/assets/`.
+- Os assets direcionais são `creatures-sides-atlas.png` e `npc-directions.png`.
