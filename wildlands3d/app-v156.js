@@ -1463,12 +1463,18 @@ class Creature {
 
   applyCreatureArtwork() {
     if (!creatureAtlasTexture || this.role === 'player') return;
-    const crop = this.spec.rig === 'mossclaw' ? [0.5, 0.5] : this.spec.rig === 'embermite' ? [0, 0.5] : this.spec.rig === 'gloomfin' ? [0.5, 0.5] : [0, 0];
+    const crop = {
+      glintling: [0, 0],
+      mossclaw: [1, 0],
+      embermite: [0, 1],
+      gloomfin: [1, 1],
+      ironroot: [1, 0]
+    }[this.spec.rig] || [0, 0];
     if (!this.visualSprite) {
       const map = creatureAtlasTexture.clone();
       map.needsUpdate = true;
       map.repeat.set(.5, .5);
-      map.offset.set(crop[0], crop[1]);
+      map.offset.set(crop[0] * .5, (1 - crop[1]) * .5);
       map.colorSpace = THREE.SRGBColorSpace;
       this.visualSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map, transparent: true, depthWrite: false, depthTest: true }));
       this.visualSprite.position.set(0, 1.25, .12);
