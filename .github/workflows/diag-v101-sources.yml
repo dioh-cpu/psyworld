@@ -15,9 +15,9 @@ jobs:
         shell: bash
         env:
           SOURCES: |
-            s1|https://psyworld-13q7ozo0c-world-of-monsters.vercel.app|https://psyworld-13q7ozo0c-world-of-monsters.vercel.app/?_vercel_share=l4nectImluboSblDVUkVzP9wXR17qPAt
-            s2|https://psyworld-lyc8ot8yj-world-of-monsters.vercel.app|https://psyworld-lyc8ot8yj-world-of-monsters.vercel.app/?_vercel_share=V5XmiATu7Uw3hV9xAVSHyISMwQ40nXRH
-            s3|https://psyworld-9weneh04u-world-of-monsters.vercel.app|https://psyworld-9weneh04u-world-of-monsters.vercel.app/?_vercel_share=JUS89fxAYAwJTlb4OgVis422JROqyMjY
+            s1|https://psyworld-13q7ozo0c-world-of-monsters.vercel.app|https://psyworld-13q7ozo0c-world-of-monsters.vercel.app/?_vercel_share=lLmK2Em6XXnZYguMAJ1Yd7LjvOUEFKCQ
+            s2|https://psyworld-lyc8ot8yj-world-of-monsters.vercel.app|https://psyworld-lyc8ot8yj-world-of-monsters.vercel.app/?_vercel_share=1IcxPkFieKbm9SQq9GYJmVUJSJW2Xry8
+            s3|https://psyworld-9weneh04u-world-of-monsters.vercel.app|https://psyworld-9weneh04u-world-of-monsters.vercel.app/?_vercel_share=sgnHLitAtB3aOZ3iCyjKWPpK8l5FstWW
           PATHS: |
             fronteira2d/index.html
             fronteira2d/style.css
