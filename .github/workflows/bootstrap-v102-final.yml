@@ -1,0 +1,167 @@
+name: Build verified Fronteira Iris V102
+
+on:
+  push:
+    branches:
+      - test/fronteira-iris-v102
+    paths:
+      - .github/workflows/bootstrap-v102-final.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build-v102:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: test/fronteira-iris-v102
+          fetch-depth: 0
+
+      - name: Authenticate to verified V101 source
+        shell: bash
+        env:
+          AUTH_URL: https://psyworld-13q7ozo0c-world-of-monsters.vercel.app/?_vercel_share=l4nectImluboSblDVUkVzP9wXR17qPAt
+        run: |
+          set -euo pipefail
+          COOKIE_JAR="$RUNNER_TEMP/vercel-cookies.txt"
+          curl -fsSL --retry 3 --retry-delay 1 -c "$COOKIE_JAR" -b "$COOKIE_JAR" "$AUTH_URL" -o "$RUNNER_TEMP/source-root.html"
+          test "$(sha256sum "$RUNNER_TEMP/source-root.html" | awk '{print $1}')" = "7d796871c0374368ec28b8d797e17342093fc75b28f1c88d560dad5048bf2ef0"
+          echo "COOKIE_JAR=$COOKIE_JAR" >> "$GITHUB_ENV"
+
+      - name: Restore exact V101 Fronteira files
+        shell: bash
+        env:
+          BASE_URL: https://psyworld-13q7ozo0c-world-of-monsters.vercel.app
+          FILES_LIST: |
+            fronteira2d/assets/arvore-corte.png
+            fronteira2d/assets/arvore-idle.png
+            fronteira2d/assets/cobre-idle.png
+            fronteira2d/assets/creatures-atlas.png
+            fronteira2d/assets/creatures-sides-atlas.png
+            fronteira2d/assets/environment-atlas.png
+            fronteira2d/assets/lumion-atlas-v133.png
+            fronteira2d/assets/magnus-idle.png
+            fronteira2d/assets/map-tiles/tile-00.png
+            fronteira2d/assets/map-tiles/tile-01.png
+            fronteira2d/assets/map-tiles/tile-02.png
+            fronteira2d/assets/map-tiles/tile-03.png
+            fronteira2d/assets/map-tiles/tile-04.png
+            fronteira2d/assets/map-tiles/tile-05.png
+            fronteira2d/assets/map-tiles/tile-06.png
+            fronteira2d/assets/map-tiles/tile-07.png
+            fronteira2d/assets/map-tiles/tile-08.png
+            fronteira2d/assets/map-tiles/tile-09.png
+            fronteira2d/assets/map-tiles/tile-10.png
+            fronteira2d/assets/map-tiles/tile-11.png
+            fronteira2d/assets/map-tiles/tile-12.png
+            fronteira2d/assets/map-tiles/tile-13.png
+            fronteira2d/assets/map-tiles/tile-14.png
+            fronteira2d/assets/map-tiles/tile-15.png
+            fronteira2d/assets/mapa-vila-iris.png
+            fronteira2d/assets/mina-cobre-v1.png
+            fronteira2d/assets/npc-directions.png
+            fronteira2d/custom/copper-idle-8.png
+            fronteira2d/custom/copper-idle.png
+            fronteira2d/custom/copper-idle.webp
+            fronteira2d/custom/tree-chopping-8.png
+            fronteira2d/custom/tree-chopping.png
+            fronteira2d/custom/tree-chopping.webp
+            fronteira2d/custom/tree-idle-8.png
+            fronteira2d/custom/tree-idle.png
+            fronteira2d/custom/tree-idle.webp
+            fronteira2d/custom-assets.js
+            fronteira2d/game.js
+            fronteira2d/index.html
+            fronteira2d/style.css
+        run: |
+          set -euo pipefail
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            mkdir -p "$(dirname "$path")"
+            curl -fsSL --retry 3 --retry-delay 1 -c "$COOKIE_JAR" -b "$COOKIE_JAR" "$BASE_URL/$path" -o "$path"
+          done <<< "$FILES_LIST"
+          cat > index.html <<'HTML'
+          <!doctype html>
+          <html lang="pt-BR">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <meta http-equiv="refresh" content="0; url=./fronteira2d/" />
+              <title>Fronteira Íris — 2D</title>
+              <script>location.replace('./fronteira2d/');</script>
+            </head>
+            <body style="background:#06151a;color:#e9fbf5;font-family:system-ui;text-align:center;padding:48px">Abrindo a reconstrução 2D da Fronteira Íris…</body>
+          </html>
+          HTML
+
+      - name: Verify V101 baseline byte for byte
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum index.html | awk '{print $1}')" = "ca9a0f2c9d7b0e7c26de2cf9d576eaa795de665c1e4e081cfbd5834dafe6a4b9"
+          sha256sum -c <<'CHECKSUMS'
+          7b02e84c6ce8a43fd340a8e7537650130b0cee0c96fb3e14f3861b76d7226068  fronteira2d/index.html
+          90092b0e26be28c31aecf1349c20046116c5bfeddfa75cb216b70d663eb9f6f5  fronteira2d/style.css
+          fd8106ca7de2ecc057ed7318680b3e53073a5902e2c9b17b32dbc28a13487af6  fronteira2d/custom-assets.js
+          164cf5323382056913ecbe1380caf8533e014cd6ab237cd2a911b892936c222e  fronteira2d/game.js
+          37e086d1c6c013af3d958d94e4d48aceeca3ee2b5e54de0431e017963334d5f6  fronteira2d/assets/arvore-corte.png
+          bb03be975fa3472ec9dc990726ba828d6579d20380b16340e3cf9764701dded7  fronteira2d/assets/arvore-idle.png
+          2215cd47033ebafc3f57486f6ac30a1a24c4922446838477c436920a5ce1dec0  fronteira2d/assets/cobre-idle.png
+          5a019ef7c63f139ca32c0ac5bf1887f39d7aeeaf972b565de06bdfdf9d40b9c4  fronteira2d/assets/creatures-atlas.png
+          9a038bde73540833322531820e7e670b709256e35d637266f0a5320f87841e47  fronteira2d/assets/creatures-sides-atlas.png
+          147418850e96765356d74f4c32ec50ddd4f64b7f7b20b1f1c0ca9c1cf03def2e  fronteira2d/assets/environment-atlas.png
+          c91252cb1428c1c01f3b9057ef05d5c4e2046ed78681af57dff495ddce1580c1  fronteira2d/assets/lumion-atlas-v133.png
+          05c0d2a124d593ca91a08873bdc5669567eb17a5c4cc1a1a7d07ef5f389bea2c  fronteira2d/assets/magnus-idle.png
+          1db23d75ed7cc0a209b832c1270a71da6a983829ecc60d8faeb3649a2334550a  fronteira2d/assets/map-tiles/tile-00.png
+          71f768b05f2bae802d483936eec48e23cff2bbcfda540c7cd8b54f0c0dbbc180  fronteira2d/assets/map-tiles/tile-01.png
+          43b6893acc777a8521c5ab97ae9f5363ce2edd1d1c6805702c0e87ca27de66d8  fronteira2d/assets/map-tiles/tile-02.png
+          0697729da49bc3382ff409a38e6fd9126cfcd02980f05bdc2db453d1607a0588  fronteira2d/assets/map-tiles/tile-03.png
+          f2523c51c836f732b53492dba2f6cb6bf0fb291aeb76111188156b725d0d0e56  fronteira2d/assets/map-tiles/tile-04.png
+          af723c59cf870a8b07e1d80d3e6f3b2368fbde76faad38fd91b3c34374a5a20f  fronteira2d/assets/map-tiles/tile-05.png
+          bc46641e2e7794dce09424a6d3ae60eb2672c169d34c57d851c9ea17649ce18e  fronteira2d/assets/map-tiles/tile-06.png
+          684dbb9c1cffbb6fe95a9241cdc87dc00b82795dcb098091209e4db7fc1e84e2  fronteira2d/assets/map-tiles/tile-07.png
+          1028a9d285d579c2b800b646fefe36129db6567a6dc1ff1ce17f1467a58c3a71  fronteira2d/assets/map-tiles/tile-08.png
+          1278fb9bbf2628065a29e5ab4e5dc758edec2a6d1dd64a549949c126f4cd6629  fronteira2d/assets/map-tiles/tile-09.png
+          87eea7d6db4386c9070a6630ae5f84f991630cba1d765bb7d6400530f52b4d5b  fronteira2d/assets/map-tiles/tile-10.png
+          873187d037f1b4b2a7a74fb5aa67c757947a051c9b81843b72ece14671a85582  fronteira2d/assets/map-tiles/tile-11.png
+          48e7b27027bbb769486ae60008a39eeff81a1bbb3ca141b5afa0d473572d3c3f  fronteira2d/assets/map-tiles/tile-12.png
+          2e90eb58738229ee51ac714c8457db9c4f6a7f7afc9147b1d39a4fabcd2bc772  fronteira2d/assets/map-tiles/tile-13.png
+          78e42c8959083af312c72e59dabeefef3d2db2ceb838c1626c3c87b235bd5166  fronteira2d/assets/map-tiles/tile-14.png
+          3ef6401201d29c23777affcffd00dfd42a1595896a1ced74c27031923d084ec8  fronteira2d/assets/map-tiles/tile-15.png
+          842d4c79ea72ea00470d2ef9227ed8a532b308143f3e1934799551624c226718  fronteira2d/assets/mapa-vila-iris.png
+          56e6549ee884de6aa68ea95b9262f832955344df925c655bd0510b74fbf237c0  fronteira2d/assets/mina-cobre-v1.png
+          0bc69257271aae06239e1cc5db094c3d0fd341f007d5b3057d723585b01a08d7  fronteira2d/assets/npc-directions.png
+          776d2d04184298e4d7ddc001cedf7c4d4c3010ae7016c9a2c5818388338bf280  fronteira2d/custom/copper-idle-8.png
+          2215cd47033ebafc3f57486f6ac30a1a24c4922446838477c436920a5ce1dec0  fronteira2d/custom/copper-idle.png
+          d675eea1ed2f2b0d50394c837a6f9a8e1f639804aae5e874ca9015e02efbb6fa  fronteira2d/custom/copper-idle.webp
+          6ab4e8783bd2667363e7ae7f07f27cd758d30846f237a565830a25c030496f4e  fronteira2d/custom/tree-chopping-8.png
+          aea3e8d88c3ea41627daa5d451ba8aca50ae287511afa610abe0b2836620a7e2  fronteira2d/custom/tree-chopping.png
+          72600b678de9a844b62ec077572b7a3af0498aa60017d4e247bcc6fc4feb7ce6  fronteira2d/custom/tree-chopping.webp
+          4d795933984b364f3fd173fc0cae8cd8781389ef0348a546f7c2ad2b6e7b10c1  fronteira2d/custom/tree-idle-8.png
+          bb03be975fa3472ec9dc990726ba828d6579d20380b16340e3cf9764701dded7  fronteira2d/custom/tree-idle.png
+          e518d252823ec50ab54f3bdac68aaddce1b48c6beacef21f8451f37a2256ecf8  fronteira2d/custom/tree-idle.webp
+          CHECKSUMS
+
+      - name: Apply only V102 mine collision fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/patch-fronteira-v102.py
+          node --check fronteira2d/game.js
+          test "$(sha256sum fronteira2d/game.js | awk '{print $1}')" = "2a0325bce60524494976ba1ad1b467eddf4f10bc42f4de1618b2b5bc68585322"
+          grep -q "return floor/total<.25" fronteira2d/game.js
+          grep -q "const magnus=" fronteira2d/game.js
+          grep -q "const mineEntrance=" fronteira2d/game.js
+          test "$(find fronteira2d/assets/map-tiles -maxdepth 1 -name 'tile-*.png' | wc -l)" -eq 16
+
+      - name: Commit verified V102
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "PSYWORLD Preview Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html fronteira2d
+          git commit -m "V102: verified Fronteira Iris baseline and mine collision"
+          git push origin HEAD:test/fronteira-iris-v102
