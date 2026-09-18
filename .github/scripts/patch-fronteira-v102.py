@@ -16,6 +16,12 @@ new = '''  function mineBlocked(x,y){
 pattern = r'  function mineBlocked\(x,y\)\{.*?(?=  function toast\()'
 s2, count = re.subn(pattern, new, s, count=1, flags=re.S)
 if count != 1:
+    print('GAME_JS_SIZE', len(s))
+    for term in ['mineBlocked', 'mineEntrance', 'MINE', 'magnus', 'const CITY', 'gameCanvas', 'const WORLD']:
+        print(term, s.find(term))
+    print('GAME_JS_HEAD_START')
+    print(s[:2500])
+    print('GAME_JS_HEAD_END')
     raise SystemExit(f'Expected one mineBlocked function, found {count}')
 p.write_text(s2, encoding='utf-8')
 
