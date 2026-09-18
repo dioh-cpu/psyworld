@@ -1,0 +1,63 @@
+name: Diagnose V101 file sources
+
+on:
+  push:
+    branches:
+      - test/fronteira-iris-v102
+    paths:
+      - .github/workflows/diag-v101-sources.yml
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe direct deployments
+        shell: bash
+        env:
+          SOURCES: |
+            s1|https://psyworld-13q7ozo0c-world-of-monsters.vercel.app|https://psyworld-13q7ozo0c-world-of-monsters.vercel.app/?_vercel_share=l4nectImluboSblDVUkVzP9wXR17qPAt
+            s2|https://psyworld-lyc8ot8yj-world-of-monsters.vercel.app|https://psyworld-lyc8ot8yj-world-of-monsters.vercel.app/?_vercel_share=V5XmiATu7Uw3hV9xAVSHyISMwQ40nXRH
+            s3|https://psyworld-9weneh04u-world-of-monsters.vercel.app|https://psyworld-9weneh04u-world-of-monsters.vercel.app/?_vercel_share=JUS89fxAYAwJTlb4OgVis422JROqyMjY
+          PATHS: |
+            fronteira2d/index.html
+            fronteira2d/style.css
+            fronteira2d/game.js
+            fronteira2d/assets/arvore-idle.png
+            fronteira2d/assets/arvore-corte.png
+            fronteira2d/assets/cobre-idle.png
+            fronteira2d/assets/magnus-idle.png
+            fronteira2d/assets/lumion-atlas-v133.png
+            fronteira2d/assets/mina-cobre-v1.png
+            fronteira2d/assets/mapa-vila-iris.png
+            fronteira2d/assets/map-tiles/tile-00.png
+            fronteira2d/assets/map-tiles/tile-01.png
+            fronteira2d/assets/map-tiles/tile-02.png
+            fronteira2d/assets/map-tiles/tile-03.png
+            fronteira2d/assets/map-tiles/tile-04.png
+            fronteira2d/assets/map-tiles/tile-05.png
+            fronteira2d/assets/map-tiles/tile-06.png
+            fronteira2d/assets/map-tiles/tile-07.png
+            fronteira2d/assets/map-tiles/tile-08.png
+            fronteira2d/assets/map-tiles/tile-09.png
+            fronteira2d/assets/map-tiles/tile-10.png
+            fronteira2d/assets/map-tiles/tile-11.png
+            fronteira2d/assets/map-tiles/tile-12.png
+            fronteira2d/assets/map-tiles/tile-13.png
+            fronteira2d/assets/map-tiles/tile-14.png
+            fronteira2d/assets/map-tiles/tile-15.png
+        run: |
+          set -u
+          while IFS='|' read -r name base auth; do
+            [ -n "$name" ] || continue
+            jar="$RUNNER_TEMP/$name.cookies"
+            curl -sSL -c "$jar" -b "$jar" "$auth" -o "$RUNNER_TEMP/$name.root"
+            echo "=== $name ==="
+            while IFS= read -r path; do
+              [ -n "$path" ] || continue
+              out="$RUNNER_TEMP/$name.$(echo "$path" | tr '/ ' '__')"
+              code=$(curl -sSL -c "$jar" -b "$jar" -w '%{http_code}' -o "$out" "$base/$path")
+              size=$(wc -c < "$out")
+              sha=$(sha256sum "$out" | awk '{print $1}')
+              echo "$code $size $sha $path"
+            done <<< "$PATHS"
+          done <<< "$SOURCES"
