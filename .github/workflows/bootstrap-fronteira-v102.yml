@@ -74,24 +74,18 @@ jobs:
             curl -fsSL --retry 3 --retry-delay 1 "$BASE_URL/$path" -o "$path"
           done <<< "$FILES_LIST"
 
-      - name: Apply V102 mine collision fix
-        run: python3 .github/scripts/patch-fronteira-v102.py
-
-      - name: Validate V102 Fronteira
+      - name: Validate restored Fronteira
         shell: bash
         run: |
           set -euo pipefail
-          test -f fronteira2d/assets/mina-cobre-v1.png
-          test -f fronteira2d/assets/magnus-idle.png
-          test -f fronteira2d/assets/mapa-vila-iris.png
-          test -f fronteira2d/game.js
-          test -f fronteira2d/index.html
-          grep -q "return floor/total<.25" fronteira2d/game.js
-          grep -q "mineEntrance" fronteira2d/game.js
-          grep -q "magnus" fronteira2d/game.js
+          test -s fronteira2d/assets/mina-cobre-v1.png
+          test -s fronteira2d/assets/magnus-idle.png
+          test -s fronteira2d/assets/mapa-vila-iris.png
+          test -s fronteira2d/game.js
+          test -s fronteira2d/index.html
           test "$(find fronteira2d/assets/map-tiles -maxdepth 1 -name 'tile-*.png' | wc -l)" -eq 16
 
-      - name: Commit V102 Fronteira preview
+      - name: Commit restored Fronteira
         shell: bash
         run: |
           set -euo pipefail
@@ -99,7 +93,8 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add index.html fronteira2d
           if git diff --cached --quiet; then
+            echo "No changes to commit"
             exit 0
           fi
-          git commit -m "V102: restore Fronteira Iris baseline and mine collision"
+          git commit -m "V102: restore Fronteira Iris V101 baseline"
           git push origin HEAD:test/fronteira-iris-v102
