@@ -81,21 +81,22 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p=Path('fronteira2d/game.js')
           s=p.read_text(encoding='utf-8')
-          old="  function mineBlocked(x,y){if(!minePixels)return false;const px=clamp(Math.floor(x/MINE.w*assets.mine.naturalWidth),0,assets.mine.naturalWidth-1),py=clamp(Math.floor(y/MINE.h*assets.mine.naturalHeight),0,assets.mine.naturalHeight-1),i=(py*assets.mine.naturalWidth+px)*4,r=minePixels[i],g=minePixels[i+1],b=minePixels[i+2],bright=(r+g+b)/3;return !(r>g*1.035&&g>b*1.04&&bright>73)}"
           new="""  function mineBlocked(x,y){
             if(!minePixels)return false;
             const px=clamp(Math.floor(x/MINE.w*assets.mine.naturalWidth),0,assets.mine.naturalWidth-1),py=clamp(Math.floor(y/MINE.h*assets.mine.naturalHeight),0,assets.mine.naturalHeight-1);
             let floor=0,total=0;
             for(let dy=-9;dy<=9;dy+=3){const sy=clamp(py+dy,0,assets.mine.naturalHeight-1);for(let dx=-9;dx<=9;dx+=3){const sx=clamp(px+dx,0,assets.mine.naturalWidth-1),i=(sy*assets.mine.naturalWidth+sx)*4,r=minePixels[i],g=minePixels[i+1],b=minePixels[i+2],bright=(r+g+b)/3;floor+=(r>g*1.02&&g>b&&bright>65)?1:0;total++}}
             return floor/total<.25;
-          }"""
-          if 'return floor/total<.25;' not in s:
-              if old not in s:
-                  raise SystemExit('Original V101 mineBlocked signature not found; refusing unsafe patch')
-              s=s.replace(old,new,1)
-              p.write_text(s,encoding='utf-8')
+          }
+"""
+          pat=r"  function mineBlocked\(x,y\)\{.*?(?=  function toast\()"
+          s2,n=re.subn(pat,new,s,count=1,flags=re.S)
+          if n!=1:
+              raise SystemExit(f'Expected exactly one mineBlocked function, found {n}')
+          p.write_text(s2,encoding='utf-8')
           PY
           cat > fronteira2d/PATCH_NOTES.txt <<'TXT'
           PSYWORLD V102 - Fronteira Iris 2D
