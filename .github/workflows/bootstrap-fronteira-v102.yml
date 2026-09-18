@@ -71,42 +71,11 @@ jobs:
           while IFS= read -r path; do
             [ -n "$path" ] || continue
             mkdir -p "$(dirname "$path")"
-            echo "Restoring $path"
             curl -fsSL --retry 3 --retry-delay 1 "$BASE_URL/$path" -o "$path"
           done <<< "$FILES_LIST"
 
       - name: Apply V102 mine collision fix
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          p=Path('fronteira2d/game.js')
-          s=p.read_text(encoding='utf-8')
-          new="""  function mineBlocked(x,y){
-            if(!minePixels)return false;
-            const px=clamp(Math.floor(x/MINE.w*assets.mine.naturalWidth),0,assets.mine.naturalWidth-1),py=clamp(Math.floor(y/MINE.h*assets.mine.naturalHeight),0,assets.mine.naturalHeight-1);
-            let floor=0,total=0;
-            for(let dy=-9;dy<=9;dy+=3){const sy=clamp(py+dy,0,assets.mine.naturalHeight-1);for(let dx=-9;dx<=9;dx+=3){const sx=clamp(px+dx,0,assets.mine.naturalWidth-1),i=(sy*assets.mine.naturalWidth+sx)*4,r=minePixels[i],g=minePixels[i+1],b=minePixels[i+2],bright=(r+g+b)/3;floor+=(r>g*1.02&&g>b&&bright>65)?1:0;total++}}
-            return floor/total<.25;
-          }
-"""
-          pat=r"  function mineBlocked\(x,y\)\{.*?(?=  function toast\()"
-          s2,n=re.subn(pat,new,s,count=1,flags=re.S)
-          if n!=1:
-              raise SystemExit(f'Expected exactly one mineBlocked function, found {n}')
-          p.write_text(s2,encoding='utf-8')
-          PY
-          cat > fronteira2d/PATCH_NOTES.txt <<'TXT'
-          PSYWORLD V102 - Fronteira Iris 2D
-
-          - V101 preservada como base visual e funcional da Fronteira Iris.
-          - Tilemap, Magnus, Mina de Cobre, sprites, arvores e controles preservados.
-          - Corrigida somente a colisao interna da Mina de Cobre para nao bloquear trilhos, rachaduras e sombras estreitas do piso.
-          - Os 12 minerios de cobre permanecem exclusivamente dentro da mina.
-          - Preview de teste: branch test/fronteira-iris-v102. Production nao e alterada.
-          TXT
+        run: python3 .github/scripts/patch-fronteira-v102.py
 
       - name: Validate V102 Fronteira
         shell: bash
@@ -130,7 +99,6 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add index.html fronteira2d
           if git diff --cached --quiet; then
-            echo "No V102 preview changes to commit"
             exit 0
           fi
           git commit -m "V102: restore Fronteira Iris baseline and mine collision"
