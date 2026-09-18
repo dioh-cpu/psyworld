@@ -4,10 +4,133 @@ on:
   push:
     branches:
       - test/fronteira-iris-v102
+    paths:
+      - .github/workflows/bootstrap-fronteira-v102.yml
+
+permissions:
+  contents: write
 
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
     steps:
-      - name: Sanity check
-        run: echo "workflow ok"
+      - uses: actions/checkout@v4
+        with:
+          ref: test/fronteira-iris-v102
+          fetch-depth: 0
+
+      - name: Restore V101 Fronteira assets
+        shell: bash
+        env:
+          BASE_URL: https://psyworld-v102-teste-publico-lendpaoio-world-of-monsters.vercel.app
+          FILES_LIST: |
+            index.html
+            fronteira2d/PATCH_NOTES.txt
+            fronteira2d/assets/arvore-corte.png
+            fronteira2d/assets/arvore-idle.png
+            fronteira2d/assets/cobre-idle.png
+            fronteira2d/assets/creatures-atlas.png
+            fronteira2d/assets/creatures-sides-atlas.png
+            fronteira2d/assets/environment-atlas.png
+            fronteira2d/assets/lumion-atlas-v133.png
+            fronteira2d/assets/magnus-idle.png
+            fronteira2d/assets/map-tiles/tile-00.png
+            fronteira2d/assets/map-tiles/tile-01.png
+            fronteira2d/assets/map-tiles/tile-02.png
+            fronteira2d/assets/map-tiles/tile-03.png
+            fronteira2d/assets/map-tiles/tile-04.png
+            fronteira2d/assets/map-tiles/tile-05.png
+            fronteira2d/assets/map-tiles/tile-06.png
+            fronteira2d/assets/map-tiles/tile-07.png
+            fronteira2d/assets/map-tiles/tile-08.png
+            fronteira2d/assets/map-tiles/tile-09.png
+            fronteira2d/assets/map-tiles/tile-10.png
+            fronteira2d/assets/map-tiles/tile-11.png
+            fronteira2d/assets/map-tiles/tile-12.png
+            fronteira2d/assets/map-tiles/tile-13.png
+            fronteira2d/assets/map-tiles/tile-14.png
+            fronteira2d/assets/map-tiles/tile-15.png
+            fronteira2d/assets/mapa-vila-iris.png
+            fronteira2d/assets/mina-cobre-v1.png
+            fronteira2d/assets/npc-directions.png
+            fronteira2d/custom/copper-idle-8.png
+            fronteira2d/custom/copper-idle.png
+            fronteira2d/custom/copper-idle.webp
+            fronteira2d/custom/tree-chopping-8.png
+            fronteira2d/custom/tree-chopping.png
+            fronteira2d/custom/tree-chopping.webp
+            fronteira2d/custom/tree-idle-8.png
+            fronteira2d/custom/tree-idle.png
+            fronteira2d/custom/tree-idle.webp
+            fronteira2d/custom-assets.js
+            fronteira2d/game.js
+            fronteira2d/index.html
+            fronteira2d/style.css
+        run: |
+          set -euo pipefail
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            mkdir -p "$(dirname "$path")"
+            echo "Restoring $path"
+            curl -fsSL --retry 3 --retry-delay 1 "$BASE_URL/$path" -o "$path"
+          done <<< "$FILES_LIST"
+
+      - name: Apply V102 mine collision fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('fronteira2d/game.js')
+          s=p.read_text(encoding='utf-8')
+          old="  function mineBlocked(x,y){if(!minePixels)return false;const px=clamp(Math.floor(x/MINE.w*assets.mine.naturalWidth),0,assets.mine.naturalWidth-1),py=clamp(Math.floor(y/MINE.h*assets.mine.naturalHeight),0,assets.mine.naturalHeight-1),i=(py*assets.mine.naturalWidth+px)*4,r=minePixels[i],g=minePixels[i+1],b=minePixels[i+2],bright=(r+g+b)/3;return !(r>g*1.035&&g>b*1.04&&bright>73)}"
+          new="""  function mineBlocked(x,y){
+            if(!minePixels)return false;
+            const px=clamp(Math.floor(x/MINE.w*assets.mine.naturalWidth),0,assets.mine.naturalWidth-1),py=clamp(Math.floor(y/MINE.h*assets.mine.naturalHeight),0,assets.mine.naturalHeight-1);
+            let floor=0,total=0;
+            for(let dy=-9;dy<=9;dy+=3){const sy=clamp(py+dy,0,assets.mine.naturalHeight-1);for(let dx=-9;dx<=9;dx+=3){const sx=clamp(px+dx,0,assets.mine.naturalWidth-1),i=(sy*assets.mine.naturalWidth+sx)*4,r=minePixels[i],g=minePixels[i+1],b=minePixels[i+2],bright=(r+g+b)/3;floor+=(r>g*1.02&&g>b&&bright>65)?1:0;total++}}
+            return floor/total<.25;
+          }"""
+          if 'return floor/total<.25;' not in s:
+              if old not in s:
+                  raise SystemExit('Original V101 mineBlocked signature not found; refusing unsafe patch')
+              s=s.replace(old,new,1)
+              p.write_text(s,encoding='utf-8')
+          PY
+          cat > fronteira2d/PATCH_NOTES.txt <<'TXT'
+          PSYWORLD V102 - Fronteira Iris 2D
+
+          - V101 preservada como base visual e funcional da Fronteira Iris.
+          - Tilemap, Magnus, Mina de Cobre, sprites, arvores e controles preservados.
+          - Corrigida somente a colisao interna da Mina de Cobre para nao bloquear trilhos, rachaduras e sombras estreitas do piso.
+          - Os 12 minerios de cobre permanecem exclusivamente dentro da mina.
+          - Preview de teste: branch test/fronteira-iris-v102. Production nao e alterada.
+          TXT
+
+      - name: Validate V102 Fronteira
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f fronteira2d/assets/mina-cobre-v1.png
+          test -f fronteira2d/assets/magnus-idle.png
+          test -f fronteira2d/assets/mapa-vila-iris.png
+          test -f fronteira2d/game.js
+          test -f fronteira2d/index.html
+          grep -q "return floor/total<.25" fronteira2d/game.js
+          grep -q "mineEntrance" fronteira2d/game.js
+          grep -q "magnus" fronteira2d/game.js
+          test "$(find fronteira2d/assets/map-tiles -maxdepth 1 -name 'tile-*.png' | wc -l)" -eq 16
+
+      - name: Commit V102 Fronteira preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "PSYWORLD Preview Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html fronteira2d
+          if git diff --cached --quiet; then
+            echo "No V102 preview changes to commit"
+            exit 0
+          fi
+          git commit -m "V102: restore Fronteira Iris baseline and mine collision"
+          git push origin HEAD:test/fronteira-iris-v102
