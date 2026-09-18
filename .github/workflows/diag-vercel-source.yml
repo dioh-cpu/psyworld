@@ -1,0 +1,34 @@
+name: Diagnose V101 source access
+
+on:
+  push:
+    branches:
+      - test/fronteira-iris-v102
+    paths:
+      - .github/workflows/diag-vercel-source.yml
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Vercel share session
+        shell: bash
+        env:
+          AUTH_URL: https://psyworld-13q7ozo0c-world-of-monsters.vercel.app/?_vercel_share=l4nectImluboSblDVUkVzP9wXR17qPAt
+          BASE_URL: https://psyworld-13q7ozo0c-world-of-monsters.vercel.app
+        run: |
+          set -u
+          JAR="$RUNNER_TEMP/cookies.txt"
+          curl -sSL -c "$JAR" -b "$JAR" "$AUTH_URL" -o "$RUNNER_TEMP/root.out"
+          echo ROOT_SIZE=$(wc -c < "$RUNNER_TEMP/root.out")
+          echo ROOT_SHA=$(sha256sum "$RUNNER_TEMP/root.out" | awk '{print $1}')
+          echo ROOT_HEAD
+          head -c 300 "$RUNNER_TEMP/root.out" | tr '\n' ' ' || true
+          echo
+          curl -sSL -c "$JAR" -b "$JAR" "$BASE_URL/fronteira2d/game.js" -o "$RUNNER_TEMP/game.out"
+          echo GAME_SIZE=$(wc -c < "$RUNNER_TEMP/game.out")
+          echo GAME_SHA=$(sha256sum "$RUNNER_TEMP/game.out" | awk '{print $1}')
+          echo GAME_HEAD
+          head -c 400 "$RUNNER_TEMP/game.out" | tr '\n' ' ' || true
+          echo
+          grep -n "mineBlocked" "$RUNNER_TEMP/game.out" | head -3 || true
