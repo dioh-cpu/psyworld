@@ -2,17 +2,19 @@
 'use strict';
 if(W.__PSYWORLD_ONLINE_AUTHORITY_V26__)return;
 W.__PSYWORLD_ONLINE_AUTHORITY_V26__=true;
-const BUILD='ONLINE_AUTHORITY_V26_20260902_D';
+const BUILD='ONLINE_AUTHORITY_V26_20260927_A';
 const SESSION_KEY='psyworld_online_session_v23',SYNC_KEY='psyworld_cloud_sync_v23';
 const LOCAL_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
-let busy=0,bootUser='',lastProgress=0,lastHeartbeat=0,lastServerRefresh=0,lastServerSnapshot=null,lastOnlineMeta=null,lastServerOk=0;
+let busy=0,bootUser='',lastProgress=0,lastHeartbeat=0,lastServerRefresh=0,lastServerSnapshot=null,lastOnlineMeta=null,lastServerOk=0,lastServerError=false,serverSyncBusy=false,tickBusy=false,bootstrapPromise=null;
 const originals=new Map();
 const parse=s=>{try{return s?JSON.parse(s):null}catch(_){return null}};
 const toast=(m,t=3200)=>{try{W.notif?.(m,t)}catch(_){console.log('[V26]',m)}};
-const uid=()=>{const s=parse(localStorage.getItem(SESSION_KEY));return String(s?.user?.id||s?.user?.email||s?.email||'')};
+const tokenUserKey=s=>{try{const part=String(s?.access_token||'').split('.')[1];if(!part)return'';const b=part.replace(/-/g,'+').replace(/_/g,'/');return String(JSON.parse(atob(b.padEnd(Math.ceil(b.length/4)*4,'='))).sub||'')}catch(_){return''}};
 const session=()=>parse(localStorage.getItem(SESSION_KEY));
+const identity=s=>String(s?.user?.id||s?.user?.email||s?.email||tokenUserKey(s)||'');
+const uid=()=>identity(session());
 const online=()=>!!session()?.access_token;
-const syncReady=()=>{const s=session(),m=parse(localStorage.getItem(SYNC_KEY))||{};const k=String(s?.user?.id||s?.user?.email||s?.email||'');return !!(k&&m.resolved&&m.userKey===k)};
+const syncReady=()=>{const s=session(),m=parse(localStorage.getItem(SYNC_KEY))||{};const k=identity(s);return !!(k&&m.resolved&&m.userKey===k)};
 const fmt=n=>Number(n||0).toLocaleString('pt-BR');
 function bestLocal(){return LOCAL_KEYS.map(k=>parse(localStorage.getItem(k))).filter(x=>{const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p.team[0]?.id)}).sort((a,b)=>Number(b.savedAt||0)-Number(a.savedAt||0))[0]||null}
 function idem(prefix){try{return prefix+':'+crypto.randomUUID()}catch(_){return prefix+':'+Date.now()+':'+Math.random().toString(36).slice(2)}}
@@ -67,23 +69,40 @@ function renderServerPanel(snapshot=lastServerSnapshot,meta=lastOnlineMeta){
  const pl=meta?.player||snapshot?.player||{},inv=meta?.inventory||snapshot?.inventory||{},pok=Array.isArray(meta?.pokemon)?meta.pokemon:null;
  const itemCount=Array.isArray(inv)?inv.filter(x=>Number(x?.quantity||0)>0).length:Object.values(inv||{}).filter(x=>Number(x)>0).length;
  const pokeCount=pok?pok.length:((p()?.team?.length||0)+(p()?.box?.length||0));
- const active=!!bootUser&&!!lastServerOk;
- if(st){st.textContent=active?'SERVIDOR ATIVO':(bootUser?'SERVIDOR CONECTADO':'CONECTANDO...');st.style.color=active?'#86efac':'#fbbf24'}
+ const connected=!!lastServerOk&&!lastServerError,active=!!bootUser&&connected;
+ const label=active?'SERVIDOR ATIVO':connected?'SERVIDOR CONECTADO':lastServerError?'FALHA DE CONEXÃO':syncReady()?'CONECTANDO...':'SAVE NÃO VINCULADO';
+ if(st){st.textContent=label;st.style.color=active||connected?'#86efac':lastServerError?'#f87171':'#fbbf24'}
  if(sum)sum.textContent=`Gold ${fmt(pl.gold??p()?.gold)} • Diamonds ${fmt(pl.diamonds??p()?.diamonds)} • PsyCoin ${fmt(pl.psycoin??p()?.psycoin)} • ${fmt(itemCount)} itens • ${fmt(pokeCount)} Pokémon`;
  if(time)time.textContent=lastServerOk?'Última confirmação: '+new Date(lastServerOk).toLocaleTimeString('pt-BR')+' • Autoridade '+String(pl.authority_version??'V26'):'';
 }
-function apply(s,opt={}){mergeWallet(s);mergeInventory(s,!!opt.fullInventory);mergeSystem(s);if(s?.player){lastServerSnapshot=s;lastServerOk=Date.now()}renderServerPanel(s);try{W.updateHUD?.()}catch(_){}try{W.renderTeam?.()}catch(_){}try{W.autoSave?.()}catch(_){}return s}
+function apply(s,opt={}){mergeWallet(s);mergeInventory(s,!!opt.fullInventory);mergeSystem(s);if(s?.player){lastServerSnapshot=s;lastServerOk=Date.now();lastServerError=false}renderServerPanel(s);try{W.updateHUD?.()}catch(_){}try{W.renderTeam?.()}catch(_){}try{W.autoSave?.()}catch(_){}return s}
 async function syncServerNow(manual=false){
  if(!online()){if(manual)toast('❌ Entre na conta online primeiro.');renderServerPanel();return null}
+ if(serverSyncBusy)return null;serverSyncBusy=true;
  const btn=D.getElementById('psy-server-sync-v26');if(btn){btn.disabled=true;btn.textContent='⏳ SINCRONIZANDO...'}
  try{
-   const [snap,meta]=await Promise.all([game('state'),onlineMeta()]);lastOnlineMeta=meta;lastServerRefresh=Date.now();lastServerOk=Date.now();apply(snap,{fullInventory:true});renderServerPanel(snap,meta);if(manual)toast('🌐 Estado confirmado pelo servidor.',2200);return snap
- }catch(e){console.warn('[V26 sync server]',e);const st=D.getElementById('psy-server-status-v26');if(st){st.textContent='FALHA DE CONEXÃO';st.style.color='#f87171'}if(manual)toast('❌ Falha ao sincronizar com servidor.',3200);return null
- }finally{if(btn){btn.disabled=false;btn.textContent='↻ SINCRONIZAR COM SERVIDOR'}}
+   if(!syncReady()){if(manual)toast('Escolha ou confirme o save para habilitar a sincronização do servidor.',3600);renderServerPanel();return null}
+   if(!bootUser&&!await bootstrap())throw new Error('authority_not_ready');
+   const [snap,meta]=await Promise.all([game('state'),onlineMeta()]);
+   if(!snap?.player)throw new Error('snapshot_invalid');
+   lastOnlineMeta=meta;lastServerRefresh=Date.now();lastServerError=false;apply(snap,{fullInventory:true});renderServerPanel(snap,meta);if(manual)toast('🌐 Estado confirmado pelo servidor.',2200);return snap
+ }catch(e){console.warn('[V26 sync server]',e);lastServerError=true;renderServerPanel();if(manual)toast('❌ Falha ao sincronizar com servidor.',3200);return null
+ }finally{serverSyncBusy=false;if(btn){btn.disabled=false;btn.textContent='↻ SINCRONIZAR COM SERVIDOR'}}
 }
 async function call(action,payload,opt={}){if(busy&&!opt.parallel)return null;busy+=opt.parallel?0:1;try{const d=await game(action,payload,opt.key);apply(d,opt);return d}catch(e){console.warn('[PSYWORLD V26]',action,e);if(!opt.silent)toast('❌ Online: '+String(e.message||e).replaceAll('_',' '),4200);return null}finally{busy=Math.max(0,busy-(opt.parallel?0:1))}}
 function statusBadge(ok,text){const host=D.getElementById('psy-online-status');if(!host)return;let b=D.getElementById('psy-v26-authority-badge');if(!b){b=D.createElement('div');b.id='psy-v26-authority-badge';b.style.cssText='margin-top:5px;font-weight:900';host.appendChild(b)}b.style.color=ok?'#86efac':'#fbbf24';b.textContent=(ok?'🛡 ':'⚠ ')+text}
-async function bootstrap(){if(!online()||!syncReady()||!p()){renderServerPanel();return false}const u=uid();if(!u||bootUser===u)return true;const save=bestLocal();if(!save)return false;statusBadge(false,'ativando autoridade V26...');try{const d=await game('bootstrap',{save},'v26-bootstrap:'+u);apply(d,{fullInventory:true});bootUser=u;lastServerOk=Date.now();statusBadge(true,'economia online protegida • Market bloqueado');renderServerPanel(d);setTimeout(()=>syncServerNow(false),180);toast('🛡 Autoridade online V26 ativa.',2600);return true}catch(e){console.warn('[V26 bootstrap]',e);statusBadge(false,'falha ao ativar V26');renderServerPanel();return false}}
+async function bootstrap(){
+ if(!online()||!syncReady()||!p()){renderServerPanel();return false}
+ const u=uid();if(!u)return false;if(bootUser===u)return true;if(bootstrapPromise)return bootstrapPromise;
+ const run=(async()=>{
+   const save=bestLocal();if(!save)return false;
+   statusBadge(false,'ativando autoridade V26...');
+   try{const d=await game('bootstrap',{save},'v26-bootstrap:'+u);if(!d?.player)throw new Error('snapshot_invalid');apply(d,{fullInventory:true});bootUser=u;lastServerOk=Date.now();lastServerRefresh=Date.now();lastServerError=false;statusBadge(true,'economia online protegida • Market bloqueado');renderServerPanel(d);toast('🛡 Autoridade online V26 ativa.',2600);return true}
+   catch(e){console.warn('[V26 bootstrap]',e);lastServerError=true;statusBadge(false,'falha ao ativar V26');renderServerPanel();return false}
+ })();
+ bootstrapPromise=run;
+ try{return await run}finally{if(bootstrapPromise===run)bootstrapPromise=null}
+}
 function progressPayload(){const P=p();if(!P)return{};const rw=P.meta?.rewardsV10||{};return{kills:Number(P.meta?.kills||rw.kills||0),captures:Number(P.meta?.captures||rw.captures||0),egg_hatches:Number(P.meta?.eggHatches||rw.eggHatches||0),dex:Object.keys(P.meta?.caughtDex||P.pokedex||{}).length,gyms:Array.isArray(P.gymProgress)?P.gymProgress.length:Number(P.meta?.gyms||0),survivor_best:Number(P.psyduck?.survivorBest||0),card_wins:Number(rw.cardWins||P.meta?.cardWins||0),type_kills:rw.typeKills||{}}}
 async function progressSync(){if(!online()||!bootUser)return;const now=Date.now();if(now-lastProgress<15000)return;lastProgress=now;await call('progress-sync',progressPayload(),{silent:true,parallel:true,key:idem('v26-progress')})}
 function nonVipBuff(k){let n=0;try{n=Number(W.getTotalBuff?.(k)||0)}catch(_){}const on=Number(p()?.meta?.vipUntil||0)>Date.now();if(on&&(k==='xp'||k==='drop'))n-=50;if(on&&k==='cap')n-=20;return Math.max(0,n)}
@@ -112,7 +131,7 @@ function afkHooks(){wrap('toggleAfkV9',old=>async function(){if(!online())return
 }
 function install(){installSimpleHooks();wheelHook();captureHook();battleHooks();afkHooks()}
 async function heartbeat(){if(!online()||!bootUser)return;const now=Date.now();if(now-lastHeartbeat>=5000){lastHeartbeat=now;const d=await call('roulette-heartbeat',{}, {silent:true,parallel:true,key:idem('roulette-hb')});if(d?.roulette){const P=p();P.meta=P.meta||{};P.meta.rouletteSpins=Number(d.roulette.spins||0);P.meta.rouletteProgress=Number(d.roulette.progress||0)}}}
-async function tick(){try{ensureMenuLayout();ensureServerPanel();await bootstrap();install();await progressSync();await heartbeat();const menu=D.getElementById('menu');if(online()&&bootUser&&menu&&getComputedStyle(menu).display!=='none'&&Date.now()-lastServerRefresh>20000)syncServerNow(false)}catch(e){console.warn('[V26 tick]',e)}}
+async function tick(){if(tickBusy)return;tickBusy=true;try{ensureMenuLayout();ensureServerPanel();await bootstrap();install();await progressSync();await heartbeat();const menu=D.getElementById('menu');if(online()&&bootUser&&menu&&getComputedStyle(menu).display!=='none'&&Date.now()-lastServerRefresh>20000)syncServerNow(false)}catch(e){console.warn('[V26 tick]',e)}finally{tickBusy=false}}
 setInterval(tick,2200);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='visible')tick()});setTimeout(tick,450);
 W.psyOnlineAuthorityV26={build:BUILD,online,bootstrap,state:()=>game('state'),sync:progressSync,syncServer:syncServerNow,request:game};
 console.log('🛡 PSYWORLD online authority V26 loaded',BUILD);
