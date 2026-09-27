@@ -55,7 +55,7 @@ function ensureUI(){
   if(screen)return screen;
   screen=D.createElement('div');screen.id='screen-market5';
   screen.style.cssText='display:none;position:fixed;inset:0;background:#000e;z-index:1000007;overflow:auto;padding:10px';
-  screen.innerHTML='<div class="psy-modal-panel" style="max-width:1050px;margin:auto;padding:12px;position:relative"><button class="psy-close-x" onclick="document.getElementById(\\'screen-market5\\').style.display=\\'none\\'">×</button><h2 class="psy-title-glint">🌐 MARKET GLOBAL</h2><div class="psy-market-warn" id="market5-status"></div><div class="psy-tabbar5"><button onclick="renderMarket5(\\'browse\\')">COMPRAR</button><button onclick="renderMarket5(\\'sell\\')">ANUNCIAR</button></div><div id="market5-content"></div></div>';
+  screen.innerHTML='<div class="psy-modal-panel" style="max-width:1050px;margin:auto;padding:12px;position:relative"><button class="psy-close-x" onclick="document.getElementById(\'screen-market5\').style.display=\'none\'">×</button><h2 class="psy-title-glint">🌐 MARKET GLOBAL</h2><div class="psy-market-warn" id="market5-status"></div><div class="psy-tabbar5"><button onclick="renderMarket5(\'browse\')">COMPRAR</button><button onclick="renderMarket5(\'sell\')">ANUNCIAR</button></div><div id="market5-content"></div></div>';
   D.body.appendChild(screen);return screen;
 }
 function setStatus(text){const el=$('market5-status')||D.querySelector('#screen-market5 .psy-market-warn');if(el)el.textContent=text}
