@@ -6,7 +6,7 @@
 'use strict';
 const W=window,D=document;
   // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
-  const PHYSICAL_BUILD='PSYWORLD_V186_ONLINE_REALTIME_20260927';
+  const PHYSICAL_BUILD='PSYWORLD_V186_GITHUB_AUTH_20260927';
 function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',build=raw.includes('modes/idle-social-v1.js')?'PSYWORLD_IDLE_SOCIAL_REALTIME_20260927_A':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
