@@ -13,7 +13,8 @@ function validSave(x){const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p
 function bestLocal(){return LOCAL_KEYS.map(k=>parse(localStorage.getItem(k))).filter(validSave).sort((a,b)=>Number(b.savedAt||0)-Number(a.savedAt||0))[0]||null}
 function localStamp(x){return Number(x?.savedAt||0)}
 function cloudStamp(g){return Math.max(Date.parse(g?.client_updated_at||'')||0,Date.parse(g?.updated_at||'')||0,Number(g?.save?.savedAt||0))}
-function userKey(){return String(session?.user?.id||session?.user?.email||session?.email||'')}
+function tokenUserKey(token=session?.access_token){try{const part=String(token||'').split('.')[1];if(!part)return'';const b=part.replace(/-/g,'+').replace(/_/g,'/');return String(JSON.parse(atob(b.padEnd(Math.ceil(b.length/4)*4,'='))).sub||'')}catch(_){return''}}
+function userKey(){return String(session?.user?.id||session?.user?.email||session?.email||tokenUserKey()||'')}
 function readSync(){return parse(localStorage.getItem(SYNC_KEY))||{}}
 function writeSync(patch){try{const old=readSync();localStorage.setItem(SYNC_KEY,JSON.stringify({...old,...patch,userKey:userKey()}))}catch(_){}}
 function saveSession(s){session=s||null;try{session?localStorage.setItem(SESSION_KEY,JSON.stringify(session)):localStorage.removeItem(SESSION_KEY)}catch(_){}}
