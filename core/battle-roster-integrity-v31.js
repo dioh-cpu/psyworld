@@ -184,7 +184,15 @@ function installAll(){
   installRecalcGuard();installLevelGuard();installWorldKillGuard();installAddTeamGuard();installHealGuard();installReviveGuard();installFaintHandler();installActionGuard();installEndGuard();
 }
 
-function start(){installAll();archiveOwnedPsyduck();repairRosterOnce();setInterval(()=>{installAll();battleInvariant()},120);setInterval(()=>{scrubPools();archiveOwnedPsyduck()},1500)}
+function start(){
+  installAll();archiveOwnedPsyduck();repairRosterOnce();
+  let queued=false;
+  const queueInstall=()=>{if(queued)return;queued=true;setTimeout(()=>{queued=false;installAll();battleInvariant()},40)};
+  const root=D.head||D.documentElement;
+  if(root)new MutationObserver(rows=>{for(const row of rows)for(const n of row.addedNodes||[])if(n?.tagName==='SCRIPT'){n.addEventListener?.('load',queueInstall,{once:true});queueInstall();}}).observe(root,{childList:true,subtree:true});
+  setInterval(()=>{if(!W.PSY_RUNTIME_MODE?.isExclusive?.())battleInvariant()},500);
+  setInterval(()=>{if(W.PSY_RUNTIME_MODE?.shouldRunBackground?.()!==false){scrubPools();archiveOwnedPsyduck()}},4000)
+}
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',()=>setTimeout(start,50),{once:true});else setTimeout(start,50);
 console.log('✅ PSYWORLD V31 carregado: KO definitivo, level-up sem cura, roster reparado e Psyduck exclusivo Survivor',BUILD);
 })(window,document);

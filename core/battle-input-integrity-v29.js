@@ -128,9 +128,9 @@ if(typeof endBase==='function'){
    The city must not consume the same keyboard/touch state underneath them. */
 function visible(id){const e=D.getElementById(id);if(!e)return false;const s=getComputedStyle(e);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'}
 function exclusiveState(){
-  const survivor=visible('screen-survivor-v12')&&!!W.PSY_CLEAN_SURV;
-  const adventure=visible('psy-platform-screen');
-  const world=visible('screen-world');
+  const survivor=W.PSY_RUNTIME_MODE?.is?.('survivor')||(visible('screen-survivor-v12')&&!!W.PSY_CLEAN_SURV);
+  const adventure=W.PSY_RUNTIME_MODE?.is?.('adventure')||visible('psy-adventure-v95-authored');
+  const world=W.PSY_RUNTIME_MODE?.is?.('world')||visible('screen-world');
   return{active:survivor||adventure||world,hideCity:survivor||adventure,survivor,adventure,world};
 }
 const POS_KEYS=['x','y','px','py','tx','ty'];
@@ -160,7 +160,7 @@ function isolateCity(){
     if(game&&savedDisplay!==null){game.style.display=savedDisplay||'block';savedDisplay=null}
   }
 }
-const isolationTimer=setInterval(isolateCity,60);
+const isolationTimer=setInterval(isolateCity,240);
 W.addEventListener('pagehide',()=>clearInterval(isolationTimer),{once:true});
 setTimeout(isolateCity,0);
 

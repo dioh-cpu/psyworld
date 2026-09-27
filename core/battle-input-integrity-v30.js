@@ -184,7 +184,7 @@ if(typeof actionBase==='function'){
 
 /* ===== City input isolation ===== */
 function visible(id){const e=D.getElementById(id);if(!e)return false;const s=getComputedStyle(e);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'}
-function exclusiveState(){const survivor=visible('screen-survivor-v12')&&!!W.PSY_CLEAN_SURV;const adventure=visible('psy-platform-screen')||visible('psy-adventure');const world=visible('screen-world');return{active:survivor||adventure||world,hideCity:survivor||adventure,survivor,adventure,world}}
+function exclusiveState(){const survivor=W.PSY_RUNTIME_MODE?.is?.('survivor')||(visible('screen-survivor-v12')&&!!W.PSY_CLEAN_SURV);const adventure=W.PSY_RUNTIME_MODE?.is?.('adventure')||visible('psy-adventure-v95-authored');const world=W.PSY_RUNTIME_MODE?.is?.('world')||visible('screen-world');return{active:survivor||adventure||world,hideCity:survivor||adventure,survivor,adventure,world}}
 const POS_KEYS=['x','y','px','py','tx','ty'];let cityLock=null,wasExclusive=false,savedDisplay=null;
 function citySnapshot(){const P=P0(),o={};if(P)for(const k of POS_KEYS)if(Number.isFinite(Number(P[k])))o[k]=Number(P[k]);return o}
 function restoreCity(o){const P=P0();if(!P||!o)return;for(const [k,v] of Object.entries(o))P[k]=v;P.moving=false;W.clickMove=null}
@@ -192,8 +192,9 @@ function releaseMovementKeys(){const data=[['ArrowUp','ArrowUp'],['ArrowDown','A
 function isolateCity(){const st=exclusiveState(),game=D.getElementById('game-wrap');if(st.active){if(!wasExclusive){cityLock=citySnapshot();wasExclusive=true}restoreCity(cityLock);if(st.hideCity&&game&&getComputedStyle(game).display!=='none'){if(savedDisplay===null)savedDisplay=game.style.display||'block';game.style.display='none'}return}if(wasExclusive){restoreCity(cityLock);releaseMovementKeys();cityLock=null;wasExclusive=false;if(game&&savedDisplay!==null){game.style.display=savedDisplay||'block';savedDisplay=null}}}
 
 /* Re-assert spawn filters after lazy modes finish loading. */
-function maintenance(){enforcePsyduckExclusive();patchStartGuard();isolateCity()}
-const timer=setInterval(maintenance,180);W.addEventListener('pagehide',()=>clearInterval(timer),{once:true});maintenance();setTimeout(maintenance,500);setTimeout(maintenance,1600);
+function maintenance(){isolateCity()}
+function guardMaintenance(){if(W.PSY_RUNTIME_MODE?.shouldRunBackground?.()===false)return;enforcePsyduckExclusive();patchStartGuard()}
+const timer=setInterval(maintenance,240),guardTimer=setInterval(guardMaintenance,2500);W.addEventListener('pagehide',()=>{clearInterval(timer);clearInterval(guardTimer)},{once:true});guardMaintenance();maintenance();setTimeout(maintenance,500);setTimeout(guardMaintenance,1600);
 
 console.log('✅ PSYWORLD V30 ativo: troca obrigatória persistente, derrota manual, Psyduck exclusivo Survivor e cidade isolada',BUILD);
 })(window,document);

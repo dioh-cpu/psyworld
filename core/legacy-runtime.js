@@ -392,14 +392,14 @@ const GENS = [
 // ===== COLE ISSO NO LUGAR DO SEU RARITIES ANTIGO =====
 const RARITIES = [
     {n:"Lixo", color:"#888", mult:1, chance:74.345, cap:90},
-    {n:"Quase Lixo", color:"#aaa", mult:2, chance:16, cap:80},
-    {n:"Nice", color:"#44ff88", mult:3, chance:6, cap:65},
-    {n:"Belezura", color:"#4488ff", mult:4, chance:2.5, cap:45},
-    {n:"Lêndea", color:"#ff44ff", mult:5, chance:0.8, cap:30},
-    {n:"Bombado", color:"#ff8800", mult:7, chance:0.25, cap:15},
-    {n:"Pika das Galáxias", color:"#ffd700", mult:10, chance:0.08, cap:10},
-    {n:"DEUS", color:"#ffffff", mult:15, chance:0.02, cap:5, glow:"#ffffff"},
-    {n:"CRIADOR", color:"#ff00ff", mult:25, chance:0.005, cap:1, rainbow:true}
+    {n:"Quase Lixo", color:"#aaa", mult:1.1, chance:16, cap:80},
+    {n:"Nice", color:"#44ff88", mult:1.2, chance:6, cap:65},
+    {n:"Belezura", color:"#4488ff", mult:1.35, chance:2.5, cap:45},
+    {n:"Lêndea", color:"#ff44ff", mult:1.5, chance:0.8, cap:30},
+    {n:"Bombado", color:"#ff8800", mult:1.7, chance:0.25, cap:15},
+    {n:"Pika das Galáxias", color:"#ffd700", mult:1.9, chance:0.08, cap:10},
+    {n:"DEUS", color:"#ffffff", mult:2.15, chance:0.02, cap:5, glow:"#ffffff"},
+    {n:"CRIADOR", color:"#ff00ff", mult:2.4, chance:0.005, cap:1, rainbow:true}
 ]; window.RARITIES = RARITIES;
 
 // ROLL COM FILTRO DE TIER - AQUI É O PULO DO GATO
@@ -1746,13 +1746,13 @@ function showDmgPopup(dmg, isEnemy, isCrit){
   el.classList.add('show');
   setTimeout(()=> el.className = '', 800);
 }
-function checkLevelUp() {
+function checkLevelUp(deferHud=false) {
     while (P.team[0].exp >= P.team[0].maxExp) {
         P.team[0].exp -= P.team[0].maxExp; P.team[0].level++; P.team[0].maxExp = Math.floor(P.team[0].maxExp * 1.3);
         P.team[0].maxHp += 20; P.team[0].hp = P.team[0].maxHp;
         P.hp = P.team[0].hp; P.maxHp = P.team[0].maxHp;
         notif(`⭐ ${P.team[0].name} subiu para o nível ${P.team[0].level}!`, 3000);
-    } updateHUD();
+    } if(!deferHud)updateHUD();
 }
 function initEngine() {
     if(window.__psyEngineStarted) return;
@@ -1855,6 +1855,11 @@ function updatePlayerAnimatedSprite(){
 
 let psyCityNpcAt=0,psyCityMiniAt=0,psyCityPlayerAt=0;
 function gameLoop(ts = 0) {
+    if(window.__psyIdleActive||window.PSY_RUNTIME_MODE?.is?.('adventure')){
+        lastTime=ts;
+        requestAnimationFrame(gameLoop);
+        return;
+    }
     const cityWrap=document.getElementById('game-wrap'),cityVisible=!!cityWrap&&cityWrap.style.display!=='none';
     if(!inBattle&&!cityVisible){lastTime=ts;requestAnimationFrame(gameLoop);return}
     if(inBattle){updateBattleAnimation();const dt=Math.min(ts-lastTime,50);lastTime=ts;update(dt);requestAnimationFrame(gameLoop);return}
@@ -2559,7 +2564,7 @@ function tryDropStone(pokeType, pokeLevel){
      marca a execução para impedir que a antiga chance de 3% volte a somar. */
   if(window.__psyDropContext?.mode==='world') return false;
   ensureTrainerData();
-  let base = 3 + (pokeLevel * 0.01); // 3% base + 0.01% por level
+  let base = 0.8 + (pokeLevel * 0.005); // taxa de materiais reduzida para limitar farm por hora
   let totalDrop = getTotalBuff('drop'); // ex: 195%
   let finalChance = base * (1 + totalDrop / 100); // 3% * (1+1.95) = 8.85% e não 198%
 
@@ -2576,20 +2581,21 @@ function tryDropStone(pokeType, pokeLevel){
 
 window.psyAwardWildLikeVictory=function(enemy,source='idle'){
   if(!enemy||!P?.team?.[0])return null;
+  const idleSource=source==='idle';
   const lvl=Math.max(1,Number(enemy.level||enemy.lvl||1));
-  const finalXp=Math.floor((lvl*85+150)*(1+getTotalBuff('xp')/100));
-  const finalGold=Math.floor((lvl*18+80)*(1+getTotalBuff('gold')/100));
-  P.team[0].exp=(P.team[0].exp||0)+finalXp;P.gold=(P.gold||0)+finalGold;psyAwardGlobalPsyduckXp(finalXp,source);
-  gainTrainerXp(Math.floor(finalXp*.1));
+  const finalXp=Math.floor((lvl*85+150)*(1+getTotalBuff('xp')/100)*(1+Math.max(0,Number(enemy.idleXpBonus||0))/100));
+  const finalGold=Math.floor((lvl*2+8)*Math.min(2,1+getTotalBuff('gold')/100)*(idleSource?.15:1));
+  P.team[0].exp=(P.team[0].exp||0)+finalXp;if(idleSource)window.psyModeAddGold?.('idle',finalGold);else P.gold=(P.gold||0)+finalGold;psyAwardGlobalPsyduckXp(finalXp,source);
+  gainTrainerXp(Math.floor(finalXp*.1),idleSource,idleSource);
   const got=[];
-  try{const common=window.psySharedCombatDrop?.(enemy,source==='idle'?'world':source)||[];if(Array.isArray(common))got.push(...common)}catch(e){console.warn('[WORLD IDLE] shared drops',e)}
-  try{if(Math.random()<.5&&tryDropStone(enemy.type||TYPE_BY_ID_ALL?.[enemy.id]||'Normal',lvl))got.push(getStoneForType(enemy.type||TYPE_BY_ID_ALL?.[enemy.id]||'Normal'))}catch(e){}
-  try{if(source!=='idle'||Math.random()<.5){const before={ub:Number(P.inventory?.['Ultra Ball']||0),bs:Number(P.inventory?.['Boost Stone']||0),ss:Number(P.inventory?.['Shiny Stone']||0)};tryGlobalDrops(enemy);if(Number(P.inventory?.['Ultra Ball']||0)>before.ub)got.push('Ultra Ball');if(Number(P.inventory?.['Boost Stone']||0)>before.bs)got.push('Boost Stone');if(Number(P.inventory?.['Shiny Stone']||0)>before.ss)got.push('Shiny Stone')}}catch(e){}
-  try{checkLevelUp()}catch(e){}try{updateHUD()}catch(e){}try{autoSave()}catch(e){}
+  try{const common=window.psySharedCombatDrop?.(enemy,source==='idle'?'idle':source)||[];if(Array.isArray(common))got.push(...common)}catch(e){console.warn('[WORLD IDLE] shared drops',e)}
+  try{if(!idleSource&&Math.random()<.5&&tryDropStone(enemy.type||TYPE_BY_ID_ALL?.[enemy.id]||'Normal',lvl))got.push(getStoneForType(enemy.type||TYPE_BY_ID_ALL?.[enemy.id]||'Normal'))}catch(e){}
+  try{if(!idleSource){const before={ub:Number(P.inventory?.['Ultra Ball']||0),bs:Number(P.inventory?.['Boost Stone']||0),ss:Number(P.inventory?.['Shiny Stone']||0)};tryGlobalDrops(enemy);if(Number(P.inventory?.['Ultra Ball']||0)>before.ub)got.push('Ultra Ball');if(Number(P.inventory?.['Boost Stone']||0)>before.bs)got.push('Boost Stone');if(Number(P.inventory?.['Shiny Stone']||0)>before.ss)got.push('Shiny Stone')}}catch(e){}
+  try{checkLevelUp(idleSource)}catch(e){}if(!idleSource)try{updateHUD()}catch(e){}try{if(idleSource)window.psyQueueIdleSave?.();else autoSave()}catch(e){}
   return{xp:finalXp,gold:finalGold,drops:got};
 };
 
-function gainTrainerXp(amount){
+function gainTrainerXp(amount,deferHud=false,deferSave=false){
   ensureTrainerData();
   amount=Math.max(0,Math.floor(Number(amount)||0));if(amount<=0)return;
   P.trainerExp+=amount;
@@ -2598,7 +2604,7 @@ function gainTrainerXp(amount){
     notif(`🧑🏫 TREINADOR Lv.${P.trainerLevel}! +1 Ponto de Talento!`,4000);
     try{spawnFloat(`TREINADOR LVL UP!`,"#00d0ff")}catch(e){}
   }
-  autoSave();try{updateTrainerHUD()}catch(e){}try{updateHUD()}catch(e){}
+  if(!deferSave)autoSave();if(!deferHud){try{updateTrainerHUD()}catch(e){}try{updateHUD()}catch(e){}}
 }
 function updateTrainerHUD(){
   let elLv=document.getElementById('trainer-lv-hud');
@@ -3073,6 +3079,7 @@ function castRay(px,py,rayAngle){ let mapX=Math.floor(px), mapY=Math.floor(py); 
 
 function worldLoop(ts=performance.now()){
   if(!inWorld)return;
+  if(window.PSY_RUNTIME_MODE?.is?.('adventure')){ requestAnimationFrame(worldLoop); return; }
   const frameDt=Math.max(1,ts-(psyWorldFrameLast||ts));psyWorldFrameLast=ts;psyWorldFrameAvg=psyWorldFrameAvg*.94+Math.min(60,frameDt)*.06;
   const coarse=!!window.matchMedia?.('(pointer:coarse)')?.matches;psyWorldRayStep=psyWorldFrameAvg>27?4:psyWorldFrameAvg>21?3:coarse?3:2;
   try{
@@ -3435,7 +3442,7 @@ battleAction = function(action, moveData){
       battleData.state = 'won';
       let lvl = battleData.wild.level || 5;
       let finalXp = Math.floor((lvl*85+150)*(1+getTotalBuff('xp')/100));
-      let finalGold = Math.floor((lvl*18+80)*(1+getTotalBuff('gold')/100));
+      let finalGold = Math.floor((lvl*5+15)*Math.min(2,1+getTotalBuff('gold')/100));
       P.team[0].exp += finalXp; P.gold += finalGold;psyAwardGlobalPsyduckXp(finalXp,'battle');
       gainTrainerXp(Math.floor(finalXp*0.1));
       /* O Wild entrega os materiais no ponto real da vitória. O encerramento
@@ -4118,9 +4125,9 @@ window.enterDungeonBoss=function(id){
   let bh=calcBaseHpV14(lvl,12,true,true,id)*5;
   document.getElementById('screen-dungeon').style.display='none';
   window.isDungeonBoss=true; window.currentDungeonId=id;
-  startBattle({id:b.id,name:b.name+" [BOSS MEGA]",type:TYPE_BY_ID_ALL[id]||TYPE_BY_ID_EXT[id]||"Normal",shiny:false,isMega:true,rarity:{n:"DEUS",mult:20,color:"#fff"},level:lvl,maxHp:bh,hp:bh,isBoss:true});
+  startBattle({id:b.id,name:b.name+" [BOSS MEGA]",type:TYPE_BY_ID_ALL[id]||TYPE_BY_ID_EXT[id]||"Normal",shiny:false,isMega:true,rarity:{n:"DEUS",mult:2.15,color:"#fff"},level:lvl,maxHp:bh,hp:bh,isBoss:true});
 };
-window.enterDungeonShiny=function(id){ if((P.gold||0)<50000){ notif("❌ 50k!"); return; } P.gold-=50000; autoSave(); updateHUD(); let s=DUNGEON_SHINIES.find(x=>x.id==id); let lvl=60; let bh=calcBaseHpV14(lvl,5,true,false,id)*2.5; document.getElementById('screen-dungeon').style.display='none'; window.isDungeonShiny=true; window.currentDungeonId=id; startBattle({id:s.id,name:s.name+" ✨",type:TYPE_BY_ID_ALL[id]||"Normal",shiny:true,isMega:false,rarity:{n:"Pika",mult:10,color:"#ffd700"},level:lvl,maxHp:bh,hp:bh}); };
+window.enterDungeonShiny=function(id){ if((P.gold||0)<50000){ notif("❌ 50k!"); return; } P.gold-=50000; autoSave(); updateHUD(); let s=DUNGEON_SHINIES.find(x=>x.id==id); let lvl=60; let bh=calcBaseHpV14(lvl,5,true,false,id)*2.5; document.getElementById('screen-dungeon').style.display='none'; window.isDungeonShiny=true; window.currentDungeonId=id; startBattle({id:s.id,name:s.name+" ✨",type:TYPE_BY_ID_ALL[id]||"Normal",shiny:true,isMega:false,rarity:{n:"Pika das Galáxias",mult:1.9,color:"#ffd700"},level:lvl,maxHp:bh,hp:bh}); };
 window.endBattle=function(won){
   let wasBoss=window.isDungeonBoss, wasShiny=window.isDungeonShiny, dId=window.currentDungeonId;
   inBattle=false;
@@ -5015,7 +5022,7 @@ window.enterMegaDungeon = function(id){
   let bh=calcBaseHpV14(85,15,true,true,id)*6;
   document.getElementById('screen-dungeon').style.display='none';
   window.isDungeonMega=true;
-  startBattle({id:id,name:`MEGA ${getPokeName(id)} [SSS DEUS]`,type:TYPE_BY_ID_ALL[id]||"Normal",shiny:false,isMega:true,rarity:{n:"DEUS",mult:15,color:"#fff"},level:85,maxHp:bh,hp:bh,isBoss:true});
+  startBattle({id:id,name:`MEGA ${getPokeName(id)} [SSS DEUS]`,type:TYPE_BY_ID_ALL[id]||"Normal",shiny:false,isMega:true,rarity:{n:"DEUS",mult:2.15,color:"#fff"},level:85,maxHp:bh,hp:bh,isBoss:true});
 }
 const _openDetailOld2 = window.openPokeDetail;
 window.openPokeDetail = function(idx,isBox){
@@ -5922,22 +5929,22 @@ setTimeout(()=>{
    ============================================================ */
 window.PSY_RARITY_REBORN = {
   LIXO:{n:"Lixo",color:"#888",mult:1,chance:74.345,cap:.5},
-  QUASE:{n:"Quase Lixo",color:"#aaa",mult:2,chance:16,cap:.5},
-  NICE:{n:"Nice",color:"#44ff88",mult:3,chance:6,cap:.5},
-  BELEZA:{n:"Belezura",color:"#4488ff",mult:4,chance:2.5,cap:.5},
-  LENDEA:{n:"Lêndea",color:"#ff44ff",mult:5,chance:.8,cap:.5},
-  BOMBADO:{n:"Bombado",color:"#ff8800",mult:7,chance:.25,cap:.5},
-  PIKA:{n:"Pika das Galáxias",color:"#ffd700",mult:10,chance:.08,cap:.5},
-  DEUS:{n:"DEUS",color:"#ffffff",mult:15,chance:.02,cap:.5,glow:"#fff"},
-  VOID:{n:"VOID",color:"#8b5cf6",mult:30,chance:0,cap:.20,void:true},
-  CRIADOR:{n:"CRIADOR",color:"#ff00ff",mult:22,chance:.005,cap:.25,rainbow:true},
-  OBLIVION:{n:"OBLIVION",color:"#00ffff",mult:40,chance:0,cap:.08,oblivion:true}
+  QUASE:{n:"Quase Lixo",color:"#aaa",mult:1.1,chance:16,cap:.5},
+  NICE:{n:"Nice",color:"#44ff88",mult:1.2,chance:6,cap:.5},
+  BELEZA:{n:"Belezura",color:"#4488ff",mult:1.35,chance:2.5,cap:.5},
+  LENDEA:{n:"Lêndea",color:"#ff44ff",mult:1.5,chance:.8,cap:.5},
+  BOMBADO:{n:"Bombado",color:"#ff8800",mult:1.7,chance:.25,cap:.5},
+  PIKA:{n:"Pika das Galáxias",color:"#ffd700",mult:1.9,chance:.08,cap:.5},
+  DEUS:{n:"DEUS",color:"#ffffff",mult:2.15,chance:.02,cap:.5,glow:"#fff"},
+  VOID:{n:"VOID",color:"#8b5cf6",mult:2.7,chance:0,cap:.20,void:true},
+  CRIADOR:{n:"CRIADOR",color:"#ff00ff",mult:2.4,chance:.005,cap:.25,rainbow:true},
+  OBLIVION:{n:"OBLIVION",color:"#00ffff",mult:3,chance:0,cap:.08,oblivion:true}
 };
 window.RARITIES=[
  PSY_RARITY_REBORN.LIXO,PSY_RARITY_REBORN.QUASE,PSY_RARITY_REBORN.NICE,
  PSY_RARITY_REBORN.BELEZA,PSY_RARITY_REBORN.LENDEA,PSY_RARITY_REBORN.BOMBADO,
- PSY_RARITY_REBORN.PIKA,PSY_RARITY_REBORN.DEUS,PSY_RARITY_REBORN.VOID,
- PSY_RARITY_REBORN.CRIADOR,PSY_RARITY_REBORN.OBLIVION
+ PSY_RARITY_REBORN.PIKA,PSY_RARITY_REBORN.DEUS,PSY_RARITY_REBORN.CRIADOR,
+ PSY_RARITY_REBORN.VOID,PSY_RARITY_REBORN.OBLIVION
 ];
 
 function psyRarityForPokemon(id,shiny=false,mega=false,isBoss=false){
@@ -6424,6 +6431,7 @@ function psyEnforceTierRarity(p){
   p.tier=tier;
 
   /* Special forms use the Tier window too. A default is only supplied when the Pokémon has no quality yet. */
+  if(p.rarity){const canonical=Object.values(PSY_RARITY_REBORN||{}).find(r=>r.n===p.rarity.n);if(canonical)p.rarity={...p.rarity,...canonical};}
   const special=psyRarityForPokemon?.(p.id,!!p.shiny,!!p.isMega,!!p.isBoss);
   if(special&&!p.rarity)p.rarity={...special};
 
@@ -6526,7 +6534,9 @@ window.createCapturedPoke=function(id,rarity,shiny,isPremier,isMega){
 
 function psyMigrateTierBalance(){
   const all=[...(P?.team||[]),...(P?.box||[])];
+  const canonical=Object.values(window.PSY_RARITY_REBORN||{});
   all.forEach(p=>{
+    const savedName=String(p?.rarity?.n||'');const fresh=canonical.find(r=>r.n===savedName);if(fresh)p.rarity={...p.rarity,...fresh};
     psyEnforceTierRarity(p);
     recalcPoke(p);
   });
@@ -8423,7 +8433,7 @@ function psyV9Snapshot(){
 function psyV9WriteLocal(){
   try{
     if(!P?.team?.length || !P.team[0]?.id) return false;
-    const raw=JSON.stringify(psyV9Snapshot());
+    const raw=JSON.stringify(psyV9Snapshot());window.__psyLastFullSaveAt=Date.now();
     const current=localStorage.getItem(PSY_LOCAL_KEY);
     if(current && current!==raw && psyV9Valid(psyV9Parse(current))) localStorage.setItem(PSY_LOCAL_BACKUP_KEY,current);
     localStorage.setItem(PSY_LOCAL_KEY,raw);
@@ -8525,7 +8535,7 @@ try{
 }catch(e){console.warn('market local patch',e)}
 
 /* ---------- Level-up: active Pokémon always leaves level-up at full HP. ---------- */
-window.checkLevelUp=checkLevelUp=function(){
+window.checkLevelUp=checkLevelUp=function(deferHud=false,deferSave=false){
   const p=P?.team?.[0];if(!p)return;let ups=0;
   while((p.exp||0)>=(p.maxExp||100) && (p.level||1)<(P.levelCap||20)){
     p.exp-=p.maxExp;p.level++;p.maxExp=Math.floor(p.maxExp*1.3);ups++;
@@ -8534,7 +8544,7 @@ window.checkLevelUp=checkLevelUp=function(){
   }
   if(ups){
     try{if(typeof worldPlayer!=='undefined'){worldPlayer.maxHp=Math.max(worldPlayer.maxHp||0,p.maxHp);worldPlayer.hp=worldPlayer.maxHp}}catch(e){}
-    notif(`⭐ ${p.name||getPokeName(p.id)} subiu ${ups>1?ups+' níveis':'de nível'} e recuperou todo o HP!`,3200);updateHUD();try{renderTeam()}catch(e){}autoSave();
+    notif(`⭐ ${p.name||getPokeName(p.id)} subiu ${ups>1?ups+' níveis':'de nível'} e recuperou todo o HP!`,3200);if(!deferHud){updateHUD();try{renderTeam()}catch(e){}}if(!deferSave)autoSave();else try{window.psyQueueIdleSave?.()}catch(e){}
   }
 };
 
@@ -8777,7 +8787,7 @@ window.psyUseSelectedCard=function(){const s=window.cgBattleState;if(!s||!s.sele
   if(!s.stun){let dmg=Math.floor(38*Math.pow(1.075,s.stage-1)*(1+(CG_TIER_RANK[s.tier]||0)*.12)*(s.boss?1.35:1));if(s.weakenTurns>0){dmg=Math.floor(dmg*(1-s.weaken));s.weakenTurns--}if(s.shield){dmg=Math.floor(dmg*(1-s.shield));s.shield=0}s.playerHp=Math.max(0,s.playerHp-Math.max(5,dmg))}else{s.stun=false;notif('⏳ Inimigo perdeu o contra-ataque!',1800)}
   if(s.playerHp<=0)return psyCardStageLose();s.turn++;s.energy=Math.min(s.maxEnergy,s.energy+2);psyDrawHand(s);cgDrawBattle();
 };
-function psyCardStageWin(){const s=window.cgBattleState,cg=psyCardsEnsure(),first=s.stage>cg.best;cg.best=Math.max(cg.best,s.stage);if(first)cg.skillPoints=(cg.skillPoints||0)+1;if(s.stage<60)cg.stage=s.stage+1;const gold=Math.floor(3500*s.stage*(1+s.stage*.04)*(s.boss?1.6:1)),dia=s.boss?Math.min(6,1+Math.floor(s.stage/15)):0;P.gold+=gold;P.diamonds+=dia;if(s.boss&&Math.random()<.06){cg.packs.ss++;notif('🌐 DROP GLOBAL: Pack SS!',4500)}window.cgBattleState=null;autoSave();updateHUD();notif(`🏆 Fase ${s.stage}! +${gold.toLocaleString()} Gold${dia?' +'+dia+' 💎':''}`,3500);renderCardTab('battle')}
+function psyCardStageWin(){const s=window.cgBattleState,cg=psyCardsEnsure(),first=s.stage>cg.best;cg.best=Math.max(cg.best,s.stage);if(first)cg.skillPoints=(cg.skillPoints||0)+1;if(s.stage<60)cg.stage=s.stage+1;const gold=Math.floor(3500*s.stage*(1+s.stage*.04)*(s.boss?1.6:1)*.2),dia=s.boss?Math.min(6,1+Math.floor(s.stage/15)):0;P.gold+=gold;P.diamonds+=dia;if(s.boss&&Math.random()<.06){cg.packs.ss++;notif('🌐 DROP GLOBAL: Pack SS!',4500)}window.cgBattleState=null;autoSave();updateHUD();notif(`🏆 Fase ${s.stage}! +${gold.toLocaleString()} Gold${dia?' +'+dia+' 💎':''}`,3500);renderCardTab('battle')}
 function psyCardStageLose(){window.cgBattleState=null;notif('💀 Nexus derrotado. Ajuste o Deck e tente novamente.',3000);renderCardTab('battle')}
 window.cgWinStage=psyCardStageWin;window.cgLoseStage=psyCardStageLose;
 
@@ -8877,7 +8887,7 @@ function psyV10AfkRates(){
   const tl=Math.max(1,Number(P.trainerLevel||1)),cap=Math.max(20,Number(P.levelCap||20));
   const trainerSteps=Math.floor((tl-1)/10),capSteps=Math.floor((cap-20)/10);
   const progression=1+trainerSteps*.13+capSteps*.08;
-  const goldPerMin=(320+tl*16)*progression*(1+Number(getTotalBuff?.('gold')||0)/100);
+  const goldPerMin=(65+tl*4)*progression*Math.min(2,1+Number(getTotalBuff?.('gold')||0)/100);
   const xpPerMin=(27+tl*2.35)*progression*(1+Number(getTotalBuff?.('xp')||0)/100);
   const dropBoost=1+Math.min(2,Number(getTotalBuff?.('drop')||0)/100);
   return {tl,cap,trainerSteps,capSteps,progression,goldPerMin,xpPerMin,dropBoost};
@@ -8892,8 +8902,8 @@ psyAfkReward=function(seconds,offline=false){
   let stones=0,essences=0,eggs=0;const packs=[],loot=[];const whole=Math.floor(mins);
   const elems=[...new Map(Object.values(PSY_ELEMENT_DATA||{}).map(e=>[e.ess,e])).values()];
   for(let i=0;i<whole;i++){
-    if(Math.random()<.050*rates.dropBoost){const e=elems[Math.floor(Math.random()*elems.length)]||PSY_ELEMENT_DATA.Normal;P.inventory[e.ess]=(P.inventory[e.ess]||0)+1;essences++;loot.push(e.ess)}
-    if(Math.random()<.014*rates.dropBoost){const stonesPool=['Fire Stone','Water Stone','Leaf Stone','Thunder Stone','Ice Stone','Fighting Stone','Poison Stone','Ground Stone','Flying Stone','Psychic Stone','Bug Stone','Rock Stone','Ghost Stone','Dragon Stone','Dark Stone','Metal Stone','Fairy Stone','Normal Stone'];const st=stonesPool[Math.floor(Math.random()*stonesPool.length)];P.inventory[st]=(P.inventory[st]||0)+1;stones++;loot.push(st)}
+    if(Math.random()<.0125*rates.dropBoost){const e=elems[Math.floor(Math.random()*elems.length)]||PSY_ELEMENT_DATA.Normal;P.inventory[e.ess]=(P.inventory[e.ess]||0)+1;essences++;loot.push(e.ess)}
+    if(Math.random()<.0035*rates.dropBoost){const stonesPool=['Fire Stone','Water Stone','Leaf Stone','Thunder Stone','Ice Stone','Fighting Stone','Poison Stone','Ground Stone','Flying Stone','Psychic Stone','Bug Stone','Rock Stone','Ghost Stone','Dragon Stone','Dark Stone','Metal Stone','Fairy Stone','Normal Stone'];const st=stonesPool[Math.floor(Math.random()*stonesPool.length)];P.inventory[st]=(P.inventory[st]||0)+1;stones++;loot.push(st)}
     // WORLD/AFK: eggs are intentionally rarer than the previous 0.15% roll.
     if(Math.random()<.00075*rates.dropBoost){const t=PSY_TYPE_NAMES[Math.floor(Math.random()*PSY_TYPE_NAMES.length)];if(psyV10SilentEgg(Math.random()<.72?{type:t,source:'afk'}:{source:'afk'})){eggs++;loot.push(`${t} Egg`)}}
     const r=Math.random();if(r<.000025){P.cardGame.packs.ss=(P.cardGame.packs.ss||0)+1;packs.push('SS Global')}else if(r<.00018){P.cardGame.packs.epic=(P.cardGame.packs.epic||0)+1;packs.push('Épico')}else if(r<.00075){P.cardGame.packs.rare=(P.cardGame.packs.rare||0)+1;packs.push('Raro')}else if(r<.003){P.cardGame.packs.normal=(P.cardGame.packs.normal||0)+1;packs.push('Normal')}
@@ -9025,7 +9035,7 @@ window.psyUseSelectedCard=function(){const s=window.cgBattleState;if(!s||!s.sele
   if(!s.stun){const chapter=Math.ceil(s.stage/10),rank=CG_TIER_RANK[s.tier]||1,eff=psyV10Eff(s.enemyType,s.heroType);let dmg=Math.floor((38+s.stage*.34+chapter*1.8)*(1+rank*.07)*(s.boss?1.28:1)*Math.max(.5,eff));if(s.weakenTurns>0){dmg=Math.floor(dmg*(1-s.weaken));s.weakenTurns--}if(s.shield){dmg=Math.floor(dmg*(1-s.shield));s.shield=0}s.playerHp=Math.max(0,s.playerHp-Math.max(5,dmg));if(eff>=2)notif(`⚠ ${s.enemyType} é forte contra seu principal!`,1300)}else{s.stun=false;notif('⏳ Inimigo perdeu o contra-ataque!',1500)}
   if(s.playerHp<=0)return psyCardStageLose();s.turn++;s.energy=Math.min(s.maxEnergy,s.energy+2);psyDrawHand(s);cgDrawBattle();
 };
-psyCardStageWin=function(){const s=window.cgBattleState,cg=psyCardsEnsure(),first=s.stage>cg.best;cg.best=Math.max(cg.best,s.stage);if(first)cg.skillPoints=(cg.skillPoints||0)+1;if(s.stage<500)cg.stage=s.stage+1;cg.chapterView=Math.ceil(cg.stage/10);const gold=Math.floor((2200+s.stage*165)*(s.boss?1.7:1)),dia=s.boss?Math.min(6,1+Math.floor(s.stage/100)):0;P.gold+=gold;P.diamonds+=dia;psyV10RewardsEnsure().cardWins++;if(s.boss&&Math.random()<.045){cg.packs.ss++;notif('🌐 DROP GLOBAL: Pack SS!',4200)}window.cgBattleState=null;autoSave();updateHUD();notif(`🏆 Fase ${s.stage}/500! +${gold.toLocaleString()} Gold${dia?' +'+dia+' 💎':''}`,3200);renderCardTab('battle')};window.cgWinStage=psyCardStageWin;
+psyCardStageWin=function(){const s=window.cgBattleState,cg=psyCardsEnsure(),first=s.stage>cg.best;cg.best=Math.max(cg.best,s.stage);if(first)cg.skillPoints=(cg.skillPoints||0)+1;if(s.stage<500)cg.stage=s.stage+1;cg.chapterView=Math.ceil(cg.stage/10);const gold=Math.floor((2200+s.stage*165)*(s.boss?1.7:1)*.2),dia=s.boss?Math.min(6,1+Math.floor(s.stage/100)):0;P.gold+=gold;P.diamonds+=dia;psyV10RewardsEnsure().cardWins++;if(s.boss&&Math.random()<.045){cg.packs.ss++;notif('🌐 DROP GLOBAL: Pack SS!',4200)}window.cgBattleState=null;autoSave();updateHUD();notif(`🏆 Fase ${s.stage}/500! +${gold.toLocaleString()} Gold${dia?' +'+dia+' 💎':''}`,3200);renderCardTab('battle')};window.cgWinStage=psyCardStageWin;
 function psyInstallCardTabsV10(){const s=document.getElementById('screen-card-mode');if(!s)return;const bar=s.querySelector('.cardgame-tabs');if(!bar)return;bar.innerHTML=`<button onclick="renderCardTab('collection')">📚 PRINCIPAL / DECK</button><button onclick="renderCardTab('gacha')">✨ GACHA / PACKS</button><button onclick="renderCardTab('history')">📜 HISTÓRICO</button><button onclick="renderCardTab('skills')">🌟 HABILIDADES</button><button onclick="renderCardTab('battle')">⚔ 500 FASES</button>`}
 setInterval(()=>{if(!document.hidden)psyInstallCardTabsV10()},3000);setTimeout(psyInstallCardTabsV10,400);
 

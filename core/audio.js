@@ -25,6 +25,10 @@ const FILES={
   enemy_mega_shiny:'enemy_mega_shiny.mp3'
 };
 
+Object.assign(FILES,{capture:'user/capture-success.mp3',capture_end:'user/capture-success-end.mp3',capture_fail:'user/capture-fail.mp3',ball_throw:'user/ball-throw.mp3',heal:'user/heal.mp3',levelup:'user/pokemon-level.mp3',trainer_level:'user/trainer-level.mp3',level_general:'user/level-general.mp3',shiny_found:'user/shiny-found.mp3',shiny_spawn:'user/shiny-spawn.mp3',item_drop:'user/item-drop.mp3',rare_drop:'user/rare-drop.mp3'});
+const tracks=[{id:'theme',label:'Tema Psyworld',file:FILES.theme},...Array.from({length:4},(_,i)=>({id:'music-'+(i+1),label:'Música '+(i+1),file:'user/music-'+(i+1)+'.mp3'}))];
+let selectedTrack=localStorage.getItem('psy_audio_track')||'theme';
+
 const TYPE={
   normal:'normal',
   fire:'fire',fogo:'fire',
@@ -81,7 +85,7 @@ function sfx(name,opt={}){
   const arr=pool(name);if(!arr.length)return;
   const i=poolIndex[name]++%arr.length,a=arr[i];
   try{
-    a.pause();a.currentTime=0;
+    a.pause();a.currentTime=0;a.onended=name==='capture'?()=>sfx('capture_end',{cooldown:0}):null;
     a.volume=clamp(settings.sfx*Number(opt.volume??1));
     const p=a.play();if(p?.catch)p.catch(()=>{});
   }catch(e){}
@@ -100,7 +104,7 @@ function sfxForMove(move){
 }
 function ensureTheme(){
   if(theme)return theme;
-  theme=new Audio(BASE+FILES.theme);
+  theme=new Audio(BASE+(tracks.find(t=>t.id===selectedTrack)||tracks[0]).file);
   theme.loop=true;theme.preload='auto';theme.playsInline=true;
   theme.volume=clamp(settings.music*duck);
   return theme;
@@ -110,6 +114,8 @@ function playTheme(){
   const a=ensureTheme();a.volume=clamp(settings.music*duck);
   const p=a.play();if(p?.catch)p.catch(()=>{});
 }
+function selectTrack(id){if(!tracks.some(t=>t.id===id))return;pauseTheme();selectedTrack=id;theme=null;localStorage.setItem('psy_audio_track',id);settings.musicOn=true;saveSettings();unlock();playTheme()}
+function setVolume(kind,value){if(!['music','sfx'].includes(kind))return;settings[kind]=clamp(value);settings[kind+'On']=settings[kind]>0;saveSettings();if(kind==='music'){if(theme)theme.volume=clamp(settings.music*duck);if(settings.musicOn)playTheme();else pauseTheme()}else for(const arr of Object.values(pools))for(const a of arr)a.volume=settings.sfx}
 function pauseTheme(){try{theme?.pause()}catch(e){}}
 function setDuck(v=.28){
   duck=clamp(v,.12,1);
@@ -140,7 +146,7 @@ function hook(name,before,after){
 function installHooks(){
   hook('battleAction',function(action,move){
     if(action==='move')sfxForMove(move);
-    else if(action==='capture')sfx('capture');
+    else if(action==='capture')sfx('ball_throw');
     else if(action==='heal')sfx('heal');
     else if(action==='flee')sfx('ui_click');
   });
@@ -173,7 +179,7 @@ D.addEventListener('click',ev=>{
   if(id==='world-skill'){sfx('psychic',{volume:.9,cooldown:120});return}
   if(id==='world-atk'){sfx('normal',{volume:.8,cooldown:120});return}
   if(id==='world-heal'||/curar|poção|potion|heal/.test(txt)){sfx('heal');return}
-  if(/captur|pok[eé]?ball|ball/.test(txt)){sfx('capture');return}
+  if(/captur|pok[eé]?ball|ball/.test(txt)){sfx('ui_click');return}
   if(/chocar|incubar|egg/.test(txt)){sfx('egg');return}
   if(/pack|abrir pacote/.test(txt)){sfx('pack');return}
   if(id==='psy-audio-open')return;
@@ -224,7 +230,7 @@ if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',installUI,{onc
 
 W.psyAudio={
   sfx,sfxForMove,typeKey,playTheme,pauseTheme,setDuck,unlock,
-  settings,openSettings:openPanel
+  settings,tracks,selectTrack,setVolume,getTrack:()=>selectedTrack,openSettings:openPanel
 };
 console.log('🔊 PSYWORLD Audio System V1 carregado');
 })();
