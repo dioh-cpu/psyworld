@@ -2516,6 +2516,12 @@ let FOV=Math.PI/3;
 let worldMap=[], worldWilds=[], worldCanvas=null, wCtx=null, zBuffer=new Float32Array(0),psyWorldBgCache=null,psyWorldHudAt=0,psyWorldFrameAvg=16.7,psyWorldFrameLast=0,psyWorldRayStep=2;
 let worldRegion=localStorage.getItem('psyworld_region')||'kanto';
 let worldPlayer={x:SAFE_X+0.5, y:SAFE_Y+0.5, angle:-Math.PI/2, hp:100, maxHp:100};
+window.__psyWorldMPStateV1=function(){
+  const p=typeof P!=='undefined'&&P?P:{},active=Array.isArray(p.team)&&p.team.length?p.team[0]:null;
+  return{x:worldPlayer.x,y:worldPlayer.y,angle:worldPlayer.angle,region:String(worldRegion||'kanto'),inWorld:!!inWorld,
+    nickname:String(p.meta?.characterNickname||p.characterNickname||p.trainerName||p.nickname||'Treinador').slice(0,24),
+    activePokemon:{name:String(active?.name||''),level:Number(active?.level||1)}};
+};
 let inWorld=false, autoBattle=false, mouseDown=false, lastMouseX=0, joyMoveX=0, joyMoveY=0, joyLookX=0;
 let camSens=parseFloat(localStorage.getItem('psyworld_camSens')||0.0025), rotSpeedCfg=parseFloat(localStorage.getItem('psyworld_rotSpeed')||0.045);
 let potionCooldown=0, skillCooldown=0;
@@ -2846,6 +2852,17 @@ function enterWorldModeReal(){
     worldPlayer.maxHp=Math.max(50, Math.floor((strong.baseMaxHp||strong.maxHp||100)*(1+buffHp/100)));
     worldPlayer.hp=worldPlayer.maxHp;
     worldPlayer.x=SAFE_X+0.5; worldPlayer.y=SAFE_Y+0.5; worldPlayer.angle=-Math.PI/2;
+    /* Spread authenticated trainers around the same safe-zone spawn so remote avatars don't stack. */
+    try{
+      const online=JSON.parse(localStorage.getItem('psyworld_online_session_v23')||'null'),uid=String(online?.user?.id||'');
+      if(uid){
+        let hash=2166136261;
+        for(let i=0;i<uid.length;i++)hash=Math.imul(hash^uid.charCodeAt(i),16777619);
+        const angle=(hash>>>0)/4294967295*Math.PI*2,radius=1.4+((hash>>>8)%220)/100;
+        worldPlayer.x=SAFE_X+0.5+Math.cos(angle)*radius;
+        worldPlayer.y=SAFE_Y+0.5+Math.sin(angle)*radius;
+      }
+    }catch(_){}
   }catch(e){ worldPlayer.maxHp=100; worldPlayer.hp=100; }
   inWorld=true;
   document.getElementById('menu').style.display='none';
@@ -3252,6 +3269,7 @@ function drawWorldFP(){
       let label = s.orig.name+" Lv"+s.orig.lvl + (s.orig.isHorde?" [HORDA]":"");
       wCtx.strokeText(label, spriteX, drawY-18); wCtx.fillText(label, spriteX, drawY-18);
     });
+    try{window.PSYWorldMultiplayerV1?.drawPeers({ctx:wCtx,w,h,halfH,zBuffer,player:worldPlayer,fov:FOV})}catch(_){}
     wCtx.strokeStyle="rgba(255,255,255,0.85)"; wCtx.lineWidth=1.5;
     wCtx.beginPath(); wCtx.moveTo(w/2-14, h/2); wCtx.lineTo(w/2+14, h/2); wCtx.moveTo(w/2, h/2-14); wCtx.lineTo(w/2, h/2+14); wCtx.stroke();
     wCtx.fillStyle="rgba(255,255,255,0.95)"; wCtx.beginPath(); wCtx.arc(w/2,h/2,3,0,Math.PI*2); wCtx.fill();
