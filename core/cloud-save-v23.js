@@ -106,6 +106,8 @@ async function applyCloud(save,game,automatic=false){
     const suppressAutosave=()=>{};
     try{W.autoSave=suppressAutosave}catch(_){}
     try{autoSave=suppressAutosave}catch(_){}
+    // Stop the legacy page-exit listener, which may hold a separate autosave binding.
+    try{W.addEventListener('beforeunload',event=>{try{event.stopImmediatePropagation()}catch(_){}},{capture:true,once:true})}catch(_){}
     location.reload();
   }catch(e){toast('❌ Não foi possível restaurar o save da nuvem.');}
 }
