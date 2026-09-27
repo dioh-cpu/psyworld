@@ -37,13 +37,13 @@
       if(!url||!key)throw new Error('configuração online indisponível');
       const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.0?bundle');
       supa=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
-      supa.auth.onAuthStateChange((event,session)=>{try{if(session){const old=readSession()||{};localStorage.setItem(SESSION_KEY,JSON.stringify({...old,...session,user:session.user||old.user,expires_at:Date.now()+Number(session.expires_in||3600)*1000}))}else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}});
+      supa.auth.onAuthStateChange((event,session)=>{try{if(session)persistSession(session);else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
       const session=readSession();
       if(session?.access_token){
         const r=await supa.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token||''});
         if(r.error)throw r.error;
         const live=r.data?.session;
-        if(live){try{localStorage.setItem(SESSION_KEY,JSON.stringify({...session,...live,user:live.user||session.user,expires_at:Date.now()+Number(live.expires_in||3600)*1000}))}catch(_){}}
+        if(live)persistSession(live);
       }
       return supa;
     })().catch(e=>{clientPromise=null;supa=null;throw e});
@@ -51,6 +51,37 @@
   }
   function currentUser(){return readSession()?.user||null}
   function signedIn(){return !!readSession()?.access_token}
+  function persistSession(session){
+    if(!session?.access_token)return;
+    const old=readSession()||{};delete old.provider_token;delete old.provider_refresh_token;
+    const safe={access_token:session.access_token,refresh_token:session.refresh_token||'',token_type:session.token_type||'bearer',expires_in:Number(session.expires_in||3600),expires_at:Date.now()+Number(session.expires_in||3600)*1000,user:session.user||old.user};
+    try{localStorage.setItem(SESSION_KEY,JSON.stringify({...old,...safe}))}catch(_){}
+  }
+  function oauthCallbackInfo(){
+    const query=new URLSearchParams(W.location.search),hash=new URLSearchParams(W.location.hash.replace(/^#/,''));
+    return{pending:query.has('code')||query.has('error')||hash.has('access_token')||hash.has('error')||hash.has('error_description'),error:query.get('error_description')||hash.get('error_description')||query.get('error')||hash.get('error')};
+  }
+  function clearOAuthCallback(){
+    try{const url=new URL(W.location.href);['code','error','error_description','error_code','state'].forEach(k=>url.searchParams.delete(k));url.hash='';W.history.replaceState(W.history.state,D.title,url.pathname+url.search)}catch(_){}
+  }
+  async function finishOAuthCallback(){
+    const callback=oauthCallbackInfo();if(!callback.pending)return;
+    const area=root?.querySelector('[data-login-area]'),status=area?.querySelector('[data-login-status]');
+    if(callback.error){clearOAuthCallback();if(status)status.textContent='Login com GitHub não concluído: '+callback.error;return}
+    if(status)status.textContent='Confirmando sua conta do GitHub…';
+    try{
+      const c=await getClient(),hash=new URLSearchParams(W.location.hash.replace(/^#/,''));
+      let data;
+      if(hash.has('access_token')){
+        const result=await c.auth.setSession({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token')||''});
+        if(result.error)throw result.error;data=result.data;
+      }else{
+        const result=await c.auth.getSession();if(result.error)throw result.error;data=result.data;
+      }
+      if(!data.session?.access_token)throw new Error('O Supabase não confirmou a sessão.');
+      persistSession(data.session);clearOAuthCallback();if(area)area.hidden=true;render();
+    }catch(e){clearOAuthCallback();if(status)status.textContent='Falha ao entrar com GitHub: '+String(e.message||'tente novamente')}
+  }
   function stopChannel(){if(channelSub&&supa){try{supa.removeChannel(channelSub)}catch(_){}}channelSub=null;activeChannel=null}
   async function connectRealtime(slug){
     const c=await getClient();const liveResult=await c.auth.getSession();if(liveResult.error)throw liveResult.error;const session=liveResult.data?.session;
@@ -77,7 +108,7 @@
   function setStatus(text,online){const el=root?.querySelector('[data-social-status]');if(el){el.textContent=text;el.dataset.online=online?'1':'0'}}
   function statusForLog(entry){if(entry.type==='capture')return entry.success?'CAPTUROU':'FALHOU';return''}
   function renderLogin(){
-    return `<div class="pis-login"><div class="pis-login-art">✦</div><b>Entre para falar com os treinadores</b><small>Use a mesma conta online do PSYWORLD. Seus logs locais continuam privados.</small><label>E-mail<input data-login-email type="email" autocomplete="email" placeholder="seu@email.com"></label><label>Senha<input data-login-pass type="password" autocomplete="current-password" placeholder="Senha"></label><div><button data-login>Entrar</button><button data-signup>Criar conta</button></div><small data-login-status>O chat conecta ao servidor quando sua conta estiver pronta.</small></div>`;
+    return `<div class="pis-login"><div class="pis-login-art">✦</div><b>Entre para falar com os treinadores</b><small>Use a mesma conta online do PSYWORLD. Seus logs locais continuam privados.</small><button type="button" data-login-github style="width:100%;border:1px solid #697386;border-radius:8px;background:#161b22;color:#fff;padding:9px;font-weight:900">Entrar com GitHub</button><label>E-mail<input data-login-email type="email" autocomplete="email" placeholder="seu@email.com"></label><label>Senha<input data-login-pass type="password" autocomplete="current-password" placeholder="Senha"></label><div><button data-login>Entrar</button><button data-signup>Criar conta</button></div><small data-login-status>O chat conecta ao servidor quando sua conta estiver pronta.</small></div>`;
   }
   function renderMessages(){
     if(!root)return;const pane=root.querySelector('[data-social-feed]');if(!pane)return;
@@ -149,10 +180,12 @@
     if(!signedIn()){const area=root.querySelector('[data-login-area]');if(area){area.hidden=false;area.innerHTML=renderLogin();wireLogin(area)}}
     const prefs=readPrefs();if(typeof prefs.open!=='boolean'){prefs.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(prefs))}catch(_){}}
     render();
+    if(oauthCallbackInfo().pending)setTimeout(finishOAuthCallback,0);
   }
   function wireLogin(area){
-    const login=async signup=>{const status=area.querySelector('[data-login-status]'),email=area.querySelector('[data-login-email]')?.value.trim(),password=area.querySelector('[data-login-pass]')?.value||'';if(!email||password.length<6){if(status)status.textContent='Informe e-mail e senha (mín. 6 caracteres).';return}try{const c=await getClient();const r=signup?await c.auth.signUp({email,password}):await c.auth.signInWithPassword({email,password});if(r.error)throw r.error;if(r.data?.session){localStorage.setItem(SESSION_KEY,JSON.stringify({...r.data.session,user:r.data.user,expires_at:Date.now()+Number(r.data.session.expires_in||3600)*1000}));area.hidden=true;render()}else if(status)status.textContent='Conta criada. Confirme o e-mail e depois entre.'}catch(e){if(status)status.textContent=String(e.message||'Falha ao autenticar')}};
+    const login=async signup=>{const status=area.querySelector('[data-login-status]'),email=area.querySelector('[data-login-email]')?.value.trim(),password=area.querySelector('[data-login-pass]')?.value||'';if(!email||password.length<6){if(status)status.textContent='Informe e-mail e senha (mín. 6 caracteres).';return}try{const c=await getClient();const r=signup?await c.auth.signUp({email,password}):await c.auth.signInWithPassword({email,password});if(r.error)throw r.error;if(r.data?.session){persistSession(r.data.session);area.hidden=true;render()}else if(status)status.textContent='Conta criada. Confirme o e-mail e depois entre.'}catch(e){if(status)status.textContent=String(e.message||'Falha ao autenticar')}};
     area.querySelector('[data-login]')?.addEventListener('click',()=>login(false));area.querySelector('[data-signup]')?.addEventListener('click',()=>login(true));
+    area.querySelector('[data-login-github]')?.addEventListener('click',async()=>{const status=area.querySelector('[data-login-status]'),btn=area.querySelector('[data-login-github]');btn.disabled=true;if(status)status.textContent='Abrindo a autenticação do GitHub…';try{const c=await getClient();const {error}=await c.auth.signInWithOAuth({provider:'github',options:{redirectTo:W.location.origin+W.location.pathname}});if(error)throw error}catch(e){if(status)status.textContent=String(e.message||'Falha ao iniciar login com GitHub');btn.disabled=false}});
   }
   function installStyles(){if(D.getElementById('psy-idle-social-css'))return;const style=D.createElement('style');style.id='psy-idle-social-css';style.textContent=`
   #psy-idle-social-dock{position:absolute;left:12px;bottom:12px;z-index:1600;font:12px/1.35 system-ui,Segoe UI,sans-serif;color:#eefaff;pointer-events:none}

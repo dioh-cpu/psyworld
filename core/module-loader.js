@@ -6,7 +6,7 @@
 'use strict';
 const W=window,D=document;
   // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
-  const PHYSICAL_BUILD='PSYWORLD_V186_IDLE_SOCIAL_20260927';
+  const PHYSICAL_BUILD='PSYWORLD_V186_GITHUB_AUTH_20260927';
 function versionedSrc(src){const sep=String(src).includes('?')?'&':'?';return String(src)+sep+'build='+encodeURIComponent(PHYSICAL_BUILD)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
@@ -236,7 +236,7 @@ const mo=new MutationObserver(()=>{addMenuButton();decorateButtons()});mo.observ
 // GitHub V62 sync: conta online/cloud save é um módulo leve e global, carregado junto ao bootstrap.
 try{
   const cs=D.createElement('script');
-  cs.src='core/cloud-save-v23.js?build=CLOUD_SAVE_V23_20260902';
+  cs.src='core/cloud-save-v23.js?build=CLOUD_SAVE_V24_GITHUB_AUTH_20260927';
   cs.async=false;
   D.head.appendChild(cs);
 }catch(e){console.warn('cloud save loader',e)}
