@@ -201,7 +201,7 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
 /* PSYWORLD V26 — autoridade online global, sem alterar a main/produção. */
 try{
   const oa=document.createElement('script');
-  oa.src='core/online-authority-v26.js?build=ONLINE_AUTHORITY_V26_20260902_D';
+  oa.src='core/online-authority-v26.js?build=ONLINE_AUTHORITY_V26_20260927_A';
   oa.async=false;
   document.head.appendChild(oa);
 }catch(e){console.warn('online authority v26 loader',e)}
@@ -217,7 +217,7 @@ try{
 /* PSYWORLD V33 — novas contas sem Psyduck no time normal + LOG OUT. */
 try{
   const v33=document.createElement('script');
-  v33.src='core/new-account-logout-v33.js?build=NEW_ACCOUNT_LOGOUT_V33_20260903_A';
+  v33.src='core/new-account-logout-v33.js?build=NEW_ACCOUNT_LOGOUT_V33_20260927_A';
   v33.async=false;
   document.head.appendChild(v33);
 }catch(e){console.warn('new account/logout v33 loader',e)}
