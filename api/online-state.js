@@ -15,7 +15,7 @@ export default async function handler(req,res){
       ok:true,
       user_id:user.id,
       authoritative:true,
-      market_enabled:false,
+      market_enabled:true,
       player:playerR.data||null,
       inventory:inventoryR.data||[],
       pokemon:pokemonR.data||[],
