@@ -17,8 +17,8 @@ function rarityByName(name){
   const list=W.RARITIES||[],reb=W.PSY_RARITY_REBORN||{};
   const found=list.find(r=>r?.n===name)||Object.values(reb).find(r=>r?.n===name);
   if(name==='SQUIZO'){
-    const o=list.find(r=>r?.n==='OBLIVION')||reb.OBLIVION||{n:'OBLIVION',mult:40,color:'#00ffff'};
-    return {...o,n:'SQUIZO',color:'#ff3df2',mult:Math.max(55,Number(o.mult||40)*1.35),cap:.03,psyduckExclusive:true};
+    const o=list.find(r=>r?.n==='OBLIVION')||reb.OBLIVION||{n:'OBLIVION',mult:3,color:'#00ffff'};
+    return {...o,n:'SQUIZO',color:'#ff3df2',mult:Math.max(3.5,Number(o.mult||3)+.5),cap:.03,psyduckExclusive:true};
   }
   return found?{...found}:{n:name||'Lixo',color:'#888',mult:1,cap:.5};
 }

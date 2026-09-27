@@ -71,7 +71,7 @@ window.useMegaStone = function(idx,isBox){
   if(P.inventory["Fragmento Mega Stone"]<=0) delete P.inventory["Fragmento Mega Stone"];
   poke.isMega=true; poke.megaForm = window.MEGA_XY[poke.id]?.[0]?.id || getShowdownName(poke.id)+'-mega';
   poke.name = (poke.shiny?'Shiny Mega ':'Mega ') + getPokeName(poke.id);
-  poke.rarity={n:"DEUS",mult:15,color:"#fff"};
+  poke.rarity={n:"DEUS",mult:2.15,color:"#fff"};
   recalcPoke(poke); autoSave(); renderTeam(); openPokeDetail(idx,isBox);
 }
 
@@ -100,7 +100,7 @@ window.confirmMegaChoice = function(idx,isBox,choiceIdx,cost){
   let choice = window.MEGA_XY[poke.id][choiceIdx];
   poke.isMega=true; poke.megaForm = choice.id;
   poke.name = (poke.shiny?'Shiny Mega ':'Mega ') + getPokeName(poke.id) + (choice.letter?' '+choice.letter:'');
-  poke.rarity={n:"DEUS",mult:15,color:"#fff"};
+  poke.rarity={n:"DEUS",mult:2.15,color:"#fff"};
   if(window.imgCache){
     Object.keys(window.imgCache).forEach(k=>{ if(k.includes(getShowdownName(poke.id)) || k.includes('charizard') || k.includes('mewtwo')) delete window.imgCache[k]; });
   }

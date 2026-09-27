@@ -32,7 +32,7 @@ function psyBattleRenderSide(side,now){
   if(el.src!==BLANK)el.src=BLANK;el.style.backgroundImage=`url("${sheets[form]}")`;el.style.backgroundRepeat='no-repeat';el.style.backgroundSize=`${512*scale}px ${768*scale}px`;el.style.backgroundPosition=`${ox}px ${oy}px`;
 }
 function psyBattleTick(){const active=(typeof inBattle!=='undefined'&&inBattle)||(W.inBattle===true);if(!active)return;const now=performance.now();psyBattleRenderSide('player',now);psyBattleRenderSide('enemy',now)}
-setInterval(psyBattleTick,80);
+setInterval(()=>{if(W.PSY_RUNTIME_MODE?.isExclusive?.())return;psyBattleTick()},80);
 const oldStart=W.startBattle;W.startBattle=function(){const r=oldStart?.apply(this,arguments);setTimeout(()=>psyBattleTick(),30);setTimeout(()=>psyBattleTick(),170);return r};try{startBattle=W.startBattle}catch(e){}
 const oldAttack=W.attackAnimation||((typeof attackAnimation!=='undefined')?attackAnimation:null);W.attackAnimation=function(who){if(who==='player'&&psyBattleForm(W.P?.team?.[0]))psyBattleSetState('player','attack',410);else if(who==='enemy'&&psyBattleForm(psyBattlePoke('enemy')))psyBattleSetState('enemy','attack',410);return oldAttack?.apply(this,arguments)};try{attackAnimation=W.attackAnimation}catch(e){}
 const oldPlayerBlink=W.setPlayerBlink||((typeof setPlayerBlink!=='undefined')?setPlayerBlink:null);W.setPlayerBlink=function(){if(psyBattleForm(W.P?.team?.[0])){const el=psyBattleImg('player');if(el)el.classList.remove('poke-blink');try{isPlayerBlinking=false;playerBlinkTimer=0}catch(e){}psyBattleSetState('player','hurt',440);return}return oldPlayerBlink?.apply(this,arguments)};try{setPlayerBlink=W.setPlayerBlink}catch(e){}

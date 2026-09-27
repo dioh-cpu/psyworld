@@ -1,8 +1,8 @@
 /* PSYWORLD — viewport fitting and fullscreen controls. */
 :root{--psy-vw:100vw;--psy-vh:100dvh;--psy-safe-top:env(safe-area-inset-top,0px);--psy-safe-right:env(safe-area-inset-right,0px);--psy-safe-bottom:env(safe-area-inset-bottom,0px);--psy-safe-left:env(safe-area-inset-left,0px)}
 html,body{width:100%;min-width:0;min-height:100%;overscroll-behavior:none}
-#psy-fullscreen-btn{position:fixed;top:max(118px,calc(var(--psy-safe-top) + 118px));left:max(14px,var(--psy-safe-left));right:auto;z-index:10003000;display:flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;padding:0;border:2px solid #67e8f9;border-radius:10px;background:linear-gradient(145deg,#0e7490,#164e63);color:#ecfeff;font-size:17px;font-weight:1000;line-height:1;box-shadow:0 5px 15px #000a,0 0 14px #22d3ee44;cursor:pointer}
-#psy-fullscreen-btn:hover{filter:brightness(1.15)}#psy-fullscreen-btn:active{transform:scale(.95)}#psy-fullscreen-btn[data-fallback="1"]{border-color:#facc15;color:#fef3c7}
+#psy-fullscreen-btn{position:fixed;top:auto;bottom:max(12px,calc(var(--psy-safe-bottom) + 12px));left:50%;right:auto;transform:translateX(-50%);z-index:10003000;display:flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;padding:0;border:2px solid #67e8f9;border-radius:10px;background:linear-gradient(145deg,#0e7490,#164e63);color:#ecfeff;font-size:17px;font-weight:1000;line-height:1;box-shadow:0 5px 15px #000a,0 0 14px #22d3ee44;cursor:pointer}
+#psy-fullscreen-btn:hover{filter:brightness(1.15)}#psy-fullscreen-btn:active{transform:translateX(-50%) scale(.95)}#psy-fullscreen-btn[data-fallback="1"]{border-color:#facc15;color:#fef3c7}
 html.psy-fullscreen-fallback,html.psy-fullscreen-fallback body{width:100%;height:100%;overflow:hidden}
 html.psy-fullscreen-fallback #game-wrap{position:fixed!important;inset:0!important;width:100%!important;height:100%!important}
 #game-wrap{width:var(--psy-vw)!important;height:var(--psy-vh)!important;max-width:100%!important;max-height:100%!important}
@@ -23,7 +23,7 @@ html.psy-fullscreen-fallback #game-wrap{position:fixed!important;inset:0!importa
 #menu{padding-top:max(12px,calc(var(--psy-safe-top) + 8px))!important;padding-bottom:max(12px,calc(var(--psy-safe-bottom) + 8px))!important}
 #screen-shop,#screen-hunts,#screen-team,#screen-bag,#screen-pokedex,#screen-gyms,#screen-dungeon,#screen-card-mode,#screen-egg-center,#screen-achievements,#screen-psy-tutorial{padding:var(--psy-safe-top) var(--psy-safe-right) var(--psy-safe-bottom) var(--psy-safe-left)!important}
 @media (max-width:760px){
-  #psy-fullscreen-btn{top:max(106px,calc(var(--psy-safe-top) + 106px));left:max(8px,var(--psy-safe-left));right:auto;width:30px;height:30px;min-width:30px;border-radius:8px;font-size:15px}
+  #psy-fullscreen-btn{top:auto;bottom:max(9px,calc(var(--psy-safe-bottom) + 9px));left:50%;right:auto;width:30px;height:30px;min-width:30px;border-radius:8px;font-size:15px}
   #battle-screen .battle-hud{width:min(96vw,calc(100dvh * 1.28))!important;height:min(92dvh,calc(96vw * .78))!important}
   #battle-player,#battle-enemy{top:14%!important;max-width:35%!important}
   #battle-player{left:3%!important}#battle-enemy{right:3%!important}
@@ -49,4 +49,4 @@ html.psy-fullscreen-fallback #game-wrap{position:fixed!important;inset:0!importa
   #battle-controls>div:last-child button{min-height:28px!important;font-size:8px!important;padding:4px 3px!important}
   #hud-player{transform:scale(.68)!important}
 }
-@media (display-mode:fullscreen){#psy-fullscreen-btn{left:max(10px,var(--psy-safe-left))!important;right:auto!important}#game-wrap{width:100vw!important;height:100dvh!important}}
+@media (display-mode:fullscreen){#psy-fullscreen-btn{left:50%!important;right:auto!important;bottom:max(9px,var(--psy-safe-bottom))!important}#game-wrap{width:100vw!important;height:100dvh!important}}

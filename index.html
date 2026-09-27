@@ -12,6 +12,7 @@
 <!-- PSYWORLD corrigido: sprites Mega X/Y + shiny + player GIF animado + sprite helpers unificados -->
 <link rel="stylesheet" href="css/game.css?build=COMBATE_STATUS_V11">
 <link rel="stylesheet" href="css/psy-responsive.css?build=RESPONSIVE_V2">
+<link rel="stylesheet" href="css/psy-assistant.css?build=PSY_V2">
 
 <script src="core/prelude.js?build=SURVIVOR_WOBBUFFET_METER_PERF_V16"></script>
 <script src="core/survivor-resume-guard-v9.js?build=COMBATE_STATUS_V10"></script>
@@ -20,7 +21,7 @@
 
 
 
-<meta name="psyworld-build" content="modular-items-pxg-v1">
+<meta name="psyworld-build" content="PSYWORLD_V186_IDLE_SOCIAL_20260927">
 <meta name="theme-color" content="#050814">
 
 <style id="PSYWORLD_ANDROID_SAFE_AREA">
@@ -248,7 +249,8 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 <div id="world-btn-float" style="position:absolute; top:170px; right:10px; z-index:20; display:flex; flex-direction:column; gap:6px;">
 <button id="btn-city-content-toggle" onclick="toggleCityGameContent()" style="background:linear-gradient(90deg,#111827,#334155); color:#fff; border:3px solid #67e8f9; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px; box-shadow:0 0 12px #22d3ee66;">📦 CONTEÚDO DO JOGO ▼</button>
 <div id="city-game-content-buttons" style="display:flex; flex-direction:column; gap:6px;">
-<button onclick="enterWorldMode()" style="background:linear-gradient(#00d084,#00a060); color:#000; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🌍 WORLD</button>
+<button id="btn-idle-realistic-float" onclick="window.openIdleRealisticV2 ? window.openIdleRealisticV2() : window.psyInstallMode?.('idleworld',()=>window.openIdleRealisticV2?.())" style="background:linear-gradient(135deg,#14532d,#0f766e);color:#fff;border:3px solid #a7f3d0;padding:10px 16px;border-radius:12px;font-weight:900;font-size:12px;box-shadow:0 0 14px #10b98155;">🌿 PSY IDLE <small style="display:block;font-size:8px;color:#d1fae5">HUNTS POR ESPÉCIE</small></button>
+
 <button id="btn-bag-float" onclick="openBag()" style="background:linear-gradient(#d59a35,#8a5a12); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🎒 BOLSA</button>
 <button id="btn-team-float" onclick="openTeam()" style="background:linear-gradient(#3b82f6,#1d4ed8); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">👥 TIME / BOX</button>
 <button id="btn-card-float" onclick="openCardMode()" style="background:linear-gradient(#7c3aed,#db2777); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🃏 CARDS</button>
@@ -267,12 +269,10 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 
 <div id="notif" style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.88); border:1px solid #ffd700; color:#ffd700; padding:8px 22px; border-radius:20px; font-size:13px; display:none; z-index:9999; pointer-events:none; white-space:nowrap;"></div>
 
-<script src="core/items.js?build=ITEMS_REVIVE_V22_20260902"></script>
+<script src="core/items.js?build=PSYWORLD_V186_IDLE_SOCIAL_20260927"></script>
 
-<script src="core/legacy-runtime.js?build=CAPTURE_ELEMENTAL_V22_20260902"></script>
-<script src="core/battle-status-v10.js?build=CAPTURE_ELEMENTAL_V22_20260902"></script>
-
-
+<script src="core/legacy-runtime.js?build=PSYWORLD_V186_IDLE_SOCIAL_20260927"></script>
+<script src="core/battle-status-v10.js?build=PSYWORLD_V186_IDLE_SOCIAL_20260927"></script>
 
 
 
@@ -282,12 +282,14 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 
 
 
-<script src="core/performance.js?build=COMBATE_STATUS_V10"></script>
+
+
+<script src="core/performance.js?build=PSYWORLD_PC_V70_RUNTIME_PERF_20260906"></script>
 
 
 
 
-<script src="core/module-loader.js?build=PSYWORLD_SURVIVOR_CORRECOES_INTEGRIDADE_V18_20260902"></script>
+<script src="core/module-loader.js?build=PSYWORLD_V186_IDLE_SOCIAL_20260927"></script>
 
 
 
@@ -296,9 +298,12 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 
 <script src="core/city-content.js?build=COMBATE_STATUS_V10"></script>
 <script src="core/npc-voice.js?build=NPC_VOICE_V1"></script>
-<script src="core/global-hub-v1.js?build=GLOBAL_HUB_WORLD_PACKS_V22_20260902"></script>
-<script src="core/shared-mode-drops-v1.js?build=SHARED_MODE_DROPS_V11_WORLD_PACKS"></script>
+<script src="core/global-hub-v1.js?build=PSYWORLD_V186_IDLE_SOCIAL_20260927"></script>
+<script src="core/shared-mode-drops-v1.js?build=PSYWORLD_V186_IDLE_SOCIAL_20260927"></script>
+<script src="core/one-agent.js?build=ONE_V3"></script>
+<script src="core/psy-assistant.js?build=PSY_TEAM_V3"></script>
 <script src="core/psy-responsive.js?build=RESPONSIVE_V2"></script>
+<script src="modes/psywiki-v1.js?build=PSYWORLD_WIKI_POKEMON_LEVELS_V171_20260926"></script>
 
 </body>
 </html>
