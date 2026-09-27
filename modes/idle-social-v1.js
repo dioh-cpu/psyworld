@@ -110,20 +110,24 @@
             channelSub=null;activeChannel=null;try{c.removeChannel(channel)}catch(_){}
             if(realtimeRetryTimer)clearTimeout(realtimeRetryTimer);
             realtimeRetryTimer=setTimeout(()=>{realtimeRetryTimer=0;if(activeView==='chat'&&activeTab===slug)connectRealtime(slug).catch(e=>setStatus('Offline • '+e.message,false))},delay);
-          }else if(status==='SUBSCRIBED'){realtimeRetries=0;setStatus('Online • ao vivo',true)}
+          }else if(status==='SUBSCRIBED'){realtimeRetries=0;setStatus('Online • ao vivo',true);loadOnlineMessages(slug,true).then(()=>{if(activeView==='chat'&&activeTab===slug)renderMessages()}).catch(e=>console.warn('[Psy Idle chat history]',e))}
         });
     })();
     realtimeConnectSlug=slug;realtimeConnectPromise=run;
     try{await run}finally{if(realtimeConnectPromise===run){realtimeConnectPromise=null;realtimeConnectSlug=''}}
   }
-  function cacheOnlineMessage(row){const p=readPrefs(),key='psyIdleChat:'+row.channel,cache=parse(localStorage.getItem(key),[]);if(!cache.some(m=>m.id===row.id)){cache.push(row);while(cache.length>80)cache.shift();try{localStorage.setItem(key,JSON.stringify(cache))}catch(_){}}}
-  async function loadOnlineMessages(slug){
-    if(historyCache.has(slug))return historyCache.get(slug);
+  function cacheOnlineMessage(row){const key='psyIdleChat:'+row.channel,cache=parse(localStorage.getItem(key),[]);if(!cache.some(m=>m.id===row.id)){cache.push(row);while(cache.length>80)cache.shift();try{localStorage.setItem(key,JSON.stringify(cache))}catch(_){}}historyCache.set(row.channel,cache)}
+  async function loadOnlineMessages(slug,force=false){
+    if(!force&&historyCache.has(slug))return historyCache.get(slug);
     if(historyRequests.has(slug))return historyRequests.get(slug);
     const request=(async()=>{
       const c=await getClient();const {data,error}=await c.from('psy_idle_chat_messages').select('id,channel,username,body,created_at').eq('channel',slug).order('created_at',{ascending:true}).limit(60);
       if(error)throw error;
-      const rows=data||[];try{localStorage.setItem('psyIdleChat:'+slug,JSON.stringify(rows))}catch(_){}
+      const cached=parse(localStorage.getItem('psyIdleChat:'+slug),[]),byId=new Map();
+      for(const row of cached)if(row?.id)byId.set(row.id,row);
+      for(const row of data||[])if(row?.id)byId.set(row.id,row);
+      const rows=Array.from(byId.values()).sort((a,b)=>(Date.parse(a.created_at||'')||0)-(Date.parse(b.created_at||'')||0)).slice(-60);
+      try{localStorage.setItem('psyIdleChat:'+slug,JSON.stringify(rows))}catch(_){}
       historyCache.set(slug,rows);return rows;
     })();
     historyRequests.set(slug,request);
