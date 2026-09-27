@@ -19,7 +19,8 @@
   const parse=(s,f)=>{try{return s?JSON.parse(s):f}catch(_){return f}};
   const readSession=()=>parse(localStorage.getItem(SESSION_KEY),null);
   const readPrefs=()=>parse(localStorage.getItem(CONFIG_KEY),{});
-  let supa=null,clientPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0;
+  let supa=null,clientPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0,realtimeRetryTimer=0,realtimeRetries=0,realtimeStatus='CLOSED',realtimeConnectPromise=null,realtimeConnectSlug='';
+  const historyCache=new Map(),historyRequests=new Map();
   const localLogs=()=>parse(localStorage.getItem(LOG_KEY),{});
   function saveLogs(x){try{localStorage.setItem(LOG_KEY,JSON.stringify(x))}catch(_){}}
   function logFor(channel){const a=localLogs();return Array.isArray(a[channel])?a[channel]:[]}
@@ -37,7 +38,7 @@
       if(!url||!key)throw new Error('configuração online indisponível');
       const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.0?bundle');
       supa=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
-      supa.auth.onAuthStateChange((event,session)=>{try{if(session)persistSession(session);else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
+      supa.auth.onAuthStateChange((event,session)=>{try{if(session){persistSession(session);if(session.access_token)Promise.resolve(supa.realtime.setAuth(session.access_token)).catch(()=>{})}else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
       const session=readSession();
       if(session?.access_token){
         const r=await supa.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token||''});
@@ -82,23 +83,51 @@
       persistSession(data.session);clearOAuthCallback();if(area)area.hidden=true;render();
     }catch(e){clearOAuthCallback();if(status)status.textContent='Falha ao entrar com GitHub: '+String(e.message||'tente novamente')}
   }
-  function stopChannel(){if(channelSub&&supa){try{supa.removeChannel(channelSub)}catch(_){}}channelSub=null;activeChannel=null}
+  function stopChannel(){
+    if(realtimeRetryTimer){clearTimeout(realtimeRetryTimer);realtimeRetryTimer=0}
+    if(activeChannel)historyCache.delete(activeChannel);
+    if(channelSub&&supa){try{supa.removeChannel(channelSub)}catch(_){}}
+    channelSub=null;activeChannel=null;realtimeStatus='CLOSED';realtimeRetries=0;
+  }
   async function connectRealtime(slug){
-    const c=await getClient();const liveResult=await c.auth.getSession();if(liveResult.error)throw liveResult.error;const session=liveResult.data?.session;
-    if(!session?.access_token)throw new Error('entre na sua conta online');
-    await c.realtime.setAuth(session.access_token);
-    if(activeChannel===slug&&channelSub)return;
-    stopChannel();activeChannel=slug;
-    channelSub=c.channel(`psyworld-idle-chat:${slug}`,{config:{private:true}})
-      .on('broadcast',{event:'INSERT'},msg=>{const payload=msg?.payload||msg||{};const row=payload.new||payload.record||msg?.new||msg?.record||payload;if(row?.id&&row.channel===slug){cacheOnlineMessage(row);if(activeView==='chat'&&activeTab===slug)renderMessages()}})
-      .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){setStatus('Reconectando…',false)}else if(status==='SUBSCRIBED'){setStatus('Online • ao vivo',true)}});
+    if(activeChannel===slug&&channelSub&&['joining','SUBSCRIBED'].includes(realtimeStatus))return;
+    if(realtimeRetryTimer)return;
+    if(realtimeConnectPromise){if(realtimeConnectSlug===slug)return realtimeConnectPromise;try{await realtimeConnectPromise}catch(_){}if(activeChannel===slug&&channelSub)return}
+    const run=(async()=>{
+      const c=await getClient();const liveResult=await c.auth.getSession();if(liveResult.error)throw liveResult.error;const session=liveResult.data?.session;
+      if(!session?.access_token)throw new Error('entre na sua conta online');
+      await c.realtime.setAuth(session.access_token);
+      stopChannel();activeChannel=slug;realtimeStatus='joining';
+      const channel=c.channel(`psyworld-idle-chat:${slug}`,{config:{private:true}});
+      channelSub=channel;
+      channel.on('broadcast',{event:'INSERT'},msg=>{const payload=msg?.payload||msg||{};const row=payload.new||payload.record||msg?.new||msg?.record||payload;if(row?.id&&row.channel===slug){cacheOnlineMessage(row);if(activeView==='chat'&&activeTab===slug)renderMessages()}})
+        .subscribe(status=>{
+          if(channelSub!==channel)return;
+          realtimeStatus=status;
+          if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+            setStatus('Reconectando…',false);historyCache.delete(slug);
+            const delay=Math.min(30000,1000*Math.pow(2,realtimeRetries++));
+            channelSub=null;activeChannel=null;try{c.removeChannel(channel)}catch(_){}
+            if(realtimeRetryTimer)clearTimeout(realtimeRetryTimer);
+            realtimeRetryTimer=setTimeout(()=>{realtimeRetryTimer=0;if(activeView==='chat'&&activeTab===slug)connectRealtime(slug).catch(e=>setStatus('Offline • '+e.message,false))},delay);
+          }else if(status==='SUBSCRIBED'){realtimeRetries=0;setStatus('Online • ao vivo',true)}
+        });
+    })();
+    realtimeConnectSlug=slug;realtimeConnectPromise=run;
+    try{await run}finally{if(realtimeConnectPromise===run){realtimeConnectPromise=null;realtimeConnectSlug=''}}
   }
   function cacheOnlineMessage(row){const p=readPrefs(),key='psyIdleChat:'+row.channel,cache=parse(localStorage.getItem(key),[]);if(!cache.some(m=>m.id===row.id)){cache.push(row);while(cache.length>80)cache.shift();try{localStorage.setItem(key,JSON.stringify(cache))}catch(_){}}}
   async function loadOnlineMessages(slug){
-    const c=await getClient();const {data,error}=await c.from('psy_idle_chat_messages').select('id,channel,username,body,created_at').eq('channel',slug).order('created_at',{ascending:true}).limit(60);
-    if(error)throw error;
-    const p=readPrefs();try{localStorage.setItem('psyIdleChat:'+slug,JSON.stringify(data||[]))}catch(_){}
-    return data||[];
+    if(historyCache.has(slug))return historyCache.get(slug);
+    if(historyRequests.has(slug))return historyRequests.get(slug);
+    const request=(async()=>{
+      const c=await getClient();const {data,error}=await c.from('psy_idle_chat_messages').select('id,channel,username,body,created_at').eq('channel',slug).order('created_at',{ascending:true}).limit(60);
+      if(error)throw error;
+      const rows=data||[];try{localStorage.setItem('psyIdleChat:'+slug,JSON.stringify(rows))}catch(_){}
+      historyCache.set(slug,rows);return rows;
+    })();
+    historyRequests.set(slug,request);
+    try{return await request}finally{if(historyRequests.get(slug)===request)historyRequests.delete(slug)}
   }
   async function sendOnlineMessage(slug,body){
     const c=await getClient();const {data,error}=await c.rpc('psy_idle_send_chat',{p_channel:slug,p_body:body});
@@ -166,7 +195,7 @@
     const cfg=CHANNELS.find(x=>x.id===activeTab);
     const compose=root.querySelector('[data-social-compose]');if(compose)compose.hidden=!cfg?.online||!signedIn();
     if(!signedIn())setStatus('Conta desconectada',false);
-    else if(cfg?.online){setStatus('Conectando…',false);loadOnlineMessages(activeTab).then(()=>{if(activeTab===cfg.id){renderMessages();connectRealtime(cfg.id).catch(e=>setStatus('Offline • '+e.message,false))}}).catch(e=>setStatus('Offline • '+e.message,false))}
+    else if(cfg?.online){setStatus(realtimeRetryTimer?'Reconectando…':activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'?'Online • ao vivo':'Conectando…',!!(activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'));loadOnlineMessages(activeTab).then(()=>{if(activeTab===cfg.id){renderMessages();connectRealtime(cfg.id).catch(e=>setStatus('Offline • '+e.message,false))}}).catch(e=>setStatus('Offline • '+e.message,false))}
     else setStatus('Registros deste aparelho',false);
   }
   function mount(s){
