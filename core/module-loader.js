@@ -6,8 +6,8 @@
 'use strict';
 const W=window,D=document;
   // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
-  const PHYSICAL_BUILD='PSYWORLD_V186_GITHUB_AUTH_20260927';
-function versionedSrc(src){const sep=String(src).includes('?')?'&':'?';return String(src)+sep+'build='+encodeURIComponent(PHYSICAL_BUILD)}
+  const PHYSICAL_BUILD='PSYWORLD_V186_ONLINE_REALTIME_20260927';
+function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',build=raw.includes('modes/idle-social-v1.js')?'PSYWORLD_IDLE_SOCIAL_REALTIME_20260927_A':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
   idleworld:{icon:'🌿',name:'PSY IDLE',desc:'Hunts individuais em mapa top-down, colisão em grade, IA e sistemas de progressão próprios.',entry:['openIdleRealisticV2']},
@@ -236,7 +236,7 @@ const mo=new MutationObserver(()=>{addMenuButton();decorateButtons()});mo.observ
 // GitHub V62 sync: conta online/cloud save é um módulo leve e global, carregado junto ao bootstrap.
 try{
   const cs=D.createElement('script');
-  cs.src='core/cloud-save-v23.js?build=CLOUD_SAVE_V24_GITHUB_AUTH_20260927';
+  cs.src='core/cloud-save-v23.js?build=CLOUD_SAVE_V23_20260927_A';
   cs.async=false;
   D.head.appendChild(cs);
 }catch(e){console.warn('cloud save loader',e)}
