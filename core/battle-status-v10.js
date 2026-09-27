@@ -207,13 +207,13 @@
     if(!battleData||battleData.state!=='active')return;
     battleData.state='won';
     const w=battleData.wild,lvl=Number(w.level||5),wildType=w.type||'Normal';
-    const xp=Math.floor((lvl*85+150)*(1+Number(getTotalBuff?.('xp')||0)/100));
+    const xp=W.psyBattleXpReward(lvl);
     const gold=Math.floor((lvl*18+80)*(1+Number(getTotalBuff?.('gold')||0)/100));
     P.team[0].exp=(P.team[0].exp||0)+xp;P.gold=(P.gold||0)+gold;
     /* The active Pokémon keeps its normal XP. A Psyduck owned in the box also
        receives this same global XP channel, so it progresses outside Survivor. */
     try{W.psyAwardGlobalPsyduckXp?.(xp,'battle')}catch(e){console.warn('[PSYWORLD] global Psyduck XP',e)}
-    try{gainTrainerXp(Math.floor(xp*.1))}catch(e){}
+    try{gainTrainerXp(W.psyBattleTrainerXpReward(lvl))}catch(e){}
     try{tryDropStone(wildType,lvl)}catch(e){}
     setLog(`🎉 Derrotou Lv.${lvl} ${w.name}! +${xp} EXP +${gold}G${extraText?' '+extraText:''}`);
     try{checkLevelUp();updateHUD()}catch(e){}
