@@ -16,7 +16,7 @@ export default function handler(req,res){
     supabaseUrl:url,
     supabaseAnonKey:anonKey,
     cloudSave:true,
-    marketEnabled:false,
+    marketEnabled:true,
     version:'V23'
   });
 }
