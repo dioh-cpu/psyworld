@@ -2,6 +2,7 @@
 'use strict';
 const SESSION_KEY='psyworld_online_session_v23';
 const SYNC_KEY='psyworld_cloud_sync_v23';
+const CHARACTER_KEY='psyworld_active_character_v38';
 const LOCAL_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
 const PROD_ORIGIN='https://psyworld-murex.vercel.app';
 const FAST_POS_KEY='psyworld_fast_encounter_pos_v24';
@@ -13,9 +14,16 @@ function validSave(x){const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p
 function bestLocal(){return LOCAL_KEYS.map(k=>parse(localStorage.getItem(k))).filter(validSave).sort((a,b)=>Number(b.savedAt||0)-Number(a.savedAt||0))[0]||null}
 function localStamp(x){return Number(x?.savedAt||0)}
 function cloudStamp(g){return Math.max(Date.parse(g?.client_updated_at||'')||0,Date.parse(g?.updated_at||'')||0,Number(g?.save?.savedAt||0))}
-function userKey(){return String(session?.user?.id||session?.user?.email||session?.email||'')}
+function tokenUserKey(token=session?.access_token){try{const part=String(token||'').split('.')[1];if(!part)return'';const b=part.replace(/-/g,'+').replace(/_/g,'/');return String(JSON.parse(atob(b.padEnd(Math.ceil(b.length/4)*4,'='))).sub||'')}catch(_){return''}}
+function userKey(){return String(session?.user?.id||session?.user?.email||session?.email||tokenUserKey()||'')}
 function readSync(){return parse(localStorage.getItem(SYNC_KEY))||{}}
 function writeSync(patch){try{const old=readSync();localStorage.setItem(SYNC_KEY,JSON.stringify({...old,...patch,userKey:userKey()}))}catch(_){}}
+function hydrateServerIdentity(state){
+  if(state?.user?.id&&session?.access_token)saveSession({...session,user:state.user});
+  const owner=String(state?.user?.id||''),meta=readSync(),nickname=String(meta.characterNickname||''),selected=String(localStorage.getItem(CHARACTER_KEY)||'');
+  const verified=Array.isArray(state?.characters)&&state.characters.some(c=>String(c.nickname||'').toLowerCase()===nickname.toLowerCase());
+  if(owner&&meta.resolved&&!meta.userKey&&nickname&&selected===nickname&&verified)writeSync({userKey:owner});
+}
 function saveSession(s){session=s||null;try{session?localStorage.setItem(SESSION_KEY,JSON.stringify(session)):localStorage.removeItem(SESSION_KEY)}catch(_){}}
 function readSession(){session=parse(localStorage.getItem(SESSION_KEY));return session}
 function authHeaders(){return session?.access_token?{Authorization:'Bearer '+session.access_token}:{} }
@@ -58,7 +66,7 @@ async function githubLogin(){
 }
 function acceptAuth(d){saveSession({...d,user:d.user||session?.user,expires_at:Date.now()+Number(d.expires_in||3600)*1000});renderStatus()}
 function friendly(s){return ({online_not_configured:'Servidor online ainda não configurado na Vercel.',invalid_credentials:'E-mail ou senha inválidos.',item_not_buyable:'Item indisponível na Poké Shop online.',insufficient_balance:'Gold insuficiente no servidor.',insufficient_item:'Itens insuficientes no servidor.'}[s]||String(s).replaceAll('_',' '))}
-async function afterAuth(){try{const state=await api('/api/player');await resolveConflict(state.game_state);renderStatus()}catch(e){toast('❌ Cloud save: '+friendly(e.message),5000)}}
+async function afterAuth(){try{const state=await api('/api/player');hydrateServerIdentity(state);await resolveConflict(state.game_state);renderStatus()}catch(e){toast('❌ Cloud save: '+friendly(e.message),5000)}}
 async function resolveConflict(game){
   const local=bestLocal(),cloud=game?.save&&validSave(game.save)?game.save:null;
   if(local&&cloud){
@@ -188,7 +196,7 @@ function styleMenu(){
   cloud.style.display=session?.access_token?'grid':'none';
 }
 function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem();installEconomyHooks()}
-async function bootstrap(){captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');await resolveConflict(state.game_state)}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();setInterval(()=>{patchSave();installGlobalUI();if(syncEnabled&&session?.access_token){const s=bestLocal(),meta=readSync();if(s&&localStamp(s)>Number(meta?.saveStamp||0)+1500)queueSync()}},4000)}
+async function bootstrap(){captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');hydrateServerIdentity(state);await resolveConflict(state.game_state)}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();setInterval(()=>{patchSave();installGlobalUI();if(syncEnabled&&session?.access_token){const s=bestLocal(),meta=readSync();if(s&&localStamp(s)>Number(meta?.saveStamp||0)+1500)queueSync()}},4000)}
 W.psyCloudV23={login,signup,loginWithGithub:githubLogin,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;renderStatus();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:async()=>upload(bestLocal(),true,true),loadNow,economy};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});
 })(window,document);
