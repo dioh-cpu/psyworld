@@ -269,6 +269,7 @@ function drawPeers(options){
   }
 }
 W.PSYWorldMultiplayerV1={drawPeers:drawPeers};
+console.log('[PSYWORLD] World multiplayer client ready');
 setInterval(scheduleReconcile,500);
 W.addEventListener('pagehide',()=>{if(room&&session?.access_token)api('leave',{room_id:room.room_id},session,true).catch(()=>{})});
 })(window,document);
