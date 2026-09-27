@@ -102,6 +102,10 @@ async function applyCloud(save,game,automatic=false){
     const cs=cloudStamp(game)||Date.now();
     writeSync({resolved:true,saveStamp:localStamp(save),cloudStamp:cs,lastDownloadAt:Date.now()});
     if(!automatic)toast('☁ Save da nuvem restaurado. Recarregando...',2800);
+    // The game's beforeunload handler autosaves in-memory state; suppress it for this reload.
+    const suppressAutosave=()=>{};
+    try{W.autoSave=suppressAutosave}catch(_){}
+    try{autoSave=suppressAutosave}catch(_){}
     location.reload();
   }catch(e){toast('❌ Não foi possível restaurar o save da nuvem.');}
 }
