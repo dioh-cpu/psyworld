@@ -44,6 +44,11 @@ async function getToken(){
 }
 async function requestUrl(url,opt={},authToken){
   const t=authToken||await getToken(),options={...opt};
+  const authority=W.psyOnlineAuthorityV26;
+  if(authority?.online?.()&&typeof authority.bootstrap==='function'){
+    const ready=await authority.bootstrap();
+    if(ready===false)throw new Error('Ative o Cloud Save e sincronize seu save antes de negociar.');
+  }
   options.headers={...(options.headers||{}),Authorization:'Bearer '+t,'Content-Type':'application/json'};
   const response=await fetch(url,options),data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||data.message||('HTTP '+response.status));
@@ -176,6 +181,7 @@ W.psyMarketListPoke=async function(){
   try{
     const t=await getToken(),state=await requestUrl('/api/online-state',{cache:'no-store'},t);
     if(!state?.player)throw new Error('Ative o Cloud Save e sincronize antes de negociar.');
+    stateCache=state;
     const pokemon_uid=await serverPokemonUid(mon,t);
     const result=await marketRequest('/list',{method:'POST',body:JSON.stringify({kind:'pokemon',pokemon_uid,currency,price})},t);
     W.P.box.splice(index,1);await refreshState(t).catch(()=>{});
