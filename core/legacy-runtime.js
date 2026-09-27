@@ -2540,6 +2540,17 @@ function psyTrainerXpNeed(level){
   return Math.floor(400 + 180*level + 8*level*level);
 }
 window.psyTrainerXpNeed=psyTrainerXpNeed;
+/* Equal-level wins give about 4% of the bar; enemy level and XP buffs help without a multi-level jump. */
+function psyBattleXpReward(enemyLevel,speciesBonus=0){
+  const poke=P?.team?.[0],ownLevel=Math.max(1,Number(poke?.level||1)),nextXp=Math.max(100,Number(poke?.maxExp||100)),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),species=Math.max(0,Number(speciesBonus)||0),rate=Math.min(.12,.04*relative*(1+xpBuff/100)*(1+species/100));
+  return Math.max(1,Math.floor(nextXp*rate));
+}
+window.psyBattleXpReward=psyBattleXpReward;
+function psyBattleTrainerXpReward(enemyLevel){
+  const ownLevel=Math.max(1,Number(P?.team?.[0]?.level||1)),trainerLevel=Math.max(1,Number(P?.trainerLevel||1)),required=psyTrainerXpNeed(trainerLevel),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),rate=Math.min(.06,.015*relative*(1+xpBuff/100));
+  return Math.max(1,Math.floor(required*rate));
+}
+window.psyBattleTrainerXpReward=psyBattleTrainerXpReward;
 function ensureTrainerData(){
   if(!P.trainerBuffs) P.trainerBuffs = {cap:0,gold:0,xp:0,dmg:0,hp:0,crit:0,drop:0,shiny:0};
   if(typeof P.trainerLevel === 'undefined'){ P.trainerLevel=1; P.trainerExp=0; P.trainerMaxExp=psyTrainerXpNeed(1); P.trainerPoints=0; }
@@ -2583,10 +2594,10 @@ window.psyAwardWildLikeVictory=function(enemy,source='idle'){
   if(!enemy||!P?.team?.[0])return null;
   const idleSource=source==='idle';
   const lvl=Math.max(1,Number(enemy.level||enemy.lvl||1));
-  const finalXp=Math.floor((lvl*85+150)*(1+getTotalBuff('xp')/100)*(1+Math.max(0,Number(enemy.idleXpBonus||0))/100));
+  const finalXp=psyBattleXpReward(lvl,Number(enemy.idleXpBonus||0));
   const finalGold=Math.floor((lvl*2+8)*Math.min(2,1+getTotalBuff('gold')/100)*(idleSource?.15:1));
   P.team[0].exp=(P.team[0].exp||0)+finalXp;if(idleSource)window.psyModeAddGold?.('idle',finalGold);else P.gold=(P.gold||0)+finalGold;psyAwardGlobalPsyduckXp(finalXp,source);
-  gainTrainerXp(Math.floor(finalXp*.1),idleSource,idleSource);
+  gainTrainerXp(psyBattleTrainerXpReward(lvl),idleSource,idleSource);
   const got=[];
   try{const common=window.psySharedCombatDrop?.(enemy,source==='idle'?'idle':source)||[];if(Array.isArray(common))got.push(...common)}catch(e){console.warn('[WORLD IDLE] shared drops',e)}
   try{if(!idleSource&&Math.random()<.5&&tryDropStone(enemy.type||TYPE_BY_ID_ALL?.[enemy.id]||'Normal',lvl))got.push(getStoneForType(enemy.type||TYPE_BY_ID_ALL?.[enemy.id]||'Normal'))}catch(e){}
@@ -3269,7 +3280,7 @@ function handleWorldKill(t){
   let goldMult=0.5*(1+getTotalBuff('gold')/100);
   let xpMult=0.5*(1+getTotalBuff('xp')/100);
   let finalGold=Math.floor(baseGold*goldMult);
-  let finalXp=Math.floor(baseXp*xpMult);
+  let finalXp=psyBattleXpReward(t.lvl);
   P.gold+=finalGold;
   if(P.team[0]){
     P.team[0].exp=(P.team[0].exp||0)+finalXp;
@@ -3279,7 +3290,7 @@ function handleWorldKill(t){
     }
   }
   psyAwardGlobalPsyduckXp(finalXp,'world');
-  gainTrainerXp(Math.floor(finalXp*0.1));
+  gainTrainerXp(psyBattleTrainerXpReward(t.lvl));
   tryDropStone(TYPE_BY_ID_ALL[t.id]||"Normal", t.lvl);
   let baseCap=10, totalCap=getTotalBuff('cap');
   let finalChance=Math.min(0.5, baseCap+totalCap);
@@ -3333,11 +3344,11 @@ function handleWorldKill(t){
   let baseGold=Math.floor(t.lvl*12); // era 30, agora 12 = -60%
   let baseXp=Math.floor(t.lvl*10);
   let finalGold=Math.floor(baseGold*(1+getTotalBuff('gold')/100)*0.5);
-  let finalXp=Math.floor(baseXp*(1+getTotalBuff('xp')/100)*0.5);
+  let finalXp=psyBattleXpReward(t.lvl);
   P.gold+=finalGold;
   if(P.team[0]){ P.team[0].exp=(P.team[0].exp||0)+finalXp; while(P.team[0].exp>=P.team[0].maxExp){ P.team[0].exp-=P.team[0].maxExp; P.team[0].level++; P.team[0].maxExp=Math.floor(P.team[0].maxExp*1.3); P.team[0].baseMaxHp=calcBaseHpV14(P.team[0].level,P.team[0].rarity?.mult||1,P.team[0].shiny,false,P.team[0].id); recalcPoke(P.team[0]); } }
   psyAwardGlobalPsyduckXp(finalXp,'world');
-  gainTrainerXp(Math.floor(finalXp*0.1));
+  gainTrainerXp(psyBattleTrainerXpReward(lvl));
   tryDropStone(TYPE_BY_ID_ALL[t.id]||"Normal", t.lvl);
 
   let rarityFactor=1/Math.sqrt(t.rarity?.mult||1);
@@ -3441,7 +3452,7 @@ battleAction = function(action, moveData){
     if (battleData.wildHp <= 0) {
       battleData.state = 'won';
       let lvl = battleData.wild.level || 5;
-      let finalXp = Math.floor((lvl*85+150)*(1+getTotalBuff('xp')/100));
+      let finalXp = psyBattleXpReward(lvl);
       let finalGold = Math.floor((lvl*5+15)*Math.min(2,1+getTotalBuff('gold')/100));
       P.team[0].exp += finalXp; P.gold += finalGold;psyAwardGlobalPsyduckXp(finalXp,'battle');
       gainTrainerXp(Math.floor(finalXp*0.1));
