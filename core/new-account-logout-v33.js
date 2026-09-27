@@ -117,7 +117,7 @@ console.log('✅ PSYWORLD V33B ativo: novas contas sem Psyduck no time + LOG OUT
 /* V35 é carregada a partir da V33 para manter o prelude estável. */
 try{
   const s=D.createElement('script');
-  s.src='core/account-menu-v34.js?build=ACCOUNT_MENU_V35_20260903_A';
+  s.src='core/account-menu-v34.js?build=ACCOUNT_MENU_V38C_20260927';
   s.async=false;
   D.head.appendChild(s);
 }catch(e){console.warn('account menu v35 loader',e)}
