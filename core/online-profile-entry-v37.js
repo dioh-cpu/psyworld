@@ -9,18 +9,21 @@
 'use strict';
 if(W.__PSYWORLD_ONLINE_CHARACTERS_V38__)return;
 W.__PSYWORLD_ONLINE_CHARACTERS_V38__=true;
-const BUILD='ONLINE_CHARACTERS_V38B_20260904';
+const BUILD='ONLINE_CHARACTERS_V38C_20260927';
 const EXIT_KEY='psyworld_local_profile_signed_out_v36';
 const SESSION_KEY='psyworld_online_session_v23';
 const SYNC_KEY='psyworld_cloud_sync_v23';
 const STASH_KEY='psyworld_local_profile_stash_v38';
 const PENDING_KEY='psyworld_new_character_pending_v38';
 const SELECTED_KEY='psyworld_active_character_v38';
+let characterRequest=null,characterRequestOwner='',characterRetryOwner='',characterRetryAt=0;
 const SAVE_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
 const $=id=>D.getElementById(id);
 const toast=(m,t=3200)=>{try{W.notif?.(m,t)}catch(_){console.log(m)}};
 function parse(s){try{return s?JSON.parse(s):null}catch(_){return null}}
 function session(){return parse(localStorage.getItem(SESSION_KEY))}
+function tokenUserKey(token){try{const part=String(token||'').split('.')[1];if(!part)return'';const b=part.replace(/-/g,'+').replace(/_/g,'/');return String(JSON.parse(atob(b.padEnd(Math.ceil(b.length/4)*4,'='))).sub||'')}catch(_){return''}}
+function sessionUserKey(s=session()){return String(s?.user?.id||s?.user?.email||s?.email||tokenUserKey(s?.access_token)||'')}
 function locked(){try{return localStorage.getItem(EXIT_KEY)==='1'}catch(_){return false}}
 function player(){try{return P}catch(_){return W.P||null}}
 function validSave(x){const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p.team.length&&p.team[0]?.id)}
@@ -59,16 +62,29 @@ function ensureCharacterList(){
   if(!box){box=D.createElement('div');box.id='psy-character-list-v38';box.style.cssText='margin-top:10px;padding-top:9px;border-top:1px solid #1d4f68;font-size:10px;color:#bae6fd';form.appendChild(box)}
   return box;
 }
-async function renderCharacters(){
+async function renderCharacters(force=false){
   const box=ensureCharacterList();if(!box)return;
-  if(!session()?.access_token){box.innerHTML='';box.style.display='none';return}
+  const ss=session();
+  if(!ss?.access_token){box.innerHTML='';box.style.display='none';box.dataset.loadedOwner='';return}
+  const owner=sessionUserKey(ss);
+  if(!force&&owner&&box.dataset.loadedOwner===owner)return;
+  if(characterRequest&&characterRequestOwner===owner)return characterRequest;
+  if(!force&&characterRetryOwner===owner&&Date.now()<characterRetryAt)return;
   box.style.display='block';box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#7dd3fc">Carregando...</div>';
-  try{
-    const chars=await listCharacters();
-    const rows=chars.length?chars.map(c=>`<button type="button" data-psy-char="${esc(c.nickname)}" style="display:block;width:100%;margin-top:5px;padding:8px;border:1px solid #256b8a;border-radius:6px;background:#0b2538;color:#fff;text-align:left;cursor:pointer"><b>${esc(c.nickname)}</b>${c.active_pokemon?` • ${esc(c.active_pokemon)} Lv.${Number(c.active_level||1)}`:''}</button>`).join(''):'<div style="margin-top:6px;color:#94a3b8">Nenhum personagem criado ainda.</div>';
-    box.innerHTML='<b>PERSONAGENS DA CONTA</b>'+rows+'<div style="margin-top:7px;color:#67e8f9">Digite um nick novo acima e clique COMEÇAR para criar outro personagem.</div>';
-    box.querySelectorAll('[data-psy-char]').forEach(b=>b.onclick=()=>{const n=b.dataset.psyChar||'';const input=$('nick-input');if(input)input.value=n;openCharacter(n)});
-  }catch(e){box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#fca5a5">Falha ao listar personagens: '+esc(e.message||e)+'</div>'}
+  const request=(async()=>{
+    try{
+      const chars=await listCharacters();
+      const rows=chars.length?chars.map(c=>`<button type="button" data-psy-char="${esc(c.nickname)}" style="display:block;width:100%;margin-top:5px;padding:8px;border:1px solid #256b8a;border-radius:6px;background:#0b2538;color:#fff;text-align:left;cursor:pointer"><b>${esc(c.nickname)}</b>${c.active_pokemon?` • ${esc(c.active_pokemon)} Lv.${Number(c.active_level||1)}`:''}</button>`).join(''):'<div style="margin-top:6px;color:#94a3b8">Nenhum personagem criado ainda.</div>';
+      box.innerHTML='<b>PERSONAGENS DA CONTA</b>'+rows+'<div style="margin-top:7px;color:#67e8f9">Digite um nick novo acima e clique COMEÇAR para criar outro personagem.</div>';
+      box.dataset.loadedOwner=owner;characterRetryOwner='';characterRetryAt=0;
+      box.querySelectorAll('[data-psy-char]').forEach(b=>b.onclick=()=>{const n=b.dataset.psyChar||'';const input=$('nick-input');if(input)input.value=n;openCharacter(n)});
+    }catch(e){
+      box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#fca5a5">Falha ao listar personagens: '+esc(e.message||e)+'</div>';
+      box.dataset.loadedOwner='';characterRetryOwner=owner;characterRetryAt=Date.now()+20000;
+    }
+  })();
+  characterRequest=request;characterRequestOwner=owner;
+  try{await request}finally{if(characterRequest===request){characterRequest=null;characterRequestOwner=''}}
 }
 async function directLogin(){
   const email=$('psy-online-email')?.value.trim(),password=$('psy-online-pass')?.value||'';
@@ -83,7 +99,7 @@ async function directLogin(){
     localStorage.setItem(EXIT_KEY,'1');
     saveStash();
     renderConnectedStatus();
-    await renderCharacters();
+    await renderCharacters(true);
     toast('☁ Conta conectada. Escolha um personagem ou digite um nick novo.',3800);
     return d;
   }catch(e){toast('❌ Login: '+String(e.message||e).replaceAll('_',' '),4500);throw e}
@@ -98,7 +114,7 @@ async function openCharacter(nickname){
     localStorage.setItem('psyWorldSave',raw);localStorage.setItem('psyWorldSave_v9',raw);
     localStorage.setItem(SELECTED_KEY,c.nickname||nick);
     localStorage.removeItem(PENDING_KEY);localStorage.removeItem(EXIT_KEY);
-    const ss=session();try{const old=parse(localStorage.getItem(SYNC_KEY))||{};localStorage.setItem(SYNC_KEY,JSON.stringify({...old,userKey:String(ss?.user?.id||ss?.user?.email||''),resolved:true,characterNickname:c.nickname||nick,saveStamp:Number(save.savedAt||0),cloudStamp:Date.parse(c.updated_at||'')||Date.now(),lastDownloadAt:Date.now()}))}catch(_){}
+    const ss=session();try{const old=parse(localStorage.getItem(SYNC_KEY))||{};localStorage.setItem(SYNC_KEY,JSON.stringify({...old,userKey:sessionUserKey(ss),resolved:true,characterNickname:c.nickname||nick,saveStamp:Number(save.savedAt||0),cloudStamp:Date.parse(c.updated_at||'')||Date.now(),lastDownloadAt:Date.now()}))}catch(_){}
     toast('☁ Abrindo '+(c.nickname||nick)+'...',1800);setTimeout(()=>location.reload(),250);
   }catch(e){toast('❌ Não foi possível abrir o personagem: '+String(e.message||e),4200)}
 }
