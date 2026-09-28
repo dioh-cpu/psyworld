@@ -1,3 +1,23 @@
+PSYWORLD v0.1.0 — CORREÇÃO DO CHAT — 28/09/2026
+
+- Melhorada a conexão ao trocar de canal, minimizar e reabrir o chat.
+- Reconexões com falha passam a respeitar intervalos progressivos.
+- O histórico carrega as 60 mensagens mais recentes.
+- Market e Leilão do Psy Idle mostram o estado real de desenvolvimento.
+- Abrir o chat não consulta mais os anúncios indisponíveis do Idle.
+
+VALIDAÇÃO
+- Testes de troca de canal durante conexão, minimizar durante conexão,
+  reconexão, histórico recente e disponibilidade do comércio passaram.
+
+AINDA PRECISA CORRIGIR / CONCLUIR
+- Concluir Market e Leilão do Psy Idle, com Gold e inventário próprios.
+- Integrar e validar transferências entre duas contas sem duplicar itens.
+- Concluir regras de itens vinculados, PsyCoin negociável e expiração.
+- Concluir o combate compartilhado; presença no World não equivale a co-op/PvP.
+
+HISTÓRICO ANTERIOR (status abaixo se refere às respectivas versões)
+
 PSYWORLD — V32 PSYDUCK EXCLUSIVO / SPRITES DO PASSE + V31/V29/V28 — ONLINE PREVIEW
 
 STATUS
