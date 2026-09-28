@@ -21,7 +21,7 @@
   const readSession=()=>parse(localStorage.getItem(SESSION_KEY),null);
   const readPrefs=()=>parse(localStorage.getItem(CONFIG_KEY),{});
   let supa=null,clientPromise=null,localSupabaseScriptPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0,realtimeRetryTimer=0,realtimeRetries=0,realtimeStatus='CLOSED',realtimeConnectPromise=null,realtimeConnectSlug='';
-  let connectionGeneration=0;
+  let connectionGeneration=0,trainerNameSyncPromise=null,syncedTrainerNameUser='',syncedTrainerName='';
   const historyCache=new Map(),historyRequests=new Map();
   const localLogs=()=>parse(localStorage.getItem(LOG_KEY),{});
   function saveLogs(x){try{localStorage.setItem(LOG_KEY,JSON.stringify(x))}catch(_){}}
@@ -63,6 +63,14 @@
   }
   function currentUser(){return readSession()?.user||null}
   function signedIn(){return !!readSession()?.access_token}
+  function worldTrainerName(){let profile=null;try{profile=P}catch(_){}profile=profile||W.P;return String(profile?.name||profile?.meta?.characterNickname||'').replace(/[\u0000-\u001f\u007f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,24)}
+  async function syncIdleTrainerName(){
+    const name=worldTrainerName(),user=currentUser();if(!signedIn()||!user?.id||!name)return;
+    if(user.user_metadata?.trainer_name===name||syncedTrainerNameUser===user.id&&syncedTrainerName===name){syncedTrainerNameUser=user.id;syncedTrainerName=name;return}
+    if(trainerNameSyncPromise)return trainerNameSyncPromise;
+    const task=(async()=>{const c=await getClient(),{data,error}=await c.auth.updateUser({data:{trainer_name:name}});if(error)throw error;if(data?.user){const session=readSession();if(session)persistSession({...session,user:data.user})}syncedTrainerNameUser=user.id;syncedTrainerName=name})();
+    trainerNameSyncPromise=task;try{await task}finally{if(trainerNameSyncPromise===task)trainerNameSyncPromise=null}
+  }
   function persistSession(session){
     if(!session?.access_token)return;
     const old=readSession()||{};delete old.provider_token;delete old.provider_refresh_token;
@@ -119,7 +127,7 @@
     if(!force&&historyCache.has(slug))return historyCache.get(slug);
     if(historyRequests.has(slug))return historyRequests.get(slug);
     const request=(async()=>{
-      const c=await getClient();const {data,error}=await c.from('psy_idle_chat_messages').select('id,channel,username,body,created_at').eq('channel',slug).order('created_at',{ascending:false}).limit(60);
+      const c=await getClient();const {data,error}=await c.from('psy_idle_chat_messages').select('id,user_id,channel,username,body,created_at').eq('channel',slug).order('created_at',{ascending:false}).limit(60);
       if(error)throw error;
       const cached=parse(localStorage.getItem('psyIdleChat:'+slug),[]),byId=new Map();
       for(const row of cached)if(row?.id)byId.set(row.id,row);
@@ -132,7 +140,7 @@
     try{return await request}finally{if(historyRequests.get(slug)===request)historyRequests.delete(slug)}
   }
   async function sendOnlineMessage(slug,body){
-    const c=await getClient();const {data,error}=await c.rpc('psy_idle_send_chat',{p_channel:slug,p_body:body});
+    await syncIdleTrainerName();const c=await getClient();const {data,error}=await c.rpc('psy_idle_send_chat',{p_channel:slug,p_body:body});
     if(error)throw error;
     if(data?.id){cacheOnlineMessage(data);renderMessages()}
   }
@@ -145,12 +153,12 @@
     if(!root)return;const pane=root.querySelector('[data-social-feed]');if(!pane)return;
     const cfg=CHANNELS.find(x=>x.id===activeTab);let rows=[];
     if(cfg?.online){rows=parse(localStorage.getItem('psyIdleChat:'+activeTab),[])}else rows=logFor(activeTab);
-    pane.innerHTML=rows.slice(-60).map(m=>{
+    const ownUserId=currentUser()?.id,worldName=worldTrainerName();pane.innerHTML=rows.slice(-60).map(m=>{
       const when=m.created_at?new Date(m.created_at):new Date(Number(m.at||Date.now()));
       if(m.type==='task')return `<article class="pis-task-event"><span>📜</span><div><b>${esc(m.quest||'Task')}</b><small>${esc(m.action||'Derrote')} ${esc(m.pokemon||'Pokémon')} · ${Number(m.current||0)}/${Number(m.goal||0)}</small><i>${Number(m.remaining||0)>0?'Faltam '+Number(m.remaining):'Concluída'}</i></div></article>`;
       if(m.type==='capture')return `<article class="pis-log-row"><span>🎯</span><div><b>${esc(m.name||'Pokémon')}</b><small>${esc(m.ball||'Pokébola')} · ${when.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div><strong class="${m.success?'pis-success':'pis-fail'}">${statusForLog(m)}</strong></article>`;
       if(m.type==='loot')return `<article class="pis-log-row"><span>🎁</span><div><b>${esc(m.name||'Item')}</b><small>Drop da hunt · ${when.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</small></div><strong>×${Math.max(1,Number(m.qty||1))}</strong></article>`;
-      return `<article class="pis-chat-msg"><div><b>${esc(m.username||'Treinador')}</b><time>${when.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time></div><p>${esc(m.body||m.text||'')}</p></article>`;
+      const username=m.user_id&&m.user_id===ownUserId&&worldName?worldName:(m.username||'Treinador');return `<article class="pis-chat-msg"><div><b>${esc(username)}</b><time>${when.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</time></div><p>${esc(m.body||m.text||'')}</p></article>`;
     }).join('')||`<div class="pis-empty">${cfg?.online?'Ainda não há mensagens neste canal.':'As atividades vão aparecer aqui enquanto você joga.'}</div>`;
     pane.scrollTop=pane.scrollHeight;
     const compose=root.querySelector('[data-social-compose]');if(compose)compose.hidden=!cfg?.online||!signedIn();
@@ -219,7 +227,7 @@
     const cfg=CHANNELS.find(x=>x.id===activeTab);
     const compose=root.querySelector('[data-social-compose]');if(compose)compose.hidden=!cfg?.online||!signedIn();
     if(!signedIn())setStatus('Conta desconectada',false);
-    else if(cfg?.online){setStatus(realtimeRetryTimer?'Reconectando…':activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'?'Online • ao vivo':'Conectando…',!!(activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'));connectRealtime(cfg.id).catch(e=>{if(wantsChat(cfg.id))setStatus('Offline • '+e.message,false)});loadOnlineMessages(activeTab).then(()=>{if(wantsChat(cfg.id))renderMessages()}).catch(e=>{console.warn('[Psy Idle chat history]',e);if(wantsChat(cfg.id)&&realtimeStatus!=='SUBSCRIBED')setStatus('Histórico indisponível • conectando ao chat…',false)})}
+    else if(cfg?.online){setStatus(realtimeRetryTimer?'Reconectando…':activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'?'Online • ao vivo':'Conectando…',!!(activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'));syncIdleTrainerName().catch(e=>console.warn('[Psy Idle trainer name]',e)).finally(()=>{if(!wantsChat(cfg.id))return;connectRealtime(cfg.id).catch(e=>{if(wantsChat(cfg.id))setStatus('Offline • '+e.message,false)});loadOnlineMessages(activeTab).then(()=>{if(wantsChat(cfg.id))renderMessages()}).catch(e=>{console.warn('[Psy Idle chat history]',e);if(wantsChat(cfg.id)&&realtimeStatus!=='SUBSCRIBED')setStatus('Histórico indisponível • conectando ao chat…',false)})})}
     else setStatus('Registros deste aparelho',false);
   }
   function mount(s){

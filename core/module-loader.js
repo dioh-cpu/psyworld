@@ -7,7 +7,7 @@
 const W=window,D=document;
   // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
   const PHYSICAL_BUILD='PSYWORLD_XP_BALANCE_V187_20260927';
-function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',build=(/modes\/idle-(social|commerce|realistic)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'))?'IDLE_EXCLUSIVE_TRADEZONE_20260928_V4':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
+function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',build=(/modes\/idle-(social|commerce|realistic)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'))?'IDLE_TRAINER_NAME_SYNC_20260928_V5':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
   idleworld:{icon:'🌿',name:'PSY IDLE',desc:'Hunts individuais em mapa top-down, colisão em grade, IA e sistemas de progressão próprios.',entry:['openIdleRealisticV2']},
