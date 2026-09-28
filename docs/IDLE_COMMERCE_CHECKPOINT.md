@@ -2,6 +2,13 @@
 
 User scope: all online systems belong exclusively to Idle. Latest clarification: leave PSYWORLD exactly as it is; do not add online features to it and do not remove its existing modules. Never import PSYWORLD currency, items or Pokémon into Idle commerce. Market and auctions are categorized UI catalogs, not player maps.
 
+## Continuação atual — 2026-09-28
+
+- O preview autenticado `psyworld-it7jhtkpm-world-of-monsters.vercel.app` (commit `cb96a779dfc4b450282f7efb8c61e7eb9d2d3741`) retornou ao jogo pelo callback isolado do Psy Idle, sem abrir o fluxo de Cloud Save do PSYWORLD. A Trade Zone social indicou `Online • ao vivo`; o Market carregou `500 Gold Idle · 0 PsyCoin negociáveis · 0 vinculados` e confirmou conta e inventário exclusivos do Idle.
+- O teste real do navegador encontrou uma corrida de renderização: um evento de presença podia chegar depois que os elementos do contador/lista da Trade Zone fossem removidos. Corrigido com uma checagem dos dois elementos antes de atualizar a tela.
+- Depois da correção, todos os testes `tests/*.cjs`, `node --check` dos modos alterados e `git diff --check` passaram. A nova versão ainda precisa de preview próprio para confirmar que o erro desapareceu antes do merge/publicação.
+- O resultado do navegador apenas abriu telas e leu saldo/catálogo; não comprou, vendeu, criou anúncio, iniciou hunt nem carregou ou alterou save do PSYWORLD.
+
 ## Latest continuation — 2026-09-28 18:59 UTC
 
 - Added server-authoritative Idle hunting and capture through `api/idle-hunt.js` and the service-only `public.idle_hunt` RPC. The API accepts the authenticated user, requested route, server ticket and owned Ball; reward values, route species, levels, rarity, drops and captured asset data come from the server. Idle account bootstrap grants its own 500 Gold, bound Bulbasaur and three bound Pokéballs. No PSYWORLD save, wallet or inventory is read or changed.
