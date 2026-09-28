@@ -20,6 +20,7 @@
   const readSession=()=>parse(localStorage.getItem(SESSION_KEY),null);
   const readPrefs=()=>parse(localStorage.getItem(CONFIG_KEY),{});
   let supa=null,clientPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0,realtimeRetryTimer=0,realtimeRetries=0,realtimeStatus='CLOSED',realtimeConnectPromise=null,realtimeConnectSlug='';
+  let connectionGeneration=0;
   const historyCache=new Map(),historyRequests=new Map();
   const localLogs=()=>parse(localStorage.getItem(LOG_KEY),{});
   function saveLogs(x){try{localStorage.setItem(LOG_KEY,JSON.stringify(x))}catch(_){}}
@@ -27,12 +28,12 @@
   function addLog(channel,entry){const a=localLogs(),list=Array.isArray(a[channel])?a[channel]:[];list.push({...entry,at:Date.now()});a[channel]=list.slice(-160);saveLogs(a);if(root&&activeView==='chat'&&activeTab===channel)renderMessages();if(channel==='tasks')updateTaskBadge(entry)}
   function showToast(msg){try{W.notif?.(msg,3600)}catch(_){}}
   async function getConfig(){
-    try{const r=await fetch('/api/config',{cache:'no-store'});if(r.ok){const c=await r.json();if(c?.onlineConfigured&&c?.supabaseUrl&&c?.supabaseAnonKey)return{url:c.supabaseUrl,key:c.supabaseAnonKey}}}catch(_){}
-    return{url:PROJECT_URL,key:PUBLISHABLE_KEY};
+    try{const r=await fetch('/api/config',{cache:'no-store'});if(r.ok){const c=await r.json();if(c?.onlineConfigured&&c?.supabaseUrl&&c?.supabaseAnonKey)return{...c,url:c.supabaseUrl,key:c.supabaseAnonKey}}}catch(_){}
+    return{url:PROJECT_URL,key:PUBLISHABLE_KEY,idleMarketEnabled:false,idleAuctionEnabled:false};
   }
   async function getClient(){
-    if(supa)return supa;
     if(clientPromise)return clientPromise;
+    if(supa)return supa;
     clientPromise=(async()=>{
       const {url,key}=await getConfig();
       if(!url||!key)throw new Error('configuração online indisponível');
@@ -55,7 +56,8 @@
   function persistSession(session){
     if(!session?.access_token)return;
     const old=readSession()||{};delete old.provider_token;delete old.provider_refresh_token;
-    const safe={access_token:session.access_token,refresh_token:session.refresh_token||'',token_type:session.token_type||'bearer',expires_in:Number(session.expires_in||3600),expires_at:Date.now()+Number(session.expires_in||3600)*1000,user:session.user||old.user};
+    const expiry=Number(session.expires_at||0);
+    const safe={access_token:session.access_token,refresh_token:session.refresh_token||'',token_type:session.token_type||'bearer',expires_in:Number(session.expires_in||3600),expires_at:expiry>0?(expiry<1e12?expiry*1000:expiry):Date.now()+Number(session.expires_in||3600)*1000,user:session.user||old.user};
     try{localStorage.setItem(SESSION_KEY,JSON.stringify({...old,...safe}))}catch(_){}
   }
   function oauthCallbackInfo(){
@@ -83,34 +85,45 @@
       persistSession(data.session);clearOAuthCallback();if(area)area.hidden=true;render();
     }catch(e){clearOAuthCallback();if(status)status.textContent='Falha ao entrar com GitHub: '+String(e.message||'tente novamente')}
   }
-  function stopChannel(){
+  function wantsChat(slug){return !!root&&!!readPrefs().open&&activeView==='chat'&&activeTab===slug&&signedIn()&&!!CHANNELS.find(c=>c.id===slug)?.online}
+  function stopChannel(resetRetries=true){
+    connectionGeneration++;
     if(realtimeRetryTimer){clearTimeout(realtimeRetryTimer);realtimeRetryTimer=0}
     if(activeChannel)historyCache.delete(activeChannel);
-    if(channelSub&&supa){try{supa.removeChannel(channelSub)}catch(_){}}
-    channelSub=null;activeChannel=null;realtimeStatus='CLOSED';realtimeRetries=0;
+    const previous=channelSub;
+    channelSub=null;activeChannel=null;realtimeStatus='CLOSED';
+    realtimeConnectPromise=null;realtimeConnectSlug='';
+    if(resetRetries)realtimeRetries=0;
+    if(previous&&supa){try{Promise.resolve(supa.removeChannel(previous)).catch(()=>{})}catch(_){}}
   }
   async function connectRealtime(slug){
+    if(!wantsChat(slug))return;
     if(activeChannel===slug&&channelSub&&['joining','SUBSCRIBED'].includes(realtimeStatus))return;
     if(realtimeRetryTimer)return;
-    if(realtimeConnectPromise){if(realtimeConnectSlug===slug)return realtimeConnectPromise;try{await realtimeConnectPromise}catch(_){}if(activeChannel===slug&&channelSub)return}
+    if(realtimeConnectPromise&&realtimeConnectSlug===slug)return realtimeConnectPromise;
+    if(channelSub||realtimeConnectPromise)stopChannel(false);
+    const generation=connectionGeneration;
+    const current=()=>generation===connectionGeneration&&wantsChat(slug);
     const run=(async()=>{
       const c=await getClient();const liveResult=await c.auth.getSession();if(liveResult.error)throw liveResult.error;const session=liveResult.data?.session;
+      if(!current())return;
       if(!session?.access_token)throw new Error('entre na sua conta online');
       await c.realtime.setAuth(session.access_token);
-      stopChannel();activeChannel=slug;realtimeStatus='joining';
+      if(!current())return;
+      activeChannel=slug;realtimeStatus='joining';
       const channel=c.channel(`psyworld-idle-chat:${slug}`,{config:{private:true}});
       channelSub=channel;
       channel.on('broadcast',{event:'INSERT'},msg=>{const payload=msg?.payload||msg||{};const row=payload.new||payload.record||msg?.new||msg?.record||payload;if(row?.id&&row.channel===slug){cacheOnlineMessage(row);if(activeView==='chat'&&activeTab===slug)renderMessages()}})
         .subscribe(status=>{
-          if(channelSub!==channel)return;
+          if(channelSub!==channel||!current())return;
           realtimeStatus=status;
-          if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+          if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
             setStatus('Reconectando…',false);historyCache.delete(slug);
             const delay=Math.min(30000,1000*Math.pow(2,realtimeRetries++));
-            channelSub=null;activeChannel=null;try{c.removeChannel(channel)}catch(_){}
+            channelSub=null;activeChannel=null;try{Promise.resolve(c.removeChannel(channel)).catch(()=>{})}catch(_){}
             if(realtimeRetryTimer)clearTimeout(realtimeRetryTimer);
-            realtimeRetryTimer=setTimeout(()=>{realtimeRetryTimer=0;if(activeView==='chat'&&activeTab===slug)connectRealtime(slug).catch(e=>setStatus('Offline • '+e.message,false))},delay);
-          }else if(status==='SUBSCRIBED'){realtimeRetries=0;setStatus('Online • ao vivo',true);loadOnlineMessages(slug,true).then(()=>{if(activeView==='chat'&&activeTab===slug)renderMessages()}).catch(e=>console.warn('[Psy Idle chat history]',e))}
+            realtimeRetryTimer=setTimeout(()=>{realtimeRetryTimer=0;if(current())connectRealtime(slug).catch(e=>{if(current())setStatus('Offline • '+e.message,false)})},delay);
+          }else if(status==='SUBSCRIBED'){realtimeRetries=0;setStatus('Online • ao vivo',true);loadOnlineMessages(slug,true).then(()=>{if(current())renderMessages()}).catch(e=>console.warn('[Psy Idle chat history]',e))}
         });
     })();
     realtimeConnectSlug=slug;realtimeConnectPromise=run;
@@ -121,7 +134,7 @@
     if(!force&&historyCache.has(slug))return historyCache.get(slug);
     if(historyRequests.has(slug))return historyRequests.get(slug);
     const request=(async()=>{
-      const c=await getClient();const {data,error}=await c.from('psy_idle_chat_messages').select('id,channel,username,body,created_at').eq('channel',slug).order('created_at',{ascending:true}).limit(60);
+      const c=await getClient();const {data,error}=await c.from('psy_idle_chat_messages').select('id,channel,username,body,created_at').eq('channel',slug).order('created_at',{ascending:false}).limit(60);
       if(error)throw error;
       const cached=parse(localStorage.getItem('psyIdleChat:'+slug),[]),byId=new Map();
       for(const row of cached)if(row?.id)byId.set(row.id,row);
@@ -167,22 +180,37 @@
   }
   function setMarketStatus(label,online){const el=root?.querySelector('[data-market-live]');if(el){el.textContent=label;el.dataset.online=online?'1':'0'}}
   async function refreshMarket(){
+    if(activeView==='chat'||!readPrefs().open)return;
+    const view=activeView;
     const pane=root?.querySelector('[data-market-feed]');if(!pane)return;
     if(!signedIn()){setMarketStatus('○ conta desconectada',false);pane.innerHTML='<div class="pis-empty">Entre na conta online para consultar o market e os leilões.</div>';return}
     setMarketStatus('◌ verificando servidor',false);
     try{
+      const config=await getConfig();
+      if(view!==activeView||pane!==root?.querySelector('[data-market-feed]')||!readPrefs().open)return;
+      const available=view==='auction'?config.idleAuctionEnabled===true:config.idleMarketEnabled===true;
+      if(!available){
+        const label=view==='auction'?'Leilão':'Market';
+        setStatus('Conta conectada',true);
+        setMarketStatus('Em desenvolvimento',false);
+        root.querySelectorAll('.pis-market-filters,.pis-market-tools,.pis-market-foot').forEach(el=>{el.hidden=true;el.style.display='none'});
+        pane.innerHTML=`<div class="pis-empty"><b>${label} do Psy Idle em desenvolvimento</b><small>As negociações entre jogadores ainda não estão disponíveis neste modo.</small><small>O chat Global, Dúvidas e Trade já está disponível. Volte à aba Chat para conversar.</small></div>`;
+        return;
+      }
       const c=await getClient();
-      const table=activeView==='auction'?'psy_idle_auction_public':'psy_idle_market_public';
+      const table=view==='auction'?'psy_idle_auction_public':'psy_idle_market_public';
       const {data,error}=await c.from(table).select('*').eq('status','active').order('created_at',{ascending:false}).limit(100);
+      if(view!==activeView||pane!==root?.querySelector('[data-market-feed]'))return;
       if(error)throw error;
       setMarketStatus('● online • anúncios atualizados',true);
       const q=search.trim().toLocaleLowerCase('pt-BR');
       const list=(data||[]).filter(x=>(filter==='all'||x.category===filter)&&(!q||`${x.name||''} ${x.seller_name||''}`.toLocaleLowerCase('pt-BR').includes(q)));
       pane.innerHTML=list.map(x=>`<article class="pis-listing"><div class="pis-listing-art">${x.sprite_url?`<img src="${esc(x.sprite_url)}" alt="">`:esc(x.icon||'✦')}</div><div class="pis-listing-info"><b>${esc(x.name||'Item')}</b><small>${esc(x.category||'item')} · ${esc(x.rarity||'')}</small><span>Vendedor: ${esc(x.seller_name||'Treinador')}</span><strong>${Number(x.price||x.current_bid||0).toLocaleString('pt-BR')} ${esc(x.currency||'Gold')}</strong></div><button data-market-offer="${esc(x.id)}" disabled>Indisponível</button></article>`).join('')||'<div class="pis-empty">Nenhum anúncio corresponde aos filtros.</div>';
     }catch(e){
-      const text=String(e?.message||'');
+      if(view!==activeView||pane!==root?.querySelector('[data-market-feed]'))return;
       setMarketStatus('○ servidor indisponível',false);
-      pane.innerHTML=`<div class="pis-empty"><b>Market online ainda não habilitado.</b><small>${esc(text.includes('Could not find the table')||text.includes('does not exist')?'A migração do Market/Leilões ainda não foi aplicada ao banco.':'O servidor não confirmou o cofre de itens Idle.')}</small><small>Não vou mostrar anúncios de teste nem permitir venda baseada no save local.</small></div>`;
+      pane.innerHTML='<div class="pis-empty"><b>Não foi possível carregar os anúncios.</b><small>Tente atualizar novamente. Sua conta e o chat continuam disponíveis.</small></div>';
+      console.warn('[Psy Idle market]',e);
     }
   }
   function render(){
@@ -190,23 +218,30 @@
     root.classList.toggle('is-minimized',!readPrefs().open);
     const minimized=root.querySelector('[data-social-minimized]');if(minimized)minimized.hidden=!!readPrefs().open;
     const panel=root.querySelector('.pis-window');if(panel)panel.hidden=!readPrefs().open;
+    if(!readPrefs().open){stopChannel();return}
     root.querySelectorAll('[data-social-view]').forEach(b=>b.classList.toggle('active',b.dataset.socialView===activeView));
     root.querySelector('[data-social-chat-area]').hidden=activeView!=='chat';
     root.querySelector('[data-social-market-area]').hidden=activeView==='chat';
     root.querySelectorAll('[data-social-tab]').forEach(b=>b.classList.toggle('active',activeView==='chat'&&b.dataset.socialTab===activeTab));
-    const market=root.querySelector('[data-social-market-area]');if(market){market.innerHTML=localInventoryNotice();market.querySelector('[data-market-filter]')?.addEventListener('change',e=>{filter=e.target.value;refreshMarket()});market.querySelector('[data-market-search]')?.addEventListener('input',e=>{search=e.target.value;refreshMarket()});market.querySelector('[data-market-refresh]')?.addEventListener('click',refreshMarket);market.querySelector('[data-market-sell]')?.addEventListener('click',()=>showToast('Anunciar, ofertar e receber valores será liberado após sincronizar o cofre Idle com o servidor.'));refreshMarket()}
+    if(activeView!=='chat'){
+      stopChannel();
+      setStatus(signedIn()?'Conta conectada':'Conta desconectada',signedIn());
+      const market=root.querySelector('[data-social-market-area]');
+      if(market){market.innerHTML=localInventoryNotice();market.querySelector('[data-market-filter]')?.addEventListener('change',e=>{filter=e.target.value;refreshMarket()});market.querySelector('[data-market-search]')?.addEventListener('input',e=>{search=e.target.value;refreshMarket()});market.querySelector('[data-market-refresh]')?.addEventListener('click',refreshMarket);market.querySelector('[data-market-sell]')?.addEventListener('click',()=>showToast('As negociações do Psy Idle ainda estão em desenvolvimento.'));refreshMarket()}
+      return;
+    }
     renderMessages();
     const cfg=CHANNELS.find(x=>x.id===activeTab);
     const compose=root.querySelector('[data-social-compose]');if(compose)compose.hidden=!cfg?.online||!signedIn();
     if(!signedIn())setStatus('Conta desconectada',false);
-    else if(cfg?.online){setStatus(realtimeRetryTimer?'Reconectando…':activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'?'Online • ao vivo':'Conectando…',!!(activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'));loadOnlineMessages(activeTab).then(()=>{if(activeTab===cfg.id){renderMessages();connectRealtime(cfg.id).catch(e=>setStatus('Offline • '+e.message,false))}}).catch(e=>setStatus('Offline • '+e.message,false))}
+    else if(cfg?.online){setStatus(realtimeRetryTimer?'Reconectando…':activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'?'Online • ao vivo':'Conectando…',!!(activeChannel===cfg.id&&realtimeStatus==='SUBSCRIBED'));connectRealtime(cfg.id).catch(e=>{if(wantsChat(cfg.id))setStatus('Offline • '+e.message,false)});loadOnlineMessages(activeTab).then(()=>{if(wantsChat(cfg.id))renderMessages()}).catch(e=>{console.warn('[Psy Idle chat history]',e);if(wantsChat(cfg.id)&&realtimeStatus!=='SUBSCRIBED')setStatus('Histórico indisponível • conectando ao chat…',false)})}
     else setStatus('Registros deste aparelho',false);
   }
   function mount(s){
     screen=s;if(D.getElementById('psy-idle-social-dock'))return;installStyles();root=D.createElement('aside');root.id='psy-idle-social-dock';
     root.innerHTML=`<button type="button" data-social-minimized aria-label="Abrir chat" title="Abrir chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.7A3.7 3.7 0 0 1 7.7 2h8.6A3.7 3.7 0 0 1 20 5.7v7.1a3.7 3.7 0 0 1-3.7 3.7h-5.6l-5 4v-4.5A3.7 3.7 0 0 1 4 12.8z"/><path d="M8 7.7h8M8 11h5"/></svg><i></i></button><section class="pis-window"><header class="pis-head"><div><small>PSY IDLE · SOCIAL</small><b>Mensagens & comércio</b><span data-social-status data-online="0">Carregando</span></div><button type="button" data-social-minimize aria-label="Minimizar">−</button></header><nav class="pis-main-tabs"><button data-social-view="chat">Chat</button><button data-social-view="market">Market</button><button data-social-view="auction">Leilão</button></nav><div data-social-chat-area><nav class="pis-channels">${CHANNELS.map(c=>`<button type="button" data-social-tab="${c.id}" title="${c.label}">${c.icon}<span>${c.label}</span></button>`).join('')}</nav><div class="pis-feed" data-social-feed></div><form class="pis-compose" data-social-compose hidden><input maxlength="240" autocomplete="off" placeholder="Escreva uma mensagem…"><button type="submit" aria-label="Enviar">➤</button></form><div data-login-area hidden></div></div><section class="pis-market-area" data-social-market-area hidden></section></section>`;
     s.appendChild(root);
-    root.querySelectorAll('[data-social-minimize],[data-social-minimized]').forEach(b=>b.addEventListener('click',()=>{const p=readPrefs();p.open=!p.open;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}if(p.open)render();else stopChannel();render()}));
+    root.querySelectorAll('[data-social-minimize],[data-social-minimized]').forEach(b=>b.addEventListener('click',()=>{const p=readPrefs();p.open=!p.open;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()}));
     root.querySelectorAll('[data-social-view]').forEach(b=>b.addEventListener('click',()=>{activeView=b.dataset.socialView;stopChannel();render()}));
     root.querySelectorAll('[data-social-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.socialTab;stopChannel();render()}));
     const form=root.querySelector('[data-social-compose]');form?.addEventListener('submit',async e=>{e.preventDefault();const input=form.querySelector('input'),body=input?.value.trim();if(!body)return;if(body.length>240)return;const btn=form.querySelector('button');btn.disabled=true;try{await sendOnlineMessage(activeTab,body);input.value=''}catch(err){setStatus(String(err.message||'Mensagem não enviada'),false)}finally{btn.disabled=false;input?.focus()}});
