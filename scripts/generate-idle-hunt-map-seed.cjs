@@ -40,7 +40,11 @@ const parent=new Map();
 for(const [from,row] of Object.entries(evolution))if(row?.to&&!parent.has(Number(row.to)))parent.set(Number(row.to),Number(from));
 for(const [from,choices] of Object.entries(special))for(const row of Object.values(choices||{}))if(row?.to&&!parent.has(Number(row.to)))parent.set(Number(row.to),Number(from));
 function stage(id){return stage3.has(id)?3:stage2.has(id)?2:1}
+// The starter route's low-level encounters, plus Togepi, are available as
+// level-1 individual hunts. Keep this list aligned with idle-realistic-v1.js.
+const levelOneHunts=new Set([1,4,7,10,13,16,19,25,29,32,43,46,69,84,102,175]);
 function huntLevel(id){
+  if(levelOneHunts.has(id))return 1;
   if([6,18,94,144,145,146,150,151].includes(id))return 80;
   let s=stage(id),hasParent=parent.has(id),hasChild=!!evolution[id]?.to||Object.keys(special[id]||{}).length>0;
   if(hasParent&&hasChild)return 40;if(hasParent)return 80;if(hasChild)return 20;return s>=3?80:50;
@@ -63,8 +67,7 @@ for(const region of regions){
   for(let id=region.min;id<=region.max;id++){
     if(!names[id])continue;
     const key=region.key==='KANTO'?`kanto-${String(id).padStart(3,'0')}`:`region-${region.key.toLowerCase()}-${id}`;
-    let required=Math.max(region.start,huntLevel(id));
-    if(key==='kanto-001')required=1;
+    let required=levelOneHunts.has(id)?1:Math.max(region.start,huntLevel(id));
     const tier=baseTier(id),low=minLevelForTier(tier);
     values.push(`(${sql(key)},${sql(region.key)},${id},${sql(names[id])},${required},${huntLevel(id)},${sql(tier)},${sql(low)},${sql(maxLevelForTier(tier))})`);
   }
