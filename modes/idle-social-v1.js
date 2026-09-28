@@ -1,7 +1,8 @@
 /* PSY IDLE · Chat global e registros pessoais. Supabase Realtime usa somente chave publicável. */
 (function(W,D){
   'use strict';
-  const SESSION_KEY='psyworld_online_session_v23';
+  const SESSION_KEY='psy_idle_session_v1';
+  const OAUTH_PENDING_KEY='psyIdleSocialOAuthPendingV1';
   const CONFIG_KEY='psyIdleSocialPrefsV1';
   const LOG_KEY='psyIdleSocialLogsV1';
   const PROJECT_URL='https://otwgavwvjxuwtgncjbiq.supabase.co';
@@ -19,7 +20,7 @@
   const parse=(s,f)=>{try{return s?JSON.parse(s):f}catch(_){return f}};
   const readSession=()=>parse(localStorage.getItem(SESSION_KEY),null);
   const readPrefs=()=>parse(localStorage.getItem(CONFIG_KEY),{});
-  let supa=null,clientPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0,realtimeRetryTimer=0,realtimeRetries=0,realtimeStatus='CLOSED',realtimeConnectPromise=null,realtimeConnectSlug='';
+  let supa=null,clientPromise=null,localSupabaseScriptPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0,realtimeRetryTimer=0,realtimeRetries=0,realtimeStatus='CLOSED',realtimeConnectPromise=null,realtimeConnectSlug='';
   let connectionGeneration=0;
   const historyCache=new Map(),historyRequests=new Map();
   const localLogs=()=>parse(localStorage.getItem(LOG_KEY),{});
@@ -31,15 +32,24 @@
     try{const r=await fetch('/api/config',{cache:'no-store'});if(r.ok){const c=await r.json();if(c?.onlineConfigured&&c?.supabaseUrl&&c?.supabaseAnonKey)return{...c,url:c.supabaseUrl,key:c.supabaseAnonKey}}}catch(_){}
     return{url:PROJECT_URL,key:PUBLISHABLE_KEY,idleMarketEnabled:false,idleAuctionEnabled:false};
   }
+  async function getSupabaseCreateClient(){
+    try{return(await import('https://esm.sh/@supabase/supabase-js@2.57.0?bundle')).createClient}
+    catch(remoteError){
+      if(typeof W.supabase?.createClient==='function')return W.supabase.createClient;
+      if(!localSupabaseScriptPromise)localSupabaseScriptPromise=new Promise((resolve,reject)=>{const script=D.createElement('script');script.src='/assets/vendor/supabase-js-2.117.2.js';script.async=true;script.onload=()=>resolve(W.supabase?.createClient);script.onerror=()=>reject(remoteError);D.head.appendChild(script)});
+      try{const createClient=await localSupabaseScriptPromise;if(typeof createClient!=='function')throw remoteError;return createClient}
+      catch(e){localSupabaseScriptPromise=null;throw e}
+    }
+  }
   async function getClient(){
     if(clientPromise)return clientPromise;
     if(supa)return supa;
     clientPromise=(async()=>{
       const {url,key}=await getConfig();
       if(!url||!key)throw new Error('configuração online indisponível');
-      const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.0?bundle');
+      const createClient=await getSupabaseCreateClient();
       supa=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
-      supa.auth.onAuthStateChange((event,session)=>{try{if(session){persistSession(session);if(session.access_token)Promise.resolve(supa.realtime.setAuth(session.access_token)).catch(()=>{})}else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
+      supa.auth.onAuthStateChange((event,session)=>{try{if(session){persistSession(session);if(session.access_token)Promise.resolve(supa.realtime.setAuth(session.access_token)).catch(()=>{})}else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(['SIGNED_IN','SIGNED_OUT'].includes(event))W.dispatchEvent(new CustomEvent('idle-auth-changed'));if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
       const session=readSession();
       if(session?.access_token){
         const r=await supa.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token||''});
@@ -59,31 +69,6 @@
     const expiry=Number(session.expires_at||0);
     const safe={access_token:session.access_token,refresh_token:session.refresh_token||'',token_type:session.token_type||'bearer',expires_in:Number(session.expires_in||3600),expires_at:expiry>0?(expiry<1e12?expiry*1000:expiry):Date.now()+Number(session.expires_in||3600)*1000,user:session.user||old.user};
     try{localStorage.setItem(SESSION_KEY,JSON.stringify({...old,...safe}))}catch(_){}
-  }
-  function oauthCallbackInfo(){
-    const query=new URLSearchParams(W.location.search),hash=new URLSearchParams(W.location.hash.replace(/^#/,''));
-    return{pending:query.has('code')||query.has('error')||hash.has('access_token')||hash.has('error')||hash.has('error_description'),error:query.get('error_description')||hash.get('error_description')||query.get('error')||hash.get('error')};
-  }
-  function clearOAuthCallback(){
-    try{const url=new URL(W.location.href);['code','error','error_description','error_code','state'].forEach(k=>url.searchParams.delete(k));url.hash='';W.history.replaceState(W.history.state,D.title,url.pathname+url.search)}catch(_){}
-  }
-  async function finishOAuthCallback(){
-    const callback=oauthCallbackInfo();if(!callback.pending)return;
-    const area=root?.querySelector('[data-login-area]'),status=area?.querySelector('[data-login-status]');
-    if(callback.error){clearOAuthCallback();if(status)status.textContent='Login com GitHub não concluído: '+callback.error;return}
-    if(status)status.textContent='Confirmando sua conta do GitHub…';
-    try{
-      const c=await getClient(),hash=new URLSearchParams(W.location.hash.replace(/^#/,''));
-      let data;
-      if(hash.has('access_token')){
-        const result=await c.auth.setSession({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token')||''});
-        if(result.error)throw result.error;data=result.data;
-      }else{
-        const result=await c.auth.getSession();if(result.error)throw result.error;data=result.data;
-      }
-      if(!data.session?.access_token)throw new Error('O Supabase não confirmou a sessão.');
-      persistSession(data.session);clearOAuthCallback();if(area)area.hidden=true;render();
-    }catch(e){clearOAuthCallback();if(status)status.textContent='Falha ao entrar com GitHub: '+String(e.message||'tente novamente')}
   }
   function wantsChat(slug){return !!root&&!!readPrefs().open&&activeView==='chat'&&activeTab===slug&&signedIn()&&!!CHANNELS.find(c=>c.id===slug)?.online}
   function stopChannel(resetRetries=true){
@@ -154,7 +139,7 @@
   function setStatus(text,online){const el=root?.querySelector('[data-social-status]');if(el){el.textContent=text;el.dataset.online=online?'1':'0'}}
   function statusForLog(entry){if(entry.type==='capture')return entry.success?'CAPTUROU':'FALHOU';return''}
   function renderLogin(){
-    return `<div class="pis-login"><div class="pis-login-art">✦</div><b>Entre para falar com os treinadores</b><small>Use a mesma conta online do PSYWORLD. Seus logs locais continuam privados.</small><button type="button" data-login-github style="width:100%;border:1px solid #697386;border-radius:8px;background:#161b22;color:#fff;padding:9px;font-weight:900">Entrar com GitHub</button><label>E-mail<input data-login-email type="email" autocomplete="email" placeholder="seu@email.com"></label><label>Senha<input data-login-pass type="password" autocomplete="current-password" placeholder="Senha"></label><div><button data-login>Entrar</button><button data-signup>Criar conta</button></div><small data-login-status>O chat conecta ao servidor quando sua conta estiver pronta.</small></div>`;
+    return `<div class="pis-login"><div class="pis-login-art">✦</div><b>Entre para falar com os treinadores</b><small>Conta do Psy Idle. Seus logs locais continuam privados.</small><button type="button" data-login-github style="width:100%;border:1px solid #697386;border-radius:8px;background:#161b22;color:#fff;padding:9px;font-weight:900">Entrar com GitHub</button><label>E-mail<input data-login-email type="email" autocomplete="email" placeholder="seu@email.com"></label><label>Senha<input data-login-pass type="password" autocomplete="current-password" placeholder="Senha"></label><div><button data-login>Entrar</button><button data-signup>Criar conta</button></div><small data-login-status>O chat conecta ao servidor quando sua conta estiver pronta.</small></div>`;
   }
   function renderMessages(){
     if(!root)return;const pane=root.querySelector('[data-social-feed]');if(!pane)return;
@@ -242,18 +227,17 @@
     root.innerHTML=`<button type="button" data-social-minimized aria-label="Abrir chat" title="Abrir chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.7A3.7 3.7 0 0 1 7.7 2h8.6A3.7 3.7 0 0 1 20 5.7v7.1a3.7 3.7 0 0 1-3.7 3.7h-5.6l-5 4v-4.5A3.7 3.7 0 0 1 4 12.8z"/><path d="M8 7.7h8M8 11h5"/></svg><i></i></button><section class="pis-window"><header class="pis-head"><div><small>PSY IDLE · SOCIAL</small><b>Mensagens & comércio</b><span data-social-status data-online="0">Carregando</span></div><button type="button" data-social-minimize aria-label="Minimizar">−</button></header><nav class="pis-main-tabs"><button data-social-view="chat">Chat</button><button data-social-view="market">Market</button><button data-social-view="auction">Leilão</button></nav><div data-social-chat-area><nav class="pis-channels">${CHANNELS.map(c=>`<button type="button" data-social-tab="${c.id}" title="${c.label}">${c.icon}<span>${c.label}</span></button>`).join('')}</nav><div class="pis-feed" data-social-feed></div><form class="pis-compose" data-social-compose hidden><input maxlength="240" autocomplete="off" placeholder="Escreva uma mensagem…"><button type="submit" aria-label="Enviar">➤</button></form><div data-login-area hidden></div></div><section class="pis-market-area" data-social-market-area hidden></section></section>`;
     s.appendChild(root);
     root.querySelectorAll('[data-social-minimize],[data-social-minimized]').forEach(b=>b.addEventListener('click',()=>{const p=readPrefs();p.open=!p.open;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()}));
-    root.querySelectorAll('[data-social-view]').forEach(b=>b.addEventListener('click',()=>{activeView=b.dataset.socialView;stopChannel();render()}));
+    root.querySelectorAll('[data-social-view]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.socialView!=='chat'&&W.PsyIdleCommerce){W.PsyIdleCommerce.open(b.dataset.socialView);return}activeView=b.dataset.socialView;stopChannel();render()}));
     root.querySelectorAll('[data-social-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.socialTab;stopChannel();render()}));
     const form=root.querySelector('[data-social-compose]');form?.addEventListener('submit',async e=>{e.preventDefault();const input=form.querySelector('input'),body=input?.value.trim();if(!body)return;if(body.length>240)return;const btn=form.querySelector('button');btn.disabled=true;try{await sendOnlineMessage(activeTab,body);input.value=''}catch(err){setStatus(String(err.message||'Mensagem não enviada'),false)}finally{btn.disabled=false;input?.focus()}});
     if(!signedIn()){const area=root.querySelector('[data-login-area]');if(area){area.hidden=false;area.innerHTML=renderLogin();wireLogin(area)}}
     const prefs=readPrefs();if(typeof prefs.open!=='boolean'){prefs.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(prefs))}catch(_){}}
     render();
-    if(oauthCallbackInfo().pending)setTimeout(finishOAuthCallback,0);
   }
   function wireLogin(area){
     const login=async signup=>{const status=area.querySelector('[data-login-status]'),email=area.querySelector('[data-login-email]')?.value.trim(),password=area.querySelector('[data-login-pass]')?.value||'';if(!email||password.length<6){if(status)status.textContent='Informe e-mail e senha (mín. 6 caracteres).';return}try{const c=await getClient();const r=signup?await c.auth.signUp({email,password}):await c.auth.signInWithPassword({email,password});if(r.error)throw r.error;if(r.data?.session){persistSession(r.data.session);area.hidden=true;render()}else if(status)status.textContent='Conta criada. Confirme o e-mail e depois entre.'}catch(e){if(status)status.textContent=String(e.message||'Falha ao autenticar')}};
     area.querySelector('[data-login]')?.addEventListener('click',()=>login(false));area.querySelector('[data-signup]')?.addEventListener('click',()=>login(true));
-    area.querySelector('[data-login-github]')?.addEventListener('click',async()=>{const status=area.querySelector('[data-login-status]'),btn=area.querySelector('[data-login-github]');btn.disabled=true;if(status)status.textContent='Abrindo a autenticação do GitHub…';try{const c=await getClient();const {error}=await c.auth.signInWithOAuth({provider:'github',options:{redirectTo:W.location.origin+W.location.pathname}});if(error)throw error}catch(e){if(status)status.textContent=String(e.message||'Falha ao iniciar login com GitHub');btn.disabled=false}});
+    area.querySelector('[data-login-github]')?.addEventListener('click',async()=>{const status=area.querySelector('[data-login-status]'),btn=area.querySelector('[data-login-github]');btn.disabled=true;if(status)status.textContent='Abrindo a autenticação do GitHub…';try{const c=await getClient();localStorage.setItem(OAUTH_PENDING_KEY,'1');const {error}=await c.auth.signInWithOAuth({provider:'github',options:{redirectTo:new URL('/idle-oauth-callback.html',W.location.origin).href}});if(error)throw error}catch(e){localStorage.removeItem(OAUTH_PENDING_KEY);if(status)status.textContent=String(e.message||'Falha ao iniciar login com GitHub');btn.disabled=false}});
   }
   function installStyles(){if(D.getElementById('psy-idle-social-css'))return;const style=D.createElement('style');style.id='psy-idle-social-css';style.textContent=`
   #psy-idle-social-dock{position:absolute;left:12px;bottom:12px;z-index:1600;font:12px/1.35 system-ui,Segoe UI,sans-serif;color:#eefaff;pointer-events:none}
@@ -279,7 +263,7 @@
   function install(){const s=D.getElementById('psy-idle-realistic');if(s&&getComputedStyle(s).display!=='none'){mount(s);return}if(!D.body)return;const obs=new MutationObserver(()=>{const now=D.getElementById('psy-idle-realistic');if(now&&getComputedStyle(now).display!=='none'){mount(now);obs.disconnect()}});obs.observe(D.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});setTimeout(()=>obs.disconnect(),120000)}
   W.addEventListener('psy-idle-social-log',e=>{const d=e.detail||{};if(d.type==='capture')addLog('captures',d);if(d.type==='loot')addLog('loot',d);if(d.type==='task')addLog('tasks',d)});
   W.addEventListener('storage',e=>{if(e.key===SESSION_KEY&&root)render()});
-  W.PsyIdleSocial={open(){if(!root){install();return}const p=readPrefs();p.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()},log:addLog};
+  W.PsyIdleSocial={client:getClient,open(){if(!root){install();return}const p=readPrefs();p.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()},log:addLog};
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',install,{once:true});else install();
   setTimeout(install,500);
 })(window,document);

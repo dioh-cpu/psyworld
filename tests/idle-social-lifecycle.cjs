@@ -3,9 +3,11 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 
 const source = fs.readFileSync(require.resolve('../modes/idle-social-v1.js'), 'utf8');
+assert.match(source,/redirectTo:new URL\('\/idle-oauth-callback\.html',W\.location\.origin\)\.href/);
+assert.doesNotMatch(source,/psyworld_online_session_v23/);
 const session = {access_token:'fixture',refresh_token:'fixture',expires_at:2000000000};
 const data = new Map([
-  ['psyworld_online_session_v23',JSON.stringify(session)],
+  ['psy_idle_session_v1',JSON.stringify(session)],
   ['psyIdleSocialPrefsV1','{"open":true}']
 ]);
 const elements = new Map();
@@ -27,7 +29,7 @@ const rows = Array.from({length:80},(_,i)=>({
   created_at:new Date(100000+i*1000).toISOString()
 }));
 const client = {
-  auth:{getSession:async()=>({data:{session}})},
+  auth:{getSession:async()=>({data:{session}}),setSession:async credentials=>{client.auth.lastSetSession=credentials;return{data:{session:{...session,...credentials}}}}},
   realtime:{setAuth:async()=>{}}, removeChannel:async()=>{},
   channel(topic) {
     const c = {topic,on(){return c},subscribe(fn){c.callback=fn;return c}};
@@ -42,7 +44,7 @@ const client = {
     };
   }
 };
-const window = {addEventListener(){}};
+const window = {addEventListener(){},location:{href:'https://example.invalid/',search:'',hash:'',pathname:'/'},history:{replaceState(){}}};
 const context = {
   window,document:{readyState:'loading',addEventListener(){}},localStorage,
   console,URL,URLSearchParams,Date,Map,Promise,
@@ -114,6 +116,7 @@ const flush = async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
   console.log('PASS: unavailable commerce does not cause a database error');
 
   test.persistSession({...session,expires_in:3600});
-  assert.equal(JSON.parse(data.get('psyworld_online_session_v23')).expires_at,2000000000000);
+  assert.equal(JSON.parse(data.get('psy_idle_session_v1')).expires_at,2000000000000);
   console.log('PASS: the actual token expiry is preserved');
+
 })().catch(error=>{console.error(error);process.exitCode=1});
