@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..');
 const expectedIds = [1, 4, 7, 10, 13, 16, 19, 25, 29, 32, 43, 46, 69, 84, 102, 175];
 const idle = fs.readFileSync(path.join(root, 'modes/idle-realistic-v1.js'), 'utf8');
 const generator = fs.readFileSync(path.join(root, 'scripts/generate-idle-hunt-map-seed.cjs'), 'utf8');
+const loader = fs.readFileSync(path.join(root, 'core/module-loader.js'), 'utf8');
 const readIds = (source, pattern) => {
   const match = source.match(pattern);
   assert.ok(match, 'level-1 hunt list exists');
@@ -16,6 +17,7 @@ const readIds = (source, pattern) => {
 assert.deepEqual(readIds(idle, /IDLE_LEVEL_1_HUNT_IDS=new Set\(\[([^\]]+)\]\)/), expectedIds);
 assert.deepEqual(readIds(generator, /const levelOneHunts=new Set\(\[([^\]]+)\]\)/), expectedIds);
 assert.match(idle, /lv=enemyLevel\(rnd\)/, 'encounter levels follow the selected map range');
+assert.match(loader, /IDLE_EXCLUSIVE_TRADEZONE_20260928_V4/, 'updated Idle scripts use a fresh browser cache key');
 
 const sql = execFileSync(process.execPath, [path.join(root, 'scripts/generate-idle-hunt-map-seed.cjs')], { encoding: 'utf8' });
 for (const id of expectedIds) {
