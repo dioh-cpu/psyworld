@@ -37,7 +37,7 @@
     try{return(await import('https://esm.sh/@supabase/supabase-js@2.57.0?bundle')).createClient}
     catch(remoteError){
       if(typeof W.supabase?.createClient==='function')return W.supabase.createClient;
-      if(!localSupabaseScriptPromise)localSupabaseScriptPromise=new Promise((resolve,reject)=>{const script=D.createElement('script');script.src='/vendor/supabase-js-2.117.2.js';script.async=true;script.onload=()=>resolve(W.supabase?.createClient);script.onerror=()=>reject(remoteError);D.head.appendChild(script)});
+      if(!localSupabaseScriptPromise)localSupabaseScriptPromise=new Promise((resolve,reject)=>{const script=D.createElement('script');script.src='/assets/vendor/supabase-js-2.117.2.js';script.async=true;script.onload=()=>resolve(W.supabase?.createClient);script.onerror=()=>reject(remoteError);D.head.appendChild(script)});
       try{const createClient=await localSupabaseScriptPromise;if(typeof createClient!=='function')throw remoteError;return createClient}
       catch(e){localSupabaseScriptPromise=null;throw e}
     }
