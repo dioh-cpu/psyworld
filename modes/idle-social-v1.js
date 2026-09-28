@@ -21,7 +21,7 @@
   const parse=(s,f)=>{try{return s?JSON.parse(s):f}catch(_){return f}};
   const readSession=()=>parse(localStorage.getItem(SESSION_KEY),null);
   const readPrefs=()=>parse(localStorage.getItem(CONFIG_KEY),{});
-  let supa=null,clientPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0,realtimeRetryTimer=0,realtimeRetries=0,realtimeStatus='CLOSED',realtimeConnectPromise=null,realtimeConnectSlug='';
+  let supa=null,clientPromise=null,localSupabaseScriptPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0,realtimeRetryTimer=0,realtimeRetries=0,realtimeStatus='CLOSED',realtimeConnectPromise=null,realtimeConnectSlug='';
   let connectionGeneration=0;
   const historyCache=new Map(),historyRequests=new Map();
   const localLogs=()=>parse(localStorage.getItem(LOG_KEY),{});
@@ -33,13 +33,22 @@
     try{const r=await fetch('/api/config',{cache:'no-store'});if(r.ok){const c=await r.json();if(c?.onlineConfigured&&c?.supabaseUrl&&c?.supabaseAnonKey)return{...c,url:c.supabaseUrl,key:c.supabaseAnonKey}}}catch(_){}
     return{url:PROJECT_URL,key:PUBLISHABLE_KEY,idleMarketEnabled:false,idleAuctionEnabled:false};
   }
+  async function getSupabaseCreateClient(){
+    try{return(await import('https://esm.sh/@supabase/supabase-js@2.57.0?bundle')).createClient}
+    catch(remoteError){
+      if(typeof W.supabase?.createClient==='function')return W.supabase.createClient;
+      if(!localSupabaseScriptPromise)localSupabaseScriptPromise=new Promise((resolve,reject)=>{const script=D.createElement('script');script.src='/vendor/supabase-js-2.117.2.js';script.async=true;script.onload=()=>resolve(W.supabase?.createClient);script.onerror=()=>reject(remoteError);D.head.appendChild(script)});
+      try{const createClient=await localSupabaseScriptPromise;if(typeof createClient!=='function')throw remoteError;return createClient}
+      catch(e){localSupabaseScriptPromise=null;throw e}
+    }
+  }
   async function getClient(){
     if(clientPromise)return clientPromise;
     if(supa)return supa;
     clientPromise=(async()=>{
       const {url,key}=await getConfig();
       if(!url||!key)throw new Error('configuração online indisponível');
-      const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.0?bundle');
+      const createClient=await getSupabaseCreateClient();
       supa=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
       supa.auth.onAuthStateChange((event,session)=>{try{if(session){persistSession(session);if(session.access_token)Promise.resolve(supa.realtime.setAuth(session.access_token)).catch(()=>{})}else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(['SIGNED_IN','SIGNED_OUT'].includes(event))W.dispatchEvent(new CustomEvent('idle-auth-changed'));if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
       const session=readSession();
