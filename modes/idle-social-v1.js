@@ -3,7 +3,6 @@
   'use strict';
   const SESSION_KEY='psy_idle_session_v1';
   const OAUTH_PENDING_KEY='psyIdleSocialOAuthPendingV1';
-  const CLOUD_SESSION_KEY='psyworld_online_session_v23';
   const CONFIG_KEY='psyIdleSocialPrefsV1';
   const LOG_KEY='psyIdleSocialLogsV1';
   const PROJECT_URL='https://otwgavwvjxuwtgncjbiq.supabase.co';
@@ -70,32 +69,6 @@
     const expiry=Number(session.expires_at||0);
     const safe={access_token:session.access_token,refresh_token:session.refresh_token||'',token_type:session.token_type||'bearer',expires_in:Number(session.expires_in||3600),expires_at:expiry>0?(expiry<1e12?expiry*1000:expiry):Date.now()+Number(session.expires_in||3600)*1000,user:session.user||old.user};
     try{localStorage.setItem(SESSION_KEY,JSON.stringify({...old,...safe}))}catch(_){}
-  }
-  function oauthCallbackInfo(){
-    const query=new URLSearchParams(W.location.search),hash=new URLSearchParams(W.location.hash.replace(/^#/,''));
-    return{pending:query.has('code')||query.has('error')||hash.has('access_token')||hash.has('error')||hash.has('error_description'),error:query.get('error_description')||hash.get('error_description')||query.get('error')||hash.get('error')};
-  }
-  function clearOAuthCallback(){
-    try{const url=new URL(W.location.href);['code','error','error_description','error_code','state'].forEach(k=>url.searchParams.delete(k));url.hash='';W.history.replaceState(W.history.state,D.title,url.pathname+url.search)}catch(_){}
-  }
-  async function finishOAuthCallback(){
-    const callback=oauthCallbackInfo(),oauthPending=localStorage.getItem(OAUTH_PENDING_KEY)==='1';if(!callback.pending&&!oauthPending)return;
-    const area=root?.querySelector('[data-login-area]'),status=area?.querySelector('[data-login-status]');
-    if(callback.error){localStorage.removeItem(OAUTH_PENDING_KEY);clearOAuthCallback();if(status)status.textContent='Login com GitHub não concluído: '+callback.error;return}
-    if(status)status.textContent='Confirmando sua conta do GitHub…';
-    try{
-      const c=await getClient(),hash=new URLSearchParams(W.location.hash.replace(/^#/,''));
-      let data,accessToken=hash.get('access_token'),refreshToken=hash.get('refresh_token')||'';
-      if(!accessToken&&oauthPending){const cloudSession=parse(localStorage.getItem(CLOUD_SESSION_KEY),null);accessToken=cloudSession?.access_token||'';refreshToken=cloudSession?.refresh_token||''}
-      if(accessToken){
-        const result=await c.auth.setSession({access_token:accessToken,refresh_token:refreshToken});
-        if(result.error)throw result.error;data=result.data;
-      }else{
-        const result=await c.auth.getSession();if(result.error)throw result.error;data=result.data;
-      }
-      if(!data.session?.access_token)throw new Error('O Supabase não confirmou a sessão.');
-      persistSession(data.session);localStorage.removeItem(OAUTH_PENDING_KEY);clearOAuthCallback();if(area)area.hidden=true;render();
-    }catch(e){localStorage.removeItem(OAUTH_PENDING_KEY);clearOAuthCallback();if(status)status.textContent='Falha ao entrar com GitHub: '+String(e.message||'tente novamente')}
   }
   function wantsChat(slug){return !!root&&!!readPrefs().open&&activeView==='chat'&&activeTab===slug&&signedIn()&&!!CHANNELS.find(c=>c.id===slug)?.online}
   function stopChannel(resetRetries=true){
@@ -260,12 +233,11 @@
     if(!signedIn()){const area=root.querySelector('[data-login-area]');if(area){area.hidden=false;area.innerHTML=renderLogin();wireLogin(area)}}
     const prefs=readPrefs();if(typeof prefs.open!=='boolean'){prefs.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(prefs))}catch(_){}}
     render();
-    if(oauthCallbackInfo().pending||localStorage.getItem(OAUTH_PENDING_KEY)==='1')setTimeout(finishOAuthCallback,0);
   }
   function wireLogin(area){
     const login=async signup=>{const status=area.querySelector('[data-login-status]'),email=area.querySelector('[data-login-email]')?.value.trim(),password=area.querySelector('[data-login-pass]')?.value||'';if(!email||password.length<6){if(status)status.textContent='Informe e-mail e senha (mín. 6 caracteres).';return}try{const c=await getClient();const r=signup?await c.auth.signUp({email,password}):await c.auth.signInWithPassword({email,password});if(r.error)throw r.error;if(r.data?.session){persistSession(r.data.session);area.hidden=true;render()}else if(status)status.textContent='Conta criada. Confirme o e-mail e depois entre.'}catch(e){if(status)status.textContent=String(e.message||'Falha ao autenticar')}};
     area.querySelector('[data-login]')?.addEventListener('click',()=>login(false));area.querySelector('[data-signup]')?.addEventListener('click',()=>login(true));
-    area.querySelector('[data-login-github]')?.addEventListener('click',async()=>{const status=area.querySelector('[data-login-status]'),btn=area.querySelector('[data-login-github]');btn.disabled=true;if(status)status.textContent='Abrindo a autenticação do GitHub…';try{const c=await getClient();localStorage.setItem(OAUTH_PENDING_KEY,'1');const {error}=await c.auth.signInWithOAuth({provider:'github',options:{redirectTo:W.location.origin+W.location.pathname}});if(error)throw error}catch(e){localStorage.removeItem(OAUTH_PENDING_KEY);if(status)status.textContent=String(e.message||'Falha ao iniciar login com GitHub');btn.disabled=false}});
+    area.querySelector('[data-login-github]')?.addEventListener('click',async()=>{const status=area.querySelector('[data-login-status]'),btn=area.querySelector('[data-login-github]');btn.disabled=true;if(status)status.textContent='Abrindo a autenticação do GitHub…';try{const c=await getClient();localStorage.setItem(OAUTH_PENDING_KEY,'1');const {error}=await c.auth.signInWithOAuth({provider:'github',options:{redirectTo:new URL('/idle-oauth-callback.html',W.location.origin).href}});if(error)throw error}catch(e){localStorage.removeItem(OAUTH_PENDING_KEY);if(status)status.textContent=String(e.message||'Falha ao iniciar login com GitHub');btn.disabled=false}});
   }
   function installStyles(){if(D.getElementById('psy-idle-social-css'))return;const style=D.createElement('style');style.id='psy-idle-social-css';style.textContent=`
   #psy-idle-social-dock{position:absolute;left:12px;bottom:12px;z-index:1600;font:12px/1.35 system-ui,Segoe UI,sans-serif;color:#eefaff;pointer-events:none}

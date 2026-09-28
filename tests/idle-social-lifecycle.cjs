@@ -3,6 +3,8 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 
 const source = fs.readFileSync(require.resolve('../modes/idle-social-v1.js'), 'utf8');
+assert.match(source,/redirectTo:new URL\('\/idle-oauth-callback\.html',W\.location\.origin\)\.href/);
+assert.doesNotMatch(source,/psyworld_online_session_v23/);
 const session = {access_token:'fixture',refresh_token:'fixture',expires_at:2000000000};
 const data = new Map([
   ['psy_idle_session_v1',JSON.stringify(session)],
@@ -58,7 +60,6 @@ const context = {
 };
 // Expose closure state only in this isolated test; no production test hooks.
 const expose = `W.__test={render,connectRealtime,stopChannel,loadOnlineMessages,persistSession,
-  finishOAuthCallback,
   setView(v,t){activeView=v;activeTab=t},setRoot(r){root=r},setClient(c){supa=c;clientPromise=null},
   reset(){stopChannel();historyCache.clear();historyRequests.clear()}};`;
 vm.runInNewContext(source.replace('})(window,document);',expose+'})(window,document);'),context);
@@ -118,21 +119,4 @@ const flush = async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
   assert.equal(JSON.parse(data.get('psy_idle_session_v1')).expires_at,2000000000000);
   console.log('PASS: the actual token expiry is preserved');
 
-  test.setRoot(null); data.delete('psy_idle_session_v1');
-  data.set('psyIdleSocialOAuthPendingV1','1');
-  data.set('psyworld_online_session_v23',JSON.stringify({access_token:'cloud-access',refresh_token:'cloud-refresh'}));
-  client.auth.lastSetSession=null;
-  await test.finishOAuthCallback();
-  assert.equal(client.auth.lastSetSession.access_token,'cloud-access');
-  assert.equal(client.auth.lastSetSession.refresh_token,'cloud-refresh');
-  assert.equal(JSON.parse(data.get('psy_idle_session_v1')).access_token,'cloud-access');
-  assert.equal(data.has('psyIdleSocialOAuthPendingV1'),false);
-  console.log('PASS: an Idle-initiated GitHub callback survives the cloud callback handler');
-
-  data.delete('psy_idle_session_v1'); data.delete('psyIdleSocialOAuthPendingV1');
-  client.auth.lastSetSession=null;
-  await test.finishOAuthCallback();
-  assert.equal(client.auth.lastSetSession,null);
-  assert.equal(data.has('psy_idle_session_v1'),false);
-  console.log('PASS: a PSYWORLD cloud session is not copied into Idle without an Idle login request');
 })().catch(error=>{console.error(error);process.exitCode=1});
