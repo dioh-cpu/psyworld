@@ -6,8 +6,9 @@ User scope: all online systems belong exclusively to Idle. Latest clarification:
 
 - O preview autenticado `psyworld-it7jhtkpm-world-of-monsters.vercel.app` (commit `cb96a779dfc4b450282f7efb8c61e7eb9d2d3741`) retornou ao jogo pelo callback isolado do Psy Idle, sem abrir o fluxo de Cloud Save do PSYWORLD. A Trade Zone social indicou `Online • ao vivo`; o Market carregou `500 Gold Idle · 0 PsyCoin negociáveis · 0 vinculados` e confirmou conta e inventário exclusivos do Idle.
 - O teste real do navegador encontrou uma corrida de renderização: um evento de presença podia chegar depois que os elementos do contador/lista da Trade Zone fossem removidos. Corrigido com uma checagem dos dois elementos antes de atualizar a tela.
-- Depois da correção, todos os testes `tests/*.cjs`, `node --check` dos modos alterados e `git diff --check` passaram. A nova versão ainda precisa de preview próprio para confirmar que o erro desapareceu antes do merge/publicação.
-- O resultado do navegador apenas abriu telas e leu saldo/catálogo; não comprou, vendeu, criou anúncio, iniciou hunt nem carregou ou alterou save do PSYWORLD.
+- No preview `psyworld-96goijvpg-world-of-monsters.vercel.app` (commit `1dd0047f415fcef0e8201dc38b3e4c533d4c9636`, `READY`), o callback voltou ao jogo sem acionar Cloud Save; a Trade Zone mostrou o treinador atual, e sair dela não produziu erros da aplicação no console. O Market autenticado mostrou `500 Gold Idle · 0 PsyCoin negociáveis · 0 vinculados` e conta/inventário exclusivos do Idle.
+- Depois da correção, todos os testes `tests/*.cjs`, `node --check` dos modos alterados e `git diff --check` passaram.
+- O teste real apenas abriu telas, autenticou pelo GitHub e leu saldo/presença/catálogo; não comprou, vendeu, criou anúncio, iniciou hunt nem carregou ou alterou save do PSYWORLD.
 
 ## Latest continuation — 2026-09-28 18:59 UTC
 
