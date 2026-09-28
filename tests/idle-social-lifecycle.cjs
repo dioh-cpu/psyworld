@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const source = fs.readFileSync(require.resolve('../modes/idle-social-v1.js'), 'utf8');
 const session = {access_token:'fixture',refresh_token:'fixture',expires_at:2000000000};
 const data = new Map([
-  ['psyworld_online_session_v23',JSON.stringify(session)],
+  ['psy_idle_session_v1',JSON.stringify(session)],
   ['psyIdleSocialPrefsV1','{"open":true}']
 ]);
 const elements = new Map();
@@ -114,6 +114,6 @@ const flush = async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
   console.log('PASS: unavailable commerce does not cause a database error');
 
   test.persistSession({...session,expires_in:3600});
-  assert.equal(JSON.parse(data.get('psyworld_online_session_v23')).expires_at,2000000000000);
+  assert.equal(JSON.parse(data.get('psy_idle_session_v1')).expires_at,2000000000000);
   console.log('PASS: the actual token expiry is preserved');
 })().catch(error=>{console.error(error);process.exitCode=1});

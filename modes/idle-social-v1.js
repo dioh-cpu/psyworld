@@ -1,7 +1,7 @@
 /* PSY IDLE · Chat global e registros pessoais. Supabase Realtime usa somente chave publicável. */
 (function(W,D){
   'use strict';
-  const SESSION_KEY='psyworld_online_session_v23';
+  const SESSION_KEY='psy_idle_session_v1';
   const CONFIG_KEY='psyIdleSocialPrefsV1';
   const LOG_KEY='psyIdleSocialLogsV1';
   const PROJECT_URL='https://otwgavwvjxuwtgncjbiq.supabase.co';
@@ -39,7 +39,7 @@
       if(!url||!key)throw new Error('configuração online indisponível');
       const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2.57.0?bundle');
       supa=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
-      supa.auth.onAuthStateChange((event,session)=>{try{if(session){persistSession(session);if(session.access_token)Promise.resolve(supa.realtime.setAuth(session.access_token)).catch(()=>{})}else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
+      supa.auth.onAuthStateChange((event,session)=>{try{if(session){persistSession(session);if(session.access_token)Promise.resolve(supa.realtime.setAuth(session.access_token)).catch(()=>{})}else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(['SIGNED_IN','SIGNED_OUT'].includes(event))W.dispatchEvent(new CustomEvent('idle-auth-changed'));if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
       const session=readSession();
       if(session?.access_token){
         const r=await supa.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token||''});
@@ -154,7 +154,7 @@
   function setStatus(text,online){const el=root?.querySelector('[data-social-status]');if(el){el.textContent=text;el.dataset.online=online?'1':'0'}}
   function statusForLog(entry){if(entry.type==='capture')return entry.success?'CAPTUROU':'FALHOU';return''}
   function renderLogin(){
-    return `<div class="pis-login"><div class="pis-login-art">✦</div><b>Entre para falar com os treinadores</b><small>Use a mesma conta online do PSYWORLD. Seus logs locais continuam privados.</small><button type="button" data-login-github style="width:100%;border:1px solid #697386;border-radius:8px;background:#161b22;color:#fff;padding:9px;font-weight:900">Entrar com GitHub</button><label>E-mail<input data-login-email type="email" autocomplete="email" placeholder="seu@email.com"></label><label>Senha<input data-login-pass type="password" autocomplete="current-password" placeholder="Senha"></label><div><button data-login>Entrar</button><button data-signup>Criar conta</button></div><small data-login-status>O chat conecta ao servidor quando sua conta estiver pronta.</small></div>`;
+    return `<div class="pis-login"><div class="pis-login-art">✦</div><b>Entre para falar com os treinadores</b><small>Conta do Psy Idle. Seus logs locais continuam privados.</small><button type="button" data-login-github style="width:100%;border:1px solid #697386;border-radius:8px;background:#161b22;color:#fff;padding:9px;font-weight:900">Entrar com GitHub</button><label>E-mail<input data-login-email type="email" autocomplete="email" placeholder="seu@email.com"></label><label>Senha<input data-login-pass type="password" autocomplete="current-password" placeholder="Senha"></label><div><button data-login>Entrar</button><button data-signup>Criar conta</button></div><small data-login-status>O chat conecta ao servidor quando sua conta estiver pronta.</small></div>`;
   }
   function renderMessages(){
     if(!root)return;const pane=root.querySelector('[data-social-feed]');if(!pane)return;
@@ -242,7 +242,7 @@
     root.innerHTML=`<button type="button" data-social-minimized aria-label="Abrir chat" title="Abrir chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.7A3.7 3.7 0 0 1 7.7 2h8.6A3.7 3.7 0 0 1 20 5.7v7.1a3.7 3.7 0 0 1-3.7 3.7h-5.6l-5 4v-4.5A3.7 3.7 0 0 1 4 12.8z"/><path d="M8 7.7h8M8 11h5"/></svg><i></i></button><section class="pis-window"><header class="pis-head"><div><small>PSY IDLE · SOCIAL</small><b>Mensagens & comércio</b><span data-social-status data-online="0">Carregando</span></div><button type="button" data-social-minimize aria-label="Minimizar">−</button></header><nav class="pis-main-tabs"><button data-social-view="chat">Chat</button><button data-social-view="market">Market</button><button data-social-view="auction">Leilão</button></nav><div data-social-chat-area><nav class="pis-channels">${CHANNELS.map(c=>`<button type="button" data-social-tab="${c.id}" title="${c.label}">${c.icon}<span>${c.label}</span></button>`).join('')}</nav><div class="pis-feed" data-social-feed></div><form class="pis-compose" data-social-compose hidden><input maxlength="240" autocomplete="off" placeholder="Escreva uma mensagem…"><button type="submit" aria-label="Enviar">➤</button></form><div data-login-area hidden></div></div><section class="pis-market-area" data-social-market-area hidden></section></section>`;
     s.appendChild(root);
     root.querySelectorAll('[data-social-minimize],[data-social-minimized]').forEach(b=>b.addEventListener('click',()=>{const p=readPrefs();p.open=!p.open;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()}));
-    root.querySelectorAll('[data-social-view]').forEach(b=>b.addEventListener('click',()=>{activeView=b.dataset.socialView;stopChannel();render()}));
+    root.querySelectorAll('[data-social-view]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.socialView!=='chat'&&W.PsyIdleCommerce){W.PsyIdleCommerce.open(b.dataset.socialView);return}activeView=b.dataset.socialView;stopChannel();render()}));
     root.querySelectorAll('[data-social-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.socialTab;stopChannel();render()}));
     const form=root.querySelector('[data-social-compose]');form?.addEventListener('submit',async e=>{e.preventDefault();const input=form.querySelector('input'),body=input?.value.trim();if(!body)return;if(body.length>240)return;const btn=form.querySelector('button');btn.disabled=true;try{await sendOnlineMessage(activeTab,body);input.value=''}catch(err){setStatus(String(err.message||'Mensagem não enviada'),false)}finally{btn.disabled=false;input?.focus()}});
     if(!signedIn()){const area=root.querySelector('[data-login-area]');if(area){area.hidden=false;area.innerHTML=renderLogin();wireLogin(area)}}
@@ -279,7 +279,7 @@
   function install(){const s=D.getElementById('psy-idle-realistic');if(s&&getComputedStyle(s).display!=='none'){mount(s);return}if(!D.body)return;const obs=new MutationObserver(()=>{const now=D.getElementById('psy-idle-realistic');if(now&&getComputedStyle(now).display!=='none'){mount(now);obs.disconnect()}});obs.observe(D.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});setTimeout(()=>obs.disconnect(),120000)}
   W.addEventListener('psy-idle-social-log',e=>{const d=e.detail||{};if(d.type==='capture')addLog('captures',d);if(d.type==='loot')addLog('loot',d);if(d.type==='task')addLog('tasks',d)});
   W.addEventListener('storage',e=>{if(e.key===SESSION_KEY&&root)render()});
-  W.PsyIdleSocial={open(){if(!root){install();return}const p=readPrefs();p.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()},log:addLog};
+  W.PsyIdleSocial={client:getClient,open(){if(!root){install();return}const p=readPrefs();p.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()},log:addLog};
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',install,{once:true});else install();
   setTimeout(install,500);
 })(window,document);
