@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const source = fs.readFileSync(require.resolve('../modes/idle-social-v1.js'), 'utf8');
 assert.match(source,/redirectTo:new URL\('\/idle-oauth-callback\.html',W\.location\.origin\)\.href/);
 assert.doesNotMatch(source,/psyworld_online_session_v23/);
-const session = {access_token:'fixture',refresh_token:'fixture',expires_at:2000000000};
+const session = {access_token:'fixture',refresh_token:'fixture',expires_at:2000000000,user:{id:'user-fixture',user_metadata:{}}};
 const data = new Map([
   ['psy_idle_session_v1',JSON.stringify(session)],
   ['psyIdleSocialPrefsV1','{"open":true}']
@@ -25,11 +25,12 @@ const localStorage = {
   getItem:k=>data.get(k)||null, setItem:(k,v)=>data.set(k,v), removeItem:k=>data.delete(k)
 };
 const rows = Array.from({length:80},(_,i)=>({
-  id:String(i+1),channel:'global',username:'Fixture',body:'Fixture '+i,
+  id:String(i+1),user_id:i===79?'user-fixture':'other-user',channel:'global',username:'Fixture',body:'Fixture '+i,
   created_at:new Date(100000+i*1000).toISOString()
 }));
+const nameUpdates=[], selectedColumns=[];
 const client = {
-  auth:{getSession:async()=>({data:{session}}),setSession:async credentials=>{client.auth.lastSetSession=credentials;return{data:{session:{...session,...credentials}}}}},
+  auth:{getSession:async()=>({data:{session}}),setSession:async credentials=>{client.auth.lastSetSession=credentials;return{data:{session:{...session,...credentials}}}},updateUser:async attrs=>{nameUpdates.push(attrs.data.trainer_name);return{data:{user:{id:'user-fixture',user_metadata:{trainer_name:attrs.data.trainer_name}}},error:null}}},
   realtime:{setAuth:async()=>{}}, removeChannel:async()=>{},
   channel(topic) {
     const c = {topic,on(){return c},subscribe(fn){c.callback=fn;return c}};
@@ -38,13 +39,13 @@ const client = {
   from(table) {
     queries.push(table); let ascending = true;
     return {
-      select(){return this},eq(){return this},
+      select(columns){selectedColumns.push(columns);return this},eq(){return this},
       order(k,o){ascending=o.ascending;return this},
       limit(n){return Promise.resolve({data:(ascending?rows:[...rows].reverse()).slice(0,n),error:null})}
     };
   }
 };
-const window = {addEventListener(){},location:{href:'https://example.invalid/',search:'',hash:'',pathname:'/'},history:{replaceState(){}}};
+const window = {P:{name:'Ash'},addEventListener(){},location:{href:'https://example.invalid/',search:'',hash:'',pathname:'/'},history:{replaceState(){}}};
 const context = {
   window,document:{readyState:'loading',addEventListener(){}},localStorage,
   console,URL,URLSearchParams,Date,Map,Promise,
@@ -70,6 +71,9 @@ const flush = async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
 (async()=>{
   test.render(); await flush();
   assert(queries.every(t=>t==='psy_idle_chat_messages'));
+  assert.deepEqual(nameUpdates,['Ash']);
+  assert(selectedColumns.every(columns=>columns.includes('user_id')));
+  assert.match(element('[data-social-feed]').innerHTML,/<b>Ash<\/b>/, 'the selected PSYWORLD trainer name labels the player\'s own history');
   assert.equal(fetches.length,0); assert.equal(channels.length,1);
   console.log('PASS: chat never queries commerce tables');
 
