@@ -46,6 +46,7 @@ declare
   i integer;
   roll numeric;
   result jsonb;
+  farm_enabled_next boolean:=coalesce((p->>'auto_farm')::boolean,true);
 begin
   if u is null then raise exception 'auth_required'; end if;
   if act not in ('claim','checkpoint') then raise exception 'unknown_action'; end if;
@@ -86,7 +87,7 @@ begin
 
     if simulated_kills>0 then
       gold_reward:=simulated_kills*greatest(1,floor((m.enemy_level*2+8)*.15)::bigint);
-      xp_reward:=simulated_kills*5;
+      xp_reward:=simulated_kills*20;
       pokemon_xp:=simulated_kills*20;
       xp_after:=profile.trainer_xp+xp_reward;
       trainer_level:=profile.trainer_level;
@@ -127,7 +128,7 @@ begin
         end if;
       end loop;
     end if;
-    update public.idle_hunt_profiles set farm_map_key=map_key,farm_checkpoint_at=clock_timestamp(),farm_enabled=true,
+    update public.idle_hunt_profiles set farm_map_key=map_key,farm_checkpoint_at=clock_timestamp(),farm_enabled=farm_enabled_next,
       updated_at=clock_timestamp() where user_id=u returning * into profile;
     result:=jsonb_build_object('ok',true,'elapsed_seconds',elapsed_seconds,'kills_awarded',simulated_kills,
       'gold_awarded',gold_reward,'xp_awarded',pokemon_xp,'trainer_xp_awarded',xp_reward,
