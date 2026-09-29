@@ -190,7 +190,7 @@
 
   function isRestrictedContent(message) {
     const q = String(message || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    return /\b(porn(o|ografia)?|erotic[oa]|nudez|nudes?|sexo explicito|conteudo sexual|sexual explicito|fetiche|estupro|abuso sexual|auto.?mutilacao|suicid(io|a)|gore|tortura explicita|violencia grafica)\b/.test(q);
+    return /\b(porn(o|ografia)?|erotic[oa]|nudez|nudes?|sexo explicito|conteudo sexual|sexual explicito|conteudo sensivel|sexual|sexo|fetiche|estupro|abuso sexual|auto.?mutilacao|suicid(io|a)|gore|tortura explicita|violencia grafica)\b/.test(q);
   }
   const restrictedReply = 'Não posso ajudar com conteúdo sexual, explícito ou sensível. Posso responder perguntas sobre Pokémon e Psyworld.';
 
