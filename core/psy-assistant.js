@@ -137,7 +137,7 @@
     if (state.history.length > MAX_HISTORY) state.history.splice(0, state.history.length - MAX_HISTORY);
   }
 
-  function addMessage(role, label, message, rememberIt = true) {
+  function addMessage(role, label, message, rememberIt = true, sources = []) {
     const host = feed();
     if (!host) return;
     const el = D.createElement('div');
@@ -147,6 +147,18 @@
     const body = D.createElement('div');
     body.textContent = message;
     el.append(small, body);
+    if (Array.isArray(sources) && sources.length) {
+      const links = D.createElement('div'); links.className = 'psy-assistant-sources';
+      for (const source of sources.slice(0, 5)) {
+        try {
+          const url = new URL(String(source.url || ''));
+          if (url.protocol !== 'https:') continue;
+          const link = D.createElement('a'); link.href = url.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+          link.textContent = text(source.title || url.hostname, 90); links.appendChild(link);
+        } catch (_) {}
+      }
+      if (links.childElementCount) el.appendChild(links);
+    }
     host.appendChild(el);
     host.scrollTop = host.scrollHeight;
     if (rememberIt && (role === 'user' || role === 'assistant')) remember(role, message);
@@ -176,11 +188,21 @@
     el.dataset.online = online ? '1' : '0';
   }
 
+  function isRestrictedContent(message) {
+    const q = String(message || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return /\b(porn(o|ografia)?|erotic[oa]|nudez|nudes?|sexo explicito|conteudo sexual|sexual explicito|fetiche|estupro|abuso sexual|auto.?mutilacao|suicid(io|a)|gore|tortura explicita|violencia grafica)\b/.test(q);
+  }
+  const restrictedReply = 'Não posso ajudar com conteúdo sexual, explícito ou sensível. Posso responder perguntas sobre Pokémon e Psyworld.';
+
   function offlineAnswer(message, ctx, files) {
     const q = String(message || '').toLowerCase();
     const pokemon = ctx.active_name || 'seu Pokémon ativo';
     const level = ctx.active_level ? ' Lv. ' + ctx.active_level : '';
     const hp = ctx.active_max_hp ? ' HP ' + ctx.active_hp + '/' + ctx.active_max_hp : '';
+    if (/\b(onde|qual|melhor|recomenda|ca[cç]ar|ca[cç]a|hunt|upar|treinar|farm)\b/.test(q) && /\b(ca[cç]|hunt|upar|level|treinar|farm|pok[eé]mon)\b/.test(q)) {
+      const name = ctx.active_name || 'seu Pokémon';
+      return 'Para ' + name + ' no nível ' + (ctx.active_level || 1) + ', escolha no Psy Idle uma hunt de nível baixo, com Pokémon selvagens de nível 1. Em Kanto, procure áreas com Caterpie, Weedle, Rattata ou Bellsprout; Charmander tem vantagem contra Caterpie, Weedle e Bellsprout, e deve evitar alvos de Água. Confira o nível mínimo da área no mapa antes de iniciar.';
+    }
     if (/\b(hp|vida|status|level|nível|nivel|xp|experi[eê]ncia|dano)\b/.test(q)) {
       return 'Seu Pokémon ativo é ' + pokemon + level + hp + '. Os detalhes completos ficam no HUD e na tela Time / Box. O dano depende do nível, dos atributos, do golpe e da vantagem de tipo.';
     }
@@ -227,7 +249,7 @@
 
   async function request(path, payload, headers) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 60000);
+    const timer = setTimeout(() => controller.abort(), 22000);
     try {
       const response = await fetch(endpoint() + path, {
         method: 'POST',
@@ -250,7 +272,7 @@
       const response = await fetch(endpoint() + '/health', { cache: 'no-store' });
       const data = await response.json();
       state.health = data;
-      setStatus(data.chat_available ? 'ONLINE' : 'LOCAL', !!data.chat_available);
+      setStatus(data.chat_available ? (data.google_search ? 'GOOGLE · ONLINE' : 'ONLINE') : 'LOCAL', !!data.chat_available);
     } catch (_) { state.health = null; setStatus('LOCAL', false); }
   }
 
@@ -405,6 +427,12 @@
     const input = panel?.querySelector('textarea');
     const send = panel?.querySelector('.psy-assistant-send');
     const message = input?.value.trim() || '';
+    if (isRestrictedContent(message)) {
+      input.value = '';
+      addMessage('user', 'Você', message);
+      addMessage('assistant', 'Psy Assistente', restrictedReply);
+      return;
+    }
     const token = panel.querySelector('[data-psy-owner-token]')?.value.trim() || '';
     state.ownerToken = token;
     let bundle = { files: [], project: null };
@@ -424,12 +452,15 @@
         addMessage('assistant', 'Psy Assistente', offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
         return;
       }
-      const data = await request('/chat', { message: finalMessage, context: ctx, history: state.history, session_id: state.sessionId }, undefined);
-      addMessage('assistant', data.name || 'Psy Assistente', data.answer || 'Não recebi uma resposta.');
+      if (send) send.textContent = 'BUSCANDO…';
+      setStatus('PESQUISANDO…', true);
+      const data = await request('/chat', { message: finalMessage, context: ctx, history: state.history }, undefined);
+      addMessage('assistant', data.name || 'Psy Assistente', data.answer || 'Não recebi uma resposta.', true, data.sources || []);
     } catch (_) {
       addMessage('assistant', 'Psy Assistente', offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
     } finally {
-      if (send) send.disabled = false;
+      if (send) { send.disabled = false; send.textContent = 'ENVIAR'; }
+      if (state.health?.chat_available) setStatus(state.health.google_search ? 'GOOGLE · ONLINE' : 'ONLINE', true);
       const fileInput = panel?.querySelector('[data-psy-files]');
       if (fileInput) fileInput.value = '';
       updateFileLabel();
@@ -468,7 +499,7 @@
     if (menu && !D.getElementById('psy-assistant-menu-button')) { const button = D.createElement('button'); button.id = 'psy-assistant-menu-button'; button.type = 'button'; button.textContent = '🧠 ABRIR PSY ASSISTENTE'; button.onclick = open; menu.insertBefore(button, menu.lastElementChild); }
     const panel = D.createElement('div');
     panel.id = 'psy-assistant'; panel.className = 'psy-assistant'; panel.hidden = true;
-    panel.innerHTML = '<section class="psy-assistant-card" role="dialog" aria-modal="true" aria-label="Psy Assistente"><header class="psy-assistant-head"><div><div class="psy-assistant-brand">🧠 Psy Assistente <em>PSYWORLD</em></div><span class="psy-assistant-status" data-psy-status>LOCAL</span></div><button class="psy-assistant-close" type="button" data-psy-close>✕</button></header><div class="psy-assistant-feed" data-psy-feed><div class="psy-msg assistant"><small>Psy Assistente</small><div>Olá. Posso tirar dúvidas, orientar sua caça e ler o estado atual da aventura.</div></div></div><div class="psy-assistant-proposal" data-psy-proposal hidden></div><div class="psy-assistant-compose"><form data-psy-form><textarea maxlength="4000" placeholder="Pergunte sobre exploração, caça ou o estado atual…"></textarea><button class="psy-assistant-send" type="submit">ENVIAR</button></form></div></section>';
+    panel.innerHTML = '<section class="psy-assistant-card" role="dialog" aria-modal="true" aria-label="Psy Assistente"><header class="psy-assistant-head"><div><div class="psy-assistant-brand">🧠 Psy Assistente <em>PSYWORLD</em></div><span class="psy-assistant-status" data-psy-status>LOCAL</span></div><button class="psy-assistant-close" type="button" data-psy-close>✕</button></header><div class="psy-assistant-feed" data-psy-feed><div class="psy-msg assistant"><small>Psy Assistente</small><div>Olá. Posso tirar dúvidas, orientar sua caça e ler o estado atual da aventura.</div></div></div><div class="psy-assistant-proposal" data-psy-proposal hidden></div><div class="psy-assistant-compose"><form data-psy-form><textarea maxlength="1400" placeholder="Pergunte sobre Pokémon, o Psyworld ou sua caça…"></textarea><button class="psy-assistant-send" type="submit">ENVIAR</button></form></div></section>';
     D.body.appendChild(panel);
     panel.querySelector('[data-psy-close]')?.addEventListener('click', close);
     panel.querySelector('[data-psy-form]')?.addEventListener('submit', submit);
