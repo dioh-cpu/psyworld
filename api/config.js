@@ -5,7 +5,7 @@ const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 18;
 const requests = new Map();
 const blockedPatterns = [
-  /\b(porn(o|ografia)?|erotic[oa]|nudez|nudes?|sexo explicito|conteudo sexual|sexual explicito|fetiche|estupro|abuso sexual|auto.?mutilacao|suicid(io|a)|gore|tortura explicita|violencia grafica)\b/i,
+  /\b(porn(o|ografia)?|erotic[oa]|nudez|nudes?|sexo explicito|conteudo sexual|sexual explicito|conteudo sensivel|sexual|sexo|fetiche|estupro|abuso sexual|auto.?mutilacao|suicid(io|a)|gore|tortura explicita|violencia grafica)\b/i,
 ];
 const refusal = 'Não posso ajudar com conteúdo sexual, explícito ou sensível. Posso responder perguntas sobre Pokémon e Psyworld.';
 
