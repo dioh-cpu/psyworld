@@ -5,6 +5,8 @@
 - E-mail/password and GitHub sign-in in PSYWORLD Cloud Save now emit a same-tab account-change event after updating the shared Supabase session. Idle Social/Market synchronizes that exact authenticated session immediately; the Trade Zone reconnects presence when a sign-in, sign-out, or account change happens while it is open.
 - The event contains only a signed-in flag and its source. It never includes access or refresh tokens. The PSYWORLD Cloud Save itself and the Idle character/economy remain separate; only the Supabase account identity is shared.
 - Added `tests/cloud-idle-session-bridge.cjs` and extended `tests/idle-shared-session.cjs` for Cloud Save email/GitHub notification and live session adoption.
+- Published to `main` as `a77f64edf26e0e877f4fb89fa969301ede837134`. Vercel production deployment `dpl_BxAdrByWZtgMyUWyRADnruxmbmWX` reached `READY` for `https://psyworld-world-of-monsters.vercel.app/`.
+- The deployment alias still returns Vercel Authentication (SSO) to anonymous requests. The application modules and tests are deployed, but anonymous browser access and live login smoke testing could not be verified through that protected alias.
 
 ## Publicação de produção — 2026-09-29
 
