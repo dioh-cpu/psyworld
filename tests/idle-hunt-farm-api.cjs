@@ -39,7 +39,7 @@ const call=async(handler,req)=>{const res=makeRes();await handler(req,res);retur
     console.log('PASS: offline claim forwards only validated route and auto setting; rewards come from the server');
 
     const invalid=await call(handler,{method:'POST',headers:{authorization:'Bearer fixture-token'},body:{
-      action:'claim',request_id:'c52d5e02-83e5-4fc2-a48c-b8e4fb8461b2',map_key:'bad-map'
+      action:'claim',request_id:'c52d5e02-83e5-4fc2-a48c-b8e4fb8461b2',map_key:'bad/map'
     }});
     assert.equal(invalid.statusCode,400);
     assert.equal(calls.length,1);
