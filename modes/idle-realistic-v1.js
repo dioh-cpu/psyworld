@@ -302,8 +302,9 @@ function requestIdleFarmClaim(payload){
  const work=idleFarmClaimQueue.catch(()=>null).then(()=>performIdleFarmClaim(payload));
  idleFarmClaimQueue=work.catch(()=>null);return work;
 }
-async function resumeIdleAfkSession(autoFarm=!!auto){try{return await requestIdleFarmClaim({map_key:currentMapKey,auto_farm:!!autoFarm,nickname:PSTATE().name||'Treinador'})}catch(e){reportIdleFarmFailure(e);return null}}
-async function checkpointIdleFarm(action='checkpoint'){try{if(action==='claim'){return await requestIdleFarmClaim({map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador'})}return await idleOfflinePost('checkpoint',{map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador'})}catch(e){reportIdleFarmFailure(e);return null}}
+function idleFarmCombatStats(){const mon=player?.poke||activeIdlePokemon();return{attacker_atk:Math.max(1,Math.floor(Number(player?.atk||mon?.atk||35))),attacker_level:Math.max(1,Math.floor(Number(player?.poke?.level||mon?.level||1)))}}
+async function resumeIdleAfkSession(autoFarm=!!auto){try{return await requestIdleFarmClaim({map_key:currentMapKey,auto_farm:!!autoFarm,nickname:PSTATE().name||'Treinador',...idleFarmCombatStats()})}catch(e){reportIdleFarmFailure(e);return null}}
+async function checkpointIdleFarm(action='checkpoint'){try{if(action==='claim'){return await requestIdleFarmClaim({map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador',...idleFarmCombatStats()})}return await idleOfflinePost('checkpoint',{map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador',...idleFarmCombatStats()})}catch(e){reportIdleFarmFailure(e);return null}}
 function startIdleFarmCheckpoints(){if(idleFarmCheckpointTimer)clearInterval(idleFarmCheckpointTimer);idleFarmCheckpointTimer=setInterval(()=>{if(running&&D.visibilityState==='visible')checkpointIdleFarm('checkpoint')},15000)}
 
 function PSTATE(){return loadIdleCharacter()}
