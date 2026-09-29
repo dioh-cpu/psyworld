@@ -17,7 +17,7 @@
     history: [],
   };
 
-  const endpoint = () => String(W.PSY_CONFIG?.endpoint || '/api/psy').replace(/\/$/, '');
+  const endpoint = () => String(W.PSY_CONFIG?.endpoint || '/api/config?psy=').replace(/\/$/, '');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[ch]));
@@ -251,7 +251,7 @@
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 22000);
     try {
-      const response = await fetch(endpoint() + path, {
+      const response = await fetch(endpoint() + path.replace(/^\/+/, ''), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Psy-Client': 'game-v2', ...(headers || {}) },
         body: JSON.stringify(payload), signal: controller.signal,
@@ -269,7 +269,7 @@
 
   async function checkHealth() {
     try {
-      const response = await fetch(endpoint() + '/health', { cache: 'no-store' });
+      const response = await fetch(endpoint() + 'health', { cache: 'no-store' });
       const data = await response.json();
       state.health = data;
       setStatus(data.chat_available ? (data.google_search ? 'GOOGLE · ONLINE' : 'ONLINE') : 'LOCAL', !!data.chat_available);
@@ -364,7 +364,7 @@
       const offset = index * PROJECT_CHUNK_BYTES;
       const end = Math.min(file.size, offset + PROJECT_CHUNK_BYTES);
       setFileStatus('Enviando ZIP do projeto… ' + Math.floor((end / file.size) * 100) + '%');
-      const response = await fetch(endpoint() + '/upload-project', {
+      const response = await fetch(endpoint() + 'upload-project', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/octet-stream',
