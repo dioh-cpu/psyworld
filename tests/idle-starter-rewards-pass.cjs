@@ -14,8 +14,28 @@ for (let level = 5; level <= 100; level += 5) {
   assert.ok(passContext.idlePassRewards(level, 'premium').some(reward => reward.kind === 'boost'), `premium tier ${level} includes a boost`);
 }
 assert.ok(passContext.idlePassRewards(100, 'free').some(reward => reward.kind === 'starterBox'), 'free pass level 100 grants the regional shiny starter box');
-assert.ok(passContext.idlePassRewards(100, 'free').some(reward => reward.kind === 'gold' && reward.qty === 50000), 'free pass gold rewards scale up');
-assert.ok(passContext.idlePassRewards(100, 'premium').some(reward => reward.kind === 'gold' && reward.qty === 50000), 'premium pass gold rewards scale up');
+for (let level = 1; level <= 100; level++) assert.ok(passContext.idlePassRewards(level, 'free').some(reward => reward.kind === 'item' && / Ball$/.test(reward.item)), `free tier ${level} includes an elemental ball`);
+const freeRewards = Array.from({ length: 100 }, (_, i) => passContext.idlePassRewards(i + 1, 'free')).flat();
+assert.ok(freeRewards.some(reward => reward.kind === 'item' && reward.item === 'Boost Stone'), 'free pass awards Boost Stones');
+assert.ok(freeRewards.some(reward => reward.kind === 'item' && reward.item === 'Shiny Stone'), 'free pass awards Shiny Stones');
+assert.ok(freeRewards.some(reward => reward.kind === 'item' && reward.item === 'Mega Stone Fragment'), 'free pass awards Mega Stone Fragments');
+assert.ok(Array.from({ length: 100 }, (_, i) => passContext.idlePassRewards(i + 1, 'free')).filter(rewards => rewards.some(reward => reward.kind === 'gold')).length < 50, 'most free tiers include non-Gold rewards');
+
+const passHelpersStart = source.indexOf('function idlePassWindow(');
+const passHelpersEnd = source.indexOf('function idleRecordKill(', passHelpersStart);
+const passProgress = { pass: { xp: 99995, plusPoints: 0, plusXpRemainder: 0 }, kills: { 1: 500 } };
+const passHelperContext = { idleProgress: () => passProgress, Date, Math, Number, Object, String };
+vm.runInNewContext(source.slice(passHelpersStart, passHelpersEnd), passHelperContext);
+passHelperContext.awardIdlePassXp(10);
+assert.equal(passProgress.pass.xp, 100000, 'pass progression stops at level 100');
+assert.equal(passProgress.pass.plusPoints, 0, 'only post-level-100 XP becomes Pass+');
+passHelperContext.awardIdlePassXp(100);
+assert.equal(passProgress.pass.plusPoints, 1, '100 excess pass XP converts to one Pass+ point');
+assert.equal(passProgress.pass.plusXpRemainder, 5, 'partial Pass+ conversion is retained');
+const passMissions = passHelperContext.idlePassMissionSpecs(passProgress);
+assert.ok(passMissions.some(m => m.desc === 'Derrote 500 Pokémon' && m.count === 500), 'season pass includes the 500-defeat milestone');
+assert.ok(passMissions.some(m => m.period === 'daily' && m.goal === 100), 'pass includes a daily defeat mission');
+assert.ok(passMissions.some(m => m.period === 'weekly' && m.goal === 500), 'pass includes a weekly defeat mission');
 
 const boxStart = source.indexOf('function openIdleStarterBox()');
 const boxEnd = source.indexOf('function renderIdleBag()', boxStart);
