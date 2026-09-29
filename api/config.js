@@ -125,19 +125,39 @@ async function psyChat(req, res) {
     ],
   };
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 18_000);
-    let upstream;
-    try {
-      upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(MODEL) + ':generateContent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-        body: JSON.stringify(body), signal: controller.signal,
-      });
-    } finally { clearTimeout(timeout); }
-    const payload = await upstream.json();
-    if (!upstream.ok) {
-      console.error('Gemini API failure:', upstream.status, payload?.error?.status || payload?.error?.message || 'unknown');
+    const modelCandidates = Array.from(new Set([MODEL, 'gemini-3.1-flash-lite']));
+    const deadline = Date.now() + 18_000;
+    const quotaFailure = () => res.status(429).json({
+      error: 'psy_quota_exhausted',
+      message: 'A Psy está online, mas a cota ou o limite de uso do Gemini foi atingido. Tente novamente mais tarde ou confira os limites do projeto no Google AI Studio.',
+    });
+    let upstream = null;
+    let payload = null;
+    for (let index = 0; index < modelCandidates.length; index += 1) {
+      const remainingMs = deadline - Date.now();
+      if (remainingMs <= 0) break;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), remainingMs);
+      try {
+        upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelCandidates[index]) + ':generateContent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
+          body: JSON.stringify(body), signal: controller.signal,
+        });
+      } finally { clearTimeout(timeout); }
+      payload = await upstream.json().catch(() => ({}));
+      if (upstream.ok) break;
+      const quotaLimited = upstream.status === 429 || payload?.error?.status === 'RESOURCE_EXHAUSTED';
+      if (!quotaLimited || index === modelCandidates.length - 1) {
+        console.error('Gemini API failure:', upstream.status, payload?.error?.status || 'unknown');
+        if (quotaLimited) return quotaFailure();
+        return res.status(502).json({ error: 'psy_upstream_unavailable', message: 'A Psy não conseguiu pesquisar agora. Tente novamente.' });
+      }
+      console.warn('Gemini primary model rate limited; trying fallback model');
+    }
+    if (!upstream?.ok) {
+      const quotaLimited = upstream?.status === 429 || payload?.error?.status === 'RESOURCE_EXHAUSTED';
+      if (quotaLimited) return quotaFailure();
       return res.status(502).json({ error: 'psy_upstream_unavailable', message: 'A Psy não conseguiu pesquisar agora. Tente novamente.' });
     }
     if (payload?.promptFeedback?.blockReason) return res.status(200).json({ name: 'Psy Assistente', answer: refusal, sources: [] });
