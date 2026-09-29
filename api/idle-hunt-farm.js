@@ -14,8 +14,8 @@ export default async function handler(req,res){
     const requestId=text(body.request_id,64);
     if(!UUID.test(requestId))fail('invalid_id');
     const mapKey=text(body.map_key,64);
-    if(!/^kanto-\\d{3}$/.test(mapKey))fail('invalid_map');
-    const payload={map_key:mapKey,nickname:text(body.nickname||user.user_metadata?.trainer_name||'Treinador',24)};
+    if(!/^kanto-\d{3}$/.test(mapKey))fail('invalid_map');
+    const payload={map_key:mapKey,auto_farm:body.auto_farm!==false,nickname:text(body.nickname||user.user_metadata?.trainer_name||'Treinador',24)};
     const {data,error}=await supabase.rpc('idle_hunt_farm',{u:user.id,act:action,p:payload,req:requestId});
     if(error){if(error.code==='P0001')fail(error.message,409);if(['22P02','22023'].includes(error.code))fail('invalid_request');throw error;}
     return res.status(200).json(data);
