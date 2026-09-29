@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../core/shared-mode-drops-v1.js'),'utf8');
+const mainProfile={inventory:{},meta:{}};
+const idleProfile={meta:{modeEconomies:{psyIdle:{gold:0,drops:{'idle:item:Essence%20Of%20Fire':2},packs:{}}}}};
+const fixedMath=Object.create(Math);fixedMath.random=()=>0;
+const window={P:mainProfile,__psyIdleProfile:idleProfile,PSY:{},RARITIES:[],TYPE_BY_ID_FULL:{1:['Fire']},autoSave(){},updateHUD(){},notif(){},psyQueueIdleSave(){},getTotalBuff(){return 0}};
+vm.runInNewContext(source,{window,P:mainProfile,Math:fixedMath,console,Map,WeakSet,Number,String,Array,Object,JSON,Date,decodeURIComponent,encodeURIComponent});
+assert.equal(window.psyModeEconomy('idle').drops['Essence Of Fire'],2,'legacy encoded Idle loot is normalized');
+window.psySharedCombatDrop({id:1,type:'Fire'},'idle');
+const idleDrops=idleProfile.meta.modeEconomies.psyIdle.drops;
+assert.ok(Number(idleDrops['Essence Of Fire'])>2,'combat drops go into the Idle profile Bag');
+assert.ok(Number(idleDrops['Fire Tail'])>0,'quest materials go into the Idle profile Bag');
+assert.deepEqual(mainProfile.meta,{},'Idle combat does not contaminate the World profile');
+console.log('Idle loot profile routing: ok');

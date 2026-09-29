@@ -13,7 +13,7 @@
   W.__PSYWORLD_SHARED_MODE_DROPS_V2__=true;
   W.__PSYWORLD_SHARED_MODE_DROPS_V1__=true; // compatibilidade com guards antigos
 
-  const BUILD='SHARED_MODE_DROPS_V11_WORLD_PACKS';
+  const BUILD='SHARED_MODE_DROPS_V12_IDLE_PROFILE';
   try{if(typeof P!=='undefined'&&P)W.P=P}catch(e){}
 
   const TYPES=['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
@@ -30,8 +30,8 @@
 
   const norm=v=>String(v==null?'':v).trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const num=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
-  const profile=()=>{try{if(typeof P!=='undefined'&&P){if(W.P!==P)W.P=P;return P}}catch(e){}return W.P||(W.P={})};
-  function ensure(){const p=profile();if(!p.inventory||typeof p.inventory!=='object')p.inventory={};if(!p.meta||typeof p.meta!=='object')p.meta={};return p}
+  const profile=(mode='')=>{if(mode==='idle'&&W.__psyIdleProfile&&typeof W.__psyIdleProfile==='object')return W.__psyIdleProfile;try{if(typeof P!=='undefined'&&P){if(W.P!==P)W.P=P;return P}}catch(e){}return W.P||(W.P={})};
+  function ensure(mode=''){const p=profile(mode);if(!p.inventory||typeof p.inventory!=='object')p.inventory={};if(!p.meta||typeof p.meta!=='object')p.meta={};return p}
   function save(){try{W.autoSave?.()}catch(e){}try{W.updateHUD?.()}catch(e){}}
   function notify(m){try{W.notif?.(m,3000)}catch(e){console.log('[PSYWORLD DROPS]',m)}}
   function buff(k){try{return Math.max(0,num(W.getTotalBuff?.(k),0))}catch(e){return 0}}
@@ -44,11 +44,24 @@
   function typeFromId(id){if(id==null)return null;const table=W.TYPE_BY_ID_FULL||W.TYPE_BY_ID_EXT||W.TYPE_BY_ID_ALL||{};return typeFromValue(table[id])}
   function enemyType(e){if(e&&typeof e==='object'){for(const v of [e.types,e.type,e.element,e.primaryType,e.elements]){const t=typeFromValue(v);if(t)return t}try{const a=W.PSY?.getAdventureCreature?.(e.name||e.spriteKey);const t=typeFromValue(a?.types||a?.element);if(t)return t}catch(_){}}return typeFromId(enemyId(e))||'Normal'}
   function essence(t){const table=W.PSY_ELEMENT_DATA||{};return table[t]||table[TYPE_PT[t]]||ESSENCE_FALLBACK[t]||ESSENCE_FALLBACK.Normal}
-  const idlePocketViews=new WeakMap();
-  function idlePocketView(x){if(idlePocketViews.has(x))return idlePocketViews.get(x);x.currencyId='idle:gold';for(const name of Object.keys(x.drops)){if(!name.startsWith('idle:item:')){const id='idle:item:'+encodeURIComponent(name);x.drops[id]=num(x.drops[id],0)+num(x.drops[name],0);delete x.drops[name]}}const encode=n=>typeof n==='string'&&!n.startsWith('idle:item:')?'idle:item:'+encodeURIComponent(n):n;const drops=new Proxy(x.drops,{get:(t,k)=>Reflect.get(t,encode(k)),set:(t,k,v)=>Reflect.set(t,encode(k),v),deleteProperty:(t,k)=>Reflect.deleteProperty(t,encode(k)),ownKeys:t=>Reflect.ownKeys(t).map(k=>typeof k==='string'&&k.startsWith('idle:item:')?decodeURIComponent(k.slice(10)):k),getOwnPropertyDescriptor:(t,k)=>{const d=Reflect.getOwnPropertyDescriptor(t,encode(k));return d?{...d,configurable:true}:undefined}});const view=new Proxy(x,{get:(t,k)=>k==='drops'?drops:Reflect.get(t,k),set:(t,k,v)=>Reflect.set(t,k,v)});idlePocketViews.set(x,view);return view}
+  const idlePocketViews=new WeakSet();
+  function idlePocketView(x){
+    if(idlePocketViews.has(x))return x;
+    const drops=x.drops&&typeof x.drops==='object'?x.drops:(x.drops={});
+    for(const key of Object.keys(drops)){
+      if(!key.startsWith('idle:item:'))continue;
+      let name=key.slice('idle:item:'.length);
+      try{name=decodeURIComponent(name)}catch(_){}
+      if(!name||name===key)continue;
+      drops[name]=num(drops[name],0)+num(drops[key],0);
+      delete drops[key];
+    }
+    idlePocketViews.add(x);
+    return x;
+  }
   function modePocket(p,key){p.meta=p.meta&&typeof p.meta==='object'?p.meta:{};p.meta.modeEconomies=p.meta.modeEconomies&&typeof p.meta.modeEconomies==='object'?p.meta.modeEconomies:{};const x=p.meta.modeEconomies[key]||(p.meta.modeEconomies[key]={gold:0,drops:{},packs:{}});x.gold=Math.max(0,num(x.gold,0));x.drops=x.drops&&typeof x.drops==='object'?x.drops:{};x.packs=x.packs&&typeof x.packs==='object'?x.packs:{};return key==='psyIdle'?idlePocketView(x):x}
   function addItem(p,n,q=1,modeOverride=''){if(!n)return 0;const qty=Math.max(1,Math.floor(num(q,1))),mode=String(modeOverride||W.__psyDropContext?.mode||'');if(mode==='idle'||mode==='survivor'){const x=modePocket(p,mode==='idle'?'psyIdle':'psyduck');x.drops[n]=Math.max(0,num(x.drops[n],0))+qty;return qty}p.inventory[n]=Math.max(0,num(p.inventory[n],0))+qty;return qty}
-  W.psyModeEconomy=function(mode){const p=ensure(),key=mode==='idle'?'psyIdle':mode==='survivor'?'psyduck':String(mode);return modePocket(p,key)};
+  W.psyModeEconomy=function(mode){const p=ensure(mode),key=mode==='idle'?'psyIdle':mode==='survivor'?'psyduck':String(mode);return modePocket(p,key)};
   W.psyModeAddGold=function(mode,amount){const x=W.psyModeEconomy(mode);x.gold=Math.max(0,num(x.gold,0)+num(amount,0));return x.gold};
   W.psyModeAddDrop=function(mode,name,qty=1){const x=W.psyModeEconomy(mode);x.drops[name]=Math.max(0,num(x.drops[name],0)+num(qty,1));return x.drops[name]};
   function ensurePacks(p){p.cardGame=p.cardGame&&typeof p.cardGame==='object'?p.cardGame:{};p.cardGame.packs=p.cardGame.packs&&typeof p.cardGame.packs==='object'?p.cardGame.packs:{};for(const k of ['normal','rare','epic','s','ss','sss','ur','urp','urpp'])p.cardGame.packs[k]=Math.max(0,Math.floor(num(p.cardGame.packs[k],0)));return p.cardGame.packs}
@@ -75,7 +88,7 @@
        Mesmo com buffs extremos, o multiplicador de materiais para em 2x.
        Isso impede farm infinito no Survivor/World quando o jogador passa a
        matar centenas de inimigos por minuto. */
-    const idleLoot=mode==='idle'&&Number(W.P?.meta?.psyIdleBuffs?.loot||0)>Date.now()?1.5:1;
+    const idleProfile=mode==='idle'?(W.__psyIdleProfile||W.P):W.P,idleLoot=mode==='idle'&&Number(idleProfile?.meta?.psyIdleBuffs?.loot||0)>Date.now()?1.5:1;
     const materialBoost=Math.min(2,Math.min(2,1+d/300)*idleLoot);
     /* Packs usam uma curva separada. V21 ainda referenciava cs.quest, campo
        inexistente, transformando a chance em NaN e anulando o drop. */
@@ -167,7 +180,7 @@
   function awardCommon(enemy,source='auto'){
     const mode=modeName(source);if(mode==='cards')return[];
     if(eventAlreadyAwarded(enemy,mode))return[];markEvent(enemy,mode);
-    const p=ensure(),profile=dropProfile(enemy,mode),cs=chanceScale(mode),rs=scale(mode),got=[],quota=materialQuota(p,mode);
+    const p=ensure(mode),profile=dropProfile(enemy,mode),cs=chanceScale(mode),rs=scale(mode),got=[],quota=materialQuota(p,mode);
 
     /* TODAS as entradas do perfil do ID são roladas independentemente.
        Survivor/World respeitam também o teto duro de 15 materiais por
@@ -246,5 +259,5 @@
   W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'3% no Idle; 0,60% base nos outros modos',questCommon:'6% no Idle; 1,20% base nos outros modos',questRare:'1% no Idle; 0,25% base nos outros modos',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor: 12%; Idle: tabela própria + suprimentos; World: 25%; Fast Encounter: 20%; Wild/Hunt: 50% das taxas da tabela'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
 
   installEndBattle();installWorldKill();installCardContext();
-  console.log('✅ PSYWORLD Shared Drops V11: materiais + Packs válidos; World usa Packs e não Cards diretas.');
+  console.log('✅ PSYWORLD Shared Drops V12: carteira Psy Idle isolada; World usa Packs e não Cards diretas.');
 })(window);
