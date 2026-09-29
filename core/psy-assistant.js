@@ -349,7 +349,7 @@
     for (const document of documents) {
       const title = String(document?.title || '');
       const body = String(document?.text || '');
-      if (!/^#\d{3}\s/.test(body)) continue;
+      if (!/^#\d{3,4}\s/.test(body)) continue;
       const speciesName = lookupKey(title).replace(/^pokemon\s+/, '');
       if (speciesName.length >= 3 && exactPhrase.includes(speciesName)) mentionedSpecies.add(speciesName);
     }
@@ -362,7 +362,7 @@
       const body = String(document?.text || '');
       const titleKey = lookupKey(title);
       const bodyKey = lookupKey(body);
-      const isSpeciesDocument = /^#\d{3}\s/.test(body);
+      const isSpeciesDocument = /^#\d{3,4}\s/.test(body);
       if (asksShinyRate && !asksCapture && !/\b(chance base de shiny|chance de shiny|taxa de shiny|shiny por spawn|1 em 2 000)\b/.test(bodyKey)) continue;
       const speciesName = isSpeciesDocument ? titleKey.replace(/^pokemon\s+/, '') : '';
       if (isSpeciesDocument && mentionedSpecies.size && !mentionedSpecies.has(speciesName)) continue;
