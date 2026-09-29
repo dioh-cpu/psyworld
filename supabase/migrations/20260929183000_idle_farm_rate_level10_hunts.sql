@@ -140,7 +140,7 @@ begin
     values(u,req,act,coalesce(p,'{}'::jsonb),coalesce(result,'{}'::jsonb));
   if act='claim' then perform realtime.send(jsonb_build_object('changed',true),'changed','idle-commerce',true); end if;
   return result;
-end $function$
+end $function$;
 
 
 -- Make the existing first-evolution Kanto hunt band available at trainer/enemy level 10.
