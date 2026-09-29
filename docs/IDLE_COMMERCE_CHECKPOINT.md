@@ -1,4 +1,12 @@
-# Idle commerce checkpoint — 2026-09-28
+# Idle commerce checkpoint — 2026-09-29
+
+## Publicação de produção — 2026-09-29
+
+- Corrigida e publicada a proteção contra venda de Pokémon do time: a loja lista apenas Pokémon do Box; venda individual e em lote revalidam a chave estável contra o Box atual; Pokémon em uso na batalha não podem ser vendidos; a sprite da batalha é reconciliada após a venda.
+- A branch `main` foi publicada no commit `6952f7b4c6e96b150a99744192b50f5a5d8cd646`. Deployment de produção Vercel `dpl_cYak739sX8TABKrn26bYSc8iYUwv` chegou a `READY`, servindo o alias `https://psyworld-world-of-monsters.vercel.app/`; URL direta: `https://psyworld-ahrhj0ysd-world-of-monsters.vercel.app/`.
+- A árvore publicada corresponde à árvore validada localmente. Nove suítes CJS passaram (venda, economia, ciclo de comércio, starter/HUD, isolamento de perfil, ciclo social, API de hunt, callback OAuth e mapas/níveis de hunt); também passaram `node --check` nos JavaScripts alterados e `git diff --check`.
+- A proteção SSO da Vercel segue ativa. O link temporário de compartilhamento redirecionou para login no navegador sem sessão; portanto, o acesso anônimo ainda não foi confirmado. Não foi alterada a configuração SSO.
+- O arquivo local `assets/audio/psyworld_theme.mp3`, que já estava modificado pelo usuário, foi preservado e excluído da publicação.
 
 User scope: all online systems belong exclusively to Idle. Latest clarification: leave PSYWORLD exactly as it is; do not add online features to it and do not remove its existing modules. Never import PSYWORLD currency, items or Pokémon into Idle commerce. Market and auctions are categorized UI catalogs, not player maps.
 
@@ -8,8 +16,7 @@ User scope: all online systems belong exclusively to Idle. Latest clarification:
 - Individual and bulk sales recheck the latest Box by stable Pokémon key before removing anything, so a stale sale screen cannot remove a Pokémon that has since moved into the team.
 - Opening the shop and completing a sale reconcile the battle sprite with the current team. If a prior erroneous sale left a stale battle reference, it switches to the current team member.
 - Added tests/idle-pokemon-sale.cjs. It passed along with the economy guardrails, commerce lifecycle, starter/HUD tests, JavaScript syntax checks and git diff --check.
-- The fix is local and not published or deployed.
-- Vercel production was checked on 2026-09-28: https://psyworld-world-of-monsters.vercel.app/ (deployment alias https://psyworld-j38plp0jn-world-of-monsters.vercel.app/), currently serving commit 913be2945fabfb8970e741640cff55390c647707. It does not yet include the local sale fix.
+- Superseded by the production publication recorded at the top of this checkpoint (2026-09-29).
 
 ## Continuação atual — 2026-09-28
 
