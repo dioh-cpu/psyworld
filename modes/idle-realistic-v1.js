@@ -232,7 +232,15 @@ function saveIdleAuto(){try{W.localStorage?.setItem(IDLE_AUTO_KEY,auto?'1':'0')}
 function syncIdleAutoButton(){const b=D.getElementById('psy-ir-auto');if(!b)return;b.classList.toggle('on',auto);b.textContent=auto?'🤖 AUTO ON':'🕹 AUTO OFF'}
 function loadIdleAfkSession(){try{return JSON.parse(W.localStorage?.getItem(IDLE_SESSION_KEY)||'null')}catch(e){return null}}
 function saveIdleAfkSession(){try{W.localStorage?.setItem(IDLE_SESSION_KEY,JSON.stringify({lastSeen:Date.now(),auto:!!auto,map:currentMapKey}))}catch(e){}}
-let idleFarmCheckpointTimer=0,idleVisibilityPaused=false;
+let idleFarmCheckpointTimer=0,idleVisibilityPaused=false,idleFarmNoticeAt=0;
+function reportIdleFarmFailure(error){
+ const now=Date.now(),code=String(error?.message||'');
+ console.warn('[PSY IDLE] falha no farm online/offline',error);
+ if(now-idleFarmNoticeAt<90000)return;
+ idleFarmNoticeAt=now;
+ const loginRequired=/auth_required|invalid_session|idle_farm_login_required|idle_auth_bridge_unavailable/i.test(code);
+ notify(loginRequired?'🔒 Para caçar com o jogo fechado, conecte sua conta online do Idle e deixe AUTO ligado.':'⚠️ Não foi possível salvar a caça online. Verifique a conexão e mantenha o Idle aberto até aparecer a confirmação.',5200);
+}
 function applyIdleOfflineClaim(report){
  if(!report||!report.ok)return;
  const xp=Math.max(0,Math.floor(Number(report.xp_awarded)||0)),gold=Math.max(0,Math.floor(Number(report.gold_awarded)||0)),kills=Math.max(0,Math.floor(Number(report.kills_awarded)||0)),drops=report.drops&&typeof report.drops==='object'?report.drops:{};
@@ -242,8 +250,8 @@ function applyIdleOfflineClaim(report){
  for(const [name,qty] of Object.entries(drops))if(Number(qty)>0)w.drops[name]=Number(w.drops[name]||0)+Number(qty);
  if(kills){const p=PSTATE();p.meta.worldIdleAfkSeconds=Number(p.meta.worldIdleAfkSeconds||0)+Number(report.elapsed_seconds||0);p.meta.worldIdleAfkGold=Number(p.meta.worldIdleAfkGold||0)+gold;p.meta.worldIdleAfkKills=Number(p.meta.worldIdleAfkKills||0)+kills;if(analytics){analytics.defeated+=kills;analytics.gold+=gold;analytics.xp+=xp;for(const [name,qty] of Object.entries(drops)){const row=analytics.drops.find(x=>x.name===name);if(row)row.qty+=Number(qty);else analytics.drops.push({name,qty:Number(qty)})}idleAnalyticsSave()}queueIdleSave();const loot=Object.entries(drops).map(([n,q])=>n+' ×'+q).join(', ');notify(`🤖 Caça online retomada: ${Math.floor(Number(report.elapsed_seconds||0)/60)} min • ${kills} abates • +${gold} G • +${xp} XP${loot?' • '+loot:''}`)}
 }
-async function resumeIdleAfkSession(){try{const s=loadIdleAfkSession()||{};const result=await idleOfflinePost('claim',{map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador'});applyIdleOfflineClaim(result)}catch(e){console.warn('[PSY IDLE] não foi possível reivindicar o farm offline',e)}}
-async function checkpointIdleFarm(action='checkpoint'){try{const s=loadIdleAfkSession()||{};if(action==='claim'){const result=await idleOfflinePost('claim',{map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador'});applyIdleOfflineClaim(result);return}await idleOfflinePost('checkpoint',{map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador'})}catch(e){}}
+async function resumeIdleAfkSession(){try{const result=await idleOfflinePost('claim',{map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador'});applyIdleOfflineClaim(result)}catch(e){reportIdleFarmFailure(e)}}
+async function checkpointIdleFarm(action='checkpoint'){try{if(action==='claim'){const result=await idleOfflinePost('claim',{map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador'});applyIdleOfflineClaim(result);return}await idleOfflinePost('checkpoint',{map_key:currentMapKey,auto_farm:!!auto,nickname:PSTATE().name||'Treinador'})}catch(e){reportIdleFarmFailure(e)}}
 function startIdleFarmCheckpoints(){if(idleFarmCheckpointTimer)clearInterval(idleFarmCheckpointTimer);idleFarmCheckpointTimer=setInterval(()=>{if(running&&D.visibilityState==='visible')checkpointIdleFarm('checkpoint')},15000)}
 
 function PSTATE(){return loadIdleCharacter()}
@@ -251,8 +259,12 @@ let idleHuntClaimQueue=Promise.resolve(),idleOnlineBallNotice=0;
 function idleRequestId(){return W.crypto?.randomUUID?.()||'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}
 function idleWait(ms){return new Promise(resolve=>setTimeout(resolve,Math.max(0,ms)))}
 async function idleOfflinePost(action,payload,requestId=idleRequestId()){
- const c=await W.PsyIdleSocial?.client?.();if(!c)return null;const auth=await c.auth.getSession();if(auth.error)throw auth.error;const token=auth.data?.session?.access_token;if(!token)return null;
- const response=await fetch('/api/idle-hunt-farm',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({action,request_id:requestId,...payload})});
+ const clientFactory=W.PsyIdleSocial?.client;
+ if(typeof clientFactory!=='function')throw new Error('idle_auth_bridge_unavailable');
+ const c=await clientFactory();if(!c?.auth)throw new Error('idle_auth_bridge_unavailable');
+ const auth=await c.auth.getSession();if(auth.error)throw auth.error;
+ const token=auth.data?.session?.access_token;if(!token)throw new Error('idle_farm_login_required');
+ const response=await fetch('/api/idle-hunt-farm',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({action,request_id:requestId,...payload}),keepalive:true});
  const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(String(body.error||'online_error'));return body;
 }
 async function idleOnlinePost(action,payload,requestId=idleRequestId()){
