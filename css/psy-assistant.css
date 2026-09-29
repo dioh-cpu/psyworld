@@ -3,7 +3,7 @@
   position:fixed;
   right:18px;
   bottom:18px;
-  z-index:1000400;
+  z-index:1236002;
   min-width:78px;
   min-height:42px;
   padding:8px 13px;
@@ -22,7 +22,7 @@
 #psy-assistant-menu-button{width:90%;margin:5px;padding:11px;border:1px solid #67e8f9;border-radius:8px;background:#0e7490;color:#fff;font-weight:900;cursor:pointer}
 .psy-global-notice{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:1000401;display:flex;align-items:center;gap:10px;width:min(720px,calc(100vw - 28px));box-sizing:border-box;padding:10px 12px;border:1px solid #facc15;border-radius:12px;background:linear-gradient(145deg,#3b2508f5,#1f2937f2);color:#fef3c7;font:800 11px/1.35 system-ui,sans-serif;box-shadow:0 12px 34px #000c,0 0 20px #facc1533 inset}.psy-global-notice b{color:#fde68a;white-space:nowrap}.psy-global-notice span{flex:1}.psy-global-notice button{border:1px solid #facc15;border-radius:7px;background:#713f12;color:#fff7ed;padding:5px 8px;font-weight:900;cursor:pointer}
 .psy-assistant[hidden]{display:none!important}
-.psy-assistant{position:fixed;inset:0;z-index:1000399;display:flex;align-items:flex-end;justify-content:flex-end;padding:78px 18px 72px;background:#02061738;pointer-events:none}
+.psy-assistant{position:fixed;inset:0;z-index:1236001;display:flex;align-items:flex-end;justify-content:flex-end;padding:78px 18px 72px;background:#02061738;pointer-events:none}
 .psy-assistant-card{pointer-events:auto;display:flex;flex-direction:column;width:min(440px,calc(100vw - 36px));height:min(650px,calc(100vh - 132px));overflow:hidden;border:1px solid #67e8f9;border-radius:20px;background:linear-gradient(145deg,#061526f8,#0b2942f5 65%,#10172ef5);color:#e0f2fe;box-shadow:0 25px 80px #000e,0 0 34px #22d3ee22 inset;backdrop-filter:blur(18px)}
 .psy-assistant-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;border-bottom:1px solid #2a6380;background:#061a2be8}
 .psy-assistant-brand{display:flex;align-items:center;gap:9px;font:1000 15px/1 system-ui,sans-serif;letter-spacing:.04em}

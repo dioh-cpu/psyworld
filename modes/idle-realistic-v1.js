@@ -655,6 +655,25 @@ function open(){makeScreen();installIdleVisualPolish();if(running)return;loadIdl
 function close(){if(running)checkpointIdleFarm('claim');if(idleFarmCheckpointTimer){clearInterval(idleFarmCheckpointTimer);idleFarmCheckpointTimer=0}persistIdlePokemonHp();W.PsyIdleTradeZone?.close();idleTradeChannel&&idleTradeClient?.removeChannel(idleTradeChannel);idleTradeChannel=null;D.getElementById('psy-ir-town')&&(D.getElementById('psy-ir-town').style.display='none');D.getElementById('psy-ir-trade-room')&&(D.getElementById('psy-ir-trade-room').style.display='none');D.getElementById('psy-ir-roster')&&(D.getElementById('psy-ir-roster').style.display='none');D.getElementById('psy-ir-starter')&&(D.getElementById('psy-ir-starter').style.display='none');W.__psyIdleActive=false;cancelIdleThrows();clearCorpses();queuedSkillIndex=-1;if(raidSession)endIdleRaid(false,'Raid cancelada ao sair do Psy Idle.');idleSuiteClose();for(const id of ['psy-ir-shop-overlay','psy-ir-analytics-overlay','psy-ir-helper','psy-ir-bag-overlay']){const el=D.getElementById(id);if(el)el.style.display='none'}closeIdleOverlay('psy-ir-quests-overlay');closeIdleOverlay('psy-ir-dex-overlay');if(idleSaveTimer){clearTimeout(idleSaveTimer);idleSaveTimer=0}try{queueIdleSave();saveIdleCharacter()}catch(e){}idleAnalyticsSettle();saveIdleAfkSession();try{W.updateTrainerHUD?.();W.updateHUD?.()}catch(e){}try{D.getElementById('world-btn-float')&&(D.getElementById('world-btn-float').style.visibility='')}catch(_){}if(!running&&screen){screen.style.display='none';return}running=false;cancelAnimationFrame(raf);raf=0;keys.clear();pointerTarget=null;W.removeEventListener('resize',resize);D.removeEventListener('keydown',onKeyDown);D.removeEventListener('keyup',onKeyUp);try{cv?.removeEventListener('pointerdown',onPointer)}catch(e){};if(screen)screen.style.display='none';try{D.getElementById('world-btn-float')&&(D.getElementById('world-btn-float').style.visibility='')}catch(e){};notify('Psy Idle encerrado.')}
 D.addEventListener('visibilitychange',()=>{if(!running)return;if(D.visibilityState==='hidden'){idleVisibilityPaused=true;cancelAnimationFrame(raf);raf=0;checkpointIdleFarm('claim')}else if(idleVisibilityPaused){checkpointIdleFarm('claim').finally(()=>{if(running&&idleVisibilityPaused){idleVisibilityPaused=false;last=performance.now();raf=requestAnimationFrame(loop)}})}});
 W.addEventListener('pagehide',()=>{try{if(running)checkpointIdleFarm('claim');idleAnalyticsSettle();saveIdleAfkSession();saveIdleCharacter()}catch(e){}});
+W.psyIdleAssistantContext=function(){
+ const profile=PSTATE()||{},trainer=idlePlayerProfile()||{},pokemon=Array.isArray(profile.team)?profile.team[0]:null,selectedMap=idleTown?null:currentMap;
+ let types=[],species=[];
+ try{types=String(getPokemonTypes(Number(pokemon?.id)||0)||'').split(/[\\/|]/).map(value=>value.trim()).filter(Boolean).slice(0,2)}catch(_){}
+ try{species=Array.isArray(selectedMap?.species)?selectedMap.species.slice(0,8).map(id=>getPokemonName(Number(id))).filter(Boolean):[]}catch(_){}
+ return {
+  screen:'Psy Idle',mode:'Psy Idle',save_scope:'Psy Idle',
+  region:String(selectedMap?.region||'').slice(0,50),
+  trainer_level:Number(trainer.level)||1,
+  active_name:String(pokemon?.name||getPokemonName(Number(pokemon?.id)||0)||'').slice(0,60),
+  active_level:Number(pokemon?.level)||1,
+  active_hp:Number(pokemon?.hp)||0,
+  active_max_hp:Number(pokemon?.maxHp||pokemon?.baseMaxHp)||0,
+  active_types:types,team_size:Array.isArray(profile.team)?profile.team.length:0,
+  current_map_key:String(selectedMap?currentMapKey:'').slice(0,40),
+  current_map_name:String(selectedMap?.name||'').slice(0,80),
+  current_map_species:species,afk:!!profile.afk
+ };
+};
 W.psyIdleHuntLevel=speciesHuntLevel;W.openIdleRealisticV1=open;W.closeIdleRealisticV1=close;W.openIdleRealisticV2=open;W.closeIdleRealisticV2=close;W.psyIdleOpenSuite=openIdleSuite;
 console.log('✅ PSYWORLD Psy Idle V2 carregado — 5 mapas + menu essencial + recompensa Wild parity');
 })(window,document);

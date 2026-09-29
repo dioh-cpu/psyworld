@@ -107,6 +107,8 @@
   }
 
   function currentMode() {
+    const idle = D.getElementById('psy-idle-realistic');
+    if (idle && getComputedStyle(idle).display !== 'none' && idle.getAttribute('aria-hidden') !== 'true') return 'Psy Idle';
     const candidates = [['psy-adventure-v95-authored', 'Aventura'], ['screen-world', 'World'], ['screen-survivor', 'Survivor'], ['screen-idle', 'World Idle']];
     const visible = candidates.find(([id]) => {
       const el = D.getElementById(id);
@@ -115,17 +117,77 @@
     return visible?.[1] || 'Hub';
   }
 
-  function gameContext() {
+  function readIdleProfile() {
+    try {
+      const profile = JSON.parse(W.localStorage?.getItem('psy_idle_character_v1') || 'null');
+      return profile && profile.psyIdleProfileVersion === 1 ? profile : null;
+    } catch (_) { return null; }
+  }
+
+  function explicitContextTarget(message) {
+    const q = String(message || '');
+    if (/\bpsy[\s-]*idle\b|\bidle\s+world\b|\bworld\s+idle\b|\bidle\b/i.test(q)) return 'Psy Idle';
+    if (/\bpsyworld\b|\bpsy[\s-]*world\b|\bmundo principal\b/i.test(q)) return 'Psyworld';
+    return '';
+  }
+
+  function idleContext() {
+    const saved = readIdleProfile();
+    let live = {};
+    if ((saved || currentMode() === 'Psy Idle') && typeof W.psyIdleAssistantContext === 'function') {
+      try { live = W.psyIdleAssistantContext() || {}; } catch (_) {}
+    }
+    const profile = saved || {};
+    const meta = profile.meta || {};
+    const trainer = meta.psyIdlePlayer || {};
+    const poke = Array.isArray(profile.team) ? profile.team[0] : null;
+    let dexName = '';
+    try {
+      dexName = W.ALL_POKE_NAMES?.[poke?.id] || '';
+      if (!dexName && typeof ALL_POKE_NAMES !== 'undefined') dexName = ALL_POKE_NAMES?.[poke?.id] || '';
+    } catch (_) {}
+    const types = Array.isArray(live.active_types) ? live.active_types.slice(0, 2).map(value => text(value, 18)) : [];
+    return {
+      screen: 'Psy Idle', mode: 'Psy Idle', save_scope: 'Psy Idle',
+      region: text(live.region || '', 50), section: '',
+      trainer_level: Number(live.trainer_level || trainer.level || profile.level) || 1,
+      active_name: text(live.active_name || poke?.name || dexName || '', 60),
+      active_level: Number(live.active_level || poke?.level) || 1,
+      active_hp: Number(live.active_hp ?? poke?.hp) || 0,
+      active_max_hp: Number(live.active_max_hp ?? poke?.maxHp ?? poke?.baseMaxHp) || 0,
+      active_types: types,
+      team_size: Array.isArray(profile.team) ? profile.team.length : Number(live.team_size) || 0,
+      current_map_key: text(live.current_map_key || '', 40),
+      current_map_name: text(live.current_map_name || '', 80),
+      current_map_species: Array.isArray(live.current_map_species) ? live.current_map_species.slice(0, 8).map(value => text(value, 60)) : [],
+      afk: !!live.afk, fast_encounter: false, quest: '',
+      nearby_count: Math.max(0, Number(live.nearby_count) || 0),
+    };
+  }
+
+  function gameContext(message = '') {
+    const target = explicitContextTarget(message);
+    if (target === 'Psy Idle') return idleContext();
+    if (target === 'Psyworld') return mainGameContext();
+    const previousUserMessage = state.history.filter(item => item.role === 'user').slice(-2, -1)[0];
+    if (currentMode() === 'Psy Idle' || explicitContextTarget(previousUserMessage?.content) === 'Psy Idle') return idleContext();
+    return mainGameContext();
+  }
+
+  function mainGameContext() {
     const p = W.P || {}, poke = activePoke(), runtime = W.PSY?.adventureRuntime, quest = p.adventureQuest || p.quest || null;
     const hp = runtime?.playerHp ?? runtime?.hp ?? poke?.hp ?? null;
     const maxHp = runtime?.playerMaxHp ?? runtime?.maxHp ?? poke?.maxHp ?? null;
     return {
-      screen: currentMode(), mode: currentMode(),
+      screen: currentMode(), mode: currentMode(), save_scope: 'Psyworld',
       region: text(runtime?.section || runtime?.region || p.currentRegion || ''),
-      section: text(runtime?.section || ''), active_name: text(poke?.name || p.activePokemon || ''),
+      section: text(runtime?.section || ''),
+      trainer_level: Number(p.trainerLevel || p.playerLevel || p.level) || 1,
+      active_name: text(poke?.name || p.activePokemon || ''),
       active_level: Number(poke?.level || p.level || 0) || 0,
-      active_hp: Number(hp) || 0, active_max_hp: Number(maxHp) || 0,
+      active_hp: Number(hp) || 0, active_max_hp: Number(maxHp) || 0, active_types: [],
       team_size: Array.isArray(p.team) ? p.team.length : 0,
+      current_map_key: '', current_map_name: '', current_map_species: [],
       afk: !!(runtime?.afk || p.afk), fast_encounter: !!W.fastEncounter,
       quest: text(quest?.title || quest?.name || ''), nearby_count: Array.isArray(runtime?.mons) ? runtime.mons.length : 0,
     };
@@ -201,7 +263,12 @@
     const hp = ctx.active_max_hp ? ' HP ' + ctx.active_hp + '/' + ctx.active_max_hp : '';
     if (/\b(onde|qual|melhor|recomenda|ca[cç]ar|ca[cç]a|hunt|upar|treinar|farm)\b/.test(q) && /\b(ca[cç]|hunt|upar|level|treinar|farm|pok[eé]mon)\b/.test(q)) {
       const name = ctx.active_name || 'seu Pokémon';
-      return 'Para ' + name + ' no nível ' + (ctx.active_level || 1) + ', escolha no Psy Idle uma hunt de nível baixo, com Pokémon selvagens de nível 1. Em Kanto, procure áreas com Caterpie, Weedle, Rattata ou Bellsprout; Charmander tem vantagem contra Caterpie, Weedle e Bellsprout, e deve evitar alvos de Água. Confira o nível mínimo da área no mapa antes de iniciar.';
+      if (ctx.save_scope === 'Psy Idle') {
+        const species = Array.isArray(ctx.current_map_species) ? ctx.current_map_species.join(', ') : '';
+        if (ctx.current_map_name) return 'No Psy Idle, você está na hunt ' + ctx.current_map_name + (species ? ', que contém ' + species : '') + '. Para escolher outra, use o mapa e confira quais rotas estão liberadas para o nível do treinador.';
+        return 'No Psy Idle, para ' + name + ' no nível ' + (ctx.active_level || 1) + ', abra o mapa de hunts e escolha uma rota marcada como liberada para o nível do treinador ' + (ctx.trainer_level || 1) + '. Sem conexão, não consigo confirmar a lista atual de mapas elegíveis.';
+      }
+      return 'Abra HUNTS ou WORLD no Psyworld e escolha uma área liberada para o seu nível. Confira os níveis dos alvos antes de iniciar e use a vantagem de tipo quando disponível.';
     }
     if (/\b(hp|vida|status|level|nível|nivel|xp|experi[eê]ncia|dano)\b/.test(q)) {
       return 'Seu Pokémon ativo é ' + pokemon + level + hp + '. Os detalhes completos ficam no HUD e na tela Time / Box. O dano depende do nível, dos atributos, do golpe e da vantagem de tipo.';
@@ -446,7 +513,7 @@
     if (project) attachedNames.push(project.name);
     addMessage('user', 'Você', attachedNames.length ? finalMessage + ' [' + attachedNames.join(', ') + ']' : finalMessage);
     if (send) send.disabled = true;
-    const ctx = gameContext();
+    const ctx = gameContext(finalMessage);
     try {
       if (!state.health?.chat_available) {
         addMessage('assistant', 'Psy Assistente', offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
