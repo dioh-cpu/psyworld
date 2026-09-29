@@ -99,3 +99,11 @@ Production remains prior main chat fixes, not this commerce implementation.
 - Browser verification blocked: no browser installed; agent-browser installer certificate error; bundled Playwright browser downloads returned invalid ZIPs. No visual verification claimed.
 - Blocking product/data issue remains: the legacy Idle Pokémon roster shares P.team/P.box with PSYWORLD. Do not import the mixed roster or reset progress without agreeing migration treatment. Market accounts remain empty until the independent Idle inventory/progression integration is implemented.
 - Prior GitHub push of 1887eb2 was rejected by automatic approval review; user has not explicitly answered the requested authorization. Do not retry or use another publication route to bypass it.
+
+
+## Publicação pública e chat em tempo real — 2026-09-28
+
+- O usuário autorizou remover a proteção SSO da Vercel e deixar o projeto público. Essa configuração ainda não foi alterada: o painel administrativo exige autenticação GitHub na sessão de navegador desta tarefa; handoff manual está pendente.
+- Verificação read-only do Supabase `otwgavwvjxuwtgncjbiq`: as migrações `20260928225705_idle_guest_chat_sale_xp` e `20260928230428_idle_chat_dual_broadcast_compat` estão aplicadas; `psy_idle_chat_messages` tem RLS ativo e política SELECT para `anon`; o trigger `psy_idle_chat_broadcast_after_insert` envia evento `INSERT` em modo público e privado para manter compatibilidade com clientes atuais. A tabela de rate limit também tem RLS e acesso apenas pelo serviço.
+- O cliente `modes/idle-social-v1.js` entra nos tópicos públicos `psyworld-idle-chat:<canal>`, marca `Online • ao vivo` quando inscrito, recarrega histórico ao conectar e atualiza ao receber `INSERT`; mensagens de visitante são gravadas pela API `/api/idle-chat` com rate limit e RPC de serviço.
+- Passaram novamente `tests/idle-social-lifecycle.cjs`, `tests/idle-pokemon-sale.cjs` e `tests/idle-economy-guardrails.cjs`. A verificação interativa do jogo público e do status em navegador continua pendente até desativar SSO.
