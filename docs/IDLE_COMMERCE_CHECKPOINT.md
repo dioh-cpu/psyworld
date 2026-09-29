@@ -127,3 +127,11 @@ Production remains prior main chat fixes, not this commerce implementation.
 - O nível 100 gratuito concede uma Caixa Shiny de Inicial das 9 regiões. A caixa aparece na Bag; abrir adiciona um inicial regional Shiny à Box.
 - Testes novos validam os presentes do inicial, as três configurações automáticas, boosts em todos os marcos de 5, valores escalados e abertura/consumo da caixa. Todos os `tests/*.cjs`, checagens de sintaxe e `git diff --check` passaram.
 - Os bônus iniciais são concedidos ao concluir a escolha do inicial; perfis que já tinham inicial escolhido recebem o pacote uma única vez quando entrarem no Idle após esta versão.
+
+
+## Mixagem dos efeitos na hunt — 2026-09-29
+
+- Efeitos elementais dos ataques automáticos do Idle compartilham limite de 760 ms, para evitar rajadas de áudio ao alternar golpes; o volume dos golpes caiu para 22% do volume de SFX escolhido pelo jogador.
+- Drops comuns deixaram de emitir um som a cada abate. Drops raros usam um único canal com intervalo mínimo de 2,4 s.
+- Cura, level-up, lançamento de Pokébola, resultado da captura e encontro Shiny mantêm seus avisos sonoros em volume reduzido e com limites próprios. O áudio global e o slider de SFX não foram alterados.
+- Teste automatizado valida o limite compartilhado entre tipos, volume reduzido, supressão de drops repetidos e preservação dos avisos de captura/Shiny.
