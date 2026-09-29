@@ -109,9 +109,9 @@
          Survivor/World aplicam 50% e o bônus de Drop pode no máximo dobrar
          essas chances. Assim, mesmo no teto, 700 abates geram em média
          ~14,35 materiais de Craft/Quest, antes do RNG. */
-      {kind:'craft',name:ess.ess,chance:mode==='idle'?.03:rs*.006*cs.materialBoost},
-      {kind:'quest-common',name:pair[0],chance:mode==='idle'?.06:rs*.012*cs.materialBoost},
-      {kind:'quest-rare',name:pair[1],chance:mode==='idle'?.01:rs*.0025*cs.materialBoost}
+      {kind:'craft',name:ess.ess,chance:mode==='idle'?.03*cs.materialBoost:rs*.006*cs.materialBoost},
+      {kind:'quest-common',name:pair[0],chance:mode==='idle'?.06*cs.materialBoost:rs*.012*cs.materialBoost},
+      {kind:'quest-rare',name:pair[1],chance:mode==='idle'?.01*cs.materialBoost:rs*.0025*cs.materialBoost}
     ]};
     if(key)idDropProfiles.set(key,profile);
     return profile;
