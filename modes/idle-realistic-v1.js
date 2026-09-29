@@ -656,21 +656,21 @@ function close(){if(running)checkpointIdleFarm('claim');if(idleFarmCheckpointTim
 D.addEventListener('visibilitychange',()=>{if(!running)return;if(D.visibilityState==='hidden'){idleVisibilityPaused=true;cancelAnimationFrame(raf);raf=0;checkpointIdleFarm('claim')}else if(idleVisibilityPaused){checkpointIdleFarm('claim').finally(()=>{if(running&&idleVisibilityPaused){idleVisibilityPaused=false;last=performance.now();raf=requestAnimationFrame(loop)}})}});
 W.addEventListener('pagehide',()=>{try{if(running)checkpointIdleFarm('claim');idleAnalyticsSettle();saveIdleAfkSession();saveIdleCharacter()}catch(e){}});
 W.psyIdleAssistantContext=function(){
- const profile=PSTATE()||{},trainer=idlePlayerProfile()||{},pokemon=Array.isArray(profile.team)?profile.team[0]:null;
+ const profile=PSTATE()||{},trainer=idlePlayerProfile()||{},pokemon=Array.isArray(profile.team)?profile.team[0]:null,selectedMap=idleTown?null:currentMap;
  let types=[],species=[];
  try{types=String(getPokemonTypes(Number(pokemon?.id)||0)||'').split(/[\\/|]/).map(value=>value.trim()).filter(Boolean).slice(0,2)}catch(_){}
- try{species=Array.isArray(currentMap?.species)?currentMap.species.slice(0,8).map(id=>getPokemonName(Number(id))).filter(Boolean):[]}catch(_){}
+ try{species=Array.isArray(selectedMap?.species)?selectedMap.species.slice(0,8).map(id=>getPokemonName(Number(id))).filter(Boolean):[]}catch(_){}
  return {
   screen:'Psy Idle',mode:'Psy Idle',save_scope:'Psy Idle',
-  region:String(currentMap?.region||mapTab||'').slice(0,50),
+  region:String(selectedMap?.region||'').slice(0,50),
   trainer_level:Number(trainer.level)||1,
   active_name:String(pokemon?.name||getPokemonName(Number(pokemon?.id)||0)||'').slice(0,60),
   active_level:Number(pokemon?.level)||1,
   active_hp:Number(pokemon?.hp)||0,
   active_max_hp:Number(pokemon?.maxHp||pokemon?.baseMaxHp)||0,
   active_types:types,team_size:Array.isArray(profile.team)?profile.team.length:0,
-  current_map_key:String(currentMapKey||'').slice(0,40),
-  current_map_name:String(currentMap?.name||'').slice(0,80),
+  current_map_key:String(selectedMap?currentMapKey:'').slice(0,40),
+  current_map_name:String(selectedMap?.name||'').slice(0,80),
   current_map_species:species,afk:!!profile.afk
  };
 };
