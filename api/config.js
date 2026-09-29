@@ -125,7 +125,7 @@ async function psyChat(req, res) {
     ],
   };
   try {
-    const modelCandidates = Array.from(new Set([MODEL, 'gemini-3.1-flash-lite']));
+    const modelCandidates = Array.from(new Set([MODEL, 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']));
     const deadline = Date.now() + 18_000;
     const quotaFailure = () => res.status(429).json({
       error: 'psy_quota_exhausted',
@@ -153,7 +153,7 @@ async function psyChat(req, res) {
         if (quotaLimited) return quotaFailure();
         return res.status(502).json({ error: 'psy_upstream_unavailable', message: 'A Psy não conseguiu pesquisar agora. Tente novamente.' });
       }
-      console.warn('Gemini primary model rate limited; trying fallback model');
+      console.warn('Gemini model rate limited; trying next fallback model');
     }
     if (!upstream?.ok) {
       const quotaLimited = upstream?.status === 429 || payload?.error?.status === 'RESOURCE_EXHAUSTED';
