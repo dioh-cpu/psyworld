@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const crypto=require('node:crypto');
 const source=fs.readFileSync(require.resolve('../modes/idle-commerce-v1.js'),'utf8');
-const listeners={},storage=new Map([['psy_idle_session_v1',JSON.stringify({access_token:'stale'})]]);
+const listeners={},storage=new Map([['psyworld_online_session_v23',JSON.stringify({access_token:'stale'})]]);
 let auth={data:{session:null}},channels=0,release;
 const client={auth:{getSession:async()=>auth},realtime:{setAuth:()=>new Promise(r=>release=r)},channel(){channels++;return{on(){return this},subscribe(){return this}}}};
 const W={dispatchEvent(){},PsyIdleSocial:{client:async()=>client},addEventListener:(k,f)=>listeners[k]=f};
@@ -17,7 +17,7 @@ vm.runInNewContext(source.replace('W.PsyIdleCommerce={open,close};',`W.test={tok
  W.test.close();release();await pending;assert.equal(channels,0);
  console.log('PASS: closing while authenticating prevents leaked realtime channel');
  root.style.display='block';listeners['idle-auth-changed']();assert.equal(root.style.display,'none');
- root.style.display='block';listeners.storage({key:'psy_idle_session_v1'});assert.equal(root.style.display,'none');
+ root.style.display='block';listeners.storage({key:'psyworld_online_session_v23'});assert.equal(root.style.display,'none');
  console.log('PASS: account changes close commerce in current and other tabs');
  await assert.rejects(W.test.mutate('create',{quantity:1}),/connection_lost/);
  assert.equal(pendingOps.size,1);

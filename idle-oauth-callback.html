@@ -4,32 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>Entrando no Psy Idle</title>
+  <title>Conta PSYWORLD</title>
   <style>
     body{margin:0;min-height:100vh;display:grid;place-items:center;background:#071321;color:#eafaff;font:16px system-ui,sans-serif}
-    main{width:min(440px,calc(100% - 40px));padding:26px;border:1px solid #47c9d5;border-radius:18px;background:#102238;text-align:center}
+    main{width:min(480px,calc(100% - 40px));padding:26px;border:1px solid #47c9d5;border-radius:18px;background:#102238;text-align:center}
     h1{color:#ffe39a;font-size:24px}p{color:#b6cada;line-height:1.55}a{color:#80e4e1}
   </style>
 </head>
 <body>
-  <main><h1>Entrando no Psy Idle</h1><p id="status">Confirmando sua conta…</p></main>
+  <main><h1>Conta PSYWORLD</h1><p>O Idle usa a conta principal já conectada ao PSYWORLD. Não há um login separado do Idle. O chat continua disponível sem login.</p><p id="status">Voltando ao jogo… <a href="/">Abrir PSYWORLD</a></p></main>
   <script>
     (()=>{
-      const SESSION_KEY='psy_idle_session_v1',PENDING_KEY='psyIdleSocialOAuthPendingV1';
-      const params=new URLSearchParams(location.hash.replace(/^#/,''));
-      const status=document.getElementById('status');
-      const fail=message=>{localStorage.removeItem(PENDING_KEY);history.replaceState(null,document.title,location.pathname+location.search);status.textContent=message+' Você pode voltar ao jogo e tentar novamente.';const link=document.createElement('a');link.href='/';link.textContent=' Voltar ao jogo';status.appendChild(link)};
-      const error=params.get('error_description')||params.get('error');
-      if(error){fail('Não foi possível concluir o login.');return}
-      if(localStorage.getItem(PENDING_KEY)!=='1'){fail('Esta autenticação não foi iniciada pelo Psy Idle.');return}
-      const access=params.get('access_token');
-      if(!access){fail('A resposta do login não trouxe uma sessão válida.');return}
-      const expiresIn=Number(params.get('expires_in')||3600),expiresAt=Number(params.get('expires_at')||0)*1000||Date.now()+expiresIn*1000;
-      try{
-        localStorage.setItem(SESSION_KEY,JSON.stringify({access_token:access,refresh_token:params.get('refresh_token')||'',token_type:params.get('token_type')||'bearer',expires_in:expiresIn,expires_at:expiresAt}));
-        localStorage.removeItem(PENDING_KEY);
-        location.replace('/');
-      }catch(_){fail('Não foi possível guardar a sessão neste navegador.')}
+      const PENDING_KEY='psyIdleSocialOAuthPendingV1';
+      try{localStorage.removeItem(PENDING_KEY)}catch(_){}
+      try{history.replaceState(null,document.title,location.pathname+location.search)}catch(_){}
+      setTimeout(()=>{try{location.replace('/')}catch(_){}},900);
     })();
   </script>
 </body>

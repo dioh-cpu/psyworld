@@ -1,7 +1,7 @@
 /* PSY IDLE · Chat global e registros pessoais. Supabase Realtime usa somente chave publicável. */
 (function(W,D){
   'use strict';
-  const SESSION_KEY='psy_idle_session_v1';
+  const SESSION_KEY='psyworld_online_session_v23';
   const CONFIG_KEY='psyIdleSocialPrefsV1';
   const LOG_KEY='psyIdleSocialLogsV1';
   const GUEST_ID_KEY='psyIdleChatGuestIdV1';
@@ -21,7 +21,7 @@
   const readSession=()=>parse(localStorage.getItem(SESSION_KEY),null);
   const readPrefs=()=>parse(localStorage.getItem(CONFIG_KEY),{});
   let supa=null,clientPromise=null,localSupabaseScriptPromise=null,activeChannel=null,channelSub=null,activeView='chat',activeTab='global',filter='all',search='',root=null,screen=null,refreshTaskTimer=0,realtimeRetryTimer=0,realtimeRetries=0,realtimeStatus='CLOSED',realtimeConnectPromise=null,realtimeConnectSlug='';
-  let connectionGeneration=0,trainerNameSyncPromise=null,syncedTrainerNameUser='',syncedTrainerName='';
+  let connectionGeneration=0,trainerNameSyncPromise=null,syncedTrainerNameUser='',syncedTrainerName='',lastSharedUserId='';
   const historyCache=new Map(),historyRequests=new Map();
   const localLogs=()=>parse(localStorage.getItem(LOG_KEY),{});
   function saveLogs(x){try{localStorage.setItem(LOG_KEY,JSON.stringify(x))}catch(_){}}
@@ -42,21 +42,33 @@
     }
   }
   async function getClient(){
-    if(clientPromise)return clientPromise;
-    if(supa)return supa;
-    clientPromise=(async()=>{
-      const {url,key}=await getConfig();
-      if(!url||!key)throw new Error('configuração online indisponível');
-      const createClient=await getSupabaseCreateClient();
-      supa=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
-      supa.auth.onAuthStateChange((event,session)=>{try{if(session){persistSession(session);if(session.access_token)Promise.resolve(supa.realtime.setAuth(session.access_token)).catch(()=>{})}else if(event==='SIGNED_OUT')localStorage.removeItem(SESSION_KEY)}catch(_){}if(['SIGNED_IN','SIGNED_OUT'].includes(event))W.dispatchEvent(new CustomEvent('idle-auth-changed'));if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
-      const session=readSession();
-      if(session?.access_token){
-        try{const r=await supa.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token||''});if(r.error)localStorage.removeItem(SESSION_KEY);else if(r.data?.session)persistSession(r.data.session)}catch(_){localStorage.removeItem(SESSION_KEY)}
-      }
-      return supa;
-    })().catch(e=>{clientPromise=null;supa=null;throw e});
-    return clientPromise;
+    if(!clientPromise&&!supa){
+      clientPromise=(async()=>{
+        const {url,key}=await getConfig();
+        if(!url||!key)throw new Error('configuração online indisponível');
+        const createClient=await getSupabaseCreateClient();
+        supa=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
+        supa.auth.onAuthStateChange((event,session)=>{try{if(session){persistSession(session);if(session.access_token)Promise.resolve(supa.realtime.setAuth(session.access_token)).catch(()=>{})}else if(event==='SIGNED_OUT')lastSharedUserId=''}catch(_){}if(['SIGNED_IN','SIGNED_OUT'].includes(event))W.dispatchEvent(new CustomEvent('idle-auth-changed'));if(root&&['SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event))setTimeout(()=>render(),0)});
+        return supa;
+      })().catch(e=>{clientPromise=null;supa=null;throw e});
+    }
+    const client=supa||await clientPromise;
+    try{await syncSharedSession(client)}catch(error){try{await client.auth.signOut({scope:'local'})}catch(_){}lastSharedUserId='';console.warn('[Psy Idle shared session]',error)}
+    return client;
+  }
+  async function syncSharedSession(client){
+    const shared=readSession();
+    if(!shared?.access_token){if(lastSharedUserId){try{await client.auth.signOut({scope:'local'})}catch(_){}lastSharedUserId=''}return null}
+    const current=await client.auth.getSession();
+    const live=current?.data?.session;
+    if(live?.access_token!==shared.access_token||String(live?.user?.id||'')!==String(shared.user?.id||'')){
+      const result=await client.auth.setSession({access_token:shared.access_token,refresh_token:shared.refresh_token||''});
+      if(result?.error)throw result.error;
+      if(result?.data?.session)persistSession(result.data.session);
+    }
+    lastSharedUserId=String(shared.user?.id||'');
+    try{await client.realtime.setAuth(shared.access_token)}catch(_){}
+    return shared;
   }
   function currentUser(){return readSession()?.user||null}
   function guestId(){try{let id=localStorage.getItem(GUEST_ID_KEY);if(!id){id=W.crypto?.randomUUID?.()||'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});localStorage.setItem(GUEST_ID_KEY,id)}return id}catch(_){return'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)})}}
@@ -71,10 +83,19 @@
   }
   function persistSession(session){
     if(!session?.access_token)return;
-    const old=readSession()||{};delete old.provider_token;delete old.provider_refresh_token;
+    const old=readSession()||{};
+    if(old.user?.id&&session.user?.id&&String(old.user.id)!==String(session.user.id))return;
+    delete old.provider_token;delete old.provider_refresh_token;
     const expiry=Number(session.expires_at||0);
     const safe={access_token:session.access_token,refresh_token:session.refresh_token||'',token_type:session.token_type||'bearer',expires_in:Number(session.expires_in||3600),expires_at:expiry>0?(expiry<1e12?expiry*1000:expiry):Date.now()+Number(session.expires_in||3600)*1000,user:session.user||old.user};
     try{localStorage.setItem(SESSION_KEY,JSON.stringify({...old,...safe}))}catch(_){}
+    if(session.user?.id)lastSharedUserId=String(session.user.id);
+  }
+  async function social(action,payload={}){
+    if(!readSession()?.access_token)throw new Error('Entre na conta principal do PSYWORLD para usar a Trade Zone. O chat continua disponível sem login.');
+    const c=await getClient(),{data,error}=await c.rpc('idle_social',{p_action:String(action),p:payload||{}});
+    if(error)throw error;
+    return data;
   }
   function wantsChat(slug){return !!root&&!!readPrefs().open&&activeView==='chat'&&activeTab===slug&&!!CHANNELS.find(c=>c.id===slug)?.online}
   function stopChannel(resetRetries=true){
@@ -255,8 +276,9 @@
   `;D.head.appendChild(style)}
   function install(){const s=D.getElementById('psy-idle-realistic');if(s&&getComputedStyle(s).display!=='none'){mount(s);return}if(!D.body)return;const obs=new MutationObserver(()=>{const now=D.getElementById('psy-idle-realistic');if(now&&getComputedStyle(now).display!=='none'){mount(now);obs.disconnect()}});obs.observe(D.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});setTimeout(()=>obs.disconnect(),120000)}
   W.addEventListener('psy-idle-social-log',e=>{const d=e.detail||{};if(d.type==='capture')addLog('captures',d);if(d.type==='loot')addLog('loot',d);if(d.type==='task')addLog('tasks',d)});
-  W.addEventListener('storage',e=>{if(e.key===SESSION_KEY&&root)render()});
-  W.PsyIdleSocial={client:getClient,open(){if(!root){install();return}const p=readPrefs();p.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()},log:addLog};
+  W.addEventListener('storage',e=>{if(e.key===SESSION_KEY){if(supa)syncSharedSession(supa).catch(error=>console.warn('[Psy Idle shared session]',error));if(root)render()}});
+  W.addEventListener('focus',()=>{if(supa)syncSharedSession(supa).catch(()=>{})});
+  W.PsyIdleSocial={client:getClient,social,trainerName:worldTrainerName,open(){if(!root){install();return}const p=readPrefs();p.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()},log:addLog};
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',install,{once:true});else install();
   setTimeout(install,500);
 })(window,document);

@@ -107,3 +107,15 @@ Production remains prior main chat fixes, not this commerce implementation.
 - Verificação read-only do Supabase `otwgavwvjxuwtgncjbiq`: as migrações `20260928225705_idle_guest_chat_sale_xp` e `20260928230428_idle_chat_dual_broadcast_compat` estão aplicadas; `psy_idle_chat_messages` tem RLS ativo e política SELECT para `anon`; o trigger `psy_idle_chat_broadcast_after_insert` envia evento `INSERT` em modo público e privado para manter compatibilidade com clientes atuais. A tabela de rate limit também tem RLS e acesso apenas pelo serviço.
 - O cliente `modes/idle-social-v1.js` entra nos tópicos públicos `psyworld-idle-chat:<canal>`, marca `Online • ao vivo` quando inscrito, recarrega histórico ao conectar e atualiza ao receber `INSERT`; mensagens de visitante são gravadas pela API `/api/idle-chat` com rate limit e RPC de serviço.
 - Passaram novamente `tests/idle-social-lifecycle.cjs`, `tests/idle-pokemon-sale.cjs` e `tests/idle-economy-guardrails.cjs`. A verificação interativa do jogo público e do status em navegador continua pendente até desativar SSO.
+
+
+## Conta compartilhada e Trade Zone — 2026-09-29
+
+- Causa do pedido de login separado: o Idle lia `psy_idle_session_v1`; a conta principal do PSYWORLD mantém a sessão em `psyworld_online_session_v23`. A Trade Zone usava a primeira chave e nunca via a autenticação já ativa.
+- O Idle agora sincroniza sua sessão Supabase com `psyworld_online_session_v23`, preservando os dados de personagem/economia do Idle em `psy_idle_character_v1`. A chave antiga `psy_idle_session_v1` não é usada para identidade ativa. O callback de OAuth legado descarta respostas próprias do Idle e volta ao PSYWORLD.
+- O chat público continua visitante: leitura e envio não precisam de login e continuam disponíveis quando a sessão principal falta ou expira.
+- A Trade Zone passou a usar um módulo dedicado com uma praça compartilhada, avatares posicionados via presença privada Supabase, movimento por clique/WASD/setas e controles de toque, nickname vindo do PSYWORLD, pedidos de amizade com aceitar/recusar, mensagens privadas com histórico, bloqueio e convites de troca com aceitar/recusar/cancelar. Solicitações sociais atualizam por consulta a cada 5 segundos; movimento/presença usa Realtime.
+- Market, leilão, Pokédex/equipe, inventário, Gold e progresso continuam isolados nos dados do Idle. Nenhum código de autenticação, save ou economia do PSYWORLD foi alterado.
+- Nenhuma migração de banco foi necessária: o módulo usa o canal privado de presença e `idle_social` já existentes/aplicados.
+- Adicionados `tests/idle-shared-session.cjs` e `tests/idle-trade-zone.cjs`; ajustados testes do callback e da sessão principal. Todos os `tests/*.cjs`, checagens de sintaxe JavaScript e `git diff --check` passaram.
+- A interface abre e aceita convites de troca; a seleção/oferta dos itens dentro da sala continua exigindo uma interface própria, pois os ativos do Idle local ainda não são sincronizados para o inventário online autoritativo.

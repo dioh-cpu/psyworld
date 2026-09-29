@@ -33,5 +33,5 @@ assert.match(migration,/realtime\.send\([\s\S]*?'psyworld-idle-chat:' \|\| new\.
 assert.match(guestApi,/rpc\('psy_idle_send_guest_chat'/);
 assert.match(social,/config:\{private:false\}/);
 assert.doesNotMatch(social,/Entrar com GitHub|data-login-email|data-login-pass|renderLogin|wireLogin/);
-assert.match(moduleLoader,/IDLE_BAG_CHAT_ECONOMY_20260928_V7/);
+assert.match(moduleLoader,/IDLE_SHARED_TRADE_ZONE_20260929_V8/);
 console.log('PASS: bag/HUD, 20 XP, guest chat and server-enforced common-loot-only sales');

@@ -106,10 +106,9 @@ const flush = async()=>{for(let i=0;i<15;i++)await Promise.resolve()};
   console.log('PASS: reconnect retrieves the newest 60 messages');
 
   test.reset();queries=[];channels=[];test.setView('market','global');
-  data.set('psy_idle_session_v1',JSON.stringify({access_token:'fixture',user:{id:'fixture'}}));
   test.render();await flush();
   assert.equal(queries.length,0);assert.equal(channels.length,0);
-  assert.match(element('[data-market-feed]').innerHTML,/em desenvolvimento/);
-  assert.equal(element('[data-market-live]').textContent,'Em desenvolvimento');
-  console.log('PASS: unavailable commerce does not cause a database error');
+  assert.match(element('[data-market-feed]').innerHTML,/Entre na conta online/);
+  assert.equal(element('[data-market-live]').textContent,'○ conta desconectada');
+  console.log('PASS: commerce stays offline without a PSYWORLD session and makes no database request');
 })().catch(error=>{console.error(error);process.exitCode=1});
