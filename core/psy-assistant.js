@@ -126,7 +126,7 @@
 
   function explicitContextTarget(message) {
     const q = String(message || '');
-    if (/\bpsy[\s-]*idle\b|\bidle\s+world\b|\bworld\s+idle\b/i.test(q)) return 'Psy Idle';
+    if (/\bpsy[\s-]*idle\b|\bidle\s+world\b|\bworld\s+idle\b|\bidle\b/i.test(q)) return 'Psy Idle';
     if (/\bpsyworld\b|\bpsy[\s-]*world\b|\bmundo principal\b/i.test(q)) return 'Psyworld';
     return '';
   }
@@ -169,9 +169,8 @@
     const target = explicitContextTarget(message);
     if (target === 'Psy Idle') return idleContext();
     if (target === 'Psyworld') return mainGameContext();
-    const recentUserMessages = state.history.filter(item => item.role === 'user').slice(-5);
-    const recentIdleTopic = recentUserMessages.some(item => explicitContextTarget(item.content) === 'Psy Idle');
-    if (currentMode() === 'Psy Idle' || recentIdleTopic) return idleContext();
+    const previousUserMessage = state.history.filter(item => item.role === 'user').slice(-2, -1)[0];
+    if (currentMode() === 'Psy Idle' || explicitContextTarget(previousUserMessage?.content) === 'Psy Idle') return idleContext();
     return mainGameContext();
   }
 
