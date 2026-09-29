@@ -77,7 +77,7 @@ begin
   if act='claim' then
     if profile.farm_checkpoint_at is not null and profile.farm_enabled then
       elapsed_seconds:=least(28800,greatest(0,floor(extract(epoch from (clock_timestamp()-profile.farm_checkpoint_at)))::integer));
-      select * into m from public.idle_hunt_maps where public.idle_hunt_maps.map_key=coalesce(profile.farm_map_key,map_key);
+      select * into m from public.idle_hunt_maps where public.idle_hunt_maps.map_key=coalesce(profile.farm_map_key, map_key);
       if m.map_key is not null and profile.trainer_level>=m.min_trainer_level then
         simulated_kills:=least(2400,floor(elapsed_seconds/12.0)::integer);
       else
