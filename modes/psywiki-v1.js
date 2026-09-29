@@ -5,7 +5,7 @@ if(W.__PSYWORLD_WIKI_V1__)return;W.__PSYWORLD_WIKI_V1__=true;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const q=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const sections=[['psyduck','🦆','Psyduck'],['pokemon','🔴','Pokémon'],['psyidle','🌿','Psy Idle'],['drops','🎁','Drops e itens'],['progression','🧭','Níveis e evolução'],['economy','🪙','Moedas e lojas'],['events','🎟️','Passe e eventos'],['systems','📚','Sistemas']];
-let active='psyduck',term='',chosen=54,dropTerm='';
+let active='psyduck',term='',chosen=54,dropTerm='',knowledgeCache=null;
 function rarityRows(){const windows=W.PSY_TIER_RARITY_WINDOW||{},tiers=['E','D','C','B','A','S','SS','SSS','UR','UR+','UR++'];return tiers.map(t=>{const band=windows[t]||[],high=({E:.16,D:.18,C:.20,B:.22,A:.24,S:.24,SS:.20,SSS:.18,UR:.14,'UR+':.06}[t]??.18);return {tier:t,band,high,hasRoll:band.length>1}})}
 function speciesCatalog(){try{if(typeof ALL_POKE_NAMES!=='undefined'&&ALL_POKE_NAMES)return ALL_POKE_NAMES}catch(_){}return W.ALL_POKE_NAMES||{}}
 function typeCatalog(){let t=W.TYPE_BY_ID_FULL||W.TYPE_BY_ID_EXT||W.TYPE_BY_ID_ALL;try{if(!t&&typeof TYPE_BY_ID_ALL!=='undefined')t=TYPE_BY_ID_ALL}catch(_){}return t||{}}
@@ -29,6 +29,85 @@ function progressionPage(){const names=speciesCatalog(),examples=[6,18,94,3,9,12
 function economyPage(){return `<div class="pw-lead"><small>ECONOMIA SEPARADA</small><h2>🪙 Moedas e lojas</h2><p>As carteiras de cada modo são independentes; PsyCoins continuam globais.</p></div><section class="pw-card"><h3>Psy Idle</h3><ul><li>Gold, Balls, poções, revives, materiais e itens coletáveis são guardados na economia própria do Idle.</li><li>Esses itens usam identificadores de modo e não movimentam o inventário do Mundo Pokémon.</li><li>A loja do Idle permite comprar Balls, poções e revives; vender materiais/drops e Pokémon comuns, com confirmação para liberar a venda de cada Pokémon.</li><li>Pokémon Shiny não podem ser vendidos. Poções não entram na aba de venda.</li><li>Breeding requer jogador nível 30, dois Pokémon elegíveis, Love Candy e pelo menos 500.000 Gold Psy Idle.</li></ul></section><section class="pw-card"><h3>Moedas globais</h3><p>PsyCoins são compartilhadas entre os modos conforme as regras da conta. As outras carteiras exibem o modo em que podem ser usadas.</p></section>`}
 function eventsPage(){return `<div class="pw-lead"><small>RECOMPENSAS E ATIVIDADES</small><h2>🎟️ Passe e eventos</h2><p>Consulte prazos, níveis exigidos e prêmios diretamente nos painéis do jogo.</p></div><section class="pw-card"><h3>Game Pass Psy Idle</h3><ul><li>Trilhas Free e Premium com missões próprias do Passe.</li><li>O Premium custa 10 PsyCoins.</li><li>Boosts de XP +50%, captura em dobro e loot +50% duram 1 hora.</li><li>Captura não concede ponto de kill; somente derrotas contam como abates. Capturas contam apenas para objetivos específicos de captura.</li></ul></section><section class="pw-card"><h3>Calendário, ranking e raids</h3><ul><li>Calendário oferece check-in e prêmios diários dentro da janela do Psy Idle.</li><li>Rankings acompanham níveis, capturas e abates; as categorias e temporadas aparecem no painel.</li><li>Raids usam relógio real e abrem em ciclos de 2 horas. A entrada libera no nível 100 do jogador; cada faixa de 50 níveis aumenta a dificuldade. Há modos individual e em grupo.</li></ul></section>`}
 function currentBody(){return active==='psyduck'?psyduckPage():active==='pokemon'?pokemonPage():active==='psyidle'?psyIdlePage():active==='drops'?dropsPage():active==='progression'?progressionPage():active==='economy'?economyPage():active==='events'?eventsPage():systemsPage()}
+
+function gameKnowledgeCorpus(){
+if(knowledgeCache)return knowledgeCache;
+const previous={active,term,chosen,dropTerm},documents=[],seen=new Set();
+const add=(title,body)=>{
+const clean=String(body||'').replace(/\s+/g,' ').trim();
+if(clean.length<12)return;
+const key=title+'|'+clean;
+if(seen.has(key))return;
+seen.add(key);documents.push({title:String(title||'PSYWORLD'),text:clean});
+};
+const plainName=id=>String(speciesCatalog()[id]||W.getPokeName?.(id)||('#'+id));
+try{
+term='';dropTerm='';
+for(const [id,icon,label] of sections){
+active=id;
+const markup=currentBody().replace(/<img\b[^>]*>/gi,'');
+const page=D.createElement('div');page.innerHTML=markup;
+const lead=page.querySelector('.pw-lead');
+if(lead)add(label,lead.textContent);
+for(const card of page.querySelectorAll('.pw-card')){
+const cardTitle=card.querySelector('h3,h2')?.textContent?.trim()||label;
+const nodes=card.querySelectorAll('p,li,tr,.pw-formula,.pw-drop-mon,summary,[data-pw-species]');
+if(!nodes.length){add(label+' — '+cardTitle,card.textContent);continue}
+for(const node of nodes){
+let content=node.textContent||'';
+if(node.matches('tr')){
+const table=node.closest('table');
+const headers=Array.from(table?.querySelectorAll('thead th')||[]).map(cell=>cell.textContent.trim()).filter(Boolean);
+if(headers.length)content=headers.join(' / ')+': '+content;
+}
+add(label+' — '+cardTitle,content);
+}
+}
+}
+const names=speciesCatalog(),typesById=typeCatalog(),windows=W.PSY_TIER_RARITY_WINDOW||{};
+for(const [rawId,rawName] of Object.entries(names)){
+const id=Number(rawId),name=String(rawName||'').trim();
+if(!(id>0)||!name)continue;
+const rawTypes=typesById[id];
+let types='Normal';
+if(Array.isArray(rawTypes))types=rawTypes.map(value=>typeof value==='object'?(value.name||value.type||''):value).filter(Boolean).join(' / ')||'Normal';
+else if(rawTypes&&typeof rawTypes==='object')types=Object.values(rawTypes).map(value=>typeof value==='object'?(value.name||value.type||''):value).filter(Boolean).join(' / ')||'Normal';
+else if(rawTypes)types=String(rawTypes);
+const tier=W.getTier?.(id)||W.getBaseTier?.(id)||'E';
+const quality=Array.isArray(windows[tier])?windows[tier].join(' a '):'especial';
+const stage=Math.max(1,Number(W.getEvoStage?.(id)||1));
+let hp=0,atk=0;
+try{hp=Number(W.calcBaseHpV14?.(1,1,false,false,id)||0)}catch(_){}
+try{atk=Number(W.calcBaseAtkV14?.(1,1,false,false,id)||0)}catch(_){}
+const evolution=[];
+let evoMap={},specialMap={};
+try{if(typeof EVOLUTION_MAP!=='undefined')evoMap=EVOLUTION_MAP||{}}catch(_){}
+try{if(typeof SPECIAL_EVOLUTIONS!=='undefined')specialMap=SPECIAL_EVOLUTIONS||{}}catch(_){}
+const targets=row=>{
+if(Array.isArray(row))return row.flatMap(targets);
+if(row&&typeof row==='object'){
+if(row.to!=null)return [Number(row.to)].filter(value=>value>0);
+return Object.values(row).flatMap(targets);
+}
+return [];
+};
+const outgoing=[...targets(evoMap[id]),...targets(specialMap[id])].filter((value,index,list)=>value!==id&&list.indexOf(value)===index);
+const incoming=[];
+for(const [source,row] of Object.entries(evoMap))if(targets(row).includes(id))incoming.push(Number(source));
+for(const [source,row] of Object.entries(specialMap))if(targets(row).includes(id))incoming.push(Number(source));
+const uniqueIncoming=incoming.filter((value,index,list)=>value>0&&list.indexOf(value)===index);
+if(outgoing.length)evolution.push('Evolui para '+outgoing.map(plainName).join(', '));
+if(uniqueIncoming.length)evolution.push('Pode evoluir de '+uniqueIncoming.map(plainName).join(', '));
+const details='#'+String(id).padStart(3,'0')+' '+name+'. Tipo: '+types+'. Tier: '+tier+'. Qualidades desse Tier: '+quality+'. Psy Idle Hunt Lv.'+wikiHuntLevel(id)+'. Forma evolutiva '+stage+'. HP base no Lv.1: '+hp.toLocaleString('pt-BR')+'. ATK base no Lv.1: '+atk.toLocaleString('pt-BR')+'. '+evolution.join('. ');
+add('Pokémon — '+name,details);
+}
+}catch(_){}
+finally{active=previous.active;term=previous.term;chosen=previous.chosen;dropTerm=previous.dropTerm}
+knowledgeCache=documents;
+return knowledgeCache;
+}
+W.PSY_GAME_KNOWLEDGE=gameKnowledgeCorpus;
+
 function render(){const root=D.getElementById('psy-wiki-content');if(root)root.innerHTML=currentBody();const nav=D.getElementById('psy-wiki-nav');if(nav)nav.innerHTML=sections.map(([id,icon,name])=>`<button data-wiki-tab="${id}" class="${active===id?'active':''}"><span>${icon}</span>${name}</button>`).join('');D.querySelectorAll('[data-wiki-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.wikiTab;term='';dropTerm='';render()});const input=D.getElementById('pw-pokemon-search');if(input)input.oninput=()=>{term=input.value;render();const n=D.getElementById('pw-pokemon-search');n?.focus();n?.setSelectionRange(term.length,term.length)};const drop=D.getElementById('pw-drop-search');if(drop)drop.oninput=()=>{dropTerm=drop.value;render();const n=D.getElementById('pw-drop-search');n?.focus();n?.setSelectionRange(dropTerm.length,dropTerm.length)};D.querySelectorAll('[data-pw-species]').forEach(b=>b.onclick=()=>{chosen=Number(b.dataset.pwSpecies);render()})}
 function close(){const m=D.getElementById('psy-wiki-overlay');if(m)m.style.display='none'}
 function open(){ensure();const m=D.getElementById('psy-wiki-overlay');m.style.display='flex';active='psyduck';term='';render()}

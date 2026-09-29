@@ -256,6 +256,159 @@
   }
   const restrictedReply = 'Não posso ajudar com conteúdo sexual, explícito ou sensível. Posso responder perguntas sobre Pokémon e Psyworld.';
 
+
+  const LOCAL_KNOWLEDGE_STOP_WORDS = new Set(('a as o os um uma uns umas de da do das dos em no na nos nas para por com sem sobre que qual quais como onde quando porque pq e e tambem seu sua seus suas meu minha meus minhas me te se ao aos pela pelo pelas pelos entre mais muito muita podem pode deve devem fazer faz ser tem ter isso esse essa esses essas aqui ai jogo psyworld psy idle').split(' '));
+  const LOCAL_KNOWLEDGE_GROUPS = [
+    ['hunt', 'caca', 'cacada', 'mapa', 'rota', 'farm', 'treino', 'upar'],
+    ['evolucao', 'evoluir', 'evolui', 'evolutiva', 'stone', 'stones', 'pedra'],
+    ['captura', 'capturar', 'capture', 'catch', 'ball', 'balls', 'pokeball', 'pokebola'],
+    ['drop', 'drops', 'loot', 'recompensa', 'recompensas', 'material', 'materiais', 'item', 'itens'],
+    ['xp', 'experiencia', 'exp', 'level', 'nivel', 'passe', 'pass', 'missao', 'missoes'],
+    ['tier', 'raridade', 'qualidade', 'multiplicador', 'rarity'],
+    ['hp', 'vida', 'dano', 'combate', 'batalha', 'ataque', 'golpe'],
+    ['bolsa', 'bag', 'inventario', 'mochila', 'carteira'],
+    ['shiny', 'brilhante', 'raridade', 'spawn', 'aparicao'],
+    ['trade', 'troca', 'amizade', 'amigo', 'jogador', 'player']
+  ];
+
+  function localKnowledgeTokens(value) {
+    return lookupKey(value).split(/\s+/).filter(token => token.length > 1 && !LOCAL_KNOWLEDGE_STOP_WORDS.has(token));
+  }
+
+  function localCurrentStatusAnswer(message, ctx) {
+    const q = lookupKey(message);
+    const asksStat = /\b(hp|vida|status|nivel|level|xp|exp|experiencia|atributo|atributos)\b/.test(q);
+    const asksCurrent = /\b(meu|minha|meus|minhas|atual|agora|ativo|ativa|time|equipe|estou|tenho|mostrar|mostre|status)\b/.test(q);
+    const asksBase = /\b(base|tier|qualidade|species|especie|pok[eé]dex)\b/.test(q);
+    if (!ctx?.active_name || !asksStat || !asksCurrent || asksBase) return '';
+    const lines = [];
+    lines.push((ctx.save_scope || 'Psyworld') + ': ' + ctx.active_name + (ctx.active_level ? ' · Lv. ' + ctx.active_level : ''));
+    if (ctx.active_max_hp) lines.push('HP atual: ' + (ctx.active_hp || 0) + '/' + ctx.active_max_hp);
+    if (ctx.trainer_level) lines.push('Nível do treinador: ' + ctx.trainer_level);
+    if (ctx.region) lines.push('Região: ' + ctx.region);
+    if (ctx.current_map_name) {
+      const species = Array.isArray(ctx.current_map_species) && ctx.current_map_species.length ? ' (' + ctx.current_map_species.join(', ') + ')' : '';
+      lines.push('Hunt atual: ' + ctx.current_map_name + species);
+    }
+    if (/\b(xp|exp|experiencia)\b/.test(q)) lines.push('O contador exato de XP não está disponível no contexto do assistente; confira o HUD do jogo.');
+    return 'Estado atual lido diretamente do jogo: ' + lines.join(' · ');
+  }
+
+  function localExcerpt(value, terms, maxLength) {
+    const source = String(value || '').replace(/\s+/g, ' ').trim();
+    if (source.length <= maxLength) return source;
+    const normalized = lookupKey(source);
+    let found = -1;
+    for (const term of terms) {
+      const at = normalized.indexOf(term);
+      if (at >= 0 && (found < 0 || at < found)) found = at;
+    }
+    let start = found >= 0 ? Math.max(0, found - Math.floor(maxLength / 3)) : 0;
+    if (start > 0) {
+      const boundary = source.indexOf(' ', start);
+      if (boundary > start) start = boundary + 1;
+    }
+    let end = Math.min(source.length, start + maxLength);
+    if (end < source.length) {
+      const boundary = source.lastIndexOf(' ', end);
+      if (boundary > start + Math.floor(maxLength * .65)) end = boundary;
+    }
+    return (start ? '…' : '') + source.slice(start, end).trim() + (end < source.length ? '…' : '');
+  }
+
+  function localGameAnswer(message, ctx) {
+    const question = String(message || '').trim();
+    const status = localCurrentStatusAnswer(question, ctx);
+    if (status) return status;
+    let searchMessage = question;
+    const userTurns = state.history.filter(item => item.role === 'user');
+    const currentTokens = localKnowledgeTokens(question);
+    if (currentTokens.length <= 2 && userTurns.length > 1) searchMessage = userTurns[userTurns.length - 2].content + ' ' + question;
+    const rawTokens = localKnowledgeTokens(searchMessage);
+    if (!rawTokens.length) return 'Faça uma pergunta sobre Pokémon, sistemas, itens ou regras do Psyworld para eu consultar a base interna.';
+    const weights = Object.create(null);
+    for (const token of rawTokens) weights[token] = Math.max(weights[token] || 0, 2.5);
+    for (const group of LOCAL_KNOWLEDGE_GROUPS) {
+      if (group.some(token => rawTokens.includes(token))) {
+        for (const token of group) if (!weights[token]) weights[token] = 0.75;
+      }
+    }
+    let documents = [];
+    try {
+      if (typeof W.PSY_GAME_KNOWLEDGE === 'function') documents = W.PSY_GAME_KNOWLEDGE() || [];
+    } catch (_) {}
+    if (!Array.isArray(documents) || !documents.length) {
+      const fallback = offlineAnswer(question, ctx, false);
+      if (!fallback.startsWith('Sou a Psy Assistente.')) return fallback;
+      return 'A base local do jogo ainda está carregando. Feche e abra a Psy Assistente para tentar novamente.';
+    }
+    const terms = Object.keys(weights);
+    const originalTerms = rawTokens;
+    const exactPhrase = lookupKey(question);
+    const mentionedSpecies = new Set();
+    for (const document of documents) {
+      const title = String(document?.title || '');
+      const body = String(document?.text || '');
+      if (!/^#\d{3,4}\s/.test(body)) continue;
+      const speciesName = lookupKey(title).replace(/^pokemon\s+/, '');
+      if (speciesName.length >= 3 && exactPhrase.includes(speciesName)) mentionedSpecies.add(speciesName);
+    }
+    const asksIdle = /\bpsy idle\b|\bidle\b/.test(exactPhrase);
+    const asksShinyRate = /\b(shiny|brilhante)\b/.test(exactPhrase) && /\b(chance|taxa|probabilidade|spawn|aparicao)\b/.test(exactPhrase);
+    const asksCapture = /\b(captura|capturar|capture|catch)\b/.test(exactPhrase);
+    const ranked = [];
+    for (const document of documents) {
+      const title = String(document?.title || 'PSYWORLD');
+      const body = String(document?.text || '');
+      const titleKey = lookupKey(title);
+      const bodyKey = lookupKey(body);
+      const isSpeciesDocument = /^#\d{3,4}\s/.test(body);
+      if (asksShinyRate && !asksCapture && !/\b(chance base de shiny|chance de shiny|taxa de shiny|shiny por spawn|1 em 2 000)\b/.test(bodyKey)) continue;
+      const speciesName = isSpeciesDocument ? titleKey.replace(/^pokemon\s+/, '') : '';
+      if (isSpeciesDocument && mentionedSpecies.size && !mentionedSpecies.has(speciesName)) continue;
+      let score = 0;
+      let matched = 0;
+      for (const term of terms) {
+        const titleHit = titleKey.includes(term);
+        const bodyHit = bodyKey.includes(term);
+        if (titleHit || bodyHit) {
+          const weight = weights[term] || 0;
+          score += weight * (titleHit ? 2.3 : 1);
+          if (originalTerms.includes(term)) matched++;
+        }
+      }
+      if (exactPhrase.length >= 5 && (titleKey.includes(exactPhrase) || bodyKey.includes(exactPhrase))) score += 8;
+      if (isSpeciesDocument && mentionedSpecies.has(speciesName)) score += 12;
+      if (asksIdle && titleKey.includes('psy idle')) score += 3;
+      if (asksShinyRate && !asksCapture) {
+        if (!/\b(shiny|brilhante)\b/.test(titleKey + ' ' + bodyKey)) score -= 5;
+        if (asksIdle && !titleKey.includes('psy idle')) score -= 4;
+        if (/\bspawn\b/.test(bodyKey)) score += 3;
+      }
+      const coverage = originalTerms.length ? matched / originalTerms.length : 0;
+      score += coverage * 2;
+      if (score > 0) ranked.push({ title, body, score, coverage });
+    }
+    ranked.sort((a, b) => b.score - a.score);
+    const selected = [];
+    const seen = new Set();
+    for (const item of ranked) {
+      if (item.score < 4 || (item.coverage < .25 && item.score < 7)) continue;
+      const key = item.title + '|' + item.body;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      selected.push(item);
+      if (selected.length >= (mentionedSpecies.size ? mentionedSpecies.size + 1 : 4)) break;
+    }
+    if (selected.length) {
+      const answer = selected.map(item => '[' + item.title + '] ' + localExcerpt(item.body, originalTerms, 300)).join('\n');
+      return 'Consultei a base interna do Psyworld:\n' + answer;
+    }
+    const fallback = offlineAnswer(question, ctx, false);
+    if (!fallback.startsWith('Sou a Psy Assistente.')) return fallback;
+    return 'Não encontrei essa regra nos dados locais atuais do Psyworld. Não vou inventar uma resposta. Tente incluir o nome do Pokémon, item ou sistema; a Psy consulta a Wiki e os dados internos do jogo, sem pesquisa externa.';
+  }
+
   function offlineAnswer(message, ctx, files) {
     const q = String(message || '').toLowerCase();
     const pokemon = ctx.active_name || 'seu Pokémon ativo';
@@ -337,6 +490,11 @@
   }
 
   async function checkHealth() {
+    if (state.mode === 'mini') {
+      state.health = { chat_available: false, local_only: true };
+      setStatus('JOGO · LOCAL', true);
+      return;
+    }
     try {
       const response = await fetch(endpoint() + 'health', { cache: 'no-store' });
       const data = await response.json();
@@ -373,7 +531,7 @@
     panel.querySelector('[data-psy-mini]')?.setAttribute('data-active', state.mode === 'mini' ? '1' : '0');
     panel.querySelector('[data-psy-owner]')?.setAttribute('data-open', ['owner', 'change'].includes(state.mode) ? '1' : '0');
     const input = panel.querySelector('textarea');
-    if (input) input.placeholder = state.mode === 'change' ? 'Descreva a mudança que Psy deve planejar…' : state.mode === 'owner' ? 'Fale com a Psy AI proprietária…' : 'Pergunte sobre exploração, caça ou o estado atual…';
+    if (input) input.placeholder = state.mode === 'change' ? 'Descreva a mudança que Psy deve planejar…' : state.mode === 'owner' ? 'Fale com a Psy AI proprietária…' : 'Pergunte sobre qualquer Pokémon, item, sistema ou regra do jogo…';
     const fileBox = panel.querySelector('[data-psy-file-box]');
     if (fileBox) fileBox.hidden = state.mode === 'mini';
   }
@@ -502,10 +660,13 @@
       addMessage('assistant', 'Psy Assistente', restrictedReply);
       return;
     }
+    const localOnly = state.mode === 'mini';
     const token = panel.querySelector('[data-psy-owner-token]')?.value.trim() || '';
     state.ownerToken = token;
     let bundle = { files: [], project: null };
-    try { bundle = await collectFiles(token); } catch (error) { addMessage('system', 'ARQUIVOS', error.message); return; }
+    if (!localOnly) {
+      try { bundle = await collectFiles(token); } catch (error) { addMessage('system', 'ARQUIVOS', error.message); return; }
+    }
     const files = bundle.files;
     const project = bundle.project;
     if (!message && !files.length && !project) return;
@@ -517,6 +678,12 @@
     if (send) send.disabled = true;
     const ctx = gameContext(finalMessage);
     try {
+      if (localOnly) {
+        if (send) send.textContent = 'CONSULTANDO…';
+        setStatus('BUSCA LOCAL', true);
+        addMessage('assistant', 'Psy Assistente', localGameAnswer(finalMessage, ctx));
+        return;
+      }
       if (!state.health?.chat_available) {
         addMessage('assistant', 'Psy Assistente', offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
         return;
@@ -530,7 +697,9 @@
       addMessage('assistant', 'Psy Assistente', remoteError || offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
     } finally {
       if (send) { send.disabled = false; send.textContent = 'ENVIAR'; }
-      if (state.health?.chat_available) setStatus(state.health.google_search ? 'GOOGLE · ONLINE' : 'ONLINE', true);
+      if (state.mode === 'mini') setStatus('JOGO · LOCAL', true);
+      else if (state.health?.chat_available) setStatus(state.health.google_search ? 'GOOGLE · ONLINE' : 'ONLINE', true);
+      else setStatus('LOCAL', false);
       const fileInput = panel?.querySelector('[data-psy-files]');
       if (fileInput) fileInput.value = '';
       updateFileLabel();
@@ -569,7 +738,7 @@
     if (menu && !D.getElementById('psy-assistant-menu-button')) { const button = D.createElement('button'); button.id = 'psy-assistant-menu-button'; button.type = 'button'; button.textContent = '🧠 ABRIR PSY ASSISTENTE'; button.onclick = open; menu.insertBefore(button, menu.lastElementChild); }
     const panel = D.createElement('div');
     panel.id = 'psy-assistant'; panel.className = 'psy-assistant'; panel.hidden = true;
-    panel.innerHTML = '<section class="psy-assistant-card" role="dialog" aria-modal="true" aria-label="Psy Assistente"><header class="psy-assistant-head"><div><div class="psy-assistant-brand">🧠 Psy Assistente <em>PSYWORLD</em></div><span class="psy-assistant-status" data-psy-status>LOCAL</span></div><button class="psy-assistant-close" type="button" data-psy-close>✕</button></header><div class="psy-assistant-feed" data-psy-feed><div class="psy-msg assistant"><small>Psy Assistente</small><div>Olá. Posso tirar dúvidas, orientar sua caça e ler o estado atual da aventura.</div></div></div><div class="psy-assistant-proposal" data-psy-proposal hidden></div><div class="psy-assistant-compose"><form data-psy-form><textarea maxlength="1400" placeholder="Pergunte sobre Pokémon, o Psyworld ou sua caça…"></textarea><button class="psy-assistant-send" type="submit">ENVIAR</button></form></div></section>';
+    panel.innerHTML = '<section class="psy-assistant-card" role="dialog" aria-modal="true" aria-label="Psy Assistente"><header class="psy-assistant-head"><div><div class="psy-assistant-brand">🧠 Psy Assistente <em>PSYWORLD</em></div><span class="psy-assistant-status" data-psy-status>JOGO · LOCAL</span></div><button class="psy-assistant-close" type="button" data-psy-close>✕</button></header><div class="psy-assistant-feed" data-psy-feed><div class="psy-msg assistant"><small>Psy Assistente</small><div>Olá. Posso tirar dúvidas, orientar sua caça e ler o estado atual da aventura.</div></div></div><div class="psy-assistant-proposal" data-psy-proposal hidden></div><div class="psy-assistant-compose"><form data-psy-form><textarea maxlength="1400" placeholder="Pergunte sobre Pokémon, o Psyworld ou sua caça…"></textarea><button class="psy-assistant-send" type="submit">ENVIAR</button></form></div></section>';
     D.body.appendChild(panel);
     panel.querySelector('[data-psy-close]')?.addEventListener('click', close);
     panel.querySelector('[data-psy-form]')?.addEventListener('submit', submit);
