@@ -463,9 +463,9 @@
   function install() {
     if (!D.body || root()) return;
     const launcher = D.createElement('button');
-    launcher.id = 'psy-assistant-launcher'; launcher.type = 'button'; launcher.innerHTML = '🧠 PSY<small>ASSISTENTE</small>'; launcher.setAttribute('aria-label', 'Abrir Psy'); launcher.onclick = open; D.body.appendChild(launcher);
+    launcher.id = 'psy-assistant-launcher'; launcher.type = 'button'; launcher.innerHTML = '🧠 PSY<small>ASSISTENTE</small>'; launcher.setAttribute('aria-label', 'Abrir Psy Assistente'); launcher.onclick = open; D.body.appendChild(launcher);
     const menu = D.getElementById('menu');
-    if (menu && !D.getElementById('psy-assistant-menu-button')) { const button = D.createElement('button'); button.id = 'psy-assistant-menu-button'; button.type = 'button'; button.textContent = '🧠 ABRIR PSY'; button.onclick = open; menu.insertBefore(button, menu.lastElementChild); }
+    if (menu && !D.getElementById('psy-assistant-menu-button')) { const button = D.createElement('button'); button.id = 'psy-assistant-menu-button'; button.type = 'button'; button.textContent = '🧠 ABRIR PSY ASSISTENTE'; button.onclick = open; menu.insertBefore(button, menu.lastElementChild); }
     const panel = D.createElement('div');
     panel.id = 'psy-assistant'; panel.className = 'psy-assistant'; panel.hidden = true;
     panel.innerHTML = '<section class="psy-assistant-card" role="dialog" aria-modal="true" aria-label="Psy Assistente"><header class="psy-assistant-head"><div><div class="psy-assistant-brand">🧠 Psy Assistente <em>PSYWORLD</em></div><span class="psy-assistant-status" data-psy-status>LOCAL</span></div><button class="psy-assistant-close" type="button" data-psy-close>✕</button></header><div class="psy-assistant-feed" data-psy-feed><div class="psy-msg assistant"><small>Psy Assistente</small><div>Olá. Posso tirar dúvidas, orientar sua caça e ler o estado atual da aventura.</div></div></div><div class="psy-assistant-proposal" data-psy-proposal hidden></div><div class="psy-assistant-compose"><form data-psy-form><textarea maxlength="4000" placeholder="Pergunte sobre exploração, caça ou o estado atual…"></textarea><button class="psy-assistant-send" type="submit">ENVIAR</button></form></div></section>';
