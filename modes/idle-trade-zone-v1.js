@@ -186,6 +186,8 @@ function open(options={}){
  '<footer><button data-trade-city>Voltar à cidade inicial</button><button data-trade-hunt>Ir para uma hunt individual</button></footer></div>';
  host.style.display='flex';host.onclick=onClick;host.onsubmit=onSubmit;connect();
 }
-W.addEventListener('storage',event=>{if(event.key==='psyworld_online_session_v23'&&host&&host.style.display!=='none'){cleanup();connect()}});
+function reconnectForSharedAccount(){if(host&&host.style.display!=='none'){cleanup();status('Conectando à conta online…');return connect()}}
+W.addEventListener('storage',event=>{if(event.key==='psyworld_online_session_v23')reconnectForSharedAccount()});
+W.addEventListener('psyworld-online-session-changed',reconnectForSharedAccount);
 W.PsyIdleTradeZone={open,close};
 })(window,document);

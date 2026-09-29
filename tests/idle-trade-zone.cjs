@@ -13,7 +13,7 @@ const messageInput={value:'Mensagem privada',focus(){}};
 const messageForm={hidden:true,elements:{body:messageInput},querySelector(){return messageInput},matches(selector){return selector==='[data-trade-message]'}};
 elements['[data-trade-selected]'].innerHTML='';
 host.querySelector=selector=>selector==='[data-trade-message]'?messageForm:elements[selector]||null;
-const created=[];const document={readyState:'complete',head:{appendChild(node){created.push(node)}},createElement(){return{id:'',textContent:''}},getElementById(id){return id==='psy-ir-trade-room'?host:created.find(x=>x.id===id)||null},addEventListener(type,fn){this[type]=fn},removeEventListener(type){delete this[type]}};
+const created=[],windowListeners={};const document={readyState:'complete',head:{appendChild(node){created.push(node)}},createElement(){return{id:'',textContent:''}},getElementById(id){return id==='psy-ir-trade-room'?host:created.find(x=>x.id===id)||null},addEventListener(type,fn){this[type]=fn},removeEventListener(type){delete this[type]}};
 let syncListener=null,statusListener=null,removed=false,authTokens=[],tracked=[],calls=[];
 const state={
  'main-user':[{user_id:'main-user',nickname:'Old name',x:42,y:44}],
@@ -21,7 +21,7 @@ const state={
 };
 const channel={on(type,filter,fn){if(type==='presence'&&filter.event==='sync')syncListener=fn;return this},subscribe(fn){statusListener=fn;return this},presenceState(){return state},track:async payload=>{tracked.push(payload);return'ok'}};
 const client={auth:{getSession:async()=>({data:{session:{access_token:'main-token',user:{id:'main-user',user_metadata:{trainer_name:'PSYWORLD account'}}}},error:null})},realtime:{setAuth:async token=>authTokens.push(token)},channel(topic,config){assert.equal(topic,'idle-trade-zone');assert.equal(config.config.private,true);assert.equal(config.config.presence.key,'main-user');return channel},removeChannel:async ch=>{assert.equal(ch,channel);removed=true}};
-const window={PsyIdleSocial:{client:async()=>client,trainerName:()=> 'Ash PSYWORLD',social:async(action,payload)=>{calls.push({action,payload});if(action==='friend_requests')return{requests:[]};if(action==='inbox')return{threads:[]};if(action==='trade_create')return{ok:true,status:'invited',trade_id:'trade-1'};if(action==='dm_list')return{messages:[{sender_id:'peer-user',body:'Oi Ash',created_at:'2026-09-29T12:00:00Z'}]};return{ok:true,status:'pending'}}},addEventListener(){},confirm:()=>true,notif(){},P:{name:'Idle nickname'}};
+const window={PsyIdleSocial:{client:async()=>client,trainerName:()=> 'Ash PSYWORLD',social:async(action,payload)=>{calls.push({action,payload});if(action==='friend_requests')return{requests:[]};if(action==='inbox')return{threads:[]};if(action==='trade_create')return{ok:true,status:'invited',trade_id:'trade-1'};if(action==='dm_list')return{messages:[{sender_id:'peer-user',body:'Oi Ash',created_at:'2026-09-29T12:00:00Z'}]};return{ok:true,status:'pending'}}},addEventListener:(name,fn)=>windowListeners[name]=fn,confirm:()=>true,notif(){},P:{name:'Idle nickname'}};
 window.PsyIdleTradeZone=null;
 const context={window,document,console,Map,Promise,Date,Math,String,Object,Number,Array,JSON,setTimeout,clearTimeout,setInterval,clearInterval};
 vm.runInNewContext(source,context);
@@ -47,6 +47,9 @@ const click=(selector,node)=>({target:{closest:s=>s===selector?node:null},preven
  const keyEvent={key:'ArrowRight',target:{matches:()=>false},preventDefault(){}};document.keydown(keyEvent);
  await new Promise(resolve=>setTimeout(resolve,210));
  assert(tracked.length>=2&&tracked.at(-1).x>tracked[0].x,'keyboard movement is broadcast to the shared presence channel');
+ await windowListeners['psyworld-online-session-changed']();await flush();
+ assert.equal(removed,true,'a Cloud Save account change tears down the old presence connection');
+ assert.equal(authTokens.length,2,'the Trade Zone reconnects with the active Cloud Save identity');
  window.PsyIdleTradeZone.close();assert.equal(host.style.display,'none');assert.equal(removed,true);
  console.log('PASS: shared Trade Zone shows players, broadcasts movement, and supports friend, trade and private-message actions');
 })().catch(error=>{console.error(error);window.PsyIdleTradeZone.close();process.exitCode=1});

@@ -24,7 +24,7 @@ function hydrateServerIdentity(state){
   const verified=Array.isArray(state?.characters)&&state.characters.some(c=>String(c.nickname||'').toLowerCase()===nickname.toLowerCase());
   if(owner&&meta.resolved&&!meta.userKey&&nickname&&selected===nickname&&verified)writeSync({userKey:owner});
 }
-function saveSession(s){session=s||null;try{session?localStorage.setItem(SESSION_KEY,JSON.stringify(session)):localStorage.removeItem(SESSION_KEY)}catch(_){}}
+function saveSession(s){session=s||null;try{session?localStorage.setItem(SESSION_KEY,JSON.stringify(session)):localStorage.removeItem(SESSION_KEY)}catch(_){}try{W.dispatchEvent(new CustomEvent('psyworld-online-session-changed',{detail:{authenticated:!!session?.access_token,source:'cloud-save'}}))}catch(_){}}
 function readSession(){session=parse(localStorage.getItem(SESSION_KEY));return session}
 function authHeaders(){return session?.access_token?{Authorization:'Bearer '+session.access_token}:{} }
 async function api(path,opt={}){const r=await fetch(path,{...opt,headers:{'Content-Type':'application/json',...authHeaders(),...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok)throw new Error(d.error||d.message||('HTTP '+r.status));return d}

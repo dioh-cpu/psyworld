@@ -277,6 +277,13 @@
   function install(){const s=D.getElementById('psy-idle-realistic');if(s&&getComputedStyle(s).display!=='none'){mount(s);return}if(!D.body)return;const obs=new MutationObserver(()=>{const now=D.getElementById('psy-idle-realistic');if(now&&getComputedStyle(now).display!=='none'){mount(now);obs.disconnect()}});obs.observe(D.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});setTimeout(()=>obs.disconnect(),120000)}
   W.addEventListener('psy-idle-social-log',e=>{const d=e.detail||{};if(d.type==='capture')addLog('captures',d);if(d.type==='loot')addLog('loot',d);if(d.type==='task')addLog('tasks',d)});
   W.addEventListener('storage',e=>{if(e.key===SESSION_KEY){if(supa)syncSharedSession(supa).catch(error=>console.warn('[Psy Idle shared session]',error));if(root)render()}});
+  W.addEventListener('psyworld-online-session-changed',()=>{
+    const apply=async()=>{
+      try{const c=await getClient();await syncSharedSession(c)}catch(error){console.warn('[Psy Idle cloud account bridge]',error)}
+      stopChannel();W.dispatchEvent(new CustomEvent('idle-auth-changed'));if(root)render();
+    };
+    return apply();
+  });
   W.addEventListener('focus',()=>{if(supa)syncSharedSession(supa).catch(()=>{})});
   W.PsyIdleSocial={client:getClient,social,trainerName:worldTrainerName,open(){if(!root){install();return}const p=readPrefs();p.open=true;try{localStorage.setItem(CONFIG_KEY,JSON.stringify(p))}catch(_){}render()},log:addLog};
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',install,{once:true});else install();

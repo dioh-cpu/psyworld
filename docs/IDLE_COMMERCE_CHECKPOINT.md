@@ -1,5 +1,11 @@
 # Idle commerce checkpoint — 2026-09-29
 
+## Cloud Save login access for Idle — 2026-09-29
+
+- E-mail/password and GitHub sign-in in PSYWORLD Cloud Save now emit a same-tab account-change event after updating the shared Supabase session. Idle Social/Market synchronizes that exact authenticated session immediately; the Trade Zone reconnects presence when a sign-in, sign-out, or account change happens while it is open.
+- The event contains only a signed-in flag and its source. It never includes access or refresh tokens. The PSYWORLD Cloud Save itself and the Idle character/economy remain separate; only the Supabase account identity is shared.
+- Added `tests/cloud-idle-session-bridge.cjs` and extended `tests/idle-shared-session.cjs` for Cloud Save email/GitHub notification and live session adoption.
+
 ## Publicação de produção — 2026-09-29
 
 - Corrigida e publicada a proteção contra venda de Pokémon do time: a loja lista apenas Pokémon do Box; venda individual e em lote revalidam a chave estável contra o Box atual; Pokémon em uso na batalha não podem ser vendidos; a sprite da batalha é reconciliada após a venda.
