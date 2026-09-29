@@ -363,6 +363,7 @@
       const titleKey = lookupKey(title);
       const bodyKey = lookupKey(body);
       const isSpeciesDocument = /^#\d{3}\s/.test(body);
+      if (asksShinyRate && !asksCapture && !/\b(chance base de shiny|chance de shiny|taxa de shiny|shiny por spawn|1 em 2 000)\b/.test(bodyKey)) continue;
       const speciesName = isSpeciesDocument ? titleKey.replace(/^pokemon\s+/, '') : '';
       if (isSpeciesDocument && mentionedSpecies.size && !mentionedSpecies.has(speciesName)) continue;
       let score = 0;
