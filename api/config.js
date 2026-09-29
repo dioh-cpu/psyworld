@@ -174,3 +174,5 @@ function handler(req,res){
     version:'V23'
   });
 }
+
+export default handler;
