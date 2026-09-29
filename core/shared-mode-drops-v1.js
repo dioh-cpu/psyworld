@@ -60,7 +60,8 @@
   function label(m){return({wild:'Wild',fast:'Fast Encounter',hunt:'Hunt',survivor:'Survivor',world:'Mundo Pokémon',adventure:'Mundo Aventura',idle:'Psy Idle'}[m]||m)}
   function scale(m){
     if(m==='world')return .25;
-    if(m==='survivor'||m==='idle')return .12;
+    if(m==='survivor')return .12;
+    if(m==='idle')return 1;
     if(m==='fast')return .2;
     if(m==='wild'||m==='hunt')return .5;
     /* As taxas ficam abaixo do combate comum para controlar a cadência de farm. */
@@ -108,9 +109,9 @@
          Survivor/World aplicam 50% e o bônus de Drop pode no máximo dobrar
          essas chances. Assim, mesmo no teto, 700 abates geram em média
          ~14,35 materiais de Craft/Quest, antes do RNG. */
-      {kind:'craft',name:ess.ess,chance:rs*.006*cs.materialBoost},
-      {kind:'quest-common',name:pair[0],chance:rs*.012*cs.materialBoost},
-      {kind:'quest-rare',name:pair[1],chance:rs*.0025*cs.materialBoost}
+      {kind:'craft',name:ess.ess,chance:mode==='idle'?.03:rs*.006*cs.materialBoost},
+      {kind:'quest-common',name:pair[0],chance:mode==='idle'?.06:rs*.012*cs.materialBoost},
+      {kind:'quest-rare',name:pair[1],chance:mode==='idle'?.01:rs*.0025*cs.materialBoost}
     ]};
     if(key)idDropProfiles.set(key,profile);
     return profile;
@@ -181,6 +182,12 @@
       }
     }
 
+    if(mode==='idle'){
+      /* Supplies for catch, healing and revive also use independent rolls. */
+      for(const [name,chance] of [['Pokéball',.08],['Great Ball',.035],['Super Ball',.015],['Poção 200',.04],['Revive',.02]]){
+        if(Math.random()<chance){addItem(p,name,1,mode);got.push(name)}
+      }
+    }
     const id=profile.id;
     if(['wild','fast','hunt'].includes(mode)&&id!=null){try{W.psyRollTMDrop?.(id)}catch(e){console.warn('[PSYWORLD DROPS V2] TM',e)}}
 
@@ -236,7 +243,7 @@
   W.psySharedWorldRareDrop=worldRareDrop;
   W.psyCommonDropHooks=function(id){return awardCommon(id,W.__psyDropContext?.mode||'auto')};
   W.PSY=W.PSY||{};
-  W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'0,60% base; World 25% / Survivor e Idle 12%; bônus de Drop até 2x',questCommon:'1,20% base; World 25% / Survivor e Idle 12%; bônus de Drop até 2x',questRare:'0,25% base; World 25% / Survivor e Idle 12%; bônus de Drop até 2x',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor/Idle: 12%; World: 25%; Fast Encounter: 20%; Wild/Hunt: 50% das taxas da tabela'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
+  W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'3% no Idle; 0,60% base nos outros modos',questCommon:'6% no Idle; 1,20% base nos outros modos',questRare:'1% no Idle; 0,25% base nos outros modos',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor: 12%; Idle: tabela própria + suprimentos; World: 25%; Fast Encounter: 20%; Wild/Hunt: 50% das taxas da tabela'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
 
   installEndBattle();installWorldKill();installCardContext();
   console.log('✅ PSYWORLD Shared Drops V11: materiais + Packs válidos; World usa Packs e não Cards diretas.');
