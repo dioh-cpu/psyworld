@@ -13,6 +13,12 @@ declare
   nickname text;
   elapsed_seconds integer:=0;
   simulated_kills integer:=0;
+  attacker_atk numeric:=35;
+  attacker_level integer:=1;
+  enemy_hp integer:=0;
+  estimated_damage integer:=0;
+  attacks_to_kill integer:=1;
+  seconds_per_kill integer:=7;
   gold_reward bigint:=0;
   xp_reward bigint:=0;
   pokemon_xp bigint:=0;
@@ -58,8 +64,14 @@ begin
       elapsed_seconds:=least(28800,greatest(0,floor(extract(epoch from (clock_timestamp()-profile.farm_checkpoint_at)))::integer));
       select * into m from public.idle_hunt_maps where public.idle_hunt_maps.map_key=coalesce(profile.farm_map_key, map_key);
       if m.map_key is not null and profile.trainer_level>=m.min_trainer_level then
-        -- One defeat every seven seconds for the intended AFK hunting pace.
-        simulated_kills:=least(4114,floor(elapsed_seconds/7.0)::integer);
+        -- Estimate hits-to-defeat from the active Idle Pokémon and the target hunt HP.
+        attacker_atk:=least(1000000,greatest(1,coalesce(nullif(p->>'attacker_atk','')::numeric,35)));
+        attacker_level:=least(10000,greatest(1,coalesce(nullif(p->>'attacker_level','')::integer,1)));
+        enemy_hp:=greatest(30,floor((65+m.enemy_level*8)*1.5)::integer);
+        estimated_damage:=greatest(15,floor(((attacker_atk*72.0/55)+(attacker_level*3))*(100.0/(100+floor(enemy_hp*.18)*.15)))::integer);
+        attacks_to_kill:=greatest(1,ceil(enemy_hp::numeric/estimated_damage)::integer);
+        seconds_per_kill:=greatest(7,attacks_to_kill*7);
+        simulated_kills:=least(floor(28800.0/seconds_per_kill)::integer,floor(elapsed_seconds::numeric/seconds_per_kill)::integer);
       else
         simulated_kills:=0;
       end if;
