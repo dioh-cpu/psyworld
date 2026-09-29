@@ -454,7 +454,7 @@
       }
       if (send) send.textContent = 'BUSCANDO…';
       setStatus('PESQUISANDO…', true);
-      const data = await request('/chat', { message: finalMessage, context: ctx, history: state.history }, undefined);
+      const data = await request('/chat', { message: finalMessage, context: ctx, history: state.history.slice(0, -1) }, undefined);
       addMessage('assistant', data.name || 'Psy Assistente', data.answer || 'Não recebi uma resposta.', true, data.sources || []);
     } catch (_) {
       addMessage('assistant', 'Psy Assistente', offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
