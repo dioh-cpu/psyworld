@@ -7,6 +7,7 @@ const idleProfile={meta:{modeEconomies:{psyIdle:{gold:0,drops:{'idle:item:Essenc
 const fixedMath=Object.create(Math);fixedMath.random=()=>0;
 const window={P:mainProfile,__psyIdleProfile:idleProfile,PSY:{},RARITIES:[],TYPE_BY_ID_FULL:{1:['Fire']},autoSave(){},updateHUD(){},notif(){},psyQueueIdleSave(){},getTotalBuff(){return 0}};
 vm.runInNewContext(source,{window,P:mainProfile,Math:fixedMath,console,Map,WeakSet,Number,String,Array,Object,JSON,Date,decodeURIComponent,encodeURIComponent});
+assert.equal(window.psyModeEconomy('idle').currencyId,'idle:gold','Idle wallet keeps its currency identity');
 assert.equal(window.psyModeEconomy('idle').drops['Essence Of Fire'],2,'legacy encoded Idle loot is normalized');
 window.psySharedCombatDrop({id:1,type:'Fire'},'idle');
 const idleDrops=idleProfile.meta.modeEconomies.psyIdle.drops;

@@ -47,6 +47,7 @@
   const idlePocketViews=new WeakSet();
   function idlePocketView(x){
     if(idlePocketViews.has(x))return x;
+    x.currencyId='idle:gold';
     const drops=x.drops&&typeof x.drops==='object'?x.drops:(x.drops={});
     for(const key of Object.keys(drops)){
       if(!key.startsWith('idle:item:'))continue;
