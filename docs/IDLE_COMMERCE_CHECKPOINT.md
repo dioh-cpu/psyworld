@@ -2,6 +2,15 @@
 
 User scope: all online systems belong exclusively to Idle. Latest clarification: leave PSYWORLD exactly as it is; do not add online features to it and do not remove its existing modules. Never import PSYWORLD currency, items or Pokémon into Idle commerce. Market and auctions are categorized UI catalogs, not player maps.
 
+## Team Pokémon sale bug — 2026-09-28
+
+- The Pokémon sale screen now lists only Pokémon in the Idle Box. Team members and any Pokémon still referenced by the active battle are excluded.
+- Individual and bulk sales recheck the latest Box by stable Pokémon key before removing anything, so a stale sale screen cannot remove a Pokémon that has since moved into the team.
+- Opening the shop and completing a sale reconcile the battle sprite with the current team. If a prior erroneous sale left a stale battle reference, it switches to the current team member.
+- Added tests/idle-pokemon-sale.cjs. It passed along with the economy guardrails, commerce lifecycle, starter/HUD tests, JavaScript syntax checks and git diff --check.
+- The fix is local and not published or deployed.
+- Vercel production was checked on 2026-09-28: https://psyworld-world-of-monsters.vercel.app/ (deployment alias https://psyworld-j38plp0jn-world-of-monsters.vercel.app/), currently serving commit 913be2945fabfb8970e741640cff55390c647707. It does not yet include the local sale fix.
+
 ## Continuação atual — 2026-09-28
 
 - O preview autenticado `psyworld-it7jhtkpm-world-of-monsters.vercel.app` (commit `cb96a779dfc4b450282f7efb8c61e7eb9d2d3741`) retornou ao jogo pelo callback isolado do Psy Idle, sem abrir o fluxo de Cloud Save do PSYWORLD. A Trade Zone social indicou `Online • ao vivo`; o Market carregou `500 Gold Idle · 0 PsyCoin negociáveis · 0 vinculados` e confirmou conta e inventário exclusivos do Idle.

@@ -10,6 +10,18 @@ begin
  assert (select gold=0 from public.idle_accounts where user_id=a),'new account must not import or mint currency';
  update public.idle_accounts set gold=1000 where user_id in(a,b,c);
  insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','stone','Fire Stone',10) returning id into asset;
+ begin perform public.idle_commerce(a,'create',jsonb_build_object('asset_id',asset,'kind','market','quantity',1,'price',100,'hours',24,'currency','gold'),gen_random_uuid());raise exception 'TEST stone listing accepted';exception when others then if sqlerrm<>'idle_item_not_sellable' then raise;end if;end;
+ assert (select quantity=10 from public.idle_assets where id=asset),'rejected sale must preserve the asset';
+ insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','item','Pokéball',3) returning id into asset;
+ begin perform public.idle_commerce(a,'create',jsonb_build_object('asset_id',asset,'kind','market','quantity',1,'price',100,'hours',24,'currency','gold'),gen_random_uuid());raise exception 'TEST shop supply listing accepted';exception when others then if sqlerrm<>'idle_item_not_sellable' then raise;end if;end;
+ assert (select quantity=3 from public.idle_assets where id=asset),'rejected Pokéball sale must preserve the supply';
+ insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','item','Poção 50',2) returning id into asset;
+ begin perform public.idle_commerce(a,'create',jsonb_build_object('asset_id',asset,'kind','market','quantity',1,'price',100,'hours',24,'currency','gold'),gen_random_uuid());raise exception 'TEST store potion listing accepted';exception when others then if sqlerrm<>'idle_item_not_sellable' then raise;end if;end;
+ assert (select quantity=2 from public.idle_assets where id=asset),'rejected store potion sale must preserve the supply';
+ insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','item','Water Pendant',1) returning id into asset;
+ begin perform public.idle_commerce(a,'create',jsonb_build_object('asset_id',asset,'kind','market','quantity',1,'price',100,'hours',24,'currency','gold'),gen_random_uuid());raise exception 'TEST rare item listing accepted';exception when others then if sqlerrm<>'idle_item_not_sellable' then raise;end if;end;
+ assert (select quantity=1 from public.idle_assets where id=asset),'rejected rare item sale must preserve the item';
+ insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','item','Fire Tail',10) returning id into asset;
  req:=gen_random_uuid();p:=jsonb_build_object('asset_id',asset,'asset_kind','item','kind','market','quantity',3,'price',100,'hours',24,'currency','gold');
  r:=public.idle_commerce(a,'create',p,req);lid:=(r->>'listing_id')::uuid;
  assert (select quantity=7 from public.idle_assets where id=asset),'escrow removes only requested quantity';
@@ -20,7 +32,7 @@ begin
  req:=gen_random_uuid();p:=jsonb_build_object('listing_id',lid);perform public.idle_commerce(b,'buy',p,req);perform public.idle_commerce(b,'buy',p,req);
  assert (select gold=900 from public.idle_accounts where user_id=b),'buyer debited exactly once';
  assert (select gold=1100 from public.idle_accounts where user_id=a),'seller credited once';
- assert (select sum(quantity)=3 from public.idle_assets where owner_id=b and name='Fire Stone'),'buyer receives lot once';
+ assert (select sum(quantity)=3 from public.idle_assets where owner_id=b and name='Fire Tail'),'buyer receives lot once';
  begin perform public.idle_commerce(c,'buy',p,gen_random_uuid());raise exception 'TEST second purchase accepted';exception when others then if sqlerrm<>'listing_unavailable' then raise;end if;end;
  insert into idle_test_results values('purchase + retry + second buyer + own listing protection');
  insert into public.idle_assets(owner_id,kind,category,name,quantity,bound) values(a,'item','egg','Bound Egg',1,true) returning id into asset;
@@ -28,7 +40,7 @@ begin
  update public.idle_accounts set psycoin=10,bound_psycoin=10 where user_id=a;
  begin perform public.idle_commerce(a,'create','{"asset_kind":"psycoin","kind":"market","quantity":1,"price":1,"hours":24,"currency":"gold"}',gen_random_uuid());raise exception 'TEST bound coin accepted';exception when others then if sqlerrm<>'insufficient_balance' then raise;end if;end;
  insert into idle_test_results values('bound items and bound PsyCoin rejected');
- insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','profession','Ruby',2) returning id into asset;
+ insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','item','Piece Of Steel',2) returning id into asset;
  r:=public.idle_commerce(a,'create',jsonb_build_object('asset_id',asset,'kind','auction','quantity',1,'price',50,'buyout',100,'hours',6,'currency','gold'),gen_random_uuid());lid:=(r->>'listing_id')::uuid;
  perform public.idle_commerce(b,'bid',jsonb_build_object('listing_id',lid,'amount',60),gen_random_uuid());
  assert (select gold=840 from public.idle_accounts where user_id=b),'bid escrow';
@@ -52,21 +64,21 @@ begin
  assert (select status='sold' and buyer_id=c from public.idle_listings where id=lid),'expired auction awards winner without seller online';
  assert (select gold=970 from public.idle_accounts where user_id=c),'winner not charged twice';
  insert into idle_test_results values('scheduled expiry settlement without connected players');
- insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','egg','Mystery Egg',2) returning id into asset;
+ insert into public.idle_assets(owner_id,kind,category,name,quantity) values(a,'item','item','Rubber Ball',2) returning id into asset;
  r:=public.idle_commerce(a,'create',jsonb_build_object('asset_id',asset,'kind','market','quantity',1,'price',100,'hours',6,'currency','gold'),gen_random_uuid());lid:=(r->>'listing_id')::uuid;
  perform public.idle_commerce(a,'cancel',jsonb_build_object('listing_id',lid),gen_random_uuid());
- assert (select sum(quantity)=2 from public.idle_assets where owner_id=a and name='Mystery Egg'),'cancellation returns lot';
+ assert (select sum(quantity)=2 from public.idle_assets where owner_id=a and name='Rubber Ball'),'cancellation returns lot';
  r:=public.idle_commerce(a,'create',jsonb_build_object('asset_id',asset,'kind','market','quantity',1,'price',100,'hours',6,'currency','gold'),gen_random_uuid());lid:=(r->>'listing_id')::uuid;
  update public.idle_listings set expires_at=now()-interval '1 second' where id=lid;
  perform public.idle_commerce(a,'state','{}',null);
  assert (select status='expired' from public.idle_listings where id=lid),'expiry without buyer';
- assert (select sum(quantity)=2 from public.idle_assets where owner_id=a and name='Mystery Egg'),'expiry returns lot';
+ assert (select sum(quantity)=2 from public.idle_assets where owner_id=a and name='Rubber Ball'),'expiry returns lot';
  insert into idle_test_results values('cancel and unbid expiry restore assets');
  -- A backlog beyond the scheduled batch must never make a late purchase valid.
  insert into public.idle_listings(seller_id,kind,category,name,quantity,asset_kind,currency,price,expires_at)
- select a,'market','item','Expired fixture',1,'item','gold',1,now()-interval '2 days' from generate_series(1,101);
+ select a,'market','item','Fire Tail',1,'item','gold',1,now()-interval '2 days' from generate_series(1,101);
  insert into public.idle_listings(seller_id,kind,category,name,quantity,asset_kind,currency,price,expires_at)
- values(a,'auction','item','Last expired fixture',1,'item','gold',1,now()-interval '1 day') returning id into lid2;
+ values(a,'auction','item','Fire Tail',1,'item','gold',1,now()-interval '1 day') returning id into lid2;
  begin perform public.idle_commerce(b,'bid',jsonb_build_object('listing_id',lid2,'amount',10),gen_random_uuid());raise exception 'TEST late bid accepted';exception when others then if sqlerrm<>'listing_unavailable' then raise;end if;end;
  begin perform public.idle_commerce(b,'buy',jsonb_build_object('listing_id',lid2),gen_random_uuid());raise exception 'TEST late buy accepted';exception when others then if sqlerrm<>'listing_unavailable' then raise;end if;end;
  insert into idle_test_results values('expired target rejected even beyond expiry batch');
