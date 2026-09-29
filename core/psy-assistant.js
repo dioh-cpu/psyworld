@@ -345,12 +345,26 @@
     const terms = Object.keys(weights);
     const originalTerms = rawTokens;
     const exactPhrase = lookupKey(question);
+    const mentionedSpecies = new Set();
+    for (const document of documents) {
+      const title = String(document?.title || '');
+      const body = String(document?.text || '');
+      if (!/^#\d{3}\s/.test(body)) continue;
+      const speciesName = lookupKey(title).replace(/^pokemon\s+/, '');
+      if (speciesName.length >= 3 && exactPhrase.includes(speciesName)) mentionedSpecies.add(speciesName);
+    }
+    const asksIdle = /\bpsy idle\b|\bidle\b/.test(exactPhrase);
+    const asksShinyRate = /\b(shiny|brilhante)\b/.test(exactPhrase) && /\b(chance|taxa|probabilidade|spawn|aparicao)\b/.test(exactPhrase);
+    const asksCapture = /\b(captura|capturar|capture|catch)\b/.test(exactPhrase);
     const ranked = [];
     for (const document of documents) {
       const title = String(document?.title || 'PSYWORLD');
       const body = String(document?.text || '');
       const titleKey = lookupKey(title);
       const bodyKey = lookupKey(body);
+      const isSpeciesDocument = /^#\d{3}\s/.test(body);
+      const speciesName = isSpeciesDocument ? titleKey.replace(/^pokemon\s+/, '') : '';
+      if (isSpeciesDocument && mentionedSpecies.size && !mentionedSpecies.has(speciesName)) continue;
       let score = 0;
       let matched = 0;
       for (const term of terms) {
@@ -363,6 +377,13 @@
         }
       }
       if (exactPhrase.length >= 5 && (titleKey.includes(exactPhrase) || bodyKey.includes(exactPhrase))) score += 8;
+      if (isSpeciesDocument && mentionedSpecies.has(speciesName)) score += 12;
+      if (asksIdle && titleKey.includes('psy idle')) score += 3;
+      if (asksShinyRate && !asksCapture) {
+        if (!/\b(shiny|brilhante)\b/.test(titleKey + ' ' + bodyKey)) score -= 5;
+        if (asksIdle && !titleKey.includes('psy idle')) score -= 4;
+        if (/\bspawn\b/.test(bodyKey)) score += 3;
+      }
       const coverage = originalTerms.length ? matched / originalTerms.length : 0;
       score += coverage * 2;
       if (score > 0) ranked.push({ title, body, score, coverage });
@@ -376,7 +397,7 @@
       if (seen.has(key)) continue;
       seen.add(key);
       selected.push(item);
-      if (selected.length >= 4) break;
+      if (selected.length >= (mentionedSpecies.size ? mentionedSpecies.size + 1 : 4)) break;
     }
     if (selected.length) {
       const answer = selected.map(item => '[' + item.title + '] ' + localExcerpt(item.body, originalTerms, 300)).join('\n');
