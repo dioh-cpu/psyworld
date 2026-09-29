@@ -177,12 +177,42 @@
   }
 
   function offlineAnswer(message, ctx, files) {
-    const q = message.toLowerCase();
-    if (/caç|hunt|caçada|caçar/.test(q)) return 'No modo local, abra HUNTS e confira a região atual antes de escolher o alvo. Ativo: ' + (ctx.active_name || 'não identificado') + '.';
-    if (/andar|mov|veloc|afk/.test(q)) return 'O estado atual indica ' + (ctx.afk ? 'AFK ativo' : 'movimentação manual') + '. A Psy local não altera a velocidade nesta sessão.';
-    if (/time|equipe|trocar|pokemon|pokémon/.test(q)) return 'Confira o time e mantenha uma resposta para o tipo da região. Posso detalhar a recomendação quando o backend estiver conectado.';
-    if (files) return 'Recebi os anexos nesta sessão, mas o backend online ainda não está configurado para analisá-los.';
-    return 'Sou a Psy. Estou em modo local porque o backend online ainda não foi configurado neste servidor.';
+    const q = String(message || '').toLowerCase();
+    const pokemon = ctx.active_name || 'seu Pokémon ativo';
+    const level = ctx.active_level ? ' Lv. ' + ctx.active_level : '';
+    const hp = ctx.active_max_hp ? ' HP ' + ctx.active_hp + '/' + ctx.active_max_hp : '';
+    if (/\b(hp|vida|status|level|nível|nivel|xp|experi[eê]ncia|dano)\b/.test(q)) {
+      return 'Seu Pokémon ativo é ' + pokemon + level + hp + '. Os detalhes completos ficam no HUD e na tela Time / Box. O dano depende do nível, dos atributos, do golpe e da vantagem de tipo.';
+    }
+    if (/\b(bag|bolsa|mochila|invent[aá]rio|itens?)\b/.test(q)) {
+      return 'Abra MENU → BOLSA para ver quantidades e categorias. Pokébolas, poções, revives, stones e materiais ficam organizados por tipo; loja e mercado são telas separadas.';
+    }
+    if (/\b(caç|hunt|caçada|caçar|farm|pok[eé]mon selvagem|encontrar)\b/.test(q)) {
+      return 'Abra HUNTS ou WORLD, escolha a região e o alvo disponível. A equipe ativa participa da caça; confira HP e nível no HUD e troque ou cure o Pokémon se a vida baixar.';
+    }
+    if (/\b(captur|catch|pok[eé]ball|pokeball|bola)\b/.test(q)) {
+      return 'Para capturar, mantenha uma Pokébola na Bolsa e use a opção de captura na batalha. No World Idle, confira as opções do ajudante para ativar captura automática e selecionar a bola.';
+    }
+    if (/\b(passe|pass|miss[aã]o|missões|di[aá]rias|semanal|pontos do passe|passe \+)\b/.test(q)) {
+      return 'Abra o Passe para acompanhar nível, recompensas e missões. As missões diárias e semanais avançam com as atividades indicadas; depois do nível 100, os pontos Pass+ podem ser trocados na loja do passe.';
+    }
+    if (/\b(inicial|come[cç]ar|começo|jornada|starter)\b/.test(q)) {
+      return 'Na primeira entrada, escolha um dos Pokémon iniciais para formar seu primeiro time. Depois abra Time / Box para ver o companheiro escolhido.';
+    }
+    if (/\b(time|equipe|box|trocar|mudar pokemon)\b/.test(q)) {
+      return 'Abra MENU → TIME / BOX. Ali você confere os Pokémon do time e os capturados no Box; a equipe ativa tem até seis Pokémon.';
+    }
+    if (/\b(amigo|amizade|trade|troca|jogador|player|trade zone)\b/.test(q)) {
+      return 'A Trade Zone é a área social do World Idle. Entre no Idle com a mesma conta/sessão do jogo para aparecer aos outros treinadores; ali ficam os pedidos de amizade e trade.';
+    }
+    if (/\b(cloud|nuvem|save|salvar|conta)\b/.test(q)) {
+      return 'O jogo salva automaticamente o progresso local. Para usar Cloud Save, abra a opção de conta/sincronização no jogo e confirme a conexão antes de trocar de dispositivo.';
+    }
+    if (/\b(gold|moeda|pr[eê]mio|recompensa|drop|loot)\b/.test(q)) {
+      return 'Os drops e recompensas aparecem no registro da caça e na Bolsa. Gold e XP vão para os contadores do jogo; itens recebidos ficam na Bolsa.';
+    }
+    if (files) return 'A Psy Assistente ajuda com dúvidas do jogo, mas não analisa arquivos nesta versão.';
+    return 'Sou a Psy Assistente. Posso ajudar com caça, batalhas, Pokémon, Bolsa, capturas, Passe e recursos sociais. Diga o que você quer encontrar ou como está sua situação no jogo.';
   }
 
   function connectionAnswer(error, mode) {
@@ -390,25 +420,14 @@
     if (send) send.disabled = true;
     const ctx = gameContext();
     try {
-      const testStateIntent = state.mode === 'owner' && isTestStateIntent(finalMessage);
-      if (state.mode === 'change' || testStateIntent) {
-        if (!token) throw new Error('Informe o token do proprietário para planejar uma alteração.');
-        const data = await request('/propose-change', { message: finalMessage, context: ctx, history: state.history, files, project_upload_id: project?.upload_id || '', session_id: state.sessionId, owner_token: token }, { 'X-Psy-Owner-Token': token });
-        renderProposal(data.proposal);
-        addMessage('assistant', 'Psy', testStateIntent ? 'Entendi o comando de teste e preparei o cartão para aplicar no save. Confirme no botão quando reconhecer o pedido.' : 'Preparei uma proposta revisável. Nada foi alterado; confira o cartão e confirme apenas se reconhecer o pedido.');
-      } else if (state.mode === 'owner') {
-        if (!token) throw new Error('Informe o token do proprietário para usar a Psy AI.');
-        const data = await request('/chat', { message: finalMessage, context: ctx, history: state.history, files, project_upload_id: project?.upload_id || '', session_id: state.sessionId, owner_token: token }, { 'X-Psy-Owner-Token': token });
-        addMessage('assistant', data.name || 'Psy AI', data.answer || 'Não recebi uma resposta.');
-        (data.images || []).forEach(image => addImage(data.name || 'Psy AI', image));
-        (data.file_warnings || []).forEach(warning => addMessage('system', 'ARQUIVO', warning, false));
-      } else {
-        const data = await request('/chat', { message: finalMessage, context: ctx, history: state.history, session_id: state.sessionId }, undefined);
-        addMessage('assistant', data.name || 'Mini Psy AI, seu assistente virtual', data.answer || 'Não recebi uma resposta.');
+      if (!state.health?.chat_available) {
+        addMessage('assistant', 'Psy Assistente', offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
+        return;
       }
-    } catch (error) {
-      const onlineMessage = connectionAnswer(error, state.mode);
-      addMessage('assistant', onlineMessage ? 'Psy AI' : 'Mini Psy AI — modo local', onlineMessage || offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
+      const data = await request('/chat', { message: finalMessage, context: ctx, history: state.history, session_id: state.sessionId }, undefined);
+      addMessage('assistant', data.name || 'Psy Assistente', data.answer || 'Não recebi uma resposta.');
+    } catch (_) {
+      addMessage('assistant', 'Psy Assistente', offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
     } finally {
       if (send) send.disabled = false;
       const fileInput = panel?.querySelector('[data-psy-files]');
@@ -444,19 +463,15 @@
   function install() {
     if (!D.body || root()) return;
     const launcher = D.createElement('button');
-    launcher.id = 'psy-assistant-launcher'; launcher.type = 'button'; launcher.innerHTML = '🧠 PSY<small>ASSISTENTE</small>'; launcher.setAttribute('aria-label', 'Abrir Psy'); launcher.onclick = open; D.body.appendChild(launcher);
+    launcher.id = 'psy-assistant-launcher'; launcher.type = 'button'; launcher.innerHTML = '🧠 PSY<small>ASSISTENTE</small>'; launcher.setAttribute('aria-label', 'Abrir Psy Assistente'); launcher.onclick = open; D.body.appendChild(launcher);
     const menu = D.getElementById('menu');
-    if (menu && !D.getElementById('psy-assistant-menu-button')) { const button = D.createElement('button'); button.id = 'psy-assistant-menu-button'; button.type = 'button'; button.textContent = '🧠 ABRIR PSY'; button.onclick = open; menu.insertBefore(button, menu.lastElementChild); }
+    if (menu && !D.getElementById('psy-assistant-menu-button')) { const button = D.createElement('button'); button.id = 'psy-assistant-menu-button'; button.type = 'button'; button.textContent = '🧠 ABRIR PSY ASSISTENTE'; button.onclick = open; menu.insertBefore(button, menu.lastElementChild); }
     const panel = D.createElement('div');
     panel.id = 'psy-assistant'; panel.className = 'psy-assistant'; panel.hidden = true;
-    panel.innerHTML = '<section class="psy-assistant-card" role="dialog" aria-modal="true" aria-label="Psy"><header class="psy-assistant-head"><div><div class="psy-assistant-brand">🧠 Psy <em>PSYWORLD</em></div><span class="psy-assistant-status" data-psy-status>LOCAL</span></div><button class="psy-assistant-close" type="button" data-psy-close>✕</button></header><div class="psy-assistant-feed" data-psy-feed><div class="psy-msg assistant"><small>Mini Psy AI, seu assistente virtual</small><div>Olá. Posso tirar dúvidas, orientar sua caça e ler o estado atual da aventura.</div></div></div><div class="psy-assistant-proposal" data-psy-proposal hidden></div><div class="psy-owner-box" data-psy-owner="0"><label>Token do proprietário <input type="password" data-psy-owner-token autocomplete="off" spellcheck="false"></label><small>Usado apenas em memória para esta solicitação; nunca fica no save nem no localStorage.</small></div><div class="psy-file-box" data-psy-file-box hidden><label>📎 Arquivos para Psy AI <input type="file" data-psy-files accept="*/*" multiple></label><small data-psy-file-label>Nenhum arquivo selecionado</small></div><div class="psy-assistant-compose"><form data-psy-form><textarea maxlength="4000" placeholder="Pergunte sobre exploração, caça ou o estado atual…"></textarea><button class="psy-assistant-send" type="submit">ENVIAR</button></form><div class="psy-assistant-tools"><button type="button" data-psy-mini="1" data-active="1">💬 MINI PSY</button><button type="button" data-psy-owner-chat="1" data-active="0">🔑 PSY AI</button><button type="button" data-psy-change="1" data-active="0">🛡 MUDANÇA</button></div></div></section>';
+    panel.innerHTML = '<section class="psy-assistant-card" role="dialog" aria-modal="true" aria-label="Psy Assistente"><header class="psy-assistant-head"><div><div class="psy-assistant-brand">🧠 Psy Assistente <em>PSYWORLD</em></div><span class="psy-assistant-status" data-psy-status>LOCAL</span></div><button class="psy-assistant-close" type="button" data-psy-close>✕</button></header><div class="psy-assistant-feed" data-psy-feed><div class="psy-msg assistant"><small>Psy Assistente</small><div>Olá. Posso tirar dúvidas, orientar sua caça e ler o estado atual da aventura.</div></div></div><div class="psy-assistant-proposal" data-psy-proposal hidden></div><div class="psy-assistant-compose"><form data-psy-form><textarea maxlength="4000" placeholder="Pergunte sobre exploração, caça ou o estado atual…"></textarea><button class="psy-assistant-send" type="submit">ENVIAR</button></form></div></section>';
     D.body.appendChild(panel);
     panel.querySelector('[data-psy-close]')?.addEventListener('click', close);
     panel.querySelector('[data-psy-form]')?.addEventListener('submit', submit);
-    panel.querySelector('[data-psy-files]')?.addEventListener('change', updateFileLabel);
-    panel.querySelector('[data-psy-mini]')?.addEventListener('click', () => setMode('mini'));
-    panel.querySelector('[data-psy-owner-chat]')?.addEventListener('click', () => setMode('owner'));
-    panel.querySelector('[data-psy-change]')?.addEventListener('click', () => setMode('change'));
     panel.addEventListener('click', event => { if (event.target === panel) close(); });
     W.PSY = W.PSY || {};
     W.PSY.assistant = { name: 'Psy', open, close, context: gameContext, checkHealth };
