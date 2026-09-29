@@ -134,7 +134,7 @@ begin
       'gold_awarded',gold_reward,'xp_awarded',pokemon_xp,'trainer_xp_awarded',xp_reward,
       'drops',drop_counts,'account',to_jsonb(account),'hunter',to_jsonb(profile));
   else
-    update public.idle_hunt_profiles set farm_map_key=map_key,farm_checkpoint_at=clock_timestamp(),farm_enabled=true,
+    update public.idle_hunt_profiles set farm_map_key=map_key,farm_checkpoint_at=clock_timestamp(),farm_enabled=farm_enabled_next,
       updated_at=clock_timestamp() where user_id=u returning * into profile;
     result:=jsonb_build_object('ok',true,'checkpoint_at',profile.farm_checkpoint_at,'hunter',to_jsonb(profile));
   end if;
