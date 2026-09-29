@@ -1,6 +1,6 @@
 import { requireUser, jsonError, method } from './_lib/supabase.js';
 
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 function fail(message,status=400){const e=new Error(message);e.status=status;throw e;}
 function text(value,max){return String(value??'').trim().slice(0,max);}
 
