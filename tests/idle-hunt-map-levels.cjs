@@ -18,8 +18,8 @@ const readIds = (source, pattern) => {
 assert.deepEqual(readIds(idle, /IDLE_LEVEL_1_HUNT_IDS=new Set\(\[([^\]]+)\]\)/), expectedIds);
 assert.deepEqual(readIds(generator, /const levelOneHunts=new Set\(\[([^\]]+)\]\)/), expectedIds);
 assert.match(idle, /lv=enemyLevel\(rnd\)/, 'encounter levels follow the selected map range');
-assert.match(loader, /IDLE_SHARED_TRADE_ZONE_20260929_V8/, 'updated Idle scripts use a fresh browser cache key');
-assert.match(index, /core\/module-loader\.js\?build=PSYWORLD_IDLE_SHARED_TRADE_ZONE_20260929/, 'the page loads the updated Idle cache-key logic');
+assert.match(loader, /IDLE_STARTER_PASS_REWARDS_20260929_V9/, 'updated Idle scripts use a fresh browser cache key');
+assert.match(index, /core\/module-loader\.js\?build=PSYWORLD_IDLE_STARTER_PASS_REWARDS_20260929/, 'the page loads the updated Idle cache-key logic');
 
 const sql = execFileSync(process.execPath, [path.join(root, 'scripts/generate-idle-hunt-map-seed.cjs')], { encoding: 'utf8' });
 for (const id of expectedIds) {

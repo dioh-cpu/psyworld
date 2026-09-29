@@ -9,6 +9,7 @@ const end = source.indexOf('function showIdleStarterPicker()', start);
 assert.ok(start >= 0 && end > start, 'starter choice and migration logic exists');
 const code = source.slice(start, end);
 let profile, saved = 0, rendered = 0, notice = '';
+const helpers = {};
 const browserWindow = {
     RARITIES: [{ n: 'Comum', mult: 1 }],
     createCapturedPoke: id => ({ id, name: ['Bulbasaur', 'Charmander', 'Squirtle'][({1:0,4:1,7:2})[id]], level: 1, rarity: { n: 'Comum', mult: 1 } })
@@ -16,6 +17,8 @@ const browserWindow = {
 const context = {
   Number, Math, window: browserWindow, W: browserWindow, D: { getElementById: () => ({ style: {} }) },
   PSTATE: () => profile,
+  idleWallet: () => { profile.meta.modeEconomies ||= {}; return profile.meta.modeEconomies.psyIdle ||= { gold: 500, drops: { 'Pokéball': 3 }, packs: {} }; },
+  idleHelperSettings: () => profile.meta.worldIdleProgress.helper ||= {},
   idleTrainerXpNext: () => 450,
   getPokemonName: id => ({1: 'Bulbasaur', 4: 'Charmander', 7: 'Squirtle'})[id],
   prepareIdlePokemon: mon => { mon.psyIdleKey = `starter-${mon.id}`; },
@@ -41,6 +44,9 @@ profile.meta.psyIdlePokemon['old-bulbasaur'] = { level: 1, xp: 0 };
 select(4);
 assert.deepEqual([...profile.team].map(mon => mon.id), [4], 'a fresh account replaces the automatic Bulbasaur placeholder');
 assert.equal(profile.meta.psyIdleStarterChosen, 1);
+assert.equal(profile.meta.psyIdleStarterWelcomeClaimed, 1);
+assert.deepEqual({ ...profile.meta.modeEconomies.psyIdle.drops }, { 'Pokéball': 203, 'Ultra Ball': 200, 'Great Ball': 200, Revive: 200, 'Poção 200': 200 });
+assert.deepEqual({ ...profile.meta.worldIdleProgress.helper }, { potion: true, revive: true, catchNormal: true, ball: 'Pokéball' });
 assert.equal(saved, 1);
 assert.equal(rendered, 1);
 assert.match(notice, /Charmander/);
@@ -67,5 +73,6 @@ for (const id of ['psy-ir-damage', 'psy-ir-hptxt', 'psy-ir-pokemon-xp', 'psy-ir-
 }
 assert.match(source, /psy-ir-roster-stats/);
 assert.match(source, /psy-ir-roster-xp/);
+assert.match(source, /Para começar sua nova jornada, enviamos os seguintes prêmios à sua bag: 200 Ultra Balls, 200 Great Balls, 200 Pokéballs, 200 Revives e 200 Poções\./);
 assert.match(source, /if\(!idleStarterChosen\(\)\)\{showIdleStarterPicker\(\);return\}/, 'the hunt cannot start before the starter is selected');
 console.log('PASS: Idle offers the starter choice, preserves existing Pokémon, and exposes combat/progression stats.');

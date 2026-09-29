@@ -119,3 +119,11 @@ Production remains prior main chat fixes, not this commerce implementation.
 - Nenhuma migração de banco foi necessária: o módulo usa o canal privado de presença e `idle_social` já existentes/aplicados.
 - Adicionados `tests/idle-shared-session.cjs` e `tests/idle-trade-zone.cjs`; ajustados testes do callback e da sessão principal. Todos os `tests/*.cjs`, checagens de sintaxe JavaScript e `git diff --check` passaram.
 - A interface abre e aceita convites de troca; a seleção/oferta dos itens dentro da sala continua exigindo uma interface própria, pois os ativos do Idle local ainda não são sincronizados para o inventário online autoritativo.
+
+## Recompensas iniciais e Passe — 2026-09-29
+
+- A escolha do primeiro inicial concede, uma vez por perfil Idle, 200 Ultra Balls, 200 Great Balls, 200 Pokéballs, 200 Revives e 200 Poções 200; o aviso aparece na tela de escolha. Auto-Potion, Auto-Revive e Auto-Catch normal ficam ativos, usando Pokéball.
+- Cada abate agora dá 20 XP de Passe (antes 1), mantendo as faixas de 1.000 XP por nível. As trilhas gratuita e premium oferecem um boost em todos os marcos múltiplos de 5, junto a recompensas de itens e Gold maiores.
+- O nível 100 gratuito concede uma Caixa Shiny de Inicial das 9 regiões. A caixa aparece na Bag; abrir adiciona um inicial regional Shiny à Box.
+- Testes novos validam os presentes do inicial, as três configurações automáticas, boosts em todos os marcos de 5, valores escalados e abertura/consumo da caixa. Todos os `tests/*.cjs`, checagens de sintaxe e `git diff --check` passaram.
+- Os bônus iniciais são concedidos quando o jogador conclui a escolha do inicial; perfis que já marcaram um inicial não recebem os presentes retroativamente.
