@@ -306,8 +306,10 @@
 
   function connectionAnswer(error, mode) {
     const code = String(error?.code || '');
+    if (code === 'psy_quota_exhausted') return 'A Psy está conectada, mas a cota ou o limite de uso do Gemini foi atingido. Tente novamente mais tarde ou confira os limites do projeto no Google AI Studio.';
+    if (code === 'psy_upstream_unavailable') return 'A Psy está conectada, mas o serviço de pesquisa online não respondeu agora. Tente novamente em instantes.';
     if (mode === 'owner' || mode === 'change') {
-      if (code === 'psy_upstream_unavailable' || code === 'psy_safety_unavailable') return 'A Psy AI não conseguiu acessar o serviço online. Verifique se a chave é real, se há créditos disponíveis e reinicie o servidor depois de configurá-la.';
+      if (code === 'psy_safety_unavailable') return 'A Psy AI não conseguiu acessar o serviço online. Verifique se a chave é real, se há créditos disponíveis e reinicie o servidor depois de configurá-la.';
       if (code === 'psy_not_configured') return 'A Psy AI ainda não recebeu uma chave de API no terminal que iniciou o servidor.';
       return 'A Psy AI não conseguiu concluir a solicitação online agora. Confira o terminal do servidor e tente novamente.';
     }
@@ -523,8 +525,9 @@
       setStatus('PESQUISANDO…', true);
       const data = await request('/chat', { message: finalMessage, context: ctx, history: state.history.slice(0, -1) }, undefined);
       addMessage('assistant', data.name || 'Psy Assistente', data.answer || 'Não recebi uma resposta.', true, data.sources || []);
-    } catch (_) {
-      addMessage('assistant', 'Psy Assistente', offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
+    } catch (error) {
+      const remoteError = connectionAnswer(error, state.mode);
+      addMessage('assistant', 'Psy Assistente', remoteError || offlineAnswer(finalMessage, ctx, files.length > 0 || !!project));
     } finally {
       if (send) { send.disabled = false; send.textContent = 'ENVIAR'; }
       if (state.health?.chat_available) setStatus(state.health.google_search ? 'GOOGLE · ONLINE' : 'ONLINE', true);
