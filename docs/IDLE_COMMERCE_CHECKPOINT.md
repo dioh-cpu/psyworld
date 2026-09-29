@@ -126,4 +126,4 @@ Production remains prior main chat fixes, not this commerce implementation.
 - Cada abate agora dá 20 XP de Passe (antes 1), mantendo as faixas de 1.000 XP por nível. As trilhas gratuita e premium oferecem um boost em todos os marcos múltiplos de 5, junto a recompensas de itens e Gold maiores.
 - O nível 100 gratuito concede uma Caixa Shiny de Inicial das 9 regiões. A caixa aparece na Bag; abrir adiciona um inicial regional Shiny à Box.
 - Testes novos validam os presentes do inicial, as três configurações automáticas, boosts em todos os marcos de 5, valores escalados e abertura/consumo da caixa. Todos os `tests/*.cjs`, checagens de sintaxe e `git diff --check` passaram.
-- Os bônus iniciais são concedidos quando o jogador conclui a escolha do inicial; perfis que já marcaram um inicial não recebem os presentes retroativamente.
+- Os bônus iniciais são concedidos ao concluir a escolha do inicial; perfis que já tinham inicial escolhido recebem o pacote uma única vez quando entrarem no Idle após esta versão.

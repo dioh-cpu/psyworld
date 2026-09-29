@@ -74,5 +74,6 @@ for (const id of ['psy-ir-damage', 'psy-ir-hptxt', 'psy-ir-pokemon-xp', 'psy-ir-
 assert.match(source, /psy-ir-roster-stats/);
 assert.match(source, /psy-ir-roster-xp/);
 assert.match(source, /Para começar sua nova jornada, enviamos os seguintes prêmios à sua bag: 200 Ultra Balls, 200 Great Balls, 200 Pokéballs, 200 Revives e 200 Poções\./);
+assert.match(source, /function renderIdleTown\(\)\{[\s\S]*?if\(grantIdleStarterWelcome\(\)\)\{saveIdleCharacter\(\);notify\(/, 'existing Idle profiles receive the one-time starter package on their next visit');
 assert.match(source, /if\(!idleStarterChosen\(\)\)\{showIdleStarterPicker\(\);return\}/, 'the hunt cannot start before the starter is selected');
 console.log('PASS: Idle offers the starter choice, preserves existing Pokémon, and exposes combat/progression stats.');
