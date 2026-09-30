@@ -31,4 +31,14 @@ assert.deepEqual(JSON.parse(JSON.stringify(eevee.map(x=>[x.to,x.stone]))),[[134,
 assert.deepEqual(JSON.parse(JSON.stringify(balance.cost({stone:'Leaf Stone',qtd:10},{shiny:false}))),{stone:'Leaf Stone',quantity:10});
 assert.deepEqual(JSON.parse(JSON.stringify(balance.cost({stone:'Leaf Stone',qtd:10},{shiny:true,shinyStoneCost:30}))),{stone:'Shiny Stone',quantity:30});
 assert.equal(balance.canonicalStone('Psychic Stone'),'Enigma Stone');
+const shop=balance.evolutionShopGoods();
+assert.equal(shop.length,18,'Idle shop sells every canonical evolution stone plus Shiny Stone');
+assert.ok(shop.some(row=>row.stone==='Moon Stone'),'Moon Stone is available for Clefairy-line evolutions');
+assert.equal(shop.find(row=>row.stone==='Leaf Stone')?.price,150,'regular evolution stones have a consistent Idle price');
+assert.equal(shop.find(row=>row.stone==='Shiny Stone')?.price,1200,'Shiny Stone remains a premium item');
+assert.ok(balance.idleEvolutionStoneDropChance(16)>balance.idleEvolutionStoneDropChance(1),'higher enemy levels improve normal stone drop chances');
+assert.ok(balance.idleShinyStoneDropChance(16)>balance.idleShinyStoneDropChance(1),'higher enemy levels improve Shiny Stone drop chances');
+assert.ok(balance.idleEvolutionStoneDropChance(16,{boss:true})>balance.idleEvolutionStoneDropChance(16),'bosses improve evolution stone drops');
+assert.deepEqual(JSON.parse(JSON.stringify(balance.rollIdleEvolutionDrops({level:20},()=>0))),['Fire Stone','Shiny Stone'],'deterministic loot rolls award Idle stones without global inventory');
+assert.deepEqual(JSON.parse(JSON.stringify(balance.rollIdleEvolutionDrops({level:20},()=>.5))),[],'ordinary rolls stay rare');
 console.log('Idle quality ladder and evolution requirements: ok');

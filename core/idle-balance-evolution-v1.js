@@ -1,6 +1,6 @@
 (function(W){
  'use strict';
- if(W.PsyIdleBalanceEvolution?.build==='IDLE_BALANCE_EVOLUTION_V1')return;
+ if(W.PsyIdleBalanceEvolution?.build==='IDLE_BALANCE_EVOLUTION_V2')return;
  const QUALITY=Object.freeze([
   Object.freeze({name:'Lixo',mult:1}),
   Object.freeze({name:'Quase Lixo',mult:1.1}),
@@ -22,6 +22,12 @@
   'Psychic Stone':'Enigma Stone','Dark Stone':'Darkness Stone','Ghost Stone':'Darkness Stone',
   'Dragon Stone':'Crystal Stone','Fairy Stone':'Heart Stone'
  });
+ const REGULAR_EVOLUTION_STONES=Object.freeze([
+  'Fire Stone','Water Stone','Leaf Stone','Thunder Stone','Ice Stone','Punch Stone',
+  'Venom Stone','Earth Stone','Feather Stone','Enigma Stone','Cocoon Stone','Rock Stone',
+  'Crystal Stone','Darkness Stone','Metal Stone','Heart Stone','Moon Stone'
+ ]);
+ const EVOLUTION_STONES=Object.freeze([...REGULAR_EVOLUTION_STONES,'Shiny Stone']);
  function qualityMultiplier(name,fallback=1){return QUALITY_BY_NAME.get(norm(name))?.mult??(Number.isFinite(Number(fallback))?Number(fallback):1)}
  function withIdleQuality(mon){
   if(!mon||typeof mon!=='object')return mon;
@@ -46,5 +52,21 @@
   if(shiny)return{stone:'Shiny Stone',quantity:Math.max(10,Math.floor(Number(shinyStoneCost)||10))};
   return{stone:canonicalStone(requirement?.stone||'Evolution Stone',stoneAliases),quantity:Math.max(1,Math.floor(Number(requirement?.qtd)||10))};
  }
- W.PsyIdleBalanceEvolution=Object.freeze({build:'IDLE_BALANCE_EVOLUTION_V1',quality:Object.freeze(QUALITY.slice()),qualityMultiplier,withIdleQuality,canonicalStone,evolutionOptions,cost});
+ function evolutionShopGoods(){return EVOLUTION_STONES.map(stone=>Object.freeze({stone,price:stone==='Shiny Stone'?1200:150}))}
+ function idleEvolutionStoneDropChance(level,{shiny=false,mega=false,boss=false}={}){
+  const lv=Math.max(1,Math.min(200,Math.floor(Number(level)||1))),base=Math.min(.018,.003+(lv-1)*.00015),variant=(shiny?1.35:1)*(mega?1.6:1)*(boss?2.5:1);
+  return Math.min(.06,base*variant);
+ }
+ function idleShinyStoneDropChance(level,{shiny=false,mega=false,boss=false}={}){
+  const lv=Math.max(1,Math.min(200,Math.floor(Number(level)||1))),base=.00002+(lv-1)*.0000025,variant=(shiny?1.5:1)*(mega?1.8:1)*(boss?3:1);
+  return Math.min(.002,base*variant);
+ }
+ function rngUnit(rng){let value=0;try{value=Number(rng?.())}catch(_){}return Math.max(0,Math.min(.999999999,Number.isFinite(value)?value:0))}
+ function rollIdleEvolutionDrops(enemy,rng=Math.random){
+  const flags={shiny:!!enemy?.shiny,mega:!!(enemy?.mega||enemy?.isMega),boss:!!(enemy?.boss||enemy?.isBoss||enemy?.raidBoss)},level=enemy?.level??enemy?.lvl??1,drops=[];
+  if(rngUnit(rng)<idleEvolutionStoneDropChance(level,flags))drops.push(REGULAR_EVOLUTION_STONES[Math.floor(rngUnit(rng)*REGULAR_EVOLUTION_STONES.length)]);
+  if(rngUnit(rng)<idleShinyStoneDropChance(level,flags))drops.push('Shiny Stone');
+  return drops;
+ }
+ W.PsyIdleBalanceEvolution=Object.freeze({build:'IDLE_BALANCE_EVOLUTION_V2',quality:Object.freeze(QUALITY.slice()),qualityMultiplier,withIdleQuality,canonicalStone,evolutionOptions,cost,evolutionStones:EVOLUTION_STONES,evolutionShopGoods,idleEvolutionStoneDropChance,idleShinyStoneDropChance,rollIdleEvolutionDrops});
 })(window);
