@@ -1,0 +1,34 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+const window={};
+const context={window,Math,Number,String,Array,Object,Map};
+vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../core/idle-genetics-v1.js'),'utf8'),context);
+vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../core/idle-balance-evolution-v1.js'),'utf8'),context);
+const balance=window.PsyIdleBalanceEvolution,genes=window.PsyIdleGenetics;
+assert.ok(balance&&genes,'Psy Idle balance and genetics helpers load');
+const qualityNames=balance.quality.map(q=>q.name);
+const worst={ivs:{hp:0,atk:0,def:0,spd:0},nature:{name:'Brava',up:'atk',down:'def'}};
+const best={ivs:{hp:32,atk:32,def:32,spd:32},nature:{name:'Brava',up:'atk',down:'def'}};
+const lowAtk=genes.multiplier({...worst},'atk'),highAtk=genes.multiplier({...best},'atk');
+for(let i=0;i<balance.quality.length-1;i++){
+ const lower=balance.quality[i],higher=balance.quality[i+1];
+ assert.ok(lower.mult*highAtk<higher.mult*lowAtk,`${higher.name} minimum remains stronger than ${lower.name} maximum`);
+}
+const quasi=balance.qualityMultiplier('Quase Lixo'),nice=balance.qualityMultiplier('Nice');
+assert.ok(nice*lowAtk>quasi*highAtk*1.14,'even the weakest Nice has at least 14% more ATK than the strongest Quase Lixo');
+const source={id:1,rarity:{n:'Nice',mult:1.2,bonus:4}};
+const effective=balance.withIdleQuality(source);
+assert.equal(effective.rarity.mult,1.35,'Psy Idle uses its explicit Nice multiplier');
+assert.equal(source.rarity.mult,1.2,'the shared/global Pokémon record is not mutated');
+const map={1:{to:2,stone:'Leaf Stone',qtd:10,minLevel:16}};
+const special={133:{'Dark Stone':{to:197,qtd:15,minLevel:25},'Water Stone':{to:134,qtd:15,minLevel:25}}};
+const aliases={'Dark Stone':'Darkness Stone','Water Stone':'Water Stone'};
+assert.deepEqual(JSON.parse(JSON.stringify(balance.evolutionOptions(1,map,{},{}))),[{to:2,stone:'Leaf Stone',qtd:10,minLevel:16}]);
+const eevee=balance.evolutionOptions(133,map,special,aliases);
+assert.deepEqual(JSON.parse(JSON.stringify(eevee.map(x=>[x.to,x.stone]))),[[134,'Water Stone'],[197,'Darkness Stone']],'branch evolutions use the canonical Darkness Stone');
+assert.deepEqual(JSON.parse(JSON.stringify(balance.cost({stone:'Leaf Stone',qtd:10},{shiny:false}))),{stone:'Leaf Stone',quantity:10});
+assert.deepEqual(JSON.parse(JSON.stringify(balance.cost({stone:'Leaf Stone',qtd:10},{shiny:true,shinyStoneCost:30}))),{stone:'Shiny Stone',quantity:30});
+assert.equal(balance.canonicalStone('Psychic Stone'),'Enigma Stone');
+console.log('Idle quality ladder and evolution requirements: ok');
