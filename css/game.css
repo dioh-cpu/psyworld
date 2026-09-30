@@ -516,6 +516,20 @@ body { background:#000; overflow:hidden; color:#fff; }
   gap:8px;
 }
 
+#dex-load-more{
+  display:block;
+  margin:12px auto 4px;
+  padding:9px 16px;
+  border:1px solid #a63b63;
+  border-radius:9px;
+  background:#27131f;
+  color:#ffe5ef;
+  font-weight:800;
+  cursor:pointer;
+}
+
+#dex-load-more[hidden]{display:none}
+
 .dex-card{
   background:#111122;
   border:2px solid #222;

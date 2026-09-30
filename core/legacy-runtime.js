@@ -4341,6 +4341,7 @@ POTION_DATA["Poção 100% HP"]={pct:100};
 // --- POKÉDEX V24 - ANIMADA + STATS LV1 + MOVES OFICIAL + RESGATAR ---
 function openPokedex(){
   document.getElementById('screen-pokedex').style.display='flex';
+  window.__psyworldDexPagingV1={query:null,visible:60,batch:60};
   if(!Object.keys(FULL_LEARNSET).length) loadFullLearnset().then(()=>renderPokedex());
   renderPokedex();
 }
@@ -4348,15 +4349,29 @@ function closePokedex(){
   document.getElementById('screen-pokedex').style.display='none';
 }
 
+function loadMorePokedex(){
+  const state=window.__psyworldDexPagingV1||(window.__psyworldDexPagingV1={query:null,visible:60,batch:60});
+  state.visible=Math.min(Object.keys(ALL_POKE_NAMES||{}).length,Math.max(60,Number(state.visible)||60)+60);
+  renderPokedex();
+}
+
 function renderPokedex(){
   let grid = document.getElementById('dex-grid');
   if(!grid) return;
-  let search = (document.getElementById('dex-search')?.value||'').toLowerCase();
-  let html = '';
+  let search = (document.getElementById('dex-search')?.value||'').trim().toLocaleLowerCase('pt-BR');
+  const state=window.__psyworldDexPagingV1||(window.__psyworldDexPagingV1={query:null,visible:60,batch:60});
+  const queryChanged=state.query!==search;
+  if(queryChanged){state.query=search;state.visible=60}
+  const matches=[];
   for(let id in ALL_POKE_NAMES){
+    const name=ALL_POKE_NAMES[id],tp=(TYPE_BY_ID_ALL[id]||TYPE_BY_ID_EXT[id]||'').toLocaleLowerCase('pt-BR');
+    if(!search||name.toLocaleLowerCase('pt-BR').includes(search)||String(id).includes(search)||tp.includes(search))matches.push(id);
+  }
+  const visible=matches.slice(0,Math.max(60,Number(state.visible)||60));
+  const wrap=document.getElementById('dex-grid-wrap'),scrollTop=wrap?.scrollTop||0;
+  let html = '';
+  for(const id of visible){
     let name = ALL_POKE_NAMES[id];
-    let tp = (TYPE_BY_ID_ALL[id]||TYPE_BY_ID_EXT[id]||'').toLowerCase();
-    if(search &&!name.toLowerCase().includes(search) &&!id.includes(search) &&!tp.includes(search)) continue;
     let caught = (P.box.some(p=>p.id==id) || P.team.some(p=>p.id==id))? 'dex-caught' : '';
     let anim = getPokeAnim({id: parseInt(id)});
     html += `<div class="dex-card ${caught}" onclick="showDexDetail(${id})">
@@ -4366,6 +4381,9 @@ function renderPokedex(){
     </div>`;
   }
   grid.innerHTML = html || "<div style='color:#666;grid-column:1/-1;text-align:center'>Nenhum encontrado</div>";
+  const more=document.getElementById('dex-load-more'),remaining=matches.length-visible.length;
+  if(more){more.hidden=remaining<=0;more.textContent=remaining>0?`Carregar mais ${Math.min(state.batch||60,remaining)} Pokémon · ${visible.length} de ${matches.length}`:'Todos os Pokémon exibidos';}
+  if(wrap)wrap.scrollTop=queryChanged?0:scrollTop;
 }
 
 function showDexDetail(id){

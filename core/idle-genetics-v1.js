@@ -2,6 +2,10 @@
  'use strict';
  if(W.PsyIdleGenetics&&W.PsyIdleGenetics.build==='IDLE_GENETICS_V1')return;
  const STATS=['hp','atk','def','spd'];
+ /* IVs/Nature add identity and a modest edge. Quality must remain the main
+    power axis: the narrowest adjacent rarity step (Quase Lixo -> Nice) is
+    about 9%, so the full IV+Nature spread stays below that gap. */
+ const IV_FACTOR_MIN=.98,IV_FACTOR_RANGE=.04,NATURE_FACTOR_UP=1.01,NATURE_FACTOR_DOWN=.99;
  const NATURES=[
   {name:'Firme',up:'atk',down:'spd'},{name:'Brava',up:'atk',down:'def'},{name:'Valente',up:'atk',down:'hp'},
   {name:'Robusta',up:'def',down:'atk'},{name:'Serena',up:'def',down:'spd'},{name:'Audaz',up:'def',down:'hp'},
@@ -40,7 +44,7 @@
  function multiplier(mon,stat){
   if(!STATS.includes(stat))return 1;
   const gene=ensure(mon),iv=Number(gene.ivs[stat])||0,nature=gene.nature||{};
-  return(0.9+(iv/32)*0.2)*(nature.up===stat?1.1:nature.down===stat?0.9:1);
+  return(IV_FACTOR_MIN+(iv/32)*IV_FACTOR_RANGE)*(nature.up===stat?NATURE_FACTOR_UP:nature.down===stat?NATURE_FACTOR_DOWN:1);
  }
  function natureLabel(mon){
   const nature=ensure(mon).nature,up=nature?.up,down=nature?.down;

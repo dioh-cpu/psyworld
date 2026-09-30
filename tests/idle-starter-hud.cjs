@@ -45,7 +45,7 @@ select(4);
 assert.deepEqual([...profile.team].map(mon => mon.id), [4], 'a fresh account replaces the automatic Bulbasaur placeholder');
 assert.equal(profile.meta.psyIdleStarterChosen, 1);
 assert.equal(profile.meta.psyIdleStarterWelcomeClaimed, 1);
-assert.deepEqual({ ...profile.meta.modeEconomies.psyIdle.drops }, { 'Pokéball': 203, 'Ultra Ball': 200, 'Great Ball': 200, Revive: 200, 'Poção 200': 200 });
+assert.deepEqual({ ...profile.meta.modeEconomies.psyIdle.drops }, { 'Pokéball': 13, 'Great Ball': 3, Revive: 1, 'Poção 50': 3 });
 assert.deepEqual({ ...profile.meta.worldIdleProgress.helper }, { potion: true, revive: true, catchNormal: true, ball: 'Pokéball' });
 assert.equal(saved, 1);
 assert.equal(rendered, 1);
@@ -73,7 +73,9 @@ for (const id of ['psy-ir-damage', 'psy-ir-hptxt', 'psy-ir-pokemon-xp', 'psy-ir-
 }
 assert.match(source, /psy-ir-roster-stats/);
 assert.match(source, /psy-ir-roster-xp/);
-assert.match(source, /Para começar sua nova jornada, enviamos os seguintes prêmios à sua bag: 200 Ultra Balls, 200 Great Balls, 200 Pokéballs, 200 Revives e 200 Poções\./);
+assert.match(source, /Para começar sua nova jornada, enviamos os seguintes prêmios à sua bag: 10 Pokéballs, 3 Great Balls, 3 Poções 50 e 1 Revive\./);
+assert.match(source, /Kit inicial enviado à sua bag: 10 Pokéballs, 3 Great Balls, 3 Poções 50 e 1 Revive\./);
+assert.match(source, /function grantIdleStarterWelcome\(\)[\s\S]*?\[\['Pokéball',10\],\['Great Ball',3\],\['Poção 50',3\],\['Revive',1\]\]/);
 assert.match(source, /function renderIdleTown\(\)\{[\s\S]*?if\(grantIdleStarterWelcome\(\)\)\{saveIdleCharacter\(\);notify\(/, 'existing Idle profiles receive the one-time starter package on their next visit');
 assert.match(source, /if\(!idleStarterChosen\(\)\)\{showIdleStarterPicker\(\);return\}/, 'the hunt cannot start before the starter is selected');
 console.log('PASS: Idle offers the starter choice, preserves existing Pokémon, and exposes combat/progression stats.');
