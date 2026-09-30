@@ -29,6 +29,6 @@ assert.match(idle, /if\(isKantoArtMap\(\)\)return 0/, 'procedural terrain cannot
 assert.match(idle, /if\(isKantoArtMap\(\)&&kantoHuntArtBlocked\(x,y,r\)\)return true/, 'player and Pokémon movement checks the art collision mask');
 assert.match(idle, /function drawGround\(\)\{if\(isKantoArtMap\(\)\)/, 'Kanto hunts render their selected type background');
 assert.match(idle, /if\(isKantoArtMap\(\)\)\{loadKantoHuntArt\(currentMap\);buildCollisionGrid\(\);return\}/, 'old generated obstacles are removed from art-based hunts');
-assert.match(loader, /PSYWORLD_IDLE_EVOLUTION_STONES_20260930/, 'Idle mode gets a fresh cache key');
-assert.match(index, /core\/module-loader\.js\?build=PSYWORLD_IDLE_EVOLUTION_STONES_20260930/, 'page loads the updated module loader');
+assert.match(loader, /PSYWORLD_IDLE_SOCIAL_LAYER_FIX_20260930/, 'Idle mode gets a fresh cache key');
+assert.match(index, /core\/module-loader\.js\?build=PSYWORLD_IDLE_SOCIAL_LAYER_FIX_20260930/, 'page loads the updated module loader');
 console.log(`Idle Kanto hunt art and collision hooks passed (${slugs.length} type backgrounds).`);

@@ -254,7 +254,8 @@
     render();
   }
   function installStyles(){if(D.getElementById('psy-idle-social-css'))return;const style=D.createElement('style');style.id='psy-idle-social-css';style.textContent=`
-  #psy-idle-social-dock{position:absolute;left:12px;bottom:12px;z-index:1600;font:12px/1.35 system-ui,Segoe UI,sans-serif;color:#eefaff;pointer-events:none}
+  /* Idle dialogs use layers 8–14; keep the dock above the game but behind every dialog. */
+  #psy-idle-social-dock{position:absolute;left:12px;bottom:12px;z-index:5;font:12px/1.35 system-ui,Segoe UI,sans-serif;color:#eefaff;pointer-events:none}
   #psy-idle-social-dock *{box-sizing:border-box}#psy-idle-social-dock button{font:inherit;color:inherit;cursor:pointer}
   #psy-idle-social-dock [data-social-minimized]{pointer-events:auto;width:50px;height:50px;border-radius:17px;border:1px solid #76e8f0;background:linear-gradient(145deg,#12394a,#242047);box-shadow:0 8px 24px #0009,0 0 20px #46d9ef44;display:grid;place-items:center;position:relative}
   #psy-idle-social-dock [data-social-minimized] svg{width:25px;height:25px;fill:none;stroke:#c5f7ff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#psy-idle-social-dock [data-social-minimized] i{position:absolute;right:7px;top:6px;width:8px;height:8px;border-radius:50%;background:#6df2be;box-shadow:0 0 8px #6df2be}
