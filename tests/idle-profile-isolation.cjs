@@ -3,7 +3,9 @@ const src=fs.readFileSync(require.resolve('../modes/idle-realistic-v1.js'),'utf8
 assert.match(src,/TELEPORTE PARA A TRADE ZONE/);assert.match(src,/data-town-trade\]'\)\.onclick=teleportTradeZone/);assert.match(src,/data-town-market\]'\)\.onclick=\(\)=>W\.PsyIdleCommerce\?\.open\('market'\)/);assert.match(src,/data-town-auction\]'\)\.onclick=\(\)=>W\.PsyIdleCommerce\?\.open\('auction'\)/);assert.doesNotMatch(src,/TELEPORTE PARA (?:O )?MARKET/);
 const start=src.indexOf('function freshIdleCharacter()'),end=src.indexOf('function idleProgress()',start);
 assert(start>=0&&end>start);
-const code=src.slice(start,end)+'\n'+src.slice(src.indexOf('function PSTATE(){'),src.indexOf('\n',src.indexOf('function PSTATE(){')));
+const xpStart=src.indexOf('function idleTrainerXpNext('),xpEnd=src.indexOf('\n',xpStart);
+assert(xpStart>=0&&xpEnd>xpStart,'capture normalization depends on the Idle XP curve');
+const code=src.slice(xpStart,xpEnd)+'\n'+src.slice(start,end)+'\n'+src.slice(src.indexOf('function PSTATE(){'),src.indexOf('\n',src.indexOf('function PSTATE(){')));
 const store=new Map([['psyWorldSave','untouched-psyworld-save']]);
 const window={RARITIES:[{n:'Comum',mult:1}],createCapturedPoke:(id,rarity)=>({id,name:'Bulbasaur',level:1,rarity,hp:1,maxHp:1,atk:1}),calcBaseHpV14:()=>100,calcBaseAtkV14:()=>40};
 const ctx={window,W:window,IDLE_SAVE_KEY:'psy_idle_character_v1',crypto:webcrypto,localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},setTimeout,clearTimeout,console,idleCharacter:null,idleSaveTimer:0,lastIdleSave:0};

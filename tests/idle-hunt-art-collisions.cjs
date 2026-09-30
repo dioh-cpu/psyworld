@@ -16,6 +16,10 @@ for (const slug of slugs) {
   const file = path.join(artDir, `${slug}.webp`);
   assert.ok(fs.existsSync(file), `Kanto ${slug} hunt art exists`);
   assert.ok(fs.statSync(file).size > 20_000, `Kanto ${slug} art is non-empty`);
+  const bytes = fs.readFileSync(file);
+  assert.equal(bytes.toString('ascii', 0, 4), 'RIFF', `Kanto ${slug} art has a valid WebP container`);
+  assert.equal(bytes.toString('ascii', 8, 12), 'WEBP', `Kanto ${slug} art has the WebP signature`);
+  assert.equal(bytes.readUInt32LE(4) + 8, bytes.length, `Kanto ${slug} art is complete, not truncated`);
 }
 assert.match(idle, /KANTO_HUNT_ART_SLUG=/, 'all Kanto types map to their artwork');
 assert.match(idle, /function kantoArtCrop\(image\)/, 'art is cover-cropped without distortion');

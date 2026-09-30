@@ -15,9 +15,9 @@ export default async function handler(req,res){
     if(!UUID.test(requestId))fail('invalid_id');
     const mapKey=text(body.map_key,64);
     if(!/^[a-z0-9-]{1,64}$/.test(mapKey))fail('invalid_map');
-    const attackerAtk=Math.max(1,Math.min(1000000,Math.floor(Number(body.attacker_atk)||35)));
-    const attackerLevel=Math.max(1,Math.min(10000,Math.floor(Number(body.attacker_level)||1)));
-    const payload={map_key:mapKey,auto_farm:body.auto_farm!==false,nickname:text(body.nickname||user.user_metadata?.trainer_name||'Treinador',24),attacker_atk:attackerAtk,attacker_level:attackerLevel};
+    // Offline combat is computed from the authenticated server profile. Team
+    // stats remain local, so client-supplied ATK/level are deliberately ignored.
+    const payload={map_key:mapKey,auto_farm:body.auto_farm!==false,nickname:text(user.user_metadata?.trainer_name||'Treinador',24)};
     const {data,error}=await supabase.rpc('idle_hunt_farm',{u:user.id,act:action,p:payload,req:requestId});
     if(error){if(error.code==='P0001')fail(error.message,409);if(['22P02','22023'].includes(error.code))fail('invalid_request');throw error;}
     return res.status(200).json(data);

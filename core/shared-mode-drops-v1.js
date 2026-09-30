@@ -13,7 +13,7 @@
   W.__PSYWORLD_SHARED_MODE_DROPS_V2__=true;
   W.__PSYWORLD_SHARED_MODE_DROPS_V1__=true; // compatibilidade com guards antigos
 
-  const BUILD='SHARED_MODE_DROPS_V12_IDLE_PROFILE';
+  const BUILD='SHARED_MODE_DROPS_V13_IDLE_LEVEL_SCALING';
   try{if(typeof P!=='undefined'&&P)W.P=P}catch(e){}
 
   const TYPES=['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
@@ -81,7 +81,7 @@
     /* As taxas ficam abaixo do combate comum para controlar a cadência de farm. */
     return 1;
   }
-  function chanceScale(mode=''){
+  function chanceScale(mode='',enemyLevel=1){
     const eq=mode==='adventure'?Math.max(0,num(W.PSY?.getAdventureEquipmentDropBonus?.(),0)):0;
     const d=buff('drop')+eq;
     /* V5 LOW VOLUME:
@@ -90,11 +90,12 @@
        Isso impede farm infinito no Survivor/World quando o jogador passa a
        matar centenas de inimigos por minuto. */
     const idleProfile=mode==='idle'?(W.__psyIdleProfile||W.P):W.P,idleLoot=mode==='idle'&&Number(idleProfile?.meta?.psyIdleBuffs?.loot||0)>Date.now()?1.5:1;
-    const materialBoost=Math.min(2,Math.min(2,1+d/300)*idleLoot);
+    const level=Math.max(1,Math.min(100,Math.floor(num(enemyLevel,1)))),idleLevelBoost=mode==='idle'?Math.min(2,1+.012*(level-1)):1;
+    const materialBoost=Math.min(2,Math.min(2,1+d/300)*idleLoot*idleLevelBoost);
     /* Packs usam uma curva separada. V21 ainda referenciava cs.quest, campo
        inexistente, transformando a chance em NaN e anulando o drop. */
-    const packBoost=Math.min(3,Math.min(3,1+d/100)*idleLoot);
-    return{drop:d,globalDrop:buff('drop'),equipmentDrop:eq,materialBoost,packBoost}
+    const packBoost=Math.min(3,Math.min(3,1+d/100)*idleLoot*idleLevelBoost);
+    return{drop:d,globalDrop:buff('drop'),equipmentDrop:eq,level,levelBoost:idleLevelBoost,materialBoost,packBoost}
   }
 
   function eventAlreadyAwarded(enemy,mode){
@@ -110,13 +111,14 @@
   }
 
   const idDropProfiles=new Map();
+  function enemyLevel(enemy){return Math.max(1,Math.min(100,Math.floor(num(enemy?.level??enemy?.lvl,1))))}
   function dropProfile(enemy,mode){
-    const id=enemyId(enemy),type=enemyType(enemy),cs=chanceScale(mode),rs=scale(mode),key=id==null?null:`${id}:${mode}:${cs.drop}`;
+    const id=enemyId(enemy),level=enemyLevel(enemy),type=enemyType(enemy),cs=chanceScale(mode,level),rs=scale(mode),key=id==null?null:`${id}:${mode}:${cs.drop}:${cs.materialBoost}:${cs.packBoost}:${level}`;
     if(key&&idDropProfiles.has(key))return idDropProfiles.get(key);
     const ess=essence(type),pair=QUEST_LOOT[type]||QUEST_LOOT.Normal;
     /* O perfil é construído por ID. Cada entrada possui sua própria chance e
        sua própria rolagem; não existe limite de um item por inimigo. */
-    const profile={id,type,entries:[
+    const profile={id,type,level,levelBoost:cs.levelBoost,entries:[
       /* Taxas deliberadamente baixas porque Survivor/World possuem volume
          enorme de abates. Cada item continua com rolagem independente.
          Base em modos normais: 0,60% / 1,20% / 0,25%.
@@ -181,7 +183,7 @@
   function awardCommon(enemy,source='auto'){
     const mode=modeName(source);if(mode==='cards')return[];
     if(eventAlreadyAwarded(enemy,mode))return[];markEvent(enemy,mode);
-    const p=ensure(mode),profile=dropProfile(enemy,mode),cs=chanceScale(mode),rs=scale(mode),got=[],quota=materialQuota(p,mode);
+    const level=enemyLevel(enemy),p=ensure(mode),profile=dropProfile(enemy,mode),cs=chanceScale(mode,level),rs=scale(mode),got=[],quota=materialQuota(p,mode);
 
     /* TODAS as entradas do perfil do ID são roladas independentemente.
        Survivor/World respeitam também o teto duro de 15 materiais por
@@ -199,7 +201,7 @@
     if(mode==='idle'){
       /* Supplies for catch, healing and revive also use independent rolls. */
       for(const [name,chance] of [['Pokéball',.08],['Great Ball',.035],['Super Ball',.015],['Poção 200',.04],['Revive',.02]]){
-        if(Math.random()<chance){addItem(p,name,1,mode);got.push(name)}
+        if(Math.random()<Math.min(1,chance*cs.materialBoost)){addItem(p,name,1,mode);got.push(name)}
       }
     }
     const id=profile.id;
@@ -257,8 +259,8 @@
   W.psySharedWorldRareDrop=worldRareDrop;
   W.psyCommonDropHooks=function(id){return awardCommon(id,W.__psyDropContext?.mode||'auto')};
   W.PSY=W.PSY||{};
-  W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'3% no Idle; 0,60% base nos outros modos',questCommon:'6% no Idle; 1,20% base nos outros modos',questRare:'1% no Idle; 0,25% base nos outros modos',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor: 12%; Idle: tabela própria + suprimentos; World: 25%; Fast Encounter: 20%; Wild/Hunt: 50% das taxas da tabela'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
+  W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'3% no Idle no Lv.1; escala por nível até 2×',questCommon:'6% no Idle no Lv.1; escala por nível até 2×',questRare:'1% no Idle no Lv.1; escala por nível até 2×',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor: 12%; Idle: tabela por nível + suprimentos; World: 25%; Fast Encounter: 20%; Wild/Hunt: 50% das taxas da tabela'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
 
   installEndBattle();installWorldKill();installCardContext();
-  console.log('✅ PSYWORLD Shared Drops V12: carteira Psy Idle isolada; World usa Packs e não Cards diretas.');
+  console.log('✅ PSYWORLD Shared Drops V13: chances do Psy Idle escalam por nível com limites; economias permanecem isoladas.');
 })(window);

@@ -36,20 +36,28 @@ const call=async(handler,req)=>{const res=makeRes();await handler(req,res);retur
     assert.equal(claim.statusCode,200);
     assert.equal(claim.body.kills_awarded,5);
     assert.deepEqual(calls[0],{u:userId,act:'claim',p:{map_key:'kanto-001',auto_farm:true,nickname:'Fixture'},req:'c52d5e02-83e5-4fc2-a48c-b8e4fb8461b2'});
-    console.log('PASS: offline claim forwards only validated route and auto setting; rewards come from the server');
+    console.log('PASS: offline claim forwards validated route and auto setting; rewards are server-computed');
+
+    const bounded=await call(handler,{method:'POST',headers:{authorization:'Bearer fixture-token'},body:{
+      action:'checkpoint',request_id:'d1c9ab07-21cc-4148-93df-5a79958f839b',map_key:'kanto-001',
+      attacker_atk:9999999,attacker_level:50000,gold_awarded:999999,drops:{'Master Ball':500}
+    }});
+    assert.equal(bounded.statusCode,200);
+    assert.deepEqual(calls[1],{u:userId,act:'checkpoint',p:{map_key:'kanto-001',auto_farm:true,nickname:'Fixture'},req:'d1c9ab07-21cc-4148-93df-5a79958f839b'});
+    console.log('PASS: client-supplied combat stats and rewards are ignored');
 
     const invalid=await call(handler,{method:'POST',headers:{authorization:'Bearer fixture-token'},body:{
       action:'claim',request_id:'c52d5e02-83e5-4fc2-a48c-b8e4fb8461b2',map_key:'bad/map'
     }});
     assert.equal(invalid.statusCode,400);
-    assert.equal(calls.length,1);
+    assert.equal(calls.length,2);
     console.log('PASS: invalid routes cannot reach the farm RPC');
 
     const unauth=await call(handler,{method:'POST',headers:{},body:{
       action:'claim',request_id:'c52d5e02-83e5-4fc2-a48c-b8e4fb8461b2',map_key:'kanto-001'
     }});
     assert.equal(unauth.statusCode,401);
-    assert.equal(calls.length,1);
+    assert.equal(calls.length,2);
     console.log('PASS: unauthenticated claims cannot reach the farm RPC');
   }finally{console.error=oldError}
 })().catch(error=>{console.error(error);process.exitCode=1});
