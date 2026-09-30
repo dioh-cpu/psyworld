@@ -7,7 +7,7 @@
 const W=window,D=document;
   // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
   const PHYSICAL_BUILD='PSYWORLD_XP_BALANCE_V187_20260927';
-function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSY_IDLE_AFK_REPORT_V1_20260929':isIdleShared?'IDLE_SHARED_ACCOUNT_BRIDGE_20260929_V11':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
+function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSY_IDLE_AFK_REPORT_V1_20260929':isIdleShared?'IDLE_AUTO_CATCH_FIX_20260930_V13':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
   idleworld:{icon:'🌿',name:'PSY IDLE',desc:'Hunts individuais em mapa top-down, colisão em grade, IA e sistemas de progressão próprios.',entry:['openIdleRealisticV2']},
@@ -236,7 +236,7 @@ const mo=new MutationObserver(()=>{addMenuButton();decorateButtons()});mo.observ
 // GitHub V62 sync: conta online/cloud save é um módulo leve e global, carregado junto ao bootstrap.
 try{
   const cs=D.createElement('script');
-  cs.src='core/cloud-save-v23.js?build=CLOUD_IDLE_SESSION_BRIDGE_20260929_C';
+  cs.src='core/cloud-save-v23.js?build=CLOUD_IDLE_SESSION_BRIDGE_20260929_D';
   cs.async=false;
   D.head.appendChild(cs);
 }catch(e){console.warn('cloud save loader',e)}
