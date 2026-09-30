@@ -20,7 +20,7 @@ assert.match(online,/'trainer_xp_awarded',xp_reward,'pokemon_xp_awarded',xp_rewa
 assert.match(farm,/xp_reward:=simulated_kills\*xp_per_kill;\s*pokemon_xp:=xp_reward;/,'AFK awards the same per-kill XP to Trainer and active Pokémon');
 assert.match(farm,/'xp_awarded',pokemon_xp,'trainer_xp_awarded',xp_reward[\s\S]*?'pokemon_xp_awarded',pokemon_xp/,'AFK response keeps both XP totals equal');
 assert.match(online,/'id',t\.species_id,'name',t\.species_name,'level',1,'exp',0/,'online-captured Pokémon always starts at level 1');
-const leaderboardSql=fs.readFileSync(path.join(migrationsDir,'20260930191403_idle_hunt_leaderboard_v1.sql'),'utf8');
+const leaderboardSql=fs.readFileSync(path.join(migrationsDir,'20260930193359_idle_hunt_leaderboard_v1.sql'),'utf8');
 const leaderboardOnline=leaderboardSql.match(/create or replace function public\.idle_hunt\([\s\S]*?\$\$;/i)?.[0];
 assert.match(leaderboardOnline,/'id',t\.species_id,'name',t\.species_name,'level',1,'exp',0/,'later leaderboard migration preserves level-1 captures');
 assert.match(online,/gold_reward:=reward\.gold/);

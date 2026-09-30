@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const sql=fs.readFileSync('supabase/migrations/20260930191403_idle_hunt_leaderboard_v1.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20260930193359_idle_hunt_leaderboard_v1.sql','utf8');
 const section=(signature)=>{
   const start=sql.indexOf(`create or replace function public.${signature}`);
   assert.notEqual(start,-1,`missing ${signature}`);

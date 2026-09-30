@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const sql=fs.readFileSync('supabase/migrations/20260930192342_idle_psy_idle_fk_indexes_v1.sql','utf8');
+const sql=fs.readFileSync('supabase/migrations/20260930193403_idle_psy_idle_fk_indexes_v1.sql','utf8');
 
 for(const [index,table,column] of [
   ['idle_bid_history_listing_id_idx','idle_bid_history','listing_id'],

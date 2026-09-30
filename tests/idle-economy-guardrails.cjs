@@ -6,7 +6,7 @@ const game=read('../modes/idle-realistic-v1.js');
 const social=read('../modes/idle-social-v1.js');
 const guestApi=read('../api/idle-chat.js');
 const migration=read('../supabase/migrations/20260928225705_idle_guest_chat_sale_xp.sql');
-const rewardMigration=read('../supabase/migrations/20260930190636_idle_hunt_reward_balance_v1.sql');
+const rewardMigration=read('../supabase/migrations/20260930193354_idle_hunt_reward_balance_v1.sql');
 const moduleLoader=read('../core/module-loader.js');
 const sellableSource=game.match(/const IDLE_SELLABLE_ITEMS=new Set\(\[([^\]]+)\]\);/);
 const rareSource=game.match(/const IDLE_RARE_DROP_ITEMS=new Set\(\[([^\]]+)\]\);/);
