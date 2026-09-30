@@ -2,9 +2,8 @@
  'use strict';
  if(W.PsyIdleGenetics&&W.PsyIdleGenetics.build==='IDLE_GENETICS_V1')return;
  const STATS=['hp','atk','def','spd'];
- /* IVs/Nature add identity and a modest edge. Quality must remain the main
-    power axis: the narrowest adjacent rarity step (Quase Lixo -> Nice) is
-    about 9%, so the full IV+Nature spread stays below that gap. */
+ /* IVs/Nature add identity and a modest edge. Psy Idle applies its own
+    quality curve so IV and Nature cannot let a lower quality outrank the next. */
  const IV_FACTOR_MIN=.98,IV_FACTOR_RANGE=.04,NATURE_FACTOR_UP=1.01,NATURE_FACTOR_DOWN=.99;
  const NATURES=[
   {name:'Firme',up:'atk',down:'spd'},{name:'Brava',up:'atk',down:'def'},{name:'Valente',up:'atk',down:'hp'},
