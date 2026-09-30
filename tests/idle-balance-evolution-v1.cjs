@@ -9,8 +9,8 @@ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../core/idle-balance-evo
 const balance=window.PsyIdleBalanceEvolution,genes=window.PsyIdleGenetics;
 assert.ok(balance&&genes,'Psy Idle balance and genetics helpers load');
 const qualityNames=balance.quality.map(q=>q.name);
-const worst={ivs:{hp:0,atk:0,def:0,spd:0},nature:{name:'Brava',up:'atk',down:'def'}};
-const best={ivs:{hp:32,atk:32,def:32,spd:32},nature:{name:'Brava',up:'atk',down:'def'}};
+const worst={ivs:{hp:0,atk:0,def:0,spd:0},nature:{name:'Robusta',up:'def',down:'atk'}};
+const best={ivs:{hp:32,atk:32,def:32,spd:32},nature:{name:'Firme',up:'atk',down:'spd'}};
 const lowAtk=genes.multiplier({...worst},'atk'),highAtk=genes.multiplier({...best},'atk');
 for(let i=0;i<balance.quality.length-1;i++){
  const lower=balance.quality[i],higher=balance.quality[i+1];
