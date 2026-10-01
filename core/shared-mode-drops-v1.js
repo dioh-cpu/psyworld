@@ -189,6 +189,7 @@
        Survivor/World respeitam também o teto duro de 15 materiais por
        bloco de 700 abates. */
     for(const entry of profile.entries){
+      if(mode==='idle'&&/ultra\s*ball/i.test(entry.name))continue;
       if(quota&&quota.items>=quota.capItems)break;
       if(Math.random()<entry.chance){
         addItem(p,entry.name,1,mode);
@@ -199,8 +200,10 @@
     }
 
     if(mode==='idle'){
-      /* Supplies for catch, healing and revive also use independent rolls. */
-      for(const [name,chance] of [['Pokéball',.08],['Great Ball',.035],['Super Ball',.015],['Poção 200',.04],['Revive',.02]]){
+      /* Cada suprimento rola por conta própria; poção acompanha o nível do selvagem. */
+      const potion=level<=9?'Poção 50':level<20?'Poção 100':'Poção 200';
+      const potionChance=.06+Math.min(.05,level*.0005);
+      for(const [name,chance] of [['Pokéball',.08],['Great Ball',.035],['Super Ball',.015],[potion,potionChance],['Revive',.02]]){
         if(Math.random()<Math.min(1,chance*cs.materialBoost)){addItem(p,name,1,mode);got.push(name)}
       }
     }
