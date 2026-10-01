@@ -54,18 +54,19 @@
  }
  function evolutionShopGoods(){return EVOLUTION_STONES.map(stone=>Object.freeze({stone,price:stone==='Shiny Stone'?1200:150}))}
  function idleEvolutionStoneDropChance(level,{shiny=false,mega=false,boss=false}={}){
-  const lv=Math.max(1,Math.min(200,Math.floor(Number(level)||1))),base=Math.min(.018,.003+(lv-1)*.00015),variant=(shiny?1.35:1)*(mega?1.6:1)*(boss?2.5:1);
-  return Math.min(.06,base*variant);
+  const lv=Math.max(1,Math.min(200,Math.floor(Number(level)||1))),base=Math.min(.04,.01+(lv-1)*.0002),variant=(shiny?1.35:1)*(mega?1.6:1)*(boss?2.5:1);
+  return Math.min(.08,base*variant);
  }
  function idleShinyStoneDropChance(level,{shiny=false,mega=false,boss=false}={}){
-  const lv=Math.max(1,Math.min(200,Math.floor(Number(level)||1))),base=.00002+(lv-1)*.0000025,variant=(shiny?1.5:1)*(mega?1.8:1)*(boss?3:1);
-  return Math.min(.002,base*variant);
+  const lv=Math.max(1,Math.min(200,Math.floor(Number(level)||1))),base=.0002+(lv-1)*.00001,variant=(shiny?1.5:1)*(mega?1.8:1)*(boss?3:1);
+  return Math.min(.005,base*variant);
  }
  function rngUnit(rng){let value=0;try{value=Number(rng?.())}catch(_){}return Math.max(0,Math.min(.999999999,Number.isFinite(value)?value:0))}
- function rollIdleEvolutionDrops(enemy,rng=Math.random){
+ function rollIdleEvolutionDrops(enemy,multiplierOrRng=1,rng=Math.random){
+  const multiplier=typeof multiplierOrRng==='function'?1:Math.max(0,Math.min(2,Number(multiplierOrRng)||1)),roller=typeof multiplierOrRng==='function'?multiplierOrRng:rng;
   const flags={shiny:!!enemy?.shiny,mega:!!(enemy?.mega||enemy?.isMega),boss:!!(enemy?.boss||enemy?.isBoss||enemy?.raidBoss)},level=enemy?.level??enemy?.lvl??1,drops=[];
-  if(rngUnit(rng)<idleEvolutionStoneDropChance(level,flags))drops.push(REGULAR_EVOLUTION_STONES[Math.floor(rngUnit(rng)*REGULAR_EVOLUTION_STONES.length)]);
-  if(rngUnit(rng)<idleShinyStoneDropChance(level,flags))drops.push('Shiny Stone');
+  if(rngUnit(roller)<idleEvolutionStoneDropChance(level,flags)*multiplier)drops.push(REGULAR_EVOLUTION_STONES[Math.floor(rngUnit(roller)*REGULAR_EVOLUTION_STONES.length)]);
+  if(rngUnit(roller)<idleShinyStoneDropChance(level,flags)*multiplier)drops.push('Shiny Stone');
   return drops;
  }
  W.PsyIdleBalanceEvolution=Object.freeze({build:'IDLE_BALANCE_EVOLUTION_V2',quality:Object.freeze(QUALITY.slice()),qualityMultiplier,withIdleQuality,canonicalStone,evolutionOptions,cost,evolutionStones:EVOLUTION_STONES,evolutionShopGoods,idleEvolutionStoneDropChance,idleShinyStoneDropChance,rollIdleEvolutionDrops});

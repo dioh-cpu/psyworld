@@ -26,7 +26,7 @@
     return {
       gold:Math.floor(14000*scale*partyBonus),
       playerXp:Math.floor(18000*(1+tier*.72)*partyBonus),
-      ultraBalls:20+Math.min(40,tier*2),
+      ultraBalls:0,
       revives:5+Math.floor(tier/2),
       raidCores:3+Math.floor(tier*.7),
       stone:STONES[((Math.floor(Number(slot)||0)+tier)%STONES.length+STONES.length)%STONES.length],
