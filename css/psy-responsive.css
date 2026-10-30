@@ -148,3 +148,48 @@ body:has(#battle-screen.active) #psy-fullscreen-btn{
   #move-buttons button{min-height:36px!important;padding:5px 7px!important;font-size:clamp(9px,1.5vw,12px)!important}
   #battle-controls>div:last-child button{min-height:31px!important;padding:4px 5px!important}
 }
+
+
+/* Responsive PSY IDLE Trade Zone: keep its header, map, panels, and exits inside the viewport. */
+#psy-idle-realistic #psy-ir-trade-room{position:fixed!important;inset:0!important;box-sizing:border-box!important;padding:var(--psy-safe-top) var(--psy-safe-right) var(--psy-safe-bottom) var(--psy-safe-left)!important;overflow:hidden!important;align-items:center!important;justify-content:center!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card{position:relative!important;box-sizing:border-box!important;min-width:0!important;min-height:0!important;margin:auto!important;flex:0 1 auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header{position:relative!important;display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:12px!important;width:100%!important;min-width:0!important;flex:0 0 auto!important;padding:0!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header>div{min-width:0!important;flex:1 1 auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header button{position:relative!important;inset:auto!important;flex:0 0 48px!important;width:48px!important;height:48px!important;min-width:48px!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>.zone-note,#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>[data-trade-status]{flex:0 0 auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout{grid-template-columns:minmax(0,1.35fr) minmax(245px,.85fr)!important;grid-template-rows:minmax(0,1fr)!important;min-width:0!important;min-height:0!important;overflow:hidden!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout>div:first-child{display:flex!important;flex-direction:column!important;min-width:0!important;min-height:0!important;overflow:hidden!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-map{flex:1 1 auto!important;min-height:0!important;height:auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-controls{flex:0 0 auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-sidebar{min-width:0!important;min-height:0!important;overflow:auto!important;overscroll-behavior:contain!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer{position:static!important;inset:auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;width:100%!important;min-width:0!important;flex:0 0 auto!important;margin:10px 0 0!important;padding:0!important;transform:none!important;background:transparent!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer button{min-width:0!important;width:100%!important;min-height:42px!important;white-space:normal!important}
+@media (orientation:portrait) and (max-width:760px){
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card{width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 12px)!important;height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 12px)!important;padding:11px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header{gap:8px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header button{flex-basis:42px!important;width:42px!important;height:42px!important;min-width:42px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header h2{font-size:clamp(21px,5.5vw,28px)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(190px,.9fr) minmax(140px,1fr)!important;gap:8px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:start!important;gap:7px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-controls{grid-column:1/-1!important}
+}
+@media (max-width:420px){
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card{padding:9px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout{grid-template-rows:minmax(175px,.8fr) minmax(145px,1fr)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-sidebar{grid-template-columns:minmax(0,1fr)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer button{min-height:38px!important;font-size:9px!important}
+}
+@media (orientation:landscape) and (max-height:650px){
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card{width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 16px)!important;height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 12px)!important;max-height:none!important;padding:clamp(8px,1.4vh,14px)!important;border-radius:14px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header h2{font-size:clamp(21px,3.6vh,30px)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>.zone-note{margin:2px 0 5px!important;font-size:clamp(11px,1.9vh,14px)!important;line-height:1.3!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>[data-trade-status]{margin:2px 0 5px!important;min-height:0!important;font-size:clamp(11px,1.9vh,14px)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout{grid-template-columns:minmax(0,1.35fr) minmax(220px,.8fr)!important;grid-template-rows:minmax(0,1fr)!important;gap:8px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-map{min-height:0!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-sidebar{display:flex!important;gap:6px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-panel{padding:7px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-controls{grid-template-columns:repeat(3,36px)!important;grid-template-rows:repeat(2,30px)!important;gap:2px!important;margin-top:4px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-controls button{min-height:28px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer{gap:7px!important;margin-top:6px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer button{min-height:34px!important;font-size:10px!important}
+}
