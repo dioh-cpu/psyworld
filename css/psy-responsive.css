@@ -193,3 +193,27 @@ body:has(#battle-screen.active) #psy-fullscreen-btn{
  #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer{gap:7px!important;margin-top:6px!important}
  #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer button{min-height:34px!important;font-size:10px!important}
 }
+
+
+/* Keep portrait battle sprites in the center of the arena instead of crowding the top. */
+@media (orientation:portrait) and (max-width:760px){
+  #battle-screen{align-items:center!important;justify-content:center!important}
+  #battle-screen .battle-hud{
+    width:min(calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 14px),640px)!important;
+    height:min(calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 14px),1180px)!important;
+    max-width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 14px)!important;
+    max-height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 14px)!important;
+    margin:auto!important;
+  }
+  #battle-player,#battle-enemy{top:clamp(145px,18%,225px)!important}
+  #battle-controls{max-height:42%!important;bottom:1.5%!important}
+}
+@media (orientation:landscape) and (max-height:760px){
+  #battle-screen{align-items:center!important;justify-content:center!important}
+  #battle-screen .battle-hud{
+    width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 14px)!important;
+    height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 14px)!important;
+    max-width:1400px!important;max-height:740px!important;margin:auto!important;
+  }
+  #battle-player,#battle-enemy{top:clamp(52px,10%,78px)!important}
+}
