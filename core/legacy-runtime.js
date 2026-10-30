@@ -1020,6 +1020,7 @@ function loadOnLogin() {
     if(!saveData) { notif('❌ Nenhum save encontrado!'); return; }
 
     if(autoLoad()){
+        upgradeLegacyStarterQuality();
         document.getElementById('screen-login').style.display = 'none';
         document.getElementById('game-wrap').style.display = 'block';
         updateHUD();
@@ -1096,11 +1097,51 @@ function selectPoke(s, el) {
     document.getElementById('chosen-label').textContent = `Selecionado: ${s.name}`;
 }
 
+function rollStarterRarity() {
+    const allowed = RARITIES.slice(2, 5).filter(r => Number(r.chance) > 0);
+    if(!allowed.length) return RARITIES[2] || rollRarity();
+    const total = allowed.reduce((sum, r) => sum + Number(r.chance || 0), 0);
+    let roll = Math.random() * total;
+    for(const rarity of allowed) {
+        roll -= Number(rarity.chance || 0);
+        if(roll <= 0) return {...rarity};
+    }
+    return {...allowed[allowed.length - 1]};
+}
+
+function upgradeLegacyStarterQuality() {
+    P.meta = P.meta || {};
+    if(P.meta.psyStarterQualityFloorV1) return false;
+    const starterIds = new Set(GENS.flatMap(gen => gen.starters.map(s => Number(s.id))));
+    const mon = (P.team || []).find(p => p && p.isStarter)
+        || (P.team || []).find(p => p && starterIds.has(Number(p.id)) && Number(p.level || 1) <= 5);
+    if(!mon) return false;
+    const current = typeof mon.rarity === 'object' ? mon.rarity?.n : mon.rarity;
+    const qualityIndex = RARITIES.findIndex(r => r.n === current);
+    if(qualityIndex >= 2) {
+        P.meta.psyStarterQualityFloorV1 = true;
+        return false;
+    }
+    const oldMaxHp = Number(mon.maxHp || 0);
+    mon.rarity = rollStarterRarity();
+    if(typeof ensurePokeBase === 'function') ensurePokeBase(mon);
+    if(typeof recalcPoke === 'function') recalcPoke(mon);
+    mon.hp = Math.max(1, Number(mon.maxHp || oldMaxHp || 1));
+    P.pokemon = mon;
+    P.maxHp = mon.maxHp;
+    P.hp = mon.hp;
+    P.meta.psyStarterQualityFloorV1 = true;
+    autoSave();
+    notif(`✨ Seu inicial foi fortalecido: qualidade ${mon.rarity.n} e HP restaurado!`, 4000);
+    return true;
+}
+
 function confirmStarter() {
     if(!chosenPoke) { notif('Escolha um Pokémon primeiro!'); return; }
 
     // 1. Se já tem save v2/v1/backup, NUNCA apaga. Só entra.
     if(autoLoad() && P.team && P.team.length > 0){
+        upgradeLegacyStarterQuality();
         document.getElementById('screen-starter').style.display = 'none';
         document.getElementById('game-wrap').style.display = 'block';
         updateHUD();
@@ -1111,9 +1152,10 @@ function confirmStarter() {
     }
 
     // 2. Só cria starter se REALMENTE não tem nada
-    const rarity = rollRarity();
+    const rarity = rollStarterRarity();
     const novoPoke = {
       ...chosenPoke,
+        isStarter: true,
         rarity: rarity,
         premier: false,
         level: 1,
@@ -1142,6 +1184,8 @@ function confirmStarter() {
     // ⭐ VIP DE BOAS-VINDAS — somente para uma conta realmente nova.
     // Não é aplicado em saves já existentes e não reduz um VIP maior já ativo.
     P.meta = P.meta || {};
+    P.meta.starterPokemonId = Number(novoPoke.id);
+    P.meta.psyStarterQualityFloorV1 = true;
     if(!P.meta.welcomeVip3DaysGranted){
         const welcomeVipMs = 3 * 24 * 60 * 60 * 1000;
         P.meta.vipUntil = Math.max(Number(P.meta.vipUntil || 0), Date.now()) + welcomeVipMs;
@@ -1153,7 +1197,7 @@ function confirmStarter() {
     updateHUD();
     initEngine();
     autoSave(); // já salva em v2 + backup + v1
-    notif(`${P.name} escolheu ${chosenPoke.name}! 🎉 ⭐ VIP de boas-vindas ativado por 3 dias!`, 4500);
+    notif(`${P.name} escolheu ${chosenPoke.name} (${rarity.n})! 🎉 ⭐ VIP de boas-vindas ativado por 3 dias!`, 4500);
 }
 /* ══════════════════════════════
    LOJA
