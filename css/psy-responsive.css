@@ -50,3 +50,101 @@ html.psy-fullscreen-fallback #game-wrap{position:fixed!important;inset:0!importa
   #hud-player{transform:scale(.68)!important}
 }
 @media (display-mode:fullscreen){#psy-fullscreen-btn{left:50%!important;right:auto!important;bottom:max(9px,var(--psy-safe-bottom))!important}#game-wrap{width:100vw!important;height:100dvh!important}}
+
+
+/* Battle arena: keep the same readable two-row controls in portrait and landscape. */
+#battle-screen{
+  align-items:center!important;justify-content:center!important;
+  padding:var(--psy-safe-top) var(--psy-safe-right) var(--psy-safe-bottom) var(--psy-safe-left)!important;
+}
+#battle-screen .battle-hud{
+  box-sizing:border-box!important;width:min(1280px,96vw)!important;height:min(780px,92dvh)!important;
+  max-width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 8px)!important;
+  max-height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 8px)!important;
+  min-width:0!important;min-height:0!important;border-radius:20px!important;
+}
+#battle-log{
+  z-index:6!important;top:clamp(8px,2.5%,18px)!important;left:50%!important;right:auto!important;
+  width:min(88%,900px)!important;transform:translateX(-50%)!important;padding:5px 10px!important;
+  border:1px solid #facc1580;border-radius:999px;background:#101827bb!important;
+  font-size:clamp(11px,1.4vw,16px)!important;line-height:1.25!important;white-space:normal!important;
+}
+#battle-player,#battle-enemy{top:clamp(76px,12%,118px)!important;max-width:38%!important}
+#battle-player{left:clamp(12px,5%,76px)!important}
+#battle-enemy{right:clamp(12px,5%,76px)!important}
+#battle-player img,#battle-enemy img{
+  width:clamp(72px,13vw,150px)!important;height:clamp(72px,13vw,150px)!important;
+  max-width:100%!important;object-fit:contain!important;image-rendering:pixelated;
+}
+#battle-player .name-tag,#battle-enemy .name-tag{
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:clamp(9px,1.2vw,13px)!important;
+}
+#battle-controls{
+  box-sizing:border-box!important;left:3%!important;right:3%!important;bottom:2.5%!important;
+  max-height:43%!important;padding:10px!important;gap:8px!important;
+  background:linear-gradient(145deg,#081728f5,#111a2bf2)!important;
+  border:1px solid #52718c!important;border-radius:18px!important;
+  box-shadow:0 12px 30px #0008!important;overflow:auto!important;
+}
+#move-buttons{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;
+  margin:0!important;min-width:0!important;
+}
+#move-buttons button{
+  box-sizing:border-box!important;min-width:0!important;min-height:50px!important;
+  padding:8px 10px!important;border-radius:13px!important;font-size:clamp(10px,1.1vw,14px)!important;
+  line-height:1.2!important;white-space:normal!important;overflow-wrap:anywhere;
+}
+#battle-controls>div:last-child{display:flex!important;gap:8px!important;justify-content:stretch!important}
+#battle-controls>div:last-child button{
+  box-sizing:border-box!important;flex:1 1 0!important;min-width:0!important;max-width:none!important;
+  min-height:42px!important;padding:7px 6px!important;border:1px solid #ffffff45!important;
+  border-radius:11px!important;font-size:clamp(9px,1vw,12px)!important;
+}
+/* Remove global game controls from above the battle; leave fullscreen reachable at the edge. */
+body:has(#battle-screen.active) #menuBtn,
+body:has(#battle-screen.active) #fastEncounterBtn,
+body:has(#battle-screen.active) #hud-player,
+body:has(#battle-screen.active) #world-btn-float,
+body:has(#battle-screen.active) #psy-assistant-launcher,
+body:has(#battle-screen.active) #psy22-buffs{display:none!important}
+body:has(#battle-screen.active) #psy-fullscreen-btn{
+  top:max(7px,var(--psy-safe-top))!important;right:max(7px,var(--psy-safe-right))!important;
+  bottom:auto!important;left:auto!important;transform:none!important;
+}
+@media(max-width:760px){
+  #battle-screen .battle-hud{width:min(96vw,640px)!important;height:min(94dvh,980px)!important;border-radius:16px!important}
+  #battle-log{top:8px!important;width:86%!important;font-size:clamp(10px,2.8vw,14px)!important}
+  #battle-player,#battle-enemy{top:clamp(72px,11%,102px)!important}
+  #battle-player img,#battle-enemy img{width:clamp(62px,17vw,110px)!important;height:clamp(62px,17vw,110px)!important}
+  #battle-controls{left:2%!important;right:2%!important;bottom:1.7%!important;max-height:42%!important;padding:7px!important;gap:6px!important}
+  #move-buttons{gap:6px!important}
+  #move-buttons button{min-height:44px!important;padding:6px 5px!important;font-size:clamp(9px,2.5vw,12px)!important}
+  #battle-controls>div:last-child{gap:5px!important}
+  #battle-controls>div:last-child button{min-height:38px!important;padding:5px 3px!important;font-size:clamp(8px,2.1vw,11px)!important}
+}
+@media(orientation:portrait) and (max-width:600px){
+  #battle-screen .battle-hud{
+    width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 10px)!important;
+    height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 10px)!important;
+    max-width:640px!important;max-height:980px!important;border-radius:15px!important;
+  }
+  #battle-player,#battle-enemy{top:10%!important}
+  #battle-player{left:3%!important}#battle-enemy{right:3%!important}
+  #battle-controls{max-height:41%!important;left:1.5%!important;right:1.5%!important}
+}
+@media(orientation:landscape) and (max-height:600px){
+  #battle-screen .battle-hud{
+    width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 12px)!important;
+    height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 8px)!important;
+    max-width:1400px!important;max-height:700px!important;border-radius:15px!important;
+  }
+  #battle-log{top:7px!important}
+  #battle-player,#battle-enemy{top:8%!important}
+  #battle-player img,#battle-enemy img{width:clamp(58px,18vh,116px)!important;height:clamp(58px,18vh,116px)!important}
+  #battle-controls{left:2.5%!important;right:2.5%!important;bottom:1.2%!important;max-height:44%!important;padding:6px!important}
+  #move-buttons{gap:5px!important}
+  #move-buttons button{min-height:36px!important;padding:5px 7px!important;font-size:clamp(9px,1.5vw,12px)!important}
+  #battle-controls>div:last-child button{min-height:31px!important;padding:4px 5px!important}
+}
