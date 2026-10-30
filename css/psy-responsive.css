@@ -217,3 +217,116 @@ body:has(#battle-screen.active) #psy-fullscreen-btn{
   }
   #battle-player,#battle-enemy{top:clamp(52px,10%,78px)!important}
 }
+
+
+/* Device-aware layouts: use the visual viewport and keep dialogs usable on an upright phone. */
+#psy-layout-settings{display:none;position:fixed;inset:0;z-index:2147483000;box-sizing:border-box;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));background:#020617eF;align-items:center;justify-content:center;color:#f3f8ff}
+#psy-layout-settings[data-open="1"]{display:flex}
+#psy-layout-settings .psy-layout-card{box-sizing:border-box;width:min(460px,100%);max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);overflow:auto;padding:20px;border:1px solid #44d9e8;border-radius:18px;background:linear-gradient(145deg,#0e1a2e,#18213c);box-shadow:0 18px 70px #000c}
+#psy-layout-settings header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#psy-layout-settings header small{color:#67e8f9;font-weight:900;letter-spacing:2px}
+#psy-layout-settings h2{margin:2px 0 0;font-size:clamp(20px,5vw,28px);color:#e9fbff}
+#psy-layout-settings header button{width:42px;height:42px;border:1px solid #fb7185;border-radius:12px;background:#7f1d32;color:white;font-size:24px}
+#psy-layout-settings p{color:#c7d7e7;line-height:1.5}
+#psy-layout-settings label{display:block;margin:16px 0 7px;font-weight:900;color:#facc15}
+#psy-layout-settings select{box-sizing:border-box;width:100%;min-height:48px;padding:10px;border:1px solid #3b82a0;border-radius:10px;background:#081321;color:white;font-size:16px}
+#psy-layout-status{min-height:42px;margin:12px 0;color:#9ce8d1;font-size:13px;line-height:1.4}
+#psy-layout-settings .psy-layout-done{width:100%;min-height:46px;border:0;border-radius:11px;background:#0e7490;color:#fff;font-weight:950}
+.psy-layout-menu-button,.psy-layout-idle-button{box-sizing:border-box;width:90%;min-height:44px;margin:7px auto;padding:10px 12px;border:1px solid #45c9dc;border-radius:10px;background:linear-gradient(120deg,#0c455c,#183563);color:#f4feff;font-weight:950;cursor:pointer}
+.psy-layout-idle-button{width:100%;margin:8px 0}
+html[data-psy-layout="mobile"] #game-wrap{height:var(--psy-vh,100dvh)!important;max-height:var(--psy-vh,100dvh)!important}
+html[data-psy-layout="mobile"] #world-btn-float{position:fixed!important;top:calc(env(safe-area-inset-top) + 80px)!important;right:8px!important;bottom:calc(env(safe-area-inset-bottom) + 58px)!important;left:auto!important;width:min(48vw,205px)!important;max-width:calc(100vw - 16px)!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 150px)!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:start!important;gap:6px!important;overflow-x:hidden!important;overflow-y:auto!important;padding:6px!important}
+html[data-psy-layout="mobile"] #world-btn-float>button{box-sizing:border-box!important;width:100%!important;min-width:0!important;min-height:56px!important;margin:0!important;padding:7px 4px!important;font-size:clamp(9px,2.7vw,13px)!important;line-height:1.15!important;white-space:normal!important}
+html[data-psy-layout="mobile"] #menuBtn{position:fixed!important;top:max(8px,env(safe-area-inset-top))!important;right:8px!important;z-index:100000!important}
+html[data-psy-layout="mobile"] #hud-player{left:max(8px,env(safe-area-inset-left))!important;top:max(8px,env(safe-area-inset-top))!important;transform:none!important;max-width:min(54vw,255px)!important;max-height:calc(var(--psy-vh,100dvh) - 100px)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #psy-assistant-launcher{right:max(8px,env(safe-area-inset-right))!important;bottom:max(8px,env(safe-area-inset-bottom))!important;max-width:112px!important}
+html[data-psy-layout="mobile"] #menu{box-sizing:border-box!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-shop,
+html[data-psy-layout="mobile"] #screen-hunts,
+html[data-psy-layout="mobile"] #screen-team,
+html[data-psy-layout="mobile"] #screen-bag,
+html[data-psy-layout="mobile"] #screen-pokedex,
+html[data-psy-layout="mobile"] #screen-gyms,
+html[data-psy-layout="mobile"] #screen-dungeon,
+html[data-psy-layout="mobile"] #screen-card-mode,
+html[data-psy-layout="mobile"] #screen-egg-center,
+html[data-psy-layout="mobile"] #screen-achievements,
+html[data-psy-layout="mobile"] #screen-psy-tutorial{box-sizing:border-box!important;width:100vw!important;height:var(--psy-vh,100dvh)!important;max-height:var(--psy-vh,100dvh)!important;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-shop .shop-box,
+html[data-psy-layout="mobile"] #screen-hunts .shop-box,
+html[data-psy-layout="mobile"] #screen-team .shop-box,
+html[data-psy-layout="mobile"] #screen-bag .shop-box,
+html[data-psy-layout="mobile"] #screen-gyms .gym-box,
+html[data-psy-layout="mobile"] #screen-dungeon .shop-box,
+html[data-psy-layout="mobile"] #screen-card-mode .cardgame-shell{box-sizing:border-box!important;width:min(96vw,640px)!important;max-width:calc(100vw - 16px)!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-box{box-sizing:border-box!important;width:calc(100vw - 16px)!important;max-width:640px!important;height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px)!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px)!important;min-height:0!important;padding:10px!important;display:grid!important;grid-template-rows:auto auto minmax(0,1fr) auto!important;gap:7px!important}
+html[data-psy-layout="mobile"] #screen-pokedex h2{margin:0!important;padding:2px 44px 2px 2px!important;font-size:clamp(18px,5vw,24px)!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-topbar{margin:0!important;min-width:0!important}
+html[data-psy-layout="mobile"] #screen-pokedex #dex-search{min-width:0!important;padding:10px!important;font-size:16px!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-body{box-sizing:border-box!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(118px,31%) minmax(0,1fr)!important;gap:7px!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important}
+html[data-psy-layout="mobile"] #screen-pokedex #dex-grid-wrap{box-sizing:border-box!important;width:100%!important;height:100%!important;max-height:none!important;min-width:0!important;min-height:0!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-pokedex #dex-grid{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))!important;gap:6px!important}
+html[data-psy-layout="mobile"] #screen-pokedex #dex-detail-panel{box-sizing:border-box!important;width:100%!important;height:100%!important;max-height:none!important;min-width:0!important;min-height:0!important;overflow:auto!important;padding:8px!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-detail-empty{padding:10px!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-close-btn{min-height:42px!important;margin:0!important}
+html[data-psy-layout="mobile"] #screen-team .shop-box{width:calc(100vw - 16px)!important}
+html[data-psy-layout="mobile"] #screen-team #box-list{grid-template-columns:repeat(3,minmax(0,1fr))!important;max-height:32dvh!important}
+html[data-psy-layout="mobile"] #screen-poke-detail{box-sizing:border-box!important;padding:env(safe-area-inset-top) 8px env(safe-area-inset-bottom)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-poke-detail>div{box-sizing:border-box!important;width:100%!important;max-width:720px!important;max-height:none!important;margin:0 auto!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+html[data-psy-layout="mobile"] #screen-poke-detail>div>div{box-sizing:border-box!important;min-width:0!important;width:100%!important;padding:9px!important}
+html[data-psy-layout="mobile"] #screen-poke-detail>div>div:nth-child(2)>div:first-child{display:flex!important;align-items:center!important;gap:8px!important}
+html[data-psy-layout="mobile"] #screen-poke-detail>div>div:nth-child(2)>div:first-child h3{flex:1;min-width:0!important;font-size:clamp(12px,3.6vw,16px)!important}
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content{min-width:0!important;overflow-wrap:anywhere!important}
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content>div:first-child{grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content>div:first-child>div:nth-child(2)>div{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content>div:nth-child(2),
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content>div:nth-child(3){max-width:100%!important;overflow-wrap:anywhere!important}
+html[data-psy-layout="mobile"] #battle-screen{align-items:center!important;justify-content:center!important;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)!important;overflow:hidden!important}
+html[data-psy-layout="mobile"] #battle-screen .battle-hud{box-sizing:border-box!important;width:min(calc(100vw - 12px),640px)!important;height:min(76dvh,680px)!important;max-width:calc(100vw - 12px)!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px)!important;margin:auto!important}
+html[data-psy-layout="mobile"] #battle-player,
+html[data-psy-layout="mobile"] #battle-enemy{top:clamp(105px,18%,150px)!important}
+html[data-psy-layout="mobile"] #battle-controls{max-height:43%!important;bottom:1.5%!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #move-buttons button{min-height:42px!important;padding:6px 5px!important;font-size:clamp(9px,2.4vw,12px)!important}
+body:has(#screen-pokedex[style*="display: flex"]) #menuBtn,
+body:has(#screen-pokedex[style*="display: flex"]) #world-btn-float,
+body:has(#screen-pokedex[style*="display: flex"]) #hud-player,
+body:has(#screen-pokedex[style*="display: flex"]) #psy-assistant-launcher,
+body:has(#screen-team[style*="display: flex"]) #menuBtn,
+body:has(#screen-team[style*="display: flex"]) #world-btn-float,
+body:has(#screen-team[style*="display: flex"]) #hud-player,
+body:has(#screen-team[style*="display: flex"]) #psy-assistant-launcher,
+body:has(#screen-poke-detail[style*="display: block"]) #menuBtn,
+body:has(#screen-poke-detail[style*="display: block"]) #world-btn-float,
+body:has(#screen-poke-detail[style*="display: block"]) #hud-player,
+body:has(#screen-poke-detail[style*="display: block"]) #psy-assistant-launcher{display:none!important}
+
+html[data-psy-layout="mobile"] #psy-idle-realistic{height:var(--psy-vh,100dvh)!important;max-height:var(--psy-vh,100dvh)!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic canvas{height:calc(var(--psy-vh,100dvh) - 48px)!important;max-height:calc(var(--psy-vh,100dvh) - 48px)!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-suite-bar{box-sizing:border-box!important;width:100vw!important;max-width:100vw!important;min-width:0!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;scrollbar-width:thin!important;touch-action:pan-x!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-suite-overlay{inset:calc(env(safe-area-inset-top) + 50px) 4px calc(env(safe-area-inset-bottom) + 6px)!important;box-sizing:border-box!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 56px)!important;overflow:auto!important;align-items:flex-start!important;padding:5px!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-suite-window,
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-feature,
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-map-panel,
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-menu-panel,
+html[data-psy-layout="mobile"] #psy-idle-realistic #psy-ir-helper,
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-trade-card{box-sizing:border-box!important;width:min(100%,640px)!important;max-width:100%!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 64px)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-menu-overlay{align-items:flex-end!important;justify-content:center!important;padding:0 4px env(safe-area-inset-bottom)!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-menu-panel{width:100%!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 54px)!important;padding:12px!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-menu-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud{box-sizing:border-box!important;left:8px!important;right:8px!important;top:calc(env(safe-area-inset-top) + 54px)!important;width:min(420px,calc(100vw - 16px))!important;max-width:calc(100vw - 16px)!important;max-height:32dvh!important;overflow:auto!important;padding:7px!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud .psy-ir-row{gap:4px!important;margin-top:4px!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud .psy-ir-pill{font-size:9px!important;padding:4px 6px!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-mobile-dock{position:fixed!important;left:0!important;right:0!important;bottom:env(safe-area-inset-bottom)!important;max-width:100vw!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-moves{left:8px!important;bottom:calc(env(safe-area-inset-bottom) + 68px)!important;transform:none!important;width:min(67vw,340px)!important;max-width:calc(100vw - 16px)!important}
+@media (orientation:portrait){
+ html[data-psy-layout="mobile"] #battle-screen .battle-hud{height:min(76dvh,680px)!important}
+ html[data-psy-layout="mobile"] #screen-pokedex .dex-body{grid-template-rows:minmax(112px,29%) minmax(0,1fr)!important}
+}
+@media (orientation:landscape){
+ html[data-psy-layout="mobile"] #battle-screen .battle-hud{width:min(96vw,1100px)!important;height:min(91dvh,700px)!important}
+ html[data-psy-layout="mobile"] #screen-pokedex .dex-body{grid-template-columns:minmax(220px,38%) minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important}
+}
+@media (max-height:620px){
+ html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud{max-height:24dvh!important}
+ html[data-psy-layout="mobile"] #battle-screen #battle-controls{max-height:48%!important}
+}
