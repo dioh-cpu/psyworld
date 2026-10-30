@@ -6379,7 +6379,8 @@ window.PSY_TUTORIAL_STEPS=[
  {icon:'🏆',title:'Ginásios e Level Cap',body:'Seu level cap acompanha o próximo Ginásio. Vencer líderes abre espaço para evoluir e progredir. Mega exige Trainer Lv.100, Boss Lv.150, Shiny Mega Lv.200, Lendário Lv.250 e Lendário Shiny Lv.300.'},
  {icon:'🥚',title:'Eggs',body:'Eggs chocam após 300 Pokémon derrotados. Mystery Egg pode trazer qualquer geração, sem Boss/Lendário/Mega, com 1% Shiny e qualidade até S. Eggs premium também precisam incubar.'},
  {icon:'🃏',title:'Poké Cards',body:'Monte um deck de até 3 Pokémon. Em batalha você recebe exatamente 3 ações: atacar, curar ou buffar. Use energia com cuidado e pressione READY para avançar o turno.'},
- {icon:'💎',title:'Diamantes e economia',body:'Diamantes vêm de espécies novas, Trainer Level, conquistas e Pokédex regional. A Cash Shop é opcional; progressão principal, níveis e requisitos nunca são comprados diretamente.'}
+ {icon:'💎',title:'Diamantes e economia',body:'Diamantes vêm de espécies novas, Trainer Level, conquistas e Pokédex regional. A Cash Shop é opcional; progressão principal, níveis e requisitos nunca são comprados diretamente.'},
+ {icon:'📱',title:'Tela de celular ou computador',body:'O jogo detecta automaticamente o dispositivo e ajusta os painéis. Abra MENU → TELA / DISPOSITIVO para escolher Automático, Celular ou Computador. No celular, você pode jogar com a tela em pé; não precisa virar o aparelho.'}
 ];
 window.psyTutorialIndex=0;
 function ensureTutorial(){
