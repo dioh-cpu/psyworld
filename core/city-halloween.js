@@ -5,12 +5,14 @@
   W.__PSY_HALLOWEEN_CITY_V1__ = true;
 
   const NPCS = [
-    { id:'luna', name:'Luna', role:'Aprendiz da Lua', art:'npc-luna.svg', dx:-3.2, dy:-1.9,
+    { id:'luna', name:'Luna', role:'Bruxa da Lua', art:'npc-witch.webp', dx:-4.6, dy:-2.9,
       lines:['Bem-vindo ao Festival das Lanternas. A praça está cheia de surpresas.','Pokémon Fantasma aparecem com mais frequência nas noites de Halloween.','Há lanternas escondidas por toda a cidade.'] },
-    { id:'noah', name:'Noah', role:'Pesquisador', art:'npc-noah.svg', dx:3.2, dy:-1.9,
-      lines:['Estou estudando como os Pokémon reagem às luzes das abóboras.','Uma cidade bem iluminada é mais segura para os Pokémon pequenos.','Aproveite o festival e cuide bem da sua equipe!'] },
-    { id:'mina', name:'Mina', role:'Guardiã do Festival', art:'npc-mina.svg', dx:0, dy:3.2,
-      lines:['As casas estão decoradas para o Halloween.','A praça é o ponto de encontro dos treinadores esta noite.','Que sua próxima aventura seja cheia de bons encontros.'] }
+    { id:'noah', name:'Noah', role:'Pesquisador Pokémon', art:'npc-researcher.webp', dx:4.6, dy:-2.9,
+      lines:['Estou estudando como os Pokémon reagem às luzes das abóboras.','Uma cidade bem iluminada é mais segura para os Pokémon pequenos.','Consulte o arquivo antigo se procurar pistas sobre Pokémon Fantasma.'] },
+    { id:'amora', name:'Amora', role:'Feirante do Festival', art:'npc-vendor.webp', dx:-4.6, dy:3.8,
+      lines:['Minha barraca está cheia de guloseimas e abóboras da estação.','As folhas douradas anunciam que a noite mais assustadora chegou.','Passe aqui depois da sua próxima hunt; sempre há algo especial.'] },
+    { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.6, dy:3.8,
+      lines:['Os livros da torre guardam mapas de regiões muito distantes.','Procure o tomo de capa azul para descobrir lendas de Halloween.','A biblioteca fica aberta até o último treinador voltar da hunt.'] }
   ];
   const HOUSES = [
     { dx:-7.1, dy:-5.8, wall:'#5b3650', roof:'#20182d', sign:'BOTICA', kind:'shop', width:1.22 },
