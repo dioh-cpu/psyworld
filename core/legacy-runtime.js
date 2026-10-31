@@ -919,9 +919,6 @@ function autoLoad() {
     P.px = data.map.px; P.py = data.map.py;
 
     if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
-    // Run the versioned starter repair only after the saved profile is in memory.
-    // Its metadata flag means later combat fainting will not be healed on a reload.
-    try { upgradeLegacyStarterQuality(); } catch(e) { console.warn('Starter HP migration', e); }
     return true; // carregou com sucesso
 }
 
@@ -8582,6 +8579,9 @@ function psyV9LoadLocal(){
     if(data.map){P.x=data.map.x??P.x;P.y=data.map.y??P.y;P.px=data.map.px??P.px;P.py=data.map.py??P.py;P.tx=P.x;P.ty=P.y;P.moving=false}
     try{P.team.forEach(migratePoke);P.box.forEach(migratePoke)}catch(e){}
     if(P.team[0]){P.pokemon=P.team[0];P.hp=P.team[0].hp;P.maxHp=P.team[0].maxHp}
+    // Repair the active starter only after the real V9 local/cloud save is restored.
+    // The version flag keeps this entry migration from healing later combat fainting.
+    try{upgradeLegacyStarterQuality()}catch(e){console.warn('Starter HP migration',e)}
     try{psyAfkResumeCatchup('save-load')}catch(e){console.warn('AFK resume',e)}
     return true;
   }catch(e){console.warn('local load',e);return false}
