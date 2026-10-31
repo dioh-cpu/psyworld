@@ -1982,33 +1982,31 @@ function endBattle(won) {
 const COLORS = { 0:'#0a1a08', 1:'#1a5c1e', 2:'#1a3a8a', 3:'#8c7048', 4:'#5a4030', };
 
 function drawCityGround(offX, offY){
-  // Mar infinito
-  ctx.fillStyle = '#0a7dc2';
+  const halloweenCity = document.getElementById('game-wrap')?.dataset?.citySeason === 'halloween';
+  // Keep the legacy ground in the same night palette as the Halloween city overlay.
+  ctx.fillStyle = halloweenCity ? '#07101f' : '#0a7dc2';
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  // Onda clara
-  ctx.fillStyle = '#1e90ff';
+  ctx.fillStyle = halloweenCity ? '#101b32' : '#1e90ff';
   ctx.beginPath();
   ctx.ellipse(canvas.width/2, canvas.height/2, canvas.width*0.8, canvas.height*0.7, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // Ilha grande
   const cx = offX + 25*TILE + TILE/2;
   const cy = offY + 22*TILE + TILE/2;
 
   ctx.beginPath();
   ctx.ellipse(cx, cy, 680, 480, 0, 0, Math.PI*2);
-  ctx.fillStyle = '#f7e8b5';
+  ctx.fillStyle = halloweenCity ? '#202338' : '#f7e8b5';
   ctx.fill();
 
   ctx.lineWidth = 14;
-  ctx.strokeStyle = '#e9d28c';
+  ctx.strokeStyle = halloweenCity ? '#574054' : '#e9d28c';
   ctx.stroke();
 
-  // Areia clara centro
   ctx.beginPath();
   ctx.ellipse(cx, cy, 600, 400, 0, 0, Math.PI*2);
-  ctx.fillStyle = '#fff6cc';
+  ctx.fillStyle = halloweenCity ? '#25243a' : '#fff6cc';
   ctx.fill();
 }
 
@@ -2025,13 +2023,15 @@ function draw(){
     const minX=Math.max(0,Math.floor(P.x-visible)), maxX=Math.min(MAP_W-1,Math.ceil(P.x+visible));
     const minY=Math.max(0,Math.floor(P.y-visible)), maxY=Math.min(MAP_H-1,Math.ceil(P.y+visible));
 
-    // Cores novas - areia, não verde feio
-    const tileColors={
-      0:'#1e90ff', // agua vira mar
-      1:'#fff6cc', // grama vira areia clara
-      2:'#0a7dc2', // borda vira mar escuro
-      3:'#f7e8b5', // caminho vira areia
-      4:'#e9d28c' // tronco vira areia escura
+    const halloweenCity = document.getElementById('game-wrap')?.dataset?.citySeason === 'halloween';
+    const tileColors = halloweenCity ? {
+      0:'#101b32', // water
+      1:'#25243a', // night grass
+      2:'#07101f', // deep water edge
+      3:'#34283a', // lantern-lit path
+      4:'#201b2c'  // autumn timber
+    } : {
+      0:'#1e90ff', 1:'#fff6cc', 2:'#0a7dc2', 3:'#f7e8b5', 4:'#e9d28c'
     };
 
     for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++){
@@ -2043,7 +2043,7 @@ function draw(){
         ctx.fillStyle=tileColors[t]||'#fff6cc';
         ctx.fillRect(sx,sy,TILE+1,TILE+1);
     }
-    BUILDINGS.forEach(b=>{
+    if(!halloweenCity) BUILDINGS.forEach(b=>{
         const bx=offX+b.x*TILE, by=offY+b.y*TILE, bw=b.w*TILE, bh=b.h*TILE, depth=22;
         if(bx> w||by>h||bx+bw<0||by+bh<0) return;
         ctx.fillStyle='rgba(0,0,0,.36)'; ctx.beginPath(); ctx.ellipse(bx+bw/2,by+bh+10,bw*.58,18,0,0,Math.PI*2); ctx.fill();
