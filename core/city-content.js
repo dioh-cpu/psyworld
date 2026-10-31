@@ -37,7 +37,7 @@
   if(document.getElementById('psy-audio-system-script'))return;
   const s=document.createElement('script');
   s.id='psy-audio-system-script';
-  s.src='core/audio.js?v=1';
+  s.src='core/audio.js?v=2';
   s.async=true;
   document.head.appendChild(s);
 })();
