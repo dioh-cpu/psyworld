@@ -919,6 +919,9 @@ function autoLoad() {
     P.px = data.map.px; P.py = data.map.py;
 
     if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+    // Run the versioned starter repair only after the saved profile is in memory.
+    // Its metadata flag means later combat fainting will not be healed on a reload.
+    try { upgradeLegacyStarterQuality(); } catch(e) { console.warn('Starter HP migration', e); }
     return true; // carregou com sucesso
 }
 
