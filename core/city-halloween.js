@@ -89,8 +89,9 @@
     if(now-lastDraw<20)return; lastDraw=now;
     const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height;
     c.save();
-    const glow=c.createRadialGradient(w*.5,h*.48,30,w*.5,h*.48,Math.max(w,h)*.82);
-    glow.addColorStop(0,'rgba(38,16,44,.04)');glow.addColorStop(1,'rgba(13,7,25,.48)');
+    c.fillStyle='rgba(25,11,38,.20)';c.fillRect(0,0,w,h);
+    const glow=c.createRadialGradient(w*.5,h*.47,24,w*.5,h*.47,Math.max(w,h)*.84);
+    glow.addColorStop(0,'rgba(251,146,60,.09)');glow.addColorStop(.46,'rgba(88,28,135,.12)');glow.addColorStop(1,'rgba(10,4,20,.52)');
     c.fillStyle=glow;c.fillRect(0,0,w,h);
     const center=screenPoint(0,0), roadW=Math.max(56,TILE*1.05);
     c.fillStyle='#49384d';c.strokeStyle='#231a2c';c.lineWidth=5;
@@ -112,7 +113,11 @@
     });
     c.fillStyle='#f8c96b';c.beginPath();c.arc(w*.52,h*.14,24,0,Math.PI*2);c.fill();
     c.fillStyle='#301d3a';[[w*.51,h*.13,7],[w*.55,h*.16,5],[w*.49,h*.17,4]].forEach(([x,y,r])=>{c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill()});
-    c.fillStyle='#1d1329';c.font='bold 14px system-ui';c.textAlign='center';c.fillText('🎃 FESTIVAL DE HALLOWEEN 🎃',w*.52,h*.205);
+    [[.40,.105],[.62,.13],[.71,.19],[.34,.17],[.59,.075]].forEach(([x,y])=>{c.fillStyle='#fff0b3';c.globalAlpha=.8;c.beginPath();c.arc(w*x,h*y,2,0,Math.PI*2);c.fill()});c.globalAlpha=1;
+    const bannerW=Math.min(290,w-28),bannerY=h*.205;
+    c.fillStyle='#1b1023ed';c.strokeStyle='#fb923c';c.lineWidth=2;
+    rounded(c,w/2-bannerW/2,bannerY-17,bannerW,34,16);c.fill();c.stroke();
+    c.fillStyle='#ffcf70';c.font='900 13px system-ui';c.textAlign='center';c.fillText('🎃 FESTIVAL DE HALLOWEEN 🎃',w/2,bannerY+5);
     c.restore();
   }
   function makeDialog() {
