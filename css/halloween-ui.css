@@ -110,3 +110,7 @@ body:not(:has(#screen-login[style*="display: none"])) #psy-audio-quick-toggle{
   left:auto!important;right:max(12px,env(safe-area-inset-right,0px))!important;
   bottom:max(12px,env(safe-area-inset-bottom,0px))!important;
 }
+
+/* Let the illustrated entry scene own the full viewport before gameplay. */
+#screen-login{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:100dvh!important;min-height:100dvh!important}
+body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:none!important}
