@@ -204,3 +204,6 @@ body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:n
  #psy-ir-town .psy-ir-town-services{gap:7px!important}
  #psy-ir-town .psy-ir-town-services button{min-height:48px!important}
 }
+
+#psy-ir-town .psy-ir-town-services button.primary{color:#fff2d4!important}
+#psy-ir-town .psy-ir-town-services button.trade{color:#f6eaff!important}
