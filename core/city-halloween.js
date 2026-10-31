@@ -41,7 +41,7 @@
     if (x < origin.tileX-16 || x > origin.tileX+16 || y < origin.tileY-15 || y > origin.tileY+15) return false;
     let r={x1:19,x2:31,y1:3,y2:23};
     try { if (typeof ROUTE1 !== 'undefined') r=ROUTE1; } catch (_) {}
-    return !(x>=r.x1 && x<=r.x2 && y>=r.y1 && y<=r.y2);
+    return !(x>=r.x1 && x<=r.x2 && y>=r.y1 && y<=Math.max(r.y2,23));
   }
   function cityVisible() {
     const wrap = D.getElementById('game-wrap');
@@ -58,7 +58,8 @@
     const b=cityScreenBounds(w,h); let r={x1:19,x2:31,y1:3,y2:23};
     try { if (typeof ROUTE1 !== 'undefined') r=ROUTE1; } catch (_) {}
     const hx0=Math.max(b.x0,r.x1), hx1=Math.min(b.x1,r.x2);
-    const hy0=Math.max(b.y0,r.y1), hy1=Math.min(b.y1,r.y2);
+    const routeY2=Math.max(r.y2,23);
+    const hy0=Math.max(b.y0,r.y1), hy1=Math.min(b.y1,routeY2);
     const x=n=>w/2-P.px-b.tile/2+n*b.tile;
     const y=n=>h/2-P.py-b.tile/2+n*b.tile;
     c.beginPath();
