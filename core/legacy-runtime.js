@@ -934,8 +934,10 @@ function psyValidSaveSnapshot(raw) {
     try {
         const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
         const player = data?.player || data;
-        return !!player && typeof player === 'object' &&
-            (Array.isArray(player.team) || Array.isArray(player.box));
+        // Match autoLoad's minimum roster requirement: a team array must exist,
+        // and at least one Pokémon must be in the team or box.
+        return !!player && typeof player === 'object' && Array.isArray(player.team) &&
+            (player.team.length > 0 || (Array.isArray(player.box) && player.box.length > 0));
     } catch(e) { return false; }
 }
 
