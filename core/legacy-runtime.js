@@ -1322,6 +1322,8 @@ for(let y=4;y<=20;y++)for(let x=20;x<=30;x++){
   if([5,6,7,9,10].includes(map[y][x]))continue;
   if(map[y][x]===8)SOLID.add(x+','+y);
 }
+// Rocky stream at the western edge; water cells block both keyboard and touch movement.
+for(let y=15;y<=17;y++)for(let x=20;x<=22;x++){map[y][x]=0;SOLID.add(x+','+y)}
 
 BUILDINGS.forEach(b => {
     for(let dy = 0; dy < b.h; dy++)
@@ -2099,6 +2101,9 @@ function draw(){
           ctx.fillStyle='#3a7350';ctx.beginPath();ctx.arc(sx+TILE*.4,sy+TILE*.34,TILE*.16,0,Math.PI*2);ctx.fill();
         }else if(t===9){
           ctx.fillStyle='#81717a';ctx.beginPath();ctx.moveTo(sx+8,sy+45);ctx.lineTo(sx+13,sy+19);ctx.lineTo(sx+31,sy+8);ctx.lineTo(sx+46,sy+21);ctx.lineTo(sx+50,sy+45);ctx.closePath();ctx.fill();
+        }else if(t===0 && x>=20&&x<=22&&y>=15&&y<=17){
+          ctx.fillStyle='#245c76';ctx.fillRect(sx,sy,TILE+1,TILE+1);
+          ctx.strokeStyle='#93d4db';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx+7,sy+13);ctx.quadraticCurveTo(sx+24,sy+7,sx+45,sy+13);ctx.stroke();
         }else if(t===10){
           ctx.strokeStyle='#c3985f';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(sx+4,sy+TILE/2);ctx.lineTo(sx+TILE-4,sy+TILE/2);ctx.stroke();
           for(let fx=10;fx<TILE;fx+=16){ctx.beginPath();ctx.moveTo(sx+fx,sy+10);ctx.lineTo(sx+fx,sy+TILE-10);ctx.stroke()}
@@ -2114,6 +2119,11 @@ function draw(){
         ctx.fillStyle='#513222'; const doorX=bx+bw/2-14; ctx.fillRect(doorX,by+bh-42,28,42);
         ctx.fillStyle='#fff6d2'; ctx.font='bold 10px Tahoma'; ctx.textAlign='center'; ctx.fillText(b.name,bx+bw/2,by-26);
     });
+    // Wooden Route 1 marker at the south entrance, visible from town and trail.
+    const signX=offX+23*TILE,signY=offY+20*TILE;
+    ctx.fillStyle='#2b1b23';ctx.fillRect(signX,signY,4,36);ctx.fillRect(signX+TILE*3,signY,4,36);
+    ctx.fillStyle='#39282f';ctx.strokeStyle='#e2b46c';ctx.lineWidth=2;ctx.fillRect(signX,signY-8,TILE*3+4,20);ctx.strokeRect(signX,signY-8,TILE*3+4,20);
+    ctx.fillStyle='#fff0bd';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('ROTA 1 · PALLET → VIRIDIAN',signX+(TILE*3+4)/2,signY+6);
     const px=offX+P.px, py=offY+P.py;
     if(P.team && P.team[0]){
         ctx.save();
