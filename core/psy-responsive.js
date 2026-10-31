@@ -6,9 +6,18 @@
   if (!D.getElementById('psy-idle-fresh-start-script')) {
     const resetScript = D.createElement('script');
     resetScript.id = 'psy-idle-fresh-start-script';
-    resetScript.src = 'core/psy-idle-fresh-start-v1.js';
+    resetScript.src = 'core/psy-idle-fresh-start-v1.js?v=1';
     resetScript.async = false;
     (D.head || root).appendChild(resetScript);
+  }
+  // Start audio loading during page initialization; city-content.js keeps the same
+  // element id as a fallback and will not append a second copy.
+  if (!D.getElementById('psy-audio-system-script')) {
+    const audioScript = D.createElement('script');
+    audioScript.id = 'psy-audio-system-script';
+    audioScript.src = 'core/audio.js?v=psy-halloween-theme-1';
+    audioScript.async = false;
+    (D.head || root).appendChild(audioScript);
   }
   const STORAGE_KEY = 'psyworld-layout-mode-v1';
   let mode = 'auto';
