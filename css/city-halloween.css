@@ -11,13 +11,6 @@
 .psy-halloween-role{max-width:106px;border-color:#8b5cf6;color:#e9d5ff;font-size:10px}
 .psy-halloween-npc:hover .psy-halloween-sprite img,.psy-halloween-npc:focus-visible .psy-halloween-sprite img{transform:translateY(-6px);filter:drop-shadow(0 0 15px #fb923c)}
 @media(max-width:600px){.psy-halloween-npc{width:104px}.psy-halloween-sprite{width:92px;height:112px}.psy-halloween-sprite img{width:92px;height:108px}.psy-halloween-name,.psy-halloween-role{font-size:11px}.psy-halloween-role{font-size:9px}}
-.psy-halloween-npc[hidden]{display:none!important}
-.psy-halloween-sprite{position:relative;display:flex;align-items:flex-end;justify-content:center;width:48px;height:58px}
-.psy-halloween-sprite img{width:46px;height:56px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 7px #f9731688)}
-.psy-halloween-sprite img[hidden]{display:none}
-.psy-halloween-name,.psy-halloween-role{display:block;max-width:78px;padding:2px 5px;border:1px solid #f59e0b;border-radius:99px;background:#180f21ed;color:#fff7ed;font:900 9px/1.1 system-ui,sans-serif;text-align:center;white-space:nowrap}
-.psy-halloween-role{max-width:74px;border-color:#7c3aed;color:#ddd6fe;font-size:7px}
-.psy-halloween-npc:hover .psy-halloween-sprite,.psy-halloween-npc:focus-visible .psy-halloween-sprite{transform:translateY(-4px);filter:drop-shadow(0 0 10px #fb923c)}
 .psy-halloween-dialog{position:fixed;z-index:10050000;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);width:min(370px,calc(100vw - 28px));box-sizing:border-box;padding:15px 16px 13px;border:2px solid #fb923c;border-radius:18px;background:linear-gradient(145deg,#221329f5,#111827f5);color:#fff7ed;box-shadow:0 14px 42px #000c,0 0 22px #f9731640;transform:translate(-50%,16px);opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease,visibility .16s}
 .psy-halloween-dialog.open{opacity:1;visibility:visible;transform:translate(-50%,0)}
 .psy-halloween-dialog small{color:#fbbf24;font:900 9px/1 system-ui,sans-serif;letter-spacing:.12em}
