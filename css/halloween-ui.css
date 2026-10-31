@@ -45,3 +45,60 @@
 @media(prefers-reduced-motion:reduce){
   .psy-halloween-button-icon{filter:none}
 }
+
+/* Illustrated Halloween login screen. */
+#screen-login{
+  position:relative!important;isolation:isolate;overflow:hidden!important;
+  background:
+    radial-gradient(circle at 74% 22%,#f8dfaa 0 2px,transparent 4px),
+    radial-gradient(circle at 73% 22%,#eee2c7 0 34px,#9a81a955 37px,transparent 82px),
+    radial-gradient(ellipse at 75% 86%,#542b4e9c,transparent 46%),
+    linear-gradient(180deg,#080916 0%,#121026 56%,#2a1731 100%)!important;
+}
+#screen-login::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(2px 2px at 16% 19%,#fff7d9 98%,transparent),
+    radial-gradient(1px 1px at 31% 11%,#dfd7ff 98%,transparent),
+    radial-gradient(1.5px 1.5px at 47% 24%,#fff7d9 98%,transparent),
+    radial-gradient(1px 1px at 63% 12%,#dfd7ff 98%,transparent),
+    radial-gradient(2px 2px at 92% 35%,#fff7d9 98%,transparent),
+    linear-gradient(0deg,#06071155,#06071100 45%);
+  opacity:.74;
+}
+#screen-login::after{
+  content:"";position:absolute;z-index:1;right:3vw;bottom:2vh;width:min(36vw,470px);height:82vh;
+  background:url("/assets/halloween/npc-witch.webp") center bottom/contain no-repeat;
+  filter:drop-shadow(0 0 35px #fb923c30);pointer-events:none;opacity:.94;
+}
+#screen-login #login-box{
+  position:relative!important;z-index:2!important;box-sizing:border-box!important;
+  width:min(410px,calc(100vw - 30px))!important;max-width:calc(100vw - 30px)!important;
+  padding:26px!important;border:1px solid #9c6a98!important;border-radius:23px!important;
+  background:linear-gradient(155deg,#19172deF,#0b0d19f2)!important;
+  box-shadow:0 22px 70px #000a,0 0 38px #c2416b20!important;backdrop-filter:blur(12px);
+}
+#screen-login #login-box h1{
+  margin-top:4px!important;color:#fff1cf!important;text-shadow:0 0 22px #f59e0b55!important;
+}
+#screen-login #login-box p{color:#d7cbe5!important}
+#screen-login #nick-input{
+  box-sizing:border-box!important;width:100%!important;min-height:48px!important;
+  border:1px solid #61506d!important;border-radius:12px!important;background:#090b16!important;color:#fff!important;
+}
+#screen-login #login-box>button{
+  position:relative!important;inset:auto!important;display:block!important;box-sizing:border-box!important;
+  width:100%!important;min-height:46px!important;height:auto!important;margin:8px 0!important;padding:11px 13px!important;
+  border:1px solid #8d70aa!important;border-radius:12px!important;color:#fff4e3!important;
+  text-align:center!important;line-height:1.25!important;box-shadow:0 5px 16px #0006!important;
+}
+#screen-login #login-box>button:nth-of-type(1){background:linear-gradient(110deg,#d97706,#f59e0b 52%,#b45309)!important;border-color:#ffd27d!important;color:#190f18!important}
+#screen-login #login-box>button:nth-of-type(2){background:linear-gradient(110deg,#452679,#352063)!important}
+#screen-login #login-box>button:nth-of-type(3){background:linear-gradient(110deg,#341d42,#24172f)!important}
+#screen-login #login-box>button:nth-of-type(4),
+#screen-login #login-box>button:nth-of-type(5){background:linear-gradient(110deg,#17243b,#101827)!important}
+@media(max-width:760px){
+  #screen-login::after{right:-8vw;bottom:0;width:66vw;height:50vh;opacity:.5}
+  #screen-login #login-box{padding:22px!important}
+}
+@media(prefers-reduced-motion:reduce){#screen-login::after{filter:none}}
