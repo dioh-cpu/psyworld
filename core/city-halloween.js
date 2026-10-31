@@ -12,13 +12,22 @@
     { id:'amora', name:'Amora', role:'Feirante do Festival', art:'npc-vendor.webp', dx:-4.6, dy:3.2,
       lines:['Minha barraca está cheia de guloseimas e abóboras da estação.','As folhas douradas anunciam que a noite mais assustadora chegou.','Passe aqui depois da sua próxima hunt; sempre há algo especial.'] },
     { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.6, dy:3.2,
-      lines:['Os livros da torre guardam mapas de regiões muito distantes.','Procure o tomo de capa azul para descobrir lendas de Halloween.','A biblioteca fica aberta até o último treinador voltar da hunt.'] }
+      lines:['Os livros da torre guardam mapas de regiões muito distantes.','Procure o tomo de capa azul para descobrir lendas de Halloween.','A biblioteca fica aberta até o último treinador voltar da hunt.'] },
+    { id:'oak', name:'Professor Carvalho', role:'Pesquisador Pokémon', art:'npc-researcher.webp', dx:0, dy:-9.2, story:'oak',
+      lines:['Olá, treinador. Sou o Professor Carvalho. Cada Pokémon que você encontra ajuda a completar a Pokédex.','Explore a rota ao norte e observe a grama alta. Pokémon descobertos no mundo serão liberados depois nas Hunts do farm Idle.','A Rota 1 liga a cidade às trilhas de Viridian. Siga pelo caminho aberto e registre as espécies que encontrar.'] },
+    { id:'rival', name:'Rival', role:'Treinador desafiante', art:'npc-noah.webp', dx:-9.6, dy:0.1, story:'rival',
+      lines:['Eu já escolhi meu parceiro. Vamos ver quem conhece melhor os Pokémon!','Encontre espécies nas rotas e monte uma equipe equilibrada antes de avançar pelos ginásios.','Quando estiver pronto, vamos nos enfrentar no campo de treino.'] },
+    { id:'rocket', name:'Agente Rocket', role:'Vendedor suspeito', art:'npc-vendor.webp', dx:9.7, dy:0.1, story:'rocket',
+      lines:['Só vendo itens raros. Não pergunte sobre as caixas atrás da barraca.','A Equipe Rocket procura Pokémon raros pelas rotas. Ninguém vai nos impedir de encontrá-los primeiro.','Você atrapalhou nossos planos por enquanto. A Equipe Rocket vai voltar.'] }
   ];
   const HOUSES = [
     { dx:-7.1, dy:-5.8, wall:'#5b3650', roof:'#20182d', sign:'BOTICA', kind:'shop', width:1.22 },
     { dx: 7.1, dy:-5.8, wall:'#493450', roof:'#1d1930', sign:'POUSADA', kind:'inn', width:1.18 },
     { dx:-7.1, dy: 5.8, wall:'#633c4b', roof:'#27192f', sign:'MANSÃO', kind:'mansion', width:1.34 },
-    { dx: 7.1, dy: 5.8, wall:'#51435d', roof:'#211a32', sign:'ARQUIVO', kind:'hall', width:1.26 }
+    { dx: 7.1, dy: 5.8, wall:'#51435d', roof:'#211a32', sign:'ARQUIVO', kind:'hall', width:1.26 },
+    { dx:-12.6, dy:-8.2, wall:'#55445d', roof:'#2a2341', sign:'LABORATÓRIO', kind:'lab', width:1.18 },
+    { dx: 12.6, dy: 8.2, wall:'#613d43', roof:'#301d2b', sign:'CENTRO', kind:'center', width:1.2 },
+    { dx: 0, dy: 12.4, wall:'#3f495e', roof:'#22283b', sign:'ESTAÇÃO', kind:'station', width:1.14 }
   ];
   const CITY_LAMPS=[[-4.8,-.7],[4.8,.7],[-.7,-4.8],[.7,4.8],[-8.9,1.6],[8.9,-1.6]];
   const CITY_GRAVEYARD={dx:9.6,dy:.1};
@@ -167,6 +176,24 @@
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
     for(let i=0;i<3;i++){const gx=grave.x-28+i*28,gy=grave.y+4;c.fillStyle=['#697083','#7d7888','#59677a'][i];rounded(c,gx-9,gy-17,18,29,8);c.fill();c.fillStyle='#b6bdca';c.fillRect(gx-1,gy-11,2,12);c.fillRect(gx-5,gy-7,10,2)}
     drawWeb(c,grave.x-43,grave.y-34,29);
+    // Fountain and ringed stonework create a readable central town square.
+    const plaza=screenPoint(0,0);
+    c.save();c.fillStyle='#4a4053';c.strokeStyle='#b68c55';c.lineWidth=3;
+    c.beginPath();c.ellipse(plaza.x,plaza.y,Math.max(78,TILE*1.45),Math.max(40,TILE*.76),0,0,Math.PI*2);c.fill();c.stroke();
+    c.fillStyle='#343447';c.beginPath();c.ellipse(plaza.x,plaza.y,Math.max(51,TILE*.96),Math.max(25,TILE*.48),0,0,Math.PI*2);c.fill();
+    c.fillStyle='#667c94';c.beginPath();c.ellipse(plaza.x,plaza.y,Math.max(35,TILE*.64),Math.max(15,TILE*.28),0,0,Math.PI*2);c.fill();
+    c.shadowColor='#76d8ec';c.shadowBlur=15;c.fillStyle='#a5edff';c.beginPath();c.arc(plaza.x,plaza.y-8,5,0,Math.PI*2);c.fill();c.shadowBlur=0;c.restore();
+    // Lantern strings and pennants across the market lanes.
+    c.save();c.strokeStyle='#725568';c.lineWidth=2;
+    [[-5.7,-3.8,5.7,-3.8],[-5.7,3.8,5.7,3.8]].forEach(([ax,ay,bx,by])=>{
+      const a=screenPoint(ax,ay),b=screenPoint(bx,by);c.beginPath();c.moveTo(a.x,a.y);c.quadraticCurveTo((a.x+b.x)/2,(a.y+b.y)/2+13,b.x,b.y);c.stroke();
+      for(let i=1;i<9;i++){const t=i/9,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t+Math.sin(t*Math.PI)*13;c.fillStyle=i%2?'#a33f59':'#e19d45';c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.lineTo(x,y+12);c.closePath();c.fill()}
+    });c.restore();
+    // Benches and pumpkin planters make side lanes feel inhabited.
+    [[-10,-4.8],[10,4.8],[-3,9],[3,-9]].forEach(([dx,dy],i)=>{
+      const p=screenPoint(dx,dy);c.fillStyle='#20182b';c.fillRect(p.x-19,p.y-3,38,8);c.fillStyle=i%2?'#a76449':'#8c543e';c.fillRect(p.x-17,p.y-8,34,7);c.fillStyle='#403047';c.fillRect(p.x-14,p.y+5,4,7);c.fillRect(p.x+10,p.y+5,4,7);
+      c.fillStyle='#344d3f';c.fillRect(p.x+30,p.y-8,17,15);c.fillStyle='#ef9d4e';c.beginPath();c.arc(p.x+33,p.y-8,4,0,Math.PI*2);c.fill()
+    });
     // Copper lamps, hanging pennants, scattered leaves and pumpkins.
     CITY_LAMPS.forEach(([dx,dy],i)=>{
       const p=screenPoint(dx,dy);c.fillStyle='#171421';c.fillRect(p.x-4,p.y-23,8,34);
@@ -189,11 +216,32 @@
     dialog.querySelector('.psy-halloween-next').onclick=()=>dialog.classList.remove('open');
     D.body.appendChild(dialog); return dialog;
   }
+  const STORY_KEY='psy_kanto_city_story_v1';
+  function storyState(){try{return JSON.parse(localStorage.getItem(STORY_KEY)||'{}')}catch(_){return {}}}
+  function storyLine(npc){
+    if(!npc.story)return {index:Math.floor(Math.random()*npc.lines.length),locked:false};
+    const state=storyState(),seen=Number(W.PsyWorldProgressV1?.snapshot?.().seenPokemon?.length||0);
+    let index=0,locked=false;
+    if(npc.story==='oak'){index=Math.min(2,Number(state.oakStage||0));state.oakStage=Math.min(3,index+1)}
+    if(npc.story==='rival'){
+      if(!state.oakStage){index=0;locked=true}
+      else if(seen<1){index=1;locked=true}
+      else{index=Math.min(2,Number(state.rivalStage||0));state.rivalStage=Math.min(3,index+1)}
+    }
+    if(npc.story==='rocket'){
+      if(seen<3){index=0;locked=true}
+      else{index=Math.min(2,Number(state.rocketStage||0));state.rocketStage=Math.min(3,index+1)}
+    }
+    try{localStorage.setItem(STORY_KEY,JSON.stringify(state))}catch(_){}
+    return {index,locked};
+  }
   function speak(npc) {
     const panel=makeDialog(), name=panel.querySelector('h3'), copy=panel.querySelector('p');
     dialogIndex=(dialogIndex+1)%npc.lines.length;
-    const index=Math.floor(Math.random()*npc.lines.length);
-    const line=npc.lines[index];
+    const progression=storyLine(npc),index=progression.index;
+    const line=progression.locked
+      ? (npc.story==='rival'&&!storyState().oakStage?'Vá ao laboratório e converse com o Professor Carvalho primeiro.':npc.story==='rocket'?'A barraca parece comum. Volte depois de conhecer mais Pokémon.':npc.lines[index])
+      : npc.lines[index];
     const emotions=['happy','curious','mysterious'];
     const portrait=panel.querySelector('.psy-halloween-portrait');
     portrait.dataset.emotion=emotions[index%emotions.length];
