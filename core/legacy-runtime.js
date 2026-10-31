@@ -966,8 +966,18 @@ function uploadSave(event) {
                 P.x = data.map.x; P.y = data.map.y;
                 P.px = data.map.px; P.py = data.map.py;
 
+                // Apply the one-time starter migrations to menu imports as well as login imports.
+                (P.team || []).forEach(migratePoke);
+                (P.box || []).forEach(migratePoke);
+                upgradeLegacyStarterQuality();
+                if(P.team[0]) {
+                    P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+                    P.pokemon = P.team[0];
+                    P.hp = P.team[0].hp;
+                    P.maxHp = P.team[0].maxHp;
+                }
+
                 updateHUD();
-                if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
                 loadMoveButtons();
                 document.getElementById('menu').style.display = 'none';
 
