@@ -25,10 +25,12 @@
   outline:3px solid #fcd34d!important;outline-offset:3px;
 }
 #psy-audio-quick-toggle{
+  touch-action:none!important;cursor:grab!important;user-select:none!important;-webkit-user-select:none!important;
   border-color:#f59e0b!important;color:#fff0c2!important;
   background:linear-gradient(145deg,#2b1b24f0,#101121f2)!important;
   box-shadow:0 6px 20px #0009,0 0 16px #f9731630!important;
 }
+#psy-audio-quick-toggle[data-dragging="1"]{cursor:grabbing!important;filter:brightness(1.1)!important}
 #psy-audio-panel>div{
   background:
     radial-gradient(ellipse at 100% 0,#7c3aed26,transparent 42%),
@@ -40,7 +42,7 @@
 #psy-audio-panel input[type=range]{accent-color:#f59e0b}
 @media(max-width:760px){
   .psy-halloween-button-icon{width:19px;height:19px;margin-right:5px}
-  #psy-audio-quick-toggle{left:8px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 82px)!important;min-width:48px!important;height:42px!important}
+  #psy-audio-quick-toggle{min-width:48px!important;height:42px!important}
 }
 @media(prefers-reduced-motion:reduce){
   .psy-halloween-button-icon{filter:none}
