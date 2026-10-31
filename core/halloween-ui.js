@@ -73,15 +73,39 @@ function decorate(button){
  span.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ICON[icon]+'</svg>';
  button.insertBefore(span,button.firstChild);
 }
+
+function polishTutorialAndStarter(){
+ const tutorial=D.getElementById('psy-tutorial-body');
+ if(tutorial){
+  const walker=D.createTreeWalker(tutorial,NodeFilter.SHOW_TEXT);
+  let n;
+  while((n=walker.nextNode())){
+   const text=n.nodeValue||'';
+   if(!text.trim())continue;
+   if(/^[\\s\\p{Extended_Pictographic}\\p{Emoji_Presentation}\\p{Regional_Indicator}\\uFE0F\\u200D]+$/u.test(text)){
+    if(n.parentElement&&n.parentElement.childNodes.length===1)n.parentElement.remove();
+    else n.nodeValue='';
+   }else n.nodeValue=text.replace(/^([\\s]*)(?:[\\p{Extended_Pictographic}\\p{Emoji_Presentation}\\p{Regional_Indicator}\\uFE0F\\u200D]+\\s*)+/u,'$1');
+  }
+  if(!tutorial.querySelector('.psy-halloween-tutorial-mark')){
+   const mark=D.createElement('div');mark.className='psy-halloween-tutorial-mark';mark.setAttribute('aria-hidden','true');
+   mark.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+ICON.lantern+'</svg>';
+   tutorial.insertBefore(mark,tutorial.firstChild);
+  }
+ }
+ D.querySelectorAll('#starter-list .gen-label').forEach(label=>{
+  label.textContent=(label.textContent||'').replace(/^[\\s\\p{Extended_Pictographic}\\p{Emoji_Presentation}\\p{Regional_Indicator}\\uFE0F\\u200D]+\\s*/u,'');
+ });
+}
 function scan(root){
  if(!root)return;
  if(root.matches?.('button'))decorate(root);
  root.querySelectorAll?.('button').forEach(decorate);
 }
 function start(){
- scan(D);
+ scan(D);polishTutorialAndStarter();
  const mo=new MutationObserver(records=>{
-  for(const record of records)for(const node of record.addedNodes)if(node.nodeType===1)scan(node);
+  for(const record of records)for(const node of record.addedNodes)if(node.nodeType===1)scan(node);polishTutorialAndStarter();
  });
  mo.observe(D.body,{childList:true,subtree:true});
 }
