@@ -309,12 +309,13 @@ function openPanel(){
     </div>`;
     D.body.appendChild(p);
     const mo=p.querySelector('#psy-music-on'),so=p.querySelector('#psy-sfx-on'),mv=p.querySelector('#psy-music-vol'),sv=p.querySelector('#psy-sfx-vol');
-    mo.onchange=()=>{settings.musicOn=mo.checked;saveSettings();settings.musicOn?playTheme():pauseTheme()};
+    mo.onchange=()=>{settings.musicOn=mo.checked;saveSettings();settings.musicOn?playTheme():pauseTheme();updateQuickToggle()};
     so.onchange=()=>{settings.sfxOn=so.checked;saveSettings();if(so.checked)sfx('ui_click')};
     mv.oninput=()=>{settings.music=Number(mv.value)/100;saveSettings();if(theme)theme.volume=clamp(settings.music*duck)};
     sv.oninput=()=>{settings.sfx=Number(sv.value)/100;saveSettings();sfx('ui_click',{cooldown:0})};
     p.querySelector('#psy-audio-close').onclick=()=>p.style.display='none';
   }
+  installUI();
   p.querySelector('#psy-audio-track') && (p.querySelector('#psy-audio-track').value=selectedTrack);
   p.querySelector('#psy-music-on').checked=settings.musicOn;
   p.querySelector('#psy-sfx-on').checked=settings.sfxOn;
