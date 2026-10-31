@@ -28,7 +28,7 @@
       !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure');
   }
   function captureOrigin() {
-    if (origin || !W.P?.team?.length || !cityVisible()) return;
+    if (origin || !(typeof P!=='undefined'&&P.team?.length) || !cityVisible()) return;
     origin = {
       px:Number(P.px) || Number(P.x || 25) * TILE,
       py:Number(P.py) || Number(P.y || 25) * TILE,
@@ -83,7 +83,7 @@
     c.restore();
   }
   function drawCity() {
-    if (!cityVisible() || !W.P?.team?.length || W.inBattle) return;
+    if (!cityVisible() || !(typeof P!=='undefined'&&P.team?.length) || W.inBattle) return;
     captureOrigin(); if (!origin) return;
     const now=performance.now();
     if(now-lastDraw<20)return; lastDraw=now;
@@ -141,7 +141,7 @@
     });
   }
   function positionNPCs() {
-    const active=cityVisible()&&!!origin&&!!W.P?.team?.length&&!W.inBattle;
+    const active=cityVisible()&&!!origin&&!!(typeof P!=='undefined'&&P.team?.length)&&!(typeof inBattle!=='undefined'&&inBattle);
     NPCS.forEach(npc=>{
       const el=D.getElementById('psy-halloween-npc-'+npc.id);if(!el)return;
       if(!active){el.hidden=true;return}
