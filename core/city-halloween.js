@@ -147,6 +147,74 @@
     c.beginPath();c.moveTo(-20,0);c.quadraticCurveTo(-17,-14,-7,-7);c.quadraticCurveTo(-3,-15,0,-7);c.quadraticCurveTo(4,-15,8,-7);c.quadraticCurveTo(18,-14,21,0);c.quadraticCurveTo(12,-4,8,5);c.lineTo(3,1);c.lineTo(0,7);c.lineTo(-4,1);c.lineTo(-9,5);c.quadraticCurveTo(-13,-3,-20,0);c.fill();
     c.fillStyle='#f7a943';c.fillRect(-5,-2,2,2);c.fillRect(3,-2,2,2);c.restore();
   }
+
+  // Decorative Ghost Pokémon are anchored to world coordinates around the outer plaza.
+  // PokeAPI sprites are loaded once with a hand-drawn fallback for offline/CORS failures.
+  const GHOST_DECOR = [
+    {id:92, dx:-9.4, dy:-5.2, color:'#8d74b8'},
+    {id:93, dx:9.5, dy:-5.2, color:'#9b67c4'},
+    {id:94, dx:-13.2, dy:2.1, color:'#7550a5'},
+    {id:200,dx:13.2, dy:-2.1, color:'#bd75dc'},
+    {id:302,dx:-10.2,dy:8.5, color:'#62729a'},
+    {id:353,dx:10.2, dy:-8.5,color:'#8b73b6'},
+    {id:354,dx:-14.1,dy:-5.8,color:'#73559d'},
+    {id:355,dx:14.1, dy:5.8, color:'#9b9aa8'},
+    {id:425,dx:-8.3, dy:11.4,color:'#a88ad8'},
+    {id:426,dx:8.3,  dy:-11.4,color:'#8b70c2'},
+    {id:607,dx:-14.0,dy:8.1, color:'#efb85c'},
+    {id:609,dx:14.0, dy:-8.1,color:'#d17b61'},
+    {id:778,dx:-11.5,dy:-10.5,color:'#e0ddd5'},
+    {id:854,dx:11.5, dy:10.5,color:'#8d6cc2'},
+    {id:885,dx:-12.8,dy:5.8,color:'#729bd1'}
+  ];
+  const ghostSpriteCache = new Map();
+  function loadGhostSprite(id) {
+    if (ghostSpriteCache.has(id)) return ghostSpriteCache.get(id);
+    const image = new Image();
+    const entry = { image, ready:false, failed:false };
+    image.crossOrigin = 'anonymous';
+    image.onload = () => { entry.ready = true; };
+    image.onerror = () => { entry.failed = true; };
+    image.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' + id + '.png';
+    ghostSpriteCache.set(id, entry);
+    return entry;
+  }
+  function drawGhostFallback(c, x, y, color, scale) {
+    c.save(); c.translate(x,y); c.scale(scale,scale);
+    c.shadowColor=color; c.shadowBlur=11;
+    c.fillStyle=color; c.beginPath();
+    c.moveTo(-15,-5); c.quadraticCurveTo(-14,-18,0,-18);
+    c.quadraticCurveTo(15,-18,15,-4); c.lineTo(15,12);
+    c.lineTo(8,8); c.lineTo(2,13); c.lineTo(-5,8); c.lineTo(-14,13); c.closePath(); c.fill();
+    c.shadowBlur=0; c.fillStyle='#fff2cd';
+    c.beginPath(); c.ellipse(-5,-4,2.6,4.1,-.2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(5,-4,2.6,4.1,.2,0,Math.PI*2); c.fill();
+    c.fillStyle='#241632'; c.beginPath(); c.arc(-4,-4,1.2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(6,-4,1.2,0,Math.PI*2); c.fill();
+    c.restore();
+  }
+  function drawGhostDecorations(c) {
+    const scale = Math.max(.82, Math.min(1.34, TILE / 30));
+    GHOST_DECOR.forEach(mon => {
+      const p = screenPoint(mon.dx, mon.dy);
+      const size = 46 * scale;
+      if (p.x < -size || p.y < -size || p.x > W.innerWidth+size || p.y > W.innerHeight+size) return;
+      // The center lanes remain clear; all decorations sit at least eight tiles away.
+      c.save(); c.globalAlpha=.93;
+      c.fillStyle='rgba(0,0,0,.34)'; c.beginPath();
+      c.ellipse(p.x,p.y+size*.36,size*.31,size*.1,0,0,Math.PI*2); c.fill();
+      const sprite=loadGhostSprite(mon.id);
+      if (sprite.ready) {
+        c.shadowColor=mon.color; c.shadowBlur=10;
+        c.imageSmoothingEnabled=false;
+        c.drawImage(sprite.image,p.x-size/2,p.y-size*.78,size,size);
+      } else {
+        drawGhostFallback(c,p.x,p.y-size*.16,mon.color,scale);
+      }
+      c.restore();
+    });
+  }
+
   function drawCity() {
     if (!cityVisible() || !(typeof P!=='undefined'&&P.team?.length) || (typeof inBattle!=='undefined'&&inBattle)) return;
     captureOrigin(); if (!origin) return;
@@ -206,6 +274,7 @@
     const bannerW=Math.min(330,w-28),bannerY=h*.215;
     c.fillStyle='#171426f2';c.strokeStyle='#d78a4a';c.lineWidth=2.4;rounded(c,w/2-bannerW/2,bannerY-20,bannerW,40,18);c.fill();c.stroke();
     c.fillStyle='#f8d98c';c.font='900 13px system-ui';c.textAlign='center';c.fillText('VILA DAS SOMBRAS  ·  FESTIVAL DE HALLOWEEN',w/2,bannerY+5);
+    drawGhostDecorations(c);
     c.restore();
   }
   function makeDialog() {
