@@ -20,6 +20,7 @@
     { dx:-7.1, dy: 5.8, wall:'#633c4b', roof:'#27192f', sign:'MANSÃO', kind:'mansion', width:1.34 },
     { dx: 7.1, dy: 5.8, wall:'#51435d', roof:'#211a32', sign:'ARQUIVO', kind:'hall', width:1.26 }
   ];
+  const CITY_LAMPS=[[-4.8,-.7],[4.8,.7],[-.7,-4.8],[.7,4.8],[-8.9,1.6],[8.9,-1.6]];
   let origin = null;
   let dialog = null;
 
@@ -38,20 +39,23 @@
     };
     const wrap = D.getElementById('game-wrap');
     wrap.dataset.citySeason = 'halloween';
-    HOUSES.forEach(h => {
-      const hx = Math.round(origin.tileX + h.dx), hy = Math.round(origin.tileY + h.dy);
-      for (let y=hy-2; y<=hy+2; y++) for (let x=hx-3; x<=hx+3; x++) {
-        if (x>0 && y>0 && x<MAP_W-1 && y<MAP_H-1) SOLID.add(x+','+y);
+    const block=(dx,dy,rx,ry)=>{
+      const cx=Math.round(origin.tileX+dx),cy=Math.round(origin.tileY+dy);
+      for(let y=cy-ry;y<=cy+ry;y++)for(let x=cx-rx;x<=cx+rx;x++){
+        if(x>0&&y>0&&x<MAP_W-1&&y<MAP_H-1)SOLID.add(x+','+y);
       }
-    });
-    // NPCs occupy a small tile footprint at their feet so the player can approach
-    // each character from the plaza but cannot walk through their sprite.
-    NPCS.forEach(npc => {
-      const nx=Math.round(origin.tileX+npc.dx), ny=Math.round(origin.tileY+npc.dy);
-      for(let y=ny-1;y<=ny;y++) for(let x=nx-1;x<=nx+1;x++) {
-        if(x>0&&y>0&&x<MAP_W-1&&y<MAP_H-1) SOLID.add(x+','+y);
-      }
-    });
+    };
+    // Buildings: 7×5 tile footprints. The center cross and lanes between plots stay open.
+    HOUSES.forEach(h=>block(h.dx,h.dy,3,2));
+    // NPCs: three feet tiles (1×3), leaving every adjacent tile reachable for interaction.
+    NPCS.forEach(npc=>block(npc.dx,npc.dy,1,0));
+    // Cemetery fence and grave markers occupy a 3×3 tile patch.
+    block(9.6,.1,1,1);
+    // Lamp post bases and the three pumpkin props occupy their ground tiles.
+    CITY_LAMPS.forEach(([dx,dy])=>block(dx,dy,0,0));
+    [[CITY_LAMPS[0][0]+22/TILE,CITY_LAMPS[0][1]+8/TILE],
+     [CITY_LAMPS[2][0]+22/TILE,CITY_LAMPS[2][1]+8/TILE],
+     [CITY_LAMPS[4][0]+22/TILE,CITY_LAMPS[4][1]+8/TILE]].forEach(([dx,dy])=>block(dx,dy,0,0));
   }
   function screenPoint(dx, dy) {
     const cv = D.getElementById('gameCanvas');
@@ -162,7 +166,7 @@
     for(let i=0;i<3;i++){const gx=grave.x-28+i*28,gy=grave.y+4;c.fillStyle=['#697083','#7d7888','#59677a'][i];rounded(c,gx-9,gy-17,18,29,8);c.fill();c.fillStyle='#b6bdca';c.fillRect(gx-1,gy-11,2,12);c.fillRect(gx-5,gy-7,10,2)}
     drawWeb(c,grave.x-43,grave.y-34,29);
     // Copper lamps, hanging pennants, scattered leaves and pumpkins.
-    [[-4.8,-.7],[4.8,.7],[-.7,-4.8],[.7,4.8],[-8.9,1.6],[8.9,-1.6]].forEach(([dx,dy],i)=>{
+    CITY_LAMPS.forEach(([dx,dy],i)=>{
       const p=screenPoint(dx,dy);c.fillStyle='#171421';c.fillRect(p.x-4,p.y-23,8,34);
       c.fillStyle='#80583e';c.fillRect(p.x-9,p.y-27,18,5);c.shadowColor='#ff9e46';c.shadowBlur=24;c.fillStyle='#ffb65b';c.beginPath();c.arc(p.x,p.y-34,8,0,Math.PI*2);c.fill();c.shadowBlur=0;
       if(i%2===0)drawPumpkin(c,p.x+22,p.y+8,.68);
@@ -202,30 +206,52 @@
   }
   function positionNPCs() {
     const active=cityVisible()&&!!origin&&!!(typeof P!=='undefined'&&P.team?.length)&&!(typeof inBattle!=='undefined'&&inBattle);
-    const cv=D.getElementById('gameCanvas'), wrap=D.getElementById('game-wrap');
-    const canvasBox=cv?.getBoundingClientRect(), wrapBox=wrap?.getBoundingClientRect();
+    const cv=D.getElementById('gameCanvas'),wrap=D.getElementById('game-wrap');
+    const canvasBox=cv?.getBoundingClientRect(),wrapBox=wrap?.getBoundingClientRect();
     const sx=canvasBox?.width&&cv.width?canvasBox.width/cv.width:1;
     const sy=canvasBox?.height&&cv.height?canvasBox.height/cv.height:1;
+    const blockers=['hud-player','menuBtn','world-btn-float'].map(id=>D.getElementById(id)).filter(el=>{
+      if(!el||el.hidden)return false;
+      const r=el.getBoundingClientRect(),cs=W.getComputedStyle(el);
+      return cs.display!=='none'&&cs.visibility!=='hidden'&&r.width>0&&r.height>0;
+    });
     NPCS.forEach(npc=>{
       const el=D.getElementById('psy-halloween-npc-'+npc.id);if(!el)return;
       if(!active){if(!el.hidden)el.hidden=true;return}
+      if(el.hidden)el.hidden=false;
       const p=screenPoint(npc.dx,npc.dy);
-      // Keep the DOM art in the same coordinate space as the canvas world.
-      // Subtract the positioned game wrapper origin because these buttons are its children.
+      // Project the world-space point through the canvas camera into the wrapper's
+      // local coordinate system. UI panels never change this position.
       const left=(canvasBox?.left||0)-(wrapBox?.left||0)-(wrap?.clientLeft||0)+p.x*sx;
       const top=(canvasBox?.top||0)-(wrapBox?.top||0)-(wrap?.clientTop||0)+p.y*sy;
-      const x=Math.round(left), y=Math.round(top);
+      const x=Math.round(left),y=Math.round(top);
       if(el.style.left!==x+'px')el.style.left=x+'px';
       if(el.style.top!==y+'px')el.style.top=y+'px';
       const rect=el.getBoundingClientRect();
       const view=canvasBox||{left:0,top:0,right:W.innerWidth,bottom:W.innerHeight};
       const intersects=rect.right>view.left&&rect.left<view.right&&rect.bottom>view.top&&rect.top<view.bottom;
-      if(el.hidden===intersects)el.hidden=!intersects;
+      if(!intersects){if(!el.hidden)el.hidden=true;return}
+      if(el.hidden)el.hidden=false;
+      // Hide only while a fixed interface element actually covers the character.
+      // A small hysteresis margin prevents repeated visibility toggles at panel edges.
+      const wasBlocked=el.dataset.uiBlocked==='1',pad=wasBlocked?14:0;
+      const blocked=blockers.some(node=>{
+        const b=node.getBoundingClientRect();
+        return rect.right>b.left-pad&&rect.left<b.right+pad&&rect.bottom>b.top-pad&&rect.top<b.bottom+pad;
+      });
+      el.dataset.uiBlocked=blocked?'1':'0';
+      el.style.visibility=blocked?'hidden':'visible';
+      el.style.pointerEvents=blocked?'none':'auto';
     });
     if(!cityVisible())dialog?.classList.remove('open');
   }
   const baseDraw=W.draw;
-  if(typeof baseDraw==='function')W.draw=function(){baseDraw.apply(this,arguments);drawCity()};
+  if(typeof baseDraw==='function')W.draw=function(){
+    const result=baseDraw.apply(this,arguments);
+    drawCity();
+    if(cityVisible()){captureOrigin();ensureNPCs();positionNPCs()}
+    return result;
+  };
   const baseNpcUpdate=W.updateNPCSprites;
   if(typeof baseNpcUpdate==='function')W.updateNPCSprites=function(){baseNpcUpdate.apply(this,arguments);captureOrigin();ensureNPCs();positionNPCs()};
   W.addEventListener('resize',positionNPCs,{passive:true});
