@@ -5,15 +5,15 @@
   W.__PSY_HALLOWEEN_CITY_V1__ = true;
 
   const NPCS = [
-    { id:'luna', name:'Luna', role:'Bruxa da Lua', art:'npc-witch.webp', dx:-4.6, dy:-2.9,
+    { id:'luna', name:'Luna', role:'Bruxa da Lua', art:'npc-witch.webp', dx:-9.6, dy:-2.9,
       lines:['Bem-vindo ao Festival das Lanternas. A praça está cheia de surpresas.','Pokémon Fantasma aparecem com mais frequência nas noites de Halloween.','Há lanternas escondidas por toda a cidade.'] },
-    { id:'noah', name:'Noah', role:'Pesquisador Pokémon', art:'npc-researcher.webp', dx:4.6, dy:-2.9,
+    { id:'noah', name:'Noah', role:'Pesquisador Pokémon', art:'npc-researcher.webp', dx:9.6, dy:-2.9,
       lines:['Estou estudando como os Pokémon reagem às luzes das abóboras.','Uma cidade bem iluminada é mais segura para os Pokémon pequenos.','Consulte o arquivo antigo se procurar pistas sobre Pokémon Fantasma.'] },
     { id:'amora', name:'Amora', role:'Feirante do Festival', art:'npc-vendor.webp', dx:-4.6, dy:3.2,
       lines:['Minha barraca está cheia de guloseimas e abóboras da estação.','As folhas douradas anunciam que a noite mais assustadora chegou.','Passe aqui depois da sua próxima hunt; sempre há algo especial.'] },
     { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.6, dy:3.2,
       lines:['Os livros da torre guardam mapas de regiões muito distantes.','Procure o tomo de capa azul para descobrir lendas de Halloween.','A biblioteca fica aberta até o último treinador voltar da hunt.'] },
-    { id:'oak', name:'Professor Carvalho', role:'Pesquisador Pokémon', art:'/assets/story/professor-oak.png', dx:0, dy:-9.2, story:'oak',
+    { id:'oak', name:'Professor Carvalho', role:'Pesquisador Pokémon', art:'/assets/story/professor-oak.png', dx:-8.5, dy:-8.2, story:'oak',
       lines:['Olá, treinador. Sou o Professor Carvalho. Cada Pokémon que você encontra ajuda a completar a Pokédex.','Explore a rota ao norte e observe a grama alta. Pokémon descobertos no mundo serão liberados depois nas Hunts do farm Idle.','A Rota 1 liga a cidade às trilhas de Viridian. Siga pelo caminho aberto e registre as espécies que encontrar.'] },
     { id:'rival', name:'Rival', role:'Treinador desafiante', art:'/assets/story/rival.png', dx:-9.6, dy:0.1, story:'rival',
       lines:['Eu já escolhi meu parceiro. Vamos ver quem conhece melhor os Pokémon!','Encontre espécies nas rotas e monte uma equipe equilibrada antes de avançar pelos ginásios.','Quando estiver pronto, vamos nos enfrentar no campo de treino.'] },
@@ -21,24 +21,71 @@
       lines:['Só vendo itens raros. Não pergunte sobre as caixas atrás da barraca.','A Equipe Rocket procura Pokémon raros pelas rotas. Ninguém vai nos impedir de encontrá-los primeiro.','Você atrapalhou nossos planos por enquanto. A Equipe Rocket vai voltar.'] }
   ];
   const HOUSES = [
-    { dx:-7.1, dy:-5.8, wall:'#5b3650', roof:'#20182d', sign:'POÇÕES', kind:'shop', width:1.22 },
-    { dx: 7.1, dy:-5.8, wall:'#493450', roof:'#1d1930', sign:'POUSADA', kind:'inn', width:1.18 },
+    { dx:-9.4, dy:-5.8, wall:'#5b3650', roof:'#20182d', sign:'POÇÕES', kind:'shop', width:1.22 },
+    { dx: 9.4, dy:-5.8, wall:'#493450', roof:'#1d1930', sign:'POUSADA', kind:'inn', width:1.18 },
     { dx:-7.1, dy: 5.8, wall:'#633c4b', roof:'#27192f', sign:'MANSÃO', kind:'mansion', width:1.34 },
     { dx: 7.1, dy: 5.8, wall:'#51435d', roof:'#211a32', sign:'ARQUIVO', kind:'hall', width:1.26 },
     { dx:-12.6, dy:-8.2, wall:'#55445d', roof:'#2a2341', sign:'LABORATÓRIO', kind:'lab', width:1.18 },
     { dx: 12.6, dy: 8.2, wall:'#613d43', roof:'#301d2b', sign:'CENTRO', kind:'center', width:1.2 },
     { dx: 0, dy: 12.4, wall:'#3f495e', roof:'#22283b', sign:'ESTAÇÃO', kind:'station', width:1.14 }
   ];
-  const CITY_LAMPS=[[-4.8,-.7],[4.8,.7],[-.7,-4.8],[.7,4.8],[-8.9,1.6],[8.9,-1.6]];
+  const CITY_LAMPS=[[-4.8,-.7],[4.8,.7],[-10.4,-4.8],[.7,4.8],[-8.9,1.6],[8.9,-1.6]];
   const CITY_GRAVEYARD={dx:9.6,dy:.1};
   let origin = null;
   let dialog = null;
   let dialogIndex = 0;
 
+  function inCityWorld() {
+    if (!origin || !(typeof P !== 'undefined' && P.team?.length)) return true;
+    const x=Math.floor(Number(P.x)||0), y=Math.floor(Number(P.y)||0);
+    if (x < origin.tileX-16 || x > origin.tileX+16 || y < origin.tileY-15 || y > origin.tileY+15) return false;
+    let r={x1:19,x2:31,y1:3,y2:23};
+    try { if (typeof ROUTE1 !== 'undefined') r=ROUTE1; } catch (_) {}
+    return !(x>=r.x1 && x<=r.x2 && y>=r.y1 && y<=r.y2);
+  }
   function cityVisible() {
     const wrap = D.getElementById('game-wrap');
     return !!wrap && W.getComputedStyle(wrap).display !== 'none' &&
-      !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure');
+      !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure') && inCityWorld();
+  }
+  function cityScreenBounds(w,h) {
+    const tile=Number(TILE)||55, x0=Math.max(0,origin.tileX-16), x1=Math.min(MAP_W-1,origin.tileX+16);
+    const y0=Math.max(0,origin.tileY-15), y1=Math.min(MAP_H-1,origin.tileY+15);
+    const ox=w/2-P.px-tile/2, oy=h/2-P.py-tile/2;
+    return {tile,x0,x1,y0,y1,left:ox+x0*tile,top:oy+y0*tile,right:ox+(x1+1)*tile,bottom:oy+(y1+1)*tile};
+  }
+  function clipCityArea(c,w,h) {
+    const b=cityScreenBounds(w,h); let r={x1:19,x2:31,y1:3,y2:23};
+    try { if (typeof ROUTE1 !== 'undefined') r=ROUTE1; } catch (_) {}
+    const hx0=Math.max(b.x0,r.x1), hx1=Math.min(b.x1,r.x2);
+    const hy0=Math.max(b.y0,r.y1), hy1=Math.min(b.y1,r.y2);
+    const x=n=>w/2-P.px-b.tile/2+n*b.tile;
+    const y=n=>h/2-P.py-b.tile/2+n*b.tile;
+    c.beginPath();
+    if(hx0>hx1||hy0>hy1)c.rect(b.left,b.top,b.right-b.left,b.bottom-b.top);
+    else {
+      if(hx0>b.x0)c.rect(b.left,b.top,x(hx0)-b.left,b.bottom-b.top);
+      if(hx1<b.x1)c.rect(x(hx1+1),b.top,b.right-x(hx1+1),b.bottom-b.top);
+      if(hy0>b.y0)c.rect(x(hx0),b.top,x(hx1+1)-x(hx0),y(hy0)-b.top);
+      if(hy1<b.y1)c.rect(x(hx0),y(hy1+1),x(hx1+1)-x(hx0),b.bottom-y(hy1+1));
+    }
+    c.clip();
+  }
+  function drawCityFloor(c,w,h) {
+    const b=cityScreenBounds(w,h), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
+    for(let ty=b.y0;ty<=b.y1;ty++)for(let tx=b.x0;tx<=b.x1;tx++){
+      if(typeof map!=='undefined' && map?.[ty]?.[tx]!==1) continue;
+      const sx=w/2-P.px-b.tile/2+tx*b.tile, sy=h/2-P.py-b.tile/2+ty*b.tile;
+      if(sx+b.tile<0||sy+b.tile<0||sx>w||sy>h)continue;
+      c.fillStyle='#211d30';c.fillRect(sx,sy,b.tile+1,b.tile+1);
+      const stone=19;
+      for(let row=0;row<Math.ceil(b.tile/stone);row++)for(let col=0;col<Math.ceil(b.tile/stone);col++){
+        const seed=(ty*73+tx*97+row*19+col*31+(row%2)*7)%shades.length;
+        const px=sx+col*stone+(row%2)*8, py=sy+row*stone;
+        c.fillStyle=shades[seed];rounded(c,px+1,py+1,stone-3,stone-3,3);c.fill();
+        c.fillStyle='rgba(205,170,118,.09)';c.fillRect(px+4,py+3,stone-9,1);
+      }
+    }
   }
   function captureOrigin() {
     if (origin || !(typeof P!=='undefined'&&P.team?.length) || !cityVisible()) return;
@@ -221,7 +268,8 @@
     // Legacy draw clears the canvas on every animation frame; repaint this overlay each time too.
     const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height, center=screenPoint(0,0);
     c.save();
-    // Cool moonlight across the map with warm amber pockets around the town.
+    clipCityArea(c,w,h);
+    // Halloween lighting and cobblestones stay inside the town; Route 1 remains clear.
     c.fillStyle='rgba(7,10,27,.47)';c.fillRect(0,0,w,h);
     const vignette=c.createRadialGradient(w*.52,h*.4,12,w*.52,h*.45,Math.max(w,h)*.78);
     vignette.addColorStop(0,'rgba(39,67,106,.08)');vignette.addColorStop(.55,'rgba(22,19,49,.28)');vignette.addColorStop(1,'rgba(5,7,19,.72)');
@@ -233,22 +281,9 @@
     c.fillStyle='rgba(17,22,43,.4)';c.beginPath();c.moveTo(0,h*.33);c.quadraticCurveTo(w*.2,h*.22,w*.42,h*.34);c.quadraticCurveTo(w*.72,h*.20,w,h*.31);c.lineTo(w,h*.49);c.lineTo(0,h*.49);c.fill();
     for(let i=0;i<34;i++){const x=((i*197+53)%997)/997*w,y=((i*83+31)%271)/271*h*.36;c.fillStyle=i%5===0?'#ffd789':'#dbeafe';c.globalAlpha=.35+(i%4)*.12;c.beginPath();c.arc(x,y,i%7===0?1.5:1,0,Math.PI*2);c.fill()}
     c.globalAlpha=1;
-    // Broad Halloween cobblestone plaza replaces the road and roundabout.
-    // Ground stays walkable; house, prop and NPC footprints still use SOLID.
-    const plazaW=Math.max(w+24,24*TILE), plazaH=Math.max(h+24,24*TILE);
-    const px=center.x-plazaW/2, py=center.y-plazaH/2, stone=19;
-    const shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
-    c.fillStyle='#211d30';c.fillRect(px,py,plazaW,plazaH);
-    for(let row=0;row<Math.ceil(plazaH/stone);row++){
-      for(let col=0;col<Math.ceil(plazaW/stone);col++){
-        const seed=(row*73+col*97+(row%2)*31)%shades.length;
-        const sx=px+col*stone+(row%2)*9, sy=py+row*stone;
-        c.fillStyle=shades[seed];rounded(c,sx+1,sy+1,stone-3,stone-3,3);c.fill();
-        c.fillStyle='rgba(205,170,118,.09)';c.fillRect(sx+4,sy+3,stone-9,1);
-      }
-    }
-    c.strokeStyle='rgba(190,150,104,.18)';c.lineWidth=2;
-    c.strokeRect(px+5,py+5,plazaW-10,plazaH-10);
+    // World-anchored cobblestone floor only replaces ordinary town ground.
+    // Route 1 path, grass, obstacles and surrounding map retain their own tiles.
+    drawCityFloor(c,w,h);
     HOUSES.forEach(house=>drawHouse(c,house));
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
@@ -263,12 +298,12 @@
     c.shadowColor='#76d8ec';c.shadowBlur=15;c.fillStyle='#a5edff';c.beginPath();c.arc(plaza.x,plaza.y-8,5,0,Math.PI*2);c.fill();c.shadowBlur=0;c.restore();
     // Lantern strings and pennants across the market lanes.
     c.save();c.strokeStyle='#725568';c.lineWidth=2;
-    [[-5.7,-3.8,5.7,-3.8],[-5.7,3.8,5.7,3.8]].forEach(([ax,ay,bx,by])=>{
+    [[-5.7,-.2,5.7,-.2],[-5.7,3.8,5.7,3.8]].forEach(([ax,ay,bx,by])=>{
       const a=screenPoint(ax,ay),b=screenPoint(bx,by);c.beginPath();c.moveTo(a.x,a.y);c.quadraticCurveTo((a.x+b.x)/2,(a.y+b.y)/2+13,b.x,b.y);c.stroke();
       for(let i=1;i<9;i++){const t=i/9,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t+Math.sin(t*Math.PI)*13;c.fillStyle=i%2?'#a33f59':'#e19d45';c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.lineTo(x,y+12);c.closePath();c.fill()}
     });c.restore();
     // Benches and pumpkin planters make side lanes feel inhabited.
-    [[-10,-4.8],[10,4.8],[-3,9],[3,-9]].forEach(([dx,dy],i)=>{
+    [[-10,-4.8],[10,4.8],[-3,9],[10.5,-9]].forEach(([dx,dy],i)=>{
       const p=screenPoint(dx,dy);c.fillStyle='#20182b';c.fillRect(p.x-19,p.y-3,38,8);c.fillStyle=i%2?'#a76449':'#8c543e';c.fillRect(p.x-17,p.y-8,34,7);c.fillStyle='#403047';c.fillRect(p.x-14,p.y+5,4,7);c.fillRect(p.x+10,p.y+5,4,7);
       c.fillStyle='#344d3f';c.fillRect(p.x+30,p.y-8,17,15);c.fillStyle='#ef9d4e';c.beginPath();c.arc(p.x+33,p.y-8,4,0,Math.PI*2);c.fill()
     });
@@ -281,9 +316,9 @@
     drawBat(c,w*.17,h*.21,.85);drawBat(c,w*.68,h*.29,.65);drawBat(c,w*.92,h*.34,.48);
     drawWeb(c,8,8,55);drawWeb(c,w-8,8,55);
     // Illustrated signboard, typography only; no emoji glyphs.
-    const bannerW=Math.min(330,w-28),bannerY=h*.215;
-    c.fillStyle='#171426f2';c.strokeStyle='#d78a4a';c.lineWidth=2.4;rounded(c,w/2-bannerW/2,bannerY-20,bannerW,40,18);c.fill();c.stroke();
-    c.fillStyle='#f8d98c';c.font='900 13px system-ui';c.textAlign='center';c.fillText('VILA DAS SOMBRAS  ·  FESTIVAL DE HALLOWEEN',w/2,bannerY+5);
+    const bannerW=Math.min(330,w-28),banner=screenPoint(-10,-1.2),bannerY=banner.y;
+    c.fillStyle='#171426f2';c.strokeStyle='#d78a4a';c.lineWidth=2.4;rounded(c,banner.x-bannerW/2,bannerY-20,bannerW,40,18);c.fill();c.stroke();
+    c.fillStyle='#f8d98c';c.font='900 13px system-ui';c.textAlign='center';c.fillText('VILA DAS SOMBRAS  ·  FESTIVAL DE HALLOWEEN',banner.x,bannerY+5);
     drawGhostDecorations(c);
     c.restore();
   }
@@ -377,6 +412,8 @@
   }
   const baseDraw=W.draw;
   if(typeof baseDraw==='function')W.draw=function(){
+    const wrap=D.getElementById('game-wrap');
+    if(origin&&wrap){if(cityVisible())wrap.dataset.citySeason='halloween';else delete wrap.dataset.citySeason;}
     const result=baseDraw.apply(this,arguments);
     drawCity();
     if(cityVisible()){captureOrigin();ensureNPCs();positionNPCs()}
