@@ -10,7 +10,16 @@
 .psy-halloween-name,.psy-halloween-role{position:relative;display:block;max-width:112px;padding:4px 8px;border:1px solid #f59e0b;border-radius:99px;background:#130f22f5;color:#fff7ed;font:900 12px/1.1 system-ui,sans-serif;text-align:center;white-space:nowrap;text-shadow:0 1px 2px #000}
 .psy-halloween-role{max-width:106px;border-color:#8b5cf6;color:#e9d5ff;font-size:10px}
 .psy-halloween-npc:hover .psy-halloween-sprite img,.psy-halloween-npc:focus-visible .psy-halloween-sprite img{transform:translateY(-6px);filter:drop-shadow(0 0 15px #fb923c)}
-@media(max-width:600px){.psy-halloween-npc{width:132px;gap:2px}.psy-halloween-sprite{width:120px;height:164px}.psy-halloween-sprite img{width:120px;height:160px}.psy-halloween-name,.psy-halloween-role{font-size:11px}.psy-halloween-role{font-size:9px}}.psy-halloween-sprite{width:92px;height:112px}.psy-halloween-sprite img{width:92px;height:108px}.psy-halloween-name,.psy-halloween-role{font-size:11px}.psy-halloween-role{font-size:9px}}
+@media(max-width:600px){
+ .psy-halloween-npc{width:158px;gap:3px}
+ .psy-halloween-sprite{width:152px;height:196px}
+ .psy-halloween-sprite img{width:152px;height:192px}
+ .psy-halloween-name{max-width:140px;font-size:12px;padding:5px 9px}
+ .psy-halloween-role{max-width:132px;font-size:10px}
+}
+@media(orientation:landscape) and (max-height:600px){
+ .psy-halloween-npc{transform:translate(-50%,-100%) scale(.84);transform-origin:bottom center}
+}
 .psy-halloween-dialog{position:fixed;z-index:10050000;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);width:min(370px,calc(100vw - 28px));box-sizing:border-box;padding:15px 16px 13px;border:2px solid #fb923c;border-radius:18px;background:linear-gradient(145deg,#221329f5,#111827f5);color:#fff7ed;box-shadow:0 14px 42px #000c,0 0 22px #f9731640;transform:translate(-50%,16px);opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease,visibility .16s}
 .psy-halloween-dialog.open{opacity:1;visibility:visible;transform:translate(-50%,0)}
 .psy-halloween-dialog small{color:#fbbf24;font:900 9px/1 system-ui,sans-serif;letter-spacing:.12em}
@@ -29,7 +38,7 @@ html[data-psy-layout="mobile"] #world-btn-float{
 }
 html[data-psy-layout="mobile"] #world-btn-float.city-content-collapsed{
   left:auto!important;right:10px!important;bottom:max(74px,calc(env(safe-area-inset-bottom,0px) + 72px))!important;
-  width:min(60vw,220px)!important;max-height:none!important;padding:0!important;overflow:visible!important;
+  width:min(48vw,180px)!important;max-height:none!important;padding:0!important;overflow:visible!important;
   border:0!important;border-radius:14px!important;background:transparent!important;box-shadow:none!important;
 }
 html[data-psy-layout="mobile"] #btn-city-content-toggle{
