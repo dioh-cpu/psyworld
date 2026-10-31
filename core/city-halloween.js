@@ -24,6 +24,7 @@
   const CITY_GRAVEYARD={dx:9.6,dy:.1};
   let origin = null;
   let dialog = null;
+  let dialogIndex = 0;
 
   function cityVisible() {
     const wrap = D.getElementById('game-wrap');
@@ -183,15 +184,23 @@
   function makeDialog() {
     if (dialog) return dialog;
     dialog=D.createElement('section'); dialog.className='psy-halloween-dialog'; dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-live','polite');
-    dialog.innerHTML='<button type="button" class="psy-halloween-close" aria-label="Fechar">×</button><small>FESTIVAL DE HALLOWEEN</small><h3></h3><p></p><button type="button" class="psy-halloween-next">CONTINUAR</button>';
+    dialog.innerHTML='<button type="button" class="psy-halloween-close" aria-label="Fechar">×</button><small>VILA DAS SOMBRAS · FESTIVAL DE HALLOWEEN</small><div class="psy-halloween-dialog-body"><div class="psy-halloween-portrait" data-emotion="neutral"><img alt=""><span class="psy-halloween-expression" aria-hidden="true"><i class="brow left"></i><i class="brow right"></i><i class="mouth"></i></span></div><div class="psy-halloween-dialog-copy"><h3></h3><p></p></div></div><button type="button" class="psy-halloween-next">CONTINUAR</button>';
     dialog.querySelector('.psy-halloween-close').onclick=()=>dialog.classList.remove('open');
     dialog.querySelector('.psy-halloween-next').onclick=()=>dialog.classList.remove('open');
     D.body.appendChild(dialog); return dialog;
   }
   function speak(npc) {
     const panel=makeDialog(), name=panel.querySelector('h3'), copy=panel.querySelector('p');
-    const line=npc.lines[Math.floor(Math.random()*npc.lines.length)];
-    name.textContent=npc.name+' · '+npc.role; copy.textContent='“'+line+'”'; panel.classList.add('open');
+    dialogIndex=(dialogIndex+1)%npc.lines.length;
+    const index=Math.floor(Math.random()*npc.lines.length);
+    const line=npc.lines[index];
+    const emotions=['happy','curious','mysterious'];
+    const portrait=panel.querySelector('.psy-halloween-portrait');
+    portrait.dataset.emotion=emotions[index%emotions.length];
+    const portraitImg=portrait.querySelector('img');
+    portraitImg.src='/assets/halloween/'+npc.art;
+    portraitImg.alt='Retrato de '+npc.name;
+    name.textContent=npc.name+' · '+npc.role; copy.textContent='“'+line+'”'; panel.dataset.npc=npc.id; panel.classList.add('open');
   }
   function ensureNPCs() {
     const wrap=D.getElementById('game-wrap');if(!wrap)return;
@@ -211,11 +220,6 @@
     const canvasBox=cv?.getBoundingClientRect(),wrapBox=wrap?.getBoundingClientRect();
     const sx=canvasBox?.width&&cv.width?canvasBox.width/cv.width:1;
     const sy=canvasBox?.height&&cv.height?canvasBox.height/cv.height:1;
-    const blockers=['hud-player','menuBtn','world-btn-float'].map(id=>D.getElementById(id)).filter(el=>{
-      if(!el||el.hidden)return false;
-      const r=el.getBoundingClientRect(),cs=W.getComputedStyle(el);
-      return cs.display!=='none'&&cs.visibility!=='hidden'&&r.width>0&&r.height>0;
-    });
     NPCS.forEach(npc=>{
       const el=D.getElementById('psy-halloween-npc-'+npc.id);if(!el)return;
       if(!active){if(!el.hidden)el.hidden=true;return}
@@ -233,16 +237,14 @@
       const intersects=rect.right>view.left&&rect.left<view.right&&rect.bottom>view.top&&rect.top<view.bottom;
       if(!intersects){if(!el.hidden)el.hidden=true;return}
       if(el.hidden)el.hidden=false;
-      // Hide only while a fixed interface element actually covers the character.
-      // A small hysteresis margin prevents repeated visibility toggles at panel edges.
-      const wasBlocked=el.dataset.uiBlocked==='1',pad=wasBlocked?14:0;
-      const blocked=blockers.some(node=>{
-        const b=node.getBoundingClientRect();
-        return rect.right>b.left-pad&&rect.left<b.right+pad&&rect.bottom>b.top-pad&&rect.top<b.bottom+pad;
-      });
-      el.dataset.uiBlocked=blocked?'1':'0';
-      el.style.visibility=blocked?'hidden':'visible';
-      el.style.pointerEvents=blocked?'none':'auto';
+      // Keep NPC visibility independent from floating HUD/menu rectangles. Hiding
+      // whole sprites on UI overlap caused characters to blink out while the
+      // camera moved. UI keeps its own higher stacking layer and NPC world points
+      // remain projected exclusively from game coordinates.
+      el.dataset.uiBlocked='0';
+      el.style.visibility='visible';
+      el.style.pointerEvents='auto';
+      el.style.zIndex='38';
     });
     if(!cityVisible())dialog?.classList.remove('open');
   }
