@@ -578,6 +578,12 @@ function toggleFastEncounter(){
         btn.setAttribute('aria-label', btn.title);
         btn.textContent = '';
     }
+    if(window.fastEncounter && !ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){
+        window.fastEncounter=false; fastEncounter=false; clearInterval(fastLoop);
+        if(btn){btn.style.background='#dc2626';btn.style.boxShadow='0 0 10px #0008,0 0 10px #ef444466';btn.title='Fast Encounter: disponível somente na grama da Route 1';btn.setAttribute('aria-label',btn.title)}
+        try{notif('Fast Encounter só pode ser ativado na grama da Route 1.',2600)}catch(e){}
+        return;
+    }
     if(window.fastEncounter){
         if(!inBattle){
             const last = P?.meta?.cleanHunt?.last;
@@ -1997,6 +2003,12 @@ function update(dt) {
             const nx=P.x+dx, ny=P.y+dy;
             if(nx>=0 && ny>=0 && nx<MAP_W && ny<MAP_H && !SOLID.has(nx+','+ny)) {
                 P.tx=nx; P.ty=ny; P.moving=true; checkShopEntry(nx,ny);
+                if(window.fastEncounter && !ROUTE1.grass.has(nx+','+ny)){
+                    // Leaving Route 1 grass stops farming before a chained battle starts.
+                    window.fastEncounter=false; fastEncounter=false; clearInterval(fastLoop);
+                    const fastBtn=document.getElementById('fastEncounterBtn');
+                    if(fastBtn){fastBtn.style.background='#dc2626';fastBtn.style.boxShadow='0 0 10px #0008,0 0 10px #ef444466';fastBtn.title='Fast Encounter: disponível somente na grama da Route 1';fastBtn.setAttribute('aria-label',fastBtn.title)}
+                }
                 if(window.fastEncounter){
                     let plvl = P.team[0]?.level || 1;
                     let autoTier = plvl < 10? 1 : plvl < 20? 2 : plvl < 40? 3 : 4;
@@ -2026,7 +2038,7 @@ function endBattle(won) {
     if (pDiv) { pDiv.classList.remove('poke-blink'); pDiv.style.transform = ''; }
     if (eDiv) { eDiv.classList.remove('poke-blink'); eDiv.style.transform = ''; }
     if(battleData) battleData.state = won? 'won' : 'lost';
-    if(won && window.fastEncounter){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
+    if(won && window.fastEncounter && ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
 }
 const COLORS = { 0:'#0a1a08', 1:'#1a5c1e', 2:'#1a3a8a', 3:'#8c7048', 4:'#5a4030', };
 
@@ -4334,7 +4346,7 @@ window.endBattle=function(won){
     P.gold+=75000; gainTrainerXp(900); autoSave();
   }
   window.isDungeonBoss=false; window.isDungeonShiny=false; window.currentDungeonId=null;
-  if(won && window.fastEncounter){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
+  if(won && window.fastEncounter && ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
 };
 // TALENTO - SÓ SHINY 0.1%
 window.TALENT_CONFIG = {
