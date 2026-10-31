@@ -1302,6 +1302,27 @@ for(let y = 0; y < MAP_H; y++)
     for(let x = 0; x < MAP_W; x++)
         if(map[y][x] === 2 || map[y][x] === 4) SOLID.add(x+','+y);
 
+/* Route 1: continuous, walkable Kanto woodland connected north of Pallet. */
+const ROUTE1={x1:19,x2:31,y1:3,y2:20,grass:new Set()};
+for(let y=ROUTE1.y1;y<=ROUTE1.y2;y++){
+  for(let x=ROUTE1.x1;x<=ROUTE1.x2;x++) map[y][x]=8;
+}
+// Dirt trail stays clear and connects directly into the town.
+for(let y=ROUTE1.y1;y<=21;y++)for(let x=24;x<=26;x++)map[y][x]=6;
+for(let y=20;y<=23;y++)for(let x=24;x<=26;x++)map[y][x]=3;
+// Walkable tall grass encounter patches.
+for(let y=8;y<=13;y++)for(let x=20;x<=22;x++){map[y][x]=5;ROUTE1.grass.add(x+','+y)}
+for(let y=14;y<=18;y++)for(let x=28;x<=30;x++){map[y][x]=5;ROUTE1.grass.add(x+','+y)}
+// Boundary tree line, boulders and fence segments; keep the path open.
+for(let y=3;y<=20;y++){map[y][19]=8;map[y][31]=8;SOLID.add('19,'+y);SOLID.add('31,'+y)}
+for(let x=20;x<=30;x++){map[3][x]=8;SOLID.add(x+',3')}
+[[23,7],[27,7],[23,15],[27,19],[29,10],[21,17]].forEach(([x,y])=>{map[y][x]=9;SOLID.add(x+','+y)});
+[[23,5],[27,5],[23,6],[27,6],[23,19],[27,18]].forEach(([x,y])=>{map[y][x]=10;SOLID.add(x+','+y)});
+for(let y=4;y<=20;y++)for(let x=20;x<=30;x++){
+  if([5,6,7,9,10].includes(map[y][x]))continue;
+  if(map[y][x]===8)SOLID.add(x+','+y);
+}
+
 BUILDINGS.forEach(b => {
     for(let dy = 0; dy < b.h; dy++)
         for(let dx = 0; dx < b.w; dx++)
@@ -1982,7 +2003,8 @@ function update(dt) {
                     triggerWild(autoKey);
                 } else {
                     const tile = map[ny]?.[nx];
-                    if(tile===0 && Math.random()<0.08) triggerWild(P.currentHunt || 'kanto_planta_t1');
+                    if(tile===5 && ROUTE1.grass.has(nx+','+ny) && Math.random()<0.12) triggerWild('kanto_normal_t1');
+                    else if(tile===0 && Math.random()<0.08) triggerWild(P.currentHunt || 'kanto_planta_t1');
                     else if(tile===1 && Math.random()<0.04) triggerWild(P.currentHunt || 'kanto_planta_t1');
                 }
             }
@@ -2050,13 +2072,11 @@ function draw(){
 
     const halloweenCity = document.getElementById('game-wrap')?.dataset?.citySeason === 'halloween';
     const tileColors = halloweenCity ? {
-      0:'#101b32', // water
-      1:'#25243a', // night grass
-      2:'#07101f', // deep water edge
-      3:'#34283a', // lantern-lit path
-      4:'#201b2c'  // autumn timber
+      0:'#101b32',1:'#25243a',2:'#07101f',3:'#34283a',4:'#201b2c',
+      5:'#244a35',6:'#75513b',7:'#6b7040',8:'#172b2a',9:'#62566a',10:'#5b392f'
     } : {
-      0:'#1e90ff', 1:'#fff6cc', 2:'#0a7dc2', 3:'#f7e8b5', 4:'#e9d28c'
+      0:'#1e90ff',1:'#fff6cc',2:'#0a7dc2',3:'#f7e8b5',4:'#e9d28c',
+      5:'#247342',6:'#bd8b4a',7:'#82a84a',8:'#214d34',9:'#746c70',10:'#936446'
     };
 
     for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++){
@@ -2067,6 +2087,22 @@ function draw(){
         const sx=offX+x*TILE, sy=offY+y*TILE, t=map[y][x];
         ctx.fillStyle=tileColors[t]||'#fff6cc';
         ctx.fillRect(sx,sy,TILE+1,TILE+1);
+        if(t===5){
+          ctx.strokeStyle='#9ecb78';ctx.lineWidth=2;
+          for(let i=0;i<5;i++){const bx=sx+7+i*9,by=sy+TILE-3-(i%2)*3;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx-2,by-11-(i%3)*3);ctx.stroke()}
+        }else if(t===6){
+          ctx.fillStyle='#d3a76b';ctx.fillRect(sx+4,sy+7,TILE-8,TILE-14);
+          ctx.fillStyle='#8f6549';ctx.fillRect(sx+9,sy+12,4,3);ctx.fillRect(sx+34,sy+34,5,3);
+        }else if(t===8){
+          ctx.fillStyle='#08191b';ctx.beginPath();ctx.arc(sx+TILE/2,sy+TILE/2,TILE*.49,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#24513a';ctx.beginPath();ctx.arc(sx+TILE/2,sy+TILE*.42,TILE*.39,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#3a7350';ctx.beginPath();ctx.arc(sx+TILE*.4,sy+TILE*.34,TILE*.16,0,Math.PI*2);ctx.fill();
+        }else if(t===9){
+          ctx.fillStyle='#81717a';ctx.beginPath();ctx.moveTo(sx+8,sy+45);ctx.lineTo(sx+13,sy+19);ctx.lineTo(sx+31,sy+8);ctx.lineTo(sx+46,sy+21);ctx.lineTo(sx+50,sy+45);ctx.closePath();ctx.fill();
+        }else if(t===10){
+          ctx.strokeStyle='#c3985f';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(sx+4,sy+TILE/2);ctx.lineTo(sx+TILE-4,sy+TILE/2);ctx.stroke();
+          for(let fx=10;fx<TILE;fx+=16){ctx.beginPath();ctx.moveTo(sx+fx,sy+10);ctx.lineTo(sx+fx,sy+TILE-10);ctx.stroke()}
+        }
     }
     if(!halloweenCity) BUILDINGS.forEach(b=>{
         const bx=offX+b.x*TILE, by=offY+b.y*TILE, bw=b.w*TILE, bh=b.h*TILE, depth=22;
