@@ -261,6 +261,60 @@ D.addEventListener('click',ev=>{
 },true);
 
 // ---------- Audio settings UI ----------
+function installDraggableQuickToggle(button){
+  const KEY='psy_audio_quick_toggle_position_v1';
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  function apply(x,y,save){
+    const rect=button.getBoundingClientRect();
+    const left=clamp(Number(x)||0,6,Math.max(6,W.innerWidth-rect.width-6));
+    const top=clamp(Number(y)||0,6,Math.max(6,W.innerHeight-rect.height-6));
+    button.style.left=Math.round(left)+'px';
+    button.style.top=Math.round(top)+'px';
+    button.style.right='auto';
+    button.style.bottom='auto';
+    button.dataset.psyAudioCustomPosition='1';
+    if(save){try{localStorage.setItem(KEY,JSON.stringify({x:left,y:top}))}catch(_){}}
+  }
+  try{
+    const saved=JSON.parse(localStorage.getItem(KEY)||'null');
+    if(saved&&Number.isFinite(Number(saved.x))&&Number.isFinite(Number(saved.y)))apply(saved.x,saved.y,false);
+  }catch(_){}
+  let drag=null;
+  button.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    const r=button.getBoundingClientRect();
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};
+    button.dataset.dragging='1';
+    try{button.setPointerCapture(e.pointerId)}catch(_){}
+  });
+  button.addEventListener('pointermove',e=>{
+    if(!drag||drag.id!==e.pointerId)return;
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(!drag.moved&&Math.hypot(dx,dy)<6)return;
+    drag.moved=true;e.preventDefault();
+    apply(drag.left+dx,drag.top+dy,false);
+  },{passive:false});
+  const finish=e=>{
+    if(!drag||drag.id!==e.pointerId)return;
+    const moved=drag.moved;
+    if(moved){
+      const r=button.getBoundingClientRect();
+      apply(r.left,r.top,true);
+      button.dataset.suppressAudioClick='1';
+      setTimeout(()=>{delete button.dataset.suppressAudioClick},250);
+    }
+    delete button.dataset.dragging;
+    try{button.releasePointerCapture(e.pointerId)}catch(_){}
+    drag=null;
+  };
+  button.addEventListener('pointerup',finish);
+  button.addEventListener('pointercancel',finish);
+  W.addEventListener('resize',()=>{
+    if(button.dataset.psyAudioCustomPosition==='1'){
+      const r=button.getBoundingClientRect();apply(r.left,r.top,true);
+    }
+  },{passive:true});
+}
 function installUI(){
   const menu=D.getElementById('menu');
   if(menu&&!D.getElementById('psy-audio-open')){
@@ -275,9 +329,9 @@ function installUI(){
     const b=D.createElement('button');b.id='psy-audio-quick-toggle';b.type='button';
     b.style.cssText='position:fixed;z-index:1900000;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);min-width:52px;height:46px;padding:0 12px;border:1px solid #67e8f9;border-radius:14px;background:#081827eF;color:#b9fbff;font:900 13px system-ui;box-shadow:0 6px 18px #0008;cursor:pointer;touch-action:manipulation;';
     b.setAttribute('aria-label','Desativar música de Halloween');
-    b.onclick=()=>{settings.musicOn=!settings.musicOn;saveSettings();settings.musicOn?playTheme():pauseTheme();updateQuickToggle();if(settings.musicOn)sfx('ui_click',{cooldown:0})};
+    b.onclick=()=>{if(b.dataset.suppressAudioClick==='1')return;settings.musicOn=!settings.musicOn;saveSettings();settings.musicOn?playTheme():pauseTheme();updateQuickToggle();if(settings.musicOn)sfx('ui_click',{cooldown:0})};
     b.oncontextmenu=e=>{e.preventDefault();openPanel()};
-    D.body.appendChild(b);updateQuickToggle();
+    D.body.appendChild(b);installDraggableQuickToggle(b);updateQuickToggle();
   }
   const p=D.getElementById('psy-audio-panel');
   if(p&&!p.querySelector('#psy-audio-track')){
