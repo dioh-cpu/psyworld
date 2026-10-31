@@ -58,3 +58,5 @@ html[data-psy-layout="mobile"] #city-game-content-buttons>button small{font-size
  html[data-psy-layout="mobile"] #world-btn-float.city-content-collapsed{left:auto!important;right:8px!important;top:72px!important;bottom:auto!important;width:min(60vw,220px)!important}
  html[data-psy-layout="mobile"] #city-game-content-buttons{grid-template-columns:repeat(3,minmax(0,1fr))!important;max-height:calc(100dvh - 132px)!important}
 }
+
+body:has(#battle-screen.active) .psy-halloween-npc{display:none!important}
