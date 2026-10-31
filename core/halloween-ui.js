@@ -115,6 +115,9 @@ function start(){
     const button=record.target.parentElement?.closest?.('button');
     if(button&&!button.dataset.psyHalloweenIcon)decorate(button);
    }else{
+    const parent=record.target.nodeType===1?record.target:record.target.parentElement;
+    const button=parent?.closest?.('button');
+    if(button&&!button.dataset.psyHalloweenIcon)decorate(button);
     for(const node of record.addedNodes)if(node.nodeType===1)scan(node);
    }
   }
