@@ -112,7 +112,7 @@ function freshIdleCharacter(){
  const common=(W.RARITIES||[]).find(r=>r.n==='Comum')||{n:'Comum',mult:1};let starter;
  try{starter=W.createCapturedPoke?.(1,common,false,false,false)}catch(_){}
  if(!starter)starter={id:1,name:'Bulbasaur',level:1,exp:0,maxExp:450,hp:100,maxHp:100,atk:40,rarity:common,tier:'E',moves:[]};
- prepareIdlePokemon(starter,'starter');
+ prepareIdlePokemon(starter,'starter');starter.hp=Math.max(1,Number(starter.maxHp)||Number(starter.hp)||1);
  return {psyIdleProfileVersion:1,name:'Treinador',level:1,xp:0,xpNext:450,gold:500,psycoin:0,team:[starter],box:[],inventory:{},x:1200,y:800,px:1200,py:800,meta:{psyIdleOwnProfile:1,psyIdleHome:'cidade-inicial',psyIdleTradeZone:{x:1200,y:800},modeEconomies:{psyIdle:{gold:500,drops:{'Pokéball':3},packs:{}}},worldIdleProgress:{},psyIdlePlayer:{level:1,xp:0,xpNext:450}}};
 }
 function normalizeIdleCharacter(raw){if(!raw||typeof raw!=='object'||raw.psyIdleProfileVersion!==1)return freshIdleCharacter();const p=raw,defaults=freshIdleCharacter();
