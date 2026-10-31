@@ -195,12 +195,50 @@
   }
   function positionNPCs() {
     const active=cityVisible()&&!!origin&&!!(typeof P!=='undefined'&&P.team?.length)&&!(typeof inBattle!=='undefined'&&inBattle);
+    const cv=D.getElementById('gameCanvas'), canvasBox=cv?.getBoundingClientRect();
+    const sx=canvasBox?.width&&cv.width?canvasBox.width/cv.width:1;
+    const sy=canvasBox?.height&&cv.height?canvasBox.height/cv.height:1;
+    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+    const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+    const blockers=['hud-player','menuBtn','world-btn-float'].map(id=>D.getElementById(id)).filter(el=>{
+      if(!el||el.hidden)return false;
+      const r=el.getBoundingClientRect(),style=W.getComputedStyle(el);
+      return style.display!=='none'&&style.visibility!=='hidden'&&r.width>0&&r.height>0;
+    });
+    const occupied=[];
     NPCS.forEach(npc=>{
       const el=D.getElementById('psy-halloween-npc-'+npc.id);if(!el)return;
       if(!active){el.hidden=true;return}
       const p=screenPoint(npc.dx,npc.dy);
-      const visible=p.x>-80&&p.x<W.innerWidth+80&&p.y>-110&&p.y<W.innerHeight+40;
-      el.hidden=!visible;el.style.left=p.x+'px';el.style.top=p.y+'px';
+      const x=(canvasBox?.left||0)+p.x*sx, y=(canvasBox?.top||0)+p.y*sy;
+      const boxW=el.offsetWidth||132, boxH=el.offsetHeight||210;
+      // Hide only when the character is well outside the city view. Near-edge NPCs are
+      // nudged fully into view so their artwork and labels are never sliced by the screen.
+      const near=x>-boxW&&x<W.innerWidth+boxW&&y>-boxH&&y<W.innerHeight+boxH;
+      if(!near){el.hidden=true;return}
+      el.hidden=false;
+      const half=boxW/2;
+      let cx=clamp(x,half+6,W.innerWidth-half-6);
+      let bottom=clamp(y,boxH+6,W.innerHeight-6);
+      const place=(left,top)=>{el.style.left=left+'px';el.style.top=top+'px';return el.getBoundingClientRect()};
+      let rect=place(cx,bottom);
+      // Keep sprites clear of the fixed trainer card and touch menus.
+      const obstacles=[...blockers.map(e=>e.getBoundingClientRect()),...occupied];
+      for(const obstacle of obstacles){
+        if(!overlaps(rect,obstacle))continue;
+        const choices=[
+          [obstacle.right+half+8,bottom],
+          [obstacle.left-half-8,bottom],
+          [cx,obstacle.top-8],
+          [cx,obstacle.bottom+boxH+8]
+        ].filter(([px,py])=>px>=half+6&&px<=W.innerWidth-half-6&&py>=boxH+6&&py<=W.innerHeight-6)
+          .sort((a,b)=>Math.hypot(a[0]-cx,a[1]-bottom)-Math.hypot(b[0]-cx,b[1]-bottom));
+        for(const [px,py] of choices){
+          const candidate=place(px,py);
+          if(!blockers.some(e=>overlaps(candidate,e.getBoundingClientRect()))&&!occupied.some(r=>overlaps(candidate,r))){cx=px;bottom=py;rect=candidate;break}
+        }
+      }
+      occupied.push(rect);
     });
     if(!cityVisible())dialog?.classList.remove('open');
   }

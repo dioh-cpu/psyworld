@@ -617,3 +617,34 @@ html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-moves{left:8px!import
 @media(prefers-reduced-motion:reduce){
  #psy-idle-realistic #psy-ir-map-overlay *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+
+/* Compact portrait trainer HUD so the town's characters remain visible. */
+@media(max-width:760px) and (orientation:portrait){
+ html[data-psy-layout="mobile"] #hud-player{
+  box-sizing:border-box!important;width:min(52vw,228px)!important;min-width:0!important;max-width:min(52vw,228px)!important;
+  padding:7px!important;max-height:calc(var(--psy-vh,100dvh) - 24px)!important;overflow:hidden!important;
+ }
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-head{
+  grid-template-columns:34px minmax(0,1fr)!important;gap:6px!important;padding-bottom:4px!important;margin-bottom:4px!important;
+ }
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-avatar{width:32px!important;height:32px!important;border-radius:8px!important}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-avatar img{width:30px!important;height:30px!important}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-name{font-size:clamp(11px,3.2vw,14px)!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-sub,
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-badges,
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-wallet,
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-mini-stats,
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-psyduck-shortcut{display:none!important}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-resource{
+  grid-template-columns:23px minmax(0,1fr) 35px!important;gap:4px!important;margin:3px 0!important;
+ }
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-label{font-size:8px!important}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-val{font-size:8px!important}
+ html[data-psy-layout="mobile"] #hud-player .bar{height:7px!important}
+}
+@media(max-height:600px) and (orientation:landscape){
+ html[data-psy-layout="mobile"] .psy-halloween-npc{width:108px}
+ html[data-psy-layout="mobile"] .psy-halloween-sprite{width:98px;height:132px}
+ html[data-psy-layout="mobile"] .psy-halloween-sprite img{width:98px;height:128px}
+}
