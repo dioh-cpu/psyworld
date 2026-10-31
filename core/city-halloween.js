@@ -133,7 +133,7 @@
     NPCS.forEach(npc=>{
       if(D.getElementById('psy-halloween-npc-'+npc.id))return;
       const button=D.createElement('button');button.type='button';button.id='psy-halloween-npc-'+npc.id;button.className='psy-halloween-npc';button.setAttribute('aria-label','Conversar com '+npc.name);
-      button.innerHTML='<span class="psy-halloween-sprite"><img alt=""><b></b><i>'+npc.fallback+'</i></span><span class="psy-halloween-name">'+npc.name+'</span><span class="psy-halloween-role">'+npc.role+'</span>';
+      button.innerHTML='<span class="psy-halloween-sprite"><img alt=""><b></b><i hidden>'+npc.fallback+'</i></span><span class="psy-halloween-name">'+npc.name+'</span><span class="psy-halloween-role">'+npc.role+'</span>';
       const img=button.querySelector('img'),fallback=button.querySelector('i');
       img.src='https://play.pokemonshowdown.com/sprites/trainers/'+npc.sprite+'.png';
       img.onerror=()=>{img.hidden=true;fallback.hidden=false};
