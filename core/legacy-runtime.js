@@ -2025,11 +2025,15 @@ function update(dt) {
                     if(fastBtn){fastBtn.style.background='#dc2626';fastBtn.style.boxShadow='0 0 10px #0008,0 0 10px #ef444466';fastBtn.title='Fast Encounter: disponível somente na grama da Route 1';fastBtn.setAttribute('aria-label',fastBtn.title)}
                 }
                 if(window.fastEncounter){
-                    let plvl = P.team[0]?.level || 1;
-                    let autoTier = plvl < 10? 1 : plvl < 20? 2 : plvl < 40? 3 : 4;
-                    let tipo = (P.currentHunt || 'kanto_planta_t1').split('_')[1] || 'planta';
-                    let autoKey = `kanto_${tipo}_t${autoTier}`;
-                    triggerWild(autoKey);
+                    const huntKey = String(P.currentHunt || '');
+                    if(huntKey.startsWith('psy19:')) window.triggerWild(huntKey);
+                    else {
+                        let plvl = P.team[0]?.level || 1;
+                        let autoTier = plvl < 10? 1 : plvl < 20? 2 : plvl < 40? 3 : 4;
+                        let tipo = (huntKey || 'kanto_planta_t1').split('_')[1] || 'planta';
+                        let autoKey = `kanto_${tipo}_t${autoTier}`;
+                        triggerWild(autoKey);
+                    }
                 } else {
                     const tile = map[ny]?.[nx];
                     // Natural encounters occur only in explicitly marked tall grass.
