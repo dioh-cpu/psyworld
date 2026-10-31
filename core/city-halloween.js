@@ -211,7 +211,7 @@
   function makeDialog() {
     if (dialog) return dialog;
     dialog=D.createElement('section'); dialog.className='psy-halloween-dialog'; dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-live','polite');
-    dialog.innerHTML='<button type="button" class="psy-halloween-close" aria-label="Fechar">×</button><small>VILA DAS SOMBRAS · FESTIVAL DE HALLOWEEN</small><div class="psy-halloween-dialog-body"><div class="psy-halloween-portrait" data-emotion="neutral"><img alt=""><span class="psy-halloween-expression" aria-hidden="true"><i class="brow left"></i><i class="brow right"></i><i class="mouth"></i></span></div><div class="psy-halloween-dialog-copy"><h3></h3><p></p></div></div><button type="button" class="psy-halloween-next">CONTINUAR</button>';
+    dialog.innerHTML='<button type="button" class="psy-halloween-close" aria-label="Fechar">×</button><small>VILA DAS SOMBRAS · FESTIVAL DE HALLOWEEN</small><img class="psy-route-preview" src="/assets/story/kanto-route-1.webp" alt="Mapa ilustrado da Rota 1" loading="lazy"><div class="psy-halloween-dialog-body"><div class="psy-halloween-portrait" data-emotion="neutral"><img alt=""><span class="psy-halloween-expression" aria-hidden="true"><i class="brow left"></i><i class="brow right"></i><i class="mouth"></i></span></div><div class="psy-halloween-dialog-copy"><h3></h3><p></p></div></div><button type="button" class="psy-halloween-next">CONTINUAR</button>';
     dialog.querySelector('.psy-halloween-close').onclick=()=>dialog.classList.remove('open');
     dialog.querySelector('.psy-halloween-next').onclick=()=>dialog.classList.remove('open');
     D.body.appendChild(dialog); return dialog;
