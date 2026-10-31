@@ -21,7 +21,7 @@
       lines:['Só vendo itens raros. Não pergunte sobre as caixas atrás da barraca.','A Equipe Rocket procura Pokémon raros pelas rotas. Ninguém vai nos impedir de encontrá-los primeiro.','Você atrapalhou nossos planos por enquanto. A Equipe Rocket vai voltar.'] }
   ];
   const HOUSES = [
-    { dx:-7.1, dy:-5.8, wall:'#5b3650', roof:'#20182d', sign:'BOTICA', kind:'shop', width:1.22 },
+    { dx:-7.1, dy:-5.8, wall:'#5b3650', roof:'#20182d', sign:'POÇÕES', kind:'shop', width:1.22 },
     { dx: 7.1, dy:-5.8, wall:'#493450', roof:'#1d1930', sign:'POUSADA', kind:'inn', width:1.18 },
     { dx:-7.1, dy: 5.8, wall:'#633c4b', roof:'#27192f', sign:'MANSÃO', kind:'mansion', width:1.34 },
     { dx: 7.1, dy: 5.8, wall:'#51435d', roof:'#211a32', sign:'ARQUIVO', kind:'hall', width:1.26 },
@@ -233,12 +233,22 @@
     c.fillStyle='rgba(17,22,43,.4)';c.beginPath();c.moveTo(0,h*.33);c.quadraticCurveTo(w*.2,h*.22,w*.42,h*.34);c.quadraticCurveTo(w*.72,h*.20,w,h*.31);c.lineTo(w,h*.49);c.lineTo(0,h*.49);c.fill();
     for(let i=0;i<34;i++){const x=((i*197+53)%997)/997*w,y=((i*83+31)%271)/271*h*.36;c.fillStyle=i%5===0?'#ffd789':'#dbeafe';c.globalAlpha=.35+(i%4)*.12;c.beginPath();c.arc(x,y,i%7===0?1.5:1,0,Math.PI*2);c.fill()}
     c.globalAlpha=1;
-    // Village crossroads and broad paved lanes.
-    const roadW=Math.max(68,TILE*1.42);
-    c.fillStyle='#302a3b';c.fillRect(center.x-roadW/2,center.y-12*TILE,roadW,24*TILE);c.fillRect(center.x-12*TILE,center.y-roadW/2,24*TILE,roadW);
-    c.fillStyle='#494052';c.fillRect(center.x-roadW/2+4,center.y-12*TILE,5,24*TILE);c.fillRect(center.x+roadW/2-9,center.y-12*TILE,5,24*TILE);
-    c.fillRect(center.x-12*TILE,center.y-roadW/2+4,24*TILE,5);c.fillRect(center.x-12*TILE,center.y+roadW/2-9,24*TILE,5);
-    c.strokeStyle='#cfad6c';c.lineWidth=2.5;c.setLineDash([18,18]);c.beginPath();c.moveTo(center.x,center.y-12*TILE);c.lineTo(center.x,center.y+12*TILE);c.stroke();c.beginPath();c.moveTo(center.x-12*TILE,center.y);c.lineTo(center.x+12*TILE,center.y);c.stroke();c.setLineDash([]);
+    // Broad Halloween cobblestone plaza replaces the road and roundabout.
+    // Ground stays walkable; house, prop and NPC footprints still use SOLID.
+    const plazaW=Math.max(w+24,24*TILE), plazaH=Math.max(h+24,24*TILE);
+    const px=center.x-plazaW/2, py=center.y-plazaH/2, stone=19;
+    const shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
+    c.fillStyle='#211d30';c.fillRect(px,py,plazaW,plazaH);
+    for(let row=0;row<Math.ceil(plazaH/stone);row++){
+      for(let col=0;col<Math.ceil(plazaW/stone);col++){
+        const seed=(row*73+col*97+(row%2)*31)%shades.length;
+        const sx=px+col*stone+(row%2)*9, sy=py+row*stone;
+        c.fillStyle=shades[seed];rounded(c,sx+1,sy+1,stone-3,stone-3,3);c.fill();
+        c.fillStyle='rgba(205,170,118,.09)';c.fillRect(sx+4,sy+3,stone-9,1);
+      }
+    }
+    c.strokeStyle='rgba(190,150,104,.18)';c.lineWidth=2;
+    c.strokeRect(px+5,py+5,plazaW-10,plazaH-10);
     HOUSES.forEach(house=>drawHouse(c,house));
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();

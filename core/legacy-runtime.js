@@ -2005,9 +2005,9 @@ function update(dt) {
                     triggerWild(autoKey);
                 } else {
                     const tile = map[ny]?.[nx];
+                    // Natural encounters occur only in explicitly marked tall grass.
+                    // Paths, town floor, decorations and all other tiles are safe.
                     if(tile===5 && ROUTE1.grass.has(nx+','+ny) && Math.random()<0.12) triggerWild('kanto_normal_t1');
-                    else if(tile===0 && Math.random()<0.08) triggerWild(P.currentHunt || 'kanto_planta_t1');
-                    else if(tile===1 && Math.random()<0.04) triggerWild(P.currentHunt || 'kanto_planta_t1');
                 }
             }
         }
