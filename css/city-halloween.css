@@ -1,12 +1,20 @@
 /* Halloween city scene, touch-friendly NPC dialogs and compact city menu. */
 #game-wrap[data-city-season="halloween"] #gameCanvas{filter:saturate(.88) contrast(1.04)}
-.psy-halloween-npc{position:absolute;z-index:18;display:flex;flex-direction:column;align-items:center;gap:1px;width:78px;padding:0;border:0;background:transparent;transform:translate(-50%,-100%);cursor:pointer;filter:drop-shadow(0 5px 3px #0009)}
+.psy-halloween-npc{position:absolute;z-index:18;display:flex;flex-direction:column;align-items:center;gap:4px;width:116px;padding:0;border:0;background:transparent;transform:translate(-50%,-100%);cursor:pointer;filter:drop-shadow(0 8px 5px #000b);touch-action:manipulation}
+.psy-halloween-npc[hidden]{display:none!important}
+.psy-halloween-sprite{position:relative;display:flex;align-items:flex-end;justify-content:center;width:104px;height:126px}
+.psy-halloween-sprite:before{content:"";position:absolute;bottom:0;width:80px;height:14px;border-radius:50%;background:#030712aa;filter:blur(5px)}
+.psy-halloween-sprite img{position:relative;width:104px;height:122px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 0 9px #fb923c55);transition:transform .18s ease,filter .18s ease}
+.psy-halloween-sprite img[hidden]{display:none}
+.psy-halloween-npc-art-missing .psy-halloween-sprite{opacity:.25}
+.psy-halloween-name,.psy-halloween-role{position:relative;display:block;max-width:112px;padding:4px 8px;border:1px solid #f59e0b;border-radius:99px;background:#130f22f5;color:#fff7ed;font:900 12px/1.1 system-ui,sans-serif;text-align:center;white-space:nowrap;text-shadow:0 1px 2px #000}
+.psy-halloween-role{max-width:106px;border-color:#8b5cf6;color:#e9d5ff;font-size:10px}
+.psy-halloween-npc:hover .psy-halloween-sprite img,.psy-halloween-npc:focus-visible .psy-halloween-sprite img{transform:translateY(-6px);filter:drop-shadow(0 0 15px #fb923c)}
+@media(max-width:600px){.psy-halloween-npc{width:104px}.psy-halloween-sprite{width:92px;height:112px}.psy-halloween-sprite img{width:92px;height:108px}.psy-halloween-name,.psy-halloween-role{font-size:11px}.psy-halloween-role{font-size:9px}}
 .psy-halloween-npc[hidden]{display:none!important}
 .psy-halloween-sprite{position:relative;display:flex;align-items:flex-end;justify-content:center;width:48px;height:58px}
 .psy-halloween-sprite img{width:46px;height:56px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 7px #f9731688)}
 .psy-halloween-sprite img[hidden]{display:none}
-.psy-halloween-sprite i{display:none;font-style:normal;font-size:37px;line-height:1}
-.psy-halloween-sprite i:not([hidden]){display:block}
 .psy-halloween-name,.psy-halloween-role{display:block;max-width:78px;padding:2px 5px;border:1px solid #f59e0b;border-radius:99px;background:#180f21ed;color:#fff7ed;font:900 9px/1.1 system-ui,sans-serif;text-align:center;white-space:nowrap}
 .psy-halloween-role{max-width:74px;border-color:#7c3aed;color:#ddd6fe;font-size:7px}
 .psy-halloween-npc:hover .psy-halloween-sprite,.psy-halloween-npc:focus-visible .psy-halloween-sprite{transform:translateY(-4px);filter:drop-shadow(0 0 10px #fb923c)}
