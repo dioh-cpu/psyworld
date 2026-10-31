@@ -105,9 +105,17 @@ function scan(root){
 function start(){
  scan(D);polishTutorialAndStarter();
  const mo=new MutationObserver(records=>{
-  for(const record of records)for(const node of record.addedNodes)if(node.nodeType===1)scan(node);polishTutorialAndStarter();
+  for(const record of records){
+   if(record.type==='characterData'){
+    const button=record.target.parentElement?.closest?.('button');
+    if(button&&!button.dataset.psyHalloweenIcon)decorate(button);
+   }else{
+    for(const node of record.addedNodes)if(node.nodeType===1)scan(node);
+   }
+  }
+  polishTutorialAndStarter();
  });
- mo.observe(D.body,{childList:true,subtree:true});
+ mo.observe(D.body,{childList:true,characterData:true,subtree:true});
 }
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })(window,document);
