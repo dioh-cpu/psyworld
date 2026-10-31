@@ -102,3 +102,11 @@
   #screen-login #login-box{padding:22px!important}
 }
 @media(prefers-reduced-motion:reduce){#screen-login::after{filter:none}}
+
+/* Keep movement controls off the account entry screen. */
+body:not(:has(#screen-login[style*="display: none"])) #joystick,
+body:not(:has(#screen-login[style*="display: none"])) #psy-fullscreen-btn{display:none!important}
+body:not(:has(#screen-login[style*="display: none"])) #psy-audio-quick-toggle{
+  left:auto!important;right:max(12px,env(safe-area-inset-right,0px))!important;
+  bottom:max(12px,env(safe-area-inset-bottom,0px))!important;
+}
