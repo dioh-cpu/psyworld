@@ -1,0 +1,60 @@
+/* Halloween city scene, touch-friendly NPC dialogs and compact city menu. */
+#game-wrap[data-city-season="halloween"] #gameCanvas{filter:saturate(.88) contrast(1.04)}
+.psy-halloween-npc{position:absolute;z-index:18;display:flex;flex-direction:column;align-items:center;gap:1px;width:78px;padding:0;border:0;background:transparent;transform:translate(-50%,-100%);cursor:pointer;filter:drop-shadow(0 5px 3px #0009)}
+.psy-halloween-npc[hidden]{display:none!important}
+.psy-halloween-sprite{position:relative;display:flex;align-items:flex-end;justify-content:center;width:48px;height:58px}
+.psy-halloween-sprite img{width:46px;height:56px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 7px #f9731688)}
+.psy-halloween-sprite img[hidden]{display:none}
+.psy-halloween-sprite i{display:none;font-style:normal;font-size:37px;line-height:1}
+.psy-halloween-sprite i:not([hidden]){display:block}
+.psy-halloween-name,.psy-halloween-role{display:block;max-width:78px;padding:2px 5px;border:1px solid #f59e0b;border-radius:99px;background:#180f21ed;color:#fff7ed;font:900 9px/1.1 system-ui,sans-serif;text-align:center;white-space:nowrap}
+.psy-halloween-role{max-width:74px;border-color:#7c3aed;color:#ddd6fe;font-size:7px}
+.psy-halloween-npc:hover .psy-halloween-sprite,.psy-halloween-npc:focus-visible .psy-halloween-sprite{transform:translateY(-4px);filter:drop-shadow(0 0 10px #fb923c)}
+.psy-halloween-dialog{position:fixed;z-index:10050000;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);width:min(370px,calc(100vw - 28px));box-sizing:border-box;padding:15px 16px 13px;border:2px solid #fb923c;border-radius:18px;background:linear-gradient(145deg,#221329f5,#111827f5);color:#fff7ed;box-shadow:0 14px 42px #000c,0 0 22px #f9731640;transform:translate(-50%,16px);opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease,visibility .16s}
+.psy-halloween-dialog.open{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.psy-halloween-dialog small{color:#fbbf24;font:900 9px/1 system-ui,sans-serif;letter-spacing:.12em}
+.psy-halloween-dialog h3{margin:7px 32px 5px 0;color:#fcd34d;font:900 15px/1.2 system-ui,sans-serif}
+.psy-halloween-dialog p{margin:0 0 10px;color:#f1f5f9;font:500 13px/1.4 system-ui,sans-serif}
+.psy-halloween-dialog button{border:1px solid #fb923c;border-radius:9px;background:#7c2d12;color:#fff7ed;padding:7px 12px;font-weight:900}
+.psy-halloween-dialog .psy-halloween-close{position:absolute;right:9px;top:9px;width:29px;height:29px;padding:0;font-size:18px}
+.psy-halloween-dialog .psy-halloween-next{width:100%;background:linear-gradient(90deg,#ea580c,#7c3aed)}
+#menuBtn{border-color:#fb923c!important;background:linear-gradient(135deg,#facc15,#f97316)!important;color:#201123!important;box-shadow:0 5px 16px #43140755!important}
+html[data-psy-layout="mobile"] #world-btn-float{
+  position:fixed!important;top:auto!important;right:10px!important;bottom:max(74px,calc(env(safe-area-inset-bottom,0px) + 72px))!important;
+  left:10px!important;width:auto!important;max-width:none!important;max-height:50dvh!important;box-sizing:border-box!important;
+  display:flex!important;flex-direction:column!important;gap:5px!important;padding:8px!important;
+  overflow:hidden!important;border:1px solid #fb923c!important;border-radius:18px!important;
+  background:linear-gradient(145deg,#180f21ed,#111827ec)!important;box-shadow:0 12px 34px #0009,0 0 22px #fb923c28!important;
+}
+html[data-psy-layout="mobile"] #world-btn-float.city-content-collapsed{
+  left:auto!important;right:10px!important;bottom:max(74px,calc(env(safe-area-inset-bottom,0px) + 72px))!important;
+  width:min(60vw,220px)!important;max-height:none!important;padding:0!important;overflow:visible!important;
+  border:0!important;border-radius:14px!important;background:transparent!important;box-shadow:none!important;
+}
+html[data-psy-layout="mobile"] #btn-city-content-toggle{
+  width:100%!important;min-width:0!important;height:38px!important;min-height:38px!important;margin:0!important;padding:6px 10px!important;
+  border:1px solid #fb923c!important;border-radius:13px!important;background:linear-gradient(100deg,#7c2d12,#4c1d95)!important;
+  color:#fff7ed!important;font-size:11px!important;box-shadow:0 5px 15px #0008!important;
+}
+html[data-psy-layout="mobile"] #city-game-content-buttons{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-content:start!important;gap:5px!important;
+  max-height:calc(50dvh - 58px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding:2px!important;
+}
+html[data-psy-layout="mobile"] #world-btn-float.city-content-collapsed #city-game-content-buttons{display:none!important}
+html[data-psy-layout="mobile"] #world-btn-float>button:not(#btn-city-content-toggle){display:none!important}
+html[data-psy-layout="mobile"] #city-game-content-buttons>button{
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;height:51px!important;min-height:51px!important;margin:0!important;padding:5px 3px!important;
+  border:1px solid #e9d5ff!important;border-radius:11px!important;font-size:9px!important;line-height:1.12!important;
+  white-space:normal!important;box-shadow:0 3px 9px #0006!important;
+}
+html[data-psy-layout="mobile"] #city-game-content-buttons>button small{font-size:7px!important}
+@media(max-width:420px){
+ .psy-halloween-npc{transform:translate(-50%,-100%) scale(.88);transform-origin:bottom center}
+ html[data-psy-layout="mobile"] #city-game-content-buttons{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ html[data-psy-layout="mobile"] #world-btn-float{bottom:max(72px,calc(env(safe-area-inset-bottom,0px) + 70px))!important}
+}
+@media(orientation:landscape) and (max-height:600px){
+ html[data-psy-layout="mobile"] #world-btn-float{left:auto!important;right:8px!important;top:72px!important;bottom:56px!important;width:min(45vw,360px)!important;max-height:none!important}
+ html[data-psy-layout="mobile"] #world-btn-float.city-content-collapsed{left:auto!important;right:8px!important;top:72px!important;bottom:auto!important;width:min(60vw,220px)!important}
+ html[data-psy-layout="mobile"] #city-game-content-buttons{grid-template-columns:repeat(3,minmax(0,1fr))!important;max-height:calc(100dvh - 132px)!important}
+}
