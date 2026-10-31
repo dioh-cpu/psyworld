@@ -166,3 +166,10 @@ body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:n
 #screen-psy-tutorial .psy-halloween-tutorial-mark{
   display:block!important;float:none!important;margin:0 auto 12px!important;
 }
+
+#screen-psy-tutorial .psy-tutorial-step{
+  display:block!important;width:100%!important;grid-template-columns:minmax(0,1fr)!important;
+}
+#screen-psy-tutorial .psy-tutorial-step > *{
+  width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;
+}
