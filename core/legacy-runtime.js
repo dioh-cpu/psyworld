@@ -5332,6 +5332,17 @@ window.startBattle=function(wildPoke){
     const need=wildPoke?.shiny?PSY_TRAINER_GATES.shinyLegendary:PSY_TRAINER_GATES.legendary;
     if(tl<need){notif(`🔒 ${wildPoke?.shiny?'Lendário Shiny':'Lendário'} libera no Trainer Lv.${need}. Você está Lv.${tl}.`,4000);return false;}
   }
+  const lead=P.team?.[0];
+  if(lead){
+    const max=Math.max(1,Number(lead.maxHp)||Number(P.maxHp)||1);
+    P.meta=P.meta||{};
+    if(!P.meta.psyStarterHpRepairV1){
+      if(!Number.isFinite(Number(lead.hp))||Number(lead.hp)<=0){lead.maxHp=max;lead.hp=max;}
+      P.meta.psyStarterHpRepairV1=1;
+      try{autoSave()}catch(_){}
+    }
+    P.pokemon=lead;P.hp=Number(lead.hp);P.maxHp=max;
+  }
   const r=psyOldStartBattle.apply(this,arguments);
   psyRefreshBattleSprites();
   return r;
