@@ -539,7 +539,7 @@ const SPECIAL_EVOLUTIONS = {
 const P = {
     name:"", level:1, hp:50, maxHp:50,
     exp:0, maxExp:100, gold:25000,
-    team: [], box: [],
+    team: [], box: [], seenPokemon:[],
     x:25, y:25, px:25*32, py:25*32,
     tx:25, ty:25, moving:false,
     inventory: { 
@@ -783,6 +783,29 @@ function autoSave() {
     }catch(e){ console.warn(e); }
 }
 
+window.PsyWorldProgressV1 = {
+    snapshot(){
+        const clean = pokemon => Array.isArray(pokemon) ? pokemon.filter(mon=>mon&&Number(mon.id)>0).map(mon=>({id:Number(mon.id),name:String(mon.name||''),level:Math.max(1,Number(mon.level)||1)})) : [];
+        const team=clean(P.team),box=clean(P.box),owned=[...team,...box].map(mon=>mon.id);
+        return {
+            trainerLevel:Math.max(1,Number(P.trainerLevel)||1),
+            levelCap:Math.max(1,Number(P.levelCap)||20),
+            gymProgress:Array.isArray(P.gymProgress)?P.gymProgress.slice():[],
+            completedRegions:REGION_ORDER.filter(region=>getRegionCompleted(region)),
+            team,box,
+            seenPokemon:[...new Set([...(Array.isArray(P.seenPokemon)?P.seenPokemon:[]),...owned].map(Number).filter(id=>Number.isInteger(id)&&id>0))]
+        };
+    },
+    recordSeenSpecies(id){
+        const n=Number(id);if(!Number.isInteger(n)||n<1||n>1025)return false;
+        P.seenPokemon=Array.isArray(P.seenPokemon)?P.seenPokemon:[];
+        if(P.seenPokemon.includes(n))return false;
+        P.seenPokemon.push(n);autoSave();
+        try{if(document.getElementById('screen-pokedex')?.style.display==='flex')renderPokedex()}catch(_){}
+        return true;
+    }
+};
+
 function autoLoad() {
     try{
         let raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(SAVE_BACKUP_KEY) || localStorage.getItem('psyWorldSave');
@@ -795,6 +818,7 @@ function autoLoad() {
         P.gold = pd.gold?? P.gold;
         P.team = pd.team || [];
         P.box = pd.box || [];
+        P.seenPokemon = Array.isArray(pd.seenPokemon)?[...new Set(pd.seenPokemon.map(Number).filter(id=>Number.isInteger(id)&&id>0&&id<=1025))]:[];
         P.inventory = pd.inventory || P.inventory;
         P.levelCap = pd.levelCap?? P.levelCap;
         P.gymProgress = pd.gymProgress || [];
@@ -1579,6 +1603,7 @@ if(!list||list.length==0){
   return;
 }
 const base=list[Math.floor(Math.random()*list.length)];
+window.PsyWorldProgressV1?.recordSeenSpecies(base.id);
 let tierLetter = getTier(base.id); // <-- E,D,C,B,A,S,SS,SSS,UR
 const rarity=typeof rollRarity==='function'?rollRarity(tierLetter):{n:"Comum",bonus:0,mult:1};
 let realType=base.type||TYPE_BY_ID_ALL[base.id]||"Normal";
