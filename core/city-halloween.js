@@ -83,7 +83,7 @@
     c.restore();
   }
   function drawCity() {
-    if (!cityVisible() || !(typeof P!=='undefined'&&P.team?.length) || W.inBattle) return;
+    if (!cityVisible() || !(typeof P!=='undefined'&&P.team?.length) || (typeof inBattle!=='undefined'&&inBattle)) return;
     captureOrigin(); if (!origin) return;
     const now=performance.now();
     if(now-lastDraw<20)return; lastDraw=now;
