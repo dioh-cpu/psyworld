@@ -648,3 +648,23 @@ html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-moves{left:8px!import
  html[data-psy-layout="mobile"] .psy-halloween-sprite{width:98px;height:132px}
  html[data-psy-layout="mobile"] .psy-halloween-sprite img{width:98px;height:128px}
 }
+
+
+/* Hunt rows use the target Pokémon's sprite as the selection thumbnail. */
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{
+  box-sizing:border-box!important;width:46px!important;height:46px!important;padding:3px!important;
+  display:grid!important;place-items:center!important;overflow:hidden!important;
+  border:1px solid #8b65b5!important;border-radius:11px!important;
+  background:linear-gradient(145deg,#242039,#151b2b)!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon::after{display:none!important;content:none!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon img{
+  display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;
+  image-rendering:pixelated!important;filter:drop-shadow(0 2px 3px #0009)!important;
+}
+@media(max-width:760px){
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{width:42px!important;height:42px!important}
+}
+@media(max-width:420px){
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{width:36px!important;height:36px!important;padding:2px!important}
+}
