@@ -246,7 +246,7 @@
     const portrait=panel.querySelector('.psy-halloween-portrait');
     portrait.dataset.emotion=emotions[index%emotions.length];
     const portraitImg=portrait.querySelector('img');
-    portraitImg.src='/assets/halloween/'+npc.art;
+    portraitImg.src=npc.art.startsWith('/')?npc.art:'/assets/halloween/'+npc.art;
     portraitImg.alt='Retrato de '+npc.name;
     name.textContent=npc.name+' · '+npc.role; copy.textContent='“'+line+'”'; panel.dataset.npc=npc.id; panel.classList.add('open');
   }
