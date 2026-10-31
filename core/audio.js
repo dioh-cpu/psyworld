@@ -189,7 +189,7 @@ function playTheme(){
   try{const p=a.play();if(p?.catch)p.catch(()=>{})}catch(_){}
 }
 function selectTrack(id){if(!tracks.some(t=>t.id===id))return;pauseTheme();selectedTrack=id;theme=null;localStorage.setItem('psy_audio_track',id);settings.musicOn=true;saveSettings();unlock();playTheme()}
-function setVolume(kind,value){if(!['music','sfx'].includes(kind))return;settings[kind]=clamp(value);settings[kind+'On']=settings[kind]>0;saveSettings();if(kind==='music'){if(theme)theme.volume=clamp(settings.music*duck);if(settings.musicOn)playTheme();else pauseTheme()}else for(const arr of Object.values(pools))for(const a of arr)a.volume=settings.sfx}
+function setVolume(kind,value){if(!['music','sfx'].includes(kind))return;settings[kind]=clamp(value);settings[kind+'On']=settings[kind]>0;saveSettings();if(kind==='music'){if(theme)theme.volume=clamp(settings.music*duck);if(settings.musicOn)playTheme();else pauseTheme();updateQuickToggle()}else for(const arr of Object.values(pools))for(const a of arr)a.volume=settings.sfx}
 function pauseTheme(){try{theme?.pause()}catch(e){}}
 function setDuck(v=.28){
   duck=clamp(v,.12,1);
@@ -311,7 +311,7 @@ function openPanel(){
     const mo=p.querySelector('#psy-music-on'),so=p.querySelector('#psy-sfx-on'),mv=p.querySelector('#psy-music-vol'),sv=p.querySelector('#psy-sfx-vol');
     mo.onchange=()=>{settings.musicOn=mo.checked;saveSettings();settings.musicOn?playTheme():pauseTheme();updateQuickToggle()};
     so.onchange=()=>{settings.sfxOn=so.checked;saveSettings();if(so.checked)sfx('ui_click')};
-    mv.oninput=()=>{settings.music=Number(mv.value)/100;saveSettings();if(theme)theme.volume=clamp(settings.music*duck)};
+    mv.oninput=()=>{setVolume('music',Number(mv.value)/100);mo.checked=settings.musicOn};
     sv.oninput=()=>{settings.sfx=Number(sv.value)/100;saveSettings();sfx('ui_click',{cooldown:0})};
     p.querySelector('#psy-audio-close').onclick=()=>p.style.display='none';
   }
