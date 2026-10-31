@@ -9,9 +9,9 @@
       lines:['Bem-vindo ao Festival das Lanternas. A praça está cheia de surpresas.','Pokémon Fantasma aparecem com mais frequência nas noites de Halloween.','Há lanternas escondidas por toda a cidade.'] },
     { id:'noah', name:'Noah', role:'Pesquisador Pokémon', art:'npc-researcher.webp', dx:4.6, dy:-2.9,
       lines:['Estou estudando como os Pokémon reagem às luzes das abóboras.','Uma cidade bem iluminada é mais segura para os Pokémon pequenos.','Consulte o arquivo antigo se procurar pistas sobre Pokémon Fantasma.'] },
-    { id:'amora', name:'Amora', role:'Feirante do Festival', art:'npc-vendor.webp', dx:-4.6, dy:3.8,
+    { id:'amora', name:'Amora', role:'Feirante do Festival', art:'npc-vendor.webp', dx:-4.6, dy:3.2,
       lines:['Minha barraca está cheia de guloseimas e abóboras da estação.','As folhas douradas anunciam que a noite mais assustadora chegou.','Passe aqui depois da sua próxima hunt; sempre há algo especial.'] },
-    { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.6, dy:3.8,
+    { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.6, dy:3.2,
       lines:['Os livros da torre guardam mapas de regiões muito distantes.','Procure o tomo de capa azul para descobrir lendas de Halloween.','A biblioteca fica aberta até o último treinador voltar da hunt.'] }
   ];
   const HOUSES = [
@@ -21,6 +21,7 @@
     { dx: 7.1, dy: 5.8, wall:'#51435d', roof:'#211a32', sign:'ARQUIVO', kind:'hall', width:1.26 }
   ];
   const CITY_LAMPS=[[-4.8,-.7],[4.8,.7],[-.7,-4.8],[.7,4.8],[-8.9,1.6],[8.9,-1.6]];
+  const CITY_GRAVEYARD={dx:9.6,dy:.1};
   let origin = null;
   let dialog = null;
 
@@ -50,7 +51,7 @@
     // NPCs: three feet tiles (1×3), leaving every adjacent tile reachable for interaction.
     NPCS.forEach(npc=>block(npc.dx,npc.dy,1,0));
     // Cemetery fence and grave markers occupy a 3×3 tile patch.
-    block(9.6,.1,1,1);
+    block(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy,1,1);
     // Lamp post bases and the three pumpkin props occupy their ground tiles.
     CITY_LAMPS.forEach(([dx,dy])=>block(dx,dy,0,0));
     [[CITY_LAMPS[0][0]+22/TILE,CITY_LAMPS[0][1]+8/TILE],
@@ -162,7 +163,7 @@
     c.strokeStyle='#cfad6c';c.lineWidth=2.5;c.setLineDash([18,18]);c.beginPath();c.moveTo(center.x,center.y-12*TILE);c.lineTo(center.x,center.y+12*TILE);c.stroke();c.beginPath();c.moveTo(center.x-12*TILE,center.y);c.lineTo(center.x+12*TILE,center.y);c.stroke();c.setLineDash([]);
     HOUSES.forEach(house=>drawHouse(c,house));
     // Little graveyard at the edge of the square.
-    const grave=screenPoint(9.6,0.1);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
+    const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
     for(let i=0;i<3;i++){const gx=grave.x-28+i*28,gy=grave.y+4;c.fillStyle=['#697083','#7d7888','#59677a'][i];rounded(c,gx-9,gy-17,18,29,8);c.fill();c.fillStyle='#b6bdca';c.fillRect(gx-1,gy-11,2,12);c.fillRect(gx-5,gy-7,10,2)}
     drawWeb(c,grave.x-43,grave.y-34,29);
     // Copper lamps, hanging pennants, scattered leaves and pumpkins.
