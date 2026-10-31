@@ -13,11 +13,11 @@
       lines:['Minha barraca está cheia de guloseimas e abóboras da estação.','As folhas douradas anunciam que a noite mais assustadora chegou.','Passe aqui depois da sua próxima hunt; sempre há algo especial.'] },
     { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.6, dy:3.2,
       lines:['Os livros da torre guardam mapas de regiões muito distantes.','Procure o tomo de capa azul para descobrir lendas de Halloween.','A biblioteca fica aberta até o último treinador voltar da hunt.'] },
-    { id:'oak', name:'Professor Carvalho', role:'Pesquisador Pokémon', art:'npc-researcher.webp', dx:0, dy:-9.2, story:'oak',
+    { id:'oak', name:'Professor Carvalho', role:'Pesquisador Pokémon', art:'/assets/story/professor-oak.png', dx:0, dy:-9.2, story:'oak',
       lines:['Olá, treinador. Sou o Professor Carvalho. Cada Pokémon que você encontra ajuda a completar a Pokédex.','Explore a rota ao norte e observe a grama alta. Pokémon descobertos no mundo serão liberados depois nas Hunts do farm Idle.','A Rota 1 liga a cidade às trilhas de Viridian. Siga pelo caminho aberto e registre as espécies que encontrar.'] },
-    { id:'rival', name:'Rival', role:'Treinador desafiante', art:'npc-noah.webp', dx:-9.6, dy:0.1, story:'rival',
+    { id:'rival', name:'Rival', role:'Treinador desafiante', art:'/assets/story/rival.png', dx:-9.6, dy:0.1, story:'rival',
       lines:['Eu já escolhi meu parceiro. Vamos ver quem conhece melhor os Pokémon!','Encontre espécies nas rotas e monte uma equipe equilibrada antes de avançar pelos ginásios.','Quando estiver pronto, vamos nos enfrentar no campo de treino.'] },
-    { id:'rocket', name:'Agente Rocket', role:'Vendedor suspeito', art:'npc-vendor.webp', dx:9.7, dy:0.1, story:'rocket',
+    { id:'rocket', name:'Agente Rocket', role:'Vendedor suspeito', art:'/assets/story/rocket-grunt.png', dx:9.7, dy:0.1, story:'rocket',
       lines:['Só vendo itens raros. Não pergunte sobre as caixas atrás da barraca.','A Equipe Rocket procura Pokémon raros pelas rotas. Ninguém vai nos impedir de encontrá-los primeiro.','Você atrapalhou nossos planos por enquanto. A Equipe Rocket vai voltar.'] }
   ];
   const HOUSES = [
@@ -257,7 +257,7 @@
       const button=D.createElement('button');button.type='button';button.id='psy-halloween-npc-'+npc.id;button.className='psy-halloween-npc';button.setAttribute('aria-label','Conversar com '+npc.name);
       button.innerHTML='<span class="psy-halloween-sprite"><img alt=""></span><span class="psy-halloween-name">'+npc.name+'</span><span class="psy-halloween-role">'+npc.role+'</span>';
       const img=button.querySelector('img');
-      img.src='/assets/halloween/'+npc.art;
+      img.src=npc.art.startsWith('/')?npc.art:'/assets/halloween/'+npc.art;
       img.onerror=()=>{button.classList.add('psy-halloween-art-missing')};
       button.onclick=()=>speak(npc);wrap.appendChild(button);
     });
