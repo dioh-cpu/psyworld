@@ -173,3 +173,6 @@ body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:n
 #screen-psy-tutorial .psy-tutorial-step > *{
   width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;
 }
+
+/* Respect the game's inline hidden state after leaving login. */
+#screen-login[style*="display: none"]{display:none!important}
