@@ -155,3 +155,14 @@ body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:n
 #screen-starter .s-card .sname{color:#fff2d7!important}
 #screen-starter .s-card .stype{color:#d5c4e4!important}
 #screen-starter #btn-confirm{border:1px solid #ffd27d!important;border-radius:12px!important;background:linear-gradient(110deg,#d97706,#f59e0b,#b45309)!important;color:#1b1016!important}
+
+/* Keep the tutorial content readable across its full panel width. */
+#screen-psy-tutorial #psy-tutorial-body{
+  display:block!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;
+}
+#screen-psy-tutorial #psy-tutorial-body > *:not(.psy-halloween-tutorial-mark){
+  width:auto!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;
+}
+#screen-psy-tutorial .psy-halloween-tutorial-mark{
+  display:block!important;float:none!important;margin:0 auto 12px!important;
+}
