@@ -114,3 +114,44 @@ body:not(:has(#screen-login[style*="display: none"])) #psy-audio-quick-toggle{
 /* Let the illustrated entry scene own the full viewport before gameplay. */
 #screen-login{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;height:100dvh!important;min-height:100dvh!important}
 body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:none!important}
+
+/* Tutorial and starter selection carry the same night palette. */
+#screen-psy-tutorial{
+  background:radial-gradient(ellipse at 78% 12%,#402752a8,transparent 45%),#070712ed!important;
+  backdrop-filter:blur(6px);
+}
+#screen-psy-tutorial .psy-tutorial-card{
+  box-sizing:border-box!important;width:min(780px,calc(100vw - 28px))!important;max-width:780px!important;
+  border:1px solid #a67558!important;border-radius:22px!important;
+  background:radial-gradient(ellipse at 100% 0,#39224f66,transparent 45%),linear-gradient(155deg,#19172c,#0b0e19)!important;
+  color:#f8f0e0!important;box-shadow:0 24px 70px #000c,0 0 34px #f9731620!important;
+}
+#screen-psy-tutorial #psy-tutorial-body{color:#f5eddd!important}
+#screen-psy-tutorial #psy-tutorial-body h1,
+#screen-psy-tutorial #psy-tutorial-body h2,
+#screen-psy-tutorial #psy-tutorial-body h3{color:#ffd27d!important}
+#screen-psy-tutorial .psy-close-x{border:1px solid #a67558!important;background:#321d3c!important;color:#ffe3b1!important}
+#screen-psy-tutorial .psy-tutorial-dots i.active{background:#f59e0b!important}
+#screen-psy-tutorial .psy-halloween-tutorial-mark{width:52px;height:52px;float:left;margin:4px 15px 8px 0;color:#ffd27d;filter:drop-shadow(0 0 10px #f9731655)}
+#screen-psy-tutorial .psy-halloween-tutorial-mark svg{width:100%;height:100%}
+#screen-psy-tutorial .psy-tutorial-card>div:last-child button{
+  min-height:42px!important;padding:9px 15px!important;border:1px solid #9a663b!important;border-radius:11px!important;
+  background:linear-gradient(110deg,#54283b,#392052)!important;color:#fff2d4!important;font-weight:800!important
+}
+#screen-starter{
+  box-sizing:border-box!important;min-height:100dvh!important;padding:16px!important;
+  background:
+    radial-gradient(ellipse at 78% 20%,#432652a8,transparent 39%),
+    radial-gradient(ellipse at 15% 90%,#542f3366,transparent 46%),
+    linear-gradient(180deg,#080916,#171326 65%,#090a14)!important;
+}
+#screen-starter #starter-header h1{color:#ffe3a0!important;text-shadow:0 0 20px #f59e0b44!important}
+#screen-starter #starter-header p{color:#e9dded!important}
+#screen-starter #starter-scroll{max-width:min(1120px,100%)!important;overflow:auto!important}
+#screen-starter .gen-section{border:1px solid #53445f!important;border-radius:15px!important;background:linear-gradient(145deg,#171629eF,#0e111eeF)!important}
+#screen-starter .gen-label{color:#ffd27d!important;border-bottom:1px solid #76512e!important}
+#screen-starter .s-card{border:1px solid #60506a!important;border-radius:15px!important;background:linear-gradient(145deg,#1c1b30,#10121e)!important;color:#fff5e4!important;box-shadow:0 8px 20px #0005!important}
+#screen-starter .s-card.sel{border:2px solid #f59e0b!important;box-shadow:0 0 20px #f9731650!important}
+#screen-starter .s-card .sname{color:#fff2d7!important}
+#screen-starter .s-card .stype{color:#d5c4e4!important}
+#screen-starter #btn-confirm{border:1px solid #ffd27d!important;border-radius:12px!important;background:linear-gradient(110deg,#d97706,#f59e0b,#b45309)!important;color:#1b1016!important}
