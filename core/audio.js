@@ -26,8 +26,16 @@ const FILES={
 };
 
 Object.assign(FILES,{capture:'user/capture-success.mp3',capture_end:'user/capture-success-end.mp3',capture_fail:'user/capture-fail.mp3',ball_throw:'user/ball-throw.mp3',heal:'user/heal.mp3',levelup:'user/pokemon-level.mp3',trainer_level:'user/trainer-level.mp3',level_general:'user/level-general.mp3',shiny_found:'user/shiny-found.mp3',shiny_spawn:'user/shiny-spawn.mp3',item_drop:'user/item-drop.mp3',rare_drop:'user/rare-drop.mp3'});
-const tracks=[{id:'theme',label:'Tema Psyworld',file:FILES.theme},...Array.from({length:4},(_,i)=>({id:'music-'+(i+1),label:'Música '+(i+1),file:'user/music-'+(i+1)+'.mp3'}))];
-let selectedTrack=localStorage.getItem('psy_audio_track')||'theme';
+const tracks=[{id:'halloween',label:'Halloween · Noite Fantasma',file:null},{id:'theme',label:'Tema Psyworld',file:FILES.theme},...Array.from({length:4},(_,i)=>({id:'music-'+(i+1),label:'Música '+(i+1),file:'user/music-'+(i+1)+'.mp3'}))];
+const HALLOWEEN_DEFAULT_KEY='psy_halloween_theme_default_v1';
+let selectedTrack=localStorage.getItem('psy_audio_track')||'halloween';
+try{
+  if(localStorage.getItem(HALLOWEEN_DEFAULT_KEY)!=='1'){
+    selectedTrack='halloween';
+    localStorage.setItem('psy_audio_track',selectedTrack);
+    localStorage.setItem(HALLOWEEN_DEFAULT_KEY,'1');
+  }
+}catch(_){}
 
 const TYPE={
   normal:'normal',
@@ -58,7 +66,7 @@ const settings={
   sfxOn: localStorage.getItem('psy_audio_sfx_on')!=='0'
 };
 const last=new Map(),pools={},poolIndex={};
-let unlocked=false,theme=null,duck=.28;
+let unlocked=false,theme=null,duck=.72;
 
 function clamp(v,a=0,b=1){return Math.max(a,Math.min(b,Number(v)||0))}
 function saveSettings(){
@@ -102,17 +110,83 @@ function sfxForMove(move){
   }
   return sfx(typeKey(move?.type),{volume:.92,cooldown:90});
 }
+function createHalloweenTheme(){
+  const Ctx=W.AudioContext||W.webkitAudioContext;
+  if(!Ctx){const fallback=new Audio(BASE+FILES.theme);fallback.loop=true;fallback.preload='auto';fallback.playsInline=true;return fallback}
+  let context;
+  try{context=new Ctx()}catch(_){const fallback=new Audio(BASE+FILES.theme);fallback.loop=true;return fallback}
+  const master=context.createGain(),filter=context.createBiquadFilter();
+  filter.type='lowpass';filter.frequency.value=2200;filter.Q.value=.55;
+  master.gain.value=0;filter.connect(master);master.connect(context.destination);
+  let active=false,timer=0,step=0,nextStepAt=0,volume=clamp(settings.music*duck);
+  const bpm=76,stepDuration=60/bpm/2;
+  const roots=[146.83,116.54,130.81,110]; // Dm, Bb, C, Am
+  const chords=[[146.83,174.61,220],[116.54,146.83,174.61],[130.81,164.81,196],[110,130.81,164.81]];
+  const melody=[587.33,523.25,440,523.25,587.33,698.46,659.25,523.25,466.16,523.25,587.33,440,392,440,523.25,587.33,587.33,523.25,440,392,349.23,392,440,523.25,466.16,440,392,349.23,329.63,392,440,523.25];
+  function voice(freq,when,duration,level,wave='triangle'){
+    const osc=context.createOscillator(),env=context.createGain();
+    osc.type=wave;osc.frequency.setValueAtTime(freq,when);
+    env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(Math.max(.0002,level),when+.045);
+    env.gain.exponentialRampToValueAtTime(.0001,when+duration);
+    osc.connect(env);env.connect(filter);osc.start(when);osc.stop(when+duration+.08);
+  }
+  function schedule(){
+    if(!active||context.state!=='running')return;
+    const limit=context.currentTime+1.15;
+    while(nextStepAt<limit){
+      const bar=Math.floor(step/8),position=step%8,when=nextStepAt;
+      if(position===0){
+        chords[bar].forEach((freq,index)=>voice(freq,when,3.65,index===0?.035:.018,'sine'));
+        voice(roots[bar]/2,when,2.2,.065,'triangle');
+      }
+      const note=melody[step];
+      if(note)voice(note,when,.31,(position===0||position===4)?.085:.055,'triangle');
+      if(position===2||position===6)voice(note/2,when+.015,.42,.024,'sine');
+      step=(step+1)%32;nextStepAt+=stepDuration;
+    }
+  }
+  function setVolume(value){
+    volume=clamp(value);
+    if(active&&context.state==='running')master.gain.setTargetAtTime(volume,context.currentTime,.14);
+  }
+  return {
+    get volume(){return volume},
+    set volume(value){setVolume(value)},
+    play(){
+      active=true;
+      return context.resume().then(()=>{
+        if(!active)return;
+        master.gain.cancelScheduledValues(context.currentTime);
+        master.gain.setTargetAtTime(volume,context.currentTime,.22);
+        if(!timer){nextStepAt=context.currentTime+.06;timer=setInterval(schedule,160)}
+        schedule();
+      });
+    },
+    pause(){
+      active=false;
+      if(timer){clearInterval(timer);timer=0}
+      if(context.state==='running'){
+        master.gain.cancelScheduledValues(context.currentTime);
+        master.gain.setTargetAtTime(.0001,context.currentTime,.08);
+        setTimeout(()=>{if(!active&&context.state==='running')context.suspend().catch(()=>{})},220);
+      }
+    }
+  };
+}
 function ensureTheme(){
   if(theme)return theme;
-  theme=new Audio(BASE+(tracks.find(t=>t.id===selectedTrack)||tracks[0]).file);
-  theme.loop=true;theme.preload='auto';theme.playsInline=true;
+  const track=tracks.find(t=>t.id===selectedTrack)||tracks[0];
+  theme=track.id==='halloween'?createHalloweenTheme():new Audio(BASE+track.file);
+  if('loop'in theme)theme.loop=true;
+  if('preload'in theme)theme.preload='auto';
+  if('playsInline'in theme)theme.playsInline=true;
   theme.volume=clamp(settings.music*duck);
   return theme;
 }
 function playTheme(){
-  if(!unlocked||!settings.musicOn||D.hidden)return;
+  if(!settings.musicOn||D.hidden)return;
   const a=ensureTheme();a.volume=clamp(settings.music*duck);
-  const p=a.play();if(p?.catch)p.catch(()=>{});
+  try{const p=a.play();if(p?.catch)p.catch(()=>{})}catch(_){}
 }
 function selectTrack(id){if(!tracks.some(t=>t.id===id))return;pauseTheme();selectedTrack=id;theme=null;localStorage.setItem('psy_audio_track',id);settings.musicOn=true;saveSettings();unlock();playTheme()}
 function setVolume(kind,value){if(!['music','sfx'].includes(kind))return;settings[kind]=clamp(value);settings[kind+'On']=settings[kind]>0;saveSettings();if(kind==='music'){if(theme)theme.volume=clamp(settings.music*duck);if(settings.musicOn)playTheme();else pauseTheme()}else for(const arr of Object.values(pools))for(const a of arr)a.volume=settings.sfx}
@@ -191,12 +265,34 @@ function installUI(){
   const menu=D.getElementById('menu');
   if(menu&&!D.getElementById('psy-audio-open')){
     const b=D.createElement('button');
-    b.id='psy-audio-open';b.textContent='🔊 ÁUDIO';
+    b.id='psy-audio-open';b.textContent='♫ ÁUDIO';
     b.style.cssText='background:linear-gradient(90deg,#0f766e,#4338ca);width:90%;margin:5px;padding:10px;border:1px solid #67e8f9;color:#fff;border-radius:8px;font-weight:900;';
     b.onclick=openPanel;
     const close=[...menu.querySelectorAll('button')].find(x=>/fechar/i.test(x.textContent||''));
     menu.insertBefore(b,close||null);
   }
+  if(!D.getElementById('psy-audio-quick-toggle')){
+    const b=D.createElement('button');b.id='psy-audio-quick-toggle';b.type='button';
+    b.style.cssText='position:fixed;z-index:1900000;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);min-width:52px;height:46px;padding:0 12px;border:1px solid #67e8f9;border-radius:14px;background:#081827eF;color:#b9fbff;font:900 13px system-ui;box-shadow:0 6px 18px #0008;cursor:pointer;touch-action:manipulation;';
+    b.setAttribute('aria-label','Desativar música de Halloween');
+    b.onclick=()=>{settings.musicOn=!settings.musicOn;saveSettings();settings.musicOn?playTheme():pauseTheme();updateQuickToggle();if(settings.musicOn)sfx('ui_click',{cooldown:0})};
+    b.oncontextmenu=e=>{e.preventDefault();openPanel()};
+    D.body.appendChild(b);updateQuickToggle();
+  }
+  const p=D.getElementById('psy-audio-panel');
+  if(p&&!p.querySelector('#psy-audio-track')){
+    const label=D.createElement('label');label.style.cssText='display:flex;flex-direction:column;gap:7px;margin:4px 0 16px;color:#d8faff;font-weight:700';label.innerHTML='<span>Trilha sonora</span><select id="psy-audio-track" style="padding:10px;border:1px solid #476379;border-radius:9px;background:#071322;color:#fff;font:inherit"></select>';
+    p.querySelector('h2')?.after(label);
+    const select=label.querySelector('#psy-audio-track');select.innerHTML=tracks.map(t=>'<option value="'+t.id+'">'+t.label+'</option>').join('');
+    select.value=selectedTrack;select.onchange=()=>selectTrack(select.value);
+  }
+}
+function updateQuickToggle(){
+  const b=D.getElementById('psy-audio-quick-toggle');if(!b)return;
+  b.textContent=settings.musicOn?'♫ ON':'♫ OFF';
+  b.dataset.audioOn=settings.musicOn?'1':'0';
+  b.style.opacity=settings.musicOn?'1':'.72';
+  b.setAttribute('aria-label',settings.musicOn?'Desativar música de Halloween':'Ativar música de Halloween');
 }
 function openPanel(){
   let p=D.getElementById('psy-audio-panel');
@@ -204,8 +300,8 @@ function openPanel(){
     p=D.createElement('div');p.id='psy-audio-panel';
     p.style.cssText='position:fixed;inset:0;z-index:2005000;background:#020617dd;display:flex;align-items:center;justify-content:center;padding:14px;color:#fff;font-family:system-ui';
     p.innerHTML=`<div style="width:min(440px,94vw);background:linear-gradient(160deg,#0b1b32,#050d19);border:2px solid #67e8f9;border-radius:18px;padding:18px;box-shadow:0 20px 70px #000c">
-      <h2 style="margin:0 0 12px;color:#67e8f9">🔊 ÁUDIO PSYWORLD</h2>
-      <label style="display:flex;justify-content:space-between;gap:12px;margin:12px 0"><b>🎵 Música</b><input id="psy-music-on" type="checkbox"></label>
+      <h2 style="margin:0 0 12px;color:#67e8f9">♫ ÁUDIO PSYWORLD</h2>
+      <label style="display:flex;justify-content:space-between;gap:12px;margin:12px 0"><b>Música</b><input id="psy-music-on" type="checkbox"></label>
       <input id="psy-music-vol" type="range" min="0" max="100" style="width:100%">
       <label style="display:flex;justify-content:space-between;gap:12px;margin:16px 0 8px"><b>⚡ Efeitos sonoros</b><input id="psy-sfx-on" type="checkbox"></label>
       <input id="psy-sfx-vol" type="range" min="0" max="100" style="width:100%">
@@ -219,6 +315,7 @@ function openPanel(){
     sv.oninput=()=>{settings.sfx=Number(sv.value)/100;saveSettings();sfx('ui_click',{cooldown:0})};
     p.querySelector('#psy-audio-close').onclick=()=>p.style.display='none';
   }
+  p.querySelector('#psy-audio-track') && (p.querySelector('#psy-audio-track').value=selectedTrack);
   p.querySelector('#psy-music-on').checked=settings.musicOn;
   p.querySelector('#psy-sfx-on').checked=settings.sfxOn;
   p.querySelector('#psy-music-vol').value=Math.round(settings.music*100);
@@ -227,6 +324,8 @@ function openPanel(){
 }
 setInterval(()=>{if(!D.hidden)installUI()},2500);
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',installUI,{once:true});else installUI();
+D.addEventListener('DOMContentLoaded',()=>{try{playTheme()}catch(_){}},{once:true});
+setTimeout(()=>{try{playTheme()}catch(_){}},180);
 
 W.psyAudio={
   sfx,sfxForMove,typeKey,playTheme,pauseTheme,setDuck,unlock,
