@@ -43,6 +43,8 @@ function choose(button){
  if(/egg|ovo/.test(t))return'egg';
  if(/vip|premium/.test(t))return'star';
  if(/dungeon|masmorra/.test(t))return'castle';
+ if(/trade zone|teleporte/.test(t))return'city';
+ if(/meus pok[eé]mon/.test(t))return'team';
  if(/hunt|caça/.test(t))return'target';
  if(/pokedex|pokédex|dex/.test(t))return'book';
  if(/gym|ginásio/.test(t))return'medal';
