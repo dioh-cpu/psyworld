@@ -22,7 +22,6 @@
   ];
   let origin = null;
   let dialog = null;
-  let lastDraw = 0;
 
   function cityVisible() {
     const wrap = D.getElementById('game-wrap');
@@ -136,7 +135,7 @@
   function drawCity() {
     if (!cityVisible() || !(typeof P!=='undefined'&&P.team?.length) || (typeof inBattle!=='undefined'&&inBattle)) return;
     captureOrigin(); if (!origin) return;
-    const now=performance.now(); if(now-lastDraw<20)return; lastDraw=now;
+    // Legacy draw clears the canvas on every animation frame; repaint this overlay each time too.
     const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height, center=screenPoint(0,0);
     c.save();
     // Cool moonlight across the map with warm amber pockets around the town.
