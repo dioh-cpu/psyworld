@@ -65,7 +65,7 @@ function decorate(button){
  while((node=walker.nextNode())){
   const value=node.nodeValue||'';
   if(value.trim()){
-   node.nodeValue=value.replace(/^(\s*)(?:[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D]+\s*)+/u,'$1');
+   node.nodeValue=value.replace(/^(\s*)(?:[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D\u25B6\u2B06]+\s*)+/u,'$1');
    break;
   }
  }
