@@ -929,27 +929,66 @@ function loadOnLogin(){
 /* ══════════════
    PASSO 4: AUTO SAVE
 ══════════════ */
+// Active save writer/loader: preserve V2, backup and legacy keys.
+function psyValidSaveSnapshot(raw) {
+    try {
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const player = data?.player || data;
+        return !!player && typeof player === 'object' &&
+            (Array.isArray(player.team) || Array.isArray(player.box));
+    } catch(e) { return false; }
+}
+
 // SALVAR AUTOMATICO SILENCIOSO
 function autoSave() {
-    const saveData = {
-        player: P,
-        map: { x: P.x, y: P.y, px: P.px, py: P.py }
-    };
-    localStorage.setItem('psyWorldSave', JSON.stringify(saveData));
+    try {
+        const saveData = { v:2, player:P, map:{x:P.x,y:P.y,px:P.px,py:P.py}, time:Date.now() };
+        const str = safeStringify(saveData);
+        if(!str || !psyValidSaveSnapshot(str)) return false;
+        // Keep the last valid state as backup. Never replace any save with invalid JSON.
+        let previous = null;
+        for(const key of [SAVE_KEY, 'psyWorldSave', SAVE_BACKUP_KEY]) {
+            const candidate = localStorage.getItem(key);
+            if(candidate && psyValidSaveSnapshot(candidate)) { previous = candidate; break; }
+        }
+        localStorage.setItem(SAVE_BACKUP_KEY, previous || str);
+        localStorage.setItem(SAVE_KEY, str);
+        localStorage.setItem('psyWorldSave', str); // legacy compatibility
+        return true;
+    } catch(e) { console.warn('[PSYWORLD] save skipped', e); return false; }
 }
 
 // CARREGAR AUTOMATICO AO ENTRAR
 function autoLoad() {
-    const saveData = localStorage.getItem('psyWorldSave');
-    if(!saveData) return false; // não tem save
-
-    const data = JSON.parse(saveData);
-    Object.assign(P, data.player);
-    P.x = data.map.x; P.y = data.map.y;
-    P.px = data.map.px; P.py = data.map.py;
-
-    if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
-    return true; // carregou com sucesso
+    try {
+        let data = null, sourceKey = null;
+        for(const key of [SAVE_KEY, SAVE_BACKUP_KEY, 'psyWorldSave']) {
+            const raw = localStorage.getItem(key);
+            if(!raw || !psyValidSaveSnapshot(raw)) continue;
+            const parsed = JSON.parse(raw), player = parsed.player || parsed;
+            if(!Array.isArray(player.team) || (!player.team.length && !(player.box?.length))) continue;
+            data = parsed; sourceKey = key; break;
+        }
+        if(!data) return false;
+        const player = data.player || data;
+        Object.assign(P, player);
+        P.team = Array.isArray(player.team) ? player.team : [];
+        P.box = Array.isArray(player.box) ? player.box : [];
+        const map = data.map || {};
+        P.x = map.x ?? P.x ?? 25; P.y = map.y ?? P.y ?? 25;
+        P.px = map.px ?? P.x*32; P.py = map.py ?? P.y*32;
+        P.team.forEach(migratePoke);
+        P.box.forEach(migratePoke);
+        if(P.team[0]) {
+            P.pokemon = P.team[0];
+            P.hp = P.team[0].hp; P.maxHp = P.team[0].maxHp;
+            P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+        }
+        if(typeof upgradeLegacyStarterQuality === 'function') upgradeLegacyStarterQuality();
+        // Heal/re-save metadata upgrades only when loading from a fallback key.
+        if(sourceKey !== SAVE_KEY) autoSave();
+        return true;
+    } catch(e) { console.warn('[PSYWORLD] load failed', e); return false; }
 }
 
 // CARREGAR SAVE DE UM ARQUIVO
