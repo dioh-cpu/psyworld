@@ -82,10 +82,10 @@ function polishTutorialAndStarter(){
   while((n=walker.nextNode())){
    const text=n.nodeValue||'';
    if(!text.trim())continue;
-   if(/^[\\s\\p{Extended_Pictographic}\\p{Emoji_Presentation}\\p{Regional_Indicator}\\uFE0F\\u200D]+$/u.test(text)){
+   if(/^[\s\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]+$/u.test(text)){
     if(n.parentElement&&n.parentElement.childNodes.length===1)n.parentElement.remove();
     else n.nodeValue='';
-   }else n.nodeValue=text.replace(/^([\\s]*)(?:[\\p{Extended_Pictographic}\\p{Emoji_Presentation}\\p{Regional_Indicator}\\uFE0F\\u200D]+\\s*)+/u,'$1');
+   }else n.nodeValue=text.replace(/^([\s]*)(?:[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]+\s*)+/u,'$1');
   }
   if(!tutorial.querySelector('.psy-halloween-tutorial-mark')){
    const mark=D.createElement('div');mark.className='psy-halloween-tutorial-mark';mark.setAttribute('aria-hidden','true');
@@ -94,7 +94,7 @@ function polishTutorialAndStarter(){
   }
  }
  D.querySelectorAll('#starter-list .gen-label').forEach(label=>{
-  label.textContent=(label.textContent||'').replace(/^[\\s\\p{Extended_Pictographic}\\p{Emoji_Presentation}\\p{Regional_Indicator}\\uFE0F\\u200D]+\\s*/u,'');
+  label.textContent=(label.textContent||'').replace(/^[\s\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]+\s*/u,'');
  });
 }
 function scan(root){
