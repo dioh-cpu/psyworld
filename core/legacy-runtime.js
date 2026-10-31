@@ -1111,29 +1111,43 @@ function rollStarterRarity() {
 
 function upgradeLegacyStarterQuality() {
     P.meta = P.meta || {};
-    if(P.meta.psyStarterQualityFloorV1) return false;
+    const qualityDone = !!P.meta.psyStarterQualityFloorV1;
+    const hpDone = !!P.meta.psyStarterHpRestoreV1;
+    if(qualityDone && hpDone) return false;
     const starterIds = new Set(GENS.flatMap(gen => gen.starters.map(s => Number(s.id))));
     const mon = (P.team || []).find(p => p && p.isStarter)
         || (P.team || []).find(p => p && starterIds.has(Number(p.id)) && Number(p.level || 1) <= 5);
     if(!mon) return false;
+
+    let qualityChanged = false;
     const current = typeof mon.rarity === 'object' ? mon.rarity?.n : mon.rarity;
     const qualityIndex = RARITIES.findIndex(r => r.n === current);
-    if(qualityIndex >= 2) {
-        P.meta.psyStarterQualityFloorV1 = true;
-        return false;
+    if(!qualityDone && qualityIndex < 2) {
+        const oldMaxHp = Number(mon.maxHp || 0);
+        mon.rarity = rollStarterRarity();
+        if(typeof ensurePokeBase === 'function') ensurePokeBase(mon);
+        if(typeof recalcPoke === 'function') recalcPoke(mon);
+        mon.hp = Math.max(1, Number(mon.maxHp || oldMaxHp || 1));
+        qualityChanged = true;
     }
-    const oldMaxHp = Number(mon.maxHp || 0);
-    mon.rarity = rollStarterRarity();
-    if(typeof ensurePokeBase === 'function') ensurePokeBase(mon);
-    if(typeof recalcPoke === 'function') recalcPoke(mon);
-    mon.hp = Math.max(1, Number(mon.maxHp || oldMaxHp || 1));
+
+    const maxHp = Math.max(1, Number(mon.maxHp || mon.baseMaxHp || P.maxHp || 1));
+    let hpChanged = false;
+    if(!hpDone) {
+        if(!Number.isFinite(Number(mon.hp)) || Number(mon.hp) <= 0) {
+            mon.hp = maxHp;
+            hpChanged = true;
+        }
+        P.meta.psyStarterHpRestoreV1 = true;
+    }
     P.pokemon = mon;
-    P.maxHp = mon.maxHp;
-    P.hp = mon.hp;
+    P.maxHp = maxHp;
+    P.hp = Math.max(1, Math.min(maxHp, Number(mon.hp || maxHp)));
     P.meta.psyStarterQualityFloorV1 = true;
     autoSave();
-    notif(`✨ Seu inicial foi fortalecido: qualidade ${mon.rarity.n} e HP restaurado!`, 4000);
-    return true;
+    if(qualityChanged) notif(`Seu inicial foi fortalecido: qualidade ${mon.rarity?.n || mon.rarity} e HP restaurado!`, 4000);
+    else if(hpChanged) notif('HP do inicial restaurado.', 2500);
+    return qualityChanged || hpChanged;
 }
 
 function confirmStarter() {
@@ -1172,6 +1186,9 @@ function confirmStarter() {
         novoPoke.maxHp = Math.floor(50 + novoPoke.level * 5 + (rarity.bonus||0));
         novoPoke.hp = novoPoke.maxHp;
     }
+
+    novoPoke.maxHp = Math.max(1, Number(novoPoke.maxHp || novoPoke.baseMaxHp || 1));
+    novoPoke.hp = novoPoke.maxHp;
 
     document.getElementById('screen-starter').style.display = 'none';
 
