@@ -85,7 +85,10 @@ function polishTutorialAndStarter(){
    if(/^[\s\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]+$/u.test(text)){
     if(n.parentElement&&n.parentElement.childNodes.length===1)n.parentElement.remove();
     else n.nodeValue='';
-   }else n.nodeValue=text.replace(/^([\s]*)(?:[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]+\s*)+/u,'$1');
+   }else{
+    const clean=text.replace(/^([\s]*)(?:[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]+\s*)+/u,'$1');
+    if(clean!==text)n.nodeValue=clean;
+   }
   }
   if(!tutorial.querySelector('.psy-halloween-tutorial-mark')){
    const mark=D.createElement('div');mark.className='psy-halloween-tutorial-mark';mark.setAttribute('aria-hidden','true');
@@ -94,7 +97,9 @@ function polishTutorialAndStarter(){
   }
  }
  D.querySelectorAll('#starter-list .gen-label').forEach(label=>{
-  label.textContent=(label.textContent||'').replace(/^[\s\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]+\s*/u,'');
+  const original=label.textContent||'';
+  const clean=original.replace(/^[\s\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]+\s*/u,'');
+  if(clean!==original)label.textContent=clean;
  });
 }
 function scan(root){
