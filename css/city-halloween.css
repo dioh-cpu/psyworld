@@ -95,3 +95,6 @@ body:has(#battle-screen.active) .psy-halloween-npc{display:none!important}
 .psy-halloween-portrait[data-emotion="mysterious"] .brow.left{transform:rotate(12deg)}
 .psy-halloween-portrait[data-emotion="mysterious"] .brow.right{transform:rotate(-12deg)}
 @media(prefers-reduced-motion:reduce){.psy-halloween-sprite img{animation:none!important}}
+
+.psy-route-preview{display:none;width:100%;height:92px;object-fit:cover;object-position:center 56%;border:1px solid #a66a45;border-radius:10px;margin:8px 0;image-rendering:auto}.psy-halloween-dialog[data-npc="oak"] .psy-route-preview{display:block}
+@media(max-width:600px){.psy-route-preview{height:76px}}
