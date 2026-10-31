@@ -330,3 +330,290 @@ html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-moves{left:8px!import
  html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud{max-height:24dvh!important}
  html[data-psy-layout="mobile"] #battle-screen #battle-controls{max-height:48%!important}
 }
+
+
+
+/* PSY IDLE hunt selector: readable routes and selection in portrait and landscape. */
+#psy-idle-realistic #psy-ir-map-overlay{
+  position:fixed!important;inset:0!important;box-sizing:border-box!important;
+  z-index:2147482200!important;padding:12px!important;overflow:hidden!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-panel{
+  box-sizing:border-box!important;width:min(1480px,100%)!important;
+  height:min(94dvh,1120px)!important;max-height:calc(100dvh - 24px)!important;
+  min-width:0!important;min-height:0!important;display:flex!important;
+  flex-direction:column!important;overflow:hidden!important;border-radius:20px!important;
+  border:1px solid #8a56dc!important;
+  background:linear-gradient(155deg,#101627 0%,#171b31 42%,#11172a 100%)!important;
+  box-shadow:0 28px 90px #000c,0 0 34px #b54aeb24!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head{
+  flex:0 0 auto!important;min-height:54px!important;padding:9px 14px!important;
+  border-bottom:1px solid #7135a0!important;background:linear-gradient(90deg,#1a1e37,#222040 68%,#341a39)!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head .psy-ir-menu-title{
+  font-size:clamp(18px,2.2vw,27px)!important;letter-spacing:.08em!important;color:#ffe0a4!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions{display:flex!important;gap:7px!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions button{
+  min-width:42px!important;min-height:42px!important;border:1px solid #8354b2!important;
+  border-radius:12px!important;background:#171b30!important;color:#fff2ce!important;
+  font-size:20px!important;font-weight:900!important;touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tabs{
+  flex:0 0 auto!important;display:flex!important;flex-wrap:nowrap!important;gap:8px!important;
+  max-height:none!important;min-height:62px!important;padding:8px 12px!important;
+  overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain!important;
+  scrollbar-width:thin!important;background:#111729!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab{
+  flex:0 0 clamp(142px,15vw,205px)!important;min-height:46px!important;
+  padding:7px 9px 7px 48px!important;border:1px solid #564176!important;border-radius:12px!important;
+  background:linear-gradient(145deg,#25233b,#171c31)!important;color:#fff5dc!important;
+  box-shadow:inset 0 1px #fff2!important;touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab::before{
+  content:""!important;left:9px!important;top:8px!important;width:30px!important;height:30px!important;
+  border:1px solid #f4a744!important;border-radius:10px!important;
+  background:#241a31 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 4 28 17 42 10 32 23 45 28 30 30 35 44 24 34 13 44 18 30 3 28 16 23 6 10 20 17z' fill='%23f3a746' stroke='%23ffe0a4' stroke-width='2'/%3E%3Ccircle cx='24' cy='24' r='5' fill='%231b1830'/%3E%3C/svg%3E") center/21px no-repeat!important;
+  box-shadow:0 0 14px #ff9f4a30!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab small{
+  display:block!important;margin-top:3px!important;color:#c1b0d6!important;font-size:10px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab.active{
+  border-color:#ffc75e!important;background:linear-gradient(135deg,#492d32,#2c2140)!important;
+  box-shadow:0 0 0 1px #ffc75e77,0 0 20px #eb8f4340!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-filters{
+  flex:0 0 auto!important;padding:9px 12px!important;
+  background:#0e1728!important;border-bottom:1px solid #3b2c4e!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query{gap:7px!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input{
+  box-sizing:border-box!important;height:42px!important;min-width:0!important;
+  border:1px solid #4c4760!important;border-radius:10px!important;background:#0a1020!important;
+  color:#fff6e5!important;font-size:14px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input[type=search]{
+  padding-left:12px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input::placeholder{color:#928ba1!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query label{color:#ead5b3!important;font-size:12px!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filters{
+  display:flex!important;flex-wrap:wrap!important;gap:6px!important;margin-top:8px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter{
+  min-width:76px!important;min-height:34px!important;padding:6px 9px!important;
+  border:1px solid #3a4057!important;border-radius:8px!important;
+  background:#151c2d!important;color:transparent!important;font-size:0!important;
+  touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter::before{
+  content:""!important;display:inline-block!important;width:8px!important;height:8px!important;
+  margin-right:6px!important;border-radius:50%!important;background:#a86ce0!important;
+  box-shadow:0 0 8px #e29fff88!important;vertical-align:1px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter::after{
+  color:#e9e5f0!important;font-size:10px!important;font-weight:900!important;letter-spacing:.03em!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Steel"]::after{content:"AÇO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Water"]::after{content:"ÁGUA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Dragon"]::after{content:"DRAGÃO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Electric"]::after{content:"ELÉTRICO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Psychic"]::after{content:"PSÍQUICO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Ghost"]::after{content:"FANTASMA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Fire"]::after{content:"FOGO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Grass"]::after{content:"PLANTA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Bug"]::after{content:"INSETO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Normal"]::after{content:"NORMAL"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Rock"]::after{content:"PEDRA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Ground"]::after{content:"TERRA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Poison"]::after{content:"VENENO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Flying"]::after{content:"VOADOR"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Fighting"]::after{content:"LUTADOR"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Ice"]::after{content:"GELO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Dark"]::after{content:"SOMBRIO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Fairy"]::after{content:"FADA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter.active{
+  border-color:#ffc65b!important;background:linear-gradient(135deg,#47302d,#292044)!important;
+  box-shadow:0 0 12px #ffb45a33!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-status{
+  flex:0 0 auto!important;min-height:34px!important;box-sizing:border-box!important;
+  padding:7px 13px!important;background:#15182b!important;color:#d7cde5!important;
+  border-bottom:1px solid #382b4b!important;font-size:11px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-status #psy-ir-map-count{color:#f7cb7b!important;font-weight:900!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-view-switch{
+  flex:0 0 auto!important;background:#111729!important;border-bottom:1px solid #352c48!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-scroll{
+  flex:1 1 auto!important;min-height:120px!important;max-height:none!important;
+  overflow:auto!important;overscroll-behavior:contain!important;
+  background:radial-gradient(ellipse at 50% 0%,#27223b,#101728 70%)!important;
+  scrollbar-color:#76518e #171a2a!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row{
+  min-height:74px!important;padding:9px 11px!important;border-color:#3c3c54!important;
+  border-radius:13px!important;background:linear-gradient(125deg,#1b2033,#11182a)!important;
+  color:#f7f2e8!important;touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row.selected{
+  border-color:#ffd071!important;background:linear-gradient(120deg,#3b2934,#211e37)!important;
+  box-shadow:0 0 0 1px #ffd07177,0 0 18px #e7984a30!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row.current{border-left:4px solid #79e3ad!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{
+  position:relative!important;display:grid!important;place-items:center!important;
+  width:38px!important;height:38px!important;border:1px solid #9565bb!important;
+  border-radius:12px!important;background:linear-gradient(145deg,#372741,#1c2032)!important;
+  color:transparent!important;font-size:0!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon::after{
+  content:""!important;width:24px!important;height:24px!important;display:block!important;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 4 28 17 42 10 32 23 45 28 30 30 35 44 24 34 13 44 18 30 3 28 16 23 6 10 20 17z' fill='%23f3a746' stroke='%23ffe0a4' stroke-width='2'/%3E%3Ccircle cx='24' cy='24' r='5' fill='%231b1830'/%3E%3C/svg%3E") center/contain no-repeat!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-info b{font-size:14px!important;color:#ffe0a5!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-info small{font-size:11px!important;color:#c2c1d0!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-state{
+  padding:7px 10px!important;border:1px solid #72538d!important;border-radius:9px!important;
+  background:#251d35!important;color:#e6c9ff!important;font-size:10px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer{
+  box-sizing:border-box!important;flex:0 1 auto!important;min-height:155px!important;
+  max-height:min(28dvh,300px)!important;overflow:auto!important;
+  border-top:1px solid #5c3e74!important;background:linear-gradient(145deg,#141a2e,#231a31)!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer-title>small{color:#d889ff!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer-title h3{color:#ffd58e!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-start{
+  border-color:#ffcb66!important;background:linear-gradient(110deg,#9a4c27,#792984)!important;
+  color:#fff6de!important;touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-start:not(:disabled){box-shadow:0 0 20px #e6894e40!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-empty{
+  padding:24px!important;color:#d8c3e7!important;text-align:center!important;
+  border:1px dashed #72518a!important;border-radius:14px!important;
+}
+
+@media(max-width:760px){
+  #psy-idle-realistic #psy-ir-menu-overlay{z-index:2147482100!important}
+  #psy-idle-realistic #psy-ir-map-overlay{
+    inset:0!important;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)!important;
+    align-items:stretch!important;justify-content:stretch!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-panel{
+    width:100%!important;height:100%!important;max-height:100%!important;min-height:0!important;
+    border-radius:0!important;padding:0!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head{
+    min-height:48px!important;padding:5px 8px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head .psy-ir-menu-title{
+    font-size:clamp(15px,4.2vw,20px)!important;letter-spacing:.04em!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions{gap:4px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions button{
+    min-width:38px!important;min-height:38px!important;border-radius:10px!important;font-size:18px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tabs{
+    min-height:55px!important;padding:5px 7px!important;gap:6px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab{
+    flex-basis:clamp(130px,38vw,180px)!important;min-height:43px!important;padding:5px 7px 5px 42px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab::before{
+    left:7px!important;top:7px!important;width:27px!important;height:27px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab small{font-size:9px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-filters{padding:6px 8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query{
+    grid-template-columns:minmax(0,1fr) auto 52px auto 52px!important;gap:4px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input{height:36px!important;padding:0 6px!important;font-size:13px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input[type=search]{
+    grid-column:1/-1!important;height:40px!important;padding-left:10px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query label{font-size:10px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filters{
+    flex-wrap:nowrap!important;overflow-x:auto!important;overscroll-behavior-x:contain!important;
+    padding-bottom:3px!important;scrollbar-width:thin!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter{flex:0 0 auto!important;min-width:72px!important;min-height:32px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-status{
+    min-height:30px!important;padding:5px 8px!important;font-size:9px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-view-switch{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-scroll{
+    min-height:110px!important;padding:7px!important;flex:1 1 auto!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-kanto-size,
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-kanto-board{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-list{
+    display:grid!important;grid-template-columns:1fr!important;gap:6px!important;align-content:start!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-classic-grid:empty{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-classic-grid:has(.psy-ir-map-card){
+    display:grid!important;grid-template-columns:1fr!important;gap:7px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay:has(.psy-ir-map-card) .psy-ir-hunt-list{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-card{
+    min-width:0!important;padding:12px!important;border-color:#57416a!important;
+    border-radius:14px!important;background:linear-gradient(135deg,#202238,#151a2c)!important;color:#f5edf7!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-card h3{color:#ffd78f!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-card button{
+    width:100%!important;min-height:42px!important;border-radius:10px!important;
+    background:linear-gradient(110deg,#934b2c,#722882)!important;color:white!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row{
+    min-height:66px!important;padding:7px!important;grid-template-columns:38px minmax(0,1fr) auto!important;gap:7px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-info b{font-size:13px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-info small{font-size:10px!important;white-space:normal!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-state{padding:6px!important;font-size:9px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer{
+    flex:0 1 24dvh!important;min-height:130px!important;max-height:26dvh!important;
+    padding:8px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer-top{gap:8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer-title h3{font-size:16px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-start{min-width:106px!important;min-height:42px!important;font-size:12px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics>div{padding:5px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics small{font-size:7px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics b{font-size:13px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics span{font-size:8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-drops{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:420px){
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query{grid-template-columns:minmax(0,1fr) auto 43px auto 43px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row{grid-template-columns:34px minmax(0,1fr) auto!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{width:32px!important;height:32px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-state{font-size:8px!important}
+}
+@media(orientation:landscape) and (max-height:620px){
+  #psy-idle-realistic #psy-ir-map-overlay{padding:4px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-panel{height:100%!important;max-height:100%!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head{min-height:40px!important;padding:3px 8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions button{min-height:32px!important;min-width:34px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tabs{min-height:43px!important;padding:3px 6px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab{min-height:36px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab::before{top:4px!important;width:26px!important;height:26px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab small{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-filters{padding:4px 8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query{grid-template-columns:minmax(0,1fr) auto 42px auto 42px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input{height:31px!important;font-size:11px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input[type=search]{grid-column:auto!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filters{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-status{min-height:25px!important;padding:3px 8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-scroll{min-height:80px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer{flex-basis:22dvh!important;min-height:82px!important;max-height:24dvh!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-drops,
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-drop-head{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #psy-idle-realistic #psy-ir-map-overlay *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
