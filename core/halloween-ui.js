@@ -49,6 +49,11 @@ function choose(button){
  if(/curar|heal|poção/.test(t))return'potion';
  if(/loja|shop|market|leilão/.test(t))return'shop';
  if(/áudio|música/.test(t))return'music';
+ if(/idioma|language/.test(t))return'book';
+ if(/carregar save|load save/.test(t))return'scroll';
+ if(/arquivo|file/.test(t))return'book';
+ if(/conta online|cloud save|online account/.test(t))return'city';
+ if(/começar|iniciar|start/.test(t))return'star';
  return null;
 }
 function decorate(button){
