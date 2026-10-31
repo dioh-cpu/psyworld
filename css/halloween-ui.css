@@ -176,3 +176,31 @@ body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:n
 
 /* Respect the game's inline hidden state after leaving login. */
 #screen-login[style*="display: none"]{display:none!important}
+
+/* Illustrated moonlit settlement for the Idle onboarding. */
+#psy-ir-town{
+  background:radial-gradient(ellipse at 77% 16%,#59405b77,transparent 38%),linear-gradient(180deg,#080d1c,#101126 55%,#1c172c)!important;
+}
+#psy-ir-town .psy-ir-town-card{
+  border:1px solid #b77c56!important;border-radius:22px!important;
+  background:radial-gradient(ellipse at 100% 0,#63335255,transparent 42%),linear-gradient(155deg,#171a32,#0d1222 60%,#211629)!important;
+  box-shadow:0 24px 70px #000c,0 0 28px #f58b3b1c!important;
+}
+#psy-ir-town .psy-ir-town-card h1{color:#ffe1a0!important;text-shadow:0 0 20px #ffad4244!important}
+#psy-ir-town .psy-ir-town-card p,#psy-ir-town .psy-ir-town-card small{color:#d7cadb!important}
+#psy-ir-town .psy-idle-city-art{
+  position:relative!important;min-height:180px!important;border:1px solid #76523e!important;border-radius:15px!important;
+  background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201200%20300%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22s%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%230b1027%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2330203f%22%2F%3E%3C%2FlinearGradient%3E%3ClinearGradient%20id%3D%22w%22%20y2%3D%221%22%3E%3Cstop%20stop-color%3D%22%2342304e%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23171324%22%2F%3E%3C%2FlinearGradient%3E%3CradialGradient%20id%3D%22m%22%3E%3Cstop%20stop-color%3D%22%23fff0bd%22%20stop-opacity%3D%22.75%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23fff0bd%22%20stop-opacity%3D%220%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%221200%22%20height%3D%22300%22%20fill%3D%22url(%23s)%22%2F%3E%3Ccircle%20cx%3D%22995%22%20cy%3D%2265%22%20r%3D%2285%22%20fill%3D%22url(%23m)%22%2F%3E%3Ccircle%20cx%3D%22995%22%20cy%3D%2265%22%20r%3D%2235%22%20fill%3D%22%23f4dfb0%22%2F%3E%3Cg%20fill%3D%22%23fff2cf%22%3E%3Ccircle%20cx%3D%2285%22%20cy%3D%2244%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%22235%22%20cy%3D%2278%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%22410%22%20cy%3D%2242%22%20r%3D%221.5%22%2F%3E%3Ccircle%20cx%3D%22713%22%20cy%3D%2262%22%20r%3D%222%22%2F%3E%3Ccircle%20cx%3D%22820%22%20cy%3D%2235%22%20r%3D%221.5%22%2F%3E%3Ccircle%20cx%3D%221110%22%20cy%3D%22120%22%20r%3D%222%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M0%20245%20Q250%20205%20450%20244T850%20235T1200%20248V300H0Z%22%20fill%3D%22%2311111e%22%2F%3E%3Cpath%20d%3D%22M0%20262H1200%22%20stroke%3D%22%23c98b48%22%20stroke-width%3D%224%22%20opacity%3D%22.65%22%2F%3E%3Cg%20stroke%3D%22%23d89061%22%20stroke-width%3D%227%22%20stroke-linejoin%3D%22round%22%3E%3Cg%20fill%3D%22url(%23w)%22%3E%3Cpath%20d%3D%22M82%20246V130L196%2063l112%2067v116Z%22%2F%3E%3Cpath%20d%3D%22M396%20246V150l100-66%20100%2066v96Z%22%2F%3E%3Cpath%20d%3D%22M724%20246V119l132-79%20132%2079v127Z%22%2F%3E%3Cpath%20d%3D%22M1040%20246V159l79-53%2079%2053v87Z%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M75%20132%20196%2054l121%2078M388%20151l108-74%20108%2074M714%20120%20856%2034l142%2086M1033%20160l86-59%2086%2059%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22%23ffc667%22%3E%3Cpath%20d%3D%22M140%20148h35v43h-35zm76%200h35v43h-35zM453%20164h29v38h-29zm57%200h29v38h-29zM785%20145h39v52h-39zm84%200h39v52h-39zM1074%20172h26v35h-26z%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22%230b0a13%22%3E%3Cpath%20d%3D%22M174%20246v-64h45v64M482%20246v-53h31v53M834%20246v-72h46v72M1092%20246v-54h26v54%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22%23402b22%22%20stroke%3D%22%23ff9b43%22%20stroke-width%3D%223%22%3E%3Ccircle%20cx%3D%22365%22%20cy%3D%22244%22%20r%3D%2225%22%2F%3E%3Ccircle%20cx%3D%22674%22%20cy%3D%22247%22%20r%3D%2222%22%2F%3E%3Ccircle%20cx%3D%221012%22%20cy%3D%22248%22%20r%3D%2228%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22%23ffad42%22%3E%3Cpath%20d%3D%22M358%20236q7-10%2014%200v15q-7%2011-14%200z%22%2F%3E%3Cpath%20d%3D%22M667%20241q7-9%2014%200v13q-7%209-14%200z%22%2F%3E%3Cpath%20d%3D%22M1004%20239q8-12%2016%200v18q-8%2011-16%200z%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M180%20112q22-25%2044%200-21-9-44%200m495-34q20-22%2040%200-20-7-40%200m208%2066q22-23%2044%200-22-8-44%200%22%20fill%3D%22%23090a15%22%20stroke%3D%22%238d6cac%22%20stroke-width%3D%223%22%2F%3E%3C%2Fsvg%3E") center/cover no-repeat!important;box-shadow:inset 0 -22px 35px #0a0814aa,0 8px 24px #0006!important;overflow:hidden!important;
+}
+#psy-ir-town .psy-idle-city-art span{display:none!important}
+#psy-ir-town .psy-ir-town-services button{
+  min-height:54px!important;border-color:#785a71!important;background:linear-gradient(130deg,#24213b,#17182d)!important;
+  box-shadow:0 7px 18px #0005!important;
+}
+#psy-ir-town .psy-ir-town-services button.primary{border-color:#f7bb62!important;background:linear-gradient(110deg,#8b482a,#572b47)!important}
+@media(max-width:600px){
+ #psy-ir-town .psy-idle-city-art{min-height:126px!important;background-position:center!important}
+ #psy-ir-town .psy-ir-town-card{padding:14px!important}
+ #psy-ir-town .psy-ir-town-services{gap:7px!important}
+ #psy-ir-town .psy-ir-town-services button{min-height:48px!important}
+}
