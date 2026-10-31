@@ -1073,11 +1073,16 @@ function uploadSaveLogin(event) {
             P.x = data.map.x; P.y = data.map.y;
             P.px = data.map.px; P.py = data.map.py;
 
-            if(P.team[0]) { // seta o poke
+            // Apply the same one-time migrations used by local saves before syncing battle/HUD state.
+            (P.team || []).forEach(migratePoke);
+            (P.box || []).forEach(migratePoke);
+            upgradeLegacyStarterQuality();
+
+            if(P.team[0]) {
                 P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
                 P.pokemon = P.team[0];
-                P.hp = P.pokemon.hp;
-                P.maxHp = P.pokemon.maxHp;
+                P.hp = P.team[0].hp;
+                P.maxHp = P.team[0].maxHp;
             }
 
             document.getElementById('screen-login').style.display = 'none';
