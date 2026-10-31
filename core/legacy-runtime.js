@@ -1132,6 +1132,7 @@ function upgradeLegacyStarterQuality() {
     }
 
     const maxHp = Math.max(1, Number(mon.maxHp || mon.baseMaxHp || P.maxHp || 1));
+    mon.maxHp = maxHp;
     let hpChanged = false;
     if(!hpDone) {
         if(!Number.isFinite(Number(mon.hp)) || Number(mon.hp) <= 0) {
@@ -1143,6 +1144,7 @@ function upgradeLegacyStarterQuality() {
     P.pokemon = mon;
     P.maxHp = maxHp;
     P.hp = Math.max(1, Math.min(maxHp, Number(mon.hp || maxHp)));
+    mon.hp = P.hp;
     P.meta.psyStarterQualityFloorV1 = true;
     autoSave();
     if(qualityChanged) notif(`Seu inicial foi fortalecido: qualidade ${mon.rarity?.n || mon.rarity} e HP restaurado!`, 4000);
