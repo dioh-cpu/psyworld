@@ -539,7 +539,7 @@ const SPECIAL_EVOLUTIONS = {
 const P = {
     name:"", level:1, hp:50, maxHp:50,
     exp:0, maxExp:100, gold:25000,
-    team: [], box: [],
+    team: [], box: [], seenPokemon:[],
     x:25, y:25, px:25*32, py:25*32,
     tx:25, ty:25, moving:false,
     inventory: { 
@@ -577,6 +577,12 @@ function toggleFastEncounter(){
         btn.title = window.fastEncounter ? 'Fast Encounter: ligado' : 'Fast Encounter: desligado';
         btn.setAttribute('aria-label', btn.title);
         btn.textContent = '';
+    }
+    if(window.fastEncounter && !ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){
+        window.fastEncounter=false; fastEncounter=false; clearInterval(fastLoop);
+        if(btn){btn.style.background='#dc2626';btn.style.boxShadow='0 0 10px #0008,0 0 10px #ef444466';btn.title='Fast Encounter: disponível somente na grama da Route 1';btn.setAttribute('aria-label',btn.title)}
+        try{notif('Fast Encounter só pode ser ativado na grama da Route 1.',2600)}catch(e){}
+        return;
     }
     if(window.fastEncounter){
         if(!inBattle){
@@ -783,6 +789,29 @@ function autoSave() {
     }catch(e){ console.warn(e); }
 }
 
+window.PsyWorldProgressV1 = {
+    snapshot(){
+        const clean = pokemon => Array.isArray(pokemon) ? pokemon.filter(mon=>mon&&Number(mon.id)>0).map(mon=>({id:Number(mon.id),name:String(mon.name||''),level:Math.max(1,Number(mon.level)||1)})) : [];
+        const team=clean(P.team),box=clean(P.box),owned=[...team,...box].map(mon=>mon.id);
+        return {
+            trainerLevel:Math.max(1,Number(P.trainerLevel)||1),
+            levelCap:Math.max(1,Number(P.levelCap)||20),
+            gymProgress:Array.isArray(P.gymProgress)?P.gymProgress.slice():[],
+            completedRegions:REGION_ORDER.filter(region=>getRegionCompleted(region)),
+            team,box,
+            seenPokemon:[...new Set([...(Array.isArray(P.seenPokemon)?P.seenPokemon:[]),...owned].map(Number).filter(id=>Number.isInteger(id)&&id>0))]
+        };
+    },
+    recordSeenSpecies(id){
+        const n=Number(id);if(!Number.isInteger(n)||n<1||n>1025)return false;
+        P.seenPokemon=Array.isArray(P.seenPokemon)?P.seenPokemon:[];
+        if(P.seenPokemon.includes(n))return false;
+        P.seenPokemon.push(n);autoSave();
+        try{if(document.getElementById('screen-pokedex')?.style.display==='flex')renderPokedex()}catch(_){}
+        return true;
+    }
+};
+
 function autoLoad() {
     try{
         let raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(SAVE_BACKUP_KEY) || localStorage.getItem('psyWorldSave');
@@ -795,6 +824,7 @@ function autoLoad() {
         P.gold = pd.gold?? P.gold;
         P.team = pd.team || [];
         P.box = pd.box || [];
+        P.seenPokemon = Array.isArray(pd.seenPokemon)?[...new Set(pd.seenPokemon.map(Number).filter(id=>Number.isInteger(id)&&id>0&&id<=1025))]:[];
         P.inventory = pd.inventory || P.inventory;
         P.levelCap = pd.levelCap?? P.levelCap;
         P.gymProgress = pd.gymProgress || [];
@@ -899,27 +929,68 @@ function loadOnLogin(){
 /* ══════════════
    PASSO 4: AUTO SAVE
 ══════════════ */
+// Active save writer/loader: preserve V2, backup and legacy keys.
+function psyValidSaveSnapshot(raw) {
+    try {
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const player = data?.player || data;
+        // Match autoLoad's minimum roster requirement: a team array must exist,
+        // and at least one Pokémon must be in the team or box.
+        return !!player && typeof player === 'object' && Array.isArray(player.team) &&
+            (player.team.length > 0 || (Array.isArray(player.box) && player.box.length > 0));
+    } catch(e) { return false; }
+}
+
 // SALVAR AUTOMATICO SILENCIOSO
 function autoSave() {
-    const saveData = {
-        player: P,
-        map: { x: P.x, y: P.y, px: P.px, py: P.py }
-    };
-    localStorage.setItem('psyWorldSave', JSON.stringify(saveData));
+    try {
+        const saveData = { v:2, player:P, map:{x:P.x,y:P.y,px:P.px,py:P.py}, time:Date.now() };
+        const str = safeStringify(saveData);
+        if(!str || !psyValidSaveSnapshot(str)) return false;
+        // Keep the last valid state as backup. Never replace any save with invalid JSON.
+        let previous = null;
+        for(const key of [SAVE_KEY, 'psyWorldSave', SAVE_BACKUP_KEY]) {
+            const candidate = localStorage.getItem(key);
+            if(candidate && psyValidSaveSnapshot(candidate)) { previous = candidate; break; }
+        }
+        localStorage.setItem(SAVE_BACKUP_KEY, previous || str);
+        localStorage.setItem(SAVE_KEY, str);
+        localStorage.setItem('psyWorldSave', str); // legacy compatibility
+        return true;
+    } catch(e) { console.warn('[PSYWORLD] save skipped', e); return false; }
 }
 
 // CARREGAR AUTOMATICO AO ENTRAR
 function autoLoad() {
-    const saveData = localStorage.getItem('psyWorldSave');
-    if(!saveData) return false; // não tem save
-
-    const data = JSON.parse(saveData);
-    Object.assign(P, data.player);
-    P.x = data.map.x; P.y = data.map.y;
-    P.px = data.map.px; P.py = data.map.py;
-
-    if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
-    return true; // carregou com sucesso
+    try {
+        let data = null, sourceKey = null;
+        for(const key of [SAVE_KEY, SAVE_BACKUP_KEY, 'psyWorldSave']) {
+            const raw = localStorage.getItem(key);
+            if(!raw || !psyValidSaveSnapshot(raw)) continue;
+            const parsed = JSON.parse(raw), player = parsed.player || parsed;
+            if(!Array.isArray(player.team) || (!player.team.length && !(player.box?.length))) continue;
+            data = parsed; sourceKey = key; break;
+        }
+        if(!data) return false;
+        const player = data.player || data;
+        Object.assign(P, player);
+        P.team = Array.isArray(player.team) ? player.team : [];
+        P.box = Array.isArray(player.box) ? player.box : [];
+        const map = data.map || {};
+        P.x = map.x ?? P.x ?? 25; P.y = map.y ?? P.y ?? 25;
+        P.px = map.px ?? P.x*32; P.py = map.py ?? P.y*32;
+        P.team.forEach(migratePoke);
+        P.box.forEach(migratePoke);
+        if(P.team[0]) {
+            P.pokemon = P.team[0];
+            P.hp = P.team[0].hp; P.maxHp = P.team[0].maxHp;
+            P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+        }
+        if(typeof upgradeLegacyStarterQuality === 'function') upgradeLegacyStarterQuality();
+        // Heal/re-save metadata upgrades only when loading from a fallback key.
+        if(sourceKey !== SAVE_KEY) autoSave();
+        return true;
+    } catch(e) { console.warn('[PSYWORLD] load failed', e); return false; }
 }
 
 // CARREGAR SAVE DE UM ARQUIVO
@@ -936,8 +1007,18 @@ function uploadSave(event) {
                 P.x = data.map.x; P.y = data.map.y;
                 P.px = data.map.px; P.py = data.map.py;
 
+                // Apply the one-time starter migrations to menu imports as well as login imports.
+                (P.team || []).forEach(migratePoke);
+                (P.box || []).forEach(migratePoke);
+                upgradeLegacyStarterQuality();
+                if(P.team[0]) {
+                    P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+                    P.pokemon = P.team[0];
+                    P.hp = P.team[0].hp;
+                    P.maxHp = P.team[0].maxHp;
+                }
+
                 updateHUD();
-                if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
                 loadMoveButtons();
                 document.getElementById('menu').style.display = 'none';
 
@@ -1020,6 +1101,7 @@ function loadOnLogin() {
     if(!saveData) { notif('❌ Nenhum save encontrado!'); return; }
 
     if(autoLoad()){
+        upgradeLegacyStarterQuality();
         document.getElementById('screen-login').style.display = 'none';
         document.getElementById('game-wrap').style.display = 'block';
         updateHUD();
@@ -1042,11 +1124,16 @@ function uploadSaveLogin(event) {
             P.x = data.map.x; P.y = data.map.y;
             P.px = data.map.px; P.py = data.map.py;
 
-            if(P.team[0]) { // seta o poke
+            // Apply the same one-time migrations used by local saves before syncing battle/HUD state.
+            (P.team || []).forEach(migratePoke);
+            (P.box || []).forEach(migratePoke);
+            upgradeLegacyStarterQuality();
+
+            if(P.team[0]) {
                 P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
                 P.pokemon = P.team[0];
-                P.hp = P.pokemon.hp;
-                P.maxHp = P.pokemon.maxHp;
+                P.hp = P.team[0].hp;
+                P.maxHp = P.team[0].maxHp;
             }
 
             document.getElementById('screen-login').style.display = 'none';
@@ -1096,11 +1183,67 @@ function selectPoke(s, el) {
     document.getElementById('chosen-label').textContent = `Selecionado: ${s.name}`;
 }
 
+function rollStarterRarity() {
+    const allowed = RARITIES.slice(2, 5).filter(r => Number(r.chance) > 0);
+    if(!allowed.length) return RARITIES[2] || rollRarity();
+    const total = allowed.reduce((sum, r) => sum + Number(r.chance || 0), 0);
+    let roll = Math.random() * total;
+    for(const rarity of allowed) {
+        roll -= Number(rarity.chance || 0);
+        if(roll <= 0) return {...rarity};
+    }
+    return {...allowed[allowed.length - 1]};
+}
+
+function upgradeLegacyStarterQuality() {
+    P.meta = P.meta || {};
+    const qualityDone = !!P.meta.psyStarterQualityFloorV1;
+    const hpDone = !!P.meta.psyStarterHpRestoreV1;
+    if(qualityDone && hpDone) return false;
+    const starterIds = new Set(GENS.flatMap(gen => gen.starters.map(s => Number(s.id))));
+    const mon = (P.team || []).find(p => p && p.isStarter)
+        || (P.team || []).find(p => p && starterIds.has(Number(p.id)) && Number(p.level || 1) <= 5);
+    if(!mon) return false;
+
+    let qualityChanged = false;
+    const current = typeof mon.rarity === 'object' ? mon.rarity?.n : mon.rarity;
+    const qualityIndex = RARITIES.findIndex(r => r.n === current);
+    if(!qualityDone && qualityIndex < 2) {
+        const oldMaxHp = Number(mon.maxHp || 0);
+        mon.rarity = rollStarterRarity();
+        if(typeof ensurePokeBase === 'function') ensurePokeBase(mon);
+        if(typeof recalcPoke === 'function') recalcPoke(mon);
+        mon.hp = Math.max(1, Number(mon.maxHp || oldMaxHp || 1));
+        qualityChanged = true;
+    }
+
+    const maxHp = Math.max(1, Number(mon.maxHp || mon.baseMaxHp || P.maxHp || 1));
+    mon.maxHp = maxHp;
+    let hpChanged = false;
+    if(!hpDone) {
+        if(!Number.isFinite(Number(mon.hp)) || Number(mon.hp) <= 0) {
+            mon.hp = maxHp;
+            hpChanged = true;
+        }
+        P.meta.psyStarterHpRestoreV1 = true;
+    }
+    P.pokemon = mon;
+    P.maxHp = maxHp;
+    P.hp = Math.max(1, Math.min(maxHp, Number(mon.hp || maxHp)));
+    mon.hp = P.hp;
+    P.meta.psyStarterQualityFloorV1 = true;
+    autoSave();
+    if(qualityChanged) notif(`Seu inicial foi fortalecido: qualidade ${mon.rarity?.n || mon.rarity} e HP restaurado!`, 4000);
+    else if(hpChanged) notif('HP do inicial restaurado.', 2500);
+    return qualityChanged || hpChanged;
+}
+
 function confirmStarter() {
     if(!chosenPoke) { notif('Escolha um Pokémon primeiro!'); return; }
 
     // 1. Se já tem save v2/v1/backup, NUNCA apaga. Só entra.
     if(autoLoad() && P.team && P.team.length > 0){
+        upgradeLegacyStarterQuality();
         document.getElementById('screen-starter').style.display = 'none';
         document.getElementById('game-wrap').style.display = 'block';
         updateHUD();
@@ -1111,9 +1254,10 @@ function confirmStarter() {
     }
 
     // 2. Só cria starter se REALMENTE não tem nada
-    const rarity = rollRarity();
+    const rarity = rollStarterRarity();
     const novoPoke = {
       ...chosenPoke,
+        isStarter: true,
         rarity: rarity,
         premier: false,
         level: 1,
@@ -1131,6 +1275,9 @@ function confirmStarter() {
         novoPoke.hp = novoPoke.maxHp;
     }
 
+    novoPoke.maxHp = Math.max(1, Number(novoPoke.maxHp || novoPoke.baseMaxHp || 1));
+    novoPoke.hp = novoPoke.maxHp;
+
     document.getElementById('screen-starter').style.display = 'none';
 
     P.team = [novoPoke];
@@ -1142,6 +1289,8 @@ function confirmStarter() {
     // ⭐ VIP DE BOAS-VINDAS — somente para uma conta realmente nova.
     // Não é aplicado em saves já existentes e não reduz um VIP maior já ativo.
     P.meta = P.meta || {};
+    P.meta.starterPokemonId = Number(novoPoke.id);
+    P.meta.psyStarterQualityFloorV1 = true;
     if(!P.meta.welcomeVip3DaysGranted){
         const welcomeVipMs = 3 * 24 * 60 * 60 * 1000;
         P.meta.vipUntil = Math.max(Number(P.meta.vipUntil || 0), Date.now()) + welcomeVipMs;
@@ -1153,7 +1302,7 @@ function confirmStarter() {
     updateHUD();
     initEngine();
     autoSave(); // já salva em v2 + backup + v1
-    notif(`${P.name} escolheu ${chosenPoke.name}! 🎉 ⭐ VIP de boas-vindas ativado por 3 dias!`, 4500);
+    notif(`${P.name} escolheu ${chosenPoke.name} (${rarity.n})! 🎉 ⭐ VIP de boas-vindas ativado por 3 dias!`, 4500);
 }
 /* ══════════════════════════════
    LOJA
@@ -1214,6 +1363,29 @@ const SOLID = new Set();
 for(let y = 0; y < MAP_H; y++)
     for(let x = 0; x < MAP_W; x++)
         if(map[y][x] === 2 || map[y][x] === 4) SOLID.add(x+','+y);
+
+/* Route 1: continuous, walkable Kanto woodland connected north of Pallet. */
+const ROUTE1={x1:19,x2:31,y1:3,y2:20,grass:new Set()};
+for(let y=ROUTE1.y1;y<=ROUTE1.y2;y++){
+  for(let x=ROUTE1.x1;x<=ROUTE1.x2;x++) map[y][x]=8;
+}
+// Dirt trail stays clear and connects directly into the town.
+for(let y=ROUTE1.y1;y<=21;y++)for(let x=24;x<=26;x++)map[y][x]=6;
+for(let y=20;y<=23;y++)for(let x=24;x<=26;x++)map[y][x]=3;
+// Walkable tall grass encounter patches.
+for(let y=8;y<=13;y++)for(let x=20;x<=22;x++){map[y][x]=5;ROUTE1.grass.add(x+','+y)}
+for(let y=14;y<=18;y++)for(let x=28;x<=30;x++){map[y][x]=5;ROUTE1.grass.add(x+','+y)}
+// Boundary tree line, boulders and fence segments; keep the path open.
+for(let y=3;y<=20;y++){map[y][19]=8;map[y][31]=8;SOLID.add('19,'+y);SOLID.add('31,'+y)}
+for(let x=20;x<=30;x++){map[3][x]=8;SOLID.add(x+',3')}
+[[23,7],[27,7],[23,15],[27,19],[29,10],[21,17]].forEach(([x,y])=>{map[y][x]=9;SOLID.add(x+','+y)});
+[[23,5],[27,5],[23,6],[27,6],[23,19],[27,18]].forEach(([x,y])=>{map[y][x]=10;SOLID.add(x+','+y)});
+for(let y=4;y<=20;y++)for(let x=20;x<=30;x++){
+  if([5,6,7,9,10].includes(map[y][x]))continue;
+  if(map[y][x]===8)SOLID.add(x+','+y);
+}
+// Rocky stream at the western edge; water cells block both keyboard and touch movement.
+for(let y=15;y<=17;y++)for(let x=20;x<=22;x++){map[y][x]=0;SOLID.add(x+','+y)}
 
 BUILDINGS.forEach(b => {
     for(let dy = 0; dy < b.h; dy++)
@@ -1516,6 +1688,7 @@ if(!list||list.length==0){
   return;
 }
 const base=list[Math.floor(Math.random()*list.length)];
+window.PsyWorldProgressV1?.recordSeenSpecies(base.id);
 let tierLetter = getTier(base.id); // <-- E,D,C,B,A,S,SS,SSS,UR
 const rarity=typeof rollRarity==='function'?rollRarity(tierLetter):{n:"Comum",bonus:0,mult:1};
 let realType=base.type||TYPE_BY_ID_ALL[base.id]||"Normal";
@@ -1886,16 +2059,27 @@ function update(dt) {
             const nx=P.x+dx, ny=P.y+dy;
             if(nx>=0 && ny>=0 && nx<MAP_W && ny<MAP_H && !SOLID.has(nx+','+ny)) {
                 P.tx=nx; P.ty=ny; P.moving=true; checkShopEntry(nx,ny);
+                if(window.fastEncounter && !ROUTE1.grass.has(nx+','+ny)){
+                    // Leaving Route 1 grass stops farming before a chained battle starts.
+                    window.fastEncounter=false; fastEncounter=false; clearInterval(fastLoop);
+                    const fastBtn=document.getElementById('fastEncounterBtn');
+                    if(fastBtn){fastBtn.style.background='#dc2626';fastBtn.style.boxShadow='0 0 10px #0008,0 0 10px #ef444466';fastBtn.title='Fast Encounter: disponível somente na grama da Route 1';fastBtn.setAttribute('aria-label',fastBtn.title)}
+                }
                 if(window.fastEncounter){
-                    let plvl = P.team[0]?.level || 1;
-                    let autoTier = plvl < 10? 1 : plvl < 20? 2 : plvl < 40? 3 : 4;
-                    let tipo = (P.currentHunt || 'kanto_planta_t1').split('_')[1] || 'planta';
-                    let autoKey = `kanto_${tipo}_t${autoTier}`;
-                    triggerWild(autoKey);
+                    const huntKey = String(P.currentHunt || '');
+                    if(huntKey.startsWith('psy19:')) window.triggerWild(huntKey);
+                    else {
+                        let plvl = P.team[0]?.level || 1;
+                        let autoTier = plvl < 10? 1 : plvl < 20? 2 : plvl < 40? 3 : 4;
+                        let tipo = (huntKey || 'kanto_planta_t1').split('_')[1] || 'planta';
+                        let autoKey = `kanto_${tipo}_t${autoTier}`;
+                        triggerWild(autoKey);
+                    }
                 } else {
                     const tile = map[ny]?.[nx];
-                    if(tile===0 && Math.random()<0.08) triggerWild(P.currentHunt || 'kanto_planta_t1');
-                    else if(tile===1 && Math.random()<0.04) triggerWild(P.currentHunt || 'kanto_planta_t1');
+                    // Natural encounters occur only in explicitly marked tall grass.
+                    // Paths, town floor, decorations and all other tiles are safe.
+                    if(tile===5 && ROUTE1.grass.has(nx+','+ny) && Math.random()<0.12) triggerWild('kanto_normal_t1');
                 }
             }
         }
@@ -1914,38 +2098,36 @@ function endBattle(won) {
     if (pDiv) { pDiv.classList.remove('poke-blink'); pDiv.style.transform = ''; }
     if (eDiv) { eDiv.classList.remove('poke-blink'); eDiv.style.transform = ''; }
     if(battleData) battleData.state = won? 'won' : 'lost';
-    if(won && window.fastEncounter){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
+    if(won && window.fastEncounter && ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
 }
 const COLORS = { 0:'#0a1a08', 1:'#1a5c1e', 2:'#1a3a8a', 3:'#8c7048', 4:'#5a4030', };
 
 function drawCityGround(offX, offY){
-  // Mar infinito
-  ctx.fillStyle = '#0a7dc2';
+  const halloweenCity = document.getElementById('game-wrap')?.dataset?.citySeason === 'halloween';
+  // Keep the legacy ground in the same night palette as the Halloween city overlay.
+  ctx.fillStyle = halloweenCity ? '#07101f' : '#0a7dc2';
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  // Onda clara
-  ctx.fillStyle = '#1e90ff';
+  ctx.fillStyle = halloweenCity ? '#101b32' : '#1e90ff';
   ctx.beginPath();
   ctx.ellipse(canvas.width/2, canvas.height/2, canvas.width*0.8, canvas.height*0.7, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // Ilha grande
   const cx = offX + 25*TILE + TILE/2;
   const cy = offY + 22*TILE + TILE/2;
 
   ctx.beginPath();
   ctx.ellipse(cx, cy, 680, 480, 0, 0, Math.PI*2);
-  ctx.fillStyle = '#f7e8b5';
+  ctx.fillStyle = halloweenCity ? '#202338' : '#f7e8b5';
   ctx.fill();
 
   ctx.lineWidth = 14;
-  ctx.strokeStyle = '#e9d28c';
+  ctx.strokeStyle = halloweenCity ? '#574054' : '#e9d28c';
   ctx.stroke();
 
-  // Areia clara centro
   ctx.beginPath();
   ctx.ellipse(cx, cy, 600, 400, 0, 0, Math.PI*2);
-  ctx.fillStyle = '#fff6cc';
+  ctx.fillStyle = halloweenCity ? '#25243a' : '#fff6cc';
   ctx.fill();
 }
 
@@ -1962,13 +2144,13 @@ function draw(){
     const minX=Math.max(0,Math.floor(P.x-visible)), maxX=Math.min(MAP_W-1,Math.ceil(P.x+visible));
     const minY=Math.max(0,Math.floor(P.y-visible)), maxY=Math.min(MAP_H-1,Math.ceil(P.y+visible));
 
-    // Cores novas - areia, não verde feio
-    const tileColors={
-      0:'#1e90ff', // agua vira mar
-      1:'#fff6cc', // grama vira areia clara
-      2:'#0a7dc2', // borda vira mar escuro
-      3:'#f7e8b5', // caminho vira areia
-      4:'#e9d28c' // tronco vira areia escura
+    const halloweenCity = document.getElementById('game-wrap')?.dataset?.citySeason === 'halloween';
+    const tileColors = halloweenCity ? {
+      0:'#101b32',1:'#25243a',2:'#07101f',3:'#34283a',4:'#201b2c',
+      5:'#244a35',6:'#75513b',7:'#6b7040',8:'#172b2a',9:'#62566a',10:'#5b392f'
+    } : {
+      0:'#1e90ff',1:'#fff6cc',2:'#0a7dc2',3:'#f7e8b5',4:'#e9d28c',
+      5:'#247342',6:'#bd8b4a',7:'#82a84a',8:'#214d34',9:'#746c70',10:'#936446'
     };
 
     for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++){
@@ -1979,8 +2161,27 @@ function draw(){
         const sx=offX+x*TILE, sy=offY+y*TILE, t=map[y][x];
         ctx.fillStyle=tileColors[t]||'#fff6cc';
         ctx.fillRect(sx,sy,TILE+1,TILE+1);
+        if(t===5){
+          ctx.strokeStyle='#9ecb78';ctx.lineWidth=2;
+          for(let i=0;i<5;i++){const bx=sx+7+i*9,by=sy+TILE-3-(i%2)*3;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx-2,by-11-(i%3)*3);ctx.stroke()}
+        }else if(t===6){
+          ctx.fillStyle='#d3a76b';ctx.fillRect(sx+4,sy+7,TILE-8,TILE-14);
+          ctx.fillStyle='#8f6549';ctx.fillRect(sx+9,sy+12,4,3);ctx.fillRect(sx+34,sy+34,5,3);
+        }else if(t===8){
+          ctx.fillStyle='#08191b';ctx.beginPath();ctx.arc(sx+TILE/2,sy+TILE/2,TILE*.49,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#24513a';ctx.beginPath();ctx.arc(sx+TILE/2,sy+TILE*.42,TILE*.39,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#3a7350';ctx.beginPath();ctx.arc(sx+TILE*.4,sy+TILE*.34,TILE*.16,0,Math.PI*2);ctx.fill();
+        }else if(t===9){
+          ctx.fillStyle='#81717a';ctx.beginPath();ctx.moveTo(sx+8,sy+45);ctx.lineTo(sx+13,sy+19);ctx.lineTo(sx+31,sy+8);ctx.lineTo(sx+46,sy+21);ctx.lineTo(sx+50,sy+45);ctx.closePath();ctx.fill();
+        }else if(t===0 && x>=20&&x<=22&&y>=15&&y<=17){
+          ctx.fillStyle='#245c76';ctx.fillRect(sx,sy,TILE+1,TILE+1);
+          ctx.strokeStyle='#93d4db';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx+7,sy+13);ctx.quadraticCurveTo(sx+24,sy+7,sx+45,sy+13);ctx.stroke();
+        }else if(t===10){
+          ctx.strokeStyle='#c3985f';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(sx+4,sy+TILE/2);ctx.lineTo(sx+TILE-4,sy+TILE/2);ctx.stroke();
+          for(let fx=10;fx<TILE;fx+=16){ctx.beginPath();ctx.moveTo(sx+fx,sy+10);ctx.lineTo(sx+fx,sy+TILE-10);ctx.stroke()}
+        }
     }
-    BUILDINGS.forEach(b=>{
+    if(!halloweenCity) BUILDINGS.forEach(b=>{
         const bx=offX+b.x*TILE, by=offY+b.y*TILE, bw=b.w*TILE, bh=b.h*TILE, depth=22;
         if(bx> w||by>h||bx+bw<0||by+bh<0) return;
         ctx.fillStyle='rgba(0,0,0,.36)'; ctx.beginPath(); ctx.ellipse(bx+bw/2,by+bh+10,bw*.58,18,0,0,Math.PI*2); ctx.fill();
@@ -1990,6 +2191,11 @@ function draw(){
         ctx.fillStyle='#513222'; const doorX=bx+bw/2-14; ctx.fillRect(doorX,by+bh-42,28,42);
         ctx.fillStyle='#fff6d2'; ctx.font='bold 10px Tahoma'; ctx.textAlign='center'; ctx.fillText(b.name,bx+bw/2,by-26);
     });
+    // Wooden Route 1 marker at the south entrance, visible from town and trail.
+    const signX=offX+23*TILE,signY=offY+20*TILE;
+    ctx.fillStyle='#2b1b23';ctx.fillRect(signX,signY,4,36);ctx.fillRect(signX+TILE*3,signY,4,36);
+    ctx.fillStyle='#39282f';ctx.strokeStyle='#e2b46c';ctx.lineWidth=2;ctx.fillRect(signX,signY-8,TILE*3+4,20);ctx.strokeRect(signX,signY-8,TILE*3+4,20);
+    ctx.fillStyle='#fff0bd';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('ROTA 1 · PALLET → VIRIDIAN',signX+(TILE*3+4)/2,signY+6);
     const px=offX+P.px, py=offY+P.py;
     if(P.team && P.team[0]){
         ctx.save();
@@ -2548,12 +2754,12 @@ function psyTrainerXpNeed(level){
 window.psyTrainerXpNeed=psyTrainerXpNeed;
 /* Equal-level wins give about 4% of the bar; enemy level and XP buffs help without a multi-level jump. */
 function psyBattleXpReward(enemyLevel,speciesBonus=0){
-  const poke=P?.team?.[0],ownLevel=Math.max(1,Number(poke?.level||1)),nextXp=Math.max(100,Number(poke?.maxExp||100)),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),species=Math.max(0,Number(speciesBonus)||0),rate=Math.min(.12,.04*relative*(1+xpBuff/100)*(1+species/100));
+  const poke=P?.team?.[0],ownLevel=Math.max(1,Number(poke?.level||1)),nextXp=Math.max(100,Number(poke?.maxExp||100)),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),species=Math.max(0,Number(speciesBonus)||0),rate=Math.min(.144,.048*relative*(1+xpBuff/100)*(1+species/100));
   return Math.max(1,Math.floor(nextXp*rate));
 }
 window.psyBattleXpReward=psyBattleXpReward;
 function psyBattleTrainerXpReward(enemyLevel){
-  const ownLevel=Math.max(1,Number(P?.team?.[0]?.level||1)),trainerLevel=Math.max(1,Number(P?.trainerLevel||1)),required=psyTrainerXpNeed(trainerLevel),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),rate=Math.min(.06,.015*relative*(1+xpBuff/100));
+  const ownLevel=Math.max(1,Number(P?.team?.[0]?.level||1)),trainerLevel=Math.max(1,Number(P?.trainerLevel||1)),required=psyTrainerXpNeed(trainerLevel),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),rate=Math.min(.072,.018*relative*(1+xpBuff/100));
   return Math.max(1,Math.floor(required*rate));
 }
 window.psyBattleTrainerXpReward=psyBattleTrainerXpReward;
@@ -4200,7 +4406,7 @@ window.endBattle=function(won){
     P.gold+=75000; gainTrainerXp(900); autoSave();
   }
   window.isDungeonBoss=false; window.isDungeonShiny=false; window.currentDungeonId=null;
-  if(won && window.fastEncounter){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
+  if(won && window.fastEncounter && ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
 };
 // TALENTO - SÓ SHINY 0.1%
 window.TALENT_CONFIG = {
@@ -5243,6 +5449,17 @@ window.startBattle=function(wildPoke){
   if(legends?.has?.(wildPoke?.id)){
     const need=wildPoke?.shiny?PSY_TRAINER_GATES.shinyLegendary:PSY_TRAINER_GATES.legendary;
     if(tl<need){notif(`🔒 ${wildPoke?.shiny?'Lendário Shiny':'Lendário'} libera no Trainer Lv.${need}. Você está Lv.${tl}.`,4000);return false;}
+  }
+  const lead=P.team?.[0];
+  if(lead){
+    const max=Math.max(1,Number(lead.maxHp)||Number(P.maxHp)||1);
+    P.meta=P.meta||{};
+    if(!P.meta.psyStarterHpRepairV1){
+      if(!Number.isFinite(Number(lead.hp))||Number(lead.hp)<=0){lead.maxHp=max;lead.hp=max;}
+      P.meta.psyStarterHpRepairV1=1;
+      try{autoSave()}catch(_){}
+    }
+    P.pokemon=lead;P.hp=Number(lead.hp);P.maxHp=max;
   }
   const r=psyOldStartBattle.apply(this,arguments);
   psyRefreshBattleSprites();
@@ -6335,7 +6552,8 @@ window.PSY_TUTORIAL_STEPS=[
  {icon:'🏆',title:'Ginásios e Level Cap',body:'Seu level cap acompanha o próximo Ginásio. Vencer líderes abre espaço para evoluir e progredir. Mega exige Trainer Lv.100, Boss Lv.150, Shiny Mega Lv.200, Lendário Lv.250 e Lendário Shiny Lv.300.'},
  {icon:'🥚',title:'Eggs',body:'Eggs chocam após 300 Pokémon derrotados. Mystery Egg pode trazer qualquer geração, sem Boss/Lendário/Mega, com 1% Shiny e qualidade até S. Eggs premium também precisam incubar.'},
  {icon:'🃏',title:'Poké Cards',body:'Monte um deck de até 3 Pokémon. Em batalha você recebe exatamente 3 ações: atacar, curar ou buffar. Use energia com cuidado e pressione READY para avançar o turno.'},
- {icon:'💎',title:'Diamantes e economia',body:'Diamantes vêm de espécies novas, Trainer Level, conquistas e Pokédex regional. A Cash Shop é opcional; progressão principal, níveis e requisitos nunca são comprados diretamente.'}
+ {icon:'💎',title:'Diamantes e economia',body:'Diamantes vêm de espécies novas, Trainer Level, conquistas e Pokédex regional. A Cash Shop é opcional; progressão principal, níveis e requisitos nunca são comprados diretamente.'},
+ {icon:'📱',title:'Tela de celular ou computador',body:'O jogo detecta automaticamente o dispositivo e ajusta os painéis. Abra MENU → TELA / DISPOSITIVO para escolher Automático, Celular ou Computador. No celular, você pode jogar com a tela em pé; não precisa virar o aparelho.'}
 ];
 window.psyTutorialIndex=0;
 function ensureTutorial(){
@@ -7866,6 +8084,7 @@ setTimeout(psyMobileDock,200);
 /* Tutorial rewritten: no capture percentages/rates are disclosed. */
 window.PSY_TUTORIAL_STEPS=[
  {icon:'🎮',title:'Bem-vindo ao PSYWORLD',body:'Explore a cidade, monte seu time, evolua seus Pokémon e avance pelos Ginásios. Hunts, WORLD, Dungeons, Survivor, Álbum, Eggs, Passe e demais sistemas compartilham a mesma progressão principal.'},
+ {icon:'📱',title:'Jogar no celular ou computador',body:'O jogo detecta automaticamente celular/tablet ou computador. Abra MENU → TELA / DISPOSITIVO para escolher Automático, Celular ou Computador. No celular, mantenha a tela em pé: o PSY IDLE organiza os controles, equipe e Hunts para caber no retrato. Use a barra inferior do Idle para abrir Equipe, Hunts e Mochila; a lista de Hunts permite escolher a próxima área sem esconder as opções.'},
  {icon:'🐾',title:'Encontros e captura',body:'Escolha uma Hunt compatível com sua progressão, enfraqueça o Pokémon e use suas Balls. Tentativas de captura consomem o turno. Fast Encounter usa a Hunt selecionada para acelerar o farm, mas não substitui os requisitos de região, Level Cap ou progressão.'},
  {icon:'✨',title:'Tier, qualidade e formas',body:'Tier e qualidade são sistemas diferentes. O Tier da espécie/forma é fixo; a qualidade varia dentro da faixa permitida. Shiny evolui usando Shiny Stone. Mega é SSS, Boss UR, Lendário UR+, Shiny Mega UR+ e Lendário Shiny UR++. Formas especiais continuam bloqueadas pelo Trainer Level necessário mesmo quando obtidas antes.'},
  {icon:'🏆',title:'Ginásios, Level Cap e Trainer',body:'A progressão dos Ginásios respeita o Level Cap e o Pokémon mais forte da conta. O Trainer Level não possui limite e concede pontos de talento. Mega exige Trainer Lv.100, Boss Lv.150, Shiny Mega Lv.200, Lendário Lv.250 e Lendário Shiny Lv.300.'},
@@ -8514,6 +8733,9 @@ function psyV9LoadLocal(){
     if(data.map){P.x=data.map.x??P.x;P.y=data.map.y??P.y;P.px=data.map.px??P.px;P.py=data.map.py??P.py;P.tx=P.x;P.ty=P.y;P.moving=false}
     try{P.team.forEach(migratePoke);P.box.forEach(migratePoke)}catch(e){}
     if(P.team[0]){P.pokemon=P.team[0];P.hp=P.team[0].hp;P.maxHp=P.team[0].maxHp}
+    // Repair the active starter only after the real V9 local/cloud save is restored.
+    // The version flag keeps this entry migration from healing later combat fainting.
+    try{upgradeLegacyStarterQuality()}catch(e){console.warn('Starter HP migration',e)}
     try{psyAfkResumeCatchup('save-load')}catch(e){console.warn('AFK resume',e)}
     return true;
   }catch(e){console.warn('local load',e);return false}

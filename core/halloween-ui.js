@@ -8,11 +8,11 @@
   const SHEET = 2048;
   const CELL = 512;
   const CHARACTERS = [
-    { id: 'black_boy', name: 'Rapaz negro', detail: 'Treinador da lanterna', files: {
+    { id: 'black_boy', name: 'Kai', detail: 'Treinador de Pallet', files: {
       basic: 'basic-black-boy.webp', divine: 'divine-black-boy.webp',
       macabre: 'horror-ghostface-black-boy.webp', macabre_alt: 'macabre-alt-black-boy.webp', supreme: 'apex-black-boy.webp'
     } },
-    { id: 'black_girl', name: 'Garota negra', detail: 'Guardiã das lanternas', files: {
+    { id: 'black_girl', name: 'Maya', detail: 'Treinadora de Pallet', files: {
       basic: 'basic-black-girl.webp', divine: 'divine-black-girl.webp',
       macabre: 'horror-ghostface-black-girl.webp', macabre_alt: 'macabre-alt-black-girl.webp', supreme: 'apex-black-girl.webp'
     } },
