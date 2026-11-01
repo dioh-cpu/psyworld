@@ -6,17 +6,17 @@
 
   const CINEMATIC_STORY = [
     {title:'PALLET TOWN',text:'Depois de escolher quem será seu treinador, você chega a Pallet Town. A cidade é seu ponto de encontro: converse com os moradores, conheça os prédios e prepare-se no seu próprio ritmo.'},
-    {title:'UM CHAMADO DE KANTO',text:'O Professor Carvalho abriu a jornada pela região. A campanha começa pelo botão no alto da cidade; não existe passagem física da praça para uma rota.'},
+    {title:'UM CHAMADO DE KANTO',text:'A campanha começa pelo botão na Psy City. Depois da escolha do inicial, sua jornada começa em Pallet; dali, as cidades de Kanto têm saídas caminháveis para as rotas.'},
     {title:'ESCOLHA SEU PRIMEIRO PARCEIRO',text:'A aventura começa com um inicial de Kanto. Bulbasaur, Charmander e Squirtle são as escolhas disponíveis agora; novas regiões e iniciais serão liberados pela progressão.'}
   ];
   const TUTORIAL = [
     {icon:'🌙',title:'Sua cidade',text:'Esta é a praça de Pallet. As casas, a fonte e as decorações ficam posicionadas no mundo enquanto você caminha pela cidade.',target:'#gameCanvas'},
-    {icon:'💚',title:'Seu treinador e parceiro',text:'Depois que você escolher seu inicial pela campanha, este painel mostrará o nível, a vida e a experiência do Pokémon que está à frente da equipe.',target:'#hud-player'},
+    {icon:'HUD',title:'Seu treinador e parceiro',text:'Depois que você escolher seu inicial pela campanha, este painel mostrará o nível, a vida e a experiência do Pokémon que está à frente da equipe.',target:'#hud-player'},
     {icon:'🧑‍🤝‍🧑',title:'Converse com os moradores',text:'Aproxime-se de uma pessoa e toque nela para ler suas falas e conhecer os serviços e histórias da cidade.',target:'#psy-halloween-npc-luna'},
-    {icon:'🕹️',title:'Caminhe pela cidade',text:'No computador, use as setas ou WASD. No celular, arraste o joystick do canto inferior esquerdo para andar.',target:'#joystick'},
-    {icon:'🎬',title:'Entre na campanha',text:'Este botão inicia a história de Kanto. A cinemática apresenta a jornada e, em seguida, você escolhe um dos três iniciais da primeira região.',target:'#btn-kanto-journey'},
-    {icon:'🎒',title:'Equipe, bolsa e menu',text:'Use estes atalhos para abrir sua equipe e sua bolsa. O MENU reúne as outras atividades e permite rever este tutorial quando quiser.',target:'#btn-team-float'},
-    {icon:'🧭',title:'Você está no controle',text:'A campanha é acessada pelo botão. A cidade continua como área própria, sem placa ou saída de rota. Vamos começar?',target:'#menuBtn'}
+    {icon:'MOVIMENTO',title:'Caminhe pela cidade',text:'No computador, use as setas ou WASD. No celular, toque e arraste o joystick dinâmico para andar.',target:'#joystick'},
+    {icon:'CAMPANHA',title:'Entre na campanha',text:'Este botão inicia a história de Kanto. A cinemática apresenta a jornada e, em seguida, você escolhe um dos três iniciais da primeira região.',target:'#btn-kanto-journey'},
+    {icon:'MENU',title:'Equipe, bolsa e menu',text:'Use estes atalhos para abrir sua equipe e sua bolsa. O MENU reúne as outras atividades e permite rever este tutorial quando quiser.',target:'#btn-team-float'},
+    {icon:'CIDADE',title:'Você está no controle',text:'A campanha começa pelo botão na Psy City. Já em Kanto, caminhe entre cidades e rotas pelas saídas dos mapas. Vamos começar?',target:'#menuBtn'}
   ];
 
   function addStyles() {
@@ -67,29 +67,46 @@
   function showCampaignCinematic(){
     addStyles();removeOldRouteVestige();
     let root=D.getElementById('psy-kanto-cinematic');if(!root){root=D.createElement('div');root.id='psy-kanto-cinematic';D.body.appendChild(root)}
+    const hasKantoStarter=()=>!!(Number(P?.meta?.kantoStarterChosen)||P?.team?.length);
     let stage=0;
     function render(){
       const story=CINEMATIC_STORY[Math.min(stage,CINEMATIC_STORY.length-1)];
-      const choose=stage===CINEMATIC_STORY.length;
-      root.innerHTML=`<div class="psy-kc-backdrop"></div><section class="psy-kc-card" aria-live="polite"><div class="psy-kc-kicker">PSYWORLD · CAMPANHA KANTO</div><div class="psy-kc-progress">${CINEMATIC_STORY.map((_,i)=>`<i class="${i<=stage?'on':''}"></i>`).join('')}</div>${choose?`<h1>Escolha seu inicial</h1><p>${CINEMATIC_STORY[2].text}</p><div class="psy-kc-starters">${GENS[0].starters.map(p=>`<button class="psy-kc-choice" data-starter="${p.id}"><img src="${getSpriteUrl(p.id)}" alt="${p.name}"><b>${p.name}</b><small>${p.type}</small></button>`).join('')}</div>`:`<h1>${story.title}</h1><p>${story.text}</p><div class="psy-kc-actions"><button data-cancel>VOLTAR À CIDADE</button><button class="primary" data-next>${stage===CINEMATIC_STORY.length-1?'ESCOLHER INICIAL':'CONTINUAR'}</button></div>`}</section>`;
+      const resume=stage===CINEMATIC_STORY.length&&hasKantoStarter();
+      const choose=stage===CINEMATIC_STORY.length&&!resume;
+      root.innerHTML=`<div class="psy-kc-backdrop"></div><section class="psy-kc-card" aria-live="polite"><div class="psy-kc-kicker">PSYWORLD · CAMPANHA KANTO</div><div class="psy-kc-progress">${CINEMATIC_STORY.map((_,i)=>`<i class="${i<=stage?'on':''}"></i>`).join('')}</div>${resume?`<h1>Campanha em andamento</h1><p>Seu inicial já foi escolhido. Você pode voltar à cidade e retomar Kanto por este mesmo botão sempre que quiser.</p><div class="psy-kc-actions"><button data-cancel>VOLTAR À CIDADE</button><button class="primary" data-resume>RETOMAR CAMPANHA</button></div>`:choose?`<h1>Escolha seu inicial</h1><p>${CINEMATIC_STORY[2].text}</p><div class="psy-kc-starters">${GENS[0].starters.map(p=>`<button class="psy-kc-choice" data-starter="${p.id}"><img src="${getSpriteUrl(p.id)}" alt="${p.name}"><b>${p.name}</b><small>${p.type}</small></button>`).join('')}</div>`:`<h1>${story.title}</h1><p>${story.text}</p><div class="psy-kc-actions"><button data-cancel>VOLTAR À CIDADE</button><button data-skip-story>PULAR HISTÓRIA</button><button class="primary" data-next>${stage===CINEMATIC_STORY.length-1?(hasKantoStarter()?'RETOMAR CAMPANHA':'ESCOLHER INICIAL'):'CONTINUAR'}</button></div>`}</section>`;
       root.querySelector('[data-cancel]')?.addEventListener('click',closeCampaignCinematic);
-      root.querySelector('[data-next]')?.addEventListener('click',()=>{stage++;render()});
+      root.querySelector('[data-skip-story]')?.addEventListener('click',()=>{stage=CINEMATIC_STORY.length;render()});
+      root.querySelector('[data-next]')?.addEventListener('click',()=>{
+        if(stage===CINEMATIC_STORY.length-1&&hasKantoStarter())return resumeCampaign();
+        stage++;render();
+      });
+      root.querySelector('[data-resume]')?.addEventListener('click',resumeCampaign);
       root.querySelectorAll('[data-starter]').forEach(btn=>btn.addEventListener('click',()=>{
         const id=Number(btn.dataset.starter),starter=GENS[0].starters.find(p=>p.id===id);if(!starter)return;
         chosenPoke=starter;P.meta=P.meta||{};P.meta.kantoCampaignIntroSeen=true;P.meta.kantoStarterChosen=id;
         const old=D.getElementById('screen-starter');if(old)old.style.display='none';
         closeCampaignCinematic();
-        try{confirmStarter();W.setTimeout(()=>W.PsyKantoPlayableV1?.open('pallet'),450)}
+        try{
+          confirmStarter();
+          W.setTimeout(()=>{
+            // Begin directly in the authored Pallet Town map; do not open the old yellow atlas.
+            W.PsyKantoPlayableV1?.open?.('pallet');
+          },450);
+        }
         catch(e){console.error('[Kanto campaign] initial choice failed',e);W.notif?.('Não foi possível iniciar a campanha agora.',3000)}
       }));
+    }
+    function resumeCampaign(){
+      closeCampaignCinematic();
+      const progress=W.PsyKantoPlayableV1?.progress?.();
+      const active=progress?.active;
+      const target=active&&W.PsyKantoCampaignArtV1?.has?.(active)?active:'pallet';
+      W.PsyKantoPlayableV1?.open?.(target);
     }
     render();
   }
   const oldOpenKanto=W.openKantoJourneyV1;
-  if(typeof oldOpenKanto==='function')W.openKantoJourneyV1=function(){
-    if(!Array.isArray(P.team)||!P.team.length)return showCampaignCinematic();
-    return oldOpenKanto.apply(this,arguments);
-  };
+  if(typeof oldOpenKanto==='function')W.openKantoJourneyV1=function(){return showCampaignCinematic()};
   W.openKantoCampaignCinematic=showCampaignCinematic;
 
   let tutorialIndex=0,tutorialRoot=null,spotlight=null;
@@ -119,7 +136,7 @@
   W.openTutorial=function(){
     addStyles();tutorialIndex=0;
     tutorialRoot=D.getElementById('psy-tutorial-cinematic');
-    if(!tutorialRoot){tutorialRoot=D.createElement('div');tutorialRoot.id='psy-tutorial-cinematic';tutorialRoot.innerHTML=`<div class="psy-tc-spotlight"></div><section class="psy-tc-caption" role="dialog" aria-modal="true"><div class="psy-tc-kicker"></div><h2></h2><p></p><div class="psy-tc-actions"><button data-close>SAIR</button><button data-prev>← VOLTAR</button><span class="psy-tc-count"></span><button class="next" data-next>PRÓXIMA CENA →</button></div></section>`;D.body.appendChild(tutorialRoot);}
+    if(!tutorialRoot){tutorialRoot=D.createElement('div');tutorialRoot.id='psy-tutorial-cinematic';tutorialRoot.innerHTML=`<div class="psy-tc-spotlight"></div><section class="psy-tc-caption" role="dialog" aria-modal="true"><div class="psy-tc-kicker"></div><h2></h2><p></p><div class="psy-tc-actions"><button data-close>PULAR TUTORIAL</button><button data-prev>← VOLTAR</button><span class="psy-tc-count"></span><button class="next" data-next>PRÓXIMA CENA →</button></div></section>`;D.body.appendChild(tutorialRoot);}
     spotlight=tutorialRoot.querySelector('.psy-tc-spotlight');tutorialRoot.style.display='block';
     D.getElementById('menu')?.style && (D.getElementById('menu').style.display='none');
     tutorialRoot.querySelector('[data-close]').onclick=W.closeTutorial;
