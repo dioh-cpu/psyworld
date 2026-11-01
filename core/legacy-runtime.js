@@ -6571,7 +6571,7 @@ setTimeout(()=>{
   try{psyMigrateRarities()}catch(e){console.warn('rarity migration',e)}
   psyAddTutorialMenu();psyInstallAllX();psyDecorateRarityText();autoSave();
   P.meta=P.meta||{};
-  if(!P.meta.tutorialSeen && document.getElementById('game-wrap')?.style.display!=='none')setTimeout(openTutorial,700);
+  if(!P.meta.tutorialSeen && P.playerCharacterId && document.getElementById('game-wrap')?.style.display!=='none')setTimeout(openTutorial,700);
 },1300);
 
 
