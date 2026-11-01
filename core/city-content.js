@@ -1,5 +1,5 @@
 (function(){
-  const KEY='psyworld_city_content_collapsed_v2';
+  const KEY='psyworld_city_content_collapsed_v3';
 
   window.toggleCityGameContent=function(force){
     const dock=document.getElementById('world-btn-float');

@@ -36,11 +36,12 @@
   function inCityWorld() {
     if (!origin || !(typeof P !== 'undefined' && P.team?.length)) return true;
     const x=Math.floor(Number(P.x)||0), y=Math.floor(Number(P.y)||0);
-    if (x < origin.tileX-16 || x > origin.tileX+16 || y < origin.tileY-15 || y > origin.tileY+15) return false;
-    let r={x1:19,x2:31,y1:3,y2:23};
-    try { if (typeof ROUTE1 !== 'undefined') r=ROUTE1; } catch (_) {}
+    if (x < origin.tileX-20 || x > origin.tileX+20 || y < origin.tileY-18 || y > origin.tileY+18) return false;
+    // Keep the town layer alive while the player walks onto Route 1.
+    // The canvas clip already excludes route tiles; disabling the whole city
+    // overlay here made every building and NPC vanish at the route boundary.
     if(W.PsyKantoJourneyV1?.isAdventureTile?.(x,y))return false;
-    return !(x>=r.x1 && x<=r.x2 && y>=r.y1 && y<=Math.max(r.y2,23));
+    return true;
   }
   function cityVisible() {
     const wrap = D.getElementById('game-wrap');
@@ -143,7 +144,8 @@
     const p=screenPoint(h.dx,h.dy), scale=Math.max(.82,Math.min(1.5,TILE/30));
     const w=Math.round(164*h.width*scale), bodyH=Math.round(102*scale), roofH=Math.round(68*scale);
     const x=p.x-w/2, y=p.y-bodyH/2;
-    if (x>w+W.innerWidth || x+w< -40 || y>W.innerHeight+40 || y-bodyH< -100) return;
+    const cv=D.getElementById('gameCanvas'), viewW=cv?.width||W.innerWidth, viewH=cv?.height||W.innerHeight;
+    if (x>viewW+40 || x+w< -40 || y>viewH+40 || y-bodyH-roofH< -100) return;
     c.save();
     c.fillStyle='#020617aa'; c.beginPath(); c.ellipse(p.x,y+bodyH+12,w*.64,16*scale,0,0,Math.PI*2); c.fill();
     // Broad timbered facade and stone foundation.
@@ -264,6 +266,21 @@
     });
   }
 
+  function drawRouteGate(c) {
+    // Put the entrance on the town side of the existing open 3-tile trail.
+    // It is decorative only; the original walkable Route 1 tiles stay intact.
+    const p=screenPoint(0,.35), half=Math.min(TILE*1.52,W.innerWidth*.39), postTop=p.y-55, postBottom=p.y+23;
+    c.save();
+    c.fillStyle='#21172b';c.strokeStyle='#d69b52';c.lineWidth=3;
+    [-1,1].forEach(side=>{const x=p.x+side*half;c.fillRect(x-5,postTop,10,postBottom-postTop);c.strokeRect(x-5,postTop,10,postBottom-postTop)});
+    c.fillStyle='#261a2b';c.strokeStyle='#f4c66f';c.lineWidth=2.4;
+    rounded(c,p.x-half-6,p.y-73,half*2+12,31,10);c.fill();c.stroke();
+    c.fillStyle='#ffedbd';c.font='900 12px system-ui';c.textAlign='center';c.fillText('↑  ROTA 1 · VIRIDIAN',p.x,p.y-53);
+    c.fillStyle='#ffb45e';c.shadowColor='#ff9e46';c.shadowBlur=12;
+    [-1,1].forEach(side=>{c.beginPath();c.arc(p.x+side*half,p.y-57,5,0,Math.PI*2);c.fill()});
+    c.shadowBlur=0;c.restore();
+  }
+
   function drawCity() {
     if (!cityVisible() || !(typeof P!=='undefined'&&P.team?.length) || (typeof inBattle!=='undefined'&&inBattle)) return;
     captureOrigin(); if (!origin) return;
@@ -287,6 +304,7 @@
     // Route 1 path, grass, obstacles and surrounding map retain their own tiles.
     drawCityFloor(c,w,h);
     HOUSES.forEach(house=>drawHouse(c,house));
+    drawRouteGate(c);
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
     for(let i=0;i<3;i++){const gx=grave.x-28+i*28,gy=grave.y+4;c.fillStyle=['#697083','#7d7888','#59677a'][i];rounded(c,gx-9,gy-17,18,29,8);c.fill();c.fillStyle='#b6bdca';c.fillRect(gx-1,gy-11,2,12);c.fillRect(gx-5,gy-7,10,2)}

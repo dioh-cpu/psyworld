@@ -2191,11 +2191,7 @@ function draw(){
         ctx.fillStyle='#513222'; const doorX=bx+bw/2-14; ctx.fillRect(doorX,by+bh-42,28,42);
         ctx.fillStyle='#fff6d2'; ctx.font='bold 10px Tahoma'; ctx.textAlign='center'; ctx.fillText(b.name,bx+bw/2,by-26);
     });
-    // Wooden Route 1 marker at the south entrance, visible from town and trail.
-    const signX=offX+23*TILE,signY=offY+20*TILE;
-    ctx.fillStyle='#2b1b23';ctx.fillRect(signX,signY,4,36);ctx.fillRect(signX+TILE*3,signY,4,36);
-    ctx.fillStyle='#39282f';ctx.strokeStyle='#e2b46c';ctx.lineWidth=2;ctx.fillRect(signX,signY-8,TILE*3+4,20);ctx.strokeRect(signX,signY-8,TILE*3+4,20);
-    ctx.fillStyle='#fff0bd';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('ROTA 1 · PALLET → VIRIDIAN',signX+(TILE*3+4)/2,signY+6);
+    // Route 1 entrance sign is drawn by the town art layer on the walkable town-side trail.
     const px=offX+P.px, py=offY+P.py;
     if(P.team && P.team[0]){
         ctx.save();
