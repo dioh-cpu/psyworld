@@ -5,17 +5,17 @@
   W.__PSY_HALLOWEEN_CITY_V1__ = true;
 
   const NPCS = [
-    { id:'luna', name:'Luna', role:'Bruxa da Lua', art:'npc-witch.webp', dx:-9.6, dy:-2.9,
+    { id:'luna', name:'Luna', role:'Bruxa da Lua', art:'npc-witch.webp', dx:-4.5, dy:-0.2,
       lines:['Bem-vindo ao Festival das Lanternas. A praça está cheia de surpresas.','Pokémon Fantasma aparecem com mais frequência nas noites de Halloween.','Há lanternas escondidas por toda a cidade.'] },
-    { id:'noah', name:'Noah', role:'Pesquisador Pokémon', art:'npc-researcher.webp', dx:9.6, dy:-2.9,
+    { id:'noah', name:'Noah', role:'Pesquisador Pokémon', art:'npc-researcher.webp', dx:4.5, dy:-0.2,
       lines:['Estou estudando como os Pokémon reagem às luzes das abóboras.','Uma cidade bem iluminada é mais segura para os Pokémon pequenos.','Consulte o arquivo antigo se procurar pistas sobre Pokémon Fantasma.'] },
-    { id:'amora', name:'Amora', role:'Feirante do Festival', art:'npc-vendor.webp', dx:-4.6, dy:3.2,
+    { id:'amora', name:'Amora', role:'Feirante do Festival', art:'npc-vendor.webp', dx:-4.5, dy:2.8,
       lines:['Minha barraca está cheia de guloseimas e abóboras da estação.','As folhas douradas anunciam que a noite mais assustadora chegou.','Passe aqui depois da sua próxima hunt; sempre há algo especial.'] },
-    { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.6, dy:3.2,
+    { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.5, dy:2.8,
       lines:['Os livros da torre guardam mapas de regiões muito distantes.','Procure o tomo de capa azul para descobrir lendas de Halloween.','A biblioteca fica aberta até o último treinador voltar da hunt.'] },
-    { id:'rival', name:'Rival', role:'Treinador desafiante', art:'/assets/story/rival.png', dx:-9.6, dy:0.1, story:'rival',
+    { id:'rival', name:'Rival', role:'Treinador desafiante', art:'/assets/story/rival.png', dx:-4.5, dy:5.8, story:'rival',
       lines:['Eu já escolhi meu parceiro. Vamos ver quem conhece melhor os Pokémon!','Explore Kanto e monte uma equipe equilibrada antes de avançar pelos Ginásios.','Quando estiver pronto, vamos nos enfrentar no campo de treino.'] },
-    { id:'rocket', name:'Agente Rocket', role:'Vendedor suspeito', art:'/assets/story/rocket-grunt.png', dx:9.7, dy:0.1, story:'rocket',
+    { id:'rocket', name:'Agente Rocket', role:'Vendedor suspeito', art:'/assets/story/rocket-grunt.png', dx:4.5, dy:5.8, story:'rocket',
       lines:['Só vendo itens raros. Não pergunte sobre as caixas atrás da barraca.','A Equipe Rocket procura Pokémon raros por todo Kanto. Ninguém vai nos impedir de encontrá-los primeiro.','Você atrapalhou nossos planos por enquanto. A Equipe Rocket vai voltar.'] }
   ];
   const HOUSES = [

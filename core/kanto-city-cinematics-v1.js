@@ -24,6 +24,7 @@
     const s=D.createElement('style');s.id='psy-kanto-city-cinematics-style';
     s.textContent=`
       #psy-mode-intro{display:none!important}
+      #world-btn-float{z-index:80!important}#hud-player,#menuBtn,#fastEncounterBtn{z-index:90!important}
       #psy-kanto-cinematic,#psy-tutorial-cinematic{position:fixed;inset:0;z-index:2400000;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
       #psy-kanto-cinematic{display:flex;align-items:center;justify-content:center;padding:18px;background:#080716}
       .psy-kc-backdrop{position:absolute;inset:0;background:#141126 url('/assets/story/kanto-pallet-town-v1.webp') center/cover no-repeat;animation:psy-kc-pan 18s ease-in-out infinite alternate}
