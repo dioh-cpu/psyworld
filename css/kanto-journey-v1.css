@@ -53,3 +53,43 @@
 .psy-kanto-teacher{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 9px;align-items:center}.psy-kanto-teacher b{color:#ffe3a5}.psy-kanto-teacher span{grid-column:1/-1;color:#a9c0cf;font-size:11px;line-height:1.4}.psy-kanto-teacher button,.psy-kanto-solve-field{padding:7px 9px;border:1px solid #247e81;border-radius:9px;background:#11534d;color:#b8fff0;font-size:10px;font-weight:900;cursor:pointer}.psy-kanto-teacher button:disabled,.psy-kanto-solve-field:disabled{border-color:#38404c;background:#202330;color:#788595;cursor:not-allowed}.psy-kanto-teacher.learned{border-color:#319c75}
 .psy-kanto-puzzle{border-color:#68523a}.psy-kanto-puzzle.solved{border-color:#237b5a;background:#0c2825}.psy-kanto-puzzle-title{display:flex;justify-content:space-between;gap:8px;align-items:center}.psy-kanto-puzzle-title b{color:#ffe2a5;font-size:12px}.psy-kanto-puzzle-title small{color:#83dce1;font-size:9px;font-weight:900;letter-spacing:.08em;text-align:right}.psy-kanto-puzzle p{margin:7px 0;color:#b9c8d1;font-size:11px;line-height:1.4}.psy-kanto-choices{display:grid;gap:5px}.psy-kanto-choices button{padding:7px 9px;border:1px solid #405064;border-radius:8px;background:#101c2a;color:#dceaf0;text-align:left;font-size:11px;cursor:pointer}.psy-kanto-choices button:disabled{opacity:.5;cursor:not-allowed}.psy-kanto-hunt-card:disabled{filter:saturate(.65)}
 @media(max-width:700px){.psy-kanto-teacher{grid-template-columns:1fr}.psy-kanto-teacher button{justify-self:start}.psy-kanto-puzzle-title{align-items:flex-start}}
+
+/* Estilos adicionais da campanha Cerulean V4. */
+/* PSYWORLD Kanto campaign: responsive frame and touch-stage defaults. */
+#psy-kanto-world,
+#psy-kanto-cinematic,
+.psy-town-cinema {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#psy-kanto-world *,
+#psy-kanto-cinematic *,
+.psy-town-cinema * {
+  box-sizing: border-box;
+}
+
+#psy-kanto-world .kp-stage {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#psy-kanto-world #psy-kanto-canvas {
+  display: block;
+}
+
+@media (orientation: portrait) and (max-width: 650px) {
+  #psy-kanto-world .kp-head {
+    min-height: 46px;
+  }
+
+  #psy-kanto-world .kp-title small {
+    max-width: 45vw;
+  }
+
+  #psy-kanto-world .kp-objective {
+    max-height: 2.8em;
+    overflow: hidden;
+  }
+}
