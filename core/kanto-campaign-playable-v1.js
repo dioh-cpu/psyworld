@@ -11,6 +11,7 @@
   const CAMPAIGN_KEY = 'psyKantoCampaignV1';
   const COLS = 32, ROWS = 20, TILE = 28;
   const SHEET_CELL = 512, AVATAR_ROOT = 'assets/characters/halloween/';
+  const IDLE_FRAME = 0, WALK_FRAME_COLUMNS = [1, 3];
   const avatarImages = new Map();
   const GYM_FOR_PLACE = {
     pewter: 'kanto_brock', cerulean: 'kanto_misty', vermilion: 'kanto_surge',
@@ -122,7 +123,7 @@
     root.querySelectorAll('[data-dir]').forEach(btn => {
       const dir = btn.dataset.dir;
       const start = e => { e.preventDefault(); model.held = dir; move(dir); };
-      const stop = e => { e.preventDefault(); if (model.held === dir) model.held = null; };
+      const stop = e => { e.preventDefault(); if (model.held === dir) { model.held = null; model.frame = 0; render(); } };
       btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', stop); btn.addEventListener('pointercancel', stop); btn.addEventListener('pointerleave', stop);
     });
     D.addEventListener('keydown', onKeyDown); D.addEventListener('keyup', onKeyUp);
@@ -181,14 +182,14 @@
     if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){e.preventDefault();interact();}
     if(e.code==='Escape'){e.preventDefault();closeWorld();}
   }
-  function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held)model.held=null; }
+  function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();} }
   function move(dir) {
     if(!model.place||!model.root?.classList.contains('open'))return;
     const step={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(!step)return;
     const nx=model.x+step[0],ny=model.y+step[1];if(nx<1||ny<1||nx>=COLS-1||ny>=ROWS-1)return;
     model.direction=dir;
     const tile=model.map.grid[ny][nx];if(tile===9||tile===3||tile===4)return;
-    model.x=nx;model.y=ny;model.frame=(model.frame+1)%4;
+    model.x=nx;model.y=ny;model.frame=(model.frame+1)%WALK_FRAME_COLUMNS.length;
     if(tile===5)maybeEncounter();
     if(nx===model.map.exit.x&&ny===model.map.exit.y)interact();
     updateObjective();render();
@@ -303,7 +304,8 @@
     const avatar=selectedAvatar();
     if(avatar?.ready){
       const row=({down:0,left:1,right:2,up:3})[model.direction]??0;
-      c.drawImage(avatar.image,(model.frame%4)*SHEET_CELL,row*SHEET_CELL,SHEET_CELL,SHEET_CELL,px-25,py-42,50,50);
+      const sourceFrame=model.held?WALK_FRAME_COLUMNS[model.frame%WALK_FRAME_COLUMNS.length]:IDLE_FRAME;
+      drawNormalizedAvatar(c,avatar,row,sourceFrame,px,py+8);
     }else{
       c.fillStyle='#141a23';c.beginPath();c.ellipse(px,py+8,8,4,0,0,Math.PI*2);c.fill();
       c.fillStyle='#e8c492';c.beginPath();c.arc(px,py-4,6,0,Math.PI*2);c.fill();c.fillStyle='#315777';c.fillRect(px-6,py+1,12,10);c.fillStyle='#f2f0e8';c.fillRect(px-5,py+11,4,4);c.fillRect(px+2,py+11,4,4);
@@ -317,9 +319,37 @@
     const filename=character.costumes?.[key];if(!filename)return null;
     const url=AVATAR_ROOT+filename;
     if(avatarImages.has(url))return avatarImages.get(url);
-    const entry={image:new Image(),ready:false};
-    entry.image.onload=()=>{entry.ready=true;render()};entry.image.onerror=()=>{avatarImages.delete(url)};entry.image.src=url;avatarImages.set(url,entry);
+    const entry={image:new Image(),ready:false,frameBounds:null,frameScale:1,frameCols:4};
+    entry.image.onload=()=>{entry.ready=true;prepareAvatarFrames(entry);render()};entry.image.onerror=()=>{avatarImages.delete(url)};entry.image.src=url;avatarImages.set(url,entry);
     return entry;
+  }
+  function prepareAvatarFrames(avatar) {
+    try {
+      const image=avatar.image, scan=D.createElement('canvas');
+      scan.width=image.naturalWidth||SHEET_CELL*4;scan.height=image.naturalHeight||SHEET_CELL*4;
+      const ctx=scan.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
+      const pixels=ctx.getImageData(0,0,scan.width,scan.height).data;
+      const cols=Math.floor(scan.width/SHEET_CELL),rows=Math.floor(scan.height/SHEET_CELL),bounds=[];
+      let maxW=1,maxH=1;
+      for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+        let minX=SHEET_CELL,minY=SHEET_CELL,maxX=-1,maxY=-1;
+        const x0=col*SHEET_CELL,y0=row*SHEET_CELL;
+        for(let y=0;y<SHEET_CELL;y++)for(let x=0;x<SHEET_CELL;x++){
+          if(pixels[((y0+y)*scan.width+x0+x)*4+3]>32){
+            if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+          }
+        }
+        const box=maxX<0?{x:0,y:0,w:SHEET_CELL,h:SHEET_CELL}:{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1};
+        bounds.push(box);maxW=Math.max(maxW,box.w);maxH=Math.max(maxH,box.h);
+      }
+      avatar.frameBounds=bounds;avatar.frameCols=cols;avatar.frameScale=Math.min(46/maxW,46/maxH);
+    } catch (_) { avatar.frameBounds=null;avatar.frameScale=1; }
+  }
+  function drawNormalizedAvatar(ctx,avatar,row,col,centerX,baselineY) {
+    const image=avatar.image,cols=avatar.frameCols||4,index=row*cols+col,box=avatar.frameBounds?.[index];
+    if(!box){ctx.drawImage(image,col*SHEET_CELL,row*SHEET_CELL,SHEET_CELL,SHEET_CELL,centerX-25,baselineY-50,50,50);return;}
+    const scale=avatar.frameScale||1,w=box.w*scale,h=box.h*scale;
+    ctx.drawImage(image,col*SHEET_CELL+box.x,row*SHEET_CELL+box.y,box.w,box.h,centerX-w/2,baselineY-h,w,h);
   }
   function tick() {
     if(!model.root?.classList.contains('open')){model.raf=0;return;}
