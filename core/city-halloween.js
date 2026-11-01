@@ -37,10 +37,6 @@
     if (!origin || !(typeof P !== 'undefined' && P.team?.length)) return true;
     const x=Math.floor(Number(P.x)||0), y=Math.floor(Number(P.y)||0);
     if (x < origin.tileX-20 || x > origin.tileX+20 || y < origin.tileY-18 || y > origin.tileY+18) return false;
-    // Keep the town layer alive while the player walks onto Route 1.
-    // The canvas clip already excludes route tiles; disabling the whole city
-    // overlay here made every building and NPC vanish at the route boundary.
-    if(W.PsyKantoJourneyV1?.isAdventureTile?.(x,y))return false;
     return true;
   }
   function cityVisible() {
@@ -77,7 +73,7 @@
     }
   }
   function captureOrigin() {
-    if (origin || !(typeof P!=='undefined'&&P.team?.length) || !cityVisible()) return;
+    if (origin || !cityVisible()) return;
     origin = {
       px:Number(P.px) || Number(P.x || 25) * TILE,
       py:Number(P.py) || Number(P.y || 25) * TILE,
@@ -187,6 +183,31 @@
     c.fillStyle='#f7a943';c.fillRect(-5,-2,2,2);c.fillRect(3,-2,2,2);c.restore();
   }
 
+  const CITY_DECOR = [
+    {id:'pumpkin-lantern',dx:-2.7,dy:1.5,src:[20,244,302,340],width:82},
+    {id:'moon-lantern',dx:2.7,dy:1.5,src:[370,161,236,423],width:66},
+    {id:'black-cat-statue',dx:-6.2,dy:1.2,src:[668,232,246,353],width:64},
+    {id:'moon-potion',dx:6.2,dy:1.2,src:[984,243,253,341],width:58},
+    {id:'ghost-plush',dx:-11.2,dy:3.4,src:[23,786,289,361],width:58},
+    {id:'autumn-flower-pot',dx:11.2,dy:3.4,src:[354,764,273,383],width:70},
+    {id:'bat-mobile',dx:-11.2,dy:-7.5,src:[637,660,319,466],width:72},
+    {id:'cobweb-banner',dx:11.2,dy:-7.5,src:[970,685,265,456],width:64}
+  ];
+  const decorImage = new Image();
+  decorImage.src = '/assets/halloween/city-decor-sprite-sheet-v1.png';
+  function drawCityDecor(c) {
+    if (!decorImage.complete || !decorImage.naturalWidth) return;
+    const scale=Math.max(.78,Math.min(1.28,TILE/55));
+    CITY_DECOR.forEach(item=>{
+      const p=screenPoint(item.dx,item.dy),[sx,sy,sw,sh]=item.src;
+      const width=item.width*scale,height=width*sh/sw;
+      if(p.x < -width || p.y < -height || p.x > W.innerWidth+width || p.y > W.innerHeight+height)return;
+      c.save();c.shadowColor='#ffbd59';c.shadowBlur=7*scale;
+      c.drawImage(decorImage,sx,sy,sw,sh,p.x-width/2,p.y-height,width,height);
+      c.restore();
+    });
+  }
+
   // Decorative Ghost Pokémon are anchored to world coordinates around the outer plaza.
   // PokeAPI sprites are loaded once with a hand-drawn fallback for offline/CORS failures.
   const GHOST_DECOR = [
@@ -255,7 +276,7 @@
   }
 
   function drawCity() {
-    if (!cityVisible() || !(typeof P!=='undefined'&&P.team?.length) || (typeof inBattle!=='undefined'&&inBattle)) return;
+    if (!cityVisible() || (typeof inBattle!=='undefined'&&inBattle)) return;
     captureOrigin(); if (!origin) return;
     // Legacy draw clears the canvas on every animation frame; repaint this overlay each time too.
     const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height, center=screenPoint(0,0);
@@ -277,6 +298,7 @@
     // The full town quarter uses one continuous cobblestone surface.
     drawCityFloor(c,w,h);
     HOUSES.forEach(house=>drawHouse(c,house));
+    drawCityDecor(c);
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
     for(let i=0;i<3;i++){const gx=grave.x-28+i*28,gy=grave.y+4;c.fillStyle=['#697083','#7d7888','#59677a'][i];rounded(c,gx-9,gy-17,18,29,8);c.fill();c.fillStyle='#b6bdca';c.fillRect(gx-1,gy-11,2,12);c.fillRect(gx-5,gy-7,10,2)}
@@ -369,7 +391,7 @@
     });
   }
   function positionNPCs() {
-    const active=cityVisible()&&!!origin&&!!(typeof P!=='undefined'&&P.team?.length)&&!(typeof inBattle!=='undefined'&&inBattle);
+    const active=cityVisible()&&!!origin&&!(typeof inBattle!=='undefined'&&inBattle);
     const cv=D.getElementById('gameCanvas'),wrap=D.getElementById('game-wrap');
     const canvasBox=cv?.getBoundingClientRect(),wrapBox=wrap?.getBoundingClientRect();
     const sx=canvasBox?.width&&cv.width?canvasBox.width/cv.width:1;
@@ -421,3 +443,4 @@
   W.addEventListener('resize',positionNPCs,{passive:true});
   W.addEventListener('orientationchange',()=>setTimeout(positionNPCs,120),{passive:true});
 })(window,document);
+

@@ -1371,14 +1371,6 @@ for(let y=ROUTE1.y1;y<=ROUTE1.y2;y++)for(let x=ROUTE1.x1;x<=ROUTE1.x2;x++){
   map[y][x]=1;
   SOLID.delete(x+','+y);
 }
-// Hedges and a low stone boundary close the old northward route opening.
-for(let y=ROUTE1.y1;y<=ROUTE1.y2;y++){
-  map[y][ROUTE1.x1]=8;map[y][ROUTE1.x2]=8;
-  SOLID.add(ROUTE1.x1+','+y);SOLID.add(ROUTE1.x2+','+y);
-}
-for(let x=ROUTE1.x1;x<=ROUTE1.x2;x++){
-  map[ROUTE1.y1][x]=8;SOLID.add(x+','+ROUTE1.y1);
-}
 BUILDINGS.forEach(b => {
     for(let dy = 0; dy < b.h; dy++)
         for(let dx = 0; dx < b.w; dx++)

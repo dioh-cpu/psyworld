@@ -234,7 +234,7 @@
         const login = D.getElementById('screen-login'); if (login) login.style.display = 'flex';
       }
     });
-    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = currentPickerKind === 'new' ? 'CONTINUAR PARA OS INICIAIS' : 'USAR ESTE PERSONAGEM';
+    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = currentPickerKind === 'new' ? 'ENTRAR NA CIDADE' : 'USAR ESTE PERSONAGEM';
     next.addEventListener('click', () => {
       const p = player(); if (!p) return;
       p.playerCharacterId = selectedCharacter;
@@ -243,10 +243,9 @@
       closeScreen(screen);
       if (currentPickerKind === 'new') {
         const login = D.getElementById('screen-login'); if (login) login.style.display = 'none';
-        try {
-          if (typeof buildStarterScreen === 'function') buildStarterScreen();
-          const starter = D.getElementById('screen-starter'); if (starter) starter.style.display = 'flex';
-        } catch (err) { console.error('[Halloween UI] could not open starter screen', err); }
+        const starter = D.getElementById('screen-starter'); if (starter) starter.style.display = 'none';
+        if (typeof W.startKantoCityPrelude === 'function') W.startKantoCityPrelude();
+        else console.error('[Halloween UI] Kanto city entry is unavailable');
       } else {
         persist(); syncAvatar();
       }
@@ -359,3 +358,4 @@
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', install, { once: true });
   else install();
 })(window, document);
+

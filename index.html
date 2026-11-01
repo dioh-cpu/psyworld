@@ -252,7 +252,7 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 <div id="world-btn-float" style="position:absolute; top:170px; right:10px; z-index:20; display:flex; flex-direction:column; gap:6px;">
 <button id="btn-city-content-toggle" onclick="toggleCityGameContent()" style="background:linear-gradient(90deg,#111827,#334155); color:#fff; border:3px solid #67e8f9; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px; box-shadow:0 0 12px #22d3ee66;">📦 CONTEÚDO DO JOGO ▼</button>
 <div id="city-game-content-buttons" style="display:flex; flex-direction:column; gap:6px;">
-<button id="btn-kanto-journey" onclick="window.openKantoJourneyV1?.()" style="background:linear-gradient(135deg,#172554,#164e63);color:#e0f2fe;border:2px solid #67e8f9;padding:10px 16px;border-radius:12px;font-weight:900;font-size:12px;">KANTO · JORNADA</button>
+<button id="btn-kanto-journey" onclick="window.openKantoJourneyV1?.()" style="background:linear-gradient(135deg,#172554,#164e63);color:#e0f2fe;border:2px solid #67e8f9;padding:10px 16px;border-radius:12px;font-weight:900;font-size:12px;">🎬 CAMPANHA KANTO</button>
 
 <button id="btn-idle-realistic-float" onclick="window.openIdleRealisticV2 ? window.openIdleRealisticV2() : window.psyInstallMode?.('idleworld',()=>window.openIdleRealisticV2?.())" style="background:linear-gradient(135deg,#14532d,#0f766e);color:#fff;border:3px solid #a7f3d0;padding:10px 16px;border-radius:12px;font-weight:900;font-size:12px;box-shadow:0 0 14px #10b98155;">🌿 PSY IDLE <small style="display:block;font-size:8px;color:#d1fae5">HUNTS POR ESPÉCIE</small></button>
 
@@ -316,7 +316,9 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 <script src="core/psy-responsive.js?build=PSYWORLD_DEVICE_LAYOUT_V1_20261030"></script>
 <script src="modes/psywiki-v1.js?build=PSYWORLD_IDLE_AUTO_CATCH_FIX_20260930"></script>
 <script src="core/kanto-campaign-playable-v1.js?build=KANTO_PLAYABLE_V1_20261101"></script>
+<script src="core/kanto-city-cinematics-v1.js?build=KANTO_CITY_CINEMATICS_V1_20261101"></script>
 
 </body>
 </html>
+
 
