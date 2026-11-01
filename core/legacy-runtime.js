@@ -1364,29 +1364,21 @@ for(let y = 0; y < MAP_H; y++)
     for(let x = 0; x < MAP_W; x++)
         if(map[y][x] === 2 || map[y][x] === 4) SOLID.add(x+','+y);
 
-/* Route 1: continuous, walkable Kanto woodland connected north of Pallet. */
+/* Pallet city north quarter. The campaign is opened through KANTO · JORNADA;
+   this legacy city map has no physical connection to Route 1. */
 const ROUTE1={x1:19,x2:31,y1:3,y2:20,grass:new Set()};
+for(let y=ROUTE1.y1;y<=ROUTE1.y2;y++)for(let x=ROUTE1.x1;x<=ROUTE1.x2;x++){
+  map[y][x]=1;
+  SOLID.delete(x+','+y);
+}
+// Hedges and a low stone boundary close the old northward route opening.
 for(let y=ROUTE1.y1;y<=ROUTE1.y2;y++){
-  for(let x=ROUTE1.x1;x<=ROUTE1.x2;x++) map[y][x]=8;
+  map[y][ROUTE1.x1]=8;map[y][ROUTE1.x2]=8;
+  SOLID.add(ROUTE1.x1+','+y);SOLID.add(ROUTE1.x2+','+y);
 }
-// Dirt trail stays clear and connects directly into the town.
-for(let y=ROUTE1.y1;y<=21;y++)for(let x=24;x<=26;x++)map[y][x]=6;
-for(let y=20;y<=23;y++)for(let x=24;x<=26;x++)map[y][x]=3;
-// Walkable tall grass encounter patches.
-for(let y=8;y<=13;y++)for(let x=20;x<=22;x++){map[y][x]=5;ROUTE1.grass.add(x+','+y)}
-for(let y=14;y<=18;y++)for(let x=28;x<=30;x++){map[y][x]=5;ROUTE1.grass.add(x+','+y)}
-// Boundary tree line, boulders and fence segments; keep the path open.
-for(let y=3;y<=20;y++){map[y][19]=8;map[y][31]=8;SOLID.add('19,'+y);SOLID.add('31,'+y)}
-for(let x=20;x<=30;x++){map[3][x]=8;SOLID.add(x+',3')}
-[[23,7],[27,7],[23,15],[27,19],[29,10],[21,17]].forEach(([x,y])=>{map[y][x]=9;SOLID.add(x+','+y)});
-[[23,5],[27,5],[23,6],[27,6],[23,19],[27,18]].forEach(([x,y])=>{map[y][x]=10;SOLID.add(x+','+y)});
-for(let y=4;y<=20;y++)for(let x=20;x<=30;x++){
-  if([5,6,7,9,10].includes(map[y][x]))continue;
-  if(map[y][x]===8)SOLID.add(x+','+y);
+for(let x=ROUTE1.x1;x<=ROUTE1.x2;x++){
+  map[ROUTE1.y1][x]=8;SOLID.add(x+','+ROUTE1.y1);
 }
-// Rocky stream at the western edge; water cells block both keyboard and touch movement.
-for(let y=15;y<=17;y++)for(let x=20;x<=22;x++){map[y][x]=0;SOLID.add(x+','+y)}
-
 BUILDINGS.forEach(b => {
     for(let dy = 0; dy < b.h; dy++)
         for(let dx = 0; dx < b.w; dx++)

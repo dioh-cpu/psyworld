@@ -14,9 +14,9 @@
     { id:'elara', name:'Elara', role:'Bibliotecária Noturna', art:'npc-librarian.webp', dx:4.6, dy:3.2,
       lines:['Os livros da torre guardam mapas de regiões muito distantes.','Procure o tomo de capa azul para descobrir lendas de Halloween.','A biblioteca fica aberta até o último treinador voltar da hunt.'] },
     { id:'rival', name:'Rival', role:'Treinador desafiante', art:'/assets/story/rival.png', dx:-9.6, dy:0.1, story:'rival',
-      lines:['Eu já escolhi meu parceiro. Vamos ver quem conhece melhor os Pokémon!','Encontre espécies nas rotas e monte uma equipe equilibrada antes de avançar pelos ginásios.','Quando estiver pronto, vamos nos enfrentar no campo de treino.'] },
+      lines:['Eu já escolhi meu parceiro. Vamos ver quem conhece melhor os Pokémon!','Explore Kanto e monte uma equipe equilibrada antes de avançar pelos Ginásios.','Quando estiver pronto, vamos nos enfrentar no campo de treino.'] },
     { id:'rocket', name:'Agente Rocket', role:'Vendedor suspeito', art:'/assets/story/rocket-grunt.png', dx:9.7, dy:0.1, story:'rocket',
-      lines:['Só vendo itens raros. Não pergunte sobre as caixas atrás da barraca.','A Equipe Rocket procura Pokémon raros pelas rotas. Ninguém vai nos impedir de encontrá-los primeiro.','Você atrapalhou nossos planos por enquanto. A Equipe Rocket vai voltar.'] }
+      lines:['Só vendo itens raros. Não pergunte sobre as caixas atrás da barraca.','A Equipe Rocket procura Pokémon raros por todo Kanto. Ninguém vai nos impedir de encontrá-los primeiro.','Você atrapalhou nossos planos por enquanto. A Equipe Rocket vai voltar.'] }
   ];
   const HOUSES = [
     { dx:-9.4, dy:-5.8, wall:'#5b3650', roof:'#20182d', sign:'POÇÕES', kind:'shop', width:1.22 },
@@ -50,27 +50,15 @@
   }
   function cityScreenBounds(w,h) {
     const tile=Number(TILE)||55, x0=Math.max(0,origin.tileX-16), x1=Math.min(MAP_W-1,origin.tileX+16);
-    const y0=Math.max(0,origin.tileY-15), y1=Math.min(MAP_H-1,origin.tileY+15);
+    const y0=Math.max(0,origin.tileY-19), y1=Math.min(MAP_H-1,origin.tileY+15);
     const ox=w/2-P.px-tile/2, oy=h/2-P.py-tile/2;
     return {tile,x0,x1,y0,y1,left:ox+x0*tile,top:oy+y0*tile,right:ox+(x1+1)*tile,bottom:oy+(y1+1)*tile};
   }
   function clipCityArea(c,w,h) {
-    const b=cityScreenBounds(w,h); let r={x1:19,x2:31,y1:3,y2:23};
-    try { if (typeof ROUTE1 !== 'undefined') r=ROUTE1; } catch (_) {}
-    const hx0=Math.max(b.x0,r.x1), hx1=Math.min(b.x1,r.x2);
-    const routeY2=Math.max(r.y2,23);
-    const hy0=Math.max(b.y0,r.y1), hy1=Math.min(b.y1,routeY2);
-    const x=n=>w/2-P.px-b.tile/2+n*b.tile;
-    const y=n=>h/2-P.py-b.tile/2+n*b.tile;
-    c.beginPath();
-    if(hx0>hx1||hy0>hy1)c.rect(b.left,b.top,b.right-b.left,b.bottom-b.top);
-    else {
-      if(hx0>b.x0)c.rect(b.left,b.top,x(hx0)-b.left,b.bottom-b.top);
-      if(hx1<b.x1)c.rect(x(hx1+1),b.top,b.right-x(hx1+1),b.bottom-b.top);
-      if(hy0>b.y0)c.rect(x(hx0),b.top,x(hx1+1)-x(hx0),y(hy0)-b.top);
-      if(hy1<b.y1)c.rect(x(hx0),y(hy1+1),x(hx1+1)-x(hx0),b.bottom-y(hy1+1));
-    }
-    c.clip();
+    // The town is one continuous city map. Kanto's campaign is entered only
+    // through the KANTO · JORNADA button, so no route-shaped hole is cut here.
+    const b=cityScreenBounds(w,h);
+    c.beginPath();c.rect(b.left,b.top,b.right-b.left,b.bottom-b.top);c.clip();
   }
   function drawCityFloor(c,w,h) {
     const b=cityScreenBounds(w,h), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
@@ -266,21 +254,6 @@
     });
   }
 
-  function drawRouteGate(c) {
-    // Put the entrance on the town side of the existing open 3-tile trail.
-    // It is decorative only; the original walkable Route 1 tiles stay intact.
-    const p=screenPoint(0,.35), half=Math.min(TILE*1.52,W.innerWidth*.39), postTop=p.y-55, postBottom=p.y+23;
-    c.save();
-    c.fillStyle='#21172b';c.strokeStyle='#d69b52';c.lineWidth=3;
-    [-1,1].forEach(side=>{const x=p.x+side*half;c.fillRect(x-5,postTop,10,postBottom-postTop);c.strokeRect(x-5,postTop,10,postBottom-postTop)});
-    c.fillStyle='#261a2b';c.strokeStyle='#f4c66f';c.lineWidth=2.4;
-    rounded(c,p.x-half-6,p.y-73,half*2+12,31,10);c.fill();c.stroke();
-    c.fillStyle='#ffedbd';c.font='900 12px system-ui';c.textAlign='center';c.fillText('↑  ROTA 1 · VIRIDIAN',p.x,p.y-53);
-    c.fillStyle='#ffb45e';c.shadowColor='#ff9e46';c.shadowBlur=12;
-    [-1,1].forEach(side=>{c.beginPath();c.arc(p.x+side*half,p.y-57,5,0,Math.PI*2);c.fill()});
-    c.shadowBlur=0;c.restore();
-  }
-
   function drawCity() {
     if (!cityVisible() || !(typeof P!=='undefined'&&P.team?.length) || (typeof inBattle!=='undefined'&&inBattle)) return;
     captureOrigin(); if (!origin) return;
@@ -301,10 +274,9 @@
     for(let i=0;i<34;i++){const x=((i*197+53)%997)/997*w,y=((i*83+31)%271)/271*h*.36;c.fillStyle=i%5===0?'#ffd789':'#dbeafe';c.globalAlpha=.35+(i%4)*.12;c.beginPath();c.arc(x,y,i%7===0?1.5:1,0,Math.PI*2);c.fill()}
     c.globalAlpha=1;
     // World-anchored cobblestone floor only replaces ordinary town ground.
-    // Route 1 path, grass, obstacles and surrounding map retain their own tiles.
+    // The full town quarter uses one continuous cobblestone surface.
     drawCityFloor(c,w,h);
     HOUSES.forEach(house=>drawHouse(c,house));
-    drawRouteGate(c);
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
     for(let i=0;i<3;i++){const gx=grave.x-28+i*28,gy=grave.y+4;c.fillStyle=['#697083','#7d7888','#59677a'][i];rounded(c,gx-9,gy-17,18,29,8);c.fill();c.fillStyle='#b6bdca';c.fillRect(gx-1,gy-11,2,12);c.fillRect(gx-5,gy-7,10,2)}
@@ -345,7 +317,7 @@
   function makeDialog() {
     if (dialog) return dialog;
     dialog=D.createElement('section'); dialog.className='psy-halloween-dialog'; dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-live','polite');
-    dialog.innerHTML='<button type="button" class="psy-halloween-close" aria-label="Fechar">×</button><small>PALLET TOWN · KANTO · FESTIVAL DE HALLOWEEN</small><img class="psy-route-preview" src="/assets/story/kanto-route-1-v1.webp" alt="Mapa ilustrado da Rota 1" loading="lazy"><div class="psy-halloween-dialog-body"><div class="psy-halloween-portrait" data-emotion="neutral"><img alt=""><span class="psy-halloween-expression" aria-hidden="true"><i class="brow left"></i><i class="brow right"></i><i class="mouth"></i></span></div><div class="psy-halloween-dialog-copy"><h3></h3><p></p></div></div><button type="button" class="psy-halloween-next">CONTINUAR</button>';
+    dialog.innerHTML='<button type="button" class="psy-halloween-close" aria-label="Fechar">×</button><small>PALLET TOWN · KANTO · FESTIVAL DE HALLOWEEN</small><div class="psy-halloween-dialog-body"><div class="psy-halloween-portrait" data-emotion="neutral"><img alt=""><span class="psy-halloween-expression" aria-hidden="true"><i class="brow left"></i><i class="brow right"></i><i class="mouth"></i></span></div><div class="psy-halloween-dialog-copy"><h3></h3><p></p></div></div><button type="button" class="psy-halloween-next">CONTINUAR</button>';
     dialog.querySelector('.psy-halloween-close').onclick=()=>dialog.classList.remove('open');
     dialog.querySelector('.psy-halloween-next').onclick=()=>dialog.classList.remove('open');
     D.body.appendChild(dialog); return dialog;
@@ -436,6 +408,8 @@
     if(wrap){
       const worldActive=wrap.style.display!=='none'&&!!(typeof P!=='undefined'&&P.team?.length)&&!W.__psyIdleActive&&!W.PSY_RUNTIME_MODE?.is?.('adventure');
       if(worldActive)wrap.dataset.citySeason='halloween';else delete wrap.dataset.citySeason;
+      const fastButton=D.getElementById('fastEncounterBtn');
+      if(fastButton)fastButton.style.display=worldActive?'none':'';
     }
     const result=baseDraw.apply(this,arguments);
     drawCity();
