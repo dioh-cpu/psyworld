@@ -56,6 +56,25 @@
     const b=cityScreenBounds(w,h);
     c.beginPath();c.rect(b.left,b.top,b.right-b.left,b.bottom-b.top);c.clip();
   }
+  function drawCityBackdrop(c,w,h) {
+    // The legacy island renderer paints its beach outside MAP_W/MAP_H. City mode
+    // must cover that too, including the first frame after startup/returning.
+    const tile=Number(TILE)||55, stone=19;
+    const worldX=w/2-P.px-tile/2, worldY=h/2-P.py-tile/2;
+    c.fillStyle='#211d30';c.fillRect(0,0,w,h);
+    const firstRow=Math.floor(-worldY/stone)-1,lastRow=Math.ceil((h-worldY)/stone)+1;
+    for(let row=firstRow;row<=lastRow;row++){
+      const firstCol=Math.floor((-worldX-(row%2)*9)/stone)-1;
+      const lastCol=Math.ceil((w-worldX-(row%2)*9)/stone)+1;
+      for(let col=firstCol;col<=lastCol;col++){
+        const x=worldX+col*stone+(row%2)*9,y=worldY+row*stone;
+        const seed=(row*19+col*31+(row%2)*7+50)%5;
+        c.fillStyle=['#30283c','#342b40','#2a2537','#382c3d','#29263a'][(seed+5)%5];
+        rounded(c,x+1,y+1,stone-3,stone-3,3);c.fill();
+        c.fillStyle='rgba(205,170,118,.09)';c.fillRect(x+4,y+3,stone-9,1);
+      }
+    }
+  }
   function drawCityFloor(c,w,h) {
     const b=cityScreenBounds(w,h), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
     const worldOffsetX=w/2-P.px-b.tile/2, worldOffsetY=h/2-P.py-b.tile/2;
@@ -74,7 +93,10 @@
     }
   }
   function captureOrigin() {
-    if (origin || !cityVisible()) return;
+    // Wait for the real player profile. Capturing the startup placeholder
+    // anchors buildings and decorations to the wrong point for the whole session.
+    if (origin || !cityVisible() || !(typeof P !== 'undefined' && P.team?.length) ||
+        !Number.isFinite(Number(P.x)) || !Number.isFinite(Number(P.y))) return;
     origin = {
       px:Number(P.px) || Number(P.x || 25) * TILE,
       py:Number(P.py) || Number(P.y || 25) * TILE,
@@ -282,6 +304,7 @@
     // Legacy draw clears the canvas on every animation frame; repaint this overlay each time too.
     const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height, center=screenPoint(0,0);
     c.save();
+    drawCityBackdrop(c,w,h);
     clipCityArea(c,w,h);
     // Halloween lighting and cobblestones stay inside the town; Route 1 remains clear.
     c.fillStyle='rgba(7,10,27,.47)';c.fillRect(0,0,w,h);
