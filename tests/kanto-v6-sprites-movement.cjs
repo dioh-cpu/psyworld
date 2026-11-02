@@ -19,5 +19,6 @@ assert(calls.every(a=>a[0]===entry.atlas&&a[7]===48&&a[8]===64&&a[5]===76&&a[6]=
 const moveAndTick=part('function move(dx,dy,dt){','function maybeEncounter(){')+part('function tick(now){','function onKeyDown(e){');
 function walk(fps){const st={root:{classList:{contains:()=>true}},dialogOpen:false,suspended:false,world:{id:'pallet'},inside:null,position:{x:0,y:500},held:new Set(['up']),joy:null,path:[],stepDistance:0,walkFrame:0,lastRender:0,time:0};const tick=new Function('state','positionValid','DATA','performance','W','draw',moveAndTick+'return tick')(st,()=>true,{}, {now:()=>0},{innerWidth:390,requestAnimationFrame:()=>1},()=>{});for(let i=1;i<=fps*2;i++)tick(i*1000/fps);return 500-st.position.y}
 assert(Math.abs(walk(60)-walk(15))<10,'15 fps movement was slowed');
+assert(Math.abs(walk(60)-walk(10))<10,'10 fps movement was slowed');
 assert(s.includes("root.addEventListener('contextmenu',e=>e.preventDefault())"),'Android long press is not intercepted');
 console.log('Kanto V6: sprite atlas, 24 frames, 60/15 fps walking, Android touch safeguards passed');
