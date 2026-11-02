@@ -142,8 +142,8 @@ function drawPlayer(c,x,y){
     const b=entry.frames[row*4+col]||entry.frames[row*4]||entry.frames[0];
     if(b?.w&&b?.h){
       // Fixed physical height: feet anchored to the same ground point.
-      // Width follows frame proportions but never changes character height.
-      const w=Math.min(36,46*b.w/b.h),h=46;
+      // All walking frames use the same physical width and height; animated poses cannot pulse in size.
+      const w=33,h=46;
       c.imageSmoothingEnabled=true;
       c.drawImage(entry.im,col*entry.cellX+b.x,row*entry.cellY+b.y,b.w,b.h,
         x-w/2,y+7-h,w,h);
