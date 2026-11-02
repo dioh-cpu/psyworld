@@ -17,6 +17,9 @@ function player(){try{return typeof P!=='undefined'?P:(W.P||{})}catch(_){return 
 function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{if(url.startsWith('assets/characters/halloween/'))prepareAvatar(o);o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
 function makeUI(){if(state.root)return;const root=D.createElement('div');root.id='psy-kanto-world-v2';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
 root.innerHTML='<header class="kw2-top"><button type="button" data-atlas>← ATLAS</button><div><strong class="kw2-title"></strong><small class="kw2-subtitle"></small></div><button type="button" class="kw2-close" aria-label="Fechar">×</button></header><div class="kw2-stage"><canvas aria-label="Mapa jogável com colisões"></canvas><div class="kw2-joystick"></div><section class="kw2-dialog"><div class="kw2-dialog-main"><img class="kw2-portrait" alt="Retrato do NPC"/><div><div class="kw2-dialog-title"></div><div class="kw2-expression"></div><div class="kw2-dialog-body"></div></div></div><div class="kw2-dialog-actions"></div></section></div><footer class="kw2-footer"><div class="kw2-objective"></div><div class="kw2-pad"><button data-dir="up" aria-label="Subir">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Descer">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button class="kw2-interact" data-interact>INTERAGIR</button></footer>';
+root.addEventListener('contextmenu',e=>e.preventDefault());
+root.addEventListener('selectstart',e=>e.preventDefault());
+root.addEventListener('dragstart',e=>e.preventDefault());
 D.body.appendChild(root);state.root=root;state.canvas=root.querySelector('canvas');state.ctx=state.canvas.getContext('2d');
 root.querySelector('[data-atlas]').onclick=()=>{close();W.openKantoJourneyV1?.()};root.querySelector('.kw2-close').onclick=close;root.querySelector('[data-interact]').onclick=interact;
 root.querySelectorAll('[data-dir]').forEach(el=>{const dir=el.dataset.dir;const up=e=>{e.preventDefault();state.held.delete(dir)};el.addEventListener('pointerdown',e=>{e.preventDefault();state.path=[];state.navRequest++;state.held.add(dir);el.setPointerCapture?.(e.pointerId)});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)});
@@ -55,7 +58,7 @@ function tick(now){if(!state.root?.classList.contains('open')){state.raf=0;retur
 let dx=0,dy=0;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
 if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<7){state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d}}
 if(dx||dy)move(dx,dy,dt);
-const frameBudget=W.innerWidth<740?1000/36:1000/50;
+const frameBudget=W.innerWidth<740?1000/48:1000/60;
 if(now-state.lastRender>=frameBudget){draw();state.lastRender=now}
 state.raf=W.requestAnimationFrame(tick)}
 function onKeyDown(e){if(!state.root?.classList.contains('open'))return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){e.preventDefault();e.stopImmediatePropagation();state.path=[];state.navRequest++;state.held.add(keys[e.code])}else if(['KeyE','Enter','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)interact()}else if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}}
@@ -73,7 +76,16 @@ function camera(){
   return {w:cw,h:ch,scale,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale)};
 }
 function draw(){if(!state.root?.classList.contains('open')||!state.world)return;const c=state.ctx,view=camera();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,view.w,view.h);c.fillStyle='#122e30';c.fillRect(0,0,view.w,view.h);c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);
-if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art);if(o?.loaded){c.imageSmoothingEnabled=true;c.drawImage(o.im,0,0,state.world.w,state.world.h)}else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
+if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art);if(o?.loaded){
+    if(!o.mapCanvas||o.mapCanvas.width!==state.world.w||o.mapCanvas.height!==state.world.h){
+      const flat=D.createElement('canvas');flat.width=state.world.w;flat.height=state.world.h;
+      const fc=flat.getContext('2d');fc.imageSmoothingEnabled=true;
+      fc.drawImage(o.im,0,0,flat.width,flat.height);o.mapCanvas=flat;
+    }
+    const sx=Math.max(0,-view.ox/view.scale),sy=Math.max(0,-view.oy/view.scale);
+    const sw=Math.min(state.world.w-sx,view.w/view.scale),sh=Math.min(state.world.h-sy,view.h/view.scale);
+    if(sw>0&&sh>0){c.imageSmoothingEnabled=true;c.drawImage(o.mapCanvas,sx,sy,sw,sh,sx,sy,sw,sh)}
+  }else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
 if(!state.inside){state.world.doors.forEach(d=>{if(Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<88)drawMarker(c,d.at[0],d.at[1],'ENTRAR','#79dced')});
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':'VIRIDIAN','#80ffaa')}
@@ -130,6 +142,23 @@ function prepareAvatar(entry){
   }catch(_){
     entry.frames=Array.from({length:16},()=>({x:sx*.27,y:sy*.27,w:sx*.49,h:sy*.64}));
   }
+  // Every source frame is normalized once into a tiny fixed-size atlas.
+  // Animating this atlas avoids resampling the original 2048x2048 image.
+  const atlas=D.createElement('canvas');
+  const tileW=48,tileH=64,drawW=33,drawH=46;
+  atlas.width=tileW*4;atlas.height=tileH*4;
+  const ac=atlas.getContext('2d');
+  ac.imageSmoothingEnabled=true;ac.imageSmoothingQuality='high';
+  for(let r=0;r<4;r++)for(let col=0;col<4;col++){
+    const b=entry.frames[r*4+col]||entry.frames[r*4]||entry.frames[0];
+    if(!b||!b.w||!b.h)continue;
+    const srcX=col*sx+b.x,srcY=r*sy+b.y;
+    // identical drawn body frame and feet anchoring, including idle frames
+    ac.drawImage(im,srcX,srcY,b.w,b.h,
+      col*tileW+(tileW-drawW)/2,r*tileH+(tileH-drawH)-4,drawW,drawH);
+  }
+  entry.atlas=atlas;
+  entry.atlasTileW=tileW;entry.atlasTileH=tileH;
 }
 function drawPlayer(c,x,y){
   c.save();
@@ -139,14 +168,10 @@ function drawPlayer(c,x,y){
     const row=({down:0,left:1,right:2,up:3})[state.facing]||0;
     const moving=state.held.size||state.path.length||state.joy;
     const col=moving?(Math.floor(state.walkFrame)%2?3:1):0;
-    const b=entry.frames[row*4+col]||entry.frames[row*4]||entry.frames[0];
-    if(b?.w&&b?.h){
-      // Fixed physical height: feet anchored to the same ground point.
-      // All walking frames use the same physical width and height; animated poses cannot pulse in size.
-      const w=33,h=46;
+    if(entry.atlas){
+      // The draw destination is a stable 48x64 box; feet never move.
       c.imageSmoothingEnabled=true;
-      c.drawImage(entry.im,col*entry.cellX+b.x,row*entry.cellY+b.y,b.w,b.h,
-        x-w/2,y+7-h,w,h);
+      c.drawImage(entry.atlas,col*48,row*64,48,64,x-24,y+7-64,48,64);
       usedSprite=true;
     }
   }
