@@ -343,7 +343,7 @@
     for(let x=2;x<=10;x++)grid[2][x]=0;
     const isCenter=building.id==='oak-lab';
     const isLab=building.id==='oak-lab';
-    model.map={grid,width:w,height:h,authoredKind:'interior',seed:hash(building.id),npcs:[],object:null,portals:[{x:6,y:8,to:'pallet',entry:building.returnTo,gate:false}],draw(c,{offsetX=0,offsetY=0,TILE=28}={}){
+    model.map={grid,width:w,height:h,authoredKind:'interior',seed:hash(building.id),npcs:[],object:null,portals:[{x:6,y:h-1,to:'pallet',entry:building.returnTo,gate:false}],draw(c,{offsetX=0,offsetY=0,TILE=28}={}){
       const box=(x,y,bw,bh,color)=>{c.fillStyle=color;c.fillRect(offsetX+x*TILE,offsetY+y*TILE,bw*TILE,bh*TILE)};
       box(1,1,11,13,'#9c795c');box(2,2,9,11,isCenter?'#d9e4dd':'#dfc69a');
       box(2,2,9,1,'#734d3d');box(2,12,9,1,'#b49978');
@@ -357,7 +357,7 @@
     model.x=6;model.y=13;model.direction='up';model.frame=0;model.held=null;model.motion=null;
     model.root.querySelector('.kp-title b').textContent=building.name;
     model.root.querySelector('.kp-title small').textContent='Pallet Town · interior';
-    model.dialog?.classList.remove('open');render();
+    model.dialog?.classList.remove('open');updateObjective();render();
   }
   function showDialog(title,text,actions=[],emotion='neutral',sprite='traveler',portraitKey='') {
     const d=model.dialog;d.querySelector('.kp-dialog-title').textContent=title;d.querySelector('.kp-dialog-text').textContent=text;const portrait=d.querySelector('.kp-dialog-portrait');portrait.dataset.emotion=emotion;const portraitImg=portrait.querySelector('img');portrait.classList.toggle('expression-art',!!portraitKey);portraitImg.src=portraitKey?`/assets/kanto/campaign-art/npc/expressions/${portraitKey}-${emotion}.${portraitKey==='misty'?'webp':'png'}`:`/assets/kanto/campaign-art/npc/npc-${sprite}.png`;portraitImg.alt=`Retrato de ${title} · ${emotion}`;
@@ -500,6 +500,10 @@
 
   function updateObjective() {
     if(!model.place||!model.root)return;
+    if(model.map?.authoredKind==='interior'){
+      const inCenter=model.map.npcs?.some(n=>n.id==='pallet-nurse');
+      model.root.querySelector('.kp-objective').innerHTML=inCenter?'Centro Pokémon · aproxime-se da Enfermeira Joy e toque INTERAGIR para curar a equipe · saída pela porta de baixo':'Casa de Pallet · saída pela porta de baixo';return;
+    }
     if(model.map?.authoredKind==='pallet'){
       const door=palletDoors().find(b=>nearby(b.door)||nearby(b.returnTo));
       model.root.querySelector('.kp-objective').innerHTML=door?`<strong>INTERAGIR</strong> para entrar em ${door.name} · siga pela rua ao norte para Route 1`:'Pallet Town · aproxime-se das portas e toque INTERAGIR para entrar nas casas e no Centro Pokémon · saída ao norte: Route 1';return;
