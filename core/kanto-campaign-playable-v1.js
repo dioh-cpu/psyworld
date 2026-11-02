@@ -193,7 +193,7 @@
         const buildings=town?[town.playerHouse,town.professorHouse,town.rivalHouse].filter(Boolean):[];
         return {...provided,width:provided.width||COLS,height:provided.height||ROWS,authoredKind,
           authored:{...(provided.authored||{}),...(town||{}),buildings},
-          npcs:town?.npcs||provided.npcs};
+          npcs:provided.npcs||town?.npcs};
       }
       return {...provided,width:provided.width||COLS,height:provided.height||ROWS,authoredKind};
     }
