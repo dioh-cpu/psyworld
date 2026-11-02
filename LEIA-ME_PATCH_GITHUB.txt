@@ -1,5 +1,0 @@
-PSYWORLD — PATCH KANTO / CERULEAN V4
-
-Extraia este ZIP dentro da pasta psyworld que está aberta no GitHub Desktop, mantendo a estrutura de pastas. Quando o Windows perguntar, substitua os arquivos existentes.
-
-Este pacote contém somente os arquivos adicionados ou atualizados em relação ao origin/main. Não contém exclusões. Depois confira a lista de alterações no GitHub Desktop e faça o commit/push normalmente.
