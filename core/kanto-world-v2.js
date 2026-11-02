@@ -71,12 +71,25 @@ function camera(){
 }
 function draw(){if(!state.root?.classList.contains('open')||!state.world)return;const c=state.ctx,view=camera();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,view.w,view.h);c.fillStyle='#122e30';c.fillRect(0,0,view.w,view.h);c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);
 if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art);if(o?.loaded){c.imageSmoothingEnabled=true;c.drawImage(o.im,0,0,state.world.w,state.world.h)}else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
-const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawMarker(c,npc.at[0],npc.at[1],npc.name,distance<60?'#80ffcb':'#ffd98a')});
+const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
 if(!state.inside){state.world.doors.forEach(d=>{if(Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<88)drawMarker(c,d.at[0],d.at[1],'ENTRAR','#79dced')});
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':'VIRIDIAN','#80ffaa')}
 else drawMarker(c,400,410,'SAÍDA','#85efdc');
 drawPlayer(c,state.position.x,state.position.y);c.setTransform(1,0,0,1,0,0)}
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35);c.restore()}
+function drawNPC(c,npc,distance){
+  const x=npc.at[0],y=npc.at[1],entry=image(npc.portrait);
+  c.save();
+  c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,14,5,0,0,Math.PI*2);c.fill();
+  if(entry?.loaded){
+    c.shadowColor='#020617';c.shadowBlur=5;c.drawImage(entry.im,x-21,y-53,42,56);c.shadowBlur=0;
+  } else {
+    c.fillStyle='#d4ad72';c.fillRect(x-8,y-30,16,26);
+    c.fillStyle='#f6cf9b';c.beginPath();c.arc(x,y-37,8,0,Math.PI*2);c.fill();
+  }
+  c.restore();
+  if(distance<95)drawMarker(c,x,y-43,npc.name,distance<60?'#80ffcb':'#ffd98a');
+}
 function selectedAvatar(){const p=player(),id=p.playerCharacterId;
   const character=(W.PsyHalloweenCharacters||[]).find(c=>c.id===id);
   if(!character)return null;
