@@ -177,7 +177,7 @@ function ensureTheme(){
   if(theme)return theme;
   const track=tracks.find(t=>t.id===selectedTrack)||tracks[0];
   theme=track.id==='halloween'?createHalloweenTheme():new Audio(BASE+track.file);
-  if('loop'in theme)theme.loop=true;
+  if('loop'in theme)theme.loop=true;if(theme){theme.preload='auto';theme.playsInline=true;}
   if('preload'in theme)theme.preload='auto';
   if('playsInline'in theme)theme.playsInline=true;
   theme.volume=clamp(settings.music*duck);

@@ -1,0 +1,45 @@
+:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#030a13;color:#e0f2fe;--cyan:#67e8f9;--purple:#c084fc;--panel:#071827}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 12% 0,#123b55 0,#071827 38%,#02050a 100%);overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.psy-mobile-app{width:min(760px,100%);min-height:100dvh;margin:0 auto;padding:20px 14px 28px;display:flex;flex-direction:column;gap:14px}
+.psy-mobile-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border:1px solid #2a6380;border-radius:22px;background:linear-gradient(145deg,#061526ee,#0b2942e8 65%,#10172ee8);box-shadow:0 16px 44px #0008}
+.psy-mobile-kicker{color:#a5f3fc;font-size:10px;font-weight:900;letter-spacing:.14em}
+h1{margin:8px 0 4px;font-size:clamp(26px,7vw,42px);line-height:1;color:#fff}
+.psy-mobile-header p{margin:0;color:#bae6fd;font-size:13px;line-height:1.4}
+.psy-mobile-status{flex:none;padding:7px 9px;border:1px solid #facc15;border-radius:999px;color:#fde68a;font-size:9px;font-weight:900;letter-spacing:.12em}
+.psy-mobile-status[data-online="1"]{border-color:#4ade80;color:#bbf7d0}
+.psy-mobile-lock,.psy-mobile-chat{border:1px solid #24536d;border-radius:20px;background:#061526e8;box-shadow:0 18px 54px #0009;overflow:hidden}
+.psy-mobile-lock{padding:24px 20px;text-align:left}
+.psy-mobile-lock-icon{font-size:34px;text-align:center}
+.psy-mobile-lock h2{margin:9px 0 6px;text-align:center;color:#fef3c7}
+.psy-mobile-lock p{margin:0 auto 18px;max-width:520px;color:#bae6fd;font-size:12px;line-height:1.5;text-align:center}
+label{display:block;margin:11px 0 6px;color:#c4b5fd;font-size:11px;font-weight:900}
+input,textarea{width:100%;border:1px solid #39708d;border-radius:11px;background:#071827;color:#fff;outline:none}
+input{padding:11px 12px;margin-top:6px}
+textarea{min-height:86px;resize:vertical;padding:11px 12px;line-height:1.4}
+input:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #22d3ee22}
+.psy-mobile-primary,.psy-mobile-secondary{min-height:43px;border-radius:11px;padding:9px 13px;font-size:11px;font-weight:1000}
+.psy-mobile-primary{border:1px solid var(--cyan);background:linear-gradient(135deg,#0e7490,#155e75);color:#ecfeff}
+.psy-mobile-secondary{border:1px solid #c084fc;background:#3b2164;color:#f5d0fe}
+.psy-mobile-lock .psy-mobile-primary{display:block;width:100%;margin-top:18px}
+.psy-mobile-lock small,.psy-mobile-note{display:block;color:#99f6e4;font-size:10px;line-height:1.45}
+.psy-mobile-lock small{text-align:center;margin-top:10px}
+.psy-mobile-chat{display:flex;flex-direction:column;min-height:62dvh}
+.psy-mobile-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid #24536d;color:#99f6e4;font-size:10px;font-weight:900}
+.psy-mobile-toolbar button{border:1px solid #64748b;border-radius:8px;background:#1e293b;color:#e2e8f0;padding:6px 9px;font-size:9px;font-weight:900}
+.psy-mobile-feed{flex:1;min-height:300px;max-height:55dvh;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:9px}
+.psy-mobile-message{padding:9px 10px;border:1px solid #23445b;border-radius:12px;background:#0b2031;color:#e0f2fe;font-size:12px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.psy-mobile-message.user{align-self:flex-end;max-width:92%;border-color:#7451a1;background:#24183d}
+.psy-mobile-message.system{border-color:#facc15;background:#211b0a;color:#fef3c7}
+.psy-mobile-message small{display:block;margin-bottom:4px;color:#67e8f9;font-size:9px;font-weight:900;text-transform:uppercase}
+.psy-mobile-message.user small{color:#e9d5ff}
+.psy-mobile-filebox{margin:0 14px 10px;padding:10px;border:1px solid #2dd4bf;border-radius:11px;background:#062a2be8}
+.psy-mobile-filebox label{margin:0;color:#ccfbf1}.psy-mobile-filebox input{padding:7px;margin-top:5px;border-color:#2dd4bf}.psy-mobile-filebox small{display:block;margin-top:5px;color:#99f6e4;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.psy-mobile-compose{padding:11px 14px 10px;border-top:1px solid #24536d;background:#061526}
+.psy-mobile-actions{display:flex;gap:8px;margin-top:8px}.psy-mobile-actions button{flex:1}
+.psy-mobile-proposal{margin:0 14px 10px;padding:11px;border:1px solid #facc15;border-radius:12px;background:#211b0a;color:#fef3c7;font-size:11px;line-height:1.45}.psy-mobile-proposal[hidden]{display:none!important}.psy-mobile-proposal strong{display:block;color:#fde68a}.psy-mobile-proposal dl{display:grid;grid-template-columns:82px 1fr;gap:4px 8px}.psy-mobile-proposal dt{color:#facc15;font-weight:900}.psy-mobile-proposal dd{margin:0;overflow-wrap:anywhere}.psy-mobile-proposal button{width:100%;margin-top:7px;padding:9px;border:1px solid #facc15;border-radius:8px;background:#854d0e;color:#fff7ed;font-weight:900}
+.psy-mobile-note{margin:0;padding:0 14px 13px;text-align:center;color:#94a3b8}
+@media(max-width:520px){.psy-mobile-app{padding:12px 9px 20px}.psy-mobile-header{padding:15px;border-radius:18px}.psy-mobile-header p{font-size:11px}.psy-mobile-lock{padding:19px 14px}.psy-mobile-chat{min-height:72dvh}.psy-mobile-actions{flex-direction:column}.psy-mobile-feed{max-height:52dvh}}

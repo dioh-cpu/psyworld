@@ -2,8 +2,8 @@
   'use strict';
   /* PSYWORLD Shared Combat Drops V2
      Uma única autoridade para materiais de craft/quest nos modos de combate.
-     - Wild / Fast / Hunt / Aventura: 100% das taxas base.
-     - World / Survivor: 50% das taxas base.
+     - Wild / Hunt: 50%; Fast: 20%; World: 25%; Idle / Survivor: 12%.
+     - Gold e itens de Idle/Survivor ficam nas carteiras de cada modo.
      - Cada item possui rolagem independente; um único abate pode entregar
        Essência + material comum + material raro + pack no mesmo evento.
      - Travas são por EVENTO, não por espécie, para nunca bloquear drops de
@@ -13,7 +13,7 @@
   W.__PSYWORLD_SHARED_MODE_DROPS_V2__=true;
   W.__PSYWORLD_SHARED_MODE_DROPS_V1__=true; // compatibilidade com guards antigos
 
-  const BUILD='SHARED_MODE_DROPS_V11_WORLD_PACKS';
+  const BUILD='SHARED_MODE_DROPS_V13_IDLE_LEVEL_SCALING';
   try{if(typeof P!=='undefined'&&P)W.P=P}catch(e){}
 
   const TYPES=['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
@@ -30,8 +30,8 @@
 
   const norm=v=>String(v==null?'':v).trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const num=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
-  const profile=()=>{try{if(typeof P!=='undefined'&&P){if(W.P!==P)W.P=P;return P}}catch(e){}return W.P||(W.P={})};
-  function ensure(){const p=profile();if(!p.inventory||typeof p.inventory!=='object')p.inventory={};if(!p.meta||typeof p.meta!=='object')p.meta={};return p}
+  const profile=(mode='')=>{if(mode==='idle'&&W.__psyIdleProfile&&typeof W.__psyIdleProfile==='object')return W.__psyIdleProfile;try{if(typeof P!=='undefined'&&P){if(W.P!==P)W.P=P;return P}}catch(e){}return W.P||(W.P={})};
+  function ensure(mode=''){const p=profile(mode);if(!p.inventory||typeof p.inventory!=='object')p.inventory={};if(!p.meta||typeof p.meta!=='object')p.meta={};return p}
   function save(){try{W.autoSave?.()}catch(e){}try{W.updateHUD?.()}catch(e){}}
   function notify(m){try{W.notif?.(m,3000)}catch(e){console.log('[PSYWORLD DROPS]',m)}}
   function buff(k){try{return Math.max(0,num(W.getTotalBuff?.(k),0))}catch(e){return 0}}
@@ -44,23 +44,44 @@
   function typeFromId(id){if(id==null)return null;const table=W.TYPE_BY_ID_FULL||W.TYPE_BY_ID_EXT||W.TYPE_BY_ID_ALL||{};return typeFromValue(table[id])}
   function enemyType(e){if(e&&typeof e==='object'){for(const v of [e.types,e.type,e.element,e.primaryType,e.elements]){const t=typeFromValue(v);if(t)return t}try{const a=W.PSY?.getAdventureCreature?.(e.name||e.spriteKey);const t=typeFromValue(a?.types||a?.element);if(t)return t}catch(_){}}return typeFromId(enemyId(e))||'Normal'}
   function essence(t){const table=W.PSY_ELEMENT_DATA||{};return table[t]||table[TYPE_PT[t]]||ESSENCE_FALLBACK[t]||ESSENCE_FALLBACK.Normal}
-  function addItem(p,n,q=1){if(!n)return 0;const qty=Math.max(1,Math.floor(num(q,1)));p.inventory[n]=Math.max(0,num(p.inventory[n],0))+qty;return qty}
+  const idlePocketViews=new WeakSet();
+  function idlePocketView(x){
+    if(idlePocketViews.has(x))return x;
+    x.currencyId='idle:gold';
+    const drops=x.drops&&typeof x.drops==='object'?x.drops:(x.drops={});
+    for(const key of Object.keys(drops)){
+      if(!key.startsWith('idle:item:'))continue;
+      let name=key.slice('idle:item:'.length);
+      try{name=decodeURIComponent(name)}catch(_){}
+      if(!name||name===key)continue;
+      drops[name]=num(drops[name],0)+num(drops[key],0);
+      delete drops[key];
+    }
+    idlePocketViews.add(x);
+    return x;
+  }
+  function modePocket(p,key){p.meta=p.meta&&typeof p.meta==='object'?p.meta:{};p.meta.modeEconomies=p.meta.modeEconomies&&typeof p.meta.modeEconomies==='object'?p.meta.modeEconomies:{};const x=p.meta.modeEconomies[key]||(p.meta.modeEconomies[key]={gold:0,drops:{},packs:{}});x.gold=Math.max(0,num(x.gold,0));x.drops=x.drops&&typeof x.drops==='object'?x.drops:{};x.packs=x.packs&&typeof x.packs==='object'?x.packs:{};return key==='psyIdle'?idlePocketView(x):x}
+  function addItem(p,n,q=1,modeOverride=''){if(!n)return 0;const qty=Math.max(1,Math.floor(num(q,1))),mode=String(modeOverride||W.__psyDropContext?.mode||'');if(mode==='idle'||mode==='survivor'){const x=modePocket(p,mode==='idle'?'psyIdle':'psyduck');x.drops[n]=Math.max(0,num(x.drops[n],0))+qty;return qty}p.inventory[n]=Math.max(0,num(p.inventory[n],0))+qty;return qty}
+  W.psyModeEconomy=function(mode){const p=ensure(mode),key=mode==='idle'?'psyIdle':mode==='survivor'?'psyduck':String(mode);return modePocket(p,key)};
+  W.psyModeAddGold=function(mode,amount){const x=W.psyModeEconomy(mode);x.gold=Math.max(0,num(x.gold,0)+num(amount,0));return x.gold};
+  W.psyModeAddDrop=function(mode,name,qty=1){const x=W.psyModeEconomy(mode);x.drops[name]=Math.max(0,num(x.drops[name],0)+num(qty,1));return x.drops[name]};
   function ensurePacks(p){p.cardGame=p.cardGame&&typeof p.cardGame==='object'?p.cardGame:{};p.cardGame.packs=p.cardGame.packs&&typeof p.cardGame.packs==='object'?p.cardGame.packs:{};for(const k of ['normal','rare','epic','s','ss','sss','ur','urp','urpp'])p.cardGame.packs[k]=Math.max(0,Math.floor(num(p.cardGame.packs[k],0)));return p.cardGame.packs}
   function packKey(e){const raw=norm(e?.tier||e?.rarity?.n||e?.rarity||e?.quality||'normal');if(raw.includes('ur++'))return'urpp';if(raw.includes('ur+'))return'urp';if(/\bur\b/.test(raw))return'ur';if(raw.includes('sss'))return'sss';if(/\bss\b/.test(raw))return'ss';if(/\bs\b/.test(raw)&&!raw.includes('ss'))return's';if(raw.includes('epic')||raw.includes('epico'))return'epic';if(raw.includes('rare')||raw.includes('raro'))return'rare';return'normal'}
-  function addPack(p,k){const packs=ensurePacks(p);packs[k]=num(packs[k],0)+1}
+  function addPack(p,k,modeOverride=''){const mode=String(modeOverride||W.__psyDropContext?.mode||'');if(mode==='idle'||mode==='survivor'){const x=modePocket(p,mode==='idle'?'psyIdle':'psyduck');x.packs[k]=num(x.packs[k],0)+1;return}const packs=ensurePacks(p);packs[k]=num(packs[k],0)+1}
 
   function inferMode(){const p=ensure();if(W.fastEncounter)return'fast';if(String(p.currentHunt||'').toLowerCase().startsWith('psy19:'))return'hunt';return'wild'}
   function modeName(src){const ctx=String(W.__psyDropContext?.mode||'').toLowerCase();if(ctx)return ctx;const s=String(src||'auto').toLowerCase();return['survivor','world','adventure','cards','wild','fast','hunt','idle'].includes(s)?s:inferMode()}
-  function label(m){return({wild:'Wild',fast:'Fast Encounter',hunt:'Hunt',survivor:'Survivor',world:'Mundo Pokémon',adventure:'Mundo Aventura',idle:'World Idle'}[m]||m)}
+  function label(m){return({wild:'Wild',fast:'Fast Encounter',hunt:'Hunt',survivor:'Survivor',world:'Mundo Pokémon',adventure:'Mundo Aventura',idle:'Psy Idle'}[m]||m)}
   function scale(m){
-    if(m==='world'||m==='survivor'||m==='idle')return .25;
-    /* Fast Encounter entrega um novo alvo a cada ~2–3 s.
-       Para não superar Wild/Hunt apenas por cadência, usa 40% da taxa cheia.
-       Quem não mata em insta-kill naturalmente recebe menos drops por hora. */
-    if(m==='fast')return .4;
+    if(m==='world')return .25;
+    if(m==='survivor')return .12;
+    if(m==='idle')return 1;
+    if(m==='fast')return .2;
+    if(m==='wild'||m==='hunt')return .5;
+    /* As taxas ficam abaixo do combate comum para controlar a cadência de farm. */
     return 1;
   }
-  function chanceScale(mode=''){
+  function chanceScale(mode='',enemyLevel=1){
     const eq=mode==='adventure'?Math.max(0,num(W.PSY?.getAdventureEquipmentDropBonus?.(),0)):0;
     const d=buff('drop')+eq;
     /* V5 LOW VOLUME:
@@ -68,11 +89,13 @@
        Mesmo com buffs extremos, o multiplicador de materiais para em 2x.
        Isso impede farm infinito no Survivor/World quando o jogador passa a
        matar centenas de inimigos por minuto. */
-    const materialBoost=Math.min(2,1+d/300);
+    const idleProfile=mode==='idle'?(W.__psyIdleProfile||W.P):W.P,idleLoot=mode==='idle'&&Number(idleProfile?.meta?.psyIdleBuffs?.loot||0)>Date.now()?1.5:1;
+    const level=Math.max(1,Math.min(100,Math.floor(num(enemyLevel,1)))),idleLevelBoost=mode==='idle'?Math.min(2,1+.012*(level-1)):1;
+    const materialBoost=Math.min(2,Math.min(2,1+d/300)*idleLoot*idleLevelBoost);
     /* Packs usam uma curva separada. V21 ainda referenciava cs.quest, campo
        inexistente, transformando a chance em NaN e anulando o drop. */
-    const packBoost=Math.min(3,1+d/100);
-    return{drop:d,globalDrop:buff('drop'),equipmentDrop:eq,materialBoost,packBoost}
+    const packBoost=Math.min(3,Math.min(3,1+d/100)*idleLoot*idleLevelBoost);
+    return{drop:d,globalDrop:buff('drop'),equipmentDrop:eq,level,levelBoost:idleLevelBoost,materialBoost,packBoost}
   }
 
   function eventAlreadyAwarded(enemy,mode){
@@ -88,22 +111,23 @@
   }
 
   const idDropProfiles=new Map();
+  function enemyLevel(enemy){return Math.max(1,Math.min(100,Math.floor(num(enemy?.level??enemy?.lvl,1))))}
   function dropProfile(enemy,mode){
-    const id=enemyId(enemy),type=enemyType(enemy),cs=chanceScale(mode),rs=scale(mode),key=id==null?null:`${id}:${mode}:${cs.drop}`;
+    const id=enemyId(enemy),level=enemyLevel(enemy),type=enemyType(enemy),cs=chanceScale(mode,level),rs=scale(mode),key=id==null?null:`${id}:${mode}:${cs.drop}:${cs.materialBoost}:${cs.packBoost}:${level}`;
     if(key&&idDropProfiles.has(key))return idDropProfiles.get(key);
     const ess=essence(type),pair=QUEST_LOOT[type]||QUEST_LOOT.Normal;
     /* O perfil é construído por ID. Cada entrada possui sua própria chance e
        sua própria rolagem; não existe limite de um item por inimigo. */
-    const profile={id,type,entries:[
+    const profile={id,type,level,levelBoost:cs.levelBoost,entries:[
       /* Taxas deliberadamente baixas porque Survivor/World possuem volume
          enorme de abates. Cada item continua com rolagem independente.
          Base em modos normais: 0,60% / 1,20% / 0,25%.
          Survivor/World aplicam 50% e o bônus de Drop pode no máximo dobrar
          essas chances. Assim, mesmo no teto, 700 abates geram em média
          ~14,35 materiais de Craft/Quest, antes do RNG. */
-      {kind:'craft',name:ess.ess,chance:rs*.006*cs.materialBoost},
-      {kind:'quest-common',name:pair[0],chance:rs*.012*cs.materialBoost},
-      {kind:'quest-rare',name:pair[1],chance:rs*.0025*cs.materialBoost}
+      {kind:'craft',name:ess.ess,chance:mode==='idle'?.03*cs.materialBoost:rs*.006*cs.materialBoost},
+      {kind:'quest-common',name:pair[0],chance:mode==='idle'?.06*cs.materialBoost:rs*.012*cs.materialBoost},
+      {kind:'quest-rare',name:pair[1],chance:mode==='idle'?.01*cs.materialBoost:rs*.0025*cs.materialBoost}
     ]};
     if(key)idDropProfiles.set(key,profile);
     return profile;
@@ -159,32 +183,46 @@
   function awardCommon(enemy,source='auto'){
     const mode=modeName(source);if(mode==='cards')return[];
     if(eventAlreadyAwarded(enemy,mode))return[];markEvent(enemy,mode);
-    const p=ensure(),profile=dropProfile(enemy,mode),cs=chanceScale(mode),rs=scale(mode),got=[],quota=materialQuota(p,mode);
+    const level=enemyLevel(enemy),p=ensure(mode),profile=dropProfile(enemy,mode),cs=chanceScale(mode,level),rs=scale(mode),got=[],quota=materialQuota(p,mode);
 
     /* TODAS as entradas do perfil do ID são roladas independentemente.
        Survivor/World respeitam também o teto duro de 15 materiais por
        bloco de 700 abates. */
     for(const entry of profile.entries){
+      if(mode==='idle'&&/ultra\s*ball/i.test(entry.name))continue;
       if(quota&&quota.items>=quota.capItems)break;
       if(Math.random()<entry.chance){
-        addItem(p,entry.name);
+        addItem(p,entry.name,1,mode);
         got.push(entry.name);
         if(quota)quota.items++;
         if(mode==='survivor')survivorVisualDrop(enemy,entry.name,entry.kind,1);
       }
     }
 
+    if(mode==='idle'){
+      /* Cada suprimento rola por conta própria; poção acompanha o nível do selvagem. */
+      const potion=level<=9?'Poção 50':level<20?'Poção 100':'Poção 200';
+      const potionChance=.06+Math.min(.05,level*.0005);
+      for(const [name,chance] of [['Pokéball',.08],['Great Ball',.035],['Super Ball',.015],[potion,potionChance],['Revive',.02]]){
+        if(Math.random()<Math.min(1,chance*cs.materialBoost)){addItem(p,name,1,mode);got.push(name)}
+      }
+    }
     const id=profile.id;
-    if(['wild','fast','hunt','idle'].includes(mode)&&id!=null){try{W.psyRollTMDrop?.(id)}catch(e){console.warn('[PSYWORLD DROPS V2] TM',e)}}
+    if(['wild','fast','hunt'].includes(mode)&&id!=null){try{W.psyRollTMDrop?.(id)}catch(e){console.warn('[PSYWORLD DROPS V2] TM',e)}}
 
     const boss=(enemy?.boss||enemy?.isBoss)?4.5:1,shiny=enemy?.shiny?1.35:1,mega=(enemy?.mega||enemy?.isMega)?1.8:1;
     const packBase=mode==='adventure'?.012:.0005;
-    if(Math.random()<rs*packBase*cs.packBoost*boss*shiny*mega){const k=packKey(enemy),packName='Pack '+(k==='rare'?'Raro':k==='epic'?'Épico':k==='normal'?'Normal':k.toUpperCase());addPack(p,k);got.push(packName);if(mode==='survivor')survivorVisualDrop(enemy,packName,'pack',1)}
+    if(Math.random()<rs*packBase*cs.packBoost*boss*shiny*mega){const k=packKey(enemy),packName='Pack '+(k==='rare'?'Raro':k==='epic'?'Épico':k==='normal'?'Normal':k.toUpperCase());addPack(p,k,mode);got.push(packName);if(mode==='survivor')survivorVisualDrop(enemy,packName,'pack',1)}
 
     p.meta.sharedDropV2=p.meta.sharedDropV2&&typeof p.meta.sharedDropV2==='object'?p.meta.sharedDropV2:{};
     p.meta.sharedDropV2.kills=num(p.meta.sharedDropV2.kills,0)+1;
     p.meta.sharedDropV2.byMode=p.meta.sharedDropV2.byMode||{};p.meta.sharedDropV2.byMode[mode]=num(p.meta.sharedDropV2.byMode[mode],0)+1;
-    if(got.length){p.meta.sharedDropV2.items=num(p.meta.sharedDropV2.items,0)+got.length;save();notify(`🎁 ${label(mode)} • ${got.join(' + ')}`)}
+    if(got.length)p.meta.sharedDropV2.items=num(p.meta.sharedDropV2.items,0)+got.length;
+    /* Psy Idle pode derrotar vários inimigos por segundo. Nunca faça
+       serialização síncrona do save no loop de combate; o próprio modo
+       agrupa as gravações em fila. */
+    if(mode==='idle'){try{W.psyQueueIdleSave?.()}catch(e){};if(got.length)notify(`🎁 ${label(mode)} • ${got.join(' + ')}`)}
+    else if(got.length){save();notify(`🎁 ${label(mode)} • ${got.join(' + ')}`)}
     else{try{W.autoSave?.()}catch(e){}}
     return got;
   }
@@ -224,8 +262,8 @@
   W.psySharedWorldRareDrop=worldRareDrop;
   W.psyCommonDropHooks=function(id){return awardCommon(id,W.__psyDropContext?.mode||'auto')};
   W.PSY=W.PSY||{};
-  W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'0,60% base; World/Survivor/Idle = 0,15%; bônus de Drop até 2x',questCommon:'1,20% base; World/Survivor/Idle = 0,30%; bônus de Drop até 2x',questRare:'0,25% base; World/Survivor/Idle = 0,0625%; bônus de Drop até 2x',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor/World/Idle: 25% da taxa cheia + teto 15/700; Fast Encounter: 40% da taxa cheia + teto 15/700; Wild/Hunt: taxa cheia + teto 30/700'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
+  W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'3% no Idle no Lv.1; escala por nível até 2×',questCommon:'6% no Idle no Lv.1; escala por nível até 2×',questRare:'1% no Idle no Lv.1; escala por nível até 2×',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor: 12%; Idle: tabela por nível + suprimentos; World: 25%; Fast Encounter: 20%; Wild/Hunt: 50% das taxas da tabela'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
 
   installEndBattle();installWorldKill();installCardContext();
-  console.log('✅ PSYWORLD Shared Drops V11: materiais + Packs válidos; World usa Packs e não Cards diretas.');
+  console.log('✅ PSYWORLD Shared Drops V13: chances do Psy Idle escalam por nível com limites; economias permanecem isoladas.');
 })(window);

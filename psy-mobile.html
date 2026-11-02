@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071827">
+  <meta name="description" content="Psy AI — assistente proprietária do PSYWORLD">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="mobile/manifest.webmanifest">
+  <link rel="stylesheet" href="mobile/psy-mobile.css?build=PSY_MOBILE_V2">
+  <link rel="stylesheet" href="css/psy-responsive.css?build=RESPONSIVE_V1">
+  <title>Psy AI · PSYWORLD</title>
+</head>
+<body>
+  <main class="psy-mobile-app" id="psy-mobile-app">
+    <header class="psy-mobile-header">
+      <div>
+        <div class="psy-mobile-kicker">PSYWORLD · APLICATIVO PESSOAL</div>
+        <h1>🧠 Psy AI</h1>
+        <p>Assistente proprietária de jogo, código, arquivos e atualizações.</p>
+      </div>
+      <span class="psy-mobile-status" data-mobile-status>LOCKED</span>
+    </header>
+
+    <section class="psy-mobile-lock" data-mobile-lock>
+      <div class="psy-mobile-lock-icon">🔐</div>
+      <h2>Acesso do proprietário</h2>
+      <p>O token é usado apenas nesta sessão e desaparece quando o app é fechado ou bloqueado.</p>
+      <label>Endereço seguro do gateway
+        <input data-mobile-endpoint type="url" inputmode="url" autocomplete="off" placeholder="https://seu-servidor-privado/api/psy">
+      </label>
+      <label>Token do proprietário
+        <input data-mobile-token type="password" autocomplete="off" spellcheck="false">
+      </label>
+      <button class="psy-mobile-primary" type="button" data-mobile-unlock>DESBLOQUEAR PSY AI</button>
+      <small data-mobile-lock-status>Use HTTPS quando o gateway estiver fora do computador.</small>
+    </section>
+
+    <section class="psy-mobile-chat" data-mobile-chat hidden>
+      <div class="psy-mobile-toolbar">
+        <span>🔒 Sessão privada em memória</span>
+        <button type="button" data-mobile-lock-button>BLOQUEAR</button>
+      </div>
+      <div class="psy-mobile-feed" data-mobile-feed>
+        <div class="psy-mobile-message assistant"><small>Psy AI</small><div>Estou pronta. Posso conversar, pesquisar, analisar arquivos, gerar imagens e preparar mudanças do PSYWORLD.</div></div>
+      </div>
+      <div class="psy-mobile-proposal" data-mobile-proposal hidden></div>
+      <div class="psy-mobile-filebox">
+        <label>📎 Anexar arquivos
+          <input type="file" data-mobile-files accept="*/*" multiple>
+        </label>
+        <small data-mobile-files-label>Nenhum arquivo selecionado</small>
+      </div>
+      <form class="psy-mobile-compose" data-mobile-form>
+        <textarea data-mobile-input maxlength="4000" placeholder="Fale com a Psy AI…"></textarea>
+        <div class="psy-mobile-actions">
+          <button class="psy-mobile-secondary" type="button" data-mobile-plan>🛡 PLANEJAR MUDANÇA</button>
+          <button class="psy-mobile-primary" type="submit">ENVIAR</button>
+        </div>
+      </form>
+      <p class="psy-mobile-note">Código novo e funções novas entram em revisão; a Psy não executa shell, eval ou arquivos arbitrários.</p>
+    </section>
+  </main>
+  <script src="mobile/psy-mobile.js?build=PSY_MOBILE_V2"></script>
+  <script src="core/psy-responsive.js?build=RESPONSIVE_V1"></script>
+</body>
+</html>

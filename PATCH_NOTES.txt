@@ -1,0 +1,99 @@
+PSYWORLD v0.1.0 — CORREÇÃO DO CHAT — 28/09/2026
+
+- Melhorada a conexão ao trocar de canal, minimizar e reabrir o chat.
+- Reconexões com falha passam a respeitar intervalos progressivos.
+- O histórico carrega as 60 mensagens mais recentes.
+- Market e Leilão do Psy Idle mostram o estado real de desenvolvimento.
+- Abrir o chat não consulta mais os anúncios indisponíveis do Idle.
+
+VALIDAÇÃO
+- Testes de troca de canal durante conexão, minimizar durante conexão,
+  reconexão, histórico recente e disponibilidade do comércio passaram.
+
+AINDA PRECISA CORRIGIR / CONCLUIR
+- Concluir Market e Leilão do Psy Idle, com Gold e inventário próprios.
+- Integrar e validar transferências entre duas contas sem duplicar itens.
+- Concluir regras de itens vinculados, PsyCoin negociável e expiração.
+- Concluir o combate compartilhado; presença no World não equivale a co-op/PvP.
+
+HISTÓRICO ANTERIOR (status abaixo se refere às respectivas versões)
+
+PSYWORLD — V32 PSYDUCK EXCLUSIVO / SPRITES DO PASSE + V31/V29/V28 — ONLINE PREVIEW
+
+STATUS
+- Branch de teste: online-cloud-save-v23.
+- Produção/main continua intocada até aprovação explícita.
+- Conta online, Cloud Save, autoridade online V26, captura server-side e balanceamento Tier/Raridade V27 permanecem ativos.
+- Market continua bloqueado.
+
+ALTERAÇÕES V32 — PSYDUCK EXCLUSIVO DO SURVIVOR
+- Corrigida a exceção da V31 que mantinha o Psyduck Supremo visível no TIME/BOX por possuir psyduckChosen.
+- Agora qualquer Psyduck #54 é removido do TIME normal e não pode ser ativado/adicionado ao time comum.
+- O objeto autoritativo do Psyduck Supremo é preservado internamente no fim do BOX como reserva oculta, mantendo exatamente Lv, EXP, Reset, Provações e demais dados usados pelo Survivor.
+- A reserva oculta não aparece visualmente no TIME/BOX e não entra no contador visível do BOX.
+- Se existirem múltiplas cópias antigas de Psyduck, a melhor cópia do Supremo é preservada e as extras são arquivadas em P.meta.psyduckExclusiveArchive sem perda de dados.
+- Psyduck continua bloqueado em Wild/Hunt/World pelas proteções V31.
+
+ALTERAÇÕES V32 — BATTLE PASS
+- Recompensas do Passe passam a usar o catálogo visual autoritativo window.PSY_ITEMS em vez de depender apenas de emojis genéricos.
+- Stones, Balls elementais, Fragmento Mega Stone, Boost Stone, Shiny Stone, Packs, Eggs, Gold, Diamantes, PsyCoin e Cupom utilizam sprites reais quando mapeados em core/items.js.
+- O renderer do Passe é reaplicado após cada abertura/re-render do Passe e também por MutationObserver, evitando voltar ao emoji após resgates ou troca de aba.
+- Mantido fallback somente para recompensas sem sprite cadastrada.
+
+ALTERAÇÕES V31 — KO / LEVEL UP / ROSTER
+- Adicionada core/battle-roster-integrity-v31.js como camada final de integridade, com reinstalação automática caso bundles tardios sobrescrevam recalcPoke, checkLevelUp, battleAction ou endBattle.
+- Corrigida a causa estrutural da regressão: V29/V30 podiam carregar antes de v50-compat, que depois redefinia recalcPoke e removia a proteção de HP zero.
+- Corrigida uma segunda causa concreta de revive: checkLevelUp legado fazia hp=maxHp ao subir de nível. Agora level-up preserva a porcentagem de HP do Pokémon vivo; um Pokémon derrotado permanece em 0 HP.
+- Pokémon derrotado recebe trava persistente de KO durante a batalha. Se qualquer camada tentar restaurar seu HP, a V31 força novamente 0 até cura/Revive intencional.
+- battleAction é protegido novamente após qualquer sobrescrita tardia: Pokémon derrotado não pode atacar, capturar ou continuar o turno.
+- A troca obrigatória permanece dona da batalha enquanto o ativo está derrotado. Outro Pokémon vivo precisa ser escolhido para continuar.
+- addToTeam não cura mais implicitamente um Pokémon derrotado ao mover Box -> Time.
+- CURAR e uso intencional de Revive limpam corretamente a trava de derrotado.
+- handleWorldKill/level-up do World preserva HP em vez de curar o Pokémon por subir de nível.
+- Aplicada uma reparação única de roster: Pokémon antigos são recalculados com a fórmula atual de Tier/Raridade, mantendo a porcentagem de HP dos vivos e mantendo derrotados em 0.
+
+ALTERAÇÕES V31 — PSYDUCK EXCLUSIVO
+- Psyduck normal #54 é removido das listas WILD_ZONES_GEN1 e demais pools acessíveis de Wild/Hunt.
+- getPokesForHunt/getWorldPool/psyCleanHuntPool/getHuntPool são filtrados contra Psyduck caso sejam recriados por bundle tardio.
+- Psyduck existente em worldWilds é removido.
+- startBattle bloqueia qualquer encontro normal de Psyduck como proteção final.
+- Psyduck normal já capturado antes desta regra é arquivado em P.meta.psyduckExclusiveArchive em vez de ser apagado.
+
+ALTERAÇÕES V29/V30 PRESERVADAS
+- CURAR usa maxHP real e sincroniza Cidade/Batalha.
+- HP zero persiste em recálculos.
+- KO exige troca obrigatória e Revive não continua a batalha automaticamente.
+- Cidade fica isolada enquanto World/Aventura/Survivor controlam o jogador.
+- Psyduck é bloqueado de encontros normais.
+
+ALTERAÇÕES V28 — SURVIVOR PRESERVADAS
+- Um único runtime V47 hard-pinned.
+- Wobbuffet com sprite válida; helpers sem rótulos/barras indevidas.
+- Instinto de Caça aparece em BÔNUS ATIVOS e entra no loot.
+- Elites/Mega/Shiny/Mega Shiny mantêm ataques especiais.
+- Psy Nova, Vórtice Mental, Chuva Psíquica, Blissey/Santuário e VFX permanecem completos.
+- Otimizações usam spatial grid, camera culling, limites de simulação, colisão reduzida e draw throttle; não reduzem gráficos.
+
+VALIDAÇÕES RELEVANTES
+- Usuário confirmou que o revive automático/KO foi corrigido na Preview V31.
+- A causa de Psyduck ainda visível foi localizada: psyduckChosen fazia o Supremo escapar da regra normalPsyduck da V31.
+- V32 preserva o mesmo objeto do Supremo em reserva oculta para não reinicializar progresso do Survivor.
+- core/items.js já possui sprites locais/autoridade visual para as principais recompensas do Passe; V32 passa a reutilizar essa fonte.
+- Vercel Preview do commit V32 concluiu com status SUCCESS.
+- Produção/main não foi alterada.
+
+CHECKLIST DE TESTE V32
+1. Ctrl+F5 e confirmar no console: "PSYWORLD V32 ativo: Psyduck reservado ao Survivor + sprites reais no Passe".
+2. Abrir TIME/BOX: nenhum Psyduck deve aparecer no TIME nem nas cartas visíveis do BOX.
+3. Abrir PSYDUCK SUPREMO: Lv, EXP, Reset, Tier/Qualidade e Provações anteriores devem continuar preservados.
+4. Wild/Hunt/World não devem gerar Psyduck #54.
+5. Abrir PASSE e percorrer níveis 1–100: recompensas de itens devem mostrar sprites reais em vez de emojis genéricos.
+6. Conferir especialmente Boost Stone, Shiny Stone, Fragmento Mega Stone, Balls, Packs, Eggs, Gold, Diamantes e PsyCoin.
+7. Resgatar uma recompensa disponível e confirmar que, após o re-render, a sprite continua correta.
+
+AINDA PRECISA CORRIGIR / VALIDAR
+- Confirmar visualmente no navegador real que a reserva do Psyduck não aparece no TIME/BOX e o Survivor preserva o progresso.
+- Confirmar no Passe se existe algum nome de recompensa antigo não reconhecido pelo catálogo PSY_ITEMS; se houver, adicionar alias específico.
+- Validar Survivor por sessão prolongada para confirmar ganho de performance após unificação do runtime V47.
+- Survivor ainda é simulação em tempo real no cliente; autoridade total da simulação continua etapa futura.
+- Market permanece BLOQUEADO até ownership/Pack/Egg/Survivor e testes anti-cheat estarem fechados server-side.

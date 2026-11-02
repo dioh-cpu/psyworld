@@ -2734,12 +2734,12 @@ function psyTrainerXpNeed(level){
 window.psyTrainerXpNeed=psyTrainerXpNeed;
 /* Equal-level wins give about 4% of the bar; enemy level and XP buffs help without a multi-level jump. */
 function psyBattleXpReward(enemyLevel,speciesBonus=0){
-  const poke=P?.team?.[0],ownLevel=Math.max(1,Number(poke?.level||1)),nextXp=Math.max(100,Number(poke?.maxExp||100)),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),species=Math.max(0,Number(speciesBonus)||0),rate=Math.min(.144,.048*relative*(1+xpBuff/100)*(1+species/100));
+  const poke=P?.team?.[0],ownLevel=Math.max(1,Number(poke?.level||1)),nextXp=Math.max(100,Number(poke?.maxExp||100)),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),species=Math.max(0,Number(speciesBonus)||0),rate=Math.min(.12,.04*relative*(1+xpBuff/100)*(1+species/100));
   return Math.max(1,Math.floor(nextXp*rate));
 }
 window.psyBattleXpReward=psyBattleXpReward;
 function psyBattleTrainerXpReward(enemyLevel){
-  const ownLevel=Math.max(1,Number(P?.team?.[0]?.level||1)),trainerLevel=Math.max(1,Number(P?.trainerLevel||1)),required=psyTrainerXpNeed(trainerLevel),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),rate=Math.min(.072,.018*relative*(1+xpBuff/100));
+  const ownLevel=Math.max(1,Number(P?.team?.[0]?.level||1)),trainerLevel=Math.max(1,Number(P?.trainerLevel||1)),required=psyTrainerXpNeed(trainerLevel),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),rate=Math.min(.06,.015*relative*(1+xpBuff/100));
   return Math.max(1,Math.floor(required*rate));
 }
 window.psyBattleTrainerXpReward=psyBattleTrainerXpReward;

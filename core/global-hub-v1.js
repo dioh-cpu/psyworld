@@ -15,8 +15,8 @@
     es:{flag:'🇪🇸',name:'Español'}
   };
   const TEXT={
-    'pt-BR':{menu:'MENU',inventory:'BOLSA',shop:'LOJA',team:'TIME / BOX',album:'ÁLBUM',eggs:'OVOS',skills:'HABILIDADES',evolutions:'EVOLUÇÕES',books:'MAGIC BOOKS',cards:'CARDS',adventureShop:'LOJA AVENTURA',quests:'QUESTS',achievements:'CONQUISTAS',pokedex:'POKÉDEX',dungeons:'DUNGEONS',hunts:'HUNTS',gyms:'GINÁSIOS',afk:'MODO AFK',survivor:'SURVIVOR / PSYDUCK',battlepass:'BATTLE PASS',vip:'VIP',trainer:'TALENTOS',cash:'CASH SHOP',heal:'CURAR',adventure:'AVENTURA',world:'WORLD',moveHud:'AJUSTAR CONTROLES',config:'CONFIG',close:'FECHAR',general:'GERAL',language:'IDIOMA',hotkeys:'HOTKEYS',sound:'SOM',save:'SALVAR',load:'CARREGAR',choose:'Escolha um idioma'},
-    'pt-PT':{menu:'MENU',inventory:'INVENTÁRIO',shop:'LOJA',team:'EQUIPA / BOX',album:'ÁLBUM',eggs:'OVOS',skills:'HABILIDADES',evolutions:'EVOLUÇÕES',books:'LIVROS MÁGICOS',cards:'CARTAS',adventureShop:'LOJA AVENTURA',quests:'MISSÕES',achievements:'CONQUISTAS',pokedex:'POKÉDEX',dungeons:'MASMORRAS',hunts:'CAÇADAS',gyms:'GINÁSIOS',afk:'MODO AFK',survivor:'SURVIVOR / PSYDUCK',battlepass:'PASSE DE BATALHA',vip:'VIP',trainer:'TALENTOS',cash:'LOJA PREMIUM',heal:'CURAR',adventure:'AVENTURA',world:'WORLD',moveHud:'AJUSTAR CONTROLOS',config:'CONFIGURAÇÕES',close:'FECHAR',general:'GERAL',language:'IDIOMA',hotkeys:'ATALHOS',sound:'SOM',save:'GUARDAR',load:'CARREGAR',choose:'Escolha um idioma'},
+    'pt-BR':{menu:'MENU',inventory:'BOLSA',shop:'LOJA',team:'TIME / BOX',album:'ÁLBUM',eggs:'OVOS',skills:'HABILIDADES',evolutions:'EVOLUÇÕES',books:'MAGIC BOOKS',cards:'CARDS',adventureShop:'LOJA AVENTURA',quests:'QUESTS',achievements:'CONQUISTAS',pokedex:'POKÉDEX',dungeons:'DUNGEONS',mystery:'MASMORRAS DO MISTÉRIO',hunts:'HUNTS',gyms:'GINÁSIOS',afk:'MODO AFK',survivor:'SURVIVOR / PSYDUCK',battlepass:'BATTLE PASS',vip:'VIP',trainer:'TALENTOS',cash:'CASH SHOP',heal:'CURAR',adventure:'AVENTURA',world:'WORLD',moveHud:'AJUSTAR CONTROLES',config:'CONFIG',close:'FECHAR',general:'GERAL',language:'IDIOMA',hotkeys:'HOTKEYS',sound:'SOM',save:'SALVAR',load:'CARREGAR',choose:'Escolha um idioma'},
+    'pt-PT':{menu:'MENU',inventory:'INVENTÁRIO',shop:'LOJA',team:'EQUIPA / BOX',album:'ÁLBUM',eggs:'OVOS',skills:'HABILIDADES',evolutions:'EVOLUÇÕES',books:'LIVROS MÁGICOS',cards:'CARTAS',adventureShop:'LOJA AVENTURA',quests:'MISSÕES',achievements:'CONQUISTAS',pokedex:'POKÉDEX',dungeons:'MASMORRAS',mystery:'MASMORRAS DO MISTÉRIO',hunts:'CAÇADAS',gyms:'GINÁSIOS',afk:'MODO AFK',survivor:'SURVIVOR / PSYDUCK',battlepass:'PASSE DE BATALHA',vip:'VIP',trainer:'TALENTOS',cash:'LOJA PREMIUM',heal:'CURAR',adventure:'AVENTURA',world:'WORLD',moveHud:'AJUSTAR CONTROLOS',config:'CONFIGURAÇÕES',close:'FECHAR',general:'GERAL',language:'IDIOMA',hotkeys:'ATALHOS',sound:'SOM',save:'GUARDAR',load:'CARREGAR',choose:'Escolha um idioma'},
     en:{menu:'MENU',inventory:'INVENTORY',shop:'SHOP',team:'TEAM / BOX',album:'ALBUM',eggs:'EGGS',skills:'SKILLS',evolutions:'EVOLUTIONS',books:'MAGIC BOOKS',cards:'CARDS',adventureShop:'ADVENTURE SHOP',quests:'QUESTS',achievements:'ACHIEVEMENTS',pokedex:'POKÉDEX',dungeons:'DUNGEONS',hunts:'HUNTS',gyms:'GYMS',afk:'AFK MODE',survivor:'SURVIVOR / PSYDUCK',battlepass:'BATTLE PASS',vip:'VIP',trainer:'TRAINER TALENTS',cash:'CASH SHOP',heal:'HEAL',adventure:'ADVENTURE',world:'WORLD',moveHud:'ADJUST CONTROLS',config:'SETTINGS',close:'CLOSE',general:'GENERAL',language:'LANGUAGE',hotkeys:'HOTKEYS',sound:'SOUND',save:'SAVE',load:'LOAD',choose:'Choose a language'},
     fr:{menu:'MENU',inventory:'SAC',shop:'BOUTIQUE',team:'ÉQUIPE / BOÎTE',album:'ALBUM',eggs:'ŒUFS',skills:'COMPÉTENCES',evolutions:'ÉVOLUTIONS',books:'LIVRES MAGIQUES',cards:'CARTES',adventureShop:'BOUTIQUE AVENTURE',quests:'QUÊTES',achievements:'SUCCÈS',pokedex:'POKÉDEX',dungeons:'DONJONS',hunts:'CHASSES',gyms:'ARÈNES',afk:'MODE AFK',survivor:'SURVIVOR / PSYDUCK',battlepass:'PASSE DE COMBAT',vip:'VIP',trainer:'TALENTS',cash:'BOUTIQUE PREMIUM',heal:'SOIGNER',adventure:'AVENTURE',world:'MONDE',moveHud:'AJUSTER LES COMMANDES',config:'CONFIGURATION',close:'FERMER',general:'GÉNÉRAL',language:'LANGUE',hotkeys:'TOUCHES',sound:'SON',save:'SAUVEGARDER',load:'CHARGER',choose:'Choisissez une langue'},
     de:{menu:'MENÜ',inventory:'INVENTAR',shop:'SHOP',team:'TEAM / BOX',album:'ALBUM',eggs:'EIER',skills:'FÄHIGKEITEN',evolutions:'ENTWICKLUNGEN',books:'MAGISCHE BÜCHER',cards:'KARTEN',adventureShop:'ABENTEUER-SHOP',quests:'QUESTS',achievements:'ERFOLGE',pokedex:'POKÉDEX',dungeons:'DUNGEONS',hunts:'JAGDEN',gyms:'ARENEN',afk:'AFK-MODUS',survivor:'SURVIVOR / PSYDUCK',battlepass:'BATTLE PASS',vip:'VIP',trainer:'TRAINER-TALENTE',cash:'CASH-SHOP',heal:'HEILEN',adventure:'ABENTEUER',world:'WELT',moveHud:'STEUERUNG ANPASSEN',config:'EINSTELLUNGEN',close:'SCHLIESSEN',general:'ALLGEMEIN',language:'SPRACHE',hotkeys:'TASTEN',sound:'TON',save:'SPEICHERN',load:'LADEN',choose:'Sprache wählen'},
@@ -35,7 +35,7 @@
   const saveCfg=()=>{try{localStorage.setItem(STORE,JSON.stringify(cfg))}catch(e){}};
   function profile(){return W.P||null}
   function notify(msg){try{W.notif?.(msg,2600)}catch(e){console.log(msg)}}
-  function activeAdventure(){const el=D.getElementById('psy-adventure');return !!el&&getComputedStyle(el).display!=='none'}
+  function activeAdventure(){const el=D.getElementById('psy-adventure-v95-authored');return !!el&&getComputedStyle(el).display!=='none'}
   function getRoot(id){let el=D.getElementById(id);if(!el){el=D.createElement('div');el.id=id;D.body.appendChild(el)}return el}
   function setText(el,value){if(el&&el.textContent!==String(value))el.textContent=String(value)}
   function setDisplay(el,value){if(el&&el.style.display!==value)el.style.display=value}
@@ -58,12 +58,10 @@
   }
 
   const actions=[
-    ['world','🌍','world'],['inventory','🎒','openBag'],['shop','🏪','openShop'],['team','👥','openTeam'],['album','📒','album'],['eggs','🥚','eggs'],['skills','🧠','skills'],['evolutions','🧬','evolutions'],
+  ['inventory','🎒','openBag'],['shop','🏪','openShop'],['team','👥','openTeam'],['album','📒','album'],['eggs','🥚','eggs'],['skills','🧠','skills'],['evolutions','🧬','evolutions'],['books','📖','books'],['moveHud','✥','moveHud'],
     ['quests','📜','openQuestsV11'],['achievements','🏆','openAchievements'],['pokedex','📘','openPokedex'],['dungeons','🏰','openDungeons'],['hunts','🗺️','openHunts'],['gyms','🏅','openGyms'],['afk','🌙','openAfkV9'],['survivor','🦆','survivor'],['battlepass','🎫','openBattlePass'],['vip','⭐','openVIP'],['trainer','🧑‍🏫','openTrainerShop'],['heal','💚','heal']
   ];
   function invoke(kind){
-    if(kind==='adventure')return W.openAdventureMode?.();
-    if(kind==='world')return W.enterWorldMode?.();
     if(kind==='team'&&activeAdventure()&&typeof W.showAdventureTeam==='function')return W.showAdventureTeam();
     if(kind==='afk'&&activeAdventure()&&typeof W.showAdventureAfk==='function')return W.showAdventureAfk();
     if(kind==='album')return activeAdventure()&&typeof W.showAdventureAlbum==='function'?W.showAdventureAlbum('codex'):(typeof W.openCardMode==='function'?W.openCardMode():openCards());
@@ -204,7 +202,7 @@
   function hideDuplicates(){
     const legacyMenu=D.getElementById('menu'),cityDock=D.getElementById('world-btn-float');
     const city=D.getElementById('menuBtn');
-    const adv=D.getElementById('psy-adventure'),inAdventure=!!adv&&getComputedStyle(adv).display!=='none';
+    const adv=D.getElementById('psy-adventure-v95-authored'),inAdventure=activeAdventure();
     if(!inAdventure){
       // Não fechar o menu legado em cada ciclo: o jogador precisa conseguir
       // mantê-lo aberto e acessar o álbum antigo sem a camada global
@@ -234,6 +232,7 @@
   function releaseHotkey(code){const key=Object.keys(cfg.keys).find(k=>cfg.keys[k]===code);if(['up','down','left','right'].includes(key)){const mapped={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'}[key];W.PSY?.adventureRuntime?.keys?.delete(mapped)}}
   const padState=new WeakMap();
   function gamepad(){
+    if(W.PSY_RUNTIME_MODE?.isExclusive?.()){W.requestAnimationFrame(gamepad);return}
     for(const pad of navigator.getGamepads?.()||[]){if(!pad)continue;const r=W.PSY?.adventureRuntime?.keys,x=Number(pad.axes?.[0]||0),y=Number(pad.axes?.[1]||0),set=(k,on)=>{if(!r)return;on?r.add(k):r.delete(k)};set('ArrowLeft',x<-.25);set('ArrowRight',x>.25);set('ArrowUp',y<-.25);set('ArrowDown',y>.25);let old=padState.get(pad);if(!old){old=[];padState.set(pad,old)}[[0,'Space'],[1,'Escape'],[2,'KeyI'],[3,'KeyC']].forEach(([i,c])=>{const on=!!pad.buttons?.[i]?.pressed;if(on&&!old[i])dispatchHotkey(c);old[i]=on})}
     W.requestAnimationFrame(gamepad)
   }

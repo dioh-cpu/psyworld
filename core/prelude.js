@@ -24,7 +24,6 @@ function getRealSprite(p){
   return `https://play.pokemonshowdown.com/sprites/${folder}/${base}.gif`;
 }
 
-// FIX SEM PISCAR - substitui o getSpriteUrl da linha 3041
 window.getSpriteUrl = function(id, shiny, isMega, megaForm){
   let active = window.P?.team?.[0];
   if(active && active.id===id){
@@ -72,7 +71,7 @@ window.useMegaStone = function(idx,isBox){
   if(P.inventory["Fragmento Mega Stone"]<=0) delete P.inventory["Fragmento Mega Stone"];
   poke.isMega=true; poke.megaForm = window.MEGA_XY[poke.id]?.[0]?.id || getShowdownName(poke.id)+'-mega';
   poke.name = (poke.shiny?'Shiny Mega ':'Mega ') + getPokeName(poke.id);
-  poke.rarity={n:"DEUS",mult:15,color:"#fff"};
+  poke.rarity={n:"DEUS",mult:2.15,color:"#fff"};
   recalcPoke(poke); autoSave(); renderTeam(); openPokeDetail(idx,isBox);
 }
 
@@ -101,7 +100,7 @@ window.confirmMegaChoice = function(idx,isBox,choiceIdx,cost){
   let choice = window.MEGA_XY[poke.id][choiceIdx];
   poke.isMega=true; poke.megaForm = choice.id;
   poke.name = (poke.shiny?'Shiny Mega ':'Mega ') + getPokeName(poke.id) + (choice.letter?' '+choice.letter:'');
-  poke.rarity={n:"DEUS",mult:15,color:"#fff"};
+  poke.rarity={n:"DEUS",mult:2.15,color:"#fff"};
   if(window.imgCache){
     Object.keys(window.imgCache).forEach(k=>{ if(k.includes(getShowdownName(poke.id)) || k.includes('charizard') || k.includes('mewtwo')) delete window.imgCache[k]; });
   }
@@ -135,7 +134,6 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
     if(typeof W.psySurvLater!=='function')W.psySurvLater=laterFallback;
     if(modal.querySelector('[data-psy-surv-later="1"]'))return true;
 
-    // Find the action row used by both the legacy 2-button modal and the current modal.
     const buttons=[...modal.querySelectorAll('button')];
     const yes=buttons.find(b=>/^\s*SIM\s*$/i.test(b.textContent||''));
     const no=buttons.find(b=>/^\s*N[ÃA]O\s*$/i.test(b.textContent||''));
@@ -166,10 +164,60 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
     if(!target)return setTimeout(start,0);
     const mo=new MutationObserver(()=>ensureLaterButton());
     mo.observe(target,{childList:true,subtree:true});
-    // Extra checks cover modals whose HTML is replaced without a new outer node.
     setTimeout(ensureLaterButton,500);
     setTimeout(ensureLaterButton,1500);
     setTimeout(ensureLaterButton,3500);
   };
   if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
+
+/* PSYWORLD V26 — preflight do menu Cloud Save para evitar corrida de DOM. */
+(function(){
+  'use strict';
+  const W=window,D=document;
+  function ensureCloudMenu(){
+    const menu=D.getElementById('menu');if(!menu)return false;
+    let cloud=D.getElementById('psy-cloud-menu-actions');
+    if(!cloud){
+      cloud=D.createElement('div');cloud.id='psy-cloud-menu-actions';
+      cloud.style.cssText='width:min(700px,90%);margin:8px auto;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;';
+      cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button>';
+      menu.appendChild(cloud);
+    }
+    const save=cloud.querySelector('#psy-cloud-save-now'),load=cloud.querySelector('#psy-cloud-load-now');
+    if(save&&!save.dataset.psyCloudGuard){save.dataset.psyCloudGuard='1';save.onclick=()=>W.psyCloudV23?.uploadNow?.()}
+    if(load&&!load.dataset.psyCloudGuard){load.dataset.psyCloudGuard='1';load.onclick=()=>W.psyCloudV23?.loadNow?.()}
+    return !!(save&&load)
+  }
+  const start=()=>{
+    ensureCloudMenu();
+    const target=D.body||D.documentElement;if(!target)return;
+    const mo=new MutationObserver(()=>ensureCloudMenu());mo.observe(target,{childList:true,subtree:true});
+    setTimeout(ensureCloudMenu,60);setTimeout(ensureCloudMenu,250);setTimeout(ensureCloudMenu,1000);
+  };
+  if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+
+/* PSYWORLD V26 — autoridade online global, sem alterar a main/produção. */
+try{
+  const oa=document.createElement('script');
+  oa.src='core/online-authority-v26.js?build=ONLINE_AUTHORITY_V26_20260927_A';
+  oa.async=false;
+  document.head.appendChild(oa);
+}catch(e){console.warn('online authority v26 loader',e)}
+
+/* PSYWORLD V62 — captura por qualidade/evolução/força, bônus aditivo, teto 30%. */
+try{
+  const ch=document.createElement('script');
+  ch.src='core/capture-hotfix-v26e.js?build=CAPTURE_V62_TALENT_BONUS_REWORK_20260906';
+  ch.async=false;
+  document.head.appendChild(ch);
+}catch(e){console.warn('capture v62 loader',e)}
+
+/* PSYWORLD V33 — novas contas sem Psyduck no time normal + LOG OUT. */
+try{
+  const v33=document.createElement('script');
+  v33.src='core/new-account-logout-v33.js?build=NEW_ACCOUNT_LOGOUT_V33_20260927_A';
+  v33.async=false;
+  document.head.appendChild(v33);
+}catch(e){console.warn('new account/logout v33 loader',e)}

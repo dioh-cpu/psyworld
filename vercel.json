@@ -6,6 +6,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/player/:action",
+      "destination": "/api/player?action=:action"
+    },
+    {
       "source": "/api/economy/:action",
       "destination": "/api/economy?action=:action"
     },
