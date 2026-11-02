@@ -450,7 +450,7 @@
     const cols=model.map.width||COLS,rows=model.map.height||ROWS,drawTile=model.map.artKey?Math.min(TILE,Math.floor(cw/cols)):model.map.authoredKind==='pallet'?Math.min(TILE,Math.floor(cw/cols),Math.floor(ch/rows)):TILE;
     const offsetX=Math.floor((cw-cols*drawTile)/2);
     const worldHeight=rows*drawTile,scrollY=worldHeight>ch?Math.max(0,Math.min(worldHeight-ch,model.y*drawTile+drawTile/2-ch/2)):0;
-    const offsetY=Math.floor((ch-worldHeight)/2-scrollY);
+    const offsetY=worldHeight>ch?-scrollY:Math.floor((ch-worldHeight)/2);
     const artDrawn=model.map.artKey?W.PsyKantoCampaignArtV1?.draw?.(c,model.map,{offsetX,offsetY,TILE:drawTile}):false;
     // Campaign locations use their authored map art. Never substitute the
     // generic terrain tiles when an illustration has not loaded or is absent.
