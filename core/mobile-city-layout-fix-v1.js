@@ -8,7 +8,7 @@
   style.id = 'psy-mobile-city-layout-fix-v1';
   style.textContent = `
     #world-btn-float{
-      position:fixed!important;top:auto!important;right:10px!important;bottom:74px!important;
+      display:flex!important;height:auto!important;min-height:0!important;min-width:0!important;position:fixed!important;top:auto!important;right:10px!important;bottom:74px!important;
       z-index:120!important;width:min(228px,48vw)!important;max-height:30dvh!important;
       flex-direction:column!important;align-items:stretch!important;
       gap:7px!important;padding:8px!important;box-sizing:border-box!important;
@@ -18,14 +18,14 @@
     }
     #btn-city-content-toggle{width:100%!important;min-height:42px!important;flex:none!important;text-align:center!important}
     #city-game-content-buttons{
-      display:flex!important;flex-direction:column!important;align-items:stretch!important;
+      display:flex!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;grid-template-columns:none!important;flex-direction:column!important;align-items:stretch!important;
       gap:6px!important;max-height:calc(30dvh - 66px)!important;overflow-y:auto!important;
       overscroll-behavior:contain;scrollbar-width:thin;padding-right:2px
     }
     #world-btn-float.city-content-collapsed #city-game-content-buttons{display:none!important}
     #city-game-content-buttons>button{
       display:block!important;width:100%!important;min-height:38px!important;height:auto!important;
-      flex:none!important;box-sizing:border-box!important;padding:7px 9px!important;
+      flex:none!important;min-width:0!important;max-width:none!important;overflow-wrap:anywhere!important;box-sizing:border-box!important;padding:7px 9px!important;
       border-width:1px!important;border-radius:9px!important;text-align:left!important;
       line-height:1.2!important;font-size:11px!important;white-space:normal!important
     }

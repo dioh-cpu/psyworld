@@ -31,8 +31,8 @@
     'route-24-25':{art:'route-24-25',kind:'route',spawn:[16,30],npc:[16,14],object:[17,20],exit:[16,1],grass:[[4,8,5,5],[23,8,5,5]],npcs:[{id:'bridge-trainer',name:'Treinador da Ponte',x:16,y:14,facing:'down',sprite:'trainer'}]},
     'mt-moon':{art:'mt-moon',kind:'dungeon',spawn:[16,30],npc:[19,14],object:[20,20],exit:[16,1],grass:[[6,8,5,4],[22,12,5,4]],npcs:[{id:'moon-researcher',name:'Pesquisadora do Monte Lua',x:19,y:14,facing:'left',sprite:'professor'}]}
   };
-  function nearestWalkable(grid,point){const [sx,sy]=point;if(grid[sy]?.[sx]!==undefined&&!['3','4','6','9'].includes(grid[sy][sx]))return{x:sx,y:sy};for(let r=1;r<12;r++)for(let y=Math.max(0,sy-r);y<=Math.min(31,sy+r);y++)for(let x=Math.max(0,sx-r);x<=Math.min(31,sx+r);x++)if(Math.abs(x-sx)+Math.abs(y-sy)<=r&& !['3','4','6','9'].includes(grid[y][x]))return{x,y};return{x:16,y:16};}
-  function carve(grid,points,width=1){for(let i=1;i<points.length;i++){let [x,y]=points[i-1], [tx,ty]=points[i],dx=Math.abs(tx-x),sx=x<tx?1:-1,dy=-Math.abs(ty-y),sy=y<ty?1:-1,err=dx+dy;while(true){for(let oy=-width;oy<=width;oy++)for(let ox=-width;ox<=width;ox++){const xx=x+ox,yy=y+oy;if(grid[yy]?.[xx]!==undefined&&!['3','4','6','9'].includes(grid[yy][xx]))grid[yy][xx]=1;}if(x===tx&&y===ty)break;const e2=2*err;if(e2>=dy){err+=dy;x+=sx}if(e2<=dx){err+=dx;y+=sy}}}}
+  function nearestWalkable(grid,point){const [sx,sy]=point;if(grid[sy]?.[sx]!==undefined&&![3,4,6,9].includes(grid[sy][sx]))return{x:sx,y:sy};for(let r=1;r<12;r++)for(let y=Math.max(0,sy-r);y<=Math.min(31,sy+r);y++)for(let x=Math.max(0,sx-r);x<=Math.min(31,sx+r);x++)if(Math.abs(x-sx)+Math.abs(y-sy)<=r&& ![3,4,6,9].includes(grid[y][x]))return{x,y};return{x:16,y:16};}
+  function carve(grid,points,width=1){for(let i=1;i<points.length;i++){let [x,y]=points[i-1], [tx,ty]=points[i],dx=Math.abs(tx-x),sx=x<tx?1:-1,dy=-Math.abs(ty-y),sy=y<ty?1:-1,err=dx+dy;while(true){for(let oy=-width;oy<=width;oy++)for(let ox=-width;ox<=width;ox++){const xx=x+ox,yy=y+oy;if(grid[yy]?.[xx]!==undefined&&![3,4,6,9].includes(grid[yy][xx]))grid[yy][xx]=1;}if(x===tx&&y===ty)break;const e2=2*err;if(e2>=dy){err+=dy;x+=sx}if(e2<=dx){err+=dx;y+=sy}}}}
   function build(place){const id=typeof place==='string'?place:place?.id,meta=META[id],data=DATA[id]||(id==='mt-moon'?DATA['route-4']:null);if(!meta||!data)return null;const grid=data.grid.map(row=>Array.from(row,Number));
     if(id==='pallet'){
       // Rebuild the collision map against the square Pallet illustration: the
@@ -52,7 +52,7 @@
       for(const [x,y] of [[16,0],[7,15],[18,14],[26,16],[21,25]])grid[y][x]=1;
     }
     // Playable habitat overlays may only use traversable ground; leave trees, water and roofs as drawn.
-    if(meta.grass)for(const [x,y,w,h] of meta.grass)for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(grid[yy]?.[xx]!==undefined&&!['3','4','6','9'].includes(grid[yy][xx]))grid[yy][xx]=2;
+    if(meta.grass)for(const [x,y,w,h] of meta.grass)for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(grid[yy]?.[xx]!==undefined&&![3,4,6,9].includes(grid[yy][xx]))grid[yy][xx]=2;
     const routePaths={
       'route-1':[[16,31],[15,27],[16,23],[17,19],[17,15],[18,11],[17,7],[17,3],[17,1]],
       'route-2':[[16,31],[17,27],[16,23],[17,19],[17,16],[16,13],[16,10],[17,7],[16,3],[16,1]],
