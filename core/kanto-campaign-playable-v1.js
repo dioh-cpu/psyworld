@@ -125,7 +125,7 @@
     D.head.appendChild(style);
   }
 
-  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
+  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, lastMove:0, motion:null, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
   function makeRoot() {
     if (model.root) return model.root;
     addStyles();
@@ -256,11 +256,12 @@
   function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();} }
   function move(dir) {
     if(!model.place||!model.root?.classList.contains('open'))return;
+    const now=performance.now();model.lastMove=now;
     const step={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(!step)return;
     const nx=model.x+step[0],ny=model.y+step[1],width=model.map.width||COLS,height=model.map.height||ROWS;if(nx<0||ny<0||nx>=width||ny>=height)return;
     model.direction=dir;
     const tile=model.map.grid[ny][nx],npcAtCell=(model.map.npcs||[]).some(n=>n.x===nx&&n.y===ny);if(tile===9||tile===3||tile===4||tile===6||npcAtCell)return;
-    model.x=nx;model.y=ny;model.frame=(model.frame+1)%WALK_FRAME_COLUMNS.length;
+    model.motion={fromX:model.x,fromY:model.y,toX:nx,toY:ny,start:now,duration:135};model.x=nx;model.y=ny;model.frame=(model.frame+1)%WALK_FRAME_COLUMNS.length;
     if(tile===5||tile===2)maybeEncounter();
     if((model.map.portals||[]).some(portal=>portal.x===nx&&portal.y===ny)){interact();return;}
     if(model.map.exit&&nx===model.map.exit.x&&ny===model.map.exit.y)interact();
@@ -494,11 +495,15 @@
     if(model.map.portals?.length)model.map.portals.forEach(portal=>marker(portal,portal.gate&&!objectivesMet(model.place)?'#cb7474':'#79df94','›',places().find(p=>p.id===portal.to)?.name||'Próxima área'));
     else if(model.map.exit)marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima área');
     if(model.map.secretChest&&model.map.secretGate&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
-    const px=offsetX+model.x*drawTile+drawTile/2,py=offsetY+model.y*drawTile+drawTile/2;
+    const motion=model.motion,blend=motion?Math.max(0,Math.min(1,(performance.now()-motion.start)/motion.duration)):1;
+    if(motion&&blend>=1)model.motion=null;
+    const visualX=motion?motion.fromX+(motion.toX-motion.fromX)*blend:model.x,visualY=motion?motion.fromY+(motion.toY-motion.fromY)*blend:model.y;
+    const px=offsetX+visualX*drawTile+drawTile/2,py=offsetY+visualY*drawTile+drawTile/2;
     const avatar=selectedAvatar();
     if(avatar?.ready){
       const row=({down:0,left:1,right:2,up:3})[model.direction]??0;
       const sourceFrame=model.held?WALK_FRAME_COLUMNS[model.frame%WALK_FRAME_COLUMNS.length]:IDLE_FRAME;
+      c.fillStyle='rgba(5,12,16,.38)';c.beginPath();c.ellipse(px,py+drawTile*.34,drawTile*.2,drawTile*.09,0,0,Math.PI*2);c.fill();
       drawNormalizedAvatar(c,avatar,row,sourceFrame,px,py+8);
     }else{
       c.fillStyle='#141a23';c.beginPath();c.ellipse(px,py+8,8,4,0,0,Math.PI*2);c.fill();
@@ -547,7 +552,7 @@
   }
   function tick() {
     if(!model.root?.classList.contains('open')){model.raf=0;return;}
-    const now=performance.now();if(model.held&&now-model.lastMove>160){model.lastMove=now;move(model.held)}
+    const now=performance.now();if(model.held&&now-model.lastMove>160)move(model.held);
     render();model.raf=requestAnimationFrame(tick);
   }
   function injectEntryButton() {
