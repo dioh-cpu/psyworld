@@ -1,5 +1,5 @@
 /* Exclusivo da preview de Kanto; não é carregado no ambiente público. */
-#psy-kanto-world-v2{position:fixed;inset:0;z-index:2147483100;background:#08111c;color:#f8eed7;display:none;flex-direction:column;font:14px/1.4 system-ui,Arial,sans-serif;overflow:hidden;touch-action:none}
+#psy-kanto-world-v2{position:fixed;inset:0;z-index:2147483646;background:#08111c;color:#f8eed7;display:none;flex-direction:column;font:14px/1.4 system-ui,Arial,sans-serif;overflow:hidden;touch-action:none}
 #psy-kanto-world-v2.open{display:flex}
 #psy-kanto-world-v2 *{box-sizing:border-box}
 #psy-kanto-world-v2 .kw2-top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1728ed;border-bottom:1px solid #426273;min-height:60px;z-index:2}
@@ -31,3 +31,13 @@
 #psy-kanto-world-v2 .kw2-mode{position:absolute;top:8px;right:8px;background:#07151bcc;color:#ffe4a0;border:1px solid #8fd3be;border-radius:9px;padding:4px 8px;font-size:11px;pointer-events:none}
 @media(max-width:680px){#psy-kanto-world-v2 .kw2-top{min-height:54px;padding:7px}#psy-kanto-world-v2 .kw2-footer{min-height:107px;flex-wrap:wrap;gap:5px;padding:5px 7px calc(5px + env(safe-area-inset-bottom))}#psy-kanto-world-v2 .kw2-objective{order:0;flex-basis:100%;min-width:100%;max-height:40px;font-size:11px}#psy-kanto-world-v2 .kw2-pad{order:1}#psy-kanto-world-v2 .kw2-interact{order:2;margin-left:auto;min-height:61px}#psy-kanto-world-v2 .kw2-portrait{width:58px;height:65px}#psy-kanto-world-v2 .kw2-dialog{bottom:7px}}
 @media(max-height:500px){#psy-kanto-world-v2 .kw2-top{min-height:42px}#psy-kanto-world-v2 .kw2-footer{min-height:62px}#psy-kanto-world-v2 .kw2-objective{flex-basis:auto;min-width:0}#psy-kanto-world-v2 .kw2-pad{grid-template-columns:repeat(3,32px);grid-template-rows:repeat(2,25px)}#psy-kanto-world-v2 .kw2-pad button{min-height:25px}#psy-kanto-world-v2 .kw2-interact{min-height:40px}}
+/* Do not allow production HUD/menu/assistants over the Kanto preview. */
+body.psy-kanto-v2-active #menuBtn,
+body.psy-kanto-v2-active #psy-assistant-launcher,
+body.psy-kanto-v2-active #world-btn-float,
+body.psy-kanto-v2-active #psy-kanto-world,
+body.psy-kanto-v2-active #psy-music-float,
+body.psy-kanto-v2-active #psy-audio-floating{display:none!important}
+#psy-kanto-world-v2 .kw2-stage{min-height:0}
+#psy-kanto-world-v2 .kw2-top{padding-right:max(10px,env(safe-area-inset-right))}
+#psy-kanto-world-v2 .kw2-mode{z-index:3}
