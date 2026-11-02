@@ -133,7 +133,41 @@
   function theme(place) { return THEMES[place.kind] || THEMES.route; }
   function hash(text) { let h=2166136261; for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)} return h>>>0; }
   function random(seed) { let n=seed>>>0; return () => { n=(n+0x6D2B79F5)>>>0; let t=n; t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296; }; }
+
+  // Authored, connected campaign maps. 0 walkable, 1 path, 5 hunt grass,
+  // 3 rock, 4 buildings and 9 solid boundary/trees/fence. All other locations
+  // retain the procedural prototype until they receive authored layouts.
+  function buildFirstKantoMap(place) {
+    const g=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+    const rect=(x1,y1,x2,y2,t)=>{for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++)if(g[y]&&x>=0&&x<COLS)g[y][x]=t;};
+    rect(0,0,31,0,9);rect(0,19,31,19,9);rect(0,0,0,19,9);rect(31,0,31,19,9);
+    // Distinct north and south portals never intersect fences or buildings.
+    rect(13,1,18,18,1);
+    if(place.id==='pallet'){
+      rect(1,1,10,4,9);rect(21,1,30,4,9);
+      rect(2,6,10,11,4);rect(21,6,29,11,4);
+      rect(2,14,9,17,4);rect(22,14,29,17,4);
+      rect(11,5,20,6,1);rect(9,12,22,13,1);rect(10,17,21,18,1);
+      rect(2,12,8,13,5);rect(23,12,29,13,5);
+      rect(11,7,12,10,5);rect(19,7,20,10,5);
+      rect(1,18,11,18,9);rect(20,18,30,18,9);
+      return {grid:g,npc:{x:14,y:9},object:{x:18,y:12},exit:{x:15,y:1},entry:{x:15,y:17},secretGate:null,secretChest:null,seed:hash(place.id)};
+    }
+    // Route 1: four large grass habitats, each with an unobstructed walk-in
+    // entrance from the shared path; no invisible or locked hunt corridor.
+    rect(1,1,12,18,9);rect(19,1,30,18,9);
+    rect(2,2,11,7,5);rect(20,2,29,7,5);
+    rect(2,11,11,17,5);rect(20,11,29,17,5);
+    rect(10,4,13,5,1);rect(18,5,21,6,1);
+    rect(10,13,13,14,1);rect(18,13,21,14,1);
+    rect(13,8,18,10,1);rect(13,17,18,18,1);
+    // Decorative, impassable rocks stay outside all required crossings.
+    g[3][3]=3;g[3][28]=3;g[16][3]=3;g[16][28]=3;
+    return {grid:g,npc:{x:14,y:9},object:{x:17,y:9},exit:{x:15,y:1},entry:{x:15,y:17},secretGate:null,secretChest:null,seed:hash(place.id)};
+  }
+
   function buildMap(place) {
+    if(place.id==='pallet'||place.id==='route-1')return buildFirstKantoMap(place);
     const rnd=random(hash(place.id)), grid=Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>(x===0||y===0||x===COLS-1||y===ROWS-1)?9:0));
     const path=(x,y,t=1)=>{if(grid[y]&&grid[y][x]!==9)grid[y][x]=t};
     // Shared route through the generated location gives every map a clear route from entrance to NPC and exit.
@@ -166,10 +200,10 @@
   function openWorld(id) {
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
-    makeRoot(); model.place=place; model.map=buildMap(place); model.x=3; model.y=ROWS-3; model.direction='down';model.frame=0;model.held=null;
+    makeRoot(); model.place=place; model.map=buildMap(place); model.x=model.map.entry?.x??3; model.y=model.map.entry?.y??ROWS-3; model.direction='down';model.frame=0;model.held=null;
     state().active=place.id;
     model.root.querySelector('.kp-title b').textContent=place.name;
-    model.root.querySelector('.kp-title small').textContent=`${place.mark} · mapa gerado por tema`;
+    model.root.querySelector('.kp-title small').textContent=`${place.mark} · mapa com colisões definidas`;
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     if(!model.raf)tick();
   }
@@ -289,13 +323,14 @@
     const offsetX=Math.floor((cw-COLS*TILE)/2),offsetY=Math.floor((ch-ROWS*TILE)/2);
     for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
       const t=g[y][x],sx=offsetX+x*TILE,sy=offsetY+y*TILE;
-      c.fillStyle=t===9?th.wall:t===1?th.path:t===2?th.floor:t===3?th.floor:t===4?th.floor:t===5?th.floor:th.floor;c.fillRect(sx,sy,TILE,TILE);
+      c.fillStyle=t===9?'#264935':t===1?'#d1ac77':t===3?'#746d64':t===4?'#866b52':t===5?'#438c42':th.floor;c.fillRect(sx,sy,TILE,TILE);
       if(t===1){c.fillStyle='#ffffff10';c.fillRect(sx+2,sy+2,TILE-4,2)}
       if(t===2){c.fillStyle='#79bd73';c.fillRect(sx+4,sy+5,3,10);c.fillRect(sx+17,sy+2,3,12);c.fillStyle='#315a38';c.fillRect(sx+10,sy+17,5,8)}
       if(t===3){c.fillStyle='#171920';c.beginPath();c.arc(sx+14,sy+14,10,0,Math.PI*2);c.fill();c.fillStyle='#716a64';c.beginPath();c.moveTo(sx+4,sy+22);c.lineTo(sx+8,sy+6);c.lineTo(sx+14,sy+3);c.lineTo(sx+21,sy+9);c.lineTo(sx+24,sy+22);c.closePath();c.fill()}
       if(t===4){c.fillStyle='#41515a';c.fillRect(sx+4,sy+8,19,15);c.fillStyle='#85949b';c.fillRect(sx+7,sy+5,13,3)}
+      if(t===4){c.fillStyle='#b3423b';c.fillRect(sx+2,sy+3,TILE-4,10);c.fillStyle='#dec8a1';c.fillRect(sx+5,sy+14,TILE-10,12)}
       if(t===5){c.fillStyle=th.accent;c.globalAlpha=.7;c.fillRect(sx+8,sy+7,2,12);c.fillRect(sx+17,sy+11,2,10);c.globalAlpha=1}
-      if(t===9){c.fillStyle='#0004';c.fillRect(sx,sy+TILE-4,TILE,4)}
+      if(t===9){c.fillStyle='#426d3e';c.beginPath();c.arc(sx+14,sy+12,12,0,Math.PI*2);c.fill();c.fillStyle='#0004';c.fillRect(sx,sy+TILE-4,TILE,4)}
     }
     const marker=(pt,color,glyph,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12);c.fillStyle='#071019d9';c.fillRect(sx-tw/2,sy-29,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,sy-22)};
     marker(model.map.npc,'#ffcf70','!',model.place.npc);marker(model.map.object,'#75d5db','?','Pista / segredo');marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima rota');
