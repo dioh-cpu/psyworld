@@ -57,11 +57,12 @@
   function isUnlocked(place) {
     if (!place) return false;
     if (place.id === 'pallet' || place.id === 'route-1') return true;
+    if (place.id === 'viridian' && (journeySave().visited || []).includes('route-1')) return true;
     const all = places(), index = all.findIndex(p => p.id === place.id), prev = all[index - 1];
     if (!prev) return true;
     const saved = journeySave();
     const visited = Array.isArray(saved.visited) ? saved.visited : [];
-    const prevOpen = prev.id === 'route-1' ? discovered(prev) >= 3 : visited.includes(prev.id);
+    const prevOpen = visited.includes(prev.id);
     const badgeGate = Number(place.badge || prev.badge || 0);
     return prevOpen && badgeCount() >= badgeGate;
   }
