@@ -1,8 +1,8 @@
 /* PSYWORLD — viewport fitting and fullscreen controls. */
 :root{--psy-vw:100vw;--psy-vh:100dvh;--psy-safe-top:env(safe-area-inset-top,0px);--psy-safe-right:env(safe-area-inset-right,0px);--psy-safe-bottom:env(safe-area-inset-bottom,0px);--psy-safe-left:env(safe-area-inset-left,0px)}
 html,body{width:100%;min-width:0;min-height:100%;overscroll-behavior:none}
-#psy-fullscreen-btn{position:fixed;top:max(118px,calc(var(--psy-safe-top) + 118px));left:max(14px,var(--psy-safe-left));right:auto;z-index:10003000;display:flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;padding:0;border:2px solid #67e8f9;border-radius:10px;background:linear-gradient(145deg,#0e7490,#164e63);color:#ecfeff;font-size:17px;font-weight:1000;line-height:1;box-shadow:0 5px 15px #000a,0 0 14px #22d3ee44;cursor:pointer}
-#psy-fullscreen-btn:hover{filter:brightness(1.15)}#psy-fullscreen-btn:active{transform:scale(.95)}#psy-fullscreen-btn[data-fallback="1"]{border-color:#facc15;color:#fef3c7}
+#psy-fullscreen-btn{position:fixed;top:auto;bottom:max(12px,calc(var(--psy-safe-bottom) + 12px));left:50%;right:auto;transform:translateX(-50%);z-index:10003000;display:flex;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;padding:0;border:2px solid #67e8f9;border-radius:10px;background:linear-gradient(145deg,#0e7490,#164e63);color:#ecfeff;font-size:17px;font-weight:1000;line-height:1;box-shadow:0 5px 15px #000a,0 0 14px #22d3ee44;cursor:pointer}
+#psy-fullscreen-btn:hover{filter:brightness(1.15)}#psy-fullscreen-btn:active{transform:translateX(-50%) scale(.95)}#psy-fullscreen-btn[data-fallback="1"]{border-color:#facc15;color:#fef3c7}
 html.psy-fullscreen-fallback,html.psy-fullscreen-fallback body{width:100%;height:100%;overflow:hidden}
 html.psy-fullscreen-fallback #game-wrap{position:fixed!important;inset:0!important;width:100%!important;height:100%!important}
 #game-wrap{width:var(--psy-vw)!important;height:var(--psy-vh)!important;max-width:100%!important;max-height:100%!important}
@@ -23,7 +23,7 @@ html.psy-fullscreen-fallback #game-wrap{position:fixed!important;inset:0!importa
 #menu{padding-top:max(12px,calc(var(--psy-safe-top) + 8px))!important;padding-bottom:max(12px,calc(var(--psy-safe-bottom) + 8px))!important}
 #screen-shop,#screen-hunts,#screen-team,#screen-bag,#screen-pokedex,#screen-gyms,#screen-dungeon,#screen-card-mode,#screen-egg-center,#screen-achievements,#screen-psy-tutorial{padding:var(--psy-safe-top) var(--psy-safe-right) var(--psy-safe-bottom) var(--psy-safe-left)!important}
 @media (max-width:760px){
-  #psy-fullscreen-btn{top:max(106px,calc(var(--psy-safe-top) + 106px));left:max(8px,var(--psy-safe-left));right:auto;width:30px;height:30px;min-width:30px;border-radius:8px;font-size:15px}
+  #psy-fullscreen-btn{top:auto;bottom:max(9px,calc(var(--psy-safe-bottom) + 9px));left:50%;right:auto;width:30px;height:30px;min-width:30px;border-radius:8px;font-size:15px}
   #battle-screen .battle-hud{width:min(96vw,calc(100dvh * 1.28))!important;height:min(92dvh,calc(96vw * .78))!important}
   #battle-player,#battle-enemy{top:14%!important;max-width:35%!important}
   #battle-player{left:3%!important}#battle-enemy{right:3%!important}
@@ -49,4 +49,622 @@ html.psy-fullscreen-fallback #game-wrap{position:fixed!important;inset:0!importa
   #battle-controls>div:last-child button{min-height:28px!important;font-size:8px!important;padding:4px 3px!important}
   #hud-player{transform:scale(.68)!important}
 }
-@media (display-mode:fullscreen){#psy-fullscreen-btn{left:max(10px,var(--psy-safe-left))!important;right:auto!important}#game-wrap{width:100vw!important;height:100dvh!important}}
+@media (display-mode:fullscreen){#psy-fullscreen-btn{left:50%!important;right:auto!important;bottom:max(9px,var(--psy-safe-bottom))!important}#game-wrap{width:100vw!important;height:100dvh!important}}
+
+
+/* Battle arena: keep the same readable two-row controls in portrait and landscape. */
+#battle-screen{
+  align-items:center!important;justify-content:center!important;
+  padding:var(--psy-safe-top) var(--psy-safe-right) var(--psy-safe-bottom) var(--psy-safe-left)!important;
+}
+#battle-screen .battle-hud{
+  box-sizing:border-box!important;width:min(1280px,96vw)!important;height:min(780px,92dvh)!important;
+  max-width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 8px)!important;
+  max-height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 8px)!important;
+  min-width:0!important;min-height:0!important;border-radius:20px!important;
+}
+#battle-log{
+  z-index:6!important;top:clamp(8px,2.5%,18px)!important;left:50%!important;right:auto!important;
+  width:min(88%,900px)!important;transform:translateX(-50%)!important;padding:5px 10px!important;
+  border:1px solid #facc1580;border-radius:999px;background:#101827bb!important;
+  font-size:clamp(11px,1.4vw,16px)!important;line-height:1.25!important;white-space:normal!important;
+}
+#battle-player,#battle-enemy{top:clamp(76px,12%,118px)!important;max-width:38%!important}
+#battle-player{left:clamp(12px,5%,76px)!important}
+#battle-enemy{right:clamp(12px,5%,76px)!important}
+#battle-player img,#battle-enemy img{
+  width:clamp(72px,13vw,150px)!important;height:clamp(72px,13vw,150px)!important;
+  max-width:100%!important;object-fit:contain!important;image-rendering:pixelated;
+}
+#battle-player .name-tag,#battle-enemy .name-tag{
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:clamp(9px,1.2vw,13px)!important;
+}
+#battle-controls{
+  box-sizing:border-box!important;left:3%!important;right:3%!important;bottom:2.5%!important;
+  max-height:43%!important;padding:10px!important;gap:8px!important;
+  background:linear-gradient(145deg,#081728f5,#111a2bf2)!important;
+  border:1px solid #52718c!important;border-radius:18px!important;
+  box-shadow:0 12px 30px #0008!important;overflow:auto!important;
+}
+#move-buttons{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;
+  margin:0!important;min-width:0!important;
+}
+#move-buttons button{
+  box-sizing:border-box!important;min-width:0!important;min-height:50px!important;
+  padding:8px 10px!important;border-radius:13px!important;font-size:clamp(10px,1.1vw,14px)!important;
+  line-height:1.2!important;white-space:normal!important;overflow-wrap:anywhere;
+}
+#battle-controls>div:last-child{display:flex!important;gap:8px!important;justify-content:stretch!important}
+#battle-controls>div:last-child button{
+  box-sizing:border-box!important;flex:1 1 0!important;min-width:0!important;max-width:none!important;
+  min-height:42px!important;padding:7px 6px!important;border:1px solid #ffffff45!important;
+  border-radius:11px!important;font-size:clamp(9px,1vw,12px)!important;
+}
+/* Remove global game controls from above the battle; leave fullscreen reachable at the edge. */
+body:has(#battle-screen.active) #menuBtn,
+body:has(#battle-screen.active) #fastEncounterBtn,
+body:has(#battle-screen.active) #hud-player,
+body:has(#battle-screen.active) #world-btn-float,
+body:has(#battle-screen.active) #psy-assistant-launcher,
+body:has(#battle-screen.active) #psy22-buffs{display:none!important}
+body:has(#battle-screen.active) #psy-fullscreen-btn{
+  top:max(7px,var(--psy-safe-top))!important;right:max(7px,var(--psy-safe-right))!important;
+  bottom:auto!important;left:auto!important;transform:none!important;
+}
+@media(max-width:760px){
+  #battle-screen .battle-hud{width:min(96vw,640px)!important;height:min(94dvh,980px)!important;border-radius:16px!important}
+  #battle-log{top:8px!important;width:86%!important;font-size:clamp(10px,2.8vw,14px)!important}
+  #battle-player,#battle-enemy{top:clamp(72px,11%,102px)!important}
+  #battle-player img,#battle-enemy img{width:clamp(62px,17vw,110px)!important;height:clamp(62px,17vw,110px)!important}
+  #battle-controls{left:2%!important;right:2%!important;bottom:1.7%!important;max-height:42%!important;padding:7px!important;gap:6px!important}
+  #move-buttons{gap:6px!important}
+  #move-buttons button{min-height:44px!important;padding:6px 5px!important;font-size:clamp(9px,2.5vw,12px)!important}
+  #battle-controls>div:last-child{gap:5px!important}
+  #battle-controls>div:last-child button{min-height:38px!important;padding:5px 3px!important;font-size:clamp(8px,2.1vw,11px)!important}
+}
+@media(orientation:portrait) and (max-width:600px){
+  #battle-screen .battle-hud{
+    width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 10px)!important;
+    height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 10px)!important;
+    max-width:640px!important;max-height:980px!important;border-radius:15px!important;
+  }
+  #battle-player,#battle-enemy{top:10%!important}
+  #battle-player{left:3%!important}#battle-enemy{right:3%!important}
+  #battle-controls{max-height:41%!important;left:1.5%!important;right:1.5%!important}
+}
+@media(orientation:landscape) and (max-height:600px){
+  #battle-screen .battle-hud{
+    width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 12px)!important;
+    height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 8px)!important;
+    max-width:1400px!important;max-height:700px!important;border-radius:15px!important;
+  }
+  #battle-log{top:7px!important}
+  #battle-player,#battle-enemy{top:8%!important}
+  #battle-player img,#battle-enemy img{width:clamp(58px,18vh,116px)!important;height:clamp(58px,18vh,116px)!important}
+  #battle-controls{left:2.5%!important;right:2.5%!important;bottom:1.2%!important;max-height:44%!important;padding:6px!important}
+  #move-buttons{gap:5px!important}
+  #move-buttons button{min-height:36px!important;padding:5px 7px!important;font-size:clamp(9px,1.5vw,12px)!important}
+  #battle-controls>div:last-child button{min-height:31px!important;padding:4px 5px!important}
+}
+
+
+/* Responsive PSY IDLE Trade Zone: keep its header, map, panels, and exits inside the viewport. */
+#psy-idle-realistic #psy-ir-trade-room{position:fixed!important;inset:0!important;box-sizing:border-box!important;padding:var(--psy-safe-top) var(--psy-safe-right) var(--psy-safe-bottom) var(--psy-safe-left)!important;overflow:hidden!important;align-items:center!important;justify-content:center!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card{position:relative!important;box-sizing:border-box!important;min-width:0!important;min-height:0!important;margin:auto!important;flex:0 1 auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header{position:relative!important;display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:12px!important;width:100%!important;min-width:0!important;flex:0 0 auto!important;padding:0!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header>div{min-width:0!important;flex:1 1 auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header button{position:relative!important;inset:auto!important;flex:0 0 48px!important;width:48px!important;height:48px!important;min-width:48px!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>.zone-note,#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>[data-trade-status]{flex:0 0 auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout{grid-template-columns:minmax(0,1.35fr) minmax(245px,.85fr)!important;grid-template-rows:minmax(0,1fr)!important;min-width:0!important;min-height:0!important;overflow:hidden!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout>div:first-child{display:flex!important;flex-direction:column!important;min-width:0!important;min-height:0!important;overflow:hidden!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-map{flex:1 1 auto!important;min-height:0!important;height:auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-controls{flex:0 0 auto!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-sidebar{min-width:0!important;min-height:0!important;overflow:auto!important;overscroll-behavior:contain!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer{position:static!important;inset:auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;width:100%!important;min-width:0!important;flex:0 0 auto!important;margin:10px 0 0!important;padding:0!important;transform:none!important;background:transparent!important}
+#psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer button{min-width:0!important;width:100%!important;min-height:42px!important;white-space:normal!important}
+@media (orientation:portrait) and (max-width:760px){
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card{width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 12px)!important;height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 12px)!important;padding:11px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header{gap:8px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header button{flex-basis:42px!important;width:42px!important;height:42px!important;min-width:42px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header h2{font-size:clamp(21px,5.5vw,28px)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(190px,.9fr) minmax(140px,1fr)!important;gap:8px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:start!important;gap:7px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-controls{grid-column:1/-1!important}
+}
+@media (max-width:420px){
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card{padding:9px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout{grid-template-rows:minmax(175px,.8fr) minmax(145px,1fr)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-sidebar{grid-template-columns:minmax(0,1fr)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer button{min-height:38px!important;font-size:9px!important}
+}
+@media (orientation:landscape) and (max-height:650px){
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card{width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 16px)!important;height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 12px)!important;max-height:none!important;padding:clamp(8px,1.4vh,14px)!important;border-radius:14px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>header h2{font-size:clamp(21px,3.6vh,30px)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>.zone-note{margin:2px 0 5px!important;font-size:clamp(11px,1.9vh,14px)!important;line-height:1.3!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>[data-trade-status]{margin:2px 0 5px!important;min-height:0!important;font-size:clamp(11px,1.9vh,14px)!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-layout{grid-template-columns:minmax(0,1.35fr) minmax(220px,.8fr)!important;grid-template-rows:minmax(0,1fr)!important;gap:8px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-map{min-height:0!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-sidebar{display:flex!important;gap:6px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-panel{padding:7px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-controls{grid-template-columns:repeat(3,36px)!important;grid-template-rows:repeat(2,30px)!important;gap:2px!important;margin-top:4px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-controls button{min-height:28px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer{gap:7px!important;margin-top:6px!important}
+ #psy-idle-realistic #psy-ir-trade-room .psy-ir-trade-card>footer button{min-height:34px!important;font-size:10px!important}
+}
+
+
+/* Keep portrait battle sprites in the center of the arena instead of crowding the top. */
+@media (orientation:portrait) and (max-width:760px){
+  #battle-screen{align-items:center!important;justify-content:center!important}
+  #battle-screen .battle-hud{
+    width:min(calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 14px),640px)!important;
+    height:min(calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 14px),1180px)!important;
+    max-width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 14px)!important;
+    max-height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 14px)!important;
+    margin:auto!important;
+  }
+  #battle-player,#battle-enemy{top:clamp(145px,18%,225px)!important}
+  #battle-controls{max-height:42%!important;bottom:1.5%!important}
+}
+@media (orientation:landscape) and (max-height:760px){
+  #battle-screen{align-items:center!important;justify-content:center!important}
+  #battle-screen .battle-hud{
+    width:calc(100vw - var(--psy-safe-left) - var(--psy-safe-right) - 14px)!important;
+    height:calc(100dvh - var(--psy-safe-top) - var(--psy-safe-bottom) - 14px)!important;
+    max-width:1400px!important;max-height:740px!important;margin:auto!important;
+  }
+  #battle-player,#battle-enemy{top:clamp(52px,10%,78px)!important}
+}
+
+
+/* Device-aware layouts: use the visual viewport and keep dialogs usable on an upright phone. */
+#psy-layout-settings{display:none;position:fixed;inset:0;z-index:2147483000;box-sizing:border-box;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));background:#020617eF;align-items:center;justify-content:center;color:#f3f8ff}
+#psy-layout-settings[data-open="1"]{display:flex}
+#psy-layout-settings .psy-layout-card{box-sizing:border-box;width:min(460px,100%);max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);overflow:auto;padding:20px;border:1px solid #44d9e8;border-radius:18px;background:linear-gradient(145deg,#0e1a2e,#18213c);box-shadow:0 18px 70px #000c}
+#psy-layout-settings header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#psy-layout-settings header small{color:#67e8f9;font-weight:900;letter-spacing:2px}
+#psy-layout-settings h2{margin:2px 0 0;font-size:clamp(20px,5vw,28px);color:#e9fbff}
+#psy-layout-settings header button{width:42px;height:42px;border:1px solid #fb7185;border-radius:12px;background:#7f1d32;color:white;font-size:24px}
+#psy-layout-settings p{color:#c7d7e7;line-height:1.5}
+#psy-layout-settings label{display:block;margin:16px 0 7px;font-weight:900;color:#facc15}
+#psy-layout-settings select{box-sizing:border-box;width:100%;min-height:48px;padding:10px;border:1px solid #3b82a0;border-radius:10px;background:#081321;color:white;font-size:16px}
+#psy-layout-status{min-height:42px;margin:12px 0;color:#9ce8d1;font-size:13px;line-height:1.4}
+#psy-layout-settings .psy-layout-done{width:100%;min-height:46px;border:0;border-radius:11px;background:#0e7490;color:#fff;font-weight:950}
+.psy-layout-menu-button,.psy-layout-idle-button{box-sizing:border-box;width:90%;min-height:44px;margin:7px auto;padding:10px 12px;border:1px solid #45c9dc;border-radius:10px;background:linear-gradient(120deg,#0c455c,#183563);color:#f4feff;font-weight:950;cursor:pointer}
+.psy-layout-idle-button{width:100%;margin:8px 0}
+html[data-psy-layout="mobile"] #game-wrap{height:var(--psy-vh,100dvh)!important;max-height:var(--psy-vh,100dvh)!important}
+html[data-psy-layout="mobile"] #world-btn-float{position:fixed!important;top:calc(env(safe-area-inset-top) + 80px)!important;right:8px!important;bottom:calc(env(safe-area-inset-bottom) + 58px)!important;left:auto!important;width:min(48vw,205px)!important;max-width:calc(100vw - 16px)!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 150px)!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-content:start!important;gap:6px!important;overflow-x:hidden!important;overflow-y:auto!important;padding:6px!important}
+html[data-psy-layout="mobile"] #world-btn-float>button{box-sizing:border-box!important;width:100%!important;min-width:0!important;min-height:56px!important;margin:0!important;padding:7px 4px!important;font-size:clamp(9px,2.7vw,13px)!important;line-height:1.15!important;white-space:normal!important}
+html[data-psy-layout="mobile"] #menuBtn{position:fixed!important;top:max(8px,env(safe-area-inset-top))!important;right:8px!important;z-index:100000!important}
+html[data-psy-layout="mobile"] #hud-player{left:max(8px,env(safe-area-inset-left))!important;top:max(8px,env(safe-area-inset-top))!important;transform:none!important;max-width:min(54vw,255px)!important;max-height:calc(var(--psy-vh,100dvh) - 100px)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #psy-assistant-launcher{right:max(8px,env(safe-area-inset-right))!important;bottom:max(8px,env(safe-area-inset-bottom))!important;max-width:112px!important}
+html[data-psy-layout="mobile"] #menu{box-sizing:border-box!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-shop,
+html[data-psy-layout="mobile"] #screen-hunts,
+html[data-psy-layout="mobile"] #screen-team,
+html[data-psy-layout="mobile"] #screen-bag,
+html[data-psy-layout="mobile"] #screen-pokedex,
+html[data-psy-layout="mobile"] #screen-gyms,
+html[data-psy-layout="mobile"] #screen-dungeon,
+html[data-psy-layout="mobile"] #screen-card-mode,
+html[data-psy-layout="mobile"] #screen-egg-center,
+html[data-psy-layout="mobile"] #screen-achievements,
+html[data-psy-layout="mobile"] #screen-psy-tutorial{box-sizing:border-box!important;width:100vw!important;height:var(--psy-vh,100dvh)!important;max-height:var(--psy-vh,100dvh)!important;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-shop .shop-box,
+html[data-psy-layout="mobile"] #screen-hunts .shop-box,
+html[data-psy-layout="mobile"] #screen-team .shop-box,
+html[data-psy-layout="mobile"] #screen-bag .shop-box,
+html[data-psy-layout="mobile"] #screen-gyms .gym-box,
+html[data-psy-layout="mobile"] #screen-dungeon .shop-box,
+html[data-psy-layout="mobile"] #screen-card-mode .cardgame-shell{box-sizing:border-box!important;width:min(96vw,640px)!important;max-width:calc(100vw - 16px)!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-box{box-sizing:border-box!important;width:calc(100vw - 16px)!important;max-width:640px!important;height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px)!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px)!important;min-height:0!important;padding:10px!important;display:grid!important;grid-template-rows:auto auto minmax(0,1fr) auto!important;gap:7px!important}
+html[data-psy-layout="mobile"] #screen-pokedex h2{margin:0!important;padding:2px 44px 2px 2px!important;font-size:clamp(18px,5vw,24px)!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-topbar{margin:0!important;min-width:0!important}
+html[data-psy-layout="mobile"] #screen-pokedex #dex-search{min-width:0!important;padding:10px!important;font-size:16px!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-body{box-sizing:border-box!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(118px,31%) minmax(0,1fr)!important;gap:7px!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important}
+html[data-psy-layout="mobile"] #screen-pokedex #dex-grid-wrap{box-sizing:border-box!important;width:100%!important;height:100%!important;max-height:none!important;min-width:0!important;min-height:0!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-pokedex #dex-grid{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))!important;gap:6px!important}
+html[data-psy-layout="mobile"] #screen-pokedex #dex-detail-panel{box-sizing:border-box!important;width:100%!important;height:100%!important;max-height:none!important;min-width:0!important;min-height:0!important;overflow:auto!important;padding:8px!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-detail-empty{padding:10px!important}
+html[data-psy-layout="mobile"] #screen-pokedex .dex-close-btn{min-height:42px!important;margin:0!important}
+html[data-psy-layout="mobile"] #screen-team .shop-box{width:calc(100vw - 16px)!important}
+html[data-psy-layout="mobile"] #screen-team #box-list{grid-template-columns:repeat(3,minmax(0,1fr))!important;max-height:32dvh!important}
+html[data-psy-layout="mobile"] #screen-poke-detail{box-sizing:border-box!important;padding:env(safe-area-inset-top) 8px env(safe-area-inset-bottom)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #screen-poke-detail>div{box-sizing:border-box!important;width:100%!important;max-width:720px!important;max-height:none!important;margin:0 auto!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+html[data-psy-layout="mobile"] #screen-poke-detail>div>div{box-sizing:border-box!important;min-width:0!important;width:100%!important;padding:9px!important}
+html[data-psy-layout="mobile"] #screen-poke-detail>div>div:nth-child(2)>div:first-child{display:flex!important;align-items:center!important;gap:8px!important}
+html[data-psy-layout="mobile"] #screen-poke-detail>div>div:nth-child(2)>div:first-child h3{flex:1;min-width:0!important;font-size:clamp(12px,3.6vw,16px)!important}
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content{min-width:0!important;overflow-wrap:anywhere!important}
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content>div:first-child{grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content>div:first-child>div:nth-child(2)>div{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content>div:nth-child(2),
+html[data-psy-layout="mobile"] #screen-poke-detail #detail-poke-content>div:nth-child(3){max-width:100%!important;overflow-wrap:anywhere!important}
+html[data-psy-layout="mobile"] #battle-screen{align-items:center!important;justify-content:center!important;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)!important;overflow:hidden!important}
+html[data-psy-layout="mobile"] #battle-screen .battle-hud{box-sizing:border-box!important;width:min(calc(100vw - 12px),640px)!important;height:min(76dvh,680px)!important;max-width:calc(100vw - 12px)!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px)!important;margin:auto!important}
+html[data-psy-layout="mobile"] #battle-player,
+html[data-psy-layout="mobile"] #battle-enemy{top:clamp(105px,18%,150px)!important}
+html[data-psy-layout="mobile"] #battle-controls{max-height:43%!important;bottom:1.5%!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #move-buttons button{min-height:42px!important;padding:6px 5px!important;font-size:clamp(9px,2.4vw,12px)!important}
+body:has(#screen-pokedex[style*="display: flex"]) #menuBtn,
+body:has(#screen-pokedex[style*="display: flex"]) #world-btn-float,
+body:has(#screen-pokedex[style*="display: flex"]) #hud-player,
+body:has(#screen-pokedex[style*="display: flex"]) #psy-assistant-launcher,
+body:has(#screen-team[style*="display: flex"]) #menuBtn,
+body:has(#screen-team[style*="display: flex"]) #world-btn-float,
+body:has(#screen-team[style*="display: flex"]) #hud-player,
+body:has(#screen-team[style*="display: flex"]) #psy-assistant-launcher,
+body:has(#screen-poke-detail[style*="display: block"]) #menuBtn,
+body:has(#screen-poke-detail[style*="display: block"]) #world-btn-float,
+body:has(#screen-poke-detail[style*="display: block"]) #hud-player,
+body:has(#screen-poke-detail[style*="display: block"]) #psy-assistant-launcher{display:none!important}
+
+html[data-psy-layout="mobile"] #psy-idle-realistic{height:var(--psy-vh,100dvh)!important;max-height:var(--psy-vh,100dvh)!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic canvas{height:calc(var(--psy-vh,100dvh) - 48px)!important;max-height:calc(var(--psy-vh,100dvh) - 48px)!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-suite-bar{box-sizing:border-box!important;width:100vw!important;max-width:100vw!important;min-width:0!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;scrollbar-width:thin!important;touch-action:pan-x!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-suite-overlay{inset:calc(env(safe-area-inset-top) + 50px) 4px calc(env(safe-area-inset-bottom) + 6px)!important;box-sizing:border-box!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 56px)!important;overflow:auto!important;align-items:flex-start!important;padding:5px!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-suite-window,
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-feature,
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-map-panel,
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-menu-panel,
+html[data-psy-layout="mobile"] #psy-idle-realistic #psy-ir-helper,
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-trade-card{box-sizing:border-box!important;width:min(100%,640px)!important;max-width:100%!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 64px)!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-menu-overlay{align-items:flex-end!important;justify-content:center!important;padding:0 4px env(safe-area-inset-bottom)!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-menu-panel{width:100%!important;max-height:calc(var(--psy-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 54px)!important;padding:12px!important;overflow:auto!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-menu-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud{box-sizing:border-box!important;left:8px!important;right:8px!important;top:calc(env(safe-area-inset-top) + 54px)!important;width:min(420px,calc(100vw - 16px))!important;max-width:calc(100vw - 16px)!important;max-height:32dvh!important;overflow:auto!important;padding:7px!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud .psy-ir-row{gap:4px!important;margin-top:4px!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud .psy-ir-pill{font-size:9px!important;padding:4px 6px!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-mobile-dock{position:fixed!important;left:0!important;right:0!important;bottom:env(safe-area-inset-bottom)!important;max-width:100vw!important}
+html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-moves{left:8px!important;bottom:calc(env(safe-area-inset-bottom) + 68px)!important;transform:none!important;width:min(67vw,340px)!important;max-width:calc(100vw - 16px)!important}
+@media (orientation:portrait){
+ html[data-psy-layout="mobile"] #battle-screen .battle-hud{height:min(76dvh,680px)!important}
+ html[data-psy-layout="mobile"] #screen-pokedex .dex-body{grid-template-rows:minmax(112px,29%) minmax(0,1fr)!important}
+}
+@media (orientation:landscape){
+ html[data-psy-layout="mobile"] #battle-screen .battle-hud{width:min(96vw,1100px)!important;height:min(91dvh,700px)!important}
+ html[data-psy-layout="mobile"] #screen-pokedex .dex-body{grid-template-columns:minmax(220px,38%) minmax(0,1fr)!important;grid-template-rows:minmax(0,1fr)!important}
+}
+@media (max-height:620px){
+ html[data-psy-layout="mobile"] #psy-idle-realistic .psy-ir-hud{max-height:24dvh!important}
+ html[data-psy-layout="mobile"] #battle-screen #battle-controls{max-height:48%!important}
+}
+
+
+
+/* PSY IDLE hunt selector: readable routes and selection in portrait and landscape. */
+#psy-idle-realistic #psy-ir-map-overlay{
+  position:fixed!important;inset:0!important;box-sizing:border-box!important;
+  z-index:2147482200!important;padding:12px!important;overflow:hidden!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-panel{
+  box-sizing:border-box!important;width:min(1480px,100%)!important;
+  height:min(94dvh,1120px)!important;max-height:calc(100dvh - 24px)!important;
+  min-width:0!important;min-height:0!important;display:flex!important;
+  flex-direction:column!important;overflow:hidden!important;border-radius:20px!important;
+  border:1px solid #8a56dc!important;
+  background:linear-gradient(155deg,#101627 0%,#171b31 42%,#11172a 100%)!important;
+  box-shadow:0 28px 90px #000c,0 0 34px #b54aeb24!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head{
+  flex:0 0 auto!important;min-height:54px!important;padding:9px 14px!important;
+  border-bottom:1px solid #7135a0!important;background:linear-gradient(90deg,#1a1e37,#222040 68%,#341a39)!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head .psy-ir-menu-title{
+  font-size:clamp(18px,2.2vw,27px)!important;letter-spacing:.08em!important;color:#ffe0a4!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions{display:flex!important;gap:7px!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions button{
+  min-width:42px!important;min-height:42px!important;border:1px solid #8354b2!important;
+  border-radius:12px!important;background:#171b30!important;color:#fff2ce!important;
+  font-size:20px!important;font-weight:900!important;touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tabs{
+  flex:0 0 auto!important;display:flex!important;flex-wrap:nowrap!important;gap:8px!important;
+  max-height:none!important;min-height:62px!important;padding:8px 12px!important;
+  overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain!important;
+  scrollbar-width:thin!important;background:#111729!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab{
+  flex:0 0 clamp(142px,15vw,205px)!important;min-height:46px!important;
+  padding:7px 9px 7px 48px!important;border:1px solid #564176!important;border-radius:12px!important;
+  background:linear-gradient(145deg,#25233b,#171c31)!important;color:#fff5dc!important;
+  box-shadow:inset 0 1px #fff2!important;touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab::before{
+  content:""!important;left:9px!important;top:8px!important;width:30px!important;height:30px!important;
+  border:1px solid #f4a744!important;border-radius:10px!important;
+  background:#241a31 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 4 28 17 42 10 32 23 45 28 30 30 35 44 24 34 13 44 18 30 3 28 16 23 6 10 20 17z' fill='%23f3a746' stroke='%23ffe0a4' stroke-width='2'/%3E%3Ccircle cx='24' cy='24' r='5' fill='%231b1830'/%3E%3C/svg%3E") center/21px no-repeat!important;
+  box-shadow:0 0 14px #ff9f4a30!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab small{
+  display:block!important;margin-top:3px!important;color:#c1b0d6!important;font-size:10px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab.active{
+  border-color:#ffc75e!important;background:linear-gradient(135deg,#492d32,#2c2140)!important;
+  box-shadow:0 0 0 1px #ffc75e77,0 0 20px #eb8f4340!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-filters{
+  flex:0 0 auto!important;padding:9px 12px!important;
+  background:#0e1728!important;border-bottom:1px solid #3b2c4e!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query{gap:7px!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input{
+  box-sizing:border-box!important;height:42px!important;min-width:0!important;
+  border:1px solid #4c4760!important;border-radius:10px!important;background:#0a1020!important;
+  color:#fff6e5!important;font-size:14px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input[type=search]{
+  padding-left:12px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input::placeholder{color:#928ba1!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query label{color:#ead5b3!important;font-size:12px!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filters{
+  display:flex!important;flex-wrap:wrap!important;gap:6px!important;margin-top:8px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter{
+  min-width:76px!important;min-height:34px!important;padding:6px 9px!important;
+  border:1px solid #3a4057!important;border-radius:8px!important;
+  background:#151c2d!important;color:transparent!important;font-size:0!important;
+  touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter::before{
+  content:""!important;display:inline-block!important;width:8px!important;height:8px!important;
+  margin-right:6px!important;border-radius:50%!important;background:#a86ce0!important;
+  box-shadow:0 0 8px #e29fff88!important;vertical-align:1px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter::after{
+  color:#e9e5f0!important;font-size:10px!important;font-weight:900!important;letter-spacing:.03em!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Steel"]::after{content:"AÇO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Water"]::after{content:"ÁGUA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Dragon"]::after{content:"DRAGÃO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Electric"]::after{content:"ELÉTRICO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Psychic"]::after{content:"PSÍQUICO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Ghost"]::after{content:"FANTASMA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Fire"]::after{content:"FOGO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Grass"]::after{content:"PLANTA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Bug"]::after{content:"INSETO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Normal"]::after{content:"NORMAL"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Rock"]::after{content:"PEDRA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Ground"]::after{content:"TERRA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Poison"]::after{content:"VENENO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Flying"]::after{content:"VOADOR"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Fighting"]::after{content:"LUTADOR"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Ice"]::after{content:"GELO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Dark"]::after{content:"SOMBRIO"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter[data-idle-type="Fairy"]::after{content:"FADA"}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter.active{
+  border-color:#ffc65b!important;background:linear-gradient(135deg,#47302d,#292044)!important;
+  box-shadow:0 0 12px #ffb45a33!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-status{
+  flex:0 0 auto!important;min-height:34px!important;box-sizing:border-box!important;
+  padding:7px 13px!important;background:#15182b!important;color:#d7cde5!important;
+  border-bottom:1px solid #382b4b!important;font-size:11px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-status #psy-ir-map-count{color:#f7cb7b!important;font-weight:900!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-view-switch{
+  flex:0 0 auto!important;background:#111729!important;border-bottom:1px solid #352c48!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-scroll{
+  flex:1 1 auto!important;min-height:120px!important;max-height:none!important;
+  overflow:auto!important;overscroll-behavior:contain!important;
+  background:radial-gradient(ellipse at 50% 0%,#27223b,#101728 70%)!important;
+  scrollbar-color:#76518e #171a2a!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row{
+  min-height:74px!important;padding:9px 11px!important;border-color:#3c3c54!important;
+  border-radius:13px!important;background:linear-gradient(125deg,#1b2033,#11182a)!important;
+  color:#f7f2e8!important;touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row.selected{
+  border-color:#ffd071!important;background:linear-gradient(120deg,#3b2934,#211e37)!important;
+  box-shadow:0 0 0 1px #ffd07177,0 0 18px #e7984a30!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row.current{border-left:4px solid #79e3ad!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{
+  position:relative!important;display:grid!important;place-items:center!important;
+  width:38px!important;height:38px!important;border:1px solid #9565bb!important;
+  border-radius:12px!important;background:linear-gradient(145deg,#372741,#1c2032)!important;
+  color:transparent!important;font-size:0!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon::after{
+  content:""!important;width:24px!important;height:24px!important;display:block!important;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 4 28 17 42 10 32 23 45 28 30 30 35 44 24 34 13 44 18 30 3 28 16 23 6 10 20 17z' fill='%23f3a746' stroke='%23ffe0a4' stroke-width='2'/%3E%3Ccircle cx='24' cy='24' r='5' fill='%231b1830'/%3E%3C/svg%3E") center/contain no-repeat!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-info b{font-size:14px!important;color:#ffe0a5!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-info small{font-size:11px!important;color:#c2c1d0!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-state{
+  padding:7px 10px!important;border:1px solid #72538d!important;border-radius:9px!important;
+  background:#251d35!important;color:#e6c9ff!important;font-size:10px!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer{
+  box-sizing:border-box!important;flex:0 1 auto!important;min-height:155px!important;
+  max-height:min(28dvh,300px)!important;overflow:auto!important;
+  border-top:1px solid #5c3e74!important;background:linear-gradient(145deg,#141a2e,#231a31)!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer-title>small{color:#d889ff!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer-title h3{color:#ffd58e!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-start{
+  border-color:#ffcb66!important;background:linear-gradient(110deg,#9a4c27,#792984)!important;
+  color:#fff6de!important;touch-action:manipulation!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-start:not(:disabled){box-shadow:0 0 20px #e6894e40!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-empty{
+  padding:24px!important;color:#d8c3e7!important;text-align:center!important;
+  border:1px dashed #72518a!important;border-radius:14px!important;
+}
+
+@media(max-width:760px){
+  #psy-idle-realistic #psy-ir-menu-overlay{z-index:2147482100!important}
+  #psy-idle-realistic #psy-ir-map-overlay{
+    inset:0!important;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)!important;
+    align-items:stretch!important;justify-content:stretch!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-panel{
+    width:100%!important;height:100%!important;max-height:100%!important;min-height:0!important;
+    border-radius:0!important;padding:0!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head{
+    min-height:48px!important;padding:5px 8px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head .psy-ir-menu-title{
+    font-size:clamp(15px,4.2vw,20px)!important;letter-spacing:.04em!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions{gap:4px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions button{
+    min-width:38px!important;min-height:38px!important;border-radius:10px!important;font-size:18px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tabs{
+    min-height:55px!important;padding:5px 7px!important;gap:6px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab{
+    flex-basis:clamp(130px,38vw,180px)!important;min-height:43px!important;padding:5px 7px 5px 42px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab::before{
+    left:7px!important;top:7px!important;width:27px!important;height:27px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab small{font-size:9px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-filters{padding:6px 8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query{
+    grid-template-columns:minmax(0,1fr) auto 52px auto 52px!important;gap:4px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input{height:36px!important;padding:0 6px!important;font-size:13px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input[type=search]{
+    grid-column:1/-1!important;height:40px!important;padding-left:10px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query label{font-size:10px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filters{
+    flex-wrap:nowrap!important;overflow-x:auto!important;overscroll-behavior-x:contain!important;
+    padding-bottom:3px!important;scrollbar-width:thin!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filter{flex:0 0 auto!important;min-width:72px!important;min-height:32px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-status{
+    min-height:30px!important;padding:5px 8px!important;font-size:9px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-view-switch{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-scroll{
+    min-height:110px!important;padding:7px!important;flex:1 1 auto!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-kanto-size,
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-kanto-board{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-list{
+    display:grid!important;grid-template-columns:1fr!important;gap:6px!important;align-content:start!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-classic-grid:empty{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-classic-grid:has(.psy-ir-map-card){
+    display:grid!important;grid-template-columns:1fr!important;gap:7px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay:has(.psy-ir-map-card) .psy-ir-hunt-list{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-card{
+    min-width:0!important;padding:12px!important;border-color:#57416a!important;
+    border-radius:14px!important;background:linear-gradient(135deg,#202238,#151a2c)!important;color:#f5edf7!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-card h3{color:#ffd78f!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-card button{
+    width:100%!important;min-height:42px!important;border-radius:10px!important;
+    background:linear-gradient(110deg,#934b2c,#722882)!important;color:white!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row{
+    min-height:66px!important;padding:7px!important;grid-template-columns:38px minmax(0,1fr) auto!important;gap:7px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-info b{font-size:13px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-info small{font-size:10px!important;white-space:normal!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-state{padding:6px!important;font-size:9px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer{
+    flex:0 1 24dvh!important;min-height:130px!important;max-height:26dvh!important;
+    padding:8px!important;
+  }
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer-top{gap:8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer-title h3{font-size:16px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-start{min-width:106px!important;min-height:42px!important;font-size:12px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics>div{padding:5px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics small{font-size:7px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics b{font-size:13px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics span{font-size:8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-drops{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:420px){
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query{grid-template-columns:minmax(0,1fr) auto 43px auto 43px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row{grid-template-columns:34px minmax(0,1fr) auto!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{width:32px!important;height:32px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-state{font-size:8px!important}
+}
+@media(orientation:landscape) and (max-height:620px){
+  #psy-idle-realistic #psy-ir-map-overlay{padding:4px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-panel{height:100%!important;max-height:100%!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head{min-height:40px!important;padding:3px 8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-head-actions button{min-height:32px!important;min-width:34px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tabs{min-height:43px!important;padding:3px 6px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab{min-height:36px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab::before{top:4px!important;width:26px!important;height:26px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-region-tab small{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-filters{padding:4px 8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query{grid-template-columns:minmax(0,1fr) auto 42px auto 42px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input{height:31px!important;font-size:11px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-query input[type=search]{grid-column:auto!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-type-filters{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-status{min-height:25px!important;padding:3px 8px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-map-scroll{min-height:80px!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-analyzer{flex-basis:22dvh!important;min-height:82px!important;max-height:24dvh!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-metrics{display:none!important}
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-drops,
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-drop-head{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #psy-idle-realistic #psy-ir-map-overlay *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+
+/* Compact portrait trainer HUD so the town's characters remain visible. */
+@media(max-width:760px) and (orientation:portrait){
+ html[data-psy-layout="mobile"] #hud-player{
+  box-sizing:border-box!important;width:min(52vw,228px)!important;min-width:0!important;max-width:min(52vw,228px)!important;
+  padding:7px!important;max-height:calc(var(--psy-vh,100dvh) - 24px)!important;overflow:hidden!important;
+ }
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-head{
+  grid-template-columns:34px minmax(0,1fr)!important;gap:6px!important;padding-bottom:4px!important;margin-bottom:4px!important;
+ }
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-avatar{width:32px!important;height:32px!important;border-radius:8px!important}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-avatar img{width:30px!important;height:30px!important}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-name{font-size:clamp(11px,3.2vw,14px)!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-sub,
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-badges,
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-wallet,
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-mini-stats,
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-psyduck-shortcut{display:none!important}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-resource{
+  grid-template-columns:23px minmax(0,1fr) 35px!important;gap:4px!important;margin:3px 0!important;
+ }
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-label{font-size:8px!important}
+ html[data-psy-layout="mobile"] #hud-player .psy-hud-val{font-size:8px!important}
+ html[data-psy-layout="mobile"] #hud-player .bar{height:7px!important}
+}
+@media(max-height:600px) and (orientation:landscape){
+ html[data-psy-layout="mobile"] .psy-halloween-npc{width:108px}
+ html[data-psy-layout="mobile"] .psy-halloween-sprite{width:98px;height:132px}
+ html[data-psy-layout="mobile"] .psy-halloween-sprite img{width:98px;height:128px}
+}
+
+
+/* Hunt rows use the target Pokémon's sprite as the selection thumbnail. */
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{
+  box-sizing:border-box!important;width:46px!important;height:46px!important;padding:3px!important;
+  display:grid!important;place-items:center!important;overflow:hidden!important;
+  border:1px solid #8b65b5!important;border-radius:11px!important;
+  background:linear-gradient(145deg,#242039,#151b2b)!important;
+}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon::after{display:none!important;content:none!important}
+#psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon img{
+  display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;
+  image-rendering:pixelated!important;filter:drop-shadow(0 2px 3px #0009)!important;
+}
+@media(max-width:760px){
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{width:42px!important;height:42px!important}
+}
+@media(max-width:420px){
+  #psy-idle-realistic #psy-ir-map-overlay .psy-ir-hunt-row-icon{width:36px!important;height:36px!important;padding:2px!important}
+}

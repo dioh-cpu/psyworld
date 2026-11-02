@@ -5,12 +5,12 @@
 (function(){
 'use strict';
 const W=window,D=document;
-  // V36: invalida o cache do itch.io após os ajustes de economia e câmera.
-const PHYSICAL_BUILD='PSYWORLD_SURVIVOR_CORRECOES_INTEGRIDADE_V18_20260902';
-function versionedSrc(src){const sep=String(src).includes('?')?'&':'?';return String(src)+sep+'build='+encodeURIComponent(PHYSICAL_BUILD)}
+  // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
+const PHYSICAL_BUILD='PSYWORLD_BATTLE_ARENA_V1_20261030';
+function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSYWORLD_IDLE_MOBILE_HUD_V2_20261031':isIdleShared?'IDLE_SOCIAL_LAYER_FIX_20260930_V1':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
-  world:{icon:'🌍',name:'WORLD',desc:'Exploração em primeira pessoa, Pokémon no mapa e combate World.',entry:['enterWorldMode']},
+  idleworld:{icon:'🌿',name:'PSY IDLE',desc:'Hunts individuais em mapa top-down, colisão em grade, IA e sistemas de progressão próprios.',entry:['openIdleRealisticV2']},
   hunts:{icon:'🗺️',name:'HUNTS',desc:'Hunts por região, nível e tipo.',entry:['openHunts']},
   dungeons:{icon:'🏰',name:'DUNGEONS',desc:'Bosses e desafios especiais.',entry:['openDungeons']},
   gyms:{icon:'🏆',name:'GYMS',desc:'Progressão regional de Ginásios.',entry:['openGyms']},
@@ -147,7 +147,7 @@ function modeFromButton(b){
   const oc=String(b.getAttribute?.('onclick')||'');
   for(const [k,m] of Object.entries(MODES))if(m.entry.some(fn=>oc.includes(fn+'(')||oc.includes('window.'+fn+'(')))return k;
   const t=String(b.textContent||'').toUpperCase();
-  if(t.includes('WORLD IDLE')||t.includes('IDLE REALISTA'))return'idleworld'; if(/\bWORLD\b/.test(t))return'world'; if(t.includes('HUNTS'))return'hunts';
+if(t.includes('PSY IDLE'))return'idleworld'; if(t.includes('HUNTS'))return'hunts';
   if(t.includes('DUNGEON'))return'dungeons'; if(t.includes('GYM')||t.includes('GINÁSIO'))return'gyms';
   if(t.includes('CARDS')||t.includes('ÁLBUM'))return'cards'; if(t.includes('SURVIVOR')||t.includes('PSYDUCK SUPREMO'))return'survivor';
   if(t.includes('POKÉDEX'))return'pokedex'; if(t.includes('EGG CENTER'))return'eggs'; if(t.includes('QUEST'))return'quests';
@@ -233,5 +233,12 @@ const oldConfirm=W.confirmStarter;if(typeof oldConfirm==='function'){W.confirmSt
 
 refreshGates();ensureUI();addMenuButton();decorateButtons();setTimeout(()=>{refreshGates();addMenuButton();maybeIntro()},700);
 const mo=new MutationObserver(()=>{addMenuButton();decorateButtons()});mo.observe(D.body,{childList:true,subtree:true});
+// GitHub V62 sync: conta online/cloud save é um módulo leve e global, carregado junto ao bootstrap.
+try{
+  const cs=D.createElement('script');
+  cs.src='core/cloud-save-v23.js?build=CLOUD_IDLE_SESSION_BRIDGE_20260929_D';
+  cs.async=false;
+  D.head.appendChild(cs);
+}catch(e){console.warn('cloud save loader',e)}
 console.log('✅ PSYWORLD physical module loader ready');
 })();
