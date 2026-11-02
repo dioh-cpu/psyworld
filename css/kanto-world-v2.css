@@ -41,3 +41,6 @@ body.psy-kanto-v2-active #psy-audio-floating{display:none!important}
 #psy-kanto-world-v2 .kw2-stage{min-height:0}
 #psy-kanto-world-v2 .kw2-top{padding-right:max(10px,env(safe-area-inset-right))}
 #psy-kanto-world-v2 .kw2-mode{z-index:3}
+
+/* Keep draggable soundtrack toggle outside the campaign stage. */
+body.psy-kanto-v2-active #psy-audio-quick-toggle{display:none!important}
