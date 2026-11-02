@@ -455,6 +455,10 @@
     // Keep the location playable when its optional illustration is missing or
     // still loading. Pallet has a dedicated authored renderer; other places
     // use the terrain grid until their artwork finishes loading.
+    if(!artDrawn&&model.map.artKey){
+      const fallbackFloor=model.map.authoredKind==='route'?'#579d48':model.map.authoredKind==='pallet'?'#5fa64d':th.floor;
+      c.fillStyle=fallbackFloor;c.fillRect(0,0,cw,ch);
+    }
     if(!artDrawn&&model.map.authoredKind==='pallet')drawPallet(c,model.map,offsetX,offsetY,drawTile);
     else if(!artDrawn) {
       for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
