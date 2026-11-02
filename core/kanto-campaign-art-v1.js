@@ -18,7 +18,7 @@
   const IMAGES={},FAILED=new Set(),SCALED_ART=new Map();
   for(const [key,file] of Object.entries(FILES)){const img=new Image();img.onload=()=>W.dispatchEvent(new Event('psy-kanto-art-ready'));img.onerror=()=>{FAILED.add(key);W.dispatchEvent(new Event('psy-kanto-art-ready'));};img.src=file.startsWith('/')?file:BASE+file;IMAGES[key]=img;}
   const META={
-    'pallet':{art:'pallet',kind:'pallet',spawn:[16,17],npc:[17,13],object:[18,17],npcs:[{id:'oak',name:'Professor Carvalho',x:17,y:13,facing:'down',sprite:'professor'},{id:'rival',name:'Rival',x:22,y:17,facing:'left',sprite:'trainer'},{id:'town-guide',name:'Guia de Pallet',x:11,y:18,facing:'right',sprite:'shopkeeper'}],exit:[16,4]},
+    'pallet':{art:'pallet',kind:'pallet',spawn:[16,17],npc:[17,13],object:[18,17],npcs:[{id:'oak',name:'Professor Carvalho',x:16,y:15,facing:'down',sprite:'professor'},{id:'rival',name:'Rival',x:22,y:17,facing:'left',sprite:'trainer'},{id:'town-guide',name:'Guia de Pallet',x:11,y:18,facing:'right',sprite:'shopkeeper'}],exit:[16,4]},
     'viridian':{art:'viridian',kind:'city',spawn:[16,29],npc:[16,20],object:[19,16],sprite:'traveler',exit:[16,1]},
     'pewter':{art:'pewter',kind:'city',spawn:[16,30],npc:[16,14],object:[17,17],sprite:'trainer',npcs:[{id:'brock',name:'Brock',x:16,y:14,facing:'down',sprite:'trainer'},{id:'museum-curator',name:'Curador do Museu',x:7,y:10,facing:'right',sprite:'elder'},{id:'fossil-researcher',name:'Pesquisadora de Fósseis',x:24,y:10,facing:'left',sprite:'professor'},{id:'pewter-guide',name:'Guia de Pewter',x:12,y:18,facing:'up',sprite:'shopkeeper'}],exit:[16,0]},
     'cerulean':{art:'cerulean',kind:'city',spawn:[16,4],npc:[16,14],object:[17,17],sprite:'trainer',exit:[16,0],npcs:[{id:'misty',name:'Misty',x:19,y:14,facing:'left',sprite:'misty'},{id:'cerulean-guide',name:'Guia de Cerulean',x:12,y:18,facing:'right',sprite:'shopkeeper'}]},
@@ -35,14 +35,21 @@
   function carve(grid,points,width=1){for(let i=1;i<points.length;i++){let [x,y]=points[i-1], [tx,ty]=points[i],dx=Math.abs(tx-x),sx=x<tx?1:-1,dy=-Math.abs(ty-y),sy=y<ty?1:-1,err=dx+dy;while(true){for(let oy=-width;oy<=width;oy++)for(let ox=-width;ox<=width;ox++){const xx=x+ox,yy=y+oy;if(grid[yy]?.[xx]!==undefined&&!['3','4','6','9'].includes(grid[yy][xx]))grid[yy][xx]=1;}if(x===tx&&y===ty)break;const e2=2*err;if(e2>=dy){err+=dy;x+=sx}if(e2<=dx){err+=dx;y+=sy}}}}
   function build(place){const id=typeof place==='string'?place:place?.id,meta=META[id],data=DATA[id]||(id==='mt-moon'?DATA['route-4']:null);if(!meta||!data)return null;const grid=data.grid.map(row=>Array.from(row,Number));
     if(id==='pallet'){
-      // The collision map used to allow walking through Pallet's buildings.
-      // Buildings block movement; leave continuous side lanes from the north gate
-      // around the laboratory and into the southern plaza.
-      for(const [x,y,w,h] of [[14,7,8,6],[4,10,8,6],[24,11,6,6],[21,22,8,7]])
-        for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(grid[yy]?.[xx]!==undefined)grid[yy][xx]=9;
-      carve(grid,[[16,4],[16,6],[13,6],[13,16],[16,16],[23,16],[23,6],[16,6]],0);
-      carve(grid,[[16,16],[16,31]],0);
-      grid[16][16]=1;
+      // Rebuild the collision map against the square Pallet illustration: the
+      // legacy 32x32 grid came from a different, GBA-proportioned layout.
+      for(let y=0;y<32;y++)for(let x=0;x<32;x++)grid[y][x]=0;
+      for(let y=0;y<32;y++)for(let x=0;x<32;x++)if(x<2||x===31||y===31)grid[y][x]=9;
+      // Collision footprints follow the four structures in the square town art.
+      for(const [x,y,w,h] of [[14,7,8,7],[4,9,8,6],[24,11,6,6],[18,18,7,7]])
+        for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)grid[yy][xx]=9;
+      // One north exit. The trail forks around the Pokémon Center and joins
+      // the plaza; branches reach every house and the south waterfront.
+      carve(grid,[[16,0],[16,6],[13,6],[13,17],[16,17],[22,17],[22,6],[16,6]],0);
+      carve(grid,[[2,17],[13,17],[22,17],[30,17]],0);
+      carve(grid,[[7,17],[7,15]],0);carve(grid,[[18,17],[18,14]],0);
+      carve(grid,[[26,17],[26,16]],0);carve(grid,[[16,17],[16,25],[21,25]],0);
+      // Door threshold tiles and north exit are always reachable.
+      for(const [x,y] of [[16,0],[7,15],[18,14],[26,16],[21,25]])grid[y][x]=1;
     }
     // Playable habitat overlays may only use traversable ground; leave trees, water and roofs as drawn.
     if(meta.grass)for(const [x,y,w,h] of meta.grass)for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(grid[yy]?.[xx]!==undefined&&!['3','4','6','9'].includes(grid[yy][xx]))grid[yy][xx]=2;
@@ -55,7 +62,7 @@
       'route-24-25':[[16,31],[16,26],[16,21],[16,16],[16,11],[16,6],[16,1]]
     };
     const cityPaths={
-      'pallet':[[[16,31],[16,27],[16,23],[16,20],[16,17]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]],[[16,17],[10,17],[7,13]],[[16,17],[22,17],[25,13]],[[11,17],[11,12],[11,9]],[[21,17],[21,12],[21,9]],[[16,4],[16,6],[13,6],[13,16],[16,16],[23,16],[23,6],[16,6]]],
+      'pallet':[[[16,31],[16,27],[16,23],[16,20],[16,17]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]],[[16,17],[10,17],[7,15]],[[16,17],[18,17],[18,14]],[[16,17],[26,17],[26,16]],[[16,17],[16,25],[21,25]],[[16,4],[16,6],[13,6],[13,16],[16,16],[23,16],[23,6],[16,6]]],
       'viridian':[[[16,31],[16,27],[16,23],[16,20],[16,17]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]],[[10,17],[10,12],[10,9]],[[22,17],[22,12],[22,9]]],
       'pewter':[[[16,31],[16,27],[16,23],[16,20],[16,17],[16,13],[16,9],[16,5],[16,1]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]]],
       'cerulean':[[[16,31],[16,27],[16,23],[16,20],[16,17],[16,13],[16,9],[16,5],[16,1]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]],[[16,17],[8,13]],[[16,17],[24,13]]],

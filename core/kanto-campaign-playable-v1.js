@@ -123,7 +123,7 @@
       .psy-kanto-enter-world{width:100%;margin:8px 0 12px;background:linear-gradient(110deg,#075985,#14532d)!important;border-color:#8be5ca!important}
       .kp-touch-stick{position:absolute;z-index:4;width:88px;height:88px;margin:-44px 0 0 -44px;border:2px solid #c8edff9c;border-radius:50%;background:#13243a66;box-shadow:0 2px 16px #0008;pointer-events:none;touch-action:none}
       .kp-touch-stick:after{content:'';position:absolute;left:50%;top:50%;width:32px;height:32px;margin:-16px;border:2px solid #effbff;border-radius:50%;background:#59c3e899;transform:translate(var(--stick-x,0),var(--stick-y,0));box-shadow:0 2px 9px #0007}
-      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px}.kp-title small{max-width:58vw}#psy-kanto-canvas{width:100vw;height:min(calc(100vh - 150px),62.5vw);border-radius:0}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{font-size:11px}.kp-interact{min-width:72px}}
+      @media(max-width:900px),(pointer:coarse){#psy-kanto-world .kp-head{padding:8px 10px}.kp-title small{max-width:58vw}#psy-kanto-world .kp-stage{flex:1 1 auto;min-height:0}#psy-kanto-canvas{width:100%;height:100%;max-width:none;max-height:none;border-radius:0}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{font-size:11px}.kp-interact{min-width:72px}}
       @media(prefers-reduced-motion:reduce){#psy-kanto-world .kp-stage{transition-duration:.01ms}#psy-kanto-world.map-fade-in .kp-stage{animation-duration:.01ms}}
     `;
     D.head.appendChild(style);
@@ -136,6 +136,9 @@
     const root = D.createElement('div'); root.id = 'psy-kanto-world'; root.setAttribute('role','dialog'); root.setAttribute('aria-modal','true');
     root.innerHTML = `<header class="kp-head"><button type="button" data-back>← CIDADE</button><div class="kp-title"><b></b><small></small></div><button type="button" data-campaign>CONTINUAR</button><button type="button" class="kp-close" aria-label="Fechar">×</button></header><div class="kp-stage"><canvas id="psy-kanto-canvas" width="896" height="560" aria-label="Mapa jogável de Kanto"></canvas><section id="psy-kanto-dialog"><div class="kp-dialog-portrait" data-emotion="neutral"><img alt=""><span class="kp-dialog-face" aria-hidden="true"></span></div><div class="kp-dialog-copy"><div class="kp-dialog-title"></div><div class="kp-dialog-text"></div></div><div class="kp-dialog-actions"></div></section></div><footer class="kp-footer"><div class="kp-objective"></div><div class="kp-controls" aria-hidden="true"></div><button type="button" class="kp-interact" data-interact>INTERAGIR</button></footer>`;
     D.body.appendChild(root); model.root = root; model.canvas = root.querySelector('canvas'); model.ctx = model.canvas.getContext('2d'); model.dialog = root.querySelector('#psy-kanto-dialog');
+    const fitCampaignCanvas=()=>{const box=model.canvas.getBoundingClientRect(),w=Math.max(1,Math.round(box.width)),h=Math.max(1,Math.round(box.height));if(model.canvas.width!==w||model.canvas.height!==h){model.canvas.width=w;model.canvas.height=h;model.ctx=model.canvas.getContext('2d');render();}};
+    if(typeof ResizeObserver==='function'){const ro=new ResizeObserver(fitCampaignCanvas);ro.observe(root.querySelector('.kp-stage'));}
+    W.addEventListener('resize',fitCampaignCanvas,{passive:true});
     root.querySelector('.kp-close').onclick = closeWorld;
     root.querySelector('[data-back]').onclick = () => closeWorld();
     root.querySelector('[data-campaign]').onclick = advanceCampaign;
@@ -260,7 +263,7 @@
     model.root.querySelector('.kp-title small').textContent=model.map.authoredKind==='pallet'?'Pallet Town · saída norte para Route 1':model.map.authoredKind==='route'?'Mapa de campanha · arte original com colisões':model.map.authoredKind==='city'?'Cidade · caminho integrado à campanha':'Mapa de campanha · arte original';
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     scheduleTick();
-    if(place.id==='pallet'||place.id==='pewter'||place.id==='cerulean')W.setTimeout(()=>W.PsyKantoTownStoryV1?.cinematic(place.id),options.__transitionComplete?420:220);
+    if(!options.skipCinematic&&(place.id==='pallet'||place.id==='pewter'||place.id==='cerulean'))W.setTimeout(()=>W.PsyKantoTownStoryV1?.cinematic(place.id),options.__transitionComplete?420:220);
   }
   function closeWorld() { model.held=null;model.motion=null;model.transitioning=false;if(model.transitionTimer)W.clearTimeout(model.transitionTimer);model.transitionTimer=0;if(model.transitionRaf)W.cancelAnimationFrame(model.transitionRaf);model.transitionRaf=0;model.root?.classList.remove('open','map-fade-out','map-fade-in');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
@@ -327,6 +330,35 @@
     updateObjective();
   }
   function nearby(point) { return !!point&&Math.abs(model.x-point.x)+Math.abs(model.y-point.y)<=1; }
+  function palletDoors(){return [
+    {id:'west-home',name:'Casa da praça',door:{x:7,y:15},returnTo:{x:7,y:16}},
+    {id:'oak-lab',name:'Centro Pokémon e Laboratório Carvalho',door:{x:18,y:14},returnTo:{x:18,y:15}},
+    {id:'east-home',name:'Casa do leste',door:{x:26,y:16},returnTo:{x:26,y:17}},
+    {id:'south-home',name:'Casa do cais',door:{x:21,y:25},returnTo:{x:20,y:25}}
+  ];}
+  function enterPalletInterior(building) {
+    const w=13,h=15,grid=Array.from({length:h},(_,y)=>Array.from({length:w},(_,x)=>(x===0||y===0||x===w-1||y===h-1)?9:1));
+    grid[h-1][6]=1;
+    // Keep a clear entrance aisle and a small, legible room appropriate to the building.
+    for(let x=2;x<=10;x++)grid[2][x]=0;
+    const isCenter=building.id==='oak-lab';
+    const isLab=building.id==='oak-lab';
+    model.map={grid,width:w,height:h,authoredKind:'interior',seed:hash(building.id),npcs:[],object:null,portals:[{x:6,y:8,to:'pallet',entry:building.returnTo,gate:false}],draw(c,{offsetX=0,offsetY=0,TILE=28}={}){
+      const box=(x,y,bw,bh,color)=>{c.fillStyle=color;c.fillRect(offsetX+x*TILE,offsetY+y*TILE,bw*TILE,bh*TILE)};
+      box(1,1,11,13,'#9c795c');box(2,2,9,11,isCenter?'#d9e4dd':'#dfc69a');
+      box(2,2,9,1,'#734d3d');box(2,12,9,1,'#b49978');
+      if(isCenter){box(3,3,2,1,'#7b9c96');box(8,3,2,1,'#7b9c96');box(3,5,7,1,'#6f8c89');box(5,4,3,1,'#f3d17b');}
+      else if(isLab){box(3,3,2,1,'#536f76');box(8,3,2,1,'#536f76');box(5,4,3,1,'#d5e5e8');box(6,4,1,1,'#e77261');}
+      else {box(2,3,3,1,'#784c4c');box(8,3,3,1,'#784c4c');box(5,5,3,1,'#9c7552');}
+      box(3,8,7,3,'#9b7759');box(5,13,3,1,'#593b2f');
+    }};
+    model.map.npc=isLab?{id:'pallet-nurse',x:6,y:3,name:'Enfermeira Joy',sprite:'nurse'}:null;
+    model.map.npcs=isLab?[model.map.npc,{id:'oak',x:9,y:3,name:'Professor Carvalho',sprite:'professor'}]:[];
+    model.x=6;model.y=13;model.direction='up';model.frame=0;model.held=null;model.motion=null;
+    model.root.querySelector('.kp-title b').textContent=building.name;
+    model.root.querySelector('.kp-title small').textContent='Pallet Town · interior';
+    model.dialog?.classList.remove('open');render();
+  }
   function showDialog(title,text,actions=[],emotion='neutral',sprite='traveler',portraitKey='') {
     const d=model.dialog;d.querySelector('.kp-dialog-title').textContent=title;d.querySelector('.kp-dialog-text').textContent=text;const portrait=d.querySelector('.kp-dialog-portrait');portrait.dataset.emotion=emotion;const portraitImg=portrait.querySelector('img');portrait.classList.toggle('expression-art',!!portraitKey);portraitImg.src=portraitKey?`/assets/kanto/campaign-art/npc/expressions/${portraitKey}-${emotion}.${portraitKey==='misty'?'webp':'png'}`:`/assets/kanto/campaign-art/npc/npc-${sprite}.png`;portraitImg.alt=`Retrato de ${title} · ${emotion}`;
     const box=d.querySelector('.kp-dialog-actions');box.replaceChildren();
@@ -349,7 +381,25 @@
         showDialog('Saída bloqueada',`Para seguir, ${missing.join(', ')}. Progresso de espécies: ${Math.min(count,need)}/${need}.`);return;
       }
       if(portal.gate)markCleared(place);
-      openWorld(portal.to,{entry:portal.entry,fromPortal:true});return;
+      openWorld(portal.to,{entry:portal.entry,fromPortal:true,skipCinematic:true});return;
+    }
+    if(model.map.authoredKind==='interior'){
+      const person=(model.map.npcs||[]).find(n=>nearby(n));
+      if(person?.id==='pallet-nurse'){
+        showDialog('Enfermeira Joy','Posso recuperar o HP da sua equipe agora.',[{label:'CURAR EQUIPE',primary:true,onClick:()=>{
+          const p=player();if(typeof upgradeLegacyStarterQuality==='function')upgradeLegacyStarterQuality();
+          for(const mon of p.team||[]){if(!mon)continue;const max=Math.max(1,Number(mon.maxHp||mon.baseMaxHp||1));mon.maxHp=max;mon.hp=max;delete mon._psyFaintedV31;mon.fainted=false;}
+          const first=p.team?.[0];if(first){p.pokemon=first;p.hp=first.hp;p.maxHp=first.maxHp;}
+          W.autoSave?.();W.notif?.('Equipe recuperada no Centro Pokémon de Pallet!',2500);
+        }}]);return;
+      }
+      if(person?.id==='oak'){showDialog('Professor Carvalho','O Centro Pokémon e meu laboratório ficam no mesmo prédio. A enfermeira pode recuperar seu inicial a qualquer momento.');return;}
+      showDialog('Pallet Town','Você está dentro de uma construção de Pallet. Use a saída para voltar à rua.');return;
+    }
+    if(model.map.authoredKind==='pallet'){
+      const doors=palletDoors();
+      const door=doors.find(b=>nearby(b.door)||nearby(b.returnTo));
+      if(door){enterPalletInterior(door);return;}
     }
     if(model.map.authoredKind==='pallet'&&!(model.map.exit&&nearby(model.map.exit))){
       const person=(model.map.npcs||[]).find(n=>nearby(n));
@@ -450,7 +500,10 @@
 
   function updateObjective() {
     if(!model.place||!model.root)return;
-    if(model.map?.authoredKind==='pallet'){const talked=placeState('pallet').talked;model.root.querySelector('.kp-objective').innerHTML=`Pallet Town · converse com os moradores: <strong>${talked?'Professor Carvalho já falou com você':'Professor Carvalho é um bom começo'}</strong> · saída norte leva à Route 1`;return;}
+    if(model.map?.authoredKind==='pallet'){
+      const door=palletDoors().find(b=>nearby(b.door)||nearby(b.returnTo));
+      model.root.querySelector('.kp-objective').innerHTML=door?`<strong>INTERAGIR</strong> para entrar em ${door.name} · siga pela rua ao norte para Route 1`:'Pallet Town · aproxime-se das portas e toque INTERAGIR para entrar nas casas e no Centro Pokémon · saída ao norte: Route 1';return;
+    }
     const place=model.place, ps=placeState(place.id), need=objective(place), count=new Set(ps.found).size, gym=GYM_FOR_PLACE[place.id], gymDone=!gym||(Array.isArray(player().gymProgress)&&player().gymProgress.includes(gym));
     const items=[`Fale com <strong>${esc(place.npc)}</strong>: ${ps.talked?'✅':'◻'}`];
     if(place.kind!=='city')items.push(`Registre espécies: <strong>${Math.min(count,need)}/${need}</strong>`);
@@ -491,7 +544,7 @@
     const cols=model.map.width||COLS,rows=model.map.height||ROWS;
     // Campaign illustrations are painted as a complete atlas; render them at
     // a closer scale and move both axes with the trainer so details stay legible.
-    const drawTile=model.map.artKey?TILE*1.7:model.map.authoredKind==='pallet'?Math.min(TILE,Math.floor(cw/cols),Math.floor(ch/rows)):TILE;
+    const drawTile=model.map.artKey?TILE*1.7:model.map.authoredKind==='interior'?Math.min(72,Math.floor(cw/cols),Math.floor(ch/rows)):model.map.authoredKind==='pallet'?Math.min(TILE,Math.floor(cw/cols),Math.floor(ch/rows)):TILE;
     const worldWidth=cols*drawTile,worldHeight=rows*drawTile;
     const cameraX=model.motion?model.motion.fromX+(model.motion.toX-model.motion.fromX)*Math.max(0,Math.min(1,(performance.now()-model.motion.start)/model.motion.duration)):model.x;
     const cameraY=model.motion?model.motion.fromY+(model.motion.toY-model.motion.fromY)*Math.max(0,Math.min(1,(performance.now()-model.motion.start)/model.motion.duration)):model.y;

@@ -1199,7 +1199,6 @@ function upgradeLegacyStarterQuality() {
     P.meta = P.meta || {};
     const qualityDone = !!P.meta.psyStarterQualityFloorV1;
     const hpDone = !!P.meta.psyStarterHpRestoreV1;
-    if(qualityDone && hpDone) return false;
     const starterIds = new Set(GENS.flatMap(gen => gen.starters.map(s => Number(s.id))));
     const mon = (P.team || []).find(p => p && p.isStarter)
         || (P.team || []).find(p => p && starterIds.has(Number(p.id)) && Number(p.level || 1) <= 5);
@@ -1220,11 +1219,10 @@ function upgradeLegacyStarterQuality() {
     const maxHp = Math.max(1, Number(mon.maxHp || mon.baseMaxHp || P.maxHp || 1));
     mon.maxHp = maxHp;
     let hpChanged = false;
-    if(!hpDone) {
-        if(!Number.isFinite(Number(mon.hp)) || Number(mon.hp) <= 0) {
-            mon.hp = maxHp;
-            hpChanged = true;
-        }
+    // Always repair an exhausted starter, including older saves whose migration
+    // flag was set before their HP values were restored correctly.
+    if(!Number.isFinite(Number(mon.hp)) || Number(mon.hp) <= 0 || !hpDone) {
+        if(!Number.isFinite(Number(mon.hp)) || Number(mon.hp) <= 0) { mon.hp = maxHp; hpChanged = true; }
         P.meta.psyStarterHpRestoreV1 = true;
     }
     P.pokemon = mon;

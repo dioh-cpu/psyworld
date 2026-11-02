@@ -4,8 +4,8 @@
   const api = W.PsyKantoJourneyV1;
   if (!api || api.__campaignGraphV4) return;
   const LINKS = Object.freeze([
-    {a:'pallet',b:'route-1',at:[16,4],entry:[16,30],gateA:true},
-    {a:'route-1',b:'viridian',at:[17,1],entry:[16,29],gateA:true},
+    {a:'pallet',b:'route-1',at:[16,4],entry:[16,30],gateA:false},
+    {a:'route-1',b:'viridian',at:[17,1],entry:[16,29],gateA:false},
     {a:'viridian',b:'route-2',at:[16,1],entry:[16,30],gateA:true},
     {a:'route-2',b:'viridian-forest',at:[16,1],entry:[16,30],gateA:true},
     {a:'viridian-forest',b:'pewter',at:[16,1],entry:[16,30],gateA:true},

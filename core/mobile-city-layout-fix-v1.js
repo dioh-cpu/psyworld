@@ -9,7 +9,7 @@
   style.textContent = `
     #world-btn-float{
       position:fixed!important;top:auto!important;right:10px!important;bottom:74px!important;
-      z-index:120!important;width:min(228px,48vw)!important;max-height:44dvh!important;
+      z-index:120!important;width:min(228px,48vw)!important;max-height:30dvh!important;
       flex-direction:column!important;align-items:stretch!important;
       gap:7px!important;padding:8px!important;box-sizing:border-box!important;
       overflow:visible!important;border:1px solid #67e8f966;border-radius:14px;
@@ -19,9 +19,10 @@
     #btn-city-content-toggle{width:100%!important;min-height:42px!important;flex:none!important;text-align:center!important}
     #city-game-content-buttons{
       display:flex!important;flex-direction:column!important;align-items:stretch!important;
-      gap:6px!important;max-height:calc(44dvh - 66px)!important;overflow-y:auto!important;
+      gap:6px!important;max-height:calc(30dvh - 66px)!important;overflow-y:auto!important;
       overscroll-behavior:contain;scrollbar-width:thin;padding-right:2px
     }
+    #world-btn-float.city-content-collapsed #city-game-content-buttons{display:none!important}
     #city-game-content-buttons>button{
       display:block!important;width:100%!important;min-height:38px!important;height:auto!important;
       flex:none!important;box-sizing:border-box!important;padding:7px 9px!important;
@@ -37,17 +38,19 @@
   `;
   D.head.appendChild(style);
 
-  W.toggleCityGameContent = function () {
-    const host = D.getElementById('city-game-content-buttons');
+  W.toggleCityGameContent = function (force) {
+    const dock = D.getElementById('world-btn-float');
     const button = D.getElementById('btn-city-content-toggle');
-    if (!host) return;
-    const opening = W.getComputedStyle(host).display === 'none';
-    host.style.setProperty('display', opening ? 'flex' : 'none', 'important');
+    if (!dock) return;
+    const collapsed = typeof force === 'boolean' ? force : !dock.classList.contains('city-content-collapsed');
+    dock.classList.toggle('city-content-collapsed', collapsed);
     if (button) {
-      button.setAttribute('aria-expanded', String(opening));
-      button.textContent = `📦 CONTEÚDO DO JOGO ${opening ? '▼' : '▲'}`;
+      button.setAttribute('aria-expanded', String(!collapsed));
+      button.textContent = `📦 CONTEÚDO DO JOGO ${collapsed ? '▶' : '▼'}`;
+      try { localStorage.setItem('psyworld_city_content_collapsed_v3', collapsed ? '1' : '0'); } catch (_) {}
     }
   };
+  if (W.matchMedia('(max-width: 900px), (pointer: coarse)').matches) W.toggleCityGameContent(true);
 
   // The previous phone resize used window height although the game canvas is
   // shorter than the browser viewport. Measure the actual canvas box so the

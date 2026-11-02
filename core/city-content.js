@@ -21,6 +21,9 @@
     let collapsed=false, saved=null;
     try{saved=localStorage.getItem(KEY);collapsed=saved==='1'}catch(e){}
     if(saved===null)collapsed=!!window.matchMedia?.('(max-width: 760px)').matches;
+    // Keep the campaign map visible on touch devices even when an old save
+    // remembered the oversized menu as expanded. Players can still open it.
+    if(window.matchMedia?.('(max-width: 900px), (pointer: coarse)').matches)collapsed=true;
     window.toggleCityGameContent(collapsed);
   }
 
