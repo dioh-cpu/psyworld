@@ -68,6 +68,28 @@
     imageCache.set(url, entry);
     return entry;
   }
+  function prepareFrameBounds(entry) {
+    if (entry.frameBounds) return entry.frameBounds;
+    entry.frameBounds = false;
+    try {
+      const img=entry.img,cols=Math.floor((img.naturalWidth||SHEET)/CELL),rows=Math.floor((img.naturalHeight||SHEET)/CELL);
+      const scan=D.createElement('canvas');scan.width=img.naturalWidth||SHEET;scan.height=img.naturalHeight||SHEET;
+      const scanCtx=scan.getContext('2d',{willReadFrequently:true});scanCtx.drawImage(img,0,0);
+      const pixels=scanCtx.getImageData(0,0,scan.width,scan.height).data,bounds=[];
+      for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
+        let minX=CELL,minY=CELL,maxX=-1,maxY=-1;
+        const x0=col*CELL,y0=row*CELL;
+        for(let y=0;y<CELL;y++)for(let x=0;x<CELL;x++){
+          if(pixels[((y0+y)*scan.width+x0+x)*4+3]>32){
+            if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;
+          }
+        }
+        bounds.push(maxX<0?null:{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1});
+      }
+      entry.frameCols=cols;entry.frameBounds=bounds;
+    } catch (_) { entry.frameBounds=false; }
+    return entry.frameBounds;
+  }
   function drawSheet(canvas, id, key, row, col) {
     const entry = imageFor(id, key), ctx = canvas?.getContext?.('2d');
     if (!entry || !ctx || !entry.ready) return false;
@@ -200,9 +222,16 @@
     if (moving) frame = Math.floor((W.performance?.now?.() || Date.now()) / 130) % 4;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(entry.img, frame * CELL, directionRow() * CELL, CELL, CELL, 0, 0, canvas.width, canvas.height);
-    const bounce = moving && frame % 2 ? -3 : 0;
-    canvas.style.transform = `translate(-50%, calc(-82% + ${bounce}px))`;
+    const row=directionRow(),bounds=prepareFrameBounds(entry),box=bounds?.[row*(entry.frameCols||4)+frame];
+    if(box){
+      // Every frame uses one visible height and the same foot baseline. The source
+      // sheets have different transparent padding per pose, so scaling whole cells
+      // made the trainer visibly grow and shrink while walking.
+      const targetHeight=64,targetWidth=box.w*(targetHeight/box.h);
+      ctx.drawImage(entry.img,frame*CELL+box.x,row*CELL+box.y,box.w,box.h,
+        (canvas.width-targetWidth)/2,canvas.height-targetHeight,targetWidth,targetHeight);
+    }else ctx.drawImage(entry.img, frame * CELL, row * CELL, CELL, CELL, 0, 0, canvas.width, canvas.height);
+    canvas.style.transform = 'translate(-50%, -82%)';
     canvas.style.display = 'block';
     canvas.dataset.character = id;
     canvas.dataset.costume = key;

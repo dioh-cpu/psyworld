@@ -528,7 +528,7 @@
       const ctx=scan.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
       const pixels=ctx.getImageData(0,0,scan.width,scan.height).data;
       const cols=Math.floor(scan.width/SHEET_CELL),rows=Math.floor(scan.height/SHEET_CELL),bounds=[];
-      let maxW=1,maxH=1;
+      let maxH=1;
       for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
         let minX=SHEET_CELL,minY=SHEET_CELL,maxX=-1,maxY=-1;
         const x0=col*SHEET_CELL,y0=row*SHEET_CELL;
@@ -538,15 +538,17 @@
           }
         }
         const box=maxX<0?{x:0,y:0,w:SHEET_CELL,h:SHEET_CELL}:{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1};
-        bounds.push(box);maxW=Math.max(maxW,box.w);maxH=Math.max(maxH,box.h);
+        bounds.push(box);maxH=Math.max(maxH,box.h);
       }
-      avatar.frameBounds=bounds;avatar.frameCols=cols;avatar.frameScale=Math.min(46/maxW,46/maxH);
+      avatar.frameBounds=bounds;avatar.frameCols=cols;avatar.frameScale=46/maxH;
     } catch (_) { avatar.frameBounds=null;avatar.frameScale=1; }
   }
   function drawNormalizedAvatar(ctx,avatar,row,col,centerX,baselineY) {
     const image=avatar.image,cols=avatar.frameCols||4,index=row*cols+col,box=avatar.frameBounds?.[index];
     if(!box){ctx.drawImage(image,col*SHEET_CELL,row*SHEET_CELL,SHEET_CELL,SHEET_CELL,centerX-25,baselineY-50,50,50);return;}
-    const scale=avatar.frameScale||1,w=box.w*scale,h=box.h*scale;
+    // Keep the character's visible height constant between idle/walk frames;
+    // sheet padding differs by pose even though every cell is 512×512.
+    const scale=46/box.h,w=box.w*scale,h=46;
     ctx.drawImage(image,col*SHEET_CELL+box.x,row*SHEET_CELL+box.y,box.w,box.h,centerX-w/2,baselineY-h,w,h);
   }
   function tick() {
