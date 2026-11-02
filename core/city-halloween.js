@@ -300,11 +300,14 @@
 
   function drawCity() {
     if (!cityVisible() || (typeof inBattle!=='undefined'&&inBattle)) return;
-    captureOrigin(); if (!origin) return;
+    captureOrigin();
     // Legacy draw clears the canvas on every animation frame; repaint this overlay each time too.
-    const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height, center=screenPoint(0,0);
+    const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height;
     c.save();
     drawCityBackdrop(c,w,h);
+    // Cover the legacy beach even while the profile is still loading. City props
+    // wait until captureOrigin has a real player position.
+    if (!origin) { c.restore(); return; }
     clipCityArea(c,w,h);
     // Halloween lighting and cobblestones stay inside the town; Route 1 remains clear.
     c.fillStyle='rgba(7,10,27,.47)';c.fillRect(0,0,w,h);
@@ -452,7 +455,7 @@
   if(typeof baseDraw==='function')W.draw=function(){
     const wrap=D.getElementById('game-wrap');
     if(wrap){
-      const worldActive=wrap.style.display!=='none'&&!!(typeof P!=='undefined'&&P.team?.length)&&!W.__psyIdleActive&&!W.PSY_RUNTIME_MODE?.is?.('adventure');
+      const worldActive=wrap.style.display!=='none'&&!W.__psyIdleActive&&!W.PSY_RUNTIME_MODE?.is?.('adventure');
       if(worldActive)wrap.dataset.citySeason='halloween';else delete wrap.dataset.citySeason;
       const fastButton=D.getElementById('fastEncounterBtn');
       if(fastButton)fastButton.style.display=worldActive?'none':'';
