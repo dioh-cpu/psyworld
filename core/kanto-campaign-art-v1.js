@@ -18,7 +18,7 @@
   const IMAGES={},FAILED=new Set(),SCALED_ART=new Map();
   for(const [key,file] of Object.entries(FILES)){const img=new Image();img.onload=()=>W.dispatchEvent(new Event('psy-kanto-art-ready'));img.onerror=()=>{FAILED.add(key);W.dispatchEvent(new Event('psy-kanto-art-ready'));};img.src=file.startsWith('/')?file:BASE+file;IMAGES[key]=img;}
   const META={
-    'pallet':{art:'pallet',kind:'pallet',spawn:[16,17],npc:[17,13],object:[18,17],npcs:[{id:'oak',name:'Professor Carvalho',x:17,y:13,facing:'down',sprite:'professor'},{id:'rival',name:'Rival',x:22,y:17,facing:'left',sprite:'trainer'},{id:'town-guide',name:'Guia de Pallet',x:11,y:18,facing:'right',sprite:'shopkeeper'}],exit:[16,13]},
+    'pallet':{art:'pallet',kind:'pallet',spawn:[16,17],npc:[17,13],object:[18,17],npcs:[{id:'oak',name:'Professor Carvalho',x:17,y:13,facing:'down',sprite:'professor'},{id:'rival',name:'Rival',x:22,y:17,facing:'left',sprite:'trainer'},{id:'town-guide',name:'Guia de Pallet',x:11,y:18,facing:'right',sprite:'shopkeeper'}],exit:[16,4]},
     'viridian':{art:'viridian',kind:'city',spawn:[16,29],npc:[16,20],object:[19,16],sprite:'traveler',exit:[16,1]},
     'pewter':{art:'pewter',kind:'city',spawn:[16,30],npc:[16,14],object:[17,17],sprite:'trainer',npcs:[{id:'brock',name:'Brock',x:16,y:14,facing:'down',sprite:'trainer'},{id:'museum-curator',name:'Curador do Museu',x:7,y:10,facing:'right',sprite:'elder'},{id:'fossil-researcher',name:'Pesquisadora de Fósseis',x:24,y:10,facing:'left',sprite:'professor'},{id:'pewter-guide',name:'Guia de Pewter',x:12,y:18,facing:'up',sprite:'shopkeeper'}],exit:[16,0]},
     'cerulean':{art:'cerulean',kind:'city',spawn:[16,4],npc:[16,14],object:[17,17],sprite:'trainer',exit:[16,0],npcs:[{id:'misty',name:'Misty',x:19,y:14,facing:'left',sprite:'misty'},{id:'cerulean-guide',name:'Guia de Cerulean',x:12,y:18,facing:'right',sprite:'shopkeeper'}]},
@@ -35,10 +35,14 @@
   function carve(grid,points,width=1){for(let i=1;i<points.length;i++){let [x,y]=points[i-1], [tx,ty]=points[i],dx=Math.abs(tx-x),sx=x<tx?1:-1,dy=-Math.abs(ty-y),sy=y<ty?1:-1,err=dx+dy;while(true){for(let oy=-width;oy<=width;oy++)for(let ox=-width;ox<=width;ox++){const xx=x+ox,yy=y+oy;if(grid[yy]?.[xx]!==undefined&&!['3','4','6','9'].includes(grid[yy][xx]))grid[yy][xx]=1;}if(x===tx&&y===ty)break;const e2=2*err;if(e2>=dy){err+=dy;x+=sx}if(e2<=dx){err+=dx;y+=sy}}}}
   function build(place){const id=typeof place==='string'?place:place?.id,meta=META[id],data=DATA[id]||(id==='mt-moon'?DATA['route-4']:null);if(!meta||!data)return null;const grid=data.grid.map(row=>Array.from(row,Number));
     if(id==='pallet'){
-      // Keep roofs/walls solid; the plaza-to-Route-1 transition is at the lab door.
-      for(const [x,y,w,h] of [[13,7,9,6],[4,9,9,7],[23,12,7,7],[20,22,9,7]])
+      // The collision map used to allow walking through Pallet's buildings.
+      // Buildings block movement; leave continuous side lanes from the north gate
+      // around the laboratory and into the southern plaza.
+      for(const [x,y,w,h] of [[14,7,8,6],[4,10,8,6],[24,11,6,6],[21,22,8,7]])
         for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(grid[yy]?.[xx]!==undefined)grid[yy][xx]=9;
-      grid[13][16]=1;grid[14][16]=1;
+      carve(grid,[[16,4],[16,6],[13,6],[13,16],[16,16],[23,16],[23,6],[16,6]],0);
+      carve(grid,[[16,16],[16,31]],0);
+      grid[16][16]=1;
     }
     // Playable habitat overlays may only use traversable ground; leave trees, water and roofs as drawn.
     if(meta.grass)for(const [x,y,w,h] of meta.grass)for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(grid[yy]?.[xx]!==undefined&&!['3','4','6','9'].includes(grid[yy][xx]))grid[yy][xx]=2;
@@ -51,7 +55,7 @@
       'route-24-25':[[16,31],[16,26],[16,21],[16,16],[16,11],[16,6],[16,1]]
     };
     const cityPaths={
-      'pallet':[[[16,31],[16,27],[16,23],[16,20],[16,17]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]],[[16,17],[10,17],[7,13]],[[16,17],[22,17],[25,13]],[[11,17],[11,12],[11,9]],[[21,17],[21,12],[21,9]]],
+      'pallet':[[[16,31],[16,27],[16,23],[16,20],[16,17]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]],[[16,17],[10,17],[7,13]],[[16,17],[22,17],[25,13]],[[11,17],[11,12],[11,9]],[[21,17],[21,12],[21,9]],[[16,4],[16,6],[13,6],[13,16],[16,16],[23,16],[23,6],[16,6]]],
       'viridian':[[[16,31],[16,27],[16,23],[16,20],[16,17]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]],[[10,17],[10,12],[10,9]],[[22,17],[22,12],[22,9]]],
       'pewter':[[[16,31],[16,27],[16,23],[16,20],[16,17],[16,13],[16,9],[16,5],[16,1]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]]],
       'cerulean':[[[16,31],[16,27],[16,23],[16,20],[16,17],[16,13],[16,9],[16,5],[16,1]],[[2,17],[8,17],[14,17],[20,17],[26,17],[31,17]],[[16,17],[8,13]],[[16,17],[24,13]]],
@@ -66,8 +70,8 @@
     if(map.exit)grid[map.exit.y][map.exit.x]=1;if(id==='mt-moon'){for(let y=1;y<=30;y++)for(let x=15;x<=17;x++)if(![6,9].includes(grid[y][x]))grid[y][x]=1;for(let x=13;x<=19;x++)if(![6,9].includes(grid[14][x]))grid[14][x]=1;grid[1][16]=1;grid[14][19]=1;}if(meta.gate){grid[meta.chest[1]][meta.chest[0]]=2;for(let y=meta.gate[1]-2;y<=meta.gate[1]+2;y++)for(let x=meta.gate[0]+1;x<=meta.gate[0]+5;x++)if(x!==meta.chest[0]||y!==meta.chest[1])grid[y][x]=2;grid[meta.gate[1]][meta.gate[0]]=9;for(let y=meta.gate[1]-2;y<=meta.gate[1]+2;y++)grid[y][meta.gate[0]+1]=9;for(let y=meta.gate[1]-2;y<=meta.gate[1]+2;y++)grid[y][meta.gate[0]+3]=9;map.secretGate={x:meta.gate[0],y:meta.gate[1]};map.secretWalls=[];for(let y=meta.gate[1]-2;y<=meta.gate[1]+2;y++)map.secretWalls.push({x:meta.gate[0]+1,y},{x:meta.gate[0]+3,y});map.secretChest={x:meta.chest[0],y:meta.chest[1]};const solved=(W.P?.psyKantoCampaignV1?.places?.[id]?.solved||[]).length>0||place?.mysteries?.some(m=>(W.P?.psyKantoCampaignV1?.places?.[id]?.solved||[]).includes(m.id));if(solved){grid[meta.gate[1]][meta.gate[0]]=1;map.secretWalls.forEach(p=>grid[p.y][p.x]=2);map.artKey=meta.openArt||meta.art;}}
     // Map exits are portals on the walkable edge. Their collision cells are
     // explicit so the character can reach them and return through the graph.
-    map.portals=(W.PsyKantoJourneyV1?.connectionsFor?.(id)||[]).flatMap(link=>{
-      const [x,y]=id==='pallet'&&link.to==='route-1'?[16,13]:link.at;
+    map.portals=(W.PsyKantoJourneyV1?.connectionsFor?.(id)||[]).map(link=>{
+      const [x,y]=link.at;
       const [ex,ey]=id==='route-1'&&link.to==='pallet'?[16,3]:link.entry;
       if(grid[y]?.[x]!==undefined)grid[y][x]=1;
       // The authored artwork already has a central walk. Join only the local
@@ -76,7 +80,7 @@
       const near=neighbors.find(([nx,ny])=>grid[ny]?.[nx]!==undefined&&![3,4,6,9].includes(grid[ny][nx]));
       if(near&&grid[y]?.[x]!==undefined)grid[y][x]=1;
       const portal={x,y,to:link.to,entry:{x:ex,y:ey},gate:link.gate};
-      return id==='pallet'&&link.to==='route-1'?[portal,{...portal,x:16,y:4}]:[portal];
+      return portal;
     });
     // All exits are defined by the campaign graph now. Ignore legacy single
     // exits so side routes cannot be skipped by the old linear transition.

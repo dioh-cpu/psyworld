@@ -275,6 +275,7 @@
   function walkableCell(map,x,y) {
     const grid=map?.grid,row=grid?.[y],width=map?.width||COLS,height=map?.height||ROWS;
     if(x<0||y<0||x>=width||y>=height||!row||row[x]===undefined)return false;
+    if(row[x]===4)return !!W.PsyKantoJourneyV1?.hasTechnique?.('surf');
     if(![0,1,2,5].includes(row[x]))return false;
     return !(map.npcs||[]).some(n=>n.x===x&&n.y===y);
   }
@@ -301,7 +302,7 @@
     if(!canEnterCell(nx,ny)){model.held=null;model.frame=0;render();scheduleTick();return false;}
     const tile=model.map.grid[ny][nx];
     model.motion={fromX:model.x,fromY:model.y,toX:nx,toY:ny,start:now,duration:135};model.x=nx;model.y=ny;model.frame=(model.frame+1)%WALK_FRAME_COLUMNS.length;
-    if(tile===5||tile===2)maybeEncounter();
+    if(tile===5||tile===2||tile===4)maybeEncounter();
     if((model.map.portals||[]).some(portal=>portal.x===nx&&portal.y===ny)){interact();scheduleTick();return true;}
     if(model.map.exit&&nx===model.map.exit.x&&ny===model.map.exit.y){interact();scheduleTick();return true;}
     updateObjective();render();scheduleTick();return true;
@@ -490,7 +491,7 @@
     const cols=model.map.width||COLS,rows=model.map.height||ROWS;
     // Campaign illustrations are painted as a complete atlas; render them at
     // a closer scale and move both axes with the trainer so details stay legible.
-    const drawTile=model.map.artKey?TILE*1.34:model.map.authoredKind==='pallet'?Math.min(TILE,Math.floor(cw/cols),Math.floor(ch/rows)):TILE;
+    const drawTile=model.map.artKey?TILE*1.7:model.map.authoredKind==='pallet'?Math.min(TILE,Math.floor(cw/cols),Math.floor(ch/rows)):TILE;
     const worldWidth=cols*drawTile,worldHeight=rows*drawTile;
     const cameraX=model.motion?model.motion.fromX+(model.motion.toX-model.motion.fromX)*Math.max(0,Math.min(1,(performance.now()-model.motion.start)/model.motion.duration)):model.x;
     const cameraY=model.motion?model.motion.fromY+(model.motion.toY-model.motion.fromY)*Math.max(0,Math.min(1,(performance.now()-model.motion.start)/model.motion.duration)):model.y;
@@ -549,10 +550,8 @@
     if(avatar?.ready){
       const row=({down:0,left:1,right:2,up:3})[model.direction]??0;
       const sourceFrame=model.held?WALK_FRAME_COLUMNS[model.frame%WALK_FRAME_COLUMNS.length]:IDLE_FRAME;
-      c.fillStyle='rgba(5,12,16,.38)';c.beginPath();c.ellipse(px,py+drawTile*.34,drawTile*.2,drawTile*.09,0,0,Math.PI*2);c.fill();
       drawNormalizedAvatar(c,avatar,row,sourceFrame,px,py+8,46*(drawTile/TILE));
     }else{
-      c.fillStyle='#141a23';c.beginPath();c.ellipse(px,py+8,8,4,0,0,Math.PI*2);c.fill();
       c.fillStyle='#e8c492';c.beginPath();c.arc(px,py-4,6,0,Math.PI*2);c.fill();c.fillStyle='#315777';c.fillRect(px-6,py+1,12,10);c.fillStyle='#f2f0e8';c.fillRect(px-5,py+11,4,4);c.fillRect(px+2,py+11,4,4);
     }
   }
