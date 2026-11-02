@@ -75,8 +75,8 @@
     if(map.portals.length)map.exit=null;
     return map;
   }
-  function draw(ctx,map,{offsetX=0,offsetY=0,TILE=28}={}){const key=map?.artKey,img=IMAGES[key];if(!img?.complete||!img.naturalWidth)return FAILED.has(key)?'missing':false;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,offsetX,offsetY,32*TILE,32*TILE);return true;}
-  function drawNpc(ctx,npc,x,y,tile=28){const img=NPC_IMAGES[npc?.sprite||'traveler'];if(!img?.complete||!img.naturalWidth)return false;const h=tile*1.62,w=h*(img.naturalWidth/img.naturalHeight);ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x-w/2,y-h*.72,w,h);ctx.fillStyle='#fff';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(npc.name||'',x,y-h*.82);return true;}
+  function draw(ctx,map,{offsetX=0,offsetY=0,TILE=28}={}){const key=map?.artKey,img=IMAGES[key];if(!img?.complete||!img.naturalWidth)return FAILED.has(key)?'missing':false;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,offsetX,offsetY,32*TILE,32*TILE);return true;}
+  function drawNpc(ctx,npc,x,y,tile=28){const img=NPC_IMAGES[npc?.sprite||'traveler'];if(!img?.complete||!img.naturalWidth)return false;const h=tile*1.62,w=h*(img.naturalWidth/img.naturalHeight);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,x-w/2,y-h*.72,w,h);ctx.fillStyle='#fff';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(npc.name||'',x,y-h*.82);return true;}
   function has(place){const id=typeof place==='string'?place:place?.id;return !!META[id]&&!!DATA[id];}
   W.PsyKantoCampaignArtV1=Object.freeze({version:1,ids:Object.keys(META),build,draw,drawNpc,has});
 })(window);

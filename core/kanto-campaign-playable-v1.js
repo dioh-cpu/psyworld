@@ -109,7 +109,7 @@
       #psy-kanto-world button{color:#fff;background:#1f3446;border:1px solid #668397;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;touch-action:manipulation}
       #psy-kanto-world .kp-close{background:#522d35;border-color:#b36b73;font-size:17px;padding:5px 12px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
-      #psy-kanto-canvas{width:min(100vw,calc((100vh - 150px)*1.6));height:min(calc(100vh - 150px),62.5vw);max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
+      #psy-kanto-canvas{width:min(100vw,calc((100vh - 150px)*1.6));height:min(calc(100vh - 150px),62.5vw);max-width:100%;max-height:100%;image-rendering:auto;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
       #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:none!important}
       .kp-controls button{padding:0;font-size:17px;background:#243747}.kp-controls [data-dir="up"]{grid-column:2}.kp-controls [data-dir="left"]{grid-column:1;grid-row:2}.kp-controls [data-dir="down"]{grid-column:2;grid-row:2}.kp-controls [data-dir="right"]{grid-column:3;grid-row:2}
@@ -447,10 +447,17 @@
   function render() {
     if(!model.place||!model.ctx||!model.root?.classList.contains('open'))return;
     const c=model.ctx, cw=model.canvas.width, ch=model.canvas.height, th=theme(model.place), g=model.map.grid;
-    c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
-    const cols=model.map.width||COLS,rows=model.map.height||ROWS,drawTile=model.map.artKey?Math.min(TILE,Math.floor(cw/cols)):model.map.authoredKind==='pallet'?Math.min(TILE,Math.floor(cw/cols),Math.floor(ch/rows)):TILE;
-    const offsetX=Math.floor((cw-cols*drawTile)/2);
-    const worldHeight=rows*drawTile,scrollY=worldHeight>ch?Math.max(0,Math.min(worldHeight-ch,model.y*drawTile+drawTile/2-ch/2)):0;
+    c.imageSmoothingEnabled=!!model.map.artKey;if(model.map.artKey)c.imageSmoothingQuality='high';c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
+    const cols=model.map.width||COLS,rows=model.map.height||ROWS;
+    // Campaign illustrations are painted as a complete atlas; render them at
+    // a closer scale and move both axes with the trainer so details stay legible.
+    const drawTile=model.map.artKey?TILE*1.34:model.map.authoredKind==='pallet'?Math.min(TILE,Math.floor(cw/cols),Math.floor(ch/rows)):TILE;
+    const worldWidth=cols*drawTile,worldHeight=rows*drawTile;
+    const cameraX=model.motion?model.motion.fromX+(model.motion.toX-model.motion.fromX)*Math.max(0,Math.min(1,(performance.now()-model.motion.start)/model.motion.duration)):model.x;
+    const cameraY=model.motion?model.motion.fromY+(model.motion.toY-model.motion.fromY)*Math.max(0,Math.min(1,(performance.now()-model.motion.start)/model.motion.duration)):model.y;
+    const scrollX=worldWidth>cw?Math.max(0,Math.min(worldWidth-cw,cameraX*drawTile+drawTile/2-cw/2)):0;
+    const offsetX=worldWidth>cw?-scrollX:Math.floor((cw-worldWidth)/2);
+    const scrollY=worldHeight>ch?Math.max(0,Math.min(worldHeight-ch,cameraY*drawTile+drawTile/2-ch/2)):0;
     const offsetY=worldHeight>ch?-scrollY:Math.floor((ch-worldHeight)/2);
     const artDrawn=model.map.artKey?W.PsyKantoCampaignArtV1?.draw?.(c,model.map,{offsetX,offsetY,TILE:drawTile}):false;
     // Campaign locations use their authored map art. Never substitute the
@@ -504,7 +511,7 @@
       const row=({down:0,left:1,right:2,up:3})[model.direction]??0;
       const sourceFrame=model.held?WALK_FRAME_COLUMNS[model.frame%WALK_FRAME_COLUMNS.length]:IDLE_FRAME;
       c.fillStyle='rgba(5,12,16,.38)';c.beginPath();c.ellipse(px,py+drawTile*.34,drawTile*.2,drawTile*.09,0,0,Math.PI*2);c.fill();
-      drawNormalizedAvatar(c,avatar,row,sourceFrame,px,py+8);
+      drawNormalizedAvatar(c,avatar,row,sourceFrame,px,py+8,46*(drawTile/TILE));
     }else{
       c.fillStyle='#141a23';c.beginPath();c.ellipse(px,py+8,8,4,0,0,Math.PI*2);c.fill();
       c.fillStyle='#e8c492';c.beginPath();c.arc(px,py-4,6,0,Math.PI*2);c.fill();c.fillStyle='#315777';c.fillRect(px-6,py+1,12,10);c.fillStyle='#f2f0e8';c.fillRect(px-5,py+11,4,4);c.fillRect(px+2,py+11,4,4);
@@ -543,12 +550,12 @@
       avatar.frameBounds=bounds;avatar.frameCols=cols;avatar.frameScale=46/maxH;
     } catch (_) { avatar.frameBounds=null;avatar.frameScale=1; }
   }
-  function drawNormalizedAvatar(ctx,avatar,row,col,centerX,baselineY) {
+  function drawNormalizedAvatar(ctx,avatar,row,col,centerX,baselineY,targetHeight=46) {
     const image=avatar.image,cols=avatar.frameCols||4,index=row*cols+col,box=avatar.frameBounds?.[index];
-    if(!box){ctx.drawImage(image,col*SHEET_CELL,row*SHEET_CELL,SHEET_CELL,SHEET_CELL,centerX-25,baselineY-50,50,50);return;}
+    if(!box){const size=targetHeight*50/46;ctx.drawImage(image,col*SHEET_CELL,row*SHEET_CELL,SHEET_CELL,SHEET_CELL,centerX-size/2,baselineY-size,size,size);return;}
     // Keep the character's visible height constant between idle/walk frames;
     // sheet padding differs by pose even though every cell is 512×512.
-    const scale=46/box.h,w=box.w*scale,h=46;
+    const scale=targetHeight/box.h,w=box.w*scale,h=targetHeight;
     ctx.drawImage(image,col*SHEET_CELL+box.x,row*SHEET_CELL+box.y,box.w,box.h,centerX-w/2,baselineY-h,w,h);
   }
   function tick() {
