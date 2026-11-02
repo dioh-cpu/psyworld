@@ -54,7 +54,7 @@ if(typeof old==='function')W.startBattle=function(wild){if(wild&&typeof wild==='
 try{W.triggerWild('kanto_normal_t1')}catch(e){console.warn('Rota 1 encounter',e);state.suspended=false;state.root.classList.add('open')}finally{if(typeof old==='function')W.startBattle=old}
 if(state.suspended){const prev=W.endBattle;if(typeof prev==='function'&&!prev.__kw2){const wrapped=function(){const result=prev.apply(this,arguments);state.suspended=false;setTimeout(()=>{if(state.world){state.root.classList.add('open');draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}}},50);return result};wrapped.__kw2=true;W.endBattle=wrapped}}
 }
-function tick(now){if(!state.root?.classList.contains('open')){state.raf=0;return}const dt=Math.min(.095,Math.max(0,(now-state.time)/1000));state.time=now;
+function tick(now){if(!state.root?.classList.contains('open')){state.raf=0;return}const dt=Math.min(.12,Math.max(0,(now-state.time)/1000));state.time=now;
 let dx=0,dy=0;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
 if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<7){state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d}}
 if(dx||dy)move(dx,dy,dt);
