@@ -9,65 +9,64 @@
   const pallet={
     id:'pallet',title:'Pallet Town',w:1000,h:667,
     art:'assets/story/pallet-town-artist-v2.webp',
-    spawn:[603,609],exit:[605,63],
+    spawn:[510,475],exit:[573,42],
+    // Paths follow the approved painted streets; solid anywhere not authored.
     paths:[
-      [603,609,650,575,36],[650,575,680,488,35],
-      [603,609,460,616,33],[460,616,225,615,27],
-      [680,488,700,441,37],[680,470,525,462,29],
-      [525,462,425,511,28],[425,511,205,474,31],[425,511,205,474,37],
-      [612,455,652,355,37],[652,355,616,273,36],
-      [616,273,602,175,42],[602,175,605,63,36],
-      [425,511,422,488,28], // Market door
-      [205,474,192,433,28], // Center door
-      [650,355,535,330,29],[535,330,350,340,29],
-      [350,340,323,326,25], // house A
-      [700,441,776,424,32], // house B
-      [460,616,300,616,25],[300,616,225,615,25], // player's home
-      [604,160,725,152,25],[725,152,885,135,25], // hill route toward lab
-      [700,441,790,460,25]
+      [540,450,570,365,35],[570,365,570,260,31],
+      [570,260,574,155,30],[574,155,573,42,27],
+      [540,450,460,445,32],[460,445,405,446,31],
+      [405,446,290,448,30],[290,448,167,430,28],
+      [540,450,615,411,33],[615,411,700,378,31],
+      [700,378,812,341,29],
+      [565,322,450,320,29],[450,320,309,309,26],
+      [540,450,465,503,28],[465,503,365,529,27],
+      [365,529,260,560,27],[260,560,214,602,28],
+      [574,155,653,147,27],[653,147,751,138,27],
+      [751,138,861,110,24]
     ],
-    plazas:[[590,522,78,45],[610,575,42,42]],
-    blockers:[[588,520,36]],
+    plazas:[[540,449,81,54],[566,375,43,47],[548,302,37,40]],
+    blockers:[[565,452,24]],
     grass:[],
-    // Buildings are not passable and are entered only from the door coordinates.
     doors:[
-      {id:'center',title:'Centro Pokémon',at:[192,433],inside:[380,400],range:38},
-      {id:'market',title:'Poké Mart',at:[422,488],inside:[380,400],range:35},
-      {id:'home',title:'Casa do Treinador',at:[225,615],inside:[380,400],range:44},
-      {id:'house-east',title:'Casa da Vila',at:[776,424],inside:[380,400],range:39},
-      {id:'house-west',title:'Casa do Vizinho',at:[323,326],inside:[380,400],range:42},
-      {id:'lab',title:'Laboratório do Professor Carvalho',at:[885,135],inside:[380,400],range:40}
+      {id:'center',title:'Centro Pokémon',at:[167,430],inside:[380,400],range:42},
+      {id:'market',title:'Poké Mart',at:[405,446],inside:[380,400],range:42},
+      {id:'home',title:'Casa do Treinador',at:[214,602],inside:[380,400],range:44},
+      {id:'house-east',title:'Casa da Vila',at:[812,341],inside:[380,400],range:40},
+      {id:'house-west',title:'Casa do Vizinho',at:[309,309],inside:[380,400],range:41},
+      {id:'lab',title:'Laboratório do Professor Carvalho',at:[861,110],inside:[380,400],range:42}
     ],
     npcs:[
-      {id:'oak',name:'Professor Carvalho',at:[870,169],portrait:'assets/story/professor-oak.png',emote:'sereno'},
-      {id:'lia',name:'Lia',at:[540,564],portrait:'assets/story/rival.png',emote:'alegre'},
-      {id:'gate',name:'Guarda da Rota',at:[610,108],portrait:'assets/halloween/npc-noah.svg',emote:'atento'},
-      {id:'neighbor',name:'Nina',at:[360,387],portrait:'assets/halloween/npc-mina.svg',emote:'amigável'}
+      {id:'oak',name:'Professor Carvalho',at:[528,385],portrait:'assets/halloween/npc-researcher.webp',emote:'sereno'},
+      {id:'lia',name:'Lia',at:[461,489],portrait:'assets/story/rival.png',emote:'alegre'},
+      {id:'gate',name:'Guarda da Rota',at:[575,106],portrait:'assets/halloween/npc-noah.svg',emote:'atento'},
+      {id:'neighbor',name:'Nina',at:[373,312],portrait:'assets/halloween/npc-mina.svg',emote:'amigável'}
     ],
-    signs:[{at:[601,81],title:'ROTA 1 ↑'},{at:[690,510],title:'PALLET TOWN'}]
+    signs:[{at:[573,42],title:'ROTA 1 ↑'},{at:[664,525],title:'PALLET TOWN'}]
   };
   const route1={
     id:'route-1',title:'Rota 1 · Nível 1–3',w:1000,h:500,
-    art:'assets/story/route-1-artist-v2.webp',spawn:[83,440],exit:[929,51],
+    art:'assets/story/route-1-artist-v2.webp',spawn:[99,450],exit:[939,81],
     paths:[
-      [83,440,89,382,34],[89,382,150,319,36],[150,319,250,286,38],
-      [250,286,370,272,39],[370,272,520,250,39],[520,250,625,234,40],
-      [625,234,740,192,42],[740,192,892,152,38],[892,152,929,51,32],
-      [213,297,213,224,27], // grass A stairs
-      [419,270,419,345,30], // grass B entrance
-      [720,202,735,169,33], // grass C entrance
-      [760,198,820,266,35], // grass D entrance
-      [550,257,550,295,31], // river-side viewpoint
+      [99,450,102,395,26],[102,395,166,334,30],
+      [166,334,250,294,31],[250,294,397,290,30],
+      [397,290,519,275,31],[519,275,599,255,29],
+      [599,255,711,221,33],[711,221,828,191,31],
+      [828,191,913,139,28],[913,139,939,81,26],
+      [220,310,216,232,24],
+      [366,289,363,347,27],
+      [711,221,718,200,26],
+      [827,191,827,288,27]
     ],
     plazas:[],
     grass:[
-      {id:'a',rect:[100,102,359,223],spawn:[225,176],entry:[213,224]},
-      {id:'b',rect:[307,344,566,445],spawn:[434,394],entry:[419,345]},
-      {id:'c',rect:[649,98,852,194],spawn:[736,154],entry:[735,169]},
-      {id:'d',rect:[758,253,973,359],spawn:[840,312],entry:[820,266]}
+      {id:'a',rect:[86,91,350,225],spawn:[216,170],entry:[216,225]},
+      {id:'b',rect:[266,344,535,449],spawn:[362,385],entry:[363,346]},
+      {id:'c',rect:[615,169,840,234],spawn:[721,193],entry:[718,210]},
+      {id:'d',rect:[718,271,941,379],spawn:[833,318],entry:[827,282]}
     ],
-    doors:[],npcs:[{id:'route-guide',name:'Exploradora Nara',at:[455,265],portrait:'assets/halloween/npc-luna.svg',emote:'curiosa'}],
-    signs:[{at:[92,405],title:'PALLET TOWN ↓'},{at:[918,66],title:'VIRIDIAN CITY ↑'}]
+    doors:[],
+    npcs:[{id:'route-guide',name:'Exploradora Nara',at:[439,285],portrait:'assets/halloween/npc-luna.svg',emote:'curiosa'}],
+    signs:[{at:[93,420],title:'PALLET TOWN ↓'},{at:[939,81],title:'VIRIDIAN CITY ↑'}]
   };
   function sq(a,b){return (a[0]-b[0])**2+(a[1]-b[1])**2}
   function distSegment(x,y,line){const [ax,ay,bx,by,r]=line,dx=bx-ax,dy=by-ay;const t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(x-ax-dx*t,y-ay-dy*t)-r}
