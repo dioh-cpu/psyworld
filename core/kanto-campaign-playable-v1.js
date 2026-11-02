@@ -57,12 +57,11 @@
   function isUnlocked(place) {
     if (!place) return false;
     if (place.id === 'pallet' || place.id === 'route-1') return true;
-    if (place.id === 'viridian' && (journeySave().visited || []).includes('route-1')) return true;
     const all = places(), index = all.findIndex(p => p.id === place.id), prev = all[index - 1];
     if (!prev) return true;
     const saved = journeySave();
     const visited = Array.isArray(saved.visited) ? saved.visited : [];
-    const prevOpen = visited.includes(prev.id);
+    const prevOpen = prev.id === 'route-1' ? discovered(prev) >= 3 : visited.includes(prev.id);
     const badgeGate = Number(place.badge || prev.badge || 0);
     return prevOpen && badgeCount() >= badgeGate;
   }
@@ -91,14 +90,14 @@
     const style = D.createElement('style');
     style.id = 'psy-kanto-playable-style';
     style.textContent = `
-      #psy-kanto-world{position:fixed;inset:0;z-index:2147483000;background:#070b12;color:#f6f0dc;display:none;font-family:system-ui,Arial,sans-serif;overscroll-behavior:contain}
+      #psy-kanto-world{position:fixed;inset:0;z-index:14000;background:#070b12;color:#f6f0dc;display:none;font-family:system-ui,Arial,sans-serif;overscroll-behavior:contain}
       #psy-kanto-world.open{display:flex;flex-direction:column}
       #psy-kanto-world .kp-head{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 14px;background:#111927;border-bottom:1px solid #36445a;min-height:54px}
       #psy-kanto-world .kp-title{min-width:0}.kp-title b{display:block;color:#ffe09a;font-size:14px}.kp-title small{display:block;color:#aab5c2;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}
       #psy-kanto-world button{color:#fff;background:#1f3446;border:1px solid #668397;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;touch-action:manipulation}
       #psy-kanto-world .kp-close{background:#522d35;border-color:#b36b73;font-size:17px;padding:5px 12px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
-      #psy-kanto-canvas{width:100%;height:100%;max-width:960px;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
+      #psy-kanto-canvas{width:min(100vw,calc((100vh - 150px)*1.6));height:min(calc(100vh - 150px),62.5vw);max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
       #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,38px);gap:3px}
       .kp-controls button{padding:0;font-size:17px;background:#243747}.kp-controls [data-dir="up"]{grid-column:2}.kp-controls [data-dir="left"]{grid-column:1;grid-row:2}.kp-controls [data-dir="down"]{grid-column:2;grid-row:2}.kp-controls [data-dir="right"]{grid-column:3;grid-row:2}
@@ -106,7 +105,7 @@
       #psy-kanto-dialog{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:13px 15px;background:#0a111df2;border:1px solid #e5c77e;border-radius:12px;box-shadow:0 10px 40px #000a;display:none;z-index:2}
       #psy-kanto-dialog.open{display:block}.kp-dialog-title{color:#ffe09a;font-weight:900;margin-bottom:5px}.kp-dialog-text{font-size:13px;line-height:1.45;color:#e4eaf0}.kp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
       .psy-kanto-enter-world{width:100%;margin:8px 0 12px;background:linear-gradient(110deg,#075985,#14532d)!important;border-color:#8be5ca!important}
-      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px}.kp-title small{max-width:58vw}#psy-kanto-canvas{width:100%;height:100%;border-radius:0}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-interact{grid-column:2;grid-row:2;min-width:72px}}
+      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px}.kp-title small{max-width:58vw}#psy-kanto-canvas{width:100vw;height:min(calc(100vh - 168px),62.5vw);border-radius:0}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-interact{grid-column:2;grid-row:2;min-width:72px}}
     `;
     D.head.appendChild(style);
   }
@@ -134,41 +133,7 @@
   function theme(place) { return THEMES[place.kind] || THEMES.route; }
   function hash(text) { let h=2166136261; for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)} return h>>>0; }
   function random(seed) { let n=seed>>>0; return () => { n=(n+0x6D2B79F5)>>>0; let t=n; t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296; }; }
-
-  // Authored, connected campaign maps. 0 walkable, 1 path, 5 hunt grass,
-  // 3 rock, 4 buildings and 9 solid boundary/trees/fence. All other locations
-  // retain the procedural prototype until they receive authored layouts.
-  function buildFirstKantoMap(place) {
-    const g=Array.from({length:ROWS},()=>Array(COLS).fill(0));
-    const rect=(x1,y1,x2,y2,t)=>{for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++)if(g[y]&&x>=0&&x<COLS)g[y][x]=t;};
-    rect(0,0,31,0,9);rect(0,19,31,19,9);rect(0,0,0,19,9);rect(31,0,31,19,9);
-    // Distinct north and south portals never intersect fences or buildings.
-    rect(13,1,18,18,1);
-    if(place.id==='pallet'){
-      rect(1,1,10,4,9);rect(21,1,30,4,9);
-      rect(2,6,10,11,4);rect(21,6,29,11,4);
-      rect(2,14,9,17,4);rect(22,14,29,17,4);
-      rect(11,5,20,6,1);rect(9,12,22,13,1);rect(10,17,21,18,1);
-      rect(2,12,8,13,5);rect(23,12,29,13,5);
-      rect(11,7,12,10,5);rect(19,7,20,10,5);
-      rect(1,18,11,18,9);rect(20,18,30,18,9);
-      return {grid:g,npc:{x:14,y:9},object:{x:18,y:12},exit:{x:15,y:1},entry:{x:15,y:17},secretGate:null,secretChest:null,seed:hash(place.id)};
-    }
-    // Route 1: four large grass habitats, each with an unobstructed walk-in
-    // entrance from the shared path; no invisible or locked hunt corridor.
-    rect(1,1,12,18,9);rect(19,1,30,18,9);
-    rect(2,2,11,7,5);rect(20,2,29,7,5);
-    rect(2,11,11,17,5);rect(20,11,29,17,5);
-    rect(10,4,13,5,1);rect(18,5,21,6,1);
-    rect(10,13,13,14,1);rect(18,13,21,14,1);
-    rect(13,8,18,10,1);rect(13,17,18,18,1);
-    // Decorative, impassable rocks stay outside all required crossings.
-    g[3][3]=3;g[3][28]=3;g[16][3]=3;g[16][28]=3;
-    return {grid:g,npc:{x:14,y:9},object:{x:17,y:9},exit:{x:15,y:1},entry:{x:15,y:17},secretGate:null,secretChest:null,seed:hash(place.id)};
-  }
-
   function buildMap(place) {
-    if(place.id==='pallet'||place.id==='route-1')return buildFirstKantoMap(place);
     const rnd=random(hash(place.id)), grid=Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>(x===0||y===0||x===COLS-1||y===ROWS-1)?9:0));
     const path=(x,y,t=1)=>{if(grid[y]&&grid[y][x]!==9)grid[y][x]=t};
     // Shared route through the generated location gives every map a clear route from entrance to NPC and exit.
@@ -201,14 +166,10 @@
   function openWorld(id) {
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
-    makeRoot();
-    // Close the Atlas overlay before showing the playable world. The Atlas
-    // previously had a greater z-index, leaving the game hidden beneath it.
-    D.getElementById('psy-kanto-atlas')?.classList.remove('open');
-    model.place=place; model.map=buildMap(place); model.x=model.map.entry?.x??3; model.y=model.map.entry?.y??ROWS-3; model.direction='down';model.frame=0;model.held=null;
+    makeRoot(); model.place=place; model.map=buildMap(place); model.x=3; model.y=ROWS-3; model.direction='down';model.frame=0;model.held=null;
     state().active=place.id;
     model.root.querySelector('.kp-title b').textContent=place.name;
-    model.root.querySelector('.kp-title small').textContent=`${place.mark} · mapa com colisões definidas`;
+    model.root.querySelector('.kp-title small').textContent=`${place.mark} · mapa gerado por tema`;
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     if(!model.raf)tick();
   }
@@ -294,7 +255,7 @@
       showDialog('Passagem secreta','Você encontrou a câmara oculta. A recompensa do enigma já foi registrada na sua jornada.');return;
     }
     if(nearby(model.map.exit)){
-      if(place.id!=='pallet'&&place.id!=='route-1'&&!objectivesMet(place)){
+      if(!objectivesMet(place)){
         const count=new Set(ps.found).size, need=objective(place);
         showDialog('Saída bloqueada',`Converse com ${place.npc}, registre ${need} espécie(s) neste local${GYM_FOR_PLACE[place.id]?' e vença o ginásio':''}. Progresso: ${count}/${need}.`);return;
       }
@@ -303,7 +264,7 @@
       else {
         const all=places(),next=all[all.findIndex(p=>p.id===place.id)+1];
         const actions=[];
-        if(next&&(isUnlocked(next)||place.id==='pallet'||place.id==='route-1'))actions.push({label:`SEGUIR PARA ${next.name.toUpperCase()}`,primary:true,onClick:()=>openWorld(next.id)});
+        if(next&&isUnlocked(next))actions.push({label:`SEGUIR PARA ${next.name.toUpperCase()}`,primary:true,onClick:()=>openWorld(next.id)});
         actions.push({label:'VOLTAR AO ATLAS',onClick:()=>{closeWorld();W.openKantoJourneyV1?.()}});
         showDialog('Capítulo concluído',`${place.name} foi concluída. A próxima parada está liberada.`,actions);
       }
@@ -318,28 +279,23 @@
     const place=model.place, ps=placeState(place.id), need=objective(place), count=new Set(ps.found).size, gym=GYM_FOR_PLACE[place.id], gymDone=!gym||(Array.isArray(player().gymProgress)&&player().gymProgress.includes(gym));
     const items=[`Fale com <strong>${esc(place.npc)}</strong>: ${ps.talked?'✅':'◻'}`,`Registre espécies: <strong>${Math.min(count,need)}/${need}</strong>`];
     if(gym)items.push(`Ginásio: <strong>${gymDone?'✅ vencido':'pendente'}</strong>`);
-    items.push(place.id==='pallet'||place.id==='route-1'?'Saída norte livre · caminhe pela grama para encontrar Pokémon':'Saída em <strong>E</strong> quando concluir · Encontre habitats marcados com grama');
+    items.push(`Saída em <strong>E</strong> quando concluir · Encontre habitats marcados com grama`);
     model.root.querySelector('.kp-objective').innerHTML=items.join(' · ');
   }
   function render() {
     if(!model.place||!model.ctx||!model.root?.classList.contains('open'))return;
-    const stage=model.root.querySelector('.kp-stage');
-    if(stage){const rw=Math.max(300,Math.round(Math.min(960,stage.clientWidth))),rh=Math.max(300,Math.round(stage.clientHeight));if(model.canvas.width!==rw)model.canvas.width=rw;if(model.canvas.height!==rh)model.canvas.height=rh;}
     const c=model.ctx, cw=model.canvas.width, ch=model.canvas.height, th=theme(model.place), g=model.map.grid;
     c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
-    const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
-    const offsetX=clamp(Math.floor(cw/2-(model.x+.5)*TILE),Math.min(0,cw-COLS*TILE),0);
-    const offsetY=clamp(Math.floor(ch/2-(model.y+.5)*TILE),Math.min(0,ch-ROWS*TILE),0);
+    const offsetX=Math.floor((cw-COLS*TILE)/2),offsetY=Math.floor((ch-ROWS*TILE)/2);
     for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
       const t=g[y][x],sx=offsetX+x*TILE,sy=offsetY+y*TILE;
-      c.fillStyle=t===9?'#264935':t===1?'#d1ac77':t===3?'#746d64':t===4?'#866b52':t===5?'#438c42':th.floor;c.fillRect(sx,sy,TILE,TILE);
+      c.fillStyle=t===9?th.wall:t===1?th.path:t===2?th.floor:t===3?th.floor:t===4?th.floor:t===5?th.floor:th.floor;c.fillRect(sx,sy,TILE,TILE);
       if(t===1){c.fillStyle='#ffffff10';c.fillRect(sx+2,sy+2,TILE-4,2)}
       if(t===2){c.fillStyle='#79bd73';c.fillRect(sx+4,sy+5,3,10);c.fillRect(sx+17,sy+2,3,12);c.fillStyle='#315a38';c.fillRect(sx+10,sy+17,5,8)}
       if(t===3){c.fillStyle='#171920';c.beginPath();c.arc(sx+14,sy+14,10,0,Math.PI*2);c.fill();c.fillStyle='#716a64';c.beginPath();c.moveTo(sx+4,sy+22);c.lineTo(sx+8,sy+6);c.lineTo(sx+14,sy+3);c.lineTo(sx+21,sy+9);c.lineTo(sx+24,sy+22);c.closePath();c.fill()}
       if(t===4){c.fillStyle='#41515a';c.fillRect(sx+4,sy+8,19,15);c.fillStyle='#85949b';c.fillRect(sx+7,sy+5,13,3)}
-      if(t===4){c.fillStyle='#b3423b';c.fillRect(sx+2,sy+3,TILE-4,10);c.fillStyle='#dec8a1';c.fillRect(sx+5,sy+14,TILE-10,12)}
       if(t===5){c.fillStyle=th.accent;c.globalAlpha=.7;c.fillRect(sx+8,sy+7,2,12);c.fillRect(sx+17,sy+11,2,10);c.globalAlpha=1}
-      if(t===9){c.fillStyle='#426d3e';c.beginPath();c.arc(sx+14,sy+12,12,0,Math.PI*2);c.fill();c.fillStyle='#0004';c.fillRect(sx,sy+TILE-4,TILE,4)}
+      if(t===9){c.fillStyle='#0004';c.fillRect(sx,sy+TILE-4,TILE,4)}
     }
     const marker=(pt,color,glyph,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12);c.fillStyle='#071019d9';c.fillRect(sx-tw/2,sy-29,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,sy-22)};
     marker(model.map.npc,'#ffcf70','!',model.place.npc);marker(model.map.object,'#75d5db','?','Pista / segredo');marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima rota');
@@ -404,7 +360,7 @@
     const detail=D.querySelector('#psy-kanto-atlas .psy-kanto-detail');if(!detail)return;
     const title=detail.querySelector('h3')?.textContent?.trim();if(!title)return;
     const place=places().find(p=>p.name===title);if(!place||detail.querySelector('.psy-kanto-enter-world'))return;
-    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ENTRAR NA LOCALIDADE':'🔒 CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=e=>{e.preventDefault();e.stopPropagation();openWorld(place.id)};
+    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ENTRAR NA LOCALIDADE':'🔒 CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=()=>openWorld(place.id);
     detail.insertBefore(button,detail.querySelector('.psy-kanto-detail-kicker')?.nextSibling||detail.firstChild);
   }
   function monitorAtlas() {

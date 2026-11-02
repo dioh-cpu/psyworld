@@ -6,7 +6,7 @@
 
   const GEN1 = [
     {id:'pallet',kind:'city',name:'Pallet Town',mark:'Laboratório do Professor Carvalho',npc:'Professor Carvalho',quest:'Receba a Pokédex e conheça seu primeiro parceiro.',species:[1,4,7],art:'/assets/story/kanto-pallet-town-v1.webp',badge:0,x:29,y:86,chapter:0},
-    {id:'route-1',kind:'route',name:'Rota 1',mark:'Trilha entre Pallet e Viridian',npc:'Treinadora Lia',quest:'Explore os campos de grama da rota e siga até Viridian City.',species:[16,19,21,52,84,108],art:'/assets/story/kanto-route-1-v1.webp',badge:0,x:43,y:69,chapter:0},
+    {id:'route-1',kind:'route',name:'Rota 1',mark:'Trilha entre Pallet e Viridian',npc:'Treinadora Lia',quest:'Registre três espécies selvagens da rota.',species:[16,19,21,52,84,108],art:'/assets/story/kanto-route-1-v1.webp',badge:0,x:43,y:69,chapter:0},
     {id:'viridian',kind:'city',name:'Viridian City',mark:'Ginásio fechado e Escola de Treinadores',npc:'Idoso da cidade',quest:'Descubra por que o Ginásio ainda não aceita desafios.',species:[16,19,21],badge:0,x:34,y:45,chapter:1},
     {id:'route-2',kind:'route',name:'Rota 2',mark:'Trilha da floresta e entrada da cidade',npc:'Treinador Caio',quest:'Ajude um treinador a encontrar o caminho pela mata.',species:[10,13,16,19],badge:0,x:48,y:32,chapter:1},
     {id:'viridian-forest',kind:'dungeon',name:'Floresta de Viridian',mark:'Bosque de insetos e clareiras antigas',npc:'Pesquisadora Nara',quest:'Encontre a trilha segura e registre três espécies do bosque.',species:[10,11,12,13,14,15,25],badge:0,x:65,y:18,chapter:1},
@@ -51,11 +51,11 @@
       {id:'pallet-harbor',name:'Margem do Porto',terrain:'Água rasa e pedras costeiras',species:[129,118],level:'1–4'}
     ],
     'route-1':[
-      {id:'route1-lantern-clearing',name:'Clareira das Lanternas',terrain:'Grama alta junto à trilha',species:[16,19,21],level:'1–3',tiles:['6,4','7,4','8,4']},
-      {id:'route1-streambank',name:'Margem do Riacho',terrain:'Grama alta perto da água',species:[19,52,84],level:'1–3',tiles:['24,4','25,4','26,4']},
-      {id:'route1-cut-grove-hunt',name:'Bosque Atrás da Cerca',terrain:'Clareira secreta · requer Cut',species:[10,13,43],level:'1–3',technique:'cut',flag:'route1-cut-grove',tiles:['16,11','17,11','16,12','17,12']},
-      {id:'route1-rock-clearing-hunt',name:'Recanto das Pedras',terrain:'Grama entre rochas · requer Rock Smash',species:[27,50,74],level:'1–3',technique:'rockSmash',flag:'route1-rock-clearing',tiles:['29,8','30,8','29,9','30,9']},
-      {id:'route1-hidden-bank-hunt',name:'Outra Margem',terrain:'Riacho oculto · requer Surf',species:[60,72,118,129],level:'1–3',technique:'surf',flag:'route1-surf-crossing',tiles:['18,16','23,15','23,16','23,17']}
+      {id:'route1-lantern-clearing',name:'Clareira das Lanternas',terrain:'Grama alta junto à trilha',species:[16,19,21],level:'2–4',tiles:['20,8','21,8','22,8']},
+      {id:'route1-streambank',name:'Margem do Riacho',terrain:'Grama alta perto da água',species:[19,52,84],level:'3–5',tiles:['28,14','29,14','30,14']},
+      {id:'route1-cut-grove-hunt',name:'Bosque Atrás da Cerca',terrain:'Clareira secreta · requer Cut',species:[10,13,43],level:'4–6',technique:'cut',flag:'route1-cut-grove',tiles:['16,11','17,11','16,12','17,12']},
+      {id:'route1-rock-clearing-hunt',name:'Recanto das Pedras',terrain:'Grama entre rochas · requer Rock Smash',species:[27,50,74],level:'5–7',technique:'rockSmash',flag:'route1-rock-clearing',tiles:['29,8','30,8','29,9','30,9']},
+      {id:'route1-hidden-bank-hunt',name:'Outra Margem',terrain:'Riacho oculto · requer Surf',species:[60,72,118,129],level:'5–8',technique:'surf',flag:'route1-surf-crossing',tiles:['18,16','23,15','23,16','23,17']}
     ],
     viridian:[
       {id:'viridian-park',name:'Parque Central',terrain:'Jardim público',species:[16,19,43],level:'3–6'},
