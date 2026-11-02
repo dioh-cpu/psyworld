@@ -139,14 +139,14 @@
     root.querySelectorAll('[data-dir]').forEach(btn => {
       const dir = btn.dataset.dir;
       const start = e => { e.preventDefault(); model.held = dir; move(dir); };
-      const stop = e => { e.preventDefault(); if (model.held === dir) { model.held = null; model.frame = 0; render(); } };
+      const stop = e => { e.preventDefault(); if (model.held === dir) { model.held = null; model.frame = 0; render(); scheduleTick(); } };
       btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', stop); btn.addEventListener('pointercancel', stop); btn.addEventListener('pointerleave', stop);
     });
     const stage=root.querySelector('.kp-stage');
     let touch=null,stick=null;
     const finishTouch=e=>{
       if(!touch||e.pointerId!==touch.id)return;
-      touch=null;model.held=null;model.frame=0;stick?.remove();stick=null;render();
+      touch=null;model.held=null;model.frame=0;stick?.remove();stick=null;render();scheduleTick();
     };
     stage.addEventListener('pointerdown',e=>{
       if(e.pointerType==='mouse'||e.target.closest('button,#psy-kanto-dialog'))return;
@@ -241,7 +241,7 @@
     model.root.querySelector('[data-campaign]').hidden=true;
     model.root.querySelector('.kp-title small').textContent=model.map.authoredKind==='pallet'?'Pallet Town · saída norte para Route 1':model.map.authoredKind==='route'?'Mapa de campanha · arte original com colisões':model.map.authoredKind==='city'?'Cidade · caminho integrado à campanha':'Mapa de campanha · arte original';
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
-    if(!model.raf)tick();
+    scheduleTick();
     if(place.id==='pallet'||place.id==='pewter'||place.id==='cerulean')W.setTimeout(()=>W.PsyKantoTownStoryV1?.cinematic(place.id),220);
   }
   function closeWorld() { model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
@@ -253,19 +253,27 @@
     if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){e.preventDefault();interact();}
     if(e.code==='Escape'){e.preventDefault();closeWorld();}
   }
-  function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();} }
+  function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();scheduleTick();} }
+  function canEnterCell(x,y) {
+    const grid=model.map?.grid,row=grid?.[y],width=model.map?.width||COLS,height=model.map?.height||ROWS;
+    if(x<0||y<0||x>=width||y>=height||!row||row[x]===undefined)return false;
+    const tile=row[x];
+    if(tile===3||tile===4||tile===6||tile===9)return false;
+    return !(model.map.npcs||[]).some(n=>n.x===x&&n.y===y);
+  }
   function move(dir) {
-    if(!model.place||!model.root?.classList.contains('open'))return;
+    if(!model.place||!model.root?.classList.contains('open'))return false;
     const now=performance.now();model.lastMove=now;
-    const step={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(!step)return;
-    const nx=model.x+step[0],ny=model.y+step[1],width=model.map.width||COLS,height=model.map.height||ROWS;if(nx<0||ny<0||nx>=width||ny>=height)return;
+    const step={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(!step)return false;
+    const nx=model.x+step[0],ny=model.y+step[1];
     model.direction=dir;
-    const tile=model.map.grid[ny][nx],npcAtCell=(model.map.npcs||[]).some(n=>n.x===nx&&n.y===ny);if(tile===9||tile===3||tile===4||tile===6||npcAtCell)return;
+    if(!canEnterCell(nx,ny)){render();scheduleTick();return false;}
+    const tile=model.map.grid[ny][nx];
     model.motion={fromX:model.x,fromY:model.y,toX:nx,toY:ny,start:now,duration:135};model.x=nx;model.y=ny;model.frame=(model.frame+1)%WALK_FRAME_COLUMNS.length;
     if(tile===5||tile===2)maybeEncounter();
     if((model.map.portals||[]).some(portal=>portal.x===nx&&portal.y===ny)){interact();return;}
     if(model.map.exit&&nx===model.map.exit.x&&ny===model.map.exit.y)interact();
-    updateObjective();render();
+    updateObjective();render();scheduleTick();return true;
   }
   function maybeEncounter() {
     if(Date.now()-model.encounterAt<2600||!model.place)return;
@@ -459,7 +467,7 @@
     const offsetX=worldWidth>cw?-scrollX:Math.floor((cw-worldWidth)/2);
     const scrollY=worldHeight>ch?Math.max(0,Math.min(worldHeight-ch,cameraY*drawTile+drawTile/2-ch/2)):0;
     const offsetY=worldHeight>ch?-scrollY:Math.floor((ch-worldHeight)/2);
-    const artDrawn=model.map.artKey?W.PsyKantoCampaignArtV1?.draw?.(c,model.map,{offsetX,offsetY,TILE:drawTile}):false;
+    const artDrawn=model.map.artKey?W.PsyKantoCampaignArtV1?.draw?.(c,model.map,{offsetX,offsetY,TILE:drawTile,width:cw,height:ch}):false;
     // Campaign locations use their authored map art. Never substitute the
     // generic terrain tiles when an illustration has not loaded or is absent.
     if(!artDrawn&&model.map.artKey){
@@ -558,10 +566,11 @@
     const scale=targetHeight/box.h,w=box.w*scale,h=targetHeight;
     ctx.drawImage(image,col*SHEET_CELL+box.x,row*SHEET_CELL+box.y,box.w,box.h,centerX-w/2,baselineY-h,w,h);
   }
+  function scheduleTick(){if(!model.raf&&model.root?.classList.contains('open'))model.raf=requestAnimationFrame(tick);}
   function tick() {
-    if(!model.root?.classList.contains('open')){model.raf=0;return;}
-    const now=performance.now();if(model.held&&now-model.lastMove>160)move(model.held);
-    render();model.raf=requestAnimationFrame(tick);
+    model.raf=0;if(!model.root?.classList.contains('open'))return;
+    const now=performance.now();if(model.held&&now-model.lastMove>160&&!move(model.held)){model.held=null;model.frame=0;}
+    render();if(model.held||model.motion)scheduleTick();
   }
   function injectEntryButton() {
     const detail=D.querySelector('#psy-kanto-atlas .psy-kanto-detail');if(!detail)return;
