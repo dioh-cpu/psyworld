@@ -91,7 +91,7 @@
     const style = D.createElement('style');
     style.id = 'psy-kanto-playable-style';
     style.textContent = `
-      #psy-kanto-world{position:fixed;inset:0;z-index:14000;background:#070b12;color:#f6f0dc;display:none;font-family:system-ui,Arial,sans-serif;overscroll-behavior:contain}
+      #psy-kanto-world{position:fixed;inset:0;z-index:2147483000;background:#070b12;color:#f6f0dc;display:none;font-family:system-ui,Arial,sans-serif;overscroll-behavior:contain}
       #psy-kanto-world.open{display:flex;flex-direction:column}
       #psy-kanto-world .kp-head{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 14px;background:#111927;border-bottom:1px solid #36445a;min-height:54px}
       #psy-kanto-world .kp-title{min-width:0}.kp-title b{display:block;color:#ffe09a;font-size:14px}.kp-title small{display:block;color:#aab5c2;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}
@@ -201,7 +201,11 @@
   function openWorld(id) {
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
-    makeRoot(); model.place=place; model.map=buildMap(place); model.x=model.map.entry?.x??3; model.y=model.map.entry?.y??ROWS-3; model.direction='down';model.frame=0;model.held=null;
+    makeRoot();
+    // Close the Atlas overlay before showing the playable world. The Atlas
+    // previously had a greater z-index, leaving the game hidden beneath it.
+    D.getElementById('psy-kanto-atlas')?.classList.remove('open');
+    model.place=place; model.map=buildMap(place); model.x=model.map.entry?.x??3; model.y=model.map.entry?.y??ROWS-3; model.direction='down';model.frame=0;model.held=null;
     state().active=place.id;
     model.root.querySelector('.kp-title b').textContent=place.name;
     model.root.querySelector('.kp-title small').textContent=`${place.mark} · mapa com colisões definidas`;
@@ -400,7 +404,7 @@
     const detail=D.querySelector('#psy-kanto-atlas .psy-kanto-detail');if(!detail)return;
     const title=detail.querySelector('h3')?.textContent?.trim();if(!title)return;
     const place=places().find(p=>p.name===title);if(!place||detail.querySelector('.psy-kanto-enter-world'))return;
-    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ENTRAR NA LOCALIDADE':'🔒 CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=()=>openWorld(place.id);
+    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ENTRAR NA LOCALIDADE':'🔒 CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=e=>{e.preventDefault();e.stopPropagation();openWorld(place.id)};
     detail.insertBefore(button,detail.querySelector('.psy-kanto-detail-kicker')?.nextSibling||detail.firstChild);
   }
   function monitorAtlas() {
