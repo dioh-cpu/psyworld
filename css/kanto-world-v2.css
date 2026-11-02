@@ -45,3 +45,17 @@ body.psy-kanto-v2-active #psy-audio-quick-toggle{display:none!important}
 
 /* Dialog portraits communicate mood visually; no internal emote/build text. */
 #psy-kanto-world-v2 .kw2-expression{display:none}
+
+
+/* Kanto controls are a game surface, not selectable browser text. */
+#psy-kanto-world-v2,#psy-kanto-world-v2 *,
+#psy-kanto-world-v2 .kw2-stage,#psy-kanto-world-v2 canvas{
+  user-select:none!important;-webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent!important;
+  overscroll-behavior:contain;
+}
+#psy-kanto-world-v2 .kw2-stage,#psy-kanto-world-v2 canvas,
+#psy-kanto-world-v2 .kw2-pad,#psy-kanto-world-v2 .kw2-pad button{
+  touch-action:none!important;
+}
+#psy-kanto-world-v2 .kw2-pad button:active{background:#387c8a}
