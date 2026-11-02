@@ -16,19 +16,19 @@ function mark(key){const q=progress();if(q[key])return;q[key]=true;putProgress()
 function player(){try{return typeof P!=='undefined'?P:(W.P||{})}catch(_){return W.P||{}}}
 function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
 function makeUI(){if(state.root)return;const root=D.createElement('div');root.id='psy-kanto-world-v2';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
-root.innerHTML='<header class="kw2-top"><button type="button" data-atlas>← ATLAS</button><div><strong class="kw2-title"></strong><small class="kw2-subtitle"></small></div><button type="button" class="kw2-close" aria-label="Fechar">×</button></header><div class="kw2-stage"><canvas aria-label="Mapa jogável com colisões"></canvas><div class="kw2-mode">PREVIEW · KANTO V2</div><div class="kw2-joystick"></div><section class="kw2-dialog"><div class="kw2-dialog-main"><img class="kw2-portrait" alt="Retrato do NPC"/><div><div class="kw2-dialog-title"></div><div class="kw2-expression"></div><div class="kw2-dialog-body"></div></div></div><div class="kw2-dialog-actions"></div></section></div><footer class="kw2-footer"><div class="kw2-objective"></div><div class="kw2-pad"><button data-dir="up" aria-label="Subir">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Descer">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button class="kw2-interact" data-interact>INTERAGIR</button></footer>';
+root.innerHTML='<header class="kw2-top"><button type="button" data-atlas>← ATLAS</button><div><strong class="kw2-title"></strong><small class="kw2-subtitle"></small></div><button type="button" class="kw2-close" aria-label="Fechar">×</button></header><div class="kw2-stage"><canvas aria-label="Mapa jogável com colisões"></canvas><div class="kw2-joystick"></div><section class="kw2-dialog"><div class="kw2-dialog-main"><img class="kw2-portrait" alt="Retrato do NPC"/><div><div class="kw2-dialog-title"></div><div class="kw2-expression"></div><div class="kw2-dialog-body"></div></div></div><div class="kw2-dialog-actions"></div></section></div><footer class="kw2-footer"><div class="kw2-objective"></div><div class="kw2-pad"><button data-dir="up" aria-label="Subir">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Descer">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button class="kw2-interact" data-interact>INTERAGIR</button></footer>';
 D.body.appendChild(root);state.root=root;state.canvas=root.querySelector('canvas');state.ctx=state.canvas.getContext('2d');
 root.querySelector('[data-atlas]').onclick=()=>{close();W.openKantoJourneyV1?.()};root.querySelector('.kw2-close').onclick=close;root.querySelector('[data-interact]').onclick=interact;
 root.querySelectorAll('[data-dir]').forEach(el=>{const dir=el.dataset.dir;const up=e=>{e.preventDefault();state.held.delete(dir)};el.addEventListener('pointerdown',e=>{e.preventDefault();state.path=[];state.held.add(dir);el.setPointerCapture?.(e.pointerId)});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)});
 D.addEventListener('keydown',onKeyDown,true);D.addEventListener('keyup',onKeyUp,true);W.addEventListener('resize',draw);
 const stage=root.querySelector('.kw2-stage');stage.addEventListener('pointerdown',touchStart);stage.addEventListener('pointermove',touchMove);stage.addEventListener('pointerup',touchEnd);stage.addEventListener('pointercancel',touchEnd);
 }
-function showDialog(title,body,actions=[],portrait='',emote=''){const d=state.root.querySelector('.kw2-dialog');d.querySelector('.kw2-dialog-title').textContent=title;d.querySelector('.kw2-dialog-body').textContent=body;d.querySelector('.kw2-expression').textContent=emote?('EXPRESSÃO · '+emote.toUpperCase()):'';
+function showDialog(title,body,actions=[],portrait='',emote=''){const d=state.root.querySelector('.kw2-dialog');d.querySelector('.kw2-dialog-title').textContent=title;d.querySelector('.kw2-dialog-body').textContent=body;d.dataset.emotion=emote||'normal';d.querySelector('.kw2-expression').textContent='';
 const im=d.querySelector('.kw2-portrait');im.style.display=portrait?'block':'none';if(portrait)im.src=portrait;
 const box=d.querySelector('.kw2-dialog-actions');box.replaceChildren();const options=actions.length?actions:[{text:'CONTINUAR'}];options.forEach(a=>{const b=D.createElement('button');b.textContent=a.text;b.classList.toggle('primary',!!a.primary);b.onclick=()=>{d.classList.remove('open');state.dialogOpen=false;a.run?.();hud()};box.appendChild(b)});
 d.classList.add('open');state.dialogOpen=true;state.path=[];state.held.clear();}
 function hud(){if(!state.root)return;const q=progress();const title=state.inside?state.inside.title:state.world?.title||'';state.root.querySelector('.kw2-title').textContent=title;
-state.root.querySelector('.kw2-subtitle').textContent=state.inside?'Portas funcionais · pressione INTERAGIR perto da saída':state.world?.id==='pallet'?'Explore Pallet e receba a autorização para a Rota 1':'Quatro campos de caça · níveis 1 a 3';
+state.root.querySelector('.kw2-subtitle').textContent=state.inside?'Converse com os moradores e utilize a porta para sair':state.world?.id==='pallet'?'Lar do Professor Carvalho':'Caminho para Viridian City · níveis 1 a 3';
 let info='';if(state.world?.id==='pallet')info=`Missão de Pallet: Carvalho ${q.oak?'✓':'◻'} · Centro ${q.center?'✓':'◻'} · Market ${q.market?'✓':'◻'} · Guarda ${q.guard?'✓':'◻'}`;else info='Rota 1 · 4 campos acessíveis · siga ao norte para Viridian · encontros Lv.1–3';
 state.root.querySelector('.kw2-objective').textContent=info;
 }
@@ -40,7 +40,7 @@ image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('op
 function close(){D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
 function positionValid(x,y){if(state.inside)return x>65&&x<735&&y>84&&y<426&&!state.inside.blocks.some(([a,b,c,d])=>x>=a&&x<=c&&y>=b&&y<=d);
 return DATA.walkable(state.world,x,y,5)}
-function move(dx,dy,dt){if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?132:116,dist=speed*dt,steps=Math.ceil(dist/5);let mx=0,my=0;
+function move(dx,dy,dt){if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?144:143,dist=speed*dt,steps=Math.ceil(dist/3);let mx=0,my=0;
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
 if(positionValid(p.x+stepx,p.y+stepy)){p.x+=stepx;p.y+=stepy;mx+=stepx;my+=stepy}else{if(positionValid(p.x+stepx,p.y)){p.x+=stepx;mx+=stepx}if(positionValid(p.x,p.y+stepy)){p.y+=stepy;my+=stepy}}}
 if(Math.abs(mx)>Math.abs(my))state.facing=mx>0?'right':'left';else if(my)state.facing=my>0?'down':'up';if(Math.abs(mx)+Math.abs(my)>0.25){state.walkFrame+=dt*7;if(state.world?.id==='route-1'&&!state.inside){state.stepDistance+=Math.hypot(mx,my);if(state.stepDistance>=32){state.stepDistance=0;maybeEncounter()}}}}
@@ -81,6 +81,7 @@ function drawNPC(c,npc,distance){
   const x=npc.at[0],y=npc.at[1],entry=image(npc.portrait);
   c.save();
   c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,14,5,0,0,Math.PI*2);c.fill();
+  if(npc.painted){c.restore();return}
   if(entry?.loaded){
     c.shadowColor='#020617';c.shadowBlur=5;c.drawImage(entry.im,x-21,y-53,42,56);c.shadowBlur=0;
   } else {
@@ -88,7 +89,7 @@ function drawNPC(c,npc,distance){
     c.fillStyle='#f6cf9b';c.beginPath();c.arc(x,y-37,8,0,Math.PI*2);c.fill();
   }
   c.restore();
-  if(distance<95)drawMarker(c,x,y-43,npc.name,distance<60?'#80ffcb':'#ffd98a');
+  if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,y-60,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,y-56);c.restore()}
 }
 function selectedAvatar(){const p=player(),id=p.playerCharacterId;
   const character=(W.PsyHalloweenCharacters||[]).find(c=>c.id===id);
@@ -143,7 +144,7 @@ else showDialog(npc.name,'Que bom conhecer mais um treinador nesta cidade!',[],p
 function enterDoor(door){const id=door.id;state.lastOutdoor={...state.position};state.inside={id,title:door.title,blocks:[[80,76,720,95],[110,235,255,315],[545,235,690,315]],npcs:[]};state.position={x:400,y:384};state.path=[];
 if(id==='center'){mark('center');state.inside.npcs.push({id:'nurse',name:'Enfermeira',at:[400,215],portrait:'assets/halloween/npc-mina.svg',emote:'acolhedora'});showDialog('Centro Pokémon','Bem-vindo! Aqui você pode curar sua equipe. O atendimento também conta como etapa da missão inicial.')}
 else if(id==='market'){mark('market');state.inside.npcs.push({id:'vendor',name:'Atendente',at:[400,215],portrait:'assets/halloween/npc-vendor.webp',emote:'animado'});showDialog('Poké Mart','Bem-vindo ao mercado! Converse com o atendente para abrir a loja.')}
-else if(id==='lab'){mark('oak');state.inside.npcs.push({id:'assistant',name:'Assistente',at:[400,215],portrait:'assets/halloween/npc-researcher.webp',emote:'curioso'});showDialog('Laboratório','Você chegou ao laboratório de pesquisa de Pallet.')}
+else if(id==='lab'){state.inside.npcs.push({id:'oak',name:'Professor Carvalho',at:[400,200],portrait:'assets/story/professor-oak.png',emote:'sereno'});showDialog('Laboratório do Professor Carvalho','O professor está esperando por você. Converse com ele para começar sua jornada.')}
 else if(id==='home')showDialog('Sua Casa','Um espaço seguro para descansar antes de começar a aventura.');else showDialog(door.title,'Um interior acessível, com colisões para os móveis e saída pela porta.');hud()}
 function exitDoor(){state.inside=null;if(state.lastOutdoor)state.position={...state.lastOutdoor};state.lastOutdoor=null;state.path=[];hud()}
 function healTeam(){const p=player();if(Array.isArray(p.team))for(const mon of p.team){const hp=Number(mon.maxHp||mon.maxHP||mon.hpMax||0);if(hp>0)mon.hp=hp}try{W.updateHUD?.();W.autoSave?.()}catch(_){}showDialog('Enfermeira','Sua equipe foi recuperada. Boa viagem!')}
@@ -155,10 +156,11 @@ function touchCoords(e){const r=state.canvas.getBoundingClientRect();const cam=c
 function touchStart(e){if(e.target!==state.canvas||state.dialogOpen)return;e.preventDefault();const t=touchCoords(e);state.touch={id:e.pointerId,x:e.clientX,y:e.clientY,tx:t.x,ty:t.y,t:performance.now(),drag:false};state.canvas.setPointerCapture?.(e.pointerId);state.path=[]}
 function touchMove(e){const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();const dx=e.clientX-t.x,dy=e.clientY-t.y;if(Math.hypot(dx,dy)>11)t.drag=true;if(t.drag){const d=Math.max(1,Math.hypot(dx,dy));state.joy={x:dx/Math.max(35,d),y:dy/Math.max(35,d)};const stick=state.root.querySelector('.kw2-joystick'),r=state.canvas.getBoundingClientRect();stick.style.left=(t.x-r.left)+'px';stick.style.top=(t.y-r.top)+'px';stick.style.display='block';stick.style.setProperty('--jx',Math.round(Math.min(30,dx/d*30))+'px');stick.style.setProperty('--jy',Math.round(Math.min(30,dy/d*30))+'px')}}
 function touchEnd(e){const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();state.joy=null;state.touch=null;state.root.querySelector('.kw2-joystick').style.display='none';if(!t.drag){const near=currentTargets().find(v=>Math.hypot(v.at[0]-t.tx,v.at[1]-t.ty)<30&&Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)<70);if(near){interact();return}state.path=findPath([state.position.x,state.position.y],[t.tx,t.ty])}}
-function findPath(from,to){const step=12,world=state.inside?{w:800,h:470}:state.world,cx=x=>Math.round(x/step),cell=(x,y)=>x+','+y;let a=[cx(from[0]),cx(from[1])],b=[cx(to[0]),cx(to[1])];if(!positionValid(b[0]*step,b[1]*step))return [];
+function findPath(from,to){const step=8,world=state.inside?{w:800,h:470}:state.world,cx=x=>Math.round(x/step),cell=(x,y)=>x+','+y;let a=[cx(from[0]),cx(from[1])],b=[cx(to[0]),cx(to[1])];
+if(!positionValid(b[0]*step,b[1]*step)){let nearest=null,score=Infinity;for(let r=1;r<=9&&!nearest;r++){for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.abs(dx)!==r&&Math.abs(dy)!==r)continue;const nx=b[0]+dx,ny=b[1]+dy;if(!positionValid(nx*step,ny*step))continue;const d=dx*dx+dy*dy;if(d<score){score=d;nearest=[nx,ny]}}}if(!nearest)return [];b=nearest;}
 const start=cell(...a),target=cell(...b),queue=[[...a]],came=new Map([[start,null]]),limit=6000;for(let i=0;i<queue.length&&i<limit;i++){const [x,y]=queue[i],key=cell(x,y);if(key===target){const out=[];let k=key;while(k&&k!==start){const [ax,ay]=k.split(',').map(Number);out.push([ax*step,ay*step]);k=came.get(k)}return out.reverse()}
 for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,n=cell(nx,ny);if(came.has(n)||!positionValid(nx*step,ny*step))continue;came.set(n,key);queue.push([nx,ny])}}return []}
-W.PsyKantoWorldV2={open,close,data:DATA,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:DATA.route1,x,y)};
+W.PsyKantoWorldV2={open,close,data:DATA,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y})};
 // Capture Atlas entry before any legacy canvas handler; also works after Atlas rerenders.
 D.addEventListener('click',e=>{
   const button=e.target?.closest?.('#psy-kanto-atlas .psy-kanto-enter-world');
