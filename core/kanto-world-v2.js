@@ -34,10 +34,10 @@ state.root.querySelector('.kw2-objective').textContent=info;
 }
 function open(id,options={}){if(!['pallet','route-1'].includes(id))return false;
 if(id==='route-1'&&!progress().guard&&!options.skipGuard){open('pallet');setTimeout(()=>showDialog('Rota 1 bloqueada','Primeiro fale com o guarda no norte de Pallet. Ele libera a viagem após a missão inicial.'),80);return false}
-makeUI();state.world=id==='pallet'?DATA.pallet:DATA.route1;state.inside=null;state.path=[];state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
+makeUI();D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=id==='pallet'?DATA.pallet:DATA.route1;state.inside=null;state.path=[];state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
 const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}return true;}
-function close(){state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
+function close(){D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
 function positionValid(x,y){if(state.inside)return x>65&&x<735&&y>84&&y<426&&!state.inside.blocks.some(([a,b,c,d])=>x>=a&&x<=c&&y>=b&&y<=d);
 return DATA.walkable(state.world,x,y,5)}
 function move(dx,dy,dt){if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?132:116,dist=speed*dt,steps=Math.ceil(dist/5);let mx=0,my=0;
@@ -57,12 +57,20 @@ if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){co
 if(dx||dy)move(dx,dy,dt);draw();state.raf=W.requestAnimationFrame(tick)}
 function onKeyDown(e){if(!state.root?.classList.contains('open'))return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){e.preventDefault();e.stopImmediatePropagation();state.path=[];state.held.add(keys[e.code])}else if(['KeyE','Enter','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)interact()}else if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}}
 function onKeyUp(e){if(!state.root?.classList.contains('open'))return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){e.preventDefault();e.stopImmediatePropagation();state.held.delete(keys[e.code])}}
-function camera(){const map=state.inside?{w:800,h:470}:state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');const r=stage.getBoundingClientRect(),dpr=Math.min(2,W.devicePixelRatio||1);
-const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
-const base=state.inside?610:(r.width<720?420:780);const scale=Math.min(4,Math.max(.8,cw/base,ch/Math.min(map.h,580)));const viewW=cw/scale,viewH=ch/scale;
-const cx=Math.max(viewW/2,Math.min(map.w-viewW/2,state.position.x)),cy=Math.max(viewH/2,Math.min(map.h-viewH/2,state.position.y));return {w:cw,h:ch,scale,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale)}}
+function camera(){
+  const map=state.inside?{w:800,h:470}:state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');
+  const r=stage.getBoundingClientRect(),dpr=Math.min(2,W.devicePixelRatio||1);
+  const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
+  if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
+  // Cover the screen instead of letterboxing; scroll with the player.
+  const scale=Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
+  const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
+  const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
+  return {w:cw,h:ch,scale,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale)};
+}
 function draw(){if(!state.root?.classList.contains('open')||!state.world)return;const c=state.ctx,view=camera();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,view.w,view.h);c.fillStyle='#122e30';c.fillRect(0,0,view.w,view.h);c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);
-if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art);if(o?.loaded){c.imageSmoothingEnabled=true;c.drawImage(o.im,0,0,state.world.w,state.world.h)}else{c.fillStyle='#315342';c.fillRect(0,0,state.world.w,state.world.h);c.strokeStyle='#dfbd83';c.lineCap='round';for(const [a,b,d,e,r] of state.world.paths){c.lineWidth=r*2;c.beginPath();c.moveTo(a,b);c.lineTo(d,e);c.stroke()}c.fillStyle='#4a9943';for(const g of state.world.grass){c.fillRect(g.rect[0],g.rect[1],g.rect[2]-g.rect[0],g.rect[3]-g.rect[1])}}}
+if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art);if(o?.loaded){c.imageSmoothingEnabled=true;c.drawImage(o.im,0,0,state.world.w,state.world.h)}else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawMarker(c,npc.at[0],npc.at[1],npc.name,distance<60?'#80ffcb':'#ffd98a')});
 if(!state.inside){state.world.doors.forEach(d=>{if(Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<88)drawMarker(c,d.at[0],d.at[1],'ENTRAR','#79dced')});
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':'VIRIDIAN','#80ffaa')}
@@ -138,4 +146,15 @@ function findPath(from,to){const step=12,world=state.inside?{w:800,h:470}:state.
 const start=cell(...a),target=cell(...b),queue=[[...a]],came=new Map([[start,null]]),limit=6000;for(let i=0;i<queue.length&&i<limit;i++){const [x,y]=queue[i],key=cell(x,y);if(key===target){const out=[];let k=key;while(k&&k!==start){const [ax,ay]=k.split(',').map(Number);out.push([ax*step,ay*step]);k=came.get(k)}return out.reverse()}
 for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,n=cell(nx,ny);if(came.has(n)||!positionValid(nx*step,ny*step))continue;came.set(n,key);queue.push([nx,ny])}}return []}
 W.PsyKantoWorldV2={open,close,data:DATA,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:DATA.route1,x,y)};
+// Capture Atlas entry before any legacy canvas handler; also works after Atlas rerenders.
+D.addEventListener('click',e=>{
+  const button=e.target?.closest?.('#psy-kanto-atlas .psy-kanto-enter-world');
+  if(!button)return;
+  const title=button.closest('.psy-kanto-detail')?.querySelector('h3')?.textContent?.trim();
+  const place=W.PsyKantoJourneyV1?.places?.find(p=>p.name===title);
+  if(place?.id!=='pallet'&&place?.id!=='route-1')return;
+  e.preventDefault();e.stopImmediatePropagation();
+  open(place.id);
+},true);
+
 })(window,document);
