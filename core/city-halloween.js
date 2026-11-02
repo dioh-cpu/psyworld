@@ -29,14 +29,26 @@
   ];
   const CITY_LAMPS=[[-4.8,-.7],[4.8,.7],[-10.4,-4.8],[.7,4.8],[-8.9,1.6],[8.9,-1.6]];
   const CITY_GRAVEYARD={dx:9.6,dy:.1};
+  const TOWN_PROPS=[
+    {id:0,dx:-19,dy:-15,width:150,solid:true},{id:1,dx:19,dy:-15,width:145,solid:true},
+    {id:0,dx:-20,dy:15,width:145,solid:true},{id:1,dx:20,dy:15,width:145,solid:true},
+    {id:2,dx:-14,dy:-1,width:118},{id:3,dx:14,dy:-1,width:128},
+    {id:4,dx:-3,dy:-8.7,width:78,solid:true},{id:5,dx:3,dy:-8.7,width:82},
+    {id:6,dx:-14,dy:5.7,width:105},{id:7,dx:-13,dy:-3,width:72},
+    {id:8,dx:-14,dy:-8,width:112,solid:true},{id:9,dx:15,dy:1,width:125,solid:true},
+    {id:10,dx:15,dy:3.8,width:112,solid:true},{id:11,dx:16,dy:5.7,width:120,solid:true},
+    {id:12,dx:-14,dy:9.4,width:132},{id:13,dx:19,dy:9,width:130,solid:true},
+    {id:14,dx:0,dy:-12,width:76},{id:15,dx:-14,dy:13.6,width:106},
+    {id:2,dx:14,dy:9.8,width:112},{id:3,dx:-15,dy:-5.5,width:126},
+    {id:5,dx:0,dy:16.4,width:72},{id:6,dx:14,dy:-8,width:106}
+  ];
   let origin = null;
   let dialog = null;
   let dialogIndex = 0;
 
   function inCityWorld() {
-    if (!origin || !(typeof P !== 'undefined' && P.team?.length)) return true;
-    const x=Math.floor(Number(P.x)||0), y=Math.floor(Number(P.y)||0);
-    if (x < origin.tileX-20 || x > origin.tileX+20 || y < origin.tileY-18 || y > origin.tileY+18) return false;
+    // The base map remains Pallet Town for the full camera, even when the
+    // trainer walks beyond the old origin-centered clip rectangle.
     return true;
   }
   function cityVisible() {
@@ -45,21 +57,32 @@
       !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure') && inCityWorld();
   }
   function cityScreenBounds(w,h) {
-    const tile=Number(TILE)||55, x0=Math.max(0,origin.tileX-16), x1=Math.min(MAP_W-1,origin.tileX+16);
-    const y0=Math.max(0,origin.tileY-19), y1=Math.min(MAP_H-1,origin.tileY+15);
-    const ox=w/2-P.px-tile/2, oy=h/2-P.py-tile/2;
-    return {tile,x0,x1,y0,y1,left:ox+x0*tile,top:oy+y0*tile,right:ox+(x1+1)*tile,bottom:oy+(y1+1)*tile};
+    return {tile:Number(TILE)||55,left:0,top:0,right:w,bottom:h};
   }
   function clipCityArea(c,w,h) {
-    // The town is one continuous city map. Kanto's campaign is entered only
-    // through the KANTO · JORNADA button, so no route-shaped hole is cut here.
-    const b=cityScreenBounds(w,h);
-    c.beginPath();c.rect(b.left,b.top,b.right-b.left,b.bottom-b.top);c.clip();
+    // Keep the city on the entire visible camera. The old origin-clamped clip
+    // produced a hard vertical seam when the trainer walked past its rectangle.
+    c.beginPath();c.rect(0,0,w,h);c.clip();
   }
   let cityFloorPattern = null;
   function drawCityBackdrop(c,w,h) {
-    // The legacy island renderer paints its beach outside MAP_W/MAP_H. City mode
-    // must cover that too, including the first frame after startup/returning.
+    // Replace the legacy beach with a natural lawn base. Paths and garden plots
+    // are drawn separately so the screen does not become one endless tile carpet.
+    const tile=Number(TILE)||55,playerX=typeof P!=='undefined'?Number(P.px)||0:0,playerY=typeof P!=='undefined'?Number(P.py)||0:0;
+    const ox=w/2-playerX-tile/2,oy=h/2-playerY-tile/2;
+    c.fillStyle='#263a2e';c.fillRect(0,0,w,h);
+    const x0=Math.floor((playerX-w/2)/tile)-1,x1=Math.ceil((playerX+w/2)/tile)+1;
+    const y0=Math.floor((playerY-h/2)/tile)-1,y1=Math.ceil((playerY+h/2)/tile)+1;
+    for(let wy=y0;wy<=y1;wy++)for(let wx=x0;wx<=x1;wx++){
+      const seed=Math.abs(Math.sin(wx*127.1+wy*311.7)*43758.5453)%1;
+      if(seed>.28){
+        const px=ox+wx*tile+seed*tile,py=oy+wy*tile+((seed*17)%1)*tile;
+        c.fillStyle=seed>.78?'rgba(202,139,60,.23)':'rgba(98,139,93,.23)';
+        c.beginPath();c.ellipse(px,py,3+seed*4,2+seed*3,seed*3,0,Math.PI*2);c.fill();
+        if(seed>.68){c.strokeStyle='rgba(139,177,118,.48)';c.lineWidth=1;c.beginPath();c.moveTo(px-3,py+3);c.lineTo(px-5,py-2);c.moveTo(px,py+3);c.lineTo(px+1,py-3);c.moveTo(px+3,py+3);c.lineTo(px+5,py-1);c.stroke()}
+      }
+    }
+    // A light, world-anchored paving pattern is reserved for streets only.
     if(!cityFloorPattern){
       const tile=D.createElement('canvas');tile.width=38;tile.height=38;
       const p=tile.getContext('2d'), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
@@ -70,24 +93,29 @@
       });
       cityFloorPattern=c.createPattern(tile,'repeat');
     }
-    c.fillStyle=cityFloorPattern;c.fillRect(0,0,w,h);
   }
   function drawCityFloor(c,w,h) {
-    const b=cityScreenBounds(w,h), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
-    const worldOffsetX=w/2-P.px-b.tile/2, worldOffsetY=h/2-P.py-b.tile/2;
-    const left=worldOffsetX+b.x0*b.tile, top=worldOffsetY+b.y0*b.tile;
-    const right=worldOffsetX+(b.x1+1)*b.tile, bottom=worldOffsetY+(b.y1+1)*b.tile;
-    c.fillStyle='#211d30';c.fillRect(left,top,right-left,bottom-top);
-    // Lay stones on one world-anchored grid rather than restarting the
-    // pattern in every 55px map tile. This removes the visible square seams.
-    const stone=19, firstX=Math.floor(b.x0*b.tile/stone)-1, lastX=Math.ceil((b.x1+1)*b.tile/stone)+1;
-    const firstY=Math.floor(b.y0*b.tile/stone)-1, lastY=Math.ceil((b.y1+1)*b.tile/stone)+1;
-    for(let row=firstY;row<=lastY;row++)for(let col=firstX;col<=lastX;col++){
-      const seed=(row*19+col*31+(row%2)*7+shades.length*10)%shades.length;
-      const px=worldOffsetX+col*stone+(row%2)*9, py=worldOffsetY+row*stone;
-      c.fillStyle=shades[(seed+shades.length)%shades.length];rounded(c,px+1,py+1,stone-3,stone-3,3);c.fill();
-      c.fillStyle='rgba(205,170,118,.09)';c.fillRect(px+4,py+3,stone-9,1);
+    const tile=Number(TILE)||55;
+    function path(dx,dy,widthTiles,heightTiles){
+      const p=screenPoint(dx,dy),pw=widthTiles*tile,ph=heightTiles*tile;
+      c.save();rounded(c,p.x-pw/2,p.y-ph/2,pw,ph,Math.min(24,tile*.38));
+      c.fillStyle='#514c43';c.fill();c.strokeStyle='#9a7653';c.lineWidth=3;c.stroke();c.clip();
+      c.globalAlpha=.82;c.fillStyle=cityFloorPattern;c.fillRect(p.x-pw/2,p.y-ph/2,pw,ph);c.globalAlpha=1;c.restore();
     }
+    // Main cross-streets, with a short paved path from every house to the square.
+    path(0,0,2.8,48);path(0,-.7,48,2.6);
+    HOUSES.forEach(h=>{
+      const p=screenPoint(h.dx,h.dy),plotW=tile*7.5,plotH=tile*5.2;
+      c.fillStyle='#314937';c.strokeStyle='#63734d';c.lineWidth=2;
+      rounded(c,p.x-plotW/2,p.y-plotH/2,plotW,plotH,16);c.fill();c.stroke();
+      // Each house plot gets a small planted border and a clear front walk.
+      for(let i=0;i<8;i++){
+        const fx=p.x-plotW*.42+i*plotW*.12,fy=p.y+plotH*.38;
+        c.fillStyle=i%3?'#d8984a':'#a985bd';c.beginPath();c.arc(fx,fy,3.5,0,Math.PI*2);c.fill();
+      }
+      const doorY=h.dy+(h.dy<0?2.3:-2.3),len=Math.abs(doorY);
+      if(len>.5)path(h.dx,(h.dy<0?doorY/2:doorY/2),1.2,len);
+    });
   }
   function captureOrigin() {
     // The city can be entered before a team is assigned. The initialized map
@@ -122,6 +150,7 @@
     [[CITY_LAMPS[0][0]+22/TILE,CITY_LAMPS[0][1]+8/TILE],
      [CITY_LAMPS[2][0]+22/TILE,CITY_LAMPS[2][1]+8/TILE],
      [CITY_LAMPS[4][0]+22/TILE,CITY_LAMPS[4][1]+8/TILE]].forEach(([dx,dy])=>block(dx,dy,0,0));
+    TOWN_PROPS.filter(prop=>prop.solid).forEach(prop=>block(prop.dx,prop.dy,prop.id===0||prop.id===1?1:0,prop.id===0||prop.id===1?1:0));
   }
   function screenPoint(dx, dy) {
     const cv = D.getElementById('gameCanvas');
@@ -150,7 +179,8 @@
     const w=Math.round(164*h.width*scale), bodyH=Math.round(102*scale), roofH=Math.round(68*scale);
     const x=p.x-w/2, y=p.y-bodyH/2;
     const cv=D.getElementById('gameCanvas'), viewW=cv?.width||W.innerWidth, viewH=cv?.height||W.innerHeight;
-    if (x>viewW+40 || x+w< -40 || y>viewH+40 || y-bodyH-roofH< -100) return;
+    const top=y-roofH,bottom=y+bodyH+30*scale;
+    if (x>viewW+40 || x+w< -40 || top>viewH+40 || bottom< -40) return;
     c.save();
     c.fillStyle='#020617aa'; c.beginPath(); c.ellipse(p.x,y+bodyH+12,w*.64,16*scale,0,0,Math.PI*2); c.fill();
     // Broad timbered facade and stone foundation.
@@ -216,6 +246,21 @@
   ];
   const decorImage = new Image();
   decorImage.src = '/assets/halloween/city-decor-sprite-sheet-v1.png';
+  const townPropImage = new Image();
+  townPropImage.src = '/assets/halloween/pallet-town-props-sprite-sheet-v2.png';
+  const PROP_GRID=[0,313,627,940,1254];
+  function drawTownProps(c) {
+    if(!townPropImage.complete||!townPropImage.naturalWidth)return;
+    const scale=Math.max(.82,Math.min(1.18,(Number(TILE)||55)/55));
+    TOWN_PROPS.forEach(item=>{
+      const p=screenPoint(item.dx,item.dy),col=item.id%4,row=Math.floor(item.id/4);
+      const sx=PROP_GRID[col],sy=PROP_GRID[row],sw=PROP_GRID[col+1]-sx,sh=PROP_GRID[row+1]-sy;
+      const width=item.width*scale,height=width*sh/sw;
+      if(p.x < -width || p.y < -height || p.x > W.innerWidth+width || p.y > W.innerHeight+height)return;
+      c.save();c.globalAlpha=.98;c.shadowColor='#171426';c.shadowBlur=7;
+      c.drawImage(townPropImage,sx,sy,sw,sh,p.x-width/2,p.y-height,width,height);c.restore();
+    });
+  }
   function drawCityDecor(c) {
     if (!decorImage.complete || !decorImage.naturalWidth) return;
     const scale=Math.max(.78,Math.min(1.28,TILE/55));
@@ -323,6 +368,7 @@
     // The full town quarter uses one continuous cobblestone surface.
     drawCityFloor(c,w,h);
     HOUSES.forEach(house=>drawHouse(c,house));
+    drawTownProps(c);
     drawCityDecor(c);
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
