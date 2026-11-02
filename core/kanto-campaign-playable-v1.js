@@ -97,7 +97,7 @@
       #psy-kanto-world button{color:#fff;background:#1f3446;border:1px solid #668397;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;touch-action:manipulation}
       #psy-kanto-world .kp-close{background:#522d35;border-color:#b36b73;font-size:17px;padding:5px 12px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
-      #psy-kanto-canvas{width:min(100vw,calc((100vh - 150px)*1.6));height:min(calc(100vh - 150px),62.5vw);max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
+      #psy-kanto-canvas{width:100%;height:100%;max-width:960px;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
       #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,38px);gap:3px}
       .kp-controls button{padding:0;font-size:17px;background:#243747}.kp-controls [data-dir="up"]{grid-column:2}.kp-controls [data-dir="left"]{grid-column:1;grid-row:2}.kp-controls [data-dir="down"]{grid-column:2;grid-row:2}.kp-controls [data-dir="right"]{grid-column:3;grid-row:2}
@@ -105,7 +105,7 @@
       #psy-kanto-dialog{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:13px 15px;background:#0a111df2;border:1px solid #e5c77e;border-radius:12px;box-shadow:0 10px 40px #000a;display:none;z-index:2}
       #psy-kanto-dialog.open{display:block}.kp-dialog-title{color:#ffe09a;font-weight:900;margin-bottom:5px}.kp-dialog-text{font-size:13px;line-height:1.45;color:#e4eaf0}.kp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
       .psy-kanto-enter-world{width:100%;margin:8px 0 12px;background:linear-gradient(110deg,#075985,#14532d)!important;border-color:#8be5ca!important}
-      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px}.kp-title small{max-width:58vw}#psy-kanto-canvas{width:100vw;height:min(calc(100vh - 168px),62.5vw);border-radius:0}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-interact{grid-column:2;grid-row:2;min-width:72px}}
+      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px}.kp-title small{max-width:58vw}#psy-kanto-canvas{width:100%;height:100%;border-radius:0}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-interact{grid-column:2;grid-row:2;min-width:72px}}
     `;
     D.head.appendChild(style);
   }
@@ -289,7 +289,7 @@
       showDialog('Passagem secreta','Você encontrou a câmara oculta. A recompensa do enigma já foi registrada na sua jornada.');return;
     }
     if(nearby(model.map.exit)){
-      if(!objectivesMet(place)){
+      if(place.id!=='pallet'&&place.id!=='route-1'&&!objectivesMet(place)){
         const count=new Set(ps.found).size, need=objective(place);
         showDialog('Saída bloqueada',`Converse com ${place.npc}, registre ${need} espécie(s) neste local${GYM_FOR_PLACE[place.id]?' e vença o ginásio':''}. Progresso: ${count}/${need}.`);return;
       }
@@ -298,7 +298,7 @@
       else {
         const all=places(),next=all[all.findIndex(p=>p.id===place.id)+1];
         const actions=[];
-        if(next&&isUnlocked(next))actions.push({label:`SEGUIR PARA ${next.name.toUpperCase()}`,primary:true,onClick:()=>openWorld(next.id)});
+        if(next&&(isUnlocked(next)||place.id==='pallet'||place.id==='route-1'))actions.push({label:`SEGUIR PARA ${next.name.toUpperCase()}`,primary:true,onClick:()=>openWorld(next.id)});
         actions.push({label:'VOLTAR AO ATLAS',onClick:()=>{closeWorld();W.openKantoJourneyV1?.()}});
         showDialog('Capítulo concluído',`${place.name} foi concluída. A próxima parada está liberada.`,actions);
       }
@@ -313,14 +313,18 @@
     const place=model.place, ps=placeState(place.id), need=objective(place), count=new Set(ps.found).size, gym=GYM_FOR_PLACE[place.id], gymDone=!gym||(Array.isArray(player().gymProgress)&&player().gymProgress.includes(gym));
     const items=[`Fale com <strong>${esc(place.npc)}</strong>: ${ps.talked?'✅':'◻'}`,`Registre espécies: <strong>${Math.min(count,need)}/${need}</strong>`];
     if(gym)items.push(`Ginásio: <strong>${gymDone?'✅ vencido':'pendente'}</strong>`);
-    items.push(`Saída em <strong>E</strong> quando concluir · Encontre habitats marcados com grama`);
+    items.push(place.id==='pallet'||place.id==='route-1'?'Saída norte livre · caminhe pela grama para encontrar Pokémon':'Saída em <strong>E</strong> quando concluir · Encontre habitats marcados com grama');
     model.root.querySelector('.kp-objective').innerHTML=items.join(' · ');
   }
   function render() {
     if(!model.place||!model.ctx||!model.root?.classList.contains('open'))return;
+    const stage=model.root.querySelector('.kp-stage');
+    if(stage){const rw=Math.max(300,Math.round(Math.min(960,stage.clientWidth))),rh=Math.max(300,Math.round(stage.clientHeight));if(model.canvas.width!==rw)model.canvas.width=rw;if(model.canvas.height!==rh)model.canvas.height=rh;}
     const c=model.ctx, cw=model.canvas.width, ch=model.canvas.height, th=theme(model.place), g=model.map.grid;
     c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
-    const offsetX=Math.floor((cw-COLS*TILE)/2),offsetY=Math.floor((ch-ROWS*TILE)/2);
+    const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
+    const offsetX=clamp(Math.floor(cw/2-(model.x+.5)*TILE),Math.min(0,cw-COLS*TILE),0);
+    const offsetY=clamp(Math.floor(ch/2-(model.y+.5)*TILE),Math.min(0,ch-ROWS*TILE),0);
     for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
       const t=g[y][x],sx=offsetX+x*TILE,sy=offsetY+y*TILE;
       c.fillStyle=t===9?'#264935':t===1?'#d1ac77':t===3?'#746d64':t===4?'#866b52':t===5?'#438c42':th.floor;c.fillRect(sx,sy,TILE,TILE);
