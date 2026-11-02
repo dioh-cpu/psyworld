@@ -56,24 +56,21 @@
     const b=cityScreenBounds(w,h);
     c.beginPath();c.rect(b.left,b.top,b.right-b.left,b.bottom-b.top);c.clip();
   }
+  let cityFloorPattern = null;
   function drawCityBackdrop(c,w,h) {
     // The legacy island renderer paints its beach outside MAP_W/MAP_H. City mode
     // must cover that too, including the first frame after startup/returning.
-    const tile=Number(TILE)||55, stone=19;
-    const worldX=w/2-P.px-tile/2, worldY=h/2-P.py-tile/2;
-    c.fillStyle='#211d30';c.fillRect(0,0,w,h);
-    const firstRow=Math.floor(-worldY/stone)-1,lastRow=Math.ceil((h-worldY)/stone)+1;
-    for(let row=firstRow;row<=lastRow;row++){
-      const firstCol=Math.floor((-worldX-(row%2)*9)/stone)-1;
-      const lastCol=Math.ceil((w-worldX-(row%2)*9)/stone)+1;
-      for(let col=firstCol;col<=lastCol;col++){
-        const x=worldX+col*stone+(row%2)*9,y=worldY+row*stone;
-        const seed=(row*19+col*31+(row%2)*7+50)%5;
-        c.fillStyle=['#30283c','#342b40','#2a2537','#382c3d','#29263a'][(seed+5)%5];
-        rounded(c,x+1,y+1,stone-3,stone-3,3);c.fill();
-        c.fillStyle='rgba(205,170,118,.09)';c.fillRect(x+4,y+3,stone-9,1);
-      }
+    if(!cityFloorPattern){
+      const tile=D.createElement('canvas');tile.width=38;tile.height=38;
+      const p=tile.getContext('2d'), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
+      p.fillStyle='#211d30';p.fillRect(0,0,38,38);
+      [[0,0],[19,0],[9,19],[28,19]].forEach(([x,y],i)=>{
+        p.fillStyle=shades[i];rounded(p,x+1,y+1,16,16,3);p.fill();
+        p.fillStyle='rgba(205,170,118,.09)';p.fillRect(x+4,y+3,10,1);
+      });
+      cityFloorPattern=c.createPattern(tile,'repeat');
     }
+    c.fillStyle=cityFloorPattern;c.fillRect(0,0,w,h);
   }
   function drawCityFloor(c,w,h) {
     const b=cityScreenBounds(w,h), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
