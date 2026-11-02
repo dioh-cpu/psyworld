@@ -165,6 +165,11 @@
     return {grid,npc,object,exit,secretGate,secretChest,seed:hash(place.id)};
   }
   function openWorld(id) {
+    if(id==='pallet'||id==='route-1'){
+      if(W.PsyKantoWorldV2?.open)return W.PsyKantoWorldV2.open(id);
+      W.notif?.('Mapa ilustrado indisponível. Recarregue a preview.',4000);
+      return false;
+    }
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
     makeRoot(); model.place=place; model.map=buildMap(place); model.x=3; model.y=ROWS-3; model.direction='down';model.frame=0;model.held=null;
@@ -361,7 +366,7 @@
     const detail=D.querySelector('#psy-kanto-atlas .psy-kanto-detail');if(!detail)return;
     const title=detail.querySelector('h3')?.textContent?.trim();if(!title)return;
     const place=places().find(p=>p.name===title);if(!place||detail.querySelector('.psy-kanto-enter-world'))return;
-    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ENTRAR NA LOCALIDADE':'🔒 CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=()=>{if((place.id==='pallet'||place.id==='route-1')&&W.PsyKantoWorldV2)W.PsyKantoWorldV2.open(place.id);else openWorld(place.id)};
+    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ENTRAR NA LOCALIDADE':'🔒 CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=()=>openWorld(place.id);
     detail.insertBefore(button,detail.querySelector('.psy-kanto-detail-kicker')?.nextSibling||detail.firstChild);
   }
   function monitorAtlas() {
