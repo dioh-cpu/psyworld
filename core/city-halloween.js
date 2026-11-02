@@ -90,9 +90,10 @@
     }
   }
   function captureOrigin() {
-    // Wait for the real player profile. Capturing the startup placeholder
-    // anchors buildings and decorations to the wrong point for the whole session.
-    if (origin || !cityVisible() || !(typeof P !== 'undefined' && P.team?.length) ||
+    // The city can be entered before a team is assigned. The initialized map
+    // coordinates are enough to place its buildings and decorations; waiting
+    // for P.team would leave the player on an empty cobblestone screen.
+    if (origin || !cityVisible() || typeof P === 'undefined' ||
         !Number.isFinite(Number(P.x)) || !Number.isFinite(Number(P.y))) return;
     origin = {
       px:Number(P.px) || Number(P.x || 25) * TILE,
