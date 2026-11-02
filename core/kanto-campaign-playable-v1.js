@@ -108,7 +108,10 @@
       #psy-kanto-world .kp-title{min-width:0}.kp-title b{display:block;color:#ffe09a;font-size:14px}.kp-title small{display:block;color:#aab5c2;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}
       #psy-kanto-world button{color:#fff;background:#1f3446;border:1px solid #668397;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;touch-action:manipulation}
       #psy-kanto-world .kp-close{background:#522d35;border-color:#b36b73;font-size:17px;padding:5px 12px}
-      #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
+      #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%);transition:opacity .18s ease,transform .18s ease}
+      #psy-kanto-world.map-fade-out .kp-stage{opacity:0;transform:scale(.985);pointer-events:none}
+      #psy-kanto-world.map-fade-in .kp-stage{animation:kpMapEnter .28s cubic-bezier(.2,.75,.25,1) both}
+      @keyframes kpMapEnter{from{opacity:0;transform:scale(1.012)}to{opacity:1;transform:scale(1)}}
       #psy-kanto-canvas{width:min(100vw,calc((100vh - 150px)*1.6));height:min(calc(100vh - 150px),62.5vw);max-width:100%;max-height:100%;image-rendering:auto;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
       #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:none!important}
@@ -121,11 +124,12 @@
       .kp-touch-stick{position:absolute;z-index:4;width:88px;height:88px;margin:-44px 0 0 -44px;border:2px solid #c8edff9c;border-radius:50%;background:#13243a66;box-shadow:0 2px 16px #0008;pointer-events:none;touch-action:none}
       .kp-touch-stick:after{content:'';position:absolute;left:50%;top:50%;width:32px;height:32px;margin:-16px;border:2px solid #effbff;border-radius:50%;background:#59c3e899;transform:translate(var(--stick-x,0),var(--stick-y,0));box-shadow:0 2px 9px #0007}
       @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px}.kp-title small{max-width:58vw}#psy-kanto-canvas{width:100vw;height:min(calc(100vh - 150px),62.5vw);border-radius:0}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{font-size:11px}.kp-interact{min-width:72px}}
+      @media(prefers-reduced-motion:reduce){#psy-kanto-world .kp-stage{transition-duration:.01ms}#psy-kanto-world.map-fade-in .kp-stage{animation-duration:.01ms}}
     `;
     D.head.appendChild(style);
   }
 
-  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, lastMove:0, motion:null, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
+  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, lastMove:0, motion:null, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, transitioning:false, transitionTimer:0, transitionRaf:0, raf:0, atlasObserver:null, atlasNode:null };
   function makeRoot() {
     if (model.root) return model.root;
     addStyles();
@@ -234,7 +238,21 @@
     // location already had its own authored, walkable map.
     if(!map.authoredKind){W.notif?.('Este mapa ainda está sendo construído.',3000);return;}
     if(!options.fromPortal&&!isUnlocked(place)){W.notif?.('🔒 Conclua os objetivos do caminho anterior e obtenha as insígnias exigidas.',2600);return;}
-    makeRoot(); model.place=place; model.map=map; model.x=options.entry?.x??model.map.spawn?.x??model.map.authored?.spawn?.x??3; model.y=options.entry?.y??model.map.spawn?.y??model.map.authored?.spawn?.y??ROWS-3; model.direction=model.map.authored?.spawn?.facing??'down';model.frame=0;model.held=null;
+    makeRoot();
+    if(model.root.classList.contains('open')&&model.place?.id!==id&&!options.__transitionComplete){
+      if(model.transitioning)return;
+      model.transitioning=true;model.held=null;model.root.classList.remove('map-fade-in');model.root.classList.add('map-fade-out');
+      model.transitionTimer=W.setTimeout(()=>{
+        model.transitionTimer=0;
+        if(!model.root?.classList.contains('open')){model.transitioning=false;return;}
+        model.root.classList.remove('map-fade-out');openWorld(id,{...options,__transitionComplete:true});model.root.classList.add('map-fade-in');
+        model.transitionRaf=W.requestAnimationFrame(()=>{model.transitionRaf=0;if(!model.root?.classList.contains('open')){model.transitioning=false;return;}model.transitionTimer=W.setTimeout(()=>{model.transitionTimer=0;model.root?.classList.remove('map-fade-in');model.transitioning=false;scheduleTick();},300);});
+      },180);
+      return;
+    }
+    model.place=place;model.map=map;
+    const requested=options.entry||map.spawn||map.authored?.spawn||{x:3,y:ROWS-3},arrival=nearestWalkableCell(map,requested);
+    model.x=arrival.x;model.y=arrival.y;model.direction=map.authored?.spawn?.facing??'down';model.frame=0;model.held=null;model.motion=null;
     state().active=place.id;markVisited(place.id);saveProgress();
     if(model.map.secretGate&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)model.map.artKey=model.map.unlockedArtKey||model.map.artKey;
     model.root.querySelector('.kp-title b').textContent=place.name;
@@ -242,9 +260,9 @@
     model.root.querySelector('.kp-title small').textContent=model.map.authoredKind==='pallet'?'Pallet Town · saída norte para Route 1':model.map.authoredKind==='route'?'Mapa de campanha · arte original com colisões':model.map.authoredKind==='city'?'Cidade · caminho integrado à campanha':'Mapa de campanha · arte original';
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     scheduleTick();
-    if(place.id==='pallet'||place.id==='pewter'||place.id==='cerulean')W.setTimeout(()=>W.PsyKantoTownStoryV1?.cinematic(place.id),220);
+    if(place.id==='pallet'||place.id==='pewter'||place.id==='cerulean')W.setTimeout(()=>W.PsyKantoTownStoryV1?.cinematic(place.id),options.__transitionComplete?420:220);
   }
-  function closeWorld() { model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
+  function closeWorld() { model.held=null;model.motion=null;model.transitioning=false;if(model.transitionTimer)W.clearTimeout(model.transitionTimer);model.transitionTimer=0;if(model.transitionRaf)W.cancelAnimationFrame(model.transitionRaf);model.transitionRaf=0;model.root?.classList.remove('open','map-fade-out','map-fade-in');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
     if(!model.root?.classList.contains('open'))return;
     e.stopPropagation();
@@ -254,15 +272,23 @@
     if(e.code==='Escape'){e.preventDefault();closeWorld();}
   }
   function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();scheduleTick();} }
-  function canEnterCell(x,y) {
-    const grid=model.map?.grid,row=grid?.[y],width=model.map?.width||COLS,height=model.map?.height||ROWS;
+  function walkableCell(map,x,y) {
+    const grid=map?.grid,row=grid?.[y],width=map?.width||COLS,height=map?.height||ROWS;
     if(x<0||y<0||x>=width||y>=height||!row||row[x]===undefined)return false;
-    const tile=row[x];
-    if(tile===3||tile===4||tile===6||tile===9)return false;
-    return !(model.map.npcs||[]).some(n=>n.x===x&&n.y===y);
+    if(![0,1,2,5].includes(row[x]))return false;
+    return !(map.npcs||[]).some(n=>n.x===x&&n.y===y);
+  }
+  function nearestWalkableCell(map,point) {
+    const width=map.width||COLS,height=map.height||ROWS,x0=Math.trunc(Number(point?.x)),y0=Math.trunc(Number(point?.y));
+    if(Number.isFinite(x0)&&Number.isFinite(y0)&&walkableCell(map,x0,y0))return{x:x0,y:y0};
+    for(let distance=1;distance<width+height;distance++)for(let y=Math.max(0,y0-distance);y<=Math.min(height-1,y0+distance);y++)for(let x=Math.max(0,x0-distance);x<=Math.min(width-1,x0+distance);x++)if(Math.abs(x-x0)+Math.abs(y-y0)===distance&&walkableCell(map,x,y))return{x,y};
+    return map.spawn||{x:3,y:height-3};
+  }
+  function canEnterCell(x,y) {
+    return walkableCell(model.map,x,y);
   }
   function move(dir) {
-    if(!model.place||!model.root?.classList.contains('open'))return false;
+    if(!model.place||model.transitioning||!model.root?.classList.contains('open'))return false;
     const now=performance.now();model.lastMove=now;
     const step={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(!step)return false;
     // Queue held input until the current tile transition finishes. Without
@@ -276,8 +302,8 @@
     const tile=model.map.grid[ny][nx];
     model.motion={fromX:model.x,fromY:model.y,toX:nx,toY:ny,start:now,duration:135};model.x=nx;model.y=ny;model.frame=(model.frame+1)%WALK_FRAME_COLUMNS.length;
     if(tile===5||tile===2)maybeEncounter();
-    if((model.map.portals||[]).some(portal=>portal.x===nx&&portal.y===ny)){interact();return;}
-    if(model.map.exit&&nx===model.map.exit.x&&ny===model.map.exit.y)interact();
+    if((model.map.portals||[]).some(portal=>portal.x===nx&&portal.y===ny)){interact();scheduleTick();return true;}
+    if(model.map.exit&&nx===model.map.exit.x&&ny===model.map.exit.y){interact();scheduleTick();return true;}
     updateObjective();render();scheduleTick();return true;
   }
   function maybeEncounter() {
@@ -311,7 +337,7 @@
     if(typeof portrait.animate==='function')portrait.animate([{opacity:.45,transform:'scale(.96)'},{opacity:1,transform:'scale(1)'}],{duration:220,easing:'ease-out'});
   }
   function interact() {
-    if(!model.place)return;
+    if(!model.place||model.transitioning)return;
     const place=model.place, ps=placeState(place.id), gymId=GYM_FOR_PLACE[place.id];
     const portal=(model.map.portals||[]).map(p=>({...p,distance:Math.abs(model.x-p.x)+Math.abs(model.y-p.y)}))
       .filter(p=>p.distance<=1).sort((a,b)=>a.distance-b.distance)[0];
