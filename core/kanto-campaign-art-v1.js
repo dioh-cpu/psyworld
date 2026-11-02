@@ -66,15 +66,17 @@
     if(map.exit)grid[map.exit.y][map.exit.x]=1;if(id==='mt-moon'){for(let y=1;y<=30;y++)for(let x=15;x<=17;x++)if(![6,9].includes(grid[y][x]))grid[y][x]=1;for(let x=13;x<=19;x++)if(![6,9].includes(grid[14][x]))grid[14][x]=1;grid[1][16]=1;grid[14][19]=1;}if(meta.gate){grid[meta.chest[1]][meta.chest[0]]=2;for(let y=meta.gate[1]-2;y<=meta.gate[1]+2;y++)for(let x=meta.gate[0]+1;x<=meta.gate[0]+5;x++)if(x!==meta.chest[0]||y!==meta.chest[1])grid[y][x]=2;grid[meta.gate[1]][meta.gate[0]]=9;for(let y=meta.gate[1]-2;y<=meta.gate[1]+2;y++)grid[y][meta.gate[0]+1]=9;for(let y=meta.gate[1]-2;y<=meta.gate[1]+2;y++)grid[y][meta.gate[0]+3]=9;map.secretGate={x:meta.gate[0],y:meta.gate[1]};map.secretWalls=[];for(let y=meta.gate[1]-2;y<=meta.gate[1]+2;y++)map.secretWalls.push({x:meta.gate[0]+1,y},{x:meta.gate[0]+3,y});map.secretChest={x:meta.chest[0],y:meta.chest[1]};const solved=(W.P?.psyKantoCampaignV1?.places?.[id]?.solved||[]).length>0||place?.mysteries?.some(m=>(W.P?.psyKantoCampaignV1?.places?.[id]?.solved||[]).includes(m.id));if(solved){grid[meta.gate[1]][meta.gate[0]]=1;map.secretWalls.forEach(p=>grid[p.y][p.x]=2);map.artKey=meta.openArt||meta.art;}}
     // Map exits are portals on the walkable edge. Their collision cells are
     // explicit so the character can reach them and return through the graph.
-    map.portals=(W.PsyKantoJourneyV1?.connectionsFor?.(id)||[]).map(link=>{
-      const [x,y]=id==='pallet'&&link.to==='route-1'?[16,13]:link.at,[ex,ey]=link.entry;
+    map.portals=(W.PsyKantoJourneyV1?.connectionsFor?.(id)||[]).flatMap(link=>{
+      const [x,y]=id==='pallet'&&link.to==='route-1'?[16,13]:link.at;
+      const [ex,ey]=id==='route-1'&&link.to==='pallet'?[16,3]:link.entry;
       if(grid[y]?.[x]!==undefined)grid[y][x]=1;
       // The authored artwork already has a central walk. Join only the local
       // portal tile to its nearest walkable neighbor, preserving solid art.
       const neighbors=[[x,y+1],[x,y-1],[x+1,y],[x-1,y]];
       const near=neighbors.find(([nx,ny])=>grid[ny]?.[nx]!==undefined&&![3,4,6,9].includes(grid[ny][nx]));
       if(near&&grid[y]?.[x]!==undefined)grid[y][x]=1;
-      return {x,y,to:link.to,entry:{x:ex,y:ey},gate:link.gate};
+      const portal={x,y,to:link.to,entry:{x:ex,y:ey},gate:link.gate};
+      return id==='pallet'&&link.to==='route-1'?[portal,{...portal,x:16,y:4}]:[portal];
     });
     // All exits are defined by the campaign graph now. Ignore legacy single
     // exits so side routes cannot be skipped by the old linear transition.
