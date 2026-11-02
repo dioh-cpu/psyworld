@@ -38,7 +38,7 @@
       // Keep roofs/walls solid; the plaza-to-Route-1 transition is at the lab door.
       for(const [x,y,w,h] of [[13,7,9,6],[4,9,9,7],[23,12,7,7],[20,22,9,7]])
         for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(grid[yy]?.[xx]!==undefined)grid[yy][xx]=9;
-      grid[13][16]=1;
+      grid[13][16]=1;grid[14][16]=1;
     }
     // Playable habitat overlays may only use traversable ground; leave trees, water and roofs as drawn.
     if(meta.grass)for(const [x,y,w,h] of meta.grass)for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(grid[yy]?.[xx]!==undefined&&!['3','4','6','9'].includes(grid[yy][xx]))grid[yy][xx]=2;
