@@ -57,6 +57,7 @@
   function isUnlocked(place) {
     if (!place) return false;
     if (place.id === 'pallet' || place.id === 'route-1') return true;
+    if (place.id === 'viridian') { try { if (JSON.parse(W.localStorage.getItem('psy_kanto_world_v2_quests')||'{}').viridian) return true; } catch (_) {} }
     const all = places(), index = all.findIndex(p => p.id === place.id), prev = all[index - 1];
     if (!prev) return true;
     const saved = journeySave();
@@ -360,7 +361,7 @@
     const detail=D.querySelector('#psy-kanto-atlas .psy-kanto-detail');if(!detail)return;
     const title=detail.querySelector('h3')?.textContent?.trim();if(!title)return;
     const place=places().find(p=>p.name===title);if(!place||detail.querySelector('.psy-kanto-enter-world'))return;
-    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ENTRAR NA LOCALIDADE':'🔒 CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=()=>openWorld(place.id);
+    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ENTRAR NA LOCALIDADE':'🔒 CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=()=>{if((place.id==='pallet'||place.id==='route-1')&&W.PsyKantoWorldV2)W.PsyKantoWorldV2.open(place.id);else openWorld(place.id)};
     detail.insertBefore(button,detail.querySelector('.psy-kanto-detail-kicker')?.nextSibling||detail.firstChild);
   }
   function monitorAtlas() {
