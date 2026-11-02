@@ -265,9 +265,14 @@
     if(!model.place||!model.root?.classList.contains('open'))return false;
     const now=performance.now();model.lastMove=now;
     const step={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(!step)return false;
+    // Queue held input until the current tile transition finishes. Without
+    // this guard, rapid taps can advance the collision cell ahead of the
+    // visible sprite and make it appear to slide through obstacles.
+    if(model.motion&&now-model.motion.start<model.motion.duration){scheduleTick();return true;}
+    if(model.motion)model.motion=null;
     const nx=model.x+step[0],ny=model.y+step[1];
     model.direction=dir;
-    if(!canEnterCell(nx,ny)){render();scheduleTick();return false;}
+    if(!canEnterCell(nx,ny)){model.held=null;model.frame=0;render();scheduleTick();return false;}
     const tile=model.map.grid[ny][nx];
     model.motion={fromX:model.x,fromY:model.y,toX:nx,toY:ny,start:now,duration:135};model.x=nx;model.y=ny;model.frame=(model.frame+1)%WALK_FRAME_COLUMNS.length;
     if(tile===5||tile===2)maybeEncounter();

@@ -78,7 +78,7 @@
   function draw(ctx,map,{offsetX=0,offsetY=0,TILE=28,width=ctx.canvas.width,height=ctx.canvas.height}={}){
     const key=map?.artKey,img=IMAGES[key];if(!img?.complete||!img.naturalWidth)return FAILED.has(key)?'missing':false;
     const cacheKey=`${key}:${TILE}`;let layer=SCALED_ART.get(cacheKey);
-    if(!layer){layer=document.createElement('canvas');layer.width=Math.ceil(32*TILE);layer.height=Math.ceil(32*TILE);const layerCtx=layer.getContext('2d');layerCtx.imageSmoothingEnabled=true;layerCtx.imageSmoothingQuality='high';layerCtx.drawImage(img,0,0,layer.width,layer.height);SCALED_ART.set(cacheKey,layer);}
+    if(!layer){layer=document.createElement('canvas');layer.width=Math.ceil(32*TILE);layer.height=Math.ceil(32*TILE);const layerCtx=layer.getContext('2d');layerCtx.imageSmoothingEnabled=true;layerCtx.imageSmoothingQuality='high';layerCtx.drawImage(img,0,0,layer.width,layer.height);if(SCALED_ART.size>=2)SCALED_ART.delete(SCALED_ART.keys().next().value);SCALED_ART.set(cacheKey,layer);}
     const sx=Math.max(0,-offsetX),sy=Math.max(0,-offsetY),dx=Math.max(0,offsetX),dy=Math.max(0,offsetY);
     const sw=Math.min(width-dx,layer.width-sx),sh=Math.min(height-dy,layer.height-sy);
     if(sw>0&&sh>0){ctx.imageSmoothingEnabled=false;ctx.drawImage(layer,sx,sy,sw,sh,dx,dy,sw,sh);}
