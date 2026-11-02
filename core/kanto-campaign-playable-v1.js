@@ -166,6 +166,9 @@
     stage.addEventListener('pointerup',finishTouch);stage.addEventListener('pointercancel',finishTouch);stage.addEventListener('lostpointercapture',finishTouch);
     D.addEventListener('keydown', onKeyDown); D.addEventListener('keyup', onKeyUp);
     W.addEventListener('resize', render);
+    W.addEventListener('psy-kanto-art-ready', () => {
+      if (model.root?.classList.contains('open')) W.requestAnimationFrame(render);
+    });
     return root;
   }
   function theme(place) { return THEMES[place.kind] || THEMES.route; }
@@ -180,7 +183,16 @@
     const provided=authoredMapProvider(place);
     if(provided?.authoredKind==='pallet'&&!W.PsyKantoAuthoredMapsV1?.get?.('pallet'))return {grid:[],width:0,height:0,authoredKind:null};
     const authoredKind=provided?.authoredKind||(place.id==='route-1'?'route':null);
-    if(authoredKind&&provided?.grid)return {...provided,width:provided.width||COLS,height:provided.height||ROWS,authoredKind};
+    if(authoredKind&&provided?.grid){
+      if(authoredKind==='pallet'){
+        const town=W.PsyKantoAuthoredMapsV1?.get?.('pallet');
+        const buildings=town?[town.playerHouse,town.professorHouse,town.rivalHouse].filter(Boolean):[];
+        return {...provided,width:provided.width||COLS,height:provided.height||ROWS,authoredKind,
+          authored:{...(provided.authored||{}),...(town||{}),buildings},
+          npcs:town?.npcs||provided.npcs};
+      }
+      return {...provided,width:provided.width||COLS,height:provided.height||ROWS,authoredKind};
+    }
     if (place.id === 'pallet') {
       const town=W.PsyKantoAuthoredMapsV1?.get?.('pallet'), townGrid=W.PsyKantoAuthoredMapsV1?.toGrid?.('pallet');
       if(town&&townGrid){const buildings=[town.playerHouse,town.professorHouse,town.rivalHouse].filter(Boolean);return {grid:townGrid,width:town.width,height:town.height,tileSize:town.tileSize,authoredKind:'pallet',authored:{...town,buildings},npcs:town.npcs,npc:town.npcs.find(n=>n.id==='oak')||null,object:null,exit:null,seed:hash('pallet')}}
@@ -417,7 +429,7 @@
       else {paint(x,y,((x*3+y*5)%7===0)?'#68b256':'#5fa64d');if((x*11+y*17)%6===0){c.fillStyle='#83c15e';c.fillRect(sx+5+(x%4)*3,sy+5+(y%3)*3,2,2)}}
     }
     const palettes={'pallet-home':{roof:'#bd654b',light:'#e78b62',dark:'#7e4037',wall:'#dfc69a'},'pallet-home-blue':{roof:'#4d78a3',light:'#78a1c1',dark:'#354f75',wall:'#e0d4b1'},'oak-lab':{roof:'#536f76',light:'#7b9c96',dark:'#354d5d',wall:'#d6c69a'}};
-    for(const b of map.authored.buildings){
+    for(const b of map.authored?.buildings||[]){
       const f=b.footprint,p=palettes[b.palette]||palettes['pallet-home'],x=ox+f.x*T,y=oy+f.y*T,w=f.width*T,h=f.height*T;
       c.fillStyle='#17281c66';c.fillRect(x+T*.16,y+h-T*.16,w,h*.18);c.fillStyle=p.dark;c.fillRect(x+2,y+2,w-4,h-3);
       c.fillStyle=p.roof;c.fillRect(x+4,y+3,w-8,h-T*.56);c.fillStyle=p.light;c.fillRect(x+T*.2,y+T*.2,w-T*.4,3);
@@ -440,8 +452,10 @@
     const worldHeight=rows*drawTile,scrollY=worldHeight>ch?Math.max(0,Math.min(worldHeight-ch,model.y*drawTile+drawTile/2-ch/2)):0;
     const offsetY=Math.floor((ch-worldHeight)/2-scrollY);
     const artDrawn=model.map.artKey?W.PsyKantoCampaignArtV1?.draw?.(c,model.map,{offsetX,offsetY,TILE:drawTile}):false;
-    if(!artDrawn&&model.map.artKey){/* artwork is loading; do not paint substitute tiles */}
-    else if(model.map.authoredKind==='pallet')drawPallet(c,model.map,offsetX,offsetY,drawTile);
+    // Keep the location playable when its optional illustration is missing or
+    // still loading. Pallet has a dedicated authored renderer; other places
+    // use the terrain grid until their artwork finishes loading.
+    if(!artDrawn&&model.map.authoredKind==='pallet')drawPallet(c,model.map,offsetX,offsetY,drawTile);
     else if(!artDrawn) {
       for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
         const t=g[y][x],sx=offsetX+x*drawTile,sy=offsetY+y*drawTile;

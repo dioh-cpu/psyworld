@@ -58,18 +58,19 @@
   }
   function drawCityFloor(c,w,h) {
     const b=cityScreenBounds(w,h), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
-    for(let ty=b.y0;ty<=b.y1;ty++)for(let tx=b.x0;tx<=b.x1;tx++){
-      if(typeof map!=='undefined' && map?.[ty]?.[tx]!==1) continue;
-      const sx=w/2-P.px-b.tile/2+tx*b.tile, sy=h/2-P.py-b.tile/2+ty*b.tile;
-      if(sx+b.tile<0||sy+b.tile<0||sx>w||sy>h)continue;
-      c.fillStyle='#211d30';c.fillRect(sx,sy,b.tile+1,b.tile+1);
-      const stone=19;
-      for(let row=0;row<Math.ceil(b.tile/stone);row++)for(let col=0;col<Math.ceil(b.tile/stone);col++){
-        const seed=(ty*73+tx*97+row*19+col*31+(row%2)*7)%shades.length;
-        const px=sx+col*stone+(row%2)*8, py=sy+row*stone;
-        c.fillStyle=shades[seed];rounded(c,px+1,py+1,stone-3,stone-3,3);c.fill();
-        c.fillStyle='rgba(205,170,118,.09)';c.fillRect(px+4,py+3,stone-9,1);
-      }
+    const worldOffsetX=w/2-P.px-b.tile/2, worldOffsetY=h/2-P.py-b.tile/2;
+    const left=worldOffsetX+b.x0*b.tile, top=worldOffsetY+b.y0*b.tile;
+    const right=worldOffsetX+(b.x1+1)*b.tile, bottom=worldOffsetY+(b.y1+1)*b.tile;
+    c.fillStyle='#211d30';c.fillRect(left,top,right-left,bottom-top);
+    // Lay stones on one world-anchored grid rather than restarting the
+    // pattern in every 55px map tile. This removes the visible square seams.
+    const stone=19, firstX=Math.floor(b.x0*b.tile/stone)-1, lastX=Math.ceil((b.x1+1)*b.tile/stone)+1;
+    const firstY=Math.floor(b.y0*b.tile/stone)-1, lastY=Math.ceil((b.y1+1)*b.tile/stone)+1;
+    for(let row=firstY;row<=lastY;row++)for(let col=firstX;col<=lastX;col++){
+      const seed=(row*19+col*31+(row%2)*7+shades.length*10)%shades.length;
+      const px=worldOffsetX+col*stone+(row%2)*9, py=worldOffsetY+row*stone;
+      c.fillStyle=shades[(seed+shades.length)%shades.length];rounded(c,px+1,py+1,stone-3,stone-3,3);c.fill();
+      c.fillStyle='rgba(205,170,118,.09)';c.fillRect(px+4,py+3,stone-9,1);
     }
   }
   function captureOrigin() {

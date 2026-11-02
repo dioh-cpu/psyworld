@@ -111,6 +111,8 @@
 
   let tutorialIndex=0,tutorialRoot=null,spotlight=null;
   function tutorialTarget(step){
+    const activeCampaignCanvas=D.querySelector('#psy-kanto-world.open #psy-kanto-canvas');
+    if(activeCampaignCanvas)return activeCampaignCanvas;
     const el=D.querySelector(step.target);if(el&&el.getClientRects().length)return el;
     const fallback=D.querySelector('#gameCanvas')||D.getElementById('hud-player');return fallback;
   }
