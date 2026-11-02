@@ -35,3 +35,20 @@ Escopo: SOMENTE branch `teste/kanto-pallet-rota1-v2`. A branch `main` e o domín
 - Testar no aparelho Android movimentos prolongados, toque no destino, joystick e entrada/saída de edifícios.
 - Validar visualmente os 30 modelos de personagens sob diferentes trajes e efeitos de animação.
 - Corrigir qualquer animação fonte que tenha frames cortados ou inconsistentes, caso identificado.
+
+## Correção posterior — renderização de sprites e movimentação no Android
+- O vídeo do usuário de 02/11/2026 mostrou que a V5 não resolveu completamente a lentidão e a oscilação visual.
+- Causa adicional: a referência de `index.html` ainda usava o identificador de cache V4, podendo preservar código antigo no navegador móvel.
+- Os 16 frames da spritesheet de treinador (origem 2048×2048) são pré-renderizados apenas uma vez para um atlas leve 192×256. A animação utiliza células uniformes 48×64, com corpo desenhado 33×46 e pés estáveis.
+- A arte do mapa é rasterizada uma vez para as dimensões do mundo e o desenho copia apenas o retângulo visível da câmera.
+- Seleção de texto, menu de contexto e arrasto nativo do navegador foram desabilitados SOMENTE no modo Kanto para impedir que o toque prolongado interrompa o joystick.
+- Joystick ativa com deslocamento menor e responde mais diretamente ao gesto.
+- Delta do movimento pode acompanhar até 120ms entre quadros para não causar câmera lenta quando o celular perde FPS. Busca A* agora processa 75 nós por quadro, mantendo a renderização responsiva.
+- O teste `tests/kanto-v6-sprites-movement.cjs` verifica tamanho/posição fixa em 24 desenhos, leitura de alfa só uma vez, cache do atlas e deslocamento equivalente a 60/15/10 FPS.
+- Sempre publicar com uma nova chave de cache no `index.html` da branch de TESTES.
+- Não houve modificações na branch pública `main`.
+
+### Lacunas que ainda exigem validação no aparelho
+- Experiência real no dispositivo Android específico, incluindo responsividade sob jank de CPU e navegação até portas.
+- Fidelidade de todos os trajes/fantasias e posicionamento do avatar com personagens de proporções diferentes.
+- Eventual ajuste fino do FPS, qualidade do desenho e velocidade conforme testes reais.
