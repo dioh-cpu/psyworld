@@ -69,10 +69,40 @@ if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.pos
 else drawMarker(c,400,410,'SAÍDA','#85efdc');
 drawPlayer(c,state.position.x,state.position.y);c.setTransform(1,0,0,1,0,0)}
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35);c.restore()}
-function drawPlayer(c,x,y){c.save();c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13,5,0,0,Math.PI*2);c.fill();const f=Math.sin(state.walkFrame*2)*1.4;
-// The character is always grounded: only feet intersect the walk surface.
-c.fillStyle='#f0f5f4';c.fillRect(x-9,y-13+f,7,16);c.fillRect(x+2,y-13-f,7,16);c.fillStyle='#24517a';c.fillRect(x-11,y-30,22,21);c.fillStyle='#e4b68f';c.beginPath();c.arc(x,y-38,10,0,Math.PI*2);c.fill();c.fillStyle='#273040';c.beginPath();c.arc(x,y-43,11,Math.PI,Math.PI*2);c.fill();c.fillStyle='#b33540';c.fillRect(x-9,y-29,6,12);c.fillRect(x+5,y-29,6,12);
-c.font='bold 12px system-ui';c.fillStyle='#fff';c.textAlign='center';c.shadowColor='#000';c.shadowBlur=4;c.fillText(player().name||'Treinador',x,y-59);c.restore()}
+function selectedAvatar(){const p=player(),id=p.playerCharacterId;
+  const character=(W.PsyHalloweenCharacters||[]).find(c=>c.id===id);
+  if(!character)return null;
+  const costumes=character.costumes||{},key=(p.playerCostumeByCharacter||{})[id];
+  const file=costumes[key]||costumes.basic;if(!file)return null;
+  return image('assets/characters/halloween/'+file);
+}
+function avatarBounds(entry,row,col){
+  entry.bounds=entry.bounds||{};const index=row*4+col;if(entry.bounds[index])return entry.bounds[index];
+  const im=entry.im,cellX=Math.floor(im.naturalWidth/4),cellY=Math.floor(im.naturalHeight/4);
+  if(!cellX||!cellY)return null;
+  try{const scan=D.createElement('canvas');scan.width=cellX;scan.height=cellY;
+    const sc=scan.getContext('2d',{willReadFrequently:true});sc.drawImage(im,col*cellX,row*cellY,cellX,cellY,0,0,cellX,cellY);
+    const pixels=sc.getImageData(0,0,cellX,cellY).data;
+    let minX=cellX,minY=cellY,maxX=-1,maxY=-1;
+    for(let j=0;j<cellY;j++)for(let i=0;i<cellX;i++)if(pixels[(j*cellX+i)*4+3]>30){
+      minX=Math.min(minX,i);minY=Math.min(minY,j);maxX=Math.max(maxX,i);maxY=Math.max(maxY,j)}
+    const b=maxX>=minX?{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1}:{x:0,y:0,w:cellX,h:cellY};
+    entry.bounds[index]=b;return b
+  }catch(_){return {x:0,y:0,w:cellX,h:cellY}}
+}
+function drawPlayer(c,x,y){c.save();c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13,5,0,0,Math.PI*2);c.fill();
+  const entry=selectedAvatar();let usedSprite=false;
+  if(entry?.loaded){const row=({down:0,left:1,right:2,up:3})[state.facing]||0;
+    const moving=state.held.size||state.path.length||state.joy;
+    const col=moving?(Math.floor(state.walkFrame)%2?3:1):0,b=avatarBounds(entry,row,col);
+    if(b){const cx=Math.floor(entry.im.naturalWidth/4),cy=Math.floor(entry.im.naturalHeight/4),scale=Math.min(34/b.w,49/b.h);
+      const w=b.w*scale,h=b.h*scale;c.drawImage(entry.im,col*cx+b.x,row*cy+b.y,b.w,b.h,x-w/2,y+7-h,w,h);usedSprite=true}}
+  if(!usedSprite){const f=Math.sin(state.walkFrame*2)*1.4;
+    c.fillStyle='#f0f5f4';c.fillRect(x-9,y-13+f,7,16);c.fillRect(x+2,y-13-f,7,16);
+    c.fillStyle='#24517a';c.fillRect(x-11,y-30,22,21);c.fillStyle='#e4b68f';c.beginPath();c.arc(x,y-38,10,0,Math.PI*2);c.fill();
+    c.fillStyle='#273040';c.beginPath();c.arc(x,y-43,11,Math.PI,Math.PI*2);c.fill();c.fillStyle='#b33540';c.fillRect(x-9,y-29,6,12);c.fillRect(x+5,y-29,6,12)}
+  c.font='bold 12px system-ui';c.fillStyle='#fff';c.textAlign='center';c.shadowColor='#000';c.shadowBlur=4;c.fillText(player().name||'Treinador',x,y-59);c.restore()}
+
 function drawInterior(c,inside){c.fillStyle='#2a3b46';c.fillRect(0,0,800,470);c.fillStyle='#bea47b';c.fillRect(70,75,660,355);c.strokeStyle='#e9d3a2';c.lineWidth=4;for(let y=95;y<426;y+=35){c.beginPath();c.moveTo(72,y);c.lineTo(728,y);c.stroke()}c.fillStyle='#426a6d';c.fillRect(70,74,660,38);
 const decor={center:['#e6eefa','✚', '#d97580'],market:['#d5e6fd','▤','#4376ac'],home:['#ead3ba','⌂','#995e43'],'house-east':['#decaba','⌂','#79624a'],'house-west':['#e3c2b2','⌂','#73584d'],lab:['#cedce9','⚗','#4f708e']};const d=decor[inside.id]||decor.home;
 c.fillStyle=d[0];c.fillRect(100,110,600,70);c.fillStyle=d[2];c.fillRect(105,117,590,6);c.font='bold 28px system-ui';c.textAlign='center';c.fillStyle='#203e54';c.fillText(inside.title,400,156);c.fillStyle='#73583d';c.fillRect(100,230,165,100);c.fillRect(535,230,165,100);
