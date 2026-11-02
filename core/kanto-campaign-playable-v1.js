@@ -452,15 +452,17 @@
     const worldHeight=rows*drawTile,scrollY=worldHeight>ch?Math.max(0,Math.min(worldHeight-ch,model.y*drawTile+drawTile/2-ch/2)):0;
     const offsetY=Math.floor((ch-worldHeight)/2-scrollY);
     const artDrawn=model.map.artKey?W.PsyKantoCampaignArtV1?.draw?.(c,model.map,{offsetX,offsetY,TILE:drawTile}):false;
-    // Keep the location playable when its optional illustration is missing or
-    // still loading. Pallet has a dedicated authored renderer; other places
-    // use the terrain grid until their artwork finishes loading.
+    // Campaign locations use their authored map art. Never substitute the
+    // generic terrain tiles when an illustration has not loaded or is absent.
     if(!artDrawn&&model.map.artKey){
-      const fallbackFloor=model.map.authoredKind==='route'?'#579d48':model.map.authoredKind==='pallet'?'#5fa64d':th.floor;
-      c.fillStyle=fallbackFloor;c.fillRect(0,0,cw,ch);
+      const missing=artDrawn==='missing';
+      c.fillStyle='#101827';c.fillRect(0,0,cw,ch);
+      c.fillStyle='#f5e5bd';c.textAlign='center';c.textBaseline='middle';
+      c.font='bold 18px system-ui';c.fillText(missing?'Arte desta área indisponível':'Carregando arte do mapa…',cw/2,ch/2-8);
+      if(missing){c.font='13px system-ui';c.fillStyle='#c7d2e2';c.fillText('Esta área precisa da ilustração própria da campanha.',cw/2,ch/2+20);}
+      return;
     }
-    if(!artDrawn&&model.map.authoredKind==='pallet')drawPallet(c,model.map,offsetX,offsetY,drawTile);
-    else if(!artDrawn) {
+    if(!artDrawn) {
       for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
         const t=g[y][x],sx=offsetX+x*drawTile,sy=offsetY+y*drawTile;
         if(model.map.authoredKind==='route'){

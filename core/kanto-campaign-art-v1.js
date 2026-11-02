@@ -6,7 +6,7 @@
   const BASE='/assets/kanto/campaign-art/';
   const NPC_BASE='/assets/kanto/campaign-art/npc/';
   const FILES={
-    'pallet':'pallet-town.png','viridian':'viridian-city.png','pewter':'pewter-city.png',
+    'pallet':'/assets/story/kanto-pallet-town-v1.webp','viridian':'viridian-city.png','pewter':'pewter-city.png',
     'cerulean':'cerulean-city.png','vermilion':'vermilion-city.png',
     'route-1':'route-1.png','route-1-open':'route-1-puzzle-open.png',
     'route-2':'route-2.png','route-3':'route-3-mountain.png',
@@ -15,8 +15,8 @@
   };
   const NPC_FILES={professor:'npc-professor.png',elder:'npc-elder.png',nurse:'npc-nurse.png',traveler:'npc-traveler.png',trainer:'npc-trainer.png',shopkeeper:'npc-shopkeeper.png',raincoat:'npc-raincoat.png',sailor:'npc-sailor.png',misty:'npc-misty.webp'};
   const NPC_IMAGES={};for(const [key,file] of Object.entries(NPC_FILES)){const img=new Image();img.onload=()=>W.dispatchEvent(new Event('psy-kanto-art-ready'));img.src=NPC_BASE+file;NPC_IMAGES[key]=img;}
-  const IMAGES={};
-  for(const [key,file] of Object.entries(FILES)){const img=new Image();img.onload=()=>W.dispatchEvent(new Event('psy-kanto-art-ready'));img.src=BASE+file;IMAGES[key]=img;}
+  const IMAGES={},FAILED=new Set();
+  for(const [key,file] of Object.entries(FILES)){const img=new Image();img.onload=()=>W.dispatchEvent(new Event('psy-kanto-art-ready'));img.onerror=()=>{FAILED.add(key);W.dispatchEvent(new Event('psy-kanto-art-ready'));};img.src=file.startsWith('/')?file:BASE+file;IMAGES[key]=img;}
   const META={
     'pallet':{art:'pallet',kind:'pallet',spawn:[16,29],npc:[16,10],object:[18,17],npcs:[{id:'oak',name:'Professor Carvalho',x:17,y:10,facing:'down',sprite:'professor'},{id:'rival',name:'Rival',x:22,y:17,facing:'left',sprite:'trainer'},{id:'town-guide',name:'Guia de Pallet',x:11,y:18,facing:'right',sprite:'shopkeeper'}],exit:[16,8]},
     'viridian':{art:'viridian',kind:'city',spawn:[16,29],npc:[16,20],object:[19,16],sprite:'traveler',exit:[16,1]},
@@ -75,7 +75,7 @@
     if(map.portals.length)map.exit=null;
     return map;
   }
-  function draw(ctx,map,{offsetX=0,offsetY=0,TILE=28}={}){const img=IMAGES[map?.artKey];if(!img?.complete||!img.naturalWidth)return false;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,offsetX,offsetY,32*TILE,32*TILE);return true;}
+  function draw(ctx,map,{offsetX=0,offsetY=0,TILE=28}={}){const key=map?.artKey,img=IMAGES[key];if(!img?.complete||!img.naturalWidth)return FAILED.has(key)?'missing':false;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,offsetX,offsetY,32*TILE,32*TILE);return true;}
   function drawNpc(ctx,npc,x,y,tile=28){const img=NPC_IMAGES[npc?.sprite||'traveler'];if(!img?.complete||!img.naturalWidth)return false;const h=tile*1.62,w=h*(img.naturalWidth/img.naturalHeight);ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x-w/2,y-h*.72,w,h);ctx.fillStyle='#fff';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(npc.name||'',x,y-h*.82);return true;}
   function has(place){const id=typeof place==='string'?place:place?.id;return !!META[id]&&!!DATA[id];}
   W.PsyKantoCampaignArtV1=Object.freeze({version:1,ids:Object.keys(META),build,draw,drawNpc,has});
