@@ -98,9 +98,9 @@ function drawNPC(c,npc,distance){
   c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,14,5,0,0,Math.PI*2);c.fill();
   if(npc.painted){c.restore();return}
   if(entry?.loaded){
-    c.shadowColor='#020617';c.shadowBlur=5;c.drawImage(entry.im,x-21,y-53,42,56);c.shadowBlur=0;
+    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-16,y-43,32,42);c.shadowBlur=0;
   } else {
-    c.fillStyle='#d4ad72';c.fillRect(x-8,y-30,16,26);
+    c.fillStyle='#d4ad72';c.fillRect(x-7,y-27,14,24);
     c.fillStyle='#f6cf9b';c.beginPath();c.arc(x,y-37,8,0,Math.PI*2);c.fill();
   }
   c.restore();
