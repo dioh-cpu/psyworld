@@ -149,7 +149,7 @@ for(const [id,room] of Object.entries(rooms)){
  if(id==='house-east')room.blocks=[[325,219,462,390],[24,220,154,433],[177,324,311,404]];
  if(id==='house-west')room.blocks=[[26,219,170,391],[300,227,457,344],[172,48,302,162],[22,417,111,495]];
  room.npcs.forEach((n,i)=>{
-   const y=id==='lab'?(i===0?363:408):id==='home'?400:id==='house-west'?399: id==='house-east'?405:id==='center'?(i===0?347:557):350;
+   const y=id==='lab'?(i===0?363:408):id==='home'?344:id==='house-west'?399: id==='house-east'?459:id==='center'?(i===0?347:557):350;
    n.at=[i===0?240:334,y];
    // Matching character and portrait art: no unrelated Halloween portraits.
    if(n.sprite)n.portrait=n.sprite;
