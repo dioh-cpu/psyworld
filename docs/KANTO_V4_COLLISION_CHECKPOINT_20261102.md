@@ -64,3 +64,17 @@ Escopo: SOMENTE branch `teste/kanto-pallet-rota1-v2`. A branch `main` e o domín
 - `tests/kanto-v6-sprites-movement.cjs` atualizado para manter verificação de caminhada em baixo FPS, delegando o teste visual ao V7.
 - Testes realizados por simulação isolada do código; validação no smartphone e inspeção visual com skins adicionais ainda são necessárias.
 - A produção `main` não deve receber a V7 sem autorização explícita.
+
+## 03/11/2026 — V8: conserto real do treinador quadrado na campanha
+- A falha visual foi confirmada na captura enviada pelo usuário: personagem do jogador substituído pelo desenho geométrico, com o avatar verdadeiro não carregando.
+- **Causa exata:** a V7 passou a preparar `entry.atlas`, mas `drawPlayer()` ainda exigia `entry.frames`, que não era mais gerado. Essa condição impedia o desenho do treinador real e ativava o placeholder.
+- `core/kanto-world-v2.js` agora usa `entry.loaded` e desenha o atlas verdadeiro; se a preparação falhar, desenha o frame original da imagem, nunca o boneco de blocos.
+- Perfis antigos que não possuem `playerCharacterId` recebem apenas um visual provisório de **treinador real** `basic-adventure-boy.webp`, sem alterar ou sobrescrever o save. Para contas com treinador e fantasia definidos, as escolhas continuam respeitadas.
+- O NPC do norte (Guarda da Rota) e outros NPCs renderizados têm escala 32×42 e pés ancorados, em vez da imagem ampliada 42×56.
+- `core/trainer-walk-v1.js` preserva os 16 frames das spritesheets originais sem a manipulação horizontal de tiras de pixels introduzida na V7; ciclo `[1,2,3,0]` enquanto anda, repouso no quadro 0 parado.
+- O tamanho visual e a velocidade de movimentação não foram alterados. Código e teste em `tests/trainer-walk-v7.cjs` verificam frames, carregamento e ausência do placeholder.
+- Manter `main` público intacto e publicar SOMENTE na preview de `teste/kanto-pallet-rota1-v2`.
+
+### Pendências
+- Validar aparência no Android real, sobretudo as seis opções de personagem e fantasias.
+- Os personagens e objetos efetivamente pintados no fundo da cidade exigem revisão da arte em separado se destoarem do padrão de escala.
