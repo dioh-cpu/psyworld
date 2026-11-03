@@ -181,6 +181,20 @@
     if (W.__psyIdleActive || W.PSY_RUNTIME_MODE?.is?.('adventure')) return false;
     return true;
   }
+  // City and Kanto use the same four-step walking cycle and prerendered poses.
+  const cityWalk={phase:0,last:0,moving:false,identity:''};
+  function cityWalkPhase(moving,identity){
+    const now=W.performance?.now?.()||Date.now();
+    if(!moving){cityWalk.moving=false;cityWalk.phase=0;cityWalk.last=now;return 0}
+    if(!cityWalk.moving||cityWalk.identity!==identity){
+      cityWalk.phase=0;cityWalk.last=now;cityWalk.moving=true;cityWalk.identity=identity;
+    }else if(now-cityWalk.last>=130){
+      const steps=Math.min(4,Math.floor((now-cityWalk.last)/130));
+      cityWalk.phase=(cityWalk.phase+steps)%4;
+      cityWalk.last+=steps*130;
+    }
+    return cityWalk.phase;
+  }
   function renderAvatar() {
     const p = player(), id = p?.playerCharacterId, c = character(id);
     const img = D.getElementById('player-poke-sprite');
@@ -196,13 +210,22 @@
     if (!entry || !entry.ready) { hideAvatar(); return false; }
     if (img) img.style.display = 'none';
     const moving = !!p.moving;
-    let frame = 0;
-    if (moving) frame = Math.floor((W.performance?.now?.() || Date.now()) / 130) % 4;
+    const walk=W.PsyTrainerWalkV1;
+    const phase=cityWalkPhase(moving,id+':'+key);
+    const frame=walk?walk.column(phase,moving):moving?[1,2,3,2][phase]:0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(entry.img, frame * CELL, directionRow() * CELL, CELL, CELL, 0, 0, canvas.width, canvas.height);
-    const bounce = moving && frame % 2 ? -3 : 0;
-    canvas.style.transform = `translate(-50%, calc(-82% + ${bounce}px))`;
+    if(walk){
+      if(!entry.walkAtlas)entry.walkAtlas=walk.getAtlas(entry.img);
+      if(entry.walkAtlas){
+        ctx.imageSmoothingEnabled=true;
+        walk.draw(ctx,entry.walkAtlas,directionRow(),frame,15,14,88,94);
+      }
+    }else{
+      ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(entry.img,frame*CELL,directionRow()*CELL,CELL,CELL,0,0,canvas.width,canvas.height);
+    }
+    // No CSS bounce: canvas and feet stay at the same world-space position.
+    canvas.style.transform='translate(-50%, -82%)';
     canvas.style.display = 'block';
     canvas.dataset.character = id;
     canvas.dataset.costume = key;
