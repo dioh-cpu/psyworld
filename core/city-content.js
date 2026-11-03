@@ -1,5 +1,5 @@
 (function(){
-  const KEY='psyworld_city_content_collapsed_v1';
+  const KEY='psyworld_city_content_collapsed_v2';
 
   window.toggleCityGameContent=function(force){
     const dock=document.getElementById('world-btn-float');
@@ -18,8 +18,9 @@
   };
 
   function restoreCityContentState(){
-    let collapsed=false;
-    try{collapsed=localStorage.getItem(KEY)==='1'}catch(e){}
+    let collapsed=false, saved=null;
+    try{saved=localStorage.getItem(KEY);collapsed=saved==='1'}catch(e){}
+    if(saved===null)collapsed=!!window.matchMedia?.('(max-width: 760px)').matches;
     window.toggleCityGameContent(collapsed);
   }
 
@@ -36,7 +37,7 @@
   if(document.getElementById('psy-audio-system-script'))return;
   const s=document.createElement('script');
   s.id='psy-audio-system-script';
-  s.src='core/audio.js?v=1';
+  s.src='core/audio.js?v=2';
   s.async=true;
   document.head.appendChild(s);
 })();

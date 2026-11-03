@@ -6,8 +6,8 @@
 'use strict';
 const W=window,D=document;
   // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
-const PHYSICAL_BUILD='PSYWORLD_IDLE_SOCIAL_LAYER_FIX_20260930';
-function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSYWORLD_IDLE_BOSS_LOOT_HUNTS_20261001':isIdleShared?'IDLE_SOCIAL_LAYER_FIX_20260930_V1':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
+const PHYSICAL_BUILD='PSYWORLD_BATTLE_ARENA_V1_20261030';
+function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSYWORLD_IDLE_MOBILE_HUD_V2_20261031':isIdleShared?'IDLE_SOCIAL_LAYER_FIX_20260930_V1':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
   idleworld:{icon:'🌿',name:'PSY IDLE',desc:'Hunts individuais em mapa top-down, colisão em grade, IA e sistemas de progressão próprios.',entry:['openIdleRealisticV2']},
