@@ -6,10 +6,11 @@ const pixels=new Uint8ClampedArray(384*384*4);for(let row=0;row<4;row++)for(let 
 let scans=0,renderOps=0;
 const D={createElement(){return{width:0,height:0,getContext(){return{drawImage(){renderOps++},getImageData(){scans++;return{data:pixels}},clearRect(){},beginPath(){},rect(){},clip(){},save(){},restore(){},set imageSmoothingEnabled(v){},set imageSmoothingQuality(v){}}}}}};
 const W={};vm.runInNewContext(walk,{window:W,document:D});const anim=W.PsyTrainerWalkV1;
-assert.equal(anim.columns.join(','),'1,2,3,2');
+assert.equal(anim.columns.join(','),'1,2,3,0');
 const img={naturalWidth:2048,naturalHeight:2048},atlas=anim.getAtlas(img);
 assert.strictEqual(anim.getAtlas(img),atlas);assert.equal(scans,1);assert.equal(atlas.width,192);assert.equal(atlas.height,256);
-assert(renderOps>70);
+assert.equal(renderOps,33,'16 original frames, each drawn intact without pixel strip warping');
+assert(!walk.includes('for(let y=40;y<TH;y+=2)'),'Previous fake leg slicing must not return');
 const calls=[];const c={drawImage(...a){calls.push(a)}};
 for(let row=0;row<4;row++)for(let i=0;i<8;i++)anim.draw(c,atlas,row,anim.column(i,true),5,9,48,64);
 assert.equal(calls.length,32);assert(calls.every(a=>a[5]===5&&a[6]===9&&a[7]===48&&a[8]===64));
@@ -22,4 +23,23 @@ assert.equal(seq.join(','),'0,1,2,3,0,1,2,3');assert.equal(phase(false,'basic'),
 assert(city.includes('walk.draw(ctx,entry.walkAtlas')&&!city.includes('const bounce = moving && frame % 2'));
 assert(kanto.includes('W.PsyTrainerWalkV1?.column')&&kanto.includes('W.PsyTrainerWalkV1.draw'));
 assert(html.indexOf('src="core/trainer-walk-v1.js')<html.indexOf('src="core/halloween-ui.js'));
-console.log('PASS V7: alternative strides, fixed feet, city/Kanto cycle, cached poses');
+
+// Regression for the broken V7 avatar gate (entry.frames no longer exists).
+const startSel=kanto.indexOf('function selectedAvatar(){'),endSel=kanto.indexOf('function prepareAvatar(entry){',startSel);
+assert(startSel>=0&&endSel>startSel);
+let p={};
+const requested=[];
+const select=new Function('player','W','image',
+  kanto.slice(startSel,endSel)+'return selectedAvatar')(
+  ()=>p,{PsyHalloweenCharacters:[
+    {id:'gothic_boy',costumes:{basic:'basic-gothic-boy.webp',divine:'divine-gothic-boy.webp'}},
+    {id:'adventure_boy',costumes:{basic:'basic-adventure-boy.webp'}}
+  ]},url=>{requested.push(url);return {loaded:true,atlas:{},url}});
+assert(select().url.endsWith('/basic-adventure-boy.webp'),'Uninitialized profile must show a real trainer');
+p={playerCharacterId:'gothic_boy',playerCostumeByCharacter:{gothic_boy:'divine'}};
+assert(select().url.endsWith('/divine-gothic-boy.webp'),'Chosen costume must be respected');
+assert(kanto.includes('if(entry?.loaded&&entry.atlas){'),'Sprite atlas must be rendered even without entry.frames');
+assert(!kanto.includes('if(entry?.loaded&&entry.frames){'),'Broken V7 gate must not return');
+assert(!kanto.includes("c.fillStyle='#24517a'"),'Blocky placeholder must not be drawn');
+
+console.log('PASS V8: original 4-step poses intact, fixed feet, city/Kanto cycle, cached poses');
