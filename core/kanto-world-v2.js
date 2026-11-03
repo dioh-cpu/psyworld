@@ -14,7 +14,7 @@ function putProgress(){try{localStorage.setItem(KEY,JSON.stringify(progress()))}
 function questDone(){const q=progress();return !!(q.oak&&q.center&&q.market&&q.guard)}
 function mark(key){const q=progress();if(q[key])return;q[key]=true;putProgress();hud()}
 function player(){try{return typeof P!=='undefined'?P:(W.P||{})}catch(_){return W.P||{}}}
-function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{if(url.startsWith('assets/characters/halloween/'))prepareAvatar(o);o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
+function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{if(url.startsWith('assets/characters/halloween/')){try{prepareAvatar(o)}catch(err){o.spriteError=true;console.warn('Trainer sprite could not be prepared',err)}}o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
 function makeUI(){if(state.root)return;const root=D.createElement('div');root.id='psy-kanto-world-v2';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
 root.innerHTML='<header class="kw2-top"><button type="button" data-atlas>← ATLAS</button><div><strong class="kw2-title"></strong><small class="kw2-subtitle"></small></div><button type="button" class="kw2-close" aria-label="Fechar">×</button></header><div class="kw2-stage"><canvas aria-label="Mapa jogável com colisões"></canvas><div class="kw2-joystick"></div><section class="kw2-dialog"><div class="kw2-dialog-main"><img class="kw2-portrait" alt="Retrato do NPC"/><div><div class="kw2-dialog-title"></div><div class="kw2-expression"></div><div class="kw2-dialog-body"></div></div></div><div class="kw2-dialog-actions"></div></section></div><footer class="kw2-footer"><div class="kw2-objective"></div><div class="kw2-pad"><button data-dir="up" aria-label="Subir">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Descer">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button class="kw2-interact" data-interact>INTERAGIR</button></footer>';
 root.addEventListener('contextmenu',e=>e.preventDefault());
@@ -106,15 +106,28 @@ function drawNPC(c,npc,distance){
   c.restore();
   if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,y-60,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,y-56);c.restore()}
 }
-function selectedAvatar(){const p=player(),id=p.playerCharacterId;
-  const character=(W.PsyHalloweenCharacters||[]).find(c=>c.id===id);
-  if(!character)return null;
-  const costumes=character.costumes||{},key=(p.playerCostumeByCharacter||{})[id];
-  const file=costumes[key]||costumes.basic;if(!file)return null;
-  return image('assets/characters/halloween/'+file);
+// Preview accounts created before the trainer character picker do not always
+// have playerCharacterId. Use a real supported trainer graphic, never a block
+// placeholder. This is display-only: it does not mutate the player's save.
+function selectedAvatar(){
+  const p=player();
+  const basics={
+    black_boy:'basic-black-boy.webp',black_girl:'basic-black-girl.webp',
+    gothic_boy:'basic-gothic-boy.webp',gothic_girl:'basic-gothic-girl.webp',
+    adventure_boy:'basic-adventure-boy.webp',adventure_girl:'basic-adventure-girl.webp'
+  };
+  const id=p.playerCharacterId||p.trainerCharacterId||p.characterId||'adventure_boy';
+  const c=(W.PsyHalloweenCharacters||[]).find(ch=>ch.id===id);
+  const costumes=c?.costumes||{};
+  const selected=p.playerCostumeByCharacter?.[id]||p.playerCostumeKey||'basic';
+  const basic=costumes.basic||basics[id]||basics.adventure_boy;
+  const wanted=costumes[selected]||basic;
+  let entry=image('assets/characters/halloween/'+wanted);
+  if(entry?.error&&wanted!==basic)entry=image('assets/characters/halloween/'+basic);
+  if(entry?.error&&basic!==basics.adventure_boy)entry=image('assets/characters/halloween/'+basics.adventure_boy);
+  return entry;
 }
-// All 16 source frames are measured once from a 384px thumbnail.
- // Drawing never reads pixel buffers or changes sprite scale frame-by-frame.
+// Cached sprite atlas, prepared after the image finishes loading.
 function prepareAvatar(entry){
   const walk=W.PsyTrainerWalkV1;
   if(walk){entry.atlas=walk.getAtlas(entry.im);entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight}
@@ -123,7 +136,7 @@ function drawPlayer(c,x,y){
   c.save();
   c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13,5,0,0,Math.PI*2);c.fill();
   const entry=selectedAvatar();let usedSprite=false;
-  if(entry?.loaded&&entry.frames){
+  if(entry?.loaded&&entry.atlas){
     const row=({down:0,left:1,right:2,up:3})[state.facing]||0;
     const moving=state.held.size||state.path.length||state.joy;
     const col=W.PsyTrainerWalkV1?.column(Math.floor(state.walkFrame),moving)||0;
@@ -134,14 +147,8 @@ function drawPlayer(c,x,y){
       usedSprite=true;
     }
   }
-  if(!usedSprite){
-    const f=Math.sin(state.walkFrame*2)*1.4;
-    c.fillStyle='#f0f5f4';c.fillRect(x-9,y-13+f,7,16);c.fillRect(x+2,y-13-f,7,16);
-    c.fillStyle='#24517a';c.fillRect(x-11,y-30,22,21);
-    c.fillStyle='#e4b68f';c.beginPath();c.arc(x,y-38,10,0,Math.PI*2);c.fill();
-    c.fillStyle='#273040';c.beginPath();c.arc(x,y-43,11,Math.PI,Math.PI*2);c.fill();
-    c.fillStyle='#b33540';c.fillRect(x-9,y-29,6,12);c.fillRect(x+5,y-29,6,12);
-  }
+  // Never substitute a blocky test character while the real sheet loads.
+  // The canvas redraws as soon as the trainer atlas becomes available.
   c.font='bold 12px system-ui';c.fillStyle='#fff';c.textAlign='center';
   c.shadowColor='#000';c.shadowBlur=4;
   c.fillText(player().name||'Treinador',x,y-59);c.restore();
