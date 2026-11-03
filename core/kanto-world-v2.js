@@ -30,10 +30,28 @@ function showDialog(title,body,actions=[],portrait='',emote=''){const d=state.ro
 const im=d.querySelector('.kw2-portrait');im.style.display=portrait?'block':'none';if(portrait)im.src=portrait;
 const box=d.querySelector('.kw2-dialog-actions');box.replaceChildren();const options=actions.length?actions:[{text:'CONTINUAR'}];options.forEach(a=>{const b=D.createElement('button');b.textContent=a.text;b.classList.toggle('primary',!!a.primary);b.onclick=()=>{d.classList.remove('open');state.dialogOpen=false;a.run?.();hud()};box.appendChild(b)});
 d.classList.add('open');state.dialogOpen=true;state.path=[];state.held.clear();state.navRequest++;}
-function hud(){if(!state.root)return;const q=progress();const title=state.inside?state.inside.title:state.world?.title||'';state.root.querySelector('.kw2-title').textContent=title;
-state.root.querySelector('.kw2-subtitle').textContent=state.inside?'Converse com os moradores e utilize a porta para sair':state.world?.id==='pallet'?'Lar do Professor Carvalho':'Caminho para Viridian City · níveis 1 a 3';
-let info='';if(state.world?.id==='pallet')info=`Missão de Pallet: Carvalho ${q.oak?'✓':'◻'} · Centro ${q.center?'✓':'◻'} · Market ${q.market?'✓':'◻'} · Guarda ${q.guard?'✓':'◻'}`;else info='Rota 1 · 4 campos acessíveis · siga ao norte para Viridian · encontros Lv.1–3';
-state.root.querySelector('.kw2-objective').textContent=info;
+function hud(){
+ if(!state.root)return;
+ const q=progress(),where=state.inside;
+ state.root.querySelector('.kw2-title').textContent=where?.title||state.world?.title||'Kanto';
+ const subtitles={
+  center:'Um refúgio para sua equipe',market:'Preparativos para a jornada',
+  lab:'Descobertas e primeiros passos',home:'Um lugar para recomeçar',
+  'house-east':'Histórias da vila','house-west':'Histórias à beira-mar'
+ };
+ state.root.querySelector('.kw2-subtitle').textContent=where?
+   subtitles[where.id]||'Um lugar de Pallet Town':
+   state.world?.id==='pallet'?'Sua primeira aventura começa aqui':
+   'O caminho até Viridian City';
+ let message='';
+ if(state.world?.id==='pallet'){
+   if(!q.oak)message='Jornada: visite o laboratório e converse com o Professor Carvalho.';
+   else if(!q.center)message='Jornada: encontre a enfermeira no Centro Pokémon.';
+   else if(!q.market)message='Jornada: procure o lojista no Poké Mart.';
+   else if(!q.guard)message='Jornada: encontre o guarda no caminho norte de Pallet.';
+   else message='A estrada está livre! Descubra os mistérios da Rota 1.';
+ }else message='Rota 1: explore os campos de grama e siga para Viridian City.';
+ state.root.querySelector('.kw2-objective').textContent=message;
 }
 function open(id,options={}){if(!['pallet','route-1'].includes(id))return false;
 if(id==='route-1'&&!progress().guard&&!options.skipGuard){open('pallet');setTimeout(()=>showDialog('Rota 1 bloqueada','Primeiro fale com o guarda no norte de Pallet. Ele libera a viagem após a missão inicial.'),80);return false}
@@ -41,7 +59,7 @@ makeUI();D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.cl
 const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}return true;}
 function close(){state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
-function positionValid(x,y){if(state.inside)return x>65&&x<735&&y>84&&y<426&&!state.inside.blocks.some(([a,b,c,d])=>x>=a&&x<=c&&y>=b&&y<=d);
+function positionValid(x,y){if(state.inside)return x>60&&x<740&&y>164&&y<445&&!state.inside.blocks.some(([a,b,c,d])=>x>=a-6&&x<=c+6&&y>=b-6&&y<=d+6);
 return DATA.walkable(state.world,x,y,5)}
 function move(dx,dy,dt){if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?144:143,dist=speed*dt,steps=Math.ceil(dist/4.5);let mx=0,my=0;
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
@@ -93,15 +111,12 @@ else drawMarker(c,400,410,'SAÍDA','#85efdc');
 drawPlayer(c,state.position.x,state.position.y);c.setTransform(1,0,0,1,0,0)}
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35);c.restore()}
 function drawNPC(c,npc,distance){
-  const x=npc.at[0],y=npc.at[1],entry=image(npc.portrait);
+  const x=npc.at[0],y=npc.at[1],entry=image(npc.sprite||npc.portrait);
   c.save();
   c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,14,5,0,0,Math.PI*2);c.fill();
   if(npc.painted){c.restore();return}
   if(entry?.loaded){
-    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-16,y-43,32,42);c.shadowBlur=0;
-  } else {
-    c.fillStyle='#d4ad72';c.fillRect(x-7,y-27,14,24);
-    c.fillStyle='#f6cf9b';c.beginPath();c.arc(x,y-37,8,0,Math.PI*2);c.fill();
+    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-18,y-52,36,50);c.shadowBlur=0;
   }
   c.restore();
   if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,y-60,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,y-56);c.restore()}
@@ -160,30 +175,90 @@ function drawPlayer(c,x,y){
   c.fillText(player().name||'Treinador',x,y-59);c.restore();
 }
 
-function drawInterior(c,inside){c.fillStyle='#2a3b46';c.fillRect(0,0,800,470);c.fillStyle='#bea47b';c.fillRect(70,75,660,355);c.strokeStyle='#e9d3a2';c.lineWidth=4;for(let y=95;y<426;y+=35){c.beginPath();c.moveTo(72,y);c.lineTo(728,y);c.stroke()}c.fillStyle='#426a6d';c.fillRect(70,74,660,38);
-const decor={center:['#e6eefa','✚', '#d97580'],market:['#d5e6fd','▤','#4376ac'],home:['#ead3ba','⌂','#995e43'],'house-east':['#decaba','⌂','#79624a'],'house-west':['#e3c2b2','⌂','#73584d'],lab:['#cedce9','⚗','#4f708e']};const d=decor[inside.id]||decor.home;
-c.fillStyle=d[0];c.fillRect(100,110,600,70);c.fillStyle=d[2];c.fillRect(105,117,590,6);c.font='bold 28px system-ui';c.textAlign='center';c.fillStyle='#203e54';c.fillText(inside.title,400,156);c.fillStyle='#73583d';c.fillRect(100,230,165,100);c.fillRect(535,230,165,100);
-c.fillStyle='#ded5c1';c.fillRect(110,240,145,78);c.fillRect(545,240,145,78);c.fillStyle='#ffffffbb';c.fillRect(372,418,55,25);c.fillStyle='#1d3b40';c.font='bold 14px system-ui';c.fillText('SAÍDA',400,448)}
-function currentTargets(){if(state.inside)return [{type:'exit',at:[400,410]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
+function drawInterior(c,inside){
+  const bg=image(inside.art||'assets/kanto/interiors/'+inside.id+'-v9.svg');
+  if(bg?.loaded){
+    c.imageSmoothingEnabled=true;
+    c.drawImage(bg.im,0,0,800,470);
+  }else{
+    // The stage fades from its actual game-art palette as SVG loads.
+    c.fillStyle='#374f60';c.fillRect(0,0,800,470);
+  }
+  // Only an exit floor marker; furniture, wall art and lighting belong to
+  // the room illustration, never to debug rectangles on top of it.
+  c.save();
+  c.strokeStyle='#a9e2df';c.lineWidth=2;c.globalAlpha=.64;
+  c.beginPath();c.moveTo(373,442);c.lineTo(427,442);c.stroke();
+  c.restore();
+}
+function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
 function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
 if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
-function talk(npc){const id=npc.id,pr=npc.portrait||'',em=npc.emote||'sereno';if(id==='oak'){mark('oak');showDialog('Professor Carvalho','A jornada começa com curiosidade. Visite o Centro Pokémon e o Poké Mart antes de pedir ao guarda a passagem para a Rota 1.',[{text:'ENTENDI',primary:true}],pr,em)}
-else if(id==='gate'){const q=progress();if(!q.oak||!q.center||!q.market){showDialog('Guarda da Rota',`Para seguir até Viridian, complete as orientações de Carvalho. Falta: ${[!q.oak?'Carvalho':'',!q.center?'Centro':'',!q.market?'Market':''].filter(Boolean).join(', ')}.`,[],pr,'atento')}else{mark('guard');showDialog('Guarda da Rota','Tudo certo! O caminho ao norte está liberado. A Rota 1 tem quatro campos de grama; os encontros vão até o nível 3.',[{text:'SEGUIR PARA ROTA 1',primary:true,run:()=>open('route-1')},{text:'EXPLORAR PALLET'}],pr,'alegre')}}
-else if(id==='lia'){mark('lia');showDialog('Lia','Missão secundária: encontre Nina perto da casa oeste. Explore as ruas e repare como cada obstáculo impede a passagem.',[],pr,'empolgada')}
-else if(id==='neighbor'){mark('neighbor');showDialog('Nina','Você encontrou minha casa! As portas se abrem com INTERAGIR, mas paredes e cercas não podem ser atravessadas.',[],pr,'feliz')}
-else if(id==='route-guide'){showDialog('Exploradora Nara','Há quatro espaços de caça nesta rota. Todos são acessíveis pelo caminho principal. Não se esqueça: nível máximo 3.',[],pr,'curiosa')}
-else if(id==='nurse'){showDialog('Enfermeira', 'Quer recuperar a energia dos seus Pokémon?', [{text:'CURAR TIME',primary:true,run:healTeam},{text:'AGORA NÃO'}],pr,'acolhedora')}
-else if(id==='vendor'){showDialog('Atendente', 'Bem-vindo ao Poké Mart! Produtos para a jornada e suprimentos de viagem.', [{text:'ABRIR LOJA',primary:true,run:openShop},{text:'VOLTAR'}],pr,'animado')}
-else if(id==='assistant'){showDialog('Assistente do Laboratório','O professor está estudando os habitats da região. Registre os Pokémon da Rota 1 e volte depois.',[],pr,'curioso')}
-else showDialog(npc.name,'Que bom conhecer mais um treinador nesta cidade!',[],pr,em)}
-function enterDoor(door){state.navRequest++;state.navCells.clear();const id=door.id;state.lastOutdoor={...state.position};state.inside={id,title:door.title,blocks:[[80,76,720,95],[110,235,255,315],[545,235,690,315]],npcs:[]};state.position={x:400,y:384};state.path=[];
-if(id==='center'){mark('center');state.inside.npcs.push({id:'nurse',name:'Enfermeira',at:[400,215],portrait:'assets/halloween/npc-mina.svg',emote:'acolhedora'});showDialog('Centro Pokémon','Bem-vindo! Aqui você pode curar sua equipe. O atendimento também conta como etapa da missão inicial.')}
-else if(id==='market'){mark('market');state.inside.npcs.push({id:'vendor',name:'Atendente',at:[400,215],portrait:'assets/halloween/npc-vendor.webp',emote:'animado'});showDialog('Poké Mart','Bem-vindo ao mercado! Converse com o atendente para abrir a loja.')}
-else if(id==='lab'){state.inside.npcs.push({id:'oak',name:'Professor Carvalho',at:[400,200],portrait:'assets/story/professor-oak.png',emote:'sereno'});showDialog('Laboratório do Professor Carvalho','O professor está esperando por você. Converse com ele para começar sua jornada.')}
-else if(id==='home')showDialog('Sua Casa','Um espaço seguro para descansar antes de começar a aventura.');else showDialog(door.title,'Um interior acessível, com colisões para os móveis e saída pela porta.');hud()}
+function talk(npc){
+ const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
+ if(id==='oak'){
+  mark('oak');
+  showDialog('Professor Carvalho','Toda grande jornada começa com uma escolha. Em Pallet, conheça quem cuida dos Pokémon e quem prepara seus suprimentos. Depois, o guarda abrirá o caminho de Viridian.',[
+   {text:'ENTENDI',primary:true}],pr,em);
+ }else if(id==='gate'){
+  const q=progress();
+  if(!q.oak||!q.center||!q.market){
+   const missing=[!q.oak?'o laboratório':'',!q.center?'o Centro Pokémon':'',!q.market?'o Poké Mart':''].filter(Boolean);
+   showDialog('Guarda da Rota','Carvalho pediu que ninguém partisse sem preparo. Visite '+missing.join(', ')+'. Então a trilha estará livre.',[],pr,'atento');
+  }else{
+   mark('guard');
+   showDialog('Guarda da Rota','Boa viagem! A Rota 1 está livre. Explore os quatro campos de caça e prossiga com cuidado até Viridian.',[
+     {text:'SEGUIR PARA ROTA 1',primary:true,run:()=>open('route-1')},
+     {text:'EXPLORAR PALLET'}],pr,'alegre');
+  }
+ }else if(id==='lia'){
+  mark('lia');
+  showDialog('Lia','Ouvi falar de histórias antigas no porto. Nina, na casa do lado leste, talvez saiba mais sobre aquela luz que surge ao anoitecer.',[],pr,'empolgada');
+ }else if(id==='neighbor'||id==='child'){
+  mark('neighbor');
+  showDialog('Luna','Dizem que há marcas escondidas entre as flores da vila. O velho pescador Abel costuma contar como encontrá-las.',[],pr,'curiosa');
+ }else if(id==='nurse'){
+  mark('center');
+  showDialog('Enfermeira Íris','Seus parceiros também precisam de descanso. Posso recuperar a energia da sua equipe antes da jornada?',[
+   {text:'CURAR EQUIPE',primary:true,run:healTeam},{text:'AGORA NÃO'}],pr,'acolhedora');
+ }else if(id==='vendor'){
+  mark('market');
+  showDialog('Davi, o lojista','O pessoal de Pallet começa sempre pelo básico: Poké Bolas, remédios e um pouco de coragem. Precisa de alguma coisa?',[
+    {text:'VER MERCADORIAS',primary:true,run:openShop},{text:'VOLTAR'}],pr,'animado');
+ }else if(id==='assistant'){
+  showDialog('Pesquisadora Celina','Carvalho procura registros de habitats e fenômenos nas florestas de Kanto. Registre o que encontrar na Rota 1.',[],pr,'curiosa');
+ }else if(id==='mother'){
+  showDialog('Elisa','Preparei sua mochila e deixei a casa aberta. Quando sentir saudade, volte para descansar. O Professor Carvalho já está esperando você.',[],pr,'carinhosa');
+ }else if(id==='fisher'){
+  mark('fisher');
+  showDialog('Seu Abel','Vi luzes no bosque depois da última chuva. Um dia, com as técnicas certas, você poderá alcançar lugares que hoje parecem impossíveis.',[],pr,'tranquilo');
+ }else{
+  showDialog(npc.name,'Pallet parece pequena, mas guarda histórias em cada esquina. Volte quando descobrir mais sobre Kanto.',[],pr,em);
+ }
+}
+function enterDoor(door){
+ state.navRequest++;state.navCells.clear();
+ const id=door.id,room=W.PsyKantoInteriorsV9?.get?.(id);
+ if(!room){
+  showDialog('Porta fechada','Você ainda não pode entrar aqui.');return;
+ }
+ state.lastOutdoor={...state.position};
+ state.inside={...room,title:door.title};
+ state.position={x:room.spawn[0],y:room.spawn[1]};
+ state.path=[];state.held.clear();
+ image(room.art);room.npcs.forEach(n=>{image(n.sprite);if(n.portrait)image(n.portrait)});
+ hud();draw();
+ if(room.who){
+  const actor=room.npcs.find(n=>n.id===room.who);
+  showDialog(door.title,room.intro,[
+   {text:'CONVERSAR',primary:true,run:()=>talk(actor)},
+   {text:'EXPLORAR'}],
+   actor?.portrait||'',actor?.emote||'sereno');
+ }else showDialog(door.title,room.intro,[],null);
+}
 function exitDoor(){state.navRequest++;state.navCells.clear();state.inside=null;if(state.lastOutdoor)state.position={...state.lastOutdoor};state.lastOutdoor=null;state.path=[];hud()}
 function healTeam(){const p=player();if(Array.isArray(p.team))for(const mon of p.team){const hp=Number(mon.maxHp||mon.maxHP||mon.hpMax||0);if(hp>0)mon.hp=hp}try{W.updateHUD?.();W.autoSave?.()}catch(_){}showDialog('Enfermeira','Sua equipe foi recuperada. Boa viagem!')}
-function openShop(){const fn=W.openShop;close();if(typeof fn==='function')fn();else showDialog('Poké Mart','O catálogo da loja ainda não foi vinculado a esta versão de testes.')}
+function openShop(){const fn=W.openShop;close();if(typeof fn==='function')fn();else{state.root?.classList.add('open');showDialog('Davi, o lojista','Minhas mercadorias já estão separadas. Em breve você poderá negociá-las aqui mesmo.')}}
 function exitWorld(){if(state.world.id==='pallet'){if(!questDone()){showDialog('Passagem para Rota 1','A saída está fechada até o guarda autorizar a viagem. Fale com Carvalho e visite Centro Pokémon e Market.',[{text:'ENTENDI'}]);return}open('route-1');return}
 mark('viridian');try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');save.visited=[...new Set([...(save.visited||[]),'pallet','route-1'])];save.activePlace='viridian';localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(_){}
 showDialog('Viridian City','Você atravessou a Rota 1! A entrada de Viridian está desbloqueada. A cidade usará o mapa de desenvolvimento já existente enquanto recebe sua própria arte.',[{text:'ENTRAR EM VIRIDIAN',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('viridian')}},{text:'VOLTAR'}]);}
