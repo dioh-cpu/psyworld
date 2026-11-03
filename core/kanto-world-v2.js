@@ -182,6 +182,23 @@ function drawInterior(c,inside){
   }else{
     c.fillStyle='#263d50';c.fillRect(0,0,inside.w,inside.h);
   }
+  // Original Kanto campaign artwork, restored from the project's earlier
+  // GitHub branch. Framed environmental illustrations, not debug labels.
+  const scenes={
+    center:'pallet-07.webp',market:'pallet-10.webp',
+    lab:'pallet-03.webp',home:'pallet-08.webp',
+    'house-east':'pallet-04.webp','house-west':'pallet-01.webp'
+  };
+  const file=scenes[inside.id];
+  if(file){
+    const scene=image('assets/kanto/cinematics/'+file),x=158,y=38,w=164,h=104;
+    c.save();c.fillStyle='#423344';c.fillRect(x-6,y-6,w+12,h+12);
+    c.fillStyle='#c59a65';c.fillRect(x-3,y-3,w+6,h+6);
+    if(scene?.loaded){c.imageSmoothingEnabled=true;c.drawImage(scene.im,x,y,w,h)}
+    else{c.fillStyle='#334e5f';c.fillRect(x,y,w,h)}
+    c.fillStyle='#f7e3be';c.fillRect(x-6,y-6,w+12,3);
+    c.restore();
+  }
 }
 function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
 function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
