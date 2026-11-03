@@ -136,14 +136,20 @@ function drawPlayer(c,x,y){
   c.save();
   c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13,5,0,0,Math.PI*2);c.fill();
   const entry=selectedAvatar();let usedSprite=false;
-  if(entry?.loaded&&entry.atlas){
+  if(entry?.loaded){
     const row=({down:0,left:1,right:2,up:3})[state.facing]||0;
     const moving=state.held.size||state.path.length||state.joy;
     const col=W.PsyTrainerWalkV1?.column(Math.floor(state.walkFrame),moving)||0;
-    if(entry.atlas){
-      // The draw destination is a stable 48x64 box; feet never move.
-      c.imageSmoothingEnabled=true;
+    c.imageSmoothingEnabled=true;
+    if(entry.atlas&&W.PsyTrainerWalkV1){
+      // Real player art, 48x64 cell, always anchored to the shadow.
       W.PsyTrainerWalkV1.draw(c,entry.atlas,row,col,x-24,y+7-64,48,64);
+      usedSprite=true;
+    }else if(entry.im?.naturalWidth&&entry.im?.naturalHeight){
+      // Graphics still work if atlas preprocessing fails or an older profile loads.
+      const sw=entry.im.naturalWidth/4,sh=entry.im.naturalHeight/4;
+      c.drawImage(entry.im,col*sw+sw*.25,row*sh+sh*.22,sw*.5,sh*.58,
+        x-16.5,y+7-46,33,46);
       usedSprite=true;
     }
   }
