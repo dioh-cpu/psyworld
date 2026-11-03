@@ -1,5 +1,5 @@
 /* PSYWORLD — walking animation shared by Psy City and Kanto.
- * Synthesizes opposing stride contacts once per 4x4 trainer sheet.
+ * Preserves all four authentic stride poses from each 4x4 trainer sheet.
  * Never changes trainer size, floor anchor, or movement speed.
  */
 (function(W,D){
@@ -7,7 +7,7 @@
 if(W.PsyTrainerWalkV1)return;
 const cache=new WeakMap();
 const TW=48,TH=64,BW=33,BH=46,BASE_Y=14;
-const sequence=Object.freeze([1,2,3,2]);
+const sequence=Object.freeze([1,2,3,0]);
 const create=()=>D.createElement('canvas');
 function getAtlas(img){
   if(!img)return null;
@@ -45,18 +45,10 @@ function getAtlas(img){
       (TW-BW)/2,BASE_Y,BW,BH);
     const ox=col*TW,oy=row*TH;
     c.save();c.beginPath();c.rect(ox,oy,TW,TH);c.clip();
-    if(col===1||col===3){
-      // Existing source sheets commonly show the SAME leg advancing in all
-      // poses. Animate each leg in opposite directions, with gradual hip
-      // influence toward the feet, rather than repeating that single stride.
-      c.drawImage(temp,0,0,TW,40,ox,oy,TW,40);
-      const sign=col===1?1:-1;
-      for(let y=40;y<TH;y+=2){
-        const shift=Math.round((y-40)*3/24)*sign;
-        c.drawImage(temp,0,y,24,2,ox-shift,oy+y,24,2);
-        c.drawImage(temp,24,y,24,2,ox+24+shift,oy+y,24,2);
-      }
-    }else c.drawImage(temp,ox,oy);
+    // Preserve the actual hand-authored 4x4 sprite frames without splitting
+    // limbs or shifting alternating pixel strips: the V7 strip manipulation
+    // disfigured the legs. Keep one uniform body/feet target for all poses.
+    c.drawImage(temp,ox,oy);
     c.restore();
   }
   cache.set(img,atlas);return atlas;
