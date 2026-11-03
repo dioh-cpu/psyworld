@@ -42,7 +42,7 @@
     ],
     npcs:[
       {id:'oak',name:'Professor Carvalho',at:[528,385],portrait:'assets/halloween/npc-researcher.webp',emote:'sereno'},
-      {id:'lia',name:'Lia',at:[461,489],portrait:'assets/story/rival.png',emote:'alegre'},
+      {id:'lia',name:'Lia',at:[461,415],portrait:'assets/story/rival.png',emote:'alegre'},
       {id:'gate',name:'Guarda da Rota',at:[575,106],portrait:'assets/halloween/npc-noah.svg',emote:'atento'},
       {id:'neighbor',name:'Nina',at:[373,312],portrait:'assets/halloween/npc-mina.svg',emote:'amigável'}
     ],
