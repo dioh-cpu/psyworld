@@ -52,3 +52,15 @@ Escopo: SOMENTE branch `teste/kanto-pallet-rota1-v2`. A branch `main` e o domín
 - Experiência real no dispositivo Android específico, incluindo responsividade sob jank de CPU e navegação até portas.
 - Fidelidade de todos os trajes/fantasias e posicionamento do avatar com personagens de proporções diferentes.
 - Eventual ajuste fino do FPS, qualidade do desenho e velocidade conforme testes reais.
+
+## 03/11/2026 — V7: caminhada natural compartilhada (cidade Psy + campanha)
+- Nova implementação **somente na branch de testes** `teste/kanto-pallet-rota1-v2`.
+- A causa do ciclo de caminhada rígido era a campanha alternar apenas as colunas 1 e 3, enquanto a cidade incluía a coluna 0 (repouso) e aplicava um deslocamento CSS vertical artificial.
+- `core/trainer-walk-v1.js`: atlas 4×4 de 192×256 gerado uma vez a partir de cada spritesheet original, com corpo em 33×46 dentro de células 48×64 e quadro de repouso somente parado.
+- Passos: padrão `[1,2,3,2]` com ajuste procedural leve e oposto na região das pernas para compensar as poses originais que repetiam a mesma perna à frente.
+- `core/halloween-ui.js` e `core/kanto-world-v2.js` compartilham o mesmo algoritmo e deixam a posição e a escala do avatar constantes; sem alterar velocidade, colisões ou sistema de caminhada.
+- `index.html` atualizado com chaves de cache exclusivas da V7 para os scripts de ambas as telas.
+- `tests/trainer-walk-v7.cjs` valida ciclo, preparo único, 32 desenhos com dimensões fixas, carga dos scripts e sincronização das duas telas.
+- `tests/kanto-v6-sprites-movement.cjs` atualizado para manter verificação de caminhada em baixo FPS, delegando o teste visual ao V7.
+- Testes realizados por simulação isolada do código; validação no smartphone e inspeção visual com skins adicionais ainda são necessárias.
+- A produção `main` não deve receber a V7 sem autorização explícita.
