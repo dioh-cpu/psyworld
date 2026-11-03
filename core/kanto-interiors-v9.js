@@ -8,15 +8,15 @@ const path='assets/kanto/interiors/',npc='assets/kanto/npcs/';
 const portrait={
   oak:'assets/story/professor-oak.png',
   nurse:npc+'nurse-v9.svg',
-  vendor:'assets/halloween/npc-vendor.webp',
+  vendor:npc+'vendor-v9.svg',
   mother:npc+'mother-v9.svg',
   fisher:npc+'fisher-v9.svg',
   child:npc+'child-v9.svg',
   assistant:'assets/halloween/npc-researcher.webp'
 };
 function actor(id,name,at,kind,emote='sereno'){
-  return {id,name,at,sprite:npc+kind+'-v9.svg',
-    portrait:portrait[id]||npc+kind+'-v9.svg',emote};
+  const art=portrait[id]||npc+kind+'-v9.svg';
+  return {id,name,at,sprite:art,portrait:art,emote};
 }
 const common=(id,npcs,blocks,intro,who)=>{
   return {id,art:path+id+'-v9.svg',w:800,h:470,
@@ -35,7 +35,7 @@ const rooms={
    'O aroma de madeira encerada e o brilho das prateleiras anunciam a loja de Pallet. Davi organiza os itens para novos treinadores.',
    'vendor'),
  lab:common('lab',[actor('oak','Professor Carvalho',[400,290],'oak','sereno'),
-   actor('assistant','Pesquisadora Celina',[548,333],'child','curiosa')],
+   actor('assistant','Pesquisador Elias',[548,333],'child','curioso')],
    [[285,184,515,266],[37,165,213,300],[588,165,766,300],
     [41,322,225,412],[575,322,758,410]],
    'Pesquisas, mapas e instrumentos cercam o laboratório. O Professor Carvalho aguarda o início da sua jornada por Kanto.',
@@ -56,10 +56,17 @@ const rooms={
    'O ar tem cheiro de mar. Abel guarda lembranças de viagens pelo litoral de Kanto.',
    'fisher')
 };
-for(const [name,sprite] of [
- ['gate','guard'],['neighbor','child'],['lia','mother']]){
- const target=W.PsyKantoMapDataV2?.pallet?.npcs?.find(n=>n.id===name);
- if(target)target.sprite=npc+sprite+'-v9.svg';
+const palletNpcArt={
+ gate:npc+'guard-v9.svg',
+ neighbor:'assets/halloween/npc-mina.svg',
+ lia:'assets/story/rival.png'
+};
+for(const [id,sprite] of Object.entries(palletNpcArt)){
+ const target=W.PsyKantoMapDataV2?.pallet?.npcs?.find(n=>n.id===id);
+ if(!target)continue;
+ target.sprite=sprite;target.portrait=sprite;
+ if(id==='lia')target.name='Rival';
+ if(id==='neighbor')target.name='Mina';
 }
 W.PsyKantoInteriorsV9={
  rooms,get:id=>rooms[id]||null,

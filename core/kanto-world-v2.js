@@ -126,7 +126,9 @@ function drawNPC(c,npc,distance){
   c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,14,5,0,0,Math.PI*2);c.fill();
   if(npc.painted){c.restore();return}
   if(entry?.loaded){
-    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-21,y-62,42,60);c.shadowBlur=0;
+    const iw=entry.im.naturalWidth||160,ih=entry.im.naturalHeight||190;
+    const h=60,w=Math.min(52,h*iw/ih);
+    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-w/2,y-h,w,h);c.shadowBlur=0;
   }
   c.restore();
   if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,y-60,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,y-56);c.restore()}
@@ -232,10 +234,10 @@ function talk(npc){
   }
  }else if(id==='lia'){
   mark('lia');
-  showDialog('Lia','Ouvi falar de histórias antigas no porto. Nina, na casa do lado leste, talvez saiba mais sobre aquela luz que surge ao anoitecer.',[],pr,'empolgada');
+  showDialog('Rival','Também estou começando minha jornada. Ouvi histórias antigas no porto; Mina, na casa do lado leste, talvez saiba mais sobre aquela luz que surge ao anoitecer.',[],pr,'empolgada');
  }else if(id==='neighbor'||id==='child'){
   mark('neighbor');
-  showDialog('Luna','Dizem que há marcas escondidas entre as flores da vila. O velho pescador Abel costuma contar como encontrá-las.',[],pr,'curiosa');
+  showDialog('Mina','Dizem que há marcas escondidas entre as flores da vila. O velho pescador Abel costuma contar como encontrá-las.',[],pr,'curiosa');
  }else if(id==='nurse'){
   mark('center');
   showDialog('Enfermeira Íris','Seus parceiros também precisam de descanso. Posso recuperar a energia da sua equipe antes da jornada?',[
@@ -245,7 +247,7 @@ function talk(npc){
   showDialog('Davi, o lojista','O pessoal de Pallet começa sempre pelo básico: Poké Bolas, remédios e um pouco de coragem. Precisa de alguma coisa?',[
     {text:'VER MERCADORIAS',primary:true,run:openShop},{text:'VOLTAR'}],pr,'animado');
  }else if(id==='assistant'){
-  showDialog('Pesquisadora Celina','Carvalho procura registros de habitats e fenômenos nas florestas de Kanto. Registre o que encontrar na Rota 1.',[],pr,'curiosa');
+  showDialog('Pesquisador Elias','Carvalho procura registros de habitats e fenômenos nas florestas de Kanto. Registre o que encontrar na Rota 1.',[],pr,'curiosa');
  }else if(id==='mother'){
   showDialog('Elisa','Preparei sua mochila e deixei a casa aberta. Quando sentir saudade, volte para descansar. O Professor Carvalho já está esperando você.',[],pr,'carinhosa');
  }else if(id==='fisher'){
