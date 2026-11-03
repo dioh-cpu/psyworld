@@ -38,7 +38,7 @@ const select=new Function('player','W','image',
 assert(select().url.endsWith('/basic-adventure-boy.webp'),'Uninitialized profile must show a real trainer');
 p={playerCharacterId:'gothic_boy',playerCostumeByCharacter:{gothic_boy:'divine'}};
 assert(select().url.endsWith('/divine-gothic-boy.webp'),'Chosen costume must be respected');
-assert(kanto.includes('if(entry?.loaded&&entry.atlas){'),'Sprite atlas must be rendered even without entry.frames');
+assert(kanto.includes('if(entry?.loaded){')&&kanto.includes('if(entry.atlas&&W.PsyTrainerWalkV1)'), 'Loaded trainer and sprite atlas must render without entry.frames');
 assert(!kanto.includes('if(entry?.loaded&&entry.frames){'),'Broken V7 gate must not return');
 assert(!kanto.includes("c.fillStyle='#24517a'"),'Blocky placeholder must not be drawn');
 
