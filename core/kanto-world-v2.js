@@ -59,7 +59,7 @@ makeUI();D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.cl
 const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}return true;}
 function close(){state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
-function positionValid(x,y){if(state.inside)return x>60&&x<740&&y>164&&y<445&&!state.inside.blocks.some(([a,b,c,d])=>x>=a-6&&x<=c+6&&y>=b-6&&y<=d+6);
+function positionValid(x,y){if(state.inside){const room=state.inside;return x>24&&x<room.w-24&&y>174&&y<room.h-24&&!room.blocks.some(([a,b,c,d])=>x>=a-5&&x<=c+5&&y>=b-5&&y<=d+5)}
 return DATA.walkable(state.world,x,y,5)}
 function move(dx,dy,dt){if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?144:143,dist=speed*dt,steps=Math.ceil(dist/4.5);let mx=0,my=0;
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
@@ -82,12 +82,12 @@ state.raf=W.requestAnimationFrame(tick)}
 function onKeyDown(e){if(!state.root?.classList.contains('open'))return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){e.preventDefault();e.stopImmediatePropagation();state.path=[];state.navRequest++;state.held.add(keys[e.code])}else if(['KeyE','Enter','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)interact()}else if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}}
 function onKeyUp(e){if(!state.root?.classList.contains('open'))return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){e.preventDefault();e.stopImmediatePropagation();state.held.delete(keys[e.code])}}
 function camera(){
-  const map=state.inside?{w:800,h:470}:state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');
+  const map=state.inside||state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');
   const r=state.viewport||(state.viewport=stage.getBoundingClientRect()),dpr=Math.min(1.3,W.devicePixelRatio||1);
   const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   // Cover the screen instead of letterboxing; scroll with the player.
-  const scale=Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
+  const scale=state.inside?Math.min(cw/map.w,ch/map.h):Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
   const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
@@ -116,7 +116,7 @@ function drawNPC(c,npc,distance){
   c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,14,5,0,0,Math.PI*2);c.fill();
   if(npc.painted){c.restore();return}
   if(entry?.loaded){
-    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-18,y-52,36,50);c.shadowBlur=0;
+    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-21,y-62,42,60);c.shadowBlur=0;
   }
   c.restore();
   if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,y-60,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,y-56);c.restore()}
@@ -176,20 +176,12 @@ function drawPlayer(c,x,y){
 }
 
 function drawInterior(c,inside){
-  const bg=image(inside.art||'assets/kanto/interiors/'+inside.id+'-v9.svg');
-  if(bg?.loaded){
-    c.imageSmoothingEnabled=true;
-    c.drawImage(bg.im,0,0,800,470);
+  if(inside.paint){
+    c.imageSmoothingEnabled=false;
+    c.drawImage(inside.paint,0,0,inside.w,inside.h);
   }else{
-    // The stage fades from its actual game-art palette as SVG loads.
-    c.fillStyle='#374f60';c.fillRect(0,0,800,470);
+    c.fillStyle='#263d50';c.fillRect(0,0,inside.w,inside.h);
   }
-  // Only an exit floor marker; furniture, wall art and lighting belong to
-  // the room illustration, never to debug rectangles on top of it.
-  c.save();
-  c.strokeStyle='#a9e2df';c.lineWidth=2;c.globalAlpha=.64;
-  c.beginPath();c.moveTo(373,442);c.lineTo(427,442);c.stroke();
-  c.restore();
 }
 function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
 function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
@@ -246,7 +238,7 @@ function enterDoor(door){
  state.inside={...room,title:door.title};
  state.position={x:room.spawn[0],y:room.spawn[1]};
  state.path=[];state.held.clear();
- image(room.art);room.npcs.forEach(n=>{image(n.sprite);if(n.portrait)image(n.portrait)});
+ if(room.art)image(room.art);room.npcs.forEach(n=>{image(n.sprite);if(n.portrait)image(n.portrait)});
  hud();draw();
  if(room.who){
   const actor=room.npcs.find(n=>n.id===room.who);
@@ -269,7 +261,7 @@ function touchEnd(e){const t=state.touch;if(!t||t.id!==e.pointerId)return;e.prev
 // Tap-to-walk searches asynchronously, yielding control to the game each frame.
 // Terrain queries are memoized per location; dragging joystick cancels old searches.
 function findPath(from,to,request){
-  const step=10,world=state.inside?{w:800,h:470}:state.world;
+  const step=10,world=state.inside||state.world;
   const nx=Math.ceil(world.w/step),ny=Math.ceil(world.h/step);
   const key=(x,y)=>x+','+y,cx=x=>Math.round(x/step);
   const valid=(x,y)=>{
