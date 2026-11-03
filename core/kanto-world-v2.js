@@ -116,49 +116,8 @@ function selectedAvatar(){const p=player(),id=p.playerCharacterId;
 // All 16 source frames are measured once from a 384px thumbnail.
  // Drawing never reads pixel buffers or changes sprite scale frame-by-frame.
 function prepareAvatar(entry){
-  const im=entry.im,sx=im.naturalWidth/4,sy=im.naturalHeight/4;
-  const frames=[];entry.cellX=sx;entry.cellY=sy;
-  try{
-    const scan=D.createElement('canvas');scan.width=384;scan.height=384;
-    const sc=scan.getContext('2d',{willReadFrequently:true});
-    sc.clearRect(0,0,384,384);sc.imageSmoothingEnabled=true;
-    sc.drawImage(im,0,0,384,384);
-    const pixels=sc.getImageData(0,0,384,384).data;
-    for(let row=0;row<4;row++)for(let col=0;col<4;col++){
-      let minX=96,minY=96,maxX=-1,maxY=-1;
-      const x0=col*96,y0=row*96;
-      for(let y=0;y<96;y++)for(let x=0;x<96;x++){
-        if(pixels[((y0+y)*384+x0+x)*4+3]<=40)continue;
-        if(x<minX)minX=x;if(y<minY)minY=y;
-        if(x>maxX)maxX=x;if(y>maxY)maxY=y;
-      }
-      const kx=sx/96,ky=sy/96;
-      frames[row*4+col]=maxX<0?null:{
-        x:Math.max(0,(minX-1)*kx),y:Math.max(0,(minY-1)*ky),
-        w:Math.min(sx,(maxX-minX+3)*kx),h:Math.min(sy,(maxY-minY+3)*ky)
-      };
-    }
-    entry.frames=frames;
-  }catch(_){
-    entry.frames=Array.from({length:16},()=>({x:sx*.27,y:sy*.27,w:sx*.49,h:sy*.64}));
-  }
-  // Every source frame is normalized once into a tiny fixed-size atlas.
-  // Animating this atlas avoids resampling the original 2048x2048 image.
-  const atlas=D.createElement('canvas');
-  const tileW=48,tileH=64,drawW=33,drawH=46;
-  atlas.width=tileW*4;atlas.height=tileH*4;
-  const ac=atlas.getContext('2d');
-  ac.imageSmoothingEnabled=true;ac.imageSmoothingQuality='high';
-  for(let r=0;r<4;r++)for(let col=0;col<4;col++){
-    const b=entry.frames[r*4+col]||entry.frames[r*4]||entry.frames[0];
-    if(!b||!b.w||!b.h)continue;
-    const srcX=col*sx+b.x,srcY=r*sy+b.y;
-    // identical drawn body frame and feet anchoring, including idle frames
-    ac.drawImage(im,srcX,srcY,b.w,b.h,
-      col*tileW+(tileW-drawW)/2,r*tileH+(tileH-drawH)-4,drawW,drawH);
-  }
-  entry.atlas=atlas;
-  entry.atlasTileW=tileW;entry.atlasTileH=tileH;
+  const walk=W.PsyTrainerWalkV1;
+  if(walk){entry.atlas=walk.getAtlas(entry.im);entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight}
 }
 function drawPlayer(c,x,y){
   c.save();
@@ -167,11 +126,11 @@ function drawPlayer(c,x,y){
   if(entry?.loaded&&entry.frames){
     const row=({down:0,left:1,right:2,up:3})[state.facing]||0;
     const moving=state.held.size||state.path.length||state.joy;
-    const col=moving?(Math.floor(state.walkFrame)%2?3:1):0;
+    const col=W.PsyTrainerWalkV1?.column(Math.floor(state.walkFrame),moving)||0;
     if(entry.atlas){
       // The draw destination is a stable 48x64 box; feet never move.
       c.imageSmoothingEnabled=true;
-      c.drawImage(entry.atlas,col*48,row*64,48,64,x-24,y+7-64,48,64);
+      W.PsyTrainerWalkV1.draw(c,entry.atlas,row,col,x-24,y+7-64,48,64);
       usedSprite=true;
     }
   }
