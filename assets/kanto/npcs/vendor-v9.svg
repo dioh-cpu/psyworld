@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 190"><defs>
+<linearGradient id="coat" x2=".6" y2="1"><stop stop-color="#2d7fba"/><stop offset="1" stop-color="#f5c96e"/></linearGradient>
+<linearGradient id="skin" x2="0" y2="1"><stop stop-color="#ffe7cd"/><stop offset="1" stop-color="#deb58e"/></linearGradient>
+<filter id="shadow"><feGaussianBlur stdDeviation="3"/></filter></defs>
+<ellipse cx="80" cy="178" rx="39" ry="8" fill="#071624" opacity=".55" filter="url(#shadow)"/>
+<path d="M54 132l-9 34 23 11 16-4 21 4 17-13-13-32z" fill="#273f5d" stroke="#253544" stroke-width="4"/>
+<path d="M61 143h19v30H57zM85 143h19v30H87z" fill="#273f5d" stroke="#202a39" stroke-width="3"/>
+<rect x="52" y="170" width="30" height="8" rx="4" fill="#292c40"/><rect x="87" y="170" width="30" height="8" rx="4" fill="#292c40"/>
+<path d="M52 101q25-11 57 0l16 62-37 9-42-9z" fill="url(#coat)" stroke="#2b3545" stroke-width="4" stroke-linejoin="round"/>
+<path d="M69 106l12 13 13-13 5 47-35-3z" fill="#f5c96e" opacity=".85"/>
+<path d="M52 107Q38 108 33 134l11 16 14-11 8-28M109 108q15 2 19 29l-13 17-14-15-4-24" fill="url(#coat)" stroke="#344257" stroke-width="4"/>
+<path d="M45 143q-11 5-9 14 6 10 17 1l2-10M113 147q10-3 14 7 0 10-16 10l-5-12" fill="url(#skin)" stroke="#764d4d" stroke-width="3"/>
+<path d="M57 52q1-24 27-25 25 0 28 25v37q-4 22-28 24-23-2-27-25z" fill="url(#skin)" stroke="#483440" stroke-width="4"/>
+<path d="M51 54Q48 23 80 20q36 0 40 37l-10 7-6-17q-22 12-47 6z" fill="#43374c" stroke="#322d37" stroke-width="4"/><path d="M47 38q35-29 68 0v19H47z" fill="#2d7fba" stroke="#293e53" stroke-width="4"/><path d="M83 54h44l-9 13-38-3" fill="#f5c96e" stroke="#293e53" stroke-width="3"/>
+<path d="M66 76q7-7 16 0M91 76q8-7 16 0" fill="none" stroke="#594044" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="72" cy="82" rx="3" ry="5" fill="#354a60"/><ellipse cx="98" cy="82" rx="3" ry="5" fill="#354a60"/>
+<path d="M79 96q8 4 13-1" fill="none" stroke="#ac6b78" stroke-width="3" stroke-linecap="round"/>
+<path d="M65 110l18 9 17-9" fill="none" stroke="#ffe3b9" stroke-width="3"/>
+
+
+<path d="M65 131h33" stroke="#f7d16e" stroke-width="5"/><rect x="72" y="145" width="21" height="10" rx="3" fill="#e3ecf8"/>
+
+</svg>
