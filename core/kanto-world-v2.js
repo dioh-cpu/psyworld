@@ -235,7 +235,7 @@ function enterDoor(door){
   showDialog('Porta fechada','Você ainda não pode entrar aqui.');return;
  }
  state.lastOutdoor={...state.position};
- state.inside={...room,title:door.title};
+ state.inside={...room,title:door.title,paint:room.paint};
  state.position={x:room.spawn[0],y:room.spawn[1]};
  state.path=[];state.held.clear();
  if(room.art)image(room.art);room.npcs.forEach(n=>{image(n.sprite);if(n.portrait)image(n.portrait)});
