@@ -21,12 +21,8 @@ function getAtlas(img){
   alphaCtx.drawImage(img,0,0,384,384);
   let pixels=null;
   try{pixels=alphaCtx.getImageData(0,0,384,384).data}catch(_){}
-  const atlas=create();atlas.width=TW*4;atlas.height=TH*4;
-  const c=atlas.getContext('2d');c.imageSmoothingEnabled=true;
-  c.imageSmoothingQuality='high';
-  const temp=create();temp.width=TW;temp.height=TH;
-  const tc=temp.getContext('2d');tc.imageSmoothingEnabled=true;
-  tc.imageSmoothingQuality='high';
+  const boxes=Array.from({length:4},()=>Array(4));
+  let maxBodyW=0,maxBodyH=0;
   for(let row=0;row<4;row++)for(let col=0;col<4;col++){
     let minX=96,minY=96,maxX=-1,maxY=-1;
     if(pixels)for(let y=0;y<96;y++)for(let x=0;x<96;x++){
@@ -34,20 +30,27 @@ function getAtlas(img){
       if(x<minX)minX=x;if(y<minY)minY=y;
       if(x>maxX)maxX=x;if(y>maxY)maxY=y;
     }
-    // Source art uses 512x512 cells with transparent margins; crop each
-    // pose independently then render every pose at exactly the same size.
     const box=maxX>=minX?
       {x:Math.max(0,(minX-1)*sw/96),y:Math.max(0,(minY-1)*sh/96),
        w:Math.min(sw,(maxX-minX+3)*sw/96),h:Math.min(sh,(maxY-minY+3)*sh/96)}:
       {x:sw*.27,y:sh*.27,w:sw*.5,h:sh*.56};
+    boxes[row][col]=box;maxBodyW=Math.max(maxBodyW,box.w);maxBodyH=Math.max(maxBodyH,box.h);
+  }
+  // One scale for the whole sheet. Independent per-frame stretching made
+  // the trainer visibly grow/shrink as the legs changed pose.
+  const bodyScale=Math.min(BW/maxBodyW,BH/maxBodyH);
+  const atlas=create();atlas.width=TW*4;atlas.height=TH*4;
+  const c=atlas.getContext('2d');c.imageSmoothingEnabled=true;
+  c.imageSmoothingQuality='high';
+  const temp=create();temp.width=TW;temp.height=TH;
+  const tc=temp.getContext('2d');tc.imageSmoothingEnabled=true;tc.imageSmoothingQuality='high';
+  for(let row=0;row<4;row++)for(let col=0;col<4;col++){
+    const box=boxes[row][col],dw=box.w*bodyScale,dh=box.h*bodyScale;
+    const ox=col*TW,oy=row*TH;
     tc.clearRect(0,0,TW,TH);
     tc.drawImage(img,col*sw+box.x,row*sh+box.y,box.w,box.h,
-      (TW-BW)/2,BASE_Y,BW,BH);
-    const ox=col*TW,oy=row*TH;
+      (TW-dw)/2,BASE_Y+BH-dh,dw,dh);
     c.save();c.beginPath();c.rect(ox,oy,TW,TH);c.clip();
-    // Preserve the actual hand-authored 4x4 sprite frames without splitting
-    // limbs or shifting alternating pixel strips: the V7 strip manipulation
-    // disfigured the legs. Keep one uniform body/feet target for all poses.
     c.drawImage(temp,ox,oy);
     c.restore();
   }

@@ -8,7 +8,7 @@
 if(W.PsyKantoWorldV2 || !W.PsyKantoMapDataV2)return;
 const DATA=W.PsyKantoMapDataV2,KEY='psy_kanto_world_v2_quests',SAVE_KEY='psy_kanto_journey_progress_v1';
 const $=s=>D.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={root:null,canvas:null,ctx:null,world:null,inside:null,position:{x:597,y:555},lastOutdoor:null,held:new Set(),joy:null,touch:null,path:[],time:0,raf:0,stepDistance:0,lastEncounter:0,dialogOpen:false,images:new Map(),portrait:null,avatar:null,quest:null,walkFrame:0,facing:'down',suspended:false,navRequest:0,navCells:new Map(),viewport:null,lastRender:0};
+const state={root:null,canvas:null,ctx:null,world:null,inside:null,position:{x:597,y:555},lastOutdoor:null,held:new Set(),joy:null,touch:null,path:[],time:0,raf:0,stepDistance:0,lastEncounter:0,dialogOpen:false,images:new Map(),portrait:null,avatar:null,quest:null,walkFrame:0,facing:'down',moving:false,suspended:false,navRequest:0,navCells:new Map(),viewport:null,lastRender:0};
 function progress(){if(state.quest)return state.quest;try{state.quest=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_){state.quest={}}return state.quest}
 function putProgress(){try{localStorage.setItem(KEY,JSON.stringify(progress()))}catch(_){}try{W.autoSave?.()}catch(_){}}
 function questDone(){const q=progress();return !!(q.oak&&q.center&&q.market&&q.guard)}
@@ -59,12 +59,22 @@ makeUI();D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.cl
 const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}return true;}
 function close(){state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
-function positionValid(x,y){if(state.inside){const room=state.inside;return x>24&&x<room.w-24&&y>174&&y<room.h-24&&!room.blocks.some(([a,b,c,d])=>x>=a-5&&x<=c+5&&y>=b-5&&y<=d+5)}
-return DATA.walkable(state.world,x,y,5)}
-function move(dx,dy,dt){if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?144:143,dist=speed*dt,steps=Math.ceil(dist/4.5);let mx=0,my=0;
+const PLAYER_RADIUS=11;
+function positionValid(x,y){
+  if(state.inside){
+    const room=state.inside;
+    if(x<PLAYER_RADIUS||x>room.w-PLAYER_RADIUS||y<174+PLAYER_RADIUS||y>room.h-PLAYER_RADIUS)return false;
+    if(room.blocks.some(([a,b,c,d])=>x>=a-PLAYER_RADIUS&&x<=c+PLAYER_RADIUS&&y>=b-PLAYER_RADIUS&&y<=d+PLAYER_RADIUS))return false;
+    return !(room.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
+  }
+  if(!DATA.walkable(state.world,x,y,PLAYER_RADIUS))return false;
+  return !(state.world?.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
+}
+function move(dx,dy,dt){state.moving=false;if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?144:143,dist=speed*dt,steps=Math.ceil(dist/4.5);let mx=0,my=0;
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
 if(positionValid(p.x+stepx,p.y+stepy)){p.x+=stepx;p.y+=stepy;mx+=stepx;my+=stepy}else{if(positionValid(p.x+stepx,p.y)){p.x+=stepx;mx+=stepx}if(positionValid(p.x,p.y+stepy)){p.y+=stepy;my+=stepy}}}
-if(Math.abs(mx)>Math.abs(my))state.facing=mx>0?'right':'left';else if(my)state.facing=my>0?'down':'up';if(Math.abs(mx)+Math.abs(my)>0.25){state.walkFrame+=dt*7;if(state.world?.id==='route-1'&&!state.inside){state.stepDistance+=Math.hypot(mx,my);if(state.stepDistance>=32){state.stepDistance=0;maybeEncounter()}}}}
+state.moving=Math.abs(mx)+Math.abs(my)>0.25;
+if(Math.abs(mx)>Math.abs(my))state.facing=mx>0?'right':'left';else if(my)state.facing=my>0?'down':'up';if(state.moving){state.walkFrame+=dt*10;if(state.world?.id==='route-1'&&!state.inside){state.stepDistance+=Math.hypot(mx,my);if(state.stepDistance>=32){state.stepDistance=0;maybeEncounter()}}}}
 function maybeEncounter(){if(!DATA.grassAt(state.world,state.position.x,state.position.y))return;if(performance.now()-state.lastEncounter<6000||Math.random()>.16)return;
 const p=player();if(!Array.isArray(p.team)||!p.team.length){showDialog('Equipe necessária','Escolha seu primeiro Pokémon antes de procurar encontros.');return}
 if(typeof W.triggerWild!=='function')return;state.lastEncounter=performance.now();state.suspended=true;state.root.classList.remove('open');const old=W.startBattle;
@@ -75,7 +85,7 @@ if(state.suspended){const prev=W.endBattle;if(typeof prev==='function'&&!prev.__
 function tick(now){if(!state.root?.classList.contains('open')){state.raf=0;return}const dt=Math.min(.12,Math.max(0,(now-state.time)/1000));state.time=now;
 let dx=0,dy=0;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
 if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<7){state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d}}
-if(dx||dy)move(dx,dy,dt);
+state.moving=false;if(dx||dy)move(dx,dy,dt);
 const frameBudget=W.innerWidth<740?1000/48:1000/60;
 if(now-state.lastRender>=frameBudget){draw();state.lastRender=now}
 state.raf=W.requestAnimationFrame(tick)}
@@ -153,7 +163,7 @@ function drawPlayer(c,x,y){
   const entry=selectedAvatar();let usedSprite=false;
   if(entry?.loaded){
     const row=({down:0,left:1,right:2,up:3})[state.facing]||0;
-    const moving=state.held.size||state.path.length||state.joy;
+    const moving=state.moving;
     const col=W.PsyTrainerWalkV1?.column(Math.floor(state.walkFrame),moving)||0;
     c.imageSmoothingEnabled=true;
     if(entry.atlas&&W.PsyTrainerWalkV1){
