@@ -240,6 +240,13 @@
   function enemyStatusMoveEffect(move){
     const k=compact(move?.name),f=battleData.statusFx,ds=DIRECT_STATUS[k];
     if(ds){if(Math.random()>ds.chance)return 'O efeito falhou.';return applyStatus('player',ds.status,move.name).text}
+    if(['recover','roost','synthesis','moonlight','morningsun','softboiled','milkdrink','healorder','rest'].includes(k)){
+      const mon=P.team[0],before=Number(mon.hp||0),max=Math.max(1,Number(mon.maxHp||P.maxHp||1));
+      mon.hp=Math.min(max,before+Math.ceil(max*(k==='rest'?1:.5)));P.hp=mon.hp;
+      if(k==='rest')applyStatus('player','sleep',move.name);
+      try{W.updateHUD?.()}catch(_){}
+      return 'Recuperou '+(mon.hp-before)+' HP.';
+    }
     if(k==='growl'){f.myAtk=Math.max(-60,(f.myAtk||0)-20);bumpFx(f,'myAtk');return 'ATK do seu Pokémon -20% por 3s.'}
     if(k==='tailwhip'){f.myDef=Math.max(-60,(f.myDef||0)-18);bumpFx(f,'myDef');return 'DEF do seu Pokémon -18% por 3s.'}
     if(k==='leer'){f.myDef=Math.max(-60,(f.myDef||0)-15);bumpFx(f,'myDef');return 'DEF do seu Pokémon -15% por 3s.'}
