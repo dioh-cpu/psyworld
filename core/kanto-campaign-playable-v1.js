@@ -262,7 +262,7 @@
       return typeof oldGet==='function'?oldGet.apply(this,arguments):[];
     };
     const previousStart=W.startBattle;
-    W.startBattle=function(wild){const range=({viridian:[2,4],'route-2':[3,6],'viridian-forest':[4,8],pewter:[6,9],'route-3':[7,11],'mt-moon':[8,12],'route-4':[9,13],cerulean:[10,15]})[model.place?.id];if(range){wild.level=wild.lvl=range[0]+Math.floor(Math.random()*(range[1]-range[0]+1));wild.hp=wild.maxHp=65+wild.level*8;}return previousStart.apply(this,arguments);};
+    W.startBattle=function(wild){wild.halloweenArea=model.place?.id;const range=({viridian:[2,4],'route-2':[3,6],'viridian-forest':[4,8],pewter:[6,9],'route-3':[7,11],'mt-moon':[8,12],'route-4':[9,13],cerulean:[10,15]})[model.place?.id];if(range){wild.level=wild.lvl=range[0]+Math.floor(Math.random()*(range[1]-range[0]+1));wild.hp=wild.maxHp=65+wild.level*8;}return previousStart.apply(this,arguments);};
     try { W.triggerWild?.('kanto_normal_t1'); }
     finally {W.startBattle=previousStart; if(oldGet)W.getPokesForHunt=oldGet; else delete W.getPokesForHunt; }
     const wild=W.battleData?.wild || (typeof battleData!=='undefined'?battleData?.wild:null);
@@ -444,7 +444,7 @@
       c.fillStyle='#141a23';c.beginPath();c.ellipse(px,py+8,8,4,0,0,Math.PI*2);c.fill();
       c.fillStyle='#e8c492';c.beginPath();c.arc(px,py-4,6,0,Math.PI*2);c.fill();c.fillStyle='#315777';c.fillRect(px-6,py+1,12,10);c.fillStyle='#f2f0e8';c.fillRect(px-5,py+11,4,4);c.fillRect(px+2,py+11,4,4);
     }
-    c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-18);
+    c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-18);W.PsySeason?.drawTitle(c,px,py-35);
   }
   function selectedAvatar(){
     const p=player(),id=p.playerCharacterId,character=(W.PsyHalloweenCharacters||[]).find(c=>c.id===id);
@@ -494,8 +494,8 @@
       const cells=[];for(let y=1;y<ROWS-1;y++)for(let x=1;x<COLS-1;x++)if(model.map.grid[y][x]===5)cells.push({x,y,d:Math.hypot(x-model.x,y-model.y)});
       cells.sort((a,b)=>a.d-b.d);for(const target of cells.slice(0,12).sort(()=>Math.random()-.5)){const route=tilePath(target);if(route.length){model.autoPath=route;break;}}
     }
-    if(!model.held&&model.autoPath?.length&&now-model.lastMove>160&&!W.PsyGuide?.isOpen()){model.lastMove=now;move(model.autoPath.shift());}
-    if(model.held&&now-model.lastMove>160){model.lastMove=now;move(model.held)}
+    if(!model.held&&model.autoPath?.length&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)&&!W.PsyGuide?.isOpen()){model.lastMove=now;move(model.autoPath.shift());}
+    if(model.held&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)){model.lastMove=now;move(model.held)}
     if(!model.lastRender||now-model.lastRender>(model.held?33:220)){render();model.lastRender=now;}model.raf=requestAnimationFrame(tick);
   }
   function injectEntryButton() {
@@ -564,3 +564,4 @@
   W.setTimeout(monitorAtlas,0);wrapEncounter();
   W.PsyKantoPlayableV1={version:2,questRows:chapterQuest,getPosition:()=>model.root?.classList.contains('open')?{world:model.place?.id,x:model.x,y:model.y}:null,navigateTo:target=>{model.autoHunt=false;model.autoPath=tilePath(target);return model.autoPath.length>0;},setAutoHunt:on=>{if(on&&Number(player().meta?.vipUntil||0)<=Date.now()){W.notif?.('Recurso exclusivo VIP.',2500);return false;}model.autoHunt=!!on;if(!on)model.autoPath=[];return model.autoHunt;},isAutoHunt:()=>!!model.autoHunt,open:openWorld,close:closeWorld,isUnlocked,objective,progress:()=>state()};
 })(window,document);
+

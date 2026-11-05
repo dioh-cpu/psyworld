@@ -93,12 +93,12 @@ function autoTurn(){
  if(low){
   const healing=buttons.find(b=>/recover|roost|synthesis|rest|heal|cura|recuper|moonlight|milk drink|soft.boiled/i.test(b.textContent));
   if(healing){healing.click();return;}
-  const potion=Object.keys(player().inventory||{}).find(n=>/potion/i.test(n)&&player().inventory[n]>0);
+  const potion=Object.keys(player().inventory||{}).find(n=>/potion|poção/i.test(n)&&player().inventory[n]>0);
   if(potion&&typeof usePotionBattle==='function'){usePotionBattle(potion);return;}
  }
  const gym=typeof gymBattle!=='undefined'&&!!gymBattle;
  if(catchEnabled&&!gym&&Number(battleData.wildHp)/Math.max(1,Number(battleData.wildMaxHp))<=.35){
-  const balls=Object.keys(player().inventory||{}).filter(n=>player().inventory[n]>0&&W.PSY_ITEMS?.category?.(n)==='ball');
+  const balls=Object.keys(player().inventory||{}).filter(n=>player().inventory[n]>0&&W.PSY_ITEMS?.category?.(n)==='ball'&&(!W.PsySeason||W.PsySeason.canCapture(battleData.wild,n)));
   balls.sort((a,b)=>(W.psyCaptureChancePct?.(b)||0)-(W.psyCaptureChancePct?.(a)||0));
   if(balls.length&&typeof W.tryCaptureBattle==='function'){W.tryCaptureBattle(balls[0]);return;}
  }
@@ -120,3 +120,4 @@ function refresh(){
 W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,autoFind:find};
 renderButtons();W.setInterval(refresh,600);
 })(window,document);
+

@@ -5,7 +5,7 @@ if(W.psyAudio)return;
 
 const BASE='assets/audio/';
 const FILES={
-  theme:'psyworld_theme.mp3',
+  theme:'psyworld_theme.mp3',halloween_encounter:'halloween-encounter.wav',
   ui_click:'ui_click.mp3',battle_start:'battle_start.mp3',hit:'hit.mp3',
   status:'status.mp3',heal:'heal.mp3',capture:'capture.mp3',
   victory:'victory.mp3',defeat:'defeat.mp3',levelup:'levelup.mp3',
@@ -26,11 +26,12 @@ const FILES={
 };
 
 Object.assign(FILES,{capture:'user/capture-success.mp3',capture_end:'user/capture-success-end.mp3',capture_fail:'user/capture-fail.mp3',ball_throw:'user/ball-throw.mp3',heal:'user/heal.mp3',levelup:'user/pokemon-level.mp3',trainer_level:'user/trainer-level.mp3',level_general:'user/level-general.mp3',shiny_found:'user/shiny-found.mp3',shiny_spawn:'user/shiny-spawn.mp3',item_drop:'user/item-drop.mp3',rare_drop:'user/rare-drop.mp3'});
+W.addEventListener('psy-season-change',e=>{if(e.detail?.season!=='halloween'&&selectedTrack==='halloween')selectTrack('theme');});
 const tracks=[{id:'halloween',label:'Halloween · Noite Fantasma',file:null},{id:'theme',label:'Tema Psyworld',file:FILES.theme},...Array.from({length:4},(_,i)=>({id:'music-'+(i+1),label:'Música '+(i+1),file:'user/music-'+(i+1)+'.mp3'}))];
 const HALLOWEEN_DEFAULT_KEY='psy_halloween_theme_default_v1';
-let selectedTrack=localStorage.getItem('psy_audio_track')||'halloween';
+let selectedTrack=localStorage.getItem('psy_audio_track')||(W.PsySeason?.on()?'halloween':'theme');
 try{
-  if(localStorage.getItem(HALLOWEEN_DEFAULT_KEY)!=='1'){
+  if(W.PsySeason?.on()&&localStorage.getItem(HALLOWEEN_DEFAULT_KEY)!=='1'){
     selectedTrack='halloween';
     localStorage.setItem('psy_audio_track',selectedTrack);
     localStorage.setItem(HALLOWEEN_DEFAULT_KEY,'1');

@@ -207,6 +207,8 @@
     if(!battleData||battleData.state!=='active')return;
     battleData.state='won';
     const w=battleData.wild,lvl=Number(w.level||5),wildType=w.type||'Normal';
+    const seasonGym=typeof gymBattle!=='undefined'&&!!gymBattle;
+    W.PsySeason?.award(w,seasonGym?'gym':(W.fastEncounter?'fast':'wild'));
     const xp=W.psyBattleXpReward(lvl);
     const gold=Math.floor((lvl*18+80)*(1+Number(getTotalBuff?.('gold')||0)/100));
     P.team[0].exp=(P.team[0].exp||0)+xp;P.gold=(P.gold||0)+gold;
@@ -323,6 +325,8 @@
   const oldStart=W.startBattle;
   if(typeof oldStart==='function'){
     W.startBattle=startBattle=function(wild){
+      const seasonGym=typeof gymBattle!=="undefined"&&!!gymBattle;
+      if(!seasonGym&&!W.isDungeonBoss&&!W.isDungeonMega&&!W.isDungeonShiny)W.PsySeason?.roll(wild,"wild");
       try{
         if(wild?.id){wild.tier=tierOf(wild);ensureWildRarity(wild);
           const inGym=typeof gymBattle!=='undefined'&&!!gymBattle;
@@ -425,3 +429,4 @@
   `;D.head.appendChild(css);
   console.log('[PSYWORLD]',BUILD,'ativo: status + Tier/Raridade em HP/ATK/dano inimigo.');
 })();
+

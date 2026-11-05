@@ -120,7 +120,7 @@
       tileY:Number(P.y) || 25
     };
     const wrap = D.getElementById('game-wrap');
-    wrap.dataset.citySeason = 'halloween';
+    if(!W.PsySeason||W.PsySeason.on())wrap.dataset.citySeason = 'halloween';
     const block=(dx,dy,rx,ry)=>{
       const cx=Math.round(origin.tileX+dx),cy=Math.round(origin.tileY+dy);
       for(let y=cy-ry;y<=cy+ry;y++)for(let x=cx-rx;x<=cx+rx;x++){
@@ -151,6 +151,7 @@
     c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
   }
   function drawPumpkin(c,x,y,s) {
+    if(W.PsySeason&&!W.PsySeason.on())return;
     c.save(); c.translate(x,y); c.scale(s,s);
     c.fillStyle='#f97316'; c.strokeStyle='#7c2d12'; c.lineWidth=2;
     c.beginPath(); c.ellipse(0,0,15,11,0,0,Math.PI*2); c.fill(); c.stroke();
@@ -211,12 +212,14 @@
     c.shadowBlur=0;c.restore();
   }
   function drawWeb(c,x,y,s) {
+    if(W.PsySeason&&!W.PsySeason.on())return;
     c.save();c.strokeStyle='rgba(221,210,235,.52)';c.lineWidth=1.3;
     for(let i=0;i<5;i++){const a=(Math.PI/2)*(i/4);c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*s,y+Math.sin(a)*s);c.stroke()}
     for(let r=9;r<=s;r+=10){c.beginPath();for(let i=0;i<=4;i++){const a=(Math.PI/2)*(i/4);const qx=x+Math.cos(a)*r,qy=y+Math.sin(a)*r;i?c.lineTo(qx,qy):c.moveTo(qx,qy)}c.stroke()}
     c.restore();
   }
   function drawBat(c,x,y,s) {
+    if(W.PsySeason&&!W.PsySeason.on())return;
     c.save();c.translate(x,y);c.scale(s,s);c.fillStyle='#171326';
     c.beginPath();c.moveTo(-20,0);c.quadraticCurveTo(-17,-14,-7,-7);c.quadraticCurveTo(-3,-15,0,-7);c.quadraticCurveTo(4,-15,8,-7);c.quadraticCurveTo(18,-14,21,0);c.quadraticCurveTo(12,-4,8,5);c.lineTo(3,1);c.lineTo(0,7);c.lineTo(-4,1);c.lineTo(-9,5);c.quadraticCurveTo(-13,-3,-20,0);c.fill();
     c.fillStyle='#f7a943';c.fillRect(-5,-2,2,2);c.fillRect(3,-2,2,2);c.restore();
@@ -270,7 +273,12 @@
     {id:609,dx:14.0, dy:-8.1,color:'#d17b61'},
     {id:778,dx:-11.5,dy:-10.5,color:'#e0ddd5'},
     {id:854,dx:11.5, dy:10.5,color:'#8d6cc2'},
-    {id:885,dx:-12.8,dy:5.8,color:'#729bd1'}
+    {id:885,dx:-12.8,dy:5.8,color:'#729bd1'},
+    {id:708,dx:-7.5,dy:-12.8,color:'#aec7b5'},
+    {id:710,dx:7.5,dy:12.8,color:'#ffa552'},
+    {id:971,dx:-6.5,dy:-8.8,color:'#cfaeec'},
+    {id:972,dx:6.5,dy:8.8,color:'#c9c1eb'},
+    {id:1000,dx:13.5,dy:11.5,color:'#d5b06c'}
   ];
   const ghostSpriteCache = new Map();
   function loadGhostSprite(id) {
@@ -314,7 +322,7 @@
         c.imageSmoothingEnabled=false;
         c.drawImage(sprite.image,p.x-size/2,p.y-size*.78,size,size);
       } else {
-        drawGhostFallback(c,p.x,p.y-size*.16,mon.color,scale);
+        /* Never substitute generic ghost art for a Pokémon. */
       }
       c.restore();
     });
@@ -327,7 +335,9 @@
     const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height, center=screenPoint(0,0);
     c.save();
     clipCityArea(c,w,h);
-    // Halloween lighting and cobblestones stay inside the town; Route 1 remains clear.
+    const seasonal=!W.PsySeason||W.PsySeason.on();
+    if(seasonal){
+    // Seasonal illumination is removable; architecture stays in place.
     c.fillStyle='rgba(7,10,27,.47)';c.fillRect(0,0,w,h);
     const vignette=c.createRadialGradient(w*.52,h*.4,12,w*.52,h*.45,Math.max(w,h)*.78);
     vignette.addColorStop(0,'rgba(39,67,106,.08)');vignette.addColorStop(.55,'rgba(22,19,49,.28)');vignette.addColorStop(1,'rgba(5,7,19,.72)');
@@ -339,17 +349,20 @@
     c.fillStyle='rgba(17,22,43,.4)';c.beginPath();c.moveTo(0,h*.33);c.quadraticCurveTo(w*.2,h*.22,w*.42,h*.34);c.quadraticCurveTo(w*.72,h*.20,w,h*.31);c.lineTo(w,h*.49);c.lineTo(0,h*.49);c.fill();
     for(let i=0;i<34;i++){const x=((i*197+53)%997)/997*w,y=((i*83+31)%271)/271*h*.36;c.fillStyle=i%5===0?'#ffd789':'#dbeafe';c.globalAlpha=.35+(i%4)*.12;c.beginPath();c.arc(x,y,i%7===0?1.5:1,0,Math.PI*2);c.fill()}
     c.globalAlpha=1;
+    }
     // World-anchored cobblestone floor only replaces ordinary town ground.
     // The full town quarter uses one continuous cobblestone surface.
     drawCityFloor(c,w,h);
+    W.PsySeason?.drawTitle(c,center.x,center.y-95);
 
     drawFestivalPlots(c);
     HOUSES.forEach(house=>drawHouse(c,house));
-    drawCityDecor(c);
+    if(seasonal){drawCityDecor(c);
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
     for(let i=0;i<3;i++){const gx=grave.x-28+i*28,gy=grave.y+4;c.fillStyle=['#697083','#7d7888','#59677a'][i];rounded(c,gx-9,gy-17,18,29,8);c.fill();c.fillStyle='#b6bdca';c.fillRect(gx-1,gy-11,2,12);c.fillRect(gx-5,gy-7,10,2)}
     drawWeb(c,grave.x-43,grave.y-34,29);
+    }
     // Fountain and ringed stonework create a readable central town square.
     const plaza=screenPoint(0,0);
     c.save();c.fillStyle='#4a4053';c.strokeStyle='#b68c55';c.lineWidth=3;
@@ -357,6 +370,7 @@
     c.fillStyle='#343447';c.beginPath();c.ellipse(plaza.x,plaza.y,Math.max(51,TILE*.96),Math.max(25,TILE*.48),0,0,Math.PI*2);c.fill();
     c.fillStyle='#667c94';c.beginPath();c.ellipse(plaza.x,plaza.y,Math.max(35,TILE*.64),Math.max(15,TILE*.28),0,0,Math.PI*2);c.fill();
     c.shadowColor='#76d8ec';c.shadowBlur=15;c.fillStyle='#a5edff';c.beginPath();c.arc(plaza.x,plaza.y-8,5,0,Math.PI*2);c.fill();c.shadowBlur=0;c.restore();
+    if(seasonal){
     // Lantern strings and pennants across the market lanes.
     c.save();c.strokeStyle='#725568';c.lineWidth=2;
     [[-5.7,-.2,5.7,-.2],[-5.7,3.8,5.7,3.8]].forEach(([ax,ay,bx,by])=>{
@@ -380,6 +394,7 @@
     c.fillStyle='#171426f2';c.strokeStyle='#d78a4a';c.lineWidth=2.4;rounded(c,banner.x-bannerW/2,bannerY-20,bannerW,40,18);c.fill();c.stroke();
     c.fillStyle='#f8d98c';c.font='900 13px system-ui';c.textAlign='center';c.fillText('CIDADE PSY  ·  FESTIVAL DAS LANTERNAS',banner.x,bannerY+5);
     drawGhostDecorations(c);
+    }
     c.restore();
   }
   function makeDialog() {
@@ -410,6 +425,7 @@
     return {index,locked};
   }
   function speak(npc) {
+    if(npc.id==='amora'&&W.PsySeason?.on())return W.PsySeason.openShop();
     if(W.PsyGuide){const progression=storyLine(npc);return W.PsyGuide.show({speaker:npc.name+' · '+npc.role,text:npc.lines[progression.index],portrait:npc.art.startsWith('/')?npc.art:'/assets/halloween/'+npc.art,target:'#psy-halloween-npc-'+npc.id});}
 
     const panel=makeDialog(), name=panel.querySelector('h3'), copy=panel.querySelector('p');
@@ -477,7 +493,7 @@
     const wrap=D.getElementById('game-wrap');
     if(wrap){
       const worldActive=wrap.style.display!=='none'&&!!(typeof P!=='undefined'&&P.team?.length)&&!W.__psyIdleActive&&!W.PSY_RUNTIME_MODE?.is?.('adventure');
-      if(worldActive)wrap.dataset.citySeason='halloween';else delete wrap.dataset.citySeason;
+      if(worldActive&&(!W.PsySeason||W.PsySeason.on()))wrap.dataset.citySeason='halloween';else delete wrap.dataset.citySeason;
       const fastButton=D.getElementById('fastEncounterBtn');
       if(fastButton)fastButton.style.display=worldActive?'none':'';
     }
@@ -491,4 +507,5 @@
   W.addEventListener('resize',positionNPCs,{passive:true});
   W.addEventListener('orientationchange',()=>setTimeout(positionNPCs,120),{passive:true});
 })(window,document);
+
 

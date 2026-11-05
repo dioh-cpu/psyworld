@@ -294,15 +294,17 @@
     const selected = costumeKey(id);
     COSTUMES.forEach(costume => {
       const card = D.createElement('button');
-      card.type = 'button';
+      const unlocked=!W.PsySeason||W.PsySeason.ownsCostume(costume.key);
+      card.type = 'button';card.setAttribute('aria-disabled',String(!unlocked));
       card.className = 'psy-halloween-card' + (costume.key === selected ? ' is-selected' : '');
       const canvas = D.createElement('canvas');
       canvas.className = 'psy-halloween-preview'; canvas.width = canvas.height = 96;
       canvas.dataset.psySheetPreview = '1'; canvas.dataset.character = id; canvas.dataset.costume = costume.key;
       const name = D.createElement('strong'); name.textContent = costume.label;
-      const note = D.createElement('small'); note.textContent = costume.note;
+      const note = D.createElement('small'); note.textContent = unlocked?costume.note:costume.note+' • Loja da Amora';
       card.append(canvas, name, note);
       card.addEventListener('click', () => {
+        if(!unlocked){closeScreen(screen);return W.PsySeason?.openShop();}
         const p = player(); if (!p) return;
         ensureCostumeRecord(p, id);
         p.playerCostumeByCharacter[id] = costume.key;
@@ -386,4 +388,5 @@
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', install, { once: true });
   else install();
 })(window, document);
+
 
