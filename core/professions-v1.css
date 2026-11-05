@@ -6,3 +6,5 @@
 #psy-professions h1,#psy-professions h2{animation:none!important;background:none!important;-webkit-text-fill-color:currentColor!important;color:#b2f7e5!important}
 
 #psy-professions article[hidden]{display:none!important}#psy-professions #pf-career-search{width:100%;margin-bottom:16px}#psy-professions .pf-job-bonus{color:#89efce;font-weight:700}#psy-professions .pf-careers button small{margin-top:3px;color:#a4d8ce}
+
+#psy-prof-buffs{position:fixed;top:45px;left:50%;transform:translateX(-50%);z-index:1001499;display:flex;justify-content:center;gap:5px;flex-wrap:wrap;max-width:calc(100vw - 20px);pointer-events:none;font:11px system-ui;color:#c9ffeb}#psy-prof-buffs span{background:#092b2de8;border:1px solid #4a9f9a;border-radius:16px;padding:5px 9px;box-shadow:0 2px 9px #0008}#psy-prof-buffs b{color:#fff;margin-left:5px}
