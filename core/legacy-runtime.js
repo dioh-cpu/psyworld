@@ -1011,6 +1011,7 @@ function uploadSave(event) {
                 (P.team || []).forEach(migratePoke);
                 (P.box || []).forEach(migratePoke);
                 upgradeLegacyStarterQuality();
+        if(P.team[0]){P.team[0].hp=P.team[0].maxHp;P.team[0].currentHp=P.team[0].maxHp;P.team[0].fainted=false;P.hp=P.team[0].maxHp;}
                 if(P.team[0]) {
                     P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
                     P.pokemon = P.team[0];
@@ -1280,6 +1281,10 @@ function confirmStarter() {
 
     document.getElementById('screen-starter').style.display = 'none';
 
+    novoPoke.hp=novoPoke.maxHp;
+    novoPoke.currentHp=novoPoke.maxHp;
+    novoPoke.fainted=false;
+    delete novoPoke.status;
     P.team = [novoPoke];
     P.box = P.box || []; // NÃO faz P.box = [] se já tinha backup
     P.pokemon = P.team[0];
@@ -1665,7 +1670,9 @@ if(key.includes('_t')){
   tipo=key.split('_t')[0];
   tierNum=1;
 }
+if(pool==='kanto_route1_t1')tipo='normal';
 let list=getPokesForHunt(regKey,tipo,tierNum);
+if(pool==='kanto_route1_t1')list=list.filter(p=>[16,19].includes(Number(p.id)));
 if(typeof BOSS_BAN_IDS!=='undefined') list = list.filter(p=>!BOSS_BAN_IDS.has(p.id));
 if(!list||list.length==0){
   notif(`❌ ${regKey.toUpperCase()} sem ${tipo.toUpperCase()} T${tierNum}`,2500);
@@ -1678,6 +1685,7 @@ const rarity=typeof rollRarity==='function'?rollRarity(tierLetter):{n:"Comum",bo
 let realType=base.type||TYPE_BY_ID_ALL[base.id]||"Normal";
 let tier=tierNum; // esse tierNum é o da HUNT 1-4, mantém
 let min=1,max=10; if(tier==2){min=10;max=20;}else if(tier==3){min=20;max=35;}else if(tier==4){min=40;max=60;}else if(tier==5){min=60;max=80;}
+if(pool==='kanto_route1_t1'){min=2;max=4;}
 const lvl=Math.floor(Math.random()*(max-min+1))+min;
 const maxHp=Math.floor(65+lvl*8+(rarity.bonus||0));
 if(tipo==='metal') tipo='aco';
@@ -9303,4 +9311,27 @@ setInterval(()=>{if(!document.hidden)psyV10InstallPsyduckShortcut()},3000);setTi
 console.log('✅ PSYWORLD V10: AFK live, Gym próximo líder, Cards 500 fases/tipos, Bag sell, Eggs específicos, repetíveis/roleta e Psyduck Supremo carregados');
 
 console.log('✅ PSYWORLD V9 LOCAL: save local, AFK offline, capture tiers, hunts CAP, Cards V9 carregados');
+})();
+
+/* Dynamic city joystick: anchored wherever the player starts dragging. */
+(function(){
+ let pointer=null,origin=null;
+ const base=document.getElementById('joystick');
+ function stop(){if(pointer===null)return;pointer=null;origin=null;resetJoy();if(base)base.style.display='none';}
+ document.addEventListener('pointerdown',function(e){
+  if(e.pointerType==='mouse'||inBattle||!e.target.closest('#game-wrap')||e.target.closest('button,#hud-player,#hud-minimap'))return;
+  if(document.body.classList.contains('psy-kanto-v2-active'))return;
+  pointer=e.pointerId;origin={x:e.clientX,y:e.clientY};
+  if(base){Object.assign(base.style,{display:'block',position:'fixed',left:(e.clientX-60)+'px',top:(e.clientY-60)+'px',bottom:'auto',right:'auto',pointerEvents:'none'});}
+  e.target.setPointerCapture?.(e.pointerId);e.preventDefault();
+ },{passive:false});
+ document.addEventListener('pointermove',function(e){
+  if(e.pointerId!==pointer||!origin)return;
+  const dx=e.clientX-origin.x,dy=e.clientY-origin.y,d=Math.hypot(dx,dy);
+  keys.ArrowLeft=dx<-8;keys.ArrowRight=dx>8;keys.ArrowUp=dy<-8;keys.ArrowDown=dy>8;
+  joyStick.style.transform='translate(calc(-50% + '+(dx/Math.max(1,d)*Math.min(40,d))+'px),calc(-50% + '+(dy/Math.max(1,d)*Math.min(40,d))+'px))';
+  e.preventDefault();
+ },{passive:false});
+ document.addEventListener('pointerup',stop);document.addEventListener('pointercancel',stop);window.addEventListener('blur',stop);
+ canvas.style.touchAction='none';
 })();
