@@ -28,7 +28,7 @@ function ensure(){
 }
 function targetRect(){
  let target=typeof current?.target==='function'?current.target():typeof current?.target==='string'?D.querySelector(current.target):current?.target;
- if(target?.getBoundingClientRect){if(!target.getClientRects().length)return null;target=target.getBoundingClientRect();}
+ if(target?.getBoundingClientRect){if(!target.getClientRects().length)return null;const canvas=target.tagName==='CANVAS';target=target.getBoundingClientRect();if(canvas){const x=(target.left+target.right)/2,y=(target.top+target.bottom)/2;target={left:x-32,right:x+32,top:y-48,bottom:y+24};}}
  if(!target||!Number.isFinite(target.left))return null;return target;
 }
 function place(){
@@ -61,8 +61,8 @@ function show(options){
  card.querySelector('h3').textContent=options.speaker||'Psyduck · Seu guia';
  card.querySelector('p').textContent=options.text||'';
  const portrait=card.querySelector('.pg-portrait');portrait.style.backgroundImage='url("'+(options.portrait||mascot).replace(/"/g,'')+'")';
- portrait.style.backgroundSize=options.sheet==='brock'?'400% 100%':options.sheet==='professor'?'200% 200%':'contain';
- portrait.style.backgroundPosition=options.sheet?'left top':'center';
+ portrait.style.backgroundSize=options.sheet==='brock'?'400% 100%':options.sheet==='professor'?'200% 200%':(!options.portrait||options.portrait===mascot)?'400% 600%':'contain';
+ portrait.style.backgroundPosition=(options.sheet||!options.portrait||options.portrait===mascot)?'left top':'center';
  portrait.setAttribute('aria-label',options.speaker||'Psyduck');
  const actions=card.querySelector('.pg-actions');actions.replaceChildren();
  (options.actions?.length?options.actions:[{text:'CONTINUAR'}]).forEach(a=>{
