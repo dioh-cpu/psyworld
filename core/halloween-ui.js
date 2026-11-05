@@ -257,7 +257,7 @@
         const login = D.getElementById('screen-login'); if (login) login.style.display = 'flex';
       }
     });
-    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = currentPickerKind === 'new' ? 'ENTRAR NA CIDADE' : 'USAR ESTE PERSONAGEM';
+    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = currentPickerKind === 'new' ? (player()?.team?.length?'ENTRAR NA CIDADE':'ESCOLHER INICIAL') : 'USAR ESTE PERSONAGEM';
     next.addEventListener('click', () => {
       const p = player(); if (!p) return;
       p.playerCharacterId = selectedCharacter;
@@ -267,8 +267,16 @@
       if (currentPickerKind === 'new') {
         const login = D.getElementById('screen-login'); if (login) login.style.display = 'none';
         const starter = D.getElementById('screen-starter'); if (starter) starter.style.display = 'none';
-        if (typeof W.startKantoCityPrelude === 'function') W.startKantoCityPrelude();
-        else console.error('[Halloween UI] Kanto city entry is unavailable');
+        W.toggleCityGameContent?.(true);
+        if(!p.team?.length){
+          if(typeof buildStarterScreen==='function')buildStarterScreen();
+          if(starter)starter.style.display='flex';
+        }else if(typeof W.startKantoCityPrelude==='function'){
+          W.startKantoCityPrelude();
+        }else{
+          const game=D.getElementById('game-wrap');if(game)game.style.display='block';
+          W.updateHUD?.();W.initEngine?.();
+        }
       } else {
         persist(); syncAvatar();
       }
