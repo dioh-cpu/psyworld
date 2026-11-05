@@ -26,3 +26,13 @@ Research applied (2026-11-05):
 No claim that these sources specify a universal candy percentage. Prices are preview tuning, not validated long-term live economy. No claim to have played all100 floors or every campaign chapter.
 
 Next verification: deploy branch preview and inspect real city menu/tutorial/shop, isolated mobile tower combat, shop costume preview and title/check-in. Record URL/commit and screenshots after browser verification.
+
+## Recovery and verification — 2026-11-05
+
+Recovered saved implementation commit `de0a86c778a9fdca20c8fdd9d53cf0b1922aaf65` after conversation failure. Its Vercel deployment is READY: https://psyworld-du8dpwclr-world-of-monsters.vercel.app/ (deployment dpl_DN8kqtuSubPnq6MaFhu2RG6u7ZUn, preview only).
+
+Reran all three test files with node --test: 3 passed, 0 failed. In the cloud browser, the isolated 390px mobile fixture completed floor 1 with one star and awarded 11 candy. Shop showed all four approved costume names/prices; opening Juramento da Aurora displayed the large preview and explicit purchase button. Purchasing once deducted exactly 2000 candy and disabled the owned item. Fixture uses disposable in-memory state only.
+
+Real game root opened successfully. A disposable Teste Eros profile selected Kai and entered Psy City. Content dialog showed a single entry each for Quests, VIP, Cards, Titles and Tower. Skipping introductory guide collapsed content and restored the content toggle. Full final tutorial sequence and manual Route1 encounter return still require interactive verification; automated regression coverage passed. No claim of full campaign completion or all100-floor playthrough.
+
+Authenticated multiplayer code already exists in core/world-multiplayer-v1.js, loaded by index.html, with api/world-room.js. Its presence in source is confirmed; actual two-account live authentication/presence has NOT been verified in this recovery. Do not mark multiplayer complete on code presence alone. Continue from this branch, never production/main. No Android package requested.
