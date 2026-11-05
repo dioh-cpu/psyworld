@@ -23,6 +23,7 @@
   else launcher.focus();
  };
  function install(){
+  if(D.getElementById('psy-content-modal'))return;
   dock=D.getElementById('world-btn-float');launcher=D.getElementById('btn-city-content-toggle');grid=D.getElementById('city-game-content-buttons');
   if(!dock||!launcher||!grid)return;
   D.getElementById('psy-content-backdrop')?.remove();
@@ -47,7 +48,10 @@ body:has(.psy-halloween-screen.is-open) #psy-content-modal,body.psy-kanto-v2-act
   grid.addEventListener('click',e=>{if(e.target.closest('button'))W.toggleCityGameContent(true)});
   const collect=()=>{for(const el of [...dock.children])if(el.tagName==='BUTTON'&&el!==launcher)grid.appendChild(el);layout();};
   collect();new MutationObserver(collect).observe(dock,{childList:true});
-  new MutationObserver(layout).observe(grid,{childList:true});
+  // Producers run again after lazy modules load. Keep one entry per action.
+  let cleaning=false;
+  const dedupe=()=>{if(cleaning)return;cleaning=true;try{const seen=new Set();for(const b of [...grid.children]){if(b.tagName!=='BUTTON')continue;const key=b.dataset.psy20Quests||b.dataset.psyQuestsCity?'quests':b.dataset.psy20Vip?'vip':b.dataset.psy20Pass?'pass':b.getAttribute('onclick')?.replace(/window\.|\?\.|\s/g,'')||b.id||b.textContent.trim();if(seen.has(key))b.remove();else seen.add(key);}layout();}finally{cleaning=false;}};
+  dedupe();new MutationObserver(dedupe).observe(grid,{childList:true});
   D.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden){e.preventDefault();e.stopImmediatePropagation();W.toggleCityGameContent(true);}},true);
   W.addEventListener('resize',layout);W.visualViewport?.addEventListener('resize',layout);W.visualViewport?.addEventListener('scroll',layout);
   W.toggleCityGameContent(true);

@@ -25,7 +25,7 @@
     { dx: 7.1, dy: 5.8, wall:'#51435d', roof:'#211a32', sign:'ARQUIVO', kind:'hall', width:1.26 },
     { dx:-12.6, dy:-8.2, wall:'#55445d', roof:'#2a2341', sign:'LABORATÓRIO', kind:'lab', width:1.18 },
     { dx: 12.6, dy: 8.2, wall:'#613d43', roof:'#301d2b', sign:'CENTRO', kind:'center', width:1.2 },
-    { dx: 0, dy: 12.4, wall:'#3f495e', roof:'#22283b', sign:'ESTAÇÃO', kind:'station', width:1.14 }
+    { dx: 0, dy: 12.4, wall:'#3f495e', roof:'#22283b', sign:'TORRE DE EVENTOS', kind:'eventTower', width:1.14 }
   ];
   const CITY_LAMPS=[[-4.8,-.7],[4.8,.7],[-10.4,-4.8],[.7,4.8],[-8.9,1.6],[8.9,-1.6]];
   const CITY_GRAVEYARD={dx:9.6,dy:.1};
@@ -40,6 +40,7 @@
     return true;
   }
   function cityVisible() {
+    if(W.PsyEvents?.isOpen())return false;
     const wrap = D.getElementById('game-wrap');
     return !!wrap && W.getComputedStyle(wrap).display !== 'none' &&
       !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure') && inCityWorld();
@@ -442,8 +443,10 @@
     portraitImg.alt='Retrato de '+npc.name;
     name.textContent=npc.name+' · '+npc.role; copy.textContent='“'+line+'”'; panel.dataset.npc=npc.id; panel.classList.add('open');
   }
+  W.PsyCityAccess=()=>cityVisible();
   function ensureNPCs() {
     const wrap=D.getElementById('game-wrap');if(!wrap)return;
+    if(!D.getElementById('psy-event-tower-entry')){const door=D.createElement('button');door.id='psy-event-tower-entry';door.textContent='♜ ENTRAR NA TORRE';door.setAttribute('aria-label','Entrar na Torre de Eventos');door.style.cssText='position:absolute;z-index:38;transform:translate(-50%,-50%);padding:9px;border:1px solid #dcb46c;border-radius:10px;background:#162a40;color:#ffe1a5;font:bold 11px system-ui';door.onclick=()=>W.PsyEvents?.open();wrap.appendChild(door);}
     NPCS.forEach(npc=>{
       if(D.getElementById('psy-halloween-npc-'+npc.id))return;
       const button=D.createElement('button');button.type='button';button.id='psy-halloween-npc-'+npc.id;button.className='psy-halloween-npc';button.setAttribute('aria-label','Conversar com '+npc.name);
@@ -460,6 +463,7 @@
     const canvasBox=cv?.getBoundingClientRect(),wrapBox=wrap?.getBoundingClientRect();
     const sx=canvasBox?.width&&cv.width?canvasBox.width/cv.width:1;
     const sy=canvasBox?.height&&cv.height?canvasBox.height/cv.height:1;
+    const door=D.getElementById('psy-event-tower-entry');if(door){const p=screenPoint(0,12.4);door.hidden=!active;door.style.left=((canvasBox?.left||0)-(wrapBox?.left||0)+p.x*sx)+'px';door.style.top=((canvasBox?.top||0)-(wrapBox?.top||0)+p.y*sy)+'px';}
     NPCS.forEach(npc=>{
       const el=D.getElementById('psy-halloween-npc-'+npc.id);if(!el)return;
       if(!active){if(!el.hidden)el.hidden=true;return}

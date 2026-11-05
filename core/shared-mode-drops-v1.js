@@ -157,6 +157,7 @@
     const mode=modeName(source);if(mode==='cards')return[];
     if(W.__psyDropContext?.enemy)enemy=W.__psyDropContext.enemy;
     if(eventAlreadyAwarded(enemy,mode))return[];markEvent(enemy,mode);
+    if(['hunt','fast','wild'].includes(mode)&&(mode==='hunt'||profile().currentHunt))W.PsyTitles?.record('huntKills');
     const level=enemyLevel(enemy),p=ensure(mode),profile=dropProfile(enemy,mode),cs=chanceScale(mode,level),rs=scale(mode),got=[];
 
     /* Every entry rolls independently, at reduced baseline rates. */

@@ -74,7 +74,7 @@ async function api(action,payload,auth,keepalive){
 function localProfile(state){
   const active=state.activePokemon||{};
   return{
-    nickname:nickFrom(state),title:W.PsySeason?.state()?.equipped||'',
+    nickname:nickFrom(state),title:W.PsyTitles?.state()?.display||W.PsySeason?.state()?.equipped||'',
     pokemon:cleanText(active.name||active.species||'',20),
     level:Math.max(1,Math.min(999,Number(active.level||1)))
   };
@@ -90,7 +90,7 @@ function rebuildPresence(){
   for(const [key,values] of Object.entries(state)){
     if(key===userId)continue;
     const meta=Array.isArray(values)&&values.length?values[values.length-1]:{};
-    next.set(String(key),{nickname:cleanText(meta?.nickname||'Treinador',24)||'Treinador',title:Object.prototype.hasOwnProperty.call(W.PsySeason?.titles||{},meta?.title)?meta.title:'',pokemon:cleanText(meta?.pokemon||'',20),level:Math.max(1,Number(meta?.level||1))});
+    next.set(String(key),{nickname:cleanText(meta?.nickname||'Treinador',24)||'Treinador',title:Object.prototype.hasOwnProperty.call(W.PsyTitles?.registry||W.PsySeason?.titles||{},meta?.title)?meta.title:'',pokemon:cleanText(meta?.pokemon||'',20),level:Math.max(1,Number(meta?.level||1))});
   }
   presence=next;
   for(const id of positions.keys())if(!presence.has(id))positions.delete(id);
@@ -100,7 +100,7 @@ function angleDistance(a,b){let d=(a||0)-(b||0);while(d>Math.PI)d-=Math.PI*2;whi
 function positionPayload(){
   const state=snapshot();
   return{
-    uid:userId,title:W.PsySeason?.state()?.equipped||'',
+    uid:userId,title:W.PsyTitles?.state()?.display||W.PsySeason?.state()?.equipped||'',
     x:Number(state.x),
     y:Number(state.y),
     angle:Number(state.angle)||0,
@@ -128,7 +128,7 @@ function acceptPosition(payload){
   const x=Number(payload.x),y=Number(payload.y),angle=Number(payload.angle);
   if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(angle))return;
   if(x<0||y<0||x>80||y>80)return;
-  positions.set(id,{x:x,y:y,angle:angle,nickname:presence.get(id)?.nickname||'Treinador',pokemon:cleanText(payload.pokemon||presence.get(id)?.pokemon||'',20),title:Object.prototype.hasOwnProperty.call(W.PsySeason?.titles||{},payload.title)?payload.title:'',level:Math.max(1,Math.min(999,Number(payload.level||presence.get(id)?.level||1))),receivedAt:now});
+  positions.set(id,{x:x,y:y,angle:angle,nickname:presence.get(id)?.nickname||'Treinador',pokemon:cleanText(payload.pokemon||presence.get(id)?.pokemon||'',20),title:Object.prototype.hasOwnProperty.call(W.PsyTitles?.registry||W.PsySeason?.titles||{},payload.title)?payload.title:'',level:Math.max(1,Math.min(999,Number(payload.level||presence.get(id)?.level||1))),receivedAt:now});
 }
 function failChannel(failed){
   if(channel!==failed)return;

@@ -2818,6 +2818,7 @@ window.psyAwardWildLikeVictory=function(enemy,source='idle'){
 function gainTrainerXp(amount,deferHud=false,deferSave=false){
   ensureTrainerData();
   amount=Math.max(0,Math.floor(Number(amount)||0));if(amount<=0)return;
+  window.PsyTitles?.record("xp",amount);
   P.trainerExp+=amount;
   while(P.trainerExp>=P.trainerMaxExp){
     P.trainerExp-=P.trainerMaxExp;P.trainerLevel++;P.trainerPoints++;P.trainerMaxExp=psyTrainerXpNeed(P.trainerLevel);
@@ -4290,7 +4291,9 @@ window.triggerWild = function(pool){
     else { regKey="kanto"; tipo=parts[0]; tierNum=parseInt(parts[1].replace('t',''))||1; }
   }else{ regKey="kanto"; tipo=key.split('_t')[0]; tierNum=1; }
 
+  if(pool==='kanto_route1_t1')tipo='normal';
   let list = getPokesForHunt(regKey,tipo,tierNum);
+  if(pool==='kanto_route1_t1')list=list.filter(p=>[16,19].includes(Number(p.id)));
   if(typeof BOSS_BAN_IDS!=='undefined') list = list.filter(p=>!BOSS_BAN_IDS.has(p.id));
   if(!list||!list.length){
     notif(`❌ ${regKey.toUpperCase()} SEM ${tipo.toUpperCase()} T${tierNum}`,2500);
@@ -8870,7 +8873,7 @@ window.psyCaptureChancePct=function(ballName,wildArg){
   const hpFactor=.34+(1-hpPct)*.66;
   const ball=window.psyCaptureBallMultiplier(ballName,wild);
   const rarityPenalty=1/Math.sqrt(Math.max(1,Number(wild.rarity?.mult||1)));
-  const buff=1+Math.max(0,Number(getTotalBuff?.('cap')||0)+Number(window.PsySeason?.buff('cap')||0))/100;
+  const buff=1+Math.max(0,Number(getTotalBuff?.('cap')||0))/100;
   let chance;
   if(wild.shiny){chance=.075*ball*hpFactor*rarityPenalty*buff;chance=Math.min(1,chance)}
   else{const base=PSY_CAPTURE_BASE[tier]??.5,cap=PSY_CAPTURE_CAPS[tier]??5;chance=Math.min(cap,base*ball*hpFactor*rarityPenalty*buff)}

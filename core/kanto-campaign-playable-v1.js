@@ -131,9 +131,9 @@
     });
     D.addEventListener('keydown', onKeyDown); D.addEventListener('keyup', onKeyUp);
     model.canvas.style.touchAction='none';let touch=null;
-    model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
-    model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
-    const release=()=>{touch=null;model.held=null;model.frame=0;render();};
+    model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
+    model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}touch.drag=true;model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
+    const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'&&model.map?.npc){const r=model.canvas.getBoundingClientRect(),x=(e.clientX-r.left)*model.canvas.width/r.width,y=(e.clientY-r.top)*model.canvas.height/r.height,n=model.map.npc;if(Math.abs(x-(n.x*TILE+14))<28&&Math.abs(y-(n.y*TILE))<42){interact(true);return;}}render();};
     model.canvas.addEventListener('pointerup',release);model.canvas.addEventListener('pointercancel',release);
     W.addEventListener('resize', render);
     return root;
@@ -287,14 +287,14 @@
     model.pendingGymPlace=place.id;closeWorld();W.startGymBattle(gymId);
     const arena=D.querySelector('#battle-screen .battle-hud');if(arena)arena.style.backgroundImage='url("'+ART_ROOT+(place.id==='pewter'?'brock-arena-approved.webp':'misty-arena-approved.webp')+'")';
   }
-  function interactChapter(place,ps,gymId){
+  function interactChapter(place,ps,gymId,directNPC=false){
     const map=model.map,story=STORY[place.id];
-    if(map.center&&nearby(map.center)){
+    if(!directNPC&&map.center&&nearby(map.center)){
       const p=player();for(const m of p.team||[]){m.hp=m.maxHp;m.fainted=false;}if(p.team?.[0])p.hp=p.team[0].hp;
       saveProgress();showDialog('Centro Pokémon','Sua equipe foi recuperada. Boa jornada!');return true;
     }
-    if(map.shop&&nearby(map.shop)){closeWorld();W.openShop?.();return true;}
-    if(nearby(map.npc)){
+    if(!directNPC&&map.shop&&nearby(map.shop)){closeWorld();W.openShop?.();return true;}
+    if(directNPC===true||nearby(map.npc)){
       ps.talked=true;if(story.done)ps.storyDone=true;saveProgress();
       const actions=[];
       if(gymId&&!player().gymProgress?.includes(gymId))actions.push({label:'DESAFIAR GINÁSIO',primary:true,onClick:()=>launchChapterGym(place,gymId)});
@@ -320,11 +320,11 @@
     return false;
   }
 
-  function interact() {
+  function interact(directNPC=false) {
     if(!model.place)return;
     const place=model.place, ps=placeState(place.id), gymId=GYM_FOR_PLACE[place.id];
-    if(EARLY.includes(place.id)&&interactChapter(place,ps,gymId))return;
-    if(nearby(model.map.npc)){
+    if(EARLY.includes(place.id)&&interactChapter(place,ps,gymId,directNPC===true))return;
+    if(directNPC===true||nearby(model.map.npc)){
       ps.talked=true;saveProgress();
       const needs=Math.max(0,objective(place)-new Set(ps.found).size),gymDone=!gymId||(Array.isArray(player().gymProgress)&&player().gymProgress.includes(gymId));
       const actions=[];

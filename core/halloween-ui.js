@@ -34,11 +34,11 @@
     } }
   ];
   const COSTUMES = [
-    { key: 'basic', label: 'Básica', note: 'Fantasia original' },
-    { key: 'divine', label: 'Divina', note: 'Versão luminosa' },
-    { key: 'macabre', label: 'Macabra I', note: 'Fantasia de terror' },
-    { key: 'macabre_alt', label: 'Macabra II', note: 'Segunda fantasia de terror' },
-    { key: 'supreme', label: 'Suprema', note: 'Visual especial' }
+    { key: 'basic', label: 'Traje de Jornada', note: 'Seu visual original' },
+    { key: 'divine', label: 'Juramento da Aurora', note: 'Versão luminosa' },
+    { key: 'macabre', label: 'Máscara do Último Sino', note: 'Fantasia de terror' },
+    { key: 'macabre_alt', label: 'Véu da Névoa Rubra', note: 'Segunda fantasia de terror' },
+    { key: 'supreme', label: 'Coroa do Eclipse Eterno', note: 'Visual especial' }
   ];
   const imageCache = new Map();
   let selectedCharacter = CHARACTERS[4].id;

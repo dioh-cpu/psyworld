@@ -15,8 +15,8 @@
     {icon:'🧑‍🤝‍🧑',title:'Converse com os moradores',text:'Aproxime-se de uma pessoa e toque nela para ler suas falas e conhecer os serviços e histórias da cidade.',target:'#psy-halloween-npc-luna'},
     {icon:'🕹️',title:'Caminhe pela cidade',text:'No computador, use as setas ou WASD. No celular, arraste em qualquer área livre do mapa para caminhar. Solte para parar.',target:'#gameCanvas'},
     {icon:'🎬',title:'Entre na campanha',text:'Este botão inicia a história de Kanto. A cinemática apresenta a jornada e, em seguida, você escolhe um dos três iniciais da primeira região.',target:'#btn-kanto-journey'},
-    {icon:'🎒',title:'Equipe, bolsa e menu',text:'Use estes atalhos para abrir sua equipe e sua bolsa. O MENU reúne as outras atividades e permite rever este tutorial quando quiser.',target:'#btn-team-float'},
-    {icon:'🧭',title:'Você está no controle',text:'A campanha é acessada pelo botão. A cidade continua como área própria, sem placa ou saída de rota. Vamos começar?',target:'#menuBtn'}
+    {icon:'🎒',title:'Equipe, bolsa e menu',text:'Use estes atalhos para abrir sua equipe e sua bolsa. CONTEÚDO DO JOGO reúne as atividades e a campanha. O MENU abre as opções da conta e permite rever este tutorial.',target:'#btn-team-float'},
+    {icon:'🧭',title:'Você está no controle',text:'Abra CONTEÚDO DO JOGO e toque em CAMPANHA KANTO para iniciar a história. Você pode voltar à cidade Psy quando quiser.',target:'#btn-city-content-toggle'}
   ];
 
   function addStyles() {
@@ -136,7 +136,7 @@
   };
   W.closeTutorial=function(){W.PsyGuide?.close();
     if(P){P.meta=P.meta||{};P.meta.psyCinematicTutorialSeen=true;if(P.team?.length)try{autoSave()}catch(_){}else try{W.psyV9WriteLocal?.()}catch(_){}}
-    if(tutorialRoot)tutorialRoot.style.display='none';
+    W.toggleCityGameContent?.(true);if(tutorialRoot)tutorialRoot.style.display='none';
     W.removeEventListener('resize',positionSpotlight);W.removeEventListener('scroll',positionSpotlight,true);
   };
   W.tutorialNext=function(){if(tutorialIndex<TUTORIAL.length-1){tutorialIndex++;renderTutorial()}else W.closeTutorial()};
@@ -145,3 +145,4 @@
   W.addEventListener('keydown',e=>{if(!tutorialRoot||tutorialRoot.style.display==='none')return;if(e.key==='Escape')W.closeTutorial();else if(e.key==='ArrowRight')W.tutorialNext();else if(e.key==='ArrowLeft')W.tutorialPrev()});
   addStyles();removeOldRouteVestige();
 })(window,document);
+

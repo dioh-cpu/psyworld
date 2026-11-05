@@ -14,18 +14,19 @@ assert.equal(E.buy('ball',2),true);assert.equal(player.inventory[E.items.ball],2
 for(const q of [NaN,Infinity,-1,0,1.2,101,'oops'])assert.equal(E.buy('ball',q),false);
 assert.equal(E.buy('title-moon'),true);assert.equal(E.buy('title-moon'),false);assert.equal(E.equip('moon'),true);assert.equal(E.buff('cap'),5);
 assert.equal(E.equip('sovereign'),false);assert.equal(E.buy('costume-divine'),true);assert.equal(E.ownsCostume('divine'),true);assert.equal(E.ownsCostume('basic'),true);
-player.inventory[E.items.incense]=2;assert.equal(E.useIncense(),true);close(E.spawnChance(),.011);assert.equal(E.useIncense(),false);assert.equal(player.inventory[E.items.incense],1);
-S.incenseUntil=0;S.titles.sovereign=true;E.equip('sovereign');close(E.spawnChance(),.02);S.incenseUntil=Date.now()+10000;close(E.spawnChance(),.022);
+player.inventory[E.items.incense]=20;assert.equal(E.useIncense(),true);close(E.spawnChance(),.02);assert.equal(E.useIncense(),true);close(E.spawnChance(),.03);
+for(let i=0;i<7;i++)assert.equal(E.useIncense(),true);close(E.spawnChance(),.10);const before=player.inventory[E.items.incense];assert.equal(E.useIncense(),false);assert.equal(player.inventory[E.items.incense],before);
+S.incenseCharges=[];S.incenseUntil=0;S.titles.sovereign=true;E.equip('sovereign');close(E.spawnChance(),.02);S.incenseCharges=[Date.now()+10000];close(E.spawnChance(),.04);S.incenseCharges=[];
 assert.deepEqual(Array.from(E.candyBand(1)),[3,5]);assert.deepEqual(Array.from(E.candyBand(100)),[12,23]);assert.deepEqual(Array.from(E.candyBand(100000)),[12,23]);
 const seq=values=>()=>values.length?values.shift():.999;
 function kill(rng,mode='wild',extra={}){return E.award({id:1,level:5,...extra},mode,rng)}
 E.equip('');let enemy={id:1,level:5};assert.equal(E.award(enemy,'wild',()=>0).length,1);assert.equal(E.award(enemy,'wild',()=>0).length,0);
 drop=0;const a=kill(seq([.1,0,.9]))[0].qty;drop=100000;const b=kill(seq([.1,0,.9]))[0].qty;assert.equal(a,b,'Drop never boosts candy');
-const special={id:37,level:1,halloweenForm:'luminox'};E.equip('');assert.equal(E.award({...special},'wild',seq([.9,0,.9,.9]))[0].qty,3);
-E.equip('sovereign');assert.equal(E.award({...special},'wild',seq([.9,0,.9,.9]))[0].qty,6);
+delete S.titles.sovereign;const special={id:37,level:1,halloweenForm:'luminox'};E.equip('');assert.equal(E.award({...special},'wild',seq([.9,0,.9,.9]))[0].qty,3);
+S.titles.sovereign=true;E.equip('sovereign');assert.equal(E.award({...special},'wild',seq([.9,0,.9,.9]))[0].qty,6);
 delete S.titles.sovereign;E.equip('');drop=0;E.award({...special},'wild',seq([0,0,.9,.00000099]));assert.equal(S.titles.sovereign,true,'Exact rare-title threshold succeeds');
 delete S.titles.sovereign;E.award({...special},'wild',seq([0,0,.9,.00000101]));assert.equal(S.titles.sovereign,undefined,'Above threshold must fail');
-S.incenseUntil=0;const normal={id:1,level:5,maxHp:100,hp:100,halloweenArea:'route-1'};E.roll(normal,'wild',seq([.009,0]));assert.equal(normal.halloweenForm,'luminox');assert.equal(normal.maxHp,87);assert.equal(E.sprite(normal),'assets/events/halloween/luminox.webp');
+S.incenseCharges=[];S.incenseUntil=0;const normal={id:1,level:5,maxHp:100,hp:100,halloweenArea:'route-1'};E.roll(normal,'wild',seq([.009,0]));assert.equal(normal.halloweenForm,'luminox');assert.equal(normal.maxHp,87);assert.equal(E.sprite(normal),'assets/events/halloween/luminox.webp');
 const caught={id:37};E.preserveForm(normal,caught);assert.equal(caught.halloweenForm,'luminox');assert.equal(caught.name,'Luminox de Halloween');
 for(const blocked of [{campaignTrainer:true},{isBoss:true},{psyduckDungeon:true},{shiny:true},{isMega:true}]){const mon={id:1,...blocked};E.roll(mon,'wild',()=>0);assert.equal(mon.halloweenForm,undefined);}
 const gym={id:1};E.roll(gym,'gym',()=>0);assert.equal(gym.halloweenForm,undefined);

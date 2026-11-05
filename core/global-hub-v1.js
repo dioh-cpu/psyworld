@@ -225,6 +225,7 @@
     ['#a-eggs','#a-team','#a-afk','#a-album','#a-cards','#a-stars','#a-tree','#a-evolution','#a-magic-books','#a-move-hud','#a-move-left','#a-move-right'].forEach(sel=>{const el=adv.querySelector(sel);if(el)el.setAttribute('hidden','')});hookAdventure()
   }
   function dispatchHotkey(code){
+    if(W.PsyEvents?.isOpen()||W.PsyTitles?.isOpen())return;
     const key=Object.keys(cfg.keys).find(k=>cfg.keys[k]===code);if(!key)return;const r=W.PSY?.adventureRuntime;
     if(key==='menu')return activeAdventure()?(W.PSY?.adventureSystemsV63?.openMenu?.()||W.showAdventureMenu?.()):openMenu();if(key==='basic')return r?.hooks?.cast?.(0);if(key==='skill1')return r?.hooks?.cast?.(1);if(key==='skill2')return r?.hooks?.cast?.(2);if(key==='special')return r?.hooks?.cast?.(3);if(key==='potion')return r?.ui?.querySelector('#a-potion')?.click()||W.usePotion?.();
     if(key==='jump'){if(r?.keys){r.keys.add(' ');setTimeout(()=>r.keys.delete(' '),100)}return}
