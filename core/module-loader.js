@@ -10,7 +10,6 @@ const PHYSICAL_BUILD='PSYWORLD_KANTO_CERULEAN_V4_MERGE_20261102';
 function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSYWORLD_IDLE_BOSS_LOOT_HUNTS_20261001':isIdleShared?'IDLE_SOCIAL_LAYER_FIX_20260930_V1':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
-  idleworld:{icon:'🌿',name:'PSY IDLE',desc:'Hunts individuais em mapa top-down, colisão em grade, IA e sistemas de progressão próprios.',entry:['openIdleRealisticV2']},
   hunts:{icon:'🗺️',name:'HUNTS',desc:'Hunts por região, nível e tipo.',entry:['openHunts']},
   dungeons:{icon:'🏰',name:'DUNGEONS',desc:'Bosses e desafios especiais.',entry:['openDungeons']},
   gyms:{icon:'🏆',name:'GYMS',desc:'Progressão regional de Ginásios.',entry:['openGyms']},
@@ -189,6 +188,7 @@ W.psyRefreshModeManager=function(){try{state=JSON.parse(localStorage.getItem(STO
 W.psyCloseModeIntro=function(){D.getElementById('psy-mode-intro')?.classList.remove('show')};
 
 W.psyInstallMode=async function(k,after){
+  if(k==='idleworld'){W.notif?.('Modo Idle removido desta versão.',2500);return;}
   if(!MODES[k])return;
   if(installed(k)&&sessionLoaded.has(k)){after?.();return}
   ensureUI();renderManager();
