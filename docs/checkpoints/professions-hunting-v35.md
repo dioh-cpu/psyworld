@@ -1,0 +1,28 @@
+# PSYWORLD V35 continuation — 2026-11-05
+
+Repository dioh-cpu/psyworld; ONLY teste/kanto-pallet-rota1-v2. Parent V34 6b18ba4813449a37c52da06f1e30dffb560316d4. Never main/production. User requests automatic checkpoints and continuity. No Android requested.
+
+## Authoritative user decisions
+- Latest user screenshots from Idle Poke Moon are inspiration, not copy. Adapt systems to PSYWORLD with different layout/colors. New Ofícios da Aurora identity midnight blue/cyan/emerald; original generated job backgrounds.
+- IMPORTANT recovery correction: User explicitly removed Idle on Nov5 05:16 and replaced it with Auto Find/Auto Hunt/auto battle in Pokémon world. Do not re-enable Idle, trade center or old assistant. V33/V34 accidentally improved archived Idle code; V35 restores modes/idle-realistic-v1.js to unchanged baseline, keeps removal guards and moves hunt/bag enhancements to active main world. New profession model can isolate ledgers but normal entry always main since Idle inaccessible. Do not advertise archived Idle integration as delivered.
+- Current user asks all reference systems; active delivery covers professions/craft/talents/forge/queue/focus/quality/orders/recipe book/equipment/consumables and improves existing hunts/bag/tracker. Existing native100-level pass, quests and AFK expedition reused with their original economy. No fabricated server captures/offline rewards, no new guild/market/constellation/IV systems claimed. Distinct professions and buffs adapt reference; not identical bonuses/assets.
+
+## Active implementation
+core/professions-v1.js + CSS loaded after legacy: 3 jobs ×3 specs;36 recipes (12/job),six rank gates1/15/30/50/75/100,jobXP levels1–100,kit once,1000Gold spec/job switching preserving progress,300focus regen1/min,five outputqualities snapshot at enqueue. Queue jobs prepayGold/materials; persisted readyAt finishes offline; collect once; separate parallel workstations upgraded bylevel/Gold plusMechanic talent. First craft5sec (normal30–1080sec perunit). Held copies removed from protected craftedbag when equipped and returned on unequip/replacement;2ndheld Engineer30. Consumables15min samecategory replaces. Forge+1..5 deterministic costsMinério/Gold, up to5 extra percentagepoints. Daily2item order300Gold150jobXP onceUTCdate, visible in existing campaign tracker; Auto Find opensworkshop. Item/tool data in profile.meta.professionsV1; noPsyCoin involved.
+- Spec passive bonuses3%: FundidorDef,Mechanicmaterials+20%crafttimecut,ElectricianAtk,CultivatorHP,AlchemistAtk+quality2pp,Naturalistcapture,ChronicleXP,Analystmaterials,AstronomerGold+10%crafttimecut.
+- Main getTotalBuff dmg->atk/cap->capture mapping. Detailed stats wrapper scopes heldbuffs to actualmon and addsDef. Main exploration speed hooks movement with cappedwaypoints. Existing legacy PvE stats/rewards/drop functions consume buffs; noPvP claim. Newmaterialrolls after native shared rewarddedupe22% withresourcebonus. Active team0 carries reward effects.
+- Allcrafteditems protectedmetadata outside ordinarysellbag, no trade untiliteminstances explicitlysupported. Equipping/using blocked in mainbattle (lexical inBattle guard); noRevives/autopurchases.
+core/hunting-workshop-ui-v1.js: enhances actual psy-clean-hunts afterlazyload with Pokémon/elementsearch,tier,missingbestiary,recommended,showlocked; preservesnativepool/region/band/cap/entrybuttons (filter previews do NOT restrict encounterpool). Mainbag search/name/quantitysort andworkshoplink; preservescategories/battleitemactions. Escapeclosesworkshop; hidesfloatingentryonlogin/picker. Newcode doesnotreplacenativehuntorbagrewardauthorities.
+- Professor validasset assets/kanto/npcs/professor-v33.webp correctapprovedportraitidentity. Existingbroken PNG bypassed. Original job backgroundWEBP files assets/professions/*.webp.
+
+## Previous towers/interiors completed
+See preview-towers-interiors-v30.md. Infinitefloors,unlock100 chainNormal->Inferno->Pesadelo->Purgatório power1/2/4/8,rewards1/1.5/2/3;trainer10+3healthyLv10required. Repeatfloors,refundexactentry/keyonce onloss/abandon,18elementalbranches,Gold/materials/sellrelics,18typechartwithHalloweenforms. Egg1000active,slower280msanimations. Sixnewinteriors zoom/collisions/NPCreachability. Auto Hunt waypointovershootfixed andV32faintswitch/wipestop guarded UI.
+
+## Verification
+8functional suites pass: seasonal,progression,previewregressions,towersv30,interiorsv30,autoHuntnavigationv30,automationfaintv32,professionsv33. Crafttests coverprepay,invalidqty,collectedonce,equipcopyconservation,scopeisolation,kitnoFarming,forge,talents,switchpreservingjob.
+V33 READY eb66be3058a8de44f93b6cdff54bb6a3284c97cc https://psyworld-kolihhzxg-world-of-monsters.vercel.app/ browser390pxfixture chooseMechanic->craft40Gold5Circuito->collect30XP->equipIncomum removesbagcopy. V34 READY https://psyworld-gcmsp15dr-world-of-monsters.vercel.app/ 6b18ba4813449a37c52da06f1e30dffb560316d4. V35 browserQA pending at writing; record finalresultnext.
+MainnewgameUI loads,music/characterpickerworks,menu/removedIdlecatalogpreserved. No realaccountprofiletouched;testnamedTesteOfícios.
+Browser earlier toweractualfirstfloorwon3Lv10;replayabandonentry9->8->9correct; lab/centerinspectedmobile;newgameAutoFindenteredlabspokeprofessor;actualAutoHuntenteredbattleandwipebugreproduced (guardedfixfunctionaltest).
+
+## Honest limits
+Not tested everyinfinitefloor,twoaccountonlinepresence,all quality/rank100 recipes in livecombat or long8hofflinesession. Nativepass/AFK mechanics are reused, not rebuilt or newly browserverified in thisiteration. Jobs36recipesbalance needsplayerfeedback. No newlyimplementedprofessionoutfits,TMmanufacture,constellation system; these are reference features not yet delivered ifuserexpectsfullparity.

@@ -7,7 +7,7 @@
 const W=window,D=document;
   // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
 const PHYSICAL_BUILD='PREVIEW_REPAIRS_V26';
-function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSYWORLD_IDLE_PROFESSIONS_20261105':isIdleShared?'IDLE_SOCIAL_LAYER_FIX_20260930_V1':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
+function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSYWORLD_IDLE_BOSS_LOOT_HUNTS_20261001':isIdleShared?'IDLE_SOCIAL_LAYER_FIX_20260930_V1':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
   hunts:{icon:'🗺️',name:'HUNTS',desc:'Hunts por região, nível e tipo.',entry:['openHunts']},
@@ -167,7 +167,7 @@ function ensureUI(){
   if(!D.getElementById('psy-mode-download-screen')){
     const s=D.createElement('div');s.id='psy-mode-download-screen';
     s.innerHTML=`<div class="psy-mode-manager">
-      <div class="psy-mode-manager-head"><div><h2>⬇ MODOS / DOWNLOADS</h2><p>Nesta versão modular, os arquivos JavaScript dos modos são carregados fisicamente somente quando necessários. Sprites do Survivor também ficam em arquivos separados.</p></div><button class="psy-mode-close" onclick="psyCloseModeManager()">×</button></div>
+      <div class="psy-mode-manager-head"><div><h2>⬇ MODOS / DOWNLOADS</h2><p>Escolha quais modos deseja preparar para jogar. Você pode baixar cada modo separadamente ou preparar todos de uma vez.</p></div><button class="psy-mode-close" onclick="psyCloseModeManager()">×</button></div>
       <div class="psy-mode-top-actions"><button class="psy-mode-action all" onclick="psyInstallAllModes()">⬇ BAIXAR TODOS</button><button class="psy-mode-action" onclick="psyRefreshModeManager()">↻ ATUALIZAR</button></div>
       <div id="psy-mode-grid" class="psy-mode-grid"></div>
     </div>`;D.body.appendChild(s);

@@ -40,10 +40,10 @@ function questRows(){
  else main.push({id:'story-viridian',kind:'main',title:'Explore Viridian City'});
  const raw=player().meta?.activeQuests||player().quests?.active||[];
  const active=(Array.isArray(raw)?raw:Object.values(raw)).map(q=>({...q,title:q.title||q.name||q.n,kind:q.kind||q.category||'side'}));
- return [...main,...active,...extra].filter(q=>q&&q.title&&q.status!=='completed'&&q.status!=='claimed');
+ return [...main,...active,...extra,...(W.PsyProfessions?.questRows?.()||[])].filter(q=>q&&q.title&&q.status!=='completed'&&q.status!=='claimed');
 }
 async function find(q){
- findTask=null;api()?.setAutoHunt(false);
+ findTask=null;api()?.setAutoHunt(false);if(q.goal==='workshop'){W.PsyProfessions?.open('main');return;}
  if(q.goal==='chapter'){api()?.navigateTo(q.at);return;}
  if(q.goal==='oak'){
   let p=api()?.getPosition?.();if(!p||p.world!=='pallet'){api()?.open('pallet');p=api()?.getPosition?.();}
