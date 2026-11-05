@@ -4,7 +4,7 @@
 let automatic=false,catchEnabled=false,lastAction=0,findTask=null,findAt=0,extra=[];
 const player=()=>typeof P!=='undefined'?P:{};
 const vip=()=>Number(player().meta?.vipUntil||0)>Date.now();
-const api=()=>W.PsyKantoWorldV2;
+const api=()=>W.PsyKantoPlayableV1?.getPosition?.()?W.PsyKantoPlayableV1:W.PsyKantoWorldV2;
 const note=t=>W.notif?.(t,2600);
 function requireVip(){if(vip())return true;note('Recurso exclusivo VIP.');return false;}
 function setAutomatic(on){if(on&&!requireVip())return false;automatic=!!on;renderButtons();return automatic;}
@@ -32,8 +32,10 @@ function renderButtons(){
  hunt.textContent=api()?.isAutoHunt()?'AUTO HUNT · ON':'AUTO HUNT · VIP';hunt.setAttribute('aria-pressed',String(!!api()?.isAutoHunt()));
 }
 function questRows(){
- const q=api()?.progress?.()||{},pos=api()?.getPosition?.(),main=[];
- if(!q.oak)main.push({id:'story-oak',kind:'main',title:'Fale com o Professor Car’alho',goal:'oak'});
+ const chapter=W.PsyKantoPlayableV1?.questRows?.();
+ const q=W.PsyKantoWorldV2?.progress?.()||{},pos=api()?.getPosition?.(),main=[];
+ if(chapter?.length)main.push(...chapter);
+ else if(!q.oak)main.push({id:'story-oak',kind:'main',title:'Fale com o Professor Car’alho',goal:'oak'});
  else if(!q.viridian)main.push({id:'story-route1',kind:'main',title:'Atravesse a Rota 1 até Viridian',goal:'viridian'});
  else main.push({id:'story-viridian',kind:'main',title:'Explore Viridian City'});
  const raw=player().meta?.activeQuests||player().quests?.active||[];
@@ -42,6 +44,7 @@ function questRows(){
 }
 async function find(q){
  findTask=null;api()?.setAutoHunt(false);
+ if(q.goal==='chapter'){api()?.navigateTo(q.at);return;}
  if(q.goal==='oak'){
   let p=api()?.getPosition?.();if(!p||p.world!=='pallet'){api()?.open('pallet');p=api()?.getPosition?.();}
   if(p.inside&&p.inside!=='lab')api()?.leaveInterior();
@@ -103,7 +106,7 @@ function autoTurn(){
  buttons.sort((a,b)=>score(b)-score(a));buttons[0].click();
 }
 function refresh(){
- const root=D.getElementById('psy-kanto-world-v2'),stage=root?.querySelector('.kw2-stage'),arena=D.querySelector('#battle-screen .battle-hud');
+ const legacy=D.getElementById('psy-kanto-world'),root=legacy?.classList.contains('open')?legacy:D.getElementById('psy-kanto-world-v2'),stage=root?.querySelector('.kw2-stage,.kp-stage'),arena=D.querySelector('#battle-screen .battle-hud');
  const city=D.getElementById('game-wrap'),campaignOpen=root?.classList.contains('open');
  const mapHost=campaignOpen?stage:city;
  if(mapHost){if(tracker.parentElement!==mapHost)mapHost.appendChild(tracker);if(tools.parentElement!==mapHost)mapHost.appendChild(tools);updateTracker();}

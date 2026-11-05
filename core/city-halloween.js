@@ -56,23 +56,30 @@
     const b=cityScreenBounds(w,h);
     c.beginPath();c.rect(b.left,b.top,b.right-b.left,b.bottom-b.top);c.clip();
   }
-  function drawCityFloor(c,w,h) {
-    const b=cityScreenBounds(w,h), shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
+
+  const floorCache=new Map();
+  function drawCityFloor(ctx,w,h){
+    const b=cityScreenBounds(w,h),shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
     for(let ty=b.y0;ty<=b.y1;ty++)for(let tx=b.x0;tx<=b.x1;tx++){
-      if(typeof map!=='undefined' && map?.[ty]?.[tx]!==1) continue;
-      const sx=w/2-P.px-b.tile/2+tx*b.tile, sy=h/2-P.py-b.tile/2+ty*b.tile;
-      if(sx+b.tile<0||sy+b.tile<0||sx>w||sy>h)continue;
-      c.fillStyle='#211d30';c.fillRect(sx,sy,b.tile+1,b.tile+1);
-      const stone=19;
-      for(let row=0;row<Math.ceil(b.tile/stone);row++)for(let col=0;col<Math.ceil(b.tile/stone);col++){
-        const seed=(ty*73+tx*97+row*19+col*31+(row%2)*7)%shades.length;
-        const px=sx+col*stone+(row%2)*8, py=sy+row*stone;
-        c.fillStyle=shades[seed];rounded(c,px+1,py+1,stone-3,stone-3,3);c.fill();
-        c.fillStyle='rgba(205,170,118,.09)';c.fillRect(px+4,py+3,stone-9,1);
+      if(typeof map!=='undefined'&&map?.[ty]?.[tx]!==1)continue;
+      const x=w/2-P.px-b.tile/2+tx*b.tile,y=h/2-P.py-b.tile/2+ty*b.tile;
+      if(x+b.tile<0||y+b.tile<0||x>w||y>h)continue;
+      const pattern=(tx*97+ty*73)%5,key=b.tile+':'+pattern;
+      let tile=floorCache.get(key);
+      if(!tile){
+        tile=D.createElement('canvas');tile.width=tile.height=b.tile;const c=tile.getContext('2d');
+        c.fillStyle='#211d30';c.fillRect(0,0,b.tile,b.tile);
+        for(let row=0;row<Math.ceil(b.tile/19);row++)for(let col=0;col<Math.ceil(b.tile/19);col++){
+          const px=col*19+(row%2)*8,py=row*19;c.fillStyle=shades[(pattern+row*19+col*31)%5];rounded(c,px+1,py+1,16,16,3);c.fill();c.fillStyle='#cdaa7617';c.fillRect(px+4,py+3,10,1);
+        }
+        c.strokeStyle='#d2a77419';c.strokeRect(2,2,b.tile-4,b.tile-4);
+        c.fillStyle=['#b97741','#bd9c57','#926789','#638173'][pattern%4];
+        for(let k=0;k<2;k++){c.beginPath();c.ellipse(6+(pattern*11+k*13)%(b.tile-12),k?b.tile-7:6,3.5,1.8,pattern*.4,0,Math.PI*2);c.fill();}
+        floorCache.set(key,tile);if(floorCache.size>40)floorCache.delete(floorCache.keys().next().value);
       }
+      ctx.drawImage(tile,x,y,b.tile+1,b.tile+1);
     }
   }
-
   // Every visible paving tile gets a restrained seasonal accent. Decorations
   // stay at the tile edges so the centre of walking lanes remains readable.
   function drawSeasonalPaving(c,w,h){
@@ -335,7 +342,7 @@
     // World-anchored cobblestone floor only replaces ordinary town ground.
     // The full town quarter uses one continuous cobblestone surface.
     drawCityFloor(c,w,h);
-    drawSeasonalPaving(c,w,h);
+
     drawFestivalPlots(c);
     HOUSES.forEach(house=>drawHouse(c,house));
     drawCityDecor(c);
@@ -403,6 +410,8 @@
     return {index,locked};
   }
   function speak(npc) {
+    if(W.PsyGuide){const progression=storyLine(npc);return W.PsyGuide.show({speaker:npc.name+' · '+npc.role,text:npc.lines[progression.index],portrait:npc.art.startsWith('/')?npc.art:'/assets/halloween/'+npc.art,target:'#psy-halloween-npc-'+npc.id});}
+
     const panel=makeDialog(), name=panel.querySelector('h3'), copy=panel.querySelector('p');
     dialogIndex=(dialogIndex+1)%npc.lines.length;
     const progression=storyLine(npc),index=progression.index;

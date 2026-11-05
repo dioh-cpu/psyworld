@@ -10,10 +10,10 @@
     {title:'ESCOLHA SEU PRIMEIRO PARCEIRO',text:'A aventura começa com um inicial de Kanto. Bulbasaur, Charmander e Squirtle são as escolhas disponíveis agora; novas regiões e iniciais serão liberados pela progressão.'}
   ];
   const TUTORIAL = [
-    {icon:'🌙',title:'Sua cidade',text:'Esta é a praça de Pallet. As casas, a fonte e as decorações ficam posicionadas no mundo enquanto você caminha pela cidade.',target:'#gameCanvas'},
+    {icon:'🌙',title:'Sua cidade',text:'Esta é a cidade Psy. As casas, a fonte e as decorações ficam posicionadas no mundo enquanto você caminha pela cidade.',target:'#gameCanvas'},
     {icon:'💚',title:'Seu treinador e parceiro',text:'Depois que você escolher seu inicial pela campanha, este painel mostrará o nível, a vida e a experiência do Pokémon que está à frente da equipe.',target:'#hud-player'},
     {icon:'🧑‍🤝‍🧑',title:'Converse com os moradores',text:'Aproxime-se de uma pessoa e toque nela para ler suas falas e conhecer os serviços e histórias da cidade.',target:'#psy-halloween-npc-luna'},
-    {icon:'🕹️',title:'Caminhe pela cidade',text:'No computador, use as setas ou WASD. No celular, arraste o joystick do canto inferior esquerdo para andar.',target:'#joystick'},
+    {icon:'🕹️',title:'Caminhe pela cidade',text:'No computador, use as setas ou WASD. No celular, arraste em qualquer área livre do mapa para caminhar. Solte para parar.',target:'#gameCanvas'},
     {icon:'🎬',title:'Entre na campanha',text:'Este botão inicia a história de Kanto. A cinemática apresenta a jornada e, em seguida, você escolhe um dos três iniciais da primeira região.',target:'#btn-kanto-journey'},
     {icon:'🎒',title:'Equipe, bolsa e menu',text:'Use estes atalhos para abrir sua equipe e sua bolsa. O MENU reúne as outras atividades e permite rever este tutorial quando quiser.',target:'#btn-team-float'},
     {icon:'🧭',title:'Você está no controle',text:'A campanha é acessada pelo botão. A cidade continua como área própria, sem placa ou saída de rota. Vamos começar?',target:'#menuBtn'}
@@ -122,6 +122,8 @@
     W.requestAnimationFrame(positionSpotlight);
   }
   W.openTutorial=function(){
+    if(W.PsyGuide)return W.PsyGuide.tutorial(TUTORIAL.map(step=>({text:step.text,speaker:'Psyduck · Seu guia',target:step.target,prepare:()=>{if(['#btn-kanto-journey','#btn-team-float'].includes(step.target))W.toggleCityGameContent?.(false);else W.toggleCityGameContent?.(true);},finish:()=>W.closeTutorial?.()})));
+
     addStyles();tutorialIndex=0;
     tutorialRoot=D.getElementById('psy-tutorial-cinematic');
     if(!tutorialRoot){tutorialRoot=D.createElement('div');tutorialRoot.id='psy-tutorial-cinematic';tutorialRoot.innerHTML=`<div class="psy-tc-spotlight"></div><section class="psy-tc-caption" role="dialog" aria-modal="true"><div class="psy-tc-kicker"></div><h2></h2><p></p><div class="psy-tc-actions"><button data-close>PULAR TUTORIAL</button><button data-prev>← VOLTAR</button><span class="psy-tc-count"></span><button class="next" data-next>PRÓXIMA CENA →</button></div></section>`;D.body.appendChild(tutorialRoot);}
@@ -132,7 +134,7 @@
     tutorialRoot.querySelector('[data-next]').onclick=()=>{if(tutorialIndex>=TUTORIAL.length-1)return W.closeTutorial();tutorialIndex++;renderTutorial()};
     renderTutorial();W.addEventListener('resize',positionSpotlight);W.addEventListener('scroll',positionSpotlight,true);
   };
-  W.closeTutorial=function(){
+  W.closeTutorial=function(){W.PsyGuide?.close();
     if(P){P.meta=P.meta||{};P.meta.psyCinematicTutorialSeen=true;if(P.team?.length)try{autoSave()}catch(_){}else try{W.psyV9WriteLocal?.()}catch(_){}}
     if(tutorialRoot)tutorialRoot.style.display='none';
     W.removeEventListener('resize',positionSpotlight);W.removeEventListener('scroll',positionSpotlight,true);
