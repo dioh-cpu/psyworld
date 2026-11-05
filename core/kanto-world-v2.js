@@ -95,7 +95,7 @@ if(autoHunt&&!state.inside&&!state.dialogOpen&&!state.suspended&&!state.path.len
 }
 let dx=0,dy=0;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
 if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<7){state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d}}
-state.moving=false;if(dx||dy)move(dx,dy,dt);
+state.moving=false;if(dx||dy)move(dx,dy,dt);if(state.root){state.root.dataset.worldPosition=Math.round(state.position.x)+','+Math.round(state.position.y);state.root.dataset.pathLength=String(state.path.length);}
 const frameBudget=W.innerWidth<740?1000/48:1000/60;
 if(now-state.lastRender>=frameBudget){draw();state.lastRender=now}
 state.raf=W.requestAnimationFrame(tick)}
@@ -390,7 +390,7 @@ function findPath(from,to,request){
   });
 }
 W.PsyKantoWorldV2={interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
- navigate:async function(at){autoHunt=false;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;return route.length>0;},
+ navigate:async function(at){autoHunt=false;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){if(active&&!vipActive()){showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1')open('route-1');if(state.inside)exitDoor();autoHunt=!!active;if(!autoHunt)state.path=[];return autoHunt;},
  isAutoHunt:()=>autoHunt,
  open,close,data:DATA,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y})};
