@@ -6,7 +6,7 @@
 
   const CINEMATIC_STORY = [
     {title:'PALLET TOWN',text:'Depois de escolher quem será seu treinador, você chega a Pallet Town. A cidade é seu ponto de encontro: converse com os moradores, conheça os prédios e prepare-se no seu próprio ritmo.'},
-    {title:'UM CHAMADO DE KANTO',text:'O Professor Carvalho abriu a jornada pela região. A campanha começa pelo botão no alto da cidade; não existe passagem física da praça para uma rota.'},
+    {title:'UM CHAMADO DE KANTO',text:'O Professor Car’alho abriu a jornada pela região. A campanha começa pelo botão no alto da cidade; não existe passagem física da praça para uma rota.'},
     {title:'ESCOLHA SEU PRIMEIRO PARCEIRO',text:'A aventura começa com um inicial de Kanto. Bulbasaur, Charmander e Squirtle são as escolhas disponíveis agora; novas regiões e iniciais serão liberados pela progressão.'}
   ];
   const TUTORIAL = [
@@ -71,8 +71,11 @@
     function render(){
       const story=CINEMATIC_STORY[Math.min(stage,CINEMATIC_STORY.length-1)];
       const choose=stage===CINEMATIC_STORY.length;
-      root.innerHTML=`<div class="psy-kc-backdrop"></div><section class="psy-kc-card" aria-live="polite"><div class="psy-kc-kicker">PSYWORLD · CAMPANHA KANTO</div><div class="psy-kc-progress">${CINEMATIC_STORY.map((_,i)=>`<i class="${i<=stage?'on':''}"></i>`).join('')}</div>${choose?`<h1>Escolha seu inicial</h1><p>${CINEMATIC_STORY[2].text}</p><div class="psy-kc-starters">${GENS[0].starters.map(p=>`<button class="psy-kc-choice" data-starter="${p.id}"><img src="${getSpriteUrl(p.id)}" alt="${p.name}"><b>${p.name}</b><small>${p.type}</small></button>`).join('')}</div>`:`<h1>${story.title}</h1><p>${story.text}</p><div class="psy-kc-actions"><button data-cancel>VOLTAR À CIDADE</button><button class="primary" data-next>${stage===CINEMATIC_STORY.length-1?'ESCOLHER INICIAL':'CONTINUAR'}</button></div>`}</section>`;
-      root.querySelector('[data-cancel]')?.addEventListener('click',closeCampaignCinematic);
+      root.innerHTML=`<div class="psy-kc-backdrop"></div><section class="psy-kc-card" aria-live="polite"><div class="psy-kc-kicker">PSYWORLD · CAMPANHA KANTO</div><div class="psy-kc-actions"><button data-return>VOLTAR À CIDADE PSY</button>${!choose?`<button data-skip>PULAR INTRODUÇÃO</button>`:""}</div><div class="psy-kc-progress">${CINEMATIC_STORY.map((_,i)=>`<i class="${i<=stage?'on':''}"></i>`).join('')}</div>${choose?`<h1>Escolha seu inicial</h1><p>${CINEMATIC_STORY[2].text}</p><div class="psy-kc-starters">${GENS[0].starters.map(p=>`<button class="psy-kc-choice" data-starter="${p.id}"><img src="${getSpriteUrl(p.id)}" alt="${p.name}"><b>${p.name}</b><small>${p.type}</small></button>`).join('')}</div>`:`<h1>${story.title}</h1><p>${story.text}</p><div class="psy-kc-actions"><button data-cancel>VOLTAR À CIDADE</button><button class="primary" data-next>${stage===CINEMATIC_STORY.length-1?'ESCOLHER INICIAL':'CONTINUAR'}</button></div>`}</section>`;
+      const returnToCity=()=>{closeCampaignCinematic();W.startKantoCityPrelude?.();};
+      root.querySelector('[data-cancel]')?.addEventListener('click',returnToCity);
+      root.querySelector('[data-return]')?.addEventListener('click',returnToCity);
+      root.querySelector('[data-skip]')?.addEventListener('click',()=>{stage=CINEMATIC_STORY.length;render();});
       root.querySelector('[data-next]')?.addEventListener('click',()=>{stage++;render()});
       root.querySelectorAll('[data-starter]').forEach(btn=>btn.addEventListener('click',()=>{
         const id=Number(btn.dataset.starter),starter=GENS[0].starters.find(p=>p.id===id);if(!starter)return;
@@ -121,7 +124,7 @@
   W.openTutorial=function(){
     addStyles();tutorialIndex=0;
     tutorialRoot=D.getElementById('psy-tutorial-cinematic');
-    if(!tutorialRoot){tutorialRoot=D.createElement('div');tutorialRoot.id='psy-tutorial-cinematic';tutorialRoot.innerHTML=`<div class="psy-tc-spotlight"></div><section class="psy-tc-caption" role="dialog" aria-modal="true"><div class="psy-tc-kicker"></div><h2></h2><p></p><div class="psy-tc-actions"><button data-close>SAIR</button><button data-prev>← VOLTAR</button><span class="psy-tc-count"></span><button class="next" data-next>PRÓXIMA CENA →</button></div></section>`;D.body.appendChild(tutorialRoot);}
+    if(!tutorialRoot){tutorialRoot=D.createElement('div');tutorialRoot.id='psy-tutorial-cinematic';tutorialRoot.innerHTML=`<div class="psy-tc-spotlight"></div><section class="psy-tc-caption" role="dialog" aria-modal="true"><div class="psy-tc-kicker"></div><h2></h2><p></p><div class="psy-tc-actions"><button data-close>PULAR TUTORIAL</button><button data-prev>← VOLTAR</button><span class="psy-tc-count"></span><button class="next" data-next>PRÓXIMA CENA →</button></div></section>`;D.body.appendChild(tutorialRoot);}
     spotlight=tutorialRoot.querySelector('.psy-tc-spotlight');tutorialRoot.style.display='block';
     D.getElementById('menu')?.style && (D.getElementById('menu').style.display='none');
     tutorialRoot.querySelector('[data-close]').onclick=W.closeTutorial;
