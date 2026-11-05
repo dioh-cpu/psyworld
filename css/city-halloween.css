@@ -105,3 +105,12 @@ body.psy-kanto-v2-active #world-btn-float,body.psy-kanto-v2-active #psy-content-
  #city-game-content-buttons>button{min-height:76px!important;padding:13px 9px!important;font-size:12px!important}
 }
 @media(max-height:480px){#world-btn-float:not(.city-content-collapsed){max-height:calc(100dvh - 16px)!important;padding:10px!important;gap:6px!important}#world-btn-float:not(.city-content-collapsed) #city-game-content-buttons{max-height:calc(100dvh - 92px)!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}#city-game-content-buttons>button{min-height:60px!important}}
+
+/* Entry screens own the entire viewport. World controls only belong in gameplay. */
+body:has(.psy-halloween-screen.is-open) #world-btn-float,
+body:has(.psy-halloween-screen.is-open) #psy-content-backdrop,
+body:has(#screen-starter[style*="flex"]) #world-btn-float,
+body:has(#screen-starter[style*="flex"]) #psy-content-backdrop,
+body:has(#screen-login[style*="flex"]) #world-btn-float{display:none!important}
+#world-btn-float.city-content-collapsed{transform:none!important}
+#joystick,.kw2-joystick{display:none!important;pointer-events:none!important}
