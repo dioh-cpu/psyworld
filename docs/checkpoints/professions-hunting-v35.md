@@ -1,6 +1,6 @@
 # PSYWORLD V35 continuation — 2026-11-05
 
-Repository dioh-cpu/psyworld; ONLY teste/kanto-pallet-rota1-v2. Parent V34 6b18ba4813449a37c52da06f1e30dffb560316d4. Never main/production. User requests automatic checkpoints and continuity. No Android requested.
+Repository dioh-cpu/psyworld; Preview branches only. V35 continues on teste/oficios-caca-v35 because GitHub update_ref repeatedly failed on original teste/kanto-pallet-rota1-v2; Git push lacked credentials. Creating a new preview branch from saved commit succeeded. Original branch remains V34; do not use its archived-Idle enhancement as final delivery. Parent V34 6b18ba4813449a37c52da06f1e30dffb560316d4. Never main/production. User requests automatic checkpoints and continuity. No Android requested.
 
 ## Authoritative user decisions
 - Latest user screenshots from Idle Poke Moon are inspiration, not copy. Adapt systems to PSYWORLD with different layout/colors. New Ofícios da Aurora identity midnight blue/cyan/emerald; original generated job backgrounds.
@@ -26,3 +26,5 @@ Browser earlier toweractualfirstfloorwon3Lv10;replayabandonentry9->8->9correct; 
 
 ## Honest limits
 Not tested everyinfinitefloor,twoaccountonlinepresence,all quality/rank100 recipes in livecombat or long8hofflinesession. Nativepass/AFK mechanics are reused, not rebuilt or newly browserverified in thisiteration. Jobs36recipesbalance needsplayerfeedback. No newlyimplementedprofessionoutfits,TMmanufacture,constellation system; these are reference features not yet delivered ifuserexpectsfullparity.
+
+Published V35 commit 2b8b264786aa5027f822777acd2da13af2f6dab1 on teste/oficios-caca-v35. Awaiting final browser QA.
