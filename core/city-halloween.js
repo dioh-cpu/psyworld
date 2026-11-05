@@ -72,6 +72,38 @@
       }
     }
   }
+
+  // Every visible paving tile gets a restrained seasonal accent. Decorations
+  // stay at the tile edges so the centre of walking lanes remains readable.
+  function drawSeasonalPaving(c,w,h){
+    const b=cityScreenBounds(w,h);
+    c.save();
+    for(let ty=b.y0;ty<=b.y1;ty++)for(let tx=b.x0;tx<=b.x1;tx++){
+      if(typeof map!=='undefined'&&map?.[ty]?.[tx]!==1)continue;
+      const x=w/2-P.px-b.tile/2+tx*b.tile,y=h/2-P.py-b.tile/2+ty*b.tile;
+      if(x+b.tile<0||y+b.tile<0||x>w||y>h)continue;
+      const seed=(tx*31+ty*17)>>>0;
+      c.strokeStyle='rgba(210,167,116,.10)';c.lineWidth=1;c.strokeRect(x+2,y+2,b.tile-4,b.tile-4);
+      const colors=['#b97741','#bd9c57','#926789','#638173'];
+      c.fillStyle=colors[seed%4];c.globalAlpha=.65;
+      for(let k=0;k<2;k++){
+        const lx=x+5+(seed+k*13)%(Math.max(8,b.tile-10)),ly=y+(k?b.tile-7:6);
+        c.beginPath();c.ellipse(lx,ly,3.5,1.8,(seed%5)*.4,0,Math.PI*2);c.fill();
+      }
+      c.globalAlpha=1;
+    }c.restore();
+  }
+  function drawFestivalPlots(c){
+    HOUSES.forEach((house,i)=>{
+      const p=screenPoint(house.dx,house.dy);
+      if(p.x<-350||p.y<-300||p.x>W.innerWidth+350||p.y>W.innerHeight+300)return;
+      c.save();
+      c.fillStyle=['#47324555','#2a445355','#503a3055'][i%3];
+      rounded(c,p.x-3*TILE,p.y-2*TILE,6*TILE,4*TILE,18);c.fill();
+      c.strokeStyle=['#a7795266','#9872b066','#698e8766'][i%3];c.lineWidth=2;c.stroke();
+      c.restore();
+    });
+  }
   function captureOrigin() {
     if (origin || !cityVisible()) return;
     origin = {
@@ -193,6 +225,12 @@
     {id:'bat-mobile',dx:-11.2,dy:-7.5,src:[637,660,319,466],width:72},
     {id:'cobweb-banner',dx:11.2,dy:-7.5,src:[970,685,265,456],width:64}
   ];
+  // Reuse the approved decoration atlas at the entrance of each city plot.
+  HOUSES.forEach((house,i)=>{
+    const left=CITY_DECOR[i%8],right=CITY_DECOR[(i+3)%8];
+    CITY_DECOR.push({...left,id:'plot-left-'+i,dx:house.dx-2.7,dy:house.dy+1.9,width:48});
+    CITY_DECOR.push({...right,id:'plot-right-'+i,dx:house.dx+2.7,dy:house.dy+1.9,width:48});
+  });
   const decorImage = new Image();
   decorImage.src = '/assets/halloween/city-decor-sprite-sheet-v1.png';
   function drawCityDecor(c) {
@@ -297,6 +335,8 @@
     // World-anchored cobblestone floor only replaces ordinary town ground.
     // The full town quarter uses one continuous cobblestone surface.
     drawCityFloor(c,w,h);
+    drawSeasonalPaving(c,w,h);
+    drawFestivalPlots(c);
     HOUSES.forEach(house=>drawHouse(c,house));
     drawCityDecor(c);
     // Little graveyard at the edge of the square.
@@ -327,19 +367,18 @@
       c.fillStyle='#80583e';c.fillRect(p.x-9,p.y-27,18,5);c.shadowColor='#ff9e46';c.shadowBlur=24;c.fillStyle='#ffb65b';c.beginPath();c.arc(p.x,p.y-34,8,0,Math.PI*2);c.fill();c.shadowBlur=0;
       if(i%2===0)drawPumpkin(c,p.x+22,p.y+8,.68);
     });
-    drawBat(c,w*.17,h*.21,.85);drawBat(c,w*.68,h*.29,.65);drawBat(c,w*.92,h*.34,.48);
-    drawWeb(c,8,8,55);drawWeb(c,w-8,8,55);
+    HOUSES.forEach(h=>{const p=screenPoint(h.dx,h.dy);if(p.x>-250&&p.x<w+250&&p.y>-250&&p.y<(D.getElementById('gameCanvas')?.height||W.innerHeight)+250){drawWeb(c,p.x-95,p.y-120,27);drawBat(c,p.x+75,p.y-105,.4);}});
     // Illustrated signboard, typography only; no emoji glyphs.
     const bannerW=Math.min(330,w-28),banner=screenPoint(-10,-1.2),bannerY=banner.y;
     c.fillStyle='#171426f2';c.strokeStyle='#d78a4a';c.lineWidth=2.4;rounded(c,banner.x-bannerW/2,bannerY-20,bannerW,40,18);c.fill();c.stroke();
-    c.fillStyle='#f8d98c';c.font='900 13px system-ui';c.textAlign='center';c.fillText('PALLET TOWN  ·  FESTIVAL DE HALLOWEEN',banner.x,bannerY+5);
+    c.fillStyle='#f8d98c';c.font='900 13px system-ui';c.textAlign='center';c.fillText('CIDADE PSY  ·  FESTIVAL DAS LANTERNAS',banner.x,bannerY+5);
     drawGhostDecorations(c);
     c.restore();
   }
   function makeDialog() {
     if (dialog) return dialog;
     dialog=D.createElement('section'); dialog.className='psy-halloween-dialog'; dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-live','polite');
-    dialog.innerHTML='<button type="button" class="psy-halloween-close" aria-label="Fechar">×</button><small>PALLET TOWN · KANTO · FESTIVAL DE HALLOWEEN</small><div class="psy-halloween-dialog-body"><div class="psy-halloween-portrait" data-emotion="neutral"><img alt=""><span class="psy-halloween-expression" aria-hidden="true"><i class="brow left"></i><i class="brow right"></i><i class="mouth"></i></span></div><div class="psy-halloween-dialog-copy"><h3></h3><p></p></div></div><button type="button" class="psy-halloween-next">CONTINUAR</button>';
+    dialog.innerHTML='<button type="button" class="psy-halloween-close" aria-label="Fechar">×</button><small>CIDADE PSY · FESTIVAL DE HALLOWEEN</small><div class="psy-halloween-dialog-body"><div class="psy-halloween-portrait" data-emotion="neutral"><img alt=""><span class="psy-halloween-expression" aria-hidden="true"><i class="brow left"></i><i class="brow right"></i><i class="mouth"></i></span></div><div class="psy-halloween-dialog-copy"><h3></h3><p></p></div></div><button type="button" class="psy-halloween-next">CONTINUAR</button>';
     dialog.querySelector('.psy-halloween-close').onclick=()=>dialog.classList.remove('open');
     dialog.querySelector('.psy-halloween-next').onclick=()=>dialog.classList.remove('open');
     D.body.appendChild(dialog); return dialog;
