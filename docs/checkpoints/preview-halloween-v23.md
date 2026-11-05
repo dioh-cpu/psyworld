@@ -41,3 +41,5 @@ References consulted (design references only, not claimed universal drop percent
 - https://www.padventures.org/index.php/news — official event reward context; no universal Halloween candy rate found.
 
 Browser verification: actual Psy City entry and Amora shop opened; temporary QA profile purchase deducted 100 candy, Shiny deducted 1,000 and Shiny Mega deducted another 5,000. All 16 animated form URLs loaded successfully. Final follow-up exposes visibility options through the mobile legacy settings entry and shows real costume art in the shop.
+
+Final verification (2026-11-05): code preview https://psyworld-6r2rfhr2c-world-of-monsters.vercel.app/ at commit b4dbe96ec30b3ee792e131141bf2c8fd44103684. Main-game local login, trainer selection, city entry and NPC shop checked. Tela / Dispositivo exposes all three visibility settings; hiding titles changes the actual checkbox state. Isolated 390px mobile shop screenshot saved as halloween-mobile-proof-20261105.jpg; no horizontal clipping observed. No full live campaign/continuous-hunt playthrough claimed. Public production was not promoted.
