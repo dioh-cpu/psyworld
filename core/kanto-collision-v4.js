@@ -22,6 +22,8 @@ data.route1.ground.push(
  [[735,236],[770,236],[770,294],[735,294]]
 );
 data.route1.npcs=[];
+data.route1.doors=[{id:'route-cave',title:'Gruta dos Cristais',at:[620,163],range:45}];
+data.route1.ground.push([[600,150],[638,150],[638,196],[600,196]]);
 Object.assign(D.pallet,data.pallet);
 Object.assign(D.route1,data.route1);
 D.route1.title='Rota 1';
