@@ -83,9 +83,18 @@ function updateTracker(){
 }
 function autoTurn(){
  if(!automatic||!vip())return;
- if(typeof inBattle==='undefined'||!inBattle||typeof battleData==='undefined'||!battleData||battleData.state!=='active'||battleData.turnLock)return;
+ if(typeof inBattle==='undefined'||!inBattle||typeof battleData==='undefined'||!battleData||battleData.state!=='active')return;
  if(Date.now()-lastAction<1500)return;
- const mon=player().team?.[0];if(!mon||Number(mon.hp)<=0)return;
+ const mon=player().team?.[0];if(!mon)return;
+ if(Number(mon.hp)<=0){
+  W.psyHandleBattleFaint?.();
+  const modal=D.getElementById('psy-battle-switch-required');if(!modal)return;
+  const living=(player().team||[]).some((m,i)=>i>0&&Number(m.hp)>0);
+  if(living){const button=modal.querySelector('[data-v31-switch], [data-switch]');if(button&&!button.disabled){lastAction=Date.now();button.click();}return;}
+  const end=modal.querySelector('[data-v31-end], [data-end]');if(!end)return;
+  lastAction=Date.now();automatic=false;catchEnabled=false;api()?.setAutoHunt(false);renderButtons();end.click();note('Auto Hunt encerrado: sua equipe precisa ser curada.');return;
+ }
+ if(battleData.turnLock)return;
  const buttons=[...D.querySelectorAll('#move-buttons button')].filter(b=>!b.disabled&&b.getClientRects().length);
  if(!buttons.length)return;
  lastAction=Date.now();

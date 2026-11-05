@@ -184,6 +184,7 @@
         if(Math.random()<chance*speedScale*dropBoost){addItem(p,name,1,mode);got.push(name)}
       }
     }
+    W.PsyProfessions?.onKill(enemy,mode);
     W.PsySeason?.award(enemy,mode);
     W.PsySeason?.loot(got);
     const id=profile.id;

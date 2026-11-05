@@ -9,5 +9,6 @@ const layouts={
  'house-west':{blocks:[[28,170,126,342],[330,171,454,278],[25,445,125,615]],npcs:[[240,382]]}
 };
 for(const [id,layout]of Object.entries(layouts)){const room=rooms[id];if(!room)continue;room.art='assets/kanto/interiors/'+id+'-v30.webp';Object.defineProperty(room,'paint',{value:null,writable:true,configurable:true});room.blocks=layout.blocks;room.walkBounds=[25,174,455,687];room.spawn=[240,630];room.exit=[240,675];room.npcs.forEach((npc,i)=>npc.at=layout.npcs[i]||[320,450]);}
+if(rooms.lab?.npcs?.[0])rooms.lab.npcs[0].sprite='assets/kanto/npcs/professor-v33.webp';
 W.PsyKantoInteriorArtV30={layouts};
 })(window);
