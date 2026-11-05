@@ -65,8 +65,8 @@ async function advanceFind(){
   else {if(!findTask.routing&&!findTask.routed){findTask.routing=true;const ok=await api()?.navigate([763,123]);if(findTask){findTask.routing=false;findTask.routed=ok;}}return;}
  }
  if(findTask?.phase==='professor'){
-  if(Math.hypot(p.x-240,p.y-395)<18&&p.inside==='lab'){findTask=null;api()?.interact();note('Objetivo encontrado.');}
-  else if(!findTask.routing&&!findTask.routed){findTask.routing=true;const ok=await api()?.navigate([240,395]);if(findTask){findTask.routing=false;findTask.routed=ok;}}
+  if(Math.hypot(p.x-240,p.y-307)<18&&p.inside==='lab'){findTask=null;api()?.interact();note('Objetivo encontrado.');}
+  else if(!findTask.routing&&!findTask.routed){findTask.routing=true;const ok=await api()?.navigate([240,307]);if(findTask){findTask.routing=false;findTask.routed=ok;}}
  }
 }
 let lastRows='';

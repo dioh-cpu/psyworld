@@ -64,14 +64,14 @@ const PLAYER_RADIUS=11;
 function positionValid(x,y){
   if(state.inside){
     const room=state.inside;
-    if(x<PLAYER_RADIUS||x>room.w-PLAYER_RADIUS||y<174+PLAYER_RADIUS||y>room.h-PLAYER_RADIUS)return false;
+    const bounds=room.walkBounds||[0,174,room.w,room.h];if(x<bounds[0]+PLAYER_RADIUS||x>bounds[2]-PLAYER_RADIUS||y<bounds[1]+PLAYER_RADIUS||y>bounds[3]-PLAYER_RADIUS)return false;
     if(room.blocks.some(([a,b,c,d])=>x>=a-PLAYER_RADIUS&&x<=c+PLAYER_RADIUS&&y>=b-PLAYER_RADIUS&&y<=d+PLAYER_RADIUS))return false;
     return !(room.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
   }
   if(!DATA.walkable(state.world,x,y,PLAYER_RADIUS))return false;
   return !(state.world?.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
 }
-function move(dx,dy,dt){state.moving=false;if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=(state.inside?144:143)*(1+Number(W.PsySeason?.buff('speed')||0)/100),dist=speed*dt*Math.min(1,mag),steps=Math.ceil(dist/4.5);let mx=0,my=0;
+function move(dx,dy,dt,maxDistance=Infinity){state.moving=false;if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=(state.inside?144:143)*(1+Number(W.PsySeason?.buff('speed')||0)/100),dist=Math.min(maxDistance,speed*dt*Math.min(1,mag)),steps=Math.ceil(dist/4.5);let mx=0,my=0;
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
 if(positionValid(p.x+stepx,p.y+stepy)){p.x+=stepx;p.y+=stepy;mx+=stepx;my+=stepy}else{if(positionValid(p.x+stepx,p.y)){p.x+=stepx;mx+=stepx}if(positionValid(p.x,p.y+stepy)){p.y+=stepy;my+=stepy}}}
 state.moving=Math.abs(mx)+Math.abs(my)>0.25;
@@ -98,9 +98,9 @@ if(autoHunt&&!huntPlanning&&!state.inside&&!state.dialogOpen&&!state.suspended&&
  huntPlanning=true;const request=++state.navRequest;findPath([p.x,p.y],dest,request).then(path=>{huntPlanning=false;if(autoHunt&&request===state.navRequest)state.path=path;},()=>{huntPlanning=false;});
  }
 }
-let dx=0,dy=0;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
-if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<7){state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d}}
-state.moving=false;if(dx||dy)move(dx,dy,dt);if(state.root){state.root.dataset.worldPosition=Math.round(state.position.x)+','+Math.round(state.position.y);state.root.dataset.pathLength=String(state.path.length);}
+let dx=0,dy=0,pathDistance=Infinity;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
+if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<.5){if(positionValid(...dest)){p.x=dest[0];p.y=dest[1];}state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d;pathDistance=d}}
+state.moving=false;if(dx||dy)move(dx,dy,dt,pathDistance);if(state.root){state.root.dataset.worldPosition=Math.round(state.position.x)+','+Math.round(state.position.y);state.root.dataset.pathLength=String(state.path.length);}
 const frameBudget=W.innerWidth<740?1000/48:1000/60;
 if(now-state.lastRender>=frameBudget){draw();state.lastRender=now}
 state.raf=W.requestAnimationFrame(tick)}
@@ -112,7 +112,7 @@ function camera(){
   const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   // Cover the screen instead of letterboxing; scroll with the player.
-  const scale=state.inside?Math.min(cw/map.w,ch/map.h)*(W.innerWidth<740?0.53:0.72):Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
+  const scale=state.inside?Math.min(3,Math.max(cw/map.w,ch/map.h)*(W.innerWidth<740?1.38:1.15)):Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
   const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
@@ -204,6 +204,7 @@ function drawPlayer(c,x,y){
 }
 
 function drawInterior(c,inside){
+  if(inside.art){const art=image(inside.art);if(art?.loaded){c.imageSmoothingEnabled=true;c.drawImage(art.im,0,0,inside.w,inside.h);}else{c.fillStyle='#182c35';c.fillRect(0,0,inside.w,inside.h);}return;}
   if(inside.paint){
     c.imageSmoothingEnabled=false;
     c.drawImage(inside.paint,0,0,inside.w,inside.h);
