@@ -56,7 +56,7 @@ W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI(
 const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}return true;}
 function close(){autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
-let autoHunt=false,huntPlanAt=0;
+let autoHunt=false,huntPlanAt=0,huntPlanning=false;
 const vipActive=()=>Number(player().meta?.vipUntil||0)>Date.now();
 const PLAYER_RADIUS=11;
 function positionValid(x,y){
@@ -83,14 +83,14 @@ if(state.suspended){const prev=W.endBattle;if(typeof prev==='function'&&!prev.__
 }
 function tick(now){if(!state.root?.classList.contains('open')){state.raf=0;return}const dt=Math.min(.12,Math.max(0,(now-state.time)/1000));state.time=now;
 if(autoHunt&&(!vipActive()||!(player().team||[]).some(mon=>Number(mon.hp)>0))){autoHunt=false;state.path=[];}
-if(autoHunt&&!state.inside&&!state.dialogOpen&&!state.suspended&&!state.path.length&&now-huntPlanAt>900){
+if(autoHunt&&!huntPlanning&&!state.inside&&!state.dialogOpen&&!state.suspended&&!state.path.length&&now-huntPlanAt>900){
  huntPlanAt=now;
  const fields=state.world.grass||[],p=state.position;
  const sorted=fields.slice().sort((a,b)=>Math.hypot((a.rect[0]+a.rect[2])/2-p.x,(a.rect[1]+a.rect[3])/2-p.y)-Math.hypot((b.rect[0]+b.rect[2])/2-p.x,(b.rect[1]+b.rect[3])/2-p.y));
  const field=sorted[0];
  if(field){const [x1,y1,x2,y2]=field.rect;let dest=[(x1+x2)/2,(y1+y2)/2];
  if(DATA.grassAt(state.world,p.x,p.y))for(let k=0;k<15;k++){const candidate=[x1+12+Math.random()*Math.max(1,x2-x1-24),y1+12+Math.random()*Math.max(1,y2-y1-24)];if(positionValid(...candidate)){dest=candidate;break;}}
- const request=++state.navRequest;findPath([p.x,p.y],dest,request).then(path=>{if(autoHunt&&request===state.navRequest)state.path=path;});
+ huntPlanning=true;const request=++state.navRequest;findPath([p.x,p.y],dest,request).then(path=>{huntPlanning=false;if(autoHunt&&request===state.navRequest)state.path=path;},()=>{huntPlanning=false;});
  }
 }
 let dx=0,dy=0;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
