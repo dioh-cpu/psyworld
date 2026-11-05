@@ -6,7 +6,7 @@
 
   const CINEMATIC_STORY = [
     {title:'PALLET TOWN',text:'Depois de escolher quem será seu treinador, você chega a Pallet Town. A cidade é seu ponto de encontro: converse com os moradores, conheça os prédios e prepare-se no seu próprio ritmo.'},
-    {title:'UM CHAMADO DE KANTO',text:'O Professor Car’alho abriu a jornada pela região. A campanha começa pelo botão no alto da cidade; não existe passagem física da praça para uma rota.'},
+    {title:'UM CHAMADO DE KANTO',text:'O Professor Car’alho espera por você no laboratório de Pallet. Converse com ele para preparar sua jornada e liberar a passagem ao norte, rumo à Rota 1.'},
     {title:'ESCOLHA SEU PRIMEIRO PARCEIRO',text:'A aventura começa com um inicial de Kanto. Bulbasaur, Charmander e Squirtle são as escolhas disponíveis agora; novas regiões e iniciais serão liberados pela progressão.'}
   ];
   const TUTORIAL = [
