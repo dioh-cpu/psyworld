@@ -1153,7 +1153,7 @@ function uploadSaveLogin(event) {
 function buildStarterScreen() {
     const container = document.getElementById('starter-list');
     container.innerHTML = '';
-    GENS.forEach(gen => {
+    GENS.slice(0,1).forEach(gen => {
         const sec = document.createElement('div');
         sec.className = 'gen-section';
         sec.innerHTML = `<div class="gen-label">${gen.label}</div>`;
@@ -1297,7 +1297,7 @@ function confirmStarter() {
     P.meta.starterPokemonId = Number(novoPoke.id);
     P.meta.psyStarterQualityFloorV1 = true;
     if(!P.meta.welcomeVip3DaysGranted){
-        const welcomeVipMs = 3 * 24 * 60 * 60 * 1000;
+        const welcomeVipMs = 60 * 60 * 1000;
         P.meta.vipUntil = Math.max(Number(P.meta.vipUntil || 0), Date.now()) + welcomeVipMs;
         P.meta.welcomeVip3DaysGranted = true;
         P.meta.welcomeVipGrantedAt = Date.now();
@@ -1307,7 +1307,7 @@ function confirmStarter() {
     updateHUD();
     initEngine();
     autoSave(); // já salva em v2 + backup + v1
-    notif(`${P.name} escolheu ${chosenPoke.name} (${rarity.n})! 🎉 ⭐ VIP de boas-vindas ativado por 3 dias!`, 4500);
+    notif(`${P.name} escolheu ${chosenPoke.name} (${rarity.n})! 🎉 ⭐ VIP de boas-vindas ativado por 1 hora!`, 4500);
 }
 /* ══════════════════════════════
    LOJA
