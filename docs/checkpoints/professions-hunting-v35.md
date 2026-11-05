@@ -28,3 +28,13 @@ Browser earlier toweractualfirstfloorwon3Lv10;replayabandonentry9->8->9correct; 
 Not tested everyinfinitefloor,twoaccountonlinepresence,all quality/rank100 recipes in livecombat or long8hofflinesession. Nativepass/AFK mechanics are reused, not rebuilt or newly browserverified in thisiteration. Jobs36recipesbalance needsplayerfeedback. No newlyimplementedprofessionoutfits,TMmanufacture,constellation system; these are reference features not yet delivered ifuserexpectsfullparity.
 
 Published V35 commit 2b8b264786aa5027f822777acd2da13af2f6dab1 on teste/oficios-caca-v35. Awaiting final browser QA.
+
+## Final continuation V37
+Because all update_ref calls returned GitHub GraphQL internal errors and CLI push has no credentials, final delivery is a new preview branch teste/oficios-caca-v37. It descends directly from V36 (4af36a5e4ab97871c7acbcb1403e3f0ab7348704), preserving all tower/interior fixes. Main/production untouched. V35 root https://psyworld-ddv9kfsmx-world-of-monsters.vercel.app/ verified live:
+- Login/character selection and city load. Native content catalog still excludes Idle.
+- Actual lazy Hunts18 elements loaded; new searchBulbasaur -> exactly2 hunts Planta/Veneno, previewscorrect, original entrypool/locks retained.
+- Native bag searchGreat -> onlyGreatBall; workshoplink opensnewprofessions; all9 choices disabledfortrainerLv1. OriginalGreat5/Pokéball15/potion5 intact.
+- Mainjobart3headersloadcorrectly. Fixture needed basehref/ forrelativeimages;fixedV36.
+- Floatingentry visibility fixV37 uses actualvisiblegeometry (loginchilddisplayblock whileparenthidden hadincorrectlyhiddenbutton); observer tracks style/class changes. Paletteoverrideprevents oldglobalrainbowheadingeffectinsideworkshop.
+- Mobile390px craft/collect/equipfunctional browserproof V33 recordedabove, modelunchangedexceptcontextualbuffs.
+- Final deployment/browser entryvisibility check still to be verified after V37publication; final response should link exact verified preview and describe concreteimplemented scope, not claimallreferenceparity.

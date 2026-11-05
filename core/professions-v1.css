@@ -3,3 +3,4 @@
 #psy-professions header{background-size:cover;background-position:center;padding:20px;border-radius:16px}#psy-professions progress{width:min(360px,100%);height:8px;accent-color:#57e4c0;border:0}#psy-professions *{scrollbar-width:thin;scrollbar-color:#31566a #0b1724}#psy-professions nav{scrollbar-width:none}@media(max-width:720px){#psy-professions header{padding:14px}#psy-professions .pf-recipes{max-height:130px}}
 
 #psy-professions footer button[data-pf=collect]{background:#46d9b0;color:#06251e;border-color:#9affdf}#psy-professions button[data-pf=craft]{background:#46d9b0;color:#06251e;display:block;margin-top:14px;width:100%}#psy-professions .pf-shell{scroll-behavior:smooth}
+#psy-professions h1,#psy-professions h2{animation:none!important;background:none!important;-webkit-text-fill-color:currentColor!important;color:#b2f7e5!important}
