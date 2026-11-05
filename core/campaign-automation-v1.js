@@ -24,7 +24,7 @@ const tools=D.createElement('div');tools.id='psy-campaign-tools';
 const hunt=D.createElement('button');hunt.textContent='AUTO HUNT · VIP';hunt.onclick=()=>{if(!requireVip())return;findTask=null;const on=api()?.setAutoHunt(!api()?.isAutoHunt());if(on)setAutomatic(true);renderButtons();};tools.appendChild(hunt);
 const bar=D.createElement('div');bar.id='psy-auto-battle';
 const battleButton=D.createElement('button');battleButton.onclick=()=>setAutomatic(!automatic);
-const catchButton=D.createElement('button');catchButton.onclick=()=>{if(!requireVip())return;catchEnabled=!catchEnabled;renderButtons();};bar.append(battleButton,catchButton);
+const catchButton=D.createElement('button');catchButton.onclick=()=>{if(!requireVip())return;catchEnabled=!catchEnabled;if(catchEnabled)setAutomatic(true);renderButtons();};bar.append(battleButton,catchButton);
 function renderButtons(){
  battleButton.textContent=automatic?'AUTO BATALHA · ON':'AUTO BATALHA · VIP';battleButton.setAttribute('aria-pressed',String(automatic));
  catchButton.textContent=catchEnabled?'AUTO CAPTURA · ON':'AUTO CAPTURA · VIP';catchButton.setAttribute('aria-pressed',String(catchEnabled));
@@ -36,7 +36,7 @@ function questRows(){
  else if(!q.viridian)main.push({id:'story-route1',kind:'main',title:'Atravesse a Rota 1 até Viridian',goal:'viridian'});
  else main.push({id:'story-viridian',kind:'main',title:'Explore Viridian City'});
  const raw=player().meta?.activeQuests||player().quests?.active||[];
- const active=Array.isArray(raw)?raw:Object.values(raw);
+ const active=(Array.isArray(raw)?raw:Object.values(raw)).map(q=>({...q,title:q.title||q.name||q.n,kind:q.kind||q.category||'side'}));
  return [...main,...active,...extra].filter(q=>q&&q.title&&q.status!=='completed'&&q.status!=='claimed');
 }
 async function find(q){
@@ -103,9 +103,13 @@ function autoTurn(){
 }
 function refresh(){
  const root=D.getElementById('psy-kanto-world-v2'),stage=root?.querySelector('.kw2-stage'),arena=D.querySelector('#battle-screen .battle-hud');
- if(stage){if(tracker.parentElement!==stage)stage.appendChild(tracker);if(tools.parentElement!==stage)stage.appendChild(tools);updateTracker();}
+ const city=D.getElementById('game-wrap'),campaignOpen=root?.classList.contains('open');
+ const mapHost=campaignOpen?stage:city;
+ if(mapHost){if(tracker.parentElement!==mapHost)mapHost.appendChild(tracker);if(tools.parentElement!==mapHost)mapHost.appendChild(tools);updateTracker();}
+ tracker.hidden=!mapHost||(!campaignOpen&&(!city||W.getComputedStyle(city).display==='none'))||!questRows().length;
+ tools.hidden=!campaignOpen;
  if(arena&&bar.parentElement!==arena)arena.appendChild(bar);
- if(!vip()){automatic=false;catchEnabled=false;api()?.setAutoHunt(false);}
+ if(!vip()){automatic=false;catchEnabled=false;if(api()?.isAutoHunt())api()?.setAutoHunt(false);}
  renderButtons();advanceFind().catch(()=>{findTask=null;});
  if(D.visibilityState==='visible')autoTurn();
 }
