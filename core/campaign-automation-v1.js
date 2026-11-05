@@ -58,12 +58,12 @@ async function advanceFind(){
  if(!findTask||Date.now()-findAt<1000)return;findAt=Date.now();
  const p=api()?.getPosition?.();if(!p)return;
  if(findTask.phase==='lab'){
-  if(Math.hypot(p.x-763,p.y-123)<45){api()?.enterPlace('lab');findTask.phase='professor';findAt=0;}
-  else {await api()?.navigate([763,123]);return;}
+  if(Math.hypot(p.x-763,p.y-123)<45){api()?.enterPlace('lab');findTask.phase='professor';findTask.routing=false;findTask.routed=false;findAt=0;}
+  else {if(!findTask.routing&&!findTask.routed){findTask.routing=true;const ok=await api()?.navigate([763,123]);if(findTask){findTask.routing=false;findTask.routed=ok;}}return;}
  }
  if(findTask?.phase==='professor'){
   if(Math.hypot(p.x-240,p.y-395)<18&&p.inside==='lab'){findTask=null;api()?.interact();note('Objetivo encontrado.');}
-  else await api()?.navigate([240,395]);
+  else if(!findTask.routing&&!findTask.routed){findTask.routing=true;const ok=await api()?.navigate([240,395]);if(findTask){findTask.routing=false;findTask.routed=ok;}}
  }
 }
 let lastRows='';
