@@ -178,6 +178,7 @@ function prepareAvatar(entry){
 function drawPlayer(c,x,y){
   c.save();
   c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13,5,0,0,Math.PI*2);c.fill();
+  const fashion=W.PsyProfessions?.cosmetic?.();if(fashion){c.save();c.strokeStyle=fashion.color;c.globalAlpha=.7;c.lineWidth=2;c.beginPath();c.ellipse(x,y+4,18,7,0,0,Math.PI*2);c.stroke();if(state.moving){c.globalAlpha=.45;for(let i=0;i<3;i++){c.beginPath();c.arc(x+(i-1)*9,y+8+(Math.sin(state.walkFrame+i)+1)*4,1.8,0,Math.PI*2);c.fillStyle=fashion.color;c.fill()}}c.restore()}
   const entry=selectedAvatar();let usedSprite=false;
   if(entry?.loaded){
     const row=({down:0,left:1,right:2,up:3})[state.facing]||0;

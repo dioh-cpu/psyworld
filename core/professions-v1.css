@@ -4,3 +4,5 @@
 
 #psy-professions footer button[data-pf=collect]{background:#46d9b0;color:#06251e;border-color:#9affdf}#psy-professions button[data-pf=craft]{background:#46d9b0;color:#06251e;display:block;margin-top:14px;width:100%}#psy-professions .pf-shell{scroll-behavior:smooth}
 #psy-professions h1,#psy-professions h2{animation:none!important;background:none!important;-webkit-text-fill-color:currentColor!important;color:#b2f7e5!important}
+
+#psy-professions article[hidden]{display:none!important}#psy-professions #pf-career-search{width:100%;margin-bottom:16px}#psy-professions .pf-job-bonus{color:#89efce;font-weight:700}#psy-professions .pf-careers button small{margin-top:3px;color:#a4d8ce}
