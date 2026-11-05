@@ -142,11 +142,11 @@ function showLoadError(e){
 }
 
 function modeFromButton(b){
-  if(!b)return null;
+  if(!b||b.closest('#psy-campaign-tools,#psy-auto-battle,#psy-campaign-quests'))return null;
   const oc=String(b.getAttribute?.('onclick')||'');
   for(const [k,m] of Object.entries(MODES))if(m.entry.some(fn=>oc.includes(fn+'(')||oc.includes('window.'+fn+'(')))return k;
   const t=String(b.textContent||'').toUpperCase();
-if(t.includes('PSY IDLE'))return'idleworld'; if(t.includes('HUNTS'))return'hunts';
+if(t.includes('PSY IDLE'))return null; if(t.includes('HUNTS'))return'hunts';
   if(t.includes('DUNGEON'))return'dungeons'; if(t.includes('GYM')||t.includes('GINÁSIO'))return'gyms';
   if(t.includes('CARDS')||t.includes('ÁLBUM'))return'cards'; if(t.includes('SURVIVOR')||t.includes('PSYDUCK SUPREMO'))return'survivor';
   if(t.includes('POKÉDEX'))return'pokedex'; if(t.includes('EGG CENTER'))return'eggs'; if(t.includes('QUEST'))return'quests';
