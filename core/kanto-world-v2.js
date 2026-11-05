@@ -67,7 +67,7 @@ function positionValid(x,y){
   if(!DATA.walkable(state.world,x,y,PLAYER_RADIUS))return false;
   return !(state.world?.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
 }
-function move(dx,dy,dt){state.moving=false;if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?144:143,dist=speed*dt,steps=Math.ceil(dist/4.5);let mx=0,my=0;
+function move(dx,dy,dt){state.moving=false;if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=state.inside?144:143,dist=speed*dt*Math.min(1,mag),steps=Math.ceil(dist/4.5);let mx=0,my=0;
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
 if(positionValid(p.x+stepx,p.y+stepy)){p.x+=stepx;p.y+=stepy;mx+=stepx;my+=stepy}else{if(positionValid(p.x+stepx,p.y)){p.x+=stepx;mx+=stepx}if(positionValid(p.x,p.y+stepy)){p.y+=stepy;my+=stepy}}}
 state.moving=Math.abs(mx)+Math.abs(my)>0.25;
@@ -75,8 +75,8 @@ if(Math.abs(mx)>Math.abs(my))state.facing=mx>0?'right':'left';else if(my)state.f
 function maybeEncounter(){if(!DATA.grassAt(state.world,state.position.x,state.position.y))return;if(performance.now()-state.lastEncounter<6000||Math.random()>.16)return;
 const p=player();if(!Array.isArray(p.team)||!p.team.length){showDialog('Equipe necessária','Escolha seu primeiro Pokémon antes de procurar encontros.');return}
 if(typeof W.triggerWild!=='function')return;state.lastEncounter=performance.now();state.suspended=true;state.root.classList.remove('open');const old=W.startBattle;
-if(typeof old==='function')W.startBattle=function(wild){if(wild&&typeof wild==='object'){wild.level=1+Math.floor(Math.random()*3);wild.lvl=wild.level}return old.apply(this,arguments)};
-try{W.triggerWild('kanto_normal_t1')}catch(e){console.warn('Rota 1 encounter',e);state.suspended=false;state.root.classList.add('open')}finally{if(typeof old==='function')W.startBattle=old}
+if(typeof old==='function')W.startBattle=function(wild){if(wild&&typeof wild==='object'){wild.lvl=wild.level}return old.apply(this,arguments)};
+try{W.triggerWild('kanto_route1_t1')}catch(e){console.warn('Rota 1 encounter',e);state.suspended=false;state.root.classList.add('open')}finally{if(typeof old==='function')W.startBattle=old}
 if(state.suspended){const prev=W.endBattle;if(typeof prev==='function'&&!prev.__kw2){const wrapped=function(){const result=prev.apply(this,arguments);state.suspended=false;setTimeout(()=>{if(state.world){state.root.classList.add('open');draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}}},50);return result};wrapped.__kw2=true;W.endBattle=wrapped}}
 }
 function tick(now){if(!state.root?.classList.contains('open')){state.raf=0;return}const dt=Math.min(.12,Math.max(0,(now-state.time)/1000));state.time=now;
@@ -94,7 +94,7 @@ function camera(){
   const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   // Cover the screen instead of letterboxing; scroll with the player.
-  const scale=state.inside?Math.min(cw/map.w,ch/map.h)*0.72:Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
+  const scale=state.inside?Math.min(cw/map.w,ch/map.h)*(W.innerWidth<740?0.53:0.72):Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
   const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
@@ -112,7 +112,7 @@ if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art
     if(sw>0&&sh>0){c.imageSmoothingEnabled=true;c.drawImage(o.mapCanvas,sx,sy,sw,sh,sx,sy,sw,sh)}
   }else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
-if(!state.inside){if(state.world.id==='pallet'){drawMarker(c,552,130,'LABORATÓRIO →','#ffd480');}
+if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='pallet'){drawMarker(c,552,130,'LABORATÓRIO →','#ffd480');}
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':'VIRIDIAN','#80ffaa')}
 else drawMarker(c,...(state.inside.exit||[240,675]),'SAÍDA ↓','#85efdc');
@@ -210,9 +210,9 @@ function drawInterior(c,inside){
     c.restore();
   }
 }
-function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
+function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.id==='route-1'?[{type:'return',at:[108,420]}]:[]),...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
 function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
-if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
+if(a.type==='return'){open('pallet',{spawn:[525,60]});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
 function talk(npc){
  const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
  if(id==='oak'){
@@ -255,9 +255,27 @@ function talk(npc){
   showDialog(npc.name,'Pallet parece pequena, mas guarda histórias em cada esquina. Volte quando descobrir mais sobre Kanto.',[],pr,em);
  }
 }
+function makeCaveRoom(){
+ const paint=D.createElement('canvas');paint.width=640;paint.height=480;
+ const c=paint.getContext('2d'),g=c.createRadialGradient(320,300,20,320,260,360);
+ g.addColorStop(0,'#31475a');g.addColorStop(1,'#090f21');c.fillStyle=g;c.fillRect(0,0,640,480);
+ for(let y=15;y<470;y+=24)for(let x=12;x<630;x+=32){
+  const edge=x<110||x>520||y<170;
+  c.fillStyle=edge?['#263040','#374055','#202b40'][(x+y)%3]:['#384451','#3e4c59','#33414e'][(x+y)%3];
+  c.fillRect(x+(y%48?8:0),y,30,21);
+ }
+ c.fillStyle='#667380';c.beginPath();c.ellipse(320,385,130,55,0,0,Math.PI*2);c.fill();
+ for(const [x,y]of [[100,240],[540,235],[130,365],[510,360],[290,140],[380,150]]){
+  c.fillStyle='#553c88';c.beginPath();c.moveTo(x-14,y+25);c.lineTo(x-11,y-17);c.lineTo(x,y-37);c.lineTo(x+15,y-9);c.lineTo(x+12,y+25);c.fill();
+  c.fillStyle='#b4a1ef';c.beginPath();c.moveTo(x,y-35);c.lineTo(x+12,y-9);c.lineTo(x,y+19);c.fill();
+ }
+ for(const x of [210,430]){const glow=c.createRadialGradient(x,200,2,x,200,65);glow.addColorStop(0,'#ffd17e');glow.addColorStop(1,'#ffb73900');c.fillStyle=glow;c.fillRect(x-65,135,130,130);c.fillStyle='#ffda84';c.fillRect(x-4,190,8,19);}
+ c.fillStyle='#d6bd89';c.fillRect(275,442,90,27);
+ return {id:'route-cave',title:'Gruta dos Cristais',w:640,h:480,paint,spawn:[320,410],exit:[320,455],npcs:[],blocks:[[0,0,105,480],[535,0,640,480],[0,0,640,170]]};
+}
 function enterDoor(door){
  state.navRequest++;state.navCells.clear();
- const id=door.id,room=W.PsyKantoInteriorsV9?.get?.(id);
+ const id=door.id,room=id==='route-cave'?makeCaveRoom():W.PsyKantoInteriorsV9?.get?.(id);
  if(!room){
   showDialog('Porta fechada','Você ainda não pode entrar aqui.');return;
  }
@@ -277,7 +295,7 @@ mark('viridian');try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')
 showDialog('Viridian City','Você atravessou a Rota 1! A entrada de Viridian está desbloqueada. A cidade usará o mapa de desenvolvimento já existente enquanto recebe sua própria arte.',[{text:'ENTRAR EM VIRIDIAN',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('viridian')}},{text:'VOLTAR'}]);}
 function touchCoords(e){const r=state.canvas.getBoundingClientRect();const cam=camera();return {x:(e.clientX-r.left)*(cam.w/r.width)/cam.scale-cam.ox/cam.scale,y:(e.clientY-r.top)*(cam.h/r.height)/cam.scale-cam.oy/cam.scale}}
 function touchStart(e){if(e.target!==state.canvas||state.dialogOpen)return;e.preventDefault();const t=touchCoords(e);state.touch={id:e.pointerId,x:e.clientX,y:e.clientY,tx:t.x,ty:t.y,t:performance.now(),drag:false,rect:state.canvas.getBoundingClientRect()};state.navRequest++;state.canvas.setPointerCapture?.(e.pointerId);state.path=[]}
-function touchMove(e){const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();const dx=e.clientX-t.x,dy=e.clientY-t.y;if(Math.hypot(dx,dy)>8)t.drag=true;if(t.drag){const d=Math.max(1,Math.hypot(dx,dy));state.joy={x:dx/Math.max(25,d),y:dy/Math.max(25,d)};const stick=state.root.querySelector('.kw2-joystick'),r=t.rect;stick.style.left=(t.x-r.left)+'px';stick.style.top=(t.y-r.top)+'px';stick.style.display='block';stick.style.setProperty('--jx',Math.round(Math.min(30,dx/d*30))+'px');stick.style.setProperty('--jy',Math.round(Math.min(30,dy/d*30))+'px')}}
+function touchMove(e){const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();const dx=e.clientX-t.x,dy=e.clientY-t.y;if(Math.hypot(dx,dy)>5)t.drag=true;if(t.drag){const d=Math.max(1,Math.hypot(dx,dy));state.joy={x:dx/Math.max(42,d),y:dy/Math.max(42,d)};const stick=state.root.querySelector('.kw2-joystick'),r=t.rect;stick.style.left=(t.x-r.left)+'px';stick.style.top=(t.y-r.top)+'px';stick.style.display='block';stick.style.setProperty('--jx',Math.round((dx/d*Math.min(30,d)))+'px');stick.style.setProperty('--jy',Math.round((dy/d*Math.min(30,d)))+'px')}}
 function touchEnd(e){const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();state.joy=null;state.touch=null;state.root.querySelector('.kw2-joystick').style.display='none';if(!t.drag){const near=currentTargets().find(v=>Math.hypot(v.at[0]-t.tx,v.at[1]-t.ty)<30&&Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)<70);if(near){interact();return}const request=++state.navRequest;findPath([state.position.x,state.position.y],[t.tx,t.ty],request).then(path=>{if(request===state.navRequest&&state.root?.classList.contains('open'))state.path=path})}}
 // Tap-to-walk searches asynchronously, yielding control to the game each frame.
 // Terrain queries are memoized per location; dragging joystick cancels old searches.
