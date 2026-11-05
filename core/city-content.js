@@ -6,6 +6,7 @@
     const btn=document.getElementById('btn-city-content-toggle');
     if(!dock||!btn)return;
 
+    dock.style.setProperty('z-index','10000020','important');
     let collapsed;
     if(typeof force==='boolean') collapsed=force;
     else collapsed=!dock.classList.contains('city-content-collapsed');
@@ -20,6 +21,9 @@
   };
 
   function restoreCityContentState(){
+    const dock=document.getElementById('world-btn-float'),grid=document.getElementById('city-game-content-buttons');
+    const collect=()=>{if(!dock||!grid)return;Array.from(dock.children).filter(el=>el.tagName==='BUTTON'&&el.id!=='btn-city-content-toggle').forEach(el=>grid.appendChild(el));};
+    collect();if(dock)new MutationObserver(collect).observe(dock,{childList:true});
     const backdrop=document.createElement('button');backdrop.id='psy-content-backdrop';backdrop.type='button';backdrop.setAttribute('aria-label','Fechar conteúdo do jogo');backdrop.onclick=()=>window.toggleCityGameContent(true);document.body.appendChild(backdrop);
     document.getElementById('city-game-content-buttons')?.addEventListener('click',e=>{if(e.target.closest('button'))window.toggleCityGameContent(true)});
     document.addEventListener('keydown',e=>{if(e.key==='Escape')window.toggleCityGameContent(true)});
