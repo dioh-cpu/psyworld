@@ -257,7 +257,7 @@
         const login = D.getElementById('screen-login'); if (login) login.style.display = 'flex';
       }
     });
-    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = currentPickerKind === 'new' ? (player()?.team?.length?'ENTRAR NA CIDADE':'ESCOLHER INICIAL') : 'USAR ESTE PERSONAGEM';
+    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = currentPickerKind === 'new' ? (player()?.team?.length?'ENTRAR NA CIDADE':'INICIAR CAMPANHA') : 'USAR ESTE PERSONAGEM';
     next.addEventListener('click', () => {
       const p = player(); if (!p) return;
       p.playerCharacterId = selectedCharacter;
@@ -269,8 +269,7 @@
         const starter = D.getElementById('screen-starter'); if (starter) starter.style.display = 'none';
         W.toggleCityGameContent?.(true);
         if(!p.team?.length){
-          if(typeof buildStarterScreen==='function')buildStarterScreen();
-          if(starter)starter.style.display='flex';
+          if(typeof W.openKantoCampaignCinematic==='function')W.openKantoCampaignCinematic();
         }else if(typeof W.startKantoCityPrelude==='function'){
           W.startKantoCityPrelude();
         }else{
