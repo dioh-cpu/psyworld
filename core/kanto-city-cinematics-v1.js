@@ -79,7 +79,9 @@
         chosenPoke=starter;P.meta=P.meta||{};P.meta.kantoCampaignIntroSeen=true;P.meta.kantoStarterChosen=id;
         const old=D.getElementById('screen-starter');if(old)old.style.display='none';
         closeCampaignCinematic();
-        try{confirmStarter();W.setTimeout(()=>W.PsyKantoPlayableV1?.open('pallet'),450)}
+        try{confirmStarter();
+        if(P.team?.[0]){const mon=P.team[0];mon.hp=Number(mon.maxHp||mon.baseMaxHp||P.maxHp||1);mon.currentHp=mon.hp;mon.fainted=false;P.pokemon=mon;P.hp=mon.hp;P.maxHp=mon.hp;W.autoSave?.();}
+        W.setTimeout(()=>W.PsyKantoPlayableV1?.open('pallet'),450)}
         catch(e){console.error('[Kanto campaign] initial choice failed',e);W.notif?.('Não foi possível iniciar a campanha agora.',3000)}
       }));
     }
