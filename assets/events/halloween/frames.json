@@ -52,7 +52,7 @@
         472
       ],
       "scale": 0.4909090909090909,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 10
     },
     "luminox-shiny": {
@@ -92,7 +92,7 @@
         307
       ],
       "scale": 0.7448275862068966,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "luminox-mega": {
@@ -132,7 +132,7 @@
         430
       ],
       "scale": 0.5669291338582677,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "luminox-shiny-mega": {
@@ -172,7 +172,7 @@
         436
       ],
       "scale": 0.5440806045340051,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "noctilume": {
@@ -224,7 +224,7 @@
         512
       ],
       "scale": 0.421875,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 10
     },
     "noctilume-shiny": {
@@ -264,7 +264,7 @@
         313
       ],
       "scale": 0.6835443037974683,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "noctilume-mega": {
@@ -304,7 +304,7 @@
         411
       ],
       "scale": 0.5130641330166271,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "noctilume-shiny-mega": {
@@ -344,7 +344,7 @@
         412
       ],
       "scale": 0.5130641330166271,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "brumelo": {
@@ -396,7 +396,7 @@
         489
       ],
       "scale": 0.45,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 10
     },
     "brumelo-shiny": {
@@ -436,7 +436,7 @@
         362
       ],
       "scale": 0.6136363636363636,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "brumelo-mega": {
@@ -476,7 +476,7 @@
         458
       ],
       "scale": 0.47577092511013214,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "brumelo-shiny-mega": {
@@ -516,7 +516,7 @@
         457
       ],
       "scale": 0.4778761061946903,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "corujack": {
@@ -568,7 +568,7 @@
         453
       ],
       "scale": 0.4853932584269663,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 10
     },
     "corujack-shiny": {
@@ -608,7 +608,7 @@
         326
       ],
       "scale": 0.677115987460815,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "corujack-mega": {
@@ -648,7 +648,7 @@
         402
       ],
       "scale": 0.5567010309278351,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     },
     "corujack-shiny-mega": {
@@ -688,7 +688,7 @@
         403
       ],
       "scale": 0.5524296675191815,
-      "durationMs": 160,
+      "durationMs": 280,
       "loopFrames": 6
     }
   }
