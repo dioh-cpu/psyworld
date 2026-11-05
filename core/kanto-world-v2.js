@@ -389,7 +389,7 @@ function findPath(from,to,request){
     slice();
   });
 }
-W.PsyKantoWorldV2={
+W.PsyKantoWorldV2={interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
  navigate:async function(at){autoHunt=false;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;return route.length>0;},
  setAutoHunt:function(active){if(active&&!vipActive()){showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1')open('route-1');if(state.inside)exitDoor();autoHunt=!!active;if(!autoHunt)state.path=[];return autoHunt;},
  isAutoHunt:()=>autoHunt,
