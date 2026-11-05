@@ -70,6 +70,7 @@
     const panel = D.getElementById('psy-layout-settings');
     if (!panel) return;
     applyMode(Math.max(1, Math.round(viewport?.width || W.innerWidth || 1)));
+    if(W.PsySeason){let v=panel.querySelector('[data-season-visibility-container]');if(!v){v=D.createElement('div');v.dataset.seasonVisibilityContainer='1';panel.querySelector('.psy-layout-done').before(v);}v.innerHTML=W.PsySeason.visibilityHTML();W.PsySeason.bindSettings(v);}
     panel.dataset.open = '1';
     panel.setAttribute('aria-hidden', 'false');
     D.getElementById('psy-layout-mode')?.focus();
@@ -183,3 +184,4 @@
 
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', install, { once: true }); else install();
 })(window, document);
+

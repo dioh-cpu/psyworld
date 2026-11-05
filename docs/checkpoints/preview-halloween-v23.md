@@ -9,7 +9,7 @@ Base: `5ac8d5b4fcf8c1a638e1a3aeb974c3d6e7fa67ca`, branch `teste/kanto-pallet-rot
 - Soberano do Halloween base title chance: 0.0001% = probability 0.000001 per defeated Halloween creature. Only 10% of ordinary Drop bonus applies: `0.000001 * (1 + max(0, DropPercent) * 0.10 / 100)`. No ordinary Drop bonus to candy. Only one equipped title; effects never stack across titles.
 - Halloween Ball capture multiplier is exactly twice the actual Ultra Ball multiplier (normally 6 vs 3). Existing capture ceilings, rarity penalties, trainer/gym prohibitions and turns are preserved.
 - Full-heal consumable only from event shop. Legacy full-heal inventory converts 1:2 into 50% potions. Ordinary fixed-value potions also cannot restore more than 50% maximum HP. Revive and healing services/skills are separate.
-- Independent rolls: no quota truncates item types per enemy. Shared Craft/Quest base chances halved; normal Ball probabilities are 1.2% / 0.6% / 0.3% / 0.1% before Drop (maximum 2x); Fast applies half. No Balls are emitted by the event loot table itself.
+- Independent rolls: no quota truncates item types per enemy. Shared Craft/Quest base chances halved; normal Ball probabilities are 1.2% / 0.6% / 0.3% / 0.1% before Drop (maximum 2x); Fast applies half. Normal Ball rolls are independent from the guaranteed Halloween Ball roll.
 
 ## Balance
 
@@ -25,7 +25,7 @@ Shop: 10 Halloween Balls for 100 candy, 100% potion 20, incense 300; titles +5% 
 - Removable `PsySeason` config/theme layer; architecture and acquired items remain. Halloween music already existed and remains integrated; disabling season switches that track back to default.
 - Seasonal dialogue/panel accents, bat silhouette, floating-text glow, unique title particles, 1-second nonblocking encounter intro and original 1.05-second SFX using existing volume/mute controls. Reduced-motion alternative.
 - Loot receipt auto-opens, aggregates bursts for 400ms, keeps every different item in its receipt, and supports scroll/history. Independent from battle controls.
-- Config: hide other trainers, titles, and trainers' Pokémon display. Does not hide wild Pokémon or story NPCs. Current World peer renderer only has a Pokémon name label; that display is hidden by the third option. Remote titles use whitelisted identifiers, never arbitrary HTML.
+- Config: hide other trainers, titles, and trainers' Pokémon display. Does not hide wild Pokémon or story NPCs. The legacy Tela / Dispositivo screen also exposes the three settings. Current World peer renderer only has a Pokémon name label; that display is hidden by the third option. Remote titles use whitelisted identifiers, never arbitrary HTML.
 
 ## Verification
 
@@ -39,3 +39,5 @@ References consulted (design references only, not claimed universal drop percent
 - https://wiki.pokexgames.com/index.php?mobileaction=toggle_view_mobile&title=Halloween — event NPCs, workshops, outfits, invasion tokens.
 - https://www.pokexextreme.online/index.php?id=76&page=home — 2 tokens normal / 5 shiny-mega on event invasions and NPC trades.
 - https://www.padventures.org/index.php/news — official event reward context; no universal Halloween candy rate found.
+
+Browser verification: actual Psy City entry and Amora shop opened; temporary QA profile purchase deducted 100 candy, Shiny deducted 1,000 and Shiny Mega deducted another 5,000. All 16 animated form URLs loaded successfully. Final follow-up exposes visibility options through the mobile legacy settings entry and shows real costume art in the shop.
