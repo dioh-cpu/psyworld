@@ -7,7 +7,7 @@
 if(W.PsyTrainerWalkV1)return;
 const cache=new WeakMap();
 const TW=48,TH=64,BW=33,BH=46,BASE_Y=14;
-const sequence=Object.freeze([1,2,3,0]);
+const sequence=Object.freeze([1,0,3,0]);
 const create=()=>D.createElement('canvas');
 function getAtlas(img){
   if(!img)return null;
@@ -45,7 +45,7 @@ function getAtlas(img){
   const temp=create();temp.width=TW;temp.height=TH;
   const tc=temp.getContext('2d');tc.imageSmoothingEnabled=true;tc.imageSmoothingQuality='high';
   for(let row=0;row<4;row++)for(let col=0;col<4;col++){
-    const box=boxes[row][col],dw=box.w*bodyScale,dh=box.h*bodyScale;
+    const box=boxes[row][col],dw=BW,dh=BH;
     const ox=col*TW,oy=row*TH;
     tc.clearRect(0,0,TW,TH);
     tc.drawImage(img,col*sw+box.x,row*sh+box.y,box.w,box.h,
