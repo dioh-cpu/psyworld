@@ -17,6 +17,7 @@ const style=D.createElement('style');style.textContent=`
 #psy-auto-battle{position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:6px;max-width:96%}
 #psy-auto-battle button[aria-pressed=true],#psy-campaign-tools button[aria-pressed=true]{background:#1d705a;border-color:#86efac}
 @media(max-width:600px){#psy-campaign-quests{width:46%;font-size:11px;padding:6px}#psy-auto-battle button{font-size:10px;padding:6px;min-height:34px}}
+ #psy-campaign-tools[hidden],#psy-campaign-quests[hidden]{display:none!important}
 #btn-idle-realistic-float,[data-mode-card=idleworld]{display:none!important}
 `;D.head.appendChild(style);
 const tracker=D.createElement('section');tracker.id='psy-campaign-quests';tracker.setAttribute('aria-label','Quests ativas');
