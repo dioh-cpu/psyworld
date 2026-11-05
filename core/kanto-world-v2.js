@@ -71,7 +71,7 @@ function positionValid(x,y){
   if(!DATA.walkable(state.world,x,y,PLAYER_RADIUS))return false;
   return !(state.world?.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
 }
-function move(dx,dy,dt,maxDistance=Infinity){state.moving=false;if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=(state.inside?144:143)*(1+Number(W.PsySeason?.buff('speed')||0)/100),dist=Math.min(maxDistance,speed*dt*Math.min(1,mag)),steps=Math.ceil(dist/4.5);let mx=0,my=0;
+function move(dx,dy,dt,maxDistance=Infinity){state.moving=false;if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=(state.inside?144:143)*(1+(Number(W.PsySeason?.buff('speed')||0)+Number(W.PsyProfessions?.bonus('main','speed')||0))/100),dist=Math.min(maxDistance,speed*dt*Math.min(1,mag)),steps=Math.ceil(dist/4.5);let mx=0,my=0;
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
 if(positionValid(p.x+stepx,p.y+stepy)){p.x+=stepx;p.y+=stepy;mx+=stepx;my+=stepy}else{if(positionValid(p.x+stepx,p.y)){p.x+=stepx;mx+=stepx}if(positionValid(p.x,p.y+stepy)){p.y+=stepy;my+=stepy}}}
 state.moving=Math.abs(mx)+Math.abs(my)>0.25;
