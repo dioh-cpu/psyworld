@@ -11,16 +11,21 @@
     else collapsed=!dock.classList.contains('city-content-collapsed');
 
     dock.classList.toggle('city-content-collapsed',collapsed);
-    btn.innerHTML=collapsed?'📦 CONTEÚDO DO JOGO ▶':'📦 CONTEÚDO DO JOGO ▼';
+    btn.innerHTML=collapsed?'🎃 CONTEÚDO DO JOGO':'CONTEÚDO DO JOGO <span aria-hidden="true">×</span>';
+    btn.setAttribute('aria-expanded',String(!collapsed));
+    document.getElementById('psy-content-backdrop')?.classList.toggle('open',!collapsed);
     btn.title=collapsed?'Mostrar atalhos da cidade':'Minimizar atalhos da cidade';
 
     try{localStorage.setItem(KEY,collapsed?'1':'0')}catch(e){}
   };
 
   function restoreCityContentState(){
+    const backdrop=document.createElement('button');backdrop.id='psy-content-backdrop';backdrop.type='button';backdrop.setAttribute('aria-label','Fechar conteúdo do jogo');backdrop.onclick=()=>window.toggleCityGameContent(true);document.body.appendChild(backdrop);
+    document.getElementById('city-game-content-buttons')?.addEventListener('click',e=>{if(e.target.closest('button'))window.toggleCityGameContent(true)});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')window.toggleCityGameContent(true)});
     let collapsed=false, saved=null;
     try{saved=localStorage.getItem(KEY);collapsed=saved==='1'}catch(e){}
-    if(saved===null)collapsed=!!window.matchMedia?.('(max-width: 760px)').matches;
+    collapsed=true;
     window.toggleCityGameContent(collapsed);
   }
 
