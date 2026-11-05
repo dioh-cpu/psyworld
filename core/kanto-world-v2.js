@@ -11,7 +11,7 @@ const $=s=>D.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':
 const state={root:null,canvas:null,ctx:null,world:null,inside:null,position:{x:597,y:555},lastOutdoor:null,held:new Set(),joy:null,touch:null,path:[],time:0,raf:0,stepDistance:0,lastEncounter:0,dialogOpen:false,images:new Map(),portrait:null,avatar:null,quest:null,walkFrame:0,facing:'down',moving:false,suspended:false,navRequest:0,navCells:new Map(),viewport:null,lastRender:0};
 function progress(){if(state.quest)return state.quest;try{state.quest=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_){state.quest={}}return state.quest}
 function putProgress(){try{localStorage.setItem(KEY,JSON.stringify(progress()))}catch(_){}try{W.autoSave?.()}catch(_){}}
-function questDone(){const q=progress();return !!(q.oak&&q.center&&q.market&&q.guard)}
+function questDone(){const q=progress();return !!(q.oak)}
 function mark(key){const q=progress();if(q[key])return;q[key]=true;putProgress();hud()}
 function player(){try{return typeof P!=='undefined'?P:(W.P||{})}catch(_){return W.P||{}}}
 function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{if(url.startsWith('assets/characters/halloween/')){try{prepareAvatar(o)}catch(err){o.spriteError=true;console.warn('Trainer sprite could not be prepared',err)}}o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
@@ -45,16 +45,13 @@ function hud(){
    'O caminho até Viridian City';
  let message='';
  if(state.world?.id==='pallet'){
-   if(!q.oak)message='Jornada: visite o laboratório e converse com o Professor Carvalho.';
-   else if(!q.center)message='Jornada: encontre a enfermeira no Centro Pokémon.';
-   else if(!q.market)message='Jornada: procure o lojista no Poké Mart.';
-   else if(!q.guard)message='Jornada: encontre o guarda no caminho norte de Pallet.';
+   if(!q.oak)message='Jornada: visite o laboratório e converse com o Professor Car’alho.';
    else message='A estrada está livre! Descubra os mistérios da Rota 1.';
  }else message='Rota 1: explore os campos de grama e siga para Viridian City.';
  state.root.querySelector('.kw2-objective').textContent=message;
 }
 function open(id,options={}){if(!['pallet','route-1'].includes(id))return false;
-if(id==='route-1'&&!progress().guard&&!options.skipGuard){open('pallet');setTimeout(()=>showDialog('Rota 1 bloqueada','Primeiro fale com o guarda no norte de Pallet. Ele libera a viagem após a missão inicial.'),80);return false}
+if(id==='route-1'&&!progress().oak&&!options.skipGuard){open('pallet');setTimeout(()=>showDialog('Rota 1 bloqueada','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.'),80);return false}
 makeUI();D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=id==='pallet'?DATA.pallet:DATA.route1;state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
 const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}return true;}
@@ -219,13 +216,13 @@ function talk(npc){
  const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
  if(id==='oak'){
   mark('oak');
-  showDialog('Professor Carvalho','Toda grande jornada começa com uma escolha. Em Pallet, conheça quem cuida dos Pokémon e quem prepara seus suprimentos. Depois, o guarda abrirá o caminho de Viridian.',[
+  showDialog('Professor Car’alho','Toda grande jornada começa com uma escolha. Em Pallet, conheça quem cuida dos Pokémon e quem prepara seus suprimentos. Agora você pode seguir para a Rota 1 quando quiser.',[
    {text:'ENTENDI',primary:true}],pr,em);
  }else if(id==='gate'){
   const q=progress();
   if(!q.oak||!q.center||!q.market){
    const missing=[!q.oak?'o laboratório':'',!q.center?'o Centro Pokémon':'',!q.market?'o Poké Mart':''].filter(Boolean);
-   showDialog('Guarda da Rota','Carvalho pediu que ninguém partisse sem preparo. Visite '+missing.join(', ')+'. Então a trilha estará livre.',[],pr,'atento');
+   showDialog('Guarda da Rota','Car’alho pediu que ninguém partisse sem preparo. Visite '+missing.join(', ')+'. Então a trilha estará livre.',[],pr,'atento');
   }else{
    mark('guard');
    showDialog('Guarda da Rota','Boa viagem! A Rota 1 está livre. Explore os quatro campos de caça e prossiga com cuidado até Viridian.',[
@@ -247,9 +244,9 @@ function talk(npc){
   showDialog('Davi, o lojista','O pessoal de Pallet começa sempre pelo básico: Poké Bolas, remédios e um pouco de coragem. Precisa de alguma coisa?',[
     {text:'VER MERCADORIAS',primary:true,run:openShop},{text:'VOLTAR'}],pr,'animado');
  }else if(id==='assistant'){
-  showDialog('Pesquisador Elias','Carvalho procura registros de habitats e fenômenos nas florestas de Kanto. Registre o que encontrar na Rota 1.',[],pr,'curiosa');
+  showDialog('Pesquisador Elias','Car’alho procura registros de habitats e fenômenos nas florestas de Kanto. Registre o que encontrar na Rota 1.',[],pr,'curiosa');
  }else if(id==='mother'){
-  showDialog('Elisa','Preparei sua mochila e deixei a casa aberta. Quando sentir saudade, volte para descansar. O Professor Carvalho já está esperando você.',[],pr,'carinhosa');
+  showDialog('Elisa','Preparei sua mochila e deixei a casa aberta. Quando sentir saudade, volte para descansar. O Professor Car’alho já está esperando você.',[],pr,'carinhosa');
  }else if(id==='fisher'){
   mark('fisher');
   showDialog('Seu Abel','Vi luzes no bosque depois da última chuva. Um dia, com as técnicas certas, você poderá alcançar lugares que hoje parecem impossíveis.',[],pr,'tranquilo');
@@ -280,7 +277,7 @@ function enterDoor(door){
 function exitDoor(){state.navRequest++;state.navCells.clear();state.inside=null;if(state.lastOutdoor)state.position={...state.lastOutdoor};state.lastOutdoor=null;state.path=[];hud()}
 function healTeam(){const p=player();if(Array.isArray(p.team))for(const mon of p.team){const hp=Number(mon.maxHp||mon.maxHP||mon.hpMax||0);if(hp>0)mon.hp=hp}try{W.updateHUD?.();W.autoSave?.()}catch(_){}showDialog('Enfermeira','Sua equipe foi recuperada. Boa viagem!')}
 function openShop(){const fn=W.openShop;close();if(typeof fn==='function')fn();else{state.root?.classList.add('open');showDialog('Davi, o lojista','Minhas mercadorias já estão separadas. Em breve você poderá negociá-las aqui mesmo.')}}
-function exitWorld(){if(state.world.id==='pallet'){if(!questDone()){showDialog('Passagem para Rota 1','A saída está fechada até o guarda autorizar a viagem. Fale com Carvalho e visite Centro Pokémon e Market.',[{text:'ENTENDI'}]);return}open('route-1');return}
+function exitWorld(){if(state.world.id==='pallet'){if(!questDone()){showDialog('Passagem para Rota 1','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.',[{text:'ENTENDI'}]);return}open('route-1');return}
 mark('viridian');try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');save.visited=[...new Set([...(save.visited||[]),'pallet','route-1'])];save.activePlace='viridian';localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(_){}
 showDialog('Viridian City','Você atravessou a Rota 1! A entrada de Viridian está desbloqueada. A cidade usará o mapa de desenvolvimento já existente enquanto recebe sua própria arte.',[{text:'ENTRAR EM VIRIDIAN',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('viridian')}},{text:'VOLTAR'}]);}
 function touchCoords(e){const r=state.canvas.getBoundingClientRect();const cam=camera();return {x:(e.clientX-r.left)*(cam.w/r.width)/cam.scale-cam.ox/cam.scale,y:(e.clientY-r.top)*(cam.h/r.height)/cam.scale-cam.oy/cam.scale}}
