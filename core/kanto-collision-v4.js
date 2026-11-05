@@ -12,6 +12,16 @@ data.pallet.ground.push(
 );
 data.pallet.npcs.find(n=>n.id==='lia').at=[450,370];
 data.pallet.npcs=data.pallet.npcs.filter(n=>n.id!=='gate');
+// Open paving along the fence below the pink tree to the village house.
+data.pallet.ground.push([[510,319],[625,319],[645,338],[790,333],[802,368],[610,370],[510,350]]);
+// Grass entrances include the stairs and the threshold of each field.
+data.route1.ground.push(
+ [[198,170],[226,170],[226,254],[198,254]],
+ [[324,250],[359,250],[359,337],[324,337]],
+ [[600,163],[638,163],[638,228],[600,228]],
+ [[735,236],[770,236],[770,294],[735,294]]
+);
+data.route1.npcs=[];
 Object.assign(D.pallet,data.pallet);
 Object.assign(D.route1,data.route1);
 D.route1.title='Rota 1';
