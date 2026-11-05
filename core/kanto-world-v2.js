@@ -94,7 +94,7 @@ function camera(){
   const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   // Cover the screen instead of letterboxing; scroll with the player.
-  const scale=state.inside?Math.min(cw/map.w,ch/map.h):Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
+  const scale=state.inside?Math.min(cw/map.w,ch/map.h)*0.72:Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
   const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
@@ -112,9 +112,10 @@ if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art
     if(sw>0&&sh>0){c.imageSmoothingEnabled=true;c.drawImage(o.mapCanvas,sx,sy,sw,sh,sx,sy,sw,sh)}
   }else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
-if(!state.inside){state.world.doors.forEach(d=>{if(Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<88)drawMarker(c,d.at[0],d.at[1],'ENTRAR','#79dced')});
+if(!state.inside){if(state.world.id==='pallet'){drawMarker(c,552,130,'LABORATÓRIO →','#ffd480');}
+state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':'VIRIDIAN','#80ffaa')}
-else drawMarker(c,400,410,'SAÍDA','#85efdc');
+else drawMarker(c,...(state.inside.exit||[240,675]),'SAÍDA ↓','#85efdc');
 drawPlayer(c,state.position.x,state.position.y);c.setTransform(1,0,0,1,0,0)}
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35);c.restore()}
 function drawNPC(c,npc,distance){
@@ -261,18 +262,12 @@ function enterDoor(door){
   showDialog('Porta fechada','Você ainda não pode entrar aqui.');return;
  }
  state.lastOutdoor={...state.position};
- state.inside={...room,title:door.title,paint:room.paint};
+ state.inside={...room,title:id==='lab'?'Laboratório':door.title,paint:room.paint};
  state.position={x:room.spawn[0],y:room.spawn[1]};
  state.path=[];state.held.clear();
  if(room.art)image(room.art);room.npcs.forEach(n=>{image(n.sprite);if(n.portrait)image(n.portrait)});
  hud();draw();
- if(room.who){
-  const actor=room.npcs.find(n=>n.id===room.who);
-  showDialog(door.title,room.intro,[
-   {text:'CONVERSAR',primary:true,run:()=>talk(actor)},
-   {text:'EXPLORAR'}],
-   actor?.portrait||'',actor?.emote||'sereno');
- }else showDialog(door.title,room.intro,[],null);
+
 }
 function exitDoor(){state.navRequest++;state.navCells.clear();state.inside=null;if(state.lastOutdoor)state.position={...state.lastOutdoor};state.lastOutdoor=null;state.path=[];hud()}
 function healTeam(){const p=player();if(Array.isArray(p.team))for(const mon of p.team){const hp=Number(mon.maxHp||mon.maxHP||mon.hpMax||0);if(hp>0)mon.hp=hp}try{W.updateHUD?.();W.autoSave?.()}catch(_){}showDialog('Enfermeira','Sua equipe foi recuperada. Boa viagem!')}
