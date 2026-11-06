@@ -1,0 +1,2 @@
+# Inicial V44
+Raridade já sorteada entre Nice/Belezura/Lêndea; faltava no nome exibido na batalha. Label inclui qualidade e nível, inclusive após troca. Kit adicional único:25kGold,60Pokéball,15GreatBall,20Poção50,15Poção100,5Revive; marcador persistente e recuperação uma única vez. Inicial sem qualidade/abaixoNice é reparado. Rota1 limita inimigos ao nível do líder atéNv4; sem Shiny/Mega contra líder abaixoNv5. Sem cura repetida ao entrar em combate. Apenas prévia.
