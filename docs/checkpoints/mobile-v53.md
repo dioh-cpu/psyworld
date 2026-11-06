@@ -1,0 +1,13 @@
+# PSYWORLD mobile V53 — 2026-11-06
+
+Base: main a54607805495240d42b4ba478b28f8f806336faf (V52 completo). Usuário pediu corrigir menus sobrepostos, HUD e joystick mobile, com publicação mantida na main conforme autorização anterior.
+
+Mudanças: css/mobile-shell-v53.css e core/mobile-shell-v53.js criam folhas de menu navy/ciano, fechamento único e cabeçalho persistente, grade sem largura mínima antiga, isolamento entre Menu e Conteúdo e ocultação do HUD enquanto abertos. Atalhos de acompanhantes, ofícios, analisador, áudio e fullscreen movidos ao Conteúdo mantendo seus handlers, sem cópias flutuantes. HUD mobile contém nome/nível, HP/EXP e moedas; badges redundantes e painéis grandes ficam ocultos. Conteúdo usa duas colunas em retrato e três em largura maior, com rolagem interna e primeira linha visível. Loot mobile menor.
+
+Joystick: core/touch-stick-v53.js centraliza matemática; zona morta radial de 7 px, intensidade proporcional até 42 px, origem flutuante após 72 px. Cidade escolhe um único eixo com histerese respeitando movimento por tiles. Troca somente do IIFE dinâmico no fim de core/legacy-runtime.js, mantendo listeners legados do controle fixo inativo. Kanto preserva vetor analógico e colisão, ignora segundo dedo, cancelamento nunca vira toque de navegação; soltura/perda de captura/blur/resize/ocultação liberam o controle. Não há alteração de velocidade máxima ou colisões.
+
+Validação: cinco scripts alterados passaram node --check via stdin (runtime clássico). Todas as 26 suítes tests/*.test.cjs passaram, incluindo acompanhantes e regressões. Nova suíte mobile-input verifica zona morta, proporcionalidade, direção cardinal/histerese, dono do ponteiro, multitouch, cancelamento, distinção toque/arrasto e origem flutuante.
+
+Navegador: fixture /tests/mobile-layout-v53.html com jogo real em iframe 360×740 e 740×360. Confirmados Menu e Conteúdo, fechamento único, atalhos agrupados e ausência de overflow horizontal (menu clientWidth=scrollWidth=319; Conteúdo=296). Arrasto em Pallet mudou posição 505,388 para 539,388; após soltura permaneceu em 539,388, caminho zero e joystick oculto. Não foi realizado teste em aparelho Android físico. Preview final funcional: https://psyworld-boe5j42ev-world-of-monsters.vercel.app/tests/mobile-layout-v53.html .
+
+Principais arquivos: core/mobile-shell-v53.js, core/touch-stick-v53.js, css/mobile-shell-v53.css, core/city-content.js, core/legacy-runtime.js, core/kanto-world-v2.js, index.html e fixtures de QA. Animações e economia V52 preservadas. Pesquisa técnica: MDN Pointer Events e pointercancel; interrupções e captura tratadas explicitamente. Próxima base preferencial: main com V53 após publicação.
