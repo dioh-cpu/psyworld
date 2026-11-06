@@ -1,7 +1,7 @@
 /* Campaign quest tracking and VIP automation. Test branch only. */
 (function(W,D){
 'use strict';
-let automatic=false,catchEnabled=false,lastAction=0,findTask=null,findAt=0,extra=[];
+let automatic=false,catchEnabled=false,lastAction=0,findTask=null,findAt=0,extra=[],huntController=null,huntIntent=false;
 const player=()=>typeof P!=='undefined'?P:{};
 const vip=()=>Number(player().meta?.vipUntil||0)>Date.now();
 const api=()=>W.PsyKantoPlayableV1?.getPosition?.()?W.PsyKantoPlayableV1:W.PsyKantoWorldV2;
@@ -22,14 +22,39 @@ const style=D.createElement('style');style.textContent=`
 `;D.head.appendChild(style);
 const tracker=D.createElement('section');tracker.id='psy-campaign-quests';tracker.setAttribute('aria-label','Quests ativas');
 const tools=D.createElement('div');tools.id='psy-campaign-tools';
-const hunt=D.createElement('button');hunt.textContent='AUTO HUNT · VIP';hunt.onclick=()=>{if(!requireVip())return;findTask=null;const on=api()?.setAutoHunt(!api()?.isAutoHunt());if(on)setAutomatic(true);renderButtons();};tools.appendChild(hunt);
+const hunt=D.createElement('button');hunt.textContent='AUTO HUNT · VIP';hunt.onclick=()=>{if(huntActive()){stopAutomation();return;}if(requireVip())configure('hunt');};tools.appendChild(hunt);
 const bar=D.createElement('div');bar.id='psy-auto-battle';
-const battleButton=D.createElement('button');battleButton.onclick=()=>setAutomatic(!automatic);
-const catchButton=D.createElement('button');catchButton.onclick=()=>{if(!requireVip())return;catchEnabled=!catchEnabled;if(catchEnabled)setAutomatic(true);renderButtons();};bar.append(battleButton,catchButton);
+const battleButton=D.createElement('button');battleButton.onclick=()=>{if(automatic){stopAutomation();return;}if(requireVip())configure('battle');};
+const catchButton=D.createElement('button');catchButton.onclick=()=>{if(catchEnabled){catchEnabled=false;renderButtons();return;}if(requireVip())configure('capture');};bar.append(battleButton,catchButton);
 function renderButtons(){
  battleButton.textContent=automatic?'AUTO BATALHA · ON':'AUTO BATALHA · VIP';battleButton.setAttribute('aria-pressed',String(automatic));
  catchButton.textContent=catchEnabled?'AUTO CAPTURA · ON':'AUTO CAPTURA · VIP';catchButton.setAttribute('aria-pressed',String(catchEnabled));
- hunt.textContent=api()?.isAutoHunt()?'AUTO HUNT · ON':'AUTO HUNT · VIP';hunt.setAttribute('aria-pressed',String(!!api()?.isAutoHunt()));
+ hunt.textContent=huntActive()?'AUTO HUNT · ON':'AUTO HUNT · VIP';hunt.setAttribute('aria-pressed',String(huntActive()));
+}
+function preferences(){const p=player();p.meta=p.meta||{};return p.meta.automationV47||(p.meta.automationV47={ball:'Pokéball',potion:'Poção 100',healAt:40,catchAt:35});}
+function huntActive(){return huntIntent||!!huntController?.isAutoHunt?.()||!!W.PsyKantoWorldV2?.isAutoHunt?.()||!!W.PsyKantoPlayableV1?.isAutoHunt?.();}
+function stopAutomation(){findTask=null;huntIntent=false;automatic=false;catchEnabled=false;for(const ctl of new Set([huntController,W.PsyKantoWorldV2,W.PsyKantoPlayableV1]))ctl?.setAutoHunt?.(false);huntController=null;D.getElementById('psy-auto-config')?.remove();renderButtons();note('Automação desativada.');}
+function configure(mode){
+ D.getElementById('psy-auto-config')?.remove();const cfg=preferences(),bag=player().inventory||{};
+ const balls=Object.keys(bag).filter(k=>bag[k]>0&&(W.PSY_ITEMS?.category?.(k)==='ball'||(typeof BALL_DATA!=='undefined'&&Object.hasOwn(BALL_DATA,k))));
+ const pots=Object.keys(bag).filter(k=>bag[k]>0&&/poção|potion/i.test(k));
+ const box=D.createElement('section');box.id='psy-auto-config';box.className='psy-session-modal';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Configurar automação');
+ const card=D.createElement('div');box.appendChild(card);const title=D.createElement('h2');title.textContent=mode==='capture'?'Preparar auto captura':mode==='hunt'?'Preparar Auto Hunt':'Preparar auto batalha';card.appendChild(title);
+ const help=D.createElement('p');help.textContent='Confira os suprimentos antes de confirmar. Só os itens escolhidos serão usados. Desativar interrompe novos movimentos e turnos automáticos; um golpe já iniciado termina normalmente.';card.appendChild(help);
+ function select(label,values,current,none){const l=D.createElement('label');l.textContent=label;const el=D.createElement('select');el.setAttribute('aria-label',label);if(none){const op=D.createElement('option');op.value='';op.textContent='Não usar poção';el.appendChild(op);}for(const k of values){const op=D.createElement('option');op.value=k;op.textContent=k+' ×'+bag[k];el.appendChild(op);}if(values.includes(current)||none&&current==='')el.value=current;l.appendChild(el);card.appendChild(l);return el;}
+ const ball=mode==='capture'?select('Ball principal',balls,cfg.ball,false):null;
+ const potion=select('Poção principal',pots,cfg.potion,true);
+ function percent(label,value){const l=D.createElement('label');l.textContent=label;const n=D.createElement('input');n.type='number';n.min='10';n.max='80';n.value=String(value);n.setAttribute('aria-label',label);l.appendChild(n);card.appendChild(l);return n;}
+ const heal=percent('Curar abaixo de HP (%)',cfg.healAt),capture=mode==='capture'?percent('Capturar abaixo de HP inimigo (%)',cfg.catchAt):null;
+ const warn=D.createElement('p');warn.setAttribute('role','status');card.appendChild(warn);if(ball&&!balls.length)warn.textContent='Você não possui Balls de captura. Reabasteça para ativar.';
+ const cancel=D.createElement('button');cancel.textContent='Cancelar';cancel.onclick=()=>box.remove();card.appendChild(cancel);
+ const confirm=D.createElement('button');confirm.textContent='Confirmar e ativar';confirm.disabled=!!ball&&!balls.length;confirm.onclick=()=>{
+  if(!requireVip())return;const bag=player().inventory||{};if(ball&&!(bag[ball.value]>0)){warn.textContent='A Ball escolhida acabou. Selecione outra.';return;}if(potion.value&&!(bag[potion.value]>0)){warn.textContent='A poção escolhida acabou.';return;}
+  if(!Number.isFinite(Number(heal.value))||Number(heal.value)<10||Number(heal.value)>80||capture&&(!Number.isFinite(Number(capture.value))||Number(capture.value)<10||Number(capture.value)>80)){warn.textContent='Use percentuais entre 10 e 80.';return;}
+  cfg.potion=potion.value;cfg.healAt=Number(heal.value);if(ball){cfg.ball=ball.value;cfg.catchAt=Number(capture.value);catchEnabled=true;}
+  if(mode==='hunt'){findTask=null;huntController=api();const active=huntController?.setAutoHunt(true);huntIntent=!!active;if(!active){warn.textContent='Conclua o objetivo da campanha antes de caçar automaticamente.';return;}}
+  setAutomatic(true);W.autoSave?.();box.remove();renderButtons();W.PsyHuntSession?.message('config','Automação ativada · '+(ball?'Ball: '+cfg.ball+' · ':'')+'Poção: '+(cfg.potion||'nenhuma'));
+ };card.appendChild(confirm);D.body.appendChild(box);cancel.focus?.();
 }
 function questRows(){
  const chapter=W.PsyKantoPlayableV1?.questRows?.();
@@ -94,22 +119,24 @@ function autoTurn(){
   const end=modal.querySelector('[data-v31-end], [data-end]');if(!end)return;
   lastAction=Date.now();automatic=false;catchEnabled=false;api()?.setAutoHunt(false);renderButtons();end.click();note('Auto Hunt encerrado: sua equipe precisa ser curada.');return;
  }
- if(battleData.turnLock)return;
+ if(battleData.turnLock||W.__psyCaptureBusyV26F||W.__psyCaptureBusyV26)return;
  const buttons=[...D.querySelectorAll('#move-buttons button')].filter(b=>!b.disabled&&b.getClientRects().length);
  if(!buttons.length)return;
  lastAction=Date.now();
- const low=Number(mon.hp)/Math.max(1,Number(mon.maxHp))<.4;
+ const low=Number(mon.hp)/Math.max(1,Number(mon.maxHp))<Number(preferences().healAt)/100;
  if(low){
   const healing=buttons.find(b=>/recover|roost|synthesis|rest|heal|cura|recuper|moonlight|milk drink|soft.boiled/i.test(b.textContent));
   if(healing){healing.click();return;}
-  const potion=Object.keys(player().inventory||{}).find(n=>/potion|poção/i.test(n)&&player().inventory[n]>0);
+  const chosen=preferences().potion;const potion=chosen&&Number(player().inventory?.[chosen]||0)>0?chosen:null;
+  if(chosen&&!potion){stopAutomation();note('A poção principal acabou. Reabasteça antes de continuar.');return;}
   if(potion&&typeof usePotionBattle==='function'){usePotionBattle(potion);return;}
  }
  const gym=typeof gymBattle!=='undefined'&&!!gymBattle;
- if(catchEnabled&&!gym&&Number(battleData.wildHp)/Math.max(1,Number(battleData.wildMaxHp))<=.35){
-  const balls=Object.keys(player().inventory||{}).filter(n=>player().inventory[n]>0&&W.PSY_ITEMS?.category?.(n)==='ball'&&(!W.PsySeason||W.PsySeason.canCapture(battleData.wild,n)));
-  balls.sort((a,b)=>(W.psyCaptureChancePct?.(b)||0)-(W.psyCaptureChancePct?.(a)||0));
-  if(balls.length&&typeof W.tryCaptureBattle==='function'){W.tryCaptureBattle(balls[0]);return;}
+ if(catchEnabled&&!gym&&Number(battleData.wildHp)/Math.max(1,Number(battleData.wildMaxHp))<=Number(preferences().catchAt)/100){
+  const chosen=preferences().ball,bag=player().inventory||{};
+  if(!(bag[chosen]>0)){catchEnabled=false;renderButtons();note('A Ball principal acabou. Auto captura desativada.');return;}
+  if(!W.PsySeason||W.PsySeason.canCapture(battleData.wild,chosen)){if(typeof W.tryCaptureBattle==='function'){W.tryCaptureBattle(chosen);return;}}
+  else {catchEnabled=false;renderButtons();note('A Ball escolhida não pode capturar este Pokémon. Auto captura desativada.');return;}
  }
  const score=b=>{const text=b.textContent;const power=Number(text.match(/PWR\s*(\d+)/i)?.[1]||0);return power+(/surf|earthquake|rock slide|blizzard|heat wave|discharge|dazzling gleam|razor leaf|swift|área/i.test(text)?1000:0);};
  buttons.sort((a,b)=>score(b)-score(a));buttons[0].click();
@@ -122,11 +149,12 @@ function refresh(){
  tracker.hidden=!mapHost||(!campaignOpen&&(!city||W.getComputedStyle(city).display==='none'))||!questRows().length;
  tools.hidden=!campaignOpen;
  if(arena&&bar.parentElement!==arena)arena.appendChild(bar);
- if(!vip()){automatic=false;catchEnabled=false;if(api()?.isAutoHunt())api()?.setAutoHunt(false);}
+ if(!vip()&&(automatic||catchEnabled||huntActive()))stopAutomation();
+ if(huntIntent&&huntController&&!huntController.isAutoHunt?.()&&!(typeof inBattle!=='undefined'&&inBattle)){huntIntent=false;automatic=false;catchEnabled=false;}
  renderButtons();advanceFind().catch(()=>{findTask=null;});
  if(D.visibilityState==='visible')autoTurn();
 }
-W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,autoFind:find};
+W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,autoFind:find,stop:stopAutomation,configure,preferences,huntActive};
 renderButtons();W.setInterval(refresh,600);
 })(window,document);
 

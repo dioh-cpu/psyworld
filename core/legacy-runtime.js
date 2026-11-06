@@ -2558,7 +2558,7 @@ function checkEvoStone(stoneName){
         let tem=P.inventory[stoneName]||0;
         let pode=tem>=f.req.qtd && f.p.level>=f.req.minLevel;
         html+=`<div style="background:#1a1a2e; border:2px solid ${pode?'#7c3aed':'#444'}; border-radius:12px; padding:8px; text-align:center;">
-          <img src="${getPokeAnim(f.p)}" style="width:50px;height:50px;">
+          <img class="${f.p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(f.p)}" style="width:50px;height:50px;">
           <div style="color:#fff;font-size:10px;font-weight:900;">${f.p.name} Lv.${f.p.level} → ${getPokeName(f.req.to)}</div>
           <div style="color:${tem>=f.req.qtd?'#0f0':'#f00'};font-size:9px;">${f.req.qtd}x (tem ${tem}) | Lv.${f.req.minLevel}</div>
           <div style="font-size:8px;color:#888;">${f.isTeam?'TIME':'BOX'}</div>
@@ -2585,7 +2585,7 @@ function renderTeam(){
             let nameShow = p.shiny? `<span class="shiny-name">${p.name}</span>` : p.name;
             ht+=`<div onclick="openPokeDetail(${i}, false)" style="display:flex; align-items:center; justify-content:space-between; background:#1a1a2e; border:${i==0?'2px solid #00ff41':'2px solid #334'}; border-radius:10px; padding:6px; margin:4px 0; cursor:pointer; position:relative;" class="aura-${tier}">
               <span class="tier-badge ${tier}">${tier}</span>
-              <div style="display:flex; align-items:center; gap:8px;"><img src="${getPokeAnim(p)}" style="width:42px; height:42px;"><div><div style="color:#fff;font-weight:bold;font-size:12px;">${i==0?'▶ ':''}${nameShow} Lv${p.level} <span style="font-size:9px;color:#aaa;">ATK ${p.baseMaxAtk||p.atk||0}</span></div><div style="font-size:10px;color:#888">HP ${p.hp}/${p.maxHp} | <span style="color:${p.rarity.color}">${p.rarity.n}</span> ${p.shiny?'✨':''}</div></div></div>
+              <div style="display:flex; align-items:center; gap:8px;"><img class="${p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(p)}" style="width:42px; height:42px;"><div><div style="color:#fff;font-weight:bold;font-size:12px;">${i==0?'▶ ':''}${nameShow} Lv${p.level} <span style="font-size:9px;color:#aaa;">ATK ${p.baseMaxAtk||p.atk||0}</span></div><div style="font-size:10px;color:#888">HP ${p.hp}/${p.maxHp} | <span style="color:${p.rarity.color}">${p.rarity.n}</span> ${p.shiny?'✨':''}</div></div></div>
               <div style="display:flex;gap:4px" onclick="event.stopPropagation()"><button onclick="setActive(${i})" style="width:50px;background:#334;color:#fff;border:1px solid #556;border-radius:4px;padding:4px;font-size:10px;">ATIVO</button><button onclick="removeFromTeam(${i})" style="width:50px;background:#844;color:#fff;border:none;border-radius:4px;padding:4px;font-size:10px;">TIRAR</button></div>
             </div>`;
         } else {
@@ -2599,7 +2599,7 @@ function renderTeam(){
     filtered.forEach(o=>{
       let p=o.p, i=o.originalIdx;
       let tier = typeof getTier==='function'? getTier(p.id, p.shiny, false, false) : 'E';
-      hb+=`<div onclick="openPokeDetail(${i}, true)" style="background:#1a1a2e; border:2px solid ${p.rarity.color}; border-radius:10px; padding:6px 4px; text-align:center; cursor:pointer; position:relative;" class="aura-${tier}"><span class="tier-badge ${tier}" style="font-size:7px">${tier}</span><img src="${getPokeAnim(p)}" style="width:52px; height:52px;"><span style="font-size:10px; color:#fff; font-weight:bold; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.shiny?`Shiny ${p.name}`:p.name}</span><span style="font-size:9px; color:#888;">Lv${p.level} | ${p.rarity.n}</span></div>`;
+      hb+=`<div onclick="openPokeDetail(${i}, true)" style="background:#1a1a2e; border:2px solid ${p.rarity.color}; border-radius:10px; padding:6px 4px; text-align:center; cursor:pointer; position:relative;" class="aura-${tier}"><span class="tier-badge ${tier}" style="font-size:7px">${tier}</span><img class="${p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(p)}" style="width:52px; height:52px;"><span style="font-size:10px; color:#fff; font-weight:bold; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.shiny?`Shiny ${p.name}`:p.name}</span><span style="font-size:9px; color:#888;">Lv${p.level} | ${p.rarity.n}</span></div>`;
     });
     bl.innerHTML=hb||"<p style='color:#666; grid-column:1/-1; text-align:center; padding:20px;'>Nenhum Pokémon</p>";
 }
@@ -3469,7 +3469,7 @@ function updateWorldHUD(){
     if(gold&&gold.textContent!==gv)gold.textContent=gv;if(lv&&lv.textContent!==lvv)lv.textContent=lvv;if(hp&&hp.textContent!==hpv)hp.textContent=hpv;
     const td=document.getElementById('world-team');if(!td||!P.team)return;
     const sig=P.team.slice(0,6).map(p=>[p.id,p.level,p.hp,p.maxHp,p.shiny?1:0,p.isMega?1:0].join(':')).join('|')+'#'+P.trainerLevel+':'+P.trainerPoints;
-    if(sig!==psyWorldTeamSig){psyWorldTeamSig=sig;td.innerHTML=P.team.slice(0,6).map(p=>`<div style="text-align:center; color:#fff; font-size:9px;"><img src="${getPokeAnim(p)}" style="width:32px;"><br>${p.name}<br>${p.hp}/${p.maxHp}</div>`).join('')+`<div style="color:#00d0ff; font-size:9px; text-align:center; padding:4px;">T.Lv${P.trainerLevel}<br>${P.trainerPoints} pts</div>`}
+    if(sig!==psyWorldTeamSig){psyWorldTeamSig=sig;td.innerHTML=P.team.slice(0,6).map(p=>`<div style="text-align:center; color:#fff; font-size:9px;"><img class="${p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(p)}" style="width:32px;"><br>${p.name}<br>${p.hp}/${p.maxHp}</div>`).join('')+`<div style="color:#00d0ff; font-size:9px; text-align:center; padding:4px;">T.Lv${P.trainerLevel}<br>${P.trainerPoints} pts</div>`}
   }catch(e){}
 }
 // === FIX GOLD E CAPTURA WORLD - SUBSTITUI OS DOIS QUE TAVAM DUPLICADOS ===
@@ -3526,7 +3526,7 @@ function updateWorldHUD(){
     if(gold&&gold.textContent!==gv)gold.textContent=gv;if(lv&&lv.textContent!==lvv)lv.textContent=lvv;if(hp&&hp.textContent!==hpv)hp.textContent=hpv;
     const td=document.getElementById('world-team');if(!td||!P.team)return;
     const sig=P.team.slice(0,6).map(p=>[p.id,p.level,p.hp,p.maxHp,p.shiny?1:0,p.isMega?1:0].join(':')).join('|')+'#'+P.trainerLevel+':'+P.trainerPoints;
-    if(sig!==psyWorldTeamSig){psyWorldTeamSig=sig;td.innerHTML=P.team.slice(0,6).map(p=>`<div style="text-align:center; color:#fff; font-size:9px;"><img src="${getPokeAnim(p)}" style="width:32px;"><br>${p.name}<br>${p.hp}/${p.maxHp}</div>`).join('')+`<div style="color:#00d0ff; font-size:9px; text-align:center; padding:4px;">T.Lv${P.trainerLevel}<br>${P.trainerPoints} pts</div>`}
+    if(sig!==psyWorldTeamSig){psyWorldTeamSig=sig;td.innerHTML=P.team.slice(0,6).map(p=>`<div style="text-align:center; color:#fff; font-size:9px;"><img class="${p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(p)}" style="width:32px;"><br>${p.name}<br>${p.hp}/${p.maxHp}</div>`).join('')+`<div style="color:#00d0ff; font-size:9px; text-align:center; padding:4px;">T.Lv${P.trainerLevel}<br>${P.trainerPoints} pts</div>`}
   }catch(e){}
 }
 

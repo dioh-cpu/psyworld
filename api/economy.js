@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import {ELEMENTS} from '../lib/capture-rules-v48.js';
 import { requireUser, jsonError, method } from './_lib/supabase.js';
 
 const ACTIONS=new Set(['craft','shop-buy','shop-sell']);
@@ -47,12 +48,10 @@ export default async function handler(req,res){
     let data,error;
 
     if(action==='craft'){
-      ({data,error}=await supabase.rpc('craft_element_ball',{
-        p_user:user.id,
-        p_element:cleanText(req.body?.element,'element',24).toLowerCase(),
-        p_idempotency:idempotency
-      }));
+      const raw=cleanText(req.body?.element,'element',24).toLowerCase(),element=ELEMENTS.find(t=>t.toLowerCase()===raw);if(!element)return res.status(400).json({error:'invalid element'});
+      ({data,error}=await supabase.rpc('psy_v48_state_action',{p_user:user.id,p_action:'craft-element',p_payload:{element,qty:1},p_idempotency:idempotency}));
     }else if(action==='shop-buy'){
+      if(ELEMENTS.some(t=>req.body?.item===t+' Ball')||req.body?.item==='Psyball')return res.status(400).json({error:'use exclusive craft or PsyCoin shop'});
       ({data,error}=await supabase.rpc('shop_buy_item',{
         p_user:user.id,
         p_item:cleanText(req.body?.item,'item'),

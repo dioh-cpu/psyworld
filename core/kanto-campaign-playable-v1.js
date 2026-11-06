@@ -435,6 +435,7 @@
     marker(model.map.npc,'#ffcf70','!',model.place.npc);marker(model.map.object,'#75d5db','?','Pista / segredo');marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima rota');
     if(model.map.secretChest&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
     const px=offsetX+model.x*TILE+TILE/2,py=offsetY+model.y*TILE+TILE/2;
+    if(W.PsyFollower){c.save();c.translate(offsetX,offsetY);W.PsyFollower.draw(c,{scene:'chapter:'+model.place.id,x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,moving:!!model.held||!!model.autoPath?.length,facing:model.direction,valid:(x,y)=>{const value=model.map.grid[Math.floor(y/TILE)]?.[Math.floor(x/TILE)];return [1,5].includes(value);},trainer:()=>{}});c.restore();}
     const avatar=selectedAvatar();
     if(avatar?.ready){
       const row=({down:0,left:1,right:2,up:3})[model.direction]??0;
