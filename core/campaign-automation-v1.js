@@ -5,7 +5,7 @@ let automatic=false,catchEnabled=false,lastAction=0,findTask=null,findAt=0,extra
 const player=()=>typeof P!=='undefined'?P:{};
 const vip=()=>Number(player().meta?.vipUntil||0)>Date.now();
 const api=()=>W.PsyKantoPlayableV1?.getPosition?.()?W.PsyKantoPlayableV1:W.PsyKantoWorldV2;
-const note=t=>W.notif?.(t,2600);
+const note=t=>{W.notif?.(t,3500);let status=D.getElementById('psy-campaign-status');if(!status){status=D.createElement('aside');status.id='psy-campaign-status';status.setAttribute('role','status');D.body.appendChild(status);}status.textContent=t;status.hidden=false;clearTimeout(status._timer);status._timer=setTimeout(()=>status.hidden=true,3500);};
 function requireVip(){if(vip())return true;note('Recurso exclusivo VIP.');return false;}
 function setAutomatic(on){if(on&&!requireVip())return false;automatic=!!on;renderButtons();return automatic;}
 const style=D.createElement('style');style.textContent=`

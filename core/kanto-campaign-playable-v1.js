@@ -133,7 +133,7 @@
     model.canvas.style.touchAction='none';let touch=null;
     model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
     model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}touch.drag=true;model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
-    const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'&&model.map?.npc){const r=model.canvas.getBoundingClientRect(),x=(e.clientX-r.left)*model.canvas.width/r.width,y=(e.clientY-r.top)*model.canvas.height/r.height,n=model.map.npc;if(Math.abs(x-(n.x*TILE+14))<28&&Math.abs(y-(n.y*TILE))<42){interact(true);return;}}render();};
+    const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'&&model.map?.npc){const r=model.canvas.getBoundingClientRect(),cam=model.camera||{scale:1,ox:0,oy:0},x=((e.clientX-r.left)*model.canvas.width/r.width-cam.ox)/cam.scale,y=((e.clientY-r.top)*model.canvas.height/r.height-cam.oy)/cam.scale,n=model.map.npc;if(Math.abs(x-(n.x*TILE+14))<28&&Math.abs(y-(n.y*TILE))<42){interact(true);return;}}render();};
     model.canvas.addEventListener('pointerup',release);model.canvas.addEventListener('pointercancel',release);
     W.addEventListener('resize', render);
     return root;
@@ -223,10 +223,10 @@
     state().active=place.id;
     model.root.querySelector('.kp-title b').textContent=place.name;
     model.root.querySelector('.kp-title small').textContent=place.mark;
-    model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
+    D.body.classList.add('psy-kanto-legacy-active');model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     if(!model.raf)tick();
   }
-  function closeWorld() { model.autoHunt=false;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
+  function closeWorld() { D.body.classList.remove('psy-kanto-legacy-active');model.autoHunt=false;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
     if(!model.root?.classList.contains('open'))return;
     e.stopPropagation();
@@ -422,9 +422,16 @@
 
   function render() {
     if(!model.place||!model.ctx||!model.root?.classList.contains('open'))return;
-    const c=model.ctx, cw=model.canvas.width, ch=model.canvas.height, th=theme(model.place), g=model.map.grid;
+    const c=model.ctx,rect=model.canvas.getBoundingClientRect(),ratio=Math.min(W.devicePixelRatio||1,1.5);
+    const targetW=Math.max(1,Math.round(rect.width*ratio)),targetH=Math.max(1,Math.round(rect.height*ratio));
+    if(model.canvas.width!==targetW||model.canvas.height!==targetH){model.canvas.width=targetW;model.canvas.height=targetH;}
+    const cw=model.canvas.width,ch=model.canvas.height, th=theme(model.place), g=model.map.grid;
     c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
-    const offsetX=Math.floor((cw-COLS*TILE)/2),offsetY=Math.floor((ch-ROWS*TILE)/2);
+    const scale=Math.max(cw/(COLS*TILE),ch/(ROWS*TILE));
+    const ox=Math.min(0,Math.max(cw-COLS*TILE*scale,cw/2-(model.x+.5)*TILE*scale));
+    const oy=Math.min(0,Math.max(ch-ROWS*TILE*scale,ch/2-(model.y+.5)*TILE*scale));
+    model.camera={scale,ox,oy};c.save();c.translate(ox,oy);c.scale(scale,scale);
+    const offsetX=0,offsetY=0;
     c.drawImage(terrainPaint(),offsetX,offsetY);
     const marker=(pt,color,glyph,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12);c.fillStyle='#071019d9';c.fillRect(sx-tw/2,sy-29,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,sy-22)};
     if(model.map.center)marker(model.map.center,'#99edc6','+','Centro Pokémon');
@@ -445,7 +452,7 @@
       c.fillStyle='#141a23';c.beginPath();c.ellipse(px,py+8,8,4,0,0,Math.PI*2);c.fill();
       c.fillStyle='#e8c492';c.beginPath();c.arc(px,py-4,6,0,Math.PI*2);c.fill();c.fillStyle='#315777';c.fillRect(px-6,py+1,12,10);c.fillStyle='#f2f0e8';c.fillRect(px-5,py+11,4,4);c.fillRect(px+2,py+11,4,4);
     }
-    c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-18);W.PsySeason?.drawTitle(c,px,py-35);
+    c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-18);W.PsySeason?.drawTitle(c,px,py-35);c.restore();
   }
   function selectedAvatar(){
     const p=player(),id=p.playerCharacterId,character=(W.PsyHalloweenCharacters||[]).find(c=>c.id===id);

@@ -94,7 +94,7 @@ if(autoHunt&&!huntPlanning&&!state.inside&&!state.dialogOpen&&!state.suspended&&
  const sorted=fields.slice().sort((a,b)=>Math.hypot((a.rect[0]+a.rect[2])/2-p.x,(a.rect[1]+a.rect[3])/2-p.y)-Math.hypot((b.rect[0]+b.rect[2])/2-p.x,(b.rect[1]+b.rect[3])/2-p.y));
  const field=sorted[0];
  if(field){const [x1,y1,x2,y2]=field.rect;let dest=[(x1+x2)/2,(y1+y2)/2];
- if(DATA.grassAt(state.world,p.x,p.y))for(let k=0;k<15;k++){const candidate=[x1+12+Math.random()*Math.max(1,x2-x1-24),y1+12+Math.random()*Math.max(1,y2-y1-24)];if(positionValid(...candidate)){dest=candidate;break;}}
+ if(!positionValid(...dest)||DATA.grassAt(state.world,p.x,p.y))for(let k=0;k<15;k++){const candidate=[x1+12+Math.random()*Math.max(1,x2-x1-24),y1+12+Math.random()*Math.max(1,y2-y1-24)];if(positionValid(...candidate)){dest=candidate;break;}}
  huntPlanning=true;const request=++state.navRequest;findPath([p.x,p.y],dest,request).then(path=>{huntPlanning=false;if(autoHunt&&request===state.navRequest)state.path=path;},()=>{huntPlanning=false;});
  }
 }

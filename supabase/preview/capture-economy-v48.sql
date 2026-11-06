@@ -96,7 +96,7 @@ begin
  elsif p_action='profession' then
   job:=p_payload->>'job';spec:=p_payload->>'spec';
   if job not in ('engineer','herbalist','researcher','professor','stylist','echo','dream','twilight') or coalesce(length(spec),0)<2 or length(spec)>40 then raise exception 'invalid profession';end if;
-  if (select trainer_level from players where user_id=p_user)<10 then raise exception 'trainer level 10 required';end if;
+  if (select trainer_level from players where user_id=p_user)<2 then raise exception 'trainer level 2 required';end if;
   current_job:=st#>>'{professionV48,job}';
   if current_job is not null and (current_job<>job or st#>>'{professionV48,spec}'<>spec) then perform apply_wallet_delta_v24(p_user,'gold',-1000,'craft','profession','v48:'||p_idempotency);end if;
   st:=jsonb_set(st,'{professionV48}',jsonb_build_object('job',job,'spec',spec),true);

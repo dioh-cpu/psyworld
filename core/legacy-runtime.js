@@ -7917,18 +7917,8 @@ function cgAddAfkShortcut(){
 setTimeout(cgAddAfkShortcut,1000);
 
 /* ---------- Detail buff source ---------- */
-function cgAppendBuffDetail(idx,isBox){
-  const content=document.getElementById('detail-poke-content');if(!content||document.getElementById('psy-card-buff-detail'))return;
-  const p=isBox?P.box[idx]:P.team[idx];if(!p)return;
-  const b=cgCollectionPermanentBonus(),panel=document.createElement('div');panel.id='psy-card-buff-detail';panel.className='psy-card-buff-detail';
-  const active=P.cardGame?.collection?.[String(P.cardGame.activeCard)],cb=active?cgCardBattleBuff(active):null;
-  panel.innerHTML=`<div style="color:#c4b5fd;font-weight:900;font-size:10px;margin-bottom:5px">🧾 ORIGEM DOS BUFFS</div>
-  <div class="src"><span>🌍 WORLD / Treinador</span><b>HP ${getTotalBuff('hp').toFixed(1)}% • ATK ${getTotalBuff('dmg').toFixed(1)}%</b></div>
-  <div class="src"><span>🎴 Coleção — linhas evolutivas (${b.complete})</span><b>ATK +${b.atk.toFixed(2)}% • DEF +${b.def.toFixed(2)}%</b></div>
-  <div class="src"><span>🎴 Economia da coleção</span><b>Gold +${b.gold.toFixed(2)}% • XP +${b.xp.toFixed(2)}% • Drop +${b.drop.toFixed(2)}%</b></div>
-  <div class="src"><span>⚔ Card ativo (somente modo Cards)</span><b>${cb?`${getPokeName(active.id)}: ATK +${cb.atk.toFixed(1)}% • DEF +${cb.def.toFixed(1)}% • HP +${cb.hp.toFixed(1)}%`:'Nenhum'}</b></div>`;
-  content.appendChild(panel);
-}
+function cgAppendBuffDetail(){document.getElementById('psy-card-buff-detail')?.remove();}
+
 const cgDetail4Old=window.openPokeDetail;
 window.openPokeDetail=function(idx,isBox){const r=cgDetail4Old.apply(this,arguments);setTimeout(()=>cgAppendBuffDetail(idx,isBox),70);return r};
 
