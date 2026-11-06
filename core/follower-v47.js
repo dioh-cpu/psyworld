@@ -71,6 +71,54 @@ const kantoGaits=Object.freeze({
   810:{cadence:145,sole:63,shadow:[8,3]},  // Grookey
   813:{cadence:115,sole:63,shadow:[8,3]},  // Scorbunny
   816:{cadence:158,sole:63,shadow:[8,3]},  // Sobble
+  2:{cadence:161,sole:63,shadow:[10,3]},  // Ivysaur
+  3:{cadence:192,sole:63,shadow:[13,4]},  // Venusaur
+  5:{cadence:132,sole:63,shadow:[9,3]},  // Charmeleon
+  6:{cadence:138,sole:63,shadow:[9,3]},  // Charizard
+  8:{cadence:166,sole:63,shadow:[10,3]},  // Wartortle
+  9:{cadence:198,sole:63,shadow:[13,4]},  // Blastoise
+  153:{cadence:166,sole:63,shadow:[10,3]},  // Bayleef
+  154:{cadence:198,sole:63,shadow:[13,4]},  // Meganium
+  156:{cadence:156,sole:63,shadow:[10,3]},  // Quilava
+  157:{cadence:161,sole:63,shadow:[10,3]},  // Typhlosion
+  159:{cadence:171,sole:63,shadow:[9,3]},  // Croconaw
+  160:{cadence:174,sole:63,shadow:[13,4]},  // Feraligatr
+  253:{cadence:132,sole:63,shadow:[10,3]},  // Grovyle
+  254:{cadence:138,sole:63,shadow:[10,3]},  // Sceptile
+  256:{cadence:156,sole:63,shadow:[9,3]},  // Combusken
+  257:{cadence:132,sole:63,shadow:[9,3]},  // Blaziken
+  259:{cadence:171,sole:63,shadow:[10,3]},  // Marshtomp
+  260:{cadence:174,sole:63,shadow:[13,4]},  // Swampert
+  388:{cadence:166,sole:63,shadow:[10,3]},  // Grotle
+  389:{cadence:198,sole:63,shadow:[13,4]},  // Torterra
+  391:{cadence:144,sole:63,shadow:[9,3]},  // Monferno
+  392:{cadence:126,sole:63,shadow:[9,3]},  // Infernape
+  394:{cadence:171,sole:63,shadow:[9,3]},  // Prinplup
+  395:{cadence:174,sole:63,shadow:[13,4]},  // Empoleon
+  496:{cadence:156,sole:63,shadow:[9,3]},  // Servine
+  497:{cadence:161,sole:63,shadow:[10,3]},  // Serperior
+  499:{cadence:171,sole:63,shadow:[9,3]},  // Pignite
+  500:{cadence:174,sole:63,shadow:[13,4]},  // Emboar
+  502:{cadence:161,sole:63,shadow:[9,3]},  // Dewott
+  503:{cadence:192,sole:63,shadow:[13,4]},  // Samurott
+  651:{cadence:156,sole:63,shadow:[9,3]},  // Quilladin
+  652:{cadence:186,sole:63,shadow:[13,4]},  // Chesnaught
+  654:{cadence:171,sole:63,shadow:[9,3]},  // Braixen
+  655:{cadence:151,sole:63,shadow:[10,3]},  // Delphox
+  657:{cadence:161,sole:63,shadow:[9,3]},  // Frogadier
+  658:{cadence:138,sole:63,shadow:[9,3]},  // Greninja
+  723:{cadence:166,sole:63,shadow:[9,3]},  // Dartrix
+  724:{cadence:171,sole:63,shadow:[9,3]},  // Decidueye
+  726:{cadence:156,sole:63,shadow:[10,3]},  // Torracat
+  727:{cadence:186,sole:63,shadow:[13,4]},  // Incineroar
+  729:{cadence:171,sole:63,shadow:[9,3]},  // Brionne
+  730:{cadence:151,sole:63,shadow:[9,3]},  // Primarina
+  811:{cadence:156,sole:63,shadow:[9,3]},  // Thwackey
+  812:{cadence:186,sole:63,shadow:[13,4]},  // Rillaboom
+  814:{cadence:138,sole:63,shadow:[9,3]},  // Raboot
+  815:{cadence:144,sole:63,shadow:[9,3]},  // Cinderace
+  817:{cadence:161,sole:63,shadow:[9,3]},  // Drizzile
+  818:{cadence:138,sole:63,shadow:[9,3]},  // Inteleon
 });
 function kantoStep(trail,opt,now,cadence){
  const a=trail.kantoAnimation||(trail.kantoAnimation={time:now,elapsed:0,active:false,hasMoved:false,lastMotion:now,x:opt.x,y:opt.y});
