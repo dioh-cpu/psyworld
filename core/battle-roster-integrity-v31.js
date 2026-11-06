@@ -131,7 +131,7 @@ function installAddTeamGuard(){
 /* Intentional healing clears the faint lock. */
 function installHealGuard(){
   const cur=currentFn('curarTimeCity');if(typeof cur!=='function'||cur.__psyHealV31)return;
-  const f=function(){const r=cur.apply(this,arguments);const P=P0();for(const p of P?.team||[]){clearFainted(p);p.hp=Math.max(1,Number(p.maxHp||1))}sync();return r};f.__psyHealV31=true;f.__psyOriginal=cur;assignFn('curarTimeCity',f);
+  const f=function(){const r=cur.apply(this,arguments);const P=P0();for(const p of P?.team||[]){clearFainted(p);p.hp=Math.max(1,Number(p.maxHp||1));p.currentHp=p.hp;p.fainted=false}sync();return r};f.__psyHealV31=true;f.__psyOriginal=cur;assignFn('curarTimeCity',f);
   try{const b=D.querySelector('[onclick*="curarTimeCity"]');if(b)b.onclick=()=>f()}catch(_){}
 }
 function installReviveGuard(){
