@@ -152,9 +152,9 @@ function startPendingFresh(){
   const input=$('nick-input');if(input)input.value=nick;
   const lab=$('trainer-name-label');if(lab)lab.textContent=nick;
   const login=$('screen-login');if(login)login.style.display='none';
-  const starter=$('screen-starter');if(starter)starter.style.display='none';
+  const starter=$('screen-starter');if(starter)starter.style.display='flex';
   pendingEntryNickname=nick;
-  W.choosePsyTrainer(()=>{if(starter)starter.style.display='flex';try{bs()}catch(e){console.warn('starter v38',e);pendingEntryNickname=null;}},()=>{pendingEntryNickname=null;localStorage.removeItem(PENDING_KEY);});
+  try{bs()}catch(e){console.warn('starter v38',e);pendingEntryNickname=null;return false;}
   localStorage.removeItem(EXIT_KEY);
   return true;
 }

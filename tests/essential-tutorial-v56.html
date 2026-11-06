@@ -356,7 +356,7 @@ document.getElementById('qa50-species').onchange=qa50Select;document.getElementB
   P.hp=0;P.meta.essentialGuideV56={step:3,done:false};PsyGuide.close();updateHUD();PsyEssentialGuide.resume();
  };
 })();
-</script></body>
+</script><script>(function(){const b=document.createElement('button');b.textContent='Preparar HP inválido';document.getElementById('qa-companions50').appendChild(b);b.onclick=()=>{[...document.getElementById('qa-companions50').querySelectorAll('button')].find(e=>e.textContent==='Preparar equipe derrotada').click();for(const mon of P.team){mon.hp=NaN;mon.currentHp=NaN;mon.maxHp=NaN;}updateHUD();};})();</script></body>
 </html>
 
 

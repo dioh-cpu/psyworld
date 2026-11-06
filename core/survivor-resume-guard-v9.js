@@ -141,7 +141,7 @@ function loadIntegrityV30(){
 function loadIntegrityV31(){
   if(W.__PSYWORLD_BATTLE_ROSTER_INTEGRITY_V31__||D.querySelector('script[data-psy-integrity-v31]'))return;
   const s=D.createElement('script');s.dataset.psyIntegrityV31='1';s.async=false;
-  s.src='core/battle-roster-integrity-v31.js?build=HEAL_GUIDE_V59';
+  s.src='core/battle-roster-integrity-v31.js?build=RESTORE_ENTRY_V60';
   s.onerror=()=>console.error('❌ Falha ao carregar Battle/Roster Integrity V31');
   (D.head||D.documentElement).appendChild(s);
 }

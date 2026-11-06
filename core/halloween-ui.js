@@ -247,7 +247,7 @@
   function openCharacterPicker(kind, onConfirm, onCancel) {
     currentPickerKind = kind || 'new';
     selectedCharacter = currentId() || CHARACTERS[4].id;
-    const screen = makeScreen('psy-halloween-character-screen', currentPickerKind === 'new' ? 'ESCOLHA SEU TREINADOR' : 'ESCOLHA SEU PERSONAGEM', currentPickerKind === 'new' ? 'Escolha a aparência do seu treinador antes de escolher o Pokémon inicial.' : 'A identidade escolhida fica salva neste perfil. As fantasias podem ser trocadas depois.');
+    const screen = makeScreen('psy-halloween-character-screen', currentPickerKind === 'new' ? 'ESCOLHA SEU TREINADOR' : 'ESCOLHA SEU PERSONAGEM', currentPickerKind === 'new' ? 'Agora escolha a aparência do treinador que vai acompanhar seu Pokémon inicial.' : 'A identidade escolhida fica salva neste perfil. As fantasias podem ser trocadas depois.');
     const actions = screen.querySelector('.psy-halloween-actions');
     actions.replaceChildren();
     const back = D.createElement('button'); back.type = 'button'; back.className = 'psy-halloween-action'; back.textContent = currentPickerKind === 'new' ? 'VOLTAR' : 'CANCELAR';
@@ -258,7 +258,7 @@
         const login = D.getElementById('screen-login'); if (login) login.style.display = 'flex';
       }
     });
-    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = onConfirm ? 'ESCOLHER INICIAL' : currentPickerKind === 'new' ? 'ENTRAR NA CIDADE' : 'USAR ESTE PERSONAGEM';
+    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = onConfirm ? 'CONFIRMAR PERSONAGEM' : currentPickerKind === 'new' ? 'ENTRAR NA CIDADE' : 'USAR ESTE PERSONAGEM';
     next.addEventListener('click', () => {
       const p = player(); if (!p) return;
       p.playerCharacterId = selectedCharacter;
@@ -353,16 +353,7 @@
     if (typeof previousGoStarter === 'function' && !W.__psyHalloweenGoStarterWrapped) {
       W.__psyHalloweenGoStarterWrapped = true;
       W.goStarter = function () {
-        try {
-          if (typeof W.psyV9HasLocalSave === 'function' && W.psyV9HasLocalSave()) return previousGoStarter.apply(this, arguments);
-        } catch (_) {}
-        const input = D.getElementById('nick-input');
-        const nick = String(input?.value || '').trim();
-        if (nick.length < 2) { W.notif?.('❌ Nick muito curto!'); return; }
-        const p = player(); if (p) p.name = nick;
-        const label = D.getElementById('trainer-name-label'); if (label) label.textContent = nick;
-        const login = D.getElementById('screen-login'); if (login) login.style.display = 'none';
-        openCharacterPicker('new');
+        return previousGoStarter.apply(this, arguments);
       };
     }
     if (typeof W.updatePlayerAnimatedSprite === 'function' && !W.__psyHalloweenAvatarWrapped) {

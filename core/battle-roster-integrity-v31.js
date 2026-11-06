@@ -12,7 +12,7 @@
 if(W.__PSYWORLD_BATTLE_ROSTER_INTEGRITY_V31__)return;
 W.__PSYWORLD_BATTLE_ROSTER_INTEGRITY_V31__=true;
 const BUILD='BATTLE_ROSTER_INTEGRITY_V31_20260903_A';
-const P0=()=>W.P||null;
+const P0=()=>typeof P!=='undefined'?P:W.P||null;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const toast=(m,t=2600)=>{try{W.notif?.(m,t)}catch(_){}};
 function battle(){try{return typeof battleData!=='undefined'?battleData:(W.battleData||null)}catch(_){return W.battleData||null}}
@@ -131,7 +131,16 @@ function installAddTeamGuard(){
 /* Intentional healing clears the faint lock. */
 function installHealGuard(){
   const cur=currentFn('curarTimeCity');if(typeof cur!=='function'||cur.__psyHealV31)return;
-  const f=function(){const r=cur.apply(this,arguments);const P=P0();for(const p of P?.team||[]){clearFainted(p);p.hp=Math.max(1,Number(p.maxHp||1));p.currentHp=p.hp;p.fainted=false}sync();return r};f.__psyHealV31=true;f.__psyOriginal=cur;assignFn('curarTimeCity',f);
+  const f=function(){const r=cur.apply(this,arguments);const P=P0();for(const p of P?.team||[]){
+    let max=Number(p.maxHp);
+    if(!Number.isFinite(max)||max<=0){
+      try{max=Number(currentFn('calcDetailedStats')?.(p)?.finalHp)}catch(_){}
+      if(!Number.isFinite(max)||max<=0){try{max=Number(currentFn('calcBaseHpV14')?.(Number(p.level)||1,Number(p.rarity?.mult)||1,!!p.shiny,!!p.isMega,Number(p.id)))}catch(_){}}
+      if(!Number.isFinite(max)||max<=0)max=Number(p.baseMaxHp);
+      if(!Number.isFinite(max)||max<=0)max=1;
+    }
+    clearFainted(p);p.maxHp=Math.max(1,Math.floor(max));p.hp=p.maxHp;p.currentHp=p.hp;p.fainted=false;
+  }sync();return r};f.__psyHealV31=true;f.__psyOriginal=cur;assignFn('curarTimeCity',f);
   try{const b=D.querySelector('[onclick*="curarTimeCity"]');if(b)b.onclick=()=>f()}catch(_){}
 }
 function installReviveGuard(){

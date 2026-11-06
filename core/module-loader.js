@@ -13,6 +13,7 @@ const MODES={
   hunts:{icon:'🗺️',name:'HUNTS',desc:'Hunts por região, nível e tipo.',entry:['openHunts']},
   dungeons:{icon:'🏰',name:'DUNGEONS',desc:'Bosses e desafios especiais.',entry:['openDungeons']},
   gyms:{icon:'🏆',name:'GYMS',desc:'Progressão regional de Ginásios.',entry:['openGyms']},
+  cards:{icon:'🃏',name:'ÁLBUM / CARDS',desc:'Figurinhas, Packs, Gacha e Cards.',entry:['openCardMode']},
   survivor:{icon:'🦆',name:'PSYDUCK / SURVIVOR',desc:'Psyduck Supremo e Survivor.',entry:['openPsyduckDungeon5','psy19OpenPsyduck']},
   pokedex:{icon:'📘',name:'POKÉDEX',desc:'Pokédex e recompensas.',entry:['openPokedex']},
   eggs:{icon:'🥚',name:'EGG CENTER',desc:'Eggs e incubadoras.',entry:['openEggCenter','psy19OpenEggCenter']},
@@ -156,7 +157,7 @@ if(t.includes('PSY IDLE'))return null; if(t.includes('HUNTS'))return'hunts';
 }
 function decorateButtons(){
   D.querySelectorAll('button').forEach(b=>{
-    const k=modeFromButton(b);if(k==='cards'){b.remove();return;}if(!k)return;
+    const k=modeFromButton(b);if(!k)return;
     b.dataset.psyModule=k;b.dataset.psyInstalled=installed(k)?'1':'0';
     b.title=(installed(k)?'✓ Instalado':'⬇ Baixar modo')+' — '+MODES[k].name;
   });
