@@ -25,7 +25,7 @@ W.psy29LoadDexMeta=async function(){if(DEX.ready||DEX.loading)return DEX;DEX.loa
  for(const r of parseCsv(e)){const id=+r.evolved_species_id,l=+r.minimum_level;if(id&&l>0){if(!DEX.min[id]||l<DEX.min[id])DEX.min[id]=l}}
  DEX.ready=true;rebuildChildren();try{localStorage.setItem(DEXKEY,JSON.stringify({parent:DEX.parent,min:DEX.min,ready:true}))}catch(_){ }
  try{[...(W.P?.team||[]),...(W.P?.box||[])].forEach(normalizePoke);W.renderTeam?.();W.updateHUD?.()}catch(_){ }
- try{if(document.getElementById('psy-clean-hunts')?.style.display!=='none')W.openHunts?.()}catch(_){ }
+ try{const hunts=document.getElementById('psy-clean-hunts');if(hunts&&hunts.style.display!=='none')W.openHunts?.()}catch(_){ }
  }catch(err){console.warn('V29 Pokédex meta offline; usando fallback interno.',err)}finally{DEX.loading=false}return DEX};
 setTimeout(()=>W.psy29LoadDexMeta?.(),200);
 function internalParent(id){try{for(const [from,e] of Object.entries(W.EVOLUTION_MAP||EVOLUTION_MAP||{}))if(+e?.to===+id)return +from}catch(e){}try{for(const [from,opts] of Object.entries(W.SPECIAL_EVOLUTIONS||SPECIAL_EVOLUTIONS||{}))for(const v of Object.values(opts||{}))if(+v?.to===+id)return +from}catch(e){}return 0}
