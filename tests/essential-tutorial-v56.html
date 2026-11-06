@@ -346,7 +346,17 @@ window.autoSave=function(){};window.autoLoad=function(){return false};
 function qa50Select(){const id=Number(document.getElementById('qa50-species').value);let mon=P.team.find(m=>m.id===id);if(!mon){const species=GENS.flatMap(g=>g.starters).find(m=>m.id===id)||{id,name:document.getElementById('qa50-species').selectedOptions[0].textContent,type:'Normal'};mon={...P.team[0],id,name:species.name,type:species.type,followerKeyV47:'qa51-'+id,pokemon_uid:'qa51-'+id};P.team=[P.team[0],mon];}for(const m of P.team)m.shiny=document.getElementById('qa50-shiny').checked;P.meta.followerV47={enabled:true,key:mon.pokemon_uid||mon.followerKeyV47};PsyFollower.clear();document.getElementById('qa50-status').textContent=(mon.shiny?'Shiny ':'')+mon.name+' selecionado · caminhada aprovada';}
 document.getElementById('qa50-prepare').onclick=function(){if(window.psyOnlineAuthorityV26?.online?.()){alert('Faça este teste sem entrar em uma conta online.');return;}P.name='Teste de acompanhantes';P.meta=P.meta||{};P.meta.tutorialSeen=true;P.meta.psyCinematicTutorialSeen=true;P.playerCharacterId='adventure_boy';chosenPoke=GENS.flatMap(g=>g.starters).find(p=>p.id===912);document.getElementById('screen-login').style.display='none';confirmStarter();const base={...P.team[0]};P.team=[[912,'Quaxly','Water'],[906,'Sprigatito','Grass'],[909,'Fuecoco','Fire'],[921,'Pawmi','Electric']].map(([id,name,type])=>({...base,id,name,type,shiny:false,followerKeyV47:'qa50-'+id,pokemon_uid:'qa50-'+id}));P.meta.kantoStoryV49={seen:{palletArrival:true,palletDeparture:true,routeArrival:true,professorResearch:true}};PsyKantoWorldV2.progress().oak=true;PsyCampaignAutomation.stop();qa50Select();PsyKantoWorldV2.close();document.getElementById('qa-companions50').hidden=true;document.getElementById('qa50-prepare').textContent='Reiniciar teste';};
 document.getElementById('qa50-species').onchange=qa50Select;document.getElementById('qa50-shiny').onchange=qa50Select;
-</script><link rel="stylesheet" href="css/mobile-shell-v53.css?build=MOBILE_V53"><script src="core/mobile-shell-v53.js?build=MOBILE_V53"></script><script src="core/essential-tutorial-v56.js?build=ESSENTIAL_GUIDE_V56"></script></body>
+</script><link rel="stylesheet" href="css/mobile-shell-v53.css?build=MOBILE_V53"><script src="core/mobile-shell-v53.js?build=MOBILE_V53"></script><script src="core/essential-tutorial-v56.js?build=ESSENTIAL_GUIDE_V56"></script><script>
+(function(){
+ const prepare=document.getElementById('qa50-prepare'),panel=document.getElementById('qa-companions50');
+ const test=document.createElement('button');test.textContent='Preparar equipe derrotada';panel.appendChild(test);
+ test.onclick=function(){
+  prepare.click();
+  for(const mon of P.team){mon.hp=0;mon.currentHp=0;mon.fainted=true;mon._psyFaintedV31=true;mon._psyFaintedAtV31=Date.now();}
+  P.hp=0;P.meta.essentialGuideV56={step:3,done:false};PsyGuide.close();updateHUD();PsyEssentialGuide.resume();
+ };
+})();
+</script></body>
 </html>
 
 
