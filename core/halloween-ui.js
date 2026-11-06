@@ -244,7 +244,7 @@
     if (!p.playerCostumeByCharacter || typeof p.playerCostumeByCharacter !== 'object') p.playerCostumeByCharacter = {};
     if (!character(id).files[p.playerCostumeByCharacter[id]]) p.playerCostumeByCharacter[id] = 'basic';
   }
-  function openCharacterPicker(kind) {
+  function openCharacterPicker(kind, onConfirm, onCancel) {
     currentPickerKind = kind || 'new';
     selectedCharacter = currentId() || CHARACTERS[4].id;
     const screen = makeScreen('psy-halloween-character-screen', currentPickerKind === 'new' ? 'ESCOLHA SEU TREINADOR' : 'ESCOLHA SEU PERSONAGEM', currentPickerKind === 'new' ? 'Escolha a aparência do seu treinador antes de escolher o Pokémon inicial.' : 'A identidade escolhida fica salva neste perfil. As fantasias podem ser trocadas depois.');
@@ -254,16 +254,18 @@
     back.addEventListener('click', () => {
       closeScreen(screen);
       if (currentPickerKind === 'new') {
+        onCancel?.();
         const login = D.getElementById('screen-login'); if (login) login.style.display = 'flex';
       }
     });
-    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = currentPickerKind === 'new' ? 'ENTRAR NA CIDADE' : 'USAR ESTE PERSONAGEM';
+    const next = D.createElement('button'); next.type = 'button'; next.className = 'psy-halloween-action primary'; next.textContent = onConfirm ? 'ESCOLHER INICIAL' : currentPickerKind === 'new' ? 'ENTRAR NA CIDADE' : 'USAR ESTE PERSONAGEM';
     next.addEventListener('click', () => {
       const p = player(); if (!p) return;
       p.playerCharacterId = selectedCharacter;
       ensureCostumeRecord(p, selectedCharacter);
       p.playerCostumeKey = p.playerCostumeByCharacter[selectedCharacter];
       closeScreen(screen);
+      if (onConfirm) { syncAvatar(); onConfirm(); return; }
       if (currentPickerKind === 'new') {
         const login = D.getElementById('screen-login'); if (login) login.style.display = 'none';
         const starter = D.getElementById('screen-starter'); if (starter) starter.style.display = 'none';
@@ -366,8 +368,18 @@
     if (typeof W.updatePlayerAnimatedSprite === 'function' && !W.__psyHalloweenAvatarWrapped) {
       W.__psyHalloweenAvatarWrapped = true;
       const previousUpdate = W.updatePlayerAnimatedSprite;
+      let repairPromptShown = false;
       W.updatePlayerAnimatedSprite = function () {
-        if (currentId() && renderAvatar()) return true;
+        if (!currentId() && player()?.team?.length) {
+          const sprite=D.getElementById('player-poke-sprite');if(sprite)sprite.style.display='none';
+          if(!repairPromptShown){repairPromptShown=true;openCharacterPicker('change');}
+          return true;
+        }
+        if (currentId()) {
+          if(renderAvatar())return true;
+          const sprite=D.getElementById('player-poke-sprite');if(sprite)sprite.style.display='none';
+          hideAvatar();return true;
+        }
         hideAvatar();
         return previousUpdate.apply(this, arguments);
       };
@@ -383,6 +395,7 @@
     }
     W.openPsyHalloweenCostumes = openCostumePicker;
     W.openPsyHalloweenCharacterPicker = () => openCharacterPicker('change');
+    W.choosePsyTrainer = (next, cancel) => openCharacterPicker('new', next, cancel);
     W.PsyHalloweenCharacters = CHARACTERS.map(c => ({ id: c.id, name: c.name, costumes: { ...c.files } }));
   }
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', install, { once: true });

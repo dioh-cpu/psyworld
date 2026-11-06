@@ -139,8 +139,11 @@ function resolveBuildStarter(){
   try{if(typeof W.buildStarterScreen==='function')return W.buildStarterScreen}catch(_){}
   return null;
 }
+let pendingEntryNickname=null;
 function startPendingFresh(){
-  const nick=localStorage.getItem(PENDING_KEY);if(!nick)return false;
+  const nick=localStorage.getItem(PENDING_KEY);if(!nick){pendingEntryNickname=null;return false;}
+  if(pendingEntryNickname===nick)return true;
+  if(typeof W.choosePsyTrainer!=='function')return false;
   for(const k of SAVE_KEYS)try{localStorage.removeItem(k)}catch(_){}
   try{$('psy-cloud-modal')?.remove()}catch(_){}
   const p=player(),bs=resolveBuildStarter();if(!p||typeof bs!=='function')return false;
@@ -149,8 +152,9 @@ function startPendingFresh(){
   const input=$('nick-input');if(input)input.value=nick;
   const lab=$('trainer-name-label');if(lab)lab.textContent=nick;
   const login=$('screen-login');if(login)login.style.display='none';
-  const starter=$('screen-starter');if(starter)starter.style.display='flex';
-  try{bs()}catch(e){console.warn('starter v38',e);return false}
+  const starter=$('screen-starter');if(starter)starter.style.display='none';
+  pendingEntryNickname=nick;
+  W.choosePsyTrainer(()=>{if(starter)starter.style.display='flex';try{bs()}catch(e){console.warn('starter v38',e);pendingEntryNickname=null;}},()=>{pendingEntryNickname=null;localStorage.removeItem(PENDING_KEY);});
   localStorage.removeItem(EXIT_KEY);
   return true;
 }
@@ -162,6 +166,8 @@ function installGoStarter(){
 function installConfirm(){
   const cur=W.confirmStarter;if(typeof cur!=='function'||cur.__psyCharV38)return;
   const f=function(){
+    const p0=player();
+    if(p0&&!p0.playerCharacterId&&typeof W.choosePsyTrainer==='function'){const args=arguments,self=this;W.choosePsyTrainer(()=>f.apply(self,args));return;}
     const nick=localStorage.getItem(PENDING_KEY);
     if(!nick)return cur.apply(this,arguments);
     const p=player();if(p){p.meta=p.meta||{};p.meta.characterNickname=nick;p.meta.onlineCharacter=true;p.meta.noPsyduckNormalTeamV33=true}

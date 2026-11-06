@@ -217,7 +217,7 @@ try{
 /* PSYWORLD V33 — novas contas sem Psyduck no time normal + LOG OUT. */
 try{
   const v33=document.createElement('script');
-  v33.src='core/new-account-logout-v33.js?build=NEW_ACCOUNT_LOGOUT_V33_20260927_A';
+  v33.src='core/new-account-logout-v33.js?build=TRAINER_ENTRY_V55';
   v33.async=false;
   document.head.appendChild(v33);
 }catch(e){console.warn('new account/logout v33 loader',e)}
