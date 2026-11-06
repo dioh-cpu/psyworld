@@ -3,7 +3,7 @@
 'use strict';
 function label(){const m=typeof P!=='undefined'&&P.team?.[0],el=D.getElementById('player-name-tag');if(m&&el){const q=typeof m.rarity==='object'?m.rarity?.n:m.rarity;el.textContent=(m.shiny?'✨ ':'')+m.name+' — '+(q||'Nice')+' Lv'+m.level;}}
 function kit(){if(typeof P==='undefined'||!P.team?.length)return;P.meta=P.meta||{};const m=P.team.find(p=>p.isStarter||Number(p.id)===Number(P.meta.kantoStarterChosen));if(!m)return;
- if(!P.meta.starterTrainingV45){if(Number(m.level||1)<5){m.level=5;m.exp=0;m.maxExp=500;if(typeof W.getMovesForLevel==='function')m.moves=W.getMovesForLevel(m.id,5);W.recalcPoke?.(m);m.hp=m.maxHp;m.currentHp=m.hp;m.fainted=false;delete m.status;if(m===P.team[0]){P.pokemon=m;P.hp=m.hp;P.maxHp=m.maxHp;}}P.meta.starterTrainingV45=true;W.autoSave?.();}
+ if(!P.meta.starterTrainingV45){if(Number(m.level||1)<5){m.level=5;m.exp=0;m.maxExp=Math.floor(100*Math.pow(1.3,4));if(typeof W.getMovesForLevel==='function')m.moves=W.getMovesForLevel(m.id,5);W.recalcPoke?.(m);m.hp=m.maxHp;m.currentHp=m.hp;m.fainted=false;delete m.status;if(m===P.team[0]){P.pokemon=m;P.hp=m.hp;P.maxHp=m.maxHp;}}P.meta.starterTrainingV45=true;W.autoSave?.();}
  if(P.meta.starterKitV44){W.updateHUD?.();return;}
  const q=typeof m.rarity==='object'?m.rarity?.n:m.rarity;
  if(!q||['Lixo','Quase Lixo'].includes(q)){m.rarity=W.rollStarterRarity();W.recalcPoke?.(m);}
