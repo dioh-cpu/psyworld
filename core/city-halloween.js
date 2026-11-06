@@ -60,12 +60,15 @@
 
   const floorCache=new Map();
   function drawCityFloor(ctx,w,h){
-    const b=cityScreenBounds(w,h),shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
+    const b=cityScreenBounds(w,h);
+    const ox=w/2-P.px-b.tile/2,oy=h/2-P.py-b.tile/2;
+    b.x0=Math.floor(-ox/b.tile);b.x1=Math.ceil((w-ox)/b.tile);
+    b.y0=Math.floor(-oy/b.tile);b.y1=Math.ceil((h-oy)/b.tile);
+    const shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
     for(let ty=b.y0;ty<=b.y1;ty++)for(let tx=b.x0;tx<=b.x1;tx++){
-      if(typeof map!=='undefined'&&map?.[ty]?.[tx]!==1)continue;
       const x=w/2-P.px-b.tile/2+tx*b.tile,y=h/2-P.py-b.tile/2+ty*b.tile;
       if(x+b.tile<0||y+b.tile<0||x>w||y>h)continue;
-      const pattern=(tx*97+ty*73)%5,key=b.tile+':'+pattern;
+      const pattern=((tx*97+ty*73)%5+5)%5,key=b.tile+':'+pattern;
       let tile=floorCache.get(key);
       if(!tile){
         tile=D.createElement('canvas');tile.width=tile.height=b.tile;const c=tile.getContext('2d');
@@ -335,7 +338,7 @@
     // Legacy draw clears the canvas on every animation frame; repaint this overlay each time too.
     const c=ctx, cv=D.getElementById('gameCanvas'), w=cv.width, h=cv.height, center=screenPoint(0,0);
     c.save();
-    clipCityArea(c,w,h);
+    // Paint the whole viewport, including the old island boundary.
     const seasonal=!W.PsySeason||W.PsySeason.on();
     if(seasonal){
     // Seasonal illumination is removable; architecture stays in place.

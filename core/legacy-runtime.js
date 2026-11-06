@@ -2098,32 +2098,9 @@ function endBattle(won) {
 const COLORS = { 0:'#0a1a08', 1:'#1a5c1e', 2:'#1a3a8a', 3:'#8c7048', 4:'#5a4030', };
 
 function drawCityGround(offX, offY){
-  const halloweenCity = document.getElementById('game-wrap')?.dataset?.citySeason === 'halloween';
-  // Keep the legacy ground in the same night palette as the Halloween city overlay.
-  ctx.fillStyle = halloweenCity ? '#07101f' : '#0a7dc2';
+  // The city art layer owns the town. Never expose the retired island/beach.
+  ctx.fillStyle = '#211d30';
   ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  ctx.fillStyle = halloweenCity ? '#101b32' : '#1e90ff';
-  ctx.beginPath();
-  ctx.ellipse(canvas.width/2, canvas.height/2, canvas.width*0.8, canvas.height*0.7, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  const cx = offX + 25*TILE + TILE/2;
-  const cy = offY + 22*TILE + TILE/2;
-
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, 680, 480, 0, 0, Math.PI*2);
-  ctx.fillStyle = halloweenCity ? '#202338' : '#f7e8b5';
-  ctx.fill();
-
-  ctx.lineWidth = 14;
-  ctx.strokeStyle = halloweenCity ? '#574054' : '#e9d28c';
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, 600, 400, 0, 0, Math.PI*2);
-  ctx.fillStyle = halloweenCity ? '#25243a' : '#fff6cc';
-  ctx.fill();
 }
 
 function draw(){
@@ -2132,60 +2109,8 @@ function draw(){
     const offX = w/2 - P.px - TILE/2;
     const offY = h/2 - P.py - TILE/2;
 
-    // Desenha a ilha primeiro
     drawCityGround(offX, offY);
-
-    const visible=18;
-    const minX=Math.max(0,Math.floor(P.x-visible)), maxX=Math.min(MAP_W-1,Math.ceil(P.x+visible));
-    const minY=Math.max(0,Math.floor(P.y-visible)), maxY=Math.min(MAP_H-1,Math.ceil(P.y+visible));
-
-    const halloweenCity = document.getElementById('game-wrap')?.dataset?.citySeason === 'halloween';
-    const tileColors = halloweenCity ? {
-      0:'#101b32',1:'#25243a',2:'#07101f',3:'#34283a',4:'#201b2c',
-      5:'#244a35',6:'#75513b',7:'#6b7040',8:'#172b2a',9:'#62566a',10:'#5b392f'
-    } : {
-      0:'#1e90ff',1:'#fff6cc',2:'#0a7dc2',3:'#f7e8b5',4:'#e9d28c',
-      5:'#247342',6:'#bd8b4a',7:'#82a84a',8:'#214d34',9:'#746c70',10:'#936446'
-    };
-
-    for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++){
-        // só desenha chão se estiver perto da ilha pra não cobrir o mar
-        const dist = Math.hypot(x-25, y-22);
-        if(dist > 22) continue; // fora da ilha = mar
-
-        const sx=offX+x*TILE, sy=offY+y*TILE, t=map[y][x];
-        ctx.fillStyle=tileColors[t]||'#fff6cc';
-        ctx.fillRect(sx,sy,TILE+1,TILE+1);
-        if(t===5){
-          ctx.strokeStyle='#9ecb78';ctx.lineWidth=2;
-          for(let i=0;i<5;i++){const bx=sx+7+i*9,by=sy+TILE-3-(i%2)*3;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx-2,by-11-(i%3)*3);ctx.stroke()}
-        }else if(t===6){
-          ctx.fillStyle='#d3a76b';ctx.fillRect(sx+4,sy+7,TILE-8,TILE-14);
-          ctx.fillStyle='#8f6549';ctx.fillRect(sx+9,sy+12,4,3);ctx.fillRect(sx+34,sy+34,5,3);
-        }else if(t===8){
-          ctx.fillStyle='#08191b';ctx.beginPath();ctx.arc(sx+TILE/2,sy+TILE/2,TILE*.49,0,Math.PI*2);ctx.fill();
-          ctx.fillStyle='#24513a';ctx.beginPath();ctx.arc(sx+TILE/2,sy+TILE*.42,TILE*.39,0,Math.PI*2);ctx.fill();
-          ctx.fillStyle='#3a7350';ctx.beginPath();ctx.arc(sx+TILE*.4,sy+TILE*.34,TILE*.16,0,Math.PI*2);ctx.fill();
-        }else if(t===9){
-          ctx.fillStyle='#81717a';ctx.beginPath();ctx.moveTo(sx+8,sy+45);ctx.lineTo(sx+13,sy+19);ctx.lineTo(sx+31,sy+8);ctx.lineTo(sx+46,sy+21);ctx.lineTo(sx+50,sy+45);ctx.closePath();ctx.fill();
-        }else if(t===0 && x>=20&&x<=22&&y>=15&&y<=17){
-          ctx.fillStyle='#245c76';ctx.fillRect(sx,sy,TILE+1,TILE+1);
-          ctx.strokeStyle='#93d4db';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(sx+7,sy+13);ctx.quadraticCurveTo(sx+24,sy+7,sx+45,sy+13);ctx.stroke();
-        }else if(t===10){
-          ctx.strokeStyle='#c3985f';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(sx+4,sy+TILE/2);ctx.lineTo(sx+TILE-4,sy+TILE/2);ctx.stroke();
-          for(let fx=10;fx<TILE;fx+=16){ctx.beginPath();ctx.moveTo(sx+fx,sy+10);ctx.lineTo(sx+fx,sy+TILE-10);ctx.stroke()}
-        }
-    }
-    if(!halloweenCity) BUILDINGS.forEach(b=>{
-        const bx=offX+b.x*TILE, by=offY+b.y*TILE, bw=b.w*TILE, bh=b.h*TILE, depth=22;
-        if(bx> w||by>h||bx+bw<0||by+bh<0) return;
-        ctx.fillStyle='rgba(0,0,0,.36)'; ctx.beginPath(); ctx.ellipse(bx+bw/2,by+bh+10,bw*.58,18,0,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle=b.color||'#d8d1bd'; ctx.fillRect(bx,by+depth,bw,bh-depth);
-        ctx.fillStyle=b.roof||'#5a3a50'; ctx.beginPath(); ctx.moveTo(bx-8,by+depth); ctx.lineTo(bx+bw/2,by-18); ctx.lineTo(bx+bw+8,by+depth); ctx.closePath(); ctx.fill();
-        for(let wx=bx+18;wx<bx+bw-10;wx+=38){ ctx.fillStyle='#8ed6d1'; ctx.fillRect(wx,by+depth+18,18,16); }
-        ctx.fillStyle='#513222'; const doorX=bx+bw/2-14; ctx.fillRect(doorX,by+bh-42,28,42);
-        ctx.fillStyle='#fff6d2'; ctx.font='bold 10px Tahoma'; ctx.textAlign='center'; ctx.fillText(b.name,bx+bw/2,by-26);
-    });
+    // Retired island tiles, ponds, trees and buildings are not rendered.
     // Route 1 entrance sign is drawn by the town art layer on the walkable town-side trail.
     const px=offX+P.px, py=offY+P.py;
     if(P.team && P.team[0]){
