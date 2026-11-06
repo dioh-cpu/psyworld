@@ -134,14 +134,14 @@ W.psyEnsureSurvivorCityButton=ensurePause;
 function loadIntegrityV30(){
   if(W.__PSYWORLD_BATTLE_INPUT_INTEGRITY_V30__||D.querySelector('script[data-psy-integrity-v30]'))return;
   const s=D.createElement('script');s.dataset.psyIntegrityV30='1';s.async=false;
-  s.src='core/battle-input-integrity-v30.js?build=BATTLE_INPUT_INTEGRITY_V30_20260903_A';
+  s.src='core/battle-input-integrity-v30.js?build=STARTER_HP_INIT_V46';
   s.onerror=()=>console.error('❌ Falha ao carregar Battle/Input Integrity V30');
   (D.head||D.documentElement).appendChild(s);
 }
 function loadIntegrityV31(){
   if(W.__PSYWORLD_BATTLE_ROSTER_INTEGRITY_V31__||D.querySelector('script[data-psy-integrity-v31]'))return;
   const s=D.createElement('script');s.dataset.psyIntegrityV31='1';s.async=false;
-  s.src='core/battle-roster-integrity-v31.js?build=BATTLE_ROSTER_INTEGRITY_V31_20260903_A';
+  s.src='core/battle-roster-integrity-v31.js?build=STARTER_HP_INIT_V46';
   s.onerror=()=>console.error('❌ Falha ao carregar Battle/Roster Integrity V31');
   (D.head||D.documentElement).appendChild(s);
 }

@@ -6,3 +6,5 @@ Validação:15 suites passaram. Prévia https://psyworld-apboeawir-world-of-mons
 V45:teste real revelou derrota doQuaxlyNv1mesmo contraRattataNv1 noAutoHunt. Inicial agoraNv5; treinamento retroativo único para inicialabaixo5, recalculaHP/atributos e movimentosNv5. Não repetir cura/kit ao carregar. Primeirotestedelo confirmado:QuaxlyNiceLv1/RattataQuaseLixoLv1, faltava força inicial.
 
 Prévia final: https://psyworld-q58qqgt4v-world-of-monsters.vercel.app/ ; navegador confirmou QuaxlyNv5,243/243HP,0/285XP e50kGold. V45 usa curva normal deXP. Teste cobre explicitamente líderNv5/inimigoNv8 limitado4.
+
+CAUSA RAIZ V46:guardas deHP consideravam hp indefinido de novoPokémon comoHPzero, gravavam _psyFaintedV31 na criação. Mesmoapósbarra cheia, primeirogolpe era bloqueado eHP zerado. Reproduzido nativo semAutoBattle:um cliqueWaterGun causavaderrota eRattata196/196 intacto. Guardas agora distinguem HPnãoinicializado deHPzero; kitlimpa marca incorreta umaúnicavez comstarterHealthV46. Preserva KOreal/recalculo semreviver.

@@ -26,7 +26,7 @@ function syncFrontPokemon(){
 const recalcBase=W.recalcPoke;
 if(typeof recalcBase==='function'&&!recalcBase.__psyV29ZeroSafe){
   const zeroSafe=function(p){
-    const wasFainted=!!p&&Number(p.hp||0)<=0;
+    const wasFainted=!!p&&p.hp!=null&&Number.isFinite(Number(p.hp))&&Number(p.hp)<=0;
     const r=recalcBase.apply(this,arguments);
     if(wasFainted&&p)p.hp=0;
     return r;
