@@ -1154,7 +1154,7 @@ function uploadSaveLogin(event) {
 function buildStarterScreen() {
     const container = document.getElementById('starter-list');
     container.innerHTML = '';
-    GENS.slice(0,1).forEach(gen => {
+    GENS.forEach(gen => {
         const sec = document.createElement('div');
         sec.className = 'gen-section';
         sec.innerHTML = `<div class="gen-label">${gen.label}</div>`;
