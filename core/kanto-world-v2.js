@@ -102,7 +102,7 @@ let dx=0,dy=0,pathDistance=Infinity;for(const k of state.held){if(k==='up')dy--;
 if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<.5){if(positionValid(...dest)){p.x=dest[0];p.y=dest[1];}state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d;pathDistance=d}}
 state.moving=false;if(dx||dy)move(dx,dy,dt,pathDistance);if(state.root){state.root.dataset.worldPosition=Math.round(state.position.x)+','+Math.round(state.position.y);state.root.dataset.pathLength=String(state.path.length);}
 const frameBudget=W.innerWidth<740?1000/48:1000/60;
-if(now-state.lastRender>=frameBudget){draw();state.lastRender=now}
+if(!W.PsyKantoStoryV49?.isOpen()&&now-state.lastRender>=frameBudget){draw();state.lastRender=now}
 state.raf=W.requestAnimationFrame(tick)}
 function onKeyDown(e){if(!state.root?.classList.contains('open')||W.PsyKantoStoryV49?.isOpen()||W.PsyGuide?.isOpen())return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){autoHunt=false;e.preventDefault();e.stopImmediatePropagation();state.path=[];state.navRequest++;state.held.add(keys[e.code])}else if(['KeyE','Enter','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)interact()}else if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}}
 function onKeyUp(e){if(!state.root?.classList.contains('open'))return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){e.preventDefault();e.stopImmediatePropagation();state.held.delete(keys[e.code])}}
@@ -237,7 +237,7 @@ function activateTarget(a){if(a.type==='return'){open('pallet',{spawn:[525,60]})
 function talk(npc){
  const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
  if(id==='oak'){
-  if(W.PsyKantoStoryV49&&!progress().oak)return W.PsyKantoStoryV49.professor(npc,()=>{mark('oak');hud();});
+  if(W.PsyKantoStoryV49&&!W.PsyKantoStoryV49.hasSeen('professorResearch'))return W.PsyKantoStoryV49.professor(npc,()=>{mark('oak');hud();});
   showDialog('Professor Car’alho','Toda grande jornada começa com uma escolha. Em Pallet, conheça quem cuida dos Pokémon e quem prepara seus suprimentos. Agora você pode seguir para a Rota 1 quando quiser.',[
    {text:'ENTENDI',primary:true,run:()=>mark('oak')}],pr,em);
  }else if(id==='gate'){

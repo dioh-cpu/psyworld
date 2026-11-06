@@ -3,7 +3,7 @@
 const player=()=>typeof P!=='undefined'?P:W.P||{},world=()=>W.PsyKantoWorldV2;
 const ART={pallet:'assets/story/pallet-town-artist-v2.webp',lab:'assets/kanto/interiors/lab-v30.webp',departure:'assets/kanto/cinematics/pallet-05.webp',route:'assets/story/route-1-artist-v2.webp',oak:'assets/kanto/approved/professor-expressions.webp'};
 let running=null,typing=0,transition=0,previousFocus;
-function memory(){const p=player();p.meta=p.meta||{};return p.meta.kantoStoryV49||(p.meta.kantoStoryV49={seen:{}});}
+function memory(){const p=player();p.meta=p.meta||{};const m=p.meta.kantoStoryV49||(p.meta.kantoStoryV49={});m.seen=m.seen||{};return m;}
 function save(){W.autoSave?.();}function stopTimers(){W.clearInterval(typing);W.clearTimeout(transition);typing=0;transition=0;}
 function close(completed){if(!running)return;const old=running;stopTimers();running=null;D.getElementById('psy-kanto-story')?.remove();world()?.setStoryLock(false);if(completed){memory().seen[old.id]=true;delete memory()[old.id];save();old.done?.();}previousFocus?.focus?.();}
 function play(id,beats,done,quest=false){if(running)return false;W.PsyGuide?.close();W.PsyCampaignAutomation?.stop();previousFocus=D.activeElement;world()?.setStoryLock(true);
@@ -46,5 +46,5 @@ return play('professorResearch',[
  {art:ART.lab,professor:true,speaker:'Professor Car’alho',title:'A sua jornada começa agora',text:'Posso contar com você? Ao aceitar a pesquisa, a passagem para a Rota 1 estará liberada. Caminhe para o norte de Pallet. Quero ver que histórias você e '+partner+' vão trazer.'}
  ],()=>{memory().seen.professorResearch=true;save();done?.();},true);}
 D.addEventListener('keydown',e=>{if(!running)return;e.stopImmediatePropagation();if(e.key==='Escape'){e.preventDefault();close(!running.quest);}else if(e.key==='Enter'||e.key===' '){e.preventDefault();running.root.querySelector('.ks49-actions button')?.click();}},true);
-W.PsyKantoStoryV49={enter,professor,isOpen:()=>!!running,close,art:ART};
+W.PsyKantoStoryV49={enter,professor,isOpen:()=>!!running,hasSeen:id=>!!memory().seen[id],close,art:ART};
 })(window,document);
