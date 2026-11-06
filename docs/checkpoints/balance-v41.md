@@ -37,7 +37,7 @@ Código publicado: a22e53bd2834690c66fb2bf53fc0e2c35f8a363b, somente branch de t
 - Perfil descartável 390×844: entrega diária consumiu Comum+Raro, deu 300 Gold/150XP e bloqueou nova entrega.
 - Forja da cópia Incomum consumiu 4 Circuitos/200 Gold, +1 visível e próximo custo400.
 - Lote3 Mecânico: 52segundos,120Gold/15Circuitos consumidos,3 cópias Comum coletadas,120XP totais. Nv15 150/225 → Nv16 45/235. Segunda coleta não duplicou itens/XP/Gold.
-- Campanha real em perfil novo de teste: Scorbunny126/126HP, Pallet, Auto Find alcançou laboratório e abriu diálogo do professor; objetivo avançou para Rota1. Navegação abriu Rota1 mantendo mapa e controles. Auto Hunt foi ativado pelo controle visível.
+- Campanha real em perfil novo de teste: Scorbunny126/126HP, Pallet, Auto Find alcançou laboratório e abriu diálogo do professor; objetivo avançou para Rota1. Navegação abriu Rota1 mantendo mapa e controles. Auto Hunt foi ativado pelo controle visível, alcançou combate; o único Scorbunny Nv1 terminou com0/126HP e a caça desligou automaticamente, sem reviver. Não usar esse teste como recomendação de força para farm automático.
 - Prova móvel: docs/screenshots/balance-v41.jpg.
 - Modelo corrigido para comprar bancadas usando slots ausentes como0; tabela e JSON recalculados. Isso altera apenas o relatório de simulação, não a economia do jogo.
 
