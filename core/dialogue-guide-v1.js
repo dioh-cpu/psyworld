@@ -6,7 +6,7 @@ const mascot='assets/psyduck/normal.png';
 function ensure(){
  if(root)return;
  const style=D.createElement('style');style.textContent=`
-#psy-guide{position:fixed;inset:0;z-index:10000100;pointer-events:none;font-family:system-ui}
+#psy-guide{position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:system-ui}
 #psy-guide[hidden]{display:none!important}
 #psy-guide-spot{position:fixed;border:2px solid #98edf0;border-radius:14px;box-shadow:0 0 0 250vmax #03091bc4,0 0 24px #68dcff88;pointer-events:none}
 #psy-guide-arrow{position:fixed;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}

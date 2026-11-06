@@ -25,7 +25,7 @@
     s.textContent=`
       #psy-mode-intro{display:none!important}
       #world-btn-float{z-index:80!important}#hud-player,#menuBtn,#fastEncounterBtn{z-index:90!important}
-      #psy-kanto-cinematic,#psy-tutorial-cinematic{position:fixed;inset:0;z-index:2400000;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+      #psy-kanto-cinematic,#psy-tutorial-cinematic{position:fixed;inset:0;z-index:2147483647;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
       #psy-kanto-cinematic{display:flex;align-items:center;justify-content:center;padding:18px;background:#080716}
       .psy-kc-backdrop{position:absolute;inset:0;background:#141126 url('/assets/story/kanto-pallet-town-v1.webp') center/cover no-repeat;animation:psy-kc-pan 18s ease-in-out infinite alternate}
       .psy-kc-backdrop:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,11,27,.26),rgba(9,9,25,.82) 65%,#080716)}

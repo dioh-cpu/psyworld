@@ -142,7 +142,7 @@ function showLoadError(e){
 }
 
 function modeFromButton(b){
-  if(!b||b.closest('#psy-campaign-tools,#psy-auto-battle,#psy-campaign-quests,.psy-session-modal,.psy48-screen,#psy-hunt-panel'))return null;
+  if(!b||b.closest('#psy-campaign-tools,#psy-auto-battle,#psy-campaign-quests,.psy-session-modal,.psy48-screen,#psy-hunt-panel,#psy-kanto-story,#psy-guide'))return null;
   const oc=String(b.getAttribute?.('onclick')||'');
   for(const [k,m] of Object.entries(MODES))if(m.entry.some(fn=>oc.includes(fn+'(')||oc.includes('window.'+fn+'(')))return k;
   const t=String(b.textContent||'').toUpperCase();
