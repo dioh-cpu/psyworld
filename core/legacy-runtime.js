@@ -9266,26 +9266,27 @@ console.log('✅ PSYWORLD V10: AFK live, Gym próximo líder, Cards 500 fases/ti
 console.log('✅ PSYWORLD V9 LOCAL: save local, AFK offline, capture tiers, hunts CAP, Cards V9 carregados');
 })();
 
-/* Dynamic city joystick: anchored wherever the player starts dragging. */
+/* Dynamic city joystick: one owner pointer, radial dead zone and cardinal tile intent. */
 (function(){
- let pointer=null,origin=null;
+ let pointer=null,origin=null,direction=null,dragged=false,lastDrag=0;
  const base=document.getElementById('joystick');
- function stop(){if(pointer===null)return;pointer=null;origin=null;resetJoy();if(base)base.style.display='none';}
- document.addEventListener('pointerdown',function(e){
-  if(e.pointerType==='mouse'||inBattle||!e.target.closest('#game-wrap')||e.target.closest('button,#hud-player,#hud-minimap'))return;
-  if(document.body.classList.contains('psy-kanto-v2-active'))return;
-  pointer=e.pointerId;origin={x:e.clientX,y:e.clientY};
-  if(base){Object.assign(base.style,{display:'block',position:'fixed',left:(e.clientX-60)+'px',top:(e.clientY-60)+'px',bottom:'auto',right:'auto',pointerEvents:'none'});}
-  e.target.setPointerCapture?.(e.pointerId);e.preventDefault();
+ function stop(e){if(e?.pointerId!==undefined&&e.pointerId!==pointer)return;pointer=null;origin=null;direction=null;resetJoy();if(base)base.style.display='none';}
+ window.PsyCityTouch={stop};
+ canvas.addEventListener('pointerdown',function(e){
+  if(e.pointerType==='mouse'||pointer!==null||inBattle||document.body.classList.contains('psy-shell-open')||document.body.classList.contains('psy-kanto-v2-active'))return;
+  pointer=e.pointerId;origin={x:e.clientX,y:e.clientY};dragged=false;direction=null;
+  canvas.setPointerCapture?.(e.pointerId);e.preventDefault();
  },{passive:false});
- document.addEventListener('pointermove',function(e){
+ canvas.addEventListener('pointermove',function(e){
   if(e.pointerId!==pointer||!origin)return;
-  const dx=e.clientX-origin.x,dy=e.clientY-origin.y,d=Math.hypot(dx,dy);
-  keys.ArrowLeft=dx<-8;keys.ArrowRight=dx>8;keys.ArrowUp=dy<-8;keys.ArrowDown=dy>8;
-  joyStick.style.transform='translate(calc(-50% + '+(dx/Math.max(1,d)*Math.min(40,d))+'px),calc(-50% + '+(dy/Math.max(1,d)*Math.min(40,d))+'px))';
-  e.preventDefault();
+  let dx=e.clientX-origin.x,dy=e.clientY-origin.y,d=Math.hypot(dx,dy);
+  if(d>72){origin.x+=dx/d*(d-72);origin.y+=dy/d*(d-72);dx=e.clientX-origin.x;dy=e.clientY-origin.y;d=72;}
+  const v=window.PsyTouchStick.vector(dx,dy);direction=window.PsyTouchStick.cardinal(dx,dy,direction);
+  for(const k of ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'])keys[k]=k===direction;
+  if(d>7){dragged=true;lastDrag=performance.now();if(base){base.style.setProperty('left',origin.x+'px','important');base.style.setProperty('top',origin.y+'px','important');base.style.display='block';}}
+  joyStick.style.transform='translate(calc(-50% + '+(v.x*35)+'px),calc(-50% + '+(v.y*35)+'px))';e.preventDefault();
  },{passive:false});
- document.addEventListener('pointerup',stop);document.addEventListener('pointercancel',stop);window.addEventListener('blur',stop);
- canvas.style.touchAction='none';
+ canvas.addEventListener('click',e=>{if(dragged&&performance.now()-lastDrag<350){e.preventDefault();e.stopImmediatePropagation();}},{capture:true});
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,stop);
+ window.addEventListener('blur',()=>stop());window.addEventListener('resize',()=>stop());document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});canvas.style.touchAction='none';
 })();
-

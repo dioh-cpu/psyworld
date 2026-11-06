@@ -1,0 +1,40 @@
+/* Cohesive responsive sheets. Scoped to city menus and campaign controls. */
+body.psy-shell-open{overflow:hidden!important}
+body.psy-shell-open #hud-player,body.psy-shell-open #world-btn-float,body.psy-shell-open #menuBtn,body.psy-shell-open #psy-campaign-quests,body.psy-shell-open #psy-loot-list,body.psy-shell-open #joystick{visibility:hidden!important;pointer-events:none!important}
+#menu{position:fixed!important;inset:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))!important;transform:none!important;width:min(600px,calc(100vw - 24px))!important;height:auto!important;max-height:none!important;min-width:0!important;margin:auto!important;padding:0!important;overflow:auto!important;overscroll-behavior:contain!important;border:1px solid #52677d!important;border-radius:22px!important;background:linear-gradient(145deg,#172539,#0b1424)!important;box-shadow:0 0 0 100vmax #030814d9,0 20px 60px #0008!important;z-index:10000040!important;color:#e9f2ff!important;font-family:system-ui!important}
+#menu .psy-shell-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:#142136;border-bottom:1px solid #ffffff17}
+#menu .psy-shell-header small{font-size:10px;letter-spacing:.16em;color:#7dd9e7}#menu .psy-shell-header h2{font:750 22px/1.3 system-ui!important;margin:3px 0 0!important}
+#menu .psy-shell-header>button{position:static!important;min-width:44px!important;width:44px!important;height:44px!important;min-height:44px!important;padding:0!important;border:1px solid #ffffff25!important;border-radius:13px!important;background:#ffffff0b!important;color:white!important;font-size:26px!important;box-shadow:none!important}
+#menu .psy-shell-body{display:flex;flex-direction:column;gap:10px;padding:14px;min-width:0}
+#menu #boxPokemon{display:none!important}
+#menu .psy-shell-body button,#menu .psy-menu-grid>button,#menu .psy-menu-actions>button,#psy-content-panel #city-game-content-buttons>button{box-sizing:border-box!important;width:100%!important;min-width:0!important;min-height:54px!important;height:auto!important;margin:0!important;padding:12px 10px!important;border:1px solid #ffffff20!important;border-radius:13px!important;background:linear-gradient(135deg,#253b57,#18283e)!important;color:#edf6ff!important;font:650 13px/1.35 system-ui!important;text-shadow:none!important;white-space:normal!important;box-shadow:inset 0 1px #ffffff09!important;overflow-wrap:anywhere!important;touch-action:manipulation}
+#menu .psy-menu-grid,#menu .psy-menu-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:0!important}
+#menu .psy-shell-body>button{background:#1c3047!important}#menu .psy-shell-body hr{width:100%;border:0;border-top:1px solid #ffffff14}
+#psy-content-panel{border-color:#52677d!important;background:linear-gradient(145deg,#172539,#0b1424)!important;border-radius:22px!important}
+#psy-content-panel>header{min-height:44px!important;padding:2px 2px 10px;border-bottom:1px solid #ffffff17}
+#psy-content-panel #city-game-content-buttons{align-content:start!important;grid-auto-rows:minmax(54px,auto)!important;scroll-padding:8px}
+#psy-content-panel .psy-shell-utility{position:relative!important;inset:auto!important;transform:none!important;max-width:100%!important;z-index:auto!important;display:flex!important;align-items:center!important;justify-content:center!important}
+#psy-content-panel .psy-shell-utility[hidden]{display:none!important}
+#psy-content-panel #psy-fullscreen-btn{font-size:17px!important}
+#psy-content-panel #city-game-content-buttons>button:hover,#menu .psy-shell-body button:hover{border-color:#6acdd3!important;background:#274660!important}
+#psy-content-panel #city-game-content-buttons>button:active,#menu button:active{filter:brightness(1.2)}
+#joystick{position:fixed!important;inset:auto!important;width:112px!important;height:112px!important;transform:translate(-50%,-50%)!important;pointer-events:none!important;z-index:100!important;opacity:.85}
+#joystick #joy-base{width:112px!important;height:112px!important;border:1px solid #a5e7ee80!important;background:#112a3c88!important;box-shadow:inset 0 0 20px #0003!important}
+#joystick #joy-stick{width:46px!important;height:46px!important;background:#86e1e9cc!important;border:2px solid #d5fcff!important;box-shadow:0 3px 14px #0005!important}
+@media(max-width:760px),(pointer:coarse){
+ #hud-player{top:max(8px,env(safe-area-inset-top))!important;left:max(8px,env(safe-area-inset-left))!important;width:176px!important;min-width:0!important;max-width:48vw!important;max-height:118px!important;transform:none!important;padding:8px!important;border-radius:16px!important;font-size:11px!important;pointer-events:none!important}
+ #hud-player>div:last-child,#hud-player .gold,#hud-player [id*=psyduck],#hud-player [class*=psyduck],#hud-player .psy-player-details{display:none!important}
+ #hud-player img{max-width:34px!important;max-height:34px!important}#hud-player .bar{height:5px!important;margin:3px 0!important}#hud-player b{font-size:12px!important}
+ #menuBtn{position:fixed!important;top:max(8px,env(safe-area-inset-top))!important;right:max(8px,env(safe-area-inset-right))!important;width:76px!important;min-height:44px!important;padding:8px!important;border:1px solid #62cadf!important;border-radius:13px!important;background:#132c43!important;color:#ecfeff!important;font:750 12px system-ui!important;box-shadow:0 5px 18px #0005!important;z-index:100!important}
+ #world-btn-float.city-content-collapsed{top:max(60px,calc(env(safe-area-inset-top) + 60px))!important;right:max(8px,env(safe-area-inset-right))!important;max-width:118px!important}
+ #world-btn-float.city-content-collapsed #btn-city-content-toggle{min-height:44px!important;width:118px!important;padding:8px!important;font:700 11px/1.3 system-ui!important;border-radius:13px!important;background:#18394a!important;border-color:#5d98a9!important}
+ #psy-campaign-quests{top:132px!important;right:8px!important;left:8px!important;width:auto!important;max-width:none!important;font-size:10px!important;max-height:44px!important}
+ #psy-kanto-world-v2 .kw2-pad{display:none!important}
+ #psy-kanto-world-v2 .kw2-footer{min-height:64px!important;flex-wrap:nowrap!important;gap:10px!important;padding:8px 10px calc(8px + env(safe-area-inset-bottom))!important}
+ #psy-kanto-world-v2 .kw2-objective{flex:1!important;min-width:0!important;max-height:42px!important;font-size:11px!important;order:0!important}
+ #psy-kanto-world-v2 .kw2-interact{min-height:44px!important;max-width:110px!important;margin:0!important;font-size:11px!important}
+ #psy-kanto-world-v2 .kw2-top{min-height:48px!important}#psy-kanto-world-v2 .kw2-top button{min-height:40px!important}
+ #psy-kanto-world-v2 .kw2-joystick{width:104px;height:104px;border-color:#a5e7ee80;background:#112a3c88}
+ #psy-kanto-world-v2 .kw2-joystick:after{left:29px;top:29px;width:42px;height:42px;background:#86e1e9cc;box-shadow:0 3px 14px #0005}
+}
+@media(max-height:480px) and (orientation:landscape){#hud-player{max-height:96px!important;width:158px!important}#psy-campaign-quests{left:auto!important;top:112px!important;width:160px!important}#menu .psy-shell-header{padding:8px 14px}#menu .psy-shell-body{padding:10px}#psy-kanto-world-v2 .kw2-footer{min-height:54px!important}}
