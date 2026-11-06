@@ -227,7 +227,7 @@
     if(!model.raf)tick();
   }
   function closeWorld() { D.body.classList.remove('psy-kanto-legacy-active');model.autoHunt=false;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
-  function onKeyDown(e) {
+  function onKeyDown(e) {if(e.target?.closest?.('#psy-professions,#psy-halloween-shop,.psy48-screen,.psy-session-modal'))return;
     if(!model.root?.classList.contains('open'))return;
     e.stopPropagation();
     const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};

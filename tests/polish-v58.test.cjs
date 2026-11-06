@@ -3,6 +3,7 @@ const main={trainerLevel:1,gold:10000,team:[{id:912,hp:100}],meta:{}},w={P:main}
 vm.runInNewContext(fs.readFileSync('core/professions-v1.js','utf8'),{window:w,document:d,setInterval(){},console});
 assert.equal(w.PsyProfessions.choose('engineer','Mecânico','main'),false,'Lv1 cannot select a profession');assert.equal(main.gold,10000);
 main.trainerLevel=2;assert.equal(w.PsyProfessions.choose('engineer','Mecânico','main'),true,'Lv2 can select a profession');assert.equal(main.gold,10000,'first choice remains free');
+assert.equal(w.PsyProfessions.bonus('main','atk'),3,'Engineer passive is separate from specialization');
 const effects=w.PsyProfessions.bonus('main','drop');assert(effects>0);assert.equal(w.PsyProfessions.choose('engineer','Fundidor','main'),true);assert.equal(main.gold,9000,'changing specialization retains its cost');
 const iw={};vm.runInNewContext(fs.readFileSync('core/items.js','utf8'),{window:iw,document:{createElement:()=>({}),head:{appendChild(){}}},console,Image:class{}});
 for(const n of ['Rubber Ball','Giant Piece Of Fur','Essence Of Fire','Fire Tail','Water Gem','Water Pendant','Seed','Screw','Small Stone']){const u=iw.PSY_ITEMS.url(n);assert(u.startsWith('assets/items/'),n+' uses a local image');assert(fs.existsSync(u),u);assert(iw.PSY_ITEMS.html(n).includes('src="'+u+'"'));}

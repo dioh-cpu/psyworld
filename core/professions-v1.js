@@ -9,6 +9,8 @@ const additions={
  twilight:{name:'Guardião do Crepúsculo',icon:'◐',specs:['Sentinela','Faroleiro','Vigilante Lunar'],materials:['Cinza Lunar','Fio de Luz'],base:{def:3},art:'twilight',color:'#ffca8a',desc:'Prepara proteções e lanternas para caçadas prolongadas.'}
 };
 Object.assign(jobs,additions);
+// Each original career now has a distinct passive, in addition to specialization.
+jobs.engineer.base={atk:3};jobs.herbalist.base={hp:3};jobs.researcher.base={xp:3};
 for(const [id,j]of Object.entries(jobs)){j.materials=j.materials||({engineer:['Circuito','Minério'],herbalist:['Erva','Seiva'],researcher:['Fragmento','Tinta']})[id];j.art=j.art||id;j.color=j.color||'#91f5db';j.desc=j.desc||({engineer:'Equipamentos para caça e proteção.',herbalist:'Infusões com efeitos de 15 minutos.',researcher:'Estudos e instrumentos de exploração.'})[id]}
 const specBonuses={Fundidor:{def:3},Mecânico:{drop:3},Eletricista:{atk:3},Cultivador:{hp:3},Alquimista:{atk:3},Naturalista:{capture:3},Cronista:{xp:3},Analista:{drop:3},Astrônomo:{gold:3},Mentor:{xp:2},Ecólogo:{drop:2},'Tutor de Campo':{hp:2},'Alfaiate Astral':{hp:2},'Designer de Trilhas':{speed:2},Colorista:{capture:2},Ressonante:{atk:2},'Lapidador de Ecos':{drop:2},Harmonista:{def:2},Desbravador:{drop:2},Astrógrafo:{xp:2},'Navegador dos Sonhos':{capture:2},Sentinela:{def:2},Faroleiro:{xp:2},'Vigilante Lunar':{hp:2}};
 const qualities=['Comum','Incomum','Raro','Excelente','Primoroso'],qualityPower=[1,1.1,1.2,1.35,1.55];
