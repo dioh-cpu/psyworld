@@ -15,10 +15,10 @@ function sample(trail,x,y,scene,valid){
  while(length>34&&trail.points.length>1){const next=trail.points[1],old=trail.points.shift(),distance=Math.hypot(next.x-old.x,next.y-old.y);length-=distance;const dx=next.x-trail.pos.x,dy=next.y-trail.pos.y;trail.pos={...next};if(Math.hypot(dx,dy)>.2){trail.facing=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';trail.moving=true;trail.phase+=distance;}}
  if(trail.points.length>180)trail.points.splice(0,trail.points.length-180);return trail;
 }
-function draw(c,opt){if(player().meta?.divineHaloV48){c.save();c.strokeStyle='#dfb0ff';c.shadowColor='#8ef8ff';c.shadowBlur=9;c.lineWidth=1.8;c.beginPath();c.ellipse(opt.x,opt.y+4,22,8,0,0,Math.PI*2);c.stroke();c.restore();}const mon=selected(),trainer=opt.trainer||(()=>{});if(!mon||!supported(mon)){trainer();return;}const k=key(mon),old=trails.get(k),trail=sample(old,opt.x,opt.y,opt.scene,opt.valid);trails.set(k,trail);
+function draw(c,opt){if(player().meta?.divineHaloV48){c.save();c.strokeStyle='#dfb0ff';c.shadowColor='#8ef8ff';c.shadowBlur=9;c.lineWidth=1.8;c.beginPath();c.ellipse(opt.x,opt.y+4,22,8,0,0,Math.PI*2);c.stroke();c.restore();}const mon=selected(),trainer=opt.trainer||(()=>{});if(!mon||!supported(mon)){trainer();return;}const k=key(mon)+'@'+opt.scene,old=trails.get(k),trail=sample(old,opt.x,opt.y,opt.scene,opt.valid);trails.set(k,trail);
 const entry=manifest[mon.id],image=pageImage(entry.page,!!mon.shiny);if(!image.complete||!image.naturalWidth){trainer();return;}
 const paint=()=>{let dir=trail.facing||opt.facing||'down',base=dir==='up'?2:dir==='left'||dir==='right'?4:0;const right=dir==='right',separate=right&&entry.frames===8;if(separate)base=6;
-const step=trail.moving?([0,1,1,0][Math.floor(trail.phase/11)%4]):0,frame=base+step,p=trail.pos,scale=entry.size>32?.75:1;
+const step=trail.moving?([0,1,1,0][Math.floor(trail.phase/11)%4]):0,frame=base+step,p=trail.pos,scale=entry.size>32?.9:1.6;
 c.save();c.translate(p.x,p.y+6);c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,Math.min(18,entry.size*.35),5,0,0,Math.PI*2);c.fill();if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}c.imageSmoothingEnabled=false;if(right&&!separate)c.scale(-1,1);c.drawImage(image,entry.x+frame*64,entry.y,64,64,-32*scale,-64*scale,64*scale,64*scale);c.restore();};
 if(trail.pos.y<=opt.y){paint();trainer();}else{trainer();paint();}
 }
