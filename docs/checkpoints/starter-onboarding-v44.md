@@ -1,10 +1,13 @@
-# Inicial V44
-Raridade já sorteada entre Nice/Belezura/Lêndea; faltava no nome exibido na batalha. Label inclui qualidade e nível, inclusive após troca. Kit adicional único:25kGold,60Pokéball,15GreatBall,20Poção50,15Poção100,5Revive; marcador persistente e recuperação uma única vez. Inicial sem qualidade/abaixoNice é reparado. Rota1 limita inimigos ao nível do líder atéNv4; sem Shiny/Mega contra líder abaixoNv5. Sem cura repetida ao entrar em combate. Apenas prévia.
+# Inicial — checkpoint V46
+Branch teste/iniciais-oficios-v38; produção intacta.
+Código funcional:3e49283d6d359b066a830e9bfa82228b2b3a630e.
+Prévia verificada:https://psyworld-9ozjia9j9-world-of-monsters.vercel.app/
 
-Validação:15 suites passaram. Prévia https://psyworld-apboeawir-world-of-monsters.vercel.app/ ; escolha real de Quaxly comHPcheio e50kGold, notificação do kit. Código bff50ce4403904259c96482510ce170af7748c46. Primeiro encontro V44conferido e corrigido novamente abaixo.
+- Qualidade: sorteio original Nice/Belezura/Lêndea preservado; nome da batalha agora mostra qualidade e nível.
+- Inicial:Nv5, movimentos/atributos recalculados, HP cheio. Treinamento retroativo único para iniciais abaixo5; curva normal285XP para próximo nível.
+- Kit adicional único:25.000Gold,60Pokéball,15GreatBall,20Poção50,15Poção100,5Revive. Novos perfis ficam com50kGold e somam os itens ao kit antigo. Sem moeda premium adicional.
+- Rota1:inimigos atéNv4 e limitados ao nível do líder. Outros combates não alterados.
+- Causa raiz da morte imediata:guardas deHP tratavam HP ainda indefinido comozero e gravavam _psyFaintedV31 durantecriação. Depois o inicial aparecia com barra cheia mas o primeirogolpe ativava derrota. Guardas V29/V30/V31 agora distinguem recém-criado deKOreal. starterHealthV46 limpa marca incorreta e restaura inicial umaúnicavez; nenhumarecuperação repetida ao entrar em combate.
+- Arquivos:core/starter-onboarding-v44.js;core/battle-input-integrity-v29.js;core/battle-input-integrity-v30.js;core/battle-roster-integrity-v31.js;core/survivor-resume-guard-v9.js;index.html.
 
-V45:teste real revelou derrota doQuaxlyNv1mesmo contraRattataNv1 noAutoHunt. Inicial agoraNv5; treinamento retroativo único para inicialabaixo5, recalculaHP/atributos e movimentosNv5. Não repetir cura/kit ao carregar. Primeirotestedelo confirmado:QuaxlyNiceLv1/RattataQuaseLixoLv1, faltava força inicial.
-
-Prévia final: https://psyworld-q58qqgt4v-world-of-monsters.vercel.app/ ; navegador confirmou QuaxlyNv5,243/243HP,0/285XP e50kGold. V45 usa curva normal deXP. Teste cobre explicitamente líderNv5/inimigoNv8 limitado4.
-
-CAUSA RAIZ V46:guardas deHP consideravam hp indefinido de novoPokémon comoHPzero, gravavam _psyFaintedV31 na criação. Mesmoapósbarra cheia, primeirogolpe era bloqueado eHP zerado. Reproduzido nativo semAutoBattle:um cliqueWaterGun causavaderrota eRattata196/196 intacto. Guardas agora distinguem HPnãoinicializado deHPzero; kitlimpa marca incorreta umaúnicavez comstarterHealthV46. Preserva KOreal/recalculo semreviver.
+Validação:16 suites passaram, incluindo guardas reais paraHPindefinido,HPzero e marca deKO. Reprodução browser nativa antes:umcliqueWaterGun zeravaHP eRattata196/196 ficavaintacto. Apósfix:QuaxlyNiceNv5HP243;WaterGun75;RattataNv4HP196→121→46→0;doiscontraataques41;vitória com161/243HP,+10XP,+152Gold. Segunda batalha começou161HP eprimeiroturno terminou120HP,semcurarepetida. Prova:docs/screenshots/starter-battle-v46.jpg. Fixture descartável:tests/starter-battle-native-v46.html. Nenhumaconta real usada.
