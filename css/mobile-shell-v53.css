@@ -45,3 +45,15 @@ body.psy-shell-open #hud-player,body.psy-shell-open #world-btn-float,body.psy-sh
 #menu .psy-shell-body .psy-main-close{display:none!important}
 #menu .psy-glint-name{animation:none!important;text-shadow:none!important}
 body.psy-shell-open #qa-companions50{display:none!important}
+#menu .psy-shell-body .psy-main-menu-x{display:none!important}
+#psy-content-title{animation:none!important;text-shadow:none!important;color:#e7f6ff!important}
+@media(max-width:760px),(pointer:coarse){
+ #hud-player .psy-hud-head{gap:6px!important;min-height:32px!important;margin-bottom:5px!important}
+ #hud-player .psy-hud-avatar{width:32px!important;height:32px!important;min-width:32px!important;border-radius:10px!important}
+ #hud-player .psy-hud-name{font:750 13px/1.3 system-ui!important}
+ #hud-player .psy-hud-sub,#hud-player .psy-hud-badges,#hud-player .psy-hud-mini-stats,#hud-player .psy-trainer-mini,#trainer-hud-line{display:none!important}
+ #hud-player .psy-hud-resource{font-size:9px!important;gap:4px!important;margin:3px 0!important}
+ #hud-player .psy-hud-wallet{margin:5px 0 0!important;padding:3px 0 0!important;gap:3px!important;font-size:9px!important}
+ #hud-player .psy-hud-wallet>span:nth-child(2),#hud-player .psy-hud-wallet>span:nth-child(4){display:none!important}
+ #psy-loot-list{top:auto!important;bottom:8px!important;right:8px!important;left:auto!important;width:188px!important;max-width:52vw!important;max-height:130px!important;overflow:auto!important;font-size:10px!important;padding:8px!important}
+}
