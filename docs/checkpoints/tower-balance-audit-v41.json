@@ -1,0 +1,162 @@
+{
+  "simulation": true,
+  "seedRange": [
+    1,
+    40
+  ],
+  "rows": [
+    {
+      "event": "halloween-2026",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 15.1
+    },
+    {
+      "event": "elemental-Normal",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13.3
+    },
+    {
+      "event": "elemental-Fire",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13
+    },
+    {
+      "event": "elemental-Water",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 12.1
+    },
+    {
+      "event": "elemental-Grass",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 11.2
+    },
+    {
+      "event": "elemental-Electric",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13.3
+    },
+    {
+      "event": "elemental-Ice",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 12.7
+    },
+    {
+      "event": "elemental-Fighting",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13.3
+    },
+    {
+      "event": "elemental-Poison",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 15.1
+    },
+    {
+      "event": "elemental-Ground",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 9.5
+    },
+    {
+      "event": "elemental-Flying",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13.3
+    },
+    {
+      "event": "elemental-Psychic",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13.3
+    },
+    {
+      "event": "elemental-Bug",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 12.7
+    },
+    {
+      "event": "elemental-Rock",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 11.3
+    },
+    {
+      "event": "elemental-Ghost",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13.3
+    },
+    {
+      "event": "elemental-Dragon",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 20.3
+    },
+    {
+      "event": "elemental-Dark",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13.3
+    },
+    {
+      "event": "elemental-Steel",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 13.4
+    },
+    {
+      "event": "elemental-Fairy",
+      "floor": 1,
+      "team": "3 Lv10 starters",
+      "runs": 40,
+      "wins": 40,
+      "averageActions": 12.1
+    }
+  ],
+  "limits": "Entry floor only; infinite/endgame floors checked for finite attributes and key cost invariants, not full clear balance."
+}
