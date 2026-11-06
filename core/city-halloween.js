@@ -172,8 +172,8 @@
     const p=screenPoint(h.dx,h.dy), scale=Math.max(.82,Math.min(1.5,TILE/30));
     const w=Math.round(164*h.width*scale), bodyH=Math.round(102*scale), roofH=Math.round(68*scale);
     const x=p.x-w/2, y=p.y-bodyH/2;
-    const cv=D.getElementById('gameCanvas'), viewW=cv?.width||W.innerWidth, viewH=cv?.height||W.innerHeight;
-    if (x>viewW+40 || x+w< -40 || y>viewH+40 || y-bodyH-roofH< -100) return;
+    // Only seven buildings: always submit the full silhouette to the canvas.
+    // Canvas clipping handles roof/facade/shadow overlap at every camera edge.
     c.save();
     c.fillStyle='#020617aa'; c.beginPath(); c.ellipse(p.x,y+bodyH+12,w*.64,16*scale,0,0,Math.PI*2); c.fill();
     // Broad timbered facade and stone foundation.
