@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8"><base href="/">
+<title>PSYWORLD · Quaxly walk review</title>
+<style>
+body{margin:0;background:#101c2c;color:#e5f1f7;font:16px system-ui}canvas{display:block;margin:auto}#psy-follower-launch{display:none}p{text-align:center}button{font:inherit;padding:8px 20px}
+</style>
+<canvas id="demo" width="960" height="640" aria-label="Demonstração da caminhada de Quaxly normal e Shiny"></canvas>
+<p><button onclick="demo.restart()">Recomeçar</button> Controlador e arte reais · cenário de inspeção, não mapa de produção</p>
+<script>
+window.P={meta:{followerV47:{enabled:true,key:'normal'}},team:[{id:912,hp:100,pokemon_uid:'normal'},{id:912,hp:100,pokemon_uid:'shiny',shiny:true}]};
+</script>
+<script src="core/trainer-walk-v1.js"></script>
+<script src="core/follower-v47.js"></script>
+<script>
+(async()=>{
+ const canvas=document.getElementById('demo'),c=canvas.getContext('2d');
+ const trainer=new Image();trainer.src='assets/characters/halloween/basic-adventure-boy.webp';await trainer.decode();
+ // Warm both actual atlas pages before starting the recording.
+ await Promise.all(['normal','shiny'].map(async kind=>{const im=new Image();im.src='assets/followers/pages/'+kind+'-14.webp';await im.decode();}));
+ while(!PsyFollower.manifest()[912])await new Promise(r=>setTimeout(r,10));
+ const atlas=PsyTrainerWalkV1.getAtlas(trainer);
+ const stages=[
+  {ms:800,to:[65,90],name:'Parado'},
+  {ms:1833.333333,to:[175,90],name:'Direita',dir:'right'},
+  {ms:1416.666667,to:[175,175],name:'Curva → baixo',dir:'down'},
+  {ms:800,to:[175,175],name:'Parada'},
+  {ms:1833.333333,to:[65,175],name:'Retomada → esquerda',dir:'left'},
+  {ms:1416.666667,to:[65,90],name:'Curva → cima',dir:'up'},
+  {ms:1000,to:[65,90],name:'Parada estável'},
+  {ms:1222.222222,to:[175,90],name:'Retomada · 90 px/s',dir:'right'},
+  {ms:944.444445,to:[175,175],name:'Curva · 90 px/s',dir:'down'},
+  {ms:1000,to:[175,175],name:'Parada final'}
+ ];
+ const duration=stages.reduce((sum,s)=>sum+s.ms,0);let start=performance.now(),facing='down';
+ function route(t){let from=[65,90];for(const s of stages){if(t<=s.ms){const k=Math.max(0,t/s.ms);return {x:from[0]+(s.to[0]-from[0])*k,y:from[1]+(s.to[1]-from[1])*k,moving:from[0]!==s.to[0]||from[1]!==s.to[1],label:s.name,dir:s.dir};}t-=s.ms;from=s.to;}return {x:175,y:175,moving:false,label:'Fim · revisão',dir:'down'};}
+ function render(t){
+  const p=route(Math.min(t,duration));if(p.dir)facing=p.dir;
+  c.fillStyle='#101c2c';c.fillRect(0,0,960,640);c.fillStyle='#87dec8';c.font='bold 18px system-ui';c.fillText('PSYWORLD ANIMATION STUDIO',28,35);
+  c.fillStyle='#eef7fb';c.font='bold 25px system-ui';c.fillText('Quaxly · caminhada com arte existente',28,71);
+  ['normal','shiny'].forEach((kind,i)=>{
+   c.save();c.translate(i*480+15,108);c.fillStyle=i?'#abc7f5':'#bce8cf';c.font='bold 18px system-ui';c.fillText(kind==='normal'?'QUAXLY NORMAL':'QUAXLY SHINY',15,0);
+   c.translate(0,18);c.fillStyle='#385447';c.fillRect(0,0,450,420);c.save();c.scale(2,2);
+   for(let y=0;y<210;y+=16)for(let x=0;x<225;x+=16){c.fillStyle=(x+y)%32?'#3e5b4c':'#426151';c.fillRect(x,y,16,16);}
+   c.strokeStyle='#b9d1af66';c.setLineDash([2,3]);c.lineWidth=.5;c.strokeRect(65,90,110,85);c.setLineDash([]);
+   P.meta.followerV47.key=kind;
+   PsyFollower.draw(c,{scene:'quaxly-review:'+kind,x:p.x,y:p.y,moving:p.moving,facing,valid:()=>true,trainer:()=>{
+    c.fillStyle='#0008';c.beginPath();c.ellipse(p.x,p.y+5,13,5,0,0,Math.PI*2);c.fill();
+    const row={down:0,left:1,right:2,up:3}[facing];
+    PsyTrainerWalkV1.draw(c,atlas,row,PsyTrainerWalkV1.column(Math.floor(t/100),p.moving),p.x-24,p.y+7-64,48,64);
+   }});
+   c.restore();c.restore();
+  });
+  c.fillStyle='#e7f4ed';c.font='bold 21px system-ui';c.fillText(p.label,30,591);
+  c.fillStyle='#abc0d0';c.font='15px system-ui';c.fillText('Passos: 140 ms/pose · percurso preservado · sombra fixa · tamanho real ×2',30,622);
+  return p;
+ }
+ window.demo={duration,render,restart(){PsyFollower.clear();start=performance.now();},ready:true};
+ function loop(){render(performance.now()-start);requestAnimationFrame(loop)}loop();
+})();
+</script>
+</html>

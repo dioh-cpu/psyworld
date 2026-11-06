@@ -1,0 +1,7 @@
+# PSYWORLD — approved companion integration V50
+Base remote: e6e7e0ed9d7675db9e8aaf443d1b0d1e0e04ef63, branch teste/iniciais-oficios-v38. User authorized review/integration/preview; no main/production release.
+Quaxly package base e6e7e0e, local review d3198ba9fef700ec0ad2e8090f832fc4a1a8a824. Second package base d3198ba9, local review d23f24679b0d82cabe0ac855fa3b49bbf8541096. Both applied sequentially without conflicts; source/movie/patch hashes matched delivery handoff.
+Integrated Quaxly normal/Shiny (140ms/pose) and Sprigatito115ms, Fuecoco170ms, Pawmi125ms. Species-specific scale, sole anchor and shadow; no atlas/art changes. Original trail/collision sampling preserved. City receives held-input hint; other species retain prior render behavior.
+22/22 tests/*test.cjs passed after both patches. New tests cover54 cadence scenarios and3924 exact draw-command comparisons, including654 Quaxly comparisons against approved frozen controller. Quaxly full suite also passed independently.
+Only actual game source changes are core/follower-v47.js and optional continuing hint in core/city-halloween.js, plus index cache keys. Test/demo scripts from both packages included for reproducibility. Browser fixture tests/companions-integrated-v50.html supplies4 disposable companions and a Shiny toggle, protected against logged-in use. Production index grants no extra Pokémon or resources.
+Pending: browser verification of deployed preview and final URL/evidence. Preserve all V48 economy, V49 story and existing systems. Android remains paused.

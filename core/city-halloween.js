@@ -361,7 +361,7 @@
 
     drawFestivalPlots(c);
     HOUSES.forEach(house=>drawHouse(c,house));
-    if(W.PsyFollower&&typeof P!=='undefined'){c.save();c.translate(w/2-P.px,h/2-P.py);W.PsyFollower.draw(c,{scene:'city-psy',x:P.px,y:P.py,moving:!!P.moving,valid:(x,y)=>{const tile=Number(TILE)||32;const cell=typeof map!=='undefined'?map?.[Math.floor(y/tile)]?.[Math.floor(x/tile)]:1;return [1,5,6,7,10].includes(cell);}});c.restore();}
+    if(W.PsyFollower&&typeof P!=='undefined'){c.save();c.translate(w/2-P.px,h/2-P.py);W.PsyFollower.draw(c,{scene:'city-psy',x:P.px,y:P.py,moving:!!P.moving,continuing:typeof keys!=='undefined'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyS','KeyA','KeyD'].some(k=>keys[k]),valid:(x,y)=>{const tile=Number(TILE)||32;const cell=typeof map!=='undefined'?map?.[Math.floor(y/tile)]?.[Math.floor(x/tile)]:1;return [1,5,6,7,10].includes(cell);}});c.restore();}
     if(seasonal){drawCityDecor(c);
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
