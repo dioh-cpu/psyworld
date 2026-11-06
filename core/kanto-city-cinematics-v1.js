@@ -16,6 +16,7 @@
     {icon:'🕹️',title:'Caminhe pela cidade',text:'No computador, use as setas ou WASD. No celular, arraste em qualquer área livre do mapa para caminhar. Solte para parar.',target:'#gameCanvas'},
     {icon:'🎬',title:'Entre na campanha',text:'Este botão inicia a história de Kanto. A cinemática apresenta a jornada e, em seguida, você escolhe seu parceiro entre os iniciais de todas as gerações.',target:'#btn-kanto-journey'},
     {icon:'🎒',title:'Equipe, bolsa e menu',text:'Use estes atalhos para abrir sua equipe e sua bolsa. CONTEÚDO DO JOGO reúne as atividades e a campanha. O MENU abre as opções da conta e permite rever este tutorial.',target:'#btn-team-float'},
+    {icon:'♧',title:'Seu acompanhante',text:'Abra CONTEÚDO DO JOGO e procure Acompanhante. Escolha um Pokémon vivo do time e confirme para ele seguir seu treinador. Isso não troca o líder de batalha.',target:'#psy-follower-launch'},
     {icon:'🧭',title:'Você está no controle',text:'Abra CONTEÚDO DO JOGO e toque em CAMPANHA KANTO para iniciar a história. Você pode voltar à cidade Psy quando quiser.',target:'#btn-city-content-toggle'}
   ];
 
@@ -123,7 +124,7 @@
     W.requestAnimationFrame(positionSpotlight);
   }
   W.openTutorial=function(){
-    if(W.PsyGuide)return W.PsyGuide.tutorial(TUTORIAL.map(step=>({text:step.text,speaker:'Psyduck · Seu guia',target:step.target,prepare:()=>{if(['#btn-kanto-journey','#btn-team-float'].includes(step.target))W.toggleCityGameContent?.(false);else W.toggleCityGameContent?.(true);},finish:()=>W.closeTutorial?.()})));
+    if(W.PsyGuide)return W.PsyGuide.tutorial(TUTORIAL.map(step=>({text:step.text,speaker:'Psyduck · Seu guia',target:step.target,prepare:()=>{if(['#btn-kanto-journey','#btn-team-float','#psy-follower-launch'].includes(step.target))W.toggleCityGameContent?.(false);else W.toggleCityGameContent?.(true);},finish:()=>W.closeTutorial?.()})));
 
     addStyles();tutorialIndex=0;
     tutorialRoot=D.getElementById('psy-tutorial-cinematic');

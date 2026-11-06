@@ -80,6 +80,6 @@ function tutorial(steps,index=0){
  actions.push({text:index===steps.length-1?'CONCLUIR':'CONTINUAR →',primary:true,run:()=>{if(index<steps.length-1)tutorial(steps,index+1);else step.finish?.();}});
  show({...step,speaker:step.speaker||'Psyduck · Seu guia',actions});
 }
-D.addEventListener('keydown',e=>{if(e.key==='Escape'&&current){e.preventDefault();e.stopImmediatePropagation();close();}},true);
+D.addEventListener('keydown',e=>{if(e.key==='Escape'&&current){e.preventDefault();e.stopImmediatePropagation();if(!current.required)close();}},true);
 W.PsyGuide={show,close,tutorial,isOpen:()=>!!current,mascot};
 })(window,document);
