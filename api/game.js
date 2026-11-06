@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import seasonHandler from './season.js';
+import seasonHandler from '../lib/season-handler-v48.js';
 import {captureDetails} from '../lib/capture-rules-v48.js';
 import { requireUser, jsonError, method } from './_lib/supabase.js';
 
