@@ -1,5 +1,5 @@
 /* Exclusivo da preview de Kanto; não é carregado no ambiente público. */
-#psy-kanto-world-v2{position:fixed;inset:0;z-index:2147483646;background:#08111c;color:#f8eed7;display:none;flex-direction:column;font:14px/1.4 system-ui,Arial,sans-serif;overflow:hidden;touch-action:none}
+#psy-kanto-world-v2{position:fixed;inset:0;z-index:14000;background:#08111c;color:#f8eed7;display:none;flex-direction:column;font:14px/1.4 system-ui,Arial,sans-serif;overflow:hidden;touch-action:none}
 #psy-kanto-world-v2.open{display:flex}
 #psy-kanto-world-v2 *{box-sizing:border-box}
 #psy-kanto-world-v2 .kw2-top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1728ed;border-bottom:1px solid #426273;min-height:60px;z-index:2}

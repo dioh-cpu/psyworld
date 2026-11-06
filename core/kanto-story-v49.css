@@ -15,3 +15,7 @@ body.psy-kanto-legacy-active #psy53-topbar,body.psy-kanto-legacy-active #btn-mai
 
 body.psy-kanto-legacy-active #hud-player,body.psy-kanto-legacy-active #menuBtn,body.psy-kanto-legacy-active #btn-city-content-toggle,body.psy-kanto-legacy-active #world-btn-float{display:none!important}
 #menu [onclick*="openHunts"],#menu [onclick*="openAfk"],#menu [data-afk-shortcut],#city-game-content-buttons [onclick*="openHunts"],#city-game-content-buttons [onclick*="openAfk"]{display:none!important}
+
+#psy-kanto-world #psy-kanto-canvas{position:absolute;inset:0}
+body.psy-kanto-v2-active #hud-player,body.psy-kanto-v2-active #btn-city-content-toggle{display:none!important}
+#menu .psy-shell-body button[onclick*="openHunts"],#menu .psy-shell-body button[onclick*="openAfk"],#menu .psy-shell-body button[data-afk-shortcut],#psy-content-panel #city-game-content-buttons>button[onclick*="openHunts"],#psy-content-panel #city-game-content-buttons>button[onclick*="openAfk"]{display:none!important}

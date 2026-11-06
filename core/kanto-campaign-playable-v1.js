@@ -133,7 +133,7 @@
     model.canvas.style.touchAction='none';let touch=null;
     model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
     model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}touch.drag=true;model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
-    const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'&&model.map?.npc){const r=model.canvas.getBoundingClientRect(),cam=model.camera||{scale:1,ox:0,oy:0},x=((e.clientX-r.left)*model.canvas.width/r.width-cam.ox)/cam.scale,y=((e.clientY-r.top)*model.canvas.height/r.height-cam.oy)/cam.scale,n=model.map.npc;if(Math.abs(x-(n.x*TILE+14))<28&&Math.abs(y-(n.y*TILE))<42){interact(true);return;}}render();};
+    const release=e=>{if(!touch||e.pointerId!==touch.id)return;const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'&&model.map?.npc){const r=model.canvas.getBoundingClientRect(),cam=model.camera||{scale:1,ox:0,oy:0},x=((e.clientX-r.left)*model.canvas.width/r.width-cam.ox)/cam.scale,y=((e.clientY-r.top)*model.canvas.height/r.height-cam.oy)/cam.scale,n=model.map.npc;if(Math.abs(x-(n.x*TILE+14))<28&&Math.abs(y-(n.y*TILE))<42){interact(true);return;}}render();};
     model.canvas.addEventListener('pointerup',release);model.canvas.addEventListener('pointercancel',release);
     W.addEventListener('resize', render);
     return root;
@@ -280,7 +280,7 @@
   }
 
   function chapterTarget(point){
-    const rect=model.canvas.getBoundingClientRect(),x=(point.x+.5)*TILE/896,y=(point.y+.5)*TILE/560;
+    const rect=model.canvas.getBoundingClientRect(),cam=model.camera||{scale:1,ox:0,oy:0},x=(cam.ox+(point.x+.5)*TILE*cam.scale)/model.canvas.width,y=(cam.oy+(point.y+.5)*TILE*cam.scale)/model.canvas.height;
     return {left:rect.left+x*rect.width-14,top:rect.top+y*rect.height-45,right:rect.left+x*rect.width+14,bottom:rect.top+y*rect.height+8};
   }
   function launchChapterGym(place,gymId){
