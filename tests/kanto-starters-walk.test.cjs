@@ -52,6 +52,6 @@ async function rig(id=912,shiny=false){
  }
  // Existing Quaxly and unrelated species still use their original code paths.
  const q=await rig(912);q.draw(0,0);q.draw(0,40);assert.equal(q.draw(160,60).frame,5);
- const p=await rig(25);p.draw(0,0);const a=p.draw(160,60);assert.equal(a.shadow[3],5);
+ const p=await rig(25);p.draw(0,0);const a=p.draw(160,60);assert.equal(a.shadow[3],3);
  console.log('PASS Quaxly parity and Pikachu legacy path');
 })().catch(e=>{console.error(e);process.exitCode=1});

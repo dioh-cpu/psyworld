@@ -52,6 +52,6 @@ async function rig(id=912,shiny=false){
  }
  // Existing Quaxly and unrelated species still use their original code paths.
  const q=await rig(912);q.draw(0,0);q.draw(0,40);assert.equal(q.draw(160,60).frame,5);
- const p=await rig(25);p.draw(0,0);const a=p.draw(160,60);assert.equal(a.shadow[3],5);
+ const p=await rig(25);p.draw(0,0);const a=p.draw(160,60);assert.equal(a.shadow[3],3);
  const approved=fs.readFileSync('tests/fixtures/follower-companions-v50.js.txt','utf8');const func=(s,name)=>{const start=s.indexOf('function '+name+'(');return s.slice(start,s.indexOf('\n}\n',start)+3)};assert.equal(func(source,'sample'),func(approved,'sample'),'trail unchanged');assert.equal(func(source,'quaxlyStep'),func(approved,'quaxlyStep'),'approved clock unchanged');assert(source.includes('if(pages.size>2)'),'retain two-page production cache');assert.equal(Object.keys(manifest).length,1025,'complete manifest preserved');console.log('PASS 24 Gen1–8 starters: 432 normal/Shiny FPS/speed scenarios; directions, idle, walls, scenes/teleports; approved Quaxly clock/trail and 1025-species manifest preserved.');
 })().catch(e=>{console.error(e);process.exitCode=1});

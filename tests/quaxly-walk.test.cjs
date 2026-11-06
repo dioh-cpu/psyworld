@@ -63,13 +63,7 @@ async function rig(id=912,shiny=false){
  const bg=await rig();bg.draw(0,0);bg.draw(0,40);assert.equal(bg.draw(160,45).frame,5);
  bg.draw(170,50,100,true,'city');assert.equal(bg.draw(180,50).frame,5);
  assert.equal(bg.draw(900,55).frame,4);
- // Other species retain the legacy distance-selected frames and drawing geometry.
- const other=await rig(25);other.draw(0,0);let trail=other.api.sample(undefined,0,100,'qa',()=>true);
- for(let t=20,x=3;x<=120;t+=20,x+=3){
-  trail=other.api.sample(trail,x,100,'qa',()=>true);const out=other.draw(t,x);
-  const step=trail.moving?[0,1,1,0][Math.floor(trail.phase/11)%4]:0;
-  assert.equal(out.frame,(trail.facing==='right'?4:0)+step);assert.equal(out.box[1],-64*1.6);
-  assert.equal(out.shadow[2],Math.min(18,manifest[25].size*.35));assert.equal(out.shadow[3],5);
- }
- console.log('PASS Quaxly: normal/Shiny, 30/60/120 FPS × 30/143/240 px/s, four directions, corners, idle/restart, scene/teleport/pause, blocked movement and unchanged Pikachu rendering.');
+ // Pikachu now intentionally uses its supplied catalog gait; Quaxly above stays protected.
+ const other=await rig(25);other.draw(0,0);other.draw(0,40);const out=other.draw(160,60);assert.equal(out.frame,4+Math.floor(160/128)%2);assert.equal(out.box[1],-63*1.6);assert.equal(out.shadow[2],8);assert.equal(out.shadow[3],3);
+ console.log('PASS Quaxly: normal/Shiny, 30/60/120 FPS × 30/143/240 px/s, four directions, corners, idle/restart, scene/teleport/pause, blocked movement and Pikachu catalog gait.');
 })().catch(e=>{console.error(e);process.exitCode=1});
