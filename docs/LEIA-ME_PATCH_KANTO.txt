@@ -1,0 +1,8 @@
+PSYWORLD — PATCH DA JORNADA DE KANTO
+Data: 31/10/2026
+
+Este ZIP contém somente os arquivos adicionados/alterados para esta entrega. Extraia o conteúdo na raiz do repositório PSYWORLD, preservando as pastas core/, css/, assets/ e docs/.
+
+Inclui o atlas Kanto, áreas de caça, técnicas de campo e mistérios, integração da Rota 1, estilos e artes PNG. As artes do atlas são ilustrações; a colisão real depende da grade de mapa do jogo.
+
+Checkpoint completo: docs/PSYWORLD_KANTO_CHECKPOINT_2026-10-31.md

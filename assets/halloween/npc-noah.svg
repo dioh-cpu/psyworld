@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 190" role="img" aria-labelledby="t d">
+<title id="t">Noah, pesquisador Pokémon</title><desc id="d">Pesquisador aventureiro em traje de campo ilustrado em estilo de animação.</desc>
+<defs>
+ <linearGradient id="coat" x2="0" y2="1"><stop stop-color="#f1f4ef"/><stop offset="1" stop-color="#aebdca"/></linearGradient>
+ <linearGradient id="shirt" x2="0" y2="1"><stop stop-color="#4ba4aa"/><stop offset="1" stop-color="#246378"/></linearGradient>
+ <linearGradient id="skin" x2="0" y2="1"><stop stop-color="#f8d0ad"/><stop offset="1" stop-color="#c98770"/></linearGradient>
+ <filter id="s"><feGaussianBlur stdDeviation="4"/></filter>
+</defs>
+<ellipse cx="81" cy="178" rx="38" ry="7" fill="#07101d" opacity=".55" filter="url(#s)"/>
+<path d="M49 92 35 162l24 10 20-5 21 5 23-10-15-69z" fill="url(#coat)" stroke="#203040" stroke-width="4" stroke-linejoin="round"/>
+<path d="m67 103 14 11 13-11 9 62-20 6-23-6z" fill="url(#shirt)" stroke="#273847" stroke-width="3"/>
+<path d="m55 99 21 13-10 20-13-18zM103 99l-22 13 10 20 15-18z" fill="#e8edf0" stroke="#273847" stroke-width="3" stroke-linejoin="round"/>
+<path d="M65 148h13v24H62zM85 148h13v24H88z" fill="url(#skin)" stroke="#263746" stroke-width="3"/>
+<path d="m62 133 10 7 9-7 10 7 8-7M62 141h9m24 0h-9" fill="none" stroke="#d2e1e3" stroke-width="2"/>
+<path d="M59 58q4-27 25-29 25 0 30 29l-3 34q-8 20-27 20T56 92z" fill="url(#skin)" stroke="#273746" stroke-width="4"/>
+<path d="M57 67q-10-4-10 8 1 12 13 12M113 66q11-4 11 9-2 12-13 12" fill="#e8b49d" stroke="#273746" stroke-width="3"/>
+<path d="M55 66q1-34 29-39 27-3 33 31l-13-4-7-12q-14 14-41 13z" fill="#4b332b" stroke="#203040" stroke-width="4"/>
+<path d="M64 72q8-7 16 0M92 72q8-7 16 0" fill="none" stroke="#624039" stroke-width="3.5" stroke-linecap="round"/>
+<ellipse cx="72" cy="78" rx="3" ry="4.7" fill="#3c7185"/><ellipse cx="100" cy="78" rx="3" ry="4.7" fill="#3c7185"/>
+<path d="M80 84v7l5 2M76 98q8 5 15-1" fill="none" stroke="#a3585b" stroke-width="2.5" stroke-linecap="round"/>
+<path d="m58 46 5-17 18-8 17 7 13 18-16-8-13 3-13-4z" fill="#594438" stroke="#203040" stroke-width="3" stroke-linejoin="round"/>
+<path d="M30 115q-8 5-8 18l12 9 19-19-4-12z" fill="#25394a" stroke="#172633" stroke-width="3"/>
+<path d="m24 130-3 30 20 2 8-28" fill="#8a572f" stroke="#3a2926" stroke-width="4" stroke-linejoin="round"/>
+<path d="m29 135 13 2-2 18-13-1z" fill="#f4c85e" stroke="#493020" stroke-width="2"/>
+<path d="M108 105q13-7 20 3l8 24-17 8-14-22z" fill="url(#skin)" stroke="#273746" stroke-width="4"/>
+<path d="M115 112q10 0 14 12" fill="none" stroke="#fff2db" stroke-width="4" stroke-linecap="round"/>
+<path d="m65 124 13 6-4 13-14-6z" fill="#c4534e" stroke="#263746" stroke-width="2"/>
+<path d="M72 130h10m-8 5h8" stroke="#f7d38d" stroke-width="1.5"/>
+</svg>

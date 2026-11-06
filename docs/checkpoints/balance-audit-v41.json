@@ -1,0 +1,551 @@
+{
+  "assumptions": {
+    "simulation": true,
+    "seed": 19,
+    "startingGold": 25000,
+    "goldPerKill": 10,
+    "killCadences": [
+      6,
+      12
+    ],
+    "perRecipeQueue": true,
+    "autoBuySlots": true,
+    "dailyOrders": true,
+    "noFocus": true,
+    "noUniqueSpecialties": true,
+    "maxHours": 100,
+    "warning": "Cadence and Gold are scenario inputs, not measured live player rates."
+  },
+  "before": [
+    {
+      "job": "engineer",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 1.84,
+        "15": 13.18,
+        "30": 35.96,
+        "50": 95.25
+      },
+      "finalLevel": 51,
+      "kills": 36000,
+      "crafts": 1434,
+      "goldRemaining": 279580,
+      "craftAndSlotGoldSpent": 106920
+    },
+    {
+      "job": "engineer",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.89,
+        "15": 6.81,
+        "30": 17.92,
+        "50": 47.98
+      },
+      "finalLevel": 73,
+      "kills": 72000,
+      "crafts": 2863,
+      "goldRemaining": 533820,
+      "craftAndSlotGoldSpent": 212680
+    },
+    {
+      "job": "herbalist",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 1.84,
+        "15": 13.18,
+        "30": 35.96,
+        "50": 95.25
+      },
+      "finalLevel": 51,
+      "kills": 36000,
+      "crafts": 1434,
+      "goldRemaining": 279580,
+      "craftAndSlotGoldSpent": 106920
+    },
+    {
+      "job": "herbalist",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.89,
+        "15": 6.81,
+        "30": 17.92,
+        "50": 47.98
+      },
+      "finalLevel": 73,
+      "kills": 72000,
+      "crafts": 2863,
+      "goldRemaining": 533820,
+      "craftAndSlotGoldSpent": 212680
+    },
+    {
+      "job": "researcher",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.91,
+        "15": 9.11,
+        "30": 32.28,
+        "50": 86.02
+      },
+      "finalLevel": 53,
+      "kills": 36000,
+      "crafts": 1582,
+      "goldRemaining": 320220,
+      "craftAndSlotGoldSpent": 66280
+    },
+    {
+      "job": "researcher",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.46,
+        "15": 4.6,
+        "30": 16.21,
+        "50": 43.28
+      },
+      "finalLevel": 77,
+      "kills": 72000,
+      "crafts": 3179,
+      "goldRemaining": 616340,
+      "craftAndSlotGoldSpent": 130160
+    },
+    {
+      "job": "professor",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.91,
+        "15": 9.11,
+        "30": 32.28,
+        "50": 86.02
+      },
+      "finalLevel": 53,
+      "kills": 36000,
+      "crafts": 1582,
+      "goldRemaining": 320220,
+      "craftAndSlotGoldSpent": 66280
+    },
+    {
+      "job": "professor",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.46,
+        "15": 4.6,
+        "30": 16.21,
+        "50": 43.28
+      },
+      "finalLevel": 77,
+      "kills": 72000,
+      "crafts": 3179,
+      "goldRemaining": 616340,
+      "craftAndSlotGoldSpent": 130160
+    },
+    {
+      "job": "stylist",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.91,
+        "15": 9.11,
+        "30": 32.28,
+        "50": 86.02
+      },
+      "finalLevel": 53,
+      "kills": 36000,
+      "crafts": 1582,
+      "goldRemaining": 320220,
+      "craftAndSlotGoldSpent": 66280
+    },
+    {
+      "job": "stylist",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.46,
+        "15": 4.6,
+        "30": 16.21,
+        "50": 43.28
+      },
+      "finalLevel": 77,
+      "kills": 72000,
+      "crafts": 3179,
+      "goldRemaining": 616340,
+      "craftAndSlotGoldSpent": 130160
+    },
+    {
+      "job": "echo",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.87,
+        "15": 8.87,
+        "30": 31.22,
+        "50": 83.79
+      },
+      "finalLevel": 54,
+      "kills": 36000,
+      "crafts": 1631,
+      "goldRemaining": 318260,
+      "craftAndSlotGoldSpent": 68240
+    },
+    {
+      "job": "echo",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.45,
+        "15": 4.46,
+        "30": 15.63,
+        "50": 42.03
+      },
+      "finalLevel": 78,
+      "kills": 72000,
+      "crafts": 3261,
+      "goldRemaining": 613060,
+      "craftAndSlotGoldSpent": 133440
+    },
+    {
+      "job": "dream",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.87,
+        "15": 8.9,
+        "30": 31.59,
+        "50": 84.34
+      },
+      "finalLevel": 54,
+      "kills": 36000,
+      "crafts": 1616,
+      "goldRemaining": 318860,
+      "craftAndSlotGoldSpent": 67640
+    },
+    {
+      "job": "dream",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.45,
+        "15": 4.45,
+        "30": 15.71,
+        "50": 42.42
+      },
+      "finalLevel": 78,
+      "kills": 72000,
+      "crafts": 3235,
+      "goldRemaining": 614100,
+      "craftAndSlotGoldSpent": 132400
+    },
+    {
+      "job": "twilight",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.91,
+        "15": 9.11,
+        "30": 32.28,
+        "50": 86.02
+      },
+      "finalLevel": 53,
+      "kills": 36000,
+      "crafts": 1582,
+      "goldRemaining": 320220,
+      "craftAndSlotGoldSpent": 66280
+    },
+    {
+      "job": "twilight",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.46,
+        "15": 4.6,
+        "30": 16.21,
+        "50": 43.28
+      },
+      "finalLevel": 77,
+      "kills": 72000,
+      "crafts": 3179,
+      "goldRemaining": 616340,
+      "craftAndSlotGoldSpent": 130160
+    }
+  ],
+  "after": [
+    {
+      "job": "engineer",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.18,
+        "15": 1.71,
+        "30": 4.36,
+        "50": 10.74,
+        "100": 38.8
+      },
+      "finalLevel": 100,
+      "kills": 13967,
+      "crafts": 565,
+      "goldRemaining": 122090,
+      "craftAndSlotGoldSpent": 43480
+    },
+    {
+      "job": "engineer",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.09,
+        "15": 0.86,
+        "30": 2.15,
+        "50": 5.37,
+        "100": 19.44
+      },
+      "finalLevel": 100,
+      "kills": 13994,
+      "crafts": 566,
+      "goldRemaining": 121900,
+      "craftAndSlotGoldSpent": 43640
+    },
+    {
+      "job": "herbalist",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.18,
+        "15": 1.71,
+        "30": 4.36,
+        "50": 10.74,
+        "100": 38.8
+      },
+      "finalLevel": 100,
+      "kills": 13967,
+      "crafts": 565,
+      "goldRemaining": 122090,
+      "craftAndSlotGoldSpent": 43480
+    },
+    {
+      "job": "herbalist",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.09,
+        "15": 0.86,
+        "30": 2.15,
+        "50": 5.37,
+        "100": 19.44
+      },
+      "finalLevel": 100,
+      "kills": 13994,
+      "crafts": 566,
+      "goldRemaining": 121900,
+      "craftAndSlotGoldSpent": 43640
+    },
+    {
+      "job": "researcher",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.08,
+        "15": 1.32,
+        "30": 4.74,
+        "50": 11.49,
+        "100": 41.55
+      },
+      "finalLevel": 100,
+      "kills": 14958,
+      "crafts": 664,
+      "goldRemaining": 145920,
+      "craftAndSlotGoldSpent": 29560
+    },
+    {
+      "job": "researcher",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.06,
+        "15": 0.66,
+        "30": 2.34,
+        "50": 5.74,
+        "100": 20.88
+      },
+      "finalLevel": 100,
+      "kills": 15032,
+      "crafts": 666,
+      "goldRemaining": 146280,
+      "craftAndSlotGoldSpent": 29640
+    },
+    {
+      "job": "professor",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.08,
+        "15": 1.32,
+        "30": 4.74,
+        "50": 11.49,
+        "100": 41.55
+      },
+      "finalLevel": 100,
+      "kills": 14958,
+      "crafts": 664,
+      "goldRemaining": 145920,
+      "craftAndSlotGoldSpent": 29560
+    },
+    {
+      "job": "professor",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.06,
+        "15": 0.66,
+        "30": 2.34,
+        "50": 5.74,
+        "100": 20.88
+      },
+      "finalLevel": 100,
+      "kills": 15032,
+      "crafts": 666,
+      "goldRemaining": 146280,
+      "craftAndSlotGoldSpent": 29640
+    },
+    {
+      "job": "stylist",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.08,
+        "15": 1.32,
+        "30": 4.74,
+        "50": 11.49,
+        "100": 41.55
+      },
+      "finalLevel": 100,
+      "kills": 14958,
+      "crafts": 664,
+      "goldRemaining": 145920,
+      "craftAndSlotGoldSpent": 29560
+    },
+    {
+      "job": "stylist",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.06,
+        "15": 0.66,
+        "30": 2.34,
+        "50": 5.74,
+        "100": 20.88
+      },
+      "finalLevel": 100,
+      "kills": 15032,
+      "crafts": 666,
+      "goldRemaining": 146280,
+      "craftAndSlotGoldSpent": 29640
+    },
+    {
+      "job": "echo",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.08,
+        "15": 1.31,
+        "30": 4.63,
+        "50": 11.29,
+        "100": 40.88
+      },
+      "finalLevel": 100,
+      "kills": 14718,
+      "crafts": 676,
+      "goldRemaining": 143040,
+      "craftAndSlotGoldSpent": 30040
+    },
+    {
+      "job": "echo",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.06,
+        "15": 0.65,
+        "30": 2.32,
+        "50": 5.68,
+        "100": 20.53
+      },
+      "finalLevel": 100,
+      "kills": 14780,
+      "crafts": 677,
+      "goldRemaining": 143320,
+      "craftAndSlotGoldSpent": 30080
+    },
+    {
+      "job": "dream",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.08,
+        "15": 1.31,
+        "30": 4.63,
+        "50": 11.37,
+        "100": 41.17
+      },
+      "finalLevel": 100,
+      "kills": 14820,
+      "crafts": 672,
+      "goldRemaining": 144220,
+      "craftAndSlotGoldSpent": 29880
+    },
+    {
+      "job": "dream",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.06,
+        "15": 0.65,
+        "30": 2.32,
+        "50": 5.68,
+        "100": 20.57
+      },
+      "finalLevel": 100,
+      "kills": 14808,
+      "crafts": 676,
+      "goldRemaining": 143640,
+      "craftAndSlotGoldSpent": 30040
+    },
+    {
+      "job": "twilight",
+      "killsPerMinute": 6,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.08,
+        "15": 1.32,
+        "30": 4.74,
+        "50": 11.49,
+        "100": 41.55
+      },
+      "finalLevel": 100,
+      "kills": 14958,
+      "crafts": 664,
+      "goldRemaining": 145920,
+      "craftAndSlotGoldSpent": 29560
+    },
+    {
+      "job": "twilight",
+      "killsPerMinute": 12,
+      "mode": "wild",
+      "milestoneHours": {
+        "5": 0.06,
+        "15": 0.66,
+        "30": 2.34,
+        "50": 5.74,
+        "100": 20.88
+      },
+      "finalLevel": 100,
+      "kills": 15032,
+      "crafts": 666,
+      "goldRemaining": 146280,
+      "craftAndSlotGoldSpent": 29640
+    }
+  ]
+}

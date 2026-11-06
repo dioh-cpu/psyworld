@@ -121,45 +121,18 @@
     const profile={id,type,level,levelBoost:cs.levelBoost,entries:[
       /* Taxas deliberadamente baixas porque Survivor/World possuem volume
          enorme de abates. Cada item continua com rolagem independente.
-         Base em modos normais: 0,60% / 1,20% / 0,25%.
+         Base: 0,30% / 0,60% / 0,125% antes da escala do modo.
          Survivor/World aplicam 50% e o bônus de Drop pode no máximo dobrar
-         essas chances. Assim, mesmo no teto, 700 abates geram em média
-         ~14,35 materiais de Craft/Quest, antes do RNG. */
-      {kind:'craft',name:ess.ess,chance:mode==='idle'?.03*cs.materialBoost:rs*.006*cs.materialBoost},
-      {kind:'quest-common',name:pair[0],chance:mode==='idle'?.06*cs.materialBoost:rs*.012*cs.materialBoost},
-      {kind:'quest-rare',name:pair[1],chance:mode==='idle'?.01*cs.materialBoost:rs*.0025*cs.materialBoost}
+         essas chances. As taxas são limitadas por probabilidade, não por número de itens. */
+      {kind:'craft',name:ess.ess,chance:mode==='idle'?.03*cs.materialBoost:rs*.003*cs.materialBoost},
+      {kind:'quest-common',name:pair[0],chance:mode==='idle'?.06*cs.materialBoost:rs*.006*cs.materialBoost},
+      {kind:'quest-rare',name:pair[1],chance:mode==='idle'?.01*cs.materialBoost:rs*.00125*cs.materialBoost}
     ]};
     if(key)idDropProfiles.set(key,profile);
     return profile;
   }
 
-/* Limite de segurança de economia para os modos de altíssimo volume.
-     Cada bloco de 700 abates no Survivor/World pode entregar no máximo
-     15 materiais do pool global de Craft/Quest. Drops raros próprios,
-     Stones e Packs não entram neste teto. */
-  function materialQuota(p,mode){
-    const caps={
-      survivor:{kills:700,items:15},
-      world:{kills:700,items:15},
-      wild:{kills:700,items:30},
-      fast:{kills:700,items:15},
-      hunt:{kills:700,items:30},
-      idle:{kills:700,items:30}
-    };
-    const cap=caps[mode];
-    if(!cap)return null;
-    p.meta.sharedMaterialQuota=p.meta.sharedMaterialQuota&&typeof p.meta.sharedMaterialQuota==='object'?p.meta.sharedMaterialQuota:{};
-    let q=p.meta.sharedMaterialQuota[mode];
-    if(!q||typeof q!=='object')q=p.meta.sharedMaterialQuota[mode]={kills:0,items:0};
-    q.kills=Math.max(0,Math.floor(num(q.kills,0)));
-    q.items=Math.max(0,Math.floor(num(q.items,0)));
-    if(q.kills>=cap.kills){q.kills=0;q.items=0}
-    q.kills++;
-    q.capKills=cap.kills;
-    q.capItems=cap.items;
-    return q;
-  }
-
+/* Each item rolls independently; no quota suppresses the remaining table. */
   function survivorVisualDrop(enemy,name,kind='craft',qty=1){
     if(!name)return;
     try{
@@ -182,19 +155,17 @@
   }
   function awardCommon(enemy,source='auto'){
     const mode=modeName(source);if(mode==='cards')return[];
+    if(W.__psyDropContext?.enemy)enemy=W.__psyDropContext.enemy;
     if(eventAlreadyAwarded(enemy,mode))return[];markEvent(enemy,mode);
-    const level=enemyLevel(enemy),p=ensure(mode),profile=dropProfile(enemy,mode),cs=chanceScale(mode,level),rs=scale(mode),got=[],quota=materialQuota(p,mode);
+    if(['hunt','fast','wild'].includes(mode)&&(mode==='hunt'||profile().currentHunt))W.PsyTitles?.record('huntKills');
+    const level=enemyLevel(enemy),p=ensure(mode),profile=dropProfile(enemy,mode),cs=chanceScale(mode,level),rs=scale(mode),got=[];
 
-    /* TODAS as entradas do perfil do ID são roladas independentemente.
-       Survivor/World respeitam também o teto duro de 15 materiais por
-       bloco de 700 abates. */
+    /* Every entry rolls independently, at reduced baseline rates. */
     for(const entry of profile.entries){
       if(mode==='idle'&&/ultra\s*ball/i.test(entry.name))continue;
-      if(quota&&quota.items>=quota.capItems)break;
       if(Math.random()<entry.chance){
         addItem(p,entry.name,1,mode);
         got.push(entry.name);
-        if(quota)quota.items++;
         if(mode==='survivor')survivorVisualDrop(enemy,entry.name,entry.kind,1);
       }
     }
@@ -207,6 +178,15 @@
         if(Math.random()<Math.min(1,chance*cs.materialBoost)){addItem(p,name,1,mode);got.push(name)}
       }
     }
+    if(['wild','fast','hunt'].includes(mode)){
+      const speedScale=mode==='fast'?.5:1,dropBoost=Math.min(2,1+Math.max(0,buff('drop'))/100);
+      for(const [name,chance] of [['Pokéball',.012],['Great Ball',.006],['Super Ball',.003],['Ultra Ball',.001]]){
+        if(Math.random()<chance*speedScale*dropBoost){addItem(p,name,1,mode);got.push(name)}
+      }
+    }
+    W.PsyProfessions?.onKill(enemy,mode);
+    W.PsySeason?.award(enemy,mode);
+    W.PsySeason?.loot(got);
     const id=profile.id;
     if(['wild','fast','hunt'].includes(mode)&&id!=null){try{W.psyRollTMDrop?.(id)}catch(e){console.warn('[PSYWORLD DROPS V2] TM',e)}}
 
@@ -235,7 +215,7 @@
     if(Math.random()<.5*.000060*mult)items.push('Fragmento Mega Stone');
     if(Math.random()<.5*.000080*mult)items.push('Shiny Stone');
     if(Math.random()<.5*.000710*mult)items.push(SURV_COMMON_STONES[Math.floor(Math.random()*SURV_COMMON_STONES.length)]);
-    if(!items.length)return[];items.forEach(i=>addItem(p,i));save();notify(`🌍 Mundo Pokémon • ${items.join(' + ')}`);return items;
+    if(!items.length)return[];items.forEach(i=>addItem(p,i));W.PsySeason?.loot(items);save();notify(`🌍 Mundo Pokémon • ${items.join(' + ')}`);return items;
   }
 
   function installEndBattle(){
@@ -244,7 +224,7 @@
       const mode=inferMode(),previous=W.__psyDropContext,ctx={mode,commonAwarded:false};W.__psyDropContext=ctx;
       try{
         const inGym=(()=>{try{return typeof gymBattle!=='undefined'&&!!gymBattle}catch(e){return false}})();
-        if(won&&!inGym&&W.battleData?.wild)awardCommon(W.battleData.wild,mode);
+        if(won&&!inGym&&W.battleData?.wild&&Number(W.battleData.wildHp)<=0)awardCommon(W.battleData.wild,mode);
         return old.apply(this,arguments);
       }finally{W.__psyDropContext=previous}
     };
@@ -252,7 +232,7 @@
   }
   function installWorldKill(){
     const old=W.handleWorldKill;if(typeof old!=='function'||old.__psySharedDropsV2World)return;
-    const wrapped=function(target){const prev=W.__psyDropContext,ctx={mode:'world',commonAwarded:false};W.__psyDropContext=ctx;try{const r=old.apply(this,arguments);if(!ctx.commonAwarded)awardCommon(target,'world');worldRareDrop(target);return r}finally{W.__psyDropContext=prev}};
+    const wrapped=function(target){const prev=W.__psyDropContext,ctx={mode:'world',commonAwarded:false,enemy:target};W.__psyDropContext=ctx;try{const r=old.apply(this,arguments);if(!ctx.commonAwarded)awardCommon(target,'world');worldRareDrop(target);return r}finally{W.__psyDropContext=prev}};
     wrapped.__psySharedDropsV2World=true;wrapped.__psySharedOriginal=old;W.handleWorldKill=wrapped;try{handleWorldKill=wrapped}catch(e){}
   }
   function installCardContext(){const old=W.cgWinStage;if(typeof old!=='function'||old.__psySharedDropsV2Card)return;const wrapped=function(){const prev=W.__psyDropContext;W.__psyDropContext={mode:'cards',commonAwarded:true};try{return old.apply(this,arguments)}finally{W.__psyDropContext=prev}};wrapped.__psySharedDropsV2Card=true;W.cgWinStage=wrapped;try{cgWinStage=wrapped}catch(e){}}
@@ -267,3 +247,4 @@
   installEndBattle();installWorldKill();installCardContext();
   console.log('✅ PSYWORLD Shared Drops V13: chances do Psy Idle escalam por nível com limites; economias permanecem isoladas.');
 })(window);
+

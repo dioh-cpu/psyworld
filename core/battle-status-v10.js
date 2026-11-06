@@ -207,6 +207,8 @@
     if(!battleData||battleData.state!=='active')return;
     battleData.state='won';
     const w=battleData.wild,lvl=Number(w.level||5),wildType=w.type||'Normal';
+    const seasonGym=typeof gymBattle!=='undefined'&&!!gymBattle;
+    W.PsySeason?.award(w,seasonGym?'gym':(W.fastEncounter?'fast':'wild'));
     const xp=W.psyBattleXpReward(lvl);
     const gold=Math.floor((lvl*18+80)*(1+Number(getTotalBuff?.('gold')||0)/100));
     P.team[0].exp=(P.team[0].exp||0)+xp;P.gold=(P.gold||0)+gold;
@@ -240,6 +242,13 @@
   function enemyStatusMoveEffect(move){
     const k=compact(move?.name),f=battleData.statusFx,ds=DIRECT_STATUS[k];
     if(ds){if(Math.random()>ds.chance)return 'O efeito falhou.';return applyStatus('player',ds.status,move.name).text}
+    if(['recover','roost','synthesis','moonlight','morningsun','softboiled','milkdrink','healorder','rest'].includes(k)){
+      const mon=P.team[0],before=Number(mon.hp||0),max=Math.max(1,Number(mon.maxHp||P.maxHp||1));
+      mon.hp=Math.min(max,before+Math.ceil(max*(k==='rest'?1:.5)));P.hp=mon.hp;
+      if(k==='rest')applyStatus('player','sleep',move.name);
+      try{W.updateHUD?.()}catch(_){}
+      return 'Recuperou '+(mon.hp-before)+' HP.';
+    }
     if(k==='growl'){f.myAtk=Math.max(-60,(f.myAtk||0)-20);bumpFx(f,'myAtk');return 'ATK do seu Pokémon -20% por 3s.'}
     if(k==='tailwhip'){f.myDef=Math.max(-60,(f.myDef||0)-18);bumpFx(f,'myDef');return 'DEF do seu Pokémon -18% por 3s.'}
     if(k==='leer'){f.myDef=Math.max(-60,(f.myDef||0)-15);bumpFx(f,'myDef');return 'DEF do seu Pokémon -15% por 3s.'}
@@ -316,6 +325,8 @@
   const oldStart=W.startBattle;
   if(typeof oldStart==='function'){
     W.startBattle=startBattle=function(wild){
+      const seasonGym=typeof gymBattle!=="undefined"&&!!gymBattle;
+      if(!seasonGym&&!W.isDungeonBoss&&!W.isDungeonMega&&!W.isDungeonShiny)W.PsySeason?.roll(wild,"wild");
       try{
         if(wild?.id){wild.tier=tierOf(wild);ensureWildRarity(wild);
           const inGym=typeof gymBattle!=='undefined'&&!!gymBattle;
@@ -418,3 +429,4 @@
   `;D.head.appendChild(css);
   console.log('[PSYWORLD]',BUILD,'ativo: status + Tier/Raridade em HP/ATK/dano inimigo.');
 })();
+

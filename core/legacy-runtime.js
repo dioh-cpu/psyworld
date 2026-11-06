@@ -424,6 +424,7 @@ const BALL_DATA = {
     "Super Ball": {chance:2.0, premier:false},
     "Ultra Ball": {chance:3.0, premier:false},
     "Premier Ball":{chance:1.5, premier:true},
+    "Halloween Ball":{chance:6, premier:false},
 };
 
 
@@ -433,7 +434,7 @@ const POTION_DATA = {
     "Poção 200": {cura: 200},
     "Poção 30%": {pct:30},
     "Poção 50% HP": {pct:50},
-    "Poção 100% HP": {pct:100},
+    "Poção de Halloween": {pct:100},
     "Revive": {revive:50},
 };
 
@@ -539,7 +540,7 @@ const SPECIAL_EVOLUTIONS = {
 const P = {
     name:"", level:1, hp:50, maxHp:50,
     exp:0, maxExp:100, gold:25000,
-    team: [], box: [],
+    team: [], box: [], seenPokemon:[],
     x:25, y:25, px:25*32, py:25*32,
     tx:25, ty:25, moving:false,
     inventory: { 
@@ -577,6 +578,12 @@ function toggleFastEncounter(){
         btn.title = window.fastEncounter ? 'Fast Encounter: ligado' : 'Fast Encounter: desligado';
         btn.setAttribute('aria-label', btn.title);
         btn.textContent = '';
+    }
+    if(window.fastEncounter && !ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){
+        window.fastEncounter=false; fastEncounter=false; clearInterval(fastLoop);
+        if(btn){btn.style.background='#dc2626';btn.style.boxShadow='0 0 10px #0008,0 0 10px #ef444466';btn.title='Fast Encounter: disponível somente na grama da Route 1';btn.setAttribute('aria-label',btn.title)}
+        try{notif('Fast Encounter só pode ser ativado na grama da Route 1.',2600)}catch(e){}
+        return;
     }
     if(window.fastEncounter){
         if(!inBattle){
@@ -783,6 +790,29 @@ function autoSave() {
     }catch(e){ console.warn(e); }
 }
 
+window.PsyWorldProgressV1 = {
+    snapshot(){
+        const clean = pokemon => Array.isArray(pokemon) ? pokemon.filter(mon=>mon&&Number(mon.id)>0).map(mon=>({id:Number(mon.id),name:String(mon.name||''),level:Math.max(1,Number(mon.level)||1)})) : [];
+        const team=clean(P.team),box=clean(P.box),owned=[...team,...box].map(mon=>mon.id);
+        return {
+            trainerLevel:Math.max(1,Number(P.trainerLevel)||1),
+            levelCap:Math.max(1,Number(P.levelCap)||20),
+            gymProgress:Array.isArray(P.gymProgress)?P.gymProgress.slice():[],
+            completedRegions:REGION_ORDER.filter(region=>getRegionCompleted(region)),
+            team,box,
+            seenPokemon:[...new Set([...(Array.isArray(P.seenPokemon)?P.seenPokemon:[]),...owned].map(Number).filter(id=>Number.isInteger(id)&&id>0))]
+        };
+    },
+    recordSeenSpecies(id){
+        const n=Number(id);if(!Number.isInteger(n)||n<1||n>1025)return false;
+        P.seenPokemon=Array.isArray(P.seenPokemon)?P.seenPokemon:[];
+        if(P.seenPokemon.includes(n))return false;
+        P.seenPokemon.push(n);autoSave();
+        try{if(document.getElementById('screen-pokedex')?.style.display==='flex')renderPokedex()}catch(_){}
+        return true;
+    }
+};
+
 function autoLoad() {
     try{
         let raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(SAVE_BACKUP_KEY) || localStorage.getItem('psyWorldSave');
@@ -795,6 +825,7 @@ function autoLoad() {
         P.gold = pd.gold?? P.gold;
         P.team = pd.team || [];
         P.box = pd.box || [];
+        P.seenPokemon = Array.isArray(pd.seenPokemon)?[...new Set(pd.seenPokemon.map(Number).filter(id=>Number.isInteger(id)&&id>0&&id<=1025))]:[];
         P.inventory = pd.inventory || P.inventory;
         P.levelCap = pd.levelCap?? P.levelCap;
         P.gymProgress = pd.gymProgress || [];
@@ -899,27 +930,68 @@ function loadOnLogin(){
 /* ══════════════
    PASSO 4: AUTO SAVE
 ══════════════ */
+// Active save writer/loader: preserve V2, backup and legacy keys.
+function psyValidSaveSnapshot(raw) {
+    try {
+        const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const player = data?.player || data;
+        // Match autoLoad's minimum roster requirement: a team array must exist,
+        // and at least one Pokémon must be in the team or box.
+        return !!player && typeof player === 'object' && Array.isArray(player.team) &&
+            (player.team.length > 0 || (Array.isArray(player.box) && player.box.length > 0));
+    } catch(e) { return false; }
+}
+
 // SALVAR AUTOMATICO SILENCIOSO
 function autoSave() {
-    const saveData = {
-        player: P,
-        map: { x: P.x, y: P.y, px: P.px, py: P.py }
-    };
-    localStorage.setItem('psyWorldSave', JSON.stringify(saveData));
+    try {
+        const saveData = { v:2, player:P, map:{x:P.x,y:P.y,px:P.px,py:P.py}, time:Date.now() };
+        const str = safeStringify(saveData);
+        if(!str || !psyValidSaveSnapshot(str)) return false;
+        // Keep the last valid state as backup. Never replace any save with invalid JSON.
+        let previous = null;
+        for(const key of [SAVE_KEY, 'psyWorldSave', SAVE_BACKUP_KEY]) {
+            const candidate = localStorage.getItem(key);
+            if(candidate && psyValidSaveSnapshot(candidate)) { previous = candidate; break; }
+        }
+        localStorage.setItem(SAVE_BACKUP_KEY, previous || str);
+        localStorage.setItem(SAVE_KEY, str);
+        localStorage.setItem('psyWorldSave', str); // legacy compatibility
+        return true;
+    } catch(e) { console.warn('[PSYWORLD] save skipped', e); return false; }
 }
 
 // CARREGAR AUTOMATICO AO ENTRAR
 function autoLoad() {
-    const saveData = localStorage.getItem('psyWorldSave');
-    if(!saveData) return false; // não tem save
-
-    const data = JSON.parse(saveData);
-    Object.assign(P, data.player);
-    P.x = data.map.x; P.y = data.map.y;
-    P.px = data.map.px; P.py = data.map.py;
-
-    if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
-    return true; // carregou com sucesso
+    try {
+        let data = null, sourceKey = null;
+        for(const key of [SAVE_KEY, SAVE_BACKUP_KEY, 'psyWorldSave']) {
+            const raw = localStorage.getItem(key);
+            if(!raw || !psyValidSaveSnapshot(raw)) continue;
+            const parsed = JSON.parse(raw), player = parsed.player || parsed;
+            if(!Array.isArray(player.team) || (!player.team.length && !(player.box?.length))) continue;
+            data = parsed; sourceKey = key; break;
+        }
+        if(!data) return false;
+        const player = data.player || data;
+        Object.assign(P, player);
+        P.team = Array.isArray(player.team) ? player.team : [];
+        P.box = Array.isArray(player.box) ? player.box : [];
+        const map = data.map || {};
+        P.x = map.x ?? P.x ?? 25; P.y = map.y ?? P.y ?? 25;
+        P.px = map.px ?? P.x*32; P.py = map.py ?? P.y*32;
+        P.team.forEach(migratePoke);
+        P.box.forEach(migratePoke);
+        if(P.team[0]) {
+            P.pokemon = P.team[0];
+            P.hp = P.team[0].hp; P.maxHp = P.team[0].maxHp;
+            P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+        }
+        if(typeof upgradeLegacyStarterQuality === 'function') upgradeLegacyStarterQuality();
+        // Heal/re-save metadata upgrades only when loading from a fallback key.
+        if(sourceKey !== SAVE_KEY) autoSave();
+        return true;
+    } catch(e) { console.warn('[PSYWORLD] load failed', e); return false; }
 }
 
 // CARREGAR SAVE DE UM ARQUIVO
@@ -936,8 +1008,19 @@ function uploadSave(event) {
                 P.x = data.map.x; P.y = data.map.y;
                 P.px = data.map.px; P.py = data.map.py;
 
+                // Apply the one-time starter migrations to menu imports as well as login imports.
+                (P.team || []).forEach(migratePoke);
+                (P.box || []).forEach(migratePoke);
+                upgradeLegacyStarterQuality();
+        if(P.team[0]){P.team[0].hp=P.team[0].maxHp;P.team[0].currentHp=P.team[0].maxHp;P.team[0].fainted=false;P.hp=P.team[0].maxHp;}
+                if(P.team[0]) {
+                    P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
+                    P.pokemon = P.team[0];
+                    P.hp = P.team[0].hp;
+                    P.maxHp = P.team[0].maxHp;
+                }
+
                 updateHUD();
-                if(P.team[0]) P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
                 loadMoveButtons();
                 document.getElementById('menu').style.display = 'none';
 
@@ -1020,6 +1103,7 @@ function loadOnLogin() {
     if(!saveData) { notif('❌ Nenhum save encontrado!'); return; }
 
     if(autoLoad()){
+        upgradeLegacyStarterQuality();
         document.getElementById('screen-login').style.display = 'none';
         document.getElementById('game-wrap').style.display = 'block';
         updateHUD();
@@ -1042,11 +1126,16 @@ function uploadSaveLogin(event) {
             P.x = data.map.x; P.y = data.map.y;
             P.px = data.map.px; P.py = data.map.py;
 
-            if(P.team[0]) { // seta o poke
+            // Apply the same one-time migrations used by local saves before syncing battle/HUD state.
+            (P.team || []).forEach(migratePoke);
+            (P.box || []).forEach(migratePoke);
+            upgradeLegacyStarterQuality();
+
+            if(P.team[0]) {
                 P.team[0].moves = getMovesForLevel(P.team[0].id, P.team[0].level);
                 P.pokemon = P.team[0];
-                P.hp = P.pokemon.hp;
-                P.maxHp = P.pokemon.maxHp;
+                P.hp = P.team[0].hp;
+                P.maxHp = P.team[0].maxHp;
             }
 
             document.getElementById('screen-login').style.display = 'none';
@@ -1065,7 +1154,7 @@ function uploadSaveLogin(event) {
 function buildStarterScreen() {
     const container = document.getElementById('starter-list');
     container.innerHTML = '';
-    GENS.forEach(gen => {
+    GENS.slice(0,1).forEach(gen => {
         const sec = document.createElement('div');
         sec.className = 'gen-section';
         sec.innerHTML = `<div class="gen-label">${gen.label}</div>`;
@@ -1096,11 +1185,67 @@ function selectPoke(s, el) {
     document.getElementById('chosen-label').textContent = `Selecionado: ${s.name}`;
 }
 
+function rollStarterRarity() {
+    const allowed = RARITIES.slice(2, 5).filter(r => Number(r.chance) > 0);
+    if(!allowed.length) return RARITIES[2] || rollRarity();
+    const total = allowed.reduce((sum, r) => sum + Number(r.chance || 0), 0);
+    let roll = Math.random() * total;
+    for(const rarity of allowed) {
+        roll -= Number(rarity.chance || 0);
+        if(roll <= 0) return {...rarity};
+    }
+    return {...allowed[allowed.length - 1]};
+}
+
+function upgradeLegacyStarterQuality() {
+    P.meta = P.meta || {};
+    const qualityDone = !!P.meta.psyStarterQualityFloorV1;
+    const hpDone = !!P.meta.psyStarterHpRestoreV1;
+    if(qualityDone && hpDone) return false;
+    const starterIds = new Set(GENS.flatMap(gen => gen.starters.map(s => Number(s.id))));
+    const mon = (P.team || []).find(p => p && p.isStarter)
+        || (P.team || []).find(p => p && starterIds.has(Number(p.id)) && Number(p.level || 1) <= 5);
+    if(!mon) return false;
+
+    let qualityChanged = false;
+    const current = typeof mon.rarity === 'object' ? mon.rarity?.n : mon.rarity;
+    const qualityIndex = RARITIES.findIndex(r => r.n === current);
+    if(!qualityDone && qualityIndex < 2) {
+        const oldMaxHp = Number(mon.maxHp || 0);
+        mon.rarity = rollStarterRarity();
+        if(typeof ensurePokeBase === 'function') ensurePokeBase(mon);
+        if(typeof recalcPoke === 'function') recalcPoke(mon);
+        mon.hp = Math.max(1, Number(mon.maxHp || oldMaxHp || 1));
+        qualityChanged = true;
+    }
+
+    const maxHp = Math.max(1, Number(mon.maxHp || mon.baseMaxHp || P.maxHp || 1));
+    mon.maxHp = maxHp;
+    let hpChanged = false;
+    if(!hpDone) {
+        if(!Number.isFinite(Number(mon.hp)) || Number(mon.hp) <= 0) {
+            mon.hp = maxHp;
+            hpChanged = true;
+        }
+        P.meta.psyStarterHpRestoreV1 = true;
+    }
+    P.pokemon = mon;
+    P.maxHp = maxHp;
+    P.hp = Math.max(1, Math.min(maxHp, Number(mon.hp || maxHp)));
+    mon.hp = P.hp;
+    P.meta.psyStarterQualityFloorV1 = true;
+    autoSave();
+    if(qualityChanged) notif(`Seu inicial foi fortalecido: qualidade ${mon.rarity?.n || mon.rarity} e HP restaurado!`, 4000);
+    else if(hpChanged) notif('HP do inicial restaurado.', 2500);
+    return qualityChanged || hpChanged;
+}
+
 function confirmStarter() {
     if(!chosenPoke) { notif('Escolha um Pokémon primeiro!'); return; }
 
     // 1. Se já tem save v2/v1/backup, NUNCA apaga. Só entra.
     if(autoLoad() && P.team && P.team.length > 0){
+        upgradeLegacyStarterQuality();
         document.getElementById('screen-starter').style.display = 'none';
         document.getElementById('game-wrap').style.display = 'block';
         updateHUD();
@@ -1111,9 +1256,10 @@ function confirmStarter() {
     }
 
     // 2. Só cria starter se REALMENTE não tem nada
-    const rarity = rollRarity();
+    const rarity = rollStarterRarity();
     const novoPoke = {
       ...chosenPoke,
+        isStarter: true,
         rarity: rarity,
         premier: false,
         level: 1,
@@ -1131,8 +1277,15 @@ function confirmStarter() {
         novoPoke.hp = novoPoke.maxHp;
     }
 
+    novoPoke.maxHp = Math.max(1, Number(novoPoke.maxHp || novoPoke.baseMaxHp || 1));
+    novoPoke.hp = novoPoke.maxHp;
+
     document.getElementById('screen-starter').style.display = 'none';
 
+    novoPoke.hp=novoPoke.maxHp;
+    novoPoke.currentHp=novoPoke.maxHp;
+    novoPoke.fainted=false;
+    delete novoPoke.status;
     P.team = [novoPoke];
     P.box = P.box || []; // NÃO faz P.box = [] se já tinha backup
     P.pokemon = P.team[0];
@@ -1142,8 +1295,10 @@ function confirmStarter() {
     // ⭐ VIP DE BOAS-VINDAS — somente para uma conta realmente nova.
     // Não é aplicado em saves já existentes e não reduz um VIP maior já ativo.
     P.meta = P.meta || {};
+    P.meta.starterPokemonId = Number(novoPoke.id);
+    P.meta.psyStarterQualityFloorV1 = true;
     if(!P.meta.welcomeVip3DaysGranted){
-        const welcomeVipMs = 3 * 24 * 60 * 60 * 1000;
+        const welcomeVipMs = 60 * 60 * 1000;
         P.meta.vipUntil = Math.max(Number(P.meta.vipUntil || 0), Date.now()) + welcomeVipMs;
         P.meta.welcomeVip3DaysGranted = true;
         P.meta.welcomeVipGrantedAt = Date.now();
@@ -1153,7 +1308,7 @@ function confirmStarter() {
     updateHUD();
     initEngine();
     autoSave(); // já salva em v2 + backup + v1
-    notif(`${P.name} escolheu ${chosenPoke.name}! 🎉 ⭐ VIP de boas-vindas ativado por 3 dias!`, 4500);
+    notif(`${P.name} escolheu ${chosenPoke.name} (${rarity.n})! 🎉 ⭐ VIP de boas-vindas ativado por 1 hora!`, 4500);
 }
 /* ══════════════════════════════
    LOJA
@@ -1215,6 +1370,13 @@ for(let y = 0; y < MAP_H; y++)
     for(let x = 0; x < MAP_W; x++)
         if(map[y][x] === 2 || map[y][x] === 4) SOLID.add(x+','+y);
 
+/* Pallet city north quarter. The campaign is opened through KANTO · JORNADA;
+   this legacy city map has no physical connection to Route 1. */
+const ROUTE1={x1:19,x2:31,y1:3,y2:20,grass:new Set()};
+for(let y=ROUTE1.y1;y<=ROUTE1.y2;y++)for(let x=ROUTE1.x1;x<=ROUTE1.x2;x++){
+  map[y][x]=1;
+  SOLID.delete(x+','+y);
+}
 BUILDINGS.forEach(b => {
     for(let dy = 0; dy < b.h; dy++)
         for(let dx = 0; dx < b.w; dx++)
@@ -1509,18 +1671,22 @@ if(key.includes('_t')){
   tipo=key.split('_t')[0];
   tierNum=1;
 }
+if(pool==='kanto_route1_t1')tipo='normal';
 let list=getPokesForHunt(regKey,tipo,tierNum);
+if(pool==='kanto_route1_t1')list=list.filter(p=>[16,19].includes(Number(p.id)));
 if(typeof BOSS_BAN_IDS!=='undefined') list = list.filter(p=>!BOSS_BAN_IDS.has(p.id));
 if(!list||list.length==0){
   notif(`❌ ${regKey.toUpperCase()} sem ${tipo.toUpperCase()} T${tierNum}`,2500);
   return;
 }
 const base=list[Math.floor(Math.random()*list.length)];
+window.PsyWorldProgressV1?.recordSeenSpecies(base.id);
 let tierLetter = getTier(base.id); // <-- E,D,C,B,A,S,SS,SSS,UR
 const rarity=typeof rollRarity==='function'?rollRarity(tierLetter):{n:"Comum",bonus:0,mult:1};
 let realType=base.type||TYPE_BY_ID_ALL[base.id]||"Normal";
 let tier=tierNum; // esse tierNum é o da HUNT 1-4, mantém
 let min=1,max=10; if(tier==2){min=10;max=20;}else if(tier==3){min=20;max=35;}else if(tier==4){min=40;max=60;}else if(tier==5){min=60;max=80;}
+if(pool==='kanto_route1_t1'){min=2;max=4;}
 const lvl=Math.floor(Math.random()*(max-min+1))+min;
 const maxHp=Math.floor(65+lvl*8+(rarity.bonus||0));
 if(tipo==='metal') tipo='aco';
@@ -1595,6 +1761,7 @@ isEnemyBlinking = true; enemyBlinkTimer = 0; el.classList.add('poke-blink');
 }
 function startBattle(wildPoke) {
 if(!P.team[0]) return;
+window.PsySeason?.state();
 inBattle = true;
 let bs = document.getElementById('battle-screen');
 if(bs){ bs.style.display='flex'; bs.classList.add('active'); }
@@ -1627,6 +1794,7 @@ if(typeof loadMoveButtons === 'function') loadMoveButtons();
 let bc = document.getElementById('battle-controls'); if(bc) bc.style.display='flex';
 let bl = document.getElementById('battle-log'); if(bl) bl.textContent = '⚔ Um ' + (wildPoke.name || 'Pokémon') + ' selvagem apareceu!';
 battleAnim = 0; battleBob = 0;
+window.PsySeason?.encounter?.(battleData.wild);
 }
 function updateBattleHP() {
     if(!battleData ||!P.team[0]) return;
@@ -1886,21 +2054,32 @@ function update(dt) {
             const nx=P.x+dx, ny=P.y+dy;
             if(nx>=0 && ny>=0 && nx<MAP_W && ny<MAP_H && !SOLID.has(nx+','+ny)) {
                 P.tx=nx; P.ty=ny; P.moving=true; checkShopEntry(nx,ny);
+                if(window.fastEncounter && !ROUTE1.grass.has(nx+','+ny)){
+                    // Leaving Route 1 grass stops farming before a chained battle starts.
+                    window.fastEncounter=false; fastEncounter=false; clearInterval(fastLoop);
+                    const fastBtn=document.getElementById('fastEncounterBtn');
+                    if(fastBtn){fastBtn.style.background='#dc2626';fastBtn.style.boxShadow='0 0 10px #0008,0 0 10px #ef444466';fastBtn.title='Fast Encounter: disponível somente na grama da Route 1';fastBtn.setAttribute('aria-label',fastBtn.title)}
+                }
                 if(window.fastEncounter){
-                    let plvl = P.team[0]?.level || 1;
-                    let autoTier = plvl < 10? 1 : plvl < 20? 2 : plvl < 40? 3 : 4;
-                    let tipo = (P.currentHunt || 'kanto_planta_t1').split('_')[1] || 'planta';
-                    let autoKey = `kanto_${tipo}_t${autoTier}`;
-                    triggerWild(autoKey);
+                    const huntKey = String(P.currentHunt || '');
+                    if(huntKey.startsWith('psy19:')) window.triggerWild(huntKey);
+                    else {
+                        let plvl = P.team[0]?.level || 1;
+                        let autoTier = plvl < 10? 1 : plvl < 20? 2 : plvl < 40? 3 : 4;
+                        let tipo = (huntKey || 'kanto_planta_t1').split('_')[1] || 'planta';
+                        let autoKey = `kanto_${tipo}_t${autoTier}`;
+                        triggerWild(autoKey);
+                    }
                 } else {
                     const tile = map[ny]?.[nx];
-                    if(tile===0 && Math.random()<0.08) triggerWild(P.currentHunt || 'kanto_planta_t1');
-                    else if(tile===1 && Math.random()<0.04) triggerWild(P.currentHunt || 'kanto_planta_t1');
+                    // Natural encounters occur only in explicitly marked tall grass.
+                    // Paths, town floor, decorations and all other tiles are safe.
+                    if(tile===5 && ROUTE1.grass.has(nx+','+ny) && Math.random()<0.12) triggerWild('kanto_normal_t1');
                 }
             }
         }
     } else {
-        const speed=10, tx=P.tx*TILE, ty=P.ty*TILE;
+        const speed=10*(1+Number(window.PsySeason?.buff('speed')||0)/100), tx=P.tx*TILE, ty=P.ty*TILE;
         if(P.px<tx) P.px=Math.min(P.px+speed,tx); else if(P.px>tx) P.px=Math.max(P.px-speed,tx);
         if(P.py<ty) P.py=Math.min(P.py+speed,ty); else if(P.py>ty) P.py=Math.max(P.py-speed,ty);
         if(P.px===tx && P.py===ty){ P.x=P.tx; P.y=P.ty; P.moving=false; }
@@ -1914,39 +2093,14 @@ function endBattle(won) {
     if (pDiv) { pDiv.classList.remove('poke-blink'); pDiv.style.transform = ''; }
     if (eDiv) { eDiv.classList.remove('poke-blink'); eDiv.style.transform = ''; }
     if(battleData) battleData.state = won? 'won' : 'lost';
-    if(won && window.fastEncounter){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
+    if(won && window.fastEncounter && ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
 }
 const COLORS = { 0:'#0a1a08', 1:'#1a5c1e', 2:'#1a3a8a', 3:'#8c7048', 4:'#5a4030', };
 
 function drawCityGround(offX, offY){
-  // Mar infinito
-  ctx.fillStyle = '#0a7dc2';
+  // The city art layer owns the town. Never expose the retired island/beach.
+  ctx.fillStyle = '#211d30';
   ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  // Onda clara
-  ctx.fillStyle = '#1e90ff';
-  ctx.beginPath();
-  ctx.ellipse(canvas.width/2, canvas.height/2, canvas.width*0.8, canvas.height*0.7, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  // Ilha grande
-  const cx = offX + 25*TILE + TILE/2;
-  const cy = offY + 22*TILE + TILE/2;
-
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, 680, 480, 0, 0, Math.PI*2);
-  ctx.fillStyle = '#f7e8b5';
-  ctx.fill();
-
-  ctx.lineWidth = 14;
-  ctx.strokeStyle = '#e9d28c';
-  ctx.stroke();
-
-  // Areia clara centro
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, 600, 400, 0, 0, Math.PI*2);
-  ctx.fillStyle = '#fff6cc';
-  ctx.fill();
 }
 
 function draw(){
@@ -1955,41 +2109,9 @@ function draw(){
     const offX = w/2 - P.px - TILE/2;
     const offY = h/2 - P.py - TILE/2;
 
-    // Desenha a ilha primeiro
     drawCityGround(offX, offY);
-
-    const visible=18;
-    const minX=Math.max(0,Math.floor(P.x-visible)), maxX=Math.min(MAP_W-1,Math.ceil(P.x+visible));
-    const minY=Math.max(0,Math.floor(P.y-visible)), maxY=Math.min(MAP_H-1,Math.ceil(P.y+visible));
-
-    // Cores novas - areia, não verde feio
-    const tileColors={
-      0:'#1e90ff', // agua vira mar
-      1:'#fff6cc', // grama vira areia clara
-      2:'#0a7dc2', // borda vira mar escuro
-      3:'#f7e8b5', // caminho vira areia
-      4:'#e9d28c' // tronco vira areia escura
-    };
-
-    for(let y=minY;y<=maxY;y++) for(let x=minX;x<=maxX;x++){
-        // só desenha chão se estiver perto da ilha pra não cobrir o mar
-        const dist = Math.hypot(x-25, y-22);
-        if(dist > 22) continue; // fora da ilha = mar
-
-        const sx=offX+x*TILE, sy=offY+y*TILE, t=map[y][x];
-        ctx.fillStyle=tileColors[t]||'#fff6cc';
-        ctx.fillRect(sx,sy,TILE+1,TILE+1);
-    }
-    BUILDINGS.forEach(b=>{
-        const bx=offX+b.x*TILE, by=offY+b.y*TILE, bw=b.w*TILE, bh=b.h*TILE, depth=22;
-        if(bx> w||by>h||bx+bw<0||by+bh<0) return;
-        ctx.fillStyle='rgba(0,0,0,.36)'; ctx.beginPath(); ctx.ellipse(bx+bw/2,by+bh+10,bw*.58,18,0,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle=b.color||'#d8d1bd'; ctx.fillRect(bx,by+depth,bw,bh-depth);
-        ctx.fillStyle=b.roof||'#5a3a50'; ctx.beginPath(); ctx.moveTo(bx-8,by+depth); ctx.lineTo(bx+bw/2,by-18); ctx.lineTo(bx+bw+8,by+depth); ctx.closePath(); ctx.fill();
-        for(let wx=bx+18;wx<bx+bw-10;wx+=38){ ctx.fillStyle='#8ed6d1'; ctx.fillRect(wx,by+depth+18,18,16); }
-        ctx.fillStyle='#513222'; const doorX=bx+bw/2-14; ctx.fillRect(doorX,by+bh-42,28,42);
-        ctx.fillStyle='#fff6d2'; ctx.font='bold 10px Tahoma'; ctx.textAlign='center'; ctx.fillText(b.name,bx+bw/2,by-26);
-    });
+    // Retired island tiles, ponds, trees and buildings are not rendered.
+    // Route 1 entrance sign is drawn by the town art layer on the walkable town-side trail.
     const px=offX+P.px, py=offY+P.py;
     if(P.team && P.team[0]){
         ctx.save();
@@ -2071,7 +2193,7 @@ function getItemIcon(name){
   return "📦";
 }
 function spawnFloat(text, color="#ffd700"){
-  let el=document.createElement('div');
+  let el=document.createElement('div');el.className='psy-season-float';
   el.textContent=text;
   el.style.cssText=`position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); font-size:22px; font-weight:900; color:${color}; text-shadow:0 2px 0 #000, 0 0 8px #000; z-index:999999; pointer-events:none; animation: floatUp 1.2s ease-out forwards;`;
   document.body.appendChild(el);
@@ -2081,6 +2203,7 @@ const styleFloat=document.createElement('style');
 styleFloat.innerHTML=`@keyframes floatUp{0%{transform:translate(-50%,-30%) scale(0.5); opacity:0} 20%{opacity:1; transform:translate(-50%,-50%) scale(1.3)} 100%{transform:translate(-50%,-150%) scale(1); opacity:0}}`;
 document.head.appendChild(styleFloat);
 function buyItem(name, price){
+    if(['Poção 100% HP','Poção de Halloween','Halloween Ball','Incenso de Halloween'].includes(name))return notif('Item exclusivo da loja de Halloween.');
     if(P.gold < price){ notif("❌ Sem Gold!"); spawnFloat("SEM GOLD!", "#ff2222"); return; }
     if(typeof window.confirm==='function'&&!window.confirm(`Você deseja confirmar a compra?\n\n${name} — ${Number(price).toLocaleString('pt-BR')} Gold`)) return;
     P.gold -= price; P.inventory[name] = (P.inventory[name]||0) + 1;
@@ -2088,10 +2211,11 @@ function buyItem(name, price){
     notif(`✅ Comprou ${name}!`,2000); updateHUD(); autoSave();
 }
 function getCuraValue(poke, name){
-  let d = POTION_DATA[name];
-  if(!d) return 50;
-  if(d.pct) return Math.floor(poke.maxHp * d.pct / 100);
-  return d.cura || 50;
+  window.PsySeason?.state();
+  const d=POTION_DATA[name];if(!d)return 0;
+  if(name==='Poção de Halloween')return Math.max(1,Math.floor(poke.maxHp));
+  const value=d.pct?Math.floor(poke.maxHp*Math.min(50,d.pct)/100):d.cura||0;
+  return Math.max(1,Math.min(value,Math.floor(poke.maxHp*.50)));
 }
 
 function openBag(){
@@ -2106,6 +2230,7 @@ function openBag(){
 window.psyBagFilter='all';
 window.psySetBagFilter=function(filter,button){window.psyBagFilter=filter;document.querySelectorAll('#bag-filters button').forEach(b=>b.classList.toggle('active',b===button));renderBag()};
 function renderBag(){
+  window.PsySeason?.state();
   const bl=document.getElementById('bag-list');
   if(!bl) return;
   if(window.PSY_ITEMS?.migrateInventory?.())try{autoSave()}catch(e){}
@@ -2136,7 +2261,7 @@ function renderBag(){
     else info = window.PSY_ITEMS?.detail(name)||'Item especial';
 
     const encoded=encodeURIComponent(name);
-    let action = window.bagBattleMode==='potion'?`usePotionBattle(decodeURIComponent('${encoded}'))`:window.bagBattleMode==='ball'?`tryCaptureBattle(decodeURIComponent('${encoded}'))`:(isStone||isPotion||isBall)?`useItemFromBag(decodeURIComponent('${encoded}'))`:`notif(decodeURIComponent('${encodeURIComponent(name+' • '+info)}'),2200)`;
+    let action = window.bagBattleMode==='potion'?`usePotionBattle(decodeURIComponent('${encoded}'))`:window.bagBattleMode==='ball'?`tryCaptureBattle(decodeURIComponent('${encoded}'))`:(isStone||isPotion||isBall||name==='Incenso de Halloween')?`useItemFromBag(decodeURIComponent('${encoded}'))`:`notif(decodeURIComponent('${encodeURIComponent(name+' • '+info)}'),2200)`;
 
     html+=`<div class="psy-item-card" style="--item:${borderColor}">
       <div class="psy-item-tag">${window.PSY_ITEMS?.label(name)||cat.toUpperCase()}</div>
@@ -2151,10 +2276,12 @@ function renderBag(){
   bl.innerHTML=html||"<p style='color:#666; text-align:center; padding:20px; grid-column:1/-1;'>🎒 Vazio<br><small style='font-size:10px'>Vá na loja comprar!</small></p>";
 }
 function useItemFromBag(name){
+  if(name==='Incenso de Halloween')return window.PsySeason?.useIncense();
   if(name==='Revive'){if(typeof window.psyOpenBattleSwitch==='function'&&window.inBattle)return window.psyOpenBattleSwitch(true);notif('💠 Revive é usado em batalha para recuperar um Pokémon derrotado.',2600);return;}
   if(name.includes("Stone")){ checkEvoStone(name); return; }
   if(name.includes("Poção")){
     if(!P.team[0]) return;
+    if(Number(P.team[0].hp)<=0)return notif("Poções não revivem. Visite o Centro Pokémon.");
     if(P.team[0].hp >= P.team[0].maxHp){ notif("❤ HP cheio!"); return; }
     if((P.inventory[name]||0)<=0) return;
     let cura = getCuraValue(P.team[0], name);
@@ -2349,6 +2476,7 @@ function calcHp(base, p){
 
 
 function tryEvolve(pokemon, stoneName){
+    if(pokemon.halloweenForm)return notif("Esta criatura de Halloween mantém sua forma exclusiva.");
     let evo = null;
     if(SPECIAL_EVOLUTIONS[pokemon.id] && SPECIAL_EVOLUTIONS[pokemon.id][stoneName]) evo = SPECIAL_EVOLUTIONS[pokemon.id][stoneName];
     else if(EVOLUTION_MAP[pokemon.id] && EVOLUTION_MAP[pokemon.id].stone === stoneName) evo = EVOLUTION_MAP[pokemon.id];
@@ -2430,7 +2558,7 @@ function checkEvoStone(stoneName){
         let tem=P.inventory[stoneName]||0;
         let pode=tem>=f.req.qtd && f.p.level>=f.req.minLevel;
         html+=`<div style="background:#1a1a2e; border:2px solid ${pode?'#7c3aed':'#444'}; border-radius:12px; padding:8px; text-align:center;">
-          <img src="${getPokeAnim(f.p)}" style="width:50px;height:50px;">
+          <img class="${f.p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(f.p)}" style="width:50px;height:50px;">
           <div style="color:#fff;font-size:10px;font-weight:900;">${f.p.name} Lv.${f.p.level} → ${getPokeName(f.req.to)}</div>
           <div style="color:${tem>=f.req.qtd?'#0f0':'#f00'};font-size:9px;">${f.req.qtd}x (tem ${tem}) | Lv.${f.req.minLevel}</div>
           <div style="font-size:8px;color:#888;">${f.isTeam?'TIME':'BOX'}</div>
@@ -2457,7 +2585,7 @@ function renderTeam(){
             let nameShow = p.shiny? `<span class="shiny-name">${p.name}</span>` : p.name;
             ht+=`<div onclick="openPokeDetail(${i}, false)" style="display:flex; align-items:center; justify-content:space-between; background:#1a1a2e; border:${i==0?'2px solid #00ff41':'2px solid #334'}; border-radius:10px; padding:6px; margin:4px 0; cursor:pointer; position:relative;" class="aura-${tier}">
               <span class="tier-badge ${tier}">${tier}</span>
-              <div style="display:flex; align-items:center; gap:8px;"><img src="${getPokeAnim(p)}" style="width:42px; height:42px;"><div><div style="color:#fff;font-weight:bold;font-size:12px;">${i==0?'▶ ':''}${nameShow} Lv${p.level} <span style="font-size:9px;color:#aaa;">ATK ${p.baseMaxAtk||p.atk||0}</span></div><div style="font-size:10px;color:#888">HP ${p.hp}/${p.maxHp} | <span style="color:${p.rarity.color}">${p.rarity.n}</span> ${p.shiny?'✨':''}</div></div></div>
+              <div style="display:flex; align-items:center; gap:8px;"><img class="${p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(p)}" style="width:42px; height:42px;"><div><div style="color:#fff;font-weight:bold;font-size:12px;">${i==0?'▶ ':''}${nameShow} Lv${p.level} <span style="font-size:9px;color:#aaa;">ATK ${p.baseMaxAtk||p.atk||0}</span></div><div style="font-size:10px;color:#888">HP ${p.hp}/${p.maxHp} | <span style="color:${p.rarity.color}">${p.rarity.n}</span> ${p.shiny?'✨':''}</div></div></div>
               <div style="display:flex;gap:4px" onclick="event.stopPropagation()"><button onclick="setActive(${i})" style="width:50px;background:#334;color:#fff;border:1px solid #556;border-radius:4px;padding:4px;font-size:10px;">ATIVO</button><button onclick="removeFromTeam(${i})" style="width:50px;background:#844;color:#fff;border:none;border-radius:4px;padding:4px;font-size:10px;">TIRAR</button></div>
             </div>`;
         } else {
@@ -2471,7 +2599,7 @@ function renderTeam(){
     filtered.forEach(o=>{
       let p=o.p, i=o.originalIdx;
       let tier = typeof getTier==='function'? getTier(p.id, p.shiny, false, false) : 'E';
-      hb+=`<div onclick="openPokeDetail(${i}, true)" style="background:#1a1a2e; border:2px solid ${p.rarity.color}; border-radius:10px; padding:6px 4px; text-align:center; cursor:pointer; position:relative;" class="aura-${tier}"><span class="tier-badge ${tier}" style="font-size:7px">${tier}</span><img src="${getPokeAnim(p)}" style="width:52px; height:52px;"><span style="font-size:10px; color:#fff; font-weight:bold; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.shiny?`Shiny ${p.name}`:p.name}</span><span style="font-size:9px; color:#888;">Lv${p.level} | ${p.rarity.n}</span></div>`;
+      hb+=`<div onclick="openPokeDetail(${i}, true)" style="background:#1a1a2e; border:2px solid ${p.rarity.color}; border-radius:10px; padding:6px 4px; text-align:center; cursor:pointer; position:relative;" class="aura-${tier}"><span class="tier-badge ${tier}" style="font-size:7px">${tier}</span><img class="${p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(p)}" style="width:52px; height:52px;"><span style="font-size:10px; color:#fff; font-weight:bold; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.shiny?`Shiny ${p.name}`:p.name}</span><span style="font-size:9px; color:#888;">Lv${p.level} | ${p.rarity.n}</span></div>`;
     });
     bl.innerHTML=hb||"<p style='color:#666; grid-column:1/-1; text-align:center; padding:20px;'>Nenhum Pokémon</p>";
 }
@@ -2587,7 +2715,7 @@ function tryDropStone(pokeType, pokeLevel){
 
   if(Math.random()*100 < finalChance){
     let stone = getStoneForType(pokeType);
-    P.inventory[stone] = (P.inventory[stone]||0)+1;
+    P.inventory[stone] = (P.inventory[stone]||0)+1;window.PsySeason?.loot([stone]);
     notif(`💎 Dropou ${stone}! ${pokeType} Lv${pokeLevel} (${finalChance.toFixed(2)}%)`,3500);
     try{ spawnFloat(`+${stone} 💎`, "#ff88ff"); }catch(e){}
     autoSave();
@@ -2615,6 +2743,7 @@ window.psyAwardWildLikeVictory=function(enemy,source='idle'){
 function gainTrainerXp(amount,deferHud=false,deferSave=false){
   ensureTrainerData();
   amount=Math.max(0,Math.floor(Number(amount)||0));if(amount<=0)return;
+  window.PsyTitles?.record("xp",amount);
   P.trainerExp+=amount;
   while(P.trainerExp>=P.trainerMaxExp){
     P.trainerExp-=P.trainerMaxExp;P.trainerLevel++;P.trainerPoints++;P.trainerMaxExp=psyTrainerXpNeed(P.trainerLevel);
@@ -3111,7 +3240,7 @@ function worldLoop(ts=performance.now()){
   const frameDt=Math.max(1,ts-(psyWorldFrameLast||ts));psyWorldFrameLast=ts;psyWorldFrameAvg=psyWorldFrameAvg*.94+Math.min(60,frameDt)*.06;
   const coarse=!!window.matchMedia?.('(pointer:coarse)')?.matches;psyWorldRayStep=psyWorldFrameAvg>27?4:psyWorldFrameAvg>21?3:coarse?3:2;
   try{
-    let moveSpeed=0.10, forward=0, strafe=0;
+    let moveSpeed=0.10*(1+Number(window.PsySeason?.buff('speed')||0)/100), forward=0, strafe=0;
     if(keys['KeyW']||keys['ArrowUp']||keys['w']) forward+=1;
     if(keys['KeyS']||keys['ArrowDown']||keys['s']) forward-=1;
     if(keys['KeyQ']||keys['q']) strafe-=1;
@@ -3217,6 +3346,7 @@ function drawWorldFP(){
        sprites through the z-buffer check below, but distance itself no longer makes Pokémon vanish. */
     }).filter(s=>s.dist>0.05&&Math.abs(s.ang)<FOV).sort((a,b)=>b.dist-a.dist);
     sprites.forEach(s=>{
+      if(s.dist<8)window.PsySeason?.encounter(s.orig);
       let spriteX=(0.5+s.ang/FOV)*w;
       let lineH = h / Math.max(.35,s.dist);
       let spriteH=Math.floor(lineH*0.72);
@@ -3328,7 +3458,7 @@ function handleWorldKill(t){
   },1000);
   autoSave(); updateWorldHUD();
 }
-function useWorldPotion(name, isAuto=false){ if((P.inventory[name]||0)<=0) return; if(potionCooldown>0&&!isAuto){ notif("Cooldown 2s"); return; } let cura=POTION_DATA[name]?.cura||50; if(worldPlayer.hp>=worldPlayer.maxHp&&!isAuto){ notif("Vida cheia"); return; } P.inventory[name]--; if(P.inventory[name]<=0) delete P.inventory[name]; worldPlayer.hp=Math.min(worldPlayer.maxHp, worldPlayer.hp+cura); potionCooldown=2000; notif(`🧪 +${cura} HP`); updateWorldHUD(); autoSave(); }
+function useWorldPotion(name, isAuto=false){ if((P.inventory[name]||0)<=0) return; if(potionCooldown>0&&!isAuto){ notif("Cooldown 2s"); return; } let cura=getCuraValue({maxHp:worldPlayer.maxHp},name); if(worldPlayer.hp>=worldPlayer.maxHp&&!isAuto){ notif("Vida cheia"); return; } P.inventory[name]--; if(P.inventory[name]<=0) delete P.inventory[name]; worldPlayer.hp=Math.min(worldPlayer.maxHp, worldPlayer.hp+cura); potionCooldown=2000; notif(`🧪 +${cura} HP`); updateWorldHUD(); autoSave(); }
 function checkWorldDeath(){ if(worldPlayer.hp<=0){ worldPlayer.x=SAFE_X+0.5; worldPlayer.y=SAFE_Y+0.5; worldPlayer.hp=worldPlayer.maxHp; notif("💀 Morreu! SAFE ZONE",3000); autoBattle=false; let cb=document.getElementById('auto-battle-check'); if(cb) cb.checked=false; } }
 let psyWorldTeamSig='';
 function updateWorldHUD(){
@@ -3339,7 +3469,7 @@ function updateWorldHUD(){
     if(gold&&gold.textContent!==gv)gold.textContent=gv;if(lv&&lv.textContent!==lvv)lv.textContent=lvv;if(hp&&hp.textContent!==hpv)hp.textContent=hpv;
     const td=document.getElementById('world-team');if(!td||!P.team)return;
     const sig=P.team.slice(0,6).map(p=>[p.id,p.level,p.hp,p.maxHp,p.shiny?1:0,p.isMega?1:0].join(':')).join('|')+'#'+P.trainerLevel+':'+P.trainerPoints;
-    if(sig!==psyWorldTeamSig){psyWorldTeamSig=sig;td.innerHTML=P.team.slice(0,6).map(p=>`<div style="text-align:center; color:#fff; font-size:9px;"><img src="${getPokeAnim(p)}" style="width:32px;"><br>${p.name}<br>${p.hp}/${p.maxHp}</div>`).join('')+`<div style="color:#00d0ff; font-size:9px; text-align:center; padding:4px;">T.Lv${P.trainerLevel}<br>${P.trainerPoints} pts</div>`}
+    if(sig!==psyWorldTeamSig){psyWorldTeamSig=sig;td.innerHTML=P.team.slice(0,6).map(p=>`<div style="text-align:center; color:#fff; font-size:9px;"><img class="${p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(p)}" style="width:32px;"><br>${p.name}<br>${p.hp}/${p.maxHp}</div>`).join('')+`<div style="color:#00d0ff; font-size:9px; text-align:center; padding:4px;">T.Lv${P.trainerLevel}<br>${P.trainerPoints} pts</div>`}
   }catch(e){}
 }
 // === FIX GOLD E CAPTURA WORLD - SUBSTITUI OS DOIS QUE TAVAM DUPLICADOS ===
@@ -3372,8 +3502,10 @@ function handleWorldKill(t){
   let rarityFactor=1/Math.sqrt(t.rarity?.mult||1);
   let baseChance=cfgTier.capMax * 0.4 * rarityFactor; // WORLD 40% da taxa normal
   let finalChance=Math.min(0.5, baseChance*(1+getTotalBuff('cap')/100));
-  if(Math.random()*100<finalChance){
-    let np=createCapturedPoke(t.id, t.rarity, t.shiny, false);
+  const eventCapture=!!window.PsySeason?.sprite(t),eventBall=Number(P.inventory['Halloween Ball']||0)>0;
+  if(eventCapture&&eventBall)P.inventory['Halloween Ball']--;
+  if((!eventCapture||eventBall)&&Math.random()*100<finalChance){
+    let np=createCapturedPoke(t.id, t.rarity, t.shiny, false);window.PsySeason?.preserveForm(t,np);
     np.level=t.lvl; np.maxHp=Math.floor(np.maxHp*(0.8+t.lvl*0.02)); np.hp=np.maxHp;
     P.box.push(np);
     notif(`✅ ${t.name} [${tier}] ${finalChance.toFixed(1)}%/40% +${finalGold}G`,3500);
@@ -3384,7 +3516,7 @@ function handleWorldKill(t){
   setTimeout(()=>{ if(worldWilds.length<WORLD_MAX_POKES) spawnWorldWildsIncremental(1); },1000);
   autoSave(); updateWorldHUD();
 }
-function useWorldPotion(name, isAuto=false){ if((P.inventory[name]||0)<=0) return; if(potionCooldown>0&&!isAuto){ notif("Cooldown 2s"); return; } let cura=POTION_DATA[name]?.cura||50; if(worldPlayer.hp>=worldPlayer.maxHp&&!isAuto){ notif("Vida cheia"); return; } P.inventory[name]--; if(P.inventory[name]<=0) delete P.inventory[name]; worldPlayer.hp=Math.min(worldPlayer.maxHp, worldPlayer.hp+cura); potionCooldown=2000; notif(`🧪 +${cura} HP`); updateWorldHUD(); autoSave(); }
+function useWorldPotion(name, isAuto=false){ if((P.inventory[name]||0)<=0) return; if(potionCooldown>0&&!isAuto){ notif("Cooldown 2s"); return; } let cura=getCuraValue({maxHp:worldPlayer.maxHp},name); if(worldPlayer.hp>=worldPlayer.maxHp&&!isAuto){ notif("Vida cheia"); return; } P.inventory[name]--; if(P.inventory[name]<=0) delete P.inventory[name]; worldPlayer.hp=Math.min(worldPlayer.maxHp, worldPlayer.hp+cura); potionCooldown=2000; notif(`🧪 +${cura} HP`); updateWorldHUD(); autoSave(); }
 function checkWorldDeath(){ if(worldPlayer.hp<=0){ worldPlayer.x=SAFE_X+0.5; worldPlayer.y=SAFE_Y+0.5; worldPlayer.hp=worldPlayer.maxHp; notif("💀 Morreu! SAFE ZONE",3000); autoBattle=false; let cb=document.getElementById('auto-battle-check'); if(cb) cb.checked=false; } }
 function updateWorldHUD(){
   try{
@@ -3394,7 +3526,7 @@ function updateWorldHUD(){
     if(gold&&gold.textContent!==gv)gold.textContent=gv;if(lv&&lv.textContent!==lvv)lv.textContent=lvv;if(hp&&hp.textContent!==hpv)hp.textContent=hpv;
     const td=document.getElementById('world-team');if(!td||!P.team)return;
     const sig=P.team.slice(0,6).map(p=>[p.id,p.level,p.hp,p.maxHp,p.shiny?1:0,p.isMega?1:0].join(':')).join('|')+'#'+P.trainerLevel+':'+P.trainerPoints;
-    if(sig!==psyWorldTeamSig){psyWorldTeamSig=sig;td.innerHTML=P.team.slice(0,6).map(p=>`<div style="text-align:center; color:#fff; font-size:9px;"><img src="${getPokeAnim(p)}" style="width:32px;"><br>${p.name}<br>${p.hp}/${p.maxHp}</div>`).join('')+`<div style="color:#00d0ff; font-size:9px; text-align:center; padding:4px;">T.Lv${P.trainerLevel}<br>${P.trainerPoints} pts</div>`}
+    if(sig!==psyWorldTeamSig){psyWorldTeamSig=sig;td.innerHTML=P.team.slice(0,6).map(p=>`<div style="text-align:center; color:#fff; font-size:9px;"><img class="${p.psyballCaught?'psyball-aura-v48':''}" src="${getPokeAnim(p)}" style="width:32px;"><br>${p.name}<br>${p.hp}/${p.maxHp}</div>`).join('')+`<div style="color:#00d0ff; font-size:9px; text-align:center; padding:4px;">T.Lv${P.trainerLevel}<br>${P.trainerPoints} pts</div>`}
   }catch(e){}
 }
 
@@ -3664,7 +3796,7 @@ function getShowdownName(id){
 
 window.getImg = function(id, shiny=false, isMega=false, megaForm=null){
   const pokeLike = { id, shiny:!!shiny, isMega:!!isMega, megaForm:megaForm || null };
-  const url = getRealSprite(pokeLike);
+  const url = window.PsySeason?.sprite(pokeLike)||getRealSprite(pokeLike);
   const key = url;
   if(typeof imgCache === 'undefined') window.imgCache = {};
   if(imgCache[key]) return imgCache[key];
@@ -4084,7 +4216,9 @@ window.triggerWild = function(pool){
     else { regKey="kanto"; tipo=parts[0]; tierNum=parseInt(parts[1].replace('t',''))||1; }
   }else{ regKey="kanto"; tipo=key.split('_t')[0]; tierNum=1; }
 
+  if(pool==='kanto_route1_t1')tipo='normal';
   let list = getPokesForHunt(regKey,tipo,tierNum);
+  if(pool==='kanto_route1_t1')list=list.filter(p=>[16,19].includes(Number(p.id)));
   if(typeof BOSS_BAN_IDS!=='undefined') list = list.filter(p=>!BOSS_BAN_IDS.has(p.id));
   if(!list||!list.length){
     notif(`❌ ${regKey.toUpperCase()} SEM ${tipo.toUpperCase()} T${tierNum}`,2500);
@@ -4116,7 +4250,7 @@ window.triggerWild = function(pool){
   }
 
   startBattle({
-    id:base.id,
+    id:base.id,halloweenHunt:key,
     name:base.name,
     type:base.type||TYPE_BY_ID_ALL[base.id]||"Normal",
     shiny:isShiny, isMega:isMega,
@@ -4124,7 +4258,7 @@ window.triggerWild = function(pool){
   });
 };
 
-window.createWorldWildData = function(id,x,y,lvl,isHorde=false){ let rarity = (window.rollRarityWorld?window.rollRarityWorld():rollRarity()); let totalShiny = typeof getTotalBuff==='function'?getTotalBuff('shiny'):0; let isShiny = Math.random()*100 < (0.05+totalShiny*0.0025); let isMega = Math.random()*100 < 2.0; let baseHp = window.calcBaseHpV14(lvl, rarity.mult, isShiny, isMega, id); let finalHp = Math.floor(baseHp * (isHorde?2.2:1.4)); return {id,name:getPokeName(id),x,y,hp:finalHp,maxHp:finalHp,lvl,dir:Math.random()*6.28,moveTimer:Math.random()*60,atkCD:0,speed:isHorde?0.032:0.050+Math.random()*0.01,region:typeof worldRegion!=='undefined'?worldRegion:'kanto',isHorde,rarity,shiny:isShiny,isMega:isMega}; };
+window.createWorldWildData = function(id,x,y,lvl,isHorde=false){ let rarity = (window.rollRarityWorld?window.rollRarityWorld():rollRarity()); let totalShiny = typeof getTotalBuff==='function'?getTotalBuff('shiny'):0; let isShiny = Math.random()*100 < (0.05+totalShiny*0.0025); let isMega = Math.random()*100 < 2.0; let baseHp = window.calcBaseHpV14(lvl, rarity.mult, isShiny, isMega, id); let finalHp = Math.floor(baseHp * (isHorde?2.2:1.4)); const seasonalWild={id,name:getPokeName(id),x,y,hp:finalHp,maxHp:finalHp,lvl,dir:Math.random()*6.28,moveTimer:Math.random()*60,atkCD:0,speed:isHorde?0.032:0.050+Math.random()*0.01,region:typeof worldRegion!=='undefined'?worldRegion:'kanto',isHorde,rarity,shiny:isShiny,isMega:isMega};return window.PsySeason?.roll(seasonalWild,'world')||seasonalWild; };
 window.spawnWorldWilds = function(qtd){ worldWilds=[]; let regionList=typeof getRegionPokemonList==='function'?getRegionPokemonList(worldRegion):[1,4,7,25]; if(!regionList.length) regionList=[1,4,7,25]; let tier=typeof getWorldTier==='function'?getWorldTier():{min:1,max:10}; for(let i=0;i<qtd;i++){ let id=regionList[Math.floor(Math.random()*regionList.length)]; let x,y,t=0; do{ x=Math.floor(Math.random()*(WORLD_W-10))+5+Math.random(); y=Math.floor(Math.random()*(WORLD_H-10))+5+Math.random(); t++; }while((worldMap[Math.floor(y)]?.[Math.floor(x)]!==0&&worldMap[Math.floor(y)]?.[Math.floor(x)]!==3)||Math.hypot(x-SAFE_X,y-SAFE_Y)<SAFE_R+5&&t<100); let lvl=Math.floor(Math.random()*(tier.max-tier.min+1))+tier.min; worldWilds.push(window.createWorldWildData(id,x,y,lvl,false)); } };
 window.spawnWorldWildsIncremental = function(qtd){ let regionList=typeof getRegionPokemonList==='function'?getRegionPokemonList(worldRegion):[1,4,7,25]; let tier=typeof getWorldTier==='function'?getWorldTier():{min:1,max:10}; for(let i=0;i<qtd;i++){ let id=regionList[Math.floor(Math.random()*regionList.length)]; let x,y,t=0; do{ x=Math.floor(Math.random()*(WORLD_W-10))+5+Math.random(); y=Math.floor(Math.random()*(WORLD_H-10))+5+Math.random(); t++; }while((worldMap[Math.floor(y)]?.[Math.floor(x)]!==0&&worldMap[Math.floor(y)]?.[Math.floor(x)]!==3)||Math.hypot(x-SAFE_X,y-SAFE_Y)<SAFE_R+5&&t<100); let lvl=Math.floor(Math.random()*(tier.max-tier.min+1))+tier.min; worldWilds.push(window.createWorldWildData(id,x,y,lvl,false)); } };
 
@@ -4200,7 +4334,7 @@ window.endBattle=function(won){
     P.gold+=75000; gainTrainerXp(900); autoSave();
   }
   window.isDungeonBoss=false; window.isDungeonShiny=false; window.currentDungeonId=null;
-  if(won && window.fastEncounter){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
+  if(won && window.fastEncounter && ROUTE1.grass.has(Number(P?.x)+','+Number(P?.y))){ setTimeout(()=>triggerWild(P.currentHunt||'kanto_planta_t1'),600); }
 };
 // TALENTO - SÓ SHINY 0.1%
 window.TALENT_CONFIG = {
@@ -4257,7 +4391,6 @@ const SHOP_DG = [
   {n:"Poção 200",p:100,t:"potion",i:"🧪",d:"+200 HP"},
   {n:"Poção 30%",p:1000,t:"potion",i:"💚",d:"30% MAX"},
   {n:"Poção 50% HP",p:3000,t:"potion",i:"💖",d:"50% MAX"},
-  {n:"Poção 100% HP",p:10000,t:"potion",i:"💛",d:"100% MAX"},
   {n:"Revive",p:800,t:"potion",i:"💖",d:"Revive um Pokémon derrotado"},
   {n:"Fire Stone",p:20000,t:"stone",i:"🔥",d:"Fogo"},
   {n:"Water Stone",p:20000,t:"stone",i:"💧",d:"Água"},
@@ -4336,7 +4469,7 @@ function buyMulti(){
 }
 POTION_DATA["Poção 30%"]={pct:30};
 POTION_DATA["Poção 50% HP"]={pct:50};
-POTION_DATA["Poção 100% HP"]={pct:100};
+POTION_DATA["Poção de Halloween"]={pct:100};
 
 // --- POKÉDEX V24 - ANIMADA + STATS LV1 + MOVES OFICIAL + RESGATAR ---
 function openPokedex(){
@@ -4992,6 +5125,7 @@ window.openPokeDetail = function(idx,isBox){
 
 // evoluir fora da bag
 window.tryEvolve = function(idx,isBox){
+  if((isBox?P.box:P.team)?.[idx]?.halloweenForm)return notif("Criaturas de Halloween transformam com doces na loja da Amora.");
   let poke = isBox?P.box[idx]:P.team[idx];
   let evo = EVOLUTION_MAP[poke.id];
   if(!evo) return notif("❌ Sem evolução");
@@ -5131,6 +5265,7 @@ function psyNormalizeShowdownBase(base){
 }
 
 window.getRealSprite = function(p){
+  const seasonal=window.PsySeason?.sprite(p);if(seasonal)return seasonal;
   if(!p || !p.id) return 'https://play.pokemonshowdown.com/sprites/ani/bulbasaur.gif';
   let base = (p.isMega && p.megaForm)
     ? p.megaForm
@@ -5244,6 +5379,17 @@ window.startBattle=function(wildPoke){
     const need=wildPoke?.shiny?PSY_TRAINER_GATES.shinyLegendary:PSY_TRAINER_GATES.legendary;
     if(tl<need){notif(`🔒 ${wildPoke?.shiny?'Lendário Shiny':'Lendário'} libera no Trainer Lv.${need}. Você está Lv.${tl}.`,4000);return false;}
   }
+  const lead=P.team?.[0];
+  if(lead){
+    const max=Math.max(1,Number(lead.maxHp)||Number(P.maxHp)||1);
+    P.meta=P.meta||{};
+    if(!P.meta.psyStarterHpRepairV1){
+      if(!Number.isFinite(Number(lead.hp))||Number(lead.hp)<=0){lead.maxHp=max;lead.hp=max;}
+      P.meta.psyStarterHpRepairV1=1;
+      try{autoSave()}catch(_){}
+    }
+    P.pokemon=lead;P.hp=Number(lead.hp);P.maxHp=max;
+  }
   const r=psyOldStartBattle.apply(this,arguments);
   psyRefreshBattleSprites();
   return r;
@@ -5252,6 +5398,7 @@ window.startBattle=function(wildPoke){
 /* Mega gates */
 const psyOldUseMegaStone=window.useMegaStone;
 window.useMegaStone=function(idx,isBox){
+  if((isBox?P.box:P.team)?.[idx]?.halloweenForm)return window.PsySeason?.upgrade(idx,isBox,"mega");
   const poke=isBox?P.box[idx]:P.team[idx]; if(!poke) return;
   const need=poke.shiny?PSY_TRAINER_GATES.shinyMega:PSY_TRAINER_GATES.mega;
   if((P.trainerLevel||1)<need) return notif(`🔒 ${poke.shiny?'Shiny Mega':'Mega'} libera no Trainer Lv.${need}.`,4000);
@@ -5346,6 +5493,7 @@ function psyApiReq(from,to,rows){
   return {stone,qtd,minLevel:min};
 }
 window.psyEvolveToTarget=function(idx,isBox,targetId,stone,qtd,minLevel){
+  if((isBox?P.box:P.team)?.[idx]?.halloweenForm)return notif("Não usa pedras: transforme com doces de Halloween.");
   const p=isBox?P.box[idx]:P.team[idx]; if(!p) return;
   qtd=Number(qtd)||10; minLevel=Number(minLevel)||1;
   const have=P.inventory[stone]||0;
@@ -5371,6 +5519,7 @@ window.psyTreeMega=function(idx,isBox){
 async function psyRenderEvolutionTree(idx,isBox){
   const host=document.getElementById('psy-evolution-tree'); if(!host)return;
   const p=isBox?P.box[idx]:P.team[idx]; if(!p)return;
+  if(p.halloweenForm){host.innerHTML=`<div class="psy20-card"><h3>TRANSFORMAÇÕES DE HALLOWEEN</h3><p>Sem evolução por pedras. Shiny: 1.000 doces. Mega: 5.000 doces. Requisitos de treinador são preservados.</p><button onclick="PsySeason.upgrade(${idx},${!!isBox},'shiny')" ${p.shiny?'disabled':''}>SHINY · 1.000 DOCES</button><button onclick="PsySeason.upgrade(${idx},${!!isBox},'mega')" ${p.isMega?'disabled':''}>MEGA · 5.000 DOCES</button></div>`;return;}
   host.innerHTML='<div style="color:#888;font-size:10px">Carregando árvore evolutiva…</div>';
   const rows=await psyFetchEvolutionTree(p.id);
   if(!document.getElementById('psy-evolution-tree'))return;
@@ -6081,6 +6230,7 @@ function psyMigrateRarities(){
 /* Mega and shiny transformations always assign the requested form rarity. */
 const psyMegaOld=window.useMegaStone;
 window.useMegaStone=function(idx,isBox){
+  if((isBox?P.box:P.team)?.[idx]?.halloweenForm)return window.PsySeason?.upgrade(idx,isBox,"mega");
   const r=psyMegaOld.apply(this,arguments);
   const p=isBox?P.box[idx]:P.team[idx];
   if(p?.isMega){p.rarity={...(p.shiny?PSY_RARITY_REBORN.CRIADOR:PSY_RARITY_REBORN.DEUS)};recalcPoke(p);autoSave();renderTeam();}
@@ -6095,6 +6245,7 @@ window.confirmMegaChoice=function(idx,isBox,choiceIdx,cost){
 };
 const psyShinyOld=window.useShinyStone;
 if(psyShinyOld)window.useShinyStone=function(idx,isBox){
+  if((isBox?P.box:P.team)?.[idx]?.halloweenForm)return window.PsySeason?.upgrade(idx,isBox,"shiny");
   const r=psyShinyOld.apply(this,arguments);
   const p=isBox?P.box[idx]:P.team[idx];
   if(p?.shiny){p.rarity={...(p.isMega?PSY_RARITY_REBORN.CRIADOR:PSY_RARITY_REBORN.PIKA)};recalcPoke(p);autoSave();renderTeam();}
@@ -6335,7 +6486,8 @@ window.PSY_TUTORIAL_STEPS=[
  {icon:'🏆',title:'Ginásios e Level Cap',body:'Seu level cap acompanha o próximo Ginásio. Vencer líderes abre espaço para evoluir e progredir. Mega exige Trainer Lv.100, Boss Lv.150, Shiny Mega Lv.200, Lendário Lv.250 e Lendário Shiny Lv.300.'},
  {icon:'🥚',title:'Eggs',body:'Eggs chocam após 300 Pokémon derrotados. Mystery Egg pode trazer qualquer geração, sem Boss/Lendário/Mega, com 1% Shiny e qualidade até S. Eggs premium também precisam incubar.'},
  {icon:'🃏',title:'Poké Cards',body:'Monte um deck de até 3 Pokémon. Em batalha você recebe exatamente 3 ações: atacar, curar ou buffar. Use energia com cuidado e pressione READY para avançar o turno.'},
- {icon:'💎',title:'Diamantes e economia',body:'Diamantes vêm de espécies novas, Trainer Level, conquistas e Pokédex regional. A Cash Shop é opcional; progressão principal, níveis e requisitos nunca são comprados diretamente.'}
+ {icon:'💎',title:'Diamantes e economia',body:'Diamantes vêm de espécies novas, Trainer Level, conquistas e Pokédex regional. A Cash Shop é opcional; progressão principal, níveis e requisitos nunca são comprados diretamente.'},
+ {icon:'📱',title:'Tela de celular ou computador',body:'O jogo detecta automaticamente o dispositivo e ajusta os painéis. Abra MENU → TELA / DISPOSITIVO para escolher Automático, Celular ou Computador. No celular, você pode jogar com a tela em pé; não precisa virar o aparelho.'}
 ];
 window.psyTutorialIndex=0;
 function ensureTutorial(){
@@ -6373,7 +6525,7 @@ setTimeout(()=>{
   try{psyMigrateRarities()}catch(e){console.warn('rarity migration',e)}
   psyAddTutorialMenu();psyInstallAllX();psyDecorateRarityText();autoSave();
   P.meta=P.meta||{};
-  if(!P.meta.tutorialSeen && document.getElementById('game-wrap')?.style.display!=='none')setTimeout(openTutorial,700);
+  if(!P.meta.tutorialSeen && P.playerCharacterId && document.getElementById('game-wrap')?.style.display!=='none')setTimeout(openTutorial,700);
 },1300);
 
 
@@ -6736,6 +6888,7 @@ window.psySetPokeImgSmooth=function(el,poke){
 
 /* ---------- Shiny without confirm(): sandbox-safe and deterministic ---------- */
 window.useShinyStone=function(idx,isBox){
+  if((isBox?P.box:P.team)?.[idx]?.halloweenForm)return window.PsySeason?.upgrade(idx,isBox,"shiny");
   const poke=isBox?P.box[idx]:P.team[idx];
   if(!poke) return notif('❌ Pokémon não encontrado');
   const have=P.inventory["Shiny Stone"]||0;
@@ -6792,6 +6945,7 @@ window.psyTreeMakeShiny=function(idx,isBox){ return window.useShinyStone(idx,isB
 
 /* ---------- Mega without confirm() for single-form Megas ---------- */
 window.useMegaStone=function(idx,isBox){
+  if((isBox?P.box:P.team)?.[idx]?.halloweenForm)return window.PsySeason?.upgrade(idx,isBox,"mega");
   const poke=isBox?P.box[idx]:P.team[idx];
   if(!poke||poke.isMega)return;
   const need=poke.shiny?PSY_TRAINER_GATES.shinyMega:PSY_TRAINER_GATES.mega;
@@ -6922,6 +7076,7 @@ window.psyRarityForPokemon=function(id,shiny=false,mega=false,isBoss=false){
 
 /* ---------- SHINY STONE MINIMUM 10 ---------- */
 window.useShinyStone=function(idx,isBox){
+  if((isBox?P.box:P.team)?.[idx]?.halloweenForm)return window.PsySeason?.upgrade(idx,isBox,"shiny");
   const poke=isBox?P.box[idx]:P.team[idx];if(!poke)return;
   if(poke.shiny)return notif('✨ Este Pokémon já é Shiny. Evoluções Shiny usam a árvore.');
   const baseCost=typeof window.getShinyStoneCost==='function'?Number(window.getShinyStoneCost(poke)||10):(typeof getTierCost==='function'?Number(getTierCost(poke.id)||10):10);
@@ -7041,7 +7196,7 @@ window.PSY_SHOP_META={
  'Ultra Ball':['⚫','#facc15','Melhor ball comum e usada no sistema de pity.'],
  'Premier Ball':['✨','#ffffff','Ball especial de coleção.'],
  'Poção 50':['🧪','#22c55e','Recupera 50 HP.'],'Poção 100':['🧪','#10b981','Recupera 100 HP.'],'Poção 200':['🧪','#059669','Recupera 200 HP.'],
- 'Poção 30%':['💚','#22c55e','Cura 30% do HP máximo.'],'Poção 50% HP':['💖','#ec4899','Cura metade do HP máximo.'],'Poção 100% HP':['💛','#facc15','Cura total.'],'Revive':['💖','#f472b6','Revive um Pokémon derrotado durante a batalha.'],
+ 'Poção 30%':['💚','#22c55e','Cura 30% do HP máximo.'],'Poção 50% HP':['💖','#ec4899','Cura metade do HP máximo.'],'Poção de Halloween':['🎃','#facc15','Cura total. Exclusiva da loja de Halloween.'],'Revive':['💖','#f472b6','Revive um Pokémon derrotado durante a batalha.'],
  'Fire Stone':['🔥','#ef4444','Stone de evolução Fire.'],'Water Stone':['💧','#38bdf8','Stone de evolução Water.'],
  'Leaf Stone':['🍃','#22c55e','Stone de evolução Grass.'],'Thunder Stone':['⚡','#facc15','Stone de evolução Electric.'],
  'Ice Stone':['❄️','#67e8f9','Stone de evolução Ice.'],'Fighting Stone':['🥊','#f97316','Stone de evolução Fighting.'],
@@ -7866,6 +8021,7 @@ setTimeout(psyMobileDock,200);
 /* Tutorial rewritten: no capture percentages/rates are disclosed. */
 window.PSY_TUTORIAL_STEPS=[
  {icon:'🎮',title:'Bem-vindo ao PSYWORLD',body:'Explore a cidade, monte seu time, evolua seus Pokémon e avance pelos Ginásios. Hunts, WORLD, Dungeons, Survivor, Álbum, Eggs, Passe e demais sistemas compartilham a mesma progressão principal.'},
+ {icon:'📱',title:'Jogar no celular ou computador',body:'O jogo detecta automaticamente celular/tablet ou computador. Abra MENU → TELA / DISPOSITIVO para escolher Automático, Celular ou Computador. No celular, mantenha a tela em pé: o PSY IDLE organiza os controles, equipe e Hunts para caber no retrato. Use a barra inferior do Idle para abrir Equipe, Hunts e Mochila; a lista de Hunts permite escolher a próxima área sem esconder as opções.'},
  {icon:'🐾',title:'Encontros e captura',body:'Escolha uma Hunt compatível com sua progressão, enfraqueça o Pokémon e use suas Balls. Tentativas de captura consomem o turno. Fast Encounter usa a Hunt selecionada para acelerar o farm, mas não substitui os requisitos de região, Level Cap ou progressão.'},
  {icon:'✨',title:'Tier, qualidade e formas',body:'Tier e qualidade são sistemas diferentes. O Tier da espécie/forma é fixo; a qualidade varia dentro da faixa permitida. Shiny evolui usando Shiny Stone. Mega é SSS, Boss UR, Lendário UR+, Shiny Mega UR+ e Lendário Shiny UR++. Formas especiais continuam bloqueadas pelo Trainer Level necessário mesmo quando obtidas antes.'},
  {icon:'🏆',title:'Ginásios, Level Cap e Trainer',body:'A progressão dos Ginásios respeita o Level Cap e o Pokémon mais forte da conta. O Trainer Level não possui limite e concede pontos de talento. Mega exige Trainer Lv.100, Boss Lv.150, Shiny Mega Lv.200, Lendário Lv.250 e Lendário Shiny Lv.300.'},
@@ -8090,7 +8246,7 @@ function psyRollTMDrop(pokeId){
   const p={id:pokeId,level:100};psyHydrateOfficialMoves(p).then(()=>{
     const pool=p.tmCompatibility||[];if(!pool.length)return;
     const name=pool[Math.floor(Math.random()*pool.length)];
-    P.tms[name]=(P.tms[name]||0)+1;notif(`📀 TM encontrada: ${name}!`,3200);autoSave();
+    P.tms[name]=(P.tms[name]||0)+1;window.PsySeason?.loot(["TM "+name]);notif(`📀 TM encontrada: ${name}!`,3200);autoSave();
   });
 }
 window.psyTeachTM=async function(poke,moveName){
@@ -8156,6 +8312,7 @@ Object.values(PSY_ELEMENT_DATA).forEach(e=>{if(!BALL_DATA[e.ball])BALL_DATA[e.ba
 window.tryCaptureBattle=function(ballName){
   if((P.inventory[ballName]||0)<=0)return notif('Sem Balls!');
   const wild=battleData?.wild;if(!wild)return;
+  if(window.PsySeason&&!window.PsySeason.canCapture(wild,ballName))return notif('Criaturas de Halloween só podem ser capturadas com Halloween Ball.',3000);
   if(wild.psyduckDungeon||window.isDungeonBoss||window.isDungeonMega)return notif('❌ Este encontro não pode ser capturado.');
   P.inventory[ballName]--;if(P.inventory[ballName]<=0)delete P.inventory[ballName];
   document.getElementById('screen-bag').style.display='none';window.bagBattleMode=null;
@@ -8514,6 +8671,9 @@ function psyV9LoadLocal(){
     if(data.map){P.x=data.map.x??P.x;P.y=data.map.y??P.y;P.px=data.map.px??P.px;P.py=data.map.py??P.py;P.tx=P.x;P.ty=P.y;P.moving=false}
     try{P.team.forEach(migratePoke);P.box.forEach(migratePoke)}catch(e){}
     if(P.team[0]){P.pokemon=P.team[0];P.hp=P.team[0].hp;P.maxHp=P.team[0].maxHp}
+    // Repair the active starter only after the real V9 local/cloud save is restored.
+    // The version flag keeps this entry migration from healing later combat fainting.
+    try{upgradeLegacyStarterQuality()}catch(e){console.warn('Starter HP migration',e)}
     try{psyAfkResumeCatchup('save-load')}catch(e){console.warn('AFK resume',e)}
     return true;
   }catch(e){console.warn('local load',e);return false}
@@ -8627,11 +8787,12 @@ function psyV22ElementalBallMatches(ballName,wild){
 window.psyElementalBallMatches=psyV22ElementalBallMatches;
 window.psyCaptureBallMultiplier=function(ballName,wildArg){
   const wild=wildArg||battleData?.wild;
+  if(ballName==='Halloween Ball')return Number(BALL_DATA['Ultra Ball']?.chance||3)*2;
   if(psyV22IsElementalBall(ballName))return psyV22ElementalBallMatches(ballName,wild)?6:1;
   return Math.max(.8,Number(BALL_DATA?.[ballName]?.chance||1));
 };
 window.psyCaptureChancePct=function(ballName,wildArg){
-  const wild=wildArg||battleData?.wild;if(!wild||typeof BALL_DATA==='undefined'||!BALL_DATA?.[ballName])return 0;
+  const wild=wildArg||battleData?.wild;if(window.PsySeason&&!window.PsySeason.canCapture(wild,ballName))return 0;if(!wild||typeof BALL_DATA==='undefined'||!BALL_DATA?.[ballName])return 0;
   const tier=getTier(wild.id,!!wild.shiny,!!wild.isMega,!!wild.isBoss)||'E';
   const hpPct=Math.max(0,Math.min(1,(battleData?.wildHp||wild.hp||1)/(battleData?.wildMaxHp||wild.maxHp||1)));
   const hpFactor=.34+(1-hpPct)*.66;
@@ -8649,6 +8810,7 @@ window.tryCaptureBattle=function(ballName){
   if(typeof BALL_DATA==='undefined'||!Object.prototype.hasOwnProperty.call(BALL_DATA,ballName)||window.PSY_ITEMS?.category?.(ballName)!=='ball')return notif('❌ Este item não é uma Ball de captura.',2600);
   if((P.inventory?.[ballName]||0)<=0)return notif('❌ Sem Balls!');
   const wild=battleData?.wild;if(!wild)return;
+  if(window.PsySeason&&!window.PsySeason.canCapture(wild,ballName))return notif('Criaturas de Halloween só podem ser capturadas com Halloween Ball.',3000);
   if(wild.psyduckDungeon||window.isDungeonBoss||window.isDungeonMega||wild.isBoss)return notif('❌ Este encontro não pode ser capturado.',2600);
   const tier=getTier(wild.id,!!wild.shiny,!!wild.isMega,!!wild.isBoss)||'E';
   if(!wild.shiny && (CG_TIER_RANK?.[tier]??0)>(CG_TIER_RANK?.S??5))return notif('🔒 Pokémon Tier SS+ não pode ser capturado em encontro normal.',3000);
@@ -8658,7 +8820,7 @@ window.tryCaptureBattle=function(ballName){
   const ok=Math.random()*100<chance;
   const chanceTxt=chance<1?chance.toFixed(2):chance.toFixed(1);
   if(ok){
-    const pk=createCapturedPoke(wild.id,wild.rarity,!!wild.shiny,false,!!wild.isMega);P.box.push(pk);P.meta=P.meta||{};P.meta.captures=(P.meta.captures||0)+1;
+    const pk=createCapturedPoke(wild.id,wild.rarity,!!wild.shiny,false,!!wild.isMega);window.PsySeason?.preserveForm(wild,pk);P.box.push(pk);P.meta=P.meta||{};P.meta.captures=(P.meta.captures||0)+1;
     const log=document.getElementById('battle-log');if(log)log.textContent=`🎯 Chance de captura: ${chanceTxt}% • ${pk.name||getPokeName(pk.id)} capturado!`;
     psySfx?.('capture');notif(`✅ ${pk.name||getPokeName(pk.id)} capturado! • Chance: ${chanceTxt}%`,3200);autoSave();renderTeam();endBattle(true);return;
   }
@@ -8906,6 +9068,7 @@ window.psyV10NextGym=function(id){document.getElementById('psy-v10-gym-result')?
 window.psyV10ExitGym=function(){psyV10CloseGymVictory(true)};
 window.startNextGymPoke=function(){
   if(!gymBattle)return;
+  if(window.battleData?.wild&&Number(window.battleData.wildHp)<=0)window.PsySeason?.award(window.battleData.wild,"gym");
   if(gymBattle.current>=6){
     const gym=gymBattle.gym;
     if(!P.gymProgress.includes(gym.id)){
@@ -9102,3 +9265,27 @@ console.log('✅ PSYWORLD V10: AFK live, Gym próximo líder, Cards 500 fases/ti
 
 console.log('✅ PSYWORLD V9 LOCAL: save local, AFK offline, capture tiers, hunts CAP, Cards V9 carregados');
 })();
+
+/* Dynamic city joystick: anchored wherever the player starts dragging. */
+(function(){
+ let pointer=null,origin=null;
+ const base=document.getElementById('joystick');
+ function stop(){if(pointer===null)return;pointer=null;origin=null;resetJoy();if(base)base.style.display='none';}
+ document.addEventListener('pointerdown',function(e){
+  if(e.pointerType==='mouse'||inBattle||!e.target.closest('#game-wrap')||e.target.closest('button,#hud-player,#hud-minimap'))return;
+  if(document.body.classList.contains('psy-kanto-v2-active'))return;
+  pointer=e.pointerId;origin={x:e.clientX,y:e.clientY};
+  if(base){Object.assign(base.style,{display:'block',position:'fixed',left:(e.clientX-60)+'px',top:(e.clientY-60)+'px',bottom:'auto',right:'auto',pointerEvents:'none'});}
+  e.target.setPointerCapture?.(e.pointerId);e.preventDefault();
+ },{passive:false});
+ document.addEventListener('pointermove',function(e){
+  if(e.pointerId!==pointer||!origin)return;
+  const dx=e.clientX-origin.x,dy=e.clientY-origin.y,d=Math.hypot(dx,dy);
+  keys.ArrowLeft=dx<-8;keys.ArrowRight=dx>8;keys.ArrowUp=dy<-8;keys.ArrowDown=dy>8;
+  joyStick.style.transform='translate(calc(-50% + '+(dx/Math.max(1,d)*Math.min(40,d))+'px),calc(-50% + '+(dy/Math.max(1,d)*Math.min(40,d))+'px))';
+  e.preventDefault();
+ },{passive:false});
+ document.addEventListener('pointerup',stop);document.addEventListener('pointercancel',stop);window.addEventListener('blur',stop);
+ canvas.style.touchAction='none';
+})();
+

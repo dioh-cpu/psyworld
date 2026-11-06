@@ -74,7 +74,7 @@ async function api(action,payload,auth,keepalive){
 function localProfile(state){
   const active=state.activePokemon||{};
   return{
-    nickname:nickFrom(state),
+    nickname:nickFrom(state),title:W.PsyTitles?.state()?.display||W.PsySeason?.state()?.equipped||'',
     pokemon:cleanText(active.name||active.species||'',20),
     level:Math.max(1,Math.min(999,Number(active.level||1)))
   };
@@ -90,7 +90,7 @@ function rebuildPresence(){
   for(const [key,values] of Object.entries(state)){
     if(key===userId)continue;
     const meta=Array.isArray(values)&&values.length?values[values.length-1]:{};
-    next.set(String(key),{nickname:cleanText(meta?.nickname||'Treinador',24)||'Treinador',pokemon:cleanText(meta?.pokemon||'',20),level:Math.max(1,Number(meta?.level||1))});
+    next.set(String(key),{nickname:cleanText(meta?.nickname||'Treinador',24)||'Treinador',title:Object.prototype.hasOwnProperty.call(W.PsyTitles?.registry||W.PsySeason?.titles||{},meta?.title)?meta.title:'',pokemon:cleanText(meta?.pokemon||'',20),level:Math.max(1,Number(meta?.level||1))});
   }
   presence=next;
   for(const id of positions.keys())if(!presence.has(id))positions.delete(id);
@@ -100,7 +100,7 @@ function angleDistance(a,b){let d=(a||0)-(b||0);while(d>Math.PI)d-=Math.PI*2;whi
 function positionPayload(){
   const state=snapshot();
   return{
-    uid:userId,
+    uid:userId,title:W.PsyTitles?.state()?.display||W.PsySeason?.state()?.equipped||'',
     x:Number(state.x),
     y:Number(state.y),
     angle:Number(state.angle)||0,
@@ -128,7 +128,7 @@ function acceptPosition(payload){
   const x=Number(payload.x),y=Number(payload.y),angle=Number(payload.angle);
   if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(angle))return;
   if(x<0||y<0||x>80||y>80)return;
-  positions.set(id,{x:x,y:y,angle:angle,nickname:presence.get(id)?.nickname||'Treinador',pokemon:cleanText(payload.pokemon||presence.get(id)?.pokemon||'',20),level:Math.max(1,Math.min(999,Number(payload.level||presence.get(id)?.level||1))),receivedAt:now});
+  positions.set(id,{x:x,y:y,angle:angle,nickname:presence.get(id)?.nickname||'Treinador',pokemon:cleanText(payload.pokemon||presence.get(id)?.pokemon||'',20),title:Object.prototype.hasOwnProperty.call(W.PsyTitles?.registry||W.PsySeason?.titles||{},payload.title)?payload.title:'',level:Math.max(1,Math.min(999,Number(payload.level||presence.get(id)?.level||1))),receivedAt:now});
 }
 function failChannel(failed){
   if(channel!==failed)return;
@@ -185,7 +185,7 @@ async function connectRoom(nextRegion){
       });
       if(!subscribed)throw new Error('Não foi possível entrar na sala em tempo real.');
       if(attempt!==generation||!wanted){try{await supa.removeChannel(createdChannel)}catch(_){};api('leave',{room_id:entered.room_id},auth,true).catch(()=>{});return}
-      const tracked=await createdChannel.track({nickname:profile.nickname,pokemon:profile.pokemon,level:profile.level});
+      const tracked=await createdChannel.track({nickname:profile.nickname,title:profile.title,pokemon:profile.pokemon,level:profile.level});
       if(tracked&&tracked!=='ok'&&tracked.status!=='ok')throw new Error('A presença do jogador não foi confirmada.');
       rebuildPresence();roomStatus();startTimers();sendPosition(true);
     }catch(error){
@@ -232,6 +232,7 @@ function scheduleReconcile(){
   reconcileTask=reconcile().catch(error=>{setStatus('● '+String(error?.message||'World offline'),'#fb7185');retryAt=Date.now()+5000}).finally(()=>{reconcileTask=null});
 }
 function drawPeers(options){
+  if(W.PsySeason?.settings().trainers)return;
   if(!channel||!presence.size||!options?.ctx)return;
   const ctx=options.ctx,w=Number(options.w),h=Number(options.h),halfH=Number(options.halfH),player=options.player,z=options.zBuffer,fov=Number(options.fov);
   if(!player||!w||!h||!z||!fov)return;
@@ -264,7 +265,8 @@ function drawPeers(options){
     const name=peer.profile.nickname||peer.pos.nickname||'Treinador';
     ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.9)';ctx.fillStyle='#fff';
     ctx.strokeText(name,sx,feetY-height-7);ctx.fillText(name,sx,feetY-height-7);
-    if(peer.pos.pokemon){ctx.font='10px Arial';ctx.strokeText(peer.pos.pokemon,sx,feetY-height+5);ctx.fillText(peer.pos.pokemon,sx,feetY-height+5)}
+    if(peer.pos.title||peer.profile.title)W.PsySeason?.drawTitle(ctx,sx,feetY-height-22,peer.pos.title||peer.profile.title);
+    if(peer.pos.pokemon&&!W.PsySeason?.settings().trainerPokemon){ctx.font='10px Arial';ctx.strokeText(peer.pos.pokemon,sx,feetY-height+5);ctx.fillText(peer.pos.pokemon,sx,feetY-height+5)}
     ctx.restore();
   }
 }

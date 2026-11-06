@@ -95,7 +95,7 @@ function installStartGuard(){
 function installRecalcGuard(){
   const cur=currentFn('recalcPoke');if(typeof cur!=='function'||cur.__psyZeroSafeV31)return;
   const f=function(p){
-    const dead=!!p&&(p._psyFaintedV31||Number(p.hp||0)<=0);
+    const dead=!!p&&(p._psyFaintedV31||(p.hp!=null&&Number.isFinite(Number(p.hp))&&Number(p.hp)<=0));
     const r=cur.apply(this,arguments);
     if(dead&&p)markFainted(p);
     return r;

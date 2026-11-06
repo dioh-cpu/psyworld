@@ -1,0 +1,113 @@
+/* Exclusivo da preview de Kanto; não é carregado no ambiente público. */
+#psy-kanto-world-v2{position:fixed;inset:0;z-index:2147483646;background:#08111c;color:#f8eed7;display:none;flex-direction:column;font:14px/1.4 system-ui,Arial,sans-serif;overflow:hidden;touch-action:none}
+#psy-kanto-world-v2.open{display:flex}
+#psy-kanto-world-v2 *{box-sizing:border-box}
+#psy-kanto-world-v2 .kw2-top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1728ed;border-bottom:1px solid #426273;min-height:60px;z-index:2}
+#psy-kanto-world-v2 button{border:1px solid #7ca2ac;background:#20394b;color:#fff;border-radius:11px;font:800 13px system-ui;cursor:pointer;touch-action:manipulation;min-height:42px;padding:8px 12px}
+#psy-kanto-world-v2 .kw2-top strong{display:block;font-size:16px;color:#ffe1a0;line-height:1.15}#psy-kanto-world-v2 .kw2-top small{color:#aec8cf;display:block;font-size:11px;max-width:54vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#psy-kanto-world-v2 .kw2-top .kw2-close{background:#54303b;border-color:#d08896;margin-left:auto;font-size:21px;padding:4px 13px}
+#psy-kanto-world-v2 .kw2-stage{position:relative;flex:1;min-height:180px;background:#14282d;overflow:hidden;touch-action:none}
+#psy-kanto-world-v2 .kw2-stage canvas{width:100%;height:100%;display:block;touch-action:none;image-rendering:auto}
+#psy-kanto-world-v2 .kw2-footer{display:flex;gap:10px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0b1725;border-top:1px solid #354d62;min-height:93px;z-index:2}
+#psy-kanto-world-v2 .kw2-objective{flex:1;font-size:12px;color:#b8d6d9;max-height:75px;overflow:auto}.kw2-objective b{color:#ffe4a5}
+#psy-kanto-world-v2 .kw2-interact{background:#915c26;border-color:#f5c66a;min-height:62px;padding:9px 17px;flex-shrink:0}
+#psy-kanto-world-v2 .kw2-pad{display:grid;grid-template-columns:repeat(3,37px);grid-template-rows:repeat(2,32px);gap:3px;flex-shrink:0}
+#psy-kanto-world-v2 .kw2-pad button{padding:0;min-height:32px;font-size:16px}
+#psy-kanto-world-v2 .kw2-pad [data-dir=up]{grid-column:2;grid-row:1}
+#psy-kanto-world-v2 .kw2-pad [data-dir=left]{grid-column:1;grid-row:2}
+#psy-kanto-world-v2 .kw2-pad [data-dir=down]{grid-column:2;grid-row:2}
+#psy-kanto-world-v2 .kw2-pad [data-dir=right]{grid-column:3;grid-row:2}
+#psy-kanto-world-v2 .kw2-joystick{position:absolute;width:88px;height:88px;border:2px solid #c4faeeba;border-radius:50%;background:#06363a77;display:none;z-index:3;transform:translate(-50%,-50%);pointer-events:none}
+#psy-kanto-world-v2 .kw2-joystick:after{content:"";position:absolute;left:33px;top:33px;width:20px;height:20px;background:#f3cb69;border-radius:50%;box-shadow:0 0 12px #00f8ff;transform:translate(var(--jx,0px),var(--jy,0px))}
+#psy-kanto-world-v2 .kw2-dialog{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);width:min(640px,calc(100% - 16px));background:#081524f5;border:1px solid #f5cb79;box-shadow:0 8px 36px #000c;border-radius:15px;padding:13px;display:none;z-index:5}
+#psy-kanto-world-v2 .kw2-dialog.open{display:block}
+#psy-kanto-world-v2 .kw2-dialog-main{display:flex;gap:12px;align-items:flex-start}
+#psy-kanto-world-v2 .kw2-portrait{width:75px;height:79px;flex-shrink:0;object-fit:contain;background:linear-gradient(150deg,#23465b,#252440);border:1px solid #6c8b97;border-radius:12px}
+#psy-kanto-world-v2 .kw2-dialog-title{color:#ffe1a0;font-size:15px;font-weight:900}
+#psy-kanto-world-v2 .kw2-expression{font-size:10px;color:#78dedc;letter-spacing:.07em}
+#psy-kanto-world-v2 .kw2-dialog-body{font-size:13px;line-height:1.5;color:#eef5f3;margin-top:5px}
+#psy-kanto-world-v2 .kw2-dialog-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:7px;margin-top:12px}
+#psy-kanto-world-v2 .kw2-dialog-actions .primary{background:#087564;border-color:#87edcb}
+@media(max-width:680px){#psy-kanto-world-v2 .kw2-top{min-height:54px;padding:7px}#psy-kanto-world-v2 .kw2-footer{min-height:107px;flex-wrap:wrap;gap:5px;padding:5px 7px calc(5px + env(safe-area-inset-bottom))}#psy-kanto-world-v2 .kw2-objective{order:0;flex-basis:100%;min-width:100%;max-height:40px;font-size:11px}#psy-kanto-world-v2 .kw2-pad{order:1}#psy-kanto-world-v2 .kw2-interact{order:2;margin-left:auto;min-height:61px}#psy-kanto-world-v2 .kw2-portrait{width:58px;height:65px}#psy-kanto-world-v2 .kw2-dialog{bottom:7px}}
+@media(max-height:500px){#psy-kanto-world-v2 .kw2-top{min-height:42px}#psy-kanto-world-v2 .kw2-footer{min-height:62px}#psy-kanto-world-v2 .kw2-objective{flex-basis:auto;min-width:0}#psy-kanto-world-v2 .kw2-pad{grid-template-columns:repeat(3,32px);grid-template-rows:repeat(2,25px)}#psy-kanto-world-v2 .kw2-pad button{min-height:25px}#psy-kanto-world-v2 .kw2-interact{min-height:40px}}
+/* Do not allow production HUD/menu/assistants over the Kanto preview. */
+body.psy-kanto-v2-active #menuBtn,
+body.psy-kanto-v2-active #psy-assistant-launcher,
+body.psy-kanto-v2-active #world-btn-float,
+body.psy-kanto-v2-active #psy-kanto-world,
+body.psy-kanto-v2-active #psy-music-float,
+body.psy-kanto-v2-active #psy-audio-floating{display:none!important}
+#psy-kanto-world-v2 .kw2-stage{min-height:0}
+#psy-kanto-world-v2 .kw2-top{padding-right:max(10px,env(safe-area-inset-right))}
+
+/* Keep draggable soundtrack toggle outside the campaign stage. */
+body.psy-kanto-v2-active #psy-audio-quick-toggle{display:none!important}
+
+/* Dialog portraits communicate mood visually; no internal emote/build text. */
+#psy-kanto-world-v2 .kw2-expression{display:none}
+
+
+/* Kanto controls are a game surface, not selectable browser text. */
+#psy-kanto-world-v2,#psy-kanto-world-v2 *,
+#psy-kanto-world-v2 .kw2-stage,#psy-kanto-world-v2 canvas{
+  user-select:none!important;-webkit-user-select:none!important;
+  -webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent!important;
+  overscroll-behavior:contain;
+}
+#psy-kanto-world-v2 .kw2-stage,#psy-kanto-world-v2 canvas,
+#psy-kanto-world-v2 .kw2-pad,#psy-kanto-world-v2 .kw2-pad button{
+  touch-action:none!important;
+}
+#psy-kanto-world-v2 .kw2-pad button:active{background:#387c8a}
+
+
+/* Artwork-led Kanto dialogue: character portrait, cinematic frame and readable copy. */
+#psy-kanto-world-v2 .kw2-dialog{
+ background:linear-gradient(135deg,rgba(8,21,42,.98),rgba(26,28,54,.98) 65%,rgba(47,29,55,.98));
+ border:2px solid #e1b975;box-shadow:0 8px 36px #010815df,0 0 18px #f4c97b24;
+ border-radius:18px;padding:15px 16px;backdrop-filter:blur(12px);
+}
+#psy-kanto-world-v2 .kw2-dialog::before{
+ content:"";position:absolute;top:-2px;left:34px;width:84px;height:3px;
+ border-radius:8px;background:linear-gradient(90deg,#f4c96e,#f7d9b9);
+ box-shadow:0 0 12px #f5d69688;
+}
+#psy-kanto-world-v2 .kw2-dialog-main{align-items:center;gap:14px;min-height:88px}
+#psy-kanto-world-v2 .kw2-portrait{
+ width:82px;height:92px;object-fit:contain;
+ background:radial-gradient(circle at 35% 24%,#355f78,#17213e 70%);
+ border:2px solid #d7b171;border-radius:13px;
+ box-shadow:inset 0 0 15px #c6e8ed11,0 2px 14px #000a;
+}
+#psy-kanto-world-v2 .kw2-dialog-title{
+ color:#ffe3a8;font-size:17px;font-weight:900;letter-spacing:.015em;
+ text-shadow:0 2px 5px #000b;
+}
+#psy-kanto-world-v2 .kw2-dialog-body{
+ color:#e5eef3;font-size:14px;line-height:1.58;margin-top:8px;
+}
+#psy-kanto-world-v2 .kw2-dialog-actions button{
+ min-height:40px;padding:9px 15px;border-radius:10px;
+ border:1px solid #6a94a6;background:linear-gradient(180deg,#294763,#1a324d);
+}
+#psy-kanto-world-v2 .kw2-dialog-actions .primary{
+ background:linear-gradient(135deg,#218a7f,#0e696a);border:1px solid #87e8c8;
+ box-shadow:0 0 12px #52eed02a;
+}
+#psy-kanto-world-v2 .kw2-objective{
+ color:#c6e0e2;line-height:1.45;border-left:3px solid #eac077;
+ padding-left:9px;font-weight:600;letter-spacing:.005em;
+}
+#psy-kanto-world-v2 .kw2-top{
+ background:linear-gradient(100deg,#0b1d30,#161b33);
+ border-bottom:1px solid #4a6e80;
+}
+#psy-kanto-world-v2 .kw2-top strong{
+ color:#f2d6a0;font-size:17px;
+}
+@media(max-width:680px){
+ #psy-kanto-world-v2 .kw2-dialog{padding:11px 12px}
+ #psy-kanto-world-v2 .kw2-portrait{width:68px;height:78px}
+ #psy-kanto-world-v2 .kw2-dialog-body{font-size:13px;line-height:1.5}
+ #psy-kanto-world-v2 .kw2-dialog-title{font-size:15px}
+}

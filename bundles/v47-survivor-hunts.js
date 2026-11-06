@@ -156,8 +156,8 @@ function survEstimateBossHp(s,minute=survNextBossMinute(s)){const base=42+s.phas
 function survRewardScale(s,e){const normalBase=Math.max(1,42+s.phase*4.4+Math.min(150,s.elapsed/12000)),ratio=Math.max(1,Number(e?.max||normalBase)/normalBase),phase=1+Math.max(0,Number(s.phase||1)-1)*.008;return Math.max(1,Math.min(9,(1+Math.log2(ratio)*.30)*phase))}
 function survDropScale(s,e){const normalBase=Math.max(1,42+s.phase*4.4+Math.min(150,s.elapsed/12000)),ratio=Math.max(1,Number(e?.max||normalBase)/normalBase),phase=1+Math.max(0,Number(s.phase||1)-1)*.006;return Math.max(1,Math.min(14,(1+Math.log2(ratio)*.52)*phase))}
 function survDropSource(e){if(e?.boss)return e.finalBoss?'Chefe Final':'Boss';if(e?.timedElite)return'Elite 1m30';if(e?.mega&&e?.shiny)return'Mega Shiny';if(e?.mega)return'Mega';if(e?.shiny)return'Shiny';if(e?.champion)return'Campeão';if(e?.elite)return'Elite';return'Pokémon'}
-function survDropLog(s,e,name,qty=1,rarity='rare'){s.dropHistory=s.dropHistory||[];s.dropAlerts=s.dropAlerts||[];const row={time:Number(s.elapsed||0),name,qty,source:survDropSource(e),rarity};s.dropHistory.unshift(row);if(s.dropHistory.length>120)s.dropHistory.length=120;s.dropAlerts.unshift({...row,life:3600});if(s.dropAlerts.length>5)s.dropAlerts.length=5}
-W.psySurvRegisterSharedDrop=function(e,name,kind='craft',qty=1){const s=W.PSY_CLEAN_SURV;if(!s||s.done||!name)return false;const visual=kind==='quest-rare'?'rare':kind==='pack'?'epic':kind==='craft'?'craft':'common';survDropLog(s,e,name,qty,visual);return true};
+function survDropLog(s,e,name,qty=1,rarity='rare',shared=false){if(!shared)window.PsySeason?.loot([{name,qty}]);s.dropHistory=s.dropHistory||[];s.dropAlerts=s.dropAlerts||[];const row={time:Number(s.elapsed||0),name,qty,source:survDropSource(e),rarity};s.dropHistory.unshift(row);if(s.dropHistory.length>120)s.dropHistory.length=120;s.dropAlerts.unshift({...row,life:3600});if(s.dropAlerts.length>5)s.dropAlerts.length=5}
+W.psySurvRegisterSharedDrop=function(e,name,kind='craft',qty=1){const s=W.PSY_CLEAN_SURV;if(!s||s.done||!name)return false;const visual=kind==='quest-rare'?'rare':kind==='pack'?'epic':kind==='craft'?'craft':'common';survDropLog(s,e,name,qty,visual,true);return true};
 function survPackKey(name){const n=String(name||'').toLowerCase();if(n.includes('ur++'))return'urpp';if(n.includes('ur+'))return'urp';if(/\bur\b/.test(n))return'ur';if(n.includes('sss'))return'sss';if(/\bss\b/.test(n))return'ss';if(/\bs\b/.test(n)&&!n.includes('ss'))return's';if(n.includes('épico')||n.includes('epico')||n.includes('epic'))return'epic';if(n.includes('raro')||n.includes('rare'))return'rare';return'normal'}
 function survAwardItem(s,e,type,name,visual='rare'){if(type==='pack'){const key=survPackKey(name);s.packLoot=s.packLoot||{};s.packLoot[key]=Number(s.packLoot[key]||0)+1;s.cardPacks=Number(s.packLoot.normal||0)}else{s.loot=s.loot||{};s.loot[name]=Number(s.loot[name]||0)+1}survDropLog(s,e,name,1,visual);return true}
 function survMilestoneEnsure(){core();P.meta=P.meta||{};const m=P.meta.survivorMilestones||(P.meta.survivorMilestones={});for(const k of ['totalKills','shinyProgress','shinyFails','megaProgress','megaFails','packNormalProgress','packRareProgress','packEpicProgress','evoStoneProgress'])m[k]=Math.max(0,Number(m[k]||0));return m}
@@ -1020,7 +1020,7 @@ W.triggerWild=function(pool){
   const lo=band*10+1,hi=(band+1)*10,id=ids[Math.floor(Math.random()*ids.length)],lvl=lo+Math.floor(Math.random()*(hi-lo+1));
   P.currentHunt=key;
   const rarity=W.rollRarity?.(W.getTier?.(id))||W.rollRarity?.()||{n:'Comum',mult:1};
-  try{return W.startBattle?.({id,name:W.getPokeName?.(id)||`Pokémon ${id}`,level:lvl,lvl,type,rarity})}
+  try{return W.startBattle?.({id,halloweenHunt:key,name:W.getPokeName?.(id)||`Pokémon ${id}`,level:lvl,lvl,type,rarity})}
   catch(e){console.error('Fast Encounter Hunt:',e);try{toast('Não foi possível iniciar o Fast Encounter.')}catch(_){}}
 };
 try{triggerWild=W.triggerWild}catch(e){}
@@ -1088,3 +1088,4 @@ function tick(){core();installCityJoy();clampCity();installSurvivorJoy();psyV27F
 setInterval(()=>{if(!document.hidden)tick()},2500);setTimeout(tick,100);
 console.log('✅ PSYWORLD V47: evolução Shiny direta na árvore corrigida; sem corrida assíncrona do botão JÁ SHINY');
 })();
+

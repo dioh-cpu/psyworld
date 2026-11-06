@@ -108,8 +108,10 @@
     }else{
       body='<div class="psy-gh-row"><div><b>'+esc(tr('language'))+'</b><small>Texto e voz dos NPCs.</small></div><button class="psy-gh-tab" data-language>'+LANGS[cfg.language].flag+' '+esc(LANGS[cfg.language].name)+'</button></div><div class="psy-gh-row"><div><b>'+esc(tr('hotkeys'))+'</b><small>Teclado, mouse e gamepad.</small></div><button class="psy-gh-tab" data-tab="hotkeys">'+esc(tr('hotkeys'))+'</button></div><div class="psy-gh-row"><div><b>'+esc(tr('sound'))+'</b><small>Música, efeitos e voz.</small></div><button class="psy-gh-tab" data-tab="sound">'+esc(tr('sound'))+'</button></div>';
     }
+    if(tab==='general')body+=W.PsySeason?.visibilityHTML()||'';
     r.innerHTML='<div class="psy-gh-panel"><div class="psy-gh-head"><div><div class="psy-gh-title">⚙️ '+esc(tr('config'))+'</div><div class="psy-gh-sub">'+esc(tr(tab))+'</div></div><button class="psy-gh-close" data-close>×</button></div><div class="psy-gh-grid" style="margin:14px 0"><button class="psy-gh-tab" data-tab="general">'+esc(tr('general'))+'</button><button class="psy-gh-tab" data-tab="hotkeys">'+esc(tr('hotkeys'))+'</button><button class="psy-gh-tab" data-tab="sound">'+esc(tr('sound'))+'</button></div>'+body+'</div>';
     r.querySelector('[data-close]').onclick=()=>r.classList.remove('show');r.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>openConfig(b.dataset.tab));r.querySelector('[data-language]')?.addEventListener('click',openLanguage);r.querySelectorAll('[data-sound-level]').forEach(input=>input.oninput=()=>{cfg.sound[input.dataset.soundLevel]=Number(input.value);saveCfg();applySound();openConfig('sound')});
+    W.PsySeason?.bindSettings(r);
     if(tab==='hotkeys')captureKeys(r)
   }
   function captureKeys(r){
@@ -223,6 +225,7 @@
     ['#a-eggs','#a-team','#a-afk','#a-album','#a-cards','#a-stars','#a-tree','#a-evolution','#a-magic-books','#a-move-hud','#a-move-left','#a-move-right'].forEach(sel=>{const el=adv.querySelector(sel);if(el)el.setAttribute('hidden','')});hookAdventure()
   }
   function dispatchHotkey(code){
+    if(W.PsyEvents?.isOpen()||W.PsyTitles?.isOpen())return;
     const key=Object.keys(cfg.keys).find(k=>cfg.keys[k]===code);if(!key)return;const r=W.PSY?.adventureRuntime;
     if(key==='menu')return activeAdventure()?(W.PSY?.adventureSystemsV63?.openMenu?.()||W.showAdventureMenu?.()):openMenu();if(key==='basic')return r?.hooks?.cast?.(0);if(key==='skill1')return r?.hooks?.cast?.(1);if(key==='skill2')return r?.hooks?.cast?.(2);if(key==='special')return r?.hooks?.cast?.(3);if(key==='potion')return r?.ui?.querySelector('#a-potion')?.click()||W.usePotion?.();
     if(key==='jump'){if(r?.keys){r.keys.add(' ');setTimeout(()=>r.keys.delete(' '),100)}return}
@@ -246,3 +249,4 @@
   const observer=new MutationObserver(refresh);observer.observe(D.body,{childList:true,subtree:true});setInterval(()=>{hideDuplicates();hookEconomy();hookAdventure();applySound()},1500);
   console.log('✅ PSYWORLD Global Hub V4: menu do Mundo Pokémon restaurado, álbum antigo preservado e Aventura isolada');
 })(window,document);
+

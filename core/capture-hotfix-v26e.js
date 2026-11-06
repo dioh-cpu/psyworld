@@ -3,7 +3,7 @@
 if(W.__PSYWORLD_CAPTURE_HOTFIX_V62__)return;
 W.__PSYWORLD_CAPTURE_HOTFIX_V62__=true;
 const BUILD='CAPTURE_V62_TALENT_BONUS_REWORK_20260906';
-const FINAL_CAP=30;
+const FINAL_CAP=70;
 const TIER_FACTOR={E:1,D:.90,C:.78,B:.66,A:.52,S:.38,SS:.27,SSS:.20,UR:.14,'UR+':.10,'UR++':.07};
 let captureBusy=false,suppressBallMenuUntil=0;
 const toast=(m,t=3200)=>{try{W.notif?.(m,t)}catch(_){console.log('[V40]',m)}};
@@ -69,6 +69,8 @@ function ballMultiplier(ballName,wild){
 }
 function captureDetails(ballName,wildArg){
   const bd=activeBattle(),wild=wildArg||bd?.wild;if(!wild)return {chance:0};
+  if(W.PsyCaptureRulesV48){const max=Math.max(1,Number(bd?.wildMaxHp||wild.maxHp||1)),hp=Number(bd?.wildHp??wild.hp??max)/max;const result=W.PsyCaptureRulesV48.captureDetails({wild:{...wild,tier:tierOf(wild)},ball:ballName,tier:tierOf(wild),hpPct:hp,evolutionStage:evolutionStage(wild),captureBonus:captureBonusPoints(),vip:vipBonusPoints()>0});return {...result,rarityMult:Number(wild.rarity?.mult||1),quality:wild.rarity?.n||'Lixo',tier:tierOf(wild)};}
+
   const P0=player(),tier=tierOf(wild),lvl=Math.max(1,Number(wild.level||wild.lvl||1));
   const stage=evolutionStage(wild),rar=wild.rarity||{n:'Lixo',mult:1},rarMult=Math.max(1,Number(rar.mult||1));
   const maxHp=Math.max(1,Number(bd?.wildMaxHp||wild.maxHp||wild.hp||1));
@@ -126,7 +128,7 @@ function buildPayload(ballName){
   let raw='';try{raw=String(W.TYPE_BY_ID_ALL?.[wild.id]||W.TYPE_BY_ID_FULL?.[wild.id]||W.TYPE_BY_ID_EXT?.[wild.id]||wild.type||'Normal')}catch(_){raw=String(wild.type||'Normal')}
   const types=raw.split(/[\/|,;]+/).map(x=>x.trim().toLowerCase()).filter(Boolean).slice(0,2),hp=Math.max(0,Math.min(1,Number(bd.wildHp??1)/Math.max(1,Number(bd.wildMaxHp||1))));
   const rar=wild.rarity||{n:'Lixo',mult:1},stage=evolutionStage(wild),preview=captureDetails(ballName,wild);
-  return {wild,rar,preview,payload:{species:Number(wild.id),level:Number(wild.level||wild.lvl||1),shiny:!!wild.shiny,mega:!!wild.isMega,boss:!!wild.isBoss,tier,rarity:rar.n||'Lixo',rarity_mult:Number(rar.mult||1),hp_pct:hp,ball:String(ballName),target_types:types,cap_buff:captureBonusPoints(),pokemon_data:{id:Number(wild.id),name:wild.name,level:Number(wild.level||wild.lvl||1),shiny:!!wild.shiny,isMega:!!wild.isMega,megaForm:wild.megaForm||'',tier,rarity:rar,evolutionStage:stage}}};
+  return {wild,rar,preview,payload:{species:Number(wild.id),level:Number(wild.level||wild.lvl||1),shiny:!!wild.shiny,mega:!!wild.isMega,boss:!!wild.isBoss,tier,rarity:rar.n||'Lixo',rarity_mult:Number(rar.mult||1),hp_pct:hp,ball:String(ballName),target_types:types,cap_buff:captureBonusPoints(),pokemon_data:{id:Number(wild.id),name:wild.name,level:Number(wild.level||wild.lvl||1),shiny:!!wild.shiny,isMega:!!wild.isMega,megaForm:wild.megaForm||'',tier,rarity:rar,evolutionStage:stage,halloweenForm:wild.halloweenForm||'',captureBall:ballName,psyballCaught:ballName==='Psyball'}}};
 }
 function install(){
   installCaptureBuffBridge();installBallSelectorGuard();

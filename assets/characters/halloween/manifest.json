@@ -1,0 +1,518 @@
+{
+  "schema": "psyworld.halloween-skins-runtime.v1",
+  "encoding": "webp-lossy-q95",
+  "characters": [
+    {
+      "id": "black_boy",
+      "costumes": {
+        "basic": "basic-black-boy.webp",
+        "divine": "divine-black-boy.webp",
+        "macabre": "horror-ghostface-black-boy.webp",
+        "macabre_alt": "macabre-alt-black-boy.webp",
+        "supreme": "apex-black-boy.webp"
+      }
+    },
+    {
+      "id": "black_girl",
+      "costumes": {
+        "basic": "basic-black-girl.webp",
+        "divine": "divine-black-girl.webp",
+        "macabre": "horror-ghostface-black-girl.webp",
+        "macabre_alt": "macabre-alt-black-girl.webp",
+        "supreme": "apex-black-girl.webp"
+      }
+    },
+    {
+      "id": "gothic_boy",
+      "costumes": {
+        "basic": "basic-gothic-boy.webp",
+        "divine": "divine-gothic-boy.webp",
+        "macabre": "horror-freddy-gothic-boy.webp",
+        "macabre_alt": "macabre-alt-gothic-boy.webp",
+        "supreme": "apex-gothic-boy.webp"
+      }
+    },
+    {
+      "id": "gothic_girl",
+      "costumes": {
+        "basic": "basic-gothic-girl.webp",
+        "divine": "divine-gothic-girl.webp",
+        "macabre": "horror-myers-gothic-girl.webp",
+        "macabre_alt": "macabre-alt-gothic-girl.webp",
+        "supreme": "apex-gothic-girl.webp"
+      }
+    },
+    {
+      "id": "adventure_boy",
+      "costumes": {
+        "basic": "basic-adventure-boy.webp",
+        "divine": "divine-adventure-boy.webp",
+        "macabre": "horror-jason-adventure-boy.webp",
+        "macabre_alt": "macabre-alt-adventure-boy.webp",
+        "supreme": "apex-adventure-boy.webp"
+      }
+    },
+    {
+      "id": "adventure_girl",
+      "costumes": {
+        "basic": "basic-adventure-girl.webp",
+        "divine": "divine-adventure-girl.webp",
+        "macabre": "horror-spectral-bride-adventure-girl.webp",
+        "macabre_alt": "macabre-alt-adventure-girl.webp",
+        "supreme": "apex-adventure-girl.webp"
+      }
+    }
+  ],
+  "assets": [
+    {
+      "filename": "basic-adventure-boy.webp",
+      "source_sha256": "ec132f291180a3bebd0e61ff80ff3f352f8ab47d7936088b911db8d618b9e1d8",
+      "sha256": "b2792be3430752dd2ca08819ece89740feedc4a6cdbe1f86fb3d420cb1104b59",
+      "bytes": 456534,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "basic-adventure-girl.webp",
+      "source_sha256": "65339cc15355718457b5981e1e57775f244e5024705acb09d6966ab1cb315bf8",
+      "sha256": "67491e53e5e3a1bf6342adf7960f4e54275be1951c3c41b0f844f5be047aba05",
+      "bytes": 455878,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "basic-black-boy.webp",
+      "source_sha256": "0f21e946971d3ba610dd3d6a09c1a63f3fdabdc796aad0c78da633b7ff8758da",
+      "sha256": "4e71cc04202cc361caa1c4b66de27a634785534831512a57dc8c5d3f02e97972",
+      "bytes": 357676,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "basic-black-girl.webp",
+      "source_sha256": "387f052c38ca57d31a69548665bb813e9b77891f059d367fb7ff89074ce4f7aa",
+      "sha256": "31009b3d63161e31de7a999e7e069f1d78d0dc3311674c4ed9841a3c2345f1c9",
+      "bytes": 448220,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "basic-gothic-boy.webp",
+      "source_sha256": "ab84cf01b2708ff3f00a1dfc576355ddaadc7f84b56eb4fbe20d3731e652a627",
+      "sha256": "e99f6b8c1d1b66c027bb6484e60fc081a883a980cb70eada3217e113e162a071",
+      "bytes": 403054,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "basic-gothic-girl.webp",
+      "source_sha256": "c4d356b9ddfbaa23bfe402a013f90dacf6da89669890abc7a49ed01e6aabb2f9",
+      "sha256": "9d1155254215bd5cb25dece388559a31485f52af206c4c7244d0eda462340ad3",
+      "bytes": 424702,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "divine-adventure-boy.webp",
+      "source_sha256": "85c8469c47c8bded98b293062a7f37b4d00824c93d375d9ad25ebe602865acda",
+      "sha256": "fe2b52e1d5db213be46723c4a543441a0be2f840c891bc3361972dcf1c02d7b3",
+      "bytes": 697634,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "divine-adventure-girl.webp",
+      "source_sha256": "9379317cb1d35036fab9a0a0c161ded6eb37f1f5a0114d1ecdc2ecfa78dcb380",
+      "sha256": "764a141d8ac8b06a8b462508cb0aa7a7c8f333ce970f84974a0857cca2f43ef2",
+      "bytes": 564506,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "divine-black-boy.webp",
+      "source_sha256": "023fdeda57022dad720faccdaa3acaee7056cb69573255897fb7381626c2e437",
+      "sha256": "a73b039cd53198652efc4d81f0fe68beb2916bdc7d9731f511121ef565cf95e1",
+      "bytes": 721058,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "divine-black-girl.webp",
+      "source_sha256": "ff8fcec09a8785765a1e79aa15e421134f741e708cda0311a42b89266fd47e6f",
+      "sha256": "d63a3b420316bdc694c751fa7121e933ded0b567d81e1c1eb574f754377b5047",
+      "bytes": 636832,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "divine-gothic-boy.webp",
+      "source_sha256": "aeafadaa18365a1b6cd81e302e05cc3000262361ffbd2022d3bddce46f78c285",
+      "sha256": "a73da186e4b8dc7f5e0bf4ef96dfefb5b88a1104e2080d6803829716dc469abb",
+      "bytes": 591680,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "divine-gothic-girl.webp",
+      "source_sha256": "31579420a0601e4b0936ff8b2c82f1bfb9e96c6b4769e461e42d33c9d6e0ccdf",
+      "sha256": "d2126c5c91c29a1a972960bb7b0e1e4a47f111a05b09aa2adc8044f9740d789c",
+      "bytes": 421170,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "horror-freddy-gothic-boy.webp",
+      "source_sha256": "89e039fa05212defca4a25a850564ac838a8eaccab96a00ba9299da4f4f9a13b",
+      "sha256": "931ecd62888ff0d7a3055852a7d73121c31a4bdca87b00c002f709c2751da62c",
+      "bytes": 589778,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "horror-ghostface-black-boy.webp",
+      "source_sha256": "decd5807d01c1d75ded26fd8df96569adb9ce21cda257b4c228e49a7b79502f2",
+      "sha256": "0c7b0d9a07af9d3b9a1b37a4a4b57e04f9a45ff6f9197331de18617e6d37a80a",
+      "bytes": 515884,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "horror-ghostface-black-girl.webp",
+      "source_sha256": "8d3989319eb26e90b33455addd3f0eefc6cd5df808334f1a3935c88fc005a7c2",
+      "sha256": "ac3a296d415ae773d44cddfbbdb23b1ad0918ca0b02fb4afa7f20161368866c3",
+      "bytes": 566930,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "horror-jason-adventure-boy.webp",
+      "source_sha256": "ed57b408830cbb55e06f99a4c25f6a5ead9c0deb24bad0d77c64e37313b49193",
+      "sha256": "075a4ede411f97c593f8b96534327e099ebe562ee7af52c728308ac8a1ea1be7",
+      "bytes": 375726,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "horror-myers-gothic-girl.webp",
+      "source_sha256": "59c83edd3c0a1430127c42806cdc12479f532c20b490c0611a299a81192b4ffe",
+      "sha256": "8071329ceb330f2aa4e863207fc210fcb1cc7487b8586dfd3bb155119e01df7e",
+      "bytes": 483054,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "horror-spectral-bride-adventure-girl.webp",
+      "source_sha256": "f2f2f0b266a9b13909ae72159e2b6e403686a809bd85a45eb1b6fda6f923f6ba",
+      "sha256": "e43eb0ec6bb0c67b511b5998551190c3bf3d81fbdf4bb3f54969059d5c82372b",
+      "bytes": 605272,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "apex-adventure-boy.webp",
+      "source_sha256": "0dd4d8886fd7d9894cc40368c4d05c1eff6c4ec45c999c6652d672d4645ed35f",
+      "sha256": "00784d4d335a420db1713d1dde3b3cbecb293f38b0c3288c0ef394981933fcfc",
+      "bytes": 513268,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "apex-adventure-girl.webp",
+      "source_sha256": "650c06c08642f687faaf0c5286e999ce836e24a6e8c7471d690a3b063c83545a",
+      "sha256": "eab67c4e2ec400d93842937aff5f741c2dbdb91d81bca4ea0e22a0b377d16246",
+      "bytes": 552184,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "apex-black-boy.webp",
+      "source_sha256": "575fdc6d4d3390d79efeb86c474585f25b2ae458ff045950fc351dc54c1174a9",
+      "sha256": "1b961a9867ff6fc2ff6c61d17d85d4a0c0356270fa691c3cfecda951b5e8ac72",
+      "bytes": 685168,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "apex-black-girl.webp",
+      "source_sha256": "26bf00b1d2bab09d5563e1460c8395fce6d16772ba455aa37af9d7a5ed374a76",
+      "sha256": "c923dda4a4baee4b47fbb5ee3db16524b6c684ce6b2d5ef8307091cf248f37bf",
+      "bytes": 589144,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "apex-gothic-boy.webp",
+      "source_sha256": "8b70481a16100a5875abae6e870ed64025751dfcaaba956922e05d4cbf739b66",
+      "sha256": "31e5b9ebede1f4a12acc653b798f19ad8f3814f429ee73743c715dea22ab76a2",
+      "bytes": 475000,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "apex-gothic-girl.webp",
+      "source_sha256": "b9f21a99d27f5eb2b6b7fd821bc03a5ab069dd55539e7d575029df138c3cf8bb",
+      "sha256": "c82ecdf820bac5d2c040ee3efd8dfc2059be50196a6218b73ef8888ecb4b4f22",
+      "bytes": 567090,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "macabre-alt-adventure-boy.webp",
+      "source_sha256": "31af9454e5a9d2238bb61efd8ab2529b4a1f463b77174d28f403a73c1cee8c9b",
+      "sha256": "eea06101406a12c79a08280dc2d0d2804b79db4f0d27eaecca234f9fa3540c70",
+      "bytes": 514570,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "macabre-alt-adventure-girl.webp",
+      "source_sha256": "6670c42806d8edd69e1827c040d786b5131fa36fe4367ee2ce60919da48a98cd",
+      "sha256": "7021086a2b85754594246e99683c17fbcfe3f842614baedff834344ea48b6b0a",
+      "bytes": 391036,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "macabre-alt-black-boy.webp",
+      "source_sha256": "bc71d4398d81eddb81cc739dfb7072fcb67cfeb11c87317274affb7bcdfbb204",
+      "sha256": "2939b3974963b6ba7f08b80159993fcce0256f7335f31a9807b4de59bfc6504c",
+      "bytes": 467746,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "macabre-alt-black-girl.webp",
+      "source_sha256": "1c658dc3e69e95110429e195539052308b949b5833aa708930b19aa9c8a8c3b0",
+      "sha256": "e46afd30542abbe752cbb1cbed109d4bcd01704aa88e9481b48e732cd4f6ee11",
+      "bytes": 584706,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "macabre-alt-gothic-boy.webp",
+      "source_sha256": "7eefa0f4b07c4ace3adf2412cf4ec0357e50c67c2c76daf51137e0bc91af8d26",
+      "sha256": "471c3438ea67d35eac8f5b6f7cea997d1c82075b3b34a05ca1416802c3409819",
+      "bytes": 470074,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    },
+    {
+      "filename": "macabre-alt-gothic-girl.webp",
+      "source_sha256": "d0f044993e415e68ad5f2a34b51f5a29afd30da541ae8a05b4da72f9257d3c34",
+      "sha256": "f9bab6110ecf62cde33ab5c97d70938734c39317a7b20e7446b06dbf174ae492",
+      "bytes": 513378,
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "cell_px": 512
+    }
+  ]
+}

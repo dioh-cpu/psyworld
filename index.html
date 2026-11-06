@@ -11,11 +11,14 @@
 <link rel="dns-prefetch" href="https://play.pokemonshowdown.com">
 <!-- PSYWORLD corrigido: sprites Mega X/Y + shiny + player GIF animado + sprite helpers unificados -->
 <link rel="stylesheet" href="css/game.css?build=COMBATE_STATUS_V11">
-<link rel="stylesheet" href="css/psy-responsive.css?build=RESPONSIVE_V2">
-<link rel="stylesheet" href="css/psy-assistant.css?build=PSY_IDLE_ACCESS_V3">
+<link rel="stylesheet" href="css/psy-responsive.css?build=PSYWORLD_DEVICE_LAYOUT_V2_20261031">
+<link rel="stylesheet" href="css/kanto-journey-v1.css?build=PSYWORLD_KANTO_JOURNEY_V2_20261031">
+<link rel="stylesheet" href="css/kanto-world-v2.css?build=KANTO_PIXEL_INTERIORS_V11_20261103">
+<link rel="stylesheet" href="css/city-halloween.css?build=TRAINER_ENTRY_INVISIBLE_TOUCH_V13">
+<link rel="stylesheet" href="css/halloween-ui.css?build=PSYWORLD_HALLOWEEN_UI_V2_20261031">
 
-<script src="core/prelude.js?build=PSYWORLD_V186_ONLINE_REALTIME_20260927"></script>
-<script src="core/survivor-resume-guard-v9.js?build=COMBATE_STATUS_V10"></script>
+<script src="core/prelude.js?build=SEASON_V48"></script>
+<script src="core/survivor-resume-guard-v9.js?build=STARTER_HP_INIT_V46"></script>
 
 
 
@@ -31,6 +34,8 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 </style>
 
 <style id="psy-capture-gym-v21">#battle-screen:has(#gym-progress[style*="display: block"]) #battle-ball-btn{display:none!important}</style>
+<link rel="stylesheet" href="core/hunt-session-v47.css?v48layer=2&build=SESSION_V47">
+<link rel="stylesheet" href="core/season-commerce-v48.css?v48layer=2&build=SEASON_V48">
 </head>
 <body>
 <!-- LOGIN -->
@@ -152,7 +157,6 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
         <div class="gold">💰 <span id="hud-gold">0</span> PokéCoins</div>
     </div>
     <button id="menuBtn" onclick="toggleMenu()">🎒 MENU</button>
-    <button id="fastEncounterBtn" onclick="toggleFastEncounter()" aria-label="Fast Encounter desligado" title="Fast Encounter: desligado" style="position:absolute;top:50px;right:10px;z-index:20;width:28px;height:28px;min-width:28px;padding:0;background:#cc2222;border:3px solid #fff;border-radius:50%;cursor:pointer;box-shadow:0 0 10px #0008,0 0 10px #ef444466;"></button>
     <div id="hud-minimap">
         <canvas id="mmCanvas" width="150" height="150"></canvas>
     </div>
@@ -250,7 +254,9 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 <div id="world-btn-float" style="position:absolute; top:170px; right:10px; z-index:20; display:flex; flex-direction:column; gap:6px;">
 <button id="btn-city-content-toggle" onclick="toggleCityGameContent()" style="background:linear-gradient(90deg,#111827,#334155); color:#fff; border:3px solid #67e8f9; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px; box-shadow:0 0 12px #22d3ee66;">📦 CONTEÚDO DO JOGO ▼</button>
 <div id="city-game-content-buttons" style="display:flex; flex-direction:column; gap:6px;">
-<button id="btn-idle-realistic-float" onclick="window.openIdleRealisticV2 ? window.openIdleRealisticV2() : window.psyInstallMode?.('idleworld',()=>window.openIdleRealisticV2?.())" style="background:linear-gradient(135deg,#14532d,#0f766e);color:#fff;border:3px solid #a7f3d0;padding:10px 16px;border-radius:12px;font-weight:900;font-size:12px;box-shadow:0 0 14px #10b98155;">🌿 PSY IDLE <small style="display:block;font-size:8px;color:#d1fae5">HUNTS POR ESPÉCIE</small></button>
+<button id="btn-kanto-journey" onclick="window.openKantoJourneyV1?.()" style="background:linear-gradient(135deg,#172554,#164e63);color:#e0f2fe;border:2px solid #67e8f9;padding:10px 16px;border-radius:12px;font-weight:900;font-size:12px;">🎬 CAMPANHA KANTO</button>
+
+
 
 <button id="btn-bag-float" onclick="openBag()" style="background:linear-gradient(#d59a35,#8a5a12); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">🎒 BOLSA</button>
 <button id="btn-team-float" onclick="openTeam()" style="background:linear-gradient(#3b82f6,#1d4ed8); color:#fff; border:3px solid #fff; padding:10px 16px; border-radius:12px; font-weight:900; font-size:12px;">👥 TIME / BOX</button>
@@ -270,11 +276,20 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 
 <div id="notif" style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.88); border:1px solid #ffd700; color:#ffd700; padding:8px 22px; border-radius:20px; font-size:13px; display:none; z-index:9999; pointer-events:none; white-space:nowrap;"></div>
 
-<script src="core/items.js?build=PSYWORLD_V186_IDLE_SOCIAL_20260927"></script>
+<script src="core/items.js?build=SEASON_V48"></script>
 
-<script src="core/legacy-runtime.js?build=PSYWORLD_WORLD_MP_V1_20260927"></script>
-<script src="core/world-multiplayer-v1.js?build=PSYWORLD_WORLD_MP_V1_20260927"></script>
-<script src="core/battle-status-v10.js?build=PSYWORLD_XP_BALANCE_V187_20260927"></script>
+<script src="core/titles-progression-v2.js?build=PREVIEW_REPAIRS_V26"></script>
+<script src="core/seasonal-event-v1.js?build=HALLOWEEN_TUNING_V29"></script>
+<script src="core/event-tower-v1.js?build=WORLD_BALANCE_AUDIT_V41"></script>
+<script src="core/dialogue-guide-v1.js?v49=LAYERS&build=GUIDE_CHAPTERS_V22"></script>
+<script src="core/legacy-runtime.js?build=CITY_CLEANUP_V42"></script>
+<script src="core/seasonal-types-v30.js?build=WORLD_BALANCE_AUDIT_V41"></script>
+<script src="core/city-halloween.js?build=COMPANION_WALKS_V52_HOUSES_VISIBLE_V43"></script>
+<script src="core/kanto-journey-v1.js?build=PSYWORLD_KANTO_JOURNEY_V2_20261031"></script>
+<script src="core/trainer-walk-v1.js?build=MOBILE_CAMPAIGN_REPAIRS_V10"></script>
+<script src="core/halloween-ui.js?build=PREVIEW_REPAIRS_V26"></script>
+<script src="core/world-multiplayer-v1.js?build=EVENT_TOWER_V25"></script>
+<script src="core/battle-status-v10.js?build=HALLOWEEN_ECONOMY_V23"></script>
 
 
 
@@ -291,24 +306,42 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 
 
 
-<script src="core/module-loader.js?build=PSYWORLD_IDLE_MODULE_LOADER_V3_20261001"></script>
+<script src="core/module-loader.js?build=SEASON_V48"></script>
 
 
 
 
 
 
-<script src="core/city-content.js?build=COMBATE_STATUS_V10"></script>
+<script src="core/city-content.js?build=PREVIEW_REPAIRS_V26"></script>
 <script src="core/npc-voice.js?build=NPC_VOICE_V1"></script>
-<script src="core/global-hub-v1.js?build=PSYWORLD_V186_IDLE_SOCIAL_20260927"></script>
-<script src="core/idle-genetics-v1.js?build=IDLE_GENETICS_V1_20260929"></script>
-<script src="core/idle-balance-evolution-v1.js?build=IDLE_BALANCE_EVOLUTION_V3_BOSS_LOOT_20261001"></script>
-<script src="core/shared-mode-drops-v1.js?build=PSYWORLD_IDLE_DROPS_V14_POTION_BANDS_20261001"></script>
-<script src="core/idle-afk-summary-v1.js?build=PSY_IDLE_AFK_REPORT_V1_20260929"></script>
-<script src="core/one-agent.js?build=ONE_V3"></script>
-<script src="core/psy-assistant.js?build=PSY_GAME_LOCAL_V6_20260929"></script>
-<script src="core/psy-responsive.js?build=RESPONSIVE_V2"></script>
-<script src="modes/psywiki-v1.js?build=PSYWORLD_IDLE_AUTO_CATCH_FIX_20260930"></script>
+<script src="core/global-hub-v1.js?build=EVENT_TOWER_V25"></script>
 
-</body>
+
+<script src="core/shared-mode-drops-v1.js?build=EVENT_TOWER_V25"></script>
+
+<script src="core/psy-responsive.js?build=HALLOWEEN_ECONOMY_V24"></script>
+<script src="modes/psywiki-v1.js?build=WORLD_BALANCE_AUDIT_V41"></script>
+<script src="core/kanto-map-data-v2.js?build=PALLET_MARKED_PATH_COLLISION_V3_20261103"></script>
+<script src="core/kanto-collision-v4.js?build=MOBILE_CAMPAIGN_REPAIRS_V10"></script>
+<script src="core/kanto-interiors-v9.js?build=PROFESSOR_ROUTE_UNLOCK_V7"></script>
+<script src="core/kanto-room-pixel-v10.js?build=KANTO_PIXEL_INTERIORS_V11_20261103"></script>
+<script src="core/kanto-interiors-art-v30.js?build=WORLD_BALANCE_AUDIT_V41"></script>
+<script src="core/kanto-world-v2.js?v49=STORY&build=SESSION_V47_WORLD_BALANCE_AUDIT_V41"></script>
+<script src="core/kanto-campaign-playable-v1.js?build=FOLLOWER_V47_PREVIEW_REPAIRS_V26"></script>
+<script src="core/kanto-city-cinematics-v1.js?v49=LAYERS&build=CAMPAIGN_STARTERS_V38"></script>
+
+<script src="core/campaign-automation-v1.js?build=SESSION_V47_AUTOMATION_OFFICES_V35"></script>
+<link rel="stylesheet" href="core/professions-v1.css?build=BALANCE_AUDIT_V41">
+<script src="core/professions-v1.js?build=SEASON_V48"></script>
+<script src="core/hunting-workshop-ui-v1.js?build=HUNT_WORKSHOP_V35"></script>
+<script src="core/starter-onboarding-v44.js?build=STARTER_HP_INIT_V46"></script>
+<script src="core/hunt-session-v47.js?build=SESSION_V47"></script>
+<script src="core/follower-v47.js?build=COMPANION_WALKS_V52"></script>
+<script type="module" src="core/ball-catalog-v48.js?build=CAPTURE_V48"></script>
+<script type="module" src="core/season-commerce-v48.js?build=SEASON_V48"></script>
+<link rel="stylesheet" href="core/kanto-story-v49.css?build=KANTO_STORY_V49"><script src="core/kanto-story-v49.js?build=KANTO_STORY_V49"></script></body>
 </html>
+
+
+

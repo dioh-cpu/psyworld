@@ -209,7 +209,7 @@ try{
 /* PSYWORLD V62 — captura por qualidade/evolução/força, bônus aditivo, teto 30%. */
 try{
   const ch=document.createElement('script');
-  ch.src='core/capture-hotfix-v26e.js?build=CAPTURE_V62_TALENT_BONUS_REWORK_20260906';
+  ch.src='core/capture-hotfix-v26e.js?build=CAPTURE_V62_TALENT_BONUS_REWORK_20260906&v48=CAPTURE_V48';
   ch.async=false;
   document.head.appendChild(ch);
 }catch(e){console.warn('capture v62 loader',e)}

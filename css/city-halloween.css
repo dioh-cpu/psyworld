@@ -1,0 +1,116 @@
+/* PSYWORLD Halloween town layer: visible, world-anchored NPCs and readable dialogs. */
+.psy-halloween-npc{
+  position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  width:clamp(74px,10vw,108px);min-height:112px;padding:0;border:0;background:transparent;
+  color:#fff;transform:translate(-50%,-88%);cursor:pointer;pointer-events:auto;
+  filter:drop-shadow(0 5px 8px #000b);text-align:center;z-index:38;
+  -webkit-tap-highlight-color:transparent
+}
+.psy-halloween-npc[hidden]{display:none!important}
+.psy-halloween-npc:focus-visible{outline:3px solid #facc15;outline-offset:3px;border-radius:12px}
+.psy-halloween-sprite{display:flex;align-items:flex-end;justify-content:center;width:100%;height:92px}
+.psy-halloween-sprite img{display:block!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:1!important;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center bottom!important;image-rendering:auto!important;background:transparent!important}
+.psy-halloween-name,.psy-halloween-role{
+  display:block;max-width:100%;padding:2px 6px;border:1px solid #ffffff35;border-radius:7px;
+  background:#0b1020eF;text-shadow:0 1px 2px #000;color:#fff3d2;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis
+}
+.psy-halloween-name{margin-top:-2px;font-size:11px;font-weight:900}
+.psy-halloween-role{margin-top:2px;font-size:9px;color:#d8d5e8}
+.psy-halloween-art-missing .psy-halloween-sprite{border:2px dashed #d69b52;border-radius:12px;background:#171426}
+.psy-halloween-art-missing .psy-halloween-sprite::after{content:"NPC";color:#ffe6a3;font-weight:900}
+.psy-halloween-dialog{
+  display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  box-sizing:border-box;width:min(440px,calc(100vw - 24px));max-height:calc(100dvh - 32px);
+  overflow:auto;padding:14px;border:2px solid #d69b52;border-radius:18px;
+  background:radial-gradient(circle at 100% 0,#713c6b55,transparent 46%),linear-gradient(155deg,#171426f7,#090d18f7);
+  color:#fff;box-shadow:0 22px 70px #000c,0 0 30px #f59e0b26;z-index:10001000;
+  -webkit-overflow-scrolling:touch
+}
+.psy-halloween-dialog.open{display:block}
+.psy-halloween-dialog>small{display:block;margin:0 42px 10px 2px;color:#f7d68a;font-size:10px;font-weight:900;letter-spacing:.06em}
+.psy-halloween-dialog .psy-route-preview{
+  display:block;width:100%;max-height:112px;margin:0 0 12px;object-fit:cover;
+  border:1px solid #9c6a98;border-radius:10px;background:#101526
+}
+.psy-halloween-dialog-body{display:flex;align-items:center;gap:12px;min-width:0}
+.psy-halloween-portrait{
+  position:relative;flex:0 0 84px;width:84px;height:104px;overflow:hidden;
+  border:1px solid #d69b52;border-radius:12px;background:linear-gradient(#34304b,#171426)
+}
+.psy-halloween-portrait>img{width:100%;height:100%;object-fit:contain;object-position:center bottom}
+.psy-halloween-expression{position:absolute;inset:0;pointer-events:none}
+.psy-halloween-dialog-copy{min-width:0}
+.psy-halloween-dialog-copy h3{margin:0 0 6px;color:#ffe4a6;font-size:17px;line-height:1.2}
+.psy-halloween-dialog-copy p{margin:0;color:#f3efff;font-size:14px;line-height:1.45}
+.psy-halloween-close,.psy-halloween-next{
+  min-height:42px;border:1px solid #f4c66f;border-radius:10px;font-weight:900;cursor:pointer
+}
+.psy-halloween-close{
+  position:absolute;top:9px;right:9px;width:38px;padding:0;background:#35233c;color:#fff;font-size:24px
+}
+.psy-halloween-next{display:block;width:100%;margin-top:12px;background:linear-gradient(100deg,#9a4a3b,#563b78);color:#fff3d2}
+@media(max-width:760px){
+  .psy-halloween-npc{width:clamp(64px,15vw,84px);min-height:94px}
+  .psy-halloween-sprite{height:74px}
+  .psy-halloween-name{font-size:10px;padding:2px 5px}
+  .psy-halloween-role{font-size:8px;padding:1px 4px}
+  .psy-halloween-dialog{padding:12px;border-radius:15px}
+  .psy-halloween-portrait{flex-basis:68px;width:68px;height:88px}
+  .psy-halloween-dialog-copy h3{font-size:15px}
+  .psy-halloween-dialog-copy p{font-size:13px}
+  #world-btn-float{
+    position:fixed!important;top:calc(env(safe-area-inset-top,0px) + 66px)!important;
+    right:max(8px,env(safe-area-inset-right,0px))!important;left:auto!important;
+    z-index:10000020!important;max-width:min(250px,calc(100vw - 16px))!important;
+    max-height:calc(100dvh - 110px)!important;overflow:auto!important;
+    overscroll-behavior:contain!important
+  }
+  #hud-player{transform:scale(.72)!important;transform-origin:top left!important}
+  #world-btn-float.city-content-collapsed #btn-city-content-toggle{
+    box-sizing:border-box!important;width:46px!important;min-width:46px!important;height:46px!important;
+    padding:0!important;font-size:0!important;display:grid!important;place-items:center!important
+  }
+  #world-btn-float.city-content-collapsed #btn-city-content-toggle::after{
+    content:"📦";font-size:21px;line-height:1
+  }
+  #world-btn-float:not(.city-content-collapsed) #city-game-content-buttons{
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .psy-halloween-npc,.psy-halloween-npc *{animation:none!important;transition:none!important}
+}
+
+/* Spacious content drawer shared by phone and desktop. */
+#psy-content-backdrop{display:none;position:fixed;inset:0;width:100%;height:100%;padding:0;border:0;background:#020617b8;backdrop-filter:blur(5px);z-index:10000018}
+#psy-content-backdrop.open{display:block}
+#world-btn-float{box-sizing:border-box!important;position:fixed!important;z-index:10000020!important;overflow:visible!important}
+#world-btn-float.city-content-collapsed{top:76px!important;right:12px!important;left:auto!important;width:auto!important;max-width:calc(100vw - 24px)!important;max-height:none!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important}
+#world-btn-float.city-content-collapsed #city-game-content-buttons{display:none!important}
+#world-btn-float.city-content-collapsed #btn-city-content-toggle{display:flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:48px!important;min-height:46px!important;height:auto!important;padding:12px 15px!important;font-size:12px!important;letter-spacing:.03em!important;border:1px solid #d8a86a!important;background:linear-gradient(140deg,#382640,#192238)!important;box-shadow:0 5px 20px #0007!important}
+#world-btn-float.city-content-collapsed #btn-city-content-toggle::after{content:none!important}
+#world-btn-float:not(.city-content-collapsed){top:50%!important;left:50%!important;right:auto!important;transform:translate(-50%,-50%)!important;width:min(620px,calc(100vw - 24px))!important;max-width:none!important;max-height:calc(100dvh - 40px)!important;padding:18px!important;gap:16px!important;border:1px solid #cf9e65!important;border-radius:24px!important;background:radial-gradient(ellipse at top right,#68416d55,transparent 60%),#101a2b!important;box-shadow:0 24px 80px #000b!important}
+#world-btn-float:not(.city-content-collapsed) #btn-city-content-toggle{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;flex-shrink:0!important;width:100%!important;min-height:48px!important;padding:6px 4px!important;border:0!important;background:none!important;box-shadow:none!important;color:#ffe4b5!important;font-size:18px!important;text-align:left!important}
+#btn-city-content-toggle span{display:grid;place-items:center;width:38px;height:38px;border:1px solid #ffffff30;border-radius:12px;font-size:26px;color:#fff}
+#world-btn-float:not(.city-content-collapsed) #city-game-content-buttons{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;max-height:calc(100dvh - 150px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding:2px 4px 10px!important;scrollbar-width:thin}
+#city-game-content-buttons>button{box-sizing:border-box!important;min-width:0!important;min-height:78px!important;width:100%!important;margin:0!important;padding:14px 10px!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:normal!important;font-size:13px!important;letter-spacing:.02em!important;border:1px solid #ffffff35!important;border-radius:16px!important;box-shadow:inset 0 1px #ffffff15,0 4px 12px #0003!important;color:#fff!important;cursor:pointer;touch-action:manipulation}
+#city-game-content-buttons>button:focus-visible{outline:3px solid #fbd28c;outline-offset:2px}
+#city-game-content-buttons>button:active{filter:brightness(1.2)}
+#city-game-content-buttons>button small{font-size:10px!important;line-height:1.4!important;margin-top:5px!important}
+body.psy-kanto-v2-active #world-btn-float,body.psy-kanto-v2-active #psy-content-backdrop{display:none!important}
+@media(max-width:760px){
+ #world-btn-float:not(.city-content-collapsed){padding:14px!important;border-radius:20px!important}
+ #world-btn-float:not(.city-content-collapsed) #city-game-content-buttons{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+ #city-game-content-buttons>button{min-height:76px!important;padding:13px 9px!important;font-size:12px!important}
+}
+@media(max-height:480px){#world-btn-float:not(.city-content-collapsed){max-height:calc(100dvh - 16px)!important;padding:10px!important;gap:6px!important}#world-btn-float:not(.city-content-collapsed) #city-game-content-buttons{max-height:calc(100dvh - 92px)!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}#city-game-content-buttons>button{min-height:60px!important}}
+
+/* Entry screens own the entire viewport. World controls only belong in gameplay. */
+body:has(.psy-halloween-screen.is-open) #world-btn-float,
+body:has(.psy-halloween-screen.is-open) #psy-content-backdrop,
+body:has(#screen-starter[style*="flex"]) #world-btn-float,
+body:has(#screen-starter[style*="flex"]) #psy-content-backdrop,
+body:has(#screen-login[style*="flex"]) #world-btn-float{display:none!important}
+#world-btn-float.city-content-collapsed{transform:none!important}
+#joystick,.kw2-joystick{display:none!important;pointer-events:none!important}

@@ -6,11 +6,10 @@
 'use strict';
 const W=window,D=document;
   // V96 Cinematic Reconstruction: cenários detalhados, terreno texturizado e ciclo dia/noite contínuo.
-const PHYSICAL_BUILD='PSYWORLD_IDLE_SOCIAL_LAYER_FIX_20260930';
+const PHYSICAL_BUILD='SEASON_ECONOMY_V48';
 function versionedSrc(src){const raw=String(src),sep=raw.includes('?')?'&':'?',isIdleRealistic=/modes\/idle-realistic-v1\.js/.test(raw),isIdleShared=/modes\/idle-(social|commerce|realistic|trade-zone)-v1\.js/.test(raw)||raw.includes('modes/idleworld.js'),build=isIdleRealistic?'PSYWORLD_IDLE_BOSS_LOOT_HUNTS_20261001':isIdleShared?'IDLE_SOCIAL_LAYER_FIX_20260930_V1':PHYSICAL_BUILD;return raw+sep+'build='+encodeURIComponent(build)}
 const STORE='psyworld_physical_modes_v1';
 const MODES={
-  idleworld:{icon:'🌿',name:'PSY IDLE',desc:'Hunts individuais em mapa top-down, colisão em grade, IA e sistemas de progressão próprios.',entry:['openIdleRealisticV2']},
   hunts:{icon:'🗺️',name:'HUNTS',desc:'Hunts por região, nível e tipo.',entry:['openHunts']},
   dungeons:{icon:'🏰',name:'DUNGEONS',desc:'Bosses e desafios especiais.',entry:['openDungeons']},
   gyms:{icon:'🏆',name:'GYMS',desc:'Progressão regional de Ginásios.',entry:['openGyms']},
@@ -143,11 +142,11 @@ function showLoadError(e){
 }
 
 function modeFromButton(b){
-  if(!b)return null;
+  if(!b||b.closest('#psy-campaign-tools,#psy-auto-battle,#psy-campaign-quests,.psy-session-modal,.psy48-screen,#psy-hunt-panel,#psy-kanto-story,#psy-guide'))return null;
   const oc=String(b.getAttribute?.('onclick')||'');
   for(const [k,m] of Object.entries(MODES))if(m.entry.some(fn=>oc.includes(fn+'(')||oc.includes('window.'+fn+'(')))return k;
   const t=String(b.textContent||'').toUpperCase();
-if(t.includes('PSY IDLE'))return'idleworld'; if(t.includes('HUNTS'))return'hunts';
+if(t.includes('PSY IDLE'))return null; if(t.includes('HUNTS'))return'hunts';
   if(t.includes('DUNGEON'))return'dungeons'; if(t.includes('GYM')||t.includes('GINÁSIO'))return'gyms';
   if(t.includes('CARDS')||t.includes('ÁLBUM'))return'cards'; if(t.includes('SURVIVOR')||t.includes('PSYDUCK SUPREMO'))return'survivor';
   if(t.includes('POKÉDEX'))return'pokedex'; if(t.includes('EGG CENTER'))return'eggs'; if(t.includes('QUEST'))return'quests';
@@ -168,7 +167,7 @@ function ensureUI(){
   if(!D.getElementById('psy-mode-download-screen')){
     const s=D.createElement('div');s.id='psy-mode-download-screen';
     s.innerHTML=`<div class="psy-mode-manager">
-      <div class="psy-mode-manager-head"><div><h2>⬇ MODOS / DOWNLOADS</h2><p>Nesta versão modular, os arquivos JavaScript dos modos são carregados fisicamente somente quando necessários. Sprites do Survivor também ficam em arquivos separados.</p></div><button class="psy-mode-close" onclick="psyCloseModeManager()">×</button></div>
+      <div class="psy-mode-manager-head"><div><h2>⬇ MODOS / DOWNLOADS</h2><p>Escolha quais modos deseja preparar para jogar. Você pode baixar cada modo separadamente ou preparar todos de uma vez.</p></div><button class="psy-mode-close" onclick="psyCloseModeManager()">×</button></div>
       <div class="psy-mode-top-actions"><button class="psy-mode-action all" onclick="psyInstallAllModes()">⬇ BAIXAR TODOS</button><button class="psy-mode-action" onclick="psyRefreshModeManager()">↻ ATUALIZAR</button></div>
       <div id="psy-mode-grid" class="psy-mode-grid"></div>
     </div>`;D.body.appendChild(s);
@@ -189,6 +188,7 @@ W.psyRefreshModeManager=function(){try{state=JSON.parse(localStorage.getItem(STO
 W.psyCloseModeIntro=function(){D.getElementById('psy-mode-intro')?.classList.remove('show')};
 
 W.psyInstallMode=async function(k,after){
+  if(k==='idleworld'){W.notif?.('Modo Idle removido desta versão.',2500);return;}
   if(!MODES[k])return;
   if(installed(k)&&sessionLoaded.has(k)){after?.();return}
   ensureUI();renderManager();
@@ -242,3 +242,4 @@ try{
 }catch(e){console.warn('cloud save loader',e)}
 console.log('✅ PSYWORLD physical module loader ready');
 })();
+
