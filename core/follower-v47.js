@@ -44,13 +44,53 @@ function quaxlyStep(trail,opt,now,poseMs=140){
  return active?Math.floor(a.elapsed/poseMs)%2:0;
 }
 
+// Kanto starter companions: time-based pose alternation, using original authored frames.
+// Quaxly's approved function above is intentionally untouched.
+const kantoGaits=Object.freeze({
+  1:{cadence:165,sole:63,shadow:[9,3]},   // Bulbasaur: deliberate quadruped stride
+  4:{cadence:125,sole:62,shadow:[8,3]},   // Charmander: light biped stride
+  7:{cadence:145,sole:62,shadow:[8,3]},   // Squirtle: short biped stride
+  152:{cadence:170,sole:63,shadow:[10,3]},  // Chikorita
+  155:{cadence:145,sole:63,shadow:[8,3]},  // Cyndaquil
+  158:{cadence:130,sole:63,shadow:[9,3]},  // Totodile
+  252:{cadence:135,sole:63,shadow:[8,3]},  // Treecko
+  255:{cadence:150,sole:63,shadow:[7,3]},  // Torchic
+  258:{cadence:165,sole:63,shadow:[10,3]},  // Mudkip
+  387:{cadence:175,sole:63,shadow:[10,3]},  // Turtwig
+  390:{cadence:125,sole:63,shadow:[8,3]},  // Chimchar
+  393:{cadence:155,sole:63,shadow:[8,3]},  // Piplup
+  495:{cadence:148,sole:63,shadow:[8,3]},  // Snivy
+  498:{cadence:165,sole:63,shadow:[10,3]},  // Tepig
+  501:{cadence:145,sole:63,shadow:[8,3]},  // Oshawott
+  650:{cadence:145,sole:63,shadow:[9,3]},  // Chespin
+  653:{cadence:155,sole:63,shadow:[9,3]},  // Fennekin
+  656:{cadence:120,sole:63,shadow:[9,3]},  // Froakie
+  722:{cadence:175,sole:63,shadow:[8,3]},  // Rowlet
+  725:{cadence:150,sole:63,shadow:[10,3]},  // Litten
+  728:{cadence:168,sole:63,shadow:[10,3]},  // Popplio
+  810:{cadence:145,sole:63,shadow:[8,3]},  // Grookey
+  813:{cadence:115,sole:63,shadow:[8,3]},  // Scorbunny
+  816:{cadence:158,sole:63,shadow:[8,3]},  // Sobble
+});
+function kantoStep(trail,opt,now,cadence){
+ const a=trail.kantoAnimation||(trail.kantoAnimation={time:now,elapsed:0,active:false,hasMoved:false,lastMotion:now,x:opt.x,y:opt.y});
+ if(trail.moving){a.hasMoved=true;a.lastMotion=now;}
+ const dt=now-a.time,advancing=opt.x!==a.x||opt.y!==a.y;
+ const continuing=(opt.moving||opt.continuing)&&now-a.lastMotion<=200;
+ const active=trail.moving||(a.hasMoved&&((opt.moving&&(advancing||(dt===0&&a.active)))||continuing));
+ if(!active||!a.active||dt>250||dt<0)a.elapsed=0;
+ else a.elapsed+=dt;
+ a.time=now;a.active=active;a.x=opt.x;a.y=opt.y;
+ return active?Math.floor(a.elapsed/cadence)%2:0;
+}
+
 function draw(c,opt){if(player().meta?.divineHaloV48){c.save();c.strokeStyle='#dfb0ff';c.shadowColor='#8ef8ff';c.shadowBlur=9;c.lineWidth=1.8;c.beginPath();c.ellipse(opt.x,opt.y+4,22,8,0,0,Math.PI*2);c.stroke();c.restore();}const mon=selected(),trainer=opt.trainer||(()=>{});if(!mon||!supported(mon)){trainer();return;}const k=key(mon)+'@'+opt.scene,old=trails.get(k),trail=sample(old,opt.x,opt.y,opt.scene,opt.valid);trails.set(k,trail);
-const quaxly=Number(mon.id)===912,profile=walkProfiles[Number(mon.id)],grounded=quaxly||!!profile;
-const timedStep=grounded?quaxlyStep(trail,opt,W.performance.now(),profile?.poseMs):0;
+const quaxly=Number(mon.id)===912,profile=walkProfiles[Number(mon.id)],kantoGait=kantoGaits[Number(mon.id)]||null,grounded=quaxly||!!profile||!!kantoGait;
+const timedStep=kantoGait?kantoStep(trail,opt,W.performance.now(),kantoGait.cadence):grounded?quaxlyStep(trail,opt,W.performance.now(),profile?.poseMs):0;
 const entry=manifest[mon.id],image=pageImage(entry.page,!!mon.shiny);if(!image.complete||!image.naturalWidth){trainer();return;}
 const paint=()=>{let dir=trail.facing||opt.facing||'down',base=dir==='up'?2:dir==='left'||dir==='right'?4:0;const right=dir==='right',separate=right&&entry.frames===8;if(separate)base=6;
 const step=grounded?timedStep:trail.moving?([0,1,1,0][Math.floor(trail.phase/11)%4]):0,frame=base+step,p=trail.pos,scale=profile?profile.scale:entry.size>32?.9:1.6;
-c.save();c.translate(p.x,p.y+(grounded?5:6));c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,quaxly?8:profile?profile.shadowX:Math.min(18,entry.size*.35),quaxly?3:profile?profile.shadowY:5,0,0,Math.PI*2);c.fill();if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}c.imageSmoothingEnabled=false;if(right&&!separate)c.scale(-1,1);c.drawImage(image,entry.x+frame*64,entry.y,64,64,-32*scale,-(grounded?63:64)*scale,64*scale,64*scale);c.restore();};
+c.save();c.translate(p.x,p.y+(grounded?5:6));c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,quaxly?8:profile?profile.shadowX:kantoGait?kantoGait.shadow[0]:Math.min(18,entry.size*.35),quaxly?3:profile?profile.shadowY:kantoGait?kantoGait.shadow[1]:5,0,0,Math.PI*2);c.fill();if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}c.imageSmoothingEnabled=false;if(right&&!separate)c.scale(-1,1);c.drawImage(image,entry.x+frame*64,entry.y,64,64,-32*scale,-(kantoGait?kantoGait.sole:grounded?63:64)*scale,64*scale,64*scale);c.restore();};
 if(trail.pos.y<=opt.y){paint();trainer();}else{trainer();paint();}
 }
 function choose(){D.getElementById('psy-follower-menu')?.remove();const root=D.createElement('section');root.id='psy-follower-menu';root.className='psy-session-modal';root.setAttribute('role','dialog');root.setAttribute('aria-label','Escolher Pokémon acompanhante');const card=D.createElement('div');root.appendChild(card);const title=D.createElement('h2');title.textContent='Seu parceiro de jornada';card.appendChild(title);const help=D.createElement('p');help.textContent='Escolha um Pokémon vivo do time para caminhar atrás de você. A seleção visual não troca o líder da batalha. Ele segue seus passos, para junto e acompanha as mudanças de direção.';card.appendChild(help);

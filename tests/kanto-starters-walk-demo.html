@@ -1,0 +1,48 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><base href="/">
+<title>PSYWORLD — Iniciais de Kanto · caminhada</title>
+<style>body{margin:0;background:#101c2c;color:#e5f1f7;font:15px system-ui}canvas{display:block;margin:auto}#psy-follower-launch{display:none}p{text-align:center}</style>
+<canvas id="demo" width="1280" height="790"></canvas><p>Demo técnica — mesma arte e controlador de produção. Cenário ilustrativo, não mapa do jogo.</p>
+<script>window.P={meta:{followerV47:{enabled:true,key:'1-normal'}},team:[1,4,7].flatMap(id=>[false,true].map(shiny=>({id,hp:100,pokemon_uid:id+'-'+(shiny?'shiny':'normal'),shiny})))};</script>
+<script src="core/follower-v47.js"></script>
+<script>
+(async()=>{
+ const cv=document.querySelector('#demo'),c=cv.getContext('2d');const species=[{id:1,name:'BULBASAUR'},{id:4,name:'CHARMANDER'},{id:7,name:'SQUIRTLE'}];
+ await Promise.all(['normal','shiny'].map(async type=>{let im=new Image();im.src='assets/followers/pages/'+type+'-0.webp';await im.decode()}));
+ while(!PsyFollower.manifest()[7])await new Promise(resolve=>setTimeout(resolve,10));
+ const stages=[
+  {ms:750,to:[40,55],name:'PARADOS'},
+  {ms:2100,to:[150,55],dir:'right',name:'DIREITA'},
+  {ms:1550,to:[150,127],dir:'down',name:'CURVA PARA BAIXO'},
+  {ms:800,to:[150,127],name:'PARADA'},
+  {ms:2100,to:[40,127],dir:'left',name:'RETOMADA PARA ESQUERDA'},
+  {ms:1550,to:[40,55],dir:'up',name:'CURVA PARA CIMA'},
+  {ms:900,to:[40,55],name:'PARADA'},
+  {ms:1400,to:[150,55],dir:'right',name:'RETOMADA RAPIDA'},
+  {ms:960,to:[150,127],dir:'down',name:'CURVA PARA BAIXO'},
+  {ms:650,to:[150,127],name:'PARADA'},
+  {ms:1400,to:[40,127],dir:'left',name:'RETOMADA RAPIDA'},
+  {ms:960,to:[40,55],dir:'up',name:'CURVA PARA CIMA'},
+  {ms:1800,to:[40,55],name:'PARADA FINAL'}
+ ];
+ const duration=stages.reduce((n,s)=>n+s.ms,0);let start=performance.now(),facing='down';
+ function route(t){let from=[40,55];for(const s of stages){if(t<=s.ms){const k=Math.max(0,t/s.ms);return{x:from[0]+(s.to[0]-from[0])*k,y:from[1]+(s.to[1]-from[1])*k,moving:from[0]!==s.to[0]||from[1]!==s.to[1],label:s.name,dir:s.dir}}t-=s.ms;from=s.to}return{x:40,y:55,moving:false,label:'FIM'}}
+ function render(t){const p=route(Math.min(t,duration));if(p.dir)facing=p.dir;
+ c.fillStyle='#101c2c';c.fillRect(0,0,1280,790);c.fillStyle='#85ddcb';c.font='bold 20px system-ui';c.fillText('PSYWORLD  /  ANIMATION STUDIO',28,33);c.fillStyle='#f5fcfe';c.font='bold 28px system-ui';c.fillText('INICIAIS DE KANTO · NORMAL + SHINY',28,72);
+ for(const [col,s] of species.entries())for(let row=0;row<2;row++){
+ const shiny=!!row,kind=shiny?'shiny':'normal',ox=col*420+12,oy=row*344+112;
+ c.save();c.translate(ox,oy);c.fillStyle=shiny?'#abc7f5':'#bce8cf';c.font='bold 19px system-ui';c.fillText(s.name+' · '+kind.toUpperCase(),6,0);
+ c.translate(0,18);c.fillStyle='#345448';c.fillRect(0,0,402,302);
+ c.save();c.scale(2,2);for(let y=0;y<151;y+=16)for(let x=0;x<201;x+=16){c.fillStyle=(x+y)%32?'#3e5b4c':'#426151';c.fillRect(x,y,Math.min(16,201-x),Math.min(16,151-y))}
+ c.strokeStyle='#d6f6d84d';c.setLineDash([3,3]);c.lineWidth=.6;c.strokeRect(40,55,110,72);c.setLineDash([]);
+ P.meta.followerV47.key=s.id+'-'+kind;
+ PsyFollower.draw(c,{scene:'kanto-review:'+s.id+':'+kind,x:p.x,y:p.y,moving:p.moving,facing,valid:()=>true,trainer:()=>{
+ c.fillStyle='#0b1820aa';c.beginPath();c.ellipse(p.x,p.y+6,11,4,0,0,Math.PI*2);c.fill();
+ c.fillStyle='#f5c991';c.fillRect(Math.round(p.x-4),Math.round(p.y-20),8,10);c.fillStyle='#4c86da';c.fillRect(Math.round(p.x-6),Math.round(p.y-10),12,12);c.fillStyle='#263b52';c.fillRect(Math.round(p.x-5),Math.round(p.y+2),4,5);c.fillRect(Math.round(p.x+1),Math.round(p.y+2),4,5);
+ }});c.restore();c.restore();
+ }
+ c.fillStyle='#e8f4eb';c.font='bold 23px system-ui';c.fillText(p.label,30,760);
+ return p;
+ }
+ window.demo={duration,render,ready:true,restart(){PsyFollower.clear();start=performance.now()}};
+ function loop(){render(performance.now()-start);requestAnimationFrame(loop)}loop();
+})();</script></html>
