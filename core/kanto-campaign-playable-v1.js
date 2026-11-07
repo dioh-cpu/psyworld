@@ -284,6 +284,9 @@
     return {left:rect.left+x*rect.width-14,top:rect.top+y*rect.height-45,right:rect.left+x*rect.width+14,bottom:rect.top+y*rect.height+8};
   }
   function launchChapterGym(place,gymId){
+    if(!W.PsyCampaignGymGate?.beginFromCampaign?.(gymId,place.id)){
+      W.notif?.('Desafie o líder diretamente dentro do mapa da campanha.',3200);return;
+    }
     model.pendingGymPlace=place.id;closeWorld();W.startGymBattle(gymId);
     const arena=D.querySelector('#battle-screen .battle-hud');if(arena)arena.style.backgroundImage='url("'+ART_ROOT+(place.id==='pewter'?'brock-arena-approved.webp':'misty-arena-approved.webp')+'")';
   }
@@ -297,7 +300,7 @@
     if(directNPC===true||nearby(map.npc)){
       ps.talked=true;if(story.done)ps.storyDone=true;saveProgress();
       const actions=[];
-      if(gymId&&!player().gymProgress?.includes(gymId))actions.push({label:'DESAFIAR GINÁSIO',primary:true,onClick:()=>launchChapterGym(place,gymId)});
+      if(gymId&&!W.PsyCampaignGymGate?.hasClearedInCampaign?.(gymId))actions.push({label:'DESAFIAR GINÁSIO',primary:true,onClick:()=>launchChapterGym(place,gymId)});
       if(place.id==='mt-moon'&&!ps.storyDone)actions.push({label:'PROTEGER OS FÓSSEIS',primary:true,onClick:()=>{
         model.pendingStoryPlace=place.id;
         W.startBattle?.({id:41,name:'Zubat',type:'Poison/Flying',level:12,lvl:12,maxHp:150,hp:150,rarity:{n:'Comum',mult:1,bonus:0},campaignTrainer:true});
@@ -328,7 +331,7 @@
       ps.talked=true;saveProgress();
       const needs=Math.max(0,objective(place)-new Set(ps.found).size),gymDone=!gymId||(Array.isArray(player().gymProgress)&&player().gymProgress.includes(gymId));
       const actions=[];
-      if(gymId&&!gymDone&&typeof W.startGymBattle==='function')actions.push({label:'DESAFIAR GINÁSIO',primary:true,onClick:()=>{model.pendingGymPlace=place.id;closeWorld();W.startGymBattle(gymId)}});
+      if(gymId&&!W.PsyCampaignGymGate?.hasClearedInCampaign?.(gymId)&&typeof W.startGymBattle==='function')actions.push({label:'DESAFIAR GINÁSIO',primary:true,onClick:()=>launchChapterGym(place,gymId)});
       showDialog(place.npc,needs?`${place.quest} Encontre ${needs} espécie(s) no habitat marcado e volte para concluir.`:!gymDone?`${place.quest} Seu registro da região está bom; falta vencer o ginásio para concluir este capítulo.`:place.quest,actions);
       updateObjective();return;
     }
@@ -537,7 +540,7 @@
       const wrapped=function(won){
         if(won&&model.pendingStoryPlace){placeState(model.pendingStoryPlace).storyDone=true;saveProgress();model.pendingStoryPlace=null;}
         const gym=model.pendingGymPlace,place=places().find(p=>p.id===gym),gymId=place&&GYM_FOR_PLACE[place.id];
-        if(won&&place&&gymId&&Array.isArray(player().gymProgress)&&player().gymProgress.includes(gymId)){model.pendingGymPlace=null;markCleared(place);}
+        if(won&&place&&gymId&&Array.isArray(player().gymProgress)&&player().gymProgress.includes(gymId)){W.PsyCampaignGymGate?.markVictory?.(gymId);model.pendingGymPlace=null;markCleared(place);}else if(!won&&gymId){W.PsyCampaignGymGate?.cancel?.();model.pendingGymPlace=null;}
         const result=oldEnd.apply(this,arguments);
         if(model.resumeAfterEncounter){model.resumeAfterEncounter=false;W.setTimeout(()=>{if(model.place){model.root?.classList.add('open');updateObjective();render();if(!model.raf)tick()}},0)}
         if(place&&gymId&&won&&player().gymProgress?.includes(gymId)){
