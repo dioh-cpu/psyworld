@@ -152,6 +152,7 @@ function collect(scene,id){
  if(hit<5){f.nodes[scene+':'+id]={hits:hit,respawnAt:0};save();W.notif?.('Progresso de coleta: '+hit+'/5',1200);return true}
  f.nodes[scene+':'+id]={hits:0,respawnAt:Date.now()+(3+Math.random()*5)*60000};
  const inv=inventory();inv[node.item]=count(inv[node.item])+1;addXP(node.kind,16);
+ const gathered=p().meta.hobbyGatherTotalsV1||(p().meta.hobbyGatherTotalsV1={});gathered[node.kind]=count(gathered[node.kind])+1;
  W.psyHobbyGrantFieldXp?.(18,8);
  save();W.notif?.(node.item+' coletado! +XP para Hobby, Pokémon e Treinador.',2500);return true;
 }
@@ -163,7 +164,9 @@ function drawField(c,scene){
   if(a.kind==='miner'){c.moveTo(-16,7);c.lineTo(-11,-16);c.lineTo(1,-30);c.lineTo(17,-2);c.lineTo(12,9);c.closePath()}
   else if(a.kind==='lumber'){c.rect(-12,-28,24,35)}
   else{for(let i=0;i<6;i++){const an=i*Math.PI/3;c.moveTo(0,-10);c.ellipse(Math.sin(an)*11,Math.cos(an)*11-10,7,10,an,0,Math.PI*2)}}
-  c.fill();c.stroke();c.restore();
+  c.fill();c.stroke();c.fillStyle='#09192de8';c.strokeStyle='#b9ede6';c.lineWidth=1;
+  c.beginPath();c.roundRect(-17,12,34,15,5);c.fill();c.stroke();
+  c.fillStyle='#fff';c.font='bold 10px system-ui';c.textAlign='center';c.fillText((a.kind==='miner'||a.kind==='lumber')?(a.hits+'/5'):'✦',0,23);c.restore();
  }
 }
 function decorate(name){
@@ -261,7 +264,7 @@ function startFishing(scene){
 function ensure(){
  if(root())return root();
  const el=D.createElement('section');el.id='psy-hobbies';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
- el.innerHTML='<div class="ph-shell"><header class="ph-header"><div><small>PSYWORLD · ATIVIDADES DO TREINADOR</small><h2>HOBBIES</h2><p>Todos podem aprender todos os Hobbies. Toque na imagem para abrir suas trocas e sua evolução.</p></div><button data-hobbies-close type="button" aria-label="Fechar">×</button></header><div class="ph-grid" data-hobbies-grid></div><div data-hobby-details hidden></div><p class="ph-foot">Trocas exclusivas por Hobby substituem o Craft e as antigas profissões.</p></div>';
+ el.innerHTML='<div class="ph-shell"><header class="ph-header"><div><small>PSYWORLD · ATIVIDADES DO TREINADOR</small><h2>HOBBIES</h2><p>Explore Kanto, colete recursos nos spots e evolua cada especialidade.</p></div><button data-hobbies-close type="button" aria-label="Fechar">×</button></header><div class="ph-overview" data-hobby-overview aria-live="polite"></div><div class="ph-grid" data-hobbies-grid></div><div data-hobby-details hidden></div><p class="ph-foot">Trocas exclusivas por Hobby substituem o Craft e as antigas profissões.</p></div>';
  D.body.appendChild(el);el.querySelector('[data-hobbies-close]').onclick=close;
  el.addEventListener('click',e=>{if(e.target===el)close()});
  D.addEventListener('keydown',e=>{if(e.key==='Escape'&&el.classList.contains('show')){e.stopImmediatePropagation();if(selected){selected=null;render()}else close()}},true);
@@ -270,14 +273,18 @@ function ensure(){
 function render(){
  const el=ensure(),grid=el.querySelector('[data-hobbies-grid]'),details=el.querySelector('[data-hobby-details]');grid.replaceChildren();details.replaceChildren();
  grid.hidden=!!selected;details.hidden=!selected;const records=state();
+ const overview=el.querySelector('[data-hobby-overview]'),totals=p().meta?.hobbyGatherTotalsV1||{};
+ overview.innerHTML='<span><b>'+JOBS.filter(j=>records[j.id]?.level>0).length+'</b><small>Hobbies ativos</small></span><span><b>'+Object.values(totals).reduce((n,v)=>n+count(v),0)+'</b><small>Coletas concluídas</small></span><span><b>'+visibleNodes('route-1').length+'</b><small>Spots na Rota 1</small></span>';
  if(!selected){
   for(const j of JOBS){
-   const x=records[j.id],card=D.createElement('article');card.className='ph-card';
+   const x=records[j.id],card=D.createElement('article');card.className='ph-card';card.style.setProperty('--hobby-accent',({miner:'#80d9f6',gardener:'#fba3dc',fisher:'#73d7fb',lumber:'#d9ac78',engineer:'#f4c578',alchemist:'#c5a0ff'})[j.id]||'#98dce0');
    const cover=button('',()=>openDetail(j.id));cover.className='ph-illustration ph-select';cover.setAttribute('aria-label','Abrir '+j.name);
    const img=D.createElement('img');img.src=artUrl(j);img.alt=j.name;img.loading='lazy';cover.appendChild(img);
    const tag=D.createElement('span');tag.className='ph-level';tag.textContent='LV. '+x.level;cover.appendChild(tag);
    const body=D.createElement('div');body.className='ph-card-body';const title=D.createElement('h3');title.textContent=j.name;body.appendChild(title);
-   para(body,x.level?'Status: +'+(x.level*j.per).toFixed(1)+'% '+j.stat:(j.starter?'Quest: 10 derrotas + 5 capturas':'Desbloqueio após Brock'));
+   para(body,x.level?'BÔNUS ATIVO · +'+(x.level*j.per).toFixed(1)+'% '+j.stat:(j.starter?'MISSÃO · 10 derrotas + 5 capturas':'DESBLOQUEIO · Primeiro Ginásio'));
+   if(['miner','gardener','fisher','lumber'].includes(j.id)){const indicator=D.createElement('small');indicator.className='ph-gather-total';indicator.textContent='✦ '+count(totals[j.id])+' coletas · '+count(inventory()[j.material])+' '+j.material+' na Mochila';body.appendChild(indicator)}
+   if(x.level){const track=D.createElement('div');track.className='ph-track';const bar=D.createElement('i');bar.style.width=Math.min(100,Math.round(100*x.xp/Math.max(1,xpNeed(x))))+'%';track.appendChild(bar);body.appendChild(track)}
    body.appendChild(button('ABRIR HOBBY',()=>openDetail(j.id)));card.append(cover,body);grid.appendChild(card);
   }
   return;
@@ -287,7 +294,7 @@ function render(){
  const header=D.createElement('div');header.className='ph-detail-head';
  const img=D.createElement('img');img.src=artUrl(j);img.alt=j.name;header.appendChild(img);
  const h=D.createElement('div'),name=D.createElement('h3');name.textContent=j.name+' • Nível '+x.level;h.appendChild(name);
- para(h,'Bônus +'+(x.level*j.per).toFixed(1)+'% '+j.stat+' • XP '+x.xp+'/'+xpNeed(x));header.appendChild(h);details.appendChild(header);
+ para(h,'Bônus +'+(x.level*j.per).toFixed(1)+'% '+j.stat+' • XP '+x.xp+'/'+xpNeed(x));if(['miner','gardener','fisher','lumber'].includes(j.id))para(h,'Coletas concluídas: '+count(totals[j.id])+' • '+count(inventory()[j.material])+' '+j.material+' na Mochila');header.appendChild(h);details.appendChild(header);
  if(!x.level){
   const pr=unlockProgress(j);
   para(details,j.starter?'Derrotas: '+Math.min(pr.defeats,10)+'/10 • Pokédex: '+Math.min(pr.caught,5)+'/5.':'Vença o primeiro Ginásio de Kanto para liberar.');
