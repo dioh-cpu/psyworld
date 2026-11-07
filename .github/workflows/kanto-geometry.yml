@@ -28,6 +28,9 @@ on:
       - 'core/kanto-gym-campaign-gate-v1.js'
       - 'core/hobbies-v1.js'
       - 'core/hobbies-v2.js'
+      - 'core/hobby-mastery-v1.js'
+      - 'css/hobby-campaign-v1.css'
+      - 'tests/hobbies-mastery-campaign-v1.cjs'
       - 'core/professions-v1.js'
       - 'bundles/v47-survivor-hunts-v9.js'
       - 'modes/survivor.js'
@@ -65,6 +68,9 @@ on:
       - 'core/kanto-gym-campaign-gate-v1.js'
       - 'core/hobbies-v1.js'
       - 'core/hobbies-v2.js'
+      - 'core/hobby-mastery-v1.js'
+      - 'css/hobby-campaign-v1.css'
+      - 'tests/hobbies-mastery-campaign-v1.cjs'
       - 'core/professions-v1.js'
       - 'bundles/v47-survivor-hunts-v9.js'
       - 'modes/survivor.js'
@@ -103,6 +109,7 @@ jobs:
           node --check core/kanto-city-cinematics-v1.js
           node --check core/kanto-gym-campaign-gate-v1.js
           node --check core/hobbies-v2.js
+          node --check core/hobby-mastery-v1.js
           node --check core/professions-v1.js
           node --check bundles/v47-survivor-hunts-v9.js
           node --check core/hobbies-v1.js
@@ -118,6 +125,8 @@ jobs:
         run: node tests/hobbies-no-legacy-bonuses-v4.cjs
       - name: Check Hobbies field UI and fishing tension
         run: node tests/hobbies-ux-v3.cjs
+      - name: Check campaign mastery trees and overlays
+        run: node tests/hobbies-mastery-campaign-v1.cjs
       - name: Check story-first Gym and Hobbies
         run: node tests/kanto-gym-hobbies-v70.cjs
       - name: Check campaign menu, navigation and panel recovery
