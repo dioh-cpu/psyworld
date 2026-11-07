@@ -56,7 +56,7 @@ assert(M.buy('miner','radar'));
 assert.equal(M.points('miner'),0);
 assert.equal(M.buy('miner','vein'),false,'Cannot overspend points');
 const expected=JSON.parse(JSON.stringify(p.meta.hobbyMasteryV1));
-const W2={...W,P:p};
+const W2={P:p,autoSave:W.autoSave,notif:W.notif,PsyHobbies:W.PsyHobbies};
 vm.runInNewContext(mastery,{window:W2,document:{},P:p,console,Math});
 assert.deepEqual(JSON.parse(JSON.stringify(p.meta.hobbyMasteryV1)),expected,'Reload must preserve skills');
 assert.equal(W2.PsyHobbyMastery.rank('miner','radar'),1,'Unlocked node persists across reload');
@@ -73,7 +73,7 @@ class FakeEl{
  setAttribute(name,val){(this.attributes||(this.attributes={}))[name]=val}
 }
 const D={createElement:tag=>new FakeEl(tag)};
-const W3={...W,P:p};
+const W3={P:p,autoSave:W.autoSave,notif:W.notif,PsyHobbies:W.PsyHobbies};
 vm.runInNewContext(mastery,{window:W3,document:D,P:p,console,Math});
 function all(el,cls){return (el.className?.split(' ').includes(cls)?[el]:[]).concat(...(el.children||[]).map(child=>all(child,cls)))}
 for(const id of ['miner','gardener','fisher','lumber','engineer']){
