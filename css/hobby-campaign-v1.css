@@ -297,3 +297,13 @@ body .psy-titles-panel .pt-checkin{border:1px solid #a1bce67b;background:#101d3d
  #psy-kanto-world-v2 .kw2-menu-actions button{transition:none}
  #psy-kanto-world-v2 .kw2-menu-actions button:hover{transform:none}
 }
+
+/* Mobile usability: keep the close action in reach during long skill-tree scrolls. */
+#psy-hobbies .ph-header{
+ position:sticky;top:-12px;z-index:8;
+ border-radius:12px;
+ background:linear-gradient(110deg,#17294dea,#191735eb);
+ backdrop-filter:blur(8px);
+}
+#psy-hobbies .ph-overview[hidden]{display:none!important}
+@media(max-width:520px){#psy-hobbies .ph-header{top:-10px}}
