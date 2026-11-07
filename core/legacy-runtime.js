@@ -1383,13 +1383,6 @@ BUILDINGS.forEach(b => {
             if(dy < b.h - 1) SOLID.add((b.x+dx)+','+(b.y+dy));
 });
 
-// Psy City is a safe, bounded hub. Keep the walkable town footprint near its
-// spawn so the camera cannot drift into the unused 60x60 canvas.
-const PSY_CITY_BOUNDS={x1:15,x2:45,y1:15,y2:45};
-for(let y=0;y<MAP_H;y++)for(let x=0;x<MAP_W;x++){
-  if(x<PSY_CITY_BOUNDS.x1||x>PSY_CITY_BOUNDS.x2||y<PSY_CITY_BOUNDS.y1||y>PSY_CITY_BOUNDS.y2)SOLID.add(x+','+y);
-}
-
 /* NPCs */
 const CITY_POKES = []; // V32: removidos da cidade para reduzir lag
 function updateNPCSprites() {
