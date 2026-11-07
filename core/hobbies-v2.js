@@ -307,7 +307,20 @@ function render(){
   div.appendChild(button(j.id==='engineer'?'FABRICAR BALL':'TROCAR MATERIAIS',()=>exchange(j.id,row.index),!row.plan));
   details.appendChild(div);
  }
- if(j.id==='gardener'||j.id==='lumber')details.appendChild(button('DECORAR MINHA HOUSE',()=>decorate(j.product),count(inventory()[j.product])<1));
+ if(j.id==='researcher'){
+  const all=W.PsyHobbyDungeonTradeCatalog?.()||[];
+  for(const v of all){
+    if(count(inventory()[v.item])<=0)continue;
+    const row=D.createElement('section');row.className='ph-exchange';
+    para(row,v.name+' • '+v.qty+' '+v.item+' (possui '+count(inventory()[v.item])+')');
+    row.appendChild(button('TROCAR POR '+(v.kind==='shiny'?'SHINY ':'')+v.name,()=>{
+      if(v.kind==='shiny')W.craftShiny?.(v.id);else W.craftBoss?.(v.id);
+      render();
+    },count(inventory()[v.item])<v.qty));
+    details.appendChild(row);
+  }
+}
+if(j.id==='gardener'||j.id==='lumber')details.appendChild(button('DECORAR MINHA HOUSE',()=>decorate(j.product),count(inventory()[j.product])<1));
  if(j.id==='alchemist'||j.id==='herbalist')details.appendChild(button('USAR '+j.product,()=>useConsumable(j.product),count(inventory()[j.product])<1));
 }
 function open(){selected=null;ensure();render();root().classList.add('show')}
