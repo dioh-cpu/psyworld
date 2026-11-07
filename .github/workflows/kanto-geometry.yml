@@ -15,6 +15,11 @@ on:
       - 'core/campaign-automation-v1.js'
       - 'core/kanto-gym-campaign-gate-v1.js'
       - 'core/hobbies-v1.js'
+      - 'core/hobbies-v2.js'
+      - 'core/professions-v1.js'
+      - 'bundles/v47-survivor-hunts-v9.js'
+      - 'modes/survivor.js'
+      - 'tests/hobbies-unified-v2.cjs'
       - 'tests/kanto-gym-hobbies-v70.cjs'
       - 'core/kanto-city-cinematics-v1.js'
       - 'tests/kanto-tutorial-collision-v68.cjs'
@@ -33,6 +38,11 @@ on:
       - 'core/campaign-automation-v1.js'
       - 'core/kanto-gym-campaign-gate-v1.js'
       - 'core/hobbies-v1.js'
+      - 'core/hobbies-v2.js'
+      - 'core/professions-v1.js'
+      - 'bundles/v47-survivor-hunts-v9.js'
+      - 'modes/survivor.js'
+      - 'tests/hobbies-unified-v2.cjs'
       - 'tests/kanto-gym-hobbies-v70.cjs'
       - 'core/kanto-city-cinematics-v1.js'
       - 'tests/kanto-tutorial-collision-v68.cjs'
@@ -55,9 +65,14 @@ jobs:
           node --check core/campaign-automation-v1.js
           node --check core/kanto-city-cinematics-v1.js
           node --check core/kanto-gym-campaign-gate-v1.js
+          node --check core/hobbies-v2.js
+          node --check core/professions-v1.js
+          node --check bundles/v47-survivor-hunts-v9.js
           node --check core/hobbies-v1.js
       - name: Prevent blank tutorial on startup
         run: node tests/kanto-tutorial-collision-v68.cjs
+      - name: Check unified Hobbies and Engineer progression
+        run: node tests/hobbies-unified-v2.cjs
       - name: Check story-first Gym and Hobbies
         run: node tests/kanto-gym-hobbies-v70.cjs
       - name: Check campaign menu, navigation and panel recovery
