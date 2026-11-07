@@ -1,0 +1,7 @@
+/* Small fishing-state cues; the HUD keeps the existing tension and progress rules. */
+#psy-hobby-fishing .hf-panel{transition:border-color 120ms ease,box-shadow 120ms ease}
+#psy-hobby-fishing[data-fishing-state="steady"] .hf-panel{border-color:#75edb4;box-shadow:0 18px 60px #000a,0 0 18px #35b77b55}
+#psy-hobby-fishing[data-fishing-state="danger"] .hf-panel{border-color:#ff8585;box-shadow:0 18px 60px #000a,0 0 15px #ef535055}
+#psy-hobby-fishing[data-fishing-state="caught"] .hf-panel{border-color:#ffe39b}
+#psy-hobby-fishing[data-fishing-state="escaped"] .hf-panel{border-color:#99b5c2}
+@media(prefers-reduced-motion:reduce){#psy-hobby-fishing .hf-panel{transition:none}}

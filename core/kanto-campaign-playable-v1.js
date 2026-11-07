@@ -124,7 +124,7 @@
     D.body.appendChild(root); model.root = root; model.canvas = root.querySelector('canvas'); model.ctx = model.canvas.getContext('2d'); model.dialog = root.querySelector('#psy-kanto-dialog');
     root.querySelector('.kp-close').onclick = closeWorld;
     root.querySelector('[data-kp-hobbies]').onclick=()=>{model.held=null;model.autoHunt=false;model.autoPath=[];W.PsyHobbies?.open?.()};
-    root.querySelector('[data-kp-fish]').onclick=()=>{model.held=null;W.PsyHobbies?.startFishing?.(model.place?.id)};
+    root.querySelector('[data-kp-fish]').onclick=()=>{model.held=null;model.autoPath=[];W.PsyHobbies?.startFishing?.(model.place?.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction})};
     root.querySelector('[data-back]').onclick = () => { closeWorld(); W.openKantoJourneyV1?.(); };
     root.querySelector('[data-interact]').onclick = e => { e.preventDefault(); e.stopPropagation(); interact(); };
     root.querySelectorAll('[data-dir]').forEach(btn => {
@@ -223,16 +223,16 @@
     }
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
-    W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=model.map.spawn?.x||3; model.y=model.map.spawn?.y||ROWS-3; model.direction='down';model.frame=0;model.held=null;
+    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=model.map.spawn?.x||3; model.y=model.map.spawn?.y||ROWS-3; model.direction='down';model.frame=0;model.held=null;
     state().active=place.id;
     model.root.querySelector('.kp-title b').textContent=place.name;
     model.root.querySelector('.kp-title small').textContent=place.mark;
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     if(!model.raf)tick();
   }
-  function closeWorld() { model.autoHunt=false;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
+  function closeWorld() { W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);model.autoHunt=false;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
-    if(!model.root?.classList.contains('open')||W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.())return;
+    if(!model.root?.classList.contains('open')||W.PsyHobbies?.isOpen?.()||W.PsyHobbies?.isFishing?.()||W.PsyTitles?.isOpen?.())return;
     e.stopPropagation();
     const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
     const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){model.held=dir;move(dir)}return;}
@@ -241,6 +241,7 @@
   }
   function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();} }
   function move(dir) {
+    if(W.PsyHobbiesVFX?.blocksMovement?.(model.place?.id))return;
     if(W.PsyGuide?.isOpen()||W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.())return;
     if(!model.place||!model.root?.classList.contains('open'))return;
     const step={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(!step)return;
@@ -328,10 +329,10 @@
   }
 
   function interact(directNPC=false) {
-    if(!model.place)return;
+    if(!model.place||W.PsyHobbies?.isFishing?.())return;
     if(/^route-/.test(model.place.id)){
       const gather=W.PsyHobbies?.nearby?.(model.place.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},40);
-      if(gather){W.PsyHobbies.collect(model.place.id,gather.id);render();return;}
+      if(gather){W.PsyHobbies.interact?.(model.place.id,gather.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});render();return;}
     }
     const place=model.place, ps=placeState(place.id), gymId=GYM_FOR_PLACE[place.id];
     if(EARLY.includes(place.id)&&interactChapter(place,ps,gymId,directNPC===true))return;
@@ -451,15 +452,16 @@
     if(model.map.secretChest&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
     const px=offsetX+model.x*TILE+TILE/2,py=offsetY+model.y*TILE+TILE/2;
     if(W.PsyFollower){c.save();c.translate(offsetX,offsetY);W.PsyFollower.draw(c,{scene:'chapter:'+model.place.id,x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,moving:!!model.held||!!model.autoPath?.length,facing:model.direction,valid:(x,y)=>{const value=model.map.grid[Math.floor(y/TILE)]?.[Math.floor(x/TILE)];return [1,5].includes(value);},trainer:()=>{}});c.restore();}
-    const avatar=selectedAvatar();
+    const avatar=selectedAvatar(),activityScene=model.place.id,worldActor={x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},action=W.PsyHobbiesVFX?.sampleAction?.(activityScene,{...worldActor,moving:false});
     if(avatar?.ready){
-      const row=({down:0,left:1,right:2,up:3})[model.direction]??0;
+      const row=action?.row??({down:0,left:1,right:2,up:3})[model.direction]??0;
       const sourceFrame=IDLE_FRAME;
-      drawNormalizedAvatar(c,avatar,row,sourceFrame,px,py+8);
+      drawNormalizedAvatar(c,avatar,row,sourceFrame,px,py+8,action);
     }else{
       c.fillStyle='#141a23';c.beginPath();c.ellipse(px,py+8,8,4,0,0,Math.PI*2);c.fill();
       // Keep the floor shadow while artwork loads; never invent another trainer.
     }
+    W.PsyHobbiesVFX?.drawActor?.(c,activityScene,{x:px,y:py+8,action,atlas:avatar?.animationAtlas,avatarUrl:avatar?.image?.src||''});
     c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-46);W.PsySeason?.drawTitle(c,px,py-61);
   }
   let chapterAnimationState=null;
@@ -496,12 +498,12 @@
       avatar.frameBounds=bounds;avatar.frameCols=cols;avatar.frameScale=Math.min(46/maxW,46/maxH);
     } catch (_) { avatar.frameBounds=null;avatar.frameScale=1; }
   }
-  function drawNormalizedAvatar(ctx,avatar,row,col,centerX,baselineY) {
+  function drawNormalizedAvatar(ctx,avatar,row,col,centerX,baselineY,activityAction=null) {
     if(W.PsyTrainerWalkV1?.getAnimationAtlas){
       const walk=W.PsyTrainerWalkV1;if(!chapterAnimationState)chapterAnimationState=walk.createState();
       avatar.animationAtlas=avatar.animationAtlas||walk.getAnimationAtlas(avatar.image);
       ctx.fillStyle='#0008';ctx.beginPath();ctx.ellipse(centerX,baselineY,13,5,0,0,Math.PI*2);ctx.fill();
-      walk.renderAnimated(ctx,avatar.animationAtlas,chapterAnimationState,{moving:!!model.held||!!model.autoPath?.length,discrete:true,row,x:model.x,y:model.y,identity:model.place.id+':'+avatar.image.src},centerX-24,baselineY-60,48,64);return;
+      walk.renderAnimated(ctx,avatar.animationAtlas,chapterAnimationState,{moving:!activityAction&&(!!model.held||!!model.autoPath?.length),discrete:true,row,x:model.x,y:model.y,identity:model.place.id+':'+avatar.image.src},centerX-24,baselineY-60,48,64);return;
     }
     if(W.PsyTrainerWalkV1){const atlas=W.PsyTrainerWalkV1.getAtlas(avatar.image);W.PsyTrainerWalkV1.draw(ctx,atlas,row,col,centerX-24,baselineY-60,48,64);return;}
     const image=avatar.image,cols=avatar.frameCols||4,index=row*cols+col,box=avatar.frameBounds?.[index];
@@ -512,7 +514,7 @@
   function tick() {
     if(!model.root?.classList.contains('open')){model.raf=0;return;}
     if(W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.()||D.getElementById('psy-hobby-fishing')?.classList.contains('show')){
-      model.held=null;model.autoPath=[];model.raf=W.requestAnimationFrame(tick);return;
+      model.held=null;model.autoPath=[];const now=performance.now(),fishingShown=D.getElementById('psy-hobby-fishing')?.classList.contains('show');if(fishingShown&&(!model.lastRender||now-model.lastRender>=33)){render();model.lastRender=now;}model.raf=W.requestAnimationFrame(tick);return;
     }
     const now=performance.now();
     if(model.autoHunt&&Number(player().meta?.vipUntil||0)<=Date.now()){model.autoHunt=false;model.autoPath=[];}
@@ -520,9 +522,10 @@
       const cells=[];for(let y=1;y<ROWS-1;y++)for(let x=1;x<COLS-1;x++)if(model.map.grid[y][x]===5)cells.push({x,y,d:Math.hypot(x-model.x,y-model.y)});
       cells.sort((a,b)=>a.d-b.d);for(const target of cells.slice(0,12).sort(()=>Math.random()-.5)){const route=tilePath(target);if(route.length){model.autoPath=route;break;}}
     }
-    if(!model.held&&model.autoPath?.length&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)&&!W.PsyGuide?.isOpen()){model.lastMove=now;move(model.autoPath.shift());}
-    if(model.held&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)){model.lastMove=now;move(model.held)}
-    if(!model.lastRender||now-model.lastRender>(model.held?33:220)){render();model.lastRender=now;}model.raf=requestAnimationFrame(tick);
+    const activityAction=W.PsyHobbiesVFX?.blocksMovement?.(model.place?.id);
+    if(!activityAction&&!model.held&&model.autoPath?.length&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)&&!W.PsyGuide?.isOpen()){model.lastMove=now;move(model.autoPath.shift());}
+    if(!activityAction&&model.held&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)){model.lastMove=now;move(model.held)}
+    if(!model.lastRender||now-model.lastRender>(activityAction||model.held?33:220)){render();model.lastRender=now;}model.raf=requestAnimationFrame(tick);
   }
   function injectEntryButton() {
     const detail=D.querySelector('#psy-kanto-atlas .psy-kanto-detail');if(!detail)return;

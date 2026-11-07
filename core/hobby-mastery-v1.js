@@ -117,7 +117,7 @@ function renderInto(parent,id,rerender){
  top.append(avatar,summary);section.appendChild(top);
  if(REWARDS[id]){
   const rarity=el('section','ph-rarity-box');rarity.appendChild(el('h4','','✧ Prévia de raridades ✧'));
-  rarity.appendChild(el('p','','Valores de referência para as futuras raridades. Esta prévia ainda não altera as coletas.'));
+  rarity.appendChild(el('p','','Chances aplicadas às coletas deste Hobby. A qualidade do spot fica definida até a colheita ou o próximo respawn.'));
   const row=el('div','ph-rarity-row');
   for(const k of ['common','rare','epic','legend']){const badge=el('div','ph-rarity-tier ph-rarity-'+k);badge.appendChild(el('span','ph-rarity-gem',ICON[k]));badge.appendChild(el('b','',LABEL[k]));badge.appendChild(el('strong','',fmt(c[k])));badge.appendChild(el('small','',plannedMaterial(id,k)));row.appendChild(badge)}
   rarity.appendChild(row);section.appendChild(rarity);

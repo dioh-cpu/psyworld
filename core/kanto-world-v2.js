@@ -15,13 +15,14 @@ function questDone(){const q=progress();return !!(q.oak)}
 function mark(key){const q=progress();if(q[key])return;q[key]=true;putProgress();hud()}
 function player(){try{return typeof P!=='undefined'?P:(W.P||{})}catch(_){return W.P||{}}}
 function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{if(url.startsWith('assets/characters/halloween/')){try{prepareAvatar(o)}catch(err){o.spriteError=true;console.warn('Trainer sprite could not be prepared',err)}}o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
+function updateFishingButton(){const button=state.root?.querySelector('[data-kw2-fish]');if(!button)return;const art=state.images.get(state.world?.art||'')?.mapCanvas;button.hidden=!!state.inside||!W.PsyHobbies?.canFish?.(state.world?.id,state.position,art)}
 function makeUI(){if(state.root)return;const root=D.createElement('div');root.id='psy-kanto-world-v2';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
 root.innerHTML='<header class="kw2-top"><button type="button" data-atlas>← ATLAS</button><div><strong class="kw2-title"></strong><small class="kw2-subtitle"></small></div><button type="button" class="kw2-route" data-kw2-route title="Seguir objetivo principal" aria-label="Rota automática da missão principal">↗</button><button type="button" class="kw2-menu-toggle" data-kw2-menu aria-expanded="false">☰ MENU</button><button type="button" class="kw2-close" aria-label="Fechar">×</button></header><div class="kw2-stage"><canvas aria-label="Mapa jogável com colisões"></canvas><div class="kw2-joystick"></div><section class="kw2-dialog"><div class="kw2-dialog-main"><img class="kw2-portrait" alt="Retrato do NPC"/><div><div class="kw2-dialog-title"></div><div class="kw2-expression"></div><div class="kw2-dialog-body"></div></div></div><div class="kw2-dialog-actions"></div></section></div><footer class="kw2-footer"><div class="kw2-objective"></div><div class="kw2-pad"><button data-dir="up" aria-label="Subir">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Descer">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button class="kw2-interact" data-interact>INTERAGIR</button><button class="kw2-fish" data-kw2-fish type="button" hidden>PESCAR</button></footer><section class="kw2-menu" role="dialog" aria-modal="true" aria-label="Menu da campanha" hidden><div class="kw2-menu-shell"><header class="kw2-menu-head"><div><small>PSYWORLD · KANTO</small><h2>MENU DA CAMPANHA</h2></div><button type="button" data-kw2-menu-close aria-label="Fechar menu">×</button></header><div class="kw2-menu-actions"><button type="button" data-kw2-panel="team">👥 TIME / BOX</button><button type="button" data-kw2-panel="bag">🎒 MOCHILA</button><button type="button" data-kw2-panel="pokedex">📘 POKÉDEX</button><button type="button" data-kw2-panel="hobbies">🌿 HOBBIES</button><button type="button" data-kw2-panel="titles">✧ TÍTULOS</button><button type="button" data-kw2-panel="gyms">🏆 GINÁSIOS</button><button type="button" data-kw2-panel="shop">🛍 LOJA</button><button type="button" data-kw2-panel="allmodes">⬇ BAIXAR TODOS OS MODOS</button></div><div class="kw2-menu-columns"><section class="kw2-menu-block"><h3>MISSÕES E ROTA</h3><p>Use ROTA para seguir até o objetivo. O atalho ↗ no cabeçalho segue a missão principal.</p><div data-kanto-quest-slot></div></section><section class="kw2-menu-block"><h3>AUTOMAÇÃO · VIP</h3><p>Configure o Auto Hunt sem cobrir o mapa.</p><div data-kanto-auto-slot></div></section></div><button type="button" class="kw2-menu-return" data-kw2-menu-close>VOLTAR À EXPLORAÇÃO</button></div></section>';
 root.addEventListener('contextmenu',e=>e.preventDefault());
 root.addEventListener('selectstart',e=>e.preventDefault());
 root.addEventListener('dragstart',e=>e.preventDefault());
 D.body.appendChild(root);state.root=root;state.canvas=root.querySelector('canvas');state.ctx=state.canvas.getContext('2d');
-root.querySelector('[data-kw2-fish]').onclick=()=>W.PsyHobbies?.startFishing?.(state.world?.id);
+root.querySelector('[data-kw2-fish]').onclick=()=>W.PsyHobbies?.startFishing?.(state.world?.id,{x:state.position.x,y:state.position.y,facing:state.facing});
 root.querySelector('[data-atlas]').onclick=()=>{close();W.openKantoJourneyV1?.()};root.querySelector('.kw2-close').onclick=close;root.querySelector('[data-interact]').onclick=interact;
 root.querySelector('[data-kw2-menu]').onclick=()=>toggleCampaignMenu();
 root.querySelectorAll('[data-kw2-menu-close]').forEach(b=>b.onclick=()=>toggleCampaignMenu(false));
@@ -98,13 +99,13 @@ function openCampaignPanel(kind){
  }
  suspendCampaignForPanel(spec.id);
 }
-function open(id,options={}){if(!['pallet','route-1','viridian'].includes(id)||!DATA[id==='route-1'?'route1':id])return false;const previousWorld=state.world?.id||null;
+function open(id,options={}){if(!['pallet','route-1','viridian'].includes(id)||!DATA[id==='route-1'?'route1':id])return false;const previousWorld=state.world?.id||null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);
 if(id==='viridian'&&!progress().viridian&&!options.skipGuard)return false;
 if(id==='route-1'&&!progress().oak&&!options.skipGuard){open('pallet');setTimeout(()=>showDialog('Rota 1 bloqueada','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.'),80);return false}
 W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();toggleCampaignMenu(false);state.externalPanel=null;state.root.style.visibility='';state.root.dataset.world=id;D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=id==='pallet'?DATA.pallet:id==='route-1'?DATA.route1:DATA.viridian;state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
-const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;
+const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;updateFishingButton();
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}W.PsyKantoStoryV49?.enter(previousWorld,id);return true;}
-function close(){if(state.root){state.root.style.visibility='';toggleCampaignMenu(false);state.externalPanel=null;}W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
+function close(){W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);if(state.root){state.root.style.visibility='';toggleCampaignMenu(false);state.externalPanel=null;}W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
 let autoHunt=false,huntPlanAt=0,huntPlanning=false;
 const vipActive=()=>Number(player().meta?.vipUntil||0)>Date.now();
 const PLAYER_RADIUS=11;
@@ -140,14 +141,7 @@ if(state.externalPanel){
  state.raf=W.requestAnimationFrame(tick);return;
 }
 if(state.menuOpen){state.raf=W.requestAnimationFrame(tick);return;}
-if(now-(state.lastFishingCheck||0)>550){
- state.lastFishingCheck=now;
- const fishButton=state.root?.querySelector('[data-kw2-fish]');
- if(fishButton){
-  const art=state.images.get(state.world?.art||'')?.mapCanvas;
-  fishButton.hidden=!!state.inside||!W.PsyHobbies?.canFish?.(state.world?.id,state.position,art);
- }
-}
+if(now-(state.lastFishingCheck||0)>550){state.lastFishingCheck=now;updateFishingButton();}
 if(autoHunt&&(!vipActive()||!(player().team||[]).some(mon=>Number(mon.hp)>0))){autoHunt=false;state.path=[];}
 if(autoHunt&&!huntPlanning&&!state.inside&&!state.dialogOpen&&!state.suspended&&!state.path.length&&now-huntPlanAt>900){
  huntPlanAt=now;
@@ -161,7 +155,7 @@ if(autoHunt&&!huntPlanning&&!state.inside&&!state.dialogOpen&&!state.suspended&&
 }
 let dx=0,dy=0,pathDistance=Infinity;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
 if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<.5){if(positionValid(...dest)){p.x=dest[0];p.y=dest[1];}state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d;pathDistance=d}}
-state.moving=false;if(dx||dy)move(dx,dy,dt,pathDistance);if(state.root){state.root.dataset.worldPosition=Math.round(state.position.x)+','+Math.round(state.position.y);state.root.dataset.pathLength=String(state.path.length);}
+state.moving=false;const activityScene=state.inside?.id||state.world?.id,activityLocked=W.PsyHobbiesVFX?.blocksMovement?.(activityScene);if((dx||dy)&&!activityLocked)move(dx,dy,dt,pathDistance);if(state.root){state.root.dataset.worldPosition=Math.round(state.position.x)+','+Math.round(state.position.y);state.root.dataset.pathLength=String(state.path.length);}
 const frameBudget=W.innerWidth<740?1000/48:1000/60;
 if(!W.PsyKantoStoryV49?.isOpen()&&now-state.lastRender>=frameBudget){draw();state.lastRender=now}
 state.raf=W.requestAnimationFrame(tick)}
@@ -248,10 +242,9 @@ function drawPlayer(c,x,y){
   c.save();
   c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13,5,0,0,Math.PI*2);c.fill();
   const fashion=W.PsyProfessions?.cosmetic?.();if(fashion){c.save();c.strokeStyle=fashion.color;c.globalAlpha=.7;c.lineWidth=2;c.beginPath();c.ellipse(x,y+4,18,7,0,0,Math.PI*2);c.stroke();if(state.moving){c.globalAlpha=.45;for(let i=0;i<3;i++){c.beginPath();c.arc(x+(i-1)*9,y+8+(Math.sin(state.walkFrame+i)+1)*4,1.8,0,Math.PI*2);c.fillStyle=fashion.color;c.fill()}}c.restore()}
-  const entry=selectedAvatar();let usedSprite=false;
+  const entry=selectedAvatar(),scene=state.inside?.id||state.world?.id,action=W.PsyHobbiesVFX?.sampleAction?.(scene,{x,y,moving:false}),row=action?.row??({down:0,left:1,right:2,up:3})[state.facing]??0;let usedSprite=false;
   if(entry?.loaded){
-    const row=({down:0,left:1,right:2,up:3})[state.facing]||0;
-    const moving=state.moving;
+    const moving=state.moving&&!action;
     const walk=W.PsyTrainerWalkV1;
     if(entry.animationAtlas&&walk?.renderAnimated){
       if(!humanAnimationState)humanAnimationState=walk.createState();
@@ -268,6 +261,7 @@ function drawPlayer(c,x,y){
       usedSprite=true;
     }
   }
+  W.PsyHobbiesVFX?.drawActor?.(c,scene,{x,y,action,atlas:entry?.animationAtlas,avatarUrl:entry?.im?.src||''});
   // Never substitute a blocky test character while the real sheet loads.
   // The canvas redraws as soon as the trainer atlas becomes available.
   c.font='bold 12px system-ui';c.fillStyle='#fff';c.textAlign='center';
@@ -305,7 +299,7 @@ function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.e
 function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;
 const scene=state.inside?.id||state.world?.id;
 const gather=W.PsyHobbies?.nearby?.(scene,state.position,65);
-if(gather){W.PsyHobbies?.collect?.(scene,gather.id);return;}
+if(gather){W.PsyHobbies?.interact?.(scene,gather.id,{x:state.position.x,y:state.position.y,facing:state.facing});return;}
 const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
 activateTarget(a)}
 function activateTarget(a){if(a.type==='return'){if(state.world?.id==='viridian')open('route-1',{spawn:[844,100],skipGuard:true});else open('pallet',{spawn:[525,60]});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
@@ -426,7 +420,7 @@ function touchEnd(e){
 const scene=state.inside?.id||state.world?.id;
 if(state.inside&&W.PsyHobbies?.place?.(state.inside.id,t.tx,t.ty,state.inside)){draw();return;}
 const gather=W.PsyHobbies?.nearby?.(scene,{x:t.tx,y:t.ty},28);
-if(gather&&Math.hypot(gather.x-state.position.x,gather.y-state.position.y)<65){W.PsyHobbies?.collect?.(scene,gather.id);draw();return;}
+if(gather&&Math.hypot(gather.x-state.position.x,gather.y-state.position.y)<65){W.PsyHobbies?.interact?.(scene,gather.id,{x:state.position.x,y:state.position.y,facing:state.facing});draw();return;}
 const near=currentTargets().find(v=>Math.hypot(v.at[0]-t.tx,v.at[1]-28-t.ty)<(v.type==='npc'?44:30)&&(v.type==='npc'||Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)<70));if(near){activateTarget(near);return}const request=++state.navRequest;findPath([state.position.x,state.position.y],[t.tx,t.ty],request).then(path=>{if(request===state.navRequest&&state.root?.classList.contains('open'))state.path=path})}}
 // Tap-to-walk searches asynchronously, yielding control to the game each frame.
 // Terrain queries are memoized per location; dragging joystick cancels old searches.

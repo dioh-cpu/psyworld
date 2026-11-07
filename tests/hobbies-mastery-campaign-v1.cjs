@@ -1,6 +1,5 @@
-/* PSYWORLD — mastery and campaign overlay regression
+/* PSYWORLD — mastery, spot-effect and campaign overlay regression
  * node tests/hobbies-mastery-campaign-v1.cjs
- * No collectible-spot or animation behavior is changed by this test.
  */
 const fs=require('node:fs');
 const vm=require('node:vm');
@@ -29,10 +28,11 @@ assert(playable.includes('W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.()'),'C
 assert(css.includes('.ph-mastery-tree')&&css.includes('.ph-rarity-tier')&&css.includes('.psy-titles-panel'),'Mastery and title gallery need responsive styling');
 assert(css.includes('@media(max-width:520px)')&&css.includes('@media(max-height:500px)'),'Both portrait and landscape styles are required');
 assert(css.includes('prefers-reduced-motion'),'Accessibility motion preference must be respected');
-// Only Codex changes the collectible-spot and animation mechanics.
+// Spot mechanics are in Hobbies V2; mastery stays the source of chances/ranks.
 assert(!hobby.includes('PsyHobbyMastery?.rollNextSpot'),'Rare spot mechanics must remain outside this UI patch');
-assert(hobby.includes("hit=node.kind==='miner'||node.kind==='lumber'?count(record.hits)+1:5"),'Keep existing five-hit spot mechanic');
-assert(hobby.includes("const pick=Math.random(),item=lvl>=10"),'Keep existing fishing reward logic');
+assert(hobby.includes('need=requiredHits(node.kind)')&&hobby.includes('if(hit<need)'),'Spot hit count must apply the actual mastery effect');
+assert(hobby.includes("const reward=rollReward('fisher')"),'Fishing must use the same rarity chances shown by mastery');
+assert(hobby.includes("W.PsyHobbyMastery?.chances?.(kind)"),'Collectible rarity must use the existing mastery chance contract');
 const names=['miner','gardener','fisher','lumber','engineer','herbalist','researcher','professor','stylist','echo','dream','twilight','alchemist'];
 const p={inventory:{},team:[{id:1}],meta:{auxHobbiesV1:Object.fromEntries(names.map(id=>[id,{level:1,xp:0,base:{}}]))}};
 let saves=0;
@@ -67,6 +67,7 @@ assert.equal(W2.PsyHobbyMastery.rank('miner','radar'),1,'Unlocked node persists 
 assert(saves>=2,'Node unlocks should save progress');
 assert(!mastery.includes('function rollNextSpot('),'Spot spawning must remain owned by Codex');
 assert(!mastery.includes('function respawnFactor('),'Spot respawn must remain owned by Codex');
+assert(mastery.includes('Chances aplicadas às coletas deste Hobby'),'The existing preview must describe its now-live collection effect');
 assert(hobby.includes('PsyHobbyMastery?.statBonus?.(k)'),'Non-spot mastery bonuses should apply through the existing buff getter');
 assert(M.buy('professor','base'),'Professor baseline skill should be unlockable');
 assert.equal(M.statBonus('atk'),.25,'Generic hobby stat node should grant its non-spot bonus');
