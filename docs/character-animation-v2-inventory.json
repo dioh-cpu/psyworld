@@ -1,0 +1,1749 @@
+{
+  "baseCommit": "967d7db868c5589530356ea8841190ee18747a06",
+  "characters": 6,
+  "originalLooks": 6,
+  "halloweenLooks": 24,
+  "combinations": 240,
+  "items": [
+    {
+      "id": "black_boy",
+      "name": "Kai",
+      "key": "basic",
+      "original": "assets/characters/halloween/basic-black-boy.webp",
+      "originalSha256": "4e71cc04202cc361caa1c4b66de27a634785534831512a57dc8c5d3f02e97972",
+      "atlas": "assets/characters/animation-v2/basic-black-boy.webp",
+      "atlasSha256": "1d6d3899b34c75308ba9a4257f7c8f3e1dd7306b291ec685bbfa6bc7ace60524",
+      "neutral": "assets/characters/idle-v2/basic-black-boy.webp",
+      "neutralSha256": "4f3e835eda10dbf8ff08bc55d023b14d18a1d9a736c56c2738e441e2b6e45dd9",
+      "originalRole": "roupa original / Traje de Jornada",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_girl",
+      "name": "Maya",
+      "key": "basic",
+      "original": "assets/characters/halloween/basic-black-girl.webp",
+      "originalSha256": "31009b3d63161e31de7a999e7e069f1d78d0dc3311674c4ed9841a3c2345f1c9",
+      "atlas": "assets/characters/animation-v2/basic-black-girl.webp",
+      "atlasSha256": "6d17b7d676164f2f7f6467e495e5e68fe275c855693e62944235d06f940865f7",
+      "neutral": "assets/characters/idle-v2/basic-black-girl.webp",
+      "neutralSha256": "703ccdd9c1ce78f7312fcbaa69dd19389b5d5b85daae1a0cd9054893b82361be",
+      "originalRole": "roupa original / Traje de Jornada",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_boy",
+      "name": "Rapaz gótico",
+      "key": "basic",
+      "original": "assets/characters/halloween/basic-gothic-boy.webp",
+      "originalSha256": "e99f6b8c1d1b66c027bb6484e60fc081a883a980cb70eada3217e113e162a071",
+      "atlas": "assets/characters/animation-v2/basic-gothic-boy.webp",
+      "atlasSha256": "0d8146de901f86bce2d98e07952a61bdaee184cbef69f2d5eda7ae53ffcabe7a",
+      "neutral": "assets/characters/idle-v2/basic-gothic-boy.webp",
+      "neutralSha256": "ae021ec4f04235e915912282fab1d0a4d106a4493e052e8aa7017d2fed175482",
+      "originalRole": "roupa original / Traje de Jornada",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_girl",
+      "name": "Garota gótica",
+      "key": "basic",
+      "original": "assets/characters/halloween/basic-gothic-girl.webp",
+      "originalSha256": "9d1155254215bd5cb25dece388559a31485f52af206c4c7244d0eda462340ad3",
+      "atlas": "assets/characters/animation-v2/basic-gothic-girl.webp",
+      "atlasSha256": "d46142832e361168bd87d8c4a12cc789fdf76b634c50cad51aa62d666fbad72f",
+      "neutral": "assets/characters/idle-v2/basic-gothic-girl.webp",
+      "neutralSha256": "b84652d5664935ff626cb78378e52107207bf5e6375ec3f58cca27bd432f46c8",
+      "originalRole": "roupa original / Traje de Jornada",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_boy",
+      "name": "Aventureiro",
+      "key": "basic",
+      "original": "assets/characters/halloween/basic-adventure-boy.webp",
+      "originalSha256": "b2792be3430752dd2ca08819ece89740feedc4a6cdbe1f86fb3d420cb1104b59",
+      "atlas": "assets/characters/animation-v2/basic-adventure-boy.webp",
+      "atlasSha256": "07fe9f78c07cca857d45d6c3f60b1fe6d6f8603acc455dadc8c85e764e2fca8b",
+      "neutral": "assets/characters/idle-v2/basic-adventure-boy.webp",
+      "neutralSha256": "dc2919f467b9f7ce0c1f1f0fcf6578c57b14ec2eaa561a4fa3ac0c0e6b74a77e",
+      "originalRole": "roupa original / Traje de Jornada",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_girl",
+      "name": "Aventureira",
+      "key": "basic",
+      "original": "assets/characters/halloween/basic-adventure-girl.webp",
+      "originalSha256": "67491e53e5e3a1bf6342adf7960f4e54275be1951c3c41b0f844f5be047aba05",
+      "atlas": "assets/characters/animation-v2/basic-adventure-girl.webp",
+      "atlasSha256": "5d09defd6548f2288d6037298f41f2334cc9ed245ba3df37ab1368233865acd8",
+      "neutral": "assets/characters/idle-v2/basic-adventure-girl.webp",
+      "neutralSha256": "cc9ac03a4929e0adb88c104b2d35b0b6cedce4ea2df9146df814e26527d6d68b",
+      "originalRole": "roupa original / Traje de Jornada",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_boy",
+      "name": "Kai",
+      "key": "divine",
+      "original": "assets/characters/halloween/divine-black-boy.webp",
+      "originalSha256": "a73b039cd53198652efc4d81f0fe68beb2916bdc7d9731f511121ef565cf95e1",
+      "atlas": "assets/characters/animation-v2/divine-black-boy.webp",
+      "atlasSha256": "11f8c55779e768b0eea3b0440b7ba615e0f7657b6445beb08417329899f458f2",
+      "neutral": "assets/characters/idle-v2/divine-black-boy.webp",
+      "neutralSha256": "3c6fc2048c6ec3334b75dcde0eb90905d97c266ade830c32591da439dd064c26",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_girl",
+      "name": "Maya",
+      "key": "divine",
+      "original": "assets/characters/halloween/divine-black-girl.webp",
+      "originalSha256": "d63a3b420316bdc694c751fa7121e933ded0b567d81e1c1eb574f754377b5047",
+      "atlas": "assets/characters/animation-v2/divine-black-girl.webp",
+      "atlasSha256": "aef71e2ccc138a80511e212ad5165a3b4a46e7cca360479cd9484bb8c1e8ef81",
+      "neutral": "assets/characters/idle-v2/divine-black-girl.webp",
+      "neutralSha256": "23dbedce57d32599c9354d33bdb5c3ebec2ca8b96097e5f24d2a4d0689171cff",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_boy",
+      "name": "Rapaz gótico",
+      "key": "divine",
+      "original": "assets/characters/halloween/divine-gothic-boy.webp",
+      "originalSha256": "a73da186e4b8dc7f5e0bf4ef96dfefb5b88a1104e2080d6803829716dc469abb",
+      "atlas": "assets/characters/animation-v2/divine-gothic-boy.webp",
+      "atlasSha256": "6fcfcb13b6b98ac3a042c07dd842967a4eef8b9d90d0605ddf11064d5d0a4726",
+      "neutral": "assets/characters/idle-v2/divine-gothic-boy.webp",
+      "neutralSha256": "391e08d3b534e88faf6f9d362ea45f8e804db92a70a34d3c014a87f70a454f7a",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_girl",
+      "name": "Garota gótica",
+      "key": "divine",
+      "original": "assets/characters/halloween/divine-gothic-girl.webp",
+      "originalSha256": "d2126c5c91c29a1a972960bb7b0e1e4a47f111a05b09aa2adc8044f9740d789c",
+      "atlas": "assets/characters/animation-v2/divine-gothic-girl.webp",
+      "atlasSha256": "42e5273bccaefa15e45d8beb0def8bc8f743a86574e6c64ba0ad5238fee3a25d",
+      "neutral": "assets/characters/idle-v2/divine-gothic-girl.webp",
+      "neutralSha256": "faf343c87380c6eb2c101104d77ef58628d710bb48b83f50b330d5fdeb9d84dd",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_boy",
+      "name": "Aventureiro",
+      "key": "divine",
+      "original": "assets/characters/halloween/divine-adventure-boy.webp",
+      "originalSha256": "fe2b52e1d5db213be46723c4a543441a0be2f840c891bc3361972dcf1c02d7b3",
+      "atlas": "assets/characters/animation-v2/divine-adventure-boy.webp",
+      "atlasSha256": "ced248952a0c6fdb586ac75cafd78e341331c9f77dec1978a161d0c4ddfdd306",
+      "neutral": "assets/characters/idle-v2/divine-adventure-boy.webp",
+      "neutralSha256": "a6c1940252202f4ea94e708fa5a0f778115d70c4cb35e61737a7072dd221172b",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_girl",
+      "name": "Aventureira",
+      "key": "divine",
+      "original": "assets/characters/halloween/divine-adventure-girl.webp",
+      "originalSha256": "764a141d8ac8b06a8b462508cb0aa7a7c8f333ce970f84974a0857cca2f43ef2",
+      "atlas": "assets/characters/animation-v2/divine-adventure-girl.webp",
+      "atlasSha256": "9f559f24367836001c69724821d11662af8a2d8e3767c16dc681d600a39d1425",
+      "neutral": "assets/characters/idle-v2/divine-adventure-girl.webp",
+      "neutralSha256": "c4a807ac9011500756ad57c607003454ed6a7a600454875509158a5f860a0d36",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_boy",
+      "name": "Kai",
+      "key": "macabre",
+      "original": "assets/characters/halloween/horror-ghostface-black-boy.webp",
+      "originalSha256": "0c7b0d9a07af9d3b9a1b37a4a4b57e04f9a45ff6f9197331de18617e6d37a80a",
+      "atlas": "assets/characters/animation-v2/horror-ghostface-black-boy.webp",
+      "atlasSha256": "a72450ef96325bffe60c826a4799ba130fb7296751650d6482c00737b3b009a7",
+      "neutral": "assets/characters/idle-v2/horror-ghostface-black-boy.webp",
+      "neutralSha256": "06fb85435905d9e661ecd4e8a863107ab335d3d30d2f523072ecc50276677ac2",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_girl",
+      "name": "Maya",
+      "key": "macabre",
+      "original": "assets/characters/halloween/horror-ghostface-black-girl.webp",
+      "originalSha256": "ac3a296d415ae773d44cddfbbdb23b1ad0918ca0b02fb4afa7f20161368866c3",
+      "atlas": "assets/characters/animation-v2/horror-ghostface-black-girl.webp",
+      "atlasSha256": "20016a1b8eb4c6e08248153faf18278997930fdfa878221b9845d7dd6562ac5d",
+      "neutral": "assets/characters/idle-v2/horror-ghostface-black-girl.webp",
+      "neutralSha256": "bf8d7c13fa915162af3cdfb6bb27315f130c1140afda6ca32b18e7d7a9365d3e",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_boy",
+      "name": "Rapaz gótico",
+      "key": "macabre",
+      "original": "assets/characters/halloween/horror-freddy-gothic-boy.webp",
+      "originalSha256": "931ecd62888ff0d7a3055852a7d73121c31a4bdca87b00c002f709c2751da62c",
+      "atlas": "assets/characters/animation-v2/horror-freddy-gothic-boy.webp",
+      "atlasSha256": "7fd016fea1f28672bbeccd0185658ec310cc80879dcf73339083cca12161b2d7",
+      "neutral": "assets/characters/idle-v2/horror-freddy-gothic-boy.webp",
+      "neutralSha256": "34c06a558a0a1e36fb998d7a1807c485f23d84e5907cdd0abc611ffe2f041476",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_girl",
+      "name": "Garota gótica",
+      "key": "macabre",
+      "original": "assets/characters/halloween/horror-myers-gothic-girl.webp",
+      "originalSha256": "8071329ceb330f2aa4e863207fc210fcb1cc7487b8586dfd3bb155119e01df7e",
+      "atlas": "assets/characters/animation-v2/horror-myers-gothic-girl.webp",
+      "atlasSha256": "98486586fb407fff01e5b9b3b2d80f634f0b2f1355a67780d3d6766271b663f1",
+      "neutral": "assets/characters/idle-v2/horror-myers-gothic-girl.webp",
+      "neutralSha256": "de4e17429c728871a00d58ecd46e164165b1b3887e5a3567ee810d83d05cb04b",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_boy",
+      "name": "Aventureiro",
+      "key": "macabre",
+      "original": "assets/characters/halloween/horror-jason-adventure-boy.webp",
+      "originalSha256": "075a4ede411f97c593f8b96534327e099ebe562ee7af52c728308ac8a1ea1be7",
+      "atlas": "assets/characters/animation-v2/horror-jason-adventure-boy.webp",
+      "atlasSha256": "c4a0df62e2b761c3b33bf48b2cca72d7a1c68e42d32352e2a8f67b035a5bbfc3",
+      "neutral": "assets/characters/idle-v2/horror-jason-adventure-boy.webp",
+      "neutralSha256": "8f5b734d4e76fd7431d5ae85d7f8984cc27da4cdf5fbbe292e380ad6458bd98d",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_girl",
+      "name": "Aventureira",
+      "key": "macabre",
+      "original": "assets/characters/halloween/horror-spectral-bride-adventure-girl.webp",
+      "originalSha256": "e43eb0ec6bb0c67b511b5998551190c3bf3d81fbdf4bb3f54969059d5c82372b",
+      "atlas": "assets/characters/animation-v2/horror-spectral-bride-adventure-girl.webp",
+      "atlasSha256": "02a818f527e5ac4093dc9499f7a61dd6ce3868f65c5dce6e4f642d41a44a18f9",
+      "neutral": "assets/characters/idle-v2/horror-spectral-bride-adventure-girl.webp",
+      "neutralSha256": "a1cee5fc06e9b2a6df580beb86c06bfb0c099d055dc4df08053917d37ad80deb",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_boy",
+      "name": "Kai",
+      "key": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-black-boy.webp",
+      "originalSha256": "2939b3974963b6ba7f08b80159993fcce0256f7335f31a9807b4de59bfc6504c",
+      "atlas": "assets/characters/animation-v2/macabre-alt-black-boy.webp",
+      "atlasSha256": "602f00637009e20e1aed38ca5ab9ff8a851439cd6f6e0040443a8417c736c9c9",
+      "neutral": "assets/characters/idle-v2/macabre-alt-black-boy.webp",
+      "neutralSha256": "8d4508821ab65dbba9105d32c50f522af7eb9353275bce5634b65b14def697e4",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_girl",
+      "name": "Maya",
+      "key": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-black-girl.webp",
+      "originalSha256": "e46afd30542abbe752cbb1cbed109d4bcd01704aa88e9481b48e732cd4f6ee11",
+      "atlas": "assets/characters/animation-v2/macabre-alt-black-girl.webp",
+      "atlasSha256": "125029aba4e38ac48aacf7200370fc4b73a1e6acffab4aa2ed9c836144e043f8",
+      "neutral": "assets/characters/idle-v2/macabre-alt-black-girl.webp",
+      "neutralSha256": "6856aefa32d5e3f42121d7da1b88d5d31a5d87a3e24d45257503588447934213",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_boy",
+      "name": "Rapaz gótico",
+      "key": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-gothic-boy.webp",
+      "originalSha256": "471c3438ea67d35eac8f5b6f7cea997d1c82075b3b34a05ca1416802c3409819",
+      "atlas": "assets/characters/animation-v2/macabre-alt-gothic-boy.webp",
+      "atlasSha256": "843e307dba212ddaadf0cbbc4767e7f2511effc0b24e7cddcaeb4eb1190de5ee",
+      "neutral": "assets/characters/idle-v2/macabre-alt-gothic-boy.webp",
+      "neutralSha256": "2f64c1b08bf125ebe71f4a627d93d386a19a68a5fcad369c49b546fc8971293f",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_girl",
+      "name": "Garota gótica",
+      "key": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-gothic-girl.webp",
+      "originalSha256": "f9bab6110ecf62cde33ab5c97d70938734c39317a7b20e7446b06dbf174ae492",
+      "atlas": "assets/characters/animation-v2/macabre-alt-gothic-girl.webp",
+      "atlasSha256": "5e8749442addc75f884a68ccd3fc3e7c2e81511292a151b4075e754f4546a441",
+      "neutral": "assets/characters/idle-v2/macabre-alt-gothic-girl.webp",
+      "neutralSha256": "c50f7c9704f7aee96e7a1d99cbbc33f8195e40dcf7e57cdf0a4e730bdfbebd4f",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_boy",
+      "name": "Aventureiro",
+      "key": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-adventure-boy.webp",
+      "originalSha256": "eea06101406a12c79a08280dc2d0d2804b79db4f0d27eaecca234f9fa3540c70",
+      "atlas": "assets/characters/animation-v2/macabre-alt-adventure-boy.webp",
+      "atlasSha256": "2dba29cec18957c12434ce0cc3309aa9fd0088274c390da979994b832b387d0b",
+      "neutral": "assets/characters/idle-v2/macabre-alt-adventure-boy.webp",
+      "neutralSha256": "5b848edc86ccad50d6abd9e22cf2fa0431e1d3dd2e1bfb01bae91d2c623fb426",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_girl",
+      "name": "Aventureira",
+      "key": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-adventure-girl.webp",
+      "originalSha256": "7021086a2b85754594246e99683c17fbcfe3f842614baedff834344ea48b6b0a",
+      "atlas": "assets/characters/animation-v2/macabre-alt-adventure-girl.webp",
+      "atlasSha256": "04e3cdd161f0e975c0117a94c5d1e5f0444daa6c4f191c6e0bad52227fbb13bc",
+      "neutral": "assets/characters/idle-v2/macabre-alt-adventure-girl.webp",
+      "neutralSha256": "33c4b30c5bb37cf69ef544b87551c2a370fafb4de95b37025de3be69a29f6c47",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_boy",
+      "name": "Kai",
+      "key": "supreme",
+      "original": "assets/characters/halloween/apex-black-boy.webp",
+      "originalSha256": "1b961a9867ff6fc2ff6c61d17d85d4a0c0356270fa691c3cfecda951b5e8ac72",
+      "atlas": "assets/characters/animation-v2/apex-black-boy.webp",
+      "atlasSha256": "0d4de0d65c11c1769c5fab60665a1134b1c7a1534d6f4e9ea3b0b7f24a0bad36",
+      "neutral": "assets/characters/idle-v2/apex-black-boy.webp",
+      "neutralSha256": "bbb306bdf21bc3a8297ba7c4b829e53beaf4e315f94d4420fbaab8455c9760c3",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "black_girl",
+      "name": "Maya",
+      "key": "supreme",
+      "original": "assets/characters/halloween/apex-black-girl.webp",
+      "originalSha256": "c923dda4a4baee4b47fbb5ee3db16524b6c684ce6b2d5ef8307091cf248f37bf",
+      "atlas": "assets/characters/animation-v2/apex-black-girl.webp",
+      "atlasSha256": "603131918911e7dfde941f14835fb64d32e6a1fb855b6ce60dd4293243ba5030",
+      "neutral": "assets/characters/idle-v2/apex-black-girl.webp",
+      "neutralSha256": "0ff1289cd7790a9baec0b5af7289783da35d06d93395aba4ab98351221896299",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_boy",
+      "name": "Rapaz gótico",
+      "key": "supreme",
+      "original": "assets/characters/halloween/apex-gothic-boy.webp",
+      "originalSha256": "31e5b9ebede1f4a12acc653b798f19ad8f3814f429ee73743c715dea22ab76a2",
+      "atlas": "assets/characters/animation-v2/apex-gothic-boy.webp",
+      "atlasSha256": "79f4556ce8fca0ea2f5cd3f097c9cb3e7fa2c3dced882b9b60b73fb1ededdbe8",
+      "neutral": "assets/characters/idle-v2/apex-gothic-boy.webp",
+      "neutralSha256": "81bffd5bd06255a903df4296092a377ccacfce07e833f7efd580770f9cc97309",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "gothic_girl",
+      "name": "Garota gótica",
+      "key": "supreme",
+      "original": "assets/characters/halloween/apex-gothic-girl.webp",
+      "originalSha256": "c82ecdf820bac5d2c040ee3efd8dfc2059be50196a6218b73ef8888ecb4b4f22",
+      "atlas": "assets/characters/animation-v2/apex-gothic-girl.webp",
+      "atlasSha256": "015273df0e505cd83c1d4f43a56f31df665cb39123e78eb87f321920fbc072a2",
+      "neutral": "assets/characters/idle-v2/apex-gothic-girl.webp",
+      "neutralSha256": "6698fedde09d4f2a731eb756c9cf7f8d4addba7a5f55c61ad7bb02987cd2c097",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_boy",
+      "name": "Aventureiro",
+      "key": "supreme",
+      "original": "assets/characters/halloween/apex-adventure-boy.webp",
+      "originalSha256": "00784d4d335a420db1713d1dde3b3cbecb293f38b0c3288c0ef394981933fcfc",
+      "atlas": "assets/characters/animation-v2/apex-adventure-boy.webp",
+      "atlasSha256": "19f83219053ef0225746deb1d09270076496b288b1800ed0fc0276c0c02877ad",
+      "neutral": "assets/characters/idle-v2/apex-adventure-boy.webp",
+      "neutralSha256": "bcf4002887d071d9c6d31b3a0a42912737dc0139cdb2eb09dfa71f3239a27dd1",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    },
+    {
+      "id": "adventure_girl",
+      "name": "Aventureira",
+      "key": "supreme",
+      "original": "assets/characters/halloween/apex-adventure-girl.webp",
+      "originalSha256": "eab67c4e2ec400d93842937aff5f741c2dbdb91d81bca4ea0e22a0b377d16246",
+      "atlas": "assets/characters/animation-v2/apex-adventure-girl.webp",
+      "atlasSha256": "98144f248ecab492aa6e8579ad57fd2057d33697833bbc2fd1b455918265b925",
+      "neutral": "assets/characters/idle-v2/apex-adventure-girl.webp",
+      "neutralSha256": "6a567f92c1c1d432898cada4e46169d556e4cdcfb24ab7d9f66ba3da126bb92c",
+      "originalRole": "Halloween",
+      "sourceDimensions": [
+        2048,
+        2048
+      ],
+      "sourceGrid": [
+        4,
+        4
+      ],
+      "sourceFramesPerDirection": 4,
+      "sourceRows": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "canonicalDirections": [
+        "SOUTH",
+        "WEST",
+        "EAST",
+        "NORTH"
+      ],
+      "finalDimensions": [
+        2048,
+        1792
+      ],
+      "finalTile": [
+        256,
+        128
+      ],
+      "walkFramesPerDirection": 4,
+      "idlePhasesPerDirection": 4,
+      "bodyHeightWorldPx": 46,
+      "worldFloorY": 60,
+      "states": [
+        "WALK",
+        "settle",
+        "IDLE"
+      ],
+      "renderers": [
+        "Psy City / core/halloween-ui.js",
+        "Kanto contínuo e interiores / core/kanto-world-v2.js",
+        "Capítulos / core/kanto-campaign-playable-v1.js",
+        "Pré-visualizações da seleção / core/halloween-ui.js"
+      ],
+      "walkAcceptance": "Pendente: poses originais normalizadas; alternância biomecânica não aprovada",
+      "idleAcceptance": "Arte neutra expandida após aprovação da amostra; revisão final dos 30 visuais pendente"
+    }
+  ]
+}

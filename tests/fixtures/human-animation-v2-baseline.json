@@ -1,0 +1,74 @@
+{
+  "base": "967d7db868c5589530356ea8841190ee18747a06",
+  "files": {
+    "assets/characters/halloween/apex-adventure-boy.webp": "00784d4d335a420db1713d1dde3b3cbecb293f38b0c3288c0ef394981933fcfc",
+    "assets/characters/halloween/apex-adventure-girl.webp": "eab67c4e2ec400d93842937aff5f741c2dbdb91d81bca4ea0e22a0b377d16246",
+    "assets/characters/halloween/apex-black-boy.webp": "1b961a9867ff6fc2ff6c61d17d85d4a0c0356270fa691c3cfecda951b5e8ac72",
+    "assets/characters/halloween/apex-black-girl.webp": "c923dda4a4baee4b47fbb5ee3db16524b6c684ce6b2d5ef8307091cf248f37bf",
+    "assets/characters/halloween/apex-gothic-boy.webp": "31e5b9ebede1f4a12acc653b798f19ad8f3814f429ee73743c715dea22ab76a2",
+    "assets/characters/halloween/apex-gothic-girl.webp": "c82ecdf820bac5d2c040ee3efd8dfc2059be50196a6218b73ef8888ecb4b4f22",
+    "assets/characters/halloween/basic-adventure-boy.webp": "b2792be3430752dd2ca08819ece89740feedc4a6cdbe1f86fb3d420cb1104b59",
+    "assets/characters/halloween/basic-adventure-girl.webp": "67491e53e5e3a1bf6342adf7960f4e54275be1951c3c41b0f844f5be047aba05",
+    "assets/characters/halloween/basic-black-boy.webp": "4e71cc04202cc361caa1c4b66de27a634785534831512a57dc8c5d3f02e97972",
+    "assets/characters/halloween/basic-black-girl.webp": "31009b3d63161e31de7a999e7e069f1d78d0dc3311674c4ed9841a3c2345f1c9",
+    "assets/characters/halloween/basic-gothic-boy.webp": "e99f6b8c1d1b66c027bb6484e60fc081a883a980cb70eada3217e113e162a071",
+    "assets/characters/halloween/basic-gothic-girl.webp": "9d1155254215bd5cb25dece388559a31485f52af206c4c7244d0eda462340ad3",
+    "assets/characters/halloween/divine-adventure-boy.webp": "fe2b52e1d5db213be46723c4a543441a0be2f840c891bc3361972dcf1c02d7b3",
+    "assets/characters/halloween/divine-adventure-girl.webp": "764a141d8ac8b06a8b462508cb0aa7a7c8f333ce970f84974a0857cca2f43ef2",
+    "assets/characters/halloween/divine-black-boy.webp": "a73b039cd53198652efc4d81f0fe68beb2916bdc7d9731f511121ef565cf95e1",
+    "assets/characters/halloween/divine-black-girl.webp": "d63a3b420316bdc694c751fa7121e933ded0b567d81e1c1eb574f754377b5047",
+    "assets/characters/halloween/divine-gothic-boy.webp": "a73da186e4b8dc7f5e0bf4ef96dfefb5b88a1104e2080d6803829716dc469abb",
+    "assets/characters/halloween/divine-gothic-girl.webp": "d2126c5c91c29a1a972960bb7b0e1e4a47f111a05b09aa2adc8044f9740d789c",
+    "assets/characters/halloween/horror-freddy-gothic-boy.webp": "931ecd62888ff0d7a3055852a7d73121c31a4bdca87b00c002f709c2751da62c",
+    "assets/characters/halloween/horror-ghostface-black-boy.webp": "0c7b0d9a07af9d3b9a1b37a4a4b57e04f9a45ff6f9197331de18617e6d37a80a",
+    "assets/characters/halloween/horror-ghostface-black-girl.webp": "ac3a296d415ae773d44cddfbbdb23b1ad0918ca0b02fb4afa7f20161368866c3",
+    "assets/characters/halloween/horror-jason-adventure-boy.webp": "075a4ede411f97c593f8b96534327e099ebe562ee7af52c728308ac8a1ea1be7",
+    "assets/characters/halloween/horror-myers-gothic-girl.webp": "8071329ceb330f2aa4e863207fc210fcb1cc7487b8586dfd3bb155119e01df7e",
+    "assets/characters/halloween/horror-spectral-bride-adventure-girl.webp": "e43eb0ec6bb0c67b511b5998551190c3bf3d81fbdf4bb3f54969059d5c82372b",
+    "assets/characters/halloween/macabre-alt-adventure-boy.webp": "eea06101406a12c79a08280dc2d0d2804b79db4f0d27eaecca234f9fa3540c70",
+    "assets/characters/halloween/macabre-alt-adventure-girl.webp": "7021086a2b85754594246e99683c17fbcfe3f842614baedff834344ea48b6b0a",
+    "assets/characters/halloween/macabre-alt-black-boy.webp": "2939b3974963b6ba7f08b80159993fcce0256f7335f31a9807b4de59bfc6504c",
+    "assets/characters/halloween/macabre-alt-black-girl.webp": "e46afd30542abbe752cbb1cbed109d4bcd01704aa88e9481b48e732cd4f6ee11",
+    "assets/characters/halloween/macabre-alt-gothic-boy.webp": "471c3438ea67d35eac8f5b6f7cea997d1c82075b3b34a05ca1416802c3409819",
+    "assets/characters/halloween/macabre-alt-gothic-girl.webp": "f9bab6110ecf62cde33ab5c97d70938734c39317a7b20e7446b06dbf174ae492",
+    "assets/characters/halloween/manifest.json": "cbcb23a1bfd89fb0a8763286b1857a8995b634e48f7a7783fd728c920a68e1e9",
+    "core/follower-v47.js": "7e7cdf2f85d3b39eba5eb515358dd9fdb4d58d093dc02c83bd77d24f5264f1cf",
+    "core/kanto-collision-v4.js": "b090fa8fd6cc30fab72a86c6cf97cc99f8af94b718241ffb137f419da27c1cf6",
+    "core/kanto-map-data-v2.js": "f6ee1f0c8c6804609d85f421c8a19effbbd7ecf164f2937938eb9a15bd2d4872",
+    "core/kanto-viridian-v1.js": "41104f046e8ce65163d7f878feb2f4975fb25ddd15de13b92f0134014bcc1e9b",
+    "core/legacy-runtime.js": "4945d9cd91a9e94b8a9ad8a704f97a9d4fe4688b624c5ec3e6cfe31c70dbb81f",
+    "core/seasonal-event-v1.js": "0f681557840db3e3713544d89a55d0d824cfa6feea9f6085151c89e773d8c0f6"
+  },
+  "protectedSections": [
+    {
+      "file": "core/kanto-world-v2.js",
+      "start": "function positionValid(",
+      "end": "function move(",
+      "sha256": "d719640ee8bd50758e09cade36afc028f522d83e235cbc1e2c15eb032b4d356a"
+    },
+    {
+      "file": "core/kanto-world-v2.js",
+      "start": "function move(",
+      "end": "function restoreEncounter(",
+      "sha256": "1353e13c1f95e0fa3a3b46c59749ddcd2173b62b9be3d31e9500baf28981bc2d"
+    },
+    {
+      "file": "core/kanto-campaign-playable-v1.js",
+      "start": "  function move(dir)",
+      "end": "  function maybeEncounter(",
+      "sha256": "4a32330799132face0176971405d7ddfb46073a3046074a4a46a73ab505bd792"
+    },
+    {
+      "file": "core/halloween-ui.js",
+      "start": "  function persist()",
+      "end": "  function openCharacterPicker(",
+      "sha256": "38c34c065680c0374faf38694c807ea10a9d95c0dea44ee9c5c0523cacc467c5"
+    },
+    {
+      "file": "core/halloween-ui.js",
+      "start": "  function openCharacterPicker(",
+      "end": "  function addCostumeButton(",
+      "sha256": "07164849a97be29fa8aada9759683bd9466ffdf1a2ba685988ef1181dc423464"
+    }
+  ]
+}

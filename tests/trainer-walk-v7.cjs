@@ -6,7 +6,7 @@ const pixels=new Uint8ClampedArray(384*384*4);for(let row=0;row<4;row++)for(let 
 let scans=0,renderOps=0;
 const D={createElement(){return{width:0,height:0,getContext(){return{drawImage(){renderOps++},getImageData(){scans++;return{data:pixels}},clearRect(){},beginPath(){},rect(){},clip(){},save(){},restore(){},set imageSmoothingEnabled(v){},set imageSmoothingQuality(v){}}}}}};
 const W={};vm.runInNewContext(walk,{window:W,document:D});const anim=W.PsyTrainerWalkV1;
-assert.equal(anim.columns.join(','),'1,2,3,0');
+assert.equal(anim.columns.join(','),'1,0,3,0');
 const img={naturalWidth:2048,naturalHeight:2048},atlas=anim.getAtlas(img);
 assert.strictEqual(anim.getAtlas(img),atlas);assert.equal(scans,1);assert.equal(atlas.width,192);assert.equal(atlas.height,256);
 assert.equal(renderOps,33,'16 original frames, each drawn intact without pixel strip warping');
@@ -15,13 +15,15 @@ const calls=[];const c={drawImage(...a){calls.push(a)}};
 for(let row=0;row<4;row++)for(let i=0;i<8;i++)anim.draw(c,atlas,row,anim.column(i,true),5,9,48,64);
 assert.equal(calls.length,32);assert(calls.every(a=>a[5]===5&&a[6]===9&&a[7]===48&&a[8]===64));
 assert.equal(anim.column(0,false),0);
-const first=city.indexOf('  const cityWalk={phase:0'),last=city.indexOf('  function renderAvatar()',first);
-assert(first>=0&&last>first);let now=1000;
-const phase=new Function('W',city.slice(first,last)+'return cityWalkPhase')({performance:{now:()=>now}});
-const seq=[phase(true,'basic')];for(let i=1;i<8;i++){now+=131;seq.push(phase(true,'basic'))}
-assert.equal(seq.join(','),'0,1,2,3,0,1,2,3');assert.equal(phase(false,'basic'),0);
-assert(city.includes('walk.draw(ctx,entry.walkAtlas')&&!city.includes('const bounce = moving && frame % 2'));
-assert(kanto.includes('W.PsyTrainerWalkV1?.column')&&kanto.includes('W.PsyTrainerWalkV1.draw'));
+// The active human renderer now shares a monotonic WALK/IDLE state sampler.
+assert.equal(typeof anim.createState,'function');assert.equal(typeof anim.sampleState,'function');
+const state=anim.createState();let pose=anim.sampleState(state,{now:0,moving:true,row:2,identity:'test'});
+assert.equal(pose.state,'walk');assert.equal(pose.col,1);
+pose=anim.sampleState(state,{now:130,moving:true,row:3,identity:'test'});assert.equal(pose.col,0);assert.equal(pose.row,3);
+pose=anim.sampleState(state,{now:140,moving:false,identity:'test'});assert.equal(pose.state,'settle');assert.equal(pose.row,3);
+pose=anim.sampleState(state,{now:280,moving:false,identity:'test'});assert.equal(pose.state,'idle');
+assert(city.includes('walk.renderAnimated(ctx,entry.animationAtlas')&&!city.includes('const bounce = moving && frame % 2'));
+assert(kanto.includes('walk.renderAnimated(c,entry.animationAtlas')&&kanto.includes('x-24,y+5-60,48,64'));
 assert(html.indexOf('src="core/trainer-walk-v1.js')<html.indexOf('src="core/halloween-ui.js'));
 
 // Regression for the broken V7 avatar gate (entry.frames no longer exists).
@@ -38,7 +40,7 @@ const select=new Function('player','W','image',
 assert(select().url.endsWith('/basic-adventure-boy.webp'),'Uninitialized profile must show a real trainer');
 p={playerCharacterId:'gothic_boy',playerCostumeByCharacter:{gothic_boy:'divine'}};
 assert(select().url.endsWith('/divine-gothic-boy.webp'),'Chosen costume must be respected');
-assert(kanto.includes('if(entry?.loaded){')&&kanto.includes('if(entry.atlas&&W.PsyTrainerWalkV1)'), 'Loaded trainer and sprite atlas must render without entry.frames');
+assert(kanto.includes('if(entry?.loaded){')&&kanto.includes('if(entry.animationAtlas&&walk?.renderAnimated)'), 'Loaded trainer and sprite atlas must render without entry.frames');
 assert(!kanto.includes('if(entry?.loaded&&entry.frames){'),'Broken V7 gate must not return');
 assert(!kanto.includes("c.fillStyle='#24517a'"),'Blocky placeholder must not be drawn');
 
