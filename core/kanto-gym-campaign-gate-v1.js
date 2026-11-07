@@ -70,7 +70,7 @@ function annotate(){
   const gym=gyms[i];if(!gym)return;
   card.dataset.psyCampaignGym=gym.id;
   card.querySelector('[data-psy-campaign-gym-lock]')?.remove();
-  if(hasClearedInCampaign(gym.id)){card.removeAttribute('aria-disabled');return}
+  if(hasClearedInCampaign(gym.id)){card.removeAttribute('aria-disabled');card.classList.remove('locked');return}
   card.classList.add('locked');card.setAttribute('aria-disabled','true');
   card.style.position='relative';
   const lock=D.createElement('div');lock.dataset.psyCampaignGymLock='1';

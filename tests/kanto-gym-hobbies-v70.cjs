@@ -1,0 +1,45 @@
+/* node tests/kanto-gym-hobbies-v70.cjs */
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const gateSrc=fs.readFileSync('core/kanto-gym-campaign-gate-v1.js','utf8');
+const hobbySrc=fs.readFileSync('core/hobbies-v1.js','utf8');
+const world=fs.readFileSync('core/kanto-world-v2.js','utf8');
+const html=fs.readFileSync('index.html','utf8');
+const player={meta:{},gymProgress:[],trainerLevel:1};
+const battle={current:0,gym:{id:'kanto_brock'}};
+const calls=[],messages=[];
+const W={P:player,notif:s=>messages.push(s),autoSave:()=>{},setTimeout:()=>{},getComputedStyle:()=>({display:'flex'}),
+ PsyKantoPlayableV1:{getPosition:()=>({world:'pewter'})},
+ startGymBattle:id=>calls.push(id),startNextGymPoke:()=>{},renderGyms:()=>{}};
+const D={getElementById:()=>null};
+const typeMap={27:'Terra',28:'Terra',50:'Terra',74:'Pedra/Terra',95:'Pedra/Terra',43:'Planta'};
+vm.runInNewContext(gateSrc,{window:W,document:D,P:player,gymBattle:battle,GYM_DATA:[{gyms:[{id:'kanto_brock'},{id:'kanto_misty'}]}]});
+const gym=W.PsyCampaignGymGate;
+assert(gym);
+W.startGymBattle('kanto_brock');
+assert.equal(calls.length,0,'Cannot start first Gym from general menu');
+assert(!gym.beginFromCampaign('kanto_brock','cerulean'),'Wrong story city cannot initiate Gym');
+assert(gym.beginFromCampaign('kanto_brock','pewter'));
+W.startGymBattle('kanto_brock');assert.equal(calls.length,1);
+player.gymProgress.push('kanto_brock');battle.current=6;W.startNextGymPoke();
+assert(gym.hasClearedInCampaign('kanto_brock'),'Campaign battle victory should record replay unlock');
+W.startGymBattle('kanto_brock');assert.equal(calls.length,2);
+player.gymProgress.push('kanto_misty');W.startGymBattle('kanto_misty');
+assert.equal(calls.length,2,'A legacy badge alone must not unlock menu replay');
+assert(messages.some(m=>m.includes('campanha')));
+vm.runInNewContext(hobbySrc,{window:W,document:D,P:player,TYPE_BY_ID_ALL:typeMap});
+const hobbies=W.PsyHobbies;
+assert.equal(hobbies.definitions.length,4);
+for(const j of hobbies.definitions)assert.equal(hobbies.state()[j.id].level,0,'Lv0 required: '+j.id);
+player.meta.typeKills={Terra:6,Pedra:4};
+player.meta.caughtDex={27:1,28:1,50:1,74:1,95:1};
+const prog=hobbies.progress(hobbies.definitions[0]);assert.equal(prog.defeats,10);assert.equal(prog.captured,5);
+assert(prog.ready);assert(hobbies.unlock('miner'));
+assert.equal(hobbies.state().miner.level,1);
+for(const j of ['gardener','fisher','lumber'])assert.equal(hobbies.state()[j].level,0);
+assert.equal(hobbies.unlock('fisher'),false);
+assert(world.includes('data-kw2-panel="hobbies"'));
+assert(world.includes('data-kw2-panel="allmodes"'));
+assert(world.includes('psyInstallAllModes?.()'));
+assert(html.indexOf('core/kanto-gym-campaign-gate-v1.js?')<html.indexOf('core/kanto-campaign-playable-v1.js?'));
+for(const name of ['miner','gardener','fisher','lumber'])assert(fs.existsSync('assets/hobbies/'+name+'.svg'));
+console.log('PASS: story-first Gym, verified rematch, no badge bypass, 4 independent Lv0 hobbies with 10 defeats + 5 Dex captures, all-modes action and graphics');
