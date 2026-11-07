@@ -43,7 +43,7 @@
     if(W.PsyEvents?.isOpen())return false;
     const wrap = D.getElementById('game-wrap');
     return !!wrap && W.getComputedStyle(wrap).display !== 'none' &&
-      !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure') && inCityWorld();
+      !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure');
   }
   function cityScreenBounds(w,h) {
     const tile=Number(TILE)||55, x0=Math.max(0,origin.tileX-14), x1=Math.min(MAP_W-1,origin.tileX+14);
@@ -117,12 +117,8 @@
   }
   function captureOrigin() {
     if (origin || !cityVisible()) return;
-    origin = {
-      px:Number(P.px) || Number(P.x || 25) * TILE,
-      py:Number(P.py) || Number(P.y || 25) * TILE,
-      tileX:Number(P.x) || 25,
-      tileY:Number(P.y) || 25
-    };
+    // Town geometry is stable across logins and saved player positions.
+    origin = {px:25*TILE,py:25*TILE,tileX:25,tileY:25};
     const wrap = D.getElementById('game-wrap');
     if(!W.PsySeason||W.PsySeason.on())wrap.dataset.citySeason = 'halloween';
     const block=(dx,dy,rx,ry)=>{
@@ -156,6 +152,27 @@
       if(Math.abs(x-origin.tileX)>bx||Math.abs(y-origin.tileY)>by)SOLID.add(x+','+y);
     }
   }
+  function cityBounds(){
+    return origin?{left:Math.max(1,origin.tileX-14),right:Math.min(MAP_W-2,origin.tileX+14),top:Math.max(1,origin.tileY-14),bottom:Math.min(MAP_H-2,origin.tileY+14)}:null;
+  }
+  function containsCity(x,y){
+    const b=cityBounds();return !b||(Number.isFinite(x)&&Number.isFinite(y)&&x>=b.left&&x<=b.right&&y>=b.top&&y<=b.bottom);
+  }
+  function constrainCityPlayer(p){
+    const b=cityBounds();if(!b||!p||!cityVisible())return;
+    const x=Number(p.x),y=Number(p.y),tx=Number(p.tx??x),ty=Number(p.ty??y);
+    const invalid=!containsCity(x,y)||!containsCity(tx,ty)||!Number.isInteger(x)||!Number.isInteger(y)||
+      !containsCity(Number(p.px)/TILE,Number(p.py)/TILE)||(!p.moving&&SOLID.has(x+','+y));
+    if(!invalid)return;
+    const cx=Math.max(b.left,Math.min(b.right,Number.isFinite(x)?Math.round(x):25)),cy=Math.max(b.top,Math.min(b.bottom,Number.isFinite(y)?Math.round(y):25));
+    let nearest=null,best=Infinity;
+    for(let yy=b.top;yy<=b.bottom;yy++)for(let xx=b.left;xx<=b.right;xx++){
+      if(SOLID.has(xx+','+yy))continue;const d=(xx-cx)**2+(yy-cy)**2;
+      if(d<best){best=d;nearest=[xx,yy];}
+    }
+    if(nearest){p.x=p.tx=nearest[0];p.y=p.ty=nearest[1];p.px=p.x*TILE;p.py=p.y*TILE;p.moving=false;W.PsyCityTouch?.stop?.();}
+  }
+  W.PsyCityGeometry={contains:containsCity,constrain:constrainCityPlayer,bounds:cityBounds};
   function screenPoint(dx, dy) {
     const cv = D.getElementById('gameCanvas');
     const w = cv?.width || W.innerWidth, h = cv?.height || W.innerHeight;

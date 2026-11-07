@@ -2043,6 +2043,7 @@ function gameLoop(ts = 0) {
 }
 let psyCityMoveCarry=0;
 function update(dt) {
+    window.PsyCityGeometry?.constrain?.(P);
     if(!P.moving&&!window.clickMove&&!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].some(k=>keys[k]))psyCityMoveCarry=0;
     if(inBattle) { updateBattle(dt); return; }
     if(!P.moving) {
@@ -2058,7 +2059,7 @@ function update(dt) {
         } else { walkFrame = 0; }
         if(dx||dy) {
             let nx=P.x+dx, ny=P.y+dy;
-            const free=(x,y)=>x>=0&&y>=0&&x<MAP_W&&y<MAP_H&&!SOLID.has(x+','+y);
+            const free=(x,y)=>x>=0&&y>=0&&x<MAP_W&&y<MAP_H&&!SOLID.has(x+','+y)&&(window.PsyCityGeometry?.contains?.(x,y)??true);
             // A diagonal drag slides along a wall instead of holding a blocked axis.
             const alternate=window.PsyCityTouch?.alternate?.();
             if(!free(nx,ny)&&alternate){dx=alternate.dx;dy=alternate.dy;nx=P.x+dx;ny=P.y+dy;}
@@ -2092,7 +2093,7 @@ function update(dt) {
         }
     }
     if(P.moving) {
-        const speed=psyCityMoveCarry+600*Math.max(0,Math.min(50,Number(dt)||0))/1000*(1+Number(window.PsySeason?.buff('speed')||0)/100), tx=P.tx*TILE, ty=P.ty*TILE,distance=Math.abs(P.px-tx)+Math.abs(P.py-ty);
+        const speed=psyCityMoveCarry+240*Math.max(0,Math.min(50,Number(dt)||0))/1000*(1+Number(window.PsySeason?.buff('speed')||0)/100), tx=P.tx*TILE, ty=P.ty*TILE,distance=Math.abs(P.px-tx)+Math.abs(P.py-ty);
         psyCityMoveCarry=0;
         if(P.px<tx) P.px=Math.min(P.px+speed,tx); else if(P.px>tx) P.px=Math.max(P.px-speed,tx);
         if(P.py<ty) P.py=Math.min(P.py+speed,ty); else if(P.py>ty) P.py=Math.max(P.py-speed,ty);
