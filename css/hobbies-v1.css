@@ -39,3 +39,19 @@
 #psy-hobbies [data-hobby-details] button:disabled{opacity:.48;cursor:not-allowed}
 #psy-hobbies .ph-upgrade,#psy-hobbies .ph-exchange{border:1px solid #416277;border-radius:12px;background:#0b1c30;padding:11px;display:flex;flex-direction:column;gap:9px}
 #psy-hobbies .ph-upgrade{border-color:#b8965a}
+
+/* Interactive fishing challenge. The reel is mobile touch and mouse compatible. */
+#psy-hobby-fishing{position:fixed;inset:0;z-index:2147483647;display:none;align-items:center;justify-content:center;background:#041324df;padding:14px;font-family:system-ui;color:#eefaff}
+#psy-hobby-fishing.show{display:flex}
+#psy-hobby-fishing .hf-panel{width:min(480px,100%);background:linear-gradient(145deg,#142c45,#071b31);border:2px solid #84e7de;border-radius:18px;padding:17px;box-shadow:0 18px 60px #000a}
+#psy-hobby-fishing header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+#psy-hobby-fishing h2{color:#ffe2a5;font-size:20px;margin:3px 0 8px}
+#psy-hobby-fishing small{color:#7be0e8;font-weight:800;font-size:11px}
+#psy-hobby-fishing p{color:#d6e6ed;font-size:13px;line-height:1.5}
+#psy-hobby-fishing button{border:1px solid #8acfdc;background:#235167;border-radius:10px;color:#f5ffff;font-weight:800;padding:10px;min-height:42px}
+#psy-hobby-fishing .hf-meter{position:relative;background:linear-gradient(90deg,#ae3c49 0%,#cf8a35 28%,#3ebc7d 34%,#3ebc7d 68%,#cf8a35 74%,#ae3c49 100%);height:48px;border:2px solid #d8eeec;border-radius:10px;margin:18px 0}
+#psy-hobby-fishing .hf-marker{position:absolute;top:-7px;bottom:-7px;width:6px;background:#fff9c7;border:2px solid #1d3345;border-radius:5px;box-shadow:0 0 8px #fff}
+#psy-hobby-fishing .hf-stats{display:flex;justify-content:space-between;gap:9px;font-size:11px;flex-wrap:wrap;margin:10px 0}
+#psy-hobby-fishing .hf-progress{height:13px;background:#071522;border:1px solid #4c8da3;border-radius:8px;overflow:hidden;margin:11px 0}
+#psy-hobby-fishing .hf-progress i{height:100%;width:0;display:block;background:#76ecb0}
+#psy-hobby-fishing .hf-reel{width:100%;touch-action:none;user-select:none;min-height:60px;font-size:15px}

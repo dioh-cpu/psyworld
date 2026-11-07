@@ -185,6 +185,68 @@ function drawDecor(c,room){
 let overlay;
 function button(text,click,disabled){const b=D.createElement('button');b.type='button';b.textContent=text;b.disabled=!!disabled;if(click)b.onclick=click;return b}
 function para(parent,text){const e=D.createElement('p');e.textContent=text;parent.appendChild(e)}
+
+/* Fishing runs on frame delta rather than frame count; holding and tapping work on touch. */
+const WATER={
+ 'route-1':[[132,431,95],[96,350,90]],
+ 'viridian':[[615,655,110],[470,550,70]],
+ 'pallet':[[530,630,65]]
+};
+function canFish(scene,pos,canvas){
+ const zones=WATER[scene]||[];
+ if(zones.some(([x,y,r])=>Math.hypot(x-pos.x,y-pos.y)<=r))return true;
+ if(!canvas?.getContext)return false;
+ const cx=canvas.getContext('2d',{willReadFrequently:true});let water=0;
+ for(const r of [35,48,62])for(let i=0;i<12;i++){
+  const a=i*Math.PI/6,x=Math.round(pos.x+Math.cos(a)*r),y=Math.round(pos.y+Math.sin(a)*r);
+  if(x<1||y<1||x>=canvas.width||y>=canvas.height)continue;
+  try{const p=cx.getImageData(x,y,1,1).data;if(p[2]>120&&p[2]>p[0]*1.28&&p[1]>55&&p[2]>p[1]*1.12)water++}catch(_){return false}
+ }
+ return water>=5;
+}
+let fishingRun=null;
+function fishOverlay(){
+ let el=D.getElementById('psy-hobby-fishing');if(el)return el;
+ el=D.createElement('section');el.id='psy-hobby-fishing';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+ el.innerHTML='<div class="hf-panel"><header><div><small>PSYWORLD · PESCADOR</small><h2>DESAFIO DE PESCA</h2></div><button type="button" data-fish-close>×</button></header><p>Mantenha o indicador na faixa verde. Se permanecer 3 segundos no vermelho, a linha se rompe.</p><div class="hf-meter"><div class="hf-green"></div><div class="hf-marker" data-fish-marker></div></div><div class="hf-stats"><span data-fish-status>Preparando a linha...</span><b data-fish-danger>VERMELHO 0,0 / 3,0 s</b></div><div class="hf-progress"><i data-fish-progress></i></div><button type="button" class="hf-reel" data-fish-reel>SEGURAR / TOCAR PARA PUXAR</button></div>';
+ D.body.appendChild(el);
+ const reel=el.querySelector('[data-fish-reel]');reel.addEventListener('pointerdown',e=>{if(!fishingRun)return;e.preventDefault();reel.setPointerCapture?.(e.pointerId);fishingRun.reel=true});
+ const release=e=>{if(fishingRun)fishingRun.reel=false};reel.addEventListener('pointerup',release);reel.addEventListener('pointercancel',release);reel.addEventListener('lostpointercapture',release);
+ el.querySelector('[data-fish-close]').onclick=()=>stopFishing(false);
+ return el;
+}
+function stopFishing(success){
+ const run=fishingRun;if(!run)return;fishingRun=null;W.cancelAnimationFrame?.(run.raf);
+ const el=D.getElementById('psy-hobby-fishing');el?.classList.remove('show');
+ if(!success){W.notif?.('A linha se rompeu, o peixe fugiu.',2600);return}
+ const lvl=count(state().fisher?.level);
+ const pick=Math.random(),item=lvl>=10&&pick<.12?'Peixe Dourado':lvl>=6&&pick<.23?'Peixe Cristalino':lvl>=3&&pick<.45?'Carpa Prateada':'Peixe de Rio';
+ const inv=inventory();inv[item]=count(inv[item])+1;addXP('fisher',25);W.psyHobbyGrantFieldXp?.(25,12);
+ save();W.notif?.('Pesca concluída! +1 '+item+' e XP para treinador, Pokémon e Hobby.',3400);
+}
+function startFishing(scene){
+ if(!state().fisher?.level){W.notif?.('Desbloqueie o Hobby Pescador para pescar.',2600);return false}
+ if(fishingRun)return false;
+ const el=fishOverlay();fishingRun={scene,reel:false,level:count(state().fisher.level),meter:.46,progress:0,red:0,at:0,raf:0};
+ el.classList.add('show');
+ const step=now=>{
+  const f=fishingRun;if(!f)return;
+  const dt=Math.min(.08,Math.max(0,(now-(f.at||now))/1000));f.at=now;
+  f.meter=Math.max(0,Math.min(1,f.meter+(f.reel?.38:-.25)*dt+Math.sin(now*.0019)*.035*dt));
+  const green=f.meter>=.34&&f.meter<=.68,red=f.meter<.18||f.meter>.82;
+  f.red=red?f.red+dt:Math.max(0,f.red-dt*.35);
+  f.progress=Math.max(0,Math.min(1,f.progress+(green?.19+f.level*.002:-.055)*dt));
+  el.querySelector('[data-fish-marker]').style.left=(f.meter*100)+'%';
+  el.querySelector('[data-fish-progress]').style.width=(f.progress*100)+'%';
+  el.querySelector('[data-fish-danger]').textContent='VERMELHO '+f.red.toFixed(1)+' / 3,0 s';
+  el.querySelector('[data-fish-status]').textContent=green?'LINHA ESTÁVEL · continue!':red?'PERIGO · reajuste a linha':'AJUSTE A TENSÃO';
+  if(f.red>=3)return stopFishing(false);
+  if(f.progress>=1)return stopFishing(true);
+  f.raf=W.requestAnimationFrame(step);
+ };
+ fishingRun.raf=W.requestAnimationFrame(step);return true;
+}
+
 function ensure(){
  if(root())return root();
  const el=D.createElement('section');el.id='psy-hobbies';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
@@ -244,5 +306,5 @@ const previousBuff=W.getTotalBuff;
 if(typeof previousBuff==='function')W.getTotalBuff=function(stat){return Number(previousBuff.apply(this,arguments)||0)+bonus(stat)};
 if(typeof W.openCraft5==='function')W.openCraft5=()=>openDetail('engineer');
 if(typeof W.psyCraftElementBall==='function')W.psyCraftElementBall=()=>openDetail('engineer');
-W.PsyHobbies={open,openDetail,close,unlock,levelUp,levelRequirements,exchange,addXP,recordKill,state,definitions:JOBS,ballLadder:BALLS,unlockProgress,healMultiplier,bonus,useConsumable,visibleNodes,nearby,collect,drawField,place,decorAt,moveDecor,drawDecor,decorate,field};
+W.PsyHobbies={open,openDetail,close,unlock,levelUp,levelRequirements,exchange,addXP,recordKill,state,definitions:JOBS,ballLadder:BALLS,unlockProgress,healMultiplier,bonus,useConsumable,visibleNodes,nearby,collect,drawField,place,decorAt,moveDecor,drawDecor,decorate,field,canFish,startFishing,stopFishing};
 })(window,document);
