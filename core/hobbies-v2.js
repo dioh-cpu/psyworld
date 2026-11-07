@@ -16,7 +16,7 @@ const RAW=[
  ['stylist','Estilista','stylist',['Fada'],'cap',.5,'Essência Fada','Tecido Encantado'],
  ['echo','Tecelão de Ecos','echo',['Fantasma'],'drop',1,'Essência Fantasma','Cristal Harmônico'],
  ['dream','Cartógrafo Onírico','dream',['Psíquico'],'gold',1,'Essência Psíquica','Mapa dos Sonhos'],
- ['twilight','Guardião do Crepúsculo','twilight',['Noturno'],'def',1,'Essência Noturno','Selo Crepuscular'],
+ ['twilight','Guardião do Crepúsculo','twilight',['Noturno'],'def',1,'Essência Sombria','Selo Crepuscular'],
  ['alchemist','Alquimista','alchemist',['Fogo','Planta'],'atk',1,'Essência Fogo','Tônico de Ataque']
 ];
 const JOBS=RAW.map(([id,name,art,types,stat,per,material,product])=>({id,name,art,types,stat,per,material,product,starter:['miner','gardener','fisher','lumber'].includes(id)}));
@@ -27,7 +27,7 @@ const BALLS=[
  ['Terra','Ground Ball','Essência Terra'],['Voador','Flying Ball','Essência Voador'],
  ['Psíquico','Psychic Ball','Essência Psíquica'],['Inseto','Bug Ball','Essência Inseto'],['Pedra','Rock Ball','Essência Pedra'],
  ['Fantasma','Ghost Ball','Essência Fantasma'],['Dragão','Dragon Ball','Essência Dragão'],
- ['Noturno','Dark Ball','Essência Noturno'],['Metal','Steel Ball','Essência Metal'],['Fada','Fairy Ball','Essência Fada']
+ ['Noturno','Dark Ball','Essência Sombria'],['Metal','Steel Ball','Essência Metal'],['Fada','Fairy Ball','Essência Fada']
 ];
 const translate={normal:'normal',ground:'terra',rock:'pedra',grass:'planta',fairy:'fada',water:'agua',fire:'fogo',electric:'eletrico',ice:'gelo',fighting:'lutador',poison:'veneno',flying:'voador',psychic:'psiquico',bug:'inseto',ghost:'fantasma',dragon:'dragao',dark:'noturno',steel:'metal'};
 const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
@@ -126,6 +126,9 @@ function useConsumable(name){
 }
 function field(){const u=p();u.meta=u.meta||{};const s=u.meta.hobbyGatherV2||(u.meta.hobbyGatherV2={nodes:{},decor:[]});s.nodes=s.nodes||{};s.decor=s.decor||[];return s}
 const FIELD={
+ 'route-2':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo']],
+ 'route-3':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo']],
+ 'route-4':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo']],
  'route-1':[
   ['f1','gardener',276,301,'Flor do Campo'],['f2','gardener',411,296,'Flor do Campo'],['f3','gardener',605,250,'Flor do Campo'],
   ['t1','lumber',521,280,'Madeira Bruta']],
@@ -170,7 +173,7 @@ function place(room,x,y,bounds){
  inventory()[f.placing]--;f.placing=null;save();return true;
 }
 function decorAt(room,x,y){const decor=field().decor;for(let i=decor.length-1;i>=0;i--)if(decor[i].room===room&&Math.hypot(decor[i].x-x,decor[i].y-y)<30)return i;return -1}
-function moveDecor(i,x,y,b){const d=field().decor[i];if(!d)return false;d.x=Math.max(25,Math.min(b.w-25,x));d.y=Math.max(170,Math.min(b.h-30,y));save();return true}
+function moveDecor(i,x,y,b,commit=true){const d=field().decor[i];if(!d)return false;d.x=Math.max(25,Math.min(b.w-25,x));d.y=Math.max(170,Math.min(b.h-30,y));if(commit)save();return true}
 function drawDecor(c,room){
  for(const a of field().decor.filter(v=>v.room===room)){
   c.save();c.translate(a.x,a.y);c.fillStyle='#517558';c.fillRect(-10,-6,20,15);
@@ -236,5 +239,9 @@ function render(){
 function open(){selected=null;ensure();render();root().classList.add('show')}
 function openDetail(id){if(!find(id))return false;selected=id;ensure();render();root().classList.add('show');root().querySelector('.ph-shell').scrollTop=0;return true}
 function close(){root()?.classList.remove('show');selected=null}
+const previousBuff=W.getTotalBuff;
+if(typeof previousBuff==='function')W.getTotalBuff=function(stat){return Number(previousBuff.apply(this,arguments)||0)+bonus(stat)};
+if(typeof W.openCraft5==='function')W.openCraft5=()=>openDetail('engineer');
+if(typeof W.psyCraftElementBall==='function')W.psyCraftElementBall=()=>openDetail('engineer');
 W.PsyHobbies={open,openDetail,close,unlock,levelUp,levelRequirements,exchange,addXP,recordKill,state,definitions:JOBS,ballLadder:BALLS,unlockProgress,healMultiplier,bonus,useConsumable,visibleNodes,nearby,collect,drawField,place,decorAt,moveDecor,drawDecor,decorate,field};
 })(window,document);

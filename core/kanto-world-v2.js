@@ -184,6 +184,9 @@ if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art
     const sw=Math.min(state.world.w-sx,view.w/view.scale),sh=Math.min(state.world.h-sy,view.h/view.scale);
     if(sw>0&&sh>0){c.imageSmoothingEnabled=true;c.drawImage(o.mapCanvas,sx,sy,sw,sh,sx,sy,sw,sh)}
   }else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
+const hobbyScene=state.inside?.id||state.world?.id;
+W.PsyHobbies?.drawField?.(c,hobbyScene);
+if(state.inside)W.PsyHobbies?.drawDecor?.(c,state.inside.id);
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
 if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){drawMarker(c,552,130,'LABORATÓRIO →','#ffd480');}
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
@@ -286,7 +289,11 @@ function drawInterior(c,inside){
   }
 }
 function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.id==='route-1'?[{type:'return',at:[108,420]}]:state.world.id==='viridian'?[{type:'return',at:state.world.return}]:[]),...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
-function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
+function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;
+const scene=state.inside?.id||state.world?.id;
+const gather=W.PsyHobbies?.nearby?.(scene,state.position,65);
+if(gather){W.PsyHobbies?.collect?.(scene,gather.id);return;}
+const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
 activateTarget(a)}
 function activateTarget(a){if(a.type==='return'){if(state.world?.id==='viridian')open('route-1',{spawn:[844,100],skipGuard:true});else open('pallet',{spawn:[525,60]});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
 function talk(npc){
@@ -388,11 +395,26 @@ if(state.world.id==='pallet'){if(!questDone()){showDialog('Passagem para Rota 1'
 mark('viridian');try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');save.visited=[...new Set([...(save.visited||[]),'pallet','route-1'])];save.activePlace='viridian';localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(_){}
 showDialog('Viridian City','Você atravessou a Rota 1! A entrada de Viridian está desbloqueada. Conheça a Escola de Treinadores e procure a passagem para a Rota 2.',[{text:'ENTRAR EM VIRIDIAN',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('viridian')}},{text:'VOLTAR'}]);}
 function touchCoords(e){const r=state.canvas.getBoundingClientRect();const cam=camera();return {x:(e.clientX-r.left)*(cam.w/r.width)/cam.scale-cam.ox/cam.scale,y:(e.clientY-r.top)*(cam.h/r.height)/cam.scale-cam.oy/cam.scale}}
-function touchStart(e){if(e.target!==state.canvas||state.dialogOpen||state.touch)return;autoHunt=false;e.preventDefault();const t=touchCoords(e);state.touch={id:e.pointerId,x:e.clientX,y:e.clientY,tx:t.x,ty:t.y,t:performance.now(),drag:false,rect:state.canvas.getBoundingClientRect()};state.navRequest++;state.canvas.setPointerCapture?.(e.pointerId);state.path=[]}
-function touchMove(e){const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();let dx=e.clientX-t.x,dy=e.clientY-t.y;const distance=Math.hypot(dx,dy);if(distance>72){t.x+=dx/distance*(distance-72);t.y+=dy/distance*(distance-72);dx=e.clientX-t.x;dy=e.clientY-t.y;}if(Math.hypot(dx,dy)>7)t.drag=true;if(t.drag){const d=Math.max(1,Math.hypot(dx,dy));state.joy=W.PsyTouchStick.vector(dx,dy);const stick=state.root.querySelector('.kw2-joystick'),r=t.rect;stick.style.left=(t.x-r.left)+'px';stick.style.top=(t.y-r.top)+'px';stick.style.display='block';stick.style.setProperty('--jx',Math.round((dx/d*Math.min(30,d)))+'px');stick.style.setProperty('--jy',Math.round((dy/d*Math.min(30,d)))+'px')}}
+function touchStart(e){if(e.target!==state.canvas||state.dialogOpen||state.touch)return;
+ const point=touchCoords(e),room=state.inside?.id;
+ if(room&&['home','house-east','house-west'].includes(room)){
+   const idx=W.PsyHobbies?.decorAt?.(room,point.x,point.y)??-1;
+   if(idx>=0){e.preventDefault();state.decorDrag={id:e.pointerId,index:idx};state.canvas.setPointerCapture?.(e.pointerId);return;}
+ }
+ autoHunt=false;e.preventDefault();const t=point;state.touch={id:e.pointerId,x:e.clientX,y:e.clientY,tx:t.x,ty:t.y,t:performance.now(),drag:false,rect:state.canvas.getBoundingClientRect()};state.navRequest++;state.canvas.setPointerCapture?.(e.pointerId);state.path=[]}
+function touchMove(e){
+ if(state.decorDrag?.id===e.pointerId){e.preventDefault();const pt=touchCoords(e);W.PsyHobbies?.moveDecor?.(state.decorDrag.index,pt.x,pt.y,state.inside,false);draw();return;}
+ const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();let dx=e.clientX-t.x,dy=e.clientY-t.y;const distance=Math.hypot(dx,dy);if(distance>72){t.x+=dx/distance*(distance-72);t.y+=dy/distance*(distance-72);dx=e.clientX-t.x;dy=e.clientY-t.y;}if(Math.hypot(dx,dy)>7)t.drag=true;if(t.drag){const d=Math.max(1,Math.hypot(dx,dy));state.joy=W.PsyTouchStick.vector(dx,dy);const stick=state.root.querySelector('.kw2-joystick'),r=t.rect;stick.style.left=(t.x-r.left)+'px';stick.style.top=(t.y-r.top)+'px';stick.style.display='block';stick.style.setProperty('--jx',Math.round((dx/d*Math.min(30,d)))+'px');stick.style.setProperty('--jy',Math.round((dy/d*Math.min(30,d)))+'px')}}
 function resetTouch(){state.joy=null;state.touch=null;state.held.clear();const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';}
-function touchCancel(e){if(state.touch?.id===e.pointerId)resetTouch();}
-function touchEnd(e){const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();state.joy=null;state.touch=null;state.root.querySelector('.kw2-joystick').style.display='none';if(!t.drag){const near=currentTargets().find(v=>Math.hypot(v.at[0]-t.tx,v.at[1]-28-t.ty)<(v.type==='npc'?44:30)&&(v.type==='npc'||Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)<70));if(near){activateTarget(near);return}const request=++state.navRequest;findPath([state.position.x,state.position.y],[t.tx,t.ty],request).then(path=>{if(request===state.navRequest&&state.root?.classList.contains('open'))state.path=path})}}
+function touchCancel(e){if(state.decorDrag?.id===e.pointerId)state.decorDrag=null;if(state.touch?.id===e.pointerId)resetTouch();}
+function touchEnd(e){
+ if(state.decorDrag?.id===e.pointerId){e.preventDefault();const pos=touchCoords(e);W.PsyHobbies?.moveDecor?.(state.decorDrag.index,pos.x,pos.y,state.inside,true);state.decorDrag=null;draw();return;}
+ const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();state.joy=null;state.touch=null;state.root.querySelector('.kw2-joystick').style.display='none';if(!t.drag){
+const scene=state.inside?.id||state.world?.id;
+if(state.inside&&W.PsyHobbies?.place?.(state.inside.id,t.tx,t.ty,state.inside)){draw();return;}
+const gather=W.PsyHobbies?.nearby?.(scene,{x:t.tx,y:t.ty},28);
+if(gather&&Math.hypot(gather.x-state.position.x,gather.y-state.position.y)<65){W.PsyHobbies?.collect?.(scene,gather.id);draw();return;}
+const near=currentTargets().find(v=>Math.hypot(v.at[0]-t.tx,v.at[1]-28-t.ty)<(v.type==='npc'?44:30)&&(v.type==='npc'||Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)<70));if(near){activateTarget(near);return}const request=++state.navRequest;findPath([state.position.x,state.position.y],[t.tx,t.ty],request).then(path=>{if(request===state.navRequest&&state.root?.classList.contains('open'))state.path=path})}}
 // Tap-to-walk searches asynchronously, yielding control to the game each frame.
 // Terrain queries are memoized per location; dragging joystick cancels old searches.
 function findPath(from,to,request){
