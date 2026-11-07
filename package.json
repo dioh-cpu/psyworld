@@ -9,6 +9,7 @@
     "@supabase/supabase-js": "^2.57.0"
   },
   "scripts": {
-    "test:idle-foundation": "node tests/idle-genetics-v1.cjs && node tests/idle-balance-evolution-v1.cjs && node tests/idle-loot-routing.cjs && node tests/idle-afk-summary.cjs"
+    "test:idle-foundation": "node tests/idle-genetics-v1.cjs && node tests/idle-balance-evolution-v1.cjs && node tests/idle-loot-routing.cjs && node tests/idle-afk-summary.cjs",
+    "test:campaign-world": "node tests/campaign-hourly-events-v1.cjs"
   }
 }

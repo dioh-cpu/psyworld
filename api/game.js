@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import seasonHandler from '../lib/season-handler-v48.js';
 import {captureDetails} from '../lib/capture-rules-v48.js';
+import {applyCampaignPercent} from '../lib/campaign-event-rules-v1.js';
 import { requireUser, jsonError, method } from './_lib/supabase.js';
 
 const GENERIC=new Set([
@@ -58,6 +59,11 @@ export default async function handler(req,res){
       const save=req.body?.save;if(!save||typeof save!=='object')return res.status(400).json({error:'save_required'});
       return res.status(200).json(await bootstrap(user,supabase,save));
     }
+    if(action==='campaign-lottery-heartbeat'){
+      const {data,error}=await supabase.rpc('psy_campaign_hourly_heartbeat',{p_user:user.id});
+      if(error)throw error;
+      return res.status(200).json(data||{});
+    }
     const idempotency=idem(req.body?.idempotency_key,action);
     if(GENERIC.has(action)){
       const payload=obj(req.body?.payload||req.body);
@@ -75,7 +81,10 @@ export default async function handler(req,res){
       if(error)throw error;return res.status(200).json(data);
     }
     if(action==='battle-win'){
-      const b=obj(req.body);const {data,error}=await supabase.rpc('psy_v26_battle_reward',{p_user:user.id,p_mode:txt(b.mode||'wild',20),p_enemy_level:int(b.enemy_level,1,10000,1),p_enemy_type:txt(b.enemy_type||'Normal',20),p_gold_buff:num(b.gold_buff,0,300,0),p_xp_buff:num(b.xp_buff,0,300,0),p_drop_buff:num(b.drop_buff,0,120,0),p_idempotency:idempotency});if(error)throw error;return res.status(200).json(data);
+      const b=obj(req.body),{data:campaign,error:campaignError}=await supabase.rpc('psy_campaign_hourly_heartbeat',{p_user:user.id});
+      if(campaignError)console.warn('[campaign event status unavailable]',campaignError.code||campaignError.message);
+      const event=obj(campaign?.event);
+      const {data,error}=await supabase.rpc('psy_v26_battle_reward',{p_user:user.id,p_mode:txt(b.mode||'wild',20),p_enemy_level:int(b.enemy_level,1,10000,1),p_enemy_type:txt(b.enemy_type||'Normal',20),p_gold_buff:applyCampaignPercent(b.gold_buff,event.gold_bonus_pct,300),p_xp_buff:applyCampaignPercent(b.xp_buff,event.xp_bonus_pct,300),p_drop_buff:applyCampaignPercent(b.drop_buff,event.drop_bonus_pct,120),p_idempotency:idempotency});if(error)throw error;return res.status(200).json({...obj(data),campaign_event:event.id?event:null,lottery:campaign?.lottery||null});
     }
     if(action==='reward-commit'){
       const b=obj(req.body);const {data,error}=await supabase.rpc('psy_v26_reward_commit',{p_user:user.id,p_category:txt(b.category||'system',20),p_reference:txt(b.reference,180),p_gold:int(b.gold,0,50_000_000,0),p_diamonds:int(b.diamonds,0,1000,0),p_items:safeMap(b.items,120,100000),p_packs:safeMap(b.packs,20,100),p_eggs:safeMap(b.eggs,40,100),p_idempotency:idempotency});if(error)throw error;return res.status(200).json(data);

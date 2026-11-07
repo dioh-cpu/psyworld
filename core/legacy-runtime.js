@@ -2704,13 +2704,14 @@ function psyTrainerXpNeed(level){
 }
 window.psyTrainerXpNeed=psyTrainerXpNeed;
 /* Equal-level wins give about 4% of the bar; enemy level and XP buffs help without a multi-level jump. */
-function psyBattleXpReward(enemyLevel,speciesBonus=0){
-  const poke=P?.team?.[0],ownLevel=Math.max(1,Number(poke?.level||1)),nextXp=Math.max(100,Number(poke?.maxExp||100)),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),species=Math.max(0,Number(speciesBonus)||0),rate=Math.min(.12,.04*relative*(1+xpBuff/100)*(1+species/100));
+function psyCampaignRewardBonusV1(kind){const value=Number(window.psyOnlineAuthorityV26?.campaignEvent?.()?.[kind+'_bonus_pct']||0);return Number.isFinite(value)?Math.max(0,Math.min(50,value)):0}
+function psyBattleXpReward(enemyLevel,speciesBonus=0,campaignVictory=false){
+  const poke=P?.team?.[0],ownLevel=Math.max(1,Number(poke?.level||1)),nextXp=Math.max(100,Number(poke?.maxExp||100)),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),species=Math.max(0,Number(speciesBonus)||0),eventBoost=campaignVictory?psyCampaignRewardBonusV1('xp'):0,rate=Math.min(.12,.04*relative*(1+xpBuff/100)*(1+species/100)*(1+eventBoost/100));
   return Math.max(1,Math.floor(nextXp*rate));
 }
 window.psyBattleXpReward=psyBattleXpReward;
-function psyBattleTrainerXpReward(enemyLevel){
-  const ownLevel=Math.max(1,Number(P?.team?.[0]?.level||1)),trainerLevel=Math.max(1,Number(P?.trainerLevel||1)),required=psyTrainerXpNeed(trainerLevel),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),rate=Math.min(.06,.015*relative*(1+xpBuff/100));
+function psyBattleTrainerXpReward(enemyLevel,campaignVictory=false){
+  const ownLevel=Math.max(1,Number(P?.team?.[0]?.level||1)),trainerLevel=Math.max(1,Number(P?.trainerLevel||1)),required=psyTrainerXpNeed(trainerLevel),enemy=Math.max(1,Number(enemyLevel||1)),relative=Math.max(.5,Math.min(1.5,Math.sqrt(enemy/ownLevel))),xpBuff=Math.max(0,Math.min(300,Number(window.getTotalBuff?.('xp')||0))),eventBoost=campaignVictory?psyCampaignRewardBonusV1('xp'):0,rate=Math.min(.06,.015*relative*(1+xpBuff/100)*(1+eventBoost/100));
   return Math.max(1,Math.floor(required*rate));
 }
 window.psyBattleTrainerXpReward=psyBattleTrainerXpReward;
@@ -3457,7 +3458,7 @@ function handleWorldKill(t){
   let goldMult=0.5*(1+getTotalBuff('gold')/100);
   let xpMult=0.5*(1+getTotalBuff('xp')/100);
   let finalGold=Math.floor(baseGold*goldMult);
-  let finalXp=psyBattleXpReward(t.lvl);
+  let finalXp=psyBattleXpReward(t.lvl,0,true);
   P.gold+=finalGold;
   if(P.team[0]){
     P.team[0].exp=(P.team[0].exp||0)+finalXp;
@@ -3467,7 +3468,7 @@ function handleWorldKill(t){
     }
   }
   psyAwardGlobalPsyduckXp(finalXp,'world');
-  gainTrainerXp(psyBattleTrainerXpReward(t.lvl));
+  gainTrainerXp(psyBattleTrainerXpReward(t.lvl,true));
   tryDropStone(TYPE_BY_ID_ALL[t.id]||"Normal", t.lvl);
   let baseCap=10, totalCap=getTotalBuff('cap');
   let finalChance=Math.min(0.5, baseCap+totalCap);
@@ -3521,11 +3522,11 @@ function handleWorldKill(t){
   let baseGold=Math.floor(t.lvl*12); // era 30, agora 12 = -60%
   let baseXp=Math.floor(t.lvl*10);
   let finalGold=Math.floor(baseGold*(1+getTotalBuff('gold')/100)*0.5);
-  let finalXp=psyBattleXpReward(t.lvl);
+  let finalXp=psyBattleXpReward(t.lvl,0,true);
   P.gold+=finalGold;
   if(P.team[0]){ P.team[0].exp=(P.team[0].exp||0)+finalXp; while(P.team[0].exp>=P.team[0].maxExp){ P.team[0].exp-=P.team[0].maxExp; P.team[0].level++; P.team[0].maxExp=Math.floor(P.team[0].maxExp*1.3); P.team[0].baseMaxHp=calcBaseHpV14(P.team[0].level,P.team[0].rarity?.mult||1,P.team[0].shiny,false,P.team[0].id); recalcPoke(P.team[0]); } }
   psyAwardGlobalPsyduckXp(finalXp,'world');
-  gainTrainerXp(psyBattleTrainerXpReward(lvl));
+  gainTrainerXp(psyBattleTrainerXpReward(lvl,true));
   tryDropStone(TYPE_BY_ID_ALL[t.id]||"Normal", t.lvl);
 
   let rarityFactor=1/Math.sqrt(t.rarity?.mult||1);
@@ -3631,7 +3632,7 @@ battleAction = function(action, moveData){
     if (battleData.wildHp <= 0) {
       battleData.state = 'won';
       let lvl = battleData.wild.level || 5;
-      let finalXp = psyBattleXpReward(lvl);
+      let finalXp = psyBattleXpReward(lvl,0,true);
       let finalGold = Math.floor((lvl*5+15)*Math.min(2,1+getTotalBuff('gold')/100));
       P.team[0].exp += finalXp; P.gold += finalGold;psyAwardGlobalPsyduckXp(finalXp,'battle');
       gainTrainerXp(Math.floor(finalXp*0.1));
@@ -4258,7 +4259,8 @@ window.triggerWild = function(pool){
   // RARIDADE AGORA USA O TIER DO POKE, NÃO DA HUNT
   let pokeTier = getTier(base.id);
   const rarity = rollRarity(pokeTier);
-  let isShiny = Math.random() < (0.0005 + getTotalBuff('shiny')*0.00002);
+  const campaignShinyPct=Number(window.psyOnlineAuthorityV26?.campaignEvent?.()?.shiny_bonus_pct||0);
+  let isShiny = Math.random() < (0.0005 + getTotalBuff('shiny')*0.00002 + Math.max(0,Math.min(0.1,campaignShinyPct))/100);
   let isMega = Math.random() < 0.01;
 
   let min=1,max=10;
@@ -4287,7 +4289,7 @@ window.triggerWild = function(pool){
   });
 };
 
-window.createWorldWildData = function(id,x,y,lvl,isHorde=false){ let rarity = (window.rollRarityWorld?window.rollRarityWorld():rollRarity()); let totalShiny = typeof getTotalBuff==='function'?getTotalBuff('shiny'):0; let isShiny = Math.random()*100 < (0.05+totalShiny*0.0025); let isMega = Math.random()*100 < 2.0; let baseHp = window.calcBaseHpV14(lvl, rarity.mult, isShiny, isMega, id); let finalHp = Math.floor(baseHp * (isHorde?2.2:1.4)); const seasonalWild={id,name:getPokeName(id),x,y,hp:finalHp,maxHp:finalHp,lvl,dir:Math.random()*6.28,moveTimer:Math.random()*60,atkCD:0,speed:isHorde?0.032:0.050+Math.random()*0.01,region:typeof worldRegion!=='undefined'?worldRegion:'kanto',isHorde,rarity,shiny:isShiny,isMega:isMega};return window.PsySeason?.roll(seasonalWild,'world')||seasonalWild; };
+window.createWorldWildData = function(id,x,y,lvl,isHorde=false){ let rarity = (window.rollRarityWorld?window.rollRarityWorld():rollRarity()); let totalShiny = typeof getTotalBuff==='function'?getTotalBuff('shiny'):0; const campaignShinyPct=Number(window.psyOnlineAuthorityV26?.campaignEvent?.()?.shiny_bonus_pct||0); let isShiny = Math.random()*100 < (0.05+totalShiny*0.0025+Math.max(0,Math.min(0.1,campaignShinyPct))); let isMega = Math.random()*100 < 2.0; let baseHp = window.calcBaseHpV14(lvl, rarity.mult, isShiny, isMega, id); let finalHp = Math.floor(baseHp * (isHorde?2.2:1.4)); const seasonalWild={id,name:getPokeName(id),x,y,hp:finalHp,maxHp:finalHp,lvl,dir:Math.random()*6.28,moveTimer:Math.random()*60,atkCD:0,speed:isHorde?0.032:0.050+Math.random()*0.01,region:typeof worldRegion!=='undefined'?worldRegion:'kanto',isHorde,rarity,shiny:isShiny,isMega:isMega};return window.PsySeason?.roll(seasonalWild,'world')||seasonalWild; };
 window.spawnWorldWilds = function(qtd){ worldWilds=[]; let regionList=typeof getRegionPokemonList==='function'?getRegionPokemonList(worldRegion):[1,4,7,25]; if(!regionList.length) regionList=[1,4,7,25]; let tier=typeof getWorldTier==='function'?getWorldTier():{min:1,max:10}; for(let i=0;i<qtd;i++){ let id=regionList[Math.floor(Math.random()*regionList.length)]; let x,y,t=0; do{ x=Math.floor(Math.random()*(WORLD_W-10))+5+Math.random(); y=Math.floor(Math.random()*(WORLD_H-10))+5+Math.random(); t++; }while((worldMap[Math.floor(y)]?.[Math.floor(x)]!==0&&worldMap[Math.floor(y)]?.[Math.floor(x)]!==3)||Math.hypot(x-SAFE_X,y-SAFE_Y)<SAFE_R+5&&t<100); let lvl=Math.floor(Math.random()*(tier.max-tier.min+1))+tier.min; worldWilds.push(window.createWorldWildData(id,x,y,lvl,false)); } };
 window.spawnWorldWildsIncremental = function(qtd){ let regionList=typeof getRegionPokemonList==='function'?getRegionPokemonList(worldRegion):[1,4,7,25]; let tier=typeof getWorldTier==='function'?getWorldTier():{min:1,max:10}; for(let i=0;i<qtd;i++){ let id=regionList[Math.floor(Math.random()*regionList.length)]; let x,y,t=0; do{ x=Math.floor(Math.random()*(WORLD_W-10))+5+Math.random(); y=Math.floor(Math.random()*(WORLD_H-10))+5+Math.random(); t++; }while((worldMap[Math.floor(y)]?.[Math.floor(x)]!==0&&worldMap[Math.floor(y)]?.[Math.floor(x)]!==3)||Math.hypot(x-SAFE_X,y-SAFE_Y)<SAFE_R+5&&t<100); let lvl=Math.floor(Math.random()*(tier.max-tier.min+1))+tier.min; worldWilds.push(window.createWorldWildData(id,x,y,lvl,false)); } };
 

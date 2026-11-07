@@ -5,7 +5,7 @@ W.__PSYWORLD_ONLINE_AUTHORITY_V26__=true;
 const BUILD='ONLINE_AUTHORITY_V26_20260927_A';
 const SESSION_KEY='psyworld_online_session_v23',SYNC_KEY='psyworld_cloud_sync_v23';
 const LOCAL_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
-let busy=0,bootUser='',lastProgress=0,lastHeartbeat=0,lastServerRefresh=0,lastServerSnapshot=null,lastOnlineMeta=null,lastServerOk=0,lastServerError=false,serverSyncBusy=false,tickBusy=false,bootstrapPromise=null;
+let busy=0,bootUser='',lastProgress=0,lastHeartbeat=0,lastCampaignHeartbeat=0,lastServerRefresh=0,lastServerSnapshot=null,lastOnlineMeta=null,lastServerOk=0,lastServerError=false,lastCampaignStatus=null,serverSyncBusy=false,tickBusy=false,bootstrapPromise=null;
 const originals=new Map();
 const parse=s=>{try{return s?JSON.parse(s):null}catch(_){return null}};
 const toast=(m,t=3200)=>{try{W.notif?.(m,t)}catch(_){console.log('[V26]',m)}};
@@ -72,15 +72,15 @@ function ensureServerPanel(){
  const menu=D.getElementById('menu');if(!menu)return null;let box=D.getElementById('psy-server-panel-v26');
  if(!box){
    box=D.createElement('div');box.id='psy-server-panel-v26';box.style.cssText='width:min(700px,90%);margin:10px auto;padding:11px 12px;background:#061522;border:1px solid #22d3ee;border-radius:10px;color:#e2e8f0;box-sizing:border-box;text-align:left;box-shadow:0 0 18px #0284c733';
-   box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><b style="font-size:11px;color:#bae6fd">🌐 PSYWORLD ONLINE</b><b id="psy-server-status-v26" style="font-size:10px;color:#fbbf24">CONECTANDO...</b></div><div id="psy-server-summary-v26" style="font-size:10px;color:#a5b4fc;text-align:center;margin:8px 0">Aguardando servidor...</div><div id="psy-server-security-v26" style="font-size:9px;color:#86efac;text-align:center;margin-bottom:7px">🛡 V26 • Cloud Save • Market bloqueado</div><button id="psy-server-sync-v26" type="button" style="width:100%;padding:10px;border:0;border-radius:7px;background:#0369a1;color:#fff;font-weight:900;cursor:pointer">↻ SINCRONIZAR COM SERVIDOR</button><div id="psy-server-time-v26" style="font-size:8px;color:#64748b;text-align:center;margin-top:5px"></div>';
+   box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><b style="font-size:11px;color:#bae6fd">🌐 PSYWORLD ONLINE</b><b id="psy-server-status-v26" style="font-size:10px;color:#fbbf24">CONECTANDO...</b></div><div id="psy-server-summary-v26" style="font-size:10px;color:#a5b4fc;text-align:center;margin:8px 0">Aguardando servidor...</div><div id="psy-server-security-v26" style="font-size:9px;color:#86efac;text-align:center;margin-bottom:7px">🛡 V26 • Cloud Save • Market bloqueado</div><div id="psy-campaign-world-status-v1" aria-live="polite" style="font-size:10px;line-height:1.45;color:#fde68a;text-align:center;margin:8px 0;padding:7px;border:1px solid #854d0e;border-radius:7px;background:#451a0344">Eventos de campanha e sorteio horário carregando...</div><button id="psy-server-sync-v26" type="button" style="width:100%;padding:10px;border:0;border-radius:7px;background:#0369a1;color:#fff;font-weight:900;cursor:pointer">↻ SINCRONIZAR COM SERVIDOR</button><div id="psy-server-time-v26" style="font-size:8px;color:#64748b;text-align:center;margin-top:5px"></div>';
    const cloud=D.getElementById('psy-cloud-menu-actions');if(cloud)cloud.insertAdjacentElement('afterend',box);else menu.appendChild(box);
    D.getElementById('psy-server-sync-v26').onclick=()=>syncServerNow(true);
  }
  box.style.display=online()?'block':'none';return box
 }
 function renderServerPanel(snapshot=lastServerSnapshot,meta=lastOnlineMeta){
- const box=ensureServerPanel();if(!box)return;const st=D.getElementById('psy-server-status-v26'),sum=D.getElementById('psy-server-summary-v26'),time=D.getElementById('psy-server-time-v26');
- if(!online()){box.style.display='none';return}box.style.display='block';
+ const box=ensureServerPanel();if(!box)return;const st=D.getElementById('psy-server-status-v26'),sum=D.getElementById('psy-server-summary-v26'),time=D.getElementById('psy-server-time-v26'),campaign=D.getElementById('psy-campaign-world-status-v1');
+ if(!online()){box.style.display='none';updateCampaignBanner();return}box.style.display='block';
  const pl=meta?.player||snapshot?.player||{},inv=meta?.inventory||snapshot?.inventory||{},pok=Array.isArray(meta?.pokemon)?meta.pokemon:null;
  const itemCount=Array.isArray(inv)?inv.filter(x=>Number(x?.quantity||0)>0).length:Object.values(inv||{}).filter(x=>Number(x)>0).length;
  const pokeCount=pok?pok.length:((p()?.team?.length||0)+(p()?.box?.length||0));
@@ -89,8 +89,20 @@ function renderServerPanel(snapshot=lastServerSnapshot,meta=lastOnlineMeta){
  if(st){st.textContent=label;st.style.color=active||connected?'#86efac':lastServerError?'#f87171':'#fbbf24'}
  if(sum)sum.textContent=`Gold ${fmt(pl.gold??p()?.gold)} • Diamonds ${fmt(pl.diamonds??p()?.diamonds)} • PsyCoin ${fmt(pl.psycoin??p()?.psycoin)} • ${fmt(itemCount)} itens • ${fmt(pokeCount)} Pokémon`;
  if(time)time.textContent=lastServerOk?'Última confirmação: '+new Date(lastServerOk).toLocaleTimeString('pt-BR')+' • Autoridade '+String(pl.authority_version??'V26'):'';
+ if(campaign){const status=lastCampaignStatus||{},event=status.event,lottery=status.lottery,clock=value=>value?new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}).format(new Date(value)):'--:--';const eventText=event?.name?`🌠 ${event.name}: ${event.description||'Evento ativo'} · até ${clock(event.ends_at)} (Brasília)`:'';const drawText=lottery?.drawn?`🏅 Sorteio ${clock(lottery.drawn_at)}: ${lottery.winner_name||'Treinador'} recebeu ${fmt(lottery.reward_gold)} Gold · próximo ${clock(lottery.next_draw_at)}`:`🎟 Participação automática no sorteio das ${clock(lottery?.next_draw_at)} · prêmio 25.000 Gold`;campaign.textContent=[eventText,drawText].filter(Boolean).join('  |  ')||'Evento global e sorteio horário serão sincronizados em instantes.'}
+ updateCampaignBanner();
 }
-function apply(s,opt={}){mergeWallet(s);mergeInventory(s,!!opt.fullInventory);mergeSystem(s);if(s?.player){lastServerSnapshot=s;lastServerOk=Date.now();lastServerError=false}renderServerPanel(s);try{W.updateHUD?.()}catch(_){}try{W.renderTeam?.()}catch(_){}try{W.autoSave?.()}catch(_){}return s}
+function updateCampaignBanner(){
+ let banner=D.getElementById('psy-campaign-event-banner-v1');
+ if(!banner){banner=D.createElement('aside');banner.id='psy-campaign-event-banner-v1';banner.setAttribute('aria-live','polite');banner.setAttribute('aria-label','Evento global da campanha');banner.style.cssText='position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);z-index:115;max-width:min(380px,calc(100vw - 150px));padding:7px 10px;box-sizing:border-box;border:2px solid #d9a441;border-radius:5px;background:linear-gradient(180deg,#192c39f2,#081522f5);box-shadow:0 3px 0 #4a3414,0 8px 20px #0009;color:#ffe8b0;font:800 10px/1.35 system-ui,sans-serif;text-align:center;pointer-events:none;display:none;overflow-wrap:anywhere';D.body.appendChild(banner)}
+ const compact=Number(W.innerWidth||0)<=520;banner.style.top=compact?'calc(env(safe-area-inset-top,0px) + 122px)':'calc(env(safe-area-inset-top,0px) + 10px)';banner.style.maxWidth=compact?'min(300px,calc(100vw - 24px))':'min(380px,calc(100vw - 150px))';banner.style.fontSize=compact?'9px':'10px';
+ if(!banner.dataset.psyResizeBound){banner.dataset.psyResizeBound='1';W.addEventListener('resize',updateCampaignBanner,{passive:true})}
+ const event=lastCampaignStatus?.event,menu=D.getElementById('menu'),menuOpen=!!menu&&getComputedStyle(menu).display!=='none';
+ if(!online()||!bootUser||!event?.name||menuOpen){banner.style.display='none';return}
+ const end=event.ends_at?new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}).format(new Date(event.ends_at)):'--:--';
+ banner.textContent=`🌠 EVENTO DE KANTO · ${event.name} · ${event.description||''} · até ${end} BRT`;banner.style.display='block';
+}
+function apply(s,opt={}){mergeWallet(s);mergeInventory(s,!!opt.fullInventory);mergeSystem(s);if(s?.event||s?.campaign_event||s?.lottery){lastCampaignStatus={...(lastCampaignStatus||{}),...(s?.event?{event:s.event}:{}),...(s?.campaign_event?{event:s.campaign_event}:{}),...(s?.lottery?{lottery:s.lottery}:{})}}if(s?.player){lastServerSnapshot=s;lastServerOk=Date.now();lastServerError=false}renderServerPanel(s);try{W.updateHUD?.()}catch(_){}try{W.renderTeam?.()}catch(_){}try{W.autoSave?.()}catch(_){}return s}
 async function syncServerNow(manual=false){
  if(!online()){if(manual)toast('❌ Entre na conta online primeiro.');renderServerPanel();return null}
  if(serverSyncBusy)return null;serverSyncBusy=true;
@@ -145,9 +157,9 @@ function battleHooks(){wrap('endBattle',old=>function(won){if(!online())return o
 function afkHooks(){wrap('toggleAfkV9',old=>async function(){if(!online())return old.apply(this,arguments);const a=p()?.meta?.afkV9||p()?.meta?.afk||{};const active=!!a.enabled;const action=active?'afk-stop':'afk-start';const d=await call(action,{level_cap:Number(p()?.levelCap||20),gold_buff:nonVipBuff('gold'),xp_buff:nonVipBuff('xp'),drop_buff:nonVipBuff('drop')},{fullInventory:true});if(!d)return;a.enabled=!active;a.startedAt=Date.now();a.lastSettlementAt=Date.now();localSave();W.openAfkV9?.();toast(active?'🌙 AFK coletado e pausado no servidor.':'🌙 AFK iniciado no servidor.')});
 }
 function install(){installSimpleHooks();wheelHook();captureHook();battleHooks();afkHooks()}
-async function heartbeat(){if(!online()||!bootUser)return;const now=Date.now();if(now-lastHeartbeat>=5000){lastHeartbeat=now;const d=await call('roulette-heartbeat',{}, {silent:true,parallel:true,key:idem('roulette-hb')});if(d?.roulette){const P=p();P.meta=P.meta||{};P.meta.rouletteSpins=Number(d.roulette.spins||0);P.meta.rouletteProgress=Number(d.roulette.progress||0)}}}
-async function tick(){if(tickBusy)return;tickBusy=true;try{ensureMenuLayout();ensureServerPanel();await bootstrap();install();await progressSync();await heartbeat();const menu=D.getElementById('menu');if(online()&&bootUser&&menu&&getComputedStyle(menu).display!=='none'&&Date.now()-lastServerRefresh>20000)syncServerNow(false)}catch(e){console.warn('[V26 tick]',e)}finally{tickBusy=false}}
+async function heartbeat(){if(!online()||!bootUser)return;const now=Date.now();if(now-lastHeartbeat>=5000){lastHeartbeat=now;const d=await call('roulette-heartbeat',{}, {silent:true,parallel:true,key:idem('roulette-hb')});if(d?.roulette){const P=p();P.meta=P.meta||{};P.meta.rouletteSpins=Number(d.roulette.spins||0);P.meta.rouletteProgress=Number(d.roulette.progress||0)}}if(now-lastCampaignHeartbeat>=30000){lastCampaignHeartbeat=now;await call('campaign-lottery-heartbeat',{}, {silent:true,parallel:true,key:idem('campaign-heartbeat')})}}
+async function tick(){if(tickBusy)return;tickBusy=true;try{ensureMenuLayout();ensureServerPanel();updateCampaignBanner();await bootstrap();install();await progressSync();await heartbeat();const menu=D.getElementById('menu');if(online()&&bootUser&&menu&&getComputedStyle(menu).display!=='none'&&Date.now()-lastServerRefresh>20000)syncServerNow(false)}catch(e){console.warn('[V26 tick]',e)}finally{tickBusy=false}}
 setInterval(tick,2200);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='visible')tick()});setTimeout(tick,450);
-W.psyOnlineAuthorityV26={build:BUILD,online,bootstrap,state:()=>game('state'),sync:progressSync,syncServer:syncServerNow,request:game};
+W.psyOnlineAuthorityV26={build:BUILD,online,bootstrap,state:()=>game('state'),sync:progressSync,syncServer:syncServerNow,request:game,campaignStatus:()=>lastCampaignStatus,campaignEvent:()=>lastCampaignStatus?.event||null};
 console.log('🛡 PSYWORLD online authority V26 loaded',BUILD);
 })(window,document);
