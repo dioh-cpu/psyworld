@@ -1,0 +1,42 @@
+name: Kanto map geometry
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'core/kanto-map-data-v2.js'
+      - 'core/kanto-collision-v4.js'
+      - 'core/kanto-viridian-v1.js'
+      - 'core/kanto-world-v2.js'
+      - 'core/kanto-campaign-playable-v1.js'
+      - 'css/kanto-world-v2.css'
+      - 'index.html'
+      - 'tests/kanto-viridian-v1.cjs'
+      - '.github/workflows/kanto-geometry.yml'
+  pull_request:
+    paths:
+      - 'core/kanto-map-data-v2.js'
+      - 'core/kanto-collision-v4.js'
+      - 'core/kanto-viridian-v1.js'
+      - 'core/kanto-world-v2.js'
+      - 'core/kanto-campaign-playable-v1.js'
+      - 'css/kanto-world-v2.css'
+      - 'index.html'
+      - 'tests/kanto-viridian-v1.cjs'
+permissions:
+  contents: read
+jobs:
+  viridian-geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Check JavaScript syntax
+        run: |
+          node --version
+          node --check core/kanto-map-data-v2.js
+          node --check core/kanto-collision-v4.js
+          node --check core/kanto-viridian-v1.js
+          node --check core/kanto-world-v2.js
+          node --check core/kanto-campaign-playable-v1.js
+      - name: Check Viridian routes, art ratio, encounters and load order
+        run: node tests/kanto-viridian-v1.cjs
