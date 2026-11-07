@@ -188,6 +188,20 @@ if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art
       const fc=flat.getContext('2d');fc.imageSmoothingEnabled=true;
       fc.drawImage(o.im,0,0,flat.width,flat.height);o.mapCanvas=flat;
     }
+    // The authored Route 1 illustration has a decorative fence drawn across
+    // the entrance to the lower hunting field. Keep gameplay geometry intact,
+    // but composite a small pixel-art gap into the cached map texture so the
+    // art no longer suggests that the gathering spots are fenced off.
+    if(state.world.id==='route-1'&&!o.huntFenceGapApplied){
+      const gap=image('assets/story/route-1-hunt-gap-v1.png');
+      if(gap?.loaded){
+        const mc=o.mapCanvas.getContext('2d');
+        mc.drawImage(gap.im,
+          470/1400*state.world.w,375/700*state.world.h,
+          220/1400*state.world.w,100/700*state.world.h);
+        o.huntFenceGapApplied=true;
+      }
+    }
     const sx=Math.max(0,-view.ox/view.scale),sy=Math.max(0,-view.oy/view.scale);
     const sw=Math.min(state.world.w-sx,view.w/view.scale),sh=Math.min(state.world.h-sy,view.h/view.scale);
     if(sw>0&&sh>0){c.imageSmoothingEnabled=true;c.drawImage(o.mapCanvas,sx,sy,sw,sh,sx,sy,sw,sh)}
