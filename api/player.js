@@ -34,6 +34,30 @@ function reconcileGrantedCandy(incoming,previous){
   incoming.player.meta.halloweenTestGrantV1=grant;
   return incoming;
 }
+/* When a cloud save is downloaded, use the paid wallet and authoritative
+ * positive item balances from the account's server records. Do not combine
+ * arbitrary local inventories (which would duplicate consumables). */
+async function hydratePurchasedAssets(supabase,userId,save){
+ if(!save?.player)return save;
+ const [{data:walletRows,error:walletError},{data:inventoryRows,error:inventoryError}]=await Promise.all([
+  supabase.from('wallet_ledger').select('id').eq('user_id',userId).eq('currency','psycoin').limit(1),
+  supabase.from('player_inventory').select('item_key,quantity').eq('user_id',userId)
+ ]);
+ if(walletError)throw walletError;if(inventoryError)throw inventoryError;
+ const out={...save,player:{...save.player,inventory:{...(save.player.inventory||{})}}};
+ for(const row of inventoryRows||[]){
+  const key=String(row.item_key||''),qty=Math.max(0,Math.floor(Number(row.quantity)||0));
+  if(!key)continue;
+  if(qty>0)out.player.inventory[key]=qty;
+  else delete out.player.inventory[key];
+ }
+ if(walletRows?.length){
+  const {data:wallet,error}=await supabase.from('players').select('psycoin').eq('user_id',userId).single();
+  if(error)throw error;
+  out.player.psycoin=Math.max(0,Math.floor(Number(wallet.psycoin)||0));
+ }
+ return out;
+}
 function cleanNick(value){
   return String(value||'').trim().replace(/\s+/g,' ').slice(0,14);
 }
@@ -91,6 +115,7 @@ export default async function handler(req,res){
       if(p.error)throw p.error;
       if(game.error)throw game.error;
       if(chars.error)throw chars.error;
+      if(game.data?.save)game.data.save=await hydratePurchasedAssets(supabase,user.id,game.data.save);
       return res.status(200).json({
         user:{id:user.id,email:user.email||null},
         player:p.data||null,
@@ -124,6 +149,7 @@ export default async function handler(req,res){
         .maybeSingle();
       if(error)throw error;
       if(!data)return res.status(404).json({error:'character_not_found'});
+      if(data.save)data.save=await hydratePurchasedAssets(supabase,user.id,data.save);
       return res.status(200).json({character:data});
     }
 
