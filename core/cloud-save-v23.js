@@ -88,12 +88,19 @@ async function resolveConflict(game){
   if(cloud){modal('SAVE NA NUVEM ENCONTRADO',`Existe um progresso salvo nesta conta. Deseja carregá-lo neste aparelho?`,[{label:'☁ CARREGAR SAVE DA NUVEM',bg:'#075985',run:async()=>applyCloud(cloud,game,false)},{label:'AGORA NÃO',bg:'#475569',run:()=>{syncEnabled=false;renderStatus()}}]);return}
   syncEnabled=true;writeSync({resolved:true,saveStamp:0,cloudStamp:0});toast('☁ Conta conectada. Seu primeiro save será enviado automaticamente.',4000);renderStatus()
 }
+function selectedCharacterNickname(save){
+ const p=save?.player||{};
+ const explicit=String(p.meta?.characterNickname||p.characterNickname||'').trim();
+ if(explicit)return explicit;
+ const selected=String(readSync().characterNickname||localStorage.getItem(CHARACTER_KEY)||'').trim();
+ return selected&&selected.toLowerCase()===String(p.name||p.nickname||'').toLowerCase()?selected:'';
+}
 function reconcileClientAfterUpload(sent,response){
  const grant=response?.server_grant;
  const needsGrant=grant?.id&&sent?.player?.meta?.halloweenTestGrantV1?.id!==grant.id;
  const hasWallet=Number.isFinite(Number(response?.server_psycoin))&&response.server_psycoin!==null;
  if(!needsGrant&&!hasWallet)return;
- const key=String(sent?.player?.meta?.characterNickname||sent?.player?.characterNickname||'').toLowerCase();
+ const key=selectedCharacterNickname(sent).toLowerCase();
  const apply=(p)=>{
   if(!p)return;
   p.meta=p.meta||{};p.inventory=p.inventory||{};
@@ -110,8 +117,8 @@ function reconcileClientAfterUpload(sent,response){
   try{localStorage.setItem(storageKey,JSON.stringify(stored))}catch(_){}
  }
  const live=W.P||(typeof P!=='undefined'?P:null);
- const liveKey=String(live?.meta?.characterNickname||live?.characterNickname||'').toLowerCase();
- if(live&&(!key||liveKey===key))apply(live);
+ const liveKey=String(live?.meta?.characterNickname||live?.characterNickname||live?.name||'').toLowerCase();
+ if(live&&key&&liveKey===key)apply(live);
  if(needsGrant)toast('🍬 Crédito de Halloween confirmado no servidor e restaurado neste aparelho.',4800);
 }
 async function upload(save,manual=false,markResolved=false){
@@ -119,7 +126,8 @@ async function upload(save,manual=false,markResolved=false){
  if(!await ensureToken())return manual&&toast('❌ Entre na sua conta online primeiro.');
  try{
   const d=await api('/api/player/save',{method:'POST',body:JSON.stringify({
-    save,client_updated_at:new Date(Number(save.savedAt||Date.now())).toISOString(),
+    save,character_nickname:selectedCharacterNickname(save)||null,
+    client_updated_at:new Date(Number(save.savedAt||Date.now())).toISOString(),
     base_cloud_updated_at:readSync().cloudRevision||null
   })});
   const stamp=Date.parse(d.updated_at||'')||Date.now();
