@@ -26,7 +26,22 @@ async function onlineMeta(){const t=await token();const r=await fetch('/api/onli
 function p(){return W.P||null}
 function system(s){return s?.system&&typeof s.system==='object'?s.system:{}}
 function mergeWallet(s){const P=p(),pl=s?.player;if(!P||!pl)return;for(const k of ['gold','diamonds','psycoin'])if(Number.isFinite(Number(pl[k])))P[k]=Number(pl[k]);if(Number.isFinite(Number(pl.trainer_level)))P.trainerLevel=Number(pl.trainer_level);if(Number.isFinite(Number(pl.trainer_xp)))P.trainerXp=Number(pl.trainer_xp)}
-function mergeInventory(s,full=false){const P=p(),inv=s?.inventory;if(!P||!inv||typeof inv!=='object'||Array.isArray(inv))return;P.inventory=P.inventory||{};if(full)P.inventory={};for(const [k,v] of Object.entries(inv)){const q=Math.max(0,Number(v)||0);if(q>0)P.inventory[k]=q;else delete P.inventory[k]}}
+const LOCAL_EVENT_ITEMS=new Set(['Doce de Halloween','Halloween Ball','Poção de Halloween','Incenso de Halloween','Egg de Halloween']);
+function mergeInventory(s,full=false){
+ const P=p(),inv=s?.inventory;
+ if(!P||!inv||typeof inv!=='object'||Array.isArray(inv))return;
+ P.inventory=P.inventory||{};
+ // This event uses local earned currency not represented in the V26 standard inventory.
+ const localOnly={};
+ if(full)for(const key of LOCAL_EVENT_ITEMS){
+  if(!(key in inv)&&Number(P.inventory[key])>0)localOnly[key]=Math.floor(Number(P.inventory[key]));
+ }
+ if(full)P.inventory=localOnly;
+ for(const [k,v] of Object.entries(inv)){
+  const q=Math.max(0,Number(v)||0);
+  if(q>0)P.inventory[k]=q;else delete P.inventory[k];
+ }
+}
 function mergeSystem(s){const P=p(),st=system(s);if(!P)return;P.meta=P.meta||{};P.cardGame=P.cardGame||{};P.cardGame.packs=P.cardGame.packs||{};P.psyduck=P.psyduck||{};
  if(Number.isFinite(Number(st.vip_until)))P.meta.vipUntil=Number(st.vip_until);
  if(st.battle_pass&&typeof st.battle_pass==='object'){P.meta.battlePass={...(P.meta.battlePass||{}),...st.battle_pass};if('coupon_available'in st.battle_pass)P.meta.battlePass.couponAvailable=!!st.battle_pass.coupon_available}

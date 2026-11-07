@@ -109,7 +109,7 @@ function reconcileClientAfterUpload(sent,response){
   apply(stored.player);
   try{localStorage.setItem(storageKey,JSON.stringify(stored))}catch(_){}
  }
- const live=W.P;
+ const live=W.P||(typeof P!=='undefined'?P:null);
  const liveKey=String(live?.meta?.characterNickname||live?.characterNickname||'').toLowerCase();
  if(live&&(!key||liveKey===key))apply(live);
  if(needsGrant)toast('🍬 Crédito de Halloween confirmado no servidor e restaurado neste aparelho.',4800);
@@ -186,6 +186,8 @@ function applyEconomyState(d){
   if(d?.player&&Number.isFinite(Number(d.player.gold)))p.gold=Number(d.player.gold);
   if(Array.isArray(d?.inventory)){
     const inv={};for(const row of d.inventory){const q=Math.max(0,Number(row?.quantity||0));if(q>0)inv[String(row.item_key)]=q}
+    for(const k of ['Doce de Halloween','Halloween Ball','Poção de Halloween','Incenso de Halloween','Egg de Halloween'])
+      if(!(k in inv)&&Number(p.inventory?.[k])>0)inv[k]=Math.floor(Number(p.inventory[k]));
     p.inventory=inv;
   }
   try{W.updateHUD?.()}catch(_){}
