@@ -61,4 +61,33 @@ vm.runInNewContext(mastery,{window:W2,document:{},P:p,console,Math});
 assert.deepEqual(JSON.parse(JSON.stringify(p.meta.hobbyMasteryV1)),expected,'Reload must preserve skills');
 assert.equal(W2.PsyHobbyMastery.rank('miner','radar'),1,'Unlocked node persists across reload');
 assert(saves>=2,'Node unlocks should save progress');
+assert(!mastery.includes('function rollNextSpot('),'Spot spawning must remain owned by Codex');
+assert(!mastery.includes('function respawnFactor('),'Spot respawn must remain owned by Codex');
+assert(hobby.includes('PsyHobbyMastery?.statBonus?.(k)'),'Non-spot mastery bonuses should apply through the existing buff getter');
+assert(M.buy('professor','base'),'Professor baseline skill should be unlockable');
+assert.equal(M.statBonus('atk'),.25,'Generic hobby stat node should grant its non-spot bonus');
+class FakeEl{
+ constructor(tag){this.tagName=tag;this.children=[];this.style={setProperty:(k,v)=>{(this.vars||(this.vars={}))[k]=v}}}
+ appendChild(el){this.children.push(el);return el}
+ append(...els){for(const el of els)this.appendChild(el)}
+ setAttribute(name,val){(this.attributes||(this.attributes={}))[name]=val}
+}
+const D={createElement:tag=>new FakeEl(tag)};
+const W3={...W,P:p};
+vm.runInNewContext(mastery,{window:W3,document:D,P:p,console,Math});
+function all(el,cls){return (el.className?.split(' ').includes(cls)?[el]:[]).concat(...(el.children||[]).map(child=>all(child,cls)))}
+for(const id of ['miner','gardener','fisher','lumber','engineer']){
+ const host=new FakeEl('section');
+ W3.PsyHobbyMastery.renderInto(host,id,()=>{});
+ assert.equal(all(host,'ph-mastery').length,1,'Mastery panel must render for '+id);
+ assert.equal(all(host,'ph-skill-node').length,W3.PsyHobbyMastery.skillDefs(id).length,'Every skill node must render for '+id);
+ assert.equal(all(host,'ph-rarity-tier').length,['miner','gardener','fisher','lumber'].includes(id)?4:0,'Rarity art preview only on gather specialties');
+}
+const host=new FakeEl('section');let refreshes=0;
+W3.PsyHobbyMastery.renderInto(host,'gardener',()=>refreshes++);
+const ready=all(host,'ph-skill-node').find(node=>typeof node.onclick==='function');
+assert(ready,'Available skills should have a working unlock action');
+ready.onclick();
+assert.equal(refreshes,1,'Unlock should refresh mastery panel');
+assert.equal(W3.PsyHobbyMastery.rank('gardener','botany'),1,'UI action should persist node rank');
 console.log('PASS: 13 per-Hobby skill trees, isolated point ledger, prerequisites, persistence, responsive menus, title navigation, and Codex spot isolation');
