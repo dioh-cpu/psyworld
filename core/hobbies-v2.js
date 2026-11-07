@@ -129,9 +129,9 @@ function useConsumable(name){
 }
 function field(){const u=p();u.meta=u.meta||{};const s=u.meta.hobbyGatherV2||(u.meta.hobbyGatherV2={nodes:{},decor:[]});s.nodes=s.nodes||{};s.decor=s.decor||[];return s}
 const FIELD={
- 'route-2':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo']],
- 'route-3':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo']],
- 'route-4':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo']],
+ 'route-2':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta']],
+ 'route-3':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta']],
+ 'route-4':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta']],
  'route-1':[
   ['f1','gardener',276,301,'Flor do Campo'],['f2','gardener',411,296,'Flor do Campo'],['f3','gardener',605,250,'Flor do Campo'],
   ['t1','lumber',521,280,'Madeira Bruta']],
@@ -179,9 +179,18 @@ function decorAt(room,x,y){const decor=field().decor;for(let i=decor.length-1;i>
 function moveDecor(i,x,y,b,commit=true){const d=field().decor[i];if(!d)return false;d.x=Math.max(25,Math.min(b.w-25,x));d.y=Math.max(170,Math.min(b.h-30,y));if(commit)save();return true}
 function drawDecor(c,room){
  for(const a of field().decor.filter(v=>v.room===room)){
-  c.save();c.translate(a.x,a.y);c.fillStyle='#517558';c.fillRect(-10,-6,20,15);
-  for(let i=0;i<6;i++){const t=i*Math.PI/3;c.fillStyle='#efa6d2';c.beginPath();c.ellipse(Math.sin(t)*10,-19+Math.cos(t)*10,7,5,t,0,Math.PI*2);c.fill()}
-  c.fillStyle='#ffde90';c.beginPath();c.arc(0,-19,5,0,Math.PI*2);c.fill();c.restore();
+  c.save();c.translate(a.x,a.y);
+  if(a.id==='Tábuas de Carvalho'){
+    c.fillStyle='#6e452b';c.strokeStyle='#cfa476';c.lineWidth=2;
+    c.fillRect(-20,-10,40,10);c.strokeRect(-20,-10,40,10);
+    c.fillRect(-16,0,6,18);c.fillRect(10,0,6,18);
+    c.fillStyle='#a77544';c.fillRect(-22,-15,44,7);c.strokeRect(-22,-15,44,7);
+  }else{
+    c.fillStyle='#517558';c.fillRect(-10,-6,20,15);
+    for(let i=0;i<6;i++){const t=i*Math.PI/3;c.fillStyle='#efa6d2';c.beginPath();c.ellipse(Math.sin(t)*10,-19+Math.cos(t)*10,7,5,t,0,Math.PI*2);c.fill()}
+    c.fillStyle='#ffde90';c.beginPath();c.arc(0,-19,5,0,Math.PI*2);c.fill();
+  }
+  c.restore();
  }
 }
 let overlay;
@@ -219,7 +228,7 @@ function fishOverlay(){
 }
 function stopFishing(success){
  const run=fishingRun;if(!run)return;fishingRun=null;W.cancelAnimationFrame?.(run.raf);
- const el=D.getElementById('psy-hobby-fishing');el?.classList.remove('show');
+ const el=D.getElementById('psy-hobby-fishing');el?.classList.remove('show');W.PsyKantoWorldV2?.setStoryLock?.(false);
  if(!success){W.notif?.('A linha se rompeu, o peixe fugiu.',2600);return}
  const lvl=count(state().fisher?.level);
  const pick=Math.random(),item=lvl>=10&&pick<.12?'Peixe Dourado':lvl>=6&&pick<.23?'Peixe Cristalino':lvl>=3&&pick<.45?'Carpa Prateada':'Peixe de Rio';
@@ -229,7 +238,7 @@ function stopFishing(success){
 function startFishing(scene){
  if(!state().fisher?.level){W.notif?.('Desbloqueie o Hobby Pescador para pescar.',2600);return false}
  if(fishingRun)return false;
- const el=fishOverlay();fishingRun={scene,reel:false,level:count(state().fisher.level),meter:.46,progress:0,red:0,at:0,raf:0};
+ const el=fishOverlay();W.PsyKantoWorldV2?.setStoryLock?.(true);fishingRun={scene,reel:false,level:count(state().fisher.level),meter:.46,progress:0,red:0,at:0,raf:0};
  el.classList.add('show');
  const step=now=>{
   const f=fishingRun;if(!f)return;
