@@ -22,6 +22,7 @@ on:
       - 'tests/hobbies-unified-v2.cjs'
       - 'tests/kanto-gym-hobbies-v70.cjs'
       - 'tests/hobbies-ux-v3.cjs'
+      - 'tests/hobbies-no-legacy-bonuses-v4.cjs'
       - 'core/kanto-city-cinematics-v1.js'
       - 'tests/kanto-tutorial-collision-v68.cjs'
       - '.github/workflows/kanto-geometry.yml'
@@ -46,6 +47,7 @@ on:
       - 'tests/hobbies-unified-v2.cjs'
       - 'tests/kanto-gym-hobbies-v70.cjs'
       - 'tests/hobbies-ux-v3.cjs'
+      - 'tests/hobbies-no-legacy-bonuses-v4.cjs'
       - 'core/kanto-city-cinematics-v1.js'
       - 'tests/kanto-tutorial-collision-v68.cjs'
 permissions:
@@ -75,6 +77,8 @@ jobs:
         run: node tests/kanto-tutorial-collision-v68.cjs
       - name: Check unified Hobbies and Engineer progression
         run: node tests/hobbies-unified-v2.cjs
+      - name: Check retirement of old profession bonuses
+        run: node tests/hobbies-no-legacy-bonuses-v4.cjs
       - name: Check Hobbies field UI and fishing tension
         run: node tests/hobbies-ux-v3.cjs
       - name: Check story-first Gym and Hobbies
