@@ -4,6 +4,7 @@
  */
 (function(W,D){
 'use strict';
+if(W.PsyHobbies)return;
 const RAW=[
  ['miner','Minerador','miner',['Terra','Pedra'],'def',1,'Minério Bruto','Lingote de Mina'],
  ['gardener','Jardineiro','gardener',['Planta','Fada'],'hp',1,'Flor do Campo','Vaso Floral'],
@@ -73,13 +74,14 @@ function unlock(id){
  x.level=1;x.xp=0;
  if(id==='engineer'&&BALLS[1])x.base[key(BALLS[1][0])]=kills(BALLS[1][0]);
  for(const t of j.types)x.base[key(t)]=kills(t);
- save();render();return true;
+ save();if(root()?.classList.contains('show'))render();return true;
 }
 const xpNeed=x=>100*Math.max(1,x.level);
 function levelRequirements(id){
- const j=find(id),x=state()[id];if(!j||!x?.level||x.level>=100)return {ready:false};
+ const j=find(id),x=state()[id];if(!j||!x?.level||x.level>=100||id==='engineer'&&x.level>=BALLS.length)return {ready:false,max:true};
  const ball=id==='engineer'?BALLS[x.level]:null;
- const material=ball?ball[2]:j.material,need=ball?100:Math.max(10,10*x.level);
+ const levelMats={miner:'Essência Terra',gardener:'Essência Planta',fisher:'Essência Água',lumber:'Essência Inseto'};
+ const material=ball?ball[2]:(levelMats[id]||j.material),need=ball?100:Math.max(10,10*x.level);
  const t=ball?ball[0]:j.types[0],won=Math.max(0,kills(t)-count(x.base[key(t)])),caught=captured([t]),available=count(inventory()[material]);
  return {material,need,available,defeats:won,captured:caught,xp:x.xp,xpRequired:xpNeed(x),
   ball:ball?.[1],type:t,ready:available>=need&&x.xp>=xpNeed(x)&&(id!=='engineer'||won>=100&&caught>=5)};
@@ -90,7 +92,7 @@ function levelUp(id){
  inv[req.material]-=req.need;x.xp-=xpNeed(x);x.level++;
  if(id==='engineer'&&BALLS[x.level])x.base[key(BALLS[x.level][0])]=kills(BALLS[x.level][0]);
  else for(const t of j.types)x.base[key(t)]=kills(t);
- save();render();W.notif?.('Novo nível em '+j.name+'!',2500);return true;
+ save();if(root()?.classList.contains('show'))render();W.notif?.('Novo nível em '+j.name+'!',2500);return true;
 }
 function addXP(id,amount){const x=state()[id];if(!x?.level)return false;x.xp+=Math.min(1000,count(amount));save();return true}
 function recordKill(id){const u=p();u.meta=u.meta||{};const h=u.meta.hobbyTypeKillsV2||(u.meta.hobbyTypeKillsV2={});for(const t of new Set(typesFor(id)))h[t]=count(h[t])+1}
@@ -109,7 +111,7 @@ function exchange(id,index){
  if(Object.entries(plan.inputs).some(([a,q])=>count(inv[a])<q)){W.notif?.('Faltam materiais para a troca.',2200);return false}
  for(const [a,q]of Object.entries(plan.inputs))inv[a]-=q;
  inv[plan.out]=count(inv[plan.out])+1;
- addXP(id,id==='engineer'?10:12);save();render();return true;
+ addXP(id,id==='engineer'?10:12);save();if(root()?.classList.contains('show'))render();return true;
 }
 function healMultiplier(){return 1+Math.min(.5,count(state().herbalist?.level)*.015)}
 function bonus(stat){
@@ -123,7 +125,7 @@ function useConsumable(name){
  const conf=config[name],inv=inventory();if(!conf||count(inv[name])<1)return false;
  inv[name]--;p().meta.hobbyBuffsV2=p().meta.hobbyBuffsV2||{};
  p().meta.hobbyBuffsV2[name]={...conf,until:Date.now()+15*60*1000};
- save();render();return true;
+ save();if(root()?.classList.contains('show'))render();return true;
 }
 function field(){const u=p();u.meta=u.meta||{};const s=u.meta.hobbyGatherV2||(u.meta.hobbyGatherV2={nodes:{},decor:[]});s.nodes=s.nodes||{};s.decor=s.decor||[];return s}
 const FIELD={
@@ -283,7 +285,7 @@ function render(){
   details.appendChild(button(pr.ready?'DESBLOQUEAR HOBBY':'QUEST INCOMPLETA',()=>unlock(j.id),!pr.ready));return;
  }
  const req=levelRequirements(j.id),box=D.createElement('section');box.className='ph-upgrade';
- para(box,'SUBIR DE NÍVEL • Requer XP '+x.xp+'/'+req.xpRequired);
+ para(box,req.max?'NÍVEL MÁXIMO / TODAS AS BALLS LIBERADAS':'SUBIR DE NÍVEL • Requer XP '+x.xp+'/'+req.xpRequired);
  if(j.id==='engineer'&&req.material)para(box,'Próxima '+req.ball+': '+req.defeats+'/100 derrotas do tipo '+req.type+', '+req.captured+'/5 espécies capturadas, '+req.available+'/100 '+req.material,box);
  else if(req.material)para(box,req.available+'/'+req.need+' '+req.material);
  box.appendChild(button('SUBIR DE NÍVEL',()=>levelUp(j.id),!req.ready));details.appendChild(box);
