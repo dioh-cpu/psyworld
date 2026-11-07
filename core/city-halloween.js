@@ -131,10 +131,10 @@
         if(x>0&&y>0&&x<MAP_W-1&&y<MAP_H-1)SOLID.add(x+','+y);
       }
     };
-    // Buildings: 7×5 tile footprints. The center cross and lanes between plots stay open.
-    HOUSES.forEach(h=>block(h.dx,h.dy,3,2));
-    // NPCs: three feet tiles (1×3), leaving every adjacent tile reachable for interaction.
-    NPCS.forEach(npc=>block(npc.dx,npc.dy,1,0));
+    // Only the ground-level building base is solid; roofs and overhangs do not block walking.
+    HOUSES.forEach(h=>block(h.dx,h.dy+1,2,1));
+    // One occupied feet tile per NPC leaves adjacent paving available.
+    NPCS.forEach(npc=>block(npc.dx,npc.dy,0,0));
     // Cemetery fence and grave markers occupy a 3×3 tile patch.
     block(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy,1,1);
     // Fountain basin is solid while its ring leaves a walkable plaza around it.
