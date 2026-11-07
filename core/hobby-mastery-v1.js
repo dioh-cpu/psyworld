@@ -92,19 +92,13 @@ function buy(id,nodeId){
 function effect(id,kind){return skillDefs(id).reduce((s,d)=>s+(d.effect===kind?rank(id,d.id):0),0);}
 function chances(id){
  const lv=level(id);if(!lv)return {common:100,rare:0,epic:0,legend:0};
- const rare=clamp(5+(lv-1)*.18+effect(id,'rare')*.9,0,32);
- const epic=clamp(1+(lv-1)*.06+effect(id,'epic')*.4,0,12);
- const legend=clamp(.2+(lv-1)*.012+effect(id,'legend')*.25,0,3);
+ const base=({miner:[5,1,.2],gardener:[6,1.5,.3],fisher:[7,2,.4],lumber:[5.5,1.2,.25]})[id]||[5,1,.2];
+ const rare=clamp(base[0]+(lv-1)*.18+effect(id,'rare')*.9,0,32);
+ const epic=clamp(base[1]+(lv-1)*.06+effect(id,'epic')*.4,0,12);
+ const legend=clamp(base[2]+(lv-1)*.012+effect(id,'legend')*.25,0,3);
  return {common:Math.max(0,100-rare-epic-legend),rare,epic,legend};
 }
-function rollNextSpot(id,rng=Math.random){
- const c=chances(id),v=clamp(Number(rng())||0,0,.999999)*100;
- return v<c.legend?'legend':v<c.legend+c.epic?'epic':v<c.legend+c.epic+c.rare?'rare':'common';
-}
-function reward(id,rarity){return REWARDS[id]?.[rarity]||REWARDS[id]?.common||null;}
-function additionalQuantity(id,rng=Math.random){return effect(id,'quantity')>0&&rng()<Math.min(.3,effect(id,'quantity')*.05)?1:0;}
-function harvestHits(id){return Math.max(2,5-Math.min(3,effect(id,'hits')));}
-function respawnFactor(id){return Math.max(.55,1-effect(id,'respawn')*.08);}
+function plannedMaterial(id,rarity){return REWARDS[id]?.[rarity]||REWARDS[id]?.common||null;}
 function statBonus(stat){let result=0;for(const j of H()?.definitions||[])if(j.stat===stat)result+=effect(j.id,'stat')*.25;return Math.min(12,result);}
 function fmt(v){return v.toLocaleString('pt-BR',{minimumFractionDigits:v<1?2:1,maximumFractionDigits:2})+'%';}
 function el(tag,cls,text){const x=D.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x;}
@@ -120,10 +114,10 @@ function renderInto(parent,id,rerender){
  const tags=el('div','ph-mastery-tags');tags.appendChild(el('span','', '✦ '+points(id)+' ponto(s) disponível(is)'));tags.appendChild(el('span','','Nível '+level(id)));summary.appendChild(tags);
  top.append(avatar,summary);section.appendChild(top);
  if(REWARDS[id]){
-  const rarity=el('section','ph-rarity-box');rarity.appendChild(el('h4','', '✧ Spots e recompensas ✧'));
-  rarity.appendChild(el('p','','Ao concluir uma coleta, o próximo spot pode renascer mais raro, mesmo nas primeiras rotas.'));
+  const rarity=el('section','ph-rarity-box');rarity.appendChild(el('h4','','✧ Prévia de raridades ✧'));
+  rarity.appendChild(el('p','','Valores de referência para as futuras raridades. Esta prévia ainda não altera as coletas.'));
   const row=el('div','ph-rarity-row');
-  for(const k of ['common','rare','epic','legend']){const badge=el('div','ph-rarity-tier ph-rarity-'+k);badge.appendChild(el('span','ph-rarity-gem',ICON[k]));badge.appendChild(el('b','',LABEL[k]));badge.appendChild(el('strong','',fmt(c[k])));badge.appendChild(el('small','',reward(id,k)));row.appendChild(badge)}
+  for(const k of ['common','rare','epic','legend']){const badge=el('div','ph-rarity-tier ph-rarity-'+k);badge.appendChild(el('span','ph-rarity-gem',ICON[k]));badge.appendChild(el('b','',LABEL[k]));badge.appendChild(el('strong','',fmt(c[k])));badge.appendChild(el('small','',plannedMaterial(id,k)));row.appendChild(badge)}
   rarity.appendChild(row);section.appendChild(rarity);
  }
  const heading=el('div','ph-tree-heading');heading.appendChild(el('h4','','✦ Árvore de Habilidades ✦'));
@@ -145,5 +139,5 @@ function renderInto(parent,id,rerender){
  section.appendChild(el('p','ph-mastery-note','Pontos e melhorias pertencem somente a este hobby e ficam salvos com o personagem.'));
  parent.appendChild(section);
 }
-W.PsyHobbyMastery={skillDefs,ranks,rank,points,canBuy,buy,effect,chances,rollNextSpot,reward,additionalQuantity,harvestHits,respawnFactor,statBonus,renderInto};
+W.PsyHobbyMastery={skillDefs,ranks,rank,points,canBuy,buy,effect,chances,statBonus,renderInto};
 })(window,document);
