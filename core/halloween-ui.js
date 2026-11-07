@@ -187,6 +187,12 @@
       canvas.setAttribute('aria-hidden', 'true');
       wrap.appendChild(canvas);
     }
+    if(canvas){
+      const scale=Number(W.PsyCityPresentationV1?.actorScale?.())||1,width=Math.round(192*scale),height=Math.round(118*scale);
+      if(canvas.width!==width)canvas.width=width;
+      if(canvas.height!==height)canvas.height=height;
+      canvas.style.width=width+'px';canvas.style.height=height+'px';
+    }
     return canvas;
   }
   function hideAvatar() {
@@ -225,14 +231,14 @@
     const moving = !!p.moving;
     const walk=W.PsyTrainerWalkV1;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    W.PsyCostumeAuraV1?.draw?.(ctx,entry.img.src,canvas.width/2,108);
+    W.PsyCostumeAuraV1?.draw?.(ctx,entry.img.src,canvas.width/2,canvas.height-10);
     if(walk?.getAnimationAtlas){
       if(!entry.animationAtlas)entry.animationAtlas=walk.getAnimationAtlas(entry.img);
       if(!cityAnimationState)cityAnimationState=walk.createState();
       if(entry.animationAtlas){
         // Preserve height and floor position while avoiding the old wide stretch.
-        const height=94,width=height*48/64;
-        walk.renderAnimated(ctx,entry.animationAtlas,cityAnimationState,{moving,row:directionRow(),x:Number(p.px),y:Number(p.py),identity:'city:'+id+':'+key},(canvas.width-width)/2,14,width,height);
+        const scale=Number(W.PsyCityPresentationV1?.actorScale?.())||1,height=94*scale,width=height*48/64;
+        walk.renderAnimated(ctx,entry.animationAtlas,cityAnimationState,{moving,row:directionRow(),x:Number(p.px),y:Number(p.py),identity:'city:'+id+':'+key},(canvas.width-width)/2,14*scale,width,height);
       }
     }else{
       ctx.imageSmoothingEnabled=false;

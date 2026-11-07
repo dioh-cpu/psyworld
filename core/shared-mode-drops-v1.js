@@ -19,6 +19,7 @@
   const TYPES=['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
   const TYPE_PT={Normal:'Normal',Fire:'Fogo',Water:'Água',Grass:'Planta',Electric:'Elétrico',Ice:'Gelo',Fighting:'Lutador',Poison:'Veneno',Ground:'Terra',Flying:'Voador',Psychic:'Psíquico',Bug:'Inseto',Rock:'Pedra',Ghost:'Fantasma',Dragon:'Dragão',Dark:'Sombrio',Steel:'Metal',Fairy:'Fada'};
   const TYPE_ALIASES={normal:'Normal',comum:'Normal',fire:'Fire',fogo:'Fire',water:'Water',agua:'Water',grass:'Grass',planta:'Grass',natureza:'Grass',electric:'Electric',eletrico:'Electric',energia:'Electric',ice:'Ice',gelo:'Ice',fighting:'Fighting',lutador:'Fighting',poison:'Poison',veneno:'Poison',venenoso:'Poison',ground:'Ground',terra:'Ground',areia:'Ground',sand:'Ground',flying:'Flying',voador:'Flying',ar:'Flying',psychic:'Psychic',psiquico:'Psychic',bug:'Bug',inseto:'Bug',rock:'Rock',pedra:'Rock',ghost:'Ghost',fantasma:'Ghost',undead:'Ghost',dragon:'Dragon',dragao:'Dragon',dark:'Dark',sombrio:'Dark',noturno:'Dark',steel:'Steel',metal:'Steel',aco:'Steel',fairy:'Fairy',fada:'Fairy',holy:'Fairy',luz:'Fairy'};
+  const TYPE_STONES={Normal:'Normal Stone',Fire:'Fire Stone',Water:'Water Stone',Grass:'Leaf Stone',Electric:'Thunder Stone',Ice:'Ice Stone',Fighting:'Fighting Stone',Poison:'Poison Stone',Ground:'Ground Stone',Flying:'Flying Stone',Psychic:'Psychic Stone',Bug:'Bug Stone',Rock:'Rock Stone',Ghost:'Ghost Stone',Dragon:'Dragon Stone',Dark:'Dark Stone',Steel:'Metal Stone',Fairy:'Fairy Stone'};
   const ESSENCE_FALLBACK={
     Normal:{ess:'Essência Normal',ball:'Normal Ball',ico:'⚪'},Fire:{ess:'Essência Fogo',ball:'Fire Ball',ico:'🔥'},Water:{ess:'Essência Água',ball:'Water Ball',ico:'💧'},Grass:{ess:'Essência Planta',ball:'Grass Ball',ico:'🍃'},Electric:{ess:'Essência Elétrica',ball:'Electric Ball',ico:'⚡'},Ice:{ess:'Essência Gelo',ball:'Ice Ball',ico:'❄️'},Fighting:{ess:'Essência Lutador',ball:'Fighting Ball',ico:'🥊'},Poison:{ess:'Essência Veneno',ball:'Poison Ball',ico:'☠️'},Ground:{ess:'Essência Terra',ball:'Ground Ball',ico:'⛰️'},Flying:{ess:'Essência Voador',ball:'Flying Ball',ico:'🪽'},Psychic:{ess:'Essência Psíquica',ball:'Psychic Ball',ico:'🔮'},Bug:{ess:'Essência Inseto',ball:'Bug Ball',ico:'🐛'},Rock:{ess:'Essência Pedra',ball:'Rock Ball',ico:'🪨'},Ghost:{ess:'Essência Fantasma',ball:'Ghost Ball',ico:'👻'},Dragon:{ess:'Essência Dragão',ball:'Dragon Ball',ico:'🐉'},Dark:{ess:'Essência Sombria',ball:'Dark Ball',ico:'🌑'},Steel:{ess:'Essência Metal',ball:'Steel Ball',ico:'⚙️'},Fairy:{ess:'Essência Fada',ball:'Fairy Ball',ico:'🧚'}
   };
@@ -40,9 +41,21 @@
     if(v&&typeof v==='object')return typeFromValue(v.name||v.type||v.element);
     const raw=norm(v);if(!raw)return null;for(const part of raw.split(/[\s/|,;+:]+/).filter(Boolean)){if(TYPE_ALIASES[part])return TYPE_ALIASES[part]}return TYPE_ALIASES[raw]||null;
   }
+  function typeListFromValue(v){
+    if(Array.isArray(v))return [...new Set(v.flatMap(typeListFromValue))];
+    if(v&&typeof v==='object')return typeListFromValue(v.name||v.type||v.element);
+    const raw=norm(v);if(!raw)return[];
+    return [...new Set(raw.split(/[\s/|,;+:]+/).filter(Boolean).map(part=>TYPE_ALIASES[part]).filter(Boolean))];
+  }
   function enemyId(e){if(typeof e==='number'&&Number.isFinite(e))return Math.floor(e);if(typeof e==='string'&&/^\d+$/.test(e.trim()))return Number(e);if(e&&typeof e==='object'){const n=e.id??e.pokemonId??e.dexId??e.speciesId;if(Number.isFinite(Number(n)))return Math.floor(Number(n))}return null}
   function typeFromId(id){if(id==null)return null;const table=W.TYPE_BY_ID_FULL||W.TYPE_BY_ID_EXT||W.TYPE_BY_ID_ALL||{};return typeFromValue(table[id])}
   function enemyType(e){if(e&&typeof e==='object'){for(const v of [e.types,e.type,e.element,e.primaryType,e.elements]){const t=typeFromValue(v);if(t)return t}try{const a=W.PSY?.getAdventureCreature?.(e.name||e.spriteKey);const t=typeFromValue(a?.types||a?.element);if(t)return t}catch(_){}}return typeFromId(enemyId(e))||'Normal'}
+  function enemyTypes(e){
+    if(e&&typeof e==='object')for(const v of [e.types,e.type,e.element,e.primaryType,e.elements]){const types=typeListFromValue(v);if(types.length)return types}
+    try{const a=W.PSY?.getAdventureCreature?.(e?.name||e?.spriteKey),types=typeListFromValue(a?.types||a?.element);if(types.length)return types}catch(_){}
+    const id=enemyId(e),table=W.TYPE_BY_ID_FULL||W.TYPE_BY_ID_EXT||W.TYPE_BY_ID_ALL||{};return typeListFromValue(table[id]);
+  }
+  function stoneForEnemy(e){const types=enemyTypes(e),specific=types.find(type=>type!=='Normal');return TYPE_STONES[specific||types[0]]||null}
   function essence(t){const table=W.PSY_ELEMENT_DATA||{};return table[t]||table[TYPE_PT[t]]||ESSENCE_FALLBACK[t]||ESSENCE_FALLBACK.Normal}
   const idlePocketViews=new WeakSet();
   function idlePocketView(x){
@@ -214,7 +227,7 @@
     /* World usa metade da chance e cada item continua independente. */
     if(Math.random()<.5*.000060*mult)items.push('Fragmento Mega Stone');
     if(Math.random()<.5*.000080*mult)items.push('Shiny Stone');
-    if(Math.random()<.5*.000710*mult)items.push(SURV_COMMON_STONES[Math.floor(Math.random()*SURV_COMMON_STONES.length)]);
+    const matchingStone=stoneForEnemy(target);if(matchingStone&&Math.random()<.5*.000710*mult)items.push(matchingStone);
     if(!items.length)return[];items.forEach(i=>addItem(p,i));W.PsySeason?.loot(items);save();notify(`🌍 Mundo Pokémon • ${items.join(' + ')}`);return items;
   }
 
@@ -240,6 +253,7 @@
   W.psySharedCombatDrop=awardCommon;
   W.psySharedWildVictoryDrop=awardWildVictory;
   W.psySharedWorldRareDrop=worldRareDrop;
+  W.PsyTypeStoneDropsV1=Object.freeze({forEnemy:stoneForEnemy,typesForEnemy:enemyTypes});
   W.psyCommonDropHooks=function(id){return awardCommon(id,W.__psyDropContext?.mode||'auto')};
   W.PSY=W.PSY||{};
   W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'3% no Idle no Lv.1; escala por nível até 2×',questCommon:'6% no Idle no Lv.1; escala por nível até 2×',questRare:'1% no Idle no Lv.1; escala por nível até 2×',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor: 12%; Idle: tabela por nível + suprimentos; World: 25%; Fast Encounter: 20%; Wild/Hunt: 50% das taxas da tabela'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};

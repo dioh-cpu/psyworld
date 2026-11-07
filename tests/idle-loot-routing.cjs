@@ -21,4 +21,12 @@ assert.equal(level1.entries[0].chance,.03,'Lv.1 keeps the established 3% craft-e
 assert.ok(Math.abs(level10.entries[0].chance-.03*1.108)<1e-12,'Lv.10 improves Idle loot odds by the level curve');
 assert.equal(level100.entries[0].chance,.06,'Lv.100 is capped at 2x the Lv.1 Idle chance');
 assert.notEqual(level1,level100,'drop profiles are cached separately by enemy level');
-console.log('Idle loot profile routing: ok');
+assert.equal(window.PsyTypeStoneDropsV1.forEnemy({id:16,type:'Normal/Flying'}),'Flying Stone','Pidgey receives the stone for its non-Normal Flying type');
+assert.equal(window.PsyTypeStoneDropsV1.forEnemy({id:19,type:'Normal'}),'Normal Stone','pure Normal Pokémon keep their matching stone');
+assert.equal(window.PsyTypeStoneDropsV1.forEnemy({id:16,type:'Normal/Flying'}),'Flying Stone','secondary Flying is preferred over Normal');
+const originalRandom=fixedMath.random,rolls=[.99,.99,0];fixedMath.random=()=>rolls.shift()??.99;
+const worldDrop=window.psySharedWorldRareDrop({id:16,level:2,type:'Normal/Flying'});
+fixedMath.random=originalRandom;
+assert.deepEqual(Array.from(worldDrop),['Flying Stone'],'World rare-stone drops are type-matched');
+assert.equal(mainProfile.inventory['Flying Stone'],1,'the matching stone reaches the player inventory');
+console.log('Idle loot routing and typed stone drops: ok');

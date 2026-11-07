@@ -115,7 +115,7 @@
     D.head.appendChild(style);
   }
 
-  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
+  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, autoObjective:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
   function makeRoot() {
     if (model.root) return model.root;
     addStyles();
@@ -126,16 +126,16 @@
     root.querySelector('[data-kp-hobbies]').onclick=()=>{model.held=null;model.autoHunt=false;model.autoPath=[];W.PsyHobbies?.open?.()};
     root.querySelector('[data-kp-fish]').onclick=()=>{model.held=null;model.autoPath=[];W.PsyHobbies?.startFishing?.(model.place?.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction})};
     root.querySelector('[data-back]').onclick = () => { closeWorld(); W.openKantoJourneyV1?.(); };
-    root.querySelector('[data-interact]').onclick = e => { e.preventDefault(); e.stopPropagation(); interact(); };
+    root.querySelector('[data-interact]').onclick = e => { e.preventDefault(); e.stopPropagation();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;interact(); };
     root.querySelectorAll('[data-dir]').forEach(btn => {
       const dir = btn.dataset.dir;
-      const start = e => { e.preventDefault();model.autoHunt=false;model.autoPath=[]; model.held = dir; move(dir); };
+      const start = e => { e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoHunt=false;model.autoPath=[]; model.held = dir; move(dir); };
       const stop = e => { e.preventDefault(); if (model.held === dir) { model.held = null; model.frame = 0; render(); } };
       btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', stop); btn.addEventListener('pointercancel', stop); btn.addEventListener('pointerleave', stop);
     });
     D.addEventListener('keydown', onKeyDown); D.addEventListener('keyup', onKeyUp);
     model.canvas.style.touchAction='none';let touch=null;
-    model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
+    model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
     model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}touch.drag=true;model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
     const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'&&model.map?.npc){const r=model.canvas.getBoundingClientRect(),x=(e.clientX-r.left)*model.canvas.width/r.width,y=(e.clientY-r.top)*model.canvas.height/r.height,n=model.map.npc;if(Math.abs(x-(n.x*TILE+14))<28&&Math.abs(y-(n.y*TILE))<42){interact(true);return;}}render();};
     model.canvas.addEventListener('pointerup',release);model.canvas.addEventListener('pointercancel',release);
@@ -232,7 +232,7 @@
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
     const previousPlace=model.place?.id||journeySave().activePlace||null;
-    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=model.map.spawn?.x||3; model.y=model.map.spawn?.y||ROWS-3; model.direction='down';model.frame=0;model.held=null;
+    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=model.map.spawn?.x||3; model.y=model.map.spawn?.y||ROWS-3; model.direction='down';model.frame=0;model.held=null;
     state().active=place.id;
     model.root.querySelector('.kp-title b').textContent=place.name;
     model.root.querySelector('.kp-title small').textContent=place.mark;
@@ -240,13 +240,13 @@
     W.PsyKantoStoryV49?.enter?.(previousPlace,id);
     if(!model.raf)tick();
   }
-  function closeWorld() { W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);model.autoHunt=false;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
+  function closeWorld() { W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyCampaignAutomation?.cancelRoute?.();model.autoHunt=false;model.autoObjective=null;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
     if(!model.root?.classList.contains('open')||W.PsyHobbies?.isOpen?.()||W.PsyHobbies?.isFishing?.()||W.PsyTitles?.isOpen?.())return;
     e.stopPropagation();
     const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
-    const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){model.held=dir;move(dir)}return;}
-    if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){e.preventDefault();interact();}
+    const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.held=dir;move(dir)}return;}
+    if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;interact();}
     if(e.code==='Escape'){e.preventDefault();closeWorld();}
   }
   function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();} }
@@ -352,6 +352,7 @@
 
   function interact(directNPC=false) {
     if(!model.place||W.PsyHobbies?.isFishing?.())return;
+    model.autoObjective=null;
     if(/^route-/.test(model.place.id)){
       const gather=W.PsyHobbies?.nearby?.(model.place.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},40);
       if(gather){W.PsyHobbies.interact?.(model.place.id,gather.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});render();return;}
@@ -562,6 +563,11 @@
     }
     const activityAction=W.PsyHobbiesVFX?.blocksMovement?.(model.place?.id);
     if(!activityAction&&!model.held&&model.autoPath?.length&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)&&!W.PsyGuide?.isOpen()){model.lastMove=now;move(model.autoPath.shift());}
+    if(!activityAction&&!model.held&&model.autoObjective&&!model.autoPath?.length&&!W.PsyGuide?.isOpen()){
+      const target=model.autoObjective,dx=target.x-model.x,dy=target.y-model.y;
+      if(Math.abs(dx)+Math.abs(dy)<=1){model.direction=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';interact();}
+      else model.autoObjective=null;
+    }
     if(!activityAction&&model.held&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)){model.lastMove=now;move(model.held)}
     if(!model.lastRender||now-model.lastRender>(activityAction||model.held?33:220)){render();model.lastRender=now;}model.raf=requestAnimationFrame(tick);
   }
@@ -629,6 +635,6 @@
   const oldOpenAtlas=W.openKantoJourneyV1;
   if(typeof oldOpenAtlas==='function')W.openKantoJourneyV1=function(){const result=oldOpenAtlas.apply(this,arguments);W.setTimeout(monitorAtlas,0);return result;};
   W.setTimeout(monitorAtlas,0);wrapEncounter();
-  W.PsyKantoPlayableV1={version:2,questRows:chapterQuest,getPosition:()=>model.root?.classList.contains('open')?{world:model.place?.id,x:model.x,y:model.y}:null,navigateTo:target=>{model.autoHunt=false;model.autoPath=tilePath(target);return model.autoPath.length>0;},setAutoHunt:on=>{if(on&&Number(player().meta?.vipUntil||0)<=Date.now()){W.notif?.('Recurso exclusivo VIP.',2500);return false;}model.autoHunt=!!on;if(!on)model.autoPath=[];return model.autoHunt;},isAutoHunt:()=>!!model.autoHunt,open:openWorld,close:closeWorld,isUnlocked,objective,progress:()=>state()};
+  W.PsyKantoPlayableV1={version:2,questRows:chapterQuest,getPosition:()=>model.root?.classList.contains('open')?{world:model.place?.id,x:model.x,y:model.y}:null,navigateTo:target=>{model.autoHunt=false;model.autoObjective=null;model.autoPath=tilePath(target);return model.autoPath.length>0;},navigateObjective:target=>{if(!model.root?.classList.contains('open')||!target)return false;const objective={x:Math.round(Number(target.x)),y:Math.round(Number(target.y))};if(!Number.isFinite(objective.x)||!Number.isFinite(objective.y))return false;const path=tilePath(objective);if(!path.length&&(objective.x!==model.x||objective.y!==model.y))return false;model.autoHunt=false;model.held=null;model.autoObjective=objective;model.autoPath=path;return true;},setAutoHunt:on=>{if(on&&Number(player().meta?.vipUntil||0)<=Date.now()){W.notif?.('Recurso exclusivo VIP.',2500);return false;}model.autoHunt=!!on;if(!on)model.autoPath=[];return model.autoHunt;},isAutoHunt:()=>!!model.autoHunt,open:openWorld,close:closeWorld,isUnlocked,objective,progress:()=>state()};
 })(window,document);
 

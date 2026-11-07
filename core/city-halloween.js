@@ -45,6 +45,14 @@
     return !!wrap && W.getComputedStyle(wrap).display !== 'none' &&
       !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure');
   }
+  // Presentation-only camera profile: touch/mobile viewports keep their current
+  // framing and actor sizes; movement, tile geometry, and collision stay intact.
+  function desktopCityPresentation() {
+    if(!origin||!cityVisible()||!inCityWorld()||typeof W.matchMedia!=='function')return false;
+    return W.matchMedia('(min-width: 1024px) and (min-height: 700px) and (orientation: landscape) and (pointer: fine) and (hover: hover)').matches;
+  }
+  function cityCameraZoom(){return desktopCityPresentation()?1.18:1;}
+  W.PsyCityPresentationV1={isDesktopCity:desktopCityPresentation,cameraZoom:cityCameraZoom,actorScale:()=>desktopCityPresentation()?1.5:1};
   function cityScreenBounds(w,h) {
     const tile=Number(TILE)||55, x0=Math.max(0,origin.tileX-14), x1=Math.min(MAP_W-1,origin.tileX+14);
     const y0=Math.max(0,origin.tileY-14), y1=Math.min(MAP_H-1,origin.tileY+14);
@@ -62,12 +70,13 @@
   function drawCityFloor(ctx,w,h){
     const b=cityScreenBounds(w,h);
     const ox=w/2-P.px-b.tile/2,oy=h/2-P.py-b.tile/2;
-    b.x0=Math.floor(-ox/b.tile);b.x1=Math.ceil((w-ox)/b.tile);
-    b.y0=Math.floor(-oy/b.tile);b.y1=Math.ceil((h-oy)/b.tile);
+    const zoom=cityCameraZoom(),left=w/2-w/(2*zoom),right=w/2+w/(2*zoom),top=h/2-h/(2*zoom),bottom=h/2+h/(2*zoom);
+    b.x0=Math.floor((left-ox)/b.tile);b.x1=Math.ceil((right-ox)/b.tile);
+    b.y0=Math.floor((top-oy)/b.tile);b.y1=Math.ceil((bottom-oy)/b.tile);
     const shades=['#30283c','#342b40','#2a2537','#382c3d','#29263a'];
     for(let ty=b.y0;ty<=b.y1;ty++)for(let tx=b.x0;tx<=b.x1;tx++){
       const x=w/2-P.px-b.tile/2+tx*b.tile,y=h/2-P.py-b.tile/2+ty*b.tile;
-      if(x+b.tile<0||y+b.tile<0||x>w||y>h)continue;
+      if(x+b.tile<left||y+b.tile<top||x>right||y>bottom)continue;
       const pattern=((tx*97+ty*73)%5+5)%5,key=b.tile+':'+pattern;
       let tile=floorCache.get(key);
       if(!tile){
@@ -382,12 +391,14 @@
     for(let i=0;i<34;i++){const x=((i*197+53)%997)/997*w,y=((i*83+31)%271)/271*h*.36;c.fillStyle=i%5===0?'#ffd789':'#dbeafe';c.globalAlpha=.35+(i%4)*.12;c.beginPath();c.arc(x,y,i%7===0?1.5:1,0,Math.PI*2);c.fill()}
     c.globalAlpha=1;
     }
+    const zoom=cityCameraZoom();
+    if(zoom!==1){c.translate(w/2,h/2);c.scale(zoom,zoom);c.translate(-w/2,-h/2);}
     // World-anchored cobblestone floor only replaces ordinary town ground.
     // The full town quarter uses one continuous cobblestone surface.
     drawCityFloor(c,w,h);
     drawFestivalPlots(c);
     HOUSES.forEach(house=>drawHouse(c,house));
-    if(W.PsyFollower&&typeof P!=='undefined'){c.save();c.translate(w/2-P.px,h/2-P.py);W.PsyFollower.draw(c,{scene:'city-psy',x:P.px,y:P.py,moving:!!P.moving,continuing:typeof keys!=='undefined'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyS','KeyA','KeyD'].some(k=>keys[k]),valid:(x,y)=>{const tile=Number(TILE)||32;const cell=typeof map!=='undefined'?map?.[Math.floor(y/tile)]?.[Math.floor(x/tile)]:1;return [1,5,6,7,10].includes(cell);}});c.restore();}
+    if(W.PsyFollower&&typeof P!=='undefined'){c.save();c.translate(w/2-P.px,h/2-P.py);W.PsyFollower.draw(c,{scene:'city-psy',x:P.px,y:P.py,moving:!!P.moving,continuing:typeof keys!=='undefined'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyS','KeyA','KeyD'].some(k=>keys[k]),scale:desktopCityPresentation()?1.5:1,valid:(x,y)=>{const tile=Number(TILE)||32;const cell=typeof map!=='undefined'?map?.[Math.floor(y/tile)]?.[Math.floor(x/tile)]:1;return [1,5,6,7,10].includes(cell);}});c.restore();}
     if(seasonal){drawCityDecor(c);
     // Little graveyard at the edge of the square.
     const grave=screenPoint(CITY_GRAVEYARD.dx,CITY_GRAVEYARD.dy);c.fillStyle='rgba(8,13,25,.55)';rounded(c,grave.x-48,grave.y-39,96,76,8);c.fill();c.strokeStyle='#798099';c.lineWidth=2;c.stroke();
@@ -496,12 +507,13 @@
     const canvasBox=cv?.getBoundingClientRect(),wrapBox=wrap?.getBoundingClientRect();
     const sx=canvasBox?.width&&cv.width?canvasBox.width/cv.width:1;
     const sy=canvasBox?.height&&cv.height?canvasBox.height/cv.height:1;
-    const door=D.getElementById('psy-event-tower-entry');if(door){const p=screenPoint(0,12.4);door.hidden=!active;door.style.left=((canvasBox?.left||0)-(wrapBox?.left||0)+p.x*sx)+'px';door.style.top=((canvasBox?.top||0)-(wrapBox?.top||0)+p.y*sy)+'px';}
+    const zoom=cityCameraZoom(),project=p=>({x:cv.width/2+(p.x-cv.width/2)*zoom,y:cv.height/2+(p.y-cv.height/2)*zoom});
+    const door=D.getElementById('psy-event-tower-entry');if(door){const p=project(screenPoint(0,12.4));door.hidden=!active;door.style.left=((canvasBox?.left||0)-(wrapBox?.left||0)+p.x*sx)+'px';door.style.top=((canvasBox?.top||0)-(wrapBox?.top||0)+p.y*sy)+'px';}
     NPCS.forEach(npc=>{
       const el=D.getElementById('psy-halloween-npc-'+npc.id);if(!el)return;
       if(!active){if(!el.hidden)el.hidden=true;return}
       if(el.hidden)el.hidden=false;
-      const p=screenPoint(npc.dx,npc.dy);
+      const p=project(screenPoint(npc.dx,npc.dy));
       // Project the world-space point through the canvas camera into the wrapper's
       // local coordinate system. UI panels never change this position.
       const left=(canvasBox?.left||0)-(wrapBox?.left||0)-(wrap?.clientLeft||0)+p.x*sx;

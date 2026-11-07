@@ -2692,7 +2692,7 @@ if(typeof P.worldBuffs==='undefined') P.worldBuffs={cap:0,gold:0,xp:0,dmg:0,hp:0
 const TYPE_TO_STONE = {
   "Fogo":"Fire Stone","Agua":"Water Stone","Planta":"Leaf Stone","Eletrico":"Thunder Stone",
   "Gelo":"Ice Stone","Lutador":"Punch Stone","Venenoso":"Venom Stone","Veneno":"Venom Stone",
-  "Terra":"Earth Stone","Voador":"Feather Stone","Psiquico":"Enigma Stone","Inseto":"Cocoon Stone",
+  "Terra":"Earth Stone","Voador":"Flying Stone","Flying":"Flying Stone","Psiquico":"Enigma Stone","Inseto":"Cocoon Stone",
   "Pedra":"Rock Stone","Fantasma":"Darkness Stone","Dragao":"Crystal Stone","Noturno":"Darkness Stone",
   "Sombrio":"Darkness Stone","Aco":"Metal Stone","Metal":"Metal Stone","Fada":"Heart Stone","Normal":"Heart Stone"
 };
@@ -2731,7 +2731,10 @@ ensureTrainerData();
 
 function getStoneForType(typeStr){
   if(!typeStr) return "Normal Stone";
-  let main = typeStr.split('/')[0].trim();
+  const types=String(typeStr).split(/[\/|,;]/).map(type=>type.trim()).filter(Boolean);
+  // Normal/Flying and similar pairs must use the specific elemental drop.
+  // A pure Normal species still uses its existing Normal Stone mapping.
+  let main = types.find(type=>!/^normal$/i.test(type)&&TYPE_TO_STONE[type])||types[0];
   return TYPE_TO_STONE[main] || "Normal Stone";
 }
 function tryDropStone(pokeType, pokeLevel){

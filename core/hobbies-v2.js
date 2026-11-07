@@ -307,7 +307,7 @@ function startFishing(scene,actor=null){
 function ensure(){
  if(root())return root();
  const el=D.createElement('section');el.id='psy-hobbies';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
- el.innerHTML='<div class="ph-shell"><header class="ph-header"><div><small>PSYWORLD · ATIVIDADES DO TREINADOR</small><h2>HOBBIES</h2><p>Explore Kanto, colete recursos nos spots e evolua cada especialidade.</p></div><button data-hobbies-close type="button" aria-label="Fechar">×</button></header><div class="ph-overview" data-hobby-overview aria-live="polite"></div><div class="ph-grid" data-hobbies-grid></div><div data-hobby-details hidden></div><p class="ph-foot">Trocas exclusivas por Hobby substituem o Craft e as antigas profissões.</p></div>';
+ el.innerHTML='<div class="ph-shell"><header class="ph-header"><div><small>PSYWORLD · ATIVIDADES DO TREINADOR</small><h2>HOBBIES</h2><p>Explore Kanto, colete recursos nos spots e evolua cada especialidade.</p></div><button data-hobbies-close type="button" aria-label="Fechar">×</button></header><div class="ph-overview" data-hobby-overview aria-live="polite"></div><div class="ph-grid" data-hobbies-grid></div><div data-hobby-details hidden></div></div>';
  D.body.appendChild(el);el.querySelector('[data-hobbies-close]').onclick=close;
  el.addEventListener('click',e=>{if(e.target===el)close()});
  D.addEventListener('keydown',e=>{if(e.key==='Escape'&&el.classList.contains('show')){e.stopImmediatePropagation();if(selected){selected=null;render()}else close()}},true);

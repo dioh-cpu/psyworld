@@ -17,7 +17,7 @@ function load(src){
  const im=new W.Image();im.loaded=false;im.onload=()=>{im.loaded=true};im.onerror=()=>{im.failed=true};im.src=src;return im;
 }
 images.ore=load('assets/idle-realistic/pallet/rock_mid.png');
-images.tree=load('assets/idle-realistic/pallet/tree_curve.png');
+images.tree=load('assets/idle-realistic/pallet/tree_curve-transparent-v1.png');
 images.flower=load('assets/idle-realistic/pallet/bush_flowers.png');
 images.rod=load('assets/items/fishing-rod.png');
 for(const type of ['pickaxe','axe'])for(const material of toolMaterials)
