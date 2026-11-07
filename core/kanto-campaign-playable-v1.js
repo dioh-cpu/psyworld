@@ -123,7 +123,7 @@
     root.innerHTML = `<header class="kp-head"><button type="button" data-back>← ATLAS</button><div class="kp-title"><b></b><small></small></div><button type="button" data-kp-hobbies>HOBBIES</button><button type="button" class="kp-close" aria-label="Fechar">×</button></header><div class="kp-stage"><canvas id="psy-kanto-canvas" width="896" height="560" aria-label="Mapa jogável de Kanto"></canvas><section id="psy-kanto-dialog"><div class="kp-dialog-title"></div><div class="kp-dialog-text"></div><div class="kp-dialog-actions"></div></section></div><footer class="kp-footer"><div class="kp-objective"></div><div class="kp-controls" aria-label="Controles de movimento"><button data-dir="up" aria-label="Cima">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Baixo">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button type="button" class="kp-interact" data-interact>INTERAGIR</button><button type="button" data-kp-fish hidden>PESCAR</button></footer>`;
     D.body.appendChild(root); model.root = root; model.canvas = root.querySelector('canvas'); model.ctx = model.canvas.getContext('2d'); model.dialog = root.querySelector('#psy-kanto-dialog');
     root.querySelector('.kp-close').onclick = closeWorld;
-    root.querySelector('[data-kp-hobbies]').onclick=()=>{model.held=null;W.PsyHobbies?.open?.()};
+    root.querySelector('[data-kp-hobbies]').onclick=()=>{model.held=null;model.autoHunt=false;model.autoPath=[];W.PsyHobbies?.open?.()};
     root.querySelector('[data-kp-fish]').onclick=()=>{model.held=null;W.PsyHobbies?.startFishing?.(model.place?.id)};
     root.querySelector('[data-back]').onclick = () => { closeWorld(); W.openKantoJourneyV1?.(); };
     root.querySelector('[data-interact]').onclick = e => { e.preventDefault(); e.stopPropagation(); interact(); };
@@ -511,7 +511,7 @@
   }
   function tick() {
     if(!model.root?.classList.contains('open')){model.raf=0;return;}
-    if(D.getElementById('psy-hobby-fishing')?.classList.contains('show')){
+    if(W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.()||D.getElementById('psy-hobby-fishing')?.classList.contains('show')){
       model.held=null;model.autoPath=[];model.raf=W.requestAnimationFrame(tick);return;
     }
     const now=performance.now();
