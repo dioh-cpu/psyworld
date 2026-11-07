@@ -137,6 +137,18 @@ export default async function handler(req,res){
       const nick=cleanNick(req.body?.character_nickname||characterNickFromSave(save));
       const trainerName=nick||save?.player?.name||save?.player?.nickname||req.body?.trainer_name||'Trainer';
       await ensurePlayer(supabase,user,trainerName);
+      // Paid PsyCoin purchases and spending are recorded in the server wallet ledger.
+      // A local snapshot must not overwrite a ledger-backed wallet balance.
+      const {data:paidRows,error:paidErr}=await supabase.from('wallet_ledger')
+        .select('id').eq('user_id',user.id).eq('currency','psycoin').limit(1);
+      if(paidErr)throw paidErr;
+      if(paidRows?.length){
+        const {data:wallet,error:walletErr}=await supabase.from('players')
+          .select('psycoin').eq('user_id',user.id).single();
+        if(walletErr)throw walletErr;
+        save.player=save.player||{};
+        save.player.psycoin=Math.max(0,Math.floor(Number(wallet.psycoin)||0));
+      }
       if(nick){
         const {data:previous,error:previousError}=await supabase.from('player_characters')
           .select('save,updated_at').eq('user_id',user.id)
@@ -167,7 +179,7 @@ export default async function handler(req,res){
         updated_at:now
       },{onConflict:'user_id'}).select('updated_at,client_updated_at').single();
       if(error)throw error;
-      return res.status(200).json({ok:true,...data,character,server_inventory_candy:save?.player?.inventory?.[HALLOWEEN_CANDY]??null,server_grant:save?.player?.meta?.halloweenTestGrantV1||null});
+      return res.status(200).json({ok:true,...data,character,server_inventory_candy:save?.player?.inventory?.[HALLOWEEN_CANDY]??null,server_grant:save?.player?.meta?.halloweenTestGrantV1||null,server_psycoin:paidRows?.length?save.player.psycoin:null});
     }
 
     return res.status(404).json({error:'unknown_action'});
