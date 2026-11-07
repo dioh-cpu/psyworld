@@ -111,3 +111,21 @@ body.psy-kanto-v2-active #psy-audio-quick-toggle{display:none!important}
  #psy-kanto-world-v2 .kw2-dialog-body{font-size:13px;line-height:1.5}
  #psy-kanto-world-v2 .kw2-dialog-title{font-size:15px}
 }
+
+/* VIRIDIAN RESPONSIVE V1: only the authored Viridian city scene. */
+#psy-kanto-world-v2[data-world="viridian"]{height:100dvh;max-height:100dvh}
+#psy-kanto-world-v2[data-world="viridian"] .kw2-stage{min-width:0;min-height:0}
+@media(max-width:680px) and (orientation:portrait){
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-top{min-height:48px;padding:6px 8px}
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-footer{row-gap:7px}
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-objective{max-height:50px;overflow:auto}
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-interact{min-height:52px}
+}
+@media(max-height:500px) and (orientation:landscape){
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-top{min-height:40px;padding:4px 9px}
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-footer{min-height:76px;gap:8px;flex-wrap:nowrap;padding:4px 9px max(4px,env(safe-area-inset-bottom))}
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-objective{flex:1 1 auto;min-width:0;max-height:52px;overflow:auto;font-size:11px}
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-pad{flex-shrink:0;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(2,32px)}
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-pad button{min-height:32px}
+ #psy-kanto-world-v2[data-world="viridian"] .kw2-interact{min-height:52px;padding:7px 11px;margin-left:0}
+}
