@@ -236,6 +236,7 @@ function stopFishing(success){
  const lvl=count(state().fisher?.level);
  const pick=Math.random(),item=lvl>=10&&pick<.12?'Peixe Dourado':lvl>=6&&pick<.23?'Peixe Cristalino':lvl>=3&&pick<.45?'Carpa Prateada':'Peixe de Rio';
  const inv=inventory();inv[item]=count(inv[item])+1;addXP('fisher',25);W.psyHobbyGrantFieldXp?.(25,12);
+ const gathered=p().meta.hobbyGatherTotalsV1||(p().meta.hobbyGatherTotalsV1={});gathered.fisher=count(gathered.fisher)+1;
  save();W.notif?.('Pesca concluída! +1 '+item+' e XP para treinador, Pokémon e Hobby.',3400);
 }
 function startFishing(scene){
