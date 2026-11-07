@@ -118,7 +118,7 @@ function bonus(stat){
  const k=({capture:'cap',damage:'atk',health:'hp'})[stat]||stat;
  let value=0;for(const j of JOBS)if(j.stat===k)value+=count(state()[j.id].level)*j.per;
  for(const v of Object.values(p().meta?.hobbyBuffsV2||{}))if(v.kind===k&&v.until>Date.now())value+=count(v.amount);
- return Math.min(100,value+(W.PsyHobbyMastery?.statBonus?.(k)||0));
+ return Math.min(100,value);
 }
 function useConsumable(name){
  const config={'Tônico de Ataque':{kind:'atk',amount:12},'Bálsamo Restaurador':{kind:'hp',amount:10}};
@@ -140,7 +140,7 @@ const FIELD={
 function visibleNodes(scene){
  const now=Date.now(),nodes=field().nodes;
  return (FIELD[scene]||(/^route-\d+$/.test(scene)?FIELD['route-3']:[])||[]).filter(([id])=>count(nodes[scene+':'+id]?.respawnAt)<=now)
- .map(([id,kind,x,y,item])=>({id,kind,x,y,item,hits:count(nodes[scene+':'+id]?.hits),rarity:nodes[scene+':'+id]?.rarity||'common'}));
+ .map(([id,kind,x,y,item])=>({id,kind,x,y,item,hits:count(nodes[scene+':'+id]?.hits)}));
 }
 function nearby(scene,pos,radius=65){
  let found=null,dist=radius;for(const node of visibleNodes(scene)){const d=Math.hypot(pos.x-node.x,pos.y-node.y);if(d<dist){found=node;dist=d}}return found;
@@ -148,19 +148,13 @@ function nearby(scene,pos,radius=65){
 function collect(scene,id){
  const node=visibleNodes(scene).find(v=>v.id===id);if(!node)return false;
  if(!state()[node.kind]?.level){W.notif?.('Primeiro desbloqueie '+find(node.kind).name+' em Hobbies.',2500);return false}
- const f=field(),record=f.nodes[scene+':'+id]||{};
- const limit=(node.kind==='miner'||node.kind==='lumber')?(W.PsyHobbyMastery?.harvestHits?.(node.kind)||5):1;
- const hit=count(record.hits)+1;
- if(hit<limit){f.nodes[scene+':'+id]={...record,hits:hit,respawnAt:0};save();W.notif?.('Progresso de coleta: '+hit+'/'+limit,1200);return true}
- const next=W.PsyHobbyMastery?.rollNextSpot?.(node.kind,Math.random)||'common';
- const delay=(3+Math.random()*5)*60000*(W.PsyHobbyMastery?.respawnFactor?.(node.kind)||1);
- f.nodes[scene+':'+id]={hits:0,rarity:next,respawnAt:Date.now()+delay};
- const item=W.PsyHobbyMastery?.reward?.(node.kind,node.rarity)||node.item;
- const qty=1+(W.PsyHobbyMastery?.additionalQuantity?.(node.kind,Math.random)||0);
- const inv=inventory();inv[item]=count(inv[item])+qty;addXP(node.kind,16);
+ const f=field(),record=f.nodes[scene+':'+id]||{},hit=node.kind==='miner'||node.kind==='lumber'?count(record.hits)+1:5;
+ if(hit<5){f.nodes[scene+':'+id]={hits:hit,respawnAt:0};save();W.notif?.('Progresso de coleta: '+hit+'/5',1200);return true}
+ f.nodes[scene+':'+id]={hits:0,respawnAt:Date.now()+(3+Math.random()*5)*60000};
+ const inv=inventory();inv[node.item]=count(inv[node.item])+1;addXP(node.kind,16);
  const gathered=p().meta.hobbyGatherTotalsV1||(p().meta.hobbyGatherTotalsV1={});gathered[node.kind]=count(gathered[node.kind])+1;
  W.psyHobbyGrantFieldXp?.(18,8);
- save();W.notif?.('+'+qty+' '+item+' coletado! Próximo spot: '+({common:'Comum',rare:'Raro',epic:'Épico',legend:'Lendário'})[next]+'.',3000);return true;
+ save();W.notif?.(node.item+' coletado! +XP para Hobby, Pokémon e Treinador.',2500);return true;
 }
 function drawField(c,scene){
  for(const a of visibleNodes(scene)){
@@ -170,11 +164,9 @@ function drawField(c,scene){
   if(a.kind==='miner'){c.moveTo(-16,7);c.lineTo(-11,-16);c.lineTo(1,-30);c.lineTo(17,-2);c.lineTo(12,9);c.closePath()}
   else if(a.kind==='lumber'){c.rect(-12,-28,24,35)}
   else{for(let i=0;i<6;i++){const an=i*Math.PI/3;c.moveTo(0,-10);c.ellipse(Math.sin(an)*11,Math.cos(an)*11-10,7,10,an,0,Math.PI*2)}}
-  c.fill();c.stroke();c.fillStyle='#09192de8';c.strokeStyle=({common:'#b9ede6',rare:'#79ddff',epic:'#dd91ff',legend:'#ffd579'})[a.rarity]||'#b9ede6';c.shadowColor=c.strokeStyle;c.shadowBlur=a.rarity==='common'?0:15;c.lineWidth=1;
+  c.fill();c.stroke();c.fillStyle='#09192de8';c.strokeStyle='#b9ede6';c.lineWidth=1;
   c.beginPath();c.roundRect(-17,12,34,15,5);c.fill();c.stroke();
-  c.fillStyle='#fff';c.shadowBlur=0;c.font='bold 10px system-ui';c.textAlign='center';c.fillText((a.kind==='miner'||a.kind==='lumber')?(a.hits+'/'+(W.PsyHobbyMastery?.harvestHits?.(a.kind)||5)):'✦',0,23);
-  if(a.rarity!=='common'){c.fillStyle=({rare:'#79ddff',epic:'#dd91ff',legend:'#ffd579'})[a.rarity];c.shadowColor=c.fillStyle;c.shadowBlur=9;c.font='bold 11px system-ui';c.fillText(({rare:'◆',epic:'❖',legend:'✦'})[a.rarity],0,-34);}
-  c.restore();
+  c.fillStyle='#fff';c.font='bold 10px system-ui';c.textAlign='center';c.fillText((a.kind==='miner'||a.kind==='lumber')?(a.hits+'/5'):'✦',0,23);c.restore();
  }
 }
 function decorate(name){
@@ -242,12 +234,10 @@ function stopFishing(success){
  const el=D.getElementById('psy-hobby-fishing');el?.classList.remove('show');W.PsyKantoWorldV2?.setStoryLock?.(false);
  if(!success){W.notif?.('A linha se rompeu, o peixe fugiu.',2600);return}
  const lvl=count(state().fisher?.level);
- const pick=Math.random(),rarity=W.PsyHobbyMastery?.rollNextSpot?.('fisher',Math.random);
- const item=W.PsyHobbyMastery?.reward?.('fisher',rarity)||(lvl>=10&&pick<.12?'Peixe Dourado':lvl>=6&&pick<.23?'Peixe Cristalino':lvl>=3&&pick<.45?'Carpa Prateada':'Peixe de Rio');
- const qty=1+(W.PsyHobbyMastery?.additionalQuantity?.('fisher',Math.random)||0);
- const inv=inventory();inv[item]=count(inv[item])+qty;addXP('fisher',25);W.psyHobbyGrantFieldXp?.(25,12);
+ const pick=Math.random(),item=lvl>=10&&pick<.12?'Peixe Dourado':lvl>=6&&pick<.23?'Peixe Cristalino':lvl>=3&&pick<.45?'Carpa Prateada':'Peixe de Rio';
+ const inv=inventory();inv[item]=count(inv[item])+1;addXP('fisher',25);W.psyHobbyGrantFieldXp?.(25,12);
  const gathered=p().meta.hobbyGatherTotalsV1||(p().meta.hobbyGatherTotalsV1={});gathered.fisher=count(gathered.fisher)+1;
- save();W.notif?.('Pesca concluída! +'+qty+' '+item+' e XP para treinador, Pokémon e Hobby.',3400);
+ save();W.notif?.('Pesca concluída! +1 '+item+' e XP para treinador, Pokémon e Hobby.',3400);
 }
 function startFishing(scene){
  if(!state().fisher?.level){W.notif?.('Desbloqueie o Hobby Pescador para pescar.',2600);return false}
@@ -258,8 +248,7 @@ function startFishing(scene){
   const f=fishingRun;if(!f)return;
   const dt=Math.min(.08,Math.max(0,(now-(f.at||now))/1000));f.at=now;
   f.meter=Math.max(0,Math.min(1,f.meter+(f.reel?.38:-.25)*dt+Math.sin(now*.0019)*.035*dt));
-  const help=Math.min(.06,(W.PsyHobbyMastery?.effect?.('fisher','tension')||0)*.015);
-  const green=f.meter>=.34-help&&f.meter<=.68+help,red=f.meter<.18||f.meter>.82;
+  const green=f.meter>=.34&&f.meter<=.68,red=f.meter<.18||f.meter>.82;
   f.red=red?f.red+dt:0; // fail after three continuous seconds in red
   f.progress=Math.max(0,Math.min(1,f.progress+(green?.19+f.level*.002:-.055)*dt));
   el.querySelector('[data-fish-marker]').style.left=(f.meter*100)+'%';
