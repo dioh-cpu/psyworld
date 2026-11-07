@@ -385,8 +385,6 @@
     // World-anchored cobblestone floor only replaces ordinary town ground.
     // The full town quarter uses one continuous cobblestone surface.
     drawCityFloor(c,w,h);
-    W.PsySeason?.drawTitle(c,center.x,center.y-95);
-
     drawFestivalPlots(c);
     HOUSES.forEach(house=>drawHouse(c,house));
     if(W.PsyFollower&&typeof P!=='undefined'){c.save();c.translate(w/2-P.px,h/2-P.py);W.PsyFollower.draw(c,{scene:'city-psy',x:P.px,y:P.py,moving:!!P.moving,continuing:typeof keys!=='undefined'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyS','KeyA','KeyD'].some(k=>keys[k]),valid:(x,y)=>{const tile=Number(TILE)||32;const cell=typeof map!=='undefined'?map?.[Math.floor(y/tile)]?.[Math.floor(x/tile)]:1;return [1,5,6,7,10].includes(cell);}});c.restore();}
@@ -428,6 +426,9 @@
     c.fillStyle='#f8d98c';c.font='900 13px system-ui';c.textAlign='center';c.fillText('CIDADE PSY  ·  FESTIVAL DAS LANTERNAS',banner.x,bannerY+5);
     drawGhostDecorations(c);
     }
+    // The trainer is camera-centered; render the equipped title above their head,
+    // after environmental art so the label is never hidden by scenery.
+    W.PsySeason?.drawTitle(c,w/2,h/2-83);
     c.restore();
   }
   function makeDialog() {

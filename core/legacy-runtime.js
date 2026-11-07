@@ -2238,6 +2238,30 @@ function openBag(){
 }
 
 window.psyBagFilter='all';
+/* Full item information instead of a disappearing one-line toast. */
+window.psyShowBagItemDetails=function(name){
+ const available=Number(P.inventory?.[name]||0);
+ const event=window.PsySeason?.catalog?.find(r=>r.item===name);
+ const description=event?.desc||window.PSY_ITEMS?.detail?.(name)||'Item coletado no PSYWORLD.';
+ let message=String(description);
+ if(name==='Incenso de Halloween'){
+  const effects=window.PsySeason?.incenseStatus?.();
+  const charges=effects?.charges||[];
+  message='Comprar guarda o Incenso na Mochila. Ele só é ativado quando você clicar em USAR. Cada carga aumenta em 1 ponto percentual a chance de aparição de Pokémon de Halloween por 1 hora, respeitando o limite total de 10%. '+(charges.length?'Ativas: '+charges.length+'. Próxima expiração: '+new Date(Math.min(...charges)).toLocaleTimeString('pt-BR')+'.':'Nenhuma carga ativa.');
+ }
+ const old=document.getElementById('psy-item-details-dialog');old?.remove();
+ const overlay=document.createElement('section');overlay.id='psy-item-details-dialog';
+ overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Detalhes de '+name);
+ overlay.style.cssText='position:fixed;inset:0;z-index:2147483300;display:grid;place-items:center;padding:12px;background:#020713e9;box-sizing:border-box';
+ const card=document.createElement('div');card.style.cssText='width:min(450px,100%);max-height:85dvh;overflow-y:auto;border:1px solid #8ddddc;border-radius:18px;padding:18px;color:#e9f6fb;background:linear-gradient(140deg,#16263d,#0a1426);box-shadow:0 12px 36px #0009;font:14px/1.55 system-ui;box-sizing:border-box';
+ const heading=document.createElement('h2');heading.textContent=name;heading.style.cssText='font-size:20px;color:#ffe0a6;margin:0 0 8px';
+ const amount=document.createElement('p');amount.textContent='Quantidade na Mochila: '+available.toLocaleString('pt-BR');amount.style.cssText='font-weight:800;color:#a8e5d9';
+ const body=document.createElement('p');body.textContent=message;body.style.cssText='white-space:pre-line;color:#cee2ec';
+ const close=document.createElement('button');close.type='button';close.textContent='FECHAR DETALHES';close.style.cssText='width:100%;min-height:44px;border-radius:10px;background:#2b4864;color:white;border:1px solid #88dadd;margin-top:14px;font-weight:800';
+ close.onclick=()=>overlay.remove();overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
+ card.append(heading,amount,body,close);overlay.appendChild(card);document.body.appendChild(overlay);close.focus();
+ return true;
+};
 window.psySetBagFilter=function(filter,button){window.psyBagFilter=filter;document.querySelectorAll('#bag-filters button').forEach(b=>b.classList.toggle('active',b===button));renderBag()};
 function renderBag(){
   window.PsySeason?.state();
@@ -2250,18 +2274,20 @@ function renderBag(){
   if(window.bagBattleMode==='ball') items=items.filter(([n])=>Object.prototype.hasOwnProperty.call(BALL_DATA,n)&&window.PSY_ITEMS?.category?.(n)==='ball');
   if(window.bagBattleMode==='stone') items=items.filter(([n])=>n.includes("Stone"));
 
-  const itemCategory=name=>name==='Revive'?'potion':window.PSY_ITEMS?.category(name)||(Object.prototype.hasOwnProperty.call(BALL_DATA,name)?'ball':name.includes('Poção')?'potion':name.includes('Stone')?'stone':'item');
-  if(!window.bagBattleMode&&window.psyBagFilter!=='all')items=items.filter(([n])=>window.psyBagFilter==='other'?!['ball','potion','stone','craft','quest'].includes(itemCategory(n)):itemCategory(n)===window.psyBagFilter);
-  const order={ball:0,potion:1,stone:2,craft:3,quest:4,egg:5,pack:6,tm:7,currency:8,item:9};
+  const baseCategory=name=>name==='Revive'?'potion':window.PSY_ITEMS?.category(name)||(Object.prototype.hasOwnProperty.call(BALL_DATA,name)?'ball':name.includes('Poção')?'potion':name.includes('Stone')?'stone':'item');
+  const isSpecial=name=>/halloween|festival|natal|inverno|primavera|ver[aã]o|p[aá]scoa|lanterna|sazonal|evento/i.test(name)||!!window.PsySeason?.itemUrl?.(name);
+  const itemCategory=name=>isSpecial(name)?'special':baseCategory(name);
+  if(!window.bagBattleMode&&window.psyBagFilter!=='all')items=items.filter(([n])=>window.psyBagFilter==='other'?!['ball','potion','stone','craft','quest','special'].includes(itemCategory(n)):itemCategory(n)===window.psyBagFilter);
+  const order={special:0,ball:1,potion:2,stone:3,craft:4,quest:5,egg:6,pack:7,tm:8,currency:9,item:10};
   items.sort((a,b)=>(order[itemCategory(a[0])]??9)-(order[itemCategory(b[0])]??9)||a[0].localeCompare(b[0]));
   const count=document.getElementById('bag-item-count');if(count)count.textContent=`${items.reduce((s,x)=>s+Number(x[1]||0),0).toLocaleString('pt-BR')} ITENS`;
 
   let html="";
   items.forEach(([name,qtd])=>{
-    const cat=itemCategory(name),isStone=cat==='stone',isPotion=cat==='potion',isBall=cat==='ball';
-    const colors={ball:'#facc15',potion:'#34d399',stone:'#a78bfa',craft:'#38bdf8',quest:'#fb923c',egg:'#f472b6',pack:'#c084fc',tm:'#60a5fa',currency:'#fbbf24',item:'#94a3b8'};
+    const cat=itemCategory(name),originalCat=baseCategory(name),isStone=originalCat==='stone',isPotion=originalCat==='potion',isBall=originalCat==='ball',isIncense=name==='Incenso de Halloween';
+    const colors={special:'#f4ab77',ball:'#facc15',potion:'#34d399',stone:'#a78bfa',craft:'#38bdf8',quest:'#fb923c',egg:'#f472b6',pack:'#c084fc',tm:'#60a5fa',currency:'#fbbf24',item:'#94a3b8'};
     const borderColor=colors[cat]||colors.item;
-    let btnText=isStone?'EVOLUIR':isPotion?'USAR':isBall?'USAR NA BATALHA':'DETALHES';
+    let btnText=isIncense?'USAR':isStone?'EVOLUIR':isPotion?'USAR':isBall?'USAR NA BATALHA':'DETALHES';
 
     // info extra
     let info = "";
@@ -2271,7 +2297,7 @@ function renderBag(){
     else info = window.PSY_ITEMS?.detail(name)||'Item especial';
 
     const encoded=encodeURIComponent(name);
-    let action = window.bagBattleMode==='potion'?`usePotionBattle(decodeURIComponent('${encoded}'))`:window.bagBattleMode==='ball'?`tryCaptureBattle(decodeURIComponent('${encoded}'))`:(isStone||isPotion||isBall||name==='Incenso de Halloween')?`useItemFromBag(decodeURIComponent('${encoded}'))`:`notif(decodeURIComponent('${encodeURIComponent(name+' • '+info)}'),2200)`;
+    let action = window.bagBattleMode==='potion'?`usePotionBattle(decodeURIComponent('${encoded}'))`:window.bagBattleMode==='ball'?`tryCaptureBattle(decodeURIComponent('${encoded}'))`:(isStone||isPotion||isBall||name==='Incenso de Halloween')?`useItemFromBag(decodeURIComponent('${encoded}'))`:`psyShowBagItemDetails(decodeURIComponent('${encoded}'))`;
 
     html+=`<div class="psy-item-card" style="--item:${borderColor}">
       <div class="psy-item-tag">${window.PSY_ITEMS?.label(name)||cat.toUpperCase()}</div>
@@ -2280,13 +2306,14 @@ function renderBag(){
       <div class="psy-item-info">${info}</div>
       <div class="psy-item-owned">x${Number(qtd).toLocaleString('pt-BR')}</div>
       <button onclick="${action}">${btnText}</button>
+      ${btnText==='DETALHES'?'':`<button class="psy-item-details-secondary" onclick="psyShowBagItemDetails(decodeURIComponent('${encoded}'))">DETALHES</button>`}
     </div>`;
   });
 
   bl.innerHTML=html||"<p style='color:#666; text-align:center; padding:20px; grid-column:1/-1;'>🎒 Vazio<br><small style='font-size:10px'>Vá na loja comprar!</small></p>";
 }
 function useItemFromBag(name){
-  if(name==='Incenso de Halloween')return window.PsySeason?.useIncense();
+  if(name==='Incenso de Halloween'){const used=window.PsySeason?.useIncense();if(used)renderBag();return used;}
   if(name==='Revive'){if(typeof window.psyOpenBattleSwitch==='function'&&window.inBattle)return window.psyOpenBattleSwitch(true);notif('💠 Revive é usado em batalha para recuperar um Pokémon derrotado.',2600);return;}
   if(name.includes("Stone")){ checkEvoStone(name); return; }
   if(name.includes("Poção")){
