@@ -35,6 +35,7 @@ const key=v=>translate[norm(v)]||norm(v);
 const p=()=>{try{return typeof P!=='undefined'?P:W.P||{}}catch(_){return W.P||{}}};
 const count=v=>Math.max(0,Math.floor(Number(v)||0));
 const find=id=>JOBS.find(j=>j.id===id);
+const artUrl=j=>j.starter?'assets/hobbies/'+j.art+'.svg':j.id==='alchemist'?'assets/hobbies/alchemist.svg':'assets/professions/'+j.art+'.webp';
 let selected=null;
 const root=()=>D.getElementById('psy-hobbies');
 function inventory(){const u=p();return u.inventory||(u.inventory={})}
@@ -200,7 +201,7 @@ function render(){
   for(const j of JOBS){
    const x=records[j.id],card=D.createElement('article');card.className='ph-card';
    const cover=button('',()=>openDetail(j.id));cover.className='ph-illustration ph-select';cover.setAttribute('aria-label','Abrir '+j.name);
-   const img=D.createElement('img');img.src='assets/hobbies/'+j.art+'.svg';img.alt=j.name;img.loading='lazy';cover.appendChild(img);
+   const img=D.createElement('img');img.src=artUrl(j);img.alt=j.name;img.loading='lazy';cover.appendChild(img);
    const tag=D.createElement('span');tag.className='ph-level';tag.textContent='LV. '+x.level;cover.appendChild(tag);
    const body=D.createElement('div');body.className='ph-card-body';const title=D.createElement('h3');title.textContent=j.name;body.appendChild(title);
    para(body,x.level?'Status: +'+(x.level*j.per).toFixed(1)+'% '+j.stat:(j.starter?'Quest: 10 derrotas + 5 capturas':'Desbloqueio após Brock'));
@@ -211,7 +212,7 @@ function render(){
  const j=find(selected),x=records[selected];if(!j){selected=null;render();return}
  details.appendChild(button('← VOLTAR A TODOS OS HOBBIES',()=>{selected=null;render()}));
  const header=D.createElement('div');header.className='ph-detail-head';
- const img=D.createElement('img');img.src='assets/hobbies/'+j.art+'.svg';img.alt=j.name;header.appendChild(img);
+ const img=D.createElement('img');img.src=artUrl(j);img.alt=j.name;header.appendChild(img);
  const h=D.createElement('div'),name=D.createElement('h3');name.textContent=j.name+' • Nível '+x.level;h.appendChild(name);
  para(h,'Bônus +'+(x.level*j.per).toFixed(1)+'% '+j.stat+' • XP '+x.xp+'/'+xpNeed(x));header.appendChild(h);details.appendChild(header);
  if(!x.level){
