@@ -2225,7 +2225,7 @@ function getCuraValue(poke, name){
   const d=POTION_DATA[name];if(!d)return 0;
   if(name==='Poção de Halloween')return Math.max(1,Math.floor(poke.maxHp));
   const value=d.pct?Math.floor(poke.maxHp*Math.min(50,d.pct)/100):d.cura||0;
-  return Math.max(1,Math.min(value,Math.floor(poke.maxHp*.50)));
+  return Math.max(1,Math.min(Math.floor(value*(window.PsyHobbies?.healMultiplier?.()||1)),Math.floor(poke.maxHp*.75)));
 }
 
 function openBag(){
@@ -9184,7 +9184,22 @@ function psyV10CanonicalTypeForId(id){const ess=(psyElement(id)||PSY_ELEMENT_DAT
 function psyV10RepeatList(){const types=PSY_TYPE_NAMES.map(t=>({id:'type_'+t,name:`Caçador ${t}`,desc:`Derrote 25 Pokémon do tipo ${t}`,kind:'type',type:t,goal:25,gold:12000,essence:psyV10CanonType(t),essQty:3}));return [...PSY_V10_REPEAT_BASE,...types]}
 function psyV10RepeatValue(r){const m=psyV10RewardsEnsure();if(r.kind==='kills')return Number(m.kills||0);if(r.kind==='captures')return Number(m.captures||0);if(r.kind==='eggs')return Number(m.eggHatches||0);if(r.kind==='cardWins')return Number(m.cardWins||0);if(r.kind==='type')return Number(m.typeKills[r.type]||0);return 0}
 window.psyClaimRepeatV10=function(id){const m=psyV10RewardsEnsure(),r=psyV10RepeatList().find(x=>x.id===id);if(!r)return;const completed=Math.floor(psyV10RepeatValue(r)/r.goal),claimed=Number(m.repeatClaims[id]||0),times=Math.max(0,completed-claimed);if(!times)return notif('Ainda não há recompensa acumulada.');m.repeatClaims[id]=claimed+times;const g=(r.gold||0)*times,d=(r.diamonds||0)*times;P.gold+=g;P.diamonds+=d;if(r.essence){const q=(r.essQty||1)*times;P.inventory[r.essence]=(P.inventory[r.essence]||0)+q}autoSave();updateHUD();renderAchievements();notif(`🏆 ${r.name} x${times}: +${g.toLocaleString()}G${d?' +'+d+'💎':''}`,3200)};
-function psyV10TrackTypeKill(id){const m=psyV10RewardsEnsure(),match=psyV10CanonicalTypeForId(id);m.typeKills[match]=Number(m.typeKills[match]||0)+1;autoSave()}
+window.psyHobbyTypesForId=id=>psyResolvePokemonTypes({id:Number(id)||0});
+window.psyHobbyGrantFieldXp=function(pokemonXP=18,trainerXP=8){
+ const mon=P.team?.[0],xp=Math.max(0,Math.floor(Number(pokemonXP)||0));
+ if(mon&&xp){
+   mon.exp=Math.max(0,Number(mon.exp)||0)+xp;
+   const cap=Math.max(1,Number(P.levelCap)||100);
+   while(Number(mon.level||1)<cap&&mon.exp>=Math.max(1,Number(mon.maxExp)||100)){
+     mon.exp-=Math.max(1,Number(mon.maxExp)||100);mon.level++;mon.maxExp=Math.floor(Math.max(100,Number(mon.maxExp)||100)*1.3);
+     mon.maxHp=Math.max(1,Number(mon.maxHp)||1)+20;mon.hp=mon.maxHp;
+   }
+   if(Number(mon.level||1)>=cap)mon.exp=Math.min(mon.exp,Math.max(0,Number(mon.maxExp||100)-1));
+ }
+ gainTrainerXp(Math.max(0,Math.floor(Number(trainerXP)||0)),true,true);
+ try{updateHUD();autoSave()}catch(_){}
+};
+function psyV10TrackTypeKill(id){const m=psyV10RewardsEnsure(),match=psyV10CanonicalTypeForId(id);m.typeKills[match]=Number(m.typeKills[match]||0)+1;window.PsyHobbies?.recordKill?.(id);autoSave()}
 const psyV10EndBattleTrack=window.endBattle;window.endBattle=function(won){const w=window.battleData?.wild?{...battleData.wild}:null,inGym=(typeof gymBattle!=='undefined'&&!!gymBattle),wasMegaDungeon=!!window.isDungeonMega,wasKill=!!(won&&w&&Number(battleData?.wildHp||0)<=0&&!inGym&&!window.__psyV10GymExit&&!w.psyduckDungeon&&!w.eeveeDungeon);const r=psyV10EndBattleTrack.apply(this,arguments);if(wasKill)psyV10TrackTypeKill(w.id);if(wasMegaDungeon)window.isDungeonMega=false;return r};
 const psyV10WorldKillTrack=window.handleWorldKill;if(psyV10WorldKillTrack)window.handleWorldKill=function(t){const id=t?.id,r=psyV10WorldKillTrack.apply(this,arguments);if(id)psyV10TrackTypeKill(id);return r};
 

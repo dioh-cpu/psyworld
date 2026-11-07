@@ -25,3 +25,17 @@
 @media(max-width:520px){#psy-hobbies{padding:6px}#psy-hobbies .ph-shell{padding:10px;border-radius:14px}#psy-hobbies .ph-grid{gap:8px}#psy-hobbies .ph-illustration{height:104px}#psy-hobbies .ph-card-body{padding:8px;gap:5px}#psy-hobbies .ph-card h3{font-size:14px}#psy-hobbies .ph-card button{font-size:10px}}
 @media(max-width:340px){#psy-hobbies .ph-grid{grid-template-columns:1fr}}
 @media(max-height:500px) and (orientation:landscape){#psy-hobbies .ph-illustration{height:85px}#psy-hobbies .ph-shell{max-height:calc(100dvh - 8px)}}
+
+/* V2: only HOBBIES, with image-based individual trade and level panels. */
+#psy-prof-launch{display:none!important}
+#psy-hobbies .ph-select{width:100%;padding:0!important;border:0!important;background:transparent!important;cursor:pointer;display:block;position:relative}
+#psy-hobbies .ph-select:focus-visible{outline:3px solid #a9fced}
+#psy-hobbies .ph-detail-head{display:flex;align-items:center;gap:14px;margin:12px 0;padding:12px;background:#162841;border:1px solid #426a79;border-radius:13px}
+#psy-hobbies .ph-detail-head img{width:min(40%,180px);max-height:125px;object-fit:contain}
+#psy-hobbies .ph-detail-head h3,#psy-hobbies [data-hobby-details]>h3{color:#ffe1a7}
+#psy-hobbies [data-hobby-details]{display:flex;flex-direction:column;gap:9px}
+#psy-hobbies [data-hobby-details][hidden],#psy-hobbies [data-hobbies-grid][hidden]{display:none!important}
+#psy-hobbies [data-hobby-details] button{background:#174759;border:1px solid #81d6d0;border-radius:9px;color:#fff;min-height:40px;font-weight:800;padding:8px;cursor:pointer}
+#psy-hobbies [data-hobby-details] button:disabled{opacity:.48;cursor:not-allowed}
+#psy-hobbies .ph-upgrade,#psy-hobbies .ph-exchange{border:1px solid #416277;border-radius:12px;background:#0b1c30;padding:11px;display:flex;flex-direction:column;gap:9px}
+#psy-hobbies .ph-upgrade{border-color:#b8965a}
