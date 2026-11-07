@@ -17,6 +17,23 @@ function sanitize(value,depth=0){
   return null;
 }
 
+/* Protect recorded event test grants from outdated local snapshots.
+ * Normal consumable spending is never merged or added across saves. */
+const HALLOWEEN_CANDY='Doce de Halloween';
+function reconcileGrantedCandy(incoming,previous){
+  const grant=previous?.player?.meta?.halloweenTestGrantV1;
+  if(!grant||typeof grant.id!=='string'||!Number.isSafeInteger(grant.amount)||grant.amount<1)return incoming;
+  const applied=incoming?.player?.meta?.halloweenTestGrantV1;
+  if(applied?.id===grant.id)return incoming; // client already knows the grant: accept normal purchases
+  if(!incoming?.player)return incoming;
+  incoming.player.meta=incoming.player.meta||{};
+  incoming.player.inventory=incoming.player.inventory||{};
+  const oldBalance=Math.max(0,Math.floor(Number(previous.player?.inventory?.[HALLOWEEN_CANDY])||0));
+  const localBalance=Math.max(0,Math.floor(Number(incoming.player.inventory[HALLOWEEN_CANDY])||0));
+  incoming.player.inventory[HALLOWEEN_CANDY]=Math.max(oldBalance,localBalance);
+  incoming.player.meta.halloweenTestGrantV1=grant;
+  return incoming;
+}
 function cleanNick(value){
   return String(value||'').trim().replace(/\s+/g,' ').slice(0,14);
 }
@@ -113,13 +130,29 @@ export default async function handler(req,res){
     if(action==='save'||action==='character-save'){
       if(!method(req,res,['POST']))return;
       const {user,supabase}=await requireUser(req);
-      const save=sanitize(req.body?.save||{});
+      let save=sanitize(req.body?.save||{});
       const raw=JSON.stringify(save);
       if(raw.length<20)return res.status(400).json({error:'invalid_save'});
       if(raw.length>2_400_000)return res.status(413).json({error:'save_too_large'});
       const nick=cleanNick(req.body?.character_nickname||characterNickFromSave(save));
       const trainerName=nick||save?.player?.name||save?.player?.nickname||req.body?.trainer_name||'Trainer';
       await ensurePlayer(supabase,user,trainerName);
+      if(nick){
+        const {data:previous,error:previousError}=await supabase.from('player_characters')
+          .select('save,updated_at').eq('user_id',user.id)
+          .eq('nickname_key',nick.toLowerCase()).maybeSingle();
+        if(previousError)throw previousError;
+        if(previous?.save){
+          const expected=String(req.body?.base_cloud_updated_at||'');
+          if(expected&&expected!==String(previous.updated_at)){
+            return res.status(409).json({error:'cloud_save_conflict',message:'Outro dispositivo salvou este personagem. Carregue o save da nuvem ou resolva o conflito antes de substituir.'});
+          }
+          if(!expected&&Number(save?.savedAt||0)<Number(previous.save?.savedAt||0)-1500){
+            return res.status(409).json({error:'cloud_save_newer',message:'O servidor tem um save mais recente. Baixe ou confirme esse save antes de enviar um antigo.'});
+          }
+          save=reconcileGrantedCandy(save,previous.save);
+        }
+      }
       const clientUpdatedAt=req.body?.client_updated_at||new Date(Number(save?.savedAt||Date.now())).toISOString();
       const now=new Date().toISOString();
 
@@ -134,7 +167,7 @@ export default async function handler(req,res){
         updated_at:now
       },{onConflict:'user_id'}).select('updated_at,client_updated_at').single();
       if(error)throw error;
-      return res.status(200).json({ok:true,...data,character});
+      return res.status(200).json({ok:true,...data,character,server_inventory_candy:save?.player?.inventory?.[HALLOWEEN_CANDY]??null,server_grant:save?.player?.meta?.halloweenTestGrantV1||null});
     }
 
     return res.status(404).json({error:'unknown_action'});
