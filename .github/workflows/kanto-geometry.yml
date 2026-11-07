@@ -11,6 +11,11 @@ on:
       - 'css/kanto-world-v2.css'
       - 'index.html'
       - 'tests/kanto-viridian-v1.cjs'
+      - 'tests/halloween-status-inventory-v1.cjs'
+      - 'core/seasonal-event-v1.js'
+      - 'core/titles-progression-v2.js'
+      - 'core/city-halloween.js'
+      - 'core/legacy-runtime.js'
       - 'tests/city-cloud-halloween-v1.cjs'
       - 'core/city-tap-navigation-v1.js'
       - 'core/city-quest-floating-v1.js'
@@ -43,6 +48,11 @@ on:
       - 'css/kanto-world-v2.css'
       - 'index.html'
       - 'tests/kanto-viridian-v1.cjs'
+      - 'tests/halloween-status-inventory-v1.cjs'
+      - 'core/seasonal-event-v1.js'
+      - 'core/titles-progression-v2.js'
+      - 'core/city-halloween.js'
+      - 'core/legacy-runtime.js'
       - 'tests/city-cloud-halloween-v1.cjs'
       - 'core/city-tap-navigation-v1.js'
       - 'core/city-quest-floating-v1.js'
@@ -84,6 +94,9 @@ jobs:
           node --check core/cloud-save-v23.js
           node --check core/online-authority-v26.js
           node --check core/seasonal-event-v1.js
+          node --check core/titles-progression-v2.js
+          node --check core/city-halloween.js
+          node --check core/legacy-runtime.js
           node --check core/kanto-campaign-playable-v1.js
           node --check core/campaign-automation-v1.js
           node --check core/kanto-city-cinematics-v1.js
@@ -94,6 +107,8 @@ jobs:
           node --check core/hobbies-v1.js
       - name: Verify city tap, Halloween drops, cloud-save protection
         run: node tests/city-cloud-halloween-v1.cjs
+      - name: Check Halloween item details, incense timer and title effects
+        run: node tests/halloween-status-inventory-v1.cjs
       - name: Prevent blank tutorial on startup
         run: node tests/kanto-tutorial-collision-v68.cjs
       - name: Check unified Hobbies and Engineer progression
