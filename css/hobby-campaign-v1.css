@@ -1,0 +1,206 @@
+/* PSYWORLD — Fantasy campaign menus, additive CSS.
+   Native canvas maps and in-game movement remain untouched. */
+#psy-hobbies{
+ background:radial-gradient(ellipse at 10% 0%,#41216f8f,transparent 55%),
+ radial-gradient(ellipse at 95% 95%,#164a6b8c,transparent 50%),#030817eb;
+ padding:clamp(5px,2vw,14px);
+}
+#psy-hobbies .ph-shell{
+ --ph-gold:#f6d898;
+ width:min(1000px,100%);max-height:min(96dvh,920px);overflow-x:hidden;
+ background:radial-gradient(circle at 78% -15%,#8f6ce533,transparent 50%),
+ radial-gradient(circle at -5% 60%,#2f96a52b,transparent 45%),
+ linear-gradient(145deg,#142341,#11122d 60%,#101e37);
+ border:1.5px solid #bda7f1;
+ border-radius:22px;
+ box-shadow:0 0 0 3px #6d4c8a4d,inset 0 1px 0 #ffffff42,0 20px 80px #000d;
+ scrollbar-color:#9d83cf #111a2f;
+}
+#psy-hobbies .ph-shell::before{content:"✦   ✧   ❋   ✧   ✦";display:block;text-align:center;color:#f1d6ff8f;font:600 11px system-ui;letter-spacing:clamp(8px,3vw,22px);padding:3px 0 11px;pointer-events:none;}
+#psy-hobbies .ph-header{
+ align-items:center;gap:14px;border-bottom:1px solid #d9bfff40;
+ padding:10px 7px 18px;margin-bottom:14px;
+}
+#psy-hobbies .ph-header>div{min-width:0}
+#psy-hobbies .ph-header small{color:#bea7ff;letter-spacing:.18em}
+#psy-hobbies .ph-header h2{
+ font:900 clamp(25px,5vw,38px)/1.12 Georgia,serif;
+ letter-spacing:.055em;color:#fff4df;
+ text-shadow:0 2px #724d7d,0 0 15px #efb2e766,0 0 24px #e8cb8c39;
+}
+#psy-hobbies .ph-header p{color:#d9e4fb;font-size:clamp(12px,2vw,14px)}
+#psy-hobbies .ph-header button{
+ flex:0 0 46px;border-radius:50%;width:46px;height:46px;
+ border:1px solid #f3d19c;background:linear-gradient(160deg,#544078,#241735);
+ box-shadow:0 0 14px #9b63ff4a;
+}
+#psy-hobbies .ph-overview{gap:10px}
+#psy-hobbies .ph-overview>span{
+ border:1px solid #c4b0f07a;border-radius:15px;
+ background:linear-gradient(150deg,#34335b,#111f3c);
+ box-shadow:inset 0 1px #fff3,0 6px 18px #0004;
+}
+#psy-hobbies .ph-overview b{color:#ffdd99;text-shadow:0 0 9px #ffbe6580}
+#psy-hobbies .ph-overview small{color:#ded9f9}
+#psy-hobbies .ph-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#psy-hobbies .ph-card{
+ border:1.5px solid var(--hobby-accent,#b3b9f4);
+ border-radius:18px;
+ background:linear-gradient(165deg,#223257,#151c3b 65%,#10172d);
+ box-shadow:inset 0 1px #ffffff4a,0 8px 18px #0008;
+}
+#psy-hobbies .ph-card::after{content:"✧";position:absolute;right:8px;bottom:9px;color:var(--hobby-accent);opacity:.6;pointer-events:none}
+#psy-hobbies .ph-card{position:relative}
+#psy-hobbies .ph-illustration{
+ background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--hobby-accent),transparent 72%),transparent 60%),#12223d;
+ height:clamp(115px,20vw,165px);
+}
+#psy-hobbies .ph-illustration::after{content:"✧";position:absolute;top:9px;left:12px;color:var(--hobby-accent);filter:drop-shadow(0 0 4px var(--hobby-accent));pointer-events:none}
+#psy-hobbies .ph-illustration img{max-width:100%;object-fit:contain;padding:8px;filter:drop-shadow(0 9px 8px #0009)}
+#psy-hobbies .ph-card h3{font:800 clamp(15px,2.8vw,19px)/1.15 Georgia,serif;color:#fff1d6}
+#psy-hobbies .ph-gather-total{color:#b4e9da!important}
+#psy-hobbies .ph-card-body{padding:13px;gap:9px}
+#psy-hobbies .ph-card button:not(.ph-illustration),#psy-hobbies [data-hobby-details] button:not(.ph-skill-node){
+ background:linear-gradient(115deg,#454099,#662d90);
+ border:1px solid #d1aef9;border-bottom:2px solid #9d67cd;
+ box-shadow:inset 0 1px #fff4,0 3px 11px #0007;
+ color:#fff7ff;min-height:44px;touch-action:manipulation;
+}
+#psy-hobbies .ph-card button:focus-visible,#psy-hobbies .ph-skill-node:focus-visible{outline:3px solid #fff6bb;outline-offset:3px}
+#psy-hobbies .ph-detail-head{
+ align-items:center;gap:13px;
+ border:1px solid #d3b1ff91;background:radial-gradient(circle at 14% 10%,#8057a65c,transparent 52%),linear-gradient(110deg,#132944,#1e1a3f);
+ box-shadow:inset 0 1px #fff3;
+}
+#psy-hobbies .ph-detail-head img{width:clamp(90px,23%,170px);max-height:150px;filter:drop-shadow(0 5px 14px #8dcbe580)}
+#psy-hobbies .ph-detail-head h3{font:800 clamp(20px,3vw,26px) Georgia,serif;margin:0 0 8px;color:#ffe0a6}
+#psy-hobbies .ph-upgrade,#psy-hobbies .ph-exchange{background:linear-gradient(120deg,#192d47,#14182e);border-color:#ae91d37a}
+#psy-hobbies .ph-upgrade{border-color:#f4cd83a8;background:linear-gradient(110deg,#332944,#1a2442)}
+#psy-hobbies .ph-mastery{display:flex;flex-direction:column;gap:12px;margin:4px 0 12px}
+#psy-hobbies .ph-mastery-hero{
+ display:grid;grid-template-columns:minmax(105px,30%) 1fr;
+ align-items:center;gap:14px;padding:13px;
+ background:radial-gradient(circle at 18% 40%,color-mix(in srgb,var(--mastery-accent),transparent 78%),transparent 50%),linear-gradient(110deg,#192c51,#1e1a41);
+ border:1px solid color-mix(in srgb,var(--mastery-accent),white 19%);
+ border-radius:17px;box-shadow:inset 0 1px #fff3;
+}
+#psy-hobbies .ph-mastery-portrait{
+ height:140px;display:grid;place-items:center;overflow:hidden;border-radius:16px;
+ border:1px solid color-mix(in srgb,var(--mastery-accent),transparent 25%);
+ background:radial-gradient(circle,#26496d,transparent 75%);
+}
+#psy-hobbies .ph-mastery-portrait img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 10px #000a)}
+#psy-hobbies .ph-mastery-summary{min-width:0}
+#psy-hobbies .ph-mastery-eyebrow{color:var(--mastery-accent);letter-spacing:.1em;font-size:10px;font-weight:900}
+#psy-hobbies .ph-mastery-summary h3{margin:4px 0 6px;font:900 clamp(22px,4vw,31px) Georgia,serif;color:#fff0cd;text-shadow:0 0 14px #f4c5df60}
+#psy-hobbies .ph-mastery-summary p{font-size:12px;color:#d9e9ff}
+#psy-hobbies .ph-mastery-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+#psy-hobbies .ph-mastery-tags span{
+ display:inline-flex;align-items:center;min-height:30px;border:1px solid #e4c389;
+ padding:5px 11px;border-radius:999px;background:#282749;color:#ffe6a6;font-size:11px;font-weight:900;
+}
+#psy-hobbies .ph-rarity-box{
+ border:1px solid #b790ec93;border-radius:17px;padding:13px;
+ background:radial-gradient(ellipse at 80% 0%,#624d9e38,transparent 68%),linear-gradient(140deg,#141e40,#13152d);
+}
+#psy-hobbies .ph-rarity-box h4,#psy-hobbies .ph-tree-heading h4{
+ margin:0 0 6px;text-align:center;color:#ffe9b6;font:800 clamp(17px,3vw,22px) Georgia,serif;
+ text-shadow:0 0 12px #e5addc55;
+}
+#psy-hobbies .ph-rarity-box>p,#psy-hobbies .ph-tree-heading p{text-align:center;color:#cbd9ec;font-size:12px}
+#psy-hobbies .ph-rarity-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:13px}
+#psy-hobbies .ph-rarity-tier{
+ min-width:0;border-radius:13px;border:1px solid currentColor;
+ padding:10px 4px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;
+ background:linear-gradient(160deg,#253456,#141b38);
+ box-shadow:inset 0 1px #ffffff2d;
+}
+#psy-hobbies .ph-rarity-tier b{font-size:12px}
+#psy-hobbies .ph-rarity-tier strong{font-size:clamp(12px,2vw,17px);font-variant-numeric:tabular-nums}
+#psy-hobbies .ph-rarity-tier small{font-size:10px;color:#e1eaff;overflow-wrap:anywhere;line-height:1.3}
+#psy-hobbies .ph-rarity-gem{font-size:26px;text-shadow:0 0 14px currentColor;animation:ph-gem-glow 3.2s ease-in-out infinite}
+#psy-hobbies .ph-rarity-common{color:#e5e6eb}
+#psy-hobbies .ph-rarity-rare{color:#70d8ff}
+#psy-hobbies .ph-rarity-epic{color:#e09cff}
+#psy-hobbies .ph-rarity-legend{color:#ffd072;background:radial-gradient(circle at 50% 0%,#ae6b3155,transparent 70%),#231c39}
+#psy-hobbies .ph-tree-heading{padding-top:8px}
+#psy-hobbies .ph-mastery-tree{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;
+ padding:17px;position:relative;
+ border:1px solid #a58bf17f;border-radius:18px;
+ background:radial-gradient(circle at 50% 15%,#7862d530,transparent 38%),radial-gradient(circle at 40% 90%,#3178bc2c,transparent 55%),#101629;
+}
+#psy-hobbies .ph-mastery-tree::before{
+ content:"";position:absolute;inset:15px 50% 15px auto;border-left:2px dashed #a18fda55;pointer-events:none;
+}
+#psy-hobbies .ph-skill-node{
+ position:relative;z-index:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;
+ padding:14px 10px;min-height:158px;border-radius:17px;text-align:center;
+ color:#ecebff;background:linear-gradient(160deg,#25264a,#131b38);
+ border:1.5px solid #7c7b9d;box-shadow:inset 0 1px #fff3,0 5px 16px #0007;
+ white-space:normal;cursor:pointer;
+}
+#psy-hobbies .ph-skill-node.is-ready{
+ border-color:#ffe1a0;color:#fff4d9;
+ background:radial-gradient(circle at 50% 0%,#dd9c554a,transparent 68%),linear-gradient(160deg,#343158,#191833);
+ box-shadow:0 0 14px #edba8759,inset 0 1px #ffffff45;
+}
+#psy-hobbies .ph-skill-node.is-active{border-color:#a6ebea;background:linear-gradient(160deg,#1d4754,#191d3c)}
+#psy-hobbies .ph-skill-node.is-locked{opacity:.7;cursor:default}
+#psy-hobbies .ph-skill-icon{
+ display:grid;place-items:center;width:48px;height:48px;border-radius:50%;font-size:23px;
+ color:#fff2c6;background:radial-gradient(circle,#8f72c6,#30254e 75%);
+ border:1px solid #ffe4ae;box-shadow:0 0 13px #c99dffa8;
+}
+#psy-hobbies .ph-skill-node.is-active .ph-skill-icon{background:radial-gradient(circle,#397d94,#23314e 75%);border-color:#8ff5e5}
+#psy-hobbies .ph-skill-node b{font:800 clamp(14px,2vw,17px)/1.2 Georgia,serif}
+#psy-hobbies .ph-skill-node small{font-size:11px;color:#f2d49a;font-weight:850}
+#psy-hobbies .ph-skill-desc{font-size:11px;line-height:1.4;color:#d4e1ef}
+#psy-hobbies .ph-skill-node em{
+ margin-top:auto;font-style:normal;font-size:10px;line-height:1.35;font-weight:850;
+ color:#ffdd9a;border-top:1px solid #ffffff25;padding-top:7px;width:100%;
+}
+#psy-hobbies .ph-mastery-note{text-align:center;font-size:11px;color:#c5c6e7}
+@keyframes ph-gem-glow{50%{filter:brightness(1.4);transform:translateY(-2px)}}
+body .psy-titles-panel{
+ background:radial-gradient(ellipse at 10% 0%,#39216d8b,transparent 55%),#04071ce8;
+}
+body .psy-titles-panel .pt-panel{
+ border:1px solid #cbb0ff;border-radius:22px;
+ background:radial-gradient(circle at 85% -10%,#684aa155,transparent 52%),linear-gradient(140deg,#142b49,#181332 65%,#0d203a);
+ box-shadow:0 0 0 3px #9772d342,0 20px 80px #000d,inset 0 1px #fff4;
+}
+body .psy-titles-panel .pt-panel h2{font:900 clamp(23px,4vw,34px) Georgia,serif;color:#ffe5b3;text-shadow:0 0 19px #ffc4d777}
+body .psy-titles-panel .pt-grid article{
+ border-radius:17px;border:1px solid var(--title-color);
+ background:radial-gradient(circle at 50% 0%,color-mix(in srgb,var(--title-color),transparent 86%),transparent 60%),linear-gradient(150deg,#1d2948,#15182d);
+}
+body .psy-titles-panel .pt-grid h3{font:800 16px Georgia,serif;color:#fff4db}
+body .psy-titles-panel .pt-grid button{border:1px solid var(--title-color);border-radius:11px;background:linear-gradient(110deg,#353266,#29214e)}
+body .psy-titles-panel .pt-checkin{border:1px solid #a1bce67b;background:#101d3d}
+@media(min-width:740px){#psy-hobbies .ph-grid{grid-template-columns:repeat(3,minmax(0,1fr))}#psy-hobbies .ph-mastery-tree{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){
+ #psy-hobbies{padding:5px}
+ #psy-hobbies .ph-shell{max-height:calc(100dvh - 10px);padding:11px;border-radius:16px}
+ #psy-hobbies .ph-shell::before{padding:0 0 5px}
+ #psy-hobbies .ph-header{padding:5px 0 12px}
+ #psy-hobbies .ph-overview{gap:6px}
+ #psy-hobbies .ph-overview>span{padding:9px 5px}
+ #psy-hobbies .ph-card-body{padding:9px}
+ #psy-hobbies .ph-illustration{height:107px}
+ #psy-hobbies .ph-mastery-hero{grid-template-columns:95px 1fr;gap:9px;padding:9px}
+ #psy-hobbies .ph-mastery-portrait{height:106px}
+ #psy-hobbies .ph-rarity-row{gap:4px}
+ #psy-hobbies .ph-rarity-tier{padding:8px 2px}
+ #psy-hobbies .ph-rarity-tier small{font-size:9px}
+ #psy-hobbies .ph-mastery-tree{padding:10px;gap:9px}
+ #psy-hobbies .ph-skill-node{padding:10px 7px;min-height:160px}
+ #psy-hobbies .ph-skill-icon{width:40px;height:40px;font-size:20px}
+}
+@media(max-width:350px){#psy-hobbies .ph-rarity-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-height:500px) and (orientation:landscape){
+ #psy-hobbies .ph-shell{max-height:calc(100dvh - 6px)}
+ #psy-hobbies .ph-mastery-hero{grid-template-columns:90px 1fr}
+ #psy-hobbies .ph-mastery-portrait{height:94px}
+}
+@media(prefers-reduced-motion:reduce){#psy-hobbies .ph-rarity-gem{animation:none}#psy-hobbies .ph-card{transition:none}}
