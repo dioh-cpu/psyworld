@@ -66,7 +66,7 @@ async function githubLogin(){
 }
 function acceptAuth(d){saveSession({...d,user:d.user||session?.user,expires_at:Date.now()+Number(d.expires_in||3600)*1000});renderStatus()}
 function friendly(s){return ({online_not_configured:'Servidor online ainda não configurado na Vercel.',invalid_credentials:'E-mail ou senha inválidos.',item_not_buyable:'Item indisponível na Poké Shop online.',insufficient_balance:'Gold insuficiente no servidor.',insufficient_item:'Itens insuficientes no servidor.'}[s]||String(s).replaceAll('_',' '))}
-async function afterAuth(){try{const state=await api('/api/player');hydrateServerIdentity(state);await resolveConflict(state.game_state);renderStatus()}catch(e){toast('❌ Cloud save: '+friendly(e.message),5000)}}
+async function afterAuth(){try{const state=await api('/api/player');hydrateServerIdentity(state);if(state.game_state?.updated_at)writeSync({cloudRevision:state.game_state.updated_at});await resolveConflict(state.game_state);renderStatus()}catch(e){toast('❌ Cloud save: '+friendly(e.message),5000)}}
 async function resolveConflict(game){
   const local=bestLocal(),cloud=game?.save&&validSave(game.save)?game.save:null;
   if(local&&cloud){
@@ -88,7 +88,55 @@ async function resolveConflict(game){
   if(cloud){modal('SAVE NA NUVEM ENCONTRADO',`Existe um progresso salvo nesta conta. Deseja carregá-lo neste aparelho?`,[{label:'☁ CARREGAR SAVE DA NUVEM',bg:'#075985',run:async()=>applyCloud(cloud,game,false)},{label:'AGORA NÃO',bg:'#475569',run:()=>{syncEnabled=false;renderStatus()}}]);return}
   syncEnabled=true;writeSync({resolved:true,saveStamp:0,cloudStamp:0});toast('☁ Conta conectada. Seu primeiro save será enviado automaticamente.',4000);renderStatus()
 }
-async function upload(save,manual=false,markResolved=false){if(!save||!validSave(save))return manual&&toast('❌ Nenhum save local válido encontrado.');if(!await ensureToken())return manual&&toast('❌ Entre na sua conta online primeiro.');try{const d=await api('/api/player/save',{method:'POST',body:JSON.stringify({save,client_updated_at:new Date(Number(save.savedAt||Date.now())).toISOString()})});const serverStamp=Date.parse(d.updated_at||'')||Date.now();writeSync({lastUploadAt:serverStamp,saveStamp:localStamp(save),cloudStamp:serverStamp,resolved:markResolved||readSync().resolved===true});if(manual)toast('☁ Save local enviado para a nuvem.',3500);renderStatus();return true}catch(e){console.warn('cloud upload',e);if(manual)toast('❌ Falha ao enviar save: '+friendly(e.message),4500);return false}}
+function reconcileClientAfterUpload(sent,response){
+ const grant=response?.server_grant;
+ const needsGrant=grant?.id&&sent?.player?.meta?.halloweenTestGrantV1?.id!==grant.id;
+ const hasWallet=Number.isFinite(Number(response?.server_psycoin))&&response.server_psycoin!==null;
+ if(!needsGrant&&!hasWallet)return;
+ const key=String(sent?.player?.meta?.characterNickname||sent?.player?.characterNickname||'').toLowerCase();
+ const apply=(p)=>{
+  if(!p)return;
+  p.meta=p.meta||{};p.inventory=p.inventory||{};
+  if(needsGrant){p.meta.halloweenTestGrantV1=grant;p.inventory['Doce de Halloween']=Number(response.server_inventory_candy)||0}
+  if(hasWallet)p.psycoin=Number(response.server_psycoin);
+ };
+ for(const storageKey of LOCAL_KEYS){
+  const stored=parse(localStorage.getItem(storageKey));
+  if(!stored?.player)continue;
+  const localKey=String(stored.player.meta?.characterNickname||stored.player.characterNickname||'').toLowerCase();
+  if(key&&localKey!==key)continue;
+  if(!key&&Number(stored.savedAt||0)!==Number(sent.savedAt||0))continue;
+  apply(stored.player);
+  try{localStorage.setItem(storageKey,JSON.stringify(stored))}catch(_){}
+ }
+ const live=W.P;
+ const liveKey=String(live?.meta?.characterNickname||live?.characterNickname||'').toLowerCase();
+ if(live&&(!key||liveKey===key))apply(live);
+ if(needsGrant)toast('🍬 Crédito de Halloween confirmado no servidor e restaurado neste aparelho.',4800);
+}
+async function upload(save,manual=false,markResolved=false){
+ if(!save||!validSave(save))return manual&&toast('❌ Nenhum save local válido encontrado.');
+ if(!await ensureToken())return manual&&toast('❌ Entre na sua conta online primeiro.');
+ try{
+  const d=await api('/api/player/save',{method:'POST',body:JSON.stringify({
+    save,client_updated_at:new Date(Number(save.savedAt||Date.now())).toISOString(),
+    base_cloud_updated_at:readSync().cloudRevision||null
+  })});
+  const stamp=Date.parse(d.updated_at||'')||Date.now();
+  reconcileClientAfterUpload(save,d);
+  writeSync({lastUploadAt:stamp,saveStamp:localStamp(save),cloudStamp:stamp,
+    cloudRevision:d.updated_at||null,resolved:markResolved||readSync().resolved===true});
+  if(manual)toast('☁ Save confirmado no servidor. Itens e carteira protegidos.',3500);
+  renderStatus();return true;
+ }catch(e){
+  console.warn('cloud upload',e);
+  const conflict=/cloud_save_conflict|cloud_save_newer/.test(String(e?.message));
+  if(conflict){syncEnabled=false;if(syncTimer){clearTimeout(syncTimer);syncTimer=0}
+    toast('⚠ Save mais recente na nuvem. O local foi preservado. Abra o Cloud Save para comparar antes de substituir.',6500);
+  }else if(manual)toast('❌ Falha ao enviar save: '+friendly(e.message),4500);
+  renderStatus();return false;
+ }
+}
 async function applyCloud(save,game,automatic=false){
   if(!validSave(save))return toast('❌ Save da nuvem inválido.');
   try{
@@ -100,7 +148,7 @@ async function applyCloud(save,game,automatic=false){
     if(syncTimer){clearTimeout(syncTimer);syncTimer=0}
     syncEnabled=false;
     const cs=cloudStamp(game)||Date.now();
-    writeSync({resolved:true,saveStamp:localStamp(save),cloudStamp:cs,lastDownloadAt:Date.now()});
+    writeSync({resolved:true,saveStamp:localStamp(save),cloudStamp:cs,cloudRevision:game?.updated_at||null,lastDownloadAt:Date.now()});
     if(!automatic)toast('☁ Save da nuvem restaurado. Recarregando...',2800);
     // The game's beforeunload handler autosaves in-memory state; suppress it for this reload.
     const suppressAutosave=()=>{};
