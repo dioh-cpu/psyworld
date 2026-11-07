@@ -232,7 +232,7 @@
   }
   function closeWorld() { model.autoHunt=false;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
-    if(!model.root?.classList.contains('open'))return;
+    if(!model.root?.classList.contains('open')||W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.())return;
     e.stopPropagation();
     const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
     const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){model.held=dir;move(dir)}return;}
@@ -241,7 +241,7 @@
   }
   function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();} }
   function move(dir) {
-    if(W.PsyGuide?.isOpen())return;
+    if(W.PsyGuide?.isOpen()||W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.())return;
     if(!model.place||!model.root?.classList.contains('open'))return;
     const step={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(!step)return;
     const nx=model.x+step[0],ny=model.y+step[1];if(nx<1||ny<1||nx>=COLS-1||ny>=ROWS-1)return;
