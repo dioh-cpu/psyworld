@@ -55,3 +55,27 @@
 #psy-hobby-fishing .hf-progress{height:13px;background:#071522;border:1px solid #4c8da3;border-radius:8px;overflow:hidden;margin:11px 0}
 #psy-hobby-fishing .hf-progress i{height:100%;width:0;display:block;background:#76ecb0}
 #psy-hobby-fishing .hf-reel{width:100%;touch-action:none;user-select:none;min-height:60px;font-size:15px}
+
+/* Hobbies gallery refresh — responsive, illustrated, progress-first. */
+#psy-hobbies .ph-shell{position:relative;border:1px solid #75dce0;box-shadow:0 0 0 1px #e0b97035,inset 0 1px #ffffff2b,0 28px 85px #000e;background:radial-gradient(circle at 80% -7%,#265b7255,transparent 52%),radial-gradient(circle at 4% 40%,#4e2f6e34,transparent 48%),linear-gradient(160deg,#132940,#081321)}
+#psy-hobbies .ph-header{padding:9px 8px 16px;border-bottom:1px solid #96dce32f}
+#psy-hobbies .ph-header h2{letter-spacing:.08em;text-shadow:0 3px 20px #eabf7547}
+#psy-hobbies .ph-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 16px}
+#psy-hobbies .ph-overview>span{padding:13px 8px;background:linear-gradient(140deg,#17344a,#111c32);border:1px solid #75dce04a;border-radius:13px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+#psy-hobbies .ph-overview b{font-size:clamp(19px,4vw,27px);line-height:1;color:#ffdc9d;font-variant-numeric:tabular-nums}
+#psy-hobbies .ph-overview small{font-size:10px;color:#b5dfe6;font-weight:750}
+#psy-hobbies .ph-card{transition:transform .18s ease,border-color .18s ease;box-shadow:inset 0 1px #fff2,0 8px 22px #0006;border-color:color-mix(in srgb,var(--hobby-accent),#273955 35%)}
+#psy-hobbies .ph-card:hover{transform:translateY(-2px);border-color:var(--hobby-accent)}
+#psy-hobbies .ph-illustration{background:radial-gradient(circle at 50% 34%,color-mix(in srgb,var(--hobby-accent),transparent 75%),transparent 64%),linear-gradient(145deg,#1a3654,#111d32)}
+#psy-hobbies .ph-illustration img{padding:7px;filter:drop-shadow(0 7px 12px #0009)}
+#psy-hobbies .ph-level{border-color:var(--hobby-accent);box-shadow:0 0 12px #0009}
+#psy-hobbies .ph-gather-total{display:block;color:#d7eec6!important;font-size:11px!important;line-height:1.45}
+#psy-hobbies .ph-track{margin:4px 0 1px;height:7px;background:#050f20}
+#psy-hobbies .ph-track i{box-shadow:0 0 10px var(--hobby-accent)}
+#psy-hobbies [data-hobby-details]{max-width:100%}
+#psy-hobbies .ph-detail-head{background:radial-gradient(circle at 0 50%,#36527e66,transparent 55%),#101e33;border-color:#77c6d3}
+#psy-hobbies .ph-upgrade{background:linear-gradient(120deg,#2b2538,#121e30);border-color:#d5ae6b}
+#psy-hobbies .ph-exchange{background:linear-gradient(110deg,#102c38,#0c1728);border-color:#4e9caa}
+@media(min-width:750px){#psy-hobbies .ph-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){#psy-hobbies .ph-overview{gap:5px}#psy-hobbies .ph-overview>span{padding:9px 3px}#psy-hobbies .ph-overview small{font-size:9px}#psy-hobbies .ph-illustration{height:116px}#psy-hobbies .ph-gather-total{font-size:10px!important}}
+@media(prefers-reduced-motion:reduce){#psy-hobbies .ph-card{transition:none}#psy-hobbies .ph-card:hover{transform:none}}
