@@ -36,7 +36,7 @@
   function inCityWorld() {
     if (!origin || !(typeof P !== 'undefined' && P.team?.length)) return true;
     const x=Math.floor(Number(P.x)||0), y=Math.floor(Number(P.y)||0);
-    if (x < origin.tileX-20 || x > origin.tileX+20 || y < origin.tileY-18 || y > origin.tileY+18) return false;
+    if (x < origin.tileX-14 || x > origin.tileX+14 || y < origin.tileY-14 || y > origin.tileY+14) return false;
     return true;
   }
   function cityVisible() {
@@ -46,8 +46,8 @@
       !W.__psyIdleActive && !W.PSY_RUNTIME_MODE?.is?.('adventure') && inCityWorld();
   }
   function cityScreenBounds(w,h) {
-    const tile=Number(TILE)||55, x0=Math.max(0,origin.tileX-16), x1=Math.min(MAP_W-1,origin.tileX+16);
-    const y0=Math.max(0,origin.tileY-19), y1=Math.min(MAP_H-1,origin.tileY+15);
+    const tile=Number(TILE)||55, x0=Math.max(0,origin.tileX-14), x1=Math.min(MAP_W-1,origin.tileX+14);
+    const y0=Math.max(0,origin.tileY-14), y1=Math.min(MAP_H-1,origin.tileY+14);
     const ox=w/2-P.px-tile/2, oy=h/2-P.py-tile/2;
     return {tile,x0,x1,y0,y1,left:ox+x0*tile,top:oy+y0*tile,right:ox+(x1+1)*tile,bottom:oy+(y1+1)*tile};
   }
@@ -144,6 +144,17 @@
     [[CITY_LAMPS[0][0]+22/TILE,CITY_LAMPS[0][1]+8/TILE],
      [CITY_LAMPS[2][0]+22/TILE,CITY_LAMPS[2][1]+8/TILE],
      [CITY_LAMPS[4][0]+22/TILE,CITY_LAMPS[4][1]+8/TILE]].forEach(([dx,dy])=>block(dx,dy,0,0));
+    // Keep the spawn plaza and its north/south lane open. Props around the
+    // blue fountain must not trap the player on the center row.
+    for(let d=-3;d<=3;d++){
+      SOLID.delete((origin.tileX+d)+','+origin.tileY);
+      SOLID.delete(origin.tileX+','+(origin.tileY+d));
+    }
+    // Solid perimeter around the playable town keeps the camera within the city.
+    const bx=14,by=14;
+    for(let y=1;y<MAP_H-1;y++)for(let x=1;x<MAP_W-1;x++){
+      if(Math.abs(x-origin.tileX)>bx||Math.abs(y-origin.tileY)>by)SOLID.add(x+','+y);
+    }
   }
   function screenPoint(dx, dy) {
     const cv = D.getElementById('gameCanvas');
