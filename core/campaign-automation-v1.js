@@ -158,10 +158,11 @@ function refresh(){
  const legacy=D.getElementById('psy-kanto-world'),root=legacy?.classList.contains('open')?legacy:D.getElementById('psy-kanto-world-v2'),stage=root?.querySelector('.kw2-stage,.kp-stage'),arena=D.querySelector('#battle-screen .battle-hud');
  const city=D.getElementById('game-wrap'),campaignOpen=root?.classList.contains('open');
  const isNewCampaign=campaignOpen&&root?.id==='psy-kanto-world-v2';
-  const mapHost=isNewCampaign?(root.querySelector('[data-kanto-quest-slot]')||stage):(campaignOpen?stage:city);
+  const mapHost=isNewCampaign?(root.querySelector('[data-kanto-quest-slot]')||stage):(campaignOpen?stage:W.PsyCityQuestFloating?.host?.()||city);
   const toolsHost=isNewCampaign?(root.querySelector('[data-kanto-auto-slot]')||stage):mapHost;
  if(mapHost){if(tracker.parentElement!==mapHost)mapHost.appendChild(tracker);if(tools.parentElement!==toolsHost)toolsHost.appendChild(tools);updateTracker();}
  tracker.hidden=!mapHost||(!campaignOpen&&(!city||W.getComputedStyle(city).display==='none'))||!questRows().length;
+  W.PsyCityQuestFloating?.refresh?.(!campaignOpen&&!!city&&W.getComputedStyle(city).display!=='none',questRows().length);
  tools.hidden=!campaignOpen;
  if(arena&&bar.parentElement!==arena)arena.appendChild(bar);
  if(!vip()&&(automatic||catchEnabled||huntActive()))stopAutomation();
