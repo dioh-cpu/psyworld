@@ -325,6 +325,10 @@
 
   function interact(directNPC=false) {
     if(!model.place)return;
+    if(/^route-/.test(model.place.id)){
+      const gather=W.PsyHobbies?.nearby?.(model.place.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},40);
+      if(gather){W.PsyHobbies.collect(model.place.id,gather.id);render();return;}
+    }
     const place=model.place, ps=placeState(place.id), gymId=GYM_FOR_PLACE[place.id];
     if(EARLY.includes(place.id)&&interactChapter(place,ps,gymId,directNPC===true))return;
     if(directNPC===true||nearby(model.map.npc)){
@@ -429,6 +433,7 @@
     c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
     const offsetX=Math.floor((cw-COLS*TILE)/2),offsetY=Math.floor((ch-ROWS*TILE)/2);
     c.drawImage(terrainPaint(),offsetX,offsetY);
+    if(/^route-/.test(model.place.id)){c.save();c.translate(offsetX,offsetY);W.PsyHobbies?.drawField?.(c,model.place.id);c.restore();}
     const marker=(pt,color,glyph,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12);c.fillStyle='#071019d9';c.fillRect(sx-tw/2,sy-29,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,sy-22)};
     if(model.map.center)marker(model.map.center,'#99edc6','+','Centro Pokémon');
     if(model.map.shop)marker(model.map.shop,'#8ac8ff','L','Loja');

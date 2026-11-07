@@ -137,7 +137,7 @@ const FIELD={
 };
 function visibleNodes(scene){
  const now=Date.now(),nodes=field().nodes;
- return (FIELD[scene]||[]).filter(([id])=>count(nodes[scene+':'+id]?.respawnAt)<=now)
+ return (FIELD[scene]||(/^route-\d+$/.test(scene)?FIELD['route-3']:[])||[]).filter(([id])=>count(nodes[scene+':'+id]?.respawnAt)<=now)
  .map(([id,kind,x,y,item])=>({id,kind,x,y,item,hits:count(nodes[scene+':'+id]?.hits)}));
 }
 function nearby(scene,pos,radius=65){
