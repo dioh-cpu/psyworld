@@ -54,7 +54,7 @@ function configure(mode){
   cfg.potion=potion.value;cfg.healAt=Number(heal.value);if(ball){cfg.ball=ball.value;cfg.catchAt=Number(capture.value);catchEnabled=true;}
   if(mode==='hunt'){findTask=null;huntController=api();const active=huntController?.setAutoHunt(true);huntIntent=!!active;if(!active){warn.textContent='Conclua o objetivo da campanha antes de caçar automaticamente.';return;}}
   setAutomatic(true);W.autoSave?.();box.remove();renderButtons();W.PsyHuntSession?.message('config','Automação ativada · '+(ball?'Ball: '+cfg.ball+' · ':'')+'Poção: '+(cfg.potion||'nenhuma'));
- };card.appendChild(confirm);D.body.appendChild(box);cancel.focus?.();
+ };card.appendChild(confirm);D.body.appendChild(box);W.PsyKantoWorldV2?.suspendForPanel?.('psy-auto-config');cancel.focus?.();
 }
 function questRows(){
  const chapter=W.PsyKantoPlayableV1?.questRows?.();
@@ -68,7 +68,8 @@ function questRows(){
  return [...main,...active,...extra,...(W.PsyProfessions?.questRows?.()||[])].filter(q=>q&&q.title&&q.status!=='completed'&&q.status!=='claimed');
 }
 async function find(q){
- findTask=null;api()?.setAutoHunt(false);if(q.goal==='workshop'){W.PsyProfessions?.open('main');return;}
+ W.PsyKantoWorldV2?.dismissMenu?.();
+ findTask=null;api()?.setAutoHunt(false);if(q.goal==='workshop'){if(W.PsyKantoWorldV2?.getPosition?.())W.PsyKantoWorldV2.openMenuPanel('professions');else W.PsyProfessions?.open('main');return;}
  if(q.goal==='chapter'){api()?.navigateTo(q.at);return;}
  if(q.goal==='oak'){
   let p=api()?.getPosition?.();if(!p||p.world!=='pallet'){api()?.open('pallet');p=api()?.getPosition?.();}

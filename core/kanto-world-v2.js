@@ -66,6 +66,14 @@ function toggleCampaignMenu(force){
  state.root.querySelector('[data-kw2-menu]').setAttribute('aria-expanded',String(open));
  if(open){state.path=[];state.navRequest++;state.held.clear();state.joy=null;state.touch=null;const stick=state.root.querySelector('.kw2-joystick');if(stick)stick.style.display='none';}
 }
+function suspendCampaignForPanel(id){
+ if(!state.root?.classList.contains('open'))return false;
+ const panel=D.getElementById(id);
+ if(!panel||W.getComputedStyle(panel).display==='none')return false;
+ toggleCampaignMenu(false);state.path=[];state.navRequest++;state.held.clear();state.joy=null;state.touch=null;
+ const stick=state.root.querySelector('.kw2-joystick');if(stick)stick.style.display='none';
+ state.externalPanel=id;state.root.style.visibility='hidden';return true;
+}
 function openCampaignPanel(kind){
  if(state.externalPanel)return;
  const panels={
@@ -85,7 +93,7 @@ function openCampaignPanel(kind){
  if(!panel||W.getComputedStyle(panel).display==='none'){
   showDialog('Conteúdo indisponível','Este painel ainda não está disponível. Tente novamente após carregar o modo.');return;
  }
- state.externalPanel=spec.id;state.root.style.visibility='hidden';
+ suspendCampaignForPanel(spec.id);
 }
 function open(id,options={}){if(!['pallet','route-1','viridian'].includes(id)||!DATA[id==='route-1'?'route1':id])return false;const previousWorld=state.world?.id||null;
 if(id==='viridian'&&!progress().viridian&&!options.skipGuard)return false;
@@ -463,7 +471,7 @@ function findPath(from,to,request){
     slice();
   });
 }
-W.PsyKantoWorldV2={setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
+W.PsyKantoWorldV2={dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
  navigate:async function(at){autoHunt=false;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){if(active&&!vipActive()){showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1')open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,

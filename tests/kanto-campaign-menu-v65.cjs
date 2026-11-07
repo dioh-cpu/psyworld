@@ -12,8 +12,12 @@ assert(world.includes("if(state.menuOpen){state.raf=W.requestAnimationFrame(tick
 assert(auto.includes("root.querySelector('[data-kanto-quest-slot]')"),'Mission tracker must move out of map');
 assert(auto.includes("root.querySelector('[data-kanto-auto-slot]')"),'Auto Hunt control must move out of map');
 assert(auto.includes('startPrimaryRoute:'),'Route button must start active story objective');
+assert(auto.includes("W.PsyKantoWorldV2?.dismissMenu?.()"),'Quest routes should close modal menu before movement');
+assert(auto.includes("suspendForPanel?.('psy-auto-config')"),'Auto Hunt settings must display over Kanto');
+assert(world.includes('suspendCampaignForPanel'),'Campaign must yield focus to external modal');
 assert(css.includes('#psy-kanto-world-v2 #psy-campaign-quests{position:static'),'Tracker must not overlay the canvas');
 assert(css.includes('@media(max-height:500px) and (orientation:landscape)'),'Landscape menu must be responsive');
-for(const path of ['core/kanto-world-v2.js','core/campaign-automation-v1.js','css/kanto-world-v2.css'])assert(html.includes(path+'?build=KANTO_CAMPAIGN_MENU_V65_20261107'),'Cache mismatch: '+path);
+for(const path of ['css/kanto-world-v2.css'])assert(html.includes(path+'?build=KANTO_CAMPAIGN_MENU_V65_20261107'),'CSS cache mismatch: '+path);
+for(const path of ['core/kanto-world-v2.js','core/campaign-automation-v1.js'])assert(html.includes(path+'?build=KANTO_CAMPAIGN_MENU_V66_20261107'),'JS cache mismatch: '+path);
 new Function(world);new Function(auto);
 console.log('PASS: Kanto menu links, quick route, no fixed quest HUD, external panel recovery, mobile CSS and cache');
