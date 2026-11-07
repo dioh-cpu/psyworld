@@ -69,7 +69,7 @@ function questRows(){
 }
 async function find(q){
  W.PsyKantoWorldV2?.dismissMenu?.();
- findTask=null;api()?.setAutoHunt(false);if(q.goal==='workshop'){if(W.PsyKantoWorldV2?.getPosition?.())W.PsyKantoWorldV2.openMenuPanel('professions');else W.PsyProfessions?.open('main');return;}
+ findTask=null;api()?.setAutoHunt(false);if(q.goal==='workshop'){if(W.PsyKantoWorldV2?.isOpen?.())W.PsyKantoWorldV2.openMenuPanel('professions');else W.PsyProfessions?.open('main');return;}
  if(q.goal==='chapter'){api()?.navigateTo(q.at);return;}
  if(q.goal==='oak'){
   let p=api()?.getPosition?.();if(!p||p.world!=='pallet'){api()?.open('pallet');p=api()?.getPosition?.();}
@@ -81,11 +81,18 @@ async function find(q){
   if(api()?.getPosition?.().world!=='route-1')api()?.open('route-1');
   await api()?.navigate([848,87]);note('Seguindo para a entrada de Viridian.');
  }else if(q.goal==='explore-viridian'){
-  if(api()?.getPosition?.().inside)api()?.leaveInterior();
-  const opened=W.PsyKantoPlayableV1?.open?.('viridian');
-  if(opened)note('Viridian City aberta. Siga até o objetivo da Quest.');
-  else note('Entre em Kanto · Jornada para abrir Viridian City.');
- }else if(Array.isArray(q.at)){await api()?.navigate(q.at);}
+  const pos=api()?.getPosition?.();
+  if(pos?.world==='viridian'){
+   if(pos.inside)api()?.leaveInterior();
+   const talked=!!W.PsyKantoWorldV2?.progress?.()?.viridianTalked;
+   const target=talked?[449,43]:[389,320];
+   const ok=await api()?.navigate?.(target);
+   note(ok?(talked?'Rota 2: siga para o portão norte.':'Siga até o ancião de Viridian. Faça a interação ao chegar.'):'Não foi possível traçar rota até o objetivo.');
+  }else{
+   const opened=W.PsyKantoPlayableV1?.open?.('viridian');
+   note(opened?'Viridian City aberta. Siga até o objetivo da Quest.':'Entre em Kanto · Jornada para abrir Viridian City.');
+  }
+ }else if(Array.isArray(q.at)){await api()?.navigate?.(q.at);}
  else note('Abra o diário para consultar esse objetivo.');
 }
 async function advanceFind(){

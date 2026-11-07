@@ -11,6 +11,8 @@ on:
       - 'css/kanto-world-v2.css'
       - 'index.html'
       - 'tests/kanto-viridian-v1.cjs'
+      - 'tests/kanto-campaign-menu-v65.cjs'
+      - 'core/campaign-automation-v1.js'
       - '.github/workflows/kanto-geometry.yml'
   pull_request:
     paths:
@@ -22,6 +24,8 @@ on:
       - 'css/kanto-world-v2.css'
       - 'index.html'
       - 'tests/kanto-viridian-v1.cjs'
+      - 'tests/kanto-campaign-menu-v65.cjs'
+      - 'core/campaign-automation-v1.js'
 permissions:
   contents: read
 jobs:
@@ -38,5 +42,8 @@ jobs:
           node --check core/kanto-viridian-v1.js
           node --check core/kanto-world-v2.js
           node --check core/kanto-campaign-playable-v1.js
+          node --check core/campaign-automation-v1.js
+      - name: Check campaign menu, navigation and panel recovery
+        run: node tests/kanto-campaign-menu-v65.cjs
       - name: Check Viridian routes, art ratio, encounters and load order
         run: node tests/kanto-viridian-v1.cjs
