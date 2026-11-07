@@ -222,7 +222,7 @@ function fishOverlay(){
  el.innerHTML='<div class="hf-panel"><header><div><small>PSYWORLD · PESCADOR</small><h2>DESAFIO DE PESCA</h2></div><button type="button" data-fish-close>×</button></header><p>Mantenha o indicador na faixa verde. Se permanecer 3 segundos no vermelho, a linha se rompe.</p><div class="hf-meter"><div class="hf-green"></div><div class="hf-marker" data-fish-marker></div></div><div class="hf-stats"><span data-fish-status>Preparando a linha...</span><b data-fish-danger>VERMELHO 0,0 / 3,0 s</b></div><div class="hf-progress"><i data-fish-progress></i></div><button type="button" class="hf-reel" data-fish-reel>SEGURAR / TOCAR PARA PUXAR</button></div>';
  D.body.appendChild(el);
  const reel=el.querySelector('[data-fish-reel]');reel.addEventListener('pointerdown',e=>{if(!fishingRun)return;e.preventDefault();reel.setPointerCapture?.(e.pointerId);fishingRun.reel=true});
- const release=e=>{if(fishingRun)fishingRun.reel=false};reel.addEventListener('pointerup',release);reel.addEventListener('pointercancel',release);reel.addEventListener('lostpointercapture',release);
+ const release=e=>{if(fishingRun){fishingRun.reel=false;fishingRun.meter=Math.min(1,fishingRun.meter+.045)}};reel.addEventListener('pointerup',release);reel.addEventListener('pointercancel',release);reel.addEventListener('lostpointercapture',release);
  el.querySelector('[data-fish-close]').onclick=()=>stopFishing(false);
  return el;
 }
@@ -245,7 +245,7 @@ function startFishing(scene){
   const dt=Math.min(.08,Math.max(0,(now-(f.at||now))/1000));f.at=now;
   f.meter=Math.max(0,Math.min(1,f.meter+(f.reel?.38:-.25)*dt+Math.sin(now*.0019)*.035*dt));
   const green=f.meter>=.34&&f.meter<=.68,red=f.meter<.18||f.meter>.82;
-  f.red=red?f.red+dt:Math.max(0,f.red-dt*.35);
+  f.red=red?f.red+dt:0; // fail after three continuous seconds in red
   f.progress=Math.max(0,Math.min(1,f.progress+(green?.19+f.level*.002:-.055)*dt));
   el.querySelector('[data-fish-marker]').style.left=(f.meter*100)+'%';
   el.querySelector('[data-fish-progress]').style.width=(f.progress*100)+'%';
