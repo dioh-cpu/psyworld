@@ -22,6 +22,6 @@ assert(css.includes('@media(max-height:500px) and (orientation:landscape)'),'Lan
 assert(html.includes('css/kanto-world-v2.css?build=HOBBIES_FISHING_V2_20261107'),'CSS cache mismatch: css/kanto-world-v2.css');
 assert(html.includes('core/kanto-world-v2.js?build=HOBBIES_FISHING_CHARACTER_ANIMATION_V2_20261107'),'JS cache mismatch: core/kanto-world-v2.js');
 assert(html.includes('core/kanto-campaign-playable-v1.js?build=HOBBIES_ROUTE_FLOWERS_CHARACTER_ANIMATION_V2_20261107'),'JS cache mismatch: core/kanto-campaign-playable-v1.js');
-assert(html.includes('core/campaign-automation-v1.js?build=KANTO_CAMPAIGN_MENU_V67_20261107'),'JS cache mismatch: core/campaign-automation-v1.js');
+assert(html.includes('core/campaign-automation-v1.js?build=CITY_QUEST_TOUCH_V1_20261107'),'JS cache mismatch: core/campaign-automation-v1.js');
 new Function(world);new Function(auto);
 console.log('PASS: Kanto menu links, quick route, no fixed quest HUD, external panel recovery, mobile CSS and cache');
