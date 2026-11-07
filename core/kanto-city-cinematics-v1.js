@@ -9,6 +9,7 @@
     {title:'UM CHAMADO DE KANTO',text:'O Professor Car’alho espera por você no laboratório de Pallet. Converse com ele para preparar sua jornada e liberar a passagem ao norte, rumo à Rota 1.'},
     {title:'ESCOLHA SEU PRIMEIRO PARCEIRO',text:'Escolha seu primeiro parceiro entre os 27 iniciais das nove gerações, de Kanto a Paldea. A história começa em Kanto, independentemente da origem do seu Pokémon.'}
   ];
+  const legacyCloseTutorial = W.closeTutorial;
   const TUTORIAL = [
     {icon:'🌙',title:'Sua cidade',text:'Esta é a cidade Psy. As casas, a fonte e as decorações ficam posicionadas no mundo enquanto você caminha pela cidade.',target:'#gameCanvas'},
     {icon:'💚',title:'Seu treinador e parceiro',text:'Depois que você escolher seu inicial pela campanha, este painel mostrará o nível, a vida e a experiência do Pokémon que está à frente da equipe.',target:'#hud-player'},
@@ -124,6 +125,8 @@
     W.requestAnimationFrame(positionSpotlight);
   }
   W.openTutorial=function(){
+    const old=D.getElementById('screen-psy-tutorial');
+    if(old&&old.style.display!=='none')old.style.display='none';
     if(W.PsyGuide)return W.PsyGuide.tutorial(TUTORIAL.map(step=>({text:step.text,speaker:'Psyduck · Seu guia',target:step.target,prepare:()=>{if(['#btn-kanto-journey','#btn-team-float','#psy-follower-launch'].includes(step.target))W.toggleCityGameContent?.(false);else W.toggleCityGameContent?.(true);},finish:()=>W.closeTutorial?.()})));
 
     addStyles();tutorialIndex=0;
@@ -136,15 +139,21 @@
     tutorialRoot.querySelector('[data-next]').onclick=()=>{if(tutorialIndex>=TUTORIAL.length-1)return W.closeTutorial();tutorialIndex++;renderTutorial()};
     renderTutorial();W.addEventListener('resize',positionSpotlight);W.addEventListener('scroll',positionSpotlight,true);
   };
-  W.closeTutorial=function(){W.PsyGuide?.close();
+  W.closeTutorial=function(){
+    const old=D.getElementById('screen-psy-tutorial');
+    if(old&&old.style.display!=='none'){
+      try{legacyCloseTutorial?.()}catch(e){console.warn('Old tutorial close',e)}
+      old.style.display='none';
+    }
+    W.PsyGuide?.close();
     if(P){P.meta=P.meta||{};P.meta.psyCinematicTutorialSeen=true;if(P.team?.length)try{autoSave()}catch(_){}else try{W.psyV9WriteLocal?.()}catch(_){}}
     W.toggleCityGameContent?.(true);if(tutorialRoot)tutorialRoot.style.display='none';
     W.removeEventListener('resize',positionSpotlight);W.removeEventListener('scroll',positionSpotlight,true);
   };
-  W.tutorialNext=function(){if(tutorialIndex<TUTORIAL.length-1){tutorialIndex++;renderTutorial()}else W.closeTutorial()};
-  W.tutorialPrev=function(){tutorialIndex=Math.max(0,tutorialIndex-1);renderTutorial()};
-  W.renderTutorial=renderTutorial;
-  W.addEventListener('keydown',e=>{if(!tutorialRoot||tutorialRoot.style.display==='none')return;if(e.key==='Escape')W.closeTutorial();else if(e.key==='ArrowRight')W.tutorialNext();else if(e.key==='ArrowLeft')W.tutorialPrev()});
+  W.psyKantoTutorialNext=function(){if(tutorialIndex<TUTORIAL.length-1){tutorialIndex++;renderTutorial()}else W.closeTutorial()};
+  W.psyKantoTutorialPrev=function(){tutorialIndex=Math.max(0,tutorialIndex-1);renderTutorial()};
+  W.psyKantoRenderTutorial=renderTutorial;
+  W.addEventListener('keydown',e=>{if(!tutorialRoot||tutorialRoot.style.display==='none')return;if(e.key==='Escape')W.closeTutorial();else if(e.key==='ArrowRight')W.psyKantoTutorialNext();else if(e.key==='ArrowLeft')W.psyKantoTutorialPrev()});
   addStyles();removeOldRouteVestige();
 })(window,document);
 
