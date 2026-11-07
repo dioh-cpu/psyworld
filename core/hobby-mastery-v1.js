@@ -80,6 +80,8 @@ function rank(id,node){return n(ranks(id)[node]);}
 function level(id){return n(H()?.state?.()[id]?.level);}
 function points(id){return Math.max(0,level(id)-Object.values(ranks(id)).reduce((s,v)=>s+n(v),0));}
 function canBuy(id,nodeId){
+ // Do not charge points for spot upgrades before Codex ships their actual effects.
+ if(REWARDS[id]&&!W.PsyHobbyMasterySpotReady)return false;
  const def=skillDefs(id).find(x=>x.id===nodeId);if(!def||!level(id)||points(id)<1||rank(id,nodeId)>=def.max||level(id)<def.minLevel)return false;
  return def.requires.every(dep=>rank(id,dep)>=1);
 }
@@ -121,7 +123,7 @@ function renderInto(parent,id,rerender){
   rarity.appendChild(row);section.appendChild(rarity);
  }
  const heading=el('div','ph-tree-heading');heading.appendChild(el('h4','','✦ Árvore de Habilidades ✦'));
- heading.appendChild(el('p','','Cada nível libera 1 ponto exclusivo. Os nós exigem os anteriores e um nível mínimo.'));
+ heading.appendChild(el('p','',REWARDS[id]&&!W.PsyHobbyMasterySpotReady?'As melhorias de coleta serão liberadas com a próxima atualização dos spots. Seus pontos ficam guardados.':'Cada nível libera 1 ponto exclusivo. Os nós exigem os anteriores e um nível mínimo.'));
  section.appendChild(heading);
  const grid=el('div','ph-mastery-tree');
  for(const def of defs){
@@ -131,7 +133,7 @@ function renderInto(parent,id,rerender){
   node.appendChild(el('span','ph-skill-icon',r?'✦ '+def.icon:def.icon));
   node.appendChild(el('b','',def.name));node.appendChild(el('small','', 'Nv. '+r+'/'+def.max));
   node.appendChild(el('span','ph-skill-desc',def.description));
-  node.appendChild(el('em','',r===def.max?'DOMINADO':ready?'DESBLOQUEAR · 1 PONTO':r?'EM PROGRESSO': 'Requer Nv. '+def.minLevel+(requires.length?' · '+requires.join(' + '):'')));
+  node.appendChild(el('em','',r===def.max?'DOMINADO':ready?'DESBLOQUEAR · 1 PONTO':REWARDS[id]&&!W.PsyHobbyMasterySpotReady?'AGUARDANDO MELHORIAS':r?'EM PROGRESSO': 'Requer Nv. '+def.minLevel+(requires.length?' · '+requires.join(' + '):'')));
   if(ready)node.onclick=()=>{if(buy(id,def.id))rerender()};
   grid.appendChild(node);
  }
@@ -139,5 +141,5 @@ function renderInto(parent,id,rerender){
  section.appendChild(el('p','ph-mastery-note','Pontos e melhorias pertencem somente a este hobby e ficam salvos com o personagem.'));
  parent.appendChild(section);
 }
-W.PsyHobbyMastery={skillDefs,ranks,rank,points,canBuy,buy,effect,chances,statBonus,renderInto};
+W.PsyHobbyMastery={skillDefs,ranks,rank,points,canBuy,buy,effect,chances,statBonus,renderInto,spotReady:()=>!!W.PsyHobbyMasterySpotReady};
 })(window,document);
