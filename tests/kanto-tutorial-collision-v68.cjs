@@ -13,7 +13,7 @@ const W={renderTutorial:oldRender,tutorialNext:oldNext,tutorialPrev:oldPrev,clos
   PsyGuide:{tutorial:()=>{guideOpened++},close:()=>{}},toggleCityGameContent:()=>{}};
 const D={getElementById:id=>id==='screen-psy-tutorial'?screen:null,head:{appendChild:()=>{}},
  createElement:()=>({style:{},id:'',innerHTML:'',textContent:''})};
-vm.runInNewContext(src,{window:W,document:D,console});
+vm.runInNewContext(src,{window:W,document:D,console,P:{team:[],meta:{}}});
 assert.strictEqual(W.renderTutorial,oldRender);
 assert.strictEqual(W.tutorialNext,oldNext);
 assert.strictEqual(W.tutorialPrev,oldPrev);

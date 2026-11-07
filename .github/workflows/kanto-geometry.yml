@@ -13,6 +13,8 @@ on:
       - 'tests/kanto-viridian-v1.cjs'
       - 'tests/kanto-campaign-menu-v65.cjs'
       - 'core/campaign-automation-v1.js'
+      - 'core/kanto-city-cinematics-v1.js'
+      - 'tests/kanto-tutorial-collision-v68.cjs'
       - '.github/workflows/kanto-geometry.yml'
   pull_request:
     paths:
@@ -26,6 +28,8 @@ on:
       - 'tests/kanto-viridian-v1.cjs'
       - 'tests/kanto-campaign-menu-v65.cjs'
       - 'core/campaign-automation-v1.js'
+      - 'core/kanto-city-cinematics-v1.js'
+      - 'tests/kanto-tutorial-collision-v68.cjs'
 permissions:
   contents: read
 jobs:
@@ -43,6 +47,9 @@ jobs:
           node --check core/kanto-world-v2.js
           node --check core/kanto-campaign-playable-v1.js
           node --check core/campaign-automation-v1.js
+          node --check core/kanto-city-cinematics-v1.js
+      - name: Prevent blank tutorial on startup
+        run: node tests/kanto-tutorial-collision-v68.cjs
       - name: Check campaign menu, navigation and panel recovery
         run: node tests/kanto-campaign-menu-v65.cjs
       - name: Check Viridian routes, art ratio, encounters and load order
