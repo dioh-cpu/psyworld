@@ -1,5 +1,5 @@
 {
-  "base": "0da95c0d2eab0ac3aebf30f5d1edda7d366e832a",
+  "base": "cb3ebfc716ae32c27a86e4af9b58e1a448c0788f",
   "files": {
     "assets/characters/halloween/apex-adventure-boy.webp": "00784d4d335a420db1713d1dde3b3cbecb293f38b0c3288c0ef394981933fcfc",
     "assets/characters/halloween/apex-adventure-girl.webp": "eab67c4e2ec400d93842937aff5f741c2dbdb91d81bca4ea0e22a0b377d16246",
@@ -36,7 +36,7 @@
     "core/kanto-collision-v4.js": "b090fa8fd6cc30fab72a86c6cf97cc99f8af94b718241ffb137f419da27c1cf6",
     "core/kanto-map-data-v2.js": "f6ee1f0c8c6804609d85f421c8a19effbbd7ecf164f2937938eb9a15bd2d4872",
     "core/kanto-viridian-v1.js": "41104f046e8ce65163d7f878feb2f4975fb25ddd15de13b92f0134014bcc1e9b",
-    "core/legacy-runtime.js": "39bfc4697adbc6294d4b3144677e75cddde8ab87c46d08cf34ce6e93c677953f",
+    "core/legacy-runtime.js": "4459ceddc53d31fdea2c9006c3605a60e16a162fcb31d7342ee583ca2ac614d4",
     "core/seasonal-event-v1.js": "0f681557840db3e3713544d89a55d0d824cfa6feea9f6085151c89e773d8c0f6"
   },
   "protectedSections": [

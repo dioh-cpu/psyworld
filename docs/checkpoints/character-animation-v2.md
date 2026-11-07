@@ -3,7 +3,7 @@
 Data: 2026-11-07. Implementação concluída; integração na main solicitada pelo usuário.
 Branch de desenvolvimento: `animation/halloween-characters-v2`.
 Base original do desenvolvimento: `967d7db868c5589530356ea8841190ee18747a06`.
-Base atual usada para integração: `0da95c0d2eab0ac3aebf30f5d1edda7d366e832a`.
+Base atual usada para integração: `cb3ebfc716ae32c27a86e4af9b58e1a448c0788f`.
 Primeiro commit local: `46c26601bfbc84d620da137daa67943d1a255631`.
 As atualizações concorrentes de campanha, Hobbies, pesca e coleta foram preservadas;
 a única resolução manual combinou os parâmetros de cache em `index.html`.
@@ -111,18 +111,27 @@ sobre a base exata, commit metadata, MP4, comparações e relatório. Conferir a
 em uma cópia limpa e igualdade da árvore final. A evidência de aplicação acompanha
 o ZIP; não depender de arquivos temporários do Codex para integrar.
 
-Integração: main atualizada para `0da95c0d2eab0ac3aebf30f5d1edda7d366e832a` antes
+Integração: main atualizada para `cb3ebfc716ae32c27a86e4af9b58e1a448c0788f` antes
 da integração. Foram preservadas as atualizações concorrentes e repetidos os
 testes de animação, Kanto e Hobbies. O push solicitado não usa force push.
 
+Após esse snapshot, passaram na versão final do merge 15 combinações reais do
+Aventureiro (cinco visuais em desktop, retrato e paisagem), três perfis de
+controles, testes de cadência, quatro suítes da CI de Kanto/Hobbies e verificação
+de escala dos 3.360 tiles. A matriz de 90 casos/18 perfis foi executada antes
+das últimas mudanças de Hobbies, que incluíram pesca, recursos de rota e trocas de essência;
+por isso os 15 casos acima são a validação de UI para o merge final.
+
 Vercel: a base967d7db já gerou deploy Git de PRODUÇÃO READY,
-`dpl_AbGcxwX1n29EJBxE4UTsSDm1AkWv`. Um push futuro na main deve ser considerado
-um gatilho de publicação em produção. O push solicitado também aciona o workflow
+`dpl_AbGcxwX1n29EJBxE4UTsSDm1AkWv`. O push solicitado à main é gatilho de
+publicação em produção e também aciona o workflow
 `kanto-geometry.yml`. Nenhuma configuração de deploy foi modificada.
 
 ## Verificação final concluída
 
-90 casos/360 cenas e18 perfis com save/reload: PASS, zero erros JS. Teclado/toque,
+Na base anterior, 90 casos/360 cenas e18 perfis com save/reload: PASS, zero erros JS.
+No merge final, 15 combinações visuais e três perfis de controles: PASS, zero erros.
+Teclado/toque,
 input mantido contra obstáculo com entrada em IDLE, parada sem drift: PASS nas
 três resoluções. MP4 final:123s/20FPS/2460frames, cobertura240 com quatro fases,
 zero erros JS e hashes dos arquivos finais.30 comparações e90 folhas alinhadas

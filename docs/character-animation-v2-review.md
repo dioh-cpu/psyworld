@@ -3,13 +3,13 @@
 WALK e IDLE dos seis personagens, seis roupas originais e 24 visuais de Halloween.
 Escala, apoio e direção corrigidos na produção. A implementação inicial usou a
 base `967d7db868c5589530356ea8841190ee18747a06`; depois, por instrução explícita
-do usuário, foi integrada sobre a main atual `0da95c0d2eab0ac3aebf30f5d1edda7d366e832a`,
+do usuário, foi integrada sobre a main atual `cb3ebfc716ae32c27a86e4af9b58e1a448c0788f`,
 preservando atualizações concorrentes de campanha, Hobbies, pesca e coleta.
 
 ## Base e inventário
 
 Base inicial do desenvolvimento: `967d7db868c5589530356ea8841190ee18747a06`.
-Base usada para integração: `0da95c0d2eab0ac3aebf30f5d1edda7d366e832a`.
+Base usada para integração: `cb3ebfc716ae32c27a86e4af9b58e1a448c0788f`.
 Branch: `animation/halloween-characters-v2`. Conferidos os commits recentes de
 onboarding, movimentos V58 e Viridian da main; comparada a branch de teste quanto
 a personagens. Os trabalhos anteriores e branches de Pokémon foram preservados.
@@ -157,3 +157,9 @@ Consulta somente de leitura confirmou que a base 967d7db gerou deploy Git de
 O push solicitado pelo usuário à main é gatilho de publicação em produção.
 O workflow `kanto-geometry.yml` também será acionado. Nenhuma configuração foi
 modificada; não foi usado force push.
+
+Contra a versão integrada final passaram 15 combinações do Aventureiro (cinco
+visuais em três viewports), três perfis de controles, os testes de cadência de
+todos os 30 visuais, a verificação de escala dos 3.360 tiles e as suítes atuais
+de campanha/Hobbies. A matriz de 90 casos foi aprovada sobre a main anterior às
+últimas mudanças de pesca; a validação de UI foi repetida no merge final.
