@@ -42,7 +42,11 @@ vm.runInNewContext(mastery,{window:W,document:{},P:p,console,Math});
 const M=W.PsyHobbyMastery;
 assert(M);
 for(const id of names){assert(M.skillDefs(id).length>=3,'Missing skill tree '+id);assert.equal(M.points(id),1,'Level 1 should award exactly one point to '+id)}
-assert(M.canBuy('miner','strike'),'First Miner node is available at level 1');
+assert.equal(M.canBuy('miner','strike'),false,'Spot skills must remain locked until Codex implements the effects');
+assert.equal(M.buy('miner','strike'),false,'Unimplemented skill cannot consume points');
+assert.equal(M.points('miner'),1,'Points are preserved while spot integration is pending');
+W.PsyHobbyMasterySpotReady=true;
+assert(M.canBuy('miner','strike'),'Codex-ready flag unlocks eligible nodes');
 assert.equal(M.canBuy('miner','radar'),false,'Prerequisite node must be purchased first');
 assert(M.buy('miner','strike'),'First Miner node can be bought');
 assert.equal(M.rank('miner','strike'),1);
@@ -73,7 +77,7 @@ class FakeEl{
  setAttribute(name,val){(this.attributes||(this.attributes={}))[name]=val}
 }
 const D={createElement:tag=>new FakeEl(tag)};
-const W3={P:p,autoSave:W.autoSave,notif:W.notif,PsyHobbies:W.PsyHobbies};
+const W3={P:p,autoSave:W.autoSave,notif:W.notif,PsyHobbies:W.PsyHobbies,PsyHobbyMasterySpotReady:true};
 vm.runInNewContext(mastery,{window:W3,document:D,P:p,console,Math});
 function all(el,cls){return (el.className?.split(' ').includes(cls)?[el]:[]).concat(...(el.children||[]).map(child=>all(child,cls)))}
 for(const id of ['miner','gardener','fisher','lumber','engineer']){
