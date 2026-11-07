@@ -19,9 +19,13 @@ assert(world.includes("isOpen:()=>!!state.root?.classList.contains('open')"),'Ca
 assert(auto.includes("const target=talked?[449,43]:[389,320]"),'Viridian route must guide to next objective without resetting player');
 assert(css.includes('#psy-kanto-world-v2 #psy-campaign-quests{position:static'),'Tracker must not overlay the canvas');
 assert(css.includes('@media(max-height:500px) and (orientation:landscape)'),'Landscape menu must be responsive');
-assert(html.includes('css/kanto-world-v2.css?build=HOBBIES_FISHING_V2_20261107'),'CSS cache mismatch: css/kanto-world-v2.css');
-assert(html.includes('core/kanto-world-v2.js?build=CAMPAIGN_MENUS_V2_20261107'),'JS cache mismatch: core/kanto-world-v2.js');
-assert(html.includes('core/kanto-campaign-playable-v1.js?build=CAMPAIGN_MENUS_V2_20261107'),'JS cache mismatch: core/kanto-campaign-playable-v1.js');
+assert(html.includes('css/kanto-world-v2.css?build=PSYWORLD_PIXEL_VISUALS_V1_20261107'),'CSS cache mismatch: css/kanto-world-v2.css');
+assert(html.includes('core/kanto-world-v2.js?build=PIXEL_WORLD_TIME_AURA_V1_20261107'),'JS cache mismatch: core/kanto-world-v2.js');
+assert(html.includes('core/kanto-campaign-playable-v1.js?build=PIXEL_WORLD_TIME_AURA_V1_20261107'),'JS cache mismatch: core/kanto-campaign-playable-v1.js');
+assert(html.includes('core/world-time-v1.js?build=KANTO_BRASIL_CLOCK_V1_20261107'),'Brasília clock bundle must be versioned');
+assert(html.includes('core/costume-aura-v1.js?build=HALLOWEEN_COSTUME_AURA_V1_20261107'),'Costume aura bundle must be versioned');
+assert(html.indexOf('core/world-time-v1.js')<html.indexOf('core/kanto-world-v2.js'),'Clock must load before map renderers');
+assert(html.indexOf('core/costume-aura-v1.js')<html.indexOf('core/halloween-ui.js'),'Aura must load before costume renderers');
 assert(html.includes('core/campaign-automation-v1.js?build=CITY_QUEST_TOUCH_V1_20261107'),'JS cache mismatch: core/campaign-automation-v1.js');
 new Function(world);new Function(auto);
 console.log('PASS: Kanto menu links, quick route, no fixed quest HUD, external panel recovery, mobile CSS and cache');

@@ -1,7 +1,7 @@
 /* Authored Pallet / Route 1 scenes, driven by actual map and quest events. */
 (function(W,D){'use strict';
 const player=()=>typeof P!=='undefined'?P:W.P||{},world=()=>W.PsyKantoWorldV2;
-const ART={pallet:'assets/story/pallet-town-artist-v2.webp',lab:'assets/kanto/interiors/lab-v30.webp',departure:'assets/kanto/cinematics/pallet-05.webp',route:'assets/story/route-1-artist-v2.webp',oak:'assets/kanto/approved/professor-expressions.webp'};
+const ART={pallet:'assets/story/pallet-town-artist-v2.webp',lab:'assets/kanto/interiors/lab-v30.webp',departure:'assets/kanto/cinematics/pallet-05.webp',route:'assets/story/route-1-artist-v2.webp',route2:'assets/story/route-2-artist-v1.webp',oak:'assets/kanto/approved/professor-expressions.webp'};
 let running=null,typing=0,transition=0,previousFocus;
 function memory(){const p=player();p.meta=p.meta||{};const m=p.meta.kantoStoryV49||(p.meta.kantoStoryV49={});m.seen=m.seen||{};return m;}
 function save(){W.autoSave?.();}function stopTimers(){W.clearInterval(typing);W.clearTimeout(transition);typing=0;transition=0;}
@@ -36,7 +36,15 @@ function enter(from,to){if(running||from===to)return;const m=memory();if(to==='p
  if(from==='pallet'&&!m.seen.palletDeparture)beats.push({art:ART.departure,location:'DEIXANDO PALLET',title:'O primeiro passo além de casa',text:'Você olha para trás uma última vez. Os telhados de Pallet ainda brilham ao sol. Seu parceiro se aproxima, pronto para seguir o mesmo caminho.'});
  if(first)beats.push({art:ART.route,location:'ROTA 1',title:'Entre o conhecido e o desconhecido',text:'O som da vila dá lugar ao farfalhar da grama. Pequenas pegadas cruzam a trilha. Cada clareira guarda encontros que ainda não fazem parte da sua história.'},{art:ART.route,professor:true,expression:1,speaker:'Professor Car’alho · lembrança',title:'Observe antes de avançar',text:'Não tenha pressa de vencer todas as batalhas. Observe os tipos, cuide da energia da equipe e registre o que encontrar. Quero ouvir suas descobertas quando voltar.'},{art:ART.route,speaker:'Sua jornada',title:'A estrada até Viridian',text:'Ao norte, a trilha continua em direção a Viridian City. Você ajeita a mochila, troca um olhar com seu parceiro e dá o próximo passo.'});
  if(beats.length)play('routeArrival',beats,()=>{m.seen.palletDeparture=true;save();});
- }}
+ }
+ if(to==='route-2'&&!m.seen.route2Arrival){
+ play('route2Arrival',[
+  {art:ART.route2,location:'ROTA 2 · BORDA DA FLORESTA',chapter:'KANTO · CAMINHOS OCULTOS',title:'A trilha muda sob as copas',text:'A estrada se estreita entre árvores antigas. A luz atravessa as folhas em pequenas manchas douradas. Perto de uma clareira, Caio procura algo entre a grama.'},
+  {art:ART.route2,location:'ROTA 2 · CLAREIRA',speaker:'Caio · treinador viajante',title:'Um caderno que não pode se perder',text:'Deixei minha mochila perto da trilha quando fui atrás de um Pokémon. O caderno dentro dela tem as anotações que fiz para atravessar a mata. Você pode me ajudar a encontrá-la?'},
+  {art:ART.route2,location:'ROTA 2 · CAMINHO LESTE',speaker:'Sua jornada',title:'Siga as marcas na grama',text:'Você combina de olhar a clareira ao oeste antes de continuar para o norte. As pegadas quase desaparecem sob as folhas, mas ainda apontam o caminho.'}
+ ]);return;
+ }
+ }
 function professor(npc,done){const p=player(),partner=p.team?.[0]?.name||'seu parceiro',name=String(p.name||'Treinador');
 return play('professorResearch',[
  {art:ART.lab,professor:true,expression:1,speaker:'Professor Car’alho',title:'Um parceiro, muitas possibilidades',text:name+'! Venha, fique à vontade. Vejo que '+partner+' já escolheu caminhar com você. Um bom começo não se mede pela força do primeiro golpe, mas pela confiança que vocês constroem.'},

@@ -225,6 +225,7 @@
     const moving = !!p.moving;
     const walk=W.PsyTrainerWalkV1;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    W.PsyCostumeAuraV1?.draw?.(ctx,entry.img.src,canvas.width/2,108);
     if(walk?.getAnimationAtlas){
       if(!entry.animationAtlas)entry.animationAtlas=walk.getAnimationAtlas(entry.img);
       if(!cityAnimationState)cityAnimationState=walk.createState();

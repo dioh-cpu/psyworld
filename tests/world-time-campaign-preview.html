@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <base href="../">
+  <link rel="stylesheet" href="core/kanto-story-v49.css?build=KANTO_ROUTE2_CINEMATIC_V1_20261107">
+  <title>PSYWORLD · QA visual da campanha</title>
+  <style>html,body{margin:0;background:#101923;color:#fff;font:14px system-ui}#qa{position:fixed;z-index:10;left:8px;top:8px;padding:8px;background:#101c2bcc;border:1px solid #97c9d5;border-radius:8px}</style>
+</head>
+<body>
+  <div id="qa">Perfil descartável · QA da campanha</div>
+  <script>
+    window.P={name:'Treinadora QA',playerCharacterId:'adventure_boy',playerCostumeByCharacter:{adventure_boy:'basic'},team:[{id:1,name:'Bulbasaur',level:5,hp:55,maxHp:55}],gymProgress:[],kantoPuzzleFlags:[],inventory:{},box:[]};
+    window.autoSave=()=>{};window.PsySeason={drawTitle(){},buff:()=>0};window.PsyCityAccess=()=>true;
+    localStorage.setItem('psy_kanto_world_v2_quests',JSON.stringify({viridian:true}));
+    localStorage.setItem('psy_kanto_journey_progress_v1',JSON.stringify({visited:['pallet','route-1','viridian']}));
+  </script>
+  <script src="core/trainer-walk-v1.js?build=PIXEL_WORLD_TIME_AURA_V1_20261107"></script>
+  <script src="core/world-time-v1.js?build=KANTO_BRASIL_CLOCK_V1_20261107"></script>
+  <script src="core/costume-aura-v1.js?build=HALLOWEEN_COSTUME_AURA_V1_20261107"></script>
+  <script src="core/halloween-ui.js?build=PIXEL_COSTUME_AURA_V1_20261107"></script>
+  <script src="core/kanto-journey-v1.js?build=PIXEL_WORLD_TIME_AURA_V1_20261107"></script>
+  <script src="core/kanto-map-data-v2.js"></script>
+  <script src="core/kanto-collision-v4.js"></script>
+  <script src="core/kanto-interiors-v9.js"></script>
+  <script src="core/kanto-room-pixel-v10.js"></script>
+  <script src="core/kanto-interiors-art-v30.js"></script>
+  <script src="core/kanto-world-v2.js?build=PIXEL_WORLD_TIME_AURA_V1_20261107"></script>
+  <script src="core/kanto-story-v49.js?build=KANTO_ROUTE2_CINEMATIC_V1_20261107"></script>
+  <script src="core/kanto-campaign-playable-v1.js?build=PIXEL_WORLD_TIME_AURA_V1_20261107"></script>
+  <script>window.PsyKantoPlayableV1.open('route-2');</script>
+</body>
+</html>

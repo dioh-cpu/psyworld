@@ -9,8 +9,8 @@ function distance(fps){
  const state={root:{classList:{contains:()=>true},dataset:{},querySelector:()=>null},dialogOpen:false,suspended:false,
    world:{id:'pallet'},inside:null,position:{x:0,y:500},held:new Set(['up']),
    joy:null,path:[],stepDistance:0,walkFrame:0,lastRender:0,time:0};
- const tick=new Function('state','positionValid','DATA','performance','W','draw',body+'return tick')(
-   state,()=>true,{}, {now:()=>0},{innerWidth:390,requestAnimationFrame:()=>1},()=>{});
+ const tick=new Function('state','positionValid','DATA','performance','W','draw','updateFishingButton',body+'return tick')(
+   state,()=>true,{}, {now:()=>0},{innerWidth:390,requestAnimationFrame:()=>1},()=>{},()=>{});
  for(let i=1;i<=fps*2;i++)tick(i*1000/fps);
  return 500-state.position.y;
 }
