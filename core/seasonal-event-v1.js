@@ -150,7 +150,17 @@ function drawTitle(c,x,y,key){
  if(settings().titles)return;const t=key?(W.PsyTitles?.registry[key]||TITLES[key]):title();if(!t)return;
  c.save();c.textAlign='center';c.font='bold 11px system-ui';c.lineWidth=3;c.strokeStyle='#080a18';c.fillStyle=t.color;c.shadowColor=t.color;c.shadowBlur=6;
  const glyph=t.glyph||({moon:'☾',lantern:'✧',sweets:'✿',sovereign:'♛'})[t.effect],label=glyph+' '+t.name+' '+glyph;
+ const reduced=!!W.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ const shimmer=reduced?0:Date.now()/650;
+ const measured=c.measureText(label).width;
+ c.save();c.globalAlpha=.22+(reduced?0:.09*Math.sin(shimmer));c.fillStyle=t.color;c.shadowColor=t.color;c.shadowBlur=12;
+ c.beginPath();c.ellipse(x,y-4,measured/2+11,11,0,0,Math.PI*2);c.fill();c.restore();
  c.strokeText(label,x,y);c.fillText(label,x,y);
+ // Tiny star accents reinforce rarity without obscuring the trainer or map.
+ c.save();c.strokeStyle=t.color;c.lineWidth=1.3;
+ for(let i=0;i<3;i++){const phase=reduced?0:Date.now()/900+i*2.09;const xx=x+(i-1)*Math.max(20,measured/2+11),yy=y-13+Math.sin(phase)*3;
+ c.globalAlpha=reduced?.55:.35+.3*(.5+.5*Math.sin(phase));c.beginPath();c.moveTo(xx-3,yy);c.lineTo(xx+3,yy);c.moveTo(xx,yy-3);c.lineTo(xx,yy+3);c.stroke()}
+ c.restore();
  const time=W.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:Date.now()/1000,edge=c.measureText(label).width/2+9;
  for(let i=0;i<2;i++){const side=i?1:-1,a=time*(t.effect==='sovereign'?1.8:1)+i*Math.PI;
  c.globalAlpha=.6+.3*Math.sin(a);c.beginPath();
