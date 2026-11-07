@@ -275,6 +275,7 @@ function render(){
  const el=ensure(),grid=el.querySelector('[data-hobbies-grid]'),details=el.querySelector('[data-hobby-details]');grid.replaceChildren();details.replaceChildren();
  grid.hidden=!!selected;details.hidden=!selected;const records=state();
  const overview=el.querySelector('[data-hobby-overview]'),totals=p().meta?.hobbyGatherTotalsV1||{};
+ overview.hidden=!!selected;
  overview.innerHTML='<span><b>'+JOBS.filter(j=>records[j.id]?.level>0).length+'</b><small>Hobbies ativos</small></span><span><b>'+Object.values(totals).reduce((n,v)=>n+count(v),0)+'</b><small>Coletas concluídas</small></span><span><b>'+visibleNodes('route-1').length+'</b><small>Spots na Rota 1</small></span>';
  if(!selected){
   for(const j of JOBS){
