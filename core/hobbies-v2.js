@@ -118,7 +118,7 @@ function bonus(stat){
  const k=({capture:'cap',damage:'atk',health:'hp'})[stat]||stat;
  let value=0;for(const j of JOBS)if(j.stat===k)value+=count(state()[j.id].level)*j.per;
  for(const v of Object.values(p().meta?.hobbyBuffsV2||{}))if(v.kind===k&&v.until>Date.now())value+=count(v.amount);
- return Math.min(100,value);
+ return Math.min(100,value+(W.PsyHobbyMastery?.statBonus?.(k)||0));
 }
 function useConsumable(name){
  const config={'Tônico de Ataque':{kind:'atk',amount:12},'Bálsamo Restaurador':{kind:'hp',amount:10}};
