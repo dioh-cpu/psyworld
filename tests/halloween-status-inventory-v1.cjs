@@ -32,7 +32,7 @@ assert(bag.includes("if(name==='Incenso de Halloween'){const used="),'Refresh af
 assert(bag.includes("window.psyBagFilter==='other'?!['ball','potion','stone','craft','quest','special']"),'Exclude specials from Others');
 assert(bag.includes("const itemCategory=name=>isSpecial(name)?'special':baseCategory(name)"),'Event item classifier');
 assert(html.includes("psySetBagFilter('special',this)"),'Specials tab');
-assert(html.includes('HALLOWEEN_STATUS_METER_V1_20261107'),'Fresh seasonal script');
+assert(html.includes('HALLOWEEN_TITLE_SHIMMER_V2_20261107'),'Fresh seasonal script');
 assert(city.includes('drawTitle(c,w/2,h/2-83)'),'Trainer-relative title');
 assert(!city.includes('drawTitle(c,center.x,center.y-95)'),'No plaza-anchored title');
 assert(season.includes('W.setInterval?.(refresh,1000)'),'Visible timer must update');
