@@ -6,6 +6,7 @@ const {applyCampaignPercent}=await import('../lib/campaign-event-rules-v1.js');
 
 const read=file=>fs.readFileSync(path.join(process.cwd(),file),'utf8');
 const migration=read('supabase/migrations/20261107143842_campaign_hourly_lottery_world_events_v1.sql');
+const psyballsMigration=read('supabase/migrations/20261107160000_campaign_lottery_psyballs_v1.sql');
 const api=read('api/game.js');
 const authority=read('core/online-authority-v26.js');
 const runtime=read('core/legacy-runtime.js');
@@ -24,6 +25,16 @@ assert.match(migration,/where last_seen_at >= now_at - interval '90 seconds'/,'o
 assert.match(migration,/order by random\(\) limit 1/,'the server selects one participant uniformly');
 assert.match(migration,/campaign-lottery-g:'/,'the wallet credit is keyed to the hour slot');
 assert.match(migration,/apply_wallet_delta_v24\([\s\S]*?winner_id,'gold',25000,'campaign_lottery'/,'the 25,000 Gold prize is credited by the server');
+assert.match(psyballsMigration,/add column if not exists reward_psyballs integer not null default 0/i,'the lottery records its Psyball reward for repeat heartbeats');
+assert.match(psyballsMigration,/check \(reward_psyballs between 0 and 5\)/i,'a draw cannot issue more than five Psyballs');
+assert.match(psyballsMigration,/reward_roll := random\(\)/i,'the bonus quantity is determined by server-side randomness');
+for(const [threshold,qty] of [['0\.70',0],['0\.88',1],['0\.96',2],['0\.99',3],['0\.999',4]])
+  assert.match(psyballsMigration,new RegExp(`when reward_roll < ${threshold} then ${qty}`),`weighted Psyball reward threshold ${threshold}`);
+assert.match(psyballsMigration,/else 5\s+end/i,'the rarest result grants at most five Psyballs');
+assert.match(psyballsMigration,/apply_wallet_delta_v24\([\s\S]*?winner_id,'gold',25000,'campaign_lottery'/,'the existing guaranteed Gold prize is preserved');
+assert.match(psyballsMigration,/if lottery_draw\.reward_psyballs > 0 then\s+psyball_balance := public\.adjust_inventory\(winner_id,'Psyball',lottery_draw\.reward_psyballs\)/i,'the authoritative inventory helper grants the bonus exactly once with the winning draw');
+assert.match(psyballsMigration,/'reward_psyballs',coalesce\(lottery_draw\.reward_psyballs,0\)/,'the server returns the persisted result to the client');
+assert.match(psyballsMigration,/'inventory',case when psyball_balance is null then '\{\}'::jsonb[\s\S]*?jsonb_build_object\('Psyball',psyball_balance\)/i,'the immediate server response refreshes the winner inventory');
 assert.match(migration,/array\['golden_hour','training_surge','gathering_rush','shiny_trail'\]/);
 assert.match(migration,/America\/Sao_Paulo/,'hourly events use Brasília civil time');
 assert.match(migration,/shiny_bonus_pct/,'the shiny event exposes its bonus to encounter creation');
@@ -40,6 +51,8 @@ assert.match(authority,/lastCampaignHeartbeat>=30000/,'presence refresh is bound
 assert.match(authority,/campaignEvent:\(\)=>lastCampaignStatus\?\.event/);
 assert.match(authority,/Participação automática no sorteio/);
 assert.match(authority,/Sorteio .* recebeu/);
+assert.match(authority,/chance de até 5 Psyballs/,'the upcoming prize preview discloses the possible bonus');
+assert.match(authority,/lottery\?\.reward_psyballs/,'the winner display reports the awarded Psyballs');
 assert.match(authority,/psy-campaign-event-banner-v1/,'the event remains visible during map play, outside the menu');
 assert.match(authority,/innerWidth\|\|0\)<=520/,'mobile event ribbon moves below the trainer HUD');
 assert.match(runtime,/campaignEvent\?\.\(\)\?\.shiny_bonus_pct/,'the server event reaches route encounter rolls');
@@ -56,6 +69,6 @@ assert.equal(applyCampaignPercent(300,50,300),300,'event stacking respects the e
 assert.equal(applyCampaignPercent(-10,20,120),20,'negative client values do not reduce event rewards');
 assert.equal(applyCampaignPercent(Number.NaN,Number.NaN,300),0,'invalid values fail closed');
 
-console.log('PASS: server-only hourly draw, unique winner/prize, two-hour Brasília events, battle bonuses and route Shiny integration');
+console.log('PASS: server-only hourly draw, weighted 0–5 Psyball bonus, unique winner/prizes, two-hour Brasília events, battle bonuses and route Shiny integration');
 }
 main().catch(error=>{console.error(error);process.exitCode=1});

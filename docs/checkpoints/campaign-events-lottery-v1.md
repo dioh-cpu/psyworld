@@ -10,6 +10,7 @@ Relação: o HEAD de partida contém a referência remota da `main` como ancestr
 
 - Presença online atualizada a cada 30 segundos por conta autenticada. A tabela mantém um único registro por usuário; uma janela de 90 segundos absorve pausas de rede e abas em segundo plano.
 - Um sorteio global por hora de Brasília. Um lock transacional e a chave primária do horário impedem vencedores duplicados. Um participante online recebe 25.000 Gold pelo ledger existente; o nome do vencedor é exposto, nunca seu UUID.
+- A loteria também pode conceder de 0 a 5 Psyballs extras ao vencedor. A quantidade é sorteada e persistida no servidor: 0 (70%), 1 (18%), 2 (8%), 3 (3%), 4 (0,9%) ou 5 (0,1%). O bônus de 5 tem chance de 1 em 1.000; os 25.000 Gold continuam garantidos.
 - Um evento aleatório de campanha é sorteado e persistido a cada janela de duas horas de Brasília: Hora Dourada (+20% Gold), Pulso de Treinamento (+25% XP), Rotas em Abundância (+20% de chance de drop) ou Rastro Brilhante (+0,025 ponto percentual de chance Shiny).
 - Os bônus de Gold, XP e drop chegam ao cálculo online de batalha a partir do evento lido no banco, não de percentuais fornecidos pelo cliente. O evento Shiny altera os dois geradores de encontros da campanha: batalhas de rota e Pokémon do mapa.
 - O Pulso de Treinamento também usa os métodos de XP já existentes nas vitórias de campanha. O restante dos ganhos e os limites atuais continuam sob os cálculos existentes.
@@ -18,12 +19,13 @@ Relação: o HEAD de partida contém a referência remota da `main` como ancestr
 ## Arquivos
 
 - `supabase/migrations/20261107143842_campaign_hourly_lottery_world_events_v1.sql`
+- `supabase/migrations/20261107160000_campaign_lottery_psyballs_v1.sql`
 - `api/game.js`
 - `core/online-authority-v26.js`
 - `core/legacy-runtime.js`
 - `core/prelude.js`
 - `lib/campaign-event-rules-v1.js`
-- `tests/campaign-hourly-events-v1.cjs`
+- `tests/campaign-hourly-events-v1.cjs` (inclui faixa e crédito de Psyballs)
 - `package.json`
 - `docs/checkpoints/campaign-events-lottery-v1.md`
 
@@ -48,7 +50,7 @@ Com o evento `training_surge` simulado, o runtime real calculou 4 → 5 XP para 
 
 ## Limites e operação
 
-- A migração ainda não foi aplicada ao Supabase. Nenhuma tabela, recompensa ou configuração remota foi alterada. A execução em Postgres local foi bloqueada pelo daemon Docker (`no space left on device` ao criar o diretório VFS); o teste automatizado de banco ainda precisa rodar em uma instância de desenvolvimento antes da integração.
+- As migrações ainda não foram aplicadas ao Supabase. Nenhuma tabela, recompensa ou configuração remota foi alterada. A execução em Postgres local foi bloqueada pelo daemon Docker (`no space left on device` ao criar o diretório VFS); o teste automatizado de banco ainda precisa rodar em uma instância de desenvolvimento antes da integração.
 - A autoridade v26 já retorna `xp_reward`, mas o código existente não persiste XP de Pokémon/treinador no RPC de batalha. O bônus de XP desta etapa acompanha o cálculo local de vitória e o salvamento local; a persistência online de XP continua uma pendência preexistente e não foi afirmada como validada.
 - Nenhum push, merge ou deploy ocorreu. A migração precisa preceder qualquer implantação do código, após revisão e aprovação da integração.
 
@@ -58,3 +60,10 @@ Com o evento `training_surge` simulado, o runtime real calculou 4 → 5 XP para 
 2. Aplicar esta migração em banco Supabase de desenvolvimento e exercitar concorrência, idempotência do pagamento e mudança de hora.
 3. Validar a persistência online de XP separadamente antes de ampliar ou publicitar o bônus de XP.
 4. Revisar o evento dentro do gameplay em dispositivos reais; as capturas Chromium usam o jogo real com respostas de API simuladas.
+
+## Adendo — bônus de Psyballs na loteria
+
+- Incremento desenvolvido sobre o commit `a69ed5a5b6b02f70339928b36a495514f5a4d6ff`; migração aditiva `20261107160000_campaign_lottery_psyballs_v1.sql` preserva o histórico da migração horária existente.
+- O vencedor continua recebendo 25.000 Gold. O bônus é 0/1/2/3/4/5 Psyballs com probabilidades 70%/18%/8%/3%/0,9%/0,1%; a seleção, persistência e crédito usam a transação do servidor e o helper `adjust_inventory` existente.
+- A resposta inclui a quantidade sorteada e o saldo atualizado de Psyball. O cliente mostra o prêmio e incorpora esse saldo pelo fluxo de sincronização já existente.
+- `npm run test:campaign-world`, `node --check core/online-authority-v26.js`, `node --check tests/campaign-hourly-events-v1.cjs` e `git diff --check` passaram após essa alteração. O teste do banco Supabase/Postgres ainda está pendente; nenhuma publicação ocorreu.
