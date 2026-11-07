@@ -1,0 +1,533 @@
+{
+  "schema": "psyworld.human-walk.v2",
+  "approval": "User approved Adventure Boy WALK poses and identity before expansion",
+  "baseCommit": "967d7db868c5589530356ea8841190ee18747a06",
+  "sources": [
+    {
+      "character": "adventure_boy",
+      "visual": "basic",
+      "original": "assets/characters/halloween/basic-adventure-boy.webp",
+      "walk": "assets/characters/walk-v2/basic-adventure-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-402f0bc7-3812-4b8b-9ebf-3340eee10e84.png",
+      "directionCorrection": null,
+      "sha256": "f9e8a3478ac3b53b321377ffcc77d92bcc6366a099db03f42f3fdf432db7e898"
+    },
+    {
+      "character": "adventure_girl",
+      "visual": "basic",
+      "original": "assets/characters/halloween/basic-adventure-girl.webp",
+      "walk": "assets/characters/walk-v2/basic-adventure-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-a240b942-7be0-4506-85a9-f77feadbca0b.png",
+      "directionCorrection": null,
+      "sha256": "5ddc85a11f37149166456a0e8828b8b0a6196c15388be70dd27f90e623fcdf80"
+    },
+    {
+      "character": "black_boy",
+      "visual": "basic",
+      "original": "assets/characters/halloween/basic-black-boy.webp",
+      "walk": "assets/characters/walk-v2/basic-black-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-ba077c5a-9283-4f72-9929-1fd198df61d9.png",
+      "directionCorrection": null,
+      "sha256": "eda9f35de27e868ac4873882b32b2011affaaf03ea7d3ec9bed503d2d168b150"
+    },
+    {
+      "character": "black_girl",
+      "visual": "basic",
+      "original": "assets/characters/halloween/basic-black-girl.webp",
+      "walk": "assets/characters/walk-v2/basic-black-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-696b828d-b69a-4b20-a306-37163aef8cb5.png",
+      "directionCorrection": null,
+      "sha256": "61cbaffa7d10fcf0f0b40b68f923f593d0ac145a43124ff3d2a3300988613d42"
+    },
+    {
+      "character": "gothic_boy",
+      "visual": "basic",
+      "original": "assets/characters/halloween/basic-gothic-boy.webp",
+      "walk": "assets/characters/walk-v2/basic-gothic-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-f102db23-c94e-4d89-9a58-e7aeb8302c06.png",
+      "directionCorrection": null,
+      "sha256": "2c170fb36d71567c9eec6c7ea25a080477990a2cd3e603923379ca05c71c509d"
+    },
+    {
+      "character": "gothic_girl",
+      "visual": "basic",
+      "original": "assets/characters/halloween/basic-gothic-girl.webp",
+      "walk": "assets/characters/walk-v2/basic-gothic-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-dc09cfcf-ea45-41f4-9062-d96739504bf2.png",
+      "directionCorrection": null,
+      "sha256": "b197c142155f82913e8c03938236c0c9bccebbf315295927292af693bfa3f566"
+    },
+    {
+      "character": "adventure_boy",
+      "visual": "divine",
+      "original": "assets/characters/halloween/divine-adventure-boy.webp",
+      "walk": "assets/characters/walk-v2/divine-adventure-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-f4df12ef-889e-4bb3-ae3c-3ad7b2979d8a.png",
+      "directionCorrection": null,
+      "sha256": "59d9cba79763d6c8ea51bd4305356c5a26c8aa7ea116c32eb2ca7f0180f3dc1b"
+    },
+    {
+      "character": "adventure_girl",
+      "visual": "divine",
+      "original": "assets/characters/halloween/divine-adventure-girl.webp",
+      "walk": "assets/characters/walk-v2/divine-adventure-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-23130b4f-4672-4d89-8825-e9a5404d440d.png",
+      "directionCorrection": null,
+      "sha256": "bdf145cbd5dfdab74af1f35430d4c88c5a68ec1131adba12a8c77f82293d8ec7"
+    },
+    {
+      "character": "black_boy",
+      "visual": "divine",
+      "original": "assets/characters/halloween/divine-black-boy.webp",
+      "walk": "assets/characters/walk-v2/divine-black-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-402c3314-d36b-42c5-a24f-c467b3d80e9f.png",
+      "directionCorrection": null,
+      "sha256": "8c1484776d0c2c33788ea06090d4dc283293e55382c189479bde3aef4d1f1905"
+    },
+    {
+      "character": "black_girl",
+      "visual": "divine",
+      "original": "assets/characters/halloween/divine-black-girl.webp",
+      "walk": "assets/characters/walk-v2/divine-black-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-97d5de1e-a25d-4f2e-a21c-6376e8d5c361.png",
+      "directionCorrection": null,
+      "sha256": "14e8b4b444af1afcd236ac2f485c2cd9a33f7397f56f79be0562384b4903295d"
+    },
+    {
+      "character": "gothic_boy",
+      "visual": "divine",
+      "original": "assets/characters/halloween/divine-gothic-boy.webp",
+      "walk": "assets/characters/walk-v2/divine-gothic-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-09aec580-fd91-4100-8bf9-8a50b27fd352.png",
+      "directionCorrection": null,
+      "sha256": "3abb88e53f843aa772e592f6bb98d13dede4ebfc9483ced4927c4585c4fd0b5d"
+    },
+    {
+      "character": "gothic_girl",
+      "visual": "divine",
+      "original": "assets/characters/halloween/divine-gothic-girl.webp",
+      "walk": "assets/characters/walk-v2/divine-gothic-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-5d85cfbc-0867-490a-b589-8c189c188568.png",
+      "directionCorrection": null,
+      "sha256": "a03c9d5edfe71457e324405670d7394c6914d80a868431039d569579a8aa6641"
+    },
+    {
+      "character": "adventure_boy",
+      "visual": "macabre",
+      "original": "assets/characters/halloween/horror-jason-adventure-boy.webp",
+      "walk": "assets/characters/walk-v2/horror-jason-adventure-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-be839b1a-5835-4662-8f35-b8ab721e48ff.png",
+      "directionCorrection": null,
+      "sha256": "928e957919e7a9f78160589b5583bed3d319ed1c420d89ab30ccbb6ab0846fa7"
+    },
+    {
+      "character": "adventure_girl",
+      "visual": "macabre",
+      "original": "assets/characters/halloween/horror-spectral-bride-adventure-girl.webp",
+      "walk": "assets/characters/walk-v2/horror-spectral-bride-adventure-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-df1eb4ae-3440-4d37-874f-89c78956ac3b.png",
+      "directionCorrection": null,
+      "sha256": "9c3ed6a84f57110b8230a6411b72593af5405eb0dc09d59e09e58583a6dd280d"
+    },
+    {
+      "character": "black_boy",
+      "visual": "macabre",
+      "original": "assets/characters/halloween/horror-ghostface-black-boy.webp",
+      "walk": "assets/characters/walk-v2/horror-ghostface-black-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-55af7040-6ddb-4e04-be2b-1d5210a85da2.png",
+      "directionCorrection": null,
+      "sha256": "7b557bd93333343b3f04641106ef924cb62caff2040f7fd13e9f5ead41d26b4a"
+    },
+    {
+      "character": "black_girl",
+      "visual": "macabre",
+      "original": "assets/characters/halloween/horror-ghostface-black-girl.webp",
+      "walk": "assets/characters/walk-v2/horror-ghostface-black-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-3d880467-e204-418b-8b7b-e083a25174d6.png",
+      "directionCorrection": null,
+      "sha256": "4160f309c51e8ca084a0945b14a4021bacca8f54a9f9dfc9afabcf348c723eba"
+    },
+    {
+      "character": "gothic_boy",
+      "visual": "macabre",
+      "original": "assets/characters/halloween/horror-freddy-gothic-boy.webp",
+      "walk": "assets/characters/walk-v2/horror-freddy-gothic-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-fb5c93e8-6791-41e7-8083-5b4ae0d73a29.png",
+      "directionCorrection": null,
+      "sha256": "9f86c0b598d6c62a9d0cae2042f87281fab4cfdb9946e1e6a145da26a946b419"
+    },
+    {
+      "character": "gothic_girl",
+      "visual": "macabre",
+      "original": "assets/characters/halloween/horror-myers-gothic-girl.webp",
+      "walk": "assets/characters/walk-v2/horror-myers-gothic-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-10d212d1-c962-486f-872f-6d9044888b6e.png",
+      "directionCorrection": null,
+      "sha256": "b557fd77eadff5e9088e1fc30fdf2b55cd99ce93f14fa3e463570fc8d87c8c7c"
+    },
+    {
+      "character": "adventure_boy",
+      "visual": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-adventure-boy.webp",
+      "walk": "assets/characters/walk-v2/macabre-alt-adventure-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-23ddc734-e761-4018-8cb9-b4e61155c515.png",
+      "directionCorrection": null,
+      "sha256": "f255c68797e3db1e03b633bc1f50ca9951f05391c076a9776d007ee8a866cc78"
+    },
+    {
+      "character": "adventure_girl",
+      "visual": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-adventure-girl.webp",
+      "walk": "assets/characters/walk-v2/macabre-alt-adventure-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-f649a513-fee1-4d0e-8ff6-a8ec9f8b6069.png",
+      "directionCorrection": null,
+      "sha256": "d93e8c95bb826c376f6168d3311b69ddc5e81f6c5869863beb26bcbad9a1e107"
+    },
+    {
+      "character": "black_boy",
+      "visual": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-black-boy.webp",
+      "walk": "assets/characters/walk-v2/macabre-alt-black-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-365e5c39-481e-4d83-af2a-46486e1b110a.png",
+      "directionCorrection": null,
+      "sha256": "a310359a954dc7c41f78a5e856c9eed763cc896d92df2599e2d457c8895c94d2"
+    },
+    {
+      "character": "black_girl",
+      "visual": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-black-girl.webp",
+      "walk": "assets/characters/walk-v2/macabre-alt-black-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-c053c87f-e56d-485e-a74f-832e852353f0.png",
+      "directionCorrection": null,
+      "sha256": "727423dee4a8c00eb073f68db4d6d32781ec2e8c1cef422e1f64880fca1d1001"
+    },
+    {
+      "character": "gothic_boy",
+      "visual": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-gothic-boy.webp",
+      "walk": "assets/characters/walk-v2/macabre-alt-gothic-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-d52cea02-32a9-44fc-ade8-a36f9ea7f994.png",
+      "directionCorrection": null,
+      "sha256": "468b32b3492bb820b0be4b1886ba1a3c117efb235fd750dc0ead71ed00a2033a"
+    },
+    {
+      "character": "gothic_girl",
+      "visual": "macabre_alt",
+      "original": "assets/characters/halloween/macabre-alt-gothic-girl.webp",
+      "walk": "assets/characters/walk-v2/macabre-alt-gothic-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-c94fb776-4808-4375-afa4-6cd9013443b3.png",
+      "directionCorrection": null,
+      "sha256": "704d407586d0e4ffe903c5b4c1d272c9aa1b33595279463690677e060b4c98f2"
+    },
+    {
+      "character": "adventure_boy",
+      "visual": "supreme",
+      "original": "assets/characters/halloween/apex-adventure-boy.webp",
+      "walk": "assets/characters/walk-v2/apex-adventure-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-ecec2390-f773-466d-9b95-fe7d0f32b8ee.png",
+      "directionCorrection": null,
+      "sha256": "413c75835e0f02d11a242a0e9aaa4549f53ae2cb58056514bbd14603af97553e"
+    },
+    {
+      "character": "adventure_girl",
+      "visual": "supreme",
+      "original": "assets/characters/halloween/apex-adventure-girl.webp",
+      "walk": "assets/characters/walk-v2/apex-adventure-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-42dbced0-912f-4e4d-8b36-6c0e197d8545.png",
+      "directionCorrection": {
+        "source": "exec-cd89a715-194f-474e-9309-bb1c429de623.png",
+        "rows": [
+          2
+        ]
+      },
+      "sha256": "49417de0b938a73a9983f28a5f82692d816debfa0e117382cacd55d9b75682a6"
+    },
+    {
+      "character": "black_boy",
+      "visual": "supreme",
+      "original": "assets/characters/halloween/apex-black-boy.webp",
+      "walk": "assets/characters/walk-v2/apex-black-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-233dbce6-d2b0-499b-87ce-d125f0ea5904.png",
+      "directionCorrection": {
+        "source": "exec-c0191fe2-a599-4ebb-807b-81f724fc1a0c.png",
+        "rows": [
+          1,
+          2
+        ]
+      },
+      "sha256": "d6d9c50dceae99b2d8b6aac72d985443f51a9e4f114a503d768d09e322cf91a5"
+    },
+    {
+      "character": "black_girl",
+      "visual": "supreme",
+      "original": "assets/characters/halloween/apex-black-girl.webp",
+      "walk": "assets/characters/walk-v2/apex-black-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-7888818f-9e87-41b4-acf7-8c8e89caad16.png",
+      "directionCorrection": null,
+      "sha256": "197cf0776ada4717520bbc2d3ab7817da646249afc834b1f18335bd0b304814c"
+    },
+    {
+      "character": "gothic_boy",
+      "visual": "supreme",
+      "original": "assets/characters/halloween/apex-gothic-boy.webp",
+      "walk": "assets/characters/walk-v2/apex-gothic-boy.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-5897c2c6-b99f-467d-beab-8d1c5a3d297c.png",
+      "directionCorrection": null,
+      "sha256": "588b4b4ec919917ad8182ad07535f0db9ad04999e8a7158e7b0d86f9003c68cc"
+    },
+    {
+      "character": "gothic_girl",
+      "visual": "supreme",
+      "original": "assets/characters/halloween/apex-gothic-girl.webp",
+      "walk": "assets/characters/walk-v2/apex-gothic-girl.webp",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "grid": [
+        4,
+        4
+      ],
+      "generatedSource": "exec-47ade20d-d452-4e34-834e-411b7941ce8c.png",
+      "directionCorrection": {
+        "source": "exec-00990d31-d3a4-4152-91d6-08e885faede8.png",
+        "rows": [
+          2
+        ]
+      },
+      "sha256": "e9229fe1a181c64d214f7d5e01c899d3691b7d16109a0fca2170777751f0c5a5"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><base href="/"><title>PSYWORLD · Human Animation Studio V2</title><style>body{margin:0;background:#111d2b;color:white;font:16px system-ui}canvas#studio{display:block;margin:auto}#game-wrap,#psy-halloween-avatar{display:none!important}button{font:inherit;margin:8px}</style></head><body>
+<canvas id="studio" width="1280" height="960"></canvas><button onclick="HumanStudioV2.restart()">Recomeçar</button><nav><a href="/tests/human-animation-v2.html?look=basic">Jornada</a> · <a href="/tests/human-animation-v2.html?look=divine">Divina</a> · <a href="/tests/human-animation-v2.html?look=macabre">Macabra I</a> · <a href="/tests/human-animation-v2.html?look=macabre_alt">Macabra II</a> · <a href="/tests/human-animation-v2.html?look=supreme">Suprema</a></nav><span>Controlador de produção · cenário de inspeção · perfil descartável</span><div id="game-wrap"></div>
+<script>window.P={name:'Animation Studio',team:[],meta:{},playerCharacterId:'adventure_boy',playerCostumeByCharacter:{}};window.PsyHumanAnimationBuild=new URLSearchParams(location.search).has('build');</script>
+<script src="core/trainer-walk-v1.js"></script><script src="core/halloween-ui.js"></script>
+<script>
+(async()=>{
+ while(!window.PsyHalloweenCharacters)await new Promise(r=>setTimeout(r,10));
+ const api=PsyTrainerWalkV1,canvas=document.getElementById('studio'),ctx=canvas.getContext('2d'),catalog=[],states=new Map();
+ const requested=new URLSearchParams(location.search).get('look')||'basic';
+ const keys=[['basic','divine','macabre','macabre_alt','supreme'].includes(requested)?requested:'basic'];
+ const names={basic:'ROUPAS ORIGINAIS · TRAJE DE JORNADA',divine:'JURAMENTO DA AURORA',macabre:'MÁSCARA DO ÚLTIMO SINO',macabre_alt:'VÉU DA NÉVOA RUBRA',supreme:'COROA DO ECLIPSE ETERNO'};
+ for(const ch of PsyHalloweenCharacters)for(const key of keys){
+  const image=new Image();image.src='assets/characters/halloween/'+ch.costumes[key];await image.decode();
+  let idleImage=null,walkImage=null;if(window.PsyHumanAnimationBuild){idleImage=new Image();idleImage.src='assets/characters/idle-v2/'+ch.costumes[key];await idleImage.decode();walkImage=new Image();walkImage.src='assets/characters/walk-v2/'+ch.costumes[key];await walkImage.decode();}
+  const pack=api.getAnimationAtlas(image,idleImage,walkImage);catalog.push({id:ch.id,name:ch.name,key,image,pack});
+ }
+ const stages=[
+  {ms:1100,to:[40,80],row:0,label:'WALK SOUTH · contato e passagem'}, {ms:4400,to:[40,80],row:0,label:'IDLE SOUTH · pés e rosto estáveis'},
+  {ms:1100,to:[40,60],row:3,label:'WALK NORTH · vista traseira real'}, {ms:4400,to:[40,60],row:3,label:'IDLE NORTH · respiração sutil'},
+  {ms:1100,to:[65,60],row:2,label:'WALK EAST · cadência temporal'}, {ms:4400,to:[65,60],row:2,label:'IDLE EAST · acessórios ancorados'},
+  {ms:1100,to:[40,60],row:1,label:'WALK WEST · passos complementares aprovados'}, {ms:4400,to:[40,60],row:1,label:'IDLE WEST · mesma silhueta'},
+  {ms:400,to:[60,60],row:2,label:'Retomada → curva'}, {ms:400,to:[60,80],row:0,label:'Curva → SOUTH'},
+  {ms:400,to:[40,80],row:1,label:'Curva → WEST'}, {ms:400,to:[40,60],row:3,label:'Curva → NORTH'},
+  {ms:1000,to:[40,60],row:3,label:'Parada final · pose estabilizada'}
+ ];
+ const pageDuration=stages.reduce((n,s)=>n+s.ms,0),duration=pageDuration*keys.length;let start=performance.now();
+ function route(time){let from=[40,60];for(const s of stages){if(time<=s.ms){const n=Math.max(0,time/s.ms);return {x:from[0]+(s.to[0]-from[0])*n,y:from[1]+(s.to[1]-from[1])*n,row:s.row,moving:from[0]!==s.to[0]||from[1]!==s.to[1],label:s.label};}time-=s.ms;from=s.to;}return {x:40,y:60,row:3,moving:false,label:'Fim'};}
+ function render(time){
+  const page=Math.min(keys.length-1,Math.floor(Math.max(0,time)/pageDuration)),key=keys[page],p=route(Math.min(pageDuration,Math.max(0,time-page*pageDuration)));
+  ctx.fillStyle='#111d2b';ctx.fillRect(0,0,1280,960);ctx.fillStyle='#8edbc4';ctx.font='bold 19px system-ui';ctx.fillText('PSYWORLD · CHARACTER ANIMATION STUDIO V2',24,32);
+  ctx.fillStyle='#fff';ctx.font='bold 25px system-ui';ctx.fillText(names[key],24,69);ctx.fillStyle='#b6c9da';ctx.font='15px system-ui';ctx.fillText('Seis personagens · WALK + IDLE · novos passos aprovados · fonte original à direita',24,98);
+  const actors=[];
+  catalog.filter(c=>c.key===key).forEach((ch,i)=>{
+   const left=(i%3)*426+12,top=Math.floor(i/3)*375+132;
+   ctx.save();ctx.translate(left,top);ctx.fillStyle='#d0efe2';ctx.font='bold 18px system-ui';ctx.fillText(ch.name+' · '+ch.id,4,0);
+   ctx.translate(0,14);ctx.fillStyle='#344e43';ctx.fillRect(0,0,400,330);
+   for(let x=0;x<400;x+=32)for(let y=0;y<330;y+=32){ctx.fillStyle=(x+y)%64?'#3d574a':'#385244';ctx.fillRect(x,y,Math.min(32,400-x),Math.min(32,330-y));}
+   ctx.fillStyle='#afc6b8';ctx.font='12px system-ui';ctx.fillText('ANIMADO · ×3',12,20);ctx.fillText('FONTE · SOUTH',292,20);
+   const ref=ch.pack.bounds[0].source;const refH=78,refW=refH*ref[2]/ref[3];ctx.imageSmoothingEnabled=false;
+   ctx.drawImage(ch.image,ref[0],ref[1],ref[2],ref[3],345-refW/2,37,refW,refH);
+   const identity=ch.id+':'+key;if(!states.has(identity))states.set(identity,api.createState());
+   const x=p.x*3,y=p.y*3+15;ctx.fillStyle='#0006';ctx.beginPath();ctx.ellipse(x,y,13*3,5*3,0,0,Math.PI*2);ctx.fill();
+   const pose=api.renderAnimated(ctx,ch.pack,states.get(identity),{moving:p.moving,row:p.row,x:p.x,y:p.y,identity},x-72,y-180,144,192);
+   actors.push({id:ch.id,key,pose,x:p.x,y:p.y,sourceRow:ch.pack.profile.sourceRows[pose.row]});
+   ctx.restore();
+  });
+  ctx.fillStyle='#fff';ctx.font='bold 21px system-ui';ctx.fillText(p.label,24,918);ctx.fillStyle='#b6c9da';ctx.font='15px system-ui';ctx.fillText('Sprites originais preservados · escala sem esticar · relógio independente do deslocamento e do FPS',24,946);
+  if(window.HumanStudioV2)HumanStudioV2.state={time,page,key,label:p.label,moving:p.moving,actors};
+ }
+ function restart(){start=performance.now();states.clear();}
+ window.HumanStudioV2={ready:true,catalog,api,render,restart,duration,pageDuration,keys,states};
+ function loop(){render(performance.now()-start);requestAnimationFrame(loop)}loop();
+})();
+</script></body></html>

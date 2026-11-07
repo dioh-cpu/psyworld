@@ -447,14 +447,15 @@
     const avatar=selectedAvatar();
     if(avatar?.ready){
       const row=({down:0,left:1,right:2,up:3})[model.direction]??0;
-      const sourceFrame=performance.now()-model.lastMove<190?(W.PsyTrainerWalkV1?.column(Math.floor(performance.now()/130),true)||1):IDLE_FRAME;
+      const sourceFrame=IDLE_FRAME;
       drawNormalizedAvatar(c,avatar,row,sourceFrame,px,py+8);
     }else{
       c.fillStyle='#141a23';c.beginPath();c.ellipse(px,py+8,8,4,0,0,Math.PI*2);c.fill();
-      c.fillStyle='#e8c492';c.beginPath();c.arc(px,py-4,6,0,Math.PI*2);c.fill();c.fillStyle='#315777';c.fillRect(px-6,py+1,12,10);c.fillStyle='#f2f0e8';c.fillRect(px-5,py+11,4,4);c.fillRect(px+2,py+11,4,4);
+      // Keep the floor shadow while artwork loads; never invent another trainer.
     }
-    c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-18);W.PsySeason?.drawTitle(c,px,py-35);
+    c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-46);W.PsySeason?.drawTitle(c,px,py-61);
   }
+  let chapterAnimationState=null;
   function selectedAvatar(){
     const p=player(),id=p.playerCharacterId,character=(W.PsyHalloweenCharacters||[]).find(c=>c.id===id);
     if(!character)return null;
@@ -489,6 +490,12 @@
     } catch (_) { avatar.frameBounds=null;avatar.frameScale=1; }
   }
   function drawNormalizedAvatar(ctx,avatar,row,col,centerX,baselineY) {
+    if(W.PsyTrainerWalkV1?.getAnimationAtlas){
+      const walk=W.PsyTrainerWalkV1;if(!chapterAnimationState)chapterAnimationState=walk.createState();
+      avatar.animationAtlas=avatar.animationAtlas||walk.getAnimationAtlas(avatar.image);
+      ctx.fillStyle='#0008';ctx.beginPath();ctx.ellipse(centerX,baselineY,13,5,0,0,Math.PI*2);ctx.fill();
+      walk.renderAnimated(ctx,avatar.animationAtlas,chapterAnimationState,{moving:!!model.held||!!model.autoPath?.length,discrete:true,row,x:model.x,y:model.y,identity:model.place.id+':'+avatar.image.src},centerX-24,baselineY-60,48,64);return;
+    }
     if(W.PsyTrainerWalkV1){const atlas=W.PsyTrainerWalkV1.getAtlas(avatar.image);W.PsyTrainerWalkV1.draw(ctx,atlas,row,col,centerX-24,baselineY-60,48,64);return;}
     const image=avatar.image,cols=avatar.frameCols||4,index=row*cols+col,box=avatar.frameBounds?.[index];
     if(!box){ctx.drawImage(image,col*SHEET_CELL,row*SHEET_CELL,SHEET_CELL,SHEET_CELL,centerX-25,baselineY-50,50,50);return;}

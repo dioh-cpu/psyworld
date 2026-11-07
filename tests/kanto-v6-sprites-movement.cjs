@@ -4,9 +4,9 @@ require('./trainer-walk-v7.cjs');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'../core/kanto-world-v2.js'),'utf8');
 const part=(start,end)=>{const a=source.indexOf(start),b=source.indexOf(end,a+1);assert(a>=0&&b>a,'missing movement function '+start);return source.slice(a,b)};
-const body=part('function move(dx,dy,dt){','function maybeEncounter(){')+part('function tick(now){','function onKeyDown(e){');
+const body='let autoHunt=false,huntPlanning=false,huntPlanAt=0;'+part('function move(dx,dy,dt,maxDistance=Infinity){','function maybeEncounter(){')+part('function tick(now){','function onKeyDown(e){');
 function distance(fps){
- const state={root:{classList:{contains:()=>true}},dialogOpen:false,suspended:false,
+ const state={root:{classList:{contains:()=>true},dataset:{},querySelector:()=>null},dialogOpen:false,suspended:false,
    world:{id:'pallet'},inside:null,position:{x:0,y:500},held:new Set(['up']),
    joy:null,path:[],stepDistance:0,walkFrame:0,lastRender:0,time:0};
  const tick=new Function('state','positionValid','DATA','performance','W','draw',body+'return tick')(

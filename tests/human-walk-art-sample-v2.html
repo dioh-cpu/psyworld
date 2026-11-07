@@ -1,0 +1,23 @@
+<!doctype html><html lang="pt-BR"><head><base href="/"><meta charset="utf-8"><style>body{margin:0;background:#111d2b;color:#fff;font:16px system-ui}canvas{display:block;margin:auto}</style></head><body><canvas id="studio" width="1280" height="820"></canvas>
+<script src="core/trainer-walk-v1.js"></script><script>
+(async()=>{
+ const source=new Image(),idle=new Image();source.src='tests/fixtures/walk-v2-sample/basic-adventure-boy.png';idle.src='assets/characters/idle-v2/basic-adventure-boy.webp';await Promise.all([source.decode(),idle.decode()]);
+ const api=PsyTrainerWalkV1,pack=api.getAnimationAtlas(source,idle),canvas=document.getElementById('studio'),c=canvas.getContext('2d');let start=performance.now(),states=Array.from({length:4},()=>api.createState());
+ function render(time){
+  const elapsed=Math.max(0,time-1500),travel=Math.min(9000,elapsed)/9000*6,moving=time>=1500&&time<10500;
+  c.fillStyle='#111d2b';c.fillRect(0,0,1280,820);c.fillStyle='#8edbc4';c.font='bold 20px system-ui';c.fillText('PSYWORLD · AMOSTRA DE FRAMES WALK · POSES E IDENTIDADE APROVADAS',24,33);
+  c.fillStyle='#fff';c.font='bold 22px system-ui';c.fillText('Aventureiro original · passos complementares · referência aprovada antes da expansão',24,70);
+  for(const [i,row]of [0,3,2,1].entries()){
+   const x=(i%2)*640+12,y=Math.floor(i/2)*330+105;c.save();c.translate(x,y);c.fillStyle='#d0efe2';c.font='bold 18px system-ui';c.fillText(['SOUTH','WEST','EAST','NORTH'][row],4,0);
+   c.translate(0,13);c.fillStyle='#385244';c.fillRect(0,0,616,300);c.fillStyle='#b6c9da';c.font='13px system-ui';c.fillText('CONTROLADOR REAL · ×4',10,20);c.fillText('NOVA ARTE WALK',430,20);
+   const ref=pack.bounds[row*4].source,sourceRow=pack.profile.sourceRows[row],h=118,w=h*ref[2]/ref[3];c.imageSmoothingEnabled=false;c.drawImage(source,ref[0],sourceRow*(source.naturalHeight/4)+ref[1],ref[2],ref[3],492-w/2,75,w,h);
+   const px=row===2?travel:row===1?-travel:0,py=row===0?travel:row===3?-travel:0,ax=200+px*4,ay=225+py*4;
+   c.fillStyle='#0006';c.beginPath();c.ellipse(ax,ay,52,20,0,0,Math.PI*2);c.fill();
+   const pose=api.renderAnimated(c,pack,states[i],{moving,row,x:px,y:py,identity:'idle-art-sample:'+row},ax-96,ay-240,192,256);
+   c.fillStyle='#eef7fb';c.font='14px system-ui';c.fillText(pose.state.toUpperCase(),12,282);c.restore();
+  }
+  c.fillStyle='#b6c9da';c.font='15px system-ui';c.fillText('Esta amostra não substitui a arte do jogo. Escala e chão normalizados; amostra histórica aprovada; jogo usa composição com cabeça original.',24,805);
+ }
+ window.HumanIdleSampleV2={ready:true,duration:12500,pack,restart(){start=performance.now();states=Array.from({length:4},()=>api.createState());},render};
+ function loop(){render(Math.min(12500,performance.now()-start));requestAnimationFrame(loop)}loop();
+})();</script></body></html>

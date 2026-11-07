@@ -41,6 +41,8 @@
     { key: 'supreme', label: 'Coroa do Eclipse Eterno', note: 'Visual especial' }
   ];
   const imageCache = new Map();
+  const previewStates = new WeakMap();
+  let previewRaf = 0;
   let selectedCharacter = CHARACTERS[4].id;
   let currentPickerKind = 'new';
 
@@ -73,8 +75,27 @@
     if (!entry || !ctx || !entry.ready) return false;
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(entry.img, col * CELL, row * CELL, CELL, CELL, 0, 0, w, h);
+    const walk=W.PsyTrainerWalkV1;
+    if(walk?.getAnimationAtlas){
+      entry.animationAtlas=entry.animationAtlas||walk.getAnimationAtlas(entry.img);
+      if(!previewStates.has(canvas))previewStates.set(canvas,walk.createState());
+      const pose=walk.sampleState(previewStates.get(canvas),{moving:false,row,identity:id+':'+key,profile:entry.animationAtlas.profile});
+      if(entry.animationAtlas.compiledStatus==='loading')return false;
+      if(!entry.previewFit){
+        const pack=entry.animationAtlas,probe=D.createElement('canvas');probe.width=pack.cellWidth;probe.height=pack.cellHeight;
+        const pc=probe.getContext('2d',{willReadFrequently:true}),tile=48;
+        pc.drawImage(pack.image,(tile%pack.columns)*pack.cellWidth,Math.floor(tile/pack.columns)*pack.cellHeight,pack.cellWidth,pack.cellHeight,0,0,probe.width,probe.height);
+        const pixels=pc.getImageData(0,0,probe.width,probe.height).data;let left=probe.width,right=0;
+        for(let y=0;y<probe.height;y++)for(let x=0;x<probe.width;x++)if(pixels[(y*probe.width+x)*4+3]>32){left=Math.min(left,x);right=Math.max(right,x+1);}
+        const extent=Math.max(pack.profile.anchor[0]-left/2,right/2-pack.profile.anchor[0]);
+        entry.previewFit=Math.min(h*.9/64,(w-8)/(2*Math.max(1,extent)));probe.width=probe.height=1;
+      }
+      const height=entry.previewFit*64,width=height*.75;
+      walk.drawAnimated(ctx,entry.animationAtlas,pose,(w-width)/2,h-5-60/64*height,width,height);
+    }else{
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(entry.img, col * CELL, row * CELL, CELL, CELL, 0, 0, w, h);
+    }
     return true;
   }
   function drawPreviewCanvases() {
@@ -103,7 +124,7 @@
       .psy-halloween-action{min-height:44px;padding:10px 18px;border:1px solid #64748b;border-radius:11px;background:#1e293b;color:#fff;font-weight:800;cursor:pointer}
       .psy-halloween-action.primary{border-color:#f6bd60;background:linear-gradient(135deg,#9a5b24,#d08b31);color:#160f08}
       .psy-halloween-action:disabled{opacity:.45;cursor:not-allowed}
-      #psy-halloween-avatar{position:absolute;left:50%;top:50%;width:118px;height:118px;z-index:9;display:none;pointer-events:none;image-rendering:pixelated;transform:translate(-50%,-82%);transform-origin:center bottom;will-change:transform}
+      #psy-halloween-avatar{position:absolute;left:50%;top:50%;width:192px;height:118px;z-index:9;display:none;pointer-events:none;image-rendering:pixelated;transform:translate(-50%,-82%);transform-origin:center bottom;will-change:transform}
       @media(max-width:520px){.psy-halloween-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.psy-halloween-card{padding:9px}.psy-halloween-preview{width:82px;height:82px}}
     `;
     D.head.appendChild(style);
@@ -122,7 +143,11 @@
     D.body.appendChild(el);
     return el;
   }
-  function openScreen(el) { el.classList.add('is-open'); }
+  function openScreen(el) {
+    el.classList.add('is-open');
+    // UI-only repaint; world actors continue to use their existing scene loops.
+    if(!previewRaf){const tick=()=>{previewRaf=0;if(!D.querySelector('.psy-halloween-screen.is-open'))return;drawPreviewCanvases();previewRaf=W.requestAnimationFrame(tick);};previewRaf=W.requestAnimationFrame(tick);}
+  }
   function closeScreen(el) { el?.classList.remove('is-open'); }
   function renderCharacterCards(screen, selectedId, onPick) {
     const grid = screen.querySelector('.psy-halloween-grid');
@@ -158,7 +183,7 @@
     if (!canvas && wrap) {
       canvas = D.createElement('canvas');
       canvas.id = 'psy-halloween-avatar';
-      canvas.width = canvas.height = 118;
+      canvas.width = 192; canvas.height = 118;
       canvas.setAttribute('aria-hidden', 'true');
       wrap.appendChild(canvas);
     }
@@ -181,20 +206,8 @@
     if (W.__psyIdleActive || W.PSY_RUNTIME_MODE?.is?.('adventure')) return false;
     return true;
   }
-  // City and Kanto use the same four-step walking cycle and prerendered poses.
-  const cityWalk={phase:0,last:0,moving:false,identity:''};
-  function cityWalkPhase(moving,identity){
-    const now=W.performance?.now?.()||Date.now();
-    if(!moving){cityWalk.moving=false;cityWalk.phase=0;cityWalk.last=now;return 0}
-    if(!cityWalk.moving||cityWalk.identity!==identity){
-      cityWalk.phase=0;cityWalk.last=now;cityWalk.moving=true;cityWalk.identity=identity;
-    }else if(now-cityWalk.last>=130){
-      const steps=Math.min(4,Math.floor((now-cityWalk.last)/130));
-      cityWalk.phase=(cityWalk.phase+steps)%4;
-      cityWalk.last+=steps*130;
-    }
-    return cityWalk.phase;
-  }
+  // One visual state for the city actor; never changes player movement.
+  let cityAnimationState=null;
   function renderAvatar() {
     const p = player(), id = p?.playerCharacterId, c = character(id);
     const img = D.getElementById('player-poke-sprite');
@@ -211,18 +224,18 @@
     if (img) img.style.display = 'none';
     const moving = !!p.moving;
     const walk=W.PsyTrainerWalkV1;
-    const phase=cityWalkPhase(moving,id+':'+key);
-    const frame=walk?walk.column(phase,moving):moving?[1,2,3,2][phase]:0;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if(walk){
-      if(!entry.walkAtlas)entry.walkAtlas=walk.getAtlas(entry.img);
-      if(entry.walkAtlas){
-        ctx.imageSmoothingEnabled=true;
-        walk.draw(ctx,entry.walkAtlas,directionRow(),frame,15,14,88,94);
+    if(walk?.getAnimationAtlas){
+      if(!entry.animationAtlas)entry.animationAtlas=walk.getAnimationAtlas(entry.img);
+      if(!cityAnimationState)cityAnimationState=walk.createState();
+      if(entry.animationAtlas){
+        // Preserve height and floor position while avoiding the old wide stretch.
+        const height=94,width=height*48/64;
+        walk.renderAnimated(ctx,entry.animationAtlas,cityAnimationState,{moving,row:directionRow(),x:Number(p.px),y:Number(p.py),identity:'city:'+id+':'+key},(canvas.width-width)/2,14,width,height);
       }
     }else{
       ctx.imageSmoothingEnabled=false;
-      ctx.drawImage(entry.img,frame*CELL,directionRow()*CELL,CELL,CELL,0,0,canvas.width,canvas.height);
+      ctx.drawImage(entry.img,0*CELL,directionRow()*CELL,CELL,CELL,0,0,canvas.width,canvas.height);
     }
     // No CSS bounce: canvas and feet stay at the same world-space position.
     canvas.style.transform='translate(-50%, -82%)';

@@ -238,9 +238,10 @@ function selectedAvatar(){
   return entry;
 }
 // Cached sprite atlas, prepared after the image finishes loading.
+let humanAnimationState=null;
 function prepareAvatar(entry){
   const walk=W.PsyTrainerWalkV1;
-  if(walk){entry.atlas=walk.getAtlas(entry.im);entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight}
+  if(walk){entry.animationAtlas=walk.getAnimationAtlas?.(entry.im);if(!entry.animationAtlas)entry.atlas=walk.getAtlas(entry.im);entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight}
 }
 function drawPlayer(c,x,y){
   c.save();
@@ -250,16 +251,18 @@ function drawPlayer(c,x,y){
   if(entry?.loaded){
     const row=({down:0,left:1,right:2,up:3})[state.facing]||0;
     const moving=state.moving;
-    const col=W.PsyTrainerWalkV1?.column(Math.floor(state.walkFrame),moving)||0;
-    c.imageSmoothingEnabled=true;
-    if(entry.atlas&&W.PsyTrainerWalkV1){
-      // Real player art, 48x64 cell, always anchored to the shadow.
-      W.PsyTrainerWalkV1.draw(c,entry.atlas,row,col,x-24,y+7-64,48,64);
+    const walk=W.PsyTrainerWalkV1;
+    if(entry.animationAtlas&&walk?.renderAnimated){
+      if(!humanAnimationState)humanAnimationState=walk.createState();
+      walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving,row,x,y,identity:state.world.id+':'+(state.inside?.id||'outside')+':'+entry.im.src},x-24,y+5-60,48,64);
+      usedSprite=true;
+    }else if(entry.atlas&&walk){
+      walk.draw(c,entry.atlas,row,walk.column(Math.floor(state.walkFrame),moving),x-24,y+7-64,48,64);
       usedSprite=true;
     }else if(entry.im?.naturalWidth&&entry.im?.naturalHeight){
       // Graphics still work if atlas preprocessing fails or an older profile loads.
       const sw=entry.im.naturalWidth/4,sh=entry.im.naturalHeight/4;
-      c.drawImage(entry.im,col*sw+sw*.25,row*sh+sh*.22,sw*.5,sh*.58,
+      c.drawImage(entry.im,0*sw+sw*.25,row*sh+sh*.22,sw*.5,sh*.58,
         x-16.5,y+7-46,33,46);
       usedSprite=true;
     }
