@@ -9,14 +9,14 @@ const note=t=>W.notif?.(t,2600);
 function requireVip(){if(vip())return true;note('Recurso exclusivo VIP.');return false;}
 function setAutomatic(on){if(on&&!requireVip())return false;automatic=!!on;renderButtons();return automatic;}
 const style=D.createElement('style');style.textContent=`
-#psy-campaign-quests{position:absolute;top:8px;right:8px;z-index:4;width:min(235px,48%);padding:9px;border:1px solid #d6ae61;border-radius:12px;background:#101b2be8;color:#eef5ff;font:12px/1.35 system-ui;box-sizing:border-box;pointer-events:auto}
-#psy-campaign-quests .pq-row{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid #ffffff15}
+#psy-campaign-quests{position:absolute;top:4px;right:6px;z-index:4;width:min(210px,44%);padding:5px;border:1px solid #d6ae61;border-radius:12px;background:#101b2be8;color:#eef5ff;font:12px/1.35 system-ui;box-sizing:border-box;pointer-events:auto}
+#psy-campaign-quests .pq-row{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;padding:4px 0;border-bottom:1px solid #ffffff15}
 #psy-campaign-quests small{display:block;color:#ffdb8a;font-size:10px;font-weight:800}
 #psy-campaign-quests button,#psy-campaign-tools button,#psy-auto-battle button{min-height:36px;padding:7px 10px;border:1px solid #68baba;border-radius:9px;background:#163b50;color:#fff;font:bold 11px system-ui;cursor:pointer}
 #psy-campaign-tools{position:absolute;bottom:10px;right:10px;z-index:4;display:flex;gap:6px}
 #psy-auto-battle{position:absolute;top:46px;left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:6px;max-width:96%}
 #psy-auto-battle button[aria-pressed=true],#psy-campaign-tools button[aria-pressed=true]{background:#1d705a;border-color:#86efac}
-@media(max-width:600px){#psy-campaign-quests{width:46%;font-size:11px;padding:6px}#psy-auto-battle button{font-size:10px;padding:6px;min-height:34px}}
+@media(max-width:600px){#psy-campaign-quests{width:44%;font-size:10px;padding:4px}#psy-auto-battle button{font-size:10px;padding:6px;min-height:34px}}
  #psy-campaign-tools[hidden],#psy-campaign-quests[hidden]{display:none!important}
 #btn-idle-realistic-float,[data-mode-card=idleworld]{display:none!important}
 `;D.head.appendChild(style);
@@ -62,7 +62,7 @@ function questRows(){
  if(chapter?.length)main.push(...chapter);
  else if(!q.oak)main.push({id:'story-oak',kind:'main',title:'Fale com o Professor Car’alho',goal:'oak'});
  else if(!q.viridian)main.push({id:'story-route1',kind:'main',title:'Atravesse a Rota 1 até Viridian',goal:'viridian'});
- else main.push({id:'story-viridian',kind:'main',title:'Explore Viridian City'});
+ else main.push({id:'story-viridian',kind:'main',title:'Explore Viridian City',goal:'explore-viridian'});
  const raw=player().meta?.activeQuests||player().quests?.active||[];
  const active=(Array.isArray(raw)?raw:Object.values(raw)).map(q=>({...q,title:q.title||q.name||q.n,kind:q.kind||q.category||'side'}));
  return [...main,...active,...extra,...(W.PsyProfessions?.questRows?.()||[])].filter(q=>q&&q.title&&q.status!=='completed'&&q.status!=='claimed');
@@ -79,6 +79,11 @@ async function find(q){
   if(api()?.getPosition?.().inside)api()?.leaveInterior();
   if(api()?.getPosition?.().world!=='route-1')api()?.open('route-1');
   await api()?.navigate([848,87]);note('Seguindo para a entrada de Viridian.');
+ }else if(q.goal==='explore-viridian'){
+  if(api()?.getPosition?.().inside)api()?.leaveInterior();
+  const opened=W.PsyKantoPlayableV1?.open?.('viridian');
+  if(opened)note('Viridian City aberta. Siga até o objetivo da Quest.');
+  else note('Entre em Kanto · Jornada para abrir Viridian City.');
  }else if(Array.isArray(q.at)){await api()?.navigate(q.at);}
  else note('Abra o diário para consultar esse objetivo.');
 }
@@ -102,7 +107,7 @@ function updateTracker(){
   const row=D.createElement('div');row.className='pq-row';const copy=D.createElement('div'),tag=D.createElement('small');
   tag.textContent=({main:'HISTÓRIA',side:'SECUNDÁRIA',event:'EVENTO'})[q.kind||q.category]||'QUEST';
   const text=D.createElement('span');text.textContent=q.title;copy.append(tag,text);row.appendChild(copy);
-  if(q.goal||Array.isArray(q.at)){const b=D.createElement('button');b.textContent='IR';b.setAttribute('aria-label','Auto Find: '+q.title);b.onclick=()=>find(q);row.appendChild(b);}
+  if(q.goal||Array.isArray(q.at)){const b=D.createElement('button');b.textContent='ROTA';b.setAttribute('aria-label','Auto Route: '+q.title);b.onclick=()=>find(q);row.appendChild(b);}
   tracker.appendChild(row);
  });
 }
