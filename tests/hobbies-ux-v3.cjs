@@ -5,7 +5,7 @@ new Function(src);
 assert(html.includes('>MATERIAIS</button>'));
 assert(!html.includes('>CRAFT</button>'));
 assert(!html.includes('src="core/hobbies-v1.js?'));
-assert(html.includes('core/hobbies-v2.js?build=CAMPAIGN_MENUS_V2_20261107'));
+assert(html.includes('core/hobbies-v2.js?build=CAMPAIGN_MENUS_V3_20261107'));
 assert(src.includes('f.red=red?f.red+dt:0;'),'Uninterrupted red tension rule');
 assert(src.includes('fishingRun.meter=Math.min(1,fishingRun.meter+.045)'),'Tap interaction');
 assert(src.includes('if(hit<5)'),'Five-hit mining and logging');
@@ -17,6 +17,6 @@ assert(src.includes("gathered.fisher=count(gathered.fisher)+1"),'Successful fish
 assert(src.includes("a.hits+'/5'"),'Harvest progress must be visible on nodes');
 assert(src.includes('data-hobby-overview'),'Hobbies dashboard must show activity summary');
 assert(html.includes('core/hobby-mastery-v1.js?build=CAMPAIGN_MENUS_V2_20261107'),'Mastery script should be loaded');
-assert(html.includes('css/hobby-campaign-v1.css?build=CAMPAIGN_MENUS_V2_20261107'),'Fantasy UI style should load');
+assert(html.includes('css/hobby-campaign-v1.css?build=CAMPAIGN_MENUS_V3_20261107'),'Fantasy UI style should load');
 assert(src.includes('PsyHobbyMastery?.renderInto'),'Skill trees should be embedded in hobby details');
 console.log('PASS: Hobbies UI, fishing, harvest counters and gather regression');
