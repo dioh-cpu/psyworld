@@ -149,8 +149,10 @@ function autoTurn(){
 function refresh(){
  const legacy=D.getElementById('psy-kanto-world'),root=legacy?.classList.contains('open')?legacy:D.getElementById('psy-kanto-world-v2'),stage=root?.querySelector('.kw2-stage,.kp-stage'),arena=D.querySelector('#battle-screen .battle-hud');
  const city=D.getElementById('game-wrap'),campaignOpen=root?.classList.contains('open');
- const mapHost=campaignOpen?stage:city;
- if(mapHost){if(tracker.parentElement!==mapHost)mapHost.appendChild(tracker);if(tools.parentElement!==mapHost)mapHost.appendChild(tools);updateTracker();}
+ const isNewCampaign=campaignOpen&&root?.id==='psy-kanto-world-v2';
+  const mapHost=isNewCampaign?(root.querySelector('[data-kanto-quest-slot]')||stage):(campaignOpen?stage:city);
+  const toolsHost=isNewCampaign?(root.querySelector('[data-kanto-auto-slot]')||stage):mapHost;
+ if(mapHost){if(tracker.parentElement!==mapHost)mapHost.appendChild(tracker);if(tools.parentElement!==toolsHost)toolsHost.appendChild(tools);updateTracker();}
  tracker.hidden=!mapHost||(!campaignOpen&&(!city||W.getComputedStyle(city).display==='none'))||!questRows().length;
  tools.hidden=!campaignOpen;
  if(arena&&bar.parentElement!==arena)arena.appendChild(bar);
@@ -159,7 +161,7 @@ function refresh(){
  renderButtons();advanceFind().catch(()=>{findTask=null;});
  if(D.visibilityState==='visible')autoTurn();
 }
-W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,autoFind:find,stop:stopAutomation,configure,preferences,huntActive};
+W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,autoFind:find,startPrimaryRoute:()=>{const rows=questRows(),q=rows.find(x=>x.kind==='main'&&(x.goal||Array.isArray(x.at)))||rows.find(x=>x.goal||Array.isArray(x.at));if(q)return find(q);note('Não há uma rota ativa no momento.');},stop:stopAutomation,configure,preferences,huntActive};
 renderButtons();W.setInterval(refresh,600);
 })(window,document);
 

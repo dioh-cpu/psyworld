@@ -1,0 +1,19 @@
+/* node tests/kanto-campaign-menu-v65.cjs — scene HUD/menu regression checks */
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const world=fs.readFileSync('core/kanto-world-v2.js','utf8');
+const auto=fs.readFileSync('core/campaign-automation-v1.js','utf8');
+const css=fs.readFileSync('css/kanto-world-v2.css','utf8');
+const html=fs.readFileSync('index.html','utf8');
+assert(world.includes('data-kw2-menu')&&world.includes('data-kw2-route'),'Menu and quick route must appear in Kanto header');
+for(const kind of ['team','bag','pokedex','professions','gyms','shop'])assert(world.includes('data-kw2-panel="'+kind+'"'),'Missing menu panel '+kind);
+assert(world.includes("state.root.style.visibility='hidden'"),'External panels need readable foreground layer');
+assert(world.includes("state.root.style.visibility=''"),'Campaign must resume after panel closes');
+assert(world.includes("if(state.menuOpen){state.raf=W.requestAnimationFrame(tick);return;}"),'Pause movement behind menu');
+assert(auto.includes("root.querySelector('[data-kanto-quest-slot]')"),'Mission tracker must move out of map');
+assert(auto.includes("root.querySelector('[data-kanto-auto-slot]')"),'Auto Hunt control must move out of map');
+assert(auto.includes('startPrimaryRoute:'),'Route button must start active story objective');
+assert(css.includes('#psy-kanto-world-v2 #psy-campaign-quests{position:static'),'Tracker must not overlay the canvas');
+assert(css.includes('@media(max-height:500px) and (orientation:landscape)'),'Landscape menu must be responsive');
+for(const path of ['core/kanto-world-v2.js','core/campaign-automation-v1.js','css/kanto-world-v2.css'])assert(html.includes(path+'?build=KANTO_CAMPAIGN_MENU_V65_20261107'),'Cache mismatch: '+path);
+new Function(world);new Function(auto);
+console.log('PASS: Kanto menu links, quick route, no fixed quest HUD, external panel recovery, mobile CSS and cache');
