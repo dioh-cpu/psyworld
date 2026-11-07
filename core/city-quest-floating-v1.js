@@ -80,7 +80,11 @@ W.PsyCityQuestFloating={
  host:()=>drawer,
  refresh:(cityVisible,questCount)=>{
   const modalOpen=!!D.querySelector('.psy-season-modal:not([hidden]),#psy-halloween-shop:not([hidden])');
-  const visible=!!cityVisible&&questCount>0&&!modalOpen&&!D.body.classList.contains('psy-kanto-v2-active')&&!D.body.classList.contains('psy-shell-open');
+  const battleOpen=typeof inBattle!=='undefined'&&!!inBattle;
+  const otherScreen=['menu','screen-team','screen-bag','screen-pokedex','screen-shop','screen-gyms']
+   .some(id=>{const el=D.getElementById(id);return !!el&&W.getComputedStyle(el).display!=='none'});
+  const visible=!!cityVisible&&questCount>0&&!modalOpen&&!battleOpen&&!otherScreen&&
+   !D.body.classList.contains('psy-kanto-v2-active')&&!D.body.classList.contains('psy-shell-open');
   fab.hidden=!visible;if(!visible){drawer.hidden=true;return}
   drawer.hidden=!opened;
   if(opened)positionDrawer();
