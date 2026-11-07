@@ -780,15 +780,7 @@ function migratePoke(p){
     }catch(e){}
 }
 
-function autoSave() {
-    try{
-        const saveData = { v:2, player: P, map: { x: P.x, y: P.y, px: P.px, py: P.py }, time: Date.now() };
-        const str = safeStringify(saveData); if(!str) return;
-        localStorage.setItem(SAVE_KEY, str);
-        localStorage.setItem(SAVE_BACKUP_KEY, str);
-        localStorage.setItem('psyWorldSave', str); // compat
-    }catch(e){ console.warn(e); }
-}
+// autoSave is defined below alongside the validated backup and restore logic.
 
 window.PsyWorldProgressV1 = {
     snapshot(){
