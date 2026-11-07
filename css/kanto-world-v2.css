@@ -174,3 +174,7 @@ body.psy-kanto-v2-active #psy-audio-quick-toggle{display:none!important}
  #psy-kanto-world-v2 .kw2-menu-columns{grid-template-columns:repeat(2,minmax(0,1fr))}
  #psy-kanto-world-v2 .kw2-menu-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+
+/* Kanto V70: the all-modes action is distinct, visible and mobile-friendly. */
+#psy-kanto-world-v2 .kw2-menu-actions [data-kw2-panel="allmodes"]{grid-column:1/-1;min-height:52px;background:linear-gradient(115deg,#17615c,#184969);border-color:#8eede0;color:#edfff9;letter-spacing:.02em}
+#psy-kanto-world-v2 .kw2-menu-actions [data-kw2-panel="hobbies"]{border-color:#a2e8a3;background:linear-gradient(145deg,#1f5048,#10322b)}

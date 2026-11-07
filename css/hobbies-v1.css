@@ -1,0 +1,27 @@
+/* PSYWORLD Hobbies / auxiliary profession gallery */
+#psy-hobbies{position:fixed;inset:0;z-index:2147483647;background:#020713e9;display:none;align-items:center;justify-content:center;padding:10px;color:#f4f7fc;font-family:system-ui,Arial,sans-serif;box-sizing:border-box;overscroll-behavior:contain}
+#psy-hobbies.show{display:flex}
+#psy-hobbies *{box-sizing:border-box}
+#psy-hobbies .ph-shell{background:radial-gradient(ellipse at 92% 5%,#244c6966,transparent 55%),linear-gradient(160deg,#101e34,#080f1d);border:1px solid #98e5dd;border-radius:21px;box-shadow:0 16px 70px #000c;width:min(880px,100%);max-height:100%;overflow:auto;overscroll-behavior:contain;padding:clamp(12px,3vw,24px)}
+#psy-hobbies .ph-header{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+#psy-hobbies .ph-header small{color:#79dede;font-size:11px;letter-spacing:.09em;font-weight:800}
+#psy-hobbies .ph-header h2{color:#ffe1ac;font-weight:1000;font-size:clamp(23px,5vw,34px);margin:2px 0 7px}
+#psy-hobbies p{color:#c3d5e1;font-size:12px;line-height:1.5;margin:0}
+#psy-hobbies .ph-header button{border:1px solid #d58e9d;border-radius:12px;background:#59303d;color:#fff;font-size:23px;min-width:42px;min-height:42px;cursor:pointer}
+#psy-hobbies .ph-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#psy-hobbies .ph-card{min-width:0;overflow:hidden;border:1px solid var(--hobby-accent);border-radius:15px;background:linear-gradient(135deg,#17253e,#0c1829);box-shadow:inset 0 1px #ffffff19}
+#psy-hobbies .ph-illustration{height:140px;position:relative;background:radial-gradient(ellipse at 50% 15%,#1c426b,#112338 70%);display:flex;align-items:center;justify-content:center}
+#psy-hobbies .ph-illustration img{width:100%;height:100%;object-fit:contain;display:block}
+#psy-hobbies .ph-level{position:absolute;right:9px;top:8px;padding:4px 7px;border-radius:7px;background:#091627e8;color:#ffe9b4;border:1px solid #ffffff38;font-size:11px;font-weight:900}
+#psy-hobbies .ph-card-body{padding:11px 13px;display:flex;flex-direction:column;gap:7px}
+#psy-hobbies .ph-card h3{color:var(--hobby-accent);margin:0;font-size:17px}
+#psy-hobbies .ph-card small{color:#9abec8;font-size:11px}
+#psy-hobbies .ph-progress-line{display:flex;flex-direction:column;gap:4px;color:#dceef0;font-size:11px}
+#psy-hobbies .ph-track{height:8px;border-radius:8px;border:1px solid #45677c;background:#081522;overflow:hidden}
+#psy-hobbies .ph-track i{display:block;height:100%;background:linear-gradient(90deg,#297991,var(--hobby-accent));border-radius:8px}
+#psy-hobbies .ph-card button{background:linear-gradient(110deg,#176e77,#1f5164);color:#eafffb;border:1px solid #93dedc;min-height:41px;border-radius:9px;font-weight:800;font-size:11px;cursor:pointer;margin-top:4px}
+#psy-hobbies .ph-card button:disabled{cursor:default;color:#b8c7cd;background:#1c3041;border-color:#405d69}
+#psy-hobbies .ph-foot{padding:12px 3px 0;font-size:11px;text-align:center}
+@media(max-width:520px){#psy-hobbies{padding:6px}#psy-hobbies .ph-shell{padding:10px;border-radius:14px}#psy-hobbies .ph-grid{gap:8px}#psy-hobbies .ph-illustration{height:104px}#psy-hobbies .ph-card-body{padding:8px;gap:5px}#psy-hobbies .ph-card h3{font-size:14px}#psy-hobbies .ph-card button{font-size:10px}}
+@media(max-width:340px){#psy-hobbies .ph-grid{grid-template-columns:1fr}}
+@media(max-height:500px) and (orientation:landscape){#psy-hobbies .ph-illustration{height:85px}#psy-hobbies .ph-shell{max-height:calc(100dvh - 8px)}}
