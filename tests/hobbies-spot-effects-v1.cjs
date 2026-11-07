@@ -10,6 +10,14 @@ const vfxSource=fs.readFileSync('core/hobbies-vfx-v1.js','utf8');
 const handoffSource=fs.readFileSync('core/hobby-spot-effects-v1.js','utf8');
 const mapSource=fs.readFileSync('core/kanto-map-data-v2.js','utf8');
 for(const src of [hobbySource,masterySource,vfxSource,handoffSource,mapSource])new Function(src);
+const toolManifest=JSON.parse(fs.readFileSync('assets/hobbies/tools/manifest.json','utf8'));
+assert.deepEqual(toolManifest.materials,['copper','iron','silver','gold','coal','ruby','sapphire','jade']);
+for(const type of toolManifest.tools)for(const material of toolManifest.materials){
+ const bytes=fs.readFileSync(`assets/hobbies/tools/${type}-${material}.png`);
+ assert.equal(bytes.readUInt32BE(16),64,`${type}-${material} width`);
+ assert.equal(bytes.readUInt32BE(20),64,`${type}-${material} height`);
+ assert.equal(bytes[25],6,`${type}-${material} must preserve RGBA transparency`);
+}
 
 const ids=['miner','lumber','gardener','fisher','engineer','herbalist','researcher','professor','stylist','echo','dream','twilight','alchemist'];
 const p={inventory:{},team:[{id:1,level:5,exp:0}],meta:{auxHobbiesV1:Object.fromEntries(ids.map(id=>[id,{level:1,xp:0,base:{}}]))}};
@@ -30,8 +38,9 @@ load(mapSource);load(vfxSource);load(handoffSource);
 assert.equal(W.PsyHobbyMasterySpotReady,true,'All four Hobby effects should pass the capability handoff');
 assert.deepEqual(Array.from(W.PsyHobbySpotEffects.activities),['miner','lumber','gardener','fisher']);
 assert.equal(W.PsyHobbySpotEffects.earlyMineReachable,true,'The early Route 1 mining node has a collision-safe interaction point');
-assert(W.PsyHobbySpotEffects.limitations.oreStrike===false&&W.PsyHobbySpotEffects.limitations.woodChopping===false,
- 'The capability report must keep the missing human tool actions explicit');
+assert(W.PsyHobbySpotEffects.limitations.oreStrike===true&&W.PsyHobbySpotEffects.limitations.woodChopping===true,
+ 'The capability report must match the implemented miner and lumber actions');
+assert.equal(Object.keys(W.PsyHobbiesVFX.debug().tools).length,16,'All material-specific tools are registered by the VFX layer');
 
 // Production action callback is elapsed-time based and fires once at contact.
 for(const fps of [30,60,120]){
@@ -45,6 +54,19 @@ for(const fps of [30,60,120]){
  assert.equal(impactCount,1,'Impact callback must fire once at '+fps+' FPS');
  assert(Math.abs(impactAt-1000*11/30)<=1000/fps+.01,'Impact time drifted at '+fps+' FPS: '+impactAt);
  assert.equal(W.PsyHobbiesVFX.blocksMovement('fps-'+fps),false,'Action lock must clear back to IDLE after completion');
+}
+const directions=[
+ ['down',{x:0,y:0},{x:0,y:24},0],['left',{x:0,y:0},{x:-24,y:0},1],
+ ['right',{x:0,y:0},{x:24,y:0},2],['up',{x:0,y:0},{x:0,y:-24},3]
+];
+for(const fps of [30,60,120])for(const kind of ['miner','lumber'])for(const [facing,actor,target,row] of directions){
+ now=0;let impacts=0,impactAt=null;const scene=`${kind}-${facing}-${fps}`;
+ assert(W.PsyHobbiesVFX.beginAction({scene,node:{id:'spot',kind,x:target.x,y:target.y},actor:{...actor,facing},onImpact:()=>{impacts++;impactAt=now}}));
+ assert.equal(W.PsyHobbiesVFX.actionVisual(W.PsyHobbiesVFX.sampleAction(scene,{x:actor.x,y:actor.y})).row,row,`${kind} must face ${facing}`);
+ for(let frame=1;frame<=fps;frame++){now=frame*1000/fps;W.PsyHobbiesVFX.sampleAction(scene,{x:actor.x,y:actor.y})}
+ assert.equal(impacts,1,`${kind} impact must fire exactly once at ${facing}, ${fps} FPS`);
+ assert(Math.abs(impactAt-1000*17/30)<=1000/fps+.01,`${kind} impact frame drifted at ${facing}, ${fps} FPS: ${impactAt}`);
+ assert.equal(W.PsyHobbiesVFX.blocksMovement(scene),false,`${kind} returns to normal movement at ${facing}`);
 }
 now=0;let lateImpact=0;
 assert(W.PsyHobbiesVFX.beginAction({scene:'background-return',node:{id:'flower',kind:'gardener',x:2,y:3},actor:{x:2,y:20},onImpact:()=>lateImpact++}));
@@ -78,6 +100,22 @@ assert.deepEqual(fieldXp.at(-1),[18,8]);
 assert.equal(H.collect('route-cave','o1'),false,'A cooldown node cannot grant a duplicate item');
 assert(sounds.includes('rock'),'The impact event uses the registered rock sound');
 assert(saves>=6,'Collection changes use the existing autosave contract');
+
+// Production interactions stage the tool actions before collecting. Frame-17
+// contact advances the real spot exactly once, then restores WALK/IDLE input.
+now=0;
+assert(H.interact('route-1','o1',{x:335,y:290,facing:'up'}));
+assert(W.PsyHobbiesVFX.blocksMovement('route-1'));
+assert.equal(H.visibleNodes('route-1').find(n=>n.id==='o1').hits,0,'Mining progress waits for tool contact');
+for(let frame=1;frame<=24;frame++){now=frame*1000/30;W.PsyHobbiesVFX.sampleAction('route-1',{x:335,y:290})}
+assert.equal(H.visibleNodes('route-1').find(n=>n.id==='o1').hits,1,'The mining impact counts one real spot hit');
+assert.equal(W.PsyHobbiesVFX.blocksMovement('route-1'),false,'Mining restores normal movement after recovery');
+now=0;
+assert(H.interact('route-2','t1',{x:440,y:280,facing:'right'}));
+assert(W.PsyHobbiesVFX.blocksMovement('route-2'));
+for(let frame=1;frame<=24;frame++){now=frame*1000/30;W.PsyHobbiesVFX.sampleAction('route-2',{x:440,y:280})}
+assert.equal(H.visibleNodes('route-2').find(n=>n.id==='t1').hits,1,'The chopping impact advances the real tree state once');
+assert.equal(W.PsyHobbiesVFX.blocksMovement('route-2'),false,'Chopping restores normal movement after recovery');
 
 assert(W.PsyKantoMapDataV2.walkable(W.PsyKantoMapDataV2.route1,335,290),'The added Route 1 mine spot can be approached from authored walkable ground');
 assert.equal(H.nearby('route-1',{x:335,y:290},65)?.id,'o1','The early-route mining spot is the nearest valid interaction');
@@ -151,4 +189,4 @@ assert.equal(W.PsyHobbiesVFX.blocksMovement('pallet'),false,'Fishing movement lo
 assert.equal(p.meta.hobbyGatherTotalsV1.gardener,1);
 assert(sounds.includes('water'),'Fishing casts and catches use the existing water sound');
 
-console.log('PASS: mastery-gated skill effects, five-hit and mastery-hit collection, rarity odds, quantity bonus, 30/60/120 FPS action timing, capped background deltas, cancellation, flower impact, autosave and water-only fishing rendering');
+console.log('PASS: all 16 transparent tool sprites, four-direction miner/lumber impacts at 30/60/120 FPS, mastery skills, collection rewards, rarity odds, flower action, autosave and fishing rendering');

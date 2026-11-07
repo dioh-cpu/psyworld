@@ -40,7 +40,8 @@ async function boot(page,spawn){
   avatar:document.querySelector('#psy-kanto-world-v2 canvas')?.width>0,
   walk:!!window.PsyTrainerWalkV1,
   hobbiesReady:window.PsyHobbyMasterySpotReady,
-  assets:window.PsyHobbiesVFX.debug().loaded
+  assets:window.PsyHobbiesVFX.debug().loaded,
+  tools:Object.values(window.PsyHobbiesVFX.debug().tools).every(Boolean)
  }));
 }
 async function settleOverlays(page){
@@ -61,8 +62,26 @@ async function countFrames(page,ms=1800){
   requestAnimationFrame(loop);
  }),ms);
 }
+async function auditToolFrames(page){
+ return page.evaluate(async()=>{
+  const materials=['copper','iron','silver','gold','coal','ruby','sapphire','jade'],tools=['pickaxe','axe'],frames=[];
+  for(const tool of tools)for(const material of materials){
+   const image=new Image();image.src=`assets/hobbies/tools/${tool}-${material}.png`;await image.decode();
+   if(image.naturalWidth!==64||image.naturalHeight!==64)throw new Error(`${tool}-${material} is not a 64x64 cell`);
+   const canvas=document.createElement('canvas');canvas.width=canvas.height=64;
+   const context=canvas.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0);
+   const data=context.getImageData(0,0,64,64).data;let left=64,top=64,right=-1,bottom=-1;
+   for(let y=0;y<64;y++)for(let x=0;x<64;x++)if(data[(y*64+x)*4+3]>128){left=Math.min(left,x);top=Math.min(top,y);right=Math.max(right,x+1);bottom=Math.max(bottom,y+1);}
+   if(left<2||top<2||right>62||bottom>62||right<=left||bottom<=top)throw new Error(`${tool}-${material} artwork touches or escapes its cell`);
+   frames.push({tool,material,bounds:[left,top,right,bottom]});
+  }
+  const anchors=new Set(frames.map(frame=>frame.bounds.join(',')));
+  if(anchors.size!==1)throw new Error('Tool PNG silhouettes are not aligned to a shared transparent frame: '+JSON.stringify(frames));
+  return {count:frames.length,bounds:frames[0].bounds,aligned:anchors.size===1};
+ });
+}
 async function pressInteract(page){await page.keyboard.press('e');await page.waitForTimeout(820)}
-async function pressDirectHit(page){await page.keyboard.press('e');await page.waitForTimeout(300)}
+async function pressDirectHit(page){await page.keyboard.press('e');await page.waitForTimeout(850)}
 async function fishUntilComplete(page,timeout=12000){
  const reel=page.locator('#psy-hobby-fishing [data-fish-reel]');
  const gate=await page.evaluate(()=>({position:window.PsyKantoWorldV2.getPosition(),scene:'route-1',canFish:window.PsyHobbies.canFish('route-1',window.PsyKantoWorldV2.getPosition(),null),buttonHidden:document.querySelector('#psy-kanto-world-v2 [data-kw2-fish]')?.hidden}));
@@ -96,6 +115,7 @@ async function main(){
   await context.route('**/*',route=>route.request().url().startsWith(baseURL+'/')?route.continue():route.abort());
   const page=await context.newPage();page.on('pageerror',e=>errors.push(spec.name+': '+e.message));
   const start=await boot(page,[235,294]);
+  if(!start.tools)throw new Error(spec.name+' did not load all 16 generated transparent tools');
   await page.locator('#psy-kanto-world-v2 [data-interact]').tap();await page.waitForTimeout(850);
   const totals=await page.evaluate(()=>window.P?.meta?.hobbyGatherTotalsV1||{});
   const perf=await countFrames(page);
@@ -109,6 +129,8 @@ async function main(){
  await context.route('**/*',route=>route.request().url().startsWith(baseURL+'/')?route.continue():route.abort());
  const page=await context.newPage();page.on('pageerror',e=>errors.push('demo: '+e.message));
  const desktop=await boot(page,[220,294]);
+ if(!desktop.tools)throw new Error('Desktop did not load all 16 generated transparent tools');
+ desktop.toolAlignment=await auditToolFrames(page);
  await page.screenshot({path:path.join(output,'route-1-before.png')});
  await page.keyboard.down('ArrowRight');await page.waitForTimeout(520);await page.keyboard.up('ArrowRight');
  await page.waitForTimeout(350);await pressInteract(page);
@@ -133,13 +155,15 @@ async function main(){
   const raw=localStorage.getItem('psyWorldSave_v9'),saved=raw?JSON.parse(raw):null,profile=saved?.player||saved;
   const expected=['gardener','lumber','miner','fisher'];
   const storedTotals=Object.fromEntries(expected.map(id=>[id,Number(profile?.meta?.hobbyGatherTotalsV1?.[id]||0)]));
-  const storedItems=Object.fromEntries(['Flor do Campo','Madeira Bruta','Minério Bruto','Peixe de Rio'].map(item=>[item,Number(profile?.inventory?.[item]||0)]));
+  const fishItems=['Peixe de Rio','Carpa Prateada','Peixe Cristalino','Peixe Dourado'];
+  const storedItems=Object.fromEntries(['Flor do Campo','Madeira Bruta','Minério Bruto',...fishItems].map(item=>[item,Number(profile?.inventory?.[item]||0)]));
   const restored=!!window.autoLoad?.();
   const loadedTotals=Object.fromEntries(expected.map(id=>[id,Number(window.P?.meta?.hobbyGatherTotalsV1?.[id]||0)]));
   const loadedItems=Object.fromEntries(Object.keys(storedItems).map(item=>[item,Number(window.P?.inventory?.[item]||0)]));
-  return {savePresent:!!saved,restored,storedTotals,storedItems,loadedTotals,loadedItems};
+  return {savePresent:!!saved,restored,storedTotals,storedItems,loadedTotals,loadedItems,fishItemCount:Object.values(storedItems).slice(3).reduce((sum,count)=>sum+count,0),loadedFishItemCount:Object.values(loadedItems).slice(3).reduce((sum,count)=>sum+count,0)};
  });
- if(!saveRoundTrip.savePresent||!saveRoundTrip.restored||Object.values(saveRoundTrip.loadedTotals).some(value=>value!==1)||Object.values(saveRoundTrip.loadedItems).some(value=>value!==1))
+ const nonFishItems=Object.entries(saveRoundTrip.loadedItems).filter(([item])=>item!=='Peixe de Rio'&&item!=='Carpa Prateada'&&item!=='Peixe Cristalino'&&item!=='Peixe Dourado');
+ if(!saveRoundTrip.savePresent||!saveRoundTrip.restored||Object.values(saveRoundTrip.loadedTotals).some(value=>value!==1)||nonFishItems.some(([,value])=>value!==1)||saveRoundTrip.fishItemCount!==1||saveRoundTrip.loadedFishItemCount!==1||JSON.stringify(saveRoundTrip.storedItems)!==JSON.stringify(saveRoundTrip.loadedItems))
   throw new Error('Hobby rewards did not survive the existing local save/restore flow: '+JSON.stringify(saveRoundTrip));
  const post=await page.evaluate(()=>({
   totals:window.P?.meta?.hobbyGatherTotalsV1||{},inventory:window.P?.inventory||{},

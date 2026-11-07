@@ -10,6 +10,7 @@ const ready=!!H&&!!M&&!!V&&ids.every(id=>{
  return !!H.definitions?.some(job=>job.id===id)&&activityEffects.every(effect=>effects.has(effect))&&!!chances&&!!output?.item;
 })&&typeof H.interact==='function'&&typeof H.collect==='function'&&typeof H.visibleNodes==='function'&&
  typeof H.requiredHits==='function'&&typeof H.spotEffects?.respawnDelay==='function'&&typeof H.spotEffects?.rollReward==='function'&&
+ V.capabilities?.oreStrike===true&&V.capabilities?.woodChopping===true&&
  typeof V.beginAction==='function'&&typeof V.sampleAction==='function'&&typeof V.onSpotHit==='function'&&
  ['drawField','startFishing','updateFishing','finishFishing'].every(name=>typeof V[name]==='function')&&earlyMineReachable;
 W.PsyHobbyMasterySpotReady=ready;

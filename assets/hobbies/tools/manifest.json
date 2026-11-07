@@ -1,0 +1,9 @@
+{
+  "schema": "psyworld.hobby-tools.v1",
+  "source": "psyworld-hobby-tools-atlas-v1.png",
+  "sourceNote": "New PSYWORLD pixel-art tools authored because the requested 2026-09-16 pack was unavailable in the project, Git refs, local files, and connected Drive.",
+  "cell": [64, 64],
+  "materials": ["copper", "iron", "silver", "gold", "coal", "ruby", "sapphire", "jade"],
+  "tools": ["pickaxe", "axe"],
+  "atlasOrder": "8 material rows top-to-bottom; pickaxe left, axe right"
+}

@@ -8,6 +8,7 @@ const palette={ore:'#8fe9ff',wood:'#d8a56c',leaf:'#91df9d',petal:'#ffe0f0',water
 const rarityColor={rare:'#80e8ff',epic:'#ce9dff',legend:'#ffe182'};
 const Hobbies=()=>W.PsyHobbies;
 const images=Object.create(null),actions=new Map(),fishing=new Map(),impacts=new Map(),particles=[];
+const toolImages=Object.create(null),toolMaterials=['copper','iron','silver','gold','coal','ruby','sapphire','jade'];
 let eventSerial=0;
 const reducedMotion=()=>!!W.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 const clock=()=>Number(W.performance?.now?.()??Date.now());
@@ -19,6 +20,8 @@ images.ore=load('assets/idle-realistic/pallet/rock_mid.png');
 images.tree=load('assets/idle-realistic/pallet/tree_curve.png');
 images.flower=load('assets/idle-realistic/pallet/bush_flowers.png');
 images.rod=load('assets/items/fishing-rod.png');
+for(const type of ['pickaxe','axe'])for(const material of toolMaterials)
+ toolImages[type+':'+material]=load('assets/hobbies/tools/'+type+'-'+material+'.png');
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const ease=x=>{x=clamp(x);return x*x*(3-2*x)};
 const spotKey=(scene,id)=>scene+':'+id;
@@ -29,13 +32,13 @@ function facingRow(actor,target){
 }
 function startAction({scene,node,actor,onImpact}){
  if(!scene||!node||!actor||!Number.isFinite(actor.x)||!Number.isFinite(actor.y)||typeof onImpact!=='function')return false;
- // Mining and chopping remain immediate until their approved tools and authored
- // action poses are available; never stage a reward behind an invisible tool.
- if(node.kind!=='gardener')return false;
+ if(!['gardener','miner','lumber'].includes(node.kind))return false;
  if(actions.has(scene))return false;
- const kind='gathering',frameCount=20,impactFrame=11,duration=frameCount*FRAME_MS;
+ const kind=node.kind==='miner'?'mining':node.kind==='lumber'?'chopping':'gathering';
+ const frameCount=kind==='gathering'?20:24,impactFrame=kind==='gathering'?11:17,duration=frameCount*FRAME_MS;
  const at=clock();
- actions.set(scene,{scene,node:{...node},kind,actor:{x:actor.x,y:actor.y},row:facingRow(actor,node),startedAt:at,lastAt:at,elapsed:0,duration,impactAt:FRAME_MS*impactFrame,impactFrame,frameCount,frame:0,impactFired:false,onImpact,cancelled:false});
+ const material=toolMaterials.includes(actor.toolMaterial)?actor.toolMaterial:'copper';
+ actions.set(scene,{scene,node:{...node},kind,toolMaterial:material,actor:{x:actor.x,y:actor.y},row:facingRow(actor,node),startedAt:at,lastAt:at,elapsed:0,duration,impactAt:FRAME_MS*impactFrame,impactFrame,frameCount,frame:0,impactFired:false,onImpact,cancelled:false});
  return true;
 }
 function sampleAction(scene,actor={},nowValue){
@@ -71,6 +74,16 @@ function onSpotHit({scene,node,hit=1,completed=false}){
 }
 function pose(action){
  const f=action.frame,kind=action.kind;
+ if(kind==='mining'||kind==='chopping'){
+  let reach,toolAngle;
+  if(f<4){reach=.18+ease(f/4)*.12;toolAngle=.2}
+  else if(f<10){const t=ease((f-4)/6);reach=.3+t*.64;toolAngle=.2-t*1.32}
+  else if(f<17){reach=.94+Math.sin((f-10)/7*Math.PI)*.035;toolAngle=-1.12}
+  else if(f===17){reach=.46;toolAngle=0}
+  else if(f<22){const t=ease((f-17)/5);reach=.46+t*.35;toolAngle=.85*(1-t)}
+  else{reach=.2;toolAngle=0}
+  return {reach,dip:f===17?.68:f>17&&f<22?.18:0,toolAngle,impact:f===17};
+ }
  if(kind==='fishing'){
   const reach=action.reeling?.52:action.casting?ease(f/3)*.46:.18+Math.sin(action.elapsed*.002)*.025;
   return {reach,dip:action.reeling?.12:0,toolAngle:action.reeling?.18:0,impact:false};
@@ -84,7 +97,16 @@ function pose(action){
 }
 function drawActor(c,scene,{x,y,action=null,atlas=null,avatarUrl='',fishing:fishState=null}={}){
  if(action){
-  drawBodyMotion(c,atlas,x,y,action,pose(action));
+  const actionPose=pose(action);
+  if(action.kind==='mining'||action.kind==='chopping'){
+   // When the trainer faces away from the camera, the tool is on the far side
+   // of the body. Composite it first so the torso and head naturally occlude
+   // the handle instead of letting the pick head cross the face.
+   if(action.row===3)drawHobbyTool(c,action,actionPose,x,y);
+   drawBodyMotion(c,atlas,x,y,action,actionPose);
+   if(action.row!==3)drawHobbyTool(c,action,actionPose,x,y);
+   drawHeadOverTool(c,atlas,x,y,action.row);
+  }else drawBodyMotion(c,atlas,x,y,action,actionPose);
  }
  const storedFish=fishing.get(scene),activeFish=fishState||(storedFish?.active||storedFish?.endedAt&&clock()-storedFish.endedAt<460?storedFish:null);
  if(activeFish){
@@ -101,10 +123,33 @@ function drawBodyMotion(c,atlas,x,y,action,p){
  const sw=atlas.cellWidth||256,sh=atlas.cellHeight||128;
  // Recompose a narrow torso/arm band from the approved authored WALK poses.
  // The head, feet, shadow and full-body scale remain from the production renderer.
- const col=action.kind==='fishing'?Math.max(0,Math.min(3,action.frame|0)):action.frame<4?0:action.frame<9?1:action.frame<14?2:action.frame<18?3:0,tile=action.row*4+col;
+ const col=action.kind==='fishing'?Math.max(0,Math.min(3,action.frame|0)):
+  action.kind==='mining'||action.kind==='chopping'?
+   action.frame<4?0:action.frame<10?3:action.frame<17?2:action.frame===17?1:action.frame<22?3:0:
+   action.frame<4?0:action.frame<9?1:action.frame<14?2:action.frame<18?3:0,tile=action.row*4+col;
  const dip=(action.kind==='gathering'?p.dip:0);
  c.save();c.beginPath();c.rect(x-17,y-43,34,27);c.clip();c.imageSmoothingEnabled=false;
  c.drawImage(atlas.image,(tile%8)*sw,Math.floor(tile/8)*sh,sw,sh,x-24,y-55+dip,48,64);c.restore();
+}
+function drawHobbyTool(c,action,p,x,y){
+ const type=action.kind==='mining'?'pickaxe':'axe',im=toolImages[type+':'+action.toolMaterial];if(!im?.loaded)return;
+ const target=action.node,dx=target?.x-x||0,dy=(target?.y-14)-y||0,distance=Math.hypot(dx,dy);
+ const row=action.row,baseX=row===1?-8:row===2?9:row===3?8:7,baseY=row===3?-18:-25;
+ const raised=p.reach>.72,size=Math.max(34,Math.min(52,34+Math.max(0,distance-28)*.28));
+ const desired=Math.atan2(dy+25,dx-baseX),nativeHeadAngle=-.8;
+ c.save();c.translate(Math.round(x+baseX),Math.round(y+baseY-(raised?8:0)));
+ if(row===1)c.scale(-1,1);
+ c.rotate(desired-nativeHeadAngle+p.toolAngle);
+ c.imageSmoothingEnabled=false;
+ c.drawImage(im,-size*.13,-size*.78,size*.78,size*.78);
+ c.restore();
+}
+function drawHeadOverTool(c,atlas,x,y,row){
+ if(!atlas?.image)return;
+ const sw=atlas.cellWidth||256,sh=atlas.cellHeight||128,tile=(row|0)*4;
+ c.save();c.beginPath();c.rect(x-24,y-57,48,29);c.clip();c.imageSmoothingEnabled=false;
+ c.drawImage(atlas.image,(tile%8)*sw,Math.floor(tile/8)*sh,sw,sh,x-24,y-55,48,64);
+ c.restore();
 }
 function drawRod(c,fish,x,y){
  const im=images.rod;if(!im?.loaded)return;
@@ -225,9 +270,9 @@ function actionVisual(action){
 const H=W.PsyHobbies;
 if(H){H.drawField=drawField;}
 W.PsyHobbiesVFX={
- version:1,capabilities:{flowerGathering:true,oreStrike:false,woodChopping:false,fishingCast:true,fishingLine:true,spotVfx:true},
+ version:1,capabilities:{flowerGathering:true,oreStrike:true,woodChopping:true,fishingCast:true,fishingLine:true,spotVfx:true},
  beginAction:startAction,startAction,sampleAction,blocksMovement,isBusy,cancelAction,actionVisual,onSpotHit,
  startFishing,updateFishing,finishFishing,drawField,drawActor,
- debug:()=>({pendingActions:actions.size,particles:particles.length,fishing:fishing.size,loaded:Object.fromEntries(Object.entries(images).map(([k,v])=>[k,!!v?.loaded]))})
+ debug:()=>({pendingActions:actions.size,particles:particles.length,fishing:fishing.size,loaded:Object.fromEntries(Object.entries(images).map(([k,v])=>[k,!!v?.loaded])),tools:Object.fromEntries(Object.entries(toolImages).map(([k,v])=>[k,!!v?.loaded]))})
 };
 })(window,document);
