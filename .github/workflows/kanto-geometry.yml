@@ -96,7 +96,8 @@ jobs:
           node --check core/seasonal-event-v1.js
           node --check core/titles-progression-v2.js
           node --check core/city-halloween.js
-          node --check core/legacy-runtime.js
+          # legacy-runtime is loaded by a classic <script>, not as an ES module.
+          node --input-type=commonjs --check < core/legacy-runtime.js
           node --check core/kanto-campaign-playable-v1.js
           node --check core/campaign-automation-v1.js
           node --check core/kanto-city-cinematics-v1.js
