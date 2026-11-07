@@ -212,7 +212,7 @@
     return {grid,npc,object,exit,secretGate,secretChest,seed:hash(place.id)};
   }
   function openWorld(id) {
-    if(id==='pallet'||id==='route-1'){
+    if(id==='pallet'||id==='route-1'||id==='viridian'){
       if(W.PsyKantoWorldV2?.open)return W.PsyKantoWorldV2.open(id);
       W.notif?.('Mapa ilustrado indisponível. Recarregue a preview.',4000);
       return false;

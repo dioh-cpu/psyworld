@@ -44,17 +44,19 @@ function hud(){
  state.root.querySelector('.kw2-subtitle').textContent=where?
    subtitles[where.id]||'Um lugar de Pallet Town':
    state.world?.id==='pallet'?'Sua primeira aventura começa aqui':
-   'O caminho até Viridian City';
+   state.world?.id==='viridian'?'Ginásio fechado · Rota 2 ao norte':'O caminho até Viridian City';
  let message='';
  if(state.world?.id==='pallet'){
    if(!q.oak)message='Jornada: visite o laboratório e converse com o Professor Car’alho.';
    else message='A estrada está livre! Descubra os mistérios da Rota 1.';
- }else message='Rota 1: explore os campos de grama e siga para Viridian City.';
+ }else if(state.world?.id==='viridian')message=progress().viridianTalked?'Viridian: siga para a saída norte rumo à Rota 2.':'Viridian: converse com o ancião perto do Ginásio. Não há encontros selvagens na cidade.';
+else message='Rota 1: explore os campos de grama e siga para Viridian City.';
  state.root.querySelector('.kw2-objective').textContent=message;
 }
-function open(id,options={}){if(!['pallet','route-1'].includes(id))return false;const previousWorld=state.world?.id||null;
+function open(id,options={}){if(!['pallet','route-1','viridian'].includes(id)||!DATA[id==='route-1'?'route1':id])return false;const previousWorld=state.world?.id||null;
+if(id==='viridian'&&!progress().viridian&&!options.skipGuard)return false;
 if(id==='route-1'&&!progress().oak&&!options.skipGuard){open('pallet');setTimeout(()=>showDialog('Rota 1 bloqueada','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.'),80);return false}
-W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=id==='pallet'?DATA.pallet:DATA.route1;state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
+W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=id==='pallet'?DATA.pallet:id==='route-1'?DATA.route1:DATA.viridian;state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
 const start=options.spawn||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}W.PsyKantoStoryV49?.enter(previousWorld,id);return true;}
 function close(){W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
@@ -112,7 +114,8 @@ function camera(){
   const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   // Cover the screen instead of letterboxing; scroll with the player.
-  const scale=state.inside?Math.min(3,Math.max(cw/map.w,ch/map.h)*(W.innerWidth<740?1.38:1.15)):Math.min(4,Math.max(cw/map.w,ch/map.h)*1.08);
+  const cover=Math.max(cw/map.w,ch/map.h);
+ const scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
   const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
@@ -130,9 +133,9 @@ if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art
     if(sw>0&&sh>0){c.imageSmoothingEnabled=true;c.drawImage(o.mapCanvas,sx,sy,sw,sh,sx,sy,sw,sh)}
   }else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
-if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='pallet'){drawMarker(c,552,130,'LABORATÓRIO →','#ffd480');}
+if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){drawMarker(c,552,130,'LABORATÓRIO →','#ffd480');}
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
-if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':'VIRIDIAN','#80ffaa')}
+if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':state.world.id==='viridian'?'ROTA 2':'VIRIDIAN','#80ffaa')}
 else drawMarker(c,...(state.inside.exit||[240,675]),'SAÍDA ↓','#85efdc');
 if(W.PsyFollower)W.PsyFollower.draw(c,{scene:state.world.id+':'+(state.inside?.id||'outside'),x:state.position.x,y:state.position.y,facing:state.facing,moving:state.moving,valid:positionValid,trainer:()=>drawPlayer(c,state.position.x,state.position.y)});else drawPlayer(c,state.position.x,state.position.y);c.setTransform(1,0,0,1,0,0)}
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35);c.restore()}
@@ -230,13 +233,20 @@ function drawInterior(c,inside){
     c.restore();
   }
 }
-function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.id==='route-1'?[{type:'return',at:[108,420]}]:[]),...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
+function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.id==='route-1'?[{type:'return',at:[108,420]}]:state.world.id==='viridian'?[{type:'return',at:state.world.return}]:[]),...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
 function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
 activateTarget(a)}
-function activateTarget(a){if(a.type==='return'){open('pallet',{spawn:[525,60]});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
+function activateTarget(a){if(a.type==='return'){if(state.world?.id==='viridian')open('route-1',{spawn:[844,100],skipGuard:true});else open('pallet',{spawn:[525,60]});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
 function talk(npc){
  const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
- if(id==='oak'){
+ if(id==='viridian-elder'){
+    mark('viridianTalked');
+    const campaign=W.PsyKantoPlayableV1?.progress?.();
+    if(campaign){const ps=campaign.places.viridian||(campaign.places.viridian={talked:false,found:[],solved:[],cleared:false});ps.talked=true;try{W.autoSave?.()}catch(_){}}
+    showDialog('Ancião de Viridian','O Ginásio de Viridian está fechado nesta fase. A Rota 2 fica ao norte: contorne o Ginásio pela passagem lateral e siga até o portão. A Escola de Treinadores fica a oeste.',[{text:'ENTENDI',primary:true}],pr,em);
+  }else if(id==='viridian-teacher'){
+    showDialog('Instrutora da Escola','Aprenda sobre vantagens de tipos e efeitos de status. Recupere sua equipe no Centro Pokémon antes de desafiar Brock, em Pewter.',[],pr,em);
+  }else if(id==='oak'){
   if(W.PsyKantoStoryV49&&!W.PsyKantoStoryV49.hasSeen('professorResearch'))return W.PsyKantoStoryV49.professor(npc,()=>{mark('oak');hud();});
   showDialog('Professor Car’alho','Toda grande jornada começa com uma escolha. Em Pallet, conheça quem cuida dos Pokémon e quem prepara seus suprimentos. Agora você pode seguir para a Rota 1 quando quiser.',[
    {text:'ENTENDI',primary:true,run:()=>mark('oak')}],pr,em);
@@ -296,7 +306,10 @@ function makeCaveRoom(){
 }
 function enterDoor(door){
  state.navRequest++;state.navCells.clear();
- const id=door.id,room=id==='route-cave'?makeCaveRoom():W.PsyKantoInteriorsV9?.get?.(id);
+ const id=door.id;
+ if(state.world?.id==='viridian'&&id==='gym'){showDialog('Ginásio de Viridian','Este Ginásio permanece fechado nesta etapa da campanha. Procure a passagem para a Rota 2.',[]);return;}
+ if(state.world?.id==='viridian'&&id==='school'){showDialog('Escola de Treinadores','Conheça os tipos, os estados de batalha e a preparação da equipe. Converse com a instrutora no pátio.',[]);return;}
+ const room=id==='route-cave'?makeCaveRoom():W.PsyKantoInteriorsV9?.get?.(id);
  if(!room){
   showDialog('Porta fechada','Você ainda não pode entrar aqui.');return;
  }
@@ -311,7 +324,15 @@ function enterDoor(door){
 function exitDoor(){state.navRequest++;state.navCells.clear();state.inside=null;if(state.lastOutdoor)state.position={...state.lastOutdoor};state.lastOutdoor=null;state.path=[];hud()}
 function healTeam(){const p=player();if(Array.isArray(p.team))for(const mon of p.team){const hp=Number(mon.maxHp||mon.maxHP||mon.hpMax||0);if(hp>0)mon.hp=hp}try{W.updateHUD?.();W.autoSave?.()}catch(_){}showDialog('Enfermeira','Sua equipe foi recuperada. Boa viagem!')}
 function openShop(){const fn=W.openShop;close();if(typeof fn==='function')fn();else{state.root?.classList.add('open');showDialog('Davi, o lojista','Minhas mercadorias já estão separadas. Em breve você poderá negociá-las aqui mesmo.')}}
-function exitWorld(){if(state.world.id==='pallet'){if(!questDone()){showDialog('Passagem para Rota 1','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.',[{text:'ENTENDI'}]);return}open('route-1');return}
+function exitWorld(){if(state.world.id==='viridian'){
+ const campaign=W.PsyKantoPlayableV1?.progress?.(),ps=campaign?.places?.viridian;
+ if(!progress().viridianTalked&&!ps?.talked){showDialog('Passagem para Rota 2','Converse com o ancião de Viridian antes de seguir.',[{text:'ENTENDI'}]);return}
+ if(ps){ps.talked=true;ps.cleared=true}
+ try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');save.visited=[...new Set([...(save.visited||[]),'pallet','route-1','viridian'])];save.activePlace='route-2';localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(_){}
+ try{W.autoSave?.()}catch(_){}
+ showDialog('Rota 2','Você encontrou a passagem norte. Depois da Rota 2, o caminho segue para a Floresta de Viridian.',[{text:'SEGUIR PARA ROTA 2',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('route-2')}},{text:'CONTINUAR EM VIRIDIAN'}]);return;
+}
+if(state.world.id==='pallet'){if(!questDone()){showDialog('Passagem para Rota 1','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.',[{text:'ENTENDI'}]);return}open('route-1');return}
 mark('viridian');try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');save.visited=[...new Set([...(save.visited||[]),'pallet','route-1'])];save.activePlace='viridian';localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(_){}
 showDialog('Viridian City','Você atravessou a Rota 1! A entrada de Viridian está desbloqueada. Conheça a Escola de Treinadores e procure a passagem para a Rota 2.',[{text:'ENTRAR EM VIRIDIAN',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('viridian')}},{text:'VOLTAR'}]);}
 function touchCoords(e){const r=state.canvas.getBoundingClientRect();const cam=camera();return {x:(e.clientX-r.left)*(cam.w/r.width)/cam.scale-cam.ox/cam.scale,y:(e.clientY-r.top)*(cam.h/r.height)/cam.scale-cam.oy/cam.scale}}
@@ -403,7 +424,7 @@ W.PsyKantoWorldV2={setStoryLock(active){state.suspended=!!active;state.dialogOpe
  navigate:async function(at){autoHunt=false;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){if(active&&!vipActive()){showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1')open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,
- open,close,data:DATA,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y})};
+ open,close,data:DATA,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:id==='viridian'?DATA.viridian:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y})};
 // Capture Atlas entry before any legacy canvas handler; also works after Atlas rerenders.
 D.addEventListener('click',e=>{
   const button=e.target?.closest?.('#psy-kanto-atlas .psy-kanto-enter-world');
