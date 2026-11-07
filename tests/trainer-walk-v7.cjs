@@ -18,8 +18,8 @@ assert.equal(anim.column(0,false),0);
 // The active human renderer now shares a monotonic WALK/IDLE state sampler.
 assert.equal(typeof anim.createState,'function');assert.equal(typeof anim.sampleState,'function');
 const state=anim.createState();let pose=anim.sampleState(state,{now:0,moving:true,row:2,identity:'test'});
-assert.equal(pose.state,'walk');assert.equal(pose.col,1);
-pose=anim.sampleState(state,{now:130,moving:true,row:3,identity:'test'});assert.equal(pose.col,0);assert.equal(pose.row,3);
+assert.equal(pose.state,'walk');assert.equal(pose.col,0);
+pose=anim.sampleState(state,{now:130,moving:true,row:3,identity:'test'});assert.equal(pose.col,1);assert.equal(pose.row,3);
 pose=anim.sampleState(state,{now:140,moving:false,identity:'test'});assert.equal(pose.state,'settle');assert.equal(pose.row,3);
 pose=anim.sampleState(state,{now:280,moving:false,identity:'test'});assert.equal(pose.state,'idle');
 assert(city.includes('walk.renderAnimated(ctx,entry.animationAtlas')&&!city.includes('const bounce = moving && frame % 2'));

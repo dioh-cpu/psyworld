@@ -6,8 +6,10 @@ let cases=0;
 for(const character of manifest.characters)for(const [key,file]of Object.entries(character.costumes)){
  const profile=api.animationProfile({src:'assets/characters/halloween/'+file});
  assert.equal(profile.category,key);
- assert.equal([...profile.sourceRows].join(','),['macabre_alt','supreme'].includes(key)?'0,2,3,1':'0,1,2,3');
- assert.equal(new Set(profile.walkOrder).size,4,'all authored human poses must be used');
+ assert.equal([...profile.sourceRows].join(','),file==='divine-black-girl.webp'?'0,2,1,3':['macabre_alt','supreme'].includes(key)?'0,2,3,1':'0,1,2,3');
+ assert.equal([...profile.walkOrder].join(','),'0,1,2,3','contact/pass/opposite contact/pass');
+ assert.equal([...profile.walkSourceRows].join(','),file==='divine-black-girl.webp'?'0,2,1,3':'0,1,2,3');
+ if(file==='divine-black-girl.webp')assert.equal([...profile.idleSourceRows].join(','),'0,2,1,3');
  for(const fps of [30,60,120])for(const speed of [30,143,240]){
   const s=api.createState(),step=(t,x,y,moving,row=0,identity=file,discrete=false)=>api.sampleState(s,{now:t,x,y,moving,row,identity,discrete,profile});
   step(0,-1,0,false);step(0,0,0,true);

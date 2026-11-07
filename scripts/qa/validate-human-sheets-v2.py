@@ -12,6 +12,17 @@ for item in manifest['catalog']:
  assert hashlib.sha256(p.read_bytes()).hexdigest()==item['atlasSha256']
  assert Image.open(ROOT/item['original']).size==(2048,2048)
  assert Image.open(ROOT/item['neutral']).size==(1024,256)
+ assert hashlib.sha256((ROOT/item['walk']).read_bytes()).hexdigest()==item['walkSha256']
+ raw=Image.open(ROOT/item['walk']);assert raw.width==raw.height and raw.width>=1024
+ ra=np.array(raw.convert('RGBA'))[:,:,3];cell=raw.width//4
+ assert not (ra[4*cell:,:]>32).any() and not (ra[:,4*cell:]>32).any(),'parser may only discard transparent margin'
+ for row in range(4):
+  for col in range(4):
+   edge=ra[row*cell:(row+1)*cell,col*cell:(col+1)*cell]
+   assert not (edge[[0,-1],:]>32).any() and not (edge[:,[0,-1]]>32).any(),'raw cell edge content would clip'
+ for g in item.get('gaitMetrics',[]):
+  assert g['contact'][0]<g['pivot']<g['contact'][1],(item['id'],g,'no opposite contact')
+  assert g['contact'][1]-g['contact'][0]>1,(item['id'],g,'no visible alternation')
  a=np.array(image);tiles=[]
  for index in range(112):
   x=index%8*256;y=index//8*128;t=a[y:y+128,x:x+256];tiles.append(t)
@@ -29,6 +40,6 @@ for item in manifest['catalog']:
     assert np.array_equal(tiles[tile][:68],head),(item['id'],item['key'],tile,'head')
    foot=tiles[48+pose*4][98:]
    for breath in range(4):assert np.array_equal(tiles[48+pose*4+breath][98:],foot)
- results.append({'id':item['id'],'look':item['key'],'tiles':112,'height':92,'sole':120,'headChanges':0,'idleFootChanges':0,'passed':True})
+ results.append({'id':item['id'],'look':item['key'],'tiles':112,'height':92,'sole':120,'headChanges':0,'idleFootChanges':0,'gaitMetrics':item.get('gaitMetrics',[]),'passed':True})
 output=pathlib.Path(sys.argv[1] if len(sys.argv)>1 else '/tmp/human-final-sheets-tests.json');output.write_text(json.dumps(results,indent=2)+'\n')
 print(f'PASS {len(results)} final lossless sheets / {len(results)*112} WALK, settling and IDLE tiles: dimensions, exact head/sole/height, no edge clipping, stable idle feet.')

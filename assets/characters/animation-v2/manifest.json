@@ -31,9 +31,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -384,12 +390,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 92,
+          "contact": [
+            124.14423076923077,
+            130.85576923076923
+          ],
+          "passing": [
+            124.5,
+            130.5
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 92,
+          "contact": [
+            124.9381443298969,
+            131.06185567010309
+          ],
+          "passing": [
+            125.4320987654321,
+            130.5679012345679
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/basic-black-boy.webp",
       "originalSha256": "4e71cc04202cc361caa1c4b66de27a634785534831512a57dc8c5d3f02e97972",
       "atlas": "assets/characters/animation-v2/basic-black-boy.webp",
-      "atlasSha256": "1d6d3899b34c75308ba9a4257f7c8f3e1dd7306b291ec685bbfa6bc7ace60524",
+      "atlasSha256": "9493a438303dcd6a205af16840fedfd372db141bbebe58eb152d1e1203d9023a",
       "neutral": "assets/characters/idle-v2/basic-black-boy.webp",
-      "neutralSha256": "4f3e835eda10dbf8ff08bc55d023b14d18a1d9a736c56c2738e441e2b6e45dd9"
+      "neutralSha256": "4f3e835eda10dbf8ff08bc55d023b14d18a1d9a736c56c2738e441e2b6e45dd9",
+      "walk": "assets/characters/walk-v2/basic-black-boy.webp",
+      "walkSha256": "eda9f35de27e868ac4873882b32b2011affaaf03ea7d3ec9bed503d2d168b150"
     },
     {
       "id": "black_girl",
@@ -404,9 +440,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -757,16 +799,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 92,
+          "contact": [
+            124.1125,
+            130.8875
+          ],
+          "passing": [
+            125.4320987654321,
+            129.5679012345679
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 92,
+          "contact": [
+            125.79207920792079,
+            129.20792079207922
+          ],
+          "passing": [
+            126.95876288659794,
+            128.04123711340208
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/basic-black-girl.webp",
       "originalSha256": "31009b3d63161e31de7a999e7e069f1d78d0dc3311674c4ed9841a3c2345f1c9",
       "atlas": "assets/characters/animation-v2/basic-black-girl.webp",
-      "atlasSha256": "6d17b7d676164f2f7f6467e495e5e68fe275c855693e62944235d06f940865f7",
+      "atlasSha256": "8d2ca2939d3676f47fc9f2d9a5c2865a44fd80b687a81653722f583925668ed3",
       "neutral": "assets/characters/idle-v2/basic-black-girl.webp",
-      "neutralSha256": "703ccdd9c1ce78f7312fcbaa69dd19389b5d5b85daae1a0cd9054893b82361be"
+      "neutralSha256": "703ccdd9c1ce78f7312fcbaa69dd19389b5d5b85daae1a0cd9054893b82361be",
+      "walk": "assets/characters/walk-v2/basic-black-girl.webp",
+      "walkSha256": "61cbaffa7d10fcf0f0b40b68f923f593d0ac145a43124ff3d2a3300988613d42"
     },
     {
       "id": "gothic_boy",
-      "name": "Rapaz gótico",
+      "name": "Rapaz g\u00f3tico",
       "key": "basic",
       "profile": {
         "file": "basic-gothic-boy.webp",
@@ -777,9 +849,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -1130,16 +1208,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 92,
+          "contact": [
+            126.04123711340206,
+            129.95876288659792
+          ],
+          "passing": [
+            126.6283185840708,
+            129.3716814159292
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 92,
+          "contact": [
+            126.93939393939394,
+            128.06060606060606
+          ],
+          "passing": [
+            125.90833333333333,
+            129.09166666666667
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/basic-gothic-boy.webp",
       "originalSha256": "e99f6b8c1d1b66c027bb6484e60fc081a883a980cb70eada3217e113e162a071",
       "atlas": "assets/characters/animation-v2/basic-gothic-boy.webp",
-      "atlasSha256": "0d8146de901f86bce2d98e07952a61bdaee184cbef69f2d5eda7ae53ffcabe7a",
+      "atlasSha256": "4c9d9caefa44aeb7f35a336d652045209f05166cbbd26432dd4abfce9cea5660",
       "neutral": "assets/characters/idle-v2/basic-gothic-boy.webp",
-      "neutralSha256": "ae021ec4f04235e915912282fab1d0a4d106a4493e052e8aa7017d2fed175482"
+      "neutralSha256": "ae021ec4f04235e915912282fab1d0a4d106a4493e052e8aa7017d2fed175482",
+      "walk": "assets/characters/walk-v2/basic-gothic-boy.webp",
+      "walkSha256": "2c170fb36d71567c9eec6c7ea25a080477990a2cd3e603923379ca05c71c509d"
     },
     {
       "id": "gothic_girl",
-      "name": "Garota gótica",
+      "name": "Garota g\u00f3tica",
       "key": "basic",
       "profile": {
         "file": "basic-gothic-girl.webp",
@@ -1150,9 +1258,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -1503,12 +1617,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 92,
+          "contact": [
+            125.16666666666667,
+            130.83333333333334
+          ],
+          "passing": [
+            125.65217391304348,
+            130.34782608695653
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 92,
+          "contact": [
+            127.44444444444444,
+            128.55555555555554
+          ],
+          "passing": [
+            126.7156862745098,
+            129.2843137254902
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/basic-gothic-girl.webp",
       "originalSha256": "9d1155254215bd5cb25dece388559a31485f52af206c4c7244d0eda462340ad3",
       "atlas": "assets/characters/animation-v2/basic-gothic-girl.webp",
-      "atlasSha256": "d46142832e361168bd87d8c4a12cc789fdf76b634c50cad51aa62d666fbad72f",
+      "atlasSha256": "ee17df97b077dba6fd52b694ab284531dce5006f1bbcd95b68b61d2219dc09bd",
       "neutral": "assets/characters/idle-v2/basic-gothic-girl.webp",
-      "neutralSha256": "b84652d5664935ff626cb78378e52107207bf5e6375ec3f58cca27bd432f46c8"
+      "neutralSha256": "b84652d5664935ff626cb78378e52107207bf5e6375ec3f58cca27bd432f46c8",
+      "walk": "assets/characters/walk-v2/basic-gothic-girl.webp",
+      "walkSha256": "b197c142155f82913e8c03938236c0c9bccebbf315295927292af693bfa3f566"
     },
     {
       "id": "adventure_boy",
@@ -1523,9 +1667,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -1876,12 +2026,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 92,
+          "contact": [
+            126.43820224719101,
+            129.56179775280899
+          ],
+          "passing": [
+            123.1195652173913,
+            132.8804347826087
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127,
+          "bandStart": 92,
+          "contact": [
+            125.31683168316832,
+            128.68316831683168
+          ],
+          "passing": [
+            125.28235294117647,
+            128.71764705882353
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/basic-adventure-boy.webp",
       "originalSha256": "b2792be3430752dd2ca08819ece89740feedc4a6cdbe1f86fb3d420cb1104b59",
       "atlas": "assets/characters/animation-v2/basic-adventure-boy.webp",
-      "atlasSha256": "07fe9f78c07cca857d45d6c3f60b1fe6d6f8603acc455dadc8c85e764e2fca8b",
+      "atlasSha256": "b6f5f2cc00998234e99d395ec196675ffafedfa9fecf07e2ab250ef99990dd51",
       "neutral": "assets/characters/idle-v2/basic-adventure-boy.webp",
-      "neutralSha256": "dc2919f467b9f7ce0c1f1f0fcf6578c57b14ec2eaa561a4fa3ac0c0e6b74a77e"
+      "neutralSha256": "dc2919f467b9f7ce0c1f1f0fcf6578c57b14ec2eaa561a4fa3ac0c0e6b74a77e",
+      "walk": "assets/characters/walk-v2/basic-adventure-boy.webp",
+      "walkSha256": "f9e8a3478ac3b53b321377ffcc77d92bcc6366a099db03f42f3fdf432db7e898"
     },
     {
       "id": "adventure_girl",
@@ -1896,9 +2076,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -2249,12 +2435,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 129.5,
+          "bandStart": 92,
+          "contact": [
+            127.05813953488372,
+            131.9418604651163
+          ],
+          "passing": [
+            128.3068181818182,
+            130.6931818181818
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 126.5,
+          "bandStart": 92,
+          "contact": [
+            125.4320987654321,
+            127.5679012345679
+          ],
+          "passing": [
+            123.75268817204301,
+            129.247311827957
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/basic-adventure-girl.webp",
       "originalSha256": "67491e53e5e3a1bf6342adf7960f4e54275be1951c3c41b0f844f5be047aba05",
       "atlas": "assets/characters/animation-v2/basic-adventure-girl.webp",
-      "atlasSha256": "5d09defd6548f2288d6037298f41f2334cc9ed245ba3df37ab1368233865acd8",
+      "atlasSha256": "d9733c3a94cab9926d4a08f06329a92ea7261fed2d282bfa0efb1c02d74f05a2",
       "neutral": "assets/characters/idle-v2/basic-adventure-girl.webp",
-      "neutralSha256": "cc9ac03a4929e0adb88c104b2d35b0b6cedce4ea2df9146df814e26527d6d68b"
+      "neutralSha256": "cc9ac03a4929e0adb88c104b2d35b0b6cedce4ea2df9146df814e26527d6d68b",
+      "walk": "assets/characters/walk-v2/basic-adventure-girl.webp",
+      "walkSha256": "5ddc85a11f37149166456a0e8828b8b0a6196c15388be70dd27f90e623fcdf80"
     },
     {
       "id": "black_boy",
@@ -2269,9 +2485,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -2622,12 +2844,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125,
+            130
+          ],
+          "passing": [
+            126.80851063829788,
+            128.19148936170214
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            126.47435897435898,
+            129.52564102564102
+          ],
+          "passing": [
+            125.95,
+            130.05
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/divine-black-boy.webp",
       "originalSha256": "a73b039cd53198652efc4d81f0fe68beb2916bdc7d9731f511121ef565cf95e1",
       "atlas": "assets/characters/animation-v2/divine-black-boy.webp",
-      "atlasSha256": "11f8c55779e768b0eea3b0440b7ba615e0f7657b6445beb08417329899f458f2",
+      "atlasSha256": "41806da592aea320e54a8a7521b01592d44cb7bb67aad4e8f9682a723a026ce1",
       "neutral": "assets/characters/idle-v2/divine-black-boy.webp",
-      "neutralSha256": "3c6fc2048c6ec3334b75dcde0eb90905d97c266ade830c32591da439dd064c26"
+      "neutralSha256": "3c6fc2048c6ec3334b75dcde0eb90905d97c266ade830c32591da439dd064c26",
+      "walk": "assets/characters/walk-v2/divine-black-boy.webp",
+      "walkSha256": "8c1484776d0c2c33788ea06090d4dc283293e55382c189479bde3aef4d1f1905"
     },
     {
       "id": "black_girl",
@@ -2638,13 +2890,25 @@
         "category": "divine",
         "sourceRows": [
           0,
-          1,
           2,
+          1,
+          3
+        ],
+        "walkSourceRows": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "idleSourceRows": [
+          0,
+          2,
+          1,
           3
         ],
         "walkOrder": [
-          1,
           0,
+          1,
           2,
           3
         ],
@@ -2745,90 +3009,6 @@
         {
           "row": 1,
           "col": 0,
-          "sourceRow": 1,
-          "source": [
-            151,
-            200,
-            194,
-            232
-          ],
-          "destination": [
-            83.38793103448276,
-            28,
-            76.93103448275862,
-            92
-          ],
-          "headAnchor": 263.5,
-          "headReferenceCol": 0,
-          "uniformScale": 0.39655172413793105,
-          "soleY": 120
-        },
-        {
-          "row": 1,
-          "col": 1,
-          "sourceRow": 1,
-          "source": [
-            139,
-            185,
-            207,
-            224
-          ],
-          "destination": [
-            78.91964285714286,
-            28,
-            85.01785714285714,
-            92
-          ],
-          "headAnchor": 258.5,
-          "headReferenceCol": 0,
-          "uniformScale": 0.4107142857142857,
-          "soleY": 120
-        },
-        {
-          "row": 1,
-          "col": 2,
-          "sourceRow": 1,
-          "source": [
-            154,
-            202,
-            195,
-            222
-          ],
-          "destination": [
-            76.40540540540542,
-            28,
-            80.8108108108108,
-            92
-          ],
-          "headAnchor": 278.5,
-          "headReferenceCol": 0,
-          "uniformScale": 0.4144144144144144,
-          "soleY": 120
-        },
-        {
-          "row": 1,
-          "col": 3,
-          "sourceRow": 1,
-          "source": [
-            163,
-            213,
-            178,
-            213
-          ],
-          "destination": [
-            86.31924882629107,
-            28.25,
-            76.88262910798122,
-            92
-          ],
-          "headAnchor": 259.5,
-          "headReferenceCol": 0,
-          "uniformScale": 0.431924882629108,
-          "soleY": 120
-        },
-        {
-          "row": 2,
-          "col": 0,
           "sourceRow": 2,
           "source": [
             160,
@@ -2848,7 +3028,7 @@
           "soleY": 120
         },
         {
-          "row": 2,
+          "row": 1,
           "col": 1,
           "sourceRow": 2,
           "source": [
@@ -2869,7 +3049,7 @@
           "soleY": 120
         },
         {
-          "row": 2,
+          "row": 1,
           "col": 2,
           "sourceRow": 2,
           "source": [
@@ -2890,7 +3070,7 @@
           "soleY": 120
         },
         {
-          "row": 2,
+          "row": 1,
           "col": 3,
           "sourceRow": 2,
           "source": [
@@ -2908,6 +3088,90 @@
           "headAnchor": 248.5,
           "headReferenceCol": 0,
           "uniformScale": 0.3773877551020408,
+          "soleY": 120
+        },
+        {
+          "row": 2,
+          "col": 0,
+          "sourceRow": 1,
+          "source": [
+            151,
+            200,
+            194,
+            232
+          ],
+          "destination": [
+            83.38793103448276,
+            28,
+            76.93103448275862,
+            92
+          ],
+          "headAnchor": 263.5,
+          "headReferenceCol": 0,
+          "uniformScale": 0.39655172413793105,
+          "soleY": 120
+        },
+        {
+          "row": 2,
+          "col": 1,
+          "sourceRow": 1,
+          "source": [
+            139,
+            185,
+            207,
+            224
+          ],
+          "destination": [
+            78.91964285714286,
+            28,
+            85.01785714285714,
+            92
+          ],
+          "headAnchor": 258.5,
+          "headReferenceCol": 0,
+          "uniformScale": 0.4107142857142857,
+          "soleY": 120
+        },
+        {
+          "row": 2,
+          "col": 2,
+          "sourceRow": 1,
+          "source": [
+            154,
+            202,
+            195,
+            222
+          ],
+          "destination": [
+            76.40540540540542,
+            28,
+            80.8108108108108,
+            92
+          ],
+          "headAnchor": 278.5,
+          "headReferenceCol": 0,
+          "uniformScale": 0.4144144144144144,
+          "soleY": 120
+        },
+        {
+          "row": 2,
+          "col": 3,
+          "sourceRow": 1,
+          "source": [
+            163,
+            213,
+            178,
+            213
+          ],
+          "destination": [
+            86.31924882629107,
+            28.25,
+            76.88262910798122,
+            92
+          ],
+          "headAnchor": 259.5,
+          "headReferenceCol": 0,
+          "uniformScale": 0.431924882629108,
           "soleY": 120
         },
         {
@@ -2995,16 +3259,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125.91428571428571,
+            129.0857142857143
+          ],
+          "passing": [
+            125.28,
+            129.72
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            123.41538461538461,
+            131.58461538461538
+          ],
+          "passing": [
+            122.29230769230769,
+            132.7076923076923
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/divine-black-girl.webp",
       "originalSha256": "d63a3b420316bdc694c751fa7121e933ded0b567d81e1c1eb574f754377b5047",
       "atlas": "assets/characters/animation-v2/divine-black-girl.webp",
-      "atlasSha256": "aef71e2ccc138a80511e212ad5165a3b4a46e7cca360479cd9484bb8c1e8ef81",
+      "atlasSha256": "aafc5f198c1ad89ec154121007d35fb41e57519e1d7e65f50e2b41528c8eec5f",
       "neutral": "assets/characters/idle-v2/divine-black-girl.webp",
-      "neutralSha256": "23dbedce57d32599c9354d33bdb5c3ebec2ca8b96097e5f24d2a4d0689171cff"
+      "neutralSha256": "23dbedce57d32599c9354d33bdb5c3ebec2ca8b96097e5f24d2a4d0689171cff",
+      "walk": "assets/characters/walk-v2/divine-black-girl.webp",
+      "walkSha256": "14e8b4b444af1afcd236ac2f485c2cd9a33f7397f56f79be0562384b4903295d"
     },
     {
       "id": "gothic_boy",
-      "name": "Rapaz gótico",
+      "name": "Rapaz g\u00f3tico",
       "key": "divine",
       "profile": {
         "file": "divine-gothic-boy.webp",
@@ -3015,9 +3309,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -3368,16 +3668,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            124.17525773195877,
+            130.82474226804123
+          ],
+          "passing": [
+            125.11538461538461,
+            129.8846153846154
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            125.48717948717949,
+            130.51282051282053
+          ],
+          "passing": [
+            127,
+            129
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/divine-gothic-boy.webp",
       "originalSha256": "a73da186e4b8dc7f5e0bf4ef96dfefb5b88a1104e2080d6803829716dc469abb",
       "atlas": "assets/characters/animation-v2/divine-gothic-boy.webp",
-      "atlasSha256": "6fcfcb13b6b98ac3a042c07dd842967a4eef8b9d90d0605ddf11064d5d0a4726",
+      "atlasSha256": "336f13056b908d209d416153a7d53e31ad31e01e1e43e85930ef6993ed171091",
       "neutral": "assets/characters/idle-v2/divine-gothic-boy.webp",
-      "neutralSha256": "391e08d3b534e88faf6f9d362ea45f8e804db92a70a34d3c014a87f70a454f7a"
+      "neutralSha256": "391e08d3b534e88faf6f9d362ea45f8e804db92a70a34d3c014a87f70a454f7a",
+      "walk": "assets/characters/walk-v2/divine-gothic-boy.webp",
+      "walkSha256": "3abb88e53f843aa772e592f6bb98d13dede4ebfc9483ced4927c4585c4fd0b5d"
     },
     {
       "id": "gothic_girl",
-      "name": "Garota gótica",
+      "name": "Garota g\u00f3tica",
       "key": "divine",
       "profile": {
         "file": "divine-gothic-girl.webp",
@@ -3388,9 +3718,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -3741,12 +4077,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            124.62025316455696,
+            130.37974683544303
+          ],
+          "passing": [
+            126.5,
+            128.5
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            124.35526315789474,
+            130.64473684210526
+          ],
+          "passing": [
+            126.72289156626506,
+            128.27710843373495
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/divine-gothic-girl.webp",
       "originalSha256": "d2126c5c91c29a1a972960bb7b0e1e4a47f111a05b09aa2adc8044f9740d789c",
       "atlas": "assets/characters/animation-v2/divine-gothic-girl.webp",
-      "atlasSha256": "42e5273bccaefa15e45d8beb0def8bc8f743a86574e6c64ba0ad5238fee3a25d",
+      "atlasSha256": "6f6865945d879592a8ca7c936cccb74a7cbc63ea32bec24fbb9f426ad1d3f195",
       "neutral": "assets/characters/idle-v2/divine-gothic-girl.webp",
-      "neutralSha256": "faf343c87380c6eb2c101104d77ef58628d710bb48b83f50b330d5fdeb9d84dd"
+      "neutralSha256": "faf343c87380c6eb2c101104d77ef58628d710bb48b83f50b330d5fdeb9d84dd",
+      "walk": "assets/characters/walk-v2/divine-gothic-girl.webp",
+      "walkSha256": "a03c9d5edfe71457e324405670d7394c6914d80a868431039d569579a8aa6641"
     },
     {
       "id": "adventure_boy",
@@ -3761,9 +4127,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -4114,12 +4486,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            126.82051282051282,
+            128.17948717948718
+          ],
+          "passing": [
+            126.93243243243244,
+            128.06756756756758
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            126.17721518987342,
+            129.8227848101266
+          ],
+          "passing": [
+            127.06140350877193,
+            128.93859649122808
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/divine-adventure-boy.webp",
       "originalSha256": "fe2b52e1d5db213be46723c4a543441a0be2f840c891bc3361972dcf1c02d7b3",
       "atlas": "assets/characters/animation-v2/divine-adventure-boy.webp",
-      "atlasSha256": "ced248952a0c6fdb586ac75cafd78e341331c9f77dec1978a161d0c4ddfdd306",
+      "atlasSha256": "d99bdf53e1b56a639822512719fa2b8ee4a725d90940411f81642ea3878fdae8",
       "neutral": "assets/characters/idle-v2/divine-adventure-boy.webp",
-      "neutralSha256": "a6c1940252202f4ea94e708fa5a0f778115d70c4cb35e61737a7072dd221172b"
+      "neutralSha256": "a6c1940252202f4ea94e708fa5a0f778115d70c4cb35e61737a7072dd221172b",
+      "walk": "assets/characters/walk-v2/divine-adventure-boy.webp",
+      "walkSha256": "59d9cba79763d6c8ea51bd4305356c5a26c8aa7ea116c32eb2ca7f0180f3dc1b"
     },
     {
       "id": "adventure_girl",
@@ -4134,9 +4536,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -4487,12 +4895,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127,
+          "bandStart": 102,
+          "contact": [
+            126.30588235294118,
+            127.69411764705882
+          ],
+          "passing": [
+            125.85074626865672,
+            128.1492537313433
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            124.8970588235294,
+            130.10294117647058
+          ],
+          "passing": [
+            124.36486486486487,
+            130.63513513513513
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/divine-adventure-girl.webp",
       "originalSha256": "764a141d8ac8b06a8b462508cb0aa7a7c8f333ce970f84974a0857cca2f43ef2",
       "atlas": "assets/characters/animation-v2/divine-adventure-girl.webp",
-      "atlasSha256": "9f559f24367836001c69724821d11662af8a2d8e3767c16dc681d600a39d1425",
+      "atlasSha256": "fce720c7e97f56dcee65654efc1469f2818c106d564a80e8974bf06906203399",
       "neutral": "assets/characters/idle-v2/divine-adventure-girl.webp",
-      "neutralSha256": "c4a807ac9011500756ad57c607003454ed6a7a600454875509158a5f860a0d36"
+      "neutralSha256": "c4a807ac9011500756ad57c607003454ed6a7a600454875509158a5f860a0d36",
+      "walk": "assets/characters/walk-v2/divine-adventure-girl.webp",
+      "walkSha256": "bdf145cbd5dfdab74af1f35430d4c88c5a68ec1131adba12a8c77f82293d8ec7"
     },
     {
       "id": "black_boy",
@@ -4507,9 +4945,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -4860,12 +5304,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            126.35526315789474,
+            129.64473684210526
+          ],
+          "passing": [
+            124.90588235294118,
+            131.09411764705882
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 129,
+          "bandStart": 102,
+          "contact": [
+            126.93333333333334,
+            131.06666666666666
+          ],
+          "passing": [
+            124.61643835616438,
+            133.3835616438356
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/horror-ghostface-black-boy.webp",
       "originalSha256": "0c7b0d9a07af9d3b9a1b37a4a4b57e04f9a45ff6f9197331de18617e6d37a80a",
       "atlas": "assets/characters/animation-v2/horror-ghostface-black-boy.webp",
-      "atlasSha256": "a72450ef96325bffe60c826a4799ba130fb7296751650d6482c00737b3b009a7",
+      "atlasSha256": "0e3cc886d4bedca7820eee6ad13925b1f1acd1898a7365f9ce38fcd3fcd5f605",
       "neutral": "assets/characters/idle-v2/horror-ghostface-black-boy.webp",
-      "neutralSha256": "06fb85435905d9e661ecd4e8a863107ab335d3d30d2f523072ecc50276677ac2"
+      "neutralSha256": "06fb85435905d9e661ecd4e8a863107ab335d3d30d2f523072ecc50276677ac2",
+      "walk": "assets/characters/walk-v2/horror-ghostface-black-boy.webp",
+      "walkSha256": "7b557bd93333343b3f04641106ef924cb62caff2040f7fd13e9f5ead41d26b4a"
     },
     {
       "id": "black_girl",
@@ -4880,9 +5354,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -5233,16 +5713,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            125.70833333333333,
+            130.29166666666666
+          ],
+          "passing": [
+            126.27536231884058,
+            129.7246376811594
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            121.5,
+            133.5
+          ],
+          "passing": [
+            123.5,
+            131.5
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/horror-ghostface-black-girl.webp",
       "originalSha256": "ac3a296d415ae773d44cddfbbdb23b1ad0918ca0b02fb4afa7f20161368866c3",
       "atlas": "assets/characters/animation-v2/horror-ghostface-black-girl.webp",
-      "atlasSha256": "20016a1b8eb4c6e08248153faf18278997930fdfa878221b9845d7dd6562ac5d",
+      "atlasSha256": "644ff47cc7b872c21dcab89fa1d8ebcb6924d4b778294236cb9a09218e814846",
       "neutral": "assets/characters/idle-v2/horror-ghostface-black-girl.webp",
-      "neutralSha256": "bf8d7c13fa915162af3cdfb6bb27315f130c1140afda6ca32b18e7d7a9365d3e"
+      "neutralSha256": "bf8d7c13fa915162af3cdfb6bb27315f130c1140afda6ca32b18e7d7a9365d3e",
+      "walk": "assets/characters/walk-v2/horror-ghostface-black-girl.webp",
+      "walkSha256": "4160f309c51e8ca084a0945b14a4021bacca8f54a9f9dfc9afabcf348c723eba"
     },
     {
       "id": "gothic_boy",
-      "name": "Rapaz gótico",
+      "name": "Rapaz g\u00f3tico",
       "key": "macabre",
       "profile": {
         "file": "horror-freddy-gothic-boy.webp",
@@ -5253,9 +5763,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -5606,16 +6122,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            123.5679012345679,
+            131.4320987654321
+          ],
+          "passing": [
+            124.36363636363636,
+            130.63636363636363
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            126.49038461538461,
+            128.5096153846154
+          ],
+          "passing": [
+            124.12820512820512,
+            130.87179487179486
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/horror-freddy-gothic-boy.webp",
       "originalSha256": "931ecd62888ff0d7a3055852a7d73121c31a4bdca87b00c002f709c2751da62c",
       "atlas": "assets/characters/animation-v2/horror-freddy-gothic-boy.webp",
-      "atlasSha256": "7fd016fea1f28672bbeccd0185658ec310cc80879dcf73339083cca12161b2d7",
+      "atlasSha256": "da72491edde99bde52ae9fff8f385795f63290e35dae4903c1534c722fd13fc4",
       "neutral": "assets/characters/idle-v2/horror-freddy-gothic-boy.webp",
-      "neutralSha256": "34c06a558a0a1e36fb998d7a1807c485f23d84e5907cdd0abc611ffe2f041476"
+      "neutralSha256": "34c06a558a0a1e36fb998d7a1807c485f23d84e5907cdd0abc611ffe2f041476",
+      "walk": "assets/characters/walk-v2/horror-freddy-gothic-boy.webp",
+      "walkSha256": "9f86c0b598d6c62a9d0cae2042f87281fab4cfdb9946e1e6a145da26a946b419"
     },
     {
       "id": "gothic_girl",
-      "name": "Garota gótica",
+      "name": "Garota g\u00f3tica",
       "key": "macabre",
       "profile": {
         "file": "horror-myers-gothic-girl.webp",
@@ -5626,9 +6172,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -5979,12 +6531,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128.5,
+          "bandStart": 102,
+          "contact": [
+            125.81159420289855,
+            131.18840579710144
+          ],
+          "passing": [
+            125.29850746268657,
+            131.70149253731344
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125.35632183908046,
+            129.64367816091954
+          ],
+          "passing": [
+            124.38095238095238,
+            130.61904761904762
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/horror-myers-gothic-girl.webp",
       "originalSha256": "8071329ceb330f2aa4e863207fc210fcb1cc7487b8586dfd3bb155119e01df7e",
       "atlas": "assets/characters/animation-v2/horror-myers-gothic-girl.webp",
-      "atlasSha256": "98486586fb407fff01e5b9b3b2d80f634f0b2f1355a67780d3d6766271b663f1",
+      "atlasSha256": "b4df95f8fe880f29c426bd55ef3facbf29027a0b1a89a0d8f3b68e37e9ad9e77",
       "neutral": "assets/characters/idle-v2/horror-myers-gothic-girl.webp",
-      "neutralSha256": "de4e17429c728871a00d58ecd46e164165b1b3887e5a3567ee810d83d05cb04b"
+      "neutralSha256": "de4e17429c728871a00d58ecd46e164165b1b3887e5a3567ee810d83d05cb04b",
+      "walk": "assets/characters/walk-v2/horror-myers-gothic-girl.webp",
+      "walkSha256": "b557fd77eadff5e9088e1fc30fdf2b55cd99ce93f14fa3e463570fc8d87c8c7c"
     },
     {
       "id": "adventure_boy",
@@ -5999,9 +6581,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -6352,12 +6940,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            122.13793103448276,
+            132.86206896551724
+          ],
+          "passing": [
+            122.35714285714286,
+            132.64285714285714
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127,
+          "bandStart": 102,
+          "contact": [
+            123.43956043956044,
+            130.56043956043956
+          ],
+          "passing": [
+            123.04347826086956,
+            130.95652173913044
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/horror-jason-adventure-boy.webp",
       "originalSha256": "075a4ede411f97c593f8b96534327e099ebe562ee7af52c728308ac8a1ea1be7",
       "atlas": "assets/characters/animation-v2/horror-jason-adventure-boy.webp",
-      "atlasSha256": "c4a0df62e2b761c3b33bf48b2cca72d7a1c68e42d32352e2a8f67b035a5bbfc3",
+      "atlasSha256": "851bdd930cfe7d9549e36e61778cff862b2a64f7566a1ef8de6cfbea6811ed3e",
       "neutral": "assets/characters/idle-v2/horror-jason-adventure-boy.webp",
-      "neutralSha256": "8f5b734d4e76fd7431d5ae85d7f8984cc27da4cdf5fbbe292e380ad6458bd98d"
+      "neutralSha256": "8f5b734d4e76fd7431d5ae85d7f8984cc27da4cdf5fbbe292e380ad6458bd98d",
+      "walk": "assets/characters/walk-v2/horror-jason-adventure-boy.webp",
+      "walkSha256": "928e957919e7a9f78160589b5583bed3d319ed1c420d89ab30ccbb6ab0846fa7"
     },
     {
       "id": "adventure_girl",
@@ -6372,9 +6990,15 @@
           2,
           3
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -6725,12 +7349,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127,
+          "bandStart": 102,
+          "contact": [
+            123.90625,
+            130.09375
+          ],
+          "passing": [
+            124.54098360655738,
+            129.45901639344262
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            127.28813559322033,
+            128.71186440677965
+          ],
+          "passing": [
+            122,
+            134
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/horror-spectral-bride-adventure-girl.webp",
       "originalSha256": "e43eb0ec6bb0c67b511b5998551190c3bf3d81fbdf4bb3f54969059d5c82372b",
       "atlas": "assets/characters/animation-v2/horror-spectral-bride-adventure-girl.webp",
-      "atlasSha256": "02a818f527e5ac4093dc9499f7a61dd6ce3868f65c5dce6e4f642d41a44a18f9",
+      "atlasSha256": "427fa84948a2fdc120bc86beaa102a1811f918f462e69d8e95d2057230079be5",
       "neutral": "assets/characters/idle-v2/horror-spectral-bride-adventure-girl.webp",
-      "neutralSha256": "a1cee5fc06e9b2a6df580beb86c06bfb0c099d055dc4df08053917d37ad80deb"
+      "neutralSha256": "a1cee5fc06e9b2a6df580beb86c06bfb0c099d055dc4df08053917d37ad80deb",
+      "walk": "assets/characters/walk-v2/horror-spectral-bride-adventure-girl.webp",
+      "walkSha256": "9c3ed6a84f57110b8230a6411b72593af5405eb0dc09d59e09e58583a6dd280d"
     },
     {
       "id": "black_boy",
@@ -6745,9 +7399,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -7098,12 +7758,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            126.25274725274726,
+            129.5888888888889
+          ],
+          "passing": [
+            125.60526315789474,
+            130.39473684210526
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128.5,
+          "bandStart": 102,
+          "contact": [
+            127.6987951807229,
+            129.3012048192771
+          ],
+          "passing": [
+            124.8433734939759,
+            132.15662650602408
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/macabre-alt-black-boy.webp",
       "originalSha256": "2939b3974963b6ba7f08b80159993fcce0256f7335f31a9807b4de59bfc6504c",
       "atlas": "assets/characters/animation-v2/macabre-alt-black-boy.webp",
-      "atlasSha256": "602f00637009e20e1aed38ca5ab9ff8a851439cd6f6e0040443a8417c736c9c9",
+      "atlasSha256": "7579e7b94cef3338058c4ca09547655c9575a99e8687f3fc134ec6a8757c6fd4",
       "neutral": "assets/characters/idle-v2/macabre-alt-black-boy.webp",
-      "neutralSha256": "8d4508821ab65dbba9105d32c50f522af7eb9353275bce5634b65b14def697e4"
+      "neutralSha256": "8d4508821ab65dbba9105d32c50f522af7eb9353275bce5634b65b14def697e4",
+      "walk": "assets/characters/walk-v2/macabre-alt-black-boy.webp",
+      "walkSha256": "a310359a954dc7c41f78a5e856c9eed763cc896d92df2599e2d457c8895c94d2"
     },
     {
       "id": "black_girl",
@@ -7118,9 +7808,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -7471,16 +8167,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125,
+            130
+          ],
+          "passing": [
+            125.82352941176471,
+            129.1764705882353
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127,
+          "bandStart": 102,
+          "contact": [
+            124.70175438596492,
+            129.2982456140351
+          ],
+          "passing": [
+            126.73469387755102,
+            127.26530612244898
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/macabre-alt-black-girl.webp",
       "originalSha256": "e46afd30542abbe752cbb1cbed109d4bcd01704aa88e9481b48e732cd4f6ee11",
       "atlas": "assets/characters/animation-v2/macabre-alt-black-girl.webp",
-      "atlasSha256": "125029aba4e38ac48aacf7200370fc4b73a1e6acffab4aa2ed9c836144e043f8",
+      "atlasSha256": "43cc2fe97563c3ab08733dcdb498bfdb8d4f6ff6783b6b0643a94333a159e2a9",
       "neutral": "assets/characters/idle-v2/macabre-alt-black-girl.webp",
-      "neutralSha256": "6856aefa32d5e3f42121d7da1b88d5d31a5d87a3e24d45257503588447934213"
+      "neutralSha256": "6856aefa32d5e3f42121d7da1b88d5d31a5d87a3e24d45257503588447934213",
+      "walk": "assets/characters/walk-v2/macabre-alt-black-girl.webp",
+      "walkSha256": "727423dee4a8c00eb073f68db4d6d32781ec2e8c1cef422e1f64880fca1d1001"
     },
     {
       "id": "gothic_boy",
-      "name": "Rapaz gótico",
+      "name": "Rapaz g\u00f3tico",
       "key": "macabre_alt",
       "profile": {
         "file": "macabre-alt-gothic-boy.webp",
@@ -7491,9 +8217,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -7844,16 +8576,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            124.95,
+            131.05
+          ],
+          "passing": [
+            125.27027027027027,
+            130.72972972972974
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            123.61538461538461,
+            131.3846153846154
+          ],
+          "passing": [
+            124.61842105263158,
+            130.3815789473684
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/macabre-alt-gothic-boy.webp",
       "originalSha256": "471c3438ea67d35eac8f5b6f7cea997d1c82075b3b34a05ca1416802c3409819",
       "atlas": "assets/characters/animation-v2/macabre-alt-gothic-boy.webp",
-      "atlasSha256": "843e307dba212ddaadf0cbbc4767e7f2511effc0b24e7cddcaeb4eb1190de5ee",
+      "atlasSha256": "820821fa38a0c404aada7d878f727e93a13112fa7eead2b958dd421d165cf0c3",
       "neutral": "assets/characters/idle-v2/macabre-alt-gothic-boy.webp",
-      "neutralSha256": "2f64c1b08bf125ebe71f4a627d93d386a19a68a5fcad369c49b546fc8971293f"
+      "neutralSha256": "2f64c1b08bf125ebe71f4a627d93d386a19a68a5fcad369c49b546fc8971293f",
+      "walk": "assets/characters/walk-v2/macabre-alt-gothic-boy.webp",
+      "walkSha256": "468b32b3492bb820b0be4b1886ba1a3c117efb235fd750dc0ead71ed00a2033a"
     },
     {
       "id": "gothic_girl",
-      "name": "Garota gótica",
+      "name": "Garota g\u00f3tica",
       "key": "macabre_alt",
       "profile": {
         "file": "macabre-alt-gothic-girl.webp",
@@ -7864,9 +8626,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -8217,12 +8985,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            125.29411764705883,
+            130.7058823529412
+          ],
+          "passing": [
+            125.18181818181819,
+            130.8181818181818
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            126.88461538461539,
+            128.1153846153846
+          ],
+          "passing": [
+            126.68333333333334,
+            128.31666666666666
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/macabre-alt-gothic-girl.webp",
       "originalSha256": "f9bab6110ecf62cde33ab5c97d70938734c39317a7b20e7446b06dbf174ae492",
       "atlas": "assets/characters/animation-v2/macabre-alt-gothic-girl.webp",
-      "atlasSha256": "5e8749442addc75f884a68ccd3fc3e7c2e81511292a151b4075e754f4546a441",
+      "atlasSha256": "0f8ca4a82bd79f1101c3f092e3ab734e6f667f07ebeb20e3d19eff92d7fe1fd2",
       "neutral": "assets/characters/idle-v2/macabre-alt-gothic-girl.webp",
-      "neutralSha256": "c50f7c9704f7aee96e7a1d99cbbc33f8195e40dcf7e57cdf0a4e730bdfbebd4f"
+      "neutralSha256": "c50f7c9704f7aee96e7a1d99cbbc33f8195e40dcf7e57cdf0a4e730bdfbebd4f",
+      "walk": "assets/characters/walk-v2/macabre-alt-gothic-girl.webp",
+      "walkSha256": "704d407586d0e4ffe903c5b4c1d272c9aa1b33595279463690677e060b4c98f2"
     },
     {
       "id": "adventure_boy",
@@ -8237,9 +9035,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -8590,12 +9394,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125.04347826086956,
+            129.95652173913044
+          ],
+          "passing": [
+            125,
+            130
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125.63636363636364,
+            129.36363636363637
+          ],
+          "passing": [
+            126.69014084507042,
+            128.30985915492957
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/macabre-alt-adventure-boy.webp",
       "originalSha256": "eea06101406a12c79a08280dc2d0d2804b79db4f0d27eaecca234f9fa3540c70",
       "atlas": "assets/characters/animation-v2/macabre-alt-adventure-boy.webp",
-      "atlasSha256": "2dba29cec18957c12434ce0cc3309aa9fd0088274c390da979994b832b387d0b",
+      "atlasSha256": "dc9ade15c335d5a812031180d69a84ec5ed609cbc650cd6874f6a40a30aaaa3f",
       "neutral": "assets/characters/idle-v2/macabre-alt-adventure-boy.webp",
-      "neutralSha256": "5b848edc86ccad50d6abd9e22cf2fa0431e1d3dd2e1bfb01bae91d2c623fb426"
+      "neutralSha256": "5b848edc86ccad50d6abd9e22cf2fa0431e1d3dd2e1bfb01bae91d2c623fb426",
+      "walk": "assets/characters/walk-v2/macabre-alt-adventure-boy.webp",
+      "walkSha256": "f255c68797e3db1e03b633bc1f50ca9951f05391c076a9776d007ee8a866cc78"
     },
     {
       "id": "adventure_girl",
@@ -8610,9 +9444,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -8963,12 +9803,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128.5,
+          "bandStart": 102,
+          "contact": [
+            124.44155844155844,
+            132.55844155844156
+          ],
+          "passing": [
+            127.9375,
+            129.0625
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 126.5,
+          "bandStart": 102,
+          "contact": [
+            124.81818181818181,
+            128.1818181818182
+          ],
+          "passing": [
+            123.9367088607595,
+            129.0632911392405
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/macabre-alt-adventure-girl.webp",
       "originalSha256": "7021086a2b85754594246e99683c17fbcfe3f842614baedff834344ea48b6b0a",
       "atlas": "assets/characters/animation-v2/macabre-alt-adventure-girl.webp",
-      "atlasSha256": "04e3cdd161f0e975c0117a94c5d1e5f0444daa6c4f191c6e0bad52227fbb13bc",
+      "atlasSha256": "153a0488ff603b1bb2816c31739728776c3401d977eec968f64ab38c723b861a",
       "neutral": "assets/characters/idle-v2/macabre-alt-adventure-girl.webp",
-      "neutralSha256": "33c4b30c5bb37cf69ef544b87551c2a370fafb4de95b37025de3be69a29f6c47"
+      "neutralSha256": "33c4b30c5bb37cf69ef544b87551c2a370fafb4de95b37025de3be69a29f6c47",
+      "walk": "assets/characters/walk-v2/macabre-alt-adventure-girl.webp",
+      "walkSha256": "d93e8c95bb826c376f6168d3311b69ddc5e81f6c5869863beb26bcbad9a1e107"
     },
     {
       "id": "black_boy",
@@ -8983,9 +9853,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -9336,12 +10212,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 129,
+          "bandStart": 102,
+          "contact": [
+            127.56,
+            130.44
+          ],
+          "passing": [
+            125.43835616438356,
+            132.56164383561645
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            121.04347826086956,
+            134.95652173913044
+          ],
+          "passing": [
+            119.53333333333333,
+            136.46666666666667
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/apex-black-boy.webp",
       "originalSha256": "1b961a9867ff6fc2ff6c61d17d85d4a0c0356270fa691c3cfecda951b5e8ac72",
       "atlas": "assets/characters/animation-v2/apex-black-boy.webp",
-      "atlasSha256": "0d4de0d65c11c1769c5fab60665a1134b1c7a1534d6f4e9ea3b0b7f24a0bad36",
+      "atlasSha256": "afa4466479cdc47dbce5d85c2b46c84c6f167270cbb489fd391db2368213bf31",
       "neutral": "assets/characters/idle-v2/apex-black-boy.webp",
-      "neutralSha256": "bbb306bdf21bc3a8297ba7c4b829e53beaf4e315f94d4420fbaab8455c9760c3"
+      "neutralSha256": "bbb306bdf21bc3a8297ba7c4b829e53beaf4e315f94d4420fbaab8455c9760c3",
+      "walk": "assets/characters/walk-v2/apex-black-boy.webp",
+      "walkSha256": "d6d9c50dceae99b2d8b6aac72d985443f51a9e4f114a503d768d09e322cf91a5"
     },
     {
       "id": "black_girl",
@@ -9356,9 +10262,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -9709,16 +10621,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            126.91025641025641,
+            128.0897435897436
+          ],
+          "passing": [
+            123.93243243243244,
+            131.06756756756758
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125.58333333333333,
+            129.41666666666666
+          ],
+          "passing": [
+            126.29577464788733,
+            128.70422535211267
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/apex-black-girl.webp",
       "originalSha256": "c923dda4a4baee4b47fbb5ee3db16524b6c684ce6b2d5ef8307091cf248f37bf",
       "atlas": "assets/characters/animation-v2/apex-black-girl.webp",
-      "atlasSha256": "603131918911e7dfde941f14835fb64d32e6a1fb855b6ce60dd4293243ba5030",
+      "atlasSha256": "d0ff00ed15326f86d7bf30e97b695a18cc668f24dd4efc40f3216427d7f056fa",
       "neutral": "assets/characters/idle-v2/apex-black-girl.webp",
-      "neutralSha256": "0ff1289cd7790a9baec0b5af7289783da35d06d93395aba4ab98351221896299"
+      "neutralSha256": "0ff1289cd7790a9baec0b5af7289783da35d06d93395aba4ab98351221896299",
+      "walk": "assets/characters/walk-v2/apex-black-girl.webp",
+      "walkSha256": "197cf0776ada4717520bbc2d3ab7817da646249afc834b1f18335bd0b304814c"
     },
     {
       "id": "gothic_boy",
-      "name": "Rapaz gótico",
+      "name": "Rapaz g\u00f3tico",
       "key": "supreme",
       "profile": {
         "file": "apex-gothic-boy.webp",
@@ -9729,9 +10671,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -10082,16 +11030,46 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            125.70270270270271,
+            130.2972972972973
+          ],
+          "passing": [
+            123.77631578947368,
+            132.22368421052633
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            123.14285714285714,
+            132.85714285714286
+          ],
+          "passing": [
+            126.07894736842105,
+            129.92105263157896
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/apex-gothic-boy.webp",
       "originalSha256": "31e5b9ebede1f4a12acc653b798f19ad8f3814f429ee73743c715dea22ab76a2",
       "atlas": "assets/characters/animation-v2/apex-gothic-boy.webp",
-      "atlasSha256": "79f4556ce8fca0ea2f5cd3f097c9cb3e7fa2c3dced882b9b60b73fb1ededdbe8",
+      "atlasSha256": "56a2fa992d0e5f0e8d8133aef2fdc7c889da8b2f79fc927954adb7ebf1fc31b4",
       "neutral": "assets/characters/idle-v2/apex-gothic-boy.webp",
-      "neutralSha256": "81bffd5bd06255a903df4296092a377ccacfce07e833f7efd580770f9cc97309"
+      "neutralSha256": "81bffd5bd06255a903df4296092a377ccacfce07e833f7efd580770f9cc97309",
+      "walk": "assets/characters/walk-v2/apex-gothic-boy.webp",
+      "walkSha256": "588b4b4ec919917ad8182ad07535f0db9ad04999e8a7158e7b0d86f9003c68cc"
     },
     {
       "id": "gothic_girl",
-      "name": "Garota gótica",
+      "name": "Garota g\u00f3tica",
       "key": "supreme",
       "profile": {
         "file": "apex-gothic-girl.webp",
@@ -10102,9 +11080,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -10455,12 +11439,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            126.5,
+            128.5
+          ],
+          "passing": [
+            126.77049180327869,
+            128.2295081967213
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125.13636363636364,
+            129.86363636363637
+          ],
+          "passing": [
+            125.6,
+            129.4
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/apex-gothic-girl.webp",
       "originalSha256": "c82ecdf820bac5d2c040ee3efd8dfc2059be50196a6218b73ef8888ecb4b4f22",
       "atlas": "assets/characters/animation-v2/apex-gothic-girl.webp",
-      "atlasSha256": "015273df0e505cd83c1d4f43a56f31df665cb39123e78eb87f321920fbc072a2",
+      "atlasSha256": "a26675e9f1184987f4ed219466ccc907e7f47a85298ab7ee01890efcbba35573",
       "neutral": "assets/characters/idle-v2/apex-gothic-girl.webp",
-      "neutralSha256": "6698fedde09d4f2a731eb756c9cf7f8d4addba7a5f55c61ad7bb02987cd2c097"
+      "neutralSha256": "6698fedde09d4f2a731eb756c9cf7f8d4addba7a5f55c61ad7bb02987cd2c097",
+      "walk": "assets/characters/walk-v2/apex-gothic-girl.webp",
+      "walkSha256": "e9229fe1a181c64d214f7d5e01c899d3691b7d16109a0fca2170777751f0c5a5"
     },
     {
       "id": "adventure_boy",
@@ -10475,9 +11489,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -10828,12 +11848,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            126.91666666666667,
+            128.08333333333334
+          ],
+          "passing": [
+            125.90625,
+            129.09375
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 127.5,
+          "bandStart": 102,
+          "contact": [
+            125.44736842105263,
+            129.55263157894737
+          ],
+          "passing": [
+            126.57425742574257,
+            128.4257425742574
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/apex-adventure-boy.webp",
       "originalSha256": "00784d4d335a420db1713d1dde3b3cbecb293f38b0c3288c0ef394981933fcfc",
       "atlas": "assets/characters/animation-v2/apex-adventure-boy.webp",
-      "atlasSha256": "19f83219053ef0225746deb1d09270076496b288b1800ed0fc0276c0c02877ad",
+      "atlasSha256": "064f1b084e93f00923a3f4cc9de9085869f57ac43c14e80eab320bd177528e3d",
       "neutral": "assets/characters/idle-v2/apex-adventure-boy.webp",
-      "neutralSha256": "bcf4002887d071d9c6d31b3a0a42912737dc0139cdb2eb09dfa71f3239a27dd1"
+      "neutralSha256": "bcf4002887d071d9c6d31b3a0a42912737dc0139cdb2eb09dfa71f3239a27dd1",
+      "walk": "assets/characters/walk-v2/apex-adventure-boy.webp",
+      "walkSha256": "413c75835e0f02d11a242a0e9aaa4549f53ae2cb58056514bbd14603af97553e"
     },
     {
       "id": "adventure_girl",
@@ -10848,9 +11898,15 @@
           3,
           1
         ],
-        "walkOrder": [
-          1,
+        "walkSourceRows": [
           0,
+          1,
+          2,
+          3
+        ],
+        "walkOrder": [
+          0,
+          1,
           2,
           3
         ],
@@ -11201,12 +12257,42 @@
           "soleY": 120
         }
       ],
+      "gaitMetrics": [
+        {
+          "row": 0,
+          "pivot": 127,
+          "bandStart": 102,
+          "contact": [
+            125.83076923076923,
+            128.16923076923078
+          ],
+          "passing": [
+            124.88059701492537,
+            129.11940298507463
+          ]
+        },
+        {
+          "row": 3,
+          "pivot": 128,
+          "bandStart": 102,
+          "contact": [
+            126.82352941176471,
+            129.1764705882353
+          ],
+          "passing": [
+            125.93939393939394,
+            130.06060606060606
+          ]
+        }
+      ],
       "original": "assets/characters/halloween/apex-adventure-girl.webp",
       "originalSha256": "eab67c4e2ec400d93842937aff5f741c2dbdb91d81bca4ea0e22a0b377d16246",
       "atlas": "assets/characters/animation-v2/apex-adventure-girl.webp",
-      "atlasSha256": "98144f248ecab492aa6e8579ad57fd2057d33697833bbc2fd1b455918265b925",
+      "atlasSha256": "47071ba6e21576ad2ffe6727ad127af6595e1d4191d622cb42b54ff9a64ba16d",
       "neutral": "assets/characters/idle-v2/apex-adventure-girl.webp",
-      "neutralSha256": "6a567f92c1c1d432898cada4e46169d556e4cdcfb24ab7d9f66ba3da126bb92c"
+      "neutralSha256": "6a567f92c1c1d432898cada4e46169d556e4cdcfb24ab7d9f66ba3da126bb92c",
+      "walk": "assets/characters/walk-v2/apex-adventure-girl.webp",
+      "walkSha256": "49417de0b938a73a9983f28a5f82692d816debfa0e117382cacd55d9b75682a6"
     }
   ]
 }

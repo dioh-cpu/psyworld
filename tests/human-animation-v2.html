@@ -11,14 +11,14 @@
  const names={basic:'ROUPAS ORIGINAIS · TRAJE DE JORNADA',divine:'JURAMENTO DA AURORA',macabre:'MÁSCARA DO ÚLTIMO SINO',macabre_alt:'VÉU DA NÉVOA RUBRA',supreme:'COROA DO ECLIPSE ETERNO'};
  for(const ch of PsyHalloweenCharacters)for(const key of keys){
   const image=new Image();image.src='assets/characters/halloween/'+ch.costumes[key];await image.decode();
-  let idleImage=null;if(window.PsyHumanAnimationBuild){idleImage=new Image();idleImage.src='assets/characters/idle-v2/'+ch.costumes[key];await idleImage.decode();}
-  const pack=api.getAnimationAtlas(image,idleImage);catalog.push({id:ch.id,name:ch.name,key,image,pack});
+  let idleImage=null,walkImage=null;if(window.PsyHumanAnimationBuild){idleImage=new Image();idleImage.src='assets/characters/idle-v2/'+ch.costumes[key];await idleImage.decode();walkImage=new Image();walkImage.src='assets/characters/walk-v2/'+ch.costumes[key];await walkImage.decode();}
+  const pack=api.getAnimationAtlas(image,idleImage,walkImage);catalog.push({id:ch.id,name:ch.name,key,image,pack});
  }
  const stages=[
-  {ms:1100,to:[40,80],row:0,label:'WALK SOUTH · poses atuais com escala corrigida'}, {ms:4400,to:[40,80],row:0,label:'IDLE SOUTH · pés e rosto estáveis'},
+  {ms:1100,to:[40,80],row:0,label:'WALK SOUTH · contato e passagem'}, {ms:4400,to:[40,80],row:0,label:'IDLE SOUTH · pés e rosto estáveis'},
   {ms:1100,to:[40,60],row:3,label:'WALK NORTH · vista traseira real'}, {ms:4400,to:[40,60],row:3,label:'IDLE NORTH · respiração sutil'},
   {ms:1100,to:[65,60],row:2,label:'WALK EAST · cadência temporal'}, {ms:4400,to:[65,60],row:2,label:'IDLE EAST · acessórios ancorados'},
-  {ms:1100,to:[40,60],row:1,label:'WALK WEST · biomecânica ainda em revisão'}, {ms:4400,to:[40,60],row:1,label:'IDLE WEST · mesma silhueta'},
+  {ms:1100,to:[40,60],row:1,label:'WALK WEST · passos complementares aprovados'}, {ms:4400,to:[40,60],row:1,label:'IDLE WEST · mesma silhueta'},
   {ms:400,to:[60,60],row:2,label:'Retomada → curva'}, {ms:400,to:[60,80],row:0,label:'Curva → SOUTH'},
   {ms:400,to:[40,80],row:1,label:'Curva → WEST'}, {ms:400,to:[40,60],row:3,label:'Curva → NORTH'},
   {ms:1000,to:[40,60],row:3,label:'Parada final · pose estabilizada'}
@@ -28,7 +28,7 @@
  function render(time){
   const page=Math.min(keys.length-1,Math.floor(Math.max(0,time)/pageDuration)),key=keys[page],p=route(Math.min(pageDuration,Math.max(0,time-page*pageDuration)));
   ctx.fillStyle='#111d2b';ctx.fillRect(0,0,1280,960);ctx.fillStyle='#8edbc4';ctx.font='bold 19px system-ui';ctx.fillText('PSYWORLD · CHARACTER ANIMATION STUDIO V2',24,32);
-  ctx.fillStyle='#fff';ctx.font='bold 25px system-ui';ctx.fillText(names[key],24,69);ctx.fillStyle='#b6c9da';ctx.font='15px system-ui';ctx.fillText('Seis personagens · escala + IDLE · WALK existente em revisão · fonte à direita',24,98);
+  ctx.fillStyle='#fff';ctx.font='bold 25px system-ui';ctx.fillText(names[key],24,69);ctx.fillStyle='#b6c9da';ctx.font='15px system-ui';ctx.fillText('Seis personagens · WALK + IDLE · novos passos aprovados · fonte original à direita',24,98);
   const actors=[];
   catalog.filter(c=>c.key===key).forEach((ch,i)=>{
    const left=(i%3)*426+12,top=Math.floor(i/3)*375+132;
