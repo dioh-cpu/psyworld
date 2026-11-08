@@ -67,25 +67,26 @@ function questRows(){
  const active=(Array.isArray(raw)?raw:Object.values(raw)).map(q=>({...q,title:q.title||q.name||q.n,kind:q.kind||q.category||'side'}));
  return [...main,...active,...extra,...(W.PsyProfessions?.questRows?.()||[])].filter(q=>q&&q.title&&q.status!=='completed'&&q.status!=='claimed');
 }
+function controllerIsOpen(ctl){return ctl===W.PsyKantoPlayableV1?!!ctl?.getPosition?.():!!W.PsyKantoWorldV2?.isOpen?.();}
 async function find(q){
  W.PsyKantoWorldV2?.dismissMenu?.();
  findTask=null;api()?.setAutoHunt(false);if(q.goal==='workshop'){if(W.PsyKantoWorldV2?.isOpen?.())W.PsyKantoWorldV2.openMenuPanel('professions');else W.PsyProfessions?.open('main');return;}
  if(q.goal==='chapter'){const ctl=api();if(ctl?.navigateObjective)ctl.navigateObjective(q.at);else ctl?.navigateTo?.(q.at);return;}
  if(q.goal==='oak'){
-  let p=api()?.getPosition?.();if(!p||p.world!=='pallet'){api()?.open('pallet');p=api()?.getPosition?.();}
-  if(p.inside&&p.inside!=='lab')api()?.leaveInterior();
+  let ctl=api(),p=ctl?.getPosition?.();if(!p||p.world!=='pallet'||!controllerIsOpen(ctl)){ctl?.open?.('pallet');ctl=api();p=ctl?.getPosition?.();}
+  if(p?.inside&&p.inside!=='lab')ctl?.leaveInterior();
   findTask={goal:'oak',phase:api()?.getPosition?.().inside==='lab'?'professor':'lab'};
   findAt=0;await advanceFind();
  }else if(q.goal==='viridian'){
-  const ctl=api();if(ctl?.getPosition?.().inside)ctl?.leaveInterior();
-  if(ctl?.getPosition?.().world!=='route-1')ctl?.open?.('route-1');
+  let ctl=api();if(ctl?.getPosition?.().inside)ctl?.leaveInterior();
+  if(ctl?.getPosition?.().world!=='route-1'||!controllerIsOpen(ctl)){ctl?.open?.('route-1');ctl=api();}
   const atGate=ctl?.getPosition?.();if(atGate?.world==='route-1'&&!atGate.inside&&Math.hypot(atGate.x-939,atGate.y-81)<=70){ctl.interact?.();note('Você chegou ao portão de Viridian.');return;}
   findTask={goal:'viridian-gate',target:[939,81],routing:true};findAt=0;
   const ok=await ctl?.navigate?.([939,81]);if(findTask){findTask.routing=false;findTask.routed=ok;}
   note(ok?'Seguindo pela trilha até o portão de Viridian.':'Não foi possível traçar uma rota até Viridian.');
  }else if(q.goal==='explore-viridian'){
   let ctl=api(),pos=ctl?.getPosition?.();
-  if(pos?.world==='viridian'){
+  if(pos?.world==='viridian'&&controllerIsOpen(ctl)){
    if(pos.inside)ctl?.leaveInterior();
    const talked=!!W.PsyKantoWorldV2?.progress?.()?.viridianTalked;
    if(talked){if(!pos.inside&&Math.hypot(pos.x-449,pos.y-43)<=75){ctl?.interact?.();note('Você chegou à passagem norte.');return;}findTask={goal:'viridian-exit',target:[449,43],routing:true};findAt=0;const ok=await ctl?.navigate?.([449,43]);if(findTask){findTask.routing=false;findTask.routed=ok;}note(ok?'Seguindo até a passagem norte da Rota 2.':'Não foi possível traçar rota até o portão norte.');}
@@ -98,25 +99,37 @@ async function find(q){
  }else if(Array.isArray(q.at)){const ctl=api();if(ctl?.navigateObjective)ctl.navigateObjective({x:q.at[0],y:q.at[1]});else await ctl?.navigate?.(q.at);}
  else note('Abra o diário para consultar esse objetivo.');
 }
+function navigationPathActive(){return Number(D.getElementById('psy-kanto-world-v2')?.dataset.pathLength||0)>0;}
+async function routeTask(task,target,message){
+ if(!task||findTask!==task||task.routing)return;
+ if(task.routed&&navigationPathActive())return;
+ task.routing=true;task.routed=false;
+ const ok=await api()?.navigate?.(target);
+ if(findTask!==task)return;
+ task.routing=false;task.routed=!!ok;
+ if(!ok){findTask=null;if(message)note(message);}
+}
 async function advanceFind(){
  if(!findTask||Date.now()-findAt<1000)return;findAt=Date.now();
  const p=api()?.getPosition?.();if(!p)return;
  if(findTask?.goal==='viridian-gate'){
-  if(findTask.routing)return;if(!findTask.routed){findTask=null;return;}
-  if(p.world==='route-1'&&Math.hypot(p.x-939,p.y-81)<=70){findTask=null;api()?.interact?.();note('Você chegou ao portão de Viridian.');}return;
+  const task=findTask;if(task.routing)return;
+  if(p.world==='route-1'&&!p.inside&&Math.hypot(p.x-939,p.y-81)<=70){findTask=null;api()?.interact?.();note('Você chegou ao portão de Viridian.');return;}
+  if(p.world==='route-1'&&!p.inside)await routeTask(task,task.target,'Não foi possível traçar uma rota até Viridian.');return;
  }
  if(findTask?.goal==='viridian-elder'||findTask?.goal==='viridian-exit'){
-  if(findTask.routing)return;if(!findTask.routed){findTask=null;return;}
-  const target=findTask.target,range=findTask.goal==='viridian-elder'?70:75;
-  if(p.world==='viridian'&&!p.inside&&Math.hypot(p.x-target[0],p.y-target[1])<=range){const goal=findTask.goal;findTask=null;api()?.interact?.();note(goal==='viridian-elder'?'Você chegou ao ancião; a conversa da missão foi iniciada.':'Você chegou à passagem norte.');}return;
+  const task=findTask;if(task.routing)return;
+  const target=task.target,range=task.goal==='viridian-elder'?70:75;
+  if(p.world==='viridian'&&!p.inside&&Math.hypot(p.x-target[0],p.y-target[1])<=range){const goal=task.goal;findTask=null;api()?.interact?.();note(goal==='viridian-elder'?'Você chegou ao ancião; a conversa da missão foi iniciada.':'Você chegou à passagem norte.');return;}
+  if(p.world==='viridian'&&!p.inside)await routeTask(task,target,task.goal==='viridian-elder'?'Não foi possível traçar rota até o ancião.':'Não foi possível traçar rota até o portão norte.');return;
  }
  if(findTask.phase==='lab'){
   if(Math.hypot(p.x-763,p.y-123)<45){api()?.enterPlace('lab');findTask.phase='professor';findTask.routing=false;findTask.routed=false;findAt=0;}
-  else {if(!findTask.routing&&!findTask.routed){findTask.routing=true;const ok=await api()?.navigate([763,123]);if(findTask){findTask.routing=false;findTask.routed=ok;}}return;}
+  else {await routeTask(findTask,[763,123],'Não foi possível traçar uma rota até o laboratório.');return;}
  }
  if(findTask?.phase==='professor'){
   if(Math.hypot(p.x-240,p.y-307)<18&&p.inside==='lab'){findTask=null;api()?.interact();note('Objetivo encontrado.');}
-  else if(!findTask.routing&&!findTask.routed){findTask.routing=true;const ok=await api()?.navigate([240,307]);if(findTask){findTask.routing=false;findTask.routed=ok;}}
+  else await routeTask(findTask,[240,307],'Não foi possível traçar uma rota até o professor.');
  }
 }
 let lastRows='';

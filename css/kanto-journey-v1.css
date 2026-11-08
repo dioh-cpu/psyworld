@@ -1,57 +1,135 @@
-.psy-kanto-atlas{position:fixed;inset:0;z-index:2147481900;display:none;align-items:center;justify-content:center;padding:14px;background:#030712eF;backdrop-filter:blur(8px);color:#e5efff;font-family:system-ui,sans-serif}
+.psy-kanto-atlas{position:fixed;inset:0;z-index:2147481900;display:none;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 50% 32%,#122338e8,#050914f5 72%);backdrop-filter:blur(11px);color:#edf4f4;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 .psy-kanto-atlas.open{display:flex}
-.psy-kanto-sheet{width:min(1100px,100%);height:min(850px,calc(100dvh - 28px));display:flex;flex-direction:column;overflow:hidden;border:1px solid #66d9e8;border-radius:22px;background:linear-gradient(145deg,#0c192b,#101224 64%,#1b1728);box-shadow:0 24px 90px #000b,0 0 44px #19cce322}
-.psy-kanto-sheet header{display:flex;justify-content:space-between;align-items:center;padding:17px 20px;border-bottom:1px solid #29495a;background:linear-gradient(90deg,#11263a,#1a1930)}
-.psy-kanto-sheet header small,.psy-kanto-detail-kicker{letter-spacing:.18em;color:#7ce1e8;font-weight:900;font-size:11px}
-.psy-kanto-sheet header h2{font-size:clamp(23px,4vw,36px);margin:3px 0;color:#f5dfab;font-family:Georgia,serif}
-.psy-kanto-sheet header p{margin:0;color:#acc5d5;font-size:13px}
-.psy-kanto-close{width:42px;height:42px;border:1px solid #956447;border-radius:12px;background:#282139;color:#fff0ca;font-size:26px;cursor:pointer}
-.psy-kanto-progress{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;background:#0b1625;border-bottom:1px solid #253a4b}
-.psy-kanto-progress span{padding:7px 10px;border:1px solid #315367;border-radius:20px;background:#102435;color:#c9e0e7;font-size:12px}
-.psy-kanto-progress b{color:#ffe18a}
-.psy-kanto-layout{min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr)}
-.psy-kanto-map{position:relative;min-height:300px;overflow:hidden;background-color:#102330;background-image:linear-gradient(180deg,#07101d1c,#07101d55),url('../assets/story/kanto-region-v1.webp');background-size:100% 100%;background-position:center;background-repeat:no-repeat;isolation:isolate}
-.psy-kanto-map:before{content:"";position:absolute;inset:0;z-index:0;opacity:.1;background-image:radial-gradient(#f6d68b 1px,transparent 1.5px),linear-gradient(135deg,#07101d22,transparent 48%,#07101d55);background-size:24px 24px,100% 100%;pointer-events:none}
-.psy-kanto-route-line{position:absolute;inset:0;width:100%;height:100%;z-index:1;overflow:visible;filter:drop-shadow(0 2px 4px #07101de8)}
-.psy-kanto-route-line path{fill:none;stroke:#f3d38c;stroke-width:1.05;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.4 1.6;opacity:.92;vector-effect:non-scaling-stroke}
-.psy-kanto-node{position:absolute;z-index:2;left:var(--x);top:var(--y);transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;max-width:108px;padding:4px;border:0;background:none;color:#eaf5f2;cursor:pointer;text-shadow:0 2px 4px #000;touch-action:manipulation}
-.psy-kanto-node .node-core{width:24px;height:24px;border:3px solid #f5d783;border-radius:50%;background:#173346;box-shadow:0 0 0 4px #172c3d,0 0 18px #f6c87988;transition:transform .15s,box-shadow .15s}
-.psy-kanto-node.city .node-core{width:31px;height:31px;border-radius:8px;transform:rotate(45deg);background:#1e6871}
-.psy-kanto-node.dungeon .node-core{border-radius:4px;background:#56395f}
-.psy-kanto-node.locked{filter:grayscale(.9);opacity:.5}
-.psy-kanto-node.live .node-core,.psy-kanto-node:hover .node-core{box-shadow:0 0 0 5px #1c3749,0 0 25px #7de7eb;transform:scale(1.16)}
-.psy-kanto-node.city.live .node-core{transform:rotate(45deg) scale(1.12)}
-.psy-kanto-node .node-name{max-width:108px;padding:3px 6px;border-radius:6px;background:#0b1321d9;font-size:clamp(9px,1.2vw,12px);font-weight:850;line-height:1.15;text-align:center;white-space:normal}
-.psy-kanto-detail{overflow:auto;padding:22px;background:#0c1728;border-left:1px solid #30475a}
-.psy-kanto-detail h3{margin:5px 0 4px;color:#ffe3a5;font-size:clamp(24px,3vw,34px);font-family:Georgia,serif}
-.psy-kanto-mark{margin:0 0 16px;color:#b4ccda}
-.psy-kanto-story{display:grid;grid-template-columns:92px minmax(0,1fr);gap:9px;padding:13px;border:1px solid #2d4b5d;border-radius:14px;background:#102435;font-size:13px}
-.psy-kanto-story b{color:#76dce6}.psy-kanto-story span{color:#e4edf5}
-.psy-kanto-gate{margin:13px 0;padding:10px;border:1px solid #2cc58a;border-radius:10px;background:#0c332d;color:#9af2c8;font-size:12px;font-weight:900;letter-spacing:.07em}
-.psy-kanto-gate.closed{border-color:#735c41;background:#2b231e;color:#e4c794}
-.psy-kanto-detail h4{margin:17px 0 7px;color:#9de5eb;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.psy-kanto-sheet{position:relative;width:min(1500px,calc(100vw - 36px));height:min(840px,calc(100dvh - 34px));display:flex;flex-direction:column;overflow:hidden;border:16px solid transparent;border-image-source:url("../assets/ui/kanto-atlas-frame-v3.png");border-image-slice:32 fill;border-image-width:16px;border-image-repeat:stretch;background:#101c2c url("../assets/ui/kanto-atlas-vellum-v3.png") repeat;box-shadow:0 32px 110px #000d,0 0 75px #3baeba1e}
+.psy-kanto-sheet:after{position:absolute;inset:0;content:"";pointer-events:none;box-shadow:inset 0 0 0 1px #f4d58d45,inset 0 0 48px #050d1a7a;z-index:8}
+.psy-kanto-header{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:94px;padding:13px 20px 13px 16px;border-bottom:1px solid #bb9a5949;background:linear-gradient(90deg,#101b2bf5,#17243af2 48%,#101a2af5)}
+.psy-kanto-brand{display:flex;align-items:center;gap:15px;min-width:0}
+.psy-kanto-brand img{width:64px;height:64px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 5px 10px #0008)}
+.psy-kanto-header small,.psy-kanto-detail-kicker{display:block;color:#e4c37d;font-size:10px;font-weight:950;letter-spacing:.22em;text-transform:uppercase}
+.psy-kanto-header h2{margin:3px 0 2px;color:#fbf0d4;font-family:Georgia,"Times New Roman",serif;font-size:clamp(22px,3vw,32px);line-height:1.08;text-shadow:0 2px 6px #000b}
+.psy-kanto-header p{margin:0;color:#a9c5cf;font-size:12px;line-height:1.4}
+.psy-kanto-close{flex:0 0 auto;width:43px;height:43px;border:1px solid #e0bd76;border-radius:50%;background:linear-gradient(145deg,#243247,#121c2d);box-shadow:inset 0 1px #ffffff26,0 5px 15px #0006;color:#ffe5a9;font-size:25px;line-height:1;cursor:pointer;transition:transform .2s,filter .2s}
+.psy-kanto-close:hover{transform:rotate(90deg);filter:brightness(1.2)}
+.psy-kanto-progress{position:relative;z-index:2;display:flex;gap:8px;align-items:stretch;padding:10px 16px;border-bottom:1px solid #9fc2bd29;background:#0d1724}
+.atlas-stat{display:flex;align-items:center;gap:7px;min-height:35px;padding:5px 11px;border:1px solid #799b9d47;border-radius:6px;background:linear-gradient(180deg,#1a2b3a,#111f30);box-shadow:inset 0 1px #ffffff12}
+.atlas-stat small{color:#9db5bd;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.atlas-stat b{color:#f3d791;font-size:11px}
+.atlas-frontier{margin-left:auto;border-color:#cba96282;background:linear-gradient(105deg,#342c25,#182b3a 82%)}
+.atlas-frontier b{color:#ffdf94}
+.psy-kanto-layout{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(340px,.78fr);min-height:0;flex:1}
+.psy-kanto-map{position:relative;min-width:0;min-height:0;overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at center,#344858,#121d2c 75%);border-right:1px solid #bb9a5949;touch-action:none;outline:none;cursor:grab}
+.psy-kanto-map:active{cursor:grabbing}
+.psy-kanto-map:before{position:absolute;inset:0;z-index:0;content:"";pointer-events:none;opacity:.28;background-image:linear-gradient(0deg,#101a2c25 1px,transparent 1px),linear-gradient(90deg,#101a2c25 1px,transparent 1px),radial-gradient(#f1d99a 1px,transparent 1.6px);background-size:16px 16px,16px 16px,37px 37px}
+.psy-kanto-map-world{position:absolute;top:50%;left:50%;z-index:1;overflow:visible;transform-origin:center center;will-change:transform;box-shadow:0 14px 38px #02081299;border:1px solid #e4c27580;outline:5px solid #121b29aa}
+.psy-kanto-region-image{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;user-select:none;pointer-events:none}
+.psy-kanto-map-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,#07132140,transparent 20%,transparent 76%,#07132170),linear-gradient(90deg,#07132129,transparent 17%,transparent 85%,#07132135)}
+.psy-kanto-route-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.psy-kanto-link{fill:none;stroke:#e7cb91;stroke-width:1.18;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.45 1.5;opacity:.05;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 2px #111b)}
+.psy-kanto-link.open{opacity:.54}
+.psy-kanto-link.goal{stroke:#fff0b4;stroke-width:1.9;stroke-dasharray:2.3 1.6;opacity:.96;animation:psy-atlas-route-flow 6s linear infinite;filter:drop-shadow(0 0 4px #ffc65b)}
+@keyframes psy-atlas-route-flow{to{stroke-dashoffset:-22}}
+.psy-kanto-node{position:absolute;left:var(--x);top:var(--y);z-index:3;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0;width:54px;height:58px;padding:0;border:0;background:none;color:#f3f1df;cursor:pointer;touch-action:manipulation;transform:translate(-50%,-50%);text-align:center;text-shadow:0 2px 5px #06101b,0 1px 2px #06101b;transition:filter .2s,opacity .2s}
+.psy-kanto-node.locked{opacity:.55;filter:grayscale(.78) saturate(.52)}
+.psy-kanto-node.locked{z-index:2}
+.psy-kanto-node.open{opacity:.96}
+.psy-kanto-node.open{z-index:3}
+.psy-kanto-node:hover,.psy-kanto-node:focus-visible,.psy-kanto-node[data-hovered="true"],.psy-kanto-node.selected{z-index:5;opacity:1;filter:none;outline:none}
+.psy-kanto-node.goal{z-index:6}
+.psy-kanto-sigil{position:relative;display:block;width:50px;height:50px;background-image:url("../assets/ui/kanto-atlas-markers-v3.png");background-repeat:no-repeat;background-size:400% 100%;background-position:var(--sigil-position) center;image-rendering:pixelated;filter:drop-shadow(0 4px 3px #000a);transition:transform .18s,filter .18s}
+.psy-kanto-node:hover .psy-kanto-sigil,.psy-kanto-node:focus-visible .psy-kanto-sigil{transform:translateY(-3px) scale(1.08);filter:drop-shadow(0 5px 5px #000b) drop-shadow(0 0 7px #f1cf87)}
+.psy-kanto-node.city{width:60px;height:60px}.psy-kanto-node.city .psy-kanto-sigil{width:56px;height:56px}
+.psy-kanto-node.dungeon .psy-kanto-sigil{filter:drop-shadow(0 4px 3px #000a) drop-shadow(0 0 4px #9d82ff75)}
+.psy-kanto-node.goal .psy-kanto-sigil{filter:drop-shadow(0 4px 3px #000a) drop-shadow(0 0 11px #ffcf61)}
+.psy-kanto-node.selected .psy-kanto-sigil{transform:scale(1.12);filter:drop-shadow(0 4px 3px #000a) drop-shadow(0 0 13px #7de0d7)}
+.psy-kanto-node.goal:after{position:absolute;top:3px;left:50%;width:64px;height:64px;content:"";border:1px solid #ffe297b8;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 13px #ffca5b80;pointer-events:none;animation:psy-atlas-goal-pulse 2.4s ease-in-out infinite}
+@keyframes psy-atlas-goal-pulse{0%,100%{opacity:.48;transform:translateX(-50%) scale(.9)}50%{opacity:.92;transform:translateX(-50%) scale(1.1)}}
+.node-goal-tag{position:absolute;top:-7px;z-index:2;padding:2px 5px;border:1px solid #ffe8a8;border-radius:4px;background:#523d1ce8;color:#fff1bb;font-size:7px;font-weight:1000;letter-spacing:.09em;box-shadow:0 2px 5px #0008;pointer-events:none}
+.psy-kanto-node .node-name{position:absolute;top:calc(100% - 2px);left:50%;display:none;width:max-content;max-width:112px;padding:3px 6px;border:1px solid #e9d19a55;border-radius:4px;background:#101b2de8;color:#fff4d3;font-size:10px;font-weight:850;line-height:1.08;white-space:normal;box-shadow:0 2px 6px #0007;transform:translate(-50%,-2px);pointer-events:none}
+.psy-kanto-node .node-hunts{position:absolute;top:calc(100% + 20px);left:50%;display:none;width:max-content;padding:2px 5px;border-radius:4px;background:#164439ed;color:#b8efd7;font-size:8px;font-weight:900;box-shadow:0 2px 6px #0007;transform:translateX(-50%);pointer-events:none}
+.psy-kanto-node.selected .node-name,.psy-kanto-node.goal .node-name,.psy-kanto-node:hover .node-name,.psy-kanto-node:focus-visible .node-name{display:block}
+.psy-kanto-map[data-label-mode="regional"] .psy-kanto-node.city.open .node-name{display:block}
+.psy-kanto-map[data-label-mode="all"] .psy-kanto-node .node-name{display:block}
+.psy-kanto-node.selected .node-hunts,.psy-kanto-node.goal .node-hunts{display:block}
+.psy-kanto-map-top{position:absolute;top:14px;left:15px;right:15px;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none}
+.map-region-mark{padding:7px 11px;border:1px solid #e5c67e;border-radius:4px;background:#101c2be8;box-shadow:0 4px 12px #0008;color:#f5dfa4;font-size:10px;font-weight:950;letter-spacing:.15em}
+.map-region-mark i{padding:0 4px;color:#6bd2c5;font-style:normal}
+.map-hint{padding:6px 9px;border:1px solid #d5c08d43;border-radius:4px;background:#0c1727d9;color:#c3d1d0;font-size:10px}
+.psy-kanto-map-legend{position:absolute;bottom:16px;left:17px;z-index:6;display:flex;gap:10px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 150px);padding:8px 10px;border:1px solid #d9bf805c;border-radius:5px;background:#101a2cde;box-shadow:0 4px 12px #0008;color:#e0e8df;font-size:9px;font-weight:800;pointer-events:none}
+.psy-kanto-map-legend span{display:flex;align-items:center;gap:5px}
+.psy-kanto-map-legend i{display:inline-block;width:10px;height:10px;border:1px solid #ffe49b;background:#37806c;box-shadow:0 0 7px #7de0d777}
+.psy-kanto-map-legend .legend-route{border-radius:50%;background:#c79a50}
+.psy-kanto-map-legend .legend-special{border-color:#b5a0ff;background:#594280}
+.psy-kanto-map-legend .legend-locked{border-color:#98a2a6;background:#67717a;filter:grayscale(1)}
+.psy-kanto-map-compass{position:absolute;bottom:14px;right:16px;z-index:6;width:62px;height:62px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 8px #000a);pointer-events:none}
+.psy-kanto-map-tools{position:absolute;right:16px;top:84px;z-index:7;display:grid;gap:5px}
+.psy-kanto-map-tools button{width:36px;height:36px;padding:0;border:1px solid #e1c67e;border-radius:5px;background:linear-gradient(145deg,#21354a,#111e30);box-shadow:0 3px 8px #0008;color:#ffe7ab;font-size:20px;font-weight:900;line-height:1;cursor:pointer;touch-action:manipulation}
+.psy-kanto-map-tools button:hover{background:#33536a;transform:translateY(-1px)}
+.psy-kanto-map-tools button:last-child{font-size:17px}
+.psy-kanto-detail{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:#122033 url("../assets/ui/kanto-atlas-vellum-v3.png") repeat;color:#e8efeb}
+.psy-kanto-detail-hero{position:relative;flex:0 0 205px;overflow:hidden;background:#1c2938;border-bottom:1px solid #e3c77c75}
+.psy-kanto-place-art{display:block;width:100%;height:100%;margin:0;object-fit:cover;object-position:center 54%;image-rendering:auto}
+.psy-kanto-place-crop{background-size:300% 300%;background-repeat:no-repeat}
+.place-art-wash{position:absolute;inset:0;background:linear-gradient(180deg,#07132105 15%,#07132122 44%,#081321f2 100%),linear-gradient(90deg,#0a142437,transparent 72%)}
+.place-heading{position:absolute;left:18px;right:18px;bottom:14px;z-index:1}
+.psy-kanto-detail-kicker{margin-bottom:4px;color:#e9cb88;font-size:9px}
+.place-heading h3{margin:0;color:#fff3d6;font-family:Georgia,"Times New Roman",serif;font-size:clamp(27px,3vw,37px);line-height:1.05;text-shadow:0 2px 9px #000d}
+.place-heading p{margin:5px 0 0;color:#d1e1dc;font-size:11px;text-shadow:0 2px 5px #000e}
+.psy-kanto-detail-status{display:flex;align-items:center;gap:8px;margin:10px 16px 8px;padding:7px 9px;border:1px solid #409a7b70;border-radius:4px;background:#102d2ce8;color:#a9edce;font-size:10px;font-weight:900;letter-spacing:.04em}
+.psy-kanto-detail-status.closed{border-color:#b48d536e;background:#302719df;color:#e7c995}
+.status-dot{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:#61e1a7;box-shadow:0 0 10px #66e9b6}
+.closed .status-dot{background:#c5a56e;box-shadow:0 0 8px #c5a56e}
+.psy-kanto-detail-status b{margin-left:auto;color:#f4d386;font-size:8px;letter-spacing:.15em}
+.psy-kanto-detail-tabs{display:flex;gap:3px;margin:0 14px 7px;padding:3px;border:1px solid #b89e674d;border-radius:5px;background:#0c1726b8}
+.psy-kanto-detail-tabs button{flex:1;min-width:0;padding:8px 4px;border:1px solid transparent;border-radius:3px;background:transparent;color:#9fb6be;font-size:9px;font-weight:900;white-space:nowrap;cursor:pointer}
+.psy-kanto-detail-tabs button:hover{color:#f5e6c5;background:#ffffff0b}
+.psy-kanto-detail-tabs button[aria-selected="true"]{border-color:#ddc17b;background:linear-gradient(180deg,#3b3529,#202b37);box-shadow:inset 0 1px #fff2;color:#fff0c7}
+.psy-kanto-detail-body{min-height:0;flex:1;overflow:auto;padding:0 16px 18px;scrollbar-color:#6e8a8c #132235;scrollbar-width:thin}
+.psy-kanto-detail-body [hidden]{display:none!important}
+.psy-kanto-quest-card{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;margin:4px 0 12px;padding:12px;border:1px solid #d0ad6a76;border-radius:6px;background:linear-gradient(115deg,#302a25d9,#152a38e6 78%);box-shadow:inset 0 1px #fff2,0 5px 15px #0003}
+.quest-card-icon{display:grid;place-items:center;width:28px;height:28px;border:1px solid #e6c579;border-radius:50%;background:#513c20;color:#ffe6a3;font-size:16px;box-shadow:0 0 12px #f1d17b35}
+.psy-kanto-quest-card small{display:block;margin-bottom:4px;color:#e8c578;font-size:8px;font-weight:950;letter-spacing:.16em}
+.psy-kanto-quest-card b{display:block;color:#f5f1e5;font-size:12px;line-height:1.4}
+.psy-kanto-quest-card p{margin:5px 0 0;color:#a9c0c6;font-size:10px;line-height:1.35}
+.psy-kanto-detail-body h4{margin:14px 0 7px;color:#e4c677;font-size:9px;font-weight:950;letter-spacing:.15em;text-transform:uppercase}
+.psy-kanto-section-intro{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:5px 0 10px}
+.psy-kanto-section-intro b{color:#f4dda7;font-family:Georgia,"Times New Roman",serif;font-size:17px}
+.psy-kanto-section-intro span{color:#9db6bd;font-size:9px;text-align:right}
+.psy-kanto-story{display:grid;grid-template-columns:78px minmax(0,1fr);gap:7px;padding:11px;border:1px solid #82999b4c;border-radius:5px;background:#101e2dc9;font-size:11px;line-height:1.4}
+.psy-kanto-story b{color:#73d9ce}.psy-kanto-story span{color:#dce7e4}
+.psy-kanto-hunt-list,.psy-kanto-teachers,.psy-kanto-puzzles{display:grid;gap:7px}
+.psy-kanto-hunt-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;width:100%;padding:9px;border:1px solid #8ca3a14c;border-radius:5px;background:linear-gradient(112deg,#182b3de8,#101a2ce8);box-shadow:inset 0 1px #ffffff10;color:#eaf2eb;text-align:left;cursor:pointer;transition:border-color .18s,transform .18s,background .18s}
+.psy-kanto-hunt-card:hover{border-color:#8edbd0;transform:translateY(-1px)}
+.psy-kanto-hunt-card.selected{border-color:#67d6b2;background:linear-gradient(105deg,#153d37,#142a3b);box-shadow:0 0 13px #3fd8ad25}
+.psy-kanto-hunt-card:disabled{opacity:.48;filter:saturate(.55);cursor:not-allowed}
+.psy-kanto-hunt-copy{display:grid;gap:3px;min-width:0}.psy-kanto-hunt-copy b{color:#f3d793;font-size:11px}.psy-kanto-hunt-copy small{color:#abc0c5;font-size:9px;line-height:1.35}
+.psy-kanto-hunt-sprites{grid-column:2;grid-row:1;display:flex;align-items:center}
+.psy-kanto-hunt-sprites img{width:30px;height:30px;object-fit:contain;image-rendering:pixelated;margin-left:-5px;filter:drop-shadow(0 2px 3px #000)}
+.psy-kanto-hunt-action{grid-column:1/-1;justify-self:end;padding:3px 7px;border-radius:3px;background:#174356;color:#b5edf2;font-size:8px;font-weight:950;letter-spacing:.08em}
+.psy-kanto-hunt-card.selected .psy-kanto-hunt-action{background:#145342;color:#b0f3d4}
+.psy-kanto-advance,.psy-kanto-follow-goal,.psy-kanto-enter-world{display:block;width:100%;min-height:42px;margin:7px 0 10px;padding:10px 12px;border:1px solid #f0cf82;border-radius:5px;background:linear-gradient(100deg,#93572c,#ba8738 48%,#316e71);box-shadow:inset 0 1px #ffffff32,0 5px 13px #0005;color:#fff1ce;font-size:10px;font-weight:950;letter-spacing:.1em;text-align:center;text-shadow:0 1px 3px #15141a;cursor:pointer;transition:filter .17s,transform .17s}
+.psy-kanto-follow-goal{border-color:#8fe0d0;background:linear-gradient(100deg,#145a61,#237b77 52%,#49618b);color:#e5ffec;box-shadow:inset 0 1px #ffffff31,0 0 15px #58d6c52d}
+.psy-kanto-enter-world{border-color:#d6bd7b;background:linear-gradient(100deg,#28394c,#344a59);color:#f8e7bc}
+.psy-kanto-advance:hover,.psy-kanto-follow-goal:hover,.psy-kanto-enter-world:hover{filter:brightness(1.14);transform:translateY(-1px)}
+.psy-kanto-enter-world:disabled{border-color:#64717b;background:#222d38;box-shadow:none;color:#91a0a7;cursor:not-allowed;transform:none}
+.psy-kanto-teacher,.psy-kanto-puzzle{padding:10px;border:1px solid #82999b47;border-radius:5px;background:linear-gradient(135deg,#13263a,#182435)}
+.psy-kanto-teacher{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 9px;align-items:center}
+.psy-kanto-teacher b{color:#f0d596;font-size:11px}.psy-kanto-teacher span{grid-column:1/-1;color:#a9c1c6;font-size:10px;line-height:1.4}
+.psy-kanto-teacher button,.psy-kanto-solve-field{padding:7px 9px;border:1px solid #519e93;border-radius:4px;background:#164c49;color:#c5f7df;font-size:9px;font-weight:950;cursor:pointer}
+.psy-kanto-teacher button:disabled,.psy-kanto-solve-field:disabled{border-color:#3d4b55;background:#222d39;color:#84949d;cursor:not-allowed}.psy-kanto-teacher.learned{border-color:#319c75}
+.psy-kanto-puzzle{border-color:#9c80543b;background:linear-gradient(135deg,#202c38,#1b2432)}
+.psy-kanto-puzzle.solved{border-color:#237b5a;background:#102c2a}
+.psy-kanto-puzzle-title{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.psy-kanto-puzzle-title b{color:#f2d99f;font-size:11px}.psy-kanto-puzzle-title small{color:#a9ded8;font-size:8px;font-weight:950;letter-spacing:.08em;text-align:right}
+.psy-kanto-puzzle p{margin:7px 0;color:#bccbc9;font-size:10px;line-height:1.45}
+.psy-kanto-choices{display:grid;gap:5px}.psy-kanto-choices button{padding:8px;border:1px solid #596d79;border-radius:4px;background:#101b2b;color:#e4eeec;text-align:left;font-size:10px;cursor:pointer}.psy-kanto-choices button:hover{border-color:#ddc178}
+.psy-kanto-choices button:disabled{opacity:.48;cursor:not-allowed}
 .psy-kanto-species-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
-.psy-kanto-species{min-width:0;padding:4px;border:1px solid #273b4b;border-radius:10px;background:#111a2c;text-align:center;color:#8294a8;font-size:9px}
-.psy-kanto-species img{display:block;width:44px;height:44px;object-fit:contain;margin:auto;image-rendering:pixelated;filter:grayscale(1) brightness(.45)}
-.psy-kanto-species.known{color:#cde9e9;border-color:#386e69}.psy-kanto-species.known img{filter:none}
+.psy-kanto-species{min-width:0;padding:5px;border:1px solid #7c929548;border-radius:5px;background:#101d2c;text-align:center;color:#94a6ab;font-size:9px}
+.psy-kanto-species img{display:block;width:46px;height:46px;object-fit:contain;margin:auto;image-rendering:pixelated;filter:grayscale(1) brightness(.48)}
+.psy-kanto-species.known{color:#d1ede2;border-color:#438d75}.psy-kanto-species.known img{filter:none}
 .psy-kanto-species span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.psy-kanto-enter-world{display:block;width:100%;min-height:46px;margin:0 0 13px;padding:11px 16px;border:1px solid #ffe29a;border-radius:12px;background:linear-gradient(110deg,#a95c27,#d08a36 55%,#16848a);box-shadow:inset 0 1px #fff7,0 7px 18px #050e1e9c;color:#fff8e4;font:900 12px/1.2 system-ui,sans-serif;letter-spacing:.1em;text-align:center;text-shadow:0 2px 3px #1118;cursor:pointer;transition:filter .16s,transform .16s,box-shadow .16s}
-.psy-kanto-enter-world:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:inset 0 1px #fff8,0 9px 22px #050e1ec9,0 0 16px #76e8e077}
-.psy-kanto-enter-world:disabled{border-color:#5a6875;background:linear-gradient(110deg,#313b47,#202c38);box-shadow:none;color:#aab7c3;cursor:not-allowed;transform:none}
-@media(max-width:700px){.psy-kanto-atlas{padding:0}.psy-kanto-sheet{width:100%;height:100dvh;max-height:100dvh;border:0;border-radius:0}.psy-kanto-sheet header{padding:12px 14px}.psy-kanto-sheet header p{font-size:11px}.psy-kanto-progress{gap:5px;padding:8px}.psy-kanto-progress span{font-size:10px;padding:6px 8px}.psy-kanto-layout{grid-template-columns:1fr;grid-template-rows:minmax(260px,42dvh) minmax(0,1fr)}.psy-kanto-map{min-height:0}.psy-kanto-detail{border-left:0;border-top:1px solid #30475a;padding:14px 16px}.psy-kanto-node{max-width:76px}.psy-kanto-node .node-name{max-width:76px;font-size:9px}.psy-kanto-node .node-core{width:20px;height:20px}.psy-kanto-node.city .node-core{width:26px;height:26px}}
-@media(max-height:640px) and (orientation:landscape){.psy-kanto-layout{grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);grid-template-rows:1fr}.psy-kanto-map{min-height:0}.psy-kanto-detail{border-top:0;border-left:1px solid #30475a}.psy-kanto-sheet header{padding:8px 14px}.psy-kanto-sheet header h2{font-size:22px}}
-.psy-kanto-place-art{display:block;width:100%;height:128px;margin:0 0 13px;border:1px solid #3c6871;border-radius:13px;object-fit:cover;object-position:center 54%;box-shadow:0 7px 18px #0008}
-.psy-kanto-hunt-list{display:grid;gap:8px}
-.psy-kanto-hunt-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;width:100%;padding:9px;border:1px solid #3b596b;border-radius:12px;background:linear-gradient(115deg,#13283b,#11192b);color:#e5f4f5;text-align:left;cursor:pointer}
-.psy-kanto-hunt-card.selected{border-color:#5de0be;background:linear-gradient(115deg,#10362f,#11243a);box-shadow:0 0 14px #36d8ad2a}
-.psy-kanto-hunt-card:disabled{opacity:.52;cursor:not-allowed}
-.psy-kanto-hunt-copy{display:grid;gap:3px;min-width:0}.psy-kanto-hunt-copy b{font-size:12px;color:#ffe1a2}.psy-kanto-hunt-copy small{font-size:10px;color:#aac1cf;line-height:1.3}
-.psy-kanto-hunt-sprites{grid-column:2;grid-row:1;display:flex;align-items:center}.psy-kanto-hunt-sprites img{width:31px;height:31px;object-fit:contain;image-rendering:pixelated;margin-left:-5px;filter:drop-shadow(0 2px 3px #000)}
-.psy-kanto-hunt-action{grid-column:1/-1;justify-self:end;padding:3px 7px;border-radius:7px;background:#17445a;color:#a8edf0;font-size:9px;font-weight:900;letter-spacing:.08em}
-.psy-kanto-hunt-card.selected .psy-kanto-hunt-action{background:#145342;color:#a7f3d0}
-.psy-kanto-advance{width:100%;margin-top:12px;padding:12px;border:1px solid #46d8d1;border-radius:11px;background:linear-gradient(90deg,#155e75,#164e63);color:#ecfeff;font-weight:900;letter-spacing:.05em;cursor:pointer}
-.psy-kanto-teachers,.psy-kanto-puzzles{display:grid;gap:8px}
-.psy-kanto-teacher,.psy-kanto-puzzle{padding:10px;border:1px solid #344d60;border-radius:12px;background:linear-gradient(135deg,#101f31,#151729)}
-.psy-kanto-teacher{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 9px;align-items:center}.psy-kanto-teacher b{color:#ffe3a5}.psy-kanto-teacher span{grid-column:1/-1;color:#a9c0cf;font-size:11px;line-height:1.4}.psy-kanto-teacher button,.psy-kanto-solve-field{padding:7px 9px;border:1px solid #247e81;border-radius:9px;background:#11534d;color:#b8fff0;font-size:10px;font-weight:900;cursor:pointer}.psy-kanto-teacher button:disabled,.psy-kanto-solve-field:disabled{border-color:#38404c;background:#202330;color:#788595;cursor:not-allowed}.psy-kanto-teacher.learned{border-color:#319c75}
-.psy-kanto-puzzle{border-color:#68523a}.psy-kanto-puzzle.solved{border-color:#237b5a;background:#0c2825}.psy-kanto-puzzle-title{display:flex;justify-content:space-between;gap:8px;align-items:center}.psy-kanto-puzzle-title b{color:#ffe2a5;font-size:12px}.psy-kanto-puzzle-title small{color:#83dce1;font-size:9px;font-weight:900;letter-spacing:.08em;text-align:right}.psy-kanto-puzzle p{margin:7px 0;color:#b9c8d1;font-size:11px;line-height:1.4}.psy-kanto-choices{display:grid;gap:5px}.psy-kanto-choices button{padding:7px 9px;border:1px solid #405064;border-radius:8px;background:#101c2a;color:#dceaf0;text-align:left;font-size:11px;cursor:pointer}.psy-kanto-choices button:disabled{opacity:.5;cursor:not-allowed}.psy-kanto-hunt-card:disabled{filter:saturate(.65)}
-@media(max-width:700px){.psy-kanto-teacher{grid-template-columns:1fr}.psy-kanto-teacher button{justify-self:start}.psy-kanto-puzzle-title{align-items:flex-start}}
+.psy-kanto-map :focus-visible,.psy-kanto-detail :focus-visible{outline:2px solid #ffe5a2;outline-offset:2px}
+@media(max-width:900px){.psy-kanto-sheet{width:calc(100vw - 18px);height:calc(100dvh - 18px)}.psy-kanto-layout{grid-template-columns:minmax(0,1.22fr) minmax(315px,.9fr)}.map-hint{display:none}.psy-kanto-map-legend{gap:7px;font-size:8px}.psy-kanto-map-legend span:nth-child(3){display:none}}
+@media(max-width:700px){.psy-kanto-atlas{padding:0}.psy-kanto-sheet{width:100vw;height:100dvh;max-height:100dvh;border-width:7px;border-image-width:7px}.psy-kanto-header{min-height:78px;padding:9px 10px;gap:8px}.psy-kanto-brand{gap:8px}.psy-kanto-brand img{width:43px;height:43px}.psy-kanto-header small{font-size:8px}.psy-kanto-header h2{font-size:21px}.psy-kanto-header p{font-size:9px}.psy-kanto-close{width:36px;height:36px;font-size:21px}.psy-kanto-progress{gap:5px;overflow-x:auto;padding:6px 8px;scrollbar-width:none}.psy-kanto-progress::-webkit-scrollbar{display:none}.atlas-stat{min-height:30px;gap:4px;padding:4px 7px;white-space:nowrap}.atlas-stat small{font-size:7px}.atlas-stat b{font-size:9px}.atlas-frontier{margin-left:auto}.atlas-frontier small{display:none}.psy-kanto-layout{grid-template-columns:1fr;grid-template-rows:minmax(230px,42dvh) minmax(0,1fr)}.psy-kanto-map{border-right:0;border-bottom:1px solid #bb9a5949}.psy-kanto-map-top{top:8px;left:8px;right:8px}.map-region-mark{padding:5px 7px;font-size:8px}.map-hint{display:none}.psy-kanto-map-legend{left:8px;bottom:8px;max-width:calc(100% - 115px);gap:5px;padding:5px 6px;font-size:7px}.psy-kanto-map-legend span:nth-child(3){display:flex}.psy-kanto-map-legend i{width:7px;height:7px}.psy-kanto-map-compass{right:7px;bottom:7px;width:45px;height:45px}.psy-kanto-map-tools{top:43px;right:8px;gap:3px}.psy-kanto-map-tools button{width:30px;height:30px;font-size:17px}.psy-kanto-node .node-name{max-width:76px;font-size:8px}.psy-kanto-sigil{width:40px;height:40px}.psy-kanto-node.city .psy-kanto-sigil{width:44px;height:44px}.node-goal-tag{font-size:6px}.psy-kanto-node.goal:after{width:52px;height:52px}.psy-kanto-detail{border-left:0}.psy-kanto-detail-hero{flex-basis:138px}.place-heading{left:12px;right:12px;bottom:9px}.place-heading h3{font-size:25px}.place-heading p{font-size:9px}.psy-kanto-detail-status{margin:6px 8px 5px;padding:5px 7px;font-size:8px}.psy-kanto-detail-tabs{margin:0 7px 5px;gap:1px;padding:2px}.psy-kanto-detail-tabs button{padding:7px 2px;font-size:7px;letter-spacing:-.02em}.psy-kanto-detail-body{padding:0 9px 14px}.psy-kanto-quest-card{gap:7px;margin:3px 0 8px;padding:9px}.psy-kanto-quest-card b{font-size:10px}.psy-kanto-quest-card p{font-size:9px}.psy-kanto-species-list{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.psy-kanto-species img{width:38px;height:38px}}
+@media(max-height:640px) and (orientation:landscape){.psy-kanto-layout{grid-template-columns:minmax(0,1.28fr) minmax(300px,.82fr);grid-template-rows:1fr}.psy-kanto-map{border-right:1px solid #bb9a5949;border-bottom:0}.psy-kanto-header{min-height:67px;padding:7px 12px}.psy-kanto-brand img{width:44px;height:44px}.psy-kanto-header h2{font-size:21px}.psy-kanto-header p{font-size:9px}.psy-kanto-progress{padding:5px 10px}.atlas-stat{min-height:27px;padding:4px 7px}.psy-kanto-detail-hero{flex-basis:82px}.place-heading{bottom:5px}.place-heading h3{font-size:21px}.place-heading p{font-size:8px}.psy-kanto-detail-status{margin:5px 9px}.psy-kanto-detail-tabs{margin:0 8px 4px}.psy-kanto-map-legend{font-size:7px}}
+@media(prefers-reduced-motion:reduce){.psy-kanto-atlas *, .psy-kanto-atlas *:before,.psy-kanto-atlas *:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

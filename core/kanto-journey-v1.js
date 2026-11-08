@@ -274,44 +274,225 @@
     return `BLOQUEADA · ${Math.max(0,Number(place.badge||0)-Number(player().gymsDefeated||0))} insígnias restantes`;
   }
   const escape = s => String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  function modal() { let el=D.getElementById('psy-kanto-atlas');if(el)return el;el=D.createElement('div');el.id='psy-kanto-atlas';el.className='psy-kanto-atlas';el.innerHTML='<section class="psy-kanto-sheet" role="dialog" aria-modal="true" aria-label="Atlas da Jornada de Kanto"><header><div><small>KANTO · PRIMEIRA GERAÇÃO</small><h2>Atlas da Jornada</h2><p>Uma região conectada por rotas, histórias e insígnias.</p></div><button class="psy-kanto-close" aria-label="Fechar">×</button></header><div class="psy-kanto-progress"></div><div class="psy-kanto-layout"><nav class="psy-kanto-map" aria-label="Cidades e rotas"></nav><article class="psy-kanto-detail"></article></div></section>';el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')});el.querySelector('.psy-kanto-close').onclick=()=>el.classList.remove('open');D.body.appendChild(el);return el; }
+  const CAMPAIGN_LINKS = [
+    ['pallet','route-1'],['route-1','viridian'],['viridian','route-2'],['route-2','viridian-forest'],['viridian-forest','pewter'],
+    ['pewter','route-3'],['route-3','mt-moon'],['mt-moon','route-4'],['route-4','cerulean'],
+    ['cerulean','route-24-25'],['cerulean','route-5-6'],['route-5-6','saffron'],['route-5-6','vermilion'],
+    ['vermilion','ss-anne'],['vermilion','route-11'],['route-11','diglett-cave'],['diglett-cave','route-2'],
+    ['cerulean','route-9-10'],['route-9-10','power-plant'],['route-9-10','rock-tunnel'],['rock-tunnel','lavender'],
+    ['lavender','pokemon-tower'],['lavender','route-8'],['route-8','saffron'],['saffron','route-7'],['route-7','celadon'],
+    ['celadon','rocket-hideout'],['saffron','silph-co'],['celadon','route-16-18'],['route-16-18','fuchsia'],
+    ['lavender','route-12-15'],['route-12-15','fuchsia'],['fuchsia','safari-zone'],['fuchsia','route-19-21'],
+    ['route-19-21','seafoam'],['seafoam','cinnabar'],['cinnabar','pokemon-mansion'],['viridian','viridian-gym'],
+    ['viridian','route-22-23'],['route-22-23','indigo']
+  ];
+  const LOCAL_ART = {
+    viridian:'/assets/kanto/approved/viridian-approved.webp',
+    pewter:'/assets/kanto/approved/pewter-approved.webp',
+    cerulean:'/assets/kanto/approved/cerulean-approved.webp',
+    'mt-moon':'/assets/kanto/approved/mt-moon-approved.webp'
+  };
+  let selectedAtlasPlace = null;
+  let selectedAtlasTab = 'journey';
+  const atlasView = {zoom:1,panX:0,panY:0,scene:null,bound:false,drag:null,renderDetail:null,suppressClick:false};
+  function campaignGoalId() {
+    const q=W.PsyKantoWorldV2?.progress?.()||{};
+    if(!q.oak)return 'pallet';
+    if(!q.viridian)return 'route-1';
+    const visited=new Set(getSave().visited||[]);
+    const frontier=GEN1.find(p=>p.id!=='pallet'&&p.id!=='route-1'&&!visited.has(p.id)&&unlocked(p));
+    return frontier?.id||getSave().activePlace||'indigo';
+  }
+  function campaignCurrentPlaceId() {
+    const world=W.PsyKantoWorldV2;
+    const active=world?.isOpen?.()?world.getPosition?.()?.world:null;
+    if(active&&GEN1.some(place=>place.id===active))return active;
+    const playable=W.PsyKantoPlayableV1?.getPosition?.()?.world;
+    if(playable&&GEN1.some(place=>place.id===playable))return playable;
+    const saved=getSave().activePlace;
+    return GEN1.some(place=>place.id===saved)?saved:'pallet';
+  }
+  function routeEdgesTo(goalId) {
+    const start=campaignCurrentPlaceId();if(start===goalId)return new Set();
+    const byId=new Map(GEN1.map(place=>[place.id,place]));
+    const queue=[start],previous=new Map([[start,null]]),previousEdge=new Map();
+    while(queue.length){
+      const current=queue.shift();if(current===goalId)break;
+      CAMPAIGN_LINKS.forEach((edge,index)=>{
+        if(!unlocked(byId.get(edge[0]))||!unlocked(byId.get(edge[1])))return;
+        const next=edge[0]===current?edge[1]:edge[1]===current?edge[0]:null;
+        if(next&&!previous.has(next)){previous.set(next,current);previousEdge.set(next,index);queue.push(next);}
+      });
+    }
+    if(!previous.has(goalId))return new Set();
+    const result=new Set();for(let at=goalId;previous.get(at)!==null;at=previous.get(at))result.add(previousEdge.get(at));
+    return result;
+  }
+  function modal() {
+    let el=D.getElementById('psy-kanto-atlas');if(el)return el;
+    el=D.createElement('div');el.id='psy-kanto-atlas';el.className='psy-kanto-atlas';
+    el.innerHTML='<section class="psy-kanto-sheet" role="dialog" aria-modal="true" aria-label="Atlas da Jornada de Kanto"><header class="psy-kanto-header"><div class="psy-kanto-brand"><img src="/assets/ui/kanto-atlas-compass-v3.png" alt="" aria-hidden="true"><div><small>KANTO · ATLAS DA JORNADA</small><h2>Uma região, muitas histórias</h2><p>Descubra caminhos, acompanhe missões e escolha seu próximo destino.</p></div></div><button class="psy-kanto-close" aria-label="Fechar atlas">×</button></header><div class="psy-kanto-progress"></div><div class="psy-kanto-layout"><nav class="psy-kanto-map" aria-label="Mapa ilustrado das localidades de Kanto"></nav><article class="psy-kanto-detail" aria-live="polite"></article></div></section>';
+    el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')});
+    el.querySelector('.psy-kanto-close').onclick=()=>el.classList.remove('open');
+    D.body.appendChild(el);return el;
+  }
+  function fitAtlasScene(map) {
+    const scene=map.querySelector('.psy-kanto-map-world');if(!scene)return;
+    atlasView.scene=scene;
+    const r=map.getBoundingClientRect();if(!r.width||!r.height)return;
+    let w=r.width,h=w/1.5;if(h>r.height){h=r.height;w=h*1.5;}
+    scene.style.width=w+'px';scene.style.height=h+'px';
+    applyAtlasView(map);
+  }
+  function applyAtlasView(map) {
+    const scene=map?.querySelector('.psy-kanto-map-world')||atlasView.scene;if(!scene)return;
+    atlasView.scene=scene;
+    scene.style.transform='translate(-50%,-50%) translate('+atlasView.panX+'px,'+atlasView.panY+'px) scale('+atlasView.zoom+')';
+    if(map)map.dataset.labelMode=atlasView.zoom>=1.72?'all':atlasView.zoom>=1.18?'regional':'quiet';
+  }
+  function setAtlasZoom(map,value,event) {
+    const old=atlasView.zoom,next=Math.max(.86,Math.min(2.35,value));if(next===old)return;
+    if(event){const r=map.getBoundingClientRect(),cx=event.clientX-r.left-r.width/2,cy=event.clientY-r.top-r.height/2;atlasView.panX=cx-(cx-atlasView.panX)*next/old;atlasView.panY=cy-(cy-atlasView.panY)*next/old;}
+    atlasView.zoom=next;applyAtlasView(map);
+  }
+  function nearestAtlasNode(map,x,y) {
+    let best=null,bestDistance=Infinity;
+    map.querySelectorAll('[data-place]').forEach(button=>{
+      const icon=button.querySelector('.psy-kanto-sigil'),r=icon?.getBoundingClientRect();if(!r)return;
+      const dx=Math.max(r.left-x,0,x-r.right),dy=Math.max(r.top-y,0,y-r.bottom);if(dx>7||dy>7)return;
+      const distance=Math.hypot(x-(r.left+r.width/2),y-(r.top+r.height/2));
+      if(distance<bestDistance){bestDistance=distance;best=button;}
+    });
+    return best;
+  }
+  function bindAtlasMap(map) {
+    if(map.dataset.atlasBound)return;map.dataset.atlasBound='true';
+    map.addEventListener('click',e=>{
+      const zoom=e.target.closest('[data-atlas-zoom]');
+      if(zoom){setAtlasZoom(map,atlasView.zoom+Number(zoom.dataset.atlasZoom));return;}
+      if(e.target.closest('[data-atlas-reset]')){atlasView.zoom=1;atlasView.panX=0;atlasView.panY=0;applyAtlasView(map);return;}
+      if(atlasView.suppressClick){atlasView.suppressClick=false;return;}
+      const button=(e.detail?nearestAtlasNode(map,e.clientX,e.clientY):null)||e.target.closest('[data-place]')||nearestAtlasNode(map,e.clientX,e.clientY);if(!button)return;
+      const place=GEN1.find(p=>p.id===button.dataset.place);if(!place)return;
+      selectedAtlasPlace=place.id;selectedAtlasTab='journey';
+      map.querySelectorAll('.psy-kanto-node.selected').forEach(n=>n.classList.remove('selected'));button.classList.add('selected');
+      atlasView.renderDetail?.(place);
+    });
+    map.addEventListener('wheel',e=>{e.preventDefault();setAtlasZoom(map,atlasView.zoom+(e.deltaY<0?.12:-.12),e);},{passive:false});
+    map.addEventListener('pointerdown',e=>{
+      atlasView.suppressClick=false;
+      if(e.button!==undefined&&e.button!==0||e.target.closest('button')||e.target.closest('.psy-kanto-map-tools'))return;
+      atlasView.drag={id:e.pointerId,x:e.clientX,y:e.clientY,panX:atlasView.panX,panY:atlasView.panY,moved:false};
+      map.setPointerCapture?.(e.pointerId);
+    });
+    map.addEventListener('pointermove',e=>{
+      const d=atlasView.drag;if(!d||d.id!==e.pointerId){
+        if(e.pointerType==='mouse'){
+          const hovered=nearestAtlasNode(map,e.clientX,e.clientY);
+          map.querySelectorAll('[data-hovered="true"]').forEach(n=>{if(n!==hovered)delete n.dataset.hovered;});
+          if(hovered)hovered.dataset.hovered='true';
+          map.style.cursor=hovered?'pointer':'grab';
+        }
+        return;
+      }
+      const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.abs(dx)+Math.abs(dy)>4)d.moved=true;
+      if(d.moved){atlasView.panX=d.panX+dx;atlasView.panY=d.panY+dy;applyAtlasView(map);}
+    });
+    const end=e=>{if(atlasView.drag?.id===e.pointerId){atlasView.suppressClick=atlasView.drag.moved;atlasView.drag=null;try{map.releasePointerCapture?.(e.pointerId)}catch(_){}}};
+    map.addEventListener('pointerup',end);map.addEventListener('pointercancel',end);map.addEventListener('lostpointercapture',end);
+    map.addEventListener('keydown',e=>{if(e.key==='+'||e.key==='='){e.preventDefault();setAtlasZoom(map,atlasView.zoom+.15)}else if(e.key==='-'){e.preventDefault();setAtlasZoom(map,atlasView.zoom-.15)}else if(e.key==='0'){e.preventDefault();atlasView.zoom=1;atlasView.panX=0;atlasView.panY=0;applyAtlasView(map)}});
+    if('ResizeObserver'in W){new ResizeObserver(()=>fitAtlasScene(map)).observe(map);}
+    W.addEventListener('resize',()=>fitAtlasScene(map),{passive:true});
+  }
+  function mapLines(goalId) {
+    const byId=new Map(GEN1.map(p=>[p.id,p]));
+    const route=routeEdgesTo(goalId);
+    return CAMPAIGN_LINKS.map((edge,i)=>{
+      const a=byId.get(edge[0]),b=byId.get(edge[1]);if(!a||!b)return '';
+      const dx=b.x-a.x,dy=b.y-a.y,bend=(i%3-1)*.055;
+      const mx=(a.x+b.x)/2-dy*bend,my=(a.y+b.y)/2+dx*bend;
+      const open=unlocked(a)&&unlocked(b),goal=route.has(i)&&open;
+      return '<path class="psy-kanto-link '+(open?'open':'locked')+(goal?' goal':'')+'" d="M'+a.x+' '+a.y+' Q'+mx.toFixed(2)+' '+my.toFixed(2)+' '+b.x+' '+b.y+'"/>';
+    }).join('');
+  }
+  function mapNodes(activeId,goalId) {
+    const sigil={city:'0%',route:'33.333%',dungeon:'66.667%',landmark:'100%'};
+    return GEN1.map(p=>{
+      const open=unlocked(p),selected=p.id===activeId,goal=p.id===goalId;
+      const huntCount=(p.hunts||[]).length;
+      return '<button type="button" class="psy-kanto-node '+p.kind+' '+(open?'open':'locked')+(selected?' selected':'')+(goal?' goal':'')+'" data-place="'+p.id+'" style="--x:'+p.x+'%;--y:'+p.y+'%;--sigil-position:'+(sigil[p.kind]||'33.333%')+'" aria-label="'+escape(p.name)+' · '+(open?'disponível':'bloqueado')+(goal?' · objetivo principal':'')+'" title="'+escape(p.name)+'"><span class="psy-kanto-sigil" aria-hidden="true"></span>'+(goal?'<span class="node-goal-tag">MISSÃO</span>':'')+'<span class="node-name">'+escape(p.name)+'</span>'+(huntCount?'<span class="node-hunts">'+huntCount+' áreas</span>':'')+'</button>';
+    }).join('');
+  }
+  function cropArtwork(place) {
+    const src=place.art||LOCAL_ART[place.id];
+    if(src)return '<img class="psy-kanto-place-art" src="'+escape(src)+'" alt="Paisagem de '+escape(place.name)+'">';
+    const x=Math.max(0,Math.min(100,25+place.x*.5)),y=Math.max(0,Math.min(100,25+place.y*.5));
+    return '<div class="psy-kanto-place-art psy-kanto-place-crop" role="img" aria-label="Paisagem da região próxima a '+escape(place.name)+'" style="background-image:url(/assets/story/kanto-region-v1.webp);background-position:'+x+'% '+y+'%"></div>';
+  }
   function update(selectedId) {
-    const el=modal(), progress=el.querySelector('.psy-kanto-progress'), map=el.querySelector('.psy-kanto-map'), detail=el.querySelector('.psy-kanto-detail');
-    const activeId=selectedId||getSave().activePlace||'route-1';
-    const badges=Math.max(0,Number(player().gymsDefeated||0)), count=seen().size;
-    progress.innerHTML=`<span>Pokédex: <b>${count}</b> espécies</span><span>Insígnias: <b>${badges}/8</b></span><span>Técnicas: <b>${ensureFieldState().fieldTechniques.length}</b></span><span>Campanha: <b>${badges<1?'Pallet · Rota 1':badges<3?'Pewter · Cerulean':badges<6?'Vermilion · Celadon · Fuchsia':badges<8?'Saffron · Cinnabar':'Planalto Índigo'}</b></span>`;
-    map.innerHTML='<svg class="psy-kanto-route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M29 86 L43 69 L34 45 L48 32 L65 18 L49 18 L59 16 L70 14 L78 24 L88 37 L81 46 L74 55 L66 65 L73 72 L54 74 L44 65 L34 64 L27 54 L24 57 L20 47 L17 53 L11 45 L12 34 L12 40 L21 30 L32 28 L37 34 L45 39 L55 44 L60 49 L67 50 L77 59 L82 65 L88 75 L82 81 L94 55 L94 46 L83 42"/></svg>'+GEN1.map((p,i)=>{const open=unlocked(p),active=p.id===activeId;return `<button class="psy-kanto-node ${p.kind} ${open?'open':'locked'} ${active?'live':''}" data-place="${p.id}" style="--x:${p.x}%;--y:${p.y}%" aria-label="${escape(p.name)} · ${open?'aberta':'bloqueada'}"><span class="node-core"></span><span class="node-name">${escape(p.name)}</span></button>`}).join('');
-    map.querySelectorAll('[data-place]').forEach(btn=>btn.onclick=()=>renderDetail(GEN1.find(p=>p.id===btn.dataset.place)));
-    renderDetail(GEN1.find(p=>p.id===activeId)||GEN1.find(p=>p.id==='route-1'));
+    const el=modal(),progress=el.querySelector('.psy-kanto-progress'),map=el.querySelector('.psy-kanto-map'),detail=el.querySelector('.psy-kanto-detail');
+    const goalId=campaignGoalId();
+    const activeId=selectedId||selectedAtlasPlace||getSave().activePlace||goalId;
+    selectedAtlasPlace=activeId;
+    const badges=Math.max(0,Number(player().gymsDefeated||0)),count=seen().size;
+    progress.innerHTML='<span class="atlas-stat"><small>Pokédex</small><b>'+count+' espécies</b></span><span class="atlas-stat"><small>Insígnias</small><b>'+badges+'/8</b></span><span class="atlas-stat"><small>Técnicas</small><b>'+ensureFieldState().fieldTechniques.length+'</b></span><span class="atlas-stat atlas-frontier"><small>Próximo marco</small><b>'+escape(GEN1.find(p=>p.id===goalId)?.name||'Kanto')+'</b></span>';
+    map.innerHTML='<div class="psy-kanto-map-top"><span class="map-region-mark">KANTO <i>·</i> PRIMEIRA GERAÇÃO</span><span class="map-hint">Arraste para explorar · rode a roda para aproximar</span></div><div class="psy-kanto-map-world"><img class="psy-kanto-region-image" src="/assets/story/kanto-region-v1.webp" alt="" draggable="false"><div class="psy-kanto-map-shade"></div><svg class="psy-kanto-route-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'+mapLines(goalId)+'</svg>'+mapNodes(activeId,goalId)+'</div><div class="psy-kanto-map-legend" aria-label="Legenda"><span><i class="legend-city"></i>Cidade</span><span><i class="legend-route"></i>Rota</span><span><i class="legend-special"></i>Local especial</span><span><i class="legend-locked"></i>Bloqueado</span></div><img class="psy-kanto-map-compass" src="/assets/ui/kanto-atlas-compass-v3.png" alt="" aria-hidden="true"><div class="psy-kanto-map-tools" role="group" aria-label="Controles do mapa"><button type="button" data-atlas-zoom="0.2" aria-label="Aumentar zoom" title="Aumentar zoom">+</button><button type="button" data-atlas-zoom="-0.2" aria-label="Diminuir zoom" title="Diminuir zoom">−</button><button type="button" data-atlas-reset aria-label="Centralizar mapa" title="Centralizar mapa">⌖</button></div>';
+    map.dataset.goalId=goalId;bindAtlasMap(map);fitAtlasScene(map);
+    const selected=GEN1.find(p=>p.id===activeId)||GEN1.find(p=>p.id==='route-1');
+    renderDetail(selected);
     function renderDetail(place) {
-      const open=unlocked(place), found=discoveredCount(place), isPlayable=place.id==='pallet'||place.id==='route-1';
-      const sprites=place.species.slice(0,8).map(id=>{const known=seen().has(id);const name=W.getPokeName?.(id)||`Pokémon #${id}`;return `<div class="psy-kanto-species ${known?'known':''}" title="${escape(name)}"><img loading="lazy" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="${known?escape(name):'Espécie ainda não registrada'}"><span>${known?escape(name):'???'}</span></div>`}).join('');
+      if(!place)return;
+      detail.dataset.placeId=place.id;detail.dataset.goalId=goalId;detail.dataset.mainGoal=String(place.id===goalId);
+      const open=unlocked(place),found=discoveredCount(place),tab=selectedAtlasTab;
+      const sprites=place.species.slice(0,8).map(id=>{
+        const known=seen().has(id),name=W.getPokeName?.(id)||'Pokémon #'+id;
+        return '<div class="psy-kanto-species '+(known?'known':'')+'" title="'+escape(name)+'"><img loading="lazy" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/'+id+'.png" alt="'+(known?escape(name):'Espécie ainda não registrada')+'"><span>'+(known?escape(name):'???')+'</span></div>';
+      }).join('');
       const huntCards=(place.hunts||[]).map(hunt=>{
         const active=getSave().activeHunt===hunt.id;
-        const mini=hunt.species.slice(0,4).map(id=>`<img loading="lazy" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="${escape(W.getPokeName?.(id)||'Pokémon')}">`).join('');
-        const available=huntAvailable(hunt,place),gate=place.id==='route-1'&&hunt.flag&&!ensureFieldState().kantoPuzzleFlags.includes(hunt.flag)?'SEGREDO FECHADO':hunt.technique&&!hasTechnique(hunt.technique)?`REQUER ${FIELD_TECHNIQUES[hunt.technique]?.name||'TÉCNICA'}`:open?'SELECIONAR':'BLOQUEADO';
-        return `<button class="psy-kanto-hunt-card ${active?'selected':''}" data-hunt="${escape(hunt.id)}" ${available?'':'disabled'}><span class="psy-kanto-hunt-copy"><b>${escape(hunt.name)}</b><small>${escape(hunt.terrain)} · ${escape(hunt.level)}</small></span><span class="psy-kanto-hunt-sprites">${mini}</span><span class="psy-kanto-hunt-action">${active?'SELECIONADO':gate}</span></button>`;
+        const mini=hunt.species.slice(0,4).map(id=>'<img loading="lazy" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/'+id+'.png" alt="'+escape(W.getPokeName?.(id)||'Pokémon')+'">').join('');
+        const available=huntAvailable(hunt,place),gate=place.id==='route-1'&&hunt.flag&&!ensureFieldState().kantoPuzzleFlags.includes(hunt.flag)?'SEGREDO FECHADO':hunt.technique&&!hasTechnique(hunt.technique)?'REQUER '+(FIELD_TECHNIQUES[hunt.technique]?.name||'TÉCNICA'):open?'SELECIONAR':'BLOQUEADO';
+        return '<button type="button" class="psy-kanto-hunt-card '+(active?'selected':'')+'" data-hunt="'+escape(hunt.id)+'" '+(available?'':'disabled')+'><span class="psy-kanto-hunt-copy"><b>'+escape(hunt.name)+'</b><small>'+escape(hunt.terrain)+' · '+escape(hunt.level)+'</small></span><span class="psy-kanto-hunt-sprites">'+mini+'</span><span class="psy-kanto-hunt-action">'+(active?'SELECIONADO':escape(gate))+'</span></button>';
       }).join('');
       const teachers=Object.entries(FIELD_TECHNIQUES).filter(([,rule])=>rule.source===place.id).map(([key,rule])=>{
-        const learned=hasTechnique(key),ready=canTeach(key,place),req=rule.seen?`${rule.badges} insígnias e ${rule.seen} espécies na Pokédex`:`${rule.badges} insígnias e capítulo selecionado`;
-        return `<div class="psy-kanto-teacher ${learned?'learned':''}"><b>${escape(rule.name)}</b><span>${escape(rule.clue)}</span><button data-teach="${key}" ${ready?'':'disabled'}>${learned?'APRENDIDA':ready?'APRENDER':`REQUER ${escape(req)}`}</button></div>`;
+        const learned=hasTechnique(key),ready=canTeach(key,place),req=rule.seen?rule.badges+' insígnias e '+rule.seen+' espécies na Pokédex':rule.badges+' insígnias e capítulo selecionado';
+        return '<div class="psy-kanto-teacher '+(learned?'learned':'')+'"><b>'+escape(rule.name)+'</b><span>'+escape(rule.clue)+'</span><button type="button" data-teach="'+key+'" '+(ready?'':'disabled')+'>'+(learned?'APRENDIDA':ready?'APRENDER':'REQUER '+escape(req))+'</button></div>';
       }).join('');
       const puzzleCards=(place.mysteries||[]).map(mystery=>{
         const solved=ensureFieldState().kantoPuzzleFlags.includes(mystery.id),hasRequired=mystery.kind!=='field'||hasTechnique(mystery.technique);
-        const choices=mystery.kind==='riddle'?`<div class="psy-kanto-choices">${mystery.choices.map(([label,value])=>`<button data-answer="${escape(mystery.id)}" data-value="${escape(value)}" ${!open||solved?'disabled':''}>${escape(label)}</button>`).join('')}</div>`:`<button class="psy-kanto-solve-field" data-solve="${escape(mystery.id)}" ${!open||solved||!hasRequired?'disabled':''}>${solved?'SEGREDO REVELADO':hasRequired?`USAR ${escape(FIELD_TECHNIQUES[mystery.technique]?.name||'TÉCNICA')}`:`PRECISA DE ${escape(FIELD_TECHNIQUES[mystery.technique]?.name||'TÉCNICA')}`}</button>`;
-        return `<section class="psy-kanto-puzzle ${solved?'solved':''}"><div class="psy-kanto-puzzle-title"><b>${escape(mystery.name)}</b><small>${solved?'RESOLVIDO':mystery.kind==='field'?`MISTÉRIO · ${escape(FIELD_TECHNIQUES[mystery.technique]?.name||'HABILIDADE')}`:'ENIGMA'}</small></div><p>${escape(mystery.clue)}</p>${choices}</section>`;
+        const choices=mystery.kind==='riddle'?'<div class="psy-kanto-choices">'+mystery.choices.map(([label,value])=>'<button type="button" data-answer="'+escape(mystery.id)+'" data-value="'+escape(value)+'" '+(!open||solved?'disabled':'')+'>'+escape(label)+'</button>').join('')+'</div>':'<button type="button" class="psy-kanto-solve-field" data-solve="'+escape(mystery.id)+'" '+(!open||solved||!hasRequired?'disabled':'')+'>'+(solved?'SEGREDO REVELADO':hasRequired?'USAR '+escape(FIELD_TECHNIQUES[mystery.technique]?.name||'TÉCNICA'):'PRECISA DE '+escape(FIELD_TECHNIQUES[mystery.technique]?.name||'TÉCNICA'))+'</button>';
+        return '<section class="psy-kanto-puzzle '+(solved?'solved':'')+'"><div class="psy-kanto-puzzle-title"><b>'+escape(mystery.name)+'</b><small>'+(solved?'RESOLVIDO':mystery.kind==='field'?'MISTÉRIO · '+escape(FIELD_TECHNIQUES[mystery.technique]?.name||'HABILIDADE'):'ENIGMA')+'</small></div><p>'+escape(mystery.clue)+'</p>'+choices+'</section>';
       }).join('');
-      detail.innerHTML=`${place.art?`<img class="psy-kanto-place-art" src="${escape(place.art)}" alt="Arte de ${escape(place.name)}">`:''}<div class="psy-kanto-detail-kicker">${place.kind==='city'?'CIDADE':place.kind==='dungeon'?'LOCAL ESPECIAL':place.kind==='landmark'?'MARCO DA LIGA':'ROTA'}</div><h3>${escape(place.name)}</h3><p class="psy-kanto-mark">${escape(place.mark)}</p><div class="psy-kanto-story"><b>Personagem</b><span>${escape(place.npc)}</span><b>Missão</b><span>${escape(place.quest)}</span></div><div class="psy-kanto-gate ${open?'':'closed'}">${escape(stateLabel(place))}</div>${teachers?`<h4>Técnicas de campo</h4><div class="psy-kanto-teachers">${teachers}</div>`:''}<h4>Locais de caça · ${place.hunts.length}</h4><div class="psy-kanto-hunt-list">${huntCards}</div><h4>Mistérios e recompensas</h4><div class="psy-kanto-puzzles">${puzzleCards}</div><h4>Espécies da região</h4><div class="psy-kanto-species-list">${sprites}</div>${open&&!isPlayable?`<button class="psy-kanto-advance">AVANÇAR A JORNADA</button>`:''}`;
-      detail.querySelectorAll('[data-hunt]').forEach(button=>button.onclick=()=>{const s=getSave();s.activeHunt=button.dataset.hunt;putSave(s);const hunt=place.hunts.find(item=>item.id===button.dataset.hunt);if(hunt){const p=player();p.activeKantoHunt=hunt.id;try{W.autoSave?.()}catch(_){}}renderDetail(place);W.notif?.('Local de caça selecionado no Atlas.',1600)});
-      detail.querySelectorAll('[data-teach]').forEach(button=>button.onclick=()=>{if(claimTechnique(button.dataset.teach,place)){update(place.id);W.updateHUD?.()}});
+      const kind=place.kind==='city'?'CIDADE':place.kind==='dungeon'?'CAVERNA E LOCAL ESPECIAL':place.kind==='landmark'?'MARCO DA JORNADA':'ROTA';
+      const advance=open&&place.id!=='pallet'&&place.id!=='route-1'?'<button type="button" class="psy-kanto-advance">AVANÇAR A JORNADA</button>':'';
+      detail.innerHTML='<div class="psy-kanto-detail-hero">'+cropArtwork(place)+'<div class="place-art-wash"></div><div class="place-heading"><span class="psy-kanto-detail-kicker">'+kind+'</span><h3>'+escape(place.name)+'</h3><p>'+escape(place.mark)+'</p></div></div><div class="psy-kanto-detail-status '+(open?'open':'closed')+'"><span class="status-dot"></span><span>'+escape(stateLabel(place))+'</span><b>'+(place.id===goalId?'MISSÃO':'KANTO')+'</b></div><div class="psy-kanto-detail-tabs" role="tablist" aria-label="Informações da localidade"><button type="button" data-atlas-tab="journey" role="tab" aria-selected="'+(tab==='journey')+'">Jornada</button><button type="button" data-atlas-tab="habitats" role="tab" aria-selected="'+(tab==='habitats')+'">Habitats · '+place.hunts.length+'</button><button type="button" data-atlas-tab="secrets" role="tab" aria-selected="'+(tab==='secrets')+'">Mistérios · '+place.mysteries.length+'</button><button type="button" data-atlas-tab="pokedex" role="tab" aria-selected="'+(tab==='pokedex')+'">Espécies · '+place.species.length+'</button></div><div class="psy-kanto-detail-body"><section data-atlas-pane="journey" role="tabpanel" '+(tab!=='journey'?'hidden':'')+'><div class="psy-kanto-quest-card"><span class="quest-card-icon">✦</span><div><small>MISSÃO PRINCIPAL</small><b>'+escape(place.quest)+'</b><p>Encontre '+escape(place.npc)+' para avançar sua jornada.</p></div></div>'+(teachers?'<h4>Técnicas de campo</h4><div class="psy-kanto-teachers">'+teachers+'</div>':'')+(open&&place.id===goalId?'<button type="button" class="psy-kanto-follow-goal">SEGUIR OBJETIVO · IR</button>':'')+advance+'</section><section data-atlas-pane="habitats" role="tabpanel" '+(tab!=='habitats'?'hidden':'')+'><div class="psy-kanto-section-intro"><b>Locais de caça</b><span>Escolha um habitat para acompanhar suas espécies.</span></div><div class="psy-kanto-hunt-list">'+huntCards+'</div></section><section data-atlas-pane="secrets" role="tabpanel" '+(tab!=='secrets'?'hidden':'')+'><div class="psy-kanto-section-intro"><b>Histórias e segredos</b><span>Personagens, enigmas e passagens desta localidade.</span></div><div class="psy-kanto-story"><b>Personagem</b><span>'+escape(place.npc)+'</span><b>História</b><span>'+escape(place.quest)+'</span></div><div class="psy-kanto-puzzles">'+puzzleCards+'</div></section><section data-atlas-pane="pokedex" role="tabpanel" '+(tab!=='pokedex'?'hidden':'')+'><div class="psy-kanto-section-intro"><b>Espécies desta região</b><span>'+found+'/'+place.species.length+' registradas na sua Pokédex.</span></div><div class="psy-kanto-species-list">'+sprites+'</div></section></div>';
+      detail.querySelectorAll('[data-atlas-tab]').forEach(button=>button.onclick=()=>{
+        selectedAtlasTab=button.dataset.atlasTab;
+        detail.querySelectorAll('[data-atlas-tab]').forEach(b=>b.setAttribute('aria-selected',String(b===button)));
+        detail.querySelectorAll('[data-atlas-pane]').forEach(p=>{p.hidden=p.dataset.atlasPane!==selectedAtlasTab});
+      });
+      detail.querySelectorAll('[data-hunt]').forEach(button=>button.onclick=()=>{
+        const save=getSave();save.activeHunt=button.dataset.hunt;putSave(save);
+        const hunt=place.hunts.find(item=>item.id===button.dataset.hunt);
+        if(hunt){const p=player();p.activeKantoHunt=hunt.id;try{W.autoSave?.()}catch(_){}}
+        selectedAtlasTab='habitats';renderDetail(place);W.notif?.('Local de caça selecionado no Atlas.',1600);
+      });
+      detail.querySelectorAll('[data-teach]').forEach(button=>button.onclick=()=>{if(claimTechnique(button.dataset.teach,place)){selectedAtlasTab='journey';update(place.id);W.updateHUD?.()}});
       detail.querySelectorAll('[data-answer]').forEach(button=>button.onclick=()=>{const puzzle=place.mysteries.find(x=>x.id===button.dataset.answer);if(puzzle)solveMystery(place,puzzle,button.dataset.value)});
       detail.querySelectorAll('[data-solve]').forEach(button=>button.onclick=()=>{const puzzle=place.mysteries.find(x=>x.id===button.dataset.solve);if(puzzle)solveMystery(place,puzzle)});
-      const advance=detail.querySelector('.psy-kanto-advance');
-      if(advance)advance.onclick=()=>{const s=getSave();s.visited=[...new Set([...(s.visited||[]),place.id])];s.activePlace=place.id;putSave(s);update(place.id);detail.querySelector('.psy-kanto-gate').textContent='CAPÍTULO SELECIONADO';W.notif?.('Capítulo adicionado à sua jornada.',1800)};
+      detail.querySelector('.psy-kanto-follow-goal')?.addEventListener('click',()=>{
+        el.classList.remove('open');
+        const automation=W.PsyCampaignAutomation;
+        if(automation?.startPrimaryRoute)automation.startPrimaryRoute();
+        else W.PsyKantoWorldV2?.open?.(place.id);
+      });
+      const advanceButton=detail.querySelector('.psy-kanto-advance');
+      if(advanceButton)advanceButton.onclick=()=>{const s=getSave();s.visited=[...new Set([...(s.visited||[]),place.id])];s.activePlace=place.id;putSave(s);selectedAtlasTab='journey';update(place.id);W.notif?.('Capítulo adicionado à sua jornada.',1800)};
     }
+    atlasView.renderDetail=renderDetail;
   }
   W.openKantoJourneyV1=function(){const el=modal();el.classList.add('open');update();};
-  W.PsyKantoJourneyV1={version:1,places:GEN1.map(p=>({...p,species:[...p.species],hunts:p.hunts.map(h=>({...h,species:[...h.species]}))})),refresh:update,recordEncounter:markSeen,isAdventureTile,hasTechnique,solveMystery};
+  W.PsyKantoJourneyV1={version:1,connections:CAMPAIGN_LINKS.map(edge=>edge.slice()),places:GEN1.map(p=>({...p,species:[...p.species],hunts:p.hunts.map(h=>({...h,species:[...h.species]}))})),refresh:update,recordEncounter:markSeen,isAdventureTile,hasTechnique,solveMystery};
   const oldTrigger=W.triggerWild;
   if(typeof oldTrigger==='function')W.triggerWild=function(pool){
     let result,oldGet=null,called=false;
