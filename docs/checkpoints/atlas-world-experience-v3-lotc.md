@@ -40,9 +40,8 @@ Passaram:
 
 ## Dependências e limitações
 
-- A migration de produção foi aplicada; a função está pronta, mas as recompensas novas só ficam ativas quando o commit de código for publicado na Vercel.
+- A migration de produção e o código foram publicados. O RPC está pronto e as recompensas novas estão ativas na aplicação publicada.
 - A tabela genérica replica o padrão de loot por tipo que já é usado pelo projeto e as referências conferidas para Pidgey/Rattata; exceções únicas por espécie além do tipo ainda precisam de auditoria individual antes de afirmar cobertura enciclopédica de todos os drops PXG.
-- Não alterar produção/deploy da Vercel nem aplicar migration nesta etapa. O lote C segue local e sem push.
 - Incidente anterior no endpoint `/api/game`: `psy_campaign_hourly_heartbeat` ausente no Supabase desde 2026-08-26. A rota atual apenas registra o erro e segue para a recompensa; não é corrigida por este lote.
 
 ## Testes herdados
@@ -50,6 +49,12 @@ Passaram:
 - A checagem `tests/human-animation-v2.test.cjs` possui uma expectativa histórica de hash para `core/legacy-runtime.js` que não corresponde ao baseline atual. O checkpoint anterior documenta a mesma divergência num worktree limpo da Main. Não executar atualização automática do hash; comparar o comportamento e o arquivo em um baseline limpo. Este lote modifica runtime somente para impedir Gold duplicado na recompensa online.
 - A antiga falha de Mastery exigia que compras de habilidades estivessem abertas antes de os efeitos dos spots existirem. A Main atualizada inclui a salvaguarda; `tests/hobbies-mastery-campaign-v1.cjs` passou.
 
-## Estado de integração
+## Estado de integração e publicação
 
-O commit B `e6b9b9ed39e2770b02638ac80a1e38ffa7192617` foi incorporado à branch C por rebase sobre a Main remota. Os conflitos foram resolvidos preservando a tela VIP de B e o cancelamento de aproximação/rota de spots de C. Após a aprovação explícita, a migration foi aplicada ao Supabase; o commit de código C está pronto para push à Main para disparar o deploy automático Vercel.
+- O commit B `e6b9b9ed39e2770b02638ac80a1e38ffa7192617` foi incorporado à branch C por rebase sobre a Main remota. Os conflitos foram resolvidos preservando a tela VIP de B e o cancelamento de aproximação/rota de spots de C.
+- Commit do lote C: `ce1c799c7ce49706ffd283cfd83b05c2c3c2016f` (`feat(world): add species-typed battle drops and hobby access`), baseado em B.
+- O commit C foi enviado por fast-forward à `main`; na última conferência, `origin/main` e a branch local apontavam para o mesmo SHA. Não houve force push.
+- Migration Supabase `20261108045938_campaign_species_battle_loot_v1` aplicada. O RPC `psy_v27_battle_reward` está limitado a `service_role`; `public`, `anon` e `authenticated` não têm permissão de execução. A migration não alterou linhas de jogadores.
+- Deploy Vercel de produção `dpl_nsyPNvd2KALz2MuANR7iLuncxk1m` ficou `READY`, associado ao SHA C. Smoke checks: página inicial 200, módulo `core/battle-loot-rules-v1.js` 200 com MIME JavaScript e `/api/game` sem sessão 401 `AUTH_REQUIRED`, como esperado.
+- Os logs de produção ainda mostram `PGRST202` para a RPC preexistente `psy_campaign_hourly_heartbeat`, observada desde 2026-08-26; o endpoint registra esse erro e segue. Também há um aviso de depreciação Node `url.parse()`. Nenhum dos dois foi introduzido por C.
+- URL de produção: `https://psyworld-world-of-monsters.vercel.app`.
