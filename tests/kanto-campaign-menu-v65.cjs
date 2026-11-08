@@ -30,7 +30,7 @@ assert(auto.includes("if(talked){if(!pos.inside&&Math.hypot(pos.x-449,pos.y-43)<
 assert(css.includes('#psy-kanto-world-v2 #psy-campaign-quests{position:static'),'Tracker must not overlay the canvas');
 assert(css.includes('@media(max-height:500px) and (orientation:landscape)'),'Landscape menu must be responsive');
 assert(html.includes('css/kanto-world-v2.css?build=KANTO_OBJECTIVE_ROUTE_V2_20261107'),'CSS cache mismatch: css/kanto-world-v2.css');
-assert(html.includes('core/kanto-world-v2.js?build=KANTO_AUTOHUNT_VIP_GATE_V3_20261108'),'JS cache mismatch: core/kanto-world-v2.js');
+assert(html.includes('core/kanto-world-v2.js?build=HOBBY_SPOT_TAP_APPROACH_AUTOVIP_GATE_V1_20261108'),'JS cache mismatch: core/kanto-world-v2.js');
 assert(world.includes("assets/story/route-1-hunt-gap-v1.png")&&world.includes('o.huntFenceGapApplied'),'Route 1 hunting entrance must render its fence-gap art exactly once');
 assert(html.includes('core/kanto-campaign-playable-v1.js?build=KANTO_AUTOHUNT_VIP_GATE_V2_20261108'),'JS cache mismatch: core/kanto-campaign-playable-v1.js');
 assert(html.includes('core/kanto-viridian-v1.js?build=VIRIDIAN_RESPONSIVE_V1_20261107'),'Viridian interaction map must load in production');

@@ -13,13 +13,14 @@
   W.__PSYWORLD_SHARED_MODE_DROPS_V2__=true;
   W.__PSYWORLD_SHARED_MODE_DROPS_V1__=true; // compatibilidade com guards antigos
 
-  const BUILD='SHARED_MODE_DROPS_V13_IDLE_LEVEL_SCALING';
+  const BUILD='SHARED_MODE_DROPS_V14_SPECIES_BATTLE_LOOT';
+  const BATTLE_RULES=W.PsyBattleLootRulesV1;
   try{if(typeof P!=='undefined'&&P)W.P=P}catch(e){}
 
   const TYPES=['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
   const TYPE_PT={Normal:'Normal',Fire:'Fogo',Water:'Água',Grass:'Planta',Electric:'Elétrico',Ice:'Gelo',Fighting:'Lutador',Poison:'Veneno',Ground:'Terra',Flying:'Voador',Psychic:'Psíquico',Bug:'Inseto',Rock:'Pedra',Ghost:'Fantasma',Dragon:'Dragão',Dark:'Sombrio',Steel:'Metal',Fairy:'Fada'};
   const TYPE_ALIASES={normal:'Normal',comum:'Normal',fire:'Fire',fogo:'Fire',water:'Water',agua:'Water',grass:'Grass',planta:'Grass',natureza:'Grass',electric:'Electric',eletrico:'Electric',energia:'Electric',ice:'Ice',gelo:'Ice',fighting:'Fighting',lutador:'Fighting',poison:'Poison',veneno:'Poison',venenoso:'Poison',ground:'Ground',terra:'Ground',areia:'Ground',sand:'Ground',flying:'Flying',voador:'Flying',ar:'Flying',psychic:'Psychic',psiquico:'Psychic',bug:'Bug',inseto:'Bug',rock:'Rock',pedra:'Rock',ghost:'Ghost',fantasma:'Ghost',undead:'Ghost',dragon:'Dragon',dragao:'Dragon',dark:'Dark',sombrio:'Dark',noturno:'Dark',steel:'Steel',metal:'Steel',aco:'Steel',fairy:'Fairy',fada:'Fairy',holy:'Fairy',luz:'Fairy'};
-  const TYPE_STONES={Normal:'Normal Stone',Fire:'Fire Stone',Water:'Water Stone',Grass:'Leaf Stone',Electric:'Thunder Stone',Ice:'Ice Stone',Fighting:'Fighting Stone',Poison:'Poison Stone',Ground:'Ground Stone',Flying:'Flying Stone',Psychic:'Psychic Stone',Bug:'Bug Stone',Rock:'Rock Stone',Ghost:'Ghost Stone',Dragon:'Dragon Stone',Dark:'Dark Stone',Steel:'Metal Stone',Fairy:'Fairy Stone'};
+  const TYPE_STONES={Normal:'Heart Stone',Fire:'Fire Stone',Water:'Water Stone',Grass:'Leaf Stone',Electric:'Thunder Stone',Ice:'Ice Stone',Fighting:'Punch Stone',Poison:'Venom Stone',Ground:'Earth Stone',Flying:'Flying Stone',Psychic:'Enigma Stone',Bug:'Cocoon Stone',Rock:'Rock Stone',Ghost:'Darkness Stone',Dragon:'Crystal Stone',Dark:'Darkness Stone',Steel:'Metal Stone',Fairy:'Heart Stone'};
   const ESSENCE_FALLBACK={
     Normal:{ess:'Essência Normal',ball:'Normal Ball',ico:'⚪'},Fire:{ess:'Essência Fogo',ball:'Fire Ball',ico:'🔥'},Water:{ess:'Essência Água',ball:'Water Ball',ico:'💧'},Grass:{ess:'Essência Planta',ball:'Grass Ball',ico:'🍃'},Electric:{ess:'Essência Elétrica',ball:'Electric Ball',ico:'⚡'},Ice:{ess:'Essência Gelo',ball:'Ice Ball',ico:'❄️'},Fighting:{ess:'Essência Lutador',ball:'Fighting Ball',ico:'🥊'},Poison:{ess:'Essência Veneno',ball:'Poison Ball',ico:'☠️'},Ground:{ess:'Essência Terra',ball:'Ground Ball',ico:'⛰️'},Flying:{ess:'Essência Voador',ball:'Flying Ball',ico:'🪽'},Psychic:{ess:'Essência Psíquica',ball:'Psychic Ball',ico:'🔮'},Bug:{ess:'Essência Inseto',ball:'Bug Ball',ico:'🐛'},Rock:{ess:'Essência Pedra',ball:'Rock Ball',ico:'🪨'},Ghost:{ess:'Essência Fantasma',ball:'Ghost Ball',ico:'👻'},Dragon:{ess:'Essência Dragão',ball:'Dragon Ball',ico:'🐉'},Dark:{ess:'Essência Sombria',ball:'Dark Ball',ico:'🌑'},Steel:{ess:'Essência Metal',ball:'Steel Ball',ico:'⚙️'},Fairy:{ess:'Essência Fada',ball:'Fairy Ball',ico:'🧚'}
   };
@@ -54,6 +55,10 @@
     if(e&&typeof e==='object')for(const v of [e.types,e.type,e.element,e.primaryType,e.elements]){const types=typeListFromValue(v);if(types.length)return types}
     try{const a=W.PSY?.getAdventureCreature?.(e?.name||e?.spriteKey),types=typeListFromValue(a?.types||a?.element);if(types.length)return types}catch(_){}
     const id=enemyId(e),table=W.TYPE_BY_ID_FULL||W.TYPE_BY_ID_EXT||W.TYPE_BY_ID_ALL||{};return typeListFromValue(table[id]);
+  }
+  function canonicalBattleTypes(e){
+    const id=enemyId(e),table=W.TYPE_BY_ID_FULL||W.TYPE_BY_ID_EXT||W.TYPE_BY_ID_ALL||{},catalog=typeListFromValue(table[id]);
+    return catalog.length?catalog:enemyTypes(e);
   }
   function stoneForEnemy(e){const types=enemyTypes(e),specific=types.find(type=>type!=='Normal');return TYPE_STONES[specific||types[0]]||null}
   function essence(t){const table=W.PSY_ELEMENT_DATA||{};return table[t]||table[TYPE_PT[t]]||ESSENCE_FALLBACK[t]||ESSENCE_FALLBACK.Normal}
@@ -128,19 +133,15 @@
   function dropProfile(enemy,mode){
     const id=enemyId(enemy),level=enemyLevel(enemy),type=enemyType(enemy),cs=chanceScale(mode,level),rs=scale(mode),key=id==null?null:`${id}:${mode}:${cs.drop}:${cs.materialBoost}:${cs.packBoost}:${level}`;
     if(key&&idDropProfiles.has(key))return idDropProfiles.get(key);
-    const ess=essence(type),pair=QUEST_LOOT[type]||QUEST_LOOT.Normal;
-    /* O perfil é construído por ID. Cada entrada possui sua própria chance e
-       sua própria rolagem; não existe limite de um item por inimigo. */
-    const profile={id,type,level,levelBoost:cs.levelBoost,entries:[
-      /* Taxas deliberadamente baixas porque Survivor/World possuem volume
-         enorme de abates. Cada item continua com rolagem independente.
-         Base: 0,30% / 0,60% / 0,125% antes da escala do modo.
-         Survivor/World aplicam 50% e o bônus de Drop pode no máximo dobrar
-         essas chances. As taxas são limitadas por probabilidade, não por número de itens. */
+    const ess=essence(type),pair=QUEST_LOOT[type]||QUEST_LOOT.Normal,isBattleLoot=['wild','fast','hunt','world'].includes(mode),typed=isBattleLoot&&BATTLE_RULES?.forType(canonicalBattleTypes(enemy)),rates=BATTLE_RULES?.rates(cs.drop);
+    /* Main-world battle loot is species-typed; the separate Idle, Survivor,
+       Adventure, and Cards economies retain their existing independent tables. */
+    const entries=typed?[{kind:'battle-common',name:typed.common,chance:1,minQuantity:1,maxQuantity:10},{kind:'battle-uncommon',name:typed.uncommon,chance:rates.uncommon},{kind:'battle-stone',name:typed.stone,chance:rates.stone}]:[
       {kind:'craft',name:ess.ess,chance:mode==='idle'?.03*cs.materialBoost:rs*.003*cs.materialBoost},
       {kind:'quest-common',name:pair[0],chance:mode==='idle'?.06*cs.materialBoost:rs*.006*cs.materialBoost},
       {kind:'quest-rare',name:pair[1],chance:mode==='idle'?.01*cs.materialBoost:rs*.00125*cs.materialBoost}
-    ]};
+    ];
+    const profile={id,type,level,levelBoost:cs.levelBoost,entries};
     if(key)idDropProfiles.set(key,profile);
     return profile;
   }
@@ -171,14 +172,17 @@
     if(W.__psyDropContext?.enemy)enemy=W.__psyDropContext.enemy;
     if(eventAlreadyAwarded(enemy,mode))return[];markEvent(enemy,mode);
     if(['hunt','fast','wild'].includes(mode)&&(mode==='hunt'||profile().currentHunt))W.PsyTitles?.record('huntKills');
-    const level=enemyLevel(enemy),p=ensure(mode),profile=dropProfile(enemy,mode),cs=chanceScale(mode,level),rs=scale(mode),got=[];
+    const level=enemyLevel(enemy),p=ensure(mode),lootProfile=dropProfile(enemy,mode),cs=chanceScale(mode,level),rs=scale(mode),got=[];
+    const serverBattle=['wild','fast','hunt','world'].includes(mode)&&W.psyOnlineAuthorityV26?.online?.()===true;
 
-    /* Every entry rolls independently, at reduced baseline rates. */
-    for(const entry of profile.entries){
+    /* Account-backed battle loot is granted only by the idempotent RPC. */
+    for(const entry of serverBattle?[]:lootProfile.entries){
       if(mode==='idle'&&/ultra\s*ball/i.test(entry.name))continue;
-      if(Math.random()<entry.chance){
-        addItem(p,entry.name,1,mode);
-        got.push(entry.name);
+      if(entry.kind==='battle-common'){
+        const qty=BATTLE_RULES.commonQuantity(cs.drop,Math.random);
+        addItem(p,entry.name,qty,mode);got.push(entry.name+' ×'+qty);
+      }else if(Math.random()<entry.chance){
+        addItem(p,entry.name,1,mode);got.push(entry.name);
         if(mode==='survivor')survivorVisualDrop(enemy,entry.name,entry.kind,1);
       }
     }
@@ -200,12 +204,12 @@
     W.PsyProfessions?.onKill(enemy,mode);
     W.PsySeason?.award(enemy,mode);
     W.PsySeason?.loot(got);
-    const id=profile.id;
+    const id=lootProfile.id;
     if(['wild','fast','hunt'].includes(mode)&&id!=null){try{W.psyRollTMDrop?.(id)}catch(e){console.warn('[PSYWORLD DROPS V2] TM',e)}}
 
     const boss=(enemy?.boss||enemy?.isBoss)?4.5:1,shiny=enemy?.shiny?1.35:1,mega=(enemy?.mega||enemy?.isMega)?1.8:1;
     const packBase=mode==='adventure'?.012:.0005;
-    if(Math.random()<rs*packBase*cs.packBoost*boss*shiny*mega){const k=packKey(enemy),packName='Pack '+(k==='rare'?'Raro':k==='epic'?'Épico':k==='normal'?'Normal':k.toUpperCase());addPack(p,k,mode);got.push(packName);if(mode==='survivor')survivorVisualDrop(enemy,packName,'pack',1)}
+    if(!serverBattle&&Math.random()<rs*packBase*cs.packBoost*boss*shiny*mega){const k=packKey(enemy),packName='Pack '+(k==='rare'?'Raro':k==='epic'?'Épico':k==='normal'?'Normal':k.toUpperCase());addPack(p,k,mode);got.push(packName);if(mode==='survivor')survivorVisualDrop(enemy,packName,'pack',1)}
 
     p.meta.sharedDropV2=p.meta.sharedDropV2&&typeof p.meta.sharedDropV2==='object'?p.meta.sharedDropV2:{};
     p.meta.sharedDropV2.kills=num(p.meta.sharedDropV2.kills,0)+1;
@@ -227,7 +231,7 @@
     /* World usa metade da chance e cada item continua independente. */
     if(Math.random()<.5*.000060*mult)items.push('Fragmento Mega Stone');
     if(Math.random()<.5*.000080*mult)items.push('Shiny Stone');
-    const matchingStone=stoneForEnemy(target);if(matchingStone&&Math.random()<.5*.000710*mult)items.push(matchingStone);
+    /* Matching evolution stones are granted once by the typed battle table. */
     if(!items.length)return[];items.forEach(i=>addItem(p,i));W.PsySeason?.loot(items);save();notify(`🌍 Mundo Pokémon • ${items.join(' + ')}`);return items;
   }
 
@@ -253,12 +257,13 @@
   W.psySharedCombatDrop=awardCommon;
   W.psySharedWildVictoryDrop=awardWildVictory;
   W.psySharedWorldRareDrop=worldRareDrop;
-  W.PsyTypeStoneDropsV1=Object.freeze({forEnemy:stoneForEnemy,typesForEnemy:enemyTypes});
+  W.PsyTypeStoneDropsV1=Object.freeze({forEnemy:e=>{const types=canonicalBattleTypes(e),specific=types.find(type=>type!=='Normal');return TYPE_STONES[specific||types[0]]||null},typesForEnemy:canonicalBattleTypes});
+  W.PsyBattleLootV1=Object.freeze({forEnemy:e=>BATTLE_RULES?.forType(canonicalBattleTypes(e))||null,forType:t=>BATTLE_RULES?.forType(t)||null,rates:BATTLE_RULES?.rates,commonQuantity:BATTLE_RULES?.commonQuantity});
   W.psyCommonDropHooks=function(id){return awardCommon(id,W.__psyDropContext?.mode||'auto')};
   W.PSY=W.PSY||{};
   W.PSY.sharedModeDrops={build:BUILD,dropTableForId:(id,mode='wild')=>dropProfile(id,mode),common:{craftEssences:[...new Set(TYPES.map(t=>essence(t).ess))],questMaterials:[...new Set(Object.values(QUEST_LOOT).flat())]},exclusive:EXCLUSIVE_REWARDS,rates:{craftEssence:'3% no Idle no Lv.1; escala por nível até 2×',questCommon:'6% no Idle no Lv.1; escala por nível até 2×',questRare:'1% no Idle no Lv.1; escala por nível até 2×',rule:'rolagens independentes; múltiplos itens podem cair na mesma kill; Survivor: 12%; Idle: tabela por nível + suprimentos; World: 25%; Fast Encounter: 20%; Wild/Hunt: 50% das taxas da tabela'},awardCommon,awardWildVictory,awardWorldRare:worldRareDrop};
 
   installEndBattle();installWorldKill();installCardContext();
-  console.log('✅ PSYWORLD Shared Drops V13: chances do Psy Idle escalam por nível com limites; economias permanecem isoladas.');
+  console.log('✅ PSYWORLD Shared Drops V14: recompensas de batalha compatíveis com a espécie; Idle/Survivor seguem isolados.');
 })(window);
 

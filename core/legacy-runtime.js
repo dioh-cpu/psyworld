@@ -3462,7 +3462,8 @@ function handleWorldKill(t){
   let xpMult=0.5*(1+getTotalBuff('xp')/100);
   let finalGold=Math.floor(baseGold*goldMult);
   let finalXp=psyBattleXpReward(t.lvl,0,true);
-  P.gold+=finalGold;
+  const accountBattleReward=window.psyOnlineAuthorityV26?.online?.()===true;
+  if(!accountBattleReward)P.gold+=finalGold;
   if(P.team[0]){
     P.team[0].exp=(P.team[0].exp||0)+finalXp;
     while(P.team[0].exp>=P.team[0].maxExp){
@@ -3479,8 +3480,8 @@ function handleWorldKill(t){
     let np={id:t.id,name:t.name,level:t.lvl,hp:100,maxHp:100,rarity:rollRarity(),type:TYPE_BY_ID_ALL[t.id]||"Normal",moves:getMovesForLevel(t.id,t.lvl)};
     let totalShiny=getTotalBuff('shiny');
     if(Math.random()*100<(0.1+totalShiny*0.1)) np.isShiny=true;
-    P.box.push(np); notif(`Capturou ${t.name} Lv${t.lvl} [${WORLD_REGIONS[t.region]?.name}] ${finalChance.toFixed(1)}% +${finalGold}G +${finalXp}XP`,3500);
-  } else { notif(`Derrotou ${t.name} Lv${t.lvl} +${finalGold}G +${finalXp}XP (Cap ${finalChance.toFixed(1)}%)`,2500); }
+    P.box.push(np); notif(`Capturou ${t.name} Lv${t.lvl} [${WORLD_REGIONS[t.region]?.name}] ${finalChance.toFixed(1)}% ${accountBattleReward?'recompensa confirmando':`+${finalGold}G`} +${finalXp}XP`,3500);
+  } else { notif(`Derrotou ${t.name} Lv${t.lvl} ${accountBattleReward?'recompensa confirmando':`+${finalGold}G`} +${finalXp}XP (Cap ${finalChance.toFixed(1)}%)`,2500); }
   let wasHorde = t.isHorde;
   worldWilds.splice(worldWilds.indexOf(t),1);
   if(!wasHorde) triggerHorde();
@@ -3526,7 +3527,8 @@ function handleWorldKill(t){
   let baseXp=Math.floor(t.lvl*10);
   let finalGold=Math.floor(baseGold*(1+getTotalBuff('gold')/100)*0.5);
   let finalXp=psyBattleXpReward(t.lvl,0,true);
-  P.gold+=finalGold;
+  const accountBattleReward=window.psyOnlineAuthorityV26?.online?.()===true;
+  if(!accountBattleReward)P.gold+=finalGold;
   if(P.team[0]){ P.team[0].exp=(P.team[0].exp||0)+finalXp; while(P.team[0].exp>=P.team[0].maxExp){ P.team[0].exp-=P.team[0].maxExp; P.team[0].level++; P.team[0].maxExp=Math.floor(P.team[0].maxExp*1.3); P.team[0].baseMaxHp=calcBaseHpV14(P.team[0].level,P.team[0].rarity?.mult||1,P.team[0].shiny,false,P.team[0].id); recalcPoke(P.team[0]); } }
   psyAwardGlobalPsyduckXp(finalXp,'world');
   gainTrainerXp(psyBattleTrainerXpReward(lvl,true));
@@ -3541,8 +3543,8 @@ function handleWorldKill(t){
     let np=createCapturedPoke(t.id, t.rarity, t.shiny, false);window.PsySeason?.preserveForm(t,np);
     np.level=t.lvl; np.maxHp=Math.floor(np.maxHp*(0.8+t.lvl*0.02)); np.hp=np.maxHp;
     P.box.push(np);
-    notif(`✅ ${t.name} [${tier}] ${finalChance.toFixed(1)}%/40% +${finalGold}G`,3500);
-  }else{ notif(`❌ ${t.name} [${tier}] ${finalChance.toFixed(1)}%/40% +${finalGold}G`,2200); }
+    notif(`✅ ${t.name} [${tier}] ${finalChance.toFixed(1)}%/40% ${accountBattleReward?'recompensa confirmando':`+${finalGold}G`}`,3500);
+  }else{ notif(`❌ ${t.name} [${tier}] ${finalChance.toFixed(1)}%/40% ${accountBattleReward?'recompensa confirmando':`+${finalGold}G`}`,2200); }
   let wasHorde=t.isHorde;
   worldWilds.splice(worldWilds.indexOf(t),1);
   if(!wasHorde) triggerHorde();
@@ -3637,14 +3639,14 @@ battleAction = function(action, moveData){
       let lvl = battleData.wild.level || 5;
       let finalXp = psyBattleXpReward(lvl,0,true);
       let finalGold = Math.floor((lvl*5+15)*Math.min(2,1+getTotalBuff('gold')/100));
-      P.team[0].exp += finalXp; P.gold += finalGold;psyAwardGlobalPsyduckXp(finalXp,'battle');
+      const accountBattleReward=window.psyOnlineAuthorityV26?.online?.()===true;
+      P.team[0].exp += finalXp;if(!accountBattleReward)P.gold += finalGold;psyAwardGlobalPsyduckXp(finalXp,'battle');
       gainTrainerXp(Math.floor(finalXp*0.1));
       /* O Wild entrega os materiais no ponto real da vitória. O encerramento
          legado continua responsável por fechar a batalha; a camada compartilhada
          marca o alvo para que o callback posterior não duplique o drop. */
       try{window.psySharedWildVictoryDrop?.(battleData.wild)}catch(e){console.warn('[PSYWORLD WILD] shared drops',e)}
-      tryDropStone(wildType, lvl);
-      if(log) log.textContent = `🎉 Derrotou Lv.${lvl} ${battleData.wild.name}! +${finalXp} EXP +${finalGold}G${msgEff}`;
+      if(log) log.textContent = `🎉 Derrotou Lv.${lvl} ${battleData.wild.name}! +${finalXp} EXP${accountBattleReward?' • recompensa sendo confirmada':` +${finalGold}G`}${msgEff}`;
       checkLevelUp(); updateHUD();
     // === GYM FIX - TEM QUE FICAR AQUI DENTRO ===
       if(gymBattle){

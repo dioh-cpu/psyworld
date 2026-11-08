@@ -78,8 +78,19 @@ function unlock(id){
 }
 const xpNeed=x=>100*Math.max(1,x.level);
 function levelRequirements(id){
- const j=find(id),x=state()[id];if(!j||!x?.level||x.level>=100||id==='engineer'&&x.level>=BALLS.length)return {ready:false,max:true};
- const ball=id==='engineer'?BALLS[x.level]:null;
+ const j=find(id),x=state()[id];if(!j||!x?.level||x.level>=100)return {ready:false,max:true};
+ if(id==='engineer'){
+  const nextIndex=x.level<BALLS.length?x.level:(x.level-BALLS.length)%BALLS.length,type=BALLS[nextIndex]?.[0]||'Normal',ball=x.level<BALLS.length?BALLS[x.level]:null;
+  const materials=W.PsyBattleLootV1?.forType?.(type)||{common:'Rubber Ball',uncommon:'Giant Piece Of Fur',stone:'Heart Stone'};
+  const advanced=Math.max(0,x.level-BALLS.length),defeatNeed=100+advanced*10,captureNeed=5+Math.floor(advanced/6);
+  const need=Math.min(500,25+advanced*5),uncommonNeed=Math.min(100,10+advanced*2),stoneNeed=1+Math.floor(advanced/5);
+  const t=key(type),won=Math.max(0,kills(type)-count(x.base[t])),caught=captured([type]);
+  const available=count(inventory()[materials.common]),uncommonAvailable=count(inventory()[materials.uncommon]),stoneAvailable=count(inventory()[materials.stone]);
+  return {material:materials.common,need,available,uncommonMaterial:materials.uncommon,uncommonNeed,uncommonAvailable,stoneMaterial:materials.stone,stoneNeed,stoneAvailable,
+   defeats:won,defeatNeed,captured:caught,captureNeed,xp:x.xp,xpRequired:xpNeed(x),ball:ball?.[1],type,
+   ready:available>=need&&uncommonAvailable>=uncommonNeed&&stoneAvailable>=stoneNeed&&x.xp>=xpNeed(x)&&won>=defeatNeed&&caught>=captureNeed};
+ }
+ const ball=null;
  const levelMats={miner:'Essência Terra',gardener:'Essência Planta',fisher:'Essência Água',lumber:'Essência Inseto'};
  const material=ball?ball[2]:(levelMats[id]||j.material),need=ball?100:Math.max(10,10*x.level);
  const t=ball?ball[0]:j.types[0],won=Math.max(0,kills(t)-count(x.base[key(t)])),caught=captured([t]),available=count(inventory()[material]);
@@ -88,9 +99,14 @@ function levelRequirements(id){
 }
 function levelUp(id){
  const j=find(id),x=state()[id],req=levelRequirements(id);if(!j||!x||!req.ready)return false;
- const inv=inventory();if(count(inv[req.material])<req.need)return false;
- inv[req.material]-=req.need;x.xp-=xpNeed(x);x.level++;
- if(id==='engineer'&&BALLS[x.level])x.base[key(BALLS[x.level][0])]=kills(BALLS[x.level][0]);
+ const inv=inventory();
+ if(id==='engineer'){
+  const costs=[[req.material,req.need],[req.uncommonMaterial,req.uncommonNeed],[req.stoneMaterial,req.stoneNeed]];
+  if(costs.some(([name,amount])=>count(inv[name])<amount))return false;
+  for(const [name,amount]of costs)inv[name]-=amount;
+ }else{if(count(inv[req.material])<req.need)return false;inv[req.material]-=req.need;}
+ x.xp-=xpNeed(x);x.level++;
+ if(id==='engineer')x.base[key(req.type)]=kills(req.type);
  else for(const t of j.types)x.base[key(t)]=kills(t);
  save();if(root()?.classList.contains('show'))render();W.notif?.('Novo nível em '+j.name+'!',2500);return true;
 }
@@ -347,7 +363,10 @@ function render(){
  }
  const req=levelRequirements(j.id),box=D.createElement('section');box.className='ph-upgrade';
  para(box,req.max?'NÍVEL MÁXIMO / TODAS AS BALLS LIBERADAS':'SUBIR DE NÍVEL • Requer XP '+x.xp+'/'+req.xpRequired);
- if(j.id==='engineer'&&req.material)para(box,'Próxima '+req.ball+': '+req.defeats+'/100 derrotas do tipo '+req.type+', '+req.captured+'/5 espécies capturadas, '+req.available+'/100 '+req.material,box);
+ if(j.id==='engineer'&&req.material){
+  para(box,(req.ball?'Próxima Ball: '+req.ball+' • ':'Aprimoramento de Engenheiro • ')+req.defeats+'/'+req.defeatNeed+' vitórias do tipo '+req.type+', '+req.captured+'/'+req.captureNeed+' espécies capturadas.');
+  para(box,req.available+'/'+req.need+' '+req.material+' • '+req.uncommonAvailable+'/'+req.uncommonNeed+' '+req.uncommonMaterial+' • '+req.stoneAvailable+'/'+req.stoneNeed+' '+req.stoneMaterial);
+ }
  else if(req.material)para(box,req.available+'/'+req.need+' '+req.material);
  box.appendChild(button('SUBIR DE NÍVEL',()=>levelUp(j.id),!req.ready));details.appendChild(box);
  const title=D.createElement('h3');title.textContent='TROCAS EXCLUSIVAS';details.appendChild(title);

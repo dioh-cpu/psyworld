@@ -8,7 +8,7 @@
 if(W.PsyKantoWorldV2 || !W.PsyKantoMapDataV2)return;
 const DATA=W.PsyKantoMapDataV2,KEY='psy_kanto_world_v2_quests',SAVE_KEY='psy_kanto_journey_progress_v1';
 const $=s=>D.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={root:null,canvas:null,ctx:null,world:null,inside:null,position:{x:597,y:555},lastOutdoor:null,held:new Set(),joy:null,touch:null,path:[],time:0,raf:0,stepDistance:0,lastEncounter:0,dialogOpen:false,images:new Map(),portrait:null,avatar:null,quest:null,walkFrame:0,facing:'down',moving:false,suspended:false,navRequest:0,navCells:new Map(),viewport:null,lastRender:0,menuOpen:false,externalPanel:null,hideTrainerName:false};
+const state={root:null,canvas:null,ctx:null,world:null,inside:null,position:{x:597,y:555},lastOutdoor:null,held:new Set(),joy:null,touch:null,path:[],pendingHobby:null,time:0,raf:0,stepDistance:0,lastEncounter:0,dialogOpen:false,images:new Map(),portrait:null,avatar:null,quest:null,walkFrame:0,facing:'down',moving:false,suspended:false,navRequest:0,navCells:new Map(),viewport:null,lastRender:0,menuOpen:false,externalPanel:null,hideTrainerName:false};
 function progress(){if(state.quest)return state.quest;try{state.quest=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_){state.quest={}}return state.quest}
 function putProgress(){try{localStorage.setItem(KEY,JSON.stringify(progress()))}catch(_){}try{W.autoSave?.()}catch(_){}}
 function questDone(){const q=progress();return !!(q.oak)}
@@ -30,7 +30,7 @@ root.querySelector('[data-kw2-route]').onclick=()=>{if(state.dialogOpen||state.e
 root.querySelector('[data-kw2-route-inline]').onclick=()=>root.querySelector('[data-kw2-route]').click();
 root.querySelectorAll('[data-kw2-panel]').forEach(b=>b.onclick=()=>openCampaignPanel(b.dataset.kw2Panel));
 root.querySelector('.kw2-menu').addEventListener('click',e=>{if(e.target===root.querySelector('.kw2-menu'))toggleCampaignMenu(false)});
-root.querySelectorAll('[data-dir]').forEach(el=>{const dir=el.dataset.dir;const up=e=>{e.preventDefault();state.held.delete(dir)};el.addEventListener('pointerdown',e=>{e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();state.path=[];state.navRequest++;state.held.add(dir);el.setPointerCapture?.(e.pointerId)});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)});
+root.querySelectorAll('[data-dir]').forEach(el=>{const dir=el.dataset.dir;const up=e=>{e.preventDefault();state.held.delete(dir)};el.addEventListener('pointerdown',e=>{e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();state.pendingHobby=null;state.path=[];state.navRequest++;state.held.add(dir);el.setPointerCapture?.(e.pointerId)});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)});
 D.addEventListener('keydown',onKeyDown,true);D.addEventListener('keyup',onKeyUp,true);W.addEventListener('resize',()=>{state.viewport=null;draw()});W.visualViewport?.addEventListener?.('resize',()=>{state.viewport=null;draw()});
 const stage=root.querySelector('.kw2-stage');stage.addEventListener('pointerdown',touchStart);stage.addEventListener('pointermove',touchMove);stage.addEventListener('pointerup',touchEnd);stage.addEventListener('pointercancel',touchCancel);stage.addEventListener('lostpointercapture',touchCancel);W.addEventListener('blur',resetTouch);W.addEventListener('resize',resetTouch);D.addEventListener('visibilitychange',()=>{if(D.hidden)resetTouch()});
 }
@@ -108,7 +108,7 @@ if(id==='route-1'&&!progress().oak&&!options.skipGuard){open('pallet');setTimeou
 W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();toggleCampaignMenu(false);state.externalPanel=null;state.root.style.visibility='';state.root.dataset.world=id;D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=id==='pallet'?DATA.pallet:id==='route-1'?DATA.route1:DATA.viridian;state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
 const start=options.spawn||resumePosition||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;updateFishingButton();
 image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}W.PsyKantoStoryV49?.enter(previousWorld,id);return true;}
-function close(){W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);if(state.root){state.root.style.visibility='';toggleCampaignMenu(false);state.externalPanel=null;}W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
+function close(){W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);if(state.root){state.root.style.visibility='';toggleCampaignMenu(false);state.externalPanel=null;}W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.pendingHobby=null;state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
 let autoHunt=false,huntPlanAt=0,huntPlanning=false;
 const vipActive=()=>Number(player().meta?.vipUntil||0)>Date.now();
 const PLAYER_RADIUS=11;
@@ -159,14 +159,16 @@ if(autoHunt&&!huntPlanning&&!state.inside&&!state.dialogOpen&&!state.suspended&&
 }
 let dx=0,dy=0,pathDistance=Infinity;for(const k of state.held){if(k==='up')dy--;if(k==='down')dy++;if(k==='left')dx--;if(k==='right')dx++}
 if(state.joy){dx+=state.joy.x;dy+=state.joy.y}if(!dx&&!dy&&state.path.length){const dest=state.path[0],p=state.position,d=Math.hypot(dest[0]-p.x,dest[1]-p.y);if(d<.5){if(positionValid(...dest)){p.x=dest[0];p.y=dest[1];}state.path.shift()}else{dx=(dest[0]-p.x)/d;dy=(dest[1]-p.y)/d;pathDistance=d}}
-state.moving=false;const activityScene=state.inside?.id||state.world?.id,activityLocked=W.PsyHobbiesVFX?.blocksMovement?.(activityScene);if((dx||dy)&&!activityLocked)move(dx,dy,dt,pathDistance);if(state.root){state.root.dataset.worldPosition=Math.round(state.position.x)+','+Math.round(state.position.y);state.root.dataset.pathLength=String(state.path.length);}
+state.moving=false;const activityScene=state.inside?.id||state.world?.id,activityLocked=W.PsyHobbiesVFX?.blocksMovement?.(activityScene);if((dx||dy)&&!activityLocked)move(dx,dy,dt,pathDistance);
+const pending=state.pendingHobby;if(pending&&!pending.searching&&!state.path.length&&!state.moving){const node=W.PsyHobbies?.visibleNodes?.(pending.scene)?.find(v=>v.id===pending.id);state.pendingHobby=null;if(node&&Math.hypot(node.x-state.position.x,node.y-state.position.y)<65)W.PsyHobbies?.interact?.(pending.scene,node.id,{x:state.position.x,y:state.position.y,facing:state.facing});else if(node)W.notif?.('Não foi possível alcançar esse recurso por este caminho.',2200);}
+if(state.root){state.root.dataset.worldPosition=Math.round(state.position.x)+','+Math.round(state.position.y);state.root.dataset.pathLength=String(state.path.length);}
 const frameBudget=W.innerWidth<740?1000/48:1000/60;
 if(!W.PsyKantoStoryV49?.isOpen()&&now-state.lastRender>=frameBudget){draw();state.lastRender=now}
 state.raf=W.requestAnimationFrame(tick)}
 function onKeyDown(e){if(!state.root?.classList.contains('open')||W.PsyKantoStoryV49?.isOpen()||W.PsyGuide?.isOpen())return;
 if(state.externalPanel)return;
 if(state.menuOpen){if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();toggleCampaignMenu(false)}return;}
-if(e.code==='KeyM'){e.preventDefault();e.stopImmediatePropagation();toggleCampaignMenu();return;}const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){W.PsyCampaignAutomation?.cancelRoute?.();autoHunt=false;e.preventDefault();e.stopImmediatePropagation();state.path=[];state.navRequest++;state.held.add(keys[e.code])}else if(['KeyE','Enter','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();interact()}}else if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}}
+if(e.code==='KeyM'){e.preventDefault();e.stopImmediatePropagation();toggleCampaignMenu();return;}const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){W.PsyCampaignAutomation?.cancelRoute?.();autoHunt=false;e.preventDefault();e.stopImmediatePropagation();state.pendingHobby=null;state.path=[];state.navRequest++;state.held.add(keys[e.code])}else if(['KeyE','Enter','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();interact()}}else if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}}
 function onKeyUp(e){if(!state.root?.classList.contains('open')||state.menuOpen||state.externalPanel)return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){e.preventDefault();e.stopImmediatePropagation();state.held.delete(keys[e.code])}}
 function camera(){
   const map=state.inside||state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');
@@ -314,7 +316,7 @@ function drawInterior(c,inside){
   }
 }
 function currentTargets(){if(state.inside)return [{type:'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))];return [...(state.world.id==='route-1'?[{type:'return',at:[108,420]}]:state.world.id==='viridian'?[{type:'return',at:state.world.return}]:[]),...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),{type:'exit',at:state.world.exit}]}
-function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;
+function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;state.pendingHobby=null;
 const scene=state.inside?.id||state.world?.id;
 const gather=W.PsyHobbies?.nearby?.(scene,state.position,65);
 if(gather){W.PsyHobbies?.interact?.(scene,gather.id,{x:state.position.x,y:state.position.y,facing:state.facing});return;}
@@ -426,19 +428,34 @@ function touchStart(e){if(e.target!==state.canvas||state.dialogOpen||state.touch
    const idx=W.PsyHobbies?.decorAt?.(room,point.x,point.y)??-1;
    if(idx>=0){e.preventDefault();state.decorDrag={id:e.pointerId,index:idx};state.canvas.setPointerCapture?.(e.pointerId);return;}
  }
- W.PsyCampaignAutomation?.cancelRoute?.();autoHunt=false;e.preventDefault();const t=point;state.touch={id:e.pointerId,x:e.clientX,y:e.clientY,tx:t.x,ty:t.y,t:performance.now(),drag:false,rect:state.canvas.getBoundingClientRect()};state.navRequest++;state.canvas.setPointerCapture?.(e.pointerId);state.path=[]}
+ W.PsyCampaignAutomation?.cancelRoute?.();autoHunt=false;e.preventDefault();const t=point;state.touch={id:e.pointerId,x:e.clientX,y:e.clientY,tx:t.x,ty:t.y,t:performance.now(),drag:false,rect:state.canvas.getBoundingClientRect()};state.pendingHobby=null;state.navRequest++;state.canvas.setPointerCapture?.(e.pointerId);state.path=[]}
 function touchMove(e){
  if(state.decorDrag?.id===e.pointerId){e.preventDefault();const pt=touchCoords(e);W.PsyHobbies?.moveDecor?.(state.decorDrag.index,pt.x,pt.y,state.inside,false);draw();return;}
  const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();let dx=e.clientX-t.x,dy=e.clientY-t.y;const distance=Math.hypot(dx,dy);if(distance>72){t.x+=dx/distance*(distance-72);t.y+=dy/distance*(distance-72);dx=e.clientX-t.x;dy=e.clientY-t.y;}if(Math.hypot(dx,dy)>7)t.drag=true;if(t.drag){const d=Math.max(1,Math.hypot(dx,dy));state.joy=W.PsyTouchStick.vector(dx,dy);const stick=state.root.querySelector('.kw2-joystick'),r=t.rect;stick.style.left=(t.x-r.left)+'px';stick.style.top=(t.y-r.top)+'px';stick.style.display='block';stick.style.setProperty('--jx',Math.round((dx/d*Math.min(30,d)))+'px');stick.style.setProperty('--jy',Math.round((dy/d*Math.min(30,d)))+'px')}}
 function resetTouch(){state.joy=null;state.touch=null;state.held.clear();const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';}
 function touchCancel(e){if(state.decorDrag?.id===e.pointerId)state.decorDrag=null;if(state.touch?.id===e.pointerId)resetTouch();}
+function queueHobbyApproach(scene,node){
+ const actor=state.position,request=++state.navRequest,pending={scene,id:node.id,searching:true};state.pendingHobby=pending;state.path=[];
+ const base=Math.atan2(actor.y-node.y,actor.x-node.x),turns=[0,1,-1,2,-2,3,-3,4];
+ (async()=>{
+  for(const turn of turns){
+   if(request!==state.navRequest||state.pendingHobby!==pending)return;
+   const angle=base+turn*Math.PI/4,destination=[node.x+Math.cos(angle)*48,node.y+Math.sin(angle)*48];
+   const route=await findPath([state.position.x,state.position.y],destination,request);
+   if(request!==state.navRequest||state.pendingHobby!==pending)return;
+   if(route.length){pending.searching=false;state.path=route;return;}
+  }
+  pending.searching=false;
+  if(Math.hypot(node.x-state.position.x,node.y-state.position.y)>=65){state.pendingHobby=null;W.notif?.('Não há um caminho livre até esse recurso.',2200);}
+ })();
+}
 function touchEnd(e){
  if(state.decorDrag?.id===e.pointerId){e.preventDefault();const pos=touchCoords(e);W.PsyHobbies?.moveDecor?.(state.decorDrag.index,pos.x,pos.y,state.inside,true);state.decorDrag=null;draw();return;}
  const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();state.joy=null;state.touch=null;state.root.querySelector('.kw2-joystick').style.display='none';if(!t.drag){
 const scene=state.inside?.id||state.world?.id;
 if(state.inside&&W.PsyHobbies?.place?.(state.inside.id,t.tx,t.ty,state.inside)){draw();return;}
 const gather=W.PsyHobbies?.nearby?.(scene,{x:t.tx,y:t.ty},28);
-if(gather&&Math.hypot(gather.x-state.position.x,gather.y-state.position.y)<65){W.PsyHobbies?.interact?.(scene,gather.id,{x:state.position.x,y:state.position.y,facing:state.facing});draw();return;}
+if(gather){if(Math.hypot(gather.x-state.position.x,gather.y-state.position.y)<65){state.pendingHobby=null;W.PsyHobbies?.interact?.(scene,gather.id,{x:state.position.x,y:state.position.y,facing:state.facing});draw()}else queueHobbyApproach(scene,gather);return;}
 const near=currentTargets().find(v=>Math.hypot(v.at[0]-t.tx,v.at[1]-28-t.ty)<(v.type==='npc'?44:30)&&(v.type==='npc'||Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)<70));if(near){activateTarget(near);return}const request=++state.navRequest;findPath([state.position.x,state.position.y],[t.tx,t.ty],request).then(path=>{if(request===state.navRequest&&state.root?.classList.contains('open'))state.path=path})}}
 // Tap-to-walk searches asynchronously, yielding control to the game each frame.
 // Terrain queries are memoized per location; dragging joystick cancels old searches.
@@ -453,17 +470,25 @@ function findPath(from,to,request){
     state.navCells.set(k,ok);return ok;
   };
   const straight=(x1,y1,x2,y2)=>{
-    const d=Math.hypot(x2-x1,y2-y1),parts=Math.ceil(d/6);
+    const d=Math.hypot(x2-x1,y2-y1),parts=Math.ceil(d/2.5);
     for(let j=1;j<=parts;j++){const t=j/parts;if(!positionValid(x1+(x2-x1)*t,y1+(y2-y1)*t))return false}
     return true;
   };
   if(positionValid(to[0],to[1])&&straight(from[0],from[1],to[0],to[1]))
     return Promise.resolve([[to[0],to[1]]]);
   let ax=cx(from[0]),ay=cx(from[1]),bx=cx(to[0]),by=cx(to[1]);
-  if(!valid(ax,ay)){
-    let nearest=null;
-    for(let r=1;r<=3&&!nearest;r++)for(let yy=-r;yy<=r&&!nearest;yy++)
-      for(let xx=-r;xx<=r;xx++)if(valid(ax+xx,ay+yy)){nearest=[ax+xx,ay+yy];break}
+  // A valid grid cell is not enough: the segment from the actor to its cell
+  // center must also clear every collision. Otherwise the first waypoint can
+  // sit behind a fence or on the far side of a narrow corner and movement
+  // stalls even though A* found a route through valid cell centers.
+  if(!valid(ax,ay)||!straight(from[0],from[1],ax*step,ay*step)){
+    let nearest=null,score=Infinity;
+    for(let r=1;r<=4;r++)for(let yy=-r;yy<=r;yy++)for(let xx=-r;xx<=r;xx++){
+      if(Math.abs(xx)!==r&&Math.abs(yy)!==r)continue;
+      const x=ax+xx,y=ay+yy;
+      if(!valid(x,y)||!straight(from[0],from[1],x*step,y*step))continue;
+      const scoreNow=xx*xx+yy*yy;if(scoreNow<score){nearest=[x,y];score=scoreNow;}
+    }
     if(!nearest)return Promise.resolve([]);[ax,ay]=nearest;
   }
   if(!valid(bx,by)){
@@ -494,7 +519,8 @@ function findPath(from,to,request){
           while(n!==origin){const xy=n.split(',').map(Number);nodes.push([xy[0]*step,xy[1]*step]);n=previous.get(n);if(!n)return resolve([])}
           nodes.reverse();
           // Collapse only visible segments, preserving accurate wall collisions.
-          const route=[],path=[from,...nodes];
+          const startCell=[ax*step,ay*step];
+          const route=[],path=[from,...(Math.hypot(from[0]-startCell[0],from[1]-startCell[1])>.5?[startCell]:[]),...nodes];
           let index=0;
           while(index<path.length-1){
             let next=Math.min(path.length-1,index+18);
@@ -506,6 +532,9 @@ function findPath(from,to,request){
         for(const [dx,dy] of [[0,1],[1,0],[0,-1],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){
           const x=current.x+dx,y=current.y+dy;
           if(!valid(x,y))continue;
+          // Clearance at cell centers can still hide an obstructed edge.
+          // Test the whole 10px step before adding it to the search graph.
+          if(!straight(current.x*step,current.y*step,x*step,y*step))continue;
           if(dx&&dy&&(!valid(current.x+dx,current.y)||!valid(current.x,current.y+dy)))continue;
           const g=current.g+(dx&&dy?1.41421356237:1),nk=key(x,y);
           if(g>=(best.get(nk)??Infinity))continue;
@@ -519,9 +548,9 @@ function findPath(from,to,request){
     slice();
   });
 }
-W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
- navigate:async function(at){autoHunt=false;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
- setAutoHunt:function(active){if(active&&!vipActive()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1')open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
+W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.pendingHobby=null;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
+ navigate:async function(at){autoHunt=false;state.pendingHobby=null;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
+ setAutoHunt:function(active){state.pendingHobby=null;if(active&&!vipActive()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1')open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,
  open,close,data:DATA,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:id==='viridian'?DATA.viridian:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y})};
 // Capture Atlas entry before any legacy canvas handler; also works after Atlas rerenders.

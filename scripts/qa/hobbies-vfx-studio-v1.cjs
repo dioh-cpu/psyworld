@@ -36,13 +36,16 @@ async function boot(page,spawn){
  if(!ok)throw new Error('Could not activate the Kanto Route 1 production map');
  await page.waitForTimeout(1700);
  await settleOverlays(page);
- return await page.evaluate(()=>({
+ const state=await page.evaluate(()=>({
   avatar:document.querySelector('#psy-kanto-world-v2 canvas')?.width>0,
   walk:!!window.PsyTrainerWalkV1,
   hobbiesReady:window.PsyHobbyMasterySpotReady,
+  battleRulesLoaded:!!window.PsyBattleLootRulesV1&&typeof window.PsyBattleLootRulesV1.forType==='function',
   assets:window.PsyHobbiesVFX.debug().loaded,
   tools:Object.values(window.PsyHobbiesVFX.debug().tools).every(Boolean)
  }));
+ if(!state.battleRulesLoaded)throw new Error('Typed battle loot rules did not load as a browser script');
+ return state;
 }
 async function settleOverlays(page){
  await page.evaluate(()=>{
@@ -81,7 +84,30 @@ async function auditToolFrames(page){
  });
 }
 async function pressInteract(page){await page.keyboard.press('e');await page.waitForTimeout(820)}
-async function pressDirectHit(page){await page.keyboard.press('e');await page.waitForTimeout(850)}
+async function finishSpotByInteraction(page,kind){
+ for(let attempt=0;attempt<7;attempt++){
+  await page.waitForFunction(()=>!window.PsyHobbiesVFX?.isBusy?.('route-1'),null,{timeout:6000});
+  const before=await page.evaluate(kind=>({hits:Number(window.P?.meta?.hobbyGatherV2?.nodes?.['route-1:o1']?.hits||0),total:Number(window.P?.meta?.hobbyGatherTotalsV1?.[kind]||0)}),kind);
+  if(before.total>=1)return;
+  await page.keyboard.press('e');
+  await page.waitForFunction(({kind,before})=>Number(window.P?.meta?.hobbyGatherTotalsV1?.[kind]||0)>before.total||Number(window.P?.meta?.hobbyGatherV2?.nodes?.['route-1:o1']?.hits||0)>before.hits,{kind,before},{timeout:9000});
+ }
+ const done=await page.evaluate(kind=>Number(window.P?.meta?.hobbyGatherTotalsV1?.[kind]||0)>=1,kind);
+ if(!done)throw new Error(`${kind} spot did not complete after seven real interaction attempts`);
+}
+async function tapWorldSpot(page,x,y,{touch=false}={}){
+ const point=await page.evaluate(({x,y})=>{
+  const canvas=document.querySelector('#psy-kanto-world-v2 canvas'),stage=document.querySelector('#psy-kanto-world-v2 .kw2-stage'),map=window.PsyKantoWorldV2.data.route1,pos=window.PsyKantoWorldV2.getPosition();
+  const rect=stage.getBoundingClientRect(),dpr=Math.min(1.3,window.devicePixelRatio||1),cw=Math.max(260,Math.round(rect.width*dpr)),ch=Math.max(180,Math.round(rect.height*dpr));
+  const cover=Math.max(cw/map.w,ch/map.h),scale=Math.min(4,cover*1.08),viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const cx=viewW>=map.w?map.w/2:clamp(pos.x,viewW/2,map.w-viewW/2),cy=viewH>=map.h?map.h/2:clamp(pos.y,viewH/2,map.h-viewH/2);
+  const ox=Math.round(cw/2-cx*scale),oy=Math.round(ch/2-cy*scale);
+  return {x:rect.left+(x*scale+ox)/dpr,y:rect.top+(y*scale+oy)/dpr,canvas:!!canvas,world:{x:pos.x,y:pos.y}};
+ },{x,y});
+ if(!point.canvas)throw new Error('Production map canvas is unavailable');
+ if(touch)await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);
+ return point;
+}
 async function fishUntilComplete(page,timeout=12000){
  const reel=page.locator('#psy-hobby-fishing [data-fish-reel]');
  const gate=await page.evaluate(()=>({position:window.PsyKantoWorldV2.getPosition(),scene:'route-1',canFish:window.PsyHobbies.canFish('route-1',window.PsyKantoWorldV2.getPosition(),null),buttonHidden:document.querySelector('#psy-kanto-world-v2 [data-kw2-fish]')?.hidden}));
@@ -116,7 +142,7 @@ async function main(){
   const page=await context.newPage();page.on('pageerror',e=>errors.push(spec.name+': '+e.message));
   const start=await boot(page,[235,294]);
   if(!start.tools)throw new Error(spec.name+' did not load all 16 generated transparent tools');
-  await page.locator('#psy-kanto-world-v2 [data-interact]').tap();await page.waitForTimeout(850);
+  await tapWorldSpot(page,276,301,{touch:true});await page.waitForTimeout(1050);
   const totals=await page.evaluate(()=>window.P?.meta?.hobbyGatherTotalsV1||{});
   const perf=await countFrames(page);
   if(totals.gardener!==1)throw new Error(spec.name+' did not complete a real flower interaction');
@@ -132,17 +158,19 @@ async function main(){
  if(!desktop.tools)throw new Error('Desktop did not load all 16 generated transparent tools');
  desktop.toolAlignment=await auditToolFrames(page);
  await page.screenshot({path:path.join(output,'route-1-before.png')});
- await page.keyboard.down('ArrowRight');await page.waitForTimeout(520);await page.keyboard.up('ArrowRight');
- await page.waitForTimeout(350);await pressInteract(page);
+ await tapWorldSpot(page,276,301);await page.waitForTimeout(1050);
  await page.screenshot({path:path.join(output,'route-1-flower-after.png')});
  // The real Route 1 lumber spot progresses through its actual five-hit state.
  await reopenMap(page,[500,275]);
  for(let i=0;i<5;i++){await pressInteract(page);await page.waitForTimeout(100)}
  await page.waitForTimeout(650);
- await reopenMap(page,[335,290]);
- const mineReach=await page.evaluate(()=>({walkable:window.PsyKantoWorldV2.walkable('route-1',335,290),nearest:window.PsyHobbies.nearby('route-1',{x:335,y:290},65)?.id}));
- if(!mineReach.walkable||mineReach.nearest!=='o1')throw new Error('The early-route mining spot is blocked or out of interaction reach: '+JSON.stringify(mineReach));
- for(let i=0;i<5;i++)await pressDirectHit(page);
+ await reopenMap(page,[220,294]);
+ const mineReach=await page.evaluate(()=>({walkable:window.PsyKantoWorldV2.walkable('route-1',220,294),spot:window.PsyHobbies.visibleNodes('route-1').find(n=>n.id==='o1')}));
+ if(!mineReach.walkable||!mineReach.spot)throw new Error('The early-route mining spot is blocked or unavailable: '+JSON.stringify(mineReach));
+ const mineTap=await tapWorldSpot(page,mineReach.spot.x,mineReach.spot.y);
+ try{await page.waitForFunction(()=>Number(window.P?.meta?.hobbyGatherV2?.nodes?.['route-1:o1']?.hits||0)>0,{},{timeout:12000})}
+ catch(error){const diag=await page.evaluate(()=>({position:window.PsyKantoWorldV2.getPosition(),node:window.PsyHobbies.visibleNodes('route-1').find(n=>n.id==='o1'),record:window.P?.meta?.hobbyGatherV2?.nodes?.['route-1:o1'],nearest:window.PsyHobbies.nearby('route-1',window.PsyKantoWorldV2.getPosition(),100),vfx:window.PsyHobbiesVFX.debug()}));throw new Error('Mouse click did not start the remote mining interaction at '+JSON.stringify(mineTap)+'; state='+JSON.stringify(diag)+'; '+error.message)}
+ await finishSpotByInteraction(page,'miner');
  await page.waitForTimeout(550);
  // The real fishing panel uses the active Route 1 water area and production FSM.
  await reopenMap(page,[132,431]);

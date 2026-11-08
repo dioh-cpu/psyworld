@@ -1,13 +1,17 @@
 /* node tests/hobbies-unified-v2.cjs — independent hobbies and Engineer ball ladder */
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+(async()=>{
+await import('../core/battle-loot-rules-v1.js');
+const battleLoot=globalThis.PsyBattleLootRulesV1;
+assert(battleLoot,'shared battle loot rules import in the test runtime');
 const source=fs.readFileSync('core/hobbies-v2.js','utf8');
 const index=fs.readFileSync('index.html','utf8');
 const world=fs.readFileSync('core/kanto-world-v2.js','utf8');
 const old=fs.readFileSync('core/professions-v1.js','utf8');
 const legacy=fs.readFileSync('core/legacy-runtime.js','utf8');
-const p={meta:{typeKills:{Fogo:100},caughtDex:{4:1,5:1,6:1,37:1,38:1}},gymProgress:['kanto_brock'],inventory:{'Essência Normal':24,'Essência Fogo':102},team:[{id:25,level:5,maxExp:100,exp:0}]};
+const p={meta:{typeKills:{Fogo:100},caughtDex:{4:1,5:1,6:1,37:1,38:1}},gymProgress:['kanto_brock'],inventory:{'Essência Normal':24,'Essência Fogo':102,'Essence Of Fire':102,'Fire Tail':10,'Fire Stone':1},team:[{id:25,level:5,maxExp:100,exp:0}]};
 let saveCount=0,fieldXpCount=0;
-const W={P:p,autoSave:()=>saveCount++,updateHUD:()=>{},notif:()=>{},getTotalBuff:()=>3,
+const W={P:p,PsyBattleLootV1:battleLoot,autoSave:()=>saveCount++,updateHUD:()=>{},notif:()=>{},getTotalBuff:()=>3,
  psyHobbyGrantFieldXp:()=>fieldXpCount++,
  psyHobbyTypesForId:id=>({4:['Fire'],5:['Fire'],6:['Fire','Flying'],37:['Fire'],38:['Fire'],1:['Grass'],27:['Ground'],74:['Rock','Ground']})[id]||[]};
 const D={getElementById:()=>null};
@@ -30,6 +34,9 @@ assert.equal(next.available,102);
 assert(next.ready);
 assert(H.levelUp('engineer'));
 assert.equal(H.state().engineer.level,2);
+assert.equal(p.inventory['Essence Of Fire'],77,'Engineer promotion consumes the matching common material');
+assert.equal(p.inventory['Fire Tail'],0,'Engineer promotion consumes the matching uncommon material');
+assert.equal(p.inventory['Fire Stone'],0,'Engineer promotion consumes the matching stone');
 assert.equal(H.exchange('engineer',2),false,'Water Ball locked until Lv3');
 assert(H.exchange('engineer',1),'Fire Ball should unlock Lv2');
 assert.equal(p.inventory['Fire Ball'],1);
@@ -63,4 +70,5 @@ for(const id of ['miner','gardener','fisher','lumber','alchemist'])
 for(const id of ['engineer','herbalist','researcher','professor','stylist','echo','dream','twilight'])
  assert(fs.existsSync('assets/professions/'+id+'.webp'));
 assert(saveCount>0);
-console.log('PASS: 13 independent hobbies, strict Engineer 100/5/100 progression, ball tiers, artwork, no main craft, field hooks and buffs');
+console.log('PASS: 13 independent hobbies, Engineer 100/5/100 progression and typed materials, ball tiers, artwork, no main craft, field hooks and buffs');
+})().catch(error=>{console.error(error);process.exitCode=1});
