@@ -57,6 +57,7 @@ export function createSurvivorScene() {
   let avgRendererMs = 0;
   let slowFrames = 0;
   let fastFrames = 0;
+  let slowRendererFrames = 0;
   let lastStatsAt = 0;
   let cameraX = 1800;
   let cameraZ = 1100;
@@ -67,7 +68,12 @@ export function createSurvivorScene() {
   let entityShadows = null;
   let ambientBits = null;
   let ambientData = null;
+  let combatMeshes = null;
+  let combatPrewarmed = false;
   const projected = { arrays: Object.create(null), items: Object.create(null), helperState: Object.create(null) };
+  const projectionVector = new THREE.Vector3();
+  const shadowEntities = [];
+  const combatScratch = { normal: [], tornado: [], hearts: [], enemy: [], trails: [], areas: [], beams: [] };
 
   function qualityFor(s) {
     if (s?.perf?.low) return 'low';
@@ -79,9 +85,11 @@ export function createSurvivorScene() {
     const capped = qualityNames[Math.min(qualityNames.indexOf(next), qualityNames.indexOf(qualityCeiling))];
     if (!renderer || capped === quality) return;
     quality = capped;
-    const ratio = quality === 'low' ? .56 : quality === 'medium' ? .9 : Math.min(1.35, window.devicePixelRatio || 1);
+    const ratio = quality === 'low' ? .44 : quality === 'medium' ? .9 : Math.min(1.35, window.devicePixelRatio || 1);
     renderer.setPixelRatio(ratio);
     renderer.setSize(dimensions.width, dimensions.height, false);
+    renderer.toneMapping = quality === 'low' ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = quality === 'low' ? 1 : 1.12;
     renderer.shadowMap.enabled = quality === 'high';
     const density = quality === 'low' ? .42 : quality === 'medium' ? .76 : 1;
     for (const mesh of environment?.groups || []) {
@@ -175,7 +183,7 @@ export function createSurvivorScene() {
       shadowSpots.push({ x, z, scale: 62 + random() * 28, depth: 30 + random() * 14 });
     }
 
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .97, metalness: 0, map: texture });
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0xffffff, map: texture });
     const terrainSegments = qualityCeiling === 'low' ? [24, 18] : qualityCeiling === 'medium' ? [40, 28] : [56, 40];
     const terrainGeometry = new THREE.PlaneGeometry(worldW, worldH, terrainSegments[0], terrainSegments[1]);
     const terrainPositions = terrainGeometry.attributes.position;
@@ -193,7 +201,7 @@ export function createSurvivorScene() {
     scene.add(ground);
 
     const rockGeo = new THREE.DodecahedronGeometry(24, 0);
-    const rockMat = new THREE.MeshStandardMaterial({ color: '#70816b', roughness: .92, flatShading: true });
+    const rockMat = new THREE.MeshLambertMaterial({ color: '#70816b', flatShading: true });
     const rockMesh = makeInstanceGroup(scene, rockGeo, rockMat, props, (o, p) => {
       o.position.set(p.x, terrainHeight(p.x, p.z) + 11 * p.scale, p.z);
       o.rotation.set(p.yaw * .18, p.yaw, p.yaw * .11);
@@ -201,7 +209,7 @@ export function createSurvivorScene() {
     });
 
     const shrubGeo = new THREE.IcosahedronGeometry(16, 1);
-    const shrubMat = new THREE.MeshStandardMaterial({ color: '#4d7a4e', roughness: .96, flatShading: true });
+    const shrubMat = new THREE.MeshLambertMaterial({ color: '#4d7a4e', flatShading: true });
     const shrubMesh = makeInstanceGroup(scene, shrubGeo, shrubMat, shrubs, (o, p, i) => {
       o.position.set(p.x, terrainHeight(p.x, p.z) + 11 * p.scale, p.z);
       o.rotation.set(.12 + i % 3 * .08, p.yaw, .06);
@@ -209,21 +217,21 @@ export function createSurvivorScene() {
     });
 
     const trunkGeo = new THREE.CylinderGeometry(5, 9, 54, 6, 1);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: '#684d3b', roughness: .98, flatShading: true });
+    const trunkMat = new THREE.MeshLambertMaterial({ color: '#684d3b', flatShading: true });
     const trunkMesh = makeInstanceGroup(scene, trunkGeo, trunkMat, trees, (o, p) => {
       o.position.set(p.x, terrainHeight(p.x, p.z) + 27 * p.scale, p.z);
       o.rotation.set(0, p.yaw, .025);
       o.scale.set(p.scale, p.scale, p.scale);
     });
     const crownGeo = new THREE.ConeGeometry(38, 76, 7, 1);
-    const crownMat = new THREE.MeshStandardMaterial({ color: '#386c4b', roughness: .92, flatShading: true });
+    const crownMat = new THREE.MeshLambertMaterial({ color: '#386c4b', flatShading: true });
     const crownMesh = makeInstanceGroup(scene, crownGeo, crownMat, trees, (o, p, i) => {
       o.position.set(p.x + (i % 3 - 1) * 10 * p.scale, terrainHeight(p.x, p.z) + 78 * p.scale, p.z - 3 * p.scale);
       o.rotation.set(.04, p.yaw + i * .1, .03);
       o.scale.set(p.scale, p.scale, p.scale);
     });
     const crownTopGeo = new THREE.ConeGeometry(27, 61, 7, 1);
-    const crownTopMat = new THREE.MeshStandardMaterial({ color: '#54875a', roughness: .9, flatShading: true });
+    const crownTopMat = new THREE.MeshLambertMaterial({ color: '#54875a', flatShading: true });
     const crownTopMesh = makeInstanceGroup(scene, crownTopGeo, crownTopMat, trees, (o, p, i) => {
       o.position.set(p.x - 4 * p.scale, terrainHeight(p.x, p.z) + 125 * p.scale, p.z + 2 * p.scale);
       o.rotation.set(.02, p.yaw + i * .19, -.02);
@@ -231,14 +239,14 @@ export function createSurvivorScene() {
     });
 
     const crystalGeo = new THREE.OctahedronGeometry(18, 0);
-    const crystalMat = new THREE.MeshStandardMaterial({ color: '#63c7b4', roughness: .42, metalness: .18, emissive: '#123a35', emissiveIntensity: .45, flatShading: true });
+    const crystalMat = new THREE.MeshLambertMaterial({ color: '#63c7b4', emissive: '#123a35', emissiveIntensity: .45, flatShading: true });
     const crystalMesh = makeInstanceGroup(scene, crystalGeo, crystalMat, crystals, (o, p, i) => {
       o.position.set(p.x, terrainHeight(p.x, p.z) + 17 * p.scale, p.z);
       o.rotation.set(.08, p.yaw + i * .18, .09);
       o.scale.set(.72 * p.scale, 1.45 * p.scale, .72 * p.scale);
     });
 
-    const borderMat = new THREE.MeshStandardMaterial({ color: '#465747', roughness: 1, flatShading: true });
+    const borderMat = new THREE.MeshLambertMaterial({ color: '#465747', flatShading: true });
     const wallH = 118;
     const border = [
       new THREE.Mesh(new THREE.BoxGeometry(worldW + 110, wallH, 84), borderMat),
@@ -343,9 +351,188 @@ export function createSurvivorScene() {
     scene.add(entityShadows);
   }
 
+  function makeCombatMesh(geometry, material, capacity) {
+    const mesh = new THREE.InstancedMesh(geometry, material, capacity);
+    mesh.count = 0;
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.instanceColor?.setUsage(THREE.DynamicDrawUsage);
+    mesh.frustumCulled = false;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    scene.add(mesh);
+    return mesh;
+  }
+
+  function makeCombatVisuals() {
+    const bright = new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 1.35, roughness: .25, metalness: .08, toneMapped: false });
+    const trail = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .72, depthWrite: false, toneMapped: false });
+    const disk = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 });
+    const rim = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .84, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3 });
+    const beam = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .28, depthWrite: false, toneMapped: false });
+    const projectileGeo = new THREE.SphereGeometry(1, 10, 8);
+    const tornadoGeo = new THREE.ConeGeometry(1, 2.4, 7, 1);
+    const heartGeo = new THREE.OctahedronGeometry(1, 0);
+    const trailGeo = new THREE.BoxGeometry(1, 1, 1);
+    const diskGeo = new THREE.CircleGeometry(1, 24);
+    const rimGeo = new THREE.TorusGeometry(.92, .055, 5, 28);
+    const beamGeo = new THREE.BoxGeometry(1, 1, 1);
+    combatMeshes = {
+      projectiles: makeCombatMesh(projectileGeo, bright, 260),
+      tornadoes: makeCombatMesh(tornadoGeo, bright, 48),
+      hearts: makeCombatMesh(heartGeo, bright, 72),
+      enemyProjectiles: makeCombatMesh(projectileGeo, bright, 200),
+      trails: makeCombatMesh(trailGeo, trail, 420),
+      areaDisks: makeCombatMesh(diskGeo, disk, 168),
+      areaRims: makeCombatMesh(rimGeo, rim, 168),
+      beams: makeCombatMesh(beamGeo, beam, 128)
+    };
+  }
+
+  function prewarmCombatVisuals() {
+    if (!renderer || !combatMeshes || combatPrewarmed) return;
+    const meshes = Object.values(combatMeshes);
+    for (const mesh of meshes) {
+      const matrix = mesh.userData.psyCombatDummy || (mesh.userData.psyCombatDummy = new THREE.Object3D());
+      const color = mesh.userData.psyCombatColor || (mesh.userData.psyCombatColor = new THREE.Color('#ffffff'));
+      matrix.position.set(0, 0, 0);
+      matrix.scale.setScalar(1);
+      matrix.updateMatrix();
+      mesh.setMatrixAt(0, matrix.matrix);
+      mesh.setColorAt(0, color.set('#ffffff'));
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.instanceColor.needsUpdate = true;
+      mesh.count = 1;
+      mesh.visible = true;
+    }
+    renderer.compile(scene, camera);
+    for (const mesh of meshes) {
+      mesh.count = 0;
+      mesh.visible = false;
+    }
+    combatPrewarmed = true;
+  }
+
+  function fillCombatMesh(mesh, rows, transform) {
+    if (!mesh) return 0;
+    const count = Math.min(rows.length, mesh.instanceMatrix.count);
+    const dummy = mesh.userData.psyCombatDummy || (mesh.userData.psyCombatDummy = new THREE.Object3D());
+    const color = mesh.userData.psyCombatColor || (mesh.userData.psyCombatColor = new THREE.Color());
+    for (let i = 0; i < count; i++) {
+      const row = rows[i];
+      transform(dummy, row, i);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, color.set(row.color || '#ffffff'));
+    }
+    mesh.count = count;
+    mesh.visible = count > 0;
+    if (count) {
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    }
+    return count;
+  }
+
+  function updateCombatVisuals(s, now) {
+    if (!combatMeshes) return null;
+    const { normal, tornado, hearts, enemy, trails, areas, beams } = combatScratch;
+    normal.length = tornado.length = hearts.length = enemy.length = trails.length = areas.length = beams.length = 0;
+    const addTrail = (b, color) => {
+      if (trails.length >= combatMeshes.trails.instanceMatrix.count) return;
+      const speed = Math.max(.01, Math.hypot(Number(b.vx || 0), Number(b.vy || 0)));
+      trails.push({ x: b.x, z: b.y, a: Math.atan2(Number(b.vy || 0), Number(b.vx || 0)), r: Number(b.radius || 5), speed, color });
+    };
+    for (const b of s.bullets || []) {
+      if (!b || b.dead) continue;
+      const row = { x: Number(b.x || 0), z: Number(b.y || 0), r: Math.max(3, Number(b.radius || 5)), color: b.color || '#67e8f9', kind: b.kind || 'psy', vx: Number(b.vx || 0), vy: Number(b.vy || 0) };
+      if (row.kind === 'tornado') tornado.push(row);
+      else if (row.kind === 'heart') hearts.push(row);
+      else normal.push(row);
+      addTrail(row, row.color);
+    }
+    for (const b of s.enemyBullets || []) {
+      if (!b || b.dead) continue;
+      const row = { x: Number(b.x || 0), z: Number(b.y || 0), r: Math.max(3, Number(b.radius || 5)), color: b.color || '#fb7185', vx: Number(b.vx || 0), vy: Number(b.vy || 0) };
+      enemy.push(row);
+      addTrail(row, row.color);
+    }
+    const atGround = (o, row, height) => {
+      o.position.set(row.x, terrainHeight(row.x, row.z) + height, row.z);
+      o.rotation.set(0, -Math.atan2(row.vy || 0, row.vx || 0), 0);
+    };
+    fillCombatMesh(combatMeshes.projectiles, normal, (o, b, i) => {
+      const pulse = 1 + .10 * Math.sin(now * .018 + i * 1.7);
+      atGround(o, b, 26);
+      o.scale.setScalar(b.r * pulse);
+    });
+    fillCombatMesh(combatMeshes.tornadoes, tornado, (o, b, i) => {
+      atGround(o, b, 19);
+      o.rotation.set(.14 * Math.sin(now * .008 + i), now * .0028 + i * .35, 0);
+      o.scale.set(b.r * .95, b.r * 1.7, b.r * .95);
+    });
+    fillCombatMesh(combatMeshes.hearts, hearts, (o, b, i) => {
+      atGround(o, b, 22);
+      o.rotation.set(now * .0013, now * .0019 + i, Math.PI / 4);
+      o.scale.setScalar(b.r * (1 + .08 * Math.sin(now * .015 + i)));
+    });
+    fillCombatMesh(combatMeshes.enemyProjectiles, enemy, (o, b) => {
+      atGround(o, b, 18);
+      o.scale.setScalar(b.r * .92);
+    });
+    fillCombatMesh(combatMeshes.trails, trails, (o, b) => {
+      o.position.set(b.x, terrainHeight(b.x, b.z) + 25, b.z);
+      o.rotation.set(0, -b.a, 0);
+      o.scale.set(30 + Math.min(16, b.speed * 1.5), 1.5, Math.max(1.8, b.r * .5));
+    });
+
+    const addArea = (x, z, radius, color, alpha = .18) => {
+      if (!(radius > 2) || areas.length >= combatMeshes.areaDisks.instanceMatrix.count) return;
+      areas.push({ x, z, r: radius, color, alpha });
+    };
+    const addBeam = (x, z, length, width, a, color) => {
+      if (!(length > 2) || beams.length >= combatMeshes.beams.instanceMatrix.count) return;
+      beams.push({ x, z, length, width: Math.max(6, width), a: Number(a || 0), color });
+    };
+    for (const f of s.fields || []) {
+      if (!f || f.dead) continue;
+      if (f.kind === 'waterjet' && !(f.startDelay > 0)) addBeam(Number(f.x || 0), Number(f.y || 0), Number(f.length || 0), Number(f.width || 16) * 1.5, Number(f.a || 0), f.color || '#60a5fa');
+      else if (f.kind === 'meteor') addArea(Number(f.x || 0), Number(f.y || 0), Math.min(Number(f.radius || 60), f.giant ? 180 : 95), f.color || '#fb923c', f.startDelay > 0 ? .13 : .26);
+      else if (f.kind === 'blackhole' || f.kind === 'tornadozone') addArea(Number(f.x || 0), Number(f.y || 0), Number(f.radius || 80), f.color || (f.kind === 'blackhole' ? '#a855f7' : '#a78bfa'), .14);
+    }
+    for (const h of s.bossHazards || []) {
+      if (!h || h.dead) continue;
+      if (h.kind === 'bossMeteor' || h.kind === 'bossTrap') addArea(Number(h.x || 0), Number(h.y || 0), Number(h.r || 52), '#ef4444', h.delay > 0 ? .16 : .24);
+      else if (h.kind === 'bossVolley' || h.kind === 'bossCharge') addBeam(Number(h.x || 0), Number(h.y || 0), Number(h.len || 500), Number(h.width || 28) * 1.35, Number(h.a || 0), '#ef4444');
+    }
+    for (const fx of s.effects || []) {
+      if (!fx || !['burst', 'impact', 'deathBurst', 'psyNova', 'psyRainBurst', 'freezeRing', 'stunRing'].includes(fx.type)) continue;
+      const life = clamp(Number(fx.life || 0) / Math.max(1, Number(fx.maxLife || fx.life || 1)), 0, 1);
+      const radius = Math.max(4, Number(fx.r || 12), Number(fx.type === 'deathBurst' ? fx.max : 0) * (1 - life));
+      addArea(Number(fx.x || 0), Number(fx.y || 0), radius, fx.color || '#67e8f9', .12 + .1 * life);
+    }
+    const areaCount = fillCombatMesh(combatMeshes.areaDisks, areas, (o, a) => {
+      o.position.set(a.x, terrainHeight(a.x, a.z) + .16, a.z);
+      o.rotation.set(-Math.PI / 2, 0, 0);
+      o.scale.set(a.r, a.r, 1);
+    });
+    fillCombatMesh(combatMeshes.areaRims, areas, (o, a, i) => {
+      o.position.set(a.x, terrainHeight(a.x, a.z) + .2 + i * .0001, a.z);
+      o.rotation.set(Math.PI / 2, 0, 0);
+      const pulse = 1 + .025 * Math.sin(now * .006 + i);
+      o.scale.set(a.r * pulse, a.r * pulse, 1);
+    });
+    fillCombatMesh(combatMeshes.beams, beams, (o, b) => {
+      o.position.set(b.x + Math.cos(b.a) * b.length * .5, terrainHeight(b.x, b.z) + .24, b.z + Math.sin(b.a) * b.length * .5);
+      o.rotation.set(0, -b.a, 0);
+      o.scale.set(b.length, 1.2, b.width);
+    });
+    return { projectiles: normal.length + tornado.length + hearts.length, enemyProjectiles: enemy.length, areas: areaCount, beams: beams.length };
+  }
+
   function start(s) {
     if (!s?.c || !s.ctx) return false;
     run = s;
+    slowRendererFrames = 0;
     configureDimensions(s);
     qualityCeiling = qualityFor(s);
     if (!canvas) {
@@ -380,11 +567,13 @@ export function createSurvivorScene() {
         }, undefined, () => { if (run) run.perf.terrainTextureFallback = true; });
         buildEnvironment(s, 9021 + Number(s.phase || 1));
         makeEntityShadowMesh();
+        makeCombatVisuals();
       }
       configureDimensions(s);
       renderer.setPixelRatio(qualityCeiling === 'low' ? .56 : qualityCeiling === 'medium' ? .9 : Math.min(1.35, window.devicePixelRatio || 1));
       renderer.setSize(dimensions.width, dimensions.height, false);
       setQuality(qualityCeiling);
+      prewarmCombatVisuals();
       cameraX = clamp(Number(s.x || dimensions.worldW / 2), 250, dimensions.worldW - 250);
       cameraZ = clamp(Number(s.y || dimensions.worldH / 2) - 145, 240, dimensions.worldH - 560);
       lastFrameAt = performance.now();
@@ -401,8 +590,8 @@ export function createSurvivorScene() {
 
   function projectPoint(x, z, y = 0) {
     const px = Number(x || 0), pz = Number(z || 0);
-    const p = new THREE.Vector3(px, terrainHeight(px, pz) + Number(y || 0), pz).project(camera);
-    return { x: (p.x + 1) * dimensions.width * .5, y: (1 - p.y) * dimensions.height * .5, depth: p.z };
+    projectionVector.set(px, terrainHeight(px, pz) + Number(y || 0), pz).project(camera);
+    return { x: (projectionVector.x + 1) * dimensions.width * .5, y: (1 - projectionVector.y) * dimensions.height * .5, depth: projectionVector.z };
   }
 
   function localScale(x, z) {
@@ -426,6 +615,13 @@ export function createSurvivorScene() {
     target.x = p.x;
     target.y = p.y;
     target._perspectiveScale = scale;
+    target._psyHitRemaining = clamp((Number(source._psyHitUntil || 0) - Number(run?.elapsed || 0)) / 130, 0, 1);
+    if (target._psyHitRemaining > 0) {
+      const dx = Number(source._psyHitDirX || 0), dz = Number(source._psyHitDirY || 0);
+      const away = projectPoint(wx + dx, wz + dz, 0);
+      target._psyHitScreenDX = away.x - p.x;
+      target._psyHitScreenDY = away.y - p.y;
+    } else target._psyHitScreenDX = target._psyHitScreenDY = 0;
     for (const key of scaleKeys) if (Number.isFinite(Number(source[key]))) target[key] = Number(source[key]) * scale;
     if (Number.isFinite(Number(source.a))) target.a = projectAngle(wx, wz, Number(source.a));
     if (Number.isFinite(Number(source.vx)) && Number.isFinite(Number(source.vy))) {
@@ -456,7 +652,8 @@ export function createSurvivorScene() {
 
   function drawEntityShadows(s) {
     if (!entityShadows) return;
-    const entities = [];
+    const entities = shadowEntities;
+    entities.length = 0;
     for (const e of s.enemies || []) if (!e.dead) entities.push(e);
     for (const key of s.helperIds || []) {
       const list = s.helperState?.[key];
@@ -571,7 +768,7 @@ export function createSurvivorScene() {
     view.bullets = projectArray(s.bullets, 'bullets', ['r', 'radius', 'size', 'width', 'length']);
     view.enemyBullets = projectArray(s.enemyBullets, 'enemyBullets', ['r', 'radius', 'size', 'width', 'length']);
     view.texts = projectArray(s.texts, 'texts', []);
-    view.bossHazards = projectArray((s.bossHazards || []).filter(h => !['bossMeteor', 'bossTrap'].includes(h.kind)), 'bossHazards', ['r', 'radius', 'width', 'length', 'len']);
+    view.bossHazards = projectArray((s.bossHazards || []).filter(h => !['bossMeteor', 'bossTrap', 'bossVolley', 'bossCharge'].includes(h.kind)), 'bossHazards', ['r', 'radius', 'width', 'length', 'len']);
 
     const hs = projected.helperState;
     for (const key of Object.keys(hs)) delete hs[key];
@@ -617,11 +814,23 @@ export function createSurvivorScene() {
     drawEntityShadows(s);
     updateAmbient(now);
     const scenePrepMs = performance.now() - prepStartedAt;
+    const combatStats = updateCombatVisuals(s, now);
     const renderStartedAt = performance.now();
     renderer.render(scene, camera);
     const rendererMs = performance.now() - renderStartedAt;
     avgRendererMs = avgRendererMs ? avgRendererMs * .88 + rendererMs * .12 : rendererMs;
+    slowRendererFrames = avgRendererMs > 42 ? slowRendererFrames + 1 : Math.max(0, slowRendererFrames - 2);
     adaptQuality(s, now, dt);
+    if (quality === 'low' && slowRendererFrames >= 24) {
+      s._psySurv3DActive = false;
+      s.perf.renderFallback = '2d-slow-webgl';
+      if (canvas) canvas.style.display = 'none';
+      if (!s._psySurv3DFallbackNotified) {
+        s._psySurv3DFallbackNotified = true;
+        window.toast?.('A arena 3D não está mantendo a fluidez neste navegador. Ativei o renderizador estável.', 3600);
+      }
+      return null;
+    }
     const projectionStartedAt = performance.now();
     const frameState = projectRenderState(s);
     if (s.perf) {
@@ -629,6 +838,7 @@ export function createSurvivorScene() {
       s.perf.projectionMs = performance.now() - projectionStartedAt;
       s.perf.cameraMs = cameraMs;
       s.perf.scenePrepMs = scenePrepMs;
+      if (combatStats) s.perf.combatVisuals = combatStats;
       s.perf.prepareMs = performance.now() - frameStartedAt;
     }
     return frameState;
@@ -642,6 +852,7 @@ export function createSurvivorScene() {
     stop() {
       if (canvas) canvas.style.display = 'none';
       if (run) run._psySurv3DActive = false;
+      slowRendererFrames = 0;
       run = null;
     }
   };

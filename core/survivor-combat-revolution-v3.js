@@ -1,10 +1,10 @@
-/* PSYWORLD Survivor Combat Revolution V3 — camera/arena bridge (Lot A). */
+/* PSYWORLD Survivor Combat Revolution V3 — camera, arena, and combat bridge. */
 (function (W, D) {
   'use strict';
   if (W.__PSYWORLD_SURVIVOR_COMBAT_REVOLUTION_V3__) return;
   W.__PSYWORLD_SURVIVOR_COMBAT_REVOLUTION_V3__ = true;
 
-  const BUILD = 'SURVIVOR_COMBAT_REVOLUTION_V3_LOT_A_20261108';
+  const BUILD = 'SURVIVOR_COMBAT_REVOLUTION_V3_LOT_B_20261108';
   const scriptUrl = D.currentScript?.src || W.location.href;
   const moduleUrl = new URL('./survivor-3d-renderer-v3.js', scriptUrl);
   moduleUrl.searchParams.set('build', BUILD);
@@ -33,6 +33,7 @@
     special:      { shake: 4.2, zoom: .38, duration: 220, cooldown: 150 },
     transform:    { shake: 7.0, zoom: .62, duration: 390, cooldown: 280 },
     boss:         { shake: 9.0, zoom: .52, duration: 500, cooldown: 420 },
+    bossPhase:    { shake: 7.0, zoom: .36, duration: 350, cooldown: 300 },
     bossHit:      { shake: 4.4, zoom: .24, duration: 175, cooldown: 115 },
     explosion:    { shake: 6.0, zoom: .28, duration: 240, cooldown: 155 },
     bossDefeat:   { shake: 13,  zoom: .78, duration: 700, cooldown: 650 },
