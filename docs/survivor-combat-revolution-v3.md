@@ -4,6 +4,7 @@
 
 - Base `main`: `f73bb17b6a8d19455557a995763469cb25934e68` (Lot A, published to Murex)
 - Lot B release: `8d526de3c2adc860e553c11952100b7b02527c52` (published to Murex; Vercel `READY`)
+- Lot C release: `baff1dd9cdf1f9034e383946f4a6456881aea38a` (published to Murex; Vercel `READY`)
 - Working branch: `feature/survivor-combat-revolution-v3`
 - Keep each finished lot in its own commit. The production target is the verified `psyworld-murex.vercel.app` domain.
 - Do not publish through the `world-of-monsters` URL.
@@ -49,9 +50,25 @@ The 3D pass now draws form-colored orbitals and transformation pulses, expanding
 - Chromium in this managed container uses ANGLE SwiftShader. It exceeded the renderer guard, so the normal run returned to the stable Canvas layer. A forced cold WebGL frame measured 3504 ms in this software renderer; this is not a hardware or mobile GPU benchmark. Low-quality instance counts are now capped at 52% (arcs/shards/sectors/columns), medium at 76%, and high at full capacity.
 - `node --check` passed for the bridge, renderer and Survivor bundle; `git diff --check` passed.
 
+### Murex production smoke
+
+- `https://psyworld-murex.vercel.app/` returned HTTP 200 and the PSYWORLD page title. The verified production domain is attached to the deployed project.
+- The production Survivor module opened from the lobby and entered phase 1 with enemies. The Lot C bridge, renderer, CSS, and bundled Three.js loaded without failed requests or JavaScript errors.
+- Production Chromium uses SwiftShader too; the renderer switched to its Canvas fallback while the Survivor run continued. The smoke did not alter the `world-of-monsters` deployment configuration.
+
+## Lot D — bounded build synergy
+
+Added **Arco Psíquico**, a three-level Survivor run upgrade. Each Psyduck projectile may jump to one nearby unhit enemy per level, within 3 SQM; each hop deals 70% of the preceding hit. A projectile can chain at most three times, helper shots do not chain, and a target is tracked in the same per-projectile hit set. The chain has no recursion, extra bullets, ATK/Critical Chance, or changes to per-kill rewards. Unsupported empty MAX offers are rejected, and the Survivor manifests now bust the combat bundle cache for this lot.
+
+### Verification record
+
+- Applied Arco Psíquico three times through the run upgrade API; a fourth application was rejected. The run exposed the upgrade in the existing five-choice system.
+- A live simulation projectile hit four test enemies once each. HP changed from 100 to 90, 93, 95.1, and 96.57, which matches the bounded 10 → 7 → 4.9 → 3.43 damage chain. Three lightning records were emitted for the same real hit sequence.
+- Gold, run KOs, and Psyduck EXP stayed unchanged because none of the targets died. No JavaScript errors occurred.
+- `node --check` and `git diff --check` passed.
+
 ## Remaining lots
 
-- D: gameplay-changing, bounded run upgrades.
 - E: enemy behavior and boss events.
 - F: audio, camera, visual balance, and performance pass.
 
