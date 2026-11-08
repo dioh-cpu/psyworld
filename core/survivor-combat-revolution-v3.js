@@ -4,7 +4,7 @@
   if (W.__PSYWORLD_SURVIVOR_COMBAT_REVOLUTION_V3__) return;
   W.__PSYWORLD_SURVIVOR_COMBAT_REVOLUTION_V3__ = true;
 
-  const BUILD = 'SURVIVOR_COMBAT_REVOLUTION_V3_LOT_B_20261108';
+  const BUILD = 'SURVIVOR_COMBAT_REVOLUTION_V3_LOT_C_20261108';
   const scriptUrl = D.currentScript?.src || W.location.href;
   const moduleUrl = new URL('./survivor-3d-renderer-v3.js', scriptUrl);
   moduleUrl.searchParams.set('build', BUILD);
@@ -104,5 +104,5 @@
     wrapped.__psySurvivor3DWrapped = true;
     W.psyReturnFromSurvivor = wrapped;
   }
-  console.info('✅ PSYWORLD Survivor Combat Revolution V3 — Lot A bridge ready');
+  console.info('✅ PSYWORLD Survivor Combat Revolution V3 — Lot C bridge ready');
 })(window, document);

@@ -3,6 +3,7 @@
 ## Checkpoint
 
 - Base `main`: `f73bb17b6a8d19455557a995763469cb25934e68` (Lot A, published to Murex)
+- Lot B release: `8d526de3c2adc860e553c11952100b7b02527c52` (published to Murex; Vercel `READY`)
 - Working branch: `feature/survivor-combat-revolution-v3`
 - Keep each finished lot in its own commit. The production target is the verified `psyworld-murex.vercel.app` domain.
 - Do not publish through the `world-of-monsters` URL.
@@ -36,10 +37,20 @@ Three.js renders live Psyduck/helper/enemy projectiles, their trails, field indi
 - In SwiftShader, low-quality WebGL repeatedly exceeded 42 ms per rendered frame (58.6 ms in one sample, 299 ms average during cold compilation in another). After 24 slow frames the guard hid WebGL and restored the stable Canvas renderer without changing the simulation. The same run continued through hit, level-up, pause, touch steering, and result with no page errors.
 - `node --check` passed for the modified JavaScript files; `git diff --check` passed.
 
+## Lot C — Psyduck and helper VFX
+
+The 3D pass now draws form-colored orbitals and transformation pulses, expanding Psy Nova rings, a rotating Vórtice, descending Psy Rain strikes at their recorded target coordinates, lightning columns, Lapras ice sectors/crystals, Slowpoke water beams/bubbles, Dragonite tornado meshes, Gengar gravity rings, Charizard meteor columns, and Blissey/Wobbuffet support rings. Existing attack, field, target, damage, and reward state remains authoritative; the renderer reads those records and never performs a hit check. The 2D effect layer remains available on browsers that take the automatic Canvas fallback.
+
+### Verification record
+
+- Started the installed Survivor from the lobby. Local Chromium showed the run, level-up, five upgrade choices, pause/resume, touch input and result flow without JavaScript errors or failed Survivor assets.
+- Injected representative Psyduck/helper VFX records into a paused live run and rendered them through Three.js: 15 ground indicators, 3 beams, 24 arcs, 5 shards, 1 ice sector and 4 vertical columns were built. The test enemy's HP was unchanged, confirming the 3D effect pass does not apply damage.
+- The new perspective module loaded with the Lot C cache key. Desktop, 844x390 landscape and 390x844 portrait retained the run controls. No game state or rewards were changed by the effect test.
+- Chromium in this managed container uses ANGLE SwiftShader. It exceeded the renderer guard, so the normal run returned to the stable Canvas layer. A forced cold WebGL frame measured 3504 ms in this software renderer; this is not a hardware or mobile GPU benchmark. Low-quality instance counts are now capped at 52% (arcs/shards/sectors/columns), medium at 76%, and high at full capacity.
+- `node --check` passed for the bridge, renderer and Survivor bundle; `git diff --check` passed.
+
 ## Remaining lots
 
-- B: attack impacts and combat response.
-- C: Psyduck and helper VFX.
 - D: gameplay-changing, bounded run upgrades.
 - E: enemy behavior and boss events.
 - F: audio, camera, visual balance, and performance pass.

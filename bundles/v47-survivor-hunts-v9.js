@@ -742,7 +742,7 @@ function survPsyRain(s){
     for(let q=0;q<columns;q++){
       const ox=e.x+(q-(columns-1)/2)*22+(Math.random()-.5)*12,oy=e.y-175-Math.random()*42;
       survFxLightning(s,ox,oy,e.x+(Math.random()-.5)*10,e.y,pal.special,q===0?7:4,16,q===0?1.55:1.1);
-      survFxPush(s,{type:'psyRainDrop',x:ox,y:oy,r:4,max:18,life:18,color:q%2?pal.shot:pal.accent});
+      survFxPush(s,{type:'psyRainDrop',x:ox,y:oy,targetX:e.x,targetY:e.y,r:4,max:18,life:18,color:q%2?pal.shot:pal.accent});
     }
     survFxPush(s,{type:'psyRainBurst',x:e.x,y:e.y-12,r:12,max:s.rainMax?62:48,life:26,color:pal.special,color2:pal.shot});
     survFxPush(s,{type:'psyblade',x:e.x,y:e.y-58,x2:e.x,y2:e.y+12,color:pal.shot,life:18,w:s.rainMax?20:16});
@@ -935,6 +935,7 @@ function survHelperFilter(vis){
   if(vis?.shiny)return'brightness(1.16) saturate(1.65) contrast(1.10)';
   return'';
 }
+const SURV_3D_VFX_TYPES=new Set(['particle','bubble','lightning','iceCone','iceShard','psyRainCloud','psyRainDrop','psyRainBurst','meteorWarning','meteorStrike','psyblade','psyNova','vortex','thunderSeal','waterCast','windCast','voidOpen','heartBurst','shieldGrant','sanctuary','mirrorPulse','freezeRing','stunRing']);
 function survDraw(s){
   const perspectiveState=W.PSY_SURV_3D?.prepare?.(s);if(perspectiveState)s=perspectiveState;
   const ctx=s.ctx,viewW=Number(s.viewW||s.c.width),viewH=Number(s.viewH||s.c.height),worldW=Number(s.worldW||s.w),worldH=Number(s.worldH||s.h);
@@ -1001,6 +1002,7 @@ function survDraw(s){
      mirrors remain visible and readable during dense projectile waves. */
   survDrawWobbuffetGuard(s,ctx);
   for(const fx of s.effects){
+    if(s._psySurv3DActive&&SURV_3D_VFX_TYPES.has(fx.type))continue;
     if(!survInView(s,fx.x,fx.y,220))continue;const life=Math.max(0,fx.life/Math.max(1,fx.maxLife||fx.life||1));ctx.save();ctx.globalAlpha=Math.min(1,.18+life*.82);ctx.strokeStyle=fx.color||'#fff';ctx.fillStyle=fx.color||'#fff';ctx.shadowColor=fx.color||'#fff';ctx.shadowBlur=Number(s.perf?.vfxQuality||1)>.72?8:3;
     if(fx.type==='particle'||fx.type==='bubble'){ctx.globalAlpha=Math.min(.95,life);ctx.beginPath();ctx.arc(fx.x,fx.y,Math.max(1,Number(fx.size||4)*(.45+life*.55)),0,Math.PI*2);ctx.fill();if(fx.type==='bubble'){ctx.strokeStyle='#e0f2fe';ctx.globalAlpha*=.75;ctx.stroke()}}
     else if(fx.type==='burst'||fx.type==='impact'){ctx.lineWidth=fx.heavy?6:3;ctx.beginPath();ctx.arc(fx.x,fx.y,Math.max(2,fx.r||8),0,Math.PI*2);ctx.stroke();if(fx.type==='impact'){ctx.globalAlpha*=.20;ctx.fill();for(let q=0;q<6;q++){const a=q*Math.PI/3+fx.seed,rr=(fx.r||12)*.72;ctx.globalAlpha=.55*life;ctx.beginPath();ctx.moveTo(fx.x+Math.cos(a)*rr*.45,fx.y+Math.sin(a)*rr*.45);ctx.lineTo(fx.x+Math.cos(a)*rr,fx.y+Math.sin(a)*rr);ctx.stroke()}}}

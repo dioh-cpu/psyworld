@@ -3,6 +3,8 @@ import * as THREE from '../vendor/three-0.164.1.module.min.js';
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const mix = (a, b, t) => a + (b - a) * t;
 const qualityNames = ['low', 'medium', 'high'];
+const COMBAT_AREA_FX = new Set(['burst', 'impact', 'deathBurst', 'psyNova', 'psyRainBurst', 'freezeRing', 'stunRing', 'thunderSeal', 'waterCast', 'windCast', 'meteorWarning', 'voidOpen', 'heartBurst', 'shieldGrant', 'sanctuary', 'mirrorPulse']);
+const FORM_ATTACK_COLORS = { normal: '#38d9ff', shiny: '#22d3ee', mega: '#67e8f9', mega_shiny: '#7c3aed', squizo: '#ec4899' };
 
 const BIOMES = [
   { ground: '#d1e0ad', sky: '#102822', fog: '#183b31', leaf: '#5e945e', moss: '#75855b', crystal: '#5fc9b2', light: '#ffe1a6' },
@@ -73,7 +75,7 @@ export function createSurvivorScene() {
   const projected = { arrays: Object.create(null), items: Object.create(null), helperState: Object.create(null) };
   const projectionVector = new THREE.Vector3();
   const shadowEntities = [];
-  const combatScratch = { normal: [], tornado: [], hearts: [], enemy: [], trails: [], areas: [], beams: [] };
+  const combatScratch = { normal: [], tornado: [], hearts: [], enemy: [], trails: [], areas: [], beams: [], arcs: [], shards: [], sectors: [], columns: [] };
 
   function qualityFor(s) {
     if (s?.perf?.low) return 'low';
@@ -369,6 +371,8 @@ export function createSurvivorScene() {
     const disk = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 });
     const rim = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .84, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3 });
     const beam = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .28, depthWrite: false, toneMapped: false });
+    const sector = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .23, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 });
+    const column = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .48, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
     const projectileGeo = new THREE.SphereGeometry(1, 10, 8);
     const tornadoGeo = new THREE.ConeGeometry(1, 2.4, 7, 1);
     const heartGeo = new THREE.OctahedronGeometry(1, 0);
@@ -376,6 +380,10 @@ export function createSurvivorScene() {
     const diskGeo = new THREE.CircleGeometry(1, 24);
     const rimGeo = new THREE.TorusGeometry(.92, .055, 5, 28);
     const beamGeo = new THREE.BoxGeometry(1, 1, 1);
+    const arcGeo = new THREE.TorusGeometry(.92, .045, 5, 24, Math.PI * 1.55);
+    const shardGeo = new THREE.OctahedronGeometry(1, 0);
+    const sectorGeo = new THREE.CircleGeometry(1, 24, -.55, 1.1);
+    const columnGeo = new THREE.ConeGeometry(.48, 1, 8, 1);
     combatMeshes = {
       projectiles: makeCombatMesh(projectileGeo, bright, 260),
       tornadoes: makeCombatMesh(tornadoGeo, bright, 48),
@@ -384,7 +392,11 @@ export function createSurvivorScene() {
       trails: makeCombatMesh(trailGeo, trail, 420),
       areaDisks: makeCombatMesh(diskGeo, disk, 168),
       areaRims: makeCombatMesh(rimGeo, rim, 168),
-      beams: makeCombatMesh(beamGeo, beam, 128)
+      beams: makeCombatMesh(beamGeo, beam, 128),
+      arcs: makeCombatMesh(arcGeo, bright, 128),
+      shards: makeCombatMesh(shardGeo, bright, 160),
+      sectors: makeCombatMesh(sectorGeo, sector, 24),
+      columns: makeCombatMesh(columnGeo, column, 36)
     };
   }
 
@@ -435,8 +447,8 @@ export function createSurvivorScene() {
 
   function updateCombatVisuals(s, now) {
     if (!combatMeshes) return null;
-    const { normal, tornado, hearts, enemy, trails, areas, beams } = combatScratch;
-    normal.length = tornado.length = hearts.length = enemy.length = trails.length = areas.length = beams.length = 0;
+    const { normal, tornado, hearts, enemy, trails, areas, beams, arcs, shards, sectors, columns } = combatScratch;
+    normal.length = tornado.length = hearts.length = enemy.length = trails.length = areas.length = beams.length = arcs.length = shards.length = sectors.length = columns.length = 0;
     const addTrail = (b, color) => {
       if (trails.length >= combatMeshes.trails.instanceMatrix.count) return;
       const speed = Math.max(.01, Math.hypot(Number(b.vx || 0), Number(b.vy || 0)));
@@ -493,6 +505,23 @@ export function createSurvivorScene() {
       if (!(length > 2) || beams.length >= combatMeshes.beams.instanceMatrix.count) return;
       beams.push({ x, z, length, width: Math.max(6, width), a: Number(a || 0), color });
     };
+    const density = quality === 'low' ? .52 : quality === 'medium' ? .76 : 1;
+    const addArc = (x, z, radius, color, angle = 0, scale = 1) => {
+      if (!(radius > 5) || arcs.length >= Math.max(20, Math.floor(combatMeshes.arcs.instanceMatrix.count * density))) return;
+      arcs.push({ x, z, r: radius, color, a: angle, scale });
+    };
+    const addShard = (x, z, size, color, angle = 0, lift = 22) => {
+      if (shards.length >= Math.max(32, Math.floor(combatMeshes.shards.instanceMatrix.count * density))) return;
+      shards.push({ x, z, r: clamp(Number(size || 5), 3, 24), color, a: angle, lift });
+    };
+    const addSector = (x, z, radius, angle, color, scale = 1) => {
+      if (!(radius > 8) || sectors.length >= Math.max(8, Math.floor(combatMeshes.sectors.instanceMatrix.count * density))) return;
+      sectors.push({ x, z, r: radius, a: angle, color, scale });
+    };
+    const addColumn = (x, z, height, radius, color, angle = 0) => {
+      if (!(height > 6) || columns.length >= Math.max(12, Math.floor(combatMeshes.columns.instanceMatrix.count * density))) return;
+      columns.push({ x, z, h: height, r: radius, color, a: angle });
+    };
     for (const f of s.fields || []) {
       if (!f || f.dead) continue;
       if (f.kind === 'waterjet' && !(f.startDelay > 0)) addBeam(Number(f.x || 0), Number(f.y || 0), Number(f.length || 0), Number(f.width || 16) * 1.5, Number(f.a || 0), f.color || '#60a5fa');
@@ -504,11 +533,82 @@ export function createSurvivorScene() {
       if (h.kind === 'bossMeteor' || h.kind === 'bossTrap') addArea(Number(h.x || 0), Number(h.y || 0), Number(h.r || 52), '#ef4444', h.delay > 0 ? .16 : .24);
       else if (h.kind === 'bossVolley' || h.kind === 'bossCharge') addBeam(Number(h.x || 0), Number(h.y || 0), Number(h.len || 500), Number(h.width || 28) * 1.35, Number(h.a || 0), '#ef4444');
     }
-    for (const fx of s.effects || []) {
-      if (!fx || !['burst', 'impact', 'deathBurst', 'psyNova', 'psyRainBurst', 'freezeRing', 'stunRing'].includes(fx.type)) continue;
+    const effects = s.effects || [];
+    for (let i = effects.length - 1; i >= 0; i--) {
+      const fx = effects[i];
+      if (!fx) continue;
       const life = clamp(Number(fx.life || 0) / Math.max(1, Number(fx.maxLife || fx.life || 1)), 0, 1);
       const radius = Math.max(4, Number(fx.r || 12), Number(fx.type === 'deathBurst' ? fx.max : 0) * (1 - life));
-      addArea(Number(fx.x || 0), Number(fx.y || 0), radius, fx.color || '#67e8f9', .12 + .1 * life);
+      const x = Number(fx.x || 0), z = Number(fx.y || 0), color = fx.color || '#67e8f9';
+      if (COMBAT_AREA_FX.has(fx.type)) {
+        addArea(x, z, Math.max(radius, Number(fx.max || 0) * (1 - life)), color, .12 + .1 * life);
+      }
+      if (fx.type === 'psyNova') {
+        addArc(x, z, Math.max(12, radius * .66), fx.color2 || color, now * .0018, 1 + (1 - life) * .22);
+        addArc(x, z, Math.max(12, radius), color, -now * .0012, 1 + (1 - life) * .12);
+      } else if (fx.type === 'vortex' || fx.type === 'voidOpen' || fx.type === 'blackhole') {
+        const maxR = Math.max(radius, Number(fx.r || fx.max || 64));
+        addArc(x, z, maxR * .38, fx.color2 || color, now * .004, .9);
+        addArc(x, z, maxR * .68, color, -now * .003, 1.04);
+        addArc(x, z, maxR, fx.color2 || color, now * .0018, 1.08);
+        if (fx.type !== 'vortex') addArea(x, z, maxR * .72, '#170b2b', .2);
+      } else if (fx.type === 'psyRainCloud') {
+        addArc(x, z, Math.max(18, radius * .92), color, now * .0014, .72);
+        addArc(x, z, Math.max(18, radius * .72), fx.color2 || color, -now * .0018, .82);
+      } else if (fx.type === 'psyRainBurst' || fx.type === 'freezeRing' || fx.type === 'stunRing' || fx.type === 'thunderSeal' || fx.type === 'heartBurst' || fx.type === 'shieldGrant' || fx.type === 'mirrorPulse' || fx.type === 'sanctuary') {
+        const pulse = 1 + (1 - life) * .25;
+        addArc(x, z, Math.max(12, radius * .76), color, now * .0025, pulse);
+        addArc(x, z, Math.max(12, radius), fx.color2 || color, -now * .0017, .94 + (1 - life) * .15);
+      } else if (fx.type === 'meteorWarning' || fx.type === 'meteorStrike') {
+        const h = fx.giant ? 250 : 180;
+        addColumn(x, z, h * (fx.type === 'meteorWarning' ? .38 : .72 + .28 * (1 - life)), fx.giant ? 20 : 13, color, -.24);
+        addArc(x, z, Math.max(radius, Number(fx.radius || 0) * .46), '#fff1d6', now * .001, 1.02);
+      } else if (fx.type === 'lightning') {
+        const x2 = Number(fx.x2 ?? x), z2 = Number(fx.y2 ?? z), dx = x2 - x, dz = z2 - z;
+        const length = Math.hypot(dx, dz);
+        if (length > 2) addBeam(x, z, length, Math.max(5, Number(fx.thick || 4) * 1.25), Math.atan2(dz, dx), color);
+        addColumn(x2, z2, 120 * (.68 + .32 * (1 - life)), Math.max(7, Number(fx.thick || 4) * 1.8), color);
+        addShard(x2, z2, Math.max(5, Number(fx.thick || 4) * 1.5), '#fffbea', now * .01, 34);
+      } else if (fx.type === 'iceCone' || fx.type === 'cone') {
+        addSector(x, z, Number(fx.range || radius), Number(fx.a || 0), color, fx.maxed ? 1.05 : .96);
+        addArc(x, z, Number(fx.range || radius), '#dff8ff', Number(fx.a || 0), 1.02);
+      } else if (fx.type === 'psyRainDrop') {
+        const tx = Number(fx.targetX ?? x), tz = Number(fx.targetY ?? z + 175);
+        const fall = 1 - life;
+        addColumn(tx, tz, 62 + 118 * life, 7 + 4 * life, color, .08);
+        addShard(tx, tz, 8 + fall * 5, color, now * .012, 26 + 124 * life);
+      } else if (fx.type === 'psyblade') {
+        const x2 = Number(fx.x2 ?? x), z2 = Number(fx.y2 ?? z), dx = x2 - x, dz = z2 - z;
+        const length = Math.hypot(dx, dz);
+        if (length > 2) addBeam(x, z, length, Math.max(7, Number(fx.w || 12)), Math.atan2(dz, dx), color);
+        addColumn(x2, z2, 82 * life, Math.max(5, Number(fx.w || 12) * .42), fx.color || '#ffffff');
+      } else if (fx.type === 'iceShard' || fx.type === 'particle' || fx.type === 'bubble' || fx.type === 'petal') {
+        const angle = Number(fx.a || 0) + now * (fx.type === 'iceShard' ? .002 : .004);
+        addShard(x, z, Number(fx.size || (fx.type === 'bubble' ? 5 : 4)), fx.type === 'iceShard' ? '#dff8ff' : color, angle, fx.type === 'particle' || fx.type === 'bubble' ? 18 + Number(fx.size || 4) : 24);
+        if (fx.type === 'bubble') addArc(x, z, Math.max(6, Number(fx.size || 4) * 1.7), '#e0f2fe', angle, .84);
+      }
+    }
+    const form = String(s.psyForm || 'normal');
+    if (Number(s.orbit || 0) > 0) {
+      const count = Math.min(8, 1 + Number(s.orbit || 0) + (s.orbitMax ? 2 : 0));
+      const orbitRadius = 58 + Number(s.orbit || 0) * 7 + (s.orbitMax ? 18 : 0);
+      const formColor = FORM_ATTACK_COLORS[form] || '#38d9ff';
+      for (let i = 0; i < count; i++) {
+        const a = Number(s.elapsed || 0) / 520 + i * Math.PI * 2 / count;
+        addShard(Number(s.x || 0) + Math.cos(a) * orbitRadius, Number(s.y || 0) + Math.sin(a) * orbitRadius, 11 + (s.orbitMax ? 3 : 0), formColor, a + now * .002, 26);
+        if (i < 4) addArc(Number(s.x || 0), Number(s.y || 0), orbitRadius, formColor, a, .85);
+      }
+    }
+    const changedAt = Number(s.psyFormChangedAt || -99999), transformAge = Number(s.elapsed || 0) - changedAt;
+    if (transformAge >= 0 && transformAge < 1250) {
+      const formColor = FORM_ATTACK_COLORS[form] || '#38d9ff';
+      const radius = 44 + transformAge * .42;
+      addArc(Number(s.x || 0), Number(s.y || 0), radius, formColor, now * .003, 1 + (1 - transformAge / 1250) * .22);
+      addArc(Number(s.x || 0), Number(s.y || 0), radius * .72, '#ffffff', -now * .004, .9);
+      for (let i = 0; i < 6; i++) {
+        const a = now * .003 + i * Math.PI / 3;
+        addShard(Number(s.x || 0) + Math.cos(a) * radius, Number(s.y || 0) + Math.sin(a) * radius, 7, formColor, a, 28 + Math.sin(a) * 10);
+      }
     }
     const areaCount = fillCombatMesh(combatMeshes.areaDisks, areas, (o, a) => {
       o.position.set(a.x, terrainHeight(a.x, a.z) + .16, a.z);
@@ -526,7 +626,28 @@ export function createSurvivorScene() {
       o.rotation.set(0, -b.a, 0);
       o.scale.set(b.length, 1.2, b.width);
     });
-    return { projectiles: normal.length + tornado.length + hearts.length, enemyProjectiles: enemy.length, areas: areaCount, beams: beams.length };
+    fillCombatMesh(combatMeshes.arcs, arcs, (o, a, i) => {
+      o.position.set(a.x, terrainHeight(a.x, a.z) + .34 + i * .0005, a.z);
+      o.rotation.set(Math.PI / 2, a.a + now * .001, 0);
+      const pulse = 1 + .025 * Math.sin(now * .007 + i);
+      o.scale.set(a.r * a.scale * pulse, a.r * a.scale * pulse, 1);
+    });
+    fillCombatMesh(combatMeshes.shards, shards, (o, p, i) => {
+      o.position.set(p.x, terrainHeight(p.x, p.z) + p.lift + 3 * Math.sin(now * .009 + i), p.z);
+      o.rotation.set(now * .0015 + i * .3, p.a + now * .001, now * .0011);
+      o.scale.set(p.r, p.r * 1.65, p.r);
+    });
+    fillCombatMesh(combatMeshes.sectors, sectors, (o, p) => {
+      o.position.set(p.x, terrainHeight(p.x, p.z) + .26, p.z);
+      o.rotation.set(-Math.PI / 2, -p.a, 0);
+      o.scale.set(p.r * p.scale, p.r * p.scale, 1);
+    });
+    fillCombatMesh(combatMeshes.columns, columns, (o, p, i) => {
+      o.position.set(p.x, terrainHeight(p.x, p.z) + p.h * .5, p.z);
+      o.rotation.set(0, p.a + i * .03, 0);
+      o.scale.set(p.r, p.h, p.r);
+    });
+    return { projectiles: normal.length + tornado.length + hearts.length, enemyProjectiles: enemy.length, areas: areaCount, beams: beams.length, arcs: arcs.length, shards: shards.length, sectors: sectors.length, columns: columns.length };
   }
 
   function start(s) {
