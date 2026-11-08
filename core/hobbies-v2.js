@@ -157,9 +157,11 @@ function useConsumable(name){
 }
 function field(){const u=p();u.meta=u.meta||{};const s=u.meta.hobbyGatherV2||(u.meta.hobbyGatherV2={nodes:{},decor:[]});s.nodes=s.nodes||{};s.decor=s.decor||[];return s}
 const FIELD={
- 'route-2':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta']],
- 'route-3':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta']],
- 'route-4':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta']],
+ 'route-2':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',730,378,'Minério Bruto']],
+ 'viridian-forest':[['f1','gardener',185,260,'Flor da Clareira'],['f2','gardener',724,305,'Flor do Bosque'],['f3','gardener',642,218,'Flor Silvestre'],['t1','lumber',690,365,'Madeira Caída'],['m1','miner',407,320,'Minério Bruto']],
+ 'route-3':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',758,378,'Minério Bruto']],
+ 'route-4':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',758,378,'Minério Bruto']],
+ 'mt-moon':[['m1','miner',462,462,'Minério Bruto'],['m2','miner',574,266,'Minério Bruto'],['f1','gardener',238,266,'Flor de Caverna'],['f2','gardener',658,210,'Flor de Caverna'],['d1','treasureHunter',490,378,'Solo rachado'],['d2','treasureHunter',294,350,'Solo rachado'],['d3','treasureHunter',266,154,'Solo rachado']],
  'route-1':[
   ['f1','gardener',276,301,'Flor do Campo'],['f2','gardener',411,296,'Flor do Campo'],['f3','gardener',605,250,'Flor do Campo'],
   ['t1','lumber',521,280,'Madeira Bruta'],['o1','miner',335,258,'Minério Bruto'],
@@ -167,9 +169,17 @@ const FIELD={
  'route-cave':[
   ['o1','miner',230,370,'Minério Bruto'],['o2','miner',664,376,'Minério Bruto'],
   ['d1','treasureHunter',310,466,'Solo rachado'],['d2','treasureHunter',586,475,'Solo rachado'],
-  ['d3','treasureHunter',450,536,'Solo rachado']
+  ['d3','treasureHunter',450,536,'Solo rachado'],
+  ['f1','gardener',78,240,'Flor de Cristal'],['f2','gardener',822,240,'Flor de Cristal']
  ]
 };
+function fieldNodes(scene){
+ if(FIELD[scene])return FIELD[scene];
+ const place=W.PsyKantoJourneyV1?.places?.find?.(value=>value.id===scene);
+ if(place?.kind==='route')return FIELD['route-3'];
+ if(place?.kind==='dungeon')return FIELD['route-cave'];
+ return [];
+}
 const SPOT_REWARDS={
  miner:{common:'Minério Bruto',rare:'Minério Luminoso',epic:'Cristal Arcano',legend:'Cristal Lendário'},
  treasureHunter:{common:'Fragmento Antigo',rare:'Baú Simples',epic:'Baú Ornamentado',legend:'Baú Relíquia'},
@@ -204,7 +214,7 @@ function rollReward(id){
 }
 function visibleNodes(scene){
  const now=Date.now(),nodes=field().nodes;
- return (FIELD[scene]||(/^route-\d+$/.test(scene)?FIELD['route-3']:[])||[]).filter(([id,kind,,,,minimum=1,skill])=>
+ return fieldNodes(scene).filter(([id,kind,,,,minimum=1,skill])=>
   (kind!=='treasureHunter'||W.PsyTreasureHuntV1?.isAvailable?.()!==false&&count(state()[kind]?.level)>=minimum&&(!skill||count(W.PsyTreasureHuntV1?.hobbyState?.(kind)?.skills?.[skill])>0))&&count(nodes[scene+':'+id]?.respawnAt)<=now)
  .map(([id,kind,x,y,item])=>{const record=nodes[scene+':'+id]||{};return {id,kind,x,y,item,hits:count(record.hits),totalHits:requiredHits(kind),rarity:stableSpotRarity(scene,id,kind,record)}});
 }

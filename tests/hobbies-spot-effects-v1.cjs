@@ -19,12 +19,13 @@ for(const type of toolManifest.tools)for(const material of toolManifest.material
  assert.equal(bytes[25],6,`${type}-${material} must preserve RGBA transparency`);
 }
 
-const ids=['miner','lumber','gardener','fisher','engineer','herbalist','researcher','professor','stylist','echo','dream','twilight','alchemist'];
+const ids=['miner','lumber','gardener','fisher','engineer','herbalist','researcher','professor','stylist','echo','dream','twilight','alchemist','treasureHunter','looter'];
 const p={inventory:{},team:[{id:1,level:5,exp:0}],meta:{auxHobbiesV1:Object.fromEntries(ids.map(id=>[id,{level:1,xp:0,base:{}}]))}};
 let now=0,saves=0,fieldXp=[],sounds=[];
 const math=Object.create(Math);let random=()=>.5;math.random=()=>random();
 class FakeImage{set src(value){this._src=value}get src(){return this._src}}
 const W={P:p,Image:FakeImage,performance:{now:()=>now},matchMedia:()=>({matches:false}),
+ PsyKantoJourneyV1:{places:[{id:'route-3',kind:'route'},{id:'route-4',kind:'route'},{id:'mt-moon',kind:'dungeon'},{id:'diglett-cave',kind:'dungeon'}]},
  autoSave:()=>saves++,updateHUD:()=>{},notif:()=>{},psyHobbyGrantFieldXp:(trainer,mon)=>fieldXp.push([trainer,mon]),
  psyAudio:{sfx:name=>sounds.push(name)},
  PsyKantoWorldV2:{setStoryLock:()=>{}},requestAnimationFrame:()=>1,cancelAnimationFrame:()=>{}};
@@ -33,6 +34,13 @@ const load=(src)=>vm.runInNewContext(src,{window:W,document:D,P:p,console,Math:m
 load(hobbySource);load(masterySource);
 const H=W.PsyHobbies,M=W.PsyHobbyMastery;
 assert(H&&M);
+assert.equal(H.visibleNodes('route-2').length,5,'Route 2 has five separated field spots');
+assert.equal(H.visibleNodes('viridian-forest').length,5,'Viridian Forest has five separated field spots');
+assert.equal(H.visibleNodes('route-3').length,5,'route templates provide five field spots');
+assert.equal(H.visibleNodes('route-4').length,5,'later routes provide at least five field spots');
+assert.equal(H.visibleNodes('mt-moon').length,7,'Mt. Moon combines ores, wall flowers and excavation soil');
+assert.equal(H.visibleNodes('diglett-cave').length,7,'cave areas receive ores, wall flowers and excavation soil');
+assert.equal(H.visibleNodes('route-cave').length,7,'Crystal Grotto combines ores, wall flowers and excavation soil');
 assert.equal(M.canBuy('miner','strike'),false,'Spot skills remain protected until production effects register');
 load(mapSource);load(vfxSource);load(handoffSource);
 assert.equal(W.PsyHobbyMasterySpotReady,true,'All four Hobby effects should pass the capability handoff');

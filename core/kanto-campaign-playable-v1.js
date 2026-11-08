@@ -99,45 +99,61 @@
       #psy-kanto-world .kp-title{min-width:0}.kp-title b{display:block;color:#ffe09a;font-size:14px}.kp-title small{display:block;color:#aab5c2;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56vw}#psy-kanto-world .kp-title .kp-clock{color:#f2d394;font-size:10px;letter-spacing:.04em}
       #psy-kanto-world button{color:#fff;background:#1f3446;border:1px solid #668397;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;touch-action:manipulation}
       #psy-kanto-world .kp-close{background:#522d35;border-color:#b36b73;font-size:17px;padding:5px 12px}
+      #psy-kanto-world .kp-route{background:linear-gradient(135deg,#075985,#166534);border-color:#9ad9ac;white-space:nowrap}
+      #psy-kanto-world .kp-route-footer{min-width:50px;min-height:58px;background:linear-gradient(135deg,#075985,#166534);border-color:#9ad9ac}
+      #psy-kanto-world .kp-stage #psy-campaign-quests{top:8px!important;right:8px!important;left:auto!important;width:min(210px,44%)!important;max-width:220px!important;max-height:92px!important;overflow:auto!important}
       #psy-kanto-world [data-kp-fish][hidden]{display:none!important}
       #psy-kanto-world [data-kp-fish]{background:#0e5d80;border-color:#9ee4f5;min-height:52px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
-      #psy-kanto-canvas{width:min(100vw,calc((100vh - 150px)*1.6));height:min(calc(100vh - 150px),62.5vw);max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
-      #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
+      #psy-kanto-canvas{box-sizing:border-box;width:min(100vw,calc((100vh - 176px)*1.6));height:auto;aspect-ratio:8/5;max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
+      #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,38px);gap:3px}
       .kp-controls button{padding:0;font-size:17px;background:#243747}.kp-controls [data-dir="up"]{grid-column:2}.kp-controls [data-dir="left"]{grid-column:1;grid-row:2}.kp-controls [data-dir="down"]{grid-column:2;grid-row:2}.kp-controls [data-dir="right"]{grid-column:3;grid-row:2}
       .kp-interact{min-width:78px;min-height:58px;background:linear-gradient(135deg,#80521f,#b47b31)!important;border-color:#f4c76b!important;font-size:11px!important}
       #psy-kanto-dialog{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:13px 15px;background:#0a111df2;border:1px solid #e5c77e;border-radius:12px;box-shadow:0 10px 40px #000a;display:none;z-index:2}
       #psy-kanto-dialog.open{display:block}.kp-dialog-title{color:#ffe09a;font-weight:900;margin-bottom:5px}.kp-dialog-text{font-size:13px;line-height:1.45;color:#e4eaf0}.kp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
       #psy-kanto-world .psy-kanto-enter-world{width:100%;margin:8px 0 12px}
-      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px}.kp-title small{max-width:58vw}#psy-kanto-canvas{width:100vw;height:min(calc(100vh - 168px),62.5vw);border-radius:0}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-interact{grid-column:2;grid-row:2;min-width:72px}}
+      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-canvas{width:min(100vw,calc((100vh - 176px)*1.6));height:auto;aspect-ratio:8/5;border-radius:0}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
     `;
     D.head.appendChild(style);
   }
 
-  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, autoObjective:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
+  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, autoObjective:null, autoSpot:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
   function makeRoot() {
     if (model.root) return model.root;
     addStyles();
     const root = D.createElement('div'); root.id = 'psy-kanto-world'; root.setAttribute('role','dialog'); root.setAttribute('aria-modal','true');
-    root.innerHTML = `<header class="kp-head"><button type="button" data-back>← ATLAS</button><div class="kp-title"><b></b><small></small><small class="kp-clock" data-world-clock></small></div><button type="button" data-kp-hobbies>HOBBIES</button><button type="button" class="kp-close" aria-label="Fechar">×</button></header><div class="kp-stage"><canvas id="psy-kanto-canvas" width="896" height="560" aria-label="Mapa jogável de Kanto"></canvas><section id="psy-kanto-dialog"><div class="kp-dialog-title"></div><div class="kp-dialog-text"></div><div class="kp-dialog-actions"></div></section></div><footer class="kp-footer"><div class="kp-objective"></div><div class="kp-controls" aria-label="Controles de movimento"><button data-dir="up" aria-label="Cima">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Baixo">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button type="button" class="kp-interact" data-interact>INTERAGIR</button><button type="button" data-kp-fish hidden>PESCAR</button></footer>`;
+    root.innerHTML = `<header class="kp-head"><button type="button" data-back>← ATLAS</button><div class="kp-title"><b></b><small></small><small class="kp-clock" data-world-clock></small></div><button type="button" class="kp-route" data-kp-route aria-label="Seguir objetivo da campanha">ROTA</button><button type="button" data-kp-hobbies>HOBBIES</button><button type="button" class="kp-close" aria-label="Fechar">×</button></header><div class="kp-stage"><canvas id="psy-kanto-canvas" width="896" height="560" aria-label="Mapa jogável de Kanto"></canvas><section id="psy-kanto-dialog"><div class="kp-dialog-title"></div><div class="kp-dialog-text"></div><div class="kp-dialog-actions"></div></section></div><footer class="kp-footer"><div class="kp-objective"></div><div class="kp-controls" aria-label="Controles de movimento"><button data-dir="up" aria-label="Cima">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Baixo">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button type="button" class="kp-route-footer" data-kp-route-footer aria-label="Ir ao objetivo da missão">IR</button><button type="button" class="kp-interact" data-interact>INTERAGIR</button><button type="button" data-kp-fish hidden>PESCAR</button></footer>`;
     D.body.appendChild(root); model.root = root; model.canvas = root.querySelector('canvas'); model.ctx = model.canvas.getContext('2d'); model.dialog = root.querySelector('#psy-kanto-dialog');
     root.querySelector('.kp-close').onclick = closeWorld;
-    root.querySelector('[data-kp-hobbies]').onclick=()=>{model.held=null;model.autoHunt=false;model.autoPath=[];W.PsyHobbies?.open?.()};
-    root.querySelector('[data-kp-fish]').onclick=()=>{model.held=null;model.autoPath=[];W.PsyHobbies?.startFishing?.(model.place?.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction})};
+    const followObjective=()=>W.PsyCampaignAutomation?.startPrimaryRoute?.();
+    root.querySelector('[data-kp-route]').onclick=followObjective;
+    root.querySelector('[data-kp-route-footer]').onclick=followObjective;
+    root.querySelector('[data-kp-hobbies]').onclick=()=>{model.held=null;model.autoSpot=null;model.autoHunt=false;model.autoPath=[];W.PsyHobbies?.open?.()};
+    root.querySelector('[data-kp-fish]').onclick=()=>{model.held=null;model.autoSpot=null;model.autoPath=[];W.PsyHobbies?.startFishing?.(model.place?.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction})};
     root.querySelector('[data-back]').onclick = () => { closeWorld(); W.openKantoJourneyV1?.(); };
-    root.querySelector('[data-interact]').onclick = e => { e.preventDefault(); e.stopPropagation();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;interact(); };
+    root.querySelector('[data-interact]').onclick = e => { e.preventDefault(); e.stopPropagation();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;interact(); };
     root.querySelectorAll('[data-dir]').forEach(btn => {
       const dir = btn.dataset.dir;
-      const start = e => { e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoHunt=false;model.autoPath=[]; model.held = dir; move(dir); };
+      const start = e => { e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoHunt=false;model.autoPath=[]; model.held = dir; move(dir); };
       const stop = e => { e.preventDefault(); if (model.held === dir) { model.held = null; model.frame = 0; render(); } };
       btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', stop); btn.addEventListener('pointercancel', stop); btn.addEventListener('pointerleave', stop);
     });
     D.addEventListener('keydown', onKeyDown); D.addEventListener('keyup', onKeyUp);
     model.canvas.style.touchAction='none';let touch=null;
-    model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
+    model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
     model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}touch.drag=true;model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
-    const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'&&model.map?.npc){const r=model.canvas.getBoundingClientRect(),x=(e.clientX-r.left)*model.canvas.width/r.width,y=(e.clientY-r.top)*model.canvas.height/r.height,n=model.map.npc;if(Math.abs(x-(n.x*TILE+14))<28&&Math.abs(y-(n.y*TILE))<42){interact(true);return;}}render();};
+    const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'){
+      const r=model.canvas.getBoundingClientRect(),x=(e.clientX-r.left)*model.canvas.width/r.width,y=(e.clientY-r.top)*model.canvas.height/r.height;
+      const npc=model.map?.npc;if(npc&&Math.abs(x-(npc.x*TILE+14))<28&&Math.abs(y-(npc.y*TILE))<42){interact(true);return;}
+      if(model.place?.kind==='route'||model.place?.kind==='dungeon'||model.place?.id==='viridian-forest'){
+        const spot=W.PsyHobbies?.nearby?.(model.place.id,{x,y},32);
+        if(spot){const goal={x:Math.max(1,Math.min(COLS-2,Math.floor(spot.x/TILE))),y:Math.max(1,Math.min(ROWS-2,Math.floor(spot.y/TILE)))},path=tilePath(goal);
+          if(!path.length&&(goal.x!==model.x||goal.y!==model.y)){W.notif?.('Não há um caminho acessível até este recurso.',1800);return;}
+          model.autoSpot=spot.id;model.autoPath=path;if(!path.length){model.autoSpot=null;W.PsyHobbies.interact?.(model.place.id,spot.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});}return;
+        }
+      }
+    }render();};
     model.canvas.addEventListener('pointerup',release);model.canvas.addEventListener('pointercancel',release);
     W.addEventListener('resize', render);
     return root;
@@ -158,11 +174,12 @@
     cerulean:{text:'Bem-vindo ao ginásio aquático! Sou Misty. Depois de Brock, é hora de testar sua equipe contra a força da água.'}
   };
   const ART_ROOT='assets/kanto/approved/';
-  const MAP_ART={viridian:ART_ROOT+'viridian-approved.webp',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp'};
+  const MAP_ART={viridian:ART_ROOT+'viridian-approved.webp',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp','viridian-forest':'assets/story/viridian-forest-route2-v1.webp'};
   const NPC_ART={viridian:'assets/kanto/npcs/fisher-v9.svg','route-2':'assets/kanto/cinematics/trainers/black_boy.webp','viridian-forest':'assets/kanto/cinematics/trainers/black_girl.webp',pewter:ART_ROOT+'brock-expressions.webp','route-3':'assets/kanto/cinematics/trainers/adventure_boy.webp','mt-moon':'assets/halloween/npc-researcher.webp','route-4':'assets/kanto/cinematics/trainers/adventure_girl.webp',cerulean:'https://play.pokemonshowdown.com/sprites/trainers/misty.png'};
   const regionImages=new Map();
   function regionImage(url){if(!url)return null;if(!regionImages.has(url)){const im=new Image();im.onload=()=>{if(model.map)model.map.paint=null;render()};im.src=url;regionImages.set(url,im)}return regionImages.get(url);}
   function authoredMap(place){
+    const early=W.PsyKantoEarlyChaptersV1?.get?.(place.id);if(early)return {...early,seed:hash(place.id)};
     if(!MAP_ART[place.id]||place.id==='route-2')return null;
     const grid=Array.from({length:ROWS},()=>Array(COLS).fill(9));
     const line=(ax,ay,bx,by,r=0)=>{const steps=Math.max(Math.abs(bx-ax),Math.abs(by-ay));for(let t=0;t<=steps;t++){const x=Math.round(ax+(bx-ax)*t/(steps||1)),y=Math.round(ay+(by-ay)*t/(steps||1));if(t>0){const px=Math.round(ax+(bx-ax)*(t-1)/(steps||1)),py=Math.round(ay+(by-ay)*(t-1)/(steps||1));if(x!==px&&y!==py&&py>0&&py<ROWS-1&&x>0&&x<COLS-1)grid[py][x]=1;}for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(y+dy>0&&y+dy<ROWS-1&&x+dx>0&&x+dx<COLS-1)grid[y+dy][x+dx]=1;}};
@@ -223,16 +240,16 @@
     grid[npc.y][npc.x]=1; grid[object.y][object.x]=1; grid[exit.y][exit.x]=1;
     return {grid,npc,object,exit,spawn,secretGate,secretChest,art:MAP_ART[place.id],seed:hash(place.id)};
   }
-  function openWorld(id) {
+  function openWorld(id,options={}) {
     if(id==='pallet'||id==='route-1'||id==='viridian'){
-      if(W.PsyKantoWorldV2?.open)return W.PsyKantoWorldV2.open(id);
+      if(W.PsyKantoWorldV2?.open)return W.PsyKantoWorldV2.open(id,options);
       W.notif?.('Mapa ilustrado indisponível. Recarregue a preview.',4000);
       return false;
     }
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
     const previousPlace=model.place?.id||journeySave().activePlace||null;
-    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=model.map.spawn?.x||3; model.y=model.map.spawn?.y||ROWS-3; model.direction='down';model.frame=0;model.held=null;
+    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=options.spawn?.x??model.map.spawn?.x??3; model.y=options.spawn?.y??model.map.spawn?.y??ROWS-3; model.direction=options.direction||'down';model.frame=0;model.held=null;
     state().active=place.id;
     model.root.querySelector('.kp-title b').textContent=place.name;
     model.root.querySelector('.kp-title small').textContent=place.mark;
@@ -240,13 +257,13 @@
     W.PsyKantoStoryV49?.enter?.(previousPlace,id);
     if(!model.raf)tick();
   }
-  function closeWorld() { W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyCampaignAutomation?.cancelRoute?.();model.autoHunt=false;model.autoObjective=null;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
+  function closeWorld() { W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyCampaignAutomation?.cancelRoute?.();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
     if(!model.root?.classList.contains('open')||W.PsyHobbies?.isOpen?.()||W.PsyHobbies?.isFishing?.()||W.PsyTitles?.isOpen?.())return;
     e.stopPropagation();
     const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
-    const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.held=dir;move(dir)}return;}
-    if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;interact();}
+    const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.held=dir;move(dir)}return;}
+    if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;interact();}
     if(e.code==='Escape'){e.preventDefault();closeWorld();}
   }
   function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();} }
@@ -278,7 +295,7 @@
       return typeof oldGet==='function'?oldGet.apply(this,arguments):[];
     };
     const previousStart=W.startBattle;
-    W.startBattle=function(wild){wild.halloweenArea=model.place?.id;const range=({viridian:[2,4],'route-2':[3,6],'viridian-forest':[4,8],pewter:[6,9],'route-3':[7,11],'mt-moon':[8,12],'route-4':[9,13],cerulean:[10,15]})[model.place?.id];if(range){wild.level=wild.lvl=range[0]+Math.floor(Math.random()*(range[1]-range[0]+1));wild.hp=wild.maxHp=65+wild.level*8;}return previousStart.apply(this,arguments);};
+    W.startBattle=function(wild){wild.halloweenArea=model.place?.id;const range=model.map?.encounterLevels||({viridian:[2,4],'route-2':[3,6],'viridian-forest':[4,8],'pewter':[6,9],'route-3':[7,11],'mt-moon':[8,12],'route-4':[9,13],cerulean:[10,15]})[model.place?.id];if(range){wild.level=wild.lvl=range[0]+Math.floor(Math.random()*(range[1]-range[0]+1));wild.hp=wild.maxHp=65+wild.level*8;}return previousStart.apply(this,arguments);};
     try { W.triggerWild?.('kanto_normal_t1'); }
     finally {W.startBattle=previousStart; if(oldGet)W.getPokesForHunt=oldGet; else delete W.getPokesForHunt; }
     const wild=W.battleData?.wild || (typeof battleData!=='undefined'?battleData?.wild:null);
@@ -342,7 +359,8 @@
     const back=map.returnGate||{x:3,y:ROWS-3};
     if(nearby(back)){
       const all=places(),index=all.findIndex(p=>p.id===place.id),prev=all[index-1];
-      if(prev)showDialog('Voltar pelo caminho','Deseja retornar para '+prev.name+'?',[{label:'VOLTAR',primary:true,onClick:()=>{if(prev.id==='route-1'){closeWorld();W.PsyKantoWorldV2?.open('route-1',{spawn:[848,95]});}else openWorld(prev.id); }},{label:'FICAR'}]);return true;
+      const connection=map.returnTo,previous=connection?.world?all.find(p=>p.id===connection.world):prev;
+      if(previous)showDialog('Voltar pelo caminho','Deseja retornar para '+previous.name+'?',[{label:'VOLTAR',primary:true,onClick:()=>{if(previous.id==='route-1'&&!connection){closeWorld();W.PsyKantoWorldV2?.open('route-1',{spawn:[848,95]});}else if(Array.isArray(connection?.spawn)){closeWorld();openWorld(previous.id,{spawn:connection.spawn,skipGuard:true});}else openWorld(previous.id,connection?.spawn?{spawn:connection.spawn}:{});}},{label:'FICAR'}]);return true;
     }
     if(nearby(map.exit)&&!objectivesMet(place)){
       showDialog('Jornada em andamento',gymId?'Converse com '+place.npc+' e conquiste a insígnia para seguir.':!ps.talked?'Converse com '+place.npc+' antes de seguir.':'Conclua o objetivo marcado no mapa antes de seguir.');return true;
@@ -353,7 +371,7 @@
   function interact(directNPC=false) {
     if(!model.place||W.PsyHobbies?.isFishing?.())return;
     model.autoObjective=null;
-    if(/^route-/.test(model.place.id)){
+    if(/^route-/.test(model.place.id)||model.place.id==='viridian-forest'){
       const gather=W.PsyHobbies?.nearby?.(model.place.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},40);
       if(gather){W.PsyHobbies.interact?.(model.place.id,gather.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});render();return;}
     }
@@ -399,7 +417,8 @@
       else {
         const all=places(),next=all[all.findIndex(p=>p.id===place.id)+1];
         const actions=[];
-        if(next&&isUnlocked(next))actions.push({label:`SEGUIR PARA ${next.name.toUpperCase()}`,primary:true,onClick:()=>openWorld(next.id)});
+        const connected=model.map.next,connectedPlace=connected?.world?all.find(p=>p.id===connected.world):next;
+        if(connectedPlace&&isUnlocked(connectedPlace))actions.push({label:`SEGUIR PARA ${connectedPlace.name.toUpperCase()}`,primary:true,onClick:()=>openWorld(connectedPlace.id,connected?.spawn?{spawn:connected.spawn}:{})});
         actions.push({label:'VOLTAR AO ATLAS',onClick:()=>{closeWorld();W.openKantoJourneyV1?.()}});
         showDialog('Capítulo concluído',`${place.name} foi concluída. A próxima parada está liberada.`,actions);
       }
@@ -472,11 +491,15 @@
     const waterBtn=model.root.querySelector('[data-kp-fish]');
     if(waterBtn)waterBtn.hidden=!W.PsyHobbies?.canFish?.(model.place.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},model.map.paint);
 
-    if(/^route-/.test(model.place.id)){c.save();c.translate(offsetX,offsetY);W.PsyHobbies?.drawField?.(c,model.place.id);c.restore();}
+    if(model.place.kind==='route'||model.place.kind==='dungeon'||model.place.id==='viridian-forest'){c.save();c.translate(offsetX,offsetY);W.PsyHobbies?.drawField?.(c,model.place.id);c.restore();}
+    if(model.place.id==='viridian-forest'&&placeState(model.place.id).storyDone){
+      const pulse=.68+Math.sin(performance.now()/620)*.08;
+      for(const [x,y] of model.map.lanterns||[]){const light=c.createRadialGradient(offsetX+x,offsetY+y,2,offsetX+x,offsetY+y,28);light.addColorStop(0,`rgba(255,216,119,${pulse*.34})`);light.addColorStop(1,'rgba(255,190,74,0)');c.fillStyle=light;c.fillRect(offsetX+x-28,offsetY+y-28,56,56);}
+    }
     const marker=(pt,color,glyph,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12);c.fillStyle='#071019d9';c.fillRect(sx-tw/2,sy-29,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,sy-22)};
     if(model.map.center)marker(model.map.center,'#99edc6','+','Centro Pokémon');
     if(model.map.shop)marker(model.map.shop,'#8ac8ff','L','Loja');
-    if(model.map.returnGate)marker(model.map.returnGate,'#c4d8f2','‹','Retornar');
+    if(model.map.returnGate&&!nearby(model.map.returnGate))marker(model.map.returnGate,'#c4d8f2','‹','Retornar');
     const actor=regionImage(NPC_ART[model.place.id]);
     if(actor?.complete&&actor.naturalWidth){const x=offsetX+(model.map.npc.x+.5)*TILE,y=offsetY+(model.map.npc.y+.5)*TILE;if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);}
     marker(model.map.npc,'#ffcf70','!',model.place.npc);
@@ -485,7 +508,8 @@
       const backpack=regionImage('assets/story/route-2-backpack.png'),x=offsetX+(model.map.object.x+.5)*TILE,y=offsetY+(model.map.object.y+.5)*TILE;
       if(backpack?.complete&&backpack.naturalWidth){c.save();c.imageSmoothingEnabled=false;c.fillStyle='rgba(217,189,106,.27)';c.beginPath();c.ellipse(x,y+7,18,6,0,0,Math.PI*2);c.fill();c.drawImage(backpack,x-19,y-24,38,37);c.font='bold 10px system-ui';c.textAlign='center';c.textBaseline='middle';const tag='MOCHILA PERDIDA',tagWidth=c.measureText(tag).width+10;c.fillStyle='#071019dc';c.fillRect(x-tagWidth/2,y-34,tagWidth,14);c.fillStyle='#fff2c5';c.fillText(tag,x,y-27);c.restore();}
       else marker(model.map.object,'#75d5db','?','Mochila perdida');
-    }else marker(model.map.object,'#75d5db','✓','Mochila recuperada');
+    }else if(model.place.id==='viridian-forest')marker(model.map.object,route2Story.storyDone?'#ffe08a':'#75d5db',route2Story.storyDone?'✦':'?',route2Story.storyDone?'Lanterna acesa':'Lanterna antiga');
+    else if(model.place.id==='route-2')marker(model.map.object,'#75d5db','✓','Mochila recuperada');
     marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima rota');
     if(model.map.secretChest&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
     const px=offsetX+model.x*TILE+TILE/2,py=offsetY+model.y*TILE+TILE/2;
@@ -567,6 +591,10 @@
       const target=model.autoObjective,dx=target.x-model.x,dy=target.y-model.y;
       if(Math.abs(dx)+Math.abs(dy)<=1){model.direction=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';interact();}
       else model.autoObjective=null;
+    }
+    if(!activityAction&&!model.held&&model.autoSpot&&!model.autoPath?.length&&!W.PsyGuide?.isOpen()){
+      const id=model.autoSpot,nodes=W.PsyHobbies?.visibleNodes?.(model.place?.id)||[],node=nodes.find(n=>n.id===id);model.autoSpot=null;
+      if(node&&Math.hypot((model.x+.5)*TILE-node.x,(model.y+.5)*TILE-node.y)<=48)W.PsyHobbies?.interact?.(model.place.id,node.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});
     }
     if(!activityAction&&model.held&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)){model.lastMove=now;move(model.held)}
     if(!model.lastRender||now-model.lastRender>(activityAction||model.held?33:220)){render();model.lastRender=now;}model.raf=requestAnimationFrame(tick);
