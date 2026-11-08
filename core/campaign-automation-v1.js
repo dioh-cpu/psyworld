@@ -6,8 +6,25 @@ const player=()=>typeof P!=='undefined'?P:{};
 const vip=()=>Number(player().meta?.vipUntil||0)>Date.now();
 const api=()=>W.PsyKantoWorldV2?.isOpen?.()?W.PsyKantoWorldV2:(W.PsyKantoPlayableV1?.getPosition?.()?W.PsyKantoPlayableV1:W.PsyKantoWorldV2);
 const note=t=>W.notif?.(t,2600);
-function requireVip(){if(vip())return true;note('Recurso exclusivo VIP.');return false;}
-function setAutomatic(on){if(on&&!requireVip())return false;automatic=!!on;renderButtons();return automatic;}
+function supportUrl(){const value=String(W.PSYWORLD_SUPPORT_URL||W.PsySupport?.donationUrl||'').trim();return /^https:\/\/[^\s]+$/i.test(value)?value:'';}
+function openVipGate(feature='hunt'){
+ const old=D.getElementById('psy-vip-gate');if(old){old.querySelector('[data-vip-close]')?.focus?.();return old;}
+ const root=D.createElement('section');root.id='psy-vip-gate';root.className='psy-vip-gate';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-labelledby','psy-vip-gate-title');
+ const card=D.createElement('div');card.className='psy-vip-gate-card';
+ const close=D.createElement('button');close.type='button';close.className='psy-vip-gate-close';close.dataset.vipClose='1';close.setAttribute('aria-label','Fechar aviso VIP');close.textContent='×';close.onclick=()=>root.remove();
+ const ribbon=D.createElement('div');ribbon.className='psy-vip-gate-ribbon';ribbon.textContent=feature==='hunt'?'AUTO HUNT · BENEFÍCIO VIP':'AUTOMAÇÃO · BENEFÍCIO VIP';
+ const hero=D.createElement('div');hero.className='psy-vip-gate-hero';hero.setAttribute('aria-hidden','true');const mascot=D.createElement('div');mascot.className='psy-vip-gate-mascot';hero.appendChild(mascot);
+ const heading=D.createElement('div');heading.className='psy-vip-gate-heading';const eyebrow=D.createElement('small');eyebrow.textContent='PSYWORLD · PASSE DE TREINADOR';const title=D.createElement('h2');title.id='psy-vip-gate-title';title.textContent='Um atalho VIP para sua jornada';heading.append(eyebrow,title);
+ const copy=D.createElement('p');copy.className='psy-vip-gate-copy';copy.textContent='Opa! Parece que você ainda não tem VIP. Você pode conhecer as opções oficiais para conseguir PsyCoins participando de eventos, apoiando o servidor ou explorando o Survivor do Psyduck.';
+ const actions=D.createElement('div');actions.className='psy-vip-gate-actions';
+ const survivor=D.createElement('button');survivor.type='button';survivor.className='psy-vip-gate-button survivor';survivor.textContent='🦆 SURVIVOR';survivor.onclick=()=>{root.remove();const world=W.PsyKantoWorldV2;if(world?.isOpen?.())world.close?.();if(typeof W.openPsyduckDungeon5==='function')W.openPsyduckDungeon5();else if(typeof W.psy19OpenPsyduck==='function')W.psy19OpenPsyduck();else note('O Survivor do Psyduck não está disponível agora.');};
+ const supportStatus=D.createElement('small');supportStatus.className='psy-vip-gate-foot';supportStatus.textContent='A automação permanece bloqueada sem VIP.';
+ const support=D.createElement('button');support.type='button';support.className='psy-vip-gate-button support';support.textContent='✦ APOIAR O SERVIDOR';support.onclick=()=>{const url=supportUrl();if(url){root.remove();W.open?.(url,'_blank','noopener,noreferrer');return;}const message='O canal oficial de apoio ainda não está disponível por aqui.';supportStatus.textContent=message;supportStatus.setAttribute('role','status');supportStatus.setAttribute('aria-live','polite');note(message);};actions.append(survivor,support);
+ const foot=supportStatus;
+ card.append(close,ribbon,hero,heading,copy,actions,foot);root.appendChild(card);root.addEventListener('click',e=>{if(e.target===root)root.remove()});root.addEventListener('keydown',e=>{if(e.key==='Escape')root.remove()});D.body.appendChild(root);close.focus?.();return root;
+}
+function requireVip(feature='hunt'){if(vip())return true;openVipGate(feature);return false;}
+function setAutomatic(on){if(on&&!requireVip('battle'))return false;automatic=!!on;renderButtons();return automatic;}
 const style=D.createElement('style');style.textContent=`
 #psy-campaign-quests{position:absolute;top:4px;right:6px;z-index:4;width:min(210px,44%);padding:5px;border:1px solid #d6ae61;border-radius:12px;background:#101b2be8;color:#eef5ff;font:12px/1.35 system-ui;box-sizing:border-box;pointer-events:auto}
 #psy-campaign-quests .pq-row{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;padding:4px 0;border-bottom:1px solid #ffffff15}
@@ -19,13 +36,33 @@ const style=D.createElement('style');style.textContent=`
 @media(max-width:600px){#psy-campaign-quests{width:44%;font-size:10px;padding:4px}#psy-auto-battle button{font-size:10px;padding:6px;min-height:34px}}
  #psy-campaign-tools[hidden],#psy-campaign-quests[hidden]{display:none!important}
 #btn-idle-realistic-float,[data-mode-card=idleworld]{display:none!important}
+#psy-campaign-tools button{border:2px solid #e5c27b;background:linear-gradient(140deg,#352b59,#1a2547 58%,#143848);box-shadow:inset 0 1px #ffffff44,0 4px 12px #0008;text-shadow:0 1px 3px #000}
+.psy-vip-gate{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:clamp(10px,3vw,28px);background:radial-gradient(ellipse at 50% 20%,#55347c66,transparent 55%),#050817e8;backdrop-filter:blur(8px);box-sizing:border-box}
+.psy-vip-gate *{box-sizing:border-box}
+.psy-vip-gate-card{position:relative;width:min(550px,100%);padding:24px 26px 20px;border:2px solid #d6b56f;outline:2px solid #7652a7;outline-offset:4px;background:radial-gradient(ellipse at 76% 5%,#6f4ba244,transparent 50%),linear-gradient(150deg,#162b45,#171a36 58%,#0c2133);box-shadow:0 22px 70px #000c,inset 0 1px #fff5;color:#f4f5fb;overflow:hidden}
+.psy-vip-gate-card:before,.psy-vip-gate-card:after{content:"✦";position:absolute;color:#f7cf76;text-shadow:0 0 12px #e6b85a;pointer-events:none}.psy-vip-gate-card:before{top:10px;left:12px}.psy-vip-gate-card:after{right:14px;bottom:10px}
+.psy-vip-gate-close{position:absolute;right:10px;top:10px;z-index:2;width:40px;height:40px;border:1px solid #e9c58a;border-radius:9px;background:#382846;color:#fff;font-size:24px;cursor:pointer}
+.psy-vip-gate-ribbon{display:inline-block;margin:0 44px 10px 0;padding:5px 9px;border:1px solid #f2ca79;background:#352b42;color:#ffe3a3;font:bold 10px/1.2 system-ui;letter-spacing:.1em}
+.psy-vip-gate-hero{float:left;width:112px;height:122px;margin:0 16px 8px 0;display:grid;place-items:center;border:1px solid #b392e2;background:radial-gradient(circle,#f3bd4866,#3a2c5644 65%,transparent 66%);image-rendering:pixelated}
+.psy-vip-gate-mascot{width:96px;height:112px;background:url("assets/psyduck/normal.png") 0 0/400% 600% no-repeat;image-rendering:pixelated;filter:drop-shadow(0 5px 5px #0009)}
+.psy-vip-gate-heading small{color:#8de6e2;font:800 10px system-ui;letter-spacing:.14em}
+.psy-vip-gate-heading h2{margin:5px 42px 8px 0;color:#fff0c5;font:900 clamp(20px,4vw,28px)/1.1 Georgia,serif;text-shadow:0 0 14px #dfb8ec77}
+.psy-vip-gate-copy{min-height:74px;margin:0 0 16px;color:#dce6f4;font:14px/1.55 system-ui}
+.psy-vip-gate-actions{clear:both;display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
+.psy-vip-gate-button{min-height:48px;padding:10px;border:2px solid #f2d490;background:linear-gradient(140deg,#8b5624,#713b65);color:#fff5df;font:900 12px system-ui;letter-spacing:.03em;box-shadow:inset 0 1px #ffffff6b,0 5px 12px #0006;cursor:pointer;touch-action:manipulation}
+.psy-vip-gate-button.survivor{background:linear-gradient(135deg,#7a591f,#326a70);border-color:#f5d176}
+.psy-vip-gate-button.support{background:linear-gradient(135deg,#65509a,#1c6071);border-color:#9de9e4}
+.psy-vip-gate-button:hover{filter:brightness(1.14);transform:translateY(-1px)}
+.psy-vip-gate-foot{display:block;margin-top:14px;color:#aebdd2;text-align:center;font:11px system-ui}
+@media(max-width:480px){.psy-vip-gate-card{padding:20px 16px 16px}.psy-vip-gate-hero{width:82px;height:96px;margin-right:11px}.psy-vip-gate-mascot{width:72px;height:84px}.psy-vip-gate-copy{font-size:13px;min-height:92px}.psy-vip-gate-actions{grid-template-columns:1fr}.psy-vip-gate-button{min-height:46px}}
+@media(prefers-reduced-motion:reduce){.psy-vip-gate-button{transition:none}.psy-vip-gate-button:hover{transform:none}}
 `;D.head.appendChild(style);
 const tracker=D.createElement('section');tracker.id='psy-campaign-quests';tracker.setAttribute('aria-label','Quests ativas');
 const tools=D.createElement('div');tools.id='psy-campaign-tools';
-const hunt=D.createElement('button');hunt.textContent='AUTO HUNT · VIP';hunt.onclick=()=>{if(huntActive()){stopAutomation();return;}if(requireVip())configure('hunt');};tools.appendChild(hunt);
+const hunt=D.createElement('button');hunt.textContent='AUTO HUNT · VIP';hunt.onclick=()=>{if(huntActive()){stopAutomation();return;}if(requireVip('hunt'))configure('hunt');};tools.appendChild(hunt);
 const bar=D.createElement('div');bar.id='psy-auto-battle';
-const battleButton=D.createElement('button');battleButton.onclick=()=>{if(automatic){stopAutomation();return;}if(requireVip())configure('battle');};
-const catchButton=D.createElement('button');catchButton.onclick=()=>{if(catchEnabled){catchEnabled=false;renderButtons();return;}if(requireVip())configure('capture');};bar.append(battleButton,catchButton);
+const battleButton=D.createElement('button');battleButton.onclick=()=>{if(automatic){stopAutomation();return;}if(requireVip('battle'))configure('battle');};
+const catchButton=D.createElement('button');catchButton.onclick=()=>{if(catchEnabled){catchEnabled=false;renderButtons();return;}if(requireVip('capture'))configure('capture');};bar.append(battleButton,catchButton);
 function renderButtons(){
  battleButton.textContent=automatic?'AUTO BATALHA · ON':'AUTO BATALHA · VIP';battleButton.setAttribute('aria-pressed',String(automatic));
  catchButton.textContent=catchEnabled?'AUTO CAPTURA · ON':'AUTO CAPTURA · VIP';catchButton.setAttribute('aria-pressed',String(catchEnabled));
@@ -49,7 +86,7 @@ function configure(mode){
  const warn=D.createElement('p');warn.setAttribute('role','status');card.appendChild(warn);if(ball&&!balls.length)warn.textContent='Você não possui Balls de captura. Reabasteça para ativar.';
  const cancel=D.createElement('button');cancel.textContent='Cancelar';cancel.onclick=()=>box.remove();card.appendChild(cancel);
  const confirm=D.createElement('button');confirm.textContent='Confirmar e ativar';confirm.disabled=!!ball&&!balls.length;confirm.onclick=()=>{
-  if(!requireVip())return;const bag=player().inventory||{};if(ball&&!(bag[ball.value]>0)){warn.textContent='A Ball escolhida acabou. Selecione outra.';return;}if(potion.value&&!(bag[potion.value]>0)){warn.textContent='A poção escolhida acabou.';return;}
+  if(!requireVip(mode))return;const bag=player().inventory||{};if(ball&&!(bag[ball.value]>0)){warn.textContent='A Ball escolhida acabou. Selecione outra.';return;}if(potion.value&&!(bag[potion.value]>0)){warn.textContent='A poção escolhida acabou.';return;}
   if(!Number.isFinite(Number(heal.value))||Number(heal.value)<10||Number(heal.value)>80||capture&&(!Number.isFinite(Number(capture.value))||Number(capture.value)<10||Number(capture.value)>80)){warn.textContent='Use percentuais entre 10 e 80.';return;}
   cfg.potion=potion.value;cfg.healAt=Number(heal.value);if(ball){cfg.ball=ball.value;cfg.catchAt=Number(capture.value);catchEnabled=true;}
   if(mode==='hunt'){findTask=null;huntController=api();const active=huntController?.setAutoHunt(true);huntIntent=!!active;if(!active){warn.textContent='Conclua o objetivo da campanha antes de caçar automaticamente.';return;}}
@@ -195,7 +232,7 @@ function refresh(){
  renderButtons();advanceFind().catch(()=>{findTask=null;});
  if(D.visibilityState==='visible')autoTurn();
 }
-W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,autoFind:find,cancelRoute:()=>{findTask=null;},startPrimaryRoute:()=>{const rows=questRows(),q=rows.find(x=>x.kind==='main'&&(x.goal||Array.isArray(x.at)))||rows.find(x=>x.goal||Array.isArray(x.at));if(q)return find(q);note('Não há uma rota ativa no momento.');},stop:stopAutomation,configure,preferences,huntActive};
+W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,showVipGate:openVipGate,autoFind:find,cancelRoute:()=>{findTask=null;},startPrimaryRoute:()=>{const rows=questRows(),q=rows.find(x=>x.kind==='main'&&(x.goal||Array.isArray(x.at)))||rows.find(x=>x.goal||Array.isArray(x.at));if(q)return find(q);note('Não há uma rota ativa no momento.');},stop:stopAutomation,configure,preferences,huntActive};
 renderButtons();W.setInterval(refresh,600);
 })(window,document);
 

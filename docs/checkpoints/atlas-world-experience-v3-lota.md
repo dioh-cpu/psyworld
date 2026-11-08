@@ -6,7 +6,7 @@
 - Commit-base: `636a718bebf743b9df3be2dcf739a1d776e54ace`.
 - `origin/main` conferida antes das alterações: o mesmo SHA completo do commit-base.
 - Produção Vercel conferida antes das alterações: deployment `READY`, associado ao mesmo SHA (`636a718bebf743b9df3be2dcf739a1d776e54ace`).
-- Sem push, merge ou deploy; nenhuma configuração de publicação foi alterada.
+- Atualização de estado: o commit `77bdd4437e9c6d1d4448d727f78cb582d9a79a6d` foi publicado na `main` após este checkpoint inicial. Em 2026-11-08, `git ls-remote origin refs/heads/main` confirmou novamente esse SHA. Nenhuma configuração de publicação foi alterada.
 
 ## Escopo concluído
 
@@ -63,4 +63,4 @@ Artefatos gerados fora do repositório para revisão:
 - A validação visual foi feita em Chromium com perfis temporários e nos três viewports listados; não foi feita em aparelhos físicos.
 - O servidor local exibiu respostas 404 preexistentes para alguns recursos externos ao Atlas e para `/api/config`; não houve exceções no navegador, e esses recursos não fazem parte deste checkpoint.
 - Lotes B, C e D — tutorial e apresentação adicional, drops/engenheiro e gruta/tesouros — ainda não foram implementados neste branch.
-- Esta etapa não foi integrada à Main e não foi publicada.
+- O registro acima foi escrito antes da integração autorizada; a atualização de estado no início deste arquivo registra a publicação posterior.

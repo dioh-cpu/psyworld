@@ -307,3 +307,15 @@ body .psy-titles-panel .pt-checkin{border:1px solid #a1bce67b;background:#101d3d
 }
 #psy-hobbies .ph-overview[hidden]{display:none!important}
 @media(max-width:520px){#psy-hobbies .ph-header{top:-10px}}
+
+/* Auto Hunt campaign card: reuse the approved Psyduck sheet as a pixel mascot. */
+#psy-kanto-world-v2 .kw2-vip-block{
+ border-color:#d6b876a8;
+ background:radial-gradient(circle at 8% 0,#b8793622,transparent 47%),linear-gradient(145deg,#202748,#151a31 60%,#10283a);
+ box-shadow:inset 0 1px #fff3,0 7px 18px #0006;
+}
+#psy-kanto-world-v2 .kw2-vip-block h3{color:#ffe4a6;text-shadow:0 0 12px #e5ae5755}
+#psy-kanto-world-v2 .kw2-vip-intro{display:grid;grid-template-columns:78px minmax(0,1fr);gap:10px;align-items:center;margin:4px 0 12px;padding:8px;border:1px solid #d7b77455;background:linear-gradient(120deg,#f0c87812,#64dbdb0a)}
+#psy-kanto-world-v2 .kw2-vip-intro p{margin:0;color:#e2e8f2;line-height:1.45}
+#psy-kanto-world-v2 .kw2-vip-mascot{width:72px;height:78px;background:url("../assets/psyduck/normal.png") 0 0/400% 600% no-repeat;image-rendering:pixelated;filter:drop-shadow(0 4px 4px #0009)}
+@media(max-width:540px){#psy-kanto-world-v2 .kw2-vip-intro{grid-template-columns:64px minmax(0,1fr);gap:8px;padding:6px}#psy-kanto-world-v2 .kw2-vip-mascot{width:60px;height:66px}}
