@@ -66,6 +66,13 @@ export default async function handler(req,res){
       return res.status(200).json(data||{});
     }
     const idempotency=idem(req.body?.idempotency_key,action);
+    if(action==='treasure-action'){
+      const body=obj(req.body),payload=obj(body.payload),subAction=txt(payload.action,32).toLowerCase();
+      if(!['unlock','dig','open-chest','level-up','skill-buy','treasure-roll','equip-cosmetic'].includes(subAction))return res.status(400).json({error:'invalid_treasure_action'});
+      const {data,error}=await supabase.rpc('psy_v28_treasure_action_v1',{p_user:user.id,p_action:subAction,p_payload:payload,p_idempotency:idempotency});
+      if(error)throw error;
+      return res.status(200).json({...obj(data),action:subAction});
+    }
     if(GENERIC.has(action)){
       const payload=obj(req.body?.payload||req.body);
       const {data,error}=await supabase.rpc('psy_v26_action',{p_user:user.id,p_action:action,p_payload:payload,p_idempotency:idempotency});

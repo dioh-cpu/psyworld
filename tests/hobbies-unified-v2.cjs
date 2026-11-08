@@ -17,7 +17,7 @@ const W={P:p,PsyBattleLootV1:battleLoot,autoSave:()=>saveCount++,updateHUD:()=>{
 const D={getElementById:()=>null};
 vm.runInNewContext(source,{window:W,document:D,P:p,console});
 const H=W.PsyHobbies;
-assert.equal(H.definitions.length,13);
+assert.equal(H.definitions.length,15);
 assert.equal(H.ballLadder.length,18);
 for(const job of H.definitions)assert.equal(H.state()[job.id].level,0,'Hobby starts Lv0: '+job.id);
 assert.equal(H.exchange('engineer',0),false,'No ball manufacture before unlock');
@@ -65,10 +65,10 @@ assert(index.includes('core/hobbies-v2.js?build='));
 assert(!index.includes('src="core/hobbies-v1.js?'));
 assert(old.includes("if(s!=='idle')return false"),'No more main-game career/craft');
 assert(legacy.includes('psyHobbyGrantFieldXp'),'Field collection must grant trainer & Pokemon XP');
-for(const id of ['miner','gardener','fisher','lumber','alchemist'])
+for(const id of ['miner','gardener','fisher','lumber','alchemist','treasure-hunter','looter'])
  assert(fs.existsSync('assets/hobbies/'+id+'.svg'));
 for(const id of ['engineer','herbalist','researcher','professor','stylist','echo','dream','twilight'])
  assert(fs.existsSync('assets/professions/'+id+'.webp'));
 assert(saveCount>0);
-console.log('PASS: 13 independent hobbies, Engineer 100/5/100 progression and typed materials, ball tiers, artwork, no main craft, field hooks and buffs');
+console.log('PASS: 15 independent hobbies, Engineer 100/5/100 progression and typed materials, ball tiers, treasure progression, artwork, no main craft, field hooks and buffs');
 })().catch(error=>{console.error(error);process.exitCode=1});

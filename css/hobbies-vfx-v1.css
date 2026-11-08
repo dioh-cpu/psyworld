@@ -5,3 +5,21 @@
 #psy-hobby-fishing[data-fishing-state="caught"] .hf-panel{border-color:#ffe39b}
 #psy-hobby-fishing[data-fishing-state="escaped"] .hf-panel{border-color:#99b5c2}
 @media(prefers-reduced-motion:reduce){#psy-hobby-fishing .hf-panel{transition:none}}
+
+/* Crystal Grotto activity cards use the existing Hobbies dialog shell. */
+#psy-hobbies .th-panel{margin:14px 0;padding:16px;border:1px solid #8b75b2;border-radius:14px;background:linear-gradient(145deg,#141d32,#26203c 58%,#17283a);box-shadow:inset 0 0 0 2px #ffffff08,0 10px 25px #080d1b55;color:#edf3fb}
+#psy-hobbies .th-title{margin:10px 0 7px;color:#f3d38b;letter-spacing:.06em;font-size:.9rem}
+#psy-hobbies .th-summary{display:grid;gap:5px;margin:8px 0 14px;color:#c5d6e5;font-size:.88rem}
+#psy-hobbies .th-note{color:#b8cad9;line-height:1.55;font-size:.82rem}
+#psy-hobbies .th-button{border:1px solid #70d9d1;border-radius:8px;padding:9px 12px;background:linear-gradient(135deg,#1a6271,#344b86);color:#fff;font-weight:900;cursor:pointer}
+#psy-hobbies .th-button:disabled{opacity:.46;cursor:not-allowed;filter:saturate(.6)}
+#psy-hobbies .th-chest-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+#psy-hobbies .th-chest{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px;border:1px solid #75638e;border-radius:9px;background:#111b2d;color:#e8d8ff;font-size:.8rem}
+#psy-hobbies .th-chest .th-button{padding:6px 8px;font-size:.72rem}
+#psy-hobbies .th-skills{display:grid;gap:8px;margin-top:16px}
+#psy-hobbies .th-skills h4{margin:0;color:#c3a9ff}
+#psy-hobbies .th-skill{display:grid;gap:6px;padding:10px;border:1px solid #44516c;border-radius:9px;background:#0e1829}
+#psy-hobbies .th-skill.ready{border-color:#60d8c0;box-shadow:inset 0 0 14px #48cbb418}
+#psy-hobbies .th-skill strong{color:#f3dda5;font-size:.86rem}
+#psy-hobbies .th-skill small{color:#b9c7d8;line-height:1.4}
+@media(max-width:600px){#psy-hobbies .th-chest-row{grid-template-columns:1fr}}

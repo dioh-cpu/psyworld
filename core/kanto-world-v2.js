@@ -126,15 +126,26 @@ function move(dx,dy,dt,maxDistance=Infinity){state.moving=false;if(state.dialogO
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
 if(positionValid(p.x+stepx,p.y+stepy)){p.x+=stepx;p.y+=stepy;mx+=stepx;my+=stepy}else{if(positionValid(p.x+stepx,p.y)){p.x+=stepx;mx+=stepx}if(positionValid(p.x,p.y+stepy)){p.y+=stepy;my+=stepy}}}
 state.moving=Math.abs(mx)+Math.abs(my)>0.25;
-if(Math.abs(mx)>Math.abs(my))state.facing=mx>0?'right':'left';else if(my)state.facing=my>0?'down':'up';if(state.moving){state.walkFrame+=dt*10;if(state.world?.id==='route-1'&&!state.inside){state.stepDistance+=Math.hypot(mx,my);if(state.stepDistance>=32){state.stepDistance=0;maybeEncounter()}}}}
+if(Math.abs(mx)>Math.abs(my))state.facing=mx>0?'right':'left';else if(my)state.facing=my>0?'down':'up';if(state.moving){state.walkFrame+=dt*10;const encounter=encounterForScene();if(encounter){state.stepDistance+=Math.hypot(mx,my);if(state.stepDistance>=encounter.stepDistance){state.stepDistance%=encounter.stepDistance;maybeEncounter(encounter)}}}}
 function restoreEncounter(){if(!state.suspended)return;state.suspended=false;D.body.classList.add('psy-kanto-v2-active');state.root.classList.add('open');draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}}
-function maybeEncounter(){if(!DATA.grassAt(state.world,state.position.x,state.position.y))return;if(performance.now()-state.lastEncounter<6000||Math.random()>.16)return;
+function encounterForScene(){
+ const scene=state.inside||state.world;if(!scene)return null;
+ if(scene.encounter&&typeof scene.encounter==='object')return scene.encounter;
+ if(state.inside&&/(cave|cavern|gruta|caverna|mine)/i.test(String(scene.id||scene.title||'')))return {pool:'kanto_cave_t1',area:'crystal-grotto',stepDistance:40,chance:.14,cooldownMs:6500};
+ if(!state.inside&&scene.id==='route-1'&&DATA.grassAt(scene,state.position.x,state.position.y))return {pool:'kanto_route1_t1',area:'route-1',stepDistance:32,chance:.16,cooldownMs:6000};
+ return null;
+}
+function cavePool(){
+ const ids=[27,50,41,74,95,104],getName=W.getPokeName;
+ return ids.map(id=>({id,name:typeof getName==='function'?getName(id):'Pokémon '+id,type:W.TYPE_BY_ID_ALL?.[id]||'Rock'}));
+}
+function maybeEncounter(config){if(!config)return;if(config.area==='route-1'&&!DATA.grassAt(state.world,state.position.x,state.position.y))return;if(performance.now()-state.lastEncounter<(config.cooldownMs||6000)||Math.random()>(config.chance??.16))return;
 const p=player();if(!Array.isArray(p.team)||!p.team.length){showDialog('Equipe necessária','Escolha seu primeiro Pokémon antes de procurar encontros.');return}
 if(typeof W.triggerWild!=='function')return;state.lastEncounter=performance.now();state.suspended=true;state.held.clear();state.path=[];state.joy=null;state.root.classList.remove('open');const old=W.startBattle,oldGet=W.getPokesForHunt;
 const prev=W.endBattle;if(typeof prev==='function'&&!prev.__kw2){const wrapped=function(){const result=prev.apply(this,arguments);if(state.suspended)W.setTimeout(restoreEncounter,0);return result};wrapped.__kw2=true;W.endBattle=wrapped}
-if(typeof oldGet==='function')W.getPokesForHunt=function(){const pool=oldGet.apply(this,arguments);return W.PsyWorldTimeV1?.weightEncounterRecords?.(pool,'route-1')||pool};
-if(typeof old==='function')W.startBattle=function(wild){if(wild&&typeof wild==='object'){wild.lvl=wild.level;wild.halloweenArea='route-1'}return old.apply(this,arguments)};
-try{W.triggerWild('kanto_route1_t1')}catch(e){console.warn('Rota 1 encounter',e);restoreEncounter()}finally{if(typeof old==='function')W.startBattle=old;if(typeof oldGet==='function')W.getPokesForHunt=oldGet}
+if(typeof oldGet==='function')W.getPokesForHunt=function(region,type,tier){const pool=String(config.pool||'');if(pool==='kanto_cave_t1'&&region==='kanto'&&type==='cave')return W.PsyWorldTimeV1?.weightEncounterRecords?.(cavePool(),config.area)||cavePool();const records=oldGet.apply(this,arguments);return W.PsyWorldTimeV1?.weightEncounterRecords?.(records,config.area)||records};
+if(typeof old==='function')W.startBattle=function(wild){if(wild&&typeof wild==='object'){wild.lvl=wild.level;wild.halloweenArea=config.area}return old.apply(this,arguments)};
+try{W.triggerWild(config.pool||'kanto_route1_t1')}catch(e){console.warn('Kanto exploration encounter',e);restoreEncounter()}finally{if(typeof old==='function')W.startBattle=old;if(typeof oldGet==='function')W.getPokesForHunt=oldGet}
 const battle=D.getElementById('battle-screen');if(!battle||battle.style.display==='none'||!battle.classList.contains('active'))restoreEncounter();
 }
 
@@ -209,6 +220,7 @@ if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art
     if(sw>0&&sh>0){c.imageSmoothingEnabled=true;c.drawImage(o.mapCanvas,sx,sy,sw,sh,sx,sy,sw,sh)}
   }else{c.fillStyle='#172b31';c.fillRect(0,0,state.world.w,state.world.h);c.fillStyle='#f5d28e';c.font='bold 20px system-ui';c.textAlign='center';c.fillText(o?.error?'ERRO: ARTE DO MAPA NÃO CARREGOU':'CARREGANDO ARTE DO MAPA...',state.world.w/2,state.world.h/2)}}
 const hobbyScene=state.inside?.id||state.world?.id;
+W.PsyTreasureHuntV1?.drawScene?.(c,hobbyScene,performance.now());
 W.PsyHobbies?.drawField?.(c,hobbyScene);
 if(state.inside)W.PsyHobbies?.drawDecor?.(c,state.inside.id);
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
@@ -262,7 +274,7 @@ function drawPlayer(c,x,y){
   c.save();
   c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13,5,0,0,Math.PI*2);c.fill();
   const fashion=W.PsyProfessions?.cosmetic?.();if(fashion){c.save();c.strokeStyle=fashion.color;c.globalAlpha=.7;c.lineWidth=2;c.beginPath();c.ellipse(x,y+4,18,7,0,0,Math.PI*2);c.stroke();if(state.moving){c.globalAlpha=.45;for(let i=0;i<3;i++){c.beginPath();c.arc(x+(i-1)*9,y+8+(Math.sin(state.walkFrame+i)+1)*4,1.8,0,Math.PI*2);c.fillStyle=fashion.color;c.fill()}}c.restore()}
-  const entry=selectedAvatar(),scene=state.inside?.id||state.world?.id,action=W.PsyHobbiesVFX?.sampleAction?.(scene,{x,y,moving:false}),row=action?.row??({down:0,left:1,right:2,up:3})[state.facing]??0;W.PsyCostumeAuraV1?.draw?.(c,entry?.im?.src,x,y+5);let usedSprite=false;
+  const entry=selectedAvatar(),scene=state.inside?.id||state.world?.id,action=W.PsyHobbiesVFX?.sampleAction?.(scene,{x,y,moving:false}),row=action?.row??({down:0,left:1,right:2,up:3})[state.facing]??0;W.PsyCostumeAuraV1?.draw?.(c,entry?.im?.src,x,y+5);W.PsyTreasureHuntV1?.drawBountyAura?.(c,x,y,performance.now());let usedSprite=false;
   if(entry?.loaded){
     const moving=state.moving&&!action;
     const walk=W.PsyTrainerWalkV1;
@@ -373,22 +385,12 @@ function talk(npc){
  }
 }
 function makeCaveRoom(){
- const paint=D.createElement('canvas');paint.width=640;paint.height=480;
- const c=paint.getContext('2d'),g=c.createRadialGradient(320,300,20,320,260,360);
- g.addColorStop(0,'#31475a');g.addColorStop(1,'#090f21');c.fillStyle=g;c.fillRect(0,0,640,480);
- for(let y=15;y<470;y+=24)for(let x=12;x<630;x+=32){
-  const edge=x<110||x>520||y<170;
-  c.fillStyle=edge?['#263040','#374055','#202b40'][(x+y)%3]:['#384451','#3e4c59','#33414e'][(x+y)%3];
-  c.fillRect(x+(y%48?8:0),y,30,21);
- }
- c.fillStyle='#667380';c.beginPath();c.ellipse(320,385,130,55,0,0,Math.PI*2);c.fill();
- for(const [x,y]of [[100,240],[540,235],[130,365],[510,360],[290,140],[380,150]]){
-  c.fillStyle='#553c88';c.beginPath();c.moveTo(x-14,y+25);c.lineTo(x-11,y-17);c.lineTo(x,y-37);c.lineTo(x+15,y-9);c.lineTo(x+12,y+25);c.fill();
-  c.fillStyle='#b4a1ef';c.beginPath();c.moveTo(x,y-35);c.lineTo(x+12,y-9);c.lineTo(x,y+19);c.fill();
- }
- for(const x of [210,430]){const glow=c.createRadialGradient(x,200,2,x,200,65);glow.addColorStop(0,'#ffd17e');glow.addColorStop(1,'#ffb73900');c.fillStyle=glow;c.fillRect(x-65,135,130,130);c.fillStyle='#ffda84';c.fillRect(x-4,190,8,19);}
- c.fillStyle='#d6bd89';c.fillRect(275,442,90,27);
- return {id:'route-cave',title:'Gruta dos Cristais',w:640,h:480,paint,spawn:[320,410],exit:[320,455],npcs:[],blocks:[[0,0,105,480],[535,0,640,480],[0,0,640,170]]};
+ return {
+  id:'route-cave',title:'Gruta dos Cristais',w:900,h:675,
+  art:'assets/kanto/caves/crystal-grotto-v1.webp',spawn:[450,254],exit:[450,207],npcs:[],
+  walkBounds:[35,180,865,645],blocks:[[90,535,169,580],[733,213,811,257]],
+  encounter:{pool:'kanto_cave_t1',area:'crystal-grotto',stepDistance:40,chance:.14,cooldownMs:6500}
+ };
 }
 function enterDoor(door){
  state.navRequest++;state.navCells.clear();

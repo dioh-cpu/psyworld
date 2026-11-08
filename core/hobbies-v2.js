@@ -18,7 +18,9 @@ const RAW=[
  ['echo','Tecelão de Ecos','echo',['Fantasma'],'drop',1,'Essência Fantasma','Cristal Harmônico'],
  ['dream','Cartógrafo Onírico','dream',['Psíquico'],'gold',1,'Essência Psíquica','Mapa dos Sonhos'],
  ['twilight','Guardião do Crepúsculo','twilight',['Noturno'],'def',1,'Essência Sombria','Selo Crepuscular'],
- ['alchemist','Alquimista','alchemist',['Fogo','Planta'],'atk',1,'Essência Fogo','Tônico de Ataque']
+ ['alchemist','Alquimista','alchemist',['Fogo','Planta'],'atk',1,'Essência Fogo','Tônico de Ataque'],
+ ['treasureHunter','Caçador de Tesouros','treasure-hunter',['Terra','Pedra'],'drop',1,'Fragmento Antigo','Relíquia Mineral'],
+ ['looter','Looter','looter',['Fantasma','Noturno'],'drop',1,'Fragmento de Baú','Selo de Saque']
 ];
 const JOBS=RAW.map(([id,name,art,types,stat,per,material,product])=>({id,name,art,types,stat,per,material,product,starter:['miner','gardener','fisher','lumber'].includes(id)}));
 const BALLS=[
@@ -36,7 +38,7 @@ const key=v=>translate[norm(v)]||norm(v);
 const p=()=>{try{return typeof P!=='undefined'?P:W.P||{}}catch(_){return W.P||{}}};
 const count=v=>Math.max(0,Math.floor(Number(v)||0));
 const find=id=>JOBS.find(j=>j.id===id);
-const artUrl=j=>j.starter?'assets/hobbies/'+j.art+'.svg':j.id==='alchemist'?'assets/hobbies/alchemist.svg':'assets/professions/'+j.art+'.webp';
+const artUrl=j=>j.starter||['alchemist','treasureHunter','looter'].includes(j.id)?'assets/hobbies/'+j.art+'.svg':'assets/professions/'+j.art+'.webp';
 let selected=null;
 const root=()=>D.getElementById('psy-hobbies');
 function inventory(){const u=p();return u.inventory||(u.inventory={})}
@@ -46,7 +48,14 @@ function state(){
  for(const j of JOBS){
   const x=h[j.id]||(h[j.id]={level:0,xp:0});
   x.level=count(x.level);x.xp=count(x.xp);x.base=x.base||{};
-  if(!x.careerMigrated&&u.meta.professionsV1?.jobs?.[j.id]){
+  }
+ for(const id of ['treasureHunter','looter']){
+  const remote=u.meta.treasureHuntV1?.hobbies?.[id];
+  if(remote){h[id].level=count(remote.level);h[id].xp=count(remote.xp);h[id].base=h[id].base||{}}
+ }
+ for(const j of JOBS){
+  const x=h[j.id];
+  if(!['treasureHunter','looter'].includes(j.id)&&!x.careerMigrated&&u.meta.professionsV1?.jobs?.[j.id]){
    const prev=u.meta.professionsV1.jobs[j.id];x.level=Math.max(x.level,count(prev.level));x.xp=Math.max(x.xp,count(prev.xp));x.careerMigrated=true;
   }
  }
@@ -69,6 +78,7 @@ function captured(types){
 function unlockProgress(j){return {defeats:defeated(j.types),caught:captured(j.types),
  ready:j.starter?defeated(j.types)>=10&&captured(j.types)>=5:!!p().gymProgress?.includes('kanto_brock')}}
 function unlock(id){
+ if(['treasureHunter','looter'].includes(id)&&W.PsyTreasureHuntV1)return W.PsyTreasureHuntV1.unlock(id);
  const j=find(id),x=state()[id];if(!j||!x)return false;if(x.level>0)return true;
  if(!unlockProgress(j).ready){W.notif?.('Conclua a quest de desbloqueio.',2500);return false}
  x.level=1;x.xp=0;
@@ -76,8 +86,9 @@ function unlock(id){
  for(const t of j.types)x.base[key(t)]=kills(t);
  save();if(root()?.classList.contains('show'))render();return true;
 }
-const xpNeed=x=>100*Math.max(1,x.level);
+const xpNeed=(x,id='')=>['treasureHunter','looter'].includes(id)?Math.ceil(100*Math.pow(Math.max(1,x.level),1.55)):100*Math.max(1,x.level);
 function levelRequirements(id){
+ if(['treasureHunter','looter'].includes(id)&&W.PsyTreasureHuntV1)return W.PsyTreasureHuntV1.levelRequirements(id);
  const j=find(id),x=state()[id];if(!j||!x?.level||x.level>=100)return {ready:false,max:true};
  if(id==='engineer'){
   const nextIndex=x.level<BALLS.length?x.level:(x.level-BALLS.length)%BALLS.length,type=BALLS[nextIndex]?.[0]||'Normal',ball=x.level<BALLS.length?BALLS[x.level]:null;
@@ -87,17 +98,18 @@ function levelRequirements(id){
   const t=key(type),won=Math.max(0,kills(type)-count(x.base[t])),caught=captured([type]);
   const available=count(inventory()[materials.common]),uncommonAvailable=count(inventory()[materials.uncommon]),stoneAvailable=count(inventory()[materials.stone]);
   return {material:materials.common,need,available,uncommonMaterial:materials.uncommon,uncommonNeed,uncommonAvailable,stoneMaterial:materials.stone,stoneNeed,stoneAvailable,
-   defeats:won,defeatNeed,captured:caught,captureNeed,xp:x.xp,xpRequired:xpNeed(x),ball:ball?.[1],type,
-   ready:available>=need&&uncommonAvailable>=uncommonNeed&&stoneAvailable>=stoneNeed&&x.xp>=xpNeed(x)&&won>=defeatNeed&&caught>=captureNeed};
+   defeats:won,defeatNeed,captured:caught,captureNeed,xp:x.xp,xpRequired:xpNeed(x,id),ball:ball?.[1],type,
+   ready:available>=need&&uncommonAvailable>=uncommonNeed&&stoneAvailable>=stoneNeed&&x.xp>=xpNeed(x,id)&&won>=defeatNeed&&caught>=captureNeed};
  }
  const ball=null;
  const levelMats={miner:'Essência Terra',gardener:'Essência Planta',fisher:'Essência Água',lumber:'Essência Inseto'};
  const material=ball?ball[2]:(levelMats[id]||j.material),need=ball?100:Math.max(10,10*x.level);
  const t=ball?ball[0]:j.types[0],won=Math.max(0,kills(t)-count(x.base[key(t)])),caught=captured([t]),available=count(inventory()[material]);
- return {material,need,available,defeats:won,captured:caught,xp:x.xp,xpRequired:xpNeed(x),
-  ball:ball?.[1],type:t,ready:available>=need&&x.xp>=xpNeed(x)&&(id!=='engineer'||won>=100&&caught>=5)};
+ return {material,need,available,defeats:won,captured:caught,xp:x.xp,xpRequired:xpNeed(x,id),
+  ball:ball?.[1],type:t,ready:available>=need&&x.xp>=xpNeed(x,id)&&(id!=='engineer'||won>=100&&caught>=5)};
 }
 function levelUp(id){
+ if(['treasureHunter','looter'].includes(id)&&W.PsyTreasureHuntV1)return W.PsyTreasureHuntV1.levelUp(id);
  const j=find(id),x=state()[id],req=levelRequirements(id);if(!j||!x||!req.ready)return false;
  const inv=inventory();
  if(id==='engineer'){
@@ -105,7 +117,7 @@ function levelUp(id){
   if(costs.some(([name,amount])=>count(inv[name])<amount))return false;
   for(const [name,amount]of costs)inv[name]-=amount;
  }else{if(count(inv[req.material])<req.need)return false;inv[req.material]-=req.need;}
- x.xp-=xpNeed(x);x.level++;
+ x.xp-=xpNeed(x,id);x.level++;
  if(id==='engineer')x.base[key(req.type)]=kills(req.type);
  else for(const t of j.types)x.base[key(t)]=kills(t);
  save();if(root()?.classList.contains('show'))render();W.notif?.('Novo nível em '+j.name+'!',2500);return true;
@@ -150,11 +162,17 @@ const FIELD={
  'route-4':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta']],
  'route-1':[
   ['f1','gardener',276,301,'Flor do Campo'],['f2','gardener',411,296,'Flor do Campo'],['f3','gardener',605,250,'Flor do Campo'],
-  ['t1','lumber',521,280,'Madeira Bruta'],['o1','miner',335,258,'Minério Bruto']],
- 'route-cave':[['o1','miner',260,374,'Minério Bruto'],['o2','miner',390,370,'Minério Bruto']]
+  ['t1','lumber',521,280,'Madeira Bruta'],['o1','miner',335,258,'Minério Bruto'],
+  ['d1','treasureHunter',285,325,'Solo rachado',1],['d2','treasureHunter',706,275,'Solo rachado',5,'trail']],
+ 'route-cave':[
+  ['o1','miner',230,370,'Minério Bruto'],['o2','miner',664,376,'Minério Bruto'],
+  ['d1','treasureHunter',310,466,'Solo rachado'],['d2','treasureHunter',586,475,'Solo rachado'],
+  ['d3','treasureHunter',450,536,'Solo rachado']
+ ]
 };
 const SPOT_REWARDS={
  miner:{common:'Minério Bruto',rare:'Minério Luminoso',epic:'Cristal Arcano',legend:'Cristal Lendário'},
+ treasureHunter:{common:'Fragmento Antigo',rare:'Baú Simples',epic:'Baú Ornamentado',legend:'Baú Relíquia'},
  gardener:{common:'Flor do Campo',rare:'Flor Encantada',epic:'Flor Astral',legend:'Flor Lendária'},
  fisher:{common:'Peixe de Rio',rare:'Carpa Prateada',epic:'Peixe Cristalino',legend:'Peixe Dourado'},
  lumber:{common:'Madeira Bruta',rare:'Madeira Encantada',epic:'Tronco Rúnico',legend:'Madeira Celestial'}
@@ -186,7 +204,8 @@ function rollReward(id){
 }
 function visibleNodes(scene){
  const now=Date.now(),nodes=field().nodes;
- return (FIELD[scene]||(/^route-\d+$/.test(scene)?FIELD['route-3']:[])||[]).filter(([id])=>count(nodes[scene+':'+id]?.respawnAt)<=now)
+ return (FIELD[scene]||(/^route-\d+$/.test(scene)?FIELD['route-3']:[])||[]).filter(([id,kind,,,,minimum=1,skill])=>
+  (kind!=='treasureHunter'||count(state()[kind]?.level)>=minimum&&(!skill||count(W.PsyTreasureHuntV1?.hobbyState?.(kind)?.skills?.[skill])>0))&&count(nodes[scene+':'+id]?.respawnAt)<=now)
  .map(([id,kind,x,y,item])=>{const record=nodes[scene+':'+id]||{};return {id,kind,x,y,item,hits:count(record.hits),totalHits:requiredHits(kind),rarity:stableSpotRarity(scene,id,kind,record)}});
 }
 function nearby(scene,pos,radius=65){
@@ -195,6 +214,7 @@ function nearby(scene,pos,radius=65){
 function collect(scene,id,actor=null){
  const node=visibleNodes(scene).find(v=>v.id===id);if(!node)return false;
  if(!state()[node.kind]?.level){W.notif?.('Primeiro desbloqueie '+find(node.kind).name+' em Hobbies.',2500);return false}
+ if(node.kind==='treasureHunter')return !!W.PsyTreasureHuntV1?.hit?.(scene,node,actor);
  const f=field(),record=f.nodes[scene+':'+id]||{},need=requiredHits(node.kind),hit=node.kind==='miner'||node.kind==='lumber'?Math.min(need,count(record.hits)+1):need;
  if(hit<need){f.nodes[scene+':'+id]={hits:hit,respawnAt:0};W.PsyHobbiesVFX?.onSpotHit?.({scene,node,hit,total:need,completed:false,actor});save();W.notif?.('Progresso de coleta: '+hit+'/'+need,1200);return true}
  f.nodes[scene+':'+id]={hits:0,respawnAt:Date.now()+respawnDelay(node.kind)};
@@ -337,14 +357,15 @@ function render(){
  overview.innerHTML='<span><b>'+JOBS.filter(j=>records[j.id]?.level>0).length+'</b><small>Hobbies ativos</small></span><span><b>'+Object.values(totals).reduce((n,v)=>n+count(v),0)+'</b><small>Coletas concluídas</small></span><span><b>'+visibleNodes('route-1').length+'</b><small>Spots na Rota 1</small></span>';
  if(!selected){
   for(const j of JOBS){
-   const x=records[j.id],card=D.createElement('article');card.className='ph-card';card.style.setProperty('--hobby-accent',({miner:'#80d9f6',gardener:'#fba3dc',fisher:'#73d7fb',lumber:'#d9ac78',engineer:'#f4c578',alchemist:'#c5a0ff'})[j.id]||'#98dce0');
+   const x=records[j.id],card=D.createElement('article');card.className='ph-card';card.style.setProperty('--hobby-accent',({miner:'#80d9f6',gardener:'#fba3dc',fisher:'#73d7fb',lumber:'#d9ac78',engineer:'#f4c578',alchemist:'#c5a0ff',treasureHunter:'#f3bd67',looter:'#cf9cff'})[j.id]||'#98dce0');
    const cover=button('',()=>openDetail(j.id));cover.className='ph-illustration ph-select';cover.setAttribute('aria-label','Abrir '+j.name);
    const img=D.createElement('img');img.src=artUrl(j);img.alt=j.name;img.loading='lazy';cover.appendChild(img);
    const tag=D.createElement('span');tag.className='ph-level';tag.textContent='LV. '+x.level;cover.appendChild(tag);
    const body=D.createElement('div');body.className='ph-card-body';const title=D.createElement('h3');title.textContent=j.name;body.appendChild(title);
-   para(body,x.level?'BÔNUS ATIVO · +'+(x.level*j.per).toFixed(1)+'% '+j.stat:(j.starter?'MISSÃO · 10 derrotas + 5 capturas':'DESBLOQUEIO · Primeiro Ginásio'));
+   const treasureHint=j.id==='treasureHunter'?'DESBLOQUEIO · Treinador nível 3 + exploração':j.id==='looter'?'DESBLOQUEIO · Encontre um baú':j.starter?'MISSÃO · 10 derrotas + 5 capturas':'DESBLOQUEIO · Primeiro Ginásio';
+   para(body,x.level?'BÔNUS ATIVO · +'+(x.level*j.per).toFixed(1)+'% '+j.stat:treasureHint);
    if(['miner','gardener','fisher','lumber'].includes(j.id)){const indicator=D.createElement('small');indicator.className='ph-gather-total';indicator.textContent='✦ '+count(totals[j.id])+' coletas · '+count(inventory()[j.material])+' '+j.material+' na Mochila';body.appendChild(indicator)}
-   if(x.level){const track=D.createElement('div');track.className='ph-track';const bar=D.createElement('i');bar.style.width=Math.min(100,Math.round(100*x.xp/Math.max(1,xpNeed(x))))+'%';track.appendChild(bar);body.appendChild(track)}
+   if(x.level){const track=D.createElement('div');track.className='ph-track';const bar=D.createElement('i');bar.style.width=Math.min(100,Math.round(100*x.xp/Math.max(1,xpNeed(x,j.id))))+'%';track.appendChild(bar);body.appendChild(track)}
    body.appendChild(button('ABRIR HOBBY',()=>openDetail(j.id)));card.append(cover,body);grid.appendChild(card);
   }
   return;
@@ -354,7 +375,8 @@ function render(){
  const header=D.createElement('div');header.className='ph-detail-head';
  const img=D.createElement('img');img.src=artUrl(j);img.alt=j.name;header.appendChild(img);
  const h=D.createElement('div'),name=D.createElement('h3');name.textContent=j.name+' • Nível '+x.level;h.appendChild(name);
- para(h,'Bônus +'+(x.level*j.per).toFixed(1)+'% '+j.stat+' • XP '+x.xp+'/'+xpNeed(x));if(['miner','gardener','fisher','lumber'].includes(j.id))para(h,'Coletas concluídas: '+count(totals[j.id])+' • '+count(inventory()[j.material])+' '+j.material+' na Mochila');header.appendChild(h);details.appendChild(header);
+ para(h,'Bônus +'+(x.level*j.per).toFixed(1)+'% '+j.stat+' • XP '+x.xp+'/'+xpNeed(x,j.id));if(['miner','gardener','fisher','lumber'].includes(j.id))para(h,'Coletas concluídas: '+count(totals[j.id])+' • '+count(inventory()[j.material])+' '+j.material+' na Mochila');header.appendChild(h);details.appendChild(header);
+ if(['treasureHunter','looter'].includes(j.id)&&W.PsyTreasureHuntV1){W.PsyTreasureHuntV1.renderInto(details,j.id,render);return;}
  W.PsyHobbyMastery?.renderInto?.(details,j.id,render);
  if(!x.level){
   const pr=unlockProgress(j);

@@ -20,6 +20,7 @@ images.ore=load('assets/idle-realistic/pallet/rock_mid.png');
 images.tree=load('assets/idle-realistic/pallet/tree_curve-transparent-v1.png');
 images.flower=load('assets/idle-realistic/pallet/bush_flowers.png');
 images.rod=load('assets/items/fishing-rod.png');
+images.treasureCrack=load('assets/hobbies/treasure-crack-v1.svg');
 for(const type of ['pickaxe','axe'])for(const material of toolMaterials)
  toolImages[type+':'+material]=load('assets/hobbies/tools/'+type+'-'+material+'.png');
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
@@ -32,9 +33,9 @@ function facingRow(actor,target){
 }
 function startAction({scene,node,actor,onImpact}){
  if(!scene||!node||!actor||!Number.isFinite(actor.x)||!Number.isFinite(actor.y)||typeof onImpact!=='function')return false;
- if(!['gardener','miner','lumber'].includes(node.kind))return false;
+ if(!['gardener','miner','lumber','treasureHunter'].includes(node.kind))return false;
  if(actions.has(scene))return false;
- const kind=node.kind==='miner'?'mining':node.kind==='lumber'?'chopping':'gathering';
+ const kind=node.kind==='miner'||node.kind==='treasureHunter'?'mining':node.kind==='lumber'?'chopping':'gathering';
  const frameCount=kind==='gathering'?20:24,impactFrame=kind==='gathering'?11:17,duration=frameCount*FRAME_MS;
  const at=clock();
  const material=toolMaterials.includes(actor.toolMaterial)?actor.toolMaterial:'copper';
@@ -69,6 +70,7 @@ function onSpotHit({scene,node,hit=1,completed=false}){
  const key=spotKey(scene,node.id),at=clock();impacts.set(key,{at,hit,completed});
  const x=node.x,y=node.y-14;
  if(node.kind==='miner'){burst(scene,x,y,completed?'gold':'ore',completed?12:7);sfx('rock');}
+ else if(node.kind==='treasureHunter'){burst(scene,x,y,completed?'gold':'ore',completed?14:8);burst(scene,x,y,'wood',completed?5:2);sfx('rock');}
  else if(node.kind==='lumber'){burst(scene,x,y-8,completed?'leaf':'wood',completed?13:7);sfx('hit');}
  else{burst(scene,x,y,'petal',completed?8:5);sfx('grass');}
 }
@@ -164,6 +166,8 @@ function drawExhausted(c,kind,x,y){
   c.strokeStyle='#bf9463';c.lineWidth=1.3;c.beginPath();c.ellipse(x,y-6,5,2.4,0,0,Math.PI*2);c.stroke();
  }else if(kind==='miner'){
   c.fillStyle='#6d7b83';c.strokeStyle='#d0d9d5';c.lineWidth=1;c.beginPath();c.moveTo(x-17,y);c.lineTo(x-11,y-10);c.lineTo(x-2,y-7);c.lineTo(x+6,y-13);c.lineTo(x+17,y);c.closePath();c.fill();c.stroke();
+ }else if(kind==='treasureHunter'){
+  c.fillStyle='#453b32';c.strokeStyle='#b88e55';c.lineWidth=1.4;c.beginPath();c.moveTo(-15,-2);c.lineTo(-10,-8);c.lineTo(-3,-4);c.lineTo(3,-11);c.lineTo(10,-5);c.lineTo(15,-2);c.closePath();c.fill();c.stroke();
  }else{
   c.strokeStyle='#4f8b62';c.lineWidth=2;c.beginPath();c.moveTo(x,y);c.lineTo(x,y-9);c.moveTo(x,y-4);c.lineTo(x-7,y-10);c.moveTo(x,y-3);c.lineTo(x+7,y-11);c.stroke();
  }
@@ -176,12 +180,18 @@ function drawCracks(c,kind,x,y,hits,age){
   c.stroke();if(age<110){c.globalAlpha=1-age/110;c.fillStyle='#d9fbff';c.beginPath();c.arc(0,5,2.2,0,Math.PI*2);c.fill()}c.restore();
  }else if(kind==='lumber'&&hits>0){
   c.save();c.translate(x,y-18);c.strokeStyle=hits>=4?'#ffdf98':'#402d25';c.lineWidth=hits>=3?2:1.2;c.beginPath();c.moveTo(-1,0);c.lineTo(1,5);c.lineTo(-2,8);c.lineTo(1,13);if(hits>=2){c.moveTo(-1,5);c.lineTo(-7,7)}if(hits>=3){c.moveTo(-2,8);c.lineTo(7,11)}c.stroke();c.restore();
+ }else if(kind==='treasureHunter'&&hits>0){
+  c.save();c.translate(x,y-15);c.strokeStyle=hits>=4?'#ffe493':'#242832';c.lineWidth=hits>=3?2:1.2;c.lineJoin='miter';c.beginPath();
+  c.moveTo(-11,3);c.lineTo(-6,-1);c.lineTo(-7,-6);c.lineTo(-2,-3);c.lineTo(1,-9);c.lineTo(3,-3);c.lineTo(8,-5);c.lineTo(5,0);c.lineTo(11,3);
+  if(hits>=2){c.moveTo(-2,-3);c.lineTo(-4,3);c.lineTo(-1,7)}if(hits>=3){c.moveTo(3,-3);c.lineTo(1,2);c.lineTo(5,5)}
+  c.stroke();if(hits>=3){c.fillStyle=hits>=4?'#ffe37a':'#66e7d5';c.fillRect(-1,-2,2,2)}
+  if(age<130){c.globalAlpha=1-age/130;c.fillStyle='#fce9ad';c.fillRect(-2,-2,4,4)}c.restore();
  }
 }
 function drawProgress(c,node){
- if(node.kind!=='miner'&&node.kind!=='lumber')return;
+ if(node.kind!=='miner'&&node.kind!=='lumber'&&node.kind!=='treasureHunter')return;
  c.save();c.fillStyle='#071321d9';c.strokeStyle='#d1e7e7';c.lineWidth=1;c.beginPath();c.roundRect(-19,4,38,12,4);c.fill();c.stroke();
- const total=Math.max(1,node.totalHits||5);c.fillStyle=node.kind==='miner'?'#82e5fa':'#deb179';c.fillRect(-16,7,32*clamp(node.hits/total),3);
+ const total=Math.max(1,node.totalHits||5);c.fillStyle=node.kind==='miner'?'#82e5fa':node.kind==='treasureHunter'?'#f5c86a':'#deb179';c.fillRect(-16,7,32*clamp(node.hits/total),3);
  c.fillStyle='#fff';c.font='bold 8px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(node.hits+'/'+total,0,12);c.restore();
 }
 function drawNode(c,scene,def,record,now,rarity='common'){
@@ -189,7 +199,7 @@ function drawNode(c,scene,def,record,now,rarity='common'){
  const hit=available?Math.max(0,Math.min(4,Math.floor(Number(record?.hits)||0))):0;
  const impact=impacts.get(spotKey(scene,id)),age=impact?Math.max(0,now-impact.at):9999;
  c.save();c.translate(x,y);
- c.fillStyle='#0612244f';c.beginPath();c.ellipse(0,-1,kind==='lumber'?15:kind==='miner'?20:18,4,0,0,Math.PI*2);c.fill();
+ c.fillStyle='#0612244f';c.beginPath();c.ellipse(0,-1,kind==='lumber'?15:kind==='miner'||kind==='treasureHunter'?20:18,4,0,0,Math.PI*2);c.fill();
  if(!available){drawExhausted(c,kind,0,0);c.restore();return}
  if(rarity!=='common'){
   const color=rarityColor[rarity]||rarityColor.rare,pulse=reducedMotion()?1:.72+Math.sin(now*.003)*.12;
@@ -198,6 +208,12 @@ function drawNode(c,scene,def,record,now,rarity='common'){
  }
  if(kind==='miner'){
   const im=images.ore;if(im?.loaded){c.imageSmoothingEnabled=false;c.drawImage(im,-24,-29,48,30)}
+  drawCracks(c,kind,0,0,hit,age);drawProgress(c,{kind,hits:hit,totalHits:Hobbies()?.requiredHits?.(kind)||5});
+ }else if(kind==='treasureHunter'){
+  const im=images.treasureCrack;if(im?.loaded){c.imageSmoothingEnabled=false;c.drawImage(im,-27,-21,54,31)}else{
+   c.fillStyle='#5c4936';c.strokeStyle='#272a31';c.lineWidth=1.5;c.beginPath();c.moveTo(-22,-5);c.lineTo(-16,-16);c.lineTo(-5,-18);c.lineTo(3,-13);c.lineTo(14,-16);c.lineTo(23,-6);c.lineTo(18,2);c.lineTo(-18,2);c.closePath();c.fill();c.stroke();
+   c.fillStyle='#67ded4';c.fillRect(-2,-14,4,2);c.fillRect(-1,-12,2,2);
+  }
   drawCracks(c,kind,0,0,hit,age);drawProgress(c,{kind,hits:hit,totalHits:Hobbies()?.requiredHits?.(kind)||5});
  }else if(kind==='lumber'){
   const sway=reducedMotion()?0:Math.sin(now*.007)*.012+(age<190?Math.sin(age*.09)*.025*(1-age/190):0);
@@ -239,7 +255,8 @@ function drawField(c,scene){
  const H=W.PsyHobbies;if(!H)return;
  const all=H.fieldDefinitions?.()||{},defs=all[scene]||(/^route-\d+$/.test(scene)?all['route-3']:[]);
  const now=clock(),records=H.field().nodes||{};
- for(const def of defs){const rec=records[spotKey(scene,def[0])]||null,rarity=Hobbies()?.rarityForSpot?.(scene,def[0],def[1],rec)||'common';drawNode(c,scene,def,rec,now,rarity)}
+ const hunterLevel=()=>Math.max(0,Math.floor(Number(H.state?.()?.treasureHunter?.level)||0));
+ for(const def of defs){if(def[1]==='treasureHunter'&&(hunterLevel()<Number(def[5]||1)||def[6]&&!Number(W.PsyTreasureHuntV1?.hobbyState?.('treasureHunter')?.skills?.[def[6]])))continue;const rec=records[spotKey(scene,def[0])]||null,rarity=def[1]==='treasureHunter'?'common':Hobbies()?.rarityForSpot?.(scene,def[0],def[1],rec)||'common';drawNode(c,scene,def,rec,now,rarity)}
  drawFish(c,scene,now);drawParticles(c,scene,now);
 }
 function startFishing(scene,actor){
