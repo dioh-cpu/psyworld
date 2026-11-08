@@ -82,12 +82,18 @@ assert(sql.includes("'treasure_roll'"));
  assert.equal(p.inventory['Fragmento Antigo'],9,'Online inventory is taken from the authoritative snapshot');
  assert.equal(H.visibleNodes('route-cave').find(x=>x.id==='d1').hits,2,'Server site progress is merged to the rendering record');
 
- W.psyOnlineAuthorityV26.request=async()=>{throw new Error('RPC unavailable')};
+ W.psyOnlineAuthorityV26.request=async(...args)=>{requested=args;throw new Error('RPC unavailable')};
  await T.refresh();assert.equal(T.isAvailable(),false,'Missing or unreachable production migration closes the online feature');
  assert.equal(H.visibleNodes('route-1').some(x=>x.kind==='treasureHunter'),false,'Online treasure spots remain hidden until server authority is ready');
  const beforeUnavailable={gold:p.gold,diamonds:p.diamonds,inventory:{...p.inventory}};
  assert.equal(await T.action('dig',{site:'cave-1'}),null,'Unavailable online action fails closed');
  assert.deepEqual({gold:p.gold,diamonds:p.diamonds,inventory:{...p.inventory}},beforeUnavailable,'Failed online authority never falls back to client rewards');
+ W.psyOnlineAuthorityV26.online=()=>false;await T.refresh();assert.equal(T.isAvailable(),true,'Offline play remains available');
+ W.psyOnlineAuthorityV26.online=()=>true;requested=null;
+ assert.equal(T.isAvailable(),false,'Logging into an online account without reloading starts a capability probe and stays closed');
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(requested[1].payload.action,'status','Online login probes the server migration before exposing treasure spots');
+ assert.equal(T.isAvailable(),false,'A missing server migration remains closed after the login probe fails');
  W.psyOnlineAuthorityV26.request=async(...args)=>{requested=args;return args[1]?.payload?.action==='status'?{ok:true,version:1}:onlineSnapshot};
  await T.refresh();assert.equal(T.isAvailable(),true);
 

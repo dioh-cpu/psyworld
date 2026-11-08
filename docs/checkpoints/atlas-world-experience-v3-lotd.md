@@ -1,9 +1,9 @@
 # PSYWORLD — Atlas & World Experience V3, lote D
 
-Data: 2026-11-08  
-Branch: `visual/psyworld-atlas-world-v3-lotd`  
-Base originalmente informada: `295ded5cffc9186e69be66f58a8ebc5a901851e8`  
-Implementação original: `b59b7811760f455406b2e83daf7bd42b718f1b82`
+- Data: 2026-11-08
+- Branch: `visual/psyworld-atlas-world-v3-lotd`
+- Base originalmente informada: `295ded5cffc9186e69be66f58a8ebc5a901851e8`
+- Implementação original: `b59b7811760f455406b2e83daf7bd42b718f1b82`
 
 ## Integração e escopo
 

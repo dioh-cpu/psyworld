@@ -22,12 +22,16 @@ const syncHobbies=()=>{const p=PLAYER(),s=local();if(!p||!s)return;p.meta.auxHob
 function save(){syncHobbies();try{W.autoSave?.();W.updateHUD?.()}catch(_){}}
 function isOnline(){try{return !!W.psyOnlineAuthorityV26?.online?.()}catch(_){return false}}
 function key(){return 'treasure:'+Date.now().toString(36)+':'+Math.random().toString(36).slice(2,12)}
-let authorityReady=false;
-function isAvailable(){return !isOnline()||authorityReady}
+let authorityReady=false,authorityOnlineProbe=false;
+function isAvailable(){
+ if(!isOnline()){authorityReady=false;authorityOnlineProbe=false;return true}
+ if(!authorityOnlineProbe){authorityOnlineProbe=true;Promise.resolve().then(()=>refresh()).catch(()=>{authorityReady=false;refreshHobbyView()})}
+ return authorityReady;
+}
 function refreshHobbyView(){if(W.PsyHobbies?.isOpen?.())W.PsyHobbies.refresh?.()}
 async function probeAuthority(){
- if(!isOnline()){authorityReady=true;return true}
- authorityReady=false;
+ if(!isOnline()){authorityReady=false;authorityOnlineProbe=false;return false}
+ authorityOnlineProbe=true;authorityReady=false;
  try{const data=await W.psyOnlineAuthorityV26.request('treasure-action',{payload:{action:'status'}},key());authorityReady=data?.ok===true&&Number(data.version)===1}
  catch(_){authorityReady=false}
  return authorityReady;
@@ -40,12 +44,12 @@ function merge(result){const p=PLAYER();if(!p||!result)return;const pl=result.pl
 }
 async function server(action,payload={}){
  const api=W.psyOnlineAuthorityV26;if(!api?.request)throw new Error('autoridade online indisponível');
- if(!authorityReady)throw new Error('Caça ao tesouro online temporariamente indisponível.');
+ if(!authorityReady||!authorityOnlineProbe)throw new Error('Caça ao tesouro online temporariamente indisponível.');
  const data=await api.request('treasure-action',{payload:{action,...payload}},key());if(!data?.ok)throw new Error(data?.error||'ação não confirmada');merge(data);return data;
 }
-async function refresh(){if(!isOnline()){authorityReady=true;return local()}try{if(!await probeAuthority()){refreshHobbyView();return local()}const data=await W.psyOnlineAuthorityV26.state();if(data?.system?.treasure_hunt){merge(data);applySites(data.system.treasure_hunt)}refreshHobbyView();return local()}catch(e){authorityReady=false;refreshHobbyView();console.warn('[PSYWORLD treasure state]',e)}return local()}
+async function refresh(){if(!isOnline()){authorityReady=false;authorityOnlineProbe=false;return local()}try{if(!await probeAuthority()){refreshHobbyView();return local()}const data=await W.psyOnlineAuthorityV26.state();if(data?.system?.treasure_hunt){merge(data);applySites(data.system.treasure_hunt)}refreshHobbyView();return local()}catch(e){authorityReady=false;refreshHobbyView();console.warn('[PSYWORLD treasure state]',e)}return local()}
 function applySites(s){const p=PLAYER();if(!p||!s?.sites)return;p.meta=p.meta||{};const h=p.meta.hobbyGatherV2||(p.meta.hobbyGatherV2={nodes:{},decor:[]});h.nodes=h.nodes||{};for(const [id,v] of Object.entries(s.sites)){const route=id.startsWith('route1-'),scene=route?'route-1':'route-cave',node='d'+id.slice(route?7:5);h.nodes[scene+':'+node]={hits:n(v.hits),respawnAt:n(v.depletedUntil)}}}
-async function act(action,payload={}){if(isOnline()){if(!authorityReady)throw new Error('Caça ao tesouro online temporariamente indisponível.');return server(action,payload)}const s=local();if(!s)throw new Error('save indisponível');return localAction(action,payload,s)}
+async function act(action,payload={}){if(isOnline()){if(!authorityReady||!authorityOnlineProbe)throw new Error('Caça ao tesouro online temporariamente indisponível.');return server(action,payload)}const s=local();if(!s)throw new Error('save indisponível');return localAction(action,payload,s)}
 function roll(max){return Math.floor(Math.random()*max)+1}
 function xpNeed(id){const lv=Math.max(1,n(hobbyState(id).level));return Math.ceil(100*Math.pow(lv,1.55))}
 function bumpXP(id,amount){const h=hobbyState(id);if(!h.level)return;h.xp=n(h.xp)+n(amount);}
