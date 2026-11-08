@@ -105,6 +105,7 @@ function questRows(){
  return [...main,...active,...extra,...(W.PsyProfessions?.questRows?.()||[])].filter(q=>q&&q.title&&q.status!=='completed'&&q.status!=='claimed');
 }
 function controllerIsOpen(ctl){return ctl===W.PsyKantoPlayableV1?!!ctl?.getPosition?.():!!W.PsyKantoWorldV2?.isOpen?.();}
+function viridianElderAt(){const at=W.PsyKantoMapDataV2?.viridian?.npcs?.find?.(npc=>npc.id==='viridian-elder')?.at;return Array.isArray(at)?at:[389,355];}
 async function find(q){
  W.PsyKantoWorldV2?.dismissMenu?.();
  findTask=null;api()?.setAutoHunt(false);if(q.goal==='workshop'){if(W.PsyKantoWorldV2?.isOpen?.())W.PsyKantoWorldV2.openMenuPanel('professions');else W.PsyProfessions?.open('main');return;}
@@ -126,11 +127,11 @@ async function find(q){
   if(pos?.world==='viridian'&&controllerIsOpen(ctl)){
    if(pos.inside)ctl?.leaveInterior();
    const talked=!!W.PsyKantoWorldV2?.progress?.()?.viridianTalked;
-   if(talked){if(!pos.inside&&Math.hypot(pos.x-449,pos.y-43)<=75){ctl?.interact?.();note('Você chegou à passagem norte.');return;}findTask={goal:'viridian-exit',target:[449,43],routing:true};findAt=0;const ok=await ctl?.navigate?.([449,43]);if(findTask){findTask.routing=false;findTask.routed=ok;}note(ok?'Seguindo até a passagem norte da Rota 2.':'Não foi possível traçar rota até o portão norte.');}
-   else {if(!pos.inside&&Math.hypot(pos.x-389,pos.y-320)<=70){ctl?.interact?.();note('Você chegou ao ancião; a conversa da missão foi iniciada.');return;}findTask={goal:'viridian-elder',target:[389,320],routing:true};findAt=0;const ok=await ctl?.navigate?.([389,320]);if(findTask){findTask.routing=false;findTask.routed=ok;}note(ok?'Indo falar com o ancião de Viridian.':'Não foi possível traçar rota até o ancião.');}
+   if(talked){if(!pos.inside&&Math.hypot(pos.x-449,pos.y-43)<=75){findTask={goal:'viridian-exit',target:[449,43]};ctl?.interact?.();findTask=null;note('Você chegou à passagem norte.');return;}findTask={goal:'viridian-exit',target:[449,43],routing:true};findAt=0;const ok=await ctl?.navigate?.([449,43]);if(findTask){findTask.routing=false;findTask.routed=ok;}note(ok?'Seguindo até a passagem norte da Rota 2.':'Não foi possível traçar rota até o portão norte.');}
+   else {const elder=viridianElderAt();if(!pos.inside&&Math.hypot(pos.x-elder[0],pos.y-elder[1])<=70){ctl?.interact?.();note('Você chegou ao ancião; a conversa da missão foi iniciada.');return;}findTask={goal:'viridian-elder',target:elder,routing:true};findAt=0;const ok=await ctl?.navigate?.(elder);if(findTask){findTask.routing=false;findTask.routed=ok;}note(ok?'Indo falar com o ancião de Viridian.':'Não foi possível traçar rota até o ancião.');}
   }else{
    const opened=ctl?.open?.('viridian',{skipGuard:true});
-   if(opened){ctl=api();findTask={goal:'viridian-elder',target:[389,320],routing:true};findAt=0;const ok=await ctl?.navigate?.([389,320]);if(findTask){findTask.routing=false;findTask.routed=ok;}note(ok?'Viridian City: seguindo até o ancião para concluir a missão.':'Viridian City aberta, mas não foi possível traçar rota ao ancião.');}
+   if(opened){ctl=api();const elder=viridianElderAt();findTask={goal:'viridian-elder',target:elder,routing:true};findAt=0;const ok=await ctl?.navigate?.(elder);if(findTask){findTask.routing=false;findTask.routed=ok;}note(ok?'Viridian City: seguindo até o ancião para concluir a missão.':'Viridian City aberta, mas não foi possível traçar rota ao ancião.');}
    else note('Entre em Kanto · Jornada para abrir Viridian City.');
   }
  }else if(Array.isArray(q.at)){const ctl=api();if(ctl?.navigateObjective)ctl.navigateObjective({x:q.at[0],y:q.at[1]});else await ctl?.navigate?.(q.at);}
@@ -157,7 +158,7 @@ async function advanceFind(){
  if(findTask?.goal==='viridian-elder'||findTask?.goal==='viridian-exit'){
   const task=findTask;if(task.routing)return;
   const target=task.target,range=task.goal==='viridian-elder'?70:75;
-  if(p.world==='viridian'&&!p.inside&&Math.hypot(p.x-target[0],p.y-target[1])<=range){const goal=task.goal;findTask=null;api()?.interact?.();note(goal==='viridian-elder'?'Você chegou ao ancião; a conversa da missão foi iniciada.':'Você chegou à passagem norte.');return;}
+  if(p.world==='viridian'&&!p.inside&&Math.hypot(p.x-target[0],p.y-target[1])<=range){const goal=task.goal;if(goal==='viridian-exit'){api()?.interact?.();if(findTask===task)findTask=null;}else{findTask=null;api()?.interact?.();}note(goal==='viridian-elder'?'Você chegou ao ancião; a conversa da missão foi iniciada.':'Você chegou à passagem norte.');return;}
   if(p.world==='viridian'&&!p.inside)await routeTask(task,target,task.goal==='viridian-elder'?'Não foi possível traçar rota até o ancião.':'Não foi possível traçar rota até o portão norte.');return;
  }
  if(findTask.phase==='lab'){
@@ -232,7 +233,7 @@ function refresh(){
  renderButtons();advanceFind().catch(()=>{findTask=null;});
  if(D.visibilityState==='visible')autoTurn();
 }
-W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,showVipGate:openVipGate,autoFind:find,cancelRoute:()=>{findTask=null;},startPrimaryRoute:()=>{const rows=questRows(),q=rows.find(x=>x.kind==='main'&&(x.goal||Array.isArray(x.at)))||rows.find(x=>x.goal||Array.isArray(x.at));if(q)return find(q);note('Não há uma rota ativa no momento.');},stop:stopAutomation,configure,preferences,huntActive};
+W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,showVipGate:openVipGate,autoFind:find,isAutoRouting:()=>!!findTask,cancelRoute:()=>{findTask=null;},startPrimaryRoute:()=>{const rows=questRows(),q=rows.find(x=>x.kind==='main'&&(x.goal||Array.isArray(x.at)))||rows.find(x=>x.goal||Array.isArray(x.at));if(q)return find(q);note('Não há uma rota ativa no momento.');},stop:stopAutomation,configure,preferences,huntActive};
 renderButtons();W.setInterval(refresh,600);
 })(window,document);
 

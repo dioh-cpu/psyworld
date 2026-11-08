@@ -464,7 +464,9 @@ function exitWorld(){if(state.world.id==='viridian'){
  if(ps){ps.talked=true;ps.cleared=true}
  try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');save.visited=[...new Set([...(save.visited||[]),'pallet','route-1','viridian'])];save.activePlace='route-2';localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(_){}
  try{W.autoSave?.()}catch(_){}
- showDialog('Rota 2','Você encontrou a passagem norte. Depois da Rota 2, o caminho segue para a Floresta de Viridian.',[{text:'SEGUIR PARA ROTA 2',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('route-2')}},{text:'CONTINUAR EM VIRIDIAN'}]);return;
+ const enterRoute2=()=>{close();W.PsyKantoPlayableV1?.open?.('route-2')};
+ if(W.PsyCampaignAutomation?.isAutoRouting?.()){enterRoute2();return;}
+ showDialog('Rota 2','Você encontrou a passagem norte. Depois da Rota 2, o caminho segue para a Floresta de Viridian.',[{text:'SEGUIR PARA ROTA 2',primary:true,run:enterRoute2},{text:'CONTINUAR EM VIRIDIAN'}]);return;
 }
 if(state.world.id==='pallet'){if(!questDone()){showDialog('Passagem para Rota 1','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.',[{text:'ENTENDI'}]);return}open('route-1');return}
 mark('viridian');try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');save.visited=[...new Set([...(save.visited||[]),'pallet','route-1'])];save.activePlace='viridian';localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(_){}
