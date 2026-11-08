@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <pattern id="veins" width="128" height="128" patternUnits="userSpaceOnUse">
+      <path d="M10 112q28-18 42-52m-18 28 18-4m-7-17 19-4m13 68q20-24 18-56m0 28 20-12m-17-8 13-13M92 20q-4 20 13 37m-8-16 13-5" fill="none" stroke="#77a76a" stroke-opacity=".2" stroke-width="2" stroke-linecap="round"/>
+      <path d="M39 90q-18-13-16-29 17 4 21 18m41 37q-3-17 10-26 10 15 1 28M94 40q14-10 26-3-7 15-20 13" fill="#91bb72" fill-opacity=".17"/>
+      <path d="M5 18l12-5 8 10-8 9-13-4zm81 78 10-5 8 9-8 8-11-3zM61 46l7-4 6 7-5 7-9-2z" fill="#b2a879" fill-opacity=".28"/>
+      <path d="m7 45 8-8m80 47 10-7m-48 34 7-7m32-82 8 8" stroke="#d2c395" stroke-opacity=".26" stroke-width="2" stroke-linecap="round"/>
+      <path d="M28 9q8 3 9 11-8 5-14-2 0-6 5-9m79 80q8 4 8 12-7 4-13-3 0-6 5-9" fill="#d8c98c" fill-opacity=".25"/>
+    </pattern>
+  </defs>
+  <rect width="512" height="512" fill="#29483c"/>
+  <path d="M0 54q54-22 104 5t102-2 98 6 108-11 100 4v51q-62 13-118-2t-101 3-97-1-105 4T0 104zm0 276q63-15 119 2t100-2 103 5 102-5 88 4v68q-50 11-101-3t-97 7-103-2-110 5T0 399z" fill="#355b46" fill-opacity=".46"/>
+  <path d="M-12 195q67-29 125 0t111-5 113 8 106-10 88 3m-544 45q58-18 117 0t104-3 103 5 113-8 119 1m-496 82q53-16 104 1t108-3 112 4 95-7 91 1" fill="none" stroke="#6d8158" stroke-opacity=".28" stroke-width="5" stroke-linecap="round"/>
+  <path d="M15 142q26-20 42-51m-21 30 19-6m-5-16 18-5m49 88q20-25 18-57m0 27 20-12m-17-8 12-13m59 322q20-27 17-58m-1 29 20-13m-19-8 14-14m99-293q-2 25 18 43m-9-19 17-7m121 248q19-24 15-54m-2 27 19-11m-16-9 12-12" fill="none" stroke="#8cac70" stroke-opacity=".48" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#b5a774" fill-opacity=".55">
+    <path d="m66 178 16-7 10 10-5 13-17 3-9-9z"/><path d="m229 96 12-8 13 6 4 12-11 9-16-5z"/>
+    <path d="m407 191 13-8 14 7 2 12-12 10-15-7z"/><path d="m151 378 12-6 11 8-2 12-14 5-10-9z"/>
+    <path d="m344 425 15-7 10 9-4 11-16 4-8-8z"/><path d="m477 62 11-5 12 8-3 10-13 4-9-8z"/>
+  </g>
+  <g fill="#4e7752" fill-opacity=".76">
+    <path d="M174 28q10-18 22-4-3 15-17 15zm-119 299q12-20 23-4-4 15-18 16zm304-177q11-19 22-4-3 16-18 16zm-82 291q10-17 21-5-3 15-17 15z"/>
+  </g>
+  <rect width="512" height="512" fill="url(#veins)" opacity=".85"/>
+</svg>
