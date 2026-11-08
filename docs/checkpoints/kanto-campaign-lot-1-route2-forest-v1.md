@@ -6,6 +6,7 @@ Date: 2026-11-08
 
 - Work branch: `campaign/kanto-lot-1-route2-forest`
 - Commit base: `ae6566ef8439395f234f580c6fb9be567d1573df`
+- Implementation commit: `f6c76509c93a5ac6a291addfd932a5add6e5b559`
 - Remote `main` rechecked before integration: `ae6566ef8439395f234f580c6fb9be567d1573df`
 - This checkpoint covers Route 2 and Viridian Forest only. It does not claim that Kanto is complete.
 
