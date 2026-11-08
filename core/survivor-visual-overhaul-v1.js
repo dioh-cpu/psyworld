@@ -1,4 +1,4 @@
-/* PSYWORLD Survivor visual layer V1: cached arena ambience and resilient UI art. */
+/* PSYWORLD Survivor visual layer V1: cached gradients, arena ambience and resilient UI art. */
 (function (W, D) {
   'use strict';
   if (W.__PSYWORLD_SURVIVOR_VISUAL_V1__) return;
@@ -11,92 +11,53 @@
     { top: '#0c2028', mid: '#175044', low: '#286b56', glow: '#6ee7b7', edge: '#07151a' },
     { top: '#281b24', mid: '#57402f', low: '#625244', glow: '#f4bd66', edge: '#140f1a' }
   ];
-  const ctxCache = new WeakMap();
   const firstFillAfterClear = new WeakSet();
+  const backgroundPainted = new WeakSet();
+  const skippedVignette = new WeakSet();
+  const ctxCache = new WeakMap();
   const canvasProto = W.CanvasRenderingContext2D?.prototype;
-  let textureVersion = 0;
   if (canvasProto && !canvasProto.__psySurvivorVisualV1) {
     canvasProto.__psySurvivorVisualV1 = true;
     const nativeClearRect = canvasProto.clearRect;
     const previousFillRect = canvasProto.fillRect;
-    const tile = new Image();
-    tile.decoding = 'async';
-    tile.onload = () => { textureVersion++; };
-    tile.src = 'assets/survivor/arena-tile-v1.svg?build=SURVIVOR_VISUAL_OVERHAUL_V1_20261108';
 
     canvasProto.clearRect = function (x, y, w, h) {
       if (this.canvas?.id === 'psy-clean-surv-canvas' && x <= 0 && y <= 0 && w >= this.canvas.width && h >= this.canvas.height) {
         firstFillAfterClear.delete(this);
+        backgroundPainted.delete(this);
+        skippedVignette.delete(this);
       }
       return nativeClearRect.apply(this, arguments);
     };
 
     function arenaCache(ctx, s, w, h) {
-      const phase = Math.max(1, Number(s.phase || 1));
-      const themeIndex = Math.floor((phase - 1) / 20) % themes.length;
+      const themeIndex = Math.floor((Math.max(1, Number(s.phase || 1)) - 1) / 20) % themes.length;
       const current = ctxCache.get(ctx);
-      if (current && current.w === w && current.h === h && current.themeIndex === themeIndex && current.textureVersion === textureVersion) return current;
+      if (current && current.w === w && current.h === h && current.themeIndex === themeIndex) return current;
       const theme = themes[themeIndex];
-      const sceneCanvas = D.createElement('canvas');
-      sceneCanvas.width = w;
-      sceneCanvas.height = h;
-      const sceneCtx = sceneCanvas.getContext('2d');
-      const ground = sceneCtx.createLinearGradient(0, 0, w * 0.04, h);
-      ground.addColorStop(0, theme.top);
-      ground.addColorStop(0.46, theme.mid);
-      ground.addColorStop(0.78, theme.low);
+      const ground = ctx.createRadialGradient(w * 0.5, h * 0.5, Math.min(w, h) * 0.08, w * 0.5, h * 0.52, Math.max(w, h) * 0.86);
+      ground.addColorStop(0, theme.low);
+      ground.addColorStop(0.42, theme.mid);
+      ground.addColorStop(0.76, theme.top);
       ground.addColorStop(1, theme.edge);
-      const glow = sceneCtx.createRadialGradient(w * 0.52, h * 0.44, 10, w * 0.52, h * 0.44, Math.max(w, h) * 0.78);
-      glow.addColorStop(0, `${theme.glow}28`);
-      glow.addColorStop(0.52, `${theme.glow}0d`);
-      glow.addColorStop(1, `${theme.edge}00`);
-      const pattern = tile.complete && tile.naturalWidth ? sceneCtx.createPattern(tile, 'repeat') : null;
-      const next = { w, h, themeIndex, textureVersion, sceneCanvas, sceneCtx, ground, glow, pattern, theme, lastOx: null, lastOy: null };
+      const next = { w, h, themeIndex, theme, ground };
       ctxCache.set(ctx, next);
       return next;
     }
 
     function paintArena(ctx, s, w, h) {
       const cache = arenaCache(ctx, s, w, h);
-      const ox = -((Number(s.camX || 0) * 0.08) % 256);
-      const oy = -((Number(s.camY || 0) * 0.08) % 256);
-      if (cache.lastOx === null || Math.abs(ox - cache.lastOx) >= 1 || Math.abs(oy - cache.lastOy) >= 1) {
-        const scene = cache.sceneCtx;
-        scene.save();
-        scene.setTransform(1, 0, 0, 1, 0, 0);
-        scene.globalCompositeOperation = 'source-over';
-        scene.globalAlpha = 1;
-        scene.fillStyle = cache.ground;
-        scene.fillRect(0, 0, w, h);
-        scene.fillStyle = cache.glow;
-        scene.fillRect(0, 0, w, h);
-        if (cache.pattern) {
-          scene.save();
-          scene.globalAlpha = 0.27;
-          scene.translate(ox, oy);
-          scene.fillStyle = cache.pattern;
-          scene.fillRect(-ox, -oy, w, h);
-          scene.restore();
-        }
-        scene.globalAlpha = 0.15;
-        scene.strokeStyle = cache.theme.glow;
-        scene.lineWidth = 1;
-        const cx = w * 0.5;
-        const cy = h * 0.52;
-        for (let i = 0; i < 3; i++) {
-          scene.beginPath();
-          scene.ellipse(cx, cy, 96 + i * 82, 34 + i * 30, 0, 0, Math.PI * 2);
-          scene.stroke();
-        }
-        scene.restore();
-        cache.lastOx = ox;
-        cache.lastOy = oy;
-      }
+      ctx.fillStyle = cache.ground;
+      previousFillRect.call(ctx, 0, 0, w, h);
       ctx.save();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
-      ctx.drawImage(cache.sceneCanvas, 0, 0);
+      ctx.globalAlpha = 0.12;
+      ctx.strokeStyle = cache.theme.glow;
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(w * 0.5, h * 0.52, 96 + i * 82, 34 + i * 30, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -108,9 +69,19 @@
         firstFillAfterClear.add(this);
         const s = W.PSY_CLEAN_SURV;
         if (s && !s.done) {
+          const themeIndex = Math.floor((Math.max(1, Number(s.phase || 1)) - 1) / 20) % themes.length;
+          const screen = D.getElementById('screen-survivor-v12');
+          if (screen && screen.dataset.psySurvBiome !== String(themeIndex)) screen.dataset.psySurvBiome = String(themeIndex);
+          backgroundPainted.add(this);
           paintArena(this, s, w, h);
           return;
         }
+      }
+      if (canvas?.id === 'psy-clean-surv-canvas' &&
+          x === 0 && y === 0 && w === canvas.width && h === canvas.height &&
+          backgroundPainted.has(this) && !skippedVignette.has(this)) {
+        skippedVignette.add(this);
+        return;
       }
       return previousFillRect.apply(this, arguments);
     };
@@ -186,6 +157,14 @@
   }
   let screenObserver = null;
   let observedScreen = null;
+  function syncLobbyUnderlay(screen = D.getElementById('screen-survivor-v12')) {
+    const lobby = D.getElementById('screen-psyduck-v12');
+    if (!lobby) return;
+    const visible = !!screen && !screen.hidden &&
+      W.getComputedStyle(screen).display !== 'none' &&
+      W.getComputedStyle(screen).visibility !== 'hidden';
+    lobby.classList.toggle('psy-surv-cover-underlay', visible);
+  }
   function syncSurvivorOrientation(screen = D.getElementById('screen-survivor-v12')) {
     const surface = screen?.querySelector('.psy-clean-surv');
     if (!surface) return;
@@ -215,32 +194,61 @@
   }
   function observeSurvivorScreen() {
     const screen = D.getElementById('screen-survivor-v12');
-    if (!screen || screen === observedScreen) return;
+    if (!screen) {
+      screenObserver?.disconnect();
+      observedScreen = null;
+      syncLobbyUnderlay(null);
+      return;
+    }
+    if (screen === observedScreen) return;
     screenObserver?.disconnect();
     observedScreen = screen;
+    let observedUpgradeGrid = null;
+    let observedPauseList = null;
     screenObserver = new MutationObserver(records => {
-      if (records.some(record => record.target === screen && record.type === 'childList')) syncSurvivorOrientation(screen);
-      const relevant = records.some(record => {
-        const target = record.target?.nodeType === 1 ? record.target : record.target?.parentElement;
-        if (target?.closest?.('#psy-clean-surv-upgrid, #psy-clean-surv-current, .psy-clean-result')) return true;
-        return [...(record.addedNodes || [])].some(node => node.nodeType === 1 && (
-          node.matches?.('.psy-surv-upcard, .psy-surv-pause-power, .psy-clean-result') ||
-          node.querySelector?.('.psy-surv-upcard, .psy-surv-pause-power, .psy-clean-result')
-        ));
-      });
-      if (relevant) {
-        decorateCards(screen);
-        decorateResult();
+      if (records.some(record => record.type === 'attributes' && record.target === screen)) {
+        syncLobbyUnderlay(screen);
       }
+      if (records.some(record => record.target === screen)) {
+        syncSurvivorOrientation(screen);
+        const nextUpgradeGrid = screen.querySelector('#psy-clean-surv-upgrid');
+        const nextPauseList = screen.querySelector('#psy-clean-surv-current');
+        if (nextUpgradeGrid && nextUpgradeGrid !== observedUpgradeGrid) {
+          observedUpgradeGrid = nextUpgradeGrid;
+          screenObserver.observe(nextUpgradeGrid, { childList: true, subtree: true });
+        }
+        if (nextPauseList && nextPauseList !== observedPauseList) {
+          observedPauseList = nextPauseList;
+          screenObserver.observe(nextPauseList, { childList: true, subtree: true });
+        }
+      }
+      decorateCards(screen);
+      decorateResult();
     });
-    screenObserver.observe(screen, { childList: true, subtree: true });
+    screenObserver.observe(screen, {
+      childList: true,
+      attributes: true,
+      attributeFilter: ['style', 'class', 'hidden']
+    });
+    const upgradeGrid = screen.querySelector('#psy-clean-surv-upgrid');
+    const pauseList = screen.querySelector('#psy-clean-surv-current');
+    if (upgradeGrid) {
+      observedUpgradeGrid = upgradeGrid;
+      screenObserver.observe(upgradeGrid, { childList: true, subtree: true });
+    }
+    if (pauseList) {
+      observedPauseList = pauseList;
+      screenObserver.observe(pauseList, { childList: true, subtree: true });
+    }
     syncSurvivorOrientation(screen);
+    syncLobbyUnderlay(screen);
     decorateCards(screen);
     decorateResult();
   }
   const bodyObserver = new MutationObserver(() => {
     observeSurvivorLobby();
     observeSurvivorScreen();
+    syncLobbyUnderlay();
   });
   bodyObserver.observe(D.body, { childList: true });
   observeSurvivorLobby();
