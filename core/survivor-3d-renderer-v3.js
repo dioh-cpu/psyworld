@@ -552,6 +552,11 @@ export function createSurvivorScene() {
         addArc(x, z, maxR * .68, color, -now * .003, 1.04);
         addArc(x, z, maxR, fx.color2 || color, now * .0018, 1.08);
         if (fx.type !== 'vortex') addArea(x, z, maxR * .72, '#170b2b', .2);
+      } else if (fx.type === 'enemyCharge') {
+        const tx = Number(fx.x2 ?? x), tz = Number(fx.y2 ?? z), dx = tx - x, dz = tz - z, length = Math.hypot(dx, dz);
+        if (length > 2) addBeam(x, z, length, 16, Math.atan2(dz, dx), color);
+        addArea(tx, tz, Math.max(24, Number(fx.r || 0)), color, .18);
+        addArc(tx, tz, Math.max(24, Number(fx.max || fx.r || 0)), '#fecdd3', now * .003, .96);
       } else if (fx.type === 'psyRainCloud') {
         addArc(x, z, Math.max(18, radius * .92), color, now * .0014, .72);
         addArc(x, z, Math.max(18, radius * .72), fx.color2 || color, -now * .0018, .82);

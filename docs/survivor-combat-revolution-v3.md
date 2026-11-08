@@ -67,9 +67,25 @@ Added **Arco Psíquico**, a three-level Survivor run upgrade. Each Psyduck proje
 - Gold, run KOs, and Psyduck EXP stayed unchanged because none of the targets died. No JavaScript errors occurred.
 - `node --check` and `git diff --check` passed.
 
+### Murex production smoke
+
+- Lot D release `a105ff2cf4297bece0f9af0857c1059b1f57158a` deployed READY to `https://psyworld-murex.vercel.app/`.
+- The production Lobby opened a Survivor run and loaded the Lot D bundle key. No failed Survivor assets or JavaScript page errors were observed.
+
+## Lot E — enemy behavior and readable telegraphs
+
+Enemy species now receive bounded archetypes at spawn: flankers approach and circle at range, chargers telegraph a line and target area before a short dash and recovery, ranged enemies retain their existing spacing and shots, and the other species keep their existing pursuit. Boss logic remains in the same simulation; the perspective renderer draws charge warnings on the arena floor. Contact damage, boss hazard damage, enemy stats, spawn schedules, rewards, and economy were not changed.
+
+### Verification record
+
+- Browser AI checks confirmed all four classifications: flanker, charger, ranged, and boss. The flanker moved both radially and laterally; the charger produced one live `enemyCharge` telegraph, entered its dash phase, and moved in the warned direction. No extra damage was introduced by the telegraph.
+- Advanced the live Survivor clock to its first scheduled 90-second Boss event. The actual event spawned a boss, emitted the `boss` camera cue, and queued four ground meteors with the existing warning delay and source boss.
+- Re-ran the lobby and Survivor flow: phase 1 and 39 live enemies, one real projectile hit exactly once, five level-up choices, pause plus saved run, resume, joystick movement, landscape/portrait layouts, and result/reward panel. No JS page errors or failed Survivor requests.
+- Chromium in this environment uses SwiftShader and selected the Canvas fallback; the tests establish simulation/control continuity but do not represent hardware GPU or mobile FPS.
+- `node --check` for the modified bundle and renderer, and `git diff --check`, passed.
+
 ## Remaining lots
 
-- E: enemy behavior and boss events.
 - F: audio, camera, visual balance, and performance pass.
 
 Preserve combat values, economy, progression, drop rules, and all non-Survivor systems unless a change is explicitly part of a bounded Survivor upgrade and validated in the run flow.

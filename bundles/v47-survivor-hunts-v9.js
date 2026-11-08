@@ -222,6 +222,9 @@ const SURV_RUN_UPS=[
   {id:'regen',name:'Água Restauradora',kind:'DEFESA',poke:242,desc:'+0,25% HP/s por nível • HP máximo: +3% / +5% / +7% / +10% / +15%',max:5}
 ]
 const SURV_LAST_RESORT_UPGRADE={id:'last_resort',name:'Força e Vitalidade',kind:'BÔNUS FINAL',poke:113,desc:'Aumenta simultaneamente o ataque e a vida máxima quando não há habilidade elegível para sortear.',max:1,maxDesc:'+10% ATK e +10% HP máximo'};
+const SURV_ENEMY_FLANKERS=new Set([41,42,48,49,123,163,164,167,168,198,215,276,277,335,396,397,430,441,519,520,521,627,628,661,662,663,731,732,733,821,822,823]);
+const SURV_ENEMY_CHARGERS=new Set([19,20,56,57,66,67,104,105,128,161,162,263,264,400,504,505,506,507,659,660,915]);
+function survEnemyAIStyle(id,boss,ranged){return boss?'boss':ranged?'ranged':SURV_ENEMY_FLANKERS.has(Number(id))?'flanker':SURV_ENEMY_CHARGERS.has(Number(id))?'charger':'chase'}
 function survEnemyPool(phase){return phase<=20?SURV_ENEMY_POOLS.early:phase<=60?SURV_ENEMY_POOLS.mid:SURV_ENEMY_POOLS.late}
 function survEnemy(s,opt={}){
   const pool=survEnemyPool(s.phase),megaPool=[3,6,9,15,18,65,80,94,115,127,130,142,181,208,212,214,229,248,254,257,260,282,302,303,306,308,310,319,323,334,354,359,362,373,376,428,445,448,460,475,531];
@@ -235,9 +238,9 @@ function survEnemy(s,opt={}){
   const base=42+s.phase*4.4+Math.min(150,s.elapsed/12000),bossScale=boss?survBossScale(bossMinute):1,variantHp=mega&&shiny?5.2:mega?3.6:shiny?2.0:1,minuteHpMult=survMinuteHpMult(s),hpMult=(champion?3.8:elite?2.45:1)*(boss?34*bossScale:1)*variantHp*minuteHpMult;
   let hp=Math.max(26,Math.floor(base*hpMult*Math.max(1,Number(s.trialDifficulty||1))));if(Number(opt.hpOverride)>0)hp=Math.max(26,Math.floor(Number(opt.hpOverride)*Math.max(1,Number(s.trialDifficulty||1))));
   const size=(finalBoss?108:boss?92:opt.timedElite?78:champion?66:elite?57:47)*1.5*(mega?1.15:1),pt=(Number.isFinite(Number(opt.spawnX))&&Number.isFinite(Number(opt.spawnY)))?{x:Number(opt.spawnX),y:Number(opt.spawnY),spawnSide:Number(opt.spawnSide||0),spawnT:Number(opt.spawnT||.5)}:survSpawnSlotPoint(s,opt.spawnSide,opt.spawnT);
-  let sp=(.82+Math.min(2.05,s.phase*.015+s.elapsed/900000))*(boss?.82:champion?.96:1);
+  let sp=(.82+Math.min(2.05,s.phase*.015+s.elapsed/900000))*(boss?.82:champion?.96:1);const aiStyle=String(opt.aiStyle||survEnemyAIStyle(id,boss,ranged));
   sp*=Math.sqrt(Math.max(1,Number(s.trialDifficulty||1)));
-  return{x:pt.x,y:pt.y,spawnX:pt.x,spawnY:pt.y,spawnSide:pt.spawnSide,spawnT:pt.spawnT,slotId:opt.slotId??null,specialSpawn:!!opt.specialSpawn,timedElite:!!opt.timedElite,specialKind:opt.specialKind||'',hp,max:hp,sp,id,boss,elite,champion,ranged,finalBoss,bossMinute,shiny,mega,size,hit:(boss?.34:opt.timedElite?.30:champion?.27:elite?.22:.16)*Math.max(1,Number(s.trialDifficulty||1)),shootCd:350+Math.random()*750,shootRate:Math.max(620,1550-s.phase*3.0-s.elapsed/2600),attackRange:170+Math.random()*80,slow:0,orbitCd:0}
+  return{aiStyle,aiSide:id%2?1:-1,x:pt.x,y:pt.y,spawnX:pt.x,spawnY:pt.y,spawnSide:pt.spawnSide,spawnT:pt.spawnT,slotId:opt.slotId??null,specialSpawn:!!opt.specialSpawn,timedElite:!!opt.timedElite,specialKind:opt.specialKind||'',hp,max:hp,sp,id,boss,elite,champion,ranged,finalBoss,bossMinute,shiny,mega,size,hit:(boss?.34:opt.timedElite?.30:champion?.27:elite?.22:.16)*Math.max(1,Number(s.trialDifficulty||1)),shootCd:350+Math.random()*750,shootRate:Math.max(620,1550-s.phase*3.0-s.elapsed/2600),attackRange:170+Math.random()*80,slow:0,orbitCd:0}
 }
 function survEnemySprite(s,arg){
   const e=typeof arg==='object'&&arg?arg:{id:arg},id=Number(e.id||1),megaForm=e.megaForm||null,form=e.form||'',key=`${id}:${e.shiny?1:0}:${e.mega?1:0}:${megaForm||''}:${form}`;s.spriteCache=s.spriteCache||{};
@@ -680,6 +683,29 @@ function survEnemyTarget(s,e,dt){
   if(key){const i=s.helperIds.indexOf(key),h=survHelperState(s,key,i);return{kind:'helper',key,x:h.x,y:h.y,h}}
   return{kind:'psyduck',key:'',x:s.x,y:s.y,h:null}
 }
+function survMoveEnemyFlanker(s,e,tar,dt,slowMul){
+  const dx=tar.x-e.x,dy=tar.y-e.y,dist=Math.hypot(dx,dy)||1,a=Math.atan2(dy,dx),desired=128+Number(e.size||32)*.16;
+  const radial=dist>desired*1.16?1:dist<desired*.72?-.62:.08,lateral=dist>desired*1.16?.38:1,side=Number(e.aiSide||1),orbitAngle=a+side*Math.PI/2+.14*Math.sin(Number(s.elapsed||0)/460+Number(e.id||0));
+  let vx=Math.cos(a)*radial+Math.cos(orbitAngle)*lateral,vy=Math.sin(a)*radial+Math.sin(orbitAngle)*lateral,mag=Math.hypot(vx,vy)||1;
+  e.x+=vx/mag*e.sp*slowMul*dt/16;e.y+=vy/mag*e.sp*slowMul*dt/16
+}
+function survMoveEnemyCharger(s,e,tar,dt,slowMul,frozenNow){
+  const ai=e.aiCharge||(e.aiCharge={phase:'approach',left:0,cooldown:1700+(Number(e.id||0)%6)*180});ai.cooldown=Math.max(0,Number(ai.cooldown||0)-dt);
+  if(frozenNow&&(ai.phase==='windup'||ai.phase==='dash')){ai.phase='recover';ai.left=360}
+  if(ai.phase==='windup'){
+    ai.left-=dt;if(ai.left<=0){ai.phase='dash';ai.left=360;ai.a=Math.atan2(Number(ai.targetY||tar.y)-e.y,Number(ai.targetX||tar.x)-e.x)}
+    if(ai.phase==='windup')return;
+  }
+  if(ai.phase==='dash'){
+    const dashSpeed=e.sp*2.3*slowMul;e.x+=Math.cos(ai.a)*dashSpeed*dt/16;e.y+=Math.sin(ai.a)*dashSpeed*dt/16;ai.left-=dt;
+    if(ai.left<=0||e.x<e.size*.35||e.x>s.worldW-e.size*.35||e.y<e.size*.35||e.y>s.worldH-e.size*.35){ai.phase='recover';ai.left=360}
+    return;
+  }
+  if(ai.phase==='recover'){ai.left-=dt;if(ai.left<=0)ai.phase='approach';return}
+  const dx=tar.x-e.x,dy=tar.y-e.y,dist=Math.hypot(dx,dy)||1;
+  if(ai.cooldown<=0&&dist<520&&dist>132){ai.phase='windup';ai.left=300;ai.targetX=tar.x;ai.targetY=tar.y;ai.cooldown=5600+(Number(e.id||0)%5)*260;survFxPush(s,{type:'enemyCharge',x:e.x,y:e.y,x2:tar.x,y2:tar.y,r:26,max:42,life:22,maxLife:22,color:'#fb7185'});return}
+  e.x+=dx/dist*e.sp*slowMul*dt/16;e.y+=dy/dist*e.sp*slowMul*dt/16
+}
 function survBuildEnemyGrid(s){const cell=128,g=s._enemyGrid||(s._enemyGrid=new Map());g.clear();s._enemyGridCell=cell;for(const e of s._liveEnemies||s.enemies){if(e.dead)continue;const k=((e.x/cell)|0)+','+((e.y/cell)|0),a=g.get(k);if(a)a.push(e);else g.set(k,[e])}}
 function survGridCandidates(s,x,y,range=180){const g=s._enemyGrid,cell=Number(s._enemyGridCell||128);if(!g||!g.size)return s._liveEnemies||s.enemies;const out=[],x0=Math.floor((x-range)/cell),x1=Math.floor((x+range)/cell),y0=Math.floor((y-range)/cell),y1=Math.floor((y+range)/cell);for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){const a=g.get(gx+','+gy);if(a)for(const e of a)out.push(e)}return out}
 function survNearestEnemy(s,x,y,exclude,maxRange=Infinity){let best=null,bd2=maxRange===Infinity?Infinity:maxRange*maxRange;const pool=maxRange===Infinity?(s._liveEnemies||s.enemies):survGridCandidates(s,x,y,maxRange+80);for(const e of pool){if(e.dead||e===exclude)continue;const dx=e.x-x,dy=e.y-y,d2=dx*dx+dy*dy;if(d2<=bd2){bd2=d2;best=e}}return best}
@@ -943,7 +969,7 @@ function survHelperFilter(vis){
   if(vis?.shiny)return'brightness(1.16) saturate(1.65) contrast(1.10)';
   return'';
 }
-const SURV_3D_VFX_TYPES=new Set(['particle','bubble','lightning','iceCone','iceShard','psyRainCloud','psyRainDrop','psyRainBurst','meteorWarning','meteorStrike','psyblade','psyNova','vortex','thunderSeal','waterCast','windCast','voidOpen','heartBurst','shieldGrant','sanctuary','mirrorPulse','freezeRing','stunRing']);
+const SURV_3D_VFX_TYPES=new Set(['particle','bubble','lightning','iceCone','iceShard','psyRainCloud','psyRainDrop','psyRainBurst','meteorWarning','meteorStrike','psyblade','psyNova','vortex','enemyCharge','thunderSeal','waterCast','windCast','voidOpen','heartBurst','shieldGrant','sanctuary','mirrorPulse','freezeRing','stunRing']);
 function survDraw(s){
   const perspectiveState=W.PSY_SURV_3D?.prepare?.(s);if(perspectiveState)s=perspectiveState;
   const ctx=s.ctx,viewW=Number(s.viewW||s.c.width),viewH=Number(s.viewH||s.c.height),worldW=Number(s.worldW||s.w),worldH=Number(s.worldH||s.h);
@@ -1020,6 +1046,7 @@ function survDraw(s){
     else if(fx.type==='psyRainCloud'){const rr=Number(fx.r||24),pulse=.78+.22*Math.sin(s.elapsed/130);ctx.globalAlpha=.20*life;ctx.fillStyle=fx.color;ctx.beginPath();ctx.arc(fx.x-rr*.55,fx.y,rr*.62,0,Math.PI*2);ctx.arc(fx.x,fx.y-rr*.18,rr*.82,0,Math.PI*2);ctx.arc(fx.x+rr*.58,fx.y,rr*.60,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.72*life;ctx.strokeStyle=fx.color2||'#c4b5fd';ctx.lineWidth=3;ctx.beginPath();ctx.arc(fx.x,fx.y,rr*(.78+.08*pulse),Math.PI*.12,Math.PI*.88);ctx.stroke();for(let q=0;q<7;q++){const px=fx.x+(q-3)*rr*.25,py=fx.y+rr*.48+Math.sin(s.elapsed/190+q)*6;ctx.globalAlpha=.62*life;ctx.strokeStyle=q%2?fx.color2||'#c4b5fd':fx.color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px-3,py+16+q%3*6);ctx.stroke()}}
     else if(fx.type==='psyRainDrop'){const rr=Number(fx.r||4)+(1-life)*Number(fx.max||18);ctx.globalAlpha=.85*life;ctx.fillStyle=fx.color;ctx.beginPath();ctx.moveTo(fx.x,fx.y-rr*1.8);ctx.quadraticCurveTo(fx.x+rr,fx.y,fx.x,fx.y+rr*1.2);ctx.quadraticCurveTo(fx.x-rr,fx.y,fx.x,fx.y-rr*1.8);ctx.fill()}
     else if(fx.type==='psyRainBurst'){const rr=Number(fx.r||12),spin=s.elapsed/170;ctx.globalAlpha=.82*life;ctx.strokeStyle=fx.color;ctx.lineWidth=3;for(let q=0;q<3;q++){ctx.beginPath();ctx.arc(fx.x,fx.y,rr*(.58+q*.34),spin+q*.7,spin+q*.7+Math.PI*1.42);ctx.stroke()}ctx.globalAlpha=.55*life;ctx.fillStyle=fx.color2||'#c4b5fd';for(let q=0;q<6;q++){const a=spin+q*Math.PI/3,px=fx.x+Math.cos(a)*rr*1.65,py=fx.y+Math.sin(a)*rr*1.65;ctx.beginPath();ctx.arc(px,py,3+q%2*2,0,Math.PI*2);ctx.fill()}}
+    else if(fx.type==='enemyCharge'){ctx.globalAlpha=.55*life;ctx.strokeStyle=fx.color||'#fb7185';ctx.lineWidth=7;ctx.setLineDash([10,7]);ctx.beginPath();ctx.moveTo(fx.x,fx.y);ctx.lineTo(fx.x2,fx.y2);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=.78*life;ctx.lineWidth=3;ctx.beginPath();ctx.arc(fx.x2,fx.y2,Number(fx.r||24),0,Math.PI*2);ctx.stroke()}
     else if(fx.type==='meteorStrike'){const h=fx.giant?250:180;ctx.strokeStyle='#fff7ed';ctx.lineWidth=fx.giant?18:10;ctx.globalAlpha=.75*life;ctx.beginPath();ctx.moveTo(fx.x+55,fx.y-h);ctx.lineTo(fx.x,fx.y);ctx.stroke();ctx.strokeStyle='#fb923c';ctx.lineWidth=fx.giant?36:22;ctx.globalAlpha=.24*life;ctx.stroke();ctx.globalAlpha=.35*life;ctx.fillStyle='#f97316';ctx.beginPath();ctx.arc(fx.x,fx.y,Math.min(fx.radius||60,fx.giant?180:85)*(1-life*.35),0,Math.PI*2);ctx.fill()}
     else if(fx.type==='psyblade'){ctx.lineCap='round';ctx.strokeStyle=fx.color;ctx.lineWidth=fx.w||12;ctx.globalAlpha=.28*life;ctx.beginPath();ctx.moveTo(fx.x,fx.y);ctx.lineTo(fx.x2,fx.y2);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.globalAlpha=.92*life;ctx.stroke();ctx.lineCap='butt'}
     else if(fx.type==='psyNova'){const rr=Number(fx.r||30),spin=s.elapsed/260;ctx.globalAlpha=.86*life;ctx.strokeStyle=fx.color;ctx.lineWidth=5;ctx.beginPath();ctx.arc(fx.x,fx.y,rr*.42,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=fx.color2||'#67e8f9';ctx.lineWidth=2.5;for(let q=0;q<12;q++){const a=spin+q*Math.PI/6,ri=rr*.32,ro=rr*(.92+(q%2)*.10);ctx.beginPath();ctx.moveTo(fx.x+Math.cos(a)*ri,fx.y+Math.sin(a)*ri);ctx.lineTo(fx.x+Math.cos(a)*ro,fx.y+Math.sin(a)*ro);ctx.stroke();const px=fx.x+Math.cos(a)*ro,py=fx.y+Math.sin(a)*ro;ctx.fillStyle=q%2?fx.color:fx.color2||'#fff';ctx.beginPath();ctx.arc(px,py,3+(q%3),0,Math.PI*2);ctx.fill()}ctx.globalAlpha=.25*life;ctx.fillStyle=fx.color;ctx.beginPath();ctx.arc(fx.x,fx.y,rr*.78,0,Math.PI*2);ctx.fill()}
@@ -1069,7 +1096,9 @@ function survLoop(ts){
       const ch=e.charge;e.x+=Math.cos(ch.a)*ch.speed*dt/16;e.y+=Math.sin(ch.a)*ch.speed*dt/16;ch.left-=dt;vx=s.x-e.x;vy=s.y-e.y;dist=Math.hypot(vx,vy)||1;
       if(!ch.hit&&dist<48+e.size*.25){ch.hit=true;survBossHurt(s,ch.dmg,s.x,s.y,'💥 INVESTIDA!')}
       if(ch.left<=0||e.x<e.size*.35||e.x>s.worldW-e.size*.35||e.y<e.size*.35||e.y>s.worldH-e.size*.35)ch.active=false;
-    }else if(e.ranged&&!e.boss){
+    }else if(e.aiStyle==='flanker'&&!e.boss){survMoveEnemyFlanker(s,e,tar,dt,slowMul);vx=tar.x-e.x;vy=tar.y-e.y;dist=Math.hypot(vx,vy)||1}
+    else if(e.aiStyle==='charger'&&!e.boss){survMoveEnemyCharger(s,e,tar,dt,slowMul,frozenNow);vx=tar.x-e.x;vy=tar.y-e.y;dist=Math.hypot(vx,vy)||1}
+    else if(e.ranged&&!e.boss){
       if(dist>e.attackRange*1.04){e.x+=Math.cos(a)*e.sp*slowMul*dt/16;e.y+=Math.sin(a)*e.sp*slowMul*dt/16}else if(dist<e.attackRange*.64){e.x-=Math.cos(a)*e.sp*.72*slowMul*dt/16;e.y-=Math.sin(a)*e.sp*.72*slowMul*dt/16}else{e.x+=Math.cos(a+Math.PI/2)*e.sp*.42*slowMul*dt/16;e.y+=Math.sin(a+Math.PI/2)*e.sp*.42*slowMul*dt/16}e.shootCd-=dt;if(e.shootCd<=0){e.shootCd=e.shootRate*(.80+Math.random()*.34);const aa=Math.atan2(tar.y-e.y,tar.x-e.x),spd=3.6+Math.min(2.8,s.phase*.014+s.elapsed/520000);s.enemyBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*spd,vy:Math.sin(aa)*spd,dmg:survScaleEnemyAttack(s,(e.champion?9:e.elite?7:5.5)*(1+s.phase*.014)),radius:e.champion?7:6,color:e.champion?'#fb7185':'#f59e0b',life:3000,targetHelperKey:tar.kind==='helper'?tar.key:''})}
     }else{e.x+=Math.cos(a)*e.sp*slowMul*dt/16;e.y+=Math.sin(a)*e.sp*slowMul*dt/16}
     e.x=Math.max(e.size*.35,Math.min(s.worldW-e.size*.35,e.x));e.y=Math.max(e.size*.35,Math.min(s.worldH-e.size*.35,e.y));
@@ -1341,6 +1370,7 @@ const oldMoves=W.loadMoveButtons;W.loadMoveButtons=function(){const r=oldMoves?.
 W.PSY_SURV_DEBUG={
   build:PSY_SURVIVOR_BUILD,
   timings:{eliteInterval:SURV_ELITE_INTERVAL,bossInterval:SURV_BOSS_INTERVAL,bossTimes:SURV_BOSS_TIMES.slice(),finalBossTime:SURV_FINAL_BOSS_TIME,lastEliteTime:SURV_LAST_ELITE_TIME},
+  enemyAIStyle:survEnemyAIStyle,
   minuteHpBonusPct:survMinuteHpBonusPct,
   minuteAttackBonusPct:survMinuteAttackBonusPct,
   minuteAttackMult:survMinuteAttackMult,
