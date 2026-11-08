@@ -1,0 +1,18 @@
+/* The scene remains scoped to Survivor; canvas 2D is the transparent sprite/VFX layer. */
+#screen-survivor-v12 #psy-surv-world-v3 {
+  position: absolute !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  image-rendering: auto !important;
+  touch-action: none !important;
+}
+
+#screen-survivor-v12 #psy-clean-surv-canvas {
+  z-index: 1 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+
+#screen-survivor-v12:has(#psy-surv-world-v3) {
+  background: #10241e !important;
+}
