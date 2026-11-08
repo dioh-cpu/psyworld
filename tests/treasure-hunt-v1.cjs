@@ -10,7 +10,9 @@ const apiSource=fs.readFileSync('api/game.js','utf8');
 const sql=fs.readFileSync('supabase/migrations/20261108052207_psyworld_treasure_hunt_v1.sql','utf8');
 for(const js of [source,hobbiesSource,vfxSource,worldSource])new Function(js);
 assert(apiSource.includes("action==='treasure-action'"));
+assert(apiSource.includes("['status','unlock','dig','open-chest','level-up','skill-buy','treasure-roll','equip-cosmetic']"));
 assert(sql.includes("grant execute on function public.psy_v28_treasure_action_v1"));
+assert(sql.includes("if p_action = 'status' then"),'online availability probe is read-only and versioned');
 assert(sql.includes('game_action_receipts')&&sql.includes('pg_advisory_xact_lock'));
 assert(sql.includes("from public,anon,authenticated"),'treasure rewards cannot be called from client roles');
 assert(sql.includes("'treasure_roll'"));
@@ -25,6 +27,7 @@ assert(sql.includes("'treasure_roll'"));
  const load=src=>vm.runInNewContext(src,{window:W,document:D,P:p,console,Math:math,Date,Map,Set,WeakMap,Image:W.Image});
  load(source);load(hobbiesSource);load(vfxSource);
  const T=W.PsyTreasureHuntV1,H=W.PsyHobbies,V=W.PsyHobbiesVFX;H.openDetail=()=>true;
+ H.refresh=()=>{};
  assert(T&&H&&V);
  assert.equal(H.definitions.length,15,'Hunter and Looter are distinct Hobby entries');
  assert.equal(H.visibleNodes('route-1').some(x=>x.kind==='treasureHunter'),false,'Route 1 treasure spots stay hidden until Hunter unlock');
@@ -71,11 +74,22 @@ assert(sql.includes("'treasure_roll'"));
 
  // Online transactions use the authenticated endpoint and never fall back to local rewards.
  let requested=null;
- W.psyOnlineAuthorityV26={online:()=>true,request:async(...args)=>{requested=args;return {ok:true,player:{gold:100,diamonds:0,psycoin:0},inventory:{'Fragmento Antigo':9},system:{treasure_hunt:{hobbies:{treasureHunter:{level:1,xp:65,points:1,skills:{}},looter:{level:1,xp:60,points:1,skills:{}}},sites:{'cave-1':{hits:2,depletedUntil:0}},chests:{common:1},stats:{digs:1,chestsOpened:1},titles:{},cosmetic:{bountyHunter:false,equipped:false}}}}}};
+ const onlineSnapshot={ok:true,player:{gold:100,diamonds:0,psycoin:0},inventory:{'Fragmento Antigo':9},system:{treasure_hunt:{hobbies:{treasureHunter:{level:1,xp:65,points:1,skills:{}},looter:{level:1,xp:60,points:1,skills:{}}},sites:{'cave-1':{hits:2,depletedUntil:0}},chests:{common:1},stats:{digs:1,chestsOpened:1},titles:{},cosmetic:{bountyHunter:false,equipped:false}}}};
+ W.psyOnlineAuthorityV26={online:()=>true,request:async(...args)=>{requested=args;return args[1]?.payload?.action==='status'?{ok:true,version:1}:onlineSnapshot},state:async()=>onlineSnapshot};
+ await T.refresh();assert.equal(T.isAvailable(),true,'Online actions open only after the server migration answers its capability probe');
  const response=await T.action('dig',{site:'cave-1'});
  assert(response.ok);assert.equal(requested[0],'treasure-action');assert.equal(requested[1].payload.action,'dig');
  assert.equal(p.inventory['Fragmento Antigo'],9,'Online inventory is taken from the authoritative snapshot');
  assert.equal(H.visibleNodes('route-cave').find(x=>x.id==='d1').hits,2,'Server site progress is merged to the rendering record');
+
+ W.psyOnlineAuthorityV26.request=async()=>{throw new Error('RPC unavailable')};
+ await T.refresh();assert.equal(T.isAvailable(),false,'Missing or unreachable production migration closes the online feature');
+ assert.equal(H.visibleNodes('route-1').some(x=>x.kind==='treasureHunter'),false,'Online treasure spots remain hidden until server authority is ready');
+ const beforeUnavailable={gold:p.gold,diamonds:p.diamonds,inventory:{...p.inventory}};
+ assert.equal(await T.action('dig',{site:'cave-1'}),null,'Unavailable online action fails closed');
+ assert.deepEqual({gold:p.gold,diamonds:p.diamonds,inventory:{...p.inventory}},beforeUnavailable,'Failed online authority never falls back to client rewards');
+ W.psyOnlineAuthorityV26.request=async(...args)=>{requested=args;return args[1]?.payload?.action==='status'?{ok:true,version:1}:onlineSnapshot};
+ await T.refresh();assert.equal(T.isAvailable(),true);
 
  // Roll costs and prizes are server-owned online; offline accumulator preserves tenths.
  W.psyOnlineAuthorityV26.online=()=>false;
@@ -92,5 +106,5 @@ assert(sql.includes("'treasure_roll'"));
  assert.equal(costume.prize.kind,'bountyHunter');assert.equal(local.cosmetic.equipped,true);
  assert.equal(typeof T.drawBountyAura,'function');
  assert(saves>10);
- console.log('PASS: cave crack interaction and five timed impacts, single reward, cooldown, chest/Looter XP, route unlock, online authority merge, Treasure Roll currency/prize branches and costume state');
+console.log('PASS: cave crack interaction and five timed impacts, single reward, cooldown, chest/Looter XP, route unlock, fail-closed online authority gate, Treasure Roll currency/prize branches and costume state');
 })().catch(error=>{console.error(error);process.exitCode=1});

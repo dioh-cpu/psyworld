@@ -205,7 +205,7 @@ function rollReward(id){
 function visibleNodes(scene){
  const now=Date.now(),nodes=field().nodes;
  return (FIELD[scene]||(/^route-\d+$/.test(scene)?FIELD['route-3']:[])||[]).filter(([id,kind,,,,minimum=1,skill])=>
-  (kind!=='treasureHunter'||count(state()[kind]?.level)>=minimum&&(!skill||count(W.PsyTreasureHuntV1?.hobbyState?.(kind)?.skills?.[skill])>0))&&count(nodes[scene+':'+id]?.respawnAt)<=now)
+  (kind!=='treasureHunter'||W.PsyTreasureHuntV1?.isAvailable?.()!==false&&count(state()[kind]?.level)>=minimum&&(!skill||count(W.PsyTreasureHuntV1?.hobbyState?.(kind)?.skills?.[skill])>0))&&count(nodes[scene+':'+id]?.respawnAt)<=now)
  .map(([id,kind,x,y,item])=>{const record=nodes[scene+':'+id]||{};return {id,kind,x,y,item,hits:count(record.hits),totalHits:requiredHits(kind),rarity:stableSpotRarity(scene,id,kind,record)}});
 }
 function nearby(scene,pos,radius=65){
@@ -423,5 +423,5 @@ const previousBuff=W.getTotalBuff;
 if(typeof previousBuff==='function')W.getTotalBuff=function(stat){return Number(previousBuff.apply(this,arguments)||0)+bonus(stat)};
 if(typeof W.openCraft5==='function')W.openCraft5=()=>openDetail('engineer');
 if(typeof W.psyCraftElementBall==='function')W.psyCraftElementBall=()=>openDetail('engineer');
-W.PsyHobbies={open,openDetail,close,isOpen:()=>!!root()?.classList.contains('show'),isFishing:()=>!!fishingRun,unlock,levelUp,levelRequirements,exchange,addXP,recordKill,state,definitions:JOBS,ballLadder:BALLS,unlockProgress,healMultiplier,bonus,useConsumable,visibleNodes,nearby,collect,interact,fieldDefinitions:()=>FIELD,rarityForSpot:stableSpotRarity,requiredHits,rollReward,spotEffects:{requiredHits,respawnDelay,rollReward,rewardFor},drawField,place,decorAt,moveDecor,drawDecor,decorate,field,canFish,startFishing,stopFishing};
+W.PsyHobbies={open,openDetail,close,refresh:render,isOpen:()=>!!root()?.classList.contains('show'),isFishing:()=>!!fishingRun,unlock,levelUp,levelRequirements,exchange,addXP,recordKill,state,definitions:JOBS,ballLadder:BALLS,unlockProgress,healMultiplier,bonus,useConsumable,visibleNodes,nearby,collect,interact,fieldDefinitions:()=>FIELD,rarityForSpot:stableSpotRarity,requiredHits,rollReward,spotEffects:{requiredHits,respawnDelay,rollReward,rewardFor},drawField,place,decorAt,moveDecor,drawDecor,decorate,field,canFish,startFishing,stopFishing};
 })(window,document);

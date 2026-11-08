@@ -64,8 +64,14 @@ begin
   if p_idempotency is null or length(p_idempotency) < 8 or length(p_idempotency) > 180 then
     raise exception 'invalid_idempotency_key';
   end if;
-  if p_action not in ('unlock','dig','open-chest','level-up','skill-buy','treasure-roll','equip-cosmetic') then
+  if p_action not in ('status','unlock','dig','open-chest','level-up','skill-buy','treasure-roll','equip-cosmetic') then
     raise exception 'invalid_treasure_action';
+  end if;
+
+  -- A read-only capability probe lets the client keep the online feature closed
+  -- until this migration is installed. It creates no receipt and touches no save.
+  if p_action = 'status' then
+    return jsonb_build_object('ok',true,'version',1);
   end if;
 
   perform pg_advisory_xact_lock(hashtextextended(p_user::text || ':treasure:' || p_idempotency, 0));

@@ -22,6 +22,16 @@ const syncHobbies=()=>{const p=PLAYER(),s=local();if(!p||!s)return;p.meta.auxHob
 function save(){syncHobbies();try{W.autoSave?.();W.updateHUD?.()}catch(_){}}
 function isOnline(){try{return !!W.psyOnlineAuthorityV26?.online?.()}catch(_){return false}}
 function key(){return 'treasure:'+Date.now().toString(36)+':'+Math.random().toString(36).slice(2,12)}
+let authorityReady=false;
+function isAvailable(){return !isOnline()||authorityReady}
+function refreshHobbyView(){if(W.PsyHobbies?.isOpen?.())W.PsyHobbies.refresh?.()}
+async function probeAuthority(){
+ if(!isOnline()){authorityReady=true;return true}
+ authorityReady=false;
+ try{const data=await W.psyOnlineAuthorityV26.request('treasure-action',{payload:{action:'status'}},key());authorityReady=data?.ok===true&&Number(data.version)===1}
+ catch(_){authorityReady=false}
+ return authorityReady;
+}
 function merge(result){const p=PLAYER();if(!p||!result)return;const pl=result.player||{},system=result.system||{};for(const k of ['gold','diamonds','psycoin'])if(pl[k]!==undefined)p[k]=Number(pl[k])||0;
  if(result.inventory&&typeof result.inventory==='object'){p.inventory=p.inventory||{};for(const [k,v] of Object.entries(result.inventory)){const q=n(v);if(q)p.inventory[k]=q;else delete p.inventory[k]}}
  p.meta=p.meta||{};if(system.treasure_hunt){p.meta.treasureHuntV1=system.treasure_hunt;applySites(system.treasure_hunt)}
@@ -30,11 +40,12 @@ function merge(result){const p=PLAYER();if(!p||!result)return;const pl=result.pl
 }
 async function server(action,payload={}){
  const api=W.psyOnlineAuthorityV26;if(!api?.request)throw new Error('autoridade online indisponível');
+ if(!authorityReady)throw new Error('Caça ao tesouro online temporariamente indisponível.');
  const data=await api.request('treasure-action',{payload:{action,...payload}},key());if(!data?.ok)throw new Error(data?.error||'ação não confirmada');merge(data);return data;
 }
-async function refresh(){if(!isOnline())return local();try{const data=await W.psyOnlineAuthorityV26.state();if(data?.system?.treasure_hunt){merge(data);applySites(data.system.treasure_hunt);return local()}}catch(e){console.warn('[PSYWORLD treasure state]',e)}return local()}
+async function refresh(){if(!isOnline()){authorityReady=true;return local()}try{if(!await probeAuthority()){refreshHobbyView();return local()}const data=await W.psyOnlineAuthorityV26.state();if(data?.system?.treasure_hunt){merge(data);applySites(data.system.treasure_hunt)}refreshHobbyView();return local()}catch(e){authorityReady=false;refreshHobbyView();console.warn('[PSYWORLD treasure state]',e)}return local()}
 function applySites(s){const p=PLAYER();if(!p||!s?.sites)return;p.meta=p.meta||{};const h=p.meta.hobbyGatherV2||(p.meta.hobbyGatherV2={nodes:{},decor:[]});h.nodes=h.nodes||{};for(const [id,v] of Object.entries(s.sites)){const route=id.startsWith('route1-'),scene=route?'route-1':'route-cave',node='d'+id.slice(route?7:5);h.nodes[scene+':'+node]={hits:n(v.hits),respawnAt:n(v.depletedUntil)}}}
-async function act(action,payload={}){if(isOnline())return server(action,payload);const s=local();if(!s)throw new Error('save indisponível');return localAction(action,payload,s)}
+async function act(action,payload={}){if(isOnline()){if(!authorityReady)throw new Error('Caça ao tesouro online temporariamente indisponível.');return server(action,payload)}const s=local();if(!s)throw new Error('save indisponível');return localAction(action,payload,s)}
 function roll(max){return Math.floor(Math.random()*max)+1}
 function xpNeed(id){const lv=Math.max(1,n(hobbyState(id).level));return Math.ceil(100*Math.pow(lv,1.55))}
 function bumpXP(id,amount){const h=hobbyState(id);if(!h.level)return;h.xp=n(h.xp)+n(amount);}
@@ -119,6 +130,7 @@ function el(tag,cls,text){const x=D.createElement(tag);if(cls)x.className=cls;if
 function button(text,handler,disabled=false){const b=el('button','th-button',text);b.type='button';b.disabled=!!disabled;b.onclick=handler;return b}
 function renderInto(parent,id,rerender){const {s,h}=localHud(id),isHunter=id==='treasureHunter',defs=isHunter?HUNTER_SKILLS:LOOTER_SKILLS,section=el('section','th-panel');
  section.appendChild(el('h4','th-title',isHunter?'✦ EXPLORAÇÃO DE TESOUROS':'✦ RELICÁRIO DO LOOTER'));
+ if(!isAvailable()){section.appendChild(el('p','th-note','Caça ao tesouro temporariamente indisponível nesta conta. O progresso e as recompensas online só serão ativados quando a autoridade de servidor estiver pronta.'));parent.appendChild(section);return;}
  const summary=el('div','th-summary');summary.appendChild(el('div','',`Nível ${n(h.level)} · XP ${n(h.xp)}/${xpNeed(id)} · ${n(h.points)} ponto(s) de habilidade`));
  summary.appendChild(el('div','',`Escavações: ${n(s.stats?.digs)} · Baús descobertos: ${Object.values(s.chests||{}).reduce((a,b)=>a+n(b),0)} · Baús abertos: ${n(s.stats?.chestsOpened)}`));section.appendChild(summary);
  if(!h.level){const text=isHunter?'Requer Treinador nível 3. Encontre rachaduras de solo na Gruta dos Cristais.':'Encontre seu primeiro baú com o Caçador de Tesouros para liberar esta especialidade.';section.appendChild(el('p','th-note',text));section.appendChild(button('DESBLOQUEAR HOBBY',async()=>{await unlock(id);rerender()},isHunter?n(PLAYER()?.trainerLevel)<3:!Object.values(s.chests||{}).some(n)));parent.appendChild(section);return;}
@@ -144,6 +156,6 @@ function drawBountyAura(c,x,y,now=performance.now()){const s=localState();if(!s.
 function registerTitles(){for(const [id,name,goal]of [['treasure-hunter:beginner','Caçador Iniciante',10],['treasure-hunter:veteran','Caçador Veterano',100],['treasure-hunter:master','Caçador Mestre',1000],['treasure-hunter:insane','Caçador Insano',5000]])W.PsyTitles?.register?.({id,name,metric:'treasureDigs',goal,bonus:{drop:id.endsWith('insane')?1.5:.25},glyph:'✦',color:'#e8bd72',note:'Explorações concluídas na Gruta dos Cristais.'})}
 function stats(){return localState()}
 function levelRequirements(id){const h=hobbyState(id),need=xpNeed(id),inv=PLAYER()?.inventory||{},required=2+n(h.level)*2;return {need,available:n(h.xp),material:'Fragmento Antigo',required,ready:n(h.level)>0&&n(h.level)<MAX_LEVEL&&n(h.xp)>=need&&n(inv['Fragmento Antigo'])>=required&&(h.level%5!==4||n(inv['Crystal Stone'])>=1)}}
-W.PsyTreasureHuntV1={version:1,siteHits:SITE_HITS,unlock,levelUp,levelRequirements,hit,collect:hit,renderInto,drawScene,drawBountyAura,action,refresh,stats,hobbyState,skills:{treasureHunter:HUNTER_SKILLS,looter:LOOTER_SKILLS},isOnline,localAction};
+W.PsyTreasureHuntV1={version:1,siteHits:SITE_HITS,unlock,levelUp,levelRequirements,hit,collect:hit,renderInto,drawScene,drawBountyAura,action,refresh,stats,hobbyState,skills:{treasureHunter:HUNTER_SKILLS,looter:LOOTER_SKILLS},isOnline,isAvailable,localAction};
 W.addEventListener('load',()=>{registerTitles();refresh()},{once:true});
 })(window,document);
