@@ -102,6 +102,7 @@
       #psy-kanto-world .kp-route{background:linear-gradient(135deg,#075985,#166534);border-color:#9ad9ac;white-space:nowrap}
       #psy-kanto-world .kp-route-footer{min-width:50px;min-height:58px;background:linear-gradient(135deg,#075985,#166534);border-color:#9ad9ac}
       #psy-kanto-world .kp-stage #psy-campaign-quests{top:8px!important;right:8px!important;left:auto!important;width:min(210px,44%)!important;max-width:220px!important;max-height:92px!important;overflow:auto!important}
+      #psy-kanto-world.psy-rift-active #psy-campaign-quests{display:none!important}
       #psy-kanto-world [data-kp-fish][hidden]{display:none!important}
       #psy-kanto-world [data-kp-fish]{background:#0e5d80;border-color:#9ee4f5;min-height:52px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
@@ -118,7 +119,9 @@
     D.head.appendChild(style);
   }
 
-  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, autoObjective:null, autoSpot:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
+  const RIFT_ID='kanto-hunt-rift';
+  const RIFT_PLACE={id:RIFT_ID,name:'Fenda Selvagem',mark:'Uma clareira rara entre rotas e cavernas',kind:'route',species:[],npc:'',quest:'Reúna recursos antes que a fenda se feche.'};
+  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, autoObjective:null, autoSpot:null, autoPortal:false, autoRiftExit:false, riftPortal:null, riftSession:null, riftOrigin:null, riftFrozen:false, pendingRiftWin:null, lastRiftSecond:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
   function makeRoot() {
     if (model.root) return model.root;
     addStyles();
@@ -126,7 +129,7 @@
     root.innerHTML = `<header class="kp-head"><button type="button" data-back>← ATLAS</button><div class="kp-title"><b></b><small></small><small class="kp-clock" data-world-clock></small></div><button type="button" class="kp-route" data-kp-route aria-label="Seguir objetivo da campanha">ROTA</button><button type="button" data-kp-hobbies>HOBBIES</button><button type="button" class="kp-close" aria-label="Fechar">×</button></header><div class="kp-stage"><canvas id="psy-kanto-canvas" width="896" height="560" aria-label="Mapa jogável de Kanto"></canvas><section id="psy-kanto-dialog"><div class="kp-dialog-title"></div><div class="kp-dialog-text"></div><div class="kp-dialog-actions"></div></section></div><footer class="kp-footer"><div class="kp-objective"></div><div class="kp-controls" aria-label="Controles de movimento"><button data-dir="up" aria-label="Cima">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Baixo">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button type="button" class="kp-route-footer" data-kp-route-footer aria-label="Ir ao objetivo da missão">IR</button><button type="button" class="kp-interact" data-interact>INTERAGIR</button><button type="button" data-kp-fish hidden>PESCAR</button></footer>`;
     D.body.appendChild(root); model.root = root; model.canvas = root.querySelector('canvas'); model.ctx = model.canvas.getContext('2d'); model.dialog = root.querySelector('#psy-kanto-dialog');
     root.querySelector('.kp-close').onclick = closeWorld;
-    const followObjective=()=>W.PsyCampaignAutomation?.startPrimaryRoute?.();
+    const followObjective=()=>{if(model.riftSession){W.notif?.('Conclua a exploração da fenda antes de seguir outra rota.',2000);return;}W.PsyCampaignAutomation?.startPrimaryRoute?.()};
     root.querySelector('[data-kp-route]').onclick=followObjective;
     root.querySelector('[data-kp-route-footer]').onclick=followObjective;
     root.querySelector('[data-kp-hobbies]').onclick=()=>{model.held=null;model.autoSpot=null;model.autoHunt=false;model.autoPath=[];W.PsyHobbies?.open?.()};
@@ -135,18 +138,22 @@
     root.querySelector('[data-interact]').onclick = e => { e.preventDefault(); e.stopPropagation();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;interact(); };
     root.querySelectorAll('[data-dir]').forEach(btn => {
       const dir = btn.dataset.dir;
-      const start = e => { e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoHunt=false;model.autoPath=[]; model.held = dir; move(dir); };
+      const start = e => { e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoPortal=false;model.autoRiftExit=false;model.autoHunt=false;model.autoPath=[]; model.held = dir; move(dir); };
       const stop = e => { e.preventDefault(); if (model.held === dir) { model.held = null; model.frame = 0; render(); } };
       btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', stop); btn.addEventListener('pointercancel', stop); btn.addEventListener('pointerleave', stop);
     });
     D.addEventListener('keydown', onKeyDown); D.addEventListener('keyup', onKeyUp);
     model.canvas.style.touchAction='none';let touch=null;
-    model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen())return;W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
+    model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen()||model.riftFrozen)return;W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoPortal=false;model.autoRiftExit=false;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
     model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}touch.drag=true;model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
     const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'){
       const r=model.canvas.getBoundingClientRect(),x=(e.clientX-r.left)*model.canvas.width/r.width,y=(e.clientY-r.top)*model.canvas.height/r.height;
+      const target=model.riftSession?model.map?.exit:model.riftPortal;
+      if(target){const tx=model.riftSession?target.x*TILE+TILE/2:target.x*TILE+TILE/2,ty=model.riftSession?target.y*TILE+TILE/2:target.y*TILE+TILE/2;
+        if(Math.hypot(x-tx,y-ty)<34){const goal={x:target.x,y:target.y},path=tilePath(goal);if(!path.length&&(goal.x!==model.x||goal.y!==model.y))return;model.autoPath=path;if(model.riftSession)model.autoRiftExit=true;else model.autoPortal=true;if(!path.length){if(model.riftSession)returnFromRift(false);else enterRift();}return;}
+      }
       const npc=model.map?.npc;if(npc&&Math.abs(x-(npc.x*TILE+14))<28&&Math.abs(y-(npc.y*TILE))<42){interact(true);return;}
-      if(model.place?.kind==='route'||model.place?.kind==='dungeon'||model.place?.id==='viridian-forest'){
+      if(model.place?.kind==='route'||model.place?.kind==='dungeon'||model.place?.id==='viridian-forest'||model.place?.id===RIFT_ID){
         const spot=W.PsyHobbies?.nearby?.(model.place.id,{x,y},32);
         if(spot){const goal={x:Math.max(1,Math.min(COLS-2,Math.floor(spot.x/TILE))),y:Math.max(1,Math.min(ROWS-2,Math.floor(spot.y/TILE)))},path=tilePath(goal);
           if(!path.length&&(goal.x!==model.x||goal.y!==model.y)){W.notif?.('Não há um caminho acessível até este recurso.',1800);return;}
@@ -240,7 +247,73 @@
     grid[npc.y][npc.x]=1; grid[object.y][object.x]=1; grid[exit.y][exit.x]=1;
     return {grid,npc,object,exit,spawn,secretGate,secretChest,art:MAP_ART[place.id],seed:hash(place.id)};
   }
+
+  function buildRiftMap(){
+    const grid=Array.from({length:ROWS},(_,y)=>Array.from({length:COLS},(_,x)=>x===0||y===0||x===COLS-1||y===ROWS-1?9:2));
+    // The pond is a real collision zone with a walkable bank for the fishing minigame.
+    for(let y=5;y<=16;y++)for(let x=26;x<=30;x++)grid[y][x]=3;
+    for(let y=6;y<=14;y++)grid[y][25]=1;
+    const exit={x:16,y:4},spawn={x:16,y:17};grid[exit.y][exit.x]=1;grid[spawn.y][spawn.x]=1;
+    return {grid,spawn,exit,returnGate:exit,art:'assets/story/kanto-hunt-rift-v1.webp',seed:hash(RIFT_ID),rift:true};
+  }
+  function attachRiftOffer(offer){
+    if(!offer||model.place?.id!==offer.context.world||!model.map)return false;
+    const baseX=Math.max(1,Math.min(COLS-2,Math.round(offer.context.x))),baseY=Math.max(1,Math.min(ROWS-2,Math.round(offer.context.y)));
+    let point=null;
+    for(let radius=1;radius<=4&&!point;radius++)for(let dy=-radius;dy<=radius&&!point;dy++)for(let dx=-radius;dx<=radius&&!point;dx++){
+      if(Math.abs(dx)!==radius&&Math.abs(dy)!==radius)continue;
+      const x=baseX+dx,y=baseY+dy,tile=model.map.grid[y]?.[x];if(tile!==undefined&&![9,3,4].includes(tile))point={x,y};
+    }
+    if(!point)return false;
+    model.riftPortal={...offer,...point};model.autoHunt=false;model.held=null;model.autoPath=[];model.autoObjective=null;
+    updateObjective();render();W.notif?.('Uma fenda de caça surgiu perto de você. Aproxime-se e pressione INTERAGIR.',4500);return true;
+  }
+  function createRiftOffer(context,roll=Math.random()){
+    const offer=W.PsyKantoHuntRiftV1?.tryOffer?.('campaign',context,Date.now(),roll);
+    return attachRiftOffer(offer);
+  }
+  function enterRift(){
+    const offer=model.riftPortal;if(!offer||model.riftSession)return false;
+    const origin={place:model.place,map:model.map,x:model.x,y:model.y,direction:model.direction,autoHunt:model.autoHunt};
+    const session=W.PsyKantoHuntRiftV1?.enter?.('campaign',offer.id,origin,Date.now());
+    if(!session){model.riftPortal=null;W.notif?.('A fenda já se fechou.');updateObjective();render();return false;}
+    model.riftOrigin=origin;model.riftSession=session;model.riftFrozen=false;model.riftPortal=null;model.root?.classList.add('psy-rift-active');
+    model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[];model.held=null;
+    model.place=RIFT_PLACE;model.map=buildRiftMap();model.x=model.map.spawn.x;model.y=model.map.spawn.y;model.direction='up';model.frame=0;
+    model.root.querySelector('.kp-title b').textContent=RIFT_PLACE.name;model.root.querySelector('.kp-title small').textContent=RIFT_PLACE.mark;
+    updateObjective();render();W.notif?.('Você entrou na fenda. Há 3 minutos para explorar e coletar.',3200);return true;
+  }
+  function returnFromRift(expired){
+    const session=model.riftSession;if(!session)return false;
+    W.PsyHobbiesVFX?.cancelAction?.(RIFT_ID);W.PsyHobbies?.cancelFishing?.();
+    const origin=W.PsyKantoHuntRiftV1?.finish?.(session)||model.riftOrigin;
+    if(!origin)return false;
+    model.riftSession=null;model.riftOrigin=null;model.riftFrozen=false;model.riftPortal=null;model.root?.classList.remove('psy-rift-active');
+    model.place=origin.place;model.map=origin.map;model.x=origin.x;model.y=origin.y;model.direction=origin.direction||'down';
+    model.autoHunt=!!origin.autoHunt&&Number(player().meta?.vipUntil||0)>Date.now();model.autoObjective=null;model.autoSpot=null;model.autoPath=[];model.held=null;
+    model.root.querySelector('.kp-title b').textContent=model.place.name;model.root.querySelector('.kp-title small').textContent=model.place.mark;
+    updateObjective();render();if(expired)W.notif?.('A fenda se fechou. Você retornou ao ponto de entrada com os recursos coletados.',3500);return true;
+  }
+  function updateRiftClock(now=Date.now()){
+    if(!model.riftSession||model.riftFrozen)return;
+    const status=W.PsyKantoHuntRiftV1?.status?.(model.riftSession,now);if(!status)return;
+    const second=Math.ceil(status.remainingMs/1000);if(model.lastRiftSecond===second)return;model.lastRiftSecond=second;
+    const min=String(Math.floor(second/60)).padStart(2,'0'),sec=String(second%60).padStart(2,'0');
+    const objective=model.root?.querySelector('.kp-objective');if(objective)objective.textContent=`Fenda Selvagem · ${min}:${sec} · colete o que puder e retorne pelo portal ao norte`;
+  }
+  function tickRift(now=Date.now()){
+    if(model.riftPortal){const current=W.PsyKantoHuntRiftV1?.getOffer?.('campaign',now);if(!current||current.id!==model.riftPortal.id){model.riftPortal=null;model.autoHunt=false;updateObjective();render();}}
+    if(!model.riftSession)return false;
+    const status=W.PsyKantoHuntRiftV1?.status?.(model.riftSession,now);
+    if(status?.phase==='closing'&&!model.riftFrozen){
+      model.riftFrozen=true;model.held=null;model.autoPath=[];model.autoHunt=false;W.PsyHobbiesVFX?.cancelAction?.(RIFT_ID);W.PsyHobbies?.cancelFishing?.();
+      render();
+    }
+    if(status?.phase==='return'){returnFromRift(true);return false;}
+    updateRiftClock(now);return !!model.riftFrozen;
+  }
   function openWorld(id,options={}) {
+    if(model.riftSession){W.notif?.('Saia pela passagem da fenda para voltar à jornada.',2200);return false;}
     if(id==='pallet'||id==='route-1'||id==='viridian'){
       if(W.PsyKantoWorldV2?.open)return W.PsyKantoWorldV2.open(id,options);
       W.notif?.('Mapa ilustrado indisponível. Recarregue a preview.',4000);
@@ -250,24 +323,27 @@
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
     const previousPlace=model.place?.id||journeySave().activePlace||null;
     W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=options.spawn?.x??model.map.spawn?.x??3; model.y=options.spawn?.y??model.map.spawn?.y??ROWS-3; model.direction=options.direction||'down';model.frame=0;model.held=null;
+    const pendingRift=W.PsyKantoHuntRiftV1?.getOffer?.('campaign');model.riftPortal=null;
     state().active=place.id;
     model.root.querySelector('.kp-title b').textContent=place.name;
     model.root.querySelector('.kp-title small').textContent=place.mark;
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     W.PsyKantoStoryV49?.enter?.(previousPlace,id);
     if(!model.raf)tick();
+    if(pendingRift?.context.world===id)attachRiftOffer(pendingRift);
   }
-  function closeWorld() { W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyCampaignAutomation?.cancelRoute?.();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
+  function closeWorld() { if(model.riftSession)returnFromRift(false);W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyCampaignAutomation?.cancelRoute?.();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[];model.held=null;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
     if(!model.root?.classList.contains('open')||W.PsyHobbies?.isOpen?.()||W.PsyHobbies?.isFishing?.()||W.PsyTitles?.isOpen?.())return;
     e.stopPropagation();
     const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
-    const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.held=dir;move(dir)}return;}
+    const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoPortal=false;model.autoRiftExit=false;model.held=dir;move(dir)}return;}
     if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;interact();}
     if(e.code==='Escape'){e.preventDefault();closeWorld();}
   }
   function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]===model.held){model.held=null;model.frame=0;render();} }
   function move(dir) {
+    if(model.riftFrozen)return;
     if(W.PsyHobbiesVFX?.blocksMovement?.(model.place?.id))return;
     if(W.PsyGuide?.isOpen()||W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.())return;
     if(!model.place||!model.root?.classList.contains('open'))return;
@@ -277,7 +353,7 @@
     const tile=model.map.grid[ny][nx];if(tile===9||tile===3||tile===4)return;
     model.x=nx;model.y=ny;model.frame=(model.frame+1)%WALK_FRAME_COLUMNS.length;
     if(tile===5)maybeEncounter();
-    if(nx===model.map.exit.x&&ny===model.map.exit.y)interact();
+    if(nx===model.map.exit.x&&ny===model.map.exit.y){if(model.riftSession)returnFromRift(false);else interact();}
     updateObjective();render();
   }
   function maybeEncounter() {
@@ -371,7 +447,14 @@
   function interact(directNPC=false) {
     if(!model.place||W.PsyHobbies?.isFishing?.())return;
     model.autoObjective=null;
-    if(/^route-/.test(model.place.id)||model.place.id==='viridian-forest'){
+    if(model.riftSession){
+      if(nearby(model.map.exit)){returnFromRift(false);return;}
+      const gather=W.PsyHobbies?.nearby?.(RIFT_ID,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},44);
+      if(gather){W.PsyHobbies?.interact?.(RIFT_ID,gather.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});render();return;}
+      showDialog('Fenda Selvagem','A passagem de saída fica ao norte. Cada recurso mantém sua coleta e seu progresso normais.');return;
+    }
+    if(model.riftPortal&&Math.hypot(model.x-model.riftPortal.x,model.y-model.riftPortal.y)<=2){enterRift();return;}
+    if(/^route-/.test(model.place.id)||model.place.id==='viridian-forest'||model.place.id===RIFT_ID){
       const gather=W.PsyHobbies?.nearby?.(model.place.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},40);
       if(gather){W.PsyHobbies.interact?.(model.place.id,gather.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});render();return;}
     }
@@ -430,6 +513,8 @@
   }
   function updateObjective() {
     if(!model.place||!model.root)return;
+    if(model.riftSession){updateRiftClock();return;}
+    if(model.riftPortal){model.root.querySelector('.kp-objective').textContent='Uma fenda de caça apareceu por perto. Aproxime-se e pressione INTERAGIR antes que ela desapareça.';return;}
     const place=model.place, ps=placeState(place.id), need=objective(place), count=new Set(ps.found).size, gym=GYM_FOR_PLACE[place.id], gymDone=!gym||(Array.isArray(player().gymProgress)&&player().gymProgress.includes(gym));
     if(EARLY.includes(place.id)){
       let todo='Siga para a próxima localidade';
@@ -497,21 +582,26 @@
       for(const [x,y] of model.map.lanterns||[]){const light=c.createRadialGradient(offsetX+x,offsetY+y,2,offsetX+x,offsetY+y,28);light.addColorStop(0,`rgba(255,216,119,${pulse*.34})`);light.addColorStop(1,'rgba(255,190,74,0)');c.fillStyle=light;c.fillRect(offsetX+x-28,offsetY+y-28,56,56);}
     }
     const marker=(pt,color,glyph,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12);c.fillStyle='#071019d9';c.fillRect(sx-tw/2,sy-29,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,sy-22)};
-    if(model.map.center)marker(model.map.center,'#99edc6','+','Centro Pokémon');
-    if(model.map.shop)marker(model.map.shop,'#8ac8ff','L','Loja');
-    if(model.map.returnGate&&!nearby(model.map.returnGate))marker(model.map.returnGate,'#c4d8f2','‹','Retornar');
-    const actor=regionImage(NPC_ART[model.place.id]);
-    if(actor?.complete&&actor.naturalWidth){const x=offsetX+(model.map.npc.x+.5)*TILE,y=offsetY+(model.map.npc.y+.5)*TILE;if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);}
-    marker(model.map.npc,'#ffcf70','!',model.place.npc);
-    const route2Story=placeState(model.place.id);
-    if(model.place.id==='route-2'&&!route2Story.storyItemFound){
-      const backpack=regionImage('assets/story/route-2-backpack.png'),x=offsetX+(model.map.object.x+.5)*TILE,y=offsetY+(model.map.object.y+.5)*TILE;
-      if(backpack?.complete&&backpack.naturalWidth){c.save();c.imageSmoothingEnabled=false;c.fillStyle='rgba(217,189,106,.27)';c.beginPath();c.ellipse(x,y+7,18,6,0,0,Math.PI*2);c.fill();c.drawImage(backpack,x-19,y-24,38,37);c.font='bold 10px system-ui';c.textAlign='center';c.textBaseline='middle';const tag='MOCHILA PERDIDA',tagWidth=c.measureText(tag).width+10;c.fillStyle='#071019dc';c.fillRect(x-tagWidth/2,y-34,tagWidth,14);c.fillStyle='#fff2c5';c.fillText(tag,x,y-27);c.restore();}
-      else marker(model.map.object,'#75d5db','?','Mochila perdida');
-    }else if(model.place.id==='viridian-forest')marker(model.map.object,route2Story.storyDone?'#ffe08a':'#75d5db',route2Story.storyDone?'✦':'?',route2Story.storyDone?'Lanterna acesa':'Lanterna antiga');
-    else if(model.place.id==='route-2')marker(model.map.object,'#75d5db','✓','Mochila recuperada');
-    marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima rota');
-    if(model.map.secretChest&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
+    const drawPortal=(pt,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2,pulse=.62+Math.sin(performance.now()/180)*.18,glow=c.createRadialGradient(sx,sy,3,sx,sy,34);glow.addColorStop(0,`rgba(121,247,231,${pulse})`);glow.addColorStop(.55,'rgba(131,91,255,.38)');glow.addColorStop(1,'rgba(55,42,140,0)');c.fillStyle=glow;c.beginPath();c.arc(sx,sy,34,0,Math.PI*2);c.fill();c.strokeStyle='#9af8ea';c.lineWidth=3;c.beginPath();c.ellipse(sx,sy,12,20,0,0,Math.PI*2);c.stroke();c.fillStyle='#e1ffff';c.font='bold 10px system-ui';c.textAlign='center';c.fillText(label,sx,sy-28)};
+    if(model.riftPortal)drawPortal(model.riftPortal,'FENDA · ENTRAR');
+    if(model.place.id===RIFT_ID){drawPortal(model.map.exit,model.riftFrozen?'FENDA FECHANDO':'RETORNO');}
+    else {
+      if(model.map.center)marker(model.map.center,'#99edc6','+','Centro Pokémon');
+      if(model.map.shop)marker(model.map.shop,'#8ac8ff','L','Loja');
+      if(model.map.returnGate&&!nearby(model.map.returnGate))marker(model.map.returnGate,'#c4d8f2','‹','Retornar');
+      const actor=regionImage(NPC_ART[model.place.id]);
+      if(actor?.complete&&actor.naturalWidth){const x=offsetX+(model.map.npc.x+.5)*TILE,y=offsetY+(model.map.npc.y+.5)*TILE;if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);}
+      marker(model.map.npc,'#ffcf70','!',model.place.npc);
+      const route2Story=placeState(model.place.id);
+      if(model.place.id==='route-2'&&!route2Story.storyItemFound){
+        const backpack=regionImage('assets/story/route-2-backpack.png'),x=offsetX+(model.map.object.x+.5)*TILE,y=offsetY+(model.map.object.y+.5)*TILE;
+        if(backpack?.complete&&backpack.naturalWidth){c.save();c.imageSmoothingEnabled=false;c.fillStyle='rgba(217,189,106,.27)';c.beginPath();c.ellipse(x,y+7,18,6,0,0,Math.PI*2);c.fill();c.drawImage(backpack,x-19,y-24,38,37);c.font='bold 10px system-ui';c.textAlign='center';c.textBaseline='middle';const tag='MOCHILA PERDIDA',tagWidth=c.measureText(tag).width+10;c.fillStyle='#071019dc';c.fillRect(x-tagWidth/2,y-34,tagWidth,14);c.fillStyle='#fff2c5';c.fillText(tag,x,y-27);c.restore();}
+        else marker(model.map.object,'#75d5db','?','Mochila perdida');
+      }else if(model.place.id==='viridian-forest')marker(model.map.object,route2Story.storyDone?'#ffe08a':'#75d5db',route2Story.storyDone?'✦':'?',route2Story.storyDone?'Lanterna acesa':'Lanterna antiga');
+      else if(model.place.id==='route-2')marker(model.map.object,'#75d5db','✓','Mochila recuperada');
+      marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima rota');
+      if(model.map.secretChest&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
+    }
     const px=offsetX+model.x*TILE+TILE/2,py=offsetY+model.y*TILE+TILE/2;
     if(W.PsyFollower){c.save();c.translate(offsetX,offsetY);W.PsyFollower.draw(c,{scene:'chapter:'+model.place.id,x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,moving:!!model.held||!!model.autoPath?.length,facing:model.direction,valid:(x,y)=>{const value=model.map.grid[Math.floor(y/TILE)]?.[Math.floor(x/TILE)];return [1,5].includes(value);},trainer:()=>{}});c.restore();}
     const avatar=selectedAvatar(),activityScene=model.place.id,worldActor={x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},action=W.PsyHobbiesVFX?.sampleAction?.(activityScene,{...worldActor,moving:false});
@@ -525,6 +615,7 @@
     }
     W.PsyHobbiesVFX?.drawActor?.(c,activityScene,{x:px,y:py+8,action,atlas:avatar?.animationAtlas,avatarUrl:avatar?.image?.src||''});
     c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-46);W.PsySeason?.drawTitle(c,px,py-61);W.PsyWorldTimeV1?.drawAmbient?.(c,cw,ch);
+    if(model.riftFrozen){c.fillStyle='#04111de6';c.fillRect(0,0,cw,ch);c.fillStyle='#a4fff1';c.font='bold 26px system-ui';c.fillText('A FENDA SE FECHA',cw/2,ch/2-8);c.font='bold 14px system-ui';c.fillStyle='#f5f1ff';c.fillText('Retornando ao ponto de entrada…',cw/2,ch/2+20);}
   }
   let chapterAnimationState=null;
   function selectedAvatar(){
@@ -576,10 +667,11 @@
   }
   function tick() {
     if(!model.root?.classList.contains('open')){model.raf=0;return;}
-    if(W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.()||D.getElementById('psy-hobby-fishing')?.classList.contains('show')){
-      model.held=null;model.autoPath=[];const now=performance.now(),fishingShown=D.getElementById('psy-hobby-fishing')?.classList.contains('show');if(fishingShown&&(!model.lastRender||now-model.lastRender>=33)){render();model.lastRender=now;}model.raf=W.requestAnimationFrame(tick);return;
-    }
     const now=performance.now();
+    if(tickRift(Date.now())){model.raf=W.requestAnimationFrame(tick);return;}
+    if(W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.()||D.getElementById('psy-hobby-fishing')?.classList.contains('show')){
+      model.held=null;model.autoPath=[];const fishingShown=D.getElementById('psy-hobby-fishing')?.classList.contains('show');if(fishingShown&&(!model.lastRender||now-model.lastRender>=33)){render();model.lastRender=now;}model.raf=W.requestAnimationFrame(tick);return;
+    }
     if(model.autoHunt&&Number(player().meta?.vipUntil||0)<=Date.now()){model.autoHunt=false;model.autoPath=[];}
     if(model.autoHunt&&!model.autoPath?.length&&!model.held&&!W.PsyGuide?.isOpen()){
       const cells=[];for(let y=1;y<ROWS-1;y++)for(let x=1;x<COLS-1;x++)if(model.map.grid[y][x]===5)cells.push({x,y,d:Math.hypot(x-model.x,y-model.y)});
@@ -596,6 +688,8 @@
       const id=model.autoSpot,nodes=W.PsyHobbies?.visibleNodes?.(model.place?.id)||[],node=nodes.find(n=>n.id===id);model.autoSpot=null;
       if(node&&Math.hypot((model.x+.5)*TILE-node.x,(model.y+.5)*TILE-node.y)<=48)W.PsyHobbies?.interact?.(model.place.id,node.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});
     }
+    if(!activityAction&&!model.held&&!model.autoPath?.length&&model.autoPortal){model.autoPortal=false;if(model.riftPortal&&Math.hypot(model.x-model.riftPortal.x,model.y-model.riftPortal.y)<=2){enterRift();model.raf=W.requestAnimationFrame(tick);return;}}
+    if(!activityAction&&!model.held&&!model.autoPath?.length&&model.autoRiftExit){model.autoRiftExit=false;if(model.riftSession&&nearby(model.map.exit)){returnFromRift(false);model.raf=W.requestAnimationFrame(tick);return;}}
     if(!activityAction&&model.held&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)){model.lastMove=now;move(model.held)}
     if(!model.lastRender||now-model.lastRender>(activityAction||model.held?33:220)){render();model.lastRender=now;}model.raf=requestAnimationFrame(tick);
   }
@@ -621,9 +715,11 @@
         const wasOpen=!!model.root?.classList.contains('open');
         const encounterPlace=wasOpen?model.place:null;
         if(wasOpen){model.resumeAfterEncounter=true;model.held=null;model.root.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0;}
+        const battleWild=wild||W.battleData?.wild||(typeof battleData!=='undefined'?battleData?.wild:null);
+        model.pendingRiftWin=encounterPlace&&['route','dungeon'].includes(encounterPlace.kind)&&battleWild?.id&&!battleWild.campaignTrainer?{world:encounterPlace.id,kind:encounterPlace.kind,x:model.x,y:model.y,direction:model.direction,autoHunt:model.autoHunt}:null;
         const result=oldStart.apply(this,arguments);
         try{
-          const place=encounterPlace, battleWild=wild||W.battleData?.wild||(typeof battleData!=='undefined'?battleData?.wild:null);
+          const place=encounterPlace;
           if(place&&battleWild?.id){
             const ps=placeState(place.id),id=Number(battleWild.id);if(place.species.includes(id)&&!ps.found.includes(id))ps.found.push(id);
             const saved=journeySave();saved[place.id]=[...new Set([...(saved[place.id]||[]),id])];putJourneySave(saved);saveProgress();updateObjective();
@@ -638,8 +734,9 @@
         if(won&&model.pendingStoryPlace){placeState(model.pendingStoryPlace).storyDone=true;saveProgress();model.pendingStoryPlace=null;}
         const gym=model.pendingGymPlace,place=places().find(p=>p.id===gym),gymId=place&&GYM_FOR_PLACE[place.id];
         if(won&&place&&gymId&&Array.isArray(player().gymProgress)&&player().gymProgress.includes(gymId)){W.PsyCampaignGymGate?.markVictory?.(gymId);model.pendingGymPlace=null;markCleared(place);}else if(!won&&gymId){W.PsyCampaignGymGate?.cancel?.();model.pendingGymPlace=null;}
+        const riftContext=won===true?model.pendingRiftWin:null;model.pendingRiftWin=null;
         const result=oldEnd.apply(this,arguments);
-        if(model.resumeAfterEncounter){model.resumeAfterEncounter=false;W.setTimeout(()=>{if(model.place){model.root?.classList.add('open');updateObjective();render();if(!model.raf)tick()}},0)}
+        if(model.resumeAfterEncounter){model.resumeAfterEncounter=false;W.setTimeout(()=>{if(model.place){model.root?.classList.add('open');updateObjective();render();if(!model.raf)tick()}if(riftContext)createRiftOffer({...riftContext,won:true,trainer:false});},0)}
         if(place&&gymId&&won&&player().gymProgress?.includes(gymId)){
           model.pendingGymPlace=null;W.setTimeout(()=>{openWorld(place.id);if(place.id==='cerulean')showDialog('Misty','Você conquistou a Insígnia da Cascata! Os dois primeiros ginásios de Kanto estão concluídos.');},100);
         }return result;
@@ -663,6 +760,6 @@
   const oldOpenAtlas=W.openKantoJourneyV1;
   if(typeof oldOpenAtlas==='function')W.openKantoJourneyV1=function(){const result=oldOpenAtlas.apply(this,arguments);W.setTimeout(monitorAtlas,0);return result;};
   W.setTimeout(monitorAtlas,0);wrapEncounter();
-  W.PsyKantoPlayableV1={version:2,questRows:chapterQuest,getPosition:()=>model.root?.classList.contains('open')?{world:model.place?.id,x:model.x,y:model.y}:null,navigateTo:target=>{model.autoHunt=false;model.autoObjective=null;model.autoPath=tilePath(target);return model.autoPath.length>0;},navigateObjective:target=>{if(!model.root?.classList.contains('open')||!target)return false;const objective={x:Math.round(Number(target.x)),y:Math.round(Number(target.y))};if(!Number.isFinite(objective.x)||!Number.isFinite(objective.y))return false;const path=tilePath(objective);if(!path.length&&(objective.x!==model.x||objective.y!==model.y))return false;model.autoHunt=false;model.held=null;model.autoObjective=objective;model.autoPath=path;return true;},setAutoHunt:on=>{if(on&&Number(player().meta?.vipUntil||0)<=Date.now()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))W.notif?.('Recurso exclusivo VIP.',2500);return false;}model.autoHunt=!!on;if(!on)model.autoPath=[];return model.autoHunt;},isAutoHunt:()=>!!model.autoHunt,open:openWorld,close:closeWorld,isUnlocked,objective,progress:()=>state()};
+  W.PsyKantoPlayableV1={version:2,questRows:chapterQuest,getPosition:()=>model.root?.classList.contains('open')?{world:model.place?.id,x:model.x,y:model.y}:null,navigateTo:target=>{model.autoHunt=false;model.autoObjective=null;model.autoPath=tilePath(target);return model.autoPath.length>0;},navigateObjective:target=>{if(!model.root?.classList.contains('open')||!target)return false;const objective={x:Math.round(Number(target.x)),y:Math.round(Number(target.y))};if(!Number.isFinite(objective.x)||!Number.isFinite(objective.y))return false;const path=tilePath(objective);if(!path.length&&(objective.x!==model.x||objective.y!==model.y))return false;model.autoHunt=false;model.held=null;model.autoObjective=objective;model.autoPath=path;return true;},setAutoHunt:on=>{if(model.riftSession){W.notif?.('A caçada automática retorna depois da fenda.',1800);return false;}if(on&&Number(player().meta?.vipUntil||0)<=Date.now()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))W.notif?.('Recurso exclusivo VIP.',2500);return false;}model.autoHunt=!!on;if(!on)model.autoPath=[];return model.autoHunt;},isAutoHunt:()=>!!model.autoHunt,open:openWorld,close:closeWorld,isUnlocked,objective,progress:()=>state(),enterHuntRift:enterRift,returnFromHuntRift:()=>returnFromRift(false),considerHuntRift:(context,roll)=>createRiftOffer(context,roll)};
 })(window,document);
 

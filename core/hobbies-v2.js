@@ -157,20 +157,26 @@ function useConsumable(name){
 }
 function field(){const u=p();u.meta=u.meta||{};const s=u.meta.hobbyGatherV2||(u.meta.hobbyGatherV2={nodes:{},decor:[]});s.nodes=s.nodes||{};s.decor=s.decor||[];return s}
 const FIELD={
- 'route-2':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',730,378,'Minério Bruto']],
- 'viridian-forest':[['f1','gardener',185,260,'Flor da Clareira'],['f2','gardener',724,305,'Flor do Bosque'],['f3','gardener',642,218,'Flor Silvestre'],['t1','lumber',690,365,'Madeira Caída'],['m1','miner',407,320,'Minério Bruto']],
- 'route-3':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',758,378,'Minério Bruto']],
- 'route-4':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',758,378,'Minério Bruto']],
- 'mt-moon':[['m1','miner',462,462,'Minério Bruto'],['m2','miner',574,266,'Minério Bruto'],['f1','gardener',238,266,'Flor de Caverna'],['f2','gardener',658,210,'Flor de Caverna'],['d1','treasureHunter',490,378,'Solo rachado'],['d2','treasureHunter',294,350,'Solo rachado'],['d3','treasureHunter',266,154,'Solo rachado']],
+ 'route-2':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',730,378,'Minério Bruto'],['f4','gardener',270,420,'Flor da Trilha'],['t2','lumber',700,280,'Madeira Bruta']],
+ 'viridian-forest':[['f1','gardener',185,260,'Flor da Clareira'],['f2','gardener',724,305,'Flor do Bosque'],['f3','gardener',642,218,'Flor Silvestre'],['t1','lumber',690,365,'Madeira Caída'],['m1','miner',407,320,'Minério Bruto'],['f4','gardener',450,465,'Flor de Musgo'],['m2','miner',280,320,'Minério Bruto']],
+ 'route-3':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',758,378,'Minério Bruto'],['f4','gardener',420,470,'Flor da Trilha'],['t2','lumber',810,170,'Madeira Bruta']],
+ 'route-4':[['f1','gardener',434,381,'Flor do Campo'],['f2','gardener',430,239,'Flor do Campo'],['f3','gardener',691,183,'Flor do Campo'],['t1','lumber',460,292,'Madeira Bruta'],['m1','miner',758,378,'Minério Bruto'],['f4','gardener',420,470,'Flor da Trilha'],['t2','lumber',810,170,'Madeira Bruta']],
+ 'mt-moon':[['m1','miner',462,462,'Minério Bruto'],['m2','miner',574,266,'Minério Bruto'],['m3','miner',118,418,'Veio de Parede'],['m4','miner',782,430,'Veio de Parede'],['f1','gardener',72,266,'Flor de Caverna'],['f2','gardener',828,210,'Flor de Caverna'],['f3','gardener',82,520,'Flor de Musgo'],['f4','gardener',818,520,'Flor de Musgo'],['d1','treasureHunter',490,378,'Solo rachado'],['d2','treasureHunter',294,350,'Solo rachado'],['d3','treasureHunter',266,154,'Solo rachado']],
  'route-1':[
   ['f1','gardener',276,301,'Flor do Campo'],['f2','gardener',411,296,'Flor do Campo'],['f3','gardener',605,250,'Flor do Campo'],
   ['t1','lumber',521,280,'Madeira Bruta'],['o1','miner',335,258,'Minério Bruto'],
   ['d1','treasureHunter',285,325,'Solo rachado',1],['d2','treasureHunter',706,275,'Solo rachado',5,'trail']],
  'route-cave':[
-  ['o1','miner',230,370,'Minério Bruto'],['o2','miner',664,376,'Minério Bruto'],
+  ['o1','miner',230,370,'Minério Bruto'],['o2','miner',664,376,'Minério Bruto'],['o3','miner',820,380,'Veio de Cristal'],
   ['d1','treasureHunter',310,466,'Solo rachado'],['d2','treasureHunter',586,475,'Solo rachado'],
   ['d3','treasureHunter',450,536,'Solo rachado'],
-  ['f1','gardener',78,240,'Flor de Cristal'],['f2','gardener',822,240,'Flor de Cristal']
+  ['f1','gardener',78,240,'Flor de Cristal'],['f2','gardener',822,240,'Flor de Cristal'],['f3','gardener',78,520,'Flor de Cristal']
+ ],
+ 'kanto-hunt-rift':[
+  ['o1','miner',92,282,'Veio de Cristal'],['o2','miner',172,440,'Minério Bruto'],['o3','miner',96,468,'Veio Luminoso'],['o4','miner',220,350,'Solo para escavação'],['o5','miner',116,190,'Minério Bruto'],
+  ['t1','lumber',292,230,'Madeira Bruta'],['t2','lumber',300,420,'Tronco Caído'],['t3','lumber',690,444,'Madeira Bruta'],
+  ['f1','gardener',215,96,'Flor de Caverna'],['f2','gardener',680,92,'Flor Encantada'],['f3','gardener',64,520,'Flor de Cristal'],['f4','gardener',830,500,'Flor Silvestre'],
+  ['d1','treasureHunter',560,150,'Solo rachado'],['d2','treasureHunter',420,370,'Solo rachado'],['d3','treasureHunter',790,470,'Solo rachado']
  ]
 };
 function fieldNodes(scene){
@@ -190,7 +196,7 @@ const SPOT_REWARDS={
 const spotQualityCache=new Map();
 function masteryEffect(id,effect){return Math.max(0,count(W.PsyHobbyMastery?.effect?.(id,effect)||0))}
 function requiredHits(id){return Math.max(1,5-masteryEffect(id,'hits'))}
-function respawnDelay(id){const base=(3+Math.random()*5)*60000,reduce=Math.min(.5,masteryEffect(id,'respawn')*.1);return Math.max(60000,base*(1-reduce))}
+function respawnDelay(id,scene){if(scene==='kanto-hunt-rift')return 3500+Math.random()*2000;const base=(3+Math.random()*5)*60000,reduce=Math.min(.5,masteryEffect(id,'respawn')*.1);return Math.max(60000,base*(1-reduce))}
 function stableSpotRarity(scene,id,kind,record){
  const chances=W.PsyHobbyMastery?.chances?.(kind)||{common:100,rare:0,epic:0,legend:0};
  const level=state()[kind]?.level||0,rankRare=masteryEffect(kind,'rare'),rankEpic=masteryEffect(kind,'epic'),rankLegend=masteryEffect(kind,'legend'),respawn=count(record?.respawnAt);
@@ -227,7 +233,7 @@ function collect(scene,id,actor=null){
  if(node.kind==='treasureHunter')return !!W.PsyTreasureHuntV1?.hit?.(scene,node,actor);
  const f=field(),record=f.nodes[scene+':'+id]||{},need=requiredHits(node.kind),hit=node.kind==='miner'||node.kind==='lumber'?Math.min(need,count(record.hits)+1):need;
  if(hit<need){f.nodes[scene+':'+id]={hits:hit,respawnAt:0};W.PsyHobbiesVFX?.onSpotHit?.({scene,node,hit,total:need,completed:false,actor});save();W.notif?.('Progresso de coleta: '+hit+'/'+need,1200);return true}
- f.nodes[scene+':'+id]={hits:0,respawnAt:Date.now()+respawnDelay(node.kind)};
+ f.nodes[scene+':'+id]={hits:0,respawnAt:Date.now()+respawnDelay(node.kind,scene)};
  const reward=rewardFor(node.kind,node.rarity),inv=inventory();inv[reward.item]=count(inv[reward.item])+reward.quantity;addXP(node.kind,16);
  const gathered=p().meta.hobbyGatherTotalsV1||(p().meta.hobbyGatherTotalsV1={});gathered[node.kind]=count(gathered[node.kind])+1;
  W.psyHobbyGrantFieldXp?.(18,8);
@@ -290,7 +296,8 @@ function para(parent,text){const e=D.createElement('p');e.textContent=text;paren
 const WATER={
  'route-1':[[132,431,95],[96,350,90]],
  'viridian':[[615,655,110],[470,550,70]],
- 'pallet':[[530,630,65]]
+ 'pallet':[[530,630,65]],
+ 'kanto-hunt-rift':[[790,275,95],[738,360,65]]
 };
 function canFish(scene,pos,canvas){
  const zones=WATER[scene]||[];
@@ -315,11 +322,11 @@ function fishOverlay(){
  el.querySelector('[data-fish-close]').onclick=()=>stopFishing(false);
  return el;
 }
-function stopFishing(success){
+function stopFishing(success,options={}){
  const run=fishingRun;if(!run)return;fishingRun=null;W.cancelAnimationFrame?.(run.raf);
  W.PsyHobbiesVFX?.finishFishing?.(run.scene,!!success);
  const el=D.getElementById('psy-hobby-fishing');el?.classList.remove('show');W.PsyKantoWorldV2?.setStoryLock?.(false);
- if(!success){W.notif?.('A linha se rompeu, o peixe fugiu.',2600);return}
+ if(!success){if(!options.silent)W.notif?.('A linha se rompeu, o peixe fugiu.',2600);return}
  const reward=rollReward('fisher'),inv=inventory();inv[reward.item]=count(inv[reward.item])+reward.quantity;addXP('fisher',25);W.psyHobbyGrantFieldXp?.(25,12);
  const gathered=p().meta.hobbyGatherTotalsV1||(p().meta.hobbyGatherTotalsV1={});gathered.fisher=count(gathered.fisher)+1;
  save();W.notif?.('Pesca concluída! +'+reward.quantity+' '+reward.item+' e XP para treinador, Pokémon e Hobby.',3400);
@@ -433,5 +440,5 @@ const previousBuff=W.getTotalBuff;
 if(typeof previousBuff==='function')W.getTotalBuff=function(stat){return Number(previousBuff.apply(this,arguments)||0)+bonus(stat)};
 if(typeof W.openCraft5==='function')W.openCraft5=()=>openDetail('engineer');
 if(typeof W.psyCraftElementBall==='function')W.psyCraftElementBall=()=>openDetail('engineer');
-W.PsyHobbies={open,openDetail,close,refresh:render,isOpen:()=>!!root()?.classList.contains('show'),isFishing:()=>!!fishingRun,unlock,levelUp,levelRequirements,exchange,addXP,recordKill,state,definitions:JOBS,ballLadder:BALLS,unlockProgress,healMultiplier,bonus,useConsumable,visibleNodes,nearby,collect,interact,fieldDefinitions:()=>FIELD,rarityForSpot:stableSpotRarity,requiredHits,rollReward,spotEffects:{requiredHits,respawnDelay,rollReward,rewardFor},drawField,place,decorAt,moveDecor,drawDecor,decorate,field,canFish,startFishing,stopFishing};
+W.PsyHobbies={open,openDetail,close,refresh:render,isOpen:()=>!!root()?.classList.contains('show'),isFishing:()=>!!fishingRun,unlock,levelUp,levelRequirements,exchange,addXP,recordKill,state,definitions:JOBS,ballLadder:BALLS,unlockProgress,healMultiplier,bonus,useConsumable,visibleNodes,nearby,collect,interact,fieldDefinitions:()=>FIELD,rarityForSpot:stableSpotRarity,requiredHits,rollReward,spotEffects:{requiredHits,respawnDelay,rollReward,rewardFor},drawField,place,decorAt,moveDecor,drawDecor,decorate,field,canFish,startFishing,stopFishing,cancelFishing:()=>stopFishing(false,{silent:true})};
 })(window,document);

@@ -43,16 +43,20 @@ const hobbies=fs.readFileSync('core/hobbies-v2.js','utf8');
 const html=fs.readFileSync('index.html','utf8');
 assert(playable.includes('PsyKantoEarlyChaptersV1?.get?.(place.id)'),'authored collision maps must feed the production renderer');
 assert(playable.includes('data-kp-route-footer')&&playable.includes('data-kp-route'),'both route controls must use one handler');
-assert(playable.includes('const followObjective=()=>W.PsyCampaignAutomation?.startPrimaryRoute?.()'),'route controls must use the mission controller');
+assert(playable.includes('const followObjective=()=>{if(model.riftSession)')&&playable.includes('W.PsyCampaignAutomation?.startPrimaryRoute?.()'),'route controls must share the mission controller and stay locked during the timed rift');
+assert(playable.includes('function tickRift(now=Date.now())')&&playable.includes("W.PsyKantoHuntRiftV1?.status?.(model.riftSession,now)"),'the playable map must tick the real rift session deadline');
+assert(playable.includes("art:'assets/story/kanto-hunt-rift-v1.webp'"),'the temporary map must render its authored scene art');
+assert(playable.includes('if(pendingRift?.context.world===id)attachRiftOffer(pendingRift)'),'a pending portal must be positioned before a reopened map renders it');
 assert(playable.includes("model.place.id==='viridian-forest'"),'Forest field gathering must be integrated into the current scene');
 assert(playable.includes('const spot=W.PsyHobbies?.nearby?.(model.place.id,{x,y},32)')&&playable.includes('model.autoSpot=spot.id;model.autoPath=path'),'mouse and touch taps on hobby spots must path to and start gathering');
 assert(playable.includes('model.map?.encounterLevels||'),'the authored map encounter level ranges must drive live battles');
 assert(hobbies.includes("'viridian-forest':[['f1','gardener'"),'Forest needs its own existing-system gathering spots');
-for(const [id,points] of [['route-2',[[434,381],[430,239],[691,183],[460,292],[730,378]]],['viridian-forest',[[185,260],[724,305],[642,218],[690,365],[407,320]]]]){
+for(const [id,points] of [['route-2',[[434,381],[430,239],[691,183],[460,292],[730,378],[270,420],[700,280]]],['viridian-forest',[[185,260],[724,305],[642,218],[690,365],[407,320],[450,465],[280,320]]]]){
  const map=api.get(id);for(const [x,y] of points)assert(reaches(map,{x:Math.floor(x/28),y:Math.floor(y/28)}),id+' Hobby spot must be connected to the map spawn at '+x+','+y);
 }
 assert(html.indexOf('core/kanto-early-chapters-v1.js')<html.indexOf('core/kanto-campaign-playable-v1.js'),'the hand-authored data must load before its renderer');
+assert(html.indexOf('core/kanto-hunt-rift-v1.js')>html.indexOf('core/kanto-campaign-playable-v1.js'),'the shared timer must load after both production map controllers');
 assert(playable.includes("model.place?.kind==='route'||model.place?.kind==='dungeon'"),'route and dungeon spots need production drawing and touch targets');
-for(const file of ['assets/story/route-2-artist-v1.webp','assets/story/viridian-forest-route2-v1.webp'])assert(fs.existsSync(file),file+' is missing');
+for(const file of ['assets/story/route-2-artist-v1.webp','assets/story/viridian-forest-route2-v1.webp','assets/story/kanto-hunt-rift-v1.webp'])assert(fs.existsSync(file),file+' is missing');
 new Function(source);new Function(playable);
 console.log('PASS: Route 2 and Forest collision connectivity, story landmarks, region links, map art and shared mission-route controls');

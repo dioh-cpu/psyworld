@@ -1,0 +1,72 @@
+/* Timed wild-hunt rift lifecycle, independent of wall-clock timing. */
+const fs=require('node:fs');
+const vm=require('node:vm');
+const assert=require('node:assert/strict');
+const source=fs.readFileSync('core/kanto-hunt-rift-v1.js','utf8');
+const legacy=fs.readFileSync('core/kanto-world-v2.js','utf8');
+const campaign=fs.readFileSync('core/kanto-campaign-playable-v1.js','utf8');
+const html=fs.readFileSync('index.html','utf8');
+new Function(source);
+const W={};
+vm.runInNewContext(source,{window:W});
+const Rift=W.PsyKantoHuntRiftV1;
+assert(Rift);
+assert.equal(Rift.rules.durationMs,180000,'a portal visit lasts exactly three minutes');
+assert.equal(Rift.rules.freezeMs,700,'the frozen closing frame is brief');
+assert.equal(Rift.rules.chance,.08,'wild victories can open a low-frequency random portal');
+assert(legacy.includes("exit:[448,220]"),'the return portal and its label must be visible within the map viewport');
+assert(legacy.includes('function drawRiftGate('),'the return exit must render as a portal, not a generic marker');
+assert(legacy.includes("W.PsyKantoHuntRiftV1?.tryOffer?.('legacy',{...pending,won:true,trainer:false},Date.now())"),'legacy route and cave encounters can open a portal only after victory');
+assert(legacy.includes("classList.add('kw2-rift-active')")&&legacy.includes("classList.remove('kw2-rift-active')")&&fs.readFileSync('css/kanto-world-v2.css','utf8').includes('#psy-kanto-world-v2.kw2-rift-active #psy-campaign-quests{display:none!important}'),'legacy map also hides and restores the mission tracker during a rift');
+assert(html.includes('css/kanto-world-v2.css?build=KANTO_HUNT_RIFT_V1_20261108'),'the legacy rift mission HUD CSS invalidates the public stylesheet cache');
+assert(campaign.includes('const exit={x:16,y:4}'),'the campaign renderer must keep its return portal clear of the header');
+assert(campaign.includes("model.pendingRiftWin=encounterPlace&&['route','dungeon'].includes(encounterPlace.kind)&&battleWild?.id&&!battleWild.campaignTrainer?"),'campaign encounters exclude cities, trainer battles, losses and invalid wild actors');
+assert(campaign.includes("'A FENDA SE FECHA'"),'the campaign renderer visibly freezes the scene before teleporting home');
+assert(campaign.includes('#psy-kanto-world.psy-rift-active #psy-campaign-quests{display:none!important}')&&campaign.includes("classList.add('psy-rift-active')")&&campaign.includes("classList.remove('psy-rift-active')"),'the unrelated campaign quest panel is hidden only while the temporary map is active');
+
+const origin={world:'route-2',x:10,y:12,direction:'left'};
+const eligible={won:true,trainer:false,kind:'route',world:'route-2',x:10,y:12,direction:'left'};
+assert.equal(Rift.tryOffer('campaign',{...eligible,won:false},1000,0),null,'losses cannot open portals');
+assert.equal(Rift.tryOffer('campaign',{...eligible,trainer:true},1000,0),null,'trainer battles cannot open wild portals');
+assert.equal(Rift.tryOffer('campaign',{...eligible,kind:'city'},1000,0),null,'safe cities cannot open hunt portals');
+assert.equal(Rift.tryOffer('campaign',eligible,1000,.081),null,'the offer chance is checked against the configured threshold');
+const offer=Rift.tryOffer('campaign',eligible,1000,.079);
+assert(offer,'an eligible wild victory can open a portal');
+assert.equal(Rift.getOffer('legacy',1000),null,'offers are scoped to the active map controller');
+assert.equal(Rift.getOffer('campaign',offer.expiresAt),null,'unentered portals expire cleanly');
+
+const second=Rift.tryOffer('campaign',eligible,200000,.01);
+assert(second,'a later hunt may produce a new portal');
+const session=Rift.enter('campaign',second.id,origin,200000);
+assert(session,'the matching portal starts a timed run');
+assert.equal(Rift.enter('campaign',second.id,origin,200001),null,'a portal cannot be entered twice');
+assert.equal(Rift.status(session,379999).phase,'active','the visit remains active until the exact deadline');
+assert.equal(Rift.status(session,380000).phase,'closing','the image freezes at three minutes');
+assert.equal(Rift.status(session,380699).phase,'closing','the frozen closing frame is held briefly');
+assert.equal(Rift.status(session,380700).phase,'return','the controller is instructed to restore the origin afterward');
+assert.equal(Rift.finish(session),origin,'return restores the same saved location');
+assert.equal(Rift.status(session,380701).phase,'inactive','a finished run cannot be replayed for another reward');
+
+Rift._resetForTests();
+const expiring=Rift.tryOffer('legacy',{...eligible,world:'route-1'},500000,.01);
+assert(expiring);
+assert(Rift.clearOffer('legacy',expiring.id),'leaving the origin clears the temporary entrance');
+assert.equal(Rift.getOffer('legacy',500001),null);
+console.log('PASS: random offer gating, three-minute deadline, freeze interval, controller ownership and return lifecycle');
+
+const treasureSource=fs.readFileSync('core/treasure-hunt-v1.js','utf8');new Function(treasureSource);
+const treasurePlayer={trainerLevel:3,inventory:{},gold:0,meta:{treasureHuntV1:{hobbies:{treasureHunter:{level:1,xp:0,points:1,skills:{}},looter:{level:0,xp:0,points:0,skills:{}}},sites:{},chests:{},stats:{digs:0,chestsOpened:0},psycoinTenths:0,cosmetic:{bountyHunter:false,equipped:false},titles:{}}}};
+const treasureW={P:treasurePlayer,PsyKantoJourneyV1:{places:[{id:'mt-moon',kind:'dungeon'},{id:'diglett-cave',kind:'dungeon'}]},addEventListener(){},autoSave(){},updateHUD(){},notif(){}};
+const treasureD={getElementById(){return null},createElement(){return {}}};
+vm.runInNewContext(treasureSource,{window:treasureW,document:treasureD,console,Math,Date,Map,Set,WeakMap});
+(async()=>{
+ const accepted=await treasureW.PsyTreasureHuntV1.hit('mt-moon',{id:'d3',hits:0});
+ assert(accepted,'a Mt. Moon floor crack remains an active treasure-hunting interaction');
+ assert.equal(treasurePlayer.meta.treasureHuntV1.sites['cave-3'].hits,1,'every dungeon crack routes to the cave-authorized server site IDs');
+ assert.equal(treasurePlayer.meta.hobbyGatherV2.nodes['mt-moon:d3'].hits,1,'the cave progress overlay follows the same server-authoritative hit');
+ const portalAccepted=await treasureW.PsyTreasureHuntV1.hit('kanto-hunt-rift',{id:'d1',hits:0});
+ assert(portalAccepted,'a portal crack uses the same treasure-hunting controller as cave cracks');
+ assert.equal(treasurePlayer.meta.treasureHuntV1.sites['cave-1'].hits,1,'portal excavations reuse the server-authorized cave site ID');
+ assert.equal(treasurePlayer.meta.hobbyGatherV2.nodes['kanto-hunt-rift:d1'].hits,1,'portal crack progress is kept in sync with the existing treasure system');
+ console.log('PASS: dungeon excavation spots use valid cave IDs and synchronize progress across caves');
+})().catch(error=>{console.error(error);process.exitCode=1});
