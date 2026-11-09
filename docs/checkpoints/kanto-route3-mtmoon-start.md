@@ -2,8 +2,8 @@
 
 - Base da `main`: `bc4e21933949a60bc6e35c186579ff2f5a62043b`.
 - Branch: `campaign/kanto-route3-mtmoon-v1`.
-- Implementação: `5604c0f047a38c9e8be6ba9badfcd8de419248c9` + correções de cobertura/posicionamento nesta branch.
-- Estado: Rota 3 validada e publicada; sem mudanças de gameplay pendentes conhecidas.
+- Implementação: `5604c0f047a38c9e8be6ba9badfcd8de419248c9`; cobertura/posicionamento finalizados em `4c193aa0a2c48a94681be38cf01ad8ab76436b12`.
+- Estado: Rota 3 validada localmente; push para `main` pendente.
 
 Concluído: mapa autoral `assets/story/kanto-route-3-v1.webp`; trilha/colisões alinhadas, entrada de Pewter e saída para Monte Lua; sete spots existentes posicionados em áreas acessíveis, sem bloquear portões ou Davi; Davi usa idle aprovado; rota usa câmera, WALK/IDLE e movimento contínuo da V4, com ambiente leve. Corrigido o Auto Route para avançar após falar com NPCs. Não houve alteração de Monte Lua.
 
