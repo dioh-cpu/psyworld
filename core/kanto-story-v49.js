@@ -39,9 +39,9 @@ function enter(from,to){if(running||from===to)return;const m=memory();if(to==='p
  }
  if(to==='route-2'&&!m.seen.route2Arrival){
  play('route2Arrival',[
-  {art:ART.route2,location:'ROTA 2 · BORDA DA FLORESTA',chapter:'KANTO · CAMINHOS OCULTOS',title:'A trilha muda sob as copas',text:'A estrada se estreita entre árvores antigas. A luz atravessa as folhas em pequenas manchas douradas. Perto de uma clareira, Caio procura algo entre a grama.'},
-  {art:ART.route2,location:'ROTA 2 · CLAREIRA',speaker:'Caio · treinador viajante',title:'Um caderno que não pode se perder',text:'Deixei minha mochila perto da trilha quando fui atrás de um Pokémon. O caderno dentro dela tem as anotações que fiz para atravessar a mata. Você pode me ajudar a encontrá-la?'},
-  {art:ART.route2,location:'ROTA 2 · CAMINHO LESTE',speaker:'Sua jornada',title:'Siga as marcas na grama',text:'Você combina de olhar a clareira ao oeste antes de continuar para o norte. As pegadas quase desaparecem sob as folhas, mas ainda apontam o caminho.'}
+  {art:ART.route2,location:'ROTA 2 · BORDA DA FLORESTA',chapter:'KANTO · CAMINHOS OCULTOS',title:'A trilha muda sob as copas',text:'A estrada se estreita entre árvores antigas. A luz atravessa as folhas em pequenas manchas douradas. Perto de uma clareira, Caio segue pequenas pegadas na borda da grama.'},
+  {art:ART.route2,location:'ROTA 2 · CLAREIRA',speaker:'Caio · treinador viajante',title:'O rastro de uma mochila',text:'Um Pokémon saiu do mato, agarrou minha mochila pela alça e sumiu entre as folhas! Meu caderno de viagem está lá dentro. Você pode me ajudar a recuperar?'},
+  {art:ART.route2,location:'ROTA 2 · CAMINHO LESTE',speaker:'Sua jornada',title:'Siga as marcas na grama',text:'Caio aponta as pegadas que entram no mato. O Pokémon ainda deve estar pela rota. Você decide investigar a grama antes de seguir para a floresta.'}
  ]);return;
  }
  }

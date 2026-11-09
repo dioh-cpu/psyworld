@@ -36,7 +36,7 @@ assert(css.includes('@media(max-height:500px) and (orientation:landscape)'),'Lan
 assert(html.includes('css/kanto-world-v2.css?build=KANTO_HUNT_RIFT_V1_20261108'),'CSS cache mismatch: css/kanto-world-v2.css');
 assert(html.includes('core/kanto-world-v2.js?build=KANTO_AUTO_ROUTE_DIALOG_V2_20261109'),'JS cache mismatch: core/kanto-world-v2.js');
 assert(world.includes("assets/story/route-1-hunt-gap-v1.png")&&world.includes('o.huntFenceGapApplied'),'Route 1 hunting entrance must render its fence-gap art exactly once');
-assert(html.includes('core/kanto-campaign-playable-v1.js?build=KANTO_ROUTE2_REFERENCE_CAMERA_V2_20261109'),'JS cache mismatch: core/kanto-campaign-playable-v1.js');
+assert(html.includes('core/kanto-campaign-playable-v1.js?build=KANTO_CONTINUOUS_V4_20261109'),'JS cache mismatch: core/kanto-campaign-playable-v1.js');
 assert(html.includes('core/kanto-viridian-v1.js?build=VIRIDIAN_NPC_PIXELART_V2_20261109'),'Viridian interaction map must load in production');
 assert(html.indexOf('core/kanto-map-data-v2.js')<html.indexOf('core/kanto-viridian-v1.js')&&html.indexOf('core/kanto-viridian-v1.js')<html.indexOf('core/kanto-world-v2.js'),'Viridian map data must extend the base map before controller initialization');
 assert(html.includes('core/world-time-v1.js?build=KANTO_BRASIL_CLOCK_V1_20261107'),'Brasília clock bundle must be versioned');
