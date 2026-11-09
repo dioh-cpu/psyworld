@@ -4,7 +4,7 @@ const source=fs.readFileSync('core/kanto-early-chapters-v1.js','utf8');
 const W={};vm.runInNewContext(source,{window:W});
 const api=W.PsyKantoEarlyChaptersV1;
 assert.equal(api.version,1);
-assert.deepEqual(Array.from(api.ids),['route-2','viridian-forest']);
+assert.deepEqual(Array.from(api.ids),['route-2','route-3','viridian-forest']);
 
 function reaches(map,target){
  const seen=new Set(),queue=[[map.spawn.x,map.spawn.y]];
@@ -25,7 +25,7 @@ for(const id of api.ids){
  for(const point of [map.spawn,map.npc,map.object,map.exit,map.returnGate])assert(reaches(map,point),id+' has a disconnected landmark at '+JSON.stringify(point));
  assert(map.art.endsWith('.webp'));
 }
-const route=api.get('route-2'),forest=api.get('viridian-forest');
+const route=api.get('route-2'),route3=api.get('route-3'),forest=api.get('viridian-forest');
 assert.equal(route.art,'assets/story/route-2-artist-v1.webp');
 assert.equal(forest.art,'assets/story/viridian-forest-route2-v1.webp');
 assert.equal(route.returnTo.world,'viridian');
@@ -34,6 +34,8 @@ assert.equal(forest.returnTo.world,'route-2');
 assert.equal(forest.next.world,'pewter');
 assert.deepEqual(Array.from(route.encounterLevels),[3,6]);
 assert.deepEqual(Array.from(forest.encounterLevels),[4,8]);
+assert.equal(route3.next.world,'mt-moon');
+assert.equal(route3.returnTo.world,'pewter');
 assert(forest.lanterns.length===3);
 const sourceRoute=api.get('route-2');sourceRoute.grid[1][1]=0;
 assert.equal(api.get('route-2').grid[1][1],9,'get() returns a fresh collision grid');
@@ -65,7 +67,7 @@ assert(playable.includes('drawSceneAmbience(c,now)')&&playable.includes('render(
 assert(playable.includes('drawChapterNpcIdle(c,model.map.id||model.place.id,x,y,model.map.npcIdle)')&&playable.includes('walk.renderAnimated(ctx,data.atlas,data.state,{moving:false'),'visible story NPCs need subtle idle motion with their ground shadow anchored');
 assert(playable.includes('const npcClose=enhancedScene&&Math.abs(model.x-model.map.npc.x)+Math.abs(model.y-model.map.npc.y)<=2')&&playable.includes('if(!npcClose)marker(model.map.npc'),'nearby dialogue labels must not collide with the player name');
 assert(playable.includes('const pointVisible=(x,y)=>')&&playable.includes('const labelVisible=(x,y,width,height=14)=>')&&playable.includes('if(!pointVisible(sx,sy))return'),'off-camera story markers must not jump to the viewport edge');
-assert(playable.includes('#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none'),'only Route 2 and Forest should fill the stage without aspect-ratio letterboxing');
-for(const file of ['assets/story/route-2-artist-v1.webp','assets/story/viridian-forest-route2-v1.webp','assets/story/kanto-hunt-rift-v1.webp'])assert(fs.existsSync(file),file+' is missing');
+assert(playable.includes('#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-3"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none'),'the Kanto route maps must fill the stage without aspect-ratio letterboxing');
+for(const file of ['assets/story/route-2-artist-v1.webp','assets/story/viridian-forest-route2-v1.webp','assets/story/kanto-hunt-rift-v1.webp','assets/story/kanto-route-3-v1.webp'])assert(fs.existsSync(file),file+' is missing');
 new Function(source);new Function(playable);
 console.log('PASS: Route 2 and Forest collision connectivity, story landmarks, region links, map art and shared mission-route controls');

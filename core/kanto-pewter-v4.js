@@ -7,7 +7,7 @@
   const rect=(a,b,c,d)=>{for(let y=b;y<=d;y++)for(let x=a;x<=c;x++)grid[y][x]=1;};
   rect(15,8,16,18);rect(3,11,30,11);rect(8,5,8,7);rect(8,7,14,7);rect(14,7,15,8);
   rect(22,5,22,11);rect(6,10,6,11);rect(25,10,25,11);rect(7,15,7,16);rect(7,16,24,16);rect(24,15,24,16);
-  return {id:'pewter',grid,art:root+'city.webp',spawn:{x:15,y:18},returnGate:{x:15,y:18},returnTo:{world:'viridian-forest',spawn:{x:17,y:3}},exit:{x:30,y:11},next:{world:'route-3',spawn:{x:3,y:17}},npc:{x:16,y:12},npcName:'Guia de Pewter',npcIdle:'basic-adventure-girl.webp',npcArt:'assets/kanto/cinematics/trainers/adventure_girl.webp',object:{x:8,y:5},doors:[
+  return {id:'pewter',grid,art:root+'city.webp',spawn:{x:15,y:18},returnGate:{x:15,y:18},returnTo:{world:'viridian-forest',spawn:{x:17,y:3}},exit:{x:30,y:11},next:{world:'route-3',spawn:{x:3,y:13}},npc:{x:16,y:12},npcName:'Guia de Pewter',npcIdle:'basic-adventure-girl.webp',npcArt:'assets/kanto/cinematics/trainers/adventure_girl.webp',object:{x:8,y:5},doors:[
    {id:'gym',name:'Ginásio de Brock',x:22,y:5},{id:'museum',name:'Museu de Ciências',x:8,y:5},
    {id:'center',name:'Centro Pokémon',x:6,y:10},{id:'market',name:'Loja',x:25,y:10},
    {id:'home',name:'Casa dos Rocha',x:7,y:15},{id:'house-east',name:'Casa do Colecionador',x:24,y:15}

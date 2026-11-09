@@ -1,4 +1,4 @@
-/* PSYWORLD — hand-authored collision layouts for the Route 2 story segment. */
+/* PSYWORLD — hand-authored collision layouts for the early Kanto routes. */
 (function (W) {
   'use strict';
   if (W.PsyKantoEarlyChaptersV1) return;
@@ -62,6 +62,25 @@
       next:{world:'viridian-forest',spawn:{x:16,y:18}},
       encounterLevels:[3,6]
     },
+    'route-3': {
+      id:'route-3', cols:COLS, rows:ROWS, tile:28,
+      art:'assets/story/kanto-route-3-v1.webp',
+      grid:makeGrid(
+        [
+          [[2,13],[6,13],1], [[6,13],[9,11],1], [[9,11],[11,8],1], [[11,8],[14,5],1],
+          [[14,5],[17,6],1], [[17,6],[19,8],1], [[19,8],[21,11],1], [[21,11],[24,13],1],
+          [[24,13],[30,13],1]
+        ],
+        [[3,13,5,15],[9,8,10,10],[19,10,20,11],[15,5,16,6],[24,12,25,13],[6,11,7,12],[27,12,29,16]],
+        [[3,14,4,14],[10,8,10,8],[20,11,20,11],[15,6,15,6],[25,12,25,12],[7,11,7,11],[27,15,27,15]]
+      ),
+      spawn:{x:3,y:13}, returnGate:{x:3,y:13},
+      returnTo:{world:'pewter',spawn:{x:29,y:11}},
+      npc:{x:14,y:5}, npcName:'Escoteiro Davi', npcIdle:'basic-adventure-boy.webp',
+      object:{x:9,y:11}, exit:{x:29,y:13},
+      next:{world:'mt-moon',spawn:{x:3,y:17}},
+      encounterLevels:[7,11]
+    },
     'viridian-forest': {
       id:'viridian-forest', cols:COLS, rows:ROWS, tile:28,
       art:'assets/story/viridian-forest-route2-v1.webp',
@@ -82,6 +101,12 @@
       lanterns:[[367,230],[445,180],[527,153]], encounterLevels:[4,8]
     }
   };
+
+  // Place the seven already-registered Route 3 gathering nodes on reachable
+  // clearings beside the trail, matching their production coordinates.
+  for (const [x,y] of [[4,14],[10,8],[20,11],[15,6],[25,12],[7,11],[27,15]]) {
+    if (MAPS['route-3'].grid[y]?.[x] !== undefined) MAPS['route-3'].grid[y][x] = GRASS;
+  }
 
   function cloneMap(map) {
     return {...map, grid:map.grid.map(row=>row.slice()),

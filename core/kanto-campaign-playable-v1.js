@@ -108,7 +108,7 @@
       #psy-kanto-world [data-kp-fish]{background:#0e5d80;border-color:#9ee4f5;min-height:52px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
       #psy-kanto-canvas{box-sizing:border-box;width:min(100vw,calc((100vh - 176px)*1.6));height:auto;aspect-ratio:8/5;max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
-      #psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none}
+      #psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-3"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none}
       #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,38px);gap:3px}
       .kp-controls button{padding:0;font-size:17px;background:#243747}.kp-controls [data-dir="up"]{grid-column:2}.kp-controls [data-dir="left"]{grid-column:1;grid-row:2}.kp-controls [data-dir="down"]{grid-column:2;grid-row:2}.kp-controls [data-dir="right"]{grid-column:3;grid-row:2}
@@ -116,7 +116,7 @@
       #psy-kanto-dialog{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:13px 15px;background:#0a111df2;border:1px solid #e5c77e;border-radius:12px;box-shadow:0 10px 40px #000a;display:none;z-index:2}
       #psy-kanto-dialog.open{display:block}.kp-dialog-title{color:#ffe09a;font-weight:900;margin-bottom:5px}.kp-dialog-text{font-size:13px;line-height:1.45;color:#e4eaf0}.kp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
       #psy-kanto-world .psy-kanto-enter-world{width:100%;margin:8px 0 12px}
-      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas{width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
+      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-3"] #psy-kanto-canvas{width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
     `;
     style.textContent+=`
       #psy-kanto-world .kp-head{box-sizing:border-box;flex:0 0 var(--kp-top,60px);height:var(--kp-top,60px);min-height:0;padding:4px 8px}
@@ -199,11 +199,11 @@
     cerulean:{text:'Bem-vindo ao ginásio aquático! Sou Misty. Depois de Brock, é hora de testar sua equipe contra a força da água.'}
   };
   const ART_ROOT='assets/kanto/approved/';
-  const MAP_ART={viridian:ART_ROOT+'viridian-approved.webp',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp','viridian-forest':'assets/story/viridian-forest-route2-v1.webp'};
+  const MAP_ART={viridian:ART_ROOT+'viridian-approved.webp',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp','viridian-forest':'assets/story/viridian-forest-route2-v1.webp','route-3':'assets/story/kanto-route-3-v1.webp'};
   const NPC_ART={viridian:'assets/kanto/npcs/fisher-v9.svg','route-2':'assets/kanto/cinematics/trainers/black_boy.webp','viridian-forest':'assets/kanto/cinematics/trainers/black_girl.webp',pewter:ART_ROOT+'brock-expressions.webp','route-3':'assets/kanto/cinematics/trainers/adventure_boy.webp','mt-moon':'assets/halloween/npc-researcher.webp','route-4':'assets/kanto/cinematics/trainers/adventure_girl.webp',cerulean:'https://play.pokemonshowdown.com/sprites/trainers/misty.png'};
   const npcIdleStates=new Map();
   function drawChapterNpcIdle(ctx,id,x,y,override=null){
-    const filenames={'route-2':'basic-black-boy.webp','viridian-forest':'basic-black-girl.webp'},file=override||filenames[id],walk=W.PsyTrainerWalkV1;
+    const filenames={'route-2':'basic-black-boy.webp','viridian-forest':'basic-black-girl.webp','route-3':'basic-adventure-boy.webp'},file=override||filenames[id],walk=W.PsyTrainerWalkV1;
     if(!file||!walk?.getAnimationAtlas)return false;
     const image=regionImage('assets/characters/halloween/'+file);if(!image?.complete||!image.naturalWidth)return false;
     if(!npcIdleStates.has(id))npcIdleStates.set(id,{state:walk.createState(),atlas:walk.getAnimationAtlas(image)});
@@ -629,7 +629,7 @@
     const benchmark=W.PsyKantoWorldV2?.referenceViewport?.();if(benchmark&&model.referenceKey!==benchmark.key){model.root.style.setProperty('--kp-top',benchmark.top+'px');model.root.style.setProperty('--kp-foot',benchmark.footer+'px');model.referenceKey=benchmark.key;}
     const stage=model.root?.querySelector('.kp-stage'),r=stage?.getBoundingClientRect();
     if(!r)return null;
-    const worldW=model.map.grid[0].length*TILE,worldH=model.map.grid.length*TILE,enhancedScene=['route-2','viridian-forest','pewter'].includes(model.place?.id);
+    const worldW=model.map.grid[0].length*TILE,worldH=model.map.grid.length*TILE,enhancedScene=['route-2','viridian-forest','pewter','route-3'].includes(model.place?.id);
     if(!enhancedScene){if(model.canvas.width!==worldW||model.canvas.height!==worldH){model.canvas.width=worldW;model.canvas.height=worldH;}return model.camera={w:worldW,h:worldH,dpr:1,scale:1,ox:Math.floor((worldW-worldW)/2),oy:Math.floor((worldH-worldH)/2),viewW:worldW,viewH:worldH};}
     const dpr=Math.min(1.3,W.devicePixelRatio||1),cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
     if(model.canvas.width!==cw||model.canvas.height!==ch){model.canvas.width=cw;model.canvas.height=ch;}
@@ -647,15 +647,15 @@
     const data={grass,leaves,forest};sceneAmbience.set(map,data);return data;
   }
   function drawSceneAmbience(c,now){
-    if(model.interior||!['route-2','viridian-forest','pewter'].includes(model.place?.id))return;
-    const data=ambienceFor(model.map),forest=data.forest;
+    if(model.interior||!['route-2','viridian-forest','pewter','route-3'].includes(model.place?.id))return;
+    const data=ambienceFor(model.map),forest=data.forest,route3=model.place.id==='route-3';
     c.save();c.lineWidth=1;c.lineCap='round';
     for(const blade of data.grass){const sway=Math.sin(now*.00115+blade.phase),x=blade.x,y=blade.y;c.globalAlpha=.1+(Math.sin(now*.0014+blade.phase)+1)*.055;c.strokeStyle=blade.color;c.beginPath();c.moveTo(x,y+3);c.lineTo(x+sway*1.5,y-1);c.moveTo(x+3,y+4);c.lineTo(x+3-sway,y+1);c.stroke();}
     c.globalAlpha=1;
     for(const leaf of data.leaves){const cycle=(now*leaf.speed+leaf.phase)%(Math.PI*2),x=leaf.x+Math.sin(cycle)*8,y=leaf.y+Math.cos(cycle*.7)*3;c.save();c.translate(Math.round(x),Math.round(y));c.rotate(Math.sin(cycle)*.35);c.globalAlpha=.38+Math.sin(cycle)*.12;c.fillStyle=leaf.color;c.fillRect(-2,-1,3,2);c.fillRect(0,0,2,1);c.fillStyle='#fff0b2';c.fillRect(1,-1,1,1);c.restore();}
-    const water=model.place.id==='pewter'?[]:forest?[[418,272],[440,291],[464,313],[445,341],[477,355]]:[[24,84],[38,135],[28,207],[52,267],[84,68]];
+    const water=model.place.id==='pewter'||route3?[]:forest?[[418,272],[440,291],[464,313],[445,341],[477,355]]:[[24,84],[38,135],[28,207],[52,267],[84,68]];
     for(let i=0;i<water.length;i++){const [x,y]=water[i],phase=now*.004+i*1.4;c.globalAlpha=.12+(Math.sin(phase)+1)*.12;c.fillStyle=i%2?'#c7f8ff':'#9deaff';c.fillRect(Math.round(x+Math.sin(phase)*2),y,5+(i%2),1);}
-    if(forest){for(let i=0;i<4;i++){const phase=now*.0018+i*1.57,x=120+i*178+Math.sin(phase)*4,y=113+(i%2)*96+Math.cos(phase)*3;c.globalAlpha=.18+Math.max(0,Math.sin(phase))*.22;c.fillStyle='#fff3a8';c.fillRect(Math.round(x),Math.round(y),2,2);}}
+    if(forest||route3){const count=forest?4:5;for(let i=0;i<count;i++){const phase=now*.0018+i*1.57,x=(route3?92:120)+i*(route3?158:178)+Math.sin(phase)*4,y=(route3?104:113)+(i%2)*(route3?96:96)+Math.cos(phase)*3;c.globalAlpha=.12+Math.max(0,Math.sin(phase))*.18;c.fillStyle=route3?'#ffe6a0':'#fff3a8';c.fillRect(Math.round(x),Math.round(y),2,2);}}
     c.restore();
   }
   function tilePath(target){
@@ -689,7 +689,7 @@
     if(!model.place||!model.ctx||!model.root?.classList.contains('open'))return;
     const c=model.ctx,view=campaignCamera(),cw=view.w,ch=view.h,th=theme(model.place),g=model.map.grid,now=performance.now();
     W.PsyWorldTimeV1?.updateBadge?.(model.root.querySelector('[data-world-clock]'));
-    const enhancedScene=['route-2','viridian-forest','pewter'].includes(model.place.id);
+    const enhancedScene=['route-2','viridian-forest','pewter','route-3'].includes(model.place.id);
     c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
     c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);c.imageSmoothingEnabled=enhancedScene;c.drawImage(terrainPaint(),0,0);c.imageSmoothingEnabled=false;
     drawSceneAmbience(c,now);
@@ -804,7 +804,7 @@
     if(!activityAction&&!model.held&&model.autoObjective&&!model.autoPath?.length&&!W.PsyGuide?.isOpen()){
       const target=model.autoObjective,dx=target.x-model.x,dy=target.y-model.y;
       const q=model.place?.id==='route-2'?W.PsyKantoBackpackQuestV1?.state?.(placeState('route-2')):null;if(q?.stage==='investigating'){const target=backpackGrassTarget();model.autoObjective=target;model.autoPath=tilePath(target);model.raf=W.requestAnimationFrame(tick);render();return;}
-      if(Math.abs(dx)+Math.abs(dy)<=1){model.direction=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';interact();}
+      if(Math.abs(dx)+Math.abs(dy)<=1){model.autoObjective=null;model.direction=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';interact();}
       else model.autoObjective=null;
     }
     if(!activityAction&&!model.held&&model.autoSpot&&!model.autoPath?.length&&!W.PsyGuide?.isOpen()){
