@@ -15,6 +15,7 @@ for(const map of [route,city,gym]){
 assert(connected(route,route.exit),'Route 4 trail cannot reach Cerulean gate');
 assert.deepEqual({x:route.exit.x,y:route.exit.y},{x:30,y:7},'Route 4 exit must sit on the painted eastbound road, not below it');
 assert.equal(route.grid[10][23],9,'Route 4 stream must remain blocked');
+for(let x=20;x<=30;x++)assert.notEqual(route.grid[7][x],9,`East road cell ${x},7 must connect continuously to the city gate`);
 assert(connected(route,route.npc,true),'Joana is unreachable');
 for(const actor of route.actors)assert(connected(route,actor,true),'Route 4 resident unreachable: '+actor.id);
 const hobbySource=fs.readFileSync('core/hobbies-v2.js','utf8'),spotRow=hobbySource.match(/'route-4':\[([^\n]+)\]/)?.[1];assert(spotRow,'Route 4 gathering nodes remain registered');const spots=[...spotRow.matchAll(/\['([^']+)','([^']+)',(\d+),(\d+),'([^']+)'\]/g)].map(m=>({id:m[1],x:Math.floor(Number(m[3])/28),y:Math.floor(Number(m[4])/28)}));assert.equal(spots.length,7);for(const spot of spots)assert(connected(route,spot),'Route 4 hobby spot inaccessible '+spot.id);

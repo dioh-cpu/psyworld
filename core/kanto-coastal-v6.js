@@ -23,6 +23,10 @@
     // walk mask from making cliffs, trees, or the stream traversable.
     const points=[[12,19],[12,16],[14,13],[13,11],[10,10],[7,9],[5,8],[4,7],[3,6],[4,5],[7,5],[11,5],[15,5],[18,5],[21,6],[23,7],[26,7],[30,7]];
     for(let i=1;i<points.length;i++)line(grid,points[i-1],points[i],0,1);
+    // The eastern road continues into a straight approach to the city gate.
+    // Keep this run continuous across the bridge-to-gate join for both the
+    // continuous collider and the cell-based Auto Route pathfinder.
+    line(grid,[20,7],[30,7],0,1);
     const spawn={x:12,y:18},returnGate={x:12,y:18},npc={x:8,y:11},exit={x:30,y:7};
     // Walkable grass pockets follow the actual clearings and tall grass.
     paint([[5,6],[5,7],[6,6],[6,7]],5);                               // grass clearing inside the west switchback
