@@ -223,6 +223,19 @@ if(state.externalPanel)return;
 if(state.menuOpen){if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();toggleCampaignMenu(false)}return;}
 if(e.code==='KeyM'){e.preventDefault();e.stopImmediatePropagation();toggleCampaignMenu();return;}const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){W.PsyCampaignAutomation?.cancelRoute?.();autoHunt=false;e.preventDefault();e.stopImmediatePropagation();state.pendingHobby=null;state.pendingRiftTarget=null;state.path=[];state.navRequest++;state.held.add(keys[e.code])}else if(['KeyE','Enter','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();interact()}}else if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}}
 function onKeyUp(e){if(!state.root?.classList.contains('open')||state.menuOpen||state.externalPanel)return;const keys={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(keys[e.code]){e.preventDefault();e.stopImmediatePropagation();state.held.delete(keys[e.code])}}
+// Measure the real Route 1 layout once per viewport; later chapters share this
+// benchmark rather than guessing header/footer heights from old CSS revisions.
+let routeViewportCache=null;
+function routeOneViewport(){
+ const key=[W.innerWidth,W.innerHeight,W.devicePixelRatio,D.documentElement.dataset.psyLayout].join(':');if(routeViewportCache?.key===key)return routeViewportCache;
+ makeUI();const root=state.root,oldStyle=root.getAttribute('style'),oldWorld=root.dataset.world,wasOpen=root.classList.contains('open');
+ const labels=[root.querySelector('.kw2-title'),root.querySelector('.kw2-subtitle'),root.querySelector('.kw2-objective')],oldLabels=labels.map(el=>el?.textContent);labels[0].textContent=DATA.route1.title;labels[1].textContent='O caminho até Viridian City';labels[2].textContent='Rota 1: explore os campos de grama e siga para Viridian City.';
+ root.dataset.world='route-1';root.style.display='flex';root.style.visibility='hidden';root.style.pointerEvents='none';root.classList.add('open');
+ const stage=root.querySelector('.kw2-stage').getBoundingClientRect(),top=root.querySelector('.kw2-top').getBoundingClientRect(),foot=root.querySelector('.kw2-footer').getBoundingClientRect();
+ routeViewportCache={key,width:stage.width,height:stage.height,top:top.height,footer:foot.height,mapW:DATA.route1.w,mapH:DATA.route1.h};
+ labels.forEach((el,i)=>{if(el)el.textContent=oldLabels[i]});
+ if(oldStyle===null)root.removeAttribute('style');else root.setAttribute('style',oldStyle);if(oldWorld===undefined)delete root.dataset.world;else root.dataset.world=oldWorld;if(!wasOpen)root.classList.remove('open');return routeViewportCache;
+}
 function camera(){
   const map=state.inside||state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');
   const r=state.viewport||(state.viewport=stage.getBoundingClientRect()),dpr=Math.min(1.3,W.devicePixelRatio||1);
@@ -609,7 +622,7 @@ W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),dismissMe
  navigate:async function(at){autoHunt=false;state.pendingHobby=null;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){state.pendingHobby=null;if(active&&!vipActive()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1')open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,
- open,close,data:DATA,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:id==='viridian'?DATA.viridian:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y})};
+ open,close,data:DATA,referenceViewport:routeOneViewport,progress,walkable:(id,x,y)=>DATA.walkable(id==='pallet'?DATA.pallet:id==='viridian'?DATA.viridian:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y})};
 // Capture Atlas entry before any legacy canvas handler; also works after Atlas rerenders.
 D.addEventListener('click',e=>{
   const button=e.target?.closest?.('#psy-kanto-atlas .psy-kanto-enter-world');

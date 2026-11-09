@@ -10,5 +10,5 @@ console.log('PASS V4: 30/60/120 FPS, diagonal speed, pause clamp, swept collisio
 // Navigation from a fractional physical position must seed its rounded BFS root.
 const playable=fs.readFileSync('core/kanto-campaign-playable-v1.js','utf8');
 const body=playable.slice(playable.indexOf('  function tilePath(target){'),playable.indexOf('  function backpackGrassTarget(){'));
-const path=new Function('model','COLS','ROWS',body+';return tilePath({x:12,y:15});')({x:4.53,y:15,map:{grid:Array.from({length:20},()=>Array(32).fill(1))}},32,20);
+const path=new Function('model','COLS','ROWS',body+';return tilePath({x:12,y:15});')({x:4.53,y:15,map:{npc:{x:20,y:10},grid:Array.from({length:20},()=>Array(32).fill(1))}},32,20);
 assert.equal(path[0].x,5);assert.equal(path.at(-1).x,12);assert.equal(path.length,8);

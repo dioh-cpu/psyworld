@@ -39,7 +39,8 @@
     if (!s.places[id]) s.places[id] = { talked:false, found:[], solved:[], cleared:false };
     return s.places[id];
   };
-  const saveProgress = () => { try { W.autoSave?.(); } catch (_) {} };
+  const saveProgress = () => {rememberPosition();try { W.autoSave?.(); } catch (_) {} };
+  function rememberPosition(){if(!model.place||model.riftSession)return;const p=model.outdoor||model;state().position={world:model.place.id,x:p.x,y:p.y,direction:model.direction,inside:model.interior||null,roomPosition:model.interior?{x:model.x,y:model.y}:null};}
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   function badgeCount() {
@@ -107,7 +108,7 @@
       #psy-kanto-world [data-kp-fish]{background:#0e5d80;border-color:#9ee4f5;min-height:52px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
       #psy-kanto-canvas{box-sizing:border-box;width:min(100vw,calc((100vh - 176px)*1.6));height:auto;aspect-ratio:8/5;max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
-      #psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none}
+      #psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none}
       #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,38px);gap:3px}
       .kp-controls button{padding:0;font-size:17px;background:#243747}.kp-controls [data-dir="up"]{grid-column:2}.kp-controls [data-dir="left"]{grid-column:1;grid-row:2}.kp-controls [data-dir="down"]{grid-column:2;grid-row:2}.kp-controls [data-dir="right"]{grid-column:3;grid-row:2}
@@ -115,7 +116,18 @@
       #psy-kanto-dialog{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:13px 15px;background:#0a111df2;border:1px solid #e5c77e;border-radius:12px;box-shadow:0 10px 40px #000a;display:none;z-index:2}
       #psy-kanto-dialog.open{display:block}.kp-dialog-title{color:#ffe09a;font-weight:900;margin-bottom:5px}.kp-dialog-text{font-size:13px;line-height:1.45;color:#e4eaf0}.kp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
       #psy-kanto-world .psy-kanto-enter-world{width:100%;margin:8px 0 12px}
-      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas{width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
+      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas{width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
+    `;
+    style.textContent+=`
+      #psy-kanto-world .kp-head{box-sizing:border-box;flex:0 0 var(--kp-top,60px);height:var(--kp-top,60px);min-height:0;padding:4px 8px}
+      #psy-kanto-world .kp-footer{box-sizing:border-box;display:flex;flex:0 0 var(--kp-foot,93px);height:var(--kp-foot,93px);min-height:0;padding:4px 8px;gap:7px}
+      #psy-kanto-world .kp-objective{flex:1;min-width:0;font-size:11px;max-height:44px;overflow:auto}
+      #psy-kanto-world .kp-controls{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(2,minmax(20px,1fr));height:min(56px,calc(var(--kp-foot,93px) - 10px));gap:2px}
+      #psy-kanto-world .kp-controls button{padding:0;min-height:0}
+      #psy-kanto-world .kp-route-footer,#psy-kanto-world .kp-interact{min-height:40px!important;height:calc(var(--kp-foot,93px) - 12px);max-height:54px;padding:4px 9px}
+      @media(max-width:680px){#psy-kanto-world .kp-objective{display:none}#psy-kanto-world .kp-controls{margin-right:auto}#psy-kanto-world .kp-head{gap:4px}#psy-kanto-world .kp-head button{padding:5px 6px;font-size:11px}#psy-kanto-world .kp-title small{max-width:30vw}}
+      @media(max-height:500px){#psy-kanto-world .kp-title .kp-clock{display:none}}
+      body:has(#psy-kanto-world.open) #psy-loot-list{bottom:max(115px,env(safe-area-inset-bottom))!important;max-height:34vh;overflow:auto}
     `;
     D.head.appendChild(style);
   }
@@ -143,17 +155,18 @@
       const stop = e => { e.preventDefault(); if (model.held === dir) { model.held = null; model.frame = 0; render(); } };
       btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', stop); btn.addEventListener('pointercancel', stop); btn.addEventListener('pointerleave', stop);
     });
-    D.addEventListener('keydown', onKeyDown); D.addEventListener('keyup', onKeyUp);
+    D.addEventListener('keydown', onKeyDown,true); D.addEventListener('keyup', onKeyUp,true);
     model.canvas.style.touchAction='none';let touch=null;
     model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen()||model.riftFrozen)return;W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoPortal=false;model.autoRiftExit=false;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
-    model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}touch.drag=true;model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
-    const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'){
+    model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;model.joy=null;return;}touch.drag=true;model.joy={x:dx/48,y:dy/48};model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
+    const release=e=>{const t=touch;touch=null;model.joy=null;model.held=null;model.moving=false;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'){
       const r=model.canvas.getBoundingClientRect(),view=model.camera||campaignCamera(),sx=(e.clientX-r.left)*model.canvas.width/r.width,sy=(e.clientY-r.top)*model.canvas.height/r.height,x=(sx-view.ox)/view.scale,y=(sy-view.oy)/view.scale;
       const target=model.riftSession?model.map?.exit:model.riftPortal;
       if(target){const tx=model.riftSession?target.x*TILE+TILE/2:target.x*TILE+TILE/2,ty=model.riftSession?target.y*TILE+TILE/2:target.y*TILE+TILE/2;
         if(Math.hypot(x-tx,y-ty)<34){const goal={x:target.x,y:target.y},path=tilePath(goal);if(!path.length&&(goal.x!==model.x||goal.y!==model.y))return;model.autoPath=path;if(model.riftSession)model.autoRiftExit=true;else model.autoPortal=true;if(!path.length){if(model.riftSession)returnFromRift(false);else enterRift();}return;}
       }
-      const npc=model.map?.npc;if(npc&&Math.abs(x-(npc.x*TILE+14))<28&&Math.abs(y-(npc.y*TILE))<42){interact(true);return;}
+      const door=model.map.doors?.find(d=>Math.hypot(x-(d.x+.5)*TILE,y-(d.y+.5)*TILE)<28);if(door){model.autoObjective=door;model.autoPath=tilePath(door);if(!model.autoPath.length)interact();return;}
+      const npc=model.map?.npc;if(npc&&Math.abs(x-(npc.x*TILE+14))<28&&Math.abs(y-(npc.y*TILE))<42){if(nearby(npc))interact(true);else{model.autoObjective=npc;model.autoPath=tilePath(npc);}return;}
       if(model.place?.kind==='route'||model.place?.kind==='dungeon'||model.place?.id==='viridian-forest'||model.place?.id===RIFT_ID){
         const spot=W.PsyHobbies?.nearby?.(model.place.id,{x,y},32);
         if(spot){const goal={x:Math.max(1,Math.min(COLS-2,Math.floor(spot.x/TILE))),y:Math.max(1,Math.min(ROWS-2,Math.floor(spot.y/TILE)))},path=tilePath(goal);
@@ -161,10 +174,12 @@
           model.autoSpot=spot.id;model.autoPath=path;if(!path.length){model.autoSpot=null;W.PsyHobbies.interact?.(model.place.id,spot.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});}return;
         }
       }
+      const cell={x:Math.floor(x/TILE),y:Math.floor(y/TILE)},path=tilePath(cell);if(path.length)model.autoPath=path;
     }render();};
-    model.canvas.addEventListener('pointerup',release);model.canvas.addEventListener('pointercancel',release);
-    W.addEventListener('blur',()=>{model.keys.clear();model.held=null;model.moving=false;model.time=performance.now();});
-    D.addEventListener('visibilitychange',()=>{model.keys.clear();model.held=null;model.moving=false;model.time=performance.now();});
+    model.canvas.addEventListener('pointerup',release);model.canvas.addEventListener('pointercancel',release);model.canvas.addEventListener('lostpointercapture',release);
+    W.addEventListener('blur',()=>{model.keys.clear();model.joy=null;model.held=null;model.moving=false;model.time=performance.now();});
+    D.addEventListener('visibilitychange',()=>{model.keys.clear();model.joy=null;model.held=null;model.moving=false;model.time=performance.now();});
+    W.addEventListener('pagehide',()=>{rememberPosition();W.psyV9WriteLocal?.()});
     W.addEventListener('resize', render);
     return root;
   }
@@ -187,17 +202,30 @@
   const MAP_ART={viridian:ART_ROOT+'viridian-approved.webp',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp','viridian-forest':'assets/story/viridian-forest-route2-v1.webp'};
   const NPC_ART={viridian:'assets/kanto/npcs/fisher-v9.svg','route-2':'assets/kanto/cinematics/trainers/black_boy.webp','viridian-forest':'assets/kanto/cinematics/trainers/black_girl.webp',pewter:ART_ROOT+'brock-expressions.webp','route-3':'assets/kanto/cinematics/trainers/adventure_boy.webp','mt-moon':'assets/halloween/npc-researcher.webp','route-4':'assets/kanto/cinematics/trainers/adventure_girl.webp',cerulean:'https://play.pokemonshowdown.com/sprites/trainers/misty.png'};
   const npcIdleStates=new Map();
-  function drawChapterNpcIdle(ctx,id,x,y){
-    const filenames={'route-2':'basic-black-boy.webp','viridian-forest':'basic-black-girl.webp'},file=filenames[id],walk=W.PsyTrainerWalkV1;
+  function drawChapterNpcIdle(ctx,id,x,y,override=null){
+    const filenames={'route-2':'basic-black-boy.webp','viridian-forest':'basic-black-girl.webp'},file=override||filenames[id],walk=W.PsyTrainerWalkV1;
     if(!file||!walk?.getAnimationAtlas)return false;
     const image=regionImage('assets/characters/halloween/'+file);if(!image?.complete||!image.naturalWidth)return false;
     if(!npcIdleStates.has(id))npcIdleStates.set(id,{state:walk.createState(),atlas:walk.getAnimationAtlas(image)});
     const data=npcIdleStates.get(id);ctx.fillStyle='#04101966';ctx.beginPath();ctx.ellipse(x,y+4,13,4.5,0,0,Math.PI*2);ctx.fill();
     return walk.renderAnimated(ctx,data.atlas,data.state,{moving:false,row:0,x,y,identity:id+':npc'},x-24,y+4-60,48,64)!==false;
   }
+  const npcSheetCache=new WeakMap();
+  function drawNpcSheet(ctx,img,x,y,now){
+    let data=npcSheetCache.get(img);
+    if(!data){
+      const cell=img.naturalWidth/4,h=img.naturalHeight,scan=D.createElement('canvas');scan.width=img.naturalWidth;scan.height=h;
+      const c=scan.getContext('2d',{willReadFrequently:true});c.drawImage(img,0,0);const pixels=c.getImageData(0,0,scan.width,h).data,boxes=[];let maxH=0;
+      for(let f=0;f<4;f++){let left=cell,top=h,right=0,bottom=0;for(let py=0;py<h;py++)for(let px=0;px<cell;px++){if(pixels[(py*scan.width+f*cell+px)*4+3]>32){left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py);}}boxes.push({x:f*cell+left,y:top,w:right-left+1,h:bottom-top+1});maxH=Math.max(maxH,bottom-top+1);}
+      data={boxes,scale:46/maxH};npcSheetCache.set(img,data);
+    }
+    const sequence=[0,1,0,2,0,3],box=data.boxes[sequence[Math.floor(now/650)%sequence.length]],w=box.w*data.scale,h=box.h*data.scale;
+    ctx.fillStyle='#04101966';ctx.beginPath();ctx.ellipse(x,y+4,13,4.5,0,0,Math.PI*2);ctx.fill();ctx.imageSmoothingEnabled=false;ctx.drawImage(img,box.x,box.y,box.w,box.h,x-w/2,y+4-h,w,h);
+  }
   const regionImages=new Map();
   function regionImage(url){if(!url)return null;if(!regionImages.has(url)){const im=new Image();im.onload=()=>{if(model.map)model.map.paint=null;render()};im.src=url;regionImages.set(url,im)}return regionImages.get(url);}
   function authoredMap(place){
+    if(place.id==='pewter'&&W.PsyKantoPewterV4)return W.PsyKantoPewterV4.get();
     const early=W.PsyKantoEarlyChaptersV1?.get?.(place.id);if(early)return {...early,seed:hash(place.id)};
     if(!MAP_ART[place.id]||place.id==='route-2')return null;
     const grid=Array.from({length:ROWS},()=>Array(COLS).fill(9));
@@ -257,7 +285,7 @@
     // Landmark props: a sign, a story object, and the destination gate.
     const npc=place.id==='route-2'?{x:12,y:6}:{x:15,y:4}, object={x:5,y:4}, exit=place.id==='route-2'?{x:29,y:16}:{x:COLS-3,y:ROWS-3},spawn=place.id==='route-2'?{x:3,y:17}:undefined;
     grid[npc.y][npc.x]=1; grid[object.y][object.x]=1; grid[exit.y][exit.x]=1;
-    return {grid,npc,object,exit,spawn,secretGate,secretChest,art:MAP_ART[place.id],seed:hash(place.id)};
+    return {grid,npc,object,exit,spawn,returnTo:place.id==='route-3'?{world:'pewter',spawn:{x:29,y:11}}:undefined,secretGate,secretChest,art:MAP_ART[place.id],seed:hash(place.id)};
   }
 
   function buildRiftMap(){
@@ -334,32 +362,34 @@
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
     const previousPlace=model.place?.id||journeySave().activePlace||null;
-    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=options.spawn?.x??model.map.spawn?.x??3; model.y=options.spawn?.y??model.map.spawn?.y??ROWS-3; model.direction=options.direction||'down';model.frame=0;model.held=null;model.keys.clear();model.moving=false;model.time=performance.now();model.encounterDistance=0;
+    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[]; model.place=place;model.routeIntent=!!options.continueRoute;model.outdoor=null;model.interior=null;model.joy=null; model.map=buildMap(place);const resume=options.resume?state().position:null;model.x=options.spawn?.x??(resume?.world===id?resume.x:null)??model.map.spawn?.x??3; model.y=options.spawn?.y??(resume?.world===id?resume.y:null)??model.map.spawn?.y??ROWS-3; model.direction=options.direction||'down';model.frame=0;model.held=null;model.keys.clear();model.moving=false;model.time=performance.now();model.encounterDistance=0;
     const pendingRift=W.PsyKantoHuntRiftV1?.getOffer?.('campaign');model.riftPortal=null;
     state().active=place.id;if(place.id==='route-2')W.PsyKantoBackpackQuestV1?.resume?.(placeState(place.id));
     model.root.dataset.place=place.id;model.root.querySelector('.kp-title b').textContent=place.name;
     model.root.querySelector('.kp-title small').textContent=place.mark;
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     W.PsyKantoStoryV49?.enter?.(previousPlace,id);
+    if(options.resume&&resume?.world===id&&resume.inside){const door=model.map.doors?.find(d=>d.id===resume.inside);if(door){const roomPosition=resume.roomPosition;enterRoom(door);if(roomPosition&&W.PsyKantoContinuousMotionV1.valid(model.map.grid,(roomPosition.x+.5)*TILE,(roomPosition.y+.5)*TILE)){model.x=roomPosition.x;model.y=roomPosition.y;rememberPosition();render();}}}
     if(!model.raf)tick();
     if(pendingRift?.context.world===id)attachRiftOffer(pendingRift);
   }
-  function closeWorld() { if(model.riftSession)returnFromRift(false);W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyCampaignAutomation?.cancelRoute?.();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[];model.held=null;model.keys.clear();model.moving=false;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
+  function closeWorld() { model.routeIntent=false;rememberPosition();if(model.riftSession)returnFromRift(false);W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyCampaignAutomation?.cancelRoute?.();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[];model.held=null;model.keys.clear();model.moving=false;model.root?.classList.remove('open');model.dialog?.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0; }
   function onKeyDown(e) {
     if(!model.root?.classList.contains('open')||W.PsyHobbies?.isOpen?.()||W.PsyHobbies?.isFishing?.()||W.PsyTitles?.isOpen?.())return;
-    e.stopPropagation();
+    e.stopImmediatePropagation();
     const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
     const dir=dirs[e.code]; if(dir){e.preventDefault();if(!e.repeat){W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoPortal=false;model.autoRiftExit=false;model.keys.add(dir);model.held=dir}return;}
     if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space'){e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;interact();}
     if(e.code==='Escape'){e.preventDefault();closeWorld();}
   }
-  function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopPropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]){model.keys.delete(dirs[e.code]);model.held=model.keys.size?[...model.keys].at(-1):null;model.moving=false;render();} }
+  function onKeyUp(e) { if(!model.root?.classList.contains('open'))return;e.stopImmediatePropagation();const dirs={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};if(dirs[e.code]){model.keys.delete(dirs[e.code]);model.held=model.keys.size?[...model.keys].at(-1):null;model.moving=false;render();} }
   function moveContinuous(dt) {
     model.moving=false;
     if(model.riftFrozen||W.PsyHobbiesVFX?.blocksMovement?.(model.place?.id)||W.PsyGuide?.isOpen()||W.PsyKantoStoryV49?.isOpen()||!model.place)return;
     const directions={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
     let dx=0,dy=0,maxDistance=Infinity;
     if(model.keys.size){for(const key of model.keys){dx+=directions[key].x;dy+=directions[key].y;}}
+    else if(model.joy){dx=model.joy.x;dy=model.joy.y;}
     else if(model.held){dx=directions[model.held].x;dy=directions[model.held].y;}
     else if(model.autoPath?.length){
       const target=model.autoPath[0],x=target.x-model.x,y=target.y-model.y,d=Math.hypot(x,y);
@@ -369,13 +399,14 @@
     const motion=W.PsyKantoContinuousMotionV1;if(!motion)return;
     const position={x:(model.x+.5)*TILE,y:(model.y+.5)*TILE};
     const speed=143*(1+(Number(W.PsySeason?.buff('speed')||0)+Number(W.PsyProfessions?.bonus('main','speed')||0))/100);
-    const result=motion.advance(model.map.grid,position,{x:dx,y:dy},dt,speed,maxDistance);
+    const wasAtExit=Math.hypot(model.x-model.map.exit.x,model.y-model.map.exit.y)<.1;
+    const result=motion.advance(model.map.grid,position,{x:dx,y:dy},dt,speed,maxDistance,[{x:(model.map.npc.x+.5)*TILE,y:(model.map.npc.y+.5)*TILE,radius:8}]);
     model.x=position.x/TILE-.5;model.y=position.y/TILE-.5;model.moving=result.distance>0.0001;
     if(model.moving){
       model.direction=Math.abs(result.dx)>Math.abs(result.dy)?result.dx>0?'right':'left':result.dy>0?'down':'up';
       model.encounterDistance+=result.distance;
       if(model.encounterDistance>=32){model.encounterDistance%=32;if(model.map.grid[Math.floor(position.y/TILE)]?.[Math.floor(position.x/TILE)]===5)maybeEncounter();}
-      if(Math.hypot(model.x-model.map.exit.x,model.y-model.map.exit.y)<.1){if(model.riftSession)returnFromRift(false);else interact();}
+      if(!wasAtExit&&Math.hypot(model.x-model.map.exit.x,model.y-model.map.exit.y)<.1){if(model.interior){leaveRoom();return;}if(model.riftSession)returnFromRift(false);else interact();}
     }
     if(model.autoPath?.length&&maxDistance!==Infinity&&result.distance>=maxDistance-.0001)model.autoPath.shift();
   }
@@ -394,7 +425,7 @@
       return typeof oldGet==='function'?oldGet.apply(this,arguments):[];
     };
     const previousStart=W.startBattle;
-    W.startBattle=function(wild){wild.halloweenArea=model.place?.id;const range=model.map?.encounterLevels||({viridian:[2,4],'route-2':[3,6],'viridian-forest':[4,8],'pewter':[6,9],'route-3':[7,11],'mt-moon':[8,12],'route-4':[9,13],cerulean:[10,15]})[model.place?.id];if(range){wild.level=wild.lvl=range[0]+Math.floor(Math.random()*(range[1]-range[0]+1));wild.hp=wild.maxHp=65+wild.level*8;}if(model.place?.id==='route-2'&&!wild.campaignTrainer){const pending=W.PsyKantoBackpackQuestV1?.begin?.(placeState('route-2'),model.place.species,Number(wild.id));if(pending){model.pendingBackpack=pending;wild.campaignBackpackToken=pending.token;W.notif?.('Este Pokémon está carregando a mochila de Caio!',3200);}saveProgress();}return previousStart.apply(this,arguments);};
+    W.startBattle=function(wild){wild.halloweenArea=model.place?.id;const range=model.map?.encounterLevels||({viridian:[2,4],'route-2':[3,6],'viridian-forest':[4,8],'pewter':[6,9],'route-3':[7,11],'mt-moon':[8,12],'route-4':[9,13],cerulean:[10,15]})[model.place?.id];if(range){wild.level=wild.lvl=range[0]+Math.floor(Math.random()*(range[1]-range[0]+1));wild.hp=wild.maxHp=65+wild.level*8;}if(model.place?.id==='route-2'&&!wild.campaignTrainer){const pending=W.PsyKantoBackpackQuestV1?.begin?.(placeState('route-2'),model.place.species,Number(wild.id));if(pending){model.pendingBackpack=pending;wild.campaignBackpackToken=pending.token;W.notif?.('Este Pokémon está carregando a mochila de Caio!',3200);}saveProgress();}const result=previousStart.apply(this,arguments);if(wild.campaignBackpackToken){W.setTimeout(()=>{const battle=D.getElementById('battle-screen');if(!battle||!model.pendingBackpack)return;D.getElementById('kanto-carrier-badge')?.remove();const badge=D.createElement('div');badge.id='kanto-carrier-badge';badge.textContent='🎒 Carrega a mochila de Caio';badge.style.cssText='position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:8;padding:6px 12px;border:1px solid #eac36a;border-radius:8px;background:#182437ee;color:#ffe09a;font:bold 12px system-ui;pointer-events:none';battle.appendChild(badge)},0);}return result;};
     try { W.triggerWild?.('kanto_normal_t1'); }
     finally {W.startBattle=previousStart; if(oldGet)W.getPokesForHunt=oldGet; else delete W.getPokesForHunt; }
     const wild=W.battleData?.wild || (typeof battleData!=='undefined'?battleData?.wild:null);
@@ -403,7 +434,7 @@
   }
   function nearby(point) { return Math.abs(model.x-point.x)+Math.abs(model.y-point.y)<=1; }
   function showDialog(title,text,actions=[]) {
-    if(W.PsyGuide){model.held=null;return W.PsyGuide.show({speaker:title,text,portrait:/Brock/i.test(title)?ART_ROOT+'brock-expressions.webp':/Misty/i.test(title)?'https://play.pokemonshowdown.com/sprites/trainers/misty.png':title===model.place?.npc?NPC_ART[model.place.id]:undefined,sheet:/Brock/i.test(title)?'brock':undefined,target:()=>chapterTarget(model.map.npc),actions:actions.map(a=>({text:a.label,primary:a.primary,run:a.onClick}))});}
+    if(W.PsyGuide){model.held=null;model.joy=null;model.keys.clear();model.moving=false;return W.PsyGuide.show({speaker:title,text,portrait:/Brock/i.test(title)?ART_ROOT+'brock-expressions.webp':/Misty/i.test(title)?'https://play.pokemonshowdown.com/sprites/trainers/misty.png':title===model.place?.npc?NPC_ART[model.place.id]:undefined,sheet:/Brock/i.test(title)?'brock':undefined,target:()=>chapterTarget(model.map.npc),actions:actions.map(a=>({text:a.label,primary:a.primary,run:a.onClick}))});}
     const d=model.dialog;d.querySelector('.kp-dialog-title').textContent=title;d.querySelector('.kp-dialog-text').textContent=text;
     const box=d.querySelector('.kp-dialog-actions');box.replaceChildren();
     actions.forEach(({label,onClick,primary=false})=>{const b=D.createElement('button');b.textContent=label;if(primary)b.style.background='linear-gradient(100deg,#075985,#166534)';b.onclick=()=>{d.classList.remove('open');onClick?.()};box.appendChild(b)});
@@ -440,6 +471,7 @@
       }
       ps.talked=true;if(story.done)ps.storyDone=true;saveProgress();
       const actions=[];
+      if(gymId)model.routeIntent=false;
       if(gymId&&!W.PsyCampaignGymGate?.hasClearedInCampaign?.(gymId))actions.push({label:'DESAFIAR GINÁSIO',primary:true,onClick:()=>launchChapterGym(place,gymId)});
       if(place.id==='mt-moon'&&!ps.storyDone)actions.push({label:'PROTEGER OS FÓSSEIS',primary:true,onClick:()=>{
         model.pendingStoryPlace=place.id;
@@ -465,9 +497,27 @@
     return false;
   }
 
+  function enterRoom(door){
+    const room=W.PsyKantoPewterV4.room(door.id);if(!room)return;
+    model.outdoor={map:model.map,x:model.x,y:model.y};model.interior=door.id;model.map=room;model.x=room.spawn.x;model.y=room.spawn.y;model.autoPath=[];model.keys.clear();model.held=null;model.joy=null;model.moving=false;model.camera=null;
+    model.root.querySelector('.kp-title b').textContent=door.name;updateObjective();render();saveProgress();
+  }
+  function leaveRoom(){
+    const old=model.outdoor;if(!old)return;model.map=old.map;model.x=old.x;model.y=old.y;model.interior=null;model.outdoor=null;model.autoPath=[];model.keys.clear();model.held=null;model.joy=null;model.moving=false;model.root.querySelector('.kp-title b').textContent=model.place.name;updateObjective();render();saveProgress();
+  }
+  function interactRoom(){
+    const room=model.map,id=model.interior;if(nearby(room.exit)){leaveRoom();return;}
+    if(!nearby(room.npc)){showDialog(room.npcName,'Aproxime-se para conversar. A saída fica ao sul.');return;}
+    if(id==='gym'){interactChapter(model.place,placeState('pewter'),GYM_FOR_PLACE.pewter,true);return;}
+    if(id==='center'){W.curarTimeCity?.();saveProgress();showDialog(room.npcName,'Sua equipe está recuperada. Boa sorte no Ginásio!');return;}
+    if(id==='market'){showDialog(room.npcName,'Prepare suas Balls e poções antes de seguir para o Monte Lua.',[{label:'VER MERCADORIAS',primary:true,onClick:()=>{closeWorld();W.openShop?.();}}]);return;}
+    showDialog(room.npcName,id==='museum'?'Estas rochas guardam marcas de mares que desapareceram há milhões de anos. Os fósseis do Monte Lua podem nos ajudar a entender essa história. Observe também os cristais nas vitrines.':'As trilhas do Monte Lua começam a leste. Antes de partir, visite o Museu e prepare sua equipe no Centro Pokémon.');
+  }
   function interact(directNPC=false) {
     if(!model.place||W.PsyHobbies?.isFishing?.())return;
     model.autoObjective=null;
+    if(model.interior){interactRoom();return;}
+    if(model.place.id==='pewter'){const door=model.map.doors?.find(nearby);if(door){enterRoom(door);return;}if(nearby(model.map.npc)){showDialog('Guia de Pewter','Bem-vindo! O Museu fica a noroeste e o Ginásio de Brock a nordeste. O Centro e a Loja ficam na avenida. A saída leste leva à Rota 3 depois da Insígnia da Rocha.');return;}}
     if(model.riftSession){
       if(nearby(model.map.exit)){returnFromRift(false);return;}
       const gather=W.PsyHobbies?.nearby?.(RIFT_ID,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},44);
@@ -522,6 +572,7 @@
         const all=places(),next=all[all.findIndex(p=>p.id===place.id)+1];
         const actions=[];
         const connected=model.map.next,connectedPlace=connected?.world?all.find(p=>p.id===connected.world):next;
+        if(model.routeIntent&&connectedPlace&&isUnlocked(connectedPlace)){openWorld(connectedPlace.id,{...(connected?.spawn?{spawn:connected.spawn}:{}),continueRoute:true});return;}
         if(connectedPlace&&isUnlocked(connectedPlace))actions.push({label:`SEGUIR PARA ${connectedPlace.name.toUpperCase()}`,primary:true,onClick:()=>openWorld(connectedPlace.id,connected?.spawn?{spawn:connected.spawn}:{})});
         actions.push({label:'VOLTAR AO ATLAS',onClick:()=>{closeWorld();W.openKantoJourneyV1?.()}});
         showDialog('Capítulo concluído',`${place.name} foi concluída. A próxima parada está liberada.`,actions);
@@ -554,10 +605,10 @@
 
   function terrainPaint(){
     if(model.map.paint)return model.map.paint;
-    const art=regionImage(model.map.art),paint=D.createElement('canvas');paint.width=896;paint.height=560;
+    const art=regionImage(model.map.art),paint=D.createElement('canvas');paint.width=model.map.grid[0].length*TILE;paint.height=model.map.grid.length*TILE;
     const c=paint.getContext('2d'),th=theme(model.place),g=model.map.grid,offsetX=0,offsetY=0;
-    if(art&&art.complete&&art.naturalWidth){c.imageSmoothingEnabled=true;c.drawImage(art,0,0,896,560);}
-    else{    for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+    if(art&&art.complete&&art.naturalWidth){c.imageSmoothingEnabled=true;c.drawImage(art,0,0,paint.width,paint.height);}
+    else{    for(let y=0;y<g.length;y++)for(let x=0;x<g[0].length;x++){
       const t=g[y][x],sx=offsetX+x*TILE,sy=offsetY+y*TILE;
       c.fillStyle=t===9?th.wall:t===1?th.path:t===2?th.floor:t===3?th.floor:t===4?th.floor:t===5?th.floor:th.floor;c.fillRect(sx,sy,TILE,TILE);
       if(t===1){c.fillStyle='#ffffff10';c.fillRect(sx+2,sy+2,TILE-4,2)}
@@ -575,18 +626,15 @@
   // area using its 900×450 reference, then follow the player through larger maps.
   function campaignCamera(){
     if(!model.canvas)return null;
+    const benchmark=W.PsyKantoWorldV2?.referenceViewport?.();if(benchmark&&model.referenceKey!==benchmark.key){model.root.style.setProperty('--kp-top',benchmark.top+'px');model.root.style.setProperty('--kp-foot',benchmark.footer+'px');model.referenceKey=benchmark.key;}
     const stage=model.root?.querySelector('.kp-stage'),r=stage?.getBoundingClientRect();
     if(!r)return null;
-    const worldW=COLS*TILE,worldH=ROWS*TILE,enhancedScene=['route-2','viridian-forest'].includes(model.place?.id);
+    const worldW=model.map.grid[0].length*TILE,worldH=model.map.grid.length*TILE,enhancedScene=['route-2','viridian-forest','pewter'].includes(model.place?.id);
     if(!enhancedScene){if(model.canvas.width!==worldW||model.canvas.height!==worldH){model.canvas.width=worldW;model.canvas.height=worldH;}return model.camera={w:worldW,h:worldH,dpr:1,scale:1,ox:Math.floor((worldW-worldW)/2),oy:Math.floor((worldH-worldH)/2),viewW:worldW,viewH:worldH};}
     const dpr=Math.min(1.3,W.devicePixelRatio||1),cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
     if(model.canvas.width!==cw||model.canvas.height!==ch){model.canvas.width=cw;model.canvas.height=ch;}
-    // Route 1 uses a 51px top bar and a 64px mobile control strip (42px +
-    // 62px in landscape). Keep its camera scale even though this map's controls
-    // occupy a taller footer; the extra zoom is clipped by this scene viewport.
-    const compactViewport=W.innerWidth<=680||W.innerHeight<=500;
-    const referenceH=compactViewport?Math.max(ch,Math.round((W.innerHeight-(W.innerHeight<=500?104:115))*dpr)):ch;
-    const cover=Math.max(cw/900,referenceH/450),scale=Math.min(4,cover*1.08),viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+    const referenceW=benchmark?.mapW||900,referenceH=benchmark?.mapH||450;
+    const cover=Math.max(cw/referenceW,ch/referenceH),scale=Math.min(4,cover*1.08),viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
     const cx=viewW>=worldW?worldW/2:clamp((model.x+.5)*TILE,viewW/2,worldW-viewW/2),cy=viewH>=worldH?worldH/2:clamp((model.y+.5)*TILE,viewH/2,worldH-viewH/2);
     return model.camera={w:cw,h:ch,dpr,scale,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale),viewW,viewH};
   }
@@ -599,13 +647,13 @@
     const data={grass,leaves,forest};sceneAmbience.set(map,data);return data;
   }
   function drawSceneAmbience(c,now){
-    if(!['route-2','viridian-forest'].includes(model.place?.id))return;
+    if(model.interior||!['route-2','viridian-forest','pewter'].includes(model.place?.id))return;
     const data=ambienceFor(model.map),forest=data.forest;
     c.save();c.lineWidth=1;c.lineCap='round';
     for(const blade of data.grass){const sway=Math.sin(now*.00115+blade.phase),x=blade.x,y=blade.y;c.globalAlpha=.1+(Math.sin(now*.0014+blade.phase)+1)*.055;c.strokeStyle=blade.color;c.beginPath();c.moveTo(x,y+3);c.lineTo(x+sway*1.5,y-1);c.moveTo(x+3,y+4);c.lineTo(x+3-sway,y+1);c.stroke();}
     c.globalAlpha=1;
     for(const leaf of data.leaves){const cycle=(now*leaf.speed+leaf.phase)%(Math.PI*2),x=leaf.x+Math.sin(cycle)*8,y=leaf.y+Math.cos(cycle*.7)*3;c.save();c.translate(Math.round(x),Math.round(y));c.rotate(Math.sin(cycle)*.35);c.globalAlpha=.38+Math.sin(cycle)*.12;c.fillStyle=leaf.color;c.fillRect(-2,-1,3,2);c.fillRect(0,0,2,1);c.fillStyle='#fff0b2';c.fillRect(1,-1,1,1);c.restore();}
-    const water=forest?[[418,272],[440,291],[464,313],[445,341],[477,355]]:[[24,84],[38,135],[28,207],[52,267],[84,68]];
+    const water=model.place.id==='pewter'?[]:forest?[[418,272],[440,291],[464,313],[445,341],[477,355]]:[[24,84],[38,135],[28,207],[52,267],[84,68]];
     for(let i=0;i<water.length;i++){const [x,y]=water[i],phase=now*.004+i*1.4;c.globalAlpha=.12+(Math.sin(phase)+1)*.12;c.fillStyle=i%2?'#c7f8ff':'#9deaff';c.fillRect(Math.round(x+Math.sin(phase)*2),y,5+(i%2),1);}
     if(forest){for(let i=0;i<4;i++){const phase=now*.0018+i*1.57,x=120+i*178+Math.sin(phase)*4,y=113+(i%2)*96+Math.cos(phase)*3;c.globalAlpha=.18+Math.max(0,Math.sin(phase))*.22;c.fillStyle='#fff3a8';c.fillRect(Math.round(x),Math.round(y),2,2);}}
     c.restore();
@@ -613,7 +661,7 @@
   function tilePath(target){
     const g=model.map.grid,key=(x,y)=>x+','+y,q=[[Math.round(model.x),Math.round(model.y)]],prev=new Map([[key(Math.round(model.x),Math.round(model.y)),null]]);
     let end=null;
-    for(let i=0;i<q.length;i++){const[x,y]=q[i];if(x===target.x&&y===target.y){end=key(x,y);break;}for(const[dx,dy,dir]of [[0,-1,'up'],[0,1,'down'],[-1,0,'left'],[1,0,'right']]){const nx=x+dx,ny=y+dy,k=key(nx,ny),t=g[ny]?.[nx];if(nx<1||ny<1||nx>=COLS-1||ny>=ROWS-1||[9,3,4].includes(t)||prev.has(k))continue;prev.set(k,{x,y,dir});q.push([nx,ny]);}}
+    for(let i=0;i<q.length;i++){const[x,y]=q[i];if((target.x===model.map.npc.x&&target.y===model.map.npc.y)?Math.abs(x-target.x)+Math.abs(y-target.y)<=1:x===target.x&&y===target.y){end=key(x,y);break;}for(const[dx,dy,dir]of [[0,-1,'up'],[0,1,'down'],[-1,0,'left'],[1,0,'right']]){const nx=x+dx,ny=y+dy,k=key(nx,ny),t=g[ny]?.[nx];if(nx<1||ny<1||nx>=g[0].length-1||ny>=g.length-1||[9,3,4].includes(t)||(nx===model.map.npc.x&&ny===model.map.npc.y)||prev.has(k))continue;prev.set(k,{x,y,dir});q.push([nx,ny]);}}
     if(!end)return [];const out=[];let p;while((p=prev.get(end))){const [x,y]=end.split(',').map(Number);out.push({x,y,dir:p.dir});end=key(p.x,p.y);}out.reverse();if(Math.hypot(model.x-q[0][0],model.y-q[0][1])>.00001)out.unshift({x:q[0][0],y:q[0][1]});return out;
   }
   function backpackGrassTarget(){
@@ -627,14 +675,21 @@
     let target=model.map.exit,title='Siga para a próxima localidade';
     if(!ps.talked||needsGym||needsFossilStory){target=model.map.npc;title=!ps.talked?'Converse com '+place.npc:needsGym?'Conquiste a insígnia de '+place.npc:'Proteja os fósseis';}
     else if(objectNeeded){target=returnBackpack?model.map.npc:place.id==='route-2'?backpackGrassTarget():model.map.object;title=returnBackpack?'Devolva a mochila para Caio':place.id==='route-2'?'Procure o Pokémon com a mochila na grama':'Encontre o objetivo marcado';}
+    if(place.id==='pewter'){if(model.interior)target=model.interior==='gym'?model.map.npc:model.map.exit;else if(!ps.talked||needsGym)target=model.map.doors.find(d=>d.id==='gym');}
     return [{id:'chapter-'+place.id,kind:'main',title,goal:'chapter',at:target}];
   }
 
+  function continueObjectiveRoute(){
+    if(!model.routeIntent||!model.root?.classList.contains('open')||model.autoObjective||model.autoPath?.length||model.held||W.PsyGuide?.isOpen()||W.PsyKantoStoryV49?.isOpen())return;
+    const target=chapterQuest()[0]?.at;if(!target){model.routeIntent=false;return;}
+    model.autoObjective={x:target.x,y:target.y};model.autoPath=tilePath(model.autoObjective);
+    if(!model.autoPath.length&&!nearby(target)){model.routeIntent=false;model.autoObjective=null;W.notif?.('Não há um caminho livre até o objetivo.',2200);}
+  }
   function render() {
     if(!model.place||!model.ctx||!model.root?.classList.contains('open'))return;
     const c=model.ctx,view=campaignCamera(),cw=view.w,ch=view.h,th=theme(model.place),g=model.map.grid,now=performance.now();
     W.PsyWorldTimeV1?.updateBadge?.(model.root.querySelector('[data-world-clock]'));
-    const enhancedScene=['route-2','viridian-forest'].includes(model.place.id);
+    const enhancedScene=['route-2','viridian-forest','pewter'].includes(model.place.id);
     c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
     c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);c.imageSmoothingEnabled=enhancedScene;c.drawImage(terrainPaint(),0,0);c.imageSmoothingEnabled=false;
     drawSceneAmbience(c,now);
@@ -649,21 +704,22 @@
     const visibleBounds={left:-view.ox/view.scale,right:(cw-view.ox)/view.scale,top:-view.oy/view.scale,bottom:(ch-view.oy)/view.scale};
     const pointVisible=(x,y)=>x>=visibleBounds.left&&x<=visibleBounds.right&&y>=visibleBounds.top&&y<=visibleBounds.bottom;
     const labelVisible=(x,y,width,height=14)=>x-width/2>=visibleBounds.left+3&&x+width/2<=visibleBounds.right-3&&y-height/2>=visibleBounds.top+3&&y+height/2<=visibleBounds.bottom-3;
-    const marker=(pt,color,glyph,label)=>{const sx=pt.x*TILE+TILE/2,sy=pt.y*TILE+TILE/2;if(!pointVisible(sx,sy))return;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12,view.viewW-12),labelY=sy-22;if(labelVisible(sx,labelY,tw)){c.fillStyle='#071019d9';c.fillRect(sx-tw/2,labelY-7,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,labelY)} };
+    const marker=(pt,color,glyph,label,lift=0)=>{const sx=pt.x*TILE+TILE/2,sy=pt.y*TILE+TILE/2-lift;if(!pointVisible(sx,sy))return;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12,view.viewW-12),labelY=sy-22;if(labelVisible(sx,labelY,tw)){c.fillStyle='#071019d9';c.fillRect(sx-tw/2,labelY-7,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,labelY)} };
     const drawPortal=(pt,label)=>{const sx=pt.x*TILE+TILE/2,sy=pt.y*TILE+TILE/2,pulse=.62+Math.sin(now/180)*.18,glow=c.createRadialGradient(sx,sy,3,sx,sy,34);glow.addColorStop(0,`rgba(121,247,231,${pulse})`);glow.addColorStop(.55,'rgba(131,91,255,.38)');glow.addColorStop(1,'rgba(55,42,140,0)');c.fillStyle=glow;c.beginPath();c.arc(sx,sy,34,0,Math.PI*2);c.fill();c.strokeStyle='#9af8ea';c.lineWidth=3;c.beginPath();c.ellipse(sx,sy,12,20,0,0,Math.PI*2);c.stroke();c.fillStyle='#e1ffff';c.font='bold 10px system-ui';c.textAlign='center';c.fillText(label,sx,sy-28)};
     const npcClose=enhancedScene&&Math.abs(model.x-model.map.npc.x)+Math.abs(model.y-model.map.npc.y)<=2;let drawNpcAfterActor=null;
     if(model.riftPortal)drawPortal(model.riftPortal,'FENDA · ENTRAR');
     if(model.place.id===RIFT_ID){drawPortal(model.map.exit,model.riftFrozen?'FENDA FECHANDO':'RETORNO');}
     else {
+      for(const door of model.map.doors||[])if(Math.hypot(model.x-door.x,model.y-door.y)>2)marker(door,'#e3c789','⌂',door.name);
       if(model.map.center)marker(model.map.center,'#99edc6','+','Centro Pokémon');
       if(model.map.shop)marker(model.map.shop,'#8ac8ff','L','Loja');
       if(model.map.returnGate&&!nearby(model.map.returnGate))marker(model.map.returnGate,'#c4d8f2','‹','Retornar');
-      const actor=regionImage(NPC_ART[model.place.id]);
-      if(actor?.complete&&actor.naturalWidth){const x=(model.map.npc.x+.5)*TILE,y=(model.map.npc.y+.5)*TILE,drawNpc=()=>{if(enhancedScene){if(!drawChapterNpcIdle(c,model.place.id,x,y))c.drawImage(actor,x-22,y-54,44,58);}else if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);};if(enhancedScene&&model.map.npc.y>=model.y)drawNpcAfterActor=drawNpc;else drawNpc();}
-      if(!npcClose)marker(model.map.npc,'#ffcf70','!',model.place.npc);
+      const actor=regionImage(model.map.npcArt||NPC_ART[model.place.id]);
+      if(actor?.complete&&actor.naturalWidth){const x=(model.map.npc.x+.5)*TILE,y=(model.map.npc.y+.5)*TILE,drawNpc=()=>{if(enhancedScene){if(model.map.idleSheet)drawNpcSheet(c,actor,x,y,now);else if(!drawChapterNpcIdle(c,model.map.id||model.place.id,x,y,model.map.npcIdle))c.drawImage(actor,x-22,y-54,44,58);}else if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);};if(enhancedScene&&model.map.npc.y>=model.y)drawNpcAfterActor=drawNpc;else drawNpc();}
+      if(!npcClose)marker(model.map.npc,'#ffcf70','!',model.map.npcName||model.place.npc,60);
       const route2Story=placeState(model.place.id);
       if(model.place.id==='viridian-forest')marker(model.map.object,route2Story.storyDone?'#ffe08a':'#75d5db',route2Story.storyDone?'✦':'?',route2Story.storyDone?'Lanterna acesa':'Lanterna antiga');
-      marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima rota');
+      marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›',model.interior?'SAÍDA':model.place.id==='pewter'?'Rota 3 →':'Próxima rota');
       if(model.map.secretChest&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
     }
     const px=model.x*TILE+TILE/2,py=model.y*TILE+TILE/2;
@@ -731,9 +787,9 @@
     const scale=avatar.frameScale||1,w=box.w*scale,h=box.h*scale;
     ctx.drawImage(image,col*SHEET_CELL+box.x,row*SHEET_CELL+box.y,box.w,box.h,centerX-w/2,baselineY-h,w,h);
   }
-  function tick() {
+  function tick(timestamp=performance.now()) {
     if(!model.root?.classList.contains('open')){model.raf=0;return;}
-    const now=performance.now(),dt=Math.min(.12,Math.max(0,(now-(model.time||now))/1000));model.time=now;
+    const now=timestamp,dt=Math.min(.12,Math.max(0,(now-(model.time||now))/1000));model.time=now;
     if(tickRift(Date.now())){model.raf=W.requestAnimationFrame(tick);return;}
     if(W.PsyHobbies?.isOpen?.()||W.PsyTitles?.isOpen?.()||D.getElementById('psy-hobby-fishing')?.classList.contains('show')){
       model.held=null;model.keys.clear();model.moving=false;model.autoPath=[];const fishingShown=D.getElementById('psy-hobby-fishing')?.classList.contains('show');if(fishingShown&&(!model.lastRender||now-model.lastRender>=33)){render();model.lastRender=now;}model.raf=W.requestAnimationFrame(tick);return;
@@ -744,7 +800,7 @@
       cells.sort((a,b)=>a.d-b.d);for(const target of cells.slice(0,12).sort(()=>Math.random()-.5)){const route=tilePath(target);if(route.length){model.autoPath=route;break;}}
     }
     const activityAction=W.PsyHobbiesVFX?.blocksMovement?.(model.place?.id);
-    if(!activityAction)moveContinuous(dt);
+    if(!activityAction){continueObjectiveRoute();moveContinuous(dt);}
     if(!activityAction&&!model.held&&model.autoObjective&&!model.autoPath?.length&&!W.PsyGuide?.isOpen()){
       const target=model.autoObjective,dx=target.x-model.x,dy=target.y-model.y;
       const q=model.place?.id==='route-2'?W.PsyKantoBackpackQuestV1?.state?.(placeState('route-2')):null;if(q?.stage==='investigating'){const target=backpackGrassTarget();model.autoObjective=target;model.autoPath=tilePath(target);model.raf=W.requestAnimationFrame(tick);render();return;}
@@ -757,13 +813,14 @@
     }
     if(!activityAction&&!model.held&&!model.autoPath?.length&&model.autoPortal){model.autoPortal=false;if(model.riftPortal&&Math.hypot(model.x-model.riftPortal.x,model.y-model.riftPortal.y)<=2){enterRift();model.raf=W.requestAnimationFrame(tick);return;}}
     if(!activityAction&&!model.held&&!model.autoPath?.length&&model.autoRiftExit){model.autoRiftExit=false;if(model.riftSession&&nearby(model.map.exit)){returnFromRift(false);model.raf=W.requestAnimationFrame(tick);return;}}
+    if(now-(model.lastPositionSave||0)>1500){rememberPosition();model.lastPositionSave=now;}
     render();model.lastRender=now;model.raf=requestAnimationFrame(tick);
   }
   function injectEntryButton() {
     const detail=D.querySelector('#psy-kanto-atlas .psy-kanto-detail');if(!detail)return;
     const id=detail.dataset.placeId,title=detail.querySelector('h3')?.textContent?.trim();if(!title)return;
     const place=places().find(p=>p.id===id||p.name===title);if(!place||detail.querySelector('.psy-kanto-enter-world'))return;
-    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ABRIR LOCALIDADE':'CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=()=>openWorld(place.id);
+    const button=D.createElement('button');button.className='psy-kanto-enter-world';button.type='button';button.textContent=isUnlocked(place)?'ABRIR LOCALIDADE':'CAPÍTULO BLOQUEADO';button.disabled=!isUnlocked(place);button.onclick=()=>openWorld(place.id,{resume:true});
     const pane=detail.querySelector('[data-atlas-pane="journey"]');if(pane)pane.appendChild(button);else detail.appendChild(button);
   }
   function monitorAtlas() {
@@ -780,7 +837,7 @@
       const wrapped=function(wild){
         const wasOpen=!!model.root?.classList.contains('open');
         const encounterPlace=wasOpen?model.place:null;
-        if(wasOpen){model.resumeAfterEncounter=true;model.held=null;model.keys.clear();model.moving=false;model.root.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0;}
+        if(wasOpen){model.resumeAfterEncounter=true;model.joy=null;model.held=null;model.keys.clear();model.moving=false;model.root.classList.remove('open');cancelAnimationFrame(model.raf);model.raf=0;}
         const battleWild=wild||W.battleData?.wild||(typeof battleData!=='undefined'?battleData?.wild:null);
         model.pendingRiftWin=encounterPlace&&['route','dungeon'].includes(encounterPlace.kind)&&battleWild?.id&&!battleWild.campaignTrainer?{world:encounterPlace.id,kind:encounterPlace.kind,x:model.x,y:model.y,direction:model.direction,autoHunt:model.autoHunt}:null;
         const result=oldStart.apply(this,arguments);
@@ -797,15 +854,15 @@
     }
     const oldEnd=W.endBattle;if(typeof oldEnd==='function'&&!oldEnd.__psyKantoPlayableWrapped){
       const wrapped=function(won){
-        const backpack=model.pendingBackpack;model.pendingBackpack=null;if(backpack){const activeWild=W.battleData?.wild||(typeof battleData!=='undefined'?battleData?.wild:null),validCarrier=activeWild?.campaignBackpackToken===backpack.token&&Number(activeWild?.id)===backpack.id;const recovered=W.PsyKantoBackpackQuestV1?.finish?.(placeState('route-2'),backpack,validCarrier&&won===true);saveProgress();if(recovered){W.notif?.('Mochila de Caio recuperada! Volte para devolvê-la.',3500);if(model.autoObjective){model.autoObjective=model.map.npc;model.autoPath=tilePath(model.map.npc);}}}
+        D.getElementById('kanto-carrier-badge')?.remove();const backpack=model.pendingBackpack;model.pendingBackpack=null;if(backpack){const activeBattle=typeof battleData!=='undefined'?battleData:W.battleData,activeWild=activeBattle?.wild,validCarrier=activeWild?.campaignBackpackToken===backpack.token&&Number(activeWild?.id)===backpack.id&&Number(activeBattle?.wildHp)<=0;const recovered=W.PsyKantoBackpackQuestV1?.finish?.(placeState('route-2'),backpack,validCarrier&&won===true);saveProgress();if(recovered){W.notif?.('Mochila de Caio recuperada! Volte para devolvê-la.',3500);if(model.autoObjective){model.autoObjective=model.map.npc;model.autoPath=tilePath(model.map.npc);}}}
         if(won&&model.pendingStoryPlace){placeState(model.pendingStoryPlace).storyDone=true;saveProgress();model.pendingStoryPlace=null;}
         const gym=model.pendingGymPlace,place=places().find(p=>p.id===gym),gymId=place&&GYM_FOR_PLACE[place.id];
         if(won&&place&&gymId&&Array.isArray(player().gymProgress)&&player().gymProgress.includes(gymId)){W.PsyCampaignGymGate?.markVictory?.(gymId);model.pendingGymPlace=null;markCleared(place);}else if(!won&&gymId){W.PsyCampaignGymGate?.cancel?.();model.pendingGymPlace=null;}
         const riftContext=won===true?model.pendingRiftWin:null;model.pendingRiftWin=null;
         const result=oldEnd.apply(this,arguments);
-        if(model.resumeAfterEncounter){model.resumeAfterEncounter=false;W.setTimeout(()=>{if(model.place){model.root?.classList.add('open');updateObjective();render();if(!model.raf)tick()}if(riftContext)createRiftOffer({...riftContext,won:true,trainer:false});},0)}
+        if(model.resumeAfterEncounter){if(!(player().team||[]).some(mon=>Number(mon.hp)>0))model.routeIntent=false;model.resumeAfterEncounter=false;W.setTimeout(()=>{if(model.place){model.root?.classList.add('open');updateObjective();render();if(!model.raf)tick()}if(riftContext)createRiftOffer({...riftContext,won:true,trainer:false});},0)}
         if(place&&gymId&&won&&player().gymProgress?.includes(gymId)){
-          model.pendingGymPlace=null;W.setTimeout(()=>{openWorld(place.id);if(place.id==='cerulean')showDialog('Misty','Você conquistou a Insígnia da Cascata! Os dois primeiros ginásios de Kanto estão concluídos.');},100);
+          model.pendingGymPlace=null;W.setTimeout(()=>{openWorld(place.id,{resume:true});if(place.id==='cerulean')showDialog('Misty','Você conquistou a Insígnia da Cascata! Os dois primeiros ginásios de Kanto estão concluídos.');},100);
         }return result;
       };
       wrapped.__psyKantoPlayableWrapped=true;W.endBattle=wrapped;
@@ -827,6 +884,6 @@
   const oldOpenAtlas=W.openKantoJourneyV1;
   if(typeof oldOpenAtlas==='function')W.openKantoJourneyV1=function(){const result=oldOpenAtlas.apply(this,arguments);W.setTimeout(monitorAtlas,0);return result;};
   W.setTimeout(monitorAtlas,0);wrapEncounter();
-  W.PsyKantoPlayableV1={version:2,questRows:chapterQuest,getPosition:()=>model.root?.classList.contains('open')?{world:model.place?.id,x:model.x,y:model.y}:null,navigateTo:target=>{model.autoHunt=false;model.autoObjective=null;model.autoPath=tilePath(target);return model.autoPath.length>0;},navigateObjective:target=>{if(!model.root?.classList.contains('open')||!target)return false;const objective={x:Math.round(Number(target.x)),y:Math.round(Number(target.y))};if(!Number.isFinite(objective.x)||!Number.isFinite(objective.y))return false;const path=tilePath(objective);if(!path.length&&(objective.x!==model.x||objective.y!==model.y))return false;model.autoHunt=false;model.held=null;model.autoObjective=objective;model.autoPath=path;return true;},setAutoHunt:on=>{if(model.riftSession){W.notif?.('A caçada automática retorna depois da fenda.',1800);return false;}if(on&&Number(player().meta?.vipUntil||0)<=Date.now()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))W.notif?.('Recurso exclusivo VIP.',2500);return false;}model.autoHunt=!!on;if(!on)model.autoPath=[];return model.autoHunt;},isAutoHunt:()=>!!model.autoHunt,open:openWorld,close:closeWorld,isUnlocked,objective,progress:()=>state(),enterHuntRift:enterRift,returnFromHuntRift:()=>returnFromRift(false),considerHuntRift:(context,roll)=>createRiftOffer(context,roll)};
+  W.PsyKantoPlayableV1={version:2,questRows:chapterQuest,getPosition:()=>model.root?.classList.contains('open')?{world:model.place?.id,x:model.x,y:model.y,inside:model.interior||null}:null,navigateTo:target=>{model.routeIntent=false;model.autoHunt=false;model.autoObjective=null;model.autoPath=tilePath(target);return model.autoPath.length>0;},cancelNavigation:()=>{model.routeIntent=false;model.autoObjective=null;model.autoPath=[];},isAutoRouting:()=>!!model.routeIntent,navigateObjective:(target,options={})=>{if(!model.root?.classList.contains('open')||!target)return false;const objective={x:Math.round(Number(target.x)),y:Math.round(Number(target.y))};if(!Number.isFinite(objective.x)||!Number.isFinite(objective.y))return false;const path=tilePath(objective);if(!path.length&&(objective.x!==model.x||objective.y!==model.y)&&!(objective.x===model.map.npc.x&&objective.y===model.map.npc.y&&nearby(model.map.npc)))return false;model.autoHunt=false;model.routeIntent=!!options.continue;model.held=null;model.autoObjective=objective;model.autoPath=path;return true;},setAutoHunt:on=>{if(model.riftSession){W.notif?.('A caçada automática retorna depois da fenda.',1800);return false;}if(on&&Number(player().meta?.vipUntil||0)<=Date.now()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))W.notif?.('Recurso exclusivo VIP.',2500);return false;}model.autoHunt=!!on;if(!on)model.autoPath=[];return model.autoHunt;},isAutoHunt:()=>!!model.autoHunt,open:openWorld,close:closeWorld,isUnlocked,objective,progress:()=>state(),enterHuntRift:enterRift,returnFromHuntRift:()=>returnFromRift(false),considerHuntRift:(context,roll)=>createRiftOffer(context,roll)};
 })(window,document);
 

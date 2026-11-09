@@ -109,7 +109,7 @@ function viridianElderAt(){const at=W.PsyKantoMapDataV2?.viridian?.npcs?.find?.(
 async function find(q){
  W.PsyKantoWorldV2?.dismissMenu?.();
  findTask=null;api()?.setAutoHunt(false);if(q.goal==='workshop'){if(W.PsyKantoWorldV2?.isOpen?.())W.PsyKantoWorldV2.openMenuPanel('professions');else W.PsyProfessions?.open('main');return;}
- if(q.goal==='chapter'){const ctl=api();if(ctl?.navigateObjective)ctl.navigateObjective(q.at);else ctl?.navigateTo?.(q.at);return;}
+ if(q.goal==='chapter'){const ctl=api();if(ctl?.navigateObjective)ctl.navigateObjective(q.at,{continue:true});else ctl?.navigateTo?.(q.at);return;}
  if(q.goal==='oak'){
   let ctl=api(),p=ctl?.getPosition?.();if(!p||p.world!=='pallet'||!controllerIsOpen(ctl)){ctl?.open?.('pallet');ctl=api();p=ctl?.getPosition?.();}
   if(p?.inside&&p.inside!=='lab')ctl?.leaveInterior();
@@ -233,7 +233,7 @@ function refresh(){
  renderButtons();advanceFind().catch(()=>{findTask=null;});
  if(D.visibilityState==='visible')autoTurn();
 }
-W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,showVipGate:openVipGate,autoFind:find,isAutoRouting:()=>!!findTask,cancelRoute:()=>{findTask=null;},startPrimaryRoute:()=>{const rows=questRows(),q=rows.find(x=>x.kind==='main'&&(x.goal||Array.isArray(x.at)))||rows.find(x=>x.goal||Array.isArray(x.at));if(q)return find(q);note('Não há uma rota ativa no momento.');},stop:stopAutomation,configure,preferences,huntActive};
+W.PsyCampaignAutomation={setAutoBattle:setAutomatic,setQuests:rows=>{extra=Array.isArray(rows)?rows:[];lastRows='';},vipActive:vip,showVipGate:openVipGate,autoFind:find,isAutoRouting:()=>!!findTask||!!W.PsyKantoPlayableV1?.isAutoRouting?.(),cancelRoute:()=>{findTask=null;W.PsyKantoPlayableV1?.cancelNavigation?.()},startPrimaryRoute:()=>{const rows=questRows(),q=rows.find(x=>x.kind==='main'&&(x.goal||Array.isArray(x.at)))||rows.find(x=>x.goal||Array.isArray(x.at));if(q)return find(q);note('Não há uma rota ativa no momento.');},stop:stopAutomation,configure,preferences,huntActive};
 renderButtons();W.setInterval(refresh,600);
 })(window,document);
 
