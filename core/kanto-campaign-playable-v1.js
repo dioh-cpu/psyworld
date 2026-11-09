@@ -409,7 +409,7 @@
     const speed=143*(1+(Number(W.PsySeason?.buff('speed')||0)+Number(W.PsyProfessions?.bonus('main','speed')||0))/100);
     const wasAtExit=Math.hypot(model.x-model.map.exit.x,model.y-model.map.exit.y)<.1;
     const blockers=[model.map.npc,...(model.map.actors||[])].filter(Boolean).map(p=>({x:(p.x+.5)*TILE,y:(p.y+.5)*TILE,radius:8}));
-    const result=motion.advance(model.map.grid,position,{x:dx,y:dy},dt,speed,maxDistance,blockers);
+    const result=motion.advance(model.map.grid,position,{x:dx,y:dy},dt,speed,maxDistance,blockers,model.map.footRadius||motion.radius);
     model.x=position.x/TILE-.5;model.y=position.y/TILE-.5;model.moving=result.distance>0.0001;
     if(model.moving){
       model.direction=Math.abs(result.dx)>Math.abs(result.dy)?result.dx>0?'right':'left':result.dy>0?'down':'up';

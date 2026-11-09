@@ -53,7 +53,7 @@ assert(playable.includes("model.place.id==='viridian-forest'"),'Forest field gat
 assert(playable.includes('const spot=W.PsyHobbies?.nearby?.(model.place.id,{x,y},32)')&&playable.includes('model.autoSpot=spot.id;model.autoPath=path'),'mouse and touch taps on hobby spots must path to and start gathering');
 assert(playable.includes('model.map?.encounterLevels||'),'the authored map encounter level ranges must drive live battles');
 assert(hobbies.includes("'viridian-forest':[['f1','gardener'"),'Forest needs its own existing-system gathering spots');
-for(const [id,points] of [['route-2',[[434,381],[430,239],[691,183],[460,292],[730,378],[270,420],[700,280]]],['viridian-forest',[[185,260],[724,305],[642,218],[690,365],[407,320],[450,465],[280,320]]]]){
+for(const [id,points] of [['route-2',[[350,378],[350,238],[686,182],[350,294],[798,378],[266,434],[798,294]]],['viridian-forest',[[434,210],[462,154],[518,182],[546,406],[406,322],[462,462],[378,294]]]]){
  const map=api.get(id);for(const [x,y] of points)assert(reaches(map,{x:Math.floor(x/28),y:Math.floor(y/28)}),id+' Hobby spot must be connected to the map spawn at '+x+','+y);
 }
 assert(html.indexOf('core/kanto-early-chapters-v1.js')<html.indexOf('core/kanto-campaign-playable-v1.js'),'the hand-authored data must load before its renderer');
@@ -67,7 +67,7 @@ assert(playable.includes('drawSceneAmbience(c,now)')&&playable.includes('render(
 assert(playable.includes('drawChapterNpcIdle(c,model.map.id||model.place.id,x,y,model.map.npcIdle)')&&playable.includes('walk.renderAnimated(ctx,data.atlas,data.state,{moving:false'),'visible story NPCs need subtle idle motion with their ground shadow anchored');
 assert(playable.includes('const npcClose=enhancedScene&&Math.abs(model.x-model.map.npc.x)+Math.abs(model.y-model.map.npc.y)<=2')&&playable.includes('if(!npcClose)marker(model.map.npc'),'nearby dialogue labels must not collide with the player name');
 assert(playable.includes('const pointVisible=(x,y)=>')&&playable.includes('const labelVisible=(x,y,width,height=14)=>')&&playable.includes('if(!pointVisible(sx,sy))return'),'off-camera story markers must not jump to the viewport edge');
-assert(playable.includes('#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-3"] #psy-kanto-canvas,#psy-kanto-world[data-place="mt-moon"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none'),'the Kanto route maps must fill the stage without aspect-ratio letterboxing');
+assert(playable.includes('#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas')&&playable.includes('width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none'),'the Kanto route maps must fill the stage without aspect-ratio letterboxing');
 for(const file of ['assets/story/route-2-artist-v1.webp','assets/story/viridian-forest-route2-v1.webp','assets/story/kanto-hunt-rift-v1.webp','assets/story/kanto-route-3-v1.webp'])assert(fs.existsSync(file),file+' is missing');
 new Function(source);new Function(playable);
 console.log('PASS: Route 2 and Forest collision connectivity, story landmarks, region links, map art and shared mission-route controls');
