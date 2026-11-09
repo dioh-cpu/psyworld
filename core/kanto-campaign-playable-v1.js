@@ -107,6 +107,7 @@
       #psy-kanto-world [data-kp-fish]{background:#0e5d80;border-color:#9ee4f5;min-height:52px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
       #psy-kanto-canvas{box-sizing:border-box;width:min(100vw,calc((100vh - 176px)*1.6));height:auto;aspect-ratio:8/5;max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
+      #psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none}
       #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,38px);gap:3px}
       .kp-controls button{padding:0;font-size:17px;background:#243747}.kp-controls [data-dir="up"]{grid-column:2}.kp-controls [data-dir="left"]{grid-column:1;grid-row:2}.kp-controls [data-dir="down"]{grid-column:2;grid-row:2}.kp-controls [data-dir="right"]{grid-column:3;grid-row:2}
@@ -114,14 +115,14 @@
       #psy-kanto-dialog{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:13px 15px;background:#0a111df2;border:1px solid #e5c77e;border-radius:12px;box-shadow:0 10px 40px #000a;display:none;z-index:2}
       #psy-kanto-dialog.open{display:block}.kp-dialog-title{color:#ffe09a;font-weight:900;margin-bottom:5px}.kp-dialog-text{font-size:13px;line-height:1.45;color:#e4eaf0}.kp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
       #psy-kanto-world .psy-kanto-enter-world{width:100%;margin:8px 0 12px}
-      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-canvas{width:min(100vw,calc((100vh - 176px)*1.6));height:auto;aspect-ratio:8/5;border-radius:0}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
+      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas{width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
     `;
     D.head.appendChild(style);
   }
 
   const RIFT_ID='kanto-hunt-rift';
   const RIFT_PLACE={id:RIFT_ID,name:'Fenda Selvagem',mark:'Uma clareira rara entre rotas e cavernas',kind:'route',species:[],npc:'',quest:'Reúna recursos antes que a fenda se feche.'};
-  const model = { root:null, canvas:null, ctx:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, autoObjective:null, autoSpot:null, autoPortal:false, autoRiftExit:false, riftPortal:null, riftSession:null, riftOrigin:null, riftFrozen:false, pendingRiftWin:null, lastRiftSecond:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
+  const model = { root:null, canvas:null, ctx:null, camera:null, place:null, map:null, x:3, y:ROWS-3, frame:0, direction:'down', held:null, autoObjective:null, autoSpot:null, autoPortal:false, autoRiftExit:false, riftPortal:null, riftSession:null, riftOrigin:null, riftFrozen:false, pendingRiftWin:null, lastRiftSecond:null, lastMove:0, encounterAt:0, dialog:null, pendingGymPlace:null, resumeAfterEncounter:false, raf:0, atlasObserver:null, atlasNode:null };
   function makeRoot() {
     if (model.root) return model.root;
     addStyles();
@@ -147,7 +148,7 @@
     model.canvas.addEventListener('pointerdown',e=>{if(W.PsyGuide?.isOpen()||model.riftFrozen)return;W.PsyCampaignAutomation?.cancelRoute?.();model.autoObjective=null;model.autoSpot=null;model.autoPortal=false;model.autoRiftExit=false;model.autoHunt=false;model.autoPath=[];touch={id:e.pointerId,x:e.clientX,y:e.clientY,drag:false};model.canvas.setPointerCapture?.(e.pointerId);e.preventDefault();});
     model.canvas.addEventListener('pointermove',e=>{if(!touch||e.pointerId!==touch.id)return;const dx=e.clientX-touch.x,dy=e.clientY-touch.y;if(Math.hypot(dx,dy)<7){model.held=null;return;}touch.drag=true;model.held=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';e.preventDefault();});
     const release=e=>{const t=touch;touch=null;model.held=null;model.frame=0;if(t&&!t.drag&&e.type==='pointerup'){
-      const r=model.canvas.getBoundingClientRect(),x=(e.clientX-r.left)*model.canvas.width/r.width,y=(e.clientY-r.top)*model.canvas.height/r.height;
+      const r=model.canvas.getBoundingClientRect(),view=model.camera||campaignCamera(),sx=(e.clientX-r.left)*model.canvas.width/r.width,sy=(e.clientY-r.top)*model.canvas.height/r.height,x=(sx-view.ox)/view.scale,y=(sy-view.oy)/view.scale;
       const target=model.riftSession?model.map?.exit:model.riftPortal;
       if(target){const tx=model.riftSession?target.x*TILE+TILE/2:target.x*TILE+TILE/2,ty=model.riftSession?target.y*TILE+TILE/2:target.y*TILE+TILE/2;
         if(Math.hypot(x-tx,y-ty)<34){const goal={x:target.x,y:target.y},path=tilePath(goal);if(!path.length&&(goal.x!==model.x||goal.y!==model.y))return;model.autoPath=path;if(model.riftSession)model.autoRiftExit=true;else model.autoPortal=true;if(!path.length){if(model.riftSession)returnFromRift(false);else enterRift();}return;}
@@ -325,7 +326,7 @@
     W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[]; model.place=place; model.map=buildMap(place); model.x=options.spawn?.x??model.map.spawn?.x??3; model.y=options.spawn?.y??model.map.spawn?.y??ROWS-3; model.direction=options.direction||'down';model.frame=0;model.held=null;
     const pendingRift=W.PsyKantoHuntRiftV1?.getOffer?.('campaign');model.riftPortal=null;
     state().active=place.id;
-    model.root.querySelector('.kp-title b').textContent=place.name;
+    model.root.dataset.place=place.id;model.root.querySelector('.kp-title b').textContent=place.name;
     model.root.querySelector('.kp-title small').textContent=place.mark;
     model.root.classList.add('open'); model.dialog.classList.remove('open'); updateObjective(); render();
     W.PsyKantoStoryV49?.enter?.(previousPlace,id);
@@ -389,8 +390,8 @@
   }
 
   function chapterTarget(point){
-    const rect=model.canvas.getBoundingClientRect(),x=(point.x+.5)*TILE/896,y=(point.y+.5)*TILE/560;
-    return {left:rect.left+x*rect.width-14,top:rect.top+y*rect.height-45,right:rect.left+x*rect.width+14,bottom:rect.top+y*rect.height+8};
+    const rect=model.canvas.getBoundingClientRect(),view=model.camera||campaignCamera(),sx=((point.x+.5)*TILE*view.scale+view.ox)*rect.width/view.w,sy=((point.y+.5)*TILE*view.scale+view.oy)*rect.height/view.h;
+    return {left:rect.left+sx-14,top:rect.top+sy-45,right:rect.left+sx+14,bottom:rect.top+sy+8};
   }
   function launchChapterGym(place,gymId){
     if(!W.PsyCampaignGymGate?.beginFromCampaign?.(gymId,place.id)){
@@ -550,6 +551,45 @@
     if(!art||art.complete)model.map.paint=paint;
     return paint;
   }
+  // Match the camera used by Route 1 (core/kanto-world-v2.js): cover the play
+  // area using its 900×450 reference, then follow the player through larger maps.
+  function campaignCamera(){
+    if(!model.canvas)return null;
+    const stage=model.root?.querySelector('.kp-stage'),r=stage?.getBoundingClientRect();
+    if(!r)return null;
+    const worldW=COLS*TILE,worldH=ROWS*TILE,enhancedScene=['route-2','viridian-forest'].includes(model.place?.id);
+    if(!enhancedScene){if(model.canvas.width!==worldW||model.canvas.height!==worldH){model.canvas.width=worldW;model.canvas.height=worldH;}return model.camera={w:worldW,h:worldH,dpr:1,scale:1,ox:Math.floor((worldW-worldW)/2),oy:Math.floor((worldH-worldH)/2),viewW:worldW,viewH:worldH};}
+    const dpr=Math.min(1.3,W.devicePixelRatio||1),cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
+    if(model.canvas.width!==cw||model.canvas.height!==ch){model.canvas.width=cw;model.canvas.height=ch;}
+    // Route 1 uses a 51px top bar and a 64px mobile control strip (42px +
+    // 62px in landscape). Keep its camera scale even though this map's controls
+    // occupy a taller footer; the extra zoom is clipped by this scene viewport.
+    const compactViewport=W.innerWidth<=680||W.innerHeight<=500;
+    const referenceH=compactViewport?Math.max(ch,Math.round((W.innerHeight-(W.innerHeight<=500?104:115))*dpr)):ch;
+    const cover=Math.max(cw/900,referenceH/450),scale=Math.min(4,cover*1.08),viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+    const cx=viewW>=worldW?worldW/2:clamp((model.x+.5)*TILE,viewW/2,worldW-viewW/2),cy=viewH>=worldH?worldH/2:clamp((model.y+.5)*TILE,viewH/2,worldH-viewH/2);
+    return model.camera={w:cw,h:ch,dpr,scale,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale),viewW,viewH};
+  }
+  const sceneAmbience=new WeakMap();
+  function ambienceFor(map){
+    if(sceneAmbience.has(map))return sceneAmbience.get(map);
+    const grass=[];for(let y=1;y<ROWS-1;y++)for(let x=1;x<COLS-1;x++)if(map.grid[y][x]===5&&((x*13+y*7)%5===0))grass.push({x:x*TILE+4+((x*11+y*3)%18),y:y*TILE+8+((x*5+y*9)%14),phase:(x*17+y*31)%628/100,color:(x+y)%3?'#d9f39a':'#a9e982'});
+    const id=map.world?.id||model.place?.id||'',forest=id==='viridian-forest';
+    const leaves=Array.from({length:forest?8:7},(_,i)=>({x:((i*137+forest*19)%Math.max(1,COLS*TILE-48))+24,y:((i*83+61)%Math.max(1,ROWS*TILE-48))+24,phase:i*1.71,speed:.018+(i%3)*.004,color:i%2?'#d7e58a':'#c9ed9b'}));
+    const data={grass,leaves,forest};sceneAmbience.set(map,data);return data;
+  }
+  function drawSceneAmbience(c,now){
+    if(!['route-2','viridian-forest'].includes(model.place?.id))return;
+    const data=ambienceFor(model.map),forest=data.forest;
+    c.save();c.lineWidth=1;c.lineCap='round';
+    for(const blade of data.grass){const sway=Math.sin(now*.00115+blade.phase),x=blade.x,y=blade.y;c.globalAlpha=.1+(Math.sin(now*.0014+blade.phase)+1)*.055;c.strokeStyle=blade.color;c.beginPath();c.moveTo(x,y+3);c.lineTo(x+sway*1.5,y-1);c.moveTo(x+3,y+4);c.lineTo(x+3-sway,y+1);c.stroke();}
+    c.globalAlpha=1;
+    for(const leaf of data.leaves){const cycle=(now*leaf.speed+leaf.phase)%(Math.PI*2),x=leaf.x+Math.sin(cycle)*8,y=leaf.y+Math.cos(cycle*.7)*3;c.save();c.translate(Math.round(x),Math.round(y));c.rotate(Math.sin(cycle)*.35);c.globalAlpha=.38+Math.sin(cycle)*.12;c.fillStyle=leaf.color;c.fillRect(-2,-1,3,2);c.fillRect(0,0,2,1);c.fillStyle='#fff0b2';c.fillRect(1,-1,1,1);c.restore();}
+    const water=forest?[[418,272],[440,291],[464,313],[445,341],[477,355]]:[[24,84],[38,135],[28,207],[52,267],[84,68]];
+    for(let i=0;i<water.length;i++){const [x,y]=water[i],phase=now*.004+i*1.4;c.globalAlpha=.12+(Math.sin(phase)+1)*.12;c.fillStyle=i%2?'#c7f8ff':'#9deaff';c.fillRect(Math.round(x+Math.sin(phase)*2),y,5+(i%2),1);}
+    if(forest){for(let i=0;i<4;i++){const phase=now*.0018+i*1.57,x=120+i*178+Math.sin(phase)*4,y=113+(i%2)*96+Math.cos(phase)*3;c.globalAlpha=.18+Math.max(0,Math.sin(phase))*.22;c.fillStyle='#fff3a8';c.fillRect(Math.round(x),Math.round(y),2,2);}}
+    c.restore();
+  }
   function tilePath(target){
     const g=model.map.grid,key=(x,y)=>x+','+y,q=[[model.x,model.y]],prev=new Map([[key(model.x,model.y),null]]);
     let end=null;
@@ -568,21 +608,26 @@
 
   function render() {
     if(!model.place||!model.ctx||!model.root?.classList.contains('open'))return;
-    const c=model.ctx, cw=model.canvas.width, ch=model.canvas.height, th=theme(model.place), g=model.map.grid;
+    const c=model.ctx,view=campaignCamera(),cw=view.w,ch=view.h,th=theme(model.place),g=model.map.grid,now=performance.now();
     W.PsyWorldTimeV1?.updateBadge?.(model.root.querySelector('[data-world-clock]'));
-    c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
-    const offsetX=Math.floor((cw-COLS*TILE)/2),offsetY=Math.floor((ch-ROWS*TILE)/2);
-    c.drawImage(terrainPaint(),offsetX,offsetY);
+    const enhancedScene=['route-2','viridian-forest'].includes(model.place.id);
+    c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
+    c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);c.imageSmoothingEnabled=enhancedScene;c.drawImage(terrainPaint(),0,0);c.imageSmoothingEnabled=false;
+    drawSceneAmbience(c,now);
     const waterBtn=model.root.querySelector('[data-kp-fish]');
     if(waterBtn)waterBtn.hidden=!W.PsyHobbies?.canFish?.(model.place.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},model.map.paint);
 
-    if(model.place.kind==='route'||model.place.kind==='dungeon'||model.place.id==='viridian-forest'){c.save();c.translate(offsetX,offsetY);W.PsyHobbies?.drawField?.(c,model.place.id);c.restore();}
+    if(model.place.kind==='route'||model.place.kind==='dungeon'||model.place.id==='viridian-forest'){W.PsyHobbies?.drawField?.(c,model.place.id);}
     if(model.place.id==='viridian-forest'&&placeState(model.place.id).storyDone){
-      const pulse=.68+Math.sin(performance.now()/620)*.08;
-      for(const [x,y] of model.map.lanterns||[]){const light=c.createRadialGradient(offsetX+x,offsetY+y,2,offsetX+x,offsetY+y,28);light.addColorStop(0,`rgba(255,216,119,${pulse*.34})`);light.addColorStop(1,'rgba(255,190,74,0)');c.fillStyle=light;c.fillRect(offsetX+x-28,offsetY+y-28,56,56);}
+      const pulse=.68+Math.sin(now/620)*.08;
+      for(const [x,y] of model.map.lanterns||[]){const light=c.createRadialGradient(x,y,2,x,y,28);light.addColorStop(0,`rgba(255,216,119,${pulse*.34})`);light.addColorStop(1,'rgba(255,190,74,0)');c.fillStyle=light;c.fillRect(x-28,y-28,56,56);}
     }
-    const marker=(pt,color,glyph,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12);c.fillStyle='#071019d9';c.fillRect(sx-tw/2,sy-29,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,sy-22)};
-    const drawPortal=(pt,label)=>{const sx=offsetX+pt.x*TILE+TILE/2,sy=offsetY+pt.y*TILE+TILE/2,pulse=.62+Math.sin(performance.now()/180)*.18,glow=c.createRadialGradient(sx,sy,3,sx,sy,34);glow.addColorStop(0,`rgba(121,247,231,${pulse})`);glow.addColorStop(.55,'rgba(131,91,255,.38)');glow.addColorStop(1,'rgba(55,42,140,0)');c.fillStyle=glow;c.beginPath();c.arc(sx,sy,34,0,Math.PI*2);c.fill();c.strokeStyle='#9af8ea';c.lineWidth=3;c.beginPath();c.ellipse(sx,sy,12,20,0,0,Math.PI*2);c.stroke();c.fillStyle='#e1ffff';c.font='bold 10px system-ui';c.textAlign='center';c.fillText(label,sx,sy-28)};
+    const visibleBounds={left:-view.ox/view.scale,right:(cw-view.ox)/view.scale,top:-view.oy/view.scale,bottom:(ch-view.oy)/view.scale};
+    const pointVisible=(x,y)=>x>=visibleBounds.left&&x<=visibleBounds.right&&y>=visibleBounds.top&&y<=visibleBounds.bottom;
+    const labelVisible=(x,y,width,height=14)=>x-width/2>=visibleBounds.left+3&&x+width/2<=visibleBounds.right-3&&y-height/2>=visibleBounds.top+3&&y+height/2<=visibleBounds.bottom-3;
+    const marker=(pt,color,glyph,label)=>{const sx=pt.x*TILE+TILE/2,sy=pt.y*TILE+TILE/2;if(!pointVisible(sx,sy))return;c.fillStyle=color;c.beginPath();c.arc(sx,sy,10,0,Math.PI*2);c.fill();c.fillStyle='#17202a';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(glyph,sx,sy+1);c.font='bold 10px system-ui';const text=label.length>22?label.slice(0,20)+'…':label,tw=Math.min(190,c.measureText(text).width+12,view.viewW-12),labelY=sy-22;if(labelVisible(sx,labelY,tw)){c.fillStyle='#071019d9';c.fillRect(sx-tw/2,labelY-7,tw,14);c.fillStyle='#fff';c.textBaseline='middle';c.fillText(text,sx,labelY)} };
+    const drawPortal=(pt,label)=>{const sx=pt.x*TILE+TILE/2,sy=pt.y*TILE+TILE/2,pulse=.62+Math.sin(now/180)*.18,glow=c.createRadialGradient(sx,sy,3,sx,sy,34);glow.addColorStop(0,`rgba(121,247,231,${pulse})`);glow.addColorStop(.55,'rgba(131,91,255,.38)');glow.addColorStop(1,'rgba(55,42,140,0)');c.fillStyle=glow;c.beginPath();c.arc(sx,sy,34,0,Math.PI*2);c.fill();c.strokeStyle='#9af8ea';c.lineWidth=3;c.beginPath();c.ellipse(sx,sy,12,20,0,0,Math.PI*2);c.stroke();c.fillStyle='#e1ffff';c.font='bold 10px system-ui';c.textAlign='center';c.fillText(label,sx,sy-28)};
+    const npcClose=enhancedScene&&Math.abs(model.x-model.map.npc.x)+Math.abs(model.y-model.map.npc.y)<=2;let drawNpcAfterActor=null;
     if(model.riftPortal)drawPortal(model.riftPortal,'FENDA · ENTRAR');
     if(model.place.id===RIFT_ID){drawPortal(model.map.exit,model.riftFrozen?'FENDA FECHANDO':'RETORNO');}
     else {
@@ -590,20 +635,20 @@
       if(model.map.shop)marker(model.map.shop,'#8ac8ff','L','Loja');
       if(model.map.returnGate&&!nearby(model.map.returnGate))marker(model.map.returnGate,'#c4d8f2','‹','Retornar');
       const actor=regionImage(NPC_ART[model.place.id]);
-      if(actor?.complete&&actor.naturalWidth){const x=offsetX+(model.map.npc.x+.5)*TILE,y=offsetY+(model.map.npc.y+.5)*TILE;if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);}
-      marker(model.map.npc,'#ffcf70','!',model.place.npc);
+      if(actor?.complete&&actor.naturalWidth){const x=(model.map.npc.x+.5)*TILE,y=(model.map.npc.y+.5)*TILE,drawNpc=()=>{if(enhancedScene){const phase=now*.0021+(hash(model.place.id)%90)/100,bob=Math.sin(phase)*.65,sway=Math.sin(phase*.63)*.42;c.save();c.fillStyle=`rgba(4,12,18,${.28+Math.sin(phase)*.035})`;c.beginPath();c.ellipse(x,y+4,13,4.5,0,0,Math.PI*2);c.fill();c.translate(sway,-bob);c.drawImage(actor,x-22,y-54,44,58);c.restore();}else if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);};if(enhancedScene&&model.map.npc.y>=model.y)drawNpcAfterActor=drawNpc;else drawNpc();}
+      if(!npcClose)marker(model.map.npc,'#ffcf70','!',model.place.npc);
       const route2Story=placeState(model.place.id);
       if(model.place.id==='route-2'&&!route2Story.storyItemFound){
-        const backpack=regionImage('assets/story/route-2-backpack.png'),x=offsetX+(model.map.object.x+.5)*TILE,y=offsetY+(model.map.object.y+.5)*TILE;
-        if(backpack?.complete&&backpack.naturalWidth){c.save();c.imageSmoothingEnabled=false;c.fillStyle='rgba(217,189,106,.27)';c.beginPath();c.ellipse(x,y+7,18,6,0,0,Math.PI*2);c.fill();c.drawImage(backpack,x-19,y-24,38,37);c.font='bold 10px system-ui';c.textAlign='center';c.textBaseline='middle';const tag='MOCHILA PERDIDA',tagWidth=c.measureText(tag).width+10;c.fillStyle='#071019dc';c.fillRect(x-tagWidth/2,y-34,tagWidth,14);c.fillStyle='#fff2c5';c.fillText(tag,x,y-27);c.restore();}
+        const backpack=regionImage('assets/story/route-2-backpack.png'),x=(model.map.object.x+.5)*TILE,y=(model.map.object.y+.5)*TILE;
+        if(backpack?.complete&&backpack.naturalWidth){c.save();c.imageSmoothingEnabled=false;c.fillStyle='rgba(217,189,106,.27)';c.beginPath();c.ellipse(x,y+7,18,6,0,0,Math.PI*2);c.fill();c.drawImage(backpack,x-19,y-24,38,37);if(Math.hypot(model.x-model.map.object.x,model.y-model.map.object.y)>3&&pointVisible(x,y)){c.font='bold 10px system-ui';c.textAlign='center';c.textBaseline='middle';const tag='MOCHILA PERDIDA',tagWidth=Math.min(c.measureText(tag).width+10,view.viewW-12),tagY=y-27;if(labelVisible(x,tagY,tagWidth)){c.fillStyle='#071019dc';c.fillRect(x-tagWidth/2,tagY-7,tagWidth,14);c.fillStyle='#fff2c5';c.fillText(tag,x,tagY,tagWidth-8);}}c.restore();}
         else marker(model.map.object,'#75d5db','?','Mochila perdida');
       }else if(model.place.id==='viridian-forest')marker(model.map.object,route2Story.storyDone?'#ffe08a':'#75d5db',route2Story.storyDone?'✦':'?',route2Story.storyDone?'Lanterna acesa':'Lanterna antiga');
       else if(model.place.id==='route-2')marker(model.map.object,'#75d5db','✓','Mochila recuperada');
       marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›','Próxima rota');
       if(model.map.secretChest&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
     }
-    const px=offsetX+model.x*TILE+TILE/2,py=offsetY+model.y*TILE+TILE/2;
-    if(W.PsyFollower){c.save();c.translate(offsetX,offsetY);W.PsyFollower.draw(c,{scene:'chapter:'+model.place.id,x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,moving:!!model.held||!!model.autoPath?.length,facing:model.direction,valid:(x,y)=>{const value=model.map.grid[Math.floor(y/TILE)]?.[Math.floor(x/TILE)];return [1,5].includes(value);},trainer:()=>{}});c.restore();}
+    const px=model.x*TILE+TILE/2,py=model.y*TILE+TILE/2;
+    if(W.PsyFollower){W.PsyFollower.draw(c,{scene:'chapter:'+model.place.id,x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,moving:!!model.held||!!model.autoPath?.length,facing:model.direction,valid:(x,y)=>{const value=model.map.grid[Math.floor(y/TILE)]?.[Math.floor(x/TILE)];return [1,5].includes(value);},trainer:()=>{}});}
     const avatar=selectedAvatar(),activityScene=model.place.id,worldActor={x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},action=W.PsyHobbiesVFX?.sampleAction?.(activityScene,{...worldActor,moving:false});
     if(avatar?.ready){
       const row=action?.row??({down:0,left:1,right:2,up:3})[model.direction]??0;
@@ -614,7 +659,9 @@
       // Keep the floor shadow while artwork loads; never invent another trainer.
     }
     W.PsyHobbiesVFX?.drawActor?.(c,activityScene,{x:px,y:py+8,action,atlas:avatar?.animationAtlas,avatarUrl:avatar?.image?.src||''});
-    c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-46);W.PsySeason?.drawTitle(c,px,py-61);W.PsyWorldTimeV1?.drawAmbient?.(c,cw,ch);
+    if(drawNpcAfterActor)drawNpcAfterActor();
+    if(!npcClose){c.fillStyle='#fff';c.font='bold 12px system-ui';c.textAlign='center';c.textBaseline='alphabetic';c.fillText(player().name||'Treinador',px,py-46);W.PsySeason?.drawTitle(c,px,py-61);}
+    c.setTransform(1,0,0,1,0,0);W.PsyWorldTimeV1?.drawAmbient?.(c,cw,ch);
     if(model.riftFrozen){c.fillStyle='#04111de6';c.fillRect(0,0,cw,ch);c.fillStyle='#a4fff1';c.font='bold 26px system-ui';c.fillText('A FENDA SE FECHA',cw/2,ch/2-8);c.font='bold 14px system-ui';c.fillStyle='#f5f1ff';c.fillText('Retornando ao ponto de entrada…',cw/2,ch/2+20);}
   }
   let chapterAnimationState=null;
@@ -691,7 +738,8 @@
     if(!activityAction&&!model.held&&!model.autoPath?.length&&model.autoPortal){model.autoPortal=false;if(model.riftPortal&&Math.hypot(model.x-model.riftPortal.x,model.y-model.riftPortal.y)<=2){enterRift();model.raf=W.requestAnimationFrame(tick);return;}}
     if(!activityAction&&!model.held&&!model.autoPath?.length&&model.autoRiftExit){model.autoRiftExit=false;if(model.riftSession&&nearby(model.map.exit)){returnFromRift(false);model.raf=W.requestAnimationFrame(tick);return;}}
     if(!activityAction&&model.held&&now-model.lastMove>160/(1+Number(W.PsySeason?.buff('speed')||0)/100)){model.lastMove=now;move(model.held)}
-    if(!model.lastRender||now-model.lastRender>(activityAction||model.held?33:220)){render();model.lastRender=now;}model.raf=requestAnimationFrame(tick);
+    const animatedScene=['route-2','viridian-forest'].includes(model.place?.id),renderEvery=activityAction||model.held?33:animatedScene?((W.innerWidth<740||W.innerHeight<500)?1000/30:1000/45):220;
+    if(!model.lastRender||now-model.lastRender>renderEvery){render();model.lastRender=now;}model.raf=requestAnimationFrame(tick);
   }
   function injectEntryButton() {
     const detail=D.querySelector('#psy-kanto-atlas .psy-kanto-detail');if(!detail)return;
