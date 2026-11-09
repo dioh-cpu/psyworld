@@ -40,8 +40,8 @@ D.viridian={
   {id:'house-east',title:'Casa da Ribeira',at:[644,602],range:42}
  ],
  npcs:[
-  {id:'viridian-elder',name:'Ancião de Viridian',at:[389,355],portrait:'assets/kanto/npcs/guard-v9.svg',emote:'atento'},
-  {id:'viridian-teacher',name:'Instrutora da Escola',at:[251,306],portrait:'assets/kanto/npcs/mother-v9.svg',emote:'serena'}
+  {id:'viridian-elder',name:'Ancião de Viridian',at:[389,355],portrait:'assets/kanto/npcs/viridian-elder-v1.png',emote:'atento'},
+  {id:'viridian-teacher',name:'Instrutora da Escola',at:[251,306],portrait:'assets/kanto/npcs/viridian-instructor-v1.png',emote:'serena'}
  ],
  signs:[{at:[449,43],title:'ROTA 2 ↑'},{at:[450,550],title:'ROTA 1 ↓'}]
 };

@@ -282,7 +282,9 @@ function drawNPC(c,npc,distance){
   if(entry?.loaded){
     const iw=entry.im.naturalWidth||160,ih=entry.im.naturalHeight||190;
     const h=60,w=Math.min(52,h*iw/ih);
-    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-w/2,y-h,w,h);c.shadowBlur=0;
+    const smoothing=c.imageSmoothingEnabled;
+    if(/\/npcs\/viridian-(elder|instructor)-v1\.png$/.test(npc.portrait||npc.sprite||''))c.imageSmoothingEnabled=false;
+    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-w/2,y-h,w,h);c.shadowBlur=0;c.imageSmoothingEnabled=smoothing;
   }
   c.restore();
   if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,y-60,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,y-56);c.restore()}
@@ -387,7 +389,10 @@ function talk(npc){
     mark('viridianTalked');
     const campaign=W.PsyKantoPlayableV1?.progress?.();
     if(campaign){const ps=campaign.places.viridian||(campaign.places.viridian={talked:false,found:[],solved:[],cleared:false});ps.talked=true;try{W.autoSave?.()}catch(_){}}
-    showDialog('Ancião de Viridian','O Ginásio de Viridian está fechado nesta fase. A Rota 2 fica ao norte: contorne o Ginásio pela passagem lateral e siga até o portão. A Escola de Treinadores fica a oeste.',[{text:'ENTENDI',primary:true}],pr,em);
+    showDialog('Ancião de Viridian','A saída para a Rota 2 fica ao norte. O caminho contorna o Ginásio pelo lado oeste e está livre. Se quiser, posso guiar você até o portão.',[
+      {text:'IR PARA A ROTA 2',primary:true,run:()=>W.PsyCampaignAutomation?.startPrimaryRoute?.()},
+      {text:'CONTINUAR EXPLORANDO'}
+    ],pr,em);
   }else if(id==='viridian-teacher'){
     showDialog('Instrutora da Escola','Aprenda sobre vantagens de tipos e efeitos de status. Recupere sua equipe no Centro Pokémon antes de desafiar Brock, em Pewter.',[],pr,em);
   }else if(id==='oak'){

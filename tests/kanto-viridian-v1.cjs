@@ -15,6 +15,14 @@ const near=(pt,r)=>queue.some(([x,y])=>Math.hypot(x*step-pt[0],y*step-pt[1])<r);
 assert(near(m.return,35),'Route 1 exit unreachable');assert(near(m.exit,35),'Route 2 exit unreachable');
 for(const door of m.doors)assert(near(door.at,60),'Door unreachable: '+door.id);
 for(const npc of m.npcs)assert(near(npc.at,65),'NPC unreachable: '+npc.id);
+const npcSafe=(x,y)=>d.walkable(m,x,y,11)&&!m.npcs.some(n=>Math.hypot(x-n.at[0],y-n.at[1])<23);
+const safeStart=m.spawn.map(n=>Math.round(n/8)),safeQueue=[safeStart],safeSeen=new Set([key(...safeStart)]);
+for(let i=0;i<safeQueue.length;i++){const[x,y]=safeQueue[i];for(const[dx,dy]of [[-1,0],[1,0],[0,-1],[0,1]]){const xx=x+dx,yy=y+dy,k=key(xx,yy);if(xx<1||yy<1||xx>=112||yy>=112||safeSeen.has(k)||!npcSafe(xx*8,yy*8))continue;safeSeen.add(k);safeQueue.push([xx,yy]);}}
+const safeNear=(pt,r)=>safeQueue.some(([x,y])=>Math.hypot(x*8-pt[0],y*8-pt[1])<r);
+assert(safeNear(m.exit,35),'Route 2 passage must remain reachable with player and NPC collision radii');
+assert.equal(m.npcs.find(n=>n.id==='viridian-elder').portrait,'assets/kanto/npcs/viridian-elder-v1.png');
+assert.equal(m.npcs.find(n=>n.id==='viridian-teacher').portrait,'assets/kanto/npcs/viridian-instructor-v1.png');
+for(const npc of m.npcs){const bytes=fs.readFileSync(path.join(root,npc.portrait));assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a','Viridian NPC art must be a real PNG: '+npc.id);assert.equal(bytes.readUInt32BE(16),96,'NPC art width must stay normalized');assert.equal(bytes.readUInt32BE(20),144,'NPC art height must stay normalized');}
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 let previous=-1;
 for(const f of ['core/kanto-collision-v4.js','core/kanto-viridian-v1.js','core/kanto-world-v2.js','core/kanto-campaign-playable-v1.js']){const at=html.indexOf('src="'+f+'?');assert(at>previous,'Loader order mismatch: '+f);previous=at;}
@@ -23,4 +31,4 @@ const playable=fs.readFileSync(path.join(root,'core/kanto-campaign-playable-v1.j
 assert(world.includes("state.world?.id==='viridian'?Math.min(4,cover*"));
 assert(world.includes("if(state.world.id==='viridian'){"));
 assert(playable.includes("id==='route-1'||id==='viridian'"));
-console.log('PASS: Viridian world, no city encounters, responsive loader, '+queue.length+' reachable cells');
+console.log('PASS: Viridian world, collision-safe Route 2 corridor, normalized pixel NPC art, no city encounters, '+queue.length+' reachable cells');

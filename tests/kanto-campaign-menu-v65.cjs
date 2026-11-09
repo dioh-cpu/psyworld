@@ -15,6 +15,8 @@ assert(auto.includes("root.querySelector('[data-kanto-auto-slot]')"),'Auto Hunt 
 assert(auto.includes('startPrimaryRoute:'),'Route button must start active story objective');
 assert(auto.includes('isAutoRouting:()=>!!findTask'),'Auto Route must expose its intent while interacting with a destination');
 assert(world.includes("if(W.PsyCampaignAutomation?.isAutoRouting?.()){enterRoute2();return;}"),'Auto Route must continue through Viridian north gate into Route 2');
+assert(world.includes("{text:'IR PARA A ROTA 2',primary:true,run:()=>W.PsyCampaignAutomation?.startPrimaryRoute?.()}"),'The Elder dialogue must let players continue the shared mission route from its blocking modal');
+assert(!world.includes('contorne o Ginásio pela passagem lateral'),'The Elder must not leave players with navigation instructions they cannot follow while his dialogue is open');
 assert(auto.includes('W.PsyKantoWorldV2?.isOpen?.()?W.PsyKantoWorldV2:'),'Current open world must own auto-route even if a previous campaign controller remains mounted');
 assert(auto.includes("W.PsyKantoWorldV2?.dismissMenu?.()"),'Quest routes should close modal menu before movement');
 assert(auto.includes("goal:'viridian-gate',target:[939,81]"),'Route 1 auto route must follow the real Viridian exit');
@@ -32,10 +34,10 @@ assert(auto.includes("if(talked){if(!pos.inside&&Math.hypot(pos.x-449,pos.y-43)<
 assert(css.includes('#psy-kanto-world-v2 #psy-campaign-quests{position:static'),'Tracker must not overlay the canvas');
 assert(css.includes('@media(max-height:500px) and (orientation:landscape)'),'Landscape menu must be responsive');
 assert(html.includes('css/kanto-world-v2.css?build=KANTO_HUNT_RIFT_V1_20261108'),'CSS cache mismatch: css/kanto-world-v2.css');
-assert(html.includes('core/kanto-world-v2.js?build=KANTO_AUTO_ROUTE_VIRIDIAN_V1_20261108'),'JS cache mismatch: core/kanto-world-v2.js');
+assert(html.includes('core/kanto-world-v2.js?build=KANTO_AUTO_ROUTE_DIALOG_V2_20261109'),'JS cache mismatch: core/kanto-world-v2.js');
 assert(world.includes("assets/story/route-1-hunt-gap-v1.png")&&world.includes('o.huntFenceGapApplied'),'Route 1 hunting entrance must render its fence-gap art exactly once');
 assert(html.includes('core/kanto-campaign-playable-v1.js?build=KANTO_HUNT_RIFT_V1_20261108'),'JS cache mismatch: core/kanto-campaign-playable-v1.js');
-assert(html.includes('core/kanto-viridian-v1.js?build=VIRIDIAN_NPC_PATH_V1_20261108'),'Viridian interaction map must load in production');
+assert(html.includes('core/kanto-viridian-v1.js?build=VIRIDIAN_NPC_PIXELART_V2_20261109'),'Viridian interaction map must load in production');
 assert(html.indexOf('core/kanto-map-data-v2.js')<html.indexOf('core/kanto-viridian-v1.js')&&html.indexOf('core/kanto-viridian-v1.js')<html.indexOf('core/kanto-world-v2.js'),'Viridian map data must extend the base map before controller initialization');
 assert(html.includes('core/world-time-v1.js?build=KANTO_BRASIL_CLOCK_V1_20261107'),'Brasília clock bundle must be versioned');
 assert(html.includes('core/costume-aura-v1.js?build=HALLOWEEN_COSTUME_AURA_V1_20261107'),'Costume aura bundle must be versioned');
