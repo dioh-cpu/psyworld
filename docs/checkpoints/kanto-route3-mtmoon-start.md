@@ -3,7 +3,7 @@
 - Base confirmada da `main` antes do lote: `ba6c5b601829386889b12988a7b32d7d557de97e`.
 - Branch local: `campaign/kanto-route3-mtmoon-v1`.
 - Commit local do lote Monte Lua: HEAD da branch `campaign/kanto-route3-mtmoon-v1`.
-- Publicação: ainda não realizada; autorizada pelo pedido do usuário após validação.
+- Commit publicado na `main`: `2465edeaa103564a85f9426ddce155ffe587c446`. Vercel `READY`; smoke test de produção em Chromium aprovado.
 
 ## Entrega Monte Lua
 
@@ -22,4 +22,4 @@
 
 ## Próxima ação
 
-Revalidar `origin/main`, criar commit do lote, integrar sem force push, acompanhar deploy Vercel e executar smoke test da produção. Não começar a Rota 4 nesta execução.
+Próximo lote: Rota 4, em branch própria a partir da `main` publicada. Não foi iniciado nesta execução.
