@@ -23,9 +23,9 @@ assert.equal(nodes.length,7);
 for(const n of nodes){const p={x:Math.floor(n.x/28),y:Math.floor(n.y/28)};assert(api.walkable('route-3',p.x,p.y),`${n.id} spot must be walkable`);assert(reaches(p),`${n.id} spot must connect to the path`);}
 const pewter=fs.readFileSync('core/kanto-pewter-v4.js','utf8'),playable=fs.readFileSync('core/kanto-campaign-playable-v1.js','utf8');
 assert(pewter.includes("next:{world:'route-3',spawn:{x:3,y:13}}"),'Pewter exit must line up with Route 3 west entrance');
-assert(playable.includes("'route-3','mt-moon'].includes(model.place?.id)"),'Route 3 and Mount Moon use the shared Route 1 camera reference');
-assert(playable.includes("'route-3','mt-moon'].includes(model.place.id)"),'Route 3 and Mount Moon use the shared ambient and render path');
-assert(playable.includes("!['route-2','viridian-forest','pewter','route-3','mt-moon'].includes(model.place?.id)"),'Route 3 and Mount Moon ambient animation runs on the existing frame loop');
+assert(playable.includes("'route-3','mt-moon','route-4','cerulean'].includes(model.place?.id)"),'Coastal maps use the shared Route 1 camera reference');
+assert(playable.includes("'route-3','mt-moon','route-4','cerulean'].includes(model.place.id)"),'Coastal maps use the shared ambient and render path');
+assert(playable.includes("!['route-2','viridian-forest','pewter','route-3','mt-moon','route-4','cerulean'].includes(model.place?.id)"),'Coastal ambient animation runs on the existing frame loop');
 assert(playable.includes("'route-3':'basic-adventure-boy.webp'"),'Davi uses the existing four-direction trainer idle atlas');
 assert(playable.includes('model.map.next')&&playable.includes('map.returnTo'),'both real passage connections are consumed by production');
 const html=fs.readFileSync('index.html','utf8');assert(html.includes('KANTO_ROUTE3_AUTHORED_V1_20261109'));assert(html.includes('KANTO_MT_MOON_EXPLORE_V1_20261109'));

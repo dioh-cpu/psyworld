@@ -76,7 +76,7 @@
     const ps = placeState(place.id);
     const gym = GYM_FOR_PLACE[place.id];
     const gymDone = !gym || (Array.isArray(player().gymProgress) && player().gymProgress.includes(gym));
-    if(EARLY.includes(place.id))return ps.talked&&(!['route-2','viridian-forest','mt-moon'].includes(place.id)||ps.storyDone)&&gymDone;
+    if(EARLY.includes(place.id))return ps.talked&&(!['route-2','viridian-forest','mt-moon','route-4'].includes(place.id)||ps.storyDone)&&gymDone;
     return ps.talked && new Set(ps.found).size >= objective(place) && gymDone;
   }
   function markCleared(place) {
@@ -108,7 +108,7 @@
       #psy-kanto-world [data-kp-fish]{background:#0e5d80;border-color:#9ee4f5;min-height:52px}
       #psy-kanto-world .kp-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#182b33,#080c14 78%)}
       #psy-kanto-canvas{box-sizing:border-box;width:min(100vw,calc((100vh - 176px)*1.6));height:auto;aspect-ratio:8/5;max-width:100%;max-height:100%;image-rendering:pixelated;border:1px solid #617180;border-radius:7px;box-shadow:0 12px 50px #0009;touch-action:none}
-      #psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-3"] #psy-kanto-canvas,#psy-kanto-world[data-place="mt-moon"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none}
+      #psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-3"] #psy-kanto-canvas,#psy-kanto-world[data-place="mt-moon"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-4"] #psy-kanto-canvas,#psy-kanto-world[data-place="cerulean"] #psy-kanto-canvas{display:block;width:100%;height:100%;aspect-ratio:auto;max-width:none;max-height:none;border:0;border-radius:0;box-shadow:none}
       #psy-kanto-world .kp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#0d1420;border-top:1px solid #36445a}
       .kp-objective{font-size:12px;color:#d7e3e8;line-height:1.35}.kp-objective strong{color:#ffe09a}.kp-controls{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(2,38px);gap:3px}
       .kp-controls button{padding:0;font-size:17px;background:#243747}.kp-controls [data-dir="up"]{grid-column:2}.kp-controls [data-dir="left"]{grid-column:1;grid-row:2}.kp-controls [data-dir="down"]{grid-column:2;grid-row:2}.kp-controls [data-dir="right"]{grid-column:3;grid-row:2}
@@ -116,7 +116,7 @@
       #psy-kanto-dialog{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:13px 15px;background:#0a111df2;border:1px solid #e5c77e;border-radius:12px;box-shadow:0 10px 40px #000a;display:none;z-index:2}
       #psy-kanto-dialog.open{display:block}.kp-dialog-title{color:#ffe09a;font-weight:900;margin-bottom:5px}.kp-dialog-text{font-size:13px;line-height:1.45;color:#e4eaf0}.kp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
       #psy-kanto-world .psy-kanto-enter-world{width:100%;margin:8px 0 12px}
-      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-3"] #psy-kanto-canvas,#psy-kanto-world[data-place="mt-moon"] #psy-kanto-canvas{width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
+      @media(max-width:650px){#psy-kanto-world .kp-head{padding:8px 10px;gap:5px}.kp-head .kp-route{padding:8px;font-size:11px}.kp-title small{max-width:42vw}#psy-kanto-world[data-place="route-2"] #psy-kanto-canvas,#psy-kanto-world[data-place="viridian-forest"] #psy-kanto-canvas,#psy-kanto-world[data-place="pewter"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-3"] #psy-kanto-canvas,#psy-kanto-world[data-place="mt-moon"] #psy-kanto-canvas,#psy-kanto-world[data-place="route-4"] #psy-kanto-canvas,#psy-kanto-world[data-place="cerulean"] #psy-kanto-canvas{width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}#psy-kanto-world .kp-stage #psy-campaign-quests{width:min(176px,48%)!important;font-size:10px!important}#psy-kanto-world .kp-footer{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:6px 8px calc(7px + env(safe-area-inset-bottom))}.kp-objective{grid-column:1/-1;font-size:11px}.kp-controls{grid-column:1;grid-row:2;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,35px)}.kp-route-footer{grid-column:2;grid-row:2;min-width:44px!important;min-height:70px!important}.kp-interact{grid-column:3;grid-row:2;min-width:72px}}
     `;
     style.textContent+=`
       #psy-kanto-world .kp-head{box-sizing:border-box;flex:0 0 var(--kp-top,60px);height:var(--kp-top,60px);min-height:0;padding:4px 8px}
@@ -195,12 +195,12 @@
     pewter:{text:'Sou Brock. Meu ginásio testa preparo e estratégia. Recupere sua equipe no Centro Pokémon e fale comigo quando estiver pronto.'},
     'route-3':{text:'O Monte Lua fica no fim desta estrada. Há Pokémon de pedra e voadores nas encostas. Prepare sua equipe antes de entrar.',done:'A passagem para o Monte Lua está sinalizada.'},
     'mt-moon':{text:'A Equipe Rocket está tentando levar os fósseis. Ajude-me a proteger a câmara para liberar o caminho até Cerulean.'},
-    'route-4':{text:'Cerulean fica depois desta descida. Procure o Centro Pokémon antes de desafiar Misty.',done:'O caminho para Cerulean foi encontrado.'},
+    'route-4':{text:'Sou Joana. O túnel do Monte Lua ficou para trás; siga as curvas entre as encostas até o portão de Cerulean. A Nadadora Bia conhece a cidade e o Centro Pokémon fica perto da avenida dos canais.',done:'Você chegou ao portão de Cerulean.'},
     cerulean:{text:'Bem-vindo ao ginásio aquático! Sou Misty. Depois de Brock, é hora de testar sua equipe contra a força da água.'}
   };
   const ART_ROOT='assets/kanto/approved/';
-  const MAP_ART={viridian:ART_ROOT+'viridian-approved.webp',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp','viridian-forest':'assets/story/viridian-forest-route2-v1.webp','route-3':'assets/story/kanto-route-3-v1.webp'};
-  const NPC_ART={viridian:'assets/kanto/npcs/fisher-v9.svg','route-2':'assets/kanto/cinematics/trainers/black_boy.webp','viridian-forest':'assets/kanto/cinematics/trainers/black_girl.webp',pewter:ART_ROOT+'brock-expressions.webp','route-3':'assets/kanto/cinematics/trainers/adventure_boy.webp','mt-moon':'assets/halloween/npc-researcher.webp','route-4':'assets/kanto/cinematics/trainers/adventure_girl.webp',cerulean:'https://play.pokemonshowdown.com/sprites/trainers/misty.png'};
+  const MAP_ART={viridian:ART_ROOT+'viridian-approved.webp',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp','viridian-forest':'assets/story/viridian-forest-route2-v1.webp','route-3':'assets/story/kanto-route-3-v1.webp','route-4':'assets/story/kanto-route-4-v6.webp'};
+  const NPC_ART={viridian:'assets/kanto/npcs/fisher-v9.svg','route-2':'assets/kanto/cinematics/trainers/black_boy.webp','viridian-forest':'assets/kanto/cinematics/trainers/black_girl.webp',pewter:ART_ROOT+'brock-expressions.webp','route-3':'assets/kanto/cinematics/trainers/adventure_boy.webp','mt-moon':'assets/halloween/npc-researcher.webp','route-4':'assets/characters/halloween/basic-adventure-girl.webp',cerulean:'assets/kanto/npcs/misty-v6.png'};
   const npcIdleStates=new Map();
   function drawChapterNpcIdle(ctx,id,x,y,override=null){
     const filenames={'route-2':'basic-black-boy.webp','viridian-forest':'basic-black-girl.webp','route-3':'basic-adventure-boy.webp'},file=override||filenames[id],walk=W.PsyTrainerWalkV1;
@@ -212,6 +212,9 @@
   }
   function drawMoonResearcherIdle(ctx,image,x,y,now){
     const bob=Math.sin(now*.0017)*.65;ctx.fillStyle='#04101970';ctx.beginPath();ctx.ellipse(x,y+4,13,4.5,0,0,Math.PI*2);ctx.fill();ctx.imageSmoothingEnabled=false;ctx.drawImage(image,x-22,y-54+bob,44,58);
+  }
+  function drawStillNpcIdle(ctx,image,x,y,now){
+    const breath=Math.sin(now*.0021)*.75;ctx.fillStyle='#04101970';ctx.beginPath();ctx.ellipse(x,y+4,13,4.5,0,0,Math.PI*2);ctx.fill();ctx.imageSmoothingEnabled=false;ctx.drawImage(image,x-22,y-54+breath,44,58);
   }
   const npcSheetCache=new WeakMap();
   function drawNpcSheet(ctx,img,x,y,now){
@@ -230,6 +233,7 @@
   function authoredMap(place){
     if(place.id==='pewter'&&W.PsyKantoPewterV4)return W.PsyKantoPewterV4.get();
     if(place.id==='mt-moon'&&W.PsyKantoMtMoonV1)return {...W.PsyKantoMtMoonV1.get(),seed:hash(place.id)};
+    if(['route-4','cerulean'].includes(place.id)&&W.PsyKantoCoastalV6)return {...W.PsyKantoCoastalV6.get(place.id),seed:hash(place.id)};
     const early=W.PsyKantoEarlyChaptersV1?.get?.(place.id);if(early)return {...early,seed:hash(place.id)};
     if(!MAP_ART[place.id]||place.id==='route-2')return null;
     const grid=Array.from({length:ROWS},()=>Array(COLS).fill(9));
@@ -366,7 +370,7 @@
     const place=places().find(p=>p.id===id); if(!place)return;
     if(!isUnlocked(place)){W.notif?.('🔒 Conclua o capítulo anterior e obtenha as insígnias exigidas.',2600);return;}
     const previousPlace=model.place?.id||journeySave().activePlace||null;
-    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[]; model.place=place;model.routeIntent=!!options.continueRoute;model.outdoor=null;model.interior=null;model.joy=null; model.map=buildMap(place);const resume=options.resume?state().position:null;model.x=options.spawn?.x??(resume?.world===id?resume.x:null)??model.map.spawn?.x??3; model.y=options.spawn?.y??(resume?.world===id?resume.y:null)??model.map.spawn?.y??ROWS-3; model.direction=options.direction||'down';model.frame=0;model.held=null;model.keys.clear();model.moving=false;model.time=performance.now();model.encounterDistance=0;
+    W.PsyHobbiesVFX?.cancelAction?.(model.place?.id);W.PsyKantoWorldV2?.close?.();makeRoot();model.autoHunt=false;model.autoObjective=null;model.autoSpot=null;model.autoPath=[]; model.place=place;model.routeIntent=!!options.continueRoute;model.outdoor=null;model.interior=null;model.joy=null; model.map=buildMap(place);const resume=options.resume?state().position:null;const arrival=id==='route-4'&&options.spawn?.x===16&&options.spawn?.y===17?model.map.spawn:options.spawn;model.x=arrival?.x??(resume?.world===id?resume.x:null)??model.map.spawn?.x??3; model.y=arrival?.y??(resume?.world===id?resume.y:null)??model.map.spawn?.y??ROWS-3; model.direction=options.direction||'down';model.frame=0;model.held=null;model.keys.clear();model.moving=false;model.time=performance.now();model.encounterDistance=0;
     const pendingRift=W.PsyKantoHuntRiftV1?.getOffer?.('campaign');model.riftPortal=null;
     state().active=place.id;if(place.id==='route-2')W.PsyKantoBackpackQuestV1?.resume?.(placeState(place.id));
     model.root.dataset.place=place.id;model.root.querySelector('.kp-title b').textContent=place.name;
@@ -437,9 +441,9 @@
     if(wild?.id){if(!ps.found.includes(Number(wild.id)))ps.found.push(Number(wild.id));const saved=journeySave();saved[model.place.id]=[...new Set([...(saved[model.place.id]||[]),Number(wild.id)])];putJourneySave(saved);saveProgress();}
     updateObjective();
   }
-  function nearby(point) { return Math.abs(model.x-point.x)+Math.abs(model.y-point.y)<=1; }
+  function nearby(point) { return !!point&&Math.abs(model.x-point.x)+Math.abs(model.y-point.y)<=1; }
   function showDialog(title,text,actions=[]) {
-    if(W.PsyGuide){model.held=null;model.joy=null;model.keys.clear();model.moving=false;return W.PsyGuide.show({speaker:title,text,portrait:/Brock/i.test(title)?ART_ROOT+'brock-expressions.webp':/Misty/i.test(title)?'https://play.pokemonshowdown.com/sprites/trainers/misty.png':title===model.place?.npc?NPC_ART[model.place.id]:undefined,sheet:/Brock/i.test(title)?'brock':undefined,target:()=>chapterTarget(model.map.npc),actions:actions.map(a=>({text:a.label,primary:a.primary,run:a.onClick}))});}
+    if(W.PsyGuide){model.held=null;model.joy=null;model.keys.clear();model.moving=false;return W.PsyGuide.show({speaker:title,text,portrait:/Brock/i.test(title)?ART_ROOT+'brock-expressions.webp':/Misty/i.test(title)?NPC_ART.cerulean:title===model.place?.npc?NPC_ART[model.place.id]:undefined,sheet:/Brock/i.test(title)?'brock':undefined,target:()=>chapterTarget(model.map.npc),actions:actions.map(a=>({text:a.label,primary:a.primary,run:a.onClick}))});}
     const d=model.dialog;d.querySelector('.kp-dialog-title').textContent=title;d.querySelector('.kp-dialog-text').textContent=text;
     const box=d.querySelector('.kp-dialog-actions');box.replaceChildren();
     actions.forEach(({label,onClick,primary=false})=>{const b=D.createElement('button');b.textContent=label;if(primary)b.style.background='linear-gradient(100deg,#075985,#166534)';b.onclick=()=>{d.classList.remove('open');onClick?.()};box.appendChild(b)});
@@ -511,11 +515,12 @@
         }
         saveProgress();showDialog(place.npc,q.stage==='completed'?'Obrigado pela ajuda! A trilha ao norte leva à Floresta de Viridian.':story.text);updateObjective();return true;
       }
-      ps.talked=true;if(story.done)ps.storyDone=true;saveProgress();
+      ps.talked=true;if(story.done&&place.id!=='route-4')ps.storyDone=true;saveProgress();
       const actions=[];
-      if(gymId)model.routeIntent=false;
-      if(gymId&&!W.PsyCampaignGymGate?.hasClearedInCampaign?.(gymId))actions.push({label:'DESAFIAR GINÁSIO',primary:true,onClick:()=>launchChapterGym(place,gymId)});
-      showDialog(place.npc,ps.storyDone?'Obrigado pela ajuda. A próxima passagem está liberada.':story.text,actions);updateObjective();return true;
+      if(gymId&&model.interior==='gym')model.routeIntent=false;
+      if(gymId&&!W.PsyCampaignGymGate?.hasClearedInCampaign?.(gymId)&&(place.id!=='cerulean'||model.interior==='gym'))actions.push({label:'DESAFIAR GINÁSIO',primary:true,onClick:()=>launchChapterGym(place,gymId)});
+      if(story.done&&place.id!=='route-4')ps.storyDone=true;
+      showDialog(model.map.npcName||place.npc,ps.storyDone?'Obrigado pela ajuda. A próxima passagem está liberada.':story.text,actions);updateObjective();return true;
     }
     if(place.id==='mt-moon'&&nearby(map.object)){
       const q=moonQuest(ps);
@@ -538,6 +543,7 @@
       const connection=map.returnTo,previous=connection?.world?all.find(p=>p.id===connection.world):prev;
       if(previous)showDialog('Voltar pelo caminho','Deseja retornar para '+previous.name+'?',[{label:'VOLTAR',primary:true,onClick:()=>{if(previous.id==='route-1'&&!connection){closeWorld();W.PsyKantoWorldV2?.open('route-1',{spawn:[848,95]});}else if(Array.isArray(connection?.spawn)){closeWorld();openWorld(previous.id,{spawn:connection.spawn,skipGuard:true});}else openWorld(previous.id,connection?.spawn?{spawn:connection.spawn}:{});}},{label:'FICAR'}]);return true;
     }
+    if(place.id==='route-4'&&nearby(map.exit)&&ps.talked&&!ps.storyDone){ps.storyDone=true;saveProgress();W.notif?.('Portão de Cerulean alcançado.',2200);updateObjective();}
     if(nearby(map.exit)&&!objectivesMet(place)){
       showDialog('Jornada em andamento',gymId?'Converse com '+place.npc+' e conquiste a insígnia para seguir.':!ps.talked?'Converse com '+place.npc+' antes de seguir.':'Conclua o objetivo marcado no mapa antes de seguir.');return true;
     }
@@ -545,7 +551,7 @@
   }
 
   function enterRoom(door){
-    const room=W.PsyKantoPewterV4.room(door.id);if(!room)return;
+    const room=model.place?.id==='cerulean'?W.PsyKantoCoastalV6?.room(door.id):W.PsyKantoPewterV4?.room(door.id);if(!room)return;
     model.outdoor={map:model.map,x:model.x,y:model.y};model.interior=door.id;model.map=room;model.x=room.spawn.x;model.y=room.spawn.y;model.autoPath=[];model.keys.clear();model.held=null;model.joy=null;model.moving=false;model.camera=null;
     model.root.querySelector('.kp-title b').textContent=door.name;updateObjective();render();saveProgress();
   }
@@ -555,16 +561,16 @@
   function interactRoom(){
     const room=model.map,id=model.interior;if(nearby(room.exit)){leaveRoom();return;}
     if(!nearby(room.npc)){showDialog(room.npcName,'Aproxime-se para conversar. A saída fica ao sul.');return;}
-    if(id==='gym'){interactChapter(model.place,placeState('pewter'),GYM_FOR_PLACE.pewter,true);return;}
+    if(id==='gym'){const placeId=model.place?.id==='cerulean'?'cerulean':'pewter';interactChapter(model.place,placeState(placeId),GYM_FOR_PLACE[placeId],true);return;}
     if(id==='center'){W.curarTimeCity?.();saveProgress();showDialog(room.npcName,'Sua equipe está recuperada. Boa sorte no Ginásio!');return;}
-    if(id==='market'){showDialog(room.npcName,'Prepare suas Balls e poções antes de seguir para o Monte Lua.',[{label:'VER MERCADORIAS',primary:true,onClick:()=>{closeWorld();W.openShop?.();}}]);return;}
+    if(id==='market'){showDialog(room.npcName,model.place?.id==='cerulean'?'Prepare sua equipe para o Ginásio Aquático e aproveite os itens do balcão.':'Prepare suas Balls e poções antes de seguir para o Monte Lua.',[{label:'VER MERCADORIAS',primary:true,onClick:()=>{closeWorld();W.openShop?.();}}]);return;}
     showDialog(room.npcName,id==='museum'?'Estas rochas guardam marcas de mares que desapareceram há milhões de anos. Os fósseis do Monte Lua podem nos ajudar a entender essa história. Observe também os cristais nas vitrines.':'As trilhas do Monte Lua começam a leste. Antes de partir, visite o Museu e prepare sua equipe no Centro Pokémon.');
   }
   function interact(directNPC=false) {
     if(!model.place||W.PsyHobbies?.isFishing?.())return;
     model.autoObjective=null;
     if(model.interior){interactRoom();return;}
-    if(model.place.id==='pewter'){const door=model.map.doors?.find(nearby);if(door){enterRoom(door);return;}if(nearby(model.map.npc)){showDialog('Guia de Pewter','Bem-vindo! O Museu fica a noroeste e o Ginásio de Brock a nordeste. O Centro e a Loja ficam na avenida. A saída leste leva à Rota 3 depois da Insígnia da Rocha.');return;}}
+    if(['pewter','cerulean'].includes(model.place.id)){const door=model.map.doors?.find(nearby);if(door){enterRoom(door);return;}if(model.place.id==='pewter'&&nearby(model.map.npc)){showDialog('Guia de Pewter','Bem-vindo! O Museu fica a noroeste e o Ginásio de Brock a nordeste. O Centro e a Loja ficam na avenida. A saída leste leva à Rota 3 depois da Insígnia da Rocha.');return;}}
     if(model.riftSession){
       if(nearby(model.map.exit)){returnFromRift(false);return;}
       const gather=W.PsyHobbies?.nearby?.(RIFT_ID,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},44);
@@ -580,6 +586,7 @@
       const gather=W.PsyHobbies?.nearby?.(model.place.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE},40);
       if(gather){W.PsyHobbies.interact?.(model.place.id,gather.id,{x:(model.x+.5)*TILE,y:(model.y+.5)*TILE,facing:model.direction});render();return;}
     }
+    const resident=model.map.actors?.find(actor=>nearby(actor)&&actor.dialog);if(resident){showDialog(resident.name,resident.dialog);return;}
     const place=model.place, ps=placeState(place.id), gymId=GYM_FOR_PLACE[place.id];
     if(EARLY.includes(place.id)&&interactChapter(place,ps,gymId,directNPC===true))return;
     if(directNPC===true||nearby(model.map.npc)){
@@ -613,6 +620,7 @@
       showDialog('Passagem secreta','Você encontrou a câmara oculta. A recompensa do enigma já foi registrada na sua jornada.');return;
     }
     if(nearby(model.map.exit)){
+      if(place.id==='route-4'&&ps.talked&&!ps.storyDone){ps.storyDone=true;saveProgress();W.notif?.('Portão de Cerulean alcançado.',2200);updateObjective();}
       if(!objectivesMet(place)){
         const count=new Set(ps.found).size, need=objective(place);
         showDialog('Saída bloqueada',`Converse com ${place.npc}, registre ${need} espécie(s) neste local${GYM_FOR_PLACE[place.id]?' e vença o ginásio':''}. Progresso: ${count}/${need}.`);return;
@@ -681,7 +689,7 @@
     const benchmark=W.PsyKantoWorldV2?.referenceViewport?.();if(benchmark&&model.referenceKey!==benchmark.key){model.root.style.setProperty('--kp-top',benchmark.top+'px');model.root.style.setProperty('--kp-foot',benchmark.footer+'px');model.referenceKey=benchmark.key;}
     const stage=model.root?.querySelector('.kp-stage'),r=stage?.getBoundingClientRect();
     if(!r)return null;
-    const worldW=model.map.grid[0].length*TILE,worldH=model.map.grid.length*TILE,enhancedScene=['route-2','viridian-forest','pewter','route-3','mt-moon'].includes(model.place?.id);
+    const worldW=model.map.grid[0].length*TILE,worldH=model.map.grid.length*TILE,enhancedScene=['route-2','viridian-forest','pewter','route-3','mt-moon','route-4','cerulean'].includes(model.place?.id);
     if(!enhancedScene){if(model.canvas.width!==worldW||model.canvas.height!==worldH){model.canvas.width=worldW;model.canvas.height=worldH;}return model.camera={w:worldW,h:worldH,dpr:1,scale:1,ox:Math.floor((worldW-worldW)/2),oy:Math.floor((worldH-worldH)/2),viewW:worldW,viewH:worldH};}
     const dpr=Math.min(1.3,W.devicePixelRatio||1),cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
     if(model.canvas.width!==cw||model.canvas.height!==ch){model.canvas.width=cw;model.canvas.height=ch;}
@@ -697,16 +705,16 @@
     const id=map.world?.id||model.place?.id||'',forest=id==='viridian-forest';
     const cave=id==='mt-moon',mapW=map.grid[0].length*TILE,mapH=map.grid.length*TILE;
     const leaves=Array.from({length:forest?8:cave?0:7},(_,i)=>({x:((i*137+forest*19)%Math.max(1,mapW-48))+24,y:((i*83+61)%Math.max(1,mapH-48))+24,phase:i*1.71,speed:.018+(i%3)*.004,color:i%2?'#d7e58a':'#c9ed9b'}));
-    const data={grass,leaves,forest,cave};sceneAmbience.set(map,data);return data;
+    const coastal=id==='cerulean';const data={grass,leaves,forest,cave,coastal};sceneAmbience.set(map,data);return data;
   }
   function drawSceneAmbience(c,now){
-    if(model.interior||!['route-2','viridian-forest','pewter','route-3','mt-moon'].includes(model.place?.id))return;
+    if(model.interior||!['route-2','viridian-forest','pewter','route-3','mt-moon','route-4','cerulean'].includes(model.place?.id))return;
     const data=ambienceFor(model.map),forest=data.forest,route3=model.place.id==='route-3';
     c.save();c.lineWidth=1;c.lineCap='round';
     for(const blade of data.grass){const sway=Math.sin(now*.00115+blade.phase),x=blade.x,y=blade.y;c.globalAlpha=.1+(Math.sin(now*.0014+blade.phase)+1)*.055;c.strokeStyle=blade.color;c.beginPath();c.moveTo(x,y+3);c.lineTo(x+sway*1.5,y-1);c.moveTo(x+3,y+4);c.lineTo(x+3-sway,y+1);c.stroke();}
     c.globalAlpha=1;
     for(const leaf of data.leaves){const cycle=(now*leaf.speed+leaf.phase)%(Math.PI*2),x=leaf.x+Math.sin(cycle)*8,y=leaf.y+Math.cos(cycle*.7)*3;c.save();c.translate(Math.round(x),Math.round(y));c.rotate(Math.sin(cycle)*.35);c.globalAlpha=.38+Math.sin(cycle)*.12;c.fillStyle=leaf.color;c.fillRect(-2,-1,3,2);c.fillRect(0,0,2,1);c.fillStyle='#fff0b2';c.fillRect(1,-1,1,1);c.restore();}
-    const water=data.cave||model.place.id==='pewter'||route3?[]:forest?[[418,272],[440,291],[464,313],[445,341],[477,355]]:[[24,84],[38,135],[28,207],[52,267],[84,68]];
+    const water=data.coastal?[[266,219],[294,229],[602,205],[626,224],[758,153],[410,112],[471,114],[788,84],[343,260],[552,270]]:data.cave||model.place.id==='pewter'||route3?[]:forest?[[418,272],[440,291],[464,313],[445,341],[477,355]]:[[24,84],[38,135],[28,207],[52,267],[84,68]];
     for(let i=0;i<water.length;i++){const [x,y]=water[i],phase=now*.004+i*1.4;c.globalAlpha=.12+(Math.sin(phase)+1)*.12;c.fillStyle=i%2?'#c7f8ff':'#9deaff';c.fillRect(Math.round(x+Math.sin(phase)*2),y,5+(i%2),1);}
     if(forest||route3){const count=forest?4:5;for(let i=0;i<count;i++){const phase=now*.0018+i*1.57,x=(route3?92:120)+i*(route3?158:178)+Math.sin(phase)*4,y=(route3?104:113)+(i%2)*(route3?96:96)+Math.cos(phase)*3;c.globalAlpha=.12+Math.max(0,Math.sin(phase))*.18;c.fillStyle=route3?'#ffe6a0':'#fff3a8';c.fillRect(Math.round(x),Math.round(y),2,2);}}
     if(data.cave){const crystals=[[60,170,'#61e4ff'],[330,110,'#d99cff'],[760,210,'#ffd66b'],[76,650,'#9d93ff'],[260,800,'#5ef2de'],[795,800,'#ffb665'],[720,520,'#68dfff'],[450,450,'#c38cff']];for(let i=0;i<crystals.length;i++){const[x,y,color]=crystals[i],pulse=.14+(.12+.12*Math.sin(now*.002+i*1.73));c.globalAlpha=pulse;c.fillStyle=color;c.fillRect(Math.round(x+Math.sin(now*.001+i)*2),y,2,2);c.fillRect(x,y+2,1,1);}}
@@ -728,6 +736,7 @@
     if(!model.place||!EARLY.includes(model.place.id)||!model.root?.classList.contains('open'))return [];
     const place=model.place,ps=placeState(place.id),gym=GYM_FOR_PLACE[place.id],objectNeeded=['route-2','viridian-forest'].includes(place.id)&&ps.talked&&!ps.storyDone,returnBackpack=place.id==='route-2'&&ps.storyItemFound&&!ps.storyDone;
     const needsGym=!!gym&&!player().gymProgress?.includes(gym),needsFossilStory=place.id==='mt-moon'&&!ps.storyDone;
+    if(place.id==='cerulean'&&!needsGym)return [];
     let target=model.map.exit,title='Siga para a próxima localidade';
     if(place.id==='mt-moon'){
       const stage=moonQuest(ps).stage;
@@ -736,14 +745,16 @@
       else if(stage==='tracks-found'){target=model.map.actors.find(a=>a.role==='scout');title='Enfrente o recruta da Equipe Rocket';}
       else if(stage==='scout-defeated'){target=model.map.actors.find(a=>a.role==='leader');title='Proteja os fósseis na câmara';}
       else {target=model.map.exit;title='Siga pela escada ao sul para a Rota 4';}
-    }else if(!ps.talked||needsGym||needsFossilStory){target=model.map.npc;title=!ps.talked?'Converse com '+place.npc:needsGym?'Conquiste a insígnia de '+place.npc:'Proteja os fósseis';}
+    }else if(place.id==='cerulean'&&!ps.talked){target=model.map.npc;title='Converse com Misty';}
+    else if(place.id==='cerulean'&&needsGym){target=model.interior==='gym'?(model.map.npcApproach||model.map.npc):(model.map.doors?.find(d=>d.id==='gym')||model.map.npc);title='Encontre Misty no Ginásio Aquático';}
+    else if(!ps.talked||needsGym||needsFossilStory){target=model.map.npc;title=!ps.talked?'Converse com '+place.npc:needsGym?'Conquiste a insígnia de '+place.npc:'Proteja os fósseis';}
     else if(objectNeeded){target=returnBackpack?model.map.npc:place.id==='route-2'?backpackGrassTarget():model.map.object;title=returnBackpack?'Devolva a mochila para Caio':place.id==='route-2'?'Procure o Pokémon com a mochila na grama':'Encontre o objetivo marcado';}
     if(place.id==='pewter'){if(model.interior)target=model.interior==='gym'?model.map.npc:model.map.exit;else if(!ps.talked||needsGym)target=model.map.doors.find(d=>d.id==='gym');}
     return [{id:'chapter-'+place.id,kind:'main',title,goal:'chapter',at:target}];
   }
 
   function continueObjectiveRoute(){
-    if(!model.routeIntent||!model.root?.classList.contains('open')||model.autoObjective||model.autoPath?.length||model.held||W.PsyGuide?.isOpen()||W.PsyKantoStoryV49?.isOpen())return;
+    if(!model.routeIntent||!model.root?.classList.contains('open')||model.autoObjective||model.autoPath?.length||model.held||model.dialog?.classList.contains('open')||W.PsyGuide?.isOpen()||W.PsyKantoStoryV49?.isOpen())return;
     const target=chapterQuest()[0]?.at;if(!target){model.routeIntent=false;return;}
     model.autoObjective={x:target.x,y:target.y};model.autoPath=tilePath(model.autoObjective);
     if(!model.autoPath.length&&!nearby(target)){model.routeIntent=false;model.autoObjective=null;W.notif?.('Não há um caminho livre até o objetivo.',2200);}
@@ -752,7 +763,7 @@
     if(!model.place||!model.ctx||!model.root?.classList.contains('open'))return;
     const c=model.ctx,view=campaignCamera(),cw=view.w,ch=view.h,th=theme(model.place),g=model.map.grid,now=performance.now();
     W.PsyWorldTimeV1?.updateBadge?.(model.root.querySelector('[data-world-clock]'));
-    const enhancedScene=['route-2','viridian-forest','pewter','route-3','mt-moon'].includes(model.place.id);
+    const enhancedScene=['route-2','viridian-forest','pewter','route-3','mt-moon','route-4','cerulean'].includes(model.place.id);
     c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.clearRect(0,0,cw,ch);c.fillStyle='#111722';c.fillRect(0,0,cw,ch);
     c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);c.imageSmoothingEnabled=enhancedScene;c.drawImage(terrainPaint(),0,0);c.imageSmoothingEnabled=false;
     drawSceneAmbience(c,now);
@@ -778,7 +789,7 @@
       if(model.map.shop)marker(model.map.shop,'#8ac8ff','L','Loja');
       if(model.map.returnGate&&!nearby(model.map.returnGate))marker(model.map.returnGate,'#c4d8f2','‹','Retornar');
       const actor=regionImage(model.map.npcArt||NPC_ART[model.place.id]);
-      if(actor?.complete&&actor.naturalWidth){const x=(model.map.npc.x+.5)*TILE,y=(model.map.npc.y+.5)*TILE,drawNpc=()=>{if(model.place.id==='mt-moon')drawMoonResearcherIdle(c,actor,x,y,now);else if(enhancedScene){if(model.map.idleSheet)drawNpcSheet(c,actor,x,y,now);else if(!drawChapterNpcIdle(c,model.map.id||model.place.id,x,y,model.map.npcIdle))c.drawImage(actor,x-22,y-54,44,58);}else if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);};if(enhancedScene&&model.map.npc.y>=model.y)drawNpcAfterActor=drawNpc;else drawNpc();}
+      if(actor?.complete&&actor.naturalWidth){const x=(model.map.npc.x+.5)*TILE,y=(model.map.npc.y+.5)*TILE,drawNpc=()=>{if(model.place.id==='mt-moon')drawMoonResearcherIdle(c,actor,x,y,now);else if(model.map.npcIdleAnimation==='breathe')drawStillNpcIdle(c,actor,x,y,now);else if(enhancedScene){if(model.map.idleSheet)drawNpcSheet(c,actor,x,y,now);else if(!drawChapterNpcIdle(c,model.map.id||model.place.id,x,y,model.map.npcIdle))c.drawImage(actor,x-22,y-54,44,58);}else if(model.place.id==='pewter')c.drawImage(actor,0,0,actor.naturalWidth/4,actor.naturalHeight,x-22,y-54,44,58);else c.drawImage(actor,x-22,y-54,44,58);};if(enhancedScene&&model.map.npc.y>=model.y)drawNpcAfterActor=drawNpc;else drawNpc();}
       for(const rival of model.map.actors||[]){
         const image=regionImage(rival.art),x=(rival.x+.5)*TILE,y=(rival.y+.5)*TILE;
         if(image?.complete&&image.naturalWidth){const draw=()=>{const bob=Math.sin(now*.002+rival.x)*.75;c.fillStyle='#07101a99';c.beginPath();c.ellipse(x,y+3,13,4,0,0,Math.PI*2);c.fill();c.imageSmoothingEnabled=false;c.drawImage(image,x-20,y-45+bob,40,42);};if(rival.y>=model.y)drawActorsAfterActor.push(draw);else draw();}
@@ -787,7 +798,7 @@
       if(!npcClose)marker(model.map.npc,'#ffcf70','!',model.map.npcName||model.place.npc,60);
       const route2Story=placeState(model.place.id);
       if(model.place.id==='viridian-forest')marker(model.map.object,route2Story.storyDone?'#ffe08a':'#75d5db',route2Story.storyDone?'✦':'?',route2Story.storyDone?'Lanterna acesa':'Lanterna antiga');
-      marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›',model.interior?'SAÍDA':model.place.id==='pewter'?'Rota 3 →':'Próxima rota');
+      if(!model.map.suppressExitMarker)marker(model.map.exit,objectivesMet(model.place)?'#79df94':'#cb7474','›',model.interior?'SAÍDA':model.place.id==='pewter'?'Rota 3 →':model.place.id==='cerulean'?'Rota 4 ←':'Próxima rota');
       if(model.map.secretChest&&model.map.grid[model.map.secretGate.y][model.map.secretGate.x]===1)marker(model.map.secretChest,'#a4e7a0','★','Recompensa do enigma');
     }
     const px=model.x*TILE+TILE/2,py=model.y*TILE+TILE/2;
@@ -941,7 +952,8 @@
         if(model.resumeAfterEncounter){if(!(player().team||[]).some(mon=>Number(mon.hp)>0))model.routeIntent=false;model.resumeAfterEncounter=false;W.setTimeout(()=>{if(model.place){model.root?.classList.add('open');updateObjective();render();if(!model.raf)tick()}if(riftContext)createRiftOffer({...riftContext,won:true,trainer:false});},0)}
         if(place&&gymId&&won&&player().gymProgress?.includes(gymId)){
           model.pendingGymPlace=null;W.setTimeout(()=>{openWorld(place.id,{resume:true});if(place.id==='cerulean')showDialog('Misty','Você conquistou a Insígnia da Cascata! Os dois primeiros ginásios de Kanto estão concluídos.');},100);
-        }return result;
+        }else if(place&&gymId&&!won){W.setTimeout(()=>openWorld(place.id,{resume:true}),100);}
+        return result;
       };
       wrapped.__psyKantoPlayableWrapped=true;W.endBattle=wrapped;
     }
