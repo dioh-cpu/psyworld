@@ -1,14 +1,25 @@
-# Kanto · Checkpoint Route 3
+# Checkpoint Kanto · Rota 3 e Monte Lua
 
-- Base da `main`: `bc4e21933949a60bc6e35c186579ff2f5a62043b`.
-- Branch: `campaign/kanto-route3-mtmoon-v1`.
-- Implementação: `5604c0f047a38c9e8be6ba9badfcd8de419248c9`; cobertura/posicionamento finalizados em `4c193aa0a2c48a94681be38cf01ad8ab76436b12`.
-- Estado: Rota 3 validada localmente; push para `main` pendente.
+- Base confirmada da `main` antes do lote: `ba6c5b601829386889b12988a7b32d7d557de97e`.
+- Branch local: `campaign/kanto-route3-mtmoon-v1`.
+- Commit local do lote Monte Lua: HEAD da branch `campaign/kanto-route3-mtmoon-v1`.
+- Publicação: ainda não realizada; autorizada pelo pedido do usuário após validação.
 
-Concluído: mapa autoral `assets/story/kanto-route-3-v1.webp`; trilha/colisões alinhadas, entrada de Pewter e saída para Monte Lua; sete spots existentes posicionados em áreas acessíveis, sem bloquear portões ou Davi; Davi usa idle aprovado; rota usa câmera, WALK/IDLE e movimento contínuo da V4, com ambiente leve. Corrigido o Auto Route para avançar após falar com NPCs. Não houve alteração de Monte Lua.
+## Entrega Monte Lua
 
-Validação: `tests/kanto-route3-v1.cjs`, `tests/kanto-route2-forest-v1.cjs`, `tests/kanto-world-quality-v4.cjs`, `tests/kanto-pewter-v4.cjs`; verificações de sintaxe e `git diff --check`. Chromium desktop `1280×800` e retrato `390×844`: Pewter→Rota 3→Pewter→Rota 3 pelos portões reais; Auto Route a Davi, transição leste, retomada da posição e encontro real (Pidgey nível 7); zero erros de página. Captura desktop: `/workspace/artifacts/kanto-route3/route3-desktop.png`.
+- Reutiliza a arte aprovada `assets/kanto/approved/mt-moon-approved.webp` e o idle de pesquisador existente; Rocket usa `assets/story/rocket-grunt.png`.
+- Mapa jogável 32×32 com quatro galerias conectadas, colisões de água/rocha, degraus, câmara de fósseis, entrada/retorno pela Rota 3, saída desbloqueada para Rota 4, dois guardas Rocket e os 11 spots de Hobby existentes em pisos acessíveis.
+- Missão persistente: conversar com Miguel → examinar rastros → vencer recruta → vencer agente → liberar saída. Fuga/derrota não avança a história nem concede recompensa. Auto Route continua após vitória e para após fuga; pode ser retomado perto do Rocket.
+- Cadência WALK/IDLE, movimento contínuo e câmera da V4 são reutilizados; partículas luminosas sutis são desenhadas no loop atual. Nenhuma moeda, item ou tabela de recompensa foi alterada. O enigma do painel dos fósseis continua no sistema atual do Atlas.
+- Rota 4 continua como protótipo existente; só a conexão/desbloqueio foi validada, sem iniciar o próximo lote.
 
-Arquivos: arte da Rota 3; `core/kanto-early-chapters-v1.js`, `core/kanto-campaign-playable-v1.js`, `core/kanto-pewter-v4.js`, `core/hobbies-v2.js`, `index.html`; testes `kanto-route3-v1.cjs` e atualização de `kanto-route2-forest-v1.cjs`; script `scripts/qa/kanto-route3-browser.cjs`.
+## Testes
 
-Pendências: nenhuma conhecida na Rota 3. Próximo lote é Monte Lua, em branch nova a partir da `main` atualizada.
+- Sintaxe dos módulos e script de browser; `git diff --check`.
+- `tests/kanto-mt-moon-v1.cjs`, `tests/hobbies-spot-effects-v1.cjs`, `tests/kanto-route3-v1.cjs`, `tests/kanto-route2-forest-v1.cjs`, `tests/kanto-world-quality-v4.cjs`, `tests/kanto-pewter-v4.cjs`.
+- Chromium: jornada Rota 3 → Monte Lua, retorno pela entrada, objetivo via Auto Route, fuga sem progresso, vitórias nos dois combates, save/reload e saída para Rota 4; desktop 1280×800, retrato 390×844 e landscape 844×390; sem erros de página.
+- Capturas para inspeção: `/workspace/artifacts/kanto-mt-moon/cave-entry.png` e `fossil-gallery.png`; resultados do Chromium em `results.json` fora do repositório.
+
+## Próxima ação
+
+Revalidar `origin/main`, criar commit do lote, integrar sem force push, acompanhar deploy Vercel e executar smoke test da produção. Não começar a Rota 4 nesta execução.

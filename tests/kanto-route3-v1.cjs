@@ -8,7 +8,7 @@ assert(fs.existsSync(map.art));
 assert.deepEqual(Array.from(map.encounterLevels),[7,11]);
 assert.deepEqual({...map.spawn},{x:3,y:13});
 assert.equal(map.returnTo.world,'pewter');assert.deepEqual({...map.returnTo.spawn},{x:29,y:11});
-assert.equal(map.next.world,'mt-moon');assert.deepEqual({...map.next.spawn},{x:3,y:17});
+assert.equal(map.next.world,'mt-moon');assert.deepEqual({...map.next.spawn},{x:16,y:2});
 assert.equal(map.npcName,'Escoteiro Davi');assert.equal(map.npcIdle,'basic-adventure-boy.webp');
 assert(fs.existsSync('assets/characters/halloween/'+map.npcIdle));
 function reaches(target){
@@ -23,12 +23,12 @@ assert.equal(nodes.length,7);
 for(const n of nodes){const p={x:Math.floor(n.x/28),y:Math.floor(n.y/28)};assert(api.walkable('route-3',p.x,p.y),`${n.id} spot must be walkable`);assert(reaches(p),`${n.id} spot must connect to the path`);}
 const pewter=fs.readFileSync('core/kanto-pewter-v4.js','utf8'),playable=fs.readFileSync('core/kanto-campaign-playable-v1.js','utf8');
 assert(pewter.includes("next:{world:'route-3',spawn:{x:3,y:13}}"),'Pewter exit must line up with Route 3 west entrance');
-assert(playable.includes("['route-2','viridian-forest','pewter','route-3'].includes(model.place?.id)"),'Route 3 uses the shared Route 1 camera reference');
-assert(playable.includes("['route-2','viridian-forest','pewter','route-3'].includes(model.place.id)"),'Route 3 uses the shared ambient and render path');
-assert(playable.includes("!['route-2','viridian-forest','pewter','route-3'].includes(model.place?.id)"),'Route 3 ambient animation runs on the existing frame loop');
+assert(playable.includes("'route-3','mt-moon'].includes(model.place?.id)"),'Route 3 and Mount Moon use the shared Route 1 camera reference');
+assert(playable.includes("'route-3','mt-moon'].includes(model.place.id)"),'Route 3 and Mount Moon use the shared ambient and render path');
+assert(playable.includes("!['route-2','viridian-forest','pewter','route-3','mt-moon'].includes(model.place?.id)"),'Route 3 and Mount Moon ambient animation runs on the existing frame loop');
 assert(playable.includes("'route-3':'basic-adventure-boy.webp'"),'Davi uses the existing four-direction trainer idle atlas');
 assert(playable.includes('model.map.next')&&playable.includes('map.returnTo'),'both real passage connections are consumed by production');
-const html=fs.readFileSync('index.html','utf8');assert(html.includes('KANTO_ROUTE3_AUTHORED_V1_20261109'));assert(html.includes('KANTO_ROUTE3_WORLD_V1_20261109'));
+const html=fs.readFileSync('index.html','utf8');assert(html.includes('KANTO_ROUTE3_AUTHORED_V1_20261109'));assert(html.includes('KANTO_MT_MOON_EXPLORE_V1_20261109'));
 new Function(fs.readFileSync('core/kanto-early-chapters-v1.js','utf8'));
 new Function(playable);
 console.log('PASS: Route 3 authored map, route continuity, all seven reachable hobby spots, trainer idle, level range, and production camera wiring');

@@ -78,7 +78,7 @@
       returnTo:{world:'pewter',spawn:{x:29,y:11}},
       npc:{x:14,y:5}, npcName:'Escoteiro Davi', npcIdle:'basic-adventure-boy.webp',
       object:{x:9,y:11}, exit:{x:29,y:13},
-      next:{world:'mt-moon',spawn:{x:3,y:17}},
+      next:{world:'mt-moon',spawn:{x:16,y:2}},
       encounterLevels:[7,11]
     },
     'viridian-forest': {
