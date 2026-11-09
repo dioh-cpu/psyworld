@@ -75,6 +75,8 @@ export function createSurvivorScene() {
   const projected = { arrays: Object.create(null), items: Object.create(null), helperState: Object.create(null) };
   const projectionVector = new THREE.Vector3();
   const shadowEntities = [];
+  const shadowMatrixDummy = new THREE.Object3D();
+  const shadowPlayer = { x: 0, y: 0, size: 72 };
   const combatScratch = { normal: [], tornado: [], hearts: [], enemy: [], trails: [], areas: [], beams: [], arcs: [], shards: [], sectors: [], columns: [] };
 
   function qualityFor(s) {
@@ -786,8 +788,9 @@ export function createSurvivorScene() {
       if (Array.isArray(list)) for (const h of list) if (h && h.hp > 0) entities.push(h);
       else if (list && list.hp > 0) entities.push(list);
     }
-    entities.push({ x: s.x, y: s.y, size: s.psyForm?.startsWith('mega') ? 88 : 72 });
-    const dummy = new THREE.Object3D();
+    shadowPlayer.x = s.x; shadowPlayer.y = s.y; shadowPlayer.size = s.psyForm?.startsWith('mega') ? 88 : 72;
+    entities.push(shadowPlayer);
+    const dummy = shadowMatrixDummy;
     const count = Math.min(entities.length, entityShadows.instanceMatrix.count);
     for (let i = 0; i < count; i++) {
       const e = entities[i], size = Math.max(20, Number(e.size || 45));

@@ -4,7 +4,7 @@
   if (W.__PSYWORLD_SURVIVOR_COMBAT_REVOLUTION_V3__) return;
   W.__PSYWORLD_SURVIVOR_COMBAT_REVOLUTION_V3__ = true;
 
-  const BUILD = 'SURVIVOR_COMBAT_REVOLUTION_V3_LOT_C_20261108';
+  const BUILD = 'SURVIVOR_COMBAT_REVOLUTION_V3_LOT_F_20261108';
   const scriptUrl = D.currentScript?.src || W.location.href;
   const moduleUrl = new URL('./survivor-3d-renderer-v3.js', scriptUrl);
   moduleUrl.searchParams.set('build', BUILD);
@@ -50,6 +50,7 @@
     const remaining = current ? Number(current.duration || 0) - (now - Number(current.at || 0)) : 0;
     if (remaining > 0 && Number(current.shake || 0) > cue.shake && kind !== 'bossDefeat' && kind !== 'finalBoss') return;
     state.cameraCue = { at: now, duration: cue.duration, shake: cue.shake, zoom: cue.zoom, kind };
+    if (!state._psySurv3DActive) state.shake = Math.max(Number(state.shake || 0), Math.min(4.5, cue.shake * .28));
   };
 
   let wrappingStart = false;

@@ -84,8 +84,21 @@ Enemy species now receive bounded archetypes at spawn: flankers approach and cir
 - Chromium in this environment uses SwiftShader and selected the Canvas fallback; the tests establish simulation/control continuity but do not represent hardware GPU or mobile FPS.
 - `node --check` for the modified bundle and renderer, and `git diff --check`, passed.
 
-## Remaining lots
+### Murex production smoke
 
-- F: audio, camera, visual balance, and performance pass.
+- Lot E commit `f9db1be847ceff37aaf53066371b8adc966724c0` deployed READY to `https://psyworld-murex.vercel.app/`.
+- Production opened the Survivor Lobby and phase 1 arena (39 active enemies), loaded the E bundle key, and returned no failed Survivor requests or JavaScript page errors.
+
+## Lot F — event sync and performance cleanup
+
+Psyduck form changes now fire one synchronized camera cue and the existing `status` sound. Boss entry, phase changes, defeat, and final defeat likewise use the existing `battle_start`, `status`, and `victory` sounds at the same combat event as their camera cue. The audio service and its music/SFX settings remain unchanged. The stable Canvas fallback now receives a bounded shake pulse when 3D is unavailable. Per-frame shadow objects, enemy-target records, grid buckets, live-enemy lists, and expired-item compaction are reused to reduce allocation churn without changing combat calculations.
+
+### Verification record
+
+- Transformation emitted `status` with a `transform` camera cue. The real scheduled Boss event emitted `battle_start`; a real HP-threshold crossing emitted `status` with `bossPhase`; killing a final-Boss fixture with a live projectile emitted `victory` with `bossDefeat`. On Canvas fallback, the event also produced a decaying shake. Existing SFX controls were checked: muted SFX produced zero plays, enabled SFX produced one, and saved audio settings were restored.
+- Killed a final-Boss fixture through the live projectile update, received the existing five-choice Boss reward, selected a choice, and reached the real result/reward panel with one boss kill. This isolated the final-completion path; it was not a simulated ten-minute run.
+- After the array and target reuse changes, re-ran the AI/telegraph check and the full Lobby → phase 1 → projectile hit → five-choice level-up → saved pause/resume → joystick → landscape/portrait → result flow. No JavaScript errors or failed Survivor requests. A standard run save was present during pause.
+- In a 40-enemy SwiftShader run, the low-quality 2D fallback measured 22.6 FPS median (44.3 ms), 85.8 ms at p95; an idle sample measured 29.2 FPS median. WebGL had already tripped its software-renderer guard. This container cannot establish a 30/60 FPS GPU or mobile result; the software numbers are recorded as a limitation, not extrapolated to device GPUs.
+- `node --check` passed for the Survivor bundle, bridge, renderer, and manifests; `git diff --check` passed.
 
 Preserve combat values, economy, progression, drop rules, and all non-Survivor systems unless a change is explicitly part of a bounded Survivor upgrade and validated in the run flow.

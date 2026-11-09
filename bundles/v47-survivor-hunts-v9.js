@@ -300,7 +300,7 @@ function survPsyAttackPalette(s){const form=survPsyFormForLevel(Number(s?.runLev
 function survEnsurePsyFormImages(s){
   s.psyFormImgs=s.psyFormImgs||{normal:s.psyImg};
   for(const [k,src] of Object.entries(SURV_PSYDUCK_FORM_SHEETS))if(!s.psyFormImgs[k]){const im=new Image();im._survAnimeSheet=true;im.decoding='async';im.src=src;s.psyFormImgs[k]=im}
-  const form=survPsyFormForLevel(s.runLevel);if(s.psyForm!==form){s.psyForm=form;s.psyFormChangedAt=Number(s.elapsed||0);const pal=survPsyAttackPalette(s);s.effects?.push?.({type:'burst',x:s.x,y:s.y,r:12,max:92,life:28,color:pal.special});s.texts?.push?.({x:s.x,y:s.y-92,text:survPsyFormLabel(form),life:80,color:pal.accent,big:true})}
+  const form=survPsyFormForLevel(s.runLevel);if(s.psyForm!==form){s.psyForm=form;s.psyFormChangedAt=Number(s.elapsed||0);W.psySurvCameraEvent?.(s,'transform');W.psyAudio?.sfx?.('status',{volume:.62,cooldown:800});const pal=survPsyAttackPalette(s);s.effects?.push?.({type:'burst',x:s.x,y:s.y,r:12,max:92,life:28,color:pal.special});s.texts?.push?.({x:s.x,y:s.y-92,text:survPsyFormLabel(form),life:80,color:pal.accent,big:true})}
   return s.psyFormImgs[form]||s.psyImg
 }
 function survPsyAnimTrigger(s,state,duration=400){
@@ -494,7 +494,7 @@ function survDropPickup(s,e,type,v,name,visual=''){
   const p={x:e?.x??s.x,y:e?.y??s.y,type,v:v||0,name:name||'',visual,life:rare?90000:52000};s.pickups.push(p);return p
 }
 function survKill(s,e){
-  s.kills++;if(e?.finalBoss)W.psySurvCameraEvent?.(s,'bossDefeat');else if(e?.elite||e?.champion)W.psySurvCameraEvent?.(s,'explosion');survFxPush(s,{type:'deathBurst',x:e?.x??s.x,y:e?.y??s.y,r:8,max:Math.min(112,Number(e?.size||42)*.88),life:e?.boss?34:20,color:e?.boss?'#fbbf24':e?.mega?'#c084fc':e?.shiny?'#fde047':'#93c5fd',heavy:!!e?.boss});survApplyEliteStatBonus(s,e);
+  s.kills++;if(e?.boss){W.psySurvCameraEvent?.(s,e.finalBoss?'bossDefeat':'explosion');W.psyAudio?.sfx?.(e.finalBoss?'victory':'status',{volume:e.finalBoss ? .9 : .68,cooldown:900})}else if(e?.elite||e?.champion)W.psySurvCameraEvent?.(s,'explosion');survFxPush(s,{type:'deathBurst',x:e?.x??s.x,y:e?.y??s.y,r:8,max:Math.min(112,Number(e?.size||42)*.88),life:e?.boss?34:20,color:e?.boss?'#fbbf24':e?.mega?'#c084fc':e?.shiny?'#fde047':'#93c5fd',heavy:!!e?.boss});survApplyEliteStatBonus(s,e);
   const reward=survRewardScale(s,e),xp=Math.floor((8+(e.elite?10:0)+(e.boss?50:0))*(1+s.phase*.025)*reward),gold=Math.floor((6+(e.elite?12:0)+(e.boss?90:0))*(1+s.phase*.02)*reward);
   const goldMult=survGoldMultiplier(s),xpMult=1+Math.max(0,Number(getTotalBuff?.('xp')||0))/100,runXpMult=1+survRunUpLv(s,'runxp')*.10;
   s.runXp+=Math.max(1,Math.floor(xp*runXpMult));s.realXp+=Math.floor(xp*(1.05+s.phase*.012)*xpMult);s.gold+=Math.floor(gold*goldMult*.4);
@@ -525,7 +525,7 @@ function survSpawnMiniHorde(s){
   s.texts.push({x:s.x,y:s.y-90,text:'⚠ PRESSÃO AUMENTOU!',life:90,color:'#fb7185',big:true});
 }
 function survSpawnBoss(s,minute,finalBoss){
-  if(s.bossMarks.has(minute))return;s.bossMarks.add(minute);W.psySurvCameraEvent?.(s,finalBoss?'finalBoss':'boss');
+  if(s.bossMarks.has(minute))return;s.bossMarks.add(minute);W.psySurvCameraEvent?.(s,finalBoss?'finalBoss':'boss');W.psyAudio?.sfx?.('battle_start',{volume:finalBoss ? .92 : .70,cooldown:900});
   const id=SURV_BOSS_POOL[(s.phase+Math.round(Number(minute)||0))%SURV_BOSS_POOL.length];
   s.enemies.push(survEnemy(s,{id,boss:true,elite:true,finalBoss:!!finalBoss,bossMinute:minute,specialSpawn:true}));
   s.texts.push({x:s.x,y:s.y-90,text:finalBoss?'⚠ CHEFE FINAL — DERROTE-O PARA CONCLUIR!':'⚠ CHEFE EM CAMPO!',life:150,color:'#facc15',big:true})
@@ -680,8 +680,9 @@ function survEnemyTarget(s,e,dt){
   if(key==='wobbuffet')key='';
   if(key&&!s.helperIds?.includes(key))key='';
   if(e.helperTargetCd<=0){e.helperTargetCd=700+Math.random()*700;key='';const candidates=(s.helperIds||[]).filter((k,i)=>{if(k==='wobbuffet')return false;const h=survHelperState(s,k,i);return h.hp>0&&Math.hypot(h.x-e.x,h.y-e.y)<=SURV_SQM*8});const helperChance=e.boss?.10:e.elite?.18:.24;if(candidates.length&&Math.random()<helperChance)key=candidates[Math.floor(Math.random()*candidates.length)];e.targetHelperKey=key}
-  if(key){const i=s.helperIds.indexOf(key),h=survHelperState(s,key,i);return{kind:'helper',key,x:h.x,y:h.y,h}}
-  return{kind:'psyduck',key:'',x:s.x,y:s.y,h:null}
+  const target=e._survTarget||(e._survTarget={kind:'psyduck',key:'',x:0,y:0,h:null});
+  if(key){const i=s.helperIds.indexOf(key),h=survHelperState(s,key,i);target.kind='helper';target.key=key;target.x=h.x;target.y=h.y;target.h=h;return target}
+  target.kind='psyduck';target.key='';target.x=s.x;target.y=s.y;target.h=null;return target
 }
 function survMoveEnemyFlanker(s,e,tar,dt,slowMul){
   const dx=tar.x-e.x,dy=tar.y-e.y,dist=Math.hypot(dx,dy)||1,a=Math.atan2(dy,dx),desired=128+Number(e.size||32)*.16;
@@ -706,7 +707,12 @@ function survMoveEnemyCharger(s,e,tar,dt,slowMul,frozenNow){
   if(ai.cooldown<=0&&dist<520&&dist>132){ai.phase='windup';ai.left=300;ai.targetX=tar.x;ai.targetY=tar.y;ai.cooldown=5600+(Number(e.id||0)%5)*260;survFxPush(s,{type:'enemyCharge',x:e.x,y:e.y,x2:tar.x,y2:tar.y,r:26,max:42,life:22,maxLife:22,color:'#fb7185'});return}
   e.x+=dx/dist*e.sp*slowMul*dt/16;e.y+=dy/dist*e.sp*slowMul*dt/16
 }
-function survBuildEnemyGrid(s){const cell=128,g=s._enemyGrid||(s._enemyGrid=new Map());g.clear();s._enemyGridCell=cell;for(const e of s._liveEnemies||s.enemies){if(e.dead)continue;const k=((e.x/cell)|0)+','+((e.y/cell)|0),a=g.get(k);if(a)a.push(e);else g.set(k,[e])}}
+function survCompactArray(list,byLife=false,cap=Infinity){
+  let write=0;for(let i=0;i<list.length;i++){const item=list[i];if(item&&(byLife?item.life>0:!item.dead))list[write++]=item}
+  if(cap!==Infinity&&write>cap){const skip=write-cap;for(let i=skip;i<write;i++)list[i-skip]=list[i];write-=skip}
+  list.length=write;return list
+}
+function survBuildEnemyGrid(s){const cell=128,g=s._enemyGrid||(s._enemyGrid=new Map()),pool=s._enemyGridPool||(s._enemyGridPool=[]);for(const a of g.values()){a.length=0;pool.push(a)}g.clear();s._enemyGridCell=cell;for(const e of s._liveEnemies||s.enemies){if(e.dead)continue;const k=((e.x/cell)|0)+','+((e.y/cell)|0);let a=g.get(k);if(!a){a=pool.pop()||[];a.length=0;g.set(k,a)}a.push(e)}}
 function survGridCandidates(s,x,y,range=180){const g=s._enemyGrid,cell=Number(s._enemyGridCell||128);if(!g||!g.size)return s._liveEnemies||s.enemies;const out=[],x0=Math.floor((x-range)/cell),x1=Math.floor((x+range)/cell),y0=Math.floor((y-range)/cell),y1=Math.floor((y+range)/cell);for(let gy=y0;gy<=y1;gy++)for(let gx=x0;gx<=x1;gx++){const a=g.get(gx+','+gy);if(a)for(const e of a)out.push(e)}return out}
 function survNearestEnemy(s,x,y,exclude,maxRange=Infinity){let best=null,bd2=maxRange===Infinity?Infinity:maxRange*maxRange;const pool=maxRange===Infinity?(s._liveEnemies||s.enemies):survGridCandidates(s,x,y,maxRange+80);for(const e of pool){if(e.dead||e===exclude)continue;const dx=e.x-x,dy=e.y-y,d2=dx*dx+dy*dy;if(d2<=bd2){bd2=d2;best=e}}return best}
 function survEnemiesNear(s,x,y,maxRange){const r2=maxRange*maxRange;return survGridCandidates(s,x,y,maxRange+80).filter(e=>{if(e.dead)return false;const dx=e.x-x,dy=e.y-y;return dx*dx+dy*dy<=r2})}
@@ -736,7 +742,7 @@ function survDamageEnemy(s,e,dmg,color,slow=0,source='Psyduck'){
     survFxPush(s,{type:'burst',x:e.x,y:e.y,r:4,max:Math.min(38,Number(e.size||32)*.42),life:11,color:color||'#fff'});
   }
   e.hp=before-raw;if(real>0)survMeterLog(s,'damage',source,real);if(slow)e.slow=Math.max(e.slow,slow);
-  if(e.boss&&e.hp>0){const phase=e.hp/e.max<=.33?2:e.hp/e.max<=.66?1:0;if(phase>Number(e._psyBossPhase||0)){e._psyBossPhase=phase;W.psySurvCameraEvent?.(s,'bossPhase');survFxPush(s,{type:'burst',x:e.x,y:e.y,r:12,max:e.size*.82,life:25,color:'#fbbf24'});s.texts?.push?.({x:e.x,y:e.y-e.size*.62,text:phase===1?'FASE DO CHEFE • 2':'FASE DO CHEFE • 3',life:48,color:'#fde047',big:true})}}
+  if(e.boss&&e.hp>0){const phase=e.hp/e.max<=.33?2:e.hp/e.max<=.66?1:0;if(phase>Number(e._psyBossPhase||0)){e._psyBossPhase=phase;W.psySurvCameraEvent?.(s,'bossPhase');W.psyAudio?.sfx?.('status',{volume:.72,cooldown:650});survFxPush(s,{type:'burst',x:e.x,y:e.y,r:12,max:e.size*.82,life:25,color:'#fbbf24'});s.texts?.push?.({x:e.x,y:e.y-e.size*.62,text:phase===1?'FASE DO CHEFE • 2':'FASE DO CHEFE • 3',life:48,color:'#fde047',big:true})}}
   if(survInView(s,e.x,e.y,80)&&((s.texts?.length||0)<Number(s.perf?.textCap||90)||e.boss))s.texts.push({x:e.x,y:e.y,text:`-${Math.max(1,Math.floor(raw))}`,life:24,color:color||'#fff'});
   if(e.hp<=0&&!e.dead){e.dead=true;survKill(s,e);return true}return false
 }
@@ -1087,7 +1093,7 @@ function survLoop(ts){
   /* Mantém a simulação completa dos inimigos, mas limita as buscas de área e
      colisão ao campo expandido da câmera; os efeitos visuais continuam sendo
      desenhados normalmente para o que está visível. */
-  {const pad=720,cx=Number(s.camX||0),cy=Number(s.camY||0),vw=Number(s.viewW||s.w||1000),vh=Number(s.viewH||s.h||500);s._liveEnemies=s.enemies.filter(e=>!e.dead&&(e.boss||e.x>=cx-pad&&e.x<=cx+vw+pad&&e.y>=cy-pad&&e.y<=cy+vh+pad))}survBuildEnemyGrid(s);
+  {const pad=720,cx=Number(s.camX||0),cy=Number(s.camY||0),vw=Number(s.viewW||s.w||1000),vh=Number(s.viewH||s.h||500),live=s._liveEnemies||(s._liveEnemies=[]);live.length=0;for(const e of s.enemies)if(!e.dead&&(e.boss||e.x>=cx-pad&&e.x<=cx+vw+pad&&e.y>=cy-pad&&e.y<=cy+vh+pad))live.push(e)}survBuildEnemyGrid(s);
   s.fire+=dt;if(s.fire>s.fireRate&&s.enemies.length){s.fire=0;survShoot(s)}survUpdateHelpers(s,dt);survApplyBlisseySanctuary(s,dt);survUpdateFields(s,dt);survUpdateVariantSkills(s,dt);survUpdateBossSkills(s,dt);
   s._frameDt=dt;s.novaAcc+=dt;if(s.novaAcc>Math.max(1450,5200/(1+s.nova*.25))){s.novaAcc=0;survNova(s)}s.vortexAcc+=dt;const vortexInterval=s.vortexMax?5000:Math.max(1250,4200-s.vortex*360);if(s.vortex&&s.vortexAcc>vortexInterval){s.vortexAcc=0;survVortex(s)}s.rainAcc+=dt;if(s.rain&&s.rainAcc>Math.max(900,2800-s.rain*260)){s.rainAcc=0;survPsyRain(s)}
   for(const e of s.enemies){
@@ -1108,7 +1114,7 @@ function survLoop(ts){
   for(const eb of s.enemyBullets){if(eb.dead)continue;eb.life-=dt;const prevX=eb.x,prevY=eb.y;eb.x+=eb.vx*dt/16;eb.y+=eb.vy*dt/16;if(eb.life<=0||eb.x<-30||eb.x>s.w+30||eb.y<-30||eb.y>s.h+30){eb.dead=true;continue}if(survWobbuffetGuardIntercept(s,eb,prevX,prevY))continue;if(eb.targetHelperKey&&s.helperIds?.includes(eb.targetHelperKey)){const i=s.helperIds.indexOf(eb.targetHelperKey),h=survHelperState(s,eb.targetHelperKey,i);if(Math.hypot(eb.x-h.x,eb.y-h.y)<28+(eb.radius||5)){survDamageHelper(s,eb.targetHelperKey,eb.dmg,eb.x,eb.y,eb);if(!eb.dead){eb.dead=true;s.effects.push({type:'burst',x:h.x,y:h.y,r:3,max:28,life:10,color:'#fb7185'})}continue}}if(Math.hypot(eb.x-s.x,eb.y-s.y)<34+(eb.radius||5)){const dead=survHurtPlayer(s,eb.dmg);eb.dead=true;s.effects.push({type:'burst',x:s.x,y:s.y,r:3,max:30,life:10,color:'#fb7185'});if(dead){survBeginDefeat(s);return}}}
   for(const b of s.bullets){if(b.dead)continue;b.life-=dt;if(b.homing&&b.target&&!b.target.dead){b.homeAcc=Number(b.homeAcc||0)+dt;const homeEvery=b.kind==='tornado'?48:24;if(b.homeAcc>=homeEvery){b.homeAcc%=homeEvery;const sp=Math.max(.1,Math.hypot(b.vx,b.vy)),aa=Math.atan2(b.target.y-b.y,b.target.x-b.x);b.vx=b.vx*.72+Math.cos(aa)*sp*.28;b.vy=b.vy*.72+Math.sin(aa)*sp*.28}}const bx=b.vx*dt/16,by=b.vy*dt/16;b.x+=bx;b.y+=by;b.travel=Number(b.travel||0)+Math.hypot(bx,by);if(b.life<=0||b.travel>Number(b.maxRange||s.attackRange||SURV_ATTACK_RANGE)||b.x<-40||b.x>(s.worldW||s.w)+40||b.y<-40||b.y>(s.worldH||s.h)+40){b.dead=true;continue}for(const e of survGridCandidates(s,b.x,b.y,190)){if(e.dead||b.hit.has(e))continue;{const hitR=e.size*.42+(b.radius||5),hdx=e.x-b.x,hdy=e.y-b.y;if(hdx*hdx+hdy*hdy<hitR*hitR){b.hit.add(e);const dmg=b.dmg*(b.crit?1.75:1),src=b.source||'Psyduck';survDamageEnemy(s,e,dmg,b.crit?'#fde047':b.color||'#fff',b.slow||0,src);if(b.aoe)survAreaDamage(s,e.x,e.y,b.aoe,dmg*.50,b.color||'#fff',e,b.slow||0,src);if(b.impactField)survAddField(s,Object.assign({x:e.x,y:e.y,source:b.impactField?.source||src},b.impactField));if(b.onHit==='blisseyHeart')survBlisseyPulse(s,e.x,e.y,dmg*.35,3);if(b.onHit==='blisseyHeartMax')survBlisseyPulse(s,e.x,e.y,dmg*.35,5);if(!b.helper&&b.kind==='psy'&&b.chain>0)survChainHit(s,b,e,dmg,src,b.crit?'#fde047':b.color||'#fff');if(b.pierce>0){b.pierce--}else b.dead=true;break}}}
   }
-  for(const fx of s.effects){if(fx.type==='burst'||fx.type==='impact'||fx.type==='cast'||fx.type==='helperAura'||fx.type==='thunderSeal'||fx.type==='waterCast'||fx.type==='windCast'||fx.type==='meteorWarning'||fx.type==='voidOpen'||fx.type==='psyRainCloud'||fx.type==='psyNova')fx.r+=(Number(fx.max||fx.r)-fx.r)*.22;if(fx.type==='particle'||fx.type==='bubble'){fx.x+=Number(fx.vx||0);fx.y+=Number(fx.vy||0);fx.vy=Number(fx.vy||0)+Number(fx.gravity||0);fx.vx*=Number(fx.drag||.96);fx.vy*=Number(fx.drag||.96)}if(fx.type==='sanctuary'&&Number.isFinite(Number(fx.until)))fx.life=Number(s.elapsed||0)<Number(fx.until)?1:0;else fx.life--}s.effects=s.effects.filter(f=>f.life>0);for(const t of s.texts)t.life--;s.texts=s.texts.filter(t=>t.life>0);for(const a of (s.dropAlerts||[]))a.life-=dt;s.dropAlerts=(s.dropAlerts||[]).filter(a=>a.life>0);s.enemies=s.enemies.filter(e=>!e.dead);s.bullets=s.bullets.filter(b=>!b.dead).slice(-Number(s.perf?.bulletCap||220));s.enemyBullets=s.enemyBullets.filter(b=>!b.dead).slice(-Number(s.perf?.enemyBulletCap||200));if(s.texts.length>Number(s.perf?.textCap||100))s.texts.splice(0,s.texts.length-Number(s.perf?.textCap||100));survCollect(s);
+  for(const fx of s.effects){if(fx.type==='burst'||fx.type==='impact'||fx.type==='cast'||fx.type==='helperAura'||fx.type==='thunderSeal'||fx.type==='waterCast'||fx.type==='windCast'||fx.type==='meteorWarning'||fx.type==='voidOpen'||fx.type==='psyRainCloud'||fx.type==='psyNova')fx.r+=(Number(fx.max||fx.r)-fx.r)*.22;if(fx.type==='particle'||fx.type==='bubble'){fx.x+=Number(fx.vx||0);fx.y+=Number(fx.vy||0);fx.vy=Number(fx.vy||0)+Number(fx.gravity||0);fx.vx*=Number(fx.drag||.96);fx.vy*=Number(fx.drag||.96)}if(fx.type==='sanctuary'&&Number.isFinite(Number(fx.until)))fx.life=Number(s.elapsed||0)<Number(fx.until)?1:0;else fx.life--}survCompactArray(s.effects,true);for(const t of s.texts)t.life--;survCompactArray(s.texts,true);for(const a of (s.dropAlerts||[]))a.life-=dt;survCompactArray(s.dropAlerts||[],true);survCompactArray(s.enemies);survCompactArray(s.bullets,false,Number(s.perf?.bulletCap||220));survCompactArray(s.enemyBullets,false,Number(s.perf?.enemyBulletCap||200));if(s.texts.length>Number(s.perf?.textCap||100))s.texts.splice(0,s.texts.length-Number(s.perf?.textCap||100));survCollect(s);
   survMeterUpdate(s);if(s.finalSpawned&&s.finalBossDead&&!s.levelUpOpen)return W.psyCleanEnd(true,false);if(survShouldDraw(s,ts))survDraw(s)
 }
 const PSY_SURV_RESUME_KEY='psyworld_survivor_run_v1';
@@ -1116,7 +1122,7 @@ const PSY_SURV_RESUME_VERSION=2;
 let PSY_SURV_RESTORING=false,PSY_SURV_AUTOSAVE_AT=0;
 function psySurvClearResume(){try{localStorage.removeItem(PSY_SURV_RESUME_KEY)}catch(_){ }}
 function psySurvSnapshotState(s){
-  const omit=new Set(['c','ctx','psyImg','psyFormImgs','spriteCache','perf','last','effects','texts','bullets','enemyBullets','bossHazards','dropAlerts','_vignette','_enemyGrid','combatMeter','cameraCue','_cameraCueCooldowns','_psySurv3DActive','_psySurvLastForm']);
+  const omit=new Set(['c','ctx','psyImg','psyFormImgs','spriteCache','perf','last','effects','texts','bullets','enemyBullets','bossHazards','dropAlerts','_vignette','_enemyGrid','_enemyGridPool','_liveEnemies','combatMeter','cameraCue','_cameraCueCooldowns','_psySurv3DActive','_psySurvLastForm']);
   return JSON.parse(JSON.stringify(s,(key,value)=>{
     if(omit.has(key)||typeof value==='function')return undefined;
     if((key==='target'||key==='source')&&value&&typeof value==='object')return undefined;
