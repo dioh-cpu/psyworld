@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 
 const source=fs.readFileSync('core/cloud-save-v23.js','utf8');
+const authority=fs.readFileSync('core/online-authority-v26.js','utf8');
 const characterSave={player:{name:'Ash',meta:{characterNickname:'Ash'},team:[{id:25}],inventory:{Potion:3}},savedAt:1700000000000};
 const otherSave={player:{name:'Misty',meta:{characterNickname:'Misty'},team:[{id:54}],inventory:{PsyCoin:900}},savedAt:1800000000000};
 
@@ -85,6 +86,21 @@ function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=c
  assert(Object.keys(chooseCloud.storage()).some(k=>k.startsWith('psyWorldSave_backup_before_cloud_')),'the former local save is retained as a backup');
  const reloadChosenCloud=boot({storage:chooseCloud.storage(),remoteRevision:'2026-11-09T10:00:00.000Z'});await reloadChosenCloud.run();
  assert.equal(reloadChosenCloud.modals.length,0,'the selected sync choice survives F5');
+
+ const untaggedCloud={player:{name:'Trainer account label',team:[{id:25}],inventory:{Potion:1}},savedAt:1600000000000};
+ const cloudOnly=boot({storage:{psyWorldSave:'null',psyWorldSave_v9:'null',psyWorldSave_backup:JSON.stringify(otherSave)},remoteSave:untaggedCloud});await cloudOnly.run();
+ assert.equal(cloudOnly.modals[0],'SAVE NA NUVEM ENCONTRADO','server character metadata identifies a cloud save with no embedded nickname');
+ await cloudOnly.click('☁ CARREGAR SAVE DA NUVEM');
+ const restored=JSON.parse(cloudOnly.storage().psyWorldSave);
+ assert.equal(restored.player.meta.characterNickname,'Ash','cloud restore tags the selected profile for subsequent local lookup');
+ const readyFragment=authority.match(/const syncReady=\(\)=>\{[\s\S]*?\n\};/)?.[0];
+ assert(readyFragment,'server sync readiness uses the cloud profile metadata');
+ const syncReady=new Function('session','identity','parse','localStorage','SYNC_PROFILES_KEY','SYNC_KEY','CHARACTER_KEY',`return (${readyFragment.slice('const syncReady='.length,-1)});`);
+ const readReady=syncReady(()=>({user:{id:'account-1'}}),s=>s.user.id,JSON.parse,{getItem:k=>cloudOnly.storage()[k]||null},'psyworld_cloud_sync_profiles_v1','psyworld_cloud_sync_v23','psyworld_active_character_v38');
+ assert.equal(readReady(),true,'server sync recognizes the per-character profile binding');
+ const reloadRestored=boot({storage:cloudOnly.storage(),remoteSave:untaggedCloud});await reloadRestored.run();
+ assert.equal(reloadRestored.modals.length,0,'cloud-only restore does not reopen the modal on F5');
+ assert(authority.includes('await W.psyCloudV23.compareNow()'),'server sync button opens the actionable cloud resolution instead of a toast');
 
  const compare=boot({storage:afterCancel});await compare.run();
  await compare.window.psyCloudV23.compareNow();

@@ -114,7 +114,7 @@ async function gameForSession(state){
  if(!match)return null; // never compare another account's legacy mirror
  const result=await api('/api/player/character?nickname='+encodeURIComponent(nick));
  const c=result?.character;
- return c&&validSave(c.save)?{save:c.save,updated_at:c.updated_at,client_updated_at:c.client_updated_at}:null;
+ return c&&validSave(c.save)?{save:c.save,nickname:c.nickname||nick,characterNickname:c.nickname||nick,updated_at:c.updated_at,client_updated_at:c.client_updated_at}:null;
 }
 async function afterAuth(){try{
  const state=await api('/api/player');hydrateServerIdentity(state);
@@ -234,7 +234,11 @@ async function upload(save,manual=false,markResolved=false){
 async function applyCloud(save,game,automatic=false){
   if(!validSave(save))return toast('❌ Save da nuvem inválido.');
   try{
-    const raw=JSON.stringify(save),old=bestLocal();
+    const selected=selectedNick(),cloudNick=String(game?.characterNickname||game?.nickname||selected).trim();
+    if(selected&&cloudNick&&!sameNick(selected,cloudNick)){toast('⚠ O save encontrado pertence a outro personagem. Nada foi alterado.',4500);return false}
+    const snapshot=JSON.parse(JSON.stringify(save));
+    if(selected){snapshot.player=snapshot.player||{};snapshot.player.meta=snapshot.player.meta||{};snapshot.player.meta.characterNickname=selected}
+    const raw=JSON.stringify(snapshot),old=bestLocal();
     if(old)localStorage.setItem('psyWorldSave_backup_before_cloud_'+Date.now(),JSON.stringify(old));
     localStorage.setItem('psyWorldSave',raw);
     localStorage.setItem('psyWorldSave_v9',raw);
@@ -242,10 +246,10 @@ async function applyCloud(save,game,automatic=false){
     if(syncTimer){clearTimeout(syncTimer);syncTimer=0}
     syncEnabled=false;
     const cs=cloudStamp(game)||Date.now();
-    writeSync({resolved:true,deferredFingerprint:null,saveStamp:localStamp(save),cloudStamp:cs,
-      cloudRevision:game?.updated_at||null,localSignature:saveSignature(save),cloudSignature:saveSignature(save),
-      revisionScope:selectedCharacterNickname(save)?'character':'account',
-      resolvedFingerprint:conflictFingerprint(save,{save,updated_at:game?.updated_at||null}),pendingChoice:'cloud',lastDownloadAt:Date.now()});
+    writeSync({resolved:true,deferredFingerprint:null,saveStamp:localStamp(snapshot),cloudStamp:cs,
+      characterNickname:cloudNick||selected||undefined,cloudRevision:game?.updated_at||null,localSignature:saveSignature(snapshot),cloudSignature:saveSignature(save),
+      revisionScope:(cloudNick||selected)?'character':'account',
+      resolvedFingerprint:conflictFingerprint(snapshot,{save,updated_at:game?.updated_at||null}),pendingChoice:'cloud',lastDownloadAt:Date.now()});
     if(!automatic)toast('☁ Save da nuvem restaurado. Recarregando...',2800);
     // The game's beforeunload handler autosaves in-memory state; suppress it for this reload.
     const suppressAutosave=()=>{};

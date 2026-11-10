@@ -201,7 +201,7 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
 /* PSYWORLD V26 — autoridade online global, sem alterar a main/produção. */
 try{
   const oa=document.createElement('script');
-  oa.src='core/online-authority-v26.js?build=CAMPAIGN_EVENTS_LOTTERY_V1_20261107';
+  oa.src='core/online-authority-v26.js?build=CLOUD_CHARACTER_BINDING_V2_20261109';
   oa.async=false;
   document.head.appendChild(oa);
 }catch(e){console.warn('online authority v26 loader',e)}

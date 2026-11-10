@@ -3,7 +3,7 @@
 if(W.__PSYWORLD_ONLINE_AUTHORITY_V26__)return;
 W.__PSYWORLD_ONLINE_AUTHORITY_V26__=true;
 const BUILD='ONLINE_AUTHORITY_V26_20260927_A';
-const SESSION_KEY='psyworld_online_session_v23',SYNC_KEY='psyworld_cloud_sync_v23';
+const SESSION_KEY='psyworld_online_session_v23',SYNC_KEY='psyworld_cloud_sync_v23',SYNC_PROFILES_KEY='psyworld_cloud_sync_profiles_v1',CHARACTER_KEY='psyworld_active_character_v38';
 const LOCAL_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
 let busy=0,bootUser='',lastProgress=0,lastHeartbeat=0,lastCampaignHeartbeat=0,lastServerRefresh=0,lastServerSnapshot=null,lastOnlineMeta=null,lastServerOk=0,lastServerError=false,lastCampaignStatus=null,serverSyncBusy=false,tickBusy=false,bootstrapPromise=null;
 const originals=new Map();
@@ -14,9 +14,23 @@ const session=()=>parse(localStorage.getItem(SESSION_KEY));
 const identity=s=>String(s?.user?.id||s?.user?.email||s?.email||tokenUserKey(s)||'');
 const uid=()=>identity(session());
 const online=()=>!!session()?.access_token;
-const syncReady=()=>{const s=session(),m=parse(localStorage.getItem(SYNC_KEY))||{};const k=identity(s);return !!(k&&m.resolved&&m.userKey===k)};
+const syncReady=()=>{
+ const s=session(),k=identity(s);if(!k)return false;
+ const nick=String(localStorage.getItem(CHARACTER_KEY)||'').trim(),all=parse(localStorage.getItem(SYNC_PROFILES_KEY))||{},key=String(k).toLowerCase()+'::'+nick.toLowerCase();
+ const legacy=parse(localStorage.getItem(SYNC_KEY))||{};
+ const m=nick?(all[key]||(String(legacy.characterNickname||'').toLowerCase()===nick.toLowerCase()?legacy:{})):legacy;
+ return !!(m.resolved&&String(m.userKey||'')===k&&(!nick||String(m.characterNickname||'').toLowerCase()===nick.toLowerCase()));
+};
 const fmt=n=>Number(n||0).toLocaleString('pt-BR');
-function bestLocal(){return LOCAL_KEYS.map(k=>parse(localStorage.getItem(k))).filter(x=>{const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p.team[0]?.id)}).sort((a,b)=>Number(b.savedAt||0)-Number(a.savedAt||0))[0]||null}
+function bestLocal(){
+ const valid=x=>{const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p.team[0]?.id)};
+ const nick=String(localStorage.getItem(CHARACTER_KEY)||'').trim();
+ const rows=LOCAL_KEYS.slice(0,2).map(k=>parse(localStorage.getItem(k))).filter(valid);
+ const scoped=nick?rows.filter(x=>{const p=x?.player||x,n=String(p.meta?.characterNickname||p.characterNickname||p.name||p.nickname||'').trim();return n.toLowerCase()===nick.toLowerCase()}):rows;
+ if(scoped.length)return scoped.sort((a,b)=>Number(b.savedAt||0)-Number(a.savedAt||0))[0];
+ if(nick)return null;
+ const backup=parse(localStorage.getItem(LOCAL_KEYS[2]));return valid(backup)?backup:rows.sort((a,b)=>Number(b.savedAt||0)-Number(a.savedAt||0))[0]||null;
+}
 function idem(prefix){try{return prefix+':'+crypto.randomUUID()}catch(_){return prefix+':'+Date.now()+':'+Math.random().toString(36).slice(2)}}
 async function config(){const r=await fetch('/api/config',{cache:'no-store'});const d=await r.json();if(!r.ok||!d.onlineConfigured)throw new Error('online_not_configured');return d}
 async function refreshToken(s){if(!s?.refresh_token)return s;const c=await config();const r=await fetch(c.supabaseUrl+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:c.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});const d=await r.json();if(!r.ok||!d.access_token)throw new Error(d.message||'session_expired');const n={...s,...d,user:d.user||s.user,expires_at:Date.now()+Number(d.expires_in||3600)*1000};localStorage.setItem(SESSION_KEY,JSON.stringify(n));return n}
@@ -108,7 +122,11 @@ async function syncServerNow(manual=false){
  if(serverSyncBusy)return null;serverSyncBusy=true;
  const btn=D.getElementById('psy-server-sync-v26');if(btn){btn.disabled=true;btn.textContent='⏳ SINCRONIZANDO...'}
  try{
-   if(!syncReady()){if(manual)toast('Escolha ou confirme o save para habilitar a sincronização do servidor.',3600);renderServerPanel();return null}
+   if(!syncReady()){
+     if(manual&&typeof W.psyCloudV23?.compareNow==='function')await W.psyCloudV23.compareNow();
+     else if(manual)toast('Abra o Cloud Save para vincular o personagem selecionado.',3600);
+     renderServerPanel();return null
+   }
    if(!bootUser&&!await bootstrap())throw new Error('authority_not_ready');
    const [snap,meta]=await Promise.all([game('state'),onlineMeta()]);
    if(!snap?.player)throw new Error('snapshot_invalid');
