@@ -55,7 +55,7 @@ function backupAndClearActive(){
 function characterMode(){const login=$('screen-login');return locked()||!!localStorage.getItem(PENDING_KEY)||(login&&getComputedStyle(login).display!=='none')}
 function renderConnectedStatus(){
   const s=$('psy-online-status'),ss=session();
-  if(s)s.textContent=ss?.access_token?'☁ Conta conectada • escolha um personagem ou digite um nick novo.':'Não conectado.';
+  if(s&&s.dataset.psyOauthDiagnostic!=='1')s.textContent=ss?.access_token?'☁ Conta conectada • escolha um personagem ou digite um nick novo.':'Não conectado.';
 }
 async function listCharacters(){const d=await api('/api/player/characters');return Array.isArray(d.characters)?d.characters:[]}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}

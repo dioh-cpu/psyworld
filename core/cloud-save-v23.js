@@ -330,7 +330,7 @@ function renderCloudStatus(){
 }
 function renderStatus(preserveMessage=false){
  const signedIn=!!session?.access_token,s=$('psy-online-status');
- if(s&&!preserveMessage)s.textContent=!signedIn?'Não conectado.':'☁ Conectado: '+String(session.user?.email||session.user?.user_metadata?.user_name||session.user?.user_metadata?.name||session.email||'conta online')+(syncEnabled?' • sincronização ativa':' • escolha do save pendente');
+ if(s&&!preserveMessage&&s.dataset.psyOauthDiagnostic!=='1')s.textContent=!signedIn?'Não conectado.':'☁ Conectado: '+String(session.user?.email||session.user?.user_metadata?.user_name||session.user?.user_metadata?.name||session.email||'conta online')+(syncEnabled?' • sincronização ativa':' • escolha do save pendente');
  const google=$('psy-online-google'),github=$('psy-online-github');
  if(google)google.textContent=signedIn?'VINCULAR GOOGLE':'ENTRAR COM GOOGLE';
  if(github)github.textContent=signedIn?'VINCULAR GITHUB':'ENTRAR COM GITHUB';
@@ -349,7 +349,7 @@ async function renderLinkedIdentities(){
  }catch(_){box.textContent='Não foi possível consultar os métodos vinculados agora.'}
 }
 function modal(title,body,buttons){let m=$('psy-cloud-modal');if(!m){m=D.createElement('div');m.id='psy-cloud-modal';m.style.cssText='display:none;position:fixed;inset:0;z-index:20000;background:#000c;align-items:center;justify-content:center;padding:16px';D.body.appendChild(m)}m.innerHTML=`<div style="max-width:540px;width:100%;background:#071421;border:2px solid #22d3ee;border-radius:14px;padding:18px;color:#fff;box-shadow:0 20px 80px #000"><h2 style="margin:0 0 10px;color:#67e8f9">${escapeHtml(title)}</h2><div style="font-size:12px;line-height:1.5;color:#dbeafe">${body}</div><div id="psy-cloud-actions" style="display:grid;gap:8px;margin-top:14px"></div></div>`;const a=$('psy-cloud-actions');buttons.forEach(b=>{const el=D.createElement('button');el.textContent=b.label;el.style.cssText='padding:11px;border:0;border-radius:8px;font-weight:900;cursor:pointer;background:'+(b.bg||'#164e63')+';color:#fff';el.onclick=async()=>{if(b.close!==false)m.style.display='none';await b.run?.()};a.appendChild(el)});m.style.display='flex'}
-function signupMessage(text,color='#fbbf24'){const s=$('psy-online-status');if(s){s.textContent=text;s.style.color=color}}
+function signupMessage(text,color='#fbbf24'){const s=$('psy-online-status');if(s){s.textContent=text;s.style.color=color;if(/\bOAUTH_[A-Z_]+\b/.test(String(text)))s.dataset.psyOauthDiagnostic='1';else delete s.dataset.psyOauthDiagnostic}}
 function setResendVisible(visible){const b=$('psy-online-resend');if(b)b.style.display=visible?'block':'none'}
 function signupRedirectPath(endpoint){return endpoint+'?redirect_to='+encodeURIComponent(PROD_ORIGIN+'/')}
 function authFailureMessage(e){if(e?.status===429||/rate.?limit|over_email_send_rate_limit|email_rate_limit_exceeded/i.test(String(e?.code||e?.message)))return 'Muitas solicitações em pouco tempo. Aguarde antes de tentar novamente.';if(/email_address_not_authorized/i.test(String(e?.code||e?.message)))return 'O serviço de e-mail do projeto não está autorizado a enviar para este endereço. A equipe precisa configurar SMTP para cadastros públicos.';if(/fetch|network|failed to|load failed/i.test(String(e?.message)))return 'Falha de conexão ao solicitar a confirmação. Confira sua internet e tente mais tarde.';return 'Não foi possível concluir a solicitação agora. Tente novamente mais tarde.'}
@@ -367,6 +367,7 @@ function oauthFailureMessage(e){
 }
 async function socialLogin(provider){
  if(!['google','github'].includes(provider)||oauthBusy)return;
+ const previousStatus=$('psy-online-status');if(previousStatus)delete previousStatus.dataset.psyOauthDiagnostic;
  oauthBusy=true;const google=$('psy-online-google'),github=$('psy-online-github');if(google)google.disabled=true;if(github)github.disabled=true;
  try{
   readSession();let linking=!!session?.access_token;

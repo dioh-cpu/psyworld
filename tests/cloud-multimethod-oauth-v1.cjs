@@ -11,7 +11,7 @@ function boot({search='',session=null,exchangeSession=null,signinError=null,exch
  const values=new Map(),calls={clients:[],signin:[],link:[],setSession:[],exchange:[],signout:[]},nodes=new Map();
  const localStorage={getItem:k=>values.has(k)?values.get(k):null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k),key:i=>[...values.keys()][i]||null,get length(){return values.size}};
  if(session)localStorage.setItem(SESSION_KEY,JSON.stringify(session));
- const node=(id,value='')=>({id,value,textContent:'',innerHTML:'',style:{display:'',color:'',cssText:''},disabled:false,onclick:null,appendChild(){},setAttribute(){},querySelectorAll(){return[]},set innerHTML(v){this._html=String(v)},get innerHTML(){return this._html||''}});
+ const node=(id,value='')=>({id,value,textContent:'',innerHTML:'',dataset:{},style:{display:'',color:'',cssText:''},disabled:false,onclick:null,appendChild(){},setAttribute(){},querySelectorAll(){return[]},set innerHTML(v){this._html=String(v)},get innerHTML(){return this._html||''}});
  for(const id of ['psy-online-email','psy-online-pass','psy-online-signup','psy-online-resend','psy-online-status','psy-online-google','psy-online-github','psy-online-identities'])nodes.set(id,node(id));
  const location={origin:'https://psyworld-preview-world-of-monsters.vercel.app',pathname:'/',search,hash:''};
  Object.defineProperty(location,'href',{get(){return location.origin+location.pathname+location.search+location.hash}});
@@ -97,6 +97,7 @@ function boot({search='',session=null,exchangeSession=null,signinError=null,exch
  assert.equal(await canceled.window.psyCloudV23.completeOAuthCallback(),false,'provider cancellation does not authenticate');
  assert.equal(JSON.parse(canceled.values.get(SESSION_KEY)).user.id,'account-7','provider cancellation leaves the existing account intact');
  assert.match(canceled.nodes.get('psy-online-status').textContent,/Login cancelado/i);
+ assert.equal(canceled.nodes.get('psy-online-status').dataset.psyOauthDiagnostic,'1','callback diagnostic is marked so profile bootstrap cannot overwrite it');
  assert.equal(canceled.location.search,'','provider error parameters are removed from the address bar');
 
  console.log('PASS: Google/GitHub OAuth start, PKCE persistence, same-origin callback, explicit authenticated identity linking, session preservation, cancellation, and callback cleanup');

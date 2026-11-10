@@ -6,7 +6,7 @@ const source=fs.readFileSync(require.resolve('../core/cloud-save-v23.js'),'utf8'
 function boot(authResponse={ok:true,json:{user:{id:'disposable-test-user'}}}){
  const values=new Map(),calls=[],nodes=new Map();
  const localStorage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k)};
- const node=(id,value='')=>({id,value,textContent:'',style:{display:'',color:'',cssText:''},disabled:false,onclick:null,appendChild(){},set innerHTML(v){this.html=String(v)},get innerHTML(){return this.html||''}});
+ const node=(id,value='')=>({id,value,textContent:'',dataset:{},style:{display:'',color:'',cssText:''},disabled:false,onclick:null,appendChild(){},set innerHTML(v){this.html=String(v)},get innerHTML(){return this.html||''}});
  for(const id of ['psy-online-email','psy-online-pass','psy-online-signup','psy-online-resend','psy-online-status'])nodes.set(id,node(id));
  nodes.get('psy-online-email').value='  Test.User+Psy@Example.test  ';
  nodes.get('psy-online-pass').value='not-a-real-password';
