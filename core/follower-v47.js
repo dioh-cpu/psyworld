@@ -12,7 +12,7 @@ const walkProfiles=Object.freeze({
 const trails=new Map();let serial=0;
 // Distance is measured along the player's collision-approved trail, so a
 // wider visual gap still follows real turns and cannot cut across obstacles.
-const FOLLOWER_TRAIL_DISTANCE=52;
+const FOLLOWER_TRAIL_DISTANCE=64;
 function key(mon){return mon.pokemon_uid||mon.followerKeyV47||(mon.followerKeyV47='partner-'+Date.now().toString(36)+'-'+(++serial));}
 function selected(){const p=player(),choice=p.meta?.followerV47;if(!choice?.enabled)return null;return (p.team||[]).find(m=>(m.pokemon_uid||m.followerKeyV47)===choice.key&&Number(m.hp)>0)||null;}
 function supported(mon){const entry=manifest[mon.id];return !!entry&&!mon.isMega&&!mon.halloweenForm&&(!mon.shiny||entry.shiny);}
