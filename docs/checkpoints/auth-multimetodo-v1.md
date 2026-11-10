@@ -37,3 +37,12 @@ Base: `fix/signup-confirmation-flow-v1` at `c63ac641ca3133f3e1dc14b7cdd5e7bb706c
 - `node tests/cloud-save-character-scope-v1.cjs` — passou.
 - `node tests/idle-profile-isolation.cjs` — passou.
 - OAuth real, dois dispositivos, recuperação e teste físico mobile/desktop ainda dependem de credenciais/provedores habilitados e contas de teste autorizadas.
+
+## Continuação — ativação OAuth (2026-11-10)
+
+- O ambiente desta execução informa `SUPABASE_MGMT_TOKEN` como `ready`, restrito a `api.supabase.com`. O token é opaco e a configuração do ambiente não revela scopes/roles. A tentativa anterior de escrita foi negada com HTTP 403; não houve nova tentativa de escrita. A documentação do Management API identifica 403 como ação proibida. A autorização efetiva necessária para alterar a configuração é `auth_config_write` e `project_admin_write`; é preciso conceder `project_admin_write` ao acesso usado, sem gerar outro token.
+- Nova leitura somente GET da configuração Auth confirma: `external_github_enabled=true`, credenciais GitHub presentes, `external_google_enabled=false`, credenciais Google ausentes, `security_manual_linking_enabled=false`. Site URL permanece `https://psyworld-world-of-monsters.vercel.app/`; nenhuma configuração foi alterada.
+- Não há integração de Google Cloud/Google Auth Platform nem credenciais OAuth Google disponíveis nesta execução. A conexão Google Drive existente não dá acesso administrativo ao Google Cloud. A criação do cliente Web e da tela OAuth depende do proprietário conectar uma conta autorizada com acesso de administração à configuração OAuth do projeto correto.
+- O preview Vercel continua READY para o SHA `22d2ef2b6d597b14c493a86130f1ea3d4d595e19` em `psyworld-git-feature-auth-multimetodo-v1-world-of-monsters.vercel.app`. Playwright abriu o jogo em desktop 1440×900 e viewport móvel 390×844: botões Google/GitHub visíveis, sem erros de página e sem overflow horizontal. No clique GitHub, o fluxo saiu para `github.com/login`; nenhuma conta foi autenticada e o callback externo do GitHub não foi verificado no console do aplicativo.
+- Não foi fornecida conta de teste autorizada. Portanto não foram concluídos consentimento OAuth, retorno com sessão, validação de UUID, seletor de personagens, carregamento de save, renovação/logout, dois dispositivos ou vinculação Google/GitHub. Sem autorização para configuração Auth e sem conta de teste, esses resultados não podem ser declarados aprovados.
+- Nenhum dado, migration, política RLS, configuração de Site URL, código do jogo ou produção foi alterado nesta continuação.
