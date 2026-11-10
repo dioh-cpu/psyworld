@@ -10,4 +10,4 @@ Tests: `tests/cloud-save-character-scope-v1.cjs`, `tests/player-character-cas-v1
 
 Files: `api/player.js`; `core/account-menu-v34.js`; `core/cloud-save-v23.js`; `core/legacy-runtime.js`; `core/module-loader.js`; `core/new-account-logout-v33.js`; `core/online-authority-v26.js`; `core/online-profile-entry-v37.js`; `core/prelude.js`; `index.html`; Cloud Save regression tests.
 
-Publication status: implementation is validated locally. Update this line with the published SHA and Vercel deployment state after integrating with the latest `main`.
+Publication: commit `951364a82228cbdd4e7ccaaa6e2b2d4f989c5f43` is on `main`; Vercel production deployment `dpl_AH4toVVWYjULkzdkaULF8BHR5hiB` reached `READY`. Production smoke test returned HTTP 200 and served the `CLOUD_SAVE_UNIVERSAL_V1_20261110` prelude build. No Supabase migration was required. The API compare-and-swap path was validated with disposable mocks; no real player account or production save was modified.
