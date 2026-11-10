@@ -379,7 +379,7 @@ async function socialLogin(provider){
   catch(_){try{localStorage.removeItem(storageProbe)}catch(__){};throw Object.assign(new Error('oauth_storage_unavailable'),{code:'oauth_storage_unavailable'})}
   const intent={provider,mode:linking?'link':'login',userId:linking?String(session?.user?.id||''):null,startedAt:Date.now()};
   localStorage.setItem(OAUTH_INTENT_KEY,JSON.stringify(intent));
-  const options={redirectTo:oauthRedirectTo(),scopes:provider==='github'?'read:user user:email':provider==='google'?'openid email profile':undefined};
+  const options={redirectTo:oauthRedirectTo(),scopes:provider==='github'?'read:user user:email':provider==='google'?'openid':undefined};
   const {error}=linking?await client.auth.linkIdentity({provider,options}):await client.auth.signInWithOAuth({provider,options});
   if(error)throw error;
   signupMessage(linking?'Redirecionando para vincular '+(provider==='github'?'GitHub':'Google')+'…':'Redirecionando para '+(provider==='github'?'GitHub':'Google')+'…','#bae6fd');
