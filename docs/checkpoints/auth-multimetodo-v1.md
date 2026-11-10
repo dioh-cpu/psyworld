@@ -1,6 +1,6 @@
 # PSYWORLD Auth Multimétodo — checkpoint v1
 
-Branch: `feature/auth-multimetodo-v1`  
+Branch: `feature/auth-multimetodo-v1`
 Base: `fix/signup-confirmation-flow-v1` at `c63ac641ca3133f3e1dc14b7cdd5e7bb706cce5b`.
 
 ## Auditoria
@@ -59,3 +59,14 @@ Base: `fix/signup-confirmation-flow-v1` at `c63ac641ca3133f3e1dc14b7cdd5e7bb706c
 - Callback de cancelamento no preview manteve a mensagem `OAUTH_CANCELLED` após a execução dos atualizadores de status e removeu o parâmetro de erro da URL.
 - O acesso Google acima foi interrompido antes da tela de escolha/consentimento. Não houve login real com conta de jogador, criação de usuário, alteração de save ou teste físico em aparelho Android. A emulação Playwright não substitui uma autenticação real no aparelho.
 - Testes Node passaram: OAuth multimétodo, confirmação de cadastro, CAS de personagens, escopo de Cloud Save por personagem e isolamento Idle/PSYWORLD. Nenhuma migration, alteração Auth, save real, economia ou publicação de produção.
+
+## Validação pré-merge e publicação (2026-11-10)
+
+- Estado remoto conferido: PR #49 aberto, pronto para revisão, `mergeable=true`, head `13e251583b7b980c0c38bf363ac29cf420c8646b`; `main` (`72953a34580ba269d5bb4425db32a1451fd13dc7`) é ancestral da branch. O preview do PR está READY.
+- Auditoria do fluxo: `/api/player` valida o bearer com `supabase.auth.getUser()` e usa o `user.id` validado como escopo das operações; o segredo de serviço só é usado no servidor. RLS limita leitura ao próprio `auth.uid()` e revoga escrita direta do cliente. O CAS em `player_characters` rejeita revisão divergente com conflito HTTP 409. Os testes de escopo por personagem e isolamento passaram; nenhum save foi alterado.
+- Testes passaram: OAuth Google/GitHub, confirmação de cadastro, CAS, escopo de Cloud Save, isolamento PSYWORLD/Idle, ponte de sessão e sintaxe Node dos arquivos alterados. `git diff --check` foi corrigido removendo espaço final deste checkpoint e passou.
+- Playwright real no preview: desktop Chromium 1280×720 e Android Pixel 7 412×839 receberam HTTP 200; `/api/config` retornou HTTP 200 com `onlineConfigured=true`; jogo, API Cloud e interface Google/GitHub carregaram sem erros JavaScript de página. A página não apresentou overflow horizontal no viewport móvel testado.
+- Início real Google pelo preview chegou a `accounts.google.com` com callback `https://otwgavwvjxuwtgncjbiq.supabase.co/auth/v1/callback` e escopos `email profile openid`. O teste automatizado parou antes de selecionar uma conta. O proprietário informou anteriormente que concluiu login Google manualmente no preview e o jogo abriu; essa evidência não permite afirmar, de forma independente, qual UUID ou snapshot de Cloud Save foi carregado.
+- Nenhuma conta de teste autorizada foi disponibilizada para o agente. Login GitHub real, UUID autenticado em fluxo vivo, criação/seleção de personagem autenticado, recuperação do mesmo save entre dispositivos, vínculo de identidade e testes reais de sessão/logout não foram concluídos. Os testes automatizados de callback usam endpoints/sessões simulados; não são prova desses fluxos reais.
+- Ponto de reversão antes do merge: deployment de produção `dpl_HTbahVWjhaz7KxeTzzNKhAaMjuxd`, READY, commit `72953a34580ba269d5bb4425db32a1451fd13dc7`; o alias `psyworld-murex.vercel.app` apontava para esse deployment. Nenhum deployment de produção novo foi acionado nesta validação.
+- Google permanece habilitado no Supabase conforme leitura Auth anterior; Site URL não foi alterada. Não houve mudanças em dados, migrations, políticas RLS, economia ou configuração Auth.
