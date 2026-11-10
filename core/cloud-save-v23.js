@@ -273,6 +273,11 @@ async function loadNow(){
     ]);
   }catch(e){toast('❌ Falha ao carregar save da nuvem: '+friendly(e.message),4500)}
 }
+async function saveNow(){
+ const local=bestLocal();
+ if(!local){await compareNow();return false}
+ return upload(local,true,true);
+}
 async function compareNow(){
  if(!await ensureToken())return toast('❌ Entre na sua conta online primeiro.');
  try{const state=await api('/api/player');hydrateServerIdentity(state);const game=await gameForSession(state);await resolveConflict(game,{force:true})}
@@ -370,12 +375,12 @@ function styleMenu(){
     cloud.style.gridTemplateColumns='repeat(auto-fit,minmax(140px,1fr))';
     cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button><button id="psy-cloud-compare-now" type="button" style="padding:11px;border:1px solid #fbbf24;border-radius:8px;background:#854d0e;color:#fff;font-weight:900">⚖ COMPARAR SAVES</button>';
     const locals=buttons.find(b=>/BAIXAR SAVE\.PSY/i.test(b.textContent||''))?.parentElement; if(locals&&locals.parentElement===menu)locals.insertAdjacentElement('afterend',cloud);else menu.appendChild(cloud);
-    $('#psy-cloud-save-now').onclick=()=>W.psyCloudV23?.uploadNow();$('#psy-cloud-load-now').onclick=()=>W.psyCloudV23?.loadNow();$('#psy-cloud-compare-now').onclick=()=>W.psyCloudV23?.compareNow();
+    $('#psy-cloud-save-now').onclick=()=>W.psyCloudV23?.saveNow();$('#psy-cloud-load-now').onclick=()=>W.psyCloudV23?.loadNow();$('#psy-cloud-compare-now').onclick=()=>W.psyCloudV23?.compareNow();
   }
   cloud.style.display=session?.access_token?'grid':'none';
 }
 function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem();installEconomyHooks()}
 async function bootstrap(){captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');hydrateServerIdentity(state);const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();setInterval(()=>{patchSave();installGlobalUI();if(syncEnabled&&session?.access_token){const s=bestLocal(),meta=readSync();if(s&&(!meta.localSignature?localStamp(s)>Number(meta?.saveStamp||0)+1500:saveSignature(s)!==meta.localSignature))queueSync()}},4000)}
-W.psyCloudV23={login,signup,loginWithGithub:githubLogin,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;renderStatus();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:async()=>upload(bestLocal(),true,true),loadNow,compareNow,economy};
+W.psyCloudV23={login,signup,loginWithGithub:githubLogin,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;renderStatus();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:async()=>upload(bestLocal(),true,true),saveNow,loadNow,compareNow,economy};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});
 })(window,document);

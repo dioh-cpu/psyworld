@@ -101,6 +101,8 @@ function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=c
  const reloadRestored=boot({storage:cloudOnly.storage(),remoteSave:untaggedCloud});await reloadRestored.run();
  assert.equal(reloadRestored.modals.length,0,'cloud-only restore does not reopen the modal on F5');
  assert(authority.includes('await W.psyCloudV23.compareNow()'),'server sync button opens the actionable cloud resolution instead of a toast');
+ assert(authority.includes('id="psy-server-cloud-save-v26"')&&authority.includes('id="psy-server-cloud-load-v26"'),'online panel exposes direct save and load actions');
+ assert(source.includes('async function saveNow()')&&source.includes('if(!local){await compareNow();return false}'),'save action routes missing local profiles to a comparison instead of a dead-end toast');
 
  const compare=boot({storage:afterCancel});await compare.run();
  await compare.window.psyCloudV23.compareNow();
