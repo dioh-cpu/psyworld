@@ -114,7 +114,14 @@ async function openCharacter(nickname){
     localStorage.setItem('psyWorldSave',raw);localStorage.setItem('psyWorldSave_v9',raw);
     localStorage.setItem(SELECTED_KEY,c.nickname||nick);
     localStorage.removeItem(PENDING_KEY);localStorage.removeItem(EXIT_KEY);
-    const ss=session();try{const old=parse(localStorage.getItem(SYNC_KEY))||{};localStorage.setItem(SYNC_KEY,JSON.stringify({...old,userKey:sessionUserKey(ss),resolved:true,characterNickname:c.nickname||nick,saveStamp:Number(save.savedAt||0),cloudStamp:Date.parse(c.updated_at||'')||Date.now(),lastDownloadAt:Date.now()}))}catch(_){}
+    const ss=session();try{
+      const old=parse(localStorage.getItem(SYNC_KEY))||{},owner=sessionUserKey(ss),selected=c.nickname||nick;
+      const same=old.userKey===owner&&String(old.characterNickname||'').toLowerCase()===selected.toLowerCase();
+      const scoped=same?old:{};
+      localStorage.setItem(SYNC_KEY,JSON.stringify({...scoped,userKey:owner,resolved:true,deferredConflict:false,
+        characterNickname:selected,saveStamp:Number(save.savedAt||0),cloudStamp:Date.parse(c.updated_at||'')||Date.now(),
+        cloudRevision:c.updated_at||null,lastDownloadAt:Date.now()}));
+    }catch(_){}
     toast('☁ Abrindo '+(c.nickname||nick)+'...',1800);setTimeout(()=>location.reload(),250);
   }catch(e){toast('❌ Não foi possível abrir o personagem: '+String(e.message||e),4200)}
 }
