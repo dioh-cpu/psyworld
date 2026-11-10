@@ -46,6 +46,7 @@ function boot({search='',session=null,exchangeSession=null,signinError=null,exch
  const google=boot();
  await google.window.psyCloudV23.loginWithGoogle();
  assert.equal(google.calls.signin[0].provider,'google','Google OAuth is implemented with the same session-safe flow');
+ assert.equal(google.calls.signin[0].options.scopes,'openid email profile','Google requests only the required identity scopes including OIDC openid');
 
  const existing={access_token:'old-access',refresh_token:'old-refresh',expires_at:Date.now()+3600_000,user:{id:'account-7',email:'player@example.test'}};
  const link=boot({session:existing});

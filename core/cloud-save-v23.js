@@ -220,7 +220,7 @@ function clearOAuthFlow(){
  oauthClient=null;oauthSdkPromise=null;
 }
 function oauthDiagnosticCode(error,stage='start'){
- const value=String(error?.code||error?.message||error||'').toLowerCase();
+ const value=[error?.code,error?.message,error?.error_description,error].filter(Boolean).join(' ').toLowerCase();
  if(/access_denied|user_cancel|cancelled|canceled/.test(value))return 'OAUTH_CANCELLED';
  if(/localstorage|sessionstorage|storage|quota|securityerror/.test(value))return 'OAUTH_STORAGE_UNAVAILABLE';
  if(/online_not_configured|supabaseurl|supabaseanonkey/.test(value))return 'OAUTH_CONFIG_UNAVAILABLE';
@@ -254,6 +254,9 @@ function reportOAuthFailure(error,stage='start'){
  console.warn('[PSYWORLD OAuth]',code);
  signupMessage(oauthDiagnosticMessage(code)+' Código: '+code,'#fca5a5');
 }
+function hasOAuthCallbackData(){
+ try{const q=new URLSearchParams(W.location.search||''),h=new URLSearchParams(String(W.location.hash||'').replace(/^#/,'').replace(/^\?/,'').replace(/\+/g,' '));return ['code','error','error_code','error_description'].some(k=>q.has(k)||h.has(k))}catch(_){return false}
+}
 function oauthCallbackMessage(error,intent){
  const value=String(error||'').toLowerCase();
  if(/access_denied|cancel|user_cancel/.test(value))return 'Login cancelado. Nenhuma conta foi vinculada.';
@@ -268,9 +271,9 @@ async function completeOAuthCallback(){
  if(error){const code=oauthDiagnosticCode(error,'callback');clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]',code);signupMessage(oauthCallbackMessage(error,intent)+' Código: '+code,'#fbbf24');return false}
  const code=query.get('code');if(!code)return false;
  if(!intent||!['google','github'].includes(intent.provider)||!['login','link'].includes(intent.mode)){
-  clearOAuthCallbackUrl();await clearOAuthFlow();signupMessage('A autorização expirou ou não foi iniciada nesta sessão. Tente novamente.','#fbbf24');return false;
+  clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]','OAUTH_FLOW_MISSING');signupMessage('A autorização não corresponde a uma tentativa iniciada neste navegador. Inicie o login novamente. Código: OAUTH_FLOW_MISSING','#fbbf24');return false;
  }
- if(Date.now()-Number(intent.startedAt||0)>10*60*1000){clearOAuthCallbackUrl();await clearOAuthFlow();signupMessage(oauthCallbackMessage('expired',intent),'#fbbf24');return false}
+ if(Date.now()-Number(intent.startedAt||0)>10*60*1000){clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]','OAUTH_PKCE_FAILED');signupMessage(oauthCallbackMessage('expired',intent)+' Código: OAUTH_PKCE_FAILED','#fbbf24');return false}
  try{
   const client=await getOAuthClient(),{data,error:exchangeError}=await client.auth.exchangeCodeForSession(code);
   if(exchangeError)throw exchangeError;
@@ -325,9 +328,9 @@ function renderCloudStatus(){
  try{W.dispatchEvent(new CustomEvent('psyworld-cloud-save-status',{detail:status}))}catch(_){}
  return status;
 }
-function renderStatus(){
+function renderStatus(preserveMessage=false){
  const signedIn=!!session?.access_token,s=$('psy-online-status');
- if(s)s.textContent=!signedIn?'Não conectado.':'☁ Conectado: '+String(session.user?.email||session.user?.user_metadata?.user_name||session.user?.user_metadata?.name||session.email||'conta online')+(syncEnabled?' • sincronização ativa':' • escolha do save pendente');
+ if(s&&!preserveMessage)s.textContent=!signedIn?'Não conectado.':'☁ Conectado: '+String(session.user?.email||session.user?.user_metadata?.user_name||session.user?.user_metadata?.name||session.email||'conta online')+(syncEnabled?' • sincronização ativa':' • escolha do save pendente');
  const google=$('psy-online-google'),github=$('psy-online-github');
  if(google)google.textContent=signedIn?'VINCULAR GOOGLE':'ENTRAR COM GOOGLE';
  if(github)github.textContent=signedIn?'VINCULAR GITHUB':'ENTRAR COM GITHUB';
@@ -375,7 +378,7 @@ async function socialLogin(provider){
   catch(_){try{localStorage.removeItem(storageProbe)}catch(__){};throw Object.assign(new Error('oauth_storage_unavailable'),{code:'oauth_storage_unavailable'})}
   const intent={provider,mode:linking?'link':'login',userId:linking?String(session?.user?.id||''):null,startedAt:Date.now()};
   localStorage.setItem(OAUTH_INTENT_KEY,JSON.stringify(intent));
-  const options={redirectTo:oauthRedirectTo(),scopes:provider==='github'?'read:user user:email':undefined};
+  const options={redirectTo:oauthRedirectTo(),scopes:provider==='github'?'read:user user:email':provider==='google'?'openid email profile':undefined};
   const {error}=linking?await client.auth.linkIdentity({provider,options}):await client.auth.signInWithOAuth({provider,options});
   if(error)throw error;
   signupMessage(linking?'Redirecionando para vincular '+(provider==='github'?'GitHub':'Google')+'…':'Redirecionando para '+(provider==='github'?'GitHub':'Google')+'…','#bae6fd');
@@ -731,7 +734,7 @@ function styleMenu(){
   renderCloudStatus();
 }
 function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem();installEconomyHooks()}
-async function bootstrap(){await completeOAuthCallback();captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();startAutosave();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');hydrateServerIdentity(state);await renderLinkedIdentities();captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();startAutosave();setInterval(()=>{patchSave();installGlobalUI();renderCloudStatus();if(syncEnabled&&session?.access_token)queueSync()},15000)}
+async function bootstrap(){ensureUI();const callbackData=hasOAuthCallbackData(),callbackComplete=await completeOAuthCallback();captureAuthHash();readSession();renderStatus(callbackData&&!callbackComplete);try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();startAutosave();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus(callbackData&&!callbackComplete);try{const state=await api('/api/player');hydrateServerIdentity(state);await renderLinkedIdentities();captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();startAutosave();setInterval(()=>{patchSave();installGlobalUI();renderCloudStatus();if(syncEnabled&&session?.access_token)queueSync()},15000)}
 W.psyCloudV23={login,signup,resendSignupConfirmation,loginWithGoogle:()=>socialLogin('google'),loginWithGithub:()=>socialLogin('github'),completeOAuthCallback,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;cloudPhase='idle';renderStatus();await renderLinkedIdentities();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:saveNow,saveNow,loadNow,compareNow,economy,bestLocal,captureActiveLocal,validSave,migrateSave:normalizeSave,status:cloudStatus,renderStatus:renderCloudStatus};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});
 })(window,document);
