@@ -19,3 +19,10 @@ Tests:
 - Chromium 390x844 and 1440x900 with mocked Auth verifies signup and resend payloads, status text, and no JS errors. This is not proof of actual email delivery.
 
 Pending before publication as a working email feature: project owner must inspect Auth > SMTP and Auth > URL Configuration; if default SMTP is active, configure a verified custom SMTP sender and allow `https://psyworld-murex.vercel.app/`. Then provide one controlled disposable test mailbox (not a player's personal address) for one real signup/confirmation/login and resend test. No email was sent by these tests; no user account was created or changed by the agent.
+
+Autonomy check (2026-11-10):
+- Refetched `origin/main` at `5758d2e77d4eaa4e3163deda1885c9fe2bb12ab3`; it is an ancestor of the feature branch, so no newer main changes needed merging.
+- Supabase MCP exposes project health/logs/database, but no Auth config get/update operation. Project details do not report SMTP, confirmation toggle, templates, or redirect allowlist. No authorized Supabase dashboard browser session/tool is available in this task.
+- Vercel production env names contain Supabase integration variables but no SMTP/provider credentials. Vercel account lists no registered custom domains; project only has `psyworld-murex.vercel.app`, whose DNS is controlled by Vercel, not by the PSYWORLD team.
+- Gmail integration is attached to a personal mailbox, not a disposable test inbox; it was not used to create a test account or receive test mail. No Resend/Brevo/SES/SMTP provider integration is connected. No DNS edits, provider account creation, purchases, real signup requests, or production config changes were made.
+- Current hard blocker for end-to-end proof/publication: owner-level Auth SMTP/settings access and a verified sender domain/provider are absent, and there is no authorized disposable test inbox. Keep the code on the feature branch until one real message can be received, confirmed, and used to log in.
