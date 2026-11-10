@@ -7,7 +7,7 @@ const SESSION_KEY='psyworld_online_session_v23';
 const INTENT_KEY='psyworld_oauth_intent_v1';
 const STORAGE_KEY='psyworld_supabase_oauth_flow_v1';
 
-function boot({search='',session=null,exchangeSession=null}={}){
+function boot({search='',session=null,exchangeSession=null,signinError=null,exchangeError=null}={}){
  const values=new Map(),calls={clients:[],signin:[],link:[],setSession:[],exchange:[],signout:[]},nodes=new Map();
  const localStorage={getItem:k=>values.has(k)?values.get(k):null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k),key:i=>[...values.keys()][i]||null,get length(){return values.size}};
  if(session)localStorage.setItem(SESSION_KEY,JSON.stringify(session));
@@ -19,9 +19,9 @@ function boot({search='',session=null,exchangeSession=null}={}){
  const document={readyState:'loading',title:'PSYWORLD',body:node('body'),head:node('head'),getElementById:id=>nodes.get(id)||null,createElement:()=>node('created'),addEventListener(){},querySelector(){return null},querySelectorAll(){return[]}};
  const auth={
   setSession:async value=>{calls.setSession.push(value);return{data:{session:value},error:null}},
-  signInWithOAuth:async value=>{calls.signin.push(value);return{data:{url:'https://supabase.test/authorize'},error:null}},
+  signInWithOAuth:async value=>{calls.signin.push(value);return{data:{url:'https://supabase.test/authorize'},error:signinError}},
   linkIdentity:async value=>{calls.link.push(value);return{data:{url:'https://supabase.test/authorize'},error:null}},
-  exchangeCodeForSession:async code=>{calls.exchange.push(code);return{data:{session:exchangeSession||{access_token:'new-access',refresh_token:'new-refresh',expires_in:3600,user:{id:'user-1',email:'player@example.test'}}},error:null}},
+  exchangeCodeForSession:async code=>{calls.exchange.push(code);return{data:{session:exchangeSession||{access_token:'new-access',refresh_token:'new-refresh',expires_in:3600,user:{id:'user-1',email:'player@example.test'}}},error:exchangeError}},
   getUserIdentities:async()=>({data:{identities:[{provider:'github'}]},error:null}),
   signOut:async options=>{calls.signout.push(options);return{error:null}}
  };
@@ -71,6 +71,19 @@ function boot({search='',session=null,exchangeSession=null}={}){
  assert.equal(JSON.parse(callback.values.get(SESSION_KEY)).user.id,'user-1','callback session is persisted for cloud save');
  assert.equal(callback.location.search,'','authorization code is removed from the address bar');
  assert.equal(callback.values.has(INTENT_KEY),false,'OAuth intent is cleared after successful exchange');
+ assert.equal(callback.calls.signout.length,0,'successful OAuth cleanup never calls Supabase logout or revokes the new refresh token');
+ assert.equal(callback.values.has(STORAGE_KEY),false,'temporary SDK session storage is cleared locally after adopting the game session');
+
+ const denied=boot({signinError:{code:'unsupported_provider',message:'provider is disabled; client_secret=must-not-render'}});
+ await denied.window.psyCloudV23.loginWithGoogle();
+ assert.match(denied.nodes.get('psy-online-status').textContent,/OAUTH_PROVIDER_DISABLED/,'start failure exposes a stable diagnostic code');
+ assert.doesNotMatch(denied.nodes.get('psy-online-status').textContent,/client_secret|must-not-render/i,'diagnostic never exposes raw provider errors or secrets');
+
+ const badCallback=boot({search:'?code=expired-code',exchangeError:{code:'invalid_grant',message:'code_verifier mismatch'}});
+ badCallback.values.set(INTENT_KEY,JSON.stringify({provider:'google',mode:'login',startedAt:Date.now()}));
+ assert.equal(await badCallback.window.psyCloudV23.completeOAuthCallback(),false);
+ assert.match(badCallback.nodes.get('psy-online-status').textContent,/OAUTH_PKCE_FAILED/,'callback exchange failure has a safe diagnostic');
+ assert.doesNotMatch(badCallback.nodes.get('psy-online-status').textContent,/expired-code|verifier mismatch/i,'callback diagnostic omits authorization codes and raw verifier details');
 
  const mismatch=boot({session:existing,search:'?code=linked-code',exchangeSession:{access_token:'other-access',refresh_token:'other-refresh',user:{id:'another-account'}}});
  mismatch.values.set(INTENT_KEY,JSON.stringify({provider:'github',mode:'link',userId:'account-7',startedAt:Date.now()}));

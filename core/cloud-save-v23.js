@@ -209,10 +209,50 @@ function oauthIntent(){return parse(localStorage.getItem(OAUTH_INTENT_KEY))||nul
 function clearOAuthCallbackUrl(){
  try{const u=new URL(W.location.href);for(const key of ['code','error','error_code','error_description','state','scope'])u.searchParams.delete(key);u.hash='';history.replaceState(null,D.title,u.pathname+u.search)}catch(_){}
 }
-async function clearOAuthFlow(){
- try{if(oauthClient?.auth?.signOut)await oauthClient.auth.signOut({scope:'local'})}catch(_){}
- try{localStorage.removeItem(OAUTH_INTENT_KEY);localStorage.removeItem(OAUTH_STORAGE_KEY);localStorage.removeItem(OAUTH_STORAGE_KEY+'-code-verifier')}catch(_){}
+function clearOAuthFlow(){
+ // Do not call auth.signOut here: the callback has just produced the session
+ // that the game copied to SESSION_KEY. Supabase signOut reaches /logout and
+ // revokes the refresh token that the game needs after the access token expires.
+ for(const name of ['localStorage','sessionStorage'])try{
+  const storage=W[name];if(!storage)continue;
+  storage.removeItem(OAUTH_INTENT_KEY);storage.removeItem(OAUTH_STORAGE_KEY);storage.removeItem(OAUTH_STORAGE_KEY+'-code-verifier');
+ }catch(_){}
  oauthClient=null;oauthSdkPromise=null;
+}
+function oauthDiagnosticCode(error,stage='start'){
+ const value=String(error?.code||error?.message||error||'').toLowerCase();
+ if(/access_denied|user_cancel|cancelled|canceled/.test(value))return 'OAUTH_CANCELLED';
+ if(/localstorage|sessionstorage|storage|quota|securityerror/.test(value))return 'OAUTH_STORAGE_UNAVAILABLE';
+ if(/online_not_configured|supabaseurl|supabaseanonkey/.test(value))return 'OAUTH_CONFIG_UNAVAILABLE';
+ if(/auth_sdk_unavailable|createclient/.test(value))return 'OAUTH_SDK_UNAVAILABLE';
+ if(/redirect.*(not allowed|not permitted|allow.?list)|redirect_url_not_allowed|redirect_to_not_allowed/.test(value))return 'OAUTH_REDIRECT_NOT_ALLOWED';
+ if(/manual.?link|identity.?linking/.test(value))return 'OAUTH_LINKING_DISABLED';
+ if(/identity_already_exists|already linked/.test(value))return 'OAUTH_IDENTITY_ALREADY_LINKED';
+ if(/unsupported[ _-]?provider|provider_not_found|provider.*disabled/.test(value))return 'OAUTH_PROVIDER_DISABLED';
+ if(/session_not_found|refresh_token_not_found|invalid_refresh_token/.test(value))return 'OAUTH_SESSION_EXPIRED';
+ if(/expired|code_verifier|flow_state|state_mismatch|invalid_grant|pkce/.test(value))return 'OAUTH_PKCE_FAILED';
+ if(/network|fetch|failed to fetch|load failed|timeout/.test(value))return 'OAUTH_NETWORK_ERROR';
+ return stage==='callback'?'OAUTH_CALLBACK_FAILED':'OAUTH_START_FAILED';
+}
+function oauthDiagnosticMessage(code){return ({
+ OAUTH_CANCELLED:'Login cancelado. Nenhuma conta foi vinculada.',
+ OAUTH_STORAGE_UNAVAILABLE:'Este navegador não conseguiu guardar a sessão temporária do login. Ative o armazenamento do site e tente novamente.',
+ OAUTH_CONFIG_UNAVAILABLE:'A configuração online do jogo não está disponível neste preview.',
+ OAUTH_SDK_UNAVAILABLE:'O componente de autenticação não carregou. Atualize a página e tente novamente.',
+ OAUTH_REDIRECT_NOT_ALLOWED:'O Supabase recusou o endereço de retorno deste preview.',
+ OAUTH_LINKING_DISABLED:'A vinculação ainda não está habilitada na configuração do Supabase.',
+ OAUTH_IDENTITY_ALREADY_LINKED:'Este login social já está vinculado a outra conta. Nenhum progresso foi combinado.',
+ OAUTH_PROVIDER_DISABLED:'Este provedor ainda não está habilitado no Supabase.',
+ OAUTH_SESSION_EXPIRED:'A sessão expirou. Inicie o login novamente.',
+ OAUTH_PKCE_FAILED:'A autorização expirou ou não corresponde a esta sessão do navegador. Inicie o login novamente.',
+ OAUTH_NETWORK_ERROR:'A conexão falhou durante a autenticação. Confira a internet e tente novamente.',
+ OAUTH_CALLBACK_FAILED:'O provedor retornou, mas o jogo não conseguiu validar a sessão.',
+ OAUTH_START_FAILED:'O jogo não conseguiu iniciar a autenticação. Tente novamente.'
+}[code]||'O jogo não conseguiu concluir a autenticação. Tente novamente.')}
+function reportOAuthFailure(error,stage='start'){
+ const code=oauthDiagnosticCode(error,stage);
+ console.warn('[PSYWORLD OAuth]',code);
+ signupMessage(oauthDiagnosticMessage(code)+' Código: '+code,'#fca5a5');
 }
 function oauthCallbackMessage(error,intent){
  const value=String(error||'').toLowerCase();
@@ -225,7 +265,7 @@ function oauthCallbackMessage(error,intent){
 async function completeOAuthCallback(){
  const query=new URLSearchParams(String(W.location.search||'').replace(/^\?/,'').replace(/\+/g,' ')),hash=new URLSearchParams(String(W.location.hash||'').replace(/^#/,'').replace(/^\?/,'').replace(/\+/g,' '));
  const intent=oauthIntent(),error=query.get('error')||query.get('error_code')||query.get('error_description')||hash.get('error')||hash.get('error_code')||hash.get('error_description');
- if(error){clearOAuthCallbackUrl();await clearOAuthFlow();signupMessage(oauthCallbackMessage(error,intent),'#fbbf24');return false}
+ if(error){const code=oauthDiagnosticCode(error,'callback');clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]',code);signupMessage(oauthCallbackMessage(error,intent)+' Código: '+code,'#fbbf24');return false}
  const code=query.get('code');if(!code)return false;
  if(!intent||!['google','github'].includes(intent.provider)||!['login','link'].includes(intent.mode)){
   clearOAuthCallbackUrl();await clearOAuthFlow();signupMessage('A autorização expirou ou não foi iniciada nesta sessão. Tente novamente.','#fbbf24');return false;
@@ -240,8 +280,8 @@ async function completeOAuthCallback(){
   acceptAuth(next);clearOAuthCallbackUrl();await clearOAuthFlow();
   signupMessage(intent.mode==='link'?'✅ Provedor vinculado à conta autenticada.':'✅ Login social concluído.','#86efac');return true;
  }catch(e){
-  clearOAuthCallbackUrl();await clearOAuthFlow();
-  signupMessage(e?.message==='oauth_link_owner_changed'?'A conta retornada pelo provedor não corresponde à sessão autenticada. A sessão anterior foi preservada.':oauthCallbackMessage(e?.code||e?.message,intent),'#fca5a5');return false;
+  const code=oauthDiagnosticCode(e,'callback');clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]',code);
+  signupMessage(e?.message==='oauth_link_owner_changed'?'A conta retornada pelo provedor não corresponde à sessão autenticada. A sessão anterior foi preservada. Código: OAUTH_LINK_OWNER_MISMATCH':oauthCallbackMessage(e?.code||e?.message,intent)+' Código: '+code,'#fca5a5');return false;
  }
 }
 async function refresh(){if(!session?.refresh_token)return false;try{const d=await authFetch('token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:session.refresh_token})});if(d.access_token){saveSession({...session,...d,expires_at:Date.now()+Number(d.expires_in||3600)*1000});return true}}catch(e){console.warn('cloud refresh',e)}return false}
@@ -330,13 +370,16 @@ async function socialLogin(provider){
   if(linking&&!await ensureToken()){signupMessage('Sua sessão expirou. Entre novamente antes de vincular outro provedor.','#fbbf24');return}
   const client=await getOAuthClient();
   if(linking){const {error}=await client.auth.setSession({access_token:session.access_token,refresh_token:session.refresh_token||''});if(error)throw error}
+  const storageProbe='__psyworld_oauth_storage_probe__';
+  try{localStorage.setItem(storageProbe,'1');if(localStorage.getItem(storageProbe)!=='1')throw new Error('oauth_storage_unavailable');localStorage.removeItem(storageProbe)}
+  catch(_){try{localStorage.removeItem(storageProbe)}catch(__){};throw Object.assign(new Error('oauth_storage_unavailable'),{code:'oauth_storage_unavailable'})}
   const intent={provider,mode:linking?'link':'login',userId:linking?String(session?.user?.id||''):null,startedAt:Date.now()};
   localStorage.setItem(OAUTH_INTENT_KEY,JSON.stringify(intent));
   const options={redirectTo:oauthRedirectTo(),scopes:provider==='github'?'read:user user:email':undefined};
   const {error}=linking?await client.auth.linkIdentity({provider,options}):await client.auth.signInWithOAuth({provider,options});
   if(error)throw error;
   signupMessage(linking?'Redirecionando para vincular '+(provider==='github'?'GitHub':'Google')+'…':'Redirecionando para '+(provider==='github'?'GitHub':'Google')+'…','#bae6fd');
- }catch(e){try{localStorage.removeItem(OAUTH_INTENT_KEY)}catch(_){}signupMessage(oauthFailureMessage(e),'#fca5a5')}
+ }catch(e){try{localStorage.removeItem(OAUTH_INTENT_KEY)}catch(_){}reportOAuthFailure(e,'start')}
  finally{oauthBusy=false;if(google)google.disabled=false;if(github)github.disabled=false}
 }
 function acceptAuth(d){saveSession({...d,user:d.user||session?.user,expires_at:Date.now()+Number(d.expires_in||3600)*1000});renderStatus()}
