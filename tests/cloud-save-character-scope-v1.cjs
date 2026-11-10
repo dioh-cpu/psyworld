@@ -8,7 +8,8 @@ const authority=fs.readFileSync('core/online-authority-v26.js','utf8');
 const characterSave={player:{name:'Ash',meta:{characterNickname:'Ash'},team:[{id:25}],inventory:{Potion:3}},savedAt:1700000000000};
 const otherSave={player:{name:'Misty',meta:{characterNickname:'Misty'},team:[{id:54}],inventory:{PsyCoin:900}},savedAt:1800000000000};
 
-function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=characterSave,mirror=otherSave,saveResponse,saveError=false,account='account-1',livePlayer=null}={}){
+const divergentCharacterSave={...characterSave,player:{...characterSave.player,inventory:{Potion:1}}};
+function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=divergentCharacterSave,mirror=otherSave,saveResponse,saveError=false,account='account-1',livePlayer=null}={}){
  const data=new Map(Object.entries(storage));
  const nodes=new Map(),calls=[],timers=[],modals=[],warnings=[];
  const localStorage={getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)};
@@ -47,12 +48,20 @@ function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=c
  await first.click('CANCELAR — NÃO SINCRONIZAR AGORA');
  const afterCancel=first.storage();
  assert(afterCancel.psyworld_cloud_sync_profiles_v1.includes('account-1::ash'),'decision is persisted per account and character');
+ assert.equal(first.window.psyCloudV23.status().phase,'CONFLITO DE SAVES','deferred conflict remains visible in status without reopening the modal');
  assert.equal(first.calls.some(c=>c.url==='/api/player/save'),false,'cancelling leaves local inventory, currency, and progress untouched');
 
  const reloadSame=boot({storage:afterCancel});await reloadSame.run();
  assert.equal(reloadSame.modals.length,0,'F5 does not repeat the same deferred conflict');
- const reloadAutosave=boot({storage:afterCancel,remoteSave:{...characterSave,savedAt:characterSave.savedAt+60000},remoteRevision:'2026-11-10T12:00:00.000Z'});await reloadAutosave.run();
+ const reloadAutosave=boot({storage:afterCancel,remoteSave:{...divergentCharacterSave,savedAt:divergentCharacterSave.savedAt+60000},remoteRevision:'2026-11-09T10:00:00.000Z'});await reloadAutosave.run();
  assert.equal(reloadAutosave.modals.length,0,'save timestamps changing during ordinary autosave do not create a new conflict');
+ const liveAfterDefer={...characterSave.player,meta:{...characterSave.player.meta,characterNickname:'Ash'},inventory:{Potion:9}};
+ const reloadGameplaySave=boot({storage:afterCancel,remoteSave:divergentCharacterSave,remoteRevision:'2026-11-09T10:00:00.000Z',livePlayer:liveAfterDefer});await reloadGameplaySave.run();
+ assert.equal(reloadGameplaySave.modals.length,0,'the same deferred cloud revision does not prompt again after active runtime changes');
+ const legacyDeferredProfiles=JSON.parse(afterCancel.psyworld_cloud_sync_profiles_v1),legacyDeferredMeta=legacyDeferredProfiles['account-1::ash'];delete legacyDeferredMeta.deferredCloudRevision;delete legacyDeferredMeta.deferredCloudSignature;
+ const legacyDeferredStorage={...afterCancel,psyworld_cloud_sync_profiles_v1:JSON.stringify(legacyDeferredProfiles)};
+ const migrateDeferred=boot({storage:legacyDeferredStorage,remoteSave:divergentCharacterSave,remoteRevision:'2026-11-09T10:00:00.000Z'});await migrateDeferred.run();
+ assert.equal(migrateDeferred.modals.length,0,'a previously saved AGORA NÃO choice migrates without repeating its prompt');
 
  const legacyStorage={...afterCancel,psyworld_cloud_sync_profiles_v1:'{}',psyworld_cloud_sync_v23:JSON.stringify({userKey:'account-1',characterNickname:'Ash',resolved:true,saveStamp:characterSave.savedAt,cloudStamp:Date.parse('2026-11-10T12:00:00.000Z'),cloudRevision:'2026-11-10T12:00:00.000Z'})};
  const legacy=boot({storage:legacyStorage});await legacy.run();
@@ -88,6 +97,10 @@ function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=c
  assert(Object.keys(chooseCloud.storage()).some(k=>k.startsWith('psyWorldSave_backup_before_cloud_')),'the former local save is retained as a backup');
  const reloadChosenCloud=boot({storage:chooseCloud.storage(),remoteRevision:'2026-11-09T10:00:00.000Z'});await reloadChosenCloud.run();
  assert.equal(reloadChosenCloud.modals.length,0,'the selected sync choice survives F5');
+ const loadedPlayer={...divergentCharacterSave.player,meta:{...divergentCharacterSave.player.meta,characterNickname:'Ash',runtimeNormalizedAfterLoad:true}};
+ const reloadAfterCloud=boot({storage:chooseCloud.storage(),remoteRevision:'2026-11-09T10:00:00.000Z',remoteSave:divergentCharacterSave,livePlayer:loadedPlayer});await reloadAfterCloud.run();
+ assert.equal(reloadAfterCloud.modals.length,0,'one active-runtime normalization after loading cloud does not reopen the choice');
+ assert.equal(JSON.parse(reloadAfterCloud.storage().psyworld_cloud_sync_profiles_v1)['account-1::ash'].postLoadAck,false,'the one-time cloud-load acknowledgement is consumed');
 
  const untaggedCloud={player:{name:'Trainer account label',team:[{id:25}],inventory:{Potion:1}},savedAt:1600000000000};
  const cloudOnly=boot({storage:{psyWorldSave:'null',psyWorldSave_v9:'null',psyWorldSave_backup:JSON.stringify(otherSave)},remoteSave:untaggedCloud});await cloudOnly.run();
@@ -97,8 +110,8 @@ function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=c
  assert.equal(restored.player.meta.characterNickname,'Ash','cloud restore tags the selected profile for subsequent local lookup');
  const readyFragment=authority.match(/const syncReady=\(\)=>\{[\s\S]*?\n\};/)?.[0];
  assert(readyFragment,'server sync readiness uses the cloud profile metadata');
- const syncReady=new Function('session','identity','parse','localStorage','SYNC_PROFILES_KEY','SYNC_KEY','CHARACTER_KEY',`return (${readyFragment.slice('const syncReady='.length,-1)});`);
- const readReady=syncReady(()=>({user:{id:'account-1'}}),s=>s.user.id,JSON.parse,{getItem:k=>cloudOnly.storage()[k]||null},'psyworld_cloud_sync_profiles_v1','psyworld_cloud_sync_v23','psyworld_active_character_v38');
+ const syncReady=new Function('session','identity','parse','localStorage','SYNC_PROFILES_KEY','SYNC_KEY','CHARACTER_KEY','CHARACTER_ID_KEY',`return (${readyFragment.slice('const syncReady='.length,-1)});`);
+ const readReady=syncReady(()=>({user:{id:'account-1'}}),s=>s.user.id,JSON.parse,{getItem:k=>cloudOnly.storage()[k]||null},'psyworld_cloud_sync_profiles_v1','psyworld_cloud_sync_v23','psyworld_active_character_v38','psyworld_active_character_id_v1');
  assert.equal(readReady(),true,'server sync recognizes the per-character profile binding');
  const reloadRestored=boot({storage:cloudOnly.storage(),remoteSave:untaggedCloud});await reloadRestored.run();
  assert.equal(reloadRestored.modals.length,0,'cloud-only restore does not reopen the modal on F5');
@@ -119,6 +132,18 @@ function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=c
  assert.equal(activeBody.save.player.inventory.Potion,7,'active inventory is included in the uploaded snapshot');
  assert.equal(activeBody.save.player.meta.characterNickname,'Ash','active snapshot receives its selected character identity');
  assert.equal(activeOnly.modals.length,0,'saving an active snapshot never opens the cloud-load modal');
+
+ const v2={version:2,savedAt:1600000000000,unknownCampaignField:{kept:true},player:{name:'Ash',meta:{characterNickname:'Ash'},team:[{id:25,name:'Pikachu'}],box:[],inventory:{Potion:4}},map:{x:4,y:5}};
+ const compat=activeOnly.window.psyCloudV23.migrateSave(v2,{nickname:'Ash',characterId:'char-legacy'});
+ assert.equal(compat.version,9,'V2 saves migrate to the current envelope');
+ assert.equal(compat.unknownCampaignField.kept,true,'migration preserves unknown root data');
+ assert.equal(compat.player.meta.characterId,'char-legacy','migration binds the selected stable character id');
+ assert.equal(activeOnly.window.psyCloudV23.validSave({v:3,player:{name:'Ash',team:[],box:[{species_id:25}],inventory:{}}}),true,'legacy alternate roster structures are recognized');
+ assert.equal(activeOnly.window.psyCloudV23.validSave({version:9,savedAt:1700000000000,player:{name:'Ash',team:[],box:[],inventory:{}}}),true,'a legitimately initialized empty team is not rejected');
+ const emptyActive=boot({storage:{psyWorldSave:'null',psyWorldSave_v9:'null',psyWorldSave_backup:'null'},livePlayer:{name:'Ash',team:[],box:[],inventory:{Potion:2},meta:{characterNickname:'Ash',onlineCharacter:true}}});
+ await emptyActive.run();emptyActive.modals.length=0;
+ assert.equal(await emptyActive.window.psyCloudV23.saveNow(),true,'an initialized empty online character can still be saved');
+ assert.deepEqual(JSON.parse(emptyActive.calls.find(c=>c.url==='/api/player/save').options.body).save.player.team,[],'an intentional empty team is preserved instead of replaced with an older roster');
 
  const missingLocal=boot({storage:{psyWorldSave:'null',psyWorldSave_v9:'null',psyWorldSave_backup:'null'}});
  await missingLocal.run();

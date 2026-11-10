@@ -3,7 +3,7 @@
 if(W.__PSYWORLD_ONLINE_AUTHORITY_V26__)return;
 W.__PSYWORLD_ONLINE_AUTHORITY_V26__=true;
 const BUILD='ONLINE_AUTHORITY_V26_20260927_A';
-const SESSION_KEY='psyworld_online_session_v23',SYNC_KEY='psyworld_cloud_sync_v23',SYNC_PROFILES_KEY='psyworld_cloud_sync_profiles_v1',CHARACTER_KEY='psyworld_active_character_v38';
+const SESSION_KEY='psyworld_online_session_v23',SYNC_KEY='psyworld_cloud_sync_v23',SYNC_PROFILES_KEY='psyworld_cloud_sync_profiles_v1',CHARACTER_KEY='psyworld_active_character_v38',CHARACTER_ID_KEY='psyworld_active_character_id_v1';
 const LOCAL_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
 let busy=0,bootUser='',lastProgress=0,lastHeartbeat=0,lastCampaignHeartbeat=0,lastServerRefresh=0,lastServerSnapshot=null,lastOnlineMeta=null,lastServerOk=0,lastServerError=false,lastCampaignStatus=null,serverSyncBusy=false,tickBusy=false,bootstrapPromise=null;
 const originals=new Map();
@@ -16,13 +16,14 @@ const uid=()=>identity(session());
 const online=()=>!!session()?.access_token;
 const syncReady=()=>{
  const s=session(),k=identity(s);if(!k)return false;
- const nick=String(localStorage.getItem(CHARACTER_KEY)||'').trim(),all=parse(localStorage.getItem(SYNC_PROFILES_KEY))||{},key=String(k).toLowerCase()+'::'+nick.toLowerCase();
+ const nick=String(localStorage.getItem(CHARACTER_KEY)||'').trim(),id=String(localStorage.getItem(CHARACTER_ID_KEY)||'').trim(),all=parse(localStorage.getItem(SYNC_PROFILES_KEY))||{},key=String(k).toLowerCase()+'::'+(id?'id:'+id:nick.toLowerCase());
  const legacy=parse(localStorage.getItem(SYNC_KEY))||{};
  const m=nick?(all[key]||(String(legacy.characterNickname||'').toLowerCase()===nick.toLowerCase()?legacy:{})):legacy;
- return !!(m.resolved&&String(m.userKey||'')===k&&(!nick||String(m.characterNickname||'').toLowerCase()===nick.toLowerCase()));
+ return !!(m.resolved&&String(m.userKey||'')===k&&(!id||!m.characterId||String(m.characterId)===id)&&(!nick||String(m.characterNickname||'').toLowerCase()===nick.toLowerCase()));
 };
 const fmt=n=>Number(n||0).toLocaleString('pt-BR');
 function bestLocal(){
+ const cloud=W.psyCloudV23;if(cloud){const captured=cloud.captureActiveLocal?.();if(captured)return captured;const saved=cloud.bestLocal?.();if(saved)return saved}
  const valid=x=>{const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p.team[0]?.id)};
  const nick=String(localStorage.getItem(CHARACTER_KEY)||'').trim();
  const rows=LOCAL_KEYS.slice(0,2).map(k=>parse(localStorage.getItem(k))).filter(valid);
@@ -86,7 +87,7 @@ function ensureServerPanel(){
  const menu=D.getElementById('menu');if(!menu)return null;let box=D.getElementById('psy-server-panel-v26');
  if(!box){
    box=D.createElement('div');box.id='psy-server-panel-v26';box.style.cssText='width:min(700px,90%);margin:10px auto;padding:11px 12px;background:#061522;border:1px solid #22d3ee;border-radius:10px;color:#e2e8f0;box-sizing:border-box;text-align:left;box-shadow:0 0 18px #0284c733';
-   box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><b style="font-size:11px;color:#bae6fd">🌐 PSYWORLD ONLINE</b><b id="psy-server-status-v26" style="font-size:10px;color:#fbbf24">CONECTANDO...</b></div><div id="psy-server-summary-v26" style="font-size:10px;color:#a5b4fc;text-align:center;margin:8px 0">Aguardando servidor...</div><div id="psy-server-security-v26" style="font-size:9px;color:#86efac;text-align:center;margin-bottom:7px">🛡 V26 • Cloud Save • Market bloqueado</div><div id="psy-campaign-world-status-v1" aria-live="polite" style="font-size:10px;line-height:1.45;color:#fde68a;text-align:center;margin:8px 0;padding:7px;border:1px solid #854d0e;border-radius:7px;background:#451a0344">Eventos de campanha e sorteio horário carregando...</div><button id="psy-server-sync-v26" type="button" style="width:100%;padding:10px;border:0;border-radius:7px;background:#0369a1;color:#fff;font-weight:900;cursor:pointer">↻ SINCRONIZAR COM SERVIDOR</button><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:7px"><button id="psy-server-cloud-save-v26" type="button" style="padding:9px 6px;border:1px solid #34d399;border-radius:7px;background:#14532d;color:#fff;font-size:10px;font-weight:900;cursor:pointer">☁ SALVAR NA NUVEM</button><button id="psy-server-cloud-load-v26" type="button" style="padding:9px 6px;border:1px solid #38bdf8;border-radius:7px;background:#075985;color:#fff;font-size:10px;font-weight:900;cursor:pointer">☁ CARREGAR DA NUVEM</button><button id="psy-server-cloud-compare-v26" type="button" style="grid-column:1/-1;padding:8px 6px;border:1px solid #fbbf24;border-radius:7px;background:#78350f;color:#fff;font-size:10px;font-weight:900;cursor:pointer">⚖ COMPARAR / RESOLVER CONFLITO</button></div><div id="psy-server-time-v26" style="font-size:8px;color:#64748b;text-align:center;margin-top:5px"></div>';
+   box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><b style="font-size:11px;color:#bae6fd">🌐 PSYWORLD ONLINE</b><b id="psy-server-status-v26" style="font-size:10px;color:#fbbf24">CONECTANDO...</b></div><div id="psy-server-summary-v26" style="font-size:10px;color:#a5b4fc;text-align:center;margin:8px 0">Aguardando servidor...</div><div id="psy-server-security-v26" style="font-size:9px;color:#86efac;text-align:center;margin-bottom:7px">🛡 V26 • Cloud Save • Market bloqueado</div><div id="psy-server-cloud-status-v24" aria-live="polite" style="font-size:9px;line-height:1.4;color:#bae6fd;text-align:center;margin:6px 0;padding:6px;border:1px solid #244b66;border-radius:6px;background:#07131f">Verificando o estado do save...</div><div id="psy-campaign-world-status-v1" aria-live="polite" style="font-size:10px;line-height:1.45;color:#fde68a;text-align:center;margin:8px 0;padding:7px;border:1px solid #854d0e;border-radius:7px;background:#451a0344">Eventos de campanha e sorteio horário carregando...</div><button id="psy-server-sync-v26" type="button" style="width:100%;padding:10px;border:0;border-radius:7px;background:#0369a1;color:#fff;font-weight:900;cursor:pointer">↻ ATUALIZAR DADOS ONLINE</button><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:7px"><button id="psy-server-cloud-save-v26" type="button" style="padding:9px 6px;border:1px solid #34d399;border-radius:7px;background:#14532d;color:#fff;font-size:10px;font-weight:900;cursor:pointer">☁ SALVAR NA NUVEM</button><button id="psy-server-cloud-load-v26" type="button" style="padding:9px 6px;border:1px solid #38bdf8;border-radius:7px;background:#075985;color:#fff;font-size:10px;font-weight:900;cursor:pointer">☁ CARREGAR DA NUVEM</button><button id="psy-server-cloud-compare-v26" type="button" style="grid-column:1/-1;padding:8px 6px;border:1px solid #fbbf24;border-radius:7px;background:#78350f;color:#fff;font-size:10px;font-weight:900;cursor:pointer">⚖ COMPARAR / RESOLVER CONFLITO</button></div><div id="psy-server-time-v26" style="font-size:8px;color:#64748b;text-align:center;margin-top:5px"></div>';
    const cloud=D.getElementById('psy-cloud-menu-actions');if(cloud)cloud.insertAdjacentElement('afterend',box);else menu.appendChild(box);
    D.getElementById('psy-server-sync-v26').onclick=()=>syncServerNow(true);
    D.getElementById('psy-server-cloud-save-v26').onclick=()=>W.psyCloudV23?.saveNow?.();
@@ -97,6 +98,7 @@ function ensureServerPanel(){
 }
 function renderServerPanel(snapshot=lastServerSnapshot,meta=lastOnlineMeta){
  const box=ensureServerPanel();if(!box)return;const st=D.getElementById('psy-server-status-v26'),sum=D.getElementById('psy-server-summary-v26'),time=D.getElementById('psy-server-time-v26'),campaign=D.getElementById('psy-campaign-world-status-v1');
+ try{W.psyCloudV23?.renderStatus?.()}catch(_){}
  if(!online()){box.style.display='none';updateCampaignBanner();return}box.style.display='block';
  const pl=meta?.player||snapshot?.player||{},inv=meta?.inventory||snapshot?.inventory||{},pok=Array.isArray(meta?.pokemon)?meta.pokemon:null;
  const itemCount=Array.isArray(inv)?inv.filter(x=>Number(x?.quantity||0)>0).length:Object.values(inv||{}).filter(x=>Number(x)>0).length;

@@ -17,8 +17,9 @@ const SYNC_PROFILES_KEY='psyworld_cloud_sync_profiles_v1';
 const STASH_KEY='psyworld_local_profile_stash_v38';
 const PENDING_KEY='psyworld_new_character_pending_v38';
 const SELECTED_KEY='psyworld_active_character_v38';
+const CHARACTER_ID_KEY='psyworld_active_character_id_v1';
 let characterRequest=null,characterRequestOwner='',characterRetryOwner='',characterRetryAt=0;
-const SAVE_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_backup'];
+const SAVE_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_v2','psyWorldSave_backup'];
 const $=id=>D.getElementById(id);
 const toast=(m,t=3200)=>{try{W.notif?.(m,t)}catch(_){console.log(m)}};
 function parse(s){try{return s?JSON.parse(s):null}catch(_){return null}}
@@ -27,7 +28,7 @@ function tokenUserKey(token){try{const part=String(token||'').split('.')[1];if(!
 function sessionUserKey(s=session()){return String(s?.user?.id||s?.user?.email||s?.email||tokenUserKey(s?.access_token)||'')}
 function locked(){try{return localStorage.getItem(EXIT_KEY)==='1'}catch(_){return false}}
 function player(){try{return P}catch(_){return W.P||null}}
-function validSave(x){const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p.team.length&&p.team[0]?.id)}
+function validSave(x){if(typeof W.psyCloudV23?.validSave==='function')return W.psyCloudV23.validSave(x);const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&Array.isArray(p.box)&&(p.team.some(m=>m&&(m.id||m.name))||p.box.some(m=>m&&(m.id||m.name))||((p.meta?.characterNickname||p.name)&&(x?.version||x?.v||x?.savedAt||x?.map))))}
 function saveSignature(save){let snapshot=save||null;if(snapshot&&typeof snapshot==='object'&&!Array.isArray(snapshot)){snapshot={...snapshot};delete snapshot.savedAt}const value=JSON.stringify(snapshot);let hash=2166136261;for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619)}return (hash>>>0).toString(36)+':'+value.length}
 function authHeaders(){const s=session();return s?.access_token?{Authorization:'Bearer '+s.access_token}:{} }
 async function api(path,opt={}){const r=await fetch(path,{cache:'no-store',...opt,headers:{'Content-Type':'application/json',...authHeaders(),...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok)throw new Error(d.error||d.message||('HTTP '+r.status));return d}
@@ -110,21 +111,25 @@ async function openCharacter(nickname){
   const nick=String(nickname||'').trim();if(nick.length<2)return toast('Nick inválido.');
   try{
     const d=await api('/api/player/character?nickname='+encodeURIComponent(nick));
-    const c=d.character,save=c?.save;if(!validSave(save))throw new Error('Save do personagem inválido.');
+    const c=d.character,save=W.psyCloudV23?.migrateSave?.(c?.save,{nickname:c?.nickname||nick,characterId:c?.id})||c?.save;
+    if(c?.save&&save&&JSON.stringify(c.save)!==JSON.stringify(save)){try{const owner=sessionUserKey(session()),identity=c.id?'id:'+c.id:'nick:'+String(c.nickname||nick).toLowerCase(),backupKey='psyworld_character_backup_v1:'+encodeURIComponent(owner+'::'+identity+'::'+String(c.updated_at||'legacy'));if(!localStorage.getItem(backupKey))localStorage.setItem(backupKey,JSON.stringify({source:'cloud',schemaVersion:1,ownerId:owner,characterId:c.id||null,nickname:c.nickname||nick,cloudRevision:c.updated_at||null,savedAt:Date.now(),save:c.save}))}catch(e){console.warn('legacy cloud save backup',e)}}
+    if(!validSave(save))throw new Error('Save do personagem inválido ou incompatível. O original foi preservado.');
     saveStash();
     const raw=JSON.stringify(save);
     localStorage.setItem('psyWorldSave',raw);localStorage.setItem('psyWorldSave_v9',raw);
     localStorage.setItem(SELECTED_KEY,c.nickname||nick);
+    if(c.id)localStorage.setItem(CHARACTER_ID_KEY,String(c.id));
+    const active=player();if(active){active.meta=active.meta||{};active.meta.characterNickname=c.nickname||nick;if(c.id){active.meta.characterId=String(c.id);active.playerCharacterId=String(c.id)}}
     localStorage.removeItem(PENDING_KEY);localStorage.removeItem(EXIT_KEY);
     const ss=session();try{
       const old=parse(localStorage.getItem(SYNC_KEY))||{},owner=sessionUserKey(ss),selected=c.nickname||nick;
       const same=old.userKey===owner&&String(old.characterNickname||'').toLowerCase()===selected.toLowerCase();
       const scoped=same?old:{};
-      const next={...scoped,userKey:owner,resolved:true,deferredConflict:false,
-        characterNickname:selected,saveStamp:Number(save.savedAt||0),cloudStamp:Date.parse(c.updated_at||'')||Date.now(),
+      const next={...scoped,userKey:owner,resolved:true,deferredConflict:false,characterId:c.id||null,
+        characterNickname:selected,saveStamp:Number(save.savedAt||save.time||0),cloudStamp:Date.parse(c.updated_at||'')||Date.now(),
         cloudRevision:c.updated_at||null,revisionScope:'character',localSignature:saveSignature(save),cloudSignature:saveSignature(save),lastDownloadAt:Date.now()};
       localStorage.setItem(SYNC_KEY,JSON.stringify(next));
-      const profileKey=owner.toLowerCase()+'::'+selected.trim().toLowerCase();
+      const profileKey=owner.toLowerCase()+'::'+(c.id?'id:'+String(c.id):selected.trim().toLowerCase());
       const profiles=parse(localStorage.getItem(SYNC_PROFILES_KEY))||{};
       profiles[profileKey]=next;
       localStorage.setItem(SYNC_PROFILES_KEY,JSON.stringify(profiles));
@@ -134,6 +139,7 @@ async function openCharacter(nickname){
 }
 function beginNewCharacter(nick){
   saveStash();backupAndClearActive();
+  localStorage.removeItem(CHARACTER_ID_KEY);
   localStorage.setItem(PENDING_KEY,nick);localStorage.setItem(EXIT_KEY,'1');
   toast('✨ Criando novo personagem "'+nick+'". Escolha seu starter.',2800);
   setTimeout(()=>location.reload(),250);
@@ -162,7 +168,7 @@ function startPendingFresh(){
   try{$('psy-cloud-modal')?.remove()}catch(_){}
   const p=player(),bs=resolveBuildStarter();if(!p||typeof bs!=='function')return false;
   p.name=nick;p.team=[];p.box=[];p.pokemon=null;p.level=1;p.exp=0;p.maxExp=100;p.hp=50;p.maxHp=50;p.gold=25000;
-  p.meta=p.meta||{};p.meta.characterNickname=nick;p.meta.onlineCharacter=true;p.meta.noPsyduckNormalTeamV33=true;
+  p.meta=p.meta||{};delete p.meta.characterId;delete p.playerCharacterId;p.meta.characterNickname=nick;p.meta.onlineCharacter=true;p.meta.noPsyduckNormalTeamV33=true;
   const input=$('nick-input');if(input)input.value=nick;
   const lab=$('trainer-name-label');if(lab)lab.textContent=nick;
   const login=$('screen-login');if(login)login.style.display='none';

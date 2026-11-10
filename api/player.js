@@ -86,18 +86,31 @@ async function ensurePlayer(supabase,user,trainerName){
   if(error)throw error;
 }
 
-async function upsertCharacter(supabase,user,nickname,save,clientUpdatedAt,now){
+async function upsertCharacter(supabase,user,nickname,characterId,save,clientUpdatedAt,expected){
   const nick=cleanNick(nickname);
   if(!nick)return null;
-  const {data,error}=await supabase.from('player_characters').upsert({
-    user_id:user.id,
-    nickname:nick,
-    save,
-    client_updated_at:clientUpdatedAt,
-    updated_at:now
-  },{onConflict:'user_id,nickname_key'}).select('id,nickname,updated_at,client_updated_at').single();
+  const table=supabase.from('player_characters');
+  let query=table.select('id,nickname,save,updated_at,client_updated_at').eq('user_id',user.id);
+  query=characterId?query.eq('id',characterId):query.eq('nickname_key',nick.toLowerCase());
+  const {data:previous,error}=await query.maybeSingle();
   if(error)throw error;
-  return data;
+  if(previous){
+    if(String(previous.nickname||'').trim().toLowerCase()!==nick.toLowerCase())return {conflict:'character_id_mismatch'};
+    if(!expected||String(expected)!==String(previous.updated_at))return {conflict:'cloud_save_conflict',character:characterSummary(previous)};
+    const parsed=Date.parse(previous.updated_at)||0;
+    const now=new Date(Math.max(Date.now(),parsed+1)).toISOString();
+    let update=table.update({save,nickname:nick,client_updated_at:clientUpdatedAt,updated_at:now}).eq('user_id',user.id).eq('id',previous.id).eq('updated_at',expected);
+    const result=await update.select('id,nickname,updated_at,client_updated_at').maybeSingle();
+    if(result.error)throw result.error;
+    if(!result.data)return {conflict:'cloud_save_conflict'};
+    return {character:result.data};
+  }
+  if(characterId||expected)return {conflict:'character_not_found'};
+  const result=await table.insert({user_id:user.id,nickname:nick,save,client_updated_at:clientUpdatedAt,updated_at:new Date().toISOString()})
+    .select('id,nickname,updated_at,client_updated_at').maybeSingle();
+  if(result.error){if(result.error.code==='23505')return {conflict:'cloud_save_conflict'};throw result.error}
+  if(!result.data)return {conflict:'cloud_save_conflict'};
+  return {character:result.data};
 }
 
 export default async function handler(req,res){
@@ -140,13 +153,11 @@ export default async function handler(req,res){
     if(action==='character'){
       if(!method(req,res,['GET']))return;
       const {user,supabase}=await requireUser(req);
-      const nickname=cleanNick(req.query?.nickname||'');
-      if(!nickname)return res.status(400).json({error:'nickname_required'});
-      const {data,error}=await supabase.from('player_characters')
-        .select('id,nickname,save,updated_at,client_updated_at')
-        .eq('user_id',user.id)
-        .eq('nickname_key',nickname.toLowerCase())
-        .maybeSingle();
+      const nickname=cleanNick(req.query?.nickname||''),characterId=String(req.query?.character_id||'').trim();
+      if(!nickname&&!characterId)return res.status(400).json({error:'nickname_or_character_id_required'});
+      let query=supabase.from('player_characters').select('id,nickname,save,updated_at,client_updated_at').eq('user_id',user.id);
+      query=characterId?query.eq('id',characterId):query.eq('nickname_key',nickname.toLowerCase());
+      const {data,error}=await query.maybeSingle();
       if(error)throw error;
       if(!data)return res.status(404).json({error:'character_not_found'});
       if(data.save)data.save=await hydratePurchasedAssets(supabase,user.id,data.save);
@@ -176,26 +187,30 @@ export default async function handler(req,res){
         save.player.psycoin=Math.max(0,Math.floor(Number(wallet.psycoin)||0));
       }
       if(nick){
-        const {data:previous,error:previousError}=await supabase.from('player_characters')
-          .select('save,updated_at').eq('user_id',user.id)
-          .eq('nickname_key',nick.toLowerCase()).maybeSingle();
+        const characterId=String(req.body?.character_id||save?.player?.meta?.characterId||'').trim();
+        let previousQuery=supabase.from('player_characters').select('id,nickname,save,updated_at').eq('user_id',user.id);
+        previousQuery=characterId?previousQuery.eq('id',characterId):previousQuery.eq('nickname_key',nick.toLowerCase());
+        const {data:previous,error:previousError}=await previousQuery.maybeSingle();
         if(previousError)throw previousError;
         if(previous?.save){
           const expected=String(req.body?.base_cloud_updated_at||'');
-          if(expected&&expected!==String(previous.updated_at)){
+          if(!expected||expected!==String(previous.updated_at)){
             return res.status(409).json({error:'cloud_save_conflict',message:'Outro dispositivo salvou este personagem. Carregue o save da nuvem ou resolva o conflito antes de substituir.'});
-          }
-          if(!expected&&Number(save?.savedAt||0)<Number(previous.save?.savedAt||0)-1500){
-            return res.status(409).json({error:'cloud_save_newer',message:'O servidor tem um save mais recente. Baixe ou confirme esse save antes de enviar um antigo.'});
           }
           save=reconcileGrantedCandy(save,previous.save);
         }
       }
+      const characterId=String(req.body?.character_id||save?.player?.meta?.characterId||'').trim();
       const clientUpdatedAt=req.body?.client_updated_at||new Date(Number(save?.savedAt||Date.now())).toISOString();
       const now=new Date().toISOString();
 
       let character=null;
-      if(nick)character=await upsertCharacter(supabase,user,nick,save,clientUpdatedAt,now);
+      if(nick){
+        const result=await upsertCharacter(supabase,user,nick,characterId,save,clientUpdatedAt,req.body?.base_cloud_updated_at||'');
+        if(result?.conflict)return res.status(409).json({error:result.conflict,message:'A versão salva no servidor mudou. Compare os saves antes de substituir.'});
+        character=result?.character||null;
+        if(character?.id){save.player=save.player||{};save.player.meta=save.player.meta||{};save.player.meta.characterId=character.id}
+      }
 
       // Mantém o espelho legado como o personagem ativo para compatibilidade com a autoridade online V26.
       const {data,error}=await supabase.from('player_game_state').upsert({
@@ -204,8 +219,8 @@ export default async function handler(req,res){
         client_updated_at:clientUpdatedAt,
         updated_at:now
       },{onConflict:'user_id'}).select('updated_at,client_updated_at').single();
-      if(error)throw error;
-      return res.status(200).json({ok:true,...data,character,server_inventory_candy:save?.player?.inventory?.[HALLOWEEN_CANDY]??null,server_grant:save?.player?.meta?.halloweenTestGrantV1||null,server_psycoin:paidRows?.length?save.player.psycoin:null});
+      if(error&&!character)throw error;
+      return res.status(200).json({ok:true,...(data||{updated_at:character?.updated_at||now,client_updated_at:clientUpdatedAt}),character,mirror_updated:!error,server_inventory_candy:save?.player?.inventory?.[HALLOWEEN_CANDY]??null,server_grant:save?.player?.meta?.halloweenTestGrantV1||null,server_psycoin:paidRows?.length?save.player.psycoin:null});
     }
 
     return res.status(404).json({error:'unknown_action'});

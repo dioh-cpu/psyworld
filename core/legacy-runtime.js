@@ -8673,17 +8673,29 @@ const PSY_LOCAL_BACKUP_KEY='psyWorldSave_backup';
 function psyV9Parse(raw){try{return raw?JSON.parse(raw):null}catch(e){return null}}
 function psyV9Valid(data){
   const p=data?.player||data;
-  return !!(p && Array.isArray(p.team) && p.team.length>0 && p.team[0]?.id);
+  if(!p)return false;
+  const team=Array.isArray(p.team)?p.team:Array.isArray(p.party)?p.party:[],box=Array.isArray(p.box)?p.box:Array.isArray(p.storage)?p.storage:[];
+  const mons=[...team,...box].some(m=>m&&typeof m==='object'&&(m.id||m.speciesId||m.species_id||m.dex||m.name));
+  return !!(mons||((p.meta?.characterNickname||p.characterNickname||p.name||p.nickname)&&(data?.version||data?.v||data?.schemaVersion||data?.savedAt||data?.map)));
 }
 function psyV9Snapshot(){
   return {version:9,savedAt:Date.now(),player:P,map:{x:P.x,y:P.y,px:P.px,py:P.py}};
 }
 function psyV9WriteLocal(){
   try{
-    if(!P?.team?.length || !P.team[0]?.id) return false;
-    const raw=JSON.stringify(psyV9Snapshot());window.__psyLastFullSaveAt=Date.now();
-    const current=localStorage.getItem(PSY_LOCAL_KEY);
-    if(current && current!==raw && psyV9Valid(psyV9Parse(current))) localStorage.setItem(PSY_LOCAL_BACKUP_KEY,current);
+    if(!P||!Array.isArray(P.team)||!Array.isArray(P.box))return false;
+    if(localStorage.getItem('psyworld_local_profile_signed_out_v36')==='1'||localStorage.getItem('psyworld_new_character_pending_v38'))return false;
+    const wrap=document.getElementById('game-wrap');if(wrap&&getComputedStyle(wrap).display==='none')return false;
+    const selected=String(localStorage.getItem('psyworld_active_character_v38')||'').trim(),active=String(P.meta?.characterNickname||P.characterNickname||P.name||P.nickname||'').trim();
+    if(selected&&active&&selected.toLowerCase()!==active.toLowerCase())return false;
+    const hasPokemon=[...P.team,...P.box].some(m=>m&&typeof m==='object'&&(m.id||m.speciesId||m.species_id||m.dex||m.name));
+    const hasProfile=!!(selected||active||P.meta?.onlineCharacter||P.playerCharacterId||P.meta?.characterId);
+    if(!hasPokemon&&!hasProfile)return false;
+    const snapshot=psyV9Snapshot(),signature=value=>{const copy={...value};delete copy.savedAt;return JSON.stringify(copy)};
+    const raw=JSON.stringify(snapshot),currentRaw=localStorage.getItem(PSY_LOCAL_KEY);
+    if(currentRaw&&psyV9Valid(psyV9Parse(currentRaw))&&signature(psyV9Parse(currentRaw))===signature(snapshot))return true;
+    window.__psyLastFullSaveAt=Date.now();
+    if(currentRaw && currentRaw!==raw && psyV9Valid(psyV9Parse(currentRaw))) localStorage.setItem(PSY_LOCAL_BACKUP_KEY,currentRaw);
     localStorage.setItem(PSY_LOCAL_KEY,raw);
     localStorage.setItem(PSY_LOCAL_V9_KEY,raw);
     return true;
@@ -8691,9 +8703,9 @@ function psyV9WriteLocal(){
 }
 function psyV9LoadLocal(){
   try{
-    const candidates=[PSY_LOCAL_KEY,PSY_LOCAL_V9_KEY,PSY_LOCAL_BACKUP_KEY].map(k=>psyV9Parse(localStorage.getItem(k))).filter(psyV9Valid);
+    const candidates=[PSY_LOCAL_KEY,PSY_LOCAL_V9_KEY,'psyWorldSave_v2',PSY_LOCAL_BACKUP_KEY].map(k=>psyV9Parse(localStorage.getItem(k))).filter(psyV9Valid);
     if(!candidates.length)return false;
-    candidates.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+    candidates.sort((a,b)=>Number(b.savedAt||b.time||b.timestamp||0)-Number(a.savedAt||a.time||a.timestamp||0));
     const data=candidates[0],pd=data.player||data;
     Object.assign(P,pd);
 
@@ -8709,7 +8721,7 @@ function psyV9LoadLocal(){
       P.meta._showLegacyVipGrantNotice=true;
     }
 
-    P.team=Array.isArray(pd.team)?pd.team:[];P.box=Array.isArray(pd.box)?pd.box:[];
+    P.team=Array.isArray(pd.team)?pd.team:Array.isArray(pd.party)?pd.party:[];P.box=Array.isArray(pd.box)?pd.box:Array.isArray(pd.storage)?pd.storage:[];
     P.inventory=pd.inventory||{};
     P.levelCap=Math.max(20,Number(pd.levelCap||20));
     if(data.map){P.x=data.map.x??P.x;P.y=data.map.y??P.y;P.px=data.map.px??P.px;P.py=data.map.py??P.py;P.tx=P.x;P.ty=P.y;P.moving=false}
@@ -8731,7 +8743,7 @@ function psyV9QueueLocalSave(){
 window.autoSave=autoSave=psyV9QueueLocalSave;
 window.psyV9WriteLocal=psyV9WriteLocal;
 window.autoLoad=autoLoad=psyV9LoadLocal;
-window.psyV9HasLocalSave=()=>[PSY_LOCAL_KEY,PSY_LOCAL_V9_KEY,PSY_LOCAL_BACKUP_KEY].some(k=>psyV9Valid(psyV9Parse(localStorage.getItem(k))));
+window.psyV9HasLocalSave=()=>[PSY_LOCAL_KEY,PSY_LOCAL_V9_KEY,'psyWorldSave_v2',PSY_LOCAL_BACKUP_KEY].some(k=>psyV9Valid(psyV9Parse(localStorage.getItem(k))));
 
 function psyV9EnterSavedGame(){
   if(!psyV9LoadLocal())return false;
@@ -8757,7 +8769,7 @@ document.addEventListener('visibilitychange',()=>{
   else{try{psyAfkResumeCatchup('visibility')}catch(e){console.warn('AFK resume',e)}try{psyV9WriteLocal()}catch(e){}}
 });
 window.addEventListener('pageshow',()=>{try{psyAfkResumeCatchup('pageshow')}catch(e){console.warn('AFK resume',e)}try{psyV9WriteLocal()}catch(e){}});
-setInterval(()=>{if(P?.team?.length)psyV9WriteLocal()},20000);
+setInterval(()=>{if(P?.team&&P?.box)psyV9WriteLocal()},20000);
 try{navigator.storage?.persist?.().catch(()=>{})}catch(e){}
 
 /* Do not force starter again when a valid save exists. */

@@ -181,11 +181,12 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
     if(!cloud){
       cloud=D.createElement('div');cloud.id='psy-cloud-menu-actions';
       cloud.style.cssText='width:min(700px,90%);margin:8px auto;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;';
-      cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button>';
+      cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button><div id="psy-cloud-save-status-v24" style="grid-column:1/-1;padding:6px 8px;border:1px solid #244b66;border-radius:6px;background:#07131f;color:#bae6fd;font-size:9px;text-align:center">Verificando o estado do save…</div>';
       menu.appendChild(cloud);
     }
     const save=cloud.querySelector('#psy-cloud-save-now'),load=cloud.querySelector('#psy-cloud-load-now');
-    if(save&&!save.dataset.psyCloudGuard){save.dataset.psyCloudGuard='1';save.onclick=()=>W.psyCloudV23?.uploadNow?.()}
+    if(!D.getElementById('psy-cloud-save-status-v24')){const status=D.createElement('div');status.id='psy-cloud-save-status-v24';status.style.cssText='grid-column:1/-1;padding:6px 8px;border:1px solid #244b66;border-radius:6px;background:#07131f;color:#bae6fd;font-size:9px;text-align:center';status.textContent='Verificando o estado do save…';cloud.appendChild(status)}
+    if(save&&!save.dataset.psyCloudGuard){save.dataset.psyCloudGuard='1';save.onclick=()=>W.psyCloudV23?.saveNow?.()}
     if(load&&!load.dataset.psyCloudGuard){load.dataset.psyCloudGuard='1';load.onclick=()=>W.psyCloudV23?.loadNow?.()}
     return !!(save&&load)
   }
@@ -201,7 +202,7 @@ window.handleMegaClick = (i,b)=>{ let p=(b?P.box[i]:P.team[i]); if(window.MEGA_X
 /* PSYWORLD V26 — autoridade online global, sem alterar a main/produção. */
 try{
   const oa=document.createElement('script');
-  oa.src='core/online-authority-v26.js?build=CLOUD_SAVE_RESOLUTION_PANEL_V3_20261109';
+  oa.src='core/online-authority-v26.js?build=CLOUD_SAVE_UNIVERSAL_V1_20261110';
   oa.async=false;
   document.head.appendChild(oa);
 }catch(e){console.warn('online authority v26 loader',e)}
@@ -217,7 +218,7 @@ try{
 /* PSYWORLD V33 — novas contas sem Psyduck no time normal + LOG OUT. */
 try{
   const v33=document.createElement('script');
-  v33.src='core/new-account-logout-v33.js?build=TRAINER_ENTRY_V55';
+  v33.src='core/new-account-logout-v33.js?build=CLOUD_SAVE_UNIVERSAL_V1_20261110';
   v33.async=false;
   document.head.appendChild(v33);
 }catch(e){console.warn('new account/logout v33 loader',e)}

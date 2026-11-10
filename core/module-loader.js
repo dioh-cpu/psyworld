@@ -236,7 +236,7 @@ const mo=new MutationObserver(()=>{addMenuButton();decorateButtons()});mo.observ
 // GitHub V62 sync: conta online/cloud save é um módulo leve e global, carregado junto ao bootstrap.
 try{
   const cs=D.createElement('script');
-  cs.src='core/cloud-save-v23.js?build=CLOUD_SAVE_SAVE_ACTION_V1_20261110';
+  cs.src='core/cloud-save-v23.js?build=CLOUD_SAVE_UNIVERSAL_V1_20261110';
   cs.async=false;
   D.head.appendChild(cs);
 }catch(e){console.warn('cloud save loader',e)}
