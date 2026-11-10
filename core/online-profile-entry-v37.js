@@ -13,6 +13,7 @@ const BUILD='ONLINE_CHARACTERS_V38C_20260927';
 const EXIT_KEY='psyworld_local_profile_signed_out_v36';
 const SESSION_KEY='psyworld_online_session_v23';
 const SYNC_KEY='psyworld_cloud_sync_v23';
+const SYNC_PROFILES_KEY='psyworld_cloud_sync_profiles_v1';
 const STASH_KEY='psyworld_local_profile_stash_v38';
 const PENDING_KEY='psyworld_new_character_pending_v38';
 const SELECTED_KEY='psyworld_active_character_v38';
@@ -118,9 +119,14 @@ async function openCharacter(nickname){
       const old=parse(localStorage.getItem(SYNC_KEY))||{},owner=sessionUserKey(ss),selected=c.nickname||nick;
       const same=old.userKey===owner&&String(old.characterNickname||'').toLowerCase()===selected.toLowerCase();
       const scoped=same?old:{};
-      localStorage.setItem(SYNC_KEY,JSON.stringify({...scoped,userKey:owner,resolved:true,deferredConflict:false,
+      const next={...scoped,userKey:owner,resolved:true,deferredConflict:false,
         characterNickname:selected,saveStamp:Number(save.savedAt||0),cloudStamp:Date.parse(c.updated_at||'')||Date.now(),
-        cloudRevision:c.updated_at||null,lastDownloadAt:Date.now()}));
+        cloudRevision:c.updated_at||null,lastDownloadAt:Date.now()};
+      localStorage.setItem(SYNC_KEY,JSON.stringify(next));
+      const profileKey=owner.toLowerCase()+'::'+selected.trim().toLowerCase();
+      const profiles=parse(localStorage.getItem(SYNC_PROFILES_KEY))||{};
+      profiles[profileKey]=next;
+      localStorage.setItem(SYNC_PROFILES_KEY,JSON.stringify(profiles));
     }catch(_){}
     toast('☁ Abrindo '+(c.nickname||nick)+'...',1800);setTimeout(()=>location.reload(),250);
   }catch(e){toast('❌ Não foi possível abrir o personagem: '+String(e.message||e),4200)}
