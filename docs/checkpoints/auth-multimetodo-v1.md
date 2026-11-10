@@ -70,3 +70,13 @@ Base: `fix/signup-confirmation-flow-v1` at `c63ac641ca3133f3e1dc14b7cdd5e7bb706c
 - Nenhuma conta de teste autorizada foi disponibilizada para o agente. Login GitHub real, UUID autenticado em fluxo vivo, criação/seleção de personagem autenticado, recuperação do mesmo save entre dispositivos, vínculo de identidade e testes reais de sessão/logout não foram concluídos. Os testes automatizados de callback usam endpoints/sessões simulados; não são prova desses fluxos reais.
 - Ponto de reversão antes do merge: deployment de produção `dpl_HTbahVWjhaz7KxeTzzNKhAaMjuxd`, READY, commit `72953a34580ba269d5bb4425db32a1451fd13dc7`; o alias `psyworld-murex.vercel.app` apontava para esse deployment. Nenhum deployment de produção novo foi acionado nesta validação.
 - Google permanece habilitado no Supabase conforme leitura Auth anterior; Site URL não foi alterada. Não houve mudanças em dados, migrations, políticas RLS, economia ou configuração Auth.
+
+
+## Pós-merge e smoke de produção (2026-11-10)
+
+- PR #49 foi integrado à `main`. Commit de merge: `7beec88790d10fa3df8ca5f054078c2a7ecd4b88`.
+- Deployment inicial pós-merge: `dpl_5dLGxxg4ZHrvafteewfeUqA5YcDx`, READY, target production, commit `7beec88790d10fa3df8ca5f054078c2a7ecd4b88`. Vercel atribuiu os aliases `psyworld-murex.vercel.app`, `psyworld-world-of-monsters.vercel.app` e `psyworld-git-main-world-of-monsters.vercel.app` ao mesmo deployment.
+- Smoke Playwright no domínio oficial em desktop Chromium 1280×720 e Android Pixel 7 412×839: HTTP 200, `/api/config` HTTP 200 e online configurado; clique em Google iniciou autorização real do Supabase e enviou `redirect_to=https://psyworld-murex.vercel.app/`. A página de autorização mostrou callback Supabase correto e escopos `email profile openid`. O teste parou antes de escolher uma conta.
+- Em sessões isoladas sem conta autenticada, a abertura do jogo em desktop, Android portrait e landscape 844×390 carregou o módulo do jogo e menu Campanha Kanto, sem erro JavaScript, sem overflow horizontal e sem escrita autenticada em endpoints de jogador/campanha.
+- O smoke não comprova um novo login real, UUID de jogador, conteúdo Cloud Save, login GitHub nem recuperação entre dispositivos. O proprietário confirmou o login Google manual no preview anteriormente; não foi fornecida conta de teste para repetir a autorização aqui.
+- Nenhuma conta, personagem, save ou dado de economia foi criado, lido por credencial de jogador ou modificado durante o smoke. Nenhuma configuração Supabase, Site URL ou migration foi alterada.
