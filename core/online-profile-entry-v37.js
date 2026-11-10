@@ -28,6 +28,7 @@ function sessionUserKey(s=session()){return String(s?.user?.id||s?.user?.email||
 function locked(){try{return localStorage.getItem(EXIT_KEY)==='1'}catch(_){return false}}
 function player(){try{return P}catch(_){return W.P||null}}
 function validSave(x){const p=x?.player||x;return !!(p&&Array.isArray(p.team)&&p.team.length&&p.team[0]?.id)}
+function saveSignature(save){let snapshot=save||null;if(snapshot&&typeof snapshot==='object'&&!Array.isArray(snapshot)){snapshot={...snapshot};delete snapshot.savedAt}const value=JSON.stringify(snapshot);let hash=2166136261;for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619)}return (hash>>>0).toString(36)+':'+value.length}
 function authHeaders(){const s=session();return s?.access_token?{Authorization:'Bearer '+s.access_token}:{} }
 async function api(path,opt={}){const r=await fetch(path,{cache:'no-store',...opt,headers:{'Content-Type':'application/json',...authHeaders(),...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok)throw new Error(d.error||d.message||('HTTP '+r.status));return d}
 function saveSession(d){const prev=session()||{};const expiresIn=Number(d?.expires_in||3600);const s={...prev,...d,user:d?.user||prev.user,expires_at:Date.now()+expiresIn*1000};localStorage.setItem(SESSION_KEY,JSON.stringify(s));return s}
@@ -121,7 +122,7 @@ async function openCharacter(nickname){
       const scoped=same?old:{};
       const next={...scoped,userKey:owner,resolved:true,deferredConflict:false,
         characterNickname:selected,saveStamp:Number(save.savedAt||0),cloudStamp:Date.parse(c.updated_at||'')||Date.now(),
-        cloudRevision:c.updated_at||null,lastDownloadAt:Date.now()};
+        cloudRevision:c.updated_at||null,revisionScope:'character',localSignature:saveSignature(save),cloudSignature:saveSignature(save),lastDownloadAt:Date.now()};
       localStorage.setItem(SYNC_KEY,JSON.stringify(next));
       const profileKey=owner.toLowerCase()+'::'+selected.trim().toLowerCase();
       const profiles=parse(localStorage.getItem(SYNC_PROFILES_KEY))||{};

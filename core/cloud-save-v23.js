@@ -29,6 +29,16 @@ function bestLocal(){
 }
 function localStamp(x){return Number(x?.savedAt||0)}
 function cloudStamp(g){return Date.parse(g?.updated_at||'')||Date.parse(g?.client_updated_at||'')||Number(g?.save?.savedAt||0)}
+function saveSignature(save){
+  let snapshot=save||null;
+  if(snapshot&&typeof snapshot==='object'&&!Array.isArray(snapshot)){snapshot={...snapshot};delete snapshot.savedAt}
+  const value=JSON.stringify(snapshot);let hash=2166136261;
+  for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619)}
+  return (hash>>>0).toString(36)+':'+value.length;
+}
+function conflictFingerprint(local,game){
+  return [userKey().toLowerCase(),selectedNick().toLowerCase(),saveSignature(local),saveSignature(game?.save)].join('|');
+}
 function tokenUserKey(token=session?.access_token){try{const part=String(token||'').split('.')[1];if(!part)return'';const b=part.replace(/-/g,'+').replace(/_/g,'/');return String(JSON.parse(atob(b.padEnd(Math.ceil(b.length/4)*4,'='))).sub||'')}catch(_){return''}}
 function userKey(){return String(session?.user?.id||session?.user?.email||session?.email||tokenUserKey()||'')}
 function profileSyncKey(owner=userKey(),nick=selectedNick()){
@@ -109,39 +119,57 @@ async function gameForSession(state){
 async function afterAuth(){try{
  const state=await api('/api/player');hydrateServerIdentity(state);
  const game=await gameForSession(state);
- if(game)await resolveConflict(game);else syncEnabled=false;
+ if(game||bestLocal())await resolveConflict(game);else syncEnabled=false;
  renderStatus();
 }catch(e){toast('❌ Cloud save: '+friendly(e.message),5000)}}
-async function resolveConflict(game){
+function showSaveChoice(local,cloud,game,fingerprint){
+ const ls=localStamp(local),cs=cloudStamp(game);
+ modal('QUAL SAVE VOCÊ QUER USAR?',`Encontramos versões diferentes para este personagem.<br><br><b>📱 LOCAL:</b> ${new Date(ls||Date.now()).toLocaleString()}<br><b>☁ NUVEM:</b> ${new Date(cs||Date.now()).toLocaleString()}<br><br>Seus itens, PsyCoin e progresso não serão mesclados nem substituídos sem sua escolha.`,[
+  {label:'📱 USAR LOCAL E ENVIAR PARA NUVEM',bg:'#166534',run:async()=>{
+    syncEnabled=true;writeSync({cloudRevision:game?.updated_at||null,cloudStamp:cs,deferredFingerprint:fingerprint,pendingChoice:'local',resolved:false});
+    if(!await upload(local,true,true)){syncEnabled=false;renderStatus()}
+  }},
+  {label:'☁ USAR SAVE DA NUVEM NESTE APARELHO',bg:'#075985',run:async()=>applyCloud(cloud,game,false)},
+  {label:'CANCELAR — NÃO SINCRONIZAR AGORA',bg:'#475569',run:()=>{syncEnabled=false;writeSync({deferredFingerprint:fingerprint,pendingChoice:null,resolved:false});renderStatus()}}
+ ]);
+}
+async function resolveConflict(game,{force=false}={}){
  if(pendingProfile()){syncEnabled=false;return}
  const local=bestLocal(),cloud=game?.save&&validSave(game.save)?game.save:null;
  const previous=readSync();
- if(previous.deferredConflict&&previous.userKey===userKey()&&sameNick(previous.characterNickname,selectedNick())){syncEnabled=false;return}
+ const fingerprint=local&&cloud?conflictFingerprint(local,game):'';
+ const sameProfile=previous.userKey===userKey()&&sameNick(previous.characterNickname,selectedNick());
+ const revisionScopeValid=!selectedNick()||previous.revisionScope==='character';
+ if(!force&&sameProfile&&fingerprint&&previous.deferredFingerprint===fingerprint){syncEnabled=false;renderStatus();return}
+ if(!force&&sameProfile&&revisionScopeValid&&fingerprint&&previous.resolvedFingerprint===fingerprint){syncEnabled=previous.resolved===true;renderStatus();return}
   if(local&&cloud){
-    const ls=localStamp(local),cs=cloudStamp(game),meta=readSync(),sameUser=meta.userKey&&meta.userKey===userKey()&&sameNick(meta.characterNickname,selectedNick())&&meta.resolved;
-    if(sameUser){
-      const lastLocal=Number(meta.saveStamp||0),lastCloud=Number(meta.cloudStamp||0);
-      const localChanged=ls>lastLocal+1500,cloudChanged=cs>lastCloud+1500;
-      if(!localChanged&&!cloudChanged){syncEnabled=true;renderStatus();return}
-      if(localChanged&&!cloudChanged){syncEnabled=true;queueSync();renderStatus();return}
+    const ls=localStamp(local),cs=cloudStamp(game),meta=previous;
+    if(!force&&sameProfile&&revisionScopeValid&&meta.resolved===true){
+      const localChanged=meta.localSignature?saveSignature(local)!==meta.localSignature:ls>Number(meta.saveStamp||0)+1500;
+      const cloudChanged=meta.cloudSignature?saveSignature(cloud)!==meta.cloudSignature:
+        (String(game?.updated_at||'')!==String(meta.cloudRevision||'')||cs>Number(meta.cloudStamp||0)+1500);
+      if(!localChanged&&!cloudChanged){
+        if(String(game?.updated_at||'')!==String(meta.cloudRevision||''))writeSync({cloudRevision:game?.updated_at||null,cloudStamp:cs});
+        syncEnabled=true;renderStatus();return
+      }
+      if(localChanged&&!cloudChanged){
+        if(String(game?.updated_at||'')!==String(meta.cloudRevision||''))writeSync({cloudRevision:game?.updated_at||null,cloudStamp:cs});
+        syncEnabled=true;queueSync();renderStatus();return
+      }
       if(!localChanged&&cloudChanged){await applyCloud(cloud,game,true);return}
     }
-    modal('QUAL SAVE VOCÊ QUER USAR?',`Encontramos um save neste aparelho e outro na nuvem.<br><br><b>📱 LOCAL:</b> ${new Date(ls||Date.now()).toLocaleString()}<br><b>☁ NUVEM:</b> ${new Date(cs||Date.now()).toLocaleString()}<br><br>Nenhum deles será apagado sem sua escolha.`,[
-      {label:'📱 USAR LOCAL E ENVIAR PARA NUVEM',bg:'#166534',run:async()=>{syncEnabled=true;writeSync({cloudRevision:game?.updated_at||null,cloudStamp:cs,deferredConflict:false});if(!await upload(local,true,true)){syncEnabled=false;renderStatus()}}},
-      {label:'☁ USAR SAVE DA NUVEM NESTE APARELHO',bg:'#075985',run:async()=>applyCloud(cloud,game,false)},
-      {label:'CANCELAR — NÃO SINCRONIZAR AGORA',bg:'#475569',run:()=>{syncEnabled=false;writeSync({deferredConflict:true});renderStatus()}}
-    ]);return
+    showSaveChoice(local,cloud,game,fingerprint);return
   }
-  if(local){modal('ATIVAR CLOUD SAVE?',`Seu save local foi encontrado. Deseja enviar uma cópia para sua conta online?<br><br>O save local continuará existindo como backup.`,[{label:'☁ ENVIAR CÓPIA PARA NUVEM',bg:'#166534',run:async()=>{syncEnabled=true;await upload(local,true,true)}},{label:'AGORA NÃO',bg:'#475569',run:()=>{syncEnabled=false;writeSync({deferredConflict:true});renderStatus()}}]);return}
-  if(cloud){modal('SAVE NA NUVEM ENCONTRADO',`Existe um progresso salvo nesta conta. Deseja carregá-lo neste aparelho?`,[{label:'☁ CARREGAR SAVE DA NUVEM',bg:'#075985',run:async()=>applyCloud(cloud,game,false)},{label:'AGORA NÃO',bg:'#475569',run:()=>{syncEnabled=false;writeSync({deferredConflict:true});renderStatus()}}]);return}
-  syncEnabled=true;writeSync({resolved:true,deferredConflict:false,saveStamp:0,cloudStamp:0});toast('☁ Conta conectada. Seu primeiro save será enviado automaticamente.',4000);renderStatus()
+  if(local){const fingerprint=saveSignature(local)+'|empty-cloud';if(!force&&sameProfile&&previous.deferredFingerprint===fingerprint)return;modal('ATIVAR CLOUD SAVE?',`Seu save local foi encontrado. Deseja enviar uma cópia para sua conta online?<br><br>O save local continuará existindo como backup.`,[{label:'☁ ENVIAR CÓPIA PARA NUVEM',bg:'#166534',run:async()=>{syncEnabled=true;writeSync({deferredFingerprint:fingerprint,pendingChoice:'local',resolved:false});await upload(local,true,true)}},{label:'AGORA NÃO',bg:'#475569',run:()=>{syncEnabled=false;writeSync({deferredFingerprint:fingerprint,pendingChoice:null,resolved:false});renderStatus()}}]);return}
+  if(cloud){const fingerprint='empty-local|'+String(game?.updated_at||saveSignature(cloud));if(!force&&sameProfile&&previous.deferredFingerprint===fingerprint)return;modal('SAVE NA NUVEM ENCONTRADO',`Existe um progresso salvo para este personagem. Deseja carregá-lo neste aparelho?`,[{label:'☁ CARREGAR SAVE DA NUVEM',bg:'#075985',run:async()=>applyCloud(cloud,game,false)},{label:'AGORA NÃO',bg:'#475569',run:()=>{syncEnabled=false;writeSync({deferredFingerprint:fingerprint,resolved:false});renderStatus()}}]);return}
+  syncEnabled=true;writeSync({resolved:true,deferredFingerprint:null,saveStamp:0,cloudStamp:0});toast('☁ Conta conectada. Seu primeiro save será enviado automaticamente.',4000);renderStatus()
 }
 function selectedCharacterNickname(save){
  const p=save?.player||{};
  const explicit=String(p.meta?.characterNickname||p.characterNickname||'').trim();
  if(explicit)return explicit;
  const selected=String(readSync().characterNickname||localStorage.getItem(CHARACTER_KEY)||'').trim();
- return selected&&selected.toLowerCase()===String(p.name||p.nickname||'').toLowerCase()?selected:'';
+ return selected&&sameNick(saveNick(save),selected)?selected:'';
 }
 function reconcileClientAfterUpload(sent,response){
  const grant=response?.server_grant;
@@ -185,15 +213,20 @@ async function upload(save,manual=false,markResolved=false){
   const revision=d.character?.updated_at||d.updated_at||null;
    const stamp=Date.parse(revision||'')||Date.now();
   reconcileClientAfterUpload(save,d);
-  writeSync({lastUploadAt:stamp,saveStamp:localStamp(save),cloudStamp:stamp,
-    cloudRevision:revision,deferredConflict:false,resolved:markResolved||readSync().resolved===true});
+  const synchronizedLocal=bestLocal()||save;
+  writeSync({lastUploadAt:stamp,saveStamp:localStamp(synchronizedLocal),cloudStamp:stamp,
+    cloudRevision:revision,localSignature:saveSignature(synchronizedLocal),cloudSignature:saveSignature(synchronizedLocal),
+    revisionScope:selectedCharacterNickname(synchronizedLocal)?'character':'account',
+    resolvedFingerprint:conflictFingerprint(synchronizedLocal,{save:synchronizedLocal,updated_at:revision}),deferredFingerprint:null,pendingChoice:null,
+    resolved:markResolved||readSync().resolved===true});
   if(manual)toast('☁ Save confirmado no servidor. Itens e carteira protegidos.',3500);
   renderStatus();return true;
  }catch(e){
   console.warn('cloud upload',e);
   const conflict=/cloud_save_conflict|cloud_save_newer/.test(String(e?.message));
   if(conflict){syncEnabled=false;if(syncTimer){clearTimeout(syncTimer);syncTimer=0}
-    toast('⚠ Save mais recente na nuvem. O local foi preservado. Abra o Cloud Save para comparar antes de substituir.',6500);
+    toast('⚠ A versão deste personagem mudou na nuvem. Seus dados locais foram preservados; compare as versões para decidir.',6500);
+    try{const state=await api('/api/player'),game=await gameForSession(state);if(game)await resolveConflict(game)}catch(refreshError){console.warn('cloud conflict refresh',refreshError)}
   }else if(manual)toast('❌ Falha ao enviar save: '+friendly(e.message),4500);
   renderStatus();return false;
  }
@@ -209,7 +242,10 @@ async function applyCloud(save,game,automatic=false){
     if(syncTimer){clearTimeout(syncTimer);syncTimer=0}
     syncEnabled=false;
     const cs=cloudStamp(game)||Date.now();
-    writeSync({resolved:true,deferredConflict:false,saveStamp:localStamp(save),cloudStamp:cs,cloudRevision:game?.updated_at||null,lastDownloadAt:Date.now()});
+    writeSync({resolved:true,deferredFingerprint:null,saveStamp:localStamp(save),cloudStamp:cs,
+      cloudRevision:game?.updated_at||null,localSignature:saveSignature(save),cloudSignature:saveSignature(save),
+      revisionScope:selectedCharacterNickname(save)?'character':'account',
+      resolvedFingerprint:conflictFingerprint(save,{save,updated_at:game?.updated_at||null}),pendingChoice:'cloud',lastDownloadAt:Date.now()});
     if(!automatic)toast('☁ Save da nuvem restaurado. Recarregando...',2800);
     // The game's beforeunload handler autosaves in-memory state; suppress it for this reload.
     const suppressAutosave=()=>{};
@@ -233,7 +269,12 @@ async function loadNow(){
     ]);
   }catch(e){toast('❌ Falha ao carregar save da nuvem: '+friendly(e.message),4500)}
 }
-function queueSync(){if(!syncEnabled||!session?.access_token)return;if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncTimer=0;const s=bestLocal();if(s)upload(s,false,false)},2500)}
+async function compareNow(){
+ if(!await ensureToken())return toast('❌ Entre na sua conta online primeiro.');
+ try{const state=await api('/api/player');hydrateServerIdentity(state);const game=await gameForSession(state);await resolveConflict(game,{force:true})}
+ catch(e){toast('❌ Falha ao comparar saves: '+friendly(e.message),4500)}
+}
+function queueSync(){if(!syncEnabled||!session?.access_token)return;if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncTimer=0;const s=bestLocal(),meta=readSync();if(s&&(!meta.localSignature||saveSignature(s)!==meta.localSignature))upload(s,false,false)},2500)}
 function patchSave(){const old=W.autoSave;if(typeof old==='function'&&!old.__cloudV23){const f=function(){const r=old.apply(this,arguments);queueSync();return r};f.__cloudV23=true;W.autoSave=f;try{autoSave=f}catch(_){}}}
 
 function idem(prefix){try{return prefix+':'+crypto.randomUUID()}catch(_){return prefix+':'+Date.now()+':'+Math.random().toString(36).slice(2)}}
@@ -322,14 +363,15 @@ function styleMenu(){
   let cloud=$('psy-cloud-menu-actions');
   if(!cloud){
     cloud=D.createElement('div');cloud.id='psy-cloud-menu-actions';cloud.style.cssText='width:min(700px,90%);margin:8px auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;';
-    cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button>';
+    cloud.style.gridTemplateColumns='repeat(auto-fit,minmax(140px,1fr))';
+    cloud.innerHTML='<button id="psy-cloud-save-now" type="button" style="padding:11px;border:1px solid #34d399;border-radius:8px;background:#166534;color:#fff;font-weight:900">☁ SALVAR NA NUVEM</button><button id="psy-cloud-load-now" type="button" style="padding:11px;border:1px solid #38bdf8;border-radius:8px;background:#075985;color:#fff;font-weight:900">☁ CARREGAR DA NUVEM</button><button id="psy-cloud-compare-now" type="button" style="padding:11px;border:1px solid #fbbf24;border-radius:8px;background:#854d0e;color:#fff;font-weight:900">⚖ COMPARAR SAVES</button>';
     const locals=buttons.find(b=>/BAIXAR SAVE\.PSY/i.test(b.textContent||''))?.parentElement; if(locals&&locals.parentElement===menu)locals.insertAdjacentElement('afterend',cloud);else menu.appendChild(cloud);
-    $('#psy-cloud-save-now').onclick=()=>W.psyCloudV23?.uploadNow();$('#psy-cloud-load-now').onclick=()=>W.psyCloudV23?.loadNow();
+    $('#psy-cloud-save-now').onclick=()=>W.psyCloudV23?.uploadNow();$('#psy-cloud-load-now').onclick=()=>W.psyCloudV23?.loadNow();$('#psy-cloud-compare-now').onclick=()=>W.psyCloudV23?.compareNow();
   }
   cloud.style.display=session?.access_token?'grid':'none';
 }
 function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem();installEconomyHooks()}
-async function bootstrap(){captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');hydrateServerIdentity(state);const game=await gameForSession(state);if(game)await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();setInterval(()=>{patchSave();installGlobalUI();if(syncEnabled&&session?.access_token){const s=bestLocal(),meta=readSync();if(s&&localStamp(s)>Number(meta?.saveStamp||0)+1500)queueSync()}},4000)}
-W.psyCloudV23={login,signup,loginWithGithub:githubLogin,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;renderStatus();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:async()=>upload(bestLocal(),true,true),loadNow,economy};
+async function bootstrap(){captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');hydrateServerIdentity(state);const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();setInterval(()=>{patchSave();installGlobalUI();if(syncEnabled&&session?.access_token){const s=bestLocal(),meta=readSync();if(s&&(!meta.localSignature?localStamp(s)>Number(meta?.saveStamp||0)+1500:saveSignature(s)!==meta.localSignature))queueSync()}},4000)}
+W.psyCloudV23={login,signup,loginWithGithub:githubLogin,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;renderStatus();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:async()=>upload(bestLocal(),true,true),loadNow,compareNow,economy};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});
 })(window,document);
