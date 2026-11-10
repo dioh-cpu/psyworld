@@ -8,7 +8,7 @@ const authority=fs.readFileSync('core/online-authority-v26.js','utf8');
 const characterSave={player:{name:'Ash',meta:{characterNickname:'Ash'},team:[{id:25}],inventory:{Potion:3}},savedAt:1700000000000};
 const otherSave={player:{name:'Misty',meta:{characterNickname:'Misty'},team:[{id:54}],inventory:{PsyCoin:900}},savedAt:1800000000000};
 
-function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=characterSave,mirror=otherSave,saveResponse,saveError=false,account='account-1'}={}){
+function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=characterSave,mirror=otherSave,saveResponse,saveError=false,account='account-1',livePlayer=null}={}){
  const data=new Map(Object.entries(storage));
  const nodes=new Map(),calls=[],timers=[],modals=[],warnings=[];
  const localStorage={getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data.set(k,String(v)),removeItem:k=>data.delete(k)};
@@ -31,10 +31,12 @@ function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=c
   else if(String(url)==='/api/player/save')body=saveResponse||{ok:true,updated_at:'2099-01-01T00:00:00.000Z',character:{updated_at:'2026-11-10T13:00:00.000Z'}};
   return {ok:!(String(url)==='/api/player/save'&&saveError),json:async()=>String(url)==='/api/player/save'&&saveError?{error:'temporary_network_failure'}:body};
  };
- const window={localStorage,location:{hash:'',pathname:'/',search:'',reload(){}},history:{replaceState(){}},addEventListener(){},dispatchEvent(){},setInterval(){},P:null,notif(){}};
+ const notices=[];
+ const window={localStorage,location:{hash:'',pathname:'/',search:'',reload(){}},history:{replaceState(){}},addEventListener(){},dispatchEvent(){},setInterval(){},P:livePlayer,notif(msg){notices.push(String(msg))}};
+ if(livePlayer)window.psyV9WriteLocal=()=>{const snapshot={version:9,savedAt:Date.now(),player:JSON.parse(JSON.stringify(livePlayer)),map:{x:3,y:4,px:84,py:112}};localStorage.setItem('psyWorldSave',JSON.stringify(snapshot));localStorage.setItem('psyWorldSave_v9',JSON.stringify(snapshot));return true};
  const sandbox={window,document,localStorage,fetch,console:{log(){},warn(...args){warnings.push(args.map(String).join(' '))},error(){}},URLSearchParams,CustomEvent:function(){},Date,Math,JSON,Promise,atob:s=>Buffer.from(s,'base64').toString('binary'),setTimeout:(fn)=>{timers.push(fn);return timers.length},clearTimeout(){},setInterval(){},location:window.location,history:window.history,innerWidth:390,innerHeight:844};
  vm.runInNewContext(source,sandbox,{filename:'core/cloud-save-v23.js'});
- return {data,calls,modals,timers,nodes,window,warnings,run:async()=>{const fn=timers.shift();assert(fn,'bootstrap timer should be scheduled');fn();for(let i=0;i<30;i++)await Promise.resolve();},storage:()=>Object.fromEntries(data),click:async label=>{const actions=nodes.get('psy-cloud-actions');assert(actions,'save decision modal should expose actions');const button=actions.children.find(x=>x.textContent===label);assert(button,`missing modal action ${label}`);await button.onclick()}};
+ return {data,calls,modals,timers,nodes,window,warnings,notices,run:async()=>{const fn=timers.shift();assert(fn,'bootstrap timer should be scheduled');fn();for(let i=0;i<30;i++)await Promise.resolve();},storage:()=>Object.fromEntries(data),click:async label=>{const actions=nodes.get('psy-cloud-actions');assert(actions,'save decision modal should expose actions');const button=actions.children.find(x=>x.textContent===label);assert(button,`missing modal action ${label}`);await button.onclick()}};
 }
 
 (async()=>{
@@ -102,7 +104,29 @@ function boot({storage={},remoteRevision='2026-11-09T10:00:00.000Z',remoteSave=c
  assert.equal(reloadRestored.modals.length,0,'cloud-only restore does not reopen the modal on F5');
  assert(authority.includes('await W.psyCloudV23.compareNow()'),'server sync button opens the actionable cloud resolution instead of a toast');
  assert(authority.includes('id="psy-server-cloud-save-v26"')&&authority.includes('id="psy-server-cloud-load-v26"'),'online panel exposes direct save and load actions');
- assert(source.includes('async function saveNow()')&&source.includes('if(!local){await compareNow();return false}'),'save action routes missing local profiles to a comparison instead of a dead-end toast');
+ assert(source.includes('async function saveNow()')&&!source.includes('if(!local){await compareNow();return false}'),'save action never routes missing local profiles into the cloud-load comparison');
+
+ const activeSave={name:'Trainer account label',team:[{id:25}],inventory:{Potion:7},meta:{}};
+ const activeOnly=boot({storage:{psyWorldSave:'null',psyWorldSave_v9:'null',psyWorldSave_backup:'null'},livePlayer:activeSave});
+ await activeOnly.run();
+ assert(!activeOnly.modals.includes('SAVE NA NUVEM ENCONTRADO'),'active local state is captured before cloud-only load is offered');
+ activeOnly.modals.length=0;
+ assert.equal(await activeOnly.window.psyCloudV23.saveNow(),true,'save action captures and uploads the active character save');
+ const activeUpload=activeOnly.calls.find(c=>c.url==='/api/player/save');
+ assert(activeUpload,'active save action sends a cloud save request');
+ const activeBody=JSON.parse(activeUpload.options.body);
+ assert.equal(activeBody.character_nickname,'Ash','active save is scoped to the selected character');
+ assert.equal(activeBody.save.player.inventory.Potion,7,'active inventory is included in the uploaded snapshot');
+ assert.equal(activeBody.save.player.meta.characterNickname,'Ash','active snapshot receives its selected character identity');
+ assert.equal(activeOnly.modals.length,0,'saving an active snapshot never opens the cloud-load modal');
+
+ const missingLocal=boot({storage:{psyWorldSave:'null',psyWorldSave_v9:'null',psyWorldSave_backup:'null'}});
+ await missingLocal.run();
+ missingLocal.modals.length=0;
+ assert.equal(await missingLocal.window.psyCloudV23.saveNow(),undefined,'missing local save reports a failure instead of loading or comparing cloud data');
+ assert(missingLocal.notices.some(n=>n.includes('Não encontrei um save local válido')),'missing local save explains why it could not be uploaded');
+ assert.equal(missingLocal.calls.some(c=>c.url==='/api/player/save'),false,'missing local save never overwrites cloud data');
+ assert.equal(missingLocal.modals.length,0,'missing local save never reopens the load modal');
 
  const compare=boot({storage:afterCancel});await compare.run();
  await compare.window.psyCloudV23.compareNow();

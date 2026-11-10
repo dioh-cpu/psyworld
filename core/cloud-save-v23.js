@@ -27,6 +27,21 @@ function bestLocal(){
   const backup=parse(localStorage.getItem(LOCAL_KEYS[2]));
   return validSave(backup)?backup:null;
 }
+function captureActiveLocal(){
+ let local=bestLocal();if(local)return local;
+ if(pendingProfile())return null;
+ const nick=selectedNick(),live=W.P||(typeof P!=='undefined'?P:null);
+ if(!nick||!validSave(live))return null;
+ const currentNick=String(live.meta?.characterNickname||live.characterNickname||'').trim();
+ if(currentNick&&!sameNick(currentNick,nick))return null;
+ try{
+   live.meta=live.meta||{};
+   if(!currentNick)live.meta.characterNickname=nick;
+   if(typeof W.psyV9WriteLocal!=='function'||W.psyV9WriteLocal()===false)return null;
+   local=bestLocal();
+ }catch(e){console.warn('cloud active save capture',e);return null}
+ return local;
+}
 function localStamp(x){return Number(x?.savedAt||0)}
 function cloudStamp(g){return Date.parse(g?.updated_at||'')||Date.parse(g?.client_updated_at||'')||Number(g?.save?.savedAt||0)}
 function saveSignature(save){
@@ -118,6 +133,7 @@ async function gameForSession(state){
 }
 async function afterAuth(){try{
  const state=await api('/api/player');hydrateServerIdentity(state);
+ captureActiveLocal();
  const game=await gameForSession(state);
  if(game||bestLocal())await resolveConflict(game);else syncEnabled=false;
  renderStatus();
@@ -274,8 +290,9 @@ async function loadNow(){
   }catch(e){toast('❌ Falha ao carregar save da nuvem: '+friendly(e.message),4500)}
 }
 async function saveNow(){
- const local=bestLocal();
- if(!local){await compareNow();return false}
+ if(!await ensureToken())return toast('❌ Entre na sua conta online primeiro.');
+ const local=captureActiveLocal();
+ if(!local)return toast('❌ Não encontrei um save local válido deste personagem. O save da nuvem não foi alterado.',5000);
  return upload(local,true,true);
 }
 async function compareNow(){
@@ -380,7 +397,7 @@ function styleMenu(){
   cloud.style.display=session?.access_token?'grid':'none';
 }
 function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem();installEconomyHooks()}
-async function bootstrap(){captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');hydrateServerIdentity(state);const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();setInterval(()=>{patchSave();installGlobalUI();if(syncEnabled&&session?.access_token){const s=bestLocal(),meta=readSync();if(s&&(!meta.localSignature?localStamp(s)>Number(meta?.saveStamp||0)+1500:saveSignature(s)!==meta.localSignature))queueSync()}},4000)}
+async function bootstrap(){captureAuthHash();ensureUI();readSession();renderStatus();try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus();try{const state=await api('/api/player');hydrateServerIdentity(state);captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();setInterval(()=>{patchSave();installGlobalUI();if(syncEnabled&&session?.access_token){const s=bestLocal(),meta=readSync();if(s&&(!meta.localSignature?localStamp(s)>Number(meta?.saveStamp||0)+1500:saveSignature(s)!==meta.localSignature))queueSync()}},4000)}
 W.psyCloudV23={login,signup,loginWithGithub:githubLogin,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;renderStatus();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:async()=>upload(bestLocal(),true,true),saveNow,loadNow,compareNow,economy};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});
 })(window,document);
