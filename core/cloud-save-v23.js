@@ -2,6 +2,7 @@
 'use strict';
 const SESSION_KEY='psyworld_online_session_v23';
 const SYNC_KEY='psyworld_cloud_sync_v23';
+const SYNC_PROFILES_KEY='psyworld_cloud_sync_profiles_v1';
 const CHARACTER_KEY='psyworld_active_character_v38';
 const EXIT_KEY='psyworld_local_profile_signed_out_v36';
 const PENDING_KEY='psyworld_new_character_pending_v38';
@@ -30,11 +31,22 @@ function localStamp(x){return Number(x?.savedAt||0)}
 function cloudStamp(g){return Date.parse(g?.updated_at||'')||Date.parse(g?.client_updated_at||'')||Number(g?.save?.savedAt||0)}
 function tokenUserKey(token=session?.access_token){try{const part=String(token||'').split('.')[1];if(!part)return'';const b=part.replace(/-/g,'+').replace(/_/g,'/');return String(JSON.parse(atob(b.padEnd(Math.ceil(b.length/4)*4,'='))).sub||'')}catch(_){return''}}
 function userKey(){return String(session?.user?.id||session?.user?.email||session?.email||tokenUserKey()||'')}
-function readSync(){return parse(localStorage.getItem(SYNC_KEY))||{}}
+function profileSyncKey(owner=userKey(),nick=selectedNick()){
+ return owner?String(owner).toLowerCase()+'::'+String(nick).trim().toLowerCase():'';
+}
+function readSync(){
+ const key=profileSyncKey(),profiles=parse(localStorage.getItem(SYNC_PROFILES_KEY))||{};
+ if(key&&profiles[key])return profiles[key];
+ const old=parse(localStorage.getItem(SYNC_KEY))||{};
+ return old.userKey===userKey()&&sameNick(old.characterNickname,selectedNick())?old:{};
+}
 function writeSync(patch){try{
- const old=readSync(),owner=userKey(),nick=String(patch.characterNickname??selectedNick()).trim();
+ const owner=userKey(),nick=String(patch.characterNickname??selectedNick()).trim(),old=readSync();
  const scoped=old.userKey===owner&&sameNick(old.characterNickname,nick)?old:{};
- localStorage.setItem(SYNC_KEY,JSON.stringify({...scoped,...patch,userKey:owner,characterNickname:nick}));
+ const next={...scoped,...patch,userKey:owner,characterNickname:nick};
+ localStorage.setItem(SYNC_KEY,JSON.stringify(next));
+ const key=profileSyncKey(owner,nick);
+ if(key){const profiles=parse(localStorage.getItem(SYNC_PROFILES_KEY))||{};profiles[key]=next;localStorage.setItem(SYNC_PROFILES_KEY,JSON.stringify(profiles))}
 }catch(_){}}
 function hydrateServerIdentity(state){
   if(state?.user?.id&&session?.access_token)saveSession({...session,user:state.user});
