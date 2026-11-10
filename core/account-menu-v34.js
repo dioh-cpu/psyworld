@@ -129,7 +129,7 @@ console.log('✅ PSYWORLD V36B ativo: saída local persistente + seletor online 
 /* V38B: conta online pode selecionar ou criar personagens por nickname. */
 try{
   const v38=D.createElement('script');
-  v38.src='core/online-profile-entry-v37.js?build=CLOUD_SAVE_UNIVERSAL_V1_20261110';
+  v38.src='core/online-profile-entry-v37.js?build=CLOUD_SIGNUP_CONFIRMATION_V1_20261110';
   v38.async=false;
   D.head.appendChild(v38);
 }catch(e){console.warn('online characters v38 loader',e)}
