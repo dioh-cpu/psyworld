@@ -1,7 +1,7 @@
 /* Run: node tests/trainer-walk-v7.cjs */
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const root=path.join(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
-const walk=read('core/trainer-walk-v1.js'),city=read('core/halloween-ui.js'),kanto=read('core/kanto-world-v2.js'),html=read('index.html');
+const walk=read('core/trainer-walk-v1.js'),city=read('core/halloween-ui.js'),cityWorld=read('core/city-halloween.js'),kanto=read('core/kanto-world-v2.js'),html=read('index.html');
 const pixels=new Uint8ClampedArray(384*384*4);for(let row=0;row<4;row++)for(let col=0;col<4;col++)for(let y=21;y<66;y++)for(let x=22;x<55;x++)pixels[((row*96+y)*384+col*96+x)*4+3]=255;
 let scans=0,renderOps=0;
 const D={createElement(){return{width:0,height:0,getContext(){return{drawImage(){renderOps++},getImageData(){scans++;return{data:pixels}},clearRect(){},beginPath(){},rect(){},clip(){},save(){},restore(){},set imageSmoothingEnabled(v){},set imageSmoothingQuality(v){}}}}}};
@@ -23,7 +23,8 @@ pose=anim.sampleState(state,{now:130,moving:true,row:3,identity:'test'});assert.
 pose=anim.sampleState(state,{now:140,moving:false,identity:'test'});assert.equal(pose.state,'settle');assert.equal(pose.row,3);
 pose=anim.sampleState(state,{now:280,moving:false,identity:'test'});assert.equal(pose.state,'idle');
 assert(city.includes('walk.renderAnimated(ctx,entry.animationAtlas')&&!city.includes('const bounce = moving && frame % 2'));
-assert(kanto.includes('walk.renderAnimated(c,entry.animationAtlas')&&kanto.includes('x-24,y+5-60,48,64'));
+assert(kanto.includes('walk.renderAnimated(c,entry.animationAtlas')&&kanto.includes('w=48*scale,h=64*scale,left=x-w/2,top=y+5-60*scale'));
+assert(kanto.includes('drawTrainer:(ctx,x,y,options)=>drawPlayer(ctx,x,y,options)')&&cityWorld.includes('showName:false')&&cityWorld.includes('trainer}'));
 assert(html.indexOf('src="core/trainer-walk-v1.js')<html.indexOf('src="core/halloween-ui.js'));
 
 // Regression for the broken V7 avatar gate (entry.frames no longer exists).
