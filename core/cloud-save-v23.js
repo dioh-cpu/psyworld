@@ -14,7 +14,7 @@ const LOCAL_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_v2','psyWorldSa
 const PROFILE_SAVE_PREFIX='psyworld_character_save_v1:';
 const PROD_ORIGIN='https://psyworld-murex.vercel.app';
 const FAST_POS_KEY='psyworld_fast_encounter_pos_v24';
-let config=null,session=null,syncEnabled=false,syncTimer=0,localTimer=0,autosaveTimer=0,economyBusy=false,lastUploadError='',cloudPhase='idle',uploadFlights=new Map(),retryDelay=5000,signupBusy=false,resendBusy=false,oauthClient=null,oauthSdkPromise=null,oauthBusy=false;
+let config=null,session=null,syncEnabled=false,syncTimer=0,localTimer=0,autosaveTimer=0,economyBusy=false,lastUploadError='',cloudPhase='idle',uploadFlights=new Map(),retryDelay=5000,signupBusy=false,resendBusy=false,oauthClient=null,oauthSdkPromise=null,oauthBusy=false,oauthCallbackFlight=null;
 const $=id=>D.getElementById(id);
 function toast(msg,ms=3200){try{W.notif?.(msg,ms)}catch(_){console.log(msg)}}
 function parse(s){try{return s?JSON.parse(s):null}catch(_){return null}}
@@ -220,7 +220,7 @@ function clearOAuthFlow(){
  oauthClient=null;oauthSdkPromise=null;
 }
 function oauthDiagnosticCode(error,stage='start'){
- const value=[error?.code,error?.message,error?.error_description,error].filter(Boolean).join(' ').toLowerCase();
+ const value=[error?.name,error?.code,error?.message,error?.error_description,error?.status,error].filter(Boolean).join(' ').toLowerCase();
  if(/access_denied|user_cancel|cancelled|canceled/.test(value))return 'OAUTH_CANCELLED';
  if(/localstorage|sessionstorage|storage|quota|securityerror/.test(value))return 'OAUTH_STORAGE_UNAVAILABLE';
  if(/online_not_configured|supabaseurl|supabaseanonkey/.test(value))return 'OAUTH_CONFIG_UNAVAILABLE';
@@ -230,6 +230,8 @@ function oauthDiagnosticCode(error,stage='start'){
  if(/identity_already_exists|already linked/.test(value))return 'OAUTH_IDENTITY_ALREADY_LINKED';
  if(/unsupported[ _-]?provider|provider_not_found|provider.*disabled/.test(value))return 'OAUTH_PROVIDER_DISABLED';
  if(/session_not_found|refresh_token_not_found|invalid_refresh_token/.test(value))return 'OAUTH_SESSION_EXPIRED';
+ if(/oauth_session_missing|session.*(missing|not returned)|user.*(missing|not returned)/.test(value))return 'OAUTH_SESSION_MISSING';
+ if(/authretryablefetcherror|http.?5\d\d|status.?5\d\d/.test(value))return 'OAUTH_SERVER_ERROR';
  if(/expired|code_verifier|flow_state|state_mismatch|invalid_grant|pkce/.test(value))return 'OAUTH_PKCE_FAILED';
  if(/network|fetch|failed to fetch|load failed|timeout/.test(value))return 'OAUTH_NETWORK_ERROR';
  return stage==='callback'?'OAUTH_CALLBACK_FAILED':'OAUTH_START_FAILED';
@@ -244,6 +246,8 @@ function oauthDiagnosticMessage(code){return ({
  OAUTH_IDENTITY_ALREADY_LINKED:'Este login social já está vinculado a outra conta. Nenhum progresso foi combinado.',
  OAUTH_PROVIDER_DISABLED:'Este provedor ainda não está habilitado no Supabase.',
  OAUTH_SESSION_EXPIRED:'A sessão expirou. Inicie o login novamente.',
+ OAUTH_SESSION_MISSING:'O provedor retornou, mas não entregou uma sessão válida. Tente iniciar o login novamente.',
+ OAUTH_SERVER_ERROR:'O serviço de autenticação está temporariamente indisponível. Tente novamente em instantes.',
  OAUTH_PKCE_FAILED:'A autorização expirou ou não corresponde a esta sessão do navegador. Inicie o login novamente.',
  OAUTH_NETWORK_ERROR:'A conexão falhou durante a autenticação. Confira a internet e tente novamente.',
  OAUTH_CALLBACK_FAILED:'O provedor retornou, mas o jogo não conseguiu validar a sessão.',
@@ -265,7 +269,16 @@ function oauthCallbackMessage(error,intent){
  if(/provider.?disabled|unsupported[ _-]?provider|provider_not_found/.test(value))return 'Este provedor ainda não está habilitado no Supabase.';
  return 'O provedor não concluiu a autorização. Tente novamente.';
 }
-async function completeOAuthCallback(){
+function completeOAuthCallback(){
+ // A code_verifier exchange is one-shot. Share the active exchange if startup
+ // reaches this callback through more than one initializer in the same page.
+ if(oauthCallbackFlight)return oauthCallbackFlight;
+ const flight=processOAuthCallback();
+ const guarded=flight.finally(()=>{if(oauthCallbackFlight===guarded)oauthCallbackFlight=null});
+ oauthCallbackFlight=guarded;
+ return guarded;
+}
+async function processOAuthCallback(){
  const query=new URLSearchParams(String(W.location.search||'').replace(/^\?/,'').replace(/\+/g,' ')),hash=new URLSearchParams(String(W.location.hash||'').replace(/^#/,'').replace(/^\?/,'').replace(/\+/g,' '));
  const intent=oauthIntent(),error=query.get('error')||query.get('error_code')||query.get('error_description')||hash.get('error')||hash.get('error_code')||hash.get('error_description');
  if(error){const code=oauthDiagnosticCode(error,'callback');clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]',code);signupMessage(oauthCallbackMessage(error,intent)+' Código: '+code,'#fbbf24');return false}

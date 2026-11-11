@@ -8,7 +8,7 @@ const INTENT_KEY='psyworld_oauth_intent_v1';
 const STORAGE_KEY='psyworld_supabase_oauth_flow_v1';
 const EXIT_KEY='psyworld_local_profile_signed_out_v36';
 
-function boot({search='',session=null,exchangeSession=null,signinError=null,exchangeError=null}={}){
+function boot({search='',session=null,exchangeSession=null,emptyExchange=false,signinError=null,exchangeError=null}={}){
  const values=new Map(),calls={clients:[],signin:[],link:[],setSession:[],exchange:[],signout:[]},nodes=new Map();
  const localStorage={getItem:k=>values.has(k)?values.get(k):null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k),key:i=>[...values.keys()][i]||null,get length(){return values.size}};
  if(session)localStorage.setItem(SESSION_KEY,JSON.stringify(session));
@@ -22,7 +22,7 @@ function boot({search='',session=null,exchangeSession=null,signinError=null,exch
   setSession:async value=>{calls.setSession.push(value);return{data:{session:value},error:null}},
   signInWithOAuth:async value=>{calls.signin.push(value);return{data:{url:'https://supabase.test/authorize'},error:signinError}},
   linkIdentity:async value=>{calls.link.push(value);return{data:{url:'https://supabase.test/authorize'},error:null}},
-  exchangeCodeForSession:async code=>{calls.exchange.push(code);return{data:{session:exchangeSession||{access_token:'new-access',refresh_token:'new-refresh',expires_in:3600,user:{id:'user-1',email:'player@example.test'}}},error:exchangeError}},
+  exchangeCodeForSession:async code=>{calls.exchange.push(code);return{data:{session:emptyExchange?null:exchangeSession||{access_token:'new-access',refresh_token:'new-refresh',expires_in:3600,user:{id:'user-1',email:'player@example.test'}}},error:exchangeError}},
   getUserIdentities:async()=>({data:{identities:[{provider:'github'}]},error:null}),
   signOut:async options=>{calls.signout.push(options);return{error:null}}
  };
@@ -77,6 +77,14 @@ function boot({search='',session=null,exchangeSession=null,signinError=null,exch
  assert.equal(callback.calls.signout.length,0,'successful OAuth cleanup never calls Supabase logout or revokes the new refresh token');
  assert.equal(callback.values.has(STORAGE_KEY),false,'temporary SDK session storage is cleared locally after adopting the game session');
 
+ const duplicate=boot({search:'?code=single-use-code'});
+ duplicate.values.set(INTENT_KEY,JSON.stringify({provider:'google',mode:'login',startedAt:Date.now()}));
+ const firstCallback=duplicate.window.psyCloudV23.completeOAuthCallback();
+ const secondCallback=duplicate.window.psyCloudV23.completeOAuthCallback();
+ assert.equal(firstCallback,secondCallback,'concurrent callback handlers share the same in-flight exchange');
+ assert.equal(await firstCallback,true);
+ assert.equal(duplicate.calls.exchange.length,1,'a one-time authorization code is exchanged only once per page');
+
  const denied=boot({signinError:{code:'unsupported_provider',message:'provider is disabled; client_secret=must-not-render'}});
  await denied.window.psyCloudV23.loginWithGoogle();
  assert.match(denied.nodes.get('psy-online-status').textContent,/OAUTH_PROVIDER_DISABLED/,'start failure exposes a stable diagnostic code');
@@ -87,6 +95,11 @@ function boot({search='',session=null,exchangeSession=null,signinError=null,exch
  assert.equal(await badCallback.window.psyCloudV23.completeOAuthCallback(),false);
  assert.match(badCallback.nodes.get('psy-online-status').textContent,/OAUTH_PKCE_FAILED/,'callback exchange failure has a safe diagnostic');
  assert.doesNotMatch(badCallback.nodes.get('psy-online-status').textContent,/expired-code|verifier mismatch/i,'callback diagnostic omits authorization codes and raw verifier details');
+
+ const missingSession=boot({search:'?code=code-without-session',emptyExchange:true});
+ missingSession.values.set(INTENT_KEY,JSON.stringify({provider:'google',mode:'login',startedAt:Date.now()}));
+ assert.equal(await missingSession.window.psyCloudV23.completeOAuthCallback(),false);
+ assert.match(missingSession.nodes.get('psy-online-status').textContent,/OAUTH_SESSION_MISSING/,'a missing response session gets an actionable safe diagnostic');
 
  const mismatch=boot({session:existing,search:'?code=linked-code',exchangeSession:{access_token:'other-access',refresh_token:'other-refresh',user:{id:'another-account'}}});
  mismatch.values.set(INTENT_KEY,JSON.stringify({provider:'github',mode:'link',userId:'account-7',startedAt:Date.now()}));
