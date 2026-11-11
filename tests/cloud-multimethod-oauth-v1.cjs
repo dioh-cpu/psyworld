@@ -6,6 +6,7 @@ const source=fs.readFileSync(require.resolve('../core/cloud-save-v23.js'),'utf8'
 const SESSION_KEY='psyworld_online_session_v23';
 const INTENT_KEY='psyworld_oauth_intent_v1';
 const STORAGE_KEY='psyworld_supabase_oauth_flow_v1';
+const EXIT_KEY='psyworld_local_profile_signed_out_v36';
 
 function boot({search='',session=null,exchangeSession=null,signinError=null,exchangeError=null}={}){
  const values=new Map(),calls={clients:[],signin:[],link:[],setSession:[],exchange:[],signout:[]},nodes=new Map();
@@ -70,6 +71,7 @@ function boot({search='',session=null,exchangeSession=null,signinError=null,exch
  assert.equal(await callback.window.psyCloudV23.completeOAuthCallback(),true,'PKCE callback exchanges its one-time code');
  assert.equal(callback.calls.exchange[0],'one-time-code');
  assert.equal(JSON.parse(callback.values.get(SESSION_KEY)).user.id,'user-1','callback session is persisted for cloud save');
+ assert.equal(callback.values.get(EXIT_KEY),'1','a new OAuth login keeps an unrelated local profile out of startup while its account save is resolved');
  assert.equal(callback.location.search,'','authorization code is removed from the address bar');
  assert.equal(callback.values.has(INTENT_KEY),false,'OAuth intent is cleared after successful exchange');
  assert.equal(callback.calls.signout.length,0,'successful OAuth cleanup never calls Supabase logout or revokes the new refresh token');
@@ -90,6 +92,7 @@ function boot({search='',session=null,exchangeSession=null,signinError=null,exch
  mismatch.values.set(INTENT_KEY,JSON.stringify({provider:'github',mode:'link',userId:'account-7',startedAt:Date.now()}));
  assert.equal(await mismatch.window.psyCloudV23.completeOAuthCallback(),false,'identity-link callback cannot replace the existing account');
  assert.equal(JSON.parse(mismatch.values.get(SESSION_KEY)).user.id,'account-7','mismatched callback preserves the prior session');
+ assert.equal(mismatch.values.has(EXIT_KEY),false,'a rejected identity link does not change local profile state');
  assert.match(mismatch.nodes.get('psy-online-status').textContent,/sessão anterior foi preservada/i);
 
  const canceled=boot({session:existing,search:'?error=access_denied'});

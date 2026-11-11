@@ -8746,6 +8746,9 @@ window.autoLoad=autoLoad=psyV9LoadLocal;
 window.psyV9HasLocalSave=()=>[PSY_LOCAL_KEY,PSY_LOCAL_V9_KEY,'psyWorldSave_v2',PSY_LOCAL_BACKUP_KEY].some(k=>psyV9Valid(psyV9Parse(localStorage.getItem(k))));
 
 function psyV9EnterSavedGame(){
+  // An online identity may still be resolving its server-owned character after OAuth.
+  // Never resume the unrelated local profile while the account-selection lock is set.
+  try{if(localStorage.getItem('psyworld_local_profile_signed_out_v36')==='1')return false}catch(e){return false}
   if(!psyV9LoadLocal())return false;
   const login=document.getElementById('screen-login'),starter=document.getElementById('screen-starter'),game=document.getElementById('game-wrap');
   if(login)login.style.display='none';if(starter)starter.style.display='none';if(game)game.style.display='block';
