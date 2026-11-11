@@ -329,26 +329,31 @@ function prepareAvatar(entry){
   const walk=W.PsyTrainerWalkV1;
   if(walk){entry.animationAtlas=walk.getAnimationAtlas?.(entry.im);if(!entry.animationAtlas)entry.atlas=walk.getAtlas(entry.im);entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight}
 }
-function drawPlayer(c,x,y){
+function drawPlayer(c,x,y,options={}){
+  const scene=options.scene||state.inside?.id||state.world?.id||'city-psy';
+  const facing=options.facing||state.facing||'down';
+  const moving=options.moving===undefined?state.moving:!!options.moving;
+  const walkFrame=Number(options.walkFrame??state.walkFrame)||0;
+  const scale=Math.max(.75,Math.min(2,Number(options.scale)||1));
   c.save();
   c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13,5,0,0,Math.PI*2);c.fill();
-  const fashion=W.PsyProfessions?.cosmetic?.();if(fashion){c.save();c.strokeStyle=fashion.color;c.globalAlpha=.7;c.lineWidth=2;c.beginPath();c.ellipse(x,y+4,18,7,0,0,Math.PI*2);c.stroke();if(state.moving){c.globalAlpha=.45;for(let i=0;i<3;i++){c.beginPath();c.arc(x+(i-1)*9,y+8+(Math.sin(state.walkFrame+i)+1)*4,1.8,0,Math.PI*2);c.fillStyle=fashion.color;c.fill()}}c.restore()}
-  const entry=selectedAvatar(),scene=state.inside?.id||state.world?.id,action=W.PsyHobbiesVFX?.sampleAction?.(scene,{x,y,moving:false}),row=action?.row??({down:0,left:1,right:2,up:3})[state.facing]??0;W.PsyCostumeAuraV1?.draw?.(c,entry?.im?.src,x,y+5);W.PsyTreasureHuntV1?.drawBountyAura?.(c,x,y,performance.now());let usedSprite=false;
+  const fashion=W.PsyProfessions?.cosmetic?.();if(fashion){c.save();c.strokeStyle=fashion.color;c.globalAlpha=.7;c.lineWidth=2;c.beginPath();c.ellipse(x,y+4,18,7,0,0,Math.PI*2);c.stroke();if(moving){c.globalAlpha=.45;for(let i=0;i<3;i++){c.beginPath();c.arc(x+(i-1)*9,y+8+(Math.sin(walkFrame+i)+1)*4,1.8,0,Math.PI*2);c.fillStyle=fashion.color;c.fill()}}c.restore()}
+  const entry=selectedAvatar(),action=W.PsyHobbiesVFX?.sampleAction?.(scene,{x,y,moving:false}),row=action?.row??({down:0,left:1,right:2,up:3})[facing]??0;W.PsyCostumeAuraV1?.draw?.(c,entry?.im?.src,x,y+5);W.PsyTreasureHuntV1?.drawBountyAura?.(c,x,y,performance.now());let usedSprite=false;
   if(entry?.loaded){
-    const moving=state.moving&&!action;
+    const walking=moving&&!action,w=48*scale,h=64*scale,left=x-w/2,top=y+5-60*scale;
     const walk=W.PsyTrainerWalkV1;
     if(entry.animationAtlas&&walk?.renderAnimated){
       if(!humanAnimationState)humanAnimationState=walk.createState();
-      walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving,row,x,y,identity:state.world.id+':'+(state.inside?.id||'outside')+':'+entry.im.src},x-24,y+5-60,48,64);
+      walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:scene+':'+entry.im.src},left,top,w,h);
       usedSprite=true;
     }else if(entry.atlas&&walk){
-      walk.draw(c,entry.atlas,row,walk.column(Math.floor(state.walkFrame),moving),x-24,y+7-64,48,64);
+      walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
       usedSprite=true;
     }else if(entry.im?.naturalWidth&&entry.im?.naturalHeight){
       // Graphics still work if atlas preprocessing fails or an older profile loads.
       const sw=entry.im.naturalWidth/4,sh=entry.im.naturalHeight/4;
       c.drawImage(entry.im,0*sw+sw*.25,row*sh+sh*.22,sw*.5,sh*.58,
-        x-16.5,y+7-46,33,46);
+        x-16.5*scale,y+7-46*scale,33*scale,46*scale);
       usedSprite=true;
     }
   }
@@ -357,7 +362,8 @@ function drawPlayer(c,x,y){
   // The canvas redraws as soon as the trainer atlas becomes available.
   c.font='bold 12px system-ui';c.fillStyle='#fff';c.textAlign='center';
   c.shadowColor='#000';c.shadowBlur=4;
-  if(!state.hideTrainerName){c.fillText(player().name||'Treinador',x,y-59);W.PsySeason?.drawTitle(c,x,y-76)}c.restore();
+  if(options.showName!==false&&!state.hideTrainerName){c.fillText(player().name||'Treinador',x,y-59*scale);W.PsySeason?.drawTitle(c,x,y-76*scale)}c.restore();
+  return usedSprite;
 }
 
 function drawInterior(c,inside){
@@ -618,7 +624,7 @@ function findPath(from,to,request){
     slice();
   });
 }
-W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.pendingHobby=null;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
+W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),drawTrainer:(ctx,x,y,options)=>drawPlayer(ctx,x,y,options),dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.pendingHobby=null;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
  navigate:async function(at){autoHunt=false;state.pendingHobby=null;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){state.pendingHobby=null;if(active&&!vipActive()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1')open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,

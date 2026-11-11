@@ -280,6 +280,9 @@ async function completeOAuthCallback(){
   const next= data?.session;
   if(!next?.access_token||!next?.user?.id)throw new Error('oauth_session_missing');
   if(intent.mode==='link'&&String(next.user.id)!==String(intent.userId||''))throw new Error('oauth_link_owner_changed');
+  // Keep any pre-existing local profile out of startup while this account's
+  // server-owned character list and save are being resolved after the redirect.
+  if(intent.mode==='login')try{localStorage.setItem(EXIT_KEY,'1')}catch(_){}
   acceptAuth(next);clearOAuthCallbackUrl();await clearOAuthFlow();
   signupMessage(intent.mode==='link'?'✅ Provedor vinculado à conta autenticada.':'✅ Login social concluído.','#86efac');return true;
  }catch(e){

@@ -10,6 +10,9 @@ const walkProfiles=Object.freeze({
  921:Object.freeze({poseMs:125,scale:1.45,shadowX:7,shadowY:2.5})
 });
 const trails=new Map();let serial=0;
+// Distance is measured along the player's collision-approved trail, so a
+// wider visual gap still follows real turns and cannot cut across obstacles.
+const FOLLOWER_TRAIL_DISTANCE=64;
 function key(mon){return mon.pokemon_uid||mon.followerKeyV47||(mon.followerKeyV47='partner-'+Date.now().toString(36)+'-'+(++serial));}
 function selected(){const p=player(),choice=p.meta?.followerV47;if(!choice?.enabled)return null;return (p.team||[]).find(m=>(m.pokemon_uid||m.followerKeyV47)===choice.key&&Number(m.hp)>0)||null;}
 function supported(mon){const entry=manifest[mon.id];return !!entry&&!mon.isMega&&!mon.halloweenForm&&(!mon.shiny||entry.shiny);}
@@ -19,7 +22,7 @@ function sample(trail,x,y,scene,valid){
  // Retain actual collision-approved positions. Never ease diagonally across a corner.
  const steps=Math.ceil(d/3),from=trail.last;for(let i=1;i<=steps;i++){const point={x:from.x+(x-from.x)*i/steps,y:from.y+(y-from.y)*i/steps};if(!valid||valid(point.x,point.y))trail.points.push(point);}
  trail.last={x,y};let length=0;for(let i=trail.points.length-1;i>0;i--)length+=Math.hypot(trail.points[i].x-trail.points[i-1].x,trail.points[i].y-trail.points[i-1].y);
- while(length>34&&trail.points.length>1){const next=trail.points[1],old=trail.points.shift(),distance=Math.hypot(next.x-old.x,next.y-old.y);length-=distance;const dx=next.x-trail.pos.x,dy=next.y-trail.pos.y;trail.pos={...next};if(Math.hypot(dx,dy)>.2){trail.facing=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';trail.moving=true;trail.phase+=distance;}}
+ while(length>FOLLOWER_TRAIL_DISTANCE&&trail.points.length>1){const next=trail.points[1],old=trail.points.shift(),distance=Math.hypot(next.x-old.x,next.y-old.y);length-=distance;const dx=next.x-trail.pos.x,dy=next.y-trail.pos.y;trail.pos={...next};if(Math.hypot(dx,dy)>.2){trail.facing=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';trail.moving=true;trail.phase+=distance;}}
  if(trail.points.length>180)trail.points.splice(0,trail.points.length-180);return trail;
 }
 // Quaxly's two authored poses alternate feet; their common sole edge is y=63.
