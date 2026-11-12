@@ -23,7 +23,7 @@ for(let y=0;y<MASK_H;y++)for(const [start,end] of source.rows[y]){
  bits.fill(1,y*MASK_W+start,y*MASK_W+end);
 }
 // Keep the artwork's 2:1 geometry; the game renderer uniformly fits this map.
-map.w=WORLD_W;map.h=WORLD_H;map.art='assets/story/pallet-town-anime-rebuild-v2.png';
+map.w=WORLD_W;map.h=WORLD_H;map.art='assets/story/pallet/pallet-background-layered-v1.png';
 map.spawn=[450,205];
 map.returnSpawn=[463,146];
 map.exit=[463,16];

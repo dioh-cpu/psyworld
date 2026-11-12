@@ -22,7 +22,7 @@ assert.deepEqual([mask.width, mask.height], [1536, 768]);
 assert.deepEqual([map.w, map.h], [900, 450]);
 assert.deepEqual([map.w, map.h], [data.route1.w, data.route1.h], 'Pallet keeps the same world scale as Route 1');
 assert.equal(map.w / map.h, mask.width / mask.height, 'map and source mask preserve 2:1 geometry');
-assert.equal(map.art, 'assets/story/pallet-town-anime-rebuild-v2.png');
+assert.equal(map.art, 'assets/story/pallet/pallet-background-layered-v1.png');
 assert.equal(map.grass.length, 0, 'Pallet has no wild encounter grass');
 assert.equal(map.encounter, undefined, 'Pallet does not define outdoor encounters');
 const png = fs.readFileSync(path.join(root, map.art));

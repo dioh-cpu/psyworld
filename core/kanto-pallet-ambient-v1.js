@@ -82,7 +82,7 @@ function makeFoliagePatch(mapCanvas,zone){
   ctx.putImageData(pixels,0,0);return {canvas,zone};
  }catch(_){return null;}
 }
-function prepare(mapCanvas){
+function prepare(mapCanvas,options={}){
  if(!mapCanvas||source===mapCanvas)return;
  source=mapCanvas;
  maskCanvas=D.createElement('canvas');maskCanvas.width=WIDTH;maskCanvas.height=HEIGHT;
@@ -106,7 +106,7 @@ function prepare(mapCanvas){
  textureCtx.globalCompositeOperation='destination-in';textureCtx.drawImage(maskCanvas,0,0);textureCtx.globalCompositeOperation='source-over';
  waterCanvas=D.createElement('canvas');waterCanvas.width=WIDTH;waterCanvas.height=HEIGHT;
  waterCtx=waterCanvas.getContext('2d');
- foliagePatches=foliageZones.map(zone=>makeFoliagePatch(mapCanvas,zone)).filter(Boolean);
+ foliagePatches=options.independentTrees?[]:foliageZones.map(zone=>makeFoliagePatch(mapCanvas,zone)).filter(Boolean);
 }
 function modulo(n,m){return ((n%m)+m)%m}
 function drawLeaf(c,item,now,index){
@@ -193,12 +193,12 @@ function drawBirdsong(now,position){
  }
  nextBirdAt=now+10500+Math.random()*11500;
 }
-function draw(ctx,now,mapCanvas,position){
+function draw(ctx,now,mapCanvas,position,options={}){
  drawBirdsong(now,position);
  if(reduced())return;
- prepare(mapCanvas);if(!maskCanvas)return;
+ prepare(mapCanvas,options);if(!maskCanvas)return;
  drawWater(now);ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.65;ctx.drawImage(waterCanvas,0,0);ctx.restore();
- drawFoliage(ctx,now);
+ if(!options.independentTrees)drawFoliage(ctx,now);
  for(let i=0;i<leaves.length;i++)drawLeaf(ctx,leaves[i],now,i);
 }
 W.PsyKantoPalletAmbientV1={draw,perches:birdPerches};
