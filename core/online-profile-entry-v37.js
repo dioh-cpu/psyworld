@@ -18,11 +18,19 @@ const STASH_KEY='psyworld_local_profile_stash_v38';
 const PENDING_KEY='psyworld_new_character_pending_v38';
 const SELECTED_KEY='psyworld_active_character_v38';
 const CHARACTER_ID_KEY='psyworld_active_character_id_v1';
-let characterRequest=null,characterRequestOwner='',characterRetryOwner='',characterRetryAt=0,automaticEntryOwner='';
+let characterRequest=null,characterRequestOwner='',characterRetryOwner='',characterRetryAt=0,automaticEntryOwner='',entryGeneration=0,entryObservedOwner='',sessionEntryFlight=null;
 const SAVE_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_v2','psyWorldSave_backup'];
 const $=id=>D.getElementById(id);
 const toast=(m,t=3200)=>{try{W.notif?.(m,t)}catch(_){console.log(m)}};
 function parse(s){try{return s?JSON.parse(s):null}catch(_){return null}}
+const entryTrace=[];
+function traceEntry(step,status,durationMs=0,code=''){
+  const row={step,status,durationMs:Math.max(0,Math.round(durationMs)),...(code?{code}:{})};entryTrace.push(row);if(entryTrace.length>40)entryTrace.shift();
+  try{localStorage.setItem('psyworld_entry_trace_v1',JSON.stringify(entryTrace))}catch(_){}
+  try{console.info('[PSYWORLD Entry]',JSON.stringify(row))}catch(_){}
+}
+function startEntryStep(step){const started=Date.now();traceEntry(step,'pending');let ended=false;return(status,code='')=>{if(ended)return;ended=true;traceEntry(step,status,Date.now()-started,code)}}
+function safeEntryCode(error){const value=String(error?.code||error?.message||'').toLowerCase();if(/timeout|abort/.test(value))return'entry_request_timeout';if(/identity|owner|user.*change/.test(value))return'entry_identity_changed';if(/save|invalid/.test(value))return'entry_save_invalid';if(/entry_runtime_rejected/.test(value))return'entry_runtime_rejected';if(/network|fetch|http|temporarily/.test(value))return'entry_request_failed';if(/runtime/.test(value))return'entry_runtime_unavailable';return'entry_failed'}
 function session(){return parse(localStorage.getItem(SESSION_KEY))}
 function tokenUserKey(token){try{const part=String(token||'').split('.')[1];if(!part)return'';const b=part.replace(/-/g,'+').replace(/_/g,'/');return String(JSON.parse(atob(b.padEnd(Math.ceil(b.length/4)*4,'='))).sub||'')}catch(_){return''}}
 function sessionUserKey(s=session()){return String(s?.user?.id||s?.user?.email||s?.email||tokenUserKey(s?.access_token)||'')}
@@ -88,6 +96,7 @@ async function renderCharacters(force=false){
   const ss=session();
   if(!ss?.access_token){box.innerHTML='';box.style.display='none';box.dataset.loadedOwner='';return}
   const owner=authenticatedUserId(ss);
+  const generation=entryGeneration;
   const form=$('psy-online-form'),toggle=$('psy-online-toggle'),login=$('screen-login');
   const showAccount=!!(form&&login&&getComputedStyle(login).display!=='none');
   if(!owner){if(showAccount){form.style.display='block';toggle?.setAttribute('aria-expanded','true')}W.psyCloudV23?.finishEntryRecovery?.();box.style.display='block';box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#fca5a5">Não foi possível validar a identidade desta sessão. Entre novamente para proteger seus saves.</div>';box.dataset.loadedOwner='';return}
@@ -108,8 +117,10 @@ async function renderCharacters(force=false){
   }
   const request=(async()=>{
     try{
-      const chars=await listCharacters(owner);
-      if(authenticatedUserId(session())!==owner)throw new Error('account_identity_changed');
+      const listStep=startEntryStep('character_list');
+      let chars;
+      try{chars=await listCharacters(owner);listStep('completed')}catch(e){listStep('failed',safeEntryCode(e));throw e}
+      if(generation!==entryGeneration||authenticatedUserId(session())!==owner)throw Object.assign(new Error('account_identity_changed'),{code:'entry_identity_changed'});
       const valid=chars.filter(c=>String(c?.id||'').trim()&&String(c?.nickname||'').trim());
       const rows=valid.map(c=>`<button type="button" data-psy-character-id="${esc(c.id)}" data-psy-char="${esc(c.nickname)}" aria-pressed="${String(c.id)===localStorage.getItem(CHARACTER_ID_KEY)?'true':'false'}" style="display:block;width:100%;margin-top:5px;padding:8px;border:1px solid #256b8a;border-radius:6px;background:#0b2538;color:#fff;text-align:left;cursor:pointer"><b>${esc(c.nickname)}</b>${c.active_pokemon?` • ${esc(c.active_pokemon)} Lv.${Number(c.active_level||1)}`:''}</button>`).join('');
       const uncertain=chars.length!==valid.length;
@@ -127,6 +138,7 @@ async function renderCharacters(force=false){
         if(automaticEntryOwner!==key){automaticEntryOwner=key;await openCharacter(valid[0],{automatic:true,box})}
       }else W.psyCloudV23?.finishEntryRecovery?.();
     }catch(e){
+      if(generation!==entryGeneration)return;
       box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#fca5a5">Não foi possível carregar seus personagens. Nenhum save foi alterado. Verifique sua conexão e tente novamente.</div><button type="button" data-psy-retry="1" style="display:block;width:100%;margin-top:7px;padding:8px;border:1px solid #fca5a5;border-radius:6px;background:#351a24;color:#fff;font-weight:800;cursor:pointer">TENTAR NOVAMENTE</button>';
       box.dataset.loadedOwner='';characterRetryOwner=owner;characterRetryAt=Date.now()+20000;
       box.querySelector('[data-psy-retry]')?.addEventListener('click',()=>renderCharacters(true));
@@ -165,20 +177,24 @@ async function openCharacter(target,{automatic=false,box=ensureCharacterList()}=
   const nickname=target&&typeof target==='object'?target.nickname:target;
   const nick=String(nickname||'').trim(),owner=authenticatedUserId(session());
   if(nick.length<2||!owner||automatic&&!requestedId)return toast('Não foi possível validar este personagem. Atualize a lista da conta.');
+  const generation=entryGeneration,fetchStep=startEntryStep('character_save_fetch'),automaticStep=automatic?startEntryStep('automatic_entry'):null;
   try{
-    const d=await (requestedId&&typeof W.psyCloudV23?.getAccountCharacterById==='function'?W.psyCloudV23.getAccountCharacterById(requestedId):api('/api/player/character?'+(requestedId?'character_id='+encodeURIComponent(requestedId):'nickname='+encodeURIComponent(nick))));
+    const d=await (requestedId&&typeof W.psyCloudV23?.getAccountCharacterById==='function'?W.psyCloudV23.getAccountCharacterById(requestedId):api('/api/player/character?'+(requestedId?'character_id='+encodeURIComponent(requestedId):'nickname='+encodeURIComponent(nick))));fetchStep('completed');
+    if(generation!==entryGeneration||authenticatedUserId(session())!==owner)throw Object.assign(new Error('account_identity_changed'),{code:'entry_identity_changed'});
     const c=d.character;
     if(authenticatedUserId(session())!==owner||requestedId&&String(c?.id||'')!==requestedId)throw new Error('character_id_mismatch');
     const save=W.psyCloudV23?.migrateSave?.(c?.save,{nickname:c?.nickname||nick,characterId:c?.id})||c?.save;
     if(c?.save&&save&&JSON.stringify(c.save)!==JSON.stringify(save)){try{const owner=sessionUserKey(session()),identity=c.id?'id:'+c.id:'nick:'+String(c.nickname||nick).toLowerCase(),backupKey='psyworld_character_backup_v1:'+encodeURIComponent(owner+'::'+identity+'::'+String(c.updated_at||'legacy'));if(!localStorage.getItem(backupKey))localStorage.setItem(backupKey,JSON.stringify({source:'cloud',schemaVersion:1,ownerId:owner,characterId:c.id||null,nickname:c.nickname||nick,cloudRevision:c.updated_at||null,savedAt:Date.now(),save:c.save}))}catch(e){console.warn('legacy cloud save backup',e)}}
-    if(!validSave(save))throw new Error('Save do personagem inválido ou incompatível. O original foi preservado.');
+    const validateStep=startEntryStep('save_validation');
+    if(!validSave(save)){validateStep('failed','entry_save_invalid');throw Object.assign(new Error('Save do personagem inválido ou incompatível. O original foi preservado.'),{code:'entry_save_invalid'})}
+    validateStep('completed');
     saveStash();
     const raw=JSON.stringify(save);
     localStorage.setItem('psyWorldSave',raw);localStorage.setItem('psyWorldSave_v9',raw);
     localStorage.setItem(SELECTED_KEY,c.nickname||nick);
     if(c.id)localStorage.setItem(CHARACTER_ID_KEY,String(c.id));
     const active=player();if(active){active.meta=active.meta||{};active.meta.characterNickname=c.nickname||nick;if(c.id){active.meta.characterId=String(c.id);active.playerCharacterId=String(c.id)}}
-    localStorage.removeItem(PENDING_KEY);localStorage.removeItem(EXIT_KEY);
+    localStorage.removeItem(PENDING_KEY);
     const ss=session();try{
       const old=parse(localStorage.getItem(SYNC_KEY))||{},owner=sessionUserKey(ss),selected=c.nickname||nick;
       const same=old.userKey===owner&&String(old.characterNickname||'').toLowerCase()===selected.toLowerCase();
@@ -192,8 +208,16 @@ async function openCharacter(target,{automatic=false,box=ensureCharacterList()}=
       profiles[profileKey]=next;
       localStorage.setItem(SYNC_PROFILES_KEY,JSON.stringify(profiles));
     }catch(_){}
-    toast('☁ Abrindo '+(c.nickname||nick)+'...',1800);setTimeout(()=>location.reload(),250);
-  }catch(e){if(automatic){automaticEntryOwner='';W.psyCloudV23?.finishEntryRecovery?.();showCharacterOpenFailure(box,e)}else toast('❌ Não foi possível abrir o personagem. Confira sua conexão e tente novamente.',4200)}
+    const commitStep=startEntryStep('save_commit');commitStep('completed');
+    if(generation!==entryGeneration||authenticatedUserId(session())!==owner)throw Object.assign(new Error('account_identity_changed'),{code:'entry_identity_changed'});
+    const enterStep=startEntryStep('game_entry');
+    try{
+      localStorage.removeItem(EXIT_KEY);
+      if(typeof W.psyV9EnterSavedGame!=='function')throw Object.assign(new Error('entry_runtime_unavailable'),{code:'entry_runtime_unavailable'});
+      if(W.psyV9EnterSavedGame()!==true)throw Object.assign(new Error('entry_runtime_rejected_save'),{code:'entry_runtime_rejected'});
+      enterStep('completed');automaticStep?.('completed');W.psyCloudV23?.finishEntryRecovery?.();toast('☁ Bem-vindo '+(c.nickname||nick)+'!',1800);
+    }catch(e){localStorage.setItem(EXIT_KEY,'1');enterStep('failed',safeEntryCode(e));throw e}
+  }catch(e){fetchStep(e?.code==='entry_identity_changed'?'cancelled':'failed',safeEntryCode(e));automaticStep?.(generation===entryGeneration?'failed':'cancelled',safeEntryCode(e));if(generation!==entryGeneration)return;if(automatic){automaticEntryOwner='';W.psyCloudV23?.finishEntryRecovery?.();showCharacterOpenFailure(box,e)}else toast('❌ Não foi possível abrir o personagem. Confira sua conexão e tente novamente.',4200)}
 }
 function beginNewCharacter(nick){
   saveStash();backupAndClearActive();
@@ -293,8 +317,21 @@ function maintenance(){
   installLogin();installGoStarter();installConfirm();installLocalLoadRestore();renderConnectedStatus();
   if(session()?.access_token&&$('screen-login')&&getComputedStyle($('screen-login')).display!=='none')renderCharacters();
 }
+function handleSessionChanged(event){
+  const owner=event?.detail?.authenticated?authenticatedUserId(session()):'';
+  if(!owner){if(entryObservedOwner){entryGeneration++;entryObservedOwner='';characterRequest=null;characterRequestOwner='';automaticEntryOwner='';sessionEntryFlight=null;traceEntry('authenticated_session','cancelled',0,'entry_session_ended');W.psyCloudV23?.finishEntryRecovery?.()}return}
+  if(owner!==entryObservedOwner){entryGeneration++;entryObservedOwner=owner;characterRequest=null;characterRequestOwner='';automaticEntryOwner='';sessionEntryFlight=null}
+  traceEntry('authenticated_session','completed');
+  const login=$('screen-login');if(!login||getComputedStyle(login).display==='none')return;
+  if(sessionEntryFlight)return;
+  const generation=entryGeneration;
+  sessionEntryFlight=renderCharacters().catch(e=>{traceEntry('session_entry','failed',0,safeEntryCode(e))}).finally(()=>{if(generation===entryGeneration)sessionEntryFlight=null});
+  return sessionEntryFlight;
+}
+entryObservedOwner=authenticatedUserId(session());
+try{W.addEventListener('psyworld-online-session-changed',handleSessionChanged)}catch(_){}
 function boot(){maintenance();[80,180,350,700,1400,3000,6000].forEach(ms=>setTimeout(maintenance,ms));setInterval(()=>{installLogin();installGoStarter();installConfirm();installLocalLoadRestore();if(locked()&&!localStorage.getItem(PENDING_KEY))saveStash();if(localStorage.getItem(PENDING_KEY))startPendingFresh()},1800)}
 if(D.readyState==='loading')D.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-W.psyCharactersV38={list:listCharacters,open:openCharacter,render:renderCharacters};
+W.psyCharactersV38={list:listCharacters,open:openCharacter,render:renderCharacters,diagnostics:()=>entryTrace.slice()};
 console.log('✅ PSYWORLD V38B ativo: nick existente abre; nick novo cria personagem independente',BUILD);
 })(window,document);

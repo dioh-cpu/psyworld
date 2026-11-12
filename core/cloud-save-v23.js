@@ -187,30 +187,35 @@ async function accountRead(path){
  if(cached&&(cached.pending||cached.expiresAt>now))return cached.promise;
  if(cached)accountReadFlights.delete(key);
  const entry={pending:true,expiresAt:0,promise:null};
- entry.promise=(async()=>{try{const result=await api(path);if(userKey()!==owner)throw new Error('account_identity_changed');entry.pending=false;entry.expiresAt=Date.now()+3000;return result}catch(error){accountReadFlights.delete(key);throw error}})();
+ const controller=typeof AbortController==='function'?new AbortController():null;let timeoutId=0;
+ const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>{try{controller?.abort()}catch(_){}const e=new Error('entry_request_timeout');e.code='entry_request_timeout';reject(e)},20000)});
+ entry.promise=(async()=>{try{const result=await Promise.race([api(path,{signal:controller?.signal}),timeout]);if(userKey()!==owner)throw new Error('account_identity_changed');entry.pending=false;entry.expiresAt=Date.now()+3000;return result}catch(error){accountReadFlights.delete(key);throw error}finally{clearTimeout(timeoutId)}})();
  accountReadFlights.set(key,entry);
  while(accountReadFlights.size>8)accountReadFlights.delete(accountReadFlights.keys().next().value);
  return entry.promise;
 }
 function getAccountState(){return accountRead('/api/player')}
 function getAccountCharacterById(id){const value=String(id||'').trim();if(!value)throw new Error('character_id_required');return accountRead('/api/player/character?character_id='+encodeURIComponent(value))}
-async function loadConfig(){if(config)return config;const r=await fetch('/api/config',{cache:'no-store'});config=await r.json();return config}
-async function authFetch(path,opt={}){const c=await loadConfig();if(!c.onlineConfigured||!c.supabaseUrl||!c.supabaseAnonKey)throw new Error('online_not_configured');const r=await fetch(c.supabaseUrl+'/auth/v1/'+path,{...opt,headers:{apikey:c.supabaseAnonKey,'Content-Type':'application/json',...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok){const e=new Error(d.msg||d.error_description||d.message||d.error_code||d.code||d.error||('AUTH '+r.status));e.status=r.status;e.code=d.error_code||d.code||d.error||'';throw e}return d}
+async function fetchWithTimeout(url,opt={},ms=20000){const controller=typeof AbortController==='function'?new AbortController():null;let timer=0;const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{try{controller?.abort()}catch(_){}const e=new Error('entry_request_timeout');e.code='entry_request_timeout';reject(e)},ms)});try{return await Promise.race([fetch(url,{...opt,...(controller?{signal:controller.signal}:{})}),timeout])}finally{clearTimeout(timer)}}
+async function loadConfig(){if(config)return config;const r=await fetchWithTimeout('/api/config',{cache:'no-store'});config=await r.json();return config}
+async function authFetch(path,opt={}){const c=await loadConfig();if(!c.onlineConfigured||!c.supabaseUrl||!c.supabaseAnonKey)throw new Error('online_not_configured');const r=await fetchWithTimeout(c.supabaseUrl+'/auth/v1/'+path,{...opt,headers:{apikey:c.supabaseAnonKey,'Content-Type':'application/json',...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok){const e=new Error(d.msg||d.error_description||d.message||d.error_code||d.code||d.error||('AUTH '+r.status));e.status=r.status;e.code=d.error_code||d.code||d.error||'';throw e}return d}
 async function loadSupabaseSdk(){
  if(W.supabase?.createClient)return W.supabase;
  if(!oauthSdkPromise)oauthSdkPromise=new Promise((resolve,reject)=>{
+  let settled=false;const finish=(error,sdk)=>{if(settled)return;settled=true;clearTimeout(timer);if(error){oauthSdkPromise=null;reject(error)}else resolve(sdk)};
+  const timer=setTimeout(()=>finish(new Error('auth_sdk_unavailable')),20000);
   const existing=D.querySelector?.('script[data-psy-supabase-auth-sdk]');
-  if(existing){existing.addEventListener('load',()=>{if(W.supabase?.createClient)resolve(W.supabase);else{oauthSdkPromise=null;reject(new Error('auth_sdk_unavailable'))}},{once:true});existing.addEventListener('error',()=>{oauthSdkPromise=null;reject(new Error('auth_sdk_unavailable'))},{once:true});return}
+  if(existing){existing.addEventListener('load',()=>{if(W.supabase?.createClient)finish(null,W.supabase);else finish(new Error('auth_sdk_unavailable'))},{once:true});existing.addEventListener('error',()=>finish(new Error('auth_sdk_unavailable')),{once:true});return}
   const script=D.createElement('script');script.src='assets/vendor/supabase-js-2.117.2.js';script.async=true;script.dataset.psySupabaseAuthSdk='1';
-  script.onload=()=>{if(W.supabase?.createClient)resolve(W.supabase);else{oauthSdkPromise=null;reject(new Error('auth_sdk_unavailable'))}};
-  script.onerror=()=>{oauthSdkPromise=null;reject(new Error('auth_sdk_unavailable'))};D.head.appendChild(script);
+  script.onload=()=>{if(W.supabase?.createClient)finish(null,W.supabase);else finish(new Error('auth_sdk_unavailable'))};
+  script.onerror=()=>finish(new Error('auth_sdk_unavailable'));D.head.appendChild(script);
  });
  return oauthSdkPromise;
 }
 async function getOAuthClient(){
  const c=await loadConfig();if(!c.onlineConfigured||!c.supabaseUrl||!c.supabaseAnonKey)throw new Error('online_not_configured');
  if(oauthClient)return oauthClient;
- const sdk=await loadSupabaseSdk();oauthClient=sdk.createClient(c.supabaseUrl,c.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false,flowType:'pkce',storageKey:OAUTH_STORAGE_KEY}});
+ const sdk=await loadSupabaseSdk();oauthClient=sdk.createClient(c.supabaseUrl,c.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:false,detectSessionInUrl:false,flowType:'pkce',storageKey:OAUTH_STORAGE_KEY},global:{fetch:(input,init)=>fetchWithTimeout(input,init,20000)}});
  return oauthClient;
 }
 function oauthRedirectTo(){
@@ -790,14 +795,20 @@ function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem();insta
 async function bootstrap(){
  ensureUI();
  const callbackData=hasOAuthCallbackData();if(callbackData)setEntryRecovery(true);
- const callbackComplete=await completeOAuthCallback();if(callbackData&&!callbackComplete)setEntryRecovery(false);
+ let stepAt=Date.now();traceCloudEntry('oauth_callback','pending');
+ const callbackComplete=await completeOAuthCallback();traceCloudEntry('oauth_callback',callbackData?(callbackComplete?'completed':'failed'):'skipped',Date.now()-stepAt,callbackData&&!callbackComplete?'oauth_callback_failed':'');if(callbackData&&!callbackComplete)setEntryRecovery(false);
  captureAuthHash();readSession();renderStatus(callbackData&&!callbackComplete);
- try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();startAutosave();return}
- const authenticated=!!(config?.onlineConfigured&&await ensureToken());
+ stepAt=Date.now();traceCloudEntry('public_config','pending');try{await loadConfig();traceCloudEntry('public_config','completed',Date.now()-stepAt)}catch(e){traceCloudEntry('public_config','failed',Date.now()-stepAt,e?.code==='entry_request_timeout'?'entry_request_timeout':'config_unavailable');setEntryRecovery(false);signupMessage('A configuração online não respondeu. Tente novamente em Conta Online. Código: CLOUD_CONFIG_UNAVAILABLE','#fca5a5');installGlobalUI();startAutosave();return}
+ stepAt=Date.now();traceCloudEntry('session_validation','pending');const authenticated=!!(config?.onlineConfigured&&await ensureToken());traceCloudEntry('session_validation',authenticated?'completed':'failed',Date.now()-stepAt,authenticated?'':'session_unavailable');
  readSession();renderStatus(callbackData&&!callbackComplete);
- if(authenticated){try{const trusted=trustedSelectedCharacter(),state=trusted?{characters:[trusted]}:await getAccountState();if(!trusted)hydrateServerIdentity(state);renderLinkedIdentities();captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}
+ if(authenticated){stepAt=Date.now();traceCloudEntry('cloud_bootstrap','pending');try{const trusted=trustedSelectedCharacter(),state=trusted?{characters:[trusted]}:await getAccountState();if(!trusted)hydrateServerIdentity(state);renderLinkedIdentities();captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false;traceCloudEntry('cloud_bootstrap','completed',Date.now()-stepAt)}catch(e){traceCloudEntry('cloud_bootstrap','failed',Date.now()-stepAt,e?.code==='entry_request_timeout'?'entry_request_timeout':'cloud_request_failed');console.warn('[PSYWORLD Entry] cloud bootstrap failed')}}
  else setEntryRecovery(false);
  patchSave();installGlobalUI();startAutosave();setInterval(()=>{patchSave();installGlobalUI();renderCloudStatus();if(syncEnabled&&session?.access_token)queueSync()},15000)
+}
+function traceCloudEntry(step,status,durationMs=0,code=''){
+ const row={step,status,durationMs:Math.max(0,Math.round(durationMs)),...(code?{code}:{})};
+ try{const rows=JSON.parse(localStorage.getItem('psyworld_entry_trace_cloud_v1')||'[]');rows.push(row);while(rows.length>30)rows.shift();localStorage.setItem('psyworld_entry_trace_cloud_v1',JSON.stringify(rows))}catch(_){}
+ try{console.info('[PSYWORLD Entry]',JSON.stringify(row))}catch(_){}
 }
 W.psyCloudV23={login,signup,resendSignupConfirmation,loginWithGoogle:()=>socialLogin('google'),loginWithGithub:()=>socialLogin('github'),completeOAuthCallback,getAccountState,getAccountCharacterById,beginEntryRecovery:()=>setEntryRecovery(true),finishEntryRecovery:()=>setEntryRecovery(false),logout:async()=>{setEntryRecovery(false);try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);accountReadFlights.clear();syncEnabled=false;cloudPhase='idle';renderStatus();await renderLinkedIdentities();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:saveNow,saveNow,loadNow,compareNow,economy,bestLocal,captureActiveLocal,validSave,migrateSave:normalizeSave,status:cloudStatus,renderStatus:renderCloudStatus};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});

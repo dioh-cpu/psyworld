@@ -42,6 +42,7 @@ function boot({search='',session=null,exchangeSession=null,emptyExchange=false,s
  assert.equal(github.calls.clients[0].options.auth.flowType,'pkce','OAuth uses PKCE');
  assert.equal(github.calls.clients[0].options.auth.persistSession,true,'PKCE verifier persists across full-page redirects');
  assert.equal(github.calls.clients[0].options.auth.detectSessionInUrl,false,'callback is consumed explicitly before the app session changes');
+ assert.equal(typeof github.calls.clients[0].options.global.fetch,'function','Supabase Auth network calls have a bounded failure path during callback recovery');
  assert.equal(JSON.parse(github.values.get(INTENT_KEY)).mode,'login');
 
  const google=boot();

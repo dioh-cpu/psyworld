@@ -16,10 +16,10 @@ function node(id=''){
   };return n;
 }
 const validSave={version:9,savedAt:20,map:{x:10,y:20},player:{name:'Cloud Trainer',meta:{characterNickname:'Cloud Trainer'},team:[{id:25,name:'Pikachu',level:8}],box:[]}};
-function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='user-1',responseOwner=owner,characterSave=validSave,failState=false,failCharacter=false,localSave=null,holdState=false}={}){
-  let stateOutage=failState,recovery=false,releaseState;const stateGate=holdState?new Promise(resolve=>{releaseState=resolve}):null;const values=new Map(),calls={state:0,character:[],writes:[],recovery:[]},timeouts=[],nodes=new Map();
+function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='user-1',responseOwner=owner,characterSave=validSave,failState=false,failCharacter=false,localSave=null,holdState=false,authenticatedInitially=true}={}){
+  let stateOutage=failState,charOutage=failCharacter,recovery=false,releaseState;const stateGate=holdState?new Promise(resolve=>{releaseState=resolve}):null;const values=new Map(),calls={state:0,character:[],writes:[],recovery:[],entry:0},timeouts=[],nodes=new Map(),listeners=new Map();
   const localStorage={getItem:k=>values.has(k)?values.get(k):null,setItem(k,v){values.set(k,String(v))},removeItem:k=>values.delete(k),key:i=>[...values.keys()][i]||null,get length(){return values.size}};
-  localStorage.setItem(KEYS.session,JSON.stringify({access_token:'access-user-1',refresh_token:'refresh-user-1',user:{id:owner}}));
+  if(authenticatedInitially)localStorage.setItem(KEYS.session,JSON.stringify({access_token:'access-user-1',refresh_token:'refresh-user-1',user:{id:owner}}));
   localStorage.setItem(KEYS.exit,'1');
   if(localSave)localStorage.setItem('psyWorldSave',JSON.stringify(localSave));
   const el=(id,display)=>{const n=node(id);if(display)n.style.display=display;nodes.set(id,n);return n};
@@ -41,17 +41,17 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
     throw new Error('unexpected request '+url);
   }
   const player={name:'Local Trainer',meta:{},team:[{id:1,name:'Bulbasaur'}],box:[],gold:777};
-  const window={localStorage,location,history:{},P:player,notif(){},dispatchEvent(){},psyCloudV23:{validSave:s=>!!s?.player?.team?.length,migrateSave:s=>s,getAccountState:async()=>{calls.state++;calls.writes.push({url:'/api/player',method:'GET',authorization:'Bearer access-user-1'});if(stateOutage)throw new Error('network unavailable');return{user:{id:responseOwner},characters}},getAccountCharacterById:async id=>{calls.character.push({url:'/api/player/character?character_id='+id,authorization:'shared-request'});if(failCharacter)throw new Error('temporarily unavailable');return{character:{id:'char-1',nickname:'Cloud Trainer',save:characterSave,updated_at:'2026-11-10T00:00:00Z'}}},beginEntryRecovery(){recovery=true;form.style.display='none';calls.recovery.push('begin')},finishEntryRecovery(){recovery=false;form.style.display='block';calls.recovery.push('finish')}}};
+  const window={localStorage,location,history:{},P:player,notif(){},addEventListener(type,fn){const bucket=listeners.get(type)||[];bucket.push(fn);listeners.set(type,bucket)},dispatchEvent(event){return(listeners.get(event.type)||[]).map(fn=>fn(event))},psyV9EnterSavedGame(){calls.entry++;login.style.display='none';return true},psyCloudV23:{validSave:s=>!!s?.player?.team?.length,migrateSave:s=>s,getAccountState:async()=>{calls.state++;calls.writes.push({url:'/api/player',method:'GET',authorization:'Bearer access-user-1'});if(stateOutage)throw new Error('network unavailable');if(stateGate)await stateGate;return{user:{id:responseOwner},characters}},getAccountCharacterById:async id=>{calls.character.push({url:'/api/player/character?character_id='+id,authorization:'shared-request'});if(charOutage)throw new Error('temporarily unavailable');return{character:{id:'char-1',nickname:'Cloud Trainer',save:characterSave,updated_at:'2026-11-10T00:00:00Z'}}},beginEntryRecovery(){recovery=true;form.style.display='none';calls.recovery.push('begin')},finishEntryRecovery(){recovery=false;form.style.display='block';calls.recovery.push('finish')}}};
   const context={window,document,location,localStorage,fetch,CustomEvent:class{},console:{log(){},warn(){},error(){}},URL,URLSearchParams,Date,Promise,JSON,Number,String,Boolean,Math,Map,Array,Object,RegExp,encodeURIComponent,decodeURIComponent,getComputedStyle:n=>({display:n?.style?.display||'none'}),setTimeout(fn){timeouts.push(fn);return timeouts.length},clearTimeout(){},setInterval(){return 1},clearInterval(){},atob:v=>Buffer.from(v,'base64').toString('binary')};
   vm.runInNewContext(source,context,{filename:'core/online-profile-entry-v37.js'});
-  return {window,document,localStorage,calls,timeouts,nodes,form,toggle,status,nick,login,values,setStateOutage(v){stateOutage=v},releaseState(){releaseState?.()},isRecovering(){return recovery}};
+  return {window,document,localStorage,calls,timeouts,nodes,form,toggle,status,nick,login,values,setStateOutage(v){stateOutage=v},setCharacterOutage(v){charOutage=v},releaseState(){releaseState?.()},isRecovering(){return recovery},setSession(nextOwner){localStorage.setItem(KEYS.session,JSON.stringify({access_token:'access-'+nextOwner,refresh_token:'refresh-'+nextOwner,user:{id:nextOwner}}));return window.dispatchEvent({type:'psyworld-online-session-changed',detail:{authenticated:true}})},signOut(){localStorage.removeItem(KEYS.session);return window.dispatchEvent({type:'psyworld-online-session-changed',detail:{authenticated:false}})}};
 }
 
 (async()=>{
   const localOther={version:9,savedAt:5,player:{name:'Offline Profile',team:[{id:1,name:'Bulbasaur'}],box:[],gold:99}};
   const single=harness({localSave:localOther});
   await single.window.psyCharactersV38.render(true);
-  assert.equal(single.form.style.display,'none','successful single-character entry keeps the login controls hidden until the game reloads');
+  assert.equal(single.form.style.display,'block','successful entry releases the recovery card after entering the game directly');
   assert.equal(single.toggle.attributes['aria-expanded'],'true');
   assert.equal(single.calls.state,1,'server returns the validated UUID and its owned character list');
   assert.equal(single.calls.writes[0].authorization,'Bearer access-user-1');
@@ -62,8 +62,40 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   assert.equal(single.localStorage.getItem(KEYS.pending),null,'automatic entry never starts character creation');
   assert.equal(single.localStorage.getItem('psyWorldSave'),JSON.stringify(validSave),'server save replaces the active slot only after it validates');
   assert.equal(JSON.parse(single.localStorage.getItem(KEYS.stash)).psyWorldSave,JSON.stringify(localOther),'unrelated local save stays in the backup stash');
-  assert.equal(single.calls.reload,undefined,'entry requests a page reload only after accepted save; timer has not fired in the test');
-  assert.equal(single.isRecovering(),true,'single-character save stays behind the loading transition until the accepted character reloads');
+  assert.equal(single.calls.entry,1,'validated character enters the existing game runtime without a reload');
+  assert.equal(single.calls.reload,undefined,'automatic entry does not depend on a page reload');
+  assert.equal(single.isRecovering(),false,'recovery screen is dismissed as soon as gameplay entry succeeds');
+  assert.ok(single.window.psyCharactersV38.diagnostics().some(x=>x.step==='game_entry'&&x.status==='completed'),'safe entry trace records successful gameplay transition');
+
+  const oauthReturn=harness({authenticatedInitially:false});
+  oauthReturn.localStorage.setItem(KEYS.exit,'1');
+  const [oauthFlight]=oauthReturn.setSession('user-1');
+  const concurrent=[...oauthReturn.setSession('user-1')];
+  await Promise.all([oauthFlight,...concurrent]);
+  assert.equal(oauthReturn.calls.state,1,'the authenticated-session event starts entry immediately and concurrent events share the flight');
+  assert.equal(oauthReturn.calls.entry,1,'OAuth return enters the validated character without any page refresh');
+  assert.equal(oauthReturn.calls.reload,undefined);
+  assert.equal(oauthReturn.localStorage.getItem(KEYS.pending),null,'OAuth return never starts character creation');
+
+  const saveOutage=harness({failCharacter:true,localSave:localOther});
+  await saveOutage.window.psyCharactersV38.render(true);
+  assert.equal(saveOutage.calls.entry,0,'a failed server save fetch cannot start the game');
+  assert.match(saveOutage.nodes.get('psy-character-list-v38').innerHTML,/TENTAR NOVAMENTE/);
+  assert.equal(saveOutage.localStorage.getItem('psyWorldSave'),JSON.stringify(localOther),'a failed cloud fetch preserves the existing local save');
+  saveOutage.setCharacterOutage(false);
+  await saveOutage.nodes.get('psy-character-list-v38').querySelector('[data-psy-retry]').onclick();
+  assert.equal(saveOutage.calls.entry,1,'retry after a failed character fetch completes the in-page game entry');
+  assert.equal(saveOutage.calls.reload,undefined);
+
+  const stale=harness({authenticatedInitially:false,holdState:true});
+  const staleFlight=stale.setSession('user-1')[0];
+  stale.signOut();
+  const newerFlight=stale.setSession('user-2')[0];
+  stale.releaseState();
+  await Promise.all([staleFlight,newerFlight]);
+  assert.equal(stale.calls.character.length,0,'a response from an obsolete UUID cannot reach character loading');
+  assert.equal(stale.calls.entry,0,'an obsolete authentication operation cannot enter gameplay');
+  assert.equal(stale.localStorage.getItem('psyWorldSave'),null,'an obsolete response cannot write another account save');
 
   const resumed=harness();
   resumed.localStorage.setItem(KEYS.selected,'Cloud Trainer');resumed.localStorage.setItem(KEYS.id,'char-1');
@@ -145,5 +177,5 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   assert.equal(blocked,false,'legacy startup refuses local entry while OAuth account selection is locked');
   assert.equal(localLoadAttempted,false,'the unrelated local save is not even read during cloud identity validation');
 
-  console.log('PASS auto-entry: owner UUID check, single-character ID load, multiple-character selector, empty-account creation gate, retry, local-save lock, and preservation on API/save failure.');
+  console.log('PASS auto-entry: OAuth-session event to gameplay without reload, concurrency sharing, stale-owner cancellation, single/multiple/empty accounts, retry after network failure, save preservation, and UUID-scoped fast path.');
 })().catch(e=>{console.error(e);process.exitCode=1});
