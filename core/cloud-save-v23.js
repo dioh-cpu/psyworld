@@ -755,7 +755,7 @@ function installEconomyHooks(){
 
 function loadAudioSystem(){
   if(W.psyAudio||D.querySelector('script[data-psy-audio-v24]'))return;
-  const s=D.createElement('script');s.src='core/audio.js?build=AUDIO_V24_20260902';s.async=false;s.dataset.psyAudioV24='1';s.onload=()=>console.log('🔊 Audio V1 carregado no bootstrap online');s.onerror=()=>console.warn('Falha ao carregar core/audio.js');D.head.appendChild(s);
+  const s=D.createElement('script');s.src='core/audio.js?build=AUDIO_V25_PALLET_BIRDSONG_20261112';s.async=false;s.dataset.psyAudioV24='1';s.onload=()=>console.log('🔊 Audio V1 carregado no bootstrap online');s.onerror=()=>console.warn('Falha ao carregar core/audio.js');D.head.appendChild(s);
 }
 function installFastDrag(){
   const b=$('fastEncounterBtn');if(!b||b.dataset.psyDragV24)return;b.dataset.psyDragV24='1';

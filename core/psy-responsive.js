@@ -15,7 +15,7 @@
   if (!D.getElementById('psy-audio-system-script')) {
     const audioScript = D.createElement('script');
     audioScript.id = 'psy-audio-system-script';
-    audioScript.src = 'core/audio.js?v=psy-halloween-theme-1';
+    audioScript.src = 'core/audio.js?v=psy-pallet-birdsong-v1';
     audioScript.async = false;
     (D.head || root).appendChild(audioScript);
   }

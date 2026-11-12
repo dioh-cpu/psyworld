@@ -7,13 +7,14 @@
 if(W.PsyKantoPalletAmbientV1)return;
 const WIDTH=900,HEIGHT=450,SEA_TOP=402;
 const foliageZones=[
- {x:0,y:0,w:148,h:106,pivotX:12,pivotY:98,phase:.1,amp:.78,angle:.007},
- {x:150,y:0,w:150,h:68,pivotX:150,pivotY:65,phase:1.35,amp:.66,angle:.006},
- {x:520,y:0,w:178,h:77,pivotX:520,pivotY:73,phase:2.2,amp:.72,angle:.007},
- {x:702,y:0,w:198,h:118,pivotX:898,pivotY:110,phase:3.1,amp:.86,angle:.008},
- {x:0,y:118,w:52,h:240,pivotX:2,pivotY:228,phase:4.0,amp:.62,angle:.005},
- {x:848,y:102,w:52,h:242,pivotX:898,pivotY:224,phase:5.0,amp:.7,angle:.006}
+ {x:0,y:0,w:148,h:106,pivotX:63,pivotY:98,phase:.1,amp:1.36,angle:.012},
+ {x:150,y:0,w:150,h:68,pivotX:174,pivotY:65,phase:1.35,amp:1.12,angle:.01},
+ {x:520,y:0,w:178,h:77,pivotX:542,pivotY:73,phase:2.2,amp:1.24,angle:.011},
+ {x:702,y:0,w:198,h:118,pivotX:820,pivotY:110,phase:3.1,amp:1.48,angle:.013},
+ {x:0,y:118,w:52,h:210,pivotX:2,pivotY:202,phase:4.0,amp:1.04,angle:.009},
+ {x:848,y:102,w:52,h:210,pivotX:898,pivotY:198,phase:5.0,amp:1.16,angle:.01}
 ];
+const birdPerches=[[68,43],[226,24],[595,38],[816,51],[25,218],[875,214]];
 const leaves=[
  {x:64,phase:0.03,period:24,speed:21,sway:15,turn:.72,size:3.3,color:'#c9cc73'},
  {x:191,phase:.28,period:27,speed:18,sway:19,turn:-.54,size:3.8,color:'#d9ac61'},
@@ -32,7 +33,7 @@ const waveCrests=Array.from({length:9},(_,i)=>({
  x:(i*137+73)%980-40,y:SEA_TOP+12+(i*17)%29,
  speed:13+(i%3)*3.2,length:28+(i%4)*10,phase:i*1.17
 }));
-let source=null,maskCanvas=null,waterTextureCanvas=null,waterCanvas=null,waterCtx=null,foliagePatches=[],reducedMotion=null;
+let source=null,maskCanvas=null,waterTextureCanvas=null,waterCanvas=null,waterCtx=null,foliagePatches=[],reducedMotion=null,nextBirdAt=0;
 function reduced(){
  if(reducedMotion===null)reducedMotion=!!W.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  return reducedMotion;
@@ -164,22 +165,41 @@ function drawWater(now){
  c.restore();c.globalCompositeOperation='destination-in';c.drawImage(maskCanvas,0,0);c.globalCompositeOperation='source-over';
 }
 function drawFoliage(ctx,now){
- const t=now/1000,gust=1+Math.sin(t*.28)*.18;
+ const t=now/1000;
+ // A low, occasional gust swells and fades; the crown bases stay pinned to
+ // their separate pivots while each canopy moves on a different phase.
+ const gustPulse=Math.pow(Math.max(0,Math.sin(t*.145-1.1)),8),gust=1+gustPulse*.52;
  for(const patch of foliagePatches){
   const z=patch.zone,phase=z.phase;
-  const sway=Math.sin(t*.58+phase)*z.amp*gust;
-  const lift=Math.cos(t*.46+phase)*.32;
-  const angle=Math.sin(t*.51+phase)*z.angle;
-  ctx.save();ctx.globalAlpha=.3;ctx.translate(z.x+z.pivotX,z.y+z.pivotY);ctx.rotate(angle);
+  const sway=(Math.sin(t*.42+phase)*.78+Math.sin(t*.23+phase*1.7)*.22)*z.amp*(.82+gust*.18);
+  const lift=Math.cos(t*.36+phase)*.46;
+  const angle=Math.sin(t*.39+phase)*z.angle*(.8+gust*.2);
+  ctx.save();ctx.globalAlpha=.42;ctx.translate(z.x+z.pivotX,z.y+z.pivotY);ctx.rotate(angle);
   ctx.drawImage(patch.canvas,-z.pivotX+sway,-z.pivotY+lift,z.w,z.h);ctx.restore();
  }
 }
-function draw(ctx,now,mapCanvas){
+function drawBirdsong(now,position){
+ if(!position||!Number.isFinite(position.x)||!Number.isFinite(position.y))return;
+ if(!nextBirdAt)nextBirdAt=now+4800+Math.random()*2600;
+ if(now<nextBirdAt)return;
+ const audio=W.psyAudio,settings=audio?.settings;
+ if(D.hidden||!audio?.unlocked||!settings?.sfxOn||Number(settings.sfx)<=0){nextBirdAt=now+1800;return;}
+ let nearest=Infinity;
+ for(const [x,y] of birdPerches)nearest=Math.min(nearest,Math.hypot(position.x-x,position.y-y));
+ const spatial=nearest<235?Math.pow(1-nearest/235,1.35):0;
+ if(spatial>.015){
+  const variant=['pallet_birds_a','pallet_birds_b','pallet_birds_c'][Math.floor(Math.random()*3)];
+  audio.sfx(variant,{volume:.72*spatial,rate:.94+Math.random()*.12,cooldown:0});
+ }
+ nextBirdAt=now+10500+Math.random()*11500;
+}
+function draw(ctx,now,mapCanvas,position){
+ drawBirdsong(now,position);
  if(reduced())return;
  prepare(mapCanvas);if(!maskCanvas)return;
  drawWater(now);ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.65;ctx.drawImage(waterCanvas,0,0);ctx.restore();
  drawFoliage(ctx,now);
  for(let i=0;i<leaves.length;i++)drawLeaf(ctx,leaves[i],now,i);
 }
-W.PsyKantoPalletAmbientV1={draw};
+W.PsyKantoPalletAmbientV1={draw,perches:birdPerches};
 })(window,document);

@@ -21,6 +21,7 @@ const FILES={
   helper_charizard:'helper_charizard.mp3',helper_slowpoke:'helper_slowpoke.mp3',
   helper_gengar:'helper_gengar.mp3',helper_dragonite:'helper_dragonite.mp3',
   helper_blissey:'helper_blissey.mp3',
+  pallet_birds_a:'user/pallet-birds-a-v1.wav',pallet_birds_b:'user/pallet-birds-b-v1.wav',pallet_birds_c:'user/pallet-birds-c-v1.wav',
   enemy_shiny:'enemy_shiny.mp3',enemy_mega:'enemy_mega.mp3',
   enemy_mega_shiny:'enemy_mega_shiny.mp3'
 };
@@ -96,6 +97,7 @@ function sfx(name,opt={}){
   try{
     a.pause();a.currentTime=0;a.onended=name==='capture'?()=>sfx('capture_end',{cooldown:0}):null;
     a.volume=clamp(settings.sfx*Number(opt.volume??1));
+    a.playbackRate=clamp(Number(opt.rate)||1,.78,1.28);
     const p=a.play();if(p?.catch)p.catch(()=>{});
   }catch(e){}
 }
@@ -200,6 +202,7 @@ function unlock(){
   if(unlocked)return;
   unlocked=true;
   Object.keys(FILES).filter(k=>k!=='theme').slice(0,10).forEach(pool);
+  ['pallet_birds_a','pallet_birds_b','pallet_birds_c'].forEach(pool);
   playTheme();
 }
 D.addEventListener('pointerdown',unlock,{capture:true,once:true,passive:true});
@@ -385,7 +388,8 @@ setTimeout(()=>{try{playTheme()}catch(_){}},180);
 
 W.psyAudio={
   sfx,sfxForMove,typeKey,playTheme,pauseTheme,setDuck,unlock,
-  settings,tracks,selectTrack,setVolume,getTrack:()=>selectedTrack,openSettings:openPanel
+  settings,tracks,selectTrack,setVolume,getTrack:()=>selectedTrack,openSettings:openPanel,
+  get unlocked(){return unlocked}
 };
 console.log('🔊 PSYWORLD Audio System V1 carregado');
 })();

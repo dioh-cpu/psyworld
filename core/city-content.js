@@ -63,7 +63,7 @@ body:has(.psy-halloween-screen.is-open) #psy-content-modal,body.psy-kanto-v2-act
   if(document.getElementById('psy-audio-system-script'))return;
   const s=document.createElement('script');
   s.id='psy-audio-system-script';
-  s.src='core/audio.js?v=HALLOWEEN_ECONOMY_V23';
+  s.src='core/audio.js?v=PALLET_BIRDSONG_AUDIO_V1';
   s.async=true;
   document.head.appendChild(s);
 })();

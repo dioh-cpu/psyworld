@@ -281,7 +281,7 @@ W.PsyTreasureHuntV1?.drawScene?.(c,hobbyScene,performance.now());
 W.PsyHobbies?.drawField?.(c,hobbyScene);
 if(state.huntRiftOffer){const x=state.huntRiftOffer.x,y=state.huntRiftOffer.y,pulse=.62+Math.sin(performance.now()/180)*.18,g=c.createRadialGradient(x,y,3,x,y,34);g.addColorStop(0,`rgba(121,247,231,${pulse})`);g.addColorStop(.55,'rgba(131,91,255,.38)');g.addColorStop(1,'rgba(55,42,140,0)');c.fillStyle=g;c.beginPath();c.arc(x,y,34,0,Math.PI*2);c.fill();c.strokeStyle='#9af8ea';c.lineWidth=3;c.beginPath();c.ellipse(x,y,12,20,0,0,Math.PI*2);c.stroke();c.fillStyle='#e1ffff';c.font='bold 11px system-ui';c.textAlign='center';c.fillText('FENDA · ENTRAR',x,y-29);}
 if(state.inside)W.PsyHobbies?.drawDecor?.(c,state.inside.id);
-if(!state.inside&&state.world.id==='pallet')W.PsyKantoPalletAmbientV1?.draw(c,performance.now(),state.images.get(state.world.art)?.mapCanvas);
+if(!state.inside&&state.world.id==='pallet')W.PsyKantoPalletAmbientV1?.draw(c,performance.now(),state.images.get(state.world.art)?.mapCanvas,state.position);
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
 if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){const lab=state.world.doors.find(d=>d.id==='lab');if(lab)drawMarker(c,lab.at[0],lab.at[1],'LABORATÓRIO →','#ffd480');}
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
@@ -295,14 +295,15 @@ function drawNPC(c,npc,distance){
   const palletActor=state.world?.id==='pallet'&&state.inside?.id!==RIFT_ID;
   const animatePallet=palletActor&&!palletMotionReduced;
   const h=palletActor?Math.max(40,Math.min(52,Number(npc.displayHeight)||48)):60;
+  const footOffset=palletActor?Math.max(0,Number(npc.footOffset)||0)*h:0;
   const now=performance.now(),id=String(npc.id||npc.name||'pallet-npc');
   let hash=0;for(let i=0;i<id.length;i++)hash=(hash*31+id.charCodeAt(i))%6283;
   const phase=hash/1000,responsive=animatePallet&&distance<72;
-  const bob=animatePallet?Math.sin(now/910+phase)*(responsive?1.55:1.05):0;
-  const breathe=animatePallet?1+Math.sin(now/1380+phase)*.012:1;
-  const narrow=animatePallet?1+Math.cos(now/1670+phase)*.009:1;
-  const towardPlayer=responsive?Math.sign(state.position.x-x)*.016:0;
-  const lean=animatePallet?Math.sin(now/1280+phase)*.021+towardPlayer:0;
+  const bob=animatePallet?Math.sin(now/910+phase)*(responsive?.42:.28):0;
+  const breathe=animatePallet?1+Math.sin(now/1380+phase)*.006:1;
+  const narrow=animatePallet?1+Math.cos(now/1670+phase)*.005:1;
+  const towardPlayer=responsive?Math.sign(state.position.x-x)*.008:0;
+  const lean=animatePallet?Math.sin(now/1280+phase)*.014+towardPlayer:0;
   const markerY=palletActor?y-h-8:y-60;
   const embeddedShadow=palletActor&&/\.svg(?:[?#]|$)/i.test(url||'');
   c.save();
@@ -316,8 +317,10 @@ function drawNPC(c,npc,distance){
     if(/\/npcs\/viridian-(elder|instructor)-v1\.png$/.test(npc.portrait||npc.sprite||''))c.imageSmoothingEnabled=false;
     c.shadowColor='#020617';c.shadowBlur=2;
     if(palletActor){
-      c.translate(x,y-h*.48);c.rotate(lean);c.scale(narrow,breathe);c.translate(-x,-(y-h*.48));
-      c.drawImage(entry.im,x-w/2,y-h+bob,w,h);
+      // Pivot idle motion at the feet so a breathing/leaning sprite never
+      // drifts away from its fixed ground shadow or interaction position.
+      c.translate(x,y);c.rotate(lean);c.scale(narrow,breathe);c.translate(-x,-y);
+      c.drawImage(entry.im,x-w/2,y-h+footOffset+bob,w,h);
     }else c.drawImage(entry.im,x-w/2,y-h,w,h);
     c.shadowBlur=0;c.imageSmoothingEnabled=smoothing;
   }
@@ -456,7 +459,7 @@ function talk(npc){
   showDialog('Rival','Também estou começando minha jornada. Ouvi histórias antigas no porto; Mina, na casa do lado leste, talvez saiba mais sobre aquela luz que surge ao anoitecer.',[],pr,'empolgada');
  }else if(id==='neighbor'||id==='child'){
   mark('neighbor');
-  showDialog('Mina','Dizem que há marcas escondidas entre as flores da vila. O velho pescador Abel costuma contar como encontrá-las.',[],pr,'curiosa');
+  showDialog(id==='child'?'Luna':'Mina','Dizem que há marcas escondidas entre as flores da vila. O velho pescador Abel costuma contar como encontrá-las.',[],pr,'curiosa');
  }else if(id==='nurse'){
   mark('center');
   showDialog('Enfermeira Íris','Seus parceiros também precisam de descanso. Posso recuperar a energia da sua equipe antes da jornada?',[
