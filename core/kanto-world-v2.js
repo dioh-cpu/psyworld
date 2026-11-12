@@ -7,6 +7,8 @@
 'use strict';
 if(W.PsyKantoWorldV2 || !W.PsyKantoMapDataV2)return;
 const DATA=W.PsyKantoMapDataV2,KEY='psy_kanto_world_v2_quests',SAVE_KEY='psy_kanto_journey_progress_v1';
+let palletMotionReduced=!!W.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+W.matchMedia?.('(prefers-reduced-motion: reduce)').addEventListener?.('change',e=>{palletMotionReduced=e.matches});
 const $=s=>D.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const RIFT_ID='kanto-hunt-rift';
 const RIFT_ROOM={id:RIFT_ID,title:'Fenda Selvagem',w:896,h:560,art:'assets/story/kanto-hunt-rift-v1.webp',spawn:[448,500],exit:[448,220],npcs:[],walkBounds:[24,24,872,536],blocks:[[720,135,895,480]]};
@@ -279,6 +281,7 @@ W.PsyTreasureHuntV1?.drawScene?.(c,hobbyScene,performance.now());
 W.PsyHobbies?.drawField?.(c,hobbyScene);
 if(state.huntRiftOffer){const x=state.huntRiftOffer.x,y=state.huntRiftOffer.y,pulse=.62+Math.sin(performance.now()/180)*.18,g=c.createRadialGradient(x,y,3,x,y,34);g.addColorStop(0,`rgba(121,247,231,${pulse})`);g.addColorStop(.55,'rgba(131,91,255,.38)');g.addColorStop(1,'rgba(55,42,140,0)');c.fillStyle=g;c.beginPath();c.arc(x,y,34,0,Math.PI*2);c.fill();c.strokeStyle='#9af8ea';c.lineWidth=3;c.beginPath();c.ellipse(x,y,12,20,0,0,Math.PI*2);c.stroke();c.fillStyle='#e1ffff';c.font='bold 11px system-ui';c.textAlign='center';c.fillText('FENDA · ENTRAR',x,y-29);}
 if(state.inside)W.PsyHobbies?.drawDecor?.(c,state.inside.id);
+if(!state.inside&&state.world.id==='pallet')W.PsyKantoPalletAmbientV1?.draw(c,performance.now(),state.images.get(state.world.art)?.mapCanvas);
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
 if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){const lab=state.world.doors.find(d=>d.id==='lab');if(lab)drawMarker(c,lab.at[0],lab.at[1],'LABORATÓRIO →','#ffd480');}
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
@@ -288,19 +291,38 @@ if(W.PsyFollower)W.PsyFollower.draw(c,{scene:state.world.id+':'+(state.inside?.i
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);const playerName=player().name||'Treinador';c.font='bold 12px system-ui';const nameW=Math.min(180,c.measureText(playerName).width+4),overlapX=Math.abs(x-state.position.x)<(w+nameW)/2,overlapY=Math.abs((y-35)-(state.position.y-59))<23;if(overlapX&&overlapY)state.hideTrainerName=true;const actorCoversCaption=Math.abs(x-state.position.x)<w/2+24&&(y-31)>state.position.y-60&&(y-48)<state.position.y+5;c.font='bold 11px system-ui';if(!actorCoversCaption){c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35)}c.restore()}
 function drawRiftGate(c,x,y,now){const pulse=.68+Math.sin(now/180)*.16,halo=c.createRadialGradient(x,y-28,3,x,y-28,62);halo.addColorStop(0,`rgba(118,248,232,${pulse*.62})`);halo.addColorStop(.52,'rgba(120,83,244,.34)');halo.addColorStop(1,'rgba(67,42,166,0)');c.save();c.fillStyle='#10162477';c.beginPath();c.ellipse(x,y+3,24,7,0,0,Math.PI*2);c.fill();c.fillStyle=halo;c.fillRect(x-64,y-94,128,108);c.shadowColor='#99fff0';c.shadowBlur=12;c.strokeStyle='#a8fff1';c.lineWidth=4;c.beginPath();c.ellipse(x,y-30,21,37,0,0,Math.PI*2);c.stroke();c.shadowBlur=0;c.strokeStyle='#b79aff';c.lineWidth=2;c.beginPath();c.ellipse(x,y-30,13,29,0,0,Math.PI*2);c.stroke();for(let i=0;i<4;i++){const a=now/420+i*Math.PI/2;c.fillStyle=i%2?'#c6b2ff':'#d5fff7';c.beginPath();c.arc(x+Math.cos(a)*29,y-30+Math.sin(a)*38,2.4,0,Math.PI*2);c.fill()}c.textAlign='center';c.font='bold 11px system-ui';c.fillStyle='#071521df';c.fillRect(x-61,y-53,122,16);c.fillStyle='#ddfff7';c.fillText('PORTAL DE RETORNO',x,y-41);c.restore()}
 function drawNPC(c,npc,distance){
-  const x=npc.at[0],y=npc.at[1],entry=image(npc.sprite||npc.portrait);
+  const x=npc.at[0],y=npc.at[1],url=npc.sprite||npc.portrait,entry=image(url);
+  const palletActor=state.world?.id==='pallet'&&state.inside?.id!==RIFT_ID;
+  const animatePallet=palletActor&&!palletMotionReduced;
+  const h=palletActor?Math.max(40,Math.min(52,Number(npc.displayHeight)||48)):60;
+  const now=performance.now(),id=String(npc.id||npc.name||'pallet-npc');
+  let hash=0;for(let i=0;i<id.length;i++)hash=(hash*31+id.charCodeAt(i))%6283;
+  const phase=hash/1000,responsive=animatePallet&&distance<72;
+  const bob=animatePallet?Math.sin(now/910+phase)*(responsive?1.55:1.05):0;
+  const breathe=animatePallet?1+Math.sin(now/1380+phase)*.012:1;
+  const narrow=animatePallet?1+Math.cos(now/1670+phase)*.009:1;
+  const towardPlayer=responsive?Math.sign(state.position.x-x)*.016:0;
+  const lean=animatePallet?Math.sin(now/1280+phase)*.021+towardPlayer:0;
+  const markerY=palletActor?y-h-8:y-60;
+  const embeddedShadow=palletActor&&/\.svg(?:[?#]|$)/i.test(url||'');
   c.save();
-  c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,14,5,0,0,Math.PI*2);c.fill();
+  if(!embeddedShadow){c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,palletActor?10:14,palletActor?3.5:5,0,0,Math.PI*2);c.fill();}
   if(npc.painted){c.restore();return}
   if(entry?.loaded){
     const iw=entry.im.naturalWidth||160,ih=entry.im.naturalHeight||190;
-    const h=60,w=Math.min(52,h*iw/ih);
+    const w=palletActor?Math.min(44,h*iw/ih):Math.min(52,h*iw/ih);
     const smoothing=c.imageSmoothingEnabled;
+    if(palletActor&&/\/rival\.png(?:[?#]|$)/i.test(url||''))c.imageSmoothingEnabled=false;
     if(/\/npcs\/viridian-(elder|instructor)-v1\.png$/.test(npc.portrait||npc.sprite||''))c.imageSmoothingEnabled=false;
-    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-w/2,y-h,w,h);c.shadowBlur=0;c.imageSmoothingEnabled=smoothing;
+    c.shadowColor='#020617';c.shadowBlur=2;
+    if(palletActor){
+      c.translate(x,y-h*.48);c.rotate(lean);c.scale(narrow,breathe);c.translate(-x,-(y-h*.48));
+      c.drawImage(entry.im,x-w/2,y-h+bob,w,h);
+    }else c.drawImage(entry.im,x-w/2,y-h,w,h);
+    c.shadowBlur=0;c.imageSmoothingEnabled=smoothing;
   }
   c.restore();
-  if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,y-60,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,y-56);c.restore()}
+  if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,markerY,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,markerY+4);c.restore()}
 }
 // Preview accounts created before the trainer character picker do not always
 // have playerCharacterId. Use a real supported trainer graphic, never a block
