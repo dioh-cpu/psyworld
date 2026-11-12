@@ -1,0 +1,1 @@
+import {send,db} from '../../../lib/server.js';export default async function handler(req,res){if(req.method!=='POST')return send(res,405,{error:'Method not allowed'});await db('instagram_credentials','DELETE',null,'?id=eq.primary');send(res,200,{connected:false});}
