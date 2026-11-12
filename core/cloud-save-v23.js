@@ -343,7 +343,7 @@ function ensureUI(){
 function setEntryRecovery(active){
  const box=$('login-box');if(!box)return false;
  let card=$('psy-auth-recovery-v1');
- if(active&&!card){card=D.createElement('div');card.id='psy-auth-recovery-v1';card.setAttribute?.('role','status');card.setAttribute?.('aria-live','polite');card.style.cssText='display:none;box-sizing:border-box;width:100%;max-width:440px;margin:12px auto;padding:16px;border:1px solid #22d3ee;border-radius:10px;background:linear-gradient(145deg,#0c2232,#08131e);color:#bae6fd;font-size:15px;font-weight:800;text-align:center;box-shadow:0 8px 28px #0008';box.textContent='Entrando no PSYWORLD...';box.appendChild(card)}
+ if(active&&!card){card=D.createElement('div');card.id='psy-auth-recovery-v1';card.setAttribute?.('role','status');card.setAttribute?.('aria-live','polite');card.style.cssText='display:none;box-sizing:border-box;width:100%;max-width:440px;margin:12px auto;padding:16px;border:1px solid #22d3ee;border-radius:10px;background:linear-gradient(145deg,#0c2232,#08131e);color:#bae6fd;font-size:15px;font-weight:800;text-align:center;box-shadow:0 8px 28px #0008';card.textContent='Entrando no PSYWORLD...';box.appendChild(card)}
  if(!card)return false;
  if(active){
   for(const child of Array.from(box.children||[])){if(child===card)continue;if(child.dataset?.psyEntryRecoveryHidden==='1'){if(child.style)child.style.display='none';continue}child.dataset.psyEntryRecoveryDisplay=String(child.style?.display||'');child.dataset.psyEntryRecoveryHidden='1';if(child.style)child.style.display='none'}
