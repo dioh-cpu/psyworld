@@ -64,7 +64,7 @@ function renderConnectedStatus(){
   const resend=$('psy-online-resend');if(resend&&signedIn)resend.style.display='none';
 }
 async function listCharacters(expectedOwner){
-  const d=await api('/api/player');
+  const d=await (typeof W.psyCloudV23?.getAccountState==='function'?W.psyCloudV23.getAccountState():api('/api/player'));
   const owner=String(d?.user?.id||'');
   if(!expectedOwner||!owner||owner!==expectedOwner)throw new Error('account_identity_mismatch');
   if(!Array.isArray(d.characters))throw new Error('character_list_unavailable');
@@ -76,6 +76,12 @@ function ensureCharacterList(){
   let box=$('psy-character-list-v38');
   if(!box){box=D.createElement('div');box.id='psy-character-list-v38';box.style.cssText='margin-top:10px;padding-top:9px;border-top:1px solid #1d4f68;font-size:10px;color:#bae6fd';form.appendChild(box)}
   return box;
+}
+function trustedSelectedCharacter(owner){
+  const id=String(localStorage.getItem(CHARACTER_ID_KEY)||'').trim(),meta=parse(localStorage.getItem(SYNC_KEY))||{},nick=String(localStorage.getItem(SELECTED_KEY)||'').trim();
+  if(!id||!owner||meta.resolved!==true||String(meta.userKey||'')!==owner||String(meta.characterId||'')!==id||!String(meta.characterNickname||'').trim())return null;
+  if(nick&&nick.toLowerCase()!==String(meta.characterNickname).trim().toLowerCase())return null;
+  return{id,nickname:String(meta.characterNickname).trim()};
 }
 async function renderCharacters(force=false){
   const box=ensureCharacterList();if(!box)return;
@@ -91,6 +97,15 @@ async function renderCharacters(force=false){
   if(showAccount){form.style.display='block';toggle?.setAttribute('aria-expanded','true')}
   W.psyCloudV23?.beginEntryRecovery?.();
   box.style.display='block';box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#7dd3fc">Carregando...</div>';
+  const trusted=!force&&trustedSelectedCharacter(owner);
+  if(trusted){
+    const key=owner+'::'+trusted.id;
+    if(automaticEntryOwner===key)return;
+    automaticEntryOwner=key;box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#7dd3fc">Retomando '+esc(trusted.nickname)+'…</div>';
+    const request=openCharacter(trusted,{automatic:true,box});characterRequest=request;characterRequestOwner=owner;
+    try{await request}finally{if(characterRequest===request){characterRequest=null;characterRequestOwner=''}}
+    return;
+  }
   const request=(async()=>{
     try{
       const chars=await listCharacters(owner);
@@ -151,7 +166,7 @@ async function openCharacter(target,{automatic=false,box=ensureCharacterList()}=
   const nick=String(nickname||'').trim(),owner=authenticatedUserId(session());
   if(nick.length<2||!owner||automatic&&!requestedId)return toast('Não foi possível validar este personagem. Atualize a lista da conta.');
   try{
-    const d=await api('/api/player/character?'+(requestedId?'character_id='+encodeURIComponent(requestedId):'nickname='+encodeURIComponent(nick)));
+    const d=await (requestedId&&typeof W.psyCloudV23?.getAccountCharacterById==='function'?W.psyCloudV23.getAccountCharacterById(requestedId):api('/api/player/character?'+(requestedId?'character_id='+encodeURIComponent(requestedId):'nickname='+encodeURIComponent(nick))));
     const c=d.character;
     if(authenticatedUserId(session())!==owner||requestedId&&String(c?.id||'')!==requestedId)throw new Error('character_id_mismatch');
     const save=W.psyCloudV23?.migrateSave?.(c?.save,{nickname:c?.nickname||nick,characterId:c?.id})||c?.save;

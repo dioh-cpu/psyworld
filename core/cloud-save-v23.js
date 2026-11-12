@@ -14,7 +14,7 @@ const LOCAL_KEYS=['psyWorldSave','psyWorldSave_v9','psyWorldSave_v2','psyWorldSa
 const PROFILE_SAVE_PREFIX='psyworld_character_save_v1:';
 const PROD_ORIGIN='https://psyworld-murex.vercel.app';
 const FAST_POS_KEY='psyworld_fast_encounter_pos_v24';
-let config=null,session=null,syncEnabled=false,syncTimer=0,localTimer=0,autosaveTimer=0,economyBusy=false,lastUploadError='',cloudPhase='idle',uploadFlights=new Map(),retryDelay=5000,signupBusy=false,resendBusy=false,oauthClient=null,oauthSdkPromise=null,oauthBusy=false,oauthCallbackFlight=null;
+let config=null,session=null,syncEnabled=false,syncTimer=0,localTimer=0,autosaveTimer=0,economyBusy=false,lastUploadError='',cloudPhase='idle',uploadFlights=new Map(),accountReadFlights=new Map(),retryDelay=5000,signupBusy=false,resendBusy=false,oauthClient=null,oauthSdkPromise=null,oauthBusy=false,oauthCallbackFlight=null;
 const $=id=>D.getElementById(id);
 function toast(msg,ms=3200){try{W.notif?.(msg,ms)}catch(_){console.log(msg)}}
 function parse(s){try{return s?JSON.parse(s):null}catch(_){return null}}
@@ -182,6 +182,18 @@ function saveSession(s){session=s||null;try{session?localStorage.setItem(SESSION
 function readSession(){session=parse(localStorage.getItem(SESSION_KEY));return session}
 function authHeaders(){return session?.access_token?{Authorization:'Bearer '+session.access_token}:{} }
 async function api(path,opt={}){const r=await fetch(path,{...opt,headers:{'Content-Type':'application/json',...authHeaders(),...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok)throw new Error(d.error||d.message||('HTTP '+r.status));return d}
+async function accountRead(path){
+ const owner=userKey(),key=owner+'::'+path,now=Date.now(),cached=accountReadFlights.get(key);
+ if(cached&&(cached.pending||cached.expiresAt>now))return cached.promise;
+ if(cached)accountReadFlights.delete(key);
+ const entry={pending:true,expiresAt:0,promise:null};
+ entry.promise=(async()=>{try{const result=await api(path);if(userKey()!==owner)throw new Error('account_identity_changed');entry.pending=false;entry.expiresAt=Date.now()+3000;return result}catch(error){accountReadFlights.delete(key);throw error}})();
+ accountReadFlights.set(key,entry);
+ while(accountReadFlights.size>8)accountReadFlights.delete(accountReadFlights.keys().next().value);
+ return entry.promise;
+}
+function getAccountState(){return accountRead('/api/player')}
+function getAccountCharacterById(id){const value=String(id||'').trim();if(!value)throw new Error('character_id_required');return accountRead('/api/player/character?character_id='+encodeURIComponent(value))}
 async function loadConfig(){if(config)return config;const r=await fetch('/api/config',{cache:'no-store'});config=await r.json();return config}
 async function authFetch(path,opt={}){const c=await loadConfig();if(!c.onlineConfigured||!c.supabaseUrl||!c.supabaseAnonKey)throw new Error('online_not_configured');const r=await fetch(c.supabaseUrl+'/auth/v1/'+path,{...opt,headers:{apikey:c.supabaseAnonKey,'Content-Type':'application/json',...(opt.headers||{})}});let d={};try{d=await r.json()}catch(_){}if(!r.ok){const e=new Error(d.msg||d.error_description||d.message||d.error_code||d.code||d.error||('AUTH '+r.status));e.status=r.status;e.code=d.error_code||d.code||d.error||'';throw e}return d}
 async function loadSupabaseSdk(){
@@ -428,10 +440,16 @@ async function gameForSession(state){
  if(!nick&&!id)return state?.game_state||null;
  const match=Array.isArray(state?.characters)&&state.characters.some(c=>id?String(c.id||'')===id:sameNick(c.nickname,nick));
  if(!match)return null; // never compare another account's legacy mirror
- const result=await api('/api/player/character?'+(id?'character_id='+encodeURIComponent(id):'nickname='+encodeURIComponent(nick)));
+ const result=id?await getAccountCharacterById(id):await accountRead('/api/player/character?nickname='+encodeURIComponent(nick));
  const c=result?.character;
  const save=normalizeSave(c?.save,{nickname:c?.nickname||nick,characterId:c?.id||id});
  return c&&validSave(save)?{save,nickname:c.nickname||nick,characterNickname:c.nickname||nick,characterId:c.id||id,updated_at:c.updated_at,client_updated_at:c.client_updated_at}:null;
+}
+function trustedSelectedCharacter(){
+ const id=selectedCharacterId(),owner=userKey(),meta=parse(localStorage.getItem(SYNC_KEY))||{},nick=selectedNick();
+ if(!id||!owner||meta.resolved!==true||String(meta.userKey||'')!==owner||String(meta.characterId||'')!==id||!String(meta.characterNickname||'').trim())return null;
+ if(nick&&!sameNick(nick,meta.characterNickname))return null;
+ return {id,nickname:String(meta.characterNickname).trim()};
 }
 async function afterAuth(){try{
  const state=await api('/api/player');hydrateServerIdentity(state);
@@ -777,10 +795,10 @@ async function bootstrap(){
  try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();startAutosave();return}
  const authenticated=!!(config?.onlineConfigured&&await ensureToken());
  readSession();renderStatus(callbackData&&!callbackComplete);
- if(authenticated){try{const state=await api('/api/player');hydrateServerIdentity(state);renderLinkedIdentities();captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}
+ if(authenticated){try{const trusted=trustedSelectedCharacter(),state=trusted?{characters:[trusted]}:await getAccountState();if(!trusted)hydrateServerIdentity(state);renderLinkedIdentities();captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}
  else setEntryRecovery(false);
  patchSave();installGlobalUI();startAutosave();setInterval(()=>{patchSave();installGlobalUI();renderCloudStatus();if(syncEnabled&&session?.access_token)queueSync()},15000)
 }
-W.psyCloudV23={login,signup,resendSignupConfirmation,loginWithGoogle:()=>socialLogin('google'),loginWithGithub:()=>socialLogin('github'),completeOAuthCallback,beginEntryRecovery:()=>setEntryRecovery(true),finishEntryRecovery:()=>setEntryRecovery(false),logout:async()=>{setEntryRecovery(false);try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;cloudPhase='idle';renderStatus();await renderLinkedIdentities();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:saveNow,saveNow,loadNow,compareNow,economy,bestLocal,captureActiveLocal,validSave,migrateSave:normalizeSave,status:cloudStatus,renderStatus:renderCloudStatus};
+W.psyCloudV23={login,signup,resendSignupConfirmation,loginWithGoogle:()=>socialLogin('google'),loginWithGithub:()=>socialLogin('github'),completeOAuthCallback,getAccountState,getAccountCharacterById,beginEntryRecovery:()=>setEntryRecovery(true),finishEntryRecovery:()=>setEntryRecovery(false),logout:async()=>{setEntryRecovery(false);try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);accountReadFlights.clear();syncEnabled=false;cloudPhase='idle';renderStatus();await renderLinkedIdentities();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:saveNow,saveNow,loadNow,compareNow,economy,bestLocal,captureActiveLocal,validSave,migrateSave:normalizeSave,status:cloudStatus,renderStatus:renderCloudStatus};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});
 })(window,document);

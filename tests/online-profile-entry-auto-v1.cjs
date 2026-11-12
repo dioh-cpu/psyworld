@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync(require.resolve('../core/online-profile-entry-v37.js'),'utf8');
 const legacySource=fs.readFileSync(require.resolve('../core/legacy-runtime.js'),'utf8');
-const KEYS={session:'psyworld_online_session_v23',selected:'psyworld_active_character_v38',id:'psyworld_active_character_id_v1',pending:'psyworld_new_character_pending_v38',exit:'psyworld_local_profile_signed_out_v36',stash:'psyworld_local_profile_stash_v38'};
+const KEYS={session:'psyworld_online_session_v23',selected:'psyworld_active_character_v38',id:'psyworld_active_character_id_v1',sync:'psyworld_cloud_sync_v23',pending:'psyworld_new_character_pending_v38',exit:'psyworld_local_profile_signed_out_v36',stash:'psyworld_local_profile_stash_v38'};
 
 function node(id=''){
   let html='',buttons=null,retry=null;const n={id,value:'',textContent:'',dataset:{},style:{display:id==='screen-login'?'flex':'none'},attributes:{},children:[],onclick:null,
@@ -41,7 +41,7 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
     throw new Error('unexpected request '+url);
   }
   const player={name:'Local Trainer',meta:{},team:[{id:1,name:'Bulbasaur'}],box:[],gold:777};
-  const window={localStorage,location,history:{},P:player,notif(){},dispatchEvent(){},psyCloudV23:{validSave:s=>!!s?.player?.team?.length,migrateSave:s=>s,beginEntryRecovery(){recovery=true;form.style.display='none';calls.recovery.push('begin')},finishEntryRecovery(){recovery=false;form.style.display='block';calls.recovery.push('finish')}}};
+  const window={localStorage,location,history:{},P:player,notif(){},dispatchEvent(){},psyCloudV23:{validSave:s=>!!s?.player?.team?.length,migrateSave:s=>s,getAccountState:async()=>{calls.state++;calls.writes.push({url:'/api/player',method:'GET',authorization:'Bearer access-user-1'});if(stateOutage)throw new Error('network unavailable');return{user:{id:responseOwner},characters}},getAccountCharacterById:async id=>{calls.character.push({url:'/api/player/character?character_id='+id,authorization:'shared-request'});if(failCharacter)throw new Error('temporarily unavailable');return{character:{id:'char-1',nickname:'Cloud Trainer',save:characterSave,updated_at:'2026-11-10T00:00:00Z'}}},beginEntryRecovery(){recovery=true;form.style.display='none';calls.recovery.push('begin')},finishEntryRecovery(){recovery=false;form.style.display='block';calls.recovery.push('finish')}}};
   const context={window,document,location,localStorage,fetch,CustomEvent:class{},console:{log(){},warn(){},error(){}},URL,URLSearchParams,Date,Promise,JSON,Number,String,Boolean,Math,Map,Array,Object,RegExp,encodeURIComponent,decodeURIComponent,getComputedStyle:n=>({display:n?.style?.display||'none'}),setTimeout(fn){timeouts.push(fn);return timeouts.length},clearTimeout(){},setInterval(){return 1},clearInterval(){},atob:v=>Buffer.from(v,'base64').toString('binary')};
   vm.runInNewContext(source,context,{filename:'core/online-profile-entry-v37.js'});
   return {window,document,localStorage,calls,timeouts,nodes,form,toggle,status,nick,login,values,setStateOutage(v){stateOutage=v},releaseState(){releaseState?.()},isRecovering(){return recovery}};
@@ -64,6 +64,21 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   assert.equal(JSON.parse(single.localStorage.getItem(KEYS.stash)).psyWorldSave,JSON.stringify(localOther),'unrelated local save stays in the backup stash');
   assert.equal(single.calls.reload,undefined,'entry requests a page reload only after accepted save; timer has not fired in the test');
   assert.equal(single.isRecovering(),true,'single-character save stays behind the loading transition until the accepted character reloads');
+
+  const resumed=harness();
+  resumed.localStorage.setItem(KEYS.selected,'Cloud Trainer');resumed.localStorage.setItem(KEYS.id,'char-1');
+  resumed.localStorage.setItem(KEYS.sync,JSON.stringify({userKey:'user-1',resolved:true,characterId:'char-1',characterNickname:'Cloud Trainer'}));
+  await resumed.window.psyCharactersV38.render();
+  assert.equal(resumed.calls.state,0,'a previously resolved UUID-scoped character skips the account-list query after reload');
+  assert.equal(resumed.calls.character.length,1,'the persisted character is still fetched through the owner-validating server endpoint');
+  assert.equal(resumed.localStorage.getItem('psyWorldSave'),JSON.stringify(validSave));
+
+  const wrongOwner=harness();
+  wrongOwner.localStorage.setItem(KEYS.selected,'Cloud Trainer');wrongOwner.localStorage.setItem(KEYS.id,'char-1');
+  wrongOwner.localStorage.setItem(KEYS.sync,JSON.stringify({userKey:'different-user',resolved:true,characterId:'char-1',characterNickname:'Cloud Trainer'}));
+  await wrongOwner.window.psyCharactersV38.render();
+  assert.equal(wrongOwner.calls.state,1,'a character selection scoped to another UUID cannot take the fast path');
+  assert.equal(wrongOwner.calls.character.length,1,'fallback list validates ownership before opening the character');
 
   const multiple=harness({characters:[{id:'char-1',nickname:'Cloud Trainer'},{id:'char-2',nickname:'Second Trainer'}]});
   await multiple.window.psyCharactersV38.render(true);
