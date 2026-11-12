@@ -281,12 +281,12 @@ function completeOAuthCallback(){
 async function processOAuthCallback(){
  const query=new URLSearchParams(String(W.location.search||'').replace(/^\?/,'').replace(/\+/g,' ')),hash=new URLSearchParams(String(W.location.hash||'').replace(/^#/,'').replace(/^\?/,'').replace(/\+/g,' '));
  const intent=oauthIntent(),error=query.get('error')||query.get('error_code')||query.get('error_description')||hash.get('error')||hash.get('error_code')||hash.get('error_description');
- if(error){const code=oauthDiagnosticCode(error,'callback');clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]',code);signupMessage(oauthCallbackMessage(error,intent)+' Código: '+code,'#fbbf24');return false}
+ if(error){setEntryRecovery(false);const code=oauthDiagnosticCode(error,'callback');clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]',code);signupMessage(oauthCallbackMessage(error,intent)+' Código: '+code,'#fbbf24');return false}
  const code=query.get('code');if(!code)return false;
  if(!intent||!['google','github'].includes(intent.provider)||!['login','link'].includes(intent.mode)){
-  clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]','OAUTH_FLOW_MISSING');signupMessage('A autorização não corresponde a uma tentativa iniciada neste navegador. Inicie o login novamente. Código: OAUTH_FLOW_MISSING','#fbbf24');return false;
+  setEntryRecovery(false);clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]','OAUTH_FLOW_MISSING');signupMessage('A autorização não corresponde a uma tentativa iniciada neste navegador. Inicie o login novamente. Código: OAUTH_FLOW_MISSING','#fbbf24');return false;
  }
- if(Date.now()-Number(intent.startedAt||0)>10*60*1000){clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]','OAUTH_PKCE_FAILED');signupMessage(oauthCallbackMessage('expired',intent)+' Código: OAUTH_PKCE_FAILED','#fbbf24');return false}
+ if(Date.now()-Number(intent.startedAt||0)>10*60*1000){setEntryRecovery(false);clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]','OAUTH_PKCE_FAILED');signupMessage(oauthCallbackMessage('expired',intent)+' Código: OAUTH_PKCE_FAILED','#fbbf24');return false}
  try{
   const client=await getOAuthClient(),{data,error:exchangeError}=await client.auth.exchangeCodeForSession(code);
   if(exchangeError)throw exchangeError;
@@ -299,7 +299,7 @@ async function processOAuthCallback(){
   acceptAuth(next);clearOAuthCallbackUrl();await clearOAuthFlow();
   signupMessage(intent.mode==='link'?'✅ Provedor vinculado à conta autenticada.':'✅ Login social concluído.','#86efac');return true;
  }catch(e){
-  const code=oauthDiagnosticCode(e,'callback');clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]',code);
+  setEntryRecovery(false);const code=oauthDiagnosticCode(e,'callback');clearOAuthCallbackUrl();clearOAuthFlow();console.warn('[PSYWORLD OAuth]',code);
   signupMessage(e?.message==='oauth_link_owner_changed'?'A conta retornada pelo provedor não corresponde à sessão autenticada. A sessão anterior foi preservada. Código: OAUTH_LINK_OWNER_MISMATCH':oauthCallbackMessage(e?.code||e?.message,intent)+' Código: '+code,'#fca5a5');return false;
  }
 }
@@ -320,8 +320,22 @@ function captureAuthHash(){
 function ensureUI(){
   const box=$('login-box');if(!box||$('psy-online-box'))return;
   const wrap=D.createElement('div');wrap.id='psy-online-box';wrap.style.cssText='margin-top:12px;padding-top:12px;border-top:1px solid #28506f;text-align:left';
-  wrap.innerHTML=`<button id="psy-online-toggle" type="button" style="width:100%;padding:12px;border:1px solid #22d3ee;border-radius:7px;background:linear-gradient(#12324a,#0b1d2c);color:#fff;font-weight:900;cursor:pointer">☁ CONTA ONLINE / CLOUD SAVE</button><div id="psy-online-form" style="display:none;margin-top:9px;padding:10px;background:#07131f;border:1px solid #244b66;border-radius:8px"><div style="font-size:11px;color:#9bdcf4;margin-bottom:8px">Entre com e-mail para usar o mesmo save em outros dispositivos. O save local continua sendo mantido como backup.</div><input id="psy-online-email" type="email" autocomplete="email" placeholder="E-mail" style="box-sizing:border-box;width:100%;padding:10px;margin-bottom:6px;border-radius:6px;border:1px solid #355b75;background:#06101a;color:#fff"><input id="psy-online-pass" type="password" autocomplete="current-password" placeholder="Senha (mín. 6 caracteres)" style="box-sizing:border-box;width:100%;padding:10px;margin-bottom:8px;border-radius:6px;border:1px solid #355b75;background:#06101a;color:#fff"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button id="psy-online-login" type="button" style="padding:10px;background:#075985;color:#fff;border:0;border-radius:6px;font-weight:900">ENTRAR</button><button id="psy-online-signup" type="button" style="padding:10px;background:#166534;color:#fff;border:0;border-radius:6px;font-weight:900">CRIAR CONTA</button></div><button id="psy-online-resend" type="button" style="display:none;margin-top:8px;width:100%;padding:10px;background:#854d0e;color:#fff;border:1px solid #fbbf24;border-radius:6px;font-weight:900">REENVIAR E-MAIL DE CONFIRMAÇÃO</button><div id="psy-online-social-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px"><button id="psy-online-google" type="button" style="padding:10px;background:#fff;color:#1f2937;border:1px solid #cbd5e1;border-radius:6px;font-weight:900">GOOGLE</button><button id="psy-online-github" type="button" style="padding:10px;background:#161b22;color:#fff;border:1px solid #697386;border-radius:6px;font-weight:900">GITHUB</button></div><div id="psy-online-identities" style="display:none;margin-top:8px;padding:8px;border:1px solid #244b66;border-radius:6px;color:#bae6fd;font-size:10px"></div><div id="psy-online-status" role="status" aria-live="polite" style="margin-top:8px;font-size:10px;color:#94a3b8"></div></div>`;
+  wrap.innerHTML=`<button id="psy-online-toggle" type="button" style="width:100%;padding:12px;border:1px solid #22d3ee;border-radius:7px;background:linear-gradient(#12324a,#0b1d2c);color:#fff;font-weight:900;cursor:pointer">☁ CONTA ONLINE / CLOUD SAVE</button><div id="psy-online-form" style="display:none;margin-top:9px;padding:10px;background:#07131f;border:1px solid #244b66;border-radius:8px"><div id="psy-online-auth-help" style="font-size:11px;color:#9bdcf4;margin-bottom:8px">Entre com e-mail para usar o mesmo save em outros dispositivos. O save local continua sendo mantido como backup.</div><input id="psy-online-email" type="email" autocomplete="email" placeholder="E-mail" style="box-sizing:border-box;width:100%;padding:10px;margin-bottom:6px;border-radius:6px;border:1px solid #355b75;background:#06101a;color:#fff"><input id="psy-online-pass" type="password" autocomplete="current-password" placeholder="Senha (mín. 6 caracteres)" style="box-sizing:border-box;width:100%;padding:10px;margin-bottom:8px;border-radius:6px;border:1px solid #355b75;background:#06101a;color:#fff"><div id="psy-online-password-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><button id="psy-online-login" type="button" style="padding:10px;background:#075985;color:#fff;border:0;border-radius:6px;font-weight:900">ENTRAR</button><button id="psy-online-signup" type="button" style="padding:10px;background:#166534;color:#fff;border:0;border-radius:6px;font-weight:900">CRIAR CONTA</button></div><button id="psy-online-resend" type="button" style="display:none;margin-top:8px;width:100%;padding:10px;background:#854d0e;color:#fff;border:1px solid #fbbf24;border-radius:6px;font-weight:900">REENVIAR E-MAIL DE CONFIRMAÇÃO</button><div id="psy-online-social-actions" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px"><button id="psy-online-google" type="button" style="padding:10px;background:#fff;color:#1f2937;border:1px solid #cbd5e1;border-radius:6px;font-weight:900">GOOGLE</button><button id="psy-online-github" type="button" style="padding:10px;background:#161b22;color:#fff;border:1px solid #697386;border-radius:6px;font-weight:900">GITHUB</button></div><div id="psy-online-identities" style="display:none;margin-top:8px;padding:8px;border:1px solid #244b66;border-radius:6px;color:#bae6fd;font-size:10px"></div><div id="psy-online-status" role="status" aria-live="polite" style="margin-top:8px;font-size:10px;color:#94a3b8"></div></div>`;
   box.appendChild(wrap);$('psy-online-toggle').onclick=()=>{const f=$('psy-online-form');f.style.display=f.style.display==='none'?'block':'none';renderStatus()};$('psy-online-login').onclick=()=>login();$('psy-online-signup').onclick=()=>signup();$('psy-online-resend').onclick=()=>resendSignupConfirmation();$('psy-online-google').onclick=()=>socialLogin('google');$('psy-online-github').onclick=()=>socialLogin('github');
+}
+function setEntryRecovery(active){
+ const box=$('login-box');if(!box)return false;
+ let card=$('psy-auth-recovery-v1');
+ if(active&&!card){card=D.createElement('div');card.id='psy-auth-recovery-v1';card.setAttribute?.('role','status');card.setAttribute?.('aria-live','polite');card.style.cssText='display:none;box-sizing:border-box;width:100%;max-width:440px;margin:12px auto;padding:16px;border:1px solid #22d3ee;border-radius:10px;background:linear-gradient(145deg,#0c2232,#08131e);color:#bae6fd;font-size:15px;font-weight:800;text-align:center;box-shadow:0 8px 28px #0008';box.textContent='Entrando no PSYWORLD...';box.appendChild(card)}
+ if(!card)return false;
+ if(active){
+  for(const child of Array.from(box.children||[])){if(child===card)continue;if(child.dataset?.psyEntryRecoveryHidden==='1'){if(child.style)child.style.display='none';continue}child.dataset.psyEntryRecoveryDisplay=String(child.style?.display||'');child.dataset.psyEntryRecoveryHidden='1';if(child.style)child.style.display='none'}
+  card.style.display='block';
+ }else{
+  for(const child of Array.from(box.children||[])){if(child.dataset?.psyEntryRecoveryHidden!=='1')continue;if(child.style)child.style.display=child.dataset.psyEntryRecoveryDisplay||'';delete child.dataset.psyEntryRecoveryDisplay;delete child.dataset.psyEntryRecoveryHidden}
+  card.style.display='none';
+ }
+ return true;
 }
 function cloudStatus(){
  const meta=readSync(),local=bestLocal(),signature=local?saveSignature(local):'',pending=!!(meta.pending||signature&&meta.cloudSignature&&signature!==meta.cloudSignature),offline=typeof navigator!=='undefined'&&navigator.onLine===false;
@@ -350,6 +364,10 @@ function renderStatus(preserveMessage=false){
  const google=$('psy-online-google'),github=$('psy-online-github');
  if(google)google.textContent=signedIn?'VINCULAR GOOGLE':'ENTRAR COM GOOGLE';
  if(github)github.textContent=signedIn?'VINCULAR GITHUB':'ENTRAR COM GITHUB';
+ const toggle=$('psy-online-toggle');if(toggle)toggle.textContent=signedIn?'☁ CONTA CONECTADA':'☁ CONTA ONLINE / CLOUD SAVE';
+ const authDisplays={'psy-online-auth-help':'block','psy-online-email':'','psy-online-pass':'','psy-online-password-actions':'grid','psy-online-social-actions':'grid'};
+ for(const [id,display] of Object.entries(authDisplays)){const el=$(id);if(el)el.style.display=signedIn?'none':display}
+ const resend=$('psy-online-resend');if(resend&&signedIn)resend.style.display='none';
  const identities=$('psy-online-identities');if(identities)identities.style.display=signedIn?'block':'none';
  renderCloudStatus();
 }
@@ -751,7 +769,18 @@ function styleMenu(){
   renderCloudStatus();
 }
 function installGlobalUI(){installFastDrag();styleMenu();loadAudioSystem();installEconomyHooks()}
-async function bootstrap(){ensureUI();const callbackData=hasOAuthCallbackData(),callbackComplete=await completeOAuthCallback();captureAuthHash();readSession();renderStatus(callbackData&&!callbackComplete);try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();startAutosave();return}if(config?.onlineConfigured&&await ensureToken()){renderStatus(callbackData&&!callbackComplete);try{const state=await api('/api/player');hydrateServerIdentity(state);await renderLinkedIdentities();captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}patchSave();installGlobalUI();startAutosave();setInterval(()=>{patchSave();installGlobalUI();renderCloudStatus();if(syncEnabled&&session?.access_token)queueSync()},15000)}
-W.psyCloudV23={login,signup,resendSignupConfirmation,loginWithGoogle:()=>socialLogin('google'),loginWithGithub:()=>socialLogin('github'),completeOAuthCallback,logout:async()=>{try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;cloudPhase='idle';renderStatus();await renderLinkedIdentities();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:saveNow,saveNow,loadNow,compareNow,economy,bestLocal,captureActiveLocal,validSave,migrateSave:normalizeSave,status:cloudStatus,renderStatus:renderCloudStatus};
+async function bootstrap(){
+ ensureUI();
+ const callbackData=hasOAuthCallbackData();if(callbackData)setEntryRecovery(true);
+ const callbackComplete=await completeOAuthCallback();if(callbackData&&!callbackComplete)setEntryRecovery(false);
+ captureAuthHash();readSession();renderStatus(callbackData&&!callbackComplete);
+ try{await loadConfig()}catch(e){console.warn('online config',e);installGlobalUI();startAutosave();return}
+ const authenticated=!!(config?.onlineConfigured&&await ensureToken());
+ readSession();renderStatus(callbackData&&!callbackComplete);
+ if(authenticated){try{const state=await api('/api/player');hydrateServerIdentity(state);renderLinkedIdentities();captureActiveLocal();const game=await gameForSession(state);if(game||bestLocal())await resolveConflict(game);else syncEnabled=false}catch(e){console.warn('cloud bootstrap',e)}}
+ else setEntryRecovery(false);
+ patchSave();installGlobalUI();startAutosave();setInterval(()=>{patchSave();installGlobalUI();renderCloudStatus();if(syncEnabled&&session?.access_token)queueSync()},15000)
+}
+W.psyCloudV23={login,signup,resendSignupConfirmation,loginWithGoogle:()=>socialLogin('google'),loginWithGithub:()=>socialLogin('github'),completeOAuthCallback,beginEntryRecovery:()=>setEntryRecovery(true),finishEntryRecovery:()=>setEntryRecovery(false),logout:async()=>{setEntryRecovery(false);try{if(session?.access_token)await authFetch('logout',{method:'POST',headers:{Authorization:'Bearer '+session.access_token}})}catch(_){}saveSession(null);syncEnabled=false;cloudPhase='idle';renderStatus();await renderLinkedIdentities();styleMenu();toast('Conta online desconectada. O save local foi mantido.')},uploadNow:saveNow,saveNow,loadNow,compareNow,economy,bestLocal,captureActiveLocal,validSave,migrateSave:normalizeSave,status:cloudStatus,renderStatus:renderCloudStatus};
 D.readyState==='loading'?D.addEventListener('DOMContentLoaded',()=>setTimeout(bootstrap,80)):setTimeout(bootstrap,80);D.addEventListener('visibilitychange',()=>{if(D.visibilityState==='hidden')queueSync()});
 })(window,document);

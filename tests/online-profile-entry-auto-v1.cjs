@@ -16,8 +16,8 @@ function node(id=''){
   };return n;
 }
 const validSave={version:9,savedAt:20,map:{x:10,y:20},player:{name:'Cloud Trainer',meta:{characterNickname:'Cloud Trainer'},team:[{id:25,name:'Pikachu',level:8}],box:[]}};
-function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='user-1',responseOwner=owner,characterSave=validSave,failState=false,failCharacter=false,localSave=null}={}){
-  let stateOutage=failState;const values=new Map(),calls={state:0,character:[],writes:[]},timeouts=[],nodes=new Map();
+function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='user-1',responseOwner=owner,characterSave=validSave,failState=false,failCharacter=false,localSave=null,holdState=false}={}){
+  let stateOutage=failState,recovery=false,releaseState;const stateGate=holdState?new Promise(resolve=>{releaseState=resolve}):null;const values=new Map(),calls={state:0,character:[],writes:[],recovery:[]},timeouts=[],nodes=new Map();
   const localStorage={getItem:k=>values.has(k)?values.get(k):null,setItem(k,v){values.set(k,String(v))},removeItem:k=>values.delete(k),key:i=>[...values.keys()][i]||null,get length(){return values.size}};
   localStorage.setItem(KEYS.session,JSON.stringify({access_token:'access-user-1',refresh_token:'refresh-user-1',user:{id:owner}}));
   localStorage.setItem(KEYS.exit,'1');
@@ -31,6 +31,7 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   async function fetch(url,opt={}){
     if(String(url).startsWith('/api/player?')||url==='/api/player'){
       calls.state++;calls.writes.push({url,method:opt.method||'GET',authorization:opt.headers?.Authorization});
+      if(stateGate)await stateGate;
       return stateOutage?{ok:false,status:503,json:async()=>({error:'network unavailable'})}:{ok:true,status:200,json:async()=>({user:{id:responseOwner},characters})};
     }
     if(String(url).startsWith('/api/player/character?')){
@@ -40,17 +41,17 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
     throw new Error('unexpected request '+url);
   }
   const player={name:'Local Trainer',meta:{},team:[{id:1,name:'Bulbasaur'}],box:[],gold:777};
-  const window={localStorage,location,history:{},P:player,notif(){},dispatchEvent(){},psyCloudV23:{validSave:s=>!!s?.player?.team?.length,migrateSave:s=>s}};
+  const window={localStorage,location,history:{},P:player,notif(){},dispatchEvent(){},psyCloudV23:{validSave:s=>!!s?.player?.team?.length,migrateSave:s=>s,beginEntryRecovery(){recovery=true;form.style.display='none';calls.recovery.push('begin')},finishEntryRecovery(){recovery=false;form.style.display='block';calls.recovery.push('finish')}}};
   const context={window,document,location,localStorage,fetch,CustomEvent:class{},console:{log(){},warn(){},error(){}},URL,URLSearchParams,Date,Promise,JSON,Number,String,Boolean,Math,Map,Array,Object,RegExp,encodeURIComponent,decodeURIComponent,getComputedStyle:n=>({display:n?.style?.display||'none'}),setTimeout(fn){timeouts.push(fn);return timeouts.length},clearTimeout(){},setInterval(){return 1},clearInterval(){},atob:v=>Buffer.from(v,'base64').toString('binary')};
   vm.runInNewContext(source,context,{filename:'core/online-profile-entry-v37.js'});
-  return {window,document,localStorage,calls,timeouts,nodes,form,toggle,status,nick,login,values,setStateOutage(v){stateOutage=v}};
+  return {window,document,localStorage,calls,timeouts,nodes,form,toggle,status,nick,login,values,setStateOutage(v){stateOutage=v},releaseState(){releaseState?.()},isRecovering(){return recovery}};
 }
 
 (async()=>{
   const localOther={version:9,savedAt:5,player:{name:'Offline Profile',team:[{id:1,name:'Bulbasaur'}],box:[],gold:99}};
   const single=harness({localSave:localOther});
   await single.window.psyCharactersV38.render(true);
-  assert.equal(single.form.style.display,'block','authenticated account panel opens without another click');
+  assert.equal(single.form.style.display,'none','successful single-character entry keeps the login controls hidden until the game reloads');
   assert.equal(single.toggle.attributes['aria-expanded'],'true');
   assert.equal(single.calls.state,1,'server returns the validated UUID and its owned character list');
   assert.equal(single.calls.writes[0].authorization,'Bearer access-user-1');
@@ -62,6 +63,7 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   assert.equal(single.localStorage.getItem('psyWorldSave'),JSON.stringify(validSave),'server save replaces the active slot only after it validates');
   assert.equal(JSON.parse(single.localStorage.getItem(KEYS.stash)).psyWorldSave,JSON.stringify(localOther),'unrelated local save stays in the backup stash');
   assert.equal(single.calls.reload,undefined,'entry requests a page reload only after accepted save; timer has not fired in the test');
+  assert.equal(single.isRecovering(),true,'single-character save stays behind the loading transition until the accepted character reloads');
 
   const multiple=harness({characters:[{id:'char-1',nickname:'Cloud Trainer'},{id:'char-2',nickname:'Second Trainer'}]});
   await multiple.window.psyCharactersV38.render(true);
@@ -69,6 +71,7 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   assert.match(multiple.nodes.get('psy-character-list-v38').innerHTML,/Cloud Trainer/);
   assert.match(multiple.nodes.get('psy-character-list-v38').innerHTML,/Second Trainer/);
   assert.equal(multiple.localStorage.getItem(KEYS.pending),null);
+  assert.equal(multiple.isRecovering(),false,'multiple-character selector appears after the server list resolves');
   const choices=multiple.nodes.get('psy-character-list-v38').querySelectorAll('[data-psy-character-id]');
   await choices[0].onclick();
   assert.match(multiple.calls.character[0].url,/character_id=char-1/,'a selected character is also opened by stable ID');
@@ -80,6 +83,16 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   assert.match(empty.nodes.get('psy-character-list-v38').innerHTML,/ainda não tem personagens/);
   assert.equal(empty.calls.character.length,0);
   assert.equal(empty.localStorage.getItem(KEYS.pending),null,'an empty account is never auto-created');
+  assert.equal(empty.isRecovering(),false,'empty-account creation path appears after the server list resolves');
+
+  const pending=harness({characters:[{id:'char-1',nickname:'Cloud Trainer'},{id:'char-2',nickname:'Second Trainer'}],holdState:true});
+  const pendingRender=pending.window.psyCharactersV38.render(true);
+  assert.equal(pending.form.style.display,'none','login controls stay hidden while the authenticated character request is pending');
+  const periodicRender=pending.window.psyCharactersV38.render();
+  assert.equal(pending.form.style.display,'none','a repeated maintenance render cannot reopen the login form during recovery');
+  pending.releaseState();await Promise.all([pendingRender,periodicRender]);
+  assert.equal(pending.isRecovering(),false,'the character selector replaces the loading screen after recovery');
+  assert.equal(pending.form.style.display,'block');
 
   const mismatch=harness({responseOwner:'another-user'});
   await mismatch.window.psyCharactersV38.render(true);
@@ -94,6 +107,7 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   assert.equal(outage.localStorage.getItem('psyWorldSave'),JSON.stringify(localOther),'network failure leaves the old local save untouched');
   assert.equal(outage.localStorage.getItem(KEYS.pending),null);
   assert.equal(outage.calls.character.length,0);
+  assert.equal(outage.isRecovering(),false,'network errors release the loading view and expose retry');
   outage.setStateOutage(false);
   await outage.nodes.get('psy-character-list-v38').querySelector('[data-psy-retry]').onclick();
   assert.equal(outage.calls.state,2,'retry button re-queries the authenticated account instead of requiring a page reload');
@@ -104,6 +118,7 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   assert.match(invalid.nodes.get('psy-character-list-v38').innerHTML,/Nenhum save local ou da nuvem foi sobrescrito/);
   assert.equal(invalid.localStorage.getItem('psyWorldSave'),JSON.stringify(localOther),'invalid remote save cannot overwrite local state');
   assert.equal(invalid.localStorage.getItem(KEYS.pending),null);
+  assert.equal(invalid.isRecovering(),false,'invalid character saves release the loading view and expose retry');
 
   const legacyEntry=(legacySource.match(/function psyV9EnterSavedGame\(\)\{[\s\S]*?\n\}/)||[])[0];
   assert.ok(legacyEntry,'the legacy local-save entry function is present');

@@ -57,6 +57,11 @@ function characterMode(){const login=$('screen-login');return locked()||!!localS
 function renderConnectedStatus(){
   const s=$('psy-online-status'),ss=session();
   if(s&&s.dataset.psyOauthDiagnostic!=='1')s.textContent=ss?.access_token?'☁ Conta conectada • verificando personagens…':'Não conectado.';
+  const signedIn=!!ss?.access_token,toggle=$('psy-online-toggle');
+  if(toggle)toggle.textContent=signedIn?'☁ CONTA CONECTADA':'☁ CONTA ONLINE / CLOUD SAVE';
+  const defaults={'psy-online-auth-help':'block','psy-online-email':'','psy-online-pass':'','psy-online-password-actions':'grid','psy-online-social-actions':'grid'};
+  for(const [id,value] of Object.entries(defaults)){const el=$(id);if(el)el.style.display=signedIn?'none':value}
+  const resend=$('psy-online-resend');if(resend&&signedIn)resend.style.display='none';
 }
 async function listCharacters(expectedOwner){
   const d=await api('/api/player');
@@ -78,11 +83,13 @@ async function renderCharacters(force=false){
   if(!ss?.access_token){box.innerHTML='';box.style.display='none';box.dataset.loadedOwner='';return}
   const owner=authenticatedUserId(ss);
   const form=$('psy-online-form'),toggle=$('psy-online-toggle'),login=$('screen-login');
-  if(form&&login&&getComputedStyle(login).display!=='none'){form.style.display='block';toggle?.setAttribute('aria-expanded','true')}
-  if(!owner){box.style.display='block';box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#fca5a5">Não foi possível validar a identidade desta sessão. Entre novamente para proteger seus saves.</div>';box.dataset.loadedOwner='';return}
-  if(!force&&owner&&box.dataset.loadedOwner===owner)return;
+  const showAccount=!!(form&&login&&getComputedStyle(login).display!=='none');
+  if(!owner){if(showAccount){form.style.display='block';toggle?.setAttribute('aria-expanded','true')}W.psyCloudV23?.finishEntryRecovery?.();box.style.display='block';box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#fca5a5">Não foi possível validar a identidade desta sessão. Entre novamente para proteger seus saves.</div>';box.dataset.loadedOwner='';return}
   if(characterRequest&&characterRequestOwner===owner)return characterRequest;
   if(!force&&characterRetryOwner===owner&&Date.now()<characterRetryAt)return;
+  if(!force&&box.dataset.loadedOwner===owner){if(showAccount){form.style.display='block';toggle?.setAttribute('aria-expanded','true')}return}
+  if(showAccount){form.style.display='block';toggle?.setAttribute('aria-expanded','true')}
+  W.psyCloudV23?.beginEntryRecovery?.();
   box.style.display='block';box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#7dd3fc">Carregando...</div>';
   const request=(async()=>{
     try{
@@ -103,11 +110,12 @@ async function renderCharacters(force=false){
       if(!uncertain&&valid.length===1){
         const key=owner+'::'+String(valid[0].id);
         if(automaticEntryOwner!==key){automaticEntryOwner=key;await openCharacter(valid[0],{automatic:true,box})}
-      }
+      }else W.psyCloudV23?.finishEntryRecovery?.();
     }catch(e){
       box.innerHTML='<b>PERSONAGENS DA CONTA</b><div style="margin-top:6px;color:#fca5a5">Não foi possível carregar seus personagens. Nenhum save foi alterado. Verifique sua conexão e tente novamente.</div><button type="button" data-psy-retry="1" style="display:block;width:100%;margin-top:7px;padding:8px;border:1px solid #fca5a5;border-radius:6px;background:#351a24;color:#fff;font-weight:800;cursor:pointer">TENTAR NOVAMENTE</button>';
       box.dataset.loadedOwner='';characterRetryOwner=owner;characterRetryAt=Date.now()+20000;
       box.querySelector('[data-psy-retry]')?.addEventListener('click',()=>renderCharacters(true));
+      W.psyCloudV23?.finishEntryRecovery?.();
       if(e?.message==='account_identity_mismatch'||e?.message==='account_identity_changed')renderConnectedStatus();
     }
   })();
@@ -170,7 +178,7 @@ async function openCharacter(target,{automatic=false,box=ensureCharacterList()}=
       localStorage.setItem(SYNC_PROFILES_KEY,JSON.stringify(profiles));
     }catch(_){}
     toast('☁ Abrindo '+(c.nickname||nick)+'...',1800);setTimeout(()=>location.reload(),250);
-  }catch(e){if(automatic){automaticEntryOwner='';showCharacterOpenFailure(box,e)}else toast('❌ Não foi possível abrir o personagem. Confira sua conexão e tente novamente.',4200)}
+  }catch(e){if(automatic){automaticEntryOwner='';W.psyCloudV23?.finishEntryRecovery?.();showCharacterOpenFailure(box,e)}else toast('❌ Não foi possível abrir o personagem. Confira sua conexão e tente novamente.',4200)}
 }
 function beginNewCharacter(nick){
   saveStash();backupAndClearActive();
