@@ -296,7 +296,7 @@ function para(parent,text){const e=D.createElement('p');e.textContent=text;paren
 const WATER={
  'route-1':[[132,431,95],[96,350,90]],
  'viridian':[[615,655,110],[470,550,70]],
- 'pallet':[[530,630,65]],
+ 'pallet':[[450,430,38]],
  'kanto-hunt-rift':[[790,275,95],[738,360,65]]
 };
 function canFish(scene,pos,canvas){
