@@ -210,13 +210,11 @@ async function openCharacter(target,{automatic=false,box=ensureCharacterList()}=
     }catch(_){}
     const commitStep=startEntryStep('save_commit');commitStep('completed');
     if(generation!==entryGeneration||authenticatedUserId(session())!==owner)throw Object.assign(new Error('account_identity_changed'),{code:'entry_identity_changed'});
-    const enterStep=startEntryStep('game_entry');
-    try{
-      localStorage.removeItem(EXIT_KEY);
-      if(typeof W.psyV9EnterSavedGame!=='function')throw Object.assign(new Error('entry_runtime_unavailable'),{code:'entry_runtime_unavailable'});
-      if(W.psyV9EnterSavedGame()!==true)throw Object.assign(new Error('entry_runtime_rejected_save'),{code:'entry_runtime_rejected'});
-      enterStep('completed');automaticStep?.('completed');W.psyCloudV23?.finishEntryRecovery?.();toast('☁ Bem-vindo '+(c.nickname||nick)+'!',1800);
-    }catch(e){localStorage.setItem(EXIT_KEY,'1');enterStep('failed',safeEntryCode(e));throw e}
+    localStorage.removeItem(EXIT_KEY);
+    W.psyCloudV23?.finishEntryRecovery?.();
+    automaticStep?.('completed');
+    traceEntry('game_reload','pending');
+    location.reload();
   }catch(e){fetchStep(e?.code==='entry_identity_changed'?'cancelled':'failed',safeEntryCode(e));automaticStep?.(generation===entryGeneration?'failed':'cancelled',safeEntryCode(e));if(generation!==entryGeneration)return;if(automatic){automaticEntryOwner='';W.psyCloudV23?.finishEntryRecovery?.();showCharacterOpenFailure(box,e)}else toast('❌ Não foi possível abrir o personagem. Confira sua conexão e tente novamente.',4200)}
 }
 function beginNewCharacter(nick){
