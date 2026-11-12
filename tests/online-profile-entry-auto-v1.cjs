@@ -16,8 +16,8 @@ function node(id=''){
   };return n;
 }
 const validSave={version:9,savedAt:20,map:{x:10,y:20},player:{name:'Cloud Trainer',meta:{characterNickname:'Cloud Trainer'},team:[{id:25,name:'Pikachu',level:8}],box:[]}};
-function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='user-1',responseOwner=owner,characterSave=validSave,failState=false,failCharacter=false,localSave=null,holdState=false,authenticatedInitially=true}={}){
-  let stateOutage=failState,charOutage=failCharacter,recovery=false,releaseState;const stateGate=holdState?new Promise(resolve=>{releaseState=resolve}):null;const values=new Map(),calls={state:0,character:[],writes:[],recovery:[],entry:0},timeouts=[],nodes=new Map(),listeners=new Map();
+function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='user-1',responseOwner=owner,characterSave=validSave,failState=false,failCharacter=false,localSave=null,holdState=false,authenticatedInitially=true,runtimeReady=true}={}){
+  let stateOutage=failState,charOutage=failCharacter,entryRuntimeReady=runtimeReady,recovery=false,releaseState;const stateGate=holdState?new Promise(resolve=>{releaseState=resolve}):null;const values=new Map(),calls={state:0,character:[],writes:[],recovery:[],entry:0},timeouts=[],nodes=new Map(),listeners=new Map();
   const localStorage={getItem:k=>values.has(k)?values.get(k):null,setItem(k,v){values.set(k,String(v))},removeItem:k=>values.delete(k),key:i=>[...values.keys()][i]||null,get length(){return values.size}};
   if(authenticatedInitially)localStorage.setItem(KEYS.session,JSON.stringify({access_token:'access-user-1',refresh_token:'refresh-user-1',user:{id:owner}}));
   localStorage.setItem(KEYS.exit,'1');
@@ -41,10 +41,10 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
     throw new Error('unexpected request '+url);
   }
   const player={name:'Local Trainer',meta:{},team:[{id:1,name:'Bulbasaur'}],box:[],gold:777};
-  const window={localStorage,location,history:{},P:player,notif(){},addEventListener(type,fn){const bucket=listeners.get(type)||[];bucket.push(fn);listeners.set(type,bucket)},dispatchEvent(event){return(listeners.get(event.type)||[]).map(fn=>fn(event))},psyV9EnterSavedGame(){calls.entry++;login.style.display='none';return true},psyCloudV23:{validSave:s=>!!s?.player?.team?.length,migrateSave:s=>s,getAccountState:async()=>{calls.state++;calls.writes.push({url:'/api/player',method:'GET',authorization:'Bearer access-user-1'});if(stateOutage)throw new Error('network unavailable');if(stateGate)await stateGate;return{user:{id:responseOwner},characters}},getAccountCharacterById:async id=>{calls.character.push({url:'/api/player/character?character_id='+id,authorization:'shared-request'});if(charOutage)throw new Error('temporarily unavailable');return{character:{id:'char-1',nickname:'Cloud Trainer',save:characterSave,updated_at:'2026-11-10T00:00:00Z'}}},beginEntryRecovery(){recovery=true;form.style.display='none';calls.recovery.push('begin')},finishEntryRecovery(){recovery=false;form.style.display='block';calls.recovery.push('finish')}}};
+  const window={localStorage,location,history:{},P:player,notif(){},addEventListener(type,fn){const bucket=listeners.get(type)||[];bucket.push(fn);listeners.set(type,bucket)},dispatchEvent(event){return(listeners.get(event.type)||[]).map(fn=>fn(event))},psyV9EnterSavedGame(){calls.entry++;if(!entryRuntimeReady)return false;login.style.display='none';return true},psyCloudV23:{validSave:s=>!!s?.player?.team?.length,migrateSave:s=>s,getAccountState:async()=>{calls.state++;calls.writes.push({url:'/api/player',method:'GET',authorization:'Bearer access-user-1'});if(stateOutage)throw new Error('network unavailable');if(stateGate)await stateGate;return{user:{id:responseOwner},characters}},getAccountCharacterById:async id=>{calls.character.push({url:'/api/player/character?character_id='+id,authorization:'shared-request'});if(charOutage)throw new Error('temporarily unavailable');return{character:{id:'char-1',nickname:'Cloud Trainer',save:characterSave,updated_at:'2026-11-10T00:00:00Z'}}},beginEntryRecovery(){recovery=true;form.style.display='none';calls.recovery.push('begin')},finishEntryRecovery(){recovery=false;form.style.display='block';calls.recovery.push('finish')}}};
   const context={window,document,location,localStorage,fetch,CustomEvent:class{},console:{log(){},warn(){},error(){}},URL,URLSearchParams,Date,Promise,JSON,Number,String,Boolean,Math,Map,Array,Object,RegExp,encodeURIComponent,decodeURIComponent,getComputedStyle:n=>({display:n?.style?.display||'none'}),setTimeout(fn){timeouts.push(fn);return timeouts.length},clearTimeout(){},setInterval(){return 1},clearInterval(){},atob:v=>Buffer.from(v,'base64').toString('binary')};
   vm.runInNewContext(source,context,{filename:'core/online-profile-entry-v37.js'});
-  return {window,document,localStorage,calls,timeouts,nodes,form,toggle,status,nick,login,values,setStateOutage(v){stateOutage=v},setCharacterOutage(v){charOutage=v},releaseState(){releaseState?.()},isRecovering(){return recovery},setSession(nextOwner){localStorage.setItem(KEYS.session,JSON.stringify({access_token:'access-'+nextOwner,refresh_token:'refresh-'+nextOwner,user:{id:nextOwner}}));return window.dispatchEvent({type:'psyworld-online-session-changed',detail:{authenticated:true}})},signOut(){localStorage.removeItem(KEYS.session);return window.dispatchEvent({type:'psyworld-online-session-changed',detail:{authenticated:false}})}};
+  return {window,document,localStorage,calls,timeouts,nodes,form,toggle,status,nick,login,values,setStateOutage(v){stateOutage=v},setCharacterOutage(v){charOutage=v},setRuntimeReady(v){entryRuntimeReady=v},releaseState(){releaseState?.()},isRecovering(){return recovery},setSession(nextOwner){localStorage.setItem(KEYS.session,JSON.stringify({access_token:'access-'+nextOwner,refresh_token:'refresh-'+nextOwner,user:{id:nextOwner}}));return window.dispatchEvent({type:'psyworld-online-session-changed',detail:{authenticated:true}})},signOut(){localStorage.removeItem(KEYS.session);return window.dispatchEvent({type:'psyworld-online-session-changed',detail:{authenticated:false}})}};
 }
 
 (async()=>{
@@ -86,6 +86,16 @@ function harness({characters=[{id:'char-1',nickname:'Cloud Trainer'}],owner='use
   await saveOutage.nodes.get('psy-character-list-v38').querySelector('[data-psy-retry]').onclick();
   assert.equal(saveOutage.calls.entry,1,'retry after a failed character fetch completes the in-page game entry');
   assert.equal(saveOutage.calls.reload,undefined);
+
+  const runtimePending=harness({runtimeReady:false});
+  await runtimePending.window.psyCharactersV38.render(true);
+  assert.equal(runtimePending.calls.entry,1,'runtime entry was attempted after server ownership and save validation');
+  assert.equal(runtimePending.isRecovering(),false,'a runtime rejection releases the loading state');
+  assert.match(runtimePending.nodes.get('psy-character-list-v38').innerHTML,/TENTAR NOVAMENTE/);
+  runtimePending.setRuntimeReady(true);
+  await runtimePending.nodes.get('psy-character-list-v38').querySelector('[data-psy-retry]').onclick();
+  assert.equal(runtimePending.calls.entry,2,'retry reattempts entry after the runtime becomes ready');
+  assert.equal(runtimePending.calls.reload,undefined);
 
   const stale=harness({authenticatedInitially:false,holdState:true});
   const staleFlight=stale.setSession('user-1')[0];
