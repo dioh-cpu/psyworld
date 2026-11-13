@@ -13,7 +13,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY='test-service-key';
 
 const {default:callback}=await import('../pages/api/auth/callback.js');
 const {default:accountHandler}=await import('../pages/api/account.js');
-const {buildAuthorizeUrl,seal,unseal}=await import('../lib/server.js');
+const {buildAuthorizeUrl,exchangeUnifiedLoginCode,seal,unseal}=await import('../lib/server.js');
 
 function oauthState(){
   const value=crypto.randomBytes(32).toString('hex');
@@ -32,6 +32,20 @@ test('authorization URL selects the supplied Unified Login configuration without
   assert.equal(u.searchParams.get('response_type'),'code');
   assert.equal(u.searchParams.get('state'),'state-test');
   assert.equal(u.searchParams.has('scope'),false);
+});
+
+test('authorization and SUAT code exchange use the identical redirect URI',async()=>{
+  const oldFetch=globalThis.fetch;let exchangeUrl;
+  globalThis.fetch=async(input)=>{
+    exchangeUrl=new URL(input);
+    return new Response(JSON.stringify({access_token:'mock-suat'}),{status:200});
+  };
+  try{
+    const authorizationRedirect=buildAuthorizeUrl('redirect-test').searchParams.get('redirect_uri');
+    await exchangeUnifiedLoginCode('mock-code');
+    assert.equal(exchangeUrl.searchParams.get('redirect_uri'),authorizationRedirect);
+    assert.equal(exchangeUrl.searchParams.get('redirect_uri'),process.env.IG_REDIRECT_URI);
+  }finally{globalThis.fetch=oldFetch;}
 });
 
 test('callback exchanges code once, discovers assigned Instagram account, and stores SUAT encrypted',async()=>{
@@ -55,7 +69,7 @@ test('callback exchanges code once, discovers assigned Instagram account, and st
     assert.equal(exchange.searchParams.get('client_id'),process.env.IG_APP_ID);
     assert.equal(exchange.searchParams.get('code'),'mock-code');
     assert.equal(exchange.searchParams.has('grant_type'),false);
-    assert.equal(exchange.searchParams.has('redirect_uri'),false);
+    assert.equal(exchange.searchParams.get('redirect_uri'),process.env.IG_REDIRECT_URI);
     const discovery=calls[1];
     assert.equal(discovery.url.pathname,'/v27.0/me/assigned_instagram_accounts');
     assert.equal(discovery.url.searchParams.get('fields'),'id,username');
