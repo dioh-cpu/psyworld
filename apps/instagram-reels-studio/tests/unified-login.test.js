@@ -83,6 +83,32 @@ test('callback refuses missing state before making any upstream request',async()
   }finally{globalThis.fetch=oldFetch;}
 });
 
+test('callback logs only safe Meta exchange diagnostics and keeps the browser error generic',async()=>{
+  const state=oauthState(),lines=[];
+  const oldFetch=globalThis.fetch,oldError=console.error;
+  globalThis.fetch=async()=>new Response(JSON.stringify({error:{
+    message:'must-not-be-logged mock-code mock-app-secret mock-access-token',
+    type:'OAuthException',code:100,error_subcode:19001,
+  }}),{status:400});
+  console.error=(line)=>lines.push(String(line));
+  try{
+    const res=response();
+    await callback({method:'GET',url:`/auth/instagram/callback?code=mock-code&state=${state.value}`,headers:{cookie:state.cookie}},res);
+    assert.equal(res.statusCode,502);
+    assert.deepEqual(JSON.parse(res.body),{error:'A Meta não aceitou o código de autorização.'});
+    assert.equal(lines.length,1);
+    const diagnostic=JSON.parse(lines[0]);
+    assert.deepEqual(diagnostic,{
+      event:'meta_unified_login_code_exchange_failed',
+      httpStatus:400,
+      errorCode:100,
+      errorType:'OAuthException',
+      errorSubcode:19001,
+    });
+    assert.doesNotMatch(lines[0],/mock-code|mock-app-secret|mock-access-token|message/);
+  }finally{globalThis.fetch=oldFetch;console.error=oldError;}
+});
+
 test('callback supports a configuration whose SUAT has no expiration',async()=>{
   const state=oauthState(),writes=[];
   const oldFetch=globalThis.fetch;

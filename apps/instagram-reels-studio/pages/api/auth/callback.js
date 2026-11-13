@@ -1,5 +1,25 @@
 import {send,cookie,verifyState,REDIRECT,CONFIG_ID,db,seal,exchangeUnifiedLoginCode,getAssignedInstagramAccounts} from '../../../lib/server.js';
 
+function safeMetaErrorFields(error){
+  const numeric=(value)=>Number.isInteger(Number(value))?Number(value):undefined;
+  const type=typeof error?.type==='string'&&/^[A-Za-z0-9_.-]{1,64}$/.test(error.type)?error.type:undefined;
+  return {
+    errorCode:numeric(error?.code),
+    errorType:type,
+    errorSubcode:numeric(error?.error_subcode),
+  };
+}
+
+function logCodeExchangeFailure(exchange){
+  // Log only diagnostic fields. Never log provider payloads, request URLs,
+  // authorization codes, state, secrets, or access tokens.
+  console.error(JSON.stringify({
+    event:'meta_unified_login_code_exchange_failed',
+    httpStatus:Number.isInteger(exchange?.status)?exchange.status:null,
+    ...safeMetaErrorFields(exchange?.data?.error),
+  }));
+}
+
 export default async function handler(req,res){
   if(req.method!=='GET')return send(res,405,'Method not allowed');
   const q=new URL(req.url,'https://studio.invalid').searchParams;
@@ -11,9 +31,18 @@ export default async function handler(req,res){
 
   // Unified Login returns a Business Integration System User Access Token (SUAT).
   // Do not exchange it using the legacy fb_exchange_token flow.
-  const exchange=await exchangeUnifiedLoginCode(code);
+  let exchange;
+  try{
+    exchange=await exchangeUnifiedLoginCode(code);
+  }catch{
+    logCodeExchangeFailure({status:null,data:null});
+    return send(res,502,{error:'A Meta não aceitou o código de autorização.'});
+  }
   const token=exchange.data?.access_token;
-  if(!exchange.ok||!token)return send(res,502,{error:'A Meta não aceitou o código de autorização.'});
+  if(!exchange.ok||!token){
+    logCodeExchangeFailure(exchange);
+    return send(res,502,{error:'A Meta não aceitou o código de autorização.'});
+  }
   let expiresAt=null;
   if(exchange.data?.expires_in!==undefined&&exchange.data?.expires_in!==null){
     const expiresIn=Number(exchange.data.expires_in);
