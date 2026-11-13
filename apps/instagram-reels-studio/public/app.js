@@ -78,11 +78,15 @@ $('#newItem').onsubmit=async event=>{
     if(file.type!=='video/mp4'||file.size>1024*1024*1024){alert('Envie MP4 de até 1 GB.');return;}
     const reservation=await fetch('/api/upload-url',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:file.name,contentType:file.type,size:file.size})});
     const upload=await reservation.json();
-    if(!reservation.ok||!upload.token){alert(upload.error||'Falha ao iniciar upload.');return;}
-    const signed=new URL(upload.signedUrl,window.location.origin);
-    signed.searchParams.set('token',upload.token);
-    const put=await fetch(signed,{method:'PUT',headers:{'Content-Type':file.type,'x-upsert':'false'},body:file});
-    if(!put.ok){alert('Upload para armazenamento privado falhou.');return;}
+    if(!reservation.ok||!upload.signedUrl){alert(upload.error||'Falha ao iniciar upload.');return;}
+    let put;
+    try{
+      put=await window.ReelsStudioUpload.putSignedVideo(upload.signedUrl,file);
+    }catch{
+      alert('Não foi possível alcançar o Storage privado. Verifique a conexão e tente novamente.');
+      return;
+    }
+    if(!put.ok){alert(`O Storage recusou o upload (HTTP ${put.status}). Tente novamente.`);return;}
     videoPath=upload.path;
   }
   const item={series:data.get('series'),episode:data.get('episode'),caption:data.get('caption'),scheduleAt:data.get('scheduleAt'),products:data.get('products')?data.get('products').split('\n').filter(Boolean):[],videoPath,status:'Rascunho'};
