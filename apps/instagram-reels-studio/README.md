@@ -4,7 +4,7 @@ Standalone Vercel project preparation, independent of PSYWORLD. Existing Portugu
 
 ## OAuth / Unified Login
 
-Uses Instagram Login OAuth documented at `https://www.instagram.com/oauth/authorize`, code exchange at `https://api.instagram.com/oauth/access_token`, long-lived exchange/refresh at `graph.instagram.com/access_token` and `graph.instagram.com/refresh_access_token`. Scopes: `instagram_business_basic`, `instagram_business_content_publish`. App ID is set to the value supplied by the owner. Config ID `2055560198307756` is metadata for the selected setup; Meta's current Instagram Login parameter reference does not list `config_id` on the authorization URL. `IG_REDIRECT_URI` must exactly match the Meta dashboard URL. Callback route is `/auth/instagram/callback`.
+Uses Facebook Login for Business with the Meta App ID (`IG_APP_ID`) and Login Configuration ID (`IG_CONFIG_ID`). The configuration supplies permissions, so the authorization request does not send Instagram Login scopes. The authorization code is exchanged at `graph.facebook.com/v27.0/oauth/access_token`; the user token is exchanged for a long-lived Facebook token, then `/me/accounts` resolves the linked professional Instagram account and its Page access token. `IG_REDIRECT_URI` must exactly match the Meta dashboard URL. Callback route is `/auth/instagram/callback`.
 
 OAuth `state` is HMAC-signed and tied to a Secure, HttpOnly, SameSite=Lax cookie. Long-lived tokens are AES-256-GCM encrypted before storage in a dedicated Supabase table. No credentials are present in this repository.
 
@@ -18,7 +18,7 @@ Queue state/schema and signed MP4 upload are prepared. A publisher worker, sched
 
 1. Create a separate Vercel project named `cain-lucius-reels-studio`, with this directory as its root. Do not link `psyworld`.
 2. Create a dedicated Supabase project, apply the migration above, and create Vercel project secrets from `.env.example` in Preview environment. Generate `OAUTH_STATE_SECRET` as random 32+ bytes and `TOKEN_ENCRYPTION_KEY` as exactly 32 random bytes encoded in base64. Enter Meta App Secret directly in the Vercel secret manager.
-3. Set `IG_REDIRECT_URI` to `https://<actual-preview-domain>/auth/instagram/callback`, then add that exact HTTPS URI to the Meta App OAuth redirect allowlist. Redeploy Preview after setting the variables.
+3. Set `IG_REDIRECT_URI` to the HTTPS callback configured in Meta. For Facebook Login for Business, ensure the Login Configuration ID grants the required Page and Instagram permissions, including access to the linked professional account. The authorization URL uses `config_id` instead of an explicit scope list.
 4. Admin Basic Auth middleware protects the dashboard and all APIs. Only the Meta callback and status endpoint are public. Set a unique `ADMIN_USERNAME`/`ADMIN_PASSWORD` before deployment. Vercel preview protection should also be enabled.
 5. Confirm `/api/status`, `/auth/instagram/callback` (invalid state must return 400), and `/` (without admin credentials must return 401) over HTTPS. Then start OAuth manually and validate a real professional account before implementing/activating publishing.
 
