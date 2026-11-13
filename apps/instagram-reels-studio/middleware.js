@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 export const config={matcher:['/((?!favicon.ico).*)']};
 export async function middleware(request){
  const path=request.nextUrl.pathname;
+ const method=request.method.toUpperCase();
+ if(['POST','PUT','PATCH','DELETE'].includes(method)){
+  const origin=request.headers.get('origin');
+  const fetchSite=request.headers.get('sec-fetch-site');
+  if(!origin||origin!==request.nextUrl.origin||fetchSite==='cross-site')return new Response('Cross-site request rejected',{status:403,headers:{'Cache-Control':'no-store'}});
+ }
  if(path==='/auth/instagram/callback'||path==='/api/auth/callback'||path==='/api/status')return NextResponse.next();
  const user=process.env.ADMIN_USERNAME,pass=process.env.ADMIN_PASSWORD;
  if(!user||!pass)return new Response('Admin access is not configured',{status:503,headers:{'Cache-Control':'no-store'}});
