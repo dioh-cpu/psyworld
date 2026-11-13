@@ -10,7 +10,7 @@ OAuth `state` is HMAC-signed and tied to a Secure, HttpOnly, SameSite=Lax cookie
 
 ## Persistence
 
-Apply `supabase/migrations/202611120001_reels_studio.sql` only in a **new dedicated Supabase project** for this Studio. It creates private tables with RLS enabled and access revoked for anon/authenticated, a unique idempotency key for episodes, and a private Storage bucket. Video uploads use signed upload URLs so the MP4 does not pass through Vercel's 4.5 MB function request limit. Function access uses the server-only `SUPABASE_SERVICE_ROLE_KEY`.
+Apply `supabase/migrations/202611120001_reels_studio.sql` only in a **new dedicated Supabase project** for this Studio. It creates private tables with RLS enabled and access revoked for anon/authenticated, a unique idempotency key for episodes, and a private Storage bucket. Video uploads use signed upload URLs so the MP4 does not pass through Vercel's 4.5 MB function request limit. Function access uses the server-only `SUPABASE_SERVICE_ROLE_KEY`, which may contain either a legacy `service_role` JWT or a modern `sb_secret_` key. Modern secret keys are sent only in the `apikey` header because they are opaque keys rather than JWTs.
 
 Queue state/schema and signed MP4 upload are prepared. A publisher worker, scheduled cron, account admin, and media readiness/insights paths still need implementation before production scheduling/publication.
 
