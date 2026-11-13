@@ -13,6 +13,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY='test-service-key';
 
 const {default:callback}=await import('../pages/api/auth/callback.js');
 const {default:accountHandler}=await import('../pages/api/account.js');
+const {default:videoUrlHandler}=await import('../pages/api/video-url.js');
 const {buildAuthorizeUrl,exchangeUnifiedLoginCode,seal,unseal}=await import('../lib/server.js');
 
 function oauthState(){
@@ -158,5 +159,28 @@ test('account endpoint confirms stored Instagram ID and username against assigne
     assert.equal(res.statusCode,200);
     assert.deepEqual(JSON.parse(res.body),{connected:true,userId:'17840001',username:'cainsennagamer',expiresAt:JSON.parse(res.body).expiresAt});
     assert.equal(calls,2);
+  }finally{globalThis.fetch=oldFetch;}
+});
+
+
+test('private video preview only signs paths attached to a saved draft',async()=>{
+  const path='1a2b3c4d-1a2b-3c4d-5e6f-1234567890ab-1000350696.mp4';
+  const oldFetch=globalThis.fetch,calls=[];
+  globalThis.fetch=async(input,init={})=>{
+    const url=new URL(input);calls.push({url,init});
+    if(url.pathname.includes('/storage/v1/object/sign/'))return new Response(JSON.stringify({signedURL:`/storage/v1/object/sign/reels-private/${path}?token=short-lived`}),{status:200});
+    if(url.pathname==='/rest/v1/reels')return new Response(JSON.stringify([{id:'draft-1'}]),{status:200});
+    throw new Error(`Unexpected fetch target: ${url.origin}${url.pathname}`);
+  };
+  try{
+    const res=response();
+    await videoUrlHandler({method:'GET',query:{path}},res);
+    assert.equal(res.statusCode,200);
+    assert.equal(JSON.parse(res.body).url,`https://studio-supabase.invalid/storage/v1/object/sign/reels-private/${path}?token=short-lived`);
+    assert.equal(calls.length,2);
+    assert.equal(calls[0].url.pathname,'/rest/v1/reels');
+    assert.equal(calls[1].init.method,'POST');
+    assert.equal(JSON.parse(calls[1].init.body).expiresIn,600);
+    assert.equal(res.headers['Cache-Control'],'no-store');
   }finally{globalThis.fetch=oldFetch;}
 });
