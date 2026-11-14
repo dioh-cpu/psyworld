@@ -287,7 +287,7 @@
     ['viridian','route-22-23'],['route-22-23','indigo']
   ];
   const LOCAL_ART = {
-    viridian:'/assets/kanto/approved/viridian-approved.webp',
+    viridian:'/assets/kanto/viridian-test/viridian-poster-v1.png',
     pewter:'/assets/kanto/approved/pewter-approved.webp',
     cerulean:'/assets/kanto/approved/cerulean-approved.webp',
     'mt-moon':'/assets/kanto/approved/mt-moon-approved.webp'
