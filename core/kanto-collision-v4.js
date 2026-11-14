@@ -16,8 +16,10 @@ data.pallet.npcs=data.pallet.npcs.filter(n=>n.id!=='gate');
 data.pallet.ground.push([[510,319],[625,319],[645,338],[790,333],[802,368],[610,370],[510,350]]);
 // Grass entrances include the stairs and the threshold of each field.
 data.route1.ground.push(
- [[198,170],[226,170],[226,254],[198,254]],
+ [[184,170],[219,170],[219,254],[184,254]],
  [[324,250],[359,250],[359,337],[324,337]],
+ // Lower-left lobe of grass B that the artwork draws below the rect.
+ [[262,330],[310,330],[310,347],[292,362],[270,356],[262,350]],
  [[600,163],[638,163],[638,228],[600,228]],
  [[735,236],[770,236],[770,294],[735,294]]
 );
