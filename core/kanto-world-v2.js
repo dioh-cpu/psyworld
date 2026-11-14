@@ -238,9 +238,11 @@ function routeOneViewport(){
  labels.forEach((el,i)=>{if(el)el.textContent=oldLabels[i]});
  if(oldStyle===null)root.removeAttribute('style');else root.setAttribute('style',oldStyle);if(oldWorld===undefined)delete root.dataset.world;else root.dataset.world=oldWorld;if(!wasOpen)root.classList.remove('open');return routeViewportCache;
 }
+function palletHDActive(){return !state.inside&&state.world?.id==='pallet'&&!!W.PsyKantoPalletHDV1?.isActive?.();}
 function camera(){
   const map=state.inside||state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');
-  const r=state.viewport||(state.viewport=stage.getBoundingClientRect()),dpr=Math.min(1.3,W.devicePixelRatio||1);
+  const hd=palletHDActive();
+  const r=state.viewport||(state.viewport=stage.getBoundingClientRect()),dpr=Math.min(hd?2:1.3,W.devicePixelRatio||1);
   const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   // Cover the screen instead of letterboxing; scroll with the player.
@@ -249,10 +251,18 @@ function camera(){
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
   const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
-  return {w:cw,h:ch,scale,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale)};
+  return {w:cw,h:ch,scale,dpr,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale)};
 }
-function draw(){if(!state.root?.classList.contains('open')||!state.world)return;state.hideTrainerName=!state.inside&&Array.isArray(state.world.exit)&&Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<80;const c=state.ctx,view=camera();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,view.w,view.h);c.fillStyle='#122e30';c.fillRect(0,0,view.w,view.h);c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);
-if(state.inside){drawInterior(c,state.inside)}else{const o=image(state.world.art);if(o?.loaded){
+function draw(){if(!state.root?.classList.contains('open')||!state.world)return;state.hideTrainerName=!state.inside&&Array.isArray(state.world.exit)&&Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<80;const c=state.ctx,view=camera();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,view.w,view.h);
+let usedPalletHD=false;
+if(palletHDActive()){
+  const o=image(state.world.art);
+  const stage=state.root.querySelector('.kw2-stage');
+  usedPalletHD=!!W.PsyKantoPalletHDV1.render(stage,view,o?.loaded?o.im:null,performance.now(),{reduced:palletMotionReduced,dpr:view.dpr});
+}else{W.PsyKantoPalletHDV1?.hide?.();}
+if(!usedPalletHD){c.fillStyle='#122e30';c.fillRect(0,0,view.w,view.h);}
+c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);
+if(state.inside){drawInterior(c,state.inside)}else if(!usedPalletHD){const o=image(state.world.art);if(o?.loaded){
     if(!o.mapCanvas||o.mapCanvas.width!==state.world.w||o.mapCanvas.height!==state.world.h){
       const flat=D.createElement('canvas');flat.width=state.world.w;flat.height=state.world.h;
       const fc=flat.getContext('2d');fc.imageSmoothingEnabled=true;
@@ -281,7 +291,7 @@ W.PsyTreasureHuntV1?.drawScene?.(c,hobbyScene,performance.now());
 W.PsyHobbies?.drawField?.(c,hobbyScene);
 if(state.huntRiftOffer){const x=state.huntRiftOffer.x,y=state.huntRiftOffer.y,pulse=.62+Math.sin(performance.now()/180)*.18,g=c.createRadialGradient(x,y,3,x,y,34);g.addColorStop(0,`rgba(121,247,231,${pulse})`);g.addColorStop(.55,'rgba(131,91,255,.38)');g.addColorStop(1,'rgba(55,42,140,0)');c.fillStyle=g;c.beginPath();c.arc(x,y,34,0,Math.PI*2);c.fill();c.strokeStyle='#9af8ea';c.lineWidth=3;c.beginPath();c.ellipse(x,y,12,20,0,0,Math.PI*2);c.stroke();c.fillStyle='#e1ffff';c.font='bold 11px system-ui';c.textAlign='center';c.fillText('FENDA · ENTRAR',x,y-29);}
 if(state.inside)W.PsyHobbies?.drawDecor?.(c,state.inside.id);
-if(!state.inside&&state.world.id==='pallet'){
+if(!state.inside&&state.world.id==='pallet'&&!usedPalletHD){
  W.PsyKantoPalletAmbientV1?.draw(c,performance.now(),state.images.get(state.world.art)?.mapCanvas,state.position,{independentTrees:true});
  W.PsyKantoPalletVegetationV1?.draw(c,performance.now());
 }
