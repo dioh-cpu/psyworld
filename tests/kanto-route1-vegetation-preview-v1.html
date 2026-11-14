@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <base href="../">
+  <link rel="stylesheet" href="css/kanto-world-v2.css?build=ROUTE1_VEGETATION_QA_V1">
+  <title>PSYWORLD · Rota 1 — Protótipo de Vegetação Animada (Gazebo Oak)</title>
+  <style>
+    html,body{margin:0;min-height:100%;background:#06111f;color:#eaf6ff;font:14px system-ui}
+    #qa{position:fixed;z-index:2147483647;left:8px;top:8px;max-width:min(740px,calc(100vw - 16px));padding:8px 10px;background:#06111fee;border:1px solid #58d9d4;border-radius:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    #qa button{min-height:32px;padding:5px 10px;border-radius:7px;border:1px solid #b5e4e8;background:#18384e;color:#fff;font-weight:700;cursor:pointer}
+    #qa-status{width:100%;font:11px monospace;color:#a7efff;white-space:pre-wrap}
+    .kw2-top{z-index:50!important}
+  </style>
+</head>
+<body>
+  <nav id="qa" aria-label="Controles do protótipo Rota 1">
+    <button id="qa-gazebo">Focar Carvalho do Mirante (Rota 1)</button>
+    <button id="qa-spawn">Ir para Entrada Sul</button>
+    <output id="qa-status">Protótipo Visual · Rota 1 (Gazebo Oak · 7 grupos de folhagem independentes · estrutura fixa).</output>
+  </nav>
+  <script>
+    localStorage.setItem('psy_kanto_world_v2_quests',JSON.stringify({oak:true,center:true,market:true}));
+    var P={name:'Visual QA',playerCharacterId:'adventure_boy',trainerLevel:8,meta:{},team:[{id:1,name:'Sprigatito',level:5,hp:50,maxHp:50}],inventory:{},box:[]};
+    window.autoSave=()=>{};window.updateHUD=()=>{};window.PsySeason={buff:()=>0,drawTitle(){}};
+    window.PsyCityAccess=()=>true;window.PsyTouchStick={vector(dx,dy){const m=Math.max(1,Math.hypot(dx,dy));return{x:dx/m,y:dy/m}}};
+  </script>
+  <script src="core/trainer-walk-v1.js"></script>
+  <script src="core/kanto-map-data-v2.js"></script>
+  <script src="core/kanto-collision-v4.js"></script>
+  <script src="core/kanto-interiors-v9.js"></script>
+  <script src="core/kanto-room-pixel-v10.js"></script>
+  <script src="core/kanto-interiors-art-v30.js"></script>
+  <script src="core/kanto-pallet-mask-v1.js"></script>
+  <script src="core/kanto-pallet-ambient-v1.js"></script>
+  <script src="core/kanto-pallet-vegetation-v1.js"></script>
+  <script src="core/kanto-route1-vegetation-v1.js"></script>
+  <script src="core/kanto-world-v2.js"></script>
+  <script>
+    window.__route1VisualQA={
+      openAtGazebo(){
+        PsyKantoWorldV2.close();
+        PsyKantoWorldV2.open('route-1',{spawn:[372,248],skipGuard:true});
+      },
+      openAtSpawn(){
+        PsyKantoWorldV2.close();
+        PsyKantoWorldV2.open('route-1',{spawn:[108,409],skipGuard:true});
+      },
+      position(){return PsyKantoWorldV2.getPosition()},
+      vegetation(){return window.PsyKantoRoute1VegetationV1}
+    };
+    document.querySelector('#qa-gazebo').onclick=()=>window.__route1VisualQA.openAtGazebo();
+    document.querySelector('#qa-spawn').onclick=()=>window.__route1VisualQA.openAtSpawn();
+    window.__route1VisualQA.openAtGazebo();
+  </script>
+</body>
+</html>
