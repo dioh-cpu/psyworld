@@ -252,7 +252,7 @@ function camera(){
   }
   // Cover the screen instead of letterboxing; scroll with the player.
   const cover=Math.max(cw/map.w,ch/map.h);
- const scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
+ const scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):Math.min(4,cover*1.08);
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
   const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);

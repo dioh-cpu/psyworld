@@ -9,7 +9,7 @@ D.viridian={
  id:'viridian',title:'Viridian City',w:W_MAP,h:H_MAP,
  art:'assets/kanto/viridian-test/viridian-poster-v1.png',
  video:'assets/kanto/viridian-test/viridian-loop-v1.mp4',
- fixedCamera:true,
+ fixedCamera:false,
  spawn:[640,585],return:[640,650],exit:[640,85],
  ground,solids:[],grass:[],paths:[],plazas:[],blockers:[],
  doors:[
