@@ -29,7 +29,7 @@
       #world-btn-float{z-index:80!important}#hud-player,#menuBtn,#fastEncounterBtn{z-index:90!important}
       #psy-kanto-cinematic,#psy-tutorial-cinematic{position:fixed;inset:0;z-index:2147483647;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
       #psy-kanto-cinematic{display:flex;align-items:center;justify-content:center;padding:18px;background:#080716}
-      .psy-kc-backdrop{position:absolute;inset:0;background:#141126 url('/assets/story/kanto-pallet-town-v1.webp') center/cover no-repeat;animation:psy-kc-pan 18s ease-in-out infinite alternate}
+      .psy-kc-backdrop{position:absolute;inset:0;background:#141126 url('/assets/story/pallet-town-anime-rebuild-v2.png') center/cover no-repeat;animation:psy-kc-pan 18s ease-in-out infinite alternate}
       .psy-kc-backdrop:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(9,11,27,.26),rgba(9,9,25,.82) 65%,#080716)}
       @keyframes psy-kc-pan{from{transform:scale(1)}to{transform:scale(1.13) translate(-1.2%,1%)}}
       .psy-kc-card{position:relative;width:min(780px,100%);max-height:calc(100dvh - 36px);overflow:auto;border:1px solid #70e9ff88;border-radius:24px;background:linear-gradient(145deg,rgba(9,22,45,.94),rgba(28,14,43,.93));box-shadow:0 26px 90px #000a,0 0 42px #31c9ff30;padding:clamp(22px,5vw,48px);animation:psy-kc-in .5s ease both}

@@ -7,6 +7,8 @@
 'use strict';
 if(W.PsyKantoWorldV2 || !W.PsyKantoMapDataV2)return;
 const DATA=W.PsyKantoMapDataV2,KEY='psy_kanto_world_v2_quests',SAVE_KEY='psy_kanto_journey_progress_v1';
+let palletMotionReduced=!!W.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+W.matchMedia?.('(prefers-reduced-motion: reduce)').addEventListener?.('change',e=>{palletMotionReduced=e.matches});
 const $=s=>D.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const RIFT_ID='kanto-hunt-rift';
 const RIFT_ROOM={id:RIFT_ID,title:'Fenda Selvagem',w:896,h:560,art:'assets/story/kanto-hunt-rift-v1.webp',spawn:[448,500],exit:[448,220],npcs:[],walkBounds:[24,24,872,536],blocks:[[720,135,895,480]]};
@@ -279,8 +281,12 @@ W.PsyTreasureHuntV1?.drawScene?.(c,hobbyScene,performance.now());
 W.PsyHobbies?.drawField?.(c,hobbyScene);
 if(state.huntRiftOffer){const x=state.huntRiftOffer.x,y=state.huntRiftOffer.y,pulse=.62+Math.sin(performance.now()/180)*.18,g=c.createRadialGradient(x,y,3,x,y,34);g.addColorStop(0,`rgba(121,247,231,${pulse})`);g.addColorStop(.55,'rgba(131,91,255,.38)');g.addColorStop(1,'rgba(55,42,140,0)');c.fillStyle=g;c.beginPath();c.arc(x,y,34,0,Math.PI*2);c.fill();c.strokeStyle='#9af8ea';c.lineWidth=3;c.beginPath();c.ellipse(x,y,12,20,0,0,Math.PI*2);c.stroke();c.fillStyle='#e1ffff';c.font='bold 11px system-ui';c.textAlign='center';c.fillText('FENDA · ENTRAR',x,y-29);}
 if(state.inside)W.PsyHobbies?.drawDecor?.(c,state.inside.id);
+if(!state.inside&&state.world.id==='pallet'){
+ W.PsyKantoPalletAmbientV1?.draw(c,performance.now(),state.images.get(state.world.art)?.mapCanvas,state.position,{independentTrees:true});
+ W.PsyKantoPalletVegetationV1?.draw(c,performance.now());
+}
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
-if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){drawMarker(c,552,130,'LABORATÓRIO →','#ffd480');}
+if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){const lab=state.world.doors.find(d=>d.id==='lab');if(lab)drawMarker(c,lab.at[0],lab.at[1],'LABORATÓRIO →','#ffd480');}
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':state.world.id==='viridian'?'ROTA 2':'VIRIDIAN','#80ffaa')}
 else if(state.inside.id===RIFT_ID)drawRiftGate(c,...(state.inside.exit||[448,128]),performance.now());else drawMarker(c,...(state.inside.exit||[240,675]),'SAÍDA ↓','#85efdc');
@@ -288,19 +294,41 @@ if(W.PsyFollower)W.PsyFollower.draw(c,{scene:state.world.id+':'+(state.inside?.i
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);const playerName=player().name||'Treinador';c.font='bold 12px system-ui';const nameW=Math.min(180,c.measureText(playerName).width+4),overlapX=Math.abs(x-state.position.x)<(w+nameW)/2,overlapY=Math.abs((y-35)-(state.position.y-59))<23;if(overlapX&&overlapY)state.hideTrainerName=true;const actorCoversCaption=Math.abs(x-state.position.x)<w/2+24&&(y-31)>state.position.y-60&&(y-48)<state.position.y+5;c.font='bold 11px system-ui';if(!actorCoversCaption){c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35)}c.restore()}
 function drawRiftGate(c,x,y,now){const pulse=.68+Math.sin(now/180)*.16,halo=c.createRadialGradient(x,y-28,3,x,y-28,62);halo.addColorStop(0,`rgba(118,248,232,${pulse*.62})`);halo.addColorStop(.52,'rgba(120,83,244,.34)');halo.addColorStop(1,'rgba(67,42,166,0)');c.save();c.fillStyle='#10162477';c.beginPath();c.ellipse(x,y+3,24,7,0,0,Math.PI*2);c.fill();c.fillStyle=halo;c.fillRect(x-64,y-94,128,108);c.shadowColor='#99fff0';c.shadowBlur=12;c.strokeStyle='#a8fff1';c.lineWidth=4;c.beginPath();c.ellipse(x,y-30,21,37,0,0,Math.PI*2);c.stroke();c.shadowBlur=0;c.strokeStyle='#b79aff';c.lineWidth=2;c.beginPath();c.ellipse(x,y-30,13,29,0,0,Math.PI*2);c.stroke();for(let i=0;i<4;i++){const a=now/420+i*Math.PI/2;c.fillStyle=i%2?'#c6b2ff':'#d5fff7';c.beginPath();c.arc(x+Math.cos(a)*29,y-30+Math.sin(a)*38,2.4,0,Math.PI*2);c.fill()}c.textAlign='center';c.font='bold 11px system-ui';c.fillStyle='#071521df';c.fillRect(x-61,y-53,122,16);c.fillStyle='#ddfff7';c.fillText('PORTAL DE RETORNO',x,y-41);c.restore()}
 function drawNPC(c,npc,distance){
-  const x=npc.at[0],y=npc.at[1],entry=image(npc.sprite||npc.portrait);
+  const x=npc.at[0],y=npc.at[1],url=npc.sprite||npc.portrait,entry=image(url);
+  const palletActor=state.world?.id==='pallet'&&state.inside?.id!==RIFT_ID;
+  const animatePallet=palletActor&&!palletMotionReduced;
+  const h=palletActor?Math.max(40,Math.min(52,Number(npc.displayHeight)||48)):60;
+  const footOffset=palletActor?Math.max(0,Number(npc.footOffset)||0)*h:0;
+  const now=performance.now(),id=String(npc.id||npc.name||'pallet-npc');
+  let hash=0;for(let i=0;i<id.length;i++)hash=(hash*31+id.charCodeAt(i))%6283;
+  const phase=hash/1000,responsive=animatePallet&&distance<72;
+  const bob=animatePallet?Math.sin(now/910+phase)*(responsive?.42:.28):0;
+  const breathe=animatePallet?1+Math.sin(now/1380+phase)*.006:1;
+  const narrow=animatePallet?1+Math.cos(now/1670+phase)*.005:1;
+  const towardPlayer=responsive?Math.sign(state.position.x-x)*.008:0;
+  const lean=animatePallet?Math.sin(now/1280+phase)*.014+towardPlayer:0;
+  const markerY=palletActor?y-h-8:y-60;
+  const embeddedShadow=palletActor&&/\.svg(?:[?#]|$)/i.test(url||'');
   c.save();
-  c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,14,5,0,0,Math.PI*2);c.fill();
+  if(!embeddedShadow){c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,palletActor?10:14,palletActor?3.5:5,0,0,Math.PI*2);c.fill();}
   if(npc.painted){c.restore();return}
   if(entry?.loaded){
     const iw=entry.im.naturalWidth||160,ih=entry.im.naturalHeight||190;
-    const h=60,w=Math.min(52,h*iw/ih);
+    const w=palletActor?Math.min(44,h*iw/ih):Math.min(52,h*iw/ih);
     const smoothing=c.imageSmoothingEnabled;
+    if(palletActor&&/\/rival\.png(?:[?#]|$)/i.test(url||''))c.imageSmoothingEnabled=false;
     if(/\/npcs\/viridian-(elder|instructor)-v1\.png$/.test(npc.portrait||npc.sprite||''))c.imageSmoothingEnabled=false;
-    c.shadowColor='#020617';c.shadowBlur=2;c.drawImage(entry.im,x-w/2,y-h,w,h);c.shadowBlur=0;c.imageSmoothingEnabled=smoothing;
+    c.shadowColor='#020617';c.shadowBlur=2;
+    if(palletActor){
+      // Pivot idle motion at the feet so a breathing/leaning sprite never
+      // drifts away from its fixed ground shadow or interaction position.
+      c.translate(x,y);c.rotate(lean);c.scale(narrow,breathe);c.translate(-x,-y);
+      c.drawImage(entry.im,x-w/2,y-h+footOffset+bob,w,h);
+    }else c.drawImage(entry.im,x-w/2,y-h,w,h);
+    c.shadowBlur=0;c.imageSmoothingEnabled=smoothing;
   }
   c.restore();
-  if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,y-60,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,y-56);c.restore()}
+  if(distance<72){c.save();c.fillStyle=distance<48?'#8cf4bf':'#ffe2a0';c.strokeStyle='#1c2735';c.lineWidth=2;c.beginPath();c.arc(x,markerY,9,0,Math.PI*2);c.fill();c.stroke();c.fillStyle='#1a2435';c.textAlign='center';c.font='bold 12px system-ui';c.fillText('!',x,markerY+4);c.restore()}
 }
 // Preview accounts created before the trainer character picker do not always
 // have playerCharacterId. Use a real supported trainer graphic, never a block
@@ -401,7 +429,7 @@ const gather=W.PsyHobbies?.nearby?.(scene,state.position,65);
 if(gather){W.PsyHobbies?.interact?.(scene,gather.id,{x:state.position.x,y:state.position.y,facing:state.facing});return;}
 const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position.x,v.at[1]-state.position.y)})).sort((a,b)=>a.d-b.d);const a=targets[0];if(!a||a.d>70){showDialog('Exploração','Aproxime-se das portas, dos moradores ou da saída. Toque no chão para caminhar ou arraste para usar o joystick.');return}
 activateTarget(a)}
-function activateTarget(a){if(a.type==='rift'){enterHuntRift();return}if(a.type==='rift-exit'){returnFromHuntRift(false);return}if(a.type==='return'){if(state.world?.id==='viridian')open('route-1',{spawn:[844,100],skipGuard:true});else open('pallet',{spawn:[525,60]});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
+function activateTarget(a){if(a.type==='rift'){enterHuntRift();return}if(a.type==='rift-exit'){returnFromHuntRift(false);return}if(a.type==='return'){if(state.world?.id==='viridian')open('route-1',{spawn:[844,100],skipGuard:true});else open('pallet',{spawn:DATA.pallet.returnSpawn||DATA.pallet.spawn});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
 function talk(npc){
  const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
  if(id==='viridian-elder'){
@@ -434,7 +462,7 @@ function talk(npc){
   showDialog('Rival','Também estou começando minha jornada. Ouvi histórias antigas no porto; Mina, na casa do lado leste, talvez saiba mais sobre aquela luz que surge ao anoitecer.',[],pr,'empolgada');
  }else if(id==='neighbor'||id==='child'){
   mark('neighbor');
-  showDialog('Mina','Dizem que há marcas escondidas entre as flores da vila. O velho pescador Abel costuma contar como encontrá-las.',[],pr,'curiosa');
+  showDialog(id==='child'?'Luna':'Mina','Dizem que há marcas escondidas entre as flores da vila. O velho pescador Abel costuma contar como encontrá-las.',[],pr,'curiosa');
  }else if(id==='nurse'){
   mark('center');
   showDialog('Enfermeira Íris','Seus parceiros também precisam de descanso. Posso recuperar a energia da sua equipe antes da jornada?',[
@@ -536,7 +564,7 @@ const near=currentTargets().find(v=>Math.hypot(v.at[0]-t.tx,v.at[1]-28-t.ty)<(v.
 // Tap-to-walk searches asynchronously, yielding control to the game each frame.
 // Terrain queries are memoized per location; dragging joystick cancels old searches.
 function findPath(from,to,request){
-  const step=10,world=state.inside||state.world;
+  const world=state.inside||state.world,step=world?.id==='pallet'?5:10;
   const nx=Math.ceil(world.w/step),ny=Math.ceil(world.h/step);
   const key=(x,y)=>x+','+y,cx=x=>Math.round(x/step);
   const valid=(x,y)=>{
@@ -609,7 +637,7 @@ function findPath(from,to,request){
           const x=current.x+dx,y=current.y+dy;
           if(!valid(x,y))continue;
           // Clearance at cell centers can still hide an obstructed edge.
-          // Test the whole 10px step before adding it to the search graph.
+          // Test the full map-specific step before adding it to the search graph.
           if(!straight(current.x*step,current.y*step,x*step,y*step))continue;
           if(dx&&dy&&(!valid(current.x+dx,current.y)||!valid(current.x,current.y+dy)))continue;
           const g=current.g+(dx&&dy?1.41421356237:1),nk=key(x,y);

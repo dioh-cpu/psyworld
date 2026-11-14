@@ -1,7 +1,7 @@
 /* Authored Pallet / Route 1 scenes, driven by actual map and quest events. */
 (function(W,D){'use strict';
 const player=()=>typeof P!=='undefined'?P:W.P||{},world=()=>W.PsyKantoWorldV2;
-const ART={pallet:'assets/story/pallet-town-artist-v2.webp',lab:'assets/kanto/interiors/lab-v30.webp',departure:'assets/kanto/cinematics/pallet-05.webp',route:'assets/story/route-1-artist-v2.webp',route2:'assets/story/route-2-artist-v1.webp',oak:'assets/kanto/approved/professor-expressions.webp'};
+const ART={pallet:'assets/story/pallet-town-anime-rebuild-v2.png',lab:'assets/kanto/interiors/lab-v30.webp',departure:'assets/kanto/cinematics/pallet-05.webp',route:'assets/story/route-1-artist-v2.webp',route2:'assets/story/route-2-artist-v1.webp',oak:'assets/kanto/approved/professor-expressions.webp'};
 let running=null,typing=0,transition=0,previousFocus;
 function memory(){const p=player();p.meta=p.meta||{};const m=p.meta.kantoStoryV49||(p.meta.kantoStoryV49={});m.seen=m.seen||{};return m;}
 function save(){W.autoSave?.();}function stopTimers(){W.clearInterval(typing);W.clearTimeout(transition);typing=0;transition=0;}

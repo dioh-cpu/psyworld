@@ -5,7 +5,7 @@
   W.__PSY_KANTO_JOURNEY_V1__ = true;
 
   const GEN1 = [
-    {id:'pallet',kind:'city',name:'Pallet Town',mark:'Laboratório do Professor Carvalho',npc:'Professor Carvalho',quest:'Receba a Pokédex e conheça seu primeiro parceiro.',species:[1,4,7],art:'/assets/story/kanto-pallet-town-v1.webp',badge:0,x:29,y:86,chapter:0},
+    {id:'pallet',kind:'city',name:'Pallet Town',mark:'Laboratório do Professor Carvalho',npc:'Professor Carvalho',quest:'Receba a Pokédex e conheça seu primeiro parceiro.',species:[1,4,7],art:'/assets/story/pallet-town-anime-rebuild-v2.png',badge:0,x:29,y:86,chapter:0},
     {id:'route-1',kind:'route',name:'Rota 1',mark:'Trilha entre Pallet e Viridian',npc:'Treinadora Lia',quest:'Registre três espécies selvagens da rota.',species:[16,19,21,52,84,108],art:'/assets/story/kanto-route-1-v1.webp',badge:0,x:43,y:69,chapter:0},
     {id:'viridian',kind:'city',name:'Viridian City',mark:'Ginásio fechado e Escola de Treinadores',npc:'Idoso da cidade',quest:'Descubra por que o Ginásio ainda não aceita desafios.',species:[16,19,21],badge:0,x:34,y:45,chapter:1},
     {id:'route-2',kind:'route',name:'Rota 2',mark:'Trilha da floresta e entrada da cidade',npc:'Treinador Caio',quest:'Recupere a mochila levada por um Pokémon da rota e devolva-a a Caio.',species:[10,13,16,19],badge:0,x:48,y:32,chapter:1},

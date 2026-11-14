@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <base href="../">
+  <link rel="stylesheet" href="css/kanto-world-v2.css?build=PALLET_MASK_RUNTIME_V1">
+  <title>PSYWORLD · Pallet mask integration QA</title>
+  <style>
+    html,body{margin:0;min-height:100%;background:#06111f;color:#eaf6ff;font:14px system-ui}
+    #qa{position:fixed;z-index:2147483647;left:8px;top:8px;max-width:min(700px,calc(100vw - 16px));padding:8px;background:#06111fee;border:1px solid #58d9d4;border-radius:10px;display:flex;gap:5px;flex-wrap:wrap}
+    #qa button{min-height:32px;padding:5px 9px;border-radius:7px;border:1px solid #b5e4e8;background:#18384e;color:#fff;font-weight:700}
+    #qa-status{width:100%;font:11px monospace;color:#a7efff;white-space:pre-wrap}
+    .kw2-top{z-index:50!important}
+  </style>
+</head>
+<body>
+  <nav id="qa" aria-label="Controles do teste Pallet">
+    <button id="qa-open">Abrir Pallet</button>
+    <button id="qa-lab">Entrar no laboratório</button>
+    <output id="qa-status">Perfil descartável de teste · sem conta ou save real.</output>
+  </nav>
+  <script>
+    localStorage.setItem('psy_kanto_world_v2_quests',JSON.stringify({oak:true,center:true,market:true}));
+    var P={name:'Pallet QA',playerCharacterId:'adventure_boy',trainerLevel:8,meta:{},team:[{id:1,name:'Sprigatito',level:5,hp:50,maxHp:50}],inventory:{},box:[]};
+    window.autoSave=()=>{};window.updateHUD=()=>{};window.PsySeason={buff:()=>0,drawTitle(){}};
+    window.PsyCityAccess=()=>true;window.PsyTouchStick={vector(dx,dy){const m=Math.max(1,Math.hypot(dx,dy));return{x:dx/m,y:dy/m}}};
+  </script>
+  <script src="core/trainer-walk-v1.js"></script>
+  <script src="core/kanto-map-data-v2.js"></script>
+  <script src="core/kanto-collision-v4.js"></script>
+  <script src="core/kanto-interiors-v9.js"></script>
+  <script src="core/kanto-room-pixel-v10.js"></script>
+  <script src="core/kanto-interiors-art-v30.js"></script>
+  <script src="core/kanto-pallet-mask-v1.js"></script>
+  <script src="core/kanto-world-v2.js"></script>
+  <script>
+    window.__palletQA={
+      open(){PsyKantoWorldV2.close();PsyKantoWorldV2.open('pallet')},
+      position(){return PsyKantoWorldV2.getPosition()},
+      map(){return {w:PsyKantoWorldV2.data.pallet.w,h:PsyKantoWorldV2.data.pallet.h,art:PsyKantoWorldV2.data.pallet.art,doors:PsyKantoWorldV2.data.pallet.doors.map(d=>({id:d.id,at:d.at}))}},
+      walkable(x,y){return PsyKantoWorldV2.walkable('pallet',x,y)},
+      async navigate(x,y){return await PsyKantoWorldV2.navigate([x,y])},
+      enter(id){PsyKantoWorldV2.enterPlace(id)},
+      leave(){PsyKantoWorldV2.leaveInterior()},
+      interact(){PsyKantoWorldV2.interact()},
+      async toRoute1(){const exit=PsyKantoWorldV2.data.pallet.exit;await PsyKantoWorldV2.navigate(exit);PsyKantoWorldV2.interact()},
+      async returnToPallet(){await PsyKantoWorldV2.navigate([108,420]);PsyKantoWorldV2.interact()},
+      setStatus(s){document.querySelector('#qa-status').textContent=s}
+    };
+    document.querySelector('#qa-open').onclick=()=>window.__palletQA.open();
+    document.querySelector('#qa-lab').onclick=()=>window.__palletQA.enter('lab');
+    window.__palletQA.open();
+  </script>
+</body>
+</html>
