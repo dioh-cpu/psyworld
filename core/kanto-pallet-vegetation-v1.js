@@ -4,6 +4,7 @@
 if(W.PsyKantoPalletVegetationV1)return;
 const root='assets/story/pallet/trees/';
 const GROUP_COUNT=7;
+const WIND_SPEED=1.3;
 const sprites={};
 for(const size of ['small','medium','large']){
  const structure=new Image(),foliage=new Image();
@@ -28,13 +29,13 @@ function draw(ctx,now){
   if(!ready(assets.structure)||!ready(assets.foliage))continue;
   ctx.drawImage(assets.structure,x-w/2,y-h,w,h);
   const sourceH=assets.foliage.naturalHeight/GROUP_COUNT;
-  const gust=Math.pow(Math.max(0,Math.sin(t*.19-1.1+tree.phase)),9);
+  const gust=Math.pow(Math.max(0,Math.sin(t*.19*WIND_SPEED-1.1+tree.phase)),9);
   for(let group=0;group<GROUP_COUNT;group++){
    const phase=tree.phase+group*1.73+ti*.61;
    const amplitude=tree.strength*(1+gust*.32);
    // A small masked leaf clump moves independently; branches and trunk never do.
-   const dxAsset=reduced?0:(Math.sin(t*.82+phase)*1.35+Math.sin(t*.34+phase*1.47)*.48+gust*.56)*amplitude;
-   const dyAsset=reduced?0:(Math.cos(t*.61+phase)*.28+gust*.12)*amplitude;
+   const dxAsset=reduced?0:(Math.sin(t*.82*WIND_SPEED+phase)*1.35+Math.sin(t*.34*WIND_SPEED+phase*1.47)*.48+gust*.56)*amplitude;
+   const dyAsset=reduced?0:(Math.cos(t*.61*WIND_SPEED+phase)*.28+gust*.12)*amplitude;
    ctx.drawImage(assets.foliage,0,group*sourceH,assets.foliage.naturalWidth,sourceH,
     x-w/2+dxAsset*w/assets.foliage.naturalWidth,
     y-h+dyAsset*h/sourceH,
