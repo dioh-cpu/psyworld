@@ -199,7 +199,7 @@
     cerulean:{text:'Bem-vindo ao ginásio aquático! Sou Misty. Depois de Brock, é hora de testar sua equipe contra a força da água.'}
   };
   const ART_ROOT='assets/kanto/approved/';
-  const MAP_ART={viridian:ART_ROOT+'viridian-approved.webp',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp','viridian-forest':'assets/story/viridian-forest-route2-v1.webp','route-3':'assets/story/kanto-route-3-v1.webp','route-4':'assets/story/kanto-route-4-v6.webp'};
+  const MAP_ART={viridian:'assets/kanto/viridian-test/viridian-poster-v1.png',pewter:ART_ROOT+'pewter-approved.webp','mt-moon':ART_ROOT+'mt-moon-approved.webp',cerulean:ART_ROOT+'cerulean-approved.webp','route-2':'assets/story/route-2-artist-v1.webp','viridian-forest':'assets/story/viridian-forest-route2-v1.webp','route-3':'assets/story/kanto-route-3-v1.webp','route-4':'assets/story/kanto-route-4-v6.webp'};
   const NPC_ART={viridian:'assets/kanto/npcs/fisher-v9.svg','route-2':'assets/kanto/cinematics/trainers/black_boy.webp','viridian-forest':'assets/kanto/cinematics/trainers/black_girl.webp',pewter:ART_ROOT+'brock-expressions.webp','route-3':'assets/kanto/cinematics/trainers/adventure_boy.webp','mt-moon':'assets/halloween/npc-researcher.webp','route-4':'assets/characters/halloween/basic-adventure-girl.webp',cerulean:'assets/kanto/npcs/misty-v6.png'};
   const npcIdleStates=new Map();
   function drawChapterNpcIdle(ctx,id,x,y,override=null){

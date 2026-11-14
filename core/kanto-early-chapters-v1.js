@@ -70,7 +70,7 @@
         [], true
       ),
       spawn:{x:2,y:15}, returnGate:{x:2,y:15},
-      returnTo:{world:'viridian',spawn:[449,72]},
+      returnTo:{world:'viridian',spawn:[640,120]},
       npc:{x:12,y:15}, object:{x:9,y:15}, exit:{x:29,y:5},
       next:{world:'viridian-forest',spawn:{x:16,y:18}},
       encounterLevels:[3,6]
