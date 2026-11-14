@@ -372,7 +372,7 @@ function drawPlayer(c,x,y,options={}){
     const walk=W.PsyTrainerWalkV1;
     if(entry.animationAtlas&&walk?.renderAnimated){
       if(!humanAnimationState)humanAnimationState=walk.createState();
-      walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:scene+':'+entry.im.src},left,top,w,h);
+      walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,scene==='route-1'?{moving:walking,row,identity:scene+':'+entry.im.src}:{moving:walking,row,x,y,identity:scene+':'+entry.im.src},left,top,w,h);
       usedSprite=true;
     }else if(entry.atlas&&walk){
       walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
