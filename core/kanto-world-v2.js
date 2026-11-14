@@ -243,7 +243,7 @@ function routeOneViewport(){
 }
 function camera(){
   const map=state.inside||state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');
-  const r=state.viewport||(state.viewport=stage.getBoundingClientRect()),dpr=Math.min(1.3,W.devicePixelRatio||1);
+  const r=state.viewport||(state.viewport=stage.getBoundingClientRect()),dpr=Math.min(!state.inside&&state.world?.id==='viridian'?2:1.3,W.devicePixelRatio||1);
   const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   if(!state.inside&&map.fixedCamera){
@@ -262,7 +262,7 @@ function draw(){if(!state.root?.classList.contains('open')||!state.world)return;
 if(state.inside){drawInterior(c,state.inside)}else{
   const v=state.world.video?video(state.world.video):null;
   if(v?.loaded&&v.el?.readyState>=2){
-    c.imageSmoothingEnabled=true;c.drawImage(v.el,0,0,state.world.w,state.world.h);
+    c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(v.el,0,0,state.world.w,state.world.h);
   }else{
     const o=image(state.world.art);if(o?.loaded){
       if(!o.mapCanvas||o.mapCanvas.width!==state.world.w||o.mapCanvas.height!==state.world.h){
