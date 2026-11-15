@@ -56,8 +56,9 @@ function hud(){
  };
  state.root.querySelector('.kw2-subtitle').textContent=where?
    subtitles[where.id]||'Um lugar de Pallet Town':
-   state.world?.id==='pallet'?'Sua primeira aventura começa aqui':
-   state.world?.id==='viridian'?'Ginásio fechado · Rota 2 ao norte':'O caminho até Viridian City';
+   state.world?.subtitle||
+   (state.world?.id==='pallet'?'Sua primeira aventura começa aqui':
+   state.world?.id==='viridian'?'Ginásio fechado · Rota 2 ao norte':'O caminho até Viridian City');
  let message='';
  if(state.huntRiftSession){const sec=Math.max(0,Math.ceil((state.huntRiftSession.deadline-Date.now())/1000));message=`Fenda Selvagem · ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')} · colete e retorne pelo portal ao norte.`;}
  else if(state.huntRiftOffer)message='Uma fenda de caça apareceu perto de você. Aproxime-se e pressione INTERAGIR.';
@@ -145,13 +146,13 @@ function openCampaignPanel(kind){
  }
  suspendCampaignForPanel(spec.id);
 }
-function open(id,options={}){if(state.huntRiftSession){W.notif?.('Retorne pela fenda antes de mudar de localidade.',2200);return false}if(!['pallet','route-1','viridian'].includes(id)||!DATA[id==='route-1'?'route1':id])return false;const previousWorld=state.world?.id||null,resumePosition=!state.inside&&previousWorld===id&&DATA.walkable(state.world,state.position.x,state.position.y,PLAYER_RADIUS)?[state.position.x,state.position.y]:null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);
+function open(id,options={}){if(state.huntRiftSession){W.notif?.('Retorne pela fenda antes de mudar de localidade.',2200);return false}if(id==='pallet'&&W.PsyKantoAnime3Q?.isEnabled?.())id='pallet-centro-3q';const isPilot=!!W.PsyKantoAnime3Q?.isPilotMap?.(id);if(!isPilot&&(!['pallet','route-1','viridian'].includes(id)||!DATA[id==='route-1'?'route1':id]))return false;const previousWorld=state.world?.id||null,pilotMap=isPilot?W.PsyKantoAnime3Q.getMap(id):null,resumePosition=!isPilot&&!state.inside&&previousWorld===id&&DATA.walkable(state.world,state.position.x,state.position.y,PLAYER_RADIUS)?[state.position.x,state.position.y]:null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);
 if(id==='viridian'&&!progress().viridian&&!options.skipGuard)return false;
 if(id==='route-1'&&!progress().oak&&!options.skipGuard){open('pallet');setTimeout(()=>showDialog('Rota 1 bloqueada','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.'),80);return false}
-W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();toggleCampaignMenu(false);state.externalPanel=null;state.root.style.visibility='';state.root.dataset.world=id;D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=id==='pallet'?DATA.pallet:id==='route-1'?DATA.route1:DATA.viridian;state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
-const start=options.spawn||resumePosition||state.world.spawn;state.position={x:start[0],y:start[1]};state.lastOutdoor=null;updateFishingButton();
-image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;const pending=W.PsyKantoHuntRiftV1?.getOffer?.('legacy');if(pending?.context.world===id)attachHuntRiftOffer(pending);hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}W.PsyKantoStoryV49?.enter(previousWorld,id);return true;}
-function close(){if(state.huntRiftSession)returnFromHuntRift(false);if(state.huntRiftOffer)W.PsyKantoHuntRiftV1?.clearOffer?.('legacy',state.huntRiftOffer.id);state.huntRiftOffer=null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);if(state.root){state.root.style.visibility='';toggleCampaignMenu(false);state.externalPanel=null;}W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.pendingHobby=null;state.pendingRiftTarget=null;state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
+W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();toggleCampaignMenu(false);state.externalPanel=null;state.root.style.visibility='';state.root.dataset.world=id;D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=pilotMap||(id==='pallet'?DATA.pallet:id==='route-1'?DATA.route1:DATA.viridian);state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.camPos=null;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
+const start=options.spawn||resumePosition||state.world.spawn;state.position={x:start[0],y:start[1]};if(options.facing)state.facing=options.facing;state.lastOutdoor=null;updateFishingButton();
+image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;const pending=W.PsyKantoHuntRiftV1?.getOffer?.('legacy');if(pending?.context.world===id)attachHuntRiftOffer(pending);hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}if(!isPilot)W.PsyKantoStoryV49?.enter(previousWorld,id);return true;}
+function close(){W.PsyKantoPalletHDV1?.hide?.();W.PsyKantoAnime3Q?.hide?.();if(state.huntRiftSession)returnFromHuntRift(false);if(state.huntRiftOffer)W.PsyKantoHuntRiftV1?.clearOffer?.('legacy',state.huntRiftOffer.id);state.huntRiftOffer=null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);if(state.root){state.root.style.visibility='';toggleCampaignMenu(false);state.externalPanel=null;}W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.pendingHobby=null;state.pendingRiftTarget=null;state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
 let autoHunt=false,huntPlanAt=0,huntPlanning=false;
 const vipActive=()=>Number(player().meta?.vipUntil||0)>Date.now();
 const PLAYER_RADIUS=11;
@@ -162,6 +163,10 @@ function positionValid(x,y){
     if(room.blocks.some(([a,b,c,d])=>x>=a-PLAYER_RADIUS&&x<=c+PLAYER_RADIUS&&y>=b-PLAYER_RADIUS&&y<=d+PLAYER_RADIUS))return false;
     return !(room.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
   }
+  if(W.PsyKantoAnime3Q?.isPilotMap?.(state.world?.id)){
+    if(!W.PsyKantoAnime3Q.walkable(state.world.id,x,y,PLAYER_RADIUS))return false;
+    return !(state.world?.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
+  }
   if(!DATA.walkable(state.world,x,y,PLAYER_RADIUS))return false;
   return !(state.world?.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
 }
@@ -169,7 +174,7 @@ function move(dx,dy,dt,maxDistance=Infinity){state.moving=false;if(state.dialogO
 for(let i=0;i<steps;i++){const stepx=dx*dist/steps,stepy=dy*dist/steps,p=state.position;
 if(positionValid(p.x+stepx,p.y+stepy)){p.x+=stepx;p.y+=stepy;mx+=stepx;my+=stepy}else{if(positionValid(p.x+stepx,p.y)){p.x+=stepx;mx+=stepx}if(positionValid(p.x,p.y+stepy)){p.y+=stepy;my+=stepy}}}
 state.moving=Math.abs(mx)+Math.abs(my)>0.25;
-if(Math.abs(mx)>Math.abs(my))state.facing=mx>0?'right':'left';else if(my)state.facing=my>0?'down':'up';if(state.moving){state.walkFrame+=dt*10;const encounter=encounterForScene();if(encounter){state.stepDistance+=Math.hypot(mx,my);if(state.stepDistance>=encounter.stepDistance){state.stepDistance%=encounter.stepDistance;maybeEncounter(encounter)}}}}
+if(Math.abs(mx)>Math.abs(my))state.facing=mx>0?'right':'left';else if(my)state.facing=my>0?'down':'up';if(!state.inside&&W.PsyKantoAnime3Q?.isPilotMap?.(state.world?.id)){const portal=W.PsyKantoAnime3Q.checkPortal(state.world.id,state.position.x,state.position.y);if(portal){open(portal.target,{spawn:portal.spawn,facing:portal.facing,skipGuard:true});return;}}if(state.moving){state.walkFrame+=dt*10;const encounter=encounterForScene();if(encounter){state.stepDistance+=Math.hypot(mx,my);if(state.stepDistance>=encounter.stepDistance){state.stepDistance%=encounter.stepDistance;maybeEncounter(encounter)}}}}
 function restoreEncounter(){if(!state.suspended)return;state.suspended=false;D.body.classList.add('psy-kanto-v2-active');state.root.classList.add('open');draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}}
 function encounterForScene(){
  const scene=state.inside||state.world;if(!scene)return null;
@@ -239,30 +244,51 @@ function routeOneViewport(){
  if(oldStyle===null)root.removeAttribute('style');else root.setAttribute('style',oldStyle);if(oldWorld===undefined)delete root.dataset.world;else root.dataset.world=oldWorld;if(!wasOpen)root.classList.remove('open');return routeViewportCache;
 }
 function palletHDActive(){return !state.inside&&state.world?.id==='pallet'&&!!W.PsyKantoPalletHDV1?.isActive?.();}
+function anime3QActive(){return !state.inside&&!!W.PsyKantoAnime3Q?.isPilotMap?.(state.world?.id);}
 function camera(){
   const map=state.inside||state.world,c=state.canvas,stage=state.root.querySelector('.kw2-stage');
-  const hd=palletHDActive();
-  const r=state.viewport||(state.viewport=stage.getBoundingClientRect()),dpr=Math.min(hd?2:1.3,W.devicePixelRatio||1);
+  const hd=palletHDActive(),a3q=anime3QActive();
+  const r=state.viewport||(state.viewport=stage.getBoundingClientRect()),dpr=Math.min((hd||a3q)?2:1.3,W.devicePixelRatio||1);
   const cw=Math.max(260,Math.round(r.width*dpr)),ch=Math.max(180,Math.round(r.height*dpr));
   if(c.width!==cw||c.height!==ch){c.width=cw;c.height=ch}
   // Cover the screen instead of letterboxing; scroll with the player.
   const cover=Math.max(cw/map.w,ch/map.h);
- const scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
+  let scale;
+  if(a3q){
+    const portrait=r.height>r.width&&r.width<560;
+    const landscapeMobile=r.height<=500;
+    const targetScale=portrait?cw/470:landscapeMobile?ch/340:ch/395;
+    scale=Math.max(cover,Math.min(4.2,targetScale));
+  }else{
+    scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
+  }
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  const cx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
-  const cy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
+  const targetCx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
+  const targetCy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
+  let cx=targetCx,cy=targetCy;
+  if(a3q){
+    if(!state.camPos)state.camPos={x:targetCx,y:targetCy};
+    else{state.camPos.x+=(targetCx-state.camPos.x)*0.22;state.camPos.y+=(targetCy-state.camPos.y)*0.22;}
+    cx=state.camPos.x;cy=state.camPos.y;
+  }
   return {w:cw,h:ch,scale,dpr,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale)};
 }
 function draw(){if(!state.root?.classList.contains('open')||!state.world)return;state.hideTrainerName=!state.inside&&Array.isArray(state.world.exit)&&Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<80;const c=state.ctx,view=camera();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,view.w,view.h);
-let usedPalletHD=false;
-if(palletHDActive()){
+let usedPalletHD=false,usedAnime3Q=false;
+const a3q=anime3QActive();
+if(a3q){
+  W.PsyKantoPalletHDV1?.hide?.();
+  const o=image(state.world.art),stage=state.root.querySelector('.kw2-stage');
+  usedAnime3Q=!!W.PsyKantoAnime3Q.renderBackground(stage,view,state.world.id,o?.loaded?o.im:null);
+}else{W.PsyKantoAnime3Q?.hide?.();}
+if(!a3q&&palletHDActive()){
   const o=image(state.world.art);
   const stage=state.root.querySelector('.kw2-stage');
   usedPalletHD=!!W.PsyKantoPalletHDV1.render(stage,view,o?.loaded?o.im:null,performance.now(),{reduced:palletMotionReduced,dpr:view.dpr});
-}else{W.PsyKantoPalletHDV1?.hide?.();}
-if(!usedPalletHD){c.fillStyle='#122e30';c.fillRect(0,0,view.w,view.h);}
+}else if(!a3q){W.PsyKantoPalletHDV1?.hide?.();}
+if(!usedPalletHD&&!usedAnime3Q){c.fillStyle='#122e30';c.fillRect(0,0,view.w,view.h);}
 c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);
-if(state.inside){drawInterior(c,state.inside)}else if(!usedPalletHD){const o=image(state.world.art);if(o?.loaded){
+if(state.inside){drawInterior(c,state.inside)}else if(!usedPalletHD&&!usedAnime3Q){const o=image(state.world.art);if(o?.loaded){
     if(!o.mapCanvas||o.mapCanvas.width!==state.world.w||o.mapCanvas.height!==state.world.h){
       const flat=D.createElement('canvas');flat.width=state.world.w;flat.height=state.world.h;
       const fc=flat.getContext('2d');fc.imageSmoothingEnabled=true;
@@ -296,11 +322,14 @@ if(!state.inside&&state.world.id==='pallet'&&!usedPalletHD){
  W.PsyKantoPalletVegetationV1?.draw(c,performance.now());
 }
 const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
-if(!state.inside){if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){const lab=state.world.doors.find(d=>d.id==='lab');if(lab)drawMarker(c,lab.at[0],lab.at[1],'LABORATÓRIO →','#ffd480');}
+if(!state.inside){if(a3q){(state.world.portals||[]).forEach(p=>{if(p.marker&&Math.hypot(p.marker[0]-state.position.x,p.marker[1]-state.position.y)<180)drawMarker(c,p.marker[0],p.marker[1],p.label,p.color||'#80ffaa')});}else{if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){const lab=state.world.doors.find(d=>d.id==='lab');if(lab)drawMarker(c,lab.at[0],lab.at[1],'LABORATÓRIO →','#ffd480');}
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
-if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':state.world.id==='viridian'?'ROTA 2':'VIRIDIAN','#80ffaa')}
+if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':state.world.id==='viridian'?'ROTA 2':'VIRIDIAN','#80ffaa')}}
 else if(state.inside.id===RIFT_ID)drawRiftGate(c,...(state.inside.exit||[448,128]),performance.now());else drawMarker(c,...(state.inside.exit||[240,675]),'SAÍDA ↓','#85efdc');
-if(W.PsyFollower)W.PsyFollower.draw(c,{scene:state.world.id+':'+(state.inside?.id||'outside'),x:state.position.x,y:state.position.y,facing:state.facing,moving:state.moving,valid:positionValid,trainer:()=>drawPlayer(c,state.position.x,state.position.y)});else drawPlayer(c,state.position.x,state.position.y);W.PsyWorldTimeV1?.updateBadge?.(state.root.querySelector('[data-world-clock]'));c.setTransform(1,0,0,1,0,0);W.PsyWorldTimeV1?.drawAmbient?.(c,view.w,view.h);if(state.huntRiftFrozen){c.fillStyle='#04111de6';c.fillRect(0,0,view.w,view.h);c.fillStyle='#a4fff1';c.font='bold 26px system-ui';c.textAlign='center';c.fillText('A FENDA SE FECHA',view.w/2,view.h/2-8);c.font='bold 14px system-ui';c.fillStyle='#f5f1ff';c.fillText('Retornando ao ponto de entrada…',view.w/2,view.h/2+20)}}
+const charScale=a3q?(W.PsyKantoAnime3Q.characterScale||0.78):1;
+if(W.PsyFollower)W.PsyFollower.draw(c,{scene:state.world.id+':'+(state.inside?.id||'outside'),x:state.position.x,y:state.position.y,facing:state.facing,moving:state.moving,scale:charScale,valid:positionValid,trainer:()=>drawPlayer(c,state.position.x,state.position.y,{scale:charScale})});else drawPlayer(c,state.position.x,state.position.y,{scale:charScale});
+if(usedAnime3Q){const o=image(state.world.art);W.PsyKantoAnime3Q.drawOccluders(c,state.world.id,o?.loaded?o.im:null,state.position.y);}
+W.PsyWorldTimeV1?.updateBadge?.(state.root.querySelector('[data-world-clock]'));c.setTransform(1,0,0,1,0,0);W.PsyWorldTimeV1?.drawAmbient?.(c,view.w,view.h);if(state.huntRiftFrozen){c.fillStyle='#04111de6';c.fillRect(0,0,view.w,view.h);c.fillStyle='#a4fff1';c.font='bold 26px system-ui';c.textAlign='center';c.fillText('A FENDA SE FECHA',view.w/2,view.h/2-8);c.font='bold 14px system-ui';c.fillStyle='#f5f1ff';c.fillText('Retornando ao ponto de entrada…',view.w/2,view.h/2+20)}}
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);const playerName=player().name||'Treinador';c.font='bold 12px system-ui';const nameW=Math.min(180,c.measureText(playerName).width+4),overlapX=Math.abs(x-state.position.x)<(w+nameW)/2,overlapY=Math.abs((y-35)-(state.position.y-59))<23;if(overlapX&&overlapY)state.hideTrainerName=true;const actorCoversCaption=Math.abs(x-state.position.x)<w/2+24&&(y-31)>state.position.y-60&&(y-48)<state.position.y+5;c.font='bold 11px system-ui';if(!actorCoversCaption){c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35)}c.restore()}
 function drawRiftGate(c,x,y,now){const pulse=.68+Math.sin(now/180)*.16,halo=c.createRadialGradient(x,y-28,3,x,y-28,62);halo.addColorStop(0,`rgba(118,248,232,${pulse*.62})`);halo.addColorStop(.52,'rgba(120,83,244,.34)');halo.addColorStop(1,'rgba(67,42,166,0)');c.save();c.fillStyle='#10162477';c.beginPath();c.ellipse(x,y+3,24,7,0,0,Math.PI*2);c.fill();c.fillStyle=halo;c.fillRect(x-64,y-94,128,108);c.shadowColor='#99fff0';c.shadowBlur=12;c.strokeStyle='#a8fff1';c.lineWidth=4;c.beginPath();c.ellipse(x,y-30,21,37,0,0,Math.PI*2);c.stroke();c.shadowBlur=0;c.strokeStyle='#b79aff';c.lineWidth=2;c.beginPath();c.ellipse(x,y-30,13,29,0,0,Math.PI*2);c.stroke();for(let i=0;i<4;i++){const a=now/420+i*Math.PI/2;c.fillStyle=i%2?'#c6b2ff':'#d5fff7';c.beginPath();c.arc(x+Math.cos(a)*29,y-30+Math.sin(a)*38,2.4,0,Math.PI*2);c.fill()}c.textAlign='center';c.font='bold 11px system-ui';c.fillStyle='#071521df';c.fillRect(x-61,y-53,122,16);c.fillStyle='#ddfff7';c.fillText('PORTAL DE RETORNO',x,y-41);c.restore()}
 function drawNPC(c,npc,distance){
