@@ -1,8 +1,9 @@
-/* PSYWORLD — Anime 3/4 HD Playable Pilot (Centro <-> Jardins)
+/* PSYWORLD — Anime 3/4 HD Playable Pilot V2 (Centro <-> Jardins)
  * Isolated prototype activated via ?visual=anime3q or opening pallet-centro-3q / pallet-jardins-3q.
  * Preserves full 1672x941 artwork resolution via WebGL2, separates render texels from
- * 1200x675 logical collision coordinates, adapts 3/4 character scale, depth occlusion,
- * crisp pixel-art follower Pokemon, and bidirectional area transitions.
+ * 1200x675 logical polygon/circle/ellipse collision coordinates (foot-anchored),
+ * adapts 3/4 character scale, depth occlusion, crisp pixel-art follower Pokemon,
+ * and bidirectional area transitions.
  */
 (function(W,D){
 'use strict';
@@ -15,15 +16,43 @@ const LOGICAL_W=1200,LOGICAL_H=675;
 function rectsOverlap(x,y,r,rect){
   return x+r>rect[0]&&x-r<rect[2]&&y+r>rect[1]&&y-r<rect[3];
 }
-function inRect(x,y,r,rect){
-  return x-r>=rect[0]&&x+r<=rect[2]&&y-r>=rect[1]&&y+r<=rect[3];
-}
 function inEllipse(x,y,r,cx,cy,rx,ry){
   const dx=(x-cx)/(rx+r),dy=(y-cy)/(ry+r);
   return dx*dx+dy*dy<=1;
 }
+function inCircle(x,y,r,cx,cy,cr){
+  const dx=x-cx,dy=y-cy,lim=cr+r;
+  return dx*dx+dy*dy<=lim*lim;
+}
+function pointInPoly(x,y,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+function distPointToSegSq(px,py,ax,ay,bx,by){
+  const dx=bx-ax,dy=by-ay,lenSq=dx*dx+dy*dy;
+  let t=lenSq?((px-ax)*dx+(py-ay)*dy)/lenSq:0;
+  if(t<0)t=0;else if(t>1)t=1;
+  const cx=ax+t*dx,cy=ay+t*dy;
+  return (px-cx)*(px-cx)+(py-cy)*(py-cy);
+}
+function circleHitsPoly(x,y,r,poly){
+  if(pointInPoly(x,y,poly))return true;
+  const rSq=r*r;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    if(distPointToSegSq(x,y,poly[j][0],poly[j][1],poly[i][0],poly[i][1])<=rSq)return true;
+  }
+  return false;
+}
+function inUnionPolys(x,y,polys){
+  for(let i=0;i<polys.length;i++)if(pointInPoly(x,y,polys[i]))return true;
+  return false;
+}
 
-// Pixel-accurate walkable & solid geometry mapped on 1200x675 grid over 1672x941 artworks
+// Pixel-accurate walkable polygons & solid obstacles mapped on 1200x675 grid over 1672x941 artworks
 const MAPS={
   'pallet-centro-3q':{
     id:'pallet-centro-3q',
@@ -32,9 +61,9 @@ const MAPS={
     w:LOGICAL_W,h:LOGICAL_H,
     art:'assets/story/pallet/anime3q/01_centro_residencias.png',
     spawn:[600,430],
-    exit:[1180,210],
+    exit:[1180,200],
     doors:[
-      {id:'home',at:[340,210],title:'Casa de Red'},
+      {id:'home',at:[345,195],title:'Casa de Red'},
       {id:'house-east',at:[960,185],title:'Casa Leste'}
     ],
     npcs:[],
@@ -42,53 +71,51 @@ const MAPS={
     portals:[
       {
         id:'to-jardins',
-        rect:[1155,135,1200,285],
+        rect:[1155,120,1200,265],
         target:'pallet-jardins-3q',
         spawn:[82,235],
         facing:'right',
-        marker:[1165,205],
+        marker:[1165,195],
         label:'JARDINS →',
         color:'#80ffaa'
       }
     ],
-    // Wide walkable zones (union of rectangles)
-    walkZones:[
-      [110,225,1045,495],   // Central plaza & main east-west avenue
-      [540,12,665,245],     // North stone staircase
-      [535,490,740,665],    // South stone staircase
-      [15,175,160,395],     // West avenue
-      [890,145,1200,275],   // East avenue to Jardins
-      [740,390,910,480]     // East plaza bench terrace
+    walkPolys:[
+      // Main plaza + diagonal West road + diagonal East avenue to Jardins
+      [[0,145],[140,215],[390,200],[545,220],[665,220],[885,205],[1200,128],[1200,240],[940,365],[750,505],[520,520],[340,485],[0,385],[0,275]],
+      // North stone staircase
+      [[545,8],[662,8],[662,235],[545,235]],
+      // South stone staircase
+      [[530,505],[728,505],[748,670],[520,670]],
+      // NW house porch steps
+      [[310,180],[395,180],[395,218],[310,218]]
     ],
-    // Solid obstacles inside walkZones
+    blockPolys:[
+      // NW corner raised flowerbed between house and North stairs
+      [[410,130],[542,130],[542,224],[435,224]],
+      // SW wooden fence & bush island on West diagonal road
+      [[0,235],[125,300],[105,350],[0,290]]
+    ],
     blocks:[
-      // Northwest house & fenced flowerbed
-      [125,0,465,245],
-      // Northeast cherry tree, fence & bench
-      [705,0,1040,215],
-      [760,200,840,238],    // North-east bench
-      [272,218,358,255],    // North-west bench
-      // Fountain & flowerbed island in center plaza
-      [448,232,742,392],
-      // Lamp posts
-      [430,305,462,372],
-      [832,455,868,530],
-      // Southwest corner house/foliage
-      [0,395,535,675],
-      // Southeast cliff & house
-      [740,480,1200,675],
-      [910,285,1200,480]
+      [274,218,356,252], // NW wooden bench
+      [762,200,838,236]  // NE wooden bench
     ],
     ellipses:[
-      {cx:596,cy:312,rx:148,ry:82}
+      {cx:596,cy:306,rx:146,ry:80} // Central fountain & flowerbed island
     ],
-    // Depth-sorted foreground occluders (drawn AFTER player when player.y < baselineY)
+    circles:[
+      {cx:446,cy:344,r:12}, // West plaza lamp post
+      {cx:498,cy:192,r:12}, // NW lamp post
+      {cx:742,cy:192,r:12}  // NE lamp post
+    ],
     occluders:[
-      {rect:[520,218,672,300],baselineY:300}, // Fountain upper spire & water rim
-      {rect:[432,258,462,356],baselineY:356}, // West plaza lamp post
-      {rect:[832,392,868,505],baselineY:505}, // Southeast lamp post
-      {rect:[510,565,550,675],baselineY:660}, // South stair left pillar
-      {rect:[720,565,775,675],baselineY:660}  // South stair right pillar
+      {rect:[520,210,672,298],baselineY:298}, // Fountain upper spire & water rim
+      {rect:[432,258,462,352],baselineY:352}, // West plaza lamp post
+      {rect:[484,115,514,200],baselineY:200}, // NW lamp post
+      {rect:[728,115,758,200],baselineY:200}, // NE lamp post
+      {rect:[680,0,895,180],baselineY:185},   // NE cherry tree canopy
+      {rect:[505,530,545,675],baselineY:655}, // South stair left pillar
+      {rect:[715,530,775,675],baselineY:655}  // South stair right pillar
     ]
   },
   'pallet-jardins-3q':{
@@ -97,10 +124,10 @@ const MAPS={
     subtitle:'Protótipo Anime 3/4 HD · Oeste ← Centro',
     w:LOGICAL_W,h:LOGICAL_H,
     art:'assets/story/pallet/anime3q/02_jardins_bosque.png',
-    spawn:[72,235],
+    spawn:[82,235],
     exit:[20,235],
     doors:[
-      {id:'garden-cottage',at:[250,145],title:'Cabana do Bosque'}
+      {id:'garden-cottage',at:[255,130],title:'Cabana do Bosque'}
     ],
     npcs:[],
     grass:[],
@@ -109,51 +136,71 @@ const MAPS={
         id:'to-centro',
         rect:[0,130,45,350],
         target:'pallet-centro-3q',
-        spawn:[1130,210],
+        spawn:[1130,200],
         facing:'left',
         marker:[38,235],
         label:'← CENTRO',
         color:'#80ffaa'
       }
     ],
-    walkZones:[
-      [0,130,385,375],      // West cobblestone entrance & around flower island
-      [185,155,585,235],    // Upper path north of flower island
-      [195,345,585,430],    // Lower path south of flower island
-      [475,155,610,490],    // North-south central dirt avenue
-      [585,220,810,295],    // Stone arch bridge across stream
-      [785,155,1135,310],   // East grassy clearing & path to Great Tree
-      [1080,25,1180,215],   // Northeast woodland trail
-      [810,280,1040,495],   // East garden path south of bridge
-      [475,470,715,665]     // South stone staircase down to beach edge
+    walkPolys:[
+      // West cobblestone entrance
+      [[0,138],[185,225],[385,195],[385,375],[185,370],[0,275]],
+      // Cottage stone staircase & porch (Cabana do Bosque)
+      [[225,110],[320,110],[380,175],[300,210]],
+      // Upper path north of flowerbed island
+      [[185,165],[585,150],[585,228],[185,230]],
+      // Lower path south of flowerbed island
+      [[185,345],[585,345],[585,445],[185,415]],
+      // Wisteria pergola stone patio
+      [[435,105],[575,105],[585,165],[435,165]],
+      // Central north-south dirt avenue
+      [[475,145],[610,145],[610,505],[475,505]],
+      // Stone arch bridge across stream
+      [[585,222],[805,222],[805,286],[585,286]],
+      // East grassy clearing & Great Tree hollow
+      [[780,135],[1085,135],[1135,295],[780,295]],
+      // Northeast woodland trail
+      [[1055,20],[1170,20],[1145,225],[1045,225]],
+      // East garden path south of bridge & around raised flowerbed
+      [[795,280],[925,280],[925,465],[795,465]],
+      [[840,365],[1085,365],[1085,465],[840,465]],
+      // South dirt plaza & stone staircase to beach
+      [[470,455],[690,455],[690,535],[470,535]],
+      [[525,515],[685,515],[715,655],[545,655]]
     ],
+    blockPolys:[],
     blocks:[
-      // Top-left cottage & terrace
-      [0,0,340,148],
-      // Central raised flowerbed island
-      [205,220,485,358],
-      // Upper wisteria pergola & bench
-      [410,0,595,155],
-      // Stream north of bridge
-      [605,0,775,222],
-      // Stream south of bridge (with flowerbed island)
-      [525,295,840,475],
-      // Great Tree & upper-right forest border
-      [855,0,1090,175],
-      // East raised garden bed & fence
-      [920,280,1195,405],
-      // Lower-left cottage & cliff
-      [0,375,480,675],
-      // Lower-right cliff & coastal water
-      [710,475,1200,675]
+      [405,175,465,208], // Upper-left bench near cottage
+      [462,112,522,142], // Wisteria pergola table & stools
+      [605,200,775,224], // Bridge upper stone parapet
+      [605,282,775,310], // Bridge lower stone parapet
+      [922,282,1065,368], // SE raised square flowerbed
+      [795,290,845,322]  // East garden bench by stream
     ],
-    ellipses:[],
+    ellipses:[
+      {cx:345,cy:290,rx:142,ry:72}, // Central raised flowerbed island
+      {cx:965,cy:118,rx:48,ry:26}   // Great Tree trunk
+    ],
+    circles:[
+      {cx:64,cy:295,r:13},  // West entrance lamp post
+      {cx:552,cy:245,r:12}, // Central lamp post
+      {cx:768,cy:186,r:16}, // Pink cherry tree trunk (east of stream)
+      {cx:882,cy:205,r:15}, // Clearing flat rock 1
+      {cx:988,cy:224,r:12}, // Clearing flat rock 2
+      {cx:865,cy:332,r:12}  // East garden lamp post
+    ],
     occluders:[
-      {rect:[55,220,90,340],baselineY:340},   // West entrance lamp post
-      {rect:[600,170,785,238],baselineY:240}, // Bridge upper stone parapet
-      {rect:[600,260,785,305],baselineY:305}, // Bridge lower stone arch rim
-      {rect:[532,162,566,260],baselineY:260}, // Central lamp post
-      {rect:[310,235,348,325],baselineY:325}  // Flower island lamp post
+      {rect:[48,215,82,305],baselineY:305},   // West entrance lamp post
+      {rect:[310,235,348,325],baselineY:325}, // Flower island lamp post
+      {rect:[536,158,568,255],baselineY:255}, // Central lamp post
+      {rect:[600,175,785,235],baselineY:235}, // Bridge upper stone parapet
+      {rect:[600,265,785,305],baselineY:305}, // Bridge lower stone arch rim
+      {rect:[695,70,840,182],baselineY:188},  // Pink cherry tree canopy
+      {rect:[865,0,1065,130],baselineY:130},  // Great Tree canopy
+      {rect:[850,245,882,340],baselineY:340}, // East garden lamp post
+      {rect:[475,455,505,535],baselineY:535}, // South stair left lamp post
+      {rect:[680,440,710,520],baselineY:520}  // South stair right lamp post
     ]
   }
 };
@@ -166,14 +213,17 @@ function getMap(id){
   return MAPS[id]||null;
 }
 
-function walkable(id,x,y,r=11){
+function walkable(id,x,y,r=9){
   const m=MAPS[id];
   if(!m)return false;
-  if(x<r||y<r||x>m.w-r||y>m.h-r)return false;
-  const insideZone=m.walkZones.some(z=>inRect(x,y,0,z));
-  if(!insideZone)return false;
-  if(m.blocks.some(b=>rectsOverlap(x,y,r,b)))return false;
-  if(m.ellipses?.some(e=>inEllipse(x,y,r,e.cx,e.cy,e.rx,e.ry)))return false;
+  const fr=Math.min(9,r); // Foot-anchored collision radius
+  if(x<fr||y<fr||x>m.w-fr||y>m.h-fr)return false;
+  if(!inUnionPolys(x,y,m.walkPolys))return false;
+  if(!inUnionPolys(x+fr,y,m.walkPolys)||!inUnionPolys(x-fr,y,m.walkPolys)||!inUnionPolys(x,y+fr,m.walkPolys)||!inUnionPolys(x,y-fr,m.walkPolys))return false;
+  if(m.blockPolys?.some(p=>circleHitsPoly(x,y,fr,p)))return false;
+  if(m.blocks?.some(b=>rectsOverlap(x,y,fr,b)))return false;
+  if(m.ellipses?.some(e=>inEllipse(x,y,fr,e.cx,e.cy,e.rx,e.ry)))return false;
+  if(m.circles?.some(c=>inCircle(x,y,fr,c.cx,c.cy,c.r)))return false;
   return true;
 }
 

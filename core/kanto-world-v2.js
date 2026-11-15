@@ -257,7 +257,7 @@ function camera(){
   if(a3q){
     const portrait=r.height>r.width&&r.width<560;
     const landscapeMobile=r.height<=500;
-    const targetScale=portrait?cw/470:landscapeMobile?ch/340:ch/395;
+    const targetScale=portrait?Math.max(cover*1.28,cw/295):landscapeMobile?Math.max(cover*1.28,ch/245):Math.max(cover*1.25,ch/295);
     scale=Math.max(cover,Math.min(4.2,targetScale));
   }else{
     scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
@@ -603,7 +603,7 @@ const near=currentTargets().find(v=>Math.hypot(v.at[0]-t.tx,v.at[1]-28-t.ty)<(v.
 // Tap-to-walk searches asynchronously, yielding control to the game each frame.
 // Terrain queries are memoized per location; dragging joystick cancels old searches.
 function findPath(from,to,request){
-  const world=state.inside||state.world,step=world?.id==='pallet'?5:10;
+  const world=state.inside||state.world,step=(world?.id==='pallet'||anime3QActive())?6:10;
   const nx=Math.ceil(world.w/step),ny=Math.ceil(world.h/step);
   const key=(x,y)=>x+','+y,cx=x=>Math.round(x/step);
   const valid=(x,y)=>{
