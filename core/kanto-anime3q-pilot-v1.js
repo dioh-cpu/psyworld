@@ -109,13 +109,13 @@ const MAPS={
       {cx:742,cy:192,r:12}  // NE lamp post
     ],
     occluders:[
-      {rect:[520,210,672,298],baselineY:298}, // Fountain upper spire & water rim
-      {rect:[432,258,462,352],baselineY:352}, // West plaza lamp post
-      {rect:[484,115,514,200],baselineY:200}, // NW lamp post
-      {rect:[728,115,758,200],baselineY:200}, // NE lamp post
-      {rect:[680,0,895,180],baselineY:185},   // NE cherry tree canopy
-      {rect:[505,530,545,675],baselineY:655}, // South stair left pillar
-      {rect:[715,530,775,675],baselineY:655}  // South stair right pillar
+      {rect:[548,208,644,242],baselineY:244,minY:190,xPad:28}, // Fountain upper spire (only behind fountain)
+      {rect:[438,258,454,348],baselineY:348,minY:245,xPad:24}, // West plaza lamp post shaft
+      {rect:[490,115,506,196],baselineY:196,minY:105,xPad:24}, // NW lamp post shaft
+      {rect:[734,115,750,196],baselineY:196,minY:105,xPad:24}, // NE lamp post shaft
+      {rect:[705,0,890,158],baselineY:172,minY:0,xPad:16},     // NE cherry tree canopy
+      {rect:[508,545,534,665],baselineY:655,minY:525,xPad:10}, // South stair left pillar (narrow)
+      {rect:[724,545,752,665],baselineY:655,minY:525,xPad:10}  // South stair right pillar (narrow)
     ]
   },
   'pallet-jardins-3q':{
@@ -191,16 +191,15 @@ const MAPS={
       {cx:865,cy:332,r:12}  // East garden lamp post
     ],
     occluders:[
-      {rect:[48,215,82,305],baselineY:305},   // West entrance lamp post
-      {rect:[310,235,348,325],baselineY:325}, // Flower island lamp post
-      {rect:[536,158,568,255],baselineY:255}, // Central lamp post
-      {rect:[600,175,785,235],baselineY:235}, // Bridge upper stone parapet
-      {rect:[600,265,785,305],baselineY:305}, // Bridge lower stone arch rim
-      {rect:[695,70,840,182],baselineY:188},  // Pink cherry tree canopy
-      {rect:[865,0,1065,130],baselineY:130},  // Great Tree canopy
-      {rect:[850,245,882,340],baselineY:340}, // East garden lamp post
-      {rect:[475,455,505,535],baselineY:535}, // South stair left lamp post
-      {rect:[680,440,710,520],baselineY:520}  // South stair right lamp post
+      {rect:[56,215,72,298],baselineY:298,minY:205,xPad:24},   // West entrance lamp post shaft
+      {rect:[322,235,338,325],baselineY:325,minY:225,xPad:24}, // Flower island lamp post shaft
+      {rect:[544,158,560,250],baselineY:250,minY:150,xPad:24}, // Central lamp post shaft
+      {rect:[605,274,775,290],baselineY:282,minY:255,xPad:8},  // Bridge lower stone rail (feet strip only)
+      {rect:[705,70,835,172],baselineY:186,minY:60,xPad:18},   // Pink cherry tree canopy
+      {rect:[875,0,1055,112],baselineY:122,minY:0,xPad:18},    // Great Tree canopy
+      {rect:[857,245,873,335],baselineY:335,minY:235,xPad:24}, // East garden lamp post shaft
+      {rect:[482,462,498,530],baselineY:530,minY:450,xPad:14}, // South stair left lamp post
+      {rect:[688,448,704,518],baselineY:518,minY:440,xPad:14}  // South stair right lamp post
     ]
   }
 };
@@ -334,12 +333,28 @@ function renderBackground(stage,view,mapId,img){
   return true;
 }
 
-function drawOccluders(c,mapId,img,playerY){
+function getActiveOccluders(mapId,playerX,playerY){
+  const m=MAPS[mapId];
+  if(!m?.occluders?.length)return [];
+  const px=Number.isFinite(playerX)?playerX:null;
+  return m.occluders.filter(occ=>{
+    if(playerY>=occ.baselineY)return false;
+    if(occ.minY!==undefined&&playerY<occ.minY)return false;
+    if(px!==null){
+      const pad=occ.xPad??18;
+      if(px<occ.rect[0]-pad||px>occ.rect[2]+pad)return false;
+    }
+    return true;
+  });
+}
+
+function drawOccluders(c,mapId,img,playerY,playerX){
   const m=MAPS[mapId];
   if(!m?.occluders?.length||!img?.complete||!img.naturalWidth)return;
+  const active=getActiveOccluders(mapId,playerX,playerY);
+  if(!active.length)return;
   const sxScale=img.naturalWidth/m.w,syScale=img.naturalHeight/m.h;
-  for(const occ of m.occluders){
-    if(playerY>=occ.baselineY)continue;
+  for(const occ of active){
     const [x1,y1,x2,y2]=occ.rect,w=x2-x1,h=y2-y1;
     c.drawImage(img,x1*sxScale,y1*syScale,w*sxScale,h*syScale,x1,y1,w,h);
   }
@@ -358,7 +373,9 @@ W.PsyKantoAnime3Q={
   checkPortal,
   renderBackground,
   drawOccluders,
+  getActiveOccluders,
   hide,
-  characterScale:0.78
+  characterScale:1.56,
+  followerScale:1.18
 };
 })(window,document);
