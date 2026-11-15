@@ -1,7 +1,8 @@
-/* PSYWORLD — Anime 3/4 HD Playable Pilot V4 (Centro <-> Jardins)
- * Structural reconstruction of collisions (16-angle foot perimeter + full PLAYER_RADIUS=11),
- * true RGBA foreground silhouette occluder sprites (zero opaque rectangular background cutouts),
- * connectivity analyzer, and dev visual collision editor (?visual=anime3q&debug=editor).
+/* PSYWORLD — Anime 3/4 HD Playable Pilot V5 (Centro <-> Jardins)
+ * Pixel-exact 1200x675 Walkmask & Precomputed Euclidean Signed Distance Field (SDF)
+ * collisions (O(1) bilinear sdfDist + gradient normal wall-sliding),
+ * true RGBA foreground silhouette occluder sprites, connectivity analyzer,
+ * and dev visual collision editor (?visual=anime3q&debug=editor).
  */
 (function(W,D){
 'use strict';
@@ -58,6 +59,8 @@ const MAPS={
     subtitle:'Protótipo Anime 3/4 HD · Leste → Jardins',
     w:LOGICAL_W,h:LOGICAL_H,
     art:'assets/story/pallet/anime3q/01_centro_residencias.png',
+    walkmask:'assets/story/pallet/anime3q/walkmasks/centro_walkmask.png',
+    sdf:'assets/story/pallet/anime3q/walkmasks/centro_sdf.png',
     spawn:[600,430],
     exit:[1180,200],
     doors:[
@@ -113,6 +116,8 @@ const MAPS={
     subtitle:'Protótipo Anime 3/4 HD · Oeste ← Centro',
     w:LOGICAL_W,h:LOGICAL_H,
     art:'assets/story/pallet/anime3q/02_jardins_bosque.png',
+    walkmask:'assets/story/pallet/anime3q/walkmasks/jardins_walkmask.png',
+    sdf:'assets/story/pallet/anime3q/walkmasks/jardins_sdf.png',
     spawn:[98,225],
     exit:[20,225],
     doors:[
@@ -194,6 +199,78 @@ function getMaskImage(src){
 }
 Object.values(MAPS).forEach(m=>(m.occluders||[]).forEach(o=>getMaskImage(o.mask)));
 
+// Preload 1200x675 Euclidean Signed Distance Field (SDF) collision buffers (dist = pixel * 0.25)
+const sdfCache=new Map();
+const readyPromises=[];
+function getSdfEntry(src){
+  if(!src)return null;
+  if(sdfCache.has(src))return sdfCache.get(src);
+  const entry={src,im:new Image(),loaded:false,buf:null,debugCanvas:null};
+  entry.promise=new Promise(resolve=>{
+    entry.im.onload=()=>{
+      try{
+        const cv=D.createElement('canvas');
+        cv.width=LOGICAL_W;cv.height=LOGICAL_H;
+        const cx=cv.getContext('2d',{willReadFrequently:true});
+        cx.drawImage(entry.im,0,0,LOGICAL_W,LOGICAL_H);
+        const raw=cx.getImageData(0,0,LOGICAL_W,LOGICAL_H).data;
+        const buf=new Uint8Array(LOGICAL_W*LOGICAL_H);
+        for(let i=0,p=0;i<buf.length;i++,p+=4)buf[i]=raw[p];
+        entry.buf=buf;
+        entry.loaded=true;
+      }catch(err){console.warn('Anime3Q SDF decode failed',src,err);}
+      resolve(entry);
+    };
+    entry.im.onerror=()=>{resolve(entry);};
+    entry.im.src=src;
+  });
+  readyPromises.push(entry.promise);
+  sdfCache.set(src,entry);
+  return entry;
+}
+Object.values(MAPS).forEach(m=>{if(m.sdf)getSdfEntry(m.sdf);});
+
+function whenReady(){
+  return Promise.all(readyPromises).then(()=>true);
+}
+function isSdfReady(id){
+  const m=id?MAPS[id]:null;
+  if(m)return !!getSdfEntry(m.sdf)?.buf;
+  return Object.values(MAPS).every(mp=>!mp.sdf||!!getSdfEntry(mp.sdf)?.buf);
+}
+
+// O(1) bilinear Euclidean distance to nearest blocked pixel (in logical pixels)
+function sdfDist(id,x,y){
+  const m=MAPS[id];
+  if(!m?.sdf)return null;
+  const entry=getSdfEntry(m.sdf);
+  if(!entry?.buf)return null;
+  const buf=entry.buf;
+  const fx=Math.max(0,Math.min(LOGICAL_W-1.0001,x));
+  const fy=Math.max(0,Math.min(LOGICAL_H-1.0001,y));
+  const x0=fx|0,y0=fy|0;
+  const x1=x0+1<LOGICAL_W?x0+1:x0;
+  const y1=y0+1<LOGICAL_H?y0+1:y0;
+  const tx=fx-x0,ty=fy-y0;
+  const i0=y0*LOGICAL_W+x0,i1=y1*LOGICAL_W+x0;
+  const d00=buf[i0],d10=buf[y0*LOGICAL_W+x1];
+  const d01=buf[i1],d11=buf[y1*LOGICAL_W+x1];
+  const v0=d00+(d10-d00)*tx;
+  const v1=d01+(d11-d01)*tx;
+  return (v0+(v1-v0)*ty)*0.25;
+}
+
+// Unit inward gradient normal from SDF for smooth diagonal/curved wall-sliding
+function sdfNormal(id,x,y){
+  const dL=sdfDist(id,x-1,y),dR=sdfDist(id,x+1,y);
+  const dU=sdfDist(id,x,y-1),dD=sdfDist(id,x,y+1);
+  if(dL===null||dR===null||dU===null||dD===null)return null;
+  const gx=(dR-dL)*0.5,gy=(dD-dU)*0.5;
+  const len=Math.hypot(gx,gy);
+  if(len<1e-4)return null;
+  return [gx/len,gy/len];
+}
+
 function isPilotMap(id){
   return !!MAPS[id];
 }
@@ -202,12 +279,15 @@ function getMap(id){
   return MAPS[id]||null;
 }
 
-// Structural 16-angle foot-perimeter collision check using full physical foot radius (no silent shrinking)
+// V5 Primary: Pixel-Exact 1200x675 Euclidean SDF check (dist >= r).
+// Fallback only during the brief initial PNG decode before onload fires.
 function walkable(id,x,y,r=11){
   const m=MAPS[id];
   if(!m)return false;
   const foot=Math.max(0,Number(r)||11);
   if(x<foot||y<foot||x>m.w-foot||y>m.h-foot)return false;
+  const d=sdfDist(id,x,y);
+  if(d!==null)return d>=foot;
   if(!inUnionPolys(x,y,m.walkPolys))return false;
   for(let i=0;i<16;i++){
     const a=i*Math.PI/8;
@@ -391,34 +471,49 @@ function drawOccluders(c,mapId,img,playerY,playerX){
 
 // Development-only visual collision & occlusion editor (?visual=anime3q&debug=editor)
 let debugOverlayVisible=debugEditorEnabled;
+function getSdfDebugCanvas(mapId){
+  const m=MAPS[mapId];if(!m?.sdf)return null;
+  const entry=getSdfEntry(m.sdf);
+  if(!entry?.buf)return null;
+  if(entry.debugCanvas)return entry.debugCanvas;
+  const cv=D.createElement('canvas');
+  cv.width=LOGICAL_W;cv.height=LOGICAL_H;
+  const cx=cv.getContext('2d');
+  const img=cx.createImageData(LOGICAL_W,LOGICAL_H);
+  const d=img.data,buf=entry.buf;
+  for(let i=0;i<buf.length;i++){
+    const dist4=buf[i],p=i*4;
+    if(dist4===0){d[p]=239;d[p+1]=68;d[p+2]=68;d[p+3]=95;}
+    else if(dist4<44){d[p]=250;d[p+1]=204;d[p+2]=21;d[p+3]=110;}
+    else{d[p]=34;d[p+1]=197;d[p+2]=94;d[p+3]=70;}
+  }
+  cx.putImageData(img,0,0);
+  entry.debugCanvas=cv;
+  return cv;
+}
 function drawDebugOverlay(c,mapId){
   const m=MAPS[mapId];if(!m)return;
   c.save();
+  const dbg=getSdfDebugCanvas(mapId);
+  if(dbg){
+    c.drawImage(dbg,0,0,LOGICAL_W,LOGICAL_H);
+  }else{
+    c.fillStyle='rgba(34,197,94,0.18)';c.strokeStyle='#22c55e';c.lineWidth=1.5;
+    for(const poly of m.walkPolys){
+      c.beginPath();poly.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fill();c.stroke();
+    }
+    c.fillStyle='rgba(239,68,68,0.28)';c.strokeStyle='#ef4444';
+    for(const poly of (m.blockPolys||[])){
+      c.beginPath();poly.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fill();c.stroke();
+    }
+    for(const [x1,y1,x2,y2] of (m.blocks||[])){c.fillRect(x1,y1,x2-x1,y2-y1);c.strokeRect(x1,y1,x2-x1,y2-y1);}
+  }
   // Grid 50px
   c.lineWidth=0.6;c.strokeStyle='rgba(255,255,255,0.22)';
   for(let x=0;x<=m.w;x+=50){c.beginPath();c.moveTo(x,0);c.lineTo(x,m.h);c.stroke();}
   for(let y=0;y<=m.h;y+=50){c.beginPath();c.moveTo(0,y);c.lineTo(m.w,y);c.stroke();}
-  // Walkable polygons (green)
-  c.fillStyle='rgba(34,197,94,0.18)';c.strokeStyle='#22c55e';c.lineWidth=1.5;
-  for(const poly of m.walkPolys){
-    c.beginPath();poly.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fill();c.stroke();
-  }
-  // Solid blockPolys & blocks (red)
-  c.fillStyle='rgba(239,68,68,0.28)';c.strokeStyle='#ef4444';
-  for(const poly of (m.blockPolys||[])){
-    c.beginPath();poly.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fill();c.stroke();
-  }
-  for(const [x1,y1,x2,y2] of (m.blocks||[])){
-    c.fillRect(x1,y1,x2-x1,y2-y1);c.strokeRect(x1,y1,x2-x1,y2-y1);
-  }
-  for(const e of (m.ellipses||[])){
-    c.beginPath();c.ellipse(e.cx,e.cy,e.rx,e.ry,0,0,Math.PI*2);c.fill();c.stroke();
-  }
-  for(const ci of (m.circles||[])){
-    c.beginPath();c.arc(ci.cx,ci.cy,ci.r,0,Math.PI*2);c.fill();c.stroke();
-  }
   // Occluder bounds (cyan dashed)
-  c.strokeStyle='#38bdf8';c.setLineDash([4,3]);
+  c.strokeStyle='#38bdf8';c.lineWidth=1.4;c.setLineDash([4,3]);
   for(const o of (m.occluders||[])){
     const [x1,y1,x2,y2]=o.rect;c.strokeRect(x1,y1,x2-x1,y2-y1);
   }
@@ -432,7 +527,7 @@ function drawDebugOverlay(c,mapId){
 }
 
 function exportGeometryJSON(){
-  return JSON.stringify({version:'PALLET_ANIME3Q_V4_20261115',logicalSize:[LOGICAL_W,LOGICAL_H],maps:MAPS},null,2);
+  return JSON.stringify({version:'PALLET_ANIME3Q_V5_SDF_20261115',logicalSize:[LOGICAL_W,LOGICAL_H],maps:MAPS},null,2);
 }
 
 function hide(){
@@ -440,11 +535,18 @@ function hide(){
 }
 
 W.PsyKantoAnime3Q={
+  version:5,
   isEnabled:()=>enabled,
   setEnabled:v=>{enabled=!!v;},
+  whenReady,
+  isSdfReady,
   isPilotMap,
   getMap,
   walkable,
+  sdfDist,
+  sdfNormal,
+  getWalkmaskUrl:id=>MAPS[id]?.walkmask||null,
+  getSdfUrl:id=>MAPS[id]?.sdf||null,
   checkPortal,
   analyzeConnectivity,
   renderBackground,

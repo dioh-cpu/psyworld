@@ -1,0 +1,28 @@
+# 07 — MAPA DE CONTEÚDO DO PACOTE ZIP (V5)
+
+- `DOCUMENTACAO/`
+  - `01_RELATORIO_COMPLETO.md`
+  - `02_HISTORICO_DE_PROMPTS.md`
+  - `03_ARQUITETURA_E_ARQUIVOS.md`
+  - `04_COMO_EXECUTAR_E_TESTAR.md`
+  - `05_DECISOES_TECNICAS_E_COORDENADAS.md`
+  - `06_VALIDACAO_E_EVIDENCIAS.md`
+  - `07_CONTEUDO_DO_PACOTE.md`
+  - `08_ESTADO_ATUAL_E_PROXIMOS_PASSOS.md`
+- `CODIGO/`
+  - `core/kanto-anime3q-pilot-v1.js`
+  - `core/kanto-world-v2.js`
+  - `core/kanto-collision-v4.js`
+  - `core/kanto-map-data-v2.js`
+  - `core/follower-v47.js`
+  - `tools/build_walkmasks_v5.py`
+  - `tools/collision-editor-v4.html`
+- `ARTES/`
+  - `01_centro_residencias.png` (`1672×941`)
+  - `02_jardins_bosque.png` (`1672×941`)
+  - `walkmasks/centro_walkmask.png`, `walkmasks/centro_sdf.png`
+  - `walkmasks/jardins_walkmask.png`, `walkmasks/jardins_sdf.png`
+  - `masks/*.png` (9 máscaras RGBA de silhueta)
+- `MIDIA_VALIDACAO/`
+  - `pilot_v5_walkthrough.mp4`
+  - Capturas PNG de validação Desktop, Ponte, Overlay SDF, Mobile Portrait/Landscape e Editor Visual V5.

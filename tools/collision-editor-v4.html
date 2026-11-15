@@ -78,7 +78,7 @@
 </head>
 <body>
   <div id="sidebar">
-    <h1>PSYWORLD — Editor de Geometria V4</h1>
+    <h1>PSYWORLD — Editor de Geometria V4 / SDF V5</h1>
     <div class="row">
       <label>Cenário:</label>
       <select id="areaSelect">
@@ -87,9 +87,10 @@
       </select>
     </div>
     <div class="row">
+      <label><input type="checkbox" id="chkSdf" checked /> SDF V5 (r=11)</label>
       <label><input type="checkbox" id="chkGrid" checked /> Grade 50px</label>
-      <label><input type="checkbox" id="chkWalk" checked /> WalkPolys</label>
-      <label><input type="checkbox" id="chkBlock" checked /> Colisões</label>
+      <label><input type="checkbox" id="chkWalk" /> WalkPolys V4</label>
+      <label><input type="checkbox" id="chkBlock" /> Colisões V4</label>
       <label><input type="checkbox" id="chkOcc" checked /> Oclusores</label>
       <label><input type="checkbox" id="chkPortals" checked /> Portais</label>
     </div>
@@ -100,14 +101,14 @@
       <button id="btnFinishPoly">Fechar Polígono</button>
     </div>
     <div class="legend">
-      <div><span class="badge" style="background:#22c55e"></span>WalkPolys (Terreno Caminhável)</div>
-      <div><span class="badge" style="background:#ef4444"></span>Blocks / BlockPolys / Circles / Ellipses</div>
+      <div><span class="badge" style="background:#22c55e"></span>Terreno Livre (dist ≥ 11px)</div>
+      <div><span class="badge" style="background:#facc15"></span>Margem de Contato (0 &lt; dist &lt; 11px)</div>
+      <div><span class="badge" style="background:#ef4444"></span>Obstáculo Sólido (dist = 0)</div>
       <div><span class="badge" style="background:#38bdf8"></span>Occluders (Linha base splitY + Silhueta)</div>
-      <div><span class="badge" style="background:#facc15"></span>Portals / Landmarks</div>
       <div id="cursorInfo" style="margin-top:6px;color:#38bdf8;font-weight:600;">Cursor: (0, 0)</div>
     </div>
     <div class="row">
-      <button id="btnExport">Exportar JSON V4</button>
+      <button id="btnExport">Exportar JSON</button>
       <button id="btnCopy">Copiar JSON</button>
     </div>
     <textarea id="jsonOutput" readonly></textarea>
@@ -126,12 +127,20 @@
     let geoData = null;
     let currentArea = 'pallet-centro-3q';
     let bgImage = new Image();
+    let sdfOverlayCanvas = null;
+    let sdfBuf = null;
     let mode = 'inspect'; // inspect | addWalk | addBlock
     let draftPoly = [];
     let hoverPt = { x: 600, y: 430 };
 
     function getMapDict() {
       return geoData ? (geoData.maps || geoData.areas || {}) : {};
+    }
+
+    function sdfFileForArea(id) {
+      return id === 'pallet-centro-3q'
+        ? '../assets/story/pallet/anime3q/walkmasks/centro_sdf.png'
+        : '../assets/story/pallet/anime3q/walkmasks/jardins_sdf.png';
     }
 
     async function init() {
@@ -143,10 +152,48 @@
     function loadArea(id) {
       currentArea = id;
       const area = getMapDict()[id];
+      sdfOverlayCanvas = null;
+      sdfBuf = null;
       bgImage = new Image();
       bgImage.onload = () => render();
       bgImage.src = '../' + (area.art || area.image);
+      const sdfImg = new Image();
+      sdfImg.onload = () => {
+        const cv = document.createElement('canvas');
+        cv.width = 1200; cv.height = 675;
+        const cx = cv.getContext('2d');
+        cx.drawImage(sdfImg, 0, 0, 1200, 675);
+        const raw = cx.getImageData(0, 0, 1200, 675).data;
+        const buf = new Uint8Array(1200 * 675);
+        const out = cx.createImageData(1200, 675);
+        const od = out.data;
+        for (let i = 0; i < buf.length; i++) {
+          const v = raw[i * 4];
+          buf[i] = v;
+          const p = i * 4;
+          if (v === 0) { od[p] = 239; od[p+1] = 68; od[p+2] = 68; od[p+3] = 95; }
+          else if (v < 44) { od[p] = 250; od[p+1] = 204; od[p+2] = 21; od[p+3] = 110; }
+          else { od[p] = 34; od[p+1] = 197; od[p+2] = 94; od[p+3] = 70; }
+        }
+        cx.putImageData(out, 0, 0);
+        sdfBuf = buf;
+        sdfOverlayCanvas = cv;
+        render();
+      };
+      sdfImg.src = sdfFileForArea(id);
       updateJsonBox();
+    }
+
+    function sdfDistAt(x, y) {
+      if (!sdfBuf) return null;
+      const fx = Math.max(0, Math.min(1198.999, x));
+      const fy = Math.max(0, Math.min(673.999, y));
+      const x0 = fx | 0, y0 = fy | 0;
+      const tx = fx - x0, ty = fy - y0;
+      const d00 = sdfBuf[y0 * 1200 + x0], d10 = sdfBuf[y0 * 1200 + x0 + 1];
+      const d01 = sdfBuf[(y0 + 1) * 1200 + x0], d11 = sdfBuf[(y0 + 1) * 1200 + x0 + 1];
+      const v0 = d00 + (d10 - d00) * tx, v1 = d01 + (d11 - d01) * tx;
+      return (v0 + (v1 - v0) * ty) * 0.25;
     }
 
     function updateJsonBox() {
@@ -190,6 +237,10 @@
     }
 
     function walkableWithRadius(area, x, y, r = 11) {
+      if (sdfBuf) {
+        if (x < r || y < r || x > 1200 - r || y > 675 - r) return false;
+        return sdfDistAt(x, y) >= r;
+      }
       if (!pointWalkable(area, x, y)) return false;
       for (let i = 0; i < 16; i++) {
         const a = (i * Math.PI * 2) / 16;
@@ -202,6 +253,9 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (bgImage && bgImage.complete && bgImage.naturalWidth) {
         ctx.drawImage(bgImage, 0, 0, 1200, 675);
+      }
+      if (document.getElementById('chkSdf').checked && sdfOverlayCanvas) {
+        ctx.drawImage(sdfOverlayCanvas, 0, 0, 1200, 675);
       }
       if (!geoData) return;
       const area = getMapDict()[currentArea];
@@ -317,7 +371,8 @@
       hoverPt = { x, y };
       if (geoData) {
         const ok = walkableWithRadius(getMapDict()[currentArea], x, y, 11);
-        cursorInfo.textContent = `Cursor: (${x}, ${y}) — ${ok ? 'LIVRE (r=11)' : 'BLOQUEADO'}`;
+        const sd = sdfDistAt(x, y);
+        cursorInfo.textContent = `Cursor: (${x}, ${y})${sd !== null ? ` · SDF=${sd.toFixed(1)}px` : ''} — ${ok ? 'LIVRE (r=11)' : 'BLOQUEADO'}`;
       }
       render();
     });
@@ -330,7 +385,7 @@
     });
 
     areaSelect.addEventListener('change', () => loadArea(areaSelect.value));
-    ['chkGrid', 'chkWalk', 'chkBlock', 'chkOcc', 'chkPortals'].forEach(id => {
+    ['chkSdf', 'chkGrid', 'chkWalk', 'chkBlock', 'chkOcc', 'chkPortals'].forEach(id => {
       document.getElementById(id).addEventListener('change', render);
     });
 
