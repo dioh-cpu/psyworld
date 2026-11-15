@@ -1,9 +1,7 @@
-/* PSYWORLD — Anime 3/4 HD Playable Pilot V2 (Centro <-> Jardins)
- * Isolated prototype activated via ?visual=anime3q or opening pallet-centro-3q / pallet-jardins-3q.
- * Preserves full 1672x941 artwork resolution via WebGL2, separates render texels from
- * 1200x675 logical polygon/circle/ellipse collision coordinates (foot-anchored),
- * adapts 3/4 character scale, depth occlusion, crisp pixel-art follower Pokemon,
- * and bidirectional area transitions.
+/* PSYWORLD — Anime 3/4 HD Playable Pilot V4 (Centro <-> Jardins)
+ * Structural reconstruction of collisions (16-angle foot perimeter + full PLAYER_RADIUS=11),
+ * true RGBA foreground silhouette occluder sprites (zero opaque rectangular background cutouts),
+ * connectivity analyzer, and dev visual collision editor (?visual=anime3q&debug=editor).
  */
 (function(W,D){
 'use strict';
@@ -11,6 +9,7 @@ if(W.PsyKantoAnime3Q)return;
 
 const params=new URLSearchParams(W.location?.search||'');
 let enabled=params.get('visual')==='anime3q';
+const debugEditorEnabled=params.get('debug')==='editor';
 const LOGICAL_W=1200,LOGICAL_H=675;
 
 function rectsOverlap(x,y,r,rect){
@@ -52,7 +51,6 @@ function inUnionPolys(x,y,polys){
   return false;
 }
 
-// Pixel-accurate walkable polygons & solid obstacles mapped on 1200x675 grid over 1672x941 artworks
 const MAPS={
   'pallet-centro-3q':{
     id:'pallet-centro-3q',
@@ -63,17 +61,17 @@ const MAPS={
     spawn:[600,430],
     exit:[1180,200],
     doors:[
-      {id:'home',at:[345,195],title:'Casa de Red'},
-      {id:'house-east',at:[960,185],title:'Casa Leste'}
+      {id:'home',at:[350,222],title:'Casa de Red'},
+      {id:'house-east',at:[975,220],title:'Casa Leste'}
     ],
     npcs:[],
     grass:[],
     portals:[
       {
         id:'to-jardins',
-        rect:[1155,120,1200,265],
+        rect:[1155,130,1200,240],
         target:'pallet-jardins-3q',
-        spawn:[82,235],
+        spawn:[98,225],
         facing:'right',
         marker:[1165,195],
         label:'JARDINS →',
@@ -81,41 +79,32 @@ const MAPS={
       }
     ],
     walkPolys:[
-      // Main plaza + diagonal West road + diagonal East avenue to Jardins
-      [[0,145],[140,215],[390,200],[545,220],[665,220],[885,205],[1200,128],[1200,240],[940,365],[750,505],[520,520],[340,485],[0,385],[0,275]],
-      // North stone staircase
-      [[545,8],[662,8],[662,235],[545,235]],
-      // South stone staircase
-      [[530,505],[728,505],[748,670],[520,670]],
-      // NW house porch steps
-      [[310,180],[395,180],[395,218],[310,218]]
+      [[0,152],[135,222],[392,202],[542,196],[666,196],[895,212],[1200,132],[1200,235],[930,355],[745,498],[522,508],[345,472],[185,405],[0,335],[0,278],[125,332],[138,295],[0,225]],
+      [[548,10],[658,10],[695,255],[510,255]],
+      [[538,495],[716,495],[736,668],[526,668]],
+      [[315,186],[390,186],[390,224],[315,224]]
     ],
     blockPolys:[
-      // NW corner raised flowerbed between house and North stairs
-      [[410,130],[542,130],[542,224],[435,224]],
-      // SW wooden fence & bush island on West diagonal road
-      [[0,235],[125,300],[105,350],[0,290]]
+      [[395,120],[536,120],[536,194],[425,194]],
+      [[672,120],[960,120],[960,214],[755,214],[672,194]]
     ],
     blocks:[
-      [274,218,356,252], // NW wooden bench
-      [762,200,838,236]  // NE wooden bench
+      [268,212,355,252],
+      [758,196,840,236]
     ],
     ellipses:[
-      {cx:596,cy:306,rx:146,ry:80} // Central fountain & flowerbed island
+      {cx:598,cy:312,rx:132,ry:74}
     ],
     circles:[
-      {cx:446,cy:344,r:12}, // West plaza lamp post
-      {cx:498,cy:192,r:12}, // NW lamp post
-      {cx:742,cy:192,r:12}  // NE lamp post
+      {cx:448,cy:348,r:8},
+      {cx:500,cy:192,r:9},
+      {cx:745,cy:192,r:9}
     ],
     occluders:[
-      {rect:[548,208,644,242],baselineY:244,minY:190,xPad:28}, // Fountain upper spire (only behind fountain)
-      {rect:[438,258,454,348],baselineY:348,minY:245,xPad:24}, // West plaza lamp post shaft
-      {rect:[490,115,506,196],baselineY:196,minY:105,xPad:24}, // NW lamp post shaft
-      {rect:[734,115,750,196],baselineY:196,minY:105,xPad:24}, // NE lamp post shaft
-      {rect:[705,0,890,158],baselineY:172,minY:0,xPad:16},     // NE cherry tree canopy
-      {rect:[508,545,534,665],baselineY:655,minY:525,xPad:10}, // South stair left pillar (narrow)
-      {rect:[724,545,752,665],baselineY:655,minY:525,xPad:10}  // South stair right pillar (narrow)
+      {id:'centro-lamp-west',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_west.png',rect:[433.493,248.193,462.201,350.053],baselineY:348,minY:248,xPad:16},
+      {id:'centro-lamp-nw',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_nw.png',rect:[485.885,98.273,514.593,195.829],baselineY:194,minY:98,xPad:16},
+      {id:'centro-lamp-ne',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_ne.png',rect:[730.622,108.316,759.33,195.829],baselineY:194,minY:108,xPad:16},
+      {id:'centro-cherry-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/centro_cherry_canopy.png',rect:[665,0,910,145],baselineY:172,minY:0,xPad:12}
     ]
   },
   'pallet-jardins-3q':{
@@ -124,85 +113,86 @@ const MAPS={
     subtitle:'Protótipo Anime 3/4 HD · Oeste ← Centro',
     w:LOGICAL_W,h:LOGICAL_H,
     art:'assets/story/pallet/anime3q/02_jardins_bosque.png',
-    spawn:[82,235],
-    exit:[20,235],
+    spawn:[98,225],
+    exit:[20,225],
     doors:[
-      {id:'garden-cottage',at:[255,130],title:'Cabana do Bosque'}
+      {id:'garden-cottage',at:[265,132],title:'Cabana do Bosque'}
     ],
     npcs:[],
     grass:[],
     portals:[
       {
         id:'to-centro',
-        rect:[0,130,45,350],
+        rect:[0,135,45,290],
         target:'pallet-centro-3q',
-        spawn:[1130,200],
+        spawn:[1120,195],
         facing:'left',
-        marker:[38,235],
+        marker:[38,220],
         label:'← CENTRO',
         color:'#80ffaa'
       }
     ],
     walkPolys:[
-      // West cobblestone entrance
-      [[0,138],[185,225],[385,195],[385,375],[185,370],[0,275]],
-      // Cottage stone staircase & porch (Cabana do Bosque)
-      [[225,110],[320,110],[380,175],[300,210]],
-      // Upper path north of flowerbed island
-      [[185,165],[585,150],[585,228],[185,230]],
-      // Lower path south of flowerbed island
-      [[185,345],[585,345],[585,445],[185,415]],
-      // Wisteria pergola stone patio
-      [[435,105],[575,105],[585,165],[435,165]],
-      // Central north-south dirt avenue
-      [[475,145],[610,145],[610,505],[475,505]],
-      // Stone arch bridge across stream
-      [[585,222],[805,222],[805,286],[585,286]],
-      // East grassy clearing & Great Tree hollow
-      [[780,135],[1085,135],[1135,295],[780,295]],
-      // Northeast woodland trail
-      [[1055,20],[1170,20],[1145,225],[1045,225]],
-      // East garden path south of bridge & around raised flowerbed
-      [[795,280],[925,280],[925,465],[795,465]],
-      [[840,365],[1085,365],[1085,465],[840,465]],
-      // South dirt plaza & stone staircase to beach
-      [[470,455],[690,455],[690,535],[470,535]],
-      [[525,515],[685,515],[715,655],[545,655]]
+      [[0,142],[185,228],[385,195],[385,375],[185,365],[0,268]],
+      [[232,115],[315,115],[372,178],[295,210]],
+      [[185,168],[585,152],[585,228],[185,232]],
+      [[185,342],[585,342],[585,438],[185,408]],
+      [[438,108],[582,108],[588,168],[438,168]],
+      [[455,140],[602,140],[602,495],[455,495]],
+      [[575,222],[810,222],[810,282],[575,282]],
+      [[755,126],[1080,126],[1125,292],[782,292]],
+      [[1055,22],[1165,22],[1140,225],[1045,225]],
+      [[795,255],[915,255],[915,385],[795,385]],
+      [[472,455],[675,455],[675,525],[472,525]],
+      [[538,512],[672,512],[702,652],[555,652]]
     ],
-    blockPolys:[],
+    blockPolys:[
+      [[546,302],[635,302],[635,442],[546,432]]
+    ],
     blocks:[
-      [405,175,465,208], // Upper-left bench near cottage
-      [462,112,522,142], // Wisteria pergola table & stools
-      [605,200,775,224], // Bridge upper stone parapet
-      [605,282,775,310], // Bridge lower stone parapet
-      [922,282,1065,368], // SE raised square flowerbed
-      [795,290,845,322]  // East garden bench by stream
+      [402,172,468,208],
+      [452,110,502,142],
+      [600,198,780,223],
+      [600,280,780,308],
+      [792,286,848,324],
+      [918,275,1075,375]
     ],
     ellipses:[
-      {cx:345,cy:290,rx:142,ry:72}, // Central raised flowerbed island
-      {cx:965,cy:118,rx:48,ry:26}   // Great Tree trunk
+      {cx:345,cy:288,rx:140,ry:72},
+      {cx:553,cy:242,rx:45,ry:21},
+      {cx:965,cy:118,rx:52,ry:28}
     ],
     circles:[
-      {cx:64,cy:295,r:13},  // West entrance lamp post
-      {cx:552,cy:245,r:12}, // Central lamp post
-      {cx:768,cy:186,r:16}, // Pink cherry tree trunk (east of stream)
-      {cx:882,cy:205,r:15}, // Clearing flat rock 1
-      {cx:988,cy:224,r:12}, // Clearing flat rock 2
-      {cx:865,cy:332,r:12}  // East garden lamp post
+      {cx:62,cy:292,r:9},
+      {cx:553,cy:246,r:7},
+      {cx:768,cy:186,r:20},
+      {cx:882,cy:205,r:15},
+      {cx:988,cy:224,r:12},
+      {cx:868,cy:330,r:9}
     ],
     occluders:[
-      {rect:[56,215,72,298],baselineY:298,minY:205,xPad:24},   // West entrance lamp post shaft
-      {rect:[322,235,338,325],baselineY:325,minY:225,xPad:24}, // Flower island lamp post shaft
-      {rect:[544,158,560,250],baselineY:250,minY:150,xPad:24}, // Central lamp post shaft
-      {rect:[605,274,775,290],baselineY:282,minY:255,xPad:8},  // Bridge lower stone rail (feet strip only)
-      {rect:[705,70,835,172],baselineY:186,minY:60,xPad:18},   // Pink cherry tree canopy
-      {rect:[875,0,1055,112],baselineY:122,minY:0,xPad:18},    // Great Tree canopy
-      {rect:[857,245,873,335],baselineY:335,minY:235,xPad:24}, // East garden lamp post shaft
-      {rect:[482,462,498,530],baselineY:530,minY:450,xPad:14}, // South stair left lamp post
-      {rect:[688,448,704,518],baselineY:518,minY:440,xPad:14}  // South stair right lamp post
+      {id:'jardins-lamp-west',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_west.png',rect:[48.086,205.871,76.794,296.254],baselineY:294,minY:206,xPad:16},
+      {id:'jardins-lamp-central',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_central.png',rect:[538.278,152.072,566.986,248.193],baselineY:246,minY:152,xPad:16},
+      {id:'jardins-lamp-east',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_east.png',rect:[854.067,238.151,882.775,334.272],baselineY:332,minY:238,xPad:16},
+      {id:'jardins-cherry-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/jardins_cherry_canopy.png',rect:[690,62,850,168],baselineY:186,minY:62,xPad:12},
+      {id:'jardins-great-tree-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/jardins_great_tree_canopy.png',rect:[845,0,1085,92],baselineY:118,minY:0,xPad:12}
     ]
   }
 };
+
+// Preload RGBA foreground occluder masks
+const maskCache=new Map();
+function getMaskImage(src){
+  if(!src)return null;
+  if(maskCache.has(src))return maskCache.get(src);
+  const im=new Image();
+  const entry={im,loaded:false};
+  im.onload=()=>{entry.loaded=true;};
+  im.src=src;
+  maskCache.set(src,entry);
+  return entry;
+}
+Object.values(MAPS).forEach(m=>(m.occluders||[]).forEach(o=>getMaskImage(o.mask)));
 
 function isPilotMap(id){
   return !!MAPS[id];
@@ -212,17 +202,21 @@ function getMap(id){
   return MAPS[id]||null;
 }
 
-function walkable(id,x,y,r=9){
+// Structural 16-angle foot-perimeter collision check using full physical foot radius (no silent shrinking)
+function walkable(id,x,y,r=11){
   const m=MAPS[id];
   if(!m)return false;
-  const fr=Math.min(9,r); // Foot-anchored collision radius
-  if(x<fr||y<fr||x>m.w-fr||y>m.h-fr)return false;
+  const foot=Math.max(0,Number(r)||11);
+  if(x<foot||y<foot||x>m.w-foot||y>m.h-foot)return false;
   if(!inUnionPolys(x,y,m.walkPolys))return false;
-  if(!inUnionPolys(x+fr,y,m.walkPolys)||!inUnionPolys(x-fr,y,m.walkPolys)||!inUnionPolys(x,y+fr,m.walkPolys)||!inUnionPolys(x,y-fr,m.walkPolys))return false;
-  if(m.blockPolys?.some(p=>circleHitsPoly(x,y,fr,p)))return false;
-  if(m.blocks?.some(b=>rectsOverlap(x,y,fr,b)))return false;
-  if(m.ellipses?.some(e=>inEllipse(x,y,fr,e.cx,e.cy,e.rx,e.ry)))return false;
-  if(m.circles?.some(c=>inCircle(x,y,fr,c.cx,c.cy,c.r)))return false;
+  for(let i=0;i<16;i++){
+    const a=i*Math.PI/8;
+    if(!inUnionPolys(x+Math.cos(a)*foot,y+Math.sin(a)*foot,m.walkPolys))return false;
+  }
+  if(m.blockPolys?.some(p=>circleHitsPoly(x,y,foot,p)))return false;
+  if(m.blocks?.some(b=>rectsOverlap(x,y,foot,b)))return false;
+  if(m.ellipses?.some(e=>inEllipse(x,y,foot,e.cx,e.cy,e.rx,e.ry)))return false;
+  if(m.circles?.some(c=>inCircle(x,y,foot,c.cx,c.cy,c.r)))return false;
   return true;
 }
 
@@ -236,7 +230,40 @@ function checkPortal(id,x,y){
   return null;
 }
 
-// Dedicated WebGL2 renderer for 1672x941 pilot maps (zero downscaling, mipmaps, DPR up to 2.0)
+// Navigation mesh / grid connectivity analyzer (verifies zero isolated walkable islands)
+function analyzeConnectivity(id,step=6,r=11){
+  const m=MAPS[id];
+  if(!m)return null;
+  const nx=Math.ceil(m.w/step),ny=Math.ceil(m.h/step);
+  const valid=new Uint8Array(nx*ny);
+  let totalValid=0;
+  for(let y=0;y<ny;y++)for(let x=0;x<nx;x++){
+    if(walkable(id,x*step,y*step,r)){valid[y*nx+x]=1;totalValid++;}
+  }
+  const visited=new Uint8Array(nx*ny);
+  const components=[];
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  for(let y=0;y<ny;y++)for(let x=0;x<nx;x++){
+    const idx=y*nx+x;
+    if(!valid[idx]||visited[idx])continue;
+    const q=[idx];visited[idx]=1;let count=0,sample=[x*step,y*step];
+    while(q.length){
+      const cur=q.pop();count++;
+      const cx=cur%nx,cy=(cur/nx)|0;
+      for(const [dx,dy] of dirs){
+        const xx=cx+dx,yy=cy+dy;
+        if(xx<0||yy<0||xx>=nx||yy>=ny)continue;
+        const nIdx=yy*nx+xx;
+        if(valid[nIdx]&&!visited[nIdx]){visited[nIdx]=1;q.push(nIdx);}
+      }
+    }
+    components.push({cells:count,sample});
+  }
+  components.sort((a,b)=>b.cells-a.cells);
+  return {mapId:id,step,radius:r,totalValidCells:totalValid,componentCount:components.length,components};
+}
+
+// Dedicated WebGL2 renderer for 1672x941 pilot maps
 let glCanvas=null,gl=null,prog=null,quadBuf=null,contextLost=false,glVisible=false;
 const glTextures=new Map();
 
@@ -341,23 +368,71 @@ function getActiveOccluders(mapId,playerX,playerY){
     if(playerY>=occ.baselineY)return false;
     if(occ.minY!==undefined&&playerY<occ.minY)return false;
     if(px!==null){
-      const pad=occ.xPad??18;
+      const pad=occ.xPad??16;
       if(px<occ.rect[0]-pad||px>occ.rect[2]+pad)return false;
     }
     return true;
   });
 }
 
+let occludersEnabled=true;
 function drawOccluders(c,mapId,img,playerY,playerX){
-  const m=MAPS[mapId];
-  if(!m?.occluders?.length||!img?.complete||!img.naturalWidth)return;
-  const active=getActiveOccluders(mapId,playerX,playerY);
-  if(!active.length)return;
-  const sxScale=img.naturalWidth/m.w,syScale=img.naturalHeight/m.h;
-  for(const occ of active){
-    const [x1,y1,x2,y2]=occ.rect,w=x2-x1,h=y2-y1;
-    c.drawImage(img,x1*sxScale,y1*syScale,w*sxScale,h*syScale,x1,y1,w,h);
+  if(occludersEnabled){
+    const active=getActiveOccluders(mapId,playerX,playerY);
+    for(const occ of active){
+      const maskEntry=getMaskImage(occ.mask);
+      if(!maskEntry?.loaded||!maskEntry.im.naturalWidth)continue;
+      const [x1,y1,x2,y2]=occ.rect;
+      c.drawImage(maskEntry.im,0,0,maskEntry.im.naturalWidth,maskEntry.im.naturalHeight,x1,y1,x2-x1,y2-y1);
+    }
   }
+  if(debugOverlayVisible)drawDebugOverlay(c,mapId);
+}
+
+// Development-only visual collision & occlusion editor (?visual=anime3q&debug=editor)
+let debugOverlayVisible=debugEditorEnabled;
+function drawDebugOverlay(c,mapId){
+  const m=MAPS[mapId];if(!m)return;
+  c.save();
+  // Grid 50px
+  c.lineWidth=0.6;c.strokeStyle='rgba(255,255,255,0.22)';
+  for(let x=0;x<=m.w;x+=50){c.beginPath();c.moveTo(x,0);c.lineTo(x,m.h);c.stroke();}
+  for(let y=0;y<=m.h;y+=50){c.beginPath();c.moveTo(0,y);c.lineTo(m.w,y);c.stroke();}
+  // Walkable polygons (green)
+  c.fillStyle='rgba(34,197,94,0.18)';c.strokeStyle='#22c55e';c.lineWidth=1.5;
+  for(const poly of m.walkPolys){
+    c.beginPath();poly.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fill();c.stroke();
+  }
+  // Solid blockPolys & blocks (red)
+  c.fillStyle='rgba(239,68,68,0.28)';c.strokeStyle='#ef4444';
+  for(const poly of (m.blockPolys||[])){
+    c.beginPath();poly.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fill();c.stroke();
+  }
+  for(const [x1,y1,x2,y2] of (m.blocks||[])){
+    c.fillRect(x1,y1,x2-x1,y2-y1);c.strokeRect(x1,y1,x2-x1,y2-y1);
+  }
+  for(const e of (m.ellipses||[])){
+    c.beginPath();c.ellipse(e.cx,e.cy,e.rx,e.ry,0,0,Math.PI*2);c.fill();c.stroke();
+  }
+  for(const ci of (m.circles||[])){
+    c.beginPath();c.arc(ci.cx,ci.cy,ci.r,0,Math.PI*2);c.fill();c.stroke();
+  }
+  // Occluder bounds (cyan dashed)
+  c.strokeStyle='#38bdf8';c.setLineDash([4,3]);
+  for(const o of (m.occluders||[])){
+    const [x1,y1,x2,y2]=o.rect;c.strokeRect(x1,y1,x2-x1,y2-y1);
+  }
+  c.setLineDash([]);
+  // Portals (yellow)
+  c.fillStyle='rgba(250,204,21,0.25)';c.strokeStyle='#facc15';
+  for(const p of (m.portals||[])){
+    const [x1,y1,x2,y2]=p.rect;c.fillRect(x1,y1,x2-x1,y2-y1);c.strokeRect(x1,y1,x2-x1,y2-y1);
+  }
+  c.restore();
+}
+
+function exportGeometryJSON(){
+  return JSON.stringify({version:'PALLET_ANIME3Q_V4_20261115',logicalSize:[LOGICAL_W,LOGICAL_H],maps:MAPS},null,2);
 }
 
 function hide(){
@@ -371,9 +446,13 @@ W.PsyKantoAnime3Q={
   getMap,
   walkable,
   checkPortal,
+  analyzeConnectivity,
   renderBackground,
   drawOccluders,
   getActiveOccluders,
+  setOccludersEnabled:v=>{occludersEnabled=!!v;},
+  setDebugOverlay:v=>{debugOverlayVisible=!!v;},
+  exportGeometryJSON,
   hide,
   characterScale:1.56,
   followerScale:1.18

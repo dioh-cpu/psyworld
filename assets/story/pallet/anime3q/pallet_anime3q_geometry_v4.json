@@ -1,0 +1,796 @@
+{
+  "version": "PALLET_ANIME3Q_V4_20261115",
+  "logicalSize": [
+    1200,
+    675
+  ],
+  "maps": {
+    "pallet-centro-3q": {
+      "id": "pallet-centro-3q",
+      "title": "Pallet Town · Centro e Praça",
+      "subtitle": "Protótipo Anime 3/4 HD · Leste → Jardins",
+      "w": 1200,
+      "h": 675,
+      "art": "assets/story/pallet/anime3q/01_centro_residencias.png",
+      "spawn": [
+        600,
+        430
+      ],
+      "exit": [
+        1180,
+        200
+      ],
+      "doors": [
+        {
+          "id": "home",
+          "at": [
+            350,
+            222
+          ],
+          "title": "Casa de Red"
+        },
+        {
+          "id": "house-east",
+          "at": [
+            975,
+            220
+          ],
+          "title": "Casa Leste"
+        }
+      ],
+      "npcs": [],
+      "grass": [],
+      "portals": [
+        {
+          "id": "to-jardins",
+          "rect": [
+            1155,
+            130,
+            1200,
+            240
+          ],
+          "target": "pallet-jardins-3q",
+          "spawn": [
+            98,
+            225
+          ],
+          "facing": "right",
+          "marker": [
+            1165,
+            195
+          ],
+          "label": "JARDINS →",
+          "color": "#80ffaa"
+        }
+      ],
+      "walkPolys": [
+        [
+          [
+            0,
+            152
+          ],
+          [
+            135,
+            222
+          ],
+          [
+            392,
+            202
+          ],
+          [
+            542,
+            196
+          ],
+          [
+            666,
+            196
+          ],
+          [
+            895,
+            212
+          ],
+          [
+            1200,
+            132
+          ],
+          [
+            1200,
+            235
+          ],
+          [
+            930,
+            355
+          ],
+          [
+            745,
+            498
+          ],
+          [
+            522,
+            508
+          ],
+          [
+            345,
+            472
+          ],
+          [
+            185,
+            405
+          ],
+          [
+            0,
+            335
+          ],
+          [
+            0,
+            278
+          ],
+          [
+            125,
+            332
+          ],
+          [
+            138,
+            295
+          ],
+          [
+            0,
+            225
+          ]
+        ],
+        [
+          [
+            548,
+            10
+          ],
+          [
+            658,
+            10
+          ],
+          [
+            695,
+            255
+          ],
+          [
+            510,
+            255
+          ]
+        ],
+        [
+          [
+            538,
+            495
+          ],
+          [
+            716,
+            495
+          ],
+          [
+            736,
+            668
+          ],
+          [
+            526,
+            668
+          ]
+        ],
+        [
+          [
+            315,
+            186
+          ],
+          [
+            390,
+            186
+          ],
+          [
+            390,
+            224
+          ],
+          [
+            315,
+            224
+          ]
+        ]
+      ],
+      "blockPolys": [
+        [
+          [
+            395,
+            120
+          ],
+          [
+            536,
+            120
+          ],
+          [
+            536,
+            194
+          ],
+          [
+            425,
+            194
+          ]
+        ],
+        [
+          [
+            672,
+            120
+          ],
+          [
+            960,
+            120
+          ],
+          [
+            960,
+            214
+          ],
+          [
+            755,
+            214
+          ],
+          [
+            672,
+            194
+          ]
+        ]
+      ],
+      "blocks": [
+        [
+          268,
+          212,
+          355,
+          252
+        ],
+        [
+          758,
+          196,
+          840,
+          236
+        ]
+      ],
+      "ellipses": [
+        {
+          "cx": 598,
+          "cy": 312,
+          "rx": 132,
+          "ry": 74
+        }
+      ],
+      "circles": [
+        {
+          "cx": 448,
+          "cy": 348,
+          "r": 8
+        },
+        {
+          "cx": 500,
+          "cy": 192,
+          "r": 9
+        },
+        {
+          "cx": 745,
+          "cy": 192,
+          "r": 9
+        }
+      ],
+      "occluders": [
+        {
+          "id": "centro-lamp-west",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/centro_lamp_west.png",
+          "rect": [
+            433.493,
+            248.193,
+            462.201,
+            350.053
+          ],
+          "baselineY": 348,
+          "minY": 248,
+          "xPad": 16
+        },
+        {
+          "id": "centro-lamp-nw",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/centro_lamp_nw.png",
+          "rect": [
+            485.885,
+            98.273,
+            514.593,
+            195.829
+          ],
+          "baselineY": 194,
+          "minY": 98,
+          "xPad": 16
+        },
+        {
+          "id": "centro-lamp-ne",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/centro_lamp_ne.png",
+          "rect": [
+            730.622,
+            108.316,
+            759.33,
+            195.829
+          ],
+          "baselineY": 194,
+          "minY": 108,
+          "xPad": 16
+        },
+        {
+          "id": "centro-cherry-canopy",
+          "kind": "canopy",
+          "mask": "assets/story/pallet/anime3q/masks/centro_cherry_canopy.png",
+          "rect": [
+            665,
+            0,
+            910,
+            145
+          ],
+          "baselineY": 172,
+          "minY": 0,
+          "xPad": 12
+        }
+      ]
+    },
+    "pallet-jardins-3q": {
+      "id": "pallet-jardins-3q",
+      "title": "Pallet Town · Jardins e Bosque",
+      "subtitle": "Protótipo Anime 3/4 HD · Oeste ← Centro",
+      "w": 1200,
+      "h": 675,
+      "art": "assets/story/pallet/anime3q/02_jardins_bosque.png",
+      "spawn": [
+        98,
+        225
+      ],
+      "exit": [
+        20,
+        225
+      ],
+      "doors": [
+        {
+          "id": "garden-cottage",
+          "at": [
+            265,
+            132
+          ],
+          "title": "Cabana do Bosque"
+        }
+      ],
+      "npcs": [],
+      "grass": [],
+      "portals": [
+        {
+          "id": "to-centro",
+          "rect": [
+            0,
+            135,
+            45,
+            290
+          ],
+          "target": "pallet-centro-3q",
+          "spawn": [
+            1120,
+            195
+          ],
+          "facing": "left",
+          "marker": [
+            38,
+            220
+          ],
+          "label": "← CENTRO",
+          "color": "#80ffaa"
+        }
+      ],
+      "walkPolys": [
+        [
+          [
+            0,
+            142
+          ],
+          [
+            185,
+            228
+          ],
+          [
+            385,
+            195
+          ],
+          [
+            385,
+            375
+          ],
+          [
+            185,
+            365
+          ],
+          [
+            0,
+            268
+          ]
+        ],
+        [
+          [
+            232,
+            115
+          ],
+          [
+            315,
+            115
+          ],
+          [
+            372,
+            178
+          ],
+          [
+            295,
+            210
+          ]
+        ],
+        [
+          [
+            185,
+            168
+          ],
+          [
+            585,
+            152
+          ],
+          [
+            585,
+            228
+          ],
+          [
+            185,
+            232
+          ]
+        ],
+        [
+          [
+            185,
+            342
+          ],
+          [
+            585,
+            342
+          ],
+          [
+            585,
+            438
+          ],
+          [
+            185,
+            408
+          ]
+        ],
+        [
+          [
+            438,
+            108
+          ],
+          [
+            582,
+            108
+          ],
+          [
+            588,
+            168
+          ],
+          [
+            438,
+            168
+          ]
+        ],
+        [
+          [
+            455,
+            140
+          ],
+          [
+            602,
+            140
+          ],
+          [
+            602,
+            495
+          ],
+          [
+            455,
+            495
+          ]
+        ],
+        [
+          [
+            575,
+            222
+          ],
+          [
+            810,
+            222
+          ],
+          [
+            810,
+            282
+          ],
+          [
+            575,
+            282
+          ]
+        ],
+        [
+          [
+            755,
+            126
+          ],
+          [
+            1080,
+            126
+          ],
+          [
+            1125,
+            292
+          ],
+          [
+            782,
+            292
+          ]
+        ],
+        [
+          [
+            1055,
+            22
+          ],
+          [
+            1165,
+            22
+          ],
+          [
+            1140,
+            225
+          ],
+          [
+            1045,
+            225
+          ]
+        ],
+        [
+          [
+            795,
+            255
+          ],
+          [
+            915,
+            255
+          ],
+          [
+            915,
+            385
+          ],
+          [
+            795,
+            385
+          ]
+        ],
+        [
+          [
+            472,
+            455
+          ],
+          [
+            675,
+            455
+          ],
+          [
+            675,
+            525
+          ],
+          [
+            472,
+            525
+          ]
+        ],
+        [
+          [
+            538,
+            512
+          ],
+          [
+            672,
+            512
+          ],
+          [
+            702,
+            652
+          ],
+          [
+            555,
+            652
+          ]
+        ]
+      ],
+      "blockPolys": [
+        [
+          [
+            546,
+            302
+          ],
+          [
+            635,
+            302
+          ],
+          [
+            635,
+            442
+          ],
+          [
+            546,
+            432
+          ]
+        ]
+      ],
+      "blocks": [
+        [
+          402,
+          172,
+          468,
+          208
+        ],
+        [
+          452,
+          110,
+          502,
+          142
+        ],
+        [
+          600,
+          198,
+          780,
+          223
+        ],
+        [
+          600,
+          280,
+          780,
+          308
+        ],
+        [
+          792,
+          286,
+          848,
+          324
+        ],
+        [
+          918,
+          275,
+          1075,
+          375
+        ]
+      ],
+      "ellipses": [
+        {
+          "cx": 345,
+          "cy": 288,
+          "rx": 140,
+          "ry": 72
+        },
+        {
+          "cx": 553,
+          "cy": 242,
+          "rx": 45,
+          "ry": 21
+        },
+        {
+          "cx": 965,
+          "cy": 118,
+          "rx": 52,
+          "ry": 28
+        }
+      ],
+      "circles": [
+        {
+          "cx": 62,
+          "cy": 292,
+          "r": 9
+        },
+        {
+          "cx": 553,
+          "cy": 246,
+          "r": 7
+        },
+        {
+          "cx": 768,
+          "cy": 186,
+          "r": 20
+        },
+        {
+          "cx": 882,
+          "cy": 205,
+          "r": 15
+        },
+        {
+          "cx": 988,
+          "cy": 224,
+          "r": 12
+        },
+        {
+          "cx": 868,
+          "cy": 330,
+          "r": 9
+        }
+      ],
+      "occluders": [
+        {
+          "id": "jardins-lamp-west",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_lamp_west.png",
+          "rect": [
+            48.086,
+            205.871,
+            76.794,
+            296.254
+          ],
+          "baselineY": 294,
+          "minY": 206,
+          "xPad": 16
+        },
+        {
+          "id": "jardins-lamp-central",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_lamp_central.png",
+          "rect": [
+            538.278,
+            152.072,
+            566.986,
+            248.193
+          ],
+          "baselineY": 246,
+          "minY": 152,
+          "xPad": 16
+        },
+        {
+          "id": "jardins-lamp-east",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_lamp_east.png",
+          "rect": [
+            854.067,
+            238.151,
+            882.775,
+            334.272
+          ],
+          "baselineY": 332,
+          "minY": 238,
+          "xPad": 16
+        },
+        {
+          "id": "jardins-cherry-canopy",
+          "kind": "canopy",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_cherry_canopy.png",
+          "rect": [
+            690,
+            62,
+            850,
+            168
+          ],
+          "baselineY": 186,
+          "minY": 62,
+          "xPad": 12
+        },
+        {
+          "id": "jardins-great-tree-canopy",
+          "kind": "canopy",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_great_tree_canopy.png",
+          "rect": [
+            845,
+            0,
+            1085,
+            92
+          ],
+          "baselineY": 118,
+          "minY": 0,
+          "xPad": 12
+        }
+      ]
+    }
+  }
+}
