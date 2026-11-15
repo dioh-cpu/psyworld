@@ -1,24 +1,32 @@
-# 06 — VALIDAÇÃO AUTOMATIZADA E EVIDÊNCIAS VISUAIS (V5)
+# 06 — VALIDAÇÃO AUTOMATIZADA E EVIDÊNCIAS VISUAIS (V6)
 
-## 1. Conectividade Matemática em Runtime (`r = 11`, SDF Euclidiano)
-Verificação executada no Chromium real via `window.PsyKantoAnime3Q.analyzeConnectivity(..., 4, 11)` sobre os buffers `1200×675` carregados via HTTP:
-- **`pallet-centro-3q`**: `componentCount: 1` (18.794 células válidas em componente único no passo 3 offline; 100% conectado em runtime no passo 4, zero ilhas isoladas).
-- **`pallet-jardins-3q`**: `componentCount: 1` (12.145 células válidas em componente único no passo 3 offline; 100% conectado em runtime no passo 4, cruzando livremente a ponte curva e toda a trilha do bosque).
+## 1. Conectividade Matemática em Runtime (`r = 11`, 2D SDF)
+Validação executada no Chromium real via `window.PsyKantoAnime3Q.analyzeConnectivity(id, 6, 11)` para todas as **6 áreas de Pallet Town**:
+- `pallet-centro-3q`: `componentCount: 1`
+- `pallet-jardins-3q`: `componentCount: 1`
+- `pallet-lab-3q`: `componentCount: 1`
+- `pallet-costa-3q`: `componentCount: 1`
+- `pallet-colinas-3q`: `componentCount: 1`
+- `pallet-arredores-3q` (Nova Rota 1): `componentCount: 1`
 
-## 2. Verificação Estática e Física Real nos 10 Prints Reportados
-Todas as 23 coordenadas extraídas diretamente das 10 capturas do usuário (`161931`, `161942`, `161949`, `162009`, `162040`, `162045`, `162105`, `162136`, `162139`, `162143`) retornaram `walkable === false`. Em testes reais pressionando teclas direcionais (`ArrowUp`/`ArrowDown`/`ArrowLeft`/`ArrowRight`) por ~1–2s contra cada obstáculo:
-- **Mureta + vaso noroeste (Centro)**: treinador contido e deslizado mantendo `sdf >= 10.9` e `y >= 255`.
-- **Rocha e cerca sudoeste (Centro)**: treinador contido em `sdf >= 10.8`.
-- **Balaustrada oeste da escada sul (Centro)**: treinador contido em `x >= 568`.
-- **Canteiro elevado da cabana noroeste (Jardins)**: treinador contido ao sul em `y >= 220` (`y=239.72, sdf=12.79`).
-- **Travessia da Ponte Curva (Jardins)**: segurando apenas `ArrowRight` desde `(584, 260)`, o treinador atravessa suavemente todo o arco da ponte pelo contorno tangencial do SDF até `x = 983.42, y = 247.95` (`sdf = 11.05`) sem nunca pisar sobre o parapeito sul ou norte.
-- **Riacho e pedras a sudeste da ponte (Jardins)**: treinador contido fora da água (`x=840.57, y=386.14, sdf=14.01`).
-- **Balaustrada direita da escada sul (Jardins)**: treinador contido nos degraus (`x=633.96, sdf=12.38`).
-- **Transições de Portal Bidirecionais**: `Centro → Jardins` e `Jardins → Centro` funcionais sem falhas.
+## 2. Roteiro Contínuo E2E Comprovado em Chromium
+Executado em sessão contínua com gravação em vídeo (`Errors count: 0`, `404 count: 0`):
+1. **Centro (`pallet-centro-3q`) → Interior (`home`) → Saída**: entrada e retorno funcionando com `glPresent: true`.
+2. **Centro → Jardins (`pallet-jardins-3q`, `[98, 225]`) → Costa (`pallet-costa-3q`, `[1114, 74]`)**: botão contextual **PESCAR** ativo na ponta do píer (`[828, 450]`, `fishVisible: true`) e água bloqueada pelo SDF.
+3. **Costa → Colinas (`pallet-colinas-3q`, `[462, 608]`)**: exploração da pedreira/mina e retorno via portal leste para Centro (`[74, 212]`).
+4. **Centro → Laboratório (`pallet-lab-3q`, `[656, 598]`)**: Professor Carvalho renderizado com sprite completo de corpo inteiro (`professor-v33.webp`); subida integral dos **3 lances da escadaria esquerda** (`[312, 486] → [174, 336] → [546, 72]`) passando exatamente sob o oclusor RGBA do arco `"Rota 1"`.
+5. **Laboratório → Nova Rota 1 (`pallet-arredores-3q`, `[570, 598]`)**:
+   - Cercas ao redor dos canteiros (`fenceA`, `fenceB`) e rocha (`rockC`) bloqueiam passagem (`walkable === false`).
+   - Os 3 canteiros de grama alta (`grassA`, `grassB`, `grassC`) são caminháveis pelos seus vãos de entrada (`walkable === true`).
+   - Entrada no Campo C (`[945, 343]`) dispara encontro selvagem real (`#battle-screen` ativo).
+6. **Saída Norte para Viridian City e Retorno ao Laboratório**: diálogo de travessia exibido (`open: true, hasViridian: true`), botão `VOLTAR` com recuo seguro e retorno sul confirmado para `pallet-lab-3q` em `[452, 86]`.
+7. **Editor Visual V6 (`tools/collision-editor-v4.html`) e Layouts Responsivos**: seletor exibindo as 6 áreas, overlay SDF + camada de grama alta ativos, e capturas limpas em Desktop (`1280×720`), Mobile Retrato (`390×844`) e Mobile Paisagem (`844×390`).
 
 ## 3. Mídia de Validação Incluída em `MIDIA_VALIDACAO/`
-- `pilot_v5_walkthrough.mp4`: Vídeo H.264 (`1280×720`, 25 fps, `yuv420p`, `22.64s`, `4.90 MB`) cobrindo testes de colisão nos 10 locais, overlay SDF em ambos os cenários, travessia da ponte curva e transição pelos dois portais.
-- `pilot_v5_centro_desktop.png`, `pilot_v5_jardins_desktop.png`, `pilot_v5_bridge_walk.png`: Capturas limpas em Desktop (`1280×720`).
-- `pilot_v5_debug_sdf_centro.png`, `pilot_v5_debug_sdf_jardins.png`: Overlay SDF em tempo real dentro do jogo (`verde >= 11px`, `amarelo < 11px`, `vermelho = sólido`).
-- `pilot_v5_mobile_portrait.png` (`390×844`) e `pilot_v5_mobile_landscape.png` (`844×390`).
-- `pilot_v5_editor_sdf.png`: Editor Visual (`tools/collision-editor-v4.html`) exibindo a camada SDF V5 + oclusores.
+- `pilot_v6_walkthrough.mp4`: Vídeo H.264 (`yuv420p`, `960×540`, ~`128s`) percorrendo todas as 6 áreas, escadaria do Laboratório, grama alta/batalha na Nova Rota 1 e retorno.
+- `pilot_v6_01_centro_desktop.jpg` a `pilot_v6_06_rota1_desktop.jpg`: Capturas das 6 áreas em Desktop.
+- `pilot_v6_03b_lab_arch_occlusion.jpg`: Oclusão real do treinador sob o arco `"Rota 1"`.
+- `pilot_v6_06b_rota1_battle.jpg`: Batalha selvagem na Nova Rota 1.
+- `pilot_v6_debug_sdf_rota1.jpg`: Overlay SDF em tempo real na Nova Rota 1.
+- `pilot_v6_mobile_portrait.jpg` e `pilot_v6_mobile_landscape.jpg`.
+- `pilot_v6_editor_rota1.jpg`: Editor Visual V6 carregando `pallet-arredores-3q`.

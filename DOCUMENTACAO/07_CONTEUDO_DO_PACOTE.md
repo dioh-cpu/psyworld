@@ -1,4 +1,4 @@
-# 07 — MAPA DE CONTEÚDO DO PACOTE ZIP (V5)
+# 07 — MAPA DE CONTEÚDO DO PACOTE ZIP (V6)
 
 - `DOCUMENTACAO/`
   - `01_RELATORIO_COMPLETO.md`
@@ -15,14 +15,21 @@
   - `core/kanto-collision-v4.js`
   - `core/kanto-map-data-v2.js`
   - `core/follower-v47.js`
-  - `tools/build_walkmasks_v5.py`
+  - `core/hobbies-v2.js`
+  - `index.html`
+  - `tools/build_walkmasks_v6.py`
+  - `tools/build_occluders_v6.py`
   - `tools/collision-editor-v4.html`
+  - `pallet_anime3q_geometry_v6.json`
 - `ARTES/`
   - `01_centro_residencias.png` (`1672×941`)
   - `02_jardins_bosque.png` (`1672×941`)
-  - `walkmasks/centro_walkmask.png`, `walkmasks/centro_sdf.png`
-  - `walkmasks/jardins_walkmask.png`, `walkmasks/jardins_sdf.png`
-  - `masks/*.png` (9 máscaras RGBA de silhueta)
+  - `03_laboratorio.png` (`1024×576`)
+  - `04_costa_praia.png` (`1024×576`)
+  - `05_colinas_pedreiras.png` (`1024×576`)
+  - `06_arredores_rota1.png` (`1024×576`)
+  - `walkmasks/*_walkmask.png` e `walkmasks/*_sdf.png` (12 arquivos `1200×675`)
+  - `masks/*.png` (18 máscaras RGBA de primeiro plano)
 - `MIDIA_VALIDACAO/`
-  - `pilot_v5_walkthrough.mp4`
-  - Capturas PNG de validação Desktop, Ponte, Overlay SDF, Mobile Portrait/Landscape e Editor Visual V5.
+  - `pilot_v6_walkthrough.mp4`
+  - Capturas PNG de validação das 6 áreas em Desktop, oclusão sob o arco da Rota 1, batalha selvagem na grama alta, overlay SDF, Mobile Retrato/Paisagem e Editor Visual V6.

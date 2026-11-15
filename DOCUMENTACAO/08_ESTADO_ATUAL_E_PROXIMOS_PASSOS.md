@@ -1,12 +1,13 @@
 # 08 — ESTADO ATUAL E PRÓXIMOS PASSOS
 
-## Estado Atual (V5 Concluída e Validada em Chromium)
-- Branch `visual/pallet-anime3q-prototype-v1` atualizada com o motor **Pixel-Exact Walkmask + 2D Euclidean SDF V5**.
-- Todos os 10 pontos apontados nos screenshots do usuário foram vedados ao nível do pixel (`r = 11` integral, sem encolhimento de hitbox).
-- Conectividade em componente único comprovada matematicamente (`componentCount === 1`) para *Centro* e *Jardins*.
-- Deslizamento tangencial por gradiente SDF implementado em `core/kanto-world-v2.js`, mantendo zoom da V2, escala 200% do treinador da V3 e oclusão por silhueta RGBA da V4.
-- `main` e o jogo de produção permanecem intactos; publicação isolada em Preview na Vercel com `?visual=anime3q`.
+## Estado Atual (V6 Concluída e Validada em Chromium + Preview Vercel)
+- Branch isolada `visual/pallet-anime3q-prototype-v1` atualizada com todas as **6 áreas de Pallet Town** + **Nova Rota 1** totalmente jogáveis via **Pixel-Exact Walkmask + 2D Euclidean SDF V6**.
+- Conectividade em componente único (`componentCount === 1`, `PLAYER_RADIUS = 11`) validada em todos os 6 cenários.
+- 15 transições/portais configurados com retorno bidirecional, spawns seguros (`sdf >= 20.5`), subida pela escadaria esquerda do Laboratório sob o arco RGBA `"Rota 1"` e acesso real à Viridian City.
+- Nova Rota 1 integrada ao sistema de batalhas selvagens (`isRoute1: true`), com 3 canteiros de grama alta acessíveis por vãos nas cercas, além de zonas de Pesca e Mineração integradas em `core/hobbies-v2.js`.
+- Sprite do Professor Carvalho corrigido para corpo inteiro (`assets/kanto/npcs/professor-v33.webp`) no overworld do Laboratório.
+- `main` e o jogo de produção permanecem 100% intactos; distribuição em Preview isolada na Vercel (`?visual=anime3q`).
 
 ## Próximos Passos Sugeridos
-1. Replicar o pipeline `build_walkmasks_v5.py` + 2D SDF para as próximas áreas HD de Pallet Town (Distrito do Laboratório, Costa Sul, Saída Norte e Interiores).
-2. Caso ajustes milimétricos futuros sejam desejados em algum obstáculo específico, basta editar o polígono em `tools/build_walkmasks_v5.py` e rodar `python3 tools/build_walkmasks_v5.py` para regenerar automaticamente os SDFs e verificar conectividade antes do deploy.
+1. Caso deseje refinar qualquer contorno específico após testes adicionais em campo, ajuste o polígono em `tools/build_walkmasks_v6.py`, execute `python3 tools/build_walkmasks_v6.py` e valide `componentCount === 1` antes de publicar nova revisão.
+2. Utilizar a mesma metodologia (Walkmask `1200×675` + 2D SDF + oclusores RGBA) caso a adaptação Anime HD 3/4 seja expandida no futuro para Viridian City ou rota norte seguinte.

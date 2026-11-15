@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PSYWORLD — Pallet Anime 3/4 V4 — Visual Collision & Occlusion Editor</title>
+  <title>PSYWORLD — Pallet Anime 3/4 V6 — Visual Collision & Occlusion Editor</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -78,21 +78,26 @@
 </head>
 <body>
   <div id="sidebar">
-    <h1>PSYWORLD — Editor de Geometria V4 / SDF V5</h1>
+    <h1>PSYWORLD — Editor de Geometria & SDF V6 (6 Áreas)</h1>
     <div class="row">
       <label>Cenário:</label>
       <select id="areaSelect">
         <option value="pallet-centro-3q">01 — Centro e Residências</option>
         <option value="pallet-jardins-3q">02 — Jardins e Bosque</option>
+        <option value="pallet-lab-3q">03 — Laboratório do Prof. Carvalho</option>
+        <option value="pallet-costa-3q">04 — Costa e Praia</option>
+        <option value="pallet-colinas-3q">05 — Colinas e Pedreiras</option>
+        <option value="pallet-arredores-3q">06 — Arredores e Nova Rota 1</option>
       </select>
     </div>
     <div class="row">
-      <label><input type="checkbox" id="chkSdf" checked /> SDF V5 (r=11)</label>
+      <label><input type="checkbox" id="chkSdf" checked /> SDF (r=11)</label>
       <label><input type="checkbox" id="chkGrid" checked /> Grade 50px</label>
-      <label><input type="checkbox" id="chkWalk" /> WalkPolys V4</label>
-      <label><input type="checkbox" id="chkBlock" /> Colisões V4</label>
+      <label><input type="checkbox" id="chkWalk" /> WalkPolys</label>
+      <label><input type="checkbox" id="chkBlock" /> Colisões</label>
       <label><input type="checkbox" id="chkOcc" checked /> Oclusores</label>
       <label><input type="checkbox" id="chkPortals" checked /> Portais</label>
+      <label><input type="checkbox" id="chkGrass" checked /> Grama Alta</label>
     </div>
     <div class="row">
       <button id="btnModeInspect" class="active">Inspecionar / Testar Raio (r=11)</button>
@@ -105,6 +110,7 @@
       <div><span class="badge" style="background:#facc15"></span>Margem de Contato (0 &lt; dist &lt; 11px)</div>
       <div><span class="badge" style="background:#ef4444"></span>Obstáculo Sólido (dist = 0)</div>
       <div><span class="badge" style="background:#38bdf8"></span>Occluders (Linha base splitY + Silhueta)</div>
+      <div><span class="badge" style="background:#10b981"></span>Grama Alta (Nova Rota 1)</div>
       <div id="cursorInfo" style="margin-top:6px;color:#38bdf8;font-weight:600;">Cursor: (0, 0)</div>
     </div>
     <div class="row">
@@ -138,13 +144,19 @@
     }
 
     function sdfFileForArea(id) {
-      return id === 'pallet-centro-3q'
-        ? '../assets/story/pallet/anime3q/walkmasks/centro_sdf.png'
-        : '../assets/story/pallet/anime3q/walkmasks/jardins_sdf.png';
+      const files = {
+        'pallet-centro-3q': 'centro_sdf.png',
+        'pallet-jardins-3q': 'jardins_sdf.png',
+        'pallet-lab-3q': 'lab_sdf.png',
+        'pallet-costa-3q': 'costa_sdf.png',
+        'pallet-colinas-3q': 'colinas_sdf.png',
+        'pallet-arredores-3q': 'rota1_sdf.png'
+      };
+      return '../assets/story/pallet/anime3q/walkmasks/' + (files[id] || 'centro_sdf.png');
     }
 
     async function init() {
-      const res = await fetch('../assets/story/pallet/anime3q/pallet_anime3q_geometry_v4.json');
+      const res = await fetch('../assets/story/pallet/anime3q/pallet_anime3q_geometry_v6.json');
       geoData = await res.json();
       loadArea(currentArea);
     }
@@ -345,6 +357,17 @@
         }
       }
 
+      if (document.getElementById('chkGrass').checked) {
+        ctx.strokeStyle = '#10b981';
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+        ctx.lineWidth = 2;
+        for (const g of (area.grass || [])) {
+          const [x1, y1, x2, y2] = g.rect;
+          ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+          ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        }
+      }
+
       if (draftPoly.length > 0) {
         ctx.strokeStyle = '#f472b6';
         ctx.lineWidth = 2;
@@ -385,7 +408,7 @@
     });
 
     areaSelect.addEventListener('change', () => loadArea(areaSelect.value));
-    ['chkSdf', 'chkGrid', 'chkWalk', 'chkBlock', 'chkOcc', 'chkPortals'].forEach(id => {
+    ['chkSdf', 'chkGrid', 'chkWalk', 'chkBlock', 'chkOcc', 'chkPortals', 'chkGrass'].forEach(id => {
       document.getElementById(id).addEventListener('change', render);
     });
 
