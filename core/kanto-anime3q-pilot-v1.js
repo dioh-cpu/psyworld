@@ -900,6 +900,35 @@ async function exportBrush(){
   await downloadGray(sdf,`${brushActiveMap}_sdf.png`);
   setStatus(`Exportado OK: ${brushActiveMap} (1200x675, 0 diverg.)`);
 }
+async function exportAllBrush(){
+  const B=W.PsyAnime3QBrush;
+  if(!B)return;
+  const targets=[];
+  for(const mapId of Object.keys(MAPS)){
+    const ed=brushEditors.get(mapId);
+    const rec=brushDrafts.get(mapId);
+    if(ed&&(mapId===brushActiveMap||rec)){
+      targets.push({mapId,walk:ed.walkCopy(),walkL:ed.walkL(),sdf:ed.sdfU8()});
+    }else if(rec?.walk){
+      const tmp=B.create(LOGICAL_W,LOGICAL_H,rec.walk);
+      targets.push({mapId,walk:tmp.walkCopy(),walkL:tmp.walkL(),sdf:tmp.sdfU8()});
+    }
+  }
+  if(!targets.length){setStatus('Edite ou abra um mapa antes de exportar tudo');return;}
+  for(const t of targets){
+    const v=B.verifyPair(t.walk,t.sdf);
+    if(!v.ok){setStatus(`Erro em ${t.mapId}: ${v.diff} px divergentes`);return;}
+  }
+  setStatus(`Exportando ${targets.length} mapa(s)...`);
+  for(let i=0;i<targets.length;i++){
+    const t=targets[i];
+    await downloadGray(t.walkL,`${t.mapId}_walkmask.png`);
+    await new Promise(r=>setTimeout(r,220));
+    await downloadGray(t.sdf,`${t.mapId}_sdf.png`);
+    if(i<targets.length-1)await new Promise(r=>setTimeout(r,220));
+  }
+  setStatus(`Exportar Tudo OK: ${targets.length} mapa(s) (${targets.length*2} arquivos)`);
+}
 async function publishBrush(){
   const B=W.PsyAnime3QBrush;
   if(!B)return;
@@ -1032,6 +1061,7 @@ function mountBrushPanel(){
       '<button data-a="zreset" title="Centralizar no treinador">Centro</button>'+
       '<button data-a="import">Importar</button>'+
       '<button data-a="export">Exportar</button>'+
+      '<button data-a="exportAll" title="Baixar walkmask e SDF de todos os mapas editados">Exportar Tudo</button>'+
       '<button data-a="publish" title="Publicar rascunhos na branch">Publicar</button>'+
       '<button data-a="save">Salvar</button>'+
       '<button data-a="restore">Restaurar</button>'+
@@ -1107,6 +1137,7 @@ function mountBrushPanel(){
   act('import').onclick=()=>{const f=act('file');f.value='';f.click();};
   act('file').onchange=e=>importBrushFiles(e.target.files);
   act('export').onclick=exportBrush;
+  act('exportAll').onclick=exportAllBrush;
   act('publish').onclick=publishBrush;
   act('save').onclick=()=>{if(brushActiveMap)scheduleDraftSave(brushActiveMap,true);};
   act('restore').onclick=()=>{
@@ -1149,6 +1180,7 @@ function updateBrushPanel(){
   on('erase',brushMode==='erase');
   on('sdf',debugOverlayVisible);
   brushPanel.querySelector('[data-a="export"]').disabled=!ed;
+  brushPanel.querySelector('[data-a="exportAll"]').disabled=!ed&&!brushDrafts.size;
   brushPanel.querySelector('[data-a="publish"]').disabled=!ed&&!brushDrafts.size;
   brushPanel.querySelector('[data-a="import"]').disabled=!ed;
   brushPanel.querySelector('[data-a="save"]').disabled=!ed;
