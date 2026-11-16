@@ -225,53 +225,69 @@ def build_colinas_mask():
 
     # 1. East Village Road (Colinas East <-> Centro West)
     add_thick_path(d, [
-        (1200, 290), (1095, 272), (1020, 256), (960, 295),
-        (915, 345), (890, 382)
-    ], half_width=34)
+        (1200, 290), (1095, 272), (1020, 256), (995, 295),
+        (955, 335), (890, 382)
+    ], half_width=32)
 
-    # 2. Upper Mine Gantry Terrace & Rails + Ramp
+    # 2. Upper Mine Gantry Terrace & Rails + Ramp from East Road
     add_thick_path(d, [
-        (1015, 255), (975, 202), (935, 168), (860, 154), (765, 150), (630, 150)
-    ], half_width=28)
-    d.polygon([(705, 222), (895, 222), (915, 280), (695, 280)], fill=255)
-    add_thick_path(d, [(875, 248), (945, 255), (1005, 258)], half_width=24)
+        (1015, 255), (995, 205), (945, 168), (860, 154), (765, 150), (630, 150)
+    ], half_width=24)
+
+    # 2b. Lower Mine Entrance Clearing (accessed from East Road via x=900..960, y=320..350)
+    add_thick_path(d, [
+        (960, 340), (910, 332), (850, 324), (785, 305), (735, 295)
+    ], half_width=22)
 
     # 3. Lower Quarry Road across East Stairs <-> Stone Arch Bridge <-> West Cabin Plaza
-    d.polygon([(835, 338), (935, 338), (935, 405), (835, 405)], fill=255)
+    d.polygon([(835, 350), (935, 350), (935, 405), (835, 405)], fill=255)
     add_thick_path(d, [
         (870, 382), (760, 402), (620, 405), (510, 376),
-        (445, 366), (370, 368), (295, 355), (210, 332), (135, 290)
-    ], half_width=25)
+        (445, 366), (370, 368), (295, 355), (210, 325), (145, 285)
+    ], half_width=22)
 
-    d.polygon([(140, 230), (390, 230), (390, 365), (140, 365)], fill=255)
-    d.polygon([(320, 255), (410, 255), (410, 320), (320, 320)], fill=255)
+    # West Cabin Plaza (strictly south of the porch/fence y=285, north of cliff fence y=340)
+    d.polygon([(145, 280), (390, 280), (390, 352), (145, 352)], fill=255)
 
-    # 4. Northwest Mountain Trail & Lookout Stairs
+    # 4. Northwest Mountain Trail & Lookout Stairs (kept strictly on stone path)
     add_thick_path(d, [
-        (138, 255), (142, 195), (125, 145), (115, 100),
-        (165, 72), (245, 48), (285, 0)
-    ], half_width=24)
+        (145, 280), (142, 205), (125, 145), (122, 102),
+        (165, 72), (240, 48), (275, 0)
+    ], half_width=19)
 
     # 5. South Double Coastal Staircase -> Sandy Beach Exit (Colinas South <-> Costa NW)
     add_thick_path(d, [
         (332, 368), (338, 442), (398, 502), (415, 565),
         (472, 622), (482, 675)
-    ], half_width=26)
+    ], half_width=24)
     d.polygon([(440, 622), (535, 622), (535, 675), (440, 675)], fill=255)
 
     # --- SOLID OBSTACLES CARVED OUT ---
-    d.polygon([(185, 125), (415, 125), (415, 275), (240, 275), (185, 225)], fill=0)
+    # Posto dos Mineradores cabin + fenced porch (Screenshot 021912)
+    d.polygon([(175, 120), (415, 120), (415, 285), (175, 285)], fill=0)
+    # Upper-left cliff rocks above NW trail (Screenshot 021918)
+    d.polygon([(0, 0), (105, 0), (105, 115), (0, 115)], fill=0)
+    # West cliff wooden fence & rocks (Screenshot 021907)
+    d.polygon([(0, 325), (255, 362), (255, 435), (0, 435)], fill=0)
+    # East-upper buildings & bushes
     d.polygon([(1018, 75), (1200, 75), (1200, 228), (1065, 228), (1018, 180)], fill=0)
     d.polygon([(1125, 335), (1200, 335), (1200, 455), (1125, 455)], fill=0)
 
+    # Upper-middle & upper-right cliff + fence above mine entrance (Screenshots 021827, 021830)
+    d.polygon([(620, 175), (955, 200), (955, 265), (620, 255)], fill=0)
+    # Lamp post & rock/log near east road (Screenshot 021837)
+    d.ellipse([950, 258, 982, 288], fill=0)
+    d.ellipse([1098, 332, 1126, 354], fill=0)
+    # Mossy boulder & rock cluster right of mine entrance (Screenshot 021839)
+    d.polygon([(830, 265), (890, 265), (890, 305), (830, 305)], fill=0)
+    d.polygon([(645, 295), (765, 295), (765, 365), (645, 365)], fill=0)
+
+    # Center waterfall & bridge railings
     d.polygon([(385, 285), (535, 285), (535, 342), (385, 342)], fill=0)
     d.polygon([(388, 392), (518, 392), (518, 490), (415, 490), (388, 445)], fill=0)
 
-    d.ellipse([958, 266, 974, 282], fill=0)
-    d.ellipse([1098, 332, 1126, 354], fill=0)
-    d.polygon([(645, 295), (865, 295), (865, 365), (645, 365)], fill=0)
-    d.polygon([(745, 182), (915, 190), (915, 212), (745, 204)], fill=0)
-    d.rectangle([820, 266, 895, 288], fill=0)
+    # Bottom-center wooden fence & coastal cliff edge (Screenshot 021853)
+    d.polygon([(530, 428), (860, 428), (860, 540), (530, 540)], fill=0)
 
     return im
 
