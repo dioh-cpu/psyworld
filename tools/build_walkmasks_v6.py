@@ -482,6 +482,18 @@ def main():
         }
     print(json.dumps(summary, indent=2))
 
+    # Regressao por coordenada: roda sobre os SDFs recem-gravados (so se o build nao foi filtrado).
+    if not only:
+        import obstacle_regression
+        saved = sys.argv
+        sys.argv = [sys.argv[0]]
+        try:
+            code = obstacle_regression.main()
+        finally:
+            sys.argv = saved
+        if code:
+            sys.exit(code)
+
 
 if __name__ == "__main__":
     main()

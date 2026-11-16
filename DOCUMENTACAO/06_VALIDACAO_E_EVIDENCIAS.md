@@ -40,3 +40,12 @@ Executado em sessão contínua com gravação em vídeo (`Errors count: 0`, `404
 - Inspeção visual em *tiles* de 20px (`tools/render_audit_tiles.py lab 3 3 --edge` e `colinas 3 3 --edge`) confirmando `SDF < 11` em todos os 11 pontos das capturas enviadas.
 - `python3 tools/build_walkmasks_v6.py`: `components_r11_count === 1` em todas as 6 áreas.
 - `test_anime3q_v6.mjs` no Chromium: `Errors count: 0`, `404 count: 0`, subida completa da escadaria esquerda do Laboratório (`(312, 486)` -> `(192, 342)` -> `(546, 72)`) e passagem para `pallet-arredores-3q`.
+
+## Validação V6.3 (Regressão 22/22 + Editor de Pincel no Chromium Desktop & Mobile)
+- `python3 tools/build_walkmasks_v6.py`: `components_r11_count === 1` em todas as 6 áreas + `22/22 pontos OK, 0 falha(s)` em `tools/obstacle_regression.py`.
+- `test_editor_brush.mjs` no Chromium:
+  - Modo normal (`?visual=anime3q`): painel `#a3q-brush-panel` ausente (`false`).
+  - Modo editor (`?visual=anime3q&debug=editor`, Desktop `1280×800`): **Borracha** bloqueia terreno (`zeroBefore: 1522 -> 1647`), treinador permanece imóvel em `(600, 430)`, **Desfazer** restaura `1522`, **Pincel** restaura caminhabilidade (`1522`), **Exportar** baixa `pallet-centro-3q_walkmask.png` e `pallet-centro-3q_sdf.png`.
+  - Mobile Touch (`390×844`, `hasTouch: true`): toque no painel e traço na tela funcionais (`1522 -> 1550`, `canUndo: true`).
+  - `Errors count: 0` no gameplay normal (`test_anime3q_v6.mjs`) e no modo editor (`test_editor_brush.mjs`).
+

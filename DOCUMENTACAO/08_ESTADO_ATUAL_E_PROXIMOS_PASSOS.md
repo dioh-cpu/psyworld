@@ -17,3 +17,8 @@
 
 ## Estado V6.2
 - Correção estrutural completa das colisões da escadaria esquerda do Laboratório até a Rota 1, jardim experimental, caixotes, postes e via nordeste, além do muro de pedra e tronco caído das Colinas, validada em *tiles* de 20px e E2E no Chromium.
+
+## Estado V6.3
+- Suíte de regressão por coordenada (`tools/obstacle_regression.py` + `tools/obstacle_regression.json`, 22 pontos) integrada a `tools/build_walkmasks_v6.py`.
+- Editor de pincel de walkmask ao vivo (`core/anime3q-walkmask-brush.js`, painel `#a3q-brush-panel`) integrado ao piloto e validado no Chromium Desktop e Mobile exclusivamente sob `?visual=anime3q&debug=editor`.
+

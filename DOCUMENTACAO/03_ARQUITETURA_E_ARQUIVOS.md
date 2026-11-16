@@ -19,3 +19,9 @@
 - `tools/render_audit_tiles.py`: Gerador de tiles 3×3 ampliados com grade de 20px e contornos `--edge` (vermelho = borda da máscara; ciano = limite `SDF >= 11`).
 - `core/hobbies-v2.js`: Zonas `WATER['pallet-costa-3q']` ampliadas para cobrir todo o píer de pesca (`[960,440,90]`, `[1080,470,95]`).
 - `core/kanto-anime3q-pilot-v1.js`: Spawn `colinas-to-lab` ajustado para `[452,108]` (`SDF=16.0`).
+
+### Adições V6.3
+- `tools/obstacle_regression.py` e `tools/obstacle_regression.json`: Suíte de regressão com 22 pontos (spawns, obstáculos sólidos e escadaria do Lab) executada automaticamente ao final de `tools/build_walkmasks_v6.py`.
+- `core/anime3q-walkmask-brush.js`: Núcleo de edição de walkmask e recálculo 2D EDT/SDF em JavaScript (`computeEdt`, `sdfToU8`, `createEditor`), carregado sob demanda apenas em `?visual=anime3q&debug=editor`.
+- `core/kanto-anime3q-pilot-v1.js` e `core/kanto-world-v2.js`: Painel `#a3q-brush-panel`, preview ao vivo (`SDF=11` ciano) e interceptação de ponteiro (`brushActive` / `brushPointer`) em `touchStart`/`touchMove`/`touchEnd`/`touchCancel`.
+

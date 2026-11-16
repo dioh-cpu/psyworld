@@ -754,6 +754,118 @@ function drawOccluders(c,mapId,img,playerY,playerX){
   if(debugOverlayVisible)drawDebugOverlay(c,mapId);
 }
 
+
+// ---- Editor de walkmask (somente ?visual=anime3q&debug=editor) -------------
+// Pincel/Borracha alteram a walkmask em memoria, recalculam o SDF e atualizam a
+// colisao do jogo (sdfDist le entry.buf). Exportar baixa walkmask e SDF.
+const brushEditors=new Map();   // mapId -> editor
+const brushPreviews=new Map();  // mapId -> canvas de preview
+const brushLoading=new Set();
+let brushOn=false, brushActiveMap=null, brushPanel=null, brushTool='paint', brushRadius=6;
+function brushPreviewFor(mapId){
+  if(!debugEditorEnabled)return null;
+  return brushPreviews.get(mapId)||null;
+}
+function ensureBrushLib(){
+  if(W.PsyAnime3QBrush)return Promise.resolve(W.PsyAnime3QBrush);
+  return new Promise((res,rej)=>{
+    const sc=D.createElement('script');
+    sc.src='core/anime3q-walkmask-brush.js';
+    sc.onload=()=>res(W.PsyAnime3QBrush);
+    sc.onerror=()=>rej(new Error('core/anime3q-walkmask-brush.js nao carregou'));
+    D.head.appendChild(sc);
+  });
+}
+function openBrushEditor(mapId){
+  const m=MAPS[mapId];
+  if(!m?.walkmask||!m?.sdf||brushLoading.has(mapId))return;
+  brushLoading.add(mapId);
+  ensureBrushLib().then(B=>B.loadWalkFromUrl(m.walkmask).then(walk=>{
+    const cv=D.createElement('canvas');cv.width=LOGICAL_W;cv.height=LOGICAL_H;
+    const cx=cv.getContext('2d');
+    brushPreviews.set(mapId,cv);
+    const ed=B.createEditor({
+      mapId,walk,
+      onSdf:u8=>{const e=getSdfEntry(m.sdf);if(e){e.buf=u8;e.debugCanvas=null;}},
+      onPreview:rgba=>{const img=cx.createImageData(LOGICAL_W,LOGICAL_H);img.data.set(rgba);cx.putImageData(img,0,0);}
+    });
+    ed.setTool(brushTool);ed.setRadius(brushRadius);
+    brushEditors.set(mapId,ed);
+    ed.refresh();
+    updateBrushPanel();
+  })).catch(err=>{console.warn('Anime3Q editor:',err);brushLoading.delete(mapId);});
+}
+// Chamado por kanto-world-v2.js em touchStart/touchMove/touchEnd.
+// Retorna true quando o ponteiro pertence ao editor (o jogador nao deve andar).
+function brushPointer(kind,pid,pt,mapId){
+  if(!debugEditorEnabled||!brushOn||!MAPS[mapId])return false;
+  brushActiveMap=mapId;
+  const ed=brushEditors.get(mapId);
+  if(!ed){openBrushEditor(mapId);return true;}
+  if(kind==='down')ed.begin(pid,pt.x,pt.y);
+  else if(kind==='move')ed.move(pid,pt.x,pt.y);
+  else if(kind==='up'){ed.end(pid);updateBrushPanel();}
+  return true;
+}
+function downloadGray(u8,name){
+  const cv=D.createElement('canvas');cv.width=LOGICAL_W;cv.height=LOGICAL_H;
+  const cx=cv.getContext('2d');const img=cx.createImageData(LOGICAL_W,LOGICAL_H);
+  for(let i=0,p=0;i<u8.length;i++,p+=4){img.data[p]=img.data[p+1]=img.data[p+2]=u8[i];img.data[p+3]=255;}
+  cx.putImageData(img,0,0);
+  cv.toBlob(b=>{
+    const a=D.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  },'image/png');
+}
+function exportBrush(){
+  const ed=brushEditors.get(brushActiveMap);
+  if(!ed)return;
+  downloadGray(ed.walkL(),`${brushActiveMap}_walkmask.png`);
+  downloadGray(ed.sdfU8(),`${brushActiveMap}_sdf.png`);
+}
+function mountBrushPanel(){
+  if(!debugEditorEnabled||brushPanel)return;
+  brushPanel=D.createElement('div');
+  brushPanel.id='a3q-brush-panel';
+  brushPanel.style.cssText='position:fixed;left:8px;top:62px;z-index:2147483647;background:#0b1d3a;border:2px solid #facc15;border-radius:10px;padding:8px;font:13px system-ui,sans-serif;color:#f8fafc;display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:94vw;';
+  brushPanel.innerHTML=
+    '<button data-a="paint">Pincel</button>'+
+    '<button data-a="erase">Borracha</button>'+
+    '<button data-a="undo">Desfazer</button>'+
+    '<button data-a="export">Exportar</button>'+
+    '<label>raio <input data-a="radius" type="range" min="2" max="40" value="6" style="width:90px"></label>'+
+    '<span data-a="status" style="opacity:.85"></span>';
+  brushPanel.querySelectorAll('button').forEach(b=>{
+    b.style.cssText='padding:6px 10px;border-radius:6px;border:1px solid #38bdf8;background:#13294b;color:#f8fafc;touch-action:manipulation;';
+  });
+  const act=a=>brushPanel.querySelector(`[data-a="${a}"]`);
+  const setTool=t=>{
+    if(brushOn&&brushTool===t){brushOn=false;}
+    else{brushOn=true;brushTool=t;brushEditors.get(brushActiveMap)?.setTool(t);}
+    updateBrushPanel();
+  };
+  act('paint').onclick=()=>setTool('paint');
+  act('erase').onclick=()=>setTool('erase');
+  act('undo').onclick=()=>{brushEditors.get(brushActiveMap)?.undo();updateBrushPanel();};
+  act('export').onclick=exportBrush;
+  act('radius').oninput=e=>{brushRadius=+e.target.value;brushEditors.get(brushActiveMap)?.setRadius(brushRadius);};
+  (D.getElementById('psy-kanto-world-v2')||D.body).appendChild(brushPanel);
+  updateBrushPanel();
+}
+function updateBrushPanel(){
+  if(!brushPanel)return;
+  const host=D.getElementById('psy-kanto-world-v2');
+  if(host&&brushPanel.parentNode!==host)host.appendChild(brushPanel);
+  const ed=brushEditors.get(brushActiveMap);
+  const st=brushPanel.querySelector('[data-a="status"]');
+  const on=(a,v)=>{const b=brushPanel.querySelector(`[data-a="${a}"]`);b.style.background=v?'#facc15':'#13294b';b.style.color=v?'#0b1d3a':'#f8fafc';};
+  on('paint',brushOn&&brushTool==='paint');
+  on('erase',brushOn&&brushTool==='erase');
+  brushPanel.querySelector('[data-a="export"]').disabled=!ed;
+  brushPanel.querySelector('[data-a="undo"]').disabled=!ed?.canUndo();
+  st.textContent=ed?`${brushActiveMap} | ${brushOn?'editando':'parado'} | SDF=11 ciano`:'Ande ate um mapa Anime3Q para editar';
+}
+
 // Development-only visual collision & occlusion editor (?visual=anime3q&debug=editor)
 let debugOverlayVisible=debugEditorEnabled;
 function getSdfDebugCanvas(mapId){
@@ -778,8 +890,9 @@ function getSdfDebugCanvas(mapId){
 }
 function drawDebugOverlay(c,mapId){
   const m=MAPS[mapId];if(!m)return;
+  if(debugEditorEnabled&&brushPanel&&brushPanel.parentNode===D.body){const h=D.getElementById('psy-kanto-world-v2');if(h)h.appendChild(brushPanel);}
   c.save();
-  const dbg=getSdfDebugCanvas(mapId);
+  const dbg=brushPreviewFor(mapId)||getSdfDebugCanvas(mapId);
   if(dbg){
     c.drawImage(dbg,0,0,LOGICAL_W,LOGICAL_H);
   }else if(m.walkPolys?.length){
@@ -824,6 +937,7 @@ function hide(){
   if(glCanvas&&glVisible){glCanvas.style.display='none';glVisible=false;}
 }
 
+if(debugEditorEnabled){D.readyState==='loading'?D.addEventListener('DOMContentLoaded',mountBrushPanel):mountBrushPanel();}
 W.PsyKantoAnime3Q={
   version:6,
   isEnabled:()=>enabled,
@@ -845,6 +959,8 @@ W.PsyKantoAnime3Q={
   getActiveOccluders,
   setOccludersEnabled:v=>{occludersEnabled=!!v;},
   setDebugOverlay:v=>{debugOverlayVisible=!!v;},
+  brushPointer,
+  brushActive:()=>debugEditorEnabled&&brushOn,
   exportGeometryJSON,
   hide,
   characterScale:1.56,

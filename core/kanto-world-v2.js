@@ -569,6 +569,7 @@ mark('viridian');try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')
 showDialog('Viridian City','Você atravessou a Rota 1! A entrada de Viridian está desbloqueada. Conheça a Escola de Treinadores e procure a passagem para a Rota 2.',[{text:'ENTRAR EM VIRIDIAN',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('viridian')}},{text:'VOLTAR',run:()=>{if(state.world?.isRoute1&&state.position.y<40){state.position.y=48;state.portalCooldownUntil=performance.now()+1500;}}}]);}
 function touchCoords(e){const r=state.canvas.getBoundingClientRect();const cam=camera();return {x:(e.clientX-r.left)*(cam.w/r.width)/cam.scale-cam.ox/cam.scale,y:(e.clientY-r.top)*(cam.h/r.height)/cam.scale-cam.oy/cam.scale}}
 function touchStart(e){if(e.target!==state.canvas||state.dialogOpen||state.huntRiftFrozen||state.touch)return;
+ if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('down',e.pointerId,touchCoords(e),state.world?.id)){e.preventDefault();state.canvas.setPointerCapture?.(e.pointerId);draw();return;}
  const point=touchCoords(e),room=state.inside?.id;
  if(room&&['home','house-east','house-west'].includes(room)){
    const idx=W.PsyHobbies?.decorAt?.(room,point.x,point.y)??-1;
@@ -576,10 +577,11 @@ function touchStart(e){if(e.target!==state.canvas||state.dialogOpen||state.huntR
  }
 W.PsyCampaignAutomation?.cancelRoute?.();autoHunt=false;e.preventDefault();const t=point;state.touch={id:e.pointerId,x:e.clientX,y:e.clientY,tx:t.x,ty:t.y,t:performance.now(),drag:false,rect:state.canvas.getBoundingClientRect()};state.pendingHobby=null;state.pendingRiftTarget=null;state.navRequest++;state.canvas.setPointerCapture?.(e.pointerId);state.path=[]}
 function touchMove(e){
+ if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('move',e.pointerId,touchCoords(e),state.world?.id)){e.preventDefault();draw();return;}
  if(state.decorDrag?.id===e.pointerId){e.preventDefault();const pt=touchCoords(e);W.PsyHobbies?.moveDecor?.(state.decorDrag.index,pt.x,pt.y,state.inside,false);draw();return;}
  const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();let dx=e.clientX-t.x,dy=e.clientY-t.y;const distance=Math.hypot(dx,dy);if(distance>72){t.x+=dx/distance*(distance-72);t.y+=dy/distance*(distance-72);dx=e.clientX-t.x;dy=e.clientY-t.y;}if(Math.hypot(dx,dy)>7)t.drag=true;if(t.drag){const d=Math.max(1,Math.hypot(dx,dy));state.joy=W.PsyTouchStick.vector(dx,dy);const stick=state.root.querySelector('.kw2-joystick'),r=t.rect;stick.style.left=(t.x-r.left)+'px';stick.style.top=(t.y-r.top)+'px';stick.style.display='block';stick.style.setProperty('--jx',Math.round((dx/d*Math.min(30,d)))+'px');stick.style.setProperty('--jy',Math.round((dy/d*Math.min(30,d)))+'px')}}
 function resetTouch(){state.joy=null;state.touch=null;state.held.clear();const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';}
-function touchCancel(e){if(state.decorDrag?.id===e.pointerId)state.decorDrag=null;if(state.touch?.id===e.pointerId)resetTouch();}
+function touchCancel(e){if(W.PsyKantoAnime3Q?.brushActive?.())W.PsyKantoAnime3Q.brushPointer('up',e.pointerId,{x:0,y:0},state.world?.id);if(state.decorDrag?.id===e.pointerId)state.decorDrag=null;if(state.touch?.id===e.pointerId)resetTouch();}
 function queueHobbyApproach(scene,node){
  const actor=state.position,request=++state.navRequest,pending={scene,id:node.id,searching:true};state.pendingHobby=pending;state.path=[];
  const base=Math.atan2(actor.y-node.y,actor.x-node.x),turns=[0,1,-1,2,-2,3,-3,4];
@@ -596,6 +598,7 @@ function queueHobbyApproach(scene,node){
  })();
 }
 function touchEnd(e){
+ if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('up',e.pointerId,touchCoords(e),state.world?.id)){e.preventDefault();draw();return;}
  if(state.decorDrag?.id===e.pointerId){e.preventDefault();const pos=touchCoords(e);W.PsyHobbies?.moveDecor?.(state.decorDrag.index,pos.x,pos.y,state.inside,true);state.decorDrag=null;draw();return;}
  const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();state.joy=null;state.touch=null;state.root.querySelector('.kw2-joystick').style.display='none';if(!t.drag){
 const scene=state.inside?.id||state.world?.id;

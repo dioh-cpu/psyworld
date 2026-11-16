@@ -63,3 +63,11 @@ Integrar as **6 artes definitivas de Pallet Town** em um mundo continuamente exp
   - Recortadas as caixas de madeira do canto SO (`[110, 445, 290, 492]`), os postes frontais + caixote (`498..526, 338..366`, `518..540, 338..360`, `762..790, 352..380`), as caixas da quina da estufa (`830..895, 320..368`), o pilar de pedra SO e toda a cerca/canteiro do jardim experimental (`875..1136, 250..462`), além do poste e canteiros na via nordeste (`1134..1154, 212..234`).
 - **Colinas (`pallet-colinas-3q`)**:
   - Recortados o tronco caído/flores na borda superior da estrada leste (`855..942, 245..318`) e a cerca de madeira + muro de pedra acima da estrada inferior (`675..835, 350..408`), deslocando o corredor caminhável para o calçamento (`y=408..446`).
+
+## Atualização V6.3 — Suíte de Regressão de Obstáculos e Editor de Pincel ao Vivo
+- **Regressão Automática por Coordenada (`tools/obstacle_regression.py` + `tools/obstacle_regression.json`)**:
+  - Integrada ao final de `tools/build_walkmasks_v6.py`, valida automaticamente **22 pontos críticos** nos SDFs recém-gerados (6 spawns seguros com `SDF >= 11`, 13 obstáculos sólidos com `SDF < 11` incluindo os 11 pontos auditados na V6.2, e 3 pontos caminháveis da escadaria do Laboratório com `SDF >= 11`).
+- **Editor de Pincel de Walkmask ao Vivo (`core/anime3q-walkmask-brush.js`)**:
+  - Ativo **exclusivamente** em `?visual=anime3q&debug=editor` (painel `#a3q-brush-panel` com **Pincel**, **Borracha**, **Desfazer** até 40 passos, **Exportar** `*_walkmask.png` + `*_sdf.png` e controle de **raio** `2..40`).
+  - Recalcula o 2D Euclidean SDF (`computeEdt` / `sdfToU8` em escala ×4) em tempo real direto no buffer `entry.buf` lido por `sdfDist()`, exibindo a faixa de colisão `SDF=11` em ciano e interceptando o ponteiro em `core/kanto-world-v2.js` sem mover o treinador.
+
