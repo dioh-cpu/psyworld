@@ -14,3 +14,6 @@
 
 ## Estado V6.1
 - Todas as 6 áreas de Pallet Town + Nova Rota 1 possuem colisões auditadas em tiles de 20px, conectividade única (`componentCount === 1`) e píer de pesca da Costa totalmente acessível.
+
+## Estado V6.2
+- Correção estrutural completa das colisões da escadaria esquerda do Laboratório até a Rota 1, jardim experimental, caixotes, postes e via nordeste, além do muro de pedra e tronco caído das Colinas, validada em *tiles* de 20px e E2E no Chromium.

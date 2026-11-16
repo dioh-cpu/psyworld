@@ -35,3 +35,8 @@ Executado em sessão contínua com gravação em vídeo (`Errors count: 0`, `404
 - `tools/build_walkmasks_v6.py`: `components_r11_count == 1` para `centro`, `jardins`, `lab`, `costa`, `colinas` e `rota1`.
 - Todos os spawns de portais e mapas validados com `SDF >= 13.0` (`costa` píer `SDF=35.5..39.75`, `from_jardins` `17.5`, `from_centro` `41.25`, `colinas-to-lab` `16.0`).
 - E2E Chromium (`test_anime3q_v6.mjs`): 6/6 mapas com `componentCount === 1`, navegação completa até o píer com `fishVisible: true`, batalha selvagem na Rota 1, `Errors count: 0`, `404 count: 0`.
+
+## Validação V6.2 (Tiles `--edge` + Chromium E2E)
+- Inspeção visual em *tiles* de 20px (`tools/render_audit_tiles.py lab 3 3 --edge` e `colinas 3 3 --edge`) confirmando `SDF < 11` em todos os 11 pontos das capturas enviadas.
+- `python3 tools/build_walkmasks_v6.py`: `components_r11_count === 1` em todas as 6 áreas.
+- `test_anime3q_v6.mjs` no Chromium: `Errors count: 0`, `404 count: 0`, subida completa da escadaria esquerda do Laboratório (`(312, 486)` -> `(192, 342)` -> `(546, 72)`) e passagem para `pallet-arredores-3q`.

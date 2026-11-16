@@ -56,3 +56,10 @@ Integrar as **6 artes definitivas de Pallet Town** em um mundo continuamente exp
 - **Colinas (`pallet-colinas-3q`)**: Bloqueada a cerca da trilha superior da mina, telhado leste (`y>=295`), árvore leste e pilar inferior da escadaria sul.
 - **Nova Rota 1 (`pallet-arredores-3q`)**: Corrigida a lagoa da cachoeira, varanda da cabana SW, cerca do prado NO, segundo toco no prado NO, cerca leste, toco/telhado do campo C e balaustradas da escadaria sul.
 - **Centro e Jardins**: Auditados via `--edge`; mantidos íntegros (precisão já alinhada desde a V5).
+
+## Atualização V6.2 — Auditoria Fina do Laboratório (Escadaria Esquerda -> Rota 1) e Colinas
+- **Laboratório (`pallet-lab-3q`)**:
+  - Escadaria esquerda traçada com `add_var_path` (`hw=16..18`) exatamente dentro das balaustradas de pedra/madeira, eliminando invasões à cerejeira/muro lateral (`x=232..362, y=336..384`), à cerca de madeira/arbustos superiores (`x=170..210, y=180..250`) e aos arbustos abaixo do terraço superior (`y>=112`).
+  - Recortadas as caixas de madeira do canto SO (`[110, 445, 290, 492]`), os postes frontais + caixote (`498..526, 338..366`, `518..540, 338..360`, `762..790, 352..380`), as caixas da quina da estufa (`830..895, 320..368`), o pilar de pedra SO e toda a cerca/canteiro do jardim experimental (`875..1136, 250..462`), além do poste e canteiros na via nordeste (`1134..1154, 212..234`).
+- **Colinas (`pallet-colinas-3q`)**:
+  - Recortados o tronco caído/flores na borda superior da estrada leste (`855..942, 245..318`) e a cerca de madeira + muro de pedra acima da estrada inferior (`675..835, 350..408`), deslocando o corredor caminhável para o calçamento (`y=408..446`).

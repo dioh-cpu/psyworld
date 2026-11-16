@@ -20,3 +20,7 @@
 
 ### V6.1 — Costa e revisão geral de colisões
 - *"Colisões da Costa de pallet, além de que precisa liberar espaço para entrar corretamente e poder ir para a ponte. Ali vai ser um local de pesca. O que você está utilizando para fazer as colisões? Estão completamente fora do normal, preciso de mais atenção com as colisões. Dê uma olhada nas outras áreas de pallet e corrija tudo."*
+
+## Prompt V6.2 (11 capturas de tela — Laboratório e Colinas)
+- *"Ainda tem muitos lugares para ajeitar a colisão. Principalmente a.escadaria do lado esquerdo do laboratório que leva até a rota 1"*
+- Anexadas 11 capturas de tela em mobile (`Screenshot_20261116-034434` a `034836`) apontando pontos de invasão na escadaria esquerda, jardim experimental, caixotes, postes do Laboratório e muro/tronco nas Colinas.
