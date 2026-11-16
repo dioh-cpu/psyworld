@@ -504,6 +504,21 @@ function talk(npc){
  const owner=player();owner.palletRelationships=owner.palletRelationships||{version:1,npcs:{}};
  const records=owner.palletRelationships.npcs||(owner.palletRelationships.npcs={});
  const relation=records[id]||(records[id]={points:0,lastGain:{},turn:0});
+ // Explicit adult cast; Tomi and residents without a defined romance role are excluded.
+ const adults={'pallet-nina':28,'pallet-maia':32,'pallet-banhista':35,'pallet-breno':48};
+ const active=()=>player()===owner&&owner.palletRelationships?.npcs?.[id]===relation;
+ const reply=text=>showDialog(npc.name,text,[{text:'VOLTAR',run:menu}],pr,em);
+ const romance=()=>{
+  if(!active())return;
+  showDialog(npc.name,'Esta história romântica é entre personagens adultos. Deseja demonstrar interesse?',[
+   {text:'MEU PERSONAGEM É ADULTO — DEMONSTRAR INTERESSE',run:()=>{
+    if(!active()||!adults[id])return;
+    if(relation.points<30){reply('Gosto de conversar com você, mas ainda quero conhecer você melhor. Podemos continuar como amigos.');return}
+    showDialog(npc.name,'Também sinto algo por você. Quer começar um namoro comigo?',[
+     {text:'SIM, QUERO NAMORAR',run:()=>{if(!active())return;relation.romance='dating';W.autoSave?.();reply('Vamos descobrir essa história juntos, com calma.')}},
+     {text:'PREFIRO CONTINUAR A AMIZADE',run:menu}],pr,'alegre');
+   }},{text:'VOLTAR',run:menu}],pr,em);
+ };
  const menu=()=>showDialog(npc.name,'Amizade: '+(Number(relation.points)||0)+'/100',[
  ...[['Conversar',palletLines[id]],['Como você está?','Estou bem. Gosto de ter companhia enquanto cuido das minhas tarefas.'],['Como foi seu dia?','Hoje encontrei tempo para observar Pallet. Sempre há algo novo quando a gente presta atenção.']].map(([text,line],i)=>({text,run:()=>{
  if(player()!==owner||owner.palletRelationships?.npcs?.[id]!==relation)return;
@@ -511,7 +526,18 @@ function talk(npc){
  if(relation.lastGain[i]!==day){relation.lastGain[i]=day;relation.points=Math.min(100,(Number(relation.points)||0)+2)}
  relation.turn=(Number(relation.turn)||0)+1;W.autoSave?.();
  showDialog(npc.name,line+(relation.points>=20?' É bom poder conversar com alguém que já conheço.':relation.turn%2?' Obrigado por parar para conversar.':''),[{text:'VOLTAR',run:menu},{text:'ATÉ LOGO'}],pr,em);
- }})),{text:'ATÉ LOGO'}],pr,em);
+ }})),
+ ...(adults[id]?[{text:relation.romance==='dating'?'CONVERSAR SOBRE O NAMORO':'DEMONSTRAR INTERESSE',run:()=>{
+  if(!active())return;
+  if(relation.romance!=='dating'){romance();return}
+  showDialog(npc.name,'Gosto do tempo que passamos juntos. Como você está se sentindo?',[
+   {text:'PEDIR UM ABRAÇO',run:()=>{if(active())reply('Claro. Você recebe um abraço acolhedor.')}},
+   {text:'PEDIR UM BEIJO',run:()=>{if(active())reply('Eu também quero. Vocês compartilham um beijo carinhoso.')}},
+   {text:'ENCERRAR NAMORO',run:()=>showDialog(npc.name,'Quer encerrar nosso namoro? Sua amizade será preservada.',[
+    {text:'SIM, ENCERRAR',run:()=>{if(!active())return;relation.romance='friendship';W.autoSave?.();reply('Obrigado por conversar com sinceridade. Vamos respeitar esse novo momento.')}},
+    {text:'VOLTAR',run:menu}],pr,em)},
+   {text:'VOLTAR',run:menu}],pr,'alegre');
+ }}]:[]),{text:'ATÉ LOGO'}],pr,em);
  menu();return;
  }
  if(id==='viridian-elder'){

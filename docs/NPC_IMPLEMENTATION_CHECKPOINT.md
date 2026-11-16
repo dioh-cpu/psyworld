@@ -24,3 +24,12 @@ Geometria verificada no código atual: mapas Anime 3Q usam 1200 × 675 unidades 
 Verificar visualmente as sombras após o ajuste e conferir cada posição e diálogo no runtime, incluindo as outras quatro áreas e viewport Android. Revisar PNGs domésticos sobre fundos claros e escuros e preparar atlas e animações. Projetar e testar isolamento dos relacionamentos antes de persistir dados.
 
 Nenhum recurso Goals foi encontrado na lista de ferramentas disponível.
+
+## Marco funcional — amizade e início do romance
+
+- Commit `3bda8da`: `psyLoadRelationships` copia ou inicializa o campo nos cinco carregadores existentes e na criação do starter. Não altera outros campos ou políticas de backup.
+- Amizade integrada ao diálogo dos seis NPCs novos: três ações, dois pontos por ação por dia, limite de 100, variações simples e fala adicional a partir de 20 pontos.
+- Teste Chromium `tests/pallet-friendship-browser.cjs`: menu real de Nina, +6 nas três opções, repetição sem ganho, escrita local, reload e A → B sem campo → A passaram. O primeiro teste usou timestamp antigo em B e corretamente selecionou backup de A; corrigida a fixture para timestamps ordenados.
+- Romance inicial: Nina (28), Maia (32), Caio (35) e Breno (48) explicitamente adultos; recusa abaixo de 30 pontos, confirmação de personagem adulto e namoro, término com amizade preservada. Abraço e beijo são diálogos, não animações concluídas.
+- `tests/pallet-romance-browser.cjs` passou no Chromium: recusa, aceitação, beijo em diálogo, término e Tomi sem opção romântica.
+- Cloud Save online não testado. Convivência, rotinas, missões, loja de pesca, atlas e animações finais permanecem pendentes. Próxima ação: integrar residência com seleção segura de posição, ausência de duplicação e retorno do parceiro à origem, antes de adicionar rotina móvel.
