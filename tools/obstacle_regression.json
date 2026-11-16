@@ -177,6 +177,38 @@
       "y": 73,
       "tipo": "walkable",
       "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v63-rota1-norte-nara-livre",
+      "area": "rota1",
+      "x": 645,
+      "y": 325,
+      "tipo": "walkable",
+      "fonte": "V6.3 print mobile: passagem reta ao norte a direita da Exploradora Nara"
+    },
+    {
+      "id": "v63-rota1-lago-cachoeira",
+      "area": "rota1",
+      "x": 195,
+      "y": 320,
+      "tipo": "solid",
+      "fonte": "V6.3 print mobile: lago da cachoeira bloqueado"
+    },
+    {
+      "id": "v63-rota1-cerca-topo-escada",
+      "area": "rota1",
+      "x": 240,
+      "y": 176,
+      "tipo": "solid",
+      "fonte": "V6.3 print mobile: poste da cerca direita no topo da escada"
+    },
+    {
+      "id": "v63-rota1-vao-topo-escada",
+      "area": "rota1",
+      "x": 215,
+      "y": 172,
+      "tipo": "walkable",
+      "fonte": "V6.3 print mobile: vao livre no topo da escada para o prado NO"
     }
   ]
 }

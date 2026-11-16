@@ -351,15 +351,17 @@ def build_rota1_mask():
     add_thick_path(d, [(255, 360), (288, 435), (255, 512)], half_width=26)
 
     # 3. Main North Dirt Trail -> Top Exit to Viridian (x=725..845, y=0..38)
+    # Widened at the southern crossroads (x=600..675) so walking straight up east of Nara has no invisible wall
     add_thick_path(d, [
-        (600, 375), (620, 295), (636, 225), (670, 148),
+        (632, 375), (636, 305), (642, 225), (670, 148),
         (722, 88), (766, 40), (776, 0)
-    ], half_width=30)
+    ], half_width=38)
 
     # 4. NORTHWEST HUNTING MEADOW (inside wooden fence)
+    # Shifted east onto the stone stairs & cobblestone so player feet stay out of the waterfall pond
     add_thick_path(d, [
-        (255, 345), (218, 315), (218, 255), (242, 195), (242, 155)
-    ], half_width=23)
+        (265, 355), (242, 320), (235, 255), (218, 195), (215, 165)
+    ], half_width=20)
     nw_meadow = [
         (175, 78), (395, 78), (470, 92), (555, 130), (575, 152),
         (535, 175), (435, 182), (240, 172), (175, 145)
@@ -382,12 +384,16 @@ def build_rota1_mask():
     d.ellipse([302, 310, 330, 338], fill=0)
     d.ellipse([558, 312, 586, 338], fill=0)
 
+    # Waterfall pond & lower cascade edge (keep player out of water)
+    d.ellipse([130, 285, 218, 358], fill=0)
+
     # SW cottage & flower pots
     d.polygon([(0, 340), (215, 340), (215, 492), (0, 492)], fill=0)
     d.rectangle([195, 450, 248, 502], fill=0)
 
-    # NW meadow fence & stumps
+    # NW meadow fence, stair-top right fence post & stumps
     d.polygon([(0, 120), (195, 155), (195, 190), (0, 170)], fill=0)
+    d.polygon([(234, 162), (268, 178), (268, 200), (234, 195)], fill=0)
     d.polygon([(276, 184), (515, 184), (515, 224), (276, 224)], fill=0)
     d.rectangle([195, 48, 240, 82], fill=0)
     d.rectangle([465, 128, 502, 165], fill=0)
