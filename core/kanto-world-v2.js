@@ -458,20 +458,26 @@ function selectedAvatar(){
     gothic_boy:'basic-gothic-boy.webp',gothic_girl:'basic-gothic-girl.webp',
     adventure_boy:'basic-adventure-boy.webp',adventure_girl:'basic-adventure-girl.webp'
   };
+  const realistic={
+    gothic_boy:'assets/characters/realistic/basic-gothic-boy.webp'
+  };
   const id=p.playerCharacterId||p.trainerCharacterId||p.characterId||'adventure_boy';
   const c=(W.PsyHalloweenCharacters||[]).find(ch=>ch.id===id);
   const costumes=c?.costumes||{};
   const selected=p.playerCostumeByCharacter?.[id]||p.playerCostumeKey||'basic';
+  if(selected==='basic'&&realistic[id])return image(realistic[id]);
   const basic=costumes.basic||basics[id]||basics.adventure_boy;
   const wanted=costumes[selected]||basic;
-  let entry=image('assets/characters/halloween/'+wanted);
-  if(entry?.error&&wanted!==basic)entry=image('assets/characters/halloween/'+basic);
-  if(entry?.error&&basic!==basics.adventure_boy)entry=image('assets/characters/halloween/'+basics.adventure_boy);
+  const assetUrl=u=>String(u||'').startsWith('assets/')?u:('assets/characters/halloween/'+u);
+  let entry=image(assetUrl(wanted));
+  if(entry?.error&&wanted!==basic)entry=image(assetUrl(basic));
+  if(entry?.error&&basic!==basics.adventure_boy)entry=image(assetUrl(basics.adventure_boy));
   return entry;
 }
 // Cached sprite atlas, prepared after the image finishes loading.
 const humanAnimationStates=new Map();
 function prepareAvatar(entry){
+  if(/\/characters\/realistic\//.test(entry?.im?.src||''))return;
   const walk=W.PsyTrainerWalkV1;
   if(walk){
     try{entry.animationAtlas=walk.getAnimationAtlas?.(entry.im)||null}catch(err){entry.animationAtlas=null;console.warn('Trainer animationAtlas could not be prepared',err)}
@@ -491,30 +497,49 @@ function drawPlayer(c,x,y,options={}){
   const fashion=W.PsyProfessions?.cosmetic?.();if(fashion){c.save();c.strokeStyle=fashion.color;c.globalAlpha=.7;c.lineWidth=2;c.beginPath();c.ellipse(x,y+4,18,7,0,0,Math.PI*2);c.stroke();if(moving){c.globalAlpha=.45;for(let i=0;i<3;i++){c.beginPath();c.arc(x+(i-1)*9,y+8+(Math.sin(walkFrame+i)+1)*4,1.8,0,Math.PI*2);c.fillStyle=fashion.color;c.fill()}}c.restore()}
   const entry=selectedAvatar(),action=W.PsyHobbiesVFX?.sampleAction?.(scene,{x,y,moving:false}),row=action?.row??({down:0,left:1,right:2,up:3})[facing]??0;W.PsyCostumeAuraV1?.draw?.(c,entry?.im?.src,x,y+5);W.PsyTreasureHuntV1?.drawBountyAura?.(c,x,y,performance.now());let usedSprite=false;
   if(entry?.loaded){
-    const walking=moving&&!action,w=48*scale,h=64*scale,left=x-w/2,top=y+5-60*scale;
-    const walk=W.PsyTrainerWalkV1;
-    if(entry.animationAtlas&&walk?.renderAnimated){
-      if(entry.animationAtlas.compiledStatus!=='loading'){
-        const animKey=scene+':'+entry.im.src;
-        let humanAnimationState=humanAnimationStates.get(animKey);
-        if(!humanAnimationState){humanAnimationState=walk.createState();humanAnimationStates.set(animKey,humanAnimationState);}
-        walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:animKey},left,top,w,h);
-        usedSprite=true;
-      }else if(entry.atlas){
+    const walking=moving&&!action,isRealistic=/\/characters\/realistic\//.test(entry.im?.src||'');
+    if(isRealistic&&entry.im?.naturalWidth&&entry.im?.naturalHeight){
+      const sw=entry.im.naturalWidth/4,sh=entry.im.naturalHeight/4;
+      const now=performance.now();
+      const col=walking?Math.floor((now/135)%4):0;
+      const h=64*scale,w=h*(sw/sh),footPad=h*0.032;
+      const prevSmooth=c.imageSmoothingEnabled,prevQual=c.imageSmoothingQuality;
+      c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+      c.save();
+      if(!walking&&!palletMotionReduced){
+        const breathe=1+Math.sin(now/1380)*.006,narrow=1+Math.cos(now/1670)*.005;
+        c.translate(x,y+5);c.scale(narrow,breathe);c.translate(-x,-(y+5));
+      }
+      c.drawImage(entry.im,col*sw,row*sh,sw,sh,x-w/2,y+5-h+footPad,w,h);
+      c.restore();
+      c.imageSmoothingEnabled=prevSmooth;if(prevQual)c.imageSmoothingQuality=prevQual;
+      usedSprite=true;
+    }else{
+      const w=48*scale,h=64*scale,left=x-w/2,top=y+5-60*scale;
+      const walk=W.PsyTrainerWalkV1;
+      if(entry.animationAtlas&&walk?.renderAnimated){
+        if(entry.animationAtlas.compiledStatus!=='loading'){
+          const animKey=scene+':'+entry.im.src;
+          let humanAnimationState=humanAnimationStates.get(animKey);
+          if(!humanAnimationState){humanAnimationState=walk.createState();humanAnimationStates.set(animKey,humanAnimationState);}
+          walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:animKey},left,top,w,h);
+          usedSprite=true;
+        }else if(entry.atlas){
+          walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
+          usedSprite=true;
+        }
+      }else if(entry.atlas&&walk){
         walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
         usedSprite=true;
       }
-    }else if(entry.atlas&&walk){
-      walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
-      usedSprite=true;
-    }
-    if(!usedSprite&&entry.im?.naturalWidth&&entry.im?.naturalHeight){
-      // Graphics still work if atlas preprocessing fails or an older profile loads.
-      const sw=entry.im.naturalWidth/4,sh=entry.im.naturalHeight/4;
-      const col=walk?.column?walk.column(Math.floor(walkFrame),walking):(walking?[1,0,3,0][((Math.floor(walkFrame)||0)%4+4)%4]:0);
-      c.drawImage(entry.im,col*sw+sw*.25,row*sh+sh*.22,sw*.5,sh*.58,
-        x-16.5*scale,y+7-46*scale,33*scale,46*scale);
-      usedSprite=true;
+      if(!usedSprite&&entry.im?.naturalWidth&&entry.im?.naturalHeight){
+        // Graphics still work if atlas preprocessing fails or an older profile loads.
+        const sw=entry.im.naturalWidth/4,sh=entry.im.naturalHeight/4;
+        const col=walk?.column?walk.column(Math.floor(walkFrame),walking):(walking?[1,0,3,0][((Math.floor(walkFrame)||0)%4+4)%4]:0);
+        c.drawImage(entry.im,col*sw+sw*.25,row*sh+sh*.22,sw*.5,sh*.58,
+          x-16.5*scale,y+7-46*scale,33*scale,46*scale);
+        usedSprite=true;
+      }
     }
   }
   W.PsyHobbiesVFX?.drawActor?.(c,scene,{x,y,action,atlas:entry?.animationAtlas,avatarUrl:entry?.im?.src||''});
