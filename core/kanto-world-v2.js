@@ -313,8 +313,8 @@ function camera(){
   if(a3q){
     const portrait=r.height>r.width&&r.width<560;
     const landscapeMobile=r.height<=500;
-    const targetScale=portrait?Math.max(cover*1.12,cw/480):landscapeMobile?Math.max(cover*1.10,ch/420):cover*1.08;
-    scale=Math.max(cover,Math.min(cover*1.65,targetScale));
+    const targetScale=portrait?Math.max(cover*1.35,cw/420):landscapeMobile?Math.max(cover*1.24,ch/380):cover*1.08;
+    scale=Math.max(cover,Math.min(cover*1.75,targetScale));
   }else{
     scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
   }
@@ -670,6 +670,18 @@ function talk(npc){
  }else if(id==='fisher'){
   mark('fisher');
   showDialog('Seu Abel','Vi luzes no bosque depois da última chuva. Um dia, com as técnicas certas, você poderá alcançar lugares que hoje parecem impossíveis.',[],pr,'tranquilo');
+ }else if(id==='pallet-elio'){
+  showDialog('Élio','As aves do bosque cantam mais alto quando o céu está limpo. Anoto cada rota migratória no meu caderno de campo.',[],pr,em);
+ }else if(id==='pallet-iris'){
+  showDialog('Íris','A Rota 1 liga Pallet a Viridian. Fique atento à grama alta se quiser encontrar Pokémon selvagens pelo caminho!',[],pr,em);
+ }else if(id==='pallet-caio-msg'){
+  showDialog('Mensageiro Caio','Entregar cartas por toda Pallet me faz conhecer cada atalho da vila. O Professor Carvalho sempre recebe encomendas importantes!',[],pr,em);
+ }else if(id==='pallet-abel-morador'){
+  showDialog('Morador Abel','A brisa do mar aqui na costa renova as energias de qualquer viajante. Aproveite a vista antes de seguir viagem.',[],pr,em);
+ }else if(id==='pallet-raul'){
+  showDialog('Raul','Construo instrumentos de madeira com o som do vento das colinas. Cada peça leva tempo e paciência para ficar afinada.',[],pr,em);
+ }else if(id==='pallet-antonio'){
+  showDialog('Seu Antônio','Conheço essas pedreiras desde jovem. Quem observa as trilhas com calma sempre encontra o melhor caminho.',[],pr,em);
  }else{
   showDialog(npc.name,'Pallet parece pequena, mas guarda histórias em cada esquina. Volte quando descobrir mais sobre Kanto.',[],pr,em);
  }

@@ -75,8 +75,9 @@ const MAPS={
       {id:'house-east',at:[912,298],title:'Casa Leste'}
     ],
     npcs:[
-      {id:'lia',name:'Rival',at:[470,385],sprite:'assets/story/rival.png',portrait:'assets/story/rival.png',emote:'alegre'},
-      {id:'pallet-nina',name:'Nina',at:[680,430],sprite:'assets/kanto/npcs/pallet-new/nina-cartografa.png',displayHeight:92}
+      {id:'mother',name:'Elisa',at:[360,340],sprite:'assets/kanto/npcs/pallet-new/mae.png',portrait:'assets/kanto/npcs/pallet-new/mae.png',displayHeight:82,emote:'carinhosa'},
+      {id:'pallet-nina',name:'Nina',at:[780,340],sprite:'assets/kanto/npcs/pallet-new/nina-cartografa.png',portrait:'assets/kanto/npcs/pallet-new/nina-cartografa.png',displayHeight:82},
+      {id:'pallet-caio-msg',name:'Mensageiro Caio',at:[540,260],sprite:'assets/kanto/npcs/pallet-new/caio-mensageiro.png',portrait:'assets/kanto/npcs/pallet-new/caio-mensageiro.png',displayHeight:82,emote:'animado'}
     ],
     grass:[],
     portals:[
@@ -162,8 +163,8 @@ const MAPS={
       {id:'center',at:[272,168],title:'Posto de Cura do Bosque'}
     ],
     npcs:[
-      {id:'neighbor',name:'Mina',at:[215,300],sprite:'assets/halloween/npc-mina.svg',portrait:'assets/halloween/npc-mina.svg',emote:'curiosa'},
-      {id:'pallet-tomi',name:'Tomi',at:[280,370],sprite:'assets/kanto/npcs/pallet-new/tomi-botanista.png',displayHeight:86}
+      {id:'pallet-tomi',name:'Tomi',at:[240,260],sprite:'assets/kanto/npcs/pallet-new/tomi-botanico.png',portrait:'assets/kanto/npcs/pallet-new/tomi-botanico.png',displayHeight:76},
+      {id:'pallet-elio',name:'Élio',at:[480,260],sprite:'assets/kanto/npcs/pallet-new/elio-ornitologo.png',portrait:'assets/kanto/npcs/pallet-new/elio-ornitologo.png',displayHeight:82,emote:'sereno'}
     ],
     grass:[],
     portals:[
@@ -246,9 +247,8 @@ const MAPS={
       {id:'lab',at:[665,338],title:'Laboratório do Prof. Carvalho'}
     ],
     npcs:[
-      {id:'oak',name:'Professor Car’alho',at:[535,468],sprite:'assets/kanto/npcs/professor-v33.webp',portrait:'assets/story/professor-oak.png',emote:'sereno'},
-      {id:'assistant',name:'Pesquisador Elias',at:[760,392],sprite:'assets/halloween/npc-researcher.webp',portrait:'assets/halloween/npc-researcher.webp',emote:'curioso'},
-      {id:'pallet-maia',name:'Maia',at:[850,400],sprite:'assets/kanto/npcs/pallet-new/maia-socorrista.png',displayHeight:96}
+      {id:'oak',name:'Professor Car’alho',at:[535,468],sprite:'assets/kanto/npcs/pallet-new/professor-carvalho.png',portrait:'assets/kanto/npcs/pallet-new/professor-carvalho.png',displayHeight:84,emote:'sereno'},
+      {id:'pallet-maia',name:'Maia',at:[720,420],sprite:'assets/kanto/npcs/pallet-new/maia-socorrista.png',portrait:'assets/kanto/npcs/pallet-new/maia-socorrista.png',displayHeight:82}
     ],
     grass:[],
     portals:[
@@ -298,8 +298,9 @@ const MAPS={
       {id:'house-west',at:[195,222],title:'Cabana do Pescador'}
     ],
     npcs:[
-      {id:'fisher',name:'Seu Abel',at:[735,275],sprite:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',portrait:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',displayHeight:95,emote:'tranquilo'},
-      {id:'pallet-banhista',name:'Caio',at:[680,295],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',portrait:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',spriteSheet:{src:'assets/kanto/npcs/pallet-new/banhista-idle-sheet.webp',cols:6,rows:4,frames:24,fps:6},walkSheet:{src:'assets/kanto/npcs/pallet-new/banhista-walk-sheet.webp',cols:6,rows:4,frames:24,fps:8},footOffset:0.055,groundShadow:true,displayHeight:100}
+      {id:'fisher',name:'Seu Abel',at:[720,180],sprite:'assets/kanto/npcs/pallet-new/pescador.png',portrait:'assets/kanto/npcs/pallet-new/pescador.png',displayHeight:84,emote:'tranquilo'},
+      {id:'pallet-banhista',name:'Caio',at:[660,220],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',portrait:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',spriteSheet:{src:'assets/kanto/npcs/pallet-new/banhista-idle-sheet.webp',cols:6,rows:4,frames:24,fps:6},walkSheet:{src:'assets/kanto/npcs/pallet-new/banhista-walk-sheet.webp',cols:6,rows:4,frames:24,fps:8},footOffset:0.055,groundShadow:true,displayHeight:86},
+      {id:'pallet-abel-morador',name:'Morador Abel',at:[420,220],sprite:'assets/kanto/npcs/pallet-new/abel-morador.png',portrait:'assets/kanto/npcs/pallet-new/abel-morador.png',displayHeight:82,emote:'tranquilo'}
     ],
     grass:[],
     portals:[
@@ -359,8 +360,9 @@ const MAPS={
       {id:'market',at:[265,295],title:'Posto dos Mineradores'}
     ],
     npcs:[
-      {id:'child',name:'Luna',at:[320,330],sprite:'assets/kanto/npcs/child-v9.svg',portrait:'assets/kanto/npcs/child-v9.svg',emote:'animada'},
-      {id:'pallet-breno',name:'Breno',at:[350,350],sprite:'assets/kanto/npcs/pallet-new/breno-artesao.png',displayHeight:100}
+      {id:'pallet-breno',name:'Breno',at:[960,300],sprite:'assets/kanto/npcs/pallet-new/breno-artesao.png',portrait:'assets/kanto/npcs/pallet-new/breno-artesao.png',displayHeight:84},
+      {id:'pallet-antonio',name:'Seu Antônio',at:[1080,300],sprite:'assets/kanto/npcs/pallet-new/seu-antonio.png',portrait:'assets/kanto/npcs/pallet-new/seu-antonio.png',displayHeight:84,emote:'sereno'},
+      {id:'pallet-raul',name:'Raul',at:[360,540],sprite:'assets/kanto/npcs/pallet-new/raul-luthier.png',portrait:'assets/kanto/npcs/pallet-new/raul-luthier.png',displayHeight:84,emote:'tranquilo'}
     ],
     grass:[],
     portals:[
@@ -409,7 +411,7 @@ const MAPS={
     exit:[585,92],
     doors:[],
     npcs:[
-      {id:'route-guide',name:'Exploradora Nara',at:[635,420],sprite:'assets/halloween/npc-luna.svg',portrait:'assets/halloween/npc-luna.svg',emote:'curiosa'}
+      {id:'pallet-iris',name:'Íris',at:[635,420],sprite:'assets/kanto/npcs/pallet-new/iris-viajante.png',portrait:'assets/kanto/npcs/pallet-new/iris-viajante.png',displayHeight:82,emote:'curiosa'}
     ],
     grass:[
       {id:'a',rect:[340,155,515,315],spawn:[425,235],entry:[490,280]},
@@ -1335,7 +1337,7 @@ W.PsyKantoAnime3Q={
   brushActive:()=>debugEditorEnabled&&brushMode!=='off',
   exportGeometryJSON,
   hide,
-  characterScale:0.88,
-  followerScale:0.68
+  characterScale:1.15,
+  followerScale:0.90
 };
 })(window,document);
