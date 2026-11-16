@@ -75,9 +75,9 @@ const MAPS={
       {id:'house-east',at:[912,298],title:'Casa Leste'}
     ],
     npcs:[
-      {id:'mother',name:'Elisa',at:[360,340],sprite:'assets/kanto/npcs/pallet-new/mae.png',portrait:'assets/kanto/npcs/pallet-new/mae.png',displayHeight:82,emote:'carinhosa'},
-      {id:'pallet-nina',name:'Nina',at:[780,340],sprite:'assets/kanto/npcs/pallet-new/nina-cartografa.png',portrait:'assets/kanto/npcs/pallet-new/nina-cartografa.png',displayHeight:82},
-      {id:'pallet-caio-msg',name:'Mensageiro Caio',at:[540,260],sprite:'assets/kanto/npcs/pallet-new/caio-mensageiro.png',portrait:'assets/kanto/npcs/pallet-new/caio-mensageiro.png',displayHeight:82,emote:'animado'}
+      {id:'mother',name:'Elisa',at:[360,340],sprite:'assets/kanto/npcs/pallet-new/mae.png',portrait:'assets/kanto/npcs/pallet-new/mae.png',displayHeight:107,emote:'carinhosa'},
+      {id:'pallet-nina',name:'Nina',at:[780,340],sprite:'assets/kanto/npcs/pallet-new/nina-cartografa.png',portrait:'assets/kanto/npcs/pallet-new/nina-cartografa.png',displayHeight:107},
+      {id:'pallet-caio-msg',name:'Mensageiro Caio',at:[540,260],sprite:'assets/kanto/npcs/pallet-new/caio-mensageiro.png',portrait:'assets/kanto/npcs/pallet-new/caio-mensageiro.png',displayHeight:107,emote:'animado'}
     ],
     grass:[],
     portals:[
@@ -163,8 +163,8 @@ const MAPS={
       {id:'center',at:[272,168],title:'Posto de Cura do Bosque'}
     ],
     npcs:[
-      {id:'pallet-tomi',name:'Tomi',at:[240,260],sprite:'assets/kanto/npcs/pallet-new/tomi-botanico.png',portrait:'assets/kanto/npcs/pallet-new/tomi-botanico.png',displayHeight:76},
-      {id:'pallet-elio',name:'Élio',at:[480,260],sprite:'assets/kanto/npcs/pallet-new/elio-ornitologo.png',portrait:'assets/kanto/npcs/pallet-new/elio-ornitologo.png',displayHeight:82,emote:'sereno'}
+      {id:'pallet-tomi',name:'Tomi',at:[240,260],sprite:'assets/kanto/npcs/pallet-new/tomi-botanico.png',portrait:'assets/kanto/npcs/pallet-new/tomi-botanico.png',displayHeight:99},
+      {id:'pallet-elio',name:'Élio',at:[480,260],sprite:'assets/kanto/npcs/pallet-new/elio-ornitologo.png',portrait:'assets/kanto/npcs/pallet-new/elio-ornitologo.png',displayHeight:107,emote:'sereno'}
     ],
     grass:[],
     portals:[
@@ -247,8 +247,8 @@ const MAPS={
       {id:'lab',at:[665,338],title:'Laboratório do Prof. Carvalho'}
     ],
     npcs:[
-      {id:'oak',name:'Professor Car’alho',at:[535,468],sprite:'assets/kanto/npcs/pallet-new/professor-carvalho.png',portrait:'assets/kanto/npcs/pallet-new/professor-carvalho.png',displayHeight:84,emote:'sereno'},
-      {id:'pallet-maia',name:'Maia',at:[720,420],sprite:'assets/kanto/npcs/pallet-new/maia-socorrista.png',portrait:'assets/kanto/npcs/pallet-new/maia-socorrista.png',displayHeight:82}
+      {id:'oak',name:'Professor Car’alho',at:[535,468],sprite:'assets/kanto/npcs/pallet-new/professor-carvalho.png',portrait:'assets/kanto/npcs/pallet-new/professor-carvalho.png',displayHeight:109,emote:'sereno'},
+      {id:'pallet-maia',name:'Maia',at:[720,420],sprite:'assets/kanto/npcs/pallet-new/maia-socorrista.png',portrait:'assets/kanto/npcs/pallet-new/maia-socorrista.png',displayHeight:107}
     ],
     grass:[],
     portals:[
@@ -298,9 +298,9 @@ const MAPS={
       {id:'house-west',at:[195,222],title:'Cabana do Pescador'}
     ],
     npcs:[
-      {id:'fisher',name:'Seu Abel',at:[720,180],sprite:'assets/kanto/npcs/pallet-new/pescador.png',portrait:'assets/kanto/npcs/pallet-new/pescador.png',displayHeight:84,emote:'tranquilo'},
-      {id:'pallet-banhista',name:'Caio',at:[660,220],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',portrait:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',spriteSheet:{src:'assets/kanto/npcs/pallet-new/banhista-idle-sheet.webp',cols:6,rows:4,frames:24,fps:6},walkSheet:{src:'assets/kanto/npcs/pallet-new/banhista-walk-sheet.webp',cols:6,rows:4,frames:24,fps:8},footOffset:0.055,groundShadow:true,displayHeight:86},
-      {id:'pallet-abel-morador',name:'Morador Abel',at:[420,220],sprite:'assets/kanto/npcs/pallet-new/abel-morador.png',portrait:'assets/kanto/npcs/pallet-new/abel-morador.png',displayHeight:82,emote:'tranquilo'}
+      {id:'fisher',name:'Seu Abel',at:[720,180],sprite:'assets/kanto/npcs/pallet-new/pescador.png',portrait:'assets/kanto/npcs/pallet-new/pescador.png',displayHeight:109,emote:'tranquilo'},
+      {id:'pallet-banhista',name:'Caio',at:[660,220],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',portrait:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',spriteSheet:{src:'assets/kanto/npcs/pallet-new/banhista-idle-sheet.webp',cols:6,rows:4,frames:24,fps:6},walkSheet:{src:'assets/kanto/npcs/pallet-new/banhista-walk-sheet.webp',cols:6,rows:4,frames:24,fps:8},footOffset:0.055,groundShadow:true,displayHeight:112},
+      {id:'pallet-abel-morador',name:'Morador Abel',at:[420,220],sprite:'assets/kanto/npcs/pallet-new/abel-morador.png',portrait:'assets/kanto/npcs/pallet-new/abel-morador.png',displayHeight:107,emote:'tranquilo'}
     ],
     grass:[],
     portals:[
@@ -360,9 +360,9 @@ const MAPS={
       {id:'market',at:[265,295],title:'Posto dos Mineradores'}
     ],
     npcs:[
-      {id:'pallet-breno',name:'Breno',at:[960,300],sprite:'assets/kanto/npcs/pallet-new/breno-artesao.png',portrait:'assets/kanto/npcs/pallet-new/breno-artesao.png',displayHeight:84},
-      {id:'pallet-antonio',name:'Seu Antônio',at:[1080,300],sprite:'assets/kanto/npcs/pallet-new/seu-antonio.png',portrait:'assets/kanto/npcs/pallet-new/seu-antonio.png',displayHeight:84,emote:'sereno'},
-      {id:'pallet-raul',name:'Raul',at:[360,540],sprite:'assets/kanto/npcs/pallet-new/raul-luthier.png',portrait:'assets/kanto/npcs/pallet-new/raul-luthier.png',displayHeight:84,emote:'tranquilo'}
+      {id:'pallet-breno',name:'Breno',at:[960,300],sprite:'assets/kanto/npcs/pallet-new/breno-artesao.png',portrait:'assets/kanto/npcs/pallet-new/breno-artesao.png',displayHeight:109},
+      {id:'pallet-antonio',name:'Seu Antônio',at:[1080,300],sprite:'assets/kanto/npcs/pallet-new/seu-antonio.png',portrait:'assets/kanto/npcs/pallet-new/seu-antonio.png',displayHeight:109,emote:'sereno'},
+      {id:'pallet-raul',name:'Raul',at:[360,540],sprite:'assets/kanto/npcs/pallet-new/raul-luthier.png',portrait:'assets/kanto/npcs/pallet-new/raul-luthier.png',displayHeight:109,emote:'tranquilo'}
     ],
     grass:[],
     portals:[
@@ -411,7 +411,7 @@ const MAPS={
     exit:[585,92],
     doors:[],
     npcs:[
-      {id:'pallet-iris',name:'Íris',at:[635,420],sprite:'assets/kanto/npcs/pallet-new/iris-viajante.png',portrait:'assets/kanto/npcs/pallet-new/iris-viajante.png',displayHeight:82,emote:'curiosa'}
+      {id:'pallet-iris',name:'Íris',at:[635,420],sprite:'assets/kanto/npcs/pallet-new/iris-viajante.png',portrait:'assets/kanto/npcs/pallet-new/iris-viajante.png',displayHeight:107,emote:'curiosa'}
     ],
     grass:[
       {id:'a',rect:[340,155,515,315],spawn:[425,235],entry:[490,280]},
@@ -1337,7 +1337,7 @@ W.PsyKantoAnime3Q={
   brushActive:()=>debugEditorEnabled&&brushMode!=='off',
   exportGeometryJSON,
   hide,
-  characterScale:1.15,
-  followerScale:0.90
+  characterScale:1.50,
+  followerScale:1.17
 };
 })(window,document);

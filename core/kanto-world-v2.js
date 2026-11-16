@@ -405,7 +405,7 @@ function drawNPC(c,npc,distance){
   const palletActor=(state.world?.id==='pallet'||state.world?.region==='pallet'||state.world?.isRoute1)&&state.inside?.id!==RIFT_ID;
   const hasSheet=!!(sheet&&entry?.loaded&&sheet.cols>0&&sheet.rows>0);
   const animatePallet=palletActor&&!palletMotionReduced&&!hasSheet;
-  const h=inHome?Math.max(125,Number(npc.displayHeight||95)*1.65):(palletActor?Math.max(40,Math.min(105,Number(npc.displayHeight)?Number(npc.displayHeight)*(state.inside?.id?0.64:0.85):48)):60);
+  const h=inHome?Math.max(125,Number(npc.displayHeight||95)*1.65):(palletActor?Math.max(40,Math.min(125,Number(npc.displayHeight)?Number(npc.displayHeight)*(state.inside?.id?0.64:0.85):48)):60);
   const customPalletSprite=/\/npcs\/pallet-new\//.test(url||'');
   const footOffset=palletActor?(npc.footOffset!==undefined?Number(npc.footOffset):(customPalletSprite?.08:0))*h:0;
   const now=performance.now(),id=String(npc.id||npc.name||'pallet-npc');
@@ -424,7 +424,7 @@ function drawNPC(c,npc,distance){
   if(entry?.loaded){
     const iw=entry.im.naturalWidth||160,ih=entry.im.naturalHeight||190;
     const fw=hasSheet?iw/sheet.cols:iw,fh=hasSheet?ih/sheet.rows:ih;
-    const maxW=inHome?160:(npc.displayHeight?85:44);
+    const maxW=inHome?160:(npc.displayHeight?110:44);
     const w=palletActor?Math.min(maxW,h*fw/fh):Math.min(52,h*fw/fh);
     const smoothing=c.imageSmoothingEnabled;
     if(palletActor&&/\/rival\.png(?:[?#]|$)/i.test(url||''))c.imageSmoothingEnabled=false;
