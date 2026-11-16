@@ -68,55 +68,55 @@ const MAPS={
     art:'assets/story/pallet/anime3q/01_centro_residencias.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/centro_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/centro_sdf.png',
-    spawn:[600,430],
+    spawn:[600,460],
     exit:null,
     doors:[
-      {id:'home',at:[350,222],title:'Casa de Red'},
-      {id:'house-east',at:[975,220],title:'Casa Leste'}
+      {id:'home',at:[312,240],title:'Casa de Red'},
+      {id:'house-east',at:[912,298],title:'Casa Leste'}
     ],
     npcs:[
-      {id:'lia',name:'Rival',at:[500,385],sprite:'assets/story/rival.png',portrait:'assets/story/rival.png',emote:'alegre'},
+      {id:'lia',name:'Rival',at:[470,385],sprite:'assets/story/rival.png',portrait:'assets/story/rival.png',emote:'alegre'},
       {id:'pallet-nina',name:'Nina',at:[680,430],sprite:'assets/kanto/npcs/pallet-new/nina-cartografa.png',displayHeight:92}
     ],
     grass:[],
     portals:[
       {
         id:'centro-to-lab',
-        rect:[552,0,656,36],
+        rect:[530,0,665,38],
         target:'pallet-lab-3q',
-        spawn:[656,598],
+        spawn:[565,610],
         facing:'up',
-        marker:[604,48],
+        marker:[598,48],
         label:'LABORATÓRIO ↑',
         color:'#ffd480'
       },
       {
         id:'centro-to-jardins',
-        rect:[1155,130,1200,240],
+        rect:[1152,375,1200,470],
         target:'pallet-jardins-3q',
-        spawn:[98,225],
+        spawn:[75,225],
         facing:'right',
-        marker:[1162,195],
+        marker:[1158,422],
         label:'JARDINS →',
         color:'#80ffaa'
       },
       {
         id:'centro-to-costa',
-        rect:[560,636,730,675],
+        rect:[140,635,320,675],
         target:'pallet-costa-3q',
-        spawn:[608,72],
+        spawn:[595,75],
         facing:'down',
-        marker:[642,630],
+        marker:[235,628],
         label:'COSTA ↓',
         color:'#79dced'
       },
       {
         id:'centro-to-colinas',
-        rect:[0,150,42,232],
+        rect:[0,325,42,415],
         target:'pallet-colinas-3q',
-        spawn:[1124,282],
+        spawn:[1135,278],
         facing:'left',
-        marker:[48,198],
+        marker:[48,370],
         label:'← COLINAS',
         color:'#f6c978'
       }
@@ -143,12 +143,7 @@ const MAPS={
       {cx:500,cy:192,r:9},
       {cx:745,cy:192,r:9}
     ],
-    occluders:[
-      {id:'centro-lamp-west',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_west.png',rect:[433.493,248.193,462.201,350.053],baselineY:348,minY:248,xPad:16},
-      {id:'centro-lamp-nw',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_nw.png',rect:[485.885,98.273,514.593,195.829],baselineY:194,minY:98,xPad:16},
-      {id:'centro-lamp-ne',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_ne.png',rect:[730.622,108.316,759.33,195.829],baselineY:194,minY:108,xPad:16},
-      {id:'centro-cherry-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/centro_cherry_canopy.png',rect:[665,0,910,145],baselineY:172,minY:0,xPad:12}
-    ]
+    occluders:[]
   },
 
   'pallet-jardins-3q':{
@@ -161,34 +156,34 @@ const MAPS={
     art:'assets/story/pallet/anime3q/02_jardins_bosque.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/jardins_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/jardins_sdf.png',
-    spawn:[98,225],
+    spawn:[75,225],
     exit:null,
     doors:[
-      {id:'center',at:[265,132],title:'Posto de Cura do Bosque'}
+      {id:'center',at:[272,168],title:'Posto de Cura do Bosque'}
     ],
     npcs:[
-      {id:'neighbor',name:'Mina',at:[215,320],sprite:'assets/halloween/npc-mina.svg',portrait:'assets/halloween/npc-mina.svg',emote:'curiosa'},
+      {id:'neighbor',name:'Mina',at:[215,300],sprite:'assets/halloween/npc-mina.svg',portrait:'assets/halloween/npc-mina.svg',emote:'curiosa'},
       {id:'pallet-tomi',name:'Tomi',at:[280,370],sprite:'assets/kanto/npcs/pallet-new/tomi-botanista.png',displayHeight:86}
     ],
     grass:[],
     portals:[
       {
         id:'jardins-to-centro',
-        rect:[0,135,45,290],
+        rect:[0,175,44,285],
         target:'pallet-centro-3q',
-        spawn:[1125,228],
+        spawn:[1120,422],
         facing:'left',
-        marker:[42,220],
+        marker:[48,228],
         label:'← CENTRO',
         color:'#80ffaa'
       },
       {
         id:'jardins-to-costa',
-        rect:[548,636,725,675],
+        rect:[515,635,705,675],
         target:'pallet-costa-3q',
-        spawn:[1114,74],
+        spawn:[1120,242],
         facing:'down',
-        marker:[635,626],
+        marker:[610,628],
         label:'COSTA ↓',
         color:'#79dced'
       }
@@ -232,13 +227,7 @@ const MAPS={
       {cx:988,cy:224,r:12},
       {cx:868,cy:330,r:9}
     ],
-    occluders:[
-      {id:'jardins-lamp-west',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_west.png',rect:[48.086,205.871,76.794,296.254],baselineY:294,minY:206,xPad:16},
-      {id:'jardins-lamp-central',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_central.png',rect:[538.278,152.072,566.986,248.193],baselineY:246,minY:152,xPad:16},
-      {id:'jardins-lamp-east',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_east.png',rect:[854.067,238.151,882.775,334.272],baselineY:332,minY:238,xPad:16},
-      {id:'jardins-cherry-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/jardins_cherry_canopy.png',rect:[690,62,850,168],baselineY:186,minY:62,xPad:12},
-      {id:'jardins-great-tree-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/jardins_great_tree_canopy.png',rect:[845,0,1085,92],baselineY:118,minY:0,xPad:12}
-    ]
+    occluders:[]
   },
 
   'pallet-lab-3q':{
@@ -251,35 +240,35 @@ const MAPS={
     art:'assets/story/pallet/anime3q/03_laboratorio.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/lab_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/lab_sdf.png',
-    spawn:[656,590],
+    spawn:[565,610],
     exit:null,
     doors:[
-      {id:'lab',at:[638,304],title:'Laboratório do Prof. Carvalho'}
+      {id:'lab',at:[665,338],title:'Laboratório do Prof. Carvalho'}
     ],
     npcs:[
-      {id:'oak',name:'Professor Car’alho',at:[528,448],sprite:'assets/kanto/npcs/professor-v33.webp',portrait:'assets/story/professor-oak.png',emote:'sereno'},
-      {id:'assistant',name:'Pesquisador Elias',at:[760,362],sprite:'assets/halloween/npc-researcher.webp',portrait:'assets/halloween/npc-researcher.webp',emote:'curioso'},
+      {id:'oak',name:'Professor Car’alho',at:[535,468],sprite:'assets/kanto/npcs/professor-v33.webp',portrait:'assets/story/professor-oak.png',emote:'sereno'},
+      {id:'assistant',name:'Pesquisador Elias',at:[760,392],sprite:'assets/halloween/npc-researcher.webp',portrait:'assets/halloween/npc-researcher.webp',emote:'curioso'},
       {id:'pallet-maia',name:'Maia',at:[850,400],sprite:'assets/kanto/npcs/pallet-new/maia-socorrista.png',displayHeight:96}
     ],
     grass:[],
     portals:[
       {
         id:'lab-to-centro',
-        rect:[545,636,776,675],
+        rect:[465,635,650,675],
         target:'pallet-centro-3q',
-        spawn:[604,74],
+        spawn:[598,72],
         facing:'down',
-        marker:[660,628],
+        marker:[558,628],
         label:'CENTRO ↓',
         color:'#80ffaa'
       },
       {
         id:'lab-to-rota1',
-        rect:[498,24,596,66],
+        rect:[328,128,422,198],
         target:'pallet-arredores-3q',
-        spawn:[570,598],
+        spawn:[570,610],
         facing:'up',
-        marker:[548,78],
+        marker:[375,195],
         label:'ROTA 1 ↑',
         color:'#a8ff80'
       }
@@ -290,12 +279,7 @@ const MAPS={
     blocks:[],
     ellipses:[],
     circles:[],
-    occluders:[
-      {id:'lab-rota1-arch',kind:'arch',mask:'assets/story/pallet/anime3q/masks/lab_rota1_arch.png',rect:[462,4,628,86],baselineY:78,minY:0,xPad:14},
-      {id:'lab-lamp-sw',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/lab_lamp_sw.png',rect:[402,404,434,492],baselineY:486,minY:404,xPad:16},
-      {id:'lab-lamp-se',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/lab_lamp_se.png',rect:[877,418,909,498],baselineY:492,minY:418,xPad:16},
-      {id:'lab-lamp-mid-left',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/lab_lamp_mid_left.png',rect:[121,246,153,336],baselineY:330,minY:246,xPad:16}
-    ]
+    occluders:[]
   },
 
   'pallet-costa-3q':{
@@ -308,44 +292,44 @@ const MAPS={
     art:'assets/story/pallet/anime3q/04_costa_praia.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/costa_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/costa_sdf.png',
-    spawn:[608,120],
+    spawn:[595,75],
     exit:null,
     doors:[
-      {id:'house-west',at:[292,204],title:'Cabana do Pescador'}
+      {id:'house-west',at:[195,222],title:'Cabana do Pescador'}
     ],
     npcs:[
-      {id:'fisher',name:'Seu Abel',at:[848,286],sprite:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',portrait:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',displayHeight:95,emote:'tranquilo'},
-      {id:'pallet-banhista',name:'Caio',at:[760,300],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',portrait:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',spriteSheet:{src:'assets/kanto/npcs/pallet-new/banhista-idle-sheet.webp',cols:6,rows:4,frames:24,fps:6},walkSheet:{src:'assets/kanto/npcs/pallet-new/banhista-walk-sheet.webp',cols:6,rows:4,frames:24,fps:8},footOffset:0.055,groundShadow:true,displayHeight:100}
+      {id:'fisher',name:'Seu Abel',at:[735,275],sprite:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',portrait:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',displayHeight:95,emote:'tranquilo'},
+      {id:'pallet-banhista',name:'Caio',at:[680,295],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',portrait:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',spriteSheet:{src:'assets/kanto/npcs/pallet-new/banhista-idle-sheet.webp',cols:6,rows:4,frames:24,fps:6},walkSheet:{src:'assets/kanto/npcs/pallet-new/banhista-walk-sheet.webp',cols:6,rows:4,frames:24,fps:8},footOffset:0.055,groundShadow:true,displayHeight:100}
     ],
     grass:[],
     portals:[
       {
         id:'costa-to-centro',
-        rect:[525,0,685,38],
+        rect:[520,0,675,40],
         target:'pallet-centro-3q',
-        spawn:[642,598],
+        spawn:[248,608],
         facing:'up',
-        marker:[608,52],
+        marker:[598,48],
         label:'CENTRO ↑',
         color:'#80ffaa'
       },
       {
         id:'costa-to-jardins',
-        rect:[1095,0,1190,42],
+        rect:[1145,190,1200,285],
         target:'pallet-jardins-3q',
-        spawn:[622,598],
-        facing:'up',
-        marker:[1124,52],
-        label:'JARDINS ↑',
+        spawn:[610,602],
+        facing:'right',
+        marker:[1150,242],
+        label:'JARDINS →',
         color:'#80ffaa'
       },
       {
         id:'costa-to-colinas',
-        rect:[72,0,172,42],
+        rect:[205,0,315,42],
         target:'pallet-colinas-3q',
-        spawn:[462,608],
+        spawn:[215,610],
         facing:'up',
-        marker:[120,52],
+        marker:[260,48],
         label:'COLINAS ↑',
         color:'#f6c978'
       }
@@ -356,10 +340,7 @@ const MAPS={
     blocks:[],
     ellipses:[],
     circles:[],
-    occluders:[
-      {id:'costa-lamp-plaza-right',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/costa_lamp_plaza_right.png',rect:[781,170,813,248],baselineY:242,minY:170,xPad:16},
-      {id:'costa-lamp-pier',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/costa_lamp_pier.png',rect:[893,332,925,412],baselineY:406,minY:332,xPad:16}
-    ]
+    occluders:[]
   },
 
   'pallet-colinas-3q':{
@@ -372,34 +353,34 @@ const MAPS={
     art:'assets/story/pallet/anime3q/05_colinas_pedreiras.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/colinas_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/colinas_sdf.png',
-    spawn:[1100,276],
+    spawn:[1135,278],
     exit:null,
     doors:[
-      {id:'market',at:[295,285],title:'Posto dos Mineradores'}
+      {id:'market',at:[265,295],title:'Posto dos Mineradores'}
     ],
     npcs:[
-      {id:'child',name:'Luna',at:[248,308],sprite:'assets/kanto/npcs/child-v9.svg',portrait:'assets/kanto/npcs/child-v9.svg',emote:'animada'},
+      {id:'child',name:'Luna',at:[320,330],sprite:'assets/kanto/npcs/child-v9.svg',portrait:'assets/kanto/npcs/child-v9.svg',emote:'animada'},
       {id:'pallet-breno',name:'Breno',at:[350,350],sprite:'assets/kanto/npcs/pallet-new/breno-artesao.png',displayHeight:100}
     ],
     grass:[],
     portals:[
       {
         id:'colinas-to-centro',
-        rect:[1155,240,1200,340],
+        rect:[1148,235,1200,335],
         target:'pallet-centro-3q',
-        spawn:[74,212],
+        spawn:[75,370],
         facing:'right',
-        marker:[1152,286],
+        marker:[1152,285],
         label:'CENTRO →',
         color:'#80ffaa'
       },
       {
         id:'colinas-to-costa',
-        rect:[438,636,538,675],
+        rect:[105,635,285,675],
         target:'pallet-costa-3q',
-        spawn:[118,70],
+        spawn:[260,68],
         facing:'down',
-        marker:[486,626],
+        marker:[195,628],
         label:'COSTA ↓',
         color:'#79dced'
       }
@@ -410,9 +391,7 @@ const MAPS={
     blocks:[],
     ellipses:[],
     circles:[],
-    occluders:[
-      {id:'colinas-lamp-upper',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/colinas_lamp_upper.png',rect:[950,190,982,284],baselineY:278,minY:190,xPad:16}
-    ]
+    occluders:[]
   },
 
   'pallet-arredores-3q':{
@@ -426,33 +405,33 @@ const MAPS={
     art:'assets/story/pallet/anime3q/06_arredores_rota1.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/rota1_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/rota1_sdf.png',
-    spawn:[570,590],
-    exit:[770,24],
+    spawn:[570,610],
+    exit:[585,92],
     doors:[],
     npcs:[
-      {id:'route-guide',name:'Exploradora Nara',at:[632,372],sprite:'assets/halloween/npc-luna.svg',portrait:'assets/halloween/npc-luna.svg',emote:'curiosa'}
+      {id:'route-guide',name:'Exploradora Nara',at:[635,420],sprite:'assets/halloween/npc-luna.svg',portrait:'assets/halloween/npc-luna.svg',emote:'curiosa'}
     ],
     grass:[
-      {id:'a',rect:[210,68,470,174],spawn:[345,125],entry:[242,165]},
-      {id:'b',rect:[710,158,1005,256],spawn:[850,210],entry:[915,255]},
-      {id:'c',rect:[895,325,1142,425],spawn:[1020,375],entry:[915,325]}
+      {id:'a',rect:[340,155,515,315],spawn:[425,235],entry:[490,280]},
+      {id:'b',rect:[715,195,985,335],spawn:[850,265],entry:[730,265]},
+      {id:'c',rect:[950,105,1140,225],spawn:[1045,165],entry:[960,165]}
     ],
     portals:[
       {
         id:'rota1-to-lab',
-        rect:[498,636,642,675],
+        rect:[450,635,705,675],
         target:'pallet-lab-3q',
-        spawn:[452,108],
+        spawn:[385,225],
         facing:'down',
-        marker:[570,624],
+        marker:[578,628],
         label:'LABORATÓRIO ↓',
         color:'#ffd480'
       },
       {
         id:'rota1-to-viridian',
-        rect:[730,0,835,28],
+        rect:[520,72,650,125],
         action:'exitWorld',
-        marker:[772,42],
+        marker:[585,128],
         label:'VIRIDIAN CITY ↑',
         color:'#80ffaa'
       }
@@ -463,10 +442,7 @@ const MAPS={
     blocks:[],
     ellipses:[],
     circles:[],
-    occluders:[
-      {id:'rota1-lamp-crossroads',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/rota1_lamp_crossroads.png',rect:[357,224,389,342],baselineY:336,minY:224,xPad:16},
-      {id:'rota1-signpost',kind:'sign',mask:'assets/story/pallet/anime3q/masks/rota1_signpost.png',rect:[556,240,590,336],baselineY:330,minY:240,xPad:16}
-    ]
+    occluders:[]
   }
 };
 
@@ -659,8 +635,43 @@ precision highp float;
 in vec2 v_uv;
 uniform sampler2D u_tex;
 out vec4 outColor;
+vec4 texBicubic(sampler2D tex, vec2 uv){
+  vec2 texSize = vec2(textureSize(tex, 0));
+  vec2 invSize = 1.0 / texSize;
+  vec2 coord = uv * texSize - 0.5;
+  vec2 fxy = fract(coord);
+  coord -= fxy;
+  vec2 xcubic = fxy.x * (fxy.x * (fxy.x * vec2(1.5, -0.5) + vec2(-2.5, 1.0)) + vec2(0.0, 0.5));
+  vec2 ycubic = fxy.y * (fxy.y * (fxy.y * vec2(1.5, -0.5) + vec2(-2.5, 1.0)) + vec2(0.0, 0.5));
+  // 4-bilinear-tap Catmull-Rom approximation
+  vec2 f2 = fxy * fxy;
+  vec2 f3 = f2 * fxy;
+  vec2 w0 = -0.5 * f3 + f2 - 0.5 * fxy;
+  vec2 w1 = 1.5 * f3 - 2.5 * f2 + 1.0;
+  vec2 w2 = -1.5 * f3 + 2.0 * f2 + 0.5 * fxy;
+  vec2 w3 = 0.5 * f3 - 0.5 * f2;
+  vec2 s0 = w0 + w1;
+  vec2 s1 = w2 + w3;
+  vec2 offset0 = (coord - 0.5 + w1 / max(s0, 1e-5)) * invSize;
+  vec2 offset1 = (coord + 1.5 + w3 / max(s1, 1e-5)) * invSize;
+  vec4 c00 = texture(tex, vec2(offset0.x, offset0.y));
+  vec4 c10 = texture(tex, vec2(offset1.x, offset0.y));
+  vec4 c01 = texture(tex, vec2(offset0.x, offset1.y));
+  vec4 c11 = texture(tex, vec2(offset1.x, offset1.y));
+  vec4 row0 = mix(c10, c00, s0.x);
+  vec4 row1 = mix(c11, c01, s0.x);
+  return mix(row1, row0, s0.y);
+}
 void main(){
-  outColor=texture(u_tex,v_uv);
+  vec2 inv = 1.0 / vec2(textureSize(u_tex, 0));
+  vec4 base = texBicubic(u_tex, v_uv);
+  vec4 blur = (
+    texture(u_tex, v_uv + vec2(inv.x, 0.0)) +
+    texture(u_tex, v_uv - vec2(inv.x, 0.0)) +
+    texture(u_tex, v_uv + vec2(0.0, inv.y)) +
+    texture(u_tex, v_uv - vec2(0.0, inv.y))
+  ) * 0.25;
+  outColor = clamp(base + (base - blur) * 0.22, 0.0, 1.0);
 }`;
 
 function initGL(stage){
@@ -929,6 +940,35 @@ async function exportBrush(){
   await downloadGray(sdf,`${brushActiveMap}_sdf.png`);
   setStatus(`Exportado OK: ${brushActiveMap} (1200x675, 0 diverg.)`);
 }
+async function exportAllBrush(){
+  const B=W.PsyAnime3QBrush;
+  if(!B)return;
+  const targets=[];
+  for(const mapId of Object.keys(MAPS)){
+    const ed=brushEditors.get(mapId);
+    const rec=brushDrafts.get(mapId);
+    if(ed&&(mapId===brushActiveMap||rec)){
+      targets.push({mapId,walk:ed.walkCopy(),walkL:ed.walkL(),sdf:ed.sdfU8()});
+    }else if(rec?.walk){
+      const tmp=B.create(LOGICAL_W,LOGICAL_H,rec.walk);
+      targets.push({mapId,walk:tmp.walkCopy(),walkL:tmp.walkL(),sdf:tmp.sdfU8()});
+    }
+  }
+  if(!targets.length){setStatus('Edite ou abra um mapa antes de exportar tudo');return;}
+  for(const t of targets){
+    const v=B.verifyPair(t.walk,t.sdf);
+    if(!v.ok){setStatus(`Erro em ${t.mapId}: ${v.diff} px divergentes`);return;}
+  }
+  setStatus(`Exportando ${targets.length} mapa(s)...`);
+  for(let i=0;i<targets.length;i++){
+    const t=targets[i];
+    await downloadGray(t.walkL,`${t.mapId}_walkmask.png`);
+    await new Promise(r=>setTimeout(r,220));
+    await downloadGray(t.sdf,`${t.mapId}_sdf.png`);
+    if(i<targets.length-1)await new Promise(r=>setTimeout(r,220));
+  }
+  setStatus(`Exportar Tudo OK: ${targets.length} mapa(s) (${targets.length*2} arquivos)`);
+}
 async function publishBrush(){
   const B=W.PsyAnime3QBrush;
   if(!B)return;
@@ -1061,6 +1101,7 @@ function mountBrushPanel(){
       '<button data-a="zreset" title="Centralizar no treinador">Centro</button>'+
       '<button data-a="import">Importar</button>'+
       '<button data-a="export">Exportar</button>'+
+      '<button data-a="exportAll" title="Baixar walkmask e SDF de todos os mapas editados">Exportar Tudo</button>'+
       '<button data-a="publish" title="Publicar rascunhos na branch">Publicar</button>'+
       '<button data-a="save">Salvar</button>'+
       '<button data-a="restore">Restaurar</button>'+
@@ -1136,6 +1177,7 @@ function mountBrushPanel(){
   act('import').onclick=()=>{const f=act('file');f.value='';f.click();};
   act('file').onchange=e=>importBrushFiles(e.target.files);
   act('export').onclick=exportBrush;
+  act('exportAll').onclick=exportAllBrush;
   act('publish').onclick=publishBrush;
   act('save').onclick=()=>{if(brushActiveMap)scheduleDraftSave(brushActiveMap,true);};
   act('restore').onclick=()=>{
@@ -1178,6 +1220,7 @@ function updateBrushPanel(){
   on('erase',brushMode==='erase');
   on('sdf',debugOverlayVisible);
   brushPanel.querySelector('[data-a="export"]').disabled=!ed;
+  brushPanel.querySelector('[data-a="exportAll"]').disabled=!ed&&!brushDrafts.size;
   brushPanel.querySelector('[data-a="publish"]').disabled=!ed&&!brushDrafts.size;
   brushPanel.querySelector('[data-a="import"]').disabled=!ed;
   brushPanel.querySelector('[data-a="save"]').disabled=!ed;
@@ -1292,7 +1335,7 @@ W.PsyKantoAnime3Q={
   brushActive:()=>debugEditorEnabled&&brushMode!=='off',
   exportGeometryJSON,
   hide,
-  characterScale:1.56,
-  followerScale:1.18
+  characterScale:0.88,
+  followerScale:0.68
 };
 })(window,document);

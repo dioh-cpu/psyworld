@@ -60,9 +60,10 @@ export default async function handler(req,res){
       const save=req.body?.save;if(!save||typeof save!=='object')return res.status(400).json({error:'save_required'});
       return res.status(200).json(await bootstrap(user,supabase,save));
     }
+    const missingRpc=err=>err&&(err.code==='PGRST202'||err.code==='42883'||/does not exist|Could not find the function/i.test(String(err.message||'')));
     if(action==='campaign-lottery-heartbeat'){
       const {data,error}=await supabase.rpc('psy_campaign_hourly_heartbeat',{p_user:user.id});
-      if(error)throw error;
+      if(error){if(missingRpc(error))return res.status(200).json({ok:false,unavailable:true});throw error;}
       return res.status(200).json(data||{});
     }
     const idempotency=idem(req.body?.idempotency_key,action);
@@ -70,7 +71,7 @@ export default async function handler(req,res){
       const body=obj(req.body),payload=obj(body.payload),subAction=txt(payload.action,32).toLowerCase();
       if(!['status','unlock','dig','open-chest','level-up','skill-buy','treasure-roll','equip-cosmetic'].includes(subAction))return res.status(400).json({error:'invalid_treasure_action'});
       const {data,error}=await supabase.rpc('psy_v28_treasure_action_v1',{p_user:user.id,p_action:subAction,p_payload:payload,p_idempotency:idempotency});
-      if(error)throw error;
+      if(error){if(missingRpc(error))return res.status(200).json({ok:false,unavailable:true,action:subAction});throw error;}
       return res.status(200).json({...obj(data),action:subAction});
     }
     if(GENERIC.has(action)){
