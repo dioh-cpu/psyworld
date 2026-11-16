@@ -1,0 +1,214 @@
+{
+  "_schema": "Cada ponto: area (centro|jardins|lab|costa|colinas|rota1), x, y em espaco logico 1200x675, tipo (solid|walkable|spawn|portal), id opcional, fonte opcional.",
+  "_status": "V6.2: 11 solids + 3 walkable do print mobile incluidos; sementes de spawn/sólidos de build mantidas.",
+  "points": [
+    {
+      "id": "spawn-centro",
+      "area": "centro",
+      "x": 600,
+      "y": 430,
+      "tipo": "spawn",
+      "fonte": "core/kanto-anime3q-pilot-v1.js spawn do mapa centro"
+    },
+    {
+      "id": "spawn-jardins",
+      "area": "jardins",
+      "x": 98,
+      "y": 225,
+      "tipo": "spawn",
+      "fonte": "core/kanto-anime3q-pilot-v1.js spawn do mapa jardins"
+    },
+    {
+      "id": "spawn-lab",
+      "area": "lab",
+      "x": 656,
+      "y": 590,
+      "tipo": "spawn",
+      "fonte": "core/kanto-anime3q-pilot-v1.js spawn do mapa lab"
+    },
+    {
+      "id": "spawn-costa",
+      "area": "costa",
+      "x": 608,
+      "y": 120,
+      "tipo": "spawn",
+      "fonte": "core/kanto-anime3q-pilot-v1.js spawn do mapa costa"
+    },
+    {
+      "id": "spawn-colinas",
+      "area": "colinas",
+      "x": 1100,
+      "y": 276,
+      "tipo": "spawn",
+      "fonte": "core/kanto-anime3q-pilot-v1.js spawn do mapa colinas"
+    },
+    {
+      "id": "spawn-rota1",
+      "area": "rota1",
+      "x": 570,
+      "y": 590,
+      "tipo": "spawn",
+      "fonte": "core/kanto-anime3q-pilot-v1.js spawn do mapa rota1"
+    },
+    {
+      "id": "fonte-astrolabio",
+      "area": "lab",
+      "x": 652,
+      "y": 420,
+      "tipo": "solid",
+      "fonte": "tools/build_walkmasks_v6.py build_lab_mask: fonte centro 652,420"
+    },
+    {
+      "id": "lampiao-pier",
+      "area": "costa",
+      "x": 912,
+      "y": 423,
+      "tipo": "solid",
+      "fonte": "tools/build_walkmasks_v6.py build_costa_mask: pier lamp (912,420)"
+    },
+    {
+      "id": "v62-colinas-tronco-flores",
+      "area": "colinas",
+      "x": 900,
+      "y": 300,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-colinas-muro-cerca",
+      "area": "colinas",
+      "x": 760,
+      "y": 382,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-caixas-so",
+      "area": "lab",
+      "x": 255,
+      "y": 475,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-poste-esq",
+      "area": "lab",
+      "x": 512,
+      "y": 352,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-caixas-estufa",
+      "area": "lab",
+      "x": 860,
+      "y": 342,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-pilar-so-jardim",
+      "area": "lab",
+      "x": 930,
+      "y": 445,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-cerca-jardim",
+      "area": "lab",
+      "x": 1040,
+      "y": 395,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-cerejeira-muro-escada",
+      "area": "lab",
+      "x": 290,
+      "y": 360,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-cerca-arbusto-sup-escada",
+      "area": "lab",
+      "x": 180,
+      "y": 210,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-arbustos-terraco-sup",
+      "area": "lab",
+      "x": 400,
+      "y": 122,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-poste-via-ne",
+      "area": "lab",
+      "x": 1142,
+      "y": 224,
+      "tipo": "solid",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-subida-esc-1",
+      "area": "lab",
+      "x": 310,
+      "y": 485,
+      "tipo": "walkable",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-subida-esc-2",
+      "area": "lab",
+      "x": 194,
+      "y": 344,
+      "tipo": "walkable",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v62-lab-subida-esc-3",
+      "area": "lab",
+      "x": 546,
+      "y": 73,
+      "tipo": "walkable",
+      "fonte": "commit 5abe8dd V6.2 print mobile"
+    },
+    {
+      "id": "v63-rota1-norte-nara-livre",
+      "area": "rota1",
+      "x": 645,
+      "y": 325,
+      "tipo": "walkable",
+      "fonte": "V6.3 print mobile: passagem reta ao norte a direita da Exploradora Nara"
+    },
+    {
+      "id": "v63-rota1-lago-cachoeira",
+      "area": "rota1",
+      "x": 195,
+      "y": 320,
+      "tipo": "solid",
+      "fonte": "V6.3 print mobile: lago da cachoeira bloqueado"
+    },
+    {
+      "id": "v63-rota1-cerca-topo-escada",
+      "area": "rota1",
+      "x": 240,
+      "y": 176,
+      "tipo": "solid",
+      "fonte": "V6.3 print mobile: poste da cerca direita no topo da escada"
+    },
+    {
+      "id": "v63-rota1-vao-topo-escada",
+      "area": "rota1",
+      "x": 215,
+      "y": 172,
+      "tipo": "walkable",
+      "fonte": "V6.3 print mobile: vao livre no topo da escada para o prado NO"
+    }
+  ]
+}

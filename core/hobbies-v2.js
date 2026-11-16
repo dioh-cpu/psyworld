@@ -177,6 +177,12 @@ const FIELD={
   ['t1','lumber',292,230,'Madeira Bruta'],['t2','lumber',300,420,'Tronco Caído'],['t3','lumber',690,444,'Madeira Bruta'],
   ['f1','gardener',215,96,'Flor de Caverna'],['f2','gardener',680,92,'Flor Encantada'],['f3','gardener',64,520,'Flor de Cristal'],['f4','gardener',830,500,'Flor Silvestre'],
   ['d1','treasureHunter',560,150,'Solo rachado'],['d2','treasureHunter',420,370,'Solo rachado'],['d3','treasureHunter',790,470,'Solo rachado']
+ ],
+ 'pallet-colinas-3q':[
+  ['c-m1','miner',620,415,'Minério Bruto'],['c-m2','miner',820,250,'Minério Bruto'],['c-f1','gardener',360,340,'Flor do Campo']
+ ],
+ 'pallet-arredores-3q':[
+  ['r-f1','gardener',275,390,'Flor do Campo'],['r-t1','lumber',685,115,'Madeira Bruta'],['r-m1','miner',480,480,'Minério Bruto']
  ]
 };
 function fieldNodes(scene){
@@ -297,6 +303,8 @@ const WATER={
  'route-1':[[132,431,95],[96,350,90]],
  'viridian':[[615,655,110],[470,550,70]],
  'pallet':[[450,430,38]],
+ 'pallet-jardins-3q':[[690,240,65]],
+ 'pallet-costa-3q':[[830,435,75],[960,440,90],[1080,470,95],[500,395,70],[200,480,75]],
  'kanto-hunt-rift':[[790,275,95],[738,360,65]]
 };
 function canFish(scene,pos,canvas){

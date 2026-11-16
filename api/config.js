@@ -1,4 +1,5 @@
 import { adminClient } from './_lib/supabase.js';
+import collisionPublish from './_lib/collision-publish.js';
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const WINDOW_MS = 60_000;
@@ -185,6 +186,7 @@ function handler(req,res){
     return res.status(200).json({chat_available:ready,google_search:ready,provider:ready?'Google Gemini':null,model:ready?(process.env.GEMINI_MODEL||'gemini-3.8-flash'):null});
   }
   if(route==='chat') return psyChat(req,res);
+  if(route==='collision-publish') return collisionPublish(req,res);
   if(req.method!=='GET'){
     res.setHeader('Allow','GET');
     return res.status(405).json({error:'method_not_allowed'});

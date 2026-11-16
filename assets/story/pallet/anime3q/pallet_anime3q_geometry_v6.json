@@ -1,0 +1,1514 @@
+{
+  "version": "PALLET_ANIME3Q_V6_SDF_20261115",
+  "logicalSize": [
+    1200,
+    675
+  ],
+  "maps": {
+    "pallet-centro-3q": {
+      "id": "pallet-centro-3q",
+      "areaIndex": 1,
+      "region": "pallet",
+      "title": "Pallet Town · Centro e Residências",
+      "subtitle": "Norte: Lab · Leste: Jardins · Sul: Costa · Oeste: Colinas",
+      "w": 1200,
+      "h": 675,
+      "art": "assets/story/pallet/anime3q/01_centro_residencias.png",
+      "walkmask": "assets/story/pallet/anime3q/walkmasks/centro_walkmask.png",
+      "sdf": "assets/story/pallet/anime3q/walkmasks/centro_sdf.png",
+      "spawn": [
+        600,
+        430
+      ],
+      "exit": null,
+      "doors": [
+        {
+          "id": "home",
+          "at": [
+            350,
+            222
+          ],
+          "title": "Casa de Red"
+        },
+        {
+          "id": "house-east",
+          "at": [
+            975,
+            220
+          ],
+          "title": "Casa Leste"
+        }
+      ],
+      "npcs": [
+        {
+          "id": "lia",
+          "name": "Rival",
+          "at": [
+            500,
+            385
+          ],
+          "sprite": "assets/story/rival.png",
+          "portrait": "assets/story/rival.png",
+          "emote": "alegre"
+        }
+      ],
+      "grass": [],
+      "portals": [
+        {
+          "id": "centro-to-lab",
+          "rect": [
+            552,
+            0,
+            656,
+            36
+          ],
+          "target": "pallet-lab-3q",
+          "spawn": [
+            656,
+            598
+          ],
+          "facing": "up",
+          "marker": [
+            604,
+            48
+          ],
+          "label": "LABORATÓRIO ↑",
+          "color": "#ffd480"
+        },
+        {
+          "id": "centro-to-jardins",
+          "rect": [
+            1155,
+            130,
+            1200,
+            240
+          ],
+          "target": "pallet-jardins-3q",
+          "spawn": [
+            98,
+            225
+          ],
+          "facing": "right",
+          "marker": [
+            1162,
+            195
+          ],
+          "label": "JARDINS →",
+          "color": "#80ffaa"
+        },
+        {
+          "id": "centro-to-costa",
+          "rect": [
+            560,
+            636,
+            730,
+            675
+          ],
+          "target": "pallet-costa-3q",
+          "spawn": [
+            608,
+            72
+          ],
+          "facing": "down",
+          "marker": [
+            642,
+            630
+          ],
+          "label": "COSTA ↓",
+          "color": "#79dced"
+        },
+        {
+          "id": "centro-to-colinas",
+          "rect": [
+            0,
+            150,
+            42,
+            232
+          ],
+          "target": "pallet-colinas-3q",
+          "spawn": [
+            1124,
+            282
+          ],
+          "facing": "left",
+          "marker": [
+            48,
+            198
+          ],
+          "label": "← COLINAS",
+          "color": "#f6c978"
+        }
+      ],
+      "walkPolys": [
+        [
+          [
+            0,
+            152
+          ],
+          [
+            135,
+            222
+          ],
+          [
+            392,
+            202
+          ],
+          [
+            542,
+            196
+          ],
+          [
+            666,
+            196
+          ],
+          [
+            895,
+            212
+          ],
+          [
+            1200,
+            132
+          ],
+          [
+            1200,
+            235
+          ],
+          [
+            930,
+            355
+          ],
+          [
+            745,
+            498
+          ],
+          [
+            522,
+            508
+          ],
+          [
+            345,
+            472
+          ],
+          [
+            185,
+            405
+          ],
+          [
+            0,
+            335
+          ],
+          [
+            0,
+            278
+          ],
+          [
+            125,
+            332
+          ],
+          [
+            138,
+            295
+          ],
+          [
+            0,
+            225
+          ]
+        ],
+        [
+          [
+            548,
+            10
+          ],
+          [
+            658,
+            10
+          ],
+          [
+            695,
+            255
+          ],
+          [
+            510,
+            255
+          ]
+        ],
+        [
+          [
+            538,
+            495
+          ],
+          [
+            716,
+            495
+          ],
+          [
+            736,
+            668
+          ],
+          [
+            526,
+            668
+          ]
+        ],
+        [
+          [
+            315,
+            186
+          ],
+          [
+            390,
+            186
+          ],
+          [
+            390,
+            224
+          ],
+          [
+            315,
+            224
+          ]
+        ]
+      ],
+      "blockPolys": [
+        [
+          [
+            395,
+            120
+          ],
+          [
+            536,
+            120
+          ],
+          [
+            536,
+            194
+          ],
+          [
+            425,
+            194
+          ]
+        ],
+        [
+          [
+            672,
+            120
+          ],
+          [
+            960,
+            120
+          ],
+          [
+            960,
+            214
+          ],
+          [
+            755,
+            214
+          ],
+          [
+            672,
+            194
+          ]
+        ]
+      ],
+      "blocks": [
+        [
+          268,
+          212,
+          355,
+          252
+        ],
+        [
+          758,
+          196,
+          840,
+          236
+        ]
+      ],
+      "ellipses": [
+        {
+          "cx": 598,
+          "cy": 312,
+          "rx": 132,
+          "ry": 74
+        }
+      ],
+      "circles": [
+        {
+          "cx": 448,
+          "cy": 348,
+          "r": 8
+        },
+        {
+          "cx": 500,
+          "cy": 192,
+          "r": 9
+        },
+        {
+          "cx": 745,
+          "cy": 192,
+          "r": 9
+        }
+      ],
+      "occluders": [
+        {
+          "id": "centro-lamp-west",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/centro_lamp_west.png",
+          "rect": [
+            433.493,
+            248.193,
+            462.201,
+            350.053
+          ],
+          "baselineY": 348,
+          "minY": 248,
+          "xPad": 16
+        },
+        {
+          "id": "centro-lamp-nw",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/centro_lamp_nw.png",
+          "rect": [
+            485.885,
+            98.273,
+            514.593,
+            195.829
+          ],
+          "baselineY": 194,
+          "minY": 98,
+          "xPad": 16
+        },
+        {
+          "id": "centro-lamp-ne",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/centro_lamp_ne.png",
+          "rect": [
+            730.622,
+            108.316,
+            759.33,
+            195.829
+          ],
+          "baselineY": 194,
+          "minY": 108,
+          "xPad": 16
+        },
+        {
+          "id": "centro-cherry-canopy",
+          "kind": "canopy",
+          "mask": "assets/story/pallet/anime3q/masks/centro_cherry_canopy.png",
+          "rect": [
+            665,
+            0,
+            910,
+            145
+          ],
+          "baselineY": 172,
+          "minY": 0,
+          "xPad": 12
+        }
+      ]
+    },
+    "pallet-jardins-3q": {
+      "id": "pallet-jardins-3q",
+      "areaIndex": 2,
+      "region": "pallet",
+      "title": "Pallet Town · Jardins e Bosque",
+      "subtitle": "Oeste: Centro · Sul: Costa e Praia",
+      "w": 1200,
+      "h": 675,
+      "art": "assets/story/pallet/anime3q/02_jardins_bosque.png",
+      "walkmask": "assets/story/pallet/anime3q/walkmasks/jardins_walkmask.png",
+      "sdf": "assets/story/pallet/anime3q/walkmasks/jardins_sdf.png",
+      "spawn": [
+        98,
+        225
+      ],
+      "exit": null,
+      "doors": [
+        {
+          "id": "center",
+          "at": [
+            265,
+            132
+          ],
+          "title": "Posto de Cura do Bosque"
+        }
+      ],
+      "npcs": [
+        {
+          "id": "neighbor",
+          "name": "Mina",
+          "at": [
+            215,
+            320
+          ],
+          "sprite": "assets/halloween/npc-mina.svg",
+          "portrait": "assets/halloween/npc-mina.svg",
+          "emote": "curiosa"
+        }
+      ],
+      "grass": [],
+      "portals": [
+        {
+          "id": "jardins-to-centro",
+          "rect": [
+            0,
+            135,
+            45,
+            290
+          ],
+          "target": "pallet-centro-3q",
+          "spawn": [
+            1125,
+            228
+          ],
+          "facing": "left",
+          "marker": [
+            42,
+            220
+          ],
+          "label": "← CENTRO",
+          "color": "#80ffaa"
+        },
+        {
+          "id": "jardins-to-costa",
+          "rect": [
+            548,
+            636,
+            725,
+            675
+          ],
+          "target": "pallet-costa-3q",
+          "spawn": [
+            1114,
+            74
+          ],
+          "facing": "down",
+          "marker": [
+            635,
+            626
+          ],
+          "label": "COSTA ↓",
+          "color": "#79dced"
+        }
+      ],
+      "hobbies": {
+        "fishing": true,
+        "gathering": true,
+        "techniques": [
+          "cut",
+          "surf"
+        ]
+      },
+      "walkPolys": [
+        [
+          [
+            0,
+            142
+          ],
+          [
+            185,
+            228
+          ],
+          [
+            385,
+            195
+          ],
+          [
+            385,
+            375
+          ],
+          [
+            185,
+            365
+          ],
+          [
+            0,
+            268
+          ]
+        ],
+        [
+          [
+            232,
+            115
+          ],
+          [
+            315,
+            115
+          ],
+          [
+            372,
+            178
+          ],
+          [
+            295,
+            210
+          ]
+        ],
+        [
+          [
+            185,
+            168
+          ],
+          [
+            585,
+            152
+          ],
+          [
+            585,
+            228
+          ],
+          [
+            185,
+            232
+          ]
+        ],
+        [
+          [
+            185,
+            342
+          ],
+          [
+            585,
+            342
+          ],
+          [
+            585,
+            438
+          ],
+          [
+            185,
+            408
+          ]
+        ],
+        [
+          [
+            438,
+            108
+          ],
+          [
+            582,
+            108
+          ],
+          [
+            588,
+            168
+          ],
+          [
+            438,
+            168
+          ]
+        ],
+        [
+          [
+            455,
+            140
+          ],
+          [
+            602,
+            140
+          ],
+          [
+            602,
+            495
+          ],
+          [
+            455,
+            495
+          ]
+        ],
+        [
+          [
+            575,
+            222
+          ],
+          [
+            810,
+            222
+          ],
+          [
+            810,
+            282
+          ],
+          [
+            575,
+            282
+          ]
+        ],
+        [
+          [
+            755,
+            126
+          ],
+          [
+            1080,
+            126
+          ],
+          [
+            1125,
+            292
+          ],
+          [
+            782,
+            292
+          ]
+        ],
+        [
+          [
+            1055,
+            22
+          ],
+          [
+            1165,
+            22
+          ],
+          [
+            1140,
+            225
+          ],
+          [
+            1045,
+            225
+          ]
+        ],
+        [
+          [
+            795,
+            255
+          ],
+          [
+            915,
+            255
+          ],
+          [
+            915,
+            385
+          ],
+          [
+            795,
+            385
+          ]
+        ],
+        [
+          [
+            472,
+            455
+          ],
+          [
+            675,
+            455
+          ],
+          [
+            675,
+            525
+          ],
+          [
+            472,
+            525
+          ]
+        ],
+        [
+          [
+            538,
+            512
+          ],
+          [
+            672,
+            512
+          ],
+          [
+            702,
+            652
+          ],
+          [
+            555,
+            652
+          ]
+        ]
+      ],
+      "blockPolys": [
+        [
+          [
+            546,
+            302
+          ],
+          [
+            635,
+            302
+          ],
+          [
+            635,
+            442
+          ],
+          [
+            546,
+            432
+          ]
+        ]
+      ],
+      "blocks": [
+        [
+          402,
+          172,
+          468,
+          208
+        ],
+        [
+          452,
+          110,
+          502,
+          142
+        ],
+        [
+          600,
+          198,
+          780,
+          223
+        ],
+        [
+          600,
+          280,
+          780,
+          308
+        ],
+        [
+          792,
+          286,
+          848,
+          324
+        ],
+        [
+          918,
+          275,
+          1075,
+          375
+        ]
+      ],
+      "ellipses": [
+        {
+          "cx": 345,
+          "cy": 288,
+          "rx": 140,
+          "ry": 72
+        },
+        {
+          "cx": 553,
+          "cy": 242,
+          "rx": 45,
+          "ry": 21
+        },
+        {
+          "cx": 965,
+          "cy": 118,
+          "rx": 52,
+          "ry": 28
+        }
+      ],
+      "circles": [
+        {
+          "cx": 62,
+          "cy": 292,
+          "r": 9
+        },
+        {
+          "cx": 553,
+          "cy": 246,
+          "r": 7
+        },
+        {
+          "cx": 768,
+          "cy": 186,
+          "r": 20
+        },
+        {
+          "cx": 882,
+          "cy": 205,
+          "r": 15
+        },
+        {
+          "cx": 988,
+          "cy": 224,
+          "r": 12
+        },
+        {
+          "cx": 868,
+          "cy": 330,
+          "r": 9
+        }
+      ],
+      "occluders": [
+        {
+          "id": "jardins-lamp-west",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_lamp_west.png",
+          "rect": [
+            48.086,
+            205.871,
+            76.794,
+            296.254
+          ],
+          "baselineY": 294,
+          "minY": 206,
+          "xPad": 16
+        },
+        {
+          "id": "jardins-lamp-central",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_lamp_central.png",
+          "rect": [
+            538.278,
+            152.072,
+            566.986,
+            248.193
+          ],
+          "baselineY": 246,
+          "minY": 152,
+          "xPad": 16
+        },
+        {
+          "id": "jardins-lamp-east",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_lamp_east.png",
+          "rect": [
+            854.067,
+            238.151,
+            882.775,
+            334.272
+          ],
+          "baselineY": 332,
+          "minY": 238,
+          "xPad": 16
+        },
+        {
+          "id": "jardins-cherry-canopy",
+          "kind": "canopy",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_cherry_canopy.png",
+          "rect": [
+            690,
+            62,
+            850,
+            168
+          ],
+          "baselineY": 186,
+          "minY": 62,
+          "xPad": 12
+        },
+        {
+          "id": "jardins-great-tree-canopy",
+          "kind": "canopy",
+          "mask": "assets/story/pallet/anime3q/masks/jardins_great_tree_canopy.png",
+          "rect": [
+            845,
+            0,
+            1085,
+            92
+          ],
+          "baselineY": 118,
+          "minY": 0,
+          "xPad": 12
+        }
+      ]
+    },
+    "pallet-lab-3q": {
+      "id": "pallet-lab-3q",
+      "areaIndex": 3,
+      "region": "pallet",
+      "title": "Pallet Town · Laboratório do Prof. Carvalho",
+      "subtitle": "Suba as escadarias à esquerda para alcançar o arco da Rota 1",
+      "w": 1200,
+      "h": 675,
+      "art": "assets/story/pallet/anime3q/03_laboratorio.png",
+      "walkmask": "assets/story/pallet/anime3q/walkmasks/lab_walkmask.png",
+      "sdf": "assets/story/pallet/anime3q/walkmasks/lab_sdf.png",
+      "spawn": [
+        656,
+        590
+      ],
+      "exit": null,
+      "doors": [
+        {
+          "id": "lab",
+          "at": [
+            638,
+            304
+          ],
+          "title": "Laboratório do Prof. Carvalho"
+        }
+      ],
+      "npcs": [
+        {
+          "id": "oak",
+          "name": "Professor Car’alho",
+          "at": [
+            528,
+            448
+          ],
+          "sprite": "assets/kanto/npcs/professor-v33.webp",
+          "portrait": "assets/story/professor-oak.png",
+          "emote": "sereno"
+        },
+        {
+          "id": "assistant",
+          "name": "Pesquisador Elias",
+          "at": [
+            760,
+            362
+          ],
+          "sprite": "assets/halloween/npc-researcher.webp",
+          "portrait": "assets/halloween/npc-researcher.webp",
+          "emote": "curioso"
+        }
+      ],
+      "grass": [],
+      "portals": [
+        {
+          "id": "lab-to-centro",
+          "rect": [
+            545,
+            636,
+            776,
+            675
+          ],
+          "target": "pallet-centro-3q",
+          "spawn": [
+            604,
+            74
+          ],
+          "facing": "down",
+          "marker": [
+            660,
+            628
+          ],
+          "label": "CENTRO ↓",
+          "color": "#80ffaa"
+        },
+        {
+          "id": "lab-to-rota1",
+          "rect": [
+            498,
+            24,
+            596,
+            66
+          ],
+          "target": "pallet-arredores-3q",
+          "spawn": [
+            570,
+            598
+          ],
+          "facing": "up",
+          "marker": [
+            548,
+            78
+          ],
+          "label": "ROTA 1 ↑",
+          "color": "#a8ff80"
+        }
+      ],
+      "hobbies": {
+        "gathering": true,
+        "techniques": [
+          "cut"
+        ]
+      },
+      "walkPolys": [],
+      "blockPolys": [],
+      "blocks": [],
+      "ellipses": [],
+      "circles": [],
+      "occluders": [
+        {
+          "id": "lab-rota1-arch",
+          "kind": "arch",
+          "mask": "assets/story/pallet/anime3q/masks/lab_rota1_arch.png",
+          "rect": [
+            462,
+            4,
+            628,
+            86
+          ],
+          "baselineY": 78,
+          "minY": 0,
+          "xPad": 14
+        },
+        {
+          "id": "lab-lamp-sw",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/lab_lamp_sw.png",
+          "rect": [
+            402,
+            404,
+            434,
+            492
+          ],
+          "baselineY": 486,
+          "minY": 404,
+          "xPad": 16
+        },
+        {
+          "id": "lab-lamp-se",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/lab_lamp_se.png",
+          "rect": [
+            877,
+            418,
+            909,
+            498
+          ],
+          "baselineY": 492,
+          "minY": 418,
+          "xPad": 16
+        },
+        {
+          "id": "lab-lamp-mid-left",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/lab_lamp_mid_left.png",
+          "rect": [
+            121,
+            246,
+            153,
+            336
+          ],
+          "baselineY": 330,
+          "minY": 246,
+          "xPad": 16
+        }
+      ]
+    },
+    "pallet-costa-3q": {
+      "id": "pallet-costa-3q",
+      "areaIndex": 4,
+      "region": "pallet",
+      "title": "Pallet Town · Costa e Praia",
+      "subtitle": "Norte: Centro · NE: Jardins · NO: Colinas · Pesca no Píer e Praia",
+      "w": 1200,
+      "h": 675,
+      "art": "assets/story/pallet/anime3q/04_costa_praia.png",
+      "walkmask": "assets/story/pallet/anime3q/walkmasks/costa_walkmask.png",
+      "sdf": "assets/story/pallet/anime3q/walkmasks/costa_sdf.png",
+      "spawn": [
+        608,
+        120
+      ],
+      "exit": null,
+      "doors": [
+        {
+          "id": "house-west",
+          "at": [
+            292,
+            204
+          ],
+          "title": "Cabana do Pescador"
+        }
+      ],
+      "npcs": [
+        {
+          "id": "fisher",
+          "name": "Seu Abel",
+          "at": [
+            848,
+            286
+          ],
+          "sprite": "assets/kanto/npcs/fisher-v9.svg",
+          "portrait": "assets/kanto/npcs/fisher-v9.svg",
+          "emote": "tranquilo"
+        }
+      ],
+      "grass": [],
+      "portals": [
+        {
+          "id": "costa-to-centro",
+          "rect": [
+            525,
+            0,
+            685,
+            38
+          ],
+          "target": "pallet-centro-3q",
+          "spawn": [
+            642,
+            598
+          ],
+          "facing": "up",
+          "marker": [
+            608,
+            52
+          ],
+          "label": "CENTRO ↑",
+          "color": "#80ffaa"
+        },
+        {
+          "id": "costa-to-jardins",
+          "rect": [
+            1095,
+            0,
+            1190,
+            42
+          ],
+          "target": "pallet-jardins-3q",
+          "spawn": [
+            622,
+            598
+          ],
+          "facing": "up",
+          "marker": [
+            1124,
+            52
+          ],
+          "label": "JARDINS ↑",
+          "color": "#80ffaa"
+        },
+        {
+          "id": "costa-to-colinas",
+          "rect": [
+            72,
+            0,
+            172,
+            42
+          ],
+          "target": "pallet-colinas-3q",
+          "spawn": [
+            462,
+            608
+          ],
+          "facing": "up",
+          "marker": [
+            120,
+            52
+          ],
+          "label": "COLINAS ↑",
+          "color": "#f6c978"
+        }
+      ],
+      "hobbies": {
+        "fishing": true,
+        "gathering": true,
+        "techniques": [
+          "surf",
+          "cut"
+        ]
+      },
+      "walkPolys": [],
+      "blockPolys": [],
+      "blocks": [],
+      "ellipses": [],
+      "circles": [],
+      "occluders": [
+        {
+          "id": "costa-lamp-plaza-right",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/costa_lamp_plaza_right.png",
+          "rect": [
+            781,
+            170,
+            813,
+            248
+          ],
+          "baselineY": 242,
+          "minY": 170,
+          "xPad": 16
+        },
+        {
+          "id": "costa-lamp-pier",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/costa_lamp_pier.png",
+          "rect": [
+            893,
+            332,
+            925,
+            412
+          ],
+          "baselineY": 406,
+          "minY": 332,
+          "xPad": 16
+        }
+      ]
+    },
+    "pallet-colinas-3q": {
+      "id": "pallet-colinas-3q",
+      "areaIndex": 5,
+      "region": "pallet",
+      "title": "Pallet Town · Colinas e Pedreiras",
+      "subtitle": "Leste: Centro · Sul: Costa e Praia · Trilhos de Mineração",
+      "w": 1200,
+      "h": 675,
+      "art": "assets/story/pallet/anime3q/05_colinas_pedreiras.png",
+      "walkmask": "assets/story/pallet/anime3q/walkmasks/colinas_walkmask.png",
+      "sdf": "assets/story/pallet/anime3q/walkmasks/colinas_sdf.png",
+      "spawn": [
+        1100,
+        276
+      ],
+      "exit": null,
+      "doors": [
+        {
+          "id": "market",
+          "at": [
+            295,
+            285
+          ],
+          "title": "Posto dos Mineradores"
+        }
+      ],
+      "npcs": [
+        {
+          "id": "child",
+          "name": "Luna",
+          "at": [
+            248,
+            308
+          ],
+          "sprite": "assets/kanto/npcs/child-v9.svg",
+          "portrait": "assets/kanto/npcs/child-v9.svg",
+          "emote": "animada"
+        }
+      ],
+      "grass": [],
+      "portals": [
+        {
+          "id": "colinas-to-centro",
+          "rect": [
+            1155,
+            240,
+            1200,
+            340
+          ],
+          "target": "pallet-centro-3q",
+          "spawn": [
+            74,
+            212
+          ],
+          "facing": "right",
+          "marker": [
+            1152,
+            286
+          ],
+          "label": "CENTRO →",
+          "color": "#80ffaa"
+        },
+        {
+          "id": "colinas-to-costa",
+          "rect": [
+            438,
+            636,
+            538,
+            675
+          ],
+          "target": "pallet-costa-3q",
+          "spawn": [
+            118,
+            70
+          ],
+          "facing": "down",
+          "marker": [
+            486,
+            626
+          ],
+          "label": "COSTA ↓",
+          "color": "#79dced"
+        }
+      ],
+      "hobbies": {
+        "mining": true,
+        "gathering": true,
+        "techniques": [
+          "rockSmash",
+          "dig"
+        ]
+      },
+      "walkPolys": [],
+      "blockPolys": [],
+      "blocks": [],
+      "ellipses": [],
+      "circles": [],
+      "occluders": [
+        {
+          "id": "colinas-lamp-upper",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/colinas_lamp_upper.png",
+          "rect": [
+            950,
+            190,
+            982,
+            284
+          ],
+          "baselineY": 278,
+          "minY": 190,
+          "xPad": 16
+        }
+      ]
+    },
+    "pallet-arredores-3q": {
+      "id": "pallet-arredores-3q",
+      "areaIndex": 6,
+      "region": "route-1",
+      "isRoute1": true,
+      "title": "Rota 1 · Arredores de Pallet Town",
+      "subtitle": "Sul: Laboratório · Campos de Grama Alta · Norte: Viridian City",
+      "w": 1200,
+      "h": 675,
+      "art": "assets/story/pallet/anime3q/06_arredores_rota1.png",
+      "walkmask": "assets/story/pallet/anime3q/walkmasks/rota1_walkmask.png",
+      "sdf": "assets/story/pallet/anime3q/walkmasks/rota1_sdf.png",
+      "spawn": [
+        570,
+        590
+      ],
+      "exit": [
+        770,
+        24
+      ],
+      "doors": [],
+      "npcs": [
+        {
+          "id": "route-guide",
+          "name": "Exploradora Nara",
+          "at": [
+            632,
+            372
+          ],
+          "sprite": "assets/halloween/npc-luna.svg",
+          "portrait": "assets/halloween/npc-luna.svg",
+          "emote": "curiosa"
+        }
+      ],
+      "grass": [
+        {
+          "id": "a",
+          "rect": [
+            210,
+            68,
+            470,
+            174
+          ],
+          "spawn": [
+            345,
+            125
+          ],
+          "entry": [
+            242,
+            165
+          ]
+        },
+        {
+          "id": "b",
+          "rect": [
+            710,
+            158,
+            1005,
+            256
+          ],
+          "spawn": [
+            850,
+            210
+          ],
+          "entry": [
+            915,
+            255
+          ]
+        },
+        {
+          "id": "c",
+          "rect": [
+            895,
+            325,
+            1142,
+            425
+          ],
+          "spawn": [
+            1020,
+            375
+          ],
+          "entry": [
+            915,
+            325
+          ]
+        }
+      ],
+      "portals": [
+        {
+          "id": "rota1-to-lab",
+          "rect": [
+            498,
+            636,
+            642,
+            675
+          ],
+          "target": "pallet-lab-3q",
+          "spawn": [
+            452,
+            86
+          ],
+          "facing": "down",
+          "marker": [
+            570,
+            624
+          ],
+          "label": "LABORATÓRIO ↓",
+          "color": "#ffd480"
+        },
+        {
+          "id": "rota1-to-viridian",
+          "rect": [
+            730,
+            0,
+            835,
+            28
+          ],
+          "action": "exitWorld",
+          "marker": [
+            772,
+            42
+          ],
+          "label": "VIRIDIAN CITY ↑",
+          "color": "#80ffaa"
+        }
+      ],
+      "hobbies": {
+        "fishing": true,
+        "gathering": true,
+        "mining": true,
+        "techniques": [
+          "cut",
+          "dig",
+          "rockSmash"
+        ]
+      },
+      "walkPolys": [],
+      "blockPolys": [],
+      "blocks": [],
+      "ellipses": [],
+      "circles": [],
+      "occluders": [
+        {
+          "id": "rota1-lamp-crossroads",
+          "kind": "lamp",
+          "mask": "assets/story/pallet/anime3q/masks/rota1_lamp_crossroads.png",
+          "rect": [
+            357,
+            224,
+            389,
+            342
+          ],
+          "baselineY": 336,
+          "minY": 224,
+          "xPad": 16
+        },
+        {
+          "id": "rota1-signpost",
+          "kind": "sign",
+          "mask": "assets/story/pallet/anime3q/masks/rota1_signpost.png",
+          "rect": [
+            556,
+            240,
+            590,
+            336
+          ],
+          "baselineY": 330,
+          "minY": 240,
+          "xPad": 16
+        }
+      ]
+    }
+  }
+}

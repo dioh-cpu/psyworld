@@ -1,0 +1,32 @@
+# 08 — ESTADO ATUAL E PRÓXIMOS PASSOS
+
+## Estado Atual (V6 Concluída e Validada em Chromium + Preview Vercel)
+- Branch isolada `visual/pallet-anime3q-prototype-v1` atualizada com todas as **6 áreas de Pallet Town** + **Nova Rota 1** totalmente jogáveis via **Pixel-Exact Walkmask + 2D Euclidean SDF V6**.
+- Conectividade em componente único (`componentCount === 1`, `PLAYER_RADIUS = 11`) validada em todos os 6 cenários.
+- 15 transições/portais configurados com retorno bidirecional, spawns seguros (`sdf >= 20.5`), subida pela escadaria esquerda do Laboratório sob o arco RGBA `"Rota 1"` e acesso real à Viridian City.
+- Nova Rota 1 integrada ao sistema de batalhas selvagens (`isRoute1: true`), com 3 canteiros de grama alta acessíveis por vãos nas cercas, além de zonas de Pesca e Mineração integradas em `core/hobbies-v2.js`.
+- Sprite do Professor Carvalho corrigido para corpo inteiro (`assets/kanto/npcs/professor-v33.webp`) no overworld do Laboratório.
+- `main` e o jogo de produção permanecem 100% intactos; distribuição em Preview isolada na Vercel (`?visual=anime3q`).
+
+## Próximos Passos Sugeridos
+1. Caso deseje refinar qualquer contorno específico após testes adicionais em campo, ajuste o polígono em `tools/build_walkmasks_v6.py`, execute `python3 tools/build_walkmasks_v6.py` e valide `componentCount === 1` antes de publicar nova revisão.
+2. Utilizar a mesma metodologia (Walkmask `1200×675` + 2D SDF + oclusores RGBA) caso a adaptação Anime HD 3/4 seja expandida no futuro para Viridian City ou rota norte seguinte.
+
+## Estado V6.1
+- Todas as 6 áreas de Pallet Town + Nova Rota 1 possuem colisões auditadas em tiles de 20px, conectividade única (`componentCount === 1`) e píer de pesca da Costa totalmente acessível.
+
+## Estado V6.2
+- Correção estrutural completa das colisões da escadaria esquerda do Laboratório até a Rota 1, jardim experimental, caixotes, postes e via nordeste, além do muro de pedra e tronco caído das Colinas, validada em *tiles* de 20px e E2E no Chromium.
+
+## Estado V6.3
+- Suíte de regressão por coordenada (`tools/obstacle_regression.py` + `tools/obstacle_regression.json`, 22 pontos) integrada a `tools/build_walkmasks_v6.py`.
+- Editor de pincel de walkmask ao vivo (`core/anime3q-walkmask-brush.js`, painel `#a3q-brush-panel`) integrado ao piloto e validado no Chromium Desktop e Mobile exclusivamente sob `?visual=anime3q&debug=editor`.
+
+## Editor Profissional de Colisões V1 (`feature/psyworld-collision-editor-v1`)
+- Painel móvel arrastável e minimizável (`localStorage`), modo **Navegar** + Zoom (`-`/`+`/`Centro`/scroll) sem deslocamento entre toque e pixel, **Importar** / **Exportar** validados (`tools/verify_walk_sdf.py`), invalidação de cache `navCells` e rascunhos locais em **IndexedDB** (`Salvar`, `Restaurar`, `Descartar` com confirmação).
+- **Incorporação definitiva de PNGs exportados**:
+  1. Validar o par exportado com `python3 tools/verify_walk_sdf.py <area> <walkmask.png> <sdf.png>`.
+  2. Substituir os arquivos correspondentes em `assets/story/pallet/anime3q/walkmasks/` (`<prefixo>_walkmask.png` e `<prefixo>_sdf.png`).
+  3. Rodar `python3 tools/obstacle_regression.py` e atualizar o `?build=` em `index.html` (se necessário para invalidar cache de CDN) antes de commitar.
+
+

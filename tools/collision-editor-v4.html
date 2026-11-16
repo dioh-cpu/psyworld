@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PSYWORLD — Pallet Anime 3/4 V6 — Visual Collision & Occlusion Editor</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --accent: #38bdf8;
+      --text: #f8fafc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 340px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 10px;
+      overflow-y: auto;
+    }
+    h1 { font-size: 15px; margin: 0 0 4px 0; color: var(--accent); }
+    .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    select, button, input {
+      background: #0f172a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    button.active { background: #0284c7; border-color: #38bdf8; }
+    #viewport {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: #020617;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 16px;
+    }
+    canvas {
+      border: 1px solid var(--border);
+      cursor: crosshair;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    textarea {
+      width: 100%;
+      flex: 1;
+      min-height: 220px;
+      background: #020617;
+      color: #a5f3fc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+    }
+    .legend { font-size: 11px; line-height: 1.5; color: #cbd5e1; }
+    .badge { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h1>PSYWORLD — Editor de Geometria & SDF V6 (6 Áreas)</h1>
+    <div class="row">
+      <label>Cenário:</label>
+      <select id="areaSelect">
+        <option value="pallet-centro-3q">01 — Centro e Residências</option>
+        <option value="pallet-jardins-3q">02 — Jardins e Bosque</option>
+        <option value="pallet-lab-3q">03 — Laboratório do Prof. Carvalho</option>
+        <option value="pallet-costa-3q">04 — Costa e Praia</option>
+        <option value="pallet-colinas-3q">05 — Colinas e Pedreiras</option>
+        <option value="pallet-arredores-3q">06 — Arredores e Nova Rota 1</option>
+      </select>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="chkSdf" checked /> SDF (r=11)</label>
+      <label><input type="checkbox" id="chkGrid" checked /> Grade 50px</label>
+      <label><input type="checkbox" id="chkWalk" /> WalkPolys</label>
+      <label><input type="checkbox" id="chkBlock" /> Colisões</label>
+      <label><input type="checkbox" id="chkOcc" checked /> Oclusores</label>
+      <label><input type="checkbox" id="chkPortals" checked /> Portais</label>
+      <label><input type="checkbox" id="chkGrass" checked /> Grama Alta</label>
+    </div>
+    <div class="row">
+      <button id="btnModeInspect" class="active">Inspecionar / Testar Raio (r=11)</button>
+      <button id="btnAddWalk">+ WalkPoly</button>
+      <button id="btnAddBlock">+ BlockPoly</button>
+      <button id="btnFinishPoly">Fechar Polígono</button>
+    </div>
+    <div class="legend">
+      <div><span class="badge" style="background:#22c55e"></span>Terreno Livre (dist ≥ 11px)</div>
+      <div><span class="badge" style="background:#facc15"></span>Margem de Contato (0 &lt; dist &lt; 11px)</div>
+      <div><span class="badge" style="background:#ef4444"></span>Obstáculo Sólido (dist = 0)</div>
+      <div><span class="badge" style="background:#38bdf8"></span>Occluders (Linha base splitY + Silhueta)</div>
+      <div><span class="badge" style="background:#10b981"></span>Grama Alta (Nova Rota 1)</div>
+      <div id="cursorInfo" style="margin-top:6px;color:#38bdf8;font-weight:600;">Cursor: (0, 0)</div>
+    </div>
+    <div class="row">
+      <button id="btnExport">Exportar JSON</button>
+      <button id="btnCopy">Copiar JSON</button>
+    </div>
+    <textarea id="jsonOutput" readonly></textarea>
+  </div>
+  <div id="viewport">
+    <canvas id="editorCanvas" width="1200" height="675"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('editorCanvas');
+    const ctx = canvas.getContext('2d');
+    const areaSelect = document.getElementById('areaSelect');
+    const jsonOutput = document.getElementById('jsonOutput');
+    const cursorInfo = document.getElementById('cursorInfo');
+
+    let geoData = null;
+    let currentArea = 'pallet-centro-3q';
+    let bgImage = new Image();
+    let sdfOverlayCanvas = null;
+    let sdfBuf = null;
+    let mode = 'inspect'; // inspect | addWalk | addBlock
+    let draftPoly = [];
+    let hoverPt = { x: 600, y: 430 };
+
+    function getMapDict() {
+      return geoData ? (geoData.maps || geoData.areas || {}) : {};
+    }
+
+    function sdfFileForArea(id) {
+      const files = {
+        'pallet-centro-3q': 'centro_sdf.png',
+        'pallet-jardins-3q': 'jardins_sdf.png',
+        'pallet-lab-3q': 'lab_sdf.png',
+        'pallet-costa-3q': 'costa_sdf.png',
+        'pallet-colinas-3q': 'colinas_sdf.png',
+        'pallet-arredores-3q': 'rota1_sdf.png'
+      };
+      return '../assets/story/pallet/anime3q/walkmasks/' + (files[id] || 'centro_sdf.png');
+    }
+
+    async function init() {
+      const res = await fetch('../assets/story/pallet/anime3q/pallet_anime3q_geometry_v6.json');
+      geoData = await res.json();
+      loadArea(currentArea);
+    }
+
+    function loadArea(id) {
+      currentArea = id;
+      const area = getMapDict()[id];
+      sdfOverlayCanvas = null;
+      sdfBuf = null;
+      bgImage = new Image();
+      bgImage.onload = () => render();
+      bgImage.src = '../' + (area.art || area.image);
+      const sdfImg = new Image();
+      sdfImg.onload = () => {
+        const cv = document.createElement('canvas');
+        cv.width = 1200; cv.height = 675;
+        const cx = cv.getContext('2d');
+        cx.drawImage(sdfImg, 0, 0, 1200, 675);
+        const raw = cx.getImageData(0, 0, 1200, 675).data;
+        const buf = new Uint8Array(1200 * 675);
+        const out = cx.createImageData(1200, 675);
+        const od = out.data;
+        for (let i = 0; i < buf.length; i++) {
+          const v = raw[i * 4];
+          buf[i] = v;
+          const p = i * 4;
+          if (v === 0) { od[p] = 239; od[p+1] = 68; od[p+2] = 68; od[p+3] = 95; }
+          else if (v < 44) { od[p] = 250; od[p+1] = 204; od[p+2] = 21; od[p+3] = 110; }
+          else { od[p] = 34; od[p+1] = 197; od[p+2] = 94; od[p+3] = 70; }
+        }
+        cx.putImageData(out, 0, 0);
+        sdfBuf = buf;
+        sdfOverlayCanvas = cv;
+        render();
+      };
+      sdfImg.src = sdfFileForArea(id);
+      updateJsonBox();
+    }
+
+    function sdfDistAt(x, y) {
+      if (!sdfBuf) return null;
+      const fx = Math.max(0, Math.min(1198.999, x));
+      const fy = Math.max(0, Math.min(673.999, y));
+      const x0 = fx | 0, y0 = fy | 0;
+      const tx = fx - x0, ty = fy - y0;
+      const d00 = sdfBuf[y0 * 1200 + x0], d10 = sdfBuf[y0 * 1200 + x0 + 1];
+      const d01 = sdfBuf[(y0 + 1) * 1200 + x0], d11 = sdfBuf[(y0 + 1) * 1200 + x0 + 1];
+      const v0 = d00 + (d10 - d00) * tx, v1 = d01 + (d11 - d01) * tx;
+      return (v0 + (v1 - v0) * ty) * 0.25;
+    }
+
+    function updateJsonBox() {
+      if (!geoData) return;
+      jsonOutput.value = JSON.stringify(getMapDict()[currentArea], null, 2);
+    }
+
+    function pointInPoly(px, py, poly) {
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i][0], yi = poly[i][1];
+        const xj = poly[j][0], yj = poly[j][1];
+        const intersect = ((yi > py) !== (yj > py)) &&
+          (px < (xj - xi) * (py - yi) / ((yj - yi) || 1e-7) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    function pointWalkable(area, x, y) {
+      let inWalk = false;
+      for (const poly of (area.walkPolys || [])) {
+        if (pointInPoly(x, y, poly)) { inWalk = true; break; }
+      }
+      if (!inWalk) return false;
+      for (const poly of (area.blockPolys || [])) {
+        if (pointInPoly(x, y, poly)) return false;
+      }
+      for (const b of (area.blocks || [])) {
+        if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3]) return false;
+      }
+      for (const e of (area.ellipses || [])) {
+        const dx = (x - e.cx) / e.rx, dy = (y - e.cy) / e.ry;
+        if (dx * dx + dy * dy <= 1) return false;
+      }
+      for (const c of (area.circles || [])) {
+        const dx = x - c.cx, dy = y - c.cy;
+        if (dx * dx + dy * dy <= c.r * c.r) return false;
+      }
+      return true;
+    }
+
+    function walkableWithRadius(area, x, y, r = 11) {
+      if (sdfBuf) {
+        if (x < r || y < r || x > 1200 - r || y > 675 - r) return false;
+        return sdfDistAt(x, y) >= r;
+      }
+      if (!pointWalkable(area, x, y)) return false;
+      for (let i = 0; i < 16; i++) {
+        const a = (i * Math.PI * 2) / 16;
+        if (!pointWalkable(area, x + Math.cos(a) * r, y + Math.sin(a) * r)) return false;
+      }
+      return true;
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (bgImage && bgImage.complete && bgImage.naturalWidth) {
+        ctx.drawImage(bgImage, 0, 0, 1200, 675);
+      }
+      if (document.getElementById('chkSdf').checked && sdfOverlayCanvas) {
+        ctx.drawImage(sdfOverlayCanvas, 0, 0, 1200, 675);
+      }
+      if (!geoData) return;
+      const area = getMapDict()[currentArea];
+
+      if (document.getElementById('chkGrid').checked) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+        ctx.lineWidth = 1;
+        ctx.font = '10px monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        for (let x = 0; x <= 1200; x += 50) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 675); ctx.stroke();
+          if (x % 100 === 0) ctx.fillText(String(x), x + 2, 12);
+        }
+        for (let y = 0; y <= 675; y += 50) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1200, y); ctx.stroke();
+          if (y % 100 === 0) ctx.fillText(String(y), 2, y - 2);
+        }
+      }
+
+      if (document.getElementById('chkWalk').checked) {
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.22)';
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.9)';
+        ctx.lineWidth = 2;
+        for (const poly of (area.walkPolys || [])) {
+          ctx.beginPath();
+          poly.forEach((p, idx) => idx === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+
+      if (document.getElementById('chkBlock').checked) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.95)';
+        ctx.lineWidth = 2;
+        for (const poly of (area.blockPolys || [])) {
+          ctx.beginPath();
+          poly.forEach((p, idx) => idx === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        for (const b of (area.blocks || [])) {
+          ctx.fillRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+          ctx.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+        }
+        for (const e of (area.ellipses || [])) {
+          ctx.beginPath();
+          ctx.ellipse(e.cx, e.cy, e.rx, e.ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        for (const c of (area.circles || [])) {
+          ctx.beginPath();
+          ctx.arc(c.cx, c.cy, c.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+
+      if (document.getElementById('chkOcc').checked) {
+        for (const occ of (area.occluders || [])) {
+          const [sx, sy, sw, sh] = occ.rect;
+          const by = occ.baselineY ?? occ.splitY;
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.9)';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(sx, sy, sw - sx, sh - sy);
+          ctx.strokeStyle = '#facc15';
+          ctx.beginPath();
+          ctx.moveTo(sx, by);
+          ctx.lineTo(sw, by);
+          ctx.stroke();
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(`${occ.id} (y=${by})`, sx + 3, sy + 12);
+        }
+      }
+
+      if (document.getElementById('chkPortals').checked) {
+        ctx.strokeStyle = '#facc15';
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.28)';
+        for (const p of (area.portals || [])) {
+          const [x1, y1, x2, y2] = p.rect;
+          ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+          ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        }
+      }
+
+      if (document.getElementById('chkGrass').checked) {
+        ctx.strokeStyle = '#10b981';
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+        ctx.lineWidth = 2;
+        for (const g of (area.grass || [])) {
+          const [x1, y1, x2, y2] = g.rect;
+          ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+          ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        }
+      }
+
+      if (draftPoly.length > 0) {
+        ctx.strokeStyle = '#f472b6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        draftPoly.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+        ctx.lineTo(hoverPt.x, hoverPt.y);
+        ctx.stroke();
+      }
+
+      const ok = walkableWithRadius(area, hoverPt.x, hoverPt.y, 11);
+      ctx.beginPath();
+      ctx.arc(hoverPt.x, hoverPt.y, 11, 0, Math.PI * 2);
+      ctx.fillStyle = ok ? 'rgba(34, 197, 94, 0.45)' : 'rgba(239, 68, 68, 0.55)';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.round(e.clientX - rect.left);
+      const y = Math.round(e.clientY - rect.top);
+      hoverPt = { x, y };
+      if (geoData) {
+        const ok = walkableWithRadius(getMapDict()[currentArea], x, y, 11);
+        const sd = sdfDistAt(x, y);
+        cursorInfo.textContent = `Cursor: (${x}, ${y})${sd !== null ? ` · SDF=${sd.toFixed(1)}px` : ''} — ${ok ? 'LIVRE (r=11)' : 'BLOQUEADO'}`;
+      }
+      render();
+    });
+
+    canvas.addEventListener('click', () => {
+      if (mode === 'addWalk' || mode === 'addBlock') {
+        draftPoly.push([hoverPt.x, hoverPt.y]);
+        render();
+      }
+    });
+
+    areaSelect.addEventListener('change', () => loadArea(areaSelect.value));
+    ['chkSdf', 'chkGrid', 'chkWalk', 'chkBlock', 'chkOcc', 'chkPortals', 'chkGrass'].forEach(id => {
+      document.getElementById(id).addEventListener('change', render);
+    });
+
+    document.getElementById('btnModeInspect').onclick = () => { mode = 'inspect'; draftPoly = []; render(); };
+    document.getElementById('btnAddWalk').onclick = () => { mode = 'addWalk'; draftPoly = []; };
+    document.getElementById('btnAddBlock').onclick = () => { mode = 'addBlock'; draftPoly = []; };
+    document.getElementById('btnFinishPoly').onclick = () => {
+      if (draftPoly.length >= 3 && geoData) {
+        const area = getMapDict()[currentArea];
+        if (mode === 'addWalk') area.walkPolys.push(draftPoly.slice());
+        if (mode === 'addBlock') area.blockPolys.push(draftPoly.slice());
+        draftPoly = [];
+        updateJsonBox();
+        render();
+      }
+    };
+    document.getElementById('btnExport').onclick = () => updateJsonBox();
+    document.getElementById('btnCopy').onclick = () => navigator.clipboard.writeText(jsonOutput.value);
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# 07 — MAPA DE CONTEÚDO DO PACOTE ZIP (V6)
+
+- `DOCUMENTACAO/`
+  - `01_RELATORIO_COMPLETO.md`
+  - `02_HISTORICO_DE_PROMPTS.md`
+  - `03_ARQUITETURA_E_ARQUIVOS.md`
+  - `04_COMO_EXECUTAR_E_TESTAR.md`
+  - `05_DECISOES_TECNICAS_E_COORDENADAS.md`
+  - `06_VALIDACAO_E_EVIDENCIAS.md`
+  - `07_CONTEUDO_DO_PACOTE.md`
+  - `08_ESTADO_ATUAL_E_PROXIMOS_PASSOS.md`
+- `CODIGO/`
+  - `core/kanto-anime3q-pilot-v1.js`
+  - `core/kanto-world-v2.js`
+  - `core/kanto-collision-v4.js`
+  - `core/kanto-map-data-v2.js`
+  - `core/follower-v47.js`
+  - `core/hobbies-v2.js`
+  - `index.html`
+  - `tools/build_walkmasks_v6.py`
+  - `tools/build_occluders_v6.py`
+  - `tools/collision-editor-v4.html`
+  - `pallet_anime3q_geometry_v6.json`
+- `ARTES/`
+  - `01_centro_residencias.png` (`1672×941`)
+  - `02_jardins_bosque.png` (`1672×941`)
+  - `03_laboratorio.png` (`1024×576`)
+  - `04_costa_praia.png` (`1024×576`)
+  - `05_colinas_pedreiras.png` (`1024×576`)
+  - `06_arredores_rota1.png` (`1024×576`)
+  - `walkmasks/*_walkmask.png` e `walkmasks/*_sdf.png` (12 arquivos `1200×675`)
+  - `masks/*.png` (18 máscaras RGBA de primeiro plano)
+- `MIDIA_VALIDACAO/`
+  - `pilot_v6_walkthrough.mp4`
+  - Capturas PNG de validação das 6 áreas em Desktop, oclusão sob o arco da Rota 1, batalha selvagem na grama alta, overlay SDF, Mobile Retrato/Paisagem e Editor Visual V6.
+
+### Atualização V6.1
+- Inclui `tools/render_audit_tiles.py`, `tools/build_walkmasks_v6.py` atualizado, todas as máscaras/SDFs atualizadas em `assets/story/pallet/anime3q/walkmasks/`, `core/hobbies-v2.js`, `core/kanto-anime3q-pilot-v1.js` e `DOCUMENTACAO/` atualizada.
