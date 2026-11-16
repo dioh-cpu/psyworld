@@ -4,6 +4,10 @@ Objetivo: integrar NPCs com retratos e animações, histórias e serviços, amiz
 
 Base: `b6126f20e79b1ed8b02f32ca49f911cc94d30b34`; branch `feature/pallet-npc-relationships-v1`.
 
+Em retomada posterior, `origin/main` foi buscada e estava em `e221a360c302b92bfda0a0e6b557b8fb033a1463`; incorporada sem conflitos no merge `bb27cde65f795a3d53d6d01a449710905644c91f`. Ela ativa a Pallet 3Q por padrão e inclui correções do treinador. Nenhuma arte ou colisão foi revertida.
+
+Geometria verificada no código atual: mapas Anime 3Q usam 1200 × 675 unidades lógicas, raio de colisão do jogador 11, `characterScale` padrão 1,56 e altura atual de NPCs entre 40 e 52 unidades; a câmera usa zoom variável por viewport e DPR limitado a 2. A comparação visual entre NPC e treinador ainda não foi realizada.
+
 ## Estado atual
 
 - Sprites propostos e um atlas de expressões do pescador existem em `assets/kanto/npcs/pallet-new/`, ainda sem integração ou validação no runtime.
