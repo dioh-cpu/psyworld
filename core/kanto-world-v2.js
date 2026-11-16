@@ -19,6 +19,57 @@ function putProgress(){try{localStorage.setItem(KEY,JSON.stringify(progress()))}
 function questDone(){const q=progress();return !!(q.oak)}
 function mark(key){const q=progress();if(q[key])return;q[key]=true;putProgress();hud()}
 function player(){try{return typeof P!=='undefined'?P:(W.P||{})}catch(_){return W.P||{}}}
+// Household membership is serialized with the character; runtime movement is ephemeral.
+const HOUSEHOLD_ADULTS={'pallet-nina':28,'pallet-maia':32,'pallet-banhista':35,'pallet-breno':48};
+let householdRuntime=null;
+function householdSource(){
+ const data=player().palletRelationships,id=data?.household?.partnerId;
+ if(!HOUSEHOLD_ADULTS[id]||data?.npcs?.[id]?.romance!=='dating')return null;
+ for(const mapId of ['pallet-centro-3q','pallet-jardins-3q','pallet-lab-3q','pallet-costa-3q','pallet-colinas-3q']){
+  const found=W.PsyKantoAnime3Q?.getMap?.(mapId)?.npcs?.find(n=>n.id===id);
+  if(found)return found;
+ }
+ return null;
+}
+function householdPointSafe(room,x,y,avoidPlayer=false){
+ const r=12,b=room.walkBounds||[0,174,room.w,room.h];
+ if(x<b[0]+r||x>b[2]-r||y<b[1]+r||y>b[3]-r)return false;
+ if((room.blocks||[]).some(([a,b,c,d])=>x>=a-r&&x<=c+r&&y>=b-r&&y<=d+r))return false;
+ if((room.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<28))return false;
+ if([room.spawn,room.exit].filter(Boolean).some(at=>Math.hypot(x-at[0],y-at[1])<55))return false;
+ return !avoidPlayer||Math.hypot(x-state.position.x,y-state.position.y)>=25;
+}
+function householdActor(){
+ const source=householdSource(),data=player().palletRelationships;
+ if(!source){householdRuntime=null;return null}
+ if(!householdRuntime||householdRuntime.data!==data||householdRuntime.actor.id!==source.id){
+  const room=W.PsyKantoInteriorsV9?.get?.('home');
+  if(!room)return null;
+  const points=[[310,470],[310,540],[220,540]].filter(([x,y])=>householdPointSafe(room,x,y));
+  if(!points.length)return null;
+  householdRuntime={data,actor:{...source,at:points[0].slice(),domestic:true,activity:'descansando'},points,index:0,last:performance.now(),pauseUntil:performance.now()+2500};
+ }
+ return householdRuntime.actor;
+}
+function activeNPCs(){
+ const base=state.inside?.npcs||state.world?.npcs||[],source=householdSource();
+ if(!source)return base;
+ const list=base.filter(n=>n.id!==source.id);
+ if(state.inside?.id==='home'&&state.world?.region==='pallet'){
+  const actor=householdActor();if(actor)list.push(actor);
+ }
+ return list;
+}
+function updateHousehold(){
+ const actor=householdActor();if(!actor)return;
+ const rt=householdRuntime,now=performance.now(),dt=Math.min(.05,Math.max(0,(now-rt.last)/1000));rt.last=now;
+ if(state.inside?.id!=='home'||state.world?.region!=='pallet'||state.dialogOpen||state.suspended||D.hidden||palletMotionReduced)return;
+ if(now<rt.pauseUntil)return;
+ const target=rt.points[(rt.index+1)%rt.points.length],dx=target[0]-actor.at[0],dy=target[1]-actor.at[1],length=Math.hypot(dx,dy);
+ if(length<.5){rt.index=(rt.index+1)%rt.points.length;rt.pauseUntil=now+5000;actor.activity=['descansando','observando a casa','organizando as ideias'][rt.index%3];return}
+ const step=Math.min(length,22*dt),x=actor.at[0]+dx/length*step,y=actor.at[1]+dy/length*step;
+ if(householdPointSafe(state.inside,x,y,true)){actor.at=[x,y];actor.activity='caminhando pela casa'}
+}
 function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{if(url.startsWith('assets/characters/halloween/')){try{prepareAvatar(o)}catch(err){o.spriteError=true;console.warn('Trainer sprite could not be prepared',err)}}o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
 function updateFishingButton(){const button=state.root?.querySelector('[data-kw2-fish]');if(!button)return;const inRift=state.inside?.id===RIFT_ID,art=state.images.get(state.world?.art||'')?.mapCanvas;button.hidden=!!state.inside&&!inRift||!W.PsyHobbies?.canFish?.(inRift?RIFT_ID:state.world?.id,state.position,art)}
 function makeUI(){if(state.root)return;const root=D.createElement('div');root.id='psy-kanto-world-v2';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
@@ -40,7 +91,7 @@ D.addEventListener('keydown',onKeyDown,true);D.addEventListener('keyup',onKeyUp,
 const stage=root.querySelector('.kw2-stage');stage.addEventListener('pointerdown',touchStart);stage.addEventListener('pointermove',touchMove);stage.addEventListener('pointerup',touchEnd);stage.addEventListener('pointercancel',touchCancel);stage.addEventListener('lostpointercapture',touchCancel);stage.addEventListener('wheel',e=>{if(W.PsyKantoAnime3Q?.brushWheel?.(e)){e.preventDefault();draw();}},{passive:false});W.addEventListener('blur',resetTouch);W.addEventListener('resize',resetTouch);D.addEventListener('visibilitychange',()=>{if(D.hidden)resetTouch()});
 }
 function showDialog(title,body,actions=[],portrait='',emote=''){
- if(W.PsyGuide){state.dialogOpen=true;state.path=[];state.held.clear();const actor=(state.inside?.npcs||state.world?.npcs||[]).find(n=>n.name===title||title.includes(n.name));return W.PsyGuide.show({speaker:title,text:body,portrait:/Professor Car/.test(title)?'assets/kanto/approved/professor-expressions.webp':portrait||actor?.portrait,sheet:/Professor Car/.test(title)?'professor':undefined,target:actor?()=>{const view=camera(),r=state.canvas.getBoundingClientRect(),x=r.left+(actor.at[0]*view.scale+view.ox)*r.width/view.w,y=r.top+(actor.at[1]*view.scale+view.oy)*r.height/view.h;return {left:x-18,top:y-60,right:x+18,bottom:y+8};}:undefined,actions:actions.map(a=>({text:a.text,primary:a.primary,run:a.run})),onClose:()=>{state.dialogOpen=false;hud();}});}
+ if(W.PsyGuide){state.dialogOpen=true;state.path=[];state.held.clear();const actor=activeNPCs().find(n=>n.name===title||title.includes(n.name));return W.PsyGuide.show({speaker:title,text:body,portrait:/Professor Car/.test(title)?'assets/kanto/approved/professor-expressions.webp':portrait||actor?.portrait,sheet:/Professor Car/.test(title)?'professor':undefined,target:actor?()=>{const view=camera(),r=state.canvas.getBoundingClientRect(),x=r.left+(actor.at[0]*view.scale+view.ox)*r.width/view.w,y=r.top+(actor.at[1]*view.scale+view.oy)*r.height/view.h;return {left:x-18,top:y-60,right:x+18,bottom:y+8};}:undefined,actions:actions.map(a=>({text:a.text,primary:a.primary,run:a.run})),onClose:()=>{state.dialogOpen=false;hud();}});}
 const d=state.root.querySelector('.kw2-dialog');d.querySelector('.kw2-dialog-title').textContent=title;d.querySelector('.kw2-dialog-body').textContent=body;d.dataset.emotion=emote||'normal';d.querySelector('.kw2-expression').textContent='';
 const im=d.querySelector('.kw2-portrait');im.style.display=portrait?'block':'none';if(portrait)im.src=portrait;
 const box=d.querySelector('.kw2-dialog-actions');box.replaceChildren();const options=actions.length?actions:[{text:'CONTINUAR'}];options.forEach(a=>{const b=D.createElement('button');b.textContent=a.text;b.classList.toggle('primary',!!a.primary);b.onclick=()=>{d.classList.remove('open');state.dialogOpen=false;a.run?.();hud()};box.appendChild(b)});
@@ -163,14 +214,14 @@ function positionValid(x,y){
     const room=state.inside;
     const bounds=room.walkBounds||[0,174,room.w,room.h];if(x<bounds[0]+PLAYER_RADIUS||x>bounds[2]-PLAYER_RADIUS||y<bounds[1]+PLAYER_RADIUS||y>bounds[3]-PLAYER_RADIUS)return false;
     if(room.blocks.some(([a,b,c,d])=>x>=a-PLAYER_RADIUS&&x<=c+PLAYER_RADIUS&&y>=b-PLAYER_RADIUS&&y<=d+PLAYER_RADIUS))return false;
-    return !(room.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
+    return !activeNPCs().some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
   }
   if(W.PsyKantoAnime3Q?.isPilotMap?.(state.world?.id)){
     if(!W.PsyKantoAnime3Q.walkable(state.world.id,x,y,PLAYER_RADIUS))return false;
-    return !(state.world?.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
+    return !activeNPCs().some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
   }
   if(!DATA.walkable(state.world,x,y,PLAYER_RADIUS))return false;
-  return !(state.world?.npcs||[]).some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
+  return !activeNPCs().some(n=>Math.hypot(x-n.at[0],y-n.at[1])<PLAYER_RADIUS+12);
 }
 function move(dx,dy,dt,maxDistance=Infinity){state.moving=false;if(state.dialogOpen||state.suspended||(!dx&&!dy))return;const mag=Math.hypot(dx,dy);dx/=mag;dy/=mag;const speed=(state.inside?144:143)*(1+(Number(W.PsySeason?.buff('speed')||0)+Number(W.PsyProfessions?.bonus('main','speed')||0))/100),dist=Math.min(maxDistance,speed*dt*Math.min(1,mag)),steps=Math.ceil(dist/4.5);let mx=0,my=0;
 const isAnime3Q=!state.inside&&W.PsyKantoAnime3Q?.isPilotMap?.(state.world?.id)&&!!W.PsyKantoAnime3Q?.sdfNormal;
@@ -333,7 +384,7 @@ if(!state.inside&&state.world.id==='pallet'&&!usedPalletHD){
  W.PsyKantoPalletAmbientV1?.draw(c,performance.now(),state.images.get(state.world.art)?.mapCanvas,state.position,{independentTrees:true});
  W.PsyKantoPalletVegetationV1?.draw(c,performance.now());
 }
-const things=state.inside?state.inside.npcs:(state.world.npcs||[]);things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
+updateHousehold();const things=activeNPCs();things.forEach(npc=>{const distance=Math.hypot(npc.at[0]-state.position.x,npc.at[1]-state.position.y);drawNPC(c,npc,distance)});
 if(!state.inside){if(a3q){(state.world.portals||[]).forEach(p=>{if(p.marker&&Math.hypot(p.marker[0]-state.position.x,p.marker[1]-state.position.y)<180)drawMarker(c,p.marker[0],p.marker[1],p.label,p.color||'#80ffaa')});(state.world.doors||[]).forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<140)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});if(Array.isArray(state.world.exit)&&Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<140)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.isRoute1?'VIRIDIAN':'SAÍDA','#80ffaa');}else{if(state.world.id==='route-1')drawMarker(c,108,420,'← PALLET','#80ffaa');if(state.world.id==='viridian'&&Math.hypot(state.position.x-450,state.position.y-550)<115)drawMarker(c,450,550,'ROTA 1 ↓','#80ffaa');if(state.world.id==='pallet'){const lab=state.world.doors.find(d=>d.id==='lab');if(lab)drawMarker(c,lab.at[0],lab.at[1],'LABORATÓRIO →','#ffd480');}
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':state.world.id==='viridian'?'ROTA 2':'VIRIDIAN','#80ffaa')}}
@@ -487,7 +538,7 @@ function drawInterior(c,inside){
     c.restore();
   }
 }
-function currentTargets(){const targets=state.inside?[{type:state.inside.id===RIFT_ID?'rift-exit':'exit',at:state.inside.exit||[400,435]},...(state.inside.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n}))]:[...(state.world.id==='route-1'?[{type:'return',at:[108,420]}]:state.world.id==='viridian'?[{type:'return',at:state.world.return}]:[]),...(state.world.npcs||[]).map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),...(Array.isArray(state.world.exit)?[{type:'exit',at:state.world.exit}]:[])];if(state.huntRiftSession)targets.push({type:'rift-exit',at:RIFT_ROOM.exit});else if(state.huntRiftOffer)targets.push({type:'rift',at:[state.huntRiftOffer.x,state.huntRiftOffer.y]});return targets}
+function currentTargets(){const targets=state.inside?[{type:state.inside.id===RIFT_ID?'rift-exit':'exit',at:state.inside.exit||[400,435]},...activeNPCs().map(n=>({type:'npc',at:n.at,ref:n}))]:[...(state.world.id==='route-1'?[{type:'return',at:[108,420]}]:state.world.id==='viridian'?[{type:'return',at:state.world.return}]:[]),...activeNPCs().map(n=>({type:'npc',at:n.at,ref:n})),...(state.world.doors||[]).map(d=>({type:'door',at:d.at,ref:d})),...(Array.isArray(state.world.exit)?[{type:'exit',at:state.world.exit}]:[])];if(state.huntRiftSession)targets.push({type:'rift-exit',at:RIFT_ROOM.exit});else if(state.huntRiftOffer)targets.push({type:'rift',at:[state.huntRiftOffer.x,state.huntRiftOffer.y]});return targets}
 function interact(){if(!state.root?.classList.contains('open')||state.dialogOpen)return;state.pendingHobby=null;
 const scene=state.inside?.id||state.world?.id;
 if(state.huntRiftSession){const gate=state.inside?.exit||RIFT_ROOM.exit;if(Math.hypot(gate[0]-state.position.x,gate[1]-state.position.y)<78){returnFromHuntRift(false);return}const node=W.PsyHobbies?.nearby?.(RIFT_ID,state.position,65);if(node){W.PsyHobbies?.interact?.(RIFT_ID,node.id,{x:state.position.x,y:state.position.y,facing:state.facing});return}showDialog('Fenda Selvagem','A passagem luminosa ao norte leva você de volta. A coleta e a pesca usam as mesmas regras do mundo exterior.');return;}
@@ -505,7 +556,7 @@ function talk(npc){
  const records=owner.palletRelationships.npcs||(owner.palletRelationships.npcs={});
  const relation=records[id]||(records[id]={points:0,lastGain:{},turn:0});
  // Explicit adult cast; Tomi and residents without a defined romance role are excluded.
- const adults={'pallet-nina':28,'pallet-maia':32,'pallet-banhista':35,'pallet-breno':48};
+ const adults=HOUSEHOLD_ADULTS;
  const active=()=>player()===owner&&owner.palletRelationships?.npcs?.[id]===relation;
  const reply=text=>showDialog(npc.name,text,[{text:'VOLTAR',run:menu}],pr,em);
  const romance=()=>{
@@ -519,7 +570,25 @@ function talk(npc){
      {text:'PREFIRO CONTINUAR A AMIZADE',run:menu}],pr,'alegre');
    }},{text:'VOLTAR',run:menu}],pr,em);
  };
- const menu=()=>showDialog(npc.name,'Amizade: '+(Number(relation.points)||0)+'/100',[
+ const living=()=>owner.palletRelationships.household?.partnerId===id;
+ const changeHousehold=()=>{
+  if(!active()||relation.romance!=='dating'||!adults[id])return;
+  if(living()){
+   showDialog(npc.name,'Podemos voltar a morar separados e continuar nosso relacionamento. É isso que você deseja?',[
+    {text:'SIM, ENCERRAR CONVIVÊNCIA',run:()=>{if(!active())return;delete owner.palletRelationships.household;householdRuntime=null;W.autoSave?.();W.PsyGuide?.close?.();state.dialogOpen=false;draw();}},
+    {text:'CANCELAR',run:menu}],pr,em);return;
+  }
+  if(owner.palletRelationships.household?.partnerId){reply('Sua casa já tem um parceiro residente. Converse com ele antes de mudar a convivência.');return}
+  const home=W.PsyKantoInteriorsV9?.get?.('home');
+  if(!home||!householdPointSafe(home,310,470)){reply('Precisamos de um espaço livre e seguro na sua casa antes de morar juntos.');return}
+  showDialog(npc.name,'Sim, quero dividir o cotidiano com você. Vamos morar juntos na sua casa?',[
+   {text:'SIM, MORAR JUNTOS',run:()=>{
+    if(!active()||relation.romance!=='dating'||owner.palletRelationships.household?.partnerId)return;
+    owner.palletRelationships.household={partnerId:id};householdRuntime=null;W.autoSave?.();W.PsyGuide?.close?.();state.dialogOpen=false;draw();
+   }},{text:'AINDA NÃO',run:menu}],pr,'alegre');
+ };
+ const menu=()=>showDialog(npc.name,'Amizade: '+(Number(relation.points)||0)+'/100'+(living()?' · Moramos juntos':''),[
+ ...(npc.domestic?[{text:'COMO ESTÁ NOSSA CASA?',run:()=>{if(active())reply('Gosto de ter um lugar para descansar e ouvir suas histórias. Hoje estou '+(householdActor()?.activity||'descansando')+'.')}}]:[]),
  ...[['Conversar',palletLines[id]],['Como você está?','Estou bem. Gosto de ter companhia enquanto cuido das minhas tarefas.'],['Como foi seu dia?','Hoje encontrei tempo para observar Pallet. Sempre há algo novo quando a gente presta atenção.']].map(([text,line],i)=>({text,run:()=>{
  if(player()!==owner||owner.palletRelationships?.npcs?.[id]!==relation)return;
  const day=Math.floor(Date.now()/86400000);relation.lastGain=relation.lastGain||{};
@@ -531,10 +600,11 @@ function talk(npc){
   if(!active())return;
   if(relation.romance!=='dating'){romance();return}
   showDialog(npc.name,'Gosto do tempo que passamos juntos. Como você está se sentindo?',[
+   {text:living()?'ENCERRAR CONVIVÊNCIA':'CONVIDAR PARA MORAR JUNTO',run:changeHousehold},
    {text:'PEDIR UM ABRAÇO',run:()=>{if(active())reply('Claro. Você recebe um abraço acolhedor.')}},
    {text:'PEDIR UM BEIJO',run:()=>{if(active())reply('Eu também quero. Vocês compartilham um beijo carinhoso.')}},
    {text:'ENCERRAR NAMORO',run:()=>showDialog(npc.name,'Quer encerrar nosso namoro? Sua amizade será preservada.',[
-    {text:'SIM, ENCERRAR',run:()=>{if(!active())return;relation.romance='friendship';W.autoSave?.();reply('Obrigado por conversar com sinceridade. Vamos respeitar esse novo momento.')}},
+    {text:'SIM, ENCERRAR',run:()=>{if(!active())return;relation.romance='friendship';if(living()){delete owner.palletRelationships.household;householdRuntime=null}W.autoSave?.();reply('Obrigado por conversar com sinceridade. Vamos respeitar esse novo momento.')}},
     {text:'VOLTAR',run:menu}],pr,em)},
    {text:'VOLTAR',run:menu}],pr,'alegre');
  }}]:[]),{text:'ATÉ LOGO'}],pr,em);
@@ -767,7 +837,7 @@ W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),drawTrain
  navigate:async function(at){autoHunt=false;state.pendingHobby=null;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){state.pendingHobby=null;if(active&&!vipActive()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1'&&!state.world?.isRoute1)open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,
- open,close,data:DATA,referenceViewport:routeOneViewport,progress,walkable:(id,x,y)=>W.PsyKantoAnime3Q?.isPilotMap?.(id)?W.PsyKantoAnime3Q.walkable(id,x,y,PLAYER_RADIUS):DATA.walkable(id==='pallet'?DATA.pallet:id==='viridian'?DATA.viridian:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y}),
+ getActors:()=>activeNPCs().map(n=>({id:n.id,at:n.at.slice(),domestic:!!n.domestic,activity:n.activity||null})),open,close,data:DATA,referenceViewport:routeOneViewport,progress,walkable:(id,x,y)=>W.PsyKantoAnime3Q?.isPilotMap?.(id)?W.PsyKantoAnime3Q.walkable(id,x,y,PLAYER_RADIUS):DATA.walkable(id==='pallet'?DATA.pallet:id==='viridian'?DATA.viridian:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y}),
  clearNavCache:()=>{state.navCells.clear();state.path=[];state.navRequest++;},
  setEditorCamera:opts=>{if(!opts)return;if(opts.reset){state.editorCam.active=false;state.editorCam.x=state.position.x;state.editorCam.y=state.position.y;state.editorCam.zoom=1.25;draw();return;}if(opts.active!==undefined){const was=state.editorCam.active;state.editorCam.active=!!opts.active;if(state.editorCam.active&&!was){state.editorCam.x=state.camPos?.x??state.position.x;state.editorCam.y=state.camPos?.y??state.position.y;}}if(Number.isFinite(opts.x))state.editorCam.x=opts.x;if(Number.isFinite(opts.y))state.editorCam.y=opts.y;if(Number.isFinite(opts.zoom))state.editorCam.zoom=Math.max(0.55,Math.min(5.0,opts.zoom));draw();},
  getEditorCamera:()=>{const view=state.canvas&&state.world?camera():null;return {active:state.editorCam.active,x:state.editorCam.x,y:state.editorCam.y,zoom:state.editorCam.zoom,scale:view?.scale||1,dpr:view?.dpr||1};}};
