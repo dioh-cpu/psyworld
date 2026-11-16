@@ -2,14 +2,6 @@
   'use strict';
   const root = D.documentElement;
   const viewport = W.visualViewport;
-  // Load the one-time local PSY IDLE reset before the player can enter that mode.
-  if (!D.getElementById('psy-idle-fresh-start-script')) {
-    const resetScript = D.createElement('script');
-    resetScript.id = 'psy-idle-fresh-start-script';
-    resetScript.src = 'core/psy-idle-fresh-start-v1.js?v=1';
-    resetScript.async = false;
-    (D.head || root).appendChild(resetScript);
-  }
   // Start audio loading during page initialization; city-content.js keeps the same
   // element id as a fallback and will not append a second copy.
   if (!D.getElementById('psy-audio-system-script')) {
