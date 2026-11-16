@@ -42,3 +42,7 @@ Todas as 6 artes originais (tanto as `1672×941` de Centro/Jardins quanto as `10
   - `costa-lamp-plaza-right` (`[781, 170, 813, 248]`, `242`), `costa-lamp-pier` (`[893, 332, 925, 412]`, `406`).
   - `colinas-lamp-upper` (`[950, 190, 982, 284]`, `278`).
   - `rota1-lamp-crossroads` (`[357, 224, 389, 342]`, `336`), `rota1-signpost` (`[556, 240, 590, 336]`, `330`).
+
+## V6.1 — Medição por Tiles 20px
+- Substituição da estimativa visual em grade de 50px por medição direta nos tiles de `tools/render_audit_tiles.py <area> 3 3 --edge`.
+- Garantia de `components_r11_count == 1` tanto na verificação Python quanto no verificador JS (`step=2/4/6`) em todas as 6 áreas.

@@ -436,7 +436,7 @@ const MAPS={
         id:'rota1-to-lab',
         rect:[498,636,642,675],
         target:'pallet-lab-3q',
-        spawn:[452,86],
+        spawn:[452,108],
         facing:'down',
         marker:[570,624],
         label:'LABORATÓRIO ↓',

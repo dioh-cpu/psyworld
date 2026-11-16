@@ -17,3 +17,6 @@
    - Implementação completa das **6 áreas definitivas de Pallet Town** a partir das seis artes originais enviadas pelo usuário, mantendo integralmente a base V5 (Walkmask + SDF, `r=11`, zoom V2, escalas V3, WebGL2 e oclusores RGBA).
    - Conexões bidirecionais coerentes entre *Centro e Residências*, *Jardins e Bosque*, *Laboratório do Prof. Carvalho* (incluindo subida completa pela escadaria esquerda até o arco `"Rota 1"`), *Costa e Praia*, *Colinas e Pedreiras* e *Arredores / Nova Rota 1* com 3 canteiros de grama alta, batalha selvagem, acesso norte a Viridian City e pontos de Pesca/Mineração.
    - Empacotamento obrigatório `DOCUMENTACAO/` + código + artes + mídia `< 20 MB` e publicação isolada em **Preview na Vercel (`?visual=anime3q`)** sem alterar `main` nem produção.
+
+### V6.1 — Costa e revisão geral de colisões
+- *"Colisões da Costa de pallet, além de que precisa liberar espaço para entrar corretamente e poder ir para a ponte. Ali vai ser um local de pesca. O que você está utilizando para fazer as colisões? Estão completamente fora do normal, preciso de mais atenção com as colisões. Dê uma olhada nas outras áreas de pallet e corrija tudo."*

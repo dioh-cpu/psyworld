@@ -11,3 +11,6 @@
 ## Próximos Passos Sugeridos
 1. Caso deseje refinar qualquer contorno específico após testes adicionais em campo, ajuste o polígono em `tools/build_walkmasks_v6.py`, execute `python3 tools/build_walkmasks_v6.py` e valide `componentCount === 1` antes de publicar nova revisão.
 2. Utilizar a mesma metodologia (Walkmask `1200×675` + 2D SDF + oclusores RGBA) caso a adaptação Anime HD 3/4 seja expandida no futuro para Viridian City ou rota norte seguinte.
+
+## Estado V6.1
+- Todas as 6 áreas de Pallet Town + Nova Rota 1 possuem colisões auditadas em tiles de 20px, conectividade única (`componentCount === 1`) e píer de pesca da Costa totalmente acessível.

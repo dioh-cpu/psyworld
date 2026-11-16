@@ -14,3 +14,8 @@
 | `assets/story/pallet/anime3q/walkmasks/*` | 12 arquivos `1200×675`: `{centro,jardins,lab,costa,colinas,rota1}_walkmask.png` e `*_sdf.png`. |
 | `assets/story/pallet/anime3q/masks/*.png` | 18 máscaras RGBA transparentes de primeiro plano (9 da V4/V5 + 9 da V6). |
 | `assets/story/pallet/anime3q/pallet_anime3q_geometry_v6.json` | Exportação completa da geometria, portais, portas, grama alta, NPCs e oclusores dos 6 mapas. |
+
+### Adições V6.1
+- `tools/render_audit_tiles.py`: Gerador de tiles 3×3 ampliados com grade de 20px e contornos `--edge` (vermelho = borda da máscara; ciano = limite `SDF >= 11`).
+- `core/hobbies-v2.js`: Zonas `WATER['pallet-costa-3q']` ampliadas para cobrir todo o píer de pesca (`[960,440,90]`, `[1080,470,95]`).
+- `core/kanto-anime3q-pilot-v1.js`: Spawn `colinas-to-lab` ajustado para `[452,108]` (`SDF=16.0`).

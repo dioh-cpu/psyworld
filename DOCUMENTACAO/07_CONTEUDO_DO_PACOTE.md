@@ -33,3 +33,6 @@
 - `MIDIA_VALIDACAO/`
   - `pilot_v6_walkthrough.mp4`
   - Capturas PNG de validação das 6 áreas em Desktop, oclusão sob o arco da Rota 1, batalha selvagem na grama alta, overlay SDF, Mobile Retrato/Paisagem e Editor Visual V6.
+
+### Atualização V6.1
+- Inclui `tools/render_audit_tiles.py`, `tools/build_walkmasks_v6.py` atualizado, todas as máscaras/SDFs atualizadas em `assets/story/pallet/anime3q/walkmasks/`, `core/hobbies-v2.js`, `core/kanto-anime3q-pilot-v1.js` e `DOCUMENTACAO/` atualizada.

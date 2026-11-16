@@ -43,3 +43,16 @@ Integrar as **6 artes definitivas de Pallet Town** em um mundo continuamente exp
 ## 5. Resultados Efetivamente Comprovados
 - Todos os 6 mapas possuem `componentCount === 1` no runtime (`PLAYER_RADIUS = 11`).
 - Travessia contínua real em Chromium percorrendo Centro ↔ Jardins ↔ Costa ↔ Colinas ↔ Centro ↔ Laboratório ↔ subindo as 3 escadarias esquerdas até o arco Rota 1 ↔ Nova Rota 1 ↔ batalha selvagem na grama alta ↔ diálogo de saída para Viridian ↔ retorno ao Laboratório, com **zero erros de console e zero HTTP 404**.
+
+## V6.1 — Auditoria e Reconstrução de Colisões (Costa, Lab, Colinas e Rota 1)
+
+- **Sistema de colisão explicado**: As colisões utilizam máscaras 1200×675 desenhadas em `tools/build_walkmasks_v6.py` (e `tools/build_walkmasks_v5.py` para Centro e Jardins) convertidas para Signed Distance Fields Euclidianos (`*_sdf.png`, `val = round(dist * 4)`), avaliados em tempo real em `core/kanto-anime3q-pilot-v1.js` (`walkable()` exige `sdf >= 11`). O problema anterior decorria da medição visual a partir de uma grade grossa de 50px.
+- **Nova ferramenta de medição**: `tools/render_audit_tiles.py` gera tiles ampliados com grade de 20px e modo `--edge` (borda real da máscara em vermelho + limite do raio `r=11` em ciano).
+- **Costa (`pallet-costa-3q`)**:
+  - Liberada a entrada superior vinda do Centro (`x=578..624`), conectando a escadaria principal, o passeio de pedra, a trilha NO para Colinas, a trilha NE para Jardins e os degraus para o píer.
+  - Reconstruído o píer de madeira completo até `x≈1161` com passagem atrás do poste do píer (`y=390..415`) e adicionadas zonas de pesca em `core/hobbies-v2.js` (`[960,440,90]`, `[1080,470,95]`) cobrindo todo o píer.
+  - Bloqueados bancos, postes, canteiros, cercas de corda, telhado/paredes da cabana e da casinha do pescador (mantendo acesso à porta `house-west`), rochas e água.
+- **Laboratório (`pallet-lab-3q`)**: Corrigida a fonte do astrolábio (`(652,420)`), alinhados os postes, banco oeste, canteiro esquerdo, bancada de alquimia, estufa/canteiros leste, cerca do arco da Rota 1 e spawn de retorno `colinas-to-lab` (`[452,108]`).
+- **Colinas (`pallet-colinas-3q`)**: Bloqueada a cerca da trilha superior da mina, telhado leste (`y>=295`), árvore leste e pilar inferior da escadaria sul.
+- **Nova Rota 1 (`pallet-arredores-3q`)**: Corrigida a lagoa da cachoeira, varanda da cabana SW, cerca do prado NO, segundo toco no prado NO, cerca leste, toco/telhado do campo C e balaustradas da escadaria sul.
+- **Centro e Jardins**: Auditados via `--edge`; mantidos íntegros (precisão já alinhada desde a V5).

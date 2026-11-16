@@ -30,3 +30,8 @@ Executado em sessão contínua com gravação em vídeo (`Errors count: 0`, `404
 - `pilot_v6_debug_sdf_rota1.jpg`: Overlay SDF em tempo real na Nova Rota 1.
 - `pilot_v6_mobile_portrait.jpg` e `pilot_v6_mobile_landscape.jpg`.
 - `pilot_v6_editor_rota1.jpg`: Editor Visual V6 carregando `pallet-arredores-3q`.
+
+## V6.1 — Validação Local e E2E
+- `tools/build_walkmasks_v6.py`: `components_r11_count == 1` para `centro`, `jardins`, `lab`, `costa`, `colinas` e `rota1`.
+- Todos os spawns de portais e mapas validados com `SDF >= 13.0` (`costa` píer `SDF=35.5..39.75`, `from_jardins` `17.5`, `from_centro` `41.25`, `colinas-to-lab` `16.0`).
+- E2E Chromium (`test_anime3q_v6.mjs`): 6/6 mapas com `componentCount === 1`, navegação completa até o píer com `fishVisible: true`, batalha selvagem na Rota 1, `Errors count: 0`, `404 count: 0`.

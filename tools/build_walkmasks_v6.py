@@ -70,72 +70,77 @@ def build_lab_mask():
     d = ImageDraw.Draw(im)
 
     # 1. Bottom Main Grand Staircase (from Centro north portal y=675 up to central plaza y=515)
-    d.polygon([(545, 515), (776, 515), (776, 675), (545, 675)], fill=255)
+    d.polygon([(550, 515), (764, 515), (764, 675), (550, 675)], fill=255)
 
     # 2. Central Astrolabe Plaza & East-West Courtyard
     plaza = [
         (285, 392), (380, 385), (495, 345), (548, 305),
         (735, 305), (840, 325), (885, 365), (1055, 355),
         (1145, 315), (1188, 338), (1140, 395), (1045, 448),
-        (920, 492), (795, 526), (535, 522), (430, 475),
+        (920, 488), (795, 522), (535, 522), (430, 470),
         (320, 448), (272, 418)
     ]
     d.polygon(plaza, fill=255)
 
-    # Lab front entrance steps/porch landing (widened between flowerpot pillars so r=11 passes cleanly)
+    # Lab front entrance steps/porch landing
     d.polygon([(574, 286), (702, 286), (716, 336), (562, 336)], fill=255)
 
     # East path winding cleanly along cobblestone loop east of experimental gardens -> behind greenhouse
     add_thick_path(d, [
         (1030, 392), (1115, 372), (1160, 328), (1174, 274),
         (1168, 212), (1144, 158)
-    ], half_width=28)
+    ], half_width=26)
 
-    # 3. Lower-Left SW scenic steps & stone landing (cleanly connected to main plaza, outside alchemy shelf)
+    # 3. Lower-Left SW scenic steps & stone landing (outside alchemy workbench)
     d.polygon([(242, 422), (355, 422), (355, 502), (242, 502)], fill=255)
-    d.polygon([(120, 468), (275, 468), (275, 502), (120, 502)], fill=255)
-    add_thick_path(d, [(282, 488), (296, 540), (304, 588)], half_width=22)
+    d.polygon([(120, 478), (275, 478), (275, 502), (120, 502)], fill=255)
+    add_thick_path(d, [(288, 492), (305, 542), (312, 588)], half_width=20)
 
     # 4. MANDATORY LEFT STAIRCASE & TERRACE PASSAGE -> UPPER ROTA 1 ARCH GATE
     add_thick_path(d, [
-        (320, 408), (264, 392), (210, 365), (186, 344),
+        (320, 408), (264, 394), (218, 372), (186, 344),
         (228, 314), (222, 256), (190, 224), (206, 186),
-        (268, 166), (322, 152), (344, 114), (346, 86),
-        (450, 86), (546, 76), (548, 34)
-    ], half_width=27)
+        (268, 166), (322, 152), (344, 114), (346, 94),
+        (450, 98), (546, 76), (548, 34)
+    ], half_width=22)
 
-    # Widen upper terrace dirt path (y=66..118) seamlessly across to Rota 1 stone archway (x=500..596)
-    d.polygon([(330, 66), (596, 66), (596, 118), (330, 118)], fill=255)
-    d.polygon([(498, 28), (596, 28), (596, 98), (498, 98)], fill=255)
+    # Widen upper terrace dirt path (below fence y>=90) -> Rota 1 stone archway (x=500..582)
+    d.polygon([(330, 90), (586, 90), (586, 124), (330, 124)], fill=255)
+    d.polygon([(500, 28), (584, 28), (584, 98), (500, 98)], fill=255)
 
     # --- SOLID OBSTACLES CARVED OUT ---
-    # Astrolabe stone fountain (keep rx=92, ry=45 so front Lab porch connects seamlessly to plaza!)
-    d.polygon(ellipse_poly(642, 392, 92, 45), fill=0)
+    # Astrolabe stone fountain (measured center 652,420)
+    d.polygon(ellipse_poly(652, 420, 90, 46), fill=0)
 
-    d.rectangle([388, 348, 456, 394], fill=0)
+    # Left bench & flower bed wall
+    d.rectangle([414, 360, 488, 402], fill=0)
+    d.polygon([(235, 342), (350, 342), (350, 370), (235, 370)], fill=0)
     d.polygon([(275, 315), (410, 315), (410, 352), (275, 352)], fill=0)
-    # Flowerpot curb bollards flanking Lab front stairs (leave 572..704 wide open for r=11!)
+    # Alchemy workbench & SW flower bed
+    d.rectangle([110, 445, 232, 485], fill=0)
+    d.rectangle([430, 482, 515, 520], fill=0)
+
+    # Flowerpot curb bollards flanking Lab front stairs
     d.ellipse([534, 304, 568, 336], fill=0)
     d.ellipse([708, 304, 742, 336], fill=0)
 
+    # Plaza lamps (measured plinths)
     d.ellipse([402, 464, 432, 494], fill=0)
-    d.ellipse([878, 442, 908, 472], fill=0)
+    d.ellipse([880, 484, 906, 506], fill=0)
     d.ellipse([498, 316, 524, 342], fill=0)
-    d.ellipse([762, 316, 788, 342], fill=0)
+    d.ellipse([762, 368, 790, 394], fill=0)
 
-    # East greenhouse & experimental garden beds (kept west of x=1048 so east road connects cleanly with >= 20px SDF)
-    d.rectangle([838, 382, 904, 422], fill=0)
-    d.polygon([(875, 280), (1048, 255), (1048, 338), (905, 382), (875, 350)], fill=0)
+    # East greenhouse, bench & experimental garden beds
+    d.rectangle([842, 406, 906, 444], fill=0)
+    d.polygon([(875, 255), (1108, 255), (1108, 385), (960, 425), (895, 425), (875, 355)], fill=0)
 
-    d.polygon([(510, 505), (546, 505), (546, 675), (510, 675)], fill=0)
-    d.polygon([(774, 505), (812, 505), (812, 675), (774, 675)], fill=0)
+    # Bottom grand stair balustrades
+    d.polygon([(510, 505), (550, 505), (550, 675), (510, 675)], fill=0)
+    d.polygon([(764, 505), (812, 505), (812, 675), (764, 675)], fill=0)
 
-    # Arch stone pillars strictly north of y=64 so upper dirt curve (y=66..118) connects smoothly!
-    d.rectangle([466, 15, 496, 64], fill=0)
-    d.rectangle([598, 15, 628, 64], fill=0)
-    # Upper terrace lamp post & signboard along north grass curb (north of y=64)
-    d.ellipse([402, 40, 426, 63], fill=0)
-    d.rectangle([450, 42, 472, 63], fill=0)
+    # Arch stone pillars & upper terrace fence/signboard
+    d.rectangle([395, 40, 496, 92], fill=0)
+    d.rectangle([584, 15, 628, 72], fill=0)
 
     # Middle-left landing pond lamp & Stairs 3 right lamp
     d.ellipse([136, 288, 170, 322], fill=0)
@@ -144,78 +149,97 @@ def build_lab_mask():
     return im
 
 
+def add_var_path(d, pts, fill=255):
+    """Thick path whose half-width varies per vertex: pts = [(x, y, hw), ...]."""
+    for i, (x, y, hw) in enumerate(pts):
+        d.ellipse([x - hw, y - hw, x + hw, y + hw], fill=fill)
+        if i > 0:
+            ax, ay, ahw = pts[i - 1]
+            dx, dy = x - ax, y - ay
+            L = math.hypot(dx, dy)
+            if L > 0.5:
+                nx, ny = -dy / L, dx / L
+                d.polygon([(ax + nx * ahw, ay + ny * ahw), (x + nx * hw, y + ny * hw),
+                           (x - nx * hw, y - ny * hw), (ax - nx * ahw, ay - ny * ahw)], fill=fill)
+
+
 def build_costa_mask():
+    """
+    V6.1 Costa e Praia -- every vertex measured on zoomed 20px audit tiles
+    (tools/render_audit_tiles.py costa 3 3).
+    """
     im = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(im)
 
-    # 1. Top-Center Grand Cobblestone Staircase (Centro <-> Costa)
-    d.polygon([(525, 0), (685, 0), (685, 48), (525, 48)], fill=255)
-    d.polygon([(548, 35), (668, 35), (668, 222), (548, 222)], fill=255)
+    # --- 1. Top landing (Centro entrance) + grand staircase -------------------------
+    d.polygon([(478, 26), (572, 24), (578, 12), (578, 0), (624, 0), (624, 12), (628, 24),
+               (700, 26), (700, 56), (662, 64), (648, 76), (545, 78), (536, 72), (523, 62), (500, 45)], fill=255)
+    d.polygon([(545, 76), (648, 76), (662, 150), (678, 235), (680, 256), (558, 256), (556, 235), (552, 150)], fill=255)
 
-    # 2. Central Coastal Promenade Terrace
-    promenade = [
-        (225, 200), (885, 200), (905, 295), (815, 315),
-        (235, 305), (205, 260)
-    ]
-    d.polygon(promenade, fill=255)
+    # --- 2. Cobblestone promenade + cottage porch + lower-left cobble court ---------
+    d.polygon([
+        (395, 234), (548, 246), (678, 248), (701, 270), (794, 270), (808, 284), (808, 310),
+        (868, 320), (872, 344), (826, 350), (758, 335), (752, 305), (684, 304), (678, 318),
+        (648, 322), (646, 348), (575, 350), (548, 342), (536, 344), (490, 372), (445, 394),
+        (395, 396), (352, 408), (312, 402), (298, 380), (300, 352), (380, 360), (432, 360), (432, 268),
+    ], fill=255)
+    # cottage front porch & lane connected cleanly to promenade
+    d.polygon([(310, 224), (432, 224), (432, 265), (310, 265)], fill=255)
 
-    # 3. Northwest Rocky Cliff Stairs -> Cottage Lane (Colinas <-> Costa)
-    add_thick_path(d, [
-        (120, 0), (122, 45), (112, 95), (92, 145),
-        (135, 185), (205, 215), (265, 245)
-    ], half_width=24)
-    d.polygon([(245, 182), (370, 182), (370, 250), (245, 250)], fill=255)
+    # --- 3. NW stone stair path (Colinas) -> cottage side -> cobble court -> tide-pool causeway --
+    add_var_path(d, [
+        (94, 0, 20), (84, 30, 18), (95, 46, 18), (122, 62, 18), (130, 85, 18), (121, 105, 18), (100, 122, 18),
+        (84, 140, 18), (80, 157, 18), (91, 175, 18), (114, 196, 19), (138, 215, 20), (160, 236, 20),
+        (190, 257, 20), (227, 280, 19), (280, 310, 19), (318, 338, 20), (346, 370, 20), (343, 405, 19),
+        (324, 432, 18), (306, 457, 17), (285, 468, 16), (255, 480, 16), (241, 482, 16), (198, 500, 17),
+        (159, 517, 17), (143, 535, 17), (137, 552, 17), (150, 570, 17), (187, 587, 17), (207, 598, 16),
+        (235, 606, 16),
+    ])
 
-    # 4. Left Beach Ramp & Tide-Pool Breakwater Causeway
-    add_thick_path(d, [
-        (235, 270), (288, 320), (318, 372), (392, 382)
-    ], half_width=26)
-    add_thick_path(d, [
-        (292, 398), (225, 472), (145, 512), (96, 542), (138, 578), (218, 558)
-    ], half_width=26)
+    # --- 4. Sand beach (east of the fence & beach boulders) -------------------------
+    d.polygon([
+        (541, 344), (646, 344), (654, 372), (680, 382), (692, 392), (742, 392), (758, 394), (790, 403),
+        (824, 412), (826, 436), (795, 437), (750, 441), (712, 447), (673, 458), (618, 475), (585, 488),
+        (560, 496), (501, 509), (435, 522), (388, 530), (372, 520), (368, 495), (380, 487), (418, 482),
+        (440, 466), (468, 455), (472, 430), (483, 428), (527, 428), (545, 424), (556, 410), (585, 408),
+        (583, 386), (553, 376),
+    ], fill=255)
 
-    # 5. Open Stairway from Central Promenade Directly South onto Sandy Beach (x=495..615)
-    d.polygon([(492, 285), (618, 285), (618, 360), (492, 360)], fill=255)
+    # --- 5. Stone steps down to the pier + wooden fishing pier deck ---------------------
+    d.polygon([(824, 342), (874, 342), (886, 380), (894, 396), (836, 396), (828, 372)], fill=255)
+    d.polygon([
+        (836, 390), (1035, 390), (1056, 413), (1095, 431), (1146, 455), (1161, 480), (1088, 516),
+        (1046, 498), (990, 470), (937, 453), (895, 442), (838, 431),
+    ], fill=255)
 
-    # 6. Main Sandy Beach
-    beach = [
-        (365, 355), (475, 342), (610, 326), (725, 322), (790, 350),
-        (800, 395), (735, 405), (635, 396), (520, 412), (430, 422), (350, 425)
-    ]
-    d.polygon(beach, fill=255)
+    # --- 6. NE trail: plaza -> stream bridge -> garden trail (Jardins) -----------------
+    add_var_path(d, [
+        (786, 286, 18), (812, 277, 18), (838, 268, 20), (864, 258, 20), (884, 246, 20), (900, 230, 21),
+        (915, 208, 21), (935, 186, 20),
+    ])
+    add_var_path(d, [
+        (938, 178, 16), (985, 165, 16), (1030, 153, 16), (1050, 149, 17), (1078, 146, 18), (1098, 128, 18),
+        (1108, 102, 19), (1116, 82, 20), (1120, 64, 20), (1115, 44, 20), (1108, 22, 20), (1105, 0, 20),
+    ])
 
-    # 7. Stone Steps & Full Wooden Fishing Pier + Cabana Deck
-    d.polygon([(780, 245), (892, 245), (892, 335), (780, 335)], fill=255)
-    d.polygon([(820, 320), (882, 320), (882, 410), (820, 410)], fill=255)
-    d.polygon([(815, 396), (1128, 396), (1128, 464), (815, 464)], fill=255)
-    d.polygon([(1032, 435), (1132, 435), (1132, 518), (1032, 518)], fill=255)
-
-    # 8. Northeast Stream Bridge & Garden Trail (Costa <-> Jardins)
-    add_thick_path(d, [
-        (855, 240), (895, 200), (925, 160), (975, 146), (1035, 152),
-        (1085, 128), (1118, 72), (1142, 0)
-    ], half_width=24)
-
-    # --- SOLID OBSTACLES CARVED OUT ---
-    d.polygon([(560, 0), (650, 0), (650, 22), (560, 22)], fill=0)
-    d.rectangle([524, 48, 548, 215], fill=0)
-    d.rectangle([666, 48, 690, 215], fill=0)
-
-    d.ellipse([496, 175, 526, 204], fill=0)
-    d.ellipse([782, 175, 812, 204], fill=0)
-    # Merged planter box cutout (eliminates stray 1-cell island at 429,297)
-    d.rectangle([420, 248, 512, 306], fill=0)
-    d.polygon([(315, 240), (420, 240), (420, 288), (315, 288)], fill=0)
-    d.rectangle([802, 195, 868, 242], fill=0)
-    d.polygon([(622, 294), (775, 286), (775, 326), (622, 336)], fill=0)
-
-    # Pier fishing lamp & Cabana roof/wall (stop at y=404 so pier deck y=404..464 gives >22px SDF!)
-    d.ellipse([894, 382, 922, 404], fill=0)
-    d.rectangle([940, 310, 1090, 404], fill=0)
-
-    d.polygon([(325, 382), (412, 368), (412, 422), (325, 426)], fill=0)
-    d.polygon([(175, 498), (290, 495), (300, 558), (175, 558)], fill=0)
-
+    # --- SOLID OBSTACLES (carved last) ----------------------------------------------
+    # cottage roof + walls (porch steps y>=224 stay open so the door can be reached)
+    d.polygon([(150, 140), (222, 62), (236, 28), (282, 28), (282, 62), (334, 90), (392, 142), (392, 224),
+               (310, 224), (305, 245), (275, 255), (200, 225)], fill=0)
+    # lamp plinths
+    d.ellipse([508, 243, 530, 263], fill=0)     # beside stairs (519,252)
+    d.ellipse([433, 341, 447, 354], fill=0)     # beside bench (440,347)
+    d.ellipse([795, 255, 809, 269], fill=0)     # plaza right lamp (802,262)
+    d.ellipse([906, 415, 918, 431], fill=0)     # pier lamp (912,420)
+    # bench on the plaza
+    d.polygon([(448, 300), (500, 289), (518, 300), (518, 318), (494, 330), (472, 338), (448, 334)], fill=0)
+    # bench next to the NE trail
+    d.polygon([(814, 212), (868, 204), (872, 222), (870, 234), (838, 244), (822, 244), (814, 226)], fill=0)
+    # rope fence below NE trail
+    d.line([(814, 298), (842, 284), (875, 270), (908, 250)], fill=0, width=5)
+    # cabana (roof, walls, crates and barrels) -- deck begins at y>=390
+    d.polygon([(900, 300), (1125, 262), (1125, 390), (900, 390)], fill=0)
+    d.polygon([(1048, 378), (1092, 380), (1094, 408), (1052, 410)], fill=0)
     return im
 
 
@@ -260,7 +284,7 @@ def build_colinas_mask():
         (332, 368), (338, 442), (398, 502), (415, 565),
         (472, 622), (482, 675)
     ], half_width=24)
-    d.polygon([(440, 622), (535, 622), (535, 675), (440, 675)], fill=255)
+    d.polygon([(440, 605), (535, 605), (535, 675), (440, 675)], fill=255)
 
     # --- SOLID OBSTACLES CARVED OUT ---
     # Posto dos Mineradores cabin + fenced porch (Screenshot 021912)
@@ -271,10 +295,13 @@ def build_colinas_mask():
     d.polygon([(0, 325), (255, 362), (255, 435), (0, 435)], fill=0)
     # East-upper buildings & bushes
     d.polygon([(1018, 75), (1200, 75), (1200, 228), (1065, 228), (1018, 180)], fill=0)
-    d.polygon([(1125, 335), (1200, 335), (1200, 455), (1125, 455)], fill=0)
+    d.polygon([(1135, 295), (1200, 295), (1200, 455), (1125, 455)], fill=0)
+    d.polygon([(960, 325), (1040, 325), (1040, 425), (960, 425)], fill=0)
 
     # Upper-middle & upper-right cliff + fence above mine entrance (Screenshots 021827, 021830)
     d.polygon([(620, 175), (955, 200), (955, 265), (620, 255)], fill=0)
+    d.rectangle([600, 148, 800, 175], fill=0)
+    d.rectangle([445, 634, 474, 675], fill=0)
     # Lamp post & rock/log near east road (Screenshot 021837)
     d.ellipse([950, 258, 982, 288], fill=0)
     d.ellipse([1098, 332, 1126, 354], fill=0)
@@ -297,39 +324,39 @@ def build_rota1_mask():
     d = ImageDraw.Draw(im)
 
     # 1. South Grand Staircase (Rota 1 South <-> Laboratório Rota 1 Archway)
-    d.polygon([(498, 565), (642, 565), (642, 675), (498, 675)], fill=255)
+    d.polygon([(510, 565), (634, 565), (634, 675), (510, 675)], fill=255)
 
     # 2. Central Cobblestone Crossroads Plaza & SW Cottage Courtyard
     plaza = [
         (250, 325), (345, 325), (455, 345), (655, 325),
-        (715, 365), (655, 445), (642, 575), (490, 575),
+        (715, 365), (655, 445), (634, 575), (490, 575),
         (425, 475), (350, 405), (250, 385)
     ]
     d.polygon(plaza, fill=255)
-    d.polygon([(178, 445), (288, 445), (288, 515), (178, 515)], fill=255)
-    add_thick_path(d, [(255, 360), (280, 422), (245, 478)], half_width=28)
+    d.polygon([(138, 495), (295, 495), (295, 545), (138, 545)], fill=255)
+    add_thick_path(d, [(255, 360), (288, 435), (255, 512)], half_width=26)
 
     # 3. Main North Dirt Trail -> Top Exit to Viridian (x=725..845, y=0..38)
     add_thick_path(d, [
         (600, 375), (620, 295), (636, 225), (670, 148),
         (722, 88), (766, 40), (776, 0)
-    ], half_width=32)
+    ], half_width=30)
 
-    # 4. NORTHWEST HUNTING MEADOW
+    # 4. NORTHWEST HUNTING MEADOW (inside wooden fence)
     add_thick_path(d, [
-        (255, 345), (185, 315), (210, 255), (242, 195), (242, 155)
-    ], half_width=25)
+        (255, 345), (218, 315), (218, 255), (242, 195), (242, 155)
+    ], half_width=23)
     nw_meadow = [
-        (170, 58), (470, 62), (555, 108), (585, 148),
-        (535, 175), (435, 182), (240, 172), (170, 145)
+        (175, 78), (395, 78), (470, 92), (555, 130), (575, 152),
+        (535, 175), (435, 182), (240, 172), (175, 145)
     ]
     d.polygon(nw_meadow, fill=255)
 
     # 5. EAST DIRT FORK + GRASS FIELD B + GRASS FIELD C + NE Shrine
     add_thick_path(d, [
-        (640, 345), (765, 325), (890, 305), (1025, 285),
+        (640, 355), (765, 362), (825, 352), (890, 315), (1025, 285),
         (1105, 255), (1095, 195), (1085, 145)
-    ], half_width=25)
+    ], half_width=24)
     d.polygon([(710, 155), (995, 155), (1015, 262), (710, 262)], fill=255)
     add_thick_path(d, [(725, 145), (820, 155)], half_width=22)
     add_thick_path(d, [(895, 290), (925, 250)], half_width=24)
@@ -337,20 +364,32 @@ def build_rota1_mask():
 
     # --- SOLID OBSTACLES CARVED OUT ---
     d.polygon([(315, 240), (495, 240), (495, 345), (365, 355), (315, 315)], fill=0)
+    d.polygon([(345, 330), (515, 330), (515, 378), (345, 378)], fill=0)
     d.ellipse([302, 310, 330, 338], fill=0)
     d.ellipse([558, 312, 586, 338], fill=0)
 
+    # SW cottage & flower pots
+    d.polygon([(0, 340), (215, 340), (215, 492), (0, 492)], fill=0)
+    d.rectangle([195, 450, 248, 502], fill=0)
+
+    # NW meadow fence & stumps
     d.polygon([(0, 120), (195, 155), (195, 190), (0, 170)], fill=0)
     d.polygon([(276, 184), (515, 184), (515, 224), (276, 224)], fill=0)
     d.rectangle([195, 48, 240, 82], fill=0)
     d.rectangle([465, 128, 502, 165], fill=0)
+    d.rectangle([508, 96, 565, 165], fill=0)
 
+    # East stumps, fences & chimney
     d.polygon([(720, 124), (802, 108), (808, 138), (726, 152)], fill=0)
     d.polygon([(755, 265), (848, 250), (855, 282), (762, 296)], fill=0)
-    d.ellipse([830, 335, 875, 372], fill=0)
+    d.rectangle([755, 312, 815, 342], fill=0)
+    d.rectangle([1080, 288, 1125, 322], fill=0)
+    d.rectangle([1090, 412, 1155, 450], fill=0)
+    d.ellipse([830, 360, 880, 398], fill=0)
 
-    d.rectangle([465, 558, 502, 675], fill=0)
-    d.rectangle([636, 558, 675, 675], fill=0)
+    # Bottom stair balustrades
+    d.rectangle([465, 558, 512, 675], fill=0)
+    d.rectangle([632, 558, 675, 675], fill=0)
 
     return im
 
@@ -365,30 +404,23 @@ def main():
             build_lab_mask,
             [
                 (658, 650), (658, 540), (540, 465), (420, 425),
-                (320, 408), (264, 392), (210, 365), (186, 344),
+                (320, 408), (264, 394), (218, 372), (186, 344),
                 (228, 314), (222, 256), (190, 224), (206, 186),
-                (268, 166), (322, 152), (344, 114), (346, 86),
-                (450, 82), (548, 70), (552, 42)
+                (268, 166), (322, 152), (344, 114), (346, 106),
+                (480, 108), (542, 105), (542, 42)
             ],
         ),
-        (
-            "costa",
-            "assets/story/pallet/anime3q/04_costa_praia.png",
-            build_costa_mask,
-            [
-                (606, 48), (606, 225), (555, 280), (555, 360),
-                (555, 255), (835, 260), (852, 315), (852, 422), (1055, 425)
-            ],
+        ("costa", "assets/story/pallet/anime3q/04_costa_praia.png", build_costa_mask, [(600, 12), (606, 48), (606, 225), (606, 280), (606, 365), (606, 280), (775, 290), (788, 322), (845, 335), (860, 404), (912, 402), (1035, 425)],
         ),
         (
             "colinas",
             "assets/story/pallet/anime3q/05_colinas_pedreiras.png",
             build_colinas_mask,
             [
-                (1180, 290), (1095, 272), (1020, 256), (1012, 296),
-                (955, 325), (875, 378), (760, 402), (620, 405),
+                (1170, 268), (1095, 272), (1020, 256), (985, 295),
+                (940, 325), (875, 378), (760, 402), (620, 405),
                 (510, 376), (445, 366), (370, 368), (332, 368),
-                (338, 442), (398, 502), (415, 565), (472, 622), (482, 665)
+                (338, 442), (398, 502), (415, 565), (502, 635), (505, 665)
             ],
         ),
         (
@@ -396,14 +428,17 @@ def main():
             "assets/story/pallet/anime3q/06_arredores_rota1.png",
             build_rota1_mask,
             [
-                (570, 650), (570, 440), (605, 345), (636, 225),
+                (572, 650), (572, 440), (605, 345), (636, 225),
                 (670, 148), (722, 88), (772, 20)
             ],
         ),
     ]
 
+    only = [a for a in sys.argv[1:] if not a.startswith('-')]
     summary = {}
     for name, art_path, builder, route in specs:
+        if only and name not in only:
+            continue
         mask_im = builder()
         mask_arr = (np.array(mask_im) >= 128)
         edt = compute_edt_2d(mask_arr)
