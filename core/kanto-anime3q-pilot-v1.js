@@ -13,7 +13,8 @@
 if(W.PsyKantoAnime3Q)return;
 
 const params=new URLSearchParams(W.location?.search||'');
-let enabled=params.get('visual')==='anime3q';
+const visualParam=params.get('visual');
+let enabled=visualParam!=='legacy'&&visualParam!=='v2';
 const debugEditorEnabled=params.get('debug')==='editor';
 const LOGICAL_W=1200,LOGICAL_H=675;
 
