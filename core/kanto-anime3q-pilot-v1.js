@@ -956,7 +956,7 @@ async function publishBrush(){
       walkmaskBase64:encodeGrayPngBase64(t.walkL),
       sdfBase64:encodeGrayPngBase64(t.sdf),
     }));
-    const res=await fetch('/api/collision-publish',{
+    const res=await fetch('/api/config?psy=collision-publish',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({pin,files}),
