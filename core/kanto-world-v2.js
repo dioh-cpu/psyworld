@@ -500,7 +500,20 @@ function activateTarget(a){if(a.type==='rift'){enterHuntRift();return}if(a.type=
 function talk(npc){
  const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
  const palletLines={'pallet-nina':'Estou desenhando os caminhos de Pallet. Um mapa fica melhor quando escutamos quem conhece cada trilha.','pallet-tomi':'As plantas do bosque mudam com as estações. Gosto de cuidar das mudas antes de explorar.','pallet-maia':'Cuide de seus companheiros e faça pausas durante a viagem. Uma jornada longa começa com bons cuidados.','pallet-banhista':'O mar está bonito hoje! Antes de entrar na água, gosto de observar as ondas e a maré.','pallet-breno':'A pedra guarda marcas de quem trabalhou nela. Estou aprendendo a restaurar os caminhos das colinas.','pallet-lucia':'Bem-vindo! Cuido das flores desta casa e sempre guardo um pouco de água para os dias quentes.'};
- if(palletLines[id]){showDialog(npc.name,palletLines[id],[],pr,em);return}
+ if(palletLines[id]){
+ const owner=player();owner.palletRelationships=owner.palletRelationships||{version:1,npcs:{}};
+ const records=owner.palletRelationships.npcs||(owner.palletRelationships.npcs={});
+ const relation=records[id]||(records[id]={points:0,lastGain:{},turn:0});
+ const menu=()=>showDialog(npc.name,'Amizade: '+(Number(relation.points)||0)+'/100',[
+ ...[['Conversar',palletLines[id]],['Como você está?','Estou bem. Gosto de ter companhia enquanto cuido das minhas tarefas.'],['Como foi seu dia?','Hoje encontrei tempo para observar Pallet. Sempre há algo novo quando a gente presta atenção.']].map(([text,line],i)=>({text,run:()=>{
+ if(player()!==owner||owner.palletRelationships?.npcs?.[id]!==relation)return;
+ const day=Math.floor(Date.now()/86400000);relation.lastGain=relation.lastGain||{};
+ if(relation.lastGain[i]!==day){relation.lastGain[i]=day;relation.points=Math.min(100,(Number(relation.points)||0)+2)}
+ relation.turn=(Number(relation.turn)||0)+1;W.autoSave?.();
+ showDialog(npc.name,line+(relation.points>=20?' É bom poder conversar com alguém que já conheço.':relation.turn%2?' Obrigado por parar para conversar.':''),[{text:'VOLTAR',run:menu},{text:'ATÉ LOGO'}],pr,em);
+ }})),{text:'ATÉ LOGO'}],pr,em);
+ menu();return;
+ }
  if(id==='viridian-elder'){
     mark('viridianTalked');
     const campaign=W.PsyKantoPlayableV1?.progress?.();

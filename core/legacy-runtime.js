@@ -1,3 +1,7 @@
+function psyLoadRelationships(target,source){
+ const value=source?.palletRelationships;
+ target.palletRelationships=value&&typeof value==="object"&&!Array.isArray(value)?JSON.parse(JSON.stringify(value)):{version:1,npcs:{}};
+}
 // ===== GYM DATA V4 - 100% PURO POR REGIÃO =====
 const GYM_DATA=[
 {region:"KANTO",color:"#ff4444",icon:"🔴",gyms:[
@@ -813,6 +817,7 @@ function autoLoad() {
         const pd = data.player || data;
         if(!pd.team || (pd.team.length===0 && pd.box?.length===0)) return false;
 
+        psyLoadRelationships(P,pd);
         P.name = pd.name || P.name;
         P.gold = pd.gold?? P.gold;
         P.team = pd.team || [];
@@ -967,6 +972,7 @@ function autoLoad() {
         if(!data) return false;
         const player = data.player || data;
         Object.assign(P, player);
+        psyLoadRelationships(P, player);
         P.team = Array.isArray(player.team) ? player.team : [];
         P.box = Array.isArray(player.box) ? player.box : [];
         const map = data.map || {};
@@ -997,6 +1003,7 @@ function uploadSave(event) {
             try {
                 const data = JSON.parse(e.target.result);
                 Object.assign(P, data.player);
+                psyLoadRelationships(P, data.player);
                 P.x = data.map.x; P.y = data.map.y;
                 P.px = data.map.px; P.py = data.map.py;
 
@@ -1115,6 +1122,7 @@ function uploadSaveLogin(event) {
         try {
             const data = JSON.parse(e.target.result);
             Object.assign(P, data.player);
+                psyLoadRelationships(P, data.player);
             P.x = data.map.x; P.y = data.map.y;
             P.px = data.map.px; P.py = data.map.py;
 
@@ -1278,6 +1286,7 @@ function confirmStarter() {
     novoPoke.currentHp=novoPoke.maxHp;
     novoPoke.fainted=false;
     delete novoPoke.status;
+    psyLoadRelationships(P,{});
     P.team = [novoPoke];
     P.box = P.box || []; // NÃO faz P.box = [] se já tinha backup
     P.pokemon = P.team[0];
@@ -8708,6 +8717,7 @@ function psyV9LoadLocal(){
     candidates.sort((a,b)=>Number(b.savedAt||b.time||b.timestamp||0)-Number(a.savedAt||a.time||a.timestamp||0));
     const data=candidates[0],pd=data.player||data;
     Object.assign(P,pd);
+    psyLoadRelationships(P,pd);
 
     // ⭐ CAMPANHA VIP 3 DIAS — MIGRAÇÃO PARA CONTAS ANTIGAS.
     // Contas que já receberam o VIP de boas-vindas não recebem este bônus de novo.
