@@ -12,7 +12,7 @@ W.matchMedia?.('(prefers-reduced-motion: reduce)').addEventListener?.('change',e
 const $=s=>D.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const RIFT_ID='kanto-hunt-rift';
 const RIFT_ROOM={id:RIFT_ID,title:'Fenda Selvagem',w:896,h:560,art:'assets/story/kanto-hunt-rift-v1.webp',spawn:[448,500],exit:[448,220],npcs:[],walkBounds:[24,24,872,536],blocks:[[720,135,895,480]]};
-const state={root:null,canvas:null,ctx:null,world:null,inside:null,position:{x:597,y:555},lastOutdoor:null,portalCooldownUntil:0,held:new Set(),joy:null,touch:null,path:[],pendingHobby:null,pendingRiftTarget:null,time:0,raf:0,stepDistance:0,lastEncounter:0,dialogOpen:false,images:new Map(),portrait:null,avatar:null,quest:null,walkFrame:0,facing:'down',moving:false,suspended:false,navRequest:0,navCells:new Map(),viewport:null,lastRender:0,menuOpen:false,externalPanel:null,hideTrainerName:false,huntRiftOffer:null,huntRiftSession:null,huntRiftOrigin:null,huntRiftFrozen:false,pendingHuntRift:null,lastHuntRiftSecond:null};
+const state={root:null,canvas:null,ctx:null,world:null,inside:null,position:{x:597,y:555},lastOutdoor:null,portalCooldownUntil:0,held:new Set(),joy:null,touch:null,path:[],pendingHobby:null,pendingRiftTarget:null,time:0,raf:0,stepDistance:0,lastEncounter:0,dialogOpen:false,images:new Map(),portrait:null,avatar:null,quest:null,walkFrame:0,facing:'down',moving:false,suspended:false,navRequest:0,navCells:new Map(),viewport:null,lastRender:0,menuOpen:false,externalPanel:null,hideTrainerName:false,huntRiftOffer:null,huntRiftSession:null,huntRiftOrigin:null,huntRiftFrozen:false,pendingHuntRift:null,lastHuntRiftSecond:null,editorCam:{active:false,x:600,y:337.5,zoom:1.25}};
 function triggerStageFade(){const fade=state.root?.querySelector('.kw2-fade');if(!fade)return;fade.style.transition='none';fade.style.opacity='0.55';W.requestAnimationFrame(()=>{fade.style.transition='opacity 220ms ease-out';fade.style.opacity='0';});}
 function progress(){if(state.quest)return state.quest;try{state.quest=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(_){state.quest={}}return state.quest}
 function putProgress(){try{localStorage.setItem(KEY,JSON.stringify(progress()))}catch(_){}try{W.autoSave?.()}catch(_){}}
@@ -37,7 +37,7 @@ root.querySelectorAll('[data-kw2-panel]').forEach(b=>b.onclick=()=>openCampaignP
 root.querySelector('.kw2-menu').addEventListener('click',e=>{if(e.target===root.querySelector('.kw2-menu'))toggleCampaignMenu(false)});
 root.querySelectorAll('[data-dir]').forEach(el=>{const dir=el.dataset.dir;const up=e=>{e.preventDefault();state.held.delete(dir)};el.addEventListener('pointerdown',e=>{e.preventDefault();W.PsyCampaignAutomation?.cancelRoute?.();state.pendingHobby=null;state.path=[];state.navRequest++;state.held.add(dir);el.setPointerCapture?.(e.pointerId)});el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)});
 D.addEventListener('keydown',onKeyDown,true);D.addEventListener('keyup',onKeyUp,true);W.addEventListener('resize',()=>{state.viewport=null;draw()});W.visualViewport?.addEventListener?.('resize',()=>{state.viewport=null;draw()});
-const stage=root.querySelector('.kw2-stage');stage.addEventListener('pointerdown',touchStart);stage.addEventListener('pointermove',touchMove);stage.addEventListener('pointerup',touchEnd);stage.addEventListener('pointercancel',touchCancel);stage.addEventListener('lostpointercapture',touchCancel);W.addEventListener('blur',resetTouch);W.addEventListener('resize',resetTouch);D.addEventListener('visibilitychange',()=>{if(D.hidden)resetTouch()});
+const stage=root.querySelector('.kw2-stage');stage.addEventListener('pointerdown',touchStart);stage.addEventListener('pointermove',touchMove);stage.addEventListener('pointerup',touchEnd);stage.addEventListener('pointercancel',touchCancel);stage.addEventListener('lostpointercapture',touchCancel);stage.addEventListener('wheel',e=>{if(W.PsyKantoAnime3Q?.brushWheel?.(e)){e.preventDefault();draw();}},{passive:false});W.addEventListener('blur',resetTouch);W.addEventListener('resize',resetTouch);D.addEventListener('visibilitychange',()=>{if(D.hidden)resetTouch()});
 }
 function showDialog(title,body,actions=[],portrait='',emote=''){
  if(W.PsyGuide){state.dialogOpen=true;state.path=[];state.held.clear();const actor=(state.inside?.npcs||state.world?.npcs||[]).find(n=>n.name===title||title.includes(n.name));return W.PsyGuide.show({speaker:title,text:body,portrait:/Professor Car/.test(title)?'assets/kanto/approved/professor-expressions.webp':portrait||actor?.portrait,sheet:/Professor Car/.test(title)?'professor':undefined,target:actor?()=>{const view=camera(),r=state.canvas.getBoundingClientRect(),x=r.left+(actor.at[0]*view.scale+view.ox)*r.width/view.w,y=r.top+(actor.at[1]*view.scale+view.oy)*r.height/view.h;return {left:x-18,top:y-60,right:x+18,bottom:y+8};}:undefined,actions:actions.map(a=>({text:a.text,primary:a.primary,run:a.run})),onClose:()=>{state.dialogOpen=false;hud();}});}
@@ -265,6 +265,14 @@ function camera(){
   }else{
     scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
   }
+  if(a3q&&state.editorCam.active){
+    const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+    scale=Math.max(cover*0.55,Math.min(5.0,cover*state.editorCam.zoom));
+    const cx=clamp(state.editorCam.x,-140,map.w+140);
+    const cy=clamp(state.editorCam.y,-140,map.h+140);
+    state.editorCam.x=cx;state.editorCam.y=cy;
+    return {w:cw,h:ch,scale,dpr,ox:Math.round(cw/2-cx*scale),oy:Math.round(ch/2-cy*scale)};
+  }
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const targetCx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
   const targetCy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
@@ -280,6 +288,7 @@ function draw(){if(!state.root?.classList.contains('open')||!state.world)return;
 let usedPalletHD=false,usedAnime3Q=false;
 const a3q=anime3QActive();
 if(a3q){
+  W.PsyKantoAnime3Q?.syncActiveMap?.(state.world.id);
   W.PsyKantoPalletHDV1?.hide?.();
   const o=image(state.world.art),stage=state.root.querySelector('.kw2-stage');
   usedAnime3Q=!!W.PsyKantoAnime3Q.renderBackground(stage,view,state.world.id,o?.loaded?o.im:null);
@@ -569,7 +578,7 @@ mark('viridian');try{const save=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')
 showDialog('Viridian City','Você atravessou a Rota 1! A entrada de Viridian está desbloqueada. Conheça a Escola de Treinadores e procure a passagem para a Rota 2.',[{text:'ENTRAR EM VIRIDIAN',primary:true,run:()=>{close();W.PsyKantoPlayableV1?.open?.('viridian')}},{text:'VOLTAR',run:()=>{if(state.world?.isRoute1&&state.position.y<40){state.position.y=48;state.portalCooldownUntil=performance.now()+1500;}}}]);}
 function touchCoords(e){const r=state.canvas.getBoundingClientRect();const cam=camera();return {x:(e.clientX-r.left)*(cam.w/r.width)/cam.scale-cam.ox/cam.scale,y:(e.clientY-r.top)*(cam.h/r.height)/cam.scale-cam.oy/cam.scale}}
 function touchStart(e){if(e.target!==state.canvas||state.dialogOpen||state.huntRiftFrozen||state.touch)return;
- if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('down',e.pointerId,touchCoords(e),state.world?.id)){e.preventDefault();state.canvas.setPointerCapture?.(e.pointerId);draw();return;}
+ if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('down',e.pointerId,touchCoords(e),state.world?.id,e.clientX,e.clientY)){e.preventDefault();state.canvas.setPointerCapture?.(e.pointerId);draw();return;}
  const point=touchCoords(e),room=state.inside?.id;
  if(room&&['home','house-east','house-west'].includes(room)){
    const idx=W.PsyHobbies?.decorAt?.(room,point.x,point.y)??-1;
@@ -577,11 +586,11 @@ function touchStart(e){if(e.target!==state.canvas||state.dialogOpen||state.huntR
  }
 W.PsyCampaignAutomation?.cancelRoute?.();autoHunt=false;e.preventDefault();const t=point;state.touch={id:e.pointerId,x:e.clientX,y:e.clientY,tx:t.x,ty:t.y,t:performance.now(),drag:false,rect:state.canvas.getBoundingClientRect()};state.pendingHobby=null;state.pendingRiftTarget=null;state.navRequest++;state.canvas.setPointerCapture?.(e.pointerId);state.path=[]}
 function touchMove(e){
- if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('move',e.pointerId,touchCoords(e),state.world?.id)){e.preventDefault();draw();return;}
+ if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('move',e.pointerId,touchCoords(e),state.world?.id,e.clientX,e.clientY)){e.preventDefault();draw();return;}
  if(state.decorDrag?.id===e.pointerId){e.preventDefault();const pt=touchCoords(e);W.PsyHobbies?.moveDecor?.(state.decorDrag.index,pt.x,pt.y,state.inside,false);draw();return;}
  const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();let dx=e.clientX-t.x,dy=e.clientY-t.y;const distance=Math.hypot(dx,dy);if(distance>72){t.x+=dx/distance*(distance-72);t.y+=dy/distance*(distance-72);dx=e.clientX-t.x;dy=e.clientY-t.y;}if(Math.hypot(dx,dy)>7)t.drag=true;if(t.drag){const d=Math.max(1,Math.hypot(dx,dy));state.joy=W.PsyTouchStick.vector(dx,dy);const stick=state.root.querySelector('.kw2-joystick'),r=t.rect;stick.style.left=(t.x-r.left)+'px';stick.style.top=(t.y-r.top)+'px';stick.style.display='block';stick.style.setProperty('--jx',Math.round((dx/d*Math.min(30,d)))+'px');stick.style.setProperty('--jy',Math.round((dy/d*Math.min(30,d)))+'px')}}
 function resetTouch(){state.joy=null;state.touch=null;state.held.clear();const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';}
-function touchCancel(e){if(W.PsyKantoAnime3Q?.brushActive?.())W.PsyKantoAnime3Q.brushPointer('up',e.pointerId,{x:0,y:0},state.world?.id);if(state.decorDrag?.id===e.pointerId)state.decorDrag=null;if(state.touch?.id===e.pointerId)resetTouch();}
+function touchCancel(e){if(W.PsyKantoAnime3Q?.brushActive?.())W.PsyKantoAnime3Q.brushPointer('up',e.pointerId,{x:0,y:0},state.world?.id,e.clientX,e.clientY);if(state.decorDrag?.id===e.pointerId)state.decorDrag=null;if(state.touch?.id===e.pointerId)resetTouch();}
 function queueHobbyApproach(scene,node){
  const actor=state.position,request=++state.navRequest,pending={scene,id:node.id,searching:true};state.pendingHobby=pending;state.path=[];
  const base=Math.atan2(actor.y-node.y,actor.x-node.x),turns=[0,1,-1,2,-2,3,-3,4];
@@ -598,7 +607,7 @@ function queueHobbyApproach(scene,node){
  })();
 }
 function touchEnd(e){
- if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('up',e.pointerId,touchCoords(e),state.world?.id)){e.preventDefault();draw();return;}
+ if(W.PsyKantoAnime3Q?.brushActive?.()&&W.PsyKantoAnime3Q.brushPointer('up',e.pointerId,touchCoords(e),state.world?.id,e.clientX,e.clientY)){e.preventDefault();draw();return;}
  if(state.decorDrag?.id===e.pointerId){e.preventDefault();const pos=touchCoords(e);W.PsyHobbies?.moveDecor?.(state.decorDrag.index,pos.x,pos.y,state.inside,true);state.decorDrag=null;draw();return;}
  const t=state.touch;if(!t||t.id!==e.pointerId)return;e.preventDefault();state.joy=null;state.touch=null;state.root.querySelector('.kw2-joystick').style.display='none';if(!t.drag){
 const scene=state.inside?.id||state.world?.id;
@@ -703,7 +712,10 @@ W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),drawTrain
  navigate:async function(at){autoHunt=false;state.pendingHobby=null;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){state.pendingHobby=null;if(active&&!vipActive()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1'&&!state.world?.isRoute1)open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,
- open,close,data:DATA,referenceViewport:routeOneViewport,progress,walkable:(id,x,y)=>W.PsyKantoAnime3Q?.isPilotMap?.(id)?W.PsyKantoAnime3Q.walkable(id,x,y,PLAYER_RADIUS):DATA.walkable(id==='pallet'?DATA.pallet:id==='viridian'?DATA.viridian:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y})};
+ open,close,data:DATA,referenceViewport:routeOneViewport,progress,walkable:(id,x,y)=>W.PsyKantoAnime3Q?.isPilotMap?.(id)?W.PsyKantoAnime3Q.walkable(id,x,y,PLAYER_RADIUS):DATA.walkable(id==='pallet'?DATA.pallet:id==='viridian'?DATA.viridian:DATA.route1,x,y),getPosition:()=>({world:state.world?.id,inside:state.inside?.id||null,x:state.position.x,y:state.position.y}),
+ clearNavCache:()=>{state.navCells.clear();state.path=[];state.navRequest++;},
+ setEditorCamera:opts=>{if(!opts)return;if(opts.reset){state.editorCam.active=false;state.editorCam.x=state.position.x;state.editorCam.y=state.position.y;state.editorCam.zoom=1.25;draw();return;}if(opts.active!==undefined){const was=state.editorCam.active;state.editorCam.active=!!opts.active;if(state.editorCam.active&&!was){state.editorCam.x=state.camPos?.x??state.position.x;state.editorCam.y=state.camPos?.y??state.position.y;}}if(Number.isFinite(opts.x))state.editorCam.x=opts.x;if(Number.isFinite(opts.y))state.editorCam.y=opts.y;if(Number.isFinite(opts.zoom))state.editorCam.zoom=Math.max(0.55,Math.min(5.0,opts.zoom));draw();},
+ getEditorCamera:()=>{const view=state.canvas&&state.world?camera():null;return {active:state.editorCam.active,x:state.editorCam.x,y:state.editorCam.y,zoom:state.editorCam.zoom,scale:view?.scale||1,dpr:view?.dpr||1};}};
 // Capture Atlas entry before any legacy canvas handler; also works after Atlas rerenders.
 D.addEventListener('click',e=>{
   const button=e.target?.closest?.('#psy-kanto-atlas .psy-kanto-enter-world');

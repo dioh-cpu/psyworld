@@ -22,3 +22,11 @@
 - Suíte de regressão por coordenada (`tools/obstacle_regression.py` + `tools/obstacle_regression.json`, 22 pontos) integrada a `tools/build_walkmasks_v6.py`.
 - Editor de pincel de walkmask ao vivo (`core/anime3q-walkmask-brush.js`, painel `#a3q-brush-panel`) integrado ao piloto e validado no Chromium Desktop e Mobile exclusivamente sob `?visual=anime3q&debug=editor`.
 
+## Editor Profissional de Colisões V1 (`feature/psyworld-collision-editor-v1`)
+- Painel móvel arrastável e minimizável (`localStorage`), modo **Navegar** + Zoom (`-`/`+`/`Centro`/scroll) sem deslocamento entre toque e pixel, **Importar** / **Exportar** validados (`tools/verify_walk_sdf.py`), invalidação de cache `navCells` e rascunhos locais em **IndexedDB** (`Salvar`, `Restaurar`, `Descartar` com confirmação).
+- **Incorporação definitiva de PNGs exportados**:
+  1. Validar o par exportado com `python3 tools/verify_walk_sdf.py <area> <walkmask.png> <sdf.png>`.
+  2. Substituir os arquivos correspondentes em `assets/story/pallet/anime3q/walkmasks/` (`<prefixo>_walkmask.png` e `<prefixo>_sdf.png`).
+  3. Rodar `python3 tools/obstacle_regression.py` e atualizar o `?build=` em `index.html` (se necessário para invalidar cache de CDN) antes de commitar.
+
+

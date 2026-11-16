@@ -186,6 +186,7 @@
       if (!st.timer) st.timer = setTimeout(recompute, RECOMPUTE_MS);
     }
     function value() { return st.tool === 'paint' ? 1 : 0; }
+    function notifyChange() { if (opts.onChange) opts.onChange(st.walk); }
 
     return {
       mapId: st.mapId,
@@ -215,6 +216,7 @@
         st.stroke = null;
         if (st.timer) { clearTimeout(st.timer); st.timer = 0; }
         recompute();
+        notifyChange();
         return true;
       },
       undo() {
@@ -222,18 +224,91 @@
         if (!prev) return false;
         st.walk = prev;
         recompute();
+        notifyChange();
+        return true;
+      },
+      replaceWalk(nextWalk, pushUndo = true) {
+        if (!nextWalk || nextWalk.length !== W * H) return false;
+        if (pushUndo) {
+          st.undo.push(st.walk.slice());
+          if (st.undo.length > UNDO_MAX) st.undo.shift();
+        }
+        st.walk = nextWalk instanceof Uint8Array ? nextWalk.slice() : Uint8Array.from(nextWalk);
+        recompute();
+        notifyChange();
         return true;
       },
       canUndo() { return st.undo.length > 0; },
       sdfU8() { if (!st.edt) st.edt = computeEdt(st.walk); return sdfToU8(st.edt); },
       walkL() { return walkToL(st.walk); },
+      walkCopy() { return st.walk.slice(); },
       refresh() { recompute(); }
     };
   }
 
+  // Verifica correspondencia matematica exata entre walkmask (0/1) e SDF uint8.
+  function verifyPair(walk, sdfU8) {
+    if (!walk || walk.length !== W * H || !sdfU8 || sdfU8.length !== W * H) {
+      return { ok: false, diff: -1, walkableCount: 0, blockedCount: 0, reason: 'dimensao_invalida' };
+    }
+    const ref = sdfToU8(computeEdt(walk));
+    let diff = 0, walkableCount = 0;
+    for (let i = 0; i < W * H; i++) {
+      if (walk[i]) walkableCount++;
+      if (ref[i] !== sdfU8[i]) diff++;
+    }
+    return { ok: diff === 0, diff, walkableCount, blockedCount: W * H - walkableCount };
+  }
+
+  // Persistencia local de rascunhos em IndexedDB (capacidade adequada para Uint8Array 1200x675).
+  const DB_NAME = 'psyworld_collision_drafts_v1';
+  const DB_STORE = 'drafts';
+  function openDraftDb() {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined') return reject(new Error('IndexedDB indisponivel'));
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'mapId' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error('Falha ao abrir IndexedDB'));
+    });
+  }
+  const drafts = {
+    async save(mapId, art, walk) {
+      const db = await openDraftDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        const rec = { mapId, art: art || '', w: W, h: H, walk: walk.slice(), updatedAt: Date.now() };
+        tx.objectStore(DB_STORE).put(rec);
+        tx.oncomplete = () => { db.close(); resolve(rec); };
+        tx.onerror = () => { db.close(); reject(tx.error || new Error('Falha ao salvar rascunho')); };
+      });
+    },
+    async load(mapId) {
+      const db = await openDraftDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).get(mapId);
+        req.onsuccess = () => { db.close(); resolve(req.result || null); };
+        req.onerror = () => { db.close(); reject(req.error || new Error('Falha ao ler rascunho')); };
+      });
+    },
+    async remove(mapId) {
+      const db = await openDraftDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).delete(mapId);
+        tx.oncomplete = () => { db.close(); resolve(true); };
+        tx.onerror = () => { db.close(); reject(tx.error || new Error('Falha ao descartar rascunho')); };
+      });
+    }
+  };
+
   const api = { W, H, R, SDF_SCALE, edt1d, computeEdt, sdfToU8, stamp, stroke,
                 previewClasses, walkToL, walkFromL,
-                loadWalkFromUrl, createEditor, buildPreviewRGBA };
+                loadWalkFromUrl, createEditor, buildPreviewRGBA, verifyPair, drafts };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.PsyAnime3QBrush = api;
 })(typeof window !== 'undefined' ? window : globalThis);
