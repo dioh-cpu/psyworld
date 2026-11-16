@@ -350,7 +350,8 @@ function drawNPC(c,npc,distance){
   const palletActor=(state.world?.id==='pallet'||state.world?.region==='pallet'||state.world?.isRoute1)&&state.inside?.id!==RIFT_ID;
   const animatePallet=palletActor&&!palletMotionReduced;
   const h=palletActor?Math.max(40,Math.min(105,Number(npc.displayHeight)?Number(npc.displayHeight)*(state.inside?.id?0.64:0.85):48)):60;
-  const footOffset=palletActor?Math.max(0,Number(npc.footOffset)||0)*h:0;
+  const customPalletSprite=/\/npcs\/pallet-new\//.test(url||'');
+  const footOffset=palletActor?Math.max(0,Number(npc.footOffset)||(customPalletSprite?.08:0))*h:0;
   const now=performance.now(),id=String(npc.id||npc.name||'pallet-npc');
   let hash=0;for(let i=0;i<id.length;i++)hash=(hash*31+id.charCodeAt(i))%6283;
   const phase=hash/1000,responsive=animatePallet&&distance<72;
@@ -360,7 +361,7 @@ function drawNPC(c,npc,distance){
   const towardPlayer=responsive?Math.sign(state.position.x-x)*.008:0;
   const lean=animatePallet?Math.sin(now/1280+phase)*.014+towardPlayer:0;
   const markerY=palletActor?y-h-8:y-60;
-  const embeddedShadow=palletActor&&/\.svg(?:[?#]|$)/i.test(url||'');
+  const embeddedShadow=palletActor&&(/\.svg(?:[?#]|$)/i.test(url||'')||customPalletSprite);
   c.save();
   if(!embeddedShadow){c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,palletActor?10:14,palletActor?3.5:5,0,0,Math.PI*2);c.fill();}
   if(npc.painted){c.restore();return}

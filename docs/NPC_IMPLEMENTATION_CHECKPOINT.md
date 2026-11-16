@@ -17,9 +17,10 @@ Geometria verificada no código atual: mapas Anime 3Q usam 1200 × 675 unidades 
 - Quatro sprites de moradores foram recortados de uma versão editada para remover a névoa. A folha foi inspecionada visualmente; os PNGs individuais ainda precisam de revisão sobre fundos claros e escuros e comparação com os originais antes da integração.
 - O carregamento usa `Object.assign(P, ...)` em quatro pontos de `core/legacy-runtime.js`; campos ausentes em saves antigos podem manter dados em memória. É necessário validar troca de personagens antes de persistir relacionamentos.
 - `node --check core/kanto-world-v2.js` e `node tests/kanto-pallet-npcs-v1.cjs` passaram. Chromium headless abriu Centro e Casa Leste; capturas iniciais mostram problemas de escala que motivaram ajuste posterior ainda não verificado. Não houve Preview final.
+- Em continuação, capturas do Chromium desktop após o ajuste mostram Nina no Centro e Lúcia na Casa Leste com tamanho próximo ao treinador. Detectou-se sombra duplicada e deslocada; o renderer foi ajustado para usar a sombra embutida dos sprites novos e deslocar sua base. Verificação visual desse último ajuste ainda pendente. A verificação de sintaxe e o teste `kanto-pallet-npcs-v1.cjs` passaram após a mudança.
 
 ## Próxima ação
 
-Verificar visualmente a escala após o ajuste no Centro e Casa Leste, conferir cada posição e diálogo no runtime e corrigir as sombras embutidas dos sprites. Revisar PNGs domésticos sobre fundos claros e escuros e preparar atlas e animações. Projetar e testar isolamento dos relacionamentos antes de persistir dados.
+Verificar visualmente as sombras após o ajuste e conferir cada posição e diálogo no runtime, incluindo as outras quatro áreas e viewport Android. Revisar PNGs domésticos sobre fundos claros e escuros e preparar atlas e animações. Projetar e testar isolamento dos relacionamentos antes de persistir dados.
 
 Nenhum recurso Goals foi encontrado na lista de ferramentas disponível.
