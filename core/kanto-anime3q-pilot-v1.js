@@ -142,12 +142,7 @@ const MAPS={
       {cx:500,cy:192,r:9},
       {cx:745,cy:192,r:9}
     ],
-    occluders:[
-      {id:'centro-lamp-west',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_west.png',rect:[433.493,248.193,462.201,350.053],baselineY:348,minY:248,xPad:16},
-      {id:'centro-lamp-nw',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_nw.png',rect:[485.885,98.273,514.593,195.829],baselineY:194,minY:98,xPad:16},
-      {id:'centro-lamp-ne',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/centro_lamp_ne.png',rect:[730.622,108.316,759.33,195.829],baselineY:194,minY:108,xPad:16},
-      {id:'centro-cherry-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/centro_cherry_canopy.png',rect:[665,0,910,145],baselineY:172,minY:0,xPad:12}
-    ]
+    occluders:[]
   },
 
   'pallet-jardins-3q':{
@@ -230,13 +225,7 @@ const MAPS={
       {cx:988,cy:224,r:12},
       {cx:868,cy:330,r:9}
     ],
-    occluders:[
-      {id:'jardins-lamp-west',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_west.png',rect:[48.086,205.871,76.794,296.254],baselineY:294,minY:206,xPad:16},
-      {id:'jardins-lamp-central',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_central.png',rect:[538.278,152.072,566.986,248.193],baselineY:246,minY:152,xPad:16},
-      {id:'jardins-lamp-east',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/jardins_lamp_east.png',rect:[854.067,238.151,882.775,334.272],baselineY:332,minY:238,xPad:16},
-      {id:'jardins-cherry-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/jardins_cherry_canopy.png',rect:[690,62,850,168],baselineY:186,minY:62,xPad:12},
-      {id:'jardins-great-tree-canopy',kind:'canopy',mask:'assets/story/pallet/anime3q/masks/jardins_great_tree_canopy.png',rect:[845,0,1085,92],baselineY:118,minY:0,xPad:12}
-    ]
+    occluders:[]
   },
 
   'pallet-lab-3q':{
@@ -287,12 +276,7 @@ const MAPS={
     blocks:[],
     ellipses:[],
     circles:[],
-    occluders:[
-      {id:'lab-rota1-arch',kind:'arch',mask:'assets/story/pallet/anime3q/masks/lab_rota1_arch.png',rect:[462,4,628,86],baselineY:78,minY:0,xPad:14},
-      {id:'lab-lamp-sw',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/lab_lamp_sw.png',rect:[402,404,434,492],baselineY:486,minY:404,xPad:16},
-      {id:'lab-lamp-se',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/lab_lamp_se.png',rect:[877,418,909,498],baselineY:492,minY:418,xPad:16},
-      {id:'lab-lamp-mid-left',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/lab_lamp_mid_left.png',rect:[121,246,153,336],baselineY:330,minY:246,xPad:16}
-    ]
+    occluders:[]
   },
 
   'pallet-costa-3q':{
@@ -352,10 +336,7 @@ const MAPS={
     blocks:[],
     ellipses:[],
     circles:[],
-    occluders:[
-      {id:'costa-lamp-plaza-right',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/costa_lamp_plaza_right.png',rect:[781,170,813,248],baselineY:242,minY:170,xPad:16},
-      {id:'costa-lamp-pier',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/costa_lamp_pier.png',rect:[893,332,925,412],baselineY:406,minY:332,xPad:16}
-    ]
+    occluders:[]
   },
 
   'pallet-colinas-3q':{
@@ -405,9 +386,7 @@ const MAPS={
     blocks:[],
     ellipses:[],
     circles:[],
-    occluders:[
-      {id:'colinas-lamp-upper',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/colinas_lamp_upper.png',rect:[950,190,982,284],baselineY:278,minY:190,xPad:16}
-    ]
+    occluders:[]
   },
 
   'pallet-arredores-3q':{
@@ -458,10 +437,7 @@ const MAPS={
     blocks:[],
     ellipses:[],
     circles:[],
-    occluders:[
-      {id:'rota1-lamp-crossroads',kind:'lamp',mask:'assets/story/pallet/anime3q/masks/rota1_lamp_crossroads.png',rect:[357,224,389,342],baselineY:336,minY:224,xPad:16},
-      {id:'rota1-signpost',kind:'sign',mask:'assets/story/pallet/anime3q/masks/rota1_signpost.png',rect:[556,240,590,336],baselineY:330,minY:240,xPad:16}
-    ]
+    occluders:[]
   }
 };
 
