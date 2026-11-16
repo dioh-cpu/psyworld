@@ -9,8 +9,9 @@ const outside=window.PsyKantoMapDataV2.pallet.npcs;
 const rooms=window.PsyKantoInteriorsV9.rooms;
 const actors=[...outside,...Object.values(rooms).flatMap(room=>room.npcs)];
 assert.equal(outside.length,2,'Pallet outdoors retains its two established NPC identities');
-assert.equal(Object.values(rooms).flatMap(room=>room.npcs).length,8,'all six interiors and eight established NPC identities remain');
-assert.equal(actors.length,10);
+assert.equal(Object.values(rooms).flatMap(room=>room.npcs).length,9,'all established interior NPCs and Dona Lúcia remain');
+assert(rooms['house-east'].npcs.some(n=>n.id==='pallet-lucia'));
+assert.equal(actors.length,11);
 for(const npc of actors){
  assert(npc.id&&npc.name&&Array.isArray(npc.at),'NPC identity and map position are present');
  const sprite=npc.sprite||npc.portrait;assert(sprite,'NPC has a renderable sprite: '+npc.id);

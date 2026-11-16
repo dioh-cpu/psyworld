@@ -75,7 +75,8 @@ const MAPS={
       {id:'house-east',at:[975,220],title:'Casa Leste'}
     ],
     npcs:[
-      {id:'lia',name:'Rival',at:[500,385],sprite:'assets/story/rival.png',portrait:'assets/story/rival.png',emote:'alegre'}
+      {id:'lia',name:'Rival',at:[500,385],sprite:'assets/story/rival.png',portrait:'assets/story/rival.png',emote:'alegre'},
+      {id:'pallet-nina',name:'Nina',at:[680,430],sprite:'assets/kanto/npcs/pallet-new/nina-cartografa.png',displayHeight:92}
     ],
     grass:[],
     portals:[
@@ -166,7 +167,8 @@ const MAPS={
       {id:'center',at:[265,132],title:'Posto de Cura do Bosque'}
     ],
     npcs:[
-      {id:'neighbor',name:'Mina',at:[215,320],sprite:'assets/halloween/npc-mina.svg',portrait:'assets/halloween/npc-mina.svg',emote:'curiosa'}
+      {id:'neighbor',name:'Mina',at:[215,320],sprite:'assets/halloween/npc-mina.svg',portrait:'assets/halloween/npc-mina.svg',emote:'curiosa'},
+      {id:'pallet-tomi',name:'Tomi',at:[280,370],sprite:'assets/kanto/npcs/pallet-new/tomi-botanista.png',displayHeight:86}
     ],
     grass:[],
     portals:[
@@ -256,7 +258,8 @@ const MAPS={
     ],
     npcs:[
       {id:'oak',name:'Professor Car’alho',at:[528,448],sprite:'assets/kanto/npcs/professor-v33.webp',portrait:'assets/story/professor-oak.png',emote:'sereno'},
-      {id:'assistant',name:'Pesquisador Elias',at:[760,362],sprite:'assets/halloween/npc-researcher.webp',portrait:'assets/halloween/npc-researcher.webp',emote:'curioso'}
+      {id:'assistant',name:'Pesquisador Elias',at:[760,362],sprite:'assets/halloween/npc-researcher.webp',portrait:'assets/halloween/npc-researcher.webp',emote:'curioso'},
+      {id:'pallet-maia',name:'Maia',at:[850,400],sprite:'assets/kanto/npcs/pallet-new/maia-socorrista.png',displayHeight:96}
     ],
     grass:[],
     portals:[
@@ -311,7 +314,8 @@ const MAPS={
       {id:'house-west',at:[292,204],title:'Cabana do Pescador'}
     ],
     npcs:[
-      {id:'fisher',name:'Seu Abel',at:[848,286],sprite:'assets/kanto/npcs/fisher-v9.svg',portrait:'assets/kanto/npcs/fisher-v9.svg',emote:'tranquilo'}
+      {id:'fisher',name:'Seu Abel',at:[848,286],sprite:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',portrait:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',displayHeight:95,emote:'tranquilo'},
+      {id:'pallet-banhista',name:'Caio',at:[760,300],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',displayHeight:100}
     ],
     grass:[],
     portals:[
@@ -374,7 +378,8 @@ const MAPS={
       {id:'market',at:[295,285],title:'Posto dos Mineradores'}
     ],
     npcs:[
-      {id:'child',name:'Luna',at:[248,308],sprite:'assets/kanto/npcs/child-v9.svg',portrait:'assets/kanto/npcs/child-v9.svg',emote:'animada'}
+      {id:'child',name:'Luna',at:[248,308],sprite:'assets/kanto/npcs/child-v9.svg',portrait:'assets/kanto/npcs/child-v9.svg',emote:'animada'},
+      {id:'pallet-breno',name:'Breno',at:[350,350],sprite:'assets/kanto/npcs/pallet-new/breno-artesao.png',displayHeight:100}
     ],
     grass:[],
     portals:[

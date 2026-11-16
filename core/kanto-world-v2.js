@@ -349,7 +349,7 @@ function drawNPC(c,npc,distance){
   const x=npc.at[0],y=npc.at[1],url=npc.sprite||npc.portrait,entry=image(url);
   const palletActor=(state.world?.id==='pallet'||state.world?.region==='pallet'||state.world?.isRoute1)&&state.inside?.id!==RIFT_ID;
   const animatePallet=palletActor&&!palletMotionReduced;
-  const h=palletActor?Math.max(40,Math.min(52,Number(npc.displayHeight)||48)):60;
+  const h=palletActor?Math.max(40,Math.min(105,Number(npc.displayHeight)?Number(npc.displayHeight)*(state.inside?.id?0.64:0.85):48)):60;
   const footOffset=palletActor?Math.max(0,Number(npc.footOffset)||0)*h:0;
   const now=performance.now(),id=String(npc.id||npc.name||'pallet-npc');
   let hash=0;for(let i=0;i<id.length;i++)hash=(hash*31+id.charCodeAt(i))%6283;
@@ -366,7 +366,7 @@ function drawNPC(c,npc,distance){
   if(npc.painted){c.restore();return}
   if(entry?.loaded){
     const iw=entry.im.naturalWidth||160,ih=entry.im.naturalHeight||190;
-    const w=palletActor?Math.min(44,h*iw/ih):Math.min(52,h*iw/ih);
+    const w=palletActor?Math.min(npc.displayHeight?85:44,h*iw/ih):Math.min(52,h*iw/ih);
     const smoothing=c.imageSmoothingEnabled;
     if(palletActor&&/\/rival\.png(?:[?#]|$)/i.test(url||''))c.imageSmoothingEnabled=false;
     if(/\/npcs\/viridian-(elder|instructor)-v1\.png$/.test(npc.portrait||npc.sprite||''))c.imageSmoothingEnabled=false;
@@ -498,6 +498,8 @@ activateTarget(a)}
 function activateTarget(a){if(a.type==='rift'){enterHuntRift();return}if(a.type==='rift-exit'){returnFromHuntRift(false);return}if(a.type==='return'){if(state.world?.id==='viridian')open('route-1',{spawn:[844,100],skipGuard:true});else open('pallet',{spawn:DATA.pallet.returnSpawn||DATA.pallet.spawn});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
 function talk(npc){
  const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
+ const palletLines={'pallet-nina':'Estou desenhando os caminhos de Pallet. Um mapa fica melhor quando escutamos quem conhece cada trilha.','pallet-tomi':'As plantas do bosque mudam com as estações. Gosto de cuidar das mudas antes de explorar.','pallet-maia':'Cuide de seus companheiros e faça pausas durante a viagem. Uma jornada longa começa com bons cuidados.','pallet-banhista':'O mar está bonito hoje! Antes de entrar na água, gosto de observar as ondas e a maré.','pallet-breno':'A pedra guarda marcas de quem trabalhou nela. Estou aprendendo a restaurar os caminhos das colinas.','pallet-lucia':'Bem-vindo! Cuido das flores desta casa e sempre guardo um pouco de água para os dias quentes.'};
+ if(palletLines[id]){showDialog(npc.name,palletLines[id],[],pr,em);return}
  if(id==='viridian-elder'){
     mark('viridianTalked');
     const campaign=W.PsyKantoPlayableV1?.progress?.();
