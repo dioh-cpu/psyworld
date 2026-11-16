@@ -315,7 +315,7 @@ const MAPS={
     ],
     npcs:[
       {id:'fisher',name:'Seu Abel',at:[848,286],sprite:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',portrait:'assets/kanto/npcs/pallet-new/pescador-vendedor.png',displayHeight:95,emote:'tranquilo'},
-      {id:'pallet-banhista',name:'Caio',at:[760,300],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',displayHeight:100}
+      {id:'pallet-banhista',name:'Caio',at:[760,300],sprite:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',portrait:'assets/kanto/npcs/pallet-new/banhista-musculoso.png',spriteSheet:{src:'assets/kanto/npcs/pallet-new/banhista-idle-sheet.webp',cols:6,rows:4,frames:24,fps:6},walkSheet:{src:'assets/kanto/npcs/pallet-new/banhista-walk-sheet.webp',cols:6,rows:4,frames:24,fps:8},footOffset:0.055,groundShadow:true,displayHeight:100}
     ],
     grass:[],
     portals:[

@@ -139,6 +139,7 @@ function raster(id){
  return c;
 }
 for(const [id,room] of Object.entries(rooms)){
+ if(id==='home')continue;
  room.w=WIDTH;room.h=HEIGHT;
  room.spawn=[240,630];room.exit=[240,675];room.art=null;
  room.blocks=[];

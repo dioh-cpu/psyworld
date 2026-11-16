@@ -45,9 +45,9 @@ function householdActor(){
  if(!householdRuntime||householdRuntime.data!==data||householdRuntime.actor.id!==source.id){
   const room=W.PsyKantoInteriorsV9?.get?.('home');
   if(!room)return null;
-  const points=[[310,470],[310,540],[220,540]].filter(([x,y])=>householdPointSafe(room,x,y));
+  const points=[[310,470],[490,470],[510,530],[340,530]].filter(([x,y])=>householdPointSafe(room,x,y));
   if(!points.length)return null;
-  householdRuntime={data,actor:{...source,at:points[0].slice(),domestic:true,activity:'descansando'},points,index:0,last:performance.now(),pauseUntil:performance.now()+2500};
+  householdRuntime={data,actor:{...source,at:points[0].slice(),domestic:true,moving:false,facingX:1,activity:'descansando'},points,index:0,last:performance.now(),pauseUntil:performance.now()+2000};
  }
  return householdRuntime.actor;
 }
@@ -63,17 +63,18 @@ function activeNPCs(){
 function updateHousehold(){
  const actor=householdActor();if(!actor)return;
  const rt=householdRuntime,now=performance.now(),dt=Math.min(.05,Math.max(0,(now-rt.last)/1000));rt.last=now;
- if(state.inside?.id!=='home'||state.world?.region!=='pallet'||state.dialogOpen||state.suspended||D.hidden||palletMotionReduced)return;
- if(now<rt.pauseUntil)return;
+ if(state.inside?.id!=='home'||state.world?.region!=='pallet'||state.dialogOpen||state.suspended||D.hidden||palletMotionReduced){actor.moving=false;return;}
+ if(now<rt.pauseUntil){actor.moving=false;return;}
  const target=rt.points[(rt.index+1)%rt.points.length],dx=target[0]-actor.at[0],dy=target[1]-actor.at[1],length=Math.hypot(dx,dy);
- if(length<.5){rt.index=(rt.index+1)%rt.points.length;rt.pauseUntil=now+5000;actor.activity=['descansando','observando a casa','organizando as ideias'][rt.index%3];return}
- const step=Math.min(length,22*dt),x=actor.at[0]+dx/length*step,y=actor.at[1]+dy/length*step;
- if(householdPointSafe(state.inside,x,y,true)){actor.at=[x,y];actor.activity='caminhando pela casa'}
+ if(length<.5){rt.index=(rt.index+1)%rt.points.length;rt.pauseUntil=now+3500;actor.moving=false;actor.activity=['descansando','observando a casa','organizando as ideias'][rt.index%3];return}
+ const step=Math.min(length,42*dt),x=actor.at[0]+dx/length*step,y=actor.at[1]+dy/length*step;
+ if(householdPointSafe(state.inside,x,y,true)){actor.at=[x,y];actor.moving=true;if(Math.abs(dx)>.2)actor.facingX=dx<0?-1:1;actor.activity='caminhando pela casa'}
+ else actor.moving=false;
 }
 function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{if(url.startsWith('assets/characters/halloween/')){try{prepareAvatar(o)}catch(err){o.spriteError=true;console.warn('Trainer sprite could not be prepared',err)}}o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
 function updateFishingButton(){const button=state.root?.querySelector('[data-kw2-fish]');if(!button)return;const inRift=state.inside?.id===RIFT_ID,art=state.images.get(state.world?.art||'')?.mapCanvas;button.hidden=!!state.inside&&!inRift||!W.PsyHobbies?.canFish?.(inRift?RIFT_ID:state.world?.id,state.position,art)}
 function makeUI(){if(state.root)return;const root=D.createElement('div');root.id='psy-kanto-world-v2';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
-root.innerHTML='<header class="kw2-top"><button type="button" data-atlas>← ATLAS</button><div><strong class="kw2-title"></strong><small class="kw2-subtitle"></small></div><span class="kw2-clock" data-world-clock></span><button type="button" class="kw2-route" data-kw2-route title="Seguir objetivo principal" aria-label="Rota automática da missão principal">↗</button><button type="button" class="kw2-menu-toggle" data-kw2-menu aria-expanded="false">☰ MENU</button><button type="button" class="kw2-close" aria-label="Fechar">×</button></header><div class="kw2-stage"><canvas aria-label="Mapa jogável com colisões"></canvas><div class="kw2-joystick"></div><div class="kw2-fade" aria-hidden="true" style="position:absolute;inset:0;background:#07111a;opacity:0;pointer-events:none;z-index:6;"></div><section class="kw2-dialog"><div class="kw2-dialog-main"><img class="kw2-portrait" alt="Retrato do NPC"/><div><div class="kw2-dialog-title"></div><div class="kw2-expression"></div><div class="kw2-dialog-body"></div></div></div><div class="kw2-dialog-actions"></div></section></div><footer class="kw2-footer"><div class="kw2-objective-line"><div class="kw2-objective"></div><button type="button" class="kw2-route-inline" data-kw2-route-inline aria-label="Ir para o objetivo atual" title="Seguir para o próximo objetivo" hidden>IR</button></div><div class="kw2-pad"><button data-dir="up" aria-label="Subir">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Descer">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button class="kw2-interact" data-interact>INTERAGIR</button><button class="kw2-fish" data-kw2-fish type="button" hidden>PESCAR</button></footer><section class="kw2-menu" role="dialog" aria-modal="true" aria-label="Menu da campanha" hidden><div class="kw2-menu-shell"><header class="kw2-menu-head"><div><small>PSYWORLD · KANTO</small><h2>MENU DA CAMPANHA</h2></div><button type="button" data-kw2-menu-close aria-label="Fechar menu">×</button></header><div class="kw2-menu-actions"><button type="button" data-kw2-panel="team">👥 TIME / BOX</button><button type="button" data-kw2-panel="bag">🎒 MOCHILA</button><button type="button" data-kw2-panel="pokedex">📘 POKÉDEX</button><button type="button" data-kw2-panel="hobbies">🌿 HOBBIES</button><button type="button" data-kw2-panel="titles">✧ TÍTULOS</button><button type="button" data-kw2-panel="gyms">🏆 GINÁSIOS</button><button type="button" data-kw2-panel="shop">🛍 LOJA</button><button type="button" data-kw2-panel="allmodes">⬇ BAIXAR TODOS OS MODOS</button></div><div class="kw2-menu-columns"><section class="kw2-menu-block"><h3>MISSÕES E ROTA</h3><p>Use ROTA para seguir até o objetivo. O atalho ↗ no cabeçalho segue a missão principal.</p><div data-kanto-quest-slot></div></section><section class="kw2-menu-block kw2-vip-block"><h3>AUTOMAÇÃO · VIP</h3><div class="kw2-vip-intro"><div class="kw2-vip-mascot" aria-hidden="true"></div><p>A caçada automática acompanha sua equipe pelos campos de Kanto. Ative quando quiser explorar sem interromper sua jornada.</p></div><div data-kanto-auto-slot></div></section></div><button type="button" class="kw2-menu-return" data-kw2-menu-close>VOLTAR À EXPLORAÇÃO</button></div></section>';
+root.innerHTML='<header class="kw2-top"><button type="button" data-atlas>← ATLAS</button><div><strong class="kw2-title"></strong><small class="kw2-subtitle"></small></div><span class="kw2-clock" data-world-clock></span><button type="button" class="kw2-house-btn" data-kw2-house title="Ir para sua Casa" style="background:linear-gradient(135deg,#0f766e,#115e59);color:#ecfdf5;border:1px solid #5eead4;border-radius:8px;padding:4px 8px;font-weight:800;font-size:11px;">🏠 HOUSE</button><button type="button" class="kw2-route" data-kw2-route title="Seguir objetivo principal" aria-label="Rota automática da missão principal">↗</button><button type="button" class="kw2-menu-toggle" data-kw2-menu aria-expanded="false">☰ MENU</button><button type="button" class="kw2-close" aria-label="Fechar">×</button></header><div class="kw2-stage"><canvas aria-label="Mapa jogável com colisões"></canvas><div class="kw2-joystick"></div><div class="kw2-fade" aria-hidden="true" style="position:absolute;inset:0;background:#07111a;opacity:0;pointer-events:none;z-index:6;"></div><section class="kw2-dialog"><div class="kw2-dialog-main"><img class="kw2-portrait" alt="Retrato do NPC"/><div><div class="kw2-dialog-title"></div><div class="kw2-expression"></div><div class="kw2-dialog-body"></div></div></div><div class="kw2-dialog-actions"></div></section></div><footer class="kw2-footer"><div class="kw2-objective-line"><div class="kw2-objective"></div><button type="button" class="kw2-route-inline" data-kw2-route-inline aria-label="Ir para o objetivo atual" title="Seguir para o próximo objetivo" hidden>IR</button></div><div class="kw2-pad"><button data-dir="up" aria-label="Subir">▲</button><button data-dir="left" aria-label="Esquerda">◀</button><button data-dir="down" aria-label="Descer">▼</button><button data-dir="right" aria-label="Direita">▶</button></div><button class="kw2-interact" data-interact>INTERAGIR</button><button class="kw2-fish" data-kw2-fish type="button" hidden>PESCAR</button></footer><section class="kw2-menu" role="dialog" aria-modal="true" aria-label="Menu da campanha" hidden><div class="kw2-menu-shell"><header class="kw2-menu-head"><div><small>PSYWORLD · KANTO</small><h2>MENU DA CAMPANHA</h2></div><button type="button" data-kw2-menu-close aria-label="Fechar menu">×</button></header><div class="kw2-menu-actions"><button type="button" data-kw2-panel="house">🏠 HOUSE</button><button type="button" data-kw2-panel="team">👥 TIME / BOX</button><button type="button" data-kw2-panel="bag">🎒 MOCHILA</button><button type="button" data-kw2-panel="pokedex">📘 POKÉDEX</button><button type="button" data-kw2-panel="hobbies">🌿 HOBBIES</button><button type="button" data-kw2-panel="titles">✧ TÍTULOS</button><button type="button" data-kw2-panel="gyms">🏆 GINÁSIOS</button><button type="button" data-kw2-panel="shop">🛍 LOJA</button><button type="button" data-kw2-panel="allmodes">⬇ BAIXAR TODOS OS MODOS</button></div><div class="kw2-menu-columns"><section class="kw2-menu-block"><h3>MISSÕES E ROTA</h3><p>Use ROTA para seguir até o objetivo. O atalho ↗ no cabeçalho segue a missão principal.</p><div data-kanto-quest-slot></div></section><section class="kw2-menu-block kw2-vip-block"><h3>AUTOMAÇÃO · VIP</h3><div class="kw2-vip-intro"><div class="kw2-vip-mascot" aria-hidden="true"></div><p>A caçada automática acompanha sua equipe pelos campos de Kanto. Ative quando quiser explorar sem interromper sua jornada.</p></div><div data-kanto-auto-slot></div></section></div><button type="button" class="kw2-menu-return" data-kw2-menu-close>VOLTAR À EXPLORAÇÃO</button></div></section>';
 root.addEventListener('contextmenu',e=>e.preventDefault());
 root.addEventListener('selectstart',e=>e.preventDefault());
 root.addEventListener('dragstart',e=>e.preventDefault());
@@ -81,6 +82,7 @@ D.body.appendChild(root);state.root=root;state.canvas=root.querySelector('canvas
 root.querySelector('[data-kw2-fish]').onclick=()=>W.PsyHobbies?.startFishing?.(state.inside?.id||state.world?.id,{x:state.position.x,y:state.position.y,facing:state.facing});
 root.querySelector('[data-atlas]').onclick=()=>{close();W.openKantoJourneyV1?.()};root.querySelector('.kw2-close').onclick=close;root.querySelector('[data-interact]').onclick=()=>{W.PsyCampaignAutomation?.cancelRoute?.();interact();};
 root.querySelector('[data-kw2-menu]').onclick=()=>toggleCampaignMenu();
+root.querySelector('[data-kw2-house]').onclick=()=>{toggleCampaignMenu(false);openHouse();};
 root.querySelectorAll('[data-kw2-menu-close]').forEach(b=>b.onclick=()=>toggleCampaignMenu(false));
 root.querySelector('[data-kw2-route]').onclick=()=>{if(state.dialogOpen||state.externalPanel)return;toggleCampaignMenu(false);W.PsyCampaignAutomation?.startPrimaryRoute?.()};
 root.querySelector('[data-kw2-route-inline]').onclick=()=>root.querySelector('[data-kw2-route]').click();
@@ -389,20 +391,23 @@ if(!state.inside){if(a3q){(state.world.portals||[]).forEach(p=>{if(p.marker&&Mat
 state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position.x,d.at[1]-state.position.y)<100)drawMarker(c,d.at[0],d.at[1],d.id==='lab'?'LABORATÓRIO':d.title,'#79dced')});
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':state.world.id==='viridian'?'ROTA 2':'VIRIDIAN','#80ffaa')}}
 else if(state.inside.id===RIFT_ID)drawRiftGate(c,...(state.inside.exit||[448,128]),performance.now());else drawMarker(c,...(state.inside.exit||[240,675]),'SAÍDA ↓','#85efdc');
-const charScale=a3q?(W.PsyKantoAnime3Q.characterScale||1.56):1;
-const followerScale=a3q?(W.PsyKantoAnime3Q.followerScale||1.18):charScale;
+const inHome=state.inside?.id==='home';
+const charScale=inHome?2.05:(a3q?(W.PsyKantoAnime3Q.characterScale||1.56):1);
+const followerScale=inHome?1.5:(a3q?(W.PsyKantoAnime3Q.followerScale||1.18):charScale);
 if(W.PsyFollower)W.PsyFollower.draw(c,{scene:state.world.id+':'+(state.inside?.id||'outside'),x:state.position.x,y:state.position.y,facing:state.facing,moving:state.moving,scale:followerScale,valid:positionValid,trainer:()=>drawPlayer(c,state.position.x,state.position.y,{scale:charScale})});else drawPlayer(c,state.position.x,state.position.y,{scale:charScale});
 if(usedAnime3Q){const o=image(state.world.art);W.PsyKantoAnime3Q.drawOccluders(c,state.world.id,o?.loaded?o.im:null,state.position.y,state.position.x);}
 W.PsyWorldTimeV1?.updateBadge?.(state.root.querySelector('[data-world-clock]'));c.setTransform(1,0,0,1,0,0);W.PsyWorldTimeV1?.drawAmbient?.(c,view.w,view.h);if(state.huntRiftFrozen){c.fillStyle='#04111de6';c.fillRect(0,0,view.w,view.h);c.fillStyle='#a4fff1';c.font='bold 26px system-ui';c.textAlign='center';c.fillText('A FENDA SE FECHA',view.w/2,view.h/2-8);c.font='bold 14px system-ui';c.fillStyle='#f5f1ff';c.fillText('Retornando ao ponto de entrada…',view.w/2,view.h/2+20)}}
 function drawMarker(c,x,y,label,color){c.save();c.fillStyle='#0b1726bb';c.strokeStyle=color;c.lineWidth=2;c.beginPath();c.arc(x,y-18,10,0,Math.PI*2);c.fill();c.stroke();c.fillStyle=color;c.font='bold 12px system-ui';c.textAlign='center';c.fillText('!',x,y-15);c.font='bold 11px system-ui';let w=Math.min(140,c.measureText(label).width+14);const playerName=player().name||'Treinador';c.font='bold 12px system-ui';const nameW=Math.min(180,c.measureText(playerName).width+4),overlapX=Math.abs(x-state.position.x)<(w+nameW)/2,overlapY=Math.abs((y-35)-(state.position.y-59))<23;if(overlapX&&overlapY)state.hideTrainerName=true;const actorCoversCaption=Math.abs(x-state.position.x)<w/2+24&&(y-31)>state.position.y-60&&(y-48)<state.position.y+5;c.font='bold 11px system-ui';if(!actorCoversCaption){c.fillStyle='#0b182bdc';c.fillRect(x-w/2,y-48,w,17);c.fillStyle='#fff';c.fillText(label,x,y-35)}c.restore()}
 function drawRiftGate(c,x,y,now){const pulse=.68+Math.sin(now/180)*.16,halo=c.createRadialGradient(x,y-28,3,x,y-28,62);halo.addColorStop(0,`rgba(118,248,232,${pulse*.62})`);halo.addColorStop(.52,'rgba(120,83,244,.34)');halo.addColorStop(1,'rgba(67,42,166,0)');c.save();c.fillStyle='#10162477';c.beginPath();c.ellipse(x,y+3,24,7,0,0,Math.PI*2);c.fill();c.fillStyle=halo;c.fillRect(x-64,y-94,128,108);c.shadowColor='#99fff0';c.shadowBlur=12;c.strokeStyle='#a8fff1';c.lineWidth=4;c.beginPath();c.ellipse(x,y-30,21,37,0,0,Math.PI*2);c.stroke();c.shadowBlur=0;c.strokeStyle='#b79aff';c.lineWidth=2;c.beginPath();c.ellipse(x,y-30,13,29,0,0,Math.PI*2);c.stroke();for(let i=0;i<4;i++){const a=now/420+i*Math.PI/2;c.fillStyle=i%2?'#c6b2ff':'#d5fff7';c.beginPath();c.arc(x+Math.cos(a)*29,y-30+Math.sin(a)*38,2.4,0,Math.PI*2);c.fill()}c.textAlign='center';c.font='bold 11px system-ui';c.fillStyle='#071521df';c.fillRect(x-61,y-53,122,16);c.fillStyle='#ddfff7';c.fillText('PORTAL DE RETORNO',x,y-41);c.restore()}
 function drawNPC(c,npc,distance){
-  const x=npc.at[0],y=npc.at[1],url=npc.sprite||npc.portrait,entry=image(url);
+  const x=npc.at[0],y=npc.at[1],sheet=(npc.moving&&npc.walkSheet)?npc.walkSheet:npc.spriteSheet,url=sheet?.src||npc.sprite||npc.portrait,entry=image(url);
+  const inHome=state.inside?.id==='home';
   const palletActor=(state.world?.id==='pallet'||state.world?.region==='pallet'||state.world?.isRoute1)&&state.inside?.id!==RIFT_ID;
-  const animatePallet=palletActor&&!palletMotionReduced;
-  const h=palletActor?Math.max(40,Math.min(105,Number(npc.displayHeight)?Number(npc.displayHeight)*(state.inside?.id?0.64:0.85):48)):60;
+  const hasSheet=!!(sheet&&entry?.loaded&&sheet.cols>0&&sheet.rows>0);
+  const animatePallet=palletActor&&!palletMotionReduced&&!hasSheet;
+  const h=inHome?Math.max(125,Number(npc.displayHeight||95)*1.65):(palletActor?Math.max(40,Math.min(105,Number(npc.displayHeight)?Number(npc.displayHeight)*(state.inside?.id?0.64:0.85):48)):60);
   const customPalletSprite=/\/npcs\/pallet-new\//.test(url||'');
-  const footOffset=palletActor?Math.max(0,Number(npc.footOffset)||(customPalletSprite?.08:0))*h:0;
+  const footOffset=palletActor?(npc.footOffset!==undefined?Number(npc.footOffset):(customPalletSprite?.08:0))*h:0;
   const now=performance.now(),id=String(npc.id||npc.name||'pallet-npc');
   let hash=0;for(let i=0;i<id.length;i++)hash=(hash*31+id.charCodeAt(i))%6283;
   const phase=hash/1000,responsive=animatePallet&&distance<72;
@@ -412,18 +417,27 @@ function drawNPC(c,npc,distance){
   const towardPlayer=responsive?Math.sign(state.position.x-x)*.008:0;
   const lean=animatePallet?Math.sin(now/1280+phase)*.014+towardPlayer:0;
   const markerY=palletActor?y-h-8:y-60;
-  const embeddedShadow=palletActor&&(/\.svg(?:[?#]|$)/i.test(url||'')||customPalletSprite);
+  const embeddedShadow=npc.groundShadow?false:(palletActor&&(/\.svg(?:[?#]|$)/i.test(url||'')||customPalletSprite));
   c.save();
-  if(!embeddedShadow){c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,palletActor?10:14,palletActor?3.5:5,0,0,Math.PI*2);c.fill();}
+  if(!embeddedShadow){c.fillStyle='#07101f99';c.beginPath();c.ellipse(x,y+4,inHome?20:(palletActor?10:14),inHome?7:(palletActor?3.5:5),0,0,Math.PI*2);c.fill();}
   if(npc.painted){c.restore();return}
   if(entry?.loaded){
     const iw=entry.im.naturalWidth||160,ih=entry.im.naturalHeight||190;
-    const w=palletActor?Math.min(npc.displayHeight?85:44,h*iw/ih):Math.min(52,h*iw/ih);
+    const fw=hasSheet?iw/sheet.cols:iw,fh=hasSheet?ih/sheet.rows:ih;
+    const maxW=inHome?160:(npc.displayHeight?85:44);
+    const w=palletActor?Math.min(maxW,h*fw/fh):Math.min(52,h*fw/fh);
     const smoothing=c.imageSmoothingEnabled;
     if(palletActor&&/\/rival\.png(?:[?#]|$)/i.test(url||''))c.imageSmoothingEnabled=false;
     if(/\/npcs\/viridian-(elder|instructor)-v1\.png$/.test(npc.portrait||npc.sprite||''))c.imageSmoothingEnabled=false;
     c.shadowColor='#020617';c.shadowBlur=2;
-    if(palletActor){
+    if(hasSheet){
+      const total=Math.max(1,Number(sheet.frames)||sheet.cols*sheet.rows);
+      const fps=Math.max(1,Number(sheet.fps)||6);
+      const idx=Math.floor((now/1000)*fps+phase*total)%total;
+      const sx=(idx%sheet.cols)*fw,sy=Math.floor(idx/sheet.cols)*fh;
+      if(npc.facingX<0){c.translate(x,0);c.scale(-1,1);c.translate(-x,0);}
+      c.drawImage(entry.im,sx,sy,fw,fh,x-w/2,y-h+footOffset,w,h);
+    }else if(palletActor){
       // Pivot idle motion at the feet so a breathing/leaning sprite never
       // drifts away from its fixed ground shadow or interaction position.
       c.translate(x,y);c.rotate(lean);c.scale(narrow,breathe);c.translate(-x,-y);
@@ -470,7 +484,7 @@ function drawPlayer(c,x,y,options={}){
   const facing=options.facing||state.facing||'down';
   const moving=options.moving===undefined?state.moving:!!options.moving;
   const walkFrame=Number(options.walkFrame??state.walkFrame)||0;
-  const scale=Math.max(.75,Math.min(2,Number(options.scale)||1));
+  const scale=Math.max(.75,Math.min(2.4,Number(options.scale)||1));
   c.save();
   const shScale=Math.max(.85,Math.min(1.65,scale));
   c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13*shScale,5*shScale,0,0,Math.PI*2);c.fill();
@@ -681,11 +695,23 @@ function enterDoor(door){
  state.inside={...room,title:id==='lab'?'Laboratório':door.title,paint:room.paint};
  state.position={x:room.spawn[0],y:room.spawn[1]};
  state.path=[];state.held.clear();
- if(room.art)image(room.art);room.npcs.forEach(n=>{image(n.sprite);if(n.portrait)image(n.portrait)});
+ if(room.art)image(room.art);room.npcs.forEach(n=>{image(n.sprite);if(n.portrait)image(n.portrait);if(n.spriteSheet?.src)image(n.spriteSheet.src);if(n.walkSheet?.src)image(n.walkSheet.src)});
+ if(id==='home'){const h=householdActor();if(h){image(h.sprite);if(h.portrait)image(h.portrait);if(h.spriteSheet?.src)image(h.spriteSheet.src);if(h.walkSheet?.src)image(h.walkSheet.src);}}
  hud();draw();
 
 }
-function exitDoor(){state.navRequest++;state.navCells.clear();state.inside=null;if(state.lastOutdoor)state.position={...state.lastOutdoor};state.lastOutdoor=null;state.path=[];hud()}
+function exitDoor(){state.navRequest++;state.navCells.clear();state.inside=null;if(state.lastOutdoor)state.position={...state.lastOutdoor};state.lastOutdoor=null;state.path=[];if(state.returnOnHouseExit){state.returnOnHouseExit=false;close();return;}hud()}
+function openHouse(){
+ const wasOpen=!!state.root?.classList.contains('open');
+ if(!wasOpen){
+  state.returnOnHouseExit=true;
+  open('pallet',{skipGuard:true});
+ }else{
+  state.returnOnHouseExit=false;
+  if(state.inside?.id==='home')return;
+ }
+ enterDoor({id:'home',at:[345,335],title:'Minha Casa'});
+}
 function healTeam(){const p=player();if(Array.isArray(p.team))for(const mon of p.team){const hp=Number(mon.maxHp||mon.maxHP||mon.hpMax||0);if(hp>0)mon.hp=hp}try{W.updateHUD?.();W.autoSave?.()}catch(_){}showDialog('Enfermeira','Sua equipe foi recuperada. Boa viagem!')}
 function openShop(){const fn=W.openShop;close();if(typeof fn==='function')fn();else{state.root?.classList.add('open');showDialog('Davi, o lojista','Minhas mercadorias já estão separadas. Em breve você poderá negociá-las aqui mesmo.')}}
 function exitWorld(){if(state.world.id==='viridian'){
@@ -833,7 +859,7 @@ function findPath(from,to,request){
     slice();
   });
 }
-W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),drawTrainer:(ctx,x,y,options)=>drawPlayer(ctx,x,y,options),dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.pendingHobby=null;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
+W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),openHouse,drawTrainer:(ctx,x,y,options)=>drawPlayer(ctx,x,y,options),dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.pendingHobby=null;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
  navigate:async function(at){autoHunt=false;state.pendingHobby=null;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){state.pendingHobby=null;if(active&&!vipActive()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1'&&!state.world?.isRoute1)open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,
