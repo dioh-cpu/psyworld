@@ -404,7 +404,7 @@ function selectedAvatar(){
   return entry;
 }
 // Cached sprite atlas, prepared after the image finishes loading.
-let humanAnimationState=null;
+const humanAnimationStates=new Map();
 function prepareAvatar(entry){
   const walk=W.PsyTrainerWalkV1;
   if(walk){
@@ -429,8 +429,10 @@ function drawPlayer(c,x,y,options={}){
     const walk=W.PsyTrainerWalkV1;
     if(entry.animationAtlas&&walk?.renderAnimated){
       if(entry.animationAtlas.compiledStatus!=='loading'){
-        if(!humanAnimationState)humanAnimationState=walk.createState();
-        walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:scene+':'+entry.im.src},left,top,w,h);
+        const animKey=scene+':'+entry.im.src;
+        let humanAnimationState=humanAnimationStates.get(animKey);
+        if(!humanAnimationState){humanAnimationState=walk.createState();humanAnimationStates.set(animKey,humanAnimationState);}
+        walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:animKey},left,top,w,h);
         usedSprite=true;
       }else if(entry.atlas){
         walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
