@@ -153,7 +153,7 @@ if((id==='route-1'||id==='pallet-arredores-3q')&&!progress().oak&&!options.skipG
 if(id==='pallet-arredores-3q'&&Array.isArray(options.spawn)&&options.spawn[0]>800&&options.spawn[1]<140){options={...options,spawn:[762,54],facing:options.facing||'down'};}
 W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();toggleCampaignMenu(false);state.externalPanel=null;state.root.style.visibility='';state.root.dataset.world=id;D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=pilotMap||(id==='pallet'?DATA.pallet:id==='route-1'?DATA.route1:DATA.viridian);state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.camPos=null;if(isPilot)state.portalCooldownUntil=performance.now()+650;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
 const start=options.spawn||resumePosition||state.world.spawn;state.position={x:start[0],y:start[1]};if(options.facing)state.facing=options.facing;state.lastOutdoor=null;updateFishingButton();
-image(state.world.art);D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;const pending=W.PsyKantoHuntRiftV1?.getOffer?.('legacy');if(pending?.context.world===id)attachHuntRiftOffer(pending);if(isPilot)W.PsyKantoAnime3Q?.whenReady?.().then(()=>{state.navCells?.clear?.();draw()});hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}if(!isPilot)W.PsyKantoStoryV49?.enter(previousWorld,id);return true;}
+image(state.world.art);selectedAvatar();D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;const pending=W.PsyKantoHuntRiftV1?.getOffer?.('legacy');if(pending?.context.world===id)attachHuntRiftOffer(pending);if(isPilot)W.PsyKantoAnime3Q?.whenReady?.().then(()=>{state.navCells?.clear?.();draw()});hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}if(!isPilot)W.PsyKantoStoryV49?.enter(previousWorld,id);return true;}
 function close(){W.PsyKantoPalletHDV1?.hide?.();W.PsyKantoAnime3Q?.hide?.();if(state.huntRiftSession)returnFromHuntRift(false);if(state.huntRiftOffer)W.PsyKantoHuntRiftV1?.clearOffer?.('legacy',state.huntRiftOffer.id);state.huntRiftOffer=null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);if(state.root){state.root.style.visibility='';toggleCampaignMenu(false);state.externalPanel=null;}W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.pendingHobby=null;state.pendingRiftTarget=null;state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
 let autoHunt=false,huntPlanAt=0,huntPlanning=false;
 const vipActive=()=>Number(player().meta?.vipUntil||0)>Date.now();
@@ -407,7 +407,11 @@ function selectedAvatar(){
 let humanAnimationState=null;
 function prepareAvatar(entry){
   const walk=W.PsyTrainerWalkV1;
-  if(walk){entry.animationAtlas=walk.getAnimationAtlas?.(entry.im);if(!entry.animationAtlas)entry.atlas=walk.getAtlas(entry.im);entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight}
+  if(walk){
+    try{entry.animationAtlas=walk.getAnimationAtlas?.(entry.im)||null}catch(err){entry.animationAtlas=null;console.warn('Trainer animationAtlas could not be prepared',err)}
+    try{entry.atlas=walk.getAtlas?.(entry.im)||null}catch(_){entry.atlas=null}
+    entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight;
+  }
 }
 function drawPlayer(c,x,y,options={}){
   const scene=options.scene||state.inside?.id||state.world?.id||'city-psy';
@@ -424,16 +428,23 @@ function drawPlayer(c,x,y,options={}){
     const walking=moving&&!action,w=48*scale,h=64*scale,left=x-w/2,top=y+5-60*scale;
     const walk=W.PsyTrainerWalkV1;
     if(entry.animationAtlas&&walk?.renderAnimated){
-      if(!humanAnimationState)humanAnimationState=walk.createState();
-      walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:scene+':'+entry.im.src},left,top,w,h);
-      usedSprite=true;
+      if(entry.animationAtlas.compiledStatus!=='loading'){
+        if(!humanAnimationState)humanAnimationState=walk.createState();
+        walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:scene+':'+entry.im.src},left,top,w,h);
+        usedSprite=true;
+      }else if(entry.atlas){
+        walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
+        usedSprite=true;
+      }
     }else if(entry.atlas&&walk){
       walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
       usedSprite=true;
-    }else if(entry.im?.naturalWidth&&entry.im?.naturalHeight){
+    }
+    if(!usedSprite&&entry.im?.naturalWidth&&entry.im?.naturalHeight){
       // Graphics still work if atlas preprocessing fails or an older profile loads.
       const sw=entry.im.naturalWidth/4,sh=entry.im.naturalHeight/4;
-      c.drawImage(entry.im,0*sw+sw*.25,row*sh+sh*.22,sw*.5,sh*.58,
+      const col=walk?.column?walk.column(Math.floor(walkFrame),walking):(walking?[1,0,3,0][((Math.floor(walkFrame)||0)%4+4)%4]:0);
+      c.drawImage(entry.im,col*sw+sw*.25,row*sh+sh*.22,sw*.5,sh*.58,
         x-16.5*scale,y+7-46*scale,33*scale,46*scale);
       usedSprite=true;
     }
