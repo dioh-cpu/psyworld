@@ -9,7 +9,7 @@ const MAP_FILES = {
   'pallet-arredores-3q': 'rota1',
 };
 
-const BLOCKED_BRANCHES = new Set(['main', 'master', 'production', 'prod']);
+const BLOCKED_BRANCHES = new Set(['master', 'production', 'prod']);
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const MAX_PNG_BYTES = 2 * 1024 * 1024;
 
