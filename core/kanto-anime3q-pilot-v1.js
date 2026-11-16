@@ -905,6 +905,13 @@ function downloadGray(u8,name){
     },'image/png');
   });
 }
+function encodeGrayPngBase64(u8){
+  const cv=D.createElement('canvas');cv.width=LOGICAL_W;cv.height=LOGICAL_H;
+  const cx=cv.getContext('2d');const img=cx.createImageData(LOGICAL_W,LOGICAL_H);
+  for(let i=0,p=0;i<u8.length;i++,p+=4){img.data[p]=img.data[p+1]=img.data[p+2]=u8[i];img.data[p+3]=255;}
+  cx.putImageData(img,0,0);
+  return cv.toDataURL('image/png').split(',')[1]||'';
+}
 async function exportBrush(){
   const ed=brushEditors.get(brushActiveMap),B=W.PsyAnime3QBrush;
   if(!ed||!B)return;
@@ -915,6 +922,57 @@ async function exportBrush(){
   await new Promise(r=>setTimeout(r,150));
   await downloadGray(sdf,`${brushActiveMap}_sdf.png`);
   setStatus(`Exportado OK: ${brushActiveMap} (1200x675, 0 diverg.)`);
+}
+async function publishBrush(){
+  const B=W.PsyAnime3QBrush;
+  if(!B)return;
+  const targets=[];
+  for(const mapId of Object.keys(MAPS)){
+    const ed=brushEditors.get(mapId);
+    const rec=brushDrafts.get(mapId);
+    if(ed&&(mapId===brushActiveMap||rec)){
+      targets.push({mapId,walk:ed.walkCopy(),walkL:ed.walkL(),sdf:ed.sdfU8()});
+    }else if(rec?.walk){
+      const tmp=B.create(LOGICAL_W,LOGICAL_H,rec.walk);
+      targets.push({mapId,walk:tmp.walkCopy(),walkL:tmp.walkL(),sdf:tmp.sdfU8()});
+    }
+  }
+  if(!targets.length){setStatus('Edite ou abra um mapa antes de publicar');return;}
+  for(const t of targets){
+    const v=B.verifyPair(t.walk,t.sdf);
+    if(!v.ok){setStatus(`Erro em ${t.mapId}: ${v.diff} px divergentes`);return;}
+  }
+  let pin='';
+  try{pin=W.sessionStorage?.getItem('a3q-editor-pin')||'';}catch(_){}
+  if(!pin){
+    pin=W.prompt(`Publicar ${targets.length} mapa(s) na branch.\nDigite o PIN do editor:`)||'';
+    pin=pin.trim();
+    if(!pin){setStatus('Publicacao cancelada');return;}
+  }
+  setStatus(`Publicando ${targets.length} mapa(s) na branch...`);
+  try{
+    const files=targets.map(t=>({
+      mapId:t.mapId,
+      walkmaskBase64:encodeGrayPngBase64(t.walkL),
+      sdfBase64:encodeGrayPngBase64(t.sdf),
+    }));
+    const res=await fetch('/api/collision-publish',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pin,files}),
+    });
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok||!data?.ok){
+      if(res.status===401){try{W.sessionStorage?.removeItem('a3q-editor-pin');}catch(_){}}
+      setStatus(`Falha ao publicar: ${data?.error||res.status}`);
+      return;
+    }
+    try{W.sessionStorage?.setItem('a3q-editor-pin',pin);}catch(_){}
+    const shortSha=String(data.commit||'').slice(0,7);
+    setStatus(`Publicado (${shortSha}) em ${data.branch}! Preview atualiza em ~1 min.`);
+  }catch(err){
+    setStatus(`Erro de rede ao publicar: ${err?.message||'falha'}`);
+  }
 }
 function readPngGray(file){
   return new Promise((resolve,reject)=>{
@@ -997,6 +1055,7 @@ function mountBrushPanel(){
       '<button data-a="zreset" title="Centralizar no treinador">Centro</button>'+
       '<button data-a="import">Importar</button>'+
       '<button data-a="export">Exportar</button>'+
+      '<button data-a="publish" title="Publicar rascunhos na branch">Publicar</button>'+
       '<button data-a="save">Salvar</button>'+
       '<button data-a="restore">Restaurar</button>'+
       '<button data-a="discard">Descartar</button>'+
@@ -1071,6 +1130,7 @@ function mountBrushPanel(){
   act('import').onclick=()=>{const f=act('file');f.value='';f.click();};
   act('file').onchange=e=>importBrushFiles(e.target.files);
   act('export').onclick=exportBrush;
+  act('publish').onclick=publishBrush;
   act('save').onclick=()=>{if(brushActiveMap)scheduleDraftSave(brushActiveMap,true);};
   act('restore').onclick=()=>{
     const ed=brushEditors.get(brushActiveMap),rec=brushDrafts.get(brushActiveMap);
@@ -1112,6 +1172,7 @@ function updateBrushPanel(){
   on('erase',brushMode==='erase');
   on('sdf',debugOverlayVisible);
   brushPanel.querySelector('[data-a="export"]').disabled=!ed;
+  brushPanel.querySelector('[data-a="publish"]').disabled=!ed&&!brushDrafts.size;
   brushPanel.querySelector('[data-a="import"]').disabled=!ed;
   brushPanel.querySelector('[data-a="save"]').disabled=!ed;
   brushPanel.querySelector('[data-a="undo"]').disabled=!ed?.canUndo();
