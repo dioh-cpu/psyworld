@@ -42,7 +42,7 @@ const rooms={
    'oak'),
  home:{id:'home',art:path+'home-realistic-v1.png',w:1024,h:572,
    spawn:[345,335],exit:[345,290],
-   npcs:[{id:'mother',name:'Elisa, sua mãe',at:[265,445],sprite:'assets/kanto/npcs/pallet-new/mae.png',portrait:'assets/kanto/npcs/pallet-new/mae.png',emote:'carinhosa',groundShadow:true,footOffset:0.04,displayHeight:94}],
+   npcs:[],
    blocks:[[0,0,1024,270],[0,245,328,425],[0,475,280,572],[585,260,790,365],[620,305,1024,525]],
    intro:'Sua casa tem o aconchego de sempre. Elisa preparou tudo para que você parta com segurança.',
    who:'mother'},

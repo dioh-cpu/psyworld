@@ -21,7 +21,7 @@ function mark(key){const q=progress();if(q[key])return;q[key]=true;putProgress()
 function player(){try{return typeof P!=='undefined'?P:(W.P||{})}catch(_){return W.P||{}}}
 // Household membership is serialized with the character; runtime movement is ephemeral.
 const HOUSEHOLD_ADULTS={'pallet-nina':28,'pallet-maia':32,'pallet-banhista':35,'pallet-breno':48};
-let householdRuntime=null;
+let householdRuntime=null,housePreviewRuntime=null;
 function householdSource(){
  const data=player().palletRelationships,id=data?.household?.partnerId;
  if(!HOUSEHOLD_ADULTS[id]||data?.npcs?.[id]?.romance!=='dating')return null;
@@ -30,6 +30,9 @@ function householdSource(){
   if(found)return found;
  }
  return null;
+}
+function banhistaSource(){
+ return W.PsyKantoAnime3Q?.getMap?.('pallet-costa-3q')?.npcs?.find(n=>n.id==='pallet-banhista')||null;
 }
 function householdPointSafe(room,x,y,avoidPlayer=false){
  const r=12,b=room.walkBounds||[0,174,room.w,room.h];
@@ -51,25 +54,44 @@ function householdActor(){
  }
  return householdRuntime.actor;
 }
+function housePreviewActor(){
+ const source=banhistaSource();
+ if(!source)return null;
+ if(!housePreviewRuntime||housePreviewRuntime.actor.id!==source.id){
+  const room=W.PsyKantoInteriorsV9?.get?.('home');
+  if(!room)return null;
+  const points=[[450,470],[560,515],[370,520],[340,460]].filter(([x,y])=>householdPointSafe(room,x,y));
+  if(!points.length)return null;
+  housePreviewRuntime={actor:{...source,at:points[0].slice(),previewResident:true,moving:false,facingX:1,activity:'caminhando pela casa'},points,index:0,last:performance.now(),pauseUntil:performance.now()+600};
+ }
+ return housePreviewRuntime.actor;
+}
 function activeNPCs(){
  const base=state.inside?.npcs||state.world?.npcs||[],source=householdSource();
- if(!source)return base;
- const list=base.filter(n=>n.id!==source.id);
  if(state.inside?.id==='home'&&state.world?.region==='pallet'){
-  const actor=householdActor();if(actor)list.push(actor);
+  const list=source?base.filter(n=>n.id!==source.id):base.slice();
+  const actor=source?householdActor():housePreviewActor();
+  if(actor)list.push(actor);
+  return list;
  }
- return list;
+ if(!source)return base;
+ return base.filter(n=>n.id!==source.id);
 }
-function updateHousehold(){
- const actor=householdActor();if(!actor)return;
- const rt=householdRuntime,now=performance.now(),dt=Math.min(.05,Math.max(0,(now-rt.last)/1000));rt.last=now;
+function tickPatrol(rt,actor){
+ if(!rt||!actor)return;
+ const now=performance.now(),dt=Math.min(.05,Math.max(0,(now-rt.last)/1000));rt.last=now;
  if(state.inside?.id!=='home'||state.world?.region!=='pallet'||state.dialogOpen||state.suspended||D.hidden||palletMotionReduced){actor.moving=false;return;}
  if(now<rt.pauseUntil){actor.moving=false;return;}
  const target=rt.points[(rt.index+1)%rt.points.length],dx=target[0]-actor.at[0],dy=target[1]-actor.at[1],length=Math.hypot(dx,dy);
- if(length<.5){rt.index=(rt.index+1)%rt.points.length;rt.pauseUntil=now+3500;actor.moving=false;actor.activity=['descansando','observando a casa','organizando as ideias'][rt.index%3];return}
- const step=Math.min(length,42*dt),x=actor.at[0]+dx/length*step,y=actor.at[1]+dy/length*step;
+ if(length<.5){rt.index=(rt.index+1)%rt.points.length;rt.pauseUntil=now+2500;actor.moving=false;actor.activity=['descansando','observando a casa','organizando as ideias'][rt.index%3];return}
+ const step=Math.min(length,45*dt),x=actor.at[0]+dx/length*step,y=actor.at[1]+dy/length*step;
  if(householdPointSafe(state.inside,x,y,true)){actor.at=[x,y];actor.moving=true;if(Math.abs(dx)>.2)actor.facingX=dx<0?-1:1;actor.activity='caminhando pela casa'}
  else actor.moving=false;
+}
+function updateHousehold(){
+ const actor=householdActor();
+ if(actor){tickPatrol(householdRuntime,actor);return;}
+ if(state.inside?.id==='home'){const p=housePreviewActor();if(p)tickPatrol(housePreviewRuntime,p);}
 }
 function image(url){if(!url)return null;if(!state.images.has(url)){const o={loaded:false,im:new Image()};o.im.onload=()=>{if(url.startsWith('assets/characters/halloween/')){try{prepareAvatar(o)}catch(err){o.spriteError=true;console.warn('Trainer sprite could not be prepared',err)}}o.loaded=true;draw()};o.im.onerror=()=>{o.error=true};o.im.src=url;state.images.set(url,o)}return state.images.get(url)}
 function updateFishingButton(){const button=state.root?.querySelector('[data-kw2-fish]');if(!button)return;const inRift=state.inside?.id===RIFT_ID,art=state.images.get(state.world?.art||'')?.mapCanvas;button.hidden=!!state.inside&&!inRift||!W.PsyHobbies?.canFish?.(inRift?RIFT_ID:state.world?.id,state.position,art)}
@@ -392,7 +414,7 @@ state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':state.world.id==='viridian'?'ROTA 2':'VIRIDIAN','#80ffaa')}}
 else if(state.inside.id===RIFT_ID)drawRiftGate(c,...(state.inside.exit||[448,128]),performance.now());else drawMarker(c,...(state.inside.exit||[240,675]),'SAÍDA ↓','#85efdc');
 const inHome=state.inside?.id==='home';
-const charScale=inHome?2.05:(a3q?(W.PsyKantoAnime3Q.characterScale||1.56):1);
+const charScale=inHome?2.45:(a3q?(W.PsyKantoAnime3Q.characterScale||1.56):1);
 const followerScale=inHome?1.5:(a3q?(W.PsyKantoAnime3Q.followerScale||1.18):charScale);
 if(W.PsyFollower)W.PsyFollower.draw(c,{scene:state.world.id+':'+(state.inside?.id||'outside'),x:state.position.x,y:state.position.y,facing:state.facing,moving:state.moving,scale:followerScale,valid:positionValid,trainer:()=>drawPlayer(c,state.position.x,state.position.y,{scale:charScale})});else drawPlayer(c,state.position.x,state.position.y,{scale:charScale});
 if(usedAnime3Q){const o=image(state.world.art);W.PsyKantoAnime3Q.drawOccluders(c,state.world.id,o?.loaded?o.im:null,state.position.y,state.position.x);}
@@ -484,7 +506,7 @@ function drawPlayer(c,x,y,options={}){
   const facing=options.facing||state.facing||'down';
   const moving=options.moving===undefined?state.moving:!!options.moving;
   const walkFrame=Number(options.walkFrame??state.walkFrame)||0;
-  const scale=Math.max(.75,Math.min(2.4,Number(options.scale)||1));
+  const scale=Math.max(.75,Math.min(2.6,Number(options.scale)||1));
   c.save();
   const shScale=Math.max(.85,Math.min(1.65,scale));
   c.fillStyle='#0008';c.beginPath();c.ellipse(x,y+5,13*shScale,5*shScale,0,0,Math.PI*2);c.fill();
