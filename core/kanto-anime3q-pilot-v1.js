@@ -630,8 +630,43 @@ precision highp float;
 in vec2 v_uv;
 uniform sampler2D u_tex;
 out vec4 outColor;
+vec4 texBicubic(sampler2D tex, vec2 uv){
+  vec2 texSize = vec2(textureSize(tex, 0));
+  vec2 invSize = 1.0 / texSize;
+  vec2 coord = uv * texSize - 0.5;
+  vec2 fxy = fract(coord);
+  coord -= fxy;
+  vec2 xcubic = fxy.x * (fxy.x * (fxy.x * vec2(1.5, -0.5) + vec2(-2.5, 1.0)) + vec2(0.0, 0.5));
+  vec2 ycubic = fxy.y * (fxy.y * (fxy.y * vec2(1.5, -0.5) + vec2(-2.5, 1.0)) + vec2(0.0, 0.5));
+  // 4-bilinear-tap Catmull-Rom approximation
+  vec2 f2 = fxy * fxy;
+  vec2 f3 = f2 * fxy;
+  vec2 w0 = -0.5 * f3 + f2 - 0.5 * fxy;
+  vec2 w1 = 1.5 * f3 - 2.5 * f2 + 1.0;
+  vec2 w2 = -1.5 * f3 + 2.0 * f2 + 0.5 * fxy;
+  vec2 w3 = 0.5 * f3 - 0.5 * f2;
+  vec2 s0 = w0 + w1;
+  vec2 s1 = w2 + w3;
+  vec2 offset0 = (coord - 0.5 + w1 / max(s0, 1e-5)) * invSize;
+  vec2 offset1 = (coord + 1.5 + w3 / max(s1, 1e-5)) * invSize;
+  vec4 c00 = texture(tex, vec2(offset0.x, offset0.y));
+  vec4 c10 = texture(tex, vec2(offset1.x, offset0.y));
+  vec4 c01 = texture(tex, vec2(offset0.x, offset1.y));
+  vec4 c11 = texture(tex, vec2(offset1.x, offset1.y));
+  vec4 row0 = mix(c10, c00, s0.x);
+  vec4 row1 = mix(c11, c01, s0.x);
+  return mix(row1, row0, s0.y);
+}
 void main(){
-  outColor=texture(u_tex,v_uv);
+  vec2 inv = 1.0 / vec2(textureSize(u_tex, 0));
+  vec4 base = texBicubic(u_tex, v_uv);
+  vec4 blur = (
+    texture(u_tex, v_uv + vec2(inv.x, 0.0)) +
+    texture(u_tex, v_uv - vec2(inv.x, 0.0)) +
+    texture(u_tex, v_uv + vec2(0.0, inv.y)) +
+    texture(u_tex, v_uv - vec2(0.0, inv.y))
+  ) * 0.25;
+  outColor = clamp(base + (base - blur) * 0.22, 0.0, 1.0);
 }`;
 
 function initGL(stage){
@@ -1295,7 +1330,7 @@ W.PsyKantoAnime3Q={
   brushActive:()=>debugEditorEnabled&&brushMode!=='off',
   exportGeometryJSON,
   hide,
-  characterScale:1.56,
-  followerScale:1.18
+  characterScale:0.88,
+  followerScale:0.68
 };
 })(window,document);

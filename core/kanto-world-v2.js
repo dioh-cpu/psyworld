@@ -260,8 +260,8 @@ function camera(){
   if(a3q){
     const portrait=r.height>r.width&&r.width<560;
     const landscapeMobile=r.height<=500;
-    const targetScale=portrait?Math.max(cover*1.28,cw/295):landscapeMobile?Math.max(cover*1.28,ch/245):Math.max(cover*1.25,ch/295);
-    scale=Math.max(cover,Math.min(4.2,targetScale));
+    const targetScale=portrait?Math.max(cover*1.12,cw/480):landscapeMobile?Math.max(cover*1.10,ch/420):cover*1.08;
+    scale=Math.max(cover,Math.min(cover*1.65,targetScale));
   }else{
     scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
   }
