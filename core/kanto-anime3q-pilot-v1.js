@@ -68,54 +68,54 @@ const MAPS={
     art:'assets/story/pallet/anime3q/01_centro_residencias.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/centro_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/centro_sdf.png',
-    spawn:[600,430],
+    spawn:[600,460],
     exit:null,
     doors:[
-      {id:'home',at:[350,222],title:'Casa de Red'},
-      {id:'house-east',at:[975,220],title:'Casa Leste'}
+      {id:'home',at:[312,240],title:'Casa de Red'},
+      {id:'house-east',at:[912,298],title:'Casa Leste'}
     ],
     npcs:[
-      {id:'lia',name:'Rival',at:[500,385],sprite:'assets/story/rival.png',portrait:'assets/story/rival.png',emote:'alegre'}
+      {id:'lia',name:'Rival',at:[470,385],sprite:'assets/story/rival.png',portrait:'assets/story/rival.png',emote:'alegre'}
     ],
     grass:[],
     portals:[
       {
         id:'centro-to-lab',
-        rect:[552,0,656,36],
+        rect:[530,0,665,38],
         target:'pallet-lab-3q',
-        spawn:[656,598],
+        spawn:[565,610],
         facing:'up',
-        marker:[604,48],
+        marker:[598,48],
         label:'LABORATÓRIO ↑',
         color:'#ffd480'
       },
       {
         id:'centro-to-jardins',
-        rect:[1155,130,1200,240],
+        rect:[1152,375,1200,470],
         target:'pallet-jardins-3q',
-        spawn:[98,225],
+        spawn:[75,225],
         facing:'right',
-        marker:[1162,195],
+        marker:[1158,422],
         label:'JARDINS →',
         color:'#80ffaa'
       },
       {
         id:'centro-to-costa',
-        rect:[560,636,730,675],
+        rect:[140,635,320,675],
         target:'pallet-costa-3q',
-        spawn:[608,72],
+        spawn:[595,75],
         facing:'down',
-        marker:[642,630],
+        marker:[235,628],
         label:'COSTA ↓',
         color:'#79dced'
       },
       {
         id:'centro-to-colinas',
-        rect:[0,150,42,232],
+        rect:[0,325,42,415],
         target:'pallet-colinas-3q',
-        spawn:[1124,282],
+        spawn:[1135,278],
         facing:'left',
-        marker:[48,198],
+        marker:[48,370],
         label:'← COLINAS',
         color:'#f6c978'
       }
@@ -160,33 +160,33 @@ const MAPS={
     art:'assets/story/pallet/anime3q/02_jardins_bosque.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/jardins_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/jardins_sdf.png',
-    spawn:[98,225],
+    spawn:[75,225],
     exit:null,
     doors:[
-      {id:'center',at:[265,132],title:'Posto de Cura do Bosque'}
+      {id:'center',at:[272,168],title:'Posto de Cura do Bosque'}
     ],
     npcs:[
-      {id:'neighbor',name:'Mina',at:[215,320],sprite:'assets/halloween/npc-mina.svg',portrait:'assets/halloween/npc-mina.svg',emote:'curiosa'}
+      {id:'neighbor',name:'Mina',at:[215,300],sprite:'assets/halloween/npc-mina.svg',portrait:'assets/halloween/npc-mina.svg',emote:'curiosa'}
     ],
     grass:[],
     portals:[
       {
         id:'jardins-to-centro',
-        rect:[0,135,45,290],
+        rect:[0,175,44,285],
         target:'pallet-centro-3q',
-        spawn:[1125,228],
+        spawn:[1120,422],
         facing:'left',
-        marker:[42,220],
+        marker:[48,228],
         label:'← CENTRO',
         color:'#80ffaa'
       },
       {
         id:'jardins-to-costa',
-        rect:[548,636,725,675],
+        rect:[515,635,705,675],
         target:'pallet-costa-3q',
-        spawn:[1114,74],
+        spawn:[1120,242],
         facing:'down',
-        marker:[635,626],
+        marker:[610,628],
         label:'COSTA ↓',
         color:'#79dced'
       }
@@ -249,34 +249,34 @@ const MAPS={
     art:'assets/story/pallet/anime3q/03_laboratorio.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/lab_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/lab_sdf.png',
-    spawn:[656,590],
+    spawn:[565,610],
     exit:null,
     doors:[
-      {id:'lab',at:[638,304],title:'Laboratório do Prof. Carvalho'}
+      {id:'lab',at:[665,338],title:'Laboratório do Prof. Carvalho'}
     ],
     npcs:[
-      {id:'oak',name:'Professor Car’alho',at:[528,448],sprite:'assets/kanto/npcs/professor-v33.webp',portrait:'assets/story/professor-oak.png',emote:'sereno'},
-      {id:'assistant',name:'Pesquisador Elias',at:[760,362],sprite:'assets/halloween/npc-researcher.webp',portrait:'assets/halloween/npc-researcher.webp',emote:'curioso'}
+      {id:'oak',name:'Professor Car’alho',at:[535,468],sprite:'assets/kanto/npcs/professor-v33.webp',portrait:'assets/story/professor-oak.png',emote:'sereno'},
+      {id:'assistant',name:'Pesquisador Elias',at:[760,392],sprite:'assets/halloween/npc-researcher.webp',portrait:'assets/halloween/npc-researcher.webp',emote:'curioso'}
     ],
     grass:[],
     portals:[
       {
         id:'lab-to-centro',
-        rect:[545,636,776,675],
+        rect:[465,635,650,675],
         target:'pallet-centro-3q',
-        spawn:[604,74],
+        spawn:[598,72],
         facing:'down',
-        marker:[660,628],
+        marker:[558,628],
         label:'CENTRO ↓',
         color:'#80ffaa'
       },
       {
         id:'lab-to-rota1',
-        rect:[498,24,596,66],
+        rect:[328,128,422,198],
         target:'pallet-arredores-3q',
-        spawn:[570,598],
+        spawn:[570,610],
         facing:'up',
-        marker:[548,78],
+        marker:[375,195],
         label:'ROTA 1 ↑',
         color:'#a8ff80'
       }
@@ -305,43 +305,43 @@ const MAPS={
     art:'assets/story/pallet/anime3q/04_costa_praia.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/costa_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/costa_sdf.png',
-    spawn:[608,120],
+    spawn:[595,75],
     exit:null,
     doors:[
-      {id:'house-west',at:[292,204],title:'Cabana do Pescador'}
+      {id:'house-west',at:[195,222],title:'Cabana do Pescador'}
     ],
     npcs:[
-      {id:'fisher',name:'Seu Abel',at:[848,286],sprite:'assets/kanto/npcs/fisher-v9.svg',portrait:'assets/kanto/npcs/fisher-v9.svg',emote:'tranquilo'}
+      {id:'fisher',name:'Seu Abel',at:[735,275],sprite:'assets/kanto/npcs/fisher-v9.svg',portrait:'assets/kanto/npcs/fisher-v9.svg',emote:'tranquilo'}
     ],
     grass:[],
     portals:[
       {
         id:'costa-to-centro',
-        rect:[525,0,685,38],
+        rect:[520,0,675,40],
         target:'pallet-centro-3q',
-        spawn:[642,598],
+        spawn:[248,608],
         facing:'up',
-        marker:[608,52],
+        marker:[598,48],
         label:'CENTRO ↑',
         color:'#80ffaa'
       },
       {
         id:'costa-to-jardins',
-        rect:[1095,0,1190,42],
+        rect:[1145,190,1200,285],
         target:'pallet-jardins-3q',
-        spawn:[622,598],
-        facing:'up',
-        marker:[1124,52],
-        label:'JARDINS ↑',
+        spawn:[610,602],
+        facing:'right',
+        marker:[1150,242],
+        label:'JARDINS →',
         color:'#80ffaa'
       },
       {
         id:'costa-to-colinas',
-        rect:[72,0,172,42],
+        rect:[205,0,315,42],
         target:'pallet-colinas-3q',
-        spawn:[462,608],
+        spawn:[215,610],
         facing:'up',
-        marker:[120,52],
+        marker:[260,48],
         label:'COLINAS ↑',
         color:'#f6c978'
       }
@@ -368,33 +368,33 @@ const MAPS={
     art:'assets/story/pallet/anime3q/05_colinas_pedreiras.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/colinas_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/colinas_sdf.png',
-    spawn:[1100,276],
+    spawn:[1135,278],
     exit:null,
     doors:[
-      {id:'market',at:[295,285],title:'Posto dos Mineradores'}
+      {id:'market',at:[265,295],title:'Posto dos Mineradores'}
     ],
     npcs:[
-      {id:'child',name:'Luna',at:[248,308],sprite:'assets/kanto/npcs/child-v9.svg',portrait:'assets/kanto/npcs/child-v9.svg',emote:'animada'}
+      {id:'child',name:'Luna',at:[320,330],sprite:'assets/kanto/npcs/child-v9.svg',portrait:'assets/kanto/npcs/child-v9.svg',emote:'animada'}
     ],
     grass:[],
     portals:[
       {
         id:'colinas-to-centro',
-        rect:[1155,240,1200,340],
+        rect:[1148,235,1200,335],
         target:'pallet-centro-3q',
-        spawn:[74,212],
+        spawn:[75,370],
         facing:'right',
-        marker:[1152,286],
+        marker:[1152,285],
         label:'CENTRO →',
         color:'#80ffaa'
       },
       {
         id:'colinas-to-costa',
-        rect:[438,636,538,675],
+        rect:[105,635,285,675],
         target:'pallet-costa-3q',
-        spawn:[118,70],
+        spawn:[260,68],
         facing:'down',
-        marker:[486,626],
+        marker:[195,628],
         label:'COSTA ↓',
         color:'#79dced'
       }
@@ -421,33 +421,33 @@ const MAPS={
     art:'assets/story/pallet/anime3q/06_arredores_rota1.png',
     walkmask:'assets/story/pallet/anime3q/walkmasks/rota1_walkmask.png',
     sdf:'assets/story/pallet/anime3q/walkmasks/rota1_sdf.png',
-    spawn:[570,590],
-    exit:[770,24],
+    spawn:[570,610],
+    exit:[585,92],
     doors:[],
     npcs:[
-      {id:'route-guide',name:'Exploradora Nara',at:[632,372],sprite:'assets/halloween/npc-luna.svg',portrait:'assets/halloween/npc-luna.svg',emote:'curiosa'}
+      {id:'route-guide',name:'Exploradora Nara',at:[635,420],sprite:'assets/halloween/npc-luna.svg',portrait:'assets/halloween/npc-luna.svg',emote:'curiosa'}
     ],
     grass:[
-      {id:'a',rect:[210,68,470,174],spawn:[345,125],entry:[242,165]},
-      {id:'b',rect:[710,158,1005,256],spawn:[850,210],entry:[915,255]},
-      {id:'c',rect:[895,325,1142,425],spawn:[1020,375],entry:[915,325]}
+      {id:'a',rect:[340,155,515,315],spawn:[425,235],entry:[490,280]},
+      {id:'b',rect:[715,195,985,335],spawn:[850,265],entry:[730,265]},
+      {id:'c',rect:[950,105,1140,225],spawn:[1045,165],entry:[960,165]}
     ],
     portals:[
       {
         id:'rota1-to-lab',
-        rect:[498,636,642,675],
+        rect:[450,635,705,675],
         target:'pallet-lab-3q',
-        spawn:[452,108],
+        spawn:[385,225],
         facing:'down',
-        marker:[570,624],
+        marker:[578,628],
         label:'LABORATÓRIO ↓',
         color:'#ffd480'
       },
       {
         id:'rota1-to-viridian',
-        rect:[730,0,835,28],
+        rect:[520,72,650,125],
         action:'exitWorld',
-        marker:[772,42],
+        marker:[585,128],
         label:'VIRIDIAN CITY ↑',
         color:'#80ffaa'
       }
