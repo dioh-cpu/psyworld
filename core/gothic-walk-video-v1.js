@@ -6,25 +6,28 @@
 'use strict';
 if(W.PsyGothicWalkVideoV1)return;
 
-const VW=320,VH=540;
+const VW=320,VH=540,CLIP_FPS=30;
 const CLIP_SPECS={
  front:{
   key:'front',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4',
-  duration:1.292,
-  baselines:[532,530,528,526,528,532,528,530,532,532,536,540,540,540,538,534,532,530,528,526,532,534,526,530,532,532,538,540,540,540,538]
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V4',
+  duration:1.033,
+  frames:31,
+  baseline:532
  },
  left:{
   key:'left',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4',
-  duration:1.334,
-  baselines:[532,532,532,532,532,532,532,532,532,532,532,530,530,526,522,522,524,524,524,522,522,524,526,528,528,532,532,532,532,532,532,532]
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V4',
+  duration:1.067,
+  frames:32,
+  baseline:530
  },
  back:{
   key:'back',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4',
-  duration:1.250,
-  baselines:[536,536,540,536,526,526,528,532,534,538,540,540,540,540,540,540,540,540,532,526,528,532,534,536,538,540,540,540,540,540]
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V4',
+  duration:1.000,
+  frames:30,
+  baseline:536
  }
 };
 const ROW_TO_CLIP=['front','left','left','back'];
@@ -51,6 +54,9 @@ function initWebGL(){
   const opts={alpha:true,premultipliedAlpha:true,antialias:false,preserveDrawingBuffer:true,depth:false,stencil:false};
   const ctx=glCanvas.getContext('webgl2',opts)||glCanvas.getContext('webgl',opts);
   if(!ctx){glBroken=true;return null;}
+  const dbg=ctx.getExtension('WEBGL_debug_renderer_info');
+  const renderer=String((dbg&&ctx.getParameter(dbg.UNMASKED_RENDERER_WEBGL))||ctx.getParameter(ctx.RENDERER)||'');
+  if(/swiftshader|llvmpipe|software|basic render driver/i.test(renderer)){glBroken=true;return null;}
   glCanvas.addEventListener('webglcontextlost',e=>{e.preventDefault();glBroken=true;gl=null;},false);
   const vsSrc='attribute vec2 aPos;varying vec2 vUv;void main(){vUv=vec2(aPos.x*0.5+0.5,0.5-aPos.y*0.5);gl_Position=vec4(aPos,0.0,1.0);}';
   const fsSrc=`precision mediump float;
@@ -129,15 +135,17 @@ function createClip(spec){
  video.style.cssText='width:1px;height:1px;display:block;';
  const canvas=D.createElement('canvas');canvas.width=VW;canvas.height=VH;
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+ const hasVfc=typeof video.requestVideoFrameCallback==='function';
  const clip={
   key:spec.key,
   url:spec.url,
   duration:spec.duration,
-  baselines:spec.baselines,
-  baseline:spec.baselines[0]||532,
+  frameCount:spec.frames||30,
+  baseline:spec.baseline||532,
   video,
   canvas,
   ctx,
+  hasVfc,
   attached:false,
   ready:false,
   hasFrame:false,
@@ -146,7 +154,6 @@ function createClip(spec){
   playToken:0,
   frameDirty:false,
   vfcArmed:false,
-  vfcFrameIdx:-1,
   lastCapturedTime:-1,
   lastFrameIdx:-1,
   lastMediaTime:-1,
@@ -162,16 +169,15 @@ function createClip(spec){
    if(meta){
     clip.lastMediaTime=meta.mediaTime;
     clip.lastPresentedFrames=meta.presentedFrames;
-    clip.vfcFrameIdx=Math.max(0,Math.min(clip.baselines.length-1,Math.round(meta.mediaTime*24)));
    }
   }
-  if(!clip.video.paused&&!clip.failed&&typeof video.requestVideoFrameCallback==='function'){
+  if(!clip.video.paused&&!clip.failed&&clip.hasVfc){
    clip.vfcArmed=true;
    video.requestVideoFrameCallback(onFrame);
   }
  }
  clip.scheduleVfc=()=>{
-  if(clip.vfcArmed||clip.failed||typeof video.requestVideoFrameCallback!=='function')return;
+  if(clip.vfcArmed||clip.failed||!clip.hasVfc)return;
   clip.vfcArmed=true;
   video.requestVideoFrameCallback(onFrame);
  };
@@ -192,15 +198,10 @@ const clips={
 };
 const clipList=[clips.front,clips.left,clips.back];
 
-function frameIndexFor(clip){
- const arr=clip.baselines;
- const idx=Math.round((clip.video.currentTime||0)*24);
- return Math.max(0,Math.min(arr.length-1,idx));
-}
 function liveFrameIndexFor(clip){
- const arr=clip.baselines;
- const idx=Math.floor((clip.video.currentTime||0)*24+1e-4);
- return Math.max(0,Math.min(arr.length-1,idx));
+ const n=clip.frameCount||30;
+ const idx=Math.floor((clip.video.currentTime||0)*CLIP_FPS+1e-4);
+ return Math.max(0,Math.min(n-1,idx));
 }
 
 function capture2D(clip,allowInitialCount){
@@ -220,10 +221,10 @@ function capture2D(clip,allowInitialCount){
    const p=buf[i],r=p&255,g=(p>>>8)&255,b=(p>>>16)&255;
    const ge=g-(r>b?r:b)-4;
    if(ge>=excess){buf[i]=0;continue;}
-   if(ge<=0){buf[i]=p|0xff000000;continue;}
+   if(ge<=0){if((p>>>24)!==255)buf[i]=p|0xff000000;continue;}
    let alpha=1-ge/excess;
    if(alpha<.05){buf[i]=0;continue;}
-   if(alpha>.985){buf[i]=p|0xff000000;continue;}
+   if(alpha>.985){if((p>>>24)!==255)buf[i]=p|0xff000000;continue;}
    const safe=Math.max(.05,alpha);
    const nr=Math.max(0,Math.min(255,((r-kr*(1-alpha))/safe)+.5))|0;
    const ng=Math.max(0,Math.min(255,((g-kg*(1-alpha))/safe)+.5))|0;
@@ -246,14 +247,11 @@ function capture2D(clip,allowInitialCount){
  ctx.putImageData(img,0,0);
  const firstCapture=!clip.hasFrame;
  const liveIdx=liveFrameIndexFor(clip);
- const idx=clip.frameDirty&&clip.vfcFrameIdx>=0?clip.vfcFrameIdx:liveIdx;
- const isNewFrame=idx!==clip.lastFrameIdx||Math.abs(clip.video.currentTime-clip.lastCapturedTime)>0.03;
+ const isNewFrame=clip.frameDirty||liveIdx!==clip.lastFrameIdx||Math.abs(clip.video.currentTime-clip.lastCapturedTime)>(0.4/CLIP_FPS);
  clip.hasFrame=true;
- clip.baseline=clip.baselines[frameIndexFor(clip)]||532;
- clip.lastFrameIdx=idx;
+ clip.lastFrameIdx=liveIdx;
  clip.lastCapturedTime=clip.video.currentTime;
  clip.frameDirty=false;
- clip.vfcFrameIdx=-1;
  if((firstCapture&&allowInitialCount)||(!firstCapture&&isNewFrame))decodedFrames++;
  return true;
 }
@@ -374,6 +372,8 @@ function playClip(clip){
  clip.playPending=true;
  const token=++clip.playToken;
  try{
+  clip.video.defaultPlaybackRate=1;
+  clip.video.playbackRate=1;
   const p=clip.video.play();
   Promise.resolve(p).then(()=>{
    clip.playPending=false;
@@ -424,26 +424,18 @@ function draw(target,pose,x,y,width,height){
  }
  if(!clip.hasFrame)return false;
 
- const frameIdx=frameIndexFor(clip);
  const liveIdx=liveFrameIndexFor(clip);
- clip.baseline=clip.baselines[frameIdx]||532;
- const idxChanged=liveIdx>clip.lastFrameIdx||liveIdx<clip.lastFrameIdx-6;
- const vfcIdx=clip.vfcFrameIdx;
- const vfcWrapped=vfcIdx>=0&&vfcIdx<clip.lastFrameIdx-6;
- const vfcAdvanced=clip.frameDirty&&(vfcIdx<0||vfcIdx>clip.lastFrameIdx||vfcWrapped);
- const frameAdvanced=idxChanged||vfcAdvanced;
- if(clip.frameDirty&&!vfcAdvanced){clip.frameDirty=false;clip.vfcFrameIdx=-1;}
+ const vfcActive=clip.hasVfc&&clip.lastPresentedFrames>=0&&!clip.video.paused;
+ const frameAdvanced=vfcActive?clip.frameDirty:(clip.frameDirty||liveIdx!==clip.lastFrameIdx);
  let sourceCanvas=clip.canvas;
 
  if(!glBroken&&initWebGL()){
   if(clip.video.readyState>=2&&!clip.video.seeking){
    const needGl=glClipKey!==clip.key||frameAdvanced;
    if(needGl){
-    const nextIdx=vfcAdvanced&&vfcIdx>=0?(vfcWrapped?vfcIdx:Math.max(liveIdx,vfcIdx)):liveIdx;
     if(renderClipWebGL(clip)){
      clip.frameDirty=false;
-     clip.vfcFrameIdx=-1;
-     clip.lastFrameIdx=nextIdx;
+     clip.lastFrameIdx=liveIdx;
      clip.lastCapturedTime=clip.video.currentTime;
      if(frameAdvanced)decodedFrames++;
      sourceCanvas=glCanvas;

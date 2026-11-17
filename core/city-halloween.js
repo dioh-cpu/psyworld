@@ -445,7 +445,9 @@
     }
     // The trainer is camera-centered; render the equipped title above their head,
     // after environmental art so the label is never hidden by scenery.
-    W.PsySeason?.drawTitle(c,w/2,h/2-83);
+    const gothicTitle=typeof P!=='undefined'&&P?.playerCharacterId==='gothic_boy'&&(P?.playerCostumeByCharacter?.gothic_boy||P?.playerCostumeKey||'basic')==='basic'&&!!W.PsyGothicWalkVideoV1;
+    const titleOffset=Math.max(83,Math.round(zoom*(desktopCityPresentation()?1.5:1)*(gothicTitle?72:56)));
+    W.PsySeason?.drawTitle(c,w/2,h/2-titleOffset);
     c.restore();
   }
   function makeDialog() {

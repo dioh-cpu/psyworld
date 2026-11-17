@@ -232,11 +232,26 @@
     if (W.__psyIdleActive || W.PSY_RUNTIME_MODE?.is?.('adventure') || W.PsyKantoWorldV2?.isOpen?.()) return false;
     return true;
   }
+  function cityCanvasOwnsTrainer() {
+    return typeof W.PsyKantoWorldV2?.drawTrainer === 'function' && typeof W.PsyCityAccess === 'function';
+  }
   // One visual state for the city actor; never changes player movement.
   let cityAnimationState=null,gothicWalkPrepStarted=false;
   function renderAvatar() {
     const p = player(), id = p?.playerCharacterId, c = character(id);
     const img = D.getElementById('player-poke-sprite');
+    if (cityCanvasOwnsTrainer()) {
+      hideAvatar();
+      if (img && id) img.style.display = 'none';
+      else if (img && !id) img.style.display = '';
+      const key = id && c ? costumeKey(id) : null;
+      if (id === 'gothic_boy' && key === 'basic' && !gothicWalkPrepStarted && W.PsyGothicWalkVideoV1?.prepare) {
+        gothicWalkPrepStarted = true;
+        W.PsyGothicWalkVideoV1.prepare().then(() => { try { W.draw?.(); } catch (_) {} });
+      }
+      if (!id || !c || !avatarShouldShow()) return false;
+      return true;
+    }
     const canvas = ensureAvatarCanvas();
     if (!canvas) return false;
     if (!id || !c || !avatarShouldShow()) {
@@ -278,6 +293,7 @@
     try {
       if (currentId()) renderAvatar();
       else hideAvatar();
+      if (cityCanvasOwnsTrainer() && avatarShouldShow()) W.draw?.();
     } catch (err) { console.warn('[Halloween UI] avatar update failed', err); }
   }
   function persist() {

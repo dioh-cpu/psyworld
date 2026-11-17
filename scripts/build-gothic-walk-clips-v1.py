@@ -21,23 +21,26 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets/characters/source-video/gothic-boy-walk-turn-v2.mp4"
 OUT_DIR = ROOT / "assets/characters/walk-video-v1"
 
-# Inclusive 0-based 24fps source frame intervals verified visually for pure orientation
-# and seamless gait wrap-around without torso turn-in/turn-out distortion.
+# Inclusive 0-based 24fps source frame intervals + centered crop X offsets verified visually
+# for pure orientation, symmetric L/R mirror alignment, and seamless gait wrap-around.
+# Retimed 1:1 to 30fps (exact 2-vsync divisor on 60Hz displays, 1.00-1.07s two-step cycle)
+# with zero synthetic blended frames.
 CLIPS = {
-    "front": (10, 40),   # 31 frames (1.292s), down / front
-    "left":  (69, 100),  # 32 frames (1.333s), left profile (mirrored in canvas for right)
-    "back":  (124, 153), # 30 frames (1.250s), up / back
+    "front": {"frames": (11, 41), "crop_x": 609, "anchor_baseline": 532},  # 31f (1.0333s @30fps)
+    "left":  {"frames": (70, 101), "crop_x": 611, "anchor_baseline": 530}, # 32f (1.0667s @30fps)
+    "back":  {"frames": (125, 154), "crop_x": 617, "anchor_baseline": 536}, # 30f (1.0000s @30fps)
 }
 
-CROP_FILTER = "crop=640:1080:640:0,scale=320:540:flags=lanczos"
+TARGET_FPS = 30
 
 
-def encode_clip(source: Path, start_frame: int, end_frame: int, dest: Path) -> None:
+def encode_clip(source: Path, start_frame: int, end_frame: int, crop_x: int, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     vf = (
         f"select=between(n\\,{start_frame}\\,{end_frame}),"
-        f"setpts=PTS-STARTPTS,"
-        f"{CROP_FILTER}"
+        f"crop=640:1080:{crop_x}:0,"
+        f"scale=320:540:flags=lanczos,"
+        f"setpts=N/({TARGET_FPS}*TB)"
     )
     subprocess.run(
         [
@@ -45,15 +48,15 @@ def encode_clip(source: Path, start_frame: int, end_frame: int, dest: Path) -> N
             "-i", str(source),
             "-vf", vf,
             "-an",
-            "-r", "24",
+            "-r", str(TARGET_FPS),
             "-c:v", "libx264",
             "-profile:v", "main",
             "-level:v", "3.1",
             "-pix_fmt", "yuv420p",
             "-crf", "16",
             "-preset", "slow",
-            "-g", "6",
-            "-keyint_min", "6",
+            "-g", "5",
+            "-keyint_min", "5",
             "-sc_threshold", "0",
             "-bf", "0",
             "-refs", "1",
@@ -138,11 +141,15 @@ def main() -> None:
 
     summary = {}
     total_bytes = 0
-    for name, (start_frame, end_frame) in CLIPS.items():
+    for name, spec in CLIPS.items():
+        start_frame, end_frame = spec["frames"]
+        crop_x = spec["crop_x"]
         dest = out_dir / f"gothic-boy-walk-{name}.mp4"
-        encode_clip(source, start_frame, end_frame, dest)
+        encode_clip(source, start_frame, end_frame, crop_x, dest)
         info = inspect_clip(dest)
         info["source_frames"] = [start_frame, end_frame]
+        info["crop_x"] = crop_x
+        info["anchor_baseline"] = spec["anchor_baseline"]
         info["baselines"] = measure_baselines(dest)
         expected_frames = end_frame - start_frame + 1
         if info["frames"] != expected_frames:
@@ -151,10 +158,10 @@ def main() -> None:
         summary[name] = info
         print(
             f"{name}: {dest.relative_to(ROOT)} | {info['width']}x{info['height']} | "
-            f"{info['frames']}f ({info['duration']}s) | {info['bytes']} B | "
-            f"keyframes={info['keyframes']}"
+            f"{info['frames']}f @{TARGET_FPS}fps ({info['duration']}s) | {info['bytes']} B | "
+            f"crop_x={crop_x} anchor={spec['anchor_baseline']} keyframes={info['keyframes']}"
         )
-        print(f"  baselines={info['baselines']}")
+        print(f"  measured_soles={info['baselines']}")
     print(f"Total derived MP4 size: {total_bytes} bytes ({total_bytes / 1024:.1f} KiB)")
 
 

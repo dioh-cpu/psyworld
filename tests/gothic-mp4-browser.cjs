@@ -284,6 +284,90 @@ async function main() {
       console.log('PASS', name);
       await context.close();
     }
+
+    // Full-game integration check (Psy City single-sprite deduplication + Gothic MP4 + Kanto)
+    for (const [name, width, height, mobile] of [
+      ['fullgame-desktop', 1280, 720, false],
+      ['fullgame-android', 412, 915, true]
+    ]) {
+      const context = await browser.newContext({
+        viewport: { width, height },
+        isMobile: mobile,
+        hasTouch: mobile,
+        deviceScaleFactor: mobile ? 2 : 1
+      });
+      await context.route(/^https?:\/\/(?!127\.0\.0\.1|.*\.vercel\.app)/, route => route.abort());
+      const page = await context.newPage();
+      const pageErrors = [];
+      page.on('pageerror', e => pageErrors.push(e.message));
+      await page.addInitScript(() => {
+        const save = {
+          version: 2,
+          savedAt: Date.now(),
+          map: { x: 25, y: 25, px: 25 * 55, py: 25 * 55 },
+          player: {
+            name: 'AshGothic',
+            gold: 500,
+            playerCharacterId: 'gothic_boy',
+            playerCostumeByCharacter: { gothic_boy: 'basic', adventure_boy: 'basic' },
+            meta: { characterId: 'gothic_boy', tutorialSeen: true, essentialGuideV56: { done: true, step: 5 } },
+            team: [{ id: 1, name: 'Bulbasaur', level: 5, hp: 20, maxHp: 20, exp: 0, maxExp: 100, stats: { atk: 12, def: 12, spd: 12 }, moves: ['Tackle'] }],
+            box: [],
+            inventory: {},
+            gymProgress: []
+          }
+        };
+        const json = JSON.stringify(save);
+        localStorage.setItem('psyWorldSave_v2', json);
+        localStorage.setItem('psyWorldSave_v2_backup', json);
+        localStorage.setItem('psyWorldSave', json);
+      });
+      const res = await page.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
+      assert.equal(res.status(), 200);
+      await page.waitForFunction(() => typeof window.loadOnLogin === 'function' && !!window.PsyGothicWalkVideoV1);
+      await page.evaluate(() => window.loadOnLogin());
+      await page.waitForFunction(() => window.PsyGothicWalkVideoV1?.status().ready === true, { timeout: 20000 });
+      await page.waitForFunction(() => window.PsyGothicWalkVideoV1?.status().draws > 0, { timeout: 5000 });
+
+      const domCheck = await page.evaluate(() => {
+        const av = document.getElementById('psy-halloween-avatar');
+        const sp = document.getElementById('player-poke-sprite');
+        return {
+          avatarDisplay: av ? getComputedStyle(av).display : 'none',
+          pokeDisplay: sp ? getComputedStyle(sp).display : 'none',
+          draws: window.PsyGothicWalkVideoV1.status().draws
+        };
+      });
+      assert.equal(domCheck.avatarDisplay, 'none', `${name} must suppress duplicate #psy-halloween-avatar overlay`);
+      assert.equal(domCheck.pokeDisplay, 'none', `${name} must hide #player-poke-sprite`);
+      assert(domCheck.draws > 0, `${name} must draw Gothic Boy on #gameCanvas`);
+
+      const decBefore = await page.evaluate(() => window.PsyGothicWalkVideoV1.status().decodedFrames);
+      await page.keyboard.down('ArrowLeft');
+      await page.waitForTimeout(450);
+      const midLeft = await page.evaluate(() => window.PsyGothicWalkVideoV1.status());
+      await page.keyboard.up('ArrowLeft');
+      await page.waitForTimeout(220);
+      const afterLeft = await page.evaluate(() => window.PsyGothicWalkVideoV1.status());
+      assert.equal(midLeft.row, 1);
+      assert.equal(midLeft.clip, 'left');
+      assert.equal(midLeft.playing, true);
+      assert(midLeft.decodedFrames - decBefore >= 4, `${name} Psy City walk must advance real decoded frames`);
+      assert.equal(afterLeft.playing, false, `${name} Psy City must pause cleanly when stopping`);
+
+      // Switch character in Psy City and confirm duplicate overlay remains hidden
+      await page.evaluate(() => { P.playerCharacterId = 'adventure_boy'; window.updatePlayerAnimatedSprite?.(); });
+      await page.waitForTimeout(160);
+      const advAvatar = await page.evaluate(() => {
+        const av = document.getElementById('psy-halloween-avatar');
+        return av ? getComputedStyle(av).display : 'none';
+      });
+      assert.equal(advAvatar, 'none', `${name} adventure_boy must also keep duplicate #psy-halloween-avatar hidden`);
+
+      assert.deepEqual(pageErrors, [], `${name} page errors: ${pageErrors.join('; ')}`);
+      console.log('PASS', name);
+      await context.close();
+    }
   } finally {
     await browser.close();
     if (ownServer) ownServer.server.close();
