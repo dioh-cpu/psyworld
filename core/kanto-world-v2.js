@@ -474,7 +474,16 @@ const humanAnimationStates=new Map();
 function prepareAvatar(entry){
   const walk=W.PsyTrainerWalkV1;
   if(walk){
-    try{entry.animationAtlas=walk.getAnimationAtlas?.(entry.im)||null}catch(err){entry.animationAtlas=null;console.warn('Trainer animationAtlas could not be prepared',err)}
+    const source=String(entry.im?.currentSrc||entry.im?.src||'').split('?')[0];
+    const useGothicVideoIdle=source.endsWith('/basic-gothic-boy.webp');
+    if(useGothicVideoIdle&&!entry.gothicIdleRequested){
+      entry.gothicIdleRequested=true;entry.gothicIdleImg=new Image();
+      entry.gothicIdleImg.onload=()=>{entry.gothicIdleReady=true;entry.animationAtlas=null;try{prepareAvatar(entry)}catch(err){console.warn('Gothic video idle atlas fallback',err)}draw()};
+      entry.gothicIdleImg.onerror=()=>{entry.gothicIdleFailed=true;entry.gothicIdleImg=null};
+      entry.gothicIdleImg.src='assets/characters/idle-video-v1/gothic-boy-basic-4dir.webp?build=GOTHIC_IDLE_VIDEO_V1';
+    }
+    const customIdle=useGothicVideoIdle&&entry.gothicIdleReady&&entry.gothicIdleImg?.naturalWidth?entry.gothicIdleImg:null;
+    try{entry.animationAtlas=walk.getAnimationAtlas?.(entry.im,customIdle,null,customIdle?{preserveIdleSource:true,smoothIdle:true}:{})||null}catch(err){entry.animationAtlas=null;console.warn('Trainer animationAtlas could not be prepared',err)}
     try{entry.atlas=walk.getAtlas?.(entry.im)||null}catch(_){entry.atlas=null}
     entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight;
   }

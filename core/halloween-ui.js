@@ -5,6 +5,7 @@
   W.__PSY_HALLOWEEN_UI_V1__ = true;
 
   const ROOT = 'assets/characters/halloween/';
+  const GOTHIC_VIDEO_IDLE = 'assets/characters/idle-video-v1/gothic-boy-basic-4dir.webp?build=GOTHIC_IDLE_VIDEO_V1';
   const SHEET = 2048;
   const CELL = 512;
   const CHARACTERS = [
@@ -57,13 +58,29 @@
     const saved = p?.playerCostumeByCharacter?.[id];
     return character(id)?.files?.[saved] ? saved : 'basic';
   }
+  function requestVideoIdle(entry,id,key) {
+    if(id!=='gothic_boy'||key!=='basic'||entry.idleRequested)return;
+    entry.idleRequested=true;entry.idleReady=false;
+    const idle=new Image();entry.idleImg=idle;
+    idle.onload=()=>{entry.idleReady=true;entry.animationAtlas=null;drawPreviewCanvases();syncAvatar();};
+    idle.onerror=()=>{entry.idleFailed=true;entry.idleImg=null;};
+    idle.src=GOTHIC_VIDEO_IDLE;
+  }
+  function animationFor(entry,id,key) {
+    const walk=W.PsyTrainerWalkV1;if(!walk?.getAnimationAtlas)return null;
+    requestVideoIdle(entry,id,key);
+    const useVideo=!!(id==='gothic_boy'&&key==='basic'&&entry.idleReady&&entry.idleImg?.naturalWidth);
+    try{return walk.getAnimationAtlas(entry.img,useVideo?entry.idleImg:null,null,useVideo?{preserveIdleSource:true,smoothIdle:true}:{});}
+    catch(err){console.warn('[Halloween UI] trainer idle atlas fallback',err);return walk.getAnimationAtlas(entry.img);}
+  }
   function imageFor(id, key) {
     const c = character(id), name = c?.files?.[key];
     if (!name) return null;
     const url = ROOT + name;
     if (imageCache.has(url)) return imageCache.get(url);
     const img = new Image();
-    const entry = { img, ready: false, failed: false, url };
+    const entry = { img, ready: false, failed: false, url, animationAtlas:null };
+    if(id==='gothic_boy'&&key==='basic')requestVideoIdle(entry,id,key);
     img.onload = () => { entry.ready = true; drawPreviewCanvases(); };
     img.onerror = () => { entry.failed = true; };
     img.src = url;
@@ -77,7 +94,8 @@
     ctx.clearRect(0, 0, w, h);
     const walk=W.PsyTrainerWalkV1;
     if(walk?.getAnimationAtlas){
-      entry.animationAtlas=entry.animationAtlas||walk.getAnimationAtlas(entry.img);
+      entry.animationAtlas=animationFor(entry,id,key)||entry.animationAtlas;
+      canvas.dataset.videoIdle=entry.animationAtlas?.idleArtStatus==='video-view-idle'?'1':'0';
       if(!previewStates.has(canvas))previewStates.set(canvas,walk.createState());
       const pose=walk.sampleState(previewStates.get(canvas),{moving:false,row,identity:id+':'+key,profile:entry.animationAtlas.profile});
       if(entry.animationAtlas.compiledStatus==='loading')return false;
@@ -118,6 +136,7 @@
       .psy-halloween-card:hover{transform:translateY(-2px);border-color:#f6bd60}
       .psy-halloween-card.is-selected{border:2px solid #f6bd60;background:linear-gradient(180deg,#3b3429,#1a1c26);box-shadow:0 0 18px #f6bd6033}
       .psy-halloween-preview{display:block;width:96px;height:96px;margin:0 auto 8px;image-rendering:pixelated;background:radial-gradient(ellipse at 50% 82%,#334155,transparent 65%)}
+      .psy-halloween-preview[data-video-idle="1"]{image-rendering:auto}
       .psy-halloween-card strong{display:block;font-size:13px}
       .psy-halloween-card small{display:block;margin-top:4px;color:#aab6c7;font-size:11px;line-height:1.35}
       .psy-halloween-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:20px}
@@ -233,7 +252,7 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     W.PsyCostumeAuraV1?.draw?.(ctx,entry.img.src,canvas.width/2,canvas.height-10);
     if(walk?.getAnimationAtlas){
-      if(!entry.animationAtlas)entry.animationAtlas=walk.getAnimationAtlas(entry.img);
+      entry.animationAtlas=animationFor(entry,id,key)||entry.animationAtlas;
       if(!cityAnimationState)cityAnimationState=walk.createState();
       if(entry.animationAtlas){
         // Preserve height and floor position while avoiding the old wide stretch.
@@ -249,6 +268,7 @@
     canvas.style.display = 'block';
     canvas.dataset.character = id;
     canvas.dataset.costume = key;
+    canvas.style.imageRendering=key==='basic'&&id==='gothic_boy'&&entry.idleReady&&!moving?'auto':'pixelated';
     return true;
   }
   function syncAvatar() {
