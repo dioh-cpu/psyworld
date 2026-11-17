@@ -2,34 +2,43 @@
 <html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PSYWORLD · Teste do Walk em MP4</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b1726;color:white;font:15px system-ui;overflow:hidden;height:100dvh;display:flex;flex-direction:column}header{flex:none;padding:10px 14px;display:flex;gap:16px;align-items:center;justify-content:space-between}header a{color:#ffe0a3}main{position:relative;flex:1;min-height:0;overflow:hidden}canvas{width:100%;height:100%;display:block}footer{flex:none;height:64px;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px}button{font:25px system-ui;background:#163448;color:white;border:1px solid #66cfdd;border-radius:10px;min-width:54px;min-height:48px;touch-action:none;user-select:none}button:active{background:#347589}#note{position:absolute;top:8px;left:8px;max-width:80%;padding:6px 10px;background:#0b1726d9;border-radius:8px;font-size:12px}small{display:block;font-size:11px;color:#b9d6df}
+*{box-sizing:border-box}body{margin:0;background:#0b1726;color:white;font:15px system-ui;overflow:hidden;height:100dvh;display:flex;flex-direction:column}header{flex:none;padding:10px 14px;display:flex;gap:16px;align-items:center;justify-content:space-between}header a{color:#ffe0a3}main{position:relative;flex:1;min-height:0;overflow:hidden}canvas{width:100%;height:100%;display:block}footer{flex:none;height:64px;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px}button{font:25px system-ui;background:#163448;color:white;border:1px solid #66cfdd;border-radius:10px;min-width:54px;min-height:48px;touch-action:none;user-select:none}button:active:not(:disabled){background:#347589}button:disabled{opacity:.42;cursor:wait}#note{position:absolute;top:8px;left:8px;max-width:85%;padding:6px 10px;background:#0b1726d9;border-radius:8px;font-size:12px}small{display:block;font-size:11px;color:#b9d6df}
 </style>
 <header><div>PSYWORLD · Walk em MP4<small>Segure uma seta para andar; solte para pausar. Teste visual sem colisões.</small></div><a href="index.html">Jogo completo</a></header>
-<main><canvas id="scene"></canvas><div id="note" role="status">Carregando vídeo…</div></main>
-<footer><button data-row="1" aria-label="Esquerda">←</button><button data-row="3" aria-label="Cima">↑</button><button data-row="0" aria-label="Baixo">↓</button><button data-row="2" aria-label="Direita">→</button></footer>
-<script src="core/gothic-walk-video-v1.js?build=GOTHIC_MP4_WALK_V2"></script>
-<script src="core/trainer-walk-v1.js?build=GOTHIC_MP4_WALK_V2"></script>
+<main><canvas id="scene"></canvas><div id="note" role="status">Preparando vídeos (0/3)…</div></main>
+<footer><button data-row="1" aria-label="Esquerda" disabled>←</button><button data-row="3" aria-label="Cima" disabled>↑</button><button data-row="0" aria-label="Baixo" disabled>↓</button><button data-row="2" aria-label="Direita" disabled>→</button></footer>
+<script src="core/gothic-walk-video-v1.js?build=GOTHIC_MP4_WALK_V3"></script>
+<script src="core/trainer-walk-v1.js?build=GOTHIC_MP4_WALK_V3"></script>
 <script>
 'use strict';
 const scene=document.getElementById('scene'),ctx=scene.getContext('2d'),note=document.getElementById('note'),art=new Image();
 art.src='assets/story/pallet/anime3q/01_centro_residencias.png';
 const pack={profile:{file:'basic-gothic-boy.webp',walkMs:130,idleMs:3600,walkOrder:[0,1,2,3]}},state=PsyTrainerWalkV1.createState();
-let x=600,y=460,row=0,held=null,last=performance.now();
+let x=600,y=460,row=0,held=null,last=performance.now(),videosReady=false;
 const names=['Frente','Esquerda','Direita espelhada','Costas'];
-document.querySelectorAll('button[data-row]').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();held=Number(b.dataset.row);b.setPointerCapture(e.pointerId)});for(const event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>held=null)});
+const buttons=[...document.querySelectorAll('button[data-row]')];
+function unlockControls(s){
+ if(videosReady||!s||!s.ready||s.failed)return;
+ videosReady=true;
+ for(const b of buttons)b.disabled=false;
+}
+PsyGothicWalkVideoV1.prepare().then(unlockControls);
+buttons.forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();if(!videosReady)return;held=Number(b.dataset.row);b.setPointerCapture(e.pointerId)});for(const event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>held=null)});
 const keys={ArrowDown:0,ArrowLeft:1,ArrowRight:2,ArrowUp:3};
-addEventListener('keydown',e=>{if(e.key in keys){e.preventDefault();held=keys[e.key]}});addEventListener('keyup',e=>{if(keys[e.key]===held)held=null});addEventListener('blur',()=>held=null);
+addEventListener('keydown',e=>{if(e.key in keys){e.preventDefault();if(videosReady)held=keys[e.key]}});addEventListener('keyup',e=>{if(keys[e.key]===held)held=null});addEventListener('blur',()=>{held=null;});
 function render(now){
  const dt=Math.min(.05,(now-last)/1000);last=now;
- if(held!==null){row=held;x+=([0,-1,1,0][row])*90*dt;y+=([1,0,0,-1][row])*90*dt;x=Math.max(70,Math.min(1130,x));y=Math.max(130,Math.min(630,y));}
+ if(videosReady&&held!==null){row=held;x+=([0,-1,1,0][row])*90*dt;y+=([1,0,0,-1][row])*90*dt;x=Math.max(70,Math.min(1130,x));y=Math.max(130,Math.min(630,y));}
  const rect=scene.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),w=Math.round(rect.width*dpr),h=Math.round(rect.height*dpr);
  if(scene.width!==w||scene.height!==h){scene.width=w;scene.height=h;}
  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#0b1726';ctx.fillRect(0,0,rect.width,rect.height);
  const zoom=Math.max(rect.width/1200,rect.height/675,1),camX=Math.max(0,Math.min(1200-rect.width/zoom,x-rect.width/zoom/2)),camY=Math.max(0,Math.min(675-rect.height/zoom,y-rect.height/zoom/2));
  ctx.save();ctx.scale(zoom,zoom);ctx.translate(-camX,-camY);if(art.complete&&art.naturalWidth)ctx.drawImage(art,0,0,1200,675);
  ctx.fillStyle='#0006';ctx.beginPath();ctx.ellipse(x,y,18,6,0,0,Math.PI*2);ctx.fill();
- PsyTrainerWalkV1.renderAnimated(ctx,pack,state,{now,x,y,row,moving:held!==null,identity:'gothic-mp4-preview'},x-36,y-90,72,96);ctx.restore();
- const s=PsyGothicWalkVideoV1.status();note.textContent=s.failed?'Falha ao carregar o MP4.':s.draws?names[row]+' · '+(s.playing?'Vídeo em reprodução':'Vídeo pausado'):'Carregando vídeo…';
+ PsyTrainerWalkV1.renderAnimated(ctx,pack,state,{now,x,y,row,moving:videosReady&&held!==null,identity:'gothic-mp4-preview'},x-36,y-90,72,96);ctx.restore();
+ const s=PsyGothicWalkVideoV1.status();
+ unlockControls(s);
+ note.textContent=s.failed?'Falha ao carregar os MP4s.':!s.ready?'Preparando vídeos ('+s.readyCount+'/'+s.clipCount+')…':names[row]+' · '+(s.playing?'Vídeo em reprodução':'Vídeo pausado');
  requestAnimationFrame(render);
 }
 requestAnimationFrame(render);

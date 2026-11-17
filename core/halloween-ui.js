@@ -109,7 +109,7 @@
         entry.previewFit=Math.min(h*.9/64,(w-8)/(2*Math.max(1,extent)));probe.width=probe.height=1;
       }
       const height=entry.previewFit*64,width=height*.75;
-      walk.drawAnimated(ctx,entry.animationAtlas,pose,(w-width)/2,h-5-60/64*height,width,height);
+      walk.drawAnimated(ctx,entry.animationAtlas,{...pose,previewOnly:true},(w-width)/2,h-5-60/64*height,width,height);
     }else{
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(entry.img, col * CELL, row * CELL, CELL, CELL, 0, 0, w, h);
@@ -229,11 +229,11 @@
     const wrap = D.getElementById('game-wrap');
     if (!wrap || wrap.style.display === 'none') return false;
     try { if (typeof inBattle !== 'undefined' && inBattle) return false; } catch (_) {}
-    if (W.__psyIdleActive || W.PSY_RUNTIME_MODE?.is?.('adventure')) return false;
+    if (W.__psyIdleActive || W.PSY_RUNTIME_MODE?.is?.('adventure') || W.PsyKantoWorldV2?.isOpen?.()) return false;
     return true;
   }
   // One visual state for the city actor; never changes player movement.
-  let cityAnimationState=null;
+  let cityAnimationState=null,gothicWalkPrepStarted=false;
   function renderAvatar() {
     const p = player(), id = p?.playerCharacterId, c = character(id);
     const img = D.getElementById('player-poke-sprite');
@@ -258,6 +258,7 @@
       if(entry.animationAtlas){
         // Preserve height and floor position while avoiding the old wide stretch.
         const gothic=id==='gothic_boy'&&key==='basic';
+        if(gothic&&!gothicWalkPrepStarted&&W.PsyGothicWalkVideoV1?.prepare){gothicWalkPrepStarted=true;W.PsyGothicWalkVideoV1.prepare().then(()=>syncAvatar());}
         const scale=Number(W.PsyCityPresentationV1?.actorScale?.())||1,height=(gothic?112:94)*scale,width=height*48/64;
         walk.renderAnimated(ctx,entry.animationAtlas,cityAnimationState,{moving,row:directionRow(),x:Number(p.px),y:Number(p.py),identity:'city:'+id+':'+key},(canvas.width-width)/2,gothic?canvas.height*.9375-height*60/64:14*scale,width,height);
       }

@@ -481,6 +481,7 @@ function prepareAvatar(entry){
       entry.gothicIdleImg.onload=()=>{entry.gothicIdleReady=true;entry.animationAtlas=null;try{prepareAvatar(entry)}catch(err){console.warn('Gothic video idle atlas fallback',err)}draw()};
       entry.gothicIdleImg.onerror=()=>{entry.gothicIdleFailed=true;entry.gothicIdleImg=null};
       entry.gothicIdleImg.src='assets/characters/idle-video-v1/gothic-boy-basic-4dir.webp?build=GOTHIC_IDLE_VIDEO_V1';
+      W.PsyGothicWalkVideoV1?.prepare?.()?.then?.(()=>draw());
     }
     const customIdle=useGothicVideoIdle&&entry.gothicIdleReady&&entry.gothicIdleImg?.naturalWidth?entry.gothicIdleImg:null;
     try{entry.animationAtlas=walk.getAnimationAtlas?.(entry.im,customIdle,null,customIdle?{preserveIdleSource:true,smoothIdle:true}:{})||null}catch(err){entry.animationAtlas=null;console.warn('Trainer animationAtlas could not be prepared',err)}
@@ -507,7 +508,8 @@ function drawPlayer(c,x,y,options={}){
         const animKey=scene+':'+entry.im.src;
         let humanAnimationState=humanAnimationStates.get(animKey);
         if(!humanAnimationState){humanAnimationState=walk.createState();humanAnimationStates.set(animKey,humanAnimationState);}
-        walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:animKey},left,top,w,h);
+        const coveredByKanto=scene==='city-psy'&&!!state.root?.classList?.contains('open');
+        walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:animKey,previewOnly:coveredByKanto},left,top,w,h);
         usedSprite=true;
       }else if(entry.atlas){
         walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);

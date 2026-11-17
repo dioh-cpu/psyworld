@@ -255,8 +255,8 @@ function sampleState(state,opt){
  return {state:moving?'walk':state.settling?'settle':'idle',settle:Math.min(2,Math.floor(state.settleElapsed/40)),row:state.row,col:state.col,breath:moving?0:Math.floor(state.idleElapsed/(profile.idleMs/4))%4,elapsed:state.elapsed};
 }
 function drawAnimated(ctx,pack,pose,x,y,width,height){
- if(pack?.profile?.file==='basic-gothic-boy.webp'&&W.PsyGothicWalkVideoV1)return W.PsyGothicWalkVideoV1.draw(ctx,pose,x,y,width,height);
- if(!pack||pack.compiledStatus==='loading')return false;
+ if(pack?.profile?.file==='basic-gothic-boy.webp'&&!pose?.previewOnly&&W.PsyGothicWalkVideoV1&&W.PsyGothicWalkVideoV1.draw(ctx,pose,x,y,width,height))return true;
+ if(!pack||!pack.image||pack.compiledStatus==='loading')return false;
  const row=Math.max(0,Math.min(3,pose.row|0)),col=Math.max(0,Math.min(3,pose.col|0));
  const source=row*4+col;
  const tile=pose.state==='idle'?48+source*4+(pose.breath%4):pose.state==='settle'&&pose.settle>0?16+source*2+Math.min(1,pose.settle-1):source;
@@ -269,7 +269,7 @@ function drawAnimated(ctx,pack,pose,x,y,width,height){
  return true;
 }
 function renderAnimated(ctx,pack,state,opt,x,y,width,height){
- const pose=sampleState(state,{...opt,profile:pack.profile});drawAnimated(ctx,pack,pose,x,y,width,height);return pose;
+ const pose=sampleState(state,{...opt,profile:pack.profile});if(opt?.previewOnly)pose.previewOnly=true;drawAnimated(ctx,pack,pose,x,y,width,height);return pose;
 }
 
 W.PsyTrainerWalkV1={getAtlas,column,draw,columns:sequence,cellWidth:TW,cellHeight:TH,getAnimationAtlas,animationProfile,createState,sampleState,drawAnimated,renderAnimated};
