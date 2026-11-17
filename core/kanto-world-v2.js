@@ -531,7 +531,8 @@ function drawPlayer(c,x,y,options={}){
   // The canvas redraws as soon as the trainer atlas becomes available.
   c.font='bold 12px system-ui';c.fillStyle='#fff';c.textAlign='center';
   c.shadowColor='#000';c.shadowBlur=4;
-  if(options.showName!==false&&!state.hideTrainerName){c.fillText(player().name||'Treinador',x,y-59*scale);W.PsySeason?.drawTitle(c,x,y-76*scale)}c.restore();
+  const nameHeight=entry?.animationAtlas?.profile?.file==='basic-gothic-boy.webp'&&W.PsyGothicWalkVideoV1?76:59;
+  if(options.showName!==false&&!state.hideTrainerName){c.fillText(player().name||'Treinador',x,y-nameHeight*scale);W.PsySeason?.drawTitle(c,x,y-(nameHeight+17)*scale)}c.restore();
   return usedSprite;
 }
 

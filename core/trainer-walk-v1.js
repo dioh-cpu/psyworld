@@ -255,6 +255,7 @@ function sampleState(state,opt){
  return {state:moving?'walk':state.settling?'settle':'idle',settle:Math.min(2,Math.floor(state.settleElapsed/40)),row:state.row,col:state.col,breath:moving?0:Math.floor(state.idleElapsed/(profile.idleMs/4))%4,elapsed:state.elapsed};
 }
 function drawAnimated(ctx,pack,pose,x,y,width,height){
+ if(pack?.profile?.file==='basic-gothic-boy.webp'&&W.PsyGothicWalkVideoV1)return W.PsyGothicWalkVideoV1.draw(ctx,pose,x,y,width,height);
  if(!pack||pack.compiledStatus==='loading')return false;
  const row=Math.max(0,Math.min(3,pose.row|0)),col=Math.max(0,Math.min(3,pose.col|0));
  const source=row*4+col;
