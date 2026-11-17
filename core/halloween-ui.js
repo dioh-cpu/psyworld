@@ -17,7 +17,7 @@
       macabre: 'horror-ghostface-black-girl.webp', macabre_alt: 'macabre-alt-black-girl.webp', supreme: 'apex-black-girl.webp'
     } },
     { id: 'gothic_boy', name: 'Rapaz gótico', detail: 'Explorador da noite', files: {
-      basic: 'assets/characters/realistic/basic-gothic-boy.webp', divine: 'divine-gothic-boy.webp',
+      basic: 'basic-gothic-boy.webp', divine: 'divine-gothic-boy.webp',
       macabre: 'horror-freddy-gothic-boy.webp', macabre_alt: 'macabre-alt-gothic-boy.webp', supreme: 'apex-gothic-boy.webp'
     } },
     { id: 'gothic_girl', name: 'Garota gótica', detail: 'Bruxa do eclipse', files: {
@@ -60,7 +60,7 @@
   function imageFor(id, key) {
     const c = character(id), name = c?.files?.[key];
     if (!name) return null;
-    const url = name.startsWith('assets/') ? name : ROOT + name;
+    const url = ROOT + name;
     if (imageCache.has(url)) return imageCache.get(url);
     const img = new Image();
     const entry = { img, ready: false, failed: false, url };
