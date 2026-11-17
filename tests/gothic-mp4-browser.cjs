@@ -120,11 +120,18 @@ async function main() {
 
       await page.addInitScript(() => {
         window.__scriptSeeks = 0;
+        window.__bgRewinds = 0;
         const desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'currentTime');
         Object.defineProperty(HTMLMediaElement.prototype, 'currentTime', {
           get: desc.get,
           set: function(v) {
-            if (window.PsyGothicWalkVideoV1?.status().ready) window.__scriptSeeks++;
+            const api = window.PsyGothicWalkVideoV1;
+            if (api?.status().ready) {
+              const vids = api.videos;
+              const isActiveClipVideo = vids && (this === vids.front || this === vids.left || this === vids.back);
+              if (isActiveClipVideo) window.__scriptSeeks++;
+              else window.__bgRewinds++;
+            }
             return desc.set.call(this, v);
           },
           configurable: true
@@ -196,7 +203,8 @@ async function main() {
         assert.equal(mid.st.clip, expectedClip);
         assert.equal(mid.st.mirrored, row === 2);
         assert.equal(mid.st.playing, true);
-        assert.equal(mid.scriptSeeks, mark.scriptSeeks, 'switching directions must never trigger programmatic video.currentTime seeks');
+        assert.equal(mid.st.seeks, 0, 'active decoders must never incur EOF seek stalls');
+        assert.equal(mid.scriptSeeks, mark.scriptSeeks, 'switching directions must never trigger programmatic video.currentTime seeks on active clips');
 
         await page.keyboard.up(key);
         await page.waitForTimeout(180);
@@ -254,16 +262,27 @@ async function main() {
       }, rapidStart);
       assert.equal(rapidWrong, 0, `${name} rapid switching produced wrong-direction draws`);
 
-      // Continuous loop check (>1.9s hold wraps smoothly past duration without error)
-      const loopStart = await page.evaluate(() => window.PsyGothicWalkVideoV1.status().decodedFrames);
+      // Continuous loop check (>2.4s hold wraps >=2 times via standby relay with zero active EOF seeks)
+      const loopInit = await page.evaluate(() => {
+        const s = window.PsyGothicWalkVideoV1.status();
+        return { decodedFrames: s.decodedFrames, loopSwaps: s.loopSwaps, activeSeeks: window.__scriptSeeks };
+      });
       await page.keyboard.down('ArrowRight');
-      await page.waitForTimeout(1900);
-      const loopEnd = await page.evaluate(() => window.PsyGothicWalkVideoV1.status());
+      await page.waitForTimeout(2400);
+      const loopEnd = await page.evaluate(() => ({
+        st: window.PsyGothicWalkVideoV1.status(),
+        activeSeeks: window.__scriptSeeks,
+        bgRewinds: window.__bgRewinds
+      }));
       await page.keyboard.up('ArrowRight');
       await page.waitForTimeout(160);
-      assert.equal(loopEnd.failed, false);
-      assert(loopEnd.decodedFrames - loopStart >= 28, `${name} loop hold decoded too few frames: ${loopEnd.decodedFrames - loopStart}`);
-      assert(loopEnd.time >= 0 && loopEnd.time <= loopEnd.duration + 0.05);
+      assert.equal(loopEnd.st.failed, false);
+      assert.equal(loopEnd.st.seeks, 0, `${name} active decoders must incur 0 EOF seek events across loop wraps`);
+      assert.equal(loopEnd.activeSeeks, loopInit.activeSeeks, `${name} active decoders must incur 0 programmatic seeks`);
+      assert(loopEnd.st.loopSwaps - loopInit.loopSwaps >= 2, `${name} expected >=2 standby loop swaps in 2.4s, got ${loopEnd.st.loopSwaps - loopInit.loopSwaps}`);
+      assert(loopEnd.bgRewinds <= loopEnd.st.loopSwaps + 2, `${name} unexpected background rewinds: ${loopEnd.bgRewinds} vs swaps ${loopEnd.st.loopSwaps}`);
+      assert(loopEnd.st.decodedFrames - loopInit.decodedFrames >= 36, `${name} loop hold decoded too few frames: ${loopEnd.st.decodedFrames - loopInit.decodedFrames}`);
+      assert(loopEnd.st.time >= 0 && loopEnd.st.time <= loopEnd.st.duration + 0.05);
 
       // Button pointer control check
       const btn = await page.getByRole('button', { name: 'Esquerda', exact: true }).boundingBox();
@@ -281,6 +300,7 @@ async function main() {
       assert.deepEqual(errors, [], `${name} page/console errors: ${errors.join('; ')}`);
       const uniqueClips = [...new Set(mp4Requests)];
       assert.equal(uniqueClips.length, 3, `expected 3 derived clips loaded once, got ${mp4Requests}`);
+      assert.equal(mp4Requests.length, 3, `expected zero duplicate HTTP MP4 fetches across swaps, got ${mp4Requests}`);
       console.log('PASS', name);
       await context.close();
     }
@@ -352,8 +372,20 @@ async function main() {
       assert.equal(midLeft.row, 1);
       assert.equal(midLeft.clip, 'left');
       assert.equal(midLeft.playing, true);
+      assert.equal(midLeft.seeks, 0);
       assert(midLeft.decodedFrames - decBefore >= 4, `${name} Psy City walk must advance real decoded frames`);
       assert.equal(afterLeft.playing, false, `${name} Psy City must pause cleanly when stopping`);
+
+      // Continue with ArrowRight (shares left clip) across >1.067s total so Psy City exercises a live loop wrap
+      await page.keyboard.down('ArrowRight');
+      await page.waitForTimeout(780);
+      const midRight = await page.evaluate(() => window.PsyGothicWalkVideoV1.status());
+      await page.keyboard.up('ArrowRight');
+      await page.waitForTimeout(180);
+      assert.equal(midRight.row, 2);
+      assert.equal(midRight.mirrored, true);
+      assert(midRight.loopSwaps >= 1, `${name} Psy City must hand off via standby relay without EOF stall (swaps=${midRight.loopSwaps})`);
+      assert.equal(midRight.seeks, 0, `${name} Psy City active decoder must incur 0 EOF seeks`);
 
       // Switch character in Psy City and confirm duplicate overlay remains hidden
       await page.evaluate(() => { P.playerCharacterId = 'adventure_boy'; window.updatePlayerAnimatedSprite?.(); });
