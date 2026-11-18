@@ -45,11 +45,16 @@ def _alpha_mask(arr: np.ndarray) -> np.ndarray:
 
 
 def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) -> list[np.ndarray]:
-    """Close lateral head sway, back-cape trailing edge (+7.15px -> +0.57px), and waist/belt folds
-    between frame[0] (source 69) and frame[n] (source 101) using pure geometric 2D warping (zero ghosting).
+    """Build a 32-frame profile walk cycle from the steady-state straight-white-line frames
+    (source frames 85..100 = indices 16..31 of raw_frames[69..101]), eliminating the post-turn
+    crooked white coat line in frames 69..84 so Frame 31 -> Frame 0 has a 100% straight white line
+    and sub-median transition error across head, waist_cape, back_cape, and legs.
     """
-    def crop_at(idx: int, cl: float) -> np.ndarray:
-        with Image.open(raw_frames[idx]) as im:
+    steady_raw = raw_frames[16:32]  # 16 frames: source 85..100 (steady-state straight white line)
+    m = len(steady_raw)  # 16
+
+    def crop_at(path: Path, cl: float) -> np.ndarray:
+        with Image.open(path) as im:
             resized = im.convert("RGB").resize(
                 (320, 540),
                 resample=Image.Resampling.LANCZOS,
@@ -57,52 +62,49 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
             )
             return np.asarray(resized, dtype=np.float32)
 
-    init = [crop_at(k, crop_x) for k in range(n + 1)]
+    init = [crop_at(p, crop_x) for p in steady_raw]
     head_x = [float(np.mean(np.where(_alpha_mask(a)[45:165, :] > 0.5)[1])) for a in init]
-    h_closure = head_x[n] - head_x[0]
-    base: list[np.ndarray] = []
-    for k in range(n + 1):
-        target_h = head_x[0] + (k / float(n)) * h_closure
-        sway = head_x[k] - target_h
-        corr_320 = (k / float(n) - 0.5) * h_closure + 0.65 * sway
-        base.append(crop_at(k, crop_x + corr_320 * 2.0))
+    mean_hx = float(np.mean(head_x))
+    base = [crop_at(steady_raw[k], crop_x + (head_x[k] - mean_hx) * 2.0) for k in range(m)]
 
+    # Stabilize the slight cuff/glove twist at boundaries k=0 (src 85) and k=15 (src 100)
+    # without touching the front thigh (x < 116) or lower boots (y > 345).
+    yy, xx = np.mgrid[0:540, 0:320].astype(np.float32)
+    wy_c = np.clip((yy - 145.0) / 20.0, 0.0, 1.0) * np.clip((345.0 - yy) / 25.0, 0.0, 1.0)
+    wx_c = np.clip((xx - 116.0) / 10.0, 0.0, 1.0) * np.clip((255.0 - xx) / 15.0, 0.0, 1.0)
+    mask_cuff = (wy_c * wx_c)[:, :, None]
+    base[0] = base[0] * (1.0 - mask_cuff) + base[1] * mask_cuff
+    base[m - 1] = base[m - 1] * (1.0 - mask_cuff) + base[m - 2] * mask_cuff
+
+    # 1D periodic harmonic stabilization of the back-cape trailing edge across the 16-frame step
     als = [_alpha_mask(a) for a in base]
-    R = np.zeros((n + 1, 540), dtype=np.float32)
-    for k in range(n + 1):
+    R = np.zeros((m, 540), dtype=np.float32)
+    for k in range(m):
         for y in range(540):
             w = np.where(als[k][y] > 0.25)[0]
             R[k, y] = w.max() if len(w) else 160.0
 
-    shift_ky = np.zeros((n + 1, 540), dtype=np.float32)
-    for y in range(135, 455):
+    shift_ky = np.zeros((m, 540), dtype=np.float32)
+    for y in range(145, 450):
         wy = 1.0
-        if y < 175:
-            wy = (y - 135) / 40.0
-        elif y > 420:
-            wy = (455 - y) / 35.0
-        seam_d = np.clip(R[0, y] - R[n, y], -16.0, 16.0)
-        w_harm = np.clip((y - 265.0) / 35.0, 0.0, 1.0)
-        seq_closed = np.array([R[k, y] + ((k / float(n)) - 0.5) * seam_d for k in range(n)], dtype=np.float32)
-        fft = np.fft.rfft(seq_closed)
+        if y < 180:
+            wy = (y - 145) / 35.0
+        elif y > 415:
+            wy = (450 - y) / 35.0
+        fft = np.fft.rfft(R[:, y])
         fft_tgt = np.zeros_like(fft)
         fft_tgt[0] = fft[0]
-        fft_tgt[1] = fft[1] * 0.25
-        fft_tgt[2] = fft[2] * 0.70
-        tgt = np.fft.irfft(fft_tgt, n=n)
-        for k in range(n):
-            d_seam = ((k / float(n)) - 0.5) * seam_d
-            d_harm = tgt[k] - R[k, y]
-            shift_ky[k, y] = wy * ((1.0 - w_harm) * d_seam + w_harm * d_harm)
-        shift_ky[n, y] = shift_ky[0, y] + wy * seam_d
+        fft_tgt[1] = fft[1] * 0.65
+        tgt = np.fft.irfft(fft_tgt, n=m)
+        shift_ky[:, y] = wy * (tgt - R[:, y])
 
-    kernel = np.exp(-0.5 * (np.arange(-20, 21) / 7.0) ** 2)
+    kernel = np.exp(-0.5 * (np.arange(-16, 17) / 6.0) ** 2)
     kernel /= kernel.sum()
-    for k in range(n + 1):
+    for k in range(m):
         shift_ky[k] = np.convolve(shift_ky[k], kernel, mode="same")
 
     xs = np.arange(320, dtype=np.float32)
-    wx = np.clip((xs - 136.0) / 52.0, 0.0, 1.0)
+    wx_edge = np.clip((xs - 142.0) / 48.0, 0.0, 1.0)
 
     def warp1d(img: np.ndarray, k: int) -> np.ndarray:
         out = np.empty_like(img)
@@ -111,17 +113,19 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
             if abs(dxy) < 1e-3:
                 out[y] = img[y]
                 continue
-            src_x = np.clip(xs - dxy * wx, 0.0, 319.0)
+            src_x = np.clip(xs - dxy * wx_edge, 0.0, 319.0)
             x0 = np.floor(src_x).astype(np.int32)
             x1 = np.minimum(319, x0 + 1)
             f = (src_x - x0)[:, None]
             out[y] = img[y, x0] * (1.0 - f) + img[y, x1] * f
         return out
 
-    w1 = [warp1d(base[k], k) for k in range(n + 1)]
+    w1 = [warp1d(base[k], k) for k in range(m)]
+
+    # 2D periodic optical-flow closure between frame m-1 (k=15) and frame 0 (k=0)
     f0 = w1[0] * _alpha_mask(w1[0])[:, :, None]
-    fn = w1[n] * _alpha_mask(w1[n])[:, :, None]
-    step, rad, max_d, reg = 8, 10, 6, 4.0
+    fm = w1[m - 1] * _alpha_mask(w1[m - 1])[:, :, None]
+    step, rad, max_d, reg = 8, 10, 5, 4.0
     gy = np.arange(56, 456, step)
     gx = np.arange(60, 260, step)
     fdx = np.zeros((len(gy), len(gx)), dtype=np.float32)
@@ -134,7 +138,7 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
             best, bdx, bdy = 1e18, 0, 0
             for dy in range(-max_d, max_d + 1):
                 for dx in range(-max_d, max_d + 1):
-                    p1 = fn[yc + dy - rad : yc + dy + rad, xc + dx - rad : xc + dx + rad]
+                    p1 = fm[yc + dy - rad : yc + dy + rad, xc + dx - rad : xc + dx + rad]
                     err = float(np.mean((p0 - p1) ** 2)) + (dx * dx + dy * dy) * reg
                     if err < best:
                         best, bdx, bdy = err, dx, dy
@@ -155,7 +159,6 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
 
     up_dx = upsample_flow(fdx)
     up_dy = upsample_flow(fdy)
-    yy, xx = np.mgrid[0:540, 0:320].astype(np.float32)
 
     def bilinear2d(img: np.ndarray, sx: np.ndarray, sy: np.ndarray) -> np.ndarray:
         sx = np.clip(sx, 0.0, 319.0)
@@ -170,7 +173,15 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
         bot = img[y1, x0] * (1.0 - fx) + img[y1, x1] * fx
         return top * (1.0 - fy) + bot * fy
 
-    return [bilinear2d(w1[k], xx + ((k / float(n)) - 0.5) * up_dx, yy + ((k / float(n)) - 0.5) * up_dy) for k in range(n)]
+    step16 = [
+        bilinear2d(
+            w1[k],
+            xx + ((k / float(m - 1)) - 0.5) * up_dx * 0.85,
+            yy + ((k / float(m - 1)) - 0.5) * up_dy * 0.85,
+        )
+        for k in range(m)
+    ]
+    return step16 + step16
 
 
 def encode_clip(
