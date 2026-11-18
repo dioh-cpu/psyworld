@@ -68,27 +68,49 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
         base.append(crop_at(k, crop_x + corr_320 * 2.0))
 
     als = [_alpha_mask(a) for a in base]
-    r0 = np.array([np.where(als[0][y] > 0.25)[0].max() if len(np.where(als[0][y] > 0.25)[0]) else 160.0 for y in range(540)])
-    rn = np.array([np.where(als[n][y] > 0.25)[0].max() if len(np.where(als[n][y] > 0.25)[0]) else 160.0 for y in range(540)])
-    raw_diff = np.clip(r0 - rn, -16.0, 16.0)
-    for y in range(540):
-        if y < 135 or y > 455:
-            raw_diff[y] = 0.0
-        elif y < 175:
-            raw_diff[y] *= (y - 135) / 40.0
+    R = np.zeros((n + 1, 540), dtype=np.float32)
+    for k in range(n + 1):
+        for y in range(540):
+            w = np.where(als[k][y] > 0.25)[0]
+            R[k, y] = w.max() if len(w) else 160.0
+
+    shift_ky = np.zeros((n + 1, 540), dtype=np.float32)
+    for y in range(135, 455):
+        wy = 1.0
+        if y < 175:
+            wy = (y - 135) / 40.0
         elif y > 420:
-            raw_diff[y] *= (455 - y) / 35.0
-    kernel = np.exp(-0.5 * (np.arange(-20, 21) / 8.0) ** 2)
+            wy = (455 - y) / 35.0
+        seam_d = np.clip(R[0, y] - R[n, y], -16.0, 16.0)
+        w_harm = np.clip((y - 265.0) / 35.0, 0.0, 1.0)
+        seq_closed = np.array([R[k, y] + ((k / float(n)) - 0.5) * seam_d for k in range(n)], dtype=np.float32)
+        fft = np.fft.rfft(seq_closed)
+        fft_tgt = np.zeros_like(fft)
+        fft_tgt[0] = fft[0]
+        fft_tgt[1] = fft[1] * 0.25
+        fft_tgt[2] = fft[2] * 0.70
+        tgt = np.fft.irfft(fft_tgt, n=n)
+        for k in range(n):
+            d_seam = ((k / float(n)) - 0.5) * seam_d
+            d_harm = tgt[k] - R[k, y]
+            shift_ky[k, y] = wy * ((1.0 - w_harm) * d_seam + w_harm * d_harm)
+        shift_ky[n, y] = shift_ky[0, y] + wy * seam_d
+
+    kernel = np.exp(-0.5 * (np.arange(-20, 21) / 7.0) ** 2)
     kernel /= kernel.sum()
-    smooth_diff = np.convolve(raw_diff, kernel, mode="same")
+    for k in range(n + 1):
+        shift_ky[k] = np.convolve(shift_ky[k], kernel, mode="same")
+
     xs = np.arange(320, dtype=np.float32)
     wx = np.clip((xs - 136.0) / 52.0, 0.0, 1.0)
 
     def warp1d(img: np.ndarray, k: int) -> np.ndarray:
-        phase = (k / float(n)) - 0.5
         out = np.empty_like(img)
         for y in range(540):
-            dxy = smooth_diff[y] * phase
+            dxy = shift_ky[k, y]
+            if abs(dxy) < 1e-3:
+                out[y] = img[y]
+                continue
             src_x = np.clip(xs - dxy * wx, 0.0, 319.0)
             x0 = np.floor(src_x).astype(np.int32)
             x1 = np.minimum(319, x0 + 1)

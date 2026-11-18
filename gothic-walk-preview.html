@@ -4,10 +4,10 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#0b1726;color:white;font:15px system-ui;overflow:hidden;height:100dvh;display:flex;flex-direction:column}header{flex:none;padding:10px 14px;display:flex;gap:16px;align-items:center;justify-content:space-between}header a{color:#ffe0a3}main{position:relative;flex:1;min-height:0;overflow:hidden}canvas{width:100%;height:100%;display:block}footer{flex:none;height:64px;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px}button{font:25px system-ui;background:#163448;color:white;border:1px solid #66cfdd;border-radius:10px;min-width:54px;min-height:48px;touch-action:none;user-select:none}button:active:not(:disabled){background:#347589}button:disabled{opacity:.42;cursor:wait}#note{position:absolute;top:8px;left:8px;max-width:85%;padding:6px 10px;background:#0b1726d9;border-radius:8px;font-size:12px}small{display:block;font-size:11px;color:#b9d6df}
 </style>
-<header><div>PSYWORLD · Walk em MP4<small>Segure uma seta para andar; solte para pausar. Teste visual sem colisões.</small></div><a href="index.html">Jogo completo</a></header>
+<header><div>PSYWORLD · Walk em MP4<small>Segure uma seta para andar; solte para pausar. Teste visual sem colisões.</small></div><div style="display:flex;gap:12px;align-items:center"><a href="gothic-seam-inspector.html" style="background:#163448;border:1px solid #66cfdd;padding:5px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px">🔍 Ferramenta: Inspetor de Frames &amp; Capa</a><a href="index.html">Jogo completo</a></div></header>
 <main><canvas id="scene"></canvas><div id="note" role="status">Preparando vídeos (0/3)…</div></main>
 <footer><button data-row="1" aria-label="Esquerda" disabled>←</button><button data-row="3" aria-label="Cima" disabled>↑</button><button data-row="0" aria-label="Baixo" disabled>↓</button><button data-row="2" aria-label="Direita" disabled>→</button></footer>
-<script src="core/gothic-walk-video-v1.js?build=GOTHIC_MP4_WALK_V9"></script>
+<script src="core/gothic-walk-video-v1.js?build=GOTHIC_MP4_WALK_V10"></script>
 <script src="core/trainer-walk-v1.js?build=GOTHIC_MP4_WALK_V4"></script>
 <script>
 'use strict';
