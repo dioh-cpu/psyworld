@@ -27,9 +27,9 @@ OUT_DIR = ROOT / "assets/characters/walk-video-v1"
 # on 60Hz displays) and repeated 6 cycles per MP4 (~5.8-6.4s continuous playback) so normal walks
 # avoid frequent EOF <video loop> stalls without duplicating decoders or downloading extra streams.
 CLIPS = {
-    "front": {"frames": (11, 41), "crop_x": 610.2, "drift_1080": -0.47, "reps": 6, "anchor_baseline": 532},   # 31f * 6 = 186f (6.20s @30fps)
-    "left":  {"frames": (69, 100), "crop_x": 616.5, "drift_1080": -1.67, "reps": 6, "anchor_baseline": 531},  # 32f * 6 = 192f (6.40s @30fps)
-    "back":  {"frames": (130, 158), "crop_x": 612.0, "drift_1080": 6.46, "reps": 6, "anchor_baseline": 536},  # 29f * 6 = 174f (5.80s @30fps)
+    "front": {"frames": (11, 41), "crop_x": 610.2, "drift_1080": -0.47, "reps": 12, "anchor_baseline": 532},   # 31f * 12 = 372f (12.40s @30fps)
+    "left":  {"frames": (69, 100), "crop_x": 616.5, "drift_1080": -1.67, "reps": 12, "anchor_baseline": 531},  # 32f * 12 = 384f (12.80s @30fps)
+    "back":  {"frames": (130, 158), "crop_x": 612.0, "drift_1080": 6.46, "reps": 12, "anchor_baseline": 536},  # 29f * 12 = 348f (11.60s @30fps)
 }
 
 TARGET_FPS = 30

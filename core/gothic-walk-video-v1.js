@@ -10,23 +10,26 @@ const VW=320,VH=540,CLIP_FPS=30;
 const CLIP_SPECS={
  front:{
   key:'front',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V6',
-  duration:6.200,
-  frames:186,
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V7',
+  duration:12.400,
+  frames:372,
+  cycle:31,
   baseline:532
  },
  left:{
   key:'left',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V6',
-  duration:6.400,
-  frames:192,
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V7',
+  duration:12.800,
+  frames:384,
+  cycle:32,
   baseline:531
  },
  back:{
   key:'back',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V6',
-  duration:5.800,
-  frames:174,
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V7',
+  duration:11.600,
+  frames:348,
+  cycle:29,
   baseline:536
  }
 };
@@ -140,6 +143,7 @@ function createClip(spec){
   url:spec.url,
   duration:spec.duration,
   frameCount:spec.frames||30,
+   cycle:spec.cycle||30,
   baseline:spec.baseline||532,
   video,
   canvas,
@@ -384,6 +388,12 @@ function pauseClip(clip){
  clip.playPending=false;
  if(!clip.video.paused){
   try{clip.video.pause();}catch(_){}
+  // Same gait phase earlier in the file: the next long walk starts far from EOF (no loop-wrap hitch).
+  const idx=Math.round((clip.video.currentTime||0)*CLIP_FPS);
+  if(idx>=clip.cycle*2){
+   clip.priming=true;
+   try{clip.video.currentTime=(idx%clip.cycle)/CLIP_FPS;}catch(_){clip.priming=false;}
+  }
  }
 }
 
