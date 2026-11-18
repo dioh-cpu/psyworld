@@ -74,87 +74,10 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
             w = np.where(als[k][y] > 0.25)[0]
             R[k, y] = w.max() if len(w) else 160.0
 
-    shift_ky = np.zeros((n + 1, 540), dtype=np.float32)
-    for y in range(135, 455):
-        wy = 1.0
-        if y < 175:
-            wy = (y - 135) / 40.0
-        elif y > 420:
-            wy = (455 - y) / 35.0
-        seam_d = np.clip(R[0, y] - R[n, y], -16.0, 16.0)
-        w_harm = np.clip((y - 265.0) / 35.0, 0.0, 1.0)
-        seq_closed = np.array([R[k, y] + ((k / float(n)) - 0.5) * seam_d for k in range(n)], dtype=np.float32)
-        fft = np.fft.rfft(seq_closed)
-        fft_tgt = np.zeros_like(fft)
-        fft_tgt[0] = fft[0]
-        fft_tgt[1] = fft[1] * 0.25
-        fft_tgt[2] = fft[2] * 0.70
-        tgt = np.fft.irfft(fft_tgt, n=n)
-        for k in range(n):
-            d_seam = ((k / float(n)) - 0.5) * seam_d
-            d_harm = tgt[k] - R[k, y]
-            shift_ky[k, y] = wy * ((1.0 - w_harm) * d_seam + w_harm * d_harm)
-        shift_ky[n, y] = shift_ky[0, y] + wy * seam_d
-
     kernel = np.exp(-0.5 * (np.arange(-20, 21) / 7.0) ** 2)
     kernel /= kernel.sum()
-    for k in range(n + 1):
-        shift_ky[k] = np.convolve(shift_ky[k], kernel, mode="same")
-
     xs = np.arange(320, dtype=np.float32)
     wx = np.clip((xs - 136.0) / 52.0, 0.0, 1.0)
-
-    def warp1d(img: np.ndarray, k: int) -> np.ndarray:
-        out = np.empty_like(img)
-        for y in range(540):
-            dxy = shift_ky[k, y]
-            if abs(dxy) < 1e-3:
-                out[y] = img[y]
-                continue
-            src_x = np.clip(xs - dxy * wx, 0.0, 319.0)
-            x0 = np.floor(src_x).astype(np.int32)
-            x1 = np.minimum(319, x0 + 1)
-            f = (src_x - x0)[:, None]
-            out[y] = img[y, x0] * (1.0 - f) + img[y, x1] * f
-        return out
-
-    w1 = [warp1d(base[k], k) for k in range(n + 1)]
-    f0 = w1[0] * _alpha_mask(w1[0])[:, :, None]
-    fn = w1[n] * _alpha_mask(w1[n])[:, :, None]
-    step, rad, max_d, reg = 8, 10, 6, 4.0
-    gy = np.arange(56, 456, step)
-    gx = np.arange(60, 260, step)
-    fdx = np.zeros((len(gy), len(gx)), dtype=np.float32)
-    fdy = np.zeros((len(gy), len(gx)), dtype=np.float32)
-    for iy, yc in enumerate(gy):
-        for ix, xc in enumerate(gx):
-            p0 = f0[yc - rad : yc + rad, xc - rad : xc + rad]
-            if np.mean(p0) < 8.0:
-                continue
-            best, bdx, bdy = 1e18, 0, 0
-            for dy in range(-max_d, max_d + 1):
-                for dx in range(-max_d, max_d + 1):
-                    p1 = fn[yc + dy - rad : yc + dy + rad, xc + dx - rad : xc + dx + rad]
-                    err = float(np.mean((p0 - p1) ** 2)) + (dx * dx + dy * dy) * reg
-                    if err < best:
-                        best, bdx, bdy = err, dx, dy
-            fdx[iy, ix] = bdx
-            fdy[iy, ix] = bdy
-
-    def upsample_flow(grid: np.ndarray) -> np.ndarray:
-        im = Image.fromarray(grid).resize((200, 400), resample=Image.Resampling.BICUBIC)
-        full = np.zeros((540, 320), dtype=np.float32)
-        full[56:456, 60:260] = np.asarray(im, dtype=np.float32)
-        taper = np.ones(540, dtype=np.float32)
-        for y in range(540):
-            if y > 425 or y < 45:
-                taper[y] = 0.0
-            elif y > 385:
-                taper[y] = (425 - y) / 40.0
-        return full * taper[:, None]
-
-    up_dx = upsample_flow(fdx)
-    up_dy = upsample_flow(fdy)
     yy, xx = np.mgrid[0:540, 0:320].astype(np.float32)
 
     def bilinear2d(img: np.ndarray, sx: np.ndarray, sy: np.ndarray) -> np.ndarray:
@@ -170,7 +93,144 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
         bot = img[y1, x0] * (1.0 - fx) + img[y1, x1] * fx
         return top * (1.0 - fy) + bot * fy
 
-    return [bilinear2d(w1[k], xx + ((k / float(n)) - 0.5) * up_dx, yy + ((k / float(n)) - 0.5) * up_dy) for k in range(n)]
+    def close_sequence(seq_frames: list[np.ndarray], R_sub: np.ndarray) -> list[np.ndarray]:
+        m_len = len(seq_frames) - 1
+        shift_ky = np.zeros((m_len + 1, 540), dtype=np.float32)
+        for y in range(135, 455):
+            wy = 1.0
+            if y < 175:
+                wy = (y - 135) / 40.0
+            elif y > 420:
+                wy = (455 - y) / 35.0
+            seam_d = np.clip(R_sub[0, y] - R_sub[m_len, y], -16.0, 16.0)
+            w_harm = np.clip((y - 265.0) / 35.0, 0.0, 1.0)
+            seq_closed = np.array([R_sub[m, y] + ((m / float(m_len)) - 0.5) * seam_d for m in range(m_len)], dtype=np.float32)
+            fft = np.fft.rfft(seq_closed)
+            fft_tgt = np.zeros_like(fft)
+            fft_tgt[0] = fft[0]
+            if m_len == 32:
+                fft_tgt[1] = fft[1] * 0.25
+                fft_tgt[2] = fft[2] * 0.70
+            else:
+                fft_tgt[1] = fft[1] * 0.65
+            tgt = np.fft.irfft(fft_tgt, n=m_len)
+            for m in range(m_len):
+                d_seam = ((m / float(m_len)) - 0.5) * seam_d
+                d_harm = tgt[m] - R_sub[m, y]
+                shift_ky[m, y] = wy * ((1.0 - w_harm) * d_seam + w_harm * d_harm)
+            shift_ky[m_len, y] = shift_ky[0, y] + wy * seam_d
+
+        for m in range(m_len + 1):
+            shift_ky[m] = np.convolve(shift_ky[m], kernel, mode="same")
+
+        w1: list[np.ndarray] = []
+        for m in range(m_len + 1):
+            img = seq_frames[m]
+            out = np.empty_like(img)
+            for y in range(540):
+                dxy = shift_ky[m, y]
+                if abs(dxy) < 1e-3:
+                    out[y] = img[y]
+                    continue
+                src_x = np.clip(xs - dxy * wx, 0.0, 319.0)
+                x0 = np.floor(src_x).astype(np.int32)
+                x1 = np.minimum(319, x0 + 1)
+                f = (src_x - x0)[:, None]
+                out[y] = img[y, x0] * (1.0 - f) + img[y, x1] * f
+            w1.append(out)
+
+        f0 = w1[0] * _alpha_mask(w1[0])[:, :, None]
+        fn = w1[m_len] * _alpha_mask(w1[m_len])[:, :, None]
+        step, rad, max_d, reg = 8, 10, 6, 4.0
+        gy = np.arange(56, 456, step)
+        gx = np.arange(60, 260, step)
+        fdx = np.zeros((len(gy), len(gx)), dtype=np.float32)
+        fdy = np.zeros((len(gy), len(gx)), dtype=np.float32)
+        for iy, yc in enumerate(gy):
+            for ix, xc in enumerate(gx):
+                p0 = f0[yc - rad : yc + rad, xc - rad : xc + rad]
+                if np.mean(p0) < 8.0:
+                    continue
+                best, bdx, bdy = 1e18, 0, 0
+                for dy in range(-max_d, max_d + 1):
+                    for dx in range(-max_d, max_d + 1):
+                        p1 = fn[yc + dy - rad : yc + dy + rad, xc + dx - rad : xc + dx + rad]
+                        err = float(np.mean((p0 - p1) ** 2)) + (dx * dx + dy * dy) * reg
+                        if err < best:
+                            best, bdx, bdy = err, dx, dy
+                fdx[iy, ix] = bdx
+                fdy[iy, ix] = bdy
+
+        def upsample_flow(grid: np.ndarray) -> np.ndarray:
+            im = Image.fromarray(grid).resize((200, 400), resample=Image.Resampling.BICUBIC)
+            full = np.zeros((540, 320), dtype=np.float32)
+            full[56:456, 60:260] = np.asarray(im, dtype=np.float32)
+            taper = np.ones(540, dtype=np.float32)
+            for y in range(540):
+                if y > 425 or y < 45:
+                    taper[y] = 0.0
+                elif y > 385:
+                    taper[y] = (425 - y) / 40.0
+            return full * taper[:, None]
+
+        up_dx = upsample_flow(fdx)
+        up_dy = upsample_flow(fdy)
+        return [
+            bilinear2d(w1[m], xx + ((m / float(m_len)) - 0.5) * up_dx, yy + ((m / float(m_len)) - 0.5) * up_dy)
+            for m in range(m_len)
+        ]
+
+    body32 = close_sequence(base, R)
+    if n < 32:
+        return body32
+
+    # Build a 16-frame periodically closed straight-white-line coat cycle from steady-state frames 16..32
+    coat16 = close_sequence(base[16:33], R[16:33])
+    out32: list[np.ndarray] = []
+    for k in range(32):
+        ref = coat16[k % 16]
+        cur = body32[k].copy()
+        al_ref = _alpha_mask(ref)
+        al_cur = _alpha_mask(cur)
+
+        if k < 16:
+            # Erase old crooked white line remnant on lower coat (x=143..164, y=315..438)
+            old_wl_region = (yy >= 315) & (yy <= 438) & (xx >= 143) & (xx <= 164)
+            bright = np.clip((cur.min(axis=2) - 48.0) / 45.0, 0.0, 1.0) * old_wl_region.astype(np.float32)
+            coat_black = np.array([25.0, 23.0, 29.0], dtype=np.float32)
+            cur = cur * (1.0 - bright[:, :, None]) + coat_black * bright[:, :, None]
+
+            # Erase forward-protruding fingertip remnants outside the thigh contour in k=0..15
+            thigh_left_edge = np.where(yy < 270.0, 122.0, 105.0 + np.maximum(0.0, 328.0 - yy) * 0.28)
+            w_hip_band = np.clip((yy - 218.0) / 10.0, 0.0, 1.0) * np.clip((328.0 - yy) / 12.0, 0.0, 1.0)
+            w_finger_erase = w_hip_band * np.clip((thigh_left_edge - xx) / 5.0, 0.0, 1.0)
+            green_bg = cur[0, 0]
+            cur = cur * (1.0 - w_finger_erase[:, :, None]) + green_bg * w_finger_erase[:, :, None]
+            al_cur = _alpha_mask(cur)
+
+            # Darken any fingertip skin pixels overlapping the black trousers (x=thigh_left_edge..118)
+            finger_on_thigh = (yy >= 270) & (yy <= 328) & (xx >= thigh_left_edge - 2) & (xx <= 118)
+            skin_bright = np.clip((cur[:, :, 0] - 46.0) / 30.0, 0.0, 1.0) * finger_on_thigh.astype(np.float32) * al_cur
+            trouser_black = np.array([22.0, 21.0, 27.0], dtype=np.float32)
+            cur = cur * (1.0 - skin_bright[:, :, None]) + trouser_black * skin_bright[:, :, None]
+
+        # Graft periodically closed straight-white-line coat & pouch from coat16[k % 16] with foreground gating
+        w_pouch = np.clip((yy - 218.0) / 10.0, 0.0, 1.0) * np.clip((292.0 - yy) / 14.0, 0.0, 1.0)
+        base_xb = np.where(yy < 224.0, 126.0, 118.0)
+        x_bound = base_xb * (1.0 - w_pouch) + 111.0 * w_pouch
+
+        wx_g = np.clip((xx - x_bound) / 6.0, 0.0, 1.0)
+        wy_fg = np.clip((426.0 - yy) / 14.0, 0.0, 1.0)
+        wy_bg = np.clip((442.0 - yy) / 4.0, 0.0, 1.0)
+        wy_bot = wy_fg * al_cur + wy_bg * (1.0 - al_cur)
+        wy_g = np.clip((yy - 155.0) / 22.0, 0.0, 1.0) * wy_bot
+        mask = wx_g * wy_g
+
+        fg_gate = np.where(yy > 295.0, np.clip((al_ref - 0.55) / 0.30, 0.0, 1.0), 1.0)
+        mask = (mask * fg_gate)[:, :, None]
+        out32.append(cur * (1.0 - mask) + ref * mask)
+
+    return out32
 
 
 def encode_clip(

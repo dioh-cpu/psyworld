@@ -179,10 +179,13 @@ textarea{width:100%;height:74px;background:#050b14;color:#a7f3d0;border:1px soli
         <button class="btn" id="btnResetFrames" type="button">🔄 Resetar Original</button>
       </div>
       <div class="tuner-row" style="flex-wrap:wrap;gap:6px;border-top:1px solid #1e3c5a;padding-top:8px;margin-top:2px">
-        <strong style="color:#a7f3d0">Exportar Sequência Editada:</strong>
+        <strong style="color:#a7f3d0">Exportar / Importar:</strong>
         <button class="btn active" id="btnExportWebm" type="button">🎬 Exportar Vídeo (.webm)</button>
+        <button class="btn" id="btnExportGridPng" type="button" title="2560×2160 (8×4) — evita perda de resolução em chats/IAs">🖼️ Exportar Grid 8×4 HD (.png)</button>
         <button class="btn" id="btnExportPng" type="button">🖼️ Exportar Strip (.png)</button>
         <button class="btn" id="btnExportJson" type="button">💾 Exportar Receita (.json)</button>
+        <input type="file" id="importPngInput" accept="image/png,image/webp" style="display:none">
+        <button class="btn" id="btnImportPng" type="button">📥 Importar PNG</button>
       </div>
     </div>
   </section>
@@ -205,10 +208,10 @@ textarea{width:100%;height:74px;background:#050b14;color:#a7f3d0;border:1px soli
 'use strict';
 const VW = 320, VH = 540, FPS = 30;
 const CLIPS = {
-  left:  { url: 'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V12', cycle: 32, mirror: false, startSec: 0 },
-  right: { url: 'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V12', cycle: 32, mirror: true,  startSec: 0 },
-  front: { url: 'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V12', cycle: 31, mirror: false, startSec: 0 },
-  back:  { url: 'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V12', cycle: 29, mirror: false, startSec: 0 },
+  left:  { url: 'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V13', cycle: 32, mirror: false, startSec: 0 },
+  right: { url: 'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V13', cycle: 32, mirror: true,  startSec: 0 },
+  front: { url: 'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V13', cycle: 31, mirror: false, startSec: 0 },
+  back:  { url: 'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V13', cycle: 29, mirror: false, startSec: 0 },
   raw_left: { url: 'assets/characters/source-video/gothic-boy-walk-turn-v2.mp4', cycle: 32, mirror: false, startSec: 69 / 24, rawSource: true, srcFps: 24, cropX: 616.5 }
 };
 
@@ -946,6 +949,29 @@ function triggerDownload(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
+document.getElementById('btnExportGridPng').onclick = () => {
+  if (!workingFrames.length) return;
+  const clipKey = document.getElementById('clipSelect').value;
+  const n = workingFrames.length;
+  const cols = Math.min(8, n);
+  const rows = Math.ceil(n / cols);
+  const sheet = document.createElement('canvas');
+  sheet.width = VW * cols;
+  sheet.height = VH * rows;
+  const sctx = sheet.getContext('2d');
+  for (let k = 0; k < n; k++) {
+    const col = k % cols;
+    const row = Math.floor(k / cols);
+    sctx.drawImage(workingFrames[k].canvas, col * VW, row * VH);
+  }
+  sheet.toBlob(blob => {
+    if (blob) {
+      triggerDownload(blob, `gothic-walk-${clipKey}-${n}f-grid-${cols}x${rows}-hd.png`);
+      document.getElementById('statusBanner').textContent = `Grid PNG HD ${cols}×${rows} (${sheet.width}×${sheet.height}, ${n} frames) exportado!`;
+    }
+  }, 'image/png');
+};
+
 document.getElementById('btnExportPng').onclick = () => {
   if (!workingFrames.length) return;
   const clipKey = document.getElementById('clipSelect').value;
@@ -963,6 +989,69 @@ document.getElementById('btnExportPng').onclick = () => {
       document.getElementById('statusBanner').textContent = `Strip PNG (${n} frames) exportado!`;
     }
   }, 'image/png');
+};
+
+document.getElementById('btnImportPng').onclick = () => {
+  document.getElementById('importPngInput').click();
+};
+
+document.getElementById('importPngInput').onchange = async e => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    let cols = 32, rows = 1;
+    const aspectRatio = (iw / ih) / (VW / VH);
+    if (Math.abs(aspectRatio - 2) < 0.35) {
+      cols = 8; rows = 4;
+    } else {
+      cols = Math.max(3, Math.round(aspectRatio));
+      rows = 1;
+    }
+    const cellW = iw / cols, cellH = ih / rows;
+    const total = cols * rows;
+    const clipKey = document.getElementById('clipSelect').value;
+    const mirror = CLIPS[clipKey].mirror;
+    const work = document.createElement('canvas');
+    work.width = VW; work.height = VH;
+    const wctx = work.getContext('2d', { willReadFrequently: true });
+    wctx.imageSmoothingEnabled = true;
+    wctx.imageSmoothingQuality = 'high';
+
+    pushUndo(`import:${file.name}(${iw}x${ih})`);
+    const imported = [];
+    for (let k = 0; k < total; k++) {
+      const col = k % cols, row = Math.floor(k / cols);
+      wctx.fillStyle = '#24b42c';
+      wctx.fillRect(0, 0, VW, VH);
+      wctx.drawImage(img, col * cellW, row * cellH, cellW, cellH, 0, 0, VW, VH);
+      const raw = wctx.getImageData(0, 0, VW, VH);
+      const rawBytes = new Uint8ClampedArray(raw.data);
+      const keyed = chromaKeyImageData(raw);
+      keyed.srcTag = `imp${k}`;
+      keyed.rawData = rawBytes;
+      keyed.edges = measureEdges(keyed.alpha, mirror);
+      keyed.canvas = frameToCanvas(keyed.imgData);
+      imported.push(keyed);
+    }
+    rawFrames = imported;
+    currentIdx = 0;
+    focusIdx = 0;
+    document.getElementById('rangeStart').value = '0';
+    document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+    applyBrowserStabilization();
+    updatePlayButtons();
+    const resWarn = cellW < 160 ? ` ⚠️ (Atenção: arquivo veio reduzido em ${Math.round(cellW)}×${Math.round(cellH)}px/frame)` : '';
+    document.getElementById('statusBanner').textContent = `PNG importado: ${total} frames (${cols}×${rows}, ${iw}×${ih}px)${resWarn}`;
+  } catch (err) {
+    document.getElementById('statusBanner').textContent = 'Erro ao importar PNG: ' + err.message;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 };
 
 document.getElementById('btnExportJson').onclick = () => {
