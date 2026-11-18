@@ -21,53 +21,94 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets/characters/source-video/gothic-boy-walk-turn-v2.mp4"
 OUT_DIR = ROOT / "assets/characters/walk-video-v1"
 
-# Inclusive 0-based 24fps source frame intervals + centered crop X offsets + linear camera-drift
-# compensation (dx over clip cycle) verified visually and by frame-wrap MSE for seamless stepping.
-# Retimed 1:1 to 30fps (exact 2-vsync divisor on 60Hz displays) with zero synthetic blended frames.
+# Inclusive 0-based 24fps source frame intervals + centered 640px crop left X + periodic-closure
+# horizontal drift (pixels between frame [end+1] and frame [start] in 1080p) verified visually and
+# by stabilized frame-wrap MSE for seamless stepping. Retimed 1:1 to 30fps (exact 2-vsync divisor
+# on 60Hz displays) and repeated 6 cycles per MP4 (~5.8-6.4s continuous playback) so normal walks
+# avoid frequent EOF <video loop> stalls without duplicating decoders or downloading extra streams.
 CLIPS = {
-    "front": {"frames": (11, 41), "crop_x": 609, "dx": 0, "anchor_baseline": 532},   # 31f (1.0333s @30fps)
-    "left":  {"frames": (70, 101), "crop_x": 611, "dx": -6, "anchor_baseline": 530}, # 32f (1.0667s @30fps)
-    "back":  {"frames": (130, 158), "crop_x": 617, "dx": 8, "anchor_baseline": 536}, # 29f (0.9667s @30fps)
+    "front": {"frames": (11, 41), "crop_x": 610.2, "drift_1080": -0.47, "reps": 6, "anchor_baseline": 532},   # 31f * 6 = 186f (6.20s @30fps)
+    "left":  {"frames": (69, 100), "crop_x": 616.5, "drift_1080": -1.67, "reps": 6, "anchor_baseline": 531},  # 32f * 6 = 192f (6.40s @30fps)
+    "back":  {"frames": (130, 158), "crop_x": 612.0, "drift_1080": 6.46, "reps": 6, "anchor_baseline": 536},  # 29f * 6 = 174f (5.80s @30fps)
 }
 
 TARGET_FPS = 30
+CRF = 23
 
 
-def encode_clip(source: Path, start_frame: int, end_frame: int, crop_x: int, dx: int, dest: Path) -> None:
+def encode_clip(
+    source: Path,
+    start_frame: int,
+    end_frame: int,
+    crop_x: float,
+    drift_1080: float,
+    reps: int,
+    dest: Path,
+) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     n = end_frame - start_frame + 1
-    x_expr = f"{crop_x}+({dx})*(n/{n}-0.5)" if dx else str(crop_x)
-    vf = (
-        f"select=between(n\\,{start_frame}\\,{end_frame}),"
-        f"format=rgb24,"
-        f"crop=640:1080:'{x_expr}':0:exact=1,"
-        f"scale=320:540:flags=lanczos,"
-        f"format=yuv420p,"
-        f"setpts=N/({TARGET_FPS}*TB)"
-    )
-    subprocess.run(
-        [
-            "ffmpeg", "-y", "-v", "error",
-            "-i", str(source),
-            "-vf", vf,
-            "-an",
-            "-r", str(TARGET_FPS),
-            "-c:v", "libx264",
-            "-profile:v", "main",
-            "-level:v", "3.1",
-            "-pix_fmt", "yuv420p",
-            "-crf", "16",
-            "-preset", "slow",
-            "-g", "5",
-            "-keyint_min", "5",
-            "-sc_threshold", "0",
-            "-bf", "0",
-            "-refs", "1",
-            "-movflags", "+faststart",
-            str(dest),
-        ],
-        check=True,
-    )
+    gop = n * 2
+
+    with tempfile.TemporaryDirectory(prefix="gothic-walk-build-") as temp:
+        tmp = Path(temp)
+        raw_dir = tmp / "raw"
+        stab_dir = tmp / "stab"
+        raw_dir.mkdir()
+        stab_dir.mkdir()
+
+        # 1. Extract exact 1080p source frames for the chosen gait cycle.
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-v", "error",
+                "-i", str(source),
+                "-vf", f"select=between(n\\,{start_frame}\\,{end_frame}),format=rgb24",
+                "-vsync", "0",
+                str(raw_dir / "r_%03d.png"),
+            ],
+            check=True,
+        )
+        raw_frames = sorted(raw_dir.glob("r_*.png"))
+        if len(raw_frames) != n:
+            raise RuntimeError(f"Expected {n} raw frames for [{start_frame}..{end_frame}], got {len(raw_frames)}")
+
+        # 2. Single-pass fractional Lanczos crop+downscale (640x1080 -> 320x540) centered on the
+        # head midline with periodic camera-drift closure (k/n maps frame e+1 back onto frame s).
+        for k, raw_path in enumerate(raw_frames):
+            crop_left = crop_x + (k / n - 0.5) * drift_1080
+            with Image.open(raw_path) as im:
+                rgb = im.convert("RGB")
+                resized = rgb.resize(
+                    (320, 540),
+                    resample=Image.Resampling.LANCZOS,
+                    box=(crop_left, 0.0, crop_left + 640.0, 1080.0),
+                )
+                resized.save(stab_dir / f"s_{k:03d}.png")
+
+        # 3. Encode multi-cycle H.264 MP4 with aligned 2-cycle IDRs, zero B-frames, faststart.
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-v", "error",
+                "-stream_loop", str(reps - 1),
+                "-framerate", str(TARGET_FPS),
+                "-i", str(stab_dir / "s_%03d.png"),
+                "-an",
+                "-r", str(TARGET_FPS),
+                "-c:v", "libx264",
+                "-profile:v", "main",
+                "-level:v", "3.1",
+                "-pix_fmt", "yuv420p",
+                "-crf", str(CRF),
+                "-preset", "slow",
+                "-g", str(gop),
+                "-keyint_min", str(gop),
+                "-sc_threshold", "0",
+                "-bf", "0",
+                "-refs", "1",
+                "-movflags", "+faststart",
+                str(dest),
+            ],
+            check=True,
+        )
 
 
 def inspect_clip(clip_path: Path) -> dict:
@@ -110,12 +151,12 @@ def inspect_clip(clip_path: Path) -> dict:
     }
 
 
-def measure_baselines(clip_path: Path) -> list[int]:
+def measure_baselines(clip_path: Path, max_frames: int = 36) -> list[int]:
     """Compute exact 540p foot baseline matching core/gothic-walk-video-v1.js."""
     with tempfile.TemporaryDirectory(prefix="gothic-walk-base-") as temp:
         out_pat = str(Path(temp) / "f_%03d.png")
         subprocess.run(
-            ["ffmpeg", "-v", "error", "-i", str(clip_path), out_pat],
+            ["ffmpeg", "-v", "error", "-i", str(clip_path), "-vframes", str(max_frames), out_pat],
             check=True,
         )
         baselines: list[int] = []
@@ -147,26 +188,30 @@ def main() -> None:
     for name, spec in CLIPS.items():
         start_frame, end_frame = spec["frames"]
         crop_x = spec["crop_x"]
-        dx = spec.get("dx", 0)
+        drift_1080 = spec["drift_1080"]
+        reps = spec["reps"]
+        cycle_len = end_frame - start_frame + 1
         dest = out_dir / f"gothic-boy-walk-{name}.mp4"
-        encode_clip(source, start_frame, end_frame, crop_x, dx, dest)
+        encode_clip(source, start_frame, end_frame, crop_x, drift_1080, reps, dest)
         info = inspect_clip(dest)
         info["source_frames"] = [start_frame, end_frame]
+        info["cycle_frames"] = cycle_len
+        info["reps"] = reps
         info["crop_x"] = crop_x
-        info["dx"] = dx
+        info["drift_1080"] = drift_1080
         info["anchor_baseline"] = spec["anchor_baseline"]
-        info["baselines"] = measure_baselines(dest)
-        expected_frames = end_frame - start_frame + 1
+        info["baselines"] = measure_baselines(dest, cycle_len)
+        expected_frames = cycle_len * reps
         if info["frames"] != expected_frames:
             raise RuntimeError(f"{dest.name}: expected {expected_frames} frames, got {info['frames']}")
         total_bytes += info["bytes"]
         summary[name] = info
         print(
             f"{name}: {dest.relative_to(ROOT)} | {info['width']}x{info['height']} | "
-            f"{info['frames']}f @{TARGET_FPS}fps ({info['duration']}s) | {info['bytes']} B | "
-            f"crop_x={crop_x} dx={dx} anchor={spec['anchor_baseline']} keyframes={info['keyframes']}"
+            f"{info['frames']}f ({cycle_len}x{reps}) @{TARGET_FPS}fps ({info['duration']}s) | {info['bytes']} B | "
+            f"crop_x={crop_x} drift_1080={drift_1080} anchor={spec['anchor_baseline']} keyframes={info['keyframes']}"
         )
-        print(f"  measured_soles={info['baselines']}")
+        print(f"  cycle_soles={info['baselines']}")
     print(f"Total derived MP4 size: {total_bytes} bytes ({total_bytes / 1024:.1f} KiB)")
 
 

@@ -218,11 +218,13 @@ async function main() {
           const draws = window.__probe.slice(mark.idx).filter(d => d.row === row && d.state === 'walk');
           const firstWrong = draws.find(d => !d.res || d.clip !== expectedClip || d.mirrored !== (row === 2));
           const firstVisual = draws.find(d => d.res && d.clip === expectedClip && d.mirrored === (row === 2) && d.fp !== mark.lastFp);
+          const firstAdv = draws.find(d => d.decoded > mark.decoded);
           const secondVisual = firstVisual ? draws.find(d => d.t > firstVisual.t && d.fp !== firstVisual.fp) : null;
           return {
             totalWalkDraws: draws.length,
             hasWrong: !!firstWrong,
             firstVisualMs: firstVisual ? +(firstVisual.t - tInput).toFixed(1) : null,
+            firstAdvanceMs: firstAdv ? +(firstAdv.t - tInput).toFixed(1) : null,
             secondVisualMs: secondVisual ? +(secondVisual.t - tInput).toFixed(1) : null,
             decodedDelta: (draws[draws.length - 1]?.decoded || mark.decoded) - mark.decoded
           };
@@ -230,6 +232,7 @@ async function main() {
 
         assert.equal(summary.hasWrong, false, `${name} ${key} rendered a wrong orientation frame`);
         assert(summary.firstVisualMs !== null && summary.firstVisualMs < 150, `${name} ${key} first visual draw too slow: ${summary.firstVisualMs}ms`);
+        assert(summary.firstAdvanceMs !== null && summary.firstAdvanceMs < 180, `${name} ${key} first real MP4 advance stalled: ${summary.firstAdvanceMs}ms`);
         assert(summary.secondVisualMs !== null, `${name} ${key} canvas pixels did not advance during walk`);
         assert(summary.decodedDelta > 8, `${name} ${key} real MP4 frames must advance`);
         console.log(name, key, JSON.stringify(summary));
@@ -246,7 +249,7 @@ async function main() {
       await page.keyboard.up('ArrowLeft');
       await page.waitForTimeout(160);
       const tStop2 = await page.evaluate(() => window.PsyGothicWalkVideoV1.status().time);
-      assert(tStop2 > tStop1 || tStop1 > 1.0, `resume should continue clip phase (${tStop1} -> ${tStop2})`);
+      assert(tStop2 > tStop1 || tStop1 > 5.0, `resume should continue clip phase (${tStop1} -> ${tStop2})`);
 
       // Rapid switches across all 4 directions
       const rapidStart = await page.evaluate(() => window.__probe.length);
@@ -262,27 +265,59 @@ async function main() {
       }, rapidStart);
       assert.equal(rapidWrong, 0, `${name} rapid switching produced wrong-direction draws`);
 
-      // Continuous loop check (>2.4s hold wraps >=2 times via standby relay with zero active EOF seeks)
+      // Continuous walk check (>2.4s spans >2 full gait cycles continuously with 0 EOF seeks and smooth cadence)
       const loopInit = await page.evaluate(() => {
         const s = window.PsyGothicWalkVideoV1.status();
-        return { decodedFrames: s.decodedFrames, loopSwaps: s.loopSwaps, activeSeeks: window.__scriptSeeks };
+        return { decodedFrames: s.decodedFrames, seeks: s.seeks, activeSeeks: window.__scriptSeeks, probeIdx: window.__probe.length };
       });
       await page.keyboard.down('ArrowRight');
       await page.waitForTimeout(2400);
       const loopEnd = await page.evaluate(() => ({
         st: window.PsyGothicWalkVideoV1.status(),
-        activeSeeks: window.__scriptSeeks,
-        bgRewinds: window.__bgRewinds
+        activeSeeks: window.__scriptSeeks
       }));
       await page.keyboard.up('ArrowRight');
       await page.waitForTimeout(160);
+      const loopCadence = await page.evaluate(idx => {
+        const entries = window.__probe.slice(idx).filter(d => d.state === 'walk');
+        let prevT = null, maxGap = 0;
+        for (const e of entries) {
+          if (prevT !== null && e.decoded !== prevT.decoded) {
+            maxGap = Math.max(maxGap, e.t - prevT.t);
+            prevT = e;
+          } else if (prevT === null) {
+            prevT = e;
+          }
+        }
+        return +maxGap.toFixed(1);
+      }, loopInit.probeIdx);
       assert.equal(loopEnd.st.failed, false);
-      assert.equal(loopEnd.st.seeks, 0, `${name} active decoders must incur 0 EOF seek events across loop wraps`);
+      assert.equal(loopEnd.st.seeks - loopInit.seeks, 0, `${name} 2.4s walk must incur 0 EOF seek events across 6-cycle clip`);
       assert.equal(loopEnd.activeSeeks, loopInit.activeSeeks, `${name} active decoders must incur 0 programmatic seeks`);
-      assert(loopEnd.st.loopSwaps - loopInit.loopSwaps >= 2, `${name} expected >=2 standby loop swaps in 2.4s, got ${loopEnd.st.loopSwaps - loopInit.loopSwaps}`);
-      assert(loopEnd.bgRewinds <= loopEnd.st.loopSwaps + 2, `${name} unexpected background rewinds: ${loopEnd.bgRewinds} vs swaps ${loopEnd.st.loopSwaps}`);
-      assert(loopEnd.st.decodedFrames - loopInit.decodedFrames >= 36, `${name} loop hold decoded too few frames: ${loopEnd.st.decodedFrames - loopInit.decodedFrames}`);
+      assert(loopEnd.st.decodedFrames - loopInit.decodedFrames >= 42, `${name} loop hold decoded too few frames: ${loopEnd.st.decodedFrames - loopInit.decodedFrames}`);
+      assert(loopCadence < 110, `${name} continuous walk frame gap too high: ${loopCadence}ms`);
       assert(loopEnd.st.time >= 0 && loopEnd.st.time <= loopEnd.st.duration + 0.05);
+
+      if (name === 'desktop') {
+        // Move left briefly for horizontal runway, then hold ArrowRight 6650ms (>6.40s clip) across EOF wrap
+        await page.keyboard.down('ArrowLeft');
+        await page.waitForTimeout(3200);
+        await page.keyboard.up('ArrowLeft');
+        await page.waitForTimeout(140);
+        const extInit = await page.evaluate(() => {
+          const s = window.PsyGothicWalkVideoV1.status();
+          return { decodedFrames: s.decodedFrames, seeks: s.seeks, clipStart: s.clips.left.time };
+        });
+        await page.keyboard.down('ArrowRight');
+        await page.waitForTimeout(6650);
+        const extEnd = await page.evaluate(() => window.PsyGothicWalkVideoV1.status());
+        await page.keyboard.up('ArrowRight');
+        await page.waitForTimeout(160);
+        assert.equal(extEnd.failed, false);
+        assert.equal(extEnd.playing, true, 'extended walk past 6 cycles must stay actively playing across EOF');
+        assert(extEnd.seeks - extInit.seeks <= 2, `expected at most 1-2 native loop seeks across 6.65s hold, got ${extEnd.seeks - extInit.seeks}`);
+        assert(extEnd.decodedFrames - extInit.decodedFrames >= 120, `extended 6.65s walk decoded too few frames: ${extEnd.decodedFrames - extInit.decodedFrames}`);
+      }
 
       // Button pointer control check
       const btn = await page.getByRole('button', { name: 'Esquerda', exact: true }).boundingBox();
@@ -300,8 +335,8 @@ async function main() {
       assert.deepEqual(errors, [], `${name} page/console errors: ${errors.join('; ')}`);
       const uniqueClips = [...new Set(mp4Requests)];
       assert.equal(uniqueClips.length, 3, `expected 3 derived clips loaded once, got ${mp4Requests}`);
-      assert.equal(mp4Requests.length, 3, `expected zero duplicate HTTP MP4 fetches across swaps, got ${mp4Requests}`);
-      console.log('PASS', name);
+      assert.equal(mp4Requests.length, 3, `expected zero duplicate HTTP MP4 fetches, got ${mp4Requests}`);
+      console.log('PASS', name, `(2.4s maxGap=${loopCadence}ms)`);
       await context.close();
     }
 
@@ -376,16 +411,41 @@ async function main() {
       assert(midLeft.decodedFrames - decBefore >= 4, `${name} Psy City walk must advance real decoded frames`);
       assert.equal(afterLeft.playing, false, `${name} Psy City must pause cleanly when stopping`);
 
-      // Continue with ArrowRight (shares left clip) across >1.067s total so Psy City exercises a live loop wrap
+      // Continue with ArrowRight (>1.3s > 1 gait cycle) in Psy City with zero EOF seeks
+      const rightStart = await page.evaluate(() => window.PsyGothicWalkVideoV1.status().decodedFrames);
       await page.keyboard.down('ArrowRight');
-      await page.waitForTimeout(780);
+      await page.waitForTimeout(1300);
       const midRight = await page.evaluate(() => window.PsyGothicWalkVideoV1.status());
       await page.keyboard.up('ArrowRight');
       await page.waitForTimeout(180);
       assert.equal(midRight.row, 2);
       assert.equal(midRight.mirrored, true);
-      assert(midRight.loopSwaps >= 1, `${name} Psy City must hand off via standby relay without EOF stall (swaps=${midRight.loopSwaps})`);
-      assert.equal(midRight.seeks, 0, `${name} Psy City active decoder must incur 0 EOF seeks`);
+      assert(midRight.decodedFrames - rightStart >= 18, `${name} Psy City walk must sustain smooth multi-cycle playback`);
+      assert.equal(midRight.seeks, 0, `${name} Psy City continuous walk must incur 0 EOF seeks`);
+
+      // Open Kanto Pallet & walk to verify shared Gothic MP4 playback with zero duplicate sprites
+      await page.evaluate(() => window.PsyKantoWorldV2?.open?.('pallet'));
+      await page.waitForFunction(() => window.PsyKantoWorldV2?.isOpen?.() === true, { timeout: 8000 });
+      await page.waitForTimeout(150);
+      const kantoInit = await page.evaluate(() => window.PsyGothicWalkVideoV1.status().decodedFrames);
+      await page.keyboard.down('ArrowDown');
+      await page.waitForTimeout(600);
+      const kantoMid = await page.evaluate(() => ({
+        st: window.PsyGothicWalkVideoV1.status(),
+        avDisplay: (() => {
+          const av = document.getElementById('psy-halloween-avatar');
+          return av ? getComputedStyle(av).display : 'none';
+        })()
+      }));
+      await page.keyboard.up('ArrowDown');
+      await page.waitForTimeout(160);
+      assert.equal(kantoMid.st.row, 0);
+      assert.equal(kantoMid.st.clip, 'front');
+      assert.equal(kantoMid.st.seeks, 0);
+      assert(kantoMid.st.decodedFrames > kantoInit, `${name} Kanto walk must advance Gothic MP4 frames`);
+      assert.equal(kantoMid.avDisplay, 'none', `${name} Kanto must keep #psy-halloween-avatar hidden`);
+      await page.evaluate(() => window.PsyKantoWorldV2?.close?.());
+      await page.waitForTimeout(120);
 
       // Switch character in Psy City and confirm duplicate overlay remains hidden
       await page.evaluate(() => { P.playerCharacterId = 'adventure_boy'; window.updatePlayerAnimatedSprite?.(); });

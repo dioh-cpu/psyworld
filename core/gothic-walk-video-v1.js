@@ -1,8 +1,6 @@
 /* PSYWORLD — Gothic Boy MP4 walk renderer.
- * Uses three dedicated cropped, keyframe-aligned H.264 MP4 decoders (front, left, back)
- * plus a single shared zero-seek standby relay decoder backed by single-download Blob URLs
- * so continuous looping never stalls on native EOF <video loop> seeking.
- * Right mirrors left cleanly in-canvas. No spritesheets or PNG sequences.
+ * Uses three dedicated cropped, keyframe-aligned 6-cycle H.264 MP4 decoders
+ * (front, left, back); right mirrors left cleanly in-canvas. No spritesheets or PNG sequences.
  */
 (function(W,D){
 'use strict';
@@ -12,23 +10,23 @@ const VW=320,VH=540,CLIP_FPS=30;
 const CLIP_SPECS={
  front:{
   key:'front',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V5',
-  duration:1.033,
-  frames:31,
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V6',
+  duration:6.200,
+  frames:186,
   baseline:532
  },
  left:{
   key:'left',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V5',
-  duration:1.067,
-  frames:32,
-  baseline:530
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V6',
+  duration:6.400,
+  frames:192,
+  baseline:531
  },
  back:{
   key:'back',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V5',
-  duration:0.967,
-  frames:29,
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V6',
+  duration:5.800,
+  frames:174,
   baseline:536
  }
 };
@@ -42,9 +40,8 @@ const ranges=[
 
 const IS_LE=(new Uint8Array(new Uint32Array([0x04030201]).buffer)[0]===0x01);
 
-let row=0,wantedMoving=false,lastDraw=0,draws=0,decodedFrames=0,seeks=0,loopSwaps=0;
-let activeKey='front',preparePromise=null,holder=null,watchdogId=0;
-let handoffArmed=false;
+let row=0,wantedMoving=false,lastDraw=0,draws=0,decodedFrames=0,seeks=0;
+let activeKey='front',preparePromise=null,holder=null,watchdogId=0,blockedByAutoplay=false;
 
 // Shared WebGL chroma-key processor (GPU fast path; 2D Uint32Array fallback if software/unavailable).
 const glCanvas=D.createElement('canvas');
@@ -104,11 +101,11 @@ void main(){
 }
 
 function renderClipWebGL(clip){
- const ctx=initWebGL(),v=clip.slot.video;
- if(!ctx||v.readyState<2)return false;
+ const ctx=initWebGL();
+ if(!ctx||clip.video.readyState<2)return false;
  try{
   ctx.bindTexture(ctx.TEXTURE_2D,glTex);
-  ctx.texImage2D(ctx.TEXTURE_2D,0,ctx.RGBA,ctx.RGBA,ctx.UNSIGNED_BYTE,v);
+  ctx.texImage2D(ctx.TEXTURE_2D,0,ctx.RGBA,ctx.RGBA,ctx.UNSIGNED_BYTE,clip.video);
   ctx.clearColor(0,0,0,0);
   ctx.clear(ctx.COLOR_BUFFER_BIT);
   ctx.drawArrays(ctx.TRIANGLE_STRIP,0,4);
@@ -129,103 +126,85 @@ function ensureHolder(){
  return holder;
 }
 
-function createSlot(tag,ownerClip){
+function createClip(spec){
  const video=D.createElement('video');
- video.muted=true;video.defaultMuted=true;video.playsInline=true;video.loop=false;video.preload='auto';
+ video.muted=true;video.defaultMuted=true;video.playsInline=true;video.loop=true;video.preload='auto';
  video.setAttribute('playsinline','');video.setAttribute('muted','');
  video.setAttribute('aria-hidden','true');
  video.style.cssText='width:1px;height:1px;display:block;';
+ const canvas=D.createElement('canvas');canvas.width=VW;canvas.height=VH;
+ const ctx=canvas.getContext('2d',{willReadFrequently:true});
  const hasVfc=typeof video.requestVideoFrameCallback==='function';
- const slot={
-  tag,
+ const clip={
+  key:spec.key,
+  url:spec.url,
+  duration:spec.duration,
+  frameCount:spec.frames||30,
+  baseline:spec.baseline||532,
   video,
+  canvas,
+  ctx,
   hasVfc,
-  owner:ownerClip||null,
   attached:false,
-  keyLoaded:'',
-  urlLoaded:'',
+  ready:false,
+  hasFrame:false,
   failed:false,
   playPending:false,
   playToken:0,
   frameDirty:false,
   vfcArmed:false,
+  lastCapturedTime:-1,
+  lastFrameIdx:-1,
   lastMediaTime:-1,
   lastPresentedFrames:-1,
-  primed:false
+  pendingMediaIdx:-1,
+  pendingMediaTime:-1,
+  primed:false,
+  priming:false
  };
+
  function onFrame(now,meta){
-  slot.vfcArmed=false;
-  const mediaChanged=!meta||meta.presentedFrames!==slot.lastPresentedFrames||Math.abs(meta.mediaTime-slot.lastMediaTime)>1e-4;
+  clip.vfcArmed=false;
+  const mediaChanged=!meta||meta.presentedFrames!==clip.lastPresentedFrames||Math.abs(meta.mediaTime-clip.lastMediaTime)>1e-4;
   if(mediaChanged){
-   slot.frameDirty=true;
+   const dur=(Number.isFinite(clip.video.duration)&&clip.video.duration>0)?clip.video.duration:(clip.duration||6);
+   const mt=meta&&Number.isFinite(meta.mediaTime)?meta.mediaTime:-1;
+   const wrapped=clip.lastCapturedTime>dur*0.5&&mt>=0&&mt<dur*0.25;
+   const stale=mt>=0&&!wrapped&&(mt-clip.lastCapturedTime)<(0.45/CLIP_FPS);
+   const alreadyDrawn=clip.hasFrame&&mt>=0&&stale;
+   if(!alreadyDrawn){
+    clip.frameDirty=true;
+    if(mt>=0){
+     clip.pendingMediaIdx=Math.max(0,Math.min((clip.frameCount||30)-1,Math.round(mt*CLIP_FPS)));
+     clip.pendingMediaTime=mt;
+    }
+   }
    if(meta){
-    slot.lastMediaTime=meta.mediaTime;
-    slot.lastPresentedFrames=meta.presentedFrames;
+    clip.lastMediaTime=meta.mediaTime;
+    clip.lastPresentedFrames=meta.presentedFrames;
    }
   }
-  if(!slot.video.paused&&!slot.failed&&slot.hasVfc){
-   slot.vfcArmed=true;
+  if(!clip.video.paused&&!clip.failed&&clip.hasVfc){
+   clip.vfcArmed=true;
    video.requestVideoFrameCallback(onFrame);
   }
  }
- slot.scheduleVfc=()=>{
-  if(slot.vfcArmed||slot.failed||!slot.hasVfc)return;
-  slot.vfcArmed=true;
+ clip.scheduleVfc=()=>{
+  if(clip.vfcArmed||clip.failed||!clip.hasVfc)return;
+  clip.vfcArmed=true;
   video.requestVideoFrameCallback(onFrame);
  };
 
- video.addEventListener('error',()=>{
-  if(!slot.urlLoaded)return;
-  slot.failed=true;slot.playPending=false;
- });
+ video.addEventListener('error',()=>{clip.failed=true;clip.playPending=false;});
  video.addEventListener('seeked',()=>{
-  const c=slot.owner;
-  if(c&&c.slot===slot&&c.ready)seeks++;
-  slot.frameDirty=true;
+  if(clip.priming){clip.priming=false;clip.frameDirty=true;return;}
+  if(clip.ready&&draws>0)seeks++;
+  clip.frameDirty=true;
  });
- video.addEventListener('loadeddata',()=>{
-  const c=slot.owner;
-  if(c&&c.slot===slot&&!c.hasFrame)capture2D(c,true);
- });
- video.addEventListener('canplay',()=>{
-  const c=slot.owner;
-  if(c&&c.slot===slot&&!c.hasFrame)capture2D(c,true);
- });
- video.addEventListener('canplaythrough',()=>{
-  const c=slot.owner;
-  if(c&&c.slot===slot&&!c.hasFrame)capture2D(c,true);
- });
- video.addEventListener('timeupdate',()=>{if(performance.now()-lastDraw>1300)pauseAll();});
- return slot;
-}
-
-function createClip(spec){
- const canvas=D.createElement('canvas');canvas.width=VW;canvas.height=VH;
- const ctx=canvas.getContext('2d',{willReadFrequently:true});
- const zeroCanvas=D.createElement('canvas');zeroCanvas.width=VW;zeroCanvas.height=VH;
- const zeroCtx=zeroCanvas.getContext('2d');
- const clip={
-  key:spec.key,
-  url:spec.url,
-  mediaUrl:'',
-  fetchPromise:null,
-  duration:spec.duration,
-  frameCount:spec.frames||30,
-  baseline:spec.baseline||532,
-  canvas,
-  ctx,
-  zeroCanvas,
-  zeroCtx,
-  hasZero:false,
-  holdZeroUntilNextVfc:false,
-  ready:false,
-  hasFrame:false,
-  failed:false,
-  lastCapturedTime:-1,
-  lastFrameIdx:-1,
-  slot:null
- };
- clip.slot=createSlot(spec.key,clip);
+ video.addEventListener('loadeddata',()=>{if(!clip.hasFrame)capture2D(clip,true);});
+ video.addEventListener('canplay',()=>{if(!clip.hasFrame)capture2D(clip,true);});
+ video.addEventListener('canplaythrough',()=>{if(!clip.hasFrame)capture2D(clip,true);});
+ video.addEventListener('timeupdate',()=>{if(lastDraw&&performance.now()-lastDraw>1300)pauseAll();});
  return clip;
 }
 
@@ -235,40 +214,30 @@ const clips={
  back:createClip(CLIP_SPECS.back)
 };
 const clipList=[clips.front,clips.left,clips.back];
-let standbySlot=createSlot('standby',null);
-
-function fetchClipMedia(clip){
- if(clip.mediaUrl)return Promise.resolve(clip.mediaUrl);
- if(clip.fetchPromise)return clip.fetchPromise;
- if(typeof W.fetch!=='function'||typeof W.URL?.createObjectURL!=='function'){
-  clip.mediaUrl=clip.url;
-  return Promise.resolve(clip.mediaUrl);
- }
- clip.fetchPromise=W.fetch(clip.url).then(res=>{
-  if(!res||!res.ok)throw new Error('HTTP '+(res?.status||0));
-  return res.blob();
- }).then(blob=>{
-  clip.mediaUrl=W.URL.createObjectURL(blob);
-  return clip.mediaUrl;
- }).catch(()=>{
-  clip.mediaUrl=clip.url;
-  return clip.mediaUrl;
- });
- return clip.fetchPromise;
-}
 
 function liveFrameIndexFor(clip){
- const n=clip.frameCount||30,slot=clip.slot;
- const idx=Math.floor((slot.video.currentTime||0)*CLIP_FPS+1e-4);
+ const n=clip.frameCount||30;
+ const idx=Math.floor((clip.video.currentTime||0)*CLIP_FPS+0.08);
  return Math.max(0,Math.min(n-1,idx));
 }
 
+function recordCapturedFrame(clip,liveIdx){
+ const vct=clip.video.currentTime||0;
+ const pmt=clip.pendingMediaTime;
+ const pmi=clip.pendingMediaIdx;
+ const alignedPending=clip.frameDirty&&pmi>=0&&Math.abs(pmt-vct)<0.12;
+ clip.lastFrameIdx=alignedPending?Math.max(liveIdx,pmi):liveIdx;
+ clip.lastCapturedTime=alignedPending?Math.max(vct,pmt):vct;
+ clip.frameDirty=false;
+ clip.pendingMediaIdx=-1;
+ clip.pendingMediaTime=-1;
+}
+
 function capture2D(clip,allowInitialCount){
- const slot=clip.slot,v=slot.video;
- if(v.readyState<2||v.seeking||slot.failed)return false;
+ if(clip.video.readyState<2||clip.video.seeking||clip.failed)return false;
  const ctx=clip.ctx;
  ctx.clearRect(0,0,VW,VH);
- ctx.drawImage(v,0,0,VW,VH);
+ ctx.drawImage(clip.video,0,0,VW,VH);
  const img=ctx.getImageData(0,0,VW,VH),d=img.data;
  const kr=d[0],kg=d[1],kb=d[2],ka=d[3];
  const cIdx=((VH>>1)*VW+(VW>>1))<<2;
@@ -306,58 +275,40 @@ function capture2D(clip,allowInitialCount){
  ctx.putImageData(img,0,0);
  const firstCapture=!clip.hasFrame;
  const liveIdx=liveFrameIndexFor(clip);
- const isNewFrame=slot.frameDirty||liveIdx!==clip.lastFrameIdx||Math.abs(v.currentTime-clip.lastCapturedTime)>(0.4/CLIP_FPS);
- if(!clip.hasZero&&liveIdx===0&&v.currentTime<0.025){
-  clip.zeroCtx.clearRect(0,0,VW,VH);
-  clip.zeroCtx.drawImage(clip.canvas,0,0);
-  clip.hasZero=true;
- }
+ const isNewFrame=clip.frameDirty||liveIdx!==clip.lastFrameIdx||Math.abs(clip.video.currentTime-clip.lastCapturedTime)>(0.4/CLIP_FPS);
  clip.hasFrame=true;
- clip.lastFrameIdx=liveIdx;
- clip.lastCapturedTime=v.currentTime;
- slot.frameDirty=false;
+ recordCapturedFrame(clip,liveIdx);
  if((firstCapture&&allowInitialCount)||(!firstCapture&&isNewFrame))decodedFrames++;
  return true;
 }
 
-function attachSlot(slot,srcUrl,key){
+function attachClip(clip){
+ if(clip.attached)return;
  const host=ensureHolder();
- if(!host)return false;
- if(!slot.attached){
-  slot.attached=true;
-  host.appendChild(slot.video);
- }
- if(slot.urlLoaded!==srcUrl){
-  slot.failed=false;
-  slot.keyLoaded=key;
-  slot.urlLoaded=srcUrl;
-  slot.lastMediaTime=-1;
-  slot.lastPresentedFrames=-1;
-  slot.frameDirty=false;
-  slot.video.src=srcUrl;
-  slot.video.load();
- }
- return true;
+ if(!host)return;
+ clip.attached=true;
+ clip.video.src=clip.url;
+ host.appendChild(clip.video);
+ clip.video.load();
 }
 
 function attachAll(){
  if(!D.body)return false;
- for(const clip of clipList){
-  if(clip.mediaUrl)attachSlot(clip.slot,clip.mediaUrl,clip.key);
- }
+ for(const clip of clipList)attachClip(clip);
  return true;
 }
 
 function primeClipFrame(clip){
- const slot=clip.slot,v=slot.video;
- if(slot.primed||clip.hasFrame||slot.failed)return Promise.resolve(clip.hasFrame);
- slot.primed=true;
+ if(clip.primed||clip.hasFrame||clip.failed)return Promise.resolve(clip.hasFrame);
+ clip.primed=true;
  return new Promise(resolve=>{
-  const p=v.play();
+  const p=clip.video.play();
   Promise.resolve(p).then(()=>{
    setTimeout(()=>{
-    try{v.pause();v.currentTime=0;}catch(_){}
+    clip.priming=true;
+    try{clip.video.pause();clip.video.currentTime=0;}catch(_){clip.priming=false;}
     capture2D(clip,true);
+    setTimeout(()=>{clip.priming=false;},60);
     resolve(clip.hasFrame);
    },32);
   }).catch(()=>{resolve(clip.hasFrame);});
@@ -365,55 +316,58 @@ function primeClipFrame(clip){
 }
 
 function prepareClip(clip){
- return fetchClipMedia(clip).then(srcUrl=>new Promise(resolve=>{
+ return new Promise(resolve=>{
   let settled=false,softTimer=0;
-  const slot=clip.slot,v=slot.video;
   const finish=()=>{
    if(settled)return;
    settled=true;
    clearTimeout(timer);
    clearTimeout(softTimer);
-   for(const ev of ['loadeddata','canplay','canplaythrough','error'])v.removeEventListener(ev,check);
-   clip.failed=slot.failed;
+   for(const ev of ['loadeddata','canplay','canplaythrough','error'])clip.video.removeEventListener(ev,check);
    resolve(clip.ready||clip.failed);
   };
   const check=()=>{
-   if(slot.failed){finish();return;}
-   attachSlot(slot,srcUrl,clip.key);
-   if(v.readyState>=2&&!clip.hasFrame)capture2D(clip,true);
-   if(v.readyState>=3&&clip.hasFrame){clip.ready=true;finish();return;}
-   if(v.readyState>=2&&clip.hasFrame&&!softTimer){
-    softTimer=setTimeout(()=>{if(!slot.failed&&clip.hasFrame){clip.ready=true;}finish();},2000);
+   if(clip.failed){finish();return;}
+   attachClip(clip);
+   if(clip.video.readyState>=2&&!clip.hasFrame){
+    capture2D(clip,true);
    }
-   if(v.readyState>=2&&!clip.hasFrame&&!slot.primed){
+   if(clip.video.readyState>=3&&clip.hasFrame){
+    clip.ready=true;finish();return;
+   }
+   if(clip.video.readyState>=2&&clip.hasFrame&&!softTimer){
+    softTimer=setTimeout(()=>{if(!clip.failed&&clip.hasFrame){clip.ready=true;}finish();},2000);
+   }
+   if(clip.video.readyState>=2&&!clip.hasFrame&&!clip.primed){
     primeClipFrame(clip).then(()=>{
-     if(clip.hasFrame&&v.readyState>=2){clip.ready=true;finish();}
+     if(clip.hasFrame&&clip.video.readyState>=2){clip.ready=true;finish();}
     });
    }
   };
   const timer=setTimeout(()=>{
-   if(!slot.failed&&v.readyState>=2){
+   if(!clip.failed&&clip.video.readyState>=2){
     if(!clip.hasFrame)capture2D(clip,true);
     if(clip.hasFrame)clip.ready=true;
    }
    finish();
   },12000);
   if(D.body){
-   attachSlot(slot,srcUrl,clip.key);
-   if(v.readyState>=2&&!clip.hasFrame)capture2D(clip,true);
-   if(v.readyState>=3&&clip.hasFrame){clip.ready=true;finish();return;}
+   attachClip(clip);
+   if(clip.video.readyState>=2&&!clip.hasFrame)capture2D(clip,true);
+   if(clip.video.readyState>=3&&clip.hasFrame){clip.ready=true;finish();return;}
   }
-  for(const ev of ['loadeddata','canplay','canplaythrough','error'])v.addEventListener(ev,check);
- }));
+  for(const ev of ['loadeddata','canplay','canplaythrough','error'])clip.video.addEventListener(ev,check);
+ });
 }
 
 function prepare(){
  if(preparePromise)return preparePromise;
  preparePromise=new Promise(resolve=>{
   const start=()=>{
+   attachAll();
+   initWebGL();
    Promise.all(clipList.map(prepareClip)).then(()=>{
-    if(clips.front.mediaUrl)attachSlot(standbySlot,clips.front.mediaUrl,'front');
-    if(!glBroken&&clips.front.ready&&clips.front.slot.video.readyState>=2){
+    if(!glBroken&&clips.front.ready&&clips.front.video.readyState>=2){
      renderClipWebGL(clips.front);
     }
     resolve(status());
@@ -425,147 +379,43 @@ function prepare(){
  return preparePromise;
 }
 
-function pauseSlot(slot){
- slot.playToken++;
- slot.playPending=false;
- if(!slot.video.paused){
-  try{slot.video.pause();}catch(_){}
- }
-}
-
-function resetStandby(){
- handoffArmed=false;
- pauseSlot(standbySlot);
- if(standbySlot.attached&&standbySlot.video.readyState>=1&&standbySlot.video.currentTime>0.001){
-  try{standbySlot.video.currentTime=0;}catch(_){}
-  standbySlot.lastMediaTime=0;standbySlot.lastPresentedFrames=-1;standbySlot.frameDirty=false;
- }
-}
-
 function pauseClip(clip){
- pauseSlot(clip.slot);
+ clip.playToken++;
+ clip.playPending=false;
+ if(!clip.video.paused){
+  try{clip.video.pause();}catch(_){}
+ }
 }
 
 function pauseAll(){
  wantedMoving=false;
  for(const clip of clipList)pauseClip(clip);
- resetStandby();
  stopWatchdog();
 }
 
-function playSlot(slot,isStandby){
- const v=slot.video;
- if(!wantedMoving||slot.failed||v.readyState<2||v.ended)return;
- slot.scheduleVfc();
- if(!v.paused||slot.playPending)return;
- slot.playPending=true;
- const token=++slot.playToken;
+function playClip(clip){
+ if(!wantedMoving||clip.failed||clip.video.readyState<2)return;
+ clip.scheduleVfc();
+ if(!clip.video.paused||clip.playPending)return;
+ clip.playPending=true;
+ const token=++clip.playToken;
  try{
-  v.defaultPlaybackRate=1;
-  v.playbackRate=1;
-  const p=v.play();
+  clip.video.defaultPlaybackRate=1;
+  clip.video.playbackRate=1;
+  const p=clip.video.play();
   Promise.resolve(p).then(()=>{
-   slot.playPending=false;
-   if(token!==slot.playToken||!wantedMoving||D.hidden){
-    try{v.pause();}catch(_){}
+   clip.playPending=false;
+   blockedByAutoplay=false;
+   if(token!==clip.playToken||!wantedMoving||activeKey!==clip.key||D.hidden){
+    try{clip.video.pause();}catch(_){}
     return;
    }
-   const clip=isStandby?clips[activeKey]:slot.owner;
-   if(!clip||activeKey!==clip.key||(clip.slot!==slot&&(!isStandby||!handoffArmed))){
-    try{v.pause();}catch(_){}
-    return;
-   }
-   slot.scheduleVfc();
-  }).catch(()=>{slot.playPending=false;});
- }catch(_){slot.playPending=false;}
-}
-
-function ensureStandbyForClip(clip){
- if(!clip.ready||!clip.mediaUrl||!D.body)return;
- if(standbySlot.keyLoaded!==clip.key||standbySlot.urlLoaded!==clip.mediaUrl){
-  handoffArmed=false;
-  pauseSlot(standbySlot);
-  standbySlot.owner=null;
-  attachSlot(standbySlot,clip.mediaUrl,clip.key);
- }
-}
-
-function stepLoopHandoff(clip){
- const cur=clip.slot,v=cur.video;
- if(!wantedMoving||!clip.ready||cur.failed||v.readyState<2)return;
- ensureStandbyForClip(clip);
- const dur=Number.isFinite(v.duration)&&v.duration>0?v.duration:clip.duration;
- const ct=v.currentTime||0;
- if(!handoffArmed&&standbySlot.keyLoaded===clip.key&&standbySlot.video.paused&&!standbySlot.video.seeking&&(standbySlot.video.ended||standbySlot.video.currentTime>0.04)){
-  try{standbySlot.video.currentTime=0;}catch(_){}
- }
- const minReady=standbySlot.urlLoaded.startsWith('blob:')?2:3;
- const standbyReady=standbySlot.keyLoaded===clip.key&&!standbySlot.failed&&!standbySlot.video.seeking&&!standbySlot.video.ended&&standbySlot.video.readyState>=minReady&&standbySlot.video.currentTime<0.05;
- if(!handoffArmed&&!v.paused&&!v.ended&&ct>=dur-0.025){
-  if(standbyReady){
-   handoffArmed=true;
-   standbySlot.frameDirty=false;
-   standbySlot.lastMediaTime=-1;
-   standbySlot.lastPresentedFrames=-1;
-   playSlot(standbySlot,true);
-  }
- }
- if(handoffArmed){
-  const standbyAdvanced=standbySlot.frameDirty&&standbySlot.lastMediaTime>=0.025;
-  if(v.ended||ct>=dur-0.008||(ct>=dur-0.015&&standbyAdvanced)){
-   const old=cur;
-   clip.slot=standbySlot;
-   clip.slot.owner=clip;
-   standbySlot=old;
-   standbySlot.owner=null;
-   handoffArmed=false;
-   glClipKey=null;
-   loopSwaps++;
-   if(standbyAdvanced){
-    clip.holdZeroUntilNextVfc=false;
-    clip.slot.frameDirty=true;
-   }else{
-    clip.holdZeroUntilNextVfc=clip.hasZero;
-    clip.lastFrameIdx=0;
-    clip.lastCapturedTime=0;
-    if(clip.hasZero)decodedFrames++;
-   }
-   pauseSlot(standbySlot);
-   if(standbySlot.video.readyState>=1&&(standbySlot.video.ended||standbySlot.video.currentTime>0.001)){
-    try{standbySlot.video.currentTime=0;}catch(_){}
-   }
-   standbySlot.lastMediaTime=0;
-   standbySlot.lastPresentedFrames=-1;
-   standbySlot.frameDirty=false;
-   clip.slot.scheduleVfc();
-   if(clip.slot.video.paused)playSlot(clip.slot,false);
-  }
- }else if(v.ended||ct>=dur-0.008){
-  if(standbyReady){
-   const old=cur;
-   clip.slot=standbySlot;
-   clip.slot.owner=clip;
-   standbySlot=old;
-   standbySlot.owner=null;
-   glClipKey=null;
-   loopSwaps++;
-   clip.holdZeroUntilNextVfc=clip.hasZero;
-   clip.lastFrameIdx=0;
-   clip.lastCapturedTime=0;
-   if(clip.hasZero)decodedFrames++;
-   pauseSlot(standbySlot);
-   if(standbySlot.video.readyState>=1&&(standbySlot.video.ended||standbySlot.video.currentTime>0.001)){
-    try{standbySlot.video.currentTime=0;}catch(_){}
-   }
-   standbySlot.lastMediaTime=0;
-   standbySlot.lastPresentedFrames=-1;
-   standbySlot.frameDirty=false;
-   playSlot(clip.slot,false);
-  }else if(v.ended&&!v.seeking){
-   try{v.currentTime=0;}catch(_){}
-   playSlot(cur,false);
-  }
- }
+   clip.scheduleVfc();
+  }).catch(err=>{
+   clip.playPending=false;
+   if(err&&err.name==='NotAllowedError')blockedByAutoplay=true;
+  });
+ }catch(_){clip.playPending=false;}
 }
 
 function ensureWatchdog(){
@@ -586,64 +436,36 @@ function draw(target,pose,x,y,width,height){
  const next=Math.max(0,Math.min(3,(pose?.row|0)||0));
  row=next;
  const clipKey=ROW_TO_CLIP[row];
- const switchedClip=activeKey!==clipKey;
  activeKey=clipKey;
  const clip=clips[clipKey];
 
- if(switchedClip&&handoffArmed){
-  resetStandby();
- }
  for(const other of clipList){
   if(other!==clip)pauseClip(other);
  }
 
  if(wantedMoving){
-  stepLoopHandoff(clip);
-  playSlot(clip.slot,false);
+  playClip(clip);
   ensureWatchdog();
  }else{
   pauseClip(clip);
-  resetStandby();
   stopWatchdog();
  }
 
- const slot=clip.slot,v=slot.video;
- if(!clip.hasFrame&&v.readyState>=2){
+ if(!clip.hasFrame&&clip.video.readyState>=2){
   capture2D(clip,true);
  }
  if(!clip.hasFrame)return false;
 
- if(clip.holdZeroUntilNextVfc){
-  const liveReady=(slot.hasVfc&&slot.lastMediaTime>=0.025)||(!slot.hasVfc&&v.currentTime>=0.025)||v.currentTime>=0.045;
-  if(liveReady||!wantedMoving){
-   if(liveReady){clip.holdZeroUntilNextVfc=false;slot.frameDirty=true;}
-  }else if(clip.hasZero){
-   target.save();
-   target.imageSmoothingEnabled=true;
-   target.imageSmoothingQuality='high';
-   const h=height*1.2,w=h*VW/VH,foot=y+height*60/64;
-   target.translate(x+width/2,foot);
-   if(row===2)target.scale(-1,1);
-   target.drawImage(clip.zeroCanvas,-w/2,-h*clip.baseline/VH,w,h);
-   target.restore();
-   draws++;
-   return true;
-  }
- }
-
  const liveIdx=liveFrameIndexFor(clip);
- const vfcActive=slot.hasVfc&&slot.lastPresentedFrames>=0&&!v.paused;
- const frameAdvanced=vfcActive?slot.frameDirty:(slot.frameDirty||liveIdx!==clip.lastFrameIdx);
+ const frameAdvanced=clip.frameDirty||(!clip.video.paused&&liveIdx!==clip.lastFrameIdx);
  let sourceCanvas=clip.canvas;
 
  if(!glBroken&&initWebGL()){
-  if(v.readyState>=2&&!v.seeking){
+  if(clip.video.readyState>=2&&!clip.video.seeking){
    const needGl=glClipKey!==clip.key||frameAdvanced;
    if(needGl){
     if(renderClipWebGL(clip)){
-     slot.frameDirty=false;
-     clip.lastFrameIdx=liveIdx;
-     clip.lastCapturedTime=v.currentTime;
+     recordCapturedFrame(clip,liveIdx);
      if(frameAdvanced)decodedFrames++;
      sourceCanvas=glCanvas;
     }else{
@@ -653,10 +475,11 @@ function draw(target,pose,x,y,width,height){
     sourceCanvas=glCanvas;
    }
   }else if(glClipKey===clip.key){
+   // Keep the active WebGL frame across brief native loop-wrap transitions.
    sourceCanvas=glCanvas;
   }
  }else{
-  if(frameAdvanced&&v.readyState>=2&&!v.seeking){
+  if(frameAdvanced&&clip.video.readyState>=2&&!clip.video.seeking){
    capture2D(clip,false);
   }
   sourceCanvas=clip.canvas;
@@ -676,12 +499,25 @@ function draw(target,pose,x,y,width,height){
  return true;
 }
 
-for(const ev of ['pointerdown','keydown']){
- D.addEventListener(ev,()=>{if(wantedMoving)playSlot(clips[activeKey].slot,false);},{passive:true});
+for(const ev of ['pointerdown','touchstart','keydown']){
+ D.addEventListener(ev,()=>{
+  if(wantedMoving)playClip(clips[activeKey]);
+  else if(blockedByAutoplay){
+   blockedByAutoplay=false;
+   for(const clip of clipList){
+    if(!clip.failed&&clip.video.readyState>=2&&clip.video.paused){
+     try{
+      const p=clip.video.play();
+      Promise.resolve(p).then(()=>{if(!wantedMoving||activeKey!==clip.key)try{clip.video.pause();}catch(_){}}).catch(()=>{});
+     }catch(_){}
+    }
+   }
+  }
+ },{passive:true});
 }
 D.addEventListener('visibilitychange',()=>{
  if(D.hidden)pauseAll();
- else if(wantedMoving)playSlot(clips[activeKey].slot,false);
+ else if(wantedMoving)playClip(clips[activeKey]);
 });
 
 function readyCount(){
@@ -689,35 +525,34 @@ function readyCount(){
 }
 
 function status(){
- const active=clips[activeKey],v=active.slot.video;
+ const active=clips[activeKey];
  const count=readyCount();
- const anyFailed=clipList.some(c=>c.failed||c.slot.failed);
- const allFailed=clipList.every(c=>c.failed||c.slot.failed);
+ const anyFailed=clipList.some(c=>c.failed);
+ const allFailed=clipList.every(c=>c.failed);
  return {
   source:active.url,
   sources:CLIP_SPECS,
   clip:active.key,
   row,
   moving:wantedMoving,
-  playing:!v.paused&&!active.slot.failed,
+  playing:!active.video.paused&&!active.failed,
   ready:count===clipList.length&&!anyFailed,
   readyCount:count,
   clipCount:clipList.length,
-  readyState:v.readyState,
-  seeking:v.seeking,
-  time:v.currentTime,
+  readyState:active.video.readyState,
+  seeking:active.video.seeking,
+  time:active.video.currentTime,
   duration:active.duration,
-  failed:allFailed||active.failed||active.slot.failed,
+  failed:allFailed||active.failed,
   draws,
   decodedFrames,
   seeks,
-  loopSwaps,
   mirrored:row===2,
   chromaBackend:glBroken?'cpu-uint32':'webgl',
   clips:{
-   front:{ready:clips.front.ready,readyState:clips.front.slot.video.readyState,paused:clips.front.slot.video.paused,time:clips.front.slot.video.currentTime,hasFrame:clips.front.hasFrame},
-   left:{ready:clips.left.ready,readyState:clips.left.slot.video.readyState,paused:clips.left.slot.video.paused,time:clips.left.slot.video.currentTime,hasFrame:clips.left.hasFrame},
-   back:{ready:clips.back.ready,readyState:clips.back.slot.video.readyState,paused:clips.back.slot.video.paused,time:clips.back.slot.video.currentTime,hasFrame:clips.back.hasFrame}
+   front:{ready:clips.front.ready,readyState:clips.front.video.readyState,paused:clips.front.video.paused,time:clips.front.video.currentTime,hasFrame:clips.front.hasFrame},
+   left:{ready:clips.left.ready,readyState:clips.left.video.readyState,paused:clips.left.video.paused,time:clips.left.video.currentTime,hasFrame:clips.left.hasFrame},
+   back:{ready:clips.back.ready,readyState:clips.back.video.readyState,paused:clips.back.video.paused,time:clips.back.video.currentTime,hasFrame:clips.back.hasFrame}
   }
  };
 }
@@ -726,12 +561,8 @@ W.PsyGothicWalkVideoV1={
  draw,
  prepare,
  ranges,
- get video(){return clips[activeKey].slot.video;},
- videos:{
-  get front(){return clips.front.slot.video;},
-  get left(){return clips.left.slot.video;},
-  get back(){return clips.back.slot.video;}
- },
+ get video(){return clips[activeKey].video;},
+ videos:{front:clips.front.video,left:clips.left.video,back:clips.back.video},
  status
 };
 })(window,document);
