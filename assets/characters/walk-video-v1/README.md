@@ -32,3 +32,9 @@ Total derived MP4 payload across all 3 ~12s clips is `2,547,862 B` (`~2,488.1 Ki
 Clips now hold 12 gait cycles (11.6–12.8 s, 4.9 MB total). When the player stops after >= 2 cycles, the paused decoder is silently rewound to the same gait phase near the start of the file (`pauseClip`), so a normal walk never reaches EOF/loop wrap. Only an uninterrupted walk longer than ~12 s still wraps natively.
 
 V8: front/back 18 cycles, left 30 cycles (32 s), CRF 25, 7.2 MB total, so horizontal walks essentially never reach the native loop wrap.
+
+## V9: Automated seam discontinuity detector (`scripts/analyze-walk-seams.py`) & lateral waist/cape closure
+
+- Added `scripts/analyze-walk-seams.py` (`--assert-smooth`) to automatically quantify per-region frame-to-frame RMSE, 2nd-order acceleration (`jerk`), and back-cape trailing-edge velocity across `full`, `head`, `waist_cape`, `back_cape`, and `legs`.
+- Detected that in the source profile walk (`frames 69..100`), the back cape at waist level (`y=180..420, x>140`) started `+7.15 px` wider on frame 69 than on frame 100/101 (`waist_cape wrap z = +5.5`), causing a subtle waist/cape twitch every 1.07s cycle on Left and Right walks.
+- `scripts/build-gothic-walk-clips-v1.py` now applies pure geometric 2D periodic contour + optical-flow closure (`_apply_periodic_cape_closure`, zero frame blending/ghosting) across the 32-frame profile cycle, reducing `cape_edge wrap dx` from `+7.15 px` to `+0.57 px` and `waist_cape wrap z` from `+5.5` to `+1.4` (below mid-cycle step motion).

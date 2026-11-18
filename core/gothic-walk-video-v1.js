@@ -10,7 +10,7 @@ const VW=320,VH=540,CLIP_FPS=30;
 const CLIP_SPECS={
  front:{
   key:'front',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V8',
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V9',
   duration:18.600,
   frames:558,
   cycle:31,
@@ -18,7 +18,7 @@ const CLIP_SPECS={
  },
  left:{
   key:'left',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V8',
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V9',
   duration:32.000,
   frames:960,
   cycle:32,
@@ -26,7 +26,7 @@ const CLIP_SPECS={
  },
  back:{
   key:'back',
-  url:'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V8',
+  url:'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V9',
   duration:17.400,
   frames:522,
   cycle:29,
