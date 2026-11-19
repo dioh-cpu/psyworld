@@ -1,6 +1,7 @@
 /* PSYWORLD — original creatures as starter choices (test branch).
- * Adds an "Criaturas Autorais" row to the starter screen. Each card plays the creature's idle MP4.
- * Selecting a card uses the existing starter flow (selectPoke -> chosenPoke -> confirmStarter).
+ * Adds an "Criaturas Autorais" generation to GENS, so the Kanto campaign starter picker
+ * (and the legacy starter screen) list it. Cards for these creatures play the idle MP4
+ * instead of a sprite image.
  */
 (function(W,D){
 'use strict';
@@ -17,8 +18,8 @@ const CREATURES=[
   height:262
  }
 ];
+const BY_ID=new Map(CREATURES.map(c=>[String(c.id),c]));
 
-// Register the new species in the engine's lookup tables so moves, names and types resolve.
 function registerSpecies(){
  CREATURES.forEach(c=>{
   try{if(typeof ALL_POKE_NAMES!=='undefined')ALL_POKE_NAMES[c.id]=c.name;}catch(_){}
@@ -28,66 +29,60 @@ function registerSpecies(){
  });
 }
 
+function registerGeneration(){
+ let gens=null;
+ try{gens=typeof GENS!=='undefined'?GENS:null;}catch(_){}
+ if(!Array.isArray(gens))return false;
+ if(gens.some(g=>g&&g.autoral))return true;
+ gens.unshift({
+  label:'🌑 Criaturas Autorais',
+  autoral:true,
+  starters:CREATURES.map(c=>({id:c.id,name:c.name,type:c.type,autoral:true}))
+ });
+ return true;
+}
+
 function injectStyle(){
  if(D.getElementById('psy-starter-autoral-css'))return;
  const s=D.createElement('style');s.id='psy-starter-autoral-css';
  s.textContent=
-  '.s-card.s-autoral{width:176px;position:relative}'+
-  '.s-card.s-autoral .s-video{position:relative;width:100%;aspect-ratio:960/524;background:transparent}'+
-  '.s-card.s-autoral .s-tag{position:absolute;top:4px;right:4px;font-size:9px;letter-spacing:1px;'+
-  'color:#c084fc;border:1px solid #9333ea;border-radius:4px;padding:1px 4px;background:#0b0614}'+
-  '.s-card.s-autoral.sel{border-color:#9333ea;background:#12082a}';
+  '.psy-monster-video{position:relative;width:100%;aspect-ratio:960/524;margin:0 auto}'+
+  '.psy-kc-choice.psy-has-video{grid-column:span 2}'+
+  '.psy-kc-choice.psy-has-video .psy-monster-video{max-width:200px}'+
+  '.s-card.psy-has-video{width:176px}'+
+  '.s-card.psy-has-video .psy-monster-video{max-width:164px}';
  D.head.appendChild(s);
 }
 
-const mounted=[];
-function clearMounted(){while(mounted.length){try{mounted.pop().destroy();}catch(_){}}}
+function upgradeCard(el){
+ if(!el||el.dataset.psyVideo==='1')return;
+ const id=el.dataset.starter||(el.id&&el.id.replace(/^sc/,''));
+ const c=BY_ID.get(String(id));
+ if(!c||!W.PsyMonsterVideoV1)return;
+ el.dataset.psyVideo='1';el.classList.add('psy-has-video');
+ const img=el.querySelector('img');
+ const host=D.createElement('div');host.className='psy-monster-video';
+ if(img)img.replaceWith(host);else el.insertBefore(host,el.firstChild);
+ W.PsyMonsterVideoV1.mount(host,{url:c.idle,width:c.width,height:c.height});
+}
 
-function addSection(){
- const list=D.getElementById('starter-list');
- if(!list||!W.PsyMonsterVideoV1)return;
- clearMounted();
- const old=list.querySelector('.gen-section.autoral');if(old)old.remove();
- const sec=D.createElement('div');
- sec.className='gen-section autoral';
- sec.innerHTML='<div class="gen-label">🌑 Criaturas Autorais</div>';
- const row=D.createElement('div');row.className='starter-row';
- CREATURES.forEach(c=>{
-  const card=D.createElement('div');
-  card.className='s-card s-autoral';card.id='sc'+c.id;
-  card.innerHTML='<div class="s-video"></div><span class="s-tag">AUTORAL</span>'+
-   '<span class="sname">'+c.name+'</span><span class="stype">'+c.type+'</span>';
-  const host=card.querySelector('.s-video');
-  card.onclick=()=>{
-   const starter={id:c.id,name:c.name,type:c.type,autoral:true};
-   if(typeof selectPoke==='function')selectPoke(starter,card);
-  };
-  row.appendChild(card);
-  card.__host=host;card.__creature=c;
- });
- sec.appendChild(row);
- list.insertBefore(sec,list.firstChild);
- row.querySelectorAll('.s-autoral').forEach(card=>{
-  mounted.push(W.PsyMonsterVideoV1.mount(card.__host,{url:card.__creature.idle,width:card.__creature.width,height:card.__creature.height}));
+function scan(root){
+ (root||D).querySelectorAll('[data-starter],.s-card').forEach(el=>{
+  const id=el.dataset.starter||(el.id&&el.id.replace(/^sc/,''));
+  if(BY_ID.has(String(id)))upgradeCard(el);
  });
 }
 
-function install(){
- if(typeof W.buildStarterScreen!=='function')return false;
- if(W.buildStarterScreen.__autoral)return true;
- const original=W.buildStarterScreen;
- const wrapped=function(){
-  const out=original.apply(this,arguments);
-  try{registerSpecies();injectStyle();addSection();}catch(err){console.warn('starter-autoral',err);}
-  return out;
- };
- wrapped.__autoral=true;
- W.buildStarterScreen=wrapped;
- return true;
+function observe(){
+ const mo=new MutationObserver(()=>scan(D));
+ mo.observe(D.body||D.documentElement,{childList:true,subtree:true});
+ scan(D);
 }
 
 registerSpecies();
-install();
+registerGeneration();
+injectStyle();
+if(D.body)observe();else D.addEventListener('DOMContentLoaded',observe);
 
-W.PsyStarterAutoralV1={creatures:CREATURES,install,clear:clearMounted};
+W.PsyStarterAutoralV1={creatures:CREATURES,scan};
 })(window,document);
