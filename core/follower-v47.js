@@ -13,16 +13,19 @@ const trails=new Map();let serial=0;
 // Distance is measured along the player's collision-approved trail, so a
 // wider visual gap still follows real turns and cannot cut across obstacles.
 const FOLLOWER_TRAIL_DISTANCE=64;
+const autoralSheets=new Map();
+function autoralSheet(url){if(!url)return null;if(!autoralSheets.has(url)){const im=new Image();im.src=url;autoralSheets.set(url,im);}return autoralSheets.get(url);}
 function key(mon){return mon.pokemon_uid||mon.followerKeyV47||(mon.followerKeyV47='partner-'+Date.now().toString(36)+'-'+(++serial));}
 function selected(){const p=player(),choice=p.meta?.followerV47;if(!choice?.enabled)return null;return (p.team||[]).find(m=>(m.pokemon_uid||m.followerKeyV47)===choice.key&&Number(m.hp)>0)||null;}
 function supported(mon){if(W.PsyStarterAutoralV1?.isAutoral?.(mon))return !mon.isMega;const entry=manifest[mon.id];return !!entry&&!mon.isMega&&!mon.halloweenForm&&(!mon.shiny||entry.shiny);}
-function sample(trail,x,y,scene,valid){
+function sample(trail,x,y,scene,valid,dist){
+ const maxDist=Number(dist)>0?Number(dist):FOLLOWER_TRAIL_DISTANCE;
  if(!trail||trail.scene!==scene||Math.hypot(x-trail.last.x,y-trail.last.y)>160){return {scene,last:{x,y},points:[{x,y}],pos:{x,y},facing:'down',moving:false,phase:0};}
  const d=Math.hypot(x-trail.last.x,y-trail.last.y);trail.moving=false;if(d<1)return trail;
  // Retain actual collision-approved positions. Never ease diagonally across a corner.
  const steps=Math.ceil(d/3),from=trail.last;for(let i=1;i<=steps;i++){const point={x:from.x+(x-from.x)*i/steps,y:from.y+(y-from.y)*i/steps};if(!valid||valid(point.x,point.y))trail.points.push(point);}
  trail.last={x,y};let length=0;for(let i=trail.points.length-1;i>0;i--)length+=Math.hypot(trail.points[i].x-trail.points[i-1].x,trail.points[i].y-trail.points[i-1].y);
- while(length>FOLLOWER_TRAIL_DISTANCE&&trail.points.length>1){const next=trail.points[1],old=trail.points.shift(),distance=Math.hypot(next.x-old.x,next.y-old.y);length-=distance;const dx=next.x-trail.pos.x,dy=next.y-trail.pos.y;trail.pos={...next};if(Math.hypot(dx,dy)>.2){trail.facing=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';trail.moving=true;trail.phase+=distance;}}
+ while(length>maxDist&&trail.points.length>1){const next=trail.points[1],old=trail.points.shift(),distance=Math.hypot(next.x-old.x,next.y-old.y);length-=distance;const dx=next.x-trail.pos.x,dy=next.y-trail.pos.y;trail.pos={...next};if(Math.hypot(dx,dy)>.2){trail.facing=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';trail.moving=true;trail.phase+=distance;}}
  if(trail.points.length>180)trail.points.splice(0,trail.points.length-180);return trail;
 }
 // Quaxly's two authored poses alternate feet; their common sole edge is y=63.
@@ -135,17 +138,42 @@ function kantoStep(trail,opt,now,cadence){
  return active?Math.floor(a.elapsed/cadence)%2:0;
 }
 
-function draw(c,opt){if(player().meta?.divineHaloV48){c.save();c.strokeStyle='#dfb0ff';c.shadowColor='#8ef8ff';c.shadowBlur=9;c.lineWidth=1.8;c.beginPath();c.ellipse(opt.x,opt.y+4,22,8,0,0,Math.PI*2);c.stroke();c.restore();}const mon=selected(),trainer=opt.trainer||(()=>{});if(!mon||!supported(mon)){trainer();return;}const k=key(mon)+'@'+opt.scene,old=trails.get(k),trail=sample(old,opt.x,opt.y,opt.scene,opt.valid);trails.set(k,trail);
-// Original (autoral) creatures: draw a cached chroma-keyed idle video canvas. Temporary single view,
-// mirrored for right-facing until walk clips and 4 directions exist.
-if(W.PsyStarterAutoralV1?.isAutoral?.(mon)){
-const cr=W.PsyStarterAutoralV1.get(mon.id),clip=W.PsyMonsterVideoV1?.shared(cr.idle,{width:cr.width,height:cr.height});
-if(!clip){trainer();return;}clip.touch();
-if(!clip.hasFrame){trainer();return;}
-const paintAutoral=()=>{const p=trail.pos,dir=trail.facing||opt.facing||'down',pres=Number.isFinite(Number(opt.scale))?Math.max(.75,Math.min(2,Number(opt.scale))):1,h=(cr.worldHeight||34)*pres,w=h*clip.w/clip.h;
-c.save();c.translate(p.x,p.y+5);c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,w*.2,3*pres,0,0,Math.PI*2);c.fill();
-if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}
-c.imageSmoothingEnabled=true;if(dir==='right')c.scale(-1,1);c.drawImage(clip.canvas,-w/2,-h,w,h);c.restore();};
+function draw(c,opt){if(player().meta?.divineHaloV48){c.save();c.strokeStyle='#dfb0ff';c.shadowColor='#8ef8ff';c.shadowBlur=9;c.lineWidth=1.8;c.beginPath();c.ellipse(opt.x,opt.y+4,22,8,0,0,Math.PI*2);c.stroke();c.restore();}const mon=selected(),trainer=opt.trainer||(()=>{});if(!mon||!supported(mon)){trainer();return;}
+const isAutoral=!!W.PsyStarterAutoralV1?.isAutoral?.(mon),cr=isAutoral?W.PsyStarterAutoralV1.get(mon.id):null;
+const k=key(mon)+'@'+opt.scene,old=trails.get(k),trail=sample(old,opt.x,opt.y,opt.scene,opt.valid,cr?.trailDistance);trails.set(k,trail);
+// Original (autoral) creatures: use 4-direction idle WebP strip (front/left/right/back)
+// scaled directly against the trainer height, falling back to keyed MP4 if needed.
+if(isAutoral&&cr){
+const refRaw=Number.isFinite(Number(opt.trainerScale))?Number(opt.trainerScale):Number(opt.scale);
+const refScale=Number.isFinite(refRaw)?Math.max(.75,Math.min(2.5,refRaw)):1;
+const sheet=cr.idle4dir?autoralSheet(cr.idle4dir):null;
+const sheetReady=!!(sheet&&sheet.complete&&sheet.naturalWidth>0);
+const clip=!sheetReady?W.PsyMonsterVideoV1?.shared(cr.idle,{width:cr.width,height:cr.height}):null;
+if(clip)clip.touch();
+if(!sheetReady&&(!clip||!clip.hasFrame)){trainer();return;}
+const paintAutoral=()=>{
+ const p=trail.pos,dir=trail.facing||opt.facing||'down',now=W.performance.now();
+ const h=(cr.worldHeight||138)*refScale;
+ c.save();c.translate(p.x,p.y+5);
+ if(sheetReady){
+  const cellW=cr.cellW||Math.round(sheet.naturalWidth/4),cellH=cr.cellH||sheet.naturalHeight,baseRatio=(cr.baseline||cellH)/cellH;
+  const w=h*cellW/cellH,col=({down:0,left:1,right:2,up:3})[dir]??0;
+  const breath=Math.sin(now*0.0032),moving=!!trail.moving;
+  const stride=moving?Math.sin(trail.phase*0.14):0,lift=moving?Math.abs(stride)*5*refScale:0;
+  const sx=moving?(1+stride*0.015):(1-breath*0.008),sy=moving?(1-Math.abs(stride)*0.025):(1+breath*0.016);
+  c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,w*.26,Math.max(4,5.5*refScale),0,0,Math.PI*2);c.fill();
+  if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}
+  c.imageSmoothingEnabled=true;
+  c.translate(0,-lift);if(moving)c.rotate(stride*0.024);c.scale(sx,sy);
+  c.drawImage(sheet,col*cellW,0,cellW,cellH,-w/2,-h*baseRatio,w,h);
+ }else{
+  const w=h*clip.w/clip.h;
+  c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,w*.22,Math.max(4,5*refScale),0,0,Math.PI*2);c.fill();
+  if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}
+  c.imageSmoothingEnabled=true;if(dir==='right')c.scale(-1,1);c.drawImage(clip.canvas,-w/2,-h,w,h);
+ }
+ c.restore();
+};
 if(trail.pos.y<=opt.y){paintAutoral();trainer();}else{trainer();paintAutoral();}
 return;}
 const quaxly=Number(mon.id)===912,profile=walkProfiles[Number(mon.id)],kantoGait=kantoGaits[Number(mon.id)]||null,grounded=quaxly||!!profile||!!kantoGait;
