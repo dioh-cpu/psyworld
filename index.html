@@ -43,7 +43,26 @@ body{padding-left:var(--psy-safe-left);padding-right:var(--psy-safe-right)}
 <body>
 <!-- LOGIN -->
 <div id="screen-login" class="screen">
-    <video id="login-bg-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" src="assets/ui/title_bg.mp4"></video>
+    <video id="login-bg-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" src="assets/ui/title_bg.mp4" onerror="this.hidden=true"></video>
+    <script>
+    (() => {
+        const screen = document.getElementById('screen-login');
+        const video = document.getElementById('login-bg-video');
+        function syncPlayback() {
+            if (document.hidden || !screen.getClientRects().length || video.error) {
+                video.pause();
+            } else if (video.paused) {
+                video.play().catch(() => {});
+            }
+        }
+        // Login, character selection and logout independently toggle this element.
+        new MutationObserver(syncPlayback).observe(screen, {
+            attributes: true, attributeFilter: ['style', 'class', 'hidden']
+        });
+        document.addEventListener('visibilitychange', syncPlayback);
+        syncPlayback();
+    })();
+    </script>
     <div id="login-box">
         <h1>PSYWORLD</h1>
         <p>A sua aventura começa aqui.</p>
