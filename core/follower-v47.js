@@ -15,7 +15,7 @@ const trails=new Map();let serial=0;
 const FOLLOWER_TRAIL_DISTANCE=64;
 function key(mon){return mon.pokemon_uid||mon.followerKeyV47||(mon.followerKeyV47='partner-'+Date.now().toString(36)+'-'+(++serial));}
 function selected(){const p=player(),choice=p.meta?.followerV47;if(!choice?.enabled)return null;return (p.team||[]).find(m=>(m.pokemon_uid||m.followerKeyV47)===choice.key&&Number(m.hp)>0)||null;}
-function supported(mon){const entry=manifest[mon.id];return !!entry&&!mon.isMega&&!mon.halloweenForm&&(!mon.shiny||entry.shiny);}
+function supported(mon){if(W.PsyStarterAutoralV1?.isAutoral?.(mon))return !mon.isMega;const entry=manifest[mon.id];return !!entry&&!mon.isMega&&!mon.halloweenForm&&(!mon.shiny||entry.shiny);}
 function sample(trail,x,y,scene,valid){
  if(!trail||trail.scene!==scene||Math.hypot(x-trail.last.x,y-trail.last.y)>160){return {scene,last:{x,y},points:[{x,y}],pos:{x,y},facing:'down',moving:false,phase:0};}
  const d=Math.hypot(x-trail.last.x,y-trail.last.y);trail.moving=false;if(d<1)return trail;
@@ -136,6 +136,18 @@ function kantoStep(trail,opt,now,cadence){
 }
 
 function draw(c,opt){if(player().meta?.divineHaloV48){c.save();c.strokeStyle='#dfb0ff';c.shadowColor='#8ef8ff';c.shadowBlur=9;c.lineWidth=1.8;c.beginPath();c.ellipse(opt.x,opt.y+4,22,8,0,0,Math.PI*2);c.stroke();c.restore();}const mon=selected(),trainer=opt.trainer||(()=>{});if(!mon||!supported(mon)){trainer();return;}const k=key(mon)+'@'+opt.scene,old=trails.get(k),trail=sample(old,opt.x,opt.y,opt.scene,opt.valid);trails.set(k,trail);
+// Original (autoral) creatures: draw a cached chroma-keyed idle video canvas. Temporary single view,
+// mirrored for right-facing until walk clips and 4 directions exist.
+if(W.PsyStarterAutoralV1?.isAutoral?.(mon)){
+const cr=W.PsyStarterAutoralV1.get(mon.id),clip=W.PsyMonsterVideoV1?.shared(cr.idle,{width:cr.width,height:cr.height});
+if(!clip){trainer();return;}clip.touch();
+if(!clip.hasFrame){trainer();return;}
+const paintAutoral=()=>{const p=trail.pos,dir=trail.facing||opt.facing||'down',pres=Number.isFinite(Number(opt.scale))?Math.max(.75,Math.min(2,Number(opt.scale))):1,h=(cr.worldHeight||34)*pres,w=h*clip.w/clip.h;
+c.save();c.translate(p.x,p.y+5);c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,w*.2,3*pres,0,0,Math.PI*2);c.fill();
+if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}
+c.imageSmoothingEnabled=true;if(dir==='right')c.scale(-1,1);c.drawImage(clip.canvas,-w/2,-h,w,h);c.restore();};
+if(trail.pos.y<=opt.y){paintAutoral();trainer();}else{trainer();paintAutoral();}
+return;}
 const quaxly=Number(mon.id)===912,profile=walkProfiles[Number(mon.id)],kantoGait=kantoGaits[Number(mon.id)]||null,grounded=quaxly||!!profile||!!kantoGait;
 const timedStep=kantoGait?kantoStep(trail,opt,W.performance.now(),kantoGait.cadence):grounded?quaxlyStep(trail,opt,W.performance.now(),profile?.poseMs):0;
 const entry=manifest[mon.id],image=pageImage(entry.page,!!mon.shiny);if(!image.complete||!image.naturalWidth){trainer();return;}

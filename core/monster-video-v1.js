@@ -8,6 +8,7 @@
 if(W.PsyMonsterVideoV1)return;
 
 const instances=new Set();
+const shared=new Map();
 let rafId=0;
 
 function clamp(v,a,b){return v<a?a:v>b?b:v;}
@@ -34,8 +35,12 @@ function tick(){
  rafId=0;
  let active=false;
  instances.forEach(inst=>{
-  if(!inst.host.isConnected){inst.destroy();return;}
-  const visible=!D.hidden&&inst.host.offsetParent!==null;
+  let visible;
+  if(inst.keepAlive){visible=!D.hidden&&W.performance.now()-inst.lastTouch<1500;}
+  else{
+   if(!inst.host.isConnected){inst.destroy();return;}
+   visible=!D.hidden&&inst.host.offsetParent!==null;
+  }
   if(!visible){if(!inst.video.paused)inst.video.pause();return;}
   active=true;
   if(inst.video.paused){const p=inst.video.play();if(p&&p.catch)p.catch(()=>{});}
@@ -74,10 +79,26 @@ function mount(host,opts){
  const ctx=canvas.getContext('2d',{willReadFrequently:true});
  host.appendChild(video);host.appendChild(canvas);
  const inst={host,video,canvas,ctx,w,h,key:null,lastTime:-1,hasFrame:false,
-  destroy(){instances.delete(inst);try{video.pause();video.removeAttribute('src');video.load();}catch(_){}try{video.remove();canvas.remove();}catch(_){}}};
+  keepAlive:!!opts.keepAlive,lastTouch:0,
+  touch(){inst.lastTouch=W.performance.now();start();},
+  destroy(){instances.delete(inst);if(inst.shareKey)shared.delete(inst.shareKey);try{video.pause();video.removeAttribute('src');video.load();}catch(_){}try{video.remove();canvas.remove();}catch(_){}}};
  instances.add(inst);
  video.addEventListener('error',()=>{inst.failed=true;});
  start();
+ return inst;
+}
+
+/* shared(url,opts) -> one cached, always-available keyed canvas per clip (for canvas drawImage use).
+ * Call inst.touch() every time it is drawn; it pauses by itself after 1.5 s without use. */
+function sharedClip(url,opts){
+ let inst=shared.get(url);
+ if(inst)return inst;
+ const host=D.createElement('div');
+ host.style.cssText='position:fixed;left:-99999px;top:0;width:1px;height:1px;overflow:hidden;pointer-events:none;';
+ D.body.appendChild(host);
+ inst=mount(host,Object.assign({},opts,{url,keepAlive:true}));
+ inst.canvas.style.cssText='';
+ inst.shareKey=url;shared.set(url,inst);
  return inst;
 }
 
@@ -86,5 +107,5 @@ for(const ev of ['pointerdown','touchstart','keydown']){
  D.addEventListener(ev,()=>start(),{passive:true});
 }
 
-W.PsyMonsterVideoV1={mount,get count(){return instances.size;}};
+W.PsyMonsterVideoV1={mount,shared:sharedClip,get count(){return instances.size;}};
 })(window,document);

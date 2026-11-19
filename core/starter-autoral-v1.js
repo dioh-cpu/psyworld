@@ -14,6 +14,8 @@ const CREATURES=[
   type:'Noturno',
   autoral:true,
   idle:'assets/monsters/noctarn/idle-front.mp4?build=NOCTARN_IDLE_V1',
+  sprite:'assets/monsters/noctarn/sprite-front.png?build=NOCTARN_SPRITE_V1',
+  worldHeight:34,
   width:480,
   height:262
  }
@@ -79,10 +81,57 @@ function observe(){
  scan(D);
 }
 
+function isAutoral(mon){return !!mon&&BY_ID.has(String(mon.id));}
+function get(id){return BY_ID.get(String(id));}
+
+/* Static PNG for Team, Box and list icons. */
+function patchSpriteHelpers(){
+ ['getPokeAnim','getRealSprite'].forEach(name=>{
+  const orig=W[name];
+  if(typeof orig!=='function'||orig.__autoral)return;
+  const wrapped=function(p){const c=p&&get(p.id);return c?c.sprite:orig.apply(this,arguments);};
+  wrapped.__autoral=true;W[name]=wrapped;
+ });
+ const origUrl=W.getSpriteUrl;
+ if(typeof origUrl==='function'&&!origUrl.__autoral){
+  const wrappedUrl=function(id){const c=get(id);return c?c.sprite:origUrl.apply(this,arguments);};
+  wrappedUrl.__autoral=true;W.getSpriteUrl=wrappedUrl;
+ }
+}
+
+/* Animated idle video on the battle screen (player and enemy). */
+const battle={player:null,enemy:null};
+function battleMon(side){
+ try{
+  if(side==='player')return (typeof P!=='undefined'&&P.team&&P.team[0])||null;
+  return (typeof battleData!=='undefined'&&battleData&&battleData.wild)||null;
+ }catch(_){return null;}
+}
+function syncSide(side){
+ const img=D.getElementById(side==='player'?'player-img':'enemy-img');
+ if(!img)return;
+ const mon=battleMon(side),c=isAutoral(mon)?get(mon.id):null,cur=battle[side];
+ if(c){
+  if(cur&&cur.id===c.id&&cur.host.isConnected){img.style.display='none';return;}
+  if(cur){cur.inst.destroy();cur.host.remove();battle[side]=null;}
+  const host=D.createElement('div');host.className='psy-monster-video psy-battle-video';
+  host.style.cssText='width:150px;margin:0 auto;';
+  img.parentNode.insertBefore(host,img);
+  img.style.display='none';
+  battle[side]={id:c.id,host,inst:W.PsyMonsterVideoV1.mount(host,{url:c.idle,width:c.width,height:c.height})};
+ }else if(cur){
+  cur.inst.destroy();cur.host.remove();battle[side]=null;
+  img.style.display='';
+ }
+}
+function syncBattle(){if(!W.PsyMonsterVideoV1)return;syncSide('player');syncSide('enemy');}
+
 registerSpecies();
 registerGeneration();
+patchSpriteHelpers();
+W.setInterval(syncBattle,400);
 injectStyle();
 if(D.body)observe();else D.addEventListener('DOMContentLoaded',observe);
 
-W.PsyStarterAutoralV1={creatures:CREATURES,scan};
+W.PsyStarterAutoralV1={creatures:CREATURES,scan,isAutoral,get,syncBattle};
 })(window,document);
