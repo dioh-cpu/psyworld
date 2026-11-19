@@ -1,0 +1,284 @@
+================================================================================
+PSYWORLD - PLANO MESTRE DE DIRECAO VISUAL, UI ART, PERSONAGENS ELEMENTAIS
+E SISTEMA MONSTER CATCH 100% AUTORAL
+================================================================================
+Data: Novembro 2026
+Formato: Documento TXT para download, estudo e planejamento de producao
+Objetivo: Gerar todos os layouts, artes de menus, personagens (2M + 2F com
+troca de tom de pele nas animacoes) e monstros autorais ANTES de integrar no
+codigo do jogo.
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. PESQUISA DA REFERENCIA VISUAL (ESTETICA DO ANIME DE CAVALEIRO PESADO)
+--------------------------------------------------------------------------------
+Sim! Pesquisamos a fundo a linguagem visual do anime de referencia (produzido
+pelo estudio GoHands, baseado na obra de dark fantasy / sistema RPG). O que
+faz esse estilo chamar tanta atencao visualmente sao 5 pilares especificos que
+vamos trazer para os layouts e artes do PSYWORLD:
+
+1.1. Contraste Dramatico "Dark Metal + Luz Arcana"
+- Os ambientes e armaduras/roupas usam tons escuros e pesados (obsidiana,
+  chumbo, couro negro, prata oxidada), enquanto os efeitos de habilidade,
+  janelas de status e detalhes elementais brilham com saturacao intensa.
+- Isso faz com que o personagem e a interface "saltem" da tela com aspecto
+  cinematografico.
+
+1.2. Iluminacao de Borda (Rim Lighting) e Textura de Materiais
+- O metal parece metal pesado (com reflexos especulares nitidos nas fivelas,
+  ombreiras e laminas), e o tecido pesado (sobretudos, capas) tem volume e
+  caimento marcado.
+
+1.3. Janelas de Sistema RPG ("Game the System" UI)
+- Como a historia se passa dentro de um mundo regido por mecanicas de RPG,
+  as telas de Status, Inventario, Habilidades eArvore de Classes aparecem como
+  PAINEIS HOLOGRAFICOS FORJADOS: vidro escuro translúcido emoldurado por
+  filetes metalicos chanfrados, runas discretas nos cantos e indicadores
+  luminosos de nivel, raridade e atributos.
+
+1.4. Cores Elementais como Identidade de Classe/Linhagem
+- Cada afinidade elemental nao e apenas um icone: ela domina a aura, os
+  detalhes da vestimenta, o brilho da esfera/cristal de captura e os efeitos
+  de particulas ao redor do personagem.
+
+1.5. Profundidade de Campo e Atmosfera
+- Fundos com leve desfoque atmosferico (nevoa noturna, fagulhas, poeira
+  luminosa) para que o personagem 2D/MP4 e os monstros em batalha fiquem
+  100% nitidos em primeiro plano.
+
+
+--------------------------------------------------------------------------------
+2. OS 4 PERSONAGENS JOGAVEIS (2 MASCULINOS + 2 FEMININOS) E CORES ELEMENTAIS
+--------------------------------------------------------------------------------
+Voce definiu uma estrutura excelente: 4 protagonistas (2 Masculinos e 2
+Femininos) com visuais unicos atrelados a sua identidade elemental.
+
+2.1. Proposta de Divisao dos 4 Personagens
+- PERSONAGEM 1 (Masculino - Elemento TREVAS / UMBRA):
+  O Gothic Boy atual (sobretudo negro com linha vertical prateada/branca,
+  botas com fivelas de prata, bolsinha de lua/caveira, aura sombria/lunar).
+- PERSONAGEM 2 (Feminina - Elemento TREVAS / UMBRA):
+  A Goth Girl (mesma linhagem visual do elemento Trevas: sobretudo/vestimenta
+  gotica de combate em preto, prata e violeta-noturno/carmesim, botas com
+  fivelas prateadas, detalhes lunares e postura elegante).
+- PERSONAGEM 3 (Masculino - Sugestao de Elemento: CHAMA IMPERIAL / SOLAR ou
+  RAIO ARCANO):
+  Visual de Cacador/Cavaleiro Elemental com sobretudo ou armadura leve nas
+  cores do elemento (ex.: obsidiana + carmesim/ouro flamejante, ou azul-noite
+  + ciano eletrico).
+- PERSONAGEM 4 (Feminina - Sugestao de Elemento: CHAMA IMPERIAL / SOLAR ou
+  GELO ASTRAL / NATUREZA):
+  Contraparte feminina com as cores elementais correspondentes, mantendo a
+  mesma proporcao (320x540 no jogo, gerada em 9:16 1080x1920) e o mesmo nivel
+  de acabamento do Gothic Boy.
+
+2.2. E se o jogador quiser escolher QUALQUER elemento para o personagem?
+- Podemos fazer os dois!
+  - Cada dupla tem seu estilo de roupa unico (ex.: Dupla Gotica Umbral +
+    Dupla Imperial/Arcana), MAS os detalhes luminosos da roupa (a esfera de
+    captura na mao, a aura nos pes, o brilho das fivelas/insignia) podem
+    mudar de cor automaticamente via codigo conforme o Elemento Inicial que
+    o jogador escolher (Trevas = Roxo/Prata, Fogo = Carmesim/Ouro, Agua =
+    Azul Abissal, Raio = Ciano/Ambar, Terra = Esmeralda/Bronze, Luz = Ouro
+    Branco).
+
+
+--------------------------------------------------------------------------------
+3. COMO MUDAR A TONALIDADE DA COR DE PELE NAS ANIMACOES (SEM REFAZER VIDEOS!)
+--------------------------------------------------------------------------------
+Essa e a parte mais importante tecnicamente:
+"Como permitir que o jogador escolha a tonalidade da pele e isso afete os
+retratos E TAMBEM as animacoes de andar/parado (MP4)?"
+
+Se tivessemos que gerar um video MP4 diferente para cada tom de pele (ex.:
+5 tons de pele x 4 personagens x 3 direcoes = 60 videos MP4), daria muito
+trabalho e deixaria o jogo pesado.
+
+A SOLUCAO PROFISSIONAL (100% EM TEMPO REAL NO SHADER WEBGL QUE JA TEMOS):
+Nos ja usamos um Shader WebGL em `core/gothic-walk-video-v1.js` que le cada
+pixel do video MP4 a 60 quadros por segundo para remover o fundo verde.
+Podemos adicionar 15 linhas nesse mesmo Shader WebGL para fazer **Troca
+Seletiva de Tom de Pele (Real-Time Skin Tone Grading)**:
+
+COMO FUNCIONA PASSO A PASSO:
+1. Na arte base dos personagens (como o Gothic Boy), o corpo esta coberto
+   pelo sobretudo e as maos usam luvas escuras. Ou seja, a pele exposta fica
+   concentrada no ROSTO / PESCOCO (ou em areas de pele bem definidas).
+2. A pele na animacao base tem um matiz especifico (ex.: pele clara rosada/
+   pessego, com `Vermelho > Verde > Azul` e saturacao moderada), enquanto o
+   sobretudo e preto/cinza, as fivelas sao neutras (`R = G = B`) e o cabelo
+   e escuro ou colorido.
+3. O Shader WebGL detecta automaticamente os pixels de pele em cada frame do
+   video MP4 (combinando a faixa de cor da pele + a regiao vertical da cabeca/
+   maos) e aplica uma curva de transferencia de cor (Luminancia + Matiz +
+   Saturacao) preservando 100% das sombras do rosto, olhos, boca e contornos!
+4. Resultado:
+   - Com **APENAS 1 VIDEO MP4** por direcao, o jogador pode escolher entre
+     5 a 8 tonalidades de pele na criacao de personagem:
+     * Tom 1: Palido / Alabastro (original gotico)
+     * Tom 2: Claro Rosado / Creme
+     * Tom 3: Dourado / Mel
+     * Tom 4: Moreno Medio / Bronze
+     * Tom 5: Moreno Escuro / Canela
+     * Tom 6: Negro Retinto / Ebano
+     * (Opcional) Tons Misticos: Cinza Umbral / Palido Lunar
+   - O mesmo filtro WebGL/CSS e aplicado simultaneamente:
+     * Na animacao de caminhada MP4 (Cima, Baixo, Esquerda, Direita)
+     * Na animacao Idle (parado)
+     * No avatar do HUD superior e na ficha do Treinador!
+
+DICA DE OURO AO GERAR OS NOVOS PERSONAGENS (GOTH GIRL E OS OUTROS 2):
+- Mantenha luvas nas maos (ou braceletes bem marcados) e a pele base em um
+  tom claro-medio bem limpo (sem iluminação colorida forte sobre o rosto).
+  Assim o Shader WebGL consegue escurecer, aquecer ou clarear a pele para
+  qualquer tonalidade com perfeicao absoluta e zero vazamento para a roupa.
+
+
+--------------------------------------------------------------------------------
+4. TRANSICAO PARA MONSTER CATCH 100% AUTORAL (ADEUS POKEMONS DE TERCEIROS)
+--------------------------------------------------------------------------------
+Criar suas proprias criaturas e a melhor decisao possivel: o jogo passa a ser
+100% propriedade intelectual sua, podendo ser monetizado na Steam, Play Store,
+App Store e web sem nenhum risco de direitos autorais.
+
+O que muda no conceito visual:
+4.1. Nome das Criaturas e Dispositivo de Captura
+- Em vez de "Pokemon" e "Pokebola", voce tera suas proprias criaturas (ex.:
+  Anima, Eidolons, Psybeasts, Umbrals, Astrals — voce escolhe o nome!) e seu
+  proprio artefato de captura (ex.: Esfera Arcana / Orbe de Alma / Cristal de
+  Vinculo — que inclusive ja combina com a esfera que o personagem segura).
+
+4.2. Time Inicial Autoral (Os 3 ou 4 Iniciais do Jogo)
+- Cada inicial pode representar um dos elementos principais e ja nascer com o
+  estilo visual Dark Fantasy / Anime Pesado:
+  - Inicial 1 (Elemento Trevas / Sombra): Ex.: Um lobo/grifo umbral com placas
+    de prata escura e chamas violetas.
+  - Inicial 2 (Elemento Chama / Ferro): Ex.: Um draconiano/leao couracado com
+    nucleo de brasa imperial e crina de fogo dourado.
+  - Inicial 3 (Elemento Abismo / Gelo / Trovao): Ex.: Uma serpente/raposa
+    astral de cristal azul-noturno com arcos de energia ciano.
+
+4.3. Como substituir no jogo sem quebrar o sistema de batalha atual
+- O motor do PSYWORLD usa IDs numericos, status (HP, ATK, DEF, SPD), tipos
+  elementais e URLs de sprites.
+- Nos podemos trocar o catalogo de criaturas gradualmente: comecamos pelos
+  **Iniciais + Criaturas das primeiras zonas**, trocando os sprites da web
+  pelas suas artes autorais (PNG/WebP transparente ou MP4/WebP animado).
+
+
+--------------------------------------------------------------------------------
+5. LISTA COMPLETA DE ARTES DE MENUS E LAYOUTS PARA GERARMOS ANTES DE CODAR
+--------------------------------------------------------------------------------
+Ja que voce prefere gerar as artes dos menus e layouts primeiro para aprovar
+cada peca visual antes de colocarmos no jogo, aqui esta o Kit Completo de UI
+(com as medidas ideais para gerarmos):
+
+PECA 1: MOLDURA MESTRE DE JANELA DE SISTEMA (Painel Principal)
+- Onde sera usada: Inventario (Mochila), Time/Box, Loja, Ginasios, Quests,
+  Talentos e Bestiario.
+- Proporcao / Tamanho: 16:9 (1920x1080) ou 4:3 (1440x1080) com centro escuro
+  limpo (para podermos recortar as bordas em 9-slice no CSS e encaixar o
+  conteudo dinamico dentro).
+- Estilo: Moldura de metal obsidiana forjado com filetes de ouro envelhecido,
+  cantos chanfrados com engastes de cristal arcano e fundo interno em vidro
+  noturno translúcido.
+
+PECA 2: PLACA DO HUD DO JOGADOR (Canto Superior Esquerdo da Cidade)
+- Onde sera usada: Mostra o rosto do personagem, Nivel, Barra de Vida, Barra
+  de EXP e Moedas.
+- Proporcao / Tamanho: Horizontal 16:9 ou 3:1 (ex.: 900x300 px em PNG/WebP
+  com fundo transparente ao redor da placa).
+- Estilo: Brasao lateral para o retrato do personagem + trilhos metalicos
+  para as barras de HP (carmesim/esmeralda) e EXP (ciano arcano).
+
+PECA 3: SLOTS DE INVENTARIO E CARDS DE RARIDADE (Mochila, Loja e Box)
+- Onde serao usados: Quadradinhos onde ficam os itens da mochila/loja e os
+  cards das criaturas no Time/Box.
+- Proporcao / Tamanho: 1:1 (512x512 px, reduzido no jogo para 64x64 ou
+  120x120 px).
+- Quantidade: 4 variantes de borda por raridade:
+  1. Comum / Ferro (cinza chumbo e bronze)
+  2. Raro / Prata Arcana (prata e brilho ciano)
+  3. Epico / Umbral (obsidiana e brilho violeta/carmesim)
+  4. Lendario / Ouro Imperial (ouro forjado com runas luminosas)
+
+PECA 4: BOTOES TATICOS E ABAS DE MENU
+- Onde serao usados: Botoes de acao (Confirmar, Comprar, Capturar, Fugir,
+  Abas de filtro).
+- Proporcao: Barra horizontal (ex.: 600x160 px).
+- Variantes:
+  1. Botao Padrao (Obsidiana com filete dourado)
+  2. Botao Destaque / Acao Principal (Ouro Imperial)
+  3. Botao Combate / Perigo (Carmesim Escuro)
+
+PECA 5: HUD E ARENAS DA TELA DE BATALHA (RPG de Turno)
+- Fundo de Arena (16:9 - 1920x1080):
+  * Arena 1: Floresta Noturna / Ruinas Umbrais
+  * Arena 2: Cidade / Distrito Gotico Iluminado por Lanternas
+  * Arena 3: Fenda Dimensional / Caverna de Cristal Arcano
+  * Arena 4: Salao de Ordem / Ginasio Imperial
+- Placas de Status de Batalha (Jogador e Inimigo) + Moldura dos 4 Botoes de
+  Habilidade Elemental.
+
+PECA 6: TELA DE LOGIN + LOGO OFICIAL
+- Fundo 16:9 (1920x1080) dark fantasy cinematografico + Logo em PNG
+  transparente + Card central de entrada.
+
+
+--------------------------------------------------------------------------------
+6. PROMPTS BASE PRONTOS PARA GERAR AS ARTES DE UI E PERSONAGENS
+--------------------------------------------------------------------------------
+
+6.1. Prompt para Moldura de Menu / Inventario (Gerador de Imagem 16:9)
+"Dark fantasy anime RPG system window UI frame, inspired by high-contrast
+heavy armor fantasy anime, forged black obsidian metal borders with intricate
+burnished gold trim and bevelled corners, subtle glowing cyan and violet arcane
+runes etched into the corner joints, deep translucent dark slate glass center
+panel completely clean and empty for game inventory content, crisp vector-like
+2D game interface art, isolated on a solid pure black background, no text, no
+numbers, ultra clean symmetry, 4k game UI asset."
+
+6.2. Prompt para Slots de Inventario / Cards de Raridade (1:1)
+"Set of 4 square dark fantasy RPG inventory item slot frames arranged in a 2x2
+grid on a solid black background: top-left dark iron frame, top-right silver
+frame with cyan arcane glow, bottom-left obsidian frame with violet dark energy
+trim, bottom-right ornate royal gold frame with crimson gems. Clean empty dark
+centers, crisp anime RPG UI asset, no text, no icons inside."
+
+6.3. Prompt para a Goth Girl (Elemento Trevas - Imagem Base 9:16 Vertical)
+"Full-body 2D anime game character sheet, single gothic female trainer of the
+Dark Element, facing strictly left in 90-degree side profile, standing upright
+head-to-toe with clear margin above head and below boots, isolated on a solid
+flat light gray background (#E4E4E4) with zero floor shadow. Wearing a black
+gothic combat trench coat with a single straight vertical silver-white trim
+line, dark leather gloves, black platform boots with silver metal buckles and
+toe caps, small silver crescent-moon waist pouch, holding a dark arcane capture
+orb in one hand. Fair clean skin tone on face for shader recoloring, sharp
+clean anime lineart and cel shading, no cape billowing."
+
+6.4. Prompt para Animar a Caminhada Lateral (Video 9:16 Vertical 1080p)
+"2D anime character walking in place in strict left side profile on a solid
+flat uniform light gray background (#E4E4E4). Steady rhythmic two-step walk
+cycle in place like a treadmill. The black gothic coat tail and straight
+vertical white trim line stay stable and vertical with minimal sway. Arms
+remain steady, silver boot buckles remain crisp, no camera pan or zoom, no
+turning, no floor shadow, clean consistent lineart."
+
+
+--------------------------------------------------------------------------------
+7. ROTEIRO DE EXECUCAO PASSO A PASSO (O QUE FAZER AGORA)
+--------------------------------------------------------------------------------
+Passo 1: Voce baixa este TXT e define:
+         - Os 4 elementos dos 4 personagens (Trevas para Gothic Boy & Goth
+           Girl + qual elemento/visual para o outro par Masculino/Feminino).
+         - Os conceitos dos 3 ou 4 Monstros Iniciais Autorais.
+Passo 2: Nos geramos juntos (ou voce traz/gera com os prompts da Secao 6) as
+         artes das Molduras de Menu, HUD, Slots de Inventario e Arenas de
+         Batalha, e eu recorto/preparo todas em WebP transparente de alta
+         performance.
+Passo 3: Criamos o seletor de Personagem (2M / 2F) + Seletor de Tom de Pele em
+         Tempo Real (via Shader WebGL nas animacoes MP4 e retratos).
+Passo 4: Substituimos os menus antigos e os iniciais antigos pelas novas artes
+         e criaturas 100% autorais.
+================================================================================
