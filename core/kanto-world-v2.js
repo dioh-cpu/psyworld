@@ -81,6 +81,15 @@ root.addEventListener('dragstart',e=>e.preventDefault());
 D.body.appendChild(root);state.root=root;state.canvas=root.querySelector('canvas');state.ctx=state.canvas.getContext('2d');
 root.querySelector('[data-kw2-fish]').onclick=()=>W.PsyHobbies?.startFishing?.(state.inside?.id||state.world?.id,{x:state.position.x,y:state.position.y,facing:state.facing});
 root.querySelector('[data-atlas]').onclick=()=>{close();W.openKantoJourneyV1?.()};root.querySelector('.kw2-close').onclick=close;root.querySelector('[data-interact]').onclick=()=>{W.PsyCampaignAutomation?.cancelRoute?.();interact();};
+if(W.PsyIslandCampaign?.active()){
+ const entries={farm:'Horta do cais',race:'Corrida do porto',explore:'Expedições',companions:'Companheiros e ovos',rest:'Refúgio'};
+ const actions=root.querySelector('.kw2-menu-actions');
+ actions.replaceChildren(...Object.entries(entries).map(([id,label])=>{
+   const button=D.createElement('button');button.type='button';button.dataset.kw2Panel=id;button.textContent=label;return button;
+ }));
+ root.querySelector('.kw2-menu-head small').textContent='PSYWORLD · ILHA DAS MARÉS SOMBRIAS';
+ root.querySelector('.kw2-close').onclick=()=>{close();W.PsyIslandCampaign.returnToTitle();};
+}
 root.querySelector('[data-kw2-menu]').onclick=()=>toggleCampaignMenu();
 root.querySelector('[data-kw2-house]').onclick=()=>{toggleCampaignMenu(false);openHouse();};
 root.querySelectorAll('[data-kw2-menu-close]').forEach(b=>b.onclick=()=>toggleCampaignMenu(false));
@@ -93,7 +102,7 @@ D.addEventListener('keydown',onKeyDown,true);D.addEventListener('keyup',onKeyUp,
 const stage=root.querySelector('.kw2-stage');stage.addEventListener('pointerdown',touchStart);stage.addEventListener('pointermove',touchMove);stage.addEventListener('pointerup',touchEnd);stage.addEventListener('pointercancel',touchCancel);stage.addEventListener('lostpointercapture',touchCancel);stage.addEventListener('wheel',e=>{if(W.PsyKantoAnime3Q?.brushWheel?.(e)){e.preventDefault();draw();}},{passive:false});W.addEventListener('blur',resetTouch);W.addEventListener('resize',resetTouch);D.addEventListener('visibilitychange',()=>{if(D.hidden)resetTouch()});
 }
 function showDialog(title,body,actions=[],portrait='',emote=''){
- if(W.PsyGuide){state.dialogOpen=true;state.path=[];state.held.clear();const actor=activeNPCs().find(n=>n.name===title||title.includes(n.name));return W.PsyGuide.show({speaker:title,text:body,portrait:/Professor Car/.test(title)?'assets/kanto/approved/professor-expressions.webp':portrait||actor?.portrait,sheet:/Professor Car/.test(title)?'professor':undefined,target:actor?()=>{const view=camera(),r=state.canvas.getBoundingClientRect(),x=r.left+(actor.at[0]*view.scale+view.ox)*r.width/view.w,y=r.top+(actor.at[1]*view.scale+view.oy)*r.height/view.h;return {left:x-18,top:y-60,right:x+18,bottom:y+8};}:undefined,actions:actions.map(a=>({text:a.text,primary:a.primary,run:a.run})),onClose:()=>{state.dialogOpen=false;hud();}});}
+ if(W.PsyGuide){if(W.PsyIslandCampaign?.active()&&!portrait)portrait='assets/monsters/noctarn/sprite-front.png';state.dialogOpen=true;state.path=[];state.held.clear();const actor=activeNPCs().find(n=>n.name===title||title.includes(n.name));return W.PsyGuide.show({speaker:title,text:body,portrait:/Professor Car/.test(title)?'assets/kanto/approved/professor-expressions.webp':portrait||actor?.portrait,sheet:/Professor Car/.test(title)?'professor':undefined,target:actor?()=>{const view=camera(),r=state.canvas.getBoundingClientRect(),x=r.left+(actor.at[0]*view.scale+view.ox)*r.width/view.w,y=r.top+(actor.at[1]*view.scale+view.oy)*r.height/view.h;return {left:x-18,top:y-60,right:x+18,bottom:y+8};}:undefined,actions:actions.map(a=>({text:a.text,primary:a.primary,run:a.run})),onClose:()=>{state.dialogOpen=false;hud();}});}
 const d=state.root.querySelector('.kw2-dialog');d.querySelector('.kw2-dialog-title').textContent=title;d.querySelector('.kw2-dialog-body').textContent=body;d.dataset.emotion=emote||'normal';d.querySelector('.kw2-expression').textContent='';
 const im=d.querySelector('.kw2-portrait');im.style.display=portrait?'block':'none';if(portrait)im.src=portrait;
 const box=d.querySelector('.kw2-dialog-actions');box.replaceChildren();const options=actions.length?actions:[{text:'CONTINUAR'}];options.forEach(a=>{const b=D.createElement('button');b.textContent=a.text;b.classList.toggle('primary',!!a.primary);b.onclick=()=>{d.classList.remove('open');state.dialogOpen=false;a.run?.();hud()};box.appendChild(b)});
@@ -102,6 +111,14 @@ function hud(){
  if(!state.root)return;
  W.PsyWorldTimeV1?.updateBadge?.(state.root.querySelector('[data-world-clock]'));
  const q=progress(),where=state.inside;
+ if(W.PsyIslandCampaign?.active()){
+   const titles={home:'Casa do viajante',lab:'Observatório',center:'Refúgio',market:'Armazém'};
+   const areas={'pallet-centro-3q':'Porto das Cinzas','pallet-lab-3q':'Mirante das Marés','pallet-arredores-3q':'Trilha da Bruma','pallet-costa-3q':'Enseada dos Destroços'};
+   state.root.querySelector('.kw2-title').textContent=where?(titles[where.id]||'Porto das Cinzas'):(areas[state.world.id]||'Porto das Cinzas');
+   state.root.querySelector('.kw2-subtitle').textContent='Ilha das Marés Sombrias';
+   state.root.querySelector('.kw2-objective').textContent=W.PsyIslandCampaign.racing()?'Corrida: siga os marcos numerados.':'Abra o menu para acessar a horta, a corrida e as expedições.';
+   return;
+ }
  state.root.querySelector('.kw2-title').textContent=where?.title||state.world?.title||'Kanto';
  const subtitles={
   center:'Um refúgio para sua equipe',market:'Preparativos para a jornada',
@@ -179,6 +196,16 @@ function suspendCampaignForPanel(id){
 }
 function openCampaignPanel(kind){
  if(state.externalPanel)return;
+ if(W.PsyIslandCampaign?.active()){
+   toggleCampaignMenu(false);
+   const island=W.PsyIslandCampaign;
+   if(kind==='race'){
+     if(state.inside)return showDialog('Corrida do porto','Saia para a rua para iniciar a corrida.');
+     return island.beginRace(state.position,positionValid,showDialog);
+   }
+   island[kind]?.(showDialog);
+   return;
+ }
  const panels={
   team:{fn:()=>W.openTeam?.(),id:'screen-team'},
   bag:{fn:()=>W.openBag?.(),id:'screen-bag'},
@@ -200,11 +227,11 @@ function openCampaignPanel(kind){
  }
  suspendCampaignForPanel(spec.id);
 }
-function open(id,options={}){if(state.huntRiftSession){W.notif?.('Retorne pela fenda antes de mudar de localidade.',2200);return false}if(W.PsyKantoAnime3Q?.isEnabled?.()){if(id==='pallet')id='pallet-centro-3q';else if(id==='route-1')id='pallet-arredores-3q';}const isPilot=!!W.PsyKantoAnime3Q?.isPilotMap?.(id);if(!isPilot&&(!['pallet','route-1','viridian'].includes(id)||!DATA[id==='route-1'?'route1':id]))return false;const previousWorld=state.world?.id||null,pilotMap=isPilot?W.PsyKantoAnime3Q.getMap(id):null,resumePosition=!isPilot&&!state.inside&&previousWorld===id&&DATA.walkable(state.world,state.position.x,state.position.y,PLAYER_RADIUS)?[state.position.x,state.position.y]:null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);
+function open(id,options={}){if(W.PsyIslandCampaign?.active()&&id!=='pallet'&&(!id.startsWith('pallet-')||id.includes('arredores')))return false;if(state.huntRiftSession){W.notif?.('Retorne pela fenda antes de mudar de localidade.',2200);return false}if(W.PsyKantoAnime3Q?.isEnabled?.()){if(id==='pallet')id='pallet-centro-3q';else if(id==='route-1')id='pallet-arredores-3q';}const isPilot=!!W.PsyKantoAnime3Q?.isPilotMap?.(id);if(!isPilot&&(!['pallet','route-1','viridian'].includes(id)||!DATA[id==='route-1'?'route1':id]))return false;const previousWorld=state.world?.id||null,pilotMap=isPilot?W.PsyKantoAnime3Q.getMap(id):null,resumePosition=!isPilot&&!state.inside&&previousWorld===id&&DATA.walkable(state.world,state.position.x,state.position.y,PLAYER_RADIUS)?[state.position.x,state.position.y]:null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);
 if(id==='viridian'&&!progress().viridian&&!options.skipGuard)return false;
 if((id==='route-1'||id==='pallet-arredores-3q')&&!progress().oak&&!options.skipGuard){open('pallet');setTimeout(()=>showDialog('Rota 1 bloqueada','Antes de seguir para a Rota 1, converse com o Professor Car’alho no laboratório.'),80);return false}
 if(id==='pallet-arredores-3q'&&Array.isArray(options.spawn)&&options.spawn[0]>800&&options.spawn[1]<140){options={...options,spawn:[762,54],facing:options.facing||'down'};}
-W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();toggleCampaignMenu(false);state.externalPanel=null;state.root.style.visibility='';state.root.dataset.world=id;D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=pilotMap||(id==='pallet'?DATA.pallet:id==='route-1'?DATA.route1:DATA.viridian);state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.camPos=null;if(isPilot)state.portalCooldownUntil=performance.now()+650;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
+W.PsyIslandCampaign?.cancelRace();W.closeTutorial?.();D.getElementById('psy-tutorial-cinematic')?.remove();makeUI();toggleCampaignMenu(false);state.externalPanel=null;state.root.style.visibility='';state.root.dataset.world=id;D.getElementById('psy-kanto-world')?.classList.remove('open');D.body.classList.add('psy-kanto-v2-active');state.world=pilotMap||(id==='pallet'?DATA.pallet:id==='route-1'?DATA.route1:DATA.viridian);state.inside=null;state.path=[];state.navRequest++;state.navCells=new Map();state.viewport=null;state.lastRender=0;state.camPos=null;if(isPilot)state.portalCooldownUntil=performance.now()+650;state.held.clear();state.dialogOpen=false;state.root.querySelector('.kw2-dialog').classList.remove('open');
 const start=options.spawn||resumePosition||state.world.spawn;state.position={x:start[0],y:start[1]};if(options.facing)state.facing=options.facing;state.lastOutdoor=null;updateFishingButton();
 image(state.world.art);selectedAvatar();D.getElementById('psy-kanto-atlas')?.classList.remove('open');state.root.classList.add('open');state.suspended=false;const pending=W.PsyKantoHuntRiftV1?.getOffer?.('legacy');if(pending?.context.world===id)attachHuntRiftOffer(pending);if(isPilot)W.PsyKantoAnime3Q?.whenReady?.().then(()=>{state.navCells?.clear?.();draw()});hud();draw();if(!state.raf){state.time=performance.now();state.raf=W.requestAnimationFrame(tick)}if(!isPilot)W.PsyKantoStoryV49?.enter(previousWorld,id);return true;}
 function close(){W.PsyKantoPalletHDV1?.hide?.();W.PsyKantoAnime3Q?.hide?.();if(state.huntRiftSession)returnFromHuntRift(false);if(state.huntRiftOffer)W.PsyKantoHuntRiftV1?.clearOffer?.('legacy',state.huntRiftOffer.id);state.huntRiftOffer=null;W.PsyHobbiesVFX?.cancelAction?.(state.inside?.id||state.world?.id);if(state.root){state.root.style.visibility='';toggleCampaignMenu(false);state.externalPanel=null;}W.PsyKantoStoryV49?.close(false);W.PsyGuide?.close();autoHunt=false;state.navRequest++;state.navCells.clear();D.body.classList.remove('psy-kanto-v2-active');state.root?.classList.remove('open');state.path=[];state.pendingHobby=null;state.pendingRiftTarget=null;state.held.clear();state.touch=null;state.joy=null;state.dialogOpen=false;state.suspended=false;const stick=state.root?.querySelector('.kw2-joystick');if(stick)stick.style.display='none';if(state.raf)W.cancelAnimationFrame(state.raf);state.raf=0}
@@ -243,7 +270,7 @@ function cavePool(){
  const ids=[27,50,41,74,95,104],getName=W.getPokeName;
  return ids.map(id=>({id,name:typeof getName==='function'?getName(id):'Pokémon '+id,type:W.TYPE_BY_ID_ALL?.[id]||'Rock'}));
 }
-function maybeEncounter(config){if(!config)return;if(config.area==='route-1'&&!DATA.grassAt(state.world,state.position.x,state.position.y))return;if(performance.now()-state.lastEncounter<(config.cooldownMs||6000)||Math.random()>(config.chance??.16))return;
+function maybeEncounter(config){if(W.PsyIslandCampaign?.active())return;if(!config)return;if(config.area==='route-1'&&!DATA.grassAt(state.world,state.position.x,state.position.y))return;if(performance.now()-state.lastEncounter<(config.cooldownMs||6000)||Math.random()>(config.chance??.16))return;
 const p=player();if(!Array.isArray(p.team)||!p.team.length){showDialog('Equipe necessária','Escolha seu primeiro Pokémon antes de procurar encontros.');return}
 if(typeof W.triggerWild!=='function')return;state.lastEncounter=performance.now();state.suspended=true;state.pendingHuntRift={world:(state.inside||state.world)?.id||'',kind:state.inside?'dungeon':'route',x:state.position.x,y:state.position.y,facing:state.facing,autoHunt};state.held.clear();state.path=[];state.joy=null;state.root.classList.remove('open');const old=W.startBattle,oldGet=W.getPokesForHunt;
 const prev=W.endBattle;if(typeof prev==='function'&&!prev.__kw2){const wrapped=function(won){const pending=won===true?state.pendingHuntRift:null;state.pendingHuntRift=null;const result=prev.apply(this,arguments);let offer=null;if(state.suspended&&pending)offer=W.PsyKantoHuntRiftV1?.tryOffer?.('legacy',{...pending,won:true,trainer:false},Date.now());if(state.suspended)W.setTimeout(()=>{restoreEncounter();if(offer)attachHuntRiftOffer(offer)},0);return result};wrapped.__kw2=true;W.endBattle=wrapped}
@@ -392,6 +419,7 @@ state.world.doors.forEach(d=>{if(d.id==='lab'||Math.hypot(d.at[0]-state.position
 if(Math.hypot(state.world.exit[0]-state.position.x,state.world.exit[1]-state.position.y)<105)drawMarker(c,state.world.exit[0],state.world.exit[1],state.world.id==='pallet'?'ROTA 1':state.world.id==='viridian'?'ROTA 2':'VIRIDIAN','#80ffaa')}}
 else if(state.inside.id===RIFT_ID)drawRiftGate(c,...(state.inside.exit||[448,128]),performance.now());else drawMarker(c,...(state.inside.exit||[240,675]),'SAÍDA ↓','#85efdc');
 const inHome=state.inside?.id==='home';
+W.PsyIslandCampaign?.raceFrame(c,state.position,!state.inside);
 const charScale=inHome?2.45:(a3q?(W.PsyKantoAnime3Q.characterScale||1.56):1);
 const followerScale=inHome?1.5:(a3q?(W.PsyKantoAnime3Q.followerScale||1.18):charScale);
 if(W.PsyFollower)W.PsyFollower.draw(c,{scene:state.world.id+':'+(state.inside?.id||'outside'),x:state.position.x,y:state.position.y,facing:state.facing,moving:state.moving,scale:followerScale,trainerScale:charScale,valid:positionValid,trainer:()=>drawPlayer(c,state.position.x,state.position.y,{scale:charScale})});else drawPlayer(c,state.position.x,state.position.y,{scale:charScale});
@@ -575,6 +603,11 @@ const targets=currentTargets().map(v=>({...v,d:Math.hypot(v.at[0]-state.position
 activateTarget(a)}
 function activateTarget(a){if(a.type==='rift'){enterHuntRift();return}if(a.type==='rift-exit'){returnFromHuntRift(false);return}if(a.type==='return'){if(state.world?.id==='viridian')open('route-1',{spawn:[844,100],skipGuard:true});else open('pallet',{spawn:DATA.pallet.returnSpawn||DATA.pallet.spawn});return}if(a.type==='door'){enterDoor(a.ref);return}if(a.type==='exit'){if(state.inside){exitDoor();return}exitWorld();return}talk(a.ref)}
 function talk(npc){
+ if(W.PsyIslandCampaign?.active()){
+   if(npc.id==='oak')return showDialog('Guardião do mirante','Há embarcações desaparecendo perto das ruínas. Noctarn talvez reconheça os rastros deixados pela maré.');
+   if(npc.id==='center'||npc.id==='nurse')return W.PsyIslandCampaign.rest(showDialog);
+   return showDialog(npc.name,'A maré trouxe destroços à enseada. O porto tem um refúgio e uma horta para quem chega pela costa.');
+ }
  const id=npc.id,pr=npc.portrait||npc.sprite||'',em=npc.emote||'sereno';
  const palletLines={'pallet-nina':'Estou desenhando os caminhos de Pallet. Um mapa fica melhor quando escutamos quem conhece cada trilha.','pallet-tomi':'As plantas do bosque mudam com as estações. Gosto de cuidar das mudas antes de explorar.','pallet-maia':'Cuide de seus companheiros e faça pausas durante a viagem. Uma jornada longa começa com bons cuidados.','pallet-banhista':'O mar está bonito hoje! Antes de entrar na água, gosto de observar as ondas e a maré.','pallet-breno':'A pedra guarda marcas de quem trabalhou nela. Estou aprendendo a restaurar os caminhos das colinas.','pallet-lucia':'Bem-vindo! Cuido das flores desta casa e sempre guardo um pouco de água para os dias quentes.'};
  if(palletLines[id]){
@@ -707,6 +740,11 @@ function makeCaveRoom(){
  };
 }
 function enterDoor(door){
+ if(W.PsyIslandCampaign?.active()){
+   if(door.id==='center')return W.PsyIslandCampaign.rest(showDialog);
+   if(door.id==='market')return W.PsyIslandCampaign.farm(showDialog);
+ }
+
  state.navRequest++;state.navCells.clear();
  const id=door.id;
  if(state.world?.id==='viridian'&&id==='gym'){showDialog('Ginásio de Viridian','Este Ginásio permanece fechado nesta etapa da campanha. Procure a passagem para a Rota 2.',[]);return;}
@@ -738,7 +776,7 @@ function openHouse(){
 }
 function healTeam(){const p=player();if(Array.isArray(p.team))for(const mon of p.team){const hp=Number(mon.maxHp||mon.maxHP||mon.hpMax||0);if(hp>0)mon.hp=hp}try{W.updateHUD?.();W.autoSave?.()}catch(_){}showDialog('Enfermeira','Sua equipe foi recuperada. Boa viagem!')}
 function openShop(){const fn=W.openShop;close();if(typeof fn==='function')fn();else{state.root?.classList.add('open');showDialog('Davi, o lojista','Minhas mercadorias já estão separadas. Em breve você poderá negociá-las aqui mesmo.')}}
-function exitWorld(){if(state.world.id==='viridian'){
+function exitWorld(){if(W.PsyIslandCampaign?.active()){state.path=[];return showDialog('Fim da trilha','As rotas para fora de Porto das Cinzas estão fechadas.');}if(state.world.id==='viridian'){
  const campaign=W.PsyKantoPlayableV1?.progress?.(),ps=campaign?.places?.viridian;
  if(!progress().viridianTalked&&!ps?.talked){showDialog('Passagem para Rota 2','Converse com o ancião de Viridian antes de seguir.',[{text:'ENTENDI'}]);return}
  if(ps){ps.talked=true;ps.cleared=true}
@@ -883,7 +921,24 @@ function findPath(from,to,request){
     slice();
   });
 }
-W.PsyKantoWorldV2={isOpen:()=>!!state.root?.classList.contains('open'),openHouse,drawTrainer:(ctx,x,y,options)=>drawPlayer(ctx,x,y,options),dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.pendingHobby=null;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
+W.PsyKantoWorldV2={
+ islandDialog:showDialog,
+ islandBattle(start){
+   state.path=[];state.held.clear();state.joy=null;state.touch=null;
+   state.suspended=true;state.root.style.visibility='hidden';
+   const battle=D.getElementById('battle-screen');
+   const restore=()=>{
+     state.root.style.visibility='';state.suspended=false;hud();draw();W.PsyIslandCampaign.save();
+   };
+   try{start()}catch(error){restore();throw error;}
+   if(!battle.classList.contains('active')){restore();return;}
+   const observer=new MutationObserver(()=>{
+     if(battle.classList.contains('active'))return;
+     observer.disconnect();restore();
+   });
+   observer.observe(battle,{attributes:true,attributeFilter:['class']});
+ },
+ isOpen:()=>!!state.root?.classList.contains('open'),openHouse,drawTrainer:(ctx,x,y,options)=>drawPlayer(ctx,x,y,options),dismissMenu:()=>toggleCampaignMenu(false),openMenuPanel:openCampaignPanel,suspendForPanel:suspendCampaignForPanel,setStoryLock(active){state.suspended=!!active;state.dialogOpen=!!active;state.pendingHobby=null;state.path=[];state.held.clear();state.joy=null;state.touch=null;state.navRequest++;if(active)autoHunt=false;},interact,leaveInterior:exitDoor,enterPlace:id=>{const door=state.world?.doors?.find(d=>d.id===id);if(door)enterDoor(door);},
  navigate:async function(at){autoHunt=false;state.pendingHobby=null;state.path=[];const request=++state.navRequest;const route=await findPath([state.position.x,state.position.y],at,request);if(request===state.navRequest)state.path=route;if(state.root)state.root.dataset.navigationState=route.length?'following':'unreachable';return route.length>0;},
  setAutoHunt:function(active){state.pendingHobby=null;if(active&&!vipActive()){if(!W.PsyCampaignAutomation?.showVipGate?.('hunt'))showDialog('VIP necessário','Auto Hunt e auto batalha são benefícios VIP.');return false;}if(active&&!progress().oak){showDialog('Jornada','Converse primeiro com o Professor Car’alho.');return false;}if(active&&state.world?.id!=='route-1'&&!state.world?.isRoute1)open('route-1');if(active&&state.inside)exitDoor();autoHunt=!!active;if(!autoHunt){state.path=[];state.navRequest++;huntPlanning=false;state.held.clear();state.joy=null;}return autoHunt;},
  isAutoHunt:()=>autoHunt,

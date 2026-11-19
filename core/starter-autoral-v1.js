@@ -94,12 +94,12 @@ function patchSpriteHelpers(){
  ['getPokeAnim','getRealSprite'].forEach(name=>{
   const orig=W[name];
   if(typeof orig!=='function'||orig.__autoral)return;
-  const wrapped=function(p){const c=p&&get(p.id);return c?c.sprite:orig.apply(this,arguments);};
+  const wrapped=function(p){const c=p&&get(p.id);return c?.sprite||W.PsyIslandCampaign?.sprite(p)||orig.apply(this,arguments);};
   wrapped.__autoral=true;W[name]=wrapped;
  });
  const origUrl=W.getSpriteUrl;
  if(typeof origUrl==='function'&&!origUrl.__autoral){
-  const wrappedUrl=function(id){const c=get(id);return c?c.sprite:origUrl.apply(this,arguments);};
+  const wrappedUrl=function(id){const c=get(id);return c?.sprite||W.PsyIslandCampaign?.sprite({id})||origUrl.apply(this,arguments);};
   wrappedUrl.__autoral=true;W.getSpriteUrl=wrappedUrl;
  }
 }

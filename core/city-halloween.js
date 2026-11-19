@@ -510,6 +510,7 @@
     });
   }
   function positionNPCs() {
+    if (D.body.classList.contains('psy-island-preview')) return;
     const active=cityVisible()&&!!origin&&!(typeof inBattle!=='undefined'&&inBattle);
     const cv=D.getElementById('gameCanvas'),wrap=D.getElementById('game-wrap');
     const canvasBox=cv?.getBoundingClientRect(),wrapBox=wrap?.getBoundingClientRect();

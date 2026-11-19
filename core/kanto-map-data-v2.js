@@ -7,7 +7,7 @@
   // Path format: [x1,y1,x2,y2,walk radius]. Grass is an explicit rectangle, with
   // a bridge from the public path; never treat an arbitrary decorative tile as hunt.
   const pallet={
-    id:'pallet',title:'Pallet Town',w:1000,h:667,
+    id:'pallet',title:'Porto das Cinzas',w:1000,h:667,
     art:'assets/story/pallet-town-artist-v2.webp',
     spawn:[510,475],exit:[573,42],
     // Paths follow the approved painted streets; solid anywhere not authored.
@@ -33,8 +33,8 @@
     blockers:[],
     grass:[],
     doors:[
-      {id:'center',title:'Centro Pokémon',at:[167,430],inside:[380,400],range:42},
-      {id:'market',title:'Poké Mart',at:[405,446],inside:[380,400],range:42},
+      {id:'center',title:'Refúgio',at:[167,430],inside:[380,400],range:42},
+      {id:'market',title:'Horta do cais',at:[405,446],inside:[380,400],range:42},
       {id:'home',title:'Casa do Treinador',at:[214,602],inside:[380,400],range:44},
       {id:'house-east',title:'Casa da Vila',at:[812,341],inside:[380,400],range:40},
       {id:'house-west',title:'Casa do Vizinho',at:[309,309],inside:[380,400],range:41},
@@ -46,7 +46,7 @@
       {id:'gate',name:'Guarda da Rota',at:[575,106],portrait:'assets/halloween/npc-noah.svg',emote:'atento'},
       {id:'neighbor',name:'Nina',at:[373,312],portrait:'assets/halloween/npc-mina.svg',emote:'amigável'}
     ],
-    signs:[{at:[573,42],title:'ROTA 1 ↑'},{at:[664,525],title:'PALLET TOWN'}]
+    signs:[{at:[573,42],title:'TRILHA DO MIRANTE ↑'},{at:[664,525],title:'PORTO DAS CINZAS'}]
   };
   const route1={
     id:'route-1',title:'Rota 1 · Nível 1–3',w:1000,h:500,

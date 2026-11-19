@@ -1653,6 +1653,7 @@ notif('📍 '+key.toUpperCase(),2000);
 triggerWild(key);
 }
 function triggerWild(pool){
+if(window.PsyIslandCampaign?.active()) return;
 if(inBattle||!P.team[0]) return;
 // The legacy Psy City is always safe. Wild battles are permitted only on an
 // explicitly-authored Route 1 grass tile; menus and auto-hunt cannot bypass it.
@@ -1765,6 +1766,7 @@ const el = document.getElementById('battle-enemy'); if(!el) return;
 isEnemyBlinking = true; enemyBlinkTimer = 0; el.classList.add('poke-blink');
 }
 function startBattle(wildPoke) {
+if(window.PsyIslandCampaign?.active() && !wildPoke?.islandEncounter) return;
 if(!P.team[0]) return;
 window.PsySeason?.state();
 inBattle = true;
@@ -3578,6 +3580,7 @@ function updateWorldHUD(){
 battleAction = function(action, moveData){
   ensureTrainerData();
   if (!inBattle || battleData.state!== 'active') return;
+  if (window.PsyIslandCampaign?.active() && action !== 'move' && action !== 'flee') return;
   const log = document.getElementById('battle-log');
   if (action === 'move') {
     const move = moveData;
@@ -3657,6 +3660,7 @@ battleAction = function(action, moveData){
       try{window.psySharedWildVictoryDrop?.(battleData.wild)}catch(e){console.warn('[PSYWORLD WILD] shared drops',e)}
       if(log) log.textContent = `🎉 Derrotou Lv.${lvl} ${battleData.wild.name}! +${finalXp} EXP${accountBattleReward?' • recompensa sendo confirmada':` +${finalGold}G`}${msgEff}`;
       checkLevelUp(); updateHUD();
+      window.PsyIslandCampaign?.victory(battleData.wild);
     // === GYM FIX - TEM QUE FICAR AQUI DENTRO ===
       if(gymBattle){
         gymBattle.current++;

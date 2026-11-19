@@ -1,0 +1,12 @@
+body.psy-island-preview #btn-card-float,
+body.psy-island-preview #game-wrap,
+body.psy-island-preview #login-box > :not(h1,p,#nick-input,[data-island-start],[data-island-continue]),
+.psy-original-island #psy-kanto-world-v2 [data-atlas],
+.psy-original-island #psy-kanto-world-v2 [data-kw2-house],
+.psy-original-island #psy-kanto-world-v2 [data-kw2-route],
+.psy-original-island #psy-kanto-world-v2 [data-kw2-route-inline],
+.psy-original-island #psy-kanto-world-v2 .kw2-menu-columns,
+.psy-original-island #battle-controls button:not(#move-buttons button):not([onclick="battleAction('flee')"]) {
+  display: none !important;
+}
+[data-island-continue][hidden] { display: none !important; }

@@ -219,6 +219,7 @@
     try{tryDropStone(wildType,lvl)}catch(e){}
     setLog(`🎉 Derrotou Lv.${lvl} ${w.name}! +${xp} EXP +${gold}G${extraText?' '+extraText:''}`);
     try{checkLevelUp();updateHUD()}catch(e){}
+    W.PsyIslandCampaign?.victory(w);
     if(typeof gymBattle!=='undefined'&&gymBattle){gymBattle.current++;setTimeout(()=>startNextGymPoke(),900);return}
     setTimeout(()=>endBattle(true),900);
   }
