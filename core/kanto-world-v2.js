@@ -82,7 +82,13 @@ D.body.appendChild(root);state.root=root;state.canvas=root.querySelector('canvas
 root.querySelector('[data-kw2-fish]').onclick=()=>W.PsyHobbies?.startFishing?.(state.inside?.id||state.world?.id,{x:state.position.x,y:state.position.y,facing:state.facing});
 root.querySelector('[data-atlas]').onclick=()=>{close();W.openKantoJourneyV1?.()};root.querySelector('.kw2-close').onclick=close;root.querySelector('[data-interact]').onclick=()=>{W.PsyCampaignAutomation?.cancelRoute?.();interact();};
 if(W.PsyIslandCampaign?.active()){
- const entries={farm:'Horta do cais',race:'Corrida do porto',explore:'Expedições',companions:'Companheiros e ovos',rest:'Refúgio'};
+ const house=root.querySelector('[data-kw2-house]');
+ const farm=D.createElement('button');
+ farm.type='button';farm.className=house.className;farm.dataset.islandFarm='';
+ farm.textContent='🌱';farm.title='Fazenda';farm.setAttribute('aria-label','Fazenda');
+ farm.onclick=()=>{toggleCampaignMenu(false);W.PsyIslandCampaign.farm(showDialog);};
+ house.after(farm);
+ const entries={quest:'Missões',summons:'Invocações',race:'Corrida do porto',explore:'Expedições',companions:'Companheiros e ovos',rest:'Refúgio'};
  const actions=root.querySelector('.kw2-menu-actions');
  actions.replaceChildren(...Object.entries(entries).map(([id,label])=>{
    const button=D.createElement('button');button.type='button';button.dataset.kw2Panel=id;button.textContent=label;return button;
@@ -112,11 +118,16 @@ function hud(){
  W.PsyWorldTimeV1?.updateBadge?.(state.root.querySelector('[data-world-clock]'));
  const q=progress(),where=state.inside;
  if(W.PsyIslandCampaign?.active()){
+   const farm=state.root.querySelector('[data-island-farm]');
+   const unlocked=W.PsyIslandCampaign.farmUnlocked();
+   farm.dataset.locked=String(!unlocked);
+   farm.title=unlocked?'Fazenda':'Fazenda · avance nas missões';
+   farm.textContent=unlocked?'🌱':'🌱 🔒';
    const titles={home:'Casa do viajante',lab:'Observatório',center:'Refúgio',market:'Armazém'};
    const areas={'pallet-centro-3q':'Porto das Cinzas','pallet-lab-3q':'Mirante das Marés','pallet-arredores-3q':'Trilha da Bruma','pallet-costa-3q':'Enseada dos Destroços'};
    state.root.querySelector('.kw2-title').textContent=where?(titles[where.id]||'Porto das Cinzas'):(areas[state.world.id]||'Porto das Cinzas');
    state.root.querySelector('.kw2-subtitle').textContent='Ilha das Marés Sombrias';
-   state.root.querySelector('.kw2-objective').textContent=W.PsyIslandCampaign.racing()?'Corrida: siga os marcos numerados.':'Abra o menu para acessar a horta, a corrida e as expedições.';
+   state.root.querySelector('.kw2-objective').textContent=W.PsyIslandCampaign.racing()?'Corrida: siga os marcos numerados.':'Abra o menu para acessar missões, corrida e expedições.';
    return;
  }
  state.root.querySelector('.kw2-title').textContent=where?.title||state.world?.title||'Kanto';
@@ -605,6 +616,7 @@ function activateTarget(a){if(a.type==='rift'){enterHuntRift();return}if(a.type=
 function talk(npc){
  if(W.PsyIslandCampaign?.active()){
    if(npc.id==='oak')return showDialog('Guardião do mirante','Há embarcações desaparecendo perto das ruínas. Noctarn talvez reconheça os rastros deixados pela maré.');
+   if(npc.id==='pallet-nina')return W.PsyIslandCampaign.quest(showDialog);
    if(npc.id==='center'||npc.id==='nurse')return W.PsyIslandCampaign.rest(showDialog);
    return showDialog(npc.name,'A maré trouxe destroços à enseada. O porto tem um refúgio e uma horta para quem chega pela costa.');
  }
@@ -923,6 +935,7 @@ function findPath(from,to,request){
 }
 W.PsyKantoWorldV2={
  islandDialog:showDialog,
+ refreshIslandHud:hud,
  islandBattle(start){
    state.path=[];state.held.clear();state.joy=null;state.touch=null;
    state.suspended=true;state.root.style.visibility='hidden';

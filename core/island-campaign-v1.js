@@ -3,29 +3,70 @@
   'use strict';
 
   const saveKey = 'psyworld.original-island.v1';
-  const starter = {id:9001, name:'Noctarn', type:'Noturno', power:55, attack:'Garra do Crepúsculo'};
+  const starter = {id:9001, name:'Noctarn', type:'Noturno', stars:3, hp:74, damage:1.05, speed:16, isStarter:true, power:55, attack:'Garra do Crepúsculo'};
   const species = [
-    {id:9002, name:'Raizardo', type:'Planta', habitat:'Trilha do Bosque', power:48, attack:'Chicote de Espinhos'},
-    {id:9003, name:'Salmarim', type:'Agua', habitat:'Enseada dos Destroços', power:48, attack:'Jato Salgado'},
-    {id:9004, name:'Brumasa', type:'Voador', habitat:'Falésias da Bruma', power:48, attack:'Rajada das Falésias'}
+    {id:9002, name:'Raizardo', type:'Planta', stars:3, hp:86, damage:.98, speed:12, habitat:'Trilha do Bosque', power:48, attack:'Chicote de Espinhos'},
+    {id:9003, name:'Salmarim', type:'Agua', stars:3, hp:79, damage:1.01, speed:15, habitat:'Enseada dos Destroços', power:48, attack:'Jato Salgado'},
+    {id:9004, name:'Brumasa', type:'Voador', stars:4, hp:69, damage:1.08, speed:21, habitat:'Falésias da Bruma', power:48, attack:'Rajada das Falésias'}
   ];
-  const catalog = [starter, ...species];
+  const catalog = [starter, ...species, ...W.PsyIslandSummons.creatures];
   const initialEggChance = .005;
   let active = false;
   let race = null;
   const island = () => P.meta.islandCampaign;
-  const sprite = mon => species.find(entry => entry.id === Number(mon?.id))
-    ? 'assets/monsters/island/' + Number(mon.id) + '.svg' : null;
+  const entryFor = mon => catalog.find(entry=>entry.id===Number(mon?.id));
+  const starFactor = mon => 1 + .15 * (mon.stars - 3);
+  const speed = mon => Math.round((entryFor(mon).speed + 2*(mon.level-1))*starFactor(mon));
+  const damageFactor = mon => entryFor(mon).damage * starFactor(mon);
+  function sprite(mon) {
+    const entry = entryFor(mon);
+    return entry && !entry.isStarter ? 'assets/monsters/island/' + (entry.art || entry.id) + '.svg' : null;
+  }
 
-  function makeMon(entry, level = 1, hp = 74) {
-    return {
+  function applyStars(mon) {
+    const entry = entryFor(mon);
+    mon.stars = Math.max(entry.stars,Math.min(6,Number(mon.stars)||entry.stars));
+    // Start with the old level growth, then apply the species and star bonuses.
+    const hp = Math.round((entry.hp+20*(mon.level-1))*starFactor(mon));
+    const ratio = mon.maxHp ? mon.hp/mon.maxHp : 1;
+    mon.baseMaxHp = mon.maxHp = hp;
+    mon.hp = mon.currentHp = ratio > 0 ? Math.max(1,Math.round(hp*Math.min(1,ratio))) : 0;
+    return mon;
+  }
+
+  function makeMon(entry, level = 1) {
+    return applyStars({
       id:entry.id, name:entry.name, type:entry.type, level, exp:0, maxExp:100,
-      baseMaxHp:hp, maxHp:hp, hp, boost:0, resets:0,
-      followerKeyV47:entry.id === starter.id ? 'island-noctarn' : undefined,
-      rarity:{n:'Comum', mult:1, bonus:0}, isStarter:entry.id === starter.id,
+      stars:entry.stars, boost:0, resets:0,
+      followerKeyV47:entry.isStarter ? 'island-noctarn' : undefined,
+      rarity:{n:'Comum', mult:1, bonus:0}, isStarter:entry.isStarter || false,
       moves:[{name:entry.attack, power:entry.power, type:entry.type},
         {name:'Investida', power:39, type:'Normal'}]
-    };
+    });
+  }
+
+  function acquire(entry) {
+    P.box.push(makeMon(entry));
+    return entry.name+' '+entry.stars+' ★';
+  }
+
+  function summons(dialog) {
+    W.PsyIslandSummons.open(dialog,{state:island,catalog,acquire,save});
+  }
+
+  const farmUnlocked = () => active && island().quest === 'farmUnlocked';
+  function quest(dialog) {
+    const state = island();
+    if (farmUnlocked()) return dialog('Missões da ilha','Rastros na enseada concluída. A Fazenda está disponível no cabeçalho.');
+    if (!Object.values(state.defeats).some(n=>n>0)) return dialog('Rastros na enseada',
+      'Derrote uma criatura em Expedições e volte aqui para entregar a missão.');
+    dialog('Rastros na enseada','Você voltou da expedição. O porto colocou os canteiros à sua disposição.',[
+      {text:'Entregar missão',run:()=>{
+        state.quest='farmUnlocked';save();
+        W.PsyKantoWorldV2.refreshIslandHud();
+        W.notif?.('Fazenda desbloqueada!');
+      }}
+    ]);
   }
 
   function read() {
@@ -61,12 +102,18 @@
     P.team = saved?.team?.filter(mon => catalog.some(entry => entry.id === mon.id)) || [];
     if (!P.team.length) P.team = [makeMon(starter)];
     P.box = saved?.box?.filter(mon => catalog.some(entry => entry.id === mon.id)) || [];
+    [...P.team,...P.box].forEach(applyStars);
     P.pokemon = P.team[0];
     P.inventory = saved?.inventory || {};
     P.gold = saved?.gold ?? 0;
     P.meta = {islandCampaign:saved?.campaign || {
       defeats:{}, eggs:{}, plots:[null,null,null], herbs:0, record:null
     }};
+    const own = island();
+    own.tickets ??= 0;
+    own.banners ??= {};
+    own.halloweenEggs ??= 0;
+    own.quest ??= 'tracks';
     P.meta.followerV47 = {enabled:true,key:'island-noctarn'};
     active = true;
     W.autoSave = save;
@@ -95,6 +142,10 @@
       island().eggs[enemy.id] = (island().eggs[enemy.id] || 0) + 1;
       W.notif?.('Ovo encontrado: ' + enemy.name, 4000);
     }
+    const own = island();
+    own.tickets++;
+    P.inventory['Doce de Halloween'] = (P.inventory['Doce de Halloween']||0)+3;
+    applyStars(P.team[0]);
     save();
   }
 
@@ -102,7 +153,8 @@
     if (P.team[0].hp <= 0) { W.notif?.('Descanse no refúgio antes de lutar.'); return; }
     const level = Math.max(1, P.team[0].level - 1);
     W.PsyKantoWorldV2.islandBattle(() => {
-      const enemy = makeMon(entry, level, 27 + 7 * level);
+      const enemy = makeMon(entry, level);
+      enemy.maxHp = enemy.hp = Math.round(enemy.maxHp*.65);
       W.startBattle({...enemy, lvl:level, islandEncounter:true});
     });
   }
@@ -117,7 +169,7 @@
 
   function companions(dialog) {
     const current = P.team[0];
-    const actions = P.box.map(mon => ({text:'Viajar com ' + mon.name, run:()=>{
+    const actions = P.box.map(mon => ({text:'Viajar com ' + mon.name+' '+mon.stars+' ★', run:()=>{
       P.box.splice(P.box.indexOf(mon),1,current);
       P.team = [mon];
       P.pokemon = mon;
@@ -136,14 +188,42 @@
         companions(dialog);
       }});
     }
+    actions.push({text:'Fundir '+current.name,run:()=>fusion(dialog,current)});
     actions.push({text:'Fechar'});
-    dialog('Companheiros e ovos', current.name + ' · Nv. ' + current.level +
+    dialog('Companheiros e ovos', current.name + ' '+current.stars+' ★ · Velocidade '+speed(current)+' · Nv. ' + current.level +
       ' · XP ' + current.exp + '/' + current.maxExp +
       ' · Vida ' + current.hp + '/' + current.maxHp + '. Os ovos das expedições podem ser chocados aqui.', actions);
   }
 
+  const fusionCost = {3:2,4:10,5:20};
+  const copyCredit = target => Math.max(1,5-target.stars);
+  function fusion(dialog,target,selected = new Set()) {
+    const cost = fusionCost[target.stars];
+    const back = {text:'Voltar',run:()=>companions(dialog)};
+    if (!cost) return dialog('Fusão','Este companheiro já tem 6 ★.',[back]);
+    const candidates = P.box.filter(mon=>mon.type===target.type && !mon.isStarter);
+    const credit = mon => mon.id===target.id ? copyCredit(target) : 1;
+    const total = [...selected].reduce((sum,mon)=>sum+credit(mon),0);
+    const actions = [];
+    if (total>=cost) actions.push({text:'Confirmar fusão',run:()=>{
+      if (!cost || target.stars>=6 || [...selected].some(mon=>!P.box.includes(mon))) return companions(dialog);
+      P.box = P.box.filter(mon=>!selected.has(mon));
+      target.stars++; applyStars(target); save(); companions(dialog);
+    }});
+    for (const mon of candidates) {
+      actions.push({text:(selected.has(mon)?'Remover ':'Selecionar ')+mon.name+' '+mon.stars+' ★ (+'+credit(mon)+')',run:()=>{
+        if (selected.has(mon)) selected.delete(mon); else selected.add(mon);
+        fusion(dialog,target,selected);
+      }});
+    }
+    actions.push(back);
+    dialog('Fusão de '+target.name,'Materiais de '+target.type+': '+total+'/'+cost+
+      ' para subir de '+target.stars+' para '+(target.stars+1)+' ★. Os companheiros selecionados serão consumidos.',actions);
+  }
+
   const growthTime = 60000;
   function farm(dialog) {
+    if (!farmUnlocked()) return dialog('Fazenda trancada','Entregue a missão Rastros na enseada para liberar a fazenda.',[{text:'Ver missão',run:()=>quest(dialog)}]);
     const own = island();
     const now = Date.now();
     const actions = own.plots.map((plot, index) => {
@@ -238,7 +318,7 @@
 
   W.PsyIslandCampaign = {
     active:()=>active, sprite, save, victory, returnToTitle,
-    farm, rest, explore, companions, beginRace, raceFrame, racing:()=>!!race, cancelRace:()=>{race=null;}
+    farm, farmUnlocked, quest, summons, speed, damageFactor, moves:mon=>entryFor(mon)?mon.moves:null, rest, explore, companions, beginRace, raceFrame, racing:()=>!!race, cancelRace:()=>{race=null;}
   };
   D.querySelector('[data-island-start]').onclick = ()=>start(false);
   const resume = D.querySelector('[data-island-continue]');

@@ -264,23 +264,26 @@
   function chooseEnemyMove(){
     const w=battleData?.wild;if(!w)return {name:'Ataque',type:'Normal',power:40};
     try{
-      const list=(typeof getMovesForLevel==='function'?getMovesForLevel(w.id,w.level||1):[]).map(normalizeMove).filter(Boolean);
+      const own=w.islandEncounter && W.PsyIslandCampaign?.moves(w);
+      const list=(own||(typeof getMovesForLevel==='function'?getMovesForLevel(w.id,w.level||1):[])).map(normalizeMove).filter(Boolean);
       if(list.length)return list[Math.floor(Math.random()*list.length)];
     }catch(e){}
     return {name:'Ataque',type:String(w.type||'Normal').split('/')[0],power:40};
   }
 
-  function enemyTurn(done,reasonPrefix){
+  function enemyTurn(done,reasonPrefix,first=false){
     if(!battleData||battleData.state!=='active'||!P?.team?.[0]){done?.();return}
     const pre=preAction('enemy');
     if(pre.text)appendLog(pre.text);
     if(!pre.canAct){
+      if(first){done?.();return;}
       tickFx();const res=applyResiduals();
       battleData.turnLock=false;renderStatus();if(!res)done?.();return;
     }
+    const round=battleData;
     const em=normalizeMove(chooseEnemyMove()),info=moveStatusInfo(em),w=battleData.wild,p=P.team[0];
     setTimeout(()=>{
-      if(!battleData||battleData.state!=='active'){done?.();return}
+      if(battleData!==round||battleData.state!=='active')return;
       try{attackAnimation('enemy')}catch(e){}
       const enemyIsStatus=!!info.direct||Number(em.power||0)<=0||String(em.type||'').toLowerCase()==='status';
       if(enemyIsStatus){
@@ -294,7 +297,8 @@
         const eff=getEffectiveness(String(em.type||w.type||'Normal').split('/')[0],typeof psyResolvePokemonTypes==='function'?psyResolvePokemonTypes(p):(p.type||'Normal'));
         const power=Math.max(1,Number(em.power||40));
         let base=Math.floor((atk*power/55)+(Number(w.level||1)*3));
-        let dmg=f.protect?0:Math.floor(base*PVE_ENEMY_DAMAGE_SCALE*eff*(100/(100+myDef*.15)));
+        const bonus=w.islandEncounter ? W.PsyIslandCampaign.damageFactor(w) : 1;
+        let dmg=f.protect?0:Math.floor(base*PVE_ENEMY_DAMAGE_SCALE*eff*bonus*(100/(100+myDef*.15)));
         if(!f.protect&&dmg<3)dmg=3;
         if(f.protect){f.protect=0;appendLog(`🛡️ O ataque de ${w.name} foi bloqueado!`)}
         else{
@@ -303,8 +307,9 @@
           if(info.secondary&&Math.random()<=info.secondary.chance){const r=applyStatus('player',info.secondary.status,em.name);if(r.text)appendLog(r.text)}
         }
       }
-      tickFx();try{updateBattleHP();updateHUD()}catch(e){}renderStatus();
+      if(!first)tickFx();try{updateBattleHP();updateHUD()}catch(e){}renderStatus();
       if(finishPlayerLoss()){battleData.turnLock=false;return}
+      if(first){done?.();return;}
       const res=applyResiduals();battleData.turnLock=false;renderStatus();if(!res)done?.();
     },650);
   }
@@ -354,6 +359,7 @@
     try{ensureTrainerData()}catch(e){}
     if(typeof inBattle==='undefined'||!inBattle||!battleData||battleData.state!=='active')return;
     if(action!=='move'){
+      if(battleData.wild.islandEncounter && action!=='flee')return;
       /* Keep bag/capture/flee behavior from the existing engine. */
       if(action==='heal')return openBagSelector('potion');
       if(action==='capture'){if((typeof gymBattle!=='undefined'&&!!gymBattle)||document.getElementById('gym-progress')?.style.display==='block')return notif('🚫 Não é permitido capturar Pokémon em Ginásios.',3000);return (typeof window.openBattleBallSelector==='function'?window.openBattleBallSelector():openBagSelector('ball'));}
@@ -362,40 +368,56 @@
     }
     if(battleData.turnLock)return;
     battleData.turnLock=true;state();renderStatus();
-    const pre=preAction('player');
-    if(pre.text)setLog(pre.text);
-    if(!pre.canAct){return enemyTurn(()=>{},'status')}
-    if(pre.text)appendLog(pre.text);
-
-    const move=normalizeMove(moveData),info=moveStatusInfo(move),key=info.key;
-    const explicitStatus=!!DIRECT_STATUS[key];
-    const isStatus=explicitStatus||Number(move.power||0)<=0||String(move.type||'').toLowerCase()==='status';
-    const f=battleData.statusFx,log=D.getElementById('battle-log');
-    let wildType=typeof psyResolvePokemonTypes==='function'?psyResolvePokemonTypes(battleData.wild):(battleData.wild.type||'Normal');
-    const stats=calcDetailedStats(P.team[0]);
-
-    try{attackAnimation('player')}catch(e){}
-    if(isStatus){
-      const txt=statusMoveEffect(move);setLog(`✨ ${P.team[0].name} usou ${move.name}! ${txt}`);renderStatus();
-      return enemyTurn(()=>{});
+    const island = battleData.wild.islandEncounter ? W.PsyIslandCampaign : null;
+    const enemyFirst = island && island.speed(battleData.wild)>island.speed(P.team[0]);
+    function finishTurn() {
+      if (!enemyFirst) return enemyTurn(()=>{});
+      tickFx();
+      applyResiduals();
+      battleData.turnLock=false;
+      renderStatus();
     }
+    function playerTurn() {
+      const pre=preAction('player');
+      if(!pre.canAct){if(pre.text)appendLog(pre.text);return finishTurn();}
+      if(pre.text)appendLog(pre.text);
 
-    const eff=getEffectiveness(move.type,wildType),crit=Math.random()<(0.12+Number(getTotalBuff?.('crit')||0)/100);
-    const myAtk=Math.floor(Number(stats.finalAtk||0)*(1+(f.myAtk||0)/100));
-    const wildDef=Math.floor(Number(battleData.wildMaxHp||100)*.18*(1+(f.enemyDef||0)/100));
-    let base=Math.floor((myAtk*Number(move.power||0)/55)+(Number(P.team[0].level||1)*3));
-    base=Math.floor(base*(1+Number(getTotalBuff?.('dmg')||0)/100));
-    let dmg=eff===0?0:Math.floor(base*eff*(crit?1.9:1)*(100/(100+wildDef*.15)));
-    if(eff!==0&&dmg<15)dmg=15+Math.floor(Math.random()*10);
-    try{showDmgPopup(dmg,true,crit);if(crit||eff!==1)showEffPopup(eff,crit);setEnemyBlink()}catch(e){}
-    if(f.enemyProtect){f.enemyProtect=0;dmg=0;appendLog(`🛡️ ${battleData.wild.name} bloqueou o golpe com Protect!`)}
-    battleData.wildHp=Math.max(0,Number(battleData.wildHp||0)-dmg);
-    const effTxt=crit?' ⭐ CRÍTICO!':eff===0?' 😴 IMUNE!':eff>=2?' 🔥 SUPER EFETIVO!':eff<=.5?' 💧 NÃO MUITO...':'';
-    setLog(`💥 ${P.team[0].name} usou ${move.name}! ${dmg} dmg! ATK ${myAtk}${effTxt}`);
-    if(info.secondary&&dmg>0&&Math.random()<=info.secondary.chance){const r=applyStatus('enemy',info.secondary.status,move.name);if(r.text)appendLog(r.text)}
-    try{updateBattleHP();updateHUD()}catch(e){}renderStatus();
-    if(Number(battleData.wildHp||0)<=0){battleData.turnLock=false;return finishWildWin()}
-    return enemyTurn(()=>{});
+      const move=normalizeMove(moveData),info=moveStatusInfo(move),key=info.key;
+      const explicitStatus=!!DIRECT_STATUS[key];
+      const isStatus=explicitStatus||Number(move.power||0)<=0||String(move.type||'').toLowerCase()==='status';
+      const f=battleData.statusFx,log=D.getElementById('battle-log');
+      let wildType=typeof psyResolvePokemonTypes==='function'?psyResolvePokemonTypes(battleData.wild):(battleData.wild.type||'Normal');
+      const stats=calcDetailedStats(P.team[0]);
+
+      try{attackAnimation('player')}catch(e){}
+      if(isStatus){
+        const txt=statusMoveEffect(move);(enemyFirst?appendLog:setLog)(`✨ ${P.team[0].name} usou ${move.name}! ${txt}`);renderStatus();
+        return finishTurn();
+      }
+
+      const eff=getEffectiveness(move.type,wildType),crit=Math.random()<(0.12+Number(getTotalBuff?.('crit')||0)/100);
+      const myAtk=Math.floor(Number(stats.finalAtk||0)*(1+(f.myAtk||0)/100));
+      const wildDef=Math.floor(Number(battleData.wildMaxHp||100)*.18*(1+(f.enemyDef||0)/100));
+      let base=Math.floor((myAtk*Number(move.power||0)/55)+(Number(P.team[0].level||1)*3));
+      base=Math.floor(base*(1+Number(getTotalBuff?.('dmg')||0)/100));
+      const bonus=island ? island.damageFactor(P.team[0]) : 1;
+      let dmg=eff===0?0:Math.floor(base*eff*bonus*(crit?1.9:1)*(100/(100+wildDef*.15)));
+      if(eff!==0&&dmg<15)dmg=15+Math.floor(Math.random()*10);
+      try{showDmgPopup(dmg,true,crit);if(crit||eff!==1)showEffPopup(eff,crit);setEnemyBlink()}catch(e){}
+      if(f.enemyProtect){f.enemyProtect=0;dmg=0;appendLog(`🛡️ ${battleData.wild.name} bloqueou o golpe com Protect!`)}
+      battleData.wildHp=Math.max(0,Number(battleData.wildHp||0)-dmg);
+      const effTxt=crit?' ⭐ CRÍTICO!':eff===0?' 😴 IMUNE!':eff>=2?' 🔥 SUPER EFETIVO!':eff<=.5?' 💧 NÃO MUITO...':'';
+      (enemyFirst?appendLog:setLog)(`💥 ${P.team[0].name} usou ${move.name}! ${dmg} dmg! ATK ${myAtk}${effTxt}`);
+      if(info.secondary&&dmg>0&&Math.random()<=info.secondary.chance){const r=applyStatus('enemy',info.secondary.status,move.name);if(r.text)appendLog(r.text)}
+      try{updateBattleHP();updateHUD()}catch(e){}renderStatus();
+      if(Number(battleData.wildHp||0)<=0){battleData.turnLock=false;return finishWildWin()}
+      return finishTurn();
+    }
+    if(enemyFirst){
+      setLog(battleData.wild.name+' é mais rápido e age primeiro.');
+      return enemyTurn(playerTurn,null,true);
+    }
+    return playerTurn();
   };
 
   /* Failed capture is still a consumed turn, but now the enemy respects Sleep/Paralysis
