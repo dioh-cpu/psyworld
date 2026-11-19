@@ -9,6 +9,10 @@ function render(){
   el('intro').hidden = state.arrived;
   el('game').hidden = !state.arrived;
   const mon = state.team[state.active];
+  const video = el('companion');
+  video.hidden = !state.arrived || state.active !== 'Noctarn';
+  if(video.hidden) video.pause();
+  else if(video.paused) video.play().catch(()=>{});
   el('stats').textContent = state.active+' · Nv. '+mon.level+' · XP '+mon.exp+'/'+mon.maxExp;
   el('ally').replaceChildren(...Object.keys(state.team).map(n=>new Option(n,n,false,n===state.active)));
   const species = el('enemy').value;
