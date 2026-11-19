@@ -474,7 +474,17 @@ const humanAnimationStates=new Map();
 function prepareAvatar(entry){
   const walk=W.PsyTrainerWalkV1;
   if(walk){
-    try{entry.animationAtlas=walk.getAnimationAtlas?.(entry.im)||null}catch(err){entry.animationAtlas=null;console.warn('Trainer animationAtlas could not be prepared',err)}
+    const source=String(entry.im?.currentSrc||entry.im?.src||'').split('?')[0];
+    const useGothicVideoIdle=source.endsWith('/basic-gothic-boy.webp');
+    if(useGothicVideoIdle&&!entry.gothicIdleRequested){
+      entry.gothicIdleRequested=true;entry.gothicIdleImg=new Image();
+      entry.gothicIdleImg.onload=()=>{entry.gothicIdleReady=true;entry.animationAtlas=null;try{prepareAvatar(entry)}catch(err){console.warn('Gothic video idle atlas fallback',err)}draw()};
+      entry.gothicIdleImg.onerror=()=>{entry.gothicIdleFailed=true;entry.gothicIdleImg=null};
+      entry.gothicIdleImg.src='assets/characters/idle-video-v1/gothic-boy-basic-4dir.webp?build=GOTHIC_IDLE_VIDEO_V1';
+      W.PsyGothicWalkVideoV1?.prepare?.()?.then?.(()=>draw());
+    }
+    const customIdle=useGothicVideoIdle&&entry.gothicIdleReady&&entry.gothicIdleImg?.naturalWidth?entry.gothicIdleImg:null;
+    try{entry.animationAtlas=walk.getAnimationAtlas?.(entry.im,customIdle,null,customIdle?{preserveIdleSource:true,smoothIdle:true}:{})||null}catch(err){entry.animationAtlas=null;console.warn('Trainer animationAtlas could not be prepared',err)}
     try{entry.atlas=walk.getAtlas?.(entry.im)||null}catch(_){entry.atlas=null}
     entry.atlasTileW=walk.cellWidth;entry.atlasTileH=walk.cellHeight;
   }
@@ -498,7 +508,8 @@ function drawPlayer(c,x,y,options={}){
         const animKey=scene+':'+entry.im.src;
         let humanAnimationState=humanAnimationStates.get(animKey);
         if(!humanAnimationState){humanAnimationState=walk.createState();humanAnimationStates.set(animKey,humanAnimationState);}
-        walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:animKey},left,top,w,h);
+        const coveredByKanto=scene==='city-psy'&&!!state.root?.classList?.contains('open');
+        walk.renderAnimated(c,entry.animationAtlas,humanAnimationState,{moving:walking,row,x,y,identity:animKey,previewOnly:coveredByKanto},left,top,w,h);
         usedSprite=true;
       }else if(entry.atlas){
         walk.draw(c,entry.atlas,row,walk.column(Math.floor(walkFrame),walking),left,top+2*scale,w,h);
@@ -522,7 +533,8 @@ function drawPlayer(c,x,y,options={}){
   // The canvas redraws as soon as the trainer atlas becomes available.
   c.font='bold 12px system-ui';c.fillStyle='#fff';c.textAlign='center';
   c.shadowColor='#000';c.shadowBlur=4;
-  if(options.showName!==false&&!state.hideTrainerName){c.fillText(player().name||'Treinador',x,y-59*scale);W.PsySeason?.drawTitle(c,x,y-76*scale)}c.restore();
+  const nameHeight=entry?.animationAtlas?.profile?.file==='basic-gothic-boy.webp'&&W.PsyGothicWalkVideoV1?76:59;
+  if(options.showName!==false&&!state.hideTrainerName){c.fillText(player().name||'Treinador',x,y-nameHeight*scale);W.PsySeason?.drawTitle(c,x,y-(nameHeight+17)*scale)}c.restore();
   return usedSprite;
 }
 

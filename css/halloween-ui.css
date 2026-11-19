@@ -209,3 +209,58 @@ body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:n
 
 #psy-ir-town .psy-ir-town-services button.primary{color:#fff2d4!important}
 #psy-ir-town .psy-ir-town-services button.trade{color:#f6eaff!important}
+
+/* Leave the central artwork visible on handheld screens. */
+@media (max-width: 900px), (max-height: 540px) {
+  #screen-login #login-box {
+    position: absolute !important;
+    left: max(10px, env(safe-area-inset-left)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: min(300px, calc(100% - 20px)) !important;
+    max-height: calc(100% - 22px);
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 10px !important;
+    border-radius: 14px !important;
+    background: linear-gradient(145deg, #171426df, #10101dcf) !important;
+  }
+  #screen-login #login-box > * { grid-column: 1 / -1; }
+  #screen-login #login-box > h1 { font-size: 20px; letter-spacing: 3px; margin: 0 !important; }
+  #screen-login #login-box > p { display: none; }
+  #screen-login #nick-input { min-height: 40px !important; margin: 0; padding: 5px; }
+  #screen-login #login-box > button {
+    grid-column: auto;
+    min-height: 40px !important;
+    margin: 0 !important;
+    padding: 4px !important;
+    font-size: 11px !important;
+    letter-spacing: .5px !important;
+  }
+}
+
+#screen-login:has(#login-bg-video:not([hidden]))::after { display: none; }
+
+@media (orientation: portrait) {
+  #screen-login {
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+  }
+  #screen-login #login-bg-video {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    max-height: 42%;
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+  #screen-login #login-box {
+    position: relative !important;
+    inset: auto !important;
+    max-height: 53%;
+    overflow-y: auto;
+  }
+}

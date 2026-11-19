@@ -78,16 +78,17 @@ function animationProfile(img){
  const walkSourceRows=({'divine-black-girl.webp':[0,2,1,3]})[file]||[0,1,2,3];
  return {file,category,sourceRows:file==='divine-black-girl.webp'?[0,2,1,3]:alternate?[0,2,3,1]:[0,1,2,3],walkSourceRows,...(file==='divine-black-girl.webp'?{idleSourceRows:[0,2,1,3]}:{}),walkOrder:[0,1,2,3],walkMs,idleMs,breath,anchor:[64,60],bodyHeight:46};
 }
-function getAnimationAtlas(img,idleImage=null,walkImage=null){
+function getAnimationAtlas(img,idleImage=null,walkImage=null,options={}){
  if(!img||!(img.naturalWidth||img.width))return null;
- if(animationCache.has(img)&&animationCache.get(img).idleSource===idleImage&&animationCache.get(img).walkSource===walkImage)return animationCache.get(img);
+ const preserveIdleSource=!!options.preserveIdleSource,smoothIdle=!!options.smoothIdle;
+ if(animationCache.has(img)&&animationCache.get(img).idleSource===idleImage&&animationCache.get(img).walkSource===walkImage&&animationCache.get(img).idleSourceHeadPreserved===preserveIdleSource&&animationCache.get(img).idleSourceSmoothed===smoothIdle)return animationCache.get(img);
  const profile=animationProfile(img),sw=Math.floor((img.naturalWidth||img.width)/4),sh=Math.floor((img.naturalHeight||img.height)/4);
  const scan=create();scan.width=sw*4;scan.height=sh*4;const sc=scan.getContext('2d',{willReadFrequently:true});sc.drawImage(img,0,0);
  const pixels=sc.getImageData(0,0,scan.width,scan.height).data,sourceWidth=scan.width;
  const cw=HUMAN_W*HUMAN_SCALE,ch=HUMAN_H*HUMAN_SCALE;
  const sheet=create();sheet.width=HUMAN_COLS*cw;sheet.height=14*ch;const target=sheet.getContext('2d');
  const cell=create();cell.width=cw;cell.height=ch;const cc=cell.getContext('2d',{willReadFrequently:true});cc.imageSmoothingEnabled=false;
- const idleFrames=idleImage?normalizedIdleFrames(idleImage,false,profile.idleSourceRows):null;
+ const idleFrames=idleImage?normalizedIdleFrames(idleImage,false,profile.idleSourceRows,smoothIdle):null;
  const walkFrames=walkImage?normalizedIdleFrames(walkImage,true,profile.walkSourceRows):null;
  const gaitMetrics=walkFrames?alternateFrontalLegs(walkFrames,idleFrames,profile.category):[];
  const bounds=[],referenceHeads=[];
@@ -121,8 +122,9 @@ function getAnimationAtlas(img,idleImage=null,walkImage=null){
   // Without it, keep an explicitly provisional authored pose; never warp boots.
   const neutral=cc.createImageData(cw,ch);neutral.data.set(idleFrames?idleFrames[row].data:authored.data);
   // Keep the approved original head/face exactly, even for complementary body art.
-  neutral.data.set(authored.data.slice(0,34*HUMAN_SCALE*cw*4),0);
-  put(blendPose(cc,authored,neutral,.5),16+pose*2);put(neutral,17+pose*2);
+  if(!preserveIdleSource)neutral.data.set(authored.data.slice(0,34*HUMAN_SCALE*cw*4),0);
+  if(preserveIdleSource){put(neutral,16+pose*2);put(neutral,17+pose*2)}
+  else{put(blendPose(cc,authored,neutral,.5),16+pose*2);put(neutral,17+pose*2)}
   const base=neutral;
   // Controlled torso-only breathing. The head/face and lower legs are copied
   // byte-for-byte; no limb strip shifting, whole-body bounce or sprite stretching.
@@ -143,7 +145,7 @@ function getAnimationAtlas(img,idleImage=null,walkImage=null){
   }
  }
  scan.width=scan.height=1;
- const pack={image:sheet,profile,cellWidth:cw,cellHeight:ch,columns:HUMAN_COLS,bounds,idleSource:idleImage,walkSource:walkImage,gaitMetrics,walkArtStatus:walkImage?'approved-complementary-walk':'source',idleArtStatus:idleImage?(String(idleImage.src).includes('/idle-v2/')?'approved-neutral-art':'sample-art'):'awaiting-neutral-art',compiledStatus:'source'};
+ const pack={image:sheet,profile,cellWidth:cw,cellHeight:ch,columns:HUMAN_COLS,bounds,idleSource:idleImage,walkSource:walkImage,idleSourceHeadPreserved:preserveIdleSource,idleSourceSmoothed:smoothIdle,gaitMetrics,walkArtStatus:walkImage?'approved-complementary-walk':'source',idleArtStatus:idleImage?(String(idleImage.src).includes('/idle-v2/')?'approved-neutral-art':preserveIdleSource?'video-view-idle':'sample-art'):'awaiting-neutral-art',compiledStatus:'source'};
  animationCache.set(img,pack);
  // Final lossless sheets are the production fast path after loading. The exact
  // same cached builder is a safe fallback; changing the backing image never
@@ -182,10 +184,10 @@ function calibrateRasterPose(ctx,img,rect,headOffset,w,h){
  if(offset){const aligned=ctx.createImageData(w,h);for(let py=0;py<h;py++)if(py+offset>=0&&py+offset<h)aligned.data.set(best.data.data.subarray(py*w*4,(py+1)*w*4),(py+offset)*w*4);best.data=aligned;best.y+=offset;}
  return best;
 }
-function normalizedIdleFrames(img,walk=false,sourceRows=[0,1,2,3]){
+function normalizedIdleFrames(img,walk=false,sourceRows=[0,1,2,3],smooth=false){
  const strip=!walk&&img.naturalWidth>=img.naturalHeight*3,sw=Math.floor(img.naturalWidth/4),sh=strip?img.naturalHeight:Math.floor(img.naturalHeight/4),cw=HUMAN_W*HUMAN_SCALE,ch=HUMAN_H*HUMAN_SCALE;
  const scan=create();scan.width=sw;scan.height=sh;const c=scan.getContext('2d',{willReadFrequently:true}),result=[];
- const target=create();target.width=cw;target.height=ch;const tc=target.getContext('2d',{willReadFrequently:true});tc.imageSmoothingEnabled=false;
+ const target=create();target.width=cw;target.height=ch;const tc=target.getContext('2d',{willReadFrequently:true});tc.imageSmoothingEnabled=!!smooth;if(smooth)tc.imageSmoothingQuality='high';
  for(let frame=0;frame<(walk?16:4);frame++){
   const row=sourceRows[walk?Math.floor(frame/4):frame],col=walk?frame%4:0;
   const sx=walk?col*sw:strip?row*sw:0,sy=strip?0:row*sh;
@@ -253,17 +255,21 @@ function sampleState(state,opt){
  return {state:moving?'walk':state.settling?'settle':'idle',settle:Math.min(2,Math.floor(state.settleElapsed/40)),row:state.row,col:state.col,breath:moving?0:Math.floor(state.idleElapsed/(profile.idleMs/4))%4,elapsed:state.elapsed};
 }
 function drawAnimated(ctx,pack,pose,x,y,width,height){
- if(!pack||pack.compiledStatus==='loading')return false;
+ if(pack?.profile?.file==='basic-gothic-boy.webp'&&!pose?.previewOnly&&W.PsyGothicWalkVideoV1&&W.PsyGothicWalkVideoV1.draw(ctx,pose,x,y,width,height))return true;
+ if(!pack||!pack.image||pack.compiledStatus==='loading')return false;
  const row=Math.max(0,Math.min(3,pose.row|0)),col=Math.max(0,Math.min(3,pose.col|0));
  const source=row*4+col;
  const tile=pose.state==='idle'?48+source*4+(pose.breath%4):pose.state==='settle'&&pose.settle>0?16+source*2+Math.min(1,pose.settle-1):source;
  const scaleX=width/TW,scaleY=height/TH;
- ctx.imageSmoothingEnabled=false;
+ ctx.save();
+ ctx.imageSmoothingEnabled=pose.state==='idle'&&!!pack.idleSourceSmoothed;
+ if(ctx.imageSmoothingEnabled)ctx.imageSmoothingQuality='high';
  ctx.drawImage(pack.image,(tile%pack.columns)*pack.cellWidth,Math.floor(tile/pack.columns)*pack.cellHeight,pack.cellWidth,pack.cellHeight,x+width/2-HUMAN_W*scaleX/2,y,HUMAN_W*scaleX,HUMAN_H*scaleY);
+ ctx.restore();
  return true;
 }
 function renderAnimated(ctx,pack,state,opt,x,y,width,height){
- const pose=sampleState(state,{...opt,profile:pack.profile});drawAnimated(ctx,pack,pose,x,y,width,height);return pose;
+ const pose=sampleState(state,{...opt,profile:pack.profile});if(opt?.previewOnly)pose.previewOnly=true;drawAnimated(ctx,pack,pose,x,y,width,height);return pose;
 }
 
 W.PsyTrainerWalkV1={getAtlas,column,draw,columns:sequence,cellWidth:TW,cellHeight:TH,getAnimationAtlas,animationProfile,createState,sampleState,drawAnimated,renderAnimated};

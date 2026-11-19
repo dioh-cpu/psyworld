@@ -112,6 +112,8 @@ body { background:#000; overflow:hidden; color:#fff; }
 .screen { position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; }
 
 #screen-login { background:radial-gradient(ellipse at center,#1a1a2e,#000); }
+#login-bg-video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; z-index:0; pointer-events:none; }
+#screen-login #login-box { position:relative; z-index:1; }
 #login-box { background:#151520; padding:40px; border:2px solid #334; border-radius:10px; text-align:center; width:340px; }
 #login-box h1 { color:#ffd700; font-size:32px; letter-spacing:6px; margin-bottom:6px; }
 #login-box p { color:#666; font-size:12px; margin-bottom:24px; }
