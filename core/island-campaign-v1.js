@@ -95,7 +95,7 @@
   }
 
   function start(resume) {
-    const nick = D.getElementById('nick-input').value.trim();
+    const nick = D.getElementById('nick-input').value.trim() || 'Azazel';
     const saved = resume ? read() : null;
     if (!saved && nick.length < 2) { W.notif?.('Digite pelo menos dois caracteres.'); return; }
     if (!saved && read()) {
@@ -130,7 +130,7 @@
     W.PsyKantoWorldV2.open('pallet');
     save();
     if (!saved) W.PsyKantoWorldV2.islandDialog('A Ilha das Marés Sombrias',
-      'O barco se partiu no mar. Você acordou entre destroços e seguiu Noctarn até Porto das Cinzas. Explore a vila, cuide do seu companheiro e procure pistas sobre a criatura do naufrágio.');
+      'O barco se partiu no mar. Azazel acordou entre destroços e seguiu Noctarn até Porto das Cinzas. Explore a vila, cuide do seu companheiro e procure pistas sobre a criatura do naufrágio.');
   }
 
   function returnToTitle() {
