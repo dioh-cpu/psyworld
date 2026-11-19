@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PSYWORLD · Ferramenta Detectora de Saltos & Capa (MP4)</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#08111d;color:#eef6fb;font:14px/1.4 system-ui,-apple-system,sans-serif;min-height:100dvh;display:flex;flex-direction:column}
+header{padding:10px 14px;background:#0d1b2e;border-bottom:1px solid #1e3a56;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:15px;font-weight:800;color:#7ee0f2}
+header small{display:block;font-size:11px;color:#9ec2d4;font-weight:400}
+.nav-links{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.nav-links a,.btn{background:#15324a;color:#fff;border:1px solid #49b6c9;padding:6px 11px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;cursor:pointer;user-select:none}
+.nav-links a:hover,.btn:hover{background:#1f4a6b}
+.btn.active{background:#0ea5b7;color:#04131d;border-color:#9ff3ff}
+.btn.warn{background:#5b2333;border-color:#f472b6}
+.toolbar{padding:10px 14px;background:#0b1727;border-bottom:1px solid #172e46;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.toolbar label{display:flex;align-items:center;gap:6px;font-size:12px;color:#b8d7e6;font-weight:600}
+.toolbar select,.toolbar input[type=range]{accent-color:#38bdf8;background:#11243a;color:#fff;border:1px solid #2b5278;border-radius:6px;padding:4px 8px;font-size:12px}
+main{flex:1;padding:12px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px;align-content:start}
+.card{background:#0d1b2e;border:1px solid #1c3652;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.card h2{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:#7dd3fc;display:flex;justify-content:space-between;align-items:center}
+.view-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.canvas-box{position:relative;background:#060d17;border:1px solid #224263;border-radius:9px;overflow:hidden;aspect-ratio:320/420;display:flex;align-items:center;justify-content:center}
+.canvas-box canvas{width:100%;height:100%;display:block;object-fit:contain}
+.canvas-tag{position:absolute;top:6px;left:6px;background:#08111de0;border:1px solid #2b5278;padding:2px 7px;border-radius:6px;font-size:11px;color:#bae6fd;pointer-events:none}
+.controls-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
+.chart-wrap{background:#060d17;border:1px solid #1e3b58;border-radius:9px;padding:8px}
+#chartCanvas{width:100%;height:155px;display:block;cursor:pointer}
+.spike-list{display:flex;flex-direction:column;gap:6px;max-height:250px;overflow-y:auto}
+.spike-item{background:#102238;border:1px solid #214060;border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;transition:background .12s}
+.spike-item:hover,.spike-item.selected{background:#183759;border-color:#38bdf8}
+.badge{padding:2px 7px;border-radius:99px;font-size:11px;font-weight:800}
+.badge.high{background:#7f1d1d;color:#fecaca;border:1px solid #f87171}
+.badge.med{background:#78350f;color:#fde68a;border:1px solid #fbbf24}
+.badge.ok{background:#064e3b;color:#a7f3d0;border:1px solid #34d399}
+.metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.metric-box{background:#091423;border:1px solid #1a334d;border-radius:8px;padding:6px 8px;text-align:center}
+.metric-box small{display:block;font-size:10px;color:#8ab0c4}
+.metric-box strong{font-size:14px;color:#e0f2fe}
+.tuner-box{background:#091525;border:1px solid #1e3c5a;border-radius:9px;padding:9px;display:flex;flex-direction:column;gap:8px}
+.tuner-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+.tuner-row input[type=range]{flex:1}
+#statusBanner{font-size:12px;color:#fde047;font-weight:700}
+textarea{width:100%;height:74px;background:#050b14;color:#a7f3d0;border:1px solid #1e3a56;border-radius:8px;padding:7px;font:11px/1.35 ui-monospace,monospace;resize:vertical}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>PSYWORLD · Detector Automático de Saltos & Capa (Walk MP4)</h1>
+    <small>Identifica frame a frame onde a cintura, a capa ou as pernas trocam de forma brusca.</small>
+  </div>
+  <div class="nav-links">
+    <span id="statusBanner">Carregando MP4…</span>
+    <a href="gothic-walk-preview.html">← Voltar ao Teste do Walk</a>
+    <a href="index.html">Jogo Completo</a>
+  </div>
+</header>
+
+<div class="toolbar">
+  <label>Orientação:
+    <select id="clipSelect">
+      <option value="left" selected>Esquerda (gothic-boy-walk-left.mp4)</option>
+      <option value="right">Direita espelhada (left espelhado)</option>
+      <option value="front">Frente / Baixo (gothic-boy-walk-front.mp4)</option>
+      <option value="back">Costas / Cima (gothic-boy-walk-back.mp4)</option>
+      <option value="raw_left">Original Bruto Sem Correção (frames 69..100 do fonte)</option>
+    </select>
+  </label>
+  <label>Zoom / Região:
+    <select id="zoomSelect">
+      <option value="waist_cape" selected>Zoom Cintura & Capa Traseira</option>
+      <option value="back_cape">Zoom Aba da Capa</option>
+      <option value="full">Corpo Inteiro</option>
+      <option value="legs">Zoom Pernas & Botas</option>
+      <option value="head">Zoom Cabeça</option>
+    </select>
+  </label>
+  <label>Modo de Comparação:
+    <select id="diffModeSelect">
+      <option value="heatmap" selected>Mapa de Calor (Vermelho = Salto Brusco)</option>
+      <option value="onion">Onion-Skin (Ciano=Anterior / Magenta=Atual)</option>
+    </select>
+  </label>
+  <label>Velocidade:
+    <select id="speedSelect">
+      <option value="0.15">0.15x (Ultra Lento)</option>
+      <option value="0.25" selected>0.25x (Câmera Lenta)</option>
+      <option value="0.5">0.50x</option>
+      <option value="1">1.00x (30 FPS Real)</option>
+    </select>
+  </label>
+</div>
+
+<main>
+  <section class="card">
+    <h2>
+      <span>1. Inspeção Visual & Mapa de Salto</span>
+      <span id="frameLabel">Frame 0 / 31</span>
+    </h2>
+    <div class="view-pair">
+      <div class="canvas-box">
+        <canvas id="viewCanvas" width="320" height="420"></canvas>
+        <div class="canvas-tag" id="viewTag">Frame Atual</div>
+      </div>
+      <div class="canvas-box">
+        <canvas id="diffCanvas" width="320" height="420"></canvas>
+        <div class="canvas-tag" id="diffTag">Diferença (Anterior → Atual)</div>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn" id="btnPrev" type="button">◀ -1 Frame</button>
+        <button class="btn active" id="btnPlay" type="button">⏸ Pausar</button>
+        <button class="btn" id="btnNext" type="button">+1 Frame ▶</button>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn" id="btnModeCycle" type="button">Ciclo Completo (32f)</button>
+        <button class="btn" id="btnModePingPong" type="button">Ping-Pong (A ↔ B)</button>
+        <button class="btn" id="btnModeWindow" type="button">Janela (±3 Frames)</button>
+      </div>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <small>Salto Cintura/Capa</small>
+        <strong id="mWaist">—</strong>
+      </div>
+      <div class="metric-box">
+        <small>Desloc. Borda da Capa</small>
+        <strong id="mCapeDx">—</strong>
+      </div>
+      <div class="metric-box">
+        <small>Tranco / Aceleração (Jerk)</small>
+        <strong id="mJerk">—</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>
+      <span>2. Gráfico Frame a Frame (Clique numa barra)</span>
+      <select id="metricSelect" style="background:#11243a;color:#fff;border:1px solid #2b5278;border-radius:6px;padding:2px 6px;font-size:11px">
+        <option value="waist_cape" selected>Métrica: Salto Cintura & Capa (RMSE)</option>
+        <option value="cape_dx">Métrica: Velocidade Borda da Capa (|dx| px)</option>
+        <option value="jerk">Métrica: Tranco / Inversão na Capa (Jerk)</option>
+        <option value="back_cape">Métrica: Aba Traseira da Capa</option>
+        <option value="legs">Métrica: Pernas & Passada</option>
+        <option value="full">Métrica: Corpo Inteiro</option>
+      </select>
+    </h2>
+    <div class="chart-wrap">
+      <canvas id="chartCanvas" width="640" height="160"></canvas>
+    </div>
+
+    <div class="tuner-box">
+      <strong style="font-size:12px;color:#7dd3fc">Editor de Frames &amp; Simulador da Capa (No Browser):</strong>
+      <div class="tuner-row">
+        <span>Suavizar Borda/Cintura da Capa:</span>
+        <input type="range" id="smoothCapeSlider" min="0" max="100" value="0">
+        <strong id="smoothCapeVal">0%</strong>
+      </div>
+      <div class="tuner-row" style="flex-wrap:wrap;gap:6px">
+        <button class="btn warn" id="btnDeleteFrame" type="button" title="Atalho: Delete / Backspace">🗑️ Deletar Frame Atual</button>
+        <button class="btn" id="btnInsertInterp" type="button">➕ Inserir Frame Interpolado (A↔B)</button>
+        <button class="btn" id="btnDuplicateFrame" type="button">📑 Duplicar Frame</button>
+        <button class="btn" id="btnSmoothFrame" type="button">✨ Suavizar Frame Atual</button>
+      </div>
+      <div class="tuner-row" style="flex-wrap:wrap;gap:6px">
+        <span>Cortar Intervalo: De</span>
+        <input type="number" id="rangeStart" min="0" max="60" value="0" style="width:52px;background:#11243a;color:#fff;border:1px solid #2b5278;border-radius:6px;padding:3px 6px">
+        <span>até</span>
+        <input type="number" id="rangeEnd" min="1" max="60" value="31" style="width:52px;background:#11243a;color:#fff;border:1px solid #2b5278;border-radius:6px;padding:3px 6px">
+        <button class="btn" id="btnKeepRange" type="button">✂️ Manter Só Intervalo</button>
+        <button class="btn" id="btnUndo" type="button" disabled>↩️ Desfazer (0)</button>
+        <button class="btn" id="btnResetFrames" type="button">🔄 Resetar Original</button>
+      </div>
+      <div class="tuner-row" style="flex-wrap:wrap;gap:6px;border-top:1px solid #1e3c5a;padding-top:8px;margin-top:2px">
+        <strong style="color:#a7f3d0">Exportar / Importar:</strong>
+        <button class="btn active" id="btnExportWebm" type="button">🎬 Exportar Vídeo (.webm)</button>
+        <button class="btn" id="btnExportGridPng" type="button" title="2560×2160 (8×4) — evita perda de resolução em chats/IAs">🖼️ Exportar Grid 8×4 HD (.png)</button>
+        <button class="btn" id="btnExportPng" type="button">🖼️ Exportar Strip (.png)</button>
+        <button class="btn" id="btnExportJson" type="button">💾 Exportar Receita (.json)</button>
+        <input type="file" id="importPngInput" accept="image/png,image/webp" style="display:none">
+        <button class="btn" id="btnImportPng" type="button">📥 Importar PNG</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>
+      <span>3. Pontos de Troca Brusca Detectados</span>
+      <small style="color:#9ec2d4;font-weight:400">Clique para focar</small>
+    </h2>
+    <div class="spike-list" id="spikeList"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px">
+      <strong style="font-size:11px;color:#9ec2d4">Relatório Automático (copie e envie se quiser ajustar um frame específico):</strong>
+      <button class="btn" id="btnCopyReport" type="button">📋 Copiar Relatório</button>
+    </div>
+    <textarea id="reportBox" readonly></textarea>
+  </section>
+</main>
+
+<script>
+'use strict';
+const VW = 320, VH = 540, FPS = 30;
+const CLIPS = {
+  left:  { url: 'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V14', cycle: 33, mirror: false, startSec: 0 },
+  right: { url: 'assets/characters/walk-video-v1/gothic-boy-walk-left.mp4?build=GOTHIC_MP4_WALK_V14', cycle: 33, mirror: true,  startSec: 0 },
+  front: { url: 'assets/characters/walk-video-v1/gothic-boy-walk-front.mp4?build=GOTHIC_MP4_WALK_V14', cycle: 31, mirror: false, startSec: 0 },
+  back:  { url: 'assets/characters/walk-video-v1/gothic-boy-walk-back.mp4?build=GOTHIC_MP4_WALK_V14', cycle: 29, mirror: false, startSec: 0 },
+  raw_left: { url: 'assets/characters/source-video/gothic-boy-walk-turn-v2.mp4', cycle: 32, mirror: false, startSec: 69 / 24, rawSource: true, srcFps: 24, cropX: 616.5 }
+};
+
+const REGIONS = {
+  waist_cape: { label: 'Cintura & Capa', x0: 90, y0: 210, x1: 265, y1: 385, crop: [70, 165, 210, 262] },
+  back_cape:  { label: 'Aba da Capa',    x0: 145, y0: 215, x1: 270, y1: 435, crop: [95, 175, 200, 250] },
+  full:       { label: 'Corpo Inteiro',  x0: 30, y0: 40,  x1: 290, y1: 535, crop: [0, 20, 320, 510] },
+  legs:       { label: 'Pernas & Botas', x0: 70, y0: 355, x1: 245, y1: 535, crop: [50, 315, 220, 225] },
+  head:       { label: 'Cabeça & Gola',  x0: 80, y0: 40,  x1: 240, y1: 185, crop: [65, 30, 190, 220] }
+};
+
+let originalClipFrames = [];
+let rawFrames = [];
+let workingFrames = [];
+let undoStack = [];
+let editLog = [];
+let analysis = null;
+let currentIdx = 0;
+let playing = true;
+let playMode = 'cycle'; // 'cycle' | 'pingpong' | 'window'
+let focusIdx = 0;
+let smoothedOverrides = new Set();
+let lastTick = performance.now();
+
+const viewCanvas = document.getElementById('viewCanvas');
+const viewCtx = viewCanvas.getContext('2d');
+const diffCanvas = document.getElementById('diffCanvas');
+const diffCtx = diffCanvas.getContext('2d');
+const chartCanvas = document.getElementById('chartCanvas');
+const chartCtx = chartCanvas.getContext('2d');
+
+function chromaKeyImageData(imgData) {
+  const d = imgData.data;
+  const kr = d[0], kg = d[1], kb = d[2];
+  const excess = Math.max(1, kg - Math.max(kr, kb) - 4);
+  const alpha = new Float32Array(VW * VH);
+  const fg = new Float32Array(VW * VH * 3);
+  for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    let al = 1 - Math.max(0, Math.min(1, (g - Math.max(r, b) - 4) / excess));
+    if (al < 0.06) {
+      d[i] = d[i + 1] = d[i + 2] = d[i + 3] = 0;
+      alpha[p] = 0;
+      continue;
+    }
+    if (al > 0.985) al = 1;
+    const safe = Math.max(0.06, al);
+    const nr = Math.max(0, Math.min(255, (r - kr * (1 - al)) / safe));
+    const ng = Math.max(0, Math.min(255, (g - kg * (1 - al)) / safe));
+    const nb = Math.max(0, Math.min(255, (b - kb * (1 - al)) / safe));
+    d[i] = nr; d[i + 1] = ng; d[i + 2] = nb; d[i + 3] = Math.round(al * 255);
+    alpha[p] = al;
+    fg[p * 3] = nr * al;
+    fg[p * 3 + 1] = ng * al;
+    fg[p * 3 + 2] = nb * al;
+  }
+  return { imgData, alpha, fg };
+}
+
+function measureEdges(alpha, mirror) {
+  const edgeAtBand = (yStart, yEnd) => {
+    let sum = 0, count = 0;
+    for (let y = yStart; y < yEnd; y++) {
+      const rowOff = y * VW;
+      if (!mirror) {
+        for (let x = VW - 1; x >= 0; x--) {
+          if (alpha[rowOff + x] > 0.28) { sum += x; count++; break; }
+        }
+      } else {
+        for (let x = 0; x < VW; x++) {
+          if (alpha[rowOff + x] > 0.28) { sum += (VW - 1 - x); count++; break; }
+        }
+      }
+    }
+    return count ? sum / count : 160;
+  };
+  return {
+    waist260: edgeAtBand(245, 280),
+    cape340: edgeAtBand(310, 370),
+    hem400: edgeAtBand(380, 420)
+  };
+}
+
+function cloneFrame(fr) {
+  const copyData = new ImageData(new Uint8ClampedArray(fr.imgData.data), VW, VH);
+  return {
+    srcTag: fr.srcTag || 'frame',
+    rawData: fr.rawData ? new Uint8ClampedArray(fr.rawData) : new Uint8ClampedArray(fr.imgData.data),
+    imgData: copyData,
+    alpha: new Float32Array(fr.alpha),
+    fg: new Float32Array(fr.fg),
+    edges: { ...fr.edges },
+    canvas: frameToCanvas(copyData)
+  };
+}
+
+function frameToCanvas(imgData) {
+  const c = document.createElement('canvas');
+  c.width = VW; c.height = VH;
+  c.getContext('2d').putImageData(imgData, 0, 0);
+  return c;
+}
+
+async function extractCycleFrames(clipKey) {
+  const spec = CLIPS[clipKey];
+  const banner = document.getElementById('statusBanner');
+  banner.textContent = `Decodificando ${spec.cycle} frames do MP4…`;
+  const video = document.createElement('video');
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+  video.crossOrigin = 'anonymous';
+  video.src = spec.url;
+  await new Promise((resolve, reject) => {
+    video.addEventListener('loadeddata', resolve, { once: true });
+    video.addEventListener('error', () => reject(new Error('Falha ao carregar MP4')), { once: true });
+    video.load();
+  });
+
+  const work = document.createElement('canvas');
+  work.width = VW; work.height = VH;
+  const wctx = work.getContext('2d', { willReadFrequently: true });
+  const frames = [];
+  const stepFps = spec.srcFps || FPS;
+
+  for (let k = 0; k < spec.cycle; k++) {
+    const t = spec.startSec + (k + 0.15) / stepFps;
+    video.currentTime = t;
+    await new Promise(r => video.addEventListener('seeked', r, { once: true }));
+    wctx.clearRect(0, 0, VW, VH);
+    wctx.save();
+    if (spec.mirror) {
+      wctx.translate(VW, 0);
+      wctx.scale(-1, 1);
+    }
+    if (spec.rawSource) {
+      wctx.drawImage(video, spec.cropX, 0, 640, 1080, 0, 0, VW, VH);
+    } else {
+      wctx.drawImage(video, 0, 0, VW, VH);
+    }
+    wctx.restore();
+    const raw = wctx.getImageData(0, 0, VW, VH);
+    const rawBytes = new Uint8ClampedArray(raw.data);
+    const keyed = chromaKeyImageData(raw);
+    keyed.srcTag = `f${k}`;
+    keyed.rawData = rawBytes;
+    keyed.edges = measureEdges(keyed.alpha, spec.mirror);
+    keyed.canvas = frameToCanvas(keyed.imgData);
+    frames.push(keyed);
+    banner.textContent = `Analisando frame ${k + 1}/${spec.cycle}…`;
+  }
+  return frames;
+}
+
+function regionRmse(fgA, fgB, reg, mirror) {
+  let x0 = reg.x0, x1 = reg.x1;
+  if (mirror) {
+    x0 = VW - reg.x1;
+    x1 = VW - reg.x0;
+  }
+  let sum = 0, count = 0;
+  for (let y = reg.y0; y < reg.y1; y++) {
+    let idx = (y * VW + x0) * 3;
+    for (let x = x0; x < x1; x++, idx += 3) {
+      const dr = fgB[idx] - fgA[idx];
+      const dg = fgB[idx + 1] - fgA[idx + 1];
+      const db = fgB[idx + 2] - fgA[idx + 2];
+      sum += dr * dr + dg * dg + db * db;
+      count += 3;
+    }
+  }
+  return Math.sqrt(sum / Math.max(1, count));
+}
+
+function regionJerk(fgPrev, fgCurr, fgNext, reg, mirror) {
+  let x0 = reg.x0, x1 = reg.x1;
+  if (mirror) {
+    x0 = VW - reg.x1;
+    x1 = VW - reg.x0;
+  }
+  let sum = 0, count = 0;
+  for (let y = reg.y0; y < reg.y1; y++) {
+    let idx = (y * VW + x0) * 3;
+    for (let x = x0; x < x1; x++, idx += 3) {
+      const ar = fgNext[idx] - 2 * fgCurr[idx] + fgPrev[idx];
+      const ag = fgNext[idx + 1] - 2 * fgCurr[idx + 1] + fgPrev[idx + 1];
+      const ab = fgNext[idx + 2] - 2 * fgCurr[idx + 2] + fgPrev[idx + 2];
+      sum += ar * ar + ag * ag + ab * ab;
+      count += 3;
+    }
+  }
+  return Math.sqrt(sum / Math.max(1, count));
+}
+
+function median(arr) {
+  const s = [...arr].sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)] || 0;
+}
+
+function analyzeSequence(frames, clipKey) {
+  const n = frames.length;
+  const mirror = CLIPS[clipKey].mirror;
+  const transitions = [];
+  for (let i = 0; i < n; i++) {
+    const prevIdx = (i - 1 + n) % n;
+    const prev = frames[prevIdx];
+    const curr = frames[i];
+    const next = frames[(i + 1) % n];
+    const waist_cape = regionRmse(prev.fg, curr.fg, REGIONS.waist_cape, mirror);
+    const back_cape = regionRmse(prev.fg, curr.fg, REGIONS.back_cape, mirror);
+    const legs = regionRmse(prev.fg, curr.fg, REGIONS.legs, mirror);
+    const head = regionRmse(prev.fg, curr.fg, REGIONS.head, mirror);
+    const full = regionRmse(prev.fg, curr.fg, REGIONS.full, mirror);
+    const jerk = regionJerk(prev.fg, curr.fg, next.fg, REGIONS.waist_cape, mirror);
+    const cape_dx = curr.edges.cape340 - prev.edges.cape340;
+    const waist_dx = curr.edges.waist260 - prev.edges.waist260;
+    transitions.push({
+      toIdx: i,
+      fromIdx: prevIdx,
+      isWrap: prevIdx === n - 1 && i === 0,
+      waist_cape,
+      back_cape,
+      legs,
+      head,
+      full,
+      jerk,
+      cape_dx,
+      waist_dx,
+      abs_cape_dx: Math.abs(cape_dx)
+    });
+  }
+
+  for (const key of ['waist_cape', 'back_cape', 'legs', 'head', 'full', 'jerk', 'abs_cape_dx']) {
+    const vals = transitions.map(t => t[key]);
+    const med = median(vals);
+    const mad = median(vals.map(v => Math.abs(v - med))) + 1e-3;
+    for (const t of transitions) {
+      t[key + '_z'] = (t[key] - med) / mad;
+      t[key + '_med'] = med;
+    }
+  }
+
+  // Combined perceptual cape/waist hitch score
+  for (const t of transitions) {
+    t.hitchScore = t.waist_cape_z * 1.1 + t.back_cape_z * 0.9 + Math.abs(t.cape_dx) * 0.8 + Math.abs(t.waist_dx) * 0.5 + t.jerk_z * 0.7;
+  }
+
+  return transitions;
+}
+
+function applyBrowserStabilization() {
+  const strength = Number(document.getElementById('smoothCapeSlider').value) / 100;
+  const clipKey = document.getElementById('clipSelect').value;
+  const mirror = CLIPS[clipKey].mirror;
+  const n = rawFrames.length;
+  workingFrames = rawFrames.map(cloneFrame);
+
+  if (strength > 0) {
+    // Smooth horizontal cape position across all frames in browser
+    const targetCape = workingFrames.map((_, k) => {
+      let sum = 0, wsum = 0;
+      for (let d = -3; d <= 3; d++) {
+        const w = Math.exp(-0.5 * (d / 1.5) ** 2);
+        sum += rawFrames[(k + d + n) % n].edges.cape340 * w;
+        wsum += w;
+      }
+      return sum / wsum;
+    });
+
+    for (let k = 0; k < n; k++) {
+      const shift = (targetCape[k] - rawFrames[k].edges.cape340) * strength;
+      if (Math.abs(shift) < 0.08) continue;
+      const src = rawFrames[k].imgData.data;
+      const dst = workingFrames[k].imgData.data;
+      for (let y = 160; y < 450; y++) {
+        const wy = y < 195 ? (y - 160) / 35 : y > 415 ? (450 - y) / 35 : 1;
+        for (let x = 0; x < VW; x++) {
+          const isBack = !mirror ? (x > 136) : (x < VW - 136);
+          if (!isBack) continue;
+          const wx = !mirror ? Math.min(1, (x - 136) / 48) : Math.min(1, (VW - 136 - x) / 48);
+          const dx = (!mirror ? shift : -shift) * wy * wx;
+          const sx = Math.max(0, Math.min(VW - 1, Math.round(x - dx)));
+          const di = (y * VW + x) * 4, si = (y * VW + sx) * 4;
+          dst[di] = src[si]; dst[di + 1] = src[si + 1]; dst[di + 2] = src[si + 2]; dst[di + 3] = src[si + 3];
+        }
+      }
+      const rekeyed = chromaKeyImageData(workingFrames[k].imgData);
+      workingFrames[k].alpha = rekeyed.alpha;
+      workingFrames[k].fg = rekeyed.fg;
+      workingFrames[k].edges = measureEdges(rekeyed.alpha, mirror);
+      workingFrames[k].canvas = frameToCanvas(workingFrames[k].imgData);
+    }
+  }
+
+  for (const idx of smoothedOverrides) {
+    const prev = workingFrames[(idx - 1 + n) % n];
+    const next = workingFrames[(idx + 1) % n];
+    const curr = workingFrames[idx];
+    const d = curr.imgData.data, dp = prev.imgData.data, dn = next.imgData.data;
+    for (let y = 165; y < 445; y++) {
+      for (let x = 0; x < VW; x++) {
+        const isBack = !mirror ? (x > 132) : (x < VW - 132);
+        if (!isBack) continue;
+        const i = (y * VW + x) * 4;
+        d[i] = (d[i] * 0.4 + (dp[i] + dn[i]) * 0.3) | 0;
+        d[i + 1] = (d[i + 1] * 0.4 + (dp[i + 1] + dn[i + 1]) * 0.3) | 0;
+        d[i + 2] = (d[i + 2] * 0.4 + (dp[i + 2] + dn[i + 2]) * 0.3) | 0;
+        d[i + 3] = (d[i + 3] * 0.4 + (dp[i + 3] + dn[i + 3]) * 0.3) | 0;
+      }
+    }
+    const rekeyed = chromaKeyImageData(curr.imgData);
+    curr.alpha = rekeyed.alpha;
+    curr.fg = rekeyed.fg;
+    curr.edges = measureEdges(rekeyed.alpha, mirror);
+    curr.canvas = frameToCanvas(curr.imgData);
+  }
+
+  analysis = analyzeSequence(workingFrames, clipKey);
+  renderSpikeList();
+  renderChart();
+  renderCurrentFrame();
+}
+
+function renderSpikeList() {
+  const list = document.getElementById('spikeList');
+  list.innerHTML = '';
+  const sorted = [...analysis].sort((a, b) => b.hitchScore - a.hitchScore);
+  const top = sorted.slice(0, 8);
+
+  for (const item of top) {
+    const div = document.createElement('div');
+    div.className = 'spike-item' + (item.toIdx === currentIdx ? ' selected' : '');
+    const sev = item.waist_cape_z > 2.4 || Math.abs(item.cape_dx) > 3.2
+      ? ['high', 'Travada Brusca']
+      : item.waist_cape_z > 1.5 || Math.abs(item.cape_dx) > 2.1
+      ? ['med', 'Oscilação Média']
+      : ['ok', 'Normal / Suave'];
+    const wrapTag = item.isWrap ? ' (VIRADA DO LOOP)' : '';
+    div.innerHTML = `
+      <div>
+        <strong>Frame ${item.fromIdx} → ${item.toIdx}${wrapTag}</strong>
+        <div style="font-size:11px;color:#9ec2d4">
+          Cintura/Capa: <b>${item.waist_cape.toFixed(1)}</b> (z=${item.waist_cape_z >= 0 ? '+' : ''}${item.waist_cape_z.toFixed(1)}) ·
+          Borda Capa: <b>${item.cape_dx >= 0 ? '+' : ''}${item.cape_dx.toFixed(2)}px</b> ·
+          Cintura: <b>${item.waist_dx >= 0 ? '+' : ''}${item.waist_dx.toFixed(1)}px</b>
+        </div>
+      </div>
+      <span class="badge ${sev[0]}">${sev[1]}</span>
+    `;
+    div.onclick = () => {
+      focusIdx = item.toIdx;
+      currentIdx = item.toIdx;
+      playing = false;
+      updatePlayButtons();
+      renderCurrentFrame();
+      renderChart();
+      renderSpikeList();
+    };
+    list.appendChild(div);
+  }
+
+  const clipKey = document.getElementById('clipSelect').value;
+  const wrap = analysis[0];
+  const worst = sorted[0];
+  document.getElementById('reportBox').value =
+    `[PSYWORLD SEAM REPORT] clip=${clipKey} (${workingFrames.length}f) smooth=${document.getElementById('smoothCapeSlider').value}% overrides=[${[...smoothedOverrides].join(',')}] edits=[${editLog.join('; ')}]\n` +
+    `Frames Ativos: ${workingFrames.map(f => f.srcTag).join(', ')}\n` +
+    `Virada do Loop (${wrap.fromIdx}->0): waist_cape=${wrap.waist_cape.toFixed(2)} (z=${wrap.waist_cape_z.toFixed(2)}) cape_dx=${wrap.cape_dx >= 0 ? '+' : ''}${wrap.cape_dx.toFixed(2)}px\n` +
+    `Maior Pico: Frame ${worst.fromIdx}->${worst.toIdx}: waist_cape=${worst.waist_cape.toFixed(2)} (z=${worst.waist_cape_z.toFixed(2)}) cape_dx=${worst.cape_dx >= 0 ? '+' : ''}${worst.cape_dx.toFixed(2)}px waist_dx=${worst.waist_dx >= 0 ? '+' : ''}${worst.waist_dx.toFixed(1)}px`;
+}
+
+function renderChart() {
+  if (!analysis || !analysis.length) return;
+  const metric = document.getElementById('metricSelect').value;
+  const w = chartCanvas.width, h = chartCanvas.height;
+  chartCtx.clearRect(0, 0, w, h);
+  chartCtx.fillStyle = '#060d17';
+  chartCtx.fillRect(0, 0, w, h);
+
+  const vals = analysis.map(t => metric === 'cape_dx' ? Math.abs(t.cape_dx) : t[metric]);
+  const med = median(vals);
+  const maxV = Math.max(...vals, med * 1.6, 1);
+  const padL = 34, padR = 10, padT = 16, padB = 24;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  const n = vals.length;
+  const barW = plotW / n;
+
+  // Median line
+  const medY = padT + plotH * (1 - med / maxV);
+  chartCtx.strokeStyle = '#38bdf866';
+  chartCtx.setLineDash([4, 4]);
+  chartCtx.beginPath();
+  chartCtx.moveTo(padL, medY);
+  chartCtx.lineTo(w - padR, medY);
+  chartCtx.stroke();
+  chartCtx.setLineDash([]);
+  chartCtx.fillStyle = '#7dd3fc';
+  chartCtx.font = '10px system-ui';
+  chartCtx.fillText(`med ${med.toFixed(1)}`, 2, medY + 3);
+
+  for (let i = 0; i < n; i++) {
+    const v = vals[i];
+    const t = analysis[i];
+    const bh = Math.max(3, (v / maxV) * plotH);
+    const bx = padL + i * barW + 1.5;
+    const by = padT + plotH - bh;
+    const isSel = i === currentIdx;
+    const z = metric === 'cape_dx' ? t.abs_cape_dx_z : t[metric + '_z'];
+    chartCtx.fillStyle = isSel
+      ? '#38bdf8'
+      : z > 2.4
+      ? '#ef4444'
+      : z > 1.5
+      ? '#f59e0b'
+      : '#10b981';
+    chartCtx.fillRect(bx, by, Math.max(4, barW - 3), bh);
+
+    if (i % 2 === 0 || isSel) {
+      chartCtx.fillStyle = isSel ? '#fff' : '#8ab0c4';
+      chartCtx.font = isSel ? 'bold 10px system-ui' : '9px system-ui';
+      chartCtx.fillText(String(i), bx + 1, h - 7);
+    }
+  }
+}
+
+chartCanvas.addEventListener('pointerdown', e => {
+  if (!analysis || !analysis.length) return;
+  const rect = chartCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (chartCanvas.width / rect.width);
+  const padL = 34, padR = 10;
+  const plotW = chartCanvas.width - padL - padR;
+  const idx = Math.max(0, Math.min(analysis.length - 1, Math.floor(((x - padL) / plotW) * analysis.length)));
+  currentIdx = idx;
+  focusIdx = idx;
+  playing = false;
+  updatePlayButtons();
+  renderCurrentFrame();
+  renderChart();
+  renderSpikeList();
+});
+
+function renderCurrentFrame() {
+  if (!workingFrames.length || !analysis) return;
+  const n = workingFrames.length;
+  currentIdx = ((currentIdx % n) + n) % n;
+  const curr = workingFrames[currentIdx];
+  const prevIdx = (currentIdx - 1 + n) % n;
+  const prev = workingFrames[prevIdx];
+  const tr = analysis[currentIdx];
+  const zoomKey = document.getElementById('zoomSelect').value;
+  const reg = REGIONS[zoomKey] || REGIONS.waist_cape;
+  const clipKey = document.getElementById('clipSelect').value;
+  const mirror = CLIPS[clipKey].mirror;
+
+  let [cx, cy, cw, ch] = reg.crop;
+  if (mirror && zoomKey !== 'full') {
+    cx = VW - (cx + cw);
+  }
+
+  // 1) Left canvas: zoomed view with waist & cape edge ruler guides
+  viewCtx.clearRect(0, 0, viewCanvas.width, viewCanvas.height);
+  viewCtx.fillStyle = '#071320';
+  viewCtx.fillRect(0, 0, viewCanvas.width, viewCanvas.height);
+  viewCtx.imageSmoothingEnabled = true;
+  viewCtx.drawImage(curr.canvas, cx, cy, cw, ch, 0, 0, viewCanvas.width, viewCanvas.height);
+
+  // Draw cape edge markers
+  const mapX = x => ((x - cx) / cw) * viewCanvas.width;
+  const mapY = y => ((y - cy) / ch) * viewCanvas.height;
+  const capeX = !mirror ? curr.edges.cape340 : (VW - 1 - curr.edges.cape340);
+  const prevCapeX = !mirror ? prev.edges.cape340 : (VW - 1 - prev.edges.cape340);
+
+  viewCtx.strokeStyle = '#38bdf888';
+  viewCtx.setLineDash([3, 3]);
+  viewCtx.beginPath();
+  viewCtx.moveTo(mapX(prevCapeX), mapY(240));
+  viewCtx.lineTo(mapX(prevCapeX), mapY(410));
+  viewCtx.stroke();
+  viewCtx.setLineDash([]);
+
+  viewCtx.strokeStyle = '#f43f5e';
+  viewCtx.lineWidth = 2;
+  viewCtx.beginPath();
+  viewCtx.moveTo(mapX(capeX), mapY(240));
+  viewCtx.lineTo(mapX(capeX), mapY(410));
+  viewCtx.stroke();
+
+  // 2) Right canvas: Heatmap or Onion-Skin between prev and curr
+  const mode = document.getElementById('diffModeSelect').value;
+  const tmp = document.createElement('canvas');
+  tmp.width = VW; tmp.height = VH;
+  const tctx = tmp.getContext('2d');
+  const outImg = tctx.createImageData(VW, VH);
+  const od = outImg.data;
+  const pFg = prev.fg, cFg = curr.fg;
+  const pAl = prev.alpha, cAl = curr.alpha;
+
+  for (let p = 0, i = 0; p < VW * VH; p++, i += 4) {
+    const idx3 = p * 3;
+    const dr = Math.abs(cFg[idx3] - pFg[idx3]);
+    const dg = Math.abs(cFg[idx3 + 1] - pFg[idx3 + 1]);
+    const db = Math.abs(cFg[idx3 + 2] - pFg[idx3 + 2]);
+    const diff = (dr + dg + db) / 3;
+    const baseGray = (cFg[idx3] + cFg[idx3 + 1] + cFg[idx3 + 2]) / 9;
+
+    if (mode === 'heatmap') {
+      if (diff > 18) {
+        const hot = Math.min(255, diff * 3.2);
+        od[i] = 255;
+        od[i + 1] = Math.max(0, 230 - hot * 0.75);
+        od[i + 2] = 20;
+        od[i + 3] = 245;
+      } else if (cAl[p] > 0.08 || pAl[p] > 0.08) {
+        od[i] = baseGray;
+        od[i + 1] = baseGray + 12;
+        od[i + 2] = baseGray + 24;
+        od[i + 3] = 210;
+      } else {
+        od[i] = 6; od[i + 1] = 13; od[i + 2] = 23; od[i + 3] = 255;
+      }
+    } else {
+      // Onion skin: prev in cyan, curr in magenta
+      const pL = (pFg[idx3] + pFg[idx3 + 1] + pFg[idx3 + 2]) / 3;
+      const cL = (cFg[idx3] + cFg[idx3 + 1] + cFg[idx3 + 2]) / 3;
+      od[i] = Math.min(255, cL * 1.2);
+      od[i + 1] = Math.min(255, pL * 0.9);
+      od[i + 2] = Math.min(255, Math.max(pL, cL) * 1.1);
+      od[i + 3] = (cAl[p] > 0.08 || pAl[p] > 0.08) ? 245 : 255;
+    }
+  }
+  tctx.putImageData(outImg, 0, 0);
+  diffCtx.clearRect(0, 0, diffCanvas.width, diffCanvas.height);
+  diffCtx.drawImage(tmp, cx, cy, cw, ch, 0, 0, diffCanvas.width, diffCanvas.height);
+
+  // Highlight region box
+  let rx0 = reg.x0, rx1 = reg.x1;
+  if (mirror) { rx0 = VW - reg.x1; rx1 = VW - reg.x0; }
+  diffCtx.strokeStyle = '#38bdf8aa';
+  diffCtx.lineWidth = 1.5;
+  diffCtx.strokeRect(mapX(rx0), mapY(reg.y0), ((rx1 - rx0) / cw) * diffCanvas.width, ((reg.y1 - reg.y0) / ch) * diffCanvas.height);
+
+  document.getElementById('frameLabel').textContent =
+    `Frame ${prevIdx} → ${currentIdx} / ${n - 1} [${curr.srcTag}]` + (tr.isWrap ? ' (VIRADA DO LOOP)' : '');
+  document.getElementById('viewTag').textContent = `Frame ${currentIdx} (${curr.srcTag}) · Capa X=${curr.edges.cape340.toFixed(1)}px`;
+  document.getElementById('diffTag').textContent = `Salto ${prevIdx}→${currentIdx}: ΔCapa=${tr.cape_dx >= 0 ? '+' : ''}${tr.cape_dx.toFixed(2)}px`;
+  document.getElementById('mWaist').textContent = `${tr.waist_cape.toFixed(1)} (z=${tr.waist_cape_z >= 0 ? '+' : ''}${tr.waist_cape_z.toFixed(1)})`;
+  document.getElementById('mCapeDx').textContent = `${tr.cape_dx >= 0 ? '+' : ''}${tr.cape_dx.toFixed(2)} px`;
+  document.getElementById('mJerk').textContent = `${tr.jerk.toFixed(1)} (z=${tr.jerk_z >= 0 ? '+' : ''}${tr.jerk_z.toFixed(1)})`;
+}
+
+function updatePlayButtons() {
+  const b = document.getElementById('btnPlay');
+  b.textContent = playing ? '⏸ Pausar' : '▶ Reproduzir';
+  b.classList.toggle('active', playing);
+  document.getElementById('btnModeCycle').textContent = `Ciclo Completo (${workingFrames.length || 32}f)`;
+  document.getElementById('btnModeCycle').classList.toggle('active', playMode === 'cycle');
+  document.getElementById('btnModePingPong').classList.toggle('active', playMode === 'pingpong');
+  document.getElementById('btnModeWindow').classList.toggle('active', playMode === 'window');
+  const u = document.getElementById('btnUndo');
+  if (u) {
+    u.disabled = undoStack.length === 0;
+    u.textContent = `↩️ Desfazer (${undoStack.length})`;
+  }
+}
+
+function pushUndo(actionLabel) {
+  undoStack.push({
+    rawFrames: rawFrames.map(cloneFrame),
+    currentIdx,
+    smoothedOverrides: new Set(smoothedOverrides),
+    editLog: [...editLog]
+  });
+  if (undoStack.length > 25) undoStack.shift();
+  if (actionLabel) editLog.push(actionLabel);
+  updatePlayButtons();
+}
+
+function stepFrame(delta) {
+  if (!workingFrames.length) return;
+  const n = workingFrames.length;
+  currentIdx = (currentIdx + delta + n) % n;
+  renderCurrentFrame();
+  renderChart();
+}
+
+document.getElementById('btnPrev').onclick = () => { playing = false; updatePlayButtons(); stepFrame(-1); };
+document.getElementById('btnNext').onclick = () => { playing = false; updatePlayButtons(); stepFrame(1); };
+document.getElementById('btnPlay').onclick = () => { playing = !playing; updatePlayButtons(); };
+document.getElementById('btnModeCycle').onclick = () => { playMode = 'cycle'; playing = true; updatePlayButtons(); };
+document.getElementById('btnModePingPong').onclick = () => { focusIdx = currentIdx; playMode = 'pingpong'; playing = true; updatePlayButtons(); };
+document.getElementById('btnModeWindow').onclick = () => { focusIdx = currentIdx; playMode = 'window'; playing = true; updatePlayButtons(); };
+
+document.getElementById('clipSelect').onchange = () => loadCurrentClip();
+document.getElementById('zoomSelect').onchange = () => renderCurrentFrame();
+document.getElementById('diffModeSelect').onchange = () => renderCurrentFrame();
+document.getElementById('metricSelect').onchange = () => renderChart();
+document.getElementById('smoothCapeSlider').oninput = e => {
+  document.getElementById('smoothCapeVal').textContent = `${e.target.value}%`;
+  applyBrowserStabilization();
+};
+
+document.getElementById('btnDeleteFrame').onclick = () => {
+  if (rawFrames.length <= 3) {
+    document.getElementById('statusBanner').textContent = 'Mínimo de 3 frames atingido!';
+    return;
+  }
+  const removedTag = rawFrames[currentIdx].srcTag;
+  pushUndo(`del:${currentIdx}(${removedTag})`);
+  rawFrames.splice(currentIdx, 1);
+  if (currentIdx >= rawFrames.length) currentIdx = 0;
+  focusIdx = currentIdx;
+  document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+  applyBrowserStabilization();
+  updatePlayButtons();
+  document.getElementById('statusBanner').textContent = `Frame ${removedTag} removido · ${rawFrames.length} frames ativos`;
+};
+
+document.getElementById('btnInsertInterp').onclick = () => {
+  if (rawFrames.length < 2) return;
+  const n = rawFrames.length;
+  const prevIdx = (currentIdx - 1 + n) % n;
+  const frA = rawFrames[prevIdx];
+  const frB = rawFrames[currentIdx];
+  pushUndo(`interp:${frA.srcTag}+${frB.srcTag}@${currentIdx}`);
+
+  const blendImg = new ImageData(VW, VH);
+  const d = blendImg.data, dA = frA.imgData.data, dB = frB.imgData.data;
+  for (let i = 0; i < d.length; i++) {
+    d[i] = (dA[i] + dB[i]) >> 1;
+  }
+  const alpha = new Float32Array(VW * VH);
+  const fg = new Float32Array(VW * VH * 3);
+  for (let p = 0; p < VW * VH; p++) {
+    alpha[p] = (frA.alpha[p] + frB.alpha[p]) * 0.5;
+    fg[p * 3] = (frA.fg[p * 3] + frB.fg[p * 3]) * 0.5;
+    fg[p * 3 + 1] = (frA.fg[p * 3 + 1] + frB.fg[p * 3 + 1]) * 0.5;
+    fg[p * 3 + 2] = (frA.fg[p * 3 + 2] + frB.fg[p * 3 + 2]) * 0.5;
+  }
+  const clipKey = document.getElementById('clipSelect').value;
+  const mirror = CLIPS[clipKey].mirror;
+  const newFrame = {
+    srcTag: `interp(${frA.srcTag}+${frB.srcTag})`,
+    rawData: new Uint8ClampedArray(d),
+    imgData: blendImg,
+    alpha,
+    fg,
+    edges: measureEdges(alpha, mirror),
+    canvas: frameToCanvas(blendImg)
+  };
+  rawFrames.splice(currentIdx, 0, newFrame);
+  focusIdx = currentIdx;
+  document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+  applyBrowserStabilization();
+  updatePlayButtons();
+  document.getElementById('statusBanner').textContent = `Frame interpolado inserido em #${currentIdx} · ${rawFrames.length} frames ativos`;
+};
+
+document.getElementById('btnDuplicateFrame').onclick = () => {
+  if (!rawFrames.length) return;
+  const src = rawFrames[currentIdx];
+  pushUndo(`dup:${src.srcTag}@${currentIdx}`);
+  const copy = cloneFrame(src);
+  copy.srcTag = `${src.srcTag}_dup`;
+  rawFrames.splice(currentIdx + 1, 0, copy);
+  currentIdx = currentIdx + 1;
+  focusIdx = currentIdx;
+  document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+  applyBrowserStabilization();
+  updatePlayButtons();
+  document.getElementById('statusBanner').textContent = `Frame ${src.srcTag} duplicado · ${rawFrames.length} frames ativos`;
+};
+
+document.getElementById('btnKeepRange').onclick = () => {
+  const s = Math.max(0, Number(document.getElementById('rangeStart').value) || 0);
+  const e = Math.min(rawFrames.length - 1, Number(document.getElementById('rangeEnd').value) || (rawFrames.length - 1));
+  if (e - s + 1 < 3) {
+    document.getElementById('statusBanner').textContent = 'Selecione um intervalo com pelo menos 3 frames!';
+    return;
+  }
+  pushUndo(`range:${s}..${e}`);
+  rawFrames = rawFrames.slice(s, e + 1);
+  currentIdx = 0;
+  focusIdx = 0;
+  document.getElementById('rangeStart').value = '0';
+  document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+  applyBrowserStabilization();
+  updatePlayButtons();
+  document.getElementById('statusBanner').textContent = `Mantido intervalo ${s}..${e} · ${rawFrames.length} frames ativos`;
+};
+
+document.getElementById('btnUndo').onclick = () => {
+  if (!undoStack.length) return;
+  const prev = undoStack.pop();
+  rawFrames = prev.rawFrames;
+  currentIdx = Math.min(prev.currentIdx, rawFrames.length - 1);
+  focusIdx = currentIdx;
+  smoothedOverrides = prev.smoothedOverrides;
+  editLog = prev.editLog;
+  document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+  applyBrowserStabilization();
+  updatePlayButtons();
+  document.getElementById('statusBanner').textContent = `Edição desfeita · ${rawFrames.length} frames ativos`;
+};
+
+document.getElementById('btnSmoothFrame').onclick = () => {
+  pushUndo(`smooth:${currentIdx}`);
+  smoothedOverrides.add(currentIdx);
+  applyBrowserStabilization();
+};
+
+document.getElementById('btnResetFrames').onclick = () => {
+  smoothedOverrides.clear();
+  undoStack = [];
+  editLog = [];
+  rawFrames = originalClipFrames.map(cloneFrame);
+  currentIdx = 0;
+  focusIdx = 0;
+  document.getElementById('smoothCapeSlider').value = '0';
+  document.getElementById('smoothCapeVal').textContent = '0%';
+  document.getElementById('rangeStart').value = '0';
+  document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+  applyBrowserStabilization();
+  updatePlayButtons();
+  document.getElementById('statusBanner').textContent = `Resetado para original · ${rawFrames.length} frames`;
+};
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+document.getElementById('btnExportGridPng').onclick = () => {
+  if (!workingFrames.length) return;
+  const clipKey = document.getElementById('clipSelect').value;
+  const n = workingFrames.length;
+  const cols = Math.min(8, n);
+  const rows = Math.ceil(n / cols);
+  const sheet = document.createElement('canvas');
+  sheet.width = VW * cols;
+  sheet.height = VH * rows;
+  const sctx = sheet.getContext('2d');
+  for (let k = 0; k < n; k++) {
+    const col = k % cols;
+    const row = Math.floor(k / cols);
+    sctx.drawImage(workingFrames[k].canvas, col * VW, row * VH);
+  }
+  sheet.toBlob(blob => {
+    if (blob) {
+      triggerDownload(blob, `gothic-walk-${clipKey}-${n}f-grid-${cols}x${rows}-hd.png`);
+      document.getElementById('statusBanner').textContent = `Grid PNG HD ${cols}×${rows} (${sheet.width}×${sheet.height}, ${n} frames) exportado!`;
+    }
+  }, 'image/png');
+};
+
+document.getElementById('btnExportPng').onclick = () => {
+  if (!workingFrames.length) return;
+  const clipKey = document.getElementById('clipSelect').value;
+  const n = workingFrames.length;
+  const sheet = document.createElement('canvas');
+  sheet.width = VW * n;
+  sheet.height = VH;
+  const sctx = sheet.getContext('2d');
+  for (let k = 0; k < n; k++) {
+    sctx.drawImage(workingFrames[k].canvas, k * VW, 0);
+  }
+  sheet.toBlob(blob => {
+    if (blob) {
+      triggerDownload(blob, `gothic-walk-${clipKey}-${n}f-strip.png`);
+      document.getElementById('statusBanner').textContent = `Strip PNG (${n} frames) exportado!`;
+    }
+  }, 'image/png');
+};
+
+document.getElementById('btnImportPng').onclick = () => {
+  document.getElementById('importPngInput').click();
+};
+
+document.getElementById('importPngInput').onchange = async e => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    let cols = 32, rows = 1;
+    const aspectRatio = (iw / ih) / (VW / VH);
+    if (Math.abs(aspectRatio - 2) < 0.35) {
+      cols = 8; rows = 4;
+    } else {
+      cols = Math.max(3, Math.round(aspectRatio));
+      rows = 1;
+    }
+    const cellW = iw / cols, cellH = ih / rows;
+    const total = cols * rows;
+    const clipKey = document.getElementById('clipSelect').value;
+    const mirror = CLIPS[clipKey].mirror;
+    const work = document.createElement('canvas');
+    work.width = VW; work.height = VH;
+    const wctx = work.getContext('2d', { willReadFrequently: true });
+    wctx.imageSmoothingEnabled = true;
+    wctx.imageSmoothingQuality = 'high';
+
+    pushUndo(`import:${file.name}(${iw}x${ih})`);
+    const imported = [];
+    for (let k = 0; k < total; k++) {
+      const col = k % cols, row = Math.floor(k / cols);
+      wctx.fillStyle = '#24b42c';
+      wctx.fillRect(0, 0, VW, VH);
+      wctx.drawImage(img, col * cellW, row * cellH, cellW, cellH, 0, 0, VW, VH);
+      const raw = wctx.getImageData(0, 0, VW, VH);
+      const rawBytes = new Uint8ClampedArray(raw.data);
+      const keyed = chromaKeyImageData(raw);
+      keyed.srcTag = `imp${k}`;
+      keyed.rawData = rawBytes;
+      keyed.edges = measureEdges(keyed.alpha, mirror);
+      keyed.canvas = frameToCanvas(keyed.imgData);
+      imported.push(keyed);
+    }
+    rawFrames = imported;
+    currentIdx = 0;
+    focusIdx = 0;
+    document.getElementById('rangeStart').value = '0';
+    document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+    applyBrowserStabilization();
+    updatePlayButtons();
+    const resWarn = cellW < 160 ? ` ⚠️ (Atenção: arquivo veio reduzido em ${Math.round(cellW)}×${Math.round(cellH)}px/frame)` : '';
+    document.getElementById('statusBanner').textContent = `PNG importado: ${total} frames (${cols}×${rows}, ${iw}×${ih}px)${resWarn}`;
+  } catch (err) {
+    document.getElementById('statusBanner').textContent = 'Erro ao importar PNG: ' + err.message;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+};
+
+document.getElementById('btnExportJson').onclick = () => {
+  if (!workingFrames.length || !analysis) return;
+  const clipKey = document.getElementById('clipSelect').value;
+  const wrap = analysis[0];
+  const sorted = [...analysis].sort((a, b) => b.hitchScore - a.hitchScore);
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    clip: clipKey,
+    frameCount: workingFrames.length,
+    smoothCapePercent: Number(document.getElementById('smoothCapeSlider').value),
+    smoothedFrameIndices: [...smoothedOverrides],
+    editLog,
+    frames: workingFrames.map((f, idx) => ({
+      index: idx,
+      sourceTag: f.srcTag,
+      capeEdge340: Number(f.edges.cape340.toFixed(2)),
+      waistEdge260: Number(f.edges.waist260.toFixed(2))
+    })),
+    seamWrap: {
+      fromIdx: wrap.fromIdx,
+      toIdx: 0,
+      waistCapeRmse: Number(wrap.waist_cape.toFixed(2)),
+      waistCapeZ: Number(wrap.waist_cape_z.toFixed(2)),
+      capeDx: Number(wrap.cape_dx.toFixed(2))
+    },
+    worstTransition: {
+      fromIdx: sorted[0].fromIdx,
+      toIdx: sorted[0].toIdx,
+      waistCapeRmse: Number(sorted[0].waist_cape.toFixed(2)),
+      waistCapeZ: Number(sorted[0].waist_cape_z.toFixed(2)),
+      capeDx: Number(sorted[0].cape_dx.toFixed(2))
+    }
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  triggerDownload(blob, `gothic-walk-${clipKey}-${workingFrames.length}f-recipe.json`);
+  document.getElementById('statusBanner').textContent = 'Receita JSON exportada!';
+};
+
+document.getElementById('btnExportWebm').onclick = async () => {
+  if (!workingFrames.length) return;
+  const btn = document.getElementById('btnExportWebm');
+  const clipKey = document.getElementById('clipSelect').value;
+  btn.disabled = true;
+  btn.textContent = '⏳ Gravando Vídeo…';
+  document.getElementById('statusBanner').textContent = 'Exportando vídeo com 4 ciclos completos a 30 FPS…';
+
+  try {
+    const recCanvas = document.createElement('canvas');
+    recCanvas.width = VW;
+    recCanvas.height = VH;
+    const rctx = recCanvas.getContext('2d');
+    const stream = recCanvas.captureStream(FPS);
+    const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9'
+      : 'video/webm';
+    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4500000 });
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise(r => { recorder.onstop = r; });
+    recorder.start();
+
+    const totalFrames = workingFrames.length * 4;
+    for (let f = 0; f < totalFrames; f++) {
+      const fr = workingFrames[f % workingFrames.length];
+      rctx.fillStyle = '#24b42c';
+      rctx.fillRect(0, 0, VW, VH);
+      rctx.drawImage(fr.canvas, 0, 0);
+      await new Promise(r => setTimeout(r, 1000 / FPS));
+    }
+    recorder.stop();
+    await stopped;
+    const blob = new Blob(chunks, { type: mime });
+    triggerDownload(blob, `gothic-walk-${clipKey}-${workingFrames.length}f.webm`);
+    document.getElementById('statusBanner').textContent = `Vídeo WebM (${workingFrames.length}f × 4 ciclos) exportado!`;
+  } catch (err) {
+    document.getElementById('statusBanner').textContent = 'Erro ao exportar vídeo: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🎬 Exportar Vídeo (.webm)';
+  }
+};
+
+document.getElementById('btnCopyReport').onclick = () => {
+  const box = document.getElementById('reportBox');
+  box.select();
+  navigator.clipboard?.writeText(box.value);
+  document.getElementById('btnCopyReport').textContent = '✅ Copiado!';
+  setTimeout(() => { document.getElementById('btnCopyReport').textContent = '📋 Copiar Relatório'; }, 1500);
+};
+
+addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); playing = false; updatePlayButtons(); stepFrame(-1); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); playing = false; updatePlayButtons(); stepFrame(1); }
+  else if (e.key === ' ') { e.preventDefault(); playing = !playing; updatePlayButtons(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); document.getElementById('btnDeleteFrame').click(); }
+});
+
+let pingToggle = false;
+let windowOffset = -3;
+function tick(now) {
+  const speed = Number(document.getElementById('speedSelect').value) || 0.25;
+  const interval = 1000 / (FPS * speed);
+  if (playing && workingFrames.length && now - lastTick >= interval) {
+    lastTick = now;
+    const n = workingFrames.length;
+    if (playMode === 'cycle') {
+      currentIdx = (currentIdx + 1) % n;
+    } else if (playMode === 'pingpong') {
+      pingToggle = !pingToggle;
+      currentIdx = pingToggle ? focusIdx : (focusIdx - 1 + n) % n;
+    } else if (playMode === 'window') {
+      windowOffset++;
+      if (windowOffset > 3) windowOffset = -3;
+      currentIdx = (focusIdx + windowOffset + n) % n;
+    }
+    renderCurrentFrame();
+    renderChart();
+  }
+  requestAnimationFrame(tick);
+}
+
+async function loadCurrentClip() {
+  const clipKey = document.getElementById('clipSelect').value;
+  try {
+    smoothedOverrides.clear();
+    undoStack = [];
+    editLog = [];
+    document.getElementById('smoothCapeSlider').value = '0';
+    document.getElementById('smoothCapeVal').textContent = '0%';
+    originalClipFrames = await extractCycleFrames(clipKey);
+    rawFrames = originalClipFrames.map(cloneFrame);
+    currentIdx = 0;
+    focusIdx = 0;
+    document.getElementById('rangeStart').value = '0';
+    document.getElementById('rangeEnd').value = String(rawFrames.length - 1);
+    applyBrowserStabilization();
+    updatePlayButtons();
+    document.getElementById('statusBanner').textContent = `Pronto · ${rawFrames.length} frames analisados`;
+  } catch (err) {
+    document.getElementById('statusBanner').textContent = 'Erro: ' + err.message;
+  }
+}
+
+updatePlayButtons();
+loadCurrentClip();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
