@@ -239,3 +239,28 @@ body:not(:has(#screen-login[style*="display: none"])) #world-btn-float{display:n
     letter-spacing: .5px !important;
   }
 }
+
+#screen-login:has(#login-bg-video:not([hidden]))::after { display: none; }
+
+@media (orientation: portrait) {
+  #screen-login {
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+  }
+  #screen-login #login-bg-video {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    max-height: 42%;
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+  #screen-login #login-box {
+    position: relative !important;
+    inset: auto !important;
+    max-height: 53%;
+    overflow-y: auto;
+  }
+}
