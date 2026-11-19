@@ -19,17 +19,18 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets/characters/source-video/gothic-boy-walk-turn-v2.mp4"
+SOURCE_LEFT = ROOT / "assets/characters/source-video/gothic-boy-walk-left-v3.mp4"
 OUT_DIR = ROOT / "assets/characters/walk-video-v1"
+GREEN_KEY = np.array([20.0, 188.0, 61.0], dtype=np.float32)
 
-# Inclusive 0-based 24fps source frame intervals + centered 640px crop left X + periodic-closure
-# horizontal drift (pixels between frame [end+1] and frame [start] in 1080p) verified visually and
-# by stabilized frame-wrap MSE for seamless stepping. Retimed 1:1 to 30fps (exact 2-vsync divisor
-# on 60Hz displays) and repeated 6 cycles per MP4 (~5.8-6.4s continuous playback) so normal walks
-# avoid frequent EOF <video loop> stalls without duplicating decoders or downloading extra streams.
+# Inclusive 0-based 24fps source frame intervals + centered crop/scale + periodic-closure
+# verified visually and by stabilized frame-wrap MSE for seamless stepping. Retimed 1:1 to 30fps
+# (exact 2-vsync divisor on 60Hz displays) and repeated 18-30 cycles per MP4 (~17.4-33.0s continuous
+# playback) so normal walks avoid EOF <video loop> stalls without duplicating decoders.
 CLIPS = {
-    "front": {"frames": (11, 41), "crop_x": 610.2, "drift_1080": -0.47, "reps": 18, "anchor_baseline": 532, "cape_closure": False},
-    "left":  {"frames": (69, 100), "crop_x": 616.5, "drift_1080": -1.67, "reps": 30, "anchor_baseline": 531, "cape_closure": True},
-    "back":  {"frames": (130, 158), "crop_x": 612.0, "drift_1080": 6.46, "reps": 18, "anchor_baseline": 536, "cape_closure": False},
+    "front": {"source": SOURCE, "frames": (11, 41), "crop_x": 610.2, "drift_1080": -0.47, "reps": 18, "anchor_baseline": 532, "cape_closure": False},
+    "left":  {"source": SOURCE_LEFT, "frames": (106, 138), "crop_x": 0.0, "drift_1080": 0.0, "reps": 30, "anchor_baseline": 531, "cape_closure": False, "gray_bg_closure": True},
+    "back":  {"source": SOURCE, "frames": (130, 158), "crop_x": 612.0, "drift_1080": 6.46, "reps": 18, "anchor_baseline": 536, "cape_closure": False},
 }
 
 TARGET_FPS = 30
@@ -44,40 +45,124 @@ def _alpha_mask(arr: np.ndarray) -> np.ndarray:
     return al
 
 
-def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) -> list[np.ndarray]:
-    """Close lateral head sway, back-cape trailing edge (+7.15px -> +0.57px), and waist/belt folds
-    between frame[0] (source 69) and frame[n] (source 101) using pure geometric 2D warping (zero ghosting).
+def _extract_1080x1920_gray_to_320x540_green(path: Path) -> np.ndarray:
+    """Convert a 1080x1920 vertical profile frame on uniform light-gray background (#E4E4E4)
+    to a 320x540 chroma-green (20, 188, 61) frame matched in height, baseline (531), and midline
+    to the front/back clips, using border+gap flood-fill and 7px premultiplied edge unmixing.
     """
-    def crop_at(idx: int, cl: float) -> np.ndarray:
-        with Image.open(raw_frames[idx]) as im:
-            resized = im.convert("RGB").resize(
-                (320, 540),
-                resample=Image.Resampling.LANCZOS,
-                box=(cl, 0.0, cl + 640.0, 1080.0),
-            )
-            return np.asarray(resized, dtype=np.float32)
+    im1080 = np.asarray(Image.open(path).convert("RGB"), dtype=np.float32)
+    h, w, _ = im1080.shape
+    bg = np.median(im1080[:40, :40].reshape(-1, 3), axis=0)
+    dist = np.sqrt(np.sum((im1080 - bg[None, None, :]) ** 2, axis=2))
 
-    init = [crop_at(k, crop_x) for k in range(n + 1)]
-    head_x = [float(np.mean(np.where(_alpha_mask(a)[45:165, :] > 0.5)[1])) for a in init]
-    h_closure = head_x[n] - head_x[0]
-    base: list[np.ndarray] = []
-    for k in range(n + 1):
-        target_h = head_x[0] + (k / float(n)) * h_closure
-        sway = head_x[k] - target_h
-        corr_320 = (k / float(n) - 0.5) * h_closure + 0.65 * sway
-        base.append(crop_at(k, crop_x + corr_320 * 2.0))
+    cand_full = dist < 38.0
+    cand_half = cand_full[::2, ::2]
+    dist_half = dist[::2, ::2]
+    mh, mw = cand_half.shape
+    mask_h = np.zeros((mh, mw), dtype=bool)
+    mask_h[0, :] = cand_half[0, :]
+    mask_h[-1, :] = cand_half[-1, :]
+    mask_h[:, 0] = cand_half[:, 0]
+    mask_h[:, -1] = cand_half[:, -1]
 
-    als = [_alpha_mask(a) for a in base]
-    R = np.zeros((n + 1, 540), dtype=np.float32)
-    for k in range(n + 1):
-        for y in range(540):
-            w = np.where(als[k][y] > 0.25)[0]
-            R[k, y] = w.max() if len(w) else 160.0
+    # Seed flat uniform background patches in the enclosed lower-leg triangle between front/back boots
+    flat_bg = dist_half < 8.0
+    for _ in range(4):
+        p = np.pad(flat_bg, 1, mode="constant", constant_values=False)
+        flat_bg = (
+            p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:]
+            & p[:-2, :-2] & p[:-2, 2:] & p[2:, :-2] & p[2:, 2:]
+        )
+    gap_seed = np.zeros_like(flat_bg)
+    gap_seed[710:925, 200:365] = flat_bg[710:925, 200:365]
+    mask_h |= gap_seed
 
-    kernel = np.exp(-0.5 * (np.arange(-20, 21) / 7.0) ** 2)
-    kernel /= kernel.sum()
-    xs = np.arange(320, dtype=np.float32)
-    wx = np.clip((xs - 136.0) / 52.0, 0.0, 1.0)
+    while True:
+        prev = mask_h.copy()
+        p = np.pad(mask_h, 1, mode="constant", constant_values=False)
+        dil = (
+            p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
+            | p[:-2, :-2] | p[:-2, 2:] | p[2:, :-2] | p[2:, 2:]
+        )
+        mask_h = (mask_h | dil) & cand_half
+        if np.array_equal(mask_h, prev):
+            break
+
+    bg_mask = np.repeat(np.repeat(mask_h, 2, axis=0), 2, axis=1)[:h, :w] & cand_full
+    for _ in range(2):
+        p = np.pad(bg_mask, 1, mode="constant", constant_values=False)
+        dil = (
+            p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
+            | p[:-2, :-2] | p[:-2, 2:] | p[2:, :-2] | p[2:, 2:]
+        )
+        bg_mask = (bg_mask | dil) & cand_full
+
+    edge_band = bg_mask.copy()
+    for step_i in range(7):
+        p = np.pad(edge_band, 1, mode="constant", constant_values=False)
+        nxt = (
+            p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
+            | p[:-2, :-2] | p[:-2, 2:] | p[2:, :-2] | p[2:, 2:]
+        )
+        if step_i < 5:
+            edge_band = nxt
+        else:
+            edge_band[:1680, :] = nxt[:1680, :]
+
+    raw_alpha = np.clip((dist - 150.0) / 140.0, 0.0, 1.0)
+    alpha1080 = np.where(bg_mask, 0.0, np.where(edge_band, raw_alpha, 1.0)).astype(np.float32)
+    safe_a = np.maximum(alpha1080, 0.08)[:, :, None]
+    fg1080 = np.clip((im1080 - bg[None, None, :] * (1.0 - alpha1080[:, :, None])) / safe_a, 0.0, 255.0)
+    fg1080 = np.where(edge_band[:, :, None] & (alpha1080[:, :, None] < 0.98), np.minimum(fg1080, 34.0), fg1080)
+
+    pre1080 = fg1080 * alpha1080[:, :, None]
+    pil_pre = Image.fromarray(np.clip(pre1080 + 0.5, 0, 255).astype(np.uint8))
+    pil_al = Image.fromarray(np.clip(alpha1080 * 255.0 + 0.5, 0, 255).astype(np.uint8))
+
+    pre_sub = np.asarray(pil_pre.resize((288, 512), Image.Resampling.LANCZOS), dtype=np.float32)
+    al_sub = np.asarray(pil_al.resize((288, 512), Image.Resampling.LANCZOS), dtype=np.float32) / 255.0
+    al_sub = np.clip(al_sub, 0.0, 1.0)
+
+    canvas = np.broadcast_to(GREEN_KEY, (540, 320, 3)).copy()
+    canvas[20:532, 16:304] = pre_sub + GREEN_KEY[None, None, :] * (1.0 - al_sub[:, :, None])
+    return canvas
+
+
+def _apply_gray_bg_periodic_closure(raw_frames: list[Path], n: int) -> list[np.ndarray]:
+    """Extract n+1 frames (0..n) from the 1080x1920 walk-in-place profile clip onto 320x540 chroma
+    green and apply gentle 2D periodic optical-flow closure between frame[0] and frame[n].
+    """
+    w1 = [_extract_1080x1920_gray_to_320x540_green(raw_frames[k]) for k in range(n + 1)]
+    f0 = w1[0] * _alpha_mask(w1[0])[:, :, None]
+    fn = w1[n] * _alpha_mask(w1[n])[:, :, None]
+    step, rad, max_d, reg = 8, 10, 5, 5.0
+    gy = np.arange(40, 520, step)
+    gx = np.arange(40, 260, step)
+    fdx = np.zeros((len(gy), len(gx)), dtype=np.float32)
+    fdy = np.zeros((len(gy), len(gx)), dtype=np.float32)
+    for iy, yc in enumerate(gy):
+        for ix, xc in enumerate(gx):
+            p0 = f0[yc - rad : yc + rad, xc - rad : xc + rad]
+            if np.mean(p0) < 8.0:
+                continue
+            best, bdx, bdy = 1e18, 0, 0
+            for dy in range(-max_d, max_d + 1):
+                for dx in range(-max_d, max_d + 1):
+                    p1 = fn[yc + dy - rad : yc + dy + rad, xc + dx - rad : xc + dx + rad]
+                    err = float(np.mean((p0 - p1) ** 2)) + (dx * dx + dy * dy) * reg
+                    if err < best:
+                        best, bdx, bdy = err, dx, dy
+            fdx[iy, ix] = bdx
+            fdy[iy, ix] = bdy
+
+    def upsample_flow(grid: np.ndarray) -> np.ndarray:
+        im = Image.fromarray(grid).resize((220, 480), resample=Image.Resampling.BICUBIC)
+        full = np.zeros((540, 320), dtype=np.float32)
+        full[40:520, 40:260] = np.asarray(im, dtype=np.float32)
+        return full
+
+    up_dx = upsample_flow(fdx)
+    up_dy = upsample_flow(fdy)
     yy, xx = np.mgrid[0:540, 0:320].astype(np.float32)
 
     def bilinear2d(img: np.ndarray, sx: np.ndarray, sy: np.ndarray) -> np.ndarray:
@@ -93,144 +178,10 @@ def _apply_periodic_cape_closure(raw_frames: list[Path], crop_x: float, n: int) 
         bot = img[y1, x0] * (1.0 - fx) + img[y1, x1] * fx
         return top * (1.0 - fy) + bot * fy
 
-    def close_sequence(seq_frames: list[np.ndarray], R_sub: np.ndarray) -> list[np.ndarray]:
-        m_len = len(seq_frames) - 1
-        shift_ky = np.zeros((m_len + 1, 540), dtype=np.float32)
-        for y in range(135, 455):
-            wy = 1.0
-            if y < 175:
-                wy = (y - 135) / 40.0
-            elif y > 420:
-                wy = (455 - y) / 35.0
-            seam_d = np.clip(R_sub[0, y] - R_sub[m_len, y], -16.0, 16.0)
-            w_harm = np.clip((y - 265.0) / 35.0, 0.0, 1.0)
-            seq_closed = np.array([R_sub[m, y] + ((m / float(m_len)) - 0.5) * seam_d for m in range(m_len)], dtype=np.float32)
-            fft = np.fft.rfft(seq_closed)
-            fft_tgt = np.zeros_like(fft)
-            fft_tgt[0] = fft[0]
-            if m_len == 32:
-                fft_tgt[1] = fft[1] * 0.25
-                fft_tgt[2] = fft[2] * 0.70
-            else:
-                fft_tgt[1] = fft[1] * 0.65
-            tgt = np.fft.irfft(fft_tgt, n=m_len)
-            for m in range(m_len):
-                d_seam = ((m / float(m_len)) - 0.5) * seam_d
-                d_harm = tgt[m] - R_sub[m, y]
-                shift_ky[m, y] = wy * ((1.0 - w_harm) * d_seam + w_harm * d_harm)
-            shift_ky[m_len, y] = shift_ky[0, y] + wy * seam_d
-
-        for m in range(m_len + 1):
-            shift_ky[m] = np.convolve(shift_ky[m], kernel, mode="same")
-
-        w1: list[np.ndarray] = []
-        for m in range(m_len + 1):
-            img = seq_frames[m]
-            out = np.empty_like(img)
-            for y in range(540):
-                dxy = shift_ky[m, y]
-                if abs(dxy) < 1e-3:
-                    out[y] = img[y]
-                    continue
-                src_x = np.clip(xs - dxy * wx, 0.0, 319.0)
-                x0 = np.floor(src_x).astype(np.int32)
-                x1 = np.minimum(319, x0 + 1)
-                f = (src_x - x0)[:, None]
-                out[y] = img[y, x0] * (1.0 - f) + img[y, x1] * f
-            w1.append(out)
-
-        f0 = w1[0] * _alpha_mask(w1[0])[:, :, None]
-        fn = w1[m_len] * _alpha_mask(w1[m_len])[:, :, None]
-        step, rad, max_d, reg = 8, 10, 6, 4.0
-        gy = np.arange(56, 456, step)
-        gx = np.arange(60, 260, step)
-        fdx = np.zeros((len(gy), len(gx)), dtype=np.float32)
-        fdy = np.zeros((len(gy), len(gx)), dtype=np.float32)
-        for iy, yc in enumerate(gy):
-            for ix, xc in enumerate(gx):
-                p0 = f0[yc - rad : yc + rad, xc - rad : xc + rad]
-                if np.mean(p0) < 8.0:
-                    continue
-                best, bdx, bdy = 1e18, 0, 0
-                for dy in range(-max_d, max_d + 1):
-                    for dx in range(-max_d, max_d + 1):
-                        p1 = fn[yc + dy - rad : yc + dy + rad, xc + dx - rad : xc + dx + rad]
-                        err = float(np.mean((p0 - p1) ** 2)) + (dx * dx + dy * dy) * reg
-                        if err < best:
-                            best, bdx, bdy = err, dx, dy
-                fdx[iy, ix] = bdx
-                fdy[iy, ix] = bdy
-
-        def upsample_flow(grid: np.ndarray) -> np.ndarray:
-            im = Image.fromarray(grid).resize((200, 400), resample=Image.Resampling.BICUBIC)
-            full = np.zeros((540, 320), dtype=np.float32)
-            full[56:456, 60:260] = np.asarray(im, dtype=np.float32)
-            taper = np.ones(540, dtype=np.float32)
-            for y in range(540):
-                if y > 425 or y < 45:
-                    taper[y] = 0.0
-                elif y > 385:
-                    taper[y] = (425 - y) / 40.0
-            return full * taper[:, None]
-
-        up_dx = upsample_flow(fdx)
-        up_dy = upsample_flow(fdy)
-        return [
-            bilinear2d(w1[m], xx + ((m / float(m_len)) - 0.5) * up_dx, yy + ((m / float(m_len)) - 0.5) * up_dy)
-            for m in range(m_len)
-        ]
-
-    body32 = close_sequence(base, R)
-    if n < 32:
-        return body32
-
-    # Build a 16-frame periodically closed straight-white-line coat cycle from steady-state frames 16..32
-    coat16 = close_sequence(base[16:33], R[16:33])
-    out32: list[np.ndarray] = []
-    for k in range(32):
-        ref = coat16[k % 16]
-        cur = body32[k].copy()
-        al_ref = _alpha_mask(ref)
-        al_cur = _alpha_mask(cur)
-
-        if k < 16:
-            # Erase old crooked white line remnant on lower coat (x=143..164, y=315..438)
-            old_wl_region = (yy >= 315) & (yy <= 438) & (xx >= 143) & (xx <= 164)
-            bright = np.clip((cur.min(axis=2) - 48.0) / 45.0, 0.0, 1.0) * old_wl_region.astype(np.float32)
-            coat_black = np.array([25.0, 23.0, 29.0], dtype=np.float32)
-            cur = cur * (1.0 - bright[:, :, None]) + coat_black * bright[:, :, None]
-
-            # Erase forward-protruding fingertip remnants outside the thigh contour in k=0..15
-            thigh_left_edge = np.where(yy < 270.0, 122.0, 105.0 + np.maximum(0.0, 328.0 - yy) * 0.28)
-            w_hip_band = np.clip((yy - 218.0) / 10.0, 0.0, 1.0) * np.clip((328.0 - yy) / 12.0, 0.0, 1.0)
-            w_finger_erase = w_hip_band * np.clip((thigh_left_edge - xx) / 5.0, 0.0, 1.0)
-            green_bg = cur[0, 0]
-            cur = cur * (1.0 - w_finger_erase[:, :, None]) + green_bg * w_finger_erase[:, :, None]
-            al_cur = _alpha_mask(cur)
-
-            # Darken any fingertip skin pixels overlapping the black trousers (x=thigh_left_edge..118)
-            finger_on_thigh = (yy >= 270) & (yy <= 328) & (xx >= thigh_left_edge - 2) & (xx <= 118)
-            skin_bright = np.clip((cur[:, :, 0] - 46.0) / 30.0, 0.0, 1.0) * finger_on_thigh.astype(np.float32) * al_cur
-            trouser_black = np.array([22.0, 21.0, 27.0], dtype=np.float32)
-            cur = cur * (1.0 - skin_bright[:, :, None]) + trouser_black * skin_bright[:, :, None]
-
-        # Graft periodically closed straight-white-line coat & pouch from coat16[k % 16] with foreground gating
-        w_pouch = np.clip((yy - 218.0) / 10.0, 0.0, 1.0) * np.clip((292.0 - yy) / 14.0, 0.0, 1.0)
-        base_xb = np.where(yy < 224.0, 126.0, 118.0)
-        x_bound = base_xb * (1.0 - w_pouch) + 111.0 * w_pouch
-
-        wx_g = np.clip((xx - x_bound) / 6.0, 0.0, 1.0)
-        wy_fg = np.clip((426.0 - yy) / 14.0, 0.0, 1.0)
-        wy_bg = np.clip((442.0 - yy) / 4.0, 0.0, 1.0)
-        wy_bot = wy_fg * al_cur + wy_bg * (1.0 - al_cur)
-        wy_g = np.clip((yy - 155.0) / 22.0, 0.0, 1.0) * wy_bot
-        mask = wx_g * wy_g
-
-        fg_gate = np.where(yy > 295.0, np.clip((al_ref - 0.55) / 0.30, 0.0, 1.0), 1.0)
-        mask = (mask * fg_gate)[:, :, None]
-        out32.append(cur * (1.0 - mask) + ref * mask)
-
-    return out32
+    return [
+        bilinear2d(w1[k], xx + ((k / float(n)) - 0.5) * up_dx, yy + ((k / float(n)) - 0.5) * up_dy)
+        for k in range(n)
+    ]
 
 
 def encode_clip(
@@ -242,10 +193,11 @@ def encode_clip(
     reps: int,
     dest: Path,
     cape_closure: bool = False,
+    gray_bg_closure: bool = False,
 ) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     n = end_frame - start_frame + 1
-    extract_end = end_frame + (1 if cape_closure else 0)
+    extract_end = end_frame + (1 if (cape_closure or gray_bg_closure) else 0)
     expected_raw = extract_end - start_frame + 1
     gop = n * 2
 
@@ -256,7 +208,7 @@ def encode_clip(
         raw_dir.mkdir()
         stab_dir.mkdir()
 
-        # 1. Extract exact 1080p source frames for the chosen gait cycle (+1 continuation frame if closing cape seam).
+        # 1. Extract exact 1080p source frames for the chosen gait cycle (+1 continuation frame if closing seam).
         subprocess.run(
             [
                 "ffmpeg", "-y", "-v", "error",
@@ -271,12 +223,13 @@ def encode_clip(
         if len(raw_frames) != expected_raw:
             raise RuntimeError(f"Expected {expected_raw} raw frames for [{start_frame}..{extract_end}], got {len(raw_frames)}")
 
-        # 2. Single-pass fractional Lanczos crop+downscale (640x1080 -> 320x540) centered on the
-        # head midline with periodic camera-drift closure (+ 2D waist/cape seam closure for profile view).
-        if cape_closure:
-            stabilized = _apply_periodic_cape_closure(raw_frames, crop_x, n)
+        # 2. Convert / crop+downscale to 320x540 with periodic closure.
+        if gray_bg_closure:
+            stabilized = _apply_gray_bg_periodic_closure(raw_frames, n)
             for k, arr in enumerate(stabilized):
                 Image.fromarray(np.clip(arr + 0.5, 0, 255).astype(np.uint8)).save(stab_dir / f"s_{k:03d}.png")
+        elif cape_closure:
+            raise RuntimeError("Legacy cape_closure replaced by gray_bg_closure on gothic-boy-walk-left-v3.mp4")
         else:
             for k, raw_path in enumerate(raw_frames):
                 crop_left = crop_x + (k / n - 0.5) * drift_1080
@@ -383,14 +336,14 @@ def main() -> None:
     parser.add_argument("--out-dir", type=Path, default=OUT_DIR)
     args = parser.parse_args()
 
-    source = args.source.resolve()
     out_dir = args.out_dir.resolve()
-    if not source.exists():
-        raise FileNotFoundError(source)
 
     summary = {}
     total_bytes = 0
     for name, spec in CLIPS.items():
+        clip_source = Path(spec.get("source", args.source)).resolve()
+        if not clip_source.exists():
+            raise FileNotFoundError(clip_source)
         start_frame, end_frame = spec["frames"]
         crop_x = spec["crop_x"]
         drift_1080 = spec["drift_1080"]
@@ -398,7 +351,7 @@ def main() -> None:
         cycle_len = end_frame - start_frame + 1
         dest = out_dir / f"gothic-boy-walk-{name}.mp4"
         encode_clip(
-            source,
+            clip_source,
             start_frame,
             end_frame,
             crop_x,
@@ -406,6 +359,7 @@ def main() -> None:
             reps,
             dest,
             cape_closure=bool(spec.get("cape_closure", False)),
+            gray_bg_closure=bool(spec.get("gray_bg_closure", False)),
         )
         info = inspect_clip(dest)
         info["source_frames"] = [start_frame, end_frame]

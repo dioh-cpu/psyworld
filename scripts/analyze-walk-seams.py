@@ -29,7 +29,7 @@ REGIONS = {
 }
 CLIPS = [
     ("front", ROOT / "assets/characters/walk-video-v1/gothic-boy-walk-front.mp4", 31),
-    ("left", ROOT / "assets/characters/walk-video-v1/gothic-boy-walk-left.mp4", 32),
+    ("left", ROOT / "assets/characters/walk-video-v1/gothic-boy-walk-left.mp4", 33),
     ("back", ROOT / "assets/characters/walk-video-v1/gothic-boy-walk-back.mp4", 29),
 ]
 
