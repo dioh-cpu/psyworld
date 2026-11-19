@@ -281,4 +281,45 @@ Passo 3: Criamos o seletor de Personagem (2M / 2F) + Seletor de Tom de Pele em
          Tempo Real (via Shader WebGL nas animacoes MP4 e retratos).
 Passo 4: Substituimos os menus antigos e os iniciais antigos pelas novas artes
          e criaturas 100% autorais.
+
+
+--------------------------------------------------------------------------------
+8. ADENDO TECNICO: O QUE JA ESTA PRONTO NO CODIGO vs. NOVOS POLIMENTOS
+--------------------------------------------------------------------------------
+8.1. O que JA ESTA IMPLEMENTADO e VALIDADO na branch atual (V14):
+- `core/gothic-walk-video-v1.js` (579 linhas) JA EXISTE e JA RODA o Shader
+  WebGL de chroma key em tempo real (com fallback CPU Uint32Array), executando
+  o shader apenas quando o frame do video avanca (0 custo quando parado) e
+  testado em Desktop e Mobile Android (`tests/gothic-mp4-browser.cjs`).
+- As 4 direcoes de caminhada do Gothic Boy JA ESTAO PRONTAS E APROVADAS (V14):
+  * Baixo (`front`): 31 frames/ciclo @ 30fps (`baseline: 532`)
+  * Cima (`back`): 29 frames/ciclo @ 30fps (`baseline: 536`)
+  * Esquerda/Direita (`left` + espelhamento): 33 frames/ciclo @ 30fps do novo
+    video vertical 1080x1920 (`gothic-boy-walk-left-v3.mp4`, `baseline: 531`).
+  * Faltam gerar apenas os outros 3 personagens novos (Goth Girl + Casal 2).
+- Sombra eliptica dinamica nos pes (`c.ellipse` no chao) JA EXISTE em
+  `core/kanto-world-v2.js` e `core/city-halloween.js`, e `core/trainer-walk-v1.js`
+  ja possui settle de 120ms, ancoragem fixa de sola e respiracao isolada no
+  tronco.
+
+8.2. Refinamentos adicionados ao Plano (para blindar a execucao):
+1. Mascara Hibrida no Shader de Pele (Zero vazamento para o sobretudo):
+   - Em vez de aplicar HSL na tela inteira (o que poderia afetar sombras
+     quentes da roupa) e sem precisar dobrar o peso com PNGs de mascara por
+     frame, o Shader WebGL restringira a troca de cor de pele a **Regiao UV da
+     Cabeca/Rosto (`vUv.y < 0.40`, `vUv.x` central)** combinada com a distancia
+     cromatica da pele (`R > G > B` e saturacao > limiar), pois as maos usam
+     luvas escuras.
+2. Escopo Fechado do Lote 1 de Criaturas Autorais (MVP sem travar o projeto):
+   - Entrega 1 fechada em **11 criaturas autorais**:
+     * 3 Monstros Iniciais Autorais (1 de cada elemento base)
+     * 3 Evolucoes diretas dos Iniciais
+     * 5 Criaturas Selvagens da primeira regiao/fenda
+   - Substituicao direta por ID mantendo 100% do motor de batalha funcionando.
+3. Polimento Extra de Movimento no Canvas:
+   - Particulas sutis de poeira/aura elemental nos pes a cada passo (sincronizadas
+     com os frames de contato `k = 0` e `k = 16` do ciclo de 33 frames).
+   - Micro-amortecimento ("settle" de 100ms) e leve respiracao no canvas quando
+     o clipe MP4 entra em pausa (Idle).
 ================================================================================
+
