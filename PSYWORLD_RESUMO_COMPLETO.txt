@@ -1,0 +1,68 @@
+PSYWORLD — RESUMO GERAL DO PROJETO E DO TRABALHO REALIZADO
+Atualizado em 19/11/2026
+
+Este arquivo reúne o contexto disponível nesta conversa e verificações feitas no workspace. Ele serve como material de continuidade para outros agentes. O histórico completo de outros chats não está necessariamente disponível. Diferencie funcionalidades implementadas de propostas, prompts e testes planejados.
+
+1. SOBRE O PSYWORLD
+
+PsyWorld é um jogo web de aventura Pokémon com exploração de mapas, personagens treinadores, Pokémon acompanhantes, batalha, salvamento, contas online e atividades de mundo. O repositório mencionado é dioh-cpu/psyworld. O projeto possui modos visuais e branches de desenvolvimento paralelas. A main é a baseline de produção e deve ser preservada quando o trabalho pede desenvolvimento isolado.
+
+O código inclui runtime legado, telas de login e seleção, mapas de Kanto, salvamento local e Cloud Save, UI de fantasias e sistemas de movimento. O jogo é uma aplicação web com renderer Canvas e telas adaptáveis a desktop e celular.
+
+2. SISTEMA DE MAPAS DE KANTO
+
+Pallet Town foi desenvolvido em mais de uma versão visual. O modo Anime 3Q padrão possui seis áreas conectadas. Cada área usa dimensões lógicas de 1200 × 675 e imagens de cenário de 2048 × 1152, proporção 16:9. A câmera acompanha o jogador e usa zoom responsivo, com aproximação adicional em retrato. Há máscaras de caminhada, campos SDF, portais, NPCs, áreas de grama e conteúdo específico.
+
+As áreas do modo 3Q incluem Centro e Residências, Jardins e Bosque, Laboratório, Costa e Praia, Colinas e Pedreiras, e Arredores da Rota 1. O material inspecionado inclui artes, máscaras, árvores separadas em partes, iluminação ambiente, vegetação, testes e capturas de desktop e mobile. O workspace atual possui muitas alterações staged referentes a Pallet e outros sistemas. Essas mudanças não devem ser confundidas com commits remotos ou alterações da main. Antes de trabalhar nesse workspace, confira o status e preserve todas as modificações staged existentes.
+
+A Rota 1 também existe em versões antigas e novas. A versão legada usa mapa de 1000 × 500 e imagem de 1400 × 700. No modo Anime 3Q padrão, a área da Rota 1 é a sexta área 1200 × 675, com arte 2048 × 1152.
+
+Viridian City foi localizada na main como um mapa único legado de 900 × 900, com arte quadrada de 1254 × 1254. A geometria coloca o Ginásio ao norte, a saída para a Rota 2 na borda norte, a saída para a Rota 1 ao sul, a Escola a oeste, o Centro Pokémon e o Poké Mart a leste, e a praça no centro. A cidade tem dois NPCs definidos na implementação inspecionada: o Ancião de Viridian e a Instrutora da Escola. Seus sprites antigos têm 96 × 144 pixels.
+
+Foi discutida uma proposta para recriar Viridian como quatro áreas 16:9 compatíveis com o padrão do modo Pallet Anime 3Q. A direção visual solicitada pelo usuário evoluiu de ilustração anime simples para cenário 3D cinematográfico realista em UHD, com materiais detalhados, iluminação volumétrica e arquitetura urbana distinta. O usuário pediu que não se reutilize arte de Pallet como referência e que não se acrescente outra fonte à praça. Um mosaico de rosa dos ventos e um marco cívico esculpido foram sugeridos como foco central. Os quatro mapas ainda precisam ser gerados e integrados. Os prompts discutidos não são implementação de jogo.
+
+3. NPCs, AMIZADE, ROMANCE E CONVIVÊNCIA
+
+Ao longo da conversa, o objetivo foi ampliar os NPCs de Pallet, com retratos, expressões, histórias, missões, amizade progressiva, romance opcional entre adultos elegíveis e convivência na residência do jogador. Também foi solicitado o pescador e um banhista musculoso na costa, além de NPCs em jardins e outras áreas.
+
+O histórico inclui branches e commits de desenvolvimento para NPCs e relações, mas não é possível concluir apenas deste workspace que todos os requisitos originais de história, atlas, amizade, romance e convivência estejam completos e integrados à main. As branches identificadas no workspace incluem feature/pallet-npc-relationships-v1 e feature/pallet-npc-ambient-animation-v1. O trabalho deve ser confirmado por conteúdo e testes reais antes de declarar esses sistemas finalizados.
+
+Existe um sistema de convivência descrito em uma execução anterior como commits 3bda8da e da64c5c. A conversa também menciona uma execução posterior no commit 62c6215 para preservação de trabalho no GitHub. Esses SHAs vieram de solicitações e resumos anteriores. Não foram todos validados neste relatório contra o histórico remoto. A branch feature/pallet-npc-relationships-v1 existe como worktree local, mas o status atual do remoto deve ser verificado antes de retomar.
+
+4. PERSONAGEM GÓTICO E ANIMAÇÃO WALK POR VÍDEO
+
+O usuário criou artes de personagem gótico e explorou geração de vistas e animações com Gemini e Google Flow. Foram discutidos prompts de frente, perfil, costas, idle e caminhada. A consistência de rosto e cabelo entre imagens foi um problema. O usuário concluiu que o MP4 pode preservar melhor o desenho do que extrair spritesheet frame por frame.
+
+Na branch feature/gothic-idle-animation-v1 foi implementada uma solução de caminhada com clipes MP4 direcionais. Segundo o relatório de execução colado pelo usuário, o commit fb50fea8c362350277d1fb0be1cb83ca644c6c26 adicionou três clipes MP4 recortados de frente, perfil e costas, um renderer Canvas/WebGL com chroma key, controle de pausa e retomada, preparação prévia dos vídeos e integração em Kanto e na cidade. O perfil oposto é espelhado. O relatório registra testes automatizados em Chromium desktop e emulação Android, troca de direção sem frames visivelmente errados, pausa ao parar e otimização de tamanho e decodificação. A Preview informada naquele relatório foi https://psyworld-9wq3tvqd9-world-of-monsters.vercel.app/gothic-walk-preview.html . A sessão atual não reexecutou esses testes nem inspecionou o MP4 gravado pelo usuário, pois o arquivo excedeu o limite de transferência disponível.
+
+O relatório também descreve correções para não desenhar duas vezes o personagem quando Kanto está aberto. O usuário informou que pediu ao Antigravity para ajustar duplicação de sprite. Esse bug deve ser confirmado visualmente na versão mais recente antes de ser considerado resolvido.
+
+5. VÍDEO DE FUNDO DO LOGIN
+
+Foi anexado o arquivo title_bg.mp4 e o patch 0001-feat-title-video-background-on-login-screen-assets-u.patch. Na branch feature/title-video-bg-v1, a partir de feature/gothic-idle-animation-v1, o patch foi aplicado com git am. O vídeo ficou em assets/ui/title_bg.mp4, embutido em #screen-login com autoplay, muted, loop, playsinline e preload. O gradiente antigo permanece como fallback.
+
+Foi acrescentado JavaScript ao index.html para pausar o vídeo quando o login fica oculto ou quando a aba fica em segundo plano, e retomá-lo ao voltar. O controle acompanha alterações de visibilidade do elemento de login. A implementação de base foi registrada em f039267, seguida por commits de layout 9c77f05, 0e20a57 e ae6135e.
+
+Depois do feedback visual do usuário, o layout mobile foi compactado. Em paisagem, o painel fica no canto inferior esquerdo, com botões em duas colunas. Em retrato, o vídeo é mostrado inteiro com object-fit: contain na parte superior, e o painel compacto fica abaixo. A imagem decorativa da bruxa é ocultada quando o vídeo está carregado, para liberar a arte do vídeo. O último commit confirmado nesta conversa foi ae6135eb1a7cb5ecd690ae96bcb1855016d1c583. A branch está em https://github.com/dioh-cpu/psyworld/tree/feature/title-video-bg-v1 . A Preview da versão mais recente informada foi https://psyworld-pg4dwzavy-world-of-monsters.vercel.app .
+
+Validação registrada pelo Codex na Preview incluiu Chromium com emulação mobile, retrato e paisagem, autoplay mudo, object-fit: cover antes do ajuste final, interação do botão Carregar Save, pausa ao entrar com save, retomada ao tornar o login visível e fallback do gradiente quando o MP4 falha. Após o ajuste final de layout, a Preview foi publicada e o vídeo ainda estava tocando em ambas as orientações. O teste final de interação com o botão de logout online não foi concluído porque o controle não apareceu no DOM do cenário automatizado. A implementação preserva fluxo de login e botões, mas o retorno do logout deve ser retestado com uma conta/fluxo válido.
+
+6. ESTADO DO WORKSPACE OBSERVADO
+
+O workspace atual está em /workspace/psyworld e a branch ativa indicada pelo Git é work. Há muitas alterações já staged relacionadas a salvamento, login, Cloud Save, Pallet, áudio, máscaras, vegetação, NPCs e testes. Não foram criadas nem descartadas por este resumo. Não fazer reset, checkout destrutivo, commit abrangente ou push dessa árvore sem revisar o escopo e preservar todas as alterações staged.
+
+Branches de worktree visíveis no workspace incluem feature/title-video-bg-v1, feature/gothic-idle-animation-v1, feature/pallet-npc-relationships-v1 e feature/pallet-npc-ambient-animation-v1. A branch title-video-bg-v1 tinha HEAD ae6135e local na inspeção. O arquivo assets/ui/title_bg.mp4 não apareceu no caminho atual /workspace/psyworld/assets/ui no workspace ativo, embora a branch de título o tenha versionado no respectivo worktree. A existência e o estado remoto foram confirmados em execução anterior pelo Codex, e mais tarde pelo texto que o usuário colou do Claude.
+
+7. PRÓXIMOS PASSOS SUGERIDOS PARA CONTINUIDADE
+
+- Ao continuar o login, usar origin/feature/title-video-bg-v1 como base. Confirmar layout em aparelho físico e testar login, retorno, áudio e fallback.
+- Para Viridian, decidir a implementação em quatro áreas conectadas e gerar as imagens em 16:9, compatíveis com 1200 × 675 lógico e 2048 × 1152 ou maior. Preservar saídas e conexão com Rota 1 e Rota 2. Não duplicar fontes. O estilo desejado é realista, cinematográfico e muito detalhado.
+- Revisar se a animação gótica tem sprite duplicado na Preview mais recente. Não declarar corrigido apenas pelo relatório de código.
+- Auditar cada requisito de NPC, relações e convivência contra runtime, assets e testes reais. Não tratar prompts, documentos ou protótipos como funcionalidades concluídas.
+- Preservar o workspace staged e não alterar a main ou produção sem instrução expressa.
+
+8. PROMPT DO NOCTARN 360
+
+Em 19/11/2026, o usuário anexou gemini_generated_video_e4c2abeb.zip e pediu para guardar o prompt do Noctarn, criatura lobo de fantasia sombria, para futura continuidade. O arquivo de memória completo, contendo o prompt original, a versão reescrita pelo Gemini e notas sobre o resultado, está em PSYWORLD_NOCTARN_360_PROMPT.txt. O ZIP contém gemini_generated_video_e4c2abeb.mp4, com 1280 × 720, 24 fps e duração de 7,872 segundos. A duração solicitada era 10 segundos. O conteúdo visual ainda precisa de revisão antes de aprovar ou usar no jogo.
+
+FIM DO RESUMO

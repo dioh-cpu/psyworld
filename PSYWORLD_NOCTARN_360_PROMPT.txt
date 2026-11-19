@@ -1,0 +1,48 @@
+PSYWORLD — MEMÓRIA DO PROMPT DE VÍDEO 360 DO NOCTARN
+Registrado em 19/11/2026
+
+OBJETIVO
+
+Manter guardado o prompt usado para gerar no Gemini um vídeo turntable/idle de 360 graus do Noctarn, criatura lobo de fantasia sombria, para futura avaliação e extração de quadros para o PSYWORLD.
+
+RESULTADO ANEXADO
+
+Arquivo recebido: gemini_generated_video_e4c2abeb.zip
+Conteúdo: gemini_generated_video_e4c2abeb.mp4
+Metadados verificados: 1280 × 720, 24 fps, duração 7,872 segundos.
+O prompt pedia 10 segundos, mas o arquivo gerado tem aproximadamente 7,87 segundos.
+
+PROMPT ORIGINAL ENVIADO AO GEMINI
+
+Using the exact dark fantasy wolf creature from the attached reference video (Noctarn), generate a smooth, continuous 360-degree full-body turntable idle animation video for 2D game sprite extraction.
+
+EXACT CHARACTER CONSISTENCY (strictly match the attached video):
+- Muscular quadruped dark-furred shadow wolf in crisp 2D dark fantasy anime RPG art style with clean dark ink outlines and cel-shaded rendering.
+- Tall pointed wolf ears with dark purple inner fur, pale bone-grey skull mask plate over the brow and snout, glowing bright violet-purple eyes, small bared fangs, and a spiked dark metal collar.
+- Black obsidian plated chest armor, layered shoulder pauldrons, and front leg greaves with pale silver-gold metallic edges, with glowing purple arcane energy cracks running through the armor seams, chest, and hind legs.
+- Pair of tattered ash-grey leathery gargoyle/bat wings extending from the shoulders with frayed wingtips.
+- Segmented dark armored curved tail tipped with a bright glowing violet-purple flame.
+
+ANIMATION & MOTION:
+- Smooth, slow, constant-speed 360-degree turntable rotation around the creature's central vertical axis, cleanly showing all four cardinal views: exact front view (0°), left side profile (90°), back view (180°), right side profile (270°), returning cleanly to front view (360°).
+- Neutral standing idle pose throughout the entire rotation: all four clawed paws planted firmly at the exact same ground level, no walking, no jumping, no attacking; only very subtle calm breathing, slight gentle wing sway, and soft flickering of the purple tail flame.
+
+CAMERA & FRAMING:
+- Completely static, locked orthographic-like eye-level camera — zero camera zoom, zero pan, zero tilt; only the creature rotates in place at the exact center of the frame.
+- Full body completely visible from ear tips and wingtips to all four paws and tail flame with generous empty margin on all sides (nothing cropped during rotation).
+
+BACKGROUND & LIGHTING:
+- Solid, completely flat, uniform chroma key green background (#00FF00).
+- Even neutral studio lighting with consistent shading matching the reference video.
+- NO floor, NO ground shadow, NO reflections, NO green color spill on the creature, NO floating smoke or extra particles, NO text, NO watermark.
+
+PROMPT REESCRITO PELO GEMINI
+
+A clean 360-degree turntable idle animation of the exact dark fantasy RPG creature from the reference image (Noctarn), maintaining 100% strict visual fidelity to its 2D hand-drawn dark fantasy cel-shaded illustration style, crisp black ink outlines, exact anatomy, proportions, textures, and color palette, without adding, altering, or removing any design elements. The creature is an athletic, quadruped demonic wolf-hound with a deep obsidian-black coat, tall pointed ears, a shaggy charcoal neck mane, and a pale bone-white/ashen-grey skull-like facial mask featuring sharp fangs and glowing neon violet-purple eyes set in dark sockets. Glowing jagged purple-magenta lightning-like energy veins course across its dark fur on the torso, flanks, and hind legs. It wears jagged matte-black gothic plate armor with tarnished antique bronze trim covering its chest, neck collar, shoulders, and armored front legs down to its clawed paws, with glowing purple energy visible between the chest plates. A pair of leathery, smoky slate-grey bat-like wings with tattered scalloped edges and dark charcoal bone ridges sprout from its upper back, held steadily poised and partially folded close enough to stay fully inside the frame. Its long, segmented dark-plated tail curves gracefully upward at the rear, tipped with a vibrant glowing purple-and-magenta flame. The creature stands grounded in a neutral, balanced four-legged IDLE stance, completely in place—no walking, no stepping, no attacking, no jumping, and no wing flapping—exhibiting only minimal, subtle idle breathing and a gentle flicker in the tail flame. The entire creature rotates slowly, smoothly, and continuously at a constant speed through a complete 360-degree vertical-axis turntable spin in place, cleanly displaying all four orthogonal views in sequence: front view (0°), left side profile (90°), back view (180°), right side profile (270°), and returning seamlessly to the front view (360°). Full body completely visible from ear tips and wingtips to all four paws and the flaming tail tip, perfectly centered with generous uniform safe margins on all sides so no part is ever cropped during rotation. Camera is 100% locked and static at the creature's center height using a neutral, flat orthographic-like lens with zero perspective distortion, no zoom, no pan, no tilt, and no camera movement—only the creature spins on its fixed central axis. Set against a 100% solid, flat, uniform chroma key green background (#00FF00) with even, constant, neutral studio lighting; strictly no ground plane, no floor, no cast shadows on the background, no green color spill or reflection on the creature, no fog, no floating particles, no extra visual effects, no text, and no watermarks.
+
+OBSERVAÇÕES PARA CONTINUIDADE
+
+- O usuário informou que o Gemini gerou o vídeo incluído no ZIP a partir do prompt reescrito acima.
+- O prompt original solicita 10 segundos. O vídeo anexado tem 7,872 segundos, então não atende exatamente à duração solicitada.
+- A câmera, o fundo verde uniforme e a rotação em quatro ângulos são requisitos do conceito. Ainda é necessário avaliar visualmente o vídeo e confirmar se a volta fecha em loop, se as quatro vistas estão fiéis e se a pose e os detalhes permanecem consistentes.
+- Este arquivo registra os prompts e metadados do anexo. Não afirma que a animação está aprovada ou integrada no jogo.
