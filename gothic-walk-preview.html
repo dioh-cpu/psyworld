@@ -2,21 +2,37 @@
 <html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PSYWORLD · Teste do Walk em MP4</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b1726;color:white;font:15px system-ui;overflow:hidden;height:100dvh;display:flex;flex-direction:column}header{flex:none;padding:10px 14px;display:flex;gap:16px;align-items:center;justify-content:space-between}header a{color:#ffe0a3}main{position:relative;flex:1;min-height:0;overflow:hidden}canvas{width:100%;height:100%;display:block}footer{flex:none;height:64px;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px}button{font:25px system-ui;background:#163448;color:white;border:1px solid #66cfdd;border-radius:10px;min-width:54px;min-height:48px;touch-action:none;user-select:none}button:active:not(:disabled){background:#347589}button:disabled{opacity:.42;cursor:wait}#note{position:absolute;top:8px;left:8px;max-width:85%;padding:6px 10px;background:#0b1726d9;border-radius:8px;font-size:12px}small{display:block;font-size:11px;color:#b9d6df}
+*{box-sizing:border-box}body{margin:0;background:#0b1726;color:white;font:15px system-ui;overflow:hidden;height:100dvh;display:flex;flex-direction:column}header{flex:none;padding:10px 14px;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}header a{color:#ffe0a3}main{position:relative;flex:1;min-height:0;overflow:hidden}canvas{width:100%;height:100%;display:block}footer{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));background:#091320;border-top:1px solid #1e3a52}.row-ctrl{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}button[data-row]{font:25px system-ui;background:#163448;color:white;border:1px solid #66cfdd;border-radius:10px;min-width:54px;min-height:46px;touch-action:none;user-select:none}button[data-row]:active:not(:disabled){background:#347589}button:disabled{opacity:.42;cursor:wait}.skin-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#102235;color:#dbeafe;border:1px solid #355872;font:600 12px system-ui;cursor:pointer;min-height:34px}.skin-btn .dot{width:14px;height:14px;border-radius:50%;border:1px solid #ffffff88;flex:none}.skin-btn.active{border-color:#f5d38a;background:#1e354d;color:#fff6dc;box-shadow:0 0 10px #d4a85766}#note{position:absolute;top:8px;left:8px;max-width:85%;padding:6px 10px;background:#0b1726d9;border-radius:8px;font-size:12px}small{display:block;font-size:11px;color:#b9d6df}
 </style>
-<header><div>PSYWORLD · Walk em MP4<small>Segure uma seta para andar; solte para pausar. Teste visual sem colisões.</small></div><div style="display:flex;gap:12px;align-items:center"><a href="gothic-seam-inspector.html" style="background:#163448;border:1px solid #66cfdd;padding:5px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px">🔍 Ferramenta: Inspetor de Frames &amp; Capa</a><a href="index.html">Jogo completo</a></div></header>
+<header><div>PSYWORLD · Walk em MP4 + Tom de Pele em Tempo Real<small>Segure uma seta para andar; clique nos tons de pele abaixo para testar ao vivo nas 4 direções.</small></div><div style="display:flex;gap:12px;align-items:center"><a href="gothic-seam-inspector.html" style="background:#163448;border:1px solid #66cfdd;padding:5px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px">🔍 Inspetor de Frames</a><a href="index.html">Jogo completo</a></div></header>
 <main><canvas id="scene"></canvas><div id="note" role="status">Preparando vídeos (0/3)…</div></main>
-<footer><button data-row="1" aria-label="Esquerda" disabled>←</button><button data-row="3" aria-label="Cima" disabled>↑</button><button data-row="0" aria-label="Baixo" disabled>↓</button><button data-row="2" aria-label="Direita" disabled>→</button></footer>
-<script src="core/gothic-walk-video-v1.js?build=GOTHIC_MP4_WALK_V14"></script>
+<footer>
+ <div class="row-ctrl" id="skin-bar" role="group" aria-label="Tonalidade da pele"></div>
+ <div class="row-ctrl"><button data-row="1" aria-label="Esquerda" disabled>←</button><button data-row="3" aria-label="Cima" disabled>↑</button><button data-row="0" aria-label="Baixo" disabled>↓</button><button data-row="2" aria-label="Direita" disabled>→</button></div>
+</footer>
+<script src="core/gothic-walk-video-v1.js?build=GOTHIC_MP4_WALK_V15"></script>
 <script src="core/trainer-walk-v1.js?build=GOTHIC_MP4_WALK_V4"></script>
 <script>
 'use strict';
-const scene=document.getElementById('scene'),ctx=scene.getContext('2d'),note=document.getElementById('note'),art=new Image();
+const scene=document.getElementById('scene'),ctx=scene.getContext('2d'),note=document.getElementById('note'),skinBar=document.getElementById('skin-bar'),art=new Image();
 art.src='assets/story/pallet/anime3q/01_centro_residencias.png';
 const pack={profile:{file:'basic-gothic-boy.webp',walkMs:130,idleMs:3600,walkOrder:[0,1,2,3]}},state=PsyTrainerWalkV1.createState();
 let x=600,y=460,row=0,held=null,last=performance.now(),videosReady=false;
 const names=['Frente','Esquerda','Direita espelhada','Costas'];
 const buttons=[...document.querySelectorAll('button[data-row]')];
+const skinButtons=[];
+function syncSkinUI(){
+ const cur=PsyGothicWalkVideoV1.getSkinTone();
+ for(const b of skinButtons)b.classList.toggle('active',b.dataset.skin===cur);
+}
+for(const preset of PsyGothicWalkVideoV1.skinTones||[]){
+ const b=document.createElement('button');
+ b.type='button';b.className='skin-btn';b.dataset.skin=preset.id;
+ b.innerHTML='<span class="dot" style="background:'+preset.swatch+'"></span>'+preset.label;
+ b.addEventListener('click',()=>{PsyGothicWalkVideoV1.setSkinTone(preset.id);syncSkinUI();});
+ skinBar.appendChild(b);skinButtons.push(b);
+}
+syncSkinUI();
 function unlockControls(s){
  if(videosReady||!s||!s.ready||s.failed)return;
  videosReady=true;
@@ -38,7 +54,7 @@ function render(now){
  PsyTrainerWalkV1.renderAnimated(ctx,pack,state,{now,x,y,row,moving:videosReady&&held!==null,identity:'gothic-mp4-preview'},x-36,y-90,72,96);ctx.restore();
  const s=PsyGothicWalkVideoV1.status();
  unlockControls(s);
- note.textContent=s.failed?'Falha ao carregar os MP4s.':!s.ready?'Preparando vídeos ('+s.readyCount+'/'+s.clipCount+')…':names[row]+' · '+(s.playing?'Vídeo em reprodução':'Vídeo pausado');
+ note.textContent=s.failed?'Falha ao carregar os MP4s.':!s.ready?'Preparando vídeos ('+s.readyCount+'/'+s.clipCount+')…':names[row]+' · Pele: '+s.skinTone+' · '+s.chromaBackend+' · '+(s.playing?'Andando':'Pausado');
  requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
