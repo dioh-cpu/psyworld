@@ -141,25 +141,35 @@ function kantoStep(trail,opt,now,cadence){
 function draw(c,opt){if(player().meta?.divineHaloV48){c.save();c.strokeStyle='#dfb0ff';c.shadowColor='#8ef8ff';c.shadowBlur=9;c.lineWidth=1.8;c.beginPath();c.ellipse(opt.x,opt.y+4,22,8,0,0,Math.PI*2);c.stroke();c.restore();}const mon=selected(),trainer=opt.trainer||(()=>{});if(!mon||!supported(mon)){trainer();return;}
 const isAutoral=!!W.PsyStarterAutoralV1?.isAutoral?.(mon),cr=isAutoral?W.PsyStarterAutoralV1.get(mon.id):null;
 const k=key(mon)+'@'+opt.scene,old=trails.get(k),trail=sample(old,opt.x,opt.y,opt.scene,opt.valid,cr?.trailDistance);trails.set(k,trail);
-// Original (autoral) creatures: use 4-direction idle WebP strip (front/left/right/back)
-// scaled directly against the trainer height, falling back to keyed MP4 if needed.
+// Original (autoral) creatures: keep the real animated MP4 idle when facing front ('down'),
+// and use the 4-direction WebP strip for left/right/back views (and instant pre-decode fallback).
 if(isAutoral&&cr){
 const refRaw=Number.isFinite(Number(opt.trainerScale))?Number(opt.trainerScale):Number(opt.scale);
 const refScale=Number.isFinite(refRaw)?Math.max(.75,Math.min(2.5,refRaw)):1;
+const dir=trail.facing||opt.facing||'down';
 const sheet=cr.idle4dir?autoralSheet(cr.idle4dir):null;
 const sheetReady=!!(sheet&&sheet.complete&&sheet.naturalWidth>0);
-const clip=!sheetReady?W.PsyMonsterVideoV1?.shared(cr.idle,{width:cr.width,height:cr.height}):null;
+const wantVideo=dir==='down'||!sheetReady;
+const clip=wantVideo?W.PsyMonsterVideoV1?.shared(cr.idle,{width:cr.width,height:cr.height}):null;
 if(clip)clip.touch();
-if(!sheetReady&&(!clip||!clip.hasFrame)){trainer();return;}
+const videoReady=!!(clip&&clip.hasFrame);
+if(!videoReady&&!sheetReady){trainer();return;}
 const paintAutoral=()=>{
- const p=trail.pos,dir=trail.facing||opt.facing||'down',now=W.performance.now();
+ const p=trail.pos,now=W.performance.now();
  const h=(cr.worldHeight||138)*refScale;
+ const moving=!!trail.moving,stride=moving?Math.sin(trail.phase*0.14):0,lift=moving?Math.abs(stride)*5*refScale:0;
  c.save();c.translate(p.x,p.y+5);
- if(sheetReady){
+ if(dir==='down'&&videoReady){
+  const w=h*clip.w/clip.h;
+  c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,w*.18,Math.max(4,5.5*refScale),0,0,Math.PI*2);c.fill();
+  if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}
+  c.imageSmoothingEnabled=true;
+  if(moving){c.translate(0,-lift);c.rotate(stride*0.02);}
+  c.drawImage(clip.canvas,-w/2,-h*0.985,w,h);
+ }else if(sheetReady){
   const cellW=cr.cellW||Math.round(sheet.naturalWidth/4),cellH=cr.cellH||sheet.naturalHeight,baseRatio=(cr.baseline||cellH)/cellH;
   const w=h*cellW/cellH,col=({down:0,left:1,right:2,up:3})[dir]??0;
-  const breath=Math.sin(now*0.0032),moving=!!trail.moving;
-  const stride=moving?Math.sin(trail.phase*0.14):0,lift=moving?Math.abs(stride)*5*refScale:0;
+  const breath=Math.sin(now*0.0032);
   const sx=moving?(1+stride*0.015):(1-breath*0.008),sy=moving?(1-Math.abs(stride)*0.025):(1+breath*0.016);
   c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,w*.26,Math.max(4,5.5*refScale),0,0,Math.PI*2);c.fill();
   if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}
@@ -168,9 +178,9 @@ const paintAutoral=()=>{
   c.drawImage(sheet,col*cellW,0,cellW,cellH,-w/2,-h*baseRatio,w,h);
  }else{
   const w=h*clip.w/clip.h;
-  c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,w*.22,Math.max(4,5*refScale),0,0,Math.PI*2);c.fill();
+  c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,w*.18,Math.max(4,5.5*refScale),0,0,Math.PI*2);c.fill();
   if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}
-  c.imageSmoothingEnabled=true;if(dir==='right')c.scale(-1,1);c.drawImage(clip.canvas,-w/2,-h,w,h);
+  c.imageSmoothingEnabled=true;if(dir==='right')c.scale(-1,1);c.drawImage(clip.canvas,-w/2,-h*0.985,w,h);
  }
  c.restore();
 };
