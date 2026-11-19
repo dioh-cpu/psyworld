@@ -14,6 +14,12 @@ const CREATURES=[
   type:'Noturno',
   autoral:true,
   idle:'assets/monsters/noctarn/idle-front.mp4?build=NOCTARN_IDLE_V1',
+  idleClips:{
+   down:{url:'assets/monsters/noctarn/idle-front.mp4?build=NOCTARN_IDLE_V1',width:480,height:262,scale:1,baseY:0.9847,pawCx:0.5182},
+   left:{url:'assets/monsters/noctarn/idle-left.mp4?build=NOCTARN_IDLE_LEFT_V1',width:480,height:270,scale:1.083,baseY:0.9556,pawCx:0.5307},
+   right:{url:'assets/monsters/noctarn/idle-left.mp4?build=NOCTARN_IDLE_LEFT_V1',width:480,height:270,scale:1.083,baseY:0.9556,pawCx:0.5307,flip:true},
+   up:{url:'assets/monsters/noctarn/idle-back.mp4?build=NOCTARN_IDLE_BACK_V1',width:480,height:270,scale:1.074,baseY:0.9556,pawCx:0.4901}
+  },
   idle4dir:'assets/monsters/noctarn/noctarn-idle-4dir.webp?build=NOCTARN_4DIR_V1',
   cellW:640,
   cellH:512,
