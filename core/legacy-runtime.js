@@ -676,6 +676,8 @@ const TYPE_FALLBACK_MOVES = {
 
 // === SISTEMA NOVO - PEGA DO GEN9.JSON TODOS OS MOVES ATÉ LVL 100 ===
 window.getFullMoveList = function(pokeId, level){
+  const own=window.PsyIslandCampaign?.movesForSpecies(pokeId);
+  if(own)return own;
   level = level || 100;
   let engName = (typeof getShowdownName==='function'?getShowdownName(pokeId):'').toLowerCase();
   let moves = [];
@@ -6731,6 +6733,7 @@ function psyTierLevelScale(level){
 /* Replace recalc with a single authoritative version. */
 window.recalcPoke=function(p){
   if(!p)return;
+  if(window.PsyIslandCampaign?.recalculate(p))return;
   ensurePokeBase(p);
   psyEnforceTierRarity(p);
 

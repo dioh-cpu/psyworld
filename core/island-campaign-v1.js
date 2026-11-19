@@ -31,7 +31,15 @@
     const ratio = mon.maxHp ? mon.hp/mon.maxHp : 1;
     mon.baseMaxHp = mon.maxHp = hp;
     mon.hp = mon.currentHp = ratio > 0 ? Math.max(1,Math.round(hp*Math.min(1,ratio))) : 0;
+    mon.moves = speciesMoves(mon.id);
     return mon;
+  }
+
+  function speciesMoves(id) {
+    const entry = entryFor({id});
+    if (!entry) return null;
+    return [{name:entry.attack,power:entry.power,type:entry.type},
+      {name:'Investida',power:39,type:'Normal'}];
   }
 
   function makeMon(entry, level = 1) {
@@ -40,8 +48,7 @@
       stars:entry.stars, boost:0, resets:0,
       followerKeyV47:entry.isStarter ? 'island-noctarn' : undefined,
       rarity:{n:'Comum', mult:1, bonus:0}, isStarter:entry.isStarter || false,
-      moves:[{name:entry.attack, power:entry.power, type:entry.type},
-        {name:'Investida', power:39, type:'Normal'}]
+      moves:speciesMoves(entry.id)
     });
   }
 
@@ -255,6 +262,7 @@
       if (!full) island().herbs--;
       mon.hp = full ? mon.maxHp : Math.min(mon.maxHp,mon.hp + 40);
       mon.fainted = false; mon.currentHp = mon.hp;
+      delete mon._psyFaintedV31; delete mon._psyFaintedAtV31;
       save();
       W.notif?.(mon.name + ' recuperou forças.');
     };
@@ -318,7 +326,8 @@
 
   W.PsyIslandCampaign = {
     active:()=>active, sprite, save, victory, returnToTitle,
-    farm, farmUnlocked, quest, summons, speed, damageFactor, moves:mon=>entryFor(mon)?mon.moves:null, rest, explore, companions, beginRace, raceFrame, racing:()=>!!race, cancelRace:()=>{race=null;}
+    farm, farmUnlocked, quest, summons, speed, damageFactor, movesForSpecies:speciesMoves, moves:mon=>entryFor(mon)?mon.moves:null,
+    recalculate:mon=>active && entryFor(mon) ? applyStars(mon) : false, rest, explore, companions, beginRace, raceFrame, racing:()=>!!race, cancelRace:()=>{race=null;}
   };
   D.querySelector('[data-island-start]').onclick = ()=>start(false);
   const resume = D.querySelector('[data-island-continue]');
