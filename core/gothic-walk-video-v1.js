@@ -10,11 +10,11 @@ const VW=320,VH=540,CLIP_FPS=30;
 const SKIN_STORAGE_KEY='psyworld_gothic_skin_tone_v1';
 const SKIN_PRESETS=Object.freeze([
  Object.freeze({id:'original',label:'Alabastro',swatch:'#efe0dc',light:null,shadow:null}),
- Object.freeze({id:'creme',label:'Creme',swatch:'#f5d4bd',light:[0.96,0.83,0.74],shadow:[0.74,0.54,0.47]}),
- Object.freeze({id:'mel',label:'Mel',swatch:'#deae82',light:[0.87,0.68,0.51],shadow:[0.62,0.41,0.28]}),
- Object.freeze({id:'bronze',label:'Bronze',swatch:'#b87d57',light:[0.72,0.49,0.34],shadow:[0.46,0.27,0.18]}),
- Object.freeze({id:'canela',label:'Canela',swatch:'#8c593d',light:[0.55,0.35,0.24],shadow:[0.33,0.18,0.12]}),
- Object.freeze({id:'ebano',label:'Ébano',swatch:'#613d2e',light:[0.38,0.24,0.18],shadow:[0.21,0.12,0.09]})
+ Object.freeze({id:'creme',label:'Creme',swatch:'#f5d4bd',light:[0.96,0.83,0.74],shadow:[0.72,0.52,0.45]}),
+ Object.freeze({id:'mel',label:'Mel',swatch:'#deae82',light:[0.87,0.68,0.51],shadow:[0.60,0.39,0.26]}),
+ Object.freeze({id:'bronze',label:'Bronze',swatch:'#b87d57',light:[0.72,0.49,0.34],shadow:[0.44,0.25,0.16]}),
+ Object.freeze({id:'canela',label:'Canela',swatch:'#8c593d',light:[0.55,0.35,0.24],shadow:[0.31,0.17,0.11]}),
+ Object.freeze({id:'ebano',label:'Ébano',swatch:'#613d2e',light:[0.38,0.24,0.18],shadow:[0.20,0.11,0.08]})
 ]);
 const SKIN_MAP=Object.create(null);
 for(const p of SKIN_PRESETS)SKIN_MAP[p.id]=p;
@@ -32,7 +32,7 @@ const CLIP_SPECS={
   frames:558,
   cycle:31,
   baseline:532,
-  skinBoxes:[[0.3875,0.1074,0.6250,0.3185],[0.1125,0.2333,0.2563,0.3333],[0.6375,0.4741,0.8188,0.6148]]
+  skinBoxes:[[0.430,0.120,0.592,0.296],[0.118,0.238,0.246,0.326],[0.665,0.488,0.802,0.610]]
  },
  left:{
   key:'left',
@@ -41,7 +41,7 @@ const CLIP_SPECS={
   frames:990,
   cycle:33,
   baseline:531,
-  skinBoxes:[[0.3313,0.1037,0.5438,0.2963],[0.1313,0.2444,0.2625,0.3333],[0.4938,0.4852,0.6813,0.6370]]
+  skinBoxes:[[0.358,0.115,0.526,0.276],[0.132,0.248,0.242,0.326],[0.515,0.496,0.662,0.632]]
  },
  back:{
   key:'back',
@@ -50,7 +50,7 @@ const CLIP_SPECS={
   frames:522,
   cycle:29,
   baseline:536,
-  skinBoxes:[[0,0,0,0],[0.7313,0.2556,0.8313,0.3148],[0.1938,0.4963,0.3625,0.6222]]
+  skinBoxes:[[0,0,0,0],[0.738,0.258,0.826,0.312],[0.202,0.502,0.352,0.618]]
  }
 };
 const ROW_TO_CLIP=['front','left','left','back'];
@@ -93,8 +93,8 @@ uniform vec4 uSkinBox1;
 uniform vec4 uSkinBox2;
 float boxMask(vec2 uv,vec4 b){
  if(b.z<=b.x)return 0.0;
- float bx=smoothstep(b.x-0.012,b.x+0.006,uv.x)*(1.0-smoothstep(b.z-0.006,b.z+0.012,uv.x));
- float by=smoothstep(b.y-0.008,b.y+0.005,uv.y)*(1.0-smoothstep(b.w-0.005,b.w+0.008,uv.y));
+ float bx=smoothstep(b.x-0.008,b.x+0.005,uv.x)*(1.0-smoothstep(b.z-0.005,b.z+0.008,uv.x));
+ float by=smoothstep(b.y-0.006,b.y+0.004,uv.y)*(1.0-smoothstep(b.w-0.004,b.w+0.006,uv.y));
  return bx*by;
 }
 void main(){
@@ -108,23 +108,30 @@ void main(){
  float safe=max(0.05,alpha);
  vec3 straight=clamp((c-key*(1.0-alpha))/safe,0.0,1.0);
  if(uSkinActive>0.5){
-  float inBox=max(boxMask(vUv,uSkinBox0),max(boxMask(vUv,uSkinBox1),boxMask(vUv,uSkinBox2)));
+  float b0=boxMask(vUv,uSkinBox0);
+  float b12=max(boxMask(vUv,uSkinBox1),boxMask(vUv,uSkinBox2));
+  float inBox=max(b0,b12);
   if(inBox>0.001){
    float luma=0.299*straight.r+0.587*straight.g+0.114*straight.b;
    float rg=straight.r-straight.g;
    float rb=straight.r-straight.b;
    float gb=straight.g-straight.b;
-   float mLuma=smoothstep(0.38,0.54,luma);
-   float mRg=smoothstep(0.008,0.022,rg)*(1.0-smoothstep(0.130,0.205,rg));
-   float mRb=smoothstep(-0.002,0.018,rb)*(1.0-smoothstep(0.160,0.240,rb));
-   float mNoY=1.0-smoothstep(0.075,0.145,gb);
-   float mNoC=smoothstep(-0.042,-0.014,gb);
-   float sw=inBox*mLuma*mRg*mRb*mNoY*mNoC;
+   float mLuma=smoothstep(0.24,0.44,luma);
+   float mNoG=1.0-smoothstep(0.032,0.072,straight.g-straight.r);
+   float mNoB=1.0-smoothstep(0.022,0.055,straight.b-straight.r);
+   float mNoR=1.0-smoothstep(0.135,0.210,rg);
+   float mNoY=1.0-smoothstep(0.065,0.135,gb);
+   float warmth=max(rg,rb);
+   float porcelain=b0*smoothstep(0.58,0.72,luma)*(1.0-smoothstep(0.015,0.042,straight.b-straight.r));
+   float mTone=max(smoothstep(0.010,0.030,warmth),porcelain);
+   float sw=inBox*mLuma*mNoG*mNoB*mNoR*mNoY*mTone;
    if(sw>0.001){
-    float t=smoothstep(0.48,0.88,luma);
+    float t=smoothstep(0.32,0.88,luma);
     vec3 graded=mix(uSkinShadow,uSkinLight,t);
-    float hi=clamp((luma-0.88)/0.12,0.0,1.0)*0.10;
-    graded=clamp(graded+hi*(uSkinLight+0.30),0.0,1.0);
+    float edgeDark=0.25+0.75*clamp(luma/0.45,0.0,1.0);
+    graded*=edgeDark;
+    float hi=clamp((luma-0.88)/0.12,0.0,1.0)*0.08;
+    graded=clamp(graded+hi*(uSkinLight+0.25),0.0,1.0);
     straight=mix(straight,graded,sw);
    }
   }
@@ -321,28 +328,33 @@ function applySkin2D(d,boxes,light,shadow){
  for(let bi=0;bi<boxes.length;bi++){
   const b=boxes[bi];
   if(b[2]<=b[0])continue;
-  const x0=Math.max(0,Math.floor((b[0]-0.012)*VW)),x1=Math.min(VW-1,Math.ceil((b[2]+0.012)*VW));
-  const y0=Math.max(0,Math.floor((b[1]-0.008)*VH)),y1=Math.min(VH-1,Math.ceil((b[3]+0.008)*VH));
+  const isFace=bi===0;
+  const x0=Math.max(0,Math.floor((b[0]-0.008)*VW)),x1=Math.min(VW-1,Math.ceil((b[2]+0.008)*VW));
+  const y0=Math.max(0,Math.floor((b[1]-0.006)*VH)),y1=Math.min(VH-1,Math.ceil((b[3]+0.006)*VH));
   for(let y=y0;y<=y1;y++){
    const v=(y+0.5)/VH;
-   const by=smoothstep(b[1]-0.008,b[1]+0.005,v)*(1-smoothstep(b[3]-0.005,b[3]+0.008,v));
+   const by=smoothstep(b[1]-0.006,b[1]+0.004,v)*(1-smoothstep(b[3]-0.004,b[3]+0.006,v));
    if(by<=0.001)continue;
    for(let x=x0;x<=x1;x++){
     const idx=(y*VW+x)<<2;
     if(d[idx+3]<13)continue;
     const u=(x+0.5)/VW;
-    const inBox=smoothstep(b[0]-0.012,b[0]+0.006,u)*(1-smoothstep(b[2]-0.006,b[2]+0.012,u))*by;
+    const inBox=smoothstep(b[0]-0.008,b[0]+0.005,u)*(1-smoothstep(b[2]-0.005,b[2]+0.008,u))*by;
     if(inBox<=0.001)continue;
     const r=d[idx]/255,g=d[idx+1]/255,bl=d[idx+2]/255;
     const luma=0.299*r+0.587*g+0.114*bl;
     const rg=r-g,rb=r-bl,gb=g-bl;
-    const sw=inBox*smoothstep(0.38,0.54,luma)*smoothstep(0.008,0.022,rg)*(1-smoothstep(0.130,0.205,rg))*smoothstep(-0.002,0.018,rb)*(1-smoothstep(0.160,0.240,rb))*(1-smoothstep(0.075,0.145,gb))*smoothstep(-0.042,-0.014,gb);
+    const warmth=rg>rb?rg:rb;
+    const porcelain=isFace?inBox*smoothstep(0.58,0.72,luma)*(1-smoothstep(0.015,0.042,bl-r)):0;
+    const mTone=Math.max(smoothstep(0.010,0.030,warmth),porcelain);
+    const sw=inBox*smoothstep(0.24,0.44,luma)*(1-smoothstep(0.032,0.072,g-r))*(1-smoothstep(0.022,0.055,bl-r))*(1-smoothstep(0.135,0.210,rg))*(1-smoothstep(0.065,0.135,gb))*mTone;
     if(sw<=0.001)continue;
-    const t=smoothstep(0.48,0.88,luma);
-    const hi=Math.max(0,Math.min(1,(luma-0.88)/0.12))*0.10;
-    const gr=Math.min(1,sr+(lr-sr)*t+hi*(lr+0.30));
-    const gg=Math.min(1,sg+(lg-sg)*t+hi*(lg+0.30));
-    const gbl=Math.min(1,sb+(lb-sb)*t+hi*(lb+0.30));
+    const t=smoothstep(0.32,0.88,luma);
+    const edgeDark=0.25+0.75*Math.min(1,luma/0.45);
+    const hi=Math.max(0,Math.min(1,(luma-0.88)/0.12))*0.08;
+    const gr=Math.min(1,(sr+(lr-sr)*t)*edgeDark+hi*(lr+0.25));
+    const gg=Math.min(1,(sg+(lg-sg)*t)*edgeDark+hi*(lg+0.25));
+    const gbl=Math.min(1,(sb+(lb-sb)*t)*edgeDark+hi*(lb+0.25));
     d[idx]=Math.max(0,Math.min(255,((r+(gr-r)*sw)*255+0.5)|0));
     d[idx+1]=Math.max(0,Math.min(255,((g+(gg-g)*sw)*255+0.5)|0));
     d[idx+2]=Math.max(0,Math.min(255,((bl+(gbl-bl)*sw)*255+0.5)|0));
