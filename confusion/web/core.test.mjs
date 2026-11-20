@@ -223,12 +223,23 @@ test('nascimento: raridade rolada e tier igual; ovo da zona +1; abençoado é lu
   assert.equal(ab.purity, 'luz');
   assert.equal(ab.rarity, 2);
 });
-test('invocação: banner escolhe espécie e empurra a raridade', () => {
+test('invocação: destaque sai com 5%, garantia chega em 150 sem o destaque, raridades seguem os pesos', () => {
   const sp = ['Noctarn', 'Ignavor', 'Vaelith'];
-  assert.equal(C.invocationResult('permanente', sp, 0, 0).rarity, 2);
-  assert.equal(C.invocationResult('evento', sp, 0, 0).rarity, 3);
-  assert.equal(C.invocationResult('permanente', sp, 0.99, 0.5).species, 'Vaelith');
-  assert.throws(() => C.invocationResult('permanente', [], 0, 0));
+  const comDestaque = C.invocationPull('permanente', sp, 0, { destaque: 0.01, especie: 0, raridade: 0 });
+  assert.equal(comDestaque.species, 'Noctarn');
+  assert.equal(comDestaque.destaque, true);
+  assert.equal(comDestaque.pity, 0);
+  const semDestaque = C.invocationPull('permanente', sp, 0, { destaque: 0.5, especie: 0, raridade: 0 });
+  assert.equal(semDestaque.species, 'Ignavor');
+  assert.equal(semDestaque.pity, 1);
+  const garantido = C.invocationPull('permanente', sp, 149, { destaque: 0.99, especie: 0.99, raridade: 0.99 });
+  assert.equal(garantido.species, 'Noctarn');
+  assert.equal(garantido.pity, 0);
+  assert.equal(C.invocationPull('permanente', sp, 0, { destaque: 0.5, especie: 0, raridade: 0 }).rarity, 1);
+  assert.equal(C.invocationPull('permanente', sp, 0, { destaque: 0.5, especie: 0, raridade: 0.999 }).rarity, 5);
+  assert.throws(() => C.invocationPull('inexistente', sp, 0, { destaque: 0, especie: 0, raridade: 0 }));
+  assert.equal(C.FEATURED_CHANCE, 0.05);
+  assert.equal(C.PITY_FEATURED, 150);
 });
 test('zona infinita: cada andar fica mais forte', () => {
   assert.equal(C.endlessFloorPower(1), 100);

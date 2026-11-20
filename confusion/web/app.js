@@ -121,6 +121,7 @@ function newState() {
     bot: 0, successes: {}, failures: {},
     diamonds: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
+    pity: { permanente: 0, semanal: 0, evento: 0 },
     pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null, breeds: [],
     ingredients: [
       { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum', category: 'vegetal' },
@@ -148,6 +149,7 @@ function withDefaults(s) {
     ...d, ...s,
     diamonds: s.diamonds ?? 0,
     tickets: { permanente: 0, semanal: 0, evento: 0, ...(s.tickets || {}) },
+    pity: { permanente: 0, semanal: 0, evento: 0, ...(s.pity || {}) },
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0, ...(s.esferas || {}) },
     login: { streak: 0, lastDay: 0, ...(s.login || {}) },
     pass: { season: '', xp: 0, claimed: 0, premium: false, ...(s.pass || {}) },
@@ -378,7 +380,8 @@ function render() {
     <h2>12. Diamantes e invocações</h2>
     <p>Diamantes: <b>${S.diamonds}</b></p>
     <p class="muted">Fichas: permanente ${S.tickets.permanente} · semanal ${S.tickets.semanal} · evento ${S.tickets.evento}</p>
-    <label>Banner <select id="shop-banner">${Object.keys(C.BANNER_SHIFT).map((b) => `<option value="${b}">${BANNER_LABEL[b]}</option>`).join('')}</select></label>
+    <p class="muted">Garantia do destaque (sem sair em ${C.PITY_FEATURED} invocações): permanente ${S.pity.permanente}/${C.PITY_FEATURED} · semanal ${S.pity.semanal}/${C.PITY_FEATURED} · evento ${S.pity.evento}/${C.PITY_FEATURED}. Destaque de cada banner: ${Object.entries(C.BANNER_FEATURED).map(([b, e]) => `${BANNER_LABEL[b]} = ${e}`).join(', ')}, 5% por invocação.</p>
+    <label>Banner <select id="shop-banner">${Object.keys(C.BANNER_WEIGHTS).map((b) => `<option value="${b}">${BANNER_LABEL[b]}</option>`).join('')}</select></label>
     <button data-act="invoke" data-qtd="1">Invocar x1 (1 ficha)</button>
     <button data-act="invoke" data-qtd="10">Invocar x10 (10 fichas, tier 4 garantido)</button>
     <button data-act="invoke" data-qtd="50">Invocar x50 (50 fichas, tier 5 garantido)</button>
@@ -692,7 +695,13 @@ function act(name, el) {
       if ((S.tickets[banner] || 0) < qtd) { note(`faltam fichas do banner ${BANNER_LABEL[banner]}: precisa de ${qtd}.`); break; }
       S.tickets[banner] -= qtd;
       const sorteados = [];
-      for (let i = 0; i < qtd; i++) sorteados.push(C.invocationResult(banner, SPECIES, Math.random(), Math.random()));
+      let pity = S.pity[banner] || 0;
+      for (let i = 0; i < qtd; i++) {
+        const p = C.invocationPull(banner, SPECIES, pity, { destaque: Math.random(), especie: Math.random(), raridade: Math.random() });
+        pity = p.pity;
+        sorteados.push(p);
+      }
+      S.pity[banner] = pity;
       const resultados = C.garantirLote(sorteados, qtd);
       const melhorSorteio = Math.max(...sorteados.map((r) => r.rarity));
       const melhor = Math.max(...resultados.map((r) => r.rarity));
@@ -705,7 +714,8 @@ function act(name, el) {
       }
       S.last = ultimo.id;
       S.diamonds += d;
-      note(`invocação x${qtd} (${BANNER_LABEL[banner]}): ${qtd} monstrinho(s), melhor raridade ${RARITY_LABEL[C.rarityName(melhor)]}${melhor > melhorSorteio ? ` (garantia de tier ${melhor})` : ''}. Coleção: +${d} diamante(s).`);
+      const destaques = sorteados.filter((p) => p.destaque).length;
+      note(`invocação x${qtd} (${BANNER_LABEL[banner]}): ${qtd} monstrinho(s), melhor raridade ${RARITY_LABEL[C.rarityName(melhor)]}${melhor > melhorSorteio ? ` (garantia de tier ${melhor})` : ''}${destaques ? `, ${destaques} destaque(s) de ${C.BANNER_FEATURED[banner]}` : ''}. Coleção: +${d} diamante(s).`);
       break;
     }
     case 'hatchEgg': {

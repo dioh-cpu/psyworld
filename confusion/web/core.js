@@ -353,12 +353,41 @@ export function hatchEgg(egg, roll) {
     purity, mutated: egg.form === 'mutante' || egg.form === 'combinada',
   };
 }
-// Invocação: o banner escolhe a espécie entre as do banner e empurra a raridade para cima (proposta).
-export const BANNER_SHIFT = { permanente: 1, semanal: 1, evento: 2 };
-export function invocationResult(banner, species, roll1, roll2) {
-  if (!species.length) throw new Error('banner sem espécies');
-  const i = Math.min(species.length - 1, Math.floor(roll1 * species.length));
-  return { species: species[i], rarity: rollRarity(roll2, BANNER_SHIFT[banner] ?? 0) };
+// ---- Invocação com destaque, pesos por banner e garantia (GDD v1.28) ----
+// Cada banner tem um oními em destaque: 5% por invocação. Sem sair o destaque em 150 invocações, o próximo é garantido.
+export const BANNER_FEATURED = { permanente: 'Noctarn', semanal: 'Ignavor', evento: 'Vaelith' };
+export const FEATURED_CHANCE = 0.05;
+export const PITY_FEATURED = 150;
+// Pesos de raridade por banner, em % (1 a 5). Proposta de redução forte das raridades altas.
+export const BANNER_WEIGHTS = {
+  permanente: [55, 30, 10, 4, 1],
+  semanal: [55, 30, 10, 4, 1],
+  evento: [50, 30, 12, 6, 2],
+};
+export function rarityByWeights(roll, weights) {
+  const total = weights.reduce((a, b) => a + b, 0);
+  let acc = 0;
+  for (let i = 0; i < weights.length; i++) {
+    acc += weights[i] / total;
+    if (roll < acc) return i + 1;
+  }
+  return weights.length;
+}
+// Uma invocação. pity = invocações seguidas sem o destaque do banner. rolls: { destaque, especie, raridade } em [0, 1).
+export function invocationPull(banner, pool, pity, rolls) {
+  const destaque = BANNER_FEATURED[banner];
+  if (!destaque) throw new Error('banner desconhecido');
+  const outros = pool.filter((s) => s !== destaque);
+  const garantido = pity + 1 >= PITY_FEATURED;
+  let species;
+  if (garantido || !outros.length || rolls.destaque < FEATURED_CHANCE) {
+    species = destaque;
+  } else {
+    species = outros[Math.min(outros.length - 1, Math.floor(rolls.especie * outros.length))];
+  }
+  const rarity = rarityByWeights(rolls.raridade, BANNER_WEIGHTS[banner]);
+  const destacou = species === destaque;
+  return { species, rarity, destaque: destacou, pity: destacou ? 0 : pity + 1 };
 }
 
 // ---- Zona infinita (decidido pelo autor, v1.15) ----
