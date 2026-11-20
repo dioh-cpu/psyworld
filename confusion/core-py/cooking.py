@@ -19,7 +19,9 @@ def dominant_purity(items) -> str:
     counts = {"luz": 0, "trevas": 0, "neutra": 0}
     for i in items:
         counts[i.purity] += 1
-    return max(counts, key=lambda p: (counts[p], p == "neutra"))
+    top = max(counts.values())
+    leaders = [p for p, c in counts.items() if c == top]
+    return leaders[0] if len(leaders) == 1 else "neutra"  # empate vira neutra
 
 def cook(base: Ingredient, complement, seasoning, *, pot: str, charcoal: int, skill: int, roll: float) -> dict:
     if charcoal < 1:

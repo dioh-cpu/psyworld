@@ -3,19 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Confusion Waves: Double Perspective</title>
+<title>Confusion Waves: Double Perspective (piloto)</title>
 <style>
-:root{--bg:#0b0a12;--fg:#e9e4f5;--muted:#9b93b5}
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
-main{max-width:520px;padding:24px;text-align:center}
-h1{font-size:22px;margin:0 0 8px}
-p{color:var(--muted);line-height:1.5}
+:root{--bg:#0b0a12;--panel:#15131f;--fg:#e9e4f5;--muted:#9b93b5;--acc:#9333ea;--cy:#22d3ee;--warn:#f87171}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px}
+#app{max-width:820px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:20px;margin:0;color:var(--cy)}
+h2{font-size:15px;margin:0 0 8px;color:#d6c8ff}
+section{background:var(--panel);border:1px solid #2a2440;border-radius:10px;padding:12px;margin:10px 0}
+.status{color:var(--muted);font-size:13px}
+.status b.fechada{color:var(--warn)}
+.status b.aberta{color:var(--cy)}
+button{background:#2b1b4a;color:var(--fg);border:1px solid #4b3a7a;border-radius:8px;padding:8px 12px;margin:4px 4px 4px 0;font:inherit;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button:disabled{opacity:.4;cursor:default}
+button.ghost{background:transparent}
+button.danger{border-color:#7f1d1d}
+label{display:inline-flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);margin-right:10px}
+select,input{background:#0f0d18;color:var(--fg);border:1px solid #3b3260;border-radius:6px;padding:6px;font:inherit}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:6px}
+.muted{color:var(--muted);font-size:13px}
+.log{max-height:260px;overflow:auto;padding-left:18px;margin:0;font-size:13px;color:#cfc6e8}
 </style>
 </head>
 <body>
-<main>
-<h1>Confusion Waves: Double Perspective</h1>
-<p>Em construção. O núcleo de regras já está pronto e testado; a interface do jogo ainda não foi iniciada.</p>
-</main>
+<div id="app"><p>Carregando…</p></div>
+<script type="module" src="confusion/web/app.js"></script>
 </body>
 </html>
