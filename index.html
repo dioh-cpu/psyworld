@@ -37,11 +37,15 @@ select,input{background:#0f0d18;color:var(--fg);border:1px solid #3b3260;border-
 .rar-lendaria{color:#facc15}
 .rar-mitica{background:linear-gradient(90deg,#f87171,#facc15,#4ade80,#22d3ee,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
 .sprite{position:relative;border-radius:12px;margin-bottom:6px}
-.sprite.aura-mutante{box-shadow:0 0 0 2px #a855f7,0 0 26px 8px rgba(168,85,247,.55);animation:pulso-mutacao 2.4s ease-in-out infinite}
+.sprite.aura-mutante-trevas{box-shadow:0 0 0 2px #7e22ce,0 0 26px 8px rgba(126,34,206,.6);animation:pulso-trevas 2.4s ease-in-out infinite}
+.sprite.aura-mutante-luz{box-shadow:0 0 0 2px #67e8f9,0 0 26px 8px rgba(103,232,249,.5);animation:pulso-luz 2.4s ease-in-out infinite}
 .sprite.aura-abencoada{box-shadow:0 0 0 2px #facc15,0 0 26px 8px rgba(250,204,21,.5);animation:pulso-bencao 3s ease-in-out infinite}
-@keyframes pulso-mutacao{50%{box-shadow:0 0 0 2px #c084fc,0 0 34px 12px rgba(168,85,247,.7)}}
+.sprite.aura-combinada{box-shadow:0 0 0 2px #facc15,0 0 0 4px #a855f7,0 0 34px 12px rgba(250,204,21,.55),0 0 60px 22px rgba(168,85,247,.45);animation:pulso-combinada 2s ease-in-out infinite}
+@keyframes pulso-trevas{50%{box-shadow:0 0 0 2px #a855f7,0 0 34px 12px rgba(126,34,206,.75)}}
+@keyframes pulso-luz{50%{box-shadow:0 0 0 2px #a5f3fc,0 0 34px 12px rgba(103,232,249,.65)}}
 @keyframes pulso-bencao{50%{box-shadow:0 0 0 2px #fde68a,0 0 34px 12px rgba(250,204,21,.65)}}
-@media (prefers-reduced-motion: reduce){.sprite.aura-mutante,.sprite.aura-abencoada{animation:none}}
+@keyframes pulso-combinada{50%{box-shadow:0 0 0 2px #fde68a,0 0 0 4px #c084fc,0 0 42px 16px rgba(250,204,21,.7),0 0 70px 26px rgba(168,85,247,.6)}}
+@media (prefers-reduced-motion: reduce){.sprite[class*="aura-"]{animation:none}}
 </style>
 </head>
 <body>

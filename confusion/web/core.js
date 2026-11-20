@@ -243,36 +243,52 @@ export function breedSuccessEffects(m) {
 
 // ---- Ovos e invocação (GDD v1.16) ----
 // Mutação e bênção são o que o ovo carrega. A variante vira aura ao redor do monstrinho,
-// sem sprite novo: um sprite base por espécie e uma camada de aura por variante.
-// Chances por origem (proposta): o resto dos ovos é natural.
+// sem sprite novo por forma: uma camada por variante e pureza.
+// Variantes: natural, mutante (de luz ou de trevas), abençoada (luz) e combinada (mutação + bênção, rarissima).
+// Chances por origem (proposta). O resto dos ovos é natural.
 export const FORM_CHANCE = {
-  breed: { mutante: 0.15, abencoada: 0.15 },
-  zona: { mutante: 0.25, abencoada: 0.25 },
-  login: { mutante: 0.10, abencoada: 0.10 },
-  passe: { mutante: 0.10, abencoada: 0.10 },
-  selvagem: { mutante: 0.05, abencoada: 0.05 },
+  breed: { mutante: 0.15, abencoada: 0.15, combinada: 0.005 },
+  zona: { mutante: 0.25, abencoada: 0.25, combinada: 0.01 },
+  login: { mutante: 0.10, abencoada: 0.10, combinada: 0.002 },
+  passe: { mutante: 0.10, abencoada: 0.10, combinada: 0.002 },
+  selvagem: { mutante: 0.05, abencoada: 0.05, combinada: 0.0005 },
   inicial: {},
 };
-export function eggFormFor(origem, roll) {
+// roll define a forma; roll2 define a pureza da mutação; purezaFonte é a pureza do ingrediente (breed) ou do monstrinho selvagem.
+// Mutação herda a pureza da fonte quando ela é luz ou trevas; senão, sai 50/50.
+export function eggFor(origem, roll, roll2, purezaFonte = null) {
   const c = FORM_CHANCE[origem] || {};
-  const m = c.mutante || 0;
-  if (roll < m) return 'mutante';
-  if (roll < m + (c.abencoada || 0)) return 'abencoada';
-  return 'natural';
+  const comb = c.combinada || 0, mut = c.mutante || 0, ben = c.abencoada || 0;
+  let form;
+  if (roll < comb) form = 'combinada';
+  else if (roll < comb + mut) form = 'mutante';
+  else if (roll < comb + mut + ben) form = 'abencoada';
+  else form = 'natural';
+  let pureza = 'neutra';
+  if (form === 'combinada' || form === 'abencoada') pureza = 'luz';
+  else if (form === 'mutante') {
+    if (purezaFonte === 'luz' || purezaFonte === 'trevas') pureza = purezaFonte;
+    else pureza = roll2 < 0.5 ? 'luz' : 'trevas';
+  }
+  return { form, pureza };
 }
-export const breedEggForm = (roll) => eggFormFor('breed', roll);
-// Mutante e abençoado nascem com +1 de raridade. Ovo de recompensa da zona também (+1), sem somar.
-export const EGG_SHIFT = { natural: 0, mutante: 1, abencoada: 1 };
-export const PURITY_BY_FORM = { natural: 'neutra', abencoada: 'luz', mutante: 'neutra' };
-export function makeEgg(species, form, origem) {
-  return { species, form, origem, shift: Math.max(EGG_SHIFT[form] ?? 0, origem === 'zona' ? 1 : 0) };
+export const eggFormFor = (origem, roll) => eggFor(origem, roll, 0).form;
+export const breedEggForm = (roll) => eggFor('breed', roll, 0).form;
+// Mutante e abençoado: +1 de raridade. Combinada: +2. Ovo de recompensa da zona: +1 (sem somar com a forma).
+export const EGG_SHIFT = { natural: 0, mutante: 1, abencoada: 1, combinada: 2 };
+export const PURITY_BY_FORM = { natural: 'neutra', abencoada: 'luz', mutante: 'neutra', combinada: 'luz' };
+// Poder por variante (proposta): combinada é a mais forte, em dano, defesa e cura.
+export const VARIANT_POWER = { natural: 1, mutante: 1.3, abencoada: 1.2, combinada: 2.0 };
+export function makeEgg(species, form, origem, pureza = 'neutra') {
+  return { species, form, origem, pureza, shift: Math.max(EGG_SHIFT[form] ?? 0, origem === 'zona' ? 1 : 0) };
 }
-// Ao chocar, a raridade é rolada e o tier começa igual a ela. A variante (natural, mutante ou abençoada) vai para o monstrinho.
+// Ao chocar, a raridade é rolada e o tier começa igual a ela. A variante vai para o monstrinho.
 export function hatchEgg(egg, roll) {
   const rarity = rollRarity(roll, egg.shift ?? 0);
+  const purity = egg.form === 'mutante' ? (egg.pureza || 'neutra') : (PURITY_BY_FORM[egg.form] ?? 'neutra');
   return {
     species: egg.species, form: egg.form, variant: egg.form, rarity, tier: rarity,
-    purity: PURITY_BY_FORM[egg.form] ?? 'neutra', mutated: egg.form === 'mutante',
+    purity, mutated: egg.form === 'mutante' || egg.form === 'combinada',
   };
 }
 // Invocação: o banner escolhe a espécie entre as do banner e empurra a raridade para cima (proposta).
@@ -305,10 +321,10 @@ export function endlessRewards(floor, eventActive = false, rng = () => 1) {
   return out;
 }
 // Combate provisório no andar infinito: poder do monstrinho contra o poder do andar.
-// Poder = 10 por tier + 2 por nível de aptidão somado. Chance limitada entre 5% e 95%.
+// Poder = (10 por tier + 2 por nível de aptidão somado) x multiplicador da variante. Chance limitada entre 5% e 95%.
 export function monsterPower(m) {
   const apt = Object.values(m.aptitudes || {}).reduce((a, b) => a + b, 0);
-  return 10 * m.tier + 2 * apt;
+  return (10 * m.tier + 2 * apt) * (VARIANT_POWER[m.variant] ?? 1);
 }
 export function endlessChance(m, floor) {
   return Math.min(0.95, Math.max(0.05, monsterPower(m) / endlessFloorPower(floor)));

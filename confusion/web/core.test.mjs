@@ -164,6 +164,29 @@ test('forma do ovo depende da origem: selvagem é quase sempre natural; zona tem
   assert.equal(C.eggFormFor('zona', 0.6), 'natural');
   assert.equal(C.eggFormFor('inicial', 0), 'natural');
 });
+test('mutação de luz ou de trevas: herda a pureza da fonte; sem fonte definida sai 50/50', () => {
+  assert.deepEqual(C.eggFor('breed', 0.1, 0.9, 'trevas'), { form: 'mutante', pureza: 'trevas' });
+  assert.deepEqual(C.eggFor('breed', 0.1, 0.9, 'luz'), { form: 'mutante', pureza: 'luz' });
+  assert.equal(C.eggFor('zona', 0.1, 0.1).pureza, 'luz');
+  assert.equal(C.eggFor('zona', 0.1, 0.9).pureza, 'trevas');
+  assert.equal(C.hatchEgg(C.makeEgg('Noctarn', 'mutante', 'breed', 'trevas'), 0).purity, 'trevas');
+});
+test('combinada (mutação + bênção) é rarissima, luz e +2 de raridade', () => {
+  assert.equal(C.eggFor('breed', 0.001, 0).form, 'combinada');
+  assert.ok(C.FORM_CHANCE.breed.combinada < 0.01);
+  assert.ok(C.FORM_CHANCE.selvagem.combinada < C.FORM_CHANCE.breed.combinada);
+  const c = C.hatchEgg(C.makeEgg('Noctarn', 'combinada', 'breed', 'luz'), 0);
+  assert.equal(c.variant, 'combinada');
+  assert.equal(c.purity, 'luz');
+  assert.equal(c.rarity, 3);
+});
+test('poder: combinada vale o dobro; mutação e bênção também somam', () => {
+  const base = { tier: 3, aptitudes: {} };
+  assert.equal(C.monsterPower({ ...base, variant: 'natural' }), 30);
+  assert.equal(C.monsterPower({ ...base, variant: 'combinada' }), 60);
+  assert.ok(C.monsterPower({ ...base, variant: 'mutante' }) > C.monsterPower({ ...base, variant: 'natural' }));
+  assert.ok(C.monsterPower({ ...base, variant: 'abencoada' }) > C.monsterPower({ ...base, variant: 'natural' }));
+});
 test('ovo mutante ou abençoado: a variante vai para o monstrinho e o shift não soma com a zona', () => {
   assert.equal(C.hatchEgg(C.makeEgg('Noctarn', 'mutante', 'breed'), 0).variant, 'mutante');
   assert.equal(C.hatchEgg(C.makeEgg('Noctarn', 'natural', 'breed'), 0).variant, 'natural');

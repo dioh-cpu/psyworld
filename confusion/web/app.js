@@ -37,16 +37,20 @@ const monster = (id, species, rarity, level, xp, purity, variant = 'natural') =>
 const SPECIES = Y.BASE_SPECIES; // todas saem de ovo, breed ou invocação: nenhuma espécie é só de pagamento
 const PURITY_BY_SPECIES = Y.SPECIES_PURITY;
 const RARITY_LABEL = { comum: 'Comum', rara: 'Rara', epica: 'Épica', lendaria: 'Lendária', mitica: 'Mítica' };
-const VARIANT_LABEL = { natural: 'natural', mutante: 'mutação', abencoada: 'bênção' }; // a variante aparece como aura
+const VARIANT_LABEL = { natural: 'natural', mutante: 'mutação', abencoada: 'bênção', combinada: 'mutação + bênção' }; // a variante aparece como aura
+const auraClass = (m) => (m.variant === 'mutante' ? `aura-mutante-${m.purity === 'luz' ? 'luz' : 'trevas'}` : `aura-${m.variant || 'natural'}`);
 const BANNER_LABEL = { permanente: 'permanente', semanal: 'semanal', evento: 'evento' };
 const uid = (p) => `${p}${Date.now()}${Math.floor(Math.random() * 1000)}`;
 const newMonster = (species, rarity, purity, variant = 'natural') => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species], variant);
-const eggOf = (species, form, origem) => ({ ...C.makeEgg(species, form, origem), id: uid('e') });
+const eggOf = (species, form, origem, pureza = 'neutra') => ({ ...C.makeEgg(species, form, origem, pureza), id: uid('e') });
 const ORIGIN_LABEL = { breed: 'breed', zona: 'recompensa da zona', login: 'login diário', passe: 'passe de batalha', selvagem: 'drop selvagem', inicial: 'kit inicial' };
 // Aplica uma recompensa do jogo: diamantes, esferas e fichas entram direto; ovos são criados com a origem.
 function grant(reward, origem) {
   const ovos = Y.applyReward(S, reward);
-  for (let i = 0; i < ovos; i++) S.eggs.push(eggOf(Y.BASE_SPECIES[Math.floor(Math.random() * Y.BASE_SPECIES.length)], C.eggFormFor(origem, Math.random()), origem));
+  for (let i = 0; i < ovos; i++) {
+    const e = C.eggFor(origem, Math.random(), Math.random(), null);
+    S.eggs.push(eggOf(Y.BASE_SPECIES[Math.floor(Math.random() * Y.BASE_SPECIES.length)], e.form, origem, e.pureza));
+  }
   return rewardText(reward);
 }
 const rewardText = (r) => [
@@ -58,7 +62,8 @@ const rewardText = (r) => [
 // Ao fim de um encontro (captura, fuga ou lançamento), o monstrinho pode deixar um ovo.
 function dropEgg(w) {
   if (Y.dropsEgg(w, Math.random(), Y.dropBonus(Date.now()))) {
-    S.eggs.push(eggOf(w.species, C.eggFormFor('selvagem', Math.random()), 'selvagem'));
+    const e = C.eggFor('selvagem', Math.random(), Math.random(), w.purity);
+    S.eggs.push(eggOf(w.species, e.form, 'selvagem', e.pureza));
     note(`${w.species} deixou um ovo.`);
   }
 }
@@ -240,7 +245,7 @@ function render() {
          <p class="muted">Ovo inicial. Formas elegíveis: ${C.eligibleForms(S.sanity).join(', ')}.</p>
          <button data-act="hatch">Chocar ovo inicial</button>`}
     <p class="muted">Ovos do breed e da zona. Ao chocar, a raridade é rolada e o tier começa igual a ela.</p>
-    <ul class="log">${S.eggs.map((e) => `<li>Ovo de ${esc(e.species)} · forma ${esc(e.form)} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
+    <ul class="log">${S.eggs.map((e) => `<li>Ovo de ${esc(e.species)} · forma ${esc(e.form)}${e.form === 'mutante' || e.form === 'combinada' ? ` (${esc(e.pureza)})` : ''} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
   </section>
 
   <section>
@@ -289,7 +294,7 @@ function render() {
     <h2>Monstrinhos</h2>
     <div class="cards">
       ${S.monsters.map((m) => `<div class="card">
-        <div class="sprite aura-${m.variant || 'natural'}">${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<div class="noart">sem arte ainda</div>`}</div>
+        <div class="sprite ${auraClass(m)}">${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<div class="noart">sem arte ainda</div>`}</div>
         <b>${esc(m.species)}</b> ${rarityTag(m)} · nível ${m.level}
         <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity} · ${VARIANT_LABEL[m.variant || 'natural']}</div>
         <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
@@ -513,11 +518,11 @@ function act(name, el) {
         const pick = pool[Math.floor(Math.random() * pool.length)];
         C.absorbAbility(main, pick, $('fuse-keep').value === 'new');
         C.breedSuccessEffects(main);
-        const form = C.breedEggForm(Math.random());
-        S.eggs.push(eggOf(main.species, form, 'breed'));
+        const e = C.eggFor('breed', Math.random(), Math.random(), ing.purity);
+        S.eggs.push(eggOf(main.species, e.form, 'breed', e.pureza));
         S.successes[main.id] = (S.successes[main.id] || 0) + 1;
         S.failures[main.id] = 0;
-        note(`breed bem-sucedido: ${main.species} sobe para tier ${main.tier} e absorveu "${pick}". Saiu um ovo ${form}.`);
+        note(`breed bem-sucedido: ${main.species} sobe para tier ${main.tier} e absorveu "${pick}". Saiu um ovo ${e.form}.`);
       } else {
         S.failures[main.id] = (S.failures[main.id] || 0) + 1;
         note(`breed falhou. ${ing.species} foi perdido; ${main.species} continua.`);
@@ -568,7 +573,10 @@ function act(name, el) {
       S.diamonds += r.diamantes;
       for (const i of r.invocacoes) S.tickets[i.banner] += i.qtd;
       if (r.evento) S.endless.drops[r.evento] = (S.endless.drops[r.evento] || 0) + 1;
-      if (r.ovo) S.eggs.push(eggOf(SPECIES[Math.floor(Math.random() * SPECIES.length)], C.eggFormFor('zona', Math.random()), 'zona'));
+      if (r.ovo) {
+        const e = C.eggFor('zona', Math.random(), Math.random(), null);
+        S.eggs.push(eggOf(SPECIES[Math.floor(Math.random() * SPECIES.length)], e.form, 'zona', e.pureza));
+      }
       S.endless.best = Math.max(S.endless.best, floor);
       S.endless.floor = floor + 1;
       S.pass = Y.addPassXp(S.pass, 'andar');
