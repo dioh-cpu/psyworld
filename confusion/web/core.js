@@ -338,6 +338,8 @@ export const EGG_SHIFT = { natural: 0, mutante: 1, abencoada: 1, combinada: 2 };
 export const PURITY_BY_FORM = { natural: 'neutra', abencoada: 'luz', mutante: 'neutra', combinada: 'luz' };
 // Poder por variante (proposta): combinada é a mais forte, em dano, defesa e cura.
 export const VARIANT_POWER = { natural: 1, mutante: 1.3, abencoada: 1.2, combinada: 2.0 };
+// Força pela origem do monstrinho (GDD v1.29): evento e gacha semanal são mais fortes que os comuns (proposta).
+export const CLASS_POWER = { comum: 1, semanal: 1.25, evento: 1.5 };
 export function makeEgg(species, form, origem, pureza = 'neutra', tier = null) {
   return {
     species, form, origem, pureza, shift: Math.max(EGG_SHIFT[form] ?? 0, origem === 'zona' ? 1 : 0),
@@ -412,10 +414,10 @@ export function endlessRewards(floor, eventActive = false, rng = () => 1) {
   return out;
 }
 // Combate provisório no andar infinito: poder do monstrinho contra o poder do andar.
-// Poder = (10 por tier + 2 por nível de aptidão somado) x multiplicador da variante. Chance limitada entre 5% e 95%.
+// Poder = (10 por tier + 2 por nível de aptidão somado) x variante x origem. Chance limitada entre 5% e 95%.
 export function monsterPower(m) {
   const apt = Object.values(m.aptitudes || {}).reduce((a, b) => a + b, 0);
-  return (10 * m.tier + 2 * apt) * (VARIANT_POWER[m.variant] ?? 1);
+  return (10 * m.tier + 2 * apt) * (VARIANT_POWER[m.variant] ?? 1) * (CLASS_POWER[m.classe] ?? 1);
 }
 export function endlessChance(m, floor) {
   return Math.min(0.95, Math.max(0.05, monsterPower(m) / endlessFloorPower(floor)));

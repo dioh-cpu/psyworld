@@ -135,24 +135,28 @@ export function activeEvents(ts) {
 
 // ---- Encontros selvagens (busca) ----
 export const ENCOUNTER_CHANCE = 0.5;   // provisório
-export const EXCLUSIVE_CHANCE = 0.3;   // chance de um encontro ser exclusivo do evento ativo
 export function encounterChance(day) {
   return shieldActive(day) ? SHIELD_ENCOUNTER_CHANCE : ENCOUNTER_CHANCE;
 }
+// Monstrinhos de evento NÃO aparecem em encontros: saem de missões do evento.
 // rolls: { r1, r2, r3, r4 } em [0, 1). Devolve null se a busca não achou nada.
 export function rollEncounter(ts, day, rolls) {
   if (rolls.r1 >= encounterChance(day)) return null;
-  const ev = activeEvents(ts);
-  let species;
-  if (rolls.r2 < EXCLUSIVE_CHANCE) {
-    const exclusivos = [ev.semanal.exclusivo, ev.mensal.exclusivo];
-    species = exclusivos[Math.floor(rolls.r3 * exclusivos.length)];
-  } else {
-    species = BASE_SPECIES[Math.floor(rolls.r3 * BASE_SPECIES.length)];
-  }
+  const species = BASE_SPECIES[Math.floor(rolls.r3 * BASE_SPECIES.length)];
   const rarity = rollRarity(rolls.r4, 0);
-  return { species, rarity, tier: rarity, purity: SPECIES_PURITY[species], exclusivo: Boolean(EVENT_SPECIES[species]) };
+  return { species, rarity, tier: rarity, purity: SPECIES_PURITY[species], exclusivo: false };
 }
+
+// ---- Missões de evento: completar todas libera o monstrinho exclusivo do evento (uma vez por período) ----
+export const EVENT_MISSIONS = [
+  { tipo: 'capturas', meta: 3, texto: 'Capture 3 monstrinhos' },
+  { tipo: 'andares', meta: 5, texto: 'Avance 5 andares na zona infinita' },
+  { tipo: 'breeds', meta: 2, texto: 'Inicie 2 breeds' },
+  { tipo: 'cozinhar', meta: 2, texto: 'Cozinhe 2 pratos' },
+];
+// Período do evento: semana para o semanal, mês para o mensal. Muda o período, zera o progresso.
+export const missaoChave = (evento, tipo, ts) => `${evento.id}-${tipo === 'semanal' ? weekIndex(ts) : monthIndex(ts)}`;
+export const missaoConcluida = (progresso) => EVENT_MISSIONS.every((x) => (progresso[x.tipo] || 0) >= x.meta);
 
 // ---- Esferas psíquicas: uma por tentativa, consumida no lançamento ----
 export const CAPTURE = { base: 0.5, porRaridade: 0.12, porTier: 0.02, min: 0.05, max: 0.9 };

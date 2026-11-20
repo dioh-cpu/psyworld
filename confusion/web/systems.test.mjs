@@ -86,16 +86,22 @@ test('exclusivos: cada evento tem um monstrinho que não é da lista geral', () 
   }
 });
 
-test('encontro: sem sorte, sem encontro; com evento ativo pode vir exclusivo', () => {
+test('encontro: sem sorte, sem encontro; nunca sorteia monstrinho de evento', () => {
   assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0.99, r2: 0, r3: 0, r4: 0 }), null);
-  const ex = Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0, r3: 0, r4: 0 });
-  assert.equal(ex.species, 'Lumivela');
-  assert.equal(ex.exclusivo, true);
-  assert.equal(ex.rarity, 1);
-  const base = Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.999 });
-  assert.equal(base.species, 'Vaelith');
-  assert.equal(base.exclusivo, false);
-  assert.equal(base.rarity, 5);
+  for (const r3 of [0, 0.5, 0.99]) {
+    const w = Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0, r3, r4: 0 });
+    assert.ok(Y.BASE_SPECIES.includes(w.species));
+    assert.equal(w.exclusivo, false);
+  }
+  assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.999 }).rarity, 5);
+});
+test('missões: progresso completo libera o período; mudança de período zera', () => {
+  const todas = { capturas: 3, andares: 5, breeds: 2, cozinhar: 2 };
+  assert.equal(Y.missaoConcluida(todas), true);
+  assert.equal(Y.missaoConcluida({ ...todas, breeds: 1 }), false);
+  const ev = Y.WEEKLY_EVENTS[0];
+  assert.notEqual(Y.missaoChave(ev, 'semanal', Y.EPOCH_TS), Y.missaoChave(ev, 'semanal', Y.EPOCH_TS + 7 * DAY));
+  assert.equal(Y.missaoChave(ev, 'semanal', Y.EPOCH_TS), Y.missaoChave(ev, 'semanal', Y.EPOCH_TS + DAY));
 });
 
 test('captura: esfera melhor que o monstrinho aumenta a chance; limites respeitados', () => {

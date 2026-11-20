@@ -29,8 +29,8 @@ const APT = {
 for (const [k, v] of Object.entries(Y.EVENT_SPECIES)) APT[k] = v.aptitudes; // exclusivos de evento
 const ART = { Noctarn: 'assets/monsters/noctarn/sprite-front.png' };
 const EVENT_ACTIVE = true; // há sempre um evento mensal ativo no calendário; o item de drop é provisório
-const monster = (id, species, rarity, level, xp, purity, variant = 'natural') => ({
-  id, species, rarity, tier: rarity, variant, level, xp, purity, vinculo: 0,
+const monster = (id, species, rarity, level, xp, purity, variant = 'natural', classe = 'comum') => ({
+  id, species, rarity, tier: rarity, variant, classe, level, xp, purity, vinculo: 0,
   abilities: ABILITIES[species].slice(0, 4), extraAbility: null, hybrid: false, abilityLevels: {},
   aptitudes: { ...(APT[species] || {}) },
 });
@@ -74,7 +74,8 @@ const breedLinha = (b) => `<li>${esc(b.mainNome)} + ${esc(b.ingNome)} · <span c
 const lastTag = () => { const m = S.monsters.find((x) => x.id === S.last); return m ? `<p>Último monstrinho: ${monstroTag(m)}</p>` : ''; };
 const BANNER_LABEL = { permanente: 'permanente', semanal: 'semanal', evento: 'evento' };
 const uid = (p) => `${p}${Date.now()}${Math.floor(Math.random() * 1000)}`;
-const newMonster = (species, rarity, purity, variant = 'natural') => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species], variant);
+const newMonster = (species, rarity, purity, variant = 'natural', classe = 'comum') => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species], variant, classe);
+const CLASSE_BANNER = { permanente: 'comum', semanal: 'semanal', evento: 'evento' }; // força por origem (GDD v1.29)
 const eggOf = (species, form, origem, pureza = 'neutra', tier = null) => ({ ...C.makeEgg(species, form, origem, pureza, tier), id: uid('e') });
 const ORIGIN_LABEL = { breed: 'breed', zona: 'recompensa da zona', login: 'login diário', passe: 'passe de batalha', selvagem: 'drop selvagem', inicial: 'kit inicial' };
 // Aplica uma recompensa do jogo: diamantes, esferas e fichas entram direto; ovos são criados com a origem.
@@ -100,7 +101,33 @@ function dropEgg(w) {
     note(`${w.species} deixou um ovo.`);
   }
 }
-const evBlock = (e, tipo) => `<p><b>${e.nome}</b> (${tipo}) · exclusivo: <b>${esc(e.exclusivo)}</b> · captura +${pct(e.bonus.captura)} · drop +${pct(e.bonus.drop)}</p>`;
+const evBlock = (e, tipo) => `<p><b>${e.nome}</b> (${tipo}) · monstrinho de evento (por missões): <b>${esc(e.exclusivo)}</b> · captura +${pct(e.bonus.captura)} · drop +${pct(e.bonus.drop)}</p>`;
+// Missões do período atual. Mudou o período (semana ou mês), o progresso zera.
+function missaoAtual(tipo) {
+  const ts = Date.now();
+  const ev = Y.activeEvents(ts);
+  const e = tipo === 'semanal' ? ev.semanal : ev.mensal;
+  const chave = Y.missaoChave(e, tipo, ts);
+  if (!S.missoes[tipo] || S.missoes[tipo].chave !== chave) {
+    S.missoes[tipo] = { chave, progresso: { capturas: 0, andares: 0, breeds: 0, cozinhar: 0 }, resgatado: false };
+  }
+  return { e, m: S.missoes[tipo] };
+}
+// Uma ação conta para as missões das duas agendas (semanal e mensal).
+function avancarMissao(tipo) {
+  for (const t of ['semanal', 'mensal']) {
+    const { m } = missaoAtual(t);
+    m.progresso[tipo] = (m.progresso[tipo] || 0) + 1;
+  }
+}
+function missoesBlock(tipo) {
+  const { e, m } = missaoAtual(tipo);
+  const concluida = Y.missaoConcluida(m.progresso);
+  const linhas = Y.EVENT_MISSIONS.map((x) => `<li>${x.texto}: ${Math.min(m.progresso[x.tipo] || 0, x.meta)}/${x.meta}</li>`).join('');
+  return `<p><b>Missões ${tipo === 'semanal' ? 'da semana' : 'do mês'}</b> (${esc(e.nome)}), para ganhar ${esc(e.exclusivo)}:</p>
+    <ul class="log">${linhas}</ul>
+    ${m.resgatado ? '<p class="muted">Recompensa já resgatada neste período.</p>' : `<button data-act="missao" data-tipo="${tipo}" ${concluida ? '' : 'disabled'}>Resgatar ${esc(e.exclusivo)}</button>`}`;
+}
 function wildBlock() {
   const w = S.wild;
   const bonus = Y.captureBonus(Date.now(), S.day);
@@ -121,7 +148,7 @@ function newState() {
     bot: 0, successes: {}, failures: {},
     diamonds: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
-    pity: { permanente: 0, semanal: 0, evento: 0 },
+    pity: { permanente: 0, semanal: 0, evento: 0 }, missoes: { semanal: null, mensal: null },
     pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null, breeds: [],
     ingredients: [
       { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum', category: 'vegetal' },
@@ -150,6 +177,7 @@ function withDefaults(s) {
     diamonds: s.diamonds ?? 0,
     tickets: { permanente: 0, semanal: 0, evento: 0, ...(s.tickets || {}) },
     pity: { permanente: 0, semanal: 0, evento: 0, ...(s.pity || {}) },
+    missoes: { semanal: null, mensal: null, ...(s.missoes || {}) },
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0, ...(s.esferas || {}) },
     login: { streak: 0, lastDay: 0, ...(s.login || {}) },
     pass: { season: '', xp: 0, claimed: 0, premium: false, ...(s.pass || {}) },
@@ -162,10 +190,10 @@ function withDefaults(s) {
 }
 // Versão anterior usava estrelas (star). Agora: raridade 1 a 5 e tier 1 a 10 (só o breed sobe o tier).
 function migrateMonster(m) {
-  if (m.rarity) return { tier: m.tier ?? m.rarity, variant: m.mutated ? 'mutante' : 'natural', ...m };
+  if (m.rarity) return { tier: m.tier ?? m.rarity, variant: m.mutated ? 'mutante' : 'natural', classe: 'comum', ...m };
   const { star, ...rest } = m;
   const rarity = Math.min(5, Math.max(1, star ?? 1));
-  return { ...rest, rarity, tier: Math.min(10, star ?? rarity), variant: 'natural' };
+  return { ...rest, rarity, tier: Math.min(10, star ?? rarity), variant: 'natural', classe: 'comum' };
 }
 function save() {
   S.game = 'confusion-waves'; // saves antigos não têm o campo; o servidor exige
@@ -229,7 +257,9 @@ function render() {
     <h2>Eventos desta semana e deste mês</h2>
     ${evBlock(ev.semanal, 'semanal')}
     ${evBlock(ev.mensal, 'mensal')}
-    <p class="muted">Monstrinhos exclusivos só aparecem em encontros enquanto o evento está ativo. Nada disso se compra com dinheiro.</p>
+    ${missoesBlock('semanal')}
+    ${missoesBlock('mensal')}
+    <p class="muted">Monstrinhos de evento não aparecem em encontros: saem de missões. Nada disso se compra com dinheiro.</p>
   </section>
 
   <section>
@@ -603,6 +633,7 @@ function act(name, el) {
       const r = C.cook({ base, pot, charcoal: S.charcoal, skill: 0, roll: Math.random() });
       S.charcoal -= 1;
       S.pot = pot;
+      avancarMissao('cozinhar');
       if (m) m.vinculo = Math.max(0, Math.min(100, m.vinculo + r.vinculoDelta));
       if (!r.penalidade) S.diamonds += C.diamondsForItem(r.raridade);
       note(r.penalidade ? `cozinhar: ${r.penalidade}. Vínculo de ${m ? m.species : '-'} muda ${r.vinculoDelta}.`
@@ -618,6 +649,7 @@ function act(name, el) {
       const ore = Number($('fuse-ore').value);
       const chance = C.breedSuccessChance(main.tier, S.successes[main.id] || 0, S.failures[main.id] || 0, ore);
       S.pass = Y.addPassXp(S.pass, 'breed');
+      avancarMissao('breeds');
       ing.usosIngrediente = (ing.usosIngrediente || 0) + 1; // o ingrediente não some: cada breed gasta um dos 3 usos
       const aviso = ing.usosIngrediente >= C.INGREDIENT_MAX_USES
         ? ` ${ing.species} chegou a ${C.INGREDIENT_MAX_USES} usos: não serve mais de ingrediente, mas continua na coleção.` : '';
@@ -685,6 +717,7 @@ function act(name, el) {
       S.endless.best = Math.max(S.endless.best, floor);
       S.endless.floor = floor + 1;
       S.pass = Y.addPassXp(S.pass, 'andar');
+      avancarMissao('andares');
       const extra = r.invocacoes.map((i) => `, ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('');
       note(`andar ${floor} concluído com ${m.species}: +${r.diamantes} diamantes${extra}${r.ovo ? ' + ovo de recompensa' : ''}${r.evento ? ' + doce de Halloween' : ''}.`);
       break;
@@ -707,7 +740,7 @@ function act(name, el) {
       const melhor = Math.max(...resultados.map((r) => r.rarity));
       let d = 0, ultimo = null;
       for (const r of resultados) {
-        const m = newMonster(r.species, r.rarity);
+        const m = newMonster(r.species, r.rarity, undefined, 'natural', CLASSE_BANNER[banner]);
         S.monsters.push(m);
         ultimo = m;
         d += C.diamondsForItem(C.rarityName(r.rarity));
@@ -794,6 +827,7 @@ function act(name, el) {
         S.monsters.push(nm);
         S.last = nm.id;
         S.pass = Y.addPassXp(S.pass, 'captura');
+        avancarMissao('capturas');
         const d = C.diamondsForItem(C.rarityName(w.rarity));
         S.diamonds += d;
         note(`${w.species} capturado com esfera ${RARITY_LABEL[k].toLowerCase()} (chance ${pct(chance)}). Coleção: +${d} diamante(s).`);
@@ -809,6 +843,17 @@ function act(name, el) {
       note(`você deixou ${S.wild.species} ir.`);
       dropEgg(S.wild);
       S.wild = null;
+      break;
+    }
+    case 'missao': {
+      const tipo = el.dataset.tipo;
+      const { e, m } = missaoAtual(tipo);
+      if (m.resgatado || !Y.missaoConcluida(m.progresso)) return;
+      const nm = newMonster(e.exclusivo, 3, undefined, 'natural', 'evento');
+      S.monsters.push(nm);
+      S.last = nm.id;
+      m.resgatado = true;
+      note(`missões de ${e.nome} concluídas: ${e.exclusivo} entrou na coleção.`);
       break;
     }
     case 'reset': {

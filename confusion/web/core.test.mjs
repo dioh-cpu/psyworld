@@ -319,3 +319,10 @@ test('habilidade absorvida entra na lista de habilidades do pai', () => {
   assert.equal(m.extraAbility, 'x');
   assert.equal(C.activeAbilities(m).length, 5);
 });
+test('origem: monstrinho de evento vale 1,5 e do gacha semanal 1,25, em relação ao comum', () => {
+  const base = { tier: 3, aptitudes: {}, variant: 'natural' };
+  assert.equal(C.monsterPower({ ...base, classe: 'comum' }), 30);
+  assert.equal(C.monsterPower({ ...base, classe: 'semanal' }), 37.5);
+  assert.equal(C.monsterPower({ ...base, classe: 'evento' }), 45);
+  assert.equal(C.monsterPower({ ...base }), 30);
+});
