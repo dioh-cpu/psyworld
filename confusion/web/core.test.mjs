@@ -122,12 +122,8 @@ test('coleta: sem penalidade (quantidade cheia no dia)', () => {
   assert.equal(C.gatherDay('garimpar', 1).cristal, 3);
   assert.equal(C.gatherDay('minerar', 1).minerio, 3);
 });
-test('XP de trabalho sobe o nível e para em 10', () => {
-  const apt = { cortar: 1 }; const xp = {};
-  for (let i = 0; i < 3; i++) C.addWorkXp(apt, xp, 'cortar');
-  assert.equal(apt.cortar, 2);
-  for (let i = 0; i < 500; i++) C.addWorkXp(apt, xp, 'cortar');
-  assert.equal(apt.cortar, 10);
+test('aptidão não cresce com trabalho: só pela fusão', () => {
+  assert.equal(typeof C.addWorkXp, 'undefined');
 });
 
 test('estrelas: 30 no total; douradas até 6; arco-íris de 25 a 30', () => {
@@ -140,14 +136,14 @@ test('estrelas: 30 no total; douradas até 6; arco-íris de 25 a 30', () => {
   assert.equal(C.STAR_MAX, 30);
 });
 test('fusão com sucesso: +1 estrela e +1 em todas as aptidões, até 10 e 30', () => {
-  const m = { stars: 3, aptitudes: { cortar: 3, minerar: 10 } };
+  const m = { star: 3, aptitudes: { cortar: 3, minerar: 10 } };
   C.fusionSuccessEffects(m);
-  assert.equal(m.stars, 4);
+  assert.equal(m.star, 4);
   assert.equal(m.aptitudes.cortar, 4);
   assert.equal(m.aptitudes.minerar, 10);
-  const top = { stars: 30, aptitudes: {} };
+  const top = { star: 30, aptitudes: {} };
   C.fusionSuccessEffects(top);
-  assert.equal(top.stars, 30);
+  assert.equal(top.star, 30);
 });
 test('zona infinita: cada andar fica mais forte', () => {
   assert.equal(C.endlessFloorPower(1), 100);
@@ -178,4 +174,18 @@ test('diamantes: pacote de R$ 4,99 dá 500 diamantes e ganho por raridade', () =
   assert.equal(C.PACK_BRL_4_99, 500);
   assert.equal(C.diamondsForItem('comum'), 1);
   assert.ok(C.diamondsForItem('mitica') > C.diamondsForItem('comum'));
+});
+test('fusão acima de ★5 tem chance provisória que não passa do piso', () => {
+  const c6 = C.fusionSuccessChance(6, 0, 0);
+  assert.ok(c6 > 0 && c6 <= 0.95);
+  assert.ok(C.fusionSuccessChance(12, 0, 0) >= 0.2);
+  assert.ok(C.fusionSuccessChance(12, 0, 0) <= C.fusionSuccessChance(6, 0, 0));
+});
+test('zona infinita: poder do monstrinho decide a chance, limitada entre 5% e 95%', () => {
+  const fraco = { star: 1, aptitudes: {} };
+  const forte = { star: 30, aptitudes: { a: 10, b: 10, c: 10, d: 10 } };
+  assert.equal(C.monsterPower(fraco), 10);
+  assert.ok(C.endlessChance(fraco, 50) >= 0.05);
+  assert.equal(C.endlessChance(forte, 1), 0.95);
+  assert.ok(C.endlessChance(forte, 1) > C.endlessChance(forte, 20));
 });

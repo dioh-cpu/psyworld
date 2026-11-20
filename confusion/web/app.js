@@ -25,10 +25,11 @@ const APT = {
   Vaelith: { colher: 2, fabricar: 2, garimpar: 3 },
 };
 const ART = { Noctarn: 'assets/monsters/noctarn/sprite-front.png' };
+const EVENT_ACTIVE = false; // sem evento ativo no piloto: o doce de Halloween não cai
 const monster = (id, species, star, level, xp, purity) => ({
   id, species, star, level, xp, purity, vinculo: 0,
   abilities: ABILITIES[species].slice(0, 4), extraAbility: null, hybrid: false, abilityLevels: {},
-  aptitudes: { ...(APT[species] || {}) }, aptitudeXp: {},
+  aptitudes: { ...(APT[species] || {}) },
 });
 
 function newState() {
@@ -38,6 +39,7 @@ function newState() {
     egg: { id: 'ovo-1', species: 'Ignavor', result: null },
     monsters: [monster('m1', 'Noctarn', 3, 5, 40, 'trevas'), monster('m2', 'Ignavor', 2, 5, 10, 'luz'), monster('m3', 'Vaelith', 2, 5, 5, 'luz')],
     bot: 0, successes: {}, failures: {},
+    diamonds: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} },
     ingredients: [
       { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum', category: 'vegetal' },
       { name: 'Fungo Abissal', purity: 'trevas', freshness: 0.8, rarity: 'rara', category: 'fungo' },
@@ -52,7 +54,17 @@ function newState() {
 let S = load() || newState();
 
 function load() {
-  try { return JSON.parse(localStorage.getItem(KEY)); } catch (_) { return null; }
+  try { const s = JSON.parse(localStorage.getItem(KEY)); return s ? withDefaults(s) : null; } catch (_) { return null; }
+}
+// Saves antigos (local ou da nuvem) não têm os campos novos: completa com o padrão.
+function withDefaults(s) {
+  const d = newState();
+  return {
+    ...d, ...s,
+    diamonds: s.diamonds ?? 0,
+    tickets: { ...d.tickets, ...(s.tickets || {}) },
+    endless: { ...d.endless, ...(s.endless || {}) },
+  };
 }
 function save() {
   S.game = 'confusion-waves'; // saves antigos não têm o campo; o servidor exige
@@ -81,15 +93,17 @@ function note(text) {
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const pct = (x) => `${Math.round(x * 100)}%`;
+const starTag = (m) => `<b class="st st-${C.starColor(m.star)}">★${m.star}</b>`;
 
 function render() {
   const band = C.sanityBand(S.sanity);
+  const endlessR = C.endlessRewards(S.endless.floor, EVENT_ACTIVE);
   const bridge = C.bridgeState(S.day);
   const costume = S.role ? C.COSTUME[S.role] : 'base';
   $('app').innerHTML = `
   <header>
     <h1>Confusion Waves</h1>
-    <div class="status">Dia <b>${S.day}</b> · Ponte <b class="${bridge}">${bridge}</b> · Caminho <b>${S.role ? (S.role === 'heroi' ? 'herói' : 'vilão') : 'não escolhido'}</b> · Traje <b>${costume}</b></div>
+    <div class="status">Dia <b>${S.day}</b> · Ponte <b class="${bridge}">${bridge}</b> · Caminho <b>${S.role ? (S.role === 'heroi' ? 'herói' : 'vilão') : 'não escolhido'}</b> · Traje <b>${costume}</b> · Diamantes <b>${S.diamonds}</b></div>
     <button data-act="reset" class="ghost">Reiniciar piloto</button>
   </header>
 
@@ -148,8 +162,8 @@ function render() {
     <h2>6. Fusão</h2>
     <p class="muted">Na falha, só o ingrediente é perdido. O principal mantém espécie, elemento e nível.</p>
     <div class="row">
-      <label>Principal <select id="fuse-main">${S.monsters.map((m) => `<option value="${m.id}">${m.species} ★${m.star}</option>`).join('')}</select></label>
-      <label>Ingrediente <select id="fuse-ing">${S.monsters.map((m, k) => `<option value="${m.id}" ${k === 1 ? 'selected' : ''}>${m.species} ★${m.star}</option>`).join('')}</select></label>
+      <label>Principal <select id="fuse-main">${S.monsters.map((m) => `<option value="${m.id}">${m.species} ★${m.star} ${C.starColor(m.star)}</option>`).join('')}</select></label>
+      <label>Ingrediente <select id="fuse-ing">${S.monsters.map((m, k) => `<option value="${m.id}" ${k === 1 ? 'selected' : ''}>${m.species} ★${m.star} ${C.starColor(m.star)}</option>`).join('')}</select></label>
       <label>Minério <select id="fuse-ore"><option value="0">nenhum</option><option value="0.06">Obsidiana Fissurada (+6%)</option></select></label>
       <label>Habilidade extra <select id="fuse-keep"><option value="new">trocar pela nova</option><option value="keep">manter a atual</option></select></label>
     </div>
@@ -178,7 +192,7 @@ function render() {
     <div class="cards">
       ${S.monsters.map((m) => `<div class="card">
         ${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<div class="noart">sem arte ainda</div>`}
-        <b>${esc(m.species)}</b> ★${m.star} · nível ${m.level}
+        <b>${esc(m.species)}</b> ${starTag(m)} · nível ${m.level}
         <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity}${m.mutated ? ' · mutação' : ''}</div>
         <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
         <div class="muted">aptidões: ${esc(Object.entries(m.aptitudes).map(([k, v]) => `${k} ${v}`).join(' · ') || 'nenhuma')}</div>
@@ -199,7 +213,7 @@ function render() {
 
   <section>
     <h2>10. Coleta automática (fazenda)</h2>
-    <p class="muted">Não tem clique: os monstrinhos coletam ao avançar o dia, se tiverem a aptidão. Nível alto dá mais velocidade e bônus. Sem penalidade.</p>
+    <p class="muted">Não tem clique: os monstrinhos coletam ao avançar o dia, se tiverem a aptidão. Nível alto dá mais velocidade e bônus. Sem penalidade. A aptidão só sobe por fusão com sucesso.</p>
     <ul class="log">
       ${C.GATHER_TASKS ? Object.keys(C.GATHER_TASKS).map((t) => {
         const id = S.farm.mapping[t];
@@ -208,6 +222,25 @@ function render() {
       }).join('') : ''}
     </ul>
     <p class="muted">Recursos: ${Object.entries(S.resources).map(([k, v]) => `${k} ${v}`).join(' · ')}</p>
+  </section>
+
+  <section>
+    <h2>11. Zona infinita · andar ${S.endless.floor}</h2>
+    <p class="muted">Andares sem fim. Vencer dá diamantes e fichas de invocação. Perder não tira nada: o andar recomeça.</p>
+    <p>Recompensa deste andar: <b>${endlessR.diamantes}</b> diamantes${endlessR.invocacoes.map((i) => ` + ${i.qtd} ficha(s) ${i.banner}`).join('')}. Maior andar concluído: ${S.endless.best}.</p>
+    <ul class="log">${S.monsters.map((m) => `<li>${esc(m.species)}: ${pct(C.endlessChance(m, S.endless.floor))} de vencer</li>`).join('') || '<li class="muted">Sem monstrinhos.</li>'}</ul>
+    <label>Monstrinho <select id="endless-monster">${S.monsters.map((m) => `<option value="${m.id}">${m.species} ★${m.star}</option>`).join('')}</select></label>
+    <button data-act="endless" ${S.monsters.length ? '' : 'disabled'}>Enfrentar andar ${S.endless.floor}</button>
+  </section>
+
+  <section>
+    <h2>12. Diamantes e invocações</h2>
+    <p>Diamantes: <b>${S.diamonds}</b></p>
+    <p class="muted">Fichas: permanente ${S.tickets.permanente} · semanal ${S.tickets.semanal} · evento ${S.tickets.evento}</p>
+    <label>Banner <select id="shop-banner"><option value="permanente">permanente</option><option value="semanal">semanal</option><option value="evento">evento</option></select></label>
+    <button data-act="buy" data-qtd="1">Comprar 1 ficha (200 diamantes)</button>
+    <button data-act="buy" data-qtd="10">Comprar 10 fichas (1500 diamantes)</button>
+    <p class="muted">Pacote de R$ 4,99 = 500 diamantes (compra real fora do piloto). Usar as fichas para invocar ainda não está no piloto.</p>
   </section>
 
   <section>
@@ -249,7 +282,7 @@ async function onAccountEvent(event) {
       const cloud = await A.pull();
       if (cloud.save) {
         if (window.confirm('Há um save na nuvem. Carregar substitui o progresso deste navegador. Confirmar?')) {
-          S = cloud.save;
+          S = withDefaults(cloud.save);
           S.cloudVersion = cloud.version;
           notice = 'Save da nuvem carregado.';
           save();
@@ -278,7 +311,7 @@ async function accountAct(name) {
     if (name === 'pull') {
       const cloud = await A.pull();
       if (!cloud.save) notice = 'Não há save na nuvem.';
-      else { S = cloud.save; S.cloudVersion = cloud.version; notice = 'Save da nuvem carregado.'; save(); }
+      else { S = withDefaults(cloud.save); S.cloudVersion = cloud.version; notice = 'Save da nuvem carregado.'; save(); }
     }
     if (name === 'push') await cloudPush();
     if (name === 'setpass') {
@@ -319,9 +352,6 @@ function act(name, el) {
           if (res === 'carvao') S.charcoal += qty; // carvão da fazenda vai para a cozinha
           else S.resources[res] = (S.resources[res] || 0) + qty;
         }
-        // trabalho dá XP de aptidão: cada tarefa do dia conta
-        const n = C.GATHER_TASKS[task] ? C.tasksPerDay(m.aptitudes[task]) : 1;
-        C.addWorkXp(m.aptitudes, m.aptitudeXp, task, n);
       }
       if (Object.keys(S.farm.mapping).length) note('a fazenda produziu enquanto você descansou.');
       if (S.day === 4) note('o vilão derruba a ponte. A rota comercial fecha.');
@@ -350,6 +380,7 @@ function act(name, el) {
       const s = Number($('egg-sanity').value);
       const r = C.hatch(S.egg, s, Math.random());
       note(`ovo chocado com sanidade ${s}: ${r.species}, forma ${r.form}. Não pode ser chocado de novo.`);
+      S.diamonds += C.diamondsForItem('comum'); // monstrinho novo na coleção
       break;
     }
     case 'cook': {
@@ -361,6 +392,7 @@ function act(name, el) {
       S.charcoal -= 1;
       S.pot = pot;
       if (m) m.vinculo = Math.max(0, Math.min(100, m.vinculo + r.vinculoDelta));
+      if (!r.penalidade) S.diamonds += C.diamondsForItem(r.raridade);
       note(r.penalidade ? `cozinhar: ${r.penalidade}. Vínculo de ${m ? m.species : '-'} muda ${r.vinculoDelta}.`
         : `cozinhou ${r.nome} (${r.efeito}, ${r.raridade}). Vínculo de ${m ? m.species : '-'} sobe ${r.vinculoDelta}.`);
       break;
@@ -379,9 +411,10 @@ function act(name, el) {
         const pick = pool[Math.floor(Math.random() * pool.length)];
         const keepNew = $('fuse-keep').value === 'new';
         C.absorbAbility(main, pick, keepNew);
+        C.fusionSuccessEffects(main);
         S.successes[main.id] = (S.successes[main.id] || 0) + 1;
         S.failures[main.id] = 0;
-        note(`fusão bem-sucedida: ${main.species} absorveu "${pick}". Agora é híbrido com ${C.activeSlots(main)} habilidades ativas.`);
+        note(`fusão bem-sucedida: ${main.species} absorveu "${pick}" e subiu para ★${main.star} (${C.starColor(main.star)}), com aptidões +1. Híbrido com ${C.activeSlots(main)} habilidades ativas.`);
       } else {
         S.failures[main.id] = (S.failures[main.id] || 0) + 1;
         note(`fusão falhou. ${ing.species} foi perdido; ${main.species} continua.`);
@@ -395,7 +428,7 @@ function act(name, el) {
       const won = Math.random() < C.winChance(S.bot);
       const res = C.finalBattle(won ? 'vitoria' : 'derrota', m, S.bot, 25);
       S.bot = res.bot;
-      if (won) { S.battleOver = true; note(`vitória contra o bot com ${m.species}. Campanha concluída.`); }
+      if (won) { S.battleOver = true; S.diamonds += C.diamondsForItem('lendaria'); note(`vitória contra o bot com ${m.species}. Campanha concluída (+${C.diamondsForItem('lendaria')} diamantes).`); }
       else note(`derrota para o bot. ${m.species} perdeu XP (agora ${m.xp}). O bot ficou mais forte (força ${S.bot}).`);
       break;
     }
@@ -418,6 +451,37 @@ function act(name, el) {
       const tasks = ['plantar', 'colher', 'cortar', 'minerar', 'garimpar', 'transportar', 'cozinhar', 'fabricar'];
       S.farm = C.assignTasks(tasks, workers);
       note(`tarefas da fazenda designadas. Sem monstrinho: ${S.farm.unassigned.join(', ') || 'nenhuma'}.`);
+      break;
+    }
+    case 'endless': {
+      const m = S.monsters.find((x) => x.id === $('endless-monster').value);
+      if (!m) return;
+      const floor = S.endless.floor;
+      if (Math.random() >= C.endlessChance(m, floor)) {
+        note(`andar ${floor}: ${m.species} não venceu. O andar recomeça; nada foi perdido.`);
+        break;
+      }
+      const r = C.endlessRewards(floor, EVENT_ACTIVE, Math.random);
+      S.diamonds += r.diamantes;
+      for (const i of r.invocacoes) S.tickets[i.banner] += i.qtd;
+      if (r.evento) S.endless.drops[r.evento] = (S.endless.drops[r.evento] || 0) + 1;
+      S.endless.best = Math.max(S.endless.best, floor);
+      S.endless.floor = floor + 1;
+      const extra = r.invocacoes.map((i) => `, ${i.qtd} ficha(s) ${i.banner}`).join('');
+      note(`andar ${floor} concluído com ${m.species}: +${r.diamantes} diamantes${extra}${r.evento ? ' + doce de Halloween' : ''}.`);
+      break;
+    }
+    case 'buy': {
+      const qtd = Number(el.dataset.qtd);
+      const banner = $('shop-banner').value;
+      try {
+        const r = C.buyInvocations(S.diamonds, qtd);
+        S.diamonds = r.diamonds;
+        S.tickets[banner] += qtd;
+        note(`comprou ${qtd} ficha(s) do banner ${banner} por ${r.gasto} diamantes.`);
+      } catch (_) {
+        note(`diamantes insuficientes para ${qtd} ficha(s).`);
+      }
       break;
     }
     case 'reset': {

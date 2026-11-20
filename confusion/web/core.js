@@ -68,8 +68,10 @@ export function hatch(egg, sanity, roll) {
 
 // ---- Fusão e híbridos (GDD v1.9) ----
 export const BASE_SUCCESS = { 1: 0.8, 2: 0.7, 3: 0.6, 4: 0.5, 5: 0.4 };
+// Acima de ★5 ainda não há valor decidido: segue caindo 5 pontos por estrela, com piso de 20% (provisório).
+export const baseSuccess = (star) => BASE_SUCCESS[star] ?? Math.max(0.2, 0.4 - 0.05 * (star - 5));
 export function fusionSuccessChance(star, successes, failures, ore = 0) {
-  let c = Math.max(0.2, BASE_SUCCESS[star] - 0.05 * successes);
+  let c = Math.max(0.2, baseSuccess(star) - 0.05 * successes);
   c += Math.min(0.25, 0.05 * failures);
   c += Math.min(0.3, Math.max(0, ore));
   return Math.min(0.95, c);
@@ -163,7 +165,6 @@ export function mulberry32(seed) {
 // Aptidões de coleta: cortar (madeira), minerar (pedra e minério), garimpar (cristal).
 export const WORK_TASKS = ['plantar', 'colher', 'minerar', 'cortar', 'garimpar', 'transportar', 'cozinhar', 'fabricar'];
 export const WORK_LEVEL_MAX = 10;
-export const XP_PER_WORK_LEVEL = 3; // tarefas concluídas por nível (provisório)
 
 // Tarefas de coleta: recurso base por tarefa, sem penalidade.
 export const GATHER_TASKS = {
@@ -208,16 +209,7 @@ export function gatherDay(task, level) {
   return out;
 }
 
-// Concluir tarefas dá XP de trabalho; a cada XP_PER_WORK_LEVEL sobe um nível, até 10.
-export function addWorkXp(aptitudes, xp, task, tasks = 1) {
-  const level = aptitudes[task] || 1;
-  xp[task] = (xp[task] || 0) + tasks;
-  while (xp[task] >= XP_PER_WORK_LEVEL * level && (aptitudes[task] || 0) < WORK_LEVEL_MAX) {
-    xp[task] -= XP_PER_WORK_LEVEL * level;
-    aptitudes[task] = (aptitudes[task] || 0) + 1;
-  }
-  return aptitudes[task];
-}
+// Aptidão não cresce com o trabalho: só sobe pela fusão com sucesso (ver fusionSuccessEffects).
 
 // ---- Estrelas e cores (decidido pelo autor, v1.15) ----
 // 30 estrelas: douradas 1 a 6; depois vermelha, roxa, laranja e arco-íris (6 de cada).
@@ -235,7 +227,7 @@ export function starColor(stars) {
 }
 // Fusão bem-sucedida: +1 estrela no principal e +1 nível em TODAS as aptidões dele (teto 10).
 export function fusionSuccessEffects(monster) {
-  monster.stars = Math.min(STAR_MAX, (monster.stars ?? monster.star ?? 1) + 1);
+  monster.star = Math.min(STAR_MAX, monster.star + 1);
   for (const k of Object.keys(monster.aptitudes || {})) {
     monster.aptitudes[k] = Math.min(WORK_LEVEL_MAX, monster.aptitudes[k] + 1);
   }
@@ -263,9 +255,14 @@ export function endlessRewards(floor, eventActive = false, rng = () => 1) {
   if (eventActive && rng() < 0.05) out.evento = 'doce_halloween';  // chance provisória
   return out;
 }
-// Derrota: volta para o início do andar que não foi concluído.
-export function endlessAfterDefeat(state) {
-  return { ...state, floor: state.floor };  // o andar atual é o que não foi concluído
+// Combate provisório no andar infinito: poder do monstrinho contra o poder do andar.
+// Poder = 10 por estrela + 2 por nível de aptidão somado. Chance limitada entre 5% e 95%.
+export function monsterPower(m) {
+  const apt = Object.values(m.aptitudes || {}).reduce((a, b) => a + b, 0);
+  return 10 * m.star + 2 * apt;
+}
+export function endlessChance(m, floor) {
+  return Math.min(0.95, Math.max(0.05, monsterPower(m) / endlessFloorPower(floor)));
 }
 
 // ---- Diamantes: compra e ganhos (decidido pelo autor, v1.15) ----
