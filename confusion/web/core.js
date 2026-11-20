@@ -156,3 +156,38 @@ export function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+// ---- Fazenda por aptidão (GDD v1.9 decisão 19) ----
+export const APTITUDES = ['plantar', 'colher', 'minerar', 'transportar', 'cozinhar', 'fabricar'];
+// workers: [{ id, level, aptitudes: [..] }]. Cada tarefa vai ao livre com a aptidão e o nível mais altos.
+export function assignTasks(tasks, workers) {
+  for (const t of tasks) if (!APTITUDES.includes(t)) throw new Error(`tarefa desconhecida: ${t}`);
+  const busy = new Set();
+  const mapping = {};
+  const unassigned = [];
+  for (const t of tasks) {
+    const cands = workers.filter((w) => !busy.has(w.id) && w.aptitudes.includes(t));
+    if (!cands.length) { unassigned.push(t); continue; }
+    cands.sort((a, b) => b.level - a.level || (a.id < b.id ? -1 : 1));
+    busy.add(cands[0].id);
+    mapping[t] = cands[0].id;
+  }
+  return { mapping, unassigned };
+}
+// Produção de um dia para cada tarefa atribuída.
+export const PRODUCE = {
+  plantar: { sementes: 2 }, colher: { raizes: 1 }, minerar: { minerio: 1 },
+  transportar: {}, cozinhar: { carvao: 1 }, fabricar: { peca: 1 },
+};
+
+// ---- Coleta: nós, ferramenta obrigatória, retorno decrescente por dia (GDD v1.4/v1.5) ----
+export function harvest(node, tool, day, sanityFail) {
+  if (tool !== node.requiredTool) throw new Error(`precisa de ${node.requiredTool}`);
+  if (day - node.lastDay >= 1) node.harvestsInWindow = 0; // o nó regenera ao virar o dia
+  let qty = Math.max(1, Math.floor(node.baseQty / (1 + node.harvestsInWindow)));
+  node.harvestsInWindow += 1;
+  node.lastDay = day;
+  let wound = false;
+  if (sanityFail) { qty = Math.max(1, Math.floor(qty / 2)); wound = true; } // falha reduz, nunca bloqueia
+  return { resource: node.resource, qty, ferimento: wound };
+}

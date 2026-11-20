@@ -85,3 +85,36 @@ test('gerador determinístico', () => {
   const a = C.mulberry32(42), b = C.mulberry32(42);
   assert.equal(a(), b());
 });
+
+test('fazenda: tarefa vai ao monstrinho com aptidão e nível mais altos', () => {
+  const workers = [
+    { id: 'a', level: 3, aptitudes: ['plantar'] },
+    { id: 'b', level: 5, aptitudes: ['plantar', 'colher'] },
+  ];
+  const r = C.assignTasks(['plantar', 'colher', 'minerar'], workers);
+  assert.equal(r.mapping.plantar, 'b');
+  assert.equal(r.mapping.colher, undefined);
+  assert.deepEqual(r.unassigned, ['colher', 'minerar']);
+});
+test('fazenda: monstrinho ocupado não recebe segunda tarefa', () => {
+  const workers = [{ id: 'a', level: 5, aptitudes: ['plantar', 'colher'] }];
+  const r = C.assignTasks(['plantar', 'colher'], workers);
+  assert.deepEqual(r.mapping, { plantar: 'a' });
+  assert.deepEqual(r.unassigned, ['colher']);
+});
+test('fazenda: tarefa desconhecida é erro', () => {
+  assert.throws(() => C.assignTasks(['voar'], []));
+});
+test('coleta: ferramenta obrigatória, retorno decrescente e regeneração por dia', () => {
+  const n = { resource: 'pedra', requiredTool: 'picareta', baseQty: 4, lastDay: -999, harvestsInWindow: 0 };
+  assert.throws(() => C.harvest(n, 'machado', 1, false));
+  assert.equal(C.harvest(n, 'picareta', 1, false).qty, 4);
+  assert.equal(C.harvest(n, 'picareta', 1, false).qty, 2);
+  assert.equal(C.harvest(n, 'picareta', 2, false).qty, 4); // novo dia: regenerou
+});
+test('coleta: falha de sanidade reduz pela metade e marca ferimento, sem bloquear', () => {
+  const n = { resource: 'cristal', requiredTool: 'picareta', baseQty: 4, lastDay: -999, harvestsInWindow: 0 };
+  const r = C.harvest(n, 'picareta', 1, true);
+  assert.equal(r.qty, 2);
+  assert.equal(r.ferimento, true);
+});

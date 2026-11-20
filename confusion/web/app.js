@@ -1,7 +1,7 @@
 // Piloto jogável de Confusion Waves: fatia vertical dos sistemas do núcleo.
 import * as C from './core.js';
 
-const KEY = 'confusion-waves-piloto-v1';
+const KEY = 'confusion-waves-piloto-v2';
 const ABILITIES = {
   Noctarn: ['Mordida Umbral', 'Garra de Sombra', 'Chama Violeta', 'Uivo Sinistro', 'Véu Noturno'],
   Ignavor: ['Golpe Couraçado', 'Brasa Imperial', 'Juba Flamejante', 'Rugido Dourado', 'Escudo de Ferro'],
@@ -14,9 +14,12 @@ const SOURCE_LABEL = {
   trauma: 'Sofrer trauma', magia_mental: 'Magia mental proibida', crueldade: 'Crueldade deliberada', ritual: 'Ritual de corrupção',
 };
 
+const APT = { Noctarn: ['minerar', 'transportar'], Ignavor: ['plantar', 'colher', 'transportar'], Vaelith: ['colher', 'fabricar'] };
+const ART = { Noctarn: 'assets/monsters/noctarn/sprite-front.png' };
 const monster = (id, species, star, level, xp, purity) => ({
   id, species, star, level, xp, purity, vinculo: 0,
   abilities: ABILITIES[species].slice(0, 4), extraAbility: null, hybrid: false, abilityLevels: {},
+  aptitudes: APT[species] || [],
 });
 
 function newState() {
@@ -31,6 +34,14 @@ function newState() {
       { name: 'Carne de Criatura', purity: 'neutra', freshness: 0.9, rarity: 'comum', category: 'parte_de_monstro' },
     ],
     charcoal: 2, pot: 'comum', rescue: null, battleOver: false, log: [],
+    farm: { mapping: {}, unassigned: [] },
+    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0 },
+    tools: { machado: 1, picareta: 1 },
+    nodes: [
+      { id: 'arvore', label: 'Árvore', resource: 'madeira', requiredTool: 'machado', baseQty: 4, lastDay: -999, harvestsInWindow: 0 },
+      { id: 'rocha', label: 'Rocha', resource: 'pedra', requiredTool: 'picareta', baseQty: 4, lastDay: -999, harvestsInWindow: 0 },
+      { id: 'veio', label: 'Veio de cristal', resource: 'cristal', requiredTool: 'picareta', baseQty: 2, lastDay: -999, harvestsInWindow: 0 },
+    ],
   };
 }
 
@@ -137,6 +148,37 @@ function render() {
   </section>
 
   <section>
+    <h2>Monstrinhos</h2>
+    <div class="cards">
+      ${S.monsters.map((m) => `<div class="card">
+        ${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<div class="noart">sem arte ainda</div>`}
+        <b>${esc(m.species)}</b> ★${m.star} · nível ${m.level}
+        <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity}${m.mutated ? ' · mutação' : ''}</div>
+        <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
+        <div class="muted">aptidões: ${esc(m.aptitudes.join(', ') || 'nenhuma')}</div>
+      </div>`).join('') || '<p class="muted">Nenhum monstrinho.</p>'}
+    </div>
+  </section>
+
+  <section>
+    <h2>9. Fazenda</h2>
+    <p class="muted">Os monstrinhos trabalham por aptidão. A produção acontece ao avançar o dia.</p>
+    <button data-act="assign">Designar tarefas da fazenda</button>
+    <ul class="log">${Object.keys(S.farm.mapping).map((t) => {
+      const m = S.monsters.find((x) => x.id === S.farm.mapping[t]);
+      return `<li>${esc(t)}: ${m ? esc(m.species) : '-'}</li>`;
+    }).join('') || '<li class="muted">Nenhuma tarefa designada.</li>'}</ul>
+    <p class="muted">Sem monstrinho: ${esc(S.farm.unassigned.join(', ') || 'nenhuma')}</p>
+  </section>
+
+  <section>
+    <h2>10. Coleta</h2>
+    <p class="muted">Ferramentas: machado ${S.tools.machado}, picareta ${S.tools.picareta}. Retorno cai no mesmo dia e volta no dia seguinte.</p>
+    <div class="row">${S.nodes.map((n) => `<button data-act="harvest" data-node="${n.id}">Coletar em ${n.label.toLowerCase()} (${n.requiredTool})</button>`).join('')}</div>
+    <p class="muted">Recursos: ${Object.entries(S.resources).map(([k, v]) => `${k} ${v}`).join(' · ')}</p>
+  </section>
+
+  <section>
     <h2>Registro</h2>
     <ul class="log">${S.log.map((l) => `<li>${esc(l)}</li>`).join('') || '<li class="muted">Nada ainda.</li>'}</ul>
   </section>`;
@@ -160,6 +202,13 @@ function act(name, el) {
     }
     case 'day': {
       S.day += 1;
+      for (const task of Object.keys(S.farm.mapping)) {
+        for (const [res, qty] of Object.entries(C.PRODUCE[task])) {
+          if (res === 'carvao') S.charcoal += qty; // carvão da fazenda vai para a cozinha
+          else S.resources[res] = (S.resources[res] || 0) + qty;
+        }
+      }
+      if (Object.keys(S.farm.mapping).length) note('a fazenda produziu enquanto você descansou.');
       if (S.day === 4) note('o vilão derruba a ponte. A rota comercial fecha.');
       if (S.day === 8) note('a ponte é reaberta. O comércio começa a se recuperar.');
       break;
@@ -247,6 +296,22 @@ function act(name, el) {
       if (S.rescue) return;
       S.rescue = 'apoio_solicitado';
       note('você pediu apoio. A cena segue por outra rota.');
+      break;
+    }
+    case 'assign': {
+      const workers = S.monsters.map((m) => ({ id: m.id, level: m.level, aptitudes: m.aptitudes }));
+      const tasks = ['plantar', 'colher', 'minerar', 'transportar', 'cozinhar', 'fabricar'];
+      S.farm = C.assignTasks(tasks, workers);
+      note(`tarefas da fazenda designadas. Sem monstrinho: ${S.farm.unassigned.join(', ') || 'nenhuma'}.`);
+      break;
+    }
+    case 'harvest': {
+      const node = S.nodes.find((n) => n.id === el.dataset.node);
+      if (!node) return;
+      const fail = Math.random() < band.fail;
+      const r = C.harvest(node, node.requiredTool, S.day, fail);
+      S.resources[r.resource] = (S.resources[r.resource] || 0) + r.qty;
+      note(`coletou ${r.qty}x ${r.resource} em ${node.label.toLowerCase()}${r.ferimento ? ' (ferimento leve, quantidade reduzida)' : ''}.`);
       break;
     }
     case 'reset': {
