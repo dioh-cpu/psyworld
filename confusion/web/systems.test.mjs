@@ -39,17 +39,42 @@ test('login: um resgate por dia; dia seguido soma; dia pulado reinicia', () => {
   assert.equal(Y.nextLoginStreak({ streak: 3, lastDay: Y.brDayNumber(day1) }, day1 + 3 * DAY), 1);
 });
 
-test('passe: nível vem do XP; resgate paga só os níveis novos', () => {
+test('passe (v1.34): XP acumulado 3k² + 33k; resgate paga só os níveis novos', () => {
   assert.equal(Y.passLevel(0), 0);
-  assert.equal(Y.passLevel(250), 2);
+  assert.equal(Y.passXpAteNivel(1), 36);
+  assert.equal(Y.passXpAteNivel(30), 3690);
+  assert.equal(Y.passLevel(35), 0);
+  assert.equal(Y.passLevel(36), 1);
+  assert.equal(Y.passLevel(250), 5);
   assert.equal(Y.passLevel(999999), Y.PASS_LEVELS);
   let pass = { season: '2026-11', xp: 250, claimed: 0, premium: false };
   const first = Y.claimPass(pass);
-  assert.equal(first.claimed, 2);
-  assert.equal(first.reward.diamantes, 10);     // nível 1 (ímpar)
-  assert.equal(first.reward.esferas.comum, 1);  // nível 2 (par)
+  assert.equal(first.claimed, 5);
+  assert.equal(first.reward.diamantes, 30);     // níveis 1, 3 e 5 (ímpares)
+  assert.equal(first.reward.esferas.comum, 2);  // níveis 2 e 4 (pares)
+  assert.equal(first.t5, 0);
   pass = { ...pass, claimed: first.claimed };
   assert.equal(Y.claimPass(pass).reward.diamantes, 0); // nada novo
+});
+
+test('passe premium: compra única por 5000 diamantes; entrega o T5 aleatório no nível 30', () => {
+  assert.throws(() => Y.comprarPremium({ premium: false }, 4999));
+  const c = Y.comprarPremium({ premium: false }, 5000);
+  assert.equal(c.custo, 5000);
+  assert.equal(c.pass.premium, true);
+  assert.throws(() => Y.comprarPremium(c.pass, 9999));  // já comprado
+  const cheio = Y.claimPass({ season: '2026-11', xp: 999999, claimed: 0, claimedPremium: 0, premium: true });
+  assert.equal(cheio.t5, 1);
+  assert.equal(cheio.claimedPremium, 30);
+  assert.ok(cheio.reward.gold > 0);
+  // premium comprado no meio da temporada: recebe os níveis já alcançados
+  const tarde = Y.claimPass({ season: '2026-11', xp: 999999, claimed: 30, claimedPremium: 0, premium: true });
+  assert.equal(tarde.claimedPremium, 30);
+  assert.equal(tarde.t5, 1);
+  // sem premium, não há T5 nem ouro da trilha premium
+  const grátis = Y.claimPass({ season: '2026-11', xp: 999999, claimed: 0, claimedPremium: 0, premium: false });
+  assert.equal(grátis.t5, 0);
+  assert.equal(grátis.reward.gold, 0);
 });
 
 test('passe: nível 10 dá ovo e nível 30 dá esfera épica e ficha de evento', () => {
@@ -64,7 +89,7 @@ test('passe: temporada nova zera XP e níveis, mas mantém o premium', () => {
   const pass = { season: '2026-11', xp: 900, claimed: 5, premium: true };
   assert.deepEqual(Y.refreshPass(pass, at(2026, 11, 15)), pass);
   const nova = Y.refreshPass(pass, at(2026, 12, 2));
-  assert.deepEqual(nova, { season: '2026-12', xp: 0, claimed: 0, premium: true });
+  assert.deepEqual(nova, { season: '2026-12', xp: 0, claimed: 0, claimedPremium: 0, premium: true });
   assert.equal(Y.addPassXp(nova, 'batalha').xp, 50);
 });
 
@@ -93,16 +118,18 @@ test('encontro: sem sorte, sem encontro; nunca sorteia monstrinho de evento', ()
     assert.ok(Y.BASE_SPECIES.includes(w.species));
     assert.equal(w.exclusivo, false);
   }
-  assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.999 }).rarity, 5);
+  assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.999 }).rarity, 4); // na exploração, o teto é a lendária
+  assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.9999 }).rarity, 4);
 });
 
 test('captura: esfera melhor que o monstrinho aumenta a chance; limites respeitados', () => {
   const wild = { rarity: 3, tier: 3 };
-  assert.ok(Math.abs(Y.captureChance(3, wild) - 0.44) < 1e-9);
-  assert.ok(Y.captureChance(5, wild) > Y.captureChance(3, wild));
+  assert.ok(Math.abs(Y.captureChance(3, wild) - 0.24) < 1e-9);  // 30% - 2 pontos x tier 3
+  assert.ok(Y.captureChance(5, wild) > Y.captureChance(3, wild) || Y.captureChance(5, wild) === Y.CAPTURE.mitica);
   assert.ok(Y.captureChance(3, wild, 0.1) > Y.captureChance(3, wild));
   assert.equal(Y.captureChance(1, { rarity: 5, tier: 5 }), Y.CAPTURE.min);
-  assert.equal(Y.captureChance(5, { rarity: 1, tier: 1 }), Y.CAPTURE.max);
+  assert.ok(Y.captureChance(3, { rarity: 1, tier: 1 }) <= Y.CAPTURE.max);
+  assert.equal(Y.captureChance(5, { rarity: 1, tier: 1 }), Y.CAPTURE.mitica); // mítica: 75% fixa, só de evento
 });
 
 test('captura: bônus vem do escudo e dos eventos ativos (semanal + mensal)', () => {
@@ -116,15 +143,17 @@ test('captura: bônus vem do escudo e dos eventos ativos (semanal + mensal)', ()
 });
 
 test('esferas: comum, rara e épica se compram com gold; lendária custa 1500 diamantes', () => {
-  const st = { gold: 100, diamonds: 1500, esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 } };
-  assert.equal(Y.buySphere(st, 'comum').valor, 30);
-  assert.equal(st.gold, 70);
+  const st = { gold: 45, diamonds: 1500, esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 } };
+  assert.equal(Y.buySphere(st, 'comum').valor, 10);
+  assert.equal(st.gold, 35);
   assert.equal(st.esferas.comum, 1);
-  assert.throws(() => Y.buySphere(st, 'rara')); // 90 gold, só tem 70
-  assert.equal(st.gold, 70);                    // compra falha não debita
+  assert.throws(() => Y.buySphere(st, 'rara')); // 40 gold, só tem 35
+  assert.equal(st.gold, 35);                    // compra falha não debita
+  st.gold = 40;
+  assert.equal(Y.buySphere(st, 'rara').valor, 40);
+  assert.equal(st.gold, 0);
   assert.equal(Y.buySphere(st, 'lendaria').valor, 1500);
   assert.equal(st.diamonds, 0);
-  assert.equal(st.gold, 70);
   assert.equal(st.esferas.lendaria, 1);
   assert.throws(() => Y.buySphere(st, 'lendaria')); // sem diamantes
   assert.throws(() => Y.buySphere(st, 'mitica'));   // ainda não está à venda
@@ -137,9 +166,9 @@ test('captura: lendária tem 90% fixos, sem bônus de evento ou escudo', () => {
 
 test('captura: tabela de esferas comum, rara e épica contra raridades 1 a 5', () => {
   const linha = (e) => [1, 2, 3, 4, 5].map((r) => Math.round(Y.captureChance(e, { rarity: r, tier: r }) * 100));
-  assert.deepEqual(linha(1), [48, 31, 14, 5, 5]);
-  assert.deepEqual(linha(2), [63, 46, 29, 12, 5]);
-  assert.deepEqual(linha(3), [78, 61, 44, 27, 10]);
+  assert.deepEqual(linha(1), [28, 14, 3, 3, 3]);
+  assert.deepEqual(linha(2), [40, 26, 12, 3, 3]);
+  assert.deepEqual(linha(3), [52, 38, 24, 10, 3]);
 });
 
 test('gold: encontro paga 5 x raridade; zona paga 10 + 5 por andar; kit inicial dá 100', () => {

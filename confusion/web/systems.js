@@ -1,6 +1,6 @@
 // Sistemas de engajamento e captura (GDD v1.17): starter, login, passe, eventos, esferas e drops.
 // Código puro, sem DOM. Datas usam o horário de Brasília (UTC-3). Valores provisórios até o teste do piloto.
-import { clamp, rollRarity, rarityName, RARITY, RARITY_BOSS, BANNER_FEATURED, monsterPower } from './core.js';
+import { clamp, rarityByWeights, rarityName, RARITY, RARITY_BOSS, BANNER_FEATURED, monsterPower, multElemento } from './core.js';
 import { ESPECIES, ESPECIES_BASE, ESPECIES_EVENTO } from './species.js';
 
 const DAY_MS = 86400000;
@@ -79,12 +79,22 @@ export function nextLoginStreak(login, ts) {
   return login.lastDay === today - 1 ? login.streak + 1 : 1;
 }
 
-// ---- Passe de batalha: 30 níveis por temporada mensal ----
+// ---- Passe de batalha (v1.34): 30 níveis por temporada mensal, com XP calculável ----
+// Custo do nível k: 30 + 6k XP. Total para completar k níveis: 3k² + 33k. Nível 30 = 3690 XP no mês.
 export const PASS_LEVELS = 30;
-export const PASS_XP_PER_LEVEL = 100;
-export const PASS_XP = { dia: 10, andar: 15, captura: 20, breed: 15, batalha: 50 };
-export const passLevel = (xp) => Math.min(PASS_LEVELS, Math.floor(xp / PASS_XP_PER_LEVEL));
-// Recompensa do nível n (1 a 30). Premium é só cosmético e não entra aqui.
+export const PASS_XP = { dia: 10, andar: 15, breed: 15, batalha: 50, raid: 25 }; // captura: passXpCaptura
+export const passXpCaptura = (raridade) => 10 + 5 * raridade;                       // 15 a 35
+export const passCustoNivel = (k) => 30 + 6 * k;
+export const passXpAteNivel = (k) => 3 * k * k + 33 * k;
+export function passLevel(xp) {
+  let k = 0;
+  while (k < PASS_LEVELS && xp >= passXpAteNivel(k + 1)) k++;
+  return k;
+}
+// Premium: compra única, em diamantes. Vale para todas as temporadas e entrega os prêmios dos níveis já alcançados.
+export const PREMIUM_PRICE = 5000;
+export const PASS_T5_NIVEL = PASS_LEVELS; // o último prêmio do premium é um T5 aleatório (nunca de evento)
+// Trilha grátis: a de sempre.
 export function passRewardFor(n) {
   const r = emptyReward();
   if (n % 2 === 1) r.diamantes = 10; else r.esferas.comum = 1;
@@ -93,19 +103,48 @@ export function passRewardFor(n) {
   if (n === PASS_LEVELS) { r.esferas.epica = 1; r.fichas.evento = 1; }
   return r;
 }
-// pass: { season, xp, claimed, premium }. Temporada nova zera XP e níveis resgatados; premium é mantido.
+// Trilha premium: ouro em todo nível, mais esferas, fichas e ovos em intervalos. O T5 do nível 30 é tratado à parte.
+export function passPremiumRewardFor(n) {
+  const r = emptyReward();
+  r.gold = 20 + 5 * n;
+  if (n % 3 === 0) r.esferas.rara = 1;
+  if (n % 6 === 0) r.esferas.epica = 1;
+  if (n % 4 === 0) r.fichas.semanal = 1;
+  if (n % 5 === 0) r.fichas.evento = 1;
+  if (n % 10 === 0) r.ovos = 1;
+  return r;
+}
+// pass: { season, xp, claimed, claimedPremium, premium }. Temporada nova zera XP e resgates; premium é mantido.
 export function refreshPass(pass, ts) {
   const k = seasonKey(ts);
-  return pass.season === k ? pass : { ...pass, season: k, xp: 0, claimed: 0 };
+  return pass.season === k ? pass : { ...pass, season: k, xp: 0, claimed: 0, claimedPremium: 0 };
 }
-// Resgata todos os níveis alcançados e ainda não resgatados.
+// Compra o premium. Devolve o passe novo e o custo; quem chama debita os diamantes.
+export function comprarPremium(pass, diamantes) {
+  if (pass.premium) throw new Error('premium já comprado');
+  if (diamantes < PREMIUM_PRICE) throw new Error('diamantes insuficientes');
+  return { pass: { ...pass, premium: true }, custo: PREMIUM_PRICE };
+}
+// Resgata os níveis alcançados. A trilha premium só entra se o passe tem premium (e vale retroativo na temporada).
 export function claimPass(pass) {
   const lv = passLevel(pass.xp);
   const reward = emptyReward();
+  let t5 = 0;
   for (let n = pass.claimed + 1; n <= lv; n++) addInto(reward, passRewardFor(n));
-  return { reward, claimed: Math.max(pass.claimed, lv) };
+  const antesPremium = pass.claimedPremium || 0;
+  if (pass.premium) {
+    for (let n = antesPremium + 1; n <= lv; n++) {
+      addInto(reward, passPremiumRewardFor(n));
+      if (n === PASS_T5_NIVEL) t5++;
+    }
+  }
+  return {
+    reward, t5,
+    claimed: Math.max(pass.claimed, lv),
+    claimedPremium: pass.premium ? Math.max(antesPremium, lv) : antesPremium,
+  };
 }
-export const addPassXp = (pass, fonte) => ({ ...pass, xp: pass.xp + (PASS_XP[fonte] || 0) });
+export const addPassXp = (pass, fonte, quanto = PASS_XP[fonte] || 0) => ({ ...pass, xp: pass.xp + quanto });
 
 // ---- Eventos semanais e mensais (calendário de Brasília) ----
 // Semanas: só bônus de captura e de drop. Não têm monstrinho exclusivo (v1.33).
@@ -138,6 +177,8 @@ export function activeEvents(ts) {
 
 // ---- Encontros selvagens (busca) ----
 export const ENCOUNTER_CHANCE = 0.5;   // provisório
+// Raridade dos encontros de exploração: até a lendária. Mítica não sai na exploração (v1.34): só de evento sazonal.
+export const ENCOUNTER_WEIGHTS = [50, 30, 14, 5];
 export function encounterChance(day) {
   return shieldActive(day) ? SHIELD_ENCOUNTER_CHANCE : ENCOUNTER_CHANCE;
 }
@@ -146,7 +187,7 @@ export function encounterChance(day) {
 export function rollEncounter(ts, day, rolls) {
   if (rolls.r1 >= encounterChance(day)) return null;
   const species = BASE_SPECIES[Math.floor(rolls.r3 * BASE_SPECIES.length)];
-  const rarity = rollRarity(rolls.r4, 0);
+  const rarity = rarityByWeights(rolls.r4, ENCOUNTER_WEIGHTS);
   return { species, rarity, tier: rarity, purity: SPECIES_PURITY[species], exclusivo: false };
 }
 
@@ -156,7 +197,7 @@ export function rollEncounter(ts, day, rolls) {
 export const TRILHA = { dias: 7, meta: 150, resgate: 100, copiasMax: 3, copiasPreco: [30, 50, 80] }; // cópias: preço em doces do evento
 // Marcos: quando a contagem chega ao número, a recompensa cai na hora (uma vez por mês).
 export const TRILHA_MARCOS = {
-  25: { evento: 1 }, 50: { gold: 100 }, 75: { diamantes: 20 }, 100: { doce: 2 }, 125: { evento: 1 }, 150: { ovo: 1 },
+  25: { evento: 1 }, 50: { gold: 100 }, 75: { diamantes: 20 }, 100: { doce: 2 }, 125: { evento: 1 }, 150: { ovo: 1, mitica: 1 },
 };
 // Recompensa de dia: dias 1 a 7 da trilha e um item por semana depois (dias 14, 21 e 28). Resgate uma vez por dia.
 export const TRILHA_DIAS = {
@@ -204,9 +245,9 @@ export function contaCapturaSemanal(s, ts) {
 // ---- Raid bosses (v1.33): um a cada 2 horas, no horário de Brasília, aberto 60 minutos ----
 export const RAID = { janelaHoras: 2, duracaoMin: 60, fragmentosParaOvo: 10, chanceDoisFragmentos: 0.2, chanceMin: 0.05, chanceMax: 0.95 };
 export const RAID_BOSSES = [
-  { id: 'titan_cinza', nome: 'Titã de Cinza', pureza: 'neutra', poder: 120 },
-  { id: 'serpe_abismo', nome: 'Serpe do Abismo', pureza: 'trevas', poder: 150 },
-  { id: 'coroa_solar', nome: 'Coroa Solar', pureza: 'luz', poder: 150 },
+  { id: 'titan_cinza', nome: 'Titã de Cinza', pureza: 'neutra', elemento: 'fogo', poder: 120 },
+  { id: 'serpe_abismo', nome: 'Serpe do Abismo', pureza: 'trevas', elemento: 'trevas', poder: 150 },
+  { id: 'coroa_solar', nome: 'Coroa Solar', pureza: 'luz', elemento: 'luz', poder: 150 },
 ];
 const JANELA_MS = RAID.janelaHoras * 3600000;
 export function raidAt(ts) {
@@ -223,8 +264,8 @@ export const horaBrasilia = (ms) => {
   const d = new Date(ms - BR_OFFSET_MS);
   return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
 };
-// Chance de vencer o boss: poder do monstrinho contra o poder do boss, dentro de limites.
-export const chanceRaid = (m, boss) => clamp(monsterPower(m) / boss.poder, RAID.chanceMin, RAID.chanceMax);
+// Chance de vencer o boss: poder do monstrinho (com o elemento contra o boss) sobre o poder do boss, dentro de limites.
+export const chanceRaid = (m, boss) => clamp(monsterPower(m) * multElemento(m.elemento, boss.elemento) / boss.poder, RAID.chanceMin, RAID.chanceMax);
 export const fragmentosVitoria = (roll) => (roll < RAID.chanceDoisFragmentos ? 2 : 1);
 // Ovo de raid: tier de 10 a 15. Ao chocar, 40% saem boss e 60% saem mítica.
 export const tierOvoRaid = (roll) => 10 + Math.min(5, Math.floor(roll * 6));
@@ -244,12 +285,14 @@ export function custoTransferencia(m) {
 }
 
 // ---- Esferas psíquicas: uma por tentativa, consumida no lançamento ----
-// Chance = 50% + 15 pontos por nível de esfera acima da raridade do monstrinho - 2 pontos por tier. Piso 5%, teto 90%.
-// Esfera lendária: 90% fixa (não soma bônus de evento nem de escudo). Mítica: ainda não tem venda nem fonte.
-export const CAPTURE = { base: 0.5, porEsfera: 0.15, porTier: 0.02, min: 0.05, max: 0.9, lendaria: 0.9 };
+// Chance = 30% + 12 pontos por nível de esfera acima da raridade do monstrinho - 2 pontos por tier. Piso 3%, teto 90%.
+// Esfera lendária: 90% fixa, é o teto da época (não soma bônus). Mítica: 75% fixa, só vem de evento sazonal.
+export const CAPTURE = { base: 0.30, porEsfera: 0.12, porTier: 0.02, min: 0.03, max: 0.90, lendaria: 0.90, mitica: 0.75 };
 const ESFERA_LENDARIA = RARITY.indexOf('lendaria') + 1;
+const ESFERA_MITICA = RARITY.indexOf('mitica') + 1;
 export function captureChance(esferaRaridade, wild, bonus = 0) {
   if (esferaRaridade === ESFERA_LENDARIA) return CAPTURE.lendaria;
+  if (esferaRaridade === ESFERA_MITICA) return CAPTURE.mitica;
   const c = CAPTURE.base + CAPTURE.porEsfera * (esferaRaridade - wild.rarity) - CAPTURE.porTier * wild.tier + bonus;
   return clamp(c, CAPTURE.min, CAPTURE.max);
 }
@@ -269,9 +312,9 @@ export const goldEncontro = (raridade) => GOLD.encontroPorRaridade * raridade;
 export const goldAndar = (andar) => GOLD.andarBase + GOLD.andarPasso * (Math.max(1, andar) - 1);
 // Preços de venda. Comum, rara e épica: gold. Lendária: 1500 diamantes, captura com 90% fixos. Mítica: sem venda por enquanto.
 export const SPHERE_PRICE = {
-  comum: { moeda: 'gold', valor: 30 },
-  rara: { moeda: 'gold', valor: 90 },
-  epica: { moeda: 'gold', valor: 270 },
+  comum: { moeda: 'gold', valor: 10 },
+  rara: { moeda: 'gold', valor: 40 },
+  epica: { moeda: 'gold', valor: 120 },
   lendaria: { moeda: 'diamonds', valor: 1500 },
 };
 export function buySphere(state, nome) {

@@ -23,7 +23,7 @@ const APT = E.APTIDOES_DA_ESPECIE;
 const ART = E.ARTE_DA_ESPECIE;
 const EVENT_ACTIVE = true; // há sempre um evento mensal ativo no calendário; o item de drop é provisório
 const monster = (id, species, rarity, level, xp, purity, variant = 'natural', classe = 'comum', origem = 'base') => ({
-  id, species, rarity, tier: rarity, variant, classe, origem, level, xp, purity, vinculo: 0,
+  id, species, rarity, tier: rarity, variant, classe, origem, level, xp, purity, vinculo: 0, elemento: E.ELEMENTO_DA_ESPECIE[species] ?? 'neutro',
   abilities: ABILITIES[species].slice(0, 4), extraAbility: null, hybrid: false, abilityLevels: {},
   aptitudes: { ...(APT[species] || {}) },
   passivas: E.PASSIVA_DA_ESPECIE[species] ? [E.PASSIVA_DA_ESPECIE[species]] : [],
@@ -101,6 +101,10 @@ function mundoHtml() {
     ${grupos}</section>`;
 }
 
+// Elementos (v1.34): rótulos, elemento do bot pela força e chance de vencer o bot com o elemento aplicado.
+const ELEMENTO_LABEL = { fogo: 'Fogo', agua: 'Água', planta: 'Planta', terra: 'Terra', luz: 'Luz', trevas: 'Trevas', neutro: 'Neutro' };
+const botElemento = (bot) => ['fogo', 'agua', 'planta'][bot % 3];
+const chanceBot = (m) => C.winChance(S.bot, m.level, C.multElemento(m.elemento, botElemento(S.bot)));
 // Texto de XP do monstrinho: progresso no nível atual e quanto falta para o próximo.
 const xpTexto = (m) => {
   const nivel = m.level ?? C.nivelDeXp(m.xp);
@@ -123,7 +127,7 @@ function balanceHtml() {
     <p class="muted">Tabelas calculadas pelo próprio código. Ao mudar as constantes em systems.js e core.js, elas mudam junto.</p>
     <h3>Chance de captura por esfera e raridade do monstrinho</h3>
     <table class="bal"><tr><th>Esfera / raridade</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>${captura}</table>
-    <p class="muted">Bônus de evento e do escudo (dias 1 a ${Y.SHIELD_DAYS}) somam nas esferas comum, rara e épica. A lendária fica em ${pct(Y.CAPTURE.lendaria)} fixos. Piso ${pct(Y.CAPTURE.min)}, teto ${pct(Y.CAPTURE.max)}.</p>
+    <p class="muted">Bônus de evento e do escudo (dias 1 a ${Y.SHIELD_DAYS}) somam nas esferas comum, rara e épica. A lendária fica em ${pct(Y.CAPTURE.lendaria)} fixos (teto da época). A mítica fica em ${pct(Y.CAPTURE.mitica)} e só vem de evento sazonal. Piso ${pct(Y.CAPTURE.min)}, teto ${pct(Y.CAPTURE.max)}.</p>
     <h3>Gold</h3>
     <ul class="log">
       <li>Fim de cada encontro (captura, fuga ou falha): 5 gold × raridade = ${[1, 2, 3, 4, 5].map((r) => Y.goldEncontro(r)).join(', ')}.</li>
@@ -132,16 +136,22 @@ function balanceHtml() {
       <li>Kit inicial: ${Y.STARTER_KIT.gold} gold. Ganho médio por busca: ${goldPorBusca.toFixed(1)} gold (chance de encontro ${pct(Y.ENCOUNTER_CHANCE)}; ${pct(Y.SHIELD_ENCOUNTER_CHANCE)} nos dias de escudo).</li>
       <li>Preços: esfera comum ${Y.SPHERE_PRICE.comum.valor} gold (cerca de ${buscasPorEsfera} buscas de ganho), rara ${Y.SPHERE_PRICE.rara.valor} gold, épica ${Y.SPHERE_PRICE.epica.valor} gold, lendária ${Y.SPHERE_PRICE.lendaria.valor} diamantes.</li>
     </ul>
+    <h3>Elementos: quem ataca (linha) contra quem defende (coluna)</h3>
+    <table class="bal"><tr><th>Ataca / defende</th>${C.ELEMENTOS.map((d) => `<th>${ELEMENTO_LABEL[d]}</th>`).join('')}</tr>${['fogo', 'agua', 'planta', 'luz', 'trevas'].map((a) => `<tr><th>${ELEMENTO_LABEL[a]}</th>${C.ELEMENTOS.map((d) => { const v = C.multElemento(a, d); return `<td>${v === 1 ? '·' : `${v}x`}</td>`; }).join('')}</tr>`).join('')}</table>
+    <p class="muted">Fogo > planta > água > fogo (2x; 0,5x no sentido contrário). Luz e trevas se anulam (2x). Terra e neutro: 1x. No andar infinito, o elemento do andar gira em ciclo de 5. Contra os bosses de raid e contra o bot, o elemento entra na chance.</p>
     <h3>XP do monstrinho</h3>
     <ul class="log">
       <li>Captura: 5 × raridade (5 a 25 XP). Breed, monstrinho principal: ${C.XP_FONTE.breed}.</li>
       <li>Zona infinita: vitória ${C.XP_FONTE.andarVitoria(1)} XP no andar 1 e ${C.XP_FONTE.andarVitoria(20)} no andar 20; andar não vencido ${C.XP_FONTE.andarDerrota}.</li>
       <li>Batalha final: vitória +${C.XP_FONTE.batalhaVitoria} XP; derrota −${C.XP_FONTE.batalhaDerrota} XP, sem cair abaixo do nível atual.</li>
       <li>Efeitos: força na zona × (1 + 4% por nível acima do 1); chance de vencer o bot +1 ponto por nível.</li>
-      <li>Passe de batalha (XP separado, zera a cada mês): ${Y.PASS_XP_PER_LEVEL} XP por nível, ${Y.PASS_LEVELS} níveis. Dia +${Y.PASS_XP.dia}, andar +${Y.PASS_XP.andar}, captura +${Y.PASS_XP.captura}, breed +${Y.PASS_XP.breed}, batalha +${Y.PASS_XP.batalha}.</li>
+      <li>Passe de batalha (XP separado, zera a cada mês): nível k custa 30 + 6k XP, 30 níveis. Dia +${Y.PASS_XP.dia}, andar +${Y.PASS_XP.andar}, captura 10 + 5 × raridade, breed +${Y.PASS_XP.breed}, raid +${Y.PASS_XP.raid}, batalha +${Y.PASS_XP.batalha}. Premium: ${Y.PREMIUM_PRICE} diamantes, compra única.</li>
     </ul>
     <table class="bal"><tr><th>Nível</th><th>XP total</th><th>XP até o próximo</th><th>Força</th><th>Vencer o bot (bot na força 0)</th></tr>${niveis}</table>
     <details><summary>Quanto custa cada nível em XP (sem fontes)</summary><p class="muted">Cada nível pede 10 XP a mais que o anterior, começando em 40.</p></details>
+    <h3>Passe de batalha: custo de cada nível (30 níveis por mês)</h3>
+    <p class="muted">Nível k custa 30 + 6k XP. O total para completar k níveis é 3k² + 33k. Premium: ${Y.PREMIUM_PRICE} diamantes, compra única.</p>
+    <table class="bal"><tr><th>Nível</th><th>XP do nível</th><th>XP acumulado</th><th>Nível</th><th>XP do nível</th><th>XP acumulado</th></tr>${Array.from({ length: 15 }, (_, i) => i + 1).map((k) => `<tr><td>${k}</td><td>${Y.passCustoNivel(k)}</td><td>${Y.passXpAteNivel(k)}</td><td>${k + 15}</td><td>${Y.passCustoNivel(k + 15)}</td><td>${Y.passXpAteNivel(k + 15)}</td></tr>`).join('')}</table>
   </section>`;
 }
 
@@ -185,6 +195,7 @@ function aplicarRecompensa(r, ev) {
   if (r.diamantes) { S.diamonds += r.diamantes; partes.push(`${r.diamantes} diamantes`); }
   if (r.evento) { S.tickets.evento += r.evento; partes.push(`${r.evento} ficha(s) de evento`); }
   if (r.doce) { S.resources[ev.item] = (S.resources[ev.item] || 0) + r.doce; partes.push(`${r.doce} doce(s) de ${ev.nome}`); }
+  if (r.mitica) { S.esferas.mitica = (S.esferas.mitica || 0) + r.mitica; partes.push(`${r.mitica} esfera(s) mítica`); }
   if (r.ovo) { S.eggs.push(eggOf(ev.exclusivo, 'natural', 'evento', 'neutra')); partes.push('1 ovo de evento'); }
   return partes.join(', ') || 'nada';
 }
@@ -197,7 +208,7 @@ function contarMissao() {
   if (r.marco) note(`marco da trilha: ${aplicarRecompensa(r.marco, Y.monthlyEventAt(ts))}.`);
 }
 const recTexto = (r) => Object.entries(r).map(([k, v]) => ({
-  gold: `${v} gold`, diamantes: `${v} diamantes`, evento: `${v} ficha(s) de evento`, doce: `${v} doce(s)`, ovo: `${v} ovo(s) de evento`,
+  gold: `${v} gold`, diamantes: `${v} diamantes`, evento: `${v} ficha(s) de evento`, doce: `${v} doce(s)`, ovo: `${v} ovo(s) de evento`, mitica: `${v} esfera(s) mítica`,
 })[k]).join(', ');
 // Trilha do evento mensal: página 1 (missões, dias e resgate) e página 2 (cópias, liberada depois do resgate).
 function trilhaHtml() {
@@ -219,7 +230,7 @@ function trilhaHtml() {
     <button data-act="trilhaPagina" data-p="2" ${t.resgatado ? '' : 'disabled'}>Página 2 · cópias${t.resgatado ? '' : ' (libera após o resgate)'}</button></p>
     ${pagina === 1 ? `<p><progress value="${Math.min(t.missoes, Y.TRILHA.meta)}" max="${Y.TRILHA.meta}"></progress> ${t.missoes}/${Y.TRILHA.meta} missões</p>
       <ul class="log">${dias}</ul>
-      <p class="muted">Marcos (caem na hora): 25 missões, ficha de evento · 50, 100 gold · 75, 20 diamantes · 100, 2 doces · 125, ficha de evento · 150, ovo de evento.</p>
+      <p class="muted">Marcos (caem na hora): 25 missões, ficha de evento · 50, 100 gold · 75, 20 diamantes · 100, 2 doces · 125, ficha de evento · 150, ovo de evento e esfera mítica.</p>
       <button data-act="trilhaResgatar" ${resgatavel ? '' : 'disabled'}>${t.resgatado ? `${esc(ev.exclusivo)} já resgatado neste mês` : `Resgatar ${esc(ev.exclusivo)}`}</button>
       ${!resgatavel && !t.resgatado ? `<p class="muted">O resgate abre no dia ${Y.TRILHA.dias}, com ${Y.TRILHA.resgate} missões ou mais.</p>` : ''}`
     : `<p>Cópias extras de ${esc(ev.exclusivo)}: ${t.copias} de ${Y.TRILHA.copiasMax}. Doces de ${esc(ev.nome)}: ${doces}.</p>
@@ -239,7 +250,7 @@ function raidHtml() {
   const m0 = S.monsters[0];
   return `<section>
     <h2>Raid boss · a cada 2 horas</h2>
-    <p>Agora: <b>${esc(r.boss.nome)}</b> · ${estado} (horário de Brasília).</p>
+    <p>Agora: <b>${esc(r.boss.nome)}</b> (elemento ${ELEMENTO_LABEL[r.boss.elemento]}) · ${estado} (horário de Brasília).</p>
     ${m0 ? `<label>Monstrinho <select id="raid-monster">${S.monsters.map((m) => `<option value="${m.id}">${esc(m.species)} · nível ${m.level}</option>`).join('')}</select></label>
       <button data-act="raid" ${r.aberto && !usou ? '' : 'disabled'}>${usou ? 'Tentativa já usada nesta raid' : `Atacar ${esc(r.boss.nome)}`}</button>
       <p class="muted">Chance de vencer com ${esc(m0.species)}: ${pct(Y.chanceRaid(m0, r.boss))}. Vitória dá 1 fragmento (2 em 20% das vezes) e ${C.XP_FONTE.raidVitoria} XP.</p>` : '<p class="muted">Você precisa de um monstrinho para atacar.</p>'}
@@ -326,7 +337,7 @@ function withDefaults(s) {
 function alinharNivel(m) {
   const level = Math.min(C.LEVEL_MAX, Math.max(1, m.level ?? 1));
   const xp = Math.max(m.xp ?? 0, C.xpDoNivel(level));
-  return { ...m, xp, level: C.nivelDeXp(xp), origem: m.origem ?? 'base', passivas: m.passivas ?? (E.PASSIVA_DA_ESPECIE[m.species] ? [E.PASSIVA_DA_ESPECIE[m.species]] : []) };
+  return { ...m, xp, level: C.nivelDeXp(xp), origem: m.origem ?? 'base', elemento: m.elemento ?? E.ELEMENTO_DA_ESPECIE[m.species] ?? 'neutro', passivas: m.passivas ?? (E.PASSIVA_DA_ESPECIE[m.species] ? [E.PASSIVA_DA_ESPECIE[m.species]] : []) };
 }
 // Versão anterior usava estrelas (star). Agora: raridade 1 a 5 e tier 1 a 10 (só o breed sobe o tier).
 function migrateMonster(m) {
@@ -403,10 +414,13 @@ function render() {
 
   <section>
     <h2>Passe de batalha · temporada ${S.pass.season}</h2>
-    <p>Nível <b>${passLv}</b> de ${Y.PASS_LEVELS} · XP ${S.pass.xp} · níveis resgatados ${S.pass.claimed}.</p>
-    <p class="muted">XP por jogar: dia avançado +${Y.PASS_XP.dia}, andar da zona +${Y.PASS_XP.andar}, captura +${Y.PASS_XP.captura}, breed +${Y.PASS_XP.breed}, batalha final +${Y.PASS_XP.batalha}. Cada ${Y.PASS_XP_PER_LEVEL} de XP sobe um nível.</p>
-    <button data-act="passClaim" ${passLv > S.pass.claimed ? '' : 'disabled'}>Resgatar ${Math.max(0, passLv - S.pass.claimed)} nível(is)</button>
-    <p class="muted">Passe premium: só cosméticos. Não dá diamantes, esferas, fichas, ovos nem XP. Ainda não está no piloto.</p>
+    <p>Nível <b>${passLv}</b> de ${Y.PASS_LEVELS} · XP ${S.pass.xp}${passLv < Y.PASS_LEVELS ? ` · faltam ${Y.passXpAteNivel(passLv + 1) - S.pass.xp} XP para o nível ${passLv + 1} (o nível custa ${Y.passCustoNivel(passLv + 1)} XP)` : ' · nível máximo'}.</p>
+    ${passLv < Y.PASS_LEVELS ? `<p><progress value="${S.pass.xp - Y.passXpAteNivel(passLv)}" max="${Y.passCustoNivel(passLv + 1)}"></progress></p>` : ''}
+    <p class="muted">XP por jogar: dia avançado +${Y.PASS_XP.dia}, andar da zona +${Y.PASS_XP.andar}, captura 10 + 5 × raridade (15 a 35), breed +${Y.PASS_XP.breed}, raid vencido +${Y.PASS_XP.raid}, batalha final +${Y.PASS_XP.batalha}. Total para completar k níveis: 3k² + 33k XP.</p>
+    ${(() => { const falta = Math.max(passLv - S.pass.claimed, S.pass.premium ? passLv - (S.pass.claimedPremium || 0) : 0); return `<button data-act="passClaim" ${falta > 0 ? '' : 'disabled'}>Resgatar ${Math.max(0, falta)} prêmio(s)</button>`; })()}
+    <p>Premium: ${S.pass.premium ? '<b>ativo</b>. Cada nível dá ouro, esferas, fichas e ovos extras. O nível 30 dá um T5 aleatório (nunca de evento).' : `compra única por ${Y.PREMIUM_PRICE} diamantes, vale para todas as temporadas. Você tem ${S.diamonds}.`}</p>
+    ${S.pass.premium ? '' : `<button data-act="passPremium" ${S.diamonds >= Y.PREMIUM_PRICE ? '' : 'disabled'}>Comprar premium (${Y.PREMIUM_PRICE} diamantes)</button>`}
+    <p class="muted">O premium só dá itens do jogo, pagos com diamantes ganhos aqui. Dinheiro real continua só para cosméticos.</p>
   </section>
 
   <section>
@@ -486,7 +500,7 @@ function render() {
     <h2>7. Batalha final contra o bot (força ${S.bot})</h2>
     <p class="muted">Sem empate: vitória ou derrota. Derrota tira XP e fortalece o bot.</p>
     <label>Monstrinho <select id="battle-monster" data-preview="prev-battle">${S.monsters.map((m) => `<option value="${m.id}">${m.species} (nível ${m.level}, XP ${m.xp})</option>`).join('')}</select></label> <span id="prev-battle">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
-    <p class="muted">Chance de vitória (monstrinho de nível 1): ${pct(C.winChance(S.bot))}. Cada nível do monstrinho soma 1 ponto.</p>
+    <p class="muted">O bot é de ${ELEMENTO_LABEL[botElemento(S.bot)]}. Chance com o primeiro monstrinho: ${S.monsters[0] ? pct(chanceBot(S.monsters[0])) : '-'}. Cada nível soma 1 ponto; elemento vantajoso dobra a chance.</p>
     <button data-act="battle" ${S.battleOver ? 'disabled' : ''}>Enfrentar o bot</button>
   </section>
 
@@ -503,10 +517,11 @@ function render() {
     <div class="cards">
       ${S.monsters.map((m) => `<div class="card">
         ${spriteHtml(m, { aura: false })}
-        <b>${esc(m.species)}</b> ${rarityTag(m)} · nível ${m.level}
+        <b>${esc(m.species)}</b> ${rarityTag(m)} · elemento ${ELEMENTO_LABEL[m.elemento] ?? 'neutro'} · nível ${m.level}
         <div class="muted">${xpTexto(m)} · vínculo ${m.vinculo} · pureza ${m.purity}</div>
         <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
         <div class="muted">aptidões: ${esc(Object.entries(m.aptitudes).map(([k, v]) => `${k} ${v}`).join(' · ') || 'nenhuma')}</div>
+        ${(m.passivas || []).length ? `<div class="muted">passivas: ${esc(m.passivas.map((p) => p.nome).join(', '))}</div>` : ''}
         ${(m.abilities || []).length > 4 ? `<div class="muted">habilidades aprendidas: ${esc(m.abilities.join(', '))}</div>` : ''}
       </div>`).join('') || '<p class="muted">Nenhum monstrinho.</p>'}
     </div>
@@ -539,6 +554,7 @@ function render() {
   <section>
     <h2>11. Zona infinita · andar ${S.endless.floor}</h2>
     <p class="muted">Andares sem fim. Vencer dá diamantes e fichas de invocação. A cada 10 andares sai um ovo de recompensa (raridade +1). Perder não tira nada: o andar recomeça.</p>
+    <p>Elemento deste andar: <b>${ELEMENTO_LABEL[C.elementoDoAndar(S.endless.floor)]}</b>. Vantagem dá 2x de poder, desvantagem 0,5x.</p>
     <p>Recompensa deste andar: <b>${endlessR.diamantes}</b> diamantes${endlessR.invocacoes.map((i) => ` + ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('')}${endlessR.ovo ? ' + ovo de recompensa' : ''}. Maior andar concluído: ${S.endless.best}.</p>
     <ul class="log">${S.monsters.map((m) => `<li>${monstroTag(m)}<span>${pct(C.endlessChance(m, S.endless.floor))} de vencer</span></li>`).join('') || '<li class="muted">Sem monstrinhos.</li>'}</ul>
     <label>Monstrinho <select id="endless-monster" data-preview="prev-endless">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · tier ${m.tier}</option>`).join('')}</select></label> <span id="prev-endless">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
@@ -828,7 +844,7 @@ function act(name, el) {
       if (S.battleOver) return;
       const m = S.monsters.find((x) => x.id === $('battle-monster').value);
       if (!m) return;
-      const won = Math.random() < C.winChance(S.bot, m.level);
+      const won = Math.random() < chanceBot(m);
       const res = C.finalBattle(won ? 'vitoria' : 'derrota', m, S.bot);
       S.bot = res.bot;
       if (won) {
@@ -964,11 +980,29 @@ function act(name, el) {
     }
     case 'passClaim': {
       const antes = S.pass.claimed;
-      const { reward, claimed } = Y.claimPass(S.pass);
-      if (claimed <= antes) return;
+      const antesPremium = S.pass.claimedPremium || 0;
+      const { reward, claimed, t5, claimedPremium } = Y.claimPass(S.pass);
+      if (claimed <= antes && claimedPremium <= antesPremium) return;
       const txt = grant(reward, 'passe');
-      S.pass = { ...S.pass, claimed };
-      note(`passe: níveis ${antes + 1} a ${claimed} resgatados: ${txt}.`);
+      let t5Nome = '';
+      for (let i = 0; i < t5; i++) { // T5 aleatório do premium: sai de qualquer espécie base, nunca de evento
+        const sp = Y.BASE_SPECIES[Math.floor(Math.random() * Y.BASE_SPECIES.length)];
+        const m = newMonster(sp, 5, undefined, 'natural', 'comum', 'base');
+        S.monsters.push(m);
+        S.last = m.id;
+        t5Nome = sp;
+      }
+      S.pass = { ...S.pass, claimed, claimedPremium };
+      note(`passe: prêmios resgatados (grátis até o nível ${claimed}${S.pass.premium ? `, premium até o ${claimedPremium}` : ''}): ${txt}.${t5 ? ` T5 aleatório: ${t5Nome}.` : ''}`);
+      break;
+    }
+    case 'passPremium': {
+      try {
+        const r = Y.comprarPremium(S.pass, S.diamonds);
+        S.diamonds -= r.custo;
+        S.pass = r.pass;
+        note(`premium do passe comprado por ${r.custo} diamantes. Os níveis já alcançados nesta temporada entram no resgate.`);
+      } catch (e) { note(`não deu para comprar o premium: ${e.message}.`); }
       break;
     }
     case 'buySphere': {
@@ -1005,7 +1039,7 @@ function act(name, el) {
         const xp = C.ganharXp(nm, C.XP_FONTE.captura(w.rarity));
         S.monsters.push(nm);
         S.last = nm.id;
-        S.pass = Y.addPassXp(S.pass, 'captura');
+        S.pass = Y.addPassXp(S.pass, 'captura', Y.passXpCaptura(w.rarity));
         contarMissao();
         const sem = Y.contaCapturaSemanal(S.semana, Date.now()); // fichas semanais: 1 a cada 3 capturas da semana
         S.semana = sem.s;
@@ -1077,6 +1111,7 @@ function act(name, el) {
         const f = Y.fragmentosVitoria(Math.random());
         S.fragmentos[r.boss.id] = (S.fragmentos[r.boss.id] || 0) + f;
         const xp = C.ganharXp(m, C.XP_FONTE.raidVitoria);
+        S.pass = Y.addPassXp(S.pass, 'raid');
         note(`${m.species} venceu ${r.boss.nome} e pegou ${f} fragmento(s). +${xp.ganho} XP.`);
       } else note(`${m.species} não venceu ${r.boss.nome}. A tentativa desta raid está usada.`);
       break;

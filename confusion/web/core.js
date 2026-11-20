@@ -143,9 +143,10 @@ export function ganharXp(m, quanto) {
 export const fatorNivel = (nivel) => 1 + 0.04 * (clamp(nivel ?? 1, 1, LEVEL_MAX) - 1);
 
 // ---- Batalha final (sem empate) ----
-// Chance de vencer o bot: -10 pontos por vitória do bot, +1 ponto por nível do monstrinho. Piso 10%, teto 95%.
-export function winChance(bot, nivel = 1) {
-  return clamp(0.7 - 0.1 * bot + 0.01 * ((nivel ?? 1) - 1), 0.1, 0.95);
+// Chance de vencer o bot: -10 pontos por vitória do bot, +1 ponto por nível do monstrinho. Multiplicador do elemento
+// (vantagem 2x, desvantagem 0,5x). Piso 10%, teto 95%.
+export function winChance(bot, nivel = 1, mult = 1) {
+  return clamp((0.7 - 0.1 * bot + 0.01 * ((nivel ?? 1) - 1)) * mult, 0.1, 0.95);
 }
 export function finalBattle(result, monster, bot) {
   if (result !== 'vitoria' && result !== 'derrota') throw new Error('não há empate');
@@ -457,14 +458,31 @@ export function endlessRewards(floor, eventActive = false, rng = () => 1) {
   if (eventActive && rng() < 0.05) out.evento = 'doce_halloween';  // chance provisória
   return out;
 }
+// ---- Elementos (v1.34): como no Pokémon, vantagem dá 2x e desvantagem dá 0,5x. Ciclo: fogo > planta > água > fogo.
+// Luz e trevas se anulam (2x). Terra e neutro: 1x contra tudo.
+export const ELEMENTOS = ['fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'neutro'];
+const TABELA_ELEMENTO = {
+  fogo: { planta: 2, agua: 0.5 },
+  agua: { fogo: 2, planta: 0.5 },
+  planta: { agua: 2, fogo: 0.5 },
+  luz: { trevas: 2 },
+  trevas: { luz: 2 },
+};
+export const multElemento = (atacante, defensor) => TABELA_ELEMENTO[atacante]?.[defensor] ?? 1;
+// Andar infinito: cada andar tem um elemento, em ciclo de 5 (fogo, água, planta, luz, trevas).
+export const ELEMENTO_ANDAR = ['fogo', 'agua', 'planta', 'luz', 'trevas'];
+export const elementoDoAndar = (floor) => ELEMENTO_ANDAR[(Math.max(1, Math.trunc(floor)) - 1) % ELEMENTO_ANDAR.length];
+
 // Combate provisório no andar infinito: poder do monstrinho contra o poder do andar.
 // Poder = (10 por tier + 2 por nível de aptidão somado) x variante x origem x nível. Chance limitada entre 5% e 95%.
 export function monsterPower(m) {
   const apt = Object.values(m.aptitudes || {}).reduce((a, b) => a + b, 0);
   return (10 * m.tier + 2 * apt) * (VARIANT_POWER[m.variant] ?? 1) * (CLASS_POWER[m.classe] ?? 1) * fatorNivel(m.level);
 }
+// O elemento do andar entra como multiplicador do poder (vantagem 2x, desvantagem 0,5x).
 export function endlessChance(m, floor) {
-  return Math.min(0.95, Math.max(0.05, monsterPower(m) / endlessFloorPower(floor)));
+  const poder = monsterPower(m) * multElemento(m.elemento, elementoDoAndar(floor));
+  return Math.min(0.95, Math.max(0.05, poder / endlessFloorPower(floor)));
 }
 
 // ---- Diamantes: compra com diamantes ganhos no jogo (v1.15). Dinheiro real não compra diamantes (v1.16). ----
