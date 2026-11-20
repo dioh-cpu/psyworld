@@ -40,8 +40,18 @@ const RARITY_LABEL = { comum: 'Comum', rara: 'Rara', epica: 'Épica', lendaria: 
 const VARIANT_LABEL = { natural: 'natural', mutante: 'mutação', abencoada: 'bênção', combinada: 'mutação + bênção' }; // a variante aparece como aura
 const auraClass = (m) => (m.variant === 'mutante' ? `aura-mutante-${m.purity === 'luz' ? 'luz' : 'trevas'}` : `aura-${m.variant || 'natural'}`);
 const eggAura = (e) => (e.form === 'mutante' ? `aura-mutante-${e.pureza === 'luz' ? 'luz' : 'trevas'}` : `aura-${e.form || 'natural'}`);
-// Sprite do monstrinho com aura. Os cards da coleção usam só a versão natural (aura: false).
-const spriteHtml = (m, { aura = true, mini = false } = {}) => `<span class="sprite ${mini ? 'mini ' : ''}${aura ? auraClass(m) : 'aura-natural'}">${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<span class="noart">${esc(m.species)}<small>sem arte ainda</small></span>`}</span>`;
+// Silhueta genérica para monstrinhos sem arte: a aura segue este contorno, nunca um quadrado.
+const SILHUETA = '<svg class="silhueta" viewBox="0 0 120 100" aria-hidden="true"><g fill="currentColor"><ellipse cx="56" cy="60" rx="30" ry="18"/><ellipse cx="88" cy="42" rx="14" ry="12"/><path d="M98 40 L116 45 L98 50 Z"/><path d="M80 34 L84 12 L93 31 Z"/><rect x="34" y="66" width="9" height="26" rx="3"/><rect x="46" y="68" width="9" height="24" rx="3"/><rect x="66" y="68" width="9" height="24" rx="3"/><rect x="78" y="66" width="9" height="26" rx="3"/><path d="M28 56 Q8 46 12 24 Q22 40 32 48 Z"/></g></svg>';
+const OVO_SVG = '<svg class="ovo-svg" viewBox="0 0 20 26" aria-hidden="true"><path d="M10 1 C17 1 19 14 19 18 C19 22 15 25 10 25 C5 25 1 22 1 18 C1 14 3 1 10 1 Z" fill="currentColor"/></svg>';
+// Sprite do monstrinho. A aura é um filtro sobre o próprio contorno (imagem ou silhueta), animado.
+// Os cards da coleção usam só a versão natural (aura: false).
+const spriteHtml = (m, { aura = true, mini = false } = {}) => {
+  const body = ART[m.species]
+    ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">`
+    : (mini ? SILHUETA : `<span class="noart">${SILHUETA}<small>sem arte ainda</small></span>`);
+  return `<span class="sprite ${mini ? 'mini ' : ''}${aura ? auraClass(m) : 'aura-natural'}">${body}</span>`;
+};
+const eggTag = (e) => `<span class="ovo-tag ${eggAura(e)}">${OVO_SVG}</span>`;
 // Monstrinho em linha: sprite pequeno com aura, nome, raridade, tier e variante.
 const monstroTag = (m) => `<span class="tag">${spriteHtml(m, { mini: true })}<span><b>${esc(m.species)}</b> ${rarityTag(m)}${m.variant && m.variant !== 'natural' ? ` · ${VARIANT_LABEL[m.variant]}` : ''}</span></span>`;
 const lastTag = () => { const m = S.monsters.find((x) => x.id === S.last); return m ? `<p>Último monstrinho: ${monstroTag(m)}</p>` : ''; };
@@ -251,7 +261,7 @@ function render() {
          <p class="muted">Ovo inicial. Formas elegíveis: ${C.eligibleForms(S.sanity).join(', ')}.</p>
          <button data-act="hatch">Chocar ovo inicial</button>`}
     <p class="muted">Ovos do breed e da zona. Ao chocar, a raridade é rolada e o tier começa igual a ela.</p>
-    <ul class="log">${S.eggs.map((e) => `<li><span class="dot ${eggAura(e)}"></span>Ovo de ${esc(e.species)} · forma ${esc(e.form)}${e.form === 'mutante' || e.form === 'combinada' ? ` (${esc(e.pureza)})` : ''} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
+    <ul class="log">${S.eggs.map((e) => `<li>${eggTag(e)}Ovo de ${esc(e.species)} · forma ${esc(e.form)}${e.form === 'mutante' || e.form === 'combinada' ? ` (${esc(e.pureza)})` : ''} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
   </section>
 
   <section>
@@ -338,7 +348,7 @@ function render() {
     <h2>11. Zona infinita · andar ${S.endless.floor}</h2>
     <p class="muted">Andares sem fim. Vencer dá diamantes e fichas de invocação. A cada 10 andares sai um ovo de recompensa (raridade +1). Perder não tira nada: o andar recomeça.</p>
     <p>Recompensa deste andar: <b>${endlessR.diamantes}</b> diamantes${endlessR.invocacoes.map((i) => ` + ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('')}${endlessR.ovo ? ' + ovo de recompensa' : ''}. Maior andar concluído: ${S.endless.best}.</p>
-    <ul class="log">${S.monsters.map((m) => `<li>${monstroTag(m)}: ${pct(C.endlessChance(m, S.endless.floor))} de vencer</li>`).join('') || '<li class="muted">Sem monstrinhos.</li>'}</ul>
+    <ul class="log">${S.monsters.map((m) => `<li>${monstroTag(m)}<span>${pct(C.endlessChance(m, S.endless.floor))} de vencer</span></li>`).join('') || '<li class="muted">Sem monstrinhos.</li>'}</ul>
     <label>Monstrinho <select id="endless-monster" data-preview="prev-endless">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · tier ${m.tier}</option>`).join('')}</select></label> <span id="prev-endless">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
     <button data-act="endless" ${S.monsters.length ? '' : 'disabled'}>Enfrentar andar ${S.endless.floor}</button>
   </section>
@@ -357,7 +367,7 @@ function render() {
   <section>
     <h2>Registro</h2>
     ${lastTag()}
-    <ul class="log">${S.log.map((l) => `<li>${esc(l)}</li>`).join('') || '<li class="muted">Nada ainda.</li>'}</ul>
+    <ul class="log registro">${S.log.map((l) => `<li>${esc(l)}</li>`).join('') || '<li class="muted">Nada ainda.</li>'}</ul>
   </section>`;
 }
 

@@ -36,26 +36,47 @@ select,input{background:#0f0d18;color:var(--fg);border:1px solid #3b3260;border-
 .rar-epica{color:#a78bfa}
 .rar-lendaria{color:#facc15}
 .rar-mitica{background:linear-gradient(90deg,#f87171,#facc15,#4ade80,#22d3ee,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sprite{position:relative;display:block;border-radius:12px;margin-bottom:6px}
-.sprite.mini{display:inline-block;vertical-align:middle;width:64px;height:64px;margin:0;border-radius:10px}
-.sprite.mini img{width:100%;height:100%;object-fit:contain;border-radius:10px;background:#0b0a12}
-.sprite.mini .noart{height:64px;font-size:10px;padding:4px;text-align:center;border-radius:10px}
-.sprite.mini .noart small{display:none}
-.tag{display:inline-flex;align-items:center;gap:8px;margin:2px 10px 2px 0}
-.dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle;background:#4b3a7a}
-.dot.aura-mutante-trevas{background:#7e22ce;box-shadow:0 0 8px 3px rgba(126,34,206,.7)}
-.dot.aura-mutante-luz{background:#67e8f9;box-shadow:0 0 8px 3px rgba(103,232,249,.6)}
-.dot.aura-abencoada{background:#facc15;box-shadow:0 0 8px 3px rgba(250,204,21,.6)}
-.dot.aura-combinada{background:linear-gradient(90deg,#facc15,#a855f7);box-shadow:0 0 8px 3px rgba(168,85,247,.6)}
-.sprite.aura-mutante-trevas{box-shadow:0 0 0 2px #7e22ce,0 0 26px 8px rgba(126,34,206,.6);animation:pulso-trevas 2.4s ease-in-out infinite}
-.sprite.aura-mutante-luz{box-shadow:0 0 0 2px #67e8f9,0 0 26px 8px rgba(103,232,249,.5);animation:pulso-luz 2.4s ease-in-out infinite}
-.sprite.aura-abencoada{box-shadow:0 0 0 2px #facc15,0 0 26px 8px rgba(250,204,21,.5);animation:pulso-bencao 3s ease-in-out infinite}
-.sprite.aura-combinada{box-shadow:0 0 0 2px #facc15,0 0 0 4px #a855f7,0 0 34px 12px rgba(250,204,21,.55),0 0 60px 22px rgba(168,85,247,.45);animation:pulso-combinada 2s ease-in-out infinite}
-@keyframes pulso-trevas{50%{box-shadow:0 0 0 2px #a855f7,0 0 34px 12px rgba(126,34,206,.75)}}
-@keyframes pulso-luz{50%{box-shadow:0 0 0 2px #a5f3fc,0 0 34px 12px rgba(103,232,249,.65)}}
-@keyframes pulso-bencao{50%{box-shadow:0 0 0 2px #fde68a,0 0 34px 12px rgba(250,204,21,.65)}}
-@keyframes pulso-combinada{50%{box-shadow:0 0 0 2px #fde68a,0 0 0 4px #c084fc,0 0 42px 16px rgba(250,204,21,.7),0 0 70px 26px rgba(168,85,247,.6)}}
-@media (prefers-reduced-motion: reduce){.sprite[class*="aura-"]{animation:none}}
+.sprite{position:relative;display:block;margin-bottom:6px}
+.sprite.mini{display:inline-block;vertical-align:middle;width:64px;height:64px;margin:0}
+.sprite.mini img,.sprite.mini .silhueta{width:100%;height:100%;object-fit:contain;background:none}
+.sprite .silhueta{color:#3b3354;width:100%;height:100%;display:block}
+.sprite .noart .silhueta{width:96px;height:80px;margin:0 auto}
+.sprite .noart small{display:block;font-size:11px;margin-top:4px}
+.sprite.mini .noart{background:none}
+.tag{display:inline-flex;align-items:center;gap:8px;margin:2px 0;vertical-align:middle}
+/* listas com monstrinhos: espaço para o brilho da aura não ser cortado pela rolagem */
+.log{list-style:none;padding:12px 12px 12px 48px;margin:0;max-height:none;overflow:visible}
+.log.registro{max-height:260px;overflow:auto}
+.log li{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:4px 0}
+.ovo-tag{display:inline-block;width:16px;height:22px;margin-right:8px;vertical-align:middle;color:#4b3a7a}
+.ovo-tag .ovo-svg{width:100%;height:100%;display:block}
+.ovo-tag.aura-mutante-trevas{color:#7e22ce}
+.ovo-tag.aura-mutante-luz{color:#67e8f9}
+.ovo-tag.aura-abencoada{color:#facc15}
+.ovo-tag.aura-combinada{color:#f5c542}
+/* Aura: filtro de sombra sobre o contorno do monstrinho (acompanha a silhueta), animado. */
+.aura-mutante-trevas > *{animation:aura-trevas 2.4s ease-in-out infinite,respira 3s ease-in-out infinite}
+.aura-mutante-luz > *{animation:aura-luz 2.4s ease-in-out infinite,respira 3s ease-in-out infinite}
+.aura-abencoada > *{animation:aura-bencao 3s ease-in-out infinite,respira 3.4s ease-in-out infinite}
+.aura-combinada > *{animation:aura-combinada 2s ease-in-out infinite,respira 2.6s ease-in-out infinite}
+@keyframes aura-trevas{
+  0%,100%{filter:drop-shadow(0 0 2px rgba(216,180,254,.9)) drop-shadow(0 0 6px rgba(126,34,206,.9)) drop-shadow(0 0 12px rgba(88,28,135,.6))}
+  50%{filter:drop-shadow(0 0 4px rgba(243,232,255,.95)) drop-shadow(0 0 14px rgba(168,85,247,.95)) drop-shadow(0 0 26px rgba(88,28,135,.75))}
+}
+@keyframes aura-luz{
+  0%,100%{filter:drop-shadow(0 0 2px rgba(207,250,254,.9)) drop-shadow(0 0 6px rgba(103,232,249,.85)) drop-shadow(0 0 12px rgba(34,211,238,.5))}
+  50%{filter:drop-shadow(0 0 4px #ffffff) drop-shadow(0 0 14px rgba(103,232,249,.95)) drop-shadow(0 0 26px rgba(34,211,238,.7))}
+}
+@keyframes aura-bencao{
+  0%,100%{filter:drop-shadow(0 0 2px rgba(254,240,138,.95)) drop-shadow(0 0 6px rgba(250,204,21,.9)) drop-shadow(0 0 12px rgba(250,204,21,.5))}
+  50%{filter:drop-shadow(0 0 4px #fffbeb) drop-shadow(0 0 14px rgba(250,204,21,.95)) drop-shadow(0 0 26px rgba(250,204,21,.7))}
+}
+@keyframes aura-combinada{
+  0%,100%{filter:drop-shadow(0 0 2px rgba(254,240,138,.95)) drop-shadow(0 0 6px rgba(250,204,21,.9)) drop-shadow(0 0 12px rgba(168,85,247,.8))}
+  50%{filter:drop-shadow(0 0 3px rgba(233,213,255,.95)) drop-shadow(0 0 12px rgba(168,85,247,.95)) drop-shadow(0 0 24px rgba(250,204,21,.8))}
+}
+@keyframes respira{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+@media (prefers-reduced-motion: reduce){[class*="aura-"] > *{animation:none !important}}
 </style>
 </head>
 <body>
