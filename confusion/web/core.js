@@ -219,41 +219,70 @@ export function addWorkXp(aptitudes, xp, task, tasks = 1) {
   return aptitudes[task];
 }
 
-// ---- Estrelas e cores (ajuste v1.14, provisório) ----
-// ★1 a ★6 douradas; depois vermelha, roxa, laranja e arco-íris no final.
+// ---- Estrelas e cores (decidido pelo autor, v1.15) ----
+// 30 estrelas: douradas 1 a 6; depois vermelha, roxa, laranja e arco-íris (6 de cada).
 export const STAR_TIERS = [
   { cor: 'dourada', de: 1, ate: 6 },
   { cor: 'vermelha', de: 7, ate: 12 },
   { cor: 'roxa', de: 13, ate: 18 },
   { cor: 'laranja', de: 19, ate: 24 },
-  { cor: 'arco-iris', de: 25, ate: 25 },
+  { cor: 'arco-iris', de: 25, ate: 30 },
 ];
-export const STAR_MAX = 25;
+export const STAR_MAX = 30;
 export function starColor(stars) {
   const n = clamp(Math.trunc(stars), 1, STAR_MAX);
   return STAR_TIERS.find((t) => n >= t.de && n <= t.ate).cor;
 }
-// Aptidão máxima depende das estrelas: para subir a aptidão é preciso ganhar estrela (proposta).
-export function maxAptitudeFor(stars) {
-  return clamp(Math.trunc(stars), 1, WORK_LEVEL_MAX);
-}
-// Fusão bem-sucedida dá +1 estrela ao principal (proposta).
-export function starsAfterFusion(stars) {
-  return Math.min(STAR_MAX, stars + 1);
+// Fusão bem-sucedida: +1 estrela no principal e +1 nível em TODAS as aptidões dele (teto 10).
+export function fusionSuccessEffects(monster) {
+  monster.stars = Math.min(STAR_MAX, (monster.stars ?? monster.star ?? 1) + 1);
+  for (const k of Object.keys(monster.aptitudes || {})) {
+    monster.aptitudes[k] = Math.min(WORK_LEVEL_MAX, monster.aptitudes[k] + 1);
+  }
+  return monster;
 }
 
-// ---- Zona infinita (provisório) ----
-// Cada andar fica mais forte que o anterior; força base 100, +8% por andar.
+// ---- Zona infinita (decidido pelo autor, v1.15) ----
+// Andares infinitos. Perder reinicia só o andar que não foi concluído.
 export const ENDLESS_BASE_POWER = 100;
-export const ENDLESS_GROWTH = 0.08;
+export const ENDLESS_GROWTH = 0.08;   // provisório
 export function endlessFloorPower(floor) {
   const f = Math.max(1, Math.trunc(floor));
   return Math.round(ENDLESS_BASE_POWER * Math.pow(1 + ENDLESS_GROWTH, f - 1));
 }
-// Recompensas de um andar vencido. rng: função que devolve [0,1).
-export function endlessRewards(floor, rng, eventActive = false) {
+// Recompensas de um andar concluído.
+// - 10 diamantes por andar; +50 diamantes a cada 10 andares (total de 150 a cada 10 andares).
+// - Invocação no banner permanente a cada 3 andares; 3 invocações no banner semanal a cada 10; 3 no banner de evento a cada 15.
+export function endlessRewards(floor, eventActive = false, rng = () => 1) {
   const f = Math.max(1, Math.trunc(floor));
-  const out = { gold: 10 + 5 * f, diamantes: f % 5 === 0 ? 1 : 0, fichas: f % 3 === 0 ? 1 : 0, evento: null };
-  if (eventActive && rng() < 0.05) out.evento = 'doce_halloween';  // chance de item de evento (provisória)
+  const out = { diamantes: 10, invocacoes: [], evento: null };
+  if (f % 10 === 0) out.diamantes += 50;
+  if (f % 3 === 0) out.invocacoes.push({ banner: 'permanente', qtd: 1 });
+  if (f % 10 === 0) out.invocacoes.push({ banner: 'semanal', qtd: 3 });
+  if (f % 15 === 0) out.invocacoes.push({ banner: 'evento', qtd: 3 });
+  if (eventActive && rng() < 0.05) out.evento = 'doce_halloween';  // chance provisória
   return out;
+}
+// Derrota: volta para o início do andar que não foi concluído.
+export function endlessAfterDefeat(state) {
+  return { ...state, floor: state.floor };  // o andar atual é o que não foi concluído
+}
+
+// ---- Diamantes: compra e ganhos (decidido pelo autor, v1.15) ----
+export const INVOCATION_PRICE = 200;      // 2000 diamantes = 10 invocações
+export const BULK_10_PRICE = 1500;        // comprar 10 de uma vez tem desconto
+export const PACK_BRL_4_99 = 500;         // R$ 4,99 = 500 diamantes
+export function invocationCost(qtd) {
+  if (qtd === 10) return BULK_10_PRICE;
+  return qtd * INVOCATION_PRICE;
+}
+export function buyInvocations(diamonds, qtd) {
+  const cost = invocationCost(qtd);
+  if (diamonds < cost) throw new Error('diamantes insuficientes');
+  return { diamonds: diamonds - cost, gasto: cost, qtd };
+}
+// Ganho por item/monstrinho/conquista: 1 diamante base; raridades altas dão mais (proposta).
+export const DIAMOND_BY_RARITY = { comum: 1, rara: 1, epica: 2, lendaria: 3, mitica: 5 };
+export function diamondsForItem(rarity) {
+  return DIAMOND_BY_RARITY[rarity] ?? 1;
 }

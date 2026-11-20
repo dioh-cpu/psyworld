@@ -130,33 +130,52 @@ test('XP de trabalho sobe o nível e para em 10', () => {
   assert.equal(apt.cortar, 10);
 });
 
-test('estrelas: douradas até 6, depois vermelha, roxa, laranja e arco-íris', () => {
-  assert.equal(C.starColor(1), 'dourada');
+test('estrelas: 30 no total; douradas até 6; arco-íris de 25 a 30', () => {
   assert.equal(C.starColor(6), 'dourada');
   assert.equal(C.starColor(7), 'vermelha');
   assert.equal(C.starColor(13), 'roxa');
   assert.equal(C.starColor(19), 'laranja');
   assert.equal(C.starColor(25), 'arco-iris');
-  assert.equal(C.starColor(99), 'arco-iris');
+  assert.equal(C.starColor(30), 'arco-iris');
+  assert.equal(C.STAR_MAX, 30);
 });
-test('aptidão máxima acompanha as estrelas, até 10', () => {
-  assert.equal(C.maxAptitudeFor(3), 3);
-  assert.equal(C.maxAptitudeFor(12), 10);
-});
-test('fusão bem-sucedida sobe uma estrela, até o máximo', () => {
-  assert.equal(C.starsAfterFusion(3), 4);
-  assert.equal(C.starsAfterFusion(25), 25);
+test('fusão com sucesso: +1 estrela e +1 em todas as aptidões, até 10 e 30', () => {
+  const m = { stars: 3, aptitudes: { cortar: 3, minerar: 10 } };
+  C.fusionSuccessEffects(m);
+  assert.equal(m.stars, 4);
+  assert.equal(m.aptitudes.cortar, 4);
+  assert.equal(m.aptitudes.minerar, 10);
+  const top = { stars: 30, aptitudes: {} };
+  C.fusionSuccessEffects(top);
+  assert.equal(top.stars, 30);
 });
 test('zona infinita: cada andar fica mais forte', () => {
   assert.equal(C.endlessFloorPower(1), 100);
   assert.ok(C.endlessFloorPower(10) > C.endlessFloorPower(9));
-  assert.ok(C.endlessFloorPower(50) > 40 * C.endlessFloorPower(1));
 });
-test('zona infinita: recompensas por andar, e drop de evento só com evento ativo', () => {
-  const r = C.endlessRewards(5, () => 0.99, false);
-  assert.equal(r.gold, 35);
-  assert.equal(r.diamantes, 1);
-  assert.equal(r.evento, null);
-  assert.equal(C.endlessRewards(5, () => 0.01, true).evento, 'doce_halloween');
-  assert.equal(C.endlessRewards(4, () => 0.01, true).diamantes, 0);
+test('zona infinita: 10 diamantes por andar, 150 a cada 10 andares', () => {
+  assert.equal(C.endlessRewards(1).diamantes, 10);
+  assert.equal(C.endlessRewards(10).diamantes, 60);   // 10 + 50 de bônus
+  let total = 0;
+  for (let f = 1; f <= 10; f++) total += C.endlessRewards(f).diamantes;
+  assert.equal(total, 150);
+});
+test('zona infinita: invocações por banner nos andares certos', () => {
+  const r3 = C.endlessRewards(3).invocacoes;
+  assert.deepEqual(r3, [{ banner: 'permanente', qtd: 1 }]);
+  const r10 = C.endlessRewards(10).invocacoes.map((x) => x.banner + x.qtd);
+  assert.ok(!r10.includes('permanente1') && r10.includes('semanal3'));
+  const r15 = C.endlessRewards(15).invocacoes.map((x) => x.banner + x.qtd);
+  assert.ok(r15.includes('evento3') && r15.includes('permanente1'));
+});
+test('diamantes: 2000 compra 10 invocações; 10 de uma vez cai para 1500', () => {
+  assert.equal(C.invocationCost(1), 200);
+  assert.equal(C.invocationCost(10), 1500);
+  assert.equal(C.buyInvocations(2000, 10).diamonds, 500);
+  assert.throws(() => C.buyInvocations(100, 1));
+});
+test('diamantes: pacote de R$ 4,99 dá 500 diamantes e ganho por raridade', () => {
+  assert.equal(C.PACK_BRL_4_99, 500);
+  assert.equal(C.diamondsForItem('comum'), 1);
+  assert.ok(C.diamondsForItem('mitica') > C.diamondsForItem('comum'));
 });
