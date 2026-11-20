@@ -54,12 +54,23 @@ const spriteHtml = (m, { aura = true, mini = false } = {}) => {
 const eggTag = (e) => `<span class="ovo-tag ${eggAura(e)}">${OVO_SVG}</span>`;
 // Monstrinho em linha: sprite pequeno com aura, nome, raridade, tier e variante.
 const monstroTag = (m) => `<span class="tag">${spriteHtml(m, { mini: true })}<span><b>${esc(m.species)}</b> ${rarityTag(m)}${m.variant && m.variant !== 'natural' ? ` · ${VARIANT_LABEL[m.variant]}` : ''}</span></span>`;
-// Ingredientes possíveis para um principal: mesmo tier, outro monstrinho, com usos disponíveis.
-const elegiveis = (main) => S.monsters.filter((m) => !C.ingredientStatus(main, m));
+// Monstrinhos em breed não entram em outro breed. Ingrediente: mesmo tier, com usos e fora de breed.
+const ocupados = () => C.idsEmBreed(S.breeds);
+const elegiveis = (main) => {
+  if (!main || ocupados().has(main.id)) return [];
+  const oc = ocupados();
+  return S.monsters.filter((m) => !oc.has(m.id) && !C.ingredientStatus(main, m));
+};
 const opcoesIngrediente = (main) => {
-  const ops = main ? elegiveis(main) : [];
+  const ops = elegiveis(main);
   return ops.length ? ops.map((m) => `<option value="${m.id}">${m.species} · tier ${m.tier} · usos ${m.usosIngrediente || 0}/${C.INGREDIENT_MAX_USES}</option>`).join('') : '<option value="">nenhum ingrediente elegível</option>';
 };
+const breedLivre = (main) => S.breeds.length < C.BREED_SLOTS && elegiveis(main).length > 0;
+const faltaTexto = (fim) => {
+  const seg = Math.max(0, Math.ceil((fim - Date.now()) / 1000));
+  return `faltam ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
+};
+const breedLinha = (b) => `<li>${esc(b.mainNome)} + ${esc(b.ingNome)} · <span class="contagem" data-fim="${b.fim}">${faltaTexto(b.fim)}</span></li>`;
 const lastTag = () => { const m = S.monsters.find((x) => x.id === S.last); return m ? `<p>Último monstrinho: ${monstroTag(m)}</p>` : ''; };
 const BANNER_LABEL = { permanente: 'permanente', semanal: 'semanal', evento: 'evento' };
 const uid = (p) => `${p}${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -110,7 +121,7 @@ function newState() {
     bot: 0, successes: {}, failures: {},
     diamonds: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
-    pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null,
+    pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null, breeds: [],
     ingredients: [
       { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum', category: 'vegetal' },
       { name: 'Fungo Abissal', purity: 'trevas', freshness: 0.8, rarity: 'rara', category: 'fungo' },
@@ -143,6 +154,7 @@ function withDefaults(s) {
     wild: s.wild ?? null,
     endless: { ...d.endless, ...(s.endless || {}) },
     eggs: s.eggs || [],
+    breeds: s.breeds || [],
     monsters: (s.monsters || []).map(migrateMonster),
   };
 }
@@ -284,18 +296,19 @@ function render() {
 
   <section>
     <h2>6. Breed</h2>
-    <p class="muted">Breed usa o monstrinho principal e um ingrediente do mesmo tier. Cada ingrediente serve até 3 vezes e nunca some.
-      Com sucesso: o principal sobe 1 nível em todas as aptidões e sai um ovo, que pode vir com tier acima do principal.
-      O ovo ainda pode ser mutante ou abençoado.</p>
+    <p class="muted">Breed usa o principal e um ingrediente do mesmo tier. Leva 10 minutos em média. Dá para ter até 3 breeds ao mesmo tempo, e um monstrinho só pode estar em um breed por vez.
+      O ingrediente serve até 3 vezes e nunca some. Com sucesso: o principal ganha 1 nível em todas as aptidões, absorve uma habilidade do ingrediente e sai um ovo, que pode vir com tier acima do principal.</p>
     <div class="row">
-      <label>Principal <select id="fuse-main" data-preview="prev-main">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · ${RARITY_LABEL[C.rarityName(m.rarity)]} · tier ${m.tier}</option>`).join('')}</select></label>
+      <label>Principal <select id="fuse-main" data-preview="prev-main">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · ${RARITY_LABEL[C.rarityName(m.rarity)]} · tier ${m.tier}${ocupados().has(m.id) ? ' (em breed)' : ''}</option>`).join('')}</select></label>
       <label>Ingrediente <select id="fuse-ing" data-preview="prev-ing">${opcoesIngrediente(S.monsters[0])}</select></label>
       <label>Minério <select id="fuse-ore"><option value="0">nenhum</option><option value="0.06">Obsidiana Fissurada (+6%)</option></select></label>
       <label>Habilidade extra <select id="fuse-keep"><option value="new">trocar pela nova</option><option value="keep">manter a atual</option></select></label>
     </div>
     <div class="row"><span id="prev-main">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span><span id="prev-ing">${elegiveis(S.monsters[0])[0] ? monstroTag(elegiveis(S.monsters[0])[0]) : '-'}</span></div>
     <p class="muted" id="chance-main">Chance atual do principal selecionado: ${S.monsters.length ? pct(C.breedSuccessChance(S.monsters[0].tier, S.successes[S.monsters[0].id] || 0, S.failures[S.monsters[0].id] || 0)) : '-'}</p>
-    <button data-act="breed" ${elegiveis(S.monsters[0]).length ? '' : 'disabled'}>Fazer breed</button>
+    <button data-act="breed" ${breedLivre(S.monsters[0]) ? '' : 'disabled'}>Iniciar breed</button>
+    <p class="muted">Espaços em uso: ${S.breeds.length} de ${C.BREED_SLOTS}.</p>
+    <ul class="log">${S.breeds.map(breedLinha).join('') || '<li class="muted">Nenhum breed em andamento.</li>'}</ul>
   </section>
 
   <section>
@@ -323,6 +336,7 @@ function render() {
         <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity}</div>
         <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
         <div class="muted">aptidões: ${esc(Object.entries(m.aptitudes).map(([k, v]) => `${k} ${v}`).join(' · ') || 'nenhuma')}</div>
+        ${(m.abilities || []).length > 4 ? `<div class="muted">habilidades aprendidas: ${esc(m.abilities.join(', '))}</div>` : ''}
       </div>`).join('') || '<p class="muted">Nenhum monstrinho.</p>'}
     </div>
   </section>
@@ -366,7 +380,8 @@ function render() {
     <p class="muted">Fichas: permanente ${S.tickets.permanente} · semanal ${S.tickets.semanal} · evento ${S.tickets.evento}</p>
     <label>Banner <select id="shop-banner">${Object.keys(C.BANNER_SHIFT).map((b) => `<option value="${b}">${BANNER_LABEL[b]}</option>`).join('')}</select></label>
     <button data-act="invoke" data-qtd="1">Invocar x1 (1 ficha)</button>
-    <button data-act="invoke" data-qtd="10">Invocar x10 (10 fichas)</button>
+    <button data-act="invoke" data-qtd="10">Invocar x10 (10 fichas, tier 4 garantido)</button>
+    <button data-act="invoke" data-qtd="50">Invocar x50 (50 fichas, tier 5 garantido)</button>
     <button data-act="buy" data-qtd="1">Comprar 1 ficha (200 diamantes)</button>
     <button data-act="buy" data-qtd="10">Comprar 10 fichas (1500 diamantes)</button>
     <p class="muted">Diamantes e fichas só se ganham no jogo. Dinheiro real é só para cosméticos. Invocar mostra a raridade rolada, que o banner empurra para cima.</p>
@@ -409,7 +424,35 @@ function syncBreed(ingAnterior = null) {
   $('prev-ing').innerHTML = ing ? monstroTag(ing) : '-';
   $('chance-main').textContent = main ? `Chance atual do principal selecionado: ${pct(C.breedSuccessChance(main.tier, S.successes[main.id] || 0, S.failures[main.id] || 0))}` : '';
   const btn = document.querySelector('button[data-act="breed"]');
-  if (btn) btn.disabled = elegiveis(main).length === 0;
+  if (btn) btn.disabled = !breedLivre(main);
+}
+// Quando um breed termina, o resultado entra no jogo (ingrediente já foi gasto no início).
+function resolverBreeds() {
+  const agora = Date.now();
+  const prontos = S.breeds.filter((b) => agora >= b.fim);
+  if (!prontos.length) return false;
+  S.breeds = S.breeds.filter((b) => agora < b.fim);
+  for (const b of prontos) {
+    const main = S.monsters.find((m) => m.id === b.mainId);
+    if (!main) { note('um breed terminou, mas o principal não está mais na coleção.'); continue; }
+    if (b.sucesso) {
+      C.absorbAbility(main, b.pick, b.keep);
+      C.breedSuccessEffects(main);
+      S.eggs.push(eggOf(main.species, b.form, 'breed', b.pureza, b.tierOvo));
+      S.successes[main.id] = (S.successes[main.id] || 0) + 1;
+      S.failures[main.id] = 0;
+      note(`breed de ${main.species} terminou: absorveu "${b.pick}" e aptidões +1. Saiu um ovo ${b.form} de tier ${b.tierOvo}.`);
+    } else {
+      S.failures[main.id] = (S.failures[main.id] || 0) + 1;
+      note(`breed de ${main.species} terminou sem sucesso.`);
+    }
+  }
+  return true;
+}
+// Chamado a cada 5 s: resolve breeds prontos e atualiza só as contagens, sem redesenhar a página.
+function atualizarBreeds() {
+  if (resolverBreeds()) { save(); render(); return; }
+  document.querySelectorAll('.contagem').forEach((el) => { el.textContent = faltaTexto(Number(el.dataset.fim)); });
 }
 
 function accountHtml() {
@@ -490,6 +533,7 @@ async function accountAct(name) {
 
 function act(name, el) {
   if (['login', 'register', 'forgot', 'logout', 'pull', 'push', 'setpass'].includes(name)) return accountAct(name);
+  resolverBreeds();
   S.pass = Y.refreshPass(S.pass, Date.now());
   const band = C.sanityBand(S.sanity);
   switch (name) {
@@ -566,30 +610,25 @@ function act(name, el) {
       const main = S.monsters.find((m) => m.id === $('fuse-main').value);
       const ing = S.monsters.find((m) => m.id === $('fuse-ing').value);
       if (!main) return;
-      const motivo = C.ingredientStatus(main, ing);
-      if (motivo) { note(`breed não feito: ${motivo}.`); break; }
+      const motivo = C.podeIniciarBreed(S.breeds, main, ing);
+      if (motivo) { note(`breed não iniciado: ${motivo}.`); break; }
       const ore = Number($('fuse-ore').value);
       const chance = C.breedSuccessChance(main.tier, S.successes[main.id] || 0, S.failures[main.id] || 0, ore);
       S.pass = Y.addPassXp(S.pass, 'breed');
-      const roll = Math.random();
-      ing.usosIngrediente = (ing.usosIngrediente || 0) + 1; // o ingrediente não some: cada breed gasta uma das 3 vezes
+      ing.usosIngrediente = (ing.usosIngrediente || 0) + 1; // o ingrediente não some: cada breed gasta um dos 3 usos
       const aviso = ing.usosIngrediente >= C.INGREDIENT_MAX_USES
         ? ` ${ing.species} chegou a ${C.INGREDIENT_MAX_USES} usos: não serve mais de ingrediente, mas continua na coleção.` : '';
-      if (roll < chance) {
-        const pool = C.activeAbilities(ing);
-        const pick = pool[Math.floor(Math.random() * pool.length)];
-        C.absorbAbility(main, pick, $('fuse-keep').value === 'new');
-        C.breedSuccessEffects(main); // aptidões +1; o tier do pai não muda
-        const tierOvo = C.breedEggTier(main.tier, Math.random());
-        const e = C.eggFor('breed', Math.random(), Math.random(), ing.purity);
-        S.eggs.push(eggOf(main.species, e.form, 'breed', e.pureza, tierOvo));
-        S.successes[main.id] = (S.successes[main.id] || 0) + 1;
-        S.failures[main.id] = 0;
-        note(`breed bem-sucedido: ${main.species} absorveu "${pick}" e subiu aptidões +1. Saiu um ovo ${e.form} de tier ${tierOvo}.${aviso}`);
-      } else {
-        S.failures[main.id] = (S.failures[main.id] || 0) + 1;
-        note(`breed falhou. ${main.species} continua.${aviso}`);
-      }
+      const pool = ing.abilities && ing.abilities.length ? ing.abilities : C.activeAbilities(ing);
+      const e = C.eggFor('breed', Math.random(), Math.random(), ing.purity);
+      const agora = Date.now();
+      S.breeds.push({
+        id: uid('b'), mainId: main.id, ingId: ing.id, mainNome: main.species, ingNome: ing.species,
+        inicio: agora, fim: agora + C.breedDurationMs(Math.random()),
+        sucesso: Math.random() < chance, pick: pool[Math.floor(Math.random() * pool.length)],
+        keep: $('fuse-keep').value === 'new', tierOvo: C.breedEggTier(main.tier, Math.random()),
+        form: e.form, pureza: e.pureza,
+      });
+      note(`breed iniciado: ${main.species} + ${ing.species}. Termina em cerca de 10 minutos.${aviso}`);
       break;
     }
     case 'battle': {
@@ -652,18 +691,21 @@ function act(name, el) {
       const qtd = Number(el.dataset.qtd) || 1;
       if ((S.tickets[banner] || 0) < qtd) { note(`faltam fichas do banner ${BANNER_LABEL[banner]}: precisa de ${qtd}.`); break; }
       S.tickets[banner] -= qtd;
-      let d = 0, melhor = 0, ultimo = null;
-      for (let i = 0; i < qtd; i++) {
-        const r = C.invocationResult(banner, SPECIES, Math.random(), Math.random());
+      const sorteados = [];
+      for (let i = 0; i < qtd; i++) sorteados.push(C.invocationResult(banner, SPECIES, Math.random(), Math.random()));
+      const resultados = C.garantirLote(sorteados, qtd);
+      const melhorSorteio = Math.max(...sorteados.map((r) => r.rarity));
+      const melhor = Math.max(...resultados.map((r) => r.rarity));
+      let d = 0, ultimo = null;
+      for (const r of resultados) {
         const m = newMonster(r.species, r.rarity);
         S.monsters.push(m);
         ultimo = m;
-        melhor = Math.max(melhor, r.rarity);
         d += C.diamondsForItem(C.rarityName(r.rarity));
       }
       S.last = ultimo.id;
       S.diamonds += d;
-      note(`invocação x${qtd} (${BANNER_LABEL[banner]}): ${qtd} monstrinho(s), melhor raridade ${RARITY_LABEL[C.rarityName(melhor)]}. Coleção: +${d} diamante(s).`);
+      note(`invocação x${qtd} (${BANNER_LABEL[banner]}): ${qtd} monstrinho(s), melhor raridade ${RARITY_LABEL[C.rarityName(melhor)]}${melhor > melhorSorteio ? ` (garantia de tier ${melhor})` : ''}. Coleção: +${d} diamante(s).`);
       break;
     }
     case 'hatchEgg': {
@@ -770,6 +812,8 @@ function act(name, el) {
   render();
 }
 
+resolverBreeds();
+setInterval(atualizarBreeds, 5000);
 A.onChange(onAccountEvent);
 A.init().then(() => render());
 

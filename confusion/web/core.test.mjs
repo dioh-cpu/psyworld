@@ -271,3 +271,40 @@ test('zona infinita: poder pelo tier e aptidões, chance entre 5% e 95%', () => 
   assert.equal(C.endlessChance(forte, 1), 0.95);
   assert.ok(C.endlessChance(forte, 1) > C.endlessChance(forte, 20));
 });
+
+test('invocação 10x garante tier 4; 50x garante tier 5; lote que já tem o tier não muda', () => {
+  const baixos = Array.from({ length: 10 }, () => ({ species: 'Noctarn', rarity: 1 }));
+  const g10 = C.garantirLote(baixos, 10);
+  assert.equal(Math.max(...g10.map((r) => r.rarity)), 4);
+  assert.equal(g10.length, 10);
+  const g50 = C.garantirLote(Array.from({ length: 50 }, () => ({ species: 'Noctarn', rarity: 2 })), 50);
+  assert.equal(Math.max(...g50.map((r) => r.rarity)), 5);
+  const ok = [{ species: 'Ignavor', rarity: 5 }, { species: 'Ignavor', rarity: 1 }];
+  assert.deepEqual(C.garantirLote(ok, 10), ok);
+  const solto = [{ rarity: 2 }];
+  assert.deepEqual(C.garantirLote(solto, 1), solto);
+});
+test('breed com tempo: média de 10 minutos (8 a 12), até 3 espaços, monstrinho só em um breed por vez', () => {
+  assert.equal(C.breedDurationMs(0), 8 * 60000);
+  assert.equal(C.breedDurationMs(1), 12 * 60000);
+  assert.equal(C.breedDurationMs(0.5), 10 * 60000);
+  const a = { id: 'a', tier: 3, usosIngrediente: 0 };
+  const b = { id: 'b', tier: 3, usosIngrediente: 0 };
+  const c = { id: 'c', tier: 3, usosIngrediente: 0 };
+  const d = { id: 'd', tier: 3, usosIngrediente: 0 };
+  const emAndamento = [{ mainId: 'x', ingId: 'y' }];
+  assert.equal(C.podeIniciarBreed(emAndamento, a, b), null);
+  assert.ok(C.podeIniciarBreed([{ mainId: 'x', ingId: 'y' }, { mainId: 'z', ingId: 'w' }, { mainId: 'q', ingId: 'r' }], a, b));
+  assert.ok(C.podeIniciarBreed([{ mainId: 'a', ingId: 'y' }], a, b));
+  assert.ok(C.podeIniciarBreed([{ mainId: 'x', ingId: 'b' }], a, b));
+  assert.equal(C.podeIniciarBreed([], a, c), null);
+  assert.ok(C.podeIniciarBreed([], a, d) === null);
+});
+test('habilidade absorvida entra na lista de habilidades do pai', () => {
+  const m = { hybrid: false, abilities: ['a', 'b', 'c', 'd'], extraAbility: null, abilityLevels: {} };
+  C.absorbAbility(m, 'x', true);
+  assert.ok(m.abilities.includes('x'));
+  assert.equal(m.abilities.length, 5);
+  assert.equal(m.extraAbility, 'x');
+  assert.equal(C.activeAbilities(m).length, 5);
+});

@@ -83,8 +83,11 @@ export function abilityEfficiency(level) {
 }
 export function absorbAbility(m, ability, keepNew) {
   m.hybrid = true;
+  m.abilities = m.abilities || [];
+  // A habilidade absorvida entra na lista de habilidades do pai (as 4 primeiras são as base).
+  if (!m.abilities.includes(ability)) m.abilities.push(ability);
   // Habilidade que o monstrinho já tem como base sobe o nível dela (até 5), sem ocupar o slot extra.
-  if ((m.abilities || []).slice(0, 4).includes(ability)) {
+  if (m.abilities.slice(0, 4).includes(ability)) {
     m.abilityLevels[ability] = Math.min(5, (m.abilityLevels[ability] || 1) + 1);
     return m.extraAbility;
   }
@@ -245,6 +248,38 @@ export function breedSuccessEffects(m) {
     m.aptitudes[k] = Math.min(WORK_LEVEL_MAX, m.aptitudes[k] + 1);
   }
   return m;
+}
+
+// ---- Invocação com garantia por lote (GDD v1.23): 10 garante tier 4; 50 garante tier 5 ----
+// Tier de invocação = raridade. A garantia troca o último resultado se o lote não tiver o tier mínimo.
+export const INVOCATION_GUARANTEE = [{ qtd: 50, tier: 5 }, { qtd: 10, tier: 4 }];
+export function garantirLote(resultados, qtd) {
+  const g = INVOCATION_GUARANTEE.find((x) => qtd >= x.qtd);
+  if (!g || resultados.length === 0) return resultados;
+  if (Math.max(...resultados.map((r) => r.rarity)) >= g.tier) return resultados;
+  const out = resultados.slice();
+  out[out.length - 1] = { ...out[out.length - 1], rarity: g.tier };
+  return out;
+}
+
+// ---- Breed com tempo (GDD v1.23): 10 minutos em média, até 3 ao mesmo tempo, um monstrinho por breed por vez ----
+export const BREED_MINUTES_MEDIA = 10;
+export const BREED_SLOTS = 3;
+// Duração entre 8 e 12 minutos (média de 10), conforme a rolagem.
+export function breedDurationMs(roll) {
+  return Math.round(BREED_MINUTES_MEDIA * 60000 * (0.8 + 0.4 * roll));
+}
+// Ids de monstrinhos que já estão em algum breed.
+export function idsEmBreed(breeds) {
+  return new Set(breeds.flatMap((b) => [b.mainId, b.ingId]));
+}
+// Motivo para não iniciar o breed agora, ou null se pode.
+export function podeIniciarBreed(breeds, main, ing) {
+  if (breeds.length >= BREED_SLOTS) return 'os 3 espaços de breed estão ocupados';
+  const ocupados = idsEmBreed(breeds);
+  if (main && ocupados.has(main.id)) return 'o principal já está em breed';
+  if (ing && ocupados.has(ing.id)) return 'o ingrediente já está em breed';
+  return ingredientStatus(main, ing);
 }
 
 // ---- Breed (GDD v1.22): ingrediente é usado até 3 vezes e nunca some; o ovo pode vir com tier acima do pai ----
