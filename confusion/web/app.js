@@ -1,6 +1,7 @@
 // Piloto jogável de Confusion Waves: fatia vertical dos sistemas do núcleo.
 import * as C from './core.js';
 import * as A from './account.js';
+import * as Y from './systems.js';
 
 const KEY = 'confusion-waves-piloto-v3';
 let recovery = false;      // true quando o link de recuperação de senha foi aberto
@@ -11,6 +12,7 @@ const ABILITIES = {
   Ignavor: ['Golpe Couraçado', 'Brasa Imperial', 'Juba Flamejante', 'Rugido Dourado', 'Escudo de Ferro'],
   Vaelith: ['Pulso Astral', 'Arco Ciano', 'Cauda de Cristal', 'Véu Gelado', 'Fenda Estelar'],
 };
+for (const [k, v] of Object.entries(Y.EVENT_SPECIES)) ABILITIES[k] = v.abilities; // exclusivos de evento
 const REPEATABLE_SOURCES = ['descanso', 'purificacao', 'missao'];
 const NON_REPEATABLE = ['trauma', 'magia_mental', 'crueldade', 'ritual'];
 const SOURCE_LABEL = {
@@ -24,29 +26,63 @@ const APT = {
   Ignavor: { plantar: 3, colher: 2, cortar: 3, transportar: 2 },
   Vaelith: { colher: 2, fabricar: 2, garimpar: 3 },
 };
+for (const [k, v] of Object.entries(Y.EVENT_SPECIES)) APT[k] = v.aptitudes; // exclusivos de evento
 const ART = { Noctarn: 'assets/monsters/noctarn/sprite-front.png' };
-const EVENT_ACTIVE = false; // sem evento ativo no piloto: o doce de Halloween não cai
+const EVENT_ACTIVE = true; // há sempre um evento mensal ativo no calendário; o item de drop é provisório
 const monster = (id, species, rarity, level, xp, purity) => ({
   id, species, rarity, tier: rarity, level, xp, purity, vinculo: 0,
   abilities: ABILITIES[species].slice(0, 4), extraAbility: null, hybrid: false, abilityLevels: {},
   aptitudes: { ...(APT[species] || {}) },
 });
-const SPECIES = Object.keys(APT); // todas saem de ovo, breed ou invocação: nenhuma espécie é só de pagamento
-const PURITY_BY_SPECIES = { Noctarn: 'trevas', Ignavor: 'luz', Vaelith: 'luz' };
+const SPECIES = Y.BASE_SPECIES; // todas saem de ovo, breed ou invocação: nenhuma espécie é só de pagamento
+const PURITY_BY_SPECIES = Y.SPECIES_PURITY;
 const RARITY_LABEL = { comum: 'Comum', rara: 'Rara', epica: 'Épica', lendaria: 'Lendária', mitica: 'Mítica' };
 const BANNER_LABEL = { permanente: 'permanente', semanal: 'semanal', evento: 'evento' };
 const uid = (p) => `${p}${Date.now()}${Math.floor(Math.random() * 1000)}`;
 const newMonster = (species, rarity, purity) => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species]);
 const eggOf = (species, form, origem) => ({ ...C.makeEgg(species, form, origem), id: uid('e') });
+const ORIGIN_LABEL = { breed: 'breed', zona: 'recompensa da zona', login: 'login diário', passe: 'passe de batalha', selvagem: 'drop selvagem', inicial: 'kit inicial' };
+// Aplica uma recompensa do jogo: diamantes, esferas e fichas entram direto; ovos são criados com a origem.
+function grant(reward) {
+  const ovos = Y.applyReward(S, reward);
+  for (let i = 0; i < ovos; i++) S.eggs.push(eggOf(Y.BASE_SPECIES[Math.floor(Math.random() * Y.BASE_SPECIES.length)], 'natural', 'login'));
+  return rewardText(reward);
+}
+const rewardText = (r) => [
+  r.diamantes ? `${r.diamantes} diamantes` : '',
+  ...Object.entries(r.esferas).filter(([, v]) => v).map(([k, v]) => `${v} esfera(s) ${RARITY_LABEL[k]}`),
+  ...Object.entries(r.fichas).filter(([, v]) => v).map(([k, v]) => `${v} ficha(s) ${BANNER_LABEL[k]}`),
+  r.ovos ? `${r.ovos} ovo(s)` : '',
+].filter(Boolean).join(', ') || 'nada';
+// Ao fim de um encontro (captura, fuga ou lançamento), o monstrinho pode deixar um ovo.
+function dropEgg(w) {
+  if (Y.dropsEgg(w, Math.random(), Y.dropBonus(Date.now()))) {
+    S.eggs.push(eggOf(w.species, 'natural', 'selvagem'));
+    note(`${w.species} deixou um ovo.`);
+  }
+}
+const evBlock = (e, tipo) => `<p><b>${e.nome}</b> (${tipo}) · exclusivo: <b>${esc(e.exclusivo)}</b> · captura +${pct(e.bonus.captura)} · drop +${pct(e.bonus.drop)}</p>`;
+function wildBlock() {
+  const w = S.wild;
+  const bonus = Y.captureBonus(Date.now(), S.day);
+  const opts = C.RARITY.map((k, i) => `<option value="${k}">${RARITY_LABEL[k]} (${S.esferas[k]}) · chance ${pct(Y.captureChance(i + 1, w, bonus))}</option>`).join('');
+  return `<p>Apareceu um <b>${esc(w.species)}</b>${w.exclusivo ? ' <b>(exclusivo do evento)</b>' : ''} · ${RARITY_LABEL[C.rarityName(w.rarity)]} · tier ${w.tier}.</p>
+    <label>Esfera <select id="sphere">${opts}</select></label>
+    <button data-act="throw">Lançar esfera</button>
+    <button data-act="flee" class="ghost">Deixar ir</button>
+    <p class="muted">Cada lançamento gasta uma esfera e encerra o encontro.</p>`;
+}
 
 function newState() {
-  return {
+  const st = {
     game: 'confusion-waves', cloudVersion: 0,
     day: 1, role: null, switched: false, sanity: 70, uses: {},
     egg: { id: 'ovo-1', species: 'Ignavor', result: null },
     monsters: [monster('m1', 'Noctarn', 3, 5, 40, 'trevas'), monster('m2', 'Ignavor', 2, 5, 10, 'luz'), monster('m3', 'Vaelith', 2, 5, 5, 'luz')],
     bot: 0, successes: {}, failures: {},
     diamonds: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
+    esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
+    pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null,
     ingredients: [
       { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum', category: 'vegetal' },
       { name: 'Fungo Abissal', purity: 'trevas', freshness: 0.8, rarity: 'rara', category: 'fungo' },
@@ -54,8 +90,11 @@ function newState() {
     ],
     charcoal: 2, pot: 'comum', rescue: null, battleOver: false, log: [],
     farm: { mapping: {}, unassigned: [] },
-    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0 },
+    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, doce_halloween: 0, doce_solsticio: 0 },
   };
+  const ovos = Y.applyReward(st, Y.starterReward()); // kit inicial: diamantes, fichas, esferas e um ovo
+  for (let i = 0; i < ovos; i++) st.eggs.push(eggOf('Ignavor', 'natural', 'inicial'));
+  return st;
 }
 
 let S = load() || newState();
@@ -69,7 +108,11 @@ function withDefaults(s) {
   return {
     ...d, ...s,
     diamonds: s.diamonds ?? 0,
-    tickets: { ...d.tickets, ...(s.tickets || {}) },
+    tickets: { permanente: 0, semanal: 0, evento: 0, ...(s.tickets || {}) },
+    esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0, ...(s.esferas || {}) },
+    login: { streak: 0, lastDay: 0, ...(s.login || {}) },
+    pass: { season: '', xp: 0, claimed: 0, premium: false, ...(s.pass || {}) },
+    wild: s.wild ?? null,
     endless: { ...d.endless, ...(s.endless || {}) },
     eggs: s.eggs || [],
     monsters: (s.monsters || []).map(migrateMonster),
@@ -112,6 +155,10 @@ const pct = (x) => `${Math.round(x * 100)}%`;
 const rarityTag = (m) => `<b class="rar rar-${C.rarityName(m.rarity)}">${RARITY_LABEL[C.rarityName(m.rarity)]}</b> · tier ${m.tier}`;
 
 function render() {
+  S.pass = Y.refreshPass(S.pass, Date.now());
+  const ev = Y.activeEvents(Date.now());
+  const loginNext = Y.nextLoginStreak(S.login, Date.now());
+  const passLv = Y.passLevel(S.pass.xp);
   const band = C.sanityBand(S.sanity);
   const endlessR = C.endlessRewards(S.endless.floor, EVENT_ACTIVE);
   const bridge = C.bridgeState(S.day);
@@ -126,6 +173,36 @@ function render() {
   <section>
     <h2>Conta</h2>
     ${accountHtml()}
+  </section>
+
+  <section>
+    <h2>Início: login e escudo do começo</h2>
+    <p class="muted">${Y.shieldActive(S.day) ? `Escudo do começo (dias 1 a ${Y.SHIELD_DAYS}): captura +${pct(Y.SHIELD_CAPTURE_BONUS)} e busca dá encontro em ${pct(Y.SHIELD_ENCOUNTER_CHANCE)}.` : 'Escudo do começo encerrado.'}</p>
+    <p>Sequência de login: <b>${S.login.streak}</b> dia(s). ${loginNext ? `Hoje: dia ${loginNext} da sequência, com ${esc(rewardText(Y.loginRewardFor(loginNext)))}.` : 'Você já resgatou o login de hoje.'}</p>
+    <button data-act="recompensaLogin" ${loginNext ? '' : 'disabled'}>Resgatar login de hoje</button>
+  </section>
+
+  <section>
+    <h2>Eventos desta semana e deste mês</h2>
+    ${evBlock(ev.semanal, 'semanal')}
+    ${evBlock(ev.mensal, 'mensal')}
+    <p class="muted">Monstrinhos exclusivos só aparecem em encontros enquanto o evento está ativo. Nada disso se compra com dinheiro.</p>
+  </section>
+
+  <section>
+    <h2>Passe de batalha · temporada ${S.pass.season}</h2>
+    <p>Nível <b>${passLv}</b> de ${Y.PASS_LEVELS} · XP ${S.pass.xp} · níveis resgatados ${S.pass.claimed}.</p>
+    <p class="muted">XP por jogar: dia avançado +${Y.PASS_XP.dia}, andar da zona +${Y.PASS_XP.andar}, captura +${Y.PASS_XP.captura}, breed +${Y.PASS_XP.breed}, batalha final +${Y.PASS_XP.batalha}. Cada ${Y.PASS_XP_PER_LEVEL} de XP sobe um nível.</p>
+    <button data-act="passClaim" ${passLv > S.pass.claimed ? '' : 'disabled'}>Resgatar ${Math.max(0, passLv - S.pass.claimed)} nível(is)</button>
+    <p class="muted">Passe premium: só cosméticos. Não dá diamantes, esferas, fichas, ovos nem XP. Ainda não está no piloto.</p>
+  </section>
+
+  <section>
+    <h2>Explorar e capturar</h2>
+    ${S.wild ? wildBlock() : `<p class="muted">Chance de encontro nesta busca: ${pct(Y.encounterChance(S.day))}.</p><button data-act="search">Procurar monstrinho</button>`}
+    <p class="muted">Esferas: ${C.RARITY.map((k) => `${RARITY_LABEL[k]} ${S.esferas[k]}`).join(' · ')}</p>
+    <p class="muted">Compre esferas com diamantes ganhos no jogo:</p>
+    ${C.RARITY.map((k) => `<button data-act="buySphere" data-k="${k}">Esfera ${RARITY_LABEL[k].toLowerCase()} (${Y.SPHERE_PRICE[k]} diamantes)</button>`).join('')}
   </section>
 
   <section>
@@ -162,7 +239,7 @@ function render() {
          <p class="muted">Ovo inicial. Formas elegíveis: ${C.eligibleForms(S.sanity).join(', ')}.</p>
          <button data-act="hatch">Chocar ovo inicial</button>`}
     <p class="muted">Ovos do breed e da zona. Ao chocar, a raridade é rolada e o tier começa igual a ela.</p>
-    <ul class="log">${S.eggs.map((e) => `<li>Ovo de ${esc(e.species)} · forma ${esc(e.form)} · ${e.origem === 'zona' ? 'recompensa da zona' : 'breed'} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
+    <ul class="log">${S.eggs.map((e) => `<li>Ovo de ${esc(e.species)} · forma ${esc(e.form)} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
   </section>
 
   <section>
@@ -348,6 +425,7 @@ async function accountAct(name) {
 
 function act(name, el) {
   if (['login', 'register', 'forgot', 'logout', 'pull', 'push', 'setpass'].includes(name)) return accountAct(name);
+  S.pass = Y.refreshPass(S.pass, Date.now());
   const band = C.sanityBand(S.sanity);
   switch (name) {
     case 'path': {
@@ -365,6 +443,7 @@ function act(name, el) {
     }
     case 'day': {
       S.day += 1;
+      S.pass = Y.addPassXp(S.pass, 'dia');
       for (const task of Object.keys(S.farm.mapping)) {
         const m = S.monsters.find((x) => x.id === S.farm.mapping[task]);
         if (!m) continue;
@@ -425,6 +504,7 @@ function act(name, el) {
       const ing = S.monsters.find((m) => m.id === ingId);
       const ore = Number($('fuse-ore').value);
       const chance = C.breedSuccessChance(main.tier, S.successes[main.id] || 0, S.failures[main.id] || 0, ore);
+      S.pass = Y.addPassXp(S.pass, 'breed');
       const roll = Math.random();
       S.monsters = S.monsters.filter((m) => m.id !== ing.id);  // o ingrediente é sempre consumido
       if (roll < chance) {
@@ -450,7 +530,7 @@ function act(name, el) {
       const won = Math.random() < C.winChance(S.bot);
       const res = C.finalBattle(won ? 'vitoria' : 'derrota', m, S.bot, 25);
       S.bot = res.bot;
-      if (won) { S.battleOver = true; S.diamonds += C.diamondsForItem('lendaria'); note(`vitória contra o bot com ${m.species}. Campanha concluída (+${C.diamondsForItem('lendaria')} diamantes).`); }
+      if (won) { S.battleOver = true; S.pass = Y.addPassXp(S.pass, 'batalha'); S.diamonds += C.diamondsForItem('lendaria'); note(`vitória contra o bot com ${m.species}. Campanha concluída (+${C.diamondsForItem('lendaria')} diamantes).`); }
       else note(`derrota para o bot. ${m.species} perdeu XP (agora ${m.xp}). O bot ficou mais forte (força ${S.bot}).`);
       break;
     }
@@ -490,6 +570,7 @@ function act(name, el) {
       if (r.ovo) S.eggs.push(eggOf(SPECIES[Math.floor(Math.random() * SPECIES.length)], 'natural', 'zona'));
       S.endless.best = Math.max(S.endless.best, floor);
       S.endless.floor = floor + 1;
+      S.pass = Y.addPassXp(S.pass, 'andar');
       const extra = r.invocacoes.map((i) => `, ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('');
       note(`andar ${floor} concluído com ${m.species}: +${r.diamantes} diamantes${extra}${r.ovo ? ' + ovo de recompensa' : ''}${r.evento ? ' + doce de Halloween' : ''}.`);
       break;
@@ -530,6 +611,70 @@ function act(name, el) {
       } catch (_) {
         note(`diamantes insuficientes para ${qtd} ficha(s).`);
       }
+      break;
+    }
+    case 'recompensaLogin': {
+      const streak = Y.nextLoginStreak(S.login, Date.now());
+      if (!streak) return;
+      const txt = grant(Y.loginRewardFor(streak));
+      S.login = { streak, lastDay: Y.brDayNumber(Date.now()) };
+      note(`login do dia ${streak}: ${txt}.`);
+      break;
+    }
+    case 'passClaim': {
+      const antes = S.pass.claimed;
+      const { reward, claimed } = Y.claimPass(S.pass);
+      if (claimed <= antes) return;
+      const txt = grant(reward);
+      S.pass = { ...S.pass, claimed };
+      note(`passe: níveis ${antes + 1} a ${claimed} resgatados: ${txt}.`);
+      break;
+    }
+    case 'buySphere': {
+      try {
+        const p = Y.buySphere(S, el.dataset.k);
+        note(`comprou esfera ${RARITY_LABEL[el.dataset.k].toLowerCase()} por ${p} diamantes.`);
+      } catch (e) {
+        note(`não deu para comprar a esfera: ${e.message}.`);
+      }
+      break;
+    }
+    case 'search': {
+      if (S.wild) return;
+      const ts = Date.now();
+      const ev = Y.activeEvents(ts);
+      S.resources[ev.mensal.item] = (S.resources[ev.mensal.item] || 0) + 1; // a festa do mês deixa um doce a cada busca
+      const w = Y.rollEncounter(ts, S.day, { r1: Math.random(), r2: Math.random(), r3: Math.random(), r4: Math.random() });
+      if (!w) { note('a busca não achou nenhum monstrinho.'); break; }
+      S.wild = w;
+      note(`um ${w.species} apareceu${w.exclusivo ? ' (exclusivo do evento)' : ''}: ${RARITY_LABEL[C.rarityName(w.rarity)]}, tier ${w.tier}.`);
+      break;
+    }
+    case 'throw': {
+      const w = S.wild;
+      if (!w) return;
+      const k = $('sphere').value;
+      if (!S.esferas[k]) { note(`sem esfera ${RARITY_LABEL[k].toLowerCase()}.`); break; }
+      S.esferas[k] -= 1;
+      const chance = Y.captureChance(C.RARITY.indexOf(k) + 1, w, Y.captureBonus(Date.now(), S.day));
+      if (Math.random() < chance) {
+        S.monsters.push(newMonster(w.species, w.rarity, w.purity));
+        S.pass = Y.addPassXp(S.pass, 'captura');
+        const d = C.diamondsForItem(C.rarityName(w.rarity));
+        S.diamonds += d;
+        note(`${w.species} capturado com esfera ${RARITY_LABEL[k].toLowerCase()} (chance ${pct(chance)}). Coleção: +${d} diamante(s).`);
+      } else {
+        note(`a esfera ${RARITY_LABEL[k].toLowerCase()} falhou (chance ${pct(chance)}); ${w.species} escapou.`);
+      }
+      dropEgg(w);
+      S.wild = null;
+      break;
+    }
+    case 'flee': {
+      if (!S.wild) return;
+      note(`você deixou ${S.wild.species} ir.`);
+      dropEgg(S.wild);
+      S.wild = null;
       break;
     }
     case 'reset': {
