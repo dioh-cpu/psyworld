@@ -4,6 +4,7 @@ import * as A from './account.js';
 import * as Y from './systems.js';
 import * as E from './species.js';
 import * as Mundo from './mundo/index.js';
+import * as CB from './combate.js';
 
 const KEY = 'confusion-waves-piloto-v3';
 let recovery = false;      // true quando o link de recuperação de senha foi aberto
@@ -106,7 +107,7 @@ const tempoTexto = (ms) => {
   const s = Math.floor(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
-const campanhaNome = (dif, c = S.campanha) => (dif === 'normal' ? 'Normal' : dif === 'speedrun' ? 'Speedrun' : `Desafio ${c.desafioNivel + 1}`);
+const campanhaNome = (dif, c = S.campanha) => (dif === 'normal' ? 'Normal' : dif === 'speedrun' ? 'Speedrun' : nomeDesafio(c.desafioNivel + 1));
 // Campanha (v1.36): botões das dificuldades, cronômetro e recordes.
 function campanhaHtml() {
   const c = S.campanha;
@@ -133,8 +134,8 @@ function torresHtml() {
     const niveis = [0, 1, 2, 3].map((n) => `<button data-act="torreNivel" data-torre="${torre.id}" data-n="${n}" ${n > t.liberada || n === t.nivel ? 'disabled' : ''}>${n === 0 ? 'Normal' : `Dificuldade ${n} (+${n * 30}% drop)`}</button>`).join(' ');
     const m0 = S.monsters[0];
     return `<div class="card-torre">
-      <p><b>${esc(torre.nome)}</b> · tema ${esc(tema.nome)} · elemento ${ELEMENTO_LABEL[Y.elementoDaTorre(torre, ts)]} · item ${esc(Y.itemDaTorre(torre, ts))}</p>
-      <p>Andar ${Math.min(andar, torre.andares)} de ${torre.andares}${concluida ? ' · concluída nesta dificuldade' : ''}. Dificuldade escolhida: ${t.nivel}. Liberadas até: ${t.liberada}.</p>
+      <p><b>${esc(torre.nome)}</b> · tema ${esc(tema.nome)} · elemento ${ELEMENTO_LABEL[Y.elementoDaTorre(torre, ts)]} · item ${esc(itemNome(Y.itemDaTorre(torre, ts)))}</p>
+      <p>Andar ${Math.min(andar, torre.andares)} de ${torre.andares}${concluida ? ' · concluída nesta dificuldade' : ''}. Dificuldade escolhida: ${t.nivel}. Liberadas até: ${t.liberada}. Recorde: andar ${(S.recordes || {})[torre.id] || 0}.</p>
       <p>${niveis}</p>
       <button data-act="torreSubir" data-torre="${torre.id}" ${concluida || !m0 ? 'disabled' : ''}>Subir o andar ${Math.min(andar, torre.andares)}</button>
       ${m0 && !concluida ? `<p class="muted">Chance com ${esc(m0.species)}: ${pct(Y.chanceTorre(m0, torre, ts, andar, t.nivel))}. Chefes nos andares 5, 10, 15 e 20.</p>` : ''}
@@ -334,7 +335,7 @@ function newState() {
     egg: { id: 'ovo-1', species: 'Ignavor', result: null },
     monsters: [monster('m1', 'Noctarn', 3, 5, C.xpDoNivel(5), 'trevas'), monster('m2', 'Ignavor', 2, 5, C.xpDoNivel(5), 'luz'), monster('m3', 'Vaelith', 2, 5, C.xpDoNivel(5), 'luz')],
     bot: 0, successes: {}, failures: {},
-    diamonds: 0, gold: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {}, dificuldade: 0 }, eggs: [],
+    diamonds: 0, gold: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {}, dificuldade: 0 }, pocoes: { pequena: 5, media: 0, grande: 0 }, auto: { ativo: false, combate: true, zona: false, limiar: 0.35, esferas: [], habilidades: [], pocoes: [] }, combate: null, recordes: { semana: 0, mes: 0 }, eggs: [],
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
     pity: { permanente: 0, semanal: 0, evento: 0 }, pityT5: { permanente: 0, semanal: 0, evento: 0 }, torres: {}, campanha: Y.campanhaNova(), trilha: null, trilhaPagina: 1, semana: null, raid: { janela: null }, fragmentos: {}, mundo: Mundo.criarMundo(),
     pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null, breeds: [],
@@ -368,6 +369,10 @@ function withDefaults(s) {
     pity: { permanente: 0, semanal: 0, evento: 0, ...(s.pity || {}) },
     pityT5: { permanente: 0, semanal: 0, evento: 0, ...(s.pityT5 || {}) },
     torres: s.torres || {},
+    pocoes: { pequena: 0, media: 0, grande: 0, ...(s.pocoes || {}) },
+    auto: { ativo: false, combate: true, zona: false, limiar: 0.35, esferas: [], habilidades: [], pocoes: [], ...(s.auto || {}) },
+    combate: s.combate ?? null,
+    recordes: { semana: 0, mes: 0, ...(s.recordes || {}) },
     campanha: { ...Y.campanhaNova(), ...(s.campanha || {}) },
     missoes: { semanal: null, mensal: null, ...(s.missoes || {}) },
     mundo: { ...Mundo.criarMundo(), ...(s.mundo || {}) },
@@ -439,6 +444,9 @@ function render() {
     <div class="status">Dia <b>${S.day}</b> · Ponte <b class="${bridge}">${bridge}</b> · Caminho <b>${S.role ? (S.role === 'heroi' ? 'herói' : 'vilão') : 'não escolhido'}</b> · Traje <b>${costume}</b> · Gold <b>${S.gold}</b> · Diamantes <b>${S.diamonds}</b></div>
     <button data-act="reset" class="ghost">Reiniciar piloto</button>
   </header>
+
+  ${combateHtml()}
+  ${autoHtml()}
 
   <section>
     <h2>Conta</h2>
@@ -680,6 +688,259 @@ function syncBreed(ingAnterior = null) {
   if (btn) btn.disabled = !breedLivre(main);
 }
 // Quando um breed termina, o resultado entra no jogo (ingrediente já foi gasto no início).
+// ---- Exploração, combate por turnos e automático (v1.37) ----
+const TIPO_LABEL = { zona: 'zona infinita', torre: 'torre temática', raid: 'raid boss', campanha: 'campanha' };
+const ITEM_LABEL = { petala_lua: 'Pétala da Lua', espiga_fartura: 'Espiga da Fartura', estilhaco_cristal: 'Estilhaço de Cristal', doce_halloween: 'Doce de Halloween', doce_solsticio: 'Doce do Solstício', doce_lua: 'Doce da Lua', doce_fartura: 'Doce da Fartura', doce_cristal: 'Doce de Cristal' };
+const itemNome = (k) => ITEM_LABEL[k] || k;
+const nomeDesafio = (n) => (n === 1 ? 'Pesadelo' : n === 2 ? 'Lenda' : `Infinito ${n - 2}`);
+const AUTO_LIMIARES = [0.25, 0.35, 0.5];
+const AUTO_OPCOES = { esferas: ['comum', 'rara', 'epica', 'lendaria', 'mitica'], pocoes: ['pequena', 'media', 'grande'] };
+const todasHabilidades = () => [...new Set(S.monsters.flatMap((m) => C.activeAbilities(m)))];
+const opcoesAuto = (g) => (g === 'habilidades' ? todasHabilidades() : AUTO_OPCOES[g]);
+const rotuloAuto = (g, v) => (g === 'esferas' ? `Esfera ${RARITY_LABEL[v].toLowerCase()}` : g === 'pocoes' ? CB.POCOES[v].nome : v);
+const qtdAuto = (g, v) => (g === 'esferas' ? (S.esferas[v] || 0) : g === 'pocoes' ? (S.pocoes[v] || 0) : null);
+const autoPausa = (texto) => { S.auto.ativo = false; note(texto); };
+
+// Exploração: procurar, lançar esfera e deixar ir. Manual e automático usam as mesmas funções.
+function procurar() {
+  if (S.wild) return;
+  const ts = Date.now();
+  const ev = Y.activeEvents(ts);
+  S.resources[ev.mensal.item] = (S.resources[ev.mensal.item] || 0) + 1; // a festa do mês deixa um doce a cada busca
+  const w = Y.rollEncounter(ts, S.day, { r1: Math.random(), r2: Math.random(), r3: Math.random(), r4: Math.random() });
+  if (!w) { note('a busca não achou nenhum monstrinho.'); return; }
+  S.wild = w;
+  note(`um ${w.species} apareceu${w.exclusivo ? ' (exclusivo do evento)' : ''}: ${RARITY_LABEL[C.rarityName(w.rarity)]}, tier ${w.tier}.`);
+}
+function lancar(k) {
+  const w = S.wild;
+  if (!w) return;
+  if (!S.esferas[k]) { note(`sem esfera ${RARITY_LABEL[k].toLowerCase()}.`); return; }
+  S.esferas[k] -= 1;
+  const chance = Y.captureChance(C.RARITY.indexOf(k) + 1, w, Y.captureBonus(Date.now(), S.day));
+  const gold = Y.goldEncontro(w.rarity); // o encontro paga gold ao terminar, capturado ou não
+  S.gold += gold;
+  if (Math.random() < chance) {
+    const nm = newMonster(w.species, w.rarity, w.purity);
+    const xp = C.ganharXp(nm, C.XP_FONTE.captura(w.rarity));
+    S.monsters.push(nm);
+    S.last = nm.id;
+    S.pass = Y.addPassXp(S.pass, 'captura', Y.passXpCaptura(w.rarity));
+    contarMissao();
+    const sem = Y.contaCapturaSemanal(S.semana, Date.now()); // fichas semanais: 1 a cada 3 capturas da semana
+    S.semana = sem.s;
+    S.tickets.semanal += sem.fichas;
+    const d = C.diamondsForItem(C.rarityName(w.rarity));
+    S.diamonds += d;
+    note(`${w.species} capturado com esfera ${RARITY_LABEL[k].toLowerCase()} (chance ${pct(chance)}). Coleção: +${d} diamante(s), +${xp.ganho} XP, +${gold} gold.`);
+  } else {
+    note(`a esfera ${RARITY_LABEL[k].toLowerCase()} falhou (chance ${pct(chance)}); ${w.species} escapou. +${gold} gold.`);
+  }
+  dropEgg(w);
+  S.wild = null;
+}
+function deixarIr() {
+  if (!S.wild) return;
+  const gold = Y.goldEncontro(S.wild.rarity);
+  S.gold += gold;
+  note(`você deixou ${S.wild.species} ir. +${gold} gold.`);
+  dropEgg(S.wild);
+  S.wild = null;
+}
+
+// Combate por turnos: o inimigo depende do alvo. O poder passa pela escala de calibração (CB.poderInimigo).
+function alvoDoCombate(tipo, dados) {
+  const ts = Date.now();
+  if (tipo === 'zona') {
+    const dif = S.endless.dificuldade || 0;
+    return { nome: `Andar ${S.endless.floor}`, poder: CB.poderInimigo(C.endlessFloorPower(S.endless.floor) * C.fatorForca(dif)), elemento: C.elementoDoAndar(S.endless.floor), habilidades: ['Golpe sombrio', 'Investida'] };
+  }
+  if (tipo === 'torre') {
+    const torre = Y.TORRES.find((x) => x.id === dados.torreId);
+    const t = Y.torreDoPeriodo(S.torres[torre.id], torre, ts);
+    const andar = Y.andarDaTorre(t, t.nivel);
+    return { nome: `${torre.nome} · andar ${andar}`, poder: CB.poderInimigo(Y.poderAndarTorre(andar, t.nivel)), elemento: Y.elementoDaTorre(torre, ts), habilidades: ['Golpe do guardião', 'Fúria'] };
+  }
+  if (tipo === 'raid') {
+    const boss = Y.RAID_BOSSES.find((b) => b.id === dados.bossId);
+    return { nome: boss.nome, poder: CB.poderInimigo(boss.poder), elemento: boss.elemento, habilidades: ['Golpe do chefe', 'Fúria'] };
+  }
+  const idx = Y.campanhaIndice(S.campanha, S.campanha.correndo.dif);
+  return { nome: `Bot (força ${S.bot})`, poder: CB.poderInimigo((100 + 40 * S.bot) * C.fatorForcaSemLimite(idx)), elemento: botElemento(S.bot), habilidades: ['Golpe do bot', 'Fúria'] };
+}
+function iniciarCombate(tipo, m, dados = {}) {
+  if (S.combate) { note('termine o combate atual antes de começar outro.'); return; }
+  if (tipo === 'campanha' && !S.campanha.correndo) { note('escolha uma campanha para começar.'); return; }
+  const alvo = alvoDoCombate(tipo, dados);
+  const jog = CB.criarLutador({ nome: m.species, poder: C.monsterPower(m), elemento: m.elemento ?? 'neutro', habilidades: C.activeAbilities(m) });
+  S.combate = { tipo, monstroId: m.id, dados, ...CB.criarCombate(jog, CB.criarLutador(alvo), S.pocoes) };
+  note(`combate contra ${alvo.nome} começou (${TIPO_LABEL[tipo]}).`);
+}
+function fimCombate() {
+  const e = S.combate;
+  const vitoria = e.resultado === 'vitoria';
+  S.pocoes = { ...e.pocoes };
+  S.combate = null;
+  note(`combate encerrado em ${Math.min(e.turno, CB.COMBATE.turnosMax)} turno(s): ${vitoria ? 'vitória' : 'derrota'}.`);
+  const m = S.monsters.find((x) => x.id === e.monstroId);
+  if (!m) return;
+  if (e.tipo === 'zona') return fimZona(m, vitoria);
+  if (e.tipo === 'torre') return fimTorre(m, e.dados.torreId, vitoria);
+  if (e.tipo === 'raid') return fimRaid(m, e.dados.bossId, vitoria);
+  return fimCampanha(m, vitoria);
+}
+function fimZona(m, vitoria) {
+  const floor = S.endless.floor;
+  const dif = S.endless.dificuldade || 0;
+  if (!vitoria) {
+    const xp = C.ganharXp(m, C.XP_FONTE.andarDerrota);
+    note(`andar ${floor}: ${m.species} não venceu. O andar recomeça; nada foi perdido. +${xp.ganho} XP.`);
+    return;
+  }
+  const r = C.endlessRewards(floor, EVENT_ACTIVE, Math.random);
+  r.diamantes = Y.quantidadeDrop(r.diamantes, C.bonusDrop(dif), Math.random()); // dificuldade dá +30% de drop por nível
+  S.diamonds += r.diamantes;
+  for (const i of r.invocacoes) S.tickets[i.banner] += i.qtd;
+  if (r.evento) S.endless.drops[r.evento] = (S.endless.drops[r.evento] || 0) + 1;
+  if (r.ovo) {
+    const e = C.eggFor('zona', Math.random(), Math.random(), null);
+    S.eggs.push(eggOf(SPECIES[Math.floor(Math.random() * SPECIES.length)], e.form, 'zona', e.pureza));
+  }
+  S.endless.best = Math.max(S.endless.best, floor);
+  S.endless.floor = floor + 1;
+  S.pass = Y.addPassXp(S.pass, 'andar');
+  contarMissao();
+  const gold = Y.goldAndar(floor);
+  S.gold += gold;
+  const xp = C.ganharXp(m, C.XP_FONTE.andarVitoria(floor));
+  const extra = r.invocacoes.map((i) => `, ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('');
+  note(`andar ${floor} concluído com ${m.species}: +${r.diamantes} diamantes, +${gold} gold, +${xp.ganho} XP${extra}${r.ovo ? ' + ovo de recompensa' : ''}${r.evento ? ' + doce de Halloween' : ''}${xp.subiu ? `. ${m.species} subiu para o nível ${xp.nivel}` : ''}.`);
+}
+function fimTorre(m, torreId, vitoria) {
+  const torre = Y.TORRES.find((x) => x.id === torreId);
+  const ts = Date.now();
+  const t = Y.torreDoPeriodo(S.torres[torre.id], torre, ts);
+  S.torres[torre.id] = t;
+  const andar = Y.andarDaTorre(t, t.nivel);
+  if (!vitoria) {
+    const xp = C.ganharXp(m, 2);
+    note(`${torre.nome}: ${m.species} não passou do andar ${andar}. Nada perdido. +${xp.ganho} XP.`);
+    return;
+  }
+  const r = Y.venceAndarTorre(t, torre, t.nivel, { a: Math.random(), b: Math.random() });
+  S.torres[torre.id] = r.t;
+  S.recordes = S.recordes || { semana: 0, mes: 0 };
+  S.recordes[torre.id] = Math.max(S.recordes[torre.id] || 0, andar);
+  S.diamonds += r.recompensa.diamantes;
+  const item = Y.itemDaTorre(torre, ts);
+  const vantagem = C.multElemento(m.elemento, Y.elementoDaTorre(torre, ts)) > 1 ? 1 : 0; // vantagem elemental: +1 item
+  const itens = r.recompensa.item + vantagem;
+  S.resources[item] = (S.resources[item] || 0) + itens;
+  const xp = C.ganharXp(m, 5 + andar);
+  S.pass = Y.addPassXp(S.pass, 'andar');
+  contarMissao();
+  note(`${torre.nome}: andar ${andar} vencido com ${m.species}. +${r.recompensa.diamantes} diamantes, +${itens} ${itemNome(item)}${vantagem ? ' (vantagem elemental +1)' : ''}, +${xp.ganho} XP.${r.liberouNova ? ` Dificuldade ${r.t.liberada} liberada.` : ''}`);
+}
+function fimRaid(m, bossId, vitoria) {
+  const boss = Y.RAID_BOSSES.find((b) => b.id === bossId);
+  S.raid.janela = Y.raidAt(Date.now()).janela; // a tentativa desta raid foi usada
+  contarMissao();
+  if (!vitoria) { note(`${m.species} não venceu ${boss.nome}. A tentativa desta raid está usada.`); return; }
+  const f = Y.fragmentosVitoria(Math.random());
+  S.fragmentos[boss.id] = (S.fragmentos[boss.id] || 0) + f;
+  const xp = C.ganharXp(m, C.XP_FONTE.raidVitoria);
+  S.pass = Y.addPassXp(S.pass, 'raid');
+  note(`${m.species} venceu ${boss.nome} e pegou ${f} fragmento(s). +${xp.ganho} XP.`);
+}
+function fimCampanha(m, vitoria) {
+  const c = S.campanha;
+  const dif = c.correndo ? c.correndo.dif : 'normal';
+  const nome = campanhaNome(dif, c);
+  const idx = Y.campanhaIndice(c, dif);
+  const res = C.finalBattle(vitoria ? 'vitoria' : 'derrota', m, S.bot);
+  S.bot = res.bot;
+  if (!vitoria) {
+    note(`derrota para o bot. ${m.species} perdeu até ${C.XP_FONTE.batalhaDerrota} XP (agora ${m.xp}, nível ${m.level}). O bot ficou mais forte (força ${S.bot}).`);
+    return;
+  }
+  const v = Y.campanhaVencer(c, Date.now());
+  S.campanha = v.c;
+  const bonus = C.bonusDropSemLimite(idx);
+  const d = Math.floor(3 * bonus);
+  const g = Math.floor(Y.GOLD.batalhaFinal * bonus);
+  S.diamonds += d; S.gold += g; S.pass = Y.addPassXp(S.pass, 'batalha');
+  note(`campanha ${nome} zerada em ${tempoTexto(v.ms)} com ${m.species}. +${d} diamantes, +${g} gold, +${C.XP_FONTE.batalhaVitoria} XP.${dif === 'desafio' ? ` O Desafio sobe para o nível ${v.c.desafioNivel + 1}: ${campanhaNome('desafio', v.c)}.` : ''}`);
+}
+
+// Automático: um passo por tique. Combate (se ligado), depois esfera marcada, depois zona (se ligada), senão procura.
+function autoTick() {
+  const a = S.auto;
+  if (!a.ativo) return;
+  if (S.combate) {
+    if (!a.combate) return autoPausa('combate em andamento e auto-combate desligado: a auto-exploração pausou.');
+    const acao = CB.escolherAuto(S.combate, { limiarPocao: a.limiar, pocoes: a.pocoes, habilidades: a.habilidades });
+    try { CB.agir(S.combate, acao, Math.random); } catch (e) { return autoPausa(`auto-combate pausou: ${e.message}.`); }
+    S.pocoes = { ...S.combate.pocoes };
+    if (S.combate.fim) fimCombate();
+    return;
+  }
+  if (S.wild) {
+    const k = CB.escolherEsfera(S.esferas, a.esferas);
+    if (!k) return autoPausa('sem esfera marcada com estoque. Auto-exploração pausada: marque outra esfera ou compre.');
+    return lancar(k);
+  }
+  if (a.zona && S.monsters.length) return iniciarCombate('zona', S.monsters[0]);
+  procurar();
+}
+function combateHtml() {
+  const e = S.combate;
+  if (!e) return '';
+  const barra = (x) => `<progress value="${Math.max(0, x.hp)}" max="${x.hpMax}"></progress> ${Math.max(0, x.hp)}/${x.hpMax}`;
+  const habs = e.jog.habilidades.map((h) => {
+    const pronta = CB.habilidadePronta(e.jog, h.nome, e.turno);
+    return `<button data-act="combateAcao" data-acao="habilidade" data-nome="${esc(h.nome)}" ${pronta ? '' : 'disabled'}>${esc(h.nome)}${pronta ? '' : ' (recarga)'}</button>`;
+  }).join(' ');
+  const pocs = Object.keys(CB.POCOES).map((p) => `<button data-act="combateAcao" data-acao="pocao" data-p="${p}" ${(e.pocoes[p] || 0) > 0 ? '' : 'disabled'}>${CB.POCOES[p].nome} (${e.pocoes[p] || 0})</button>`).join(' ');
+  return `<section class="combate">
+    <h2>Combate por turnos · ${TIPO_LABEL[e.tipo]}</h2>
+    <p><b>${esc(e.jog.nome)}</b> ${barra(e.jog)} · elemento ${ELEMENTO_LABEL[e.jog.elemento] ?? 'Neutro'}</p>
+    <p><b>${esc(e.ini.nome)}</b> ${barra(e.ini)} · elemento ${ELEMENTO_LABEL[e.ini.elemento] ?? 'Neutro'}</p>
+    <p class="muted">Turno ${Math.min(e.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}. Vantagem elemental dobra o dano; desvantagem corta pela metade. Habilidade não repete no turno seguinte.</p>
+    <p><button data-act="combateAcao" data-acao="atacar">Atacar</button></p>
+    <p>Habilidades: ${habs || 'nenhuma'}</p>
+    <p>Poções: ${pocs}</p>
+    <ul class="log">${e.log.slice(-8).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
+  </section>`;
+}
+function autoHtml() {
+  const a = S.auto;
+  const grupo = (g, titulo) => {
+    const todas = opcoesAuto(g);
+    const marcadas = a[g].filter((v) => todas.includes(v));
+    const ordem = [...marcadas, ...todas.filter((v) => !marcadas.includes(v))];
+    const linhas = ordem.map((v) => {
+      const pos = marcadas.indexOf(v);
+      const q = qtdAuto(g, v);
+      return `<li>${pos >= 0 ? `<b>${pos + 1}º</b> ` : ''}${esc(rotuloAuto(g, v))}${q === null ? '' : ` (${q} na mão)`}
+        <button data-act="autoOpcao" data-g="${g}" data-v="${esc(v)}">${pos >= 0 ? 'Tirar' : 'Usar'}</button>
+        ${pos >= 0 ? `<button data-act="autoMover" data-g="${g}" data-v="${esc(v)}" data-d="-1" ${pos === 0 ? 'disabled' : ''}>▲</button><button data-act="autoMover" data-g="${g}" data-v="${esc(v)}" data-d="1" ${pos === marcadas.length - 1 ? 'disabled' : ''}>▼</button>` : ''}</li>`;
+    }).join('');
+    return `<div><b>${titulo}</b><p class="muted">A primeira marcada com estoque é usada. Se acabar, usa a próxima da lista.</p><ul class="log">${linhas || '<li class="muted">Nenhuma opção.</li>'}</ul></div>`;
+  };
+  return `<section>
+    <h2>Auto-exploração</h2>
+    <p>Status: <b>${a.ativo ? 'ligada' : 'desligada'}</b>. Procura, lança esferas pela ordem marcada e, se marcado, luta na zona com habilidades e poções pela ordem. Pausa se faltar esfera marcada.</p>
+    <p><button data-act="autoAtivo">${a.ativo ? 'Desligar' : 'Ligar auto-exploração'}</button>
+    <button data-act="autoCombate">Auto-combate: ${a.combate ? 'sim' : 'não'}</button>
+    <button data-act="autoZona">Lutar na zona no automático: ${a.zona ? 'sim' : 'não'}</button>
+    <button data-act="autoLimiar">Poção abaixo de ${Math.round(a.limiar * 100)}% de vida</button></p>
+    ${grupo('esferas', 'Esferas (captura)')}
+    ${grupo('habilidades', 'Habilidades (combate)')}
+    ${grupo('pocoes', 'Poções (combate)')}
+    <p><b>Comprar poções:</b> ${Object.keys(CB.POCOES).map((p) => `<button data-act="comprarPocao" data-p="${p}">${CB.POCOES[p].nome} · ${CB.POCOES[p].preco} gold</button>`).join(' ')}</p>
+  </section>`;
+}
+
 function resolverBreeds() {
   const agora = Date.now();
   const prontos = S.breeds.filter((b) => agora >= b.fim);
@@ -892,6 +1153,43 @@ function act(name, el) {
       note(`breed iniciado: ${main.species} + ${ing.species}. Termina em cerca de 10 minutos. ${main.species} ganhou ${C.XP_FONTE.breed} XP.${aviso}`);
       break;
     }
+    case 'combateAcao': {
+      if (!S.combate || S.combate.fim) return;
+      const d = el.dataset.acao;
+      const acao = d === 'pocao' ? { tipo: 'pocao', pocao: el.dataset.p } : d === 'habilidade' ? { tipo: 'habilidade', nome: el.dataset.nome } : { tipo: 'atacar' };
+      try { CB.agir(S.combate, acao, Math.random); } catch (e) { note(`não deu: ${e.message}.`); break; }
+      S.pocoes = { ...S.combate.pocoes };
+      if (S.combate.fim) fimCombate();
+      break;
+    }
+    case 'autoAtivo': { S.auto.ativo = !S.auto.ativo; break; }
+    case 'autoCombate': { S.auto.combate = !S.auto.combate; break; }
+    case 'autoZona': { S.auto.zona = !S.auto.zona; break; }
+    case 'autoLimiar': { const i = AUTO_LIMIARES.indexOf(S.auto.limiar); S.auto.limiar = AUTO_LIMIARES[(i + 1) % AUTO_LIMIARES.length]; break; }
+    case 'autoOpcao': {
+      const arr = S.auto[el.dataset.g];
+      const v = el.dataset.v;
+      const i = arr.indexOf(v);
+      if (i >= 0) arr.splice(i, 1); else arr.push(v);
+      break;
+    }
+    case 'autoMover': {
+      const arr = S.auto[el.dataset.g];
+      const i = arr.indexOf(el.dataset.v);
+      const j = i + Number(el.dataset.d);
+      if (i < 0 || j < 0 || j >= arr.length) break;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      break;
+    }
+    case 'comprarPocao': {
+      const p = el.dataset.p;
+      const preco = CB.POCOES[p].preco;
+      if (S.gold < preco) { note(`gold insuficiente: ${CB.POCOES[p].nome} custa ${preco}.`); break; }
+      S.gold -= preco;
+      S.pocoes[p] = (S.pocoes[p] || 0) + 1;
+      note(`comprou ${CB.POCOES[p].nome} por ${preco} gold.`);
+      break;
+    }
     case 'campanhaIniciar': {
       try {
         S.campanha = Y.campanhaIniciar(S.campanha, el.dataset.dif, Date.now());
@@ -901,23 +1199,9 @@ function act(name, el) {
       break;
     }
     case 'battle': {
-      const c = S.campanha;
-      if (!c.correndo) { note('escolha uma campanha para começar.'); break; }
       const m = S.monsters.find((x) => x.id === $('battle-monster').value);
       if (!m) return;
-      const idx = Y.campanhaIndice(c, c.correndo.dif);
-      const won = Math.random() < Math.max(0.05, chanceBot(m) / C.fatorForcaSemLimite(idx));
-      const res = C.finalBattle(won ? 'vitoria' : 'derrota', m, S.bot);
-      S.bot = res.bot;
-      if (won) {
-        const v = Y.campanhaVencer(c, Date.now());
-        S.campanha = v.c;
-        const bonus = C.bonusDropSemLimite(idx);
-        const d = Math.floor(3 * bonus);
-        const g = Math.floor(Y.GOLD.batalhaFinal * bonus);
-        S.diamonds += d; S.gold += g; S.pass = Y.addPassXp(S.pass, 'batalha');
-        note(`campanha ${campanhaNome(v.dif, v.c)} zerada em ${tempoTexto(v.ms)} com ${m.species}. +${d} diamantes, +${g} gold, +${C.XP_FONTE.batalhaVitoria} XP.${v.dif === 'desafio' ? ` O Desafio sobe para o nível ${v.c.desafioNivel + 1}.` : ''}`);
-      } else note(`derrota para o bot. ${m.species} perdeu até ${C.XP_FONTE.batalhaDerrota} XP (agora ${m.xp}, nível ${m.level}). O bot ficou mais forte (força ${S.bot}).`);
+      iniciarCombate('campanha', m);
       break;
     }
     case 'torreNivel': {
@@ -929,28 +1213,10 @@ function act(name, el) {
       break;
     }
     case 'torreSubir': {
-      const ts = Date.now();
       const torre = Y.TORRES.find((x) => x.id === el.dataset.torre);
-      const t = Y.torreDoPeriodo(S.torres[torre.id], torre, ts);
-      S.torres[torre.id] = t;
       const m = S.monsters.find((x) => x.id === $('torre-monster').value);
       if (!m) return;
-      const andar = Y.andarDaTorre(t, t.nivel);
-      if (andar > torre.andares) { note('torre concluída nesta dificuldade.'); break; }
-      if (Math.random() >= Y.chanceTorre(m, torre, ts, andar, t.nivel)) {
-        const xp = C.ganharXp(m, 2);
-        note(`${torre.nome}: ${m.species} não passou do andar ${andar}. Nada perdido. +${xp.ganho} XP.`);
-        break;
-      }
-      const r = Y.venceAndarTorre(t, torre, t.nivel, { a: Math.random(), b: Math.random() });
-      S.torres[torre.id] = r.t;
-      S.diamonds += r.recompensa.diamantes;
-      const item = Y.itemDaTorre(torre, ts);
-      S.resources[item] = (S.resources[item] || 0) + r.recompensa.item;
-      const xp = C.ganharXp(m, 5 + andar);
-      S.pass = Y.addPassXp(S.pass, 'andar');
-      contarMissao();
-      note(`${torre.nome}: andar ${andar} vencido com ${m.species}. +${r.recompensa.diamantes} diamantes, +${r.recompensa.item} ${item}, +${xp.ganho} XP.${r.liberouNova ? ` Dificuldade ${r.t.liberada} liberada.` : ''}`);
+      iniciarCombate('torre', m, { torreId: torre.id });
       break;
     }
     case 'endlessDif': {
@@ -983,31 +1249,7 @@ function act(name, el) {
     case 'endless': {
       const m = S.monsters.find((x) => x.id === $('endless-monster').value);
       if (!m) return;
-      const floor = S.endless.floor;
-      const dif = S.endless.dificuldade || 0;
-      if (Math.random() >= C.endlessChance(m, floor, dif)) {
-        const xp = C.ganharXp(m, C.XP_FONTE.andarDerrota);
-        note(`andar ${floor}: ${m.species} não venceu. O andar recomeça; nada foi perdido. +${xp.ganho} XP.`);
-        break;
-      }
-      const r = C.endlessRewards(floor, EVENT_ACTIVE, Math.random);
-      r.diamantes = Y.quantidadeDrop(r.diamantes, C.bonusDrop(dif), Math.random()); // dificuldade dá +30% de drop por nível
-      S.diamonds += r.diamantes;
-      for (const i of r.invocacoes) S.tickets[i.banner] += i.qtd;
-      if (r.evento) S.endless.drops[r.evento] = (S.endless.drops[r.evento] || 0) + 1;
-      if (r.ovo) {
-        const e = C.eggFor('zona', Math.random(), Math.random(), null);
-        S.eggs.push(eggOf(SPECIES[Math.floor(Math.random() * SPECIES.length)], e.form, 'zona', e.pureza));
-      }
-      S.endless.best = Math.max(S.endless.best, floor);
-      S.endless.floor = floor + 1;
-      S.pass = Y.addPassXp(S.pass, 'andar');
-      contarMissao();
-      const gold = Y.goldAndar(floor);
-      S.gold += gold;
-      const xp = C.ganharXp(m, C.XP_FONTE.andarVitoria(floor));
-      const extra = r.invocacoes.map((i) => `, ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('');
-      note(`andar ${floor} concluído com ${m.species}: +${r.diamantes} diamantes, +${gold} gold, +${xp.ganho} XP${extra}${r.ovo ? ' + ovo de recompensa' : ''}${r.evento ? ' + doce de Halloween' : ''}${xp.subiu ? `. ${m.species} subiu para o nível ${xp.nivel}` : ''}.`);
+      iniciarCombate('zona', m);
       break;
     }
     case 'invoke': {
@@ -1122,55 +1364,9 @@ function act(name, el) {
       }
       break;
     }
-    case 'search': {
-      if (S.wild) return;
-      const ts = Date.now();
-      const ev = Y.activeEvents(ts);
-      S.resources[ev.mensal.item] = (S.resources[ev.mensal.item] || 0) + 1; // a festa do mês deixa um doce a cada busca
-      const w = Y.rollEncounter(ts, S.day, { r1: Math.random(), r2: Math.random(), r3: Math.random(), r4: Math.random() });
-      if (!w) { note('a busca não achou nenhum monstrinho.'); break; }
-      S.wild = w;
-      note(`um ${w.species} apareceu${w.exclusivo ? ' (exclusivo do evento)' : ''}: ${RARITY_LABEL[C.rarityName(w.rarity)]}, tier ${w.tier}.`);
-      break;
-    }
-    case 'throw': {
-      const w = S.wild;
-      if (!w) return;
-      const k = $('sphere').value;
-      if (!S.esferas[k]) { note(`sem esfera ${RARITY_LABEL[k].toLowerCase()}.`); break; }
-      S.esferas[k] -= 1;
-      const chance = Y.captureChance(C.RARITY.indexOf(k) + 1, w, Y.captureBonus(Date.now(), S.day));
-      const gold = Y.goldEncontro(w.rarity); // o encontro paga gold ao terminar, capturado ou não
-      S.gold += gold;
-      if (Math.random() < chance) {
-        const nm = newMonster(w.species, w.rarity, w.purity);
-        const xp = C.ganharXp(nm, C.XP_FONTE.captura(w.rarity));
-        S.monsters.push(nm);
-        S.last = nm.id;
-        S.pass = Y.addPassXp(S.pass, 'captura', Y.passXpCaptura(w.rarity));
-        contarMissao();
-        const sem = Y.contaCapturaSemanal(S.semana, Date.now()); // fichas semanais: 1 a cada 3 capturas da semana
-        S.semana = sem.s;
-        S.tickets.semanal += sem.fichas;
-        const d = C.diamondsForItem(C.rarityName(w.rarity));
-        S.diamonds += d;
-        note(`${w.species} capturado com esfera ${RARITY_LABEL[k].toLowerCase()} (chance ${pct(chance)}). Coleção: +${d} diamante(s), +${xp.ganho} XP, +${gold} gold.`);
-      } else {
-        note(`a esfera ${RARITY_LABEL[k].toLowerCase()} falhou (chance ${pct(chance)}); ${w.species} escapou. +${gold} gold.`);
-      }
-      dropEgg(w);
-      S.wild = null;
-      break;
-    }
-    case 'flee': {
-      if (!S.wild) return;
-      const gold = Y.goldEncontro(S.wild.rarity);
-      S.gold += gold;
-      note(`você deixou ${S.wild.species} ir. +${gold} gold.`);
-      dropEgg(S.wild);
-      S.wild = null;
-      break;
-    }
+    case 'search': { procurar(); break; }
+    case 'throw': { if (S.wild) lancar($('sphere').value); break; }
+    case 'flee': { deixarIr(); break; }
     case 'trilhaDia': {
       const ts = Date.now();
       S.trilha = Y.trilhaDoMes(S.trilha, ts);
@@ -1214,15 +1410,7 @@ function act(name, el) {
       if (!r.aberto || S.raid.janela === r.janela) return;
       const m = S.monsters.find((x) => x.id === $('raid-monster').value);
       if (!m) return;
-      S.raid.janela = r.janela;
-      contarMissao();
-      if (Math.random() < Y.chanceRaid(m, r.boss)) {
-        const f = Y.fragmentosVitoria(Math.random());
-        S.fragmentos[r.boss.id] = (S.fragmentos[r.boss.id] || 0) + f;
-        const xp = C.ganharXp(m, C.XP_FONTE.raidVitoria);
-        S.pass = Y.addPassXp(S.pass, 'raid');
-        note(`${m.species} venceu ${r.boss.nome} e pegou ${f} fragmento(s). +${xp.ganho} XP.`);
-      } else note(`${m.species} não venceu ${r.boss.nome}. A tentativa desta raid está usada.`);
+      iniciarCombate('raid', m, { bossId: r.boss.id });
       break;
     }
     case 'raidOvo': {
@@ -1284,3 +1472,11 @@ document.addEventListener('change', (e) => {
   if (out) out.innerHTML = m ? monstroTag(m) : '-';
 });
 render();
+
+// Auto-exploração: um passo a cada 900 ms enquanto estiver ligada. Redesenha a tela a cada passo.
+setInterval(() => {
+  if (!S.auto.ativo) return;
+  autoTick();
+  save();
+  render();
+}, 900);

@@ -494,7 +494,11 @@ export const DIFICULDADE_FORCA = 0.25;
 export const nivelDificuldade = (n) => clamp(Math.trunc(n || 0), 0, DIFICULDADE_MAX);
 export const bonusDrop = (n) => 1 + DIFICULDADE_DROP * nivelDificuldade(n);
 export const fatorForca = (n) => 1 + DIFICULDADE_FORCA * nivelDificuldade(n);
-export const bonusDropSemLimite = (i) => 1 + DIFICULDADE_DROP * Math.max(0, i);
+// Campanha: +30% por índice até o 7 (Desafio 5); acima disso, +20% por índice (sugestão do autor, v1.37).
+export const bonusDropSemLimite = (i) => {
+  const n = Math.max(0, i);
+  return 1 + DIFICULDADE_DROP * Math.min(n, 7) + 0.2 * Math.max(0, n - 7);
+};
 export const fatorForcaSemLimite = (i) => 1 + DIFICULDADE_FORCA * Math.max(0, i);
 
 // ---- Diamantes: compra com diamantes ganhos no jogo (v1.15). Dinheiro real não compra diamantes (v1.16). ----

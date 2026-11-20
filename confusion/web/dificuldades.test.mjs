@@ -14,6 +14,7 @@ test('dificuldade: +30% de drop e +25% de força por nível; até 3 níveis nas 
   assert.ok(Math.abs(C.bonusDrop(9) - 1.9) < 1e-9); // trava no 3
   assert.ok(Math.abs(C.fatorForca(2) - 1.5) < 1e-9);
   assert.ok(Math.abs(C.bonusDropSemLimite(5) - 2.5) < 1e-9); // campanha não trava
+  assert.ok(Math.abs(C.bonusDropSemLimite(8) - 3.3) < 1e-9); // acima do 7: +20% por índice
 });
 
 test('drop: a parte fracionada vira sorteio; a média bate com o bônus', () => {

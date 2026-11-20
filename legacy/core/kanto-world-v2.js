@@ -314,7 +314,8 @@ function camera(){
     const portrait=r.height>r.width&&r.width<560;
     const landscapeMobile=r.height<=500;
     const targetScale=portrait?Math.max(cover*1.35,cw/420):landscapeMobile?Math.max(cover*1.24,ch/380):cover*1.08;
-    scale=Math.max(cover,Math.min(cover*1.75,targetScale));
+    // Câmera estilo Octopath (padrão): zoom mais perto. Para voltar à câmera antiga: window.PSY_CAMERA_PRESET='classico'.
+    scale=(W.PSY_CAMERA_PRESET||'octopath')==='classico'?Math.max(cover,Math.min(cover*1.75,targetScale)):cover*1.55;
   }else{
     scale=state.inside?Math.min(3,cover*(W.innerWidth<740?1.38:1.15)):state.world?.id==='viridian'?Math.min(4,cover*(r.width<650?1.22:1.10)):Math.min(4,cover*1.08);
   }
@@ -328,7 +329,9 @@ function camera(){
   }
   const viewW=cw/scale,viewH=ch/scale,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   const targetCx=viewW>=map.w?map.w/2:clamp(state.position.x,viewW/2,map.w-viewW/2);
-  const targetCy=viewH>=map.h?map.h/2:clamp(state.position.y,viewH/2,map.h-viewH/2);
+  // Altura: o personagem fica um pouco abaixo do centro, com mais chão à frente (Octopath). Clássico: centralizado.
+  const altura=(!a3q||(W.PSY_CAMERA_PRESET||'octopath')==='classico')?0:viewH*0.1;
+  const targetCy=viewH>=map.h?map.h/2:clamp(state.position.y-altura,viewH/2,map.h-viewH/2);
   let cx=targetCx,cy=targetCy;
   if(a3q){
     if(!state.camPos)state.camPos={x:targetCx,y:targetCy};
