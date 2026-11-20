@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>PSYWORLD — Preview Noctarn (Idle + Walk 4 Direções)</title>
+<style>
+:root{--bg:#090811;--panel:#131121;--border:#342a57;--purple:#9333ea;--cyan:#22d3ee;--fg:#ece8f8;--muted:#9b92b8}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 20%,#1b1332 0%,var(--bg) 70%);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column;align-items:center;padding:14px}
+header{width:100%;max-width:780px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+h1{margin:0;font-size:18px;letter-spacing:.4px;color:var(--cyan);text-shadow:0 0 12px #22d3ee55}
+.badge{font-size:12px;color:var(--muted);border:1px solid var(--border);background:var(--panel);padding:4px 10px;border-radius:999px}
+.stage-wrap{width:100%;max-width:780px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:10px;box-shadow:0 0 28px #9333ea22}
+canvas{display:block;width:100%;height:auto;border-radius:10px;background:radial-gradient(circle at 50% 62%,#231c3d 0%,#120f21 55%,#0b0a14 100%);touch-action:none}
+.controls{width:100%;max-width:780px;margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}
+.box h2{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#c084fc}
+.btn-row{display:flex;flex-wrap:wrap;gap:6px}
+button{flex:1 1 auto;background:#1d1733;color:var(--fg);border:1px solid #48387a;border-radius:8px;padding:9px 12px;font-weight:700;font-size:13px;cursor:pointer;transition:.12s}
+button:hover{border-color:var(--cyan)}
+button.active{background:linear-gradient(135deg,#581c87,#164e63);border-color:var(--cyan);box-shadow:0 0 12px #22d3ee44}
+.hint{width:100%;max-width:780px;margin-top:8px;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>Noctarn — Idle + Walk (4 Direções)</h1>
+  <span class="badge" id="status">Carregando clipes...</span>
+</header>
+
+<div class="stage-wrap">
+  <canvas id="stage" width="760" height="440"></canvas>
+</div>
+
+<div class="controls">
+  <div class="box">
+    <h2>Estado</h2>
+    <div class="btn-row">
+      <button id="m-idle" class="active">Idle (Parado)</button>
+      <button id="m-walk">Walk (Andando)</button>
+    </div>
+  </div>
+  <div class="box">
+    <h2>Direção (ou WASD / Setas)</h2>
+    <div class="btn-row">
+      <button data-dir="down" class="active">↓ Frente</button>
+      <button data-dir="left">← Esquerda</button>
+      <button data-dir="right">→ Direita</button>
+      <button data-dir="up">↑ Costas</button>
+    </div>
+  </div>
+  <div class="box">
+    <h2>Comparação</h2>
+    <div class="btn-row">
+      <button id="t-azazel" class="active">Mostrar Azazel (escala 2×)</button>
+    </div>
+  </div>
+</div>
+<p class="hint">Segure WASD / Setas para andar nas 4 direções e solte para voltar ao Idle automaticamente.</p>
+
+<script type="module">
+import { ESPECIES } from './confusion/web/species.js';
+
+const anim = ESPECIES.Noctarn.animacoes;
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+
+let mode = 'idle';
+let dir = 'down';
+let showAzazel = true;
+const heldKeys = new Set();
+
+const azazelImg = new Image();
+azazelImg.src = 'assets/characters/idle-video-v1/gothic-boy-basic-4dir.webp';
+
+// Lightweight chroma-keyed video player per URL (same keyer as monster-video-v1.js)
+const clipCache = new Map();
+function getClip(spec) {
+  let c = clipCache.get(spec.url);
+  if (c) return c;
+  const video = document.createElement('video');
+  video.muted = true; video.defaultMuted = true; video.loop = true; video.autoplay = true;
+  video.playsInline = true; video.preload = 'auto'; video.crossOrigin = 'anonymous';
+  video.setAttribute('muted', ''); video.setAttribute('playsinline', '');
+  video.src = spec.url;
+  const off = document.createElement('canvas');
+  off.width = spec.width; off.height = spec.height;
+  const octx = off.getContext('2d', { willReadFrequently: true });
+  c = { video, canvas: off, ctx: octx, w: spec.width, h: spec.height, key: null, lastTime: -1, hasFrame: false, lastTouch: 0 };
+  clipCache.set(spec.url, c);
+  return c;
+}
+
+function keyFrame(c) {
+  const { ctx: octx, w, h } = c;
+  octx.clearRect(0, 0, w, h);
+  octx.drawImage(c.video, 0, 0, w, h);
+  if (!c.key) {
+    const p = octx.getImageData(0, 0, 1, 1).data;
+    c.key = { r: p[0], g: p[1], b: p[2] };
+  }
+  const img = octx.getImageData(0, 0, w, h), d = img.data;
+  const kex = Math.max(1, c.key.g - Math.max(c.key.r, c.key.b));
+  const lo = kex * 0.18, hi = kex * 0.62;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    const ex = g - Math.max(r, b);
+    if (ex > lo) {
+      const a = 1 - Math.max(0, Math.min(1, (ex - lo) / (hi - lo)));
+      d[i + 3] = (d[i + 3] * a) | 0;
+      const cap = Math.max(r, b);
+      if (g > cap) d[i + 1] = cap;
+    }
+  }
+  octx.putImageData(img, 0, 0);
+  c.hasFrame = true;
+}
+
+// Preload all 6 unique clips quietly on first interaction / load
+Object.values(anim.idle).forEach(getClip);
+Object.values(anim.walk).forEach(getClip);
+
+function updateButtons() {
+  document.getElementById('m-idle').classList.toggle('active', mode === 'idle');
+  document.getElementById('m-walk').classList.toggle('active', mode === 'walk');
+  document.querySelectorAll('[data-dir]').forEach(b => b.classList.toggle('active', b.dataset.dir === dir));
+  document.getElementById('t-azazel').classList.toggle('active', showAzazel);
+}
+
+document.getElementById('m-idle').onclick = () => { mode = 'idle'; updateButtons(); };
+document.getElementById('m-walk').onclick = () => { mode = 'walk'; updateButtons(); };
+document.querySelectorAll('[data-dir]').forEach(b => { b.onclick = () => { dir = b.dataset.dir; updateButtons(); }; });
+document.getElementById('t-azazel').onclick = () => { showAzazel = !showAzazel; updateButtons(); };
+
+const KEY_DIR = { ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up' };
+window.addEventListener('keydown', e => {
+  const d = KEY_DIR[e.code];
+  if (!d) return;
+  e.preventDefault();
+  heldKeys.add(e.code);
+  dir = d; mode = 'walk'; updateButtons();
+});
+window.addEventListener('keyup', e => {
+  if (!KEY_DIR[e.code]) return;
+  heldKeys.delete(e.code);
+  if (!heldKeys.size) { mode = 'idle'; updateButtons(); }
+});
+
+function tick(now) {
+  const spec = anim[mode][dir];
+  const active = getClip(spec);
+  active.lastTouch = now;
+
+  clipCache.forEach(c => {
+    const keep = now - c.lastTouch < 1500;
+    if (!keep) { if (!c.video.paused) c.video.pause(); return; }
+    if (c.video.paused) { const p = c.video.play(); if (p && p.catch) p.catch(() => {}); }
+    if (c.video.readyState >= 2 && c.video.currentTime !== c.lastTime) {
+      c.lastTime = c.video.currentTime;
+      keyFrame(c);
+    }
+  });
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const groundY = 365;
+  // Subtle runic floor line
+  ctx.strokeStyle = 'rgba(34,211,238,0.22)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(60, groundY); ctx.lineTo(700, groundY); ctx.stroke();
+
+  // Azazel reference (height 125px vs Noctarn 250px = exact 2x scale)
+  const trainerH = 128;
+  const noctarnBaseH = trainerH * (anim.worldHeight / 64); // ~276px (~2x trainer!)
+
+  if (showAzazel && azazelImg.complete && azazelImg.naturalWidth > 0) {
+    const col = { down: 0, left: 1, right: 2, up: 3 }[dir] ?? 0;
+    const tile = azazelImg.naturalHeight;
+    const ax = 185;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath(); ctx.ellipse(ax, groundY, 26, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.drawImage(azazelImg, col * tile, 0, tile, tile, ax - trainerH / 2, groundY - trainerH * (502 / 512), trainerH, trainerH);
+    ctx.fillStyle = '#9b92b8'; ctx.font = '600 12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Azazel (1×)', ax, groundY + 24);
+  }
+
+  const nx = showAzazel ? 455 : 380;
+  if (active.hasFrame) {
+    const h = noctarnBaseH * (spec.scale || 1);
+    const w = h * active.w / active.h;
+    ctx.save();
+    ctx.translate(nx, groundY);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath(); ctx.ellipse(0, 0, noctarnBaseH * 0.28, 12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.imageSmoothingEnabled = true;
+    if (spec.flip) ctx.scale(-1, 1);
+    ctx.drawImage(active.canvas, -w * spec.pawCx, -h * spec.baseY, w, h);
+    ctx.restore();
+    statusEl.textContent = `${mode.toUpperCase()} · ${dir.toUpperCase()} · ${spec.url.split('/').pop()}`;
+  } else {
+    statusEl.textContent = `Carregando ${spec.url.split('/').pop()}...`;
+  }
+
+  ctx.fillStyle = '#c084fc'; ctx.font = '700 13px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('Noctarn (2×)', nx, groundY + 24);
+
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

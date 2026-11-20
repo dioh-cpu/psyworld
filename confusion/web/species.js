@@ -14,6 +14,22 @@ export const ESPECIES = {
     origem: 'base', pureza: 'trevas', aptidoes: { minerar: 4, garimpar: 2 },
     habilidades: ['Mordida Umbral', 'Garra de Sombra', 'Chama Violeta', 'Uivo Sinistro', 'Véu Noturno'],
     arte: 'assets/monsters/noctarn/sprite-front.png',
+    animacoes: {
+      worldHeight: 138,
+      idle4dir: 'assets/monsters/noctarn/noctarn-idle-4dir.webp',
+      idle: {
+        down:  { url: 'assets/monsters/noctarn/idle-front.mp4', width: 480, height: 262, scale: 1,     baseY: 0.9847, pawCx: 0.5182 },
+        left:  { url: 'assets/monsters/noctarn/idle-left.mp4',  width: 480, height: 270, scale: 1.083, baseY: 0.9556, pawCx: 0.5307 },
+        right: { url: 'assets/monsters/noctarn/idle-left.mp4',  width: 480, height: 270, scale: 1.083, baseY: 0.9556, pawCx: 0.5307, flip: true },
+        up:    { url: 'assets/monsters/noctarn/idle-back.mp4',  width: 480, height: 270, scale: 1.074, baseY: 0.9556, pawCx: 0.4901 },
+      },
+      walk: {
+        down:  { url: 'assets/monsters/noctarn/walk-front.mp4', width: 480, height: 270, scale: 1.097, baseY: 0.9370, pawCx: 0.4557 },
+        left:  { url: 'assets/monsters/noctarn/walk-left.mp4',  width: 480, height: 270, scale: 1.234, baseY: 0.9519, pawCx: 0.4807 },
+        right: { url: 'assets/monsters/noctarn/walk-left.mp4',  width: 480, height: 270, scale: 1.234, baseY: 0.9519, pawCx: 0.4807, flip: true },
+        up:    { url: 'assets/monsters/noctarn/walk-back.mp4',  width: 480, height: 270, scale: 1.083, baseY: 0.9519, pawCx: 0.4901 },
+      },
+    },
   },
   Ignavor: {
     origem: 'base', pureza: 'luz', elemento: 'fogo', aptidoes: { plantar: 3, colher: 2, cortar: 3, transportar: 2 },
@@ -62,6 +78,7 @@ export const ESPECIES_EVENTO = porOrigem('evento');
 export const HABILIDADES_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).map(([k, e]) => [k, e.habilidades]));
 export const APTIDOES_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).map(([k, e]) => [k, e.aptidoes || {}]));
 export const ARTE_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).filter(([, e]) => e.arte).map(([k, e]) => [k, e.arte]));
+export const ANIMACOES_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).filter(([, e]) => e.animacoes).map(([k, e]) => [k, e.animacoes]));
 export const PASSIVA_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).filter(([, e]) => e.passiva).map(([k, e]) => [k, e.passiva]));
 // Elemento de cada espécie (v1.34). Sem elemento explícito, vale o da pureza: luz, trevas ou neutro.
 const ELEMENTO_PELA_PUREZA = { luz: 'luz', trevas: 'trevas', neutra: 'neutro' };

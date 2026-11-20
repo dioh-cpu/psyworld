@@ -141,34 +141,45 @@ function kantoStep(trail,opt,now,cadence){
 function draw(c,opt){if(player().meta?.divineHaloV48){c.save();c.strokeStyle='#dfb0ff';c.shadowColor='#8ef8ff';c.shadowBlur=9;c.lineWidth=1.8;c.beginPath();c.ellipse(opt.x,opt.y+4,22,8,0,0,Math.PI*2);c.stroke();c.restore();}const mon=selected(),trainer=opt.trainer||(()=>{});if(!mon||!supported(mon)){trainer();return;}
 const isAutoral=!!W.PsyStarterAutoralV1?.isAutoral?.(mon),cr=isAutoral?W.PsyStarterAutoralV1.get(mon.id):null;
 const k=key(mon)+'@'+opt.scene,old=trails.get(k),trail=sample(old,opt.x,opt.y,opt.scene,opt.valid,cr?.trailDistance);trails.set(k,trail);
-// Original (autoral) creatures: play dedicated live chroma-keyed idle MP4 for every
-// direction (down/left/right-mirrored/up), using the 4-dir WebP as instant pre-decode fallback.
+// Original (autoral) creatures: play dedicated live chroma-keyed walk MP4 when moving
+// and idle MP4 when stopped across all 4 directions, with instant fallback during decode.
 if(isAutoral&&cr){
 const refRaw=Number.isFinite(Number(opt.trainerScale))?Number(opt.trainerScale):Number(opt.scale);
 const refScale=Number.isFinite(refRaw)?Math.max(.75,Math.min(2.5,refRaw)):1;
-const dir=trail.facing||opt.facing||'down';
+const dir=trail.facing||opt.facing||'down',now=W.performance.now();
+if(trail.moving)trail.lastAutoralMove=now;
+const isWalking=!!trail.moving||(!!(opt.moving||opt.continuing)&&(now-(trail.lastAutoralMove||0))<=180);
 const sheet=cr.idle4dir?autoralSheet(cr.idle4dir):null;
 const sheetReady=!!(sheet&&sheet.complete&&sheet.naturalWidth>0);
-const clipSpec=cr.idleClips?.[dir]||(cr.idle?{url:cr.idle,width:cr.width,height:cr.height,scale:1,baseY:0.985,pawCx:0.5,flip:dir==='right'}:null);
-const clip=clipSpec?W.PsyMonsterVideoV1?.shared(clipSpec.url,{width:clipSpec.width,height:clipSpec.height}):null;
-if(clip)clip.touch();
-const videoReady=!!(clip&&clip.hasFrame);
-if(!videoReady&&!sheetReady){trainer();return;}
+const idleSpec=cr.idleClips?.[dir]||(cr.idle?{url:cr.idle,width:cr.width,height:cr.height,scale:1,baseY:0.985,pawCx:0.5,flip:dir==='right'}:null);
+const walkSpec=cr.walkClips?.[dir]||null;
+const primarySpec=(isWalking&&walkSpec)?walkSpec:idleSpec;
+const fallbackSpec=(isWalking&&walkSpec)?idleSpec:walkSpec;
+const primaryClip=primarySpec?W.PsyMonsterVideoV1?.shared(primarySpec.url,{width:primarySpec.width,height:primarySpec.height}):null;
+if(primaryClip)primaryClip.touch();
+const usePrimary=!!(primaryClip&&primaryClip.hasFrame);
+const fallbackClip=(!usePrimary&&fallbackSpec)?W.PsyMonsterVideoV1?.shared(fallbackSpec.url,{width:fallbackSpec.width,height:fallbackSpec.height}):null;
+if(fallbackClip)fallbackClip.touch();
+const useFallback=!usePrimary&&!!(fallbackClip&&fallbackClip.hasFrame);
+const activeSpec=usePrimary?primarySpec:useFallback?fallbackSpec:null;
+const activeClip=usePrimary?primaryClip:useFallback?fallbackClip:null;
+const isRealWalk=usePrimary&&isWalking&&!!walkSpec;
+if(!activeClip&&!sheetReady){trainer();return;}
 const paintAutoral=()=>{
- const p=trail.pos,now=W.performance.now();
+ const p=trail.pos;
  const baseH=(cr.worldHeight||138)*refScale;
  const moving=!!trail.moving,stride=moving?Math.sin(trail.phase*0.14):0,lift=moving?Math.abs(stride)*5*refScale:0;
  c.save();c.translate(p.x,p.y+5);
- if(videoReady){
-  const h=baseH*(clipSpec.scale||1),w=h*clip.w/clip.h;
-  const pawCx=Number.isFinite(clipSpec.pawCx)?clipSpec.pawCx:0.5;
-  const baseY=Number.isFinite(clipSpec.baseY)?clipSpec.baseY:0.985;
+ if(activeClip&&activeSpec){
+  const h=baseH*(activeSpec.scale||1),w=h*activeClip.w/activeClip.h;
+  const pawCx=Number.isFinite(activeSpec.pawCx)?activeSpec.pawCx:0.5;
+  const baseY=Number.isFinite(activeSpec.baseY)?activeSpec.baseY:0.985;
   c.fillStyle='#0006';c.beginPath();c.ellipse(0,0,baseH*.28,Math.max(4,5.5*refScale),0,0,Math.PI*2);c.fill();
   if(mon.psyballCaught){c.shadowColor='#69f2ff';c.shadowBlur=9;}
   c.imageSmoothingEnabled=true;
-  if(moving){c.translate(0,-lift);c.rotate(stride*0.02);}
-  if(clipSpec.flip)c.scale(-1,1);
-  c.drawImage(clip.canvas,-w*pawCx,-h*baseY,w,h);
+  if(moving&&!isRealWalk){c.translate(0,-lift);c.rotate(stride*0.02);}
+  if(activeSpec.flip)c.scale(-1,1);
+  c.drawImage(activeClip.canvas,-w*pawCx,-h*baseY,w,h);
  }else if(sheetReady){
   const cellW=cr.cellW||Math.round(sheet.naturalWidth/4),cellH=cr.cellH||sheet.naturalHeight,baseRatio=(cr.baseline||cellH)/cellH;
   const w=baseH*cellW/cellH,col=({down:0,left:1,right:2,up:3})[dir]??0;
