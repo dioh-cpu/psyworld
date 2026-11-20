@@ -182,16 +182,20 @@ export const PRODUCE = {
   transportar: {}, cozinhar: { carvao: 1 }, fabricar: { peca: 1 },
 };
 
-// ---- Coleta: nós, ferramenta obrigatória, retorno decrescente por dia (GDD v1.4/v1.5) ----
-export const MAX_HARVESTS_PER_DAY = 3;
-export function harvest(node, tool, day, sanityFail) {
+// ---- Coleta: nós com tempo de espera e retorno decrescente (GDD v1.4/v1.5) ----
+export const COOLDOWN_MS = 10 * 60 * 1000;  // 10 minutos de espera por ponto
+export const WINDOW_MS = 60 * 60 * 1000;    // janela de 1 hora para o retorno decrescente
+export function harvest(node, tool, nowMs, sanityFail) {
   if (tool !== node.requiredTool) throw new Error(`precisa de ${node.requiredTool}`);
-  if (day - node.lastDay >= 1) node.harvestsInWindow = 0; // o nó regenera ao virar o dia
-  if (node.harvestsInWindow >= MAX_HARVESTS_PER_DAY) return { resource: node.resource, qty: 0, esgotado: true, ferimento: false };
+  if (nowMs < (node.nextAvailableMs || 0)) {
+    return { resource: node.resource, qty: 0, emCooldown: true, restanteMs: node.nextAvailableMs - nowMs, ferimento: false };
+  }
+  if (node.lastMs == null || nowMs - node.lastMs >= WINDOW_MS) node.harvestsInWindow = 0;
   let qty = Math.max(1, Math.floor(node.baseQty / (1 + node.harvestsInWindow)));
   node.harvestsInWindow += 1;
-  node.lastDay = day;
+  node.lastMs = nowMs;
+  node.nextAvailableMs = nowMs + COOLDOWN_MS;
   let wound = false;
   if (sanityFail) { qty = Math.max(1, Math.floor(qty / 2)); wound = true; } // falha reduz, nunca bloqueia
-  return { resource: node.resource, qty, ferimento: wound };
+  return { resource: node.resource, qty, emCooldown: false, ferimento: wound };
 }

@@ -43,9 +43,9 @@ function newState() {
     resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0 },
     tools: { machado: 1, picareta: 1 },
     nodes: [
-      { id: 'arvore', label: 'Árvore', resource: 'madeira', requiredTool: 'machado', baseQty: 4, lastDay: -999, harvestsInWindow: 0 },
-      { id: 'rocha', label: 'Rocha', resource: 'pedra', requiredTool: 'picareta', baseQty: 4, lastDay: -999, harvestsInWindow: 0 },
-      { id: 'veio', label: 'Veio de cristal', resource: 'cristal', requiredTool: 'picareta', baseQty: 2, lastDay: -999, harvestsInWindow: 0 },
+      { id: 'arvore', label: 'Árvore', resource: 'madeira', requiredTool: 'machado', baseQty: 4, nextAvailableMs: 0, lastMs: null, harvestsInWindow: 0 },
+      { id: 'rocha', label: 'Rocha', resource: 'pedra', requiredTool: 'picareta', baseQty: 4, nextAvailableMs: 0, lastMs: null, harvestsInWindow: 0 },
+      { id: 'veio', label: 'Veio de cristal', resource: 'cristal', requiredTool: 'picareta', baseQty: 2, nextAvailableMs: 0, lastMs: null, harvestsInWindow: 0 },
     ],
   };
 }
@@ -200,8 +200,12 @@ function render() {
 
   <section>
     <h2>10. Coleta</h2>
-    <p class="muted">Ferramentas: machado ${S.tools.machado}, picareta ${S.tools.picareta}. Retorno cai no mesmo dia e volta no dia seguinte.</p>
-    <div class="row">${S.nodes.map((n) => `<button data-act="harvest" data-node="${n.id}">Coletar em ${n.label.toLowerCase()} (${n.requiredTool})</button>`).join('')}</div>
+    <p class="muted">Ferramentas: machado ${S.tools.machado}, picareta ${S.tools.picareta}. Cada ponto espera 10 minutos entre coletas. Explorar de novo dentro de 1 hora rende menos.</p>
+    <div class="row">${S.nodes.map((n) => {
+      const left = Math.max(0, (n.nextAvailableMs || 0) - Date.now());
+      const txt = left > 0 ? `recarregando: ${Math.ceil(left / 60000)} min` : `${n.requiredTool}`;
+      return `<button data-act="harvest" data-node="${n.id}" ${left > 0 ? 'disabled' : ''}>Coletar em ${n.label.toLowerCase()} (${txt})</button>`;
+    }).join('')}</div>
     <p class="muted">Recursos: ${Object.entries(S.resources).map(([k, v]) => `${k} ${v}`).join(' · ')}</p>
   </section>
 
@@ -413,8 +417,8 @@ function act(name, el) {
       const node = S.nodes.find((n) => n.id === el.dataset.node);
       if (!node) return;
       const fail = Math.random() < band.fail;
-      const r = C.harvest(node, node.requiredTool, S.day, fail);
-      if (r.esgotado) { note(`${node.label.toLowerCase()} já foi explorada hoje. Volta amanhã.`); break; }
+      const r = C.harvest(node, node.requiredTool, Date.now(), fail);
+      if (r.emCooldown) { note(`${node.label.toLowerCase()} ainda está recarregando (${Math.ceil(r.restanteMs / 60000)} min).`); break; }
       S.resources[r.resource] = (S.resources[r.resource] || 0) + r.qty;
       note(`coletou ${r.qty}x ${r.resource} em ${node.label.toLowerCase()}${r.ferimento ? ' (ferimento leve, quantidade reduzida)' : ''}.`);
       break;
@@ -429,6 +433,11 @@ function act(name, el) {
   save();
   render();
 }
+
+// atualiza a contagem de recarga das coletas a cada 15 s
+setInterval(() => {
+  if (S.nodes.some((n) => (n.nextAvailableMs || 0) > Date.now())) render();
+}, 15000);
 
 A.onChange(onAccountEvent);
 A.init().then(() => render());

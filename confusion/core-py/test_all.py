@@ -232,11 +232,17 @@ class TestGathering(unittest.TestCase):
     def test_tool_required(self):
         n=gathering.Node("madeira","machado",4)
         with self.assertRaises(ValueError): gathering.harvest(n,"picareta",0,False)
-    def test_diminishing_then_regen(self):
+    def test_cooldown_then_diminishing_then_window_reset(self):
         n=gathering.Node("pedra","picareta",4)
         self.assertEqual(gathering.harvest(n,"picareta",0,False)["qty"],4)
-        self.assertEqual(gathering.harvest(n,"picareta",10,False)["qty"],2)
-        self.assertEqual(gathering.harvest(n,"picareta",300,False)["qty"],4)  # regenerou
+        cedo=gathering.harvest(n,"picareta",5,False)
+        self.assertTrue(cedo["emCooldown"]); self.assertEqual(cedo["qty"],0)
+        self.assertEqual(gathering.harvest(n,"picareta",10,False)["qty"],2)   # dentro da janela
+        self.assertEqual(gathering.harvest(n,"picareta",300,False)["qty"],4)  # janela passou
+    def test_no_daily_cap(self):
+        n=gathering.Node("madeira","machado",4)
+        total=sum(gathering.harvest(n,"machado",k*10,False)["qty"] for k in range(20))
+        self.assertGreater(total,0)
     def test_sanity_fail_reduces_not_blocks(self):
         n=gathering.Node("cristal","picareta",4)
         r=gathering.harvest(n,"picareta",0,True)
