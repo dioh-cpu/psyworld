@@ -39,6 +39,12 @@ const PURITY_BY_SPECIES = Y.SPECIES_PURITY;
 const RARITY_LABEL = { comum: 'Comum', rara: 'Rara', epica: 'Épica', lendaria: 'Lendária', mitica: 'Mítica' };
 const VARIANT_LABEL = { natural: 'natural', mutante: 'mutação', abencoada: 'bênção', combinada: 'mutação + bênção' }; // a variante aparece como aura
 const auraClass = (m) => (m.variant === 'mutante' ? `aura-mutante-${m.purity === 'luz' ? 'luz' : 'trevas'}` : `aura-${m.variant || 'natural'}`);
+const eggAura = (e) => (e.form === 'mutante' ? `aura-mutante-${e.pureza === 'luz' ? 'luz' : 'trevas'}` : `aura-${e.form || 'natural'}`);
+// Sprite do monstrinho com aura. Os cards da coleção usam só a versão natural (aura: false).
+const spriteHtml = (m, { aura = true, mini = false } = {}) => `<span class="sprite ${mini ? 'mini ' : ''}${aura ? auraClass(m) : 'aura-natural'}">${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<span class="noart">${esc(m.species)}<small>sem arte ainda</small></span>`}</span>`;
+// Monstrinho em linha: sprite pequeno com aura, nome, raridade, tier e variante.
+const monstroTag = (m) => `<span class="tag">${spriteHtml(m, { mini: true })}<span><b>${esc(m.species)}</b> ${rarityTag(m)}${m.variant && m.variant !== 'natural' ? ` · ${VARIANT_LABEL[m.variant]}` : ''}</span></span>`;
+const lastTag = () => { const m = S.monsters.find((x) => x.id === S.last); return m ? `<p>Último monstrinho: ${monstroTag(m)}</p>` : ''; };
 const BANNER_LABEL = { permanente: 'permanente', semanal: 'semanal', evento: 'evento' };
 const uid = (p) => `${p}${Date.now()}${Math.floor(Math.random() * 1000)}`;
 const newMonster = (species, rarity, purity, variant = 'natural') => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species], variant);
@@ -72,7 +78,7 @@ function wildBlock() {
   const w = S.wild;
   const bonus = Y.captureBonus(Date.now(), S.day);
   const opts = C.RARITY.map((k, i) => `<option value="${k}">${RARITY_LABEL[k]} (${S.esferas[k]}) · chance ${pct(Y.captureChance(i + 1, w, bonus))}</option>`).join('');
-  return `<p>Apareceu um <b>${esc(w.species)}</b>${w.exclusivo ? ' <b>(exclusivo do evento)</b>' : ''} · ${RARITY_LABEL[C.rarityName(w.rarity)]} · tier ${w.tier}.</p>
+  return `<p>${spriteHtml(w, { mini: true })}Apareceu um <b>${esc(w.species)}</b>${w.exclusivo ? ' <b>(exclusivo do evento)</b>' : ''} · ${RARITY_LABEL[C.rarityName(w.rarity)]} · tier ${w.tier}.</p>
     <label>Esfera <select id="sphere">${opts}</select></label>
     <button data-act="throw">Lançar esfera</button>
     <button data-act="flee" class="ghost">Deixar ir</button>
@@ -245,7 +251,7 @@ function render() {
          <p class="muted">Ovo inicial. Formas elegíveis: ${C.eligibleForms(S.sanity).join(', ')}.</p>
          <button data-act="hatch">Chocar ovo inicial</button>`}
     <p class="muted">Ovos do breed e da zona. Ao chocar, a raridade é rolada e o tier começa igual a ela.</p>
-    <ul class="log">${S.eggs.map((e) => `<li>Ovo de ${esc(e.species)} · forma ${esc(e.form)}${e.form === 'mutante' || e.form === 'combinada' ? ` (${esc(e.pureza)})` : ''} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
+    <ul class="log">${S.eggs.map((e) => `<li><span class="dot ${eggAura(e)}"></span>Ovo de ${esc(e.species)} · forma ${esc(e.form)}${e.form === 'mutante' || e.form === 'combinada' ? ` (${esc(e.pureza)})` : ''} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
   </section>
 
   <section>
@@ -265,11 +271,12 @@ function render() {
       Com sucesso: o principal sobe 1 tier (até 10), todas as aptidões sobem 1 nível e sai um ovo (natural, mutante ou abençoado).
       Na falha, só o ingrediente é perdido.</p>
     <div class="row">
-      <label>Principal <select id="fuse-main">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · ${RARITY_LABEL[C.rarityName(m.rarity)]} · tier ${m.tier}</option>`).join('')}</select></label>
-      <label>Ingrediente <select id="fuse-ing">${S.monsters.map((m, k) => `<option value="${m.id}" ${k === 1 ? 'selected' : ''}>${m.species} · ${RARITY_LABEL[C.rarityName(m.rarity)]} · tier ${m.tier}</option>`).join('')}</select></label>
+      <label>Principal <select id="fuse-main" data-preview="prev-main">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · ${RARITY_LABEL[C.rarityName(m.rarity)]} · tier ${m.tier}</option>`).join('')}</select></label>
+      <label>Ingrediente <select id="fuse-ing" data-preview="prev-ing">${S.monsters.map((m, k) => `<option value="${m.id}" ${k === 1 ? 'selected' : ''}>${m.species} · ${RARITY_LABEL[C.rarityName(m.rarity)]} · tier ${m.tier}</option>`).join('')}</select></label>
       <label>Minério <select id="fuse-ore"><option value="0">nenhum</option><option value="0.06">Obsidiana Fissurada (+6%)</option></select></label>
       <label>Habilidade extra <select id="fuse-keep"><option value="new">trocar pela nova</option><option value="keep">manter a atual</option></select></label>
     </div>
+    <div class="row"><span id="prev-main">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span><span id="prev-ing">${S.monsters[1] ? monstroTag(S.monsters[1]) : '-'}</span></div>
     <p class="muted">Chance atual do principal selecionado: ${S.monsters.length ? pct(C.breedSuccessChance(S.monsters[0].tier, S.successes[S.monsters[0].id] || 0, S.failures[S.monsters[0].id] || 0)) : '-'}</p>
     <button data-act="breed">Fazer breed</button>
   </section>
@@ -277,7 +284,7 @@ function render() {
   <section>
     <h2>7. Batalha final contra o bot (força ${S.bot})</h2>
     <p class="muted">Sem empate: vitória ou derrota. Derrota tira XP e fortalece o bot.</p>
-    <label>Monstrinho <select id="battle-monster">${S.monsters.map((m) => `<option value="${m.id}">${m.species} (XP ${m.xp})</option>`).join('')}</select></label>
+    <label>Monstrinho <select id="battle-monster" data-preview="prev-battle">${S.monsters.map((m) => `<option value="${m.id}">${m.species} (XP ${m.xp})</option>`).join('')}</select></label> <span id="prev-battle">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
     <p class="muted">Chance de vitória: ${pct(C.winChance(S.bot))}</p>
     <button data-act="battle" ${S.battleOver ? 'disabled' : ''}>Enfrentar o bot</button>
   </section>
@@ -294,9 +301,9 @@ function render() {
     <h2>Monstrinhos</h2>
     <div class="cards">
       ${S.monsters.map((m) => `<div class="card">
-        <div class="sprite ${auraClass(m)}">${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<div class="noart">sem arte ainda</div>`}</div>
+        ${spriteHtml(m, { aura: false })}
         <b>${esc(m.species)}</b> ${rarityTag(m)} · nível ${m.level}
-        <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity} · ${VARIANT_LABEL[m.variant || 'natural']}</div>
+        <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity}</div>
         <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
         <div class="muted">aptidões: ${esc(Object.entries(m.aptitudes).map(([k, v]) => `${k} ${v}`).join(' · ') || 'nenhuma')}</div>
       </div>`).join('') || '<p class="muted">Nenhum monstrinho.</p>'}
@@ -309,7 +316,7 @@ function render() {
     <button data-act="assign">Designar tarefas da fazenda</button>
     <ul class="log">${Object.keys(S.farm.mapping).map((t) => {
       const m = S.monsters.find((x) => x.id === S.farm.mapping[t]);
-      return `<li>${esc(t)}: ${m ? esc(m.species) : '-'}</li>`;
+      return `<li>${esc(t)}: ${m ? monstroTag(m) : '-'}</li>`;
     }).join('') || '<li class="muted">Nenhuma tarefa designada.</li>'}</ul>
     <p class="muted">Sem monstrinho: ${esc(S.farm.unassigned.join(', ') || 'nenhuma')}</p>
   </section>
@@ -321,7 +328,7 @@ function render() {
       ${C.GATHER_TASKS ? Object.keys(C.GATHER_TASKS).map((t) => {
         const id = S.farm.mapping[t];
         const m = S.monsters.find((x) => x.id === id);
-        return `<li>${esc(t)} → ${esc(C.GATHER_TASKS[t].resource)}: ${m ? `${esc(m.species)} (nível ${m.aptitudes[t]})` : 'sem monstrinho com essa aptidão'}</li>`;
+        return `<li>${esc(t)} → ${esc(C.GATHER_TASKS[t].resource)}: ${m ? `${monstroTag(m)} (nível ${m.aptitudes[t]})` : 'sem monstrinho com essa aptidão'}</li>`;
       }).join('') : ''}
     </ul>
     <p class="muted">Recursos: ${Object.entries(S.resources).map(([k, v]) => `${k} ${v}`).join(' · ')}</p>
@@ -331,8 +338,8 @@ function render() {
     <h2>11. Zona infinita · andar ${S.endless.floor}</h2>
     <p class="muted">Andares sem fim. Vencer dá diamantes e fichas de invocação. A cada 10 andares sai um ovo de recompensa (raridade +1). Perder não tira nada: o andar recomeça.</p>
     <p>Recompensa deste andar: <b>${endlessR.diamantes}</b> diamantes${endlessR.invocacoes.map((i) => ` + ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('')}${endlessR.ovo ? ' + ovo de recompensa' : ''}. Maior andar concluído: ${S.endless.best}.</p>
-    <ul class="log">${S.monsters.map((m) => `<li>${esc(m.species)} (tier ${m.tier}): ${pct(C.endlessChance(m, S.endless.floor))} de vencer</li>`).join('') || '<li class="muted">Sem monstrinhos.</li>'}</ul>
-    <label>Monstrinho <select id="endless-monster">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · tier ${m.tier}</option>`).join('')}</select></label>
+    <ul class="log">${S.monsters.map((m) => `<li>${monstroTag(m)}: ${pct(C.endlessChance(m, S.endless.floor))} de vencer</li>`).join('') || '<li class="muted">Sem monstrinhos.</li>'}</ul>
+    <label>Monstrinho <select id="endless-monster" data-preview="prev-endless">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · tier ${m.tier}</option>`).join('')}</select></label> <span id="prev-endless">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
     <button data-act="endless" ${S.monsters.length ? '' : 'disabled'}>Enfrentar andar ${S.endless.floor}</button>
   </section>
 
@@ -349,6 +356,7 @@ function render() {
 
   <section>
     <h2>Registro</h2>
+    ${lastTag()}
     <ul class="log">${S.log.map((l) => `<li>${esc(l)}</li>`).join('') || '<li class="muted">Nada ainda.</li>'}</ul>
   </section>`;
 }
@@ -591,6 +599,7 @@ function act(name, el) {
       const r = C.invocationResult(banner, SPECIES, Math.random(), Math.random());
       const m = newMonster(r.species, r.rarity);
       S.monsters.push(m);
+      S.last = m.id;
       const d = C.diamondsForItem(C.rarityName(r.rarity));
       S.diamonds += d;
       note(`invocação (${BANNER_LABEL[banner]}): ${m.species} ${RARITY_LABEL[C.rarityName(r.rarity)]}, tier ${m.tier}. Coleção: +${d} diamante(s).`);
@@ -603,6 +612,7 @@ function act(name, el) {
       const r = C.hatchEgg(egg, Math.random());
       const m = newMonster(r.species, r.rarity, r.purity, r.variant);
       S.monsters.push(m);
+      S.last = m.id;
       const d = C.diamondsForItem(C.rarityName(r.rarity));
       S.diamonds += d;
       note(`ovo de ${r.species} chocou: ${RARITY_LABEL[C.rarityName(r.rarity)]}, tier ${r.tier}, forma ${r.form}. Coleção: +${d} diamante(s).`);
@@ -666,7 +676,9 @@ function act(name, el) {
       S.esferas[k] -= 1;
       const chance = Y.captureChance(C.RARITY.indexOf(k) + 1, w, Y.captureBonus(Date.now(), S.day));
       if (Math.random() < chance) {
-        S.monsters.push(newMonster(w.species, w.rarity, w.purity));
+        const nm = newMonster(w.species, w.rarity, w.purity);
+        S.monsters.push(nm);
+        S.last = nm.id;
         S.pass = Y.addPassXp(S.pass, 'captura');
         const d = C.diamondsForItem(C.rarityName(w.rarity));
         S.diamonds += d;
@@ -702,5 +714,12 @@ A.init().then(() => render());
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
   if (el && !el.disabled) act(el.dataset.act, el);
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (!t.dataset || !t.dataset.preview) return;
+  const m = S.monsters.find((x) => x.id === t.value);
+  const out = $(t.dataset.preview);
+  if (out) out.innerHTML = m ? monstroTag(m) : '-';
 });
 render();
