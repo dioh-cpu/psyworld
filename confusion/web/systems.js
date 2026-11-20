@@ -1,6 +1,7 @@
 // Sistemas de engajamento e captura (GDD v1.17): starter, login, passe, eventos, esferas e drops.
 // Código puro, sem DOM. Datas usam o horário de Brasília (UTC-3). Valores provisórios até o teste do piloto.
 import { clamp, rollRarity, rarityName, RARITY } from './core.js';
+import { ESPECIES, ESPECIES_BASE, ESPECIES_EVENTO } from './species.js';
 
 const DAY_MS = 86400000;
 const BR_OFFSET_MS = 3 * 3600000;
@@ -112,20 +113,13 @@ export const MONTHLY_EVENTS = [
   { id: 'halloween', nome: 'Festa de Halloween', exclusivo: 'Abyssar', bonus: { captura: 0, drop: 0.10 }, item: 'doce_halloween' },
   { id: 'solsticio', nome: 'Festival do Solstício', exclusivo: 'Solarin', bonus: { captura: 0.05, drop: 0.05 }, item: 'doce_solsticio' },
 ];
-// Monstrinhos exclusivos de evento (nomes e habilidades provisórios). Só aparecem com o evento ativo.
-export const EVENT_SPECIES = {
-  Lumivela: { purity: 'luz', aptitudes: { colher: 2, transportar: 2 }, abilities: ['Pétala Lunar', 'Brilho Sereno', 'Véu Prateado', 'Canto da Lua', 'Orvalho Astral'] },
-  Brotavel: { purity: 'luz', aptitudes: { plantar: 3, colher: 2 }, abilities: ['Raiz Viva', 'Espora Verde', 'Broto Fértil', 'Chuva Doce', 'Casca Firme'] },
-  Cristalino: { purity: 'neutra', aptitudes: { garimpar: 3, minerar: 2 }, abilities: ['Lasca Prismática', 'Eco Glacial', 'Facetas', 'Brilho Frio', 'Núcleo Puro'] },
-  Abyssar: { purity: 'trevas', aptitudes: { minerar: 2, cortar: 2 }, abilities: ['Sombra Funda', 'Fenda Negra', 'Garra Abissal', 'Sussurro', 'Maré Escura'] },
-  Solarin: { purity: 'luz', aptitudes: { cortar: 2, fabricar: 2 }, abilities: ['Chama Solar', 'Raio Dourado', 'Asas de Sol', 'Calor Lento', 'Aurora'] },
-};
-// Espécies do piloto que aparecem em qualquer encontro (sem evento). Pureza de todas.
-export const BASE_SPECIES = ['Noctarn', 'Ignavor', 'Vaelith'];
-export const SPECIES_PURITY = {
-  Noctarn: 'trevas', Ignavor: 'luz', Vaelith: 'luz',
-  ...Object.fromEntries(Object.entries(EVENT_SPECIES).map(([k, v]) => [k, v.purity])),
-};
+// Monstrinhos de evento vêm do catálogo de espécies (species.js), com origem 'evento'.
+export const EVENT_SPECIES = Object.fromEntries(ESPECIES_EVENTO.map((k) => [k, {
+  purity: ESPECIES[k].pureza, aptitudes: ESPECIES[k].aptidoes, abilities: ESPECIES[k].habilidades,
+}]));
+// Espécies base (encontro, ovo, breed e invocação) e a pureza de todas, do catálogo.
+export const BASE_SPECIES = ESPECIES_BASE;
+export const SPECIES_PURITY = Object.fromEntries(Object.entries(ESPECIES).map(([k, e]) => [k, e.pureza]));
 const pick = (arr, i) => arr[mod(i, arr.length)];
 export const weeklyEventAt = (ts) => pick(WEEKLY_EVENTS, weekIndex(ts));
 export const monthlyEventAt = (ts) => pick(MONTHLY_EVENTS, monthIndex(ts));

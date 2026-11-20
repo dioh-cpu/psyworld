@@ -2,17 +2,14 @@
 import * as C from './core.js';
 import * as A from './account.js';
 import * as Y from './systems.js';
+import * as E from './species.js';
 
 const KEY = 'confusion-waves-piloto-v3';
 let recovery = false;      // true quando o link de recuperação de senha foi aberto
 let pushTimer = null;
 let notice = '';           // mensagem curta da área de conta
-const ABILITIES = {
-  Noctarn: ['Mordida Umbral', 'Garra de Sombra', 'Chama Violeta', 'Uivo Sinistro', 'Véu Noturno'],
-  Ignavor: ['Golpe Couraçado', 'Brasa Imperial', 'Juba Flamejante', 'Rugido Dourado', 'Escudo de Ferro'],
-  Vaelith: ['Pulso Astral', 'Arco Ciano', 'Cauda de Cristal', 'Véu Gelado', 'Fenda Estelar'],
-};
-for (const [k, v] of Object.entries(Y.EVENT_SPECIES)) ABILITIES[k] = v.abilities; // exclusivos de evento
+// Habilidades, aptidões e arte vêm do catálogo de espécies (species.js).
+const ABILITIES = E.HABILIDADES_DA_ESPECIE;
 const REPEATABLE_SOURCES = ['descanso', 'purificacao', 'missao'];
 const NON_REPEATABLE = ['trauma', 'magia_mental', 'crueldade', 'ritual'];
 const SOURCE_LABEL = {
@@ -20,14 +17,9 @@ const SOURCE_LABEL = {
   trauma: 'Sofrer trauma', magia_mental: 'Magia mental proibida', crueldade: 'Crueldade deliberada', ritual: 'Ritual de corrupção',
 };
 
-// Aptidões de trabalho com nível (1 a 10). Coleta exige a aptidão correspondente.
-const APT = {
-  Noctarn: { minerar: 4, garimpar: 2 },
-  Ignavor: { plantar: 3, colher: 2, cortar: 3, transportar: 2 },
-  Vaelith: { colher: 2, fabricar: 2, garimpar: 3 },
-};
-for (const [k, v] of Object.entries(Y.EVENT_SPECIES)) APT[k] = v.aptitudes; // exclusivos de evento
-const ART = { Noctarn: 'assets/monsters/noctarn/sprite-front.png' };
+// Aptidões de trabalho (1 a 10) e arte, também do catálogo.
+const APT = E.APTIDOES_DA_ESPECIE;
+const ART = E.ARTE_DA_ESPECIE;
 const EVENT_ACTIVE = true; // há sempre um evento mensal ativo no calendário; o item de drop é provisório
 const monster = (id, species, rarity, level, xp, purity, variant = 'natural', classe = 'comum') => ({
   id, species, rarity, tier: rarity, variant, classe, level, xp, purity, vinculo: 0,
