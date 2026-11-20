@@ -22,14 +22,15 @@ const SOURCE_LABEL = {
 const APT = E.APTIDOES_DA_ESPECIE;
 const ART = E.ARTE_DA_ESPECIE;
 const EVENT_ACTIVE = true; // há sempre um evento mensal ativo no calendário; o item de drop é provisório
-const monster = (id, species, rarity, level, xp, purity, variant = 'natural', classe = 'comum') => ({
-  id, species, rarity, tier: rarity, variant, classe, level, xp, purity, vinculo: 0,
+const monster = (id, species, rarity, level, xp, purity, variant = 'natural', classe = 'comum', origem = 'base') => ({
+  id, species, rarity, tier: rarity, variant, classe, origem, level, xp, purity, vinculo: 0,
   abilities: ABILITIES[species].slice(0, 4), extraAbility: null, hybrid: false, abilityLevels: {},
   aptitudes: { ...(APT[species] || {}) },
+  passivas: E.PASSIVA_DA_ESPECIE[species] ? [E.PASSIVA_DA_ESPECIE[species]] : [],
 });
 const SPECIES = Y.BASE_SPECIES; // todas saem de ovo, breed ou invocação: nenhuma espécie é só de pagamento
 const PURITY_BY_SPECIES = Y.SPECIES_PURITY;
-const RARITY_LABEL = { comum: 'Comum', rara: 'Rara', epica: 'Épica', lendaria: 'Lendária', mitica: 'Mítica' };
+const RARITY_LABEL = { comum: 'Comum', rara: 'Rara', epica: 'Épica', lendaria: 'Lendária', mitica: 'Mítica', boss: 'Boss' };
 const VARIANT_LABEL = { natural: 'natural', mutante: 'mutação', abencoada: 'bênção', combinada: 'mutação + bênção' }; // a variante aparece como aura
 const auraClass = (m) => (m.variant === 'mutante' ? `aura-mutante-${m.purity === 'luz' ? 'luz' : 'trevas'}` : `aura-${m.variant || 'natural'}`);
 const eggAura = (e) => (e.form === 'mutante' ? `aura-mutante-${e.pureza === 'luz' ? 'luz' : 'trevas'}` : `aura-${e.form || 'natural'}`);
@@ -127,7 +128,7 @@ function balanceHtml() {
     <ul class="log">
       <li>Fim de cada encontro (captura, fuga ou falha): 5 gold × raridade = ${[1, 2, 3, 4, 5].map((r) => Y.goldEncontro(r)).join(', ')}.</li>
       <li>Zona infinita: ${Y.goldAndar(1)} gold no andar 1, ${Y.goldAndar(10)} no andar 10, ${Y.goldAndar(20)} no andar 20.</li>
-      <li>Batalha final vencida: ${Y.GOLD.batalhaFinal}. Missão de evento concluída: ${Y.GOLD.missaoEvento}. Venda de 5 madeira no mercado: cerca de 12 (depende do preço do dia).</li>
+      <li>Batalha final vencida: ${Y.GOLD.batalhaFinal}. Marcos da trilha de evento: 50 missões dão 100 gold. Venda de 5 madeira no mercado: cerca de 12 (depende do preço do dia).</li>
       <li>Kit inicial: ${Y.STARTER_KIT.gold} gold. Ganho médio por busca: ${goldPorBusca.toFixed(1)} gold (chance de encontro ${pct(Y.ENCOUNTER_CHANCE)}; ${pct(Y.SHIELD_ENCOUNTER_CHANCE)} nos dias de escudo).</li>
       <li>Preços: esfera comum ${Y.SPHERE_PRICE.comum.valor} gold (cerca de ${buscasPorEsfera} buscas de ganho), rara ${Y.SPHERE_PRICE.rara.valor} gold, épica ${Y.SPHERE_PRICE.epica.valor} gold, lendária ${Y.SPHERE_PRICE.lendaria.valor} diamantes.</li>
     </ul>
@@ -147,10 +148,10 @@ function balanceHtml() {
 const lastTag = () => { const m = S.monsters.find((x) => x.id === S.last); return m ? `<p>Último monstrinho: ${monstroTag(m)}</p>` : ''; };
 const BANNER_LABEL = { permanente: 'permanente', semanal: 'semanal', evento: 'evento' };
 const uid = (p) => `${p}${Date.now()}${Math.floor(Math.random() * 1000)}`;
-const newMonster = (species, rarity, purity, variant = 'natural', classe = 'comum') => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species], variant, classe);
+const newMonster = (species, rarity, purity, variant = 'natural', classe = 'comum', origem = 'base') => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species], variant, classe, origem);
 const CLASSE_BANNER = { permanente: 'comum', semanal: 'semanal', evento: 'evento' }; // força por origem (GDD v1.29)
 const eggOf = (species, form, origem, pureza = 'neutra', tier = null) => ({ ...C.makeEgg(species, form, origem, pureza, tier), id: uid('e') });
-const ORIGIN_LABEL = { breed: 'breed', zona: 'recompensa da zona', login: 'login diário', passe: 'passe de batalha', selvagem: 'drop selvagem', inicial: 'kit inicial' };
+const ORIGIN_LABEL = { breed: 'breed', zona: 'recompensa da zona', login: 'login diário', passe: 'passe de batalha', selvagem: 'drop selvagem', inicial: 'kit inicial', evento: 'trilha do evento', raid: 'raid' };
 // Aplica uma recompensa do jogo: diamantes, esferas e fichas entram direto; ovos são criados com a origem.
 function grant(reward, origem) {
   const ovos = Y.applyReward(S, reward);
@@ -174,32 +175,89 @@ function dropEgg(w) {
     note(`${w.species} deixou um ovo.`);
   }
 }
-const evBlock = (e, tipo) => `<p><b>${e.nome}</b> (${tipo}) · monstrinho de evento (por missões): <b>${esc(e.exclusivo)}</b> · captura +${pct(e.bonus.captura)} · drop +${pct(e.bonus.drop)}</p>`;
-// Missões do período atual. Mudou o período (semana ou mês), o progresso zera.
-function missaoAtual(tipo) {
+const evBlock = (e, tipo) => tipo === 'mensal'
+  ? `<p><b>${e.nome}</b> (dura 1 mês) · onírico de evento: <b>${esc(e.exclusivo)}</b> · captura +${pct(e.bonus.captura)} · drop +${pct(e.bonus.drop)}</p>`
+  : `<p><b>${e.nome}</b> (semana) · captura +${pct(e.bonus.captura)} · drop +${pct(e.bonus.drop)}. Sem onírico exclusivo.</p>`;
+// Recompensa de evento (trilha, marcos e dias): aplica no estado e devolve o texto. Os doces são do evento mensal do momento.
+function aplicarRecompensa(r, ev) {
+  const partes = [];
+  if (r.gold) { S.gold += r.gold; partes.push(`${r.gold} gold`); }
+  if (r.diamantes) { S.diamonds += r.diamantes; partes.push(`${r.diamantes} diamantes`); }
+  if (r.evento) { S.tickets.evento += r.evento; partes.push(`${r.evento} ficha(s) de evento`); }
+  if (r.doce) { S.resources[ev.item] = (S.resources[ev.item] || 0) + r.doce; partes.push(`${r.doce} doce(s) de ${ev.nome}`); }
+  if (r.ovo) { S.eggs.push(eggOf(ev.exclusivo, 'natural', 'evento', 'neutra')); partes.push('1 ovo de evento'); }
+  return partes.join(', ') || 'nada';
+}
+// Conta uma missão da trilha (captura, andar, breed, prato ou raid). Só conta nos 7 primeiros dias do mês.
+function contarMissao() {
   const ts = Date.now();
-  const ev = Y.activeEvents(ts);
-  const e = tipo === 'semanal' ? ev.semanal : ev.mensal;
-  const chave = Y.missaoChave(e, tipo, ts);
-  if (!S.missoes[tipo] || S.missoes[tipo].chave !== chave) {
-    S.missoes[tipo] = { chave, progresso: { capturas: 0, andares: 0, breeds: 0, cozinhar: 0 }, resgatado: false };
-  }
-  return { e, m: S.missoes[tipo] };
+  S.trilha = Y.trilhaDoMes(S.trilha, ts);
+  const r = Y.contaMissao(S.trilha, ts);
+  S.trilha = r.t;
+  if (r.marco) note(`marco da trilha: ${aplicarRecompensa(r.marco, Y.monthlyEventAt(ts))}.`);
 }
-// Uma ação conta para as missões das duas agendas (semanal e mensal).
-function avancarMissao(tipo) {
-  for (const t of ['semanal', 'mensal']) {
-    const { m } = missaoAtual(t);
-    m.progresso[tipo] = (m.progresso[tipo] || 0) + 1;
-  }
+const recTexto = (r) => Object.entries(r).map(([k, v]) => ({
+  gold: `${v} gold`, diamantes: `${v} diamantes`, evento: `${v} ficha(s) de evento`, doce: `${v} doce(s)`, ovo: `${v} ovo(s) de evento`,
+})[k]).join(', ');
+// Trilha do evento mensal: página 1 (missões, dias e resgate) e página 2 (cópias, liberada depois do resgate).
+function trilhaHtml() {
+  const ts = Date.now();
+  S.trilha = Y.trilhaDoMes(S.trilha, ts);
+  const t = S.trilha;
+  const ev = Y.monthlyEventAt(ts);
+  const pagina = S.trilhaPagina === 2 && t.resgatado ? 2 : 1;
+  const dias = Object.keys(Y.TRILHA_DIAS).map(Number).map((d) => {
+    const feito = t.dias.includes(d);
+    const pronto = Y.diaResgatavel(t, ts, d);
+    return `<li>Dia ${d}: ${recTexto(Y.TRILHA_DIAS[d])} ${feito ? '<span class="muted">resgatado</span>' : `<button data-act="trilhaDia" data-dia="${d}" ${pronto ? '' : 'disabled'}>Resgatar</button>`}</li>`;
+  }).join('');
+  const resgatavel = Y.eventoResgatavel(t, ts);
+  const preco = Y.copiaPreco(t);
+  const doces = S.resources[ev.item] || 0;
+  return `<p><b>Trilha de ${esc(ev.nome)}</b> · dia ${Y.diaDoMes(ts)} do mês. Dias 1 a 7: ${Y.TRILHA.meta} missões (captura, andar da zona, breed, prato ou raid). Do dia 7, com ${Y.TRILHA.resgate} ou mais, resgata <b>${esc(ev.exclusivo)}</b>. O evento dura o mês todo.</p>
+    <p><button data-act="trilhaPagina" data-p="1" ${pagina === 1 ? 'disabled' : ''}>Página 1 · missões</button>
+    <button data-act="trilhaPagina" data-p="2" ${t.resgatado ? '' : 'disabled'}>Página 2 · cópias${t.resgatado ? '' : ' (libera após o resgate)'}</button></p>
+    ${pagina === 1 ? `<p><progress value="${Math.min(t.missoes, Y.TRILHA.meta)}" max="${Y.TRILHA.meta}"></progress> ${t.missoes}/${Y.TRILHA.meta} missões</p>
+      <ul class="log">${dias}</ul>
+      <p class="muted">Marcos (caem na hora): 25 missões, ficha de evento · 50, 100 gold · 75, 20 diamantes · 100, 2 doces · 125, ficha de evento · 150, ovo de evento.</p>
+      <button data-act="trilhaResgatar" ${resgatavel ? '' : 'disabled'}>${t.resgatado ? `${esc(ev.exclusivo)} já resgatado neste mês` : `Resgatar ${esc(ev.exclusivo)}`}</button>
+      ${!resgatavel && !t.resgatado ? `<p class="muted">O resgate abre no dia ${Y.TRILHA.dias}, com ${Y.TRILHA.resgate} missões ou mais.</p>` : ''}`
+    : `<p>Cópias extras de ${esc(ev.exclusivo)}: ${t.copias} de ${Y.TRILHA.copiasMax}. Doces de ${esc(ev.nome)}: ${doces}.</p>
+      <button data-act="trilhaCopia" ${preco === null || doces < preco ? 'disabled' : ''}>${preco === null ? 'Cópias esgotadas' : `Comprar cópia por ${preco} doces`}</button>`}`;
 }
-function missoesBlock(tipo) {
-  const { e, m } = missaoAtual(tipo);
-  const concluida = Y.missaoConcluida(m.progresso);
-  const linhas = Y.EVENT_MISSIONS.map((x) => `<li>${x.texto}: ${Math.min(m.progresso[x.tipo] || 0, x.meta)}/${x.meta}</li>`).join('');
-  return `<p><b>Missões ${tipo === 'semanal' ? 'da semana' : 'do mês'}</b> (${esc(e.nome)}), para ganhar ${esc(e.exclusivo)}:</p>
-    <ul class="log">${linhas}</ul>
-    ${m.resgatado ? '<p class="muted">Recompensa já resgatada neste período.</p>' : `<button data-act="missao" data-tipo="${tipo}" ${concluida ? '' : 'disabled'}>Resgatar ${esc(e.exclusivo)}</button>`}`;
+// Raid boss: aberto 60 minutos a cada 2 horas. Uma tentativa por raid.
+function raidHtml() {
+  const ts = Date.now();
+  const r = Y.raidAt(ts);
+  const usou = S.raid.janela === r.janela;
+  const estado = r.aberto ? `aberto até ${Y.horaBrasilia(r.inicioMs + Y.RAID.duracaoMin * 60000)}` : `fechado; abre às ${Y.horaBrasilia(r.proximoMs)}`;
+  const lista = Y.RAID_BOSSES.map((b) => {
+    const n = S.fragmentos[b.id] || 0;
+    const pronto = n >= Y.RAID.fragmentosParaOvo;
+    return `<li>${esc(b.nome)} (${b.pureza}): ${n}/${Y.RAID.fragmentosParaOvo} fragmentos ${pronto ? `<button data-act="raidOvo" data-boss="${b.id}">Chocar ovo de raid</button>` : ''}</li>`;
+  }).join('');
+  const m0 = S.monsters[0];
+  return `<section>
+    <h2>Raid boss · a cada 2 horas</h2>
+    <p>Agora: <b>${esc(r.boss.nome)}</b> · ${estado} (horário de Brasília).</p>
+    ${m0 ? `<label>Monstrinho <select id="raid-monster">${S.monsters.map((m) => `<option value="${m.id}">${esc(m.species)} · nível ${m.level}</option>`).join('')}</select></label>
+      <button data-act="raid" ${r.aberto && !usou ? '' : 'disabled'}>${usou ? 'Tentativa já usada nesta raid' : `Atacar ${esc(r.boss.nome)}`}</button>
+      <p class="muted">Chance de vencer com ${esc(m0.species)}: ${pct(Y.chanceRaid(m0, r.boss))}. Vitória dá 1 fragmento (2 em 20% das vezes) e ${C.XP_FONTE.raidVitoria} XP.</p>` : '<p class="muted">Você precisa de um monstrinho para atacar.</p>'}
+    <ul class="log">${lista}</ul>
+    <p class="muted">Fragmentos são de cada boss: ${Y.RAID.fragmentosParaOvo} deles viram um ovo de raid. O ovo sai de tier 10 a 15. Ao chocar, 40% saem boss (acima da mítica) e 60% saem mítica.</p>
+  </section>`;
+}
+// Transferência: o monstrinho de origem passa os atributos ao destino e é apagado.
+function transferHtml() {
+  const opt = (m, comCusto) => `<option value="${m.id}">${esc(m.species)} · ${RARITY_LABEL[C.rarityName(m.rarity)]} · tier ${m.tier} · ${esc(ORIGIN_LABEL[m.origem] || m.origem || 'base')}${comCusto ? ` · sai por ${Y.custoTransferencia(m)} diamantes` : ''}</option>`;
+  return `<section>
+    <h2>Transferir atributos</h2>
+    <p class="muted">Achou um monstrinho melhor e quer passar o progresso de outro para ele? O de <b>origem</b> passa raridade, tier, nível, XP, aptidões, habilidades, pureza e variante ao <b>destino</b>, e <b>é apagado</b>. O destino mantém espécie, id e passivas próprias (até 2). Custo em diamantes pelo tipo da origem: base ${Y.TRANSFERENCIA.base}, banner ${Y.TRANSFERENCIA.banner}, evento ${Y.TRANSFERENCIA.evento}, raid ${Y.TRANSFERENCIA.raid}. No máximo (tier 10 mítica, ou tier 15 boss), dobra.</p>
+    ${S.monsters.length < 2 ? '<p class="muted">Precisa de dois monstrinhos.</p>' : `
+    <label>Origem (será apagado) <select id="tr-origem">${S.monsters.map((m) => opt(m, true)).join('')}</select></label>
+    <label>Destino (recebe) <select id="tr-destino">${S.monsters.map((m) => opt(m, false)).join('')}</select></label>
+    <button data-act="transferir" class="danger">Transferir</button>`}
+  </section>`;
 }
 function wildBlock() {
   const w = S.wild;
@@ -221,7 +279,7 @@ function newState() {
     bot: 0, successes: {}, failures: {},
     diamonds: 0, gold: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
-    pity: { permanente: 0, semanal: 0, evento: 0 }, missoes: { semanal: null, mensal: null }, mundo: Mundo.criarMundo(),
+    pity: { permanente: 0, semanal: 0, evento: 0 }, pityT5: { permanente: 0, semanal: 0, evento: 0 }, trilha: null, trilhaPagina: 1, semana: null, raid: { janela: null }, fragmentos: {}, mundo: Mundo.criarMundo(),
     pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null, breeds: [],
     ingredients: [
       { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum', category: 'vegetal' },
@@ -230,7 +288,7 @@ function newState() {
     ],
     charcoal: 2, pot: 'comum', rescue: null, battleOver: false, log: [],
     farm: { mapping: {}, unassigned: [] },
-    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, doce_halloween: 0, doce_solsticio: 0 },
+    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, doce_halloween: 0, doce_solsticio: 0, doce_lua: 0, doce_fartura: 0, doce_cristal: 0 },
   };
   const ovos = Y.applyReward(st, Y.starterReward()); // kit inicial: diamantes, fichas, esferas e um ovo
   for (let i = 0; i < ovos; i++) st.eggs.push(eggOf('Ignavor', 'natural', 'inicial'));
@@ -251,6 +309,7 @@ function withDefaults(s) {
     gold: s.gold ?? 0,
     tickets: { permanente: 0, semanal: 0, evento: 0, ...(s.tickets || {}) },
     pity: { permanente: 0, semanal: 0, evento: 0, ...(s.pity || {}) },
+    pityT5: { permanente: 0, semanal: 0, evento: 0, ...(s.pityT5 || {}) },
     missoes: { semanal: null, mensal: null, ...(s.missoes || {}) },
     mundo: { ...Mundo.criarMundo(), ...(s.mundo || {}) },
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0, ...(s.esferas || {}) },
@@ -267,7 +326,7 @@ function withDefaults(s) {
 function alinharNivel(m) {
   const level = Math.min(C.LEVEL_MAX, Math.max(1, m.level ?? 1));
   const xp = Math.max(m.xp ?? 0, C.xpDoNivel(level));
-  return { ...m, xp, level: C.nivelDeXp(xp) };
+  return { ...m, xp, level: C.nivelDeXp(xp), origem: m.origem ?? 'base', passivas: m.passivas ?? (E.PASSIVA_DA_ESPECIE[m.species] ? [E.PASSIVA_DA_ESPECIE[m.species]] : []) };
 }
 // Versão anterior usava estrelas (star). Agora: raridade 1 a 5 e tier 1 a 10 (só o breed sobe o tier).
 function migrateMonster(m) {
@@ -338,8 +397,7 @@ function render() {
     <h2>Eventos desta semana e deste mês</h2>
     ${evBlock(ev.semanal, 'semanal')}
     ${evBlock(ev.mensal, 'mensal')}
-    ${missoesBlock('semanal')}
-    ${missoesBlock('mensal')}
+    ${trilhaHtml()}
     <p class="muted">Monstrinhos de evento não aparecem em encontros: saem de missões. Nada disso se compra com dinheiro.</p>
   </section>
 
@@ -495,11 +553,17 @@ function render() {
     <label>Banner <select id="shop-banner">${Object.keys(C.BANNER_WEIGHTS).map((b) => `<option value="${b}">${BANNER_LABEL[b]}</option>`).join('')}</select></label>
     <button data-act="invoke" data-qtd="1">Invocar x1 (1 ficha)</button>
     <button data-act="invoke" data-qtd="10">Invocar x10 (10 fichas, tier 4 garantido)</button>
-    <button data-act="invoke" data-qtd="50">Invocar x50 (50 fichas, tier 5 garantido)</button>
+    <button data-act="invoke" data-qtd="50">Invocar x50 (50 fichas, tier 4 a cada 10)</button>
     <button data-act="buy" data-qtd="1">Comprar 1 ficha (200 diamantes)</button>
     <button data-act="buy" data-qtd="10">Comprar 10 fichas (1500 diamantes)</button>
+    <p class="muted">Como cada ficha se ganha: <b>permanente</b> = compra com diamantes, login, passe e kit inicial (a compra só vale para este banner). <b>Semanal</b> = 1 ficha a cada 3 capturas da semana, até 4. <b>Evento</b> = trilha do evento, andares da zona a cada 15 e marcos.</p>
+    <p class="muted">Tier 5 (mítica) sai por chance, ou garantido após 150 invocações sem ele. Atual: permanente ${S.pityT5.permanente}/${C.PITY_TIER5} · semanal ${S.pityT5.semanal}/${C.PITY_TIER5} · evento ${S.pityT5.evento}/${C.PITY_TIER5}. Cada 10 invocações garantem tier 4.</p>
     <p class="muted">Diamantes e fichas só se ganham no jogo. Dinheiro real é só para cosméticos. Invocar mostra a raridade rolada, que o banner empurra para cima.</p>
   </section>
+
+  ${raidHtml()}
+
+  ${transferHtml()}
 
   ${balanceHtml()}
 
@@ -559,6 +623,7 @@ function resolverBreeds() {
     if (b.sucesso) {
       C.absorbAbility(main, b.pick, b.keep);
       C.breedSuccessEffects(main);
+      if (b.passiva && C.herdarPassiva(main, b.passiva)) note(`${main.species} herdou a passiva ${b.passiva.nome}.`);
       S.eggs.push(eggOf(main.species, b.form, 'breed', b.pureza, b.tierOvo));
       S.successes[main.id] = (S.successes[main.id] || 0) + 1;
       S.failures[main.id] = 0;
@@ -722,7 +787,7 @@ function act(name, el) {
       const r = C.cook({ base, pot, charcoal: S.charcoal, skill: 0, roll: Math.random() });
       S.charcoal -= 1;
       S.pot = pot;
-      avancarMissao('cozinhar');
+      contarMissao();
       if (m) m.vinculo = Math.max(0, Math.min(100, m.vinculo + r.vinculoDelta));
       if (!r.penalidade) S.diamonds += C.diamondsForItem(r.raridade);
       note(r.penalidade ? `cozinhar: ${r.penalidade}. Vínculo de ${m ? m.species : '-'} muda ${r.vinculoDelta}.`
@@ -739,19 +804,22 @@ function act(name, el) {
       const chance = C.breedSuccessChance(main.tier, S.successes[main.id] || 0, S.failures[main.id] || 0, ore);
       S.pass = Y.addPassXp(S.pass, 'breed');
       C.ganharXp(main, C.XP_FONTE.breed);
-      avancarMissao('breeds');
+      contarMissao();
       ing.usosIngrediente = (ing.usosIngrediente || 0) + 1; // o ingrediente não some: cada breed gasta um dos 3 usos
       const aviso = ing.usosIngrediente >= C.INGREDIENT_MAX_USES
         ? ` ${ing.species} chegou a ${C.INGREDIENT_MAX_USES} usos: não serve mais de ingrediente, mas continua na coleção.` : '';
       const pool = ing.abilities && ing.abilities.length ? ing.abilities : C.activeAbilities(ing);
       const e = C.eggFor('breed', Math.random(), Math.random(), ing.purity);
       const agora = Date.now();
+      // Passiva do ingrediente pode passar para o principal se o breed der certo (chance em C.PASSIVA_HERDA_CHANCE).
+      const passivaHerdada = ing.passivas && ing.passivas.length && Math.random() < C.PASSIVA_HERDA_CHANCE
+        ? ing.passivas[Math.floor(Math.random() * ing.passivas.length)] : null;
       S.breeds.push({
         id: uid('b'), mainId: main.id, ingId: ing.id, mainNome: main.species, ingNome: ing.species,
         inicio: agora, fim: agora + C.breedDurationMs(Math.random()),
         sucesso: Math.random() < chance, pick: pool[Math.floor(Math.random() * pool.length)],
         keep: $('fuse-keep').value === 'new', tierOvo: C.breedEggTier(main.tier, Math.random()),
-        form: e.form, pureza: e.pureza,
+        form: e.form, pureza: e.pureza, passiva: passivaHerdada,
       });
       note(`breed iniciado: ${main.species} + ${ing.species}. Termina em cerca de 10 minutos. ${main.species} ganhou ${C.XP_FONTE.breed} XP.${aviso}`);
       break;
@@ -810,7 +878,7 @@ function act(name, el) {
       S.endless.best = Math.max(S.endless.best, floor);
       S.endless.floor = floor + 1;
       S.pass = Y.addPassXp(S.pass, 'andar');
-      avancarMissao('andares');
+      contarMissao();
       const gold = Y.goldAndar(floor);
       S.gold += gold;
       const xp = C.ganharXp(m, C.XP_FONTE.andarVitoria(floor));
@@ -825,18 +893,21 @@ function act(name, el) {
       S.tickets[banner] -= qtd;
       const sorteados = [];
       let pity = S.pity[banner] || 0;
+      let pityT5 = S.pityT5[banner] || 0;
       for (let i = 0; i < qtd; i++) {
-        const p = C.invocationPull(banner, SPECIES, pity, { destaque: Math.random(), especie: Math.random(), raridade: Math.random() });
+        const p = C.invocationPull(banner, SPECIES, pity, { destaque: Math.random(), especie: Math.random(), raridade: Math.random() }, pityT5);
         pity = p.pity;
+        pityT5 = p.pityT5;
         sorteados.push(p);
       }
       S.pity[banner] = pity;
-      const resultados = C.garantirLote(sorteados, qtd);
+      S.pityT5[banner] = pityT5;
+      const resultados = C.garantirLote(sorteados);
       const melhorSorteio = Math.max(...sorteados.map((r) => r.rarity));
       const melhor = Math.max(...resultados.map((r) => r.rarity));
       let d = 0, ultimo = null;
       for (const r of resultados) {
-        const m = newMonster(r.species, r.rarity, undefined, 'natural', CLASSE_BANNER[banner]);
+        const m = newMonster(r.species, r.rarity, undefined, 'natural', CLASSE_BANNER[banner], 'banner');
         S.monsters.push(m);
         ultimo = m;
         d += C.diamondsForItem(C.rarityName(r.rarity));
@@ -852,18 +923,27 @@ function act(name, el) {
       if (!egg) return;
       S.eggs = S.eggs.filter((e) => e !== egg);
       const r = C.hatchEgg(egg, Math.random());
-      const m = newMonster(r.species, r.rarity, r.purity, r.variant);
+      if (egg.origem === 'raid') { r.rarity = Y.raridadeOvoRaid(Math.random()); r.tier = egg.tier; } // ovo de raid: boss ou mítica
+      const origem = egg.origem === 'raid' ? 'raid' : egg.origem === 'evento' ? 'evento' : 'base';
+      const m = newMonster(r.species, r.rarity, r.purity, r.variant, 'comum', origem);
       m.tier = r.tier;
       S.monsters.push(m);
       S.last = m.id;
       const d = C.diamondsForItem(C.rarityName(r.rarity));
       S.diamonds += d;
-      note(`ovo de ${r.species} chocou: ${RARITY_LABEL[C.rarityName(r.rarity)]}, tier ${r.tier}, forma ${r.form}. Coleção: +${d} diamante(s).`);
+      let clone = '';
+      if (Math.random() < Y.chanceClone(r.species)) { // clone na hora de chocar: oníricos de banner e de evento
+        const c = structuredClone(m);
+        c.id = uid('m');
+        S.monsters.push(c);
+        clone = ' Clone! Saiu uma segunda cópia.';
+      }
+      note(`ovo de ${r.species} chocou: ${RARITY_LABEL[C.rarityName(r.rarity)]}, tier ${r.tier}, forma ${r.form}. Coleção: +${d} diamante(s).${clone}`);
       break;
     }
     case 'buy': {
       const qtd = Number(el.dataset.qtd);
-      const banner = $('shop-banner').value;
+      const banner = 'permanente'; // a compra só vale para o banner permanente (v1.33)
       try {
         const r = C.buyInvocations(S.diamonds, qtd);
         S.diamonds = r.diamonds;
@@ -926,7 +1006,10 @@ function act(name, el) {
         S.monsters.push(nm);
         S.last = nm.id;
         S.pass = Y.addPassXp(S.pass, 'captura');
-        avancarMissao('capturas');
+        contarMissao();
+        const sem = Y.contaCapturaSemanal(S.semana, Date.now()); // fichas semanais: 1 a cada 3 capturas da semana
+        S.semana = sem.s;
+        S.tickets.semanal += sem.fichas;
         const d = C.diamondsForItem(C.rarityName(w.rarity));
         S.diamonds += d;
         note(`${w.species} capturado com esfera ${RARITY_LABEL[k].toLowerCase()} (chance ${pct(chance)}). Coleção: +${d} diamante(s), +${xp.ganho} XP, +${gold} gold.`);
@@ -946,16 +1029,81 @@ function act(name, el) {
       S.wild = null;
       break;
     }
-    case 'missao': {
-      const tipo = el.dataset.tipo;
-      const { e, m } = missaoAtual(tipo);
-      if (m.resgatado || !Y.missaoConcluida(m.progresso)) return;
-      const nm = newMonster(e.exclusivo, 3, undefined, 'natural', 'evento');
+    case 'trilhaDia': {
+      const ts = Date.now();
+      S.trilha = Y.trilhaDoMes(S.trilha, ts);
+      try {
+        const r = Y.resgatarDia(S.trilha, ts, Number(el.dataset.dia));
+        S.trilha = r.t;
+        note(`trilha, dia ${el.dataset.dia}: ${aplicarRecompensa(r.r, Y.monthlyEventAt(ts))}.`);
+      } catch (e) { note(`não deu para resgatar: ${e.message}.`); }
+      break;
+    }
+    case 'trilhaResgatar': {
+      const ts = Date.now();
+      S.trilha = Y.trilhaDoMes(S.trilha, ts);
+      try { S.trilha = Y.resgatarEvento(S.trilha, ts); } catch (e) { note(`não deu para resgatar: ${e.message}.`); break; }
+      const ev = Y.monthlyEventAt(ts);
+      const nm = newMonster(ev.exclusivo, 3, undefined, 'natural', 'evento', 'evento');
       S.monsters.push(nm);
       S.last = nm.id;
-      m.resgatado = true;
-      S.gold += Y.GOLD.missaoEvento;
-      note(`missões de ${e.nome} concluídas: ${e.exclusivo} entrou na coleção. +${Y.GOLD.missaoEvento} gold.`);
+      note(`${ev.exclusivo} entrou na coleção pela trilha do evento.`);
+      break;
+    }
+    case 'trilhaCopia': {
+      const ts = Date.now();
+      S.trilha = Y.trilhaDoMes(S.trilha, ts);
+      const ev = Y.monthlyEventAt(ts);
+      try {
+        const r = Y.comprarCopia(S.trilha, S.resources[ev.item] || 0);
+        S.resources[ev.item] -= r.preco;
+        S.trilha = r.t;
+        const nm = newMonster(ev.exclusivo, 3, undefined, 'natural', 'evento', 'evento');
+        S.monsters.push(nm);
+        S.last = nm.id;
+        note(`cópia de ${ev.exclusivo} comprada por ${r.preco} doces.`);
+      } catch (e) { note(`não deu para comprar: ${e.message}.`); }
+      break;
+    }
+    case 'trilhaPagina': { S.trilhaPagina = Number(el.dataset.p); break; }
+    case 'raid': {
+      const r = Y.raidAt(Date.now());
+      if (!r.aberto || S.raid.janela === r.janela) return;
+      const m = S.monsters.find((x) => x.id === $('raid-monster').value);
+      if (!m) return;
+      S.raid.janela = r.janela;
+      contarMissao();
+      if (Math.random() < Y.chanceRaid(m, r.boss)) {
+        const f = Y.fragmentosVitoria(Math.random());
+        S.fragmentos[r.boss.id] = (S.fragmentos[r.boss.id] || 0) + f;
+        const xp = C.ganharXp(m, C.XP_FONTE.raidVitoria);
+        note(`${m.species} venceu ${r.boss.nome} e pegou ${f} fragmento(s). +${xp.ganho} XP.`);
+      } else note(`${m.species} não venceu ${r.boss.nome}. A tentativa desta raid está usada.`);
+      break;
+    }
+    case 'raidOvo': {
+      const boss = Y.RAID_BOSSES.find((b) => b.id === el.dataset.boss);
+      const n = boss ? (S.fragmentos[boss.id] || 0) : 0;
+      if (!boss || n < Y.RAID.fragmentosParaOvo) { note('faltam fragmentos para o ovo.'); break; }
+      S.fragmentos[boss.id] = n - Y.RAID.fragmentosParaOvo;
+      const tier = Y.tierOvoRaid(Math.random());
+      S.eggs.push(eggOf(boss.nome, 'natural', 'raid', boss.pureza, tier));
+      note(`ovo de raid de ${boss.nome} pronto (tier ${tier}). Está na lista de ovos para chocar.`);
+      break;
+    }
+    case 'transferir': {
+      const origem = S.monsters.find((x) => x.id === $('tr-origem').value);
+      const destino = S.monsters.find((x) => x.id === $('tr-destino').value);
+      if (!origem || !destino || origem.id === destino.id) { note('escolha dois monstrinhos diferentes.'); break; }
+      if (ocupados().has(origem.id) || ocupados().has(destino.id)) { note('um dos dois está em breed. Espere terminar.'); break; }
+      const custo = Y.custoTransferencia(origem);
+      if (S.diamonds < custo) { note(`faltam diamantes: a transferência custa ${custo}.`); break; }
+      if (!window.confirm(`${origem.species} vai ser apagado e ${destino.species} recebe os atributos dele. Custa ${custo} diamantes. Confirmar?`)) return;
+      const novo = C.transferirAtributos(origem, destino);
+      S.diamonds -= custo;
+      S.monsters = S.monsters.filter((x) => x.id !== origem.id).map((x) => (x.id === destino.id ? novo : x));
+      S.last = destino.id;
+      note(`transferência feita: ${destino.species} recebeu os atributos de ${origem.species} por ${custo} diamantes.`);
       break;
     }
     case 'mundoAcao': {

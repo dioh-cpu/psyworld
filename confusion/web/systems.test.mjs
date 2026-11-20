@@ -27,7 +27,7 @@ test('login: sequência de 7 dias repete e cada dia tem recompensa fixa', () => 
   assert.equal(Y.loginRewardFor(6).ovos, 1);
   const d7 = Y.loginRewardFor(7);
   assert.equal(d7.esferas.epica, 1);
-  assert.equal(d7.fichas.semanal, 1);
+  assert.equal(d7.fichas.semanal, 0);   // fichas semanais saem só das capturas da semana (v1.33)
   assert.equal(Y.loginRewardFor(8).diamantes, Y.loginRewardFor(1).diamantes);
 });
 
@@ -80,7 +80,7 @@ test('eventos: rodízio semanal e mensal no calendário de Brasília', () => {
 });
 
 test('exclusivos: cada evento tem um monstrinho que não é da lista geral', () => {
-  for (const e of [...Y.WEEKLY_EVENTS, ...Y.MONTHLY_EVENTS]) {
+  for (const e of Y.MONTHLY_EVENTS) {
     assert.ok(Y.EVENT_SPECIES[e.exclusivo], e.exclusivo);
     assert.ok(!Y.BASE_SPECIES.includes(e.exclusivo));
   }
@@ -95,14 +95,6 @@ test('encontro: sem sorte, sem encontro; nunca sorteia monstrinho de evento', ()
   }
   assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.999 }).rarity, 5);
 });
-test('missões: progresso completo libera o período; mudança de período zera', () => {
-  const todas = { capturas: 3, andares: 5, breeds: 2, cozinhar: 2 };
-  assert.equal(Y.missaoConcluida(todas), true);
-  assert.equal(Y.missaoConcluida({ ...todas, breeds: 1 }), false);
-  const ev = Y.WEEKLY_EVENTS[0];
-  assert.notEqual(Y.missaoChave(ev, 'semanal', Y.EPOCH_TS), Y.missaoChave(ev, 'semanal', Y.EPOCH_TS + 7 * DAY));
-  assert.equal(Y.missaoChave(ev, 'semanal', Y.EPOCH_TS), Y.missaoChave(ev, 'semanal', Y.EPOCH_TS + DAY));
-});
 
 test('captura: esfera melhor que o monstrinho aumenta a chance; limites respeitados', () => {
   const wild = { rarity: 3, tier: 3 };
@@ -113,12 +105,14 @@ test('captura: esfera melhor que o monstrinho aumenta a chance; limites respeita
   assert.equal(Y.captureChance(5, { rarity: 1, tier: 1 }), Y.CAPTURE.max);
 });
 
-test('captura: bônus vem do escudo e dos eventos ativos', () => {
+test('captura: bônus vem do escudo e dos eventos ativos (semanal + mensal)', () => {
   const ts = Y.EPOCH_TS;
-  // semana da Lua (+10%) + Halloween (sem captura) + escudo (+10%)
-  assert.ok(Math.abs(Y.captureBonus(ts, 1) - 0.20) < 1e-9);
-  // depois do escudo, só o evento
-  assert.ok(Math.abs(Y.captureBonus(ts, 30) - 0.10) < 1e-9);
+  const ev = Y.activeEvents(ts);
+  const soEventos = ev.semanal.bonus.captura + ev.mensal.bonus.captura;
+  // dia 1: eventos + escudo
+  assert.ok(Math.abs(Y.captureBonus(ts, 1) - (soEventos + Y.SHIELD_CAPTURE_BONUS)) < 1e-9);
+  // depois do escudo, só os eventos
+  assert.ok(Math.abs(Y.captureBonus(ts, 30) - soEventos) < 1e-9);
 });
 
 test('esferas: comum, rara e épica se compram com gold; lendária custa 1500 diamantes', () => {

@@ -118,6 +118,7 @@ export const XP_FONTE = {
   andarDerrota: 2,                        // andar não vencido: consolo pequeno
   batalhaVitoria: 50,                     // vitória contra o bot
   batalhaDerrota: 25,                     // XP perdido na derrota; nunca cai abaixo do nível atual
+  raidVitoria: 20,                        // raid vencido
 };
 export const xpParaProximo = (nivel) => 30 + 10 * nivel;      // XP entre o nível `nivel` e o seguinte
 export function xpDoNivel(nivel) {                            // XP total necessário para chegar ao nível
@@ -261,8 +262,12 @@ export function gatherDay(task, level) {
 export const RARITY_MAX = 5;
 export const TIER_MAX = 10;
 export const RARITY_WEIGHTS = [0.5, 0.3, 0.14, 0.05, 0.01]; // proposta: chance de nascer em cada raridade
+// Boss: raridade acima da mítica. Só sai de ovo de raid (v1.33).
+export const RARITY_BOSS = 6;
 export function rarityName(r) {
-  return RARITY[clamp(Math.trunc(r), 1, RARITY_MAX) - 1];
+  const n = Math.trunc(r);
+  if (n >= RARITY_BOSS) return 'boss';
+  return RARITY[clamp(n, 1, RARITY_MAX) - 1];
 }
 // Rolagem para raridade. O shift (banner ou origem do ovo) empurra para cima, nunca para baixo.
 export function rollRarity(roll, shift = 0) {
@@ -284,15 +289,18 @@ export function breedSuccessEffects(m) {
   return m;
 }
 
-// ---- Invocação com garantia por lote (GDD v1.23): 10 garante tier 4; 50 garante tier 5 ----
-// Tier de invocação = raridade. A garantia troca o último resultado se o lote não tiver o tier mínimo.
-export const INVOCATION_GUARANTEE = [{ qtd: 50, tier: 5 }, { qtd: 10, tier: 4 }];
-export function garantirLote(resultados, qtd) {
-  const g = INVOCATION_GUARANTEE.find((x) => qtd >= x.qtd);
-  if (!g || resultados.length === 0) return resultados;
-  if (Math.max(...resultados.map((r) => r.rarity)) >= g.tier) return resultados;
+// ---- Invocação com garantia (v1.33): cada bloco de 10 garante tier 4. Tier 5 só por chance ou por 150 sem ele. ----
+// Tier de invocação = raridade. Em cada bloco de 10 sem tier 4 ou mais, a última invocação do bloco vira tier 4.
+export const INVOCATION_GUARANTEE = { bloco: 10, tier: 4 };
+export const PITY_TIER5 = 150;
+export function garantirLote(resultados) {
+  const { bloco, tier } = INVOCATION_GUARANTEE;
   const out = resultados.slice();
-  out[out.length - 1] = { ...out[out.length - 1], rarity: g.tier };
+  for (let ini = 0; ini + bloco <= out.length; ini += bloco) {
+    const fim = ini + bloco - 1;
+    const melhor = Math.max(...out.slice(ini, fim + 1).map((r) => r.rarity));
+    if (melhor < tier) out[fim] = { ...out[fim], rarity: tier };
+  }
   return out;
 }
 
@@ -409,8 +417,9 @@ export function rarityByWeights(roll, weights) {
   }
   return weights.length;
 }
-// Uma invocação. pity = invocações seguidas sem o destaque do banner. rolls: { destaque, especie, raridade } em [0, 1).
-export function invocationPull(banner, pool, pity, rolls) {
+// Uma invocação. pity = invocações seguidas sem o destaque do banner. pityT5 = invocações seguidas sem tier 5.
+// rolls: { destaque, especie, raridade } em [0, 1).
+export function invocationPull(banner, pool, pity, rolls, pityT5 = 0) {
   const destaque = BANNER_FEATURED[banner];
   if (!destaque) throw new Error('banner desconhecido');
   const outros = pool.filter((s) => s !== destaque);
@@ -421,9 +430,10 @@ export function invocationPull(banner, pool, pity, rolls) {
   } else {
     species = outros[Math.min(outros.length - 1, Math.floor(rolls.especie * outros.length))];
   }
-  const rarity = rarityByWeights(rolls.raridade, BANNER_WEIGHTS[banner]);
+  let rarity = rarityByWeights(rolls.raridade, BANNER_WEIGHTS[banner]);
+  if (pityT5 + 1 >= PITY_TIER5) rarity = RARITY_MAX;   // tier 5 garantido após 150 sem ele
   const destacou = species === destaque;
-  return { species, rarity, destaque: destacou, pity: destacou ? 0 : pity + 1 };
+  return { species, rarity, destaque: destacou, pity: destacou ? 0 : pity + 1, pityT5: rarity === RARITY_MAX ? 0 : pityT5 + 1 };
 }
 
 // ---- Zona infinita (decidido pelo autor, v1.15) ----
@@ -470,7 +480,29 @@ export function buyInvocations(diamonds, qtd) {
   return { diamonds: diamonds - cost, gasto: cost, qtd };
 }
 // Ganho por item/monstrinho/conquista: 1 diamante base; raridades altas dão mais (proposta).
-export const DIAMOND_BY_RARITY = { comum: 1, rara: 1, epica: 2, lendaria: 3, mitica: 5 };
+export const DIAMOND_BY_RARITY = { comum: 1, rara: 1, epica: 2, lendaria: 3, mitica: 5, boss: 8 };
 export function diamondsForItem(rarity) {
   return DIAMOND_BY_RARITY[rarity] ?? 1;
+}
+
+// ---- Passivas e transferência de atributos (v1.33) ----
+// Cada monstrinho guarda até 2 passivas. No breed, a passiva do ingrediente pode passar para o principal.
+export const PASSIVA_MAX = 2;
+export const PASSIVA_HERDA_CHANCE = 0.3;
+export function herdarPassiva(m, passiva) {
+  m.passivas = m.passivas || [];
+  if (!passiva || m.passivas.some((p) => p.nome === passiva.nome)) return false;
+  if (m.passivas.length >= PASSIVA_MAX) m.passivas.shift(); // substitui a mais antiga
+  m.passivas.push(passiva);
+  return true;
+}
+// Atributos que a transferência leva do monstrinho sacrificado para o destino. Espécie, id, origem e classe ficam no destino.
+export const ATRIBUTOS_TRANSFERIDOS = ['rarity', 'tier', 'level', 'xp', 'aptitudes', 'abilities', 'abilityLevels', 'extraAbility', 'hybrid', 'vinculo', 'variant', 'purity'];
+export function transferirAtributos(origem, destino) {
+  if (origem.id === destino.id) throw new Error('escolha dois monstrinhos diferentes');
+  const novo = { ...destino };
+  for (const k of ATRIBUTOS_TRANSFERIDOS) if (k in origem) novo[k] = structuredClone(origem[k]);
+  novo.passivas = [...(destino.passivas || [])];
+  for (const p of origem.passivas || []) herdarPassiva(novo, p);
+  return novo;
 }

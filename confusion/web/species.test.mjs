@@ -22,7 +22,7 @@ test('catálogo: espécie nova válida entra nas listas do jogo sem mexer no có
 test('catálogo: base e evento separados; exclusivo de evento existe e é de origem evento', () => {
   assert.ok(E.ESPECIES_BASE.includes('Noctarn'));
   assert.ok(!E.ESPECIES_BASE.includes('Lumivela'));
-  for (const e of [...Y.WEEKLY_EVENTS, ...Y.MONTHLY_EVENTS]) {
+  for (const e of Y.MONTHLY_EVENTS) {
     assert.ok(E.ESPECIES[e.exclusivo], e.exclusivo);
     assert.equal(E.ESPECIES[e.exclusivo].origem, 'evento');
   }

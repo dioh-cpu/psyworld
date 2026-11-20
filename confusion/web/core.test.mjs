@@ -133,7 +133,8 @@ test('aptidão não cresce com trabalho: só pelo breed', () => {
 test('raridade: 1 a 5 com nomes da culinária; empurrão nunca passa de 5', () => {
   assert.equal(C.rarityName(1), 'comum');
   assert.equal(C.rarityName(5), 'mitica');
-  assert.equal(C.rarityName(9), 'mitica');
+  assert.equal(C.rarityName(6), 'boss');
+  assert.equal(C.rarityName(9), 'boss');
   assert.equal(C.rollRarity(0), 1);
   assert.equal(C.rollRarity(0.999), 5);
   assert.equal(C.rollRarity(0, 1), 2);
@@ -283,17 +284,18 @@ test('zona infinita: poder pelo tier e aptidões, chance entre 5% e 95%', () => 
   assert.ok(C.endlessChance(forte, 1) > C.endlessChance(forte, 20));
 });
 
-test('invocação 10x garante tier 4; 50x garante tier 5; lote que já tem o tier não muda', () => {
+test('invocação (v1.33): cada 10 garante tier 4; sem tier 5 garantido; lote com tier 4 não muda', () => {
   const baixos = Array.from({ length: 10 }, () => ({ species: 'Noctarn', rarity: 1 }));
-  const g10 = C.garantirLote(baixos, 10);
+  const g10 = C.garantirLote(baixos);
   assert.equal(Math.max(...g10.map((r) => r.rarity)), 4);
   assert.equal(g10.length, 10);
-  const g50 = C.garantirLote(Array.from({ length: 50 }, () => ({ species: 'Noctarn', rarity: 2 })), 50);
-  assert.equal(Math.max(...g50.map((r) => r.rarity)), 5);
+  const g50 = C.garantirLote(Array.from({ length: 50 }, () => ({ species: 'Noctarn', rarity: 2 })));
+  assert.equal(g50.filter((r) => r.rarity === 4).length, 5);  // um tier 4 por bloco de 10
+  assert.equal(Math.max(...g50.map((r) => r.rarity)), 4);      // 50 não garante tier 5
   const ok = [{ species: 'Ignavor', rarity: 5 }, { species: 'Ignavor', rarity: 1 }];
-  assert.deepEqual(C.garantirLote(ok, 10), ok);
+  assert.deepEqual(C.garantirLote(ok), ok);                    // menos de 10: sem garantia
   const solto = [{ rarity: 2 }];
-  assert.deepEqual(C.garantirLote(solto, 1), solto);
+  assert.deepEqual(C.garantirLote(solto), solto);
 });
 test('breed com tempo: média de 10 minutos (8 a 12), até 3 espaços, monstrinho só em um breed por vez', () => {
   assert.equal(C.breedDurationMs(0), 8 * 60000);
