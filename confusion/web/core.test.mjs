@@ -118,3 +118,18 @@ test('coleta: falha de sanidade reduz pela metade e marca ferimento, sem bloquea
   assert.equal(r.qty, 2);
   assert.equal(r.ferimento, true);
 });
+
+test('culinária: nome não repete a pureza', () => {
+  const luz = { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum' };
+  assert.equal(C.cook({ base: luz, pot: 'rara', charcoal: 1, roll: 0.9 }).nome, 'Raiz Luminosa');
+  const sopa = { name: 'Sopa de Raiz', purity: 'luz', freshness: 1, rarity: 'comum' };
+  assert.equal(C.cook({ base: sopa, pot: 'rara', charcoal: 1, roll: 0.9 }).nome, 'Sopa de Raiz Luminosa');
+});
+test('coleta: esgota após o limite diário e volta no dia seguinte', () => {
+  const n = { resource: 'pedra', requiredTool: 'picareta', baseQty: 4, lastDay: -999, harvestsInWindow: 0 };
+  for (let i = 0; i < C.MAX_HARVESTS_PER_DAY; i++) C.harvest(n, 'picareta', 1, false);
+  const r = C.harvest(n, 'picareta', 1, false);
+  assert.equal(r.qty, 0);
+  assert.equal(r.esgotado, true);
+  assert.ok(C.harvest(n, 'picareta', 2, false).qty >= 1);
+});

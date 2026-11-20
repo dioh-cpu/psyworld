@@ -150,7 +150,7 @@ function render() {
     <p class="muted">Na falha, só o ingrediente é perdido. O principal mantém espécie, elemento e nível.</p>
     <div class="row">
       <label>Principal <select id="fuse-main">${S.monsters.map((m) => `<option value="${m.id}">${m.species} ★${m.star}</option>`).join('')}</select></label>
-      <label>Ingrediente <select id="fuse-ing">${S.monsters.map((m) => `<option value="${m.id}">${m.species} ★${m.star}</option>`).join('')}</select></label>
+      <label>Ingrediente <select id="fuse-ing">${S.monsters.map((m, k) => `<option value="${m.id}" ${k === 1 ? 'selected' : ''}>${m.species} ★${m.star}</option>`).join('')}</select></label>
       <label>Minério <select id="fuse-ore"><option value="0">nenhum</option><option value="0.06">Obsidiana Fissurada (+6%)</option></select></label>
       <label>Habilidade extra <select id="fuse-keep"><option value="new">trocar pela nova</option><option value="keep">manter a atual</option></select></label>
     </div>
@@ -414,6 +414,7 @@ function act(name, el) {
       if (!node) return;
       const fail = Math.random() < band.fail;
       const r = C.harvest(node, node.requiredTool, S.day, fail);
+      if (r.esgotado) { note(`${node.label.toLowerCase()} já foi explorada hoje. Volta amanhã.`); break; }
       S.resources[r.resource] = (S.resources[r.resource] || 0) + r.qty;
       note(`coletou ${r.qty}x ${r.resource} em ${node.label.toLowerCase()}${r.ferimento ? ' (ferimento leve, quantidade reduzida)' : ''}.`);
       break;

@@ -135,7 +135,9 @@ export function cook({ base, complement = null, seasoning = null, pot, charcoal,
   const avgRar = items.reduce((a, i) => a + RARITY.indexOf(i.rarity), 0) / items.length;
   const rarIdx = Math.min(POT_MAX[pot], Math.round(avgRar + skill / 50));
   const purity = dominantPurity(items);
-  const out = { nome: `${base.name} ${ADJ[purity]}`, efeito: EFFECT[purity], raridade: RARITY[rarIdx], penalidade: null, vinculoDelta: 5 };
+  const adj = ADJ[purity];
+  const nome = base.name.includes(adj) ? base.name : `${base.name} ${adj}`;
+  const out = { nome, efeito: EFFECT[purity], raridade: RARITY[rarIdx], penalidade: null, vinculoDelta: 5 };
   if (avgFresh < 0.2) out.penalidade = 'estragado', out.efeito = null, out.vinculoDelta = -5;
   else if (roll < 0.10) out.penalidade = 'queimado', out.efeito = null, out.vinculoDelta = -2;
   else if (avgFresh < 0.5 && roll < 0.25) out.penalidade = 'intoxicacao', out.vinculoDelta = -3;
@@ -181,9 +183,11 @@ export const PRODUCE = {
 };
 
 // ---- Coleta: nós, ferramenta obrigatória, retorno decrescente por dia (GDD v1.4/v1.5) ----
+export const MAX_HARVESTS_PER_DAY = 3;
 export function harvest(node, tool, day, sanityFail) {
   if (tool !== node.requiredTool) throw new Error(`precisa de ${node.requiredTool}`);
   if (day - node.lastDay >= 1) node.harvestsInWindow = 0; // o nó regenera ao virar o dia
+  if (node.harvestsInWindow >= MAX_HARVESTS_PER_DAY) return { resource: node.resource, qty: 0, esgotado: true, ferimento: false };
   let qty = Math.max(1, Math.floor(node.baseQty / (1 + node.harvestsInWindow)));
   node.harvestsInWindow += 1;
   node.lastDay = day;

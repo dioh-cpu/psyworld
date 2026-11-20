@@ -10,11 +10,15 @@ class Node:
     last_minute: int = -10**9
     harvests_in_window: int = 0
 
+MAX_HARVESTS_PER_DAY = 3  # paridade com o núcleo JavaScript
+
 def harvest(node: Node, tool: str, now_minute: int, sanity_fail: bool, health: int = 100) -> dict:
     if tool != node.required_tool:
         raise ValueError(f"precisa de {node.required_tool}")
     if now_minute - node.last_minute >= node.regen_minutes:
         node.harvests_in_window = 0          # o nó regenerou
+    if node.harvests_in_window >= MAX_HARVESTS_PER_DAY:
+        return {"resource": node.resource, "qty": 0, "ferimento": False, "vida": health, "esgotado": True}
     qty = max(1, int(node.base_qty / (1 + node.harvests_in_window)))  # retorno decrescente
     node.harvests_in_window += 1
     node.last_minute = now_minute
