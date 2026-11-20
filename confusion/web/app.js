@@ -3,6 +3,7 @@ import * as C from './core.js';
 import * as A from './account.js';
 import * as Y from './systems.js';
 import * as E from './species.js';
+import * as Mundo from './mundo/index.js';
 
 const KEY = 'confusion-waves-piloto-v3';
 let recovery = false;      // true quando o link de recuperação de senha foi aberto
@@ -63,6 +64,41 @@ const faltaTexto = (fim) => {
   return `faltam ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
 };
 const breedLinha = (b) => `<li>${esc(b.mainNome)} + ${esc(b.ingNome)} · <span class="contagem" data-fim="${b.fim}">${faltaTexto(b.fim)}</span></li>`;
+// Contexto que o mundo recebe a cada rodada ou ação. Os efeitos voltam e são aplicados no jogo.
+const contextoMundo = () => ({
+  dia: S.day, r: Math.random, sanidade: S.sanity, ponteFechada: C.bridgeState(S.day) === 'fechada',
+  recursos: S.resources, diamantes: S.diamonds,
+  monstros: S.monsters.map((m) => ({ id: m.id, species: m.species, classe: m.classe })),
+});
+function aplicarMundo(res) {
+  for (const n of res.notas || []) note(n);
+  const e = res.efeitos || {};
+  if (e.sanidade) S.sanity = C.clamp(S.sanity + e.sanidade, 0, 100);
+  if (e.diamantes) S.diamonds = Math.max(0, S.diamonds + e.diamantes);
+  for (const [k, v] of Object.entries(e.recursos || {})) S.resources[k] = Math.max(0, (S.resources[k] || 0) + v);
+}
+// Seção do mundo: os 50 sistemas, com o resumo de cada um e as ações disponíveis.
+const GRUPOS_MUNDO = [['01 a 10'], ['11 a 20'], ['21 a 30'], ['31 a 40'], ['41 a 50']];
+function mundoHtml() {
+  const grupos = GRUPOS_MUNDO.map(([rotulo], g) => {
+    const itens = Mundo.SISTEMAS.slice(g * 10, g * 10 + 10).map((sis) => {
+      const acoes = Object.entries(sis.acoes || {}).map(([chave, a]) => {
+        const opcoes = Mundo.OPCOES_ACAO[`${sis.id}.${chave}`];
+        const lista = opcoes ? opcoes(S.mundo) : [{ rotulo: '', args: {} }];
+        return lista.map((o) => `<button data-act="mundoAcao" data-sis="${sis.id}" data-acao="${chave}" data-args="${esc(JSON.stringify(o.args))}">${esc(a.rotulo)}${o.rotulo ? ` · ${esc(o.rotulo)}` : ''}</button>`).join('');
+      }).join('');
+      return `<div class="mundo-sis"><b>${sis.id} · ${esc(sis.nome)}</b>
+        <div class="muted">${esc(sis.resumo(S.mundo[sis.id]))}</div>
+        <div class="muted">Referência: ${esc(sis.referencia)}</div>
+        ${acoes}</div>`;
+    }).join('');
+    return `<details><summary>Sistemas ${rotulo}</summary>${itens}</details>`;
+  }).join('');
+  return `<section><h2>13. Mundo: 50 sistemas (em teste)</h2>
+    <p class="muted">Cada sistema avança a cada dia e pode mudar sanidade, recursos e diamantes. Abra um grupo para ver e usar as ações.</p>
+    ${grupos}</section>`;
+}
+
 const lastTag = () => { const m = S.monsters.find((x) => x.id === S.last); return m ? `<p>Último monstrinho: ${monstroTag(m)}</p>` : ''; };
 const BANNER_LABEL = { permanente: 'permanente', semanal: 'semanal', evento: 'evento' };
 const uid = (p) => `${p}${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -140,7 +176,7 @@ function newState() {
     bot: 0, successes: {}, failures: {},
     diamonds: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
-    pity: { permanente: 0, semanal: 0, evento: 0 }, missoes: { semanal: null, mensal: null },
+    pity: { permanente: 0, semanal: 0, evento: 0 }, missoes: { semanal: null, mensal: null }, mundo: Mundo.criarMundo(),
     pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null, breeds: [],
     ingredients: [
       { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum', category: 'vegetal' },
@@ -149,7 +185,7 @@ function newState() {
     ],
     charcoal: 2, pot: 'comum', rescue: null, battleOver: false, log: [],
     farm: { mapping: {}, unassigned: [] },
-    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, doce_halloween: 0, doce_solsticio: 0 },
+    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, doce_halloween: 0, doce_solsticio: 0 },
   };
   const ovos = Y.applyReward(st, Y.starterReward()); // kit inicial: diamantes, fichas, esferas e um ovo
   for (let i = 0; i < ovos; i++) st.eggs.push(eggOf('Ignavor', 'natural', 'inicial'));
@@ -170,6 +206,7 @@ function withDefaults(s) {
     tickets: { permanente: 0, semanal: 0, evento: 0, ...(s.tickets || {}) },
     pity: { permanente: 0, semanal: 0, evento: 0, ...(s.pity || {}) },
     missoes: { semanal: null, mensal: null, ...(s.missoes || {}) },
+    mundo: { ...Mundo.criarMundo(), ...(s.mundo || {}) },
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0, ...(s.esferas || {}) },
     login: { streak: 0, lastDay: 0, ...(s.login || {}) },
     pass: { season: '', xp: 0, claimed: 0, premium: false, ...(s.pass || {}) },
@@ -412,6 +449,8 @@ function render() {
     <p class="muted">Diamantes e fichas só se ganham no jogo. Dinheiro real é só para cosméticos. Invocar mostra a raridade rolada, que o banner empurra para cima.</p>
   </section>
 
+  ${mundoHtml()}
+
   <section>
     <h2>Registro</h2>
     ${lastTag()}
@@ -424,10 +463,13 @@ function render() {
 function capturarSelecoes() {
   const out = {};
   document.querySelectorAll('select[id]').forEach((el) => { out[el.id] = el.value; });
+  out.__abertos = [...document.querySelectorAll('details')].map((d) => d.open);
   return out;
 }
 function restaurarSelecoes(sel) {
+  if (sel.__abertos) document.querySelectorAll('details').forEach((d, i) => { d.open = !!sel.__abertos[i]; });
   for (const [id, v] of Object.entries(sel)) {
+    if (id.startsWith('__')) continue;
     const el = $(id);
     if (!el || !el.options || ![...el.options].some((o) => o.value === v)) continue;
     el.value = v;
@@ -588,6 +630,7 @@ function act(name, el) {
         }
       }
       if (Object.keys(S.farm.mapping).length) note('a fazenda produziu enquanto você descansou.');
+      aplicarMundo(Mundo.diaMundo(S.mundo, contextoMundo()));
       if (S.day === 4) note('o vilão derruba a ponte. A rota comercial fecha.');
       if (S.day === 8) note('a ponte é reaberta. O comércio começa a se recuperar.');
       break;
@@ -846,6 +889,11 @@ function act(name, el) {
       S.last = nm.id;
       m.resgatado = true;
       note(`missões de ${e.nome} concluídas: ${e.exclusivo} entrou na coleção.`);
+      break;
+    }
+    case 'mundoAcao': {
+      const args = JSON.parse(el.dataset.args || '{}');
+      aplicarMundo(Mundo.acaoMundo(S.mundo, el.dataset.sis, el.dataset.acao, args, contextoMundo()));
       break;
     }
     case 'reset': {
