@@ -20,12 +20,14 @@ export const seasonKey = (ts) => {
 // ---- Recompensas: formato único, usado por starter, login, passe e zona ----
 export const emptyReward = () => ({
   diamantes: 0,
+  gold: 0,
   esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 },
   fichas: { permanente: 0, semanal: 0, evento: 0 },
   ovos: 0,
 });
 export function addInto(a, b) {
   a.diamantes += b.diamantes;
+  a.gold += b.gold || 0;
   for (const k of RARITY) a.esferas[k] += b.esferas[k] || 0;
   for (const k of Object.keys(a.fichas)) a.fichas[k] += b.fichas[k] || 0;
   a.ovos += b.ovos || 0;
@@ -34,19 +36,21 @@ export function addInto(a, b) {
 // Aplica a recompensa no estado (diamantes, esferas e fichas). Devolve quantos ovos criar (a tela cria, com origem).
 export function applyReward(state, r) {
   state.diamonds = (state.diamonds || 0) + r.diamantes;
+  state.gold = (state.gold || 0) + (r.gold || 0);
   for (const k of RARITY) state.esferas[k] = (state.esferas[k] || 0) + (r.esferas[k] || 0);
   for (const k of Object.keys(r.fichas)) state.tickets[k] = (state.tickets[k] || 0) + (r.fichas[k] || 0);
   return r.ovos;
 }
 
 // ---- Starter: começar com ajuda extra ----
-export const STARTER_KIT = { diamantes: 300, fichas: { permanente: 3 }, esferas: { comum: 5, rara: 2 }, ovos: 1 };
+export const STARTER_KIT = { diamantes: 300, gold: 100, fichas: { permanente: 3 }, esferas: { comum: 5, rara: 2 }, ovos: 1 };
 export const SHIELD_DAYS = 7;                 // escudo do começo: dias 1 a 7 do jogo
 export const SHIELD_CAPTURE_BONUS = 0.10;     // +10 pontos na chance de captura
 export const SHIELD_ENCOUNTER_CHANCE = 0.7;   // busca dá encontro em 70% das vezes (normal: 50%)
 export function starterReward() {
   const r = emptyReward();
   r.diamantes = STARTER_KIT.diamantes;
+  r.gold = STARTER_KIT.gold;
   Object.assign(r.fichas, STARTER_KIT.fichas);
   Object.assign(r.esferas, STARTER_KIT.esferas);
   r.ovos = STARTER_KIT.ovos;
@@ -153,9 +157,13 @@ export const missaoChave = (evento, tipo, ts) => `${evento.id}-${tipo === 'seman
 export const missaoConcluida = (progresso) => EVENT_MISSIONS.every((x) => (progresso[x.tipo] || 0) >= x.meta);
 
 // ---- Esferas psíquicas: uma por tentativa, consumida no lançamento ----
-export const CAPTURE = { base: 0.5, porRaridade: 0.12, porTier: 0.02, min: 0.05, max: 0.9 };
+// Chance = 50% + 15 pontos por nível de esfera acima da raridade do monstrinho - 2 pontos por tier. Piso 5%, teto 90%.
+// Esfera lendária: 90% fixa (não soma bônus de evento nem de escudo). Mítica: ainda não tem venda nem fonte.
+export const CAPTURE = { base: 0.5, porEsfera: 0.15, porTier: 0.02, min: 0.05, max: 0.9, lendaria: 0.9 };
+const ESFERA_LENDARIA = RARITY.indexOf('lendaria') + 1;
 export function captureChance(esferaRaridade, wild, bonus = 0) {
-  const c = CAPTURE.base + CAPTURE.porRaridade * (esferaRaridade - wild.rarity) - CAPTURE.porTier * wild.tier + bonus;
+  if (esferaRaridade === ESFERA_LENDARIA) return CAPTURE.lendaria;
+  const c = CAPTURE.base + CAPTURE.porEsfera * (esferaRaridade - wild.rarity) - CAPTURE.porTier * wild.tier + bonus;
   return clamp(c, CAPTURE.min, CAPTURE.max);
 }
 // Bônus de captura vindo dos eventos ativos e do escudo do começo.
@@ -163,14 +171,30 @@ export function captureBonus(ts, day) {
   const ev = activeEvents(ts);
   return ev.semanal.bonus.captura + ev.mensal.bonus.captura + (shieldActive(day) ? SHIELD_CAPTURE_BONUS : 0);
 }
-export const SPHERE_PRICE = { comum: 40, rara: 150, epica: 400, lendaria: 1000, mitica: 2500 }; // proposta: compra só com diamantes ganhos
+// ---- Gold: moeda de jogo para esferas comuns, raras e épicas. Ganha jogando; não se compra com dinheiro real. ----
+export const GOLD = {
+  encontroPorRaridade: 5,  // fim de cada encontro (captura, fuga ou esfera que falhou): 5 x raridade = 5 a 25
+  andarBase: 10,           // zona infinita: 10 no andar 1 e +5 a cada andar
+  andarPasso: 5,
+  batalhaFinal: 100,       // vitória contra o bot (uma vez)
+  missaoEvento: 30,        // missões de evento concluídas
+};
+export const goldEncontro = (raridade) => GOLD.encontroPorRaridade * raridade;
+export const goldAndar = (andar) => GOLD.andarBase + GOLD.andarPasso * (Math.max(1, andar) - 1);
+// Preços de venda. Comum, rara e épica: gold. Lendária: 1500 diamantes, captura com 90% fixos. Mítica: sem venda por enquanto.
+export const SPHERE_PRICE = {
+  comum: { moeda: 'gold', valor: 30 },
+  rara: { moeda: 'gold', valor: 90 },
+  epica: { moeda: 'gold', valor: 270 },
+  lendaria: { moeda: 'diamonds', valor: 1500 },
+};
 export function buySphere(state, nome) {
-  const price = SPHERE_PRICE[nome];
-  if (price === undefined) throw new Error('esfera desconhecida');
-  if ((state.diamonds || 0) < price) throw new Error('diamantes insuficientes');
-  state.diamonds -= price;
+  const p = SPHERE_PRICE[nome];
+  if (!p) throw new Error('esfera não está à venda');
+  if ((state[p.moeda] || 0) < p.valor) throw new Error(`${p.moeda === 'gold' ? 'gold' : 'diamantes'} insuficiente`);
+  state[p.moeda] -= p.valor;
   state.esferas[nome] = (state.esferas[nome] || 0) + 1;
-  return price;
+  return p;
 }
 
 // ---- Drop de ovos: monstrinhos selvagens soltam ovo ao fim do encontro (captura ou fuga) ----

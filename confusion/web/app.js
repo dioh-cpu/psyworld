@@ -75,6 +75,7 @@ function aplicarMundo(res) {
   const e = res.efeitos || {};
   if (e.sanidade) S.sanity = C.clamp(S.sanity + e.sanidade, 0, 100);
   if (e.diamantes) S.diamonds = Math.max(0, S.diamonds + e.diamantes);
+  if (e.gold) S.gold = Math.max(0, S.gold + e.gold);
   for (const [k, v] of Object.entries(e.recursos || {})) S.resources[k] = Math.max(0, (S.resources[k] || 0) + v);
 }
 // Seção do mundo: os 50 sistemas, com o resumo de cada um e as ações disponíveis.
@@ -97,6 +98,50 @@ function mundoHtml() {
   return `<section><h2>13. Mundo: 50 sistemas (em teste)</h2>
     <p class="muted">Cada sistema avança a cada dia e pode mudar sanidade, recursos e diamantes. Abra um grupo para ver e usar as ações.</p>
     ${grupos}</section>`;
+}
+
+// Texto de XP do monstrinho: progresso no nível atual e quanto falta para o próximo.
+const xpTexto = (m) => {
+  const nivel = m.level ?? C.nivelDeXp(m.xp);
+  if (nivel >= C.LEVEL_MAX) return `nível máximo · XP ${m.xp}`;
+  return `XP ${m.xp} (${m.xp - C.xpDoNivel(nivel)}/${C.xpParaProximo(nivel)} até o nível ${nivel + 1})`;
+};
+// Balanceamento (provisório): as tabelas saem das constantes do código, então mostram o que o jogo usa.
+function balanceHtml() {
+  const esferas = ['comum', 'rara', 'epica', 'lendaria'];
+  const captura = esferas.map((k) => {
+    const i = C.RARITY.indexOf(k) + 1;
+    return `<tr><th>${RARITY_LABEL[k]}</th>${[1, 2, 3, 4, 5].map((r) => `<td>${pct(Y.captureChance(i, { rarity: r, tier: r }, 0))}</td>`).join('')}</tr>`;
+  }).join('');
+  const goldMedio = C.RARITY_WEIGHTS.reduce((a, w, i) => a + w * Y.goldEncontro(i + 1), 0);
+  const goldPorBusca = Y.ENCOUNTER_CHANCE * goldMedio;
+  const buscasPorEsfera = Math.ceil(Y.SPHERE_PRICE.comum.valor / goldPorBusca);
+  const niveis = Array.from({ length: C.LEVEL_MAX }, (_, i) => i + 1).map((n) => `<tr><td>${n}</td><td>${C.xpDoNivel(n)}</td><td>${n < C.LEVEL_MAX ? C.xpParaProximo(n) : '-'}</td><td>x${C.fatorNivel(n).toFixed(2)}</td><td>${pct(C.winChance(0, n))}</td></tr>`).join('');
+  return `<section>
+    <h2>Balanceamento (provisório, para testar)</h2>
+    <p class="muted">Tabelas calculadas pelo próprio código. Ao mudar as constantes em systems.js e core.js, elas mudam junto.</p>
+    <h3>Chance de captura por esfera e raridade do monstrinho</h3>
+    <table class="bal"><tr><th>Esfera / raridade</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>${captura}</table>
+    <p class="muted">Bônus de evento e do escudo (dias 1 a ${Y.SHIELD_DAYS}) somam nas esferas comum, rara e épica. A lendária fica em ${pct(Y.CAPTURE.lendaria)} fixos. Piso ${pct(Y.CAPTURE.min)}, teto ${pct(Y.CAPTURE.max)}.</p>
+    <h3>Gold</h3>
+    <ul class="log">
+      <li>Fim de cada encontro (captura, fuga ou falha): 5 gold × raridade = ${[1, 2, 3, 4, 5].map((r) => Y.goldEncontro(r)).join(', ')}.</li>
+      <li>Zona infinita: ${Y.goldAndar(1)} gold no andar 1, ${Y.goldAndar(10)} no andar 10, ${Y.goldAndar(20)} no andar 20.</li>
+      <li>Batalha final vencida: ${Y.GOLD.batalhaFinal}. Missão de evento concluída: ${Y.GOLD.missaoEvento}. Venda de 5 madeira no mercado: cerca de 12 (depende do preço do dia).</li>
+      <li>Kit inicial: ${Y.STARTER_KIT.gold} gold. Ganho médio por busca: ${goldPorBusca.toFixed(1)} gold (chance de encontro ${pct(Y.ENCOUNTER_CHANCE)}; ${pct(Y.SHIELD_ENCOUNTER_CHANCE)} nos dias de escudo).</li>
+      <li>Preços: esfera comum ${Y.SPHERE_PRICE.comum.valor} gold (cerca de ${buscasPorEsfera} buscas de ganho), rara ${Y.SPHERE_PRICE.rara.valor} gold, épica ${Y.SPHERE_PRICE.epica.valor} gold, lendária ${Y.SPHERE_PRICE.lendaria.valor} diamantes.</li>
+    </ul>
+    <h3>XP do monstrinho</h3>
+    <ul class="log">
+      <li>Captura: 5 × raridade (5 a 25 XP). Breed, monstrinho principal: ${C.XP_FONTE.breed}.</li>
+      <li>Zona infinita: vitória ${C.XP_FONTE.andarVitoria(1)} XP no andar 1 e ${C.XP_FONTE.andarVitoria(20)} no andar 20; andar não vencido ${C.XP_FONTE.andarDerrota}.</li>
+      <li>Batalha final: vitória +${C.XP_FONTE.batalhaVitoria} XP; derrota −${C.XP_FONTE.batalhaDerrota} XP, sem cair abaixo do nível atual.</li>
+      <li>Efeitos: força na zona × (1 + 4% por nível acima do 1); chance de vencer o bot +1 ponto por nível.</li>
+      <li>Passe de batalha (XP separado, zera a cada mês): ${Y.PASS_XP_PER_LEVEL} XP por nível, ${Y.PASS_LEVELS} níveis. Dia +${Y.PASS_XP.dia}, andar +${Y.PASS_XP.andar}, captura +${Y.PASS_XP.captura}, breed +${Y.PASS_XP.breed}, batalha +${Y.PASS_XP.batalha}.</li>
+    </ul>
+    <table class="bal"><tr><th>Nível</th><th>XP total</th><th>XP até o próximo</th><th>Força</th><th>Vencer o bot (bot na força 0)</th></tr>${niveis}</table>
+    <details><summary>Quanto custa cada nível em XP (sem fontes)</summary><p class="muted">Cada nível pede 10 XP a mais que o anterior, começando em 40.</p></details>
+  </section>`;
 }
 
 const lastTag = () => { const m = S.monsters.find((x) => x.id === S.last); return m ? `<p>Último monstrinho: ${monstroTag(m)}</p>` : ''; };
@@ -172,9 +217,9 @@ function newState() {
     game: 'confusion-waves', cloudVersion: 0,
     day: 1, role: null, switched: false, sanity: 70, uses: {},
     egg: { id: 'ovo-1', species: 'Ignavor', result: null },
-    monsters: [monster('m1', 'Noctarn', 3, 5, 40, 'trevas'), monster('m2', 'Ignavor', 2, 5, 10, 'luz'), monster('m3', 'Vaelith', 2, 5, 5, 'luz')],
+    monsters: [monster('m1', 'Noctarn', 3, 5, C.xpDoNivel(5), 'trevas'), monster('m2', 'Ignavor', 2, 5, C.xpDoNivel(5), 'luz'), monster('m3', 'Vaelith', 2, 5, C.xpDoNivel(5), 'luz')],
     bot: 0, successes: {}, failures: {},
-    diamonds: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
+    diamonds: 0, gold: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
     pity: { permanente: 0, semanal: 0, evento: 0 }, missoes: { semanal: null, mensal: null }, mundo: Mundo.criarMundo(),
     pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null, breeds: [],
@@ -203,6 +248,7 @@ function withDefaults(s) {
   return {
     ...d, ...s,
     diamonds: s.diamonds ?? 0,
+    gold: s.gold ?? 0,
     tickets: { permanente: 0, semanal: 0, evento: 0, ...(s.tickets || {}) },
     pity: { permanente: 0, semanal: 0, evento: 0, ...(s.pity || {}) },
     missoes: { semanal: null, mensal: null, ...(s.missoes || {}) },
@@ -214,8 +260,14 @@ function withDefaults(s) {
     endless: { ...d.endless, ...(s.endless || {}) },
     eggs: s.eggs || [],
     breeds: s.breeds || [],
-    monsters: (s.monsters || []).map(migrateMonster),
+    monsters: (s.monsters || []).map(migrateMonster).map(alinharNivel),
   };
+}
+// Nível e XP precisam bater: o XP mínimo do nível é garantido e o nível sai do XP. Saves antigos tinham nível sem XP.
+function alinharNivel(m) {
+  const level = Math.min(C.LEVEL_MAX, Math.max(1, m.level ?? 1));
+  const xp = Math.max(m.xp ?? 0, C.xpDoNivel(level));
+  return { ...m, xp, level: C.nivelDeXp(xp) };
 }
 // Versão anterior usava estrelas (star). Agora: raridade 1 a 5 e tier 1 a 10 (só o breed sobe o tier).
 function migrateMonster(m) {
@@ -266,7 +318,7 @@ function render() {
   $('app').innerHTML = `
   <header>
     <h1>Confusion Waves</h1>
-    <div class="status">Dia <b>${S.day}</b> · Ponte <b class="${bridge}">${bridge}</b> · Caminho <b>${S.role ? (S.role === 'heroi' ? 'herói' : 'vilão') : 'não escolhido'}</b> · Traje <b>${costume}</b> · Diamantes <b>${S.diamonds}</b></div>
+    <div class="status">Dia <b>${S.day}</b> · Ponte <b class="${bridge}">${bridge}</b> · Caminho <b>${S.role ? (S.role === 'heroi' ? 'herói' : 'vilão') : 'não escolhido'}</b> · Traje <b>${costume}</b> · Gold <b>${S.gold}</b> · Diamantes <b>${S.diamonds}</b></div>
     <button data-act="reset" class="ghost">Reiniciar piloto</button>
   </header>
 
@@ -303,8 +355,8 @@ function render() {
     <h2>Explorar e capturar</h2>
     ${S.wild ? wildBlock() : `<p class="muted">Chance de encontro nesta busca: ${pct(Y.encounterChance(S.day))}.</p><button data-act="search">Procurar monstrinho</button>`}
     <p class="muted">Esferas: ${C.RARITY.map((k) => `${RARITY_LABEL[k]} ${S.esferas[k]}`).join(' · ')}</p>
-    <p class="muted">Compre esferas com diamantes ganhos no jogo:</p>
-    ${C.RARITY.map((k) => `<button data-act="buySphere" data-k="${k}">Esfera ${RARITY_LABEL[k].toLowerCase()} (${Y.SPHERE_PRICE[k]} diamantes)</button>`).join('')}
+    <p class="muted">Esferas comuns, raras e épicas se compram com gold. A lendária custa diamantes e captura com 90% fixos. A mítica ainda não está à venda.</p>
+    ${C.RARITY.filter((k) => Y.SPHERE_PRICE[k]).map((k) => `<button data-act="buySphere" data-k="${k}">Esfera ${RARITY_LABEL[k].toLowerCase()} (${Y.SPHERE_PRICE[k].valor} ${Y.SPHERE_PRICE[k].moeda === 'gold' ? 'gold' : 'diamantes'})</button>`).join('')}
   </section>
 
   <section>
@@ -375,8 +427,8 @@ function render() {
   <section>
     <h2>7. Batalha final contra o bot (força ${S.bot})</h2>
     <p class="muted">Sem empate: vitória ou derrota. Derrota tira XP e fortalece o bot.</p>
-    <label>Monstrinho <select id="battle-monster" data-preview="prev-battle">${S.monsters.map((m) => `<option value="${m.id}">${m.species} (XP ${m.xp})</option>`).join('')}</select></label> <span id="prev-battle">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
-    <p class="muted">Chance de vitória: ${pct(C.winChance(S.bot))}</p>
+    <label>Monstrinho <select id="battle-monster" data-preview="prev-battle">${S.monsters.map((m) => `<option value="${m.id}">${m.species} (nível ${m.level}, XP ${m.xp})</option>`).join('')}</select></label> <span id="prev-battle">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
+    <p class="muted">Chance de vitória (monstrinho de nível 1): ${pct(C.winChance(S.bot))}. Cada nível do monstrinho soma 1 ponto.</p>
     <button data-act="battle" ${S.battleOver ? 'disabled' : ''}>Enfrentar o bot</button>
   </section>
 
@@ -394,7 +446,7 @@ function render() {
       ${S.monsters.map((m) => `<div class="card">
         ${spriteHtml(m, { aura: false })}
         <b>${esc(m.species)}</b> ${rarityTag(m)} · nível ${m.level}
-        <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity}</div>
+        <div class="muted">${xpTexto(m)} · vínculo ${m.vinculo} · pureza ${m.purity}</div>
         <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
         <div class="muted">aptidões: ${esc(Object.entries(m.aptitudes).map(([k, v]) => `${k} ${v}`).join(' · ') || 'nenhuma')}</div>
         ${(m.abilities || []).length > 4 ? `<div class="muted">habilidades aprendidas: ${esc(m.abilities.join(', '))}</div>` : ''}
@@ -448,6 +500,8 @@ function render() {
     <button data-act="buy" data-qtd="10">Comprar 10 fichas (1500 diamantes)</button>
     <p class="muted">Diamantes e fichas só se ganham no jogo. Dinheiro real é só para cosméticos. Invocar mostra a raridade rolada, que o banner empurra para cima.</p>
   </section>
+
+  ${balanceHtml()}
 
   ${mundoHtml()}
 
@@ -684,6 +738,7 @@ function act(name, el) {
       const ore = Number($('fuse-ore').value);
       const chance = C.breedSuccessChance(main.tier, S.successes[main.id] || 0, S.failures[main.id] || 0, ore);
       S.pass = Y.addPassXp(S.pass, 'breed');
+      C.ganharXp(main, C.XP_FONTE.breed);
       avancarMissao('breeds');
       ing.usosIngrediente = (ing.usosIngrediente || 0) + 1; // o ingrediente não some: cada breed gasta um dos 3 usos
       const aviso = ing.usosIngrediente >= C.INGREDIENT_MAX_USES
@@ -698,18 +753,20 @@ function act(name, el) {
         keep: $('fuse-keep').value === 'new', tierOvo: C.breedEggTier(main.tier, Math.random()),
         form: e.form, pureza: e.pureza,
       });
-      note(`breed iniciado: ${main.species} + ${ing.species}. Termina em cerca de 10 minutos.${aviso}`);
+      note(`breed iniciado: ${main.species} + ${ing.species}. Termina em cerca de 10 minutos. ${main.species} ganhou ${C.XP_FONTE.breed} XP.${aviso}`);
       break;
     }
     case 'battle': {
       if (S.battleOver) return;
       const m = S.monsters.find((x) => x.id === $('battle-monster').value);
       if (!m) return;
-      const won = Math.random() < C.winChance(S.bot);
-      const res = C.finalBattle(won ? 'vitoria' : 'derrota', m, S.bot, 25);
+      const won = Math.random() < C.winChance(S.bot, m.level);
+      const res = C.finalBattle(won ? 'vitoria' : 'derrota', m, S.bot);
       S.bot = res.bot;
-      if (won) { S.battleOver = true; S.pass = Y.addPassXp(S.pass, 'batalha'); S.diamonds += C.diamondsForItem('lendaria'); note(`vitória contra o bot com ${m.species}. Campanha concluída (+${C.diamondsForItem('lendaria')} diamantes).`); }
-      else note(`derrota para o bot. ${m.species} perdeu XP (agora ${m.xp}). O bot ficou mais forte (força ${S.bot}).`);
+      if (won) {
+        S.battleOver = true; S.pass = Y.addPassXp(S.pass, 'batalha'); S.diamonds += C.diamondsForItem('lendaria'); S.gold += Y.GOLD.batalhaFinal;
+        note(`vitória contra o bot com ${m.species}. Campanha concluída: +${C.diamondsForItem('lendaria')} diamantes, +${Y.GOLD.batalhaFinal} gold, +${C.XP_FONTE.batalhaVitoria} XP.`);
+      } else note(`derrota para o bot. ${m.species} perdeu até ${C.XP_FONTE.batalhaDerrota} XP (agora ${m.xp}, nível ${m.level}). O bot ficou mais forte (força ${S.bot}).`);
       break;
     }
     case 'rescue': {
@@ -738,7 +795,8 @@ function act(name, el) {
       if (!m) return;
       const floor = S.endless.floor;
       if (Math.random() >= C.endlessChance(m, floor)) {
-        note(`andar ${floor}: ${m.species} não venceu. O andar recomeça; nada foi perdido.`);
+        const xp = C.ganharXp(m, C.XP_FONTE.andarDerrota);
+        note(`andar ${floor}: ${m.species} não venceu. O andar recomeça; nada foi perdido. +${xp.ganho} XP.`);
         break;
       }
       const r = C.endlessRewards(floor, EVENT_ACTIVE, Math.random);
@@ -753,8 +811,11 @@ function act(name, el) {
       S.endless.floor = floor + 1;
       S.pass = Y.addPassXp(S.pass, 'andar');
       avancarMissao('andares');
+      const gold = Y.goldAndar(floor);
+      S.gold += gold;
+      const xp = C.ganharXp(m, C.XP_FONTE.andarVitoria(floor));
       const extra = r.invocacoes.map((i) => `, ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('');
-      note(`andar ${floor} concluído com ${m.species}: +${r.diamantes} diamantes${extra}${r.ovo ? ' + ovo de recompensa' : ''}${r.evento ? ' + doce de Halloween' : ''}.`);
+      note(`andar ${floor} concluído com ${m.species}: +${r.diamantes} diamantes, +${gold} gold, +${xp.ganho} XP${extra}${r.ovo ? ' + ovo de recompensa' : ''}${r.evento ? ' + doce de Halloween' : ''}${xp.subiu ? `. ${m.species} subiu para o nível ${xp.nivel}` : ''}.`);
       break;
     }
     case 'invoke': {
@@ -833,7 +894,7 @@ function act(name, el) {
     case 'buySphere': {
       try {
         const p = Y.buySphere(S, el.dataset.k);
-        note(`comprou esfera ${RARITY_LABEL[el.dataset.k].toLowerCase()} por ${p} diamantes.`);
+        note(`comprou esfera ${RARITY_LABEL[el.dataset.k].toLowerCase()} por ${p.valor} ${p.moeda === 'gold' ? 'gold' : 'diamantes'}.`);
       } catch (e) {
         note(`não deu para comprar a esfera: ${e.message}.`);
       }
@@ -857,17 +918,20 @@ function act(name, el) {
       if (!S.esferas[k]) { note(`sem esfera ${RARITY_LABEL[k].toLowerCase()}.`); break; }
       S.esferas[k] -= 1;
       const chance = Y.captureChance(C.RARITY.indexOf(k) + 1, w, Y.captureBonus(Date.now(), S.day));
+      const gold = Y.goldEncontro(w.rarity); // o encontro paga gold ao terminar, capturado ou não
+      S.gold += gold;
       if (Math.random() < chance) {
         const nm = newMonster(w.species, w.rarity, w.purity);
+        const xp = C.ganharXp(nm, C.XP_FONTE.captura(w.rarity));
         S.monsters.push(nm);
         S.last = nm.id;
         S.pass = Y.addPassXp(S.pass, 'captura');
         avancarMissao('capturas');
         const d = C.diamondsForItem(C.rarityName(w.rarity));
         S.diamonds += d;
-        note(`${w.species} capturado com esfera ${RARITY_LABEL[k].toLowerCase()} (chance ${pct(chance)}). Coleção: +${d} diamante(s).`);
+        note(`${w.species} capturado com esfera ${RARITY_LABEL[k].toLowerCase()} (chance ${pct(chance)}). Coleção: +${d} diamante(s), +${xp.ganho} XP, +${gold} gold.`);
       } else {
-        note(`a esfera ${RARITY_LABEL[k].toLowerCase()} falhou (chance ${pct(chance)}); ${w.species} escapou.`);
+        note(`a esfera ${RARITY_LABEL[k].toLowerCase()} falhou (chance ${pct(chance)}); ${w.species} escapou. +${gold} gold.`);
       }
       dropEgg(w);
       S.wild = null;
@@ -875,7 +939,9 @@ function act(name, el) {
     }
     case 'flee': {
       if (!S.wild) return;
-      note(`você deixou ${S.wild.species} ir.`);
+      const gold = Y.goldEncontro(S.wild.rarity);
+      S.gold += gold;
+      note(`você deixou ${S.wild.species} ir. +${gold} gold.`);
       dropEgg(S.wild);
       S.wild = null;
       break;
@@ -888,7 +954,8 @@ function act(name, el) {
       S.monsters.push(nm);
       S.last = nm.id;
       m.resgatado = true;
-      note(`missões de ${e.nome} concluídas: ${e.exclusivo} entrou na coleção.`);
+      S.gold += Y.GOLD.missaoEvento;
+      note(`missões de ${e.nome} concluídas: ${e.exclusivo} entrou na coleção. +${Y.GOLD.missaoEvento} gold.`);
       break;
     }
     case 'mundoAcao': {

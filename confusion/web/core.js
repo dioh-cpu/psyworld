@@ -109,14 +109,48 @@ export function activeSlots(m) {
   return m.hybrid ? 5 : 4;
 }
 
-// ---- Batalha final (sem empate) ----
-export function winChance(bot) {
-  return Math.max(0.1, 0.7 - 0.1 * bot);
+// ---- XP e nível do monstrinho: o nível sai do XP total. Nível máximo 20. ----
+export const LEVEL_MAX = 20;
+export const XP_FONTE = {
+  captura: (raridade) => 5 * raridade,   // 5 a 25 por captura
+  breed: 15,                              // monstrinho principal ao iniciar um breed
+  andarVitoria: (andar) => 10 + andar,    // zona infinita vencida: 11 no andar 1, 30 no andar 20
+  andarDerrota: 2,                        // andar não vencido: consolo pequeno
+  batalhaVitoria: 50,                     // vitória contra o bot
+  batalhaDerrota: 25,                     // XP perdido na derrota; nunca cai abaixo do nível atual
+};
+export const xpParaProximo = (nivel) => 30 + 10 * nivel;      // XP entre o nível `nivel` e o seguinte
+export function xpDoNivel(nivel) {                            // XP total necessário para chegar ao nível
+  let total = 0;
+  for (let L = 1; L < clamp(nivel, 1, LEVEL_MAX); L++) total += xpParaProximo(L);
+  return total;
 }
-export function finalBattle(result, monster, bot, xpLoss = 25) {
+export function nivelDeXp(xp) {
+  let n = 1;
+  while (n < LEVEL_MAX && (xp || 0) >= xpDoNivel(n + 1)) n++;
+  return n;
+}
+// Soma XP ao monstrinho (muda o objeto) e recalcula o nível. Devolve o ganho e quantos níveis subiu.
+export function ganharXp(m, quanto) {
+  const antes = m.level ?? nivelDeXp(m.xp);
+  const ganho = Math.max(0, quanto);
+  m.xp = (m.xp || 0) + ganho;
+  m.level = nivelDeXp(m.xp);
+  return { ganho, subiu: m.level - antes, nivel: m.level };
+}
+// Força extra por nível: +4% por nível acima do 1 (nível 20 = x1,76).
+export const fatorNivel = (nivel) => 1 + 0.04 * (clamp(nivel ?? 1, 1, LEVEL_MAX) - 1);
+
+// ---- Batalha final (sem empate) ----
+// Chance de vencer o bot: -10 pontos por vitória do bot, +1 ponto por nível do monstrinho. Piso 10%, teto 95%.
+export function winChance(bot, nivel = 1) {
+  return clamp(0.7 - 0.1 * bot + 0.01 * ((nivel ?? 1) - 1), 0.1, 0.95);
+}
+export function finalBattle(result, monster, bot) {
   if (result !== 'vitoria' && result !== 'derrota') throw new Error('não há empate');
-  if (result === 'vitoria') return { result, bot };
-  monster.xp = Math.max(0, monster.xp - xpLoss);
+  if (result === 'vitoria') { ganharXp(monster, XP_FONTE.batalhaVitoria); return { result, bot }; }
+  monster.xp = Math.max(xpDoNivel(monster.level ?? 1), (monster.xp || 0) - XP_FONTE.batalhaDerrota);
+  monster.level = nivelDeXp(monster.xp);
   return { result, bot: bot + 1 };
 }
 
@@ -414,10 +448,10 @@ export function endlessRewards(floor, eventActive = false, rng = () => 1) {
   return out;
 }
 // Combate provisório no andar infinito: poder do monstrinho contra o poder do andar.
-// Poder = (10 por tier + 2 por nível de aptidão somado) x variante x origem. Chance limitada entre 5% e 95%.
+// Poder = (10 por tier + 2 por nível de aptidão somado) x variante x origem x nível. Chance limitada entre 5% e 95%.
 export function monsterPower(m) {
   const apt = Object.values(m.aptitudes || {}).reduce((a, b) => a + b, 0);
-  return (10 * m.tier + 2 * apt) * (VARIANT_POWER[m.variant] ?? 1) * (CLASS_POWER[m.classe] ?? 1);
+  return (10 * m.tier + 2 * apt) * (VARIANT_POWER[m.variant] ?? 1) * (CLASS_POWER[m.classe] ?? 1) * fatorNivel(m.level);
 }
 export function endlessChance(m, floor) {
   return Math.min(0.95, Math.max(0.05, monsterPower(m) / endlessFloorPower(floor)));

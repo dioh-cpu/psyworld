@@ -121,13 +121,42 @@ test('captura: bônus vem do escudo e dos eventos ativos', () => {
   assert.ok(Math.abs(Y.captureBonus(ts, 30) - 0.10) < 1e-9);
 });
 
-test('esferas: compra com diamantes, sem dinheiro real', () => {
-  const st = { diamonds: 100, esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 } };
-  assert.equal(Y.buySphere(st, 'comum'), 40);
-  assert.equal(st.diamonds, 60);
+test('esferas: comum, rara e épica se compram com gold; lendária custa 1500 diamantes', () => {
+  const st = { gold: 100, diamonds: 1500, esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 } };
+  assert.equal(Y.buySphere(st, 'comum').valor, 30);
+  assert.equal(st.gold, 70);
   assert.equal(st.esferas.comum, 1);
-  assert.throws(() => Y.buySphere(st, 'rara'));
+  assert.throws(() => Y.buySphere(st, 'rara')); // 90 gold, só tem 70
+  assert.equal(st.gold, 70);                    // compra falha não debita
+  assert.equal(Y.buySphere(st, 'lendaria').valor, 1500);
+  assert.equal(st.diamonds, 0);
+  assert.equal(st.gold, 70);
+  assert.equal(st.esferas.lendaria, 1);
+  assert.throws(() => Y.buySphere(st, 'lendaria')); // sem diamantes
+  assert.throws(() => Y.buySphere(st, 'mitica'));   // ainda não está à venda
   assert.throws(() => Y.buySphere(st, 'divina'));
+});
+
+test('captura: lendária tem 90% fixos, sem bônus de evento ou escudo', () => {
+  for (const r of [1, 2, 3, 4, 5]) assert.equal(Y.captureChance(4, { rarity: r, tier: r }, 0.2), 0.9);
+});
+
+test('captura: tabela de esferas comum, rara e épica contra raridades 1 a 5', () => {
+  const linha = (e) => [1, 2, 3, 4, 5].map((r) => Math.round(Y.captureChance(e, { rarity: r, tier: r }) * 100));
+  assert.deepEqual(linha(1), [48, 31, 14, 5, 5]);
+  assert.deepEqual(linha(2), [63, 46, 29, 12, 5]);
+  assert.deepEqual(linha(3), [78, 61, 44, 27, 10]);
+});
+
+test('gold: encontro paga 5 x raridade; zona paga 10 + 5 por andar; kit inicial dá 100', () => {
+  assert.deepEqual([1, 2, 3, 4, 5].map((r) => Y.goldEncontro(r)), [5, 10, 15, 20, 25]);
+  assert.equal(Y.goldAndar(1), 10);
+  assert.equal(Y.goldAndar(10), 55);
+  assert.equal(Y.goldAndar(20), 105);
+  const st = { diamonds: 0, gold: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, esferas: {} };
+  Y.applyReward(st, Y.starterReward());
+  assert.equal(st.gold, 100);
+  assert.equal(st.diamonds, 300);
 });
 
 test('drop: monstrinho rarer solta menos ovo; evento aumenta a chance', () => {

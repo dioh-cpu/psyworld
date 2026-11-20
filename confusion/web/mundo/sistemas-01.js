@@ -348,7 +348,7 @@ const economia = {
       fn(est, ctx) {
         if ((ctx.recursos.madeira || 0) < 5) return { notas: ['Faltam 5 madeira.'] };
         const ganho = Math.floor((5 * est.precos.madeira) / 4);
-        return { notas: [`Você vendeu 5 madeira por ${ganho} diamantes.`], efeitos: { recursos: { madeira: -5 }, diamantes: ganho } };
+        return { notas: [`Você vendeu 5 madeira por ${ganho} gold.`], efeitos: { recursos: { madeira: -5 }, gold: ganho } };
       },
     },
   },

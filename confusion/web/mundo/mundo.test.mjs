@@ -113,11 +113,11 @@ test('09 investigação: com sanidade alta e sorte, pistas levam ao caso resolvi
   assert.equal(est['09'].caso.resolvido, true);
   assert.equal(est['09'].caso.encontradas, 3);
 });
-test('10 economia: vender madeira rende diamantes e tira a madeira', () => {
+test('10 economia: vender madeira rende gold e tira a madeira', () => {
   const est = M.criarMundo();
   const r = M.acaoMundo(est, '10', 'vender_madeira', {}, ctx());
   assert.equal(r.efeitos.recursos.madeira, -5);
-  assert.ok(r.efeitos.diamantes > 0);
+  assert.ok(r.efeitos.gold > 0);
 });
 test('11 chefes: derrotar tira o chefe do vivo; purificar pede sanidade 50', () => {
   const est = M.criarMundo();
