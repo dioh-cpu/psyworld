@@ -480,10 +480,22 @@ export function monsterPower(m) {
   return (10 * m.tier + 2 * apt) * (VARIANT_POWER[m.variant] ?? 1) * (CLASS_POWER[m.classe] ?? 1) * fatorNivel(m.level);
 }
 // O elemento do andar entra como multiplicador do poder (vantagem 2x, desvantagem 0,5x).
-export function endlessChance(m, floor) {
+// Dificuldade (v1.36) da zona infinita: o nível (0 a 3) aumenta o poder do andar.
+export function endlessChance(m, floor, dif = 0) {
   const poder = monsterPower(m) * multElemento(m.elemento, elementoDoAndar(floor));
-  return Math.min(0.95, Math.max(0.05, poder / endlessFloorPower(floor)));
+  return Math.min(0.95, Math.max(0.05, poder / (endlessFloorPower(floor) * fatorForca(dif))));
 }
+
+// ---- Dificuldades (v1.36): torres, zona infinita e campanha. Cada nível soma +30% de drop e +25% de força.
+// Torres e zona: até 3 níveis extras. Campanha: sem limite (o Desafio sobe a cada zerada).
+export const DIFICULDADE_MAX = 3;
+export const DIFICULDADE_DROP = 0.3;
+export const DIFICULDADE_FORCA = 0.25;
+export const nivelDificuldade = (n) => clamp(Math.trunc(n || 0), 0, DIFICULDADE_MAX);
+export const bonusDrop = (n) => 1 + DIFICULDADE_DROP * nivelDificuldade(n);
+export const fatorForca = (n) => 1 + DIFICULDADE_FORCA * nivelDificuldade(n);
+export const bonusDropSemLimite = (i) => 1 + DIFICULDADE_DROP * Math.max(0, i);
+export const fatorForcaSemLimite = (i) => 1 + DIFICULDADE_FORCA * Math.max(0, i);
 
 // ---- Diamantes: compra com diamantes ganhos no jogo (v1.15). Dinheiro real não compra diamantes (v1.16). ----
 export const INVOCATION_PRICE = 200;      // 2000 diamantes = 10 invocações

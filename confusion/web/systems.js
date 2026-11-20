@@ -1,6 +1,6 @@
 // Sistemas de engajamento e captura (GDD v1.17): starter, login, passe, eventos, esferas e drops.
 // Código puro, sem DOM. Datas usam o horário de Brasília (UTC-3). Valores provisórios até o teste do piloto.
-import { clamp, rarityByWeights, rarityName, RARITY, RARITY_BOSS, BANNER_FEATURED, monsterPower, multElemento } from './core.js';
+import { clamp, rarityByWeights, rarityName, RARITY, RARITY_BOSS, BANNER_FEATURED, monsterPower, multElemento, endlessFloorPower, bonusDrop, fatorForca, DIFICULDADE_MAX, bonusDropSemLimite, fatorForcaSemLimite } from './core.js';
 import { ESPECIES, ESPECIES_BASE, ESPECIES_EVENTO } from './species.js';
 
 const DAY_MS = 86400000;
@@ -177,8 +177,9 @@ export function activeEvents(ts) {
 
 // ---- Encontros selvagens (busca) ----
 export const ENCOUNTER_CHANCE = 0.5;   // provisório
-// Raridade dos encontros de exploração, em %: mítica sai em 1% (monstrinho). A esfera mítica é outra coisa: só de evento.
-export const ENCOUNTER_WEIGHTS = [50, 30, 14, 5, 1];
+// Raridade dos encontros de exploração, em %: até a lendária. Monstrinho mítico não sai na exploração (só de evento).
+// A esfera mítica é outra coisa: captura qualquer monstrinho com 75% e sai só do evento sazonal.
+export const ENCOUNTER_WEIGHTS = [50, 30, 14, 5];
 export function encounterChance(day) {
   return shieldActive(day) ? SHIELD_ENCOUNTER_CHANCE : ENCOUNTER_CHANCE;
 }
@@ -275,6 +276,84 @@ export const raridadeOvoRaid = (roll) => (roll < 0.4 ? RARITY_BOSS : 5);
 export const CLONE_CHANCE = 0.12;
 export const CLONAVEIS = new Set([...Object.values(BANNER_FEATURED), ...ESPECIES_EVENTO]);
 export const chanceClone = (especie) => (CLONAVEIS.has(especie) ? CLONE_CHANCE : 0);
+
+// ---- Drop com dificuldade (v1.36): a parte fracionada vira um sorteio, então a média bate com o bônus. ----
+export const quantidadeDrop = (base, bonus, roll) => {
+  const esperado = base * bonus;
+  const inteiro = Math.floor(esperado);
+  return inteiro + (roll < esperado - inteiro ? 1 : 0);
+};
+// Zona infinita: o nível 1 abre no andar 11, o 2 no 21 e o 3 no 31 (um nível a cada 10 andares concluídos).
+export const difEndlessLiberada = (best) => Math.min(DIFICULDADE_MAX, Math.floor((best || 0) / 10));
+
+// ---- Torres temáticas (v1.36): duas ativas ao mesmo tempo. A da semana segue o tema semanal; a do mês, o mensal.
+// Cada andar vencido dá diamantes e o item do tema. Andares 5, 10, 15 e 20 são de chefe: mais forte e mais drop.
+export const TORRES = [
+  { id: 'semana', nome: 'Torre da Semana', periodo: 'semana', andares: 10 },
+  { id: 'mes', nome: 'Torre do Mês', periodo: 'mes', andares: 20 },
+];
+// Elemento de cada tema. A torre temática usa o elemento do tema.
+export const ELEMENTO_TEMA = { lua: 'luz', fartura: 'planta', cristal: 'terra', halloween: 'trevas', solsticio: 'fogo' };
+// Item da torre semanal. A torre do mês usa o doce do próprio evento mensal.
+export const ITEM_SEMANAL = { lua: 'petala_lua', fartura: 'espiga_fartura', cristal: 'estilhaco_cristal' };
+const temaDaTorre = (torre, ts) => (torre.periodo === 'semana' ? activeEvents(ts).semanal : activeEvents(ts).mensal);
+export const elementoDaTorre = (torre, ts) => ELEMENTO_TEMA[temaDaTorre(torre, ts).id];
+export const itemDaTorre = (torre, ts) => {
+  const tema = temaDaTorre(torre, ts);
+  return torre.periodo === 'semana' ? ITEM_SEMANAL[tema.id] : tema.item;
+};
+export const chaveDaTorre = (torre, ts) => (torre.periodo === 'semana' ? weekIndex(ts) : monthIndex(ts));
+// Estado da torre no período atual: o andar zera a cada período; a dificuldade liberada continua.
+export function torreDoPeriodo(t, torre, ts) {
+  const chave = chaveDaTorre(torre, ts);
+  if (t && t.chave === chave) return t;
+  return { chave, progresso: {}, liberada: t ? t.liberada : 0, nivel: t ? t.nivel : 0 };
+}
+export const andarDaTorre = (t, nivel) => t.progresso[nivel] ?? 1;
+export const poderAndarTorre = (andar, nivel) => endlessFloorPower(andar) * (andar % 5 === 0 ? 1.3 : 1) * fatorForca(nivel);
+export const chanceTorre = (m, torre, ts, andar, nivel) =>
+  clamp(monsterPower(m) * multElemento(m.elemento, elementoDaTorre(torre, ts)) / poderAndarTorre(andar, nivel), 0.05, 0.95);
+// Andar vencido: avança o andar da dificuldade. Zerar o topo libera a próxima dificuldade, se for a mais alta liberada.
+export function venceAndarTorre(t, torre, nivel, rolls) {
+  if (nivel > t.liberada) throw new Error('dificuldade ainda não liberada');
+  const andar = andarDaTorre(t, nivel);
+  if (andar > torre.andares) throw new Error('torre concluída nesta dificuldade');
+  const bonus = bonusDrop(nivel);
+  const liberouNova = andar === torre.andares && nivel === t.liberada && t.liberada < DIFICULDADE_MAX;
+  return {
+    t: { ...t, progresso: { ...t.progresso, [nivel]: andar + 1 }, liberada: liberouNova ? t.liberada + 1 : t.liberada },
+    andar,
+    liberouNova,
+    recompensa: {
+      diamantes: quantidadeDrop(5 + Math.floor(andar / 2), bonus, rolls.a),
+      item: quantidadeDrop(andar % 5 === 0 ? 3 : 1, bonus, rolls.b),
+    },
+  };
+}
+
+// ---- Campanha (v1.36): Normal, Speedrun (com cronômetro) e Desafio. Zerar libera a próxima; cada Desafio zerado sobe o nível. ----
+export const CAMPANHA_DIFICULDADES = ['normal', 'speedrun', 'desafio'];
+export const campanhaNova = () => ({ concluidas: { normal: 0, speedrun: 0, desafio: 0 }, desafioNivel: 0, melhorSpeedrun: null, correndo: null });
+export function campanhaLiberada(c, dif) {
+  if (dif === 'normal') return true;
+  if (dif === 'speedrun') return c.concluidas.normal > 0;
+  return c.concluidas.speedrun > 0;
+}
+// Índice da dificuldade: normal 0, speedrun 1, desafio 2 + nível do desafio.
+export const campanhaIndice = (c, dif) => (dif === 'normal' ? 0 : dif === 'speedrun' ? 1 : 2 + c.desafioNivel);
+export function campanhaIniciar(c, dif, ts) {
+  if (!campanhaLiberada(c, dif)) throw new Error('dificuldade ainda não liberada');
+  return { ...c, correndo: { dif, inicio: ts } };
+}
+export function campanhaVencer(c, ts) {
+  if (!c.correndo) throw new Error('nenhuma campanha em andamento');
+  const { dif, inicio } = c.correndo;
+  const ms = ts - inicio;
+  const concluidas = { ...c.concluidas, [dif]: c.concluidas[dif] + 1 };
+  const melhorSpeedrun = dif === 'speedrun' && (c.melhorSpeedrun === null || ms < c.melhorSpeedrun) ? ms : c.melhorSpeedrun;
+  const desafioNivel = dif === 'desafio' ? c.desafioNivel + 1 : c.desafioNivel;
+  return { c: { ...c, concluidas, melhorSpeedrun, desafioNivel, correndo: null }, ms, dif };
+}
 
 // ---- Transferência (v1.33): o monstrinho sacrificado passa os atributos ao destino e some. Custa diamantes pelo tipo dele. ----
 export const TRANSFERENCIA = { base: 300, banner: 1500, evento: 2500, raid: 4000, maximo: 2 };

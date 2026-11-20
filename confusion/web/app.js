@@ -101,6 +101,52 @@ function mundoHtml() {
     ${grupos}</section>`;
 }
 
+// Tempo em mm:ss (cronômetro do Speedrun e do Desafio).
+const tempoTexto = (ms) => {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+const campanhaNome = (dif, c = S.campanha) => (dif === 'normal' ? 'Normal' : dif === 'speedrun' ? 'Speedrun' : `Desafio ${c.desafioNivel + 1}`);
+// Campanha (v1.36): botões das dificuldades, cronômetro e recordes.
+function campanhaHtml() {
+  const c = S.campanha;
+  const agora = c.correndo
+    ? `<p>Em andamento: <b>${campanhaNome(c.correndo.dif)}</b> · tempo ${tempoTexto(Date.now() - c.correndo.inicio)}.</p>`
+    : '<p class="muted">Nenhuma campanha em andamento. Escolha uma dificuldade para começar: o bot volta à força 0.</p>';
+  const botoes = Y.CAMPANHA_DIFICULDADES.map((d) => {
+    const lib = Y.campanhaLiberada(c, d);
+    const rotulo = d === 'desafio' ? `Desafio ${c.desafioNivel + 1}` : campanhaNome(d);
+    return `<button data-act="campanhaIniciar" data-dif="${d}" ${lib ? '' : 'disabled'}>${rotulo}${lib ? '' : ' (bloqueada)'}</button>`;
+  }).join(' ');
+  return `${agora}<p class="muted">Zeradas: normal ${c.concluidas.normal} · speedrun ${c.concluidas.speedrun} · desafio ${c.concluidas.desafio}. Melhor speedrun: ${c.melhorSpeedrun ? tempoTexto(c.melhorSpeedrun) : '-'}.</p><p>${botoes}</p>`;
+}
+// Torres temáticas (v1.36): duas, uma por tema (semana e mês). Cada uma tem dificuldades liberadas por zerar o topo.
+function torresHtml() {
+  const ts = Date.now();
+  S.torres = S.torres || {};
+  const cards = Y.TORRES.map((torre) => {
+    const t = Y.torreDoPeriodo(S.torres[torre.id], torre, ts);
+    S.torres[torre.id] = t;
+    const tema = torre.periodo === 'semana' ? Y.activeEvents(ts).semanal : Y.activeEvents(ts).mensal;
+    const andar = Y.andarDaTorre(t, t.nivel);
+    const concluida = andar > torre.andares;
+    const niveis = [0, 1, 2, 3].map((n) => `<button data-act="torreNivel" data-torre="${torre.id}" data-n="${n}" ${n > t.liberada || n === t.nivel ? 'disabled' : ''}>${n === 0 ? 'Normal' : `Dificuldade ${n} (+${n * 30}% drop)`}</button>`).join(' ');
+    const m0 = S.monsters[0];
+    return `<div class="card-torre">
+      <p><b>${esc(torre.nome)}</b> · tema ${esc(tema.nome)} · elemento ${ELEMENTO_LABEL[Y.elementoDaTorre(torre, ts)]} · item ${esc(Y.itemDaTorre(torre, ts))}</p>
+      <p>Andar ${Math.min(andar, torre.andares)} de ${torre.andares}${concluida ? ' · concluída nesta dificuldade' : ''}. Dificuldade escolhida: ${t.nivel}. Liberadas até: ${t.liberada}.</p>
+      <p>${niveis}</p>
+      <button data-act="torreSubir" data-torre="${torre.id}" ${concluida || !m0 ? 'disabled' : ''}>Subir o andar ${Math.min(andar, torre.andares)}</button>
+      ${m0 && !concluida ? `<p class="muted">Chance com ${esc(m0.species)}: ${pct(Y.chanceTorre(m0, torre, ts, andar, t.nivel))}. Chefes nos andares 5, 10, 15 e 20.</p>` : ''}
+    </div>`;
+  }).join('');
+  return `<section>
+    <h2>Torres temáticas · duas ativas agora</h2>
+    <p class="muted">Separadas da campanha, mas dá para usar a qualquer hora para pegar diamantes, o item do tema e ajudar a campanha. Cada dificuldade dá +30% de drop; até 3 extras. Zerar o topo libera a próxima.</p>
+    ${S.monsters.length ? `<label>Monstrinho <select id="torre-monster">${S.monsters.map((m) => `<option value="${m.id}">${esc(m.species)} · nível ${m.level}</option>`).join('')}</select></label>` : '<p class="muted">Precisa de um monstrinho.</p>'}
+    ${cards}
+  </section>`;
+}
 // Elementos (v1.34): rótulos, elemento do bot pela força e chance de vencer o bot com o elemento aplicado.
 const ELEMENTO_LABEL = { fogo: 'Fogo', agua: 'Água', planta: 'Planta', terra: 'Terra', luz: 'Luz', trevas: 'Trevas', neutro: 'Neutro' };
 const botElemento = (bot) => ['fogo', 'agua', 'planta'][bot % 3];
@@ -288,9 +334,9 @@ function newState() {
     egg: { id: 'ovo-1', species: 'Ignavor', result: null },
     monsters: [monster('m1', 'Noctarn', 3, 5, C.xpDoNivel(5), 'trevas'), monster('m2', 'Ignavor', 2, 5, C.xpDoNivel(5), 'luz'), monster('m3', 'Vaelith', 2, 5, C.xpDoNivel(5), 'luz')],
     bot: 0, successes: {}, failures: {},
-    diamonds: 0, gold: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {} }, eggs: [],
+    diamonds: 0, gold: 0, tickets: { permanente: 0, semanal: 0, evento: 0 }, endless: { floor: 1, best: 0, drops: {}, dificuldade: 0 }, eggs: [],
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 }, login: { streak: 0, lastDay: 0 },
-    pity: { permanente: 0, semanal: 0, evento: 0 }, pityT5: { permanente: 0, semanal: 0, evento: 0 }, trilha: null, trilhaPagina: 1, semana: null, raid: { janela: null }, fragmentos: {}, mundo: Mundo.criarMundo(),
+    pity: { permanente: 0, semanal: 0, evento: 0 }, pityT5: { permanente: 0, semanal: 0, evento: 0 }, torres: {}, campanha: Y.campanhaNova(), trilha: null, trilhaPagina: 1, semana: null, raid: { janela: null }, fragmentos: {}, mundo: Mundo.criarMundo(),
     pass: { season: '', xp: 0, claimed: 0, premium: false }, wild: null, breeds: [],
     ingredients: [
       { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum', category: 'vegetal' },
@@ -299,7 +345,7 @@ function newState() {
     ],
     charcoal: 2, pot: 'comum', rescue: null, battleOver: false, log: [],
     farm: { mapping: {}, unassigned: [] },
-    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, doce_halloween: 0, doce_solsticio: 0, doce_lua: 0, doce_fartura: 0, doce_cristal: 0 },
+    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, doce_halloween: 0, doce_solsticio: 0, doce_lua: 0, doce_fartura: 0, doce_cristal: 0, petala_lua: 0, espiga_fartura: 0, estilhaco_cristal: 0 },
   };
   const ovos = Y.applyReward(st, Y.starterReward()); // kit inicial: diamantes, fichas, esferas e um ovo
   for (let i = 0; i < ovos; i++) st.eggs.push(eggOf('Ignavor', 'natural', 'inicial'));
@@ -321,6 +367,8 @@ function withDefaults(s) {
     tickets: { permanente: 0, semanal: 0, evento: 0, ...(s.tickets || {}) },
     pity: { permanente: 0, semanal: 0, evento: 0, ...(s.pity || {}) },
     pityT5: { permanente: 0, semanal: 0, evento: 0, ...(s.pityT5 || {}) },
+    torres: s.torres || {},
+    campanha: { ...Y.campanhaNova(), ...(s.campanha || {}) },
     missoes: { semanal: null, mensal: null, ...(s.missoes || {}) },
     mundo: { ...Mundo.criarMundo(), ...(s.mundo || {}) },
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0, ...(s.esferas || {}) },
@@ -497,11 +545,12 @@ function render() {
   </section>
 
   <section>
-    <h2>7. Batalha final contra o bot (força ${S.bot})</h2>
-    <p class="muted">Sem empate: vitória ou derrota. Derrota tira XP e fortalece o bot.</p>
+    <h2>7. Campanha · batalha final contra o bot (força ${S.bot})</h2>
+    <p class="muted">Sem empate. Derrota tira XP e fortalece o bot. Speedrun libera ao zerar a Normal; o Desafio libera ao zerar o Speedrun, e cada Desafio zerado sobe o nível.</p>
+    ${campanhaHtml()}
     <label>Monstrinho <select id="battle-monster" data-preview="prev-battle">${S.monsters.map((m) => `<option value="${m.id}">${m.species} (nível ${m.level}, XP ${m.xp})</option>`).join('')}</select></label> <span id="prev-battle">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
     <p class="muted">O bot é de ${ELEMENTO_LABEL[botElemento(S.bot)]}. Chance com o primeiro monstrinho: ${S.monsters[0] ? pct(chanceBot(S.monsters[0])) : '-'}. Cada nível soma 1 ponto; elemento vantajoso dobra a chance.</p>
-    <button data-act="battle" ${S.battleOver ? 'disabled' : ''}>Enfrentar o bot</button>
+    <button data-act="battle" ${S.campanha.correndo ? '' : 'disabled'}>Enfrentar o bot</button>
   </section>
 
   <section>
@@ -551,12 +600,15 @@ function render() {
     <p class="muted">Recursos: ${Object.entries(S.resources).map(([k, v]) => `${k} ${v}`).join(' · ')}</p>
   </section>
 
+  ${torresHtml()}
+
   <section>
     <h2>11. Zona infinita · andar ${S.endless.floor}</h2>
     <p class="muted">Andares sem fim. Vencer dá diamantes e fichas de invocação. A cada 10 andares sai um ovo de recompensa (raridade +1). Perder não tira nada: o andar recomeça.</p>
+    <p>Dificuldade: ${[0, 1, 2, 3].map((n) => `<button data-act="endlessDif" data-n="${n}" ${n > Y.difEndlessLiberada(S.endless.best) || n === (S.endless.dificuldade || 0) ? 'disabled' : ''}>${n === 0 ? 'Normal' : `Dificuldade ${n} (+${n * 30}% drop, +${n * 25}% força)`}</button>`).join(' ')}. Liberada até ${Y.difEndlessLiberada(S.endless.best)}: a cada 10 andares concluídos.</p>
     <p>Elemento deste andar: <b>${ELEMENTO_LABEL[C.elementoDoAndar(S.endless.floor)]}</b>. Vantagem dá 2x de poder, desvantagem 0,5x.</p>
     <p>Recompensa deste andar: <b>${endlessR.diamantes}</b> diamantes${endlessR.invocacoes.map((i) => ` + ${i.qtd} ficha(s) ${BANNER_LABEL[i.banner]}`).join('')}${endlessR.ovo ? ' + ovo de recompensa' : ''}. Maior andar concluído: ${S.endless.best}.</p>
-    <ul class="log">${S.monsters.map((m) => `<li>${monstroTag(m)}<span>${pct(C.endlessChance(m, S.endless.floor))} de vencer</span></li>`).join('') || '<li class="muted">Sem monstrinhos.</li>'}</ul>
+    <ul class="log">${S.monsters.map((m) => `<li>${monstroTag(m)}<span>${pct(C.endlessChance(m, S.endless.floor, S.endless.dificuldade || 0))} de vencer</span></li>`).join('') || '<li class="muted">Sem monstrinhos.</li>'}</ul>
     <label>Monstrinho <select id="endless-monster" data-preview="prev-endless">${S.monsters.map((m) => `<option value="${m.id}">${m.species} · tier ${m.tier}</option>`).join('')}</select></label> <span id="prev-endless">${S.monsters[0] ? monstroTag(S.monsters[0]) : '-'}</span>
     <button data-act="endless" ${S.monsters.length ? '' : 'disabled'}>Enfrentar andar ${S.endless.floor}</button>
   </section>
@@ -840,17 +892,71 @@ function act(name, el) {
       note(`breed iniciado: ${main.species} + ${ing.species}. Termina em cerca de 10 minutos. ${main.species} ganhou ${C.XP_FONTE.breed} XP.${aviso}`);
       break;
     }
+    case 'campanhaIniciar': {
+      try {
+        S.campanha = Y.campanhaIniciar(S.campanha, el.dataset.dif, Date.now());
+        S.bot = 0;
+        note(`campanha ${campanhaNome(el.dataset.dif)} começou. O bot voltou à força 0.`);
+      } catch (e) { note(`não deu para começar: ${e.message}.`); }
+      break;
+    }
     case 'battle': {
-      if (S.battleOver) return;
+      const c = S.campanha;
+      if (!c.correndo) { note('escolha uma campanha para começar.'); break; }
       const m = S.monsters.find((x) => x.id === $('battle-monster').value);
       if (!m) return;
-      const won = Math.random() < chanceBot(m);
+      const idx = Y.campanhaIndice(c, c.correndo.dif);
+      const won = Math.random() < Math.max(0.05, chanceBot(m) / C.fatorForcaSemLimite(idx));
       const res = C.finalBattle(won ? 'vitoria' : 'derrota', m, S.bot);
       S.bot = res.bot;
       if (won) {
-        S.battleOver = true; S.pass = Y.addPassXp(S.pass, 'batalha'); S.diamonds += C.diamondsForItem('lendaria'); S.gold += Y.GOLD.batalhaFinal;
-        note(`vitória contra o bot com ${m.species}. Campanha concluída: +${C.diamondsForItem('lendaria')} diamantes, +${Y.GOLD.batalhaFinal} gold, +${C.XP_FONTE.batalhaVitoria} XP.`);
+        const v = Y.campanhaVencer(c, Date.now());
+        S.campanha = v.c;
+        const bonus = C.bonusDropSemLimite(idx);
+        const d = Math.floor(3 * bonus);
+        const g = Math.floor(Y.GOLD.batalhaFinal * bonus);
+        S.diamonds += d; S.gold += g; S.pass = Y.addPassXp(S.pass, 'batalha');
+        note(`campanha ${campanhaNome(v.dif, v.c)} zerada em ${tempoTexto(v.ms)} com ${m.species}. +${d} diamantes, +${g} gold, +${C.XP_FONTE.batalhaVitoria} XP.${v.dif === 'desafio' ? ` O Desafio sobe para o nível ${v.c.desafioNivel + 1}.` : ''}`);
       } else note(`derrota para o bot. ${m.species} perdeu até ${C.XP_FONTE.batalhaDerrota} XP (agora ${m.xp}, nível ${m.level}). O bot ficou mais forte (força ${S.bot}).`);
+      break;
+    }
+    case 'torreNivel': {
+      const torre = Y.TORRES.find((x) => x.id === el.dataset.torre);
+      const t = Y.torreDoPeriodo(S.torres[torre.id], torre, Date.now());
+      const n = Number(el.dataset.n);
+      if (n > t.liberada) { note('essa dificuldade ainda não foi liberada.'); break; }
+      S.torres[torre.id] = { ...t, nivel: n };
+      break;
+    }
+    case 'torreSubir': {
+      const ts = Date.now();
+      const torre = Y.TORRES.find((x) => x.id === el.dataset.torre);
+      const t = Y.torreDoPeriodo(S.torres[torre.id], torre, ts);
+      S.torres[torre.id] = t;
+      const m = S.monsters.find((x) => x.id === $('torre-monster').value);
+      if (!m) return;
+      const andar = Y.andarDaTorre(t, t.nivel);
+      if (andar > torre.andares) { note('torre concluída nesta dificuldade.'); break; }
+      if (Math.random() >= Y.chanceTorre(m, torre, ts, andar, t.nivel)) {
+        const xp = C.ganharXp(m, 2);
+        note(`${torre.nome}: ${m.species} não passou do andar ${andar}. Nada perdido. +${xp.ganho} XP.`);
+        break;
+      }
+      const r = Y.venceAndarTorre(t, torre, t.nivel, { a: Math.random(), b: Math.random() });
+      S.torres[torre.id] = r.t;
+      S.diamonds += r.recompensa.diamantes;
+      const item = Y.itemDaTorre(torre, ts);
+      S.resources[item] = (S.resources[item] || 0) + r.recompensa.item;
+      const xp = C.ganharXp(m, 5 + andar);
+      S.pass = Y.addPassXp(S.pass, 'andar');
+      contarMissao();
+      note(`${torre.nome}: andar ${andar} vencido com ${m.species}. +${r.recompensa.diamantes} diamantes, +${r.recompensa.item} ${item}, +${xp.ganho} XP.${r.liberouNova ? ` Dificuldade ${r.t.liberada} liberada.` : ''}`);
+      break;
+    }
+    case 'endlessDif': {
+      const n = Number(el.dataset.n);
+      if (n > Y.difEndlessLiberada(S.endless.best)) { note('dificuldade ainda não liberada.'); break; }
+      S.endless.dificuldade = n;
       break;
     }
     case 'rescue': {
@@ -878,12 +984,14 @@ function act(name, el) {
       const m = S.monsters.find((x) => x.id === $('endless-monster').value);
       if (!m) return;
       const floor = S.endless.floor;
-      if (Math.random() >= C.endlessChance(m, floor)) {
+      const dif = S.endless.dificuldade || 0;
+      if (Math.random() >= C.endlessChance(m, floor, dif)) {
         const xp = C.ganharXp(m, C.XP_FONTE.andarDerrota);
         note(`andar ${floor}: ${m.species} não venceu. O andar recomeça; nada foi perdido. +${xp.ganho} XP.`);
         break;
       }
       const r = C.endlessRewards(floor, EVENT_ACTIVE, Math.random);
+      r.diamantes = Y.quantidadeDrop(r.diamantes, C.bonusDrop(dif), Math.random()); // dificuldade dá +30% de drop por nível
       S.diamonds += r.diamantes;
       for (const i of r.invocacoes) S.tickets[i.banner] += i.qtd;
       if (r.evento) S.endless.drops[r.evento] = (S.endless.drops[r.evento] || 0) + 1;
