@@ -129,3 +129,34 @@ test('XP de trabalho sobe o nível e para em 10', () => {
   for (let i = 0; i < 500; i++) C.addWorkXp(apt, xp, 'cortar');
   assert.equal(apt.cortar, 10);
 });
+
+test('estrelas: douradas até 6, depois vermelha, roxa, laranja e arco-íris', () => {
+  assert.equal(C.starColor(1), 'dourada');
+  assert.equal(C.starColor(6), 'dourada');
+  assert.equal(C.starColor(7), 'vermelha');
+  assert.equal(C.starColor(13), 'roxa');
+  assert.equal(C.starColor(19), 'laranja');
+  assert.equal(C.starColor(25), 'arco-iris');
+  assert.equal(C.starColor(99), 'arco-iris');
+});
+test('aptidão máxima acompanha as estrelas, até 10', () => {
+  assert.equal(C.maxAptitudeFor(3), 3);
+  assert.equal(C.maxAptitudeFor(12), 10);
+});
+test('fusão bem-sucedida sobe uma estrela, até o máximo', () => {
+  assert.equal(C.starsAfterFusion(3), 4);
+  assert.equal(C.starsAfterFusion(25), 25);
+});
+test('zona infinita: cada andar fica mais forte', () => {
+  assert.equal(C.endlessFloorPower(1), 100);
+  assert.ok(C.endlessFloorPower(10) > C.endlessFloorPower(9));
+  assert.ok(C.endlessFloorPower(50) > 40 * C.endlessFloorPower(1));
+});
+test('zona infinita: recompensas por andar, e drop de evento só com evento ativo', () => {
+  const r = C.endlessRewards(5, () => 0.99, false);
+  assert.equal(r.gold, 35);
+  assert.equal(r.diamantes, 1);
+  assert.equal(r.evento, null);
+  assert.equal(C.endlessRewards(5, () => 0.01, true).evento, 'doce_halloween');
+  assert.equal(C.endlessRewards(4, () => 0.01, true).diamantes, 0);
+});

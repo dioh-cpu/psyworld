@@ -218,3 +218,42 @@ export function addWorkXp(aptitudes, xp, task, tasks = 1) {
   }
   return aptitudes[task];
 }
+
+// ---- Estrelas e cores (ajuste v1.14, provisório) ----
+// ★1 a ★6 douradas; depois vermelha, roxa, laranja e arco-íris no final.
+export const STAR_TIERS = [
+  { cor: 'dourada', de: 1, ate: 6 },
+  { cor: 'vermelha', de: 7, ate: 12 },
+  { cor: 'roxa', de: 13, ate: 18 },
+  { cor: 'laranja', de: 19, ate: 24 },
+  { cor: 'arco-iris', de: 25, ate: 25 },
+];
+export const STAR_MAX = 25;
+export function starColor(stars) {
+  const n = clamp(Math.trunc(stars), 1, STAR_MAX);
+  return STAR_TIERS.find((t) => n >= t.de && n <= t.ate).cor;
+}
+// Aptidão máxima depende das estrelas: para subir a aptidão é preciso ganhar estrela (proposta).
+export function maxAptitudeFor(stars) {
+  return clamp(Math.trunc(stars), 1, WORK_LEVEL_MAX);
+}
+// Fusão bem-sucedida dá +1 estrela ao principal (proposta).
+export function starsAfterFusion(stars) {
+  return Math.min(STAR_MAX, stars + 1);
+}
+
+// ---- Zona infinita (provisório) ----
+// Cada andar fica mais forte que o anterior; força base 100, +8% por andar.
+export const ENDLESS_BASE_POWER = 100;
+export const ENDLESS_GROWTH = 0.08;
+export function endlessFloorPower(floor) {
+  const f = Math.max(1, Math.trunc(floor));
+  return Math.round(ENDLESS_BASE_POWER * Math.pow(1 + ENDLESS_GROWTH, f - 1));
+}
+// Recompensas de um andar vencido. rng: função que devolve [0,1).
+export function endlessRewards(floor, rng, eventActive = false) {
+  const f = Math.max(1, Math.trunc(floor));
+  const out = { gold: 10 + 5 * f, diamantes: f % 5 === 0 ? 1 : 0, fichas: f % 3 === 0 ? 1 : 0, evento: null };
+  if (eventActive && rng() < 0.05) out.evento = 'doce_halloween';  // chance de item de evento (provisória)
+  return out;
+}
