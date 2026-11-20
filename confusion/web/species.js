@@ -25,8 +25,8 @@ export const ESPECIES = {
       },
       walk: {
         down:  { url: 'assets/monsters/noctarn/walk-front.mp4', width: 480, height: 270, scale: 1.097, baseY: 0.9370, pawCx: 0.4557 },
-        left:  { url: 'assets/monsters/noctarn/walk-left.mp4',  width: 480, height: 270, scale: 1.234, baseY: 0.9519, pawCx: 0.4807 },
-        right: { url: 'assets/monsters/noctarn/walk-left.mp4',  width: 480, height: 270, scale: 1.234, baseY: 0.9519, pawCx: 0.4807, flip: true },
+        left:  { url: 'assets/monsters/noctarn/walk-left.mp4',  width: 480, height: 270, scale: 1.191, baseY: 0.9519, pawCx: 0.4807 },
+        right: { url: 'assets/monsters/noctarn/walk-left.mp4',  width: 480, height: 270, scale: 1.191, baseY: 0.9519, pawCx: 0.4807, flip: true },
         up:    { url: 'assets/monsters/noctarn/walk-back.mp4',  width: 480, height: 270, scale: 1.083, baseY: 0.9519, pawCx: 0.4901 },
       },
     },
