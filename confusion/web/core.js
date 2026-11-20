@@ -66,12 +66,14 @@ export function hatch(egg, sanity, roll) {
   return egg.result;
 }
 
-// ---- Fusão e híbridos (GDD v1.9) ----
+// ---- Breed e híbridos (GDD v1.9 + v1.16; o breed substitui a fusão) ----
+// Breed = monstrinho principal + monstrinho ingrediente. O ingrediente é sempre consumido.
+// A chance depende do tier do principal (curva provisória).
 export const BASE_SUCCESS = { 1: 0.8, 2: 0.7, 3: 0.6, 4: 0.5, 5: 0.4 };
-// Acima de ★5 ainda não há valor decidido: segue caindo 5 pontos por estrela, com piso de 20% (provisório).
-export const baseSuccess = (star) => BASE_SUCCESS[star] ?? Math.max(0.2, 0.4 - 0.05 * (star - 5));
-export function fusionSuccessChance(star, successes, failures, ore = 0) {
-  let c = Math.max(0.2, baseSuccess(star) - 0.05 * successes);
+// Tier 6 a 10 ainda não tem valor decidido: cai 5 pontos por tier, com piso de 20% (provisório).
+export const breedBaseSuccess = (tier) => BASE_SUCCESS[tier] ?? Math.max(0.2, 0.4 - 0.05 * (tier - 5));
+export function breedSuccessChance(tier, successes, failures, ore = 0) {
+  let c = Math.max(0.2, breedBaseSuccess(tier) - 0.05 * successes);
   c += Math.min(0.25, 0.05 * failures);
   c += Math.min(0.3, Math.max(0, ore));
   return Math.min(0.95, c);
@@ -209,29 +211,64 @@ export function gatherDay(task, level) {
   return out;
 }
 
-// Aptidão não cresce com o trabalho: só sobe pela fusão com sucesso (ver fusionSuccessEffects).
+// Aptidão não cresce com o trabalho: só sobe pelo breed com sucesso (ver breedSuccessEffects).
 
-// ---- Estrelas e cores (decidido pelo autor, v1.15) ----
-// 30 estrelas: douradas 1 a 6; depois vermelha, roxa, laranja e arco-íris (6 de cada).
-export const STAR_TIERS = [
-  { cor: 'dourada', de: 1, ate: 6 },
-  { cor: 'vermelha', de: 7, ate: 12 },
-  { cor: 'roxa', de: 13, ate: 18 },
-  { cor: 'laranja', de: 19, ate: 24 },
-  { cor: 'arco-iris', de: 25, ate: 30 },
-];
-export const STAR_MAX = 30;
-export function starColor(stars) {
-  const n = clamp(Math.trunc(stars), 1, STAR_MAX);
-  return STAR_TIERS.find((t) => n >= t.de && n <= t.ate).cor;
+// ---- Raridade e tier (GDD v1.16) ----
+// Raridade 1 a 5 (mesmos nomes da culinária). Nasce com o monstrinho e não muda.
+// Tier começa igual à raridade (1 a 5) e só sobe pelo breed, até TIER_MAX.
+export const RARITY_MAX = 5;
+export const TIER_MAX = 10;
+export const RARITY_WEIGHTS = [0.5, 0.3, 0.14, 0.05, 0.01]; // proposta: chance de nascer em cada raridade
+export function rarityName(r) {
+  return RARITY[clamp(Math.trunc(r), 1, RARITY_MAX) - 1];
 }
-// Fusão bem-sucedida: +1 estrela no principal e +1 nível em TODAS as aptidões dele (teto 10).
-export function fusionSuccessEffects(monster) {
-  monster.star = Math.min(STAR_MAX, monster.star + 1);
-  for (const k of Object.keys(monster.aptitudes || {})) {
-    monster.aptitudes[k] = Math.min(WORK_LEVEL_MAX, monster.aptitudes[k] + 1);
+// Rolagem para raridade. O shift (banner ou origem do ovo) empurra para cima, nunca para baixo.
+export function rollRarity(roll, shift = 0) {
+  let acc = 0;
+  let base = RARITY_MAX;
+  for (let i = 0; i < RARITY_WEIGHTS.length; i++) {
+    acc += RARITY_WEIGHTS[i];
+    if (roll < acc) { base = i + 1; break; }
   }
-  return monster;
+  return clamp(base + shift, 1, RARITY_MAX);
+}
+// Breed bem-sucedido: principal sobe 1 tier (teto 10) e 1 nível em todas as aptidões (teto 10).
+export function breedSuccessEffects(m) {
+  m.tier = Math.min(TIER_MAX, m.tier + 1);
+  for (const k of Object.keys(m.aptitudes || {})) {
+    m.aptitudes[k] = Math.min(WORK_LEVEL_MAX, m.aptitudes[k] + 1);
+  }
+  return m;
+}
+
+// ---- Ovos e invocação (GDD v1.16) ----
+// Ovo do breed: natural 70%, mutante 15%, abençoado 15% (proposta).
+export const BREED_EGG_CHANCE = { mutante: 0.15, abencoada: 0.15 };
+export function breedEggForm(roll) {
+  if (roll < BREED_EGG_CHANCE.mutante) return 'mutante';
+  if (roll < BREED_EGG_CHANCE.mutante + BREED_EGG_CHANCE.abencoada) return 'abencoada';
+  return 'natural';
+}
+// Ovo mutante e abençoado nascem com +1 de raridade. Ovo de recompensa da zona também (+1).
+export const EGG_SHIFT = { natural: 0, mutante: 1, abencoada: 1 };
+export const PURITY_BY_FORM = { natural: 'neutra', abencoada: 'luz', mutante: 'neutra' };
+export function makeEgg(species, form, origem) {
+  return { species, form, origem, shift: origem === 'zona' ? 1 : (EGG_SHIFT[form] ?? 0) };
+}
+// Ao chocar, a raridade é rolada e o tier começa igual a ela.
+export function hatchEgg(egg, roll) {
+  const rarity = rollRarity(roll, egg.shift ?? 0);
+  return {
+    species: egg.species, form: egg.form, rarity, tier: rarity,
+    purity: PURITY_BY_FORM[egg.form] ?? 'neutra', mutated: egg.form === 'mutante',
+  };
+}
+// Invocação: o banner escolhe a espécie entre as do banner e empurra a raridade para cima (proposta).
+export const BANNER_SHIFT = { permanente: 1, semanal: 1, evento: 2 };
+export function invocationResult(banner, species, roll1, roll2) {
+  if (!species.length) throw new Error('banner sem espécies');
+  const i = Math.min(species.length - 1, Math.floor(roll1 * species.length));
+  return { species: species[i], rarity: rollRarity(roll2, BANNER_SHIFT[banner] ?? 0) };
 }
 
 // ---- Zona infinita (decidido pelo autor, v1.15) ----
@@ -247,7 +284,7 @@ export function endlessFloorPower(floor) {
 // - Invocação no banner permanente a cada 3 andares; 3 invocações no banner semanal a cada 10; 3 no banner de evento a cada 15.
 export function endlessRewards(floor, eventActive = false, rng = () => 1) {
   const f = Math.max(1, Math.trunc(floor));
-  const out = { diamantes: 10, invocacoes: [], evento: null };
+  const out = { diamantes: 10, invocacoes: [], evento: null, ovo: f % 10 === 0 };  // ovo de recompensa a cada 10 andares
   if (f % 10 === 0) out.diamantes += 50;
   if (f % 3 === 0) out.invocacoes.push({ banner: 'permanente', qtd: 1 });
   if (f % 10 === 0) out.invocacoes.push({ banner: 'semanal', qtd: 3 });
@@ -256,19 +293,18 @@ export function endlessRewards(floor, eventActive = false, rng = () => 1) {
   return out;
 }
 // Combate provisório no andar infinito: poder do monstrinho contra o poder do andar.
-// Poder = 10 por estrela + 2 por nível de aptidão somado. Chance limitada entre 5% e 95%.
+// Poder = 10 por tier + 2 por nível de aptidão somado. Chance limitada entre 5% e 95%.
 export function monsterPower(m) {
   const apt = Object.values(m.aptitudes || {}).reduce((a, b) => a + b, 0);
-  return 10 * m.star + 2 * apt;
+  return 10 * m.tier + 2 * apt;
 }
 export function endlessChance(m, floor) {
   return Math.min(0.95, Math.max(0.05, monsterPower(m) / endlessFloorPower(floor)));
 }
 
-// ---- Diamantes: compra e ganhos (decidido pelo autor, v1.15) ----
+// ---- Diamantes: compra com diamantes ganhos no jogo (v1.15). Dinheiro real não compra diamantes (v1.16). ----
 export const INVOCATION_PRICE = 200;      // 2000 diamantes = 10 invocações
 export const BULK_10_PRICE = 1500;        // comprar 10 de uma vez tem desconto
-export const PACK_BRL_4_99 = 500;         // R$ 4,99 = 500 diamantes
 export function invocationCost(qtd) {
   if (qtd === 10) return BULK_10_PRICE;
   return qtd * INVOCATION_PRICE;

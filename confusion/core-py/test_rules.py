@@ -18,19 +18,19 @@ class Sanity(unittest.TestCase):
         self.assertAlmostEqual(affinity_modifier(50,"heroi"), 0.0)
 
 class Fusion(unittest.TestCase):
-    def test_base_by_star(self):
-        self.assertAlmostEqual(fusion_success_chance(1,0,0), 0.80)
-        self.assertAlmostEqual(fusion_success_chance(5,0,0), 0.40)
+    def test_base_by_tier(self):
+        self.assertAlmostEqual(breed_success_chance(1,0,0), 0.80)
+        self.assertAlmostEqual(breed_success_chance(5,0,0), 0.40)
     def test_success_drops_with_floor(self):
-        self.assertAlmostEqual(fusion_success_chance(3,1,0), 0.55)
-        self.assertAlmostEqual(fusion_success_chance(1,20,0), 0.20)  # piso
+        self.assertAlmostEqual(breed_success_chance(3,1,0), 0.55)
+        self.assertAlmostEqual(breed_success_chance(1,20,0), 0.20)  # piso
     def test_pity_caps_at_25(self):
-        self.assertAlmostEqual(fusion_success_chance(5,0,3), 0.40+0.15)
-        self.assertAlmostEqual(fusion_success_chance(5,0,99), 0.40+0.25)
+        self.assertAlmostEqual(breed_success_chance(5,0,3), 0.40+0.15)
+        self.assertAlmostEqual(breed_success_chance(5,0,99), 0.40+0.25)
     def test_ore_caps_at_30(self):
-        self.assertAlmostEqual(fusion_success_chance(5,0,0,ore_bonus=0.9), 0.40+0.30)
+        self.assertAlmostEqual(breed_success_chance(5,0,0,ore_bonus=0.9), 0.40+0.30)
     def test_chance_never_exceeds_95(self):
-        self.assertLessEqual(fusion_success_chance(1,0,99,ore_bonus=1.0), 0.95)
+        self.assertLessEqual(breed_success_chance(1,0,99,ore_bonus=1.0), 0.95)
     def test_mutation_cap(self):
         self.assertAlmostEqual(mutation_chance([0.10,0.12,0.15,0.20]), 0.50)
         self.assertAlmostEqual(mutation_chance([0.10]), 0.10)
@@ -62,12 +62,31 @@ class Defeat(unittest.TestCase):
 class Fuse(unittest.TestCase):
     def test_failure_loses_only_ingredient(self):
         p=Monster("Ignavor",3,level=20); i=Monster("Umbrax",2,level=5)
-        r=fuse(p,i,rolled=0.9,chance=0.6,keep_new=True,pick="Sombra")
+        r=breed(p,i,rolled=0.9,chance=0.6,keep_new=True,pick="Sombra")
         self.assertFalse(r["ok"]); self.assertEqual(r["principal"].species,"Ignavor"); self.assertEqual(r["lost"],"Umbrax")
     def test_success_keeps_species_and_level(self):
         p=Monster("Ignavor",3,level=20); i=Monster("Umbrax",2,level=5)
-        r=fuse(p,i,rolled=0.1,chance=0.6,keep_new=True,pick="Sombra")
+        r=breed(p,i,rolled=0.1,chance=0.6,keep_new=True,pick="Sombra")
         self.assertTrue(r["ok"]); self.assertEqual(p.species,"Ignavor"); self.assertEqual(p.level,20); self.assertTrue(p.hybrid)
 
 if __name__=="__main__":
     unittest.main(verbosity=1)
+
+
+class BreedTier(unittest.TestCase):
+    def test_tier_sobe_no_sucesso_e_respeita_teto(self):
+        p=Monster("Ignavor",3); i=Monster("Umbrax",2)
+        breed(p,i,rolled=0.1,chance=0.6,keep_new=True,pick="Sombra")
+        self.assertEqual(p.tier,4)
+        top=Monster("Ignavor",10)
+        breed(top,i,rolled=0.1,chance=0.6,keep_new=True,pick="Sombra")
+        self.assertEqual(top.tier,10)
+
+    def test_tier_falha_nao_sobe(self):
+        p=Monster("Ignavor",3); i=Monster("Umbrax",2)
+        breed(p,i,rolled=0.9,chance=0.6,keep_new=True,pick="Sombra")
+        self.assertEqual(p.tier,3)
+
+    def test_tier_acima_de_5_tem_chance_menor_com_piso(self):
+        self.assertLess(breed_success_chance(6,0,0), breed_success_chance(5,0,0))
+        self.assertGreaterEqual(breed_success_chance(10,0,0), 0.20)

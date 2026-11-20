@@ -12,7 +12,7 @@ CORREÇÃO NESTA RODADA
 - alchemy.brew escolhia a pureza dominante com max(set(...)). Em empate, o resultado dependia da ordem do conjunto, que muda entre execuções. Agora o empate resolve para neutra. Um teste de regressão cobre esse caso.
 
 ARQUIVOS
-- rules.py          Sanidade (faixas e afinidade), fusão (chance, pity, minérios, mutação), híbridos (slots e níveis), monstrinho.
+- rules.py          Sanidade (faixas e afinidade), breed (chance por tier, pity, minérios, mutação), híbridos (slots e níveis), monstrinho (raridade 1 a 5, tier 1 a 10).
 - sanity.py         Mudanças de sanidade por fonte, retorno decrescente, falha em ação comum (nunca bloqueia), eventos críticos com confirmação.
 - chronology.py     Eventos com dia de origem e de ativação, estado do mundo, Memória do Mundo, proteção de 2 horas.
 - eggs.py           Eclosão por faixa de sanidade, formas elegíveis, compatibilidade com alinhamento, resultado fixado e idempotente.
@@ -32,7 +32,7 @@ ARQUIVOS
 - speedrun.py       Corrida assíncrona V1: tempo e fantasma; só a primeira conclusão de cada campanha conta; ranking mensal ordenado.
 
 IMPLEMENTADO POR DECISÃO (GDD v1.9)
-- Chance de fusão: base por estrela (★1 = 80% até ★5 = 40%), −5 pontos por fusão bem-sucedida do mesmo principal (piso de 20%), +5 por falha acumulada (teto de +25), minérios (teto de +30), mutação (teto de +50).
+- Chance de breed: base pelo tier do principal (tier 1 = 80% até tier 5 = 40%; tier 6 a 10 caem, piso de 20%), −5 pontos por breed bem-sucedido do mesmo principal (piso de 20%), +5 por falha acumulada (teto de +25), minérios (teto de +30), mutação (teto de +50). Sucesso: principal sobe 1 tier (até 10), aptidões +1 e sai um ovo.
 - Híbrido: 5 habilidades ativas (4 + 1 absorvida) e até 2 passivas. Comum: 4 ativas.
 - Habilidades iguais sobem até o nível 5, com +10% de eficiência por nível.
 - Substituição da habilidade extra: o jogador escolhe manter ou trocar.
@@ -44,14 +44,14 @@ NÃO IMPLEMENTADO (fora desta rodada)
 - Chefes persistentes (purificar, aprisionar ou corromper): só há o confronto com o bot.
 - Restaurante customizável: backlog de expansão.
 - Pareamento do speedrun ao vivo: adiado para expansão.
-- IA do bot e da fusão visual (a fusão não transfere partes visuais, então não há módulo de sprite).
+- IA do bot e do breed visual (o breed não transfere partes visuais, então não há módulo de sprite).
 - Interface, renderização, animações, cinemáticas.
 - Servidor: contas, persistência, migração de saves, anti-cheat, validação de replays.
 - Geração de variantes luz e trevas de monstrinhos a partir de eventos: o campo purity existe, mas não há gerador de variantes.
 - Mutação combinada com pureza na eclosão: a regra existe no GDD, mas só a forma mutante está implementada.
 
 VALORES PROVISÓRIOS (calibrar no piloto)
-- Chance base de fusão por estrela, redução por sucesso, pity, teto de minérios e de mutação.
+- Chance base de breed por tier, redução por sucesso, pity, teto de minérios e de mutação.
 - Multiplicador de relação de preço (±10%, ajustado pela confiança): não estava no GDD; é uma proposta minha.
 - Venda a NPC pela metade do preço base.
 - Recusa de comerciante com confiança abaixo de 15.
@@ -70,6 +70,6 @@ PENDÊNCIAS QUE DEPENDEM DE PESSOAS FORA DO DESIGN
 - Confirmação do nome da protagonista feminina (provisório: Ceres).
 
 DECISÕES DO GDD AINDA NÃO CONFIRMADAS PELO AUTOR
-- Nível e atributos do principal após a fusão (assumido: mantidos).
+- Nível e atributos do principal após o breed (assumido: mantidos; tier e aptidões sobem com sucesso, ver GDD v1.16).
 - Limite de habilidades por híbrido além das contagens (assumido: 5 ativas, 2 passivas).
 - Papel exato da versão base do Azazel: confirmado como aparência da escolha do caminho.

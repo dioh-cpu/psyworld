@@ -35,11 +35,16 @@ test('faixas de eclosão e forma fixada', () => {
   assert.equal(a, b);
   assert.equal(a.sanity_fixed, 50);
 });
-test('fusão: chance por estrela, piso, pity e teto', () => {
-  assert.ok(Math.abs(C.fusionSuccessChance(1, 0, 0) - 0.8) < 1e-9);
-  assert.ok(Math.abs(C.fusionSuccessChance(1, 20, 0) - 0.2) < 1e-9);
-  assert.ok(Math.abs(C.fusionSuccessChance(5, 0, 99) - 0.65) < 1e-9);
-  assert.ok(C.fusionSuccessChance(1, 0, 99, 1) <= 0.95 + 1e-9);
+test('breed: chance por tier, piso, pity e teto', () => {
+  assert.ok(Math.abs(C.breedSuccessChance(1, 0, 0) - 0.8) < 1e-9);
+  assert.ok(Math.abs(C.breedSuccessChance(1, 20, 0) - 0.2) < 1e-9);
+  assert.ok(Math.abs(C.breedSuccessChance(5, 0, 99) - 0.65) < 1e-9);
+  assert.ok(C.breedSuccessChance(1, 0, 99, 1) <= 0.95 + 1e-9);
+});
+test('breed: tier 6 a 10 tem chance menor e nunca abaixo de 20% (provisório)', () => {
+  assert.ok(C.breedSuccessChance(6, 0, 0) < C.breedSuccessChance(5, 0, 0));
+  assert.ok(C.breedSuccessChance(10, 0, 0) >= 0.2 - 1e-9);
+  assert.ok(C.breedSuccessChance(10, 0, 0) <= C.breedSuccessChance(6, 0, 0));
 });
 test('híbrido: 5 ativas, troca escolhida, duplicata sobe nível até 5', () => {
   const m = { hybrid: false, abilities: ['a', 'b', 'c', 'd'], extraAbility: null, abilityLevels: {} };
@@ -122,28 +127,51 @@ test('coleta: sem penalidade (quantidade cheia no dia)', () => {
   assert.equal(C.gatherDay('garimpar', 1).cristal, 3);
   assert.equal(C.gatherDay('minerar', 1).minerio, 3);
 });
-test('aptidão não cresce com trabalho: só pela fusão', () => {
+test('aptidão não cresce com trabalho: só pelo breed', () => {
   assert.equal(typeof C.addWorkXp, 'undefined');
 });
-
-test('estrelas: 30 no total; douradas até 6; arco-íris de 25 a 30', () => {
-  assert.equal(C.starColor(6), 'dourada');
-  assert.equal(C.starColor(7), 'vermelha');
-  assert.equal(C.starColor(13), 'roxa');
-  assert.equal(C.starColor(19), 'laranja');
-  assert.equal(C.starColor(25), 'arco-iris');
-  assert.equal(C.starColor(30), 'arco-iris');
-  assert.equal(C.STAR_MAX, 30);
+test('raridade: 1 a 5 com nomes da culinária; empurrão nunca passa de 5', () => {
+  assert.equal(C.rarityName(1), 'comum');
+  assert.equal(C.rarityName(5), 'mitica');
+  assert.equal(C.rarityName(9), 'mitica');
+  assert.equal(C.rollRarity(0), 1);
+  assert.equal(C.rollRarity(0.999), 5);
+  assert.equal(C.rollRarity(0, 1), 2);
+  assert.equal(C.rollRarity(0.999, 1), 5);
 });
-test('fusão com sucesso: +1 estrela e +1 em todas as aptidões, até 10 e 30', () => {
-  const m = { star: 3, aptitudes: { cortar: 3, minerar: 10 } };
-  C.fusionSuccessEffects(m);
-  assert.equal(m.star, 4);
+test('breed bem-sucedido: tier +1 (teto 10) e aptidões +1 (teto 10)', () => {
+  const m = { tier: 3, aptitudes: { cortar: 3, minerar: 10 } };
+  C.breedSuccessEffects(m);
+  assert.equal(m.tier, 4);
   assert.equal(m.aptitudes.cortar, 4);
   assert.equal(m.aptitudes.minerar, 10);
-  const top = { star: 30, aptitudes: {} };
-  C.fusionSuccessEffects(top);
-  assert.equal(top.star, 30);
+  const top = { tier: 10, aptitudes: {} };
+  C.breedSuccessEffects(top);
+  assert.equal(top.tier, 10);
+});
+test('ovo do breed: natural, mutante ou abençoado; mutante e abençoado +1 de raridade', () => {
+  assert.equal(C.breedEggForm(0.05), 'mutante');
+  assert.equal(C.breedEggForm(0.20), 'abencoada');
+  assert.equal(C.breedEggForm(0.90), 'natural');
+  assert.equal(C.makeEgg('Noctarn', 'mutante', 'breed').shift, 1);
+  assert.equal(C.makeEgg('Noctarn', 'natural', 'breed').shift, 0);
+});
+test('nascimento: raridade rolada e tier igual; ovo da zona +1; abençoado é luz', () => {
+  const h = C.hatchEgg(C.makeEgg('Ignavor', 'natural', 'breed'), 0);
+  assert.equal(h.rarity, 1);
+  assert.equal(h.tier, 1);
+  assert.equal(h.purity, 'neutra');
+  assert.equal(C.hatchEgg(C.makeEgg('Ignavor', 'natural', 'zona'), 0).rarity, 2);
+  const ab = C.hatchEgg(C.makeEgg('Ignavor', 'abencoada', 'breed'), 0);
+  assert.equal(ab.purity, 'luz');
+  assert.equal(ab.rarity, 2);
+});
+test('invocação: banner escolhe espécie e empurra a raridade', () => {
+  const sp = ['Noctarn', 'Ignavor', 'Vaelith'];
+  assert.equal(C.invocationResult('permanente', sp, 0, 0).rarity, 2);
+  assert.equal(C.invocationResult('evento', sp, 0, 0).rarity, 3);
+  assert.equal(C.invocationResult('permanente', sp, 0.99, 0.5).species, 'Vaelith');
+  assert.throws(() => C.invocationResult('permanente', [], 0, 0));
 });
 test('zona infinita: cada andar fica mais forte', () => {
   assert.equal(C.endlessFloorPower(1), 100);
@@ -151,14 +179,17 @@ test('zona infinita: cada andar fica mais forte', () => {
 });
 test('zona infinita: 10 diamantes por andar, 150 a cada 10 andares', () => {
   assert.equal(C.endlessRewards(1).diamantes, 10);
-  assert.equal(C.endlessRewards(10).diamantes, 60);   // 10 + 50 de bônus
+  assert.equal(C.endlessRewards(10).diamantes, 60);
   let total = 0;
   for (let f = 1; f <= 10; f++) total += C.endlessRewards(f).diamantes;
   assert.equal(total, 150);
 });
+test('zona infinita: ovo de recompensa a cada 10 andares', () => {
+  assert.equal(C.endlessRewards(10).ovo, true);
+  assert.equal(C.endlessRewards(5).ovo, false);
+});
 test('zona infinita: invocações por banner nos andares certos', () => {
-  const r3 = C.endlessRewards(3).invocacoes;
-  assert.deepEqual(r3, [{ banner: 'permanente', qtd: 1 }]);
+  assert.deepEqual(C.endlessRewards(3).invocacoes, [{ banner: 'permanente', qtd: 1 }]);
   const r10 = C.endlessRewards(10).invocacoes.map((x) => x.banner + x.qtd);
   assert.ok(!r10.includes('permanente1') && r10.includes('semanal3'));
   const r15 = C.endlessRewards(15).invocacoes.map((x) => x.banner + x.qtd);
@@ -170,20 +201,14 @@ test('diamantes: 2000 compra 10 invocações; 10 de uma vez cai para 1500', () =
   assert.equal(C.buyInvocations(2000, 10).diamonds, 500);
   assert.throws(() => C.buyInvocations(100, 1));
 });
-test('diamantes: pacote de R$ 4,99 dá 500 diamantes e ganho por raridade', () => {
-  assert.equal(C.PACK_BRL_4_99, 500);
+test('diamantes: ganho por raridade, só dentro do jogo', () => {
   assert.equal(C.diamondsForItem('comum'), 1);
   assert.ok(C.diamondsForItem('mitica') > C.diamondsForItem('comum'));
+  assert.equal(C.PACK_BRL_4_99, undefined);
 });
-test('fusão acima de ★5 tem chance provisória que não passa do piso', () => {
-  const c6 = C.fusionSuccessChance(6, 0, 0);
-  assert.ok(c6 > 0 && c6 <= 0.95);
-  assert.ok(C.fusionSuccessChance(12, 0, 0) >= 0.2);
-  assert.ok(C.fusionSuccessChance(12, 0, 0) <= C.fusionSuccessChance(6, 0, 0));
-});
-test('zona infinita: poder do monstrinho decide a chance, limitada entre 5% e 95%', () => {
-  const fraco = { star: 1, aptitudes: {} };
-  const forte = { star: 30, aptitudes: { a: 10, b: 10, c: 10, d: 10 } };
+test('zona infinita: poder pelo tier e aptidões, chance entre 5% e 95%', () => {
+  const fraco = { tier: 1, aptitudes: {} };
+  const forte = { tier: 10, aptitudes: { a: 10, b: 10, c: 10, d: 10 } };
   assert.equal(C.monsterPower(fraco), 10);
   assert.ok(C.endlessChance(fraco, 50) >= 0.05);
   assert.equal(C.endlessChance(forte, 1), 0.95);

@@ -28,8 +28,9 @@ def affinity_modifier(sanity: int, role: str) -> float:
         raise ValueError(role)
     return max(-0.20, min(0.20, delta))
 
-# --- Fusão (GDD v1.9 decisões 1 a 3) ---
-BASE_SUCCESS_BY_STAR = {1: 0.80, 2: 0.70, 3: 0.60, 4: 0.50, 5: 0.40}  # proposta de teste
+# --- Breed (substitui a fusão; GDD v1.16). A chance depende do tier do principal ---
+BASE_SUCCESS_BY_TIER = {1: 0.80, 2: 0.70, 3: 0.60, 4: 0.50, 5: 0.40}  # proposta de teste
+TIER_MAX = 10
 SUCCESS_DROP_PER_FUSION = 0.05
 FLOOR = 0.20
 PITY_PER_FAILURE = 0.05
@@ -37,9 +38,13 @@ PITY_CAP = 0.25
 ORE_CAP = 0.30
 MUTATION_CAP = 0.50
 
-def fusion_success_chance(principal_star: int, successes_on_principal: int,
-                          failures_accumulated: int, ore_bonus: float = 0.0) -> float:
-    base = BASE_SUCCESS_BY_STAR[principal_star]
+def breed_base_success(tier: int) -> float:
+    # tier 6 a 10: sem valor decidido; cai 5 pontos por tier, com piso (provisório)
+    return BASE_SUCCESS_BY_TIER.get(tier, max(FLOOR, 0.40 - 0.05 * (tier - 5)))
+
+def breed_success_chance(principal_tier: int, successes_on_principal: int,
+                         failures_accumulated: int, ore_bonus: float = 0.0) -> float:
+    base = breed_base_success(principal_tier)
     chance = base - SUCCESS_DROP_PER_FUSION * successes_on_principal
     chance = max(FLOOR, chance)
     chance += min(PITY_CAP, PITY_PER_FAILURE * failures_accumulated)
@@ -62,7 +67,7 @@ def ability_efficiency(level: int) -> float:
 @dataclass
 class Monster:
     species: str
-    star: int
+    tier: int  # tier 1 a 10: começa igual à raridade (1 a 5) e sobe só pelo breed
     level: int = 1
     xp: int = 0
     hybrid: bool = False
@@ -95,12 +100,12 @@ def apply_defeat(monster: Monster, xp_loss: int, bot_strength: int):
     monster.xp = max(xp_floor_for_level(monster.level), monster.xp - xp_loss)
     return bot_strength + 1  # bot persiste na campanha; zera no reinício da campanha
 
-# --- Fusão: ingrediente é perdido, principal permanece (decisão v1.7) ---
-def fuse(principal: Monster, ingredient: Monster, rolled: float, chance: float,
-         keep_new: bool, pick: str):
+# --- Breed: ingrediente é sempre perdido, principal permanece; sucesso sobe 1 tier (até 10) ---
+def breed(principal: Monster, ingredient: Monster, rolled: float, chance: float,
+          keep_new: bool, pick: str):
     """rolled e pick vêm de fora (RNG injetado) para os testes serem determinísticos."""
     if rolled >= chance:
         return {"ok": False, "principal": principal, "lost": ingredient.species}
-    ability = pick
-    principal.absorb(ability, keep_new)
-    return {"ok": True, "principal": principal, "lost": ingredient.species, "ability": ability}
+    principal.absorb(pick, keep_new)
+    principal.tier = min(TIER_MAX, principal.tier + 1)
+    return {"ok": True, "principal": principal, "lost": ingredient.species, "ability": pick}
