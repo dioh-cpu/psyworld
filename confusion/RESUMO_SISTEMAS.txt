@@ -1,0 +1,75 @@
+CONFUSION WAVES: DOUBLE PERSPECTIVE
+Resumo do núcleo de regras (código puro, sem render, sem servidor)
+Base: GDD Mestre v1.12 (19/11/2026)
+
+ESTADO GERAL
+- 70 testes automatizados, todos passando (python3 -m unittest test_rules test_all).
+- Verificado em várias execuções, inclusive com PYTHONHASHSEED diferente.
+- Os módulos não dependem de motor de jogo. Podem ser portados para Godot ou para qualquer outro motor.
+- Nada foi publicado em repositório: não há acesso de escrita a um repositório do jogo nesta sessão.
+
+CORREÇÃO NESTA RODADA
+- alchemy.brew escolhia a pureza dominante com max(set(...)). Em empate, o resultado dependia da ordem do conjunto, que muda entre execuções. Agora o empate resolve para neutra. Um teste de regressão cobre esse caso.
+
+ARQUIVOS
+- rules.py          Sanidade (faixas e afinidade), fusão (chance, pity, minérios, mutação), híbridos (slots e níveis), monstrinho.
+- sanity.py         Mudanças de sanidade por fonte, retorno decrescente, falha em ação comum (nunca bloqueia), eventos críticos com confirmação.
+- chronology.py     Eventos com dia de origem e de ativação, estado do mundo, Memória do Mundo, proteção de 2 horas.
+- eggs.py           Eclosão por faixa de sanidade, formas elegíveis, compatibilidade com alinhamento, resultado fixado e idempotente.
+- campaign.py       Traje segue o caminho, troca de lado única e irreversível, dificuldade com snapshot na entrada, dificuldade travada em batalha.
+- battle.py         Batalha final sem empate. Derrota tira XP até o piso e fortalece o bot.
+- rewards.py        Registro de recompensas idempotente por campanha e escopo; monstro escolhido entra no repertório no nível 0; registro mensal.
+- economy.py        Multiplicadores de reputação, preço = base × regional × relação, comerciantes com teto de raridade e recusa, venda a NPC pela metade.
+- parts.py          Receitas de partes com profundidade máxima de 3 níveis e sem ciclos; craft consome insumos.
+- cooking.py        Culinária: carvão e panela obrigatórios; panela limita raridade; variante por pureza; nome pelo atributo dominante; penalidades; frescor e empilhamento pelo mais baixo.
+- alchemy.py        Alquimia: combinações de sementes geram poções e sementes (pesquisa, mutante, corrompida, abençoada); decomposição entra como ingrediente.
+- vinculo.py        Vínculo com o monstrinho (comida sobe ou desce, limitado de 0 a 100); evolução por vínculo mínimo.
+- farm.py           Fazenda por aptidão: plantar, colher, minerar, transportar, cozinhar, fabricar; escolhe o monstrinho livre de maior nível.
+- clock.py          Dia e noite pelo horário de Brasília (UTC-3, sem horário de verão desde 2019); janelas de aparição de dia, noite ou ambos.
+- gacha.py          Probabilidades publicadas (somam 100%) e garantia após 50 invocações sem o item de maior raridade.
+- collection.py     Coleção: recompensa na primeira captura de cada espécie e na conclusão de cada região (uma vez).
+- gathering.py      Coleta: ferramenta obrigatória, retorno decrescente, regeneração, falha de sanidade reduz quantidade e causa ferimento leve.
+- speedrun.py       Corrida assíncrona V1: tempo e fantasma; só a primeira conclusão de cada campanha conta; ranking mensal ordenado.
+
+IMPLEMENTADO POR DECISÃO (GDD v1.9)
+- Chance de fusão: base por estrela (★1 = 80% até ★5 = 40%), −5 pontos por fusão bem-sucedida do mesmo principal (piso de 20%), +5 por falha acumulada (teto de +25), minérios (teto de +30), mutação (teto de +50).
+- Híbrido: 5 habilidades ativas (4 + 1 absorvida) e até 2 passivas. Comum: 4 ativas.
+- Habilidades iguais sobem até o nível 5, com +10% de eficiência por nível.
+- Substituição da habilidade extra: o jogador escolhe manter ou trocar.
+- Principal mantém espécie, elemento, nível e atributos.
+
+NÃO IMPLEMENTADO (fora desta rodada)
+- Rotinas de NPC com prioridade (P1 do v1.4). Não há módulo de NPC.
+- Cidades vivas, facções, personalidade, investigação, sonhos, arqueologia, guildas, companheiros, magias proibidas, contratos sobrenaturais, festivais, idiomas, mineração profunda, masmorras, portais, montarias e demais sistemas do catálogo de 50. Ficam como backlog.
+- Chefes persistentes (purificar, aprisionar ou corromper): só há o confronto com o bot.
+- Restaurante customizável: backlog de expansão.
+- Pareamento do speedrun ao vivo: adiado para expansão.
+- IA do bot e da fusão visual (a fusão não transfere partes visuais, então não há módulo de sprite).
+- Interface, renderização, animações, cinemáticas.
+- Servidor: contas, persistência, migração de saves, anti-cheat, validação de replays.
+- Geração de variantes luz e trevas de monstrinhos a partir de eventos: o campo purity existe, mas não há gerador de variantes.
+- Mutação combinada com pureza na eclosão: a regra existe no GDD, mas só a forma mutante está implementada.
+
+VALORES PROVISÓRIOS (calibrar no piloto)
+- Chance base de fusão por estrela, redução por sucesso, pity, teto de minérios e de mutação.
+- Multiplicador de relação de preço (±10%, ajustado pela confiança): não estava no GDD; é uma proposta minha.
+- Venda a NPC pela metade do preço base.
+- Recusa de comerciante com confiança abaixo de 15.
+- Faixas de dia e noite (6h às 18h, horário de Brasília).
+- Perda de XP na derrota (25).
+- Evolução: tabela de exemplo com Ignavor (vínculo 70). O nome da evolução é provisório.
+- Gacha: pesos e teto de 50 invocações.
+- Coleta: quantidades base e regeneração de 240 minutos.
+- Ferimento leve por falha de coleta: 5 pontos de vida.
+- Faixas de panela: comum até rara; rara até épica; épica até lendária; lendária sem teto.
+- Peso das falhas culinárias (queimado 10%, intoxicação 25% com frescor abaixo de 50%).
+
+PENDÊNCIAS QUE DEPENDEM DE PESSOAS FORA DO DESIGN
+- Revisão jurídica das caixas de recompensa (gacha) e das exigências das lojas de aplicativos.
+- Busca formal de marca para Azazel e para o título (INPI e USPTO, classes 9 e 41).
+- Confirmação do nome da protagonista feminina (provisório: Ceres).
+
+DECISÕES DO GDD AINDA NÃO CONFIRMADAS PELO AUTOR
+- Nível e atributos do principal após a fusão (assumido: mantidos).
+- Limite de habilidades por híbrido além das contagens (assumido: 5 ativas, 2 passivas).
+- Papel exato da versão base do Azazel: confirmado como aparência da escolha do caminho.
