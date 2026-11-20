@@ -14,8 +14,19 @@ const CREATURES=[
   type:'Noturno',
   autoral:true,
   idle:'assets/monsters/noctarn/idle-front.mp4?build=NOCTARN_IDLE_V1',
-  sprite:'assets/monsters/noctarn/sprite-front.png?build=NOCTARN_SPRITE_V1',
-  worldHeight:34,
+  idleClips:{
+   down:{url:'assets/monsters/noctarn/idle-front.mp4?build=NOCTARN_IDLE_V1',width:480,height:262,scale:1,baseY:0.9847,pawCx:0.5182},
+   left:{url:'assets/monsters/noctarn/idle-left.mp4?build=NOCTARN_IDLE_LEFT_V1',width:480,height:270,scale:1.083,baseY:0.9556,pawCx:0.5307},
+   right:{url:'assets/monsters/noctarn/idle-left.mp4?build=NOCTARN_IDLE_LEFT_V1',width:480,height:270,scale:1.083,baseY:0.9556,pawCx:0.5307,flip:true},
+   up:{url:'assets/monsters/noctarn/idle-back.mp4?build=NOCTARN_IDLE_BACK_V1',width:480,height:270,scale:1.074,baseY:0.9556,pawCx:0.4901}
+  },
+  idle4dir:'assets/monsters/noctarn/noctarn-idle-4dir.webp?build=NOCTARN_4DIR_V1',
+  cellW:640,
+  cellH:512,
+  baseline:500,
+  sprite:'assets/monsters/noctarn/sprite-front.png?build=NOCTARN_SPRITE_V2',
+  worldHeight:138,
+  trailDistance:92,
   width:480,
   height:262
  }
@@ -115,7 +126,7 @@ function syncSide(side){
   if(cur&&cur.id===c.id&&cur.host.isConnected){img.style.display='none';return;}
   if(cur){cur.inst.destroy();cur.host.remove();battle[side]=null;}
   const host=D.createElement('div');host.className='psy-monster-video psy-battle-video';
-  host.style.cssText='width:150px;margin:0 auto;';
+  host.style.cssText='width:260px;margin:0 auto;';
   img.parentNode.insertBefore(host,img);
   img.style.display='none';
   battle[side]={id:c.id,host,inst:W.PsyMonsterVideoV1.mount(host,{url:c.idle,width:c.width,height:c.height})};
