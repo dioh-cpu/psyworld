@@ -242,24 +242,36 @@ export function breedSuccessEffects(m) {
 }
 
 // ---- Ovos e invocação (GDD v1.16) ----
-// Ovo do breed: natural 70%, mutante 15%, abençoado 15% (proposta).
-export const BREED_EGG_CHANCE = { mutante: 0.15, abencoada: 0.15 };
-export function breedEggForm(roll) {
-  if (roll < BREED_EGG_CHANCE.mutante) return 'mutante';
-  if (roll < BREED_EGG_CHANCE.mutante + BREED_EGG_CHANCE.abencoada) return 'abencoada';
+// Mutação e bênção são o que o ovo carrega. A variante vira aura ao redor do monstrinho,
+// sem sprite novo: um sprite base por espécie e uma camada de aura por variante.
+// Chances por origem (proposta): o resto dos ovos é natural.
+export const FORM_CHANCE = {
+  breed: { mutante: 0.15, abencoada: 0.15 },
+  zona: { mutante: 0.25, abencoada: 0.25 },
+  login: { mutante: 0.10, abencoada: 0.10 },
+  passe: { mutante: 0.10, abencoada: 0.10 },
+  selvagem: { mutante: 0.05, abencoada: 0.05 },
+  inicial: {},
+};
+export function eggFormFor(origem, roll) {
+  const c = FORM_CHANCE[origem] || {};
+  const m = c.mutante || 0;
+  if (roll < m) return 'mutante';
+  if (roll < m + (c.abencoada || 0)) return 'abencoada';
   return 'natural';
 }
-// Ovo mutante e abençoado nascem com +1 de raridade. Ovo de recompensa da zona também (+1).
+export const breedEggForm = (roll) => eggFormFor('breed', roll);
+// Mutante e abençoado nascem com +1 de raridade. Ovo de recompensa da zona também (+1), sem somar.
 export const EGG_SHIFT = { natural: 0, mutante: 1, abencoada: 1 };
 export const PURITY_BY_FORM = { natural: 'neutra', abencoada: 'luz', mutante: 'neutra' };
 export function makeEgg(species, form, origem) {
-  return { species, form, origem, shift: origem === 'zona' ? 1 : (EGG_SHIFT[form] ?? 0) };
+  return { species, form, origem, shift: Math.max(EGG_SHIFT[form] ?? 0, origem === 'zona' ? 1 : 0) };
 }
-// Ao chocar, a raridade é rolada e o tier começa igual a ela.
+// Ao chocar, a raridade é rolada e o tier começa igual a ela. A variante (natural, mutante ou abençoada) vai para o monstrinho.
 export function hatchEgg(egg, roll) {
   const rarity = rollRarity(roll, egg.shift ?? 0);
   return {
-    species: egg.species, form: egg.form, rarity, tier: rarity,
+    species: egg.species, form: egg.form, variant: egg.form, rarity, tier: rarity,
     purity: PURITY_BY_FORM[egg.form] ?? 'neutra', mutated: egg.form === 'mutante',
   };
 }

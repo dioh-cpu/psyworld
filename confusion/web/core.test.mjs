@@ -156,6 +156,20 @@ test('ovo do breed: natural, mutante ou abençoado; mutante e abençoado +1 de r
   assert.equal(C.makeEgg('Noctarn', 'mutante', 'breed').shift, 1);
   assert.equal(C.makeEgg('Noctarn', 'natural', 'breed').shift, 0);
 });
+test('forma do ovo depende da origem: selvagem é quase sempre natural; zona tem mais mutação e bênção', () => {
+  assert.equal(C.eggFormFor('selvagem', 0.02), 'mutante');
+  assert.equal(C.eggFormFor('selvagem', 0.07), 'abencoada');
+  assert.equal(C.eggFormFor('selvagem', 0.5), 'natural');
+  assert.equal(C.eggFormFor('zona', 0.3), 'abencoada');
+  assert.equal(C.eggFormFor('zona', 0.6), 'natural');
+  assert.equal(C.eggFormFor('inicial', 0), 'natural');
+});
+test('ovo mutante ou abençoado: a variante vai para o monstrinho e o shift não soma com a zona', () => {
+  assert.equal(C.hatchEgg(C.makeEgg('Noctarn', 'mutante', 'breed'), 0).variant, 'mutante');
+  assert.equal(C.hatchEgg(C.makeEgg('Noctarn', 'natural', 'breed'), 0).variant, 'natural');
+  assert.equal(C.makeEgg('Noctarn', 'mutante', 'zona').shift, 1);
+  assert.equal(C.makeEgg('Noctarn', 'abencoada', 'zona').shift, 1);
+});
 test('nascimento: raridade rolada e tier igual; ovo da zona +1; abençoado é luz', () => {
   const h = C.hatchEgg(C.makeEgg('Ignavor', 'natural', 'breed'), 0);
   assert.equal(h.rarity, 1);

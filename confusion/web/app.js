@@ -29,23 +29,24 @@ const APT = {
 for (const [k, v] of Object.entries(Y.EVENT_SPECIES)) APT[k] = v.aptitudes; // exclusivos de evento
 const ART = { Noctarn: 'assets/monsters/noctarn/sprite-front.png' };
 const EVENT_ACTIVE = true; // há sempre um evento mensal ativo no calendário; o item de drop é provisório
-const monster = (id, species, rarity, level, xp, purity) => ({
-  id, species, rarity, tier: rarity, level, xp, purity, vinculo: 0,
+const monster = (id, species, rarity, level, xp, purity, variant = 'natural') => ({
+  id, species, rarity, tier: rarity, variant, level, xp, purity, vinculo: 0,
   abilities: ABILITIES[species].slice(0, 4), extraAbility: null, hybrid: false, abilityLevels: {},
   aptitudes: { ...(APT[species] || {}) },
 });
 const SPECIES = Y.BASE_SPECIES; // todas saem de ovo, breed ou invocação: nenhuma espécie é só de pagamento
 const PURITY_BY_SPECIES = Y.SPECIES_PURITY;
 const RARITY_LABEL = { comum: 'Comum', rara: 'Rara', epica: 'Épica', lendaria: 'Lendária', mitica: 'Mítica' };
+const VARIANT_LABEL = { natural: 'natural', mutante: 'mutação', abencoada: 'bênção' }; // a variante aparece como aura
 const BANNER_LABEL = { permanente: 'permanente', semanal: 'semanal', evento: 'evento' };
 const uid = (p) => `${p}${Date.now()}${Math.floor(Math.random() * 1000)}`;
-const newMonster = (species, rarity, purity) => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species]);
+const newMonster = (species, rarity, purity, variant = 'natural') => monster(uid('m'), species, rarity, 1, 0, purity ?? PURITY_BY_SPECIES[species], variant);
 const eggOf = (species, form, origem) => ({ ...C.makeEgg(species, form, origem), id: uid('e') });
 const ORIGIN_LABEL = { breed: 'breed', zona: 'recompensa da zona', login: 'login diário', passe: 'passe de batalha', selvagem: 'drop selvagem', inicial: 'kit inicial' };
 // Aplica uma recompensa do jogo: diamantes, esferas e fichas entram direto; ovos são criados com a origem.
-function grant(reward) {
+function grant(reward, origem) {
   const ovos = Y.applyReward(S, reward);
-  for (let i = 0; i < ovos; i++) S.eggs.push(eggOf(Y.BASE_SPECIES[Math.floor(Math.random() * Y.BASE_SPECIES.length)], 'natural', 'login'));
+  for (let i = 0; i < ovos; i++) S.eggs.push(eggOf(Y.BASE_SPECIES[Math.floor(Math.random() * Y.BASE_SPECIES.length)], C.eggFormFor(origem, Math.random()), origem));
   return rewardText(reward);
 }
 const rewardText = (r) => [
@@ -57,7 +58,7 @@ const rewardText = (r) => [
 // Ao fim de um encontro (captura, fuga ou lançamento), o monstrinho pode deixar um ovo.
 function dropEgg(w) {
   if (Y.dropsEgg(w, Math.random(), Y.dropBonus(Date.now()))) {
-    S.eggs.push(eggOf(w.species, 'natural', 'selvagem'));
+    S.eggs.push(eggOf(w.species, C.eggFormFor('selvagem', Math.random()), 'selvagem'));
     note(`${w.species} deixou um ovo.`);
   }
 }
@@ -120,10 +121,10 @@ function withDefaults(s) {
 }
 // Versão anterior usava estrelas (star). Agora: raridade 1 a 5 e tier 1 a 10 (só o breed sobe o tier).
 function migrateMonster(m) {
-  if (m.rarity) return { tier: m.tier ?? m.rarity, ...m };
+  if (m.rarity) return { tier: m.tier ?? m.rarity, variant: m.mutated ? 'mutante' : 'natural', ...m };
   const { star, ...rest } = m;
   const rarity = Math.min(5, Math.max(1, star ?? 1));
-  return { ...rest, rarity, tier: Math.min(10, star ?? rarity) };
+  return { ...rest, rarity, tier: Math.min(10, star ?? rarity), variant: 'natural' };
 }
 function save() {
   S.game = 'confusion-waves'; // saves antigos não têm o campo; o servidor exige
@@ -288,9 +289,9 @@ function render() {
     <h2>Monstrinhos</h2>
     <div class="cards">
       ${S.monsters.map((m) => `<div class="card">
-        ${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<div class="noart">sem arte ainda</div>`}
+        <div class="sprite aura-${m.variant || 'natural'}">${ART[m.species] ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">` : `<div class="noart">sem arte ainda</div>`}</div>
         <b>${esc(m.species)}</b> ${rarityTag(m)} · nível ${m.level}
-        <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity}${m.mutated ? ' · mutação' : ''}</div>
+        <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity} · ${VARIANT_LABEL[m.variant || 'natural']}</div>
         <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
         <div class="muted">aptidões: ${esc(Object.entries(m.aptitudes).map(([k, v]) => `${k} ${v}`).join(' · ') || 'nenhuma')}</div>
       </div>`).join('') || '<p class="muted">Nenhum monstrinho.</p>'}
@@ -567,7 +568,7 @@ function act(name, el) {
       S.diamonds += r.diamantes;
       for (const i of r.invocacoes) S.tickets[i.banner] += i.qtd;
       if (r.evento) S.endless.drops[r.evento] = (S.endless.drops[r.evento] || 0) + 1;
-      if (r.ovo) S.eggs.push(eggOf(SPECIES[Math.floor(Math.random() * SPECIES.length)], 'natural', 'zona'));
+      if (r.ovo) S.eggs.push(eggOf(SPECIES[Math.floor(Math.random() * SPECIES.length)], C.eggFormFor('zona', Math.random()), 'zona'));
       S.endless.best = Math.max(S.endless.best, floor);
       S.endless.floor = floor + 1;
       S.pass = Y.addPassXp(S.pass, 'andar');
@@ -592,8 +593,7 @@ function act(name, el) {
       if (!egg) return;
       S.eggs = S.eggs.filter((e) => e !== egg);
       const r = C.hatchEgg(egg, Math.random());
-      const m = newMonster(r.species, r.rarity, r.purity);
-      m.mutated = r.mutated;
+      const m = newMonster(r.species, r.rarity, r.purity, r.variant);
       S.monsters.push(m);
       const d = C.diamondsForItem(C.rarityName(r.rarity));
       S.diamonds += d;
@@ -616,7 +616,7 @@ function act(name, el) {
     case 'recompensaLogin': {
       const streak = Y.nextLoginStreak(S.login, Date.now());
       if (!streak) return;
-      const txt = grant(Y.loginRewardFor(streak));
+      const txt = grant(Y.loginRewardFor(streak), 'login');
       S.login = { streak, lastDay: Y.brDayNumber(Date.now()) };
       note(`login do dia ${streak}: ${txt}.`);
       break;
@@ -625,7 +625,7 @@ function act(name, el) {
       const antes = S.pass.claimed;
       const { reward, claimed } = Y.claimPass(S.pass);
       if (claimed <= antes) return;
-      const txt = grant(reward);
+      const txt = grant(reward, 'passe');
       S.pass = { ...S.pass, claimed };
       note(`passe: níveis ${antes + 1} a ${claimed} resgatados: ${txt}.`);
       break;
