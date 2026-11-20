@@ -159,43 +159,62 @@ export function mulberry32(seed) {
   };
 }
 
-// ---- Fazenda por aptidão (GDD v1.9 decisão 19) ----
-export const APTITUDES = ['plantar', 'colher', 'minerar', 'transportar', 'cozinhar', 'fabricar'];
-// workers: [{ id, level, aptitudes: [..] }]. Cada tarefa vai ao livre com a aptidão e o nível mais altos.
+// ---- Fazenda: trabalho automático por aptidão (GDD v1.9 decisão 19 + ajuste v1.14) ----
+// Aptidões de coleta: cortar (madeira), minerar (pedra e minério), garimpar (cristal).
+export const WORK_TASKS = ['plantar', 'colher', 'minerar', 'cortar', 'garimpar', 'transportar', 'cozinhar', 'fabricar'];
+export const WORK_LEVEL_MAX = 10;
+export const XP_PER_WORK_LEVEL = 3; // tarefas concluídas por nível (provisório)
+
+// Tarefas de coleta: recurso base por tarefa, sem penalidade.
+export const GATHER_TASKS = {
+  cortar: { resource: 'madeira', base: 2 },
+  minerar: { resource: 'pedra', base: 2, extra: { minerio: 1 } },
+  garimpar: { resource: 'cristal', base: 1 },
+};
+// Produção das outras tarefas, por dia.
+export const PRODUCE = {
+  plantar: { sementes: 2 }, colher: { raizes: 1 }, transportar: {}, cozinhar: { carvao: 1 }, fabricar: { peca: 1 },
+};
+const BASE_TASKS_PER_DAY = 3;
+
+// workers: [{ id, aptitudes: { tarefa: nivel } }]. Cada tarefa vai ao livre com o maior nível naquela aptidão.
 export function assignTasks(tasks, workers) {
-  for (const t of tasks) if (!APTITUDES.includes(t)) throw new Error(`tarefa desconhecida: ${t}`);
+  for (const t of tasks) if (!WORK_TASKS.includes(t)) throw new Error(`tarefa desconhecida: ${t}`);
   const busy = new Set();
   const mapping = {};
   const unassigned = [];
   for (const t of tasks) {
-    const cands = workers.filter((w) => !busy.has(w.id) && w.aptitudes.includes(t));
+    const cands = workers.filter((w) => !busy.has(w.id) && (w.aptitudes?.[t] || 0) > 0);
     if (!cands.length) { unassigned.push(t); continue; }
-    cands.sort((a, b) => b.level - a.level || (a.id < b.id ? -1 : 1));
+    cands.sort((a, b) => (b.aptitudes[t] - a.aptitudes[t]) || (a.id < b.id ? -1 : 1));
     busy.add(cands[0].id);
     mapping[t] = cands[0].id;
   }
   return { mapping, unassigned };
 }
-// Produção de um dia para cada tarefa atribuída.
-export const PRODUCE = {
-  plantar: { sementes: 2 }, colher: { raizes: 1 }, minerar: { minerio: 1 },
-  transportar: {}, cozinhar: { carvao: 1 }, fabricar: { peca: 1 },
-};
 
-// ---- Coleta: nós com tempo de espera e retorno decrescente (GDD v1.4/v1.5) ----
-export const COOLDOWN_MS = 10 * 60 * 1000;  // 10 minutos de espera por ponto
-export const WINDOW_MS = 60 * 60 * 1000;    // janela de 1 hora para o retorno decrescente
-export function harvest(node, tool, nowMs, sanityFail) {
-  if (tool !== node.requiredTool) throw new Error(`precisa de ${node.requiredTool}`);
-  if (nowMs < (node.nextAvailableMs || 0)) {
-    return { resource: node.resource, qty: 0, emCooldown: true, restanteMs: node.nextAvailableMs - nowMs, ferimento: false };
+// Velocidade e bônus crescem com o nível (1 a 10).
+export const workSpeed = (level) => 1 + 0.1 * (clamp(level, 1, WORK_LEVEL_MAX) - 1);
+export const workBonus = (level) => 1 + 0.05 * (clamp(level, 1, WORK_LEVEL_MAX) - 1);
+export const tasksPerDay = (level) => Math.max(1, Math.round(BASE_TASKS_PER_DAY * workSpeed(level)));
+
+// Produção de um dia de uma tarefa de coleta, para um monstrinho com esse nível.
+export function gatherDay(task, level) {
+  const g = GATHER_TASKS[task];
+  if (!g) return {};
+  const n = tasksPerDay(level);
+  const out = { [g.resource]: Math.floor(g.base * workBonus(level) * n) };
+  for (const [r, q] of Object.entries(g.extra || {})) out[r] = Math.floor(q * workBonus(level) * n);
+  return out;
+}
+
+// Concluir tarefas dá XP de trabalho; a cada XP_PER_WORK_LEVEL sobe um nível, até 10.
+export function addWorkXp(aptitudes, xp, task, tasks = 1) {
+  const level = aptitudes[task] || 1;
+  xp[task] = (xp[task] || 0) + tasks;
+  while (xp[task] >= XP_PER_WORK_LEVEL * level && (aptitudes[task] || 0) < WORK_LEVEL_MAX) {
+    xp[task] -= XP_PER_WORK_LEVEL * level;
+    aptitudes[task] = (aptitudes[task] || 0) + 1;
   }
-  if (node.lastMs == null || nowMs - node.lastMs >= WINDOW_MS) node.harvestsInWindow = 0;
-  let qty = Math.max(1, Math.floor(node.baseQty / (1 + node.harvestsInWindow)));
-  node.harvestsInWindow += 1;
-  node.lastMs = nowMs;
-  node.nextAvailableMs = nowMs + COOLDOWN_MS;
-  let wound = false;
-  if (sanityFail) { qty = Math.max(1, Math.floor(qty / 2)); wound = true; } // falha reduz, nunca bloqueia
-  return { resource: node.resource, qty, emCooldown: false, ferimento: wound };
+  return aptitudes[task];
 }

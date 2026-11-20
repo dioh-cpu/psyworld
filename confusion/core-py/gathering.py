@@ -1,35 +1,45 @@
-"""Coleta de recursos: espera de 10 min por ponto, retorno decrescente em janela de 1 h,
-ferramenta obrigatória e falha de sanidade que reduz sem bloquear (GDD v1.4/v1.5).
-Paridade com confusion/web/core.js."""
+"""Coleta automática pela fazenda: aptidões de trabalho com nível 1 a 10 (velocidade e bônus).
+Sem penalidade de coleta. Paridade com confusion/web/core.js."""
 from dataclasses import dataclass
 
-COOLDOWN_MIN = 10   # minutos de espera por ponto
-WINDOW_MIN = 60     # janela para o retorno decrescente
+WORK_LEVEL_MAX = 10
+XP_PER_WORK_LEVEL = 3
+BASE_TASKS_PER_DAY = 3
 
-@dataclass
-class Node:
-    resource: str
-    required_tool: str
-    base_qty: int
-    next_available_min: int = 0
-    last_minute: int = None
-    harvests_in_window: int = 0
+# Tarefas de coleta: cortar (madeira), minerar (pedra e minério), garimpar (cristal).
+GATHER_TASKS = {
+    "cortar": {"resource": "madeira", "base": 2, "extra": {}},
+    "minerar": {"resource": "pedra", "base": 2, "extra": {"minerio": 1}},
+    "garimpar": {"resource": "cristal", "base": 1, "extra": {}},
+}
 
-def harvest(node: Node, tool: str, now_minute: int, sanity_fail: bool, health: int = 100) -> dict:
-    if tool != node.required_tool:
-        raise ValueError(f"precisa de {node.required_tool}")
-    if now_minute < node.next_available_min:
-        return {"resource": node.resource, "qty": 0, "emCooldown": True,
-                "restanteMin": node.next_available_min - now_minute, "ferimento": False, "vida": health}
-    if node.last_minute is None or now_minute - node.last_minute >= WINDOW_MIN:
-        node.harvests_in_window = 0
-    qty = max(1, node.base_qty // (1 + node.harvests_in_window))
-    node.harvests_in_window += 1
-    node.last_minute = now_minute
-    node.next_available_min = now_minute + COOLDOWN_MIN
-    wound = False
-    if sanity_fail:
-        qty = max(1, qty // 2)   # falha reduz, nunca bloqueia
-        wound = True
-        health = max(0, health - 5)
-    return {"resource": node.resource, "qty": qty, "emCooldown": False, "ferimento": wound, "vida": health}
+def _clamp(v, lo, hi):
+    return max(lo, min(hi, v))
+
+def work_speed(level: int) -> float:
+    return 1 + 0.1 * (_clamp(level, 1, WORK_LEVEL_MAX) - 1)
+
+def work_bonus(level: int) -> float:
+    return 1 + 0.05 * (_clamp(level, 1, WORK_LEVEL_MAX) - 1)
+
+def tasks_per_day(level: int) -> int:
+    return max(1, round(BASE_TASKS_PER_DAY * work_speed(level)))
+
+def gather_day(task: str, level: int) -> dict:
+    g = GATHER_TASKS.get(task)
+    if not g:
+        return {}
+    n = tasks_per_day(level)
+    out = {g["resource"]: int(g["base"] * work_bonus(level) * n)}
+    for r, q in g["extra"].items():
+        out[r] = int(q * work_bonus(level) * n)
+    return out
+
+def add_work_xp(aptitudes: dict, xp: dict, task: str, tasks: int = 1) -> int:
+    level = aptitudes.get(task, 1)
+    xp[task] = xp.get(task, 0) + tasks
+    while xp[task] >= XP_PER_WORK_LEVEL * level and aptitudes.get(task, 0) < WORK_LEVEL_MAX:
+        xp[task] -= XP_PER_WORK_LEVEL * level
+        aptitudes[task] = aptitudes.get(task, 0) + 1
+        level = aptitudes[task]
+    return aptitudes.get(task, 0)

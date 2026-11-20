@@ -2,7 +2,7 @@
 import * as C from './core.js';
 import * as A from './account.js';
 
-const KEY = 'confusion-waves-piloto-v2';
+const KEY = 'confusion-waves-piloto-v3';
 let recovery = false;      // true quando o link de recuperação de senha foi aberto
 let pushTimer = null;
 let notice = '';           // mensagem curta da área de conta
@@ -18,12 +18,17 @@ const SOURCE_LABEL = {
   trauma: 'Sofrer trauma', magia_mental: 'Magia mental proibida', crueldade: 'Crueldade deliberada', ritual: 'Ritual de corrupção',
 };
 
-const APT = { Noctarn: ['minerar', 'transportar'], Ignavor: ['plantar', 'colher', 'transportar'], Vaelith: ['colher', 'fabricar'] };
+// Aptidões de trabalho com nível (1 a 10). Coleta exige a aptidão correspondente.
+const APT = {
+  Noctarn: { minerar: 4, garimpar: 2 },
+  Ignavor: { plantar: 3, colher: 2, cortar: 3, transportar: 2 },
+  Vaelith: { colher: 2, fabricar: 2, garimpar: 3 },
+};
 const ART = { Noctarn: 'assets/monsters/noctarn/sprite-front.png' };
 const monster = (id, species, star, level, xp, purity) => ({
   id, species, star, level, xp, purity, vinculo: 0,
   abilities: ABILITIES[species].slice(0, 4), extraAbility: null, hybrid: false, abilityLevels: {},
-  aptitudes: APT[species] || [],
+  aptitudes: { ...(APT[species] || {}) }, aptitudeXp: {},
 });
 
 function newState() {
@@ -41,12 +46,6 @@ function newState() {
     charcoal: 2, pot: 'comum', rescue: null, battleOver: false, log: [],
     farm: { mapping: {}, unassigned: [] },
     resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0 },
-    tools: { machado: 1, picareta: 1 },
-    nodes: [
-      { id: 'arvore', label: 'Árvore', resource: 'madeira', requiredTool: 'machado', baseQty: 4, nextAvailableMs: 0, lastMs: null, harvestsInWindow: 0 },
-      { id: 'rocha', label: 'Rocha', resource: 'pedra', requiredTool: 'picareta', baseQty: 4, nextAvailableMs: 0, lastMs: null, harvestsInWindow: 0 },
-      { id: 'veio', label: 'Veio de cristal', resource: 'cristal', requiredTool: 'picareta', baseQty: 2, nextAvailableMs: 0, lastMs: null, harvestsInWindow: 0 },
-    ],
   };
 }
 
@@ -182,7 +181,7 @@ function render() {
         <b>${esc(m.species)}</b> ★${m.star} · nível ${m.level}
         <div class="muted">XP ${m.xp} · vínculo ${m.vinculo} · pureza ${m.purity}${m.mutated ? ' · mutação' : ''}</div>
         <div class="muted">${m.hybrid ? `híbrido · ${C.activeSlots(m)} ativas` : `${C.activeSlots(m)} ativas`}: ${esc(C.activeAbilities(m).join(', '))}</div>
-        <div class="muted">aptidões: ${esc(m.aptitudes.join(', ') || 'nenhuma')}</div>
+        <div class="muted">aptidões: ${esc(Object.entries(m.aptitudes).map(([k, v]) => `${k} ${v}`).join(' · ') || 'nenhuma')}</div>
       </div>`).join('') || '<p class="muted">Nenhum monstrinho.</p>'}
     </div>
   </section>
@@ -199,13 +198,15 @@ function render() {
   </section>
 
   <section>
-    <h2>10. Coleta</h2>
-    <p class="muted">Ferramentas: machado ${S.tools.machado}, picareta ${S.tools.picareta}. Cada ponto espera 10 minutos entre coletas. Explorar de novo dentro de 1 hora rende menos.</p>
-    <div class="row">${S.nodes.map((n) => {
-      const left = Math.max(0, (n.nextAvailableMs || 0) - Date.now());
-      const txt = left > 0 ? `recarregando: ${Math.ceil(left / 60000)} min` : `${n.requiredTool}`;
-      return `<button data-act="harvest" data-node="${n.id}" ${left > 0 ? 'disabled' : ''}>Coletar em ${n.label.toLowerCase()} (${txt})</button>`;
-    }).join('')}</div>
+    <h2>10. Coleta automática (fazenda)</h2>
+    <p class="muted">Não tem clique: os monstrinhos coletam ao avançar o dia, se tiverem a aptidão. Nível alto dá mais velocidade e bônus. Sem penalidade.</p>
+    <ul class="log">
+      ${C.GATHER_TASKS ? Object.keys(C.GATHER_TASKS).map((t) => {
+        const id = S.farm.mapping[t];
+        const m = S.monsters.find((x) => x.id === id);
+        return `<li>${esc(t)} → ${esc(C.GATHER_TASKS[t].resource)}: ${m ? `${esc(m.species)} (nível ${m.aptitudes[t]})` : 'sem monstrinho com essa aptidão'}</li>`;
+      }).join('') : ''}
+    </ul>
     <p class="muted">Recursos: ${Object.entries(S.resources).map(([k, v]) => `${k} ${v}`).join(' · ')}</p>
   </section>
 
@@ -311,10 +312,16 @@ function act(name, el) {
     case 'day': {
       S.day += 1;
       for (const task of Object.keys(S.farm.mapping)) {
-        for (const [res, qty] of Object.entries(C.PRODUCE[task])) {
+        const m = S.monsters.find((x) => x.id === S.farm.mapping[task]);
+        if (!m) continue;
+        const prod = C.GATHER_TASKS[task] ? C.gatherDay(task, m.aptitudes[task]) : (C.PRODUCE[task] || {});
+        for (const [res, qty] of Object.entries(prod)) {
           if (res === 'carvao') S.charcoal += qty; // carvão da fazenda vai para a cozinha
           else S.resources[res] = (S.resources[res] || 0) + qty;
         }
+        // trabalho dá XP de aptidão: cada tarefa do dia conta
+        const n = C.GATHER_TASKS[task] ? C.tasksPerDay(m.aptitudes[task]) : 1;
+        C.addWorkXp(m.aptitudes, m.aptitudeXp, task, n);
       }
       if (Object.keys(S.farm.mapping).length) note('a fazenda produziu enquanto você descansou.');
       if (S.day === 4) note('o vilão derruba a ponte. A rota comercial fecha.');
@@ -407,20 +414,10 @@ function act(name, el) {
       break;
     }
     case 'assign': {
-      const workers = S.monsters.map((m) => ({ id: m.id, level: m.level, aptitudes: m.aptitudes }));
-      const tasks = ['plantar', 'colher', 'minerar', 'transportar', 'cozinhar', 'fabricar'];
+      const workers = S.monsters.map((m) => ({ id: m.id, aptitudes: m.aptitudes }));
+      const tasks = ['plantar', 'colher', 'cortar', 'minerar', 'garimpar', 'transportar', 'cozinhar', 'fabricar'];
       S.farm = C.assignTasks(tasks, workers);
       note(`tarefas da fazenda designadas. Sem monstrinho: ${S.farm.unassigned.join(', ') || 'nenhuma'}.`);
-      break;
-    }
-    case 'harvest': {
-      const node = S.nodes.find((n) => n.id === el.dataset.node);
-      if (!node) return;
-      const fail = Math.random() < band.fail;
-      const r = C.harvest(node, node.requiredTool, Date.now(), fail);
-      if (r.emCooldown) { note(`${node.label.toLowerCase()} ainda está recarregando (${Math.ceil(r.restanteMs / 60000)} min).`); break; }
-      S.resources[r.resource] = (S.resources[r.resource] || 0) + r.qty;
-      note(`coletou ${r.qty}x ${r.resource} em ${node.label.toLowerCase()}${r.ferimento ? ' (ferimento leve, quantidade reduzida)' : ''}.`);
       break;
     }
     case 'reset': {
@@ -433,11 +430,6 @@ function act(name, el) {
   save();
   render();
 }
-
-// atualiza a contagem de recarga das coletas a cada 15 s
-setInterval(() => {
-  if (S.nodes.some((n) => (n.nextAvailableMs || 0) > Date.now())) render();
-}, 15000);
 
 A.onChange(onAccountEvent);
 A.init().then(() => render());

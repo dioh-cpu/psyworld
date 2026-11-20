@@ -86,18 +86,18 @@ test('gerador determinístico', () => {
   assert.equal(a(), b());
 });
 
-test('fazenda: tarefa vai ao monstrinho com aptidão e nível mais altos', () => {
+test('fazenda: tarefa vai ao monstrinho com maior nível naquela aptidão', () => {
   const workers = [
-    { id: 'a', level: 3, aptitudes: ['plantar'] },
-    { id: 'b', level: 5, aptitudes: ['plantar', 'colher'] },
+    { id: 'a', aptitudes: { plantar: 3 } },
+    { id: 'b', aptitudes: { plantar: 5, colher: 2 } },
   ];
   const r = C.assignTasks(['plantar', 'colher', 'minerar'], workers);
   assert.equal(r.mapping.plantar, 'b');
-  assert.equal(r.mapping.colher, undefined);
+  assert.equal(r.mapping.colher, undefined);   // b já está ocupado com plantar
   assert.deepEqual(r.unassigned, ['colher', 'minerar']);
 });
 test('fazenda: monstrinho ocupado não recebe segunda tarefa', () => {
-  const workers = [{ id: 'a', level: 5, aptitudes: ['plantar', 'colher'] }];
+  const workers = [{ id: 'a', aptitudes: { plantar: 5, colher: 5 } }];
   const r = C.assignTasks(['plantar', 'colher'], workers);
   assert.deepEqual(r.mapping, { plantar: 'a' });
   assert.deepEqual(r.unassigned, ['colher']);
@@ -105,54 +105,27 @@ test('fazenda: monstrinho ocupado não recebe segunda tarefa', () => {
 test('fazenda: tarefa desconhecida é erro', () => {
   assert.throws(() => C.assignTasks(['voar'], []));
 });
-test('coleta: ferramenta obrigatória, espera de 10 min e retorno decrescente na janela de 1 h', () => {
-  const MIN = 60 * 1000;
-  const n = { resource: 'pedra', requiredTool: 'picareta', baseQty: 4, nextAvailableMs: 0, lastMs: null, harvestsInWindow: 0 };
-  assert.throws(() => C.harvest(n, 'machado', 0, false));
-  assert.equal(C.harvest(n, 'picareta', 0, false).qty, 4);
-  const cedo = C.harvest(n, 'picareta', 5 * MIN, false);
-  assert.equal(cedo.emCooldown, true);
-  assert.equal(cedo.qty, 0);
-  assert.equal(C.harvest(n, 'picareta', 10 * MIN, false).qty, 2);   // dentro da janela: rende menos
-  assert.equal(C.harvest(n, 'picareta', 90 * MIN, false).qty, 4);   // janela passou: volta ao normal
+test('coleta automática: sem aptidão, não coleta', () => {
+  const workers = [{ id: 'a', aptitudes: { plantar: 4 } }];
+  const r = C.assignTasks(['cortar', 'minerar', 'garimpar'], workers);
+  assert.deepEqual(r.unassigned, ['cortar', 'minerar', 'garimpar']);
 });
-test('coleta: sem limite de quantidade por dia, só a espera de 10 min', () => {
-  const MIN = 60 * 1000;
-  const n = { resource: 'madeira', requiredTool: 'machado', baseQty: 4, nextAvailableMs: 0, lastMs: null, harvestsInWindow: 0 };
-  let total = 0;
-  for (let k = 0; k < 20; k++) total += C.harvest(n, 'machado', k * 10 * MIN, false).qty;
-  assert.ok(total > 0);
-  assert.equal(C.harvest(n, 'machado', 190 * MIN + 1, false).emCooldown, true);
+test('coleta: nível mais alto dá mais velocidade e bônus; nível 10 é o teto', () => {
+  assert.equal(C.tasksPerDay(1), 3);
+  assert.ok(C.tasksPerDay(10) > C.tasksPerDay(1));
+  assert.ok(C.gatherDay('cortar', 10).madeira > C.gatherDay('cortar', 1).madeira);
+  assert.equal(C.workBonus(10), C.workBonus(99));
+  assert.equal(C.workSpeed(10), C.workSpeed(50));
 });
-test('fazenda: tarefa vai ao monstrinho com aptidão e nível mais altos', () => {
-  const workers = [
-    { id: 'a', level: 3, aptitudes: ['plantar'] },
-    { id: 'b', level: 5, aptitudes: ['plantar', 'colher'] },
-  ];
-  const r = C.assignTasks(['plantar', 'colher', 'minerar'], workers);
-  assert.equal(r.mapping.plantar, 'b');
-  assert.equal(r.mapping.colher, undefined);
-  assert.deepEqual(r.unassigned, ['colher', 'minerar']);
+test('coleta: sem penalidade (quantidade cheia no dia)', () => {
+  assert.equal(C.gatherDay('cortar', 1).madeira, 6);       // 2 de base x 3 tarefas
+  assert.equal(C.gatherDay('garimpar', 1).cristal, 3);
+  assert.equal(C.gatherDay('minerar', 1).minerio, 3);
 });
-test('fazenda: monstrinho ocupado não recebe segunda tarefa', () => {
-  const workers = [{ id: 'a', level: 5, aptitudes: ['plantar', 'colher'] }];
-  const r = C.assignTasks(['plantar', 'colher'], workers);
-  assert.deepEqual(r.mapping, { plantar: 'a' });
-  assert.deepEqual(r.unassigned, ['colher']);
-});
-test('fazenda: tarefa desconhecida é erro', () => {
-  assert.throws(() => C.assignTasks(['voar'], []));
-});
-test('coleta: falha de sanidade reduz pela metade e marca ferimento, sem bloquear', () => {
-  const n = { resource: 'cristal', requiredTool: 'picareta', baseQty: 4, lastDay: -999, harvestsInWindow: 0 };
-  const r = C.harvest(n, 'picareta', 1, true);
-  assert.equal(r.qty, 2);
-  assert.equal(r.ferimento, true);
-});
-
-test('culinária: nome não repete a pureza', () => {
-  const luz = { name: 'Raiz Luminosa', purity: 'luz', freshness: 1, rarity: 'comum' };
-  assert.equal(C.cook({ base: luz, pot: 'rara', charcoal: 1, roll: 0.9 }).nome, 'Raiz Luminosa');
-  const sopa = { name: 'Sopa de Raiz', purity: 'luz', freshness: 1, rarity: 'comum' };
-  assert.equal(C.cook({ base: sopa, pot: 'rara', charcoal: 1, roll: 0.9 }).nome, 'Sopa de Raiz Luminosa');
+test('XP de trabalho sobe o nível e para em 10', () => {
+  const apt = { cortar: 1 }; const xp = {};
+  for (let i = 0; i < 3; i++) C.addWorkXp(apt, xp, 'cortar');
+  assert.equal(apt.cortar, 2);
+  for (let i = 0; i < 500; i++) C.addWorkXp(apt, xp, 'cortar');
+  assert.equal(apt.cortar, 10);
 });

@@ -1,28 +1,26 @@
-"""Fazenda operada por monstrinhos por aptidão (decisão v1.9 decisão 19)."""
+"""Fazenda por aptidão: cada tarefa vai ao monstrinho livre com o maior nível naquela aptidão."""
 from dataclasses import dataclass, field
-from typing import Set
+from typing import Dict
 
-APTITUDES = {"plantar", "colher", "minerar", "transportar", "cozinhar", "fabricar"}
+APTITUDES = {"plantar", "colher", "minerar", "cortar", "garimpar", "transportar", "cozinhar", "fabricar"}
 
 @dataclass
 class Worker:
     monster_id: str
-    level: int
-    aptitudes: Set[str] = field(default_factory=set)
+    aptitudes: Dict[str, int] = field(default_factory=dict)  # tarefa -> nível (1 a 10)
     busy: bool = False
 
 def assign(tasks, workers):
-    """Cada tarefa vai ao monstrinho livre com a aptidão e o nível mais altos. Sobras ficam sem tarefa."""
     for t in tasks:
         if t not in APTITUDES:
             raise ValueError(f"tarefa desconhecida: {t}")
     mapping, unassigned = {}, []
     for t in tasks:
-        candidates = [w for w in workers if not w.busy and t in w.aptitudes]
-        if not candidates:
+        cands = [w for w in workers if not w.busy and w.aptitudes.get(t, 0) > 0]
+        if not cands:
             unassigned.append(t)
             continue
-        best = max(candidates, key=lambda w: (w.level, w.monster_id))
+        best = max(cands, key=lambda w: (w.aptitudes[t], -ord(w.monster_id[0])))
         best.busy = True
         mapping[t] = best.monster_id
     return mapping, unassigned

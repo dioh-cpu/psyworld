@@ -193,13 +193,16 @@ class TestVinculo(unittest.TestCase):
         m.vinculo=70; self.assertEqual(vinculo.try_evolve(m),"Ignavor II (provisório)")
 
 class TestFarm(unittest.TestCase):
-    def test_assign_by_aptitude_and_level(self):
-        ws=[farm.Worker("A",3,{"plantar"}),farm.Worker("B",5,{"plantar","colher"})]
+    def test_assign_by_aptitude_level(self):
+        ws=[farm.Worker("A",{"plantar":3}),farm.Worker("B",{"plantar":5,"colher":2})]
         m,u=farm.assign(["plantar","colher","minerar"],ws)
         self.assertEqual(m["plantar"],"B")
-        self.assertIn("minerar",u)
+        self.assertIn("colher",u); self.assertIn("minerar",u)
     def test_unknown_task(self):
         with self.assertRaises(ValueError): farm.assign(["voar"],[])
+    def test_no_aptitude_no_work(self):
+        m,u=farm.assign(["cortar"],[farm.Worker("A",{"plantar":4})])
+        self.assertEqual(u,["cortar"])
 
 class TestClock(unittest.TestCase):
     def test_brasilia_phase(self):
@@ -229,24 +232,20 @@ class TestCollection(unittest.TestCase):
         self.assertEqual(col.progress("norte"),(2,2))
 
 class TestGathering(unittest.TestCase):
-    def test_tool_required(self):
-        n=gathering.Node("madeira","machado",4)
-        with self.assertRaises(ValueError): gathering.harvest(n,"picareta",0,False)
-    def test_cooldown_then_diminishing_then_window_reset(self):
-        n=gathering.Node("pedra","picareta",4)
-        self.assertEqual(gathering.harvest(n,"picareta",0,False)["qty"],4)
-        cedo=gathering.harvest(n,"picareta",5,False)
-        self.assertTrue(cedo["emCooldown"]); self.assertEqual(cedo["qty"],0)
-        self.assertEqual(gathering.harvest(n,"picareta",10,False)["qty"],2)   # dentro da janela
-        self.assertEqual(gathering.harvest(n,"picareta",300,False)["qty"],4)  # janela passou
-    def test_no_daily_cap(self):
-        n=gathering.Node("madeira","machado",4)
-        total=sum(gathering.harvest(n,"machado",k*10,False)["qty"] for k in range(20))
-        self.assertGreater(total,0)
-    def test_sanity_fail_reduces_not_blocks(self):
-        n=gathering.Node("cristal","picareta",4)
-        r=gathering.harvest(n,"picareta",0,True)
-        self.assertEqual(r["qty"],2); self.assertTrue(r["ferimento"]); self.assertEqual(r["vida"],95)
+    def test_no_penalty_full_quantity(self):
+        self.assertEqual(gathering.gather_day("cortar",1)["madeira"],6)     # 2 x 3 tarefas
+        self.assertEqual(gathering.gather_day("garimpar",1)["cristal"],3)
+        self.assertEqual(gathering.gather_day("minerar",1)["minerio"],3)
+    def test_level_increases_speed_and_bonus(self):
+        self.assertLess(gathering.tasks_per_day(1), gathering.tasks_per_day(10))
+        self.assertGreater(gathering.gather_day("cortar",10)["madeira"], gathering.gather_day("cortar",1)["madeira"])
+        self.assertEqual(gathering.work_bonus(10), gathering.work_bonus(99))
+    def test_work_xp_levels_up_to_ten(self):
+        apt={"cortar":1}; xp={}
+        for _ in range(3): gathering.add_work_xp(apt,xp,"cortar")
+        self.assertEqual(apt["cortar"],2)
+        for _ in range(500): gathering.add_work_xp(apt,xp,"cortar")
+        self.assertEqual(apt["cortar"],10)
 
 class TestSpeedrun(unittest.TestCase):
     def test_only_first_completion_counts(self):
