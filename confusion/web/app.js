@@ -1,7 +1,11 @@
 // Piloto jogável de Confusion Waves: fatia vertical dos sistemas do núcleo.
 import * as C from './core.js';
+import * as A from './account.js';
 
 const KEY = 'confusion-waves-piloto-v2';
+let recovery = false;      // true quando o link de recuperação de senha foi aberto
+let pushTimer = null;
+let notice = '';           // mensagem curta da área de conta
 const ABILITIES = {
   Noctarn: ['Mordida Umbral', 'Garra de Sombra', 'Chama Violeta', 'Uivo Sinistro', 'Véu Noturno'],
   Ignavor: ['Golpe Couraçado', 'Brasa Imperial', 'Juba Flamejante', 'Rugido Dourado', 'Escudo de Ferro'],
@@ -24,6 +28,7 @@ const monster = (id, species, star, level, xp, purity) => ({
 
 function newState() {
   return {
+    game: 'confusion-waves', cloudVersion: 0,
     day: 1, role: null, switched: false, sanity: 70, uses: {},
     egg: { id: 'ovo-1', species: 'Ignavor', result: null },
     monsters: [monster('m1', 'Noctarn', 3, 5, 40, 'trevas'), monster('m2', 'Ignavor', 2, 5, 10, 'luz'), monster('m3', 'Vaelith', 2, 5, 5, 'luz')],
@@ -51,7 +56,24 @@ function load() {
   try { return JSON.parse(localStorage.getItem(KEY)); } catch (_) { return null; }
 }
 function save() {
+  S.game = 'confusion-waves'; // saves antigos não têm o campo; o servidor exige
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) { /* navegador sem armazenamento: segue sem salvar */ }
+  if (A.isEnabled() && A.email()) {
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => cloudPush(), 1500);
+  }
+}
+async function cloudPush() {
+  try {
+    const res = await A.push(S, S.cloudVersion);
+    S.cloudVersion = res.version;
+    notice = `Salvo na nuvem (versão ${res.version}).`;
+  } catch (e) {
+    notice = e.status === 409
+      ? 'Outro aparelho salvou depois. Carregue da nuvem para continuar; nada foi sobrescrito.'
+      : 'Não consegui salvar na nuvem agora. O progresso continua neste navegador.';
+  }
+  render();
 }
 function note(text) {
   S.log.unshift(`Dia ${S.day}: ${text}`);
@@ -71,6 +93,11 @@ function render() {
     <div class="status">Dia <b>${S.day}</b> · Ponte <b class="${bridge}">${bridge}</b> · Caminho <b>${S.role ? (S.role === 'heroi' ? 'herói' : 'vilão') : 'não escolhido'}</b> · Traje <b>${costume}</b></div>
     <button data-act="reset" class="ghost">Reiniciar piloto</button>
   </header>
+
+  <section>
+    <h2>Conta</h2>
+    ${accountHtml()}
+  </section>
 
   <section>
     <h2>1. Caminho</h2>
@@ -184,7 +211,84 @@ function render() {
   </section>`;
 }
 
+function accountHtml() {
+  if (!A.isEnabled()) {
+    return '<p class="muted">Conta indisponível: o servidor não está configurado. O progresso fica só neste navegador.</p>';
+  }
+  if (recovery) {
+    return `<p>Defina uma nova senha.</p>
+      <label>Nova senha <input id="acc-newpass" type="password" autocomplete="new-password"></label>
+      <button data-act="setpass">Salvar nova senha</button>`;
+  }
+  if (!A.email()) {
+    return `<div class="row">
+        <label>E-mail <input id="acc-email" type="email" autocomplete="username"></label>
+        <label>Senha <input id="acc-pass" type="password" autocomplete="current-password"></label>
+      </div>
+      <button data-act="login">Entrar</button>
+      <button data-act="register">Criar conta</button>
+      <button data-act="forgot">Esqueci a senha</button>
+      <p class="muted">${esc(notice)}</p>`;
+  }
+  return `<p>Conectado como <b>${esc(A.email())}</b>.</p>
+    <button data-act="pull">Carregar da nuvem</button>
+    <button data-act="push">Salvar agora</button>
+    <button data-act="logout">Sair</button>
+    <p class="muted">${esc(notice)}</p>`;
+}
+
+async function onAccountEvent(event) {
+  if (event === 'PASSWORD_RECOVERY') recovery = true;
+  if (event === 'SIGNED_IN' && !recovery) {
+    try {
+      const cloud = await A.pull();
+      if (cloud.save) {
+        if (window.confirm('Há um save na nuvem. Carregar substitui o progresso deste navegador. Confirmar?')) {
+          S = cloud.save;
+          S.cloudVersion = cloud.version;
+          notice = 'Save da nuvem carregado.';
+          save();
+        } else {
+          notice = 'Save da nuvem não carregado.';
+        }
+      } else {
+        S.cloudVersion = 0;
+        await cloudPush();
+      }
+    } catch (_) {
+      notice = 'Não consegui consultar a nuvem agora.';
+    }
+  }
+  render();
+}
+
+async function accountAct(name) {
+  const email = $('acc-email')?.value.trim() || '';
+  const pass = $('acc-pass')?.value || '';
+  try {
+    if (name === 'login') { await A.signIn(email, pass); notice = 'Entrou.'; }
+    if (name === 'register') { await A.signUp(email, pass); notice = 'Conta criada. Confirme o e-mail se o servidor pedir e depois entre.'; }
+    if (name === 'forgot') { await A.resetPassword(email); notice = 'Se o e-mail existir, você recebe um link para criar nova senha.'; }
+    if (name === 'logout') { await A.signOut(); notice = 'Saiu da conta. O progresso local continua neste navegador.'; }
+    if (name === 'pull') {
+      const cloud = await A.pull();
+      if (!cloud.save) notice = 'Não há save na nuvem.';
+      else { S = cloud.save; S.cloudVersion = cloud.version; notice = 'Save da nuvem carregado.'; save(); }
+    }
+    if (name === 'push') await cloudPush();
+    if (name === 'setpass') {
+      await A.setNewPassword($('acc-newpass')?.value || '');
+      recovery = false;
+      notice = 'Senha trocada.';
+    }
+  } catch (e) {
+    notice = name === 'login' ? 'E-mail ou senha não conferem.' : `Não deu certo: ${e.message}`;
+  }
+  render();
+}
+
 function act(name, el) {
+  if (['login', 'register', 'forgot', 'logout', 'pull', 'push', 'setpass'].includes(name)) return accountAct(name);
   const band = C.sanityBand(S.sanity);
   switch (name) {
     case 'path': {
@@ -324,6 +428,9 @@ function act(name, el) {
   save();
   render();
 }
+
+A.onChange(onAccountEvent);
+A.init().then(() => render());
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
