@@ -60,33 +60,44 @@ class Defeat(unittest.TestCase):
         self.assertEqual(m.xp, 0); self.assertEqual(bot,2)
 
 class Fuse(unittest.TestCase):
-    def test_failure_loses_only_ingredient(self):
-        p=Monster("Ignavor",3,level=20); i=Monster("Umbrax",2,level=5)
+    def test_failure_keeps_ingredient_and_counts_use(self):
+        p=Monster("Ignavor",3,level=20); i=Monster("Umbrax",3,level=5)
         r=breed(p,i,rolled=0.9,chance=0.6,keep_new=True,pick="Sombra")
-        self.assertFalse(r["ok"]); self.assertEqual(r["principal"].species,"Ignavor"); self.assertEqual(r["lost"],"Umbrax")
-    def test_success_keeps_species_and_level(self):
-        p=Monster("Ignavor",3,level=20); i=Monster("Umbrax",2,level=5)
+        self.assertFalse(r["ok"]); self.assertIs(r["principal"],p); self.assertEqual(i.ingredient_uses,1)
+
+    def test_success_keeps_species_level_and_parent_tier(self):
+        p=Monster("Ignavor",3,level=20); i=Monster("Umbrax",3,level=5)
         r=breed(p,i,rolled=0.1,chance=0.6,keep_new=True,pick="Sombra")
         self.assertTrue(r["ok"]); self.assertEqual(p.species,"Ignavor"); self.assertEqual(p.level,20); self.assertTrue(p.hybrid)
+        self.assertEqual(p.tier,3)
+        self.assertEqual(i.ingredient_uses,1)
 
-if __name__=="__main__":
-    unittest.main(verbosity=1)
+class BreedRules(unittest.TestCase):
+    def test_precisa_do_mesmo_tier_e_de_usos_disponiveis(self):
+        p=Monster("Ignavor",4); self.assertIsNone(ingredient_status(p,Monster("Umbrax",4)))
+        self.assertIsNotNone(ingredient_status(p,Monster("Umbrax",3)))
+        self.assertIsNotNone(ingredient_status(p,p))
+        usado=Monster("Umbrax",4,ingredient_uses=3)
+        self.assertIsNotNone(ingredient_status(p,usado))
 
+    def test_ingrediente_serve_ate_tres_vezes_e_depois_nao_breeda(self):
+        p=Monster("Ignavor",3); i=Monster("Umbrax",3)
+        for _ in range(3):
+            breed(p,i,rolled=0.9,chance=0.6,keep_new=True,pick="Sombra")
+        self.assertEqual(i.ingredient_uses,3)
+        r=breed(p,i,rolled=0.9,chance=0.6,keep_new=True,pick="Sombra")
+        self.assertFalse(r["ok"]); self.assertEqual(i.ingredient_uses,3)
+
+    def test_ovo_pode_vir_com_tier_acima_do_pai(self):
+        self.assertEqual(breed_egg_tier(4,0.01),6)
+        self.assertEqual(breed_egg_tier(4,0.20),5)
+        self.assertEqual(breed_egg_tier(4,0.90),4)
+        self.assertEqual(breed_egg_tier(10,0.01),10)
 
 class BreedTier(unittest.TestCase):
-    def test_tier_sobe_no_sucesso_e_respeita_teto(self):
-        p=Monster("Ignavor",3); i=Monster("Umbrax",2)
-        breed(p,i,rolled=0.1,chance=0.6,keep_new=True,pick="Sombra")
-        self.assertEqual(p.tier,4)
-        top=Monster("Ignavor",10)
-        breed(top,i,rolled=0.1,chance=0.6,keep_new=True,pick="Sombra")
-        self.assertEqual(top.tier,10)
-
-    def test_tier_falha_nao_sobe(self):
-        p=Monster("Ignavor",3); i=Monster("Umbrax",2)
-        breed(p,i,rolled=0.9,chance=0.6,keep_new=True,pick="Sombra")
-        self.assertEqual(p.tier,3)
-
     def test_tier_acima_de_5_tem_chance_menor_com_piso(self):
         self.assertLess(breed_success_chance(6,0,0), breed_success_chance(5,0,0))
         self.assertGreaterEqual(breed_success_chance(10,0,0), 0.20)
+
+if __name__=="__main__":
+    unittest.main(verbosity=1)

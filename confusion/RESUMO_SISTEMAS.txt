@@ -32,7 +32,7 @@ ARQUIVOS
 - speedrun.py       Corrida assíncrona V1: tempo e fantasma; só a primeira conclusão de cada campanha conta; ranking mensal ordenado.
 
 IMPLEMENTADO POR DECISÃO (GDD v1.9)
-- Chance de breed: base pelo tier do principal (tier 1 = 80% até tier 5 = 40%; tier 6 a 10 caem, piso de 20%), −5 pontos por breed bem-sucedido do mesmo principal (piso de 20%), +5 por falha acumulada (teto de +25), minérios (teto de +30), mutação (teto de +50). Sucesso: principal sobe 1 tier (até 10), aptidões +1 e sai um ovo.
+- Chance de breed: base pelo tier do principal (tier 1 = 80% até tier 5 = 40%; tier 6 a 10 caem, piso de 20%), −5 pontos por breed bem-sucedido do mesmo principal (piso de 20%), +5 por falha acumulada (teto de +25), minérios (teto de +30), mutação (teto de +50). Sucesso: principal ganha aptidões +1 e sai um ovo, cujo tier é o do pai com chance de vir acima (+1 em 35%, +2 em 5%). O ingrediente precisa ser do mesmo tier e serve até 3 vezes; nunca some.
 - Híbrido: 5 habilidades ativas (4 + 1 absorvida) e até 2 passivas. Comum: 4 ativas.
 - Habilidades iguais sobem até o nível 5, com +10% de eficiência por nível.
 - Substituição da habilidade extra: o jogador escolhe manter ou trocar.
@@ -70,6 +70,6 @@ PENDÊNCIAS QUE DEPENDEM DE PESSOAS FORA DO DESIGN
 - Confirmação do nome da protagonista feminina (provisório: Ceres).
 
 DECISÕES DO GDD AINDA NÃO CONFIRMADAS PELO AUTOR
-- Nível e atributos do principal após o breed (assumido: mantidos; tier e aptidões sobem com sucesso, ver GDD v1.16).
+- Nível e tier do principal após o breed: mantidos. Só as aptidões sobem com sucesso; quem sobe de tier é o ovo (GDD v1.22).
 - Limite de habilidades por híbrido além das contagens (assumido: 5 ativas, 2 passivas).
 - Papel exato da versão base do Azazel: confirmado como aparência da escolha do caminho.

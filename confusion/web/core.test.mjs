@@ -139,15 +139,35 @@ test('raridade: 1 a 5 com nomes da culinária; empurrão nunca passa de 5', () =
   assert.equal(C.rollRarity(0, 1), 2);
   assert.equal(C.rollRarity(0.999, 1), 5);
 });
-test('breed bem-sucedido: tier +1 (teto 10) e aptidões +1 (teto 10)', () => {
+test('breed bem-sucedido: aptidões +1 (teto 10); o tier do pai não muda', () => {
   const m = { tier: 3, aptitudes: { cortar: 3, minerar: 10 } };
   C.breedSuccessEffects(m);
-  assert.equal(m.tier, 4);
+  assert.equal(m.tier, 3);
   assert.equal(m.aptitudes.cortar, 4);
   assert.equal(m.aptitudes.minerar, 10);
-  const top = { tier: 10, aptitudes: {} };
-  C.breedSuccessEffects(top);
-  assert.equal(top.tier, 10);
+});
+test('breed: exige mesmo tier, outro monstrinho e ingrediente com usos disponíveis', () => {
+  const pai = { id: 'a', tier: 4, usosIngrediente: 0 };
+  assert.equal(C.ingredientStatus(pai, { id: 'b', tier: 4, usosIngrediente: 0 }), null);
+  assert.ok(C.ingredientStatus(pai, { id: 'b', tier: 3, usosIngrediente: 0 }));
+  assert.ok(C.ingredientStatus(pai, { id: 'a', tier: 4, usosIngrediente: 0 }));
+  assert.ok(C.ingredientStatus(pai, { id: 'b', tier: 4, usosIngrediente: 3 }));
+  assert.equal(C.ingredientStatus(pai, { id: 'b', tier: 4, usosIngrediente: 2 }), null);
+});
+test('ovo do breed: tier do pai, com chance de vir acima; nunca passa de 10', () => {
+  assert.equal(C.breedEggTier(4, 0.01), 6);   // +2
+  assert.equal(C.breedEggTier(4, 0.20), 5);   // +1
+  assert.equal(C.breedEggTier(4, 0.90), 4);   // mesmo tier
+  assert.equal(C.breedEggTier(10, 0.01), 10);
+  const ovo = C.makeEgg('Noctarn', 'natural', 'breed', 'neutra', 5);
+  assert.equal(C.hatchEgg(ovo, 0).tier, 5);
+});
+test('habilidade já base: sobe o nível dela e não ocupa o slot extra', () => {
+  const m = { hybrid: false, abilities: ['a', 'b', 'c', 'd'], extraAbility: null, abilityLevels: {} };
+  C.absorbAbility(m, 'a', true);
+  assert.equal(m.extraAbility, null);
+  assert.equal(m.abilityLevels.a, 2);
+  assert.equal(new Set(C.activeAbilities(m)).size, 4);
 });
 test('ovo do breed: natural, mutante ou abençoado; mutante e abençoado +1 de raridade', () => {
   assert.equal(C.breedEggForm(0.05), 'mutante');

@@ -77,6 +77,7 @@ class Monster:
     purity: str = "neutra"               # luz | neutra | trevas (v1.5)
     mutated: bool = False                # eixo de mutação (v1.5)
     vinculo: int = 0                     # nível de vínculo 0..100 (v1.5)
+    ingredient_uses: int = 0             # vezes usado como ingrediente em breed (máximo 3)
 
     def active_slots(self):
         return ACTIVE_SLOTS_HYBRID if self.hybrid else ACTIVE_SLOTS_COMMON
@@ -101,11 +102,41 @@ def apply_defeat(monster: Monster, xp_loss: int, bot_strength: int):
     return bot_strength + 1  # bot persiste na campanha; zera no reinício da campanha
 
 # --- Breed: ingrediente é sempre perdido, principal permanece; sucesso sobe 1 tier (até 10) ---
+# --- Breed (GDD v1.22): ingrediente de mesmo tier, usado até 3 vezes e nunca some ---
+INGREDIENT_MAX_USES = 3
+BREED_TIER_UP_2 = 0.05   # ovo com tier +2 do pai (proposta)
+BREED_TIER_UP_1 = 0.35   # ovo com tier +1 do pai (proposta)
+
+def ingredient_status(principal: Monster, ingredient) -> Optional[str]:
+    """Motivo para o par não poder fazer breed, ou None se pode."""
+    if ingredient is None or principal is ingredient:
+        return "escolha dois monstrinhos diferentes"
+    if ingredient.tier != principal.tier:
+        return "o breed exige monstrinhos do mesmo tier"
+    if ingredient.ingredient_uses >= INGREDIENT_MAX_USES:
+        return "este ingrediente já foi usado 3 vezes"
+    return None
+
+def breed_egg_tier(parent_tier: int, rolled: float) -> int:
+    """O ovo nasce com o tier do pai, com chance de vir acima. Nunca passa de TIER_MAX."""
+    if rolled < BREED_TIER_UP_2:
+        d = 2
+    elif rolled < BREED_TIER_UP_2 + BREED_TIER_UP_1:
+        d = 1
+    else:
+        d = 0
+    return min(TIER_MAX, parent_tier + d)
+
 def breed(principal: Monster, ingredient: Monster, rolled: float, chance: float,
-          keep_new: bool, pick: str):
-    """rolled e pick vêm de fora (RNG injetado) para os testes serem determinísticos."""
+          keep_new: bool, pick: str, egg_roll: float = 0.0):
+    """rolled, pick e egg_roll vêm de fora (RNG injetado) para os testes serem determinísticos.
+    O ingrediente não some: cada breed gasta uma das suas usos. O tier do pai não muda."""
+    status = ingredient_status(principal, ingredient)
+    if status is not None:
+        return {"ok": False, "motivo": status}
+    ingredient.ingredient_uses += 1
     if rolled >= chance:
-        return {"ok": False, "principal": principal, "lost": ingredient.species}
+        return {"ok": False, "principal": principal, "ingredient": ingredient}
     principal.absorb(pick, keep_new)
-    principal.tier = min(TIER_MAX, principal.tier + 1)
-    return {"ok": True, "principal": principal, "lost": ingredient.species, "ability": pick}
+    return {"ok": True, "principal": principal, "ingredient": ingredient, "ability": pick,
+            "tier_ovo": breed_egg_tier(principal.tier, egg_roll)}

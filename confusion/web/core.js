@@ -83,6 +83,11 @@ export function abilityEfficiency(level) {
 }
 export function absorbAbility(m, ability, keepNew) {
   m.hybrid = true;
+  // Habilidade que o monstrinho já tem como base sobe o nível dela (até 5), sem ocupar o slot extra.
+  if ((m.abilities || []).slice(0, 4).includes(ability)) {
+    m.abilityLevels[ability] = Math.min(5, (m.abilityLevels[ability] || 1) + 1);
+    return m.extraAbility;
+  }
   if (m.extraAbility == null || keepNew) {
     if (m.extraAbility === ability) {
       m.abilityLevels[ability] = Math.min(5, (m.abilityLevels[ability] || 1) + 1);
@@ -233,12 +238,31 @@ export function rollRarity(roll, shift = 0) {
   return clamp(base + shift, 1, RARITY_MAX);
 }
 // Breed bem-sucedido: principal sobe 1 tier (teto 10) e 1 nível em todas as aptidões (teto 10).
+// Breed bem-sucedido: o principal ganha 1 nível em todas as aptidões (teto 10). O tier do pai NÃO muda:
+// quem sobe de tier é o ovo (ver breedEggTier).
 export function breedSuccessEffects(m) {
-  m.tier = Math.min(TIER_MAX, m.tier + 1);
   for (const k of Object.keys(m.aptitudes || {})) {
     m.aptitudes[k] = Math.min(WORK_LEVEL_MAX, m.aptitudes[k] + 1);
   }
   return m;
+}
+
+// ---- Breed (GDD v1.22): ingrediente é usado até 3 vezes e nunca some; o ovo pode vir com tier acima do pai ----
+export const INGREDIENT_MAX_USES = 3;
+// Motivo para o par não poder fazer breed, ou null se pode. Exige o mesmo tier e ingrediente com usos disponíveis.
+export function ingredientStatus(main, ing) {
+  if (!main || !ing || ing.id === main.id) return 'escolha dois monstrinhos diferentes';
+  if (ing.tier !== main.tier) return 'o breed exige monstrinhos do mesmo tier';
+  if ((ing.usosIngrediente || 0) >= INGREDIENT_MAX_USES) return 'este ingrediente já foi usado 3 vezes';
+  return null;
+}
+// Chance de o ovo sair com tier acima do pai (proposta): +2 em 5%, +1 em 35%, senão o mesmo tier.
+export const BREED_TIER_UP = { mais2: 0.05, mais1: 0.35 };
+export function breedEggTier(parentTier, roll) {
+  let d = 0;
+  if (roll < BREED_TIER_UP.mais2) d = 2;
+  else if (roll < BREED_TIER_UP.mais2 + BREED_TIER_UP.mais1) d = 1;
+  return clamp(parentTier + d, 1, TIER_MAX);
 }
 
 // ---- Ovos e invocação (GDD v1.16) ----
@@ -279,15 +303,18 @@ export const EGG_SHIFT = { natural: 0, mutante: 1, abencoada: 1, combinada: 2 };
 export const PURITY_BY_FORM = { natural: 'neutra', abencoada: 'luz', mutante: 'neutra', combinada: 'luz' };
 // Poder por variante (proposta): combinada é a mais forte, em dano, defesa e cura.
 export const VARIANT_POWER = { natural: 1, mutante: 1.3, abencoada: 1.2, combinada: 2.0 };
-export function makeEgg(species, form, origem, pureza = 'neutra') {
-  return { species, form, origem, pureza, shift: Math.max(EGG_SHIFT[form] ?? 0, origem === 'zona' ? 1 : 0) };
+export function makeEgg(species, form, origem, pureza = 'neutra', tier = null) {
+  return {
+    species, form, origem, pureza, shift: Math.max(EGG_SHIFT[form] ?? 0, origem === 'zona' ? 1 : 0),
+    ...(tier != null ? { tier } : {}),
+  };
 }
 // Ao chocar, a raridade é rolada e o tier começa igual a ela. A variante vai para o monstrinho.
 export function hatchEgg(egg, roll) {
   const rarity = rollRarity(roll, egg.shift ?? 0);
   const purity = egg.form === 'mutante' ? (egg.pureza || 'neutra') : (PURITY_BY_FORM[egg.form] ?? 'neutra');
   return {
-    species: egg.species, form: egg.form, variant: egg.form, rarity, tier: rarity,
+    species: egg.species, form: egg.form, variant: egg.form, rarity, tier: egg.tier ?? rarity,
     purity, mutated: egg.form === 'mutante' || egg.form === 'combinada',
   };
 }
