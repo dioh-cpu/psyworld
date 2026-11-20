@@ -118,8 +118,8 @@ test('encontro: sem sorte, sem encontro; nunca sorteia monstrinho de evento', ()
     assert.ok(Y.BASE_SPECIES.includes(w.species));
     assert.equal(w.exclusivo, false);
   }
-  assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.999 }).rarity, 4); // na exploração, o teto é a lendária
-  assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.9999 }).rarity, 4);
+  assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.999 }).rarity, 5); // mítica (monstrinho) sai 1% na exploração
+  assert.equal(Y.rollEncounter(Y.EPOCH_TS, 10, { r1: 0, r2: 0.9, r3: 0.99, r4: 0.98 }).rarity, 4);
 });
 
 test('captura: esfera melhor que o monstrinho aumenta a chance; limites respeitados', () => {

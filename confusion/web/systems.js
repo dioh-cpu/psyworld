@@ -177,8 +177,8 @@ export function activeEvents(ts) {
 
 // ---- Encontros selvagens (busca) ----
 export const ENCOUNTER_CHANCE = 0.5;   // provisório
-// Raridade dos encontros de exploração: até a lendária. Mítica não sai na exploração (v1.34): só de evento sazonal.
-export const ENCOUNTER_WEIGHTS = [50, 30, 14, 5];
+// Raridade dos encontros de exploração, em %: mítica sai em 1% (monstrinho). A esfera mítica é outra coisa: só de evento.
+export const ENCOUNTER_WEIGHTS = [50, 30, 14, 5, 1];
 export function encounterChance(day) {
   return shieldActive(day) ? SHIELD_ENCOUNTER_CHANCE : ENCOUNTER_CHANCE;
 }
@@ -197,7 +197,7 @@ export function rollEncounter(ts, day, rolls) {
 export const TRILHA = { dias: 7, meta: 150, resgate: 100, copiasMax: 3, copiasPreco: [30, 50, 80] }; // cópias: preço em doces do evento
 // Marcos: quando a contagem chega ao número, a recompensa cai na hora (uma vez por mês).
 export const TRILHA_MARCOS = {
-  25: { evento: 1 }, 50: { gold: 100 }, 75: { diamantes: 20 }, 100: { doce: 2 }, 125: { evento: 1 }, 150: { ovo: 1, mitica: 1 },
+  25: { evento: 1 }, 50: { gold: 100 }, 75: { diamantes: 20 }, 100: { doce: 2 }, 125: { evento: 1 }, 150: { ovo: 1 },
 };
 // Recompensa de dia: dias 1 a 7 da trilha e um item por semana depois (dias 14, 21 e 28). Resgate uma vez por dia.
 export const TRILHA_DIAS = {

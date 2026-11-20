@@ -127,7 +127,7 @@ function balanceHtml() {
     <p class="muted">Tabelas calculadas pelo próprio código. Ao mudar as constantes em systems.js e core.js, elas mudam junto.</p>
     <h3>Chance de captura por esfera e raridade do monstrinho</h3>
     <table class="bal"><tr><th>Esfera / raridade</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>${captura}</table>
-    <p class="muted">Bônus de evento e do escudo (dias 1 a ${Y.SHIELD_DAYS}) somam nas esferas comum, rara e épica. A lendária fica em ${pct(Y.CAPTURE.lendaria)} fixos (teto da época). A mítica fica em ${pct(Y.CAPTURE.mitica)} e só vem de evento sazonal. Piso ${pct(Y.CAPTURE.min)}, teto ${pct(Y.CAPTURE.max)}.</p>
+    <p class="muted">Bônus de evento e do escudo (dias 1 a ${Y.SHIELD_DAYS}) somam nas esferas comum, rara e épica. A lendária fica em ${pct(Y.CAPTURE.lendaria)} fixos (teto da época). A esfera mítica fica em ${pct(Y.CAPTURE.mitica)} fixos e só sai do resgate do evento sazonal. Monstrinho mítico aparece na exploração em 1%. Piso ${pct(Y.CAPTURE.min)}, teto ${pct(Y.CAPTURE.max)}.</p>
     <h3>Gold</h3>
     <ul class="log">
       <li>Fim de cada encontro (captura, fuga ou falha): 5 gold × raridade = ${[1, 2, 3, 4, 5].map((r) => Y.goldEncontro(r)).join(', ')}.</li>
@@ -230,7 +230,7 @@ function trilhaHtml() {
     <button data-act="trilhaPagina" data-p="2" ${t.resgatado ? '' : 'disabled'}>Página 2 · cópias${t.resgatado ? '' : ' (libera após o resgate)'}</button></p>
     ${pagina === 1 ? `<p><progress value="${Math.min(t.missoes, Y.TRILHA.meta)}" max="${Y.TRILHA.meta}"></progress> ${t.missoes}/${Y.TRILHA.meta} missões</p>
       <ul class="log">${dias}</ul>
-      <p class="muted">Marcos (caem na hora): 25 missões, ficha de evento · 50, 100 gold · 75, 20 diamantes · 100, 2 doces · 125, ficha de evento · 150, ovo de evento e esfera mítica.</p>
+      <p class="muted">Marcos (caem na hora): 25 missões, ficha de evento · 50, 100 gold · 75, 20 diamantes · 100, 2 doces · 125, ficha de evento · 150, ovo de evento. O resgate do onírico dá 1 esfera mítica.</p>
       <button data-act="trilhaResgatar" ${resgatavel ? '' : 'disabled'}>${t.resgatado ? `${esc(ev.exclusivo)} já resgatado neste mês` : `Resgatar ${esc(ev.exclusivo)}`}</button>
       ${!resgatavel && !t.resgatado ? `<p class="muted">O resgate abre no dia ${Y.TRILHA.dias}, com ${Y.TRILHA.resgate} missões ou mais.</p>` : ''}`
     : `<p>Cópias extras de ${esc(ev.exclusivo)}: ${t.copias} de ${Y.TRILHA.copiasMax}. Doces de ${esc(ev.nome)}: ${doces}.</p>
@@ -427,7 +427,7 @@ function render() {
     <h2>Explorar e capturar</h2>
     ${S.wild ? wildBlock() : `<p class="muted">Chance de encontro nesta busca: ${pct(Y.encounterChance(S.day))}.</p><button data-act="search">Procurar monstrinho</button>`}
     <p class="muted">Esferas: ${C.RARITY.map((k) => `${RARITY_LABEL[k]} ${S.esferas[k]}`).join(' · ')}</p>
-    <p class="muted">Esferas comuns, raras e épicas se compram com gold. A lendária custa diamantes e captura com 90% fixos. A mítica ainda não está à venda.</p>
+    <p class="muted">Esferas comuns, raras e épicas se compram com gold. A lendária custa diamantes e captura com 90% fixos. A <b>esfera mítica</b> não se compra: sai 1 por mês, no resgate do onírico do evento sazonal (${S.esferas.mitica || 0} na mão). Captura com 75% fixos.</p>
     ${C.RARITY.filter((k) => Y.SPHERE_PRICE[k]).map((k) => `<button data-act="buySphere" data-k="${k}">Esfera ${RARITY_LABEL[k].toLowerCase()} (${Y.SPHERE_PRICE[k].valor} ${Y.SPHERE_PRICE[k].moeda === 'gold' ? 'gold' : 'diamantes'})</button>`).join('')}
   </section>
 
@@ -1081,7 +1081,8 @@ function act(name, el) {
       const nm = newMonster(ev.exclusivo, 3, undefined, 'natural', 'evento', 'evento');
       S.monsters.push(nm);
       S.last = nm.id;
-      note(`${ev.exclusivo} entrou na coleção pela trilha do evento.`);
+      S.esferas.mitica = (S.esferas.mitica || 0) + 1; // esfera mítica: 1 por mês, só por esse resgate
+      note(`${ev.exclusivo} entrou na coleção pela trilha do evento. +1 esfera mítica.`);
       break;
     }
     case 'trilhaCopia': {
