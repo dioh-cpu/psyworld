@@ -258,7 +258,7 @@ function montarCeu(scene, arteDe) {
 
 // ---- casa de teste: objeto 3D fixo no mundo (paredes em caixa e telhado de duas águas). Não é um sprite, então
 // não gira para a câmera: os lados aparecem de verdade. As fotos das imagens viram as texturas das faces.
-// O lado direito é o esquerdo espelhado, e as empenas do telhado usam uma cor de madeira.
+// As empenas do telhado usam uma cor de madeira.
 function montarCasaTeste(scene, arteDe, material, contorno) {
   const { x, z, largura, profundidade } = CASA_TESTE;
   const altoTelhado = 1.8;
@@ -268,9 +268,10 @@ function montarCasaTeste(scene, arteDe, material, contorno) {
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
   };
-  const esquerda = textura('parede-esquerda');
+  // as laterais usam a parede lisa de tábua (sem porta): a lateral esquerda não tem recorte limpo na foto
+  const esquerda = textura('parede-costas');
   const direita = esquerda.clone();
-  direita.repeat.x = -1;   // espelho do lado esquerdo
+  direita.repeat.x = -1;   // espelho
   direita.offset.x = 1;
   direita.needsUpdate = true;
   const frente = textura('parede-frente');
