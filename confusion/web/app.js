@@ -69,7 +69,7 @@ const breedLinha = (b) => `<li>${esc(b.mainNome)} + ${esc(b.ingNome)} · <span c
 // Contexto que o mundo recebe a cada rodada ou ação. Os efeitos voltam e são aplicados no jogo.
 const contextoMundo = () => ({
   dia: S.day, r: Math.random, sanidade: S.sanity, ponteFechada: C.bridgeState(S.day) === 'fechada',
-  recursos: S.resources, diamantes: S.diamonds,
+  recursos: S.resources, diamantes: S.diamonds, caminho: S.role,
   monstros: S.monsters.map((m) => ({ id: m.id, species: m.species, classe: m.classe })),
 });
 function aplicarMundo(res) {
@@ -346,7 +346,7 @@ function newState() {
     ],
     charcoal: 2, pot: 'comum', rescue: null, battleOver: false, log: [],
     farm: { mapping: {}, unassigned: [] },
-    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, doce_halloween: 0, doce_solsticio: 0, doce_lua: 0, doce_fartura: 0, doce_cristal: 0, petala_lua: 0, espiga_fartura: 0, estilhaco_cristal: 0 },
+    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, agua: 0, doce_halloween: 0, doce_solsticio: 0, doce_lua: 0, doce_fartura: 0, doce_cristal: 0, petala_lua: 0, espiga_fartura: 0, estilhaco_cristal: 0 },
   };
   const ovos = Y.applyReward(st, Y.starterReward()); // kit inicial: diamantes, fichas, esferas e um ovo
   for (let i = 0; i < ovos; i++) st.eggs.push(eggOf('Ignavor', 'natural', 'inicial'));

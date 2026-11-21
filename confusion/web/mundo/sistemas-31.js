@@ -2,26 +2,36 @@
 // autômatos, montarias, caçadores de recompensas, festivais, idiomas antigos e mineração profunda.
 import { clamp } from './util.js';
 
-// 31 — Fundação de cidades. Referência: Banished e Frostpunk (fundar um assentamento e mantê-lo vivo).
+// 31 — Fundação de cidades. Referência: Banished e Frostpunk (fundar um assentamento e mantê-lo vivo); The Last of Us (infecção que se espalha).
 const CIDADES_MAX = 2;
 const FAZENDA_POR_CIDADE = 3;      // comida produzida por cidade por dia
+const POCO_POR_CIDADE = 4;         // água produzida por cidade por dia (poço)
 const ESTOQUE_MINIMO_CRESCER = 20; // a população só cresce com esse estoque de comida
-const CHANCE_LEVANTAR = 0.2;       // um morador de fome pode se levantar como zumbi
+const CHANCE_LEVANTAR = 0.2;       // um morador que morre de fome ou de sede pode se levantar como zumbi
 const CHANCE_CONTAGIO = 0.1;       // por dia, cada zumbi transforma um morador com essa chance
 const ZUMBIS_MAX = 30;
+const comerDe = (pop) => Math.ceil(pop / 5); // comida por dia
+const beberDe = (pop) => Math.ceil(pop / 4); // água por dia: as pessoas bebem mais do que comem
 const fundacao = {
   id: '31', nome: 'Fundação de cidades', referencia: 'Banished e Frostpunk (fundar um assentamento e mantê-lo vivo); The Last of Us (infecção que se espalha)',
   criar: () => ({ fundadas: [], surto: false }),
   dia(est, ctx) {
-    // Cada cidade tem fazendas (produz comida), a população consome comida, e a população só cresce com estoque.
-    // Sem comida suficiente, os moradores morrem. Alguns mortos se levantam como zumbis, que transformam outros moradores.
-    // O primeiro levante marca o surto: pretexto de uma arma biológica lançada sobre a região (gancho para a fazenda do vilão).
+    // Cada cidade tem fazendas (comida) e poço (água). A população consome as duas e só cresce com sobra.
+    // Sem comida ou sem água, os moradores morrem. Alguns mortos se levantam como zumbis, que transformam outros moradores.
+    // O primeiro levante marca o surto: pretexto de uma arma biológica lançada sobre a região.
     const notas = [];
     for (const c of est.fundadas) c.zumbis = c.zumbis || 0; // estados salvos antes do surto não têm o campo
-    const estoque = ctx.recursos?.comida || 0;
-    const producao = est.fundadas.length * FAZENDA_POR_CIDADE;
-    const consumo = () => est.fundadas.reduce((a, c) => a + Math.ceil(c.populacao / 5), 0);
-    if (est.fundadas.length && estoque + producao - consumo() < 0) {
+    const estoqueComida = ctx.recursos?.comida || 0;
+    const estoqueAgua = ctx.recursos?.agua || 0;
+    const n = est.fundadas.length;
+    const producaoComida = n * FAZENDA_POR_CIDADE;
+    const producaoAgua = n * POCO_POR_CIDADE;
+    const consumoComida = () => est.fundadas.reduce((a, c) => a + comerDe(c.populacao), 0);
+    const consumoAgua = () => est.fundadas.reduce((a, c) => a + beberDe(c.populacao), 0);
+    const faltaComida = n > 0 && estoqueComida + producaoComida - consumoComida() < 0;
+    const faltaAgua = n > 0 && estoqueAgua + producaoAgua - consumoAgua() < 0;
+    if (faltaComida || faltaAgua) {
+      const causa = faltaComida && faltaAgua ? 'Falta comida e água' : faltaComida ? 'Falta comida' : 'Falta água';
       let mortos = 0;
       let levantados = 0;
       for (const c of est.fundadas) {
@@ -33,7 +43,7 @@ const fundacao = {
           levantados += 1;
         }
       }
-      if (mortos) notas.push(`Falta comida: ${mortos} morador(es) morreram.`);
+      if (mortos) notas.push(`${causa}: ${mortos} morador(es) morreram.`);
       if (levantados) {
         notas.push(`${levantados} dos mortos se levantaram como zumbis.`);
         if (!est.surto) {
@@ -54,18 +64,23 @@ const fundacao = {
       }
     }
     if (convertidos) notas.push(`${convertidos} morador(es) se transformaram em zumbis.`);
-    // Zumbis sem moradores para infectar se desfazem; enquanto houver zumbis numa cidade viva, ela não cresce.
+    // Zumbis sem moradores para infectar se desfazem.
     for (const c of est.fundadas) {
       if (c.populacao === 0 && c.zumbis > 0) c.zumbis = Math.max(0, c.zumbis - 2);
     }
-    // A população só cresce enquanto a produção de comida sustenta o consumo (senão entra em déficit e a fome começa).
+    // Crescimento: só em cidade sem zumbis, com comida em estoque e com sobra de comida e de água.
     for (const c of est.fundadas) {
-      if (c.zumbis === 0 && estoque >= ESTOQUE_MINIMO_CRESCER && producao - consumo() > 0 && ctx.r() < 0.5) {
+      const sobra = producaoComida - consumoComida() > 0 && producaoAgua - consumoAgua() > 0;
+      if (c.zumbis === 0 && estoqueComida >= ESTOQUE_MINIMO_CRESCER && sobra && ctx.r() < 0.5) {
         c.populacao = clamp(c.populacao + 1, 0, 50);
       }
     }
-    const saldo = producao - consumo();
-    return { notas, efeitos: saldo ? { recursos: { comida: saldo } } : {} };
+    const recursos = {};
+    const saldoComida = producaoComida - consumoComida();
+    const saldoAgua = producaoAgua - consumoAgua();
+    if (saldoComida) recursos.comida = saldoComida;
+    if (saldoAgua) recursos.agua = saldoAgua;
+    return { notas, efeitos: Object.keys(recursos).length ? { recursos } : {} };
   },
   acoes: {
     conter_surto: {
@@ -76,6 +91,19 @@ const fundacao = {
         if ((ctx.recursos.madeira || 0) < 20) return { notas: ['Faltam 20 madeira.'] };
         alvo.zumbis = Math.max(0, alvo.zumbis - 3);
         return { notas: [`${alvo.nome}: os zumbis foram contidos (${alvo.zumbis} restante(s)).`], efeitos: { recursos: { madeira: -20 } } };
+      },
+    },
+    purificar_cidade: {
+      rotulo: 'Purificar a cidade mais infestada (só no caminho do herói; 15 pedra e 10 água; os zumbis voltam a ser moradores)',
+      fn(est, ctx) {
+        if (ctx.caminho !== 'heroi') return { notas: ['Só o caminho do herói pode purificar as cidades.'] };
+        const alvo = [...est.fundadas].sort((a, b) => b.zumbis - a.zumbis)[0];
+        if (!alvo || alvo.zumbis === 0) return { notas: ['Não há zumbis para purificar.'] };
+        if ((ctx.recursos.pedra || 0) < 15 || (ctx.recursos.agua || 0) < 10) return { notas: ['Faltam 15 pedra e 10 água.'] };
+        const voltam = alvo.zumbis;
+        alvo.populacao = Math.min(50, alvo.populacao + voltam);
+        alvo.zumbis = 0;
+        return { notas: [`${alvo.nome} foi purificada: ${voltam} morador(es) voltaram a ser humanos.`], efeitos: { recursos: { pedra: -15, agua: -10 } } };
       },
     },
     fundar: {

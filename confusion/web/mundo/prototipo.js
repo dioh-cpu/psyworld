@@ -20,7 +20,7 @@ function novo() {
   estado = Mundo.criarMundo();
   jogo = {
     dia: 1, sanidade: 60, diamantes: 100, gold: 500,
-    recursos: { madeira: 300, pedra: 300, cristal: 30, comida: 200, peca: 20, sementes: 20, raizes: 20 },
+    recursos: { madeira: 300, pedra: 300, cristal: 30, comida: 200, agua: 50, peca: 20, sementes: 20, raizes: 20 },
   };
   notas = [];
 }
@@ -30,7 +30,7 @@ function contexto() {
   return {
     r: Math.random, dia: jogo.dia, sanidade: jogo.sanidade, recursos: jogo.recursos,
     diamantes: jogo.diamantes, gold: jogo.gold, monstros,
-    ponteFechada: bridgeState(jogo.dia) === 'fechada',
+    ponteFechada: bridgeState(jogo.dia) === 'fechada', caminho: el('caminho').value,
   };
 }
 
@@ -128,6 +128,25 @@ function desenhar() {
     g.fillText(`prosperidade ${c.prosperidade} · corrupção ${c.corrupcao}`, x, y + raio + 34);
   }
 
+  // Assentamentos (sistema 31): polígono verde; vermelho quando há zumbis.
+  const ASSENTAMENTOS = [[0.55, 0.2], [0.14, 0.6]];
+  estado['31'].fundadas.forEach((c, i) => {
+    if (i >= ASSENTAMENTOS.length) return;
+    const x = ASSENTAMENTOS[i][0] * W;
+    const y = ASSENTAMENTOS[i][1] * H;
+    poligono(x, y, 30, 8);
+    g.fillStyle = c.zumbis ? '#7a1f1f' : 'hsl(' + Math.min(120, c.populacao * 4) + ', 50%, 40%)';
+    g.fill();
+    g.strokeStyle = '#e8ecf3';
+    g.lineWidth = 2;
+    g.stroke();
+    g.fillStyle = '#ffffff';
+    g.font = '12px system-ui, sans-serif';
+    g.textAlign = 'center';
+    g.fillText(c.nome + ' · pop ' + c.populacao, x, y + 46);
+    if (c.zumbis) { g.fillStyle = '#ff6b6b'; g.fillText('zumbis ' + c.zumbis, x, y + 62); }
+  });
+
   // NPCs: triângulo verde se disponível na fase atual, cinza se não.
   const fase = faseDo(jogo.dia);
   for (const n of NPCS) {
@@ -163,7 +182,7 @@ function desenhar() {
 function renderizarPainel() {
   const R = jogo.recursos;
   el('status').innerHTML = `Dia <b>${jogo.dia}</b> · ${faseDo(jogo.dia)} · sanidade ${jogo.sanidade} · ${jogo.diamantes} diamantes · ${jogo.gold} gold<br>`
-    + `madeira ${R.madeira || 0} · pedra ${R.pedra || 0} · cristal ${R.cristal || 0} · comida ${R.comida || 0}`;
+    + `madeira ${R.madeira || 0} · pedra ${R.pedra || 0} · cristal ${R.cristal || 0} · comida ${R.comida || 0} · água ${R.agua || 0}`;
   el('todos').innerHTML = Mundo.resumoMundo(estado).map((t) => `<li>${t}</li>`).join('');
   el('notas').innerHTML = notas.length ? notas.map((n) => `<li>${n}</li>`).join('') : '<li>Nenhuma nota ainda.</li>';
 
@@ -209,6 +228,7 @@ for (const s of Mundo.SISTEMAS) {
   seletor.append(o);
 }
 seletor.value = '01';
+el('caminho').onchange = renderizar;
 seletor.onchange = renderizar;
 el('avancar1').onclick = () => avancar(1);
 el('avancar7').onclick = () => avancar(7);

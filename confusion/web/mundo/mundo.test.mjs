@@ -501,3 +501,21 @@ test('31 surto: zumbis transformam moradores, impedem o crescimento e podem ser 
   M.acaoMundo(est, '31', 'conter_surto', {}, ctx({ recursos: { madeira: 100 } }));
   assert.equal(est['31'].fundadas[0].zumbis, antes - 3);
 });
+test('31 água: sem água, os moradores morrem mesmo com comida de sobra', () => {
+  const est = M.criarMundo();
+  est['31'].fundadas = [{ nome: 'A', populacao: 20, zumbis: 0 }];
+  const res = sis('31').dia(est['31'], ctx({ recursos: { comida: 100, agua: 0 }, r: () => 0.99 }));
+  assert.equal(est['31'].fundadas[0].populacao, 19);
+  assert.ok(res.notas.some((n) => n.includes('Falta água')));
+});
+test('31 purificar: só no caminho do herói, e os zumbis voltam a ser moradores', () => {
+  const est = M.criarMundo();
+  est['31'].fundadas = [{ nome: 'A', populacao: 5, zumbis: 4 }];
+  est['31'].surto = true;
+  assert.match(M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'vilao', recursos: { pedra: 50, agua: 50 } })).notas[0], /herói/);
+  assert.equal(est['31'].fundadas[0].zumbis, 4);
+  const res = M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'heroi', recursos: { pedra: 50, agua: 50 } }));
+  assert.equal(est['31'].fundadas[0].zumbis, 0);
+  assert.equal(est['31'].fundadas[0].populacao, 9);
+  assert.deepEqual(res.efeitos.recursos, { pedra: -15, agua: -10 });
+});
