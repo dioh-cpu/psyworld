@@ -11,7 +11,7 @@ import { criarMaterialCor, aplicarGiro, NATURAL } from './cor-sprite.js';
 import { AREAS, areaDaRegiao } from './areas.js';
 import { POSICOES_ALIADOS, posicaoDoInimigo, vistaDoAlvo } from './camera-batalha.js';
 import * as BE from './batalha-equipe.js';
-import { montarMundo, COR_HORIZONTE } from './mundo-3d.js';
+import { montarMundo, COR_HORIZONTE, ALTURA_JOGADOR } from './mundo-3d.js';
 import * as C from '../core.js';
 import * as CB from '../combate.js';
 import * as E from '../species.js';
@@ -24,7 +24,7 @@ import {
 
 const RAIO = 0.5;             // raio do personagem no plano do chão
 const VELOCIDADE = 4.5;       // unidades por segundo com o controle no máximo
-const ALTURA_ALVO = 1.4;      // a câmera mira um pouco acima dos pés
+const ALTURA_ALVO = ALTURA_JOGADOR * 0.8;   // a câmera mira um pouco abaixo do topo do personagem
 const distanciaCamera = () => (window.innerWidth < 600 ? 13 : 11); // celular em retrato precisa de mais afastamento
 const COR_MAR = '#2b5a86';
 const COR_TRACO = '#e6ebf0';  // faixas claras do piso da praça
@@ -106,7 +106,7 @@ jogador.add(azazel.malha);
 // personagem ter 1,7 de altura visível, com o pé no chão. A direção é a do movimento no mundo (não da câmera), então ele
 // não gira quando a câmera gira.
 function criarAzazel() {
-  const ALTURA = 1.7;
+  const ALTURA = ALTURA_JOGADOR;
   const base = `${RAIZ}assets/characters/`;
 
   // andar: vídeo de 320x540; a figura vai da linha 26 (topo) até a 533 (pé)
@@ -162,12 +162,18 @@ function criarAzazel() {
     if (ativo) videos[ativo].pause();
     ativo = null;
   }
-  // rot: direção do movimento no mundo (atan2(dx, dz)); 0 = frente (+z), π/2 = direita (+x), -π/2 = esquerda (-x), π = costas
-  function atualizar(andando, rot, agora) {
-    const a = ((rot % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    const linha = a < Math.PI / 4 || a >= (7 * Math.PI) / 4 ? 0
-      : a < (3 * Math.PI) / 4 ? 2
-      : a < (5 * Math.PI) / 4 ? 3 : 1;   // 0 frente, 1 esquerda, 2 direita, 3 costas
+  // rot: direção do movimento no mundo (atan2(dx, dz)); yaw: ângulo da câmera. O personagem gira só no eixo vertical e
+  // fica de frente para a câmera (de lado ele some). O quadro vem do movimento em relação à tela: 0 frente (vindo para a
+  // câmera), 3 costas, 2 direita, 1 esquerda.
+  function atualizar(andando, rot, yaw, agora) {
+    malha.rotation.y = yaw;
+    const mx = Math.sin(rot);
+    const mz = Math.cos(rot);
+    const paraCamera = mx * Math.sin(yaw) + mz * Math.cos(yaw);     // a câmera fica em (sin yaw, cos yaw) do personagem
+    const paraDireita = mx * Math.cos(yaw) - mz * Math.sin(yaw);    // a direita da tela é (cos yaw, -sin yaw)
+    const linha = Math.abs(paraCamera) >= Math.abs(paraDireita)
+      ? (paraCamera >= 0 ? 0 : 3)
+      : (paraDireita >= 0 ? 2 : 1);
     if (andando) {
       const fonte = ['front', 'left', 'left', 'back'][linha];
       if (ativo !== fonte) {
@@ -181,7 +187,7 @@ function criarAzazel() {
       parado.visible = !andar.visible;
     } else {
       pausarVideos();
-      texParado.offset.set(linha / 4, 0);
+      texParado.offset.set(0, 0);   // parado: de frente para a câmera
       andar.visible = false;
       parado.visible = true;
     }
@@ -1108,7 +1114,7 @@ function atualizar(dt, agora) {
     andando = andou;
   }
   jogador.position.set(estado.pos.x, Math.abs(Math.sin(estado.bob)) * 0.08, estado.pos.z);
-  azazel.atualizar(andando, estado.rot, agora);
+  azazel.atualizar(andando, estado.rot, estado.yaw, agora);
 
   // câmera: posição desejada, encurtada se houver parede no caminho, e suavizada
   const alvo = new THREE.Vector3(estado.pos.x, ALTURA_ALVO, estado.pos.z);

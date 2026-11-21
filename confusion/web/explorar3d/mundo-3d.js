@@ -13,7 +13,7 @@ const COR_LAGO_BORDA = '#c2b48a';
 const COR_LAGO_REFLEXO = '#5fa3cf';
 const COR_AREIA = '#d6c08c';
 const TAMANHO_TILE = 12;                 // unidades do mundo por repetição da textura do chão
-const ALTURA_JOGADOR = 1.7;              // altura do personagem (cápsula de main.js: 0,9 + 2 x 0,4)
+export const ALTURA_JOGADOR = 2.55;        // altura visível do Azazel: casa e árvores são múltiplos dela
 const ALTURA_ARVORE = 3 * ALTURA_JOGADOR;   // copa visível: 3 vezes o personagem (com variação na escala)
 const ALTURA_CASA = 3 * ALTURA_JOGADOR;     // casa visível: 3 vezes o personagem (igual às árvores)
 const ITENS_NAVIO = [['ancora', 2.2], ['barril', 1.9], ['corda', 1.1], ['madeira-amarrada', 1.5], ['roda', 2.0], ['tabua', 1.0]];
@@ -313,10 +313,6 @@ function montarCasaTeste(scene, arteDe) {
   // telhado de duas águas, com o beiral passando das paredes
   face([[-B, A, E], [B, A, E], [B, H, 0], [-B, H, 0]], uvFrente, matFrente);
   face([[-B, A, -E], [-B, H, 0], [B, H, 0], [B, A, -E]], uvCostas, matCostas);
-  // cumeeira: viga sobre o encontro das duas águas, para não aparecer fresta no teto
-  const viga = new THREE.Mesh(new THREE.BoxGeometry(2 * B, 0.14, 0.16), new THREE.MeshBasicMaterial({ color: '#6b4423' }));
-  viga.position.set(cx, H - 0.02, cz);
-  scene.add(viga);
 }
 
 // ---- partes do mundo ----
