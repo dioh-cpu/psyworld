@@ -21,6 +21,7 @@ function cruzados(estado, ctx) {
     ...ctx,
     protecaoPragas: protecaoContraPragas(estado['05']),
     reputacao: estado['03'],
+    pragaAtiva: Boolean(estado['15']?.ativa),
     reliquiaRestaurada: estado['19']?.estado === 'restaurada',
     temBarco: estado['18']?.barco || false,
     chefesDerrotados: Object.values(estado['11']?.chefes || {}).filter((e) => e !== 'vivo').length,

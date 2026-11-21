@@ -182,7 +182,7 @@ function desenhar() {
 function renderizarPainel() {
   const R = jogo.recursos;
   el('status').innerHTML = `Dia <b>${jogo.dia}</b> · ${faseDo(jogo.dia)} · sanidade ${jogo.sanidade} · ${jogo.diamantes} diamantes · ${jogo.gold} gold<br>`
-    + `madeira ${R.madeira || 0} · pedra ${R.pedra || 0} · cristal ${R.cristal || 0} · comida ${R.comida || 0} · água ${R.agua || 0}`;
+    + `madeira ${R.madeira || 0} · pedra ${R.pedra || 0} · cristal ${R.cristal || 0} · comida ${R.comida || 0} · água ${R.agua || 0} · purificada ${R.agua_purificadora || 0}`;
   el('todos').innerHTML = Mundo.resumoMundo(estado).map((t) => `<li>${t}</li>`).join('');
   el('notas').innerHTML = notas.length ? notas.map((n) => `<li>${n}</li>`).join('') : '<li>Nenhuma nota ainda.</li>';
 

@@ -164,6 +164,16 @@ const doencas = {
     return { notas, efeitos: est.ativa ? { recursos: { comida: -1 } } : {} };
   },
   acoes: {
+    espalhar_praga: {
+      rotulo: 'Espalhar uma praga (só vilão; a praga mata moradores pelas cidades enquanto durar)',
+      fn(est, ctx) {
+        if (ctx.caminho !== 'vilao') return { notas: ['Só o caminho do vilão pode espalhar pragas.'] };
+        if (est.ativa) return { notas: ['Já há uma praga espalhada.'] };
+        est.ativa = true;
+        est.nivel = Math.max(est.nivel, 40);
+        return { notas: ['Uma praga foi espalhada de propósito pelas cidades.'] };
+      },
+    },
     tratar: {
       rotulo: 'Tratar as plantações (3 raízes, reduz a praga)',
       fn(est, ctx) {

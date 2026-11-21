@@ -346,7 +346,7 @@ function newState() {
     ],
     charcoal: 2, pot: 'comum', rescue: null, battleOver: false, log: [],
     farm: { mapping: {}, unassigned: [] },
-    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, agua: 0, doce_halloween: 0, doce_solsticio: 0, doce_lua: 0, doce_fartura: 0, doce_cristal: 0, petala_lua: 0, espiga_fartura: 0, estilhaco_cristal: 0 },
+    resources: { sementes: 0, raizes: 0, minerio: 0, carvao: 0, peca: 0, madeira: 0, pedra: 0, cristal: 0, comida: 0, agua: 0, agua_purificadora: 0, doce_halloween: 0, doce_solsticio: 0, doce_lua: 0, doce_fartura: 0, doce_cristal: 0, petala_lua: 0, espiga_fartura: 0, estilhaco_cristal: 0 },
   };
   const ovos = Y.applyReward(st, Y.starterReward()); // kit inicial: diamantes, fichas, esferas e um ovo
   for (let i = 0; i < ovos; i++) st.eggs.push(eggOf('Ignavor', 'natural', 'inicial'));

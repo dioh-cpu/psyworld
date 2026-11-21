@@ -512,10 +512,63 @@ test('31 purificar: só no caminho do herói, e os zumbis voltam a ser moradores
   const est = M.criarMundo();
   est['31'].fundadas = [{ nome: 'A', populacao: 5, zumbis: 4 }];
   est['31'].surto = true;
-  assert.match(M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'vilao', recursos: { pedra: 50, agua: 50 } })).notas[0], /herói/);
+  assert.match(M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'vilao', recursos: { pedra: 50, agua_purificadora: 50 } })).notas[0], /herói/);
   assert.equal(est['31'].fundadas[0].zumbis, 4);
-  const res = M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'heroi', recursos: { pedra: 50, agua: 50 } }));
+  const res = M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'heroi', recursos: { pedra: 50, agua_purificadora: 50 } }));
   assert.equal(est['31'].fundadas[0].zumbis, 0);
   assert.equal(est['31'].fundadas[0].populacao, 9);
-  assert.deepEqual(res.efeitos.recursos, { pedra: -15, agua: -10 });
+  assert.deepEqual(res.efeitos.recursos, { pedra: -16, agua_purificadora: -10 });
+});
+import * as S31 from './sistemas-31.js';
+import * as S15 from './sistemas-11.js';
+import * as S47 from './sistemas-41.js';
+test('47 catedral: só o herói entra; até 3 visitas por dia; um onírico de Luz pode deixar água purificada', () => {
+  const est = M.criarMundo();
+  assert.match(M.acaoMundo(est, '47', 'visitar_catedral', {}, ctx({ caminho: 'vilao' })).notas[0], /herói/);
+  const drop = M.acaoMundo(est, '47', 'visitar_catedral', {}, ctx({ caminho: 'heroi', dia: 5, r: () => 0.01 }));
+  assert.equal(drop.efeitos.recursos.agua_purificadora, 1);
+  M.acaoMundo(est, '47', 'visitar_catedral', {}, ctx({ caminho: 'heroi', dia: 5, r: () => 0.9 }));
+  M.acaoMundo(est, '47', 'visitar_catedral', {}, ctx({ caminho: 'heroi', dia: 5, r: () => 0.9 }));
+  const quarta = M.acaoMundo(est, '47', 'visitar_catedral', {}, ctx({ caminho: 'heroi', dia: 5, r: () => 0.01 }));
+  assert.match(quarta.notas[0], /bastante/);
+});
+test('15 praga do vilão: só o vilão espalha; a praga ativa mata moradores nas cidades', () => {
+  const est = M.criarMundo();
+  assert.match(M.acaoMundo(est, '15', 'espalhar_praga', {}, ctx({ caminho: 'heroi' })).notas[0], /vilão/);
+  M.acaoMundo(est, '15', 'espalhar_praga', {}, ctx({ caminho: 'vilao' }));
+  assert.equal(est['15'].ativa, true);
+  est['31'].fundadas = [{ nome: 'A', populacao: 10, zumbis: 0 }];
+  sis('31').dia(est['31'], ctx({ recursos: { comida: 100, agua: 100 }, r: () => 0.1, pragaAtiva: true }));
+  assert.equal(est['31'].fundadas[0].populacao, 9);
+});
+test('31 vilão: dominar rende diamantes por dia; dizimar mata metade e tem intervalo', () => {
+  const est = M.criarMundo();
+  est['31'].fundadas = [{ nome: 'A', populacao: 20, zumbis: 0, dominada: false }];
+  assert.match(M.acaoMundo(est, '31', 'dominar_cidade', {}, ctx({ caminho: 'heroi' })).notas[0], /vilão/);
+  for (let i = 0; i < 4; i++) M.acaoMundo(est, '31', 'dominar_cidade', {}, ctx({ caminho: 'vilao' }));
+  assert.equal(est['31'].fundadas[0].dominada, false, 'a dominação leva várias tentativas');
+  M.acaoMundo(est, '31', 'dominar_cidade', {}, ctx({ caminho: 'vilao' }));
+  assert.equal(est['31'].fundadas[0].dominada, true);
+  const dia = sis('31').dia(est['31'], ctx({ recursos: { comida: 100, agua: 100 }, r: () => 0.99 }));
+  assert.equal(dia.efeitos.diamantes, 4); // 20 moradores rendem 4 diamantes por dia
+  M.acaoMundo(est, '31', 'dizimar_populacao', {}, ctx({ caminho: 'vilao', dia: 10 }));
+  assert.equal(est['31'].fundadas[0].populacao, 10);
+  assert.match(M.acaoMundo(est, '31', 'dizimar_populacao', {}, ctx({ caminho: 'vilao', dia: 11 })).notas[0], /luto/);
+});
+test('31 purificar: o custo cresce com a população (água purificada e pedra)', () => {
+  assert.deepEqual(S31.custoPurificacao(5), { agua_purificadora: 10, pedra: 16 });
+  assert.deepEqual(S31.custoPurificacao(30), { agua_purificadora: 13, pedra: 21 });
+  const est = M.criarMundo();
+  est['31'].fundadas = [{ nome: 'A', populacao: 30, zumbis: 0, dominada: true }];
+  assert.match(M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'heroi', recursos: { pedra: 50, agua_purificadora: 10 } })).notas[0], /Faltam 13/);
+});
+test('31 batalha final: liberada quando as duas cidades estão dominadas', () => {
+  const est = M.criarMundo();
+  est['31'].fundadas = [{ nome: 'A', populacao: 5, zumbis: 0, dominada: true }, { nome: 'B', populacao: 5, zumbis: 0, dominada: false }];
+  assert.equal(S31.batalhaFinalDisponivel(est['31']), false);
+  est['31'].fundadas[1].dominada = true;
+  est['31'].diasDominadas = 9;
+  assert.equal(S31.batalhaFinalDisponivel(est['31']), false, 'precisa de 10 dias de domínio');
+  est['31'].diasDominadas = 10;
+  assert.equal(S31.batalhaFinalDisponivel(est['31']), true);
 });

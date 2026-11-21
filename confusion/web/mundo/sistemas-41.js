@@ -184,6 +184,8 @@ const astronomia = {
 };
 
 // 47 — Santuários de memória. Referência: Chrono Trigger (o passado que volta a aparecer) e Hollow Knight (ecos dos que se foram).
+const CATEDRAL_CHANCE_AGUA = 0.08; // chance de um onírico de Luz deixar água purificada numa visita
+const CATEDRAL_VISITAS_DIA = 3;
 const santuarios = {
   id: '47', nome: 'Santuários de memória', referencia: 'Chrono Trigger (o passado que volta a aparecer); Hollow Knight (ecos dos que se foram)',
   criar: () => ({ santuarios: 0, ecos: 0 }),
@@ -198,6 +200,17 @@ const santuarios = {
     return { notas };
   },
   acoes: {
+    visitar_catedral: {
+      rotulo: `Visitar a catedral (só herói; oníricos de Luz podem deixar água purificada; até ${CATEDRAL_VISITAS_DIA} visitas por dia)`,
+      fn(est, ctx) {
+        if (ctx.caminho !== 'heroi') return { notas: ['Só o caminho do herói pode entrar na catedral.'] };
+        if (est.visitasDia !== ctx.dia) { est.visitasDia = ctx.dia; est.visitas = 0; }
+        if (est.visitas >= CATEDRAL_VISITAS_DIA) return { notas: ['Você já visitou a catedral o bastante por hoje.'] };
+        est.visitas += 1;
+        if (ctx.r() < CATEDRAL_CHANCE_AGUA) return { notas: ['Um onírico de Luz deixou água purificada.'], efeitos: { recursos: { agua_purificadora: 1 } } };
+        return { notas: ['Os oníricos de Luz passaram sem deixar nada.'] };
+      },
+    },
     construir_santuario: {
       rotulo: 'Erguer um santuário de memória (20 pedra; aumenta a chance de ecos)',
       fn(est, ctx) {
