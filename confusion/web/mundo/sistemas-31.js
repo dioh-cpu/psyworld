@@ -3,43 +3,50 @@
 import { clamp } from './util.js';
 
 // 31 — Fundação de cidades. Referência: Banished e Frostpunk (fundar um assentamento e mantê-lo vivo); The Last of Us (infecção que se espalha).
-const CIDADES_MAX = 2;
+// Campanha: um mundo de várias cidades, em quatro regiões. Todas existem desde o início, cada uma com moradores.
+const CIDADES = [
+  { nome: 'Aldeia Verde', regiao: 'Norte' }, { nome: 'Pedra Alta', regiao: 'Norte' }, { nome: 'Rio Fundo', regiao: 'Norte' },
+  { nome: 'Vale Cinzento', regiao: 'Leste' }, { nome: 'Monte Brasa', regiao: 'Leste' }, { nome: 'Enseada Clara', regiao: 'Leste' },
+  { nome: 'Mata Sombria', regiao: 'Sul' }, { nome: 'Campo Dourado', regiao: 'Sul' }, { nome: 'Ponte Partida', regiao: 'Sul' },
+  { nome: 'Forte Velho', regiao: 'Oeste' }, { nome: 'Lago Espelho', regiao: 'Oeste' }, { nome: 'Fazenda Mansa', regiao: 'Oeste' },
+];
+export const CIDADES_TOTAL = CIDADES.length;
+const POPULACAO_INICIAL = 10;
 const FAZENDA_POR_CIDADE = 3;      // comida produzida por cidade por dia
 const POCO_POR_CIDADE = 4;         // água produzida por cidade por dia (poço)
 const ESTOQUE_MINIMO_CRESCER = 20; // a população só cresce com esse estoque de comida
 const CHANCE_LEVANTAR = 0.2;       // um morador que morre (fome, sede, praga ou dominação) pode se levantar como zumbi
 const CHANCE_CONTAGIO = 0.1;       // por dia, cada zumbi transforma um morador com essa chance
-const CHANCE_MORTE_PRAGA = 0.25;   // com praga ativa, cada cidade perde um morador com essa chance por dia
+const MORTE_PRAGA_POR_NIVEL = 400; // com praga ativa, cada cidade perde um morador com chance = nível da praga / 400 (teto de 25%)
 const CHANCE_OPRESSAO = 0.5;       // cidade dominada perde um morador com essa chance por dia
 const DIZIMAR_COOLDOWN = 3;        // dias de luto entre dizimações na mesma cidade
 const DOMINIO_POR_ACAO = 20;       // progresso de cada tentativa de dominação (100 = dominada)
-const DIAS_ATE_BATALHA = 10;       // dias com as duas cidades dominadas antes da batalha final
 const ZUMBIS_MAX = 30;
 const comerDe = (pop) => Math.ceil(pop / 5); // comida por dia
 const beberDe = (pop) => Math.ceil(pop / 4); // água por dia: as pessoas bebem mais do que comem
 // Purificar custa mais conforme a população: água purificada (catedral) e pedra.
 export const custoPurificacao = (pop) => ({ agua_purificadora: 10 + Math.floor(pop / 10), pedra: 15 + Math.floor(pop / 5) });
-// Batalha final: as duas cidades dominadas pelo vilão.
-export const batalhaFinalDisponivel = (est) => est.fundadas.length === CIDADES_MAX && est.fundadas.every((c) => c.dominada) && (est.diasDominadas || 0) >= DIAS_ATE_BATALHA;
-const maisInfestada = (est) => [...est.fundadas].sort((a, b) => (b.zumbis + (b.dominada ? 1 : 0)) - (a.zumbis + (a.dominada ? 1 : 0)))[0];
+// Batalha final: o vilão domina todas as cidades da campanha. Sem prazo: o ritmo é o da campanha.
+export const batalhaFinalDisponivel = (est) => est.cidades.length > 0 && est.cidades.every((c) => c.dominada);
+const maisInfestada = (est) => [...est.cidades].sort((a, b) => (b.zumbis + (b.dominada ? 1 : 0)) - (a.zumbis + (a.dominada ? 1 : 0)))[0];
 const fundacao = {
   id: '31', nome: 'Fundação de cidades', referencia: 'Banished e Frostpunk (fundar um assentamento e mantê-lo vivo); The Last of Us (infecção que se espalha)',
-  criar: () => ({ fundadas: [], surto: false }),
+  criar: () => ({ cidades: CIDADES.map((c) => ({ nome: c.nome, regiao: c.regiao, populacao: POPULACAO_INICIAL, zumbis: 0, dominada: false })), surto: false }),
   dia(est, ctx) {
     // Cada cidade tem fazendas (comida) e poço (água). A população consome as duas e só cresce com sobra.
     // Morte por fome, sede, praga ou dominação. Quem morre pode se levantar como zumbi; o primeiro levante marca o surto.
     const notas = [];
-    for (const c of est.fundadas) {
+    for (const c of est.cidades) {
       c.zumbis = c.zumbis || 0; // estados salvos antes do surto não têm o campo
       c.dominada = Boolean(c.dominada);
     }
     const estoqueComida = ctx.recursos?.comida || 0;
     const estoqueAgua = ctx.recursos?.agua || 0;
-    const n = est.fundadas.length;
+    const n = est.cidades.length;
     const producaoComida = n * FAZENDA_POR_CIDADE;
     const producaoAgua = n * POCO_POR_CIDADE;
-    const consumoComida = () => est.fundadas.reduce((a, c) => a + comerDe(c.populacao), 0);
-    const consumoAgua = () => est.fundadas.reduce((a, c) => a + beberDe(c.populacao), 0);
+    const consumoComida = () => est.cidades.reduce((a, c) => a + comerDe(c.populacao), 0);
+    const consumoAgua = () => est.cidades.reduce((a, c) => a + beberDe(c.populacao), 0);
     const faltaComida = n > 0 && estoqueComida + producaoComida - consumoComida() < 0;
     const faltaAgua = n > 0 && estoqueAgua + producaoAgua - consumoAgua() < 0;
     let mortos = 0;
@@ -56,13 +63,14 @@ const fundacao = {
     const causas = [];
     if (faltaComida || faltaAgua) {
       causas.push(faltaComida && faltaAgua ? 'Falta comida e água' : faltaComida ? 'Falta comida' : 'Falta água');
-      for (const c of est.fundadas) matar(c);
+      for (const c of est.cidades) matar(c);
     }
     if (ctx.pragaAtiva) {
       causas.push('A praga');
-      for (const c of est.fundadas) if (ctx.r() < CHANCE_MORTE_PRAGA) matar(c);
+      const chancePraga = Math.min(0.25, (ctx.pragaNivel || 0) / MORTE_PRAGA_POR_NIVEL);
+      for (const c of est.cidades) if (ctx.r() < chancePraga) matar(c);
     }
-    const dominadas = est.fundadas.filter((c) => c.dominada);
+    const dominadas = est.cidades.filter((c) => c.dominada);
     if (dominadas.length) {
       causas.push('A opressão');
       for (const c of dominadas) if (ctx.r() < CHANCE_OPRESSAO) matar(c);
@@ -77,7 +85,7 @@ const fundacao = {
     }
     // Contágio: cada zumbi pode transformar um morador por dia.
     let convertidos = 0;
-    for (const c of est.fundadas) {
+    for (const c of est.cidades) {
       for (let i = 0; i < c.zumbis; i++) {
         if (c.populacao > 0 && ctx.r() < CHANCE_CONTAGIO) {
           c.populacao -= 1;
@@ -88,11 +96,11 @@ const fundacao = {
     }
     if (convertidos) notas.push(`${convertidos} morador(es) se transformaram em zumbis.`);
     // Zumbis sem moradores para infectar se desfazem.
-    for (const c of est.fundadas) {
+    for (const c of est.cidades) {
       if (c.populacao === 0 && c.zumbis > 0) c.zumbis = Math.max(0, c.zumbis - 2);
     }
     // Crescimento: só em cidade livre de zumbis e de domínio, com comida em estoque e sobra de comida e de água.
-    for (const c of est.fundadas) {
+    for (const c of est.cidades) {
       const sobra = producaoComida - consumoComida() > 0 && producaoAgua - consumoAgua() > 0;
       if (c.zumbis === 0 && !c.dominada && estoqueComida >= ESTOQUE_MINIMO_CRESCER && sobra && ctx.r() < 0.5) {
         c.populacao = clamp(c.populacao + 1, 0, 50);
@@ -107,8 +115,6 @@ const fundacao = {
     // Tributo proporcional à população: dizimar reduz o que a cidade rende.
     const tributo = dominadas.reduce((a, c) => a + (c.populacao > 0 ? Math.ceil(c.populacao / 5) : 0), 0);
     if (tributo) efeitos.diamantes = tributo;
-    // Dias com as duas cidades dominadas contam para a batalha final; uma purificação reinicia a contagem.
-    est.diasDominadas = est.fundadas.length === CIDADES_MAX && est.fundadas.every((c) => c.dominada) ? (est.diasDominadas || 0) + 1 : 0;
     return { notas, efeitos };
   },
   acoes: {
@@ -146,7 +152,7 @@ const fundacao = {
       rotulo: 'Pressionar a cidade mais populosa para dominá-la (só vilão; cidade dominada rende diamantes por dia e sofre opressão)',
       fn(est, ctx) {
         if (ctx.caminho !== 'vilao') return { notas: ['Só o caminho do vilão pode dominar cidades.'] };
-        const alvo = [...est.fundadas].filter((c) => !c.dominada && c.populacao > 0).sort((a, b) => b.populacao - a.populacao)[0];
+        const alvo = [...est.cidades].filter((c) => !c.dominada && c.populacao > 0).sort((a, b) => b.populacao - a.populacao)[0];
         if (!alvo) return { notas: ['Não há cidade livre para dominar.'] };
         alvo.dominio = Math.min(100, (alvo.dominio || 0) + DOMINIO_POR_ACAO);
         if (alvo.dominio < 100) return { notas: [`${alvo.nome} resiste, mas a dominação avança (${alvo.dominio}%).`] };
@@ -158,7 +164,7 @@ const fundacao = {
       rotulo: `Dizimar a cidade mais populosa (só vilão; metade dos moradores morre; ${DIZIMAR_COOLDOWN} dias de intervalo)`,
       fn(est, ctx) {
         if (ctx.caminho !== 'vilao') return { notas: ['Só o caminho do vilão pode dizimar populações.'] };
-        const alvo = [...est.fundadas].filter((c) => c.populacao > 0).sort((a, b) => b.populacao - a.populacao)[0];
+        const alvo = [...est.cidades].filter((c) => c.populacao > 0).sort((a, b) => b.populacao - a.populacao)[0];
         if (!alvo) return { notas: ['Não há moradores para dizimar.'] };
         const folga = alvo.ultimaDizimacao === undefined ? DIZIMAR_COOLDOWN : ctx.dia - alvo.ultimaDizimacao;
         if (folga < DIZIMAR_COOLDOWN) return { notas: [`${alvo.nome} ainda está de luto (faltam ${DIZIMAR_COOLDOWN - folga} dia(s)).`] };
@@ -183,21 +189,12 @@ const fundacao = {
         return { notas, efeitos: {} };
       },
     },
-    fundar: {
-      rotulo: `Fundar uma nova cidade (40 madeira e 20 pedra; até ${CIDADES_MAX})`,
-      fn(est, ctx) {
-        if (est.fundadas.length >= CIDADES_MAX) return { notas: ['Já há cidades demais.'] };
-        if ((ctx.recursos.madeira || 0) < 40 || (ctx.recursos.pedra || 0) < 20) return { notas: ['Faltam 40 madeira e 20 pedra.'] };
-        est.fundadas = [...est.fundadas, { nome: `Assentamento ${est.fundadas.length + 1}`, populacao: 5, zumbis: 0, dominada: false }];
-        return { notas: ['Um novo assentamento foi fundado.'], efeitos: { recursos: { madeira: -40, pedra: -20 } } };
-      },
-    },
   },
   resumo: (est) => {
-    const pop = est.fundadas.reduce((a, c) => a + c.populacao, 0);
-    const zumbis = est.fundadas.reduce((a, c) => a + c.zumbis, 0);
-    const dominadas = est.fundadas.filter((c) => c.dominada).length;
-    return `${est.fundadas.length} assentamento(s) · população ${pop}${zumbis ? ` · zumbis ${zumbis}` : ''}${dominadas ? ` · dominadas ${dominadas}` : ''}${est.surto ? ' · surto ativo' : ''}`;
+    const pop = est.cidades.reduce((a, c) => a + c.populacao, 0);
+    const zumbis = est.cidades.reduce((a, c) => a + c.zumbis, 0);
+    const dominadas = est.cidades.filter((c) => c.dominada).length;
+    return `${est.cidades.length} cidade(s) · população ${pop}${zumbis ? ` · zumbis ${zumbis}` : ''} · dominadas ${dominadas}/${est.cidades.length}${est.surto ? ' · surto ativo' : ''}`;
   },
 };
 

@@ -128,25 +128,6 @@ function desenhar() {
     g.fillText(`prosperidade ${c.prosperidade} · corrupção ${c.corrupcao}`, x, y + raio + 34);
   }
 
-  // Assentamentos (sistema 31): polígono verde; vermelho quando há zumbis.
-  const ASSENTAMENTOS = [[0.55, 0.2], [0.14, 0.6]];
-  estado['31'].fundadas.forEach((c, i) => {
-    if (i >= ASSENTAMENTOS.length) return;
-    const x = ASSENTAMENTOS[i][0] * W;
-    const y = ASSENTAMENTOS[i][1] * H;
-    poligono(x, y, 30, 8);
-    g.fillStyle = c.zumbis ? '#7a1f1f' : 'hsl(' + Math.min(120, c.populacao * 4) + ', 50%, 40%)';
-    g.fill();
-    g.strokeStyle = '#e8ecf3';
-    g.lineWidth = 2;
-    g.stroke();
-    g.fillStyle = '#ffffff';
-    g.font = '12px system-ui, sans-serif';
-    g.textAlign = 'center';
-    g.fillText(c.nome + ' · pop ' + c.populacao, x, y + 46);
-    if (c.zumbis) { g.fillStyle = '#ff6b6b'; g.fillText('zumbis ' + c.zumbis, x, y + 62); }
-  });
-
   // NPCs: triângulo verde se disponível na fase atual, cinza se não.
   const fase = faseDo(jogo.dia);
   for (const n of NPCS) {
@@ -214,8 +195,47 @@ function renderizarPainel() {
   }
 }
 
+
+// ---- Campanha: cada cidade é um hexágono (verde = livre, vermelho = zumbis, roxo = dominada) ----
+const campanha = document.getElementById('campanha');
+function desenharCampanha() {
+  const gc = campanha.getContext('2d');
+  const W = campanha.width;
+  const H = campanha.height;
+  gc.clearRect(0, 0, W, H);
+  gc.fillStyle = '#181d27';
+  gc.fillRect(0, 0, W, H);
+  const cidades = estado['31'].cidades;
+  const colunas = 6;
+  const linhas = Math.ceil(cidades.length / colunas);
+  cidades.forEach((c, i) => {
+    const x = ((i % colunas) + 0.5) * (W / colunas);
+    const y = (Math.floor(i / colunas) + 0.5) * (H / linhas);
+    const raio = 26;
+    gc.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const ang = -Math.PI / 2 + (k * Math.PI) / 3;
+      const px = x + Math.cos(ang) * raio;
+      const py = y + Math.sin(ang) * raio;
+      if (k === 0) gc.moveTo(px, py); else gc.lineTo(px, py);
+    }
+    gc.closePath();
+    gc.fillStyle = c.dominada ? '#5b2a86' : c.zumbis ? '#7a1f1f' : 'hsl(120, 45%, 35%)';
+    gc.fill();
+    gc.strokeStyle = '#e8ecf3';
+    gc.lineWidth = 2;
+    gc.stroke();
+    gc.fillStyle = '#ffffff';
+    gc.font = '11px system-ui, sans-serif';
+    gc.textAlign = 'center';
+    gc.fillText(c.nome, x, y + raio + 13);
+    gc.fillText('pop ' + c.populacao + (c.zumbis ? ' · z ' + c.zumbis : '') + (c.dominada ? ' · dominada' : ''), x, y + raio + 26);
+  });
+}
+
 function renderizar() {
   desenhar();
+  desenharCampanha();
   renderizarPainel();
 }
 

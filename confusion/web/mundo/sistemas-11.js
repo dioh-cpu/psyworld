@@ -170,7 +170,7 @@ const doencas = {
         if (ctx.caminho !== 'vilao') return { notas: ['Só o caminho do vilão pode espalhar pragas.'] };
         if (est.ativa) return { notas: ['Já há uma praga espalhada.'] };
         est.ativa = true;
-        est.nivel = Math.max(est.nivel, 40);
+        est.nivel = Math.max(est.nivel, 80);
         return { notas: ['Uma praga foi espalhada de propósito pelas cidades.'] };
       },
     },

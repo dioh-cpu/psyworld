@@ -375,7 +375,7 @@ function withDefaults(s) {
     recordes: { semana: 0, mes: 0, ...(s.recordes || {}) },
     campanha: { ...Y.campanhaNova(), ...(s.campanha || {}) },
     missoes: { semanal: null, mensal: null, ...(s.missoes || {}) },
-    mundo: { ...Mundo.criarMundo(), ...(s.mundo || {}) },
+    mundo: Mundo.carregarMundo(s.mundo),
     esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0, ...(s.esferas || {}) },
     login: { streak: 0, lastDay: 0, ...(s.login || {}) },
     pass: { season: '', xp: 0, claimed: 0, premium: false, ...(s.pass || {}) },

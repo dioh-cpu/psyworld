@@ -13,15 +13,23 @@ export function criarMundo() {
   return Object.fromEntries(SISTEMAS.map((s) => [s.id, s.criar()]));
 }
 
+// Carrega o estado salvo. Saves de antes da campanha (cidades fundadas pelo jogador) recomeçam só o sistema 31.
+export function carregarMundo(salvo) {
+  const m = { ...criarMundo(), ...(salvo || {}) };
+  if (!m['31'].cidades) m['31'] = porId['31'].criar();
+  return m;
+}
+
 // Valores que um sistema pode precisar de outro. Calculados a partir do estado antes de cada rodada.
 function cruzados(estado, ctx) {
-  const construcoes = (estado['05']?.refugios.length || 0) + (estado['31']?.fundadas.length || 0)
+  const construcoes = (estado['05']?.refugios.length || 0)
     + (estado['48']?.canais || 0) + (estado['29']?.monumentos || 0);
   return {
     ...ctx,
     protecaoPragas: protecaoContraPragas(estado['05']),
     reputacao: estado['03'],
     pragaAtiva: Boolean(estado['15']?.ativa),
+    pragaNivel: estado['15']?.ativa ? (estado['15'].nivel || 0) : 0,
     reliquiaRestaurada: estado['19']?.estado === 'restaurada',
     temBarco: estado['18']?.barco || false,
     chefesDerrotados: Object.values(estado['11']?.chefes || {}).filter((e) => e !== 'vivo').length,

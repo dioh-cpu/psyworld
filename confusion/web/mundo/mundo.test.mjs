@@ -184,7 +184,7 @@ test('20 profissões: 6 práticas dão nível 2 e o bônus diário', () => {
   const est = M.criarMundo();
   for (let i = 0; i < 6; i++) M.acaoMundo(est, '20', 'praticar', { profissao: 'cozinheiro' }, ctx());
   assert.equal(S11.familiaPorSanidade(0) !== undefined, true);
-  const dia = M.diaMundo(est, ctx());
+  const dia = sis('20').dia(est['20'], ctx());
   assert.equal(dia.efeitos.recursos.comida, 1);
 });
 test('21 crimes: provar inocência sem testemunhas costuma funcionar', () => {
@@ -287,12 +287,11 @@ test('30 gigantes: a criatura migra a cada 4 dias', () => {
   for (let d = 1; d <= 4; d++) M.diaMundo(est, ctx({ dia: d }));
   assert.equal(est['30'].regiao, 'sul');
 });
-test('31 fundação: fundar gasta recursos e para em 2 cidades', () => {
+test('31 campanha: o mundo começa com várias cidades, todas com moradores e sem zumbis', () => {
   const est = M.criarMundo();
-  M.acaoMundo(est, '31', 'fundar', {}, ctx());
-  M.acaoMundo(est, '31', 'fundar', {}, ctx());
-  assert.match(M.acaoMundo(est, '31', 'fundar', {}, ctx()).notas[0], /demais/);
-  assert.equal(est['31'].fundadas.length, 2);
+  assert.ok(est['31'].cidades.length >= 8);
+  assert.ok(est['31'].cidades.every((c) => c.populacao > 0 && c.zumbis === 0 && !c.dominada));
+  assert.equal(new Set(est['31'].cidades.map((c) => c.regiao)).size, 4);
 });
 test('32 equipamentos: purificar a espada muda a pureza para luz', () => {
   const est = M.criarMundo();
@@ -353,7 +352,7 @@ test('40 mineração: escavar desce de camada e rende pedra na rasa', () => {
 test('41 simbiose: um vínculo de simbiose dá comida por dia', () => {
   const est = M.criarMundo();
   M.acaoMundo(est, '41', 'associar_simbiose', {}, ctx());
-  assert.equal(M.diaMundo(est, ctx()).efeitos.recursos.comida, 1);
+  assert.equal(sis('41').dia(est['41'], ctx()).efeitos.recursos.comida, 1);
 });
 test('42 labirintos: cinco passos saem do labirinto e a linha principal segue', () => {
   const est = M.criarMundo();
@@ -403,7 +402,7 @@ test('47 santuários: com eventos históricos e sorte, surge um eco', () => {
 test('48 engenharia: um canal dá comida todos os dias', () => {
   const est = M.criarMundo();
   M.acaoMundo(est, '48', 'construir_canal', {}, ctx());
-  assert.equal(M.diaMundo(est, ctx()).efeitos.recursos.comida, 1);
+  assert.equal(sis('48').dia(est['48'], ctx()).efeitos.recursos.comida, 1);
 });
 test('49 criaturas que aprendem: 5 treinos viram especialização que dá bônus', () => {
   const est = M.criarMundo();
@@ -428,14 +427,14 @@ test('15 pragas: com refúgios a praga ainda pode aparecer (piso de 2%)', () => 
 });
 test('31 cidades: sem comida, os moradores partem; com estoque, a população cresce', () => {
   const fome = M.criarMundo();
-  fome['31'].fundadas = [{ nome: 'A', populacao: 20 }];
+  fome['31'].cidades = [{ nome: 'A', populacao: 20 }];
   const r1 = sis('31').dia(fome['31'], ctx({ recursos: { comida: 0 }, r: () => 0.99 }));
-  assert.equal(fome['31'].fundadas[0].populacao, 19);
+  assert.equal(fome['31'].cidades[0].populacao, 19);
   assert.ok(r1.notas.some((n) => n.includes('Falta comida')));
   const fartura = M.criarMundo();
-  fartura['31'].fundadas = [{ nome: 'A', populacao: 5 }];
+  fartura['31'].cidades = [{ nome: 'A', populacao: 5 }];
   sis('31').dia(fartura['31'], ctx({ recursos: { comida: 100 }, r: () => 0.1 }));
-  assert.equal(fartura['31'].fundadas[0].populacao, 6);
+  assert.equal(fartura['31'].cidades[0].populacao, 6);
 });
 test('35 autômatos: com desgaste 80 ou mais, param de produzir pedra', () => {
   const est = M.criarMundo();
@@ -483,40 +482,40 @@ test('jogabilidade: um jogador prudente (sem ações de risco com sanidade abaix
 });
 test('31 surto: morte por fome pode levantar zumbis e marca o surto como arma biológica', () => {
   const est = M.criarMundo();
-  est['31'].fundadas = [{ nome: 'A', populacao: 20, zumbis: 0 }];
+  est['31'].cidades = [{ nome: 'A', populacao: 20, zumbis: 0 }];
   const res = sis('31').dia(est['31'], ctx({ recursos: { comida: 0 }, r: () => 0.1 }));
-  assert.equal(est['31'].fundadas[0].zumbis, 1);
+  assert.equal(est['31'].cidades[0].zumbis, 1);
   assert.equal(est['31'].surto, true);
   assert.ok(res.notas.some((n) => n.includes('arma biológica')));
 });
 test('31 surto: zumbis transformam moradores, impedem o crescimento e podem ser contidos', () => {
   const est = M.criarMundo();
   est['31'].surto = true;
-  est['31'].fundadas = [{ nome: 'A', populacao: 10, zumbis: 3 }];
+  est['31'].cidades = [{ nome: 'A', populacao: 10, zumbis: 3 }];
   sis('31').dia(est['31'], ctx({ recursos: { comida: 100 }, r: () => 0.05 }));
-  const c = est['31'].fundadas[0];
+  const c = est['31'].cidades[0];
   assert.ok(c.populacao < 10, 'zumbis deveriam transformar moradores');
   assert.ok(c.zumbis > 3, 'os convertidos viram zumbis');
   const antes = c.zumbis;
   M.acaoMundo(est, '31', 'conter_surto', {}, ctx({ recursos: { madeira: 100 } }));
-  assert.equal(est['31'].fundadas[0].zumbis, antes - 3);
+  assert.equal(est['31'].cidades[0].zumbis, antes - 3);
 });
 test('31 água: sem água, os moradores morrem mesmo com comida de sobra', () => {
   const est = M.criarMundo();
-  est['31'].fundadas = [{ nome: 'A', populacao: 20, zumbis: 0 }];
+  est['31'].cidades = [{ nome: 'A', populacao: 20, zumbis: 0 }];
   const res = sis('31').dia(est['31'], ctx({ recursos: { comida: 100, agua: 0 }, r: () => 0.99 }));
-  assert.equal(est['31'].fundadas[0].populacao, 19);
+  assert.equal(est['31'].cidades[0].populacao, 19);
   assert.ok(res.notas.some((n) => n.includes('Falta água')));
 });
 test('31 purificar: só no caminho do herói, e os zumbis voltam a ser moradores', () => {
   const est = M.criarMundo();
-  est['31'].fundadas = [{ nome: 'A', populacao: 5, zumbis: 4 }];
+  est['31'].cidades = [{ nome: 'A', populacao: 5, zumbis: 4 }];
   est['31'].surto = true;
   assert.match(M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'vilao', recursos: { pedra: 50, agua_purificadora: 50 } })).notas[0], /herói/);
-  assert.equal(est['31'].fundadas[0].zumbis, 4);
+  assert.equal(est['31'].cidades[0].zumbis, 4);
   const res = M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'heroi', recursos: { pedra: 50, agua_purificadora: 50 } }));
-  assert.equal(est['31'].fundadas[0].zumbis, 0);
-  assert.equal(est['31'].fundadas[0].populacao, 9);
+  assert.equal(est['31'].cidades[0].zumbis, 0);
+  assert.equal(est['31'].cidades[0].populacao, 9);
   assert.deepEqual(res.efeitos.recursos, { pedra: -16, agua_purificadora: -10 });
 });
 import * as S31 from './sistemas-31.js';
@@ -537,38 +536,35 @@ test('15 praga do vilão: só o vilão espalha; a praga ativa mata moradores nas
   assert.match(M.acaoMundo(est, '15', 'espalhar_praga', {}, ctx({ caminho: 'heroi' })).notas[0], /vilão/);
   M.acaoMundo(est, '15', 'espalhar_praga', {}, ctx({ caminho: 'vilao' }));
   assert.equal(est['15'].ativa, true);
-  est['31'].fundadas = [{ nome: 'A', populacao: 10, zumbis: 0 }];
-  sis('31').dia(est['31'], ctx({ recursos: { comida: 100, agua: 100 }, r: () => 0.1, pragaAtiva: true }));
-  assert.equal(est['31'].fundadas[0].populacao, 9);
+  est['31'].cidades = [{ nome: 'A', populacao: 10, zumbis: 0 }];
+  sis('31').dia(est['31'], ctx({ recursos: { comida: 100, agua: 100 }, r: () => 0.1, pragaAtiva: true, pragaNivel: 100 }));
+  assert.equal(est['31'].cidades[0].populacao, 9);
 });
 test('31 vilão: dominar rende diamantes por dia; dizimar mata metade e tem intervalo', () => {
   const est = M.criarMundo();
-  est['31'].fundadas = [{ nome: 'A', populacao: 20, zumbis: 0, dominada: false }];
+  est['31'].cidades = [{ nome: 'A', populacao: 20, zumbis: 0, dominada: false }];
   assert.match(M.acaoMundo(est, '31', 'dominar_cidade', {}, ctx({ caminho: 'heroi' })).notas[0], /vilão/);
   for (let i = 0; i < 4; i++) M.acaoMundo(est, '31', 'dominar_cidade', {}, ctx({ caminho: 'vilao' }));
-  assert.equal(est['31'].fundadas[0].dominada, false, 'a dominação leva várias tentativas');
+  assert.equal(est['31'].cidades[0].dominada, false, 'a dominação leva várias tentativas');
   M.acaoMundo(est, '31', 'dominar_cidade', {}, ctx({ caminho: 'vilao' }));
-  assert.equal(est['31'].fundadas[0].dominada, true);
+  assert.equal(est['31'].cidades[0].dominada, true);
   const dia = sis('31').dia(est['31'], ctx({ recursos: { comida: 100, agua: 100 }, r: () => 0.99 }));
   assert.equal(dia.efeitos.diamantes, 4); // 20 moradores rendem 4 diamantes por dia
   M.acaoMundo(est, '31', 'dizimar_populacao', {}, ctx({ caminho: 'vilao', dia: 10 }));
-  assert.equal(est['31'].fundadas[0].populacao, 10);
+  assert.equal(est['31'].cidades[0].populacao, 10);
   assert.match(M.acaoMundo(est, '31', 'dizimar_populacao', {}, ctx({ caminho: 'vilao', dia: 11 })).notas[0], /luto/);
 });
 test('31 purificar: o custo cresce com a população (água purificada e pedra)', () => {
   assert.deepEqual(S31.custoPurificacao(5), { agua_purificadora: 10, pedra: 16 });
   assert.deepEqual(S31.custoPurificacao(30), { agua_purificadora: 13, pedra: 21 });
   const est = M.criarMundo();
-  est['31'].fundadas = [{ nome: 'A', populacao: 30, zumbis: 0, dominada: true }];
+  est['31'].cidades = [{ nome: 'A', populacao: 30, zumbis: 0, dominada: true }];
   assert.match(M.acaoMundo(est, '31', 'purificar_cidade', {}, ctx({ caminho: 'heroi', recursos: { pedra: 50, agua_purificadora: 10 } })).notas[0], /Faltam 13/);
 });
-test('31 batalha final: liberada quando as duas cidades estão dominadas', () => {
+test('31 batalha final: liberada quando todas as cidades da campanha estão dominadas (sem prazo)', () => {
   const est = M.criarMundo();
-  est['31'].fundadas = [{ nome: 'A', populacao: 5, zumbis: 0, dominada: true }, { nome: 'B', populacao: 5, zumbis: 0, dominada: false }];
-  assert.equal(S31.batalhaFinalDisponivel(est['31']), false);
-  est['31'].fundadas[1].dominada = true;
-  est['31'].diasDominadas = 9;
-  assert.equal(S31.batalhaFinalDisponivel(est['31']), false, 'precisa de 10 dias de domínio');
-  est['31'].diasDominadas = 10;
+  est['31'].cidades.forEach((c) => { c.dominada = true; });
   assert.equal(S31.batalhaFinalDisponivel(est['31']), true);
+  est['31'].cidades[0].dominada = false;
+  assert.equal(S31.batalhaFinalDisponivel(est['31']), false);
 });
