@@ -64,11 +64,11 @@
   body.foto #foto-sair { display: block; }
 
   /* tela de batalha: sobre a cena, no tom da tela de referência (escolha de membro, disco de ações e resultado) */
-  #batalha { display: none; position: fixed; inset: 0; z-index: 30; overflow: hidden; background: radial-gradient(ellipse at 62% 30%, #2a5597 0%, #112a57 42%, #050b1c 100%); }
+  #batalha { display: none; position: fixed; inset: 0; z-index: 30; overflow: hidden; background: none; }
+  body.vista #batalha { background: radial-gradient(ellipse at 50% 35%, rgba(24, 56, 110, .9), rgba(5, 11, 28, .96)); }
   body.batalha #batalha { display: block; }
   body.batalha #titulo, body.batalha #local, body.batalha #direita, body.batalha #prompt, body.batalha #msg,
   body.batalha #atalhos, body.batalha #barra, body.batalha #joy, body.batalha .botao, body.batalha #foto-sair { display: none !important; }
-  #batalha::before { content: ""; position: absolute; left: -10%; right: -10%; bottom: -34%; height: 72%; border-radius: 50%; border: 2px solid rgba(127, 220, 255, .3); background: radial-gradient(ellipse, rgba(127, 220, 255, .14), transparent 70%); }
   .bat-tela { position: absolute; inset: 0; }
   .bat-tela.escolha { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; box-sizing: border-box; }
   .bat-titulo { margin: 0; font-size: 26px; text-transform: uppercase; letter-spacing: .08em; color: #fff; border-bottom: 3px solid #ffd27a; padding-bottom: 6px; }
@@ -134,6 +134,29 @@
   .bat-log.grande { position: static; width: auto; max-height: 180px; overflow: auto; padding-left: 30px; }
   .bat-fim .bat-btn { justify-self: start; }
 
+  .onirico { display: inline-block; margin: 0 8px 0 8px; padding: 1px 8px; border: 1px solid #7fdcff; border-radius: 3px; color: #7fdcff; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; vertical-align: middle; }
+  .bat-pop { position: absolute; transform: translate(-50%, -50%); font: 700 26px/1 'Rajdhani', system-ui, sans-serif; color: #fff; text-shadow: 0 0 6px #000, 0 2px 4px #000; pointer-events: none; animation: bat-pop .9s ease-out forwards; }
+  .bat-pop.critico { color: #ffb347; font-size: 34px; }
+  .bat-pop.erro { color: #cfe8ff; font-size: 22px; }
+  .bat-pop.cura { color: #9dffb0; }
+  @keyframes bat-pop { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.6); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -110%) scale(1); } }
+  .bat-tela.luta.ocupado .disco-item { cursor: default; }
+  .disco-item:disabled { cursor: default; }
+  .disco-item { font: 700 22px/1 'Rajdhani', system-ui, sans-serif; }
+  .bat-sub { margin: 0; color: #7fdcff; font-size: 16px; }
+  .bat-dica-topo { margin: 0; color: #9fb6d9; font-size: 14px; text-align: center; max-width: 520px; }
+  .bat-tela.habilidades { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; box-sizing: border-box; }
+  .slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: min(560px, 100%); }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; background: rgba(9, 25, 60, .9); border: 2px solid #3f8fd6; color: #fff; font: 700 15px/1.1 'Rajdhani', system-ui, sans-serif; cursor: pointer; min-width: 0; }
+  .slot.sel { border-color: #ffd27a; box-shadow: 0 0 14px rgba(255, 210, 122, .5); }
+  .slot .nome-hab, .hab { overflow-wrap: anywhere; }
+  .num { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #fff; color: #0d2350; font-weight: 700; font-size: 14px; flex: none; }
+  .pool { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: min(560px, 100%); }
+  .hab { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(9, 25, 60, .9); border: 2px solid #3f8fd6; color: #fff; font: 700 16px/1 'Rajdhani', system-ui, sans-serif; cursor: pointer; text-align: left; min-width: 0; }
+  .hab.em { border-color: #7fdcff; }
+  .hab.foco { background: #ffd27a; color: #0d2350; border-color: #fff; }
+  .hab.foco .num { background: #0d2350; color: #ffd27a; }
+  @media (max-width: 520px) { .slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pool { grid-template-columns: 1fr; } }
   @media (hover: none), (pointer: coarse) {
     #joy, .botao { display: block; }
     #barra, #atalhos { display: none !important; }
@@ -148,7 +171,7 @@
     .sprite.pequena { width: 80px; height: 80px; }
     .orb { width: 130px; height: 130px; font-size: 54px; }
     .bat-cartao .cab { flex-direction: column; gap: 0; }
-    .bat-log { top: 140px; bottom: auto; left: 12px; width: 240px; font-size: 13px; }
+    .bat-log { top: 176px; bottom: auto; left: 12px; width: 240px; font-size: 13px; }
     .bat-log li:not(:last-child) { display: none; }
     .bat-topo { font-size: 13px; gap: 10px; flex-wrap: wrap; }
     .disco { width: 300px; height: 300px; right: 4px; bottom: 4px; transform: scale(.7); transform-origin: 100% 100%; }
@@ -180,7 +203,7 @@
 </div>
 <div id="atalhos" class="painel" hidden>
   <p><b>WASD</b> ou setas: mover · <b>I J K L</b> ou arrastar: câmera</p>
-  <p><b>C</b> centralizar · <b>E</b> examinar · <b>P</b> modo foto · <b>H</b> fecha esta lista</p>
+  <p><b>C</b> centralizar · <b>E</b> examinar · <b>P</b> modo foto · <b>T</b> time · <b>H</b> fecha esta lista</p>
 </div>
 <div id="prompt" class="painel">E: examinar</div>
 <div id="msg" class="painel"></div>
@@ -188,6 +211,7 @@
   <button id="acao-atalhos" class="acao" type="button"><span class="tecla">H</span>Atalhos</button>
   <button id="acao-examinar" class="acao" type="button" disabled><span class="tecla">E</span>Examinar</button>
   <button id="acao-centro" class="acao" type="button"><span class="tecla">C</span>Centralizar</button>
+  <button id="acao-time" class="acao" type="button"><span class="tecla">T</span>Time</button>
   <button id="acao-foto" class="acao" type="button"><span class="tecla">P</span>Modo foto</button>
 </div>
 <div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>

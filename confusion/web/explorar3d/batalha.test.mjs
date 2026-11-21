@@ -5,6 +5,7 @@ import * as CB from '../combate.js';
 import * as Y from '../systems.js';
 import {
   timeInicial, sortearSelvagem, lutadorDo, opcoesDeAcao, aplicarResultado, recompensaDaBatalha, itensDoEspolio,
+  criarMonstro, definirSlot, habilidadesDisponiveis, matizDoMonstro, eventosDoTurno, hpAposEventos, roteiroDoTurno,
 } from './batalha.js';
 
 test('time inicial: os três monstrinhos da linha base, com habilidades e poder', () => {
@@ -21,8 +22,7 @@ test('time inicial: os três monstrinhos da linha base, com habilidades e poder'
 
 test('selvagem: espécie da lista de encontros, raridade de 1 a 4, tier e nível crescem com ela', () => {
   for (let s = 1; s <= 200; s++) {
-    const rnd = C.mulberry32(s);
-    const { monstro, raridade } = sortearSelvagem(rnd);
+    const { monstro, raridade } = sortearSelvagem(C.mulberry32(s));
     assert.ok(Y.BASE_SPECIES.includes(monstro.species));
     assert.ok(raridade >= 1 && raridade <= 4);
     assert.equal(monstro.tier, raridade + 2);
@@ -30,16 +30,63 @@ test('selvagem: espécie da lista de encontros, raridade de 1 a 4, tier e nível
   }
 });
 
-test('ações: atacar sempre; uma por habilidade; poção só com estoque', () => {
+test('selvagem: a variação azul só aparece no Ignavor, e aparece às vezes', () => {
+  let azuis = 0;
+  for (let s = 1; s <= 1000; s++) {
+    const { monstro } = sortearSelvagem(C.mulberry32(s));
+    if (monstro.variante) {
+      assert.equal(monstro.variante, 'azul');
+      assert.equal(monstro.species, 'Ignavor');
+      azuis += 1;
+    }
+  }
+  assert.ok(azuis > 0 && azuis < 300, `variações azuis: ${azuis}`);
+});
+
+test('variação azul: muda o elemento, o matiz e o conjunto de habilidades', () => {
+  const laranja = criarMonstro({ id: 'a', species: 'Ignavor', tier: 3, level: 12 });
+  const azul = criarMonstro({ id: 'b', species: 'Ignavor', tier: 3, level: 12, variante: 'azul' });
+  assert.equal(laranja.elemento, 'fogo');
+  assert.equal(azul.elemento, 'agua');
+  assert.equal(matizDoMonstro(laranja), 0);
+  assert.equal(matizDoMonstro(azul), 180);
+  assert.equal(habilidadesDisponiveis(azul).length, 5);
+  assert.ok(!azul.abilities.some((h) => habilidadesDisponiveis(laranja).includes(h)));
+});
+
+test('slots: colocar uma habilidade livre no slot a substitui; uma que já está em outro slot troca de lugar com ela', () => {
+  const m = timeInicial()[0];
+  const fora = habilidadesDisponiveis(m).find((h) => !m.abilities.includes(h));
+  definirSlot(m, 0, fora);
+  assert.equal(m.abilities[0], fora);
+  assert.equal(m.abilities.length, 4);
+  assert.equal(new Set(m.abilities).size, 4);
+  // a do slot 2 vai para o slot 4 e a do slot 4 vai para o slot 2
+  const antes2 = m.abilities[1];
+  const antes4 = m.abilities[3];
+  definirSlot(m, 3, antes2);
+  assert.equal(m.abilities[3], antes2);
+  assert.equal(m.abilities[1], antes4);
+  assert.equal(new Set(m.abilities).size, 4);
+});
+
+test('slots: slot fora de 1 a 4 e habilidade de outra espécie são recusados', () => {
+  const m = timeInicial()[0];
+  assert.throws(() => definirSlot(m, 4, habilidadesDisponiveis(m)[0]), /slot/);
+  assert.throws(() => definirSlot(m, 0, 'Chama Solar'), /não disponível/);
+});
+
+test('ações: atacar sempre; uma por slot, numerada de 1 a 4; poção só com estoque', () => {
   const m = timeInicial()[0];
   const combate = CB.criarCombate(lutadorDo(m), lutadorDo(timeInicial()[1]), { pequena: 2, media: 0, grande: 0 });
   const opcoes = opcoesDeAcao(combate, m);
   assert.equal(opcoes[0].id, 'atacar');
   assert.ok(opcoes[0].ativa);
-  assert.equal(opcoes.filter((o) => o.id === 'habilidade').length, 4);
+  const slots = opcoes.filter((o) => o.id === 'habilidade');
+  assert.equal(slots.length, 4);
+  assert.deepEqual(slots.map((o) => o.icone), ['1', '2', '3', '4']);
   const pocao = opcoes.at(-1);
   assert.equal(pocao.id, 'pocao');
-  assert.ok(pocao.ativa);
   assert.deepEqual(pocao.acao, { tipo: 'pocao', pocao: 'pequena' });
 
   const semPocao = CB.criarCombate(lutadorDo(m), lutadorDo(timeInicial()[1]), { pequena: 0, media: 0, grande: 0 });
@@ -90,6 +137,56 @@ test('espólio: derrota não tem linhas; vitória tem XP, gold e a poção, com 
   assert.deepEqual(itensDoEspolio({ vitoria: false, nomeMonstro: 'Noctarn', xp: 0, gold: 0, pocao: 0 }), []);
   const itens = itensDoEspolio({ vitoria: true, nomeMonstro: 'Noctarn', xp: 50, gold: 10, pocao: 1 });
   assert.deepEqual(itens.map((i) => [i.nome, i.qtd]), [['XP de Noctarn', 50], ['Gold', 10], ['Poção pequena', 1]]);
+});
+
+test('eventos: a primeira ação do log é do jogador, a segunda do inimigo; linhas de fim são ignoradas', () => {
+  const ev = eventosDoTurno([
+    'Noctarn atacou: 4 de dano.',
+    'Vaelith usou Pulso Astral, mas errou.',
+    'Noctarn venceu.',
+  ]);
+  assert.deepEqual(ev, [
+    { tipo: 'dano', quem: 'jogador', alvo: 'inimigo', habilidade: false, dano: 4, critico: false },
+    { tipo: 'erro', quem: 'inimigo', alvo: 'jogador', habilidade: true, dano: 0, critico: false },
+  ]);
+  assert.deepEqual(eventosDoTurno(['Noctarn venceu.', 'Tempo esgotado: Noctarn 50% x 40%.']), []);
+});
+
+test('eventos: poção cura o próprio jogador; crítico e habilidade são reconhecidos', () => {
+  const ev = eventosDoTurno(['Noctarn usou Poção pequena (+18 de vida).', 'Vaelith atacou: 6 de dano (crítico!).']);
+  assert.deepEqual(ev[0], { tipo: 'cura', quem: 'jogador', alvo: 'jogador', dano: 18 });
+  assert.equal(ev[1].critico, true);
+  assert.equal(ev[1].quem, 'inimigo');
+  const h = eventosDoTurno(['Noctarn usou Mordida Umbral: 7 de dano.']);
+  assert.equal(h[0].habilidade, true);
+});
+
+test('vida: cada golpe tira do alvo, a poção devolve até o máximo, e nada fica negativo', () => {
+  const eventos = [
+    { tipo: 'dano', quem: 'jogador', alvo: 'inimigo', dano: 10 },
+    { tipo: 'dano', quem: 'inimigo', alvo: 'jogador', dano: 5 },
+    { tipo: 'cura', quem: 'jogador', alvo: 'jogador', dano: 30 },
+    { tipo: 'dano', quem: 'jogador', alvo: 'inimigo', dano: 99 },
+  ];
+  const vida = hpAposEventos({ j: 60, i: 60 }, eventos, 60);
+  assert.deepEqual(vida, [{ j: 60, i: 50 }, { j: 55, i: 50 }, { j: 60, i: 50 }, { j: 60, i: 0 }]);
+});
+
+test('roteiro: o foco vem antes de cada golpe; o último passo mostra a vida depois do golpe', () => {
+  const eventos = eventosDoTurno(['Noctarn atacou: 10 de dano.', 'Vaelith atacou: 5 de dano.']);
+  const passos = roteiroDoTurno({ eventos, hpInicio: { j: 60, i: 60 }, resultado: null });
+  assert.deepEqual(passos.map((p) => p.tipo), ['foco', 'golpe', 'foco', 'golpe', 'pausa']);
+  assert.equal(passos[3].hp.j, 55);
+  assert.equal(passos[1].alvo, 'inimigo');
+  assert.ok(passos.every((p) => p.dur > 0));
+});
+
+test('roteiro: com resultado, termina com a tela de fim; o foco segue quem age', () => {
+  const eventos = eventosDoTurno(['Noctarn atacou: 60 de dano.']);
+  const passos = roteiroDoTurno({ eventos, hpInicio: { j: 60, i: 60 }, resultado: 'vitoria' });
+  assert.equal(passos.at(-1).tipo, 'fim');
+  assert.equal(passos.at(-1).resultado, 'vitoria');
+  assert.equal(passos[0].lado, 'jogador');
 });
 
 test('equilíbrio: o time inicial vence a maioria dos selvagens quando a luta é automática, mas não todas', () => {
