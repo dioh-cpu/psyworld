@@ -36,7 +36,10 @@ test('elementos: no andar infinito, vantagem muda a chance de vencer', () => {
   const contraAgua = C.endlessChance({ ...agua, elemento: 'planta' }, 2); // andar 2 é água
   const fraco = C.endlessChance({ ...agua, elemento: 'fogo' }, 2);
   assert.ok(contraAgua > fraco);
-  assert.ok(Math.abs(C.endlessChance({ ...agua, elemento: 'agua' }, 2) - C.endlessChance({ ...agua, elemento: undefined }, 2)) < 1e-9);
+  // mesmo elemento que o andar: água contra água é pouco efetivo (0,5x), menos chance que sem elemento
+  assert.ok(C.endlessChance({ ...agua, elemento: 'agua' }, 2) < C.endlessChance({ ...agua, elemento: undefined }, 2));
+  // fogo contra fogo é dano normal: a mesma chance de um monstrinho sem elemento contra o andar de fogo
+  assert.equal(C.multElemento('fogo', 'fogo'), 1);
 });
 
 test('elementos: na caçada de raid, o elemento do monstrinho entra na chance', () => {
@@ -81,4 +84,33 @@ test('passe: perfis de XP no mês (casual, ativo e intenso) chegam a níveis dif
   const intenso = Y.passLevel(mes({ dias: 30, andares: 40, capturas: 120, breeds: 40, batalha: 1 }));
   assert.ok(casual < ativo && ativo < intenso);
   assert.equal(intenso, Y.PASS_LEVELS);
+});
+
+test('regras da ilha: normal, lutador, psíquico, elétrico e fogo sem dano contra os alvos combinados', () => {
+  assert.equal(C.multElemento('neutro', 'fantasma'), 0);   // normal não dá dano em fantasma
+  assert.equal(C.multElemento('lutador', 'fantasma'), 0);  // lutador não dá dano em fantasma
+  assert.equal(C.multElemento('psiquico', 'trevas'), 0);   // psíquico não dá dano em noturno
+  assert.equal(C.multElemento('eletrico', 'pedra'), 0);    // elétrico não dá dano em pedra
+  assert.equal(C.multElemento('fogo', 'agua'), 0);         // fogo não dá dano em água
+  assert.equal(C.multElemento('fogo', 'fogo'), 1);         // fogo leva dano de fogo (normal)
+});
+
+test('noturno e diurno: 2x contra si mesmos e nenhuma desvantagem contra os outros elementos', () => {
+  for (const especial of ['trevas', 'luz']) {
+    assert.equal(C.multElemento(especial, especial), 2);
+    for (const outro of C.ELEMENTOS.filter((e) => e !== 'trevas' && e !== 'luz')) {
+      // o que o especial causa nunca é menos que 1
+      assert.ok(C.multElemento(especial, outro) >= 1, `${especial} contra ${outro}`);
+      // e o que os outros causam no especial nunca passa de 1 (sem fraqueza)
+      assert.ok(C.multElemento(outro, especial) <= 1, `${outro} contra ${especial}`);
+    }
+  }
+});
+
+test('elementos: são 19 (os tipos do Pokémon com trevas como noturno e luz como diurno), e todos têm nome', () => {
+  assert.equal(C.ELEMENTOS.length, 19);
+  for (const e of C.ELEMENTOS) assert.ok(C.NOME_ELEMENTO[e], e);
+  assert.equal(C.NOME_ELEMENTO.trevas, 'Noturno');
+  assert.equal(C.NOME_ELEMENTO.luz, 'Diurno');
+  assert.equal(C.NOME_ELEMENTO.neutro, 'Normal');
 });

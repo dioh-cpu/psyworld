@@ -25,7 +25,7 @@ test('área da região: devolve a área certa; fora da ilha não há área', () 
 
 test('validação: pega elemento desconhecido e cor fora do padrão', () => {
   const ruim = {
-    X: { nome: 'x', elemento: 'gelo', arena: { fundoTopo: '#123456', fundoBase: 'azul', disco: '#123456', anel: '#123456' } },
+    X: { nome: 'x', elemento: 'quantico', arena: { fundoTopo: '#123456', fundoBase: 'azul', disco: '#123456', anel: '#123456' } },
   };
   const erros = validarAreas(ruim);
   assert.ok(erros.some((e) => e.includes('elemento desconhecido')));

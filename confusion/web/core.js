@@ -460,13 +460,39 @@ export function endlessRewards(floor, eventActive = false, rng = () => 1) {
 }
 // ---- Elementos (v1.34): como no Pokémon, vantagem dá 2x e desvantagem dá 0,5x. Ciclo: fogo > planta > água > fogo.
 // Luz e trevas se anulam (2x). Terra e neutro: 1x contra tudo.
-export const ELEMENTOS = ['fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'neutro'];
+// Elementos: os tipos do Pokémon, com trevas chamado de noturno, mais o diurno (luz). Normal é o neutro, sem elemento.
+export const ELEMENTOS = [
+  'fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'neutro',
+  'lutador', 'voador', 'veneno', 'psiquico', 'inseto', 'pedra', 'fantasma', 'eletrico', 'gelo', 'dragao', 'aco', 'fada',
+];
+export const NOME_ELEMENTO = {
+  fogo: 'Fogo', agua: 'Água', planta: 'Planta', terra: 'Terra', luz: 'Diurno', trevas: 'Noturno', neutro: 'Normal',
+  lutador: 'Lutador', voador: 'Voador', veneno: 'Veneno', psiquico: 'Psíquico', inseto: 'Inseto', pedra: 'Pedra',
+  fantasma: 'Fantasma', eletrico: 'Elétrico', gelo: 'Gelo', dragao: 'Dragão', aco: 'Aço', fada: 'Fada',
+};
+// Tabela de tipos (atacante -> defensor). Só valores diferentes de 1: 2 é super efetivo, 0.5 é pouco efetivo, 0 é sem efeito.
+// Base: a tabela de tipos do Pokémon, com as regras da ilha: fogo não causa dano em água; elétrico não causa dano em pedra;
+// noturno (trevas) e diurno (luz) dão 2x contra si mesmos e não têm desvantagem contra os outros elementos.
 const TABELA_ELEMENTO = {
-  fogo: { planta: 2, agua: 0 },   // fogo não causa dano em água
-  agua: { fogo: 2, planta: 0.5 },
-  planta: { agua: 2, fogo: 0.5 },
-  luz: { trevas: 2, luz: 2 },     // diurno: 2x contra si mesmo; sem desvantagem contra os outros
-  trevas: { luz: 2, trevas: 2 },  // noturno: 2x contra si mesmo; sem desvantagem contra os outros
+  neutro: { pedra: 0.5, aco: 0.5, fantasma: 0 },
+  fogo: { planta: 2, gelo: 2, inseto: 2, aco: 2, agua: 0, pedra: 0.5, dragao: 0.5 },   // fogo contra fogo: dano normal
+  agua: { fogo: 2, terra: 2, pedra: 2, agua: 0.5, planta: 0.5, dragao: 0.5 },
+  planta: { agua: 2, terra: 2, pedra: 2, fogo: 0.5, planta: 0.5, veneno: 0.5, voador: 0.5, inseto: 0.5, dragao: 0.5, aco: 0.5 },
+  terra: { fogo: 2, eletrico: 2, veneno: 2, pedra: 2, aco: 2, planta: 0.5, inseto: 0.5, voador: 0 },
+  luz: { trevas: 2, luz: 2 },
+  trevas: { psiquico: 2, fantasma: 2, luz: 2, trevas: 2 },
+  lutador: { neutro: 2, gelo: 2, pedra: 2, aco: 2, veneno: 0.5, voador: 0.5, psiquico: 0.5, inseto: 0.5, fada: 0.5, fantasma: 0 },
+  voador: { planta: 2, lutador: 2, inseto: 2, eletrico: 0.5, pedra: 0.5, aco: 0.5 },
+  veneno: { planta: 2, fada: 2, veneno: 0.5, terra: 0.5, pedra: 0.5, fantasma: 0.5, aco: 0 },
+  psiquico: { lutador: 2, veneno: 2, psiquico: 0.5, aco: 0.5, trevas: 0 },
+  inseto: { planta: 2, psiquico: 2, fogo: 0.5, lutador: 0.5, veneno: 0.5, voador: 0.5, fantasma: 0.5, aco: 0.5, fada: 0.5 },
+  pedra: { fogo: 2, gelo: 2, voador: 2, inseto: 2, lutador: 0.5, terra: 0.5, aco: 0.5 },
+  fantasma: { psiquico: 2, fantasma: 2, trevas: 0.5, neutro: 0 },
+  eletrico: { agua: 2, voador: 2, eletrico: 0.5, planta: 0.5, dragao: 0.5, terra: 0, pedra: 0 },
+  gelo: { planta: 2, terra: 2, voador: 2, dragao: 2, fogo: 0.5, agua: 0.5, gelo: 0.5, aco: 0.5 },
+  dragao: { dragao: 2, aco: 0.5, fada: 0 },
+  aco: { gelo: 2, pedra: 2, fada: 2, fogo: 0.5, agua: 0.5, eletrico: 0.5, aco: 0.5 },
+  fada: { lutador: 2, dragao: 2, fogo: 0.5, veneno: 0.5, aco: 0.5 },
 };
 export const multElemento = (atacante, defensor) => TABELA_ELEMENTO[atacante]?.[defensor] ?? 1;
 // Andar infinito: cada andar tem um elemento, em ciclo de 5 (fogo, água, planta, luz, trevas).

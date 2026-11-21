@@ -27,8 +27,8 @@ const distanciaCamera = () => (window.innerWidth < 600 ? 13 : 11); // celular em
 const COR_MAR = '#2b5a86';
 const COR_TRACO = '#e6ebf0';  // faixas claras do piso da praça
 const RAIZ = document.body.dataset.raiz || '';   // caminho até a raiz do projeto, para as artes dos monstrinhos
-const COR_ELEMENTO = { fogo: '#ff7a45', agua: '#4fb3ff', planta: '#7bd16b', terra: '#b5895a', luz: '#ffe27a', trevas: '#8a6bd6', neutro: '#c9d6e3' };
-const NOME_ELEMENTO = { fogo: 'Fogo', agua: 'Água', planta: 'Planta', terra: 'Terra', luz: 'Luz', trevas: 'Trevas', neutro: 'Neutro' };
+const COR_ELEMENTO = Object.fromEntries(Object.entries(V.COR).map(([k, v]) => [k, v.hex]));
+const NOME_ELEMENTO = C.NOME_ELEMENTO;
 const RESPAWN_MS = 12000;
 const ROTULO_EFICACIA = { super: 'Super efetivo!', pouco: 'Pouco efetivo', nulo: 'Sem efeito' };     // tempo até outro selvagem aparecer no lugar do que foi enfrentado
 

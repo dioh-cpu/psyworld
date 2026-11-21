@@ -151,7 +151,7 @@ function torresHtml() {
   </section>`;
 }
 // Elementos (v1.34): rótulos, elemento do bot pela força e chance de vencer o bot com o elemento aplicado.
-const ELEMENTO_LABEL = { fogo: 'Fogo', agua: 'Água', planta: 'Planta', terra: 'Terra', luz: 'Luz', trevas: 'Trevas', neutro: 'Neutro' };
+const ELEMENTO_LABEL = C.NOME_ELEMENTO;
 const botElemento = (bot) => ['fogo', 'agua', 'planta'][bot % 3];
 const chanceBot = (m) => C.winChance(S.bot, m.level, C.multElemento(m.elemento, botElemento(S.bot)));
 // Texto de XP do monstrinho: progresso no nível atual e quanto falta para o próximo.
@@ -186,8 +186,8 @@ function balanceHtml() {
       <li>Preços: esfera comum ${Y.SPHERE_PRICE.comum.valor} gold (cerca de ${buscasPorEsfera} buscas de ganho), rara ${Y.SPHERE_PRICE.rara.valor} gold, épica ${Y.SPHERE_PRICE.epica.valor} gold, lendária ${Y.SPHERE_PRICE.lendaria.valor} diamantes.</li>
     </ul>
     <h3>Elementos: quem ataca (linha) contra quem defende (coluna)</h3>
-    <table class="bal"><tr><th>Ataca / defende</th>${C.ELEMENTOS.map((d) => `<th>${ELEMENTO_LABEL[d]}</th>`).join('')}</tr>${['fogo', 'agua', 'planta', 'luz', 'trevas'].map((a) => `<tr><th>${ELEMENTO_LABEL[a]}</th>${C.ELEMENTOS.map((d) => { const v = C.multElemento(a, d); return `<td>${v === 1 ? '·' : `${v}x`}</td>`; }).join('')}</tr>`).join('')}</table>
-    <p class="muted">Fogo > planta > água > fogo (2x; 0,5x no sentido contrário). Luz e trevas se anulam (2x). Terra e neutro: 1x. No andar infinito, o elemento do andar gira em ciclo de 5. Contra os bosses de raid e contra o bot, o elemento entra na chance.</p>
+    <table class="bal"><tr><th>Ataca / defende</th>${C.ELEMENTOS.map((d) => `<th>${ELEMENTO_LABEL[d]}</th>`).join('')}</tr>${C.ELEMENTOS.map((a) => `<tr><th>${ELEMENTO_LABEL[a]}</th>${C.ELEMENTOS.map((d) => { const v = C.multElemento(a, d); return `<td>${v === 1 ? '·' : `${v}x`}</td>`; }).join('')}</tr>`).join('')}</table>
+    <p class="muted">Fogo > planta > água > fogo (2x; 0,5x no sentido contrário). Diurno e noturno dão 2x contra si mesmos e não têm desvantagem contra os outros. Fogo não causa dano em água. Normal (neutro) não tem elemento. No andar infinito, o elemento do andar gira em ciclo de 5. Contra os bosses de raid e contra o bot, o elemento entra na chance.</p>
     <h3>XP do monstrinho</h3>
     <ul class="log">
       <li>Captura: 5 × raridade (5 a 25 XP). Breed, monstrinho principal: ${C.XP_FONTE.breed}.</li>

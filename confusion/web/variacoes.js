@@ -10,13 +10,25 @@ export const CHANCE_VARIACAO = 0.3;                          // chance de nascer
 // Cada cor é um elemento. matiz: cor-alvo em graus (0 vermelho, 120 verde, 210 azul, 270 roxo).
 // sat e bri ajustam a saturação e o brilho da variação (marrom é dessaturado; cinza quase não tem cor).
 export const COR = {
-  fogo: { nome: 'vermelho', matiz: 15, sat: 1.25, bri: 1.0 },
-  agua: { nome: 'azul', matiz: 210, sat: 1.2, bri: 1.0 },
-  planta: { nome: 'verde', matiz: 120, sat: 1.15, bri: 1.0 },
-  terra: { nome: 'marrom', matiz: 30, sat: 0.7, bri: 0.95 },
-  luz: { nome: 'dourado', matiz: 48, sat: 1.2, bri: 1.1 },
-  trevas: { nome: 'roxo', matiz: 270, sat: 1.1, bri: 0.85 },
-  neutro: { nome: 'cinza', matiz: 0, sat: 0.08, bri: 0.95 },
+  fogo: { nome: 'vermelho', matiz: 15, sat: 1.25, bri: 1.0, hex: '#ff7a45' },
+  agua: { nome: 'azul', matiz: 210, sat: 1.2, bri: 1.0, hex: '#4fb3ff' },
+  planta: { nome: 'verde', matiz: 120, sat: 1.15, bri: 1.0, hex: '#7bd16b' },
+  terra: { nome: 'marrom', matiz: 30, sat: 0.7, bri: 0.95, hex: '#b5895a' },
+  luz: { nome: 'dourado', matiz: 48, sat: 1.2, bri: 1.1, hex: '#ffe27a' },
+  trevas: { nome: 'roxo', matiz: 270, sat: 1.1, bri: 0.85, hex: '#8a6bd6' },
+  neutro: { nome: 'cinza', matiz: 0, sat: 0.08, bri: 0.95, hex: '#c9d6e3' },
+  lutador: { nome: 'ferrugem', matiz: 20, sat: 0.95, bri: 0.8, hex: '#b5552e' },
+  voador: { nome: 'celeste', matiz: 200, sat: 1.0, bri: 1.1, hex: '#9fd8ff' },
+  veneno: { nome: 'magenta', matiz: 300, sat: 1.2, bri: 0.95, hex: '#c255c7' },
+  psiquico: { nome: 'rosa', matiz: 330, sat: 1.1, bri: 1.05, hex: '#ff7fb6' },
+  inseto: { nome: 'lima', matiz: 80, sat: 1.1, bri: 1.0, hex: '#b5d94a' },
+  pedra: { nome: 'bege', matiz: 35, sat: 0.25, bri: 0.9, hex: '#a89f8f' },
+  fantasma: { nome: 'lilás', matiz: 265, sat: 0.7, bri: 1.0, hex: '#9a86c9' },
+  eletrico: { nome: 'amarelo', matiz: 55, sat: 1.3, bri: 1.15, hex: '#ffe04a' },
+  gelo: { nome: 'gelado', matiz: 190, sat: 0.55, bri: 1.15, hex: '#bdeeff' },
+  dragao: { nome: 'índigo', matiz: 235, sat: 1.0, bri: 0.75, hex: '#4b5ec9' },
+  aco: { nome: 'prateado', matiz: 210, sat: 0.12, bri: 1.0, hex: '#c8d3dc' },
+  fada: { nome: 'pastel', matiz: 320, sat: 0.8, bri: 1.15, hex: '#ffb3d9' },
 };
 
 // Habilidades de cada elemento (cinco por elemento). Usadas pela variação de qualquer espécie daquele elemento.
@@ -28,6 +40,18 @@ export const HABILIDADES_DO_ELEMENTO = {
   luz: ['Lâmina Clara', 'Brilho Sereno', 'Halo Cortante', 'Luz Pulsante', 'Feixe Estelar'],
   trevas: ['Sombra Voraz', 'Véu Escuro', 'Pesadelo Lento', 'Mordida Sombria', 'Eclipse Silencioso'],
   neutro: ['Golpe Cru', 'Investida', 'Pancada Firme', 'Rugido Bruto', 'Escudo Simples'],
+  lutador: ['Golpe Marcial', 'Chute Giratório', 'Soco Cruzado', 'Investida Firme', 'Punho Trovejante'],
+  voador: ['Rajada Celeste', 'Mergulho', 'Asa Cortante', 'Vendaval', 'Bico Veloz'],
+  veneno: ['Toxina', 'Nuvem Tóxica', 'Ferrão Venenoso', 'Gosma Corrosiva', 'Espinho Pútrido'],
+  psiquico: ['Mente Ferida', 'Onda Psíquica', 'Olhar Hipnótico', 'Telecinese', 'Ilusão Mental'],
+  inseto: ['Ferrão Veloz', 'Enxame', 'Casulo', 'Mandíbula Afiada', 'Zumbido'],
+  pedra: ['Estilhaço', 'Rochedo', 'Lança de Pedra', 'Pedregulho', 'Muralha Rochosa'],
+  fantasma: ['Lamento', 'Mão Espectral', 'Possessão', 'Névoa Fantasmal', 'Grito Oco'],
+  eletrico: ['Raio', 'Choque Estático', 'Trovão', 'Pulso Elétrico', 'Faísca'],
+  gelo: ['Estalactite', 'Nevasca', 'Lança de Gelo', 'Congelar', 'Raio Ártico'],
+  dragao: ['Sopro Dragônico', 'Garra Ancestral', 'Fúria Dracônica', 'Cauda Dracônica', 'Rugido Antigo'],
+  aco: ['Lâmina de Aço', 'Impacto Metálico', 'Escudo Metálico', 'Canhão Metálico', 'Esmagamento'],
+  fada: ['Pétala Mágica', 'Encanto', 'Brilho Feérico', 'Beijo Lunar', 'Poeira de Fada'],
 };
 
 // Espécies de desenho quase sem cor (prateado): a variação colore o desenho em vez de só girar a cor que já existe.

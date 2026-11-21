@@ -9,9 +9,9 @@ const INICIAIS = ['Noctarn', 'Ignavor', 'Vaelith', 'Brotavel', 'Solarin'];
 test('cada inicial tem uma variação para cada elemento que não é o natural, sem repetir', () => {
   for (const especie of INICIAIS) {
     const lista = V.variacoesDaEspecie(especie);
-    assert.equal(lista.length, 6, especie);
+    assert.equal(lista.length, C.ELEMENTOS.length - 1, especie);
     assert.ok(!lista.includes(V.elementoNatural(especie)), `${especie} repete o natural`);
-    assert.equal(new Set(lista).size, 6, especie);
+    assert.equal(new Set(lista).size, lista.length, especie);
   }
 });
 
