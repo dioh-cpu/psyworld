@@ -6,7 +6,7 @@
 //   habilidades: pelo menos 4. As 4 primeiras são as base; as seguintes entram com a absorção do breed.
 //   arte (opcional): caminho do sprite. Sem arte, aparece a silhueta genérica.
 export const PUREZAS = ['luz', 'neutra', 'trevas'];
-export const ORIGENS = ['base', 'evento', 'raid'];
+export const ORIGENS = ['base', 'evento', 'raid', 'linha'];
 export const TAREFAS_APTIDAO = ['plantar', 'colher', 'minerar', 'cortar', 'garimpar', 'transportar', 'cozinhar', 'fabricar'];
 
 export const ESPECIES = {
@@ -35,6 +35,17 @@ export const ESPECIES = {
   'Titã de Cinza': { origem: 'raid', pureza: 'neutra', elemento: 'fogo', aptidoes: { minerar: 3, cortar: 2 }, habilidades: ['Pisão Sísmico', 'Pele de Pedra', 'Rachadura', 'Eco da Montanha', 'Grito Cinza'] },
   'Serpe do Abismo': { origem: 'raid', pureza: 'trevas', elemento: 'trevas', aptidoes: { garimpar: 2, minerar: 2 }, habilidades: ['Bote Profundo', 'Sopro Sombrio', 'Escamas Negras', 'Chamado Abissal', 'Anel Gélido'] },
   'Coroa Solar': { origem: 'raid', pureza: 'luz', elemento: 'luz', aptidoes: { fabricar: 2, colher: 2 }, habilidades: ['Raio Coroado', 'Halo Ardente', 'Eclipse Breve', 'Ouro Vivo', 'Manto de Luz'] },
+  // Formas de linha (origem 'linha'): não saem em encontro, ovo comum nem invocação; entram pelo ovo ou pela evolução.
+  'Penumbrio': { origem: 'linha', pureza: 'trevas', elemento: 'trevas', aptidoes: { cortar: 1, transportar: 1 }, habilidades: ['Sopro Tímido', 'Mordida Pequena', 'Brilho Violeta', 'Sono Leve'] },
+  'Noctarion': { origem: 'linha', pureza: 'trevas', elemento: 'trevas', aptidoes: { minerar: 5, garimpar: 3 }, habilidades: ['Eclipse Umbral', 'Asas Sombrias', 'Garra Violeta', 'Uivo Abissal', 'Chama Noturna'] },
+  'Brasinha': { origem: 'linha', pureza: 'luz', elemento: 'fogo', aptidoes: { plantar: 1, cortar: 1 }, habilidades: ['Faísca Tímida', 'Aquecer', 'Bolha de Brasa', 'Pulo Faiscante'] },
+  'Ignaraz': { origem: 'linha', pureza: 'luz', elemento: 'fogo', aptidoes: { plantar: 4, cortar: 4, transportar: 3 }, habilidades: ['Couraça Ardente', 'Clarão Imperial', 'Juba Fúria', 'Investida Dourada', 'Escudo Vulcânico'] },
+  'Gotalume': { origem: 'linha', pureza: 'luz', elemento: 'agua', aptidoes: { colher: 1, fabricar: 1 }, habilidades: ['Gota Fria', 'Borrifo', 'Véu Leve', 'Bolha Calma'] },
+  'Vaelirion': { origem: 'linha', pureza: 'luz', elemento: 'agua', aptidoes: { colher: 4, fabricar: 3, garimpar: 4 }, habilidades: ['Pulso Astral Maior', 'Lâmina de Gelo', 'Cauda Cristalina', 'Névoa Ciano', 'Trovão Ártico'] },
+  'Sementil': { origem: 'linha', pureza: 'luz', elemento: 'planta', aptidoes: { plantar: 1, colher: 1 }, habilidades: ['Broto Tímido', 'Casca Leve', 'Pólen Doce', 'Raiz Curiosa'] },
+  'Florivel': { origem: 'linha', pureza: 'luz', elemento: 'planta', aptidoes: { plantar: 4, colher: 4, garimpar: 2 }, habilidades: ['Floração Mestra', 'Espinhos Vivos', 'Chuva de Pétalas', 'Galho Ancestral', 'Seiva Curativa'] },
+  'Solinho': { origem: 'linha', pureza: 'luz', elemento: 'fogo', aptidoes: { cortar: 1, fabricar: 1 }, habilidades: ['Brilho Morno', 'Asinha Quente', 'Faísca Solar', 'Calor Suave'] },
+  'Helíssio': { origem: 'linha', pureza: 'luz', elemento: 'fogo', aptidoes: { cortar: 4, fabricar: 4, transportar: 2 }, habilidades: ['Sol Coroado', 'Raio Helíaco', 'Asas Radiantes', 'Eclipse Dourado', 'Aurora Ardente'] },
 };
 
 // Lista de problemas de uma espécie. Vazia quando está completa.
@@ -77,4 +88,37 @@ export function repetidosNoCatalogo(catalogo = ESPECIES) {
     }
   }
   return repetidos;
+}
+
+// ---- Linhas de evolução (provisório, no estilo Digimon): forma inicial -> atual -> evolução ----
+// Um ovo sempre nasce na forma inicial da sua linha. Nomes e requisitos são provisórios e pedem aprovação.
+// As cinco linhas são os cinco iniciais. Brotavel e Solarin continuam exclusivos de evento até a decisão de origem.
+export const LINHAS = [
+  { id: 'noctarn', inicial: 'Penumbrio', atual: 'Noctarn', evolucao: 'Noctarion' },
+  { id: 'ignavor', inicial: 'Brasinha', atual: 'Ignavor', evolucao: 'Ignaraz' },
+  { id: 'vaelith', inicial: 'Gotalume', atual: 'Vaelith', evolucao: 'Vaelirion' },
+  { id: 'brotavel', inicial: 'Sementil', atual: 'Brotavel', evolucao: 'Florivel' },
+  { id: 'solarin', inicial: 'Solinho', atual: 'Solarin', evolucao: 'Helíssio' },
+];
+export const REQUISITOS_EVOLUCAO = {
+  inicial: { vinculo: 40, nivel: 5 },   // forma inicial -> atual
+  atual: { vinculo: 70, nivel: 10 },    // atual -> evolução
+};
+export const linhaDaEspecie = (nome) => LINHAS.find((l) => l.inicial === nome || l.atual === nome || l.evolucao === nome) ?? null;
+export function faseDaEspecie(nome) {
+  const l = linhaDaEspecie(nome);
+  if (!l) return null;
+  return l.inicial === nome ? 'inicial' : l.atual === nome ? 'atual' : 'evolucao';
+}
+// Espécie que sai do ovo: a forma inicial da linha (espécies sem linha ficam como estão).
+export const inicialDaEspecie = (nome) => linhaDaEspecie(nome)?.inicial ?? nome;
+export function proximaEspecie(nome) {
+  const l = linhaDaEspecie(nome);
+  if (!l) return null;
+  const fase = faseDaEspecie(nome);
+  return fase === 'inicial' ? l.atual : fase === 'atual' ? l.evolucao : null;
+}
+export function requisitoDe(nome) {
+  const fase = faseDaEspecie(nome);
+  return fase === 'inicial' ? REQUISITOS_EVOLUCAO.inicial : fase === 'atual' ? REQUISITOS_EVOLUCAO.atual : null;
 }

@@ -1173,6 +1173,7 @@ function act(name, el) {
       if (S.egg.result) return;
       const s = Number($('egg-sanity').value);
       const r = C.hatch(S.egg, s, Math.random());
+      r.species = E.inicialDaEspecie(r.species);
       note(`ovo chocado com sanidade ${s}: ${r.species}, forma ${r.form}. Não pode ser chocado de novo.`);
       S.diamonds += C.diamondsForItem('comum'); // monstrinho novo na coleção
       break;
@@ -1358,6 +1359,7 @@ function act(name, el) {
       if (!egg) return;
       S.eggs = S.eggs.filter((e) => e !== egg);
       const r = C.hatchEgg(egg, Math.random());
+      r.species = E.inicialDaEspecie(r.species); // o ovo nasce na forma inicial da linha
       if (egg.origem === 'raid') { r.rarity = Y.raridadeOvoRaid(Math.random()); r.tier = egg.tier; } // ovo de raid: boss ou mítica
       const origem = egg.origem === 'raid' ? 'raid' : egg.origem === 'evento' ? 'evento' : 'base';
       const m = newMonster(r.species, r.rarity, r.purity, r.variant, 'comum', origem);
@@ -1517,6 +1519,22 @@ function act(name, el) {
       S = newState();
       break;
     }
+    case 'evoluir': {
+      const m = S.monsters.find((x) => x.id === el.dataset.id);
+      if (!m) return;
+      const prox = E.proximaEspecie(m.species);
+      if (!prox) { note(`${m.species} é a forma final.`); break; }
+      const req = E.requisitoDe(m.species);
+      if ((m.vinculo || 0) < req.vinculo || m.level < req.nivel) {
+        note(`${m.species} ainda não evolui: precisa de vínculo ${req.vinculo} e nível ${req.nivel}.`);
+        break;
+      }
+      const antes = m.species;
+      m.species = prox;
+      m.elemento = E.ELEMENTO_DA_ESPECIE[prox] ?? m.elemento;
+      note(`${antes} evoluiu para ${prox}!`);
+      break;
+    }
     case 'alimentar': {
       const m = S.monsters.find((x) => x.id === el.dataset.id);
       if (!m) return;
@@ -1581,19 +1599,35 @@ let abaAtiva = 'inicio';
 const abaDaSecao = (titulo) => (REGRAS_ABA.find(([re]) => re.test(titulo)) || [null, 'inicio'])[1];
 
 function evolucaoHtml() {
-  const linhas = S.monsters.map((m) => {
-    const v = m.vinculo || 0;
-    const sem = (S.resources.comida || 0) < 1 || v >= 100;
-    return `<li class="evo-linha">
-      <div>${monstroTag(m)} · nível ${m.level}</div>
-      <div class="vinculo"><span>Vínculo ${v}/100</span><progress value="${v}" max="100"></progress></div>
-      <button data-act="alimentar" data-id="${m.id}" ${sem ? 'disabled' : ''}>Alimentar (1 comida: +10 vínculo)</button>
-      <p class="muted">Evolução: a regra e as formas evoluídas esperam o nome e a arte de cada forma.</p>
-    </li>`;
+  const linhas = E.LINHAS.map((l) => {
+    const estagios = [l.inicial, l.atual, l.evolucao];
+    const trilha = estagios.map((nome, i) => {
+      const tem = S.monsters.some((m) => m.species === nome);
+      return `<span class="estagio ${tem ? 'tem' : ''}">${tem ? esc(nome) : '???'}</span>${i < 2 ? '<span class="seta-evo">›</span>' : ''}`;
+    }).join('');
+    const donos = S.monsters.filter((m) => E.linhaDaEspecie(m.species)?.id === l.id).map((m) => {
+      const req = E.requisitoDe(m.species);
+      const prox = E.proximaEspecie(m.species);
+      const v = m.vinculo || 0;
+      const pronto = req && v >= req.vinculo && m.level >= req.nivel;
+      const semComida = (S.resources.comida || 0) < 1 || v >= 100;
+      const regra = req ? `evolui com vínculo ${req.vinculo} e nível ${req.nivel}` : 'forma final';
+      return `<li class="evo-linha">
+        <div>${monstroTag(m)} · nível ${m.level}</div>
+        <div class="vinculo"><span>Vínculo ${v}/100 · ${regra}</span><progress value="${v}" max="100"></progress></div>
+        <button data-act="alimentar" data-id="${m.id}" ${semComida ? 'disabled' : ''}>Alimentar (1 comida: +10 vínculo)</button>
+        ${prox ? `<button data-act="evoluir" data-id="${m.id}" ${pronto ? '' : 'disabled'}>Evoluir para ${esc(prox)}</button>` : ''}
+      </li>`;
+    }).join('');
+    return `<div class="linha-evo">
+      <h3>${esc(l.inicial)} › ${esc(l.atual)} › ${esc(l.evolucao)}</h3>
+      <div class="trilha">${trilha}</div>
+      <ul class="lista-evo">${donos || '<li class="muted">Nenhum monstrinho desta linha ainda.</li>'}</ul>
+    </div>`;
   }).join('');
   return `<section data-aba="evolucao"><h2>Evolução</h2>
-    <p class="muted">O vínculo sobe com comida e a evolução depende dele. Comida: ${S.resources.comida || 0}.</p>
-    <ul class="lista-evo">${linhas || '<li class="muted">Nenhum monstrinho ainda.</li>'}</ul>
+    <p class="muted">Ovos nascem na forma inicial. Comida sobe o vínculo; vínculo e nível liberam a evolução. Nomes e requisitos são provisórios.</p>
+    ${linhas}
     <button data-aba-ir="monstrinhos">Ver monstrinhos ›</button>
     <button data-aba-ir="ovos">Abrir ovos ›</button></section>`;
 }
