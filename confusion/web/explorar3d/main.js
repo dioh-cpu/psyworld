@@ -9,7 +9,7 @@ import { linhasDoRegistro, EXEMPLO_ESPOLIO } from './registro.js';
 import { criarCenaBatalha } from './cena-batalha.js';
 import { criarMaterialCor, aplicarGiro, NATURAL } from './cor-sprite.js';
 import { AREAS, areaDaRegiao } from './areas.js';
-import { POSICOES_ALIADOS, posicaoDoInimigo, vistaDoAlvo } from './camera-batalha.js';
+import { vistaDoAlvo } from './camera-batalha.js';
 import * as BE from './batalha-equipe.js';
 import { montarMundo, COR_HORIZONTE, ALTURA_JOGADOR } from './mundo-3d.js';
 import * as C from '../core.js';
@@ -740,7 +740,11 @@ function mostrarNumero(ref, texto, classe, deslocY = 0) {
 }
 
 // ---- batalha: fluxo ----
-const posicaoDoLutador = (ref) => (ref.lado === 'aliado' ? POSICOES_ALIADOS[ref.i] : posicaoDoInimigo(batalha.sorteios.length, ref.i));
+const posicaoDoLutador = (ref) => cenaBat.posicaoDoLutador(ref.lado, ref.i);
+
+// Arte de fundo da batalha por elemento (o do primeiro inimigo). Sem arte, a arena é a lisa de sempre.
+const ARTE_BATALHA = new Set(['agua', 'aco', 'dragao', 'eletrico', 'fada', 'fantasma', 'fogo', 'gelo', 'inseto', 'lutador', 'luz', 'neutro', 'pedra', 'planta', 'psiquico', 'terra', 'trevas', 'veneno', 'voador']);
+const arteDaBatalha = (elemento) => (ARTE_BATALHA.has(elemento) ? `${RAIZ}assets/mundo/batalha/${elemento}.webp` : null);
 
 // Um selvagem do mapa é o primeiro inimigo; a batalha traz mais 0 a 2, sorteados na hora. O time (até 3) sempre luta.
 function iniciarBatalha(s) {
@@ -766,6 +770,7 @@ function iniciarBatalha(s) {
   teclas.clear();
   estado.joy = { x: 0, z: 0 };
   cenaBat.tema(area.arena);
+  cenaBat.definirPalco(arteDaBatalha(sorteios[0].monstro.elemento));
   cenaBat.reiniciarCamera();
   cenaBat.disporInimigos(sorteios.length);
   time.slice(0, 3).forEach((m, i) => {
@@ -813,10 +818,10 @@ function voltarAcoes() {
 // Leva a câmera ao inimigo mais perto de quem age, e a mira fica nele.
 function irParaAlvo() {
   const b = batalha;
-  const origem = POSICOES_ALIADOS[b.quem];
+  const origem = cenaBat.posicaoDoLutador('aliado', b.quem);
   const vivos = BE.inimigosVivos(b.e);
   b.alvo = vivos.reduce((melhor, i) => {
-    const p = posicaoDoInimigo(b.sorteios.length, i);
+    const p = cenaBat.posicaoDoLutador('inimigo', i);
     const d = Math.hypot(p.x - origem.x, p.z - origem.z);
     return d < melhor.d ? { i, d } : melhor;
   }, { i: vivos[0], d: Infinity }).i;
@@ -826,7 +831,7 @@ function irParaAlvo() {
 }
 
 function mirarAlvo() {
-  cenaBat.mirarVista(vistaDoAlvo(posicaoDoInimigo(batalha.sorteios.length, batalha.alvo)));
+  cenaBat.mirarVista(vistaDoAlvo(cenaBat.posicaoDoLutador('inimigo', batalha.alvo)));
 }
 
 function ciclarAlvo(dir) {

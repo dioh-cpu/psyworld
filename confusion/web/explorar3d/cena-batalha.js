@@ -1,22 +1,44 @@
-// Cena 3D da batalha: arena em círculo, os monstrinhos em pé no chão e a câmera isométrica do roteiro da luta.
-// Cada monstrinho é um sprite com o pé na arena. Ele fica de frente para a câmera (não fica fino de cima nem de lado),
-// sem sombra. Os aliados mostram as costas e os inimigos a frente. Os lutadores não se atravessam: quem avança ou apanha
-// para na distância mínima do outro e não sai do disco.
-import { POSICOES_ALIADOS, posicaoDoInimigo, vistaDaCamera } from './camera-batalha.js';
+// Cena 3D da batalha, em duas formas:
+// - palco: a arte do elemento (16:9) é o chão. Os seis discos da arte recebem os lutadores: três aliados à esquerda e três
+//   inimigos à direita. A visão panorâmica é calculada para a arte caber na tela, e o chão é medido com essa mesma câmera,
+//   então cada lutador cai sobre o seu disco.
+// - arena lisa (sem arte): o disco escuro com anéis, como antes.
+// Nas duas formas, cada monstrinho é um sprite com o pé no chão, de frente para a câmera, sem sombra.
+import { POSICOES_ALIADOS, posicaoDoInimigo, vistaDaCamera, VISTAS } from './camera-batalha.js';
 import { criarMaterialCor, aplicarGiro as aplicarGiroCor } from './cor-sprite.js';
 
-const ALTURA = 2.1;              // altura dos monstrinhos na arena (do pé à cabeça)
-const SEPARACAO = 1.25;          // distância mínima entre dois monstrinhos
-const ARENA = { x: 4.6, z: 5.6 }; // o disco é mais comprido na profundidade: a tela do celular é alta
-const LIMITE_LUTA = { x: 3.9, z: 4.9 }; // até onde um monstrinho pode ir (dentro do disco)
+const ALTURA_PADRAO = 2.1;                  // altura dos monstrinhos na arena lisa
+const SEPARACAO = 1.25;                     // distância mínima entre dois monstrinhos na arena lisa
+const ARENA = { x: 4.6, z: 5.6 };           // o disco da arena lisa é mais comprido na profundidade
+const LIMITE_LUTA = { x: 3.9, z: 4.9 };     // (arena lisa) até onde um monstrinho pode ir
 const DAMPING_CAMERA = 3.2;
-const MEIA_LARGURA_LUTA = 5.0;   // metade da largura que o time e os inimigos ocupam na tela (em unidades da arena)
-const METADE_ALTURA_LUTA = 9.2;  // metade da altura que a luta ocupa: a arena cabe entre as faixas de cima e de baixo
-const POSICAO_RESERVA = { x: 0, z: -2.4 };   // slot de inimigo sem uso (fica escondido)
+const MEIA_LARGURA_LUTA = 5.0;              // (arena lisa) metade da largura que a luta ocupa
+const METADE_ALTURA_LUTA = 9.2;             // (arena lisa) metade da altura que a luta ocupa
+const POSICAO_RESERVA = { x: 0, z: -2.4 };  // slot de inimigo sem uso (fica escondido)
+
+// Palco: a arte tem 1344 x 756 px. Os seis discos, em px da arte: centro (x, y) e raios (rx, ry) até a borda de pedra.
+const ARTE = { largura: 1344, altura: 756 };
+const DISCOS_ARTE = {
+  aliado: [                                 // lado esquerdo; o primeiro aliado fica na frente
+    { x: 338, y: 516, rx: 91, ry: 64 },
+    { x: 518, y: 394, rx: 86, ry: 58 },
+    { x: 385, y: 283, rx: 77, ry: 47 },
+  ],
+  inimigo: [                                // lado direito; o primeiro inimigo fica no meio
+    { x: 827, y: 394, rx: 86, ry: 58 },
+    { x: 957, y: 283, rx: 77, ry: 47 },
+    { x: 1001, y: 517, rx: 89, ry: 65 },
+  ],
+};
+const DISCO_MUNDO = 2.0;       // diâmetro de um disco no mundo da luta (a câmera do palco é escalada para isso)
+const FATOR_LUTADOR = 1.25;    // altura do monstrinho em relação ao diâmetro do disco
+const RECUO_ABERTURA = 1.18;   // a abertura da luta fica um pouco mais longe da arena
 
 export function criarCenaBatalha(THREE) {
   const cena = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(vistaDaCamera('abertura').fov, 1, 0.1, 100);
+  const raio = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
   const posAtual = new THREE.Vector3();
   const olharAtual = new THREE.Vector3();
   let fovAtual = vistaDaCamera('abertura').fov;
@@ -26,6 +48,34 @@ export function criarCenaBatalha(THREE) {
   let tempo = 0;
   let larguraTela = 1;
   let alturaTela = 1;
+  let alturaAtual = ALTURA_PADRAO;   // altura dos monstrinhos na forma atual (arena lisa ou palco)
+  let arteUrl = null;                // arte do palco; null na arena lisa
+  let palco = null;                  // palco da tela atual: { m, pose, poseAbertura, cam, discos, limite }
+  const carregador = new THREE.TextureLoader();
+  const texturas = new Map();
+
+  // fundo do palco: a arte desfocada e escurecida, cobrindo a tela (aparece nas faixas de cima e de baixo)
+  const fundoArte = document.createElement('canvas');
+  const texFundoArte = new THREE.CanvasTexture(fundoArte);
+  texFundoArte.colorSpace = THREE.SRGBColorSpace;
+  let imgArte = null;   // imagem da arte do palco, já carregada
+  function desenharFundoArte() {
+    if (!imgArte) return;
+    const W = Math.max(2, Math.round(larguraTela / 2));
+    const H = Math.max(2, Math.round(alturaTela / 2));
+    fundoArte.width = W;
+    fundoArte.height = H;
+    const g = fundoArte.getContext('2d');
+    const s = Math.max(W / imgArte.width, H / imgArte.height) * 1.08;   // cobre a tela, com folga para o desfoque
+    const w = imgArte.width * s;
+    const h = imgArte.height * s;
+    g.filter = 'blur(10px)';
+    g.drawImage(imgArte, (W - w) / 2, (H - h) / 2, w, h);
+    g.filter = 'none';
+    g.fillStyle = 'rgba(5, 11, 28, 0.4)';
+    g.fillRect(0, 0, W, H);
+    texFundoArte.needsUpdate = true;
+  }
 
   // fundo em degradê, do mesmo tom de crepúsculo do mapa
   const gc = document.createElement('canvas');
@@ -46,7 +96,7 @@ export function criarCenaBatalha(THREE) {
   }
   pintarFundo('#2a5597', '#050b1c');
 
-  // arena: disco escuro com anéis claros (as cores vêm do tema da área)
+  // arena lisa: disco escuro com anéis claros (as cores vêm do tema da área)
   const discoMat = new THREE.MeshBasicMaterial({ color: '#1c3f73' });
   const disco = new THREE.Mesh(new THREE.CircleGeometry(1, 72), discoMat);
   disco.scale.set(ARENA.x, ARENA.z, 1);
@@ -64,6 +114,13 @@ export function criarCenaBatalha(THREE) {
   anelInterno.rotation.x = -Math.PI / 2;
   anelInterno.position.y = 0.012;
   cena.add(anelInterno);
+
+  // palco: a arte mapeada sobre o chão (ver geometriaDoChao)
+  const chaoMat = new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide });
+  const chao = new THREE.Mesh(new THREE.BufferGeometry(), chaoMat);
+  chao.position.y = -0.02;
+  chao.visible = false;
+  cena.add(chao);
 
   // tema da área: cores do fundo, do disco e dos anéis. Cada região da ilha tem a sua.
   function tema(arena) {
@@ -111,16 +168,20 @@ export function criarCenaBatalha(THREE) {
     geoFaisca.attributes.position.needsUpdate = true;
   }
 
-  // o sprite tem a origem no pé (a imagem sobe a partir do chão), então o pé fica na arena
+  // o sprite tem a origem no pé (a imagem sobe a partir do chão), então o pé fica no disco ou na arena
   function geometriaDoLutador(largura) {
-    const g = new THREE.PlaneGeometry(largura, ALTURA);
-    g.translate(0, ALTURA / 2, 0);
+    const g = new THREE.PlaneGeometry(largura, alturaAtual);
+    g.translate(0, alturaAtual / 2, 0);
     return g;
+  }
+  function refazerGeometria(l) {
+    l.malha.geometry.dispose();
+    l.malha.geometry = geometriaDoLutador(alturaAtual * l.aspecto);
   }
 
   function criarLutador(lado, base) {
     const { material, uniforms } = criarMaterialCor(THREE);
-    const malha = new THREE.Mesh(geometriaDoLutador(ALTURA), material);
+    const malha = new THREE.Mesh(geometriaDoLutador(alturaAtual), material);
     malha.visible = false;
     cena.add(malha);
     return {
@@ -135,21 +196,27 @@ export function criarCenaBatalha(THREE) {
       ativo: false, derrubado: false,
     };
   }
-  // até 3 aliados e até 3 inimigos; cada um tem o seu slot na arena (ver camera-batalha.js)
+  // até 3 aliados e até 3 inimigos; cada um tem o seu slot (ver camera-batalha.js e o palco)
   const slots = {
     aliado: POSICOES_ALIADOS.map((p) => criarLutador('aliado', p)),
     inimigo: [0, 1, 2].map(() => criarLutador('inimigo', POSICAO_RESERVA)),
   };
-  // arruma os inimigos conforme quantos são; os aliados ficam sempre nos três slots
+  // arruma os inimigos conforme quantos são: no palco, cada um vai para o seu disco
   function disporInimigos(quantidade) {
     slots.inimigo.forEach((l, i) => {
-      const p = posicaoDoInimigo(quantidade, i);
+      const p = palco ? palco.discos.inimigo[i] : posicaoDoInimigo(quantidade, i);
       l.base = { x: p.x, z: p.z };
       l.ativo = i < quantidade;
       if (!l.ativo) l.malha.visible = false;
     });
   }
   const lutadorDo = (lado, i) => slots[lado][i];
+
+  // onde o lutador está no repouso (o disco no palco, o slot na arena lisa)
+  function posicaoDoLutador(lado, i) {
+    const l = lutadorDo(lado, i);
+    return { x: l.base.x, z: l.base.z };
+  }
 
   const NATURAL = { matiz: 0, sat: 1, bri: 1 };
   const aplicarGiro = (l, g) => aplicarGiroCor(THREE, l.uniforms, g);
@@ -196,15 +263,15 @@ export function criarCenaBatalha(THREE) {
     def.knock = critico ? 0.22 : 0.12;
     def.knockDir = { x: -dir.x, z: -dir.z };
     tremor = Math.max(tremor, critico ? 0.16 : 0.07);
-    const p = projetarPonto(def.malha.position.x, ALTURA * 0.6, def.malha.position.z);
-    faiscas(def.malha.position.x, ALTURA * 0.6, def.malha.position.z, critico ? '#ffb347' : '#ffd27a');
+    const p = projetarPonto(def.malha.position.x, alturaAtual * 0.6, def.malha.position.z);
+    faiscas(def.malha.position.x, alturaAtual * 0.6, def.malha.position.z, critico ? '#ffb347' : '#ffd27a');
     return p;
   }
 
   function cura(lado, i) {
     const l = lutadorDo(lado, i);
     l.curaT = 0.7;
-    faiscas(l.malha.position.x, ALTURA * 0.5, l.malha.position.z, '#9dffb0');
+    faiscas(l.malha.position.x, alturaAtual * 0.5, l.malha.position.z, '#9dffb0');
   }
 
   // Vista da câmera. A passagem é suavizada no atualizar, então trocar de vista não corta.
@@ -224,8 +291,15 @@ export function criarCenaBatalha(THREE) {
     l.malha.visible = false;
   }
 
+  // Vista pelo nome. No palco, a panorâmica e a abertura são as da arte: já enquadram os seis discos, então não recuam.
+  function visaoDe(nome) {
+    if (palco && nome === 'panoramica') return { ...palco.pose, fixa: true };
+    if (palco && nome === 'abertura') return { ...palco.poseAbertura, fixa: true };
+    return vistaDaCamera(nome);
+  }
+
   function reiniciarCamera() {
-    const v = vistaDaCamera('abertura');
+    const v = visaoDe('abertura');
     posAtual.set(...v.pos);
     olharAtual.set(...v.olha);
     fovAtual = v.fov;
@@ -245,13 +319,184 @@ export function criarCenaBatalha(THREE) {
   }
   function projetar(lado, i) {
     const l = lutadorDo(lado, i);
-    return projetarPonto(l.malha.position.x, ALTURA * 0.85, l.malha.position.z);
+    return projetarPonto(l.malha.position.x, alturaAtual * 0.85, l.malha.position.z);
   }
 
-  // Colisão entre os monstrinhos: quem se desloca (avanço ou empurrão) para na distância mínima do outro e não sai do disco.
+  // ---- palco ----
+
+  // Mapa da arte para a tela: a largura dos discos (com a borda) ocupa 90% da tela, e a altura do conteúdo (do topo
+  // do lutador mais alto até a borda de baixo dos discos) ocupa 76%. Vale o que couber.
+  function mapaDoPalco(largura, altura) {
+    const todos = [...DISCOS_ARTE.aliado, ...DISCOS_ARTE.inimigo];
+    const x0 = Math.min(...todos.map((d) => d.x - d.rx));
+    const x1 = Math.max(...todos.map((d) => d.x + d.rx));
+    const y0 = Math.min(...todos.map((d) => d.y - FATOR_LUTADOR * 2 * d.rx));
+    const y1 = Math.max(...todos.map((d) => d.y + d.ry));
+    const k = Math.min((0.9 * largura) / (x1 - x0), (0.76 * altura) / (y1 - y0));
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+    return {
+      paraTela: (ax, ay) => ({ x: largura / 2 + (ax - cx) * k, y: altura / 2 + (ay - cy) * k }),
+      deTela: (sx, sy) => ({ x: cx + (sx - largura / 2) / k, y: cy + (sy - altura / 2) / k }),
+    };
+  }
+
+  // Câmera de uma pose, com a mesma projeção da câmera da cena: serve para medir onde cada pixel cai no chão.
+  function cameraDaPose(pose, largura, altura) {
+    const c = new THREE.PerspectiveCamera(pose.fov, largura / altura, 0.1, 400);
+    c.position.set(pose.pos[0], pose.pos[1], pose.pos[2]);
+    c.lookAt(pose.olha[0], pose.olha[1], pose.olha[2]);
+    c.updateMatrixWorld(true);
+    c.updateProjectionMatrix();
+    return c;
+  }
+
+  // Ponto do chão (y = 0) atingido pelo raio que passa pelo pixel (sx, sy) da tela; null se o raio não toca o chão.
+  function chaoEm(c, largura, altura, sx, sy) {
+    ndc.set((sx / largura) * 2 - 1, 1 - (sy / altura) * 2);
+    raio.setFromCamera(ndc, c);
+    const o = raio.ray.origin;
+    const d = raio.ray.direction;
+    if (Math.abs(d.y) < 1e-9) return null;
+    const t = -o.y / d.y;
+    if (t <= 0) return null;
+    return { x: o.x + d.x * t, z: o.z + d.z * t };
+  }
+
+  // Pose do palco: a direção da visão panorâmica, com a distância que faz o disco do meio medir DISCO_MUNDO.
+  // Escalar a câmera e o mundo juntos não muda a imagem: a escala só define o tamanho das coisas no mundo.
+  function calcularPalco(largura, altura) {
+    const m = mapaDoPalco(largura, altura);
+    const { pos, olha, fov } = VISTAS.panoramica;
+    const v = [pos[0] - olha[0], pos[1] - olha[1], pos[2] - olha[2]];
+    const n = Math.hypot(v[0], v[1], v[2]);
+    const dir = v.map((x) => x / n);
+    const D0 = 12;
+    const c0 = cameraDaPose({ pos: dir.map((x) => x * D0), olha: [0, 0, 0], fov }, largura, altura);
+    const meio = DISCOS_ARTE.aliado[1];
+    const esq = m.paraTela(meio.x - meio.rx, meio.y);
+    const dir2 = m.paraTela(meio.x + meio.rx, meio.y);
+    const a = chaoEm(c0, largura, altura, esq.x, esq.y);
+    const b = chaoEm(c0, largura, altura, dir2.x, dir2.y);
+    const escala = DISCO_MUNDO / Math.hypot(b.x - a.x, b.z - a.z);
+    const pose = { pos: dir.map((x) => x * D0 * escala), olha: [0, 0, 0], fov };
+    const poseAbertura = {
+      pos: dir.map((x) => x * D0 * escala * RECUO_ABERTURA),
+      olha: [0, 0, 0],
+      fov: VISTAS.abertura.fov,
+    };
+    const cam = cameraDaPose(pose, largura, altura);
+    const noChao = (p) => {
+      const s = m.paraTela(p.x, p.y);
+      return chaoEm(cam, largura, altura, s.x, s.y);
+    };
+    const discos = { aliado: DISCOS_ARTE.aliado.map(noChao), inimigo: DISCOS_ARTE.inimigo.map(noChao) };
+    const todos = [...discos.aliado, ...discos.inimigo];
+    const limite = {
+      xmin: Math.min(...todos.map((p) => p.x)) - 1.2,
+      xmax: Math.max(...todos.map((p) => p.x)) + 1.2,
+      zmin: Math.min(...todos.map((p) => p.z)) - 1.2,
+      zmax: Math.max(...todos.map((p) => p.z)) + 1.2,
+    };
+    return { m, pose, poseAbertura, cam, discos, limite };
+  }
+
+  // Malha do chão: uma grade sobre a parte da arte que aparece na tela. Cada vértice é o ponto do chão que a câmera do
+  // palco vê naquele pixel e recebe a coordenada da arte nesse pixel. Vista dessa câmera, a arte fica igual à imagem.
+  function geometriaDoChao(m, c, largura, altura) {
+    const tl = m.paraTela(0, 0);
+    const br = m.paraTela(ARTE.largura, ARTE.altura);
+    const x0 = Math.max(0, tl.x);
+    const x1 = Math.min(largura, br.x);
+    const y0 = Math.max(0, tl.y);
+    const y1 = Math.min(altura, br.y);
+    const NX = 28;
+    const NY = 16;
+    const pos = [];
+    const uv = [];
+    const idx = [];
+    for (let j = 0; j <= NY; j++) {
+      for (let i = 0; i <= NX; i++) {
+        const sx = x0 + ((x1 - x0) * i) / NX;
+        const sy = y0 + ((y1 - y0) * j) / NY;
+        const g = chaoEm(c, largura, altura, sx, sy) ?? { x: 0, z: 0 };
+        const a = m.deTela(sx, sy);
+        pos.push(g.x, 0, g.z);
+        uv.push(a.x / ARTE.largura, 1 - a.y / ARTE.altura);   // a textura tem a origem embaixo
+      }
+    }
+    for (let j = 0; j < NY; j++) {
+      for (let i = 0; i < NX; i++) {
+        const p = j * (NX + 1) + i;
+        const q = p + 1;
+        const r = p + (NX + 1);
+        const s = r + 1;
+        idx.push(p, r, q, q, r, s);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    return g;
+  }
+
+  // Monta o palco para a tela atual: chão, discos e limites. Os lutadores ficam sobre os discos.
+  function montarPalco() {
+    palco = calcularPalco(larguraTela, alturaTela);
+    alturaAtual = FATOR_LUTADOR * DISCO_MUNDO;
+    chao.geometry.dispose();
+    chao.geometry = geometriaDoChao(palco.m, palco.cam, larguraTela, alturaTela);
+    slots.aliado.forEach((l, i) => { l.base = { x: palco.discos.aliado[i].x, z: palco.discos.aliado[i].z }; });
+    slots.inimigo.forEach((l, i) => { l.base = { x: palco.discos.inimigo[i].x, z: palco.discos.inimigo[i].z }; });
+    for (const l of [...slots.aliado, ...slots.inimigo]) refazerGeometria(l);
+    desenharFundoArte();
+  }
+
+  // Liga o palco de uma arte (url), ou volta para a arena lisa (null). Chamar antes de disporInimigos.
+  function definirPalco(url) {
+    arteUrl = url;
+    const comArte = Boolean(url);
+    disco.visible = !comArte;
+    anel.visible = !comArte;
+    anelInterno.visible = !comArte;
+    chao.visible = comArte;
+    if (!comArte) {
+      palco = null;
+      alturaAtual = ALTURA_PADRAO;
+      chaoMat.map = null;
+      chaoMat.needsUpdate = true;
+      imgArte = null;
+      cena.background = fundo;
+      slots.aliado.forEach((l, i) => { l.base = { x: POSICOES_ALIADOS[i].x, z: POSICOES_ALIADOS[i].z }; });
+      for (const l of [...slots.aliado, ...slots.inimigo]) refazerGeometria(l);
+      return;
+    }
+    let tex = texturas.get(url);
+    if (!tex) {
+      tex = carregador.load(url);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      texturas.set(url, tex);
+    }
+    chaoMat.map = tex;
+    chaoMat.needsUpdate = true;
+    cena.background = fundo;   // enquanto a imagem da arte não carrega, o fundo é o degradê
+    const im = new Image();
+    im.onload = () => {
+      if (arteUrl !== url) return;   // outra batalha trocou a arte enquanto esta carregava
+      imgArte = im;
+      cena.background = texFundoArte;
+      desenharFundoArte();
+    };
+    im.src = url;
+    montarPalco();
+  }
+
+  // Colisão entre os monstrinhos: quem se desloca (avanço ou empurrão) para na distância mínima do outro e não sai da arena.
   // Quem está parado é a parede: o deslocamento nunca o atravessa.
   function resolverColisoes(todos) {
     const vivos = todos.filter((l) => l.malha.visible);
+    const separacao = palco ? alturaAtual * 0.4 : SEPARACAO;
     for (const l of vivos) l.p = { x: l.base.x + l.off.x, z: l.base.z + l.off.z };
     for (const l of vivos) {
       const movendo = l.off.x !== 0 || l.off.z !== 0;
@@ -261,18 +506,23 @@ export function criarCenaBatalha(THREE) {
           const dx = l.p.x - outro.p.x;
           const dz = l.p.z - outro.p.z;
           const d = Math.hypot(dx, dz);
-          if (d >= SEPARACAO) continue;
+          if (d >= separacao) continue;
           const n = d < 1e-6 ? 1 : d;
           const ux = d < 1e-6 ? 0 : dx / n;
           const uz = d < 1e-6 ? 1 : dz / n;
-          l.p.x = outro.p.x + ux * SEPARACAO;
-          l.p.z = outro.p.z + uz * SEPARACAO;
+          l.p.x = outro.p.x + ux * separacao;
+          l.p.z = outro.p.z + uz * separacao;
         }
       }
-      const k = Math.hypot(l.p.x / LIMITE_LUTA.x, l.p.z / LIMITE_LUTA.z);
-      if (k > 1) {
-        l.p.x /= k;
-        l.p.z /= k;
+      if (palco) {
+        l.p.x = Math.min(palco.limite.xmax, Math.max(palco.limite.xmin, l.p.x));
+        l.p.z = Math.min(palco.limite.zmax, Math.max(palco.limite.zmin, l.p.z));
+      } else {
+        const k = Math.hypot(l.p.x / LIMITE_LUTA.x, l.p.z / LIMITE_LUTA.z);
+        if (k > 1) {
+          l.p.x /= k;
+          l.p.z /= k;
+        }
       }
       l.malha.position.set(l.p.x, 0, l.p.z);
     }
@@ -290,8 +540,7 @@ export function criarCenaBatalha(THREE) {
         const w = img.naturalWidth || img.width;
         const h = img.naturalHeight || img.height;
         l.aspecto = w / h;
-        l.malha.geometry.dispose();
-        l.malha.geometry = geometriaDoLutador(ALTURA * l.aspecto);
+        refazerGeometria(l);
         l.pronto = true;
       }
       // transformação de cor (variação): do natural até a cor da variação, com as três partes do giro juntas
@@ -338,9 +587,9 @@ export function criarCenaBatalha(THREE) {
     atualizarFaiscas(dt);
 
     // câmera: vai até a vista pedida, com tremor no impacto
-    const v = vistaLivre ?? vistaDaCamera(modo);
+    const v = vistaLivre ?? visaoDe(modo);
     const k = 1 - Math.exp(-dt * DAMPING_CAMERA);
-    // a câmera recua o que for preciso para os dois lados caberem na largura (celular em retrato)
+    // na arena lisa, a câmera recua o que for preciso para os dois lados caberem (celular em retrato); o palco já enquadra
     const ox = v.pos[0] - v.olha[0];
     const oy = v.pos[1] - v.olha[1];
     const oz = v.pos[2] - v.olha[2];
@@ -348,7 +597,7 @@ export function criarCenaBatalha(THREE) {
     const tangente = Math.tan((v.fov * Math.PI) / 360);
     const necessariaLargura = MEIA_LARGURA_LUTA / (tangente * camera.aspect);
     const necessariaAltura = METADE_ALTURA_LUTA / tangente;
-    const fator = Math.max(1, necessariaLargura / distancia, necessariaAltura / distancia);
+    const fator = v.fixa ? 1 : Math.max(1, necessariaLargura / distancia, necessariaAltura / distancia);
     posAtual.lerp(new THREE.Vector3(v.olha[0] + ox * fator, v.olha[1] + oy * fator, v.olha[2] + oz * fator), k);
     olharAtual.lerp(new THREE.Vector3(...v.olha), k);
     fovAtual += (v.fov - fovAtual) * k;
@@ -370,9 +619,11 @@ export function criarCenaBatalha(THREE) {
     alturaTela = altura;
     camera.aspect = largura / altura;
     camera.updateProjectionMatrix();
+    if (arteUrl) montarPalco();   // o palco se refaz para a nova tela (o celular girou, por exemplo)
   }
 
   return {
-    cena, camera, tema, definir, golpe, cura, mirar, mirarVista, derrubar, disporInimigos, reiniciarCamera, tremerCamera, projetar, atualizar, resize,
+    cena, camera, tema, definirPalco, definir, golpe, cura, mirar, mirarVista, derrubar, disporInimigos, posicaoDoLutador,
+    reiniciarCamera, tremerCamera, projetar, atualizar, resize,
   };
 }
