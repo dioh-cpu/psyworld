@@ -88,23 +88,24 @@ const portais = {
 };
 
 // 24 — Cicatrizes e traumas. Referência: Disco Elysium (pensamentos que se internalizam) e Hellblade (o peso das lembranças).
+const CURA_DIAS = 10;
 const cicatrizes = {
   id: '24', nome: 'Cicatrizes e traumas', referencia: 'Disco Elysium (pensamentos que se internalizam); Hellblade (o peso das lembranças)',
   criar: () => ({ cicatrizes: [] }),
   dia(est) {
-    let sanidade = 0;
+    // Cicatriz que não foi superada se fecha sozinha após CURA_DIAS: sem isso, a sanidade baixa travava para sempre.
+    const notas = [];
     est.cicatrizes = est.cicatrizes.map((c) => ({ ...c, dias: c.superada ? c.dias : c.dias + 1 }));
-    for (const c of est.cicatrizes) if (!c.superada) sanidade -= 1;
-    return { notas: [], efeitos: sanidade ? { sanidade: Math.max(-3, sanidade) } : {} };
+    est.cicatrizes = est.cicatrizes.map((c) => {
+      if (c.superada || c.dias < CURA_DIAS) return c;
+      notas.push(`A cicatriz de ${c.origem} se fechou com o tempo.`);
+      return { ...c, superada: true };
+    });
+    // Cada duas cicatrizes ativas drenam 1 por dia (teto de 3): uma cicatriz isolada pesa pouco, seis pesam muito.
+    const drenagem = Math.min(3, Math.floor(est.cicatrizes.filter((c) => !c.superada).length / 2));
+    return { notas, efeitos: drenagem ? { sanidade: -drenagem } : {} };
   },
   acoes: {
-    sofrer_trauma: {
-      rotulo: 'Sofrer um trauma (para testar; deixa uma cicatriz)',
-      fn(est, ctx) {
-        est.cicatrizes = [...est.cicatrizes, { origem: 'trauma da vila', dias: 0, superada: false }].slice(-6);
-        return { notas: ['Uma cicatriz ficou.'], efeitos: { sanidade: -4 } };
-      },
-    },
     superar: {
       rotulo: 'Superar a cicatriz mais antiga (exige sanidade 40)',
       fn(est, ctx) {

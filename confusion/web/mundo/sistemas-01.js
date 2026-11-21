@@ -19,7 +19,8 @@ const cidadesVivas = {
       const c = est[v.id];
       const sofre = v.depende === 'ponte' && ctx.ponteFechada;
       c.prosperidade = clamp(c.prosperidade + (sofre ? -3 : 1) - Math.floor(c.corrupcao / 25), 0, 100);
-      c.corrupcao = clamp(c.corrupcao + (ctx.sanidade < 40 ? 2 : 0) + (ctx.r() < 0.1 ? 1 : 0), 0, 100);
+      // Corrupção sobe com sanidade muito baixa (abaixo de 30) e recua 1 por dia quando a sanidade está razoável: a vila pode se recuperar.
+      c.corrupcao = clamp(c.corrupcao + (ctx.sanidade < 30 ? 2 : -1) + (ctx.r() < 0.1 ? 1 : 0), 0, 100);
       if (c.corrupcao >= 70 && ctx.r() < 0.3) notas.push(`${c.nome} está corrompida: os serviços param.`);
     }
     return { notas };
@@ -165,6 +166,8 @@ const refugios = {
       r.abrigados = clamp(r.abrigados + (ctx.r() < 0.5 ? 1 : 0), 0, 5);
       if (r.abrigados > 0) sanidade += 1;
     }
+    // Descanso básico: sem refúgio, a sanidade ainda se recupera devagar até 60 (senão a sanidade baixa virava armadilha).
+    if (ctx.sanidade < 60) sanidade += 1;
     return { notas, efeitos: sanidade ? { sanidade: Math.min(3, sanidade) } : {} };
   },
   acoes: {

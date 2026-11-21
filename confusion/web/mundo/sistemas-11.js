@@ -89,7 +89,10 @@ const subterraneo = {
   criar: () => ({ entradas: Object.fromEntries(Object.keys(REGIOES_SUB).map((r) => [r, false])), visitadas: 0 }),
   dia(est, ctx) {
     const notas = [];
-    if (ctx.ponteFechada && ctx.r() < 0.1) {
+    // A ponte fechada (dias 4 a 7, ver bridgeState em core.js) revela uma entrada com 10% ao dia.
+    // No último dia fechado, se nada apareceu, uma entrada é revelada: a região não fica inacessível.
+    const semEntrada = !Object.values(est.entradas).some(Boolean);
+    if (ctx.ponteFechada && (ctx.r() < 0.1 || (ctx.dia === 7 && semEntrada))) {
       const alvo = Object.keys(REGIOES_SUB).find((r) => !est.entradas[r]);
       if (alvo) {
         est.entradas[alvo] = true;
@@ -154,7 +157,8 @@ const doencas = {
   criar: () => ({ nivel: 0, ativa: false }),
   dia(est, ctx) {
     const notas = [];
-    const chance = Math.max(0, 0.1 - (ctx.protecaoPragas || 0));
+    // Piso de 2%: refúgios reduzem a chance de praga, mas não a eliminam (com 3 refúgios a praga sumia de vez).
+    const chance = Math.max(0.02, 0.1 - (ctx.protecaoPragas || 0));
     if (!est.ativa && ctx.r() < chance) { est.ativa = true; est.nivel = 10; notas.push('Uma praga apareceu nas plantações.'); }
     if (est.ativa) est.nivel = clamp(est.nivel + 5, 0, 100);
     return { notas, efeitos: est.ativa ? { recursos: { comida: -1 } } : {} };
@@ -237,12 +241,12 @@ const guardioes = {
       },
     },
     desafiar: {
-      rotulo: 'Desafiar o guardião mais fraco (chance pela força; derrota custa sanidade)',
+      rotulo: 'Desafiar o guardião mais fraco (chance pela força; derrota custa sanidade e pode deixar cicatriz)',
       fn(est, ctx) {
         const g = Object.keys(est.forca).sort((a, b) => est.forca[a] - est.forca[b])[0];
         if (ctx.r() * 100 > est.forca[g]) {
           est.forca[g] = clamp(est.forca[g] + 5, 0, 100);
-          return { notas: [`${GUARDIOES[g].nome} venceu você.`], efeitos: { sanidade: -3 } };
+          return { notas: [`${GUARDIOES[g].nome} venceu você.`], efeitos: { sanidade: -3 }, cicatriz: `derrota para ${GUARDIOES[g].nome}` };
         }
         est.forca[g] = clamp(est.forca[g] - 20, 0, 100);
         return { notas: [`Você venceu ${GUARDIOES[g].nome}.`], efeitos: { recursos: { cristal: 2 } } };

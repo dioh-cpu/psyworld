@@ -42,7 +42,13 @@ export function acaoMundo(estado, sistemaId, acaoId, args, ctx) {
   const s = porId[sistemaId];
   const a = s?.acoes?.[acaoId];
   if (!a) return { notas: ['Ação desconhecida.'], efeitos: {} };
-  return a.fn(estado[s.id], cruzados(estado, ctx), args || {}) || { notas: [], efeitos: {} };
+  const res = a.fn(estado[s.id], cruzados(estado, ctx), args || {}) || { notas: [], efeitos: {} };
+  // Um sistema pode pedir uma cicatriz para o sistema 24 (ele não muda o estado de outro sistema diretamente).
+  if (res.cicatriz) {
+    const c = estado['24'];
+    c.cicatrizes = [...c.cicatrizes, { origem: res.cicatriz, dias: 0, superada: false }].slice(-6);
+  }
+  return res;
 }
 
 // Escolhas que uma ação precisa (ex.: responder um sonho). Chave: "sistema.acao".

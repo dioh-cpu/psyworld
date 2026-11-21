@@ -4,18 +4,27 @@ import { clamp } from './util.js';
 
 // 31 — Fundação de cidades. Referência: Banished e Frostpunk (fundar um assentamento e mantê-lo vivo).
 const CIDADES_MAX = 2;
+const FAZENDA_POR_CIDADE = 3;      // comida produzida por cidade por dia
+const ESTOQUE_MINIMO_CRESCER = 20; // a população só cresce com esse estoque de comida
 const fundacao = {
   id: '31', nome: 'Fundação de cidades', referencia: 'Banished e Frostpunk (fundar um assentamento e mantê-lo vivo)',
   criar: () => ({ fundadas: [] }),
   dia(est, ctx) {
+    // Cada cidade tem fazendas (produz comida), a população consome comida, e a população só cresce com estoque.
+    // Sem comida suficiente, os moradores partem. Sem isso, a população crescia sem freio e drenava o estoque.
     const notas = [];
-    let comida = 0;
-    for (const c of est.fundadas) {
-      if (ctx.r() < 0.5) c.populacao = clamp(c.populacao + 1, 0, 50);
-      comida += Math.ceil(c.populacao / 5);
+    const estoque = ctx.recursos?.comida || 0;
+    const producao = est.fundadas.length * FAZENDA_POR_CIDADE;
+    const consumo = () => est.fundadas.reduce((a, c) => a + Math.ceil(c.populacao / 5), 0);
+    if (est.fundadas.length && estoque + producao - consumo() < 0) {
+      for (const c of est.fundadas) c.populacao = Math.max(0, c.populacao - 1);
+      notas.push('Falta comida nas cidades: alguns moradores partiram.');
     }
-    if (comida) notas.push(`As novas cidades consomem ${comida} comida por dia.`);
-    return { notas, efeitos: comida ? { recursos: { comida: -comida } } : {} };
+    for (const c of est.fundadas) {
+      if (estoque >= ESTOQUE_MINIMO_CRESCER && ctx.r() < 0.5) c.populacao = clamp(c.populacao + 1, 0, 50);
+    }
+    const saldo = producao - consumo();
+    return { notas, efeitos: saldo ? { recursos: { comida: saldo } } : {} };
   },
   acoes: {
     fundar: {
@@ -127,10 +136,10 @@ const automatos = {
   dia(est) {
     const notas = [];
     est.desgaste = clamp(est.desgaste + est.guardioes, 0, 100);
-    const efeitos = est.guardioes ? { recursos: { pedra: est.guardioes } } : {};
-    if (est.desgaste >= 80 && est.guardioes) {
-      notas.push('Os autômatos estão gastos: precisam de manutenção.');
-    }
+    // Desgaste alto tem efeito: com 80 ou mais, os autômatos param de produzir pedra até a manutenção.
+    const gastos = est.desgaste >= 80;
+    if (gastos && est.guardioes) notas.push('Os autômatos estão gastos e não produzem pedra: precisam de manutenção.');
+    const efeitos = est.guardioes && !gastos ? { recursos: { pedra: est.guardioes } } : {};
     return { notas, efeitos };
   },
   acoes: {
@@ -143,11 +152,12 @@ const automatos = {
       },
     },
     manter: {
-      rotulo: 'Manter os autômatos (5 pedra, zera o desgaste)',
+      rotulo: 'Manter os autômatos (2 peças, zera o desgaste)',
       fn(est, ctx) {
-        if ((ctx.recursos.pedra || 0) < 5) return { notas: ['Faltam 5 pedra.'] };
+        // Manutenção em peças, não em pedra: com desgaste alto a pedra para de entrar, e a manutenção não podia ser paga.
+        if ((ctx.recursos.peca || 0) < 2) return { notas: ['Faltam 2 peças.'] };
         est.desgaste = 0;
-        return { notas: ['Os autômatos voltaram a funcionar bem.'], efeitos: { recursos: { pedra: -5 } } };
+        return { notas: ['Os autômatos voltaram a funcionar bem.'], efeitos: { recursos: { peca: -2 } } };
       },
     },
   },

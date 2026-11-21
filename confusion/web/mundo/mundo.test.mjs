@@ -209,9 +209,23 @@ test('23 portais: atravessar precisa da relíquia e do dia certo', () => {
 });
 test('24 cicatrizes: superar pede sanidade 40 e tira o peso', () => {
   const est = M.criarMundo();
-  M.acaoMundo(est, '24', 'sofrer_trauma', {}, ctx());
+  est['24'].cicatrizes = [{ origem: 'trauma da vila', dias: 0, superada: false }];
   assert.match(M.acaoMundo(est, '24', 'superar', {}, ctx({ sanidade: 10 })).notas[0], /forte/);
   assert.equal(M.acaoMundo(est, '24', 'superar', {}, ctx({ sanidade: 60 })).efeitos.sanidade, 5);
+});
+test('24 cicatrizes: a cicatriz se fecha sozinha após 10 dias (sanidade baixa não trava a cura)', () => {
+  const est = M.criarMundo();
+  est['24'].cicatrizes = [{ origem: 'trauma da vila', dias: 0, superada: false }];
+  let notas = [];
+  for (let d = 1; d <= 10; d++) notas = notas.concat(M.diaMundo(est, ctx({ dia: d, sanidade: 10 })).notas);
+  assert.equal(est['24'].cicatrizes[0].superada, true);
+  assert.ok(notas.some((n) => n.includes('se fechou')));
+});
+test('17 desafiar: derrota deixa cicatriz no sistema 24', () => {
+  const est = M.criarMundo();
+  M.acaoMundo(est, '17', 'desafiar', {}, ctx({ r: () => 0.99 }));
+  assert.equal(est['24'].cicatrizes.length, 1);
+  assert.match(est['24'].cicatrizes[0].origem, /derrota/);
 });
 test('25 guerras: facções opostas entram em guerra; mediar encerra', () => {
   const est = M.criarMundo();
@@ -404,4 +418,66 @@ test('50 evolução do mundo: os marcos chegam em 30, 60 e 90 e são irreversív
   for (let d = 1; d <= 90; d++) marcos.push(...M.diaMundo(est, ctx({ dia: d })).notas.filter((n) => n.includes('marco')));
   assert.equal(est['50'].marcos, 3);
   assert.equal(marcos.length, 3);
+});
+
+// Jogabilidade: correções de travamento (ver commit de ajustes do mundo).
+test('15 pragas: com refúgios a praga ainda pode aparecer (piso de 2%)', () => {
+  const est = M.criarMundo();
+  sis('15').dia(est['15'], ctx({ r: () => 0.01, protecaoPragas: 0.6 }));
+  assert.equal(est['15'].ativa, true);
+});
+test('31 cidades: sem comida, os moradores partem; com estoque, a população cresce', () => {
+  const fome = M.criarMundo();
+  fome['31'].fundadas = [{ nome: 'A', populacao: 20 }];
+  const r1 = sis('31').dia(fome['31'], ctx({ recursos: { comida: 0 }, r: () => 0.99 }));
+  assert.equal(fome['31'].fundadas[0].populacao, 19);
+  assert.ok(r1.notas.some((n) => n.includes('Falta comida')));
+  const fartura = M.criarMundo();
+  fartura['31'].fundadas = [{ nome: 'A', populacao: 5 }];
+  sis('31').dia(fartura['31'], ctx({ recursos: { comida: 100 }, r: () => 0.1 }));
+  assert.equal(fartura['31'].fundadas[0].populacao, 6);
+});
+test('35 autômatos: com desgaste 80 ou mais, param de produzir pedra', () => {
+  const est = M.criarMundo();
+  est['35'] = { guardioes: 1, desgaste: 80 };
+  const res = sis('35').dia(est['35'], ctx());
+  assert.equal(res.efeitos.recursos, undefined);
+});
+test('13 civilizações: a ponte fechada revela uma entrada até o último dia fechado', () => {
+  const est = M.criarMundo();
+  sis('13').dia(est['13'], ctx({ ponteFechada: true, dia: 7, r: () => 0.99 }));
+  assert.equal(Object.values(est['13'].entradas).filter(Boolean).length, 1);
+});
+test('01 cidades: a corrupção recua quando a sanidade está estável', () => {
+  const est = M.criarMundo();
+  est['01'].norte.corrupcao = 10;
+  sis('01').dia(est['01'], ctx({ sanidade: 60, r: () => 0.5 }));
+  assert.equal(est['01'].norte.corrupcao, 9);
+});
+test('jogabilidade: um jogador prudente (sem ações de risco com sanidade abaixo de 40) mantém sanidade e vilas vivas em 90 dias', () => {
+  const RISCO = new Set(['33.vortice_negro', '32.corromper', '34.assinar_forca', '17.desafiar', '27.provocar_evento', '16.infiltrar', '11.corromper']);
+  const est = M.criarMundo();
+  const r = rng(7);
+  let sanidade = 60;
+  const jogo = { recursos: { madeira: 300, pedra: 300, cristal: 30, comida: 200, peca: 20, sementes: 20, raizes: 20 }, diamantes: 100, gold: 500, monstros: [{ id: 'm1', species: 'Noctarn', classe: 'comum' }] };
+  const aplicar = (res) => {
+    const e = res.efeitos || {};
+    if (e.sanidade) sanidade = Math.max(0, Math.min(100, sanidade + e.sanidade));
+    for (const [k, v] of Object.entries(e.recursos || {})) jogo.recursos[k] = Math.max(0, (jogo.recursos[k] || 0) + v);
+    if (e.diamantes) jogo.diamantes = Math.max(0, jogo.diamantes + e.diamantes);
+    if (e.gold) jogo.gold = Math.max(0, jogo.gold + e.gold);
+  };
+  let sanMin = 100;
+  for (let d = 1; d <= 90; d++) {
+    const c = () => ({ r, dia: d, sanidade, recursos: jogo.recursos, diamantes: jogo.diamantes, gold: jogo.gold, monstros: jogo.monstros, ponteFechada: d >= 4 && d <= 7 });
+    aplicar(M.diaMundo(est, c()));
+    for (const s of M.SISTEMAS) for (const acao of Object.keys(s.acoes || {})) {
+      if (sanidade < 40 && RISCO.has(`${s.id}.${acao}`)) continue;
+      const op = M.OPCOES_ACAO[`${s.id}.${acao}`];
+      for (const o of (op ? op(est) : [{ args: {} }])) aplicar(M.acaoMundo(est, s.id, acao, o.args || {}, c()));
+    }
+    sanMin = Math.min(sanMin, sanidade);
+  }
+  assert.ok(sanMin > 0, `a sanidade chegou a zero (mínimo ${sanMin})`);
+  for (const id of ['norte', 'sul', 'porto']) assert.ok(est['01'][id].prosperidade > 0, `${id} sem prosperidade`);
 });
