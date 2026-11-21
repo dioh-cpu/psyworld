@@ -11,7 +11,7 @@ test('elementos: ciclo fogo > planta > água > fogo, dano 2x e 0,5x (como no Pok
   assert.equal(C.multElemento('planta', 'agua'), 2);   // planta forte contra água
   assert.equal(C.multElemento('agua', 'fogo'), 2);     // água forte contra fogo
   assert.equal(C.multElemento('agua', 'planta'), 0.5); // água dá menos dano em planta
-  assert.equal(C.multElemento('fogo', 'agua'), 0);   // fogo não causa dano em água
+  assert.equal(C.multElemento('fogo', 'agua'), 0.5); // fogo contra água: 0,5x, como no Pokémon
   assert.equal(C.multElemento('planta', 'fogo'), 0.5);
   assert.equal(C.multElemento('luz', 'trevas'), 2);
   assert.equal(C.multElemento('trevas', 'luz'), 2);
@@ -38,8 +38,8 @@ test('elementos: no andar infinito, vantagem muda a chance de vencer', () => {
   assert.ok(contraAgua > fraco);
   // mesmo elemento que o andar: água contra água é pouco efetivo (0,5x), menos chance que sem elemento
   assert.ok(C.endlessChance({ ...agua, elemento: 'agua' }, 2) < C.endlessChance({ ...agua, elemento: undefined }, 2));
-  // fogo contra fogo é dano normal: a mesma chance de um monstrinho sem elemento contra o andar de fogo
-  assert.equal(C.multElemento('fogo', 'fogo'), 1);
+  // fogo contra fogo é 0,5x, como no Pokémon
+  assert.equal(C.multElemento('fogo', 'fogo'), 0.5);
 });
 
 test('elementos: na caçada de raid, o elemento do monstrinho entra na chance', () => {
@@ -86,13 +86,36 @@ test('passe: perfis de XP no mês (casual, ativo e intenso) chegam a níveis dif
   assert.equal(intenso, Y.PASS_LEVELS);
 });
 
-test('regras da ilha: normal, lutador, psíquico, elétrico e fogo sem dano contra os alvos combinados', () => {
-  assert.equal(C.multElemento('neutro', 'fantasma'), 0);   // normal não dá dano em fantasma
-  assert.equal(C.multElemento('lutador', 'fantasma'), 0);  // lutador não dá dano em fantasma
-  assert.equal(C.multElemento('psiquico', 'trevas'), 0);   // psíquico não dá dano em noturno
-  assert.equal(C.multElemento('eletrico', 'pedra'), 0);    // elétrico não dá dano em pedra
-  assert.equal(C.multElemento('fogo', 'agua'), 0);         // fogo não dá dano em água
-  assert.equal(C.multElemento('fogo', 'fogo'), 1);         // fogo leva dano de fogo (normal)
+// Tabela do Pokémon entre os 17 tipos que existem lá (sem trevas e luz, que são o noturno e o diurno).
+// Quem não aparece na lista dá 1x.
+const POKEMON = {
+  neutro: { pedra: 0.5, aco: 0.5, fantasma: 0 },
+  fogo: { planta: 2, gelo: 2, inseto: 2, aco: 2, fogo: 0.5, agua: 0.5, pedra: 0.5, dragao: 0.5 },
+  agua: { fogo: 2, terra: 2, pedra: 2, agua: 0.5, planta: 0.5, dragao: 0.5 },
+  planta: { agua: 2, terra: 2, pedra: 2, fogo: 0.5, planta: 0.5, veneno: 0.5, voador: 0.5, inseto: 0.5, dragao: 0.5, aco: 0.5 },
+  eletrico: { agua: 2, voador: 2, eletrico: 0.5, planta: 0.5, dragao: 0.5, terra: 0 },
+  gelo: { planta: 2, terra: 2, voador: 2, dragao: 2, fogo: 0.5, agua: 0.5, gelo: 0.5, aco: 0.5 },
+  lutador: { neutro: 2, gelo: 2, pedra: 2, aco: 2, veneno: 0.5, voador: 0.5, psiquico: 0.5, inseto: 0.5, fada: 0.5, fantasma: 0 },
+  voador: { planta: 2, lutador: 2, inseto: 2, eletrico: 0.5, pedra: 0.5, aco: 0.5 },
+  veneno: { planta: 2, fada: 2, veneno: 0.5, terra: 0.5, pedra: 0.5, fantasma: 0.5, aco: 0 },
+  terra: { fogo: 2, eletrico: 2, veneno: 2, pedra: 2, aco: 2, planta: 0.5, inseto: 0.5, voador: 0 },
+  psiquico: { lutador: 2, veneno: 2, psiquico: 0.5, aco: 0.5 },
+  inseto: { planta: 2, psiquico: 2, fogo: 0.5, lutador: 0.5, veneno: 0.5, voador: 0.5, fantasma: 0.5, aco: 0.5, fada: 0.5 },
+  pedra: { fogo: 2, gelo: 2, voador: 2, inseto: 2, lutador: 0.5, terra: 0.5, aco: 0.5 },
+  fantasma: { psiquico: 2, fantasma: 2, neutro: 0 },
+  dragao: { dragao: 2, aco: 0.5, fada: 0 },
+  aco: { gelo: 2, pedra: 2, fada: 2, fogo: 0.5, agua: 0.5, eletrico: 0.5, aco: 0.5 },
+  fada: { lutador: 2, dragao: 2, fogo: 0.5, veneno: 0.5, aco: 0.5 },
+};
+
+test('tabela: os 17 tipos do Pokémon batem com a tabela oficial, todos os pares', () => {
+  const tipos = Object.keys(POKEMON);
+  assert.equal(tipos.length, 17);
+  for (const atacante of tipos) {
+    for (const defensor of tipos) {
+      assert.equal(C.multElemento(atacante, defensor), POKEMON[atacante][defensor] ?? 1, `${atacante} contra ${defensor}`);
+    }
+  }
 });
 
 test('noturno e diurno: 2x contra si mesmos e nenhuma desvantagem contra os outros elementos', () => {

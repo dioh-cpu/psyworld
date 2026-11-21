@@ -125,11 +125,11 @@ test('vampirismo elemental: golpe de outro elemento causa dano normal', () => {
   assert.ok(i.hp < i.hpMax);
 });
 
-test('tipagem: fogo contra água não causa dano e o log diz sem efeito', () => {
+test('tipagem: fogo contra água dá metade do dano (0,5x, como no Pokémon) e o log diz pouco efetivo', () => {
   const j = K.criarLutador({ nome: 'Ignavor', poder: 50, elemento: 'fogo', habilidades: [] });
   const i = K.criarLutador({ nome: 'Vaelith', poder: 50, elemento: 'agua', habilidades: [] });
   const e = K.criarCombate(j, i, { pequena: 0, media: 0, grande: 0 });
   K.agir(e, { tipo: 'atacar' }, () => 0.5);
-  assert.equal(i.hp, i.hpMax);
-  assert.ok(e.log.some((l) => l.includes('sem efeito')), e.log.join(' | '));
+  assert.ok(i.hp < i.hpMax, 'deveria tomar dano');
+  assert.ok(e.log.some((l) => l.includes('pouco efetivo')), e.log.join(' | '));
 });

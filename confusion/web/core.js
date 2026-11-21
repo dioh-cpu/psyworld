@@ -471,11 +471,11 @@ export const NOME_ELEMENTO = {
   fantasma: 'Fantasma', eletrico: 'Elétrico', gelo: 'Gelo', dragao: 'Dragão', aco: 'Aço', fada: 'Fada',
 };
 // Tabela de tipos (atacante -> defensor). Só valores diferentes de 1: 2 é super efetivo, 0.5 é pouco efetivo, 0 é sem efeito.
-// Base: a tabela de tipos do Pokémon, com as regras da ilha: fogo não causa dano em água; elétrico não causa dano em pedra;
-// noturno (trevas) e diurno (luz) dão 2x contra si mesmos e não têm desvantagem contra os outros elementos.
+// Tabela de tipos do Pokémon, exata. A única diferença: trevas é o noturno e luz é o diurno (novo), que dão 2x contra
+// si mesmos e não têm desvantagem contra os outros elementos.
 const TABELA_ELEMENTO = {
   neutro: { pedra: 0.5, aco: 0.5, fantasma: 0 },
-  fogo: { planta: 2, gelo: 2, inseto: 2, aco: 2, agua: 0, pedra: 0.5, dragao: 0.5 },   // fogo contra fogo: dano normal
+  fogo: { planta: 2, gelo: 2, inseto: 2, aco: 2, fogo: 0.5, agua: 0.5, pedra: 0.5, dragao: 0.5 },
   agua: { fogo: 2, terra: 2, pedra: 2, agua: 0.5, planta: 0.5, dragao: 0.5 },
   planta: { agua: 2, terra: 2, pedra: 2, fogo: 0.5, planta: 0.5, veneno: 0.5, voador: 0.5, inseto: 0.5, dragao: 0.5, aco: 0.5 },
   terra: { fogo: 2, eletrico: 2, veneno: 2, pedra: 2, aco: 2, planta: 0.5, inseto: 0.5, voador: 0 },
@@ -488,7 +488,7 @@ const TABELA_ELEMENTO = {
   inseto: { planta: 2, psiquico: 2, fogo: 0.5, lutador: 0.5, veneno: 0.5, voador: 0.5, fantasma: 0.5, aco: 0.5, fada: 0.5 },
   pedra: { fogo: 2, gelo: 2, voador: 2, inseto: 2, lutador: 0.5, terra: 0.5, aco: 0.5 },
   fantasma: { psiquico: 2, fantasma: 2, trevas: 0.5, neutro: 0 },
-  eletrico: { agua: 2, voador: 2, eletrico: 0.5, planta: 0.5, dragao: 0.5, terra: 0, pedra: 0 },
+  eletrico: { agua: 2, voador: 2, eletrico: 0.5, planta: 0.5, dragao: 0.5, terra: 0 },
   gelo: { planta: 2, terra: 2, voador: 2, dragao: 2, fogo: 0.5, agua: 0.5, gelo: 0.5, aco: 0.5 },
   dragao: { dragao: 2, aco: 0.5, fada: 0 },
   aco: { gelo: 2, pedra: 2, fada: 2, fogo: 0.5, agua: 0.5, eletrico: 0.5, aco: 0.5 },
