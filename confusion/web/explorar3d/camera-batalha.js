@@ -1,19 +1,20 @@
 // Pontos de vista da câmera da batalha. Código puro, sem three.js: a cena 3D só suaviza a passagem de uma vista para a outra.
-// Até 3 aliados ficam à esquerda e até 3 inimigos à direita. A câmera fica sempre do lado de cá (z positivo).
+// Como na batalha de referência: aliados em primeiro plano à esquerda, inimigos mais ao fundo e à direita.
+// A câmera fica atrás e à esquerda do grupo (z positivo), olhando para os inimigos.
 const MEIO_CORPO = 1.1;   // altura do ponto que a câmera mira num lutador
 
 // Posições dos aliados, na ordem do time (o da frente é o primeiro).
 export const POSICOES_ALIADOS = [
-  { x: -2.9, y: 0, z: 1.2 },
-  { x: -4.0, y: 0, z: -0.4 },
-  { x: -2.2, y: 0, z: -1.9 },
+  { x: -2.4, y: 0, z: 1.6 },
+  { x: -3.4, y: 0, z: -0.2 },
+  { x: -1.8, y: 0, z: -2.0 },
 ];
 
 // Posições dos inimigos conforme quantos são (1, 2 ou 3): o grupo fica centralizado à direita.
 export const POSICOES_INIMIGOS = [
-  [{ x: 2.5, y: 0, z: -0.7 }],
-  [{ x: 3.0, y: 0, z: 0.6 }, { x: 2.0, y: 0, z: -2.0 }],
-  [{ x: 2.6, y: 0, z: 1.2 }, { x: 3.8, y: 0, z: -0.6 }, { x: 2.0, y: 0, z: -2.6 }],
+  [{ x: 2.6, y: 0, z: -1.6 }],
+  [{ x: 3.0, y: 0, z: -0.4 }, { x: 1.4, y: 0, z: -3.2 }],
+  [{ x: 3.2, y: 0, z: 0.2 }, { x: 2.0, y: 0, z: -2.4 }, { x: 0.4, y: 0, z: -4.2 }],
 ];
 
 export const posicaoDoInimigo = (quantidade, i) => {
@@ -29,7 +30,7 @@ export const POSICAO = {
 
 // pos: onde a câmera fica; olha: para onde mira; fov: campo de visão vertical em graus.
 export const VISTAS = {
-  panoramica: { pos: [0, 4.4, 10.8], olha: [0, 0.8, 0], fov: 46 },
+  panoramica: { pos: [-6.2, 3.4, 6.0], olha: [0.8, 1.0, -1.6], fov: 46 },
   abertura: { pos: [0, 7.5, 15], olha: [0, 1.0, 0], fov: 52 },
   // o foco aproxima quem age, mas o outro lutador continua na tela (o olhar fica entre os dois, puxado para quem age)
   'foco-jogador': { pos: [-1.2, 2.3, 7.4], olha: [POSICAO.jogador.x * 0.5, MEIO_CORPO, 0.6], fov: 42 },

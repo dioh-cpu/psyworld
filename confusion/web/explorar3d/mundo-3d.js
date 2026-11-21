@@ -256,54 +256,41 @@ function montarCeu(scene, arteDe) {
   }
 }
 
-// ---- casa de teste: objeto 3D fixo no mundo (paredes em caixa e telhado de duas águas). Não é um sprite, então
-// não gira para a câmera: os lados aparecem de verdade. As fotos das imagens viram as texturas das faces.
-// As empenas do telhado usam uma cor de madeira.
-function montarCasaTeste(scene, arteDe, material, contorno) {
-  const { x, z, largura, profundidade } = CASA_TESTE;
-  const altoTelhado = 1.8;
-  const altoParede = ALTURA_CASA - altoTelhado;
-  const textura = (nome) => {
-    const t = carregador.load(arteDe(`casa-teste/${nome}.webp`));
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
+// ---- casa de teste: quatro cartões fixos no mundo. Cada cartão é uma das imagens (frente+esquerda, frente+direita,
+// costas+esquerda, costas+direita) com orientação fixa, voltada para a diagonal do seu quadrante. Só o cartão do quadrante
+// onde a câmera está aparece, então a casa nunca gira junto com a câmera. A altura visível é ALTURA_CASA (2,5 vezes o personagem).
+const CARTOES_CASA = [
+  { nome: 'frente-esquerda', sx: -1, sz: 1 },
+  { nome: 'frente-direita', sx: 1, sz: 1 },
+  { nome: 'costas-esquerda', sx: -1, sz: -1 },
+  { nome: 'costas-direita', sx: 1, sz: -1 },
+];
+const PROPORCAO_CASA = 572 / 398;   // largura / altura: as quatro imagens recortadas têm a mesma caixa
+
+function montarCasaTeste(scene, arteDe) {
+  const { x, z } = CASA_TESTE;
+  const altura = ALTURA_CASA;
+  const largura = altura * PROPORCAO_CASA;
+  const cartoes = CARTOES_CASA.map(({ nome, sx, sz }) => {
+    const tex = carregador.load(arteDe(`casa-teste/${nome}.webp`));
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const malha = new THREE.Mesh(
+      new THREE.PlaneGeometry(largura, altura),
+      new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 }),
+    );
+    malha.position.set(x, altura / 2, z);
+    malha.rotation.y = Math.atan2(sx, sz);   // orientação fixa: olha para a diagonal do quadrante
+    malha.visible = false;
+    scene.add(malha);
+    return { malha, sx, sz };
+  });
+  return {
+    atualizar(cam) {
+      const sx = cam.x < x ? -1 : 1;
+      const sz = cam.z < z ? -1 : 1;
+      for (const c of cartoes) c.malha.visible = c.sx === sx && c.sz === sz;
+    },
   };
-  // as laterais usam a parede lisa de tábua (sem porta): a lateral esquerda não tem recorte limpo na foto
-  const esquerda = textura('parede-costas');
-  const direita = esquerda.clone();
-  direita.repeat.x = -1;   // espelho
-  direita.offset.x = 1;
-  direita.needsUpdate = true;
-  const frente = textura('parede-frente');
-  const costas = textura('parede-costas');
-  const telhado = textura('telhado');
-  telhado.wrapS = telhado.wrapT = THREE.RepeatWrapping;   // as coordenadas do telhado são em unidades do mundo
-  telhado.repeat.set(0.3, 0.3);
-
-  // paredes: faces na ordem +x, -x, +y, -y, +z (frente), -z (costas)
-  const paredes = new THREE.Mesh(
-    new THREE.BoxGeometry(largura, altoParede, profundidade),
-    [material('#ffffff', direita), material('#ffffff', esquerda), material('#7a5230'), material('#7a5230'),
-      material('#ffffff', frente), material('#ffffff', costas)],
-  );
-  paredes.position.set(x, altoParede / 2, z);
-  contorno(paredes);
-  scene.add(paredes);
-
-  // telhado: prisma triangular com a cumeeira ao longo do eixo x; as empenas (grupo 0) são de madeira, as vertentes (grupo 1) têm a palha
-  const beiral = 0.3;
-  const forma = new THREE.Shape();
-  forma.moveTo(-profundidade / 2 - beiral, 0);
-  forma.lineTo(profundidade / 2 + beiral, 0);
-  forma.lineTo(0, altoTelhado);
-  forma.closePath();
-  const geoTelhado = new THREE.ExtrudeGeometry(forma, { depth: largura + 2 * beiral, bevelEnabled: false });
-  geoTelhado.translate(0, 0, -(largura + 2 * beiral) / 2);
-  geoTelhado.rotateY(Math.PI / 2);
-  const malhaTelhado = new THREE.Mesh(geoTelhado, [material('#7a5230'), material('#ffffff', telhado)]);
-  malhaTelhado.position.set(x, altoParede, z);
-  contorno(malhaTelhado);
-  scene.add(malhaTelhado);
 }
 
 // ---- partes do mundo ----
@@ -436,15 +423,17 @@ function navios(scene, arteDe) {
 }
 
 // Monta o mundo inteiro. `material(cor, mapa)` e `contorno(malha)` vêm de main.js; `raiz` é o caminho até a raiz do site.
+// Devolve `atualizar(posicaoCamera)`: troca o cartão da casa conforme o quadrante da câmera.
 export function montarMundo(scene, { material, contorno, raiz = '' }) {
   const arteDe = (nome) => `${raiz}assets/mundo/${nome}`;
   montarCeu(scene, arteDe);
   chao(scene, material);
   areia(scene, material);
   estradas(scene, material);
-  montarCasaTeste(scene, arteDe, material, contorno);
+  const casa = montarCasaTeste(scene, arteDe);
   lago(scene, material);
   for (const a of ARVORES) arvore(scene, material, contorno, a, arteDe);
   for (const p of PEDRAS) pedra(scene, material, contorno, p);
   navios(scene, arteDe);
+  return { atualizar: (cam) => casa.atualizar(cam) };
 }

@@ -72,7 +72,7 @@ mar.position.y = -0.3;
 scene.add(mar);
 
 // chão das regiões, areia, estradas, prédios, lago, árvores, pedras e objetos (ver mundo-3d.js)
-montarMundo(scene, { material, contorno, raiz: RAIZ });
+const mundo = montarMundo(scene, { material, contorno, raiz: RAIZ });
 
 // piso da praça: anel claro e medalhão no centro
 const anel = new THREE.Mesh(new THREE.RingGeometry(8.6, 9.1, 64), material(COR_TRACO));
@@ -505,6 +505,14 @@ function htmlBatalha(b) {
     ? `<div class="bt-alvo"><span>◀</span><b>${esc(e.inimigos[b.alvo].nome)}</b><span>▶</span><button type="button" data-bat="alvo-confirmar">Confirmar</button><button type="button" data-bat="alvo-voltar">Voltar</button></div>`
     : '';
   const mira = b.fase === 'alvo' ? '<div class="bt-mira"></div>' : '';
+  // ordem de turno (quem age primeiro, pelo poder), na borda direita: só os vivos; quem está planejando fica destacado
+  const ordem = BE.ordemDoTurno(e)
+    .filter((u) => (u.lado === 'aliado' ? e.aliados[u.i].hp : e.inimigos[u.i].hp) > 0)
+    .map((u) => {
+      const nome = u.lado === 'aliado' ? e.aliados[u.i].nome : e.inimigos[u.i].nome;
+      const vez = b.fase === 'planejar' && u.lado === 'aliado' && u.i === b.quem;
+      return `<li class="${u.lado} ${vez ? 'ativo' : ''}" title="${esc(nome)}">${esc(nome.slice(0, 2))}</li>`;
+    }).join('');
   const log = e.log.slice(-4).map((l) => `<li>${esc(l)}</li>`).join('');
   const dica = {
     planejar: b.menu === 'acoes' ? '←→ escolher · Enter confirmar · Q atacar · X habilidades · Esc fugir' : '↑↓ escolher · Enter usar · Esc voltar',
@@ -517,6 +525,7 @@ function htmlBatalha(b) {
       <span class="bt-controles"><button type="button" class="bt-ctrl ${preferenciasBatalha.auto ? 'on' : ''}" data-bat="auto" title="Auto batalha (V)">AUTO ${preferenciasBatalha.auto ? 'ON' : 'OFF'}</button><button type="button" class="bt-ctrl" data-bat="velocidade" title="Velocidade (F)">${preferenciasBatalha.velocidade}x</button></span></header>
     <section class="bt-inimigos">${inimigos}</section>
     <section class="bt-aliados">${aliados}</section>
+    <ol class="bt-ordem">${ordem}</ol>
     ${mira}${disco}${painel}${alvo}
     <ol class="bt-log">${log}</ol>
     <p class="bt-dica">${dica}</p>
@@ -1105,6 +1114,7 @@ function quadro(agora) {
   const dt = Math.min(0.05, (agora - ultimo) / 1000);
   ultimo = agora;
   atualizar(dt, agora);
+  mundo.atualizar(camera.position);
   if (batalha) {
     const dtBatalha = dt * preferenciasBatalha.velocidade;
     tocarRoteiro(dtBatalha);

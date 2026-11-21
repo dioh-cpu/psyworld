@@ -6,7 +6,7 @@ import { criarMaterialCor, aplicarGiro as aplicarGiroCor } from './cor-sprite.js
 const ALTURA = 2.4;        // altura dos monstrinhos na arena
 const POSICAO_PADRAO_INIMIGO = { x: 2.5, z: -0.7 };
 const DAMPING_CAMERA = 3.2;
-const MEIA_LARGURA_LUTA = 6.2; // espaço que o time e os inimigos precisam ocupar na tela (até 3 contra 3, em unidades da arena)
+const MEIA_LARGURA_LUTA = 3.2; // metade da largura que o time e os inimigos precisam ocupar na tela (em unidades da arena); menor = luta maior
 
 export function criarCenaBatalha(THREE) {
   const cena = new THREE.Scene();
