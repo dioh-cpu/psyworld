@@ -1526,13 +1526,19 @@ function equipamentosHtml() {
     <div class="cartas">${cartas}</div></section>`;
 }
 
-// Escâner de ovos: a tela varre a fila de ovos; o sinal fica estável quando há ovo para escanear.
+// Escâner de ovos: a tela varre a fila; ao escanear, a barra enche e o alvo gira antes do ovo abrir.
 function escanerHtml() {
   const n = S.eggs.length;
   return `<div class="escaner" aria-hidden="true">
-    <div class="escaner-tela"><div class="escaner-linha"></div></div>
+    <div class="escaner-tela"><div class="escaner-linha"></div><div class="escaner-alvo"></div></div>
     <div class="escaner-info"><b>Escâner de ovos</b><span>${n} ovo(s) na fila</span>
-    <span class="escaner-status">${n ? 'sinal estável' : 'nenhum ovo detectado'}</span></div></div>`;
+    <span class="escaner-status">${n ? 'sinal estável' : 'nenhum ovo detectado'}</span>
+    <div class="escaner-barra"><span></span></div></div></div>`;
+}
+
+// Cabeçalho da página: número e nome da aba atual, com a dica de navegação.
+function cabecalhoPagina() {
+  return `<div class="pagina-cabecalho"><span class="pagina-num"></span><h1 class="pagina-nome"></h1><span class="pagina-dica">◀ ▶ ou setas do teclado trocam de menu</span></div>`;
 }
 
 function mostrarAba(id) {
@@ -1543,6 +1549,12 @@ function mostrarAba(id) {
     const ativa = b.dataset.abaIr === abaAtiva;
     b.classList.toggle('ativa', ativa);
     if (ativa) b.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  const idx = ABAS.findIndex((a) => a.id === abaAtiva);
+  const cab = app.querySelector('.pagina-cabecalho');
+  if (cab) {
+    cab.querySelector('.pagina-num').textContent = String(idx + 1).padStart(2, '0') + ' / ' + String(ABAS.length).padStart(2, '0');
+    cab.querySelector('.pagina-nome').textContent = ABAS[idx].nome;
   }
 }
 
@@ -1562,7 +1574,7 @@ function montarMenu() {
     ovos.querySelector('h2')?.insertAdjacentHTML('afterend', escanerHtml());
     ovos.querySelectorAll('button[data-act="hatchEgg"]').forEach((b) => { b.textContent = 'Escanear'; });
     ovos.querySelectorAll('button[data-act="hatch"]').forEach((b) => { b.textContent = 'Escanear ovo inicial'; });
-    ovos.querySelectorAll('ul.log li').forEach((li) => li.classList.add('ovo-card'));
+    ovos.querySelectorAll('ul.log li').forEach((li) => { if (li.querySelector('button')) li.classList.add('ovo-card'); });
   }
   app.insertAdjacentHTML('beforeend', evolucaoHtml() + equipamentosHtml());
   const barra = `<nav class="menu-abas" aria-label="Menus">
@@ -1572,9 +1584,32 @@ function montarMenu() {
   app.querySelector(':scope > nav.menu-abas')?.remove();
   const cabecalho = app.querySelector(':scope > header');
   if (cabecalho) cabecalho.insertAdjacentHTML('afterend', barra); else app.insertAdjacentHTML('afterbegin', barra);
+  app.querySelector(':scope > nav.menu-abas')?.insertAdjacentHTML('afterend', cabecalhoPagina());
   mostrarAba(abaAtiva);
 }
 
+// Escanear um ovo leva 2,4 s: a barra enche e só então a ação de chocar roda (o sorteio não muda).
+let escaneando = false;
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act="hatchEgg"], button[data-act="hatch"]');
+  if (!btn) return;
+  e.stopImmediatePropagation();
+  e.preventDefault();
+  if (escaneando || btn.disabled) return;
+  escaneando = true;
+  const escaner = document.querySelector('.escaner');
+  if (escaner) {
+    escaner.classList.add('escaneando');
+    const status = escaner.querySelector('.escaner-status');
+    if (status) status.textContent = 'analisando';
+  }
+  const dados = { ...btn.dataset };
+  const acao = btn.dataset.act;
+  setTimeout(() => {
+    escaneando = false;
+    act(acao, { dataset: dados });
+  }, 2400);
+}, true);
 document.addEventListener('click', (e) => {
   const aba = e.target.closest('[data-aba-ir]');
   if (aba) { mostrarAba(aba.dataset.abaIr); return; }

@@ -116,6 +116,29 @@ section[data-aba=ovos] ul.log li{border:1px solid #3f8fd6;padding:10px;backgroun
 .ovo-card:hover{border-color:#ffb347}
 @media (prefers-reduced-motion: reduce){.escaner-linha{animation:none;top:50%}}
 .lista-evo li{border-bottom:1px solid #1d3f73;padding:6px 0}
+.escaner-barra{height:8px;width:100%;border:1px solid #7fdcff;background:#041027;overflow:hidden;margin-top:4px}
+.escaner-barra span{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd27a,#f29a3e);box-shadow:0 0 10px rgba(255,179,71,.6)}
+.escaner-alvo{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border:2px dashed transparent;border-radius:50%}
+.escaner.escaneando .escaner-barra span{animation:encher 2.4s linear forwards}
+.escaner.escaneando .escaner-linha{animation:escanear .9s linear infinite;box-shadow:0 0 18px #7fdcff}
+.escaner.escaneando .escaner-alvo{border-color:#ffb347;animation:girar 1.2s linear infinite}
+.escaner.escaneando .escaner-status{color:#ffd27a;animation:piscar .6s steps(2,start) infinite}
+@keyframes encher{to{width:100%}}
+@keyframes girar{to{transform:rotate(360deg)}}
+@keyframes piscar{to{visibility:hidden}}
+.pagina-cabecalho{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:6px 2px 2px}
+.pagina-num{font-size:12px;color:#ffb347;letter-spacing:.08em}
+.pagina-nome{margin:0;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:#fff;text-shadow:0 0 14px rgba(127,220,255,.6)}
+.pagina-dica{margin-left:auto;font-size:11px;color:#9fb6d9;letter-spacing:.06em}
+section[data-aba]{animation:entrar .32s ease-out}
+@keyframes entrar{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.menu-abas .aba{transition:filter .15s,transform .1s}
+.menu-abas .aba:hover{filter:brightness(1.25)}
+.menu-abas .aba:active,button:active{transform:translateY(1px)}
+button:focus-visible{outline:2px solid #ffb347;outline-offset:2px}
+.ovo-card{transition:border-color .15s,box-shadow .15s}
+.ovo-card:hover{box-shadow:0 0 14px rgba(255,179,71,.35)}
+@media (prefers-reduced-motion: reduce){section[data-aba]{animation:none}.escaner.escaneando .escaner-barra span{animation:none;width:100%}.escaner.escaneando .escaner-alvo{animation:none}.escaner.escaneando .escaner-status{animation:none}}
 </style>
 </head>
 <body>
