@@ -31,7 +31,7 @@ const DISCOS_ARTE = {
   ],
 };
 const DISCO_MUNDO = 2.0;       // diâmetro de um disco no mundo da luta (a câmera do palco é escalada para isso)
-const FATOR_LUTADOR = 1.25;    // altura do monstrinho em relação ao diâmetro do disco
+const FATOR_LUTADOR = 0.9;     // altura do desenho do monstrinho em relação ao diâmetro do disco (o corpo cabe no disco)
 const RECUO_ABERTURA = 1.18;   // a abertura da luta fica um pouco mais longe da arena
 
 export function criarCenaBatalha(THREE) {
@@ -168,20 +168,58 @@ export function criarCenaBatalha(THREE) {
     geoFaisca.attributes.position.needsUpdate = true;
   }
 
-  // o sprite tem a origem no pé (a imagem sobe a partir do chão), então o pé fica no disco ou na arena
-  function geometriaDoLutador(largura) {
-    const g = new THREE.PlaneGeometry(largura, alturaAtual);
-    g.translate(0, alturaAtual / 2, 0);
+  // Medidas do desenho dentro da imagem (ela tem margem transparente em cima e embaixo): a base e o centro do desenho,
+  // e a fração da altura que o desenho ocupa. Cacheadas por imagem.
+  const medidasCache = new WeakMap();
+  function medidasDoSprite(img) {
+    if (medidasCache.has(img)) return medidasCache.get(img);
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, w, h);
+    const d = g.getImageData(0, 0, w, h).data;
+    let x0 = w, x1 = -1, y0 = h, y1 = -1;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (d[(y * w + x) * 4 + 3] > 20) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+      }
+    }
+    const medidas = x1 < 0
+      ? { aspecto: w / h, yb: 1, xc: 0.5, vh: 1 }
+      : {
+        aspecto: w / h,
+        yb: (y1 + 1) / h,              // base do desenho, em fração da altura (de cima para baixo)
+        xc: (x0 + x1 + 1) / (2 * w),   // centro do desenho, em fração da largura
+        vh: (y1 - y0 + 1) / h,         // altura do desenho, em fração da altura da imagem
+      };
+    medidasCache.set(img, medidas);
+    return medidas;
+  }
+  // Geometria do lutador: o desenho visível tem a altura `alturaAtual`, com a base em y = 0 e o centro em x = 0.
+  function geometriaDoLutador(medidas) {
+    const m = medidas ?? { aspecto: 1, yb: 1, xc: 0.5, vh: 1 };
+    const altura = alturaAtual / m.vh;   // altura do quadro inteiro (da borda de cima à de baixo da imagem)
+    const largura = altura * m.aspecto;
+    const g = new THREE.PlaneGeometry(largura, altura);
+    g.translate(-(m.xc - 0.5) * largura, altura * (m.yb - 0.5), 0);
     return g;
   }
   function refazerGeometria(l) {
     l.malha.geometry.dispose();
-    l.malha.geometry = geometriaDoLutador(alturaAtual * l.aspecto);
+    l.malha.geometry = geometriaDoLutador(l.medidas);
   }
 
   function criarLutador(lado, base) {
     const { material, uniforms } = criarMaterialCor(THREE);
-    const malha = new THREE.Mesh(geometriaDoLutador(alturaAtual), material);
+    const malha = new THREE.Mesh(geometriaDoLutador(null), material);
     malha.visible = false;
     cena.add(malha);
     return {
@@ -189,7 +227,7 @@ export function criarCenaBatalha(THREE) {
       base: { x: base.x, z: base.z },   // onde fica no repouso
       off: { x: 0, z: 0 },              // deslocamento do golpe (avanço ou empurrão), somado à base
       p: { x: base.x, z: base.z },      // posição usada na colisão deste quadro
-      pronto: false, aspecto: 1,
+      pronto: false, aspecto: 1, medidas: null,
       lunge: 0, lungeTotal: 1, lungeAmp: 0.7, lungeDir: { x: 0, z: 0 },
       golpeT: 0, curaT: 0, knock: 0, knockDir: { x: 0, z: 0 },
       anim: null,
@@ -228,6 +266,7 @@ export function criarCenaBatalha(THREE) {
     l.derrubado = false;
     l.uniforms.map.value = textura;
     l.pronto = false;
+    l.medidas = null;
     l.malha.visible = true;
     l.lunge = 0;
     l.golpeT = 0;
@@ -496,7 +535,7 @@ export function criarCenaBatalha(THREE) {
   // Quem está parado é a parede: o deslocamento nunca o atravessa.
   function resolverColisoes(todos) {
     const vivos = todos.filter((l) => l.malha.visible);
-    const separacao = palco ? alturaAtual * 0.4 : SEPARACAO;
+    const separacao = palco ? alturaAtual * 0.8 : SEPARACAO;
     for (const l of vivos) l.p = { x: l.base.x + l.off.x, z: l.base.z + l.off.z };
     for (const l of vivos) {
       const movendo = l.off.x !== 0 || l.off.z !== 0;
@@ -537,9 +576,8 @@ export function criarCenaBatalha(THREE) {
       const mapa = l.uniforms.map.value;
       const img = mapa?.image;
       if (img && !l.pronto && (img.width || img.naturalWidth) && mapa.userData?.carregada !== false) {
-        const w = img.naturalWidth || img.width;
-        const h = img.naturalHeight || img.height;
-        l.aspecto = w / h;
+        l.medidas = medidasDoSprite(img);
+        l.aspecto = l.medidas.aspecto;
         refazerGeometria(l);
         l.pronto = true;
       }

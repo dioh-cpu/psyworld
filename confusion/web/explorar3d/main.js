@@ -775,7 +775,7 @@ function iniciarBatalha(s) {
   cenaBat.disporInimigos(sorteios.length);
   time.slice(0, 3).forEach((m, i) => {
     const giro = giroDoMonstro(m);
-    cenaBat.definir('aliado', i, { textura: texturaDeDirecao(m, 'costas'), giro, animar: Boolean(giro), dur: 1.2 });
+    cenaBat.definir('aliado', i, { textura: texturaDeDirecao(m, 'frente'), giro, animar: Boolean(giro), dur: 1.2 });
   });
   sorteios.forEach((x, i) => {
     const m = x.monstro;
