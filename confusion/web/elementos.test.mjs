@@ -11,7 +11,7 @@ test('elementos: ciclo fogo > planta > água > fogo, dano 2x e 0,5x (como no Pok
   assert.equal(C.multElemento('planta', 'agua'), 2);   // planta forte contra água
   assert.equal(C.multElemento('agua', 'fogo'), 2);     // água forte contra fogo
   assert.equal(C.multElemento('agua', 'planta'), 0.5); // água dá menos dano em planta
-  assert.equal(C.multElemento('fogo', 'agua'), 0.5);
+  assert.equal(C.multElemento('fogo', 'agua'), 0);   // fogo não causa dano em água
   assert.equal(C.multElemento('planta', 'fogo'), 0.5);
   assert.equal(C.multElemento('luz', 'trevas'), 2);
   assert.equal(C.multElemento('trevas', 'luz'), 2);

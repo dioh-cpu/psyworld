@@ -105,3 +105,31 @@ test('tipagem: o log diz super efetivo ou pouco efetivo; neutro não ganha rótu
   agir(f, { tipo: 'atacar' }, () => 0.5);
   assert.ok(!f.log.some((l) => /efetivo|sem efeito/.test(l)));
 });
+
+test('vampirismo elemental: golpe do próprio elemento cura o alvo em vez de causar dano', () => {
+  const j = K.criarLutador({ nome: 'Ignavor', poder: 50, elemento: 'fogo', habilidades: [] });
+  const i = K.criarLutador({ nome: 'Ignavor Vampiro', poder: 50, elemento: 'fogo', habilidades: [], vampirismo: true });
+  i.hp = 30;
+  const e = K.criarCombate(j, i, { pequena: 0, media: 0, grande: 0 });
+  K.agir(e, { tipo: 'atacar' }, () => 0.5);
+  assert.ok(i.hp > 30, `vida deveria subir, está em ${i.hp}`);
+  assert.ok(i.hp <= i.hpMax);
+  assert.ok(e.log.some((l) => l.includes('absorvido por Ignavor Vampiro')), e.log.join(' | '));
+});
+
+test('vampirismo elemental: golpe de outro elemento causa dano normal', () => {
+  const j = K.criarLutador({ nome: 'Vaelith', poder: 50, elemento: 'agua', habilidades: [] });
+  const i = K.criarLutador({ nome: 'Ignavor Vampiro', poder: 50, elemento: 'fogo', habilidades: [], vampirismo: true });
+  const e = K.criarCombate(j, i, { pequena: 0, media: 0, grande: 0 });
+  K.agir(e, { tipo: 'atacar' }, () => 0.5);
+  assert.ok(i.hp < i.hpMax);
+});
+
+test('tipagem: fogo contra água não causa dano e o log diz sem efeito', () => {
+  const j = K.criarLutador({ nome: 'Ignavor', poder: 50, elemento: 'fogo', habilidades: [] });
+  const i = K.criarLutador({ nome: 'Vaelith', poder: 50, elemento: 'agua', habilidades: [] });
+  const e = K.criarCombate(j, i, { pequena: 0, media: 0, grande: 0 });
+  K.agir(e, { tipo: 'atacar' }, () => 0.5);
+  assert.equal(i.hp, i.hpMax);
+  assert.ok(e.log.some((l) => l.includes('sem efeito')), e.log.join(' | '));
+});

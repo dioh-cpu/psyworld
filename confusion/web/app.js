@@ -775,7 +775,7 @@ function iniciarCombate(tipo, m, dados = {}) {
   if (S.combate) { note('termine o combate atual antes de começar outro.'); return; }
   if (tipo === 'campanha' && !S.campanha.correndo) { note('escolha uma campanha para começar.'); return; }
   const alvo = alvoDoCombate(tipo, dados);
-  const jog = CB.criarLutador({ nome: m.species, poder: C.monsterPower(m), elemento: m.elemento ?? 'neutro', habilidades: C.activeAbilities(m) });
+  const jog = CB.criarLutador({ nome: m.species, poder: C.monsterPower(m), elemento: m.elemento ?? 'neutro', habilidades: C.activeAbilities(m), vampirismo: (m.passivas || []).some((p) => p.nome === 'Vampirismo elemental') });
   S.combate = { tipo, monstroId: m.id, dados, ...CB.criarCombate(jog, CB.criarLutador(alvo), S.pocoes) };
   note(`combate contra ${alvo.nome} começou (${TIPO_LABEL[tipo]}).`);
 }

@@ -20,7 +20,8 @@ export const nomeDaVariante = (m) => V.nomeDaVariacao(m.variante);
 
 // Monstrinho com a forma que a fórmula de poder e as habilidades leem (mesma forma do jogo).
 // `abilities` é o conjunto de slots, na ordem em que aparecem no disco de ações (1 a 4).
-export function criarMonstro({ id, species, tier, level, xp, classe = 'comum', variant = 'natural', origem = 'base', variante = null }) {
+export const PASSIVA_VAMPIRISMO = 'Vampirismo elemental';
+export function criarMonstro({ id, species, tier, level, xp, classe = 'comum', variant = 'natural', origem = 'base', variante = null, passivas = [] }) {
   const m = {
     id, species, rarity: tier, tier, variant, classe, origem,
     level, xp: xp ?? C.xpDoNivel(level), purity: E.ESPECIES[species].pureza,
@@ -29,6 +30,7 @@ export function criarMonstro({ id, species, tier, level, xp, classe = 'comum', v
     extraAbility: null, hybrid: false, abilityLevels: {},
     aptitudes: { ...(E.APTIDOES_DA_ESPECIE[species] || {}) },
     vinculo: 0,
+    passivas: [...passivas],
   };
   return V.aplicarVariacao(m, variante);
 }
@@ -68,6 +70,7 @@ export function sortearSelvagem(rnd) {
 // Lutador a partir do monstrinho: o poder é o mesmo para os dois lados, então o resultado depende de tier, nível e habilidades.
 export const lutadorDo = (m) => CB.criarLutador({
   nome: m.species, poder: C.monsterPower(m), elemento: m.elemento, habilidades: C.activeAbilities(m),
+  vampirismo: (m.passivas ?? []).includes(PASSIVA_VAMPIRISMO),
 });
 
 // Disco de ações: atacar, uma entrada por slot (número 1 a 4, cinza na recarga) e poção (a menor que ainda tem).
@@ -132,7 +135,9 @@ export function eventosDoTurno(linhas) {
     const eficacia = /super efetivo/.test(texto) ? 'super' : /pouco efetivo/.test(texto) ? 'pouco' : /sem efeito/.test(texto) ? 'nulo' : null;
     if (/errou/.test(texto)) return { tipo: 'erro', quem, alvo, habilidade, dano: 0, critico: false, eficacia: null };
     const dano = /(\d+) de dano/.exec(texto);
-    return { tipo: 'dano', quem, alvo, habilidade, dano: dano ? Number(dano[1]) : 0, critico: /crítico/.test(texto), eficacia };
+    // vampirismo elemental: o alvo absorve o golpe e cura o mesmo valor
+    const absorvido = /absorvido por/.test(texto);
+    return { tipo: 'dano', quem, alvo, habilidade, dano: dano ? Number(dano[1]) : 0, critico: /crítico/.test(texto), eficacia, absorvido };
   });
 }
 
@@ -140,7 +145,11 @@ export function eventosDoTurno(linhas) {
 export function hpAposEventos(inicio, eventos, hpMax = CB.COMBATE.hpMax) {
   let atual = { j: inicio.j, i: inicio.i };
   return eventos.map((e) => {
-    if (e.tipo === 'dano') {
+    if (e.tipo === 'dano' && e.absorvido) {
+      atual = e.alvo === 'inimigo'
+        ? { ...atual, i: Math.min(hpMax, atual.i + e.dano) }
+        : { ...atual, j: Math.min(hpMax, atual.j + e.dano) };
+    } else if (e.tipo === 'dano') {
       atual = e.alvo === 'inimigo'
         ? { ...atual, i: Math.max(0, atual.i - e.dano) }
         : { ...atual, j: Math.max(0, atual.j - e.dano) };
@@ -163,7 +172,7 @@ export function roteiroDoTurno({ eventos, hpInicio, resultado = null }) {
     const tipo = e.tipo === 'erro' ? 'erro' : e.tipo === 'cura' ? 'cura' : 'golpe';
     passos.push({
       tipo, lado: e.quem, alvo: e.alvo, dano: e.dano, critico: e.critico, habilidade: e.habilidade,
-      eficacia: e.eficacia ?? null, hp: vida[k], dur: DURACAO[tipo],
+      eficacia: e.eficacia ?? null, absorvido: Boolean(e.absorvido), hp: vida[k], dur: DURACAO[tipo],
     });
   });
   passos.push({ tipo: 'pausa', dur: DURACAO.pausa });

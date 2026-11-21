@@ -23,8 +23,9 @@ export const POCOES = {
   grande: { nome: 'Poção grande', cura: 1, preco: 180 },
 };
 
-export const criarLutador = ({ nome, poder, elemento, habilidades = [] }) => ({
-  nome, poder, elemento,
+// vampirismo: passiva que cura, em vez de receber dano, quando o golpe é do próprio elemento do lutador.
+export const criarLutador = ({ nome, poder, elemento, habilidades = [], vampirismo = false }) => ({
+  nome, poder, elemento, vampirismo,
   hpMax: COMBATE.hpMax,
   hp: COMBATE.hpMax,
   habilidades: habilidades.map((h) => ({ nome: h, ultimoTurno: -99 })),
@@ -51,15 +52,22 @@ function golpe(a, d, mult, rnd) {
   const eficacia = multElemento(a.elemento, d.elemento);
   const base = a.poder * COMBATE.escalaDano * eficacia * mult * variacao;
   const dano = eficacia === 0 ? 0 : Math.max(1, Math.round(base * (critico ? 1.5 : 1)));
-  return { errou: false, dano, critico, eficacia };
+  return { errou: false, dano, critico, eficacia, elemento: a.elemento };
 }
 
 function aplicar(e, alvo, r, texto) {
   if (r.errou) { e.log.push(`${texto}, mas errou.`); return; }
-  alvo.hp = Math.max(0, alvo.hp - r.dano);
   if (r.dano === 0) { e.log.push(`${texto}, sem efeito.`); return; }
   const marcas = [r.critico ? 'crítico!' : null, rotuloEficacia(r.eficacia)].filter(Boolean);
-  e.log.push(`${texto}: ${r.dano} de dano${marcas.length ? ` (${marcas.join(', ')})` : ''}.`);
+  const sufixo = marcas.length ? ` (${marcas.join(', ')})` : '';
+  if (alvo.vampirismo && r.elemento === alvo.elemento) {
+    const antes = alvo.hp;
+    alvo.hp = Math.min(alvo.hpMax, alvo.hp + r.dano);
+    e.log.push(`${texto}: ${r.dano} de dano${sufixo}, absorvido por ${alvo.nome} (vampirismo elemental: curou ${alvo.hp - antes}).`);
+    return;
+  }
+  alvo.hp = Math.max(0, alvo.hp - r.dano);
+  e.log.push(`${texto}: ${r.dano} de dano${sufixo}.`);
 }
 
 function fechar(e, resultado) {

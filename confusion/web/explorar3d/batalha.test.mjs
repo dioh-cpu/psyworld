@@ -151,7 +151,7 @@ test('eventos: a primeira ação do log é do jogador, a segunda do inimigo; lin
     'Noctarn venceu.',
   ]);
   assert.deepEqual(ev, [
-    { tipo: 'dano', quem: 'jogador', alvo: 'inimigo', habilidade: false, dano: 4, critico: false, eficacia: null },
+    { tipo: 'dano', quem: 'jogador', alvo: 'inimigo', habilidade: false, dano: 4, critico: false, eficacia: null, absorvido: false },
     { tipo: 'erro', quem: 'inimigo', alvo: 'jogador', habilidade: true, dano: 0, critico: false, eficacia: null },
   ]);
   assert.deepEqual(eventosDoTurno(['Noctarn venceu.', 'Tempo esgotado: Noctarn 50% x 40%.']), []);
@@ -220,4 +220,16 @@ test('tipagem no roteiro: o rótulo de efetividade do log chega ao passo do golp
   assert.equal(passos.find((p) => p.tipo === 'golpe').eficacia, 'super');
   const normal = eventosDoTurno(['Noctarn atacou: 4 de dano.']);
   assert.equal(normal[0].eficacia, null);
+});
+
+test('vampirismo elemental no 3D: a passiva vai para o lutador; o golpe absorvido sobe a vida do alvo', () => {
+  const m = criarMonstro({ id: 'v', species: 'Ignavor', tier: 3, level: 12, passivas: ['Vampirismo elemental'] });
+  assert.equal(lutadorDo(m).vampirismo, true);
+  assert.equal(lutadorDo(timeInicial()[1]).vampirismo, false);
+  const ev = eventosDoTurno(['Noctarn usou Chama Violeta: 17 de dano, absorvido por Ignavor (vampirismo elemental: curou 17).']);
+  assert.equal(ev[0].absorvido, true);
+  const vida = hpAposEventos({ j: 60, i: 30 }, ev, 60);
+  assert.equal(vida[0].i, 47);
+  const passos = roteiroDoTurno({ eventos: ev, hpInicio: { j: 60, i: 30 } });
+  assert.equal(passos.find((p) => p.tipo === 'golpe').absorvido, true);
 });

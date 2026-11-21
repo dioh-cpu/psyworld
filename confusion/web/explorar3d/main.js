@@ -635,7 +635,8 @@ function executarPasso(p) {
   if (p.tipo === 'foco') { cenaBat.mirar(modoDoFoco(p.lado)); return; }
   if (p.tipo === 'golpe') {
     cenaBat.golpe(p.lado, p.alvo, { critico: p.critico, habilidade: p.habilidade });
-    if (p.dano > 0) mostrarNumero(p.alvo, p.critico ? `-${p.dano}!` : `-${p.dano}`, p.critico ? 'critico' : 'dano');
+    if (p.dano > 0 && p.absorvido) mostrarNumero(p.alvo, `+${p.dano}`, 'cura');   // vampirismo: o alvo cura
+    else if (p.dano > 0) mostrarNumero(p.alvo, p.critico ? `-${p.dano}!` : `-${p.dano}`, p.critico ? 'critico' : 'dano');
     // a tipagem aparece logo acima do número: super efetivo, pouco efetivo ou sem efeito
     if (p.eficacia) setTimeout(() => mostrarNumero(p.alvo, ROTULO_EFICACIA[p.eficacia], `efi-${p.eficacia}`, 36), 280);
     b.hpMostrado = p.hp;
