@@ -159,7 +159,8 @@ export function resolverTurno(e, rnd = Math.random) {
   if (e.fim) return e;
   if (!prontoParaResolver(e)) throw new Error('falta planejar algum aliado');
   e.eventos = [];
-  for (const ator of ordemDoTurno(e)) {
+  for (const { lado, i } of ordemDoTurno(e)) {
+    const ator = { lado, i };
     if (e.fim) break;
     const u = unidade(e, ator);
     if (!vivo(u)) continue;   // caiu antes de agir neste turno
@@ -179,4 +180,20 @@ export function resolverTurno(e, rnd = Math.random) {
     return fechar(e, pj > pi ? 'vitoria' : 'derrota');
   }
   return e;
+}
+
+// Tempos dos passos do roteiro (segundos): foco em quem age, depois o golpe, a cura ou o erro.
+export const DURACAO_EQUIPE = { foco: 0.7, golpe: 0.5, erro: 0.45, cura: 0.6, pausa: 0.3 };
+
+// Roteiro do turno resolvido: para cada evento, um passo de foco em quem age e um passo do efeito. Cada efeito traz
+// a vida de todos depois dele (hp.aliados e hp.inimigos), para a cena e as barras andarem golpe a golpe.
+export function roteiroDaEquipe(e) {
+  const passos = [];
+  for (const ev of e.eventos) {
+    passos.push({ tipo: 'foco', ator: ev.ator, dur: DURACAO_EQUIPE.foco });
+    const tipo = ev.tipo === 'erro' ? 'erro' : ev.tipo === 'cura' ? 'cura' : 'golpe';
+    passos.push({ ...ev, tipo, dur: DURACAO_EQUIPE[tipo] });
+  }
+  passos.push({ tipo: 'pausa', dur: DURACAO_EQUIPE.pausa });
+  return passos;
 }

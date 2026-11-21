@@ -148,3 +148,23 @@ test('vários turnos com sorte fixa: a luta termina e nenhum inimigo age depois 
     if (ev.ator.lado === 'inimigo') assert.ok(e.inimigos[ev.ator.i].hp >= 0);
   }
 });
+
+test('roteiro: um foco e um efeito por evento, com a vida depois de cada efeito, e uma pausa no fim', () => {
+  const a = lutador('a', 60);
+  const b = lutador('b', 50);
+  const n1 = lutador('n1', 40);
+  const n2 = lutador('n2', 30);
+  const e = B.criarBatalhaEquipe({ aliados: [a, b], inimigos: [n1, n2] });
+  B.planejar(e, 0, { tipo: 'atacar', alvo: 0 });
+  B.planejar(e, 1, { tipo: 'atacar', alvo: 1 });
+  B.resolverTurno(e, sempreMeio);
+  const passos = B.roteiroDaEquipe(e);
+  assert.equal(passos.length, e.eventos.length * 2 + 1);
+  assert.equal(passos[passos.length - 1].tipo, 'pausa');
+  for (const p of passos.filter((x) => x.tipo === 'golpe')) {
+    assert.equal(p.hp.inimigos.length, 2);
+    assert.equal(p.hp.aliados.length, 2);
+  }
+  assert.equal(passos[0].tipo, 'foco');
+  assert.deepEqual(passos[0].ator, { lado: 'aliado', i: 0 });
+});

@@ -192,6 +192,46 @@
     #registro, #registro .linha { animation: none; }
     .sprite, .sprite.inimigo { animation: none; }
   }
+
+  /* batalha em equipe: até 3 aliados contra 1 a 3 inimigos, disco de ações, lista de habilidades e alvo */
+  .bt { pointer-events: none; font-family: inherit; color: #eef5ff; }
+  .bt button, .bt .bt-card, .bt .bt-log, .bt .bt-lista, .bt .bt-alvo, .bt .bt-topo { pointer-events: auto; }
+  .bt-topo { position: absolute; left: 10px; right: 10px; top: 10px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; background: linear-gradient(180deg, rgba(18, 44, 94, .94), rgba(9, 25, 60, .94)); border: 2px solid #3f8fd6; padding: 6px 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .bt-topo span:last-child { margin-left: auto; color: #ffd27a; }
+  .bt-inimigos { position: absolute; right: 10px; top: 58px; width: 176px; display: flex; flex-direction: column; gap: 6px; }
+  .bt-aliados { position: absolute; right: 10px; bottom: 150px; width: 176px; display: flex; flex-direction: column; gap: 6px; }
+  .bt-card { display: block; width: 100%; box-sizing: border-box; text-align: left; background: linear-gradient(180deg, rgba(18, 44, 94, .95), rgba(9, 25, 60, .95)); border: 2px solid #3f8fd6; padding: 6px 8px; color: inherit; font: inherit; }
+  .bt-card.ativo { border-color: #ffd27a; box-shadow: 0 0 0 2px rgba(255, 210, 122, .35); }
+  .bt-card.alvo { border-color: #ff7a45; box-shadow: 0 0 0 2px rgba(255, 122, 69, .45); }
+  .bt-card.ko { opacity: .4; }
+  .bt-card:disabled { cursor: default; }
+  .bt-cab { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; }
+  .bt-cab span { color: #7fdcff; font-size: 11px; white-space: nowrap; }
+  .bt-barra { height: 8px; background: #0b1530; border: 1px solid #3f8fd6; margin-top: 4px; }
+  .bt-barra i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #7bd16b, #b7f08a); }
+  .bt-barra.baixa i { background: linear-gradient(90deg, #ff7a45, #ffb39a); }
+  .bt-num { font-size: 11px; text-align: right; color: #cfe8ff; }
+  .bt-plano { font-size: 11px; color: #ffd27a; min-height: 14px; }
+  .bt-log { position: absolute; left: 10px; top: 58px; width: 170px; margin: 0; padding: 6px 8px 6px 22px; background: rgba(5, 15, 40, .8); border-left: 3px solid #7fdcff; font-size: 11px; color: #cfe8ff; list-style: none; }
+  .bt-log li { margin: 2px 0; }
+  .bt-log:empty { display: none; }
+  .bt-disco { position: absolute; left: 6px; bottom: 26px; width: 260px; height: 260px; }
+  .bt-op { position: absolute; width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle, #2c5fb0, #0b1d44); border: 2px solid #7fdcff; color: #fff; font: 700 22px system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; }
+  .bt-op span { font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+  .bt-op.foco { box-shadow: 0 0 0 3px #ffd27a; }
+  .bt-lista { position: absolute; left: 10px; right: 10px; top: 150px; bottom: 150px; background: linear-gradient(180deg, rgba(18, 44, 94, .97), rgba(9, 25, 60, .97)); border: 2px solid #3f8fd6; padding: 10px; overflow: auto; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; }
+  .bt-lista h3 { margin: 0 0 4px; font-size: 14px; text-transform: uppercase; letter-spacing: .05em; }
+  .bt-item { display: flex; flex-direction: column; align-items: flex-start; background: #153060; border: 1px solid #3f8fd6; color: #fff; padding: 8px; text-align: left; font: inherit; }
+  .bt-item b { font-size: 14px; }
+  .bt-item span { font-size: 11px; color: #9fc9ff; }
+  .bt-item.foco { border-color: #ffd27a; }
+  .bt-item:disabled { opacity: .4; }
+  .bt-alvo { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); width: 92%; box-sizing: border-box; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; background: rgba(9, 25, 60, .95); border: 2px solid #ffd27a; padding: 8px; font-size: 14px; }
+  .bt-alvo button { padding: 6px 10px; }
+  .bt-mira { position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; border: 3px solid #ff7a45; border-radius: 50%; pointer-events: none; box-shadow: 0 0 14px rgba(255, 122, 69, .6); }
+  .bt-dica { position: absolute; left: 0; right: 0; bottom: 4px; margin: 0; text-align: center; font-size: 10px; color: #9fc9ff; text-shadow: 0 1px 3px #000; }
+  .bt-btn { background: #1b3d78; border: 1px solid #7fdcff; color: #fff; padding: 6px 10px; font: inherit; }
+  .bt kbd { margin-left: 6px; opacity: .8; font-size: 11px; }
 </style>
 <script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
 </head>

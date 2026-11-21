@@ -1,11 +1,12 @@
 // Cena 3D da batalha: arena em círculo, os dois monstrinhos como desenhos de pé e a câmera do roteiro da luta.
 // O desenho é o sprite da espécie. A cor de uma variação é um giro de matiz feito no sombreador, por isso dá para animar a troca.
-import { POSICAO, vistaDaCamera } from './camera-batalha.js';
+import { POSICOES_ALIADOS, posicaoDoInimigo, vistaDaCamera } from './camera-batalha.js';
 import { criarMaterialCor, aplicarGiro as aplicarGiroCor } from './cor-sprite.js';
 
 const ALTURA = 2.4;        // altura dos monstrinhos na arena
+const POSICAO_PADRAO_INIMIGO = { x: 2.5, z: -0.7 };
 const DAMPING_CAMERA = 3.2;
-const MEIA_LARGURA_LUTA = 5.1; // espaço que os dois lutadores precisam ocupar na tela (em unidades da arena)
+const MEIA_LARGURA_LUTA = 6.2; // espaço que o time e os inimigos precisam ocupar na tela (até 3 contra 3, em unidades da arena)
 
 export function criarCenaBatalha(THREE) {
   const cena = new THREE.Scene();
@@ -14,6 +15,7 @@ export function criarCenaBatalha(THREE) {
   const olharAtual = new THREE.Vector3();
   let fovAtual = vistaDaCamera('abertura').fov;
   let modo = 'abertura';
+  let vistaLivre = null;
   let tremor = 0;
   let tempo = 0;
   let larguraTela = 1;
@@ -112,14 +114,14 @@ export function criarCenaBatalha(THREE) {
     return m;
   };
 
-  function criarLutador(lado) {
+  function criarLutador(lado, base) {
     const { material, uniforms } = criarMaterialCor(THREE);
     const malha = new THREE.Mesh(new THREE.PlaneGeometry(ALTURA, ALTURA), material);
     malha.visible = false;
     cena.add(malha);
     return {
       lado, uniforms, malha, sombra: criarSombra(),
-      base: { x: POSICAO[lado].x, z: POSICAO[lado].z },
+      base: { x: base.x, z: base.z },
       flip: lado === 'inimigo',
       pronto: false, aspecto: 1,
       fase: Math.random() * 6.28,
@@ -128,14 +130,30 @@ export function criarCenaBatalha(THREE) {
       anim: null,
     };
   }
-  const lutadores = { jogador: criarLutador('jogador'), inimigo: criarLutador('inimigo') };
+  // até 3 aliados e até 3 inimigos; cada um tem o seu slot na arena (ver camera-batalha.js)
+  const slots = {
+    aliado: POSICOES_ALIADOS.map((p) => criarLutador('aliado', p)),
+    inimigo: [0, 1, 2].map(() => criarLutador('inimigo', POSICAO_PADRAO_INIMIGO)),
+  };
+  // arruma os inimigos conforme quantos são; os aliados ficam sempre nos três slots
+  function disporInimigos(quantidade) {
+    slots.inimigo.forEach((l, i) => {
+      const p = posicaoDoInimigo(quantidade, i);
+      l.base = { x: p.x, z: p.z };
+      l.ativo = i < quantidade;
+      if (!l.ativo) { l.malha.visible = false; l.sombra.visible = false; }
+    });
+  }
+  const lutadorDo = (lado, i) => slots[lado][i];
 
   const NATURAL = { matiz: 0, sat: 1, bri: 1 };
   const aplicarGiro = (l, g) => aplicarGiroCor(THREE, l.uniforms, g);
 
   // Mostra um monstrinho. `giro` é a cor da variação (null é o natural). Com `animar`, a cor vai do natural até a variação.
-  function definir(lado, { textura, giro = null, animar = false, dur = 1.4 }) {
-    const l = lutadores[lado];
+  function definir(lado, i, { textura, giro = null, animar = false, dur = 1.4 }) {
+    const l = lutadorDo(lado, i);
+    l.ativo = true;
+    l.derrubado = false;
     l.uniforms.map.value = textura;
     l.pronto = false;
     l.malha.visible = true;
@@ -151,9 +169,9 @@ export function criarCenaBatalha(THREE) {
   }
 
   // Quem age avança até o alvo e volta. Quem leva o golpe treme, pisca e é empurrado para trás.
-  function golpe(lado, alvo, { critico = false, habilidade = false } = {}) {
-    const atq = lutadores[lado];
-    const def = lutadores[alvo];
+  function golpe(ladoAtq, iAtq, ladoDef, iDef, { critico = false, habilidade = false } = {}) {
+    const atq = lutadorDo(ladoAtq, iAtq);
+    const def = lutadorDo(ladoDef, iDef);
     atq.lungeDir = Math.sign(def.base.x - atq.base.x);
     atq.lungeTotal = habilidade ? 0.6 : 0.38;
     atq.lungeAmp = habilidade ? 1.1 : 0.7;
@@ -167,8 +185,8 @@ export function criarCenaBatalha(THREE) {
     return p;
   }
 
-  function cura(lado) {
-    const l = lutadores[lado];
+  function cura(lado, i) {
+    const l = lutadorDo(lado, i);
     l.curaT = 0.7;
     faiscas(l.malha.position.x, ALTURA * 0.5, l.malha.position.z, '#9dffb0');
   }
@@ -176,6 +194,19 @@ export function criarCenaBatalha(THREE) {
   // Vista da câmera. A passagem é suavizada no atualizar, então trocar de vista não corta.
   function mirar(nome) {
     modo = nome;
+    vistaLivre = null;
+  }
+  // Vista livre (ex.: presa num alvo): recebe { pos, olha, fov }.
+  function mirarVista(v) {
+    vistaLivre = v;
+  }
+  // Tira um lutador caído da arena.
+  function derrubar(lado, i) {
+    const l = lutadorDo(lado, i);
+    l.derrubado = true;
+    l.anim = null;
+    l.malha.visible = false;
+    l.sombra.visible = false;
   }
 
   function reiniciarCamera() {
@@ -197,14 +228,15 @@ export function criarCenaBatalha(THREE) {
     const v = new THREE.Vector3(x, y, z).project(camera);
     return { x: ((v.x + 1) / 2) * larguraTela, y: ((1 - v.y) / 2) * alturaTela };
   }
-  function projetar(lado) {
-    const l = lutadores[lado];
+  function projetar(lado, i) {
+    const l = lutadorDo(lado, i);
     return projetarPonto(l.malha.position.x, ALTURA * 0.85, l.malha.position.z);
   }
 
   function atualizar(dt, t) {
     tempo = t;
-    for (const l of Object.values(lutadores)) {
+    for (const l of [...slots.aliado, ...slots.inimigo]) {
+      if (!l.ativo && !l.malha.visible) continue;
       // o sprite fica com a proporção da imagem assim que ela carregar
       const img = l.uniforms.map.value?.image;
       if (img && !l.pronto && (img.width || img.naturalWidth)) {
@@ -255,7 +287,7 @@ export function criarCenaBatalha(THREE) {
     atualizarFaiscas(dt);
 
     // câmera: vai até a vista pedida, com tremor no impacto
-    const v = vistaDaCamera(modo);
+    const v = vistaLivre ?? vistaDaCamera(modo);
     const k = 1 - Math.exp(-dt * DAMPING_CAMERA);
     // em tela estreita (celular em retrato) a câmera recua, para os dois lutadores caberem
     // a câmera recua o que for preciso para os dois lutadores caberem na largura (celular em retrato)
@@ -287,6 +319,6 @@ export function criarCenaBatalha(THREE) {
   }
 
   return {
-    cena, camera, tema, definir, golpe, cura, mirar, reiniciarCamera, tremerCamera, projetar, atualizar, resize,
+    cena, camera, tema, definir, golpe, cura, mirar, mirarVista, derrubar, disporInimigos, reiniciarCamera, tremerCamera, projetar, atualizar, resize,
   };
 }

@@ -9,7 +9,8 @@ import { linhasDoRegistro, EXEMPLO_ESPOLIO } from './registro.js';
 import { criarCenaBatalha } from './cena-batalha.js';
 import { criarMaterialCor, aplicarGiro, NATURAL } from './cor-sprite.js';
 import { AREAS, areaDaRegiao } from './areas.js';
-import { modoDoFoco } from './camera-batalha.js';
+import { POSICOES_ALIADOS, posicaoDoInimigo, vistaDoAlvo } from './camera-batalha.js';
+import * as BE from './batalha-equipe.js';
 import { montarMundo, COR_HORIZONTE } from './mundo-3d.js';
 import * as C from '../core.js';
 import * as CB from '../combate.js';
@@ -123,7 +124,7 @@ const toque = window.matchMedia('(pointer: coarse)').matches;
 // ---- time e poções: ficam só nesta sessão (o protótipo não salva nada) ----
 const time = timeInicial();
 const pocoesBatalha = { ...POCOES_INICIAIS };
-let batalha = null;   // { s, fase: 'escolha' | 'luta' | 'fim' | 'recuou', sel, foco, combate, roteiro, passo, tempo, ... }
+let batalha = null;   // { s, sorteios, e (equipe), area, fase: 'planejar' | 'alvo' | 'roteiro' | 'fim' | 'recuou', quem, menu, alvo, roteiro, ... }
 let vista = null;     // tela de Time: { tipo: 'time' | 'habilidades', sel, slot, item, voltar }
 
 // ---- texturas dos monstrinhos (carregam uma vez por espécie) ----
@@ -391,7 +392,6 @@ function atualizarLocal() {
 const batalhaEl = document.getElementById('batalha');
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const pocoesTexto = () => `P ${pocoesBatalha.pequena} · M ${pocoesBatalha.media} · G ${pocoesBatalha.grande}`;
-const pctVida = (hp) => Math.max(0, Math.min(100, (100 * hp) / CB.COMBATE.hpMax));
 
 // arte do monstrinho nas telas de menu; a cor de uma variação é um giro de matiz no próprio desenho
 const arteHtml = (m, classe = '') => {
@@ -414,36 +414,6 @@ const cartaoMembro = (t, i, sel, acao) => `<li><button type="button" class="memb
   ${xpBarra(t)}
 </button></li>`;
 
-function htmlEscolha(b) {
-  const sorteio = b.s.sorteio;
-  const m = sorteio.monstro;
-  return `<div class="bat-tela escolha">
-    <h2 class="bat-titulo">Membro da batalha</h2>
-    <div class="bat-selvagem">${arteHtml(m, 'pequena')}
-      <div><b>${esc(m.species)}</b>${badgeVariante(m)}<span>${RARIDADE_NOME[sorteio.raridade - 1]} · Nv ${m.level} · ${NOME_ELEMENTO[m.elemento]}</span></div>
-    </div>
-    <ul class="bat-membros">${time.map((t, i) => cartaoMembro(t, i, i === b.sel, 'membro')).join('')}</ul>
-    <div class="bat-acoes">
-      <button type="button" class="bat-btn primario" data-bat="confirmar">Confirmar<kbd>Enter</kbd></button>
-      <button type="button" class="bat-btn" data-bat="habilidades">Habilidades<kbd>X</kbd></button>
-      <button type="button" class="bat-btn" data-bat="voltar">Voltar<kbd>Esc</kbd></button>
-    </div>
-    <p class="bat-pocoes">Poções: ${pocoesTexto()}</p>
-  </div>`;
-}
-
-function htmlTime() {
-  return `<div class="bat-tela escolha">
-    <h2 class="bat-titulo">Time</h2>
-    <ul class="bat-membros">${time.map((t, i) => cartaoMembro(t, i, i === vista.sel, 'vista-membro')).join('')}</ul>
-    <div class="bat-acoes">
-      <button type="button" class="bat-btn primario" data-bat="vista-habilidades">Habilidades<kbd>Enter</kbd></button>
-      <button type="button" class="bat-btn" data-bat="vista-fechar">Fechar<kbd>Esc</kbd></button>
-    </div>
-    <p class="bat-pocoes">Troque as habilidades dos slots 1 a 4 quando quiser. A batalha usa esses slots no disco de ações.</p>
-  </div>`;
-}
-
 function htmlHabilidades() {
   const m = time[vista.sel];
   const pool = habilidadesDisponiveis(m);
@@ -464,78 +434,140 @@ function htmlHabilidades() {
   </div>`;
 }
 
-function htmlLuta(b) {
-  const c = b.combate;
-  const m = time[b.sel];
-  const monstroI = b.s.sorteio.monstro;
-  const ops = opcoesAtuais();
-  const sel = ops[b.foco] ?? ops[0];
-  const R = 104;
-  const centro = 150;
-  const itens = ops.map((o, i) => {
-    const ang = -Math.PI / 2 + (i * 2 * Math.PI) / ops.length;
-    const x = centro + R * Math.cos(ang) - 30;
-    const y = centro + R * Math.sin(ang) - 30;
-    return `<button type="button" class="disco-item ${i === b.foco ? 'sel' : ''} ${o.ativa ? '' : 'off'}" style="left:${x}px;top:${y}px"
-      data-bat="acao" data-i="${i}" ${o.ativa && !b.roteiro ? '' : 'disabled'} title="${esc(o.rotulo)}">${o.icone}</button>`;
+// ---- batalha em equipe: até 3 aliados (o time) contra 1 a 3 inimigos ----
+const ACOES = ['atacar', 'habilidades', 'item'];
+const TEXTO_ACAO = { atacar: 'Atacar', habilidades: 'Habilidades', item: 'Item' };
+const ICONE_ACAO = { atacar: '⚔', habilidades: '★', item: '✚' };
+const snapshotVida = (e) => ({ aliados: e.aliados.map((a) => a.hp), inimigos: e.inimigos.map((n) => n.hp) });
+const multTexto = String(CB.COMBATE.habilidadeMult).replace('.', ',');
+
+// O que cada aliado vai fazer neste turno (ou o que está esperando).
+function textoPlano(b, i) {
+  const p = b.e.planos[i];
+  if (!p) return b.fase === 'planejar' && b.quem === i ? 'escolhendo…' : 'aguardando';
+  if (p.tipo === 'pocao') return CB.POCOES[p.pocao].nome;
+  const alvo = b.e.inimigos[p.alvo].nome;
+  return p.tipo === 'habilidade' ? `${esc(p.nome)} → ${esc(alvo)}` : `Atacar → ${esc(alvo)}`;
+}
+
+// Lista do menu aberto: habilidades do aliado da vez, ou poções. ok diz se pode usar agora.
+function itensDoMenu(b) {
+  const a = b.e.aliados[b.quem];
+  if (b.menu === 'habilidades') {
+    return a.habilidades.map((h) => {
+      const pronta = CB.habilidadePronta(a, h.nome, b.e.turno);
+      return { tipo: 'habilidade', nome: h.nome, rotulo: h.nome, sub: pronta ? `dano x${multTexto}` : 'em recarga (espera 1 turno)', ok: pronta };
+    });
+  }
+  return Object.keys(CB.POCOES).map((p) => {
+    const livres = BE.pocoesLivres(b.e, p, b.quem);
+    return { tipo: 'pocao', nome: p, rotulo: CB.POCOES[p].nome, sub: `${livres} na mochila`, ok: livres > 0 };
+  });
+}
+
+function htmlBatalha(b) {
+  const e = b.e;
+  const aliados = e.aliados.map((a, i) => {
+    const ativo = b.fase === 'planejar' && b.quem === i;
+    return `<div class="bt-card aliado ${ativo ? 'ativo' : ''} ${a.hp <= 0 ? 'ko' : ''}">
+      <div class="bt-cab"><b>${esc(a.nome)}</b><span>Nv ${time[i].level}</span></div>
+      <div class="bt-barra"><i data-hp="aliado-${i}"></i></div>
+      <div class="bt-num" data-num="aliado-${i}"></div>
+      <div class="bt-plano">${textoPlano(b, i)}</div>
+    </div>`;
   }).join('');
-  const log = c.log.slice(-4).map((l) => `<li>${esc(l)}</li>`).join('');
-  return `<div class="bat-tela luta ${b.roteiro ? 'ocupado' : ''}">
-    <header class="bat-topo"><span>Batalha · ${esc(b.area.nome)} · ${NOME_ELEMENTO[b.area.elemento]}</span><span>Turno ${Math.min(c.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}</span><span>${pocoesTexto()}</span></header>
-    <section class="bat-cartao ini">
-      <div class="cab"><b>${esc(c.ini.nome)}</b>${badgeVariante(monstroI)}<span>${NOME_ELEMENTO[c.ini.elemento]} · Nv ${monstroI.level}</span></div>
-      <div class="barra"><i data-barra="ini"></i></div>
-    </section>
-    <section class="bat-cartao jog">
-      <div class="cab"><b>${esc(c.jog.nome)}</b>${badgeVariante(m)}<span>${NOME_ELEMENTO[c.jog.elemento]} · Nv ${m.level}</span></div>
-      <div class="barra"><i data-barra="jog"></i></div>
-    </section>
-    <ol class="bat-log">${log}</ol>
-    <div class="disco">
-      <button type="button" class="disco-centro" data-bat="acao" data-i="${b.foco}" ${b.roteiro ? 'disabled' : ''}>${sel.icone}</button>
-      ${itens}
-      <div class="disco-rotulo">${esc(sel.rotulo)}</div>
-    </div>
-    <p class="bat-dica">1 2 3 4 habilidade · Q atacar · X poção · ←→ escolher · Enter confirmar</p>
+  const inimigos = e.inimigos.map((n, i) => {
+    const alvo = b.fase === 'alvo' && b.alvo === i;
+    const pode = b.fase === 'alvo' && n.hp > 0;
+    return `<button type="button" class="bt-card inimigo ${alvo ? 'alvo' : ''} ${n.hp <= 0 ? 'ko' : ''}" data-bat="inimigo" data-i="${i}" ${pode ? '' : 'disabled'}>
+      <div class="bt-cab"><b>${esc(n.nome)}</b><span>${NOME_ELEMENTO[n.elemento]} · Nv ${b.nivelInimigos[i]}</span></div>
+      <div class="bt-barra"><i data-hp="inimigo-${i}"></i></div>
+      <div class="bt-num" data-num="inimigo-${i}"></div>
+    </button>`;
+  }).join('');
+  const disco = b.fase === 'planejar' && b.menu === 'acoes'
+    ? `<div class="bt-disco">${ACOES.map((op, k) => {
+      const ang = -Math.PI / 2 + (k * 2 * Math.PI) / ACOES.length;
+      const x = 130 + 88 * Math.cos(ang) - 32;
+      const y = 130 + 88 * Math.sin(ang) - 32;
+      return `<button type="button" class="bt-op ${b.opcaoMenu === k ? 'foco' : ''}" style="left:${x}px;top:${y}px" data-bat="acao" data-nome="${op}">${ICONE_ACAO[op]}<span>${TEXTO_ACAO[op]}</span></button>`;
+    }).join('')}</div>`
+    : '';
+  let painel = '';
+  if (b.fase === 'planejar' && b.menu !== 'acoes') {
+    const itens = itensDoMenu(b).map((it, k) => `<button type="button" class="bt-item ${k === b.opcaoMenu ? 'foco' : ''}" data-bat="${it.tipo}" data-nome="${esc(it.nome)}" ${it.ok ? '' : 'disabled'}>
+        <b>${esc(it.rotulo)}</b><span>${esc(it.sub)}</span></button>`).join('');
+    const titulo = b.menu === 'habilidades' ? `Habilidades · ${esc(e.aliados[b.quem].nome)}` : 'Itens';
+    painel = `<div class="bt-lista"><h3>${titulo}</h3>${itens}<button type="button" class="bt-btn" data-bat="lista-voltar">Voltar<kbd>Esc</kbd></button></div>`;
+  }
+  const alvo = b.fase === 'alvo'
+    ? `<div class="bt-alvo"><span>◀</span><b>${esc(e.inimigos[b.alvo].nome)}</b><span>▶</span><button type="button" data-bat="alvo-confirmar">Confirmar</button><button type="button" data-bat="alvo-voltar">Voltar</button></div>`
+    : '';
+  const mira = b.fase === 'alvo' ? '<div class="bt-mira"></div>' : '';
+  const log = e.log.slice(-4).map((l) => `<li>${esc(l)}</li>`).join('');
+  const dica = {
+    planejar: b.menu === 'acoes' ? '←→ escolher · Enter confirmar · Q atacar · X habilidades · Esc fugir' : '↑↓ escolher · Enter usar · Esc voltar',
+    alvo: '←→ trocar o alvo · Enter confirmar · Esc voltar',
+    roteiro: 'Turno em andamento…',
+  }[b.fase] ?? '';
+  const vezDe = b.fase === 'planejar' ? `Vez de ${esc(e.aliados[b.quem].nome)}` : '';
+  return `<div class="bat-tela bt ${b.fase}">
+    <header class="bt-topo"><span>${esc(b.area.nome)}</span><span>Turno ${Math.min(e.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}</span><span>${vezDe || pocoesTexto()}</span></header>
+    <section class="bt-inimigos">${inimigos}</section>
+    <section class="bt-aliados">${aliados}</section>
+    ${mira}${disco}${painel}${alvo}
+    <ol class="bt-log">${log}</ol>
+    <p class="bt-dica">${dica}</p>
   </div>`;
 }
 
 function htmlFim(b) {
-  const c = b.combate;
-  const m = time[b.sel];
-  const log = c.log.slice(-6).map((l) => `<li>${esc(l)}</li>`).join('');
+  const vivos = b.e.aliados.filter((a) => a.hp > 0).length;
+  const log = b.e.log.slice(-6).map((l) => `<li>${esc(l)}</li>`).join('');
   const xp = b.xp >= 0 ? `+${b.xp}` : `${b.xp}`;
   return `<div class="bat-fim ${b.resultado ? 'vitoria' : 'derrota'}">
     <h2>${b.resultado ? 'Vitória' : 'Derrota'}</h2>
-    <p>${esc(m.species)} · XP ${xp}${b.subiu ? ` · subiu para o nível ${b.nivel}` : ''}</p>
-    ${b.resultado && b.gold ? `<p>Gold +${b.gold}${b.pocao ? ' · Poção pequena +1' : ''}</p>` : ''}
+    <p>${vivos} de ${b.e.aliados.length} aliados de pé · XP ${xp}${b.subiu ? ` · subiu de nível (até ${b.nivel})` : ''}</p>
+    ${b.resultado && b.gold ? `<p>Gold +${b.gold}${b.pocao ? ` · Poção pequena +${b.pocao}` : ''}</p>` : ''}
     <ol class="bat-log grande">${log}</ol>
     <button type="button" class="bat-btn primario" data-bat="continuar">Continuar<kbd>Enter</kbd></button>
   </div>`;
 }
 
-// Barras de vida da luta: mostram a vida do roteiro (hpMostrado), que avança golpe a golpe.
+// Barras e números: mostram a vida do roteiro (hpMostrado), que avança golpe a golpe.
 function atualizarBarras() {
   const b = batalha;
-  if (!b || !b.hpMostrado || b.fase !== 'luta') return;
-  const pj = pctVida(b.hpMostrado.j);
-  const pi = pctVida(b.hpMostrado.i);
-  const eJ = batalhaEl.querySelector('[data-barra="jog"]');
-  const eI = batalhaEl.querySelector('[data-barra="ini"]');
-  if (eJ) { eJ.style.width = `${pj}%`; eJ.parentElement.classList.toggle('baixa', pj <= 30); }
-  if (eI) { eI.style.width = `${pi}%`; eI.parentElement.classList.toggle('baixa', pi <= 30); }
+  if (!b || !b.hpMostrado || b.fase === 'fim') return;
+  const pinta = (ref, hp, max) => {
+    const barra = batalhaEl.querySelector(`[data-hp="${ref}"]`);
+    const num = batalhaEl.querySelector(`[data-num="${ref}"]`);
+    const pct = Math.max(0, Math.min(100, (100 * hp) / max));
+    if (barra) { barra.style.width = `${pct}%`; barra.parentElement.classList.toggle('baixa', pct <= 30); }
+    if (num) num.textContent = `${Math.max(0, hp)}/${max}`;
+  };
+  b.e.aliados.forEach((a, i) => pinta(`aliado-${i}`, b.hpMostrado.aliados[i], a.hpMax));
+  b.e.inimigos.forEach((n, i) => pinta(`inimigo-${i}`, b.hpMostrado.inimigos[i], n.hpMax));
+}
+
+// A mira fica sobre o alvo escolhido, acompanhando a câmera.
+function atualizarMira() {
+  const b = batalha;
+  const el = batalhaEl.querySelector('.bt-mira');
+  if (!b || !el || b.fase !== 'alvo') return;
+  const p = cenaBat.projetar('inimigo', b.alvo);
+  el.style.left = `${p.x}px`;
+  el.style.top = `${p.y}px`;
 }
 
 function renderBatalha() {
   const b = batalha;
-  if (b.fase === 'escolha') batalhaEl.innerHTML = htmlEscolha(b);
-  else if (b.fase === 'luta') {
-    batalhaEl.innerHTML = htmlLuta(b);
-    atualizarBarras();
-  } else batalhaEl.innerHTML = htmlFim(b);
+  if (b.fase === 'fim') { batalhaEl.innerHTML = htmlFim(b); return; }
+  batalhaEl.innerHTML = htmlBatalha(b);
+  atualizarBarras();
+  atualizarMira();
 }
 
-// Desenha a tela atual: Time ou Habilidades (fora da luta ou a partir da escolha), a batalha, ou nada.
+// Desenha a tela atual: Time ou Habilidades (a qualquer momento, pela tecla T), a batalha, ou nada.
 function renderTudo() {
   document.body.classList.toggle('batalha', Boolean(vista || batalha));
   document.body.classList.toggle('vista', Boolean(vista));
@@ -547,9 +579,9 @@ function renderTudo() {
   else batalhaEl.replaceChildren();
 }
 
-// ---- números que sobem do monstrinho atingido ----
-function mostrarNumero(lado, texto, classe, deslocY = 0) {
-  const p = cenaBat.projetar(lado);
+// ---- números que sobem de quem foi atingido (ref: { lado, i }) ----
+function mostrarNumero(ref, texto, classe, deslocY = 0) {
+  const p = cenaBat.projetar(ref.lado, ref.i);
   const el = document.createElement('div');
   el.className = `bat-pop ${classe}`;
   el.textContent = texto;
@@ -560,92 +592,187 @@ function mostrarNumero(lado, texto, classe, deslocY = 0) {
 }
 
 // ---- batalha: fluxo ----
+const posicaoDoLutador = (ref) => (ref.lado === 'aliado' ? POSICOES_ALIADOS[ref.i] : posicaoDoInimigo(batalha.sorteios.length, ref.i));
+
+// Um selvagem do mapa é o primeiro inimigo; a batalha traz mais 0 a 2, sorteados na hora. O time (até 3) sempre luta.
 function iniciarBatalha(s) {
   s.ativo = false;
   s.malha.visible = false;
   s.reaparece = Infinity;   // não volta enquanto a luta dura; encerrarBatalha marca a volta
+  const quantidade = 1 + Math.floor(Math.random() * 3);
+  const sorteios = [s.sorteio, ...Array.from({ length: quantidade - 1 }, () => sortearSelvagem(Math.random))];
+  const e = BE.criarBatalhaEquipe({
+    aliados: time.slice(0, 3).map((m) => lutadorDo(m)),
+    inimigos: sorteios.map((x) => lutadorDo(x.monstro)),
+    pocoes: pocoesBatalha,
+  });
+  const area = areaDaRegiao(localDe(estado.pos.x, estado.pos.z)?.regiao ?? null) ?? AREAS.Centro;
   batalha = {
-    s, area: areaDaRegiao(localDe(estado.pos.x, estado.pos.z)?.regiao ?? null) ?? AREAS.Centro, fase: 'escolha', sel: 0, foco: 0, combate: null, resultado: false, xp: 0, subiu: 0, nivel: 0, gold: 0, pocao: 0,
-    roteiro: null, passo: 0, tempo: 0, iniciado: false, pendenteFim: false, hpMostrado: null,
+    s, sorteios, e, area, fase: 'planejar', quem: 0, menu: 'acoes', opcaoMenu: 0, alvo: 0, acao: null,
+    roteiro: null, passo: 0, tempo: 0, iniciado: false, pendenteFim: false, resultado: null,
+    xp: 0, subiu: 0, nivel: 0, gold: 0, pocao: 0,
+    nivelInimigos: sorteios.map((x) => x.monstro.level),
+    hpMostrado: snapshotVida(e),
   };
+  batalha.quem = BE.proximoAliadoSemPlano(e);
   teclas.clear();
   estado.joy = { x: 0, z: 0 };
-  // o selvagem aparece na arena; se for uma variação, a cor muda na frente de quem olha
-  const m = s.sorteio.monstro;
-  const giro = giroDoMonstro(m);
-  cenaBat.tema(batalha.area.arena);
+  cenaBat.tema(area.arena);
   cenaBat.reiniciarCamera();
-  cenaBat.definir('inimigo', { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.6 });
+  cenaBat.disporInimigos(sorteios.length);
+  time.slice(0, 3).forEach((m, i) => {
+    const giro = giroDoMonstro(m);
+    cenaBat.definir('aliado', i, { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.2 });
+  });
+  sorteios.forEach((x, i) => {
+    const m = x.monstro;
+    const giro = giroDoMonstro(m);
+    cenaBat.definir('inimigo', i, { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.6 });
+  });
   cenaBat.mirar('panoramica');
   renderTudo();
 }
 
-function confirmarMembro() {
+// ---- planejamento: cada aliado vivo escolhe a ação, depois o alvo ----
+function escolherAcao(op) {
   const b = batalha;
-  if (!b || b.fase !== 'escolha') return;
-  const m = time[b.sel];
-  b.combate = CB.criarCombate(lutadorDo(m), lutadorDo(b.s.sorteio.monstro), pocoesBatalha);
-  b.fase = 'luta';
-  b.foco = 0;
-  b.hpMostrado = { j: b.combate.jog.hp, i: b.combate.ini.hp };
-  const giro = giroDoMonstro(m);
-  cenaBat.definir('jogador', { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.2 });
+  if (!b || b.fase !== 'planejar') return;
+  if (op === 'habilidades' || op === 'item') {
+    b.menu = op === 'habilidades' ? 'habilidades' : 'item';
+    b.opcaoMenu = 0;
+    renderTudo();
+    return;
+  }
+  b.acao = { tipo: 'atacar' };
+  irParaAlvo();
+}
+
+function escolherItem(k) {
+  const b = batalha;
+  const it = itensDoMenu(b)[k];
+  if (!it || !it.ok) return;
+  if (it.tipo === 'pocao') { planejarAtual({ tipo: 'pocao', pocao: it.nome }); return; }
+  b.acao = { tipo: 'habilidade', nome: it.nome };
+  irParaAlvo();
+}
+
+function voltarAcoes() {
+  batalha.menu = 'acoes';
+  batalha.opcaoMenu = 0;
+  renderTudo();
+}
+
+// Leva a câmera ao inimigo mais perto de quem age, e a mira fica nele.
+function irParaAlvo() {
+  const b = batalha;
+  const origem = POSICOES_ALIADOS[b.quem];
+  const vivos = BE.inimigosVivos(b.e);
+  b.alvo = vivos.reduce((melhor, i) => {
+    const p = posicaoDoInimigo(b.sorteios.length, i);
+    const d = Math.hypot(p.x - origem.x, p.z - origem.z);
+    return d < melhor.d ? { i, d } : melhor;
+  }, { i: vivos[0], d: Infinity }).i;
+  b.fase = 'alvo';
+  mirarAlvo();
+  renderTudo();
+}
+
+function mirarAlvo() {
+  cenaBat.mirarVista(vistaDoAlvo(posicaoDoInimigo(batalha.sorteios.length, batalha.alvo)));
+}
+
+function ciclarAlvo(dir) {
+  const b = batalha;
+  const vivos = BE.inimigosVivos(b.e);
+  const k = vivos.indexOf(b.alvo);
+  b.alvo = vivos[(k + dir + vivos.length) % vivos.length];
+  mirarAlvo();
+  renderTudo();
+}
+
+function confirmarAlvo() {
+  const b = batalha;
+  if (!b || b.fase !== 'alvo') return;
+  planejarAtual(b.acao.tipo === 'habilidade'
+    ? { tipo: 'habilidade', nome: b.acao.nome, alvo: b.alvo }
+    : { tipo: 'atacar', alvo: b.alvo });
+}
+
+function voltarDoAlvo() {
+  batalha.fase = 'planejar';
+  batalha.acao = null;
   cenaBat.mirar('panoramica');
   renderTudo();
 }
 
-const opcoesAtuais = () => opcoesDeAcao(batalha.combate, time[batalha.sel]);
-
-// A ação do jogador vira um roteiro de golpes; a câmera e as barras seguem o roteiro, não o clique.
-function usarAcao(op) {
+// Registra a ação do aliado da vez. Se ainda há aliado sem ação, passa para ele; senão o turno é resolvido.
+function planejarAtual(acao) {
   const b = batalha;
-  if (!b || b.fase !== 'luta' || b.roteiro || !op || !op.ativa) return;
-  const logAntes = b.combate.log.length;
   try {
-    CB.agir(b.combate, op.acao, Math.random);
+    BE.planejar(b.e, b.quem, acao);
   } catch {
     renderTudo();
     return;
   }
-  Object.assign(pocoesBatalha, b.combate.pocoes);
-  const eventos = eventosDoTurno(b.combate.log.slice(logAntes));
-  const resultado = b.combate.fim ? b.combate.resultado : null;
-  b.roteiro = roteiroDoTurno({ eventos, hpInicio: b.hpMostrado, resultado });
+  b.menu = 'acoes';
+  b.opcaoMenu = 0;
+  b.acao = null;
+  cenaBat.mirar('panoramica');
+  const prox = BE.proximoAliadoSemPlano(b.e);
+  if (prox !== null) {
+    b.quem = prox;
+    b.fase = 'planejar';
+    renderTudo();
+    return;
+  }
+  resolverRodada();
+}
+
+function resolverRodada() {
+  const b = batalha;
+  BE.resolverTurno(b.e, Math.random);
+  Object.assign(pocoesBatalha, b.e.pocoes);
+  b.roteiro = BE.roteiroDaEquipe(b.e);
   b.passo = 0;
   b.tempo = 0;
   b.iniciado = false;
-  b.pendenteFim = Boolean(resultado);
+  b.fase = 'roteiro';
+  b.menu = 'acoes';
+  b.pendenteFim = b.e.fim;
+  b.resultado = b.e.fim ? b.e.resultado : null;
   renderTudo();
 }
 
+// ---- roteiro do turno: a câmera vai a quem age, o golpe acontece, a vida cai e quem cai sai da arena ----
 function executarPasso(p) {
   const b = batalha;
-  if (p.tipo === 'foco') { cenaBat.mirar(modoDoFoco(p.lado)); return; }
+  if (p.tipo === 'foco') { cenaBat.mirarVista(vistaDoAlvo(posicaoDoLutador(p.ator))); return; }
   if (p.tipo === 'golpe') {
-    cenaBat.golpe(p.lado, p.alvo, { critico: p.critico, habilidade: p.habilidade });
+    cenaBat.golpe(p.ator.lado, p.ator.i, p.alvo.lado, p.alvo.i, { critico: p.critico, habilidade: Boolean(p.habilidade) });
     if (p.dano > 0 && p.absorvido) mostrarNumero(p.alvo, `+${p.dano}`, 'cura');   // vampirismo: o alvo cura
     else if (p.dano > 0) mostrarNumero(p.alvo, p.critico ? `-${p.dano}!` : `-${p.dano}`, p.critico ? 'critico' : 'dano');
     // a tipagem aparece logo acima do número: super efetivo, pouco efetivo ou sem efeito
     if (p.eficacia) setTimeout(() => mostrarNumero(p.alvo, ROTULO_EFICACIA[p.eficacia], `efi-${p.eficacia}`, 36), 280);
     b.hpMostrado = p.hp;
+    p.hp.aliados.forEach((h, i) => { if (h <= 0) cenaBat.derrubar('aliado', i); });
+    p.hp.inimigos.forEach((h, i) => { if (h <= 0) cenaBat.derrubar('inimigo', i); });
     atualizarBarras();
     return;
   }
   if (p.tipo === 'erro') { mostrarNumero(p.alvo, 'Errou', 'erro'); return; }
   if (p.tipo === 'cura') {
-    cenaBat.cura(p.lado);
-    mostrarNumero(p.lado, `+${p.dano}`, 'cura');
+    cenaBat.cura(p.ator.lado, p.ator.i);
+    mostrarNumero(p.ator, `+${p.dano}`, 'cura');
     b.hpMostrado = p.hp;
     atualizarBarras();
     return;
   }
-  if (p.tipo === 'pausa') { cenaBat.mirar('panoramica'); return; }
-  if (p.tipo === 'fim') cenaBat.mirar(p.resultado === 'vitoria' ? 'vitoria' : 'derrota');
+  if (p.tipo === 'pausa') cenaBat.mirar('panoramica');
 }
 
 function tocarRoteiro(dt) {
   const b = batalha;
-  if (!b || !b.roteiro) return;
+  if (!b || b.fase !== 'roteiro' || !b.roteiro) return;
   if (b.passo >= b.roteiro.length) { concluirRoteiro(); return; }
   const p = b.roteiro[b.passo];
   if (!b.iniciado) {
@@ -663,22 +790,45 @@ function tocarRoteiro(dt) {
 function concluirRoteiro() {
   const b = batalha;
   b.roteiro = null;
-  b.hpMostrado = { j: b.combate.jog.hp, i: b.combate.ini.hp };
-  if (b.pendenteFim) terminarLuta();
+  b.hpMostrado = snapshotVida(b.e);
+  if (b.pendenteFim) { terminarLuta(); return; }
+  b.quem = BE.proximoAliadoSemPlano(b.e);
+  b.fase = 'planejar';
+  b.menu = 'acoes';
+  b.opcaoMenu = 0;
+  cenaBat.mirar('panoramica');
   renderTudo();
 }
 
+// XP só para quem está de pé quando a equipe vence; todo o time perde XP na derrota (como antes).
+// Ouro: a soma do que cada inimigo derrubado rende; uma poção pequena pode cair por luta.
 function terminarLuta() {
   const b = batalha;
-  const vitoria = b.combate.resultado === 'vitoria';
-  const r = aplicarResultado(time[b.sel], vitoria);
-  const rec = recompensaDaBatalha({ vitoria, raridade: b.s.sorteio.raridade, rnd: Math.random });
-  pocoesBatalha.pequena += rec.pocao;
-  Object.assign(b, { fase: 'fim', resultado: vitoria, xp: r.xp, subiu: r.subiu, nivel: r.nivel, gold: rec.gold, pocao: rec.pocao });
+  const vitoria = b.e.resultado === 'vitoria';
+  let xp = 0;
+  let subiu = 0;
+  let nivel = 0;
+  b.e.aliados.forEach((a, i) => {
+    if (vitoria && a.hp <= 0) return;
+    const r = aplicarResultado(time[i], vitoria);
+    xp += r.xp;
+    subiu += r.subiu;
+    nivel = Math.max(nivel, r.nivel);
+  });
+  let gold = 0;
+  let pocao = 0;
+  b.sorteios.forEach((x) => {
+    const rec = recompensaDaBatalha({ vitoria, raridade: x.raridade, rnd: Math.random });
+    gold += rec.gold;
+    pocao += rec.pocao;
+  });
+  pocoesBatalha.pequena += pocao;
+  Object.assign(b, { fase: 'fim', resultado: vitoria, xp, subiu, nivel, gold, pocao });
+  renderTudo();
 }
 
 function fugir() {
-  if (!batalha || batalha.fase !== 'escolha') return;
+  if (!batalha || batalha.fase !== 'planejar') return;
   batalha.fase = 'recuou';
   encerrarBatalha();
 }
@@ -692,7 +842,7 @@ function encerrarBatalha() {
   vista = null;
   renderTudo();
   if (fase === 'fim') {
-    const itens = itensDoEspolio({ vitoria: b.resultado, nomeMonstro: time[b.sel].species, xp: b.xp, gold: b.gold, pocao: b.pocao });
+    const itens = itensDoEspolio({ vitoria: b.resultado, nomeMonstro: `${b.sorteios.length} inimigo(s)`, xp: b.xp, gold: b.gold, pocao: b.pocao });
     mostrarRegistro(itens, 9000);
   } else {
     mostrarMensagem('Você recuou. O selvagem se afastou.');
@@ -706,7 +856,7 @@ function abrirTime() {
   renderTudo();
 }
 function abrirHabilidades(voltar) {
-  const sel = voltar === 'escolha' && batalha ? batalha.sel : (vista?.sel ?? 0);
+  const sel = vista?.sel ?? 0;
   vista = { tipo: 'habilidades', sel, slot: 0, item: 0, voltar };
   renderTudo();
 }
@@ -738,22 +888,25 @@ function teclaVista(e) {
 function teclaBatalha(e) {
   const b = batalha;
   const k = e.code;
-  if (b.fase === 'escolha') {
-    if (k === 'ArrowUp' || k === 'KeyW') { b.sel = (b.sel + time.length - 1) % time.length; renderTudo(); }
-    else if (k === 'ArrowDown' || k === 'KeyS') { b.sel = (b.sel + 1) % time.length; renderTudo(); }
-    else if (k === 'KeyX') abrirHabilidades('escolha');
-    else if (k === 'Enter' || k === 'Space' || k === 'KeyE') confirmarMembro();
+  if (b.fase === 'planejar' && b.menu === 'acoes') {
+    const n = ACOES.length;
+    if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'KeyA' || k === 'KeyW') { b.opcaoMenu = (b.opcaoMenu + n - 1) % n; renderTudo(); }
+    else if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'KeyD' || k === 'KeyS') { b.opcaoMenu = (b.opcaoMenu + 1) % n; renderTudo(); }
+    else if (k === 'KeyQ') escolherAcao('atacar');
+    else if (k === 'KeyX') escolherAcao('habilidades');
+    else if (k === 'Enter' || k === 'Space' || k === 'KeyE') escolherAcao(ACOES[b.opcaoMenu]);
     else if (k === 'Escape' || k === 'Backspace') fugir();
-  } else if (b.fase === 'luta') {
-    if (b.roteiro) return;
-    const ops = opcoesAtuais();
-    const n = ops.length;
-    if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'KeyA' || k === 'KeyW') { b.foco = (b.foco + n - 1) % n; renderTudo(); }
-    else if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'KeyD' || k === 'KeyS') { b.foco = (b.foco + 1) % n; renderTudo(); }
-    else if (/^(Digit|Numpad)[1-4]$/.test(k)) usarAcao(ops.find((o) => o.slot === Number(k.slice(-1)) - 1));
-    else if (k === 'KeyQ') usarAcao(ops[0]);
-    else if (k === 'KeyX') usarAcao(ops.at(-1));
-    else if (k === 'Enter' || k === 'Space' || k === 'KeyE') usarAcao(ops[b.foco]);
+  } else if (b.fase === 'planejar') {   // lista de habilidades ou itens
+    const n = itensDoMenu(b).length;
+    if (k === 'ArrowUp' || k === 'KeyW') { b.opcaoMenu = (b.opcaoMenu + n - 1) % n; renderTudo(); }
+    else if (k === 'ArrowDown' || k === 'KeyS') { b.opcaoMenu = (b.opcaoMenu + 1) % n; renderTudo(); }
+    else if (k === 'Enter' || k === 'Space' || k === 'KeyE') escolherItem(b.opcaoMenu);
+    else if (k === 'Escape' || k === 'Backspace') voltarAcoes();
+  } else if (b.fase === 'alvo') {
+    if (k === 'ArrowLeft' || k === 'KeyA') ciclarAlvo(-1);
+    else if (k === 'ArrowRight' || k === 'KeyD') ciclarAlvo(1);
+    else if (k === 'Enter' || k === 'Space' || k === 'KeyE') confirmarAlvo();
+    else if (k === 'Escape' || k === 'Backspace') voltarDoAlvo();
   } else if (b.fase === 'fim') {
     if (['Enter', 'Space', 'Escape', 'KeyE'].includes(k)) encerrarBatalha();
   }
@@ -777,11 +930,16 @@ batalhaEl.addEventListener('click', (e) => {
     return;
   }
   if (!batalha) return;
-  if (acao === 'membro') { batalha.sel = Number(el.dataset.i); renderTudo(); }
-  else if (acao === 'confirmar') confirmarMembro();
-  else if (acao === 'voltar') fugir();
-  else if (acao === 'habilidades') abrirHabilidades('escolha');
-  else if (acao === 'acao') usarAcao(opcoesAtuais()[Number(el.dataset.i)]);
+  if (acao === 'acao') escolherAcao(el.dataset.nome);
+  else if (acao === 'habilidade' || acao === 'pocao') {
+    const k = itensDoMenu(batalha).findIndex((it) => it.nome === el.dataset.nome);
+    escolherItem(k);
+  } else if (acao === 'inimigo') {
+    if (batalha.fase === 'alvo') { batalha.alvo = Number(el.dataset.i); mirarAlvo(); renderTudo(); }
+  } else if (acao === 'alvo-confirmar') confirmarAlvo();
+  else if (acao === 'alvo-voltar') voltarDoAlvo();
+  else if (acao === 'lista-voltar') voltarAcoes();
+  else if (acao === 'fugir') fugir();
   else if (acao === 'continuar') encerrarBatalha();
 });
 
@@ -920,6 +1078,7 @@ function quadro(agora) {
   if (batalha) {
     tocarRoteiro(dt);
     cenaBat.atualizar(dt, agora / 1000);
+    atualizarMira();
     renderer.render(cenaBat.cena, cenaBat.camera);
   } else {
     renderer.render(scene, camera);
@@ -942,10 +1101,13 @@ window.explorar3d = {
   local: () => estado.local,
   teleportar: (x, z) => { estado.pos = { x, z }; },
   registro: (itens, ms) => mostrarRegistro(itens, ms),
-  batalha: () => (batalha ? { fase: batalha.fase, turno: batalha.combate?.turno ?? 0, resultado: batalha.resultado, roteiro: Boolean(batalha.roteiro) } : null),
+  batalha: () => (batalha ? { fase: batalha.fase, turno: batalha.e.turno, quem: batalha.quem, alvo: batalha.alvo, inimigos: batalha.e.inimigos.length, aliados: batalha.e.aliados.filter((a) => a.hp > 0).length, resultado: batalha.resultado, roteiro: Boolean(batalha.roteiro) } : null),
   iniciarBatalha: (i) => iniciarBatalha(selvagens[i]),
   sortear: (i) => { novoSelvagem(selvagens[i]); return selvagens[i].sorteio.monstro.variante ?? null; },
-  acaoBatalha: (i) => { if (batalha?.fase === 'luta') usarAcao(opcoesAtuais()[i]); },
+  acaoBatalha: (i) => { if (batalha?.fase === 'planejar' && batalha.menu === 'acoes') escolherAcao(ACOES[i]); },
+  escolherItem: (i) => { if (batalha?.fase === 'planejar' && batalha.menu !== 'acoes') escolherItem(i); },
+  confirmarAlvo: () => { if (batalha?.fase === 'alvo') confirmarAlvo(); },
+  mirarInimigo: (i) => { if (batalha?.fase === 'alvo') { batalha.alvo = i; mirarAlvo(); renderTudo(); } },
   vista: () => (vista ? vista.tipo : null),
   abrirTime,
   pocoes: () => ({ ...pocoesBatalha }),
