@@ -101,6 +101,20 @@ button:hover{border-color:var(--acc)}
 section[data-aba=ovos] ul.log{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;list-style:none;padding:0}
 section[data-aba=ovos] ul.log li{border:1px solid #3f8fd6;padding:10px;background:rgba(5,15,40,.6)}
 .lista-evo{list-style:none;padding:0;margin:0 0 8px}
+.escaner{position:relative;display:flex;gap:14px;align-items:center;margin:4px 0 14px;padding:10px;border:1px solid #3f8fd6;background:#06162f}
+.escaner-tela{position:relative;flex:0 0 130px;height:92px;border:1px solid #7fdcff;background:radial-gradient(circle at 50% 60%,#0f3a6e,#04102a);overflow:hidden}
+.escaner-tela::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(127,220,255,.14) 0 1px,transparent 1px 8px)}
+.escaner-linha{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#7fdcff,transparent);box-shadow:0 0 12px #7fdcff;animation:escanear 2.4s linear infinite}
+@keyframes escanear{0%{top:0}100%{top:100%}}
+.escaner-info{display:flex;flex-direction:column;gap:4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#cfe8ff}
+.escaner-info b{color:#fff;font-size:13px}
+.escaner-status{color:#ffb347}
+.ovo-card{position:relative;list-style:none;border:1px solid #3f8fd6;padding:12px;background:rgba(5,15,40,.6)}
+.ovo-card::before,.ovo-card::after{content:"";position:absolute;width:14px;height:14px;border:2px solid #7fdcff;pointer-events:none}
+.ovo-card::before{left:-3px;top:-3px;border-right:none;border-bottom:none}
+.ovo-card::after{right:-3px;bottom:-3px;border-left:none;border-top:none}
+.ovo-card:hover{border-color:#ffb347}
+@media (prefers-reduced-motion: reduce){.escaner-linha{animation:none;top:50%}}
 .lista-evo li{border-bottom:1px solid #1d3f73;padding:6px 0}
 </style>
 </head>

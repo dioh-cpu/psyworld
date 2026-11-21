@@ -1526,6 +1526,15 @@ function equipamentosHtml() {
     <div class="cartas">${cartas}</div></section>`;
 }
 
+// Escâner de ovos: a tela varre a fila de ovos; o sinal fica estável quando há ovo para escanear.
+function escanerHtml() {
+  const n = S.eggs.length;
+  return `<div class="escaner" aria-hidden="true">
+    <div class="escaner-tela"><div class="escaner-linha"></div></div>
+    <div class="escaner-info"><b>Escâner de ovos</b><span>${n} ovo(s) na fila</span>
+    <span class="escaner-status">${n ? 'sinal estável' : 'nenhum ovo detectado'}</span></div></div>`;
+}
+
 function mostrarAba(id) {
   const app = document.getElementById('app');
   abaAtiva = ABAS.some((a) => a.id === id) ? id : 'inicio';
@@ -1547,6 +1556,13 @@ function montarMenu() {
   if (!app) return;
   for (const sec of app.querySelectorAll(':scope > section')) {
     sec.dataset.aba = abaDaSecao((sec.querySelector('h2') || {}).textContent || '');
+  }
+  const ovos = app.querySelector('section[data-aba="ovos"]');
+  if (ovos) {
+    ovos.querySelector('h2')?.insertAdjacentHTML('afterend', escanerHtml());
+    ovos.querySelectorAll('button[data-act="hatchEgg"]').forEach((b) => { b.textContent = 'Escanear'; });
+    ovos.querySelectorAll('button[data-act="hatch"]').forEach((b) => { b.textContent = 'Escanear ovo inicial'; });
+    ovos.querySelectorAll('ul.log li').forEach((li) => li.classList.add('ovo-card'));
   }
   app.insertAdjacentHTML('beforeend', evolucaoHtml() + equipamentosHtml());
   const barra = `<nav class="menu-abas" aria-label="Menus">
