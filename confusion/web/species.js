@@ -15,22 +15,22 @@ export const ESPECIES = {
     habilidades: ['Mordida Umbral', 'Garra de Sombra', 'Chama Violeta', 'Uivo Sinistro', 'Véu Noturno'],
     arte: 'assets/monsters/noctarn/sprite-front.png',
   },
-  Ignavor: {
+  Ignavor: { arte: 'assets/monsters/ignavor/sprite-front.png',
     origem: 'base', pureza: 'luz', elemento: 'fogo', aptidoes: { plantar: 3, colher: 2, cortar: 3, transportar: 2 },
     habilidades: ['Golpe Couraçado', 'Brasa Imperial', 'Juba Flamejante', 'Rugido Dourado', 'Escudo de Ferro'],
     passiva: { nome: 'Couraça Lenta', texto: 'Recebe menos dano no primeiro golpe de cada luta.' },
   },
-  Vaelith: {
+  Vaelith: { arte: 'assets/monsters/vaelith/sprite-front.png',
     origem: 'base', pureza: 'luz', elemento: 'agua', aptidoes: { colher: 2, fabricar: 2, garimpar: 3 },
     habilidades: ['Pulso Astral', 'Arco Ciano', 'Cauda de Cristal', 'Véu Gelado', 'Fenda Estelar'],
     passiva: { nome: 'Eco Astral', texto: 'Tem 10% de chance de repetir a última habilidade usada.' },
   },
   // Exclusivos de evento (nomes e habilidades provisórios).
   Lumivela: { origem: 'evento', pureza: 'luz', aptidoes: { colher: 2, transportar: 2 }, habilidades: ['Pétala Lunar', 'Brilho Sereno', 'Véu Prateado', 'Canto da Lua', 'Orvalho Astral'], passiva: { nome: 'Luz da Lua', texto: 'Vencer um andar da zona dá 5 XP a mais.' } },
-  Brotavel: { origem: 'evento', pureza: 'luz', elemento: 'planta', aptidoes: { plantar: 3, colher: 2 }, habilidades: ['Raiz Viva', 'Espora Verde', 'Broto Fértil', 'Chuva Doce', 'Casca Firme'], passiva: { nome: 'Raiz Generosa', texto: 'A coleta da fazenda rende 10% a mais.' } },
+  Brotavel: { arte: 'assets/monsters/brotavel/sprite-front.png', origem: 'evento', pureza: 'luz', elemento: 'planta', aptidoes: { plantar: 3, colher: 2 }, habilidades: ['Raiz Viva', 'Espora Verde', 'Broto Fértil', 'Chuva Doce', 'Casca Firme'], passiva: { nome: 'Raiz Generosa', texto: 'A coleta da fazenda rende 10% a mais.' } },
   Cristalino: { origem: 'evento', pureza: 'neutra', aptidoes: { garimpar: 3, minerar: 2 }, habilidades: ['Lasca Prismática', 'Eco Glacial', 'Facetas', 'Brilho Frio', 'Núcleo Puro'], passiva: { nome: 'Prisma', texto: 'O garimpo rende 10% a mais.' } },
   Abyssar: { origem: 'evento', pureza: 'trevas', aptidoes: { minerar: 2, cortar: 2 }, habilidades: ['Sombra Funda', 'Fenda Negra', 'Garra Abissal', 'Sussurro', 'Maré Escura'], passiva: { nome: 'Sombra Faminta', texto: 'Ganha 1 de vínculo por dia.' } },
-  Solarin: { origem: 'evento', pureza: 'luz', elemento: 'fogo', aptidoes: { cortar: 2, fabricar: 2 }, habilidades: ['Chama Solar', 'Raio Dourado', 'Asas de Sol', 'Calor Lento', 'Aurora'], passiva: { nome: 'Sol Permanente', texto: 'Dá 1 de sanidade ao dono por dia.' } },
+  Solarin: { arte: 'assets/monsters/solarin/sprite-front.png', origem: 'evento', pureza: 'luz', elemento: 'luz', aptidoes: { cortar: 2, fabricar: 2 }, habilidades: ['Chama Solar', 'Raio Dourado', 'Asas de Sol', 'Calor Lento', 'Aurora'], passiva: { nome: 'Sol Permanente', texto: 'Dá 1 de sanidade ao dono por dia.' } },
   // Bosses de raid (v1.33): ovos de raid saem com essas espécies. Não aparecem em encontro, ovo comum nem invocação.
   'Titã de Cinza': { origem: 'raid', pureza: 'neutra', elemento: 'fogo', aptidoes: { minerar: 3, cortar: 2 }, habilidades: ['Pisão Sísmico', 'Pele de Pedra', 'Rachadura', 'Eco da Montanha', 'Grito Cinza'] },
   'Serpe do Abismo': { origem: 'raid', pureza: 'trevas', elemento: 'trevas', aptidoes: { garimpar: 2, minerar: 2 }, habilidades: ['Bote Profundo', 'Sopro Sombrio', 'Escamas Negras', 'Chamado Abissal', 'Anel Gélido'] },
@@ -44,8 +44,8 @@ export const ESPECIES = {
   'Vaelirion': { origem: 'linha', pureza: 'luz', elemento: 'agua', aptidoes: { colher: 4, fabricar: 3, garimpar: 4 }, habilidades: ['Pulso Astral Maior', 'Lâmina de Gelo', 'Cauda Cristalina', 'Névoa Ciano', 'Trovão Ártico'] },
   'Sementil': { origem: 'linha', pureza: 'luz', elemento: 'planta', aptidoes: { plantar: 1, colher: 1 }, habilidades: ['Broto Tímido', 'Casca Leve', 'Pólen Doce', 'Raiz Curiosa'] },
   'Florivel': { origem: 'linha', pureza: 'luz', elemento: 'planta', aptidoes: { plantar: 4, colher: 4, garimpar: 2 }, habilidades: ['Floração Mestra', 'Espinhos Vivos', 'Chuva de Pétalas', 'Galho Ancestral', 'Seiva Curativa'] },
-  'Solinho': { origem: 'linha', pureza: 'luz', elemento: 'fogo', aptidoes: { cortar: 1, fabricar: 1 }, habilidades: ['Brilho Morno', 'Asinha Quente', 'Faísca Solar', 'Calor Suave'] },
-  'Helíssio': { origem: 'linha', pureza: 'luz', elemento: 'fogo', aptidoes: { cortar: 4, fabricar: 4, transportar: 2 }, habilidades: ['Sol Coroado', 'Raio Helíaco', 'Asas Radiantes', 'Eclipse Dourado', 'Aurora Ardente'] },
+  'Solinho': { origem: 'linha', pureza: 'luz', elemento: 'luz', aptidoes: { cortar: 1, fabricar: 1 }, habilidades: ['Brilho Morno', 'Asinha Quente', 'Faísca Solar', 'Calor Suave'] },
+  'Helíssio': { origem: 'linha', pureza: 'luz', elemento: 'luz', aptidoes: { cortar: 4, fabricar: 4, transportar: 2 }, habilidades: ['Sol Coroado', 'Raio Helíaco', 'Asas Radiantes', 'Eclipse Dourado', 'Aurora Ardente'] },
 };
 
 // Lista de problemas de uma espécie. Vazia quando está completa.
