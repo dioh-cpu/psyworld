@@ -896,10 +896,12 @@ function autoTick() {
 function combateHtml() {
   const e = S.combate;
   if (!e) return '';
+  // Rótulo da efetividade do golpe de quem ataca contra quem defende (vantagem 2x, desvantagem 0,5x, neutro 1x).
+  const rotuloEf = (ataque, defesa) => { const m = C.multElemento(ataque.elemento ?? 'neutro', defesa.elemento ?? 'neutro'); return m > 1 ? '2x' : m < 1 ? '0,5x' : '1x'; };
   const barra = (x) => `<progress value="${Math.max(0, x.hp)}" max="${x.hpMax}"></progress> ${Math.max(0, x.hp)}/${x.hpMax}`;
   const habs = e.jog.habilidades.map((h) => {
     const pronta = CB.habilidadePronta(e.jog, h.nome, e.turno);
-    return `<button data-act="combateAcao" data-acao="habilidade" data-nome="${esc(h.nome)}" ${pronta ? '' : 'disabled'}>${esc(h.nome)}${pronta ? '' : ' (recarga)'}</button>`;
+    return `<button data-act="combateAcao" data-acao="habilidade" data-nome="${esc(h.nome)}" ${pronta ? '' : 'disabled'}>${esc(h.nome)} <small class="ef" title="Efetividade contra ${esc(e.ini.nome)}">${rotuloEf(e.jog, e.ini)}</small>${pronta ? '' : ' (recarga)'}</button>`;
   }).join(' ');
   const pocs = Object.keys(CB.POCOES).map((p) => `<button data-act="combateAcao" data-acao="pocao" data-p="${p}" ${(e.pocoes[p] || 0) > 0 ? '' : 'disabled'}>${CB.POCOES[p].nome} (${e.pocoes[p] || 0})</button>`).join(' ');
   return `<section class="combate">
@@ -907,7 +909,7 @@ function combateHtml() {
     <p><b>${esc(e.jog.nome)}</b> ${barra(e.jog)} · elemento ${ELEMENTO_LABEL[e.jog.elemento] ?? 'Neutro'}</p>
     <p><b>${esc(e.ini.nome)}</b> ${barra(e.ini)} · elemento ${ELEMENTO_LABEL[e.ini.elemento] ?? 'Neutro'}</p>
     <p class="muted">Turno ${Math.min(e.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}. Vantagem elemental dobra o dano; desvantagem corta pela metade. Habilidade não repete no turno seguinte.</p>
-    <p><button data-act="combateAcao" data-acao="atacar">Atacar</button></p>
+    <p><button data-act="combateAcao" data-acao="atacar">Atacar <small class="ef" title="Efetividade contra ${esc(e.ini.nome)}">${rotuloEf(e.jog, e.ini)}</small></button></p>
     <p>Habilidades: ${habs || 'nenhuma'}</p>
     <p>Poções: ${pocs}</p>
     <ul class="log">${e.log.slice(-8).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
@@ -1541,6 +1543,30 @@ function cabecalhoPagina() {
   return `<div class="pagina-cabecalho"><span class="pagina-num"></span><h1 class="pagina-nome"></h1><span class="pagina-dica">◀ ▶ ou setas do teclado trocam de menu</span></div>`;
 }
 
+// Indicador "novo" nas abas: conta o que chegou desde a última visita à aba (fica salvo neste navegador).
+const VISTO_KEY = 'confusion-menu-visto';
+let visto = {};
+try { visto = JSON.parse(localStorage.getItem(VISTO_KEY)) || {}; } catch (_) { visto = {}; }
+function salvarVisto() {
+  try { localStorage.setItem(VISTO_KEY, JSON.stringify(visto)); } catch (_) { /* sem armazenamento: segue sem salvar */ }
+}
+function novosDaAba(id) {
+  if (id === 'monstrinhos' && visto.monstrinhos !== undefined) return Math.max(0, S.monsters.length - visto.monstrinhos);
+  if (id === 'ovos' && visto.ovos !== undefined) return Math.max(0, S.eggs.length - visto.ovos);
+  if (id === 'registro' && visto.registro !== undefined) {
+    const i = S.log.indexOf(visto.registro);
+    return i < 0 ? S.log.length : i;
+  }
+  return 0;
+}
+function marcarVisto(id) {
+  if (id === 'monstrinhos') visto.monstrinhos = S.monsters.length;
+  else if (id === 'ovos') visto.ovos = S.eggs.length;
+  else if (id === 'registro') visto.registro = S.log[0] ?? null;
+  else return;
+  salvarVisto();
+}
+
 function mostrarAba(id) {
   const app = document.getElementById('app');
   abaAtiva = ABAS.some((a) => a.id === id) ? id : 'inicio';
@@ -1549,6 +1575,13 @@ function mostrarAba(id) {
     const ativa = b.dataset.abaIr === abaAtiva;
     b.classList.toggle('ativa', ativa);
     if (ativa) b.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  marcarVisto(abaAtiva);
+  for (const b of app.querySelectorAll('.menu-abas .aba')) {
+    const id = b.dataset.abaIr;
+    const n = id === abaAtiva ? 0 : novosDaAba(id);
+    b.querySelector('.novo-badge')?.remove();
+    if (n > 0) b.insertAdjacentHTML('beforeend', `<span class="novo-badge">${n}</span>`);
   }
   const idx = ABAS.findIndex((a) => a.id === abaAtiva);
   const cab = app.querySelector('.pagina-cabecalho');
@@ -1569,6 +1602,9 @@ function montarMenu() {
   for (const sec of app.querySelectorAll(':scope > section')) {
     sec.dataset.aba = abaDaSecao((sec.querySelector('h2') || {}).textContent || '');
   }
+  visto.monstrinhos ??= S.monsters.length;
+  visto.ovos ??= S.eggs.length;
+  if (!('registro' in visto)) visto.registro = S.log[0] ?? null;
   const ovos = app.querySelector('section[data-aba="ovos"]');
   if (ovos) {
     ovos.querySelector('h2')?.insertAdjacentHTML('afterend', escanerHtml());
@@ -1579,7 +1615,7 @@ function montarMenu() {
   app.insertAdjacentHTML('beforeend', evolucaoHtml() + equipamentosHtml());
   const barra = `<nav class="menu-abas" aria-label="Menus">
     <button class="seta" data-seta="-1" aria-label="Aba anterior">◀</button>
-    <div class="abas">${ABAS.map((a) => `<button class="aba" data-aba-ir="${a.id}">${a.nome}</button>`).join('')}</div>
+    <div class="abas">${ABAS.map((a) => `<button class="aba" data-aba-ir="${a.id}">${a.nome}${a.id !== abaAtiva && novosDaAba(a.id) > 0 ? `<span class="novo-badge">${novosDaAba(a.id)}</span>` : ''}</button>`).join('')}</div>
     <button class="seta" data-seta="1" aria-label="Próxima aba">▶</button></nav>`;
   app.querySelector(':scope > nav.menu-abas')?.remove();
   const cabecalho = app.querySelector(':scope > header');
