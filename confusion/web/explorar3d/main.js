@@ -96,52 +96,94 @@ contorno(painel);
 placa.add(poste, painel);
 scene.add(placa);
 
-// personagem: Azazel (aparência básica de aventura), com quadros de andar e de parado nas 4 direções (ver criarAzazel)
+// personagem: Azazel no traje de vilão (trevas), com andar em vídeo e parado nas 4 direções (ver criarAzazel)
 const azazel = criarAzazel();
 const jogador = new THREE.Group();
 jogador.add(azazel.malha);
 
-// folhas de sprite do Azazel: andar 4x4 e parado 4x1, com a ordem de linhas frente, esquerda, direita, costas.
-// Cada folha tem a sua escala, para o personagem ter 1,7 de altura visível com o pé no chão. O quadro depende da
-// direção do movimento no mundo (não da câmera), então ele não gira quando a câmera gira.
+// Azazel no traje de vilão (trevas, gótico). Andar: vídeos MP4 com fundo verde nas direções frente, esquerda e costas; a
+// direita é o clipe da esquerda espelhado. Parado: uma folha com as 4 direções lado a lado. Cada um tem a sua escala para o
+// personagem ter 1,7 de altura visível, com o pé no chão. A direção é a do movimento no mundo (não da câmera), então ele
+// não gira quando a câmera gira.
 function criarAzazel() {
   const ALTURA = 1.7;
-  const carregar = (caminho) => {
-    const t = new THREE.TextureLoader().load(`${RAIZ}assets/characters/${caminho}`);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  };
-  const folhas = {
-    andar: { tex: carregar('walk-v2/basic-adventure-boy.webp'), colunas: 4, linhas: 4, celula: 313.5, pes: 271, topo: 84, ms: 130 },
-    parado: { tex: carregar('idle-v2/basic-adventure-boy.webp'), colunas: 4, linhas: 1, celula: 256, pes: 239, topo: 23, ms: 0 },
-  };
-  const malha = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ alphaTest: 0.5 }));
-  let atual = null;
-  function usar(f) {
-    if (atual === f) return;
-    atual = f;
-    malha.material.map = f.tex;
-    malha.material.needsUpdate = true;
-    const k = ALTURA / (f.pes - f.topo);
-    malha.scale.set(f.celula * k, f.celula * k, 1);
-    malha.position.y = (f.pes - f.celula / 2) * k;   // o pé fica em y = 0
+  const base = `${RAIZ}assets/characters/`;
+
+  // andar: vídeo de 320x540; a figura vai da linha 26 (topo) até a 533 (pé)
+  const VIDEO = { largura: 320, altura: 540, topo: 26, pe: 533 };
+  const kVideo = ALTURA / (VIDEO.pe - VIDEO.topo);
+  const videos = {};
+  const texturas = {};
+  for (const nome of ['front', 'left', 'back']) {
+    const v = document.createElement('video');
+    v.src = `${base}walk-video-v1/gothic-boy-walk-${nome}.mp4`;
+    v.loop = true;
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = 'auto';
+    v.style.display = 'none';
+    document.body.appendChild(v);
+    videos[nome] = v;
+    texturas[nome] = new THREE.VideoTexture(v);
   }
-  function quadro(f, linha, coluna) {
-    f.tex.repeat.set(1 / f.colunas, 1 / f.linhas);
-    f.tex.offset.set(coluna / f.colunas, 1 - (linha + 1) / f.linhas);
+  // o verde do fundo sai no shader: quanto mais verde que o resto, mais transparente; a franja verde é corrigida
+  const materialAndar = new THREE.ShaderMaterial({
+    uniforms: { map: { value: texturas.front } },
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D map; varying vec2 vUv;
+      void main() {
+        vec4 c = texture2D(map, vUv);
+        float verde = c.g - max(c.r, c.b);
+        float alfa = 1.0 - smoothstep(0.18, 0.34, verde);
+        if (alfa < 0.5) discard;
+        gl_FragColor = vec4(c.r, min(c.g, max(c.r, c.b) + 0.04), c.b, 1.0);
+      }`,
+  });
+  const larguraAndar = VIDEO.largura * kVideo;
+  const andar = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), materialAndar);
+  andar.scale.set(larguraAndar, VIDEO.altura * kVideo, 1);
+  andar.position.y = (VIDEO.pe - VIDEO.altura / 2) * kVideo;   // o pé fica em y = 0
+
+  // parado: folha 2048x512 com 4 células de 512 (frente, esquerda, direita, costas); topo na linha 21, pé na 501
+  const PARADO = { celula: 512, topo: 21, pe: 501 };
+  const kParado = ALTURA / (PARADO.pe - PARADO.topo);
+  const texParado = new THREE.TextureLoader().load(`${base}idle-video-v1/gothic-boy-basic-4dir.webp`);
+  texParado.colorSpace = THREE.SRGBColorSpace;
+  texParado.repeat.set(1 / 4, 1);
+  const parado = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: texParado, alphaTest: 0.5 }));
+  parado.scale.set(PARADO.celula * kParado, PARADO.celula * kParado, 1);
+  parado.position.y = (PARADO.pe - PARADO.celula / 2) * kParado;
+
+  const malha = new THREE.Group();
+  malha.add(andar, parado);
+
+  let ativo = null;   // nome do vídeo que está tocando
+  function pausarVideos() {
+    if (ativo) videos[ativo].pause();
+    ativo = null;
   }
   // rot: direção do movimento no mundo (atan2(dx, dz)); 0 = frente (+z), π/2 = direita (+x), -π/2 = esquerda (-x), π = costas
   function atualizar(andando, rot, agora) {
     const a = ((rot % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     const linha = a < Math.PI / 4 || a >= (7 * Math.PI) / 4 ? 0
       : a < (3 * Math.PI) / 4 ? 2
-      : a < (5 * Math.PI) / 4 ? 3 : 1;
+      : a < (5 * Math.PI) / 4 ? 3 : 1;   // 0 frente, 1 esquerda, 2 direita, 3 costas
     if (andando) {
-      usar(folhas.andar);
-      quadro(folhas.andar, linha, Math.floor(agora / folhas.andar.ms) % folhas.andar.colunas);
+      const fonte = ['front', 'left', 'left', 'back'][linha];
+      if (ativo !== fonte) {
+        pausarVideos();
+        ativo = fonte;
+        videos[fonte].play().catch(() => {});
+      }
+      materialAndar.uniforms.map.value = texturas[fonte];
+      andar.scale.x = linha === 2 ? -larguraAndar : larguraAndar;   // direita = esquerda espelhada
+      andar.visible = videos[fonte].readyState >= 2;
+      parado.visible = !andar.visible;
     } else {
-      usar(folhas.parado);
-      quadro(folhas.parado, 0, linha);   // a folha de parado tem as 4 direções lado a lado
+      pausarVideos();
+      texParado.offset.set(linha / 4, 0);
+      andar.visible = false;
+      parado.visible = true;
     }
   }
   return { malha, atualizar };
