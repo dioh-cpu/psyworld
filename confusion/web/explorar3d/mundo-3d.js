@@ -1,11 +1,10 @@
 // Mundo 3D: céu, chão com arte por região, areia na costa, estradas, casas com telhado e janelas, árvores em sprite
 // (recortes de assets/mundo), pedras e lago em forma simples. A colisão vem de CAIXAS (mundo.js).
-// Chão, parede, telhado, céu e nuvens são desenhados no canvas, iguais em todo carregamento.
+// Chão, parede e telhado são desenhados no canvas, iguais em todo carregamento; o céu é uma pintura (assets/mundo/ceu).
 import * as THREE from 'three';
 import { REGIOES, EDIFICIOS, CIDADES_MUNDO, ARVORES, PEDRAS, LAGO, ESTRADAS, regiaoDe } from './mundo.js';
 
 export const COR_HORIZONTE = '#cfe8f7';  // névoa e horizonte na mesma cor: mar e chão somem no céu
-const COR_CEU_TOPO = '#4f8fd6';
 const COR_MORTA = '#7a7468';
 const COR_PINHEIRO = '#2f5d43';          // pinheiro: copa de árvore tingida de verde escuro, até ter arte própria
 const COR_PEDRA = ['#8a8f99', '#7b7f88', '#9ea3ab'];
@@ -238,47 +237,37 @@ function spriteArte(caminho, altura, x, z, { cor = '#ffffff' } = {}) {
   return s;
 }
 
-// ---- céu: cúpula com gradiente (do horizonte ao topo) e nuvens fofas em volta da ilha ----
-function montarCeu(scene) {
-  const cupula = new THREE.Mesh(
-    new THREE.SphereGeometry(300, 32, 16),
-    new THREE.ShaderMaterial({
-      side: THREE.BackSide,
-      depthWrite: false,
-      uniforms: { topo: { value: new THREE.Color(COR_CEU_TOPO) }, horizonte: { value: new THREE.Color(COR_HORIZONTE) } },
-      vertexShader: 'varying vec3 vPos; void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: 'uniform vec3 topo; uniform vec3 horizonte; varying vec3 vPos;\n'
-        + 'void main() {\n'
-        + '  float h = clamp(normalize(vPos).y, 0.0, 1.0);\n'
-        + '  gl_FragColor = vec4(mix(horizonte, topo, pow(h, 0.6)), 1.0);\n'
-        + '#include <colorspace_fragment>\n'
-        + '}',
-    }),
-  );
-  scene.add(cupula);
+// ---- céu: quatro quadros 16:9 (assets/mundo/ceu/ceu-1..4.jpg), cada um num quarto de um cilindro em volta da ilha ----
+// A base do cilindro fica em y = -16, então o mar da imagem (os 5% de baixo) cai na linha do horizonte do jogo.
+// Cada quarto avança um pouco sobre o vizinho, e a borda esmaece: a emenda vira uma transição suave.
+const FOLGA_CEU = 0.2;   // radianos (cerca de 11 graus) de cada lado do quarto
 
-  const c = document.createElement('canvas');
-  c.width = 256;
-  c.height = 128;
-  const g = c.getContext('2d');
-  const r = gerador(31);
-  for (let i = 0; i < 10; i++) {
-    g.fillStyle = 'rgba(255,255,255,0.9)';
-    g.beginPath();
-    g.arc(40 + r() * 176, 50 + r() * 28, 22 + r() * 24, 0, Math.PI * 2);
-    g.fill();
+// rampa de transparência: 0 nas pontas, 1 no miolo, com a subida e a descida de tamanho `fracao`
+function rampaDeAlfa(fracao) {
+  const dados = new Uint8Array(256 * 4);
+  for (let i = 0; i < 256; i++) {
+    const u = i / 255;
+    const a = Math.max(0, Math.min(1, Math.min(u / fracao, (1 - u) / fracao)));
+    dados.set([a * 255, a * 255, a * 255, 255], i * 4);
   }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const rn = gerador(77);
-  for (let i = 0; i < 26; i++) {
-    const angulo = rn() * Math.PI * 2;
-    const distancia = 110 + rn() * 70;
-    const largura = 34 + rn() * 26;
-    const nuvem = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
-    nuvem.scale.set(largura, largura * 0.5, 1);
-    nuvem.position.set(Math.cos(angulo) * distancia, 22 + rn() * 14, Math.sin(angulo) * distancia);
-    scene.add(nuvem);
+  const t = new THREE.DataTexture(dados, 256, 1);
+  t.magFilter = t.minFilter = THREE.LinearFilter;
+  t.needsUpdate = true;
+  return t;
+}
+
+function montarCeu(scene, arteDe) {
+  const comprimento = Math.PI / 2 + 2 * FOLGA_CEU;
+  const alfa = rampaDeAlfa((2 * FOLGA_CEU) / comprimento);
+  for (let k = 0; k < 4; k++) {
+    const tex = carregador.load(arteDe(`ceu/ceu-${k + 1}.jpg`));
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const quarto = new THREE.Mesh(
+      new THREE.CylinderGeometry(280, 280, 315, 48, 1, true, (k * Math.PI) / 2 - FOLGA_CEU, comprimento),
+      new THREE.MeshBasicMaterial({ map: tex, alphaMap: alfa, transparent: true, side: THREE.BackSide, fog: false, depthWrite: false }),
+    );
+    quarto.position.y = 141.5;
+    scene.add(quarto);
   }
 }
 
@@ -472,7 +461,7 @@ function navios(scene, arteDe) {
 // Monta o mundo inteiro. `material(cor, mapa)` e `contorno(malha)` vêm de main.js; `raiz` é o caminho até a raiz do site.
 export function montarMundo(scene, { material, contorno, raiz = '' }) {
   const arteDe = (nome) => `${raiz}assets/mundo/${nome}`;
-  montarCeu(scene);
+  montarCeu(scene, arteDe);
   chao(scene, material);
   areia(scene, material);
   estradas(scene, material);
