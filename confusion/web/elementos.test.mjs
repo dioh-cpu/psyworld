@@ -15,6 +15,13 @@ test('elementos: ciclo fogo > planta > água > fogo, dano 2x e 0,5x (como no Pok
   assert.equal(C.multElemento('planta', 'fogo'), 0.5);
   assert.equal(C.multElemento('luz', 'trevas'), 2);
   assert.equal(C.multElemento('trevas', 'luz'), 2);
+  // noturno e diurno: 2x contra si mesmos, e nunca levam desvantagem contra os outros elementos
+  assert.equal(C.multElemento('trevas', 'trevas'), 2);
+  assert.equal(C.multElemento('luz', 'luz'), 2);
+  for (const alvo of ['fogo', 'agua', 'planta', 'terra', 'neutro']) {
+    assert.ok(C.multElemento('trevas', alvo) >= 1, `trevas contra ${alvo}`);
+    assert.ok(C.multElemento('luz', alvo) >= 1, `luz contra ${alvo}`);
+  }
   assert.equal(C.multElemento('terra', 'agua'), 1);    // terra e neutro: 1x
   assert.equal(C.multElemento('neutro', 'fogo'), 1);
   assert.equal(C.multElemento(undefined, 'fogo'), 1);  // sem elemento, 1x

@@ -465,8 +465,8 @@ const TABELA_ELEMENTO = {
   fogo: { planta: 2, agua: 0 },   // fogo não causa dano em água
   agua: { fogo: 2, planta: 0.5 },
   planta: { agua: 2, fogo: 0.5 },
-  luz: { trevas: 2 },
-  trevas: { luz: 2 },
+  luz: { trevas: 2, luz: 2 },     // diurno: 2x contra si mesmo; sem desvantagem contra os outros
+  trevas: { luz: 2, trevas: 2 },  // noturno: 2x contra si mesmo; sem desvantagem contra os outros
 };
 export const multElemento = (atacante, defensor) => TABELA_ELEMENTO[atacante]?.[defensor] ?? 1;
 // Andar infinito: cada andar tem um elemento, em ciclo de 5 (fogo, água, planta, luz, trevas).
