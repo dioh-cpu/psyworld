@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CIDADES } from '../mundo/sistemas-31.js';
-import { CIDADES_MUNDO, EDIFICIOS, CAIXAS, regiaoDe, localDe, INICIO, SINAL } from './mundo.js';
+import { CIDADES_MUNDO, EDIFICIOS, CAIXAS, regiaoDe, localDe, INICIO, SINAL, PONTOS_SELVAGENS, RAIO_CIDADE } from './mundo.js';
 import { colideCirculoCaixa } from './colisao.js';
 
 const RAIO = 0.5;
@@ -60,4 +60,16 @@ test('localização: no centro de uma cidade diz a cidade; na praça, só Centro
   assert.deepEqual(localDe(INICIO.x, INICIO.z), { regiao: 'Centro', cidade: null });
   assert.deepEqual(localDe(0, -32), { regiao: 'Norte', cidade: null }); // a 12 do centro de Rio Fundo: fora do raio
   assert.equal(localDe(60, 60), null);
+});
+
+test('selvagens: cada ponto de ronda fica num braço, longe das cidades e sem prédio por perto', () => {
+  for (const [x, z] of PONTOS_SELVAGENS) {
+    const r = regiaoDe(x, z);
+    assert.ok(r && r !== 'Centro', `ponto (${x}, ${z}) fora dos braços`);
+    for (const c of CIDADES_MUNDO) {
+      assert.ok(Math.hypot(x - c.x, z - c.z) > RAIO_CIDADE + 2, `ponto (${x}, ${z}) perto de ${c.nome}`);
+    }
+    // 2,5 = raio do selvagem (1,6) mais o passeio em volta do ponto (0,9)
+    assert.ok(!CAIXAS.some((c) => colideCirculoCaixa(x, z, 2.5, c)), `ponto (${x}, ${z}) encosta num prédio ou na costa`);
+  }
 });

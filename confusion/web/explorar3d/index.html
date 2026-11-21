@@ -63,9 +63,97 @@
   body.foto #barra, body.foto #joy, body.foto .botao { display: none !important; }
   body.foto #foto-sair { display: block; }
 
+  /* tela de batalha: sobre a cena, no tom da tela de referência (escolha de membro, disco de ações e resultado) */
+  #batalha { display: none; position: fixed; inset: 0; z-index: 30; overflow: hidden; background: radial-gradient(ellipse at 62% 30%, #2a5597 0%, #112a57 42%, #050b1c 100%); }
+  body.batalha #batalha { display: block; }
+  body.batalha #titulo, body.batalha #local, body.batalha #direita, body.batalha #prompt, body.batalha #msg,
+  body.batalha #atalhos, body.batalha #barra, body.batalha #joy, body.batalha .botao, body.batalha #foto-sair { display: none !important; }
+  #batalha::before { content: ""; position: absolute; left: -10%; right: -10%; bottom: -34%; height: 72%; border-radius: 50%; border: 2px solid rgba(127, 220, 255, .3); background: radial-gradient(ellipse, rgba(127, 220, 255, .14), transparent 70%); }
+  .bat-tela { position: absolute; inset: 0; }
+  .bat-tela.escolha { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; box-sizing: border-box; }
+  .bat-titulo { margin: 0; font-size: 26px; text-transform: uppercase; letter-spacing: .08em; color: #fff; border-bottom: 3px solid #ffd27a; padding-bottom: 6px; }
+  .bat-selvagem { display: flex; align-items: center; gap: 14px; width: min(520px, 100%); box-sizing: border-box; padding: 10px 14px; background: rgba(9, 25, 60, .9); border: 2px solid #3f8fd6; }
+  .bat-selvagem b { display: block; font-size: 20px; text-transform: uppercase; letter-spacing: .04em; }
+  .bat-selvagem span { color: #7fdcff; }
+  .bat-membros { list-style: none; margin: 0; padding: 0; width: min(520px, 100%); display: grid; gap: 8px; }
+  .membro { width: 100%; display: grid; grid-template-columns: 64px 1fr; grid-template-areas: "arte nome" "arte meta" "arte barra"; align-items: center; gap: 2px 12px; box-sizing: border-box; padding: 8px 12px; background: rgba(9, 25, 60, .9); border: 2px solid #3f8fd6; color: #fff; text-align: left; font: inherit; cursor: pointer; }
+  .membro.sel { background: #ffd27a; color: #0d2350; border-color: #fff; }
+  .membro .nome { grid-area: nome; font-size: 19px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .membro .meta { grid-area: meta; font-size: 14px; opacity: .85; }
+  .membro .barra { grid-area: barra; }
+  .membro .sprite { grid-area: arte; width: 64px; height: 64px; animation: none; }
+  .membro .orb { grid-area: arte; width: 56px; height: 56px; font-size: 28px; }
+  .bat-acoes { display: flex; gap: 12px; }
+  .bat-btn { background: linear-gradient(180deg, rgba(18, 44, 94, .96), rgba(9, 25, 60, .96)); color: #fff; border: 2px solid #3f8fd6; padding: 10px 18px; font: 700 17px/1 'Rajdhani', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+  .bat-btn.primario { background: #ffd27a; color: #0d2350; border-color: #ffd27a; }
+  .bat-btn kbd { font: 600 12px 'Rajdhani', system-ui, sans-serif; opacity: .7; margin-left: 8px; }
+  .bat-pocoes { margin: 0; color: #9fb6d9; }
+
+  .bat-topo { position: absolute; top: 12px; left: 14px; right: 14px; display: flex; gap: 18px; align-items: center; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #fff; font-size: 15px; text-shadow: 0 1px 4px #000; }
+  .bat-topo span:last-child { margin-left: auto; color: #ffd27a; }
+  .bat-cartao { position: absolute; width: 330px; box-sizing: border-box; padding: 10px 14px; background: linear-gradient(180deg, rgba(18, 44, 94, .96), rgba(9, 25, 60, .96)); border: 2px solid #3f8fd6; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
+  .bat-cartao .cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .bat-cartao .cab b { font-size: 19px; text-transform: uppercase; letter-spacing: .04em; }
+  .bat-cartao .cab span { color: #7fdcff; font-size: 14px; }
+  .bat-cartao.ini { top: 56px; right: 24px; }
+  .bat-cartao.jog { bottom: 40px; left: 24px; }
+  .barra { height: 12px; background: rgba(5, 15, 40, .8); border: 1px solid #3f8fd6; overflow: hidden; }
+  .barra i { display: block; height: 100%; background: linear-gradient(90deg, #ffd27a, #fff3c4); transition: width .7s ease; }
+  .barra.baixa i { background: linear-gradient(90deg, #ff7070, #ffb3a0); }
+  .barra.xp { height: 8px; }
+  .barra.xp i { background: linear-gradient(90deg, #7fdcff, #cfeeff); }
+  .bat-arte { position: absolute; pointer-events: none; }
+  .bat-arte.ini-arte { top: 150px; right: 150px; }
+  .bat-arte.jog-arte { bottom: 120px; left: 150px; }
+  .sprite { width: 220px; height: 220px; object-fit: contain; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .6)); animation: bob 2.4s ease-in-out infinite; }
+  .sprite.inimigo { transform: scaleX(-1); }
+  .sprite.pequena { width: 90px; height: 90px; }
+  .sprite.mini { width: 64px; height: 64px; }
+  .orb { width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, var(--cor, #c9d6e3) 45%, #0a1c3c 100%); display: grid; place-items: center; font: 700 72px/1 'Rajdhani', system-ui, sans-serif; color: #0d2350; }
+  .orb.pequena { width: 90px; height: 90px; font-size: 36px; }
+  .orb.inimigo { transform: scaleX(-1); }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .sprite.inimigo { animation-name: bob-inimigo; }
+  @keyframes bob-inimigo { 0%, 100% { transform: scaleX(-1) translateY(0); } 50% { transform: scaleX(-1) translateY(-6px); } }
+  .bat-log { position: absolute; left: 24px; top: 150px; width: 300px; margin: 0; padding: 10px 12px 10px 30px; background: rgba(5, 15, 40, .75); border-left: 3px solid #7fdcff; font-size: 14px; color: #cfe8ff; }
+  .bat-log li { margin: 2px 0; }
+  .bat-log:empty { display: none; }
+  .disco { position: absolute; right: 36px; bottom: 30px; width: 300px; height: 300px; }
+  .disco-centro { position: absolute; left: 107px; top: 107px; width: 86px; height: 86px; box-sizing: border-box; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff, #7fdcff 40%, #1d4a8f 100%); border: 3px solid #fff; color: #0d2350; font-size: 30px; cursor: pointer; box-shadow: 0 0 22px rgba(127, 220, 255, .6); }
+  .disco-item { position: absolute; width: 60px; height: 60px; box-sizing: border-box; border-radius: 50%; background: rgba(9, 25, 60, .95); border: 2px solid #3f8fd6; color: #fff; font-size: 24px; cursor: pointer; transition: transform .15s, background .15s; }
+  .disco-item.sel { transform: scale(1.18); border-color: #fff; background: #ffd27a; color: #0d2350; box-shadow: 0 0 16px rgba(255, 210, 122, .7); }
+  .disco-item.off { opacity: .35; cursor: default; }
+  .disco-rotulo { position: absolute; left: -40px; right: -40px; top: -34px; text-align: center; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .05em; font-size: 15px; text-shadow: 0 1px 4px #000; }
+  .bat-dica { position: absolute; bottom: 10px; left: 24px; margin: 0; color: #9fb6d9; font-size: 13px; letter-spacing: .04em; }
+
+  .bat-fim { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100% - 32px)); box-sizing: border-box; padding: 18px 20px; display: grid; gap: 10px; background: linear-gradient(180deg, rgba(18, 44, 94, .96), rgba(9, 25, 60, .96)); border: 2px solid #3f8fd6; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
+  .bat-fim h2 { margin: 0; font-size: 34px; text-transform: uppercase; letter-spacing: .08em; }
+  .bat-fim.vitoria h2 { color: #ffd27a; }
+  .bat-fim.derrota h2 { color: #ff7070; }
+  .bat-fim p { margin: 0; }
+  .bat-log.grande { position: static; width: auto; max-height: 180px; overflow: auto; padding-left: 30px; }
+  .bat-fim .bat-btn { justify-self: start; }
+
   @media (hover: none), (pointer: coarse) {
     #joy, .botao { display: block; }
     #barra, #atalhos { display: none !important; }
+  }
+  @media (max-width: 760px) {
+    .bat-cartao { width: auto; }
+    .bat-cartao.ini { top: 52px; left: 12px; right: 12px; }
+    .bat-cartao.jog { bottom: 12px; left: 12px; width: 190px; }
+    .bat-arte.ini-arte { top: 170px; right: 20px; }
+    .bat-arte.jog-arte { bottom: 150px; left: 40px; }
+    .sprite { width: 150px; height: 150px; }
+    .sprite.pequena { width: 80px; height: 80px; }
+    .orb { width: 130px; height: 130px; font-size: 54px; }
+    .bat-cartao .cab { flex-direction: column; gap: 0; }
+    .bat-log { top: 140px; bottom: auto; left: 12px; width: 240px; font-size: 13px; }
+    .bat-log li:not(:last-child) { display: none; }
+    .bat-topo { font-size: 13px; gap: 10px; flex-wrap: wrap; }
+    .disco { width: 300px; height: 300px; right: 4px; bottom: 4px; transform: scale(.7); transform-origin: 100% 100%; }
+    .bat-dica { display: none; }
+    .bat-titulo { font-size: 22px; }
   }
   @media (max-width: 520px) {
     #direita { width: 250px; }
@@ -76,11 +164,12 @@
   }
   @media (prefers-reduced-motion: reduce) {
     #registro, #registro .linha { animation: none; }
+    .sprite, .sprite.inimigo { animation: none; }
   }
 </style>
 <script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
 </head>
-<body>
+<body data-raiz="../../../">
 <canvas id="cena"></canvas>
 <div id="titulo" class="painel">Explorar · protótipo 3D</div>
 <div id="local" class="painel">Praça central</div>
@@ -105,6 +194,7 @@
 <button id="btn-examinar" class="botao" type="button" hidden>Examinar</button>
 <button id="btn-centro" class="botao" type="button">Centralizar</button>
 <button id="foto-sair" type="button">Modo foto · P para sair</button>
+<div id="batalha" aria-live="polite"></div>
 <script type="module" src="./main.js"></script>
 </body>
 </html>

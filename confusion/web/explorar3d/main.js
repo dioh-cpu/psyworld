@@ -1,12 +1,18 @@
-// Protótipo de exploração 3D: terceira pessoa com rotação de câmera, colisão com prédios, placa interativa, minimapa,
-// registro de espólios e controle de toque (joystick virtual, arrastar para a câmera, botões Examinar e Centralizar).
+// Protótipo de exploração 3D: terceira pessoa, colisão com prédios, placa, minimapa, registro de espólios,
+// selvagens que rondam a ilha e a tela de batalha (regras de combate.js). Controle de toque: joystick e botões.
 // A ilha vem de mundo.js. Os prédios e o personagem são provisórios (caixas e cápsula).
-// O visual de desenho vem do sombreado em degraus e do contorno; a interface segue a tela de exploração de referência.
 import * as THREE from 'three';
 import { resolverMovimento, fracaoLivreCamera } from './colisao.js';
 import { vetorJoystick } from './controles.js';
-import { CAIXAS, EDIFICIOS, CIDADES_MUNDO, REGIOES, INICIO, SINAL, LIMITE_MAPA, localDe } from './mundo.js';
+import { CAIXAS, EDIFICIOS, CIDADES_MUNDO, REGIOES, INICIO, SINAL, LIMITE_MAPA, PONTOS_SELVAGENS, localDe } from './mundo.js';
 import { linhasDoRegistro, EXEMPLO_ESPOLIO } from './registro.js';
+import * as C from '../core.js';
+import * as CB from '../combate.js';
+import * as E from '../species.js';
+import {
+  timeInicial, sortearSelvagem, lutadorDo, opcoesDeAcao, aplicarResultado, recompensaDaBatalha, itensDoEspolio,
+  RARIDADE_NOME, POCOES_INICIAIS,
+} from './batalha.js';
 
 const RAIO = 0.5;             // raio do personagem no plano do chão
 const VELOCIDADE = 4.5;       // unidades por segundo com o controle no máximo
@@ -14,6 +20,10 @@ const ALTURA_ALVO = 1.4;      // a câmera mira um pouco acima dos pés
 const distanciaCamera = () => (window.innerWidth < 600 ? 13 : 11); // celular em retrato precisa de mais afastamento
 const COR_MAR = '#2b5a86';
 const COR_TRACO = '#e6ebf0';  // faixas claras do piso da praça
+const RAIZ = document.body.dataset.raiz || '';   // caminho até a raiz do projeto, para as artes dos monstrinhos
+const COR_ELEMENTO = { fogo: '#ff7a45', agua: '#4fb3ff', planta: '#7bd16b', terra: '#b5895a', luz: '#ffe27a', trevas: '#8a6bd6', neutro: '#c9d6e3' };
+const NOME_ELEMENTO = { fogo: 'Fogo', agua: 'Água', planta: 'Planta', terra: 'Terra', luz: 'Luz', trevas: 'Trevas', neutro: 'Neutro' };
+const RESPAWN_MS = 12000;     // tempo até outro selvagem aparecer no lugar do que foi enfrentado
 
 // ---- cena ----
 const canvas = document.getElementById('cena');
@@ -115,8 +125,46 @@ const estado = {
 const teclas = new Set();
 const toque = window.matchMedia('(pointer: coarse)').matches;
 
+// ---- time e poções: ficam só nesta sessão (o protótipo não salva nada) ----
+const time = timeInicial();
+const pocoesBatalha = { ...POCOES_INICIAIS };
+let batalha = null;   // { s, fase: 'escolha' | 'luta' | 'fim' | 'recuou', sel, foco, combate, antes, resultado, xp, subiu, nivel, gold, pocao }
+
+// ---- selvagens que rondam a ilha: ao encostar, começa a batalha ----
+const selvagens = PONTOS_SELVAGENS.map((p, i) => {
+  const malha = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.7, 6, 12), material('#c9d6e3'));
+  malha.position.y = 0.7;
+  contorno(malha);
+  scene.add(malha);
+  return { casa: { x: p[0], z: p[1] }, fase: i * 1.7, malha, ativo: false, reaparece: 0, sorteio: null, cor: '#c9d6e3' };
+});
+function novoSelvagem(s) {
+  s.sorteio = sortearSelvagem(Math.random);
+  s.cor = COR_ELEMENTO[s.sorteio.monstro.elemento] ?? '#c9d6e3';
+  s.malha.material.color.set(s.cor);
+  s.ativo = true;
+  s.malha.visible = true;
+}
+selvagens.forEach(novoSelvagem);
+
+function atualizarSelvagens(t, agora) {
+  for (const s of selvagens) {
+    if (!s.ativo && agora >= s.reaparece) novoSelvagem(s);
+    if (!s.ativo) continue;
+    const x = s.casa.x + Math.cos(t * 0.7 + s.fase) * 0.9;
+    const z = s.casa.z + Math.sin(t * 0.5 + s.fase) * 0.9;
+    s.malha.position.set(x, 0.7 + Math.abs(Math.sin(t * 3 + s.fase)) * 0.06, z);
+    if (!batalha && Math.hypot(estado.pos.x - x, estado.pos.z - z) < 1.3) iniciarBatalha(s);
+  }
+}
+
 // ---- entrada pelo teclado ----
 window.addEventListener('keydown', (e) => {
+  if (batalha) {
+    if (!e.repeat) teclaBatalha(e);
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+    return;
+  }
   teclas.add(e.code);
   if (e.code === 'KeyC' || e.code === 'KeyR') estado.recentralizar = true;
   if (!e.repeat) {
@@ -184,15 +232,18 @@ function alternarFoto() { document.body.classList.toggle('foto'); }
 const pressionada = (...codigos) => codigos.some((c) => teclas.has(c));
 const diferencaAngulo = (de, para) => Math.atan2(Math.sin(para - de), Math.cos(para - de));
 
-// ---- placa ----
+// ---- mensagens e placa ----
+function mostrarMensagem(texto, ms = 3200) {
+  const msg = document.getElementById('msg');
+  msg.textContent = texto;
+  msg.style.display = 'block';
+  estado.mensagemAte = performance.now() + ms;
+}
 function perto() {
   return Math.hypot(estado.pos.x - SINAL.x, estado.pos.z - SINAL.z) < 2.2;
 }
 function examinar() {
-  const msg = document.getElementById('msg');
-  msg.textContent = 'Placa de madeira: Norte, Leste, Sul e Oeste (texto provisório).';
-  msg.style.display = 'block';
-  estado.mensagemAte = performance.now() + 3200;
+  mostrarMensagem('Placa de madeira: Norte, Leste, Sul e Oeste (texto provisório).');
 }
 
 // ---- registro de espólios: painel logo abaixo do mapa ----
@@ -239,8 +290,222 @@ function atualizarLocal() {
   if (texto !== textoLocal) { textoLocal = texto; elLocal.textContent = texto; }
 }
 
+// ---- tela de batalha ----
+const batalhaEl = document.getElementById('batalha');
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const pct = (l) => Math.round((100 * l.hp) / l.hpMax);
+const pocoesTexto = () => `P ${pocoesBatalha.pequena} · M ${pocoesBatalha.media} · G ${pocoesBatalha.grande}`;
+
+function iniciarBatalha(s) {
+  s.ativo = false;
+  s.malha.visible = false;
+  s.reaparece = Infinity;   // não volta enquanto a luta dura; encerrarBatalha marca a volta
+  batalha = { s, fase: 'escolha', sel: 0, foco: 0, combate: null, antes: null, resultado: false, xp: 0, subiu: 0, nivel: 0, gold: 0, pocao: 0 };
+  teclas.clear();
+  estado.joy = { x: 0, z: 0 };
+  document.body.classList.add('batalha');
+  renderBatalha();
+}
+
+function confirmarMembro() {
+  const b = batalha;
+  if (!b || b.fase !== 'escolha') return;
+  b.combate = CB.criarCombate(lutadorDo(time[b.sel]), lutadorDo(b.s.sorteio.monstro), pocoesBatalha);
+  b.fase = 'luta';
+  b.foco = 0;
+  b.antes = { j: 100, i: 100 };
+  renderBatalha();
+}
+
+function usarAcao(op) {
+  const b = batalha;
+  if (!b || b.fase !== 'luta' || !op || !op.ativa) return;
+  b.antes = { j: pct(b.combate.jog), i: pct(b.combate.ini) };
+  try {
+    CB.agir(b.combate, op.acao, Math.random);
+  } catch {
+    renderBatalha();
+    return;
+  }
+  Object.assign(pocoesBatalha, b.combate.pocoes);
+  if (b.combate.fim) terminarLuta();
+  renderBatalha();
+}
+
+function terminarLuta() {
+  const b = batalha;
+  const vitoria = b.combate.resultado === 'vitoria';
+  const r = aplicarResultado(time[b.sel], vitoria);
+  const rec = recompensaDaBatalha({ vitoria, raridade: b.s.sorteio.raridade, rnd: Math.random });
+  pocoesBatalha.pequena += rec.pocao;
+  Object.assign(b, { fase: 'fim', resultado: vitoria, xp: r.xp, subiu: r.subiu, nivel: r.nivel, gold: rec.gold, pocao: rec.pocao });
+}
+
+function fugir() {
+  if (!batalha || batalha.fase !== 'escolha') return;
+  batalha.fase = 'recuou';
+  encerrarBatalha();
+}
+
+function encerrarBatalha() {
+  const b = batalha;
+  if (!b) return;
+  b.s.reaparece = performance.now() + RESPAWN_MS;
+  batalha = null;
+  document.body.classList.remove('batalha');
+  batalhaEl.replaceChildren();
+  if (b.fase === 'fim') {
+    const itens = itensDoEspolio({ vitoria: b.resultado, nomeMonstro: time[b.sel].species, xp: b.xp, gold: b.gold, pocao: b.pocao });
+    mostrarRegistro(itens, 9000);
+  } else {
+    mostrarMensagem('Você recuou. O selvagem se afastou.');
+  }
+}
+
+function opcoesAtuais() {
+  return opcoesDeAcao(batalha.combate, time[batalha.sel]);
+}
+
+function teclaBatalha(e) {
+  const b = batalha;
+  const k = e.code;
+  if (b.fase === 'escolha') {
+    if (k === 'ArrowUp' || k === 'KeyW') { b.sel = (b.sel + time.length - 1) % time.length; renderBatalha(); }
+    else if (k === 'ArrowDown' || k === 'KeyS') { b.sel = (b.sel + 1) % time.length; renderBatalha(); }
+    else if (k === 'Enter' || k === 'Space' || k === 'KeyE') confirmarMembro();
+    else if (k === 'Escape' || k === 'Backspace') fugir();
+  } else if (b.fase === 'luta') {
+    const n = opcoesAtuais().length;
+    if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'KeyA' || k === 'KeyW') { b.foco = (b.foco + n - 1) % n; renderBatalha(); }
+    else if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'KeyD' || k === 'KeyS') { b.foco = (b.foco + 1) % n; renderBatalha(); }
+    else if (k === 'Enter' || k === 'Space' || k === 'KeyE') usarAcao(opcoesAtuais()[b.foco]);
+  } else if (b.fase === 'fim') {
+    if (['Enter', 'Space', 'Escape', 'KeyE'].includes(k)) encerrarBatalha();
+  }
+}
+
+batalhaEl.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-bat]');
+  if (!el || !batalha) return;
+  const acao = el.dataset.bat;
+  if (acao === 'membro') { batalha.sel = Number(el.dataset.i); renderBatalha(); }
+  else if (acao === 'confirmar') confirmarMembro();
+  else if (acao === 'voltar') fugir();
+  else if (acao === 'acao') {
+    batalha.foco = Number(el.dataset.i);
+    usarAcao(opcoesAtuais()[batalha.foco]);
+  } else if (acao === 'continuar') encerrarBatalha();
+});
+
+// barra de vida que anima do valor anterior até o atual
+function animarBarras() {
+  const barras = [...batalhaEl.querySelectorAll('[data-alvo]')];
+  for (const el of barras) el.style.width = `${el.dataset.antes}%`;
+  void batalhaEl.offsetWidth; // força o layout antes da mudança, para a transição acontecer
+  for (const el of barras) el.style.width = `${el.dataset.alvo}%`;
+}
+
+const arteHtml = (m, classe = '') => {
+  const arte = E.ESPECIES[m.species]?.arte;
+  if (arte) return `<img class="sprite ${classe}" src="${RAIZ}${arte}" alt="${esc(m.species)}">`;
+  return `<div class="orb ${classe}" style="--cor:${COR_ELEMENTO[m.elemento] ?? '#c9d6e3'}">${esc(m.species[0])}</div>`;
+};
+const xpBarra = (m) => {
+  const piso = C.xpDoNivel(m.level);
+  const teto = C.xpDoNivel(m.level + 1);
+  const p = Math.max(0, Math.min(100, Math.round((100 * ((m.xp || 0) - piso)) / (teto - piso))));
+  return `<div class="barra xp"><i style="width:${p}%"></i></div>`;
+};
+
+function renderBatalha() {
+  const b = batalha;
+  if (!b) return;
+  if (b.fase === 'escolha') batalhaEl.innerHTML = htmlEscolha(b);
+  else if (b.fase === 'luta') {
+    batalhaEl.innerHTML = htmlLuta(b);
+    animarBarras();
+  } else batalhaEl.innerHTML = htmlFim(b);
+}
+
+function htmlEscolha(b) {
+  const sorteio = b.s.sorteio;
+  const m = sorteio.monstro;
+  return `<div class="bat-tela escolha">
+    <h2 class="bat-titulo">Membro da batalha</h2>
+    <div class="bat-selvagem">${arteHtml(m, 'pequena')}
+      <div><b>${esc(m.species)}</b><span>${RARIDADE_NOME[sorteio.raridade - 1]} · Nv ${m.level} · ${NOME_ELEMENTO[m.elemento]}</span></div>
+    </div>
+    <ul class="bat-membros">
+      ${time.map((t, i) => `<li><button type="button" class="membro ${i === b.sel ? 'sel' : ''}" data-bat="membro" data-i="${i}">
+        ${arteHtml(t, 'mini')}
+        <span class="nome">${esc(t.species)}</span>
+        <span class="meta">Nv ${t.level} · ${NOME_ELEMENTO[t.elemento]}</span>
+        ${xpBarra(t)}
+      </button></li>`).join('')}
+    </ul>
+    <div class="bat-acoes">
+      <button type="button" class="bat-btn primario" data-bat="confirmar">Confirmar<kbd>Enter</kbd></button>
+      <button type="button" class="bat-btn" data-bat="voltar">Voltar<kbd>Esc</kbd></button>
+    </div>
+    <p class="bat-pocoes">Poções: ${pocoesTexto()}</p>
+  </div>`;
+}
+
+function htmlLuta(b) {
+  const c = b.combate;
+  const m = time[b.sel];
+  const ops = opcoesAtuais();
+  const sel = ops[b.foco] ?? ops[0];
+  const R = 104;
+  const centro = 150;
+  const itens = ops.map((o, i) => {
+    const ang = -Math.PI / 2 + (i * 2 * Math.PI) / ops.length;
+    const x = centro + R * Math.cos(ang) - 30;
+    const y = centro + R * Math.sin(ang) - 30;
+    return `<button type="button" class="disco-item ${i === b.foco ? 'sel' : ''} ${o.ativa ? '' : 'off'}" style="left:${x}px;top:${y}px"
+      data-bat="acao" data-i="${i}" ${o.ativa ? '' : 'aria-disabled="true"'} title="${esc(o.rotulo)}">${o.icone}</button>`;
+  }).join('');
+  const log = c.log.slice(-4).map((l) => `<li>${esc(l)}</li>`).join('');
+  const pI = pct(c.ini);
+  const pJ = pct(c.jog);
+  return `<div class="bat-tela luta">
+    <header class="bat-topo"><span>Batalha · encontro</span><span>Turno ${Math.min(c.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}</span><span>${pocoesTexto()}</span></header>
+    <div class="bat-arte ini-arte">${arteHtml(b.s.sorteio.monstro, 'inimigo')}</div>
+    <div class="bat-arte jog-arte">${arteHtml(m, 'jogador')}</div>
+    <section class="bat-cartao ini">
+      <div class="cab"><b>${esc(c.ini.nome)}</b><span>${NOME_ELEMENTO[c.ini.elemento]} · Nv ${b.s.sorteio.monstro.level}</span></div>
+      <div class="barra ${pI <= 30 ? 'baixa' : ''}"><i data-antes="${b.antes?.i ?? 100}" data-alvo="${pI}"></i></div>
+    </section>
+    <section class="bat-cartao jog">
+      <div class="cab"><b>${esc(c.jog.nome)}</b><span>${NOME_ELEMENTO[c.jog.elemento]} · Nv ${m.level}</span></div>
+      <div class="barra ${pJ <= 30 ? 'baixa' : ''}"><i data-antes="${b.antes?.j ?? 100}" data-alvo="${pJ}"></i></div>
+    </section>
+    <ol class="bat-log">${log}</ol>
+    <div class="disco">
+      <button type="button" class="disco-centro" data-bat="acao" data-i="${b.foco}">${sel.icone}</button>
+      ${itens}
+      <div class="disco-rotulo">${esc(sel.rotulo)}</div>
+    </div>
+    <p class="bat-dica">←→ escolher · Enter confirmar</p>
+  </div>`;
+}
+
+function htmlFim(b) {
+  const c = b.combate;
+  const m = time[b.sel];
+  const log = c.log.slice(-6).map((l) => `<li>${esc(l)}</li>`).join('');
+  const xp = b.xp >= 0 ? `+${b.xp}` : `${b.xp}`;
+  return `<div class="bat-fim ${b.resultado ? 'vitoria' : 'derrota'}">
+    <h2>${b.resultado ? 'Vitória' : 'Derrota'}</h2>
+    <p>${esc(m.species)} · XP ${xp}${b.subiu ? ` · subiu para o nível ${b.nivel}` : ''}</p>
+    ${b.resultado && b.gold ? `<p>Gold +${b.gold}${b.pocao ? ' · Poção pequena +1' : ''}</p>` : ''}
+    <ol class="bat-log grande">${log}</ol>
+    <button type="button" class="bat-btn primario" data-bat="continuar">Continuar<kbd>Enter</kbd></button>
+  </div>`;
+}
+
 // ---- atualização ----
-function atualizar(dt) {
+function atualizar(dt, agora) {
   // câmera pelas teclas I J K L (equivale ao analógico direito)
   if (pressionada('KeyJ')) estado.yaw -= 2.2 * dt;
   if (pressionada('KeyL')) estado.yaw += 2.2 * dt;
@@ -254,7 +519,7 @@ function atualizar(dt) {
     if (Math.abs(diferencaAngulo(estado.yaw, alvoYaw)) < 0.01) estado.recentralizar = false;
   }
 
-  // movimento relativo à câmera: teclado ou joystick
+  // movimento relativo à câmera: teclado ou joystick (parado durante a batalha)
   let ix = estado.joy.x;
   let iz = estado.joy.z;
   if (pressionada('KeyW', 'ArrowUp')) iz += 1;
@@ -267,7 +532,7 @@ function atualizar(dt) {
   let dx = frente.x * iz + direita.x * ix;
   let dz = frente.z * iz + direita.z * ix;
   const norma = Math.hypot(dx, dz);
-  if (norma > 0 && forca > 0) {
+  if (!batalha && norma > 0 && forca > 0) {
     dx = (dx / norma) * forca;
     dz = (dz / norma) * forca;
     const antes = { ...estado.pos };
@@ -297,7 +562,7 @@ function atualizar(dt) {
 
   // placa: aviso e botão Examinar aparecem quando o personagem chega perto
   const pertoAgora = perto();
-  document.getElementById('prompt').style.display = pertoAgora ? 'block' : 'none';
+  document.getElementById('prompt').style.display = pertoAgora && !batalha ? 'block' : 'none';
   acaoExaminar.disabled = !pertoAgora;
   btnExaminar.hidden = !pertoAgora;
   btnCentro.hidden = false;
@@ -305,10 +570,11 @@ function atualizar(dt) {
   if (msg.style.display === 'block' && performance.now() > estado.mensagemAte) msg.style.display = 'none';
   if (!registro.hidden && performance.now() > registroAte) registro.hidden = true;
 
+  atualizarSelvagens(agora / 1000, agora);
   atualizarLocal();
 }
 
-// ---- minimapa: mar, quatro regiões, cidades, placa e personagem (o recorte redondo é do CSS) ----
+// ---- minimapa: mar, quatro regiões, cidades, selvagens, placa e personagem (o recorte redondo é do CSS) ----
 const mini = document.getElementById('mini');
 const g = mini.getContext('2d');
 const escalaMini = mini.width / (LIMITE_MAPA * 2);
@@ -333,6 +599,17 @@ function desenharMinimapa() {
     g.fill();
     g.stroke();
   }
+  for (const s of selvagens) {
+    if (!s.ativo) continue;
+    const [x, y] = mundoParaMini(s.malha.position.x, s.malha.position.z);
+    g.beginPath();
+    g.arc(x, y, 6, 0, Math.PI * 2);
+    g.fillStyle = s.cor;
+    g.strokeStyle = '#17324f';
+    g.lineWidth = 2;
+    g.fill();
+    g.stroke();
+  }
   const [sx, sy] = mundoParaMini(SINAL.x, SINAL.z);
   g.fillStyle = '#ffd27a';
   g.beginPath(); g.arc(sx, sy, 5, 0, Math.PI * 2); g.fill();
@@ -348,7 +625,7 @@ function desenharMinimapa() {
   g.restore();
 }
 
-// ---- textos conforme o dispositivo: no toque, o prompt fala do botão; no teclado, da tecla E ----
+// ---- texto do prompt conforme o dispositivo: no toque, o prompt fala do botão ----
 if (toque) {
   document.getElementById('prompt').textContent = 'Toque em Examinar';
 }
@@ -358,7 +635,7 @@ let ultimo = performance.now();
 function quadro(agora) {
   const dt = Math.min(0.05, (agora - ultimo) / 1000);
   ultimo = agora;
-  atualizar(dt);
+  atualizar(dt, agora);
   renderer.render(scene, camera);
   desenharMinimapa();
   requestAnimationFrame(quadro);
@@ -369,17 +646,22 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
 });
 
-// para testes automáticos: lê a posição do personagem, da câmera e da localização, e teleporta
+// para testes automáticos: posição do personagem, câmera, localização, teleporte e batalha
 window.explorar3d = {
   jogador: () => ({ x: estado.pos.x, z: estado.pos.z, rot: estado.rot }),
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: estado.yaw, pitch: estado.pitch }),
   local: () => estado.local,
   teleportar: (x, z) => { estado.pos = { x, z }; },
   registro: (itens, ms) => mostrarRegistro(itens, ms),
+  batalha: () => (batalha ? { fase: batalha.fase, turno: batalha.combate?.turno ?? 0, resultado: batalha.resultado } : null),
+  iniciarBatalha: (i) => iniciarBatalha(selvagens[i]),
+  acaoBatalha: (i) => { if (batalha?.fase === 'luta') { batalha.foco = i; usarAcao(opcoesAtuais()[i]); } },
+  pocoes: () => ({ ...pocoesBatalha }),
 };
 
-// o link com #espolio mostra um exemplo do registro, já que a batalha ainda não existe no 3D
+// os links com #espolio e #batalha mostram o registro de exemplo e uma batalha, para ver as telas sem andar
 if (location.hash === '#espolio') setTimeout(() => mostrarRegistro(EXEMPLO_ESPOLIO, 60000), 900);
+if (location.hash === '#batalha') setTimeout(() => iniciarBatalha(selvagens[0]), 900);
 
 estado.cam.copy(new THREE.Vector3(estado.pos.x, ALTURA_ALVO + 3, estado.pos.z + distanciaCamera()));
 requestAnimationFrame(quadro);

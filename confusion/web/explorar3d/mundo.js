@@ -12,6 +12,12 @@ export const RAIO_CIDADE = 11;               // dentro deste raio do centro, o p
 export const INICIO = { x: 0, z: 0 };        // onde o personagem nasce: na praça
 export const SINAL = { x: 6, z: 6 };         // placa na praça
 
+// Onde os selvagens rondam: fora das cidades e da praça, espalhados pelos quatro braços.
+export const PONTOS_SELVAGENS = [
+  [-24, -40], [26, -54], [56, -24], [56, 24], [-26, 34],
+  [26, 34], [0, 34], [-46, -26], [-40, 24], [-70, -2],
+];
+
 // Retângulos de cada região, em x0..x1 e z0..z1. Norte é -z, Sul é +z, Leste é +x, Oeste é -x.
 export const REGIOES = {
   Centro: { x0: -BRACO, x1: BRACO, z0: -BRACO, z1: BRACO, cor: '#8e8b7d' },
