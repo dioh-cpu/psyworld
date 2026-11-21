@@ -1,10 +1,11 @@
-// Mundo 3D: chão com arte por região, areia na costa, estradas, prédios com janelas e telhado, árvores e objetos
-// em sprite (recortes de assets/mundo), pedras e lago em forma simples. A colisão vem de CAIXAS (mundo.js).
-// Os desenhos de chão, parede e telhado são procedurais (no canvas), iguais em todo carregamento.
+// Mundo 3D: céu, chão com arte por região, areia na costa, estradas, casas com telhado e janelas, árvores em sprite
+// (recortes de assets/mundo), pedras e lago em forma simples. A colisão vem de CAIXAS (mundo.js).
+// Chão, parede, telhado, céu e nuvens são desenhados no canvas, iguais em todo carregamento.
 import * as THREE from 'three';
 import { REGIOES, EDIFICIOS, CIDADES_MUNDO, ARVORES, PEDRAS, LAGO, ESTRADAS, regiaoDe } from './mundo.js';
 
-const COR_TRONCO = '#6b4a2e';
+export const COR_HORIZONTE = '#cfe8f7';  // névoa e horizonte na mesma cor: mar e chão somem no céu
+const COR_CEU_TOPO = '#4f8fd6';
 const COR_MORTA = '#7a7468';
 const COR_PINHEIRO = '#2f5d43';          // pinheiro: copa de árvore tingida de verde escuro, até ter arte própria
 const COR_PEDRA = ['#8a8f99', '#7b7f88', '#9ea3ab'];
@@ -12,6 +13,7 @@ const COR_LAGO = '#3f86b8';
 const COR_LAGO_BORDA = '#c2b48a';
 const COR_LAGO_REFLEXO = '#5fa3cf';
 const COR_AREIA = '#d6c08c';
+const COR_CHAMINE = '#8c6a55';
 const TAMANHO_TILE = 12;                 // unidades do mundo por repetição da textura do chão
 const ALTURA_COPA = { pequena: 3.6, media: 5.0, grande: 6.2 };
 const ITENS_NAVIO = [['ancora', 2.2], ['barril', 1.9], ['corda', 1.1], ['madeira-amarrada', 1.5], ['roda', 2.0], ['tabua', 1.0]];
@@ -32,11 +34,11 @@ function gerador(semente) {
 }
 const hash = (texto) => [...texto].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7);
 
-function texturaDeDesenho(semente, desenhar) {
+function texturaDeDesenho(semente, desenhar, n = 256) {
   const c = document.createElement('canvas');
-  c.width = 256;
-  c.height = 256;
-  desenhar(c.getContext('2d'), 256, gerador(semente));
+  c.width = n;
+  c.height = n;
+  desenhar(c.getContext('2d'), n, gerador(semente));
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.colorSpace = THREE.SRGBColorSpace;
@@ -89,8 +91,33 @@ function nevoa(g, n, r, cor, quantidade) {
   }
   g.globalAlpha = 1;
 }
+// gramado: base verde, manchas de tons diferentes e lâminas curtas em todas as direções
+function gramado(g, n, r, tons, sombra) {
+  g.fillStyle = tons[0];
+  g.fillRect(0, 0, n, n);
+  for (let i = 0; i < 48; i++) {
+    g.globalAlpha = 0.3;
+    g.fillStyle = tons[Math.floor(r() * tons.length)];
+    g.beginPath();
+    g.arc(r() * n, r() * n, 16 + r() * 30, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.globalAlpha = 1;
+  for (let i = 0; i < 1100; i++) {
+    const x = r() * n;
+    const y = r() * n;
+    const ang = -Math.PI / 2 + (r() - 0.5) * 1.1;
+    const comprimento = 5 + r() * 8;
+    g.strokeStyle = r() < 0.65 ? sombra : tons[Math.floor(r() * tons.length)];
+    g.lineWidth = 1 + r() * 0.9;
+    g.beginPath();
+    g.moveTo(x, y);
+    g.lineTo(x + Math.cos(ang) * comprimento, y + Math.sin(ang) * comprimento);
+    g.stroke();
+  }
+}
 
-// arte do chão de cada região: praça de pedra, mata escura, vale de cinzas, pradaria e bosque
+// arte do chão de cada região: praça de pedra, gramado, vale de cinzas e mata escura
 const ARTE_CHAO = {
   Centro(g, n, r) {
     g.fillStyle = '#8e8b7d';
@@ -110,12 +137,7 @@ const ARTE_CHAO = {
     }
     pontos(g, n, r, ['#7d7a6c', '#a6a293'], 200, 3);
   },
-  Norte(g, n, r) {
-    g.fillStyle = '#56685a';
-    g.fillRect(0, 0, n, n);
-    pontos(g, n, r, ['#466050', '#6b7f6b'], 420, 4);
-    tufos(g, n, r, '#3d5244', 110);
-  },
+  Norte(g, n, r) { gramado(g, n, r, ['#5f9a4e', '#4f8a42', '#74ad5c'], '#3f7236'); },
   Leste(g, n, r) {
     g.fillStyle = '#8d8064';
     g.fillRect(0, 0, n, n);
@@ -128,12 +150,7 @@ const ARTE_CHAO = {
     pontos(g, n, r, ['#3d3754', '#5b5275'], 380, 4);
     nevoa(g, n, r, '#6a5f86', 8);
   },
-  Oeste(g, n, r) {
-    g.fillStyle = '#5e7463';
-    g.fillRect(0, 0, n, n);
-    pontos(g, n, r, ['#7c9476', '#4a5d4f'], 420, 4);
-    tufos(g, n, r, '#4a5d4f', 90);
-  },
+  Oeste(g, n, r) { gramado(g, n, r, ['#6fa35a', '#5b8f4c', '#7fb368'], '#44703a'); },
 };
 const ARTE_ESTRADA = (g, n, r) => {
   g.fillStyle = '#9b7f57';
@@ -146,22 +163,31 @@ const ARTE_AREIA = (g, n, r) => {
   pontos(g, n, r, ['#c4ab74', '#e4d2a6'], 320, 3);
 };
 
-// paredes: fiadas de pedra e duas colunas de janelas (algumas acesas) em cada faixa
+// paredes: reboco com fiadas, base de pedra e duas janelas por andar, com moldura, persiana e peitoril
 const cacheParedes = new Map();
 function paredeDe(cor) {
   if (!cacheParedes.has(cor)) {
     cacheParedes.set(cor, texturaDeDesenho(hash(cor), (g, n, r) => {
       g.fillStyle = cor;
       g.fillRect(0, 0, n, n);
-      g.strokeStyle = 'rgba(0,0,0,0.13)';
+      g.strokeStyle = 'rgba(0,0,0,0.10)';
       g.lineWidth = 2;
-      for (let y = 0; y < n; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(n, y); g.stroke(); }
-      for (let y = 36; y < n - 30; y += 96) {
-        for (const x of [40, 150]) {
-          g.fillStyle = r() < 0.5 ? '#f4d27a' : '#2b3a55';
-          g.fillRect(x, y, 42, 50);
+      for (let y = 0; y < n - 56; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(n, y); g.stroke(); }
+      g.fillStyle = '#8c8170';
+      g.fillRect(0, n - 56, n, 56);
+      g.strokeStyle = 'rgba(0,0,0,0.25)';
+      for (let x = 0; x < n; x += 36) { g.beginPath(); g.moveTo(x, n - 56); g.lineTo(x, n); g.stroke(); }
+      for (let y = 40; y < n - 90; y += 92) {
+        for (const x of [36, 156]) {
           g.fillStyle = '#efe3c2';
-          g.fillRect(x - 4, y + 50, 50, 5);
+          g.fillRect(x - 6, y - 6, 60, 66);
+          g.fillStyle = r() < 0.5 ? '#f4d27a' : '#2b3a55';
+          g.fillRect(x, y, 48, 54);
+          g.fillStyle = '#3f7a4a';
+          g.fillRect(x - 10, y, 6, 54);
+          g.fillRect(x + 52, y, 6, 54);
+          g.fillStyle = '#efe3c2';
+          g.fillRect(x - 8, y + 54, 64, 6);
         }
       }
     }));
@@ -212,10 +238,54 @@ function spriteArte(caminho, altura, x, z, { cor = '#ffffff' } = {}) {
   return s;
 }
 
+// ---- céu: cúpula com gradiente (do horizonte ao topo) e nuvens fofas em volta da ilha ----
+function montarCeu(scene) {
+  const cupula = new THREE.Mesh(
+    new THREE.SphereGeometry(300, 32, 16),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      uniforms: { topo: { value: new THREE.Color(COR_CEU_TOPO) }, horizonte: { value: new THREE.Color(COR_HORIZONTE) } },
+      vertexShader: 'varying vec3 vPos; void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform vec3 topo; uniform vec3 horizonte; varying vec3 vPos;\n'
+        + 'void main() {\n'
+        + '  float h = clamp(normalize(vPos).y, 0.0, 1.0);\n'
+        + '  gl_FragColor = vec4(mix(horizonte, topo, pow(h, 0.6)), 1.0);\n'
+        + '#include <colorspace_fragment>\n'
+        + '}',
+    }),
+  );
+  scene.add(cupula);
+
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 128;
+  const g = c.getContext('2d');
+  const r = gerador(31);
+  for (let i = 0; i < 10; i++) {
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    g.beginPath();
+    g.arc(40 + r() * 176, 50 + r() * 28, 22 + r() * 24, 0, Math.PI * 2);
+    g.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const rn = gerador(77);
+  for (let i = 0; i < 26; i++) {
+    const angulo = rn() * Math.PI * 2;
+    const distancia = 110 + rn() * 70;
+    const largura = 34 + rn() * 26;
+    const nuvem = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
+    nuvem.scale.set(largura, largura * 0.5, 1);
+    nuvem.position.set(Math.cos(angulo) * distancia, 22 + rn() * 14, Math.sin(angulo) * distancia);
+    scene.add(nuvem);
+  }
+}
+
 // ---- partes do mundo ----
 function chao(scene, material) {
   for (const [nome, r] of Object.entries(REGIOES)) {
-    const tex = texturaDeDesenho(hash(nome), ARTE_CHAO[nome]);
+    const tex = texturaDeDesenho(hash(nome), ARTE_CHAO[nome], 512);
     tex.repeat.set((r.x1 - r.x0) / TAMANHO_TILE, (r.z1 - r.z0) / TAMANHO_TILE);
     const malha = new THREE.Mesh(new THREE.PlaneGeometry(r.x1 - r.x0, r.z1 - r.z0), material('#ffffff', tex));
     malha.rotation.x = -Math.PI / 2;
@@ -264,20 +334,49 @@ function estradas(scene, material) {
   }
 }
 
-// prédio: caixa com janelas, telhado de quatro águas, porta na frente; a prefeitura tem mastro e bandeira
+// telhado de duas águas: prisma triangular, com a cumeeira correndo ao longo do eixo z
+function telhadoDeDuasAguas(largura, comprimento, altura) {
+  const forma = new THREE.Shape();
+  forma.moveTo(-largura / 2 - 0.25, 0);
+  forma.lineTo(largura / 2 + 0.25, 0);
+  forma.lineTo(0, altura);
+  forma.closePath();
+  const geo = new THREE.ExtrudeGeometry(forma, { depth: comprimento + 0.4, bevelEnabled: false });
+  geo.translate(0, 0, -(comprimento + 0.4) / 2);
+  return geo;
+}
+
+// casa: caixa com janelas e porta na frente, telhado de duas águas e chaminé; a prefeitura tem telhado de
+// quatro águas, mastro e bandeira
 function predio(scene, material, contorno, e) {
   const corpo = new THREE.Mesh(new THREE.BoxGeometry(e.w, e.h, e.d), material('#ffffff', paredeDe(e.cor)));
   corpo.position.set(e.x, e.h / 2, e.z);
   contorno(corpo);
   scene.add(corpo);
 
-  const altoTelhado = e.central ? 1.8 : 1.2;
-  const telhado = new THREE.Mesh(
-    new THREE.ConeGeometry(Math.hypot(e.w, e.d) / 2, altoTelhado, 4),
-    material('#ffffff', telhadoDe(e.telhado)),
-  );
-  telhado.rotation.y = Math.PI / 4;
-  telhado.position.set(e.x, e.h + altoTelhado / 2, e.z);
+  let altoTelhado;
+  let telhado;
+  if (e.central) {
+    altoTelhado = 1.8;
+    telhado = new THREE.Mesh(
+      new THREE.ConeGeometry(Math.hypot(e.w, e.d) / 2, altoTelhado, 4),
+      material('#ffffff', telhadoDe(e.telhado)),
+    );
+    telhado.rotation.y = Math.PI / 4;
+    telhado.position.set(e.x, e.h + altoTelhado / 2, e.z);
+  } else {
+    altoTelhado = 1.5;
+    const ridgeEmZ = e.d >= e.w;   // a cumeeira segue o lado comprido da casa
+    telhado = new THREE.Mesh(
+      ridgeEmZ ? telhadoDeDuasAguas(e.w, e.d, altoTelhado) : telhadoDeDuasAguas(e.d, e.w, altoTelhado),
+      material('#ffffff', telhadoDe(e.telhado)),
+    );
+    if (!ridgeEmZ) telhado.rotation.y = Math.PI / 2;
+    telhado.position.set(e.x, e.h, e.z);
+    const chamine = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.4, 0.5), material(COR_CHAMINE));
+    chamine.position.set(e.x + e.w * 0.22, e.h + 1.1, e.z - e.d * 0.18);
+    scene.add(chamine);
+  }
   contorno(telhado);
   scene.add(telhado);
 
@@ -341,19 +440,6 @@ function lago(scene, material) {
   scene.add(borda, agua, reflexo);
 }
 
-// portal de pedra e madeira no começo de cada estrada que sai de uma cidade (passa por cima, sem colisão)
-function portais(scene, arteDe) {
-  CIDADES_MUNDO.forEach((c, i) => {
-    const estrada = ESTRADAS.find((e) => e.x0 === c.x && e.z0 === c.z);
-    if (!estrada) return;
-    const comprimento = Math.hypot(estrada.x1 - estrada.x0, estrada.z1 - estrada.z0);
-    const distancia = Math.min(11, comprimento);
-    const dx = (estrada.x1 - estrada.x0) / comprimento;
-    const dz = (estrada.z1 - estrada.z0) / comprimento;
-    scene.add(spriteArte(arteDe(`portais/portal-${(i % 4) + 1}.webp`), 7, c.x + dx * distancia, c.z + dz * distancia));
-  });
-}
-
 // peças de navio espalhadas na areia, em pontos da costa (decoração, sem colisão)
 function navios(scene, arteDe) {
   let semente = 1;
@@ -386,6 +472,7 @@ function navios(scene, arteDe) {
 // Monta o mundo inteiro. `material(cor, mapa)` e `contorno(malha)` vêm de main.js; `raiz` é o caminho até a raiz do site.
 export function montarMundo(scene, { material, contorno, raiz = '' }) {
   const arteDe = (nome) => `${raiz}assets/mundo/${nome}`;
+  montarCeu(scene);
   chao(scene, material);
   areia(scene, material);
   estradas(scene, material);
@@ -393,6 +480,5 @@ export function montarMundo(scene, { material, contorno, raiz = '' }) {
   lago(scene, material);
   for (const a of ARVORES) arvore(scene, material, contorno, a, arteDe);
   for (const p of PEDRAS) pedra(scene, material, contorno, p);
-  portais(scene, arteDe);
   navios(scene, arteDe);
 }

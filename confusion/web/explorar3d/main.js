@@ -10,7 +10,7 @@ import { criarCenaBatalha } from './cena-batalha.js';
 import { criarMaterialCor, aplicarGiro, NATURAL } from './cor-sprite.js';
 import { AREAS, areaDaRegiao } from './areas.js';
 import { modoDoFoco } from './camera-batalha.js';
-import { montarMundo } from './mundo-3d.js';
+import { montarMundo, COR_HORIZONTE } from './mundo-3d.js';
 import * as C from '../core.js';
 import * as CB from '../combate.js';
 import * as E from '../species.js';
@@ -40,10 +40,10 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#7f93ad');   // céu de crepúsculo, mais frio e com menos saturação
-scene.fog = new THREE.Fog('#7f93ad', 60, 170);
+scene.background = new THREE.Color(COR_HORIZONTE);   // o céu de verdade é a cúpula de mundo-3d.js
+scene.fog = new THREE.Fog(COR_HORIZONTE, 60, 170);    // o chão e o mar esmaecem até o horizonte
 
-const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 260);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 400);   // enxerga a cúpula do céu
 
 // sombreado em três tons, o que dá o efeito de desenho animado
 const tons = new Uint8Array([95, 175, 255]);
