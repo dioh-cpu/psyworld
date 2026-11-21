@@ -199,7 +199,7 @@ const fundacao = {
 };
 
 // 32 — Purificação e corrupção de equipamentos. Referência: Dark Souls (armas abençoadas e amaldiçoadas).
-const EQUIPAMENTOS = { espada: 'Espada da Vigília', escudo: 'Escudo de Pedra', amuleto: 'Amuleto Antigo' };
+export const EQUIPAMENTOS = { espada: 'Espada da Vigília', escudo: 'Escudo de Pedra', amuleto: 'Amuleto Antigo' };
 const equipamentos = {
   id: '32', nome: 'Purificação e corrupção de equipamentos', referencia: 'Dark Souls (armas abençoadas e amaldiçoadas)',
   criar: () => Object.fromEntries(Object.keys(EQUIPAMENTOS).map((e) => [e, { bonus: 2, pureza: 'neutra' }])),

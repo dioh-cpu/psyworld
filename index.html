@@ -82,6 +82,26 @@ table.bal th,table.bal td{border:1px solid #3a3350;padding:4px 6px;text-align:ce
 .mundo-sis{border-top:1px solid #2a2440;padding:8px 0}
 details{margin:6px 0}
 details summary{cursor:pointer;color:#d6c8ff;font-weight:600;padding:4px 0}
+
+/* Menus em abas, estilo de menu por abas de RPG (azul, bordas claras, aba ativa em laranja) */
+:root{--bg:#07142b;--panel:#0d2350;--fg:#eef5ff;--muted:#9fb6d9;--acc:#ffb347;--cy:#7fdcff;--warn:#ff7070}
+body{background:radial-gradient(1200px 700px at 50% -20%,#1d4a8f 0%,#0a1d3f 50%,#050d1f 100%) fixed}
+section{background:linear-gradient(180deg,rgba(18,44,94,.96),rgba(9,25,60,.96));border:2px solid #3f8fd6;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 6px 18px rgba(0,0,0,.35)}
+section[hidden]{display:none}
+h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:#fff;border-bottom:1px solid #3f8fd6;padding-bottom:6px;text-shadow:0 0 8px rgba(127,220,255,.5)}
+button{background:linear-gradient(#21509a,#16356b);color:var(--fg);border:1px solid #6fb8f0;border-radius:2px}
+button:hover{border-color:var(--acc)}
+.menu-abas{position:sticky;top:0;z-index:5;display:flex;align-items:stretch;gap:4px;background:linear-gradient(#0a2250,#081a3d);border:2px solid #3f8fd6;padding:6px;margin:8px 0}
+.menu-abas .abas{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1}
+.menu-abas .aba{flex:0 0 auto;margin:0;background:linear-gradient(#1c4a92,#123066);color:#d8eaff;text-transform:uppercase;font-size:12px;letter-spacing:.06em;padding:8px 16px;border:none;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)}
+.menu-abas .aba.ativa{background:linear-gradient(#ffd27a,#f29a3e);color:#2a1400;font-weight:700}
+.menu-abas .seta{margin:0;padding:6px 12px;font-size:16px;background:#0f2b5c}
+.cartas{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.carta-equip{border:1px solid #3f8fd6;padding:10px;background:rgba(5,15,40,.6);display:flex;flex-direction:column;gap:6px}
+section[data-aba=ovos] ul.log{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;list-style:none;padding:0}
+section[data-aba=ovos] ul.log li{border:1px solid #3f8fd6;padding:10px;background:rgba(5,15,40,.6)}
+.lista-evo{list-style:none;padding:0;margin:0 0 8px}
+.lista-evo li{border-bottom:1px solid #1d3f73;padding:6px 0}
 </style>
 </head>
 <body>

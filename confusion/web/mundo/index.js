@@ -3,6 +3,7 @@ import { SISTEMAS_01, protecaoContraPragas } from './sistemas-01.js';
 import { SISTEMAS_11 } from './sistemas-11.js';
 import { SISTEMAS_21 } from './sistemas-21.js';
 import { SISTEMAS_31 } from './sistemas-31.js';
+export { EQUIPAMENTOS } from './sistemas-31.js';
 import { SISTEMAS_41 } from './sistemas-41.js';
 import { resultadoVazio, somarResultado } from './util.js';
 

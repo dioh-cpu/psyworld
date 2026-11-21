@@ -650,6 +650,7 @@ function render() {
     ${lastTag()}
     <ul class="log registro">${S.log.map((l) => `<li>${esc(l)}</li>`).join('') || '<li class="muted">Nada ainda.</li>'}</ul>
   </section>`;
+  montarMenu();
   restaurarSelecoes(sel);
 }
 
@@ -1471,6 +1472,113 @@ document.addEventListener('change', (e) => {
   const out = $(t.dataset.preview);
   if (out) out.innerHTML = m ? monstroTag(m) : '-';
 });
+// ---- Menus em abas (estilo de menu de RPG por abas): ◀ ▶ na barra, setas do teclado e arrastar no celular ----
+// Cada seção já renderizada ganha uma aba pelo título. Equipamentos e evolução são páginas novas.
+const ABAS = [
+  { id: 'inicio', nome: 'Início' },
+  { id: 'caminho', nome: 'Caminho' },
+  { id: 'explorar', nome: 'Explorar' },
+  { id: 'monstrinhos', nome: 'Monstrinhos' },
+  { id: 'evolucao', nome: 'Evolução' },
+  { id: 'equipamentos', nome: 'Equipamentos' },
+  { id: 'ovos', nome: 'Ovos' },
+  { id: 'itens', nome: 'Itens' },
+  { id: 'loja', nome: 'Loja' },
+  { id: 'mundo', nome: 'Mundo' },
+  { id: 'registro', nome: 'Registro' },
+];
+// O título da seção (h2) decide a aba. A primeira regra que casar vale; sem casamento, vai para Início.
+const REGRAS_ABA = [
+  [/^1\. Caminho|Campanha|Evento crítico/, 'caminho'],
+  [/Explorar|Dias e travessia|Sanidade|Auto-exploração|Combate|Zona infinita|Torres|Raid boss/, 'explorar'],
+  [/Monstrinhos|Fazenda|Coleta automática|Transferir atributos/, 'monstrinhos'],
+  [/Breed/, 'evolucao'],
+  [/Ovos/, 'ovos'],
+  [/Cozinha|Balanceamento/, 'itens'],
+  [/Diamantes e invocações|Passe de batalha|Eventos desta semana/, 'loja'],
+  [/Mundo: 50 sistemas/, 'mundo'],
+  [/^Registro$/, 'registro'],
+];
+let abaAtiva = 'inicio';
+const abaDaSecao = (titulo) => (REGRAS_ABA.find(([re]) => re.test(titulo)) || [null, 'inicio'])[1];
+
+function evolucaoHtml() {
+  const lista = S.monsters.map((m) => `<li>${monstroTag(m)} · nível ${m.level}</li>`).join('') || '<li class="muted">Nenhum monstrinho ainda.</li>';
+  return `<section data-aba="evolucao"><h2>Evolução</h2>
+    <p class="muted">A evolução por vínculo ainda não existe no piloto web (está só no núcleo Python). Esta aba já reserva o lugar: cada monstrinho aparece aqui com o nível.</p>
+    <ul class="lista-evo">${lista}</ul>
+    <button data-aba-ir="monstrinhos">Ver monstrinhos ›</button>
+    <button data-aba-ir="ovos">Abrir ovos ›</button></section>`;
+}
+
+function equipamentosHtml() {
+  const eq = S.mundo['32'] || {};
+  const acoes = {
+    espada: '<button data-act="mundoAcao" data-sis="32" data-acao="purificar" data-args="{}">Purificar (5 pedra): luz +1</button>',
+    amuleto: '<button data-act="mundoAcao" data-sis="32" data-acao="corromper" data-args="{}">Corromper (2 cristal): trevas +2, -1 sanidade</button>',
+  };
+  const cartas = Object.entries(Mundo.EQUIPAMENTOS).map(([k, nome]) => {
+    const e = eq[k] || { bonus: 0, pureza: 'neutra' };
+    return `<div class="carta-equip"><b>${esc(nome)}</b><span>+${e.bonus} · pureza ${esc(e.pureza)}</span>${acoes[k] || '<span class="muted">Sem ação ainda.</span>'}</div>`;
+  }).join('');
+  return `<section data-aba="equipamentos"><h2>Equipamentos</h2>
+    <p class="muted">A pureza do equipamento (luz, trevas ou neutra) muda o bônus. Purificar e corromper são as ações de cada item.</p>
+    <div class="cartas">${cartas}</div></section>`;
+}
+
+function mostrarAba(id) {
+  const app = document.getElementById('app');
+  abaAtiva = ABAS.some((a) => a.id === id) ? id : 'inicio';
+  for (const sec of app.querySelectorAll(':scope > section')) sec.hidden = sec.dataset.aba !== abaAtiva;
+  for (const b of app.querySelectorAll('.menu-abas .aba')) {
+    const ativa = b.dataset.abaIr === abaAtiva;
+    b.classList.toggle('ativa', ativa);
+    if (ativa) b.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+}
+
+function girarAba(dir) {
+  const i = ABAS.findIndex((a) => a.id === abaAtiva);
+  mostrarAba(ABAS[(i + dir + ABAS.length) % ABAS.length].id);
+}
+
+function montarMenu() {
+  const app = document.getElementById('app');
+  if (!app) return;
+  for (const sec of app.querySelectorAll(':scope > section')) {
+    sec.dataset.aba = abaDaSecao((sec.querySelector('h2') || {}).textContent || '');
+  }
+  app.insertAdjacentHTML('beforeend', evolucaoHtml() + equipamentosHtml());
+  const barra = `<nav class="menu-abas" aria-label="Menus">
+    <button class="seta" data-seta="-1" aria-label="Aba anterior">◀</button>
+    <div class="abas">${ABAS.map((a) => `<button class="aba" data-aba-ir="${a.id}">${a.nome}</button>`).join('')}</div>
+    <button class="seta" data-seta="1" aria-label="Próxima aba">▶</button></nav>`;
+  app.querySelector(':scope > nav.menu-abas')?.remove();
+  const cabecalho = app.querySelector(':scope > header');
+  if (cabecalho) cabecalho.insertAdjacentHTML('afterend', barra); else app.insertAdjacentHTML('afterbegin', barra);
+  mostrarAba(abaAtiva);
+}
+
+document.addEventListener('click', (e) => {
+  const aba = e.target.closest('[data-aba-ir]');
+  if (aba) { mostrarAba(aba.dataset.abaIr); return; }
+  const seta = e.target.closest('[data-seta]');
+  if (seta) girarAba(Number(seta.dataset.seta));
+});
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest && e.target.closest('input, select, textarea')) return;
+  if (e.key === 'ArrowLeft') girarAba(-1);
+  if (e.key === 'ArrowRight') girarAba(1);
+});
+let toqueX = null;
+document.addEventListener('touchstart', (e) => { toqueX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', (e) => {
+  if (toqueX === null) return;
+  const dx = e.changedTouches[0].clientX - toqueX;
+  toqueX = null;
+  if (Math.abs(dx) > 60) girarAba(dx < 0 ? 1 : -1);
+}, { passive: true });
+
 render();
 
 // Auto-exploração: um passo a cada 900 ms enquanto estiver ligada. Redesenha a tela a cada passo.
