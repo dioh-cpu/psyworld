@@ -4,7 +4,7 @@ import { clamp } from './util.js';
 
 // 31 — Fundação de cidades. Referência: Banished e Frostpunk (fundar um assentamento e mantê-lo vivo); The Last of Us (infecção que se espalha).
 // Campanha: um mundo de várias cidades, em quatro regiões. Todas existem desde o início, cada uma com moradores.
-const CIDADES = [
+export const CIDADES = [
   { nome: 'Aldeia Verde', regiao: 'Norte' }, { nome: 'Pedra Alta', regiao: 'Norte' }, { nome: 'Rio Fundo', regiao: 'Norte' },
   { nome: 'Vale Cinzento', regiao: 'Leste' }, { nome: 'Monte Brasa', regiao: 'Leste' }, { nome: 'Enseada Clara', regiao: 'Leste' },
   { nome: 'Mata Sombria', regiao: 'Sul' }, { nome: 'Campo Dourado', regiao: 'Sul' }, { nome: 'Ponte Partida', regiao: 'Sul' },

@@ -1,38 +1,17 @@
 // Protótipo de exploração 3D: terceira pessoa com rotação de câmera, colisão com prédios, placa interativa, minimapa
 // e controle de toque (joystick virtual, arrastar para a câmera, botões Examinar e Centralizar).
-// Os personagens e prédios são provisórios (cápsula e caixas). O visual de desenho vem do sombreado em degraus e do contorno.
+// A ilha vem de mundo.js: quatro regiões em cruz, doze cidades e o mar. Os prédios e o personagem são provisórios
+// (caixas e cápsula). O visual de desenho vem do sombreado em degraus e do contorno.
 import * as THREE from 'three';
 import { resolverMovimento, fracaoLivreCamera } from './colisao.js';
 import { vetorJoystick } from './controles.js';
+import { CAIXAS, EDIFICIOS, CIDADES_MUNDO, REGIOES, INICIO, SINAL, LIMITE_MAPA, localDe } from './mundo.js';
 
 const RAIO = 0.5;             // raio do personagem no plano do chão
 const VELOCIDADE = 4.5;       // unidades por segundo com o controle no máximo
 const ALTURA_ALVO = 1.4;      // a câmera mira um pouco acima dos pés
 const distanciaCamera = () => (window.innerWidth < 600 ? 13 : 11); // celular em retrato precisa de mais afastamento
-const PREDIOS = [
-  { x: -8, z: -6, w: 4, d: 4, h: 4, cor: '#d9b48f' },
-  { x: -2, z: -9, w: 3, d: 5, h: 6, cor: '#c9d6e3' },
-  { x: 5, z: -7, w: 4, d: 3, h: 3, cor: '#e7c9a9' },
-  { x: 10, z: -2, w: 3, d: 3, h: 5, cor: '#d9b48f' },
-  { x: -10, z: 3, w: 5, d: 3, h: 3, cor: '#c9d6e3' },
-  { x: -3, z: 2, w: 2, d: 2, h: 2.5, cor: '#e7c9a9' },
-  { x: 3, z: 7, w: 4, d: 4, h: 4, cor: '#d9b48f' },
-  { x: 12, z: 6, w: 3, d: 4, h: 3, cor: '#c9d6e3' },
-];
-const SINAL = { x: 6, z: 3 };  // placa interativa
-const LIMITE = 26;             // parede invisível em volta da vila
-
-// ---- caixas de colisão (prédios + paredes invisíveis do limite) ----
-const caixas = PREDIOS.map((p) => ({
-  min: { x: p.x - p.w / 2, y: 0, z: p.z - p.d / 2 },
-  max: { x: p.x + p.w / 2, y: p.h, z: p.z + p.d / 2 },
-}));
-caixas.push(
-  { min: { x: -LIMITE - 2, y: 0, z: -LIMITE - 2 }, max: { x: LIMITE + 2, y: 4, z: -LIMITE } },
-  { min: { x: -LIMITE - 2, y: 0, z: LIMITE }, max: { x: LIMITE + 2, y: 4, z: LIMITE + 2 } },
-  { min: { x: -LIMITE - 2, y: 0, z: -LIMITE }, max: { x: -LIMITE, y: 4, z: LIMITE } },
-  { min: { x: LIMITE, y: 0, z: -LIMITE }, max: { x: LIMITE + 2, y: 4, z: LIMITE } },
-);
+const COR_MAR = '#2f7bc4';
 
 // ---- cena ----
 const canvas = document.getElementById('cena');
@@ -42,9 +21,9 @@ renderer.setSize(window.innerWidth, window.innerHeight, false);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#9fd3ff');
-scene.fog = new THREE.Fog('#9fd3ff', 40, 90);
+scene.fog = new THREE.Fog('#9fd3ff', 70, 180);
 
-const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 260);
 
 // sombreado em três tons, o que dá o efeito de desenho animado
 const tons = new Uint8Array([95, 175, 255]);
@@ -65,18 +44,29 @@ function contorno(mesh, escala = 1.05) {
   mesh.add(m);
 }
 
-const chao = new THREE.Mesh(new THREE.PlaneGeometry(LIMITE * 2 + 4, LIMITE * 2 + 4), material('#7fbf6a'));
-chao.rotation.x = -Math.PI / 2;
-scene.add(chao);
+// mar em volta da ilha
+const mar = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), material(COR_MAR));
+mar.rotation.x = -Math.PI / 2;
+mar.position.y = -0.3;
+scene.add(mar);
 
-for (const p of PREDIOS) {
-  const malha = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), material(p.cor));
-  malha.position.set(p.x, p.h / 2, p.z);
+// chão de cada região: um retângulo por braço e um para a praça
+for (const r of Object.values(REGIOES)) {
+  const chao = new THREE.Mesh(new THREE.PlaneGeometry(r.x1 - r.x0, r.z1 - r.z0), material(r.cor));
+  chao.rotation.x = -Math.PI / 2;
+  chao.position.set((r.x0 + r.x1) / 2, 0, (r.z0 + r.z1) / 2);
+  scene.add(chao);
+}
+
+// prédios das cidades (a prefeitura é mais alta e mais clara, mas usa a mesma forma)
+for (const e of EDIFICIOS) {
+  const malha = new THREE.Mesh(new THREE.BoxGeometry(e.w, e.h, e.d), material(e.cor));
+  malha.position.set(e.x, e.h / 2, e.z);
   contorno(malha);
   scene.add(malha);
 }
 
-// placa interativa: poste e painel
+// placa interativa na praça: poste e painel
 const placa = new THREE.Group();
 placa.position.set(SINAL.x, 0, SINAL.z);
 const poste = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.6, 0.15), material('#7a5230'));
@@ -98,7 +88,7 @@ scene.add(jogador);
 
 // ---- estado ----
 const estado = {
-  pos: { x: 0, z: 2 },
+  pos: { x: INICIO.x, z: INICIO.z },
   rot: 0,          // direção para onde o personagem olha
   bob: 0,
   yaw: 0,          // ângulo da câmera em volta do personagem
@@ -108,6 +98,7 @@ const estado = {
   arrastando: null,
   mensagemAte: 0,
   joy: { x: 0, z: 0 },   // vetor do joystick virtual
+  local: null,           // { regiao, cidade } onde o personagem está agora
 };
 const teclas = new Set();
 const toque = window.matchMedia('(pointer: coarse)').matches;
@@ -168,9 +159,21 @@ function perto() {
 }
 function examinar() {
   const msg = document.getElementById('msg');
-  msg.textContent = 'Placa de madeira: "Porto das Cinzas" (texto provisório).';
+  msg.textContent = 'Placa de madeira: Norte, Leste, Sul e Oeste (texto provisório).';
   msg.style.display = 'block';
   estado.mensagemAte = performance.now() + 3200;
+}
+
+// ---- localização na tela ----
+const elLocal = document.getElementById('local');
+let textoLocal = '';
+function atualizarLocal() {
+  const onde = localDe(estado.pos.x, estado.pos.z);
+  estado.local = onde;
+  const texto = !onde ? 'Mar'
+    : onde.cidade ? `${onde.regiao} · ${onde.cidade}`
+    : onde.regiao === 'Centro' ? 'Praça central' : onde.regiao;
+  if (texto !== textoLocal) { textoLocal = texto; elLocal.textContent = texto; }
 }
 
 // ---- atualização ----
@@ -205,7 +208,7 @@ function atualizar(dt) {
     dx = (dx / norma) * forca;
     dz = (dz / norma) * forca;
     const antes = { ...estado.pos };
-    estado.pos = resolverMovimento(estado.pos, dx * VELOCIDADE * dt, dz * VELOCIDADE * dt, RAIO, caixas);
+    estado.pos = resolverMovimento(estado.pos, dx * VELOCIDADE * dt, dz * VELOCIDADE * dt, RAIO, CAIXAS);
     const andou = Math.hypot(estado.pos.x - antes.x, estado.pos.z - antes.z) > 1e-4;
     estado.rot += diferencaAngulo(estado.rot, Math.atan2(dx, dz)) * Math.min(1, dt * 10);
     if (andou) estado.bob += dt * 12;
@@ -223,7 +226,7 @@ function atualizar(dt) {
     alvo.y + vert,
     alvo.z + Math.cos(estado.yaw) * horiz,
   );
-  const f = fracaoLivreCamera(alvo, desejada, caixas);
+  const f = fracaoLivreCamera(alvo, desejada, CAIXAS);
   const destino = alvo.clone().add(desejada.clone().sub(alvo).multiplyScalar(f));
   estado.cam.lerp(destino, Math.min(1, dt * 12));
   camera.position.copy(estado.cam);
@@ -236,26 +239,34 @@ function atualizar(dt) {
   btnCentro.hidden = false;
   const msg = document.getElementById('msg');
   if (msg.style.display === 'block' && performance.now() > estado.mensagemAte) msg.style.display = 'none';
+
+  atualizarLocal();
 }
 
-// ---- minimapa ----
+// ---- minimapa: mar, quatro regiões, cidades, placa e personagem ----
 const mini = document.getElementById('mini');
 const g = mini.getContext('2d');
-const escalaMini = mini.width / (LIMITE * 2 + 4);
-function mundoParaMini(x, z) {
-  return [(x + LIMITE + 2) * escalaMini, (z + LIMITE + 2) * escalaMini];
-}
+const escalaMini = mini.width / (LIMITE_MAPA * 2);
+const mundoParaMini = (x, z) => [(x + LIMITE_MAPA) * escalaMini, (z + LIMITE_MAPA) * escalaMini];
 function desenharMinimapa() {
-  g.clearRect(0, 0, mini.width, mini.height);
-  g.fillStyle = '#17324f';
+  g.fillStyle = COR_MAR;
   g.fillRect(0, 0, mini.width, mini.height);
-  g.fillStyle = '#7fbf6a';
-  const [gx, gy] = mundoParaMini(-LIMITE, -LIMITE);
-  g.fillRect(gx, gy, LIMITE * 2 * escalaMini, LIMITE * 2 * escalaMini);
-  for (const p of PREDIOS) {
-    const [x, y] = mundoParaMini(p.x - p.w / 2, p.z - p.d / 2);
-    g.fillStyle = p.cor;
-    g.fillRect(x, y, p.w * escalaMini, p.d * escalaMini);
+  for (const r of Object.values(REGIOES)) {
+    const [x, y] = mundoParaMini(r.x0, r.z0);
+    g.fillStyle = r.cor;
+    g.fillRect(x, y, (r.x1 - r.x0) * escalaMini, (r.z1 - r.z0) * escalaMini);
+  }
+  const cidadeAtual = estado.local && estado.local.cidade;
+  for (const c of CIDADES_MUNDO) {
+    const [x, y] = mundoParaMini(c.x, c.z);
+    const atual = c.nome === cidadeAtual;
+    g.beginPath();
+    g.arc(x, y, atual ? 9 : 6, 0, Math.PI * 2);
+    g.fillStyle = atual ? '#ffd27a' : '#fff8e7';
+    g.strokeStyle = '#17324f';
+    g.lineWidth = 2;
+    g.fill();
+    g.stroke();
   }
   const [sx, sy] = mundoParaMini(SINAL.x, SINAL.z);
   g.fillStyle = '#ffd27a';
@@ -294,10 +305,12 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
 });
 
-// para testes automáticos: lê a posição do personagem e da câmera
+// para testes automáticos: lê a posição do personagem, da câmera e da localização
 window.explorar3d = {
   jogador: () => ({ x: estado.pos.x, z: estado.pos.z, rot: estado.rot }),
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: estado.yaw, pitch: estado.pitch }),
+  local: () => estado.local,
+  teleportar: (x, z) => { estado.pos = { x, z }; },
 };
 
 estado.cam.copy(new THREE.Vector3(estado.pos.x, ALTURA_ALVO + 3, estado.pos.z + distanciaCamera()));
