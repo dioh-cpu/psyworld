@@ -45,7 +45,7 @@ export const habilidadePronta = (lutador, nome, turno) => {
 // Rótulo da tipagem para o log: sem efeito (0), super efetivo (acima de 1), pouco efetivo (abaixo de 1). Neutro não tem rótulo.
 export const rotuloEficacia = (m) => (m === 0 ? 'sem efeito' : m > 1 ? 'super efetivo!' : m < 1 ? 'pouco efetivo' : null);
 
-function golpe(a, d, mult, rnd) {
+export function golpe(a, d, mult, rnd) {
   if (rnd() < COMBATE.erro) return { errou: true, dano: 0, critico: false, eficacia: 1 };
   const critico = rnd() < COMBATE.critico;
   const variacao = 1 + COMBATE.variacao * (2 * rnd() - 1);
