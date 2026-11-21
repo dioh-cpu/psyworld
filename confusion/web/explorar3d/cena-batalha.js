@@ -182,14 +182,18 @@ export function criarCenaBatalha(THREE) {
     g.drawImage(img, 0, 0, w, h);
     const d = g.getImageData(0, 0, w, h).data;
     let x0 = w, x1 = -1, y0 = h, y1 = -1;
+    let massa = 0, massaX = 0;   // centro de massa horizontal do desenho (o corpo, não a cauda), ponderado pelo alfa
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        if (d[(y * w + x) * 4 + 3] > 20) {
+        const alfa = d[(y * w + x) * 4 + 3];
+        if (alfa > 20) {
           if (x < x0) x0 = x;
           if (x > x1) x1 = x;
           if (y < y0) y0 = y;
           if (y > y1) y1 = y;
         }
+        massa += alfa;
+        massaX += alfa * (x + 0.5);
       }
     }
     const medidas = x1 < 0
@@ -197,7 +201,7 @@ export function criarCenaBatalha(THREE) {
       : {
         aspecto: w / h,
         yb: (y1 + 1) / h,              // base do desenho, em fração da altura (de cima para baixo)
-        xc: (x0 + x1 + 1) / (2 * w),   // centro do desenho, em fração da largura
+        xc: massaX / massa / w,        // centro de massa do desenho, em fração da largura (fica sobre o disco)
         vh: (y1 - y0 + 1) / h,         // altura do desenho, em fração da altura da imagem
       };
     medidasCache.set(img, medidas);

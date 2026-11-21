@@ -319,12 +319,18 @@ const PERFIS_DIREITA = {
   // Ignavor: 'assets/monsters/ignavor/perfil-direita.webp',
 };
 
+// Para que lado olha a arte de frente de cada espécie. O aliado precisa olhar para a direita (o inimigo) e o inimigo para a
+// esquerda; quando a arte olha para o lado errado, ela é espelhada.
+const FRENTE_PARA = { Brotavel: 'direita', Ignavor: 'esquerda', Solarin: 'esquerda', Vaelith: 'esquerda' };
+
 // Como cada monstro aparece na batalha. Noctarn tem a folha de quatro direções: o aliado usa 'direita' e o inimigo 'esquerda'.
-// As outras espécies usam o perfil de PERFIS_DIREITA (o inimigo espelha). Sem perfil, mostra a frente.
+// As outras espécies usam o perfil de PERFIS_DIREITA (o inimigo espelha). Sem perfil, usam a frente, espelhada se preciso.
 function visaoDaBatalha(m, lado) {
   if (FOLHAS_DIRECOES[m.species]) return { textura: texturaDeDirecao(m, lado === 'aliado' ? 'direita' : 'esquerda'), espelho: false };
   if (PERFIS_DIREITA[m.species]) return { textura: texturaDeDirecao(m, 'direita'), espelho: lado === 'inimigo' };
-  return { textura: texturaDeDirecao(m, 'frente'), espelho: false };
+  const olhaPara = FRENTE_PARA[m.species] ?? 'direita';
+  const quer = lado === 'aliado' ? 'direita' : 'esquerda';
+  return { textura: texturaDeDirecao(m, 'frente'), espelho: olhaPara !== quer };
 }
 
 // ---- selvagens que rondam a ilha: ao encostar, começa a batalha ----
