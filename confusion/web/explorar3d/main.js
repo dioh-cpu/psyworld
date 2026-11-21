@@ -124,6 +124,7 @@ const toque = window.matchMedia('(pointer: coarse)').matches;
 // ---- time e poções: ficam só nesta sessão (o protótipo não salva nada) ----
 const time = timeInicial();
 const pocoesBatalha = { ...POCOES_INICIAIS };
+const preferenciasBatalha = { auto: false, velocidade: 1 };   // modo auto e velocidade (1x, 2x ou 3x), lembrados entre as lutas
 let batalha = null;   // { s, sorteios, e (equipe), area, fase: 'planejar' | 'alvo' | 'roteiro' | 'fim' | 'recuou', quem, menu, alvo, roteiro, ... }
 let vista = null;     // tela de Time: { tipo: 'time' | 'habilidades', sel, slot, item, voltar }
 
@@ -512,7 +513,8 @@ function htmlBatalha(b) {
   }[b.fase] ?? '';
   const vezDe = b.fase === 'planejar' ? `Vez de ${esc(e.aliados[b.quem].nome)}` : '';
   return `<div class="bat-tela bt ${b.fase}">
-    <header class="bt-topo"><span>${esc(b.area.nome)}</span><span>Turno ${Math.min(e.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}</span><span>${vezDe || pocoesTexto()}</span></header>
+    <header class="bt-topo"><span>${esc(b.area.nome)}</span><span>Turno ${Math.min(e.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}</span><span>${vezDe || pocoesTexto()}</span>
+      <span class="bt-controles"><button type="button" class="bt-ctrl ${preferenciasBatalha.auto ? 'on' : ''}" data-bat="auto" title="Auto batalha (V)">AUTO ${preferenciasBatalha.auto ? 'ON' : 'OFF'}</button><button type="button" class="bt-ctrl" data-bat="velocidade" title="Velocidade (F)">${preferenciasBatalha.velocidade}x</button></span></header>
     <section class="bt-inimigos">${inimigos}</section>
     <section class="bt-aliados">${aliados}</section>
     ${mira}${disco}${painel}${alvo}
@@ -588,7 +590,7 @@ function mostrarNumero(ref, texto, classe, deslocY = 0) {
   el.style.left = `${p.x}px`;
   el.style.top = `${p.y - deslocY}px`;
   batalhaEl.append(el);
-  setTimeout(() => el.remove(), 950);
+  setTimeout(() => el.remove(), 950 / preferenciasBatalha.velocidade);
 }
 
 // ---- batalha: fluxo ----
@@ -752,7 +754,7 @@ function executarPasso(p) {
     if (p.dano > 0 && p.absorvido) mostrarNumero(p.alvo, `+${p.dano}`, 'cura');   // vampirismo: o alvo cura
     else if (p.dano > 0) mostrarNumero(p.alvo, p.critico ? `-${p.dano}!` : `-${p.dano}`, p.critico ? 'critico' : 'dano');
     // a tipagem aparece logo acima do número: super efetivo, pouco efetivo ou sem efeito
-    if (p.eficacia) setTimeout(() => mostrarNumero(p.alvo, ROTULO_EFICACIA[p.eficacia], `efi-${p.eficacia}`, 36), 280);
+    if (p.eficacia) setTimeout(() => mostrarNumero(p.alvo, ROTULO_EFICACIA[p.eficacia], `efi-${p.eficacia}`, 36), 280 / preferenciasBatalha.velocidade);
     b.hpMostrado = p.hp;
     p.hp.aliados.forEach((h, i) => { if (h <= 0) cenaBat.derrubar('aliado', i); });
     p.hp.inimigos.forEach((h, i) => { if (h <= 0) cenaBat.derrubar('inimigo', i); });
@@ -768,6 +770,30 @@ function executarPasso(p) {
     return;
   }
   if (p.tipo === 'pausa') cenaBat.mirar('panoramica');
+}
+
+// Modo auto: o aliado da vez escolhe a ação e o alvo sozinho, depois de um instante (encurta na velocidade maior).
+function tocarAuto(dt) {
+  const b = batalha;
+  if (!b || !preferenciasBatalha.auto || b.fase !== 'planejar') { if (b) b.tempoAuto = 0; return; }
+  b.tempoAuto = (b.tempoAuto ?? 0) + dt;
+  if (b.tempoAuto < 0.5) return;
+  b.tempoAuto = 0;
+  const acao = BE.escolherAutoAcao(b.e, b.quem);
+  if (!acao) return;
+  planejarAtual(acao);
+}
+
+function alternarAuto() {
+  preferenciasBatalha.auto = !preferenciasBatalha.auto;
+  if (batalha && batalha.fase === 'alvo' && preferenciasBatalha.auto) voltarDoAlvo();
+  renderTudo();
+}
+
+function alternarVelocidade() {
+  const ordem = [1, 2, 3];
+  preferenciasBatalha.velocidade = ordem[(ordem.indexOf(preferenciasBatalha.velocidade) + 1) % ordem.length];
+  renderTudo();
 }
 
 function tocarRoteiro(dt) {
@@ -888,6 +914,8 @@ function teclaVista(e) {
 function teclaBatalha(e) {
   const b = batalha;
   const k = e.code;
+  if (k === 'KeyV') { alternarAuto(); return; }
+  if (k === 'KeyF') { alternarVelocidade(); return; }
   if (b.fase === 'planejar' && b.menu === 'acoes') {
     const n = ACOES.length;
     if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'KeyA' || k === 'KeyW') { b.opcaoMenu = (b.opcaoMenu + n - 1) % n; renderTudo(); }
@@ -941,6 +969,8 @@ batalhaEl.addEventListener('click', (e) => {
   else if (acao === 'lista-voltar') voltarAcoes();
   else if (acao === 'fugir') fugir();
   else if (acao === 'continuar') encerrarBatalha();
+  else if (acao === 'auto') alternarAuto();
+  else if (acao === 'velocidade') alternarVelocidade();
 });
 
 // ---- atualização do mapa ----
@@ -1076,8 +1106,10 @@ function quadro(agora) {
   ultimo = agora;
   atualizar(dt, agora);
   if (batalha) {
-    tocarRoteiro(dt);
-    cenaBat.atualizar(dt, agora / 1000);
+    const dtBatalha = dt * preferenciasBatalha.velocidade;
+    tocarRoteiro(dtBatalha);
+    tocarAuto(dtBatalha);
+    cenaBat.atualizar(dtBatalha, agora / 1000);
     atualizarMira();
     renderer.render(cenaBat.cena, cenaBat.camera);
   } else {
@@ -1101,6 +1133,9 @@ window.explorar3d = {
   local: () => estado.local,
   teleportar: (x, z) => { estado.pos = { x, z }; },
   registro: (itens, ms) => mostrarRegistro(itens, ms),
+  preferenciasBatalha: () => ({ ...preferenciasBatalha }),
+  setAuto: (on) => { preferenciasBatalha.auto = Boolean(on); renderTudo(); },
+  setVelocidade: (v) => { preferenciasBatalha.velocidade = v; renderTudo(); },
   batalha: () => (batalha ? { fase: batalha.fase, turno: batalha.e.turno, quem: batalha.quem, alvo: batalha.alvo, inimigos: batalha.e.inimigos.length, aliados: batalha.e.aliados.filter((a) => a.hp > 0).length, resultado: batalha.resultado, roteiro: Boolean(batalha.roteiro) } : null),
   iniciarBatalha: (i) => iniciarBatalha(selvagens[i]),
   sortear: (i) => { novoSelvagem(selvagens[i]); return selvagens[i].sorteio.monstro.variante ?? null; },

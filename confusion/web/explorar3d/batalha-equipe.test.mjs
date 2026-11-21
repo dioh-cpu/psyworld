@@ -168,3 +168,33 @@ test('roteiro: um foco e um efeito por evento, com a vida depois de cada efeito,
   assert.equal(passos[0].tipo, 'foco');
   assert.deepEqual(passos[0].ator, { lado: 'aliado', i: 0 });
 });
+
+test('auto: poção quando a vida cai do limiar; senão habilidade pronta; senão ataca o inimigo mais fraco', () => {
+  const a = lutador('a', 50, 'fogo', ['Brasa']);
+  a.hp = 10;   // 10 de 60: abaixo de 35%
+  const forte = lutador('forte', 40);
+  const fraco = lutador('fraco', 40);
+  fraco.hp = 5;
+  const e = B.criarBatalhaEquipe({ aliados: [a], inimigos: [forte, fraco], pocoes: { pequena: 1 } });
+  assert.deepEqual(B.escolherAutoAcao(e, 0), { tipo: 'pocao', pocao: 'pequena' });
+  a.hp = a.hpMax;
+  const acao = B.escolherAutoAcao(e, 0);
+  assert.deepEqual(acao, { tipo: 'habilidade', nome: 'Brasa', alvo: 1 });
+  assert.doesNotThrow(() => B.planejar(e, 0, acao));
+  e.aliados[0].habilidades[0].ultimoTurno = e.turno;   // recarga: não pode mais usar a habilidade
+  assert.deepEqual(B.escolherAutoAcao(e, 0), { tipo: 'atacar', alvo: 1 });
+  e.pocoes.pequena = 0;
+  a.hp = 10;
+  assert.deepEqual(B.escolherAutoAcao(e, 0), { tipo: 'atacar', alvo: 1 });   // sem poção, ataca
+});
+
+test('auto: aliado caído não planeja; a ação automática sempre é aceita por planejar', () => {
+  const a = lutador('a', 50);
+  const b = lutador('b', 40);
+  const e = B.criarBatalhaEquipe({ aliados: [a, b], inimigos: [lutador('n', 30)] });
+  a.hp = 0;
+  assert.equal(B.escolherAutoAcao(e, 0), null);
+  const acao = B.escolherAutoAcao(e, 1);
+  assert.doesNotThrow(() => B.planejar(e, 1, acao));
+  assert.equal(B.prontoParaResolver(e), true);
+});

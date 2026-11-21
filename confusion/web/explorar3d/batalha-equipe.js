@@ -197,3 +197,27 @@ export function roteiroDaEquipe(e) {
   passos.push({ tipo: 'pausa', dur: DURACAO_EQUIPE.pausa });
   return passos;
 }
+
+// Modo auto: escolha automática de um aliado. Poção se a vida cair do limiar (a menor que houver); senão a primeira
+// habilidade pronta; senão ataca. O alvo é sempre o inimigo vivo com menos vida, para derrubar logo quem está perto de cair.
+export const LIMIAR_POCAO_AUTO = 0.35;
+export const ORDEM_POCOES_AUTO = ['pequena', 'media', 'grande'];
+
+export function alvoMaisFraco(e) {
+  const vivos = inimigosVivos(e);
+  return vivos.reduce((melhor, i) => (e.inimigos[i].hp < e.inimigos[melhor].hp ? i : melhor), vivos[0]);
+}
+
+export function escolherAutoAcao(e, i) {
+  const a = e.aliados[i];
+  if (!a || !vivo(a)) return null;
+  const alvo = alvoMaisFraco(e);
+  if (alvo === undefined) return null;
+  if (a.hp / a.hpMax <= LIMIAR_POCAO_AUTO) {
+    const pocao = ORDEM_POCOES_AUTO.find((p) => pocoesLivres(e, p, i) > 0);
+    if (pocao) return { tipo: 'pocao', pocao };
+  }
+  const habilidade = a.habilidades.find((h) => CB.habilidadePronta(a, h.nome, e.turno));
+  if (habilidade) return { tipo: 'habilidade', nome: habilidade.nome, alvo };
+  return { tipo: 'atacar', alvo };
+}

@@ -197,8 +197,8 @@
   .bt { pointer-events: none; font-family: inherit; color: #eef5ff; }
   .bt button, .bt .bt-card, .bt .bt-log, .bt .bt-lista, .bt .bt-alvo, .bt .bt-topo { pointer-events: auto; }
   .bt-topo { position: absolute; left: 10px; right: 10px; top: 10px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; background: linear-gradient(180deg, rgba(18, 44, 94, .94), rgba(9, 25, 60, .94)); border: 2px solid #3f8fd6; padding: 6px 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-  .bt-topo span:last-child { margin-left: auto; color: #ffd27a; }
-  .bt-inimigos { position: absolute; right: 10px; top: 58px; width: 176px; display: flex; flex-direction: column; gap: 6px; }
+  .bt-topo span:last-child:not(.bt-controles) { margin-left: auto; color: #ffd27a; }
+  .bt-inimigos { position: absolute; right: 10px; top: 104px; width: 176px; display: flex; flex-direction: column; gap: 6px; }
   .bt-aliados { position: absolute; right: 10px; bottom: 150px; width: 176px; display: flex; flex-direction: column; gap: 6px; }
   .bt-card { display: block; width: 100%; box-sizing: border-box; text-align: left; background: linear-gradient(180deg, rgba(18, 44, 94, .95), rgba(9, 25, 60, .95)); border: 2px solid #3f8fd6; padding: 6px 8px; color: inherit; font: inherit; }
   .bt-card.ativo { border-color: #ffd27a; box-shadow: 0 0 0 2px rgba(255, 210, 122, .35); }
@@ -212,7 +212,7 @@
   .bt-barra.baixa i { background: linear-gradient(90deg, #ff7a45, #ffb39a); }
   .bt-num { font-size: 11px; text-align: right; color: #cfe8ff; }
   .bt-plano { font-size: 11px; color: #ffd27a; min-height: 14px; }
-  .bt-log { position: absolute; left: 10px; top: 58px; width: 170px; margin: 0; padding: 6px 8px 6px 22px; background: rgba(5, 15, 40, .8); border-left: 3px solid #7fdcff; font-size: 11px; color: #cfe8ff; list-style: none; }
+  .bt-log { position: absolute; left: 10px; top: 104px; width: 170px; margin: 0; padding: 6px 8px 6px 22px; background: rgba(5, 15, 40, .8); border-left: 3px solid #7fdcff; font-size: 11px; color: #cfe8ff; list-style: none; }
   .bt-log li { margin: 2px 0; }
   .bt-log:empty { display: none; }
   .bt-disco { position: absolute; left: 6px; bottom: 26px; width: 260px; height: 260px; }
@@ -232,6 +232,9 @@
   .bt-dica { position: absolute; left: 0; right: 0; bottom: 4px; margin: 0; text-align: center; font-size: 10px; color: #9fc9ff; text-shadow: 0 1px 3px #000; }
   .bt-btn { background: #1b3d78; border: 1px solid #7fdcff; color: #fff; padding: 6px 10px; font: inherit; }
   .bt kbd { margin-left: 6px; opacity: .8; font-size: 11px; }
+  .bt-controles { display: flex; gap: 6px; margin-left: auto; }
+  .bt-ctrl { background: #1b3d78; border: 1px solid #7fdcff; color: #fff; padding: 4px 8px; font: 700 11px system-ui, sans-serif; letter-spacing: .04em; pointer-events: auto; }
+  .bt-ctrl.on { background: #ffd27a; color: #1a1400; border-color: #ffd27a; }
 </style>
 <script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
 </head>
