@@ -17,7 +17,6 @@ const ALTURA_JOGADOR = 1.7;              // altura do personagem (cápsula de ma
 const ALTURA_ARVORE = 3 * ALTURA_JOGADOR;   // copa visível: 3 vezes o personagem (com variação na escala)
 const ALTURA_CASA = 2.5 * ALTURA_JOGADOR;   // casa visível: no mínimo 2 vezes o personagem
 const ITENS_NAVIO = [['ancora', 2.2], ['barril', 1.9], ['corda', 1.1], ['madeira-amarrada', 1.5], ['roda', 2.0], ['tabua', 1.0]];
-const QUADROS_CASA = ['frente-esquerda', 'frente-direita', 'costas-esquerda', 'costas-direita'];
 
 const carregador = new THREE.TextureLoader();
 const imagens = new Map();               // caminho -> { tex, sprites }: cada imagem é carregada uma vez
@@ -257,39 +256,16 @@ function montarCeu(scene, arteDe) {
   }
 }
 
-// ---- casa de teste: quatro lados vindos de dois quadros (frente e costas em 3/4, com o espelho de cada um) ----
-// A câmera escolhe o quadro pelo ângulo em volta da casa: 0 é de frente (+z), positivo é o lado +x.
-let casaTeste = null;
-
+// ---- casa de teste: um único desenho (frente e lado esquerdo em 3/4). Nenhum objeto gira com a câmera:
+// o desenho é o mesmo em todos os ângulos, como os outros sprites do mundo.
 function montarCasaTeste(scene, arteDe) {
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ alphaTest: 0.5 }));
   sprite.position.set(CASA_TESTE.x, 0, CASA_TESTE.z);
   sprite.scale.set(ALTURA_CASA * 0.75, ALTURA_CASA, 1);   // enquanto a imagem não carrega
-  const texturas = {};
-  for (const nome of QUADROS_CASA) {
-    // escala e base vêm da frente: os quatro quadros têm o mesmo quadro e o mesmo chão
-    texturas[nome] = carregador.load(arteDe(`casa-teste/${nome}.webp`), (t) => {
-      if (nome === 'frente-esquerda') ajustarEscala(sprite, ALTURA_CASA, t.image);
-    });
-    texturas[nome].colorSpace = THREE.SRGBColorSpace;
-  }
-  sprite.material.map = texturas['frente-esquerda'];
+  const tex = carregador.load(arteDe('casa-teste/frente-esquerda.webp'), (t) => ajustarEscala(sprite, ALTURA_CASA, t.image));
+  tex.colorSpace = THREE.SRGBColorSpace;
+  sprite.material.map = tex;
   scene.add(sprite);
-  casaTeste = { sprite, texturas, lado: 'frente-esquerda' };
-}
-
-// Chamado a cada quadro: troca o quadro da casa conforme a câmera gira em volta dela.
-export function atualizarMundo(camera) {
-  if (!casaTeste) return;
-  const angulo = Math.atan2(camera.position.x - CASA_TESTE.x, camera.position.z - CASA_TESTE.z);
-  const lado = Math.abs(angulo) <= Math.PI / 2
-    ? (angulo >= 0 ? 'frente-direita' : 'frente-esquerda')
-    : (angulo > 0 ? 'costas-direita' : 'costas-esquerda');
-  if (lado !== casaTeste.lado) {
-    casaTeste.lado = lado;
-    casaTeste.sprite.material.map = casaTeste.texturas[lado];
-    casaTeste.sprite.material.needsUpdate = true;
-  }
 }
 
 // ---- partes do mundo ----
