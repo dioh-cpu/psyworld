@@ -7,6 +7,7 @@ import { vetorJoystick } from './controles.js';
 import { CAIXAS, EDIFICIOS, CIDADES_MUNDO, REGIOES, INICIO, SINAL, LIMITE_MAPA, PONTOS_SELVAGENS, localDe } from './mundo.js';
 import { linhasDoRegistro, EXEMPLO_ESPOLIO } from './registro.js';
 import { criarCenaBatalha } from './cena-batalha.js';
+import { AREAS, areaDaRegiao } from './areas.js';
 import { modoDoFoco } from './camera-batalha.js';
 import * as C from '../core.js';
 import * as CB from '../combate.js';
@@ -411,7 +412,7 @@ function htmlLuta(b) {
   }).join('');
   const log = c.log.slice(-4).map((l) => `<li>${esc(l)}</li>`).join('');
   return `<div class="bat-tela luta ${b.roteiro ? 'ocupado' : ''}">
-    <header class="bat-topo"><span>Batalha · encontro</span><span>Turno ${Math.min(c.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}</span><span>${pocoesTexto()}</span></header>
+    <header class="bat-topo"><span>Batalha · ${esc(b.area.nome)} · ${NOME_ELEMENTO[b.area.elemento]}</span><span>Turno ${Math.min(c.turno, CB.COMBATE.turnosMax)} de ${CB.COMBATE.turnosMax}</span><span>${pocoesTexto()}</span></header>
     <section class="bat-cartao ini">
       <div class="cab"><b>${esc(c.ini.nome)}</b>${badgeVariante(monstroI)}<span>${NOME_ELEMENTO[c.ini.elemento]} · Nv ${monstroI.level}</span></div>
       <div class="barra"><i data-barra="ini"></i></div>
@@ -495,7 +496,7 @@ function iniciarBatalha(s) {
   s.malha.visible = false;
   s.reaparece = Infinity;   // não volta enquanto a luta dura; encerrarBatalha marca a volta
   batalha = {
-    s, fase: 'escolha', sel: 0, foco: 0, combate: null, resultado: false, xp: 0, subiu: 0, nivel: 0, gold: 0, pocao: 0,
+    s, area: areaDaRegiao(localDe(estado.pos.x, estado.pos.z)?.regiao ?? null) ?? AREAS.Centro, fase: 'escolha', sel: 0, foco: 0, combate: null, resultado: false, xp: 0, subiu: 0, nivel: 0, gold: 0, pocao: 0,
     roteiro: null, passo: 0, tempo: 0, iniciado: false, pendenteFim: false, hpMostrado: null,
   };
   teclas.clear();
@@ -503,6 +504,7 @@ function iniciarBatalha(s) {
   // o selvagem aparece na arena; se for uma variação, a cor muda na frente de quem olha
   const m = s.sorteio.monstro;
   const giro = giroDoMonstro(m);
+  cenaBat.tema(batalha.area.arena);
   cenaBat.reiniciarCamera();
   cenaBat.definir('inimigo', { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.6 });
   cenaBat.mirar('panoramica');

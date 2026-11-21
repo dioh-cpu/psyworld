@@ -66,28 +66,43 @@ export function criarCenaBatalha(THREE) {
   gc.width = 4;
   gc.height = 256;
   const gg = gc.getContext('2d');
-  const grad = gg.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#2a5597');
-  grad.addColorStop(0.6, '#0f2550');
-  grad.addColorStop(1, '#050b1c');
-  gg.fillStyle = grad;
-  gg.fillRect(0, 0, 4, 256);
-  cena.background = new THREE.CanvasTexture(gc);
+  const fundo = new THREE.CanvasTexture(gc);
+  cena.background = fundo;
+  // degradê do topo ao pé da arena; o meio é a mistura dos dois
+  function pintarFundo(topo, base) {
+    const grad = gg.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, topo);
+    grad.addColorStop(0.6, new THREE.Color(topo).lerp(new THREE.Color(base), 0.6).getStyle());
+    grad.addColorStop(1, base);
+    gg.fillStyle = grad;
+    gg.fillRect(0, 0, 4, 256);
+    fundo.needsUpdate = true;
+  }
+  pintarFundo('#2a5597', '#050b1c');
 
-  // arena: disco escuro com anéis claros
-  const disco = new THREE.Mesh(new THREE.CircleGeometry(4.2, 72), new THREE.MeshBasicMaterial({ color: '#1c3f73' }));
+  // arena: disco escuro com anéis claros (as cores vêm do tema da área)
+  const discoMat = new THREE.MeshBasicMaterial({ color: '#1c3f73' });
+  const disco = new THREE.Mesh(new THREE.CircleGeometry(4.2, 72), discoMat);
   disco.rotation.x = -Math.PI / 2;
   cena.add(disco);
-  const anel = new THREE.Mesh(new THREE.RingGeometry(4.0, 4.12, 96),
-    new THREE.MeshBasicMaterial({ color: '#7fdcff', transparent: true, opacity: 0.85 }));
+  const anelMat = new THREE.MeshBasicMaterial({ color: '#7fdcff', transparent: true, opacity: 0.85 });
+  const anel = new THREE.Mesh(new THREE.RingGeometry(4.0, 4.12, 96), anelMat);
   anel.rotation.x = -Math.PI / 2;
   anel.position.y = 0.01;
   cena.add(anel);
-  const anelInterno = new THREE.Mesh(new THREE.RingGeometry(2.1, 2.16, 96),
-    new THREE.MeshBasicMaterial({ color: '#7fdcff', transparent: true, opacity: 0.35 }));
+  const anelInternoMat = new THREE.MeshBasicMaterial({ color: '#7fdcff', transparent: true, opacity: 0.35 });
+  const anelInterno = new THREE.Mesh(new THREE.RingGeometry(2.1, 2.16, 96), anelInternoMat);
   anelInterno.rotation.x = -Math.PI / 2;
   anelInterno.position.y = 0.012;
   cena.add(anelInterno);
+
+  // tema da área: cores do fundo, do disco e dos anéis. Cada região da ilha tem a sua.
+  function tema(arena) {
+    pintarFundo(arena.fundoTopo, arena.fundoBase);
+    discoMat.color.set(arena.disco);
+    anelMat.color.set(arena.anel);
+    anelInternoMat.color.set(arena.anel);
+  }
 
   // faíscas de impacto: um lote fixo de pontos reaproveitado
   const N = 48;
@@ -336,6 +351,6 @@ export function criarCenaBatalha(THREE) {
   }
 
   return {
-    cena, camera, definir, golpe, cura, mirar, reiniciarCamera, tremerCamera, projetar, atualizar, resize,
+    cena, camera, tema, definir, golpe, cura, mirar, reiniciarCamera, tremerCamera, projetar, atualizar, resize,
   };
 }
