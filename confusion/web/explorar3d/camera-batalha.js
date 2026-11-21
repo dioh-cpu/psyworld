@@ -30,12 +30,12 @@ export const POSICAO = {
 
 // pos: onde a câmera fica; olha: para onde mira; fov: campo de visão vertical em graus.
 export const VISTAS = {
-  panoramica: { pos: [-6.2, 3.4, 6.0], olha: [0.8, 1.0, -1.6], fov: 46 },
+  panoramica: { pos: [-8.6, 4.8, 8.6], olha: [0.8, 1.0, -1.6], fov: 46 },
   abertura: { pos: [0, 7.5, 15], olha: [0, 1.0, 0], fov: 52 },
   // o foco aproxima quem age, mas o outro lutador continua na tela (o olhar fica entre os dois, puxado para quem age)
-  'foco-jogador': { pos: [-1.2, 2.3, 7.4], olha: [POSICAO.jogador.x * 0.5, MEIO_CORPO, 0.6], fov: 42 },
-  'foco-inimigo': { pos: [1.4, 2.4, 7.0], olha: [POSICAO.inimigo.x * 0.5, MEIO_CORPO, -0.3], fov: 42 },
-  vitoria: { pos: [-3.6, 0.9, 4.2], olha: [POSICAO.jogador.x + 0.2, 1.4, POSICAO.jogador.z], fov: 38 },
+  'foco-jogador': { pos: [-1.2, 2.8, 8.2], olha: [POSICAO.jogador.x * 0.5, MEIO_CORPO, 0.6], fov: 42 },
+  'foco-inimigo': { pos: [1.4, 2.8, 8.0], olha: [POSICAO.inimigo.x * 0.5, MEIO_CORPO, -0.3], fov: 42 },
+  vitoria: { pos: [-5.4, 0.9, 6.2], olha: [POSICAO.jogador.x + 0.2, 1.4, POSICAO.jogador.z], fov: 38 },
   derrota: { pos: [0, 5.6, 11], olha: [0, 0.9, 0], fov: 50 },
 };
 
@@ -51,5 +51,5 @@ export const modoDoFoco = (lado) => (lado === 'jogador' ? 'foco-jogador' : 'foco
 // Vista presa num lutador (o alvo escolhido): a câmera fica do lado de cá e mira o meio do corpo dele.
 // Os outros lutadores podem sair da tela; o alvo é o que importa nesse momento.
 export function vistaDoAlvo(p) {
-  return { pos: [p.x * 0.45 - 0.8, 2.4, p.z + 6.6], olha: [p.x * 0.6, MEIO_CORPO, p.z], fov: 40 };
+  return { pos: [p.x * 0.45 - 0.8, 3.0, p.z + 10.4], olha: [p.x * 0.6, MEIO_CORPO, p.z], fov: 40 };
 }

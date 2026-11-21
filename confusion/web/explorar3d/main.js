@@ -165,8 +165,8 @@ function criarAzazel() {
   // rot: direção do movimento no mundo (atan2(dx, dz)); yaw: ângulo da câmera. O personagem gira só no eixo vertical e
   // fica de frente para a câmera (de lado ele some). O quadro vem do movimento em relação à tela: 0 frente (vindo para a
   // câmera), 3 costas, 2 direita, 1 esquerda.
+  let ultima = 0;   // último sentido do movimento: é o quadro que fica quando o personagem para
   function atualizar(andando, rot, yaw, agora) {
-    malha.rotation.y = yaw;
     const mx = Math.sin(rot);
     const mz = Math.cos(rot);
     const paraCamera = mx * Math.sin(yaw) + mz * Math.cos(yaw);     // a câmera fica em (sin yaw, cos yaw) do personagem
@@ -175,6 +175,7 @@ function criarAzazel() {
       ? (paraCamera >= 0 ? 0 : 3)
       : (paraDireita >= 0 ? 2 : 1);
     if (andando) {
+      ultima = linha;
       const fonte = ['front', 'left', 'left', 'back'][linha];
       if (ativo !== fonte) {
         pausarVideos();
@@ -187,12 +188,16 @@ function criarAzazel() {
       parado.visible = !andar.visible;
     } else {
       pausarVideos();
-      texParado.offset.set(0, 0);   // parado: de frente para a câmera
+      texParado.offset.set(ultima / 4, 0);   // parado: mantém o último quadro do movimento
       andar.visible = false;
       parado.visible = true;
     }
   }
-  return { malha, atualizar };
+  // o personagem gira só para ficar de frente para a câmera (plano inteiro), então não some de lado nem de cima
+  function olharPara(cam) {
+    malha.quaternion.copy(cam.quaternion);
+  }
+  return { malha, atualizar, olharPara };
 }
 scene.add(jogador);
 
@@ -583,7 +588,7 @@ function htmlBatalha(b) {
       const ang = -Math.PI / 2 + (k * 2 * Math.PI) / ACOES.length;
       const x = 130 + 88 * Math.cos(ang) - 32;
       const y = 130 + 88 * Math.sin(ang) - 32;
-      return `<button type="button" class="bt-op ${b.opcaoMenu === k ? 'foco' : ''}" style="left:${x}px;top:${y}px" data-bat="acao" data-nome="${op}">${ICONE_ACAO[op]}<span>${TEXTO_ACAO[op]}</span></button>`;
+      return `<button type="button" class="bt-op ${b.opcaoMenu === k ? 'foco' : ''}" style="--x:${x}px;--y:${y}px" data-bat="acao" data-nome="${op}">${ICONE_ACAO[op]}<span>${TEXTO_ACAO[op]}</span></button>`;
     }).join('')}</div>`
     : '';
   let painel = '';
@@ -1208,6 +1213,7 @@ function quadro(agora) {
   const dt = Math.min(0.05, (agora - ultimo) / 1000);
   ultimo = agora;
   atualizar(dt, agora);
+  azazel.olharPara(camera);
   if (batalha) {
     const dtBatalha = dt * preferenciasBatalha.velocidade;
     tocarRoteiro(dtBatalha);
