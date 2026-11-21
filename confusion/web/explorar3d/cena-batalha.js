@@ -16,6 +16,10 @@ uniform float uHue;
 uniform float uFlash;
 uniform vec3 uCor;
 uniform float uAlpha;
+uniform float uSat;
+uniform float uBri;
+uniform float uColorir;
+uniform vec3 uTom;
 varying vec2 vUv;
 vec3 girar(vec3 c, float a) {
   float co = cos(a);
@@ -27,7 +31,16 @@ vec3 girar(vec3 c, float a) {
 }
 void main() {
   vec4 t = texture2D(map, vUv);
-  vec3 c = girar(t.rgb, uHue);
+  vec3 c;
+  if (uColorir > 0.5) {
+    // desenho prateado: a luminância vira a cor da variação
+    float lum = dot(t.rgb, vec3(0.299, 0.587, 0.114));
+    c = uTom * lum * 1.6;
+  } else {
+    c = girar(t.rgb, uHue);
+    float lum = dot(c, vec3(0.299, 0.587, 0.114));
+    c = mix(vec3(lum), c, uSat) * uBri;
+  }
   c = mix(c, uCor, uFlash);
   gl_FragColor = vec4(c, t.a * uAlpha);
   if (gl_FragColor.a < 0.01) discard;
@@ -133,6 +146,10 @@ export function criarCenaBatalha(THREE) {
       uFlash: { value: 0 },
       uCor: { value: new THREE.Color('#ffffff') },
       uAlpha: { value: 1 },
+      uSat: { value: 1 },
+      uBri: { value: 1 },
+      uColorir: { value: 0 },
+      uTom: { value: new THREE.Vector3(1, 1, 1) },
     };
     const material = new THREE.ShaderMaterial({
       uniforms, vertexShader: VERT, fragmentShader: FRAG,
@@ -149,24 +166,42 @@ export function criarCenaBatalha(THREE) {
       fase: Math.random() * 6.28,
       lunge: 0, lungeTotal: 1, lungeAmp: 0.7, lungeDir: 0,
       golpeT: 0, curaT: 0, knock: 0,
-      hueDe: 0, hueAte: 0, hueT: 0, hueDur: 0,
+      anim: null,
     };
   }
   const lutadores = { jogador: criarLutador('jogador'), inimigo: criarLutador('inimigo') };
 
-  // Mostra um monstrinho. Se `animarDe` for dado, a cor vai de `animarDe` até `matiz` (graus) em `dur` segundos.
-  function definir(lado, { textura, matiz = 0, animarDe = null, dur = 1.4 }) {
+  // Cor de um monstrinho: giro de matiz, saturação e brilho (o natural é 0, 1 e 1).
+  const NATURAL = { matiz: 0, sat: 1, bri: 1 };
+  // Cor cheia no matiz pedido (graus): usada como tom no modo de coloração.
+  function tomDeMatiz(graus) {
+    const h = (((graus % 360) + 360) % 360) / 60;
+    const x = 1 - Math.abs((h % 2) - 1);
+    const [r, g, b] = h < 1 ? [1, x, 0] : h < 2 ? [x, 1, 0] : h < 3 ? [0, 1, x] : h < 4 ? [0, x, 1] : h < 5 ? [x, 0, 1] : [1, 0, x];
+    return new THREE.Vector3(r, g, b);
+  }
+  function aplicarGiro(l, g) {
+    l.uniforms.uHue.value = (g.matiz * Math.PI) / 180;
+    l.uniforms.uSat.value = g.sat;
+    l.uniforms.uBri.value = g.bri;
+    l.uniforms.uColorir.value = g.colorir ? 1 : 0;
+    l.uniforms.uTom.value.copy(tomDeMatiz(g.matiz));
+  }
+
+  // Mostra um monstrinho. `giro` é a cor da variação (null é o natural). Com `animar`, a cor vai do natural até a variação.
+  function definir(lado, { textura, giro = null, animar = false, dur = 1.4 }) {
     const l = lutadores[lado];
     l.uniforms.map.value = textura;
     l.pronto = false;
     l.malha.visible = true;
     l.sombra.visible = true;
     l.malha.scale.x = l.flip ? -1 : 1;
-    if (animarDe !== null) {
-      Object.assign(l, { hueDe: animarDe, hueAte: matiz, hueT: 0, hueDur: dur });
+    if (giro && animar) {
+      l.anim = { de: NATURAL, ate: giro, t: 0, dur };
+      aplicarGiro(l, NATURAL);
     } else {
-      l.hueDur = 0;
-      l.uniforms.uHue.value = (matiz * Math.PI) / 180;
+      l.anim = null;
+      aplicarGiro(l, giro ?? NATURAL);
     }
   }
 
@@ -235,13 +270,19 @@ export function criarCenaBatalha(THREE) {
         l.malha.geometry = new THREE.PlaneGeometry(ALTURA * l.aspecto, ALTURA);
         l.pronto = true;
       }
-      // transformação de cor (variação): o giro de matiz vai de um valor a outro
-      if (l.hueDur > 0) {
-        l.hueT = Math.min(l.hueDur, l.hueT + dt);
-        const k = l.hueT / l.hueDur;
+      // transformação de cor (variação): do natural até a cor da variação, com as três partes do giro juntas
+      if (l.anim) {
+        l.anim.t = Math.min(l.anim.dur, l.anim.t + dt);
+        const k = l.anim.t / l.anim.dur;
         const suave = k * k * (3 - 2 * k);
-        l.uniforms.uHue.value = ((l.hueDe + (l.hueAte - l.hueDe) * suave) * Math.PI) / 180;
-        if (l.hueT >= l.hueDur) l.hueDur = 0;
+        const mistura = (a, b) => a + (b - a) * suave;
+        aplicarGiro(l, {
+          matiz: mistura(l.anim.de.matiz, l.anim.ate.matiz),
+          sat: mistura(l.anim.de.sat, l.anim.ate.sat),
+          bri: mistura(l.anim.de.bri, l.anim.ate.bri),
+          colorir: k >= 0.5 && Boolean(l.anim.ate.colorir),
+        });
+        if (l.anim.t >= l.anim.dur) l.anim = null;
       }
       // pulo de respiração, um avanço no golpe e um empurrão no que apanha
       let dx = 0;

@@ -5,6 +5,7 @@ import * as Y from './systems.js';
 import * as E from './species.js';
 import * as Mundo from './mundo/index.js';
 import * as CB from './combate.js';
+import * as V from './variacoes.js';
 
 const KEY = 'confusion-waves-piloto-v3';
 let recovery = false;      // true quando o link de recuperação de senha foi aberto
@@ -41,14 +42,15 @@ const OVO_SVG = '<svg class="ovo-svg" viewBox="0 0 20 26" aria-hidden="true"><pa
 // Sprite do monstrinho. A aura é um filtro sobre o próprio contorno (imagem ou silhueta), animado.
 // Os cards da coleção usam só a versão natural (aura: false).
 const spriteHtml = (m, { aura = true, mini = false } = {}) => {
+  const cor = m.variante ? ` style="filter: ${V.filtroDaVariacao(m.species, m.variante)}"` : '';
   const body = ART[m.species]
-    ? `<img src="${ART[m.species]}" alt="${esc(m.species)}">`
+    ? `<img src="${ART[m.species]}" alt="${esc(m.species)}"${cor}>`
     : (mini ? SILHUETA : `<span class="noart">${SILHUETA}<small>sem arte ainda</small></span>`);
   return `<span class="sprite ${mini ? 'mini ' : ''}${aura ? auraClass(m) : 'aura-natural'}">${body}</span>`;
 };
 const eggTag = (e) => `<span class="ovo-tag ${eggAura(e)}">${OVO_SVG}</span>`;
 // Monstrinho em linha: sprite pequeno com aura, nome, raridade, tier e variante.
-const monstroTag = (m) => `<span class="tag">${spriteHtml(m, { mini: true })}<span><b>${esc(m.species)}</b> ${rarityTag(m)}${m.variant && m.variant !== 'natural' ? ` · ${VARIANT_LABEL[m.variant]}` : ''}</span></span>`;
+const monstroTag = (m) => `<span class="tag">${spriteHtml(m, { mini: true })}<span><b>${esc(m.species)}</b> ${rarityTag(m)}${m.variant && m.variant !== 'natural' ? ` · ${VARIANT_LABEL[m.variant]}` : ''}${m.variante ? ` · ${esc(V.nomeDaVariacao(m.variante))}` : ''}</span></span>`;
 // Monstrinhos em breed não entram em outro breed. Ingrediente: mesmo tier, com usos e fora de breed.
 const ocupados = () => C.idsEmBreed(S.breeds);
 const elegiveis = (main) => {
@@ -521,7 +523,7 @@ function render() {
          <p class="muted">Ovo inicial. Formas elegíveis: ${C.eligibleForms(S.sanity).join(', ')}.</p>
          <button data-act="hatch">Chocar ovo inicial</button>`}
     <p class="muted">Ovos do breed e da zona. Ao chocar, a raridade é rolada e o tier começa igual a ela.</p>
-    <ul class="log">${S.eggs.map((e) => `<li>${eggTag(e)}Ovo de ${esc(e.species)} · forma ${esc(e.form)}${e.form === 'mutante' || e.form === 'combinada' ? ` (${esc(e.pureza)})` : ''}${e.tier ? ` · tier ${e.tier}` : ''} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
+    <ul class="log">${S.eggs.map((e) => `<li>${eggTag(e)}Ovo de ${esc(e.species)} · forma ${esc(e.form)}${e.form === 'mutante' || e.form === 'combinada' ? ` (${esc(e.pureza)})` : ''}${e.tier ? ` · tier ${e.tier}` : ''}${e.cor ? ` · ${esc(V.nomeDaVariacao(e.cor))}` : ''} · ${ORIGIN_LABEL[e.origem] || e.origem} <button data-act="hatchEgg" data-id="${e.id}">Chocar</button></li>`).join('') || '<li class="muted">Nenhum ovo extra.</li>'}</ul>
   </section>
 
   <section>
@@ -1022,7 +1024,9 @@ function resolverBreeds() {
       C.absorbAbility(main, b.pick, b.keep);
       C.breedSuccessEffects(main);
       if (b.passiva && C.herdarPassiva(main, b.passiva)) note(`${main.species} herdou a passiva ${b.passiva.nome}.`);
-      S.eggs.push(eggOf(main.species, b.form, 'breed', b.pureza, b.tierOvo));
+      const ovo = eggOf(main.species, b.form, 'breed', b.pureza, b.tierOvo);
+      ovo.cor = V.sortearVariacao(main.species, 'breed', Math.random); // breed pode dar variação de cor
+      S.eggs.push(ovo);
       S.successes[main.id] = (S.successes[main.id] || 0) + 1;
       S.failures[main.id] = 0;
       note(`breed de ${main.species} terminou: absorveu "${b.pick}" e aptidões +1. Saiu um ovo ${b.form} de tier ${b.tierOvo}.`);
@@ -1364,6 +1368,7 @@ function act(name, el) {
       const origem = egg.origem === 'raid' ? 'raid' : egg.origem === 'evento' ? 'evento' : 'base';
       const m = newMonster(r.species, r.rarity, r.purity, r.variant, 'comum', origem);
       m.tier = r.tier;
+      if (egg.cor) V.aplicarVariacao(m, egg.cor); // o ovo de variação nasce com o elemento e as habilidades da cor
       S.monsters.push(m);
       S.last = m.id;
       const d = C.diamondsForItem(C.rarityName(r.rarity));

@@ -4,6 +4,7 @@ import * as C from '../core.js';
 import * as CB from '../combate.js';
 import * as Y from '../systems.js';
 import * as E from '../species.js';
+import * as V from '../variacoes.js';
 
 export const TIER_TIME_INICIAL = 3;      // tier do time de exemplo (cada tier é uma raridade do jogo)
 export const NIVEL_TIME_INICIAL = 12;
@@ -11,40 +12,25 @@ export const RARIDADE_NOME = ['Comum', 'Rara', 'Épica', 'Lendária', 'Mítica']
 export const POCOES_INICIAIS = { pequena: 3, media: 1, grande: 0 };
 export const SLOTS = 4;                  // habilidades ativas por monstrinho, numeradas de 1 a 4
 const CHANCE_POCAO_ESPOLIO = 0.4;        // chance de a vitória deixar uma poção pequena
-export const CHANCE_VARIANTE = 0.3;      // chance de um selvagem da espécie com variação aparecer na variação
 
-// Variações de cor (oníricos): a mesma espécie em outra cor muda o elemento e o conjunto de habilidades.
-// Elemento, matiz (giro de cor em graus) e nomes das habilidades são provisórios: confirmar antes de publicar.
-export const VARIANTES = {
-  Ignavor: {
-    azul: {
-      nome: 'Onírico azul', elemento: 'agua', matiz: 180,
-      habilidades: ['Jato Azul', 'Onda Imperial', 'Corrente Gélida', 'Juba Gelada', 'Escudo de Maré'],
-    },
-  },
-};
-
-export const habilidadesDisponiveis = (m) => {
-  const v = m.variante ? VARIANTES[m.species]?.[m.variante] : null;
-  return v ? v.habilidades : E.HABILIDADES_DA_ESPECIE[m.species];
-};
-export const matizDoMonstro = (m) => (m.variante ? VARIANTES[m.species]?.[m.variante]?.matiz ?? 0 : 0);
-export const nomeDaVariante = (m) => (m.variante ? VARIANTES[m.species]?.[m.variante]?.nome ?? null : null);
+// Variações de cor (oníricos) vêm do módulo compartilhado: elemento, giro de cor e habilidades.
+export const habilidadesDisponiveis = V.habilidadesDoMonstro;
+export const giroDoMonstro = V.giroDoMonstro;
+export const nomeDaVariante = (m) => V.nomeDaVariacao(m.variante);
 
 // Monstrinho com a forma que a fórmula de poder e as habilidades leem (mesma forma do jogo).
 // `abilities` é o conjunto de slots, na ordem em que aparecem no disco de ações (1 a 4).
 export function criarMonstro({ id, species, tier, level, xp, classe = 'comum', variant = 'natural', origem = 'base', variante = null }) {
-  const v = variante ? VARIANTES[species]?.[variante] : null;
-  return {
+  const m = {
     id, species, rarity: tier, tier, variant, classe, origem,
     level, xp: xp ?? C.xpDoNivel(level), purity: E.ESPECIES[species].pureza,
-    elemento: v?.elemento ?? E.ELEMENTO_DA_ESPECIE[species] ?? 'neutro',
-    abilities: (v ? v.habilidades : E.HABILIDADES_DA_ESPECIE[species]).slice(0, SLOTS),
+    elemento: E.ELEMENTO_DA_ESPECIE[species] ?? 'neutro',
+    abilities: E.HABILIDADES_DA_ESPECIE[species].slice(0, SLOTS),
     extraAbility: null, hybrid: false, abilityLevels: {},
     aptitudes: { ...(E.APTIDOES_DA_ESPECIE[species] || {}) },
     vinculo: 0,
-    variante,
   };
+  return V.aplicarVariacao(m, variante);
 }
 
 // Time de exemplo: os três monstrinhos da linha base. Cada chamada devolve um time novo (as luta mudam o XP).
@@ -67,13 +53,12 @@ export function definirSlot(m, slot, nome) {
 }
 
 // Selvagem: espécie e raridade sorteadas com os pesos dos encontros do jogo. Raridade mais alta, tier e nível mais altos.
-// Espécies com variação aparecem na variação com a chance de CHANCE_VARIANTE.
+// A variação de cor segue a regra da exploração (batalhas ao redor do mundo).
 export function sortearSelvagem(rnd) {
   const especies = Y.BASE_SPECIES;
   const species = especies[Math.min(especies.length - 1, Math.floor(rnd() * especies.length))];
   const raridade = C.rarityByWeights(rnd(), Y.ENCOUNTER_WEIGHTS); // 1 a 4
-  const variantes = Object.keys(VARIANTES[species] ?? {});
-  const variante = variantes.length && rnd() < CHANCE_VARIANTE ? variantes[0] : null;
+  const variante = V.sortearVariacao(species, 'explorar', rnd);
   const monstro = criarMonstro({
     id: `selvagem-${Math.floor(rnd() * 1e9)}`, species, tier: raridade + 2, level: 10 + 2 * raridade, origem: 'selvagem', variante,
   });

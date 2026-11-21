@@ -5,8 +5,9 @@ import * as CB from '../combate.js';
 import * as Y from '../systems.js';
 import {
   timeInicial, sortearSelvagem, lutadorDo, opcoesDeAcao, aplicarResultado, recompensaDaBatalha, itensDoEspolio,
-  criarMonstro, definirSlot, habilidadesDisponiveis, matizDoMonstro, eventosDoTurno, hpAposEventos, roteiroDoTurno,
+  criarMonstro, definirSlot, habilidadesDisponiveis, giroDoMonstro, nomeDaVariante, eventosDoTurno, hpAposEventos, roteiroDoTurno,
 } from './batalha.js';
+import * as V from '../variacoes.js';
 
 test('time inicial: os três monstrinhos da linha base, com habilidades e poder', () => {
   const time = timeInicial();
@@ -30,28 +31,32 @@ test('selvagem: espécie da lista de encontros, raridade de 1 a 4, tier e nível
   }
 });
 
-test('selvagem: a variação azul só aparece no Ignavor, e aparece às vezes', () => {
-  let azuis = 0;
-  for (let s = 1; s <= 1000; s++) {
+test('selvagem: a variação sai da regra da exploração, em qualquer espécie inicial e elemento que não seja o natural', () => {
+  const vistas = new Set();
+  let comVariacao = 0;
+  for (let s = 1; s <= 1500; s++) {
     const { monstro } = sortearSelvagem(C.mulberry32(s));
     if (monstro.variante) {
-      assert.equal(monstro.variante, 'azul');
-      assert.equal(monstro.species, 'Ignavor');
-      azuis += 1;
+      comVariacao += 1;
+      assert.notEqual(monstro.variante, V.elementoNatural(monstro.species));
+      assert.equal(monstro.elemento, monstro.variante);
+      vistas.add(monstro.species);
     }
   }
-  assert.ok(azuis > 0 && azuis < 300, `variações azuis: ${azuis}`);
+  assert.ok(comVariacao > 0 && comVariacao < 1500);
+  assert.ok(vistas.size >= 2, 'variações deveriam sair em mais de uma espécie');
 });
 
-test('variação azul: muda o elemento, o matiz e o conjunto de habilidades', () => {
+test('variação: troca elemento, giro de cor e habilidades; o natural não tem giro', () => {
   const laranja = criarMonstro({ id: 'a', species: 'Ignavor', tier: 3, level: 12 });
-  const azul = criarMonstro({ id: 'b', species: 'Ignavor', tier: 3, level: 12, variante: 'azul' });
+  const azul = criarMonstro({ id: 'b', species: 'Ignavor', tier: 3, level: 12, variante: 'agua' });
   assert.equal(laranja.elemento, 'fogo');
   assert.equal(azul.elemento, 'agua');
-  assert.equal(matizDoMonstro(laranja), 0);
-  assert.equal(matizDoMonstro(azul), 180);
+  assert.equal(giroDoMonstro(laranja), null);
+  assert.equal(giroDoMonstro(azul).matiz, 195);
   assert.equal(habilidadesDisponiveis(azul).length, 5);
-  assert.ok(!azul.abilities.some((h) => habilidadesDisponiveis(laranja).includes(h)));
+  assert.deepEqual(azul.abilities, V.HABILIDADES_DO_ELEMENTO.agua.slice(0, 4));
+  assert.equal(nomeDaVariante(azul), 'Onírico azul');
 });
 
 test('slots: colocar uma habilidade livre no slot a substitui; uma que já está em outro slot troca de lugar com ela', () => {

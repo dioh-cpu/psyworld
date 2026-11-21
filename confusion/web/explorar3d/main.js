@@ -11,9 +11,10 @@ import { modoDoFoco } from './camera-batalha.js';
 import * as C from '../core.js';
 import * as CB from '../combate.js';
 import * as E from '../species.js';
+import * as V from '../variacoes.js';
 import {
   timeInicial, sortearSelvagem, lutadorDo, opcoesDeAcao, aplicarResultado, recompensaDaBatalha, itensDoEspolio,
-  RARIDADE_NOME, POCOES_INICIAIS, SLOTS, definirSlot, habilidadesDisponiveis, matizDoMonstro, nomeDaVariante,
+  RARIDADE_NOME, POCOES_INICIAIS, SLOTS, definirSlot, habilidadesDisponiveis, giroDoMonstro, nomeDaVariante,
   eventosDoTurno, roteiroDoTurno,
 } from './batalha.js';
 
@@ -325,8 +326,7 @@ const pctVida = (hp) => Math.max(0, Math.min(100, (100 * hp) / CB.COMBATE.hpMax)
 // arte do monstrinho nas telas de menu; a cor de uma variação é um giro de matiz no próprio desenho
 const arteHtml = (m, classe = '') => {
   const arte = arteDe(m);
-  const hue = matizDoMonstro(m);
-  const estilo = hue ? ` style="filter: hue-rotate(${hue}deg)"` : '';
+  const estilo = m.variante ? ` style="filter: ${V.filtroDaVariacao(m.species, m.variante)}"` : '';
   if (arte) return `<img class="sprite ${classe}" src="${RAIZ}${arte}" alt="${esc(m.species)}"${estilo}>`;
   return `<div class="orb ${classe}" style="--cor:${COR_ELEMENTO[m.elemento] ?? '#c9d6e3'}">${esc(m.species[0])}</div>`;
 };
@@ -502,9 +502,9 @@ function iniciarBatalha(s) {
   estado.joy = { x: 0, z: 0 };
   // o selvagem aparece na arena; se for uma variação, a cor muda na frente de quem olha
   const m = s.sorteio.monstro;
-  const hue = matizDoMonstro(m);
+  const giro = giroDoMonstro(m);
   cenaBat.reiniciarCamera();
-  cenaBat.definir('inimigo', { textura: texturaDe(arteDe(m)), matiz: hue, animarDe: hue ? 0 : null, dur: 1.6 });
+  cenaBat.definir('inimigo', { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.6 });
   cenaBat.mirar('panoramica');
   renderTudo();
 }
@@ -517,8 +517,8 @@ function confirmarMembro() {
   b.fase = 'luta';
   b.foco = 0;
   b.hpMostrado = { j: b.combate.jog.hp, i: b.combate.ini.hp };
-  const hue = matizDoMonstro(m);
-  cenaBat.definir('jogador', { textura: texturaDe(arteDe(m)), matiz: hue, animarDe: hue ? 0 : null, dur: 1.2 });
+  const giro = giroDoMonstro(m);
+  cenaBat.definir('jogador', { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.2 });
   cenaBat.mirar('panoramica');
   renderTudo();
 }
