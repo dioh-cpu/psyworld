@@ -14,11 +14,11 @@ export const SINAL = { x: 6, z: 6 };         // placa na praça
 
 // Retângulos de cada região, em x0..x1 e z0..z1. Norte é -z, Sul é +z, Leste é +x, Oeste é -x.
 export const REGIOES = {
-  Centro: { x0: -BRACO, x1: BRACO, z0: -BRACO, z1: BRACO, cor: '#8fbf6a' },
-  Norte: { x0: -BRACO, x1: BRACO, z0: -ALCANCE, z1: -BRACO, cor: '#5f9e5a' },
-  Sul: { x0: -BRACO, x1: BRACO, z0: BRACO, z1: ALCANCE, cor: '#d6b65a' },
-  Leste: { x0: BRACO, x1: ALCANCE, z0: -BRACO, z1: BRACO, cor: '#c9b67a' },
-  Oeste: { x0: -ALCANCE, x1: -BRACO, z0: -BRACO, z1: BRACO, cor: '#7ab86a' },
+  Centro: { x0: -BRACO, x1: BRACO, z0: -BRACO, z1: BRACO, cor: '#8e8b7d' },
+  Norte: { x0: -BRACO, x1: BRACO, z0: -ALCANCE, z1: -BRACO, cor: '#56685a' },
+  Sul: { x0: -BRACO, x1: BRACO, z0: BRACO, z1: ALCANCE, cor: '#9a8556' },
+  Leste: { x0: BRACO, x1: ALCANCE, z0: -BRACO, z1: BRACO, cor: '#8d8064' },
+  Oeste: { x0: -ALCANCE, x1: -BRACO, z0: -BRACO, z1: BRACO, cor: '#5e7463' },
 };
 
 // Centro de cada cidade. Cada cidade cabe num quadrado de cerca de 19 unidades, dentro da sua região.

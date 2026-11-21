@@ -1,17 +1,19 @@
-// Protótipo de exploração 3D: terceira pessoa com rotação de câmera, colisão com prédios, placa interativa, minimapa
-// e controle de toque (joystick virtual, arrastar para a câmera, botões Examinar e Centralizar).
-// A ilha vem de mundo.js: quatro regiões em cruz, doze cidades e o mar. Os prédios e o personagem são provisórios
-// (caixas e cápsula). O visual de desenho vem do sombreado em degraus e do contorno.
+// Protótipo de exploração 3D: terceira pessoa com rotação de câmera, colisão com prédios, placa interativa, minimapa,
+// registro de espólios e controle de toque (joystick virtual, arrastar para a câmera, botões Examinar e Centralizar).
+// A ilha vem de mundo.js. Os prédios e o personagem são provisórios (caixas e cápsula).
+// O visual de desenho vem do sombreado em degraus e do contorno; a interface segue a tela de exploração de referência.
 import * as THREE from 'three';
 import { resolverMovimento, fracaoLivreCamera } from './colisao.js';
 import { vetorJoystick } from './controles.js';
 import { CAIXAS, EDIFICIOS, CIDADES_MUNDO, REGIOES, INICIO, SINAL, LIMITE_MAPA, localDe } from './mundo.js';
+import { linhasDoRegistro, EXEMPLO_ESPOLIO } from './registro.js';
 
 const RAIO = 0.5;             // raio do personagem no plano do chão
 const VELOCIDADE = 4.5;       // unidades por segundo com o controle no máximo
 const ALTURA_ALVO = 1.4;      // a câmera mira um pouco acima dos pés
 const distanciaCamera = () => (window.innerWidth < 600 ? 13 : 11); // celular em retrato precisa de mais afastamento
-const COR_MAR = '#2f7bc4';
+const COR_MAR = '#2b5a86';
+const COR_TRACO = '#e6ebf0';  // faixas claras do piso da praça
 
 // ---- cena ----
 const canvas = document.getElementById('cena');
@@ -20,8 +22,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#9fd3ff');
-scene.fog = new THREE.Fog('#9fd3ff', 70, 180);
+scene.background = new THREE.Color('#7f93ad');   // céu de crepúsculo, mais frio e com menos saturação
+scene.fog = new THREE.Fog('#7f93ad', 60, 170);
 
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 260);
 
@@ -32,8 +34,8 @@ degraus.minFilter = degraus.magFilter = THREE.NearestFilter;
 degraus.needsUpdate = true;
 const material = (cor) => new THREE.MeshToonMaterial({ color: cor, gradientMap: degraus });
 
-scene.add(new THREE.AmbientLight('#8aa4c8', 0.7));
-const sol = new THREE.DirectionalLight('#fff4d6', 2.2);
+scene.add(new THREE.AmbientLight('#7d8ea8', 0.9));
+const sol = new THREE.DirectionalLight('#ffe2b0', 2.0);   // luz quente vindo do alto
 sol.position.set(8, 14, 6);
 scene.add(sol);
 
@@ -57,6 +59,16 @@ for (const r of Object.values(REGIOES)) {
   chao.position.set((r.x0 + r.x1) / 2, 0, (r.z0 + r.z1) / 2);
   scene.add(chao);
 }
+
+// piso da praça: anel claro e medalhão no centro
+const anel = new THREE.Mesh(new THREE.RingGeometry(8.6, 9.1, 64), material(COR_TRACO));
+anel.rotation.x = -Math.PI / 2;
+anel.position.y = 0.02;
+scene.add(anel);
+const medalhao = new THREE.Mesh(new THREE.CircleGeometry(2.4, 40), material(COR_TRACO));
+medalhao.rotation.x = -Math.PI / 2;
+medalhao.position.y = 0.02;
+scene.add(medalhao);
 
 // prédios das cidades (a prefeitura é mais alta e mais clara, mas usa a mesma forma)
 for (const e of EDIFICIOS) {
@@ -107,7 +119,11 @@ const toque = window.matchMedia('(pointer: coarse)').matches;
 window.addEventListener('keydown', (e) => {
   teclas.add(e.code);
   if (e.code === 'KeyC' || e.code === 'KeyR') estado.recentralizar = true;
-  if (e.code === 'KeyE' && perto()) examinar();
+  if (!e.repeat) {
+    if (e.code === 'KeyE' && perto()) examinar();
+    if (e.code === 'KeyH') alternarAtalhos();
+    if (e.code === 'KeyP') alternarFoto();
+  }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
 });
 window.addEventListener('keyup', (e) => teclas.delete(e.code));
@@ -144,11 +160,26 @@ joy.addEventListener('pointermove', (e) => { if (e.pointerId === joyDedo) joyAtu
 joy.addEventListener('pointerup', joyFim);
 joy.addEventListener('pointercancel', joyFim);
 
-// ---- botões de toque ----
+// ---- barra de ações (teclado e mouse) e botões de toque ----
+const acaoAtalhos = document.getElementById('acao-atalhos');
+const acaoExaminar = document.getElementById('acao-examinar');
+const acaoCentro = document.getElementById('acao-centro');
+const acaoFoto = document.getElementById('acao-foto');
+const atalhos = document.getElementById('atalhos');
+const fotoSair = document.getElementById('foto-sair');
 const btnExaminar = document.getElementById('btn-examinar');
 const btnCentro = document.getElementById('btn-centro');
+acaoAtalhos.addEventListener('click', alternarAtalhos);
+acaoExaminar.addEventListener('click', () => { if (perto()) examinar(); });
+acaoCentro.addEventListener('click', () => { estado.recentralizar = true; });
+acaoFoto.addEventListener('click', alternarFoto);
+fotoSair.addEventListener('click', alternarFoto);
 btnExaminar.addEventListener('click', () => { if (perto()) examinar(); });
 btnCentro.addEventListener('click', () => { estado.recentralizar = true; });
+
+// lista de atalhos (H) e modo foto (P: esconde a interface e deixa só a cena)
+function alternarAtalhos() { atalhos.hidden = !atalhos.hidden; }
+function alternarFoto() { document.body.classList.toggle('foto'); }
 
 const pressionada = (...codigos) => codigos.some((c) => teclas.has(c));
 const diferencaAngulo = (de, para) => Math.atan2(Math.sin(para - de), Math.cos(para - de));
@@ -163,6 +194,38 @@ function examinar() {
   msg.style.display = 'block';
   estado.mensagemAte = performance.now() + 3200;
 }
+
+// ---- registro de espólios: painel logo abaixo do mapa ----
+const registro = document.getElementById('registro');
+let registroAte = 0;
+function mostrarRegistro(itens, ms = 7000) {
+  const linhas = linhasDoRegistro(itens);
+  const titulo = document.createElement('h2');
+  titulo.textContent = 'Registro';
+  const corpo = document.createElement('div');
+  if (!linhas.length) {
+    const vazio = document.createElement('p');
+    vazio.textContent = 'Nenhum espólio desta vez.';
+    corpo.append(vazio);
+  }
+  for (const l of linhas) {
+    const linha = document.createElement('div');
+    linha.className = `linha ${l.cor}${l.selecionado ? ' selecionado' : ''}`;
+    const icone = document.createElement('span');
+    icone.className = 'icone';
+    icone.textContent = l.icone;
+    const nome = document.createElement('span');
+    nome.textContent = l.nome;
+    const valor = document.createElement('b');
+    valor.textContent = l.valor;
+    linha.append(icone, nome, valor);
+    corpo.append(linha);
+  }
+  registro.replaceChildren(titulo, corpo);
+  registro.hidden = false;
+  registroAte = performance.now() + ms;
+}
+registro.addEventListener('click', () => { registro.hidden = true; });
 
 // ---- localização na tela ----
 const elLocal = document.getElementById('local');
@@ -235,15 +298,17 @@ function atualizar(dt) {
   // placa: aviso e botão Examinar aparecem quando o personagem chega perto
   const pertoAgora = perto();
   document.getElementById('prompt').style.display = pertoAgora ? 'block' : 'none';
+  acaoExaminar.disabled = !pertoAgora;
   btnExaminar.hidden = !pertoAgora;
   btnCentro.hidden = false;
   const msg = document.getElementById('msg');
   if (msg.style.display === 'block' && performance.now() > estado.mensagemAte) msg.style.display = 'none';
+  if (!registro.hidden && performance.now() > registroAte) registro.hidden = true;
 
   atualizarLocal();
 }
 
-// ---- minimapa: mar, quatro regiões, cidades, placa e personagem ----
+// ---- minimapa: mar, quatro regiões, cidades, placa e personagem (o recorte redondo é do CSS) ----
 const mini = document.getElementById('mini');
 const g = mini.getContext('2d');
 const escalaMini = mini.width / (LIMITE_MAPA * 2);
@@ -272,21 +337,20 @@ function desenharMinimapa() {
   g.fillStyle = '#ffd27a';
   g.beginPath(); g.arc(sx, sy, 5, 0, Math.PI * 2); g.fill();
   const [px, py] = mundoParaMini(estado.pos.x, estado.pos.z);
-  // seta do personagem na direção que ele olha
+  // seta do personagem na direção que ele olha: amarela, como o cursor do mapa de referência
   g.save();
   g.translate(px, py);
   g.rotate(Math.PI - estado.rot); // a seta de cima vira a direção (sen rot, cos rot) no mapa
-  g.fillStyle = '#a040ff';
-  g.beginPath(); g.moveTo(0, -12); g.lineTo(8, 8); g.lineTo(-8, 8); g.closePath(); g.fill();
+  g.fillStyle = '#ffd27a';
+  g.strokeStyle = '#17324f';
+  g.lineWidth = 3;
+  g.beginPath(); g.moveTo(0, -14); g.lineTo(9, 9); g.lineTo(0, 4); g.lineTo(-9, 9); g.closePath(); g.fill(); g.stroke();
   g.restore();
 }
 
-// ---- textos conforme o dispositivo ----
+// ---- textos conforme o dispositivo: no toque, o prompt fala do botão; no teclado, da tecla E ----
 if (toque) {
-  document.getElementById('dicas').textContent = 'Joystick: mover · arraste na tela: câmera · Centralizar: volta a câmera';
   document.getElementById('prompt').textContent = 'Toque em Examinar';
-} else {
-  document.getElementById('dicas').textContent = 'WASD ou setas: mover · I J K L ou arrastar: câmera · C: centralizar · E: examinar';
 }
 
 // ---- laço principal ----
@@ -305,13 +369,17 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
 });
 
-// para testes automáticos: lê a posição do personagem, da câmera e da localização
+// para testes automáticos: lê a posição do personagem, da câmera e da localização, e teleporta
 window.explorar3d = {
   jogador: () => ({ x: estado.pos.x, z: estado.pos.z, rot: estado.rot }),
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: estado.yaw, pitch: estado.pitch }),
   local: () => estado.local,
   teleportar: (x, z) => { estado.pos = { x, z }; },
+  registro: (itens, ms) => mostrarRegistro(itens, ms),
 };
+
+// o link com #espolio mostra um exemplo do registro, já que a batalha ainda não existe no 3D
+if (location.hash === '#espolio') setTimeout(() => mostrarRegistro(EXEMPLO_ESPOLIO, 60000), 900);
 
 estado.cam.copy(new THREE.Vector3(estado.pos.x, ALTURA_ALVO + 3, estado.pos.z + distanciaCamera()));
 requestAnimationFrame(quadro);

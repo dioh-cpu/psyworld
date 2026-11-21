@@ -5,32 +5,77 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Explorar 3D (protótipo)</title>
 <link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 <style>
   [hidden] { display: none !important; }
-  html, body { margin: 0; height: 100%; background: #0b1220; overflow: hidden; font: 14px/1.4 system-ui, sans-serif; color: #eef5ff; }
+  html, body { margin: 0; height: 100%; background: #0b1220; overflow: hidden; font: 600 15px/1.3 'Rajdhani', system-ui, sans-serif; color: #eef5ff; }
   canvas#cena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  .painel { position: fixed; background: rgba(10, 28, 60, .85); border: 2px solid #3f8fd6; padding: 8px 12px; }
-  #titulo { left: 12px; top: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #fff; }
-  #local { left: 12px; top: 52px; padding: 4px 10px; font-size: 12px; color: #cfe8ff; }
-  #mini-box { right: 12px; top: 12px; padding: 6px 8px; }
-  #mini-box > div { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #cfe8ff; margin-bottom: 4px; }
-  #mini { display: block; width: 180px; height: 180px; }
-  #dicas { left: 12px; bottom: 12px; font-size: 12px; color: #cfe8ff; }
-  #prompt { left: 50%; bottom: 80px; transform: translateX(-50%); display: none; color: #ffd27a; font-weight: 700; }
+
+  /* painéis no estilo das telas do jogo: azul escuro, borda azul e canto cortado */
+  .painel { position: fixed; background: linear-gradient(180deg, rgba(18, 44, 94, .96), rgba(9, 25, 60, .96)); border: 2px solid #3f8fd6; padding: 8px 12px; }
+  #titulo { left: 14px; top: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #fff; font-size: 16px; }
+  #local { left: 14px; top: 50px; padding: 3px 12px; font-size: 14px; font-weight: 700; color: #7fdcff; letter-spacing: .04em; }
   #msg { left: 50%; top: 70px; transform: translateX(-50%); display: none; width: max-content; max-width: min(420px, calc(100vw - 32px)); }
+  #prompt { left: 50%; bottom: 66px; transform: translateX(-50%); display: none; color: #ffd27a; font-weight: 700; font-size: 16px; letter-spacing: .04em; }
+  #atalhos { left: 50%; bottom: 66px; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); font-size: 15px; }
+  #atalhos p { margin: 3px 0; }
+  #atalhos b { color: #ffd27a; }
+
+  /* coluna da direita: mapa redondo com o nome acima e, abaixo, o registro de espólios */
+  #direita { position: fixed; right: 14px; top: 12px; width: 270px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .rotulo { font-weight: 700; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: #fff; text-shadow: 0 1px 4px #000; }
+  #mini-box { position: relative; width: 180px; height: 180px; border-radius: 50%; overflow: hidden; border: 3px solid rgba(255, 255, 255, .85); box-shadow: 0 0 0 4px rgba(10, 28, 60, .55), 0 0 18px rgba(127, 220, 255, .35); }
+  #mini { display: block; width: 100%; height: 100%; }
+  #registro { position: relative; width: 100%; box-sizing: border-box; padding: 14px 16px; cursor: pointer; background: linear-gradient(180deg, rgba(18, 44, 94, .96), rgba(9, 25, 60, .96)); border: 2px solid #3f8fd6; clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); animation: registro-entra .4s ease-out; }
+  #registro h2 { margin: 0 0 8px; font-size: 18px; letter-spacing: .08em; text-transform: uppercase; color: #ffd27a; text-shadow: 0 1px 4px #000; }
+  #registro p { margin: 4px 0; color: #9fb6d9; }
+  #registro .linha { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 8px; padding: 6px 8px; margin: 5px 0; background: rgba(5, 15, 40, .6); border-left: 3px solid #7fdcff; font-size: 16px; animation: registro-entra .4s ease-out both; }
+  #registro .icone { text-align: center; }
+  #registro b { color: #ffd27a; }
+  #registro .linha.gold { border-left-color: #ffd27a; }
+  #registro .linha.mon { border-left-color: #b68cff; }
+  #registro .linha.passe { border-left-color: #9fb6d9; }
+  #registro .linha.ovo { border-left-color: #ffb347; }
+  #registro .linha.ficha { border-left-color: #ff9ad5; }
+  #registro .linha.esfera { border-left-color: #6fe39a; }
+  #registro .linha.selecionado { background: #ffd27a; border-left-color: #fff; color: #0d2350; }
+  #registro .linha.selecionado b { color: #0d2350; }
+  @keyframes registro-entra { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+
+  /* barra de ações embaixo, como a barra de atalhos da tela de referência */
+  #barra { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 26px; white-space: nowrap; }
+  .acao { background: none; border: 0; padding: 4px 2px; color: #fff; font: 700 17px/1 'Rajdhani', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; cursor: pointer; text-shadow: 0 1px 4px #000; }
+  .acao:disabled { opacity: .4; cursor: default; }
+  .tecla { width: 26px; height: 26px; border-radius: 50%; background: #fff; color: #0d2350; display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none; }
 
   /* controles de toque: aparecem só em telas sensíveis ao dedo */
   #joy { position: fixed; left: 16px; bottom: 16px; width: 124px; height: 124px; box-sizing: border-box; border-radius: 50%; background: rgba(10, 28, 60, .55); border: 2px solid #3f8fd6; touch-action: none; user-select: none; -webkit-user-select: none; display: none; }
   #joy-knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; box-sizing: border-box; border-radius: 50%; background: rgba(159, 211, 255, .9); border: 2px solid #eaf5ff; pointer-events: none; }
-  .botao { position: fixed; right: 16px; width: 124px; height: 52px; box-sizing: border-box; border: 2px solid #3f8fd6; border-radius: 10px; background: rgba(10, 28, 60, .85); color: #fff; font: 700 12px/1 system-ui, sans-serif; letter-spacing: .05em; text-transform: uppercase; touch-action: manipulation; display: none; }
+  .botao { position: fixed; right: 16px; width: 124px; height: 52px; box-sizing: border-box; border: 2px solid #3f8fd6; background: linear-gradient(180deg, rgba(18, 44, 94, .96), rgba(9, 25, 60, .96)); color: #fff; font: 700 15px/1 'Rajdhani', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; touch-action: manipulation; display: none; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
   #btn-centro { bottom: 16px; }
-  #btn-examinar { bottom: 80px; background: #ffd27a; border-color: #ffd27a; color: #17324f; }
+  #btn-examinar { bottom: 80px; background: #ffd27a; border-color: #ffd27a; color: #0d2350; }
+
+  /* modo foto: some com a interface e deixa só a cena; P ou o botão de baixo voltam */
+  #foto-sair { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: none; background: rgba(10, 28, 60, .85); border: 2px solid #3f8fd6; color: #fff; font: 700 15px 'Rajdhani', system-ui, sans-serif; padding: 6px 14px; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+  body.foto #titulo, body.foto #local, body.foto #direita, body.foto #prompt, body.foto #msg, body.foto #atalhos,
+  body.foto #barra, body.foto #joy, body.foto .botao { display: none !important; }
+  body.foto #foto-sair { display: block; }
+
   @media (hover: none), (pointer: coarse) {
     #joy, .botao { display: block; }
-    #dicas { display: none; }
+    #barra, #atalhos { display: none !important; }
   }
   @media (max-width: 520px) {
-    #mini { width: 110px; height: 110px; }
+    #direita { width: 250px; }
+    #mini-box { width: 120px; height: 120px; }
+    #registro { padding: 10px 12px; }
+    #registro h2 { font-size: 16px; }
+    #registro .linha { font-size: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #registro, #registro .linha { animation: none; }
   }
 </style>
 <script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
@@ -39,13 +84,27 @@
 <canvas id="cena"></canvas>
 <div id="titulo" class="painel">Explorar · protótipo 3D</div>
 <div id="local" class="painel">Praça central</div>
-<div id="mini-box" class="painel"><div>Navegação</div><canvas id="mini" width="360" height="360"></canvas></div>
-<div id="dicas" class="painel">WASD ou setas: mover · I J K L ou arrastar: câmera · C: centralizar · E: examinar</div>
+<div id="direita">
+  <div class="rotulo">Navegação</div>
+  <div id="mini-box"><canvas id="mini" width="360" height="360"></canvas></div>
+  <div id="registro" hidden></div>
+</div>
+<div id="atalhos" class="painel" hidden>
+  <p><b>WASD</b> ou setas: mover · <b>I J K L</b> ou arrastar: câmera</p>
+  <p><b>C</b> centralizar · <b>E</b> examinar · <b>P</b> modo foto · <b>H</b> fecha esta lista</p>
+</div>
 <div id="prompt" class="painel">E: examinar</div>
 <div id="msg" class="painel"></div>
+<div id="barra">
+  <button id="acao-atalhos" class="acao" type="button"><span class="tecla">H</span>Atalhos</button>
+  <button id="acao-examinar" class="acao" type="button" disabled><span class="tecla">E</span>Examinar</button>
+  <button id="acao-centro" class="acao" type="button"><span class="tecla">C</span>Centralizar</button>
+  <button id="acao-foto" class="acao" type="button"><span class="tecla">P</span>Modo foto</button>
+</div>
 <div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>
 <button id="btn-examinar" class="botao" type="button" hidden>Examinar</button>
 <button id="btn-centro" class="botao" type="button">Centralizar</button>
+<button id="foto-sair" type="button">Modo foto · P para sair</button>
 <script type="module" src="./main.js"></script>
 </body>
 </html>
