@@ -256,16 +256,53 @@ function montarCeu(scene, arteDe) {
   }
 }
 
-// ---- casa de teste: um único desenho (frente e lado esquerdo em 3/4). Nenhum objeto gira com a câmera:
-// o desenho é o mesmo em todos os ângulos, como os outros sprites do mundo.
-function montarCasaTeste(scene, arteDe) {
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ alphaTest: 0.5 }));
-  sprite.position.set(CASA_TESTE.x, 0, CASA_TESTE.z);
-  sprite.scale.set(ALTURA_CASA * 0.75, ALTURA_CASA, 1);   // enquanto a imagem não carrega
-  const tex = carregador.load(arteDe('casa-teste/frente-esquerda.webp'), (t) => ajustarEscala(sprite, ALTURA_CASA, t.image));
-  tex.colorSpace = THREE.SRGBColorSpace;
-  sprite.material.map = tex;
-  scene.add(sprite);
+// ---- casa de teste: objeto 3D fixo no mundo (paredes em caixa e telhado de duas águas). Não é um sprite, então
+// não gira para a câmera: os lados aparecem de verdade. As fotos das imagens viram as texturas das faces.
+// O lado direito é o esquerdo espelhado, e as empenas do telhado usam uma cor de madeira.
+function montarCasaTeste(scene, arteDe, material, contorno) {
+  const { x, z, largura, profundidade } = CASA_TESTE;
+  const altoTelhado = 1.8;
+  const altoParede = ALTURA_CASA - altoTelhado;
+  const textura = (nome) => {
+    const t = carregador.load(arteDe(`casa-teste/${nome}.webp`));
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const esquerda = textura('parede-esquerda');
+  const direita = esquerda.clone();
+  direita.repeat.x = -1;   // espelho do lado esquerdo
+  direita.offset.x = 1;
+  direita.needsUpdate = true;
+  const frente = textura('parede-frente');
+  const costas = textura('parede-costas');
+  const telhado = textura('telhado');
+  telhado.wrapS = telhado.wrapT = THREE.RepeatWrapping;   // as coordenadas do telhado são em unidades do mundo
+  telhado.repeat.set(0.3, 0.3);
+
+  // paredes: faces na ordem +x, -x, +y, -y, +z (frente), -z (costas)
+  const paredes = new THREE.Mesh(
+    new THREE.BoxGeometry(largura, altoParede, profundidade),
+    [material('#ffffff', direita), material('#ffffff', esquerda), material('#7a5230'), material('#7a5230'),
+      material('#ffffff', frente), material('#ffffff', costas)],
+  );
+  paredes.position.set(x, altoParede / 2, z);
+  contorno(paredes);
+  scene.add(paredes);
+
+  // telhado: prisma triangular com a cumeeira ao longo do eixo x; as empenas (grupo 0) são de madeira, as vertentes (grupo 1) têm a palha
+  const beiral = 0.3;
+  const forma = new THREE.Shape();
+  forma.moveTo(-profundidade / 2 - beiral, 0);
+  forma.lineTo(profundidade / 2 + beiral, 0);
+  forma.lineTo(0, altoTelhado);
+  forma.closePath();
+  const geoTelhado = new THREE.ExtrudeGeometry(forma, { depth: largura + 2 * beiral, bevelEnabled: false });
+  geoTelhado.translate(0, 0, -(largura + 2 * beiral) / 2);
+  geoTelhado.rotateY(Math.PI / 2);
+  const malhaTelhado = new THREE.Mesh(geoTelhado, [material('#7a5230'), material('#ffffff', telhado)]);
+  malhaTelhado.position.set(x, altoParede, z);
+  contorno(malhaTelhado);
+  scene.add(malhaTelhado);
 }
 
 // ---- partes do mundo ----
@@ -404,7 +441,7 @@ export function montarMundo(scene, { material, contorno, raiz = '' }) {
   chao(scene, material);
   areia(scene, material);
   estradas(scene, material);
-  montarCasaTeste(scene, arteDe);
+  montarCasaTeste(scene, arteDe, material, contorno);
   lago(scene, material);
   for (const a of ARVORES) arvore(scene, material, contorno, a, arteDe);
   for (const p of PEDRAS) pedra(scene, material, contorno, p);
