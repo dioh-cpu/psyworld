@@ -4,13 +4,13 @@
 import * as THREE from 'three';
 import { resolverMovimento, fracaoLivreCamera } from './colisao.js';
 import { vetorJoystick } from './controles.js';
-import { CAIXAS, EDIFICIOS, CIDADES_MUNDO, REGIOES, INICIO, SINAL, LIMITE_MAPA, PONTOS_SELVAGENS, localDe } from './mundo.js';
+import { CAIXAS, CIDADES_MUNDO, REGIOES, INICIO, SINAL, LIMITE_MAPA, PONTOS_SELVAGENS, localDe } from './mundo.js';
 import { linhasDoRegistro, EXEMPLO_ESPOLIO } from './registro.js';
 import { criarCenaBatalha } from './cena-batalha.js';
 import { criarMaterialCor, aplicarGiro, NATURAL } from './cor-sprite.js';
 import { AREAS, areaDaRegiao } from './areas.js';
 import { modoDoFoco } from './camera-batalha.js';
-import { montarNatureza } from './mundo-3d.js';
+import { montarMundo } from './mundo-3d.js';
 import * as C from '../core.js';
 import * as CB from '../combate.js';
 import * as E from '../species.js';
@@ -50,7 +50,7 @@ const tons = new Uint8Array([95, 175, 255]);
 const degraus = new THREE.DataTexture(tons, 3, 1, THREE.RedFormat);
 degraus.minFilter = degraus.magFilter = THREE.NearestFilter;
 degraus.needsUpdate = true;
-const material = (cor) => new THREE.MeshToonMaterial({ color: cor, gradientMap: degraus });
+const material = (cor, mapa = null) => new THREE.MeshToonMaterial({ color: cor, gradientMap: degraus, map: mapa });
 
 scene.add(new THREE.AmbientLight('#7d8ea8', 0.9));
 const sol = new THREE.DirectionalLight('#ffe2b0', 2.0);   // luz quente vindo do alto
@@ -70,13 +70,8 @@ mar.rotation.x = -Math.PI / 2;
 mar.position.y = -0.3;
 scene.add(mar);
 
-// chão de cada região: um retângulo por braço e um para a praça
-for (const r of Object.values(REGIOES)) {
-  const chao = new THREE.Mesh(new THREE.PlaneGeometry(r.x1 - r.x0, r.z1 - r.z0), material(r.cor));
-  chao.rotation.x = -Math.PI / 2;
-  chao.position.set((r.x0 + r.x1) / 2, 0, (r.z0 + r.z1) / 2);
-  scene.add(chao);
-}
+// chão das regiões, areia, estradas, prédios, lago, árvores, pedras e objetos (ver mundo-3d.js)
+montarMundo(scene, { material, contorno, raiz: RAIZ });
 
 // piso da praça: anel claro e medalhão no centro
 const anel = new THREE.Mesh(new THREE.RingGeometry(8.6, 9.1, 64), material(COR_TRACO));
@@ -87,17 +82,6 @@ const medalhao = new THREE.Mesh(new THREE.CircleGeometry(2.4, 40), material(COR_
 medalhao.rotation.x = -Math.PI / 2;
 medalhao.position.y = 0.02;
 scene.add(medalhao);
-
-// prédios das cidades (a prefeitura é mais alta e mais clara, mas usa a mesma forma)
-for (const e of EDIFICIOS) {
-  const malha = new THREE.Mesh(new THREE.BoxGeometry(e.w, e.h, e.d), material(e.cor));
-  malha.position.set(e.x, e.h / 2, e.z);
-  contorno(malha);
-  scene.add(malha);
-}
-
-// árvores, pedras e lago (formas simples; ver mundo-3d.js)
-montarNatureza(scene, material, contorno);
 
 // placa interativa na praça: poste e painel
 const placa = new THREE.Group();
@@ -953,6 +937,7 @@ window.addEventListener('resize', () => {
 // para testes automáticos: posição do personagem, câmera, localização, teleporte, batalha e time
 window.explorar3d = {
   jogador: () => ({ x: estado.pos.x, z: estado.pos.z, rot: estado.rot }),
+  sprites: () => scene.children.filter((o) => o.isSprite).map((s) => ({ x: s.position.x, z: s.position.z, altura: s.scale.y })),
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: estado.yaw, pitch: estado.pitch }),
   local: () => estado.local,
   teleportar: (x, z) => { estado.pos = { x, z }; },
