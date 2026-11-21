@@ -284,7 +284,8 @@ const COSTAS_DAS_ESPECIES = {
 function texturaDeDirecao(m, direcao) {
   const cfg = FOLHAS_DIRECOES[m.species];
   const costa = direcao === 'costas' && !cfg ? COSTAS_DAS_ESPECIES[m.species] : null;
-  const caminho = cfg ? cfg.arquivo : (costa ?? arteDe(m));
+  const perfil = direcao === 'direita' && !cfg ? PERFIS_DIREITA[m.species] : null;
+  const caminho = cfg ? cfg.arquivo : (perfil ?? costa ?? arteDe(m));
   const c = document.createElement('canvas');
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -310,6 +311,20 @@ function texturaDeDirecao(m, direcao) {
   };
   img.src = RAIZ + caminho;
   return tex;
+}
+
+// Perfil virado para a direita, por espécie (arquivo em assets/monsters/<espécie>/). O aliado mostra o perfil para o inimigo; o
+// inimigo mostra o mesmo perfil espelhado, virado para a esquerda. Espécies sem perfil mostram a frente.
+const PERFIS_DIREITA = {
+  // Ignavor: 'assets/monsters/ignavor/perfil-direita.webp',
+};
+
+// Como cada monstro aparece na batalha. Noctarn tem a folha de quatro direções: o aliado usa 'direita' e o inimigo 'esquerda'.
+// As outras espécies usam o perfil de PERFIS_DIREITA (o inimigo espelha). Sem perfil, mostra a frente.
+function visaoDaBatalha(m, lado) {
+  if (FOLHAS_DIRECOES[m.species]) return { textura: texturaDeDirecao(m, lado === 'aliado' ? 'direita' : 'esquerda'), espelho: false };
+  if (PERFIS_DIREITA[m.species]) return { textura: texturaDeDirecao(m, 'direita'), espelho: lado === 'inimigo' };
+  return { textura: texturaDeDirecao(m, 'frente'), espelho: false };
 }
 
 // ---- selvagens que rondam a ilha: ao encostar, começa a batalha ----
@@ -639,7 +654,7 @@ function htmlBatalha(b) {
     painel = `<div class="bt-lista"><h3>${titulo}</h3>${itens}<button type="button" class="bt-btn" data-bat="lista-voltar">Voltar<kbd>Esc</kbd></button></div>`;
   }
   const alvo = b.fase === 'alvo'
-    ? `<div class="bt-alvo"><span>◀</span><b>${esc(e.inimigos[b.alvo].nome)}</b><span>▶</span><button type="button" data-bat="alvo-confirmar">Confirmar</button><button type="button" data-bat="alvo-voltar">Voltar</button></div>`
+    ? `<div class="bt-alvo"><div class="bt-alvo-linha"><button type="button" class="bt-seta" data-bat="alvo-anterior" aria-label="Alvo anterior">◀</button><b>${esc(e.inimigos[b.alvo].nome)}</b><button type="button" class="bt-seta" data-bat="alvo-proximo" aria-label="Próximo alvo">▶</button></div><div class="bt-alvo-linha"><button type="button" class="bt-btn primario" data-bat="alvo-confirmar">Confirmar</button><button type="button" class="bt-btn" data-bat="alvo-voltar">Voltar</button></div></div>`
     : '';
   const mira = b.fase === 'alvo' ? '<div class="bt-mira"></div>' : '';
   // ordem de turno (quem age primeiro, pelo poder), na borda direita: só os vivos; quem está planejando fica destacado
@@ -775,12 +790,14 @@ function iniciarBatalha(s) {
   cenaBat.disporInimigos(sorteios.length);
   time.slice(0, 3).forEach((m, i) => {
     const giro = giroDoMonstro(m);
-    cenaBat.definir('aliado', i, { textura: texturaDeDirecao(m, 'frente'), giro, animar: Boolean(giro), dur: 1.2 });
+    const v = visaoDaBatalha(m, 'aliado');
+    cenaBat.definir('aliado', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.2 });
   });
   sorteios.forEach((x, i) => {
     const m = x.monstro;
     const giro = giroDoMonstro(m);
-    cenaBat.definir('inimigo', i, { textura: texturaDeDirecao(m, 'frente'), giro, animar: Boolean(giro), dur: 1.6 });
+    const v = visaoDaBatalha(m, 'inimigo');
+    cenaBat.definir('inimigo', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.6 });
   });
   cenaBat.mirar('panoramica');
   renderTudo();
@@ -1115,7 +1132,9 @@ batalhaEl.addEventListener('click', (e) => {
     escolherItem(k);
   } else if (acao === 'inimigo') {
     if (batalha.fase === 'alvo') { batalha.alvo = Number(el.dataset.i); mirarAlvo(); renderTudo(); }
-  } else if (acao === 'alvo-confirmar') confirmarAlvo();
+  } else if (acao === 'alvo-anterior') ciclarAlvo(-1);
+  else if (acao === 'alvo-proximo') ciclarAlvo(1);
+  else if (acao === 'alvo-confirmar') confirmarAlvo();
   else if (acao === 'alvo-voltar') voltarDoAlvo();
   else if (acao === 'lista-voltar') voltarAcoes();
   else if (acao === 'fugir') fugir();

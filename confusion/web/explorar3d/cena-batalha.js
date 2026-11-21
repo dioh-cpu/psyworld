@@ -260,7 +260,7 @@ export function criarCenaBatalha(THREE) {
   const aplicarGiro = (l, g) => aplicarGiroCor(THREE, l.uniforms, g);
 
   // Mostra um monstrinho. `giro` é a cor da variação (null é o natural). Com `animar`, a cor vai do natural até a variação.
-  function definir(lado, i, { textura, giro = null, animar = false, dur = 1.4 }) {
+  function definir(lado, i, { textura, espelho = false, giro = null, animar = false, dur = 1.4 }) {
     const l = lutadorDo(lado, i);
     l.ativo = true;
     l.derrubado = false;
@@ -268,6 +268,7 @@ export function criarCenaBatalha(THREE) {
     l.pronto = false;
     l.medidas = null;
     l.malha.visible = true;
+    l.malha.scale.x = espelho ? -1 : 1;   // o inimigo usa o perfil espelhado
     l.lunge = 0;
     l.golpeT = 0;
     l.curaT = 0;
