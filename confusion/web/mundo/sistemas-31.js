@@ -6,38 +6,93 @@ import { clamp } from './util.js';
 const CIDADES_MAX = 2;
 const FAZENDA_POR_CIDADE = 3;      // comida produzida por cidade por dia
 const ESTOQUE_MINIMO_CRESCER = 20; // a população só cresce com esse estoque de comida
+const CHANCE_LEVANTAR = 0.2;       // um morador de fome pode se levantar como zumbi
+const CHANCE_CONTAGIO = 0.1;       // por dia, cada zumbi transforma um morador com essa chance
+const ZUMBIS_MAX = 30;
 const fundacao = {
-  id: '31', nome: 'Fundação de cidades', referencia: 'Banished e Frostpunk (fundar um assentamento e mantê-lo vivo)',
-  criar: () => ({ fundadas: [] }),
+  id: '31', nome: 'Fundação de cidades', referencia: 'Banished e Frostpunk (fundar um assentamento e mantê-lo vivo); The Last of Us (infecção que se espalha)',
+  criar: () => ({ fundadas: [], surto: false }),
   dia(est, ctx) {
     // Cada cidade tem fazendas (produz comida), a população consome comida, e a população só cresce com estoque.
-    // Sem comida suficiente, os moradores partem. Sem isso, a população crescia sem freio e drenava o estoque.
+    // Sem comida suficiente, os moradores morrem. Alguns mortos se levantam como zumbis, que transformam outros moradores.
+    // O primeiro levante marca o surto: pretexto de uma arma biológica lançada sobre a região (gancho para a fazenda do vilão).
     const notas = [];
+    for (const c of est.fundadas) c.zumbis = c.zumbis || 0; // estados salvos antes do surto não têm o campo
     const estoque = ctx.recursos?.comida || 0;
     const producao = est.fundadas.length * FAZENDA_POR_CIDADE;
     const consumo = () => est.fundadas.reduce((a, c) => a + Math.ceil(c.populacao / 5), 0);
     if (est.fundadas.length && estoque + producao - consumo() < 0) {
-      for (const c of est.fundadas) c.populacao = Math.max(0, c.populacao - 1);
-      notas.push('Falta comida nas cidades: alguns moradores partiram.');
+      let mortos = 0;
+      let levantados = 0;
+      for (const c of est.fundadas) {
+        if (c.populacao <= 0) continue;
+        c.populacao -= 1;
+        mortos += 1;
+        if (ctx.r() < CHANCE_LEVANTAR) {
+          c.zumbis = Math.min(ZUMBIS_MAX, c.zumbis + 1);
+          levantados += 1;
+        }
+      }
+      if (mortos) notas.push(`Falta comida: ${mortos} morador(es) morreram.`);
+      if (levantados) {
+        notas.push(`${levantados} dos mortos se levantaram como zumbis.`);
+        if (!est.surto) {
+          est.surto = true;
+          notas.push('Os mortos voltaram a andar. Tudo indica que uma arma biológica foi lançada sobre a região.');
+        }
+      }
     }
+    // Contágio: cada zumbi pode transformar um morador por dia.
+    let convertidos = 0;
     for (const c of est.fundadas) {
-      if (estoque >= ESTOQUE_MINIMO_CRESCER && ctx.r() < 0.5) c.populacao = clamp(c.populacao + 1, 0, 50);
+      for (let i = 0; i < c.zumbis; i++) {
+        if (c.populacao > 0 && ctx.r() < CHANCE_CONTAGIO) {
+          c.populacao -= 1;
+          c.zumbis = Math.min(ZUMBIS_MAX, c.zumbis + 1);
+          convertidos += 1;
+        }
+      }
+    }
+    if (convertidos) notas.push(`${convertidos} morador(es) se transformaram em zumbis.`);
+    // Zumbis sem moradores para infectar se desfazem; enquanto houver zumbis numa cidade viva, ela não cresce.
+    for (const c of est.fundadas) {
+      if (c.populacao === 0 && c.zumbis > 0) c.zumbis = Math.max(0, c.zumbis - 2);
+    }
+    // A população só cresce enquanto a produção de comida sustenta o consumo (senão entra em déficit e a fome começa).
+    for (const c of est.fundadas) {
+      if (c.zumbis === 0 && estoque >= ESTOQUE_MINIMO_CRESCER && producao - consumo() > 0 && ctx.r() < 0.5) {
+        c.populacao = clamp(c.populacao + 1, 0, 50);
+      }
     }
     const saldo = producao - consumo();
     return { notas, efeitos: saldo ? { recursos: { comida: saldo } } : {} };
   },
   acoes: {
+    conter_surto: {
+      rotulo: 'Conter o surto: queimar corpos e isolar a cidade mais infestada (20 madeira; -3 zumbis)',
+      fn(est, ctx) {
+        const alvo = [...est.fundadas].sort((a, b) => b.zumbis - a.zumbis)[0];
+        if (!alvo || alvo.zumbis === 0) return { notas: ['Não há zumbis para conter.'] };
+        if ((ctx.recursos.madeira || 0) < 20) return { notas: ['Faltam 20 madeira.'] };
+        alvo.zumbis = Math.max(0, alvo.zumbis - 3);
+        return { notas: [`${alvo.nome}: os zumbis foram contidos (${alvo.zumbis} restante(s)).`], efeitos: { recursos: { madeira: -20 } } };
+      },
+    },
     fundar: {
       rotulo: `Fundar uma nova cidade (40 madeira e 20 pedra; até ${CIDADES_MAX})`,
       fn(est, ctx) {
         if (est.fundadas.length >= CIDADES_MAX) return { notas: ['Já há cidades demais.'] };
         if ((ctx.recursos.madeira || 0) < 40 || (ctx.recursos.pedra || 0) < 20) return { notas: ['Faltam 40 madeira e 20 pedra.'] };
-        est.fundadas = [...est.fundadas, { nome: `Assentamento ${est.fundadas.length + 1}`, populacao: 5 }];
+        est.fundadas = [...est.fundadas, { nome: `Assentamento ${est.fundadas.length + 1}`, populacao: 5, zumbis: 0 }];
         return { notas: ['Um novo assentamento foi fundado.'], efeitos: { recursos: { madeira: -40, pedra: -20 } } };
       },
     },
   },
-  resumo: (est) => `${est.fundadas.length} assentamento(s) · população ${est.fundadas.reduce((a, c) => a + c.populacao, 0)}`,
+  resumo: (est) => {
+    const pop = est.fundadas.reduce((a, c) => a + c.populacao, 0);
+    const zumbis = est.fundadas.reduce((a, c) => a + c.zumbis, 0);
+    return `${est.fundadas.length} assentamento(s) · população ${pop}${zumbis ? ` · zumbis ${zumbis}` : ''}${est.surto ? ' · surto ativo' : ''}`;
+  },
 };
 
 // 32 — Purificação e corrupção de equipamentos. Referência: Dark Souls (armas abençoadas e amaldiçoadas).

@@ -481,3 +481,23 @@ test('jogabilidade: um jogador prudente (sem ações de risco com sanidade abaix
   assert.ok(sanMin > 0, `a sanidade chegou a zero (mínimo ${sanMin})`);
   for (const id of ['norte', 'sul', 'porto']) assert.ok(est['01'][id].prosperidade > 0, `${id} sem prosperidade`);
 });
+test('31 surto: morte por fome pode levantar zumbis e marca o surto como arma biológica', () => {
+  const est = M.criarMundo();
+  est['31'].fundadas = [{ nome: 'A', populacao: 20, zumbis: 0 }];
+  const res = sis('31').dia(est['31'], ctx({ recursos: { comida: 0 }, r: () => 0.1 }));
+  assert.equal(est['31'].fundadas[0].zumbis, 1);
+  assert.equal(est['31'].surto, true);
+  assert.ok(res.notas.some((n) => n.includes('arma biológica')));
+});
+test('31 surto: zumbis transformam moradores, impedem o crescimento e podem ser contidos', () => {
+  const est = M.criarMundo();
+  est['31'].surto = true;
+  est['31'].fundadas = [{ nome: 'A', populacao: 10, zumbis: 3 }];
+  sis('31').dia(est['31'], ctx({ recursos: { comida: 100 }, r: () => 0.05 }));
+  const c = est['31'].fundadas[0];
+  assert.ok(c.populacao < 10, 'zumbis deveriam transformar moradores');
+  assert.ok(c.zumbis > 3, 'os convertidos viram zumbis');
+  const antes = c.zumbis;
+  M.acaoMundo(est, '31', 'conter_surto', {}, ctx({ recursos: { madeira: 100 } }));
+  assert.equal(est['31'].fundadas[0].zumbis, antes - 3);
+});
