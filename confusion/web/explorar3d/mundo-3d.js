@@ -1,8 +1,8 @@
-// Mundo 3D: céu, chão com arte por região, areia na costa, estradas, casas com telhado e janelas, árvores em sprite
-// (recortes de assets/mundo), pedras e lago em forma simples. A colisão vem de CAIXAS (mundo.js).
-// Chão, parede e telhado são desenhados no canvas, iguais em todo carregamento; o céu é uma pintura (assets/mundo/ceu).
+// Mundo 3D: céu, chão com arte por região, areia na costa, estradas, a casa de teste, árvores em sprite (recortes de
+// assets/mundo), pedras e lago em forma simples. A colisão vem de CAIXAS (mundo.js).
+// Chão e céu são desenhados (canvas e pintura), iguais em todo carregamento.
 import * as THREE from 'three';
-import { REGIOES, EDIFICIOS, CIDADES_MUNDO, ARVORES, PEDRAS, LAGO, ESTRADAS, regiaoDe } from './mundo.js';
+import { REGIOES, ARVORES, PEDRAS, LAGO, ESTRADAS, CASA_TESTE, regiaoDe } from './mundo.js';
 
 export const COR_HORIZONTE = '#cfe8f7';  // névoa e horizonte na mesma cor: mar e chão somem no céu
 const COR_MORTA = '#7a7468';
@@ -12,10 +12,12 @@ const COR_LAGO = '#3f86b8';
 const COR_LAGO_BORDA = '#c2b48a';
 const COR_LAGO_REFLEXO = '#5fa3cf';
 const COR_AREIA = '#d6c08c';
-const COR_CHAMINE = '#8c6a55';
 const TAMANHO_TILE = 12;                 // unidades do mundo por repetição da textura do chão
 const ALTURA_COPA = { pequena: 3.6, media: 5.0, grande: 6.2 };
 const ITENS_NAVIO = [['ancora', 2.2], ['barril', 1.9], ['corda', 1.1], ['madeira-amarrada', 1.5], ['roda', 2.0], ['tabua', 1.0]];
+const ALTURA_CASA = 6.5;                 // altura do sprite da casa em unidades do mundo (quadro 3:4)
+const BASE_CASA = 0.257;                 // fração do quadro, de baixo para cima, onde fica o chão da casa
+const QUADROS_CASA = ['frente-esquerda', 'frente-direita', 'costas-esquerda', 'costas-direita'];
 
 const carregador = new THREE.TextureLoader();
 const imagens = new Map();               // caminho -> { tex, sprites }: cada imagem é carregada uma vez
@@ -162,59 +164,6 @@ const ARTE_AREIA = (g, n, r) => {
   pontos(g, n, r, ['#c4ab74', '#e4d2a6'], 320, 3);
 };
 
-// paredes: reboco com fiadas, base de pedra e duas janelas por andar, com moldura, persiana e peitoril
-const cacheParedes = new Map();
-function paredeDe(cor) {
-  if (!cacheParedes.has(cor)) {
-    cacheParedes.set(cor, texturaDeDesenho(hash(cor), (g, n, r) => {
-      g.fillStyle = cor;
-      g.fillRect(0, 0, n, n);
-      g.strokeStyle = 'rgba(0,0,0,0.10)';
-      g.lineWidth = 2;
-      for (let y = 0; y < n - 56; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(n, y); g.stroke(); }
-      g.fillStyle = '#8c8170';
-      g.fillRect(0, n - 56, n, 56);
-      g.strokeStyle = 'rgba(0,0,0,0.25)';
-      for (let x = 0; x < n; x += 36) { g.beginPath(); g.moveTo(x, n - 56); g.lineTo(x, n); g.stroke(); }
-      for (let y = 40; y < n - 90; y += 92) {
-        for (const x of [36, 156]) {
-          g.fillStyle = '#efe3c2';
-          g.fillRect(x - 6, y - 6, 60, 66);
-          g.fillStyle = r() < 0.5 ? '#f4d27a' : '#2b3a55';
-          g.fillRect(x, y, 48, 54);
-          g.fillStyle = '#3f7a4a';
-          g.fillRect(x - 10, y, 6, 54);
-          g.fillRect(x + 52, y, 6, 54);
-          g.fillStyle = '#efe3c2';
-          g.fillRect(x - 8, y + 54, 64, 6);
-        }
-      }
-    }));
-  }
-  return cacheParedes.get(cor);
-}
-
-// telhados: fiadas de telha com juntas alternadas
-const cacheTelhados = new Map();
-function telhadoDe(cor) {
-  if (!cacheTelhados.has(cor)) {
-    cacheTelhados.set(cor, texturaDeDesenho(hash(cor) + 1, (g, n, r) => {
-      g.fillStyle = cor;
-      g.fillRect(0, 0, n, n);
-      g.strokeStyle = 'rgba(0,0,0,0.22)';
-      g.lineWidth = 2;
-      for (let y = 0; y < n; y += 18) {
-        g.beginPath(); g.moveTo(0, y); g.lineTo(n, y); g.stroke();
-        for (let x = (y / 18) % 2 ? 0 : 16; x < n; x += 32) {
-          g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 18); g.stroke();
-        }
-      }
-      pontos(g, n, r, ['rgba(255,255,255,0.08)'], 60, 6);
-    }));
-  }
-  return cacheTelhados.get(cor);
-}
-
 // ---- sprites: uma imagem carregada uma vez e usada em quantos objetos forem preciso ----
 const ajustarEscala = (s, altura, img) => s.scale.set((altura * img.width) / img.height, altura, 1);
 
@@ -271,6 +220,38 @@ function montarCeu(scene, arteDe) {
   }
 }
 
+// ---- casa de teste: quatro lados vindos de dois quadros (frente e costas em 3/4, com o espelho de cada um) ----
+// A câmera escolhe o quadro pelo ângulo em volta da casa: 0 é de frente (+z), positivo é o lado +x.
+let casaTeste = null;
+
+function montarCasaTeste(scene, arteDe) {
+  const texturas = {};
+  for (const nome of QUADROS_CASA) {
+    texturas[nome] = carregador.load(arteDe(`casa-teste/${nome}.webp`));
+    texturas[nome].colorSpace = THREE.SRGBColorSpace;
+  }
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texturas['frente-esquerda'], alphaTest: 0.5 }));
+  sprite.center.set(0.5, BASE_CASA);
+  sprite.position.set(CASA_TESTE.x, 0, CASA_TESTE.z);
+  sprite.scale.set(ALTURA_CASA * 0.75, ALTURA_CASA, 1);
+  scene.add(sprite);
+  casaTeste = { sprite, texturas, lado: 'frente-esquerda' };
+}
+
+// Chamado a cada quadro: troca o quadro da casa conforme a câmera gira em volta dela.
+export function atualizarMundo(camera) {
+  if (!casaTeste) return;
+  const angulo = Math.atan2(camera.position.x - CASA_TESTE.x, camera.position.z - CASA_TESTE.z);
+  const lado = Math.abs(angulo) <= Math.PI / 2
+    ? (angulo >= 0 ? 'frente-direita' : 'frente-esquerda')
+    : (angulo > 0 ? 'costas-direita' : 'costas-esquerda');
+  if (lado !== casaTeste.lado) {
+    casaTeste.lado = lado;
+    casaTeste.sprite.material.map = casaTeste.texturas[lado];
+    casaTeste.sprite.material.needsUpdate = true;
+  }
+}
+
 // ---- partes do mundo ----
 function chao(scene, material) {
   for (const [nome, r] of Object.entries(REGIOES)) {
@@ -320,65 +301,6 @@ function estradas(scene, material) {
     malha.rotation.x = -Math.PI / 2;
     malha.position.set((e.x0 + e.x1) / 2, 0.015, (e.z0 + e.z1) / 2);
     scene.add(malha);
-  }
-}
-
-// telhado de duas águas: prisma triangular, com a cumeeira correndo ao longo do eixo z
-function telhadoDeDuasAguas(largura, comprimento, altura) {
-  const forma = new THREE.Shape();
-  forma.moveTo(-largura / 2 - 0.25, 0);
-  forma.lineTo(largura / 2 + 0.25, 0);
-  forma.lineTo(0, altura);
-  forma.closePath();
-  const geo = new THREE.ExtrudeGeometry(forma, { depth: comprimento + 0.4, bevelEnabled: false });
-  geo.translate(0, 0, -(comprimento + 0.4) / 2);
-  return geo;
-}
-
-// casa: caixa com janelas e porta na frente, telhado de duas águas e chaminé; a prefeitura tem telhado de
-// quatro águas, mastro e bandeira
-function predio(scene, material, contorno, e) {
-  const corpo = new THREE.Mesh(new THREE.BoxGeometry(e.w, e.h, e.d), material('#ffffff', paredeDe(e.cor)));
-  corpo.position.set(e.x, e.h / 2, e.z);
-  contorno(corpo);
-  scene.add(corpo);
-
-  let altoTelhado;
-  let telhado;
-  if (e.central) {
-    altoTelhado = 1.8;
-    telhado = new THREE.Mesh(
-      new THREE.ConeGeometry(Math.hypot(e.w, e.d) / 2, altoTelhado, 4),
-      material('#ffffff', telhadoDe(e.telhado)),
-    );
-    telhado.rotation.y = Math.PI / 4;
-    telhado.position.set(e.x, e.h + altoTelhado / 2, e.z);
-  } else {
-    altoTelhado = 1.5;
-    const ridgeEmZ = e.d >= e.w;   // a cumeeira segue o lado comprido da casa
-    telhado = new THREE.Mesh(
-      ridgeEmZ ? telhadoDeDuasAguas(e.w, e.d, altoTelhado) : telhadoDeDuasAguas(e.d, e.w, altoTelhado),
-      material('#ffffff', telhadoDe(e.telhado)),
-    );
-    if (!ridgeEmZ) telhado.rotation.y = Math.PI / 2;
-    telhado.position.set(e.x, e.h, e.z);
-    const chamine = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.4, 0.5), material(COR_CHAMINE));
-    chamine.position.set(e.x + e.w * 0.22, e.h + 1.1, e.z - e.d * 0.18);
-    scene.add(chamine);
-  }
-  contorno(telhado);
-  scene.add(telhado);
-
-  const porta = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.3, 0.12), material('#4a2f1e'));
-  porta.position.set(e.x, 0.65, e.z + e.d / 2 + 0.03);
-  scene.add(porta);
-
-  if (e.central) {
-    const mastro = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.2, 6), material('#7a5230'));
-    mastro.position.set(e.x, e.h + altoTelhado + 1.1, e.z);
-    const bandeira = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.05), material('#c0392b'));
-    bandeira.position.set(e.x + 0.5, e.h + altoTelhado + 1.8, e.z);
-    scene.add(mastro, bandeira);
   }
 }
 
@@ -465,7 +387,7 @@ export function montarMundo(scene, { material, contorno, raiz = '' }) {
   chao(scene, material);
   areia(scene, material);
   estradas(scene, material);
-  for (const e of EDIFICIOS) predio(scene, material, contorno, e);
+  montarCasaTeste(scene, arteDe);
   lago(scene, material);
   for (const a of ARVORES) arvore(scene, material, contorno, a, arteDe);
   for (const p of PEDRAS) pedra(scene, material, contorno, p);

@@ -94,6 +94,9 @@ function distanciaAoSegmento(x, z, e) {
   return Math.hypot(x - px, z - pz);
 }
 
+// Casa de teste: a única casa do mapa por enquanto (as casas das cidades estão fora). Fica perto do início, fora da praça.
+export const CASA_TESTE = { x: -12, z: -6, largura: 4.2, profundidade: 3.2, altura: 3.2 };
+
 const OCUPADOS = [];   // árvores e pedras já colocadas: nada nasce encostado nelas
 
 // Cabe um objeto de raio `raio` aqui? Dentro da própria região, longe dos eixos, da praça, das cidades, do lago,
@@ -104,6 +107,7 @@ function livre(x, z, raio, regiao) {
   }
   if (Math.abs(x) < 4.5 + raio || Math.abs(z) < 4.5 + raio) return false;
   if (Math.hypot(x, z) < 13 + raio) return false;
+  if (Math.hypot(x - CASA_TESTE.x, z - CASA_TESTE.z) < 6 + raio) return false;
   if (CIDADES_MUNDO.some((c) => Math.hypot(x - c.x, z - c.z) < 13 + raio)) return false;
   if (dentroLago(x, z, raio + 1.5)) return false;
   if (PONTOS_SELVAGENS.some(([px, pz]) => Math.hypot(x - px, z - pz) < 4 + raio)) return false;
@@ -185,19 +189,20 @@ const COSTA = [
   { x0: -LIMITE_MAPA, x1: -ALCANCE, z0: -BRACO, z1: BRACO },
 ];
 
-// Caixas de colisão: prédios (do chão até o topo) e a costa (até 4 unidades de altura).
-const caixaDeEdificio = (e) => ({
-  min: { x: e.x - e.w / 2, y: 0, z: e.z - e.d / 2 },
-  max: { x: e.x + e.w / 2, y: e.h, z: e.z + e.d / 2 },
-});
+// Caixas de colisão: a costa (até 4 unidades de altura).
 const caixaDeRetangulo = (r) => ({ min: { x: r.x0, y: 0, z: r.z0 }, max: { x: r.x1, y: 4, z: r.z1 } });
 const caixaDeArvore = (a) => ({ min: { x: a.x - 0.4, y: 0, z: a.z - 0.4 }, max: { x: a.x + 0.4, y: 4, z: a.z + 0.4 } });
 const caixaDePedra = (p) => ({
   min: { x: p.x - p.r * 0.85, y: 0, z: p.z - p.r * 0.85 },
   max: { x: p.x + p.r * 0.85, y: p.altura * 1.5, z: p.z + p.r * 0.85 },
 });
+const CAIXA_CASA_TESTE = caixaRetangular(
+  CASA_TESTE.x - CASA_TESTE.largura / 2, CASA_TESTE.x + CASA_TESTE.largura / 2,
+  CASA_TESTE.z - CASA_TESTE.profundidade / 2, CASA_TESTE.z + CASA_TESTE.profundidade / 2,
+);
+// Colisão: a casa de teste, a costa, árvores, pedras e o lago. As casas das cidades não bloqueiam (estão fora do mapa).
 export const CAIXAS = [
-  ...EDIFICIOS.map(caixaDeEdificio), ...COSTA.map(caixaDeRetangulo),
+  CAIXA_CASA_TESTE, ...COSTA.map(caixaDeRetangulo),
   ...ARVORES.map(caixaDeArvore), ...PEDRAS.map(caixaDePedra), ...CAIXAS_LAGO,
 ];
 

@@ -10,7 +10,7 @@ import { criarCenaBatalha } from './cena-batalha.js';
 import { criarMaterialCor, aplicarGiro, NATURAL } from './cor-sprite.js';
 import { AREAS, areaDaRegiao } from './areas.js';
 import { modoDoFoco } from './camera-batalha.js';
-import { montarMundo, COR_HORIZONTE } from './mundo-3d.js';
+import { montarMundo, atualizarMundo, COR_HORIZONTE } from './mundo-3d.js';
 import * as C from '../core.js';
 import * as CB from '../combate.js';
 import * as E from '../species.js';
@@ -917,6 +917,7 @@ function quadro(agora) {
   const dt = Math.min(0.05, (agora - ultimo) / 1000);
   ultimo = agora;
   atualizar(dt, agora);
+  atualizarMundo(camera);
   if (batalha) {
     tocarRoteiro(dt);
     cenaBat.atualizar(dt, agora / 1000);
