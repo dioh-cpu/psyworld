@@ -256,21 +256,65 @@ function montarCeu(scene, arteDe) {
   }
 }
 
-// ---- casa de teste: um cartão fixo no chão, com a imagem de frente e lado esquerdo. Não troca de imagem nem gira
-// com a câmera. É de dois lados (o verso mostra a mesma imagem espelhada). A altura visível é ALTURA_CASA (2,5 vezes o personagem).
-const PROPORCAO_CASA = 572 / 398;   // largura / altura da imagem recortada
+// ---- casa de teste: volume 3D com as fachadas retas (frente, costas e lateral desenhadas no Flow). Cada face recebe a sua
+// imagem pela posição no mundo, então a casa é reta, fica no chão e não gira com a câmera. As medidas vêm das imagens:
+// K é o tamanho de um pixel no mundo (a casa tem ALTURA_CASA do chão à cumeeira).
+const CASA_K = ALTURA_CASA / (716 - 152);   // 716 = linha do chão nas imagens, 152 = cumeeira
+const CASA_PAREDE_X = 2.79;                 // meia parede de frente (eixo x)
+const CASA_PAREDE_Z = 1.62;                 // meia parede lateral (eixo z)
+const CASA_BEIRAL_X = 3.32;                 // meio telhado de frente (passa das paredes)
+const CASA_BEIRAL_Z = 2.24;                 // meia largura da lateral no beiral (a base da empena)
+const CASA_ALTURA_PAREDE = (716 - 420) * CASA_K;   // onde a parede termina e o telhado começa
 
 function montarCasaTeste(scene, arteDe) {
-  const { x, z } = CASA_TESTE;
-  const altura = ALTURA_CASA;
-  const tex = carregador.load(arteDe('casa-teste/frente-esquerda.webp'));
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const malha = new THREE.Mesh(
-    new THREE.PlaneGeometry(altura * PROPORCAO_CASA, altura),
-    new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide }),
-  );
-  malha.position.set(x, altura / 2, z);
-  scene.add(malha);
+  const { x: cx, z: cz } = CASA_TESTE;
+  const textura = (nome) => {
+    const t = carregador.load(arteDe(`casa-teste/${nome}.webp`));
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const matFrente = new THREE.MeshBasicMaterial({ map: textura('frente'), alphaTest: 0.5, side: THREE.DoubleSide });
+  const matCostas = new THREE.MeshBasicMaterial({ map: textura('costas'), alphaTest: 0.5, side: THREE.DoubleSide });
+  const matLateral = new THREE.MeshBasicMaterial({ map: textura('lateral'), alphaTest: 0.5, side: THREE.DoubleSide });
+
+  // cada imagem: pixel = (centro + dx/K, chão - y/K); uv = pixel / tamanho. A lateral direita é a mesma imagem vista do outro lado.
+  const uvFrente = ([dx, y]) => [(575 + dx / CASA_K) / 1152, 1 - (716 - y / CASA_K) / 864];
+  const uvCostas = ([dx, y]) => [(575 - dx / CASA_K) / 1152, 1 - (716 - y / CASA_K) / 864];
+  const uvLadoEsq = ([, y, dz]) => [(323.5 + dz / CASA_K) / 648, 1 - (716 - y / CASA_K) / 864];
+  const uvLadoDir = ([, y, dz]) => [(323.5 - dz / CASA_K) / 648, 1 - (716 - y / CASA_K) / 864];
+
+  // uma face: pontos [dx, y, dz] relativos à casa (triângulo ou quadrilátero), com a imagem mapeada pelo `uv`
+  const face = (pontos, uv, mat) => {
+    const pos = [];
+    const uvs = [];
+    for (const p of pontos) {
+      pos.push(cx + p[0], p[1], cz + p[2]);
+      uvs.push(...uv(p));
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    g.setIndex(pontos.length === 4 ? [0, 1, 2, 0, 2, 3] : [0, 1, 2]);
+    scene.add(new THREE.Mesh(g, mat));
+  };
+
+  const W = CASA_PAREDE_X;
+  const D = CASA_PAREDE_Z;
+  const B = CASA_BEIRAL_X;
+  const E = CASA_BEIRAL_Z;
+  const A = CASA_ALTURA_PAREDE;
+  const H = ALTURA_CASA;
+  // paredes
+  face([[-W, 0, D], [W, 0, D], [W, A, D], [-W, A, D]], uvFrente, matFrente);
+  face([[W, 0, -D], [-W, 0, -D], [-W, A, -D], [W, A, -D]], uvCostas, matCostas);
+  face([[-W, 0, -D], [-W, 0, D], [-W, A, D], [-W, A, -D]], uvLadoEsq, matLateral);
+  face([[W, 0, D], [W, 0, -D], [W, A, -D], [W, A, D]], uvLadoDir, matLateral);
+  // empenas: triângulos da lateral, acima da parede
+  face([[-W, A, -E], [-W, A, E], [-W, H, 0]], uvLadoEsq, matLateral);
+  face([[W, A, E], [W, A, -E], [W, H, 0]], uvLadoDir, matLateral);
+  // telhado de duas águas, com o beiral passando das paredes
+  face([[-B, A, E], [B, A, E], [B, H, 0], [-B, H, 0]], uvFrente, matFrente);
+  face([[-B, A, -E], [-B, H, 0], [B, H, 0], [B, A, -E]], uvCostas, matCostas);
 }
 
 // ---- partes do mundo ----
