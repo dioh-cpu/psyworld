@@ -95,7 +95,7 @@ function distanciaAoSegmento(x, z, e) {
 }
 
 // Casa de teste: a única casa do mapa por enquanto (as casas das cidades estão fora). Fica perto do início, fora da praça.
-export const CASA_TESTE = { x: -12, z: -6, largura: 5.6, profundidade: 3.3 };   // colisão = paredes da casa
+export const CASA_TESTE = { x: -12, z: -6, largura: 6.7, profundidade: 3.9 };   // colisão = paredes da casa (3 vezes o personagem)
 
 const OCUPADOS = [];   // árvores e pedras já colocadas: nada nasce encostado nelas
 

@@ -15,7 +15,7 @@ const COR_AREIA = '#d6c08c';
 const TAMANHO_TILE = 12;                 // unidades do mundo por repetição da textura do chão
 const ALTURA_JOGADOR = 1.7;              // altura do personagem (cápsula de main.js: 0,9 + 2 x 0,4)
 const ALTURA_ARVORE = 3 * ALTURA_JOGADOR;   // copa visível: 3 vezes o personagem (com variação na escala)
-const ALTURA_CASA = 2.5 * ALTURA_JOGADOR;   // casa visível: no mínimo 2 vezes o personagem
+const ALTURA_CASA = 3 * ALTURA_JOGADOR;     // casa visível: 3 vezes o personagem (igual às árvores)
 const ITENS_NAVIO = [['ancora', 2.2], ['barril', 1.9], ['corda', 1.1], ['madeira-amarrada', 1.5], ['roda', 2.0], ['tabua', 1.0]];
 
 const carregador = new THREE.TextureLoader();
@@ -257,14 +257,11 @@ function montarCeu(scene, arteDe) {
 }
 
 // ---- casa de teste: volume 3D com as fachadas retas (frente, costas e lateral desenhadas no Flow). Cada face recebe a sua
-// imagem pela posição no mundo, então a casa é reta, fica no chão e não gira com a câmera. As medidas vêm das imagens:
-// K é o tamanho de um pixel no mundo (a casa tem ALTURA_CASA do chão à cumeeira).
-const CASA_K = ALTURA_CASA / (716 - 152);   // 716 = linha do chão nas imagens, 152 = cumeeira
-const CASA_PAREDE_X = 2.79;                 // meia parede de frente (eixo x)
-const CASA_PAREDE_Z = 1.62;                 // meia parede lateral (eixo z)
-const CASA_BEIRAL_X = 3.32;                 // meio telhado de frente (passa das paredes)
-const CASA_BEIRAL_Z = 2.24;                 // meia largura da lateral no beiral (a base da empena)
-const CASA_ALTURA_PAREDE = (716 - 420) * CASA_K;   // onde a parede termina e o telhado começa
+// imagem pela posição no mundo, então a casa é reta, fica no chão e não gira com a câmera. As medidas estão em pixels das
+// imagens; K é o tamanho de um pixel no mundo, para a casa ter ALTURA_CASA do chão à cumeeira.
+const CASA_PX_ALTURA = 716 - 152;   // do chão (716) à cumeeira (152), nas imagens de frente, costas e lateral
+const CASA_K = ALTURA_CASA / CASA_PX_ALTURA;
+const CASA_PX = { paredeX: 370, paredeZ: 215, beiralX: 441, beiralZ: 296.5, topoParede: 420 };
 
 function montarCasaTeste(scene, arteDe) {
   const { x: cx, z: cz } = CASA_TESTE;
@@ -278,10 +275,11 @@ function montarCasaTeste(scene, arteDe) {
   const matLateral = new THREE.MeshBasicMaterial({ map: textura('lateral'), alphaTest: 0.5, side: THREE.DoubleSide });
 
   // cada imagem: pixel = (centro + dx/K, chão - y/K); uv = pixel / tamanho. A lateral direita é a mesma imagem vista do outro lado.
-  const uvFrente = ([dx, y]) => [(575 + dx / CASA_K) / 1152, 1 - (716 - y / CASA_K) / 864];
-  const uvCostas = ([dx, y]) => [(575 - dx / CASA_K) / 1152, 1 - (716 - y / CASA_K) / 864];
-  const uvLadoEsq = ([, y, dz]) => [(323.5 + dz / CASA_K) / 648, 1 - (716 - y / CASA_K) / 864];
-  const uvLadoDir = ([, y, dz]) => [(323.5 - dz / CASA_K) / 648, 1 - (716 - y / CASA_K) / 864];
+  const linhaY = (y) => 1 - (716 - y / CASA_K) / 864;
+  const uvFrente = ([dx, y]) => [(575 + dx / CASA_K) / 1152, linhaY(y)];
+  const uvCostas = ([dx, y]) => [(575 - dx / CASA_K) / 1152, linhaY(y)];
+  const uvLadoEsq = ([, y, dz]) => [(323.5 + dz / CASA_K) / 648, linhaY(y)];
+  const uvLadoDir = ([, y, dz]) => [(323.5 - dz / CASA_K) / 648, linhaY(y)];
 
   // uma face: pontos [dx, y, dz] relativos à casa (triângulo ou quadrilátero), com a imagem mapeada pelo `uv`
   const face = (pontos, uv, mat) => {
@@ -298,11 +296,11 @@ function montarCasaTeste(scene, arteDe) {
     scene.add(new THREE.Mesh(g, mat));
   };
 
-  const W = CASA_PAREDE_X;
-  const D = CASA_PAREDE_Z;
-  const B = CASA_BEIRAL_X;
-  const E = CASA_BEIRAL_Z;
-  const A = CASA_ALTURA_PAREDE;
+  const W = CASA_PX.paredeX * CASA_K;
+  const D = CASA_PX.paredeZ * CASA_K;
+  const B = CASA_PX.beiralX * CASA_K;
+  const E = CASA_PX.beiralZ * CASA_K;
+  const A = (716 - CASA_PX.topoParede) * CASA_K;   // altura da parede (onde começa o telhado)
   const H = ALTURA_CASA;
   // paredes
   face([[-W, 0, D], [W, 0, D], [W, A, D], [-W, A, D]], uvFrente, matFrente);
@@ -315,6 +313,10 @@ function montarCasaTeste(scene, arteDe) {
   // telhado de duas águas, com o beiral passando das paredes
   face([[-B, A, E], [B, A, E], [B, H, 0], [-B, H, 0]], uvFrente, matFrente);
   face([[-B, A, -E], [-B, H, 0], [B, H, 0], [B, A, -E]], uvCostas, matCostas);
+  // cumeeira: viga sobre o encontro das duas águas, para não aparecer fresta no teto
+  const viga = new THREE.Mesh(new THREE.BoxGeometry(2 * B, 0.14, 0.16), new THREE.MeshBasicMaterial({ color: '#6b4423' }));
+  viga.position.set(cx, H - 0.02, cz);
+  scene.add(viga);
 }
 
 // ---- partes do mundo ----

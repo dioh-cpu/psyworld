@@ -96,12 +96,56 @@ contorno(painel);
 placa.add(poste, painel);
 scene.add(placa);
 
-// personagem provisório: cápsula roxa
-const jogadorMalha = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.9, 6, 12), material('#a040ff'));
-jogadorMalha.position.y = 0.85;
-contorno(jogadorMalha);
+// personagem: Azazel (aparência básica de aventura), com quadros de andar e de parado nas 4 direções (ver criarAzazel)
+const azazel = criarAzazel();
 const jogador = new THREE.Group();
-jogador.add(jogadorMalha);
+jogador.add(azazel.malha);
+
+// folhas de sprite do Azazel: andar 4x4 e parado 4x1, com a ordem de linhas frente, esquerda, direita, costas.
+// Cada folha tem a sua escala, para o personagem ter 1,7 de altura visível com o pé no chão. O quadro depende da
+// direção do movimento no mundo (não da câmera), então ele não gira quando a câmera gira.
+function criarAzazel() {
+  const ALTURA = 1.7;
+  const carregar = (caminho) => {
+    const t = new THREE.TextureLoader().load(`${RAIZ}assets/characters/${caminho}`);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const folhas = {
+    andar: { tex: carregar('walk-v2/basic-adventure-boy.webp'), colunas: 4, linhas: 4, celula: 313.5, pes: 271, topo: 84, ms: 130 },
+    parado: { tex: carregar('idle-v2/basic-adventure-boy.webp'), colunas: 4, linhas: 1, celula: 256, pes: 239, topo: 23, ms: 0 },
+  };
+  const malha = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ alphaTest: 0.5 }));
+  let atual = null;
+  function usar(f) {
+    if (atual === f) return;
+    atual = f;
+    malha.material.map = f.tex;
+    malha.material.needsUpdate = true;
+    const k = ALTURA / (f.pes - f.topo);
+    malha.scale.set(f.celula * k, f.celula * k, 1);
+    malha.position.y = (f.pes - f.celula / 2) * k;   // o pé fica em y = 0
+  }
+  function quadro(f, linha, coluna) {
+    f.tex.repeat.set(1 / f.colunas, 1 / f.linhas);
+    f.tex.offset.set(coluna / f.colunas, 1 - (linha + 1) / f.linhas);
+  }
+  // rot: direção do movimento no mundo (atan2(dx, dz)); 0 = frente (+z), π/2 = direita (+x), -π/2 = esquerda (-x), π = costas
+  function atualizar(andando, rot, agora) {
+    const a = ((rot % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const linha = a < Math.PI / 4 || a >= (7 * Math.PI) / 4 ? 0
+      : a < (3 * Math.PI) / 4 ? 2
+      : a < (5 * Math.PI) / 4 ? 3 : 1;
+    if (andando) {
+      usar(folhas.andar);
+      quadro(folhas.andar, linha, Math.floor(agora / folhas.andar.ms) % folhas.andar.colunas);
+    } else {
+      usar(folhas.parado);
+      quadro(folhas.parado, 0, linha);   // a folha de parado tem as 4 direções lado a lado
+    }
+  }
+  return { malha, atualizar };
+}
 scene.add(jogador);
 
 // ---- estado ----
@@ -1010,6 +1054,7 @@ function atualizar(dt, agora) {
   let dx = frente.x * iz + direita.x * ix;
   let dz = frente.z * iz + direita.z * ix;
   const norma = Math.hypot(dx, dz);
+  let andando = false;
   if (!batalha && !vista && norma > 0 && forca > 0) {
     dx = (dx / norma) * forca;
     dz = (dz / norma) * forca;
@@ -1018,9 +1063,10 @@ function atualizar(dt, agora) {
     const andou = Math.hypot(estado.pos.x - antes.x, estado.pos.z - antes.z) > 1e-4;
     estado.rot += diferencaAngulo(estado.rot, Math.atan2(dx, dz)) * Math.min(1, dt * 10);
     if (andou) estado.bob += dt * 12;
+    andando = andou;
   }
   jogador.position.set(estado.pos.x, Math.abs(Math.sin(estado.bob)) * 0.08, estado.pos.z);
-  jogador.rotation.y = estado.rot;
+  azazel.atualizar(andando, estado.rot, agora);
 
   // câmera: posição desejada, encurtada se houver parede no caminho, e suavizada
   const alvo = new THREE.Vector3(estado.pos.x, ALTURA_ALVO, estado.pos.z);
