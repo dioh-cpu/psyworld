@@ -10,6 +10,7 @@ import { criarCenaBatalha } from './cena-batalha.js';
 import { criarMaterialCor, aplicarGiro, NATURAL } from './cor-sprite.js';
 import { AREAS, areaDaRegiao } from './areas.js';
 import { modoDoFoco } from './camera-batalha.js';
+import { montarNatureza } from './mundo-3d.js';
 import * as C from '../core.js';
 import * as CB from '../combate.js';
 import * as E from '../species.js';
@@ -94,6 +95,9 @@ for (const e of EDIFICIOS) {
   contorno(malha);
   scene.add(malha);
 }
+
+// árvores, pedras e lago (formas simples; ver mundo-3d.js)
+montarNatureza(scene, material, contorno);
 
 // placa interativa na praça: poste e painel
 const placa = new THREE.Group();
