@@ -141,6 +141,26 @@ button:focus-visible{outline:2px solid #ffb347;outline-offset:2px}
 @media (prefers-reduced-motion: reduce){section[data-aba]{animation:none}.escaner.escaneando .escaner-barra span{animation:none;width:100%}.escaner.escaneando .escaner-alvo{animation:none}.escaner.escaneando .escaner-status{animation:none}}
 .novo-badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:6px;border-radius:9px;background:#ff5b5b;color:#fff;font-size:11px;line-height:18px;text-align:center;box-shadow:0 0 8px rgba(255,91,91,.6)}
 .ef{font-size:11px;color:#ffd27a;margin-left:4px;letter-spacing:.02em}
+.lado-batalha{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:12px;align-items:start;background:none;border:none;box-shadow:none;padding:0;animation:entrar .32s ease-out}
+.lado-batalha .resultado{background:linear-gradient(180deg,rgba(18,44,94,.96),rgba(9,25,60,.96));border:2px solid #3f8fd6;padding:14px;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.lado-batalha .resultado.vitoria{border-color:#ffd27a}
+.lado-batalha .resultado.derrota{border-color:#ff7070}
+.espolio{background:linear-gradient(180deg,rgba(18,44,94,.96),rgba(9,25,60,.96));border:2px solid #3f8fd6;padding:14px;animation:espolio-entra .5s ease-out}
+@keyframes espolio-entra{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+.espolio h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:#fff;border-bottom:1px solid #3f8fd6;padding-bottom:6px;margin:0 0 8px}
+.espolio-item{display:flex;align-items:center;gap:8px;padding:6px 8px;margin:6px 0;border-left:3px solid #7fdcff;background:rgba(5,15,40,.6);animation:espolio-entra .4s ease-out both}
+.espolio-item.gold{border-color:#ffd27a}
+.espolio-item.mon{border-color:#b68cff}
+.espolio-item.ovo{border-color:#ffb347}
+.espolio-item.ficha{border-color:#ff9ad5}
+.espolio-item.esfera{border-color:#6fe39a}
+.espolio-item.passe{border-color:#9fb6d9}
+.espolio-icone{font-size:16px;width:22px;text-align:center}
+.vinculo{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#cfe8ff}
+.vinculo progress{width:100%;height:10px;accent-color:#ffb347}
+.evo-linha{list-style:none;border:1px solid #3f8fd6;padding:10px;margin:8px 0;background:rgba(5,15,40,.6)}
+@media (max-width:760px){.lado-batalha{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){.espolio,.espolio-item,.lado-batalha{animation:none}}
 </style>
 </head>
 <body>

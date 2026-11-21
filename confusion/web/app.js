@@ -777,7 +777,73 @@ function iniciarCombate(tipo, m, dados = {}) {
   S.combate = { tipo, monstroId: m.id, dados, ...CB.criarCombate(jog, CB.criarLutador(alvo), S.pocoes) };
   note(`combate contra ${alvo.nome} começou (${TIPO_LABEL[tipo]}).`);
 }
+// Resultado da batalha e espólios: guardados ao fim de cada batalha e mostrados ao lado da tela.
+// Os espólios são o que mudou no estado durante a batalha (antes e depois), então batem com o que o jogo aplicou.
+let ultimoCombate = null;
+let espolio = null;
+function fotoEspolio() {
+  return {
+    diamonds: S.diamonds, gold: S.gold, eggs: S.eggs.length, monsters: S.monsters.length,
+    tickets: { ...S.tickets }, esferas: { ...S.esferas }, resources: { ...S.resources }, passXp: S.pass.xp,
+  };
+}
+function calcularEspolio(a, b) {
+  const itens = [];
+  const dDiam = b.diamonds - a.diamonds;
+  if (dDiam > 0) itens.push({ icone: '◆', nome: 'Diamantes', qtd: dDiam, cor: 'diam' });
+  const dGold = b.gold - a.gold;
+  if (dGold > 0) itens.push({ icone: '●', nome: 'Gold', qtd: dGold, cor: 'gold' });
+  const dOvos = b.eggs - a.eggs;
+  if (dOvos > 0) itens.push({ icone: '⬮', nome: 'Ovo', qtd: dOvos, cor: 'ovo' });
+  const dMon = b.monsters - a.monsters;
+  if (dMon > 0) itens.push({ icone: '★', nome: 'Monstrinho capturado', qtd: dMon, cor: 'mon' });
+  for (const k of Object.keys(b.tickets)) {
+    const d = b.tickets[k] - (a.tickets[k] || 0);
+    if (d > 0) itens.push({ icone: '✦', nome: `Ficha ${BANNER_LABEL[k] || k}`, qtd: d, cor: 'ficha' });
+  }
+  for (const k of Object.keys(b.esferas)) {
+    const d = b.esferas[k] - (a.esferas[k] || 0);
+    if (d > 0) itens.push({ icone: '◉', nome: `Esfera ${(RARITY_LABEL[k] || k).toLowerCase()}`, qtd: d, cor: 'esfera' });
+  }
+  for (const k of Object.keys(b.resources)) {
+    const d = (b.resources[k] || 0) - (a.resources[k] || 0);
+    if (d > 0) itens.push({ icone: '▣', nome: ITEM_LABEL[k] || k, qtd: d, cor: 'recurso' });
+  }
+  const dPasse = b.passXp - a.passXp;
+  if (dPasse > 0) itens.push({ icone: '▲', nome: 'XP do passe', qtd: dPasse, cor: 'passe' });
+  return itens;
+}
 function fimCombate() {
+  const e = S.combate;
+  const antes = fotoEspolio();
+  fimCombateBase();
+  if (!e) return;
+  ultimoCombate = {
+    vitoria: e.resultado === 'vitoria', tipo: e.tipo, turnos: Math.min(e.turno, CB.COMBATE.turnosMax),
+    jog: e.jog.nome, ini: e.ini.nome, log: e.log.slice(-8),
+  };
+  espolio = calcularEspolio(antes, fotoEspolio());
+}
+function ladoBatalhaHtml() {
+  const r = ultimoCombate;
+  const log = r.log.map((l) => `<li>${esc(l)}</li>`).join('');
+  const itens = (espolio || []).map((i) => `<div class="espolio-item ${i.cor}"><span class="espolio-icone">${i.icone}</span><b>+${i.qtd}</b> ${esc(i.nome)}</div>`).join('')
+    || '<p class="muted">Nenhum espólio desta vez.</p>';
+  return `<section class="lado-batalha" data-aba="explorar">
+    <div class="resultado ${r.vitoria ? 'vitoria' : 'derrota'}">
+      <h2>${r.vitoria ? 'Vitória' : 'Derrota'} · ${esc(r.jog)} x ${esc(r.ini)}</h2>
+      <p class="muted">${TIPO_LABEL[r.tipo] || r.tipo} · ${r.turnos} turno(s)</p>
+      <ul class="log">${log}</ul>
+    </div>
+    <aside class="espolio">
+      <h2>Espólios</h2>
+      ${itens}
+      <button data-espolio-fechar>Fechar</button>
+    </aside>
+  </section>`;
+}
+
+function fimCombateBase() {
   const e = S.combate;
   const vitoria = e.resultado === 'vitoria';
   S.pocoes = { ...e.pocoes };
@@ -1451,6 +1517,16 @@ function act(name, el) {
       S = newState();
       break;
     }
+    case 'alimentar': {
+      const m = S.monsters.find((x) => x.id === el.dataset.id);
+      if (!m) return;
+      if ((S.resources.comida || 0) < 1) { note('sem comida para alimentar.'); break; }
+      if ((m.vinculo || 0) >= 100) { note(`${m.species} já está com vínculo máximo.`); break; }
+      S.resources.comida -= 1;
+      m.vinculo = Math.min(100, (m.vinculo || 0) + 10);
+      note(`${m.species} comeu e ficou mais ligado a você (vínculo ${m.vinculo}).`);
+      break;
+    }
     default: return;
   }
   save();
@@ -1505,10 +1581,19 @@ let abaAtiva = 'inicio';
 const abaDaSecao = (titulo) => (REGRAS_ABA.find(([re]) => re.test(titulo)) || [null, 'inicio'])[1];
 
 function evolucaoHtml() {
-  const lista = S.monsters.map((m) => `<li>${monstroTag(m)} · nível ${m.level}</li>`).join('') || '<li class="muted">Nenhum monstrinho ainda.</li>';
+  const linhas = S.monsters.map((m) => {
+    const v = m.vinculo || 0;
+    const sem = (S.resources.comida || 0) < 1 || v >= 100;
+    return `<li class="evo-linha">
+      <div>${monstroTag(m)} · nível ${m.level}</div>
+      <div class="vinculo"><span>Vínculo ${v}/100</span><progress value="${v}" max="100"></progress></div>
+      <button data-act="alimentar" data-id="${m.id}" ${sem ? 'disabled' : ''}>Alimentar (1 comida: +10 vínculo)</button>
+      <p class="muted">Evolução: a regra e as formas evoluídas esperam o nome e a arte de cada forma.</p>
+    </li>`;
+  }).join('');
   return `<section data-aba="evolucao"><h2>Evolução</h2>
-    <p class="muted">A evolução por vínculo ainda não existe no piloto web (está só no núcleo Python). Esta aba já reserva o lugar: cada monstrinho aparece aqui com o nível.</p>
-    <ul class="lista-evo">${lista}</ul>
+    <p class="muted">O vínculo sobe com comida e a evolução depende dele. Comida: ${S.resources.comida || 0}.</p>
+    <ul class="lista-evo">${linhas || '<li class="muted">Nenhum monstrinho ainda.</li>'}</ul>
     <button data-aba-ir="monstrinhos">Ver monstrinhos ›</button>
     <button data-aba-ir="ovos">Abrir ovos ›</button></section>`;
 }
@@ -1612,6 +1697,8 @@ function montarMenu() {
     ovos.querySelectorAll('button[data-act="hatch"]').forEach((b) => { b.textContent = 'Escanear ovo inicial'; });
     ovos.querySelectorAll('ul.log li').forEach((li) => { if (li.querySelector('button')) li.classList.add('ovo-card'); });
   }
+  if (S.combate) { ultimoCombate = null; espolio = null; }
+  if (ultimoCombate) app.querySelector(':scope > section[data-aba="explorar"]')?.insertAdjacentHTML('beforebegin', ladoBatalhaHtml());
   app.insertAdjacentHTML('beforeend', evolucaoHtml() + equipamentosHtml());
   const barra = `<nav class="menu-abas" aria-label="Menus">
     <button class="seta" data-seta="-1" aria-label="Aba anterior">◀</button>
@@ -1647,6 +1734,7 @@ document.addEventListener('click', (e) => {
   }, 2400);
 }, true);
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-espolio-fechar]')) { ultimoCombate = null; espolio = null; document.querySelector('.lado-batalha')?.remove(); return; }
   const aba = e.target.closest('[data-aba-ir]');
   if (aba) { mostrarAba(aba.dataset.abaIr); return; }
   const seta = e.target.closest('[data-seta]');
