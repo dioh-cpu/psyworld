@@ -119,7 +119,7 @@ const faccoes = {
 // 04 — NPCs com memória e rotina. Referência: Stardew Valley (horários) e Persona 5 (vínculos com personagens).
 const FASES = ['manha', 'tarde', 'noite'];
 export const faseDo = (dia) => FASES[(dia - 1) % 3];
-const NPCS = [
+export const NPCS = [
   { id: 'ana', nome: 'Ana, ferreira', disponivel: ['manha', 'tarde'], recompensa: { pedra: 1 } },
   { id: 'teo', nome: 'Teo, curandeiro', disponivel: ['noite'], recompensa: { raizes: 1 } },
   { id: 'lia', nome: 'Lia, cartógrafa', disponivel: ['tarde'], recompensa: { madeira: 1 } },

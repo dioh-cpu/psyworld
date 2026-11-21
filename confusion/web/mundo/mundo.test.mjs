@@ -221,6 +221,29 @@ test('25 guerras: facções opostas entram em guerra; mediar encerra', () => {
   M.acaoMundo(est, '25', 'mediar', {}, ctx());
   assert.equal(est['25'].guerra, false);
 });
+test('25 guerras: o aviso do cerco descreve o efeito real (sanidade), não queda de prosperidade', () => {
+  const est = M.criarMundo();
+  est['03'] = { guardioes: 50, culto: -50, guilda: 0 };
+  const notas = [];
+  for (let d = 1; d <= 6; d++) notas.push(...M.diaMundo(est, ctx({ dia: d })).notas);
+  const aviso = notas.find((n) => n.includes('cerco chegou'));
+  assert.ok(aviso, 'o cerco deve avisar no quinto dia');
+  assert.ok(aviso.includes('sanidade'));
+  assert.ok(!aviso.includes('prosperidade'));
+});
+test('mundo: os 50 sistemas rodam 60 dias e todas as ações executam sem erro (com os argumentos da interface)', () => {
+  const est = M.criarMundo();
+  for (let d = 1; d <= 60; d++) M.diaMundo(est, ctx({ dia: d, ponteFechada: d >= 4 && d <= 7 }));
+  for (const s of M.SISTEMAS) {
+    for (const acao of Object.keys(s.acoes || {})) {
+      const opcoes = M.OPCOES_ACAO[`${s.id}.${acao}`];
+      const lista = opcoes ? opcoes(est) : [];
+      const args = lista.length ? lista[0].args : {};
+      assert.doesNotThrow(() => M.acaoMundo(est, s.id, acao, args, ctx()), `${s.id}.${acao}`);
+    }
+    assert.equal(typeof s.resumo(est[s.id]), 'string', `${s.id} sem resumo`);
+  }
+});
 test('26 adaptações: treinar para no nível 3', () => {
   const est = M.criarMundo();
   for (let i = 0; i < 5; i++) M.acaoMundo(est, '26', 'treinar_bioma', {}, ctx());

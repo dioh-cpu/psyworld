@@ -130,7 +130,7 @@ const guerras = {
     if (!est.guerra && opostos) { est.guerra = true; notas.push('As facções entraram em guerra.'); }
     if (est.guerra) {
       est.cerco += 1;
-      if (est.cerco === 5) notas.push('O cerco chegou à Vila do Norte: a prosperidade caiu.');
+      if (est.cerco === 5) notas.push('O cerco chegou à Vila do Norte: o desgaste começa a pesar sobre a sua sanidade.');
       return { notas, efeitos: est.cerco >= 5 ? { sanidade: -1 } : {} };
     }
     return { notas };
