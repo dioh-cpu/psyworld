@@ -72,7 +72,7 @@ mar.position.y = -0.3;
 scene.add(mar);
 
 // chão das regiões, areia, estradas, prédios, lago, árvores, pedras e objetos (ver mundo-3d.js)
-const mundo = montarMundo(scene, { material, contorno, raiz: RAIZ });
+montarMundo(scene, { material, contorno, raiz: RAIZ });
 
 // piso da praça: anel claro e medalhão no centro
 const anel = new THREE.Mesh(new THREE.RingGeometry(8.6, 9.1, 64), material(COR_TRACO));
@@ -1114,7 +1114,6 @@ function quadro(agora) {
   const dt = Math.min(0.05, (agora - ultimo) / 1000);
   ultimo = agora;
   atualizar(dt, agora);
-  mundo.atualizar(camera.position);
   if (batalha) {
     const dtBatalha = dt * preferenciasBatalha.velocidade;
     tocarRoteiro(dtBatalha);

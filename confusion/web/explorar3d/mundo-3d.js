@@ -256,41 +256,21 @@ function montarCeu(scene, arteDe) {
   }
 }
 
-// ---- casa de teste: quatro cartões fixos no mundo. Cada cartão é uma das imagens (frente+esquerda, frente+direita,
-// costas+esquerda, costas+direita) com orientação fixa, voltada para a diagonal do seu quadrante. Só o cartão do quadrante
-// onde a câmera está aparece, então a casa nunca gira junto com a câmera. A altura visível é ALTURA_CASA (2,5 vezes o personagem).
-const CARTOES_CASA = [
-  { nome: 'frente-esquerda', sx: -1, sz: 1 },
-  { nome: 'frente-direita', sx: 1, sz: 1 },
-  { nome: 'costas-esquerda', sx: -1, sz: -1 },
-  { nome: 'costas-direita', sx: 1, sz: -1 },
-];
-const PROPORCAO_CASA = 572 / 398;   // largura / altura: as quatro imagens recortadas têm a mesma caixa
+// ---- casa de teste: um cartão fixo no chão, com a imagem de frente e lado esquerdo. Não troca de imagem nem gira
+// com a câmera. É de dois lados (o verso mostra a mesma imagem espelhada). A altura visível é ALTURA_CASA (2,5 vezes o personagem).
+const PROPORCAO_CASA = 572 / 398;   // largura / altura da imagem recortada
 
 function montarCasaTeste(scene, arteDe) {
   const { x, z } = CASA_TESTE;
   const altura = ALTURA_CASA;
-  const largura = altura * PROPORCAO_CASA;
-  const cartoes = CARTOES_CASA.map(({ nome, sx, sz }) => {
-    const tex = carregador.load(arteDe(`casa-teste/${nome}.webp`));
-    tex.colorSpace = THREE.SRGBColorSpace;
-    const malha = new THREE.Mesh(
-      new THREE.PlaneGeometry(largura, altura),
-      new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5 }),
-    );
-    malha.position.set(x, altura / 2, z);
-    malha.rotation.y = Math.atan2(sx, sz);   // orientação fixa: olha para a diagonal do quadrante
-    malha.visible = false;
-    scene.add(malha);
-    return { malha, sx, sz };
-  });
-  return {
-    atualizar(cam) {
-      const sx = cam.x < x ? -1 : 1;
-      const sz = cam.z < z ? -1 : 1;
-      for (const c of cartoes) c.malha.visible = c.sx === sx && c.sz === sz;
-    },
-  };
+  const tex = carregador.load(arteDe('casa-teste/frente-esquerda.webp'));
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const malha = new THREE.Mesh(
+    new THREE.PlaneGeometry(altura * PROPORCAO_CASA, altura),
+    new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide }),
+  );
+  malha.position.set(x, altura / 2, z);
+  scene.add(malha);
 }
 
 // ---- partes do mundo ----
@@ -423,17 +403,15 @@ function navios(scene, arteDe) {
 }
 
 // Monta o mundo inteiro. `material(cor, mapa)` e `contorno(malha)` vêm de main.js; `raiz` é o caminho até a raiz do site.
-// Devolve `atualizar(posicaoCamera)`: troca o cartão da casa conforme o quadrante da câmera.
 export function montarMundo(scene, { material, contorno, raiz = '' }) {
   const arteDe = (nome) => `${raiz}assets/mundo/${nome}`;
   montarCeu(scene, arteDe);
   chao(scene, material);
   areia(scene, material);
   estradas(scene, material);
-  const casa = montarCasaTeste(scene, arteDe);
+  montarCasaTeste(scene, arteDe);
   lago(scene, material);
   for (const a of ARVORES) arvore(scene, material, contorno, a, arteDe);
   for (const p of PEDRAS) pedra(scene, material, contorno, p);
   navios(scene, arteDe);
-  return { atualizar: (cam) => casa.atualizar(cam) };
 }
