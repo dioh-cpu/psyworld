@@ -30,13 +30,14 @@ export const POSICAO = {
 
 // pos: onde a câmera fica; olha: para onde mira; fov: campo de visão vertical em graus.
 export const VISTAS = {
-  panoramica: { pos: [0, 7.8, 6.8], olha: [0, 0.4, -0.6], fov: 52 },
-  abertura: { pos: [0, 11.8, 12.6], olha: [0, 0.4, -0.6], fov: 52 },
+  // visão isométrica de cima (cerca de 58 graus). A distância cresce para caber a arena inteira na largura da tela.
+  panoramica: { pos: [0, 10.4, 5.6], olha: [0, 0.2, -0.8], fov: 52 },
+  abertura: { pos: [0, 12.1, 6.6], olha: [0, 0.2, -0.8], fov: 52 },
   // o foco aproxima quem age; o outro lado continua na tela (o olhar fica entre os dois)
-  'foco-jogador': { pos: [-0.6, 6.2, 7.0], olha: [0, 1.0, 0.6], fov: 50 },
-  'foco-inimigo': { pos: [0.6, 6.2, 6.0], olha: [0, 1.0, -1.4], fov: 50 },
+  'foco-jogador': { pos: [-0.5, 7.8, 4.8], olha: [0, 1.0, 0.6], fov: 50 },
+  'foco-inimigo': { pos: [0.5, 7.8, 2.8], olha: [0, 1.0, -1.4], fov: 50 },
   vitoria: { pos: [-3.4, 1.0, 5.4], olha: [0, 1.2, 1.0], fov: 40 },
-  derrota: { pos: [0, 11.0, 9.8], olha: [0, 0.4, -0.6], fov: 54 },
+  derrota: { pos: [0, 12.4, 7.0], olha: [0, 0.2, -0.8], fov: 54 },
 };
 
 export function vistaDaCamera(modo) {
@@ -51,5 +52,5 @@ export const modoDoFoco = (lado) => (lado === 'jogador' ? 'foco-jogador' : 'foco
 // Vista presa num lutador (o alvo escolhido): isométrica, do lado de cá, mirando o meio do corpo dele.
 // Os outros lutadores podem sair da tela; o alvo é o que importa nesse momento.
 export function vistaDoAlvo(p) {
-  return { pos: [p.x * 0.4 - 0.6, 6.8, p.z + 6.8], olha: [p.x * 0.6, MEIO_CORPO, p.z], fov: 46 };
+  return { pos: [p.x * 0.6 - 0.3, 8.3, p.z + 4.5], olha: [p.x * 0.6, MEIO_CORPO, p.z], fov: 46 };
 }

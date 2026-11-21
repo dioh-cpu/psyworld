@@ -272,11 +272,19 @@ function direcoesDoMapa(especie) {
   return pronto;
 }
 
+// Costas geradas para as espécies sem folha de direções (frente e costas em arquivos separados).
+const COSTAS_DAS_ESPECIES = {
+  Brotavel: 'assets/monsters/brotavel/costas.webp',
+  Ignavor: 'assets/monsters/ignavor/costas.webp',
+  Solarin: 'assets/monsters/solarin/costas.webp',
+  Vaelith: 'assets/monsters/vaelith/costas.webp',
+};
 // Textura de uma direção do monstrinho na batalha: a célula certa da folha de quatro direções (Noctarn). Espécie sem folha
 // usa o sprite de frente nas duas direções, até a arte de costas ser gerada. A textura só vale quando a imagem carrega.
 function texturaDeDirecao(m, direcao) {
   const cfg = FOLHAS_DIRECOES[m.species];
-  const caminho = cfg ? cfg.arquivo : arteDe(m);
+  const costa = direcao === 'costas' && !cfg ? COSTAS_DAS_ESPECIES[m.species] : null;
+  const caminho = cfg ? cfg.arquivo : (costa ?? arteDe(m));
   const c = document.createElement('canvas');
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;

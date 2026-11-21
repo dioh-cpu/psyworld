@@ -7,9 +7,11 @@ import { criarMaterialCor, aplicarGiro as aplicarGiroCor } from './cor-sprite.js
 
 const ALTURA = 2.1;              // altura dos monstrinhos na arena (do pé à cabeça)
 const SEPARACAO = 1.25;          // distância mínima entre dois monstrinhos
-const RAIO_ARENA = 3.5;          // até onde um monstrinho pode ir (o disco tem 4,2)
+const ARENA = { x: 4.6, z: 5.6 }; // o disco é mais comprido na profundidade: a tela do celular é alta
+const LIMITE_LUTA = { x: 3.9, z: 4.9 }; // até onde um monstrinho pode ir (dentro do disco)
 const DAMPING_CAMERA = 3.2;
-const MEIA_LARGURA_LUTA = 3.2;   // metade da largura que o time e os inimigos ocupam na tela (em unidades da arena)
+const MEIA_LARGURA_LUTA = 5.0;   // metade da largura que o time e os inimigos ocupam na tela (em unidades da arena)
+const METADE_ALTURA_LUTA = 9.2;  // metade da altura que a luta ocupa: a arena cabe entre as faixas de cima e de baixo
 const POSICAO_RESERVA = { x: 0, z: -2.4 };   // slot de inimigo sem uso (fica escondido)
 
 export function criarCenaBatalha(THREE) {
@@ -46,16 +48,19 @@ export function criarCenaBatalha(THREE) {
 
   // arena: disco escuro com anéis claros (as cores vêm do tema da área)
   const discoMat = new THREE.MeshBasicMaterial({ color: '#1c3f73' });
-  const disco = new THREE.Mesh(new THREE.CircleGeometry(4.2, 72), discoMat);
+  const disco = new THREE.Mesh(new THREE.CircleGeometry(1, 72), discoMat);
+  disco.scale.set(ARENA.x, ARENA.z, 1);
   disco.rotation.x = -Math.PI / 2;
   cena.add(disco);
   const anelMat = new THREE.MeshBasicMaterial({ color: '#7fdcff', transparent: true, opacity: 0.85 });
-  const anel = new THREE.Mesh(new THREE.RingGeometry(4.0, 4.12, 96), anelMat);
+  const anel = new THREE.Mesh(new THREE.RingGeometry(0.94, 0.96, 96), anelMat);
+  anel.scale.set(ARENA.x, ARENA.z, 1);
   anel.rotation.x = -Math.PI / 2;
   anel.position.y = 0.01;
   cena.add(anel);
   const anelInternoMat = new THREE.MeshBasicMaterial({ color: '#7fdcff', transparent: true, opacity: 0.35 });
-  const anelInterno = new THREE.Mesh(new THREE.RingGeometry(2.1, 2.16, 96), anelInternoMat);
+  const anelInterno = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.515, 96), anelInternoMat);
+  anelInterno.scale.set(ARENA.x, ARENA.z, 1);
   anelInterno.rotation.x = -Math.PI / 2;
   anelInterno.position.y = 0.012;
   cena.add(anelInterno);
@@ -264,10 +269,10 @@ export function criarCenaBatalha(THREE) {
           l.p.z = outro.p.z + uz * SEPARACAO;
         }
       }
-      const r = Math.hypot(l.p.x, l.p.z);
-      if (r > RAIO_ARENA) {
-        l.p.x *= RAIO_ARENA / r;
-        l.p.z *= RAIO_ARENA / r;
+      const k = Math.hypot(l.p.x / LIMITE_LUTA.x, l.p.z / LIMITE_LUTA.z);
+      if (k > 1) {
+        l.p.x /= k;
+        l.p.z /= k;
       }
       l.malha.position.set(l.p.x, 0, l.p.z);
     }
@@ -340,8 +345,10 @@ export function criarCenaBatalha(THREE) {
     const oy = v.pos[1] - v.olha[1];
     const oz = v.pos[2] - v.olha[2];
     const distancia = Math.hypot(ox, oy, oz);
-    const necessaria = MEIA_LARGURA_LUTA / (Math.tan((v.fov * Math.PI) / 360) * camera.aspect);
-    const fator = Math.max(1, necessaria / distancia);
+    const tangente = Math.tan((v.fov * Math.PI) / 360);
+    const necessariaLargura = MEIA_LARGURA_LUTA / (tangente * camera.aspect);
+    const necessariaAltura = METADE_ALTURA_LUTA / tangente;
+    const fator = Math.max(1, necessariaLargura / distancia, necessariaAltura / distancia);
     posAtual.lerp(new THREE.Vector3(v.olha[0] + ox * fator, v.olha[1] + oy * fator, v.olha[2] + oz * fator), k);
     olharAtual.lerp(new THREE.Vector3(...v.olha), k);
     fovAtual += (v.fov - fovAtual) * k;
