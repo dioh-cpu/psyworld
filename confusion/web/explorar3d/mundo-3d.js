@@ -13,10 +13,10 @@ const COR_LAGO_BORDA = '#c2b48a';
 const COR_LAGO_REFLEXO = '#5fa3cf';
 const COR_AREIA = '#d6c08c';
 const TAMANHO_TILE = 12;                 // unidades do mundo por repetição da textura do chão
-const ALTURA_COPA = { pequena: 3.6, media: 5.0, grande: 6.2 };
+const ALTURA_JOGADOR = 1.7;              // altura do personagem (cápsula de main.js: 0,9 + 2 x 0,4)
+const ALTURA_ARVORE = 3 * ALTURA_JOGADOR;   // copa visível: 3 vezes o personagem (com variação na escala)
+const ALTURA_CASA = 2.5 * ALTURA_JOGADOR;   // casa visível: no mínimo 2 vezes o personagem
 const ITENS_NAVIO = [['ancora', 2.2], ['barril', 1.9], ['corda', 1.1], ['madeira-amarrada', 1.5], ['roda', 2.0], ['tabua', 1.0]];
-const ALTURA_CASA = 6.5;                 // altura do sprite da casa em unidades do mundo (quadro 3:4)
-const BASE_CASA = 0.257;                 // fração do quadro, de baixo para cima, onde fica o chão da casa
 const QUADROS_CASA = ['frente-esquerda', 'frente-direita', 'costas-esquerda', 'costas-direita'];
 
 const carregador = new THREE.TextureLoader();
@@ -165,7 +165,44 @@ const ARTE_AREIA = (g, n, r) => {
 };
 
 // ---- sprites: uma imagem carregada uma vez e usada em quantos objetos forem preciso ----
-const ajustarEscala = (s, altura, img) => s.scale.set((altura * img.width) / img.height, altura, 1);
+// Medidas da parte visível do desenho (sem a margem transparente): a fração da altura do quadro que aparece e a
+// margem de baixo. Assim um sprite de altura X aparece com X de altura, e o pé dele fica no chão.
+const medidasDaImagem = new WeakMap();
+function medidasDe(img) {
+  if (!medidasDaImagem.has(img)) {
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, img.width, img.height).data;
+    let topo = -1;
+    let base = -1;
+    for (let y = 0; y < img.height; y++) {
+      for (let x = 0; x < img.width; x++) {
+        if (d[(y * img.width + x) * 4 + 3] > 20) {
+          if (topo < 0) topo = y;
+          base = y;
+          break;
+        }
+      }
+    }
+    if (topo < 0) topo = 0;
+    if (base < 0) base = img.height - 1;
+    medidasDaImagem.set(img, {
+      frac: (base - topo + 1) / img.height,
+      margemBaixo: (img.height - (base + 1)) / img.height,
+    });
+  }
+  return medidasDaImagem.get(img);
+}
+// Escala o sprite para que a parte visível tenha a altura pedida, com o pé no chão.
+function ajustarEscala(s, altura, img) {
+  const { frac, margemBaixo } = medidasDe(img);
+  const h = altura / frac;
+  s.scale.set((h * img.width) / img.height, h, 1);
+  s.center.set(0.5, margemBaixo);
+}
 
 function spriteArte(caminho, altura, x, z, { cor = '#ffffff' } = {}) {
   let entrada = imagens.get(caminho);
@@ -225,15 +262,18 @@ function montarCeu(scene, arteDe) {
 let casaTeste = null;
 
 function montarCasaTeste(scene, arteDe) {
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ alphaTest: 0.5 }));
+  sprite.position.set(CASA_TESTE.x, 0, CASA_TESTE.z);
+  sprite.scale.set(ALTURA_CASA * 0.75, ALTURA_CASA, 1);   // enquanto a imagem não carrega
   const texturas = {};
   for (const nome of QUADROS_CASA) {
-    texturas[nome] = carregador.load(arteDe(`casa-teste/${nome}.webp`));
+    // escala e base vêm da frente: os quatro quadros têm o mesmo quadro e o mesmo chão
+    texturas[nome] = carregador.load(arteDe(`casa-teste/${nome}.webp`), (t) => {
+      if (nome === 'frente-esquerda') ajustarEscala(sprite, ALTURA_CASA, t.image);
+    });
     texturas[nome].colorSpace = THREE.SRGBColorSpace;
   }
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texturas['frente-esquerda'], alphaTest: 0.5 }));
-  sprite.center.set(0.5, BASE_CASA);
-  sprite.position.set(CASA_TESTE.x, 0, CASA_TESTE.z);
-  sprite.scale.set(ALTURA_CASA * 0.75, ALTURA_CASA, 1);
+  sprite.material.map = texturas['frente-esquerda'];
   scene.add(sprite);
   casaTeste = { sprite, texturas, lado: 'frente-esquerda' };
 }
@@ -320,7 +360,8 @@ function arvore(scene, material, contorno, a, arteDe) {
   }
   const tamanho = a.escala < 1.05 ? 'pequena' : a.escala < 1.2 ? 'media' : 'grande';
   const variante = 1 + Math.min(3, Math.floor((a.giro / (Math.PI * 2)) * 4));
-  scene.add(spriteArte(arteDe(`arvores/copa-${tamanho}-${variante}.webp`), ALTURA_COPA[tamanho] * a.escala, a.x, a.z, {
+  const altura = ALTURA_ARVORE * (0.9 + ((a.escala - 0.9) / 0.4) * 0.2);   // escala 0,9 a 1,3 → 0,9x a 1,1x
+  scene.add(spriteArte(arteDe(`arvores/copa-${tamanho}-${variante}.webp`), altura, a.x, a.z, {
     cor: a.tipo === 'pinheiro' ? COR_PINHEIRO : '#ffffff',
   }));
 }
