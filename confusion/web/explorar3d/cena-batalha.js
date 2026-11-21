@@ -1,12 +1,16 @@
-// Cena 3D da batalha: arena em círculo, os dois monstrinhos como desenhos de pé e a câmera do roteiro da luta.
-// O desenho é o sprite da espécie. A cor de uma variação é um giro de matiz feito no sombreador, por isso dá para animar a troca.
+// Cena 3D da batalha: arena em círculo, os monstrinhos em pé no chão e a câmera isométrica do roteiro da luta.
+// Cada monstrinho é um sprite com o pé na arena. Ele fica de frente para a câmera (não fica fino de cima nem de lado),
+// sem sombra. Os aliados mostram as costas e os inimigos a frente. Os lutadores não se atravessam: quem avança ou apanha
+// para na distância mínima do outro e não sai do disco.
 import { POSICOES_ALIADOS, posicaoDoInimigo, vistaDaCamera } from './camera-batalha.js';
 import { criarMaterialCor, aplicarGiro as aplicarGiroCor } from './cor-sprite.js';
 
-const ALTURA = 2.4;        // altura dos monstrinhos na arena
-const POSICAO_PADRAO_INIMIGO = { x: 2.5, z: -0.7 };
+const ALTURA = 2.1;              // altura dos monstrinhos na arena (do pé à cabeça)
+const SEPARACAO = 1.25;          // distância mínima entre dois monstrinhos
+const RAIO_ARENA = 3.5;          // até onde um monstrinho pode ir (o disco tem 4,2)
 const DAMPING_CAMERA = 3.2;
-const MEIA_LARGURA_LUTA = 4.2; // metade da largura que o time e os inimigos precisam ocupar na tela (em unidades da arena); menor = luta maior
+const MEIA_LARGURA_LUTA = 3.2;   // metade da largura que o time e os inimigos ocupam na tela (em unidades da arena)
+const POSICAO_RESERVA = { x: 0, z: -2.4 };   // slot de inimigo sem uso (fica escondido)
 
 export function criarCenaBatalha(THREE) {
   const cena = new THREE.Scene();
@@ -102,38 +106,34 @@ export function criarCenaBatalha(THREE) {
     geoFaisca.attributes.position.needsUpdate = true;
   }
 
-  // sombra de cada monstrinho no chão
-  const criarSombra = () => {
-    const m = new THREE.Mesh(new THREE.CircleGeometry(0.8, 32),
-      new THREE.MeshBasicMaterial({ color: '#000814', transparent: true, opacity: 0.45, depthWrite: false }));
-    m.rotation.x = -Math.PI / 2;
-    m.position.y = 0.02;
-    m.scale.set(1.3, 0.55, 1);
-    m.visible = false;
-    cena.add(m);
-    return m;
-  };
+  // o sprite tem a origem no pé (a imagem sobe a partir do chão), então o pé fica na arena
+  function geometriaDoLutador(largura) {
+    const g = new THREE.PlaneGeometry(largura, ALTURA);
+    g.translate(0, ALTURA / 2, 0);
+    return g;
+  }
 
   function criarLutador(lado, base) {
     const { material, uniforms } = criarMaterialCor(THREE);
-    const malha = new THREE.Mesh(new THREE.PlaneGeometry(ALTURA, ALTURA), material);
+    const malha = new THREE.Mesh(geometriaDoLutador(ALTURA), material);
     malha.visible = false;
     cena.add(malha);
     return {
-      lado, uniforms, malha, sombra: criarSombra(),
-      base: { x: base.x, z: base.z },
-      flip: lado === 'inimigo',
+      lado, uniforms, malha,
+      base: { x: base.x, z: base.z },   // onde fica no repouso
+      off: { x: 0, z: 0 },              // deslocamento do golpe (avanço ou empurrão), somado à base
+      p: { x: base.x, z: base.z },      // posição usada na colisão deste quadro
       pronto: false, aspecto: 1,
-      fase: Math.random() * 6.28,
-      lunge: 0, lungeTotal: 1, lungeAmp: 0.7, lungeDir: 0,
-      golpeT: 0, curaT: 0, knock: 0,
+      lunge: 0, lungeTotal: 1, lungeAmp: 0.7, lungeDir: { x: 0, z: 0 },
+      golpeT: 0, curaT: 0, knock: 0, knockDir: { x: 0, z: 0 },
       anim: null,
+      ativo: false, derrubado: false,
     };
   }
   // até 3 aliados e até 3 inimigos; cada um tem o seu slot na arena (ver camera-batalha.js)
   const slots = {
     aliado: POSICOES_ALIADOS.map((p) => criarLutador('aliado', p)),
-    inimigo: [0, 1, 2].map(() => criarLutador('inimigo', POSICAO_PADRAO_INIMIGO)),
+    inimigo: [0, 1, 2].map(() => criarLutador('inimigo', POSICAO_RESERVA)),
   };
   // arruma os inimigos conforme quantos são; os aliados ficam sempre nos três slots
   function disporInimigos(quantidade) {
@@ -141,7 +141,7 @@ export function criarCenaBatalha(THREE) {
       const p = posicaoDoInimigo(quantidade, i);
       l.base = { x: p.x, z: p.z };
       l.ativo = i < quantidade;
-      if (!l.ativo) { l.malha.visible = false; l.sombra.visible = false; }
+      if (!l.ativo) l.malha.visible = false;
     });
   }
   const lutadorDo = (lado, i) => slots[lado][i];
@@ -157,8 +157,10 @@ export function criarCenaBatalha(THREE) {
     l.uniforms.map.value = textura;
     l.pronto = false;
     l.malha.visible = true;
-    l.sombra.visible = true;
-    l.malha.scale.x = l.flip ? -1 : 1;
+    l.lunge = 0;
+    l.golpeT = 0;
+    l.curaT = 0;
+    l.off = { x: 0, z: 0 };
     if (giro && animar) {
       l.anim = { de: NATURAL, ate: giro, t: 0, dur };
       aplicarGiro(l, NATURAL);
@@ -168,17 +170,26 @@ export function criarCenaBatalha(THREE) {
     }
   }
 
+  // vetor unitário de `a` até `b` (no chão)
+  function direcaoEntre(a, b) {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const d = Math.hypot(dx, dz);
+    return d < 1e-6 ? { x: 0, z: 1 } : { x: dx / d, z: dz / d };
+  }
+
   // Quem age avança até o alvo e volta. Quem leva o golpe treme, pisca e é empurrado para trás.
   function golpe(ladoAtq, iAtq, ladoDef, iDef, { critico = false, habilidade = false } = {}) {
     const atq = lutadorDo(ladoAtq, iAtq);
     const def = lutadorDo(ladoDef, iDef);
-    atq.lungeDir = Math.sign(def.base.x - atq.base.x);
+    const dir = direcaoEntre(atq.base, def.base);
+    atq.lungeDir = dir;
     atq.lungeTotal = habilidade ? 0.6 : 0.38;
     atq.lungeAmp = habilidade ? 1.1 : 0.7;
     atq.lunge = atq.lungeTotal;
     def.golpeT = 0.32;
     def.knock = critico ? 0.22 : 0.12;
-    def.knockDir = -atq.lungeDir;
+    def.knockDir = { x: -dir.x, z: -dir.z };
     tremor = Math.max(tremor, critico ? 0.16 : 0.07);
     const p = projetarPonto(def.malha.position.x, ALTURA * 0.6, def.malha.position.z);
     faiscas(def.malha.position.x, ALTURA * 0.6, def.malha.position.z, critico ? '#ffb347' : '#ffd27a');
@@ -206,7 +217,6 @@ export function criarCenaBatalha(THREE) {
     l.derrubado = true;
     l.anim = null;
     l.malha.visible = false;
-    l.sombra.visible = false;
   }
 
   function reiniciarCamera() {
@@ -233,18 +243,50 @@ export function criarCenaBatalha(THREE) {
     return projetarPonto(l.malha.position.x, ALTURA * 0.85, l.malha.position.z);
   }
 
+  // Colisão entre os monstrinhos: quem se desloca (avanço ou empurrão) para na distância mínima do outro e não sai do disco.
+  // Quem está parado é a parede: o deslocamento nunca o atravessa.
+  function resolverColisoes(todos) {
+    const vivos = todos.filter((l) => l.malha.visible);
+    for (const l of vivos) l.p = { x: l.base.x + l.off.x, z: l.base.z + l.off.z };
+    for (const l of vivos) {
+      const movendo = l.off.x !== 0 || l.off.z !== 0;
+      if (movendo) {
+        for (const outro of vivos) {
+          if (outro === l) continue;
+          const dx = l.p.x - outro.p.x;
+          const dz = l.p.z - outro.p.z;
+          const d = Math.hypot(dx, dz);
+          if (d >= SEPARACAO) continue;
+          const n = d < 1e-6 ? 1 : d;
+          const ux = d < 1e-6 ? 0 : dx / n;
+          const uz = d < 1e-6 ? 1 : dz / n;
+          l.p.x = outro.p.x + ux * SEPARACAO;
+          l.p.z = outro.p.z + uz * SEPARACAO;
+        }
+      }
+      const r = Math.hypot(l.p.x, l.p.z);
+      if (r > RAIO_ARENA) {
+        l.p.x *= RAIO_ARENA / r;
+        l.p.z *= RAIO_ARENA / r;
+      }
+      l.malha.position.set(l.p.x, 0, l.p.z);
+    }
+  }
+
   function atualizar(dt, t) {
     tempo = t;
-    for (const l of [...slots.aliado, ...slots.inimigo]) {
+    const todos = [...slots.aliado, ...slots.inimigo];
+    for (const l of todos) {
       if (!l.ativo && !l.malha.visible) continue;
-      // o sprite fica com a proporção da imagem assim que ela carregar
-      const img = l.uniforms.map.value?.image;
-      if (img && !l.pronto && (img.width || img.naturalWidth)) {
+      // o sprite fica com a proporção da imagem assim que ela carregar (folhas de direção só depois de cortadas)
+      const mapa = l.uniforms.map.value;
+      const img = mapa?.image;
+      if (img && !l.pronto && (img.width || img.naturalWidth) && mapa.userData?.carregada !== false) {
         const w = img.naturalWidth || img.width;
         const h = img.naturalHeight || img.height;
         l.aspecto = w / h;
         l.malha.geometry.dispose();
-        l.malha.geometry = new THREE.PlaneGeometry(ALTURA * l.aspecto, ALTURA);
+        l.malha.geometry = geometriaDoLutador(ALTURA * l.aspecto);
         l.pronto = true;
       }
       // transformação de cor (variação): do natural até a cor da variação, com as três partes do giro juntas
@@ -261,16 +303,21 @@ export function criarCenaBatalha(THREE) {
         });
         if (l.anim.t >= l.anim.dur) l.anim = null;
       }
-      // pulo de respiração, um avanço no golpe e um empurrão no que apanha
-      let dx = 0;
+      // avanço no golpe e empurrão no que apanha (deslocamento a partir da base, em x e z)
+      let ox = 0;
+      let oz = 0;
       if (l.lunge > 0) {
         l.lunge = Math.max(0, l.lunge - dt);
         const p = 1 - l.lunge / l.lungeTotal;
-        dx += Math.sin(p * Math.PI) * l.lungeAmp * l.lungeDir;
+        const f = Math.sin(p * Math.PI) * l.lungeAmp;
+        ox += f * l.lungeDir.x;
+        oz += f * l.lungeDir.z;
       }
       if (l.golpeT > 0) {
         l.golpeT = Math.max(0, l.golpeT - dt);
-        dx += -(l.knockDir || 0) * l.knock * (l.golpeT / 0.32);
+        const f = l.knock * (l.golpeT / 0.32);
+        ox += f * l.knockDir.x;
+        oz += f * l.knockDir.z;
         l.uniforms.uFlash.value = (l.golpeT / 0.32) * 0.85;
         l.uniforms.uCor.value.set('#ffffff');
       } else if (l.curaT > 0) {
@@ -280,17 +327,15 @@ export function criarCenaBatalha(THREE) {
       } else {
         l.uniforms.uFlash.value = 0;
       }
-      const bob = Math.sin(tempo * 2 + l.fase) * 0.025;
-      l.malha.position.set(l.base.x + dx, ALTURA / 2 + bob, l.base.z);
-      l.sombra.position.set(l.base.x + dx, 0.02, l.base.z);
+      l.off = { x: ox, z: oz };
     }
+    resolverColisoes(todos);
     atualizarFaiscas(dt);
 
     // câmera: vai até a vista pedida, com tremor no impacto
     const v = vistaLivre ?? vistaDaCamera(modo);
     const k = 1 - Math.exp(-dt * DAMPING_CAMERA);
-    // em tela estreita (celular em retrato) a câmera recua, para os dois lutadores caberem
-    // a câmera recua o que for preciso para os dois lutadores caberem na largura (celular em retrato)
+    // a câmera recua o que for preciso para os dois lados caberem na largura (celular em retrato)
     const ox = v.pos[0] - v.olha[0];
     const oy = v.pos[1] - v.olha[1];
     const oz = v.pos[2] - v.olha[2];
@@ -309,6 +354,8 @@ export function criarCenaBatalha(THREE) {
       camera.fov = fovAtual;
       camera.updateProjectionMatrix();
     }
+    // o sprite fica de frente para a câmera (inteiro, sem achatar), com o pé no chão
+    for (const l of todos) l.malha.quaternion.copy(camera.quaternion);
   }
 
   function resize(largura, altura) {

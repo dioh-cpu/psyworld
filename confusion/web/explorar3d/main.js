@@ -272,6 +272,38 @@ function direcoesDoMapa(especie) {
   return pronto;
 }
 
+// Textura de uma direção do monstrinho na batalha: a célula certa da folha de quatro direções (Noctarn). Espécie sem folha
+// usa o sprite de frente nas duas direções, até a arte de costas ser gerada. A textura só vale quando a imagem carrega.
+function texturaDeDirecao(m, direcao) {
+  const cfg = FOLHAS_DIRECOES[m.species];
+  const caminho = cfg ? cfg.arquivo : arteDe(m);
+  const c = document.createElement('canvas');
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.userData.carregada = false;
+  if (!caminho) return tex;
+  const img = new Image();
+  img.onload = () => {
+    if (cfg) {
+      const largura = Math.round(img.width / cfg.ordem.length);
+      const k = Math.max(0, cfg.ordem.indexOf(direcao));
+      c.width = largura;
+      c.height = img.height;
+      c.getContext('2d').drawImage(img, k * largura, 0, largura, img.height, 0, 0, largura, img.height);
+    } else {
+      c.width = img.width;
+      c.height = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+    }
+    tex.userData.carregada = true;
+    // o canvas mudou de tamanho depois do primeiro envio à GPU: libera a textura para o three.js enviá-la de novo, inteira
+    tex.dispose();
+    tex.needsUpdate = true;
+  };
+  img.src = RAIZ + caminho;
+  return tex;
+}
+
 // ---- selvagens que rondam a ilha: ao encostar, começa a batalha ----
 const selvagens = PONTOS_SELVAGENS.map((p, i) => {
   const { material, uniforms } = criarMaterialCor(THREE);
@@ -730,12 +762,12 @@ function iniciarBatalha(s) {
   cenaBat.disporInimigos(sorteios.length);
   time.slice(0, 3).forEach((m, i) => {
     const giro = giroDoMonstro(m);
-    cenaBat.definir('aliado', i, { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.2 });
+    cenaBat.definir('aliado', i, { textura: texturaDeDirecao(m, 'costas'), giro, animar: Boolean(giro), dur: 1.2 });
   });
   sorteios.forEach((x, i) => {
     const m = x.monstro;
     const giro = giroDoMonstro(m);
-    cenaBat.definir('inimigo', i, { textura: texturaDe(arteDe(m)), giro, animar: Boolean(giro), dur: 1.6 });
+    cenaBat.definir('inimigo', i, { textura: texturaDeDirecao(m, 'frente'), giro, animar: Boolean(giro), dur: 1.6 });
   });
   cenaBat.mirar('panoramica');
   renderTudo();
@@ -1236,6 +1268,7 @@ window.addEventListener('resize', () => {
 
 // para testes automáticos: posição do personagem, câmera, localização, teleporte, batalha e time
 window.explorar3d = {
+  cenaBatalha: () => cenaBat,   // depuração: a cena 3D da batalha
   jogador: () => ({ x: estado.pos.x, z: estado.pos.z, rot: estado.rot }),
   sprites: () => scene.children.filter((o) => o.isSprite).map((s) => ({ x: s.position.x, z: s.position.z, altura: s.scale.y })),
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: estado.yaw, pitch: estado.pitch }),
