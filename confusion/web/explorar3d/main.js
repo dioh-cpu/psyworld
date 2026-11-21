@@ -1,12 +1,14 @@
-// Protótipo de exploração 3D: terceira pessoa com rotação de câmera, colisão com prédios, placa interativa e minimapa.
+// Protótipo de exploração 3D: terceira pessoa com rotação de câmera, colisão com prédios, placa interativa, minimapa
+// e controle de toque (joystick virtual, arrastar para a câmera, botões Examinar e Centralizar).
 // Os personagens e prédios são provisórios (cápsula e caixas). O visual de desenho vem do sombreado em degraus e do contorno.
 import * as THREE from 'three';
 import { resolverMovimento, fracaoLivreCamera } from './colisao.js';
+import { vetorJoystick } from './controles.js';
 
 const RAIO = 0.5;             // raio do personagem no plano do chão
-const VELOCIDADE = 4.5;       // unidades por segundo
-const DISTANCIA_CAMERA = 7;
+const VELOCIDADE = 4.5;       // unidades por segundo com o controle no máximo
 const ALTURA_ALVO = 1.4;      // a câmera mira um pouco acima dos pés
+const distanciaCamera = () => (window.innerWidth < 600 ? 13 : 11); // celular em retrato precisa de mais afastamento
 const PREDIOS = [
   { x: -8, z: -6, w: 4, d: 4, h: 4, cor: '#d9b48f' },
   { x: -2, z: -9, w: 3, d: 5, h: 6, cor: '#c9d6e3' },
@@ -100,15 +102,17 @@ const estado = {
   rot: 0,          // direção para onde o personagem olha
   bob: 0,
   yaw: 0,          // ângulo da câmera em volta do personagem
-  pitch: 0.45,     // inclinação da câmera
+  pitch: 0.5,      // inclinação da câmera
   cam: new THREE.Vector3(0, 4, 9),
   recentralizar: false,
   arrastando: null,
   mensagemAte: 0,
+  joy: { x: 0, z: 0 },   // vetor do joystick virtual
 };
 const teclas = new Set();
+const toque = window.matchMedia('(pointer: coarse)').matches;
 
-// ---- entrada ----
+// ---- entrada pelo teclado ----
 window.addEventListener('keydown', (e) => {
   teclas.add(e.code);
   if (e.code === 'KeyC' || e.code === 'KeyR') estado.recentralizar = true;
@@ -116,6 +120,8 @@ window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
 });
 window.addEventListener('keyup', (e) => teclas.delete(e.code));
+
+// ---- entrada pelo mouse e pelo dedo: arrastar na tela gira a câmera ----
 canvas.addEventListener('pointerdown', (e) => { estado.arrastando = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); });
 canvas.addEventListener('pointermove', (e) => {
   if (!estado.arrastando) return;
@@ -124,6 +130,34 @@ canvas.addEventListener('pointermove', (e) => {
   estado.arrastando = { x: e.clientX, y: e.clientY };
 });
 canvas.addEventListener('pointerup', () => { estado.arrastando = null; });
+canvas.addEventListener('pointercancel', () => { estado.arrastando = null; });
+
+// ---- joystick virtual (canto inferior esquerdo) ----
+const joy = document.getElementById('joy');
+const knob = document.getElementById('joy-knob');
+let joyDedo = null;
+function joyAtualizar(e) {
+  const r = joy.getBoundingClientRect();
+  const v = vetorJoystick(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2), r.width / 2);
+  estado.joy = v;
+  knob.style.transform = `translate(${v.x * r.width / 2}px, ${-v.z * r.width / 2}px)`;
+}
+function joyFim(e) {
+  if (e.pointerId !== joyDedo) return;
+  joyDedo = null;
+  estado.joy = { x: 0, z: 0 };
+  knob.style.transform = '';
+}
+joy.addEventListener('pointerdown', (e) => { joyDedo = e.pointerId; joy.setPointerCapture(e.pointerId); joyAtualizar(e); });
+joy.addEventListener('pointermove', (e) => { if (e.pointerId === joyDedo) joyAtualizar(e); });
+joy.addEventListener('pointerup', joyFim);
+joy.addEventListener('pointercancel', joyFim);
+
+// ---- botões de toque ----
+const btnExaminar = document.getElementById('btn-examinar');
+const btnCentro = document.getElementById('btn-centro');
+btnExaminar.addEventListener('click', () => { if (perto()) examinar(); });
+btnCentro.addEventListener('click', () => { estado.recentralizar = true; });
 
 const pressionada = (...codigos) => codigos.some((c) => teclas.has(c));
 const diferencaAngulo = (de, para) => Math.atan2(Math.sin(para - de), Math.cos(para - de));
@@ -154,21 +188,22 @@ function atualizar(dt) {
     if (Math.abs(diferencaAngulo(estado.yaw, alvoYaw)) < 0.01) estado.recentralizar = false;
   }
 
-  // movimento relativo à câmera
-  let ix = 0;
-  let iz = 0;
+  // movimento relativo à câmera: teclado ou joystick
+  let ix = estado.joy.x;
+  let iz = estado.joy.z;
   if (pressionada('KeyW', 'ArrowUp')) iz += 1;
   if (pressionada('KeyS', 'ArrowDown')) iz -= 1;
   if (pressionada('KeyD', 'ArrowRight')) ix += 1;
   if (pressionada('KeyA', 'ArrowLeft')) ix -= 1;
+  const forca = Math.min(1, Math.hypot(ix, iz));
   const frente = { x: -Math.sin(estado.yaw), z: -Math.cos(estado.yaw) };
   const direita = { x: Math.cos(estado.yaw), z: -Math.sin(estado.yaw) };
   let dx = frente.x * iz + direita.x * ix;
   let dz = frente.z * iz + direita.z * ix;
   const norma = Math.hypot(dx, dz);
-  if (norma > 0) {
-    dx /= norma;
-    dz /= norma;
+  if (norma > 0 && forca > 0) {
+    dx = (dx / norma) * forca;
+    dz = (dz / norma) * forca;
     const antes = { ...estado.pos };
     estado.pos = resolverMovimento(estado.pos, dx * VELOCIDADE * dt, dz * VELOCIDADE * dt, RAIO, caixas);
     const andou = Math.hypot(estado.pos.x - antes.x, estado.pos.z - antes.z) > 1e-4;
@@ -180,8 +215,9 @@ function atualizar(dt) {
 
   // câmera: posição desejada, encurtada se houver parede no caminho, e suavizada
   const alvo = new THREE.Vector3(estado.pos.x, ALTURA_ALVO, estado.pos.z);
-  const horiz = DISTANCIA_CAMERA * Math.cos(estado.pitch);
-  const vert = DISTANCIA_CAMERA * Math.sin(estado.pitch);
+  const d = distanciaCamera();
+  const horiz = d * Math.cos(estado.pitch);
+  const vert = d * Math.sin(estado.pitch);
   const desejada = new THREE.Vector3(
     alvo.x + Math.sin(estado.yaw) * horiz,
     alvo.y + vert,
@@ -193,8 +229,11 @@ function atualizar(dt) {
   camera.position.copy(estado.cam);
   camera.lookAt(alvo.x, alvo.y + 0.2, alvo.z);
 
-  // placa: aparece o aviso quando o personagem chega perto
-  document.getElementById('prompt').style.display = perto() ? 'block' : 'none';
+  // placa: aviso e botão Examinar aparecem quando o personagem chega perto
+  const pertoAgora = perto();
+  document.getElementById('prompt').style.display = pertoAgora ? 'block' : 'none';
+  btnExaminar.hidden = !pertoAgora;
+  btnCentro.hidden = false;
   const msg = document.getElementById('msg');
   if (msg.style.display === 'block' && performance.now() > estado.mensagemAte) msg.style.display = 'none';
 }
@@ -202,21 +241,21 @@ function atualizar(dt) {
 // ---- minimapa ----
 const mini = document.getElementById('mini');
 const g = mini.getContext('2d');
+const escalaMini = mini.width / (LIMITE * 2 + 4);
 function mundoParaMini(x, z) {
-  const escala = mini.width / (LIMITE * 2 + 4);
-  return [(x + LIMITE + 2) * escala, (z + LIMITE + 2) * escala];
+  return [(x + LIMITE + 2) * escalaMini, (z + LIMITE + 2) * escalaMini];
 }
 function desenharMinimapa() {
   g.clearRect(0, 0, mini.width, mini.height);
   g.fillStyle = '#17324f';
   g.fillRect(0, 0, mini.width, mini.height);
   g.fillStyle = '#7fbf6a';
-  g.fillRect(...mundoParaMini(-LIMITE, -LIMITE), ...[LIMITE * 2, LIMITE * 2].map((v) => v * (mini.width / (LIMITE * 2 + 4))));
+  const [gx, gy] = mundoParaMini(-LIMITE, -LIMITE);
+  g.fillRect(gx, gy, LIMITE * 2 * escalaMini, LIMITE * 2 * escalaMini);
   for (const p of PREDIOS) {
     const [x, y] = mundoParaMini(p.x - p.w / 2, p.z - p.d / 2);
-    const k = mini.width / (LIMITE * 2 + 4);
     g.fillStyle = p.cor;
-    g.fillRect(x, y, p.w * k, p.d * k);
+    g.fillRect(x, y, p.w * escalaMini, p.d * escalaMini);
   }
   const [sx, sy] = mundoParaMini(SINAL.x, SINAL.z);
   g.fillStyle = '#ffd27a';
@@ -229,6 +268,14 @@ function desenharMinimapa() {
   g.fillStyle = '#a040ff';
   g.beginPath(); g.moveTo(0, -12); g.lineTo(8, 8); g.lineTo(-8, 8); g.closePath(); g.fill();
   g.restore();
+}
+
+// ---- textos conforme o dispositivo ----
+if (toque) {
+  document.getElementById('dicas').textContent = 'Joystick: mover · arraste na tela: câmera · Centralizar: volta a câmera';
+  document.getElementById('prompt').textContent = 'Toque em Examinar';
+} else {
+  document.getElementById('dicas').textContent = 'WASD ou setas: mover · I J K L ou arrastar: câmera · C: centralizar · E: examinar';
 }
 
 // ---- laço principal ----
@@ -253,5 +300,5 @@ window.explorar3d = {
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: estado.yaw, pitch: estado.pitch }),
 };
 
-estado.cam.copy(new THREE.Vector3(estado.pos.x, ALTURA_ALVO + 3, estado.pos.z + DISTANCIA_CAMERA));
+estado.cam.copy(new THREE.Vector3(estado.pos.x, ALTURA_ALVO + 3, estado.pos.z + distanciaCamera()));
 requestAnimationFrame(quadro);

@@ -2,10 +2,11 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Explorar 3D (protótipo)</title>
 <link rel="icon" href="data:,">
 <style>
+  [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; background: #0b1220; overflow: hidden; font: 14px/1.4 system-ui, sans-serif; color: #eef5ff; }
   canvas#cena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
   .painel { position: fixed; background: rgba(10, 28, 60, .85); border: 2px solid #3f8fd6; padding: 8px 12px; }
@@ -15,7 +16,21 @@
   #mini { display: block; width: 180px; height: 180px; }
   #dicas { left: 12px; bottom: 12px; font-size: 12px; color: #cfe8ff; }
   #prompt { left: 50%; bottom: 80px; transform: translateX(-50%); display: none; color: #ffd27a; font-weight: 700; }
-  #msg { left: 50%; top: 70px; transform: translateX(-50%); display: none; max-width: 420px; }
+  #msg { left: 50%; top: 70px; transform: translateX(-50%); display: none; width: max-content; max-width: min(420px, calc(100vw - 32px)); }
+
+  /* controles de toque: aparecem só em telas sensíveis ao dedo */
+  #joy { position: fixed; left: 16px; bottom: 16px; width: 124px; height: 124px; box-sizing: border-box; border-radius: 50%; background: rgba(10, 28, 60, .55); border: 2px solid #3f8fd6; touch-action: none; user-select: none; -webkit-user-select: none; display: none; }
+  #joy-knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; box-sizing: border-box; border-radius: 50%; background: rgba(159, 211, 255, .9); border: 2px solid #eaf5ff; pointer-events: none; }
+  .botao { position: fixed; right: 16px; width: 124px; height: 52px; box-sizing: border-box; border: 2px solid #3f8fd6; border-radius: 10px; background: rgba(10, 28, 60, .85); color: #fff; font: 700 12px/1 system-ui, sans-serif; letter-spacing: .05em; text-transform: uppercase; touch-action: manipulation; display: none; }
+  #btn-centro { bottom: 16px; }
+  #btn-examinar { bottom: 80px; background: #ffd27a; border-color: #ffd27a; color: #17324f; }
+  @media (hover: none), (pointer: coarse) {
+    #joy, .botao { display: block; }
+    #dicas { display: none; }
+  }
+  @media (max-width: 520px) {
+    #mini { width: 110px; height: 110px; }
+  }
 </style>
 <script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
 </head>
@@ -26,6 +41,9 @@
 <div id="dicas" class="painel">WASD ou setas: mover · I J K L ou arrastar: câmera · C: centralizar · E: examinar</div>
 <div id="prompt" class="painel">E: examinar</div>
 <div id="msg" class="painel"></div>
+<div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>
+<button id="btn-examinar" class="botao" type="button" hidden>Examinar</button>
+<button id="btn-centro" class="botao" type="button">Centralizar</button>
 <script type="module" src="./main.js"></script>
 </body>
 </html>
