@@ -128,9 +128,11 @@ export function eventosDoTurno(linhas) {
       return { tipo: 'cura', quem, alvo: quem, dano: cura ? Number(cura[1]) : 0 };
     }
     const habilidade = !/atacou/.test(texto);
-    if (/errou/.test(texto)) return { tipo: 'erro', quem, alvo, habilidade, dano: 0, critico: false };
+    // tipagem vem do rótulo do log: super efetivo, pouco efetivo ou sem efeito (neutro não tem rótulo)
+    const eficacia = /super efetivo/.test(texto) ? 'super' : /pouco efetivo/.test(texto) ? 'pouco' : /sem efeito/.test(texto) ? 'nulo' : null;
+    if (/errou/.test(texto)) return { tipo: 'erro', quem, alvo, habilidade, dano: 0, critico: false, eficacia: null };
     const dano = /(\d+) de dano/.exec(texto);
-    return { tipo: 'dano', quem, alvo, habilidade, dano: dano ? Number(dano[1]) : 0, critico: /crítico/.test(texto) };
+    return { tipo: 'dano', quem, alvo, habilidade, dano: dano ? Number(dano[1]) : 0, critico: /crítico/.test(texto), eficacia };
   });
 }
 
@@ -161,7 +163,7 @@ export function roteiroDoTurno({ eventos, hpInicio, resultado = null }) {
     const tipo = e.tipo === 'erro' ? 'erro' : e.tipo === 'cura' ? 'cura' : 'golpe';
     passos.push({
       tipo, lado: e.quem, alvo: e.alvo, dano: e.dano, critico: e.critico, habilidade: e.habilidade,
-      hp: vida[k], dur: DURACAO[tipo],
+      eficacia: e.eficacia ?? null, hp: vida[k], dur: DURACAO[tipo],
     });
   });
   passos.push({ tipo: 'pausa', dur: DURACAO.pausa });

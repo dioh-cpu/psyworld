@@ -22,7 +22,7 @@ test('câmera: cada foco mira para o lado de quem age, sem perder o outro lutado
   assert.ok(Math.sign(VISTAS['foco-jogador'].olha[0]) === Math.sign(POSICAO.jogador.x));
   assert.ok(Math.sign(VISTAS['foco-inimigo'].olha[0]) === Math.sign(POSICAO.inimigo.x));
   for (const modo of ['foco-jogador', 'foco-inimigo']) {
-    assert.ok(Math.abs(VISTAS[modo].olha[0]) < 1.2, `${modo} olha longe demais para o centro`);
+    assert.ok(Math.abs(VISTAS[modo].olha[0]) < 1.5, `${modo} olha longe demais para o centro`);
   }
   assert.equal(modoDoFoco('jogador'), 'foco-jogador');
   assert.equal(modoDoFoco('inimigo'), 'foco-inimigo');

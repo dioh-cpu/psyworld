@@ -85,3 +85,23 @@ test('esfera automática: a primeira marcada com estoque; sem estoque, null (pau
 test('inimigo: o poder da tabela entra multiplicado pela escala de calibração', () => {
   assert.equal(K.poderInimigo(200), 200 * K.COMBATE.escalaInimigo);
 });
+
+test('tipagem: o log diz super efetivo ou pouco efetivo; neutro não ganha rótulo; sem efeito zera o dano', async () => {
+  const { rotuloEficacia, agir, criarLutador, criarCombate } = await import('./combate.js');
+  assert.equal(rotuloEficacia(2), 'super efetivo!');
+  assert.equal(rotuloEficacia(0.5), 'pouco efetivo');
+  assert.equal(rotuloEficacia(1), null);
+  assert.equal(rotuloEficacia(0), 'sem efeito');
+  // planta contra água é vantagem (2x): o log do ataque tem o rótulo
+  const j = criarLutador({ nome: 'Brotavel', poder: 50, elemento: 'planta', habilidades: [] });
+  const i = criarLutador({ nome: 'Vaelith', poder: 50, elemento: 'agua', habilidades: [] });
+  const e = criarCombate(j, i, { pequena: 0, media: 0, grande: 0 });
+  agir(e, { tipo: 'atacar' }, () => 0.5);
+  assert.ok(e.log.some((l) => l.includes('super efetivo!')), e.log.join(' | '));
+  // neutro contra neutro não tem rótulo
+  const n1 = criarLutador({ nome: 'A', poder: 50, elemento: 'neutro', habilidades: [] });
+  const n2 = criarLutador({ nome: 'B', poder: 50, elemento: 'neutro', habilidades: [] });
+  const f = criarCombate(n1, n2, { pequena: 0, media: 0, grande: 0 });
+  agir(f, { tipo: 'atacar' }, () => 0.5);
+  assert.ok(!f.log.some((l) => /efetivo|sem efeito/.test(l)));
+});

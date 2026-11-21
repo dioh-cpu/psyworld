@@ -151,8 +151,8 @@ test('eventos: a primeira ação do log é do jogador, a segunda do inimigo; lin
     'Noctarn venceu.',
   ]);
   assert.deepEqual(ev, [
-    { tipo: 'dano', quem: 'jogador', alvo: 'inimigo', habilidade: false, dano: 4, critico: false },
-    { tipo: 'erro', quem: 'inimigo', alvo: 'jogador', habilidade: true, dano: 0, critico: false },
+    { tipo: 'dano', quem: 'jogador', alvo: 'inimigo', habilidade: false, dano: 4, critico: false, eficacia: null },
+    { tipo: 'erro', quem: 'inimigo', alvo: 'jogador', habilidade: true, dano: 0, critico: false, eficacia: null },
   ]);
   assert.deepEqual(eventosDoTurno(['Noctarn venceu.', 'Tempo esgotado: Noctarn 50% x 40%.']), []);
 });
@@ -209,4 +209,15 @@ test('equilíbrio: o time inicial vence a maioria dos selvagens quando a luta é
   }
   const taxa = vitorias / n;
   assert.ok(taxa > 0.5 && taxa < 0.95, `taxa de vitória ${taxa}`);
+});
+
+test('tipagem no roteiro: o rótulo de efetividade do log chega ao passo do golpe', () => {
+  const ev = eventosDoTurno(['Noctarn usou Chama Violeta: 17 de dano (super efetivo!).', 'Vaelith atacou, sem efeito.']);
+  assert.equal(ev[0].eficacia, 'super');
+  assert.equal(ev[1].eficacia, 'nulo');
+  assert.equal(ev[1].dano, 0);
+  const passos = roteiroDoTurno({ eventos: ev, hpInicio: { j: 60, i: 60 } });
+  assert.equal(passos.find((p) => p.tipo === 'golpe').eficacia, 'super');
+  const normal = eventosDoTurno(['Noctarn atacou: 4 de dano.']);
+  assert.equal(normal[0].eficacia, null);
 });

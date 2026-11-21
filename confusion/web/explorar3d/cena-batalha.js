@@ -1,53 +1,11 @@
 // Cena 3D da batalha: arena em círculo, os dois monstrinhos como desenhos de pé e a câmera do roteiro da luta.
 // O desenho é o sprite da espécie. A cor de uma variação é um giro de matiz feito no sombreador, por isso dá para animar a troca.
 import { POSICAO, vistaDaCamera } from './camera-batalha.js';
-
-const VERT = `
-varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
-
-// O giro de matiz segue a matriz de hue-rotate do CSS, para o azul de cá ser o mesmo que no painel.
-const FRAG = `
-uniform sampler2D map;
-uniform float uHue;
-uniform float uFlash;
-uniform vec3 uCor;
-uniform float uAlpha;
-uniform float uSat;
-uniform float uBri;
-uniform float uColorir;
-uniform vec3 uTom;
-varying vec2 vUv;
-vec3 girar(vec3 c, float a) {
-  float co = cos(a);
-  float si = sin(a);
-  vec3 r0 = vec3(0.213 + co * 0.787 - si * 0.213, 0.715 - co * 0.715 - si * 0.715, 0.072 - co * 0.072 + si * 0.928);
-  vec3 r1 = vec3(0.213 - co * 0.213 + si * 0.143, 0.715 + co * 0.285 + si * 0.140, 0.072 - co * 0.072 - si * 0.283);
-  vec3 r2 = vec3(0.213 - co * 0.213 - si * 0.787, 0.715 - co * 0.715 + si * 0.715, 0.072 + co * 0.928 + si * 0.072);
-  return vec3(dot(r0, c), dot(r1, c), dot(r2, c));
-}
-void main() {
-  vec4 t = texture2D(map, vUv);
-  vec3 c;
-  if (uColorir > 0.5) {
-    // desenho prateado: a luminância vira a cor da variação
-    float lum = dot(t.rgb, vec3(0.299, 0.587, 0.114));
-    c = uTom * lum * 1.6;
-  } else {
-    c = girar(t.rgb, uHue);
-    float lum = dot(c, vec3(0.299, 0.587, 0.114));
-    c = mix(vec3(lum), c, uSat) * uBri;
-  }
-  c = mix(c, uCor, uFlash);
-  gl_FragColor = vec4(c, t.a * uAlpha);
-  if (gl_FragColor.a < 0.01) discard;
-}`;
+import { criarMaterialCor, aplicarGiro as aplicarGiroCor } from './cor-sprite.js';
 
 const ALTURA = 2.4;        // altura dos monstrinhos na arena
 const DAMPING_CAMERA = 3.2;
+const MEIA_LARGURA_LUTA = 5.1; // espaço que os dois lutadores precisam ocupar na tela (em unidades da arena)
 
 export function criarCenaBatalha(THREE) {
   const cena = new THREE.Scene();
@@ -155,21 +113,7 @@ export function criarCenaBatalha(THREE) {
   };
 
   function criarLutador(lado) {
-    const uniforms = {
-      map: { value: null },
-      uHue: { value: 0 },
-      uFlash: { value: 0 },
-      uCor: { value: new THREE.Color('#ffffff') },
-      uAlpha: { value: 1 },
-      uSat: { value: 1 },
-      uBri: { value: 1 },
-      uColorir: { value: 0 },
-      uTom: { value: new THREE.Vector3(1, 1, 1) },
-    };
-    const material = new THREE.ShaderMaterial({
-      uniforms, vertexShader: VERT, fragmentShader: FRAG,
-      transparent: true, depthWrite: false, side: THREE.DoubleSide,
-    });
+    const { material, uniforms } = criarMaterialCor(THREE);
     const malha = new THREE.Mesh(new THREE.PlaneGeometry(ALTURA, ALTURA), material);
     malha.visible = false;
     cena.add(malha);
@@ -186,22 +130,8 @@ export function criarCenaBatalha(THREE) {
   }
   const lutadores = { jogador: criarLutador('jogador'), inimigo: criarLutador('inimigo') };
 
-  // Cor de um monstrinho: giro de matiz, saturação e brilho (o natural é 0, 1 e 1).
   const NATURAL = { matiz: 0, sat: 1, bri: 1 };
-  // Cor cheia no matiz pedido (graus): usada como tom no modo de coloração.
-  function tomDeMatiz(graus) {
-    const h = (((graus % 360) + 360) % 360) / 60;
-    const x = 1 - Math.abs((h % 2) - 1);
-    const [r, g, b] = h < 1 ? [1, x, 0] : h < 2 ? [x, 1, 0] : h < 3 ? [0, 1, x] : h < 4 ? [0, x, 1] : h < 5 ? [x, 0, 1] : [1, 0, x];
-    return new THREE.Vector3(r, g, b);
-  }
-  function aplicarGiro(l, g) {
-    l.uniforms.uHue.value = (g.matiz * Math.PI) / 180;
-    l.uniforms.uSat.value = g.sat;
-    l.uniforms.uBri.value = g.bri;
-    l.uniforms.uColorir.value = g.colorir ? 1 : 0;
-    l.uniforms.uTom.value.copy(tomDeMatiz(g.matiz));
-  }
+  const aplicarGiro = (l, g) => aplicarGiroCor(THREE, l.uniforms, g);
 
   // Mostra um monstrinho. `giro` é a cor da variação (null é o natural). Com `animar`, a cor vai do natural até a variação.
   function definir(lado, { textura, giro = null, animar = false, dur = 1.4 }) {
@@ -328,8 +258,14 @@ export function criarCenaBatalha(THREE) {
     const v = vistaDaCamera(modo);
     const k = 1 - Math.exp(-dt * DAMPING_CAMERA);
     // em tela estreita (celular em retrato) a câmera recua, para os dois lutadores caberem
-    const recuo = camera.aspect < 1 ? (1 / camera.aspect - 1) * 9 : 0;
-    posAtual.lerp(new THREE.Vector3(v.pos[0], v.pos[1], v.pos[2] + recuo), k);
+    // a câmera recua o que for preciso para os dois lutadores caberem na largura (celular em retrato)
+    const ox = v.pos[0] - v.olha[0];
+    const oy = v.pos[1] - v.olha[1];
+    const oz = v.pos[2] - v.olha[2];
+    const distancia = Math.hypot(ox, oy, oz);
+    const necessaria = MEIA_LARGURA_LUTA / (Math.tan((v.fov * Math.PI) / 360) * camera.aspect);
+    const fator = Math.max(1, necessaria / distancia);
+    posAtual.lerp(new THREE.Vector3(v.olha[0] + ox * fator, v.olha[1] + oy * fator, v.olha[2] + oz * fator), k);
     olharAtual.lerp(new THREE.Vector3(...v.olha), k);
     fovAtual += (v.fov - fovAtual) * k;
     tremor = Math.max(0, tremor - dt * 0.9);

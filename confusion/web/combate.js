@@ -41,18 +41,25 @@ export const habilidadePronta = (lutador, nome, turno) => {
   return Boolean(h) && h.ultimoTurno < turno - 1;
 };
 
+// Rótulo da tipagem para o log: sem efeito (0), super efetivo (acima de 1), pouco efetivo (abaixo de 1). Neutro não tem rótulo.
+export const rotuloEficacia = (m) => (m === 0 ? 'sem efeito' : m > 1 ? 'super efetivo!' : m < 1 ? 'pouco efetivo' : null);
+
 function golpe(a, d, mult, rnd) {
-  if (rnd() < COMBATE.erro) return { errou: true, dano: 0, critico: false };
+  if (rnd() < COMBATE.erro) return { errou: true, dano: 0, critico: false, eficacia: 1 };
   const critico = rnd() < COMBATE.critico;
   const variacao = 1 + COMBATE.variacao * (2 * rnd() - 1);
-  const base = a.poder * COMBATE.escalaDano * multElemento(a.elemento, d.elemento) * mult * variacao;
-  return { errou: false, dano: Math.max(1, Math.round(base * (critico ? 1.5 : 1))), critico };
+  const eficacia = multElemento(a.elemento, d.elemento);
+  const base = a.poder * COMBATE.escalaDano * eficacia * mult * variacao;
+  const dano = eficacia === 0 ? 0 : Math.max(1, Math.round(base * (critico ? 1.5 : 1)));
+  return { errou: false, dano, critico, eficacia };
 }
 
 function aplicar(e, alvo, r, texto) {
   if (r.errou) { e.log.push(`${texto}, mas errou.`); return; }
   alvo.hp = Math.max(0, alvo.hp - r.dano);
-  e.log.push(`${texto}: ${r.dano} de dano${r.critico ? ' (crítico!)' : ''}.`);
+  if (r.dano === 0) { e.log.push(`${texto}, sem efeito.`); return; }
+  const marcas = [r.critico ? 'crítico!' : null, rotuloEficacia(r.eficacia)].filter(Boolean);
+  e.log.push(`${texto}: ${r.dano} de dano${marcas.length ? ` (${marcas.join(', ')})` : ''}.`);
 }
 
 function fechar(e, resultado) {

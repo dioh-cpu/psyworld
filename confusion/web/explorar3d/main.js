@@ -7,6 +7,7 @@ import { vetorJoystick } from './controles.js';
 import { CAIXAS, EDIFICIOS, CIDADES_MUNDO, REGIOES, INICIO, SINAL, LIMITE_MAPA, PONTOS_SELVAGENS, localDe } from './mundo.js';
 import { linhasDoRegistro, EXEMPLO_ESPOLIO } from './registro.js';
 import { criarCenaBatalha } from './cena-batalha.js';
+import { criarMaterialCor, aplicarGiro, NATURAL } from './cor-sprite.js';
 import { AREAS, areaDaRegiao } from './areas.js';
 import { modoDoFoco } from './camera-batalha.js';
 import * as C from '../core.js';
@@ -28,7 +29,8 @@ const COR_TRACO = '#e6ebf0';  // faixas claras do piso da praça
 const RAIZ = document.body.dataset.raiz || '';   // caminho até a raiz do projeto, para as artes dos monstrinhos
 const COR_ELEMENTO = { fogo: '#ff7a45', agua: '#4fb3ff', planta: '#7bd16b', terra: '#b5895a', luz: '#ffe27a', trevas: '#8a6bd6', neutro: '#c9d6e3' };
 const NOME_ELEMENTO = { fogo: 'Fogo', agua: 'Água', planta: 'Planta', terra: 'Terra', luz: 'Luz', trevas: 'Trevas', neutro: 'Neutro' };
-const RESPAWN_MS = 12000;     // tempo até outro selvagem aparecer no lugar do que foi enfrentado
+const RESPAWN_MS = 12000;
+const ROTULO_EFICACIA = { super: 'Super efetivo!', pouco: 'Pouco efetivo', nulo: 'Sem efeito' };     // tempo até outro selvagem aparecer no lugar do que foi enfrentado
 
 // ---- cena do mapa ----
 const canvas = document.getElementById('cena');
@@ -136,22 +138,90 @@ const pocoesBatalha = { ...POCOES_INICIAIS };
 let batalha = null;   // { s, fase: 'escolha' | 'luta' | 'fim' | 'recuou', sel, foco, combate, roteiro, passo, tempo, ... }
 let vista = null;     // tela de Time: { tipo: 'time' | 'habilidades', sel, slot, item, voltar }
 
+// ---- texturas dos monstrinhos (carregam uma vez por espécie) ----
+const carregador = new THREE.TextureLoader();
+const texturas = new Map();
+function texturaDe(arquivo) {
+  if (!texturas.has(arquivo)) texturas.set(arquivo, carregador.load(RAIZ + arquivo));
+  return texturas.get(arquivo);
+}
+const arteDe = (m) => E.ESPECIES[m.species]?.arte ?? null;
+const arteDaEspecie = (especie) => E.ESPECIES[especie]?.arte ?? null;
+
+// ---- monstrinhos do mapa: o próprio desenho, sempre olhando para a câmera ----
+// Espécies com folha de quatro direções (frente, esquerda, direita, costas) trocam de direção conforme andam.
+// As outras têm só o sprite de frente, usado nas quatro direções.
+const FOLHAS_DIRECOES = {
+  Noctarn: { arquivo: 'assets/monsters/noctarn/noctarn-idle-4dir.webp', ordem: ['frente', 'esquerda', 'direita', 'costas'] },
+};
+const ALTURA_MAPA = 1.7;
+const cacheMapa = new Map();   // espécie -> { direcoes: { frente, esquerda, direita, costas }, aspecto }
+
+// Corta a folha em uma textura por direção (cada célula tem a mesma largura).
+function celulasDaFolha(config, imagem) {
+  const largura = Math.round(imagem.width / config.ordem.length);
+  const direcoes = {};
+  config.ordem.forEach((nome, k) => {
+    const c = document.createElement('canvas');
+    c.width = largura;
+    c.height = imagem.height;
+    c.getContext('2d').drawImage(imagem, k * largura, 0, largura, imagem.height, 0, 0, largura, imagem.height);
+    direcoes[nome] = new THREE.CanvasTexture(c);
+  });
+  return direcoes;
+}
+
+// Direções prontas de uma espécie, ou null enquanto a imagem não carregou.
+function direcoesDoMapa(especie) {
+  if (cacheMapa.has(especie)) return cacheMapa.get(especie);
+  const cfg = FOLHAS_DIRECOES[especie];
+  const base = texturaDe(cfg ? cfg.arquivo : arteDaEspecie(especie));
+  const img = base.image;
+  if (!img || !img.width) return null;
+  const pronto = cfg
+    ? { direcoes: celulasDaFolha(cfg, img), aspecto: img.width / cfg.ordem.length / img.height }
+    : { direcoes: { frente: base, esquerda: base, direita: base, costas: base }, aspecto: img.width / img.height };
+  cacheMapa.set(especie, pronto);
+  return pronto;
+}
+
 // ---- selvagens que rondam a ilha: ao encostar, começa a batalha ----
 const selvagens = PONTOS_SELVAGENS.map((p, i) => {
-  const malha = new THREE.Mesh(new THREE.CapsuleGeometry(0.35, 0.7, 6, 12), material('#c9d6e3'));
-  malha.position.y = 0.7;
-  contorno(malha);
+  const { material, uniforms } = criarMaterialCor(THREE);
+  const malha = new THREE.Mesh(new THREE.PlaneGeometry(ALTURA_MAPA, ALTURA_MAPA), material);
+  malha.visible = false;
   scene.add(malha);
-  return { casa: { x: p[0], z: p[1] }, fase: i * 1.7, malha, ativo: false, reaparece: 0, sorteio: null, cor: '#c9d6e3' };
+  return {
+    casa: { x: p[0], z: p[1] }, fase: i * 1.7, malha, uniforms, ativo: false, reaparece: 0, sorteio: null,
+    especie: null, cor: '#c9d6e3', pronto: false, direcoes: null, celula: null,
+  };
 });
 function novoSelvagem(s) {
   s.sorteio = sortearSelvagem(Math.random);
-  s.cor = COR_ELEMENTO[s.sorteio.monstro.elemento] ?? '#c9d6e3';
-  s.malha.material.color.set(s.cor);
+  const m = s.sorteio.monstro;
+  s.especie = m.species;
+  s.cor = COR_ELEMENTO[m.elemento] ?? '#c9d6e3';
+  s.pronto = false;   // a textura e a proporção entram quando a imagem da espécie carregar
+  s.celula = null;
+  aplicarGiro(THREE, s.uniforms, giroDoMonstro(m) ?? NATURAL);
   s.ativo = true;
-  s.malha.visible = true;
+  s.malha.visible = false;
 }
 selvagens.forEach(novoSelvagem);
+
+// Direção do desenho: o monstrinho anda em círculo, então a direção sai do movimento em relação à câmera.
+function celulaDaDirecao(s, t, x, z) {
+  const vx = -0.9 * 0.7 * Math.sin(t * 0.7 + s.fase);
+  const vz = 0.9 * 0.5 * Math.cos(t * 0.5 + s.fase);
+  const paraCamera = new THREE.Vector3(camera.position.x - x, 0, camera.position.z - z).normalize();
+  const direitaCamera = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  direitaCamera.y = 0;
+  direitaCamera.normalize();
+  const emDirecaoCamera = vx * paraCamera.x + vz * paraCamera.z;
+  const aoLado = vx * direitaCamera.x + vz * direitaCamera.z;
+  if (Math.abs(emDirecaoCamera) >= Math.abs(aoLado)) return emDirecaoCamera >= 0 ? 'frente' : 'costas';
+  return aoLado >= 0 ? 'direita' : 'esquerda';
+}
 
 function atualizarSelvagens(t, agora) {
   for (const s of selvagens) {
@@ -159,7 +229,25 @@ function atualizarSelvagens(t, agora) {
     if (!s.ativo) continue;
     const x = s.casa.x + Math.cos(t * 0.7 + s.fase) * 0.9;
     const z = s.casa.z + Math.sin(t * 0.5 + s.fase) * 0.9;
-    s.malha.position.set(x, 0.7 + Math.abs(Math.sin(t * 3 + s.fase)) * 0.06, z);
+    if (!s.pronto) {
+      const d = direcoesDoMapa(s.especie);
+      if (d) {
+        s.direcoes = d.direcoes;
+        s.malha.geometry.dispose();
+        s.malha.geometry = new THREE.PlaneGeometry(ALTURA_MAPA * d.aspecto, ALTURA_MAPA);
+        s.pronto = true;
+      }
+    }
+    s.malha.visible = s.pronto;
+    if (s.pronto) {
+      const cel = celulaDaDirecao(s, t, x, z);
+      if (cel !== s.celula) {
+        s.uniforms.map.value = s.direcoes[cel];
+        s.celula = cel;
+      }
+    }
+    s.malha.position.set(x, ALTURA_MAPA / 2 + Math.abs(Math.sin(t * 3 + s.fase)) * 0.05, z);
+    s.malha.quaternion.copy(camera.quaternion);
     if (!batalha && Math.hypot(estado.pos.x - x, estado.pos.z - z) < 1.3) iniciarBatalha(s);
   }
 }
@@ -167,13 +255,6 @@ function atualizarSelvagens(t, agora) {
 // ---- cena da batalha em 3D: arena, os dois monstrinhos e a câmera ----
 const cenaBat = criarCenaBatalha(THREE);
 cenaBat.resize(window.innerWidth, window.innerHeight);
-const carregador = new THREE.TextureLoader();
-const texturas = new Map();
-function texturaDe(arte) {
-  if (!texturas.has(arte)) texturas.set(arte, carregador.load(RAIZ + arte));
-  return texturas.get(arte);
-}
-const arteDe = (m) => E.ESPECIES[m.species]?.arte ?? null;
 
 // ---- entrada pelo teclado ----
 const prevenirSetas = (e) => {
@@ -479,13 +560,13 @@ function renderTudo() {
 }
 
 // ---- números que sobem do monstrinho atingido ----
-function mostrarNumero(lado, texto, classe) {
+function mostrarNumero(lado, texto, classe, deslocY = 0) {
   const p = cenaBat.projetar(lado);
   const el = document.createElement('div');
   el.className = `bat-pop ${classe}`;
   el.textContent = texto;
   el.style.left = `${p.x}px`;
-  el.style.top = `${p.y}px`;
+  el.style.top = `${p.y - deslocY}px`;
   batalhaEl.append(el);
   setTimeout(() => el.remove(), 950);
 }
@@ -554,7 +635,9 @@ function executarPasso(p) {
   if (p.tipo === 'foco') { cenaBat.mirar(modoDoFoco(p.lado)); return; }
   if (p.tipo === 'golpe') {
     cenaBat.golpe(p.lado, p.alvo, { critico: p.critico, habilidade: p.habilidade });
-    mostrarNumero(p.alvo, p.critico ? `-${p.dano}!` : `-${p.dano}`, p.critico ? 'critico' : 'dano');
+    if (p.dano > 0) mostrarNumero(p.alvo, p.critico ? `-${p.dano}!` : `-${p.dano}`, p.critico ? 'critico' : 'dano');
+    // a tipagem aparece logo acima do número: super efetivo, pouco efetivo ou sem efeito
+    if (p.eficacia) setTimeout(() => mostrarNumero(p.alvo, ROTULO_EFICACIA[p.eficacia], `efi-${p.eficacia}`, 36), 280);
     b.hpMostrado = p.hp;
     atualizarBarras();
     return;
@@ -876,6 +959,7 @@ window.explorar3d = {
   vista: () => (vista ? vista.tipo : null),
   abrirTime,
   pocoes: () => ({ ...pocoesBatalha }),
+  selvagens: () => selvagens.map((s) => ({ especie: s.especie, celula: s.celula, pronto: s.pronto, ativo: s.ativo })),
   slots: () => time.map((m) => ({ especie: m.species, slots: [...m.abilities], variante: m.variante })),
 };
 
