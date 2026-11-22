@@ -3,6 +3,8 @@
 // Chão: grama e pedra espelhadas (única emenda exata com estas peças); estradas com as peças da 1000354504, giradas
 // para encaixar pelo meio de cada lado. Objetos fixos: planos cruzados (não giram com a câmera). Fachadas: volumes.
 import * as THREE from 'three';
+import { vetorJoystick } from '../explorar3d/controles.js';
+import { resolverMovimento, fracaoLivreCamera } from '../explorar3d/colisao.js';
 
 const A = 'assets/';
 const S = 9;                                   // lado de uma célula, em unidades do mundo
@@ -235,13 +237,18 @@ const jogador = new THREE.Group();
 jogador.add(azazel);
 cena.add(jogador);
 
-// ---- entrada e movimento ----
+// ---- entrada: teclado, joystick de toque e arrastar para girar a câmera ----
 const teclas = new Set();
 const ALVO_ALTURA = ALTURA_PERSONAGEM * 0.8;
 const estado = { x: cx(1), z: cz(2), yaw: 0, pitch: 0.5 };
 if (VISAO === 'portao') { estado.x = 0; estado.z = cz(4); estado.yaw = -Math.PI / 2; }
 if (VISAO === 'taverna') { estado.x = -11; estado.z = (cz(0) + cz(1)) / 2; estado.yaw = Math.PI / 2; }
 if (VISAO === 'loja') { estado.x = 16; estado.z = (cz(0) + cz(1)) / 2; estado.yaw = -Math.PI / 2; }
+// câmera suavizada: o ângulo e a posição seguem com amortecimento
+const cam = { yaw: estado.yaw, pitch: estado.pitch, pos: null };
+// colisões em caixas (AABB) para o movimento e para a câmera, com a mesma lógica do jogo principal
+const caixasAABB = colisoes.map((b) => ({ min: { x: b.x0, y: 0, z: b.z0 }, max: { x: b.x1, y: 6, z: b.z1 } }));
+
 window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   teclas.add(e.code);
@@ -251,26 +258,53 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => teclas.delete(e.code));
 const pressionada = (...codigos) => codigos.some((c) => teclas.has(c));
 
-function empurra(x, z, r) {
-  for (const b of colisoes) {
-    const px = Math.max(b.x0, Math.min(x, b.x1));
-    const pz = Math.max(b.z0, Math.min(z, b.z1));
-    const dx = x - px, dz = z - pz;
-    const d2 = dx * dx + dz * dz;
-    if (d2 >= r * r) continue;
-    if (d2 > 1e-10) {
-      const d = Math.sqrt(d2);
-      x = px + (dx / d) * r;
-      z = pz + (dz / d) * r;
-    } else {
-      // dentro do retângulo: sai pelo lado mais próximo
-      const saidas = [[b.x0 - r - x, 0], [b.x1 + r - x, 0], [0, b.z0 - r - z], [0, b.z1 + r - z]];
-      const [sx, sz] = saidas.reduce((m, s) => (Math.abs(s[0] + s[1]) < Math.abs(m[0] + m[1]) ? s : m));
-      x += sx; z += sz;
-    }
-  }
-  return [x, z];
+// joystick de toque (mesmo controle do jogo principal)
+const joy = { x: 0, z: 0 };
+const joyEl = document.getElementById('joy');
+const joyKnob = document.getElementById('joy-knob');
+let joyDedo = null;
+function joyAtualizar(e) {
+  const r = joyEl.getBoundingClientRect();
+  const dx = e.clientX - (r.left + r.width / 2);
+  const dy = e.clientY - (r.top + r.height / 2);
+  const v = vetorJoystick(dx, dy, r.width / 2);
+  joy.x = v.x;
+  joy.z = v.z;
+  // o botão do joystick acompanha o dedo, limitado ao círculo
+  const d = Math.hypot(dx, dy) || 1;
+  const lim = Math.min(d, r.width * 0.3);
+  joyKnob.style.transform = `translate(calc(-50% + ${(dx / d) * lim}px), calc(-50% + ${(dy / d) * lim}px))`;
 }
+function joyFim() {
+  joyDedo = null;
+  joy.x = 0;
+  joy.z = 0;
+  joyKnob.style.transform = 'translate(-50%, -50%)';
+}
+joyEl.addEventListener('pointerdown', (e) => { joyDedo = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyAtualizar(e); e.preventDefault(); });
+joyEl.addEventListener('pointermove', (e) => { if (e.pointerId === joyDedo) joyAtualizar(e); });
+joyEl.addEventListener('pointerup', joyFim);
+joyEl.addEventListener('pointercancel', joyFim);
+
+// arrastar na tela para girar a câmera (igual ao jogo principal)
+let arrastando = null;
+canvas.addEventListener('pointerdown', (e) => {
+  arrastando = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!arrastando || e.pointerId !== arrastando.id) return;
+  estado.yaw -= (e.clientX - arrastando.x) * 0.006;
+  estado.pitch = Math.max(0.15, Math.min(1.25, estado.pitch + (e.clientY - arrastando.y) * 0.004));
+  arrastando.x = e.clientX;
+  arrastando.y = e.clientY;
+});
+const soltarArraste = () => { arrastando = null; };
+canvas.addEventListener('pointerup', soltarArraste);
+canvas.addEventListener('pointercancel', soltarArraste);
+
+document.getElementById('btn-ovo').addEventListener('click', () => depositar());
+document.getElementById('btn-recolher').addEventListener('click', () => recolherOvos());
 
 function depositar() {
   let melhor = -1, dist = 3.2;
@@ -283,34 +317,38 @@ function depositar() {
 }
 function recolherOvos() { ovos.forEach((o) => { o.visible = false; }); }
 
+const diferencaAngulo = (a, b) => ((b - a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+
 let ultimo = performance.now();
 function quadro(agora) {
   const dt = Math.min(0.05, (agora - ultimo) / 1000);
   ultimo = agora;
+
   if (VISAO === 'jogo') {
     if (pressionada('KeyJ')) estado.yaw -= 2.2 * dt;
     if (pressionada('KeyL')) estado.yaw += 2.2 * dt;
     if (pressionada('KeyI')) estado.pitch = Math.min(1.25, estado.pitch + 1.2 * dt);
     if (pressionada('KeyK')) estado.pitch = Math.max(0.15, estado.pitch - 1.2 * dt);
-    let ix = 0, iz = 0;
+    let ix = joy.x, iz = joy.z;
     if (pressionada('KeyW', 'ArrowUp')) iz += 1;
     if (pressionada('KeyS', 'ArrowDown')) iz -= 1;
     if (pressionada('KeyD', 'ArrowRight')) ix += 1;
     if (pressionada('KeyA', 'ArrowLeft')) ix -= 1;
+    const forca = Math.min(1, Math.hypot(ix, iz));
     const frente = { x: -Math.sin(estado.yaw), z: -Math.cos(estado.yaw) };
     const direita = { x: Math.cos(estado.yaw), z: -Math.sin(estado.yaw) };
     let dx = frente.x * iz + direita.x * ix;
     let dz = frente.z * iz + direita.z * ix;
     const n = Math.hypot(dx, dz);
-    if (n > 0) {
-      dx = (dx / n) * VELOCIDADE * dt;
-      dz = (dz / n) * VELOCIDADE * dt;
-      const [nx, nz] = empurra(estado.x + dx, estado.z + dz, RAIO);
-      estado.x = nx;
-      estado.z = nz;
+    if (n > 1e-6 && forca > 0) {
+      dx = (dx / n) * forca * VELOCIDADE * dt;
+      dz = (dz / n) * forca * VELOCIDADE * dt;
+      const p = resolverMovimento({ x: estado.x, z: estado.z }, dx, dz, RAIO, caixasAABB);
+      estado.x = p.x;
+      estado.z = p.z;
     }
-    estado.x = Math.max(FX0 - 60, Math.min(FX1 + 60, estado.x));
   }
+
   jogador.position.set(estado.x, 0, estado.z);
   jogador.quaternion.copy(camera.quaternion);   // o personagem só fica de frente para a câmera (nunca fino)
 
@@ -323,10 +361,27 @@ function quadro(agora) {
     camera.lookAt(0, 0, -2);
     camera.fov = 40;
   } else {
+    // ângulos seguem o alvo com amortecimento; a posição da câmera também, e uma parede encurta a distância
+    const k = 1 - Math.exp(-dt * 10);
+    cam.yaw += diferencaAngulo(cam.yaw, estado.yaw) * k;
+    cam.pitch += (estado.pitch - cam.pitch) * k;
+    const alvo = { x: estado.x, y: ALVO_ALTURA, z: estado.z };
     const d = window.innerWidth < 600 ? 13 : 11;   // mesma distância do jogo
-    const h = d * Math.cos(estado.pitch), v = d * Math.sin(estado.pitch);
-    camera.position.set(estado.x + Math.sin(estado.yaw) * h, ALVO_ALTURA + v, estado.z + Math.cos(estado.yaw) * h);
-    camera.lookAt(estado.x, ALVO_ALTURA, estado.z);
+    const h = d * Math.cos(cam.pitch), v = d * Math.sin(cam.pitch);
+    const desejada = { x: alvo.x + Math.sin(cam.yaw) * h, y: alvo.y + v, z: alvo.z + Math.cos(cam.yaw) * h };
+    const f = fracaoLivreCamera(alvo, desejada, caixasAABB);
+    const destino = {
+      x: alvo.x + (desejada.x - alvo.x) * f,
+      y: alvo.y + (desejada.y - alvo.y) * f,
+      z: alvo.z + (desejada.z - alvo.z) * f,
+    };
+    if (!cam.pos) cam.pos = { ...destino };
+    const k2 = 1 - Math.exp(-dt * 14);
+    cam.pos.x += (destino.x - cam.pos.x) * k2;
+    cam.pos.y += (destino.y - cam.pos.y) * k2;
+    cam.pos.z += (destino.z - cam.pos.z) * k2;
+    camera.position.set(cam.pos.x, cam.pos.y, cam.pos.z);
+    camera.lookAt(alvo.x, alvo.y, alvo.z);
     camera.fov = 55;
   }
   camera.updateProjectionMatrix();
@@ -340,6 +395,7 @@ window.addEventListener('resize', () => {
 // para os testes: posição do personagem e estado dos ovos
 window.quarteirao = {
   estado: () => ({ x: estado.x, z: estado.z, yaw: estado.yaw, pitch: estado.pitch }),
+  camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
   ovos: () => ovos.map((o) => o.visible),
   colisoes: () => colisoes.length,
   mover: (x, z, yaw) => { estado.x = x; estado.z = z; if (yaw !== undefined) estado.yaw = yaw; },

@@ -11,6 +11,14 @@
   #ajuda { position: fixed; left: 10px; top: 10px; background: rgba(9, 25, 60, .85); color: #cfe8ff; padding: 8px 10px;
            font-size: 12px; line-height: 1.5; border: 1px solid #3f8fd6; max-width: 60vw; }
   #ajuda b { color: #ffd27a; }
+  #joy { position: fixed; left: 16px; bottom: 16px; width: 124px; height: 124px; box-sizing: border-box; border-radius: 50%;
+         background: rgba(10, 28, 60, .55); border: 2px solid #3f8fd6; touch-action: none; user-select: none; display: none; }
+  #joy-knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; border-radius: 50%; background: #cfe8ff;
+              transform: translate(-50%, -50%); pointer-events: none; }
+  @media (pointer: coarse) { #joy { display: block; } }
+  #acoes { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+  #acoes button { min-width: 124px; height: 44px; border: 2px solid #3f8fd6; background: rgba(9, 25, 60, .9); color: #fff;
+                  font: 700 13px system-ui, sans-serif; border-radius: 4px; touch-action: manipulation; }
 </style>
 <script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
 </head>
@@ -18,8 +26,14 @@
 <canvas id="cena"></canvas>
 <div id="ajuda">
   <b>Quarteirão de teste</b> (separado das áreas jogáveis)<br>
-  WASD andar · IJKL câmera · <b>E</b> depositar ovo no ninho perto · <b>Q</b> recolher ovos<br>
+  Toque: joystick para andar; arraste na tela para girar a câmera.<br>
+  Teclado: WASD andar · IJKL câmera · <b>E</b> depositar ovo · <b>Q</b> recolher ovos<br>
   Ninhos começam vazios; o ovo é objeto separado.
+</div>
+<div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>
+<div id="acoes">
+  <button id="btn-ovo" type="button">Depositar ovo</button>
+  <button id="btn-recolher" type="button">Recolher ovos</button>
 </div>
 <script type="module" src="./quarteirao.js"></script>
 </body>
