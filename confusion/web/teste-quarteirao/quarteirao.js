@@ -1,17 +1,17 @@
-// Quarteirão de teste da primeira cidade. O chão é a imagem completa da cidade (1376x768), que já tem as casas, o rio,
-// a ponte, as barracas e a fonte pintados. A colisão é uma grade de células de 8 px pintada no editor-colisao.html
-// (COLISAO): as células bloqueadas viram retângulos no jogo. Escala: o Azazel tem 3,8 de altura no mundo.
+// Quarteirão de teste da cidade na montanha. O chão é a arte limpa (piso-montanha, 1200x896), com as construções
+// já pintadas. A colisão vem do desenho em verde (o que pode andar): uma grade de células de 8 px (COLISAO),
+// convertida em retângulos. O corpo do personagem tem raio 0,2 para caber nas passagens verdes.
 import * as THREE from 'three';
 import { vetorJoystick } from '../explorar3d/controles.js';
 import { resolverMovimento } from '../explorar3d/colisao.js';
 import { criarAzazel } from './azazel.js';
 
 const A = 'assets/';
-const IMG_W = 1376, IMG_H = 768;                 // tamanho do piso (16:9)
+const IMG_W = 1200, IMG_H = 896;                 // tamanho do piso (16:9)
 const LARG = 54;                                 // largura do piso no mundo
 const ALT = LARG * IMG_H / IMG_W;                // altura do piso no mundo
 const ALTURA_PERSONAGEM = 3.8;                   // altura do Azazel no mundo, em proporção ao mapa
-const RAIO = 0.68;                               // raio do personagem para a colisão (acompanha o tamanho)
+const RAIO = 0.2;                                // raio do corpo para a colisão: cabe nas passagens verdes do desenho
 const VELOCIDADE = 5.2;
 
 // ponto da imagem (px, py) -> mundo; o topo da imagem é o norte (-z)
@@ -70,7 +70,7 @@ const materialBase = (nome, opts = {}) =>
 // ---- chão: a imagem inteira da cidade. O topo da imagem fica no norte ----
 {
   const piso = new THREE.Mesh(new THREE.PlaneGeometry(LARG, ALT).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: textura('piso-limpo') }));
+    new THREE.MeshBasicMaterial({ map: textura('piso-montanha') }));
   cena.add(piso);
 }
 
@@ -89,7 +89,7 @@ caixa(LARG / 2, 30, -ALT / 2 - 2, ALT / 2 + 2);    // leste
 
 // obstáculos pintados na imagem: grade de células de 8 px (172 x 96) desenhada no editor de colisão
 // (confusion/web/teste-quarteirao/editor-colisao.html). Cada célula 1 bloqueia. A grade vira retângulos (caixasDaGrade).
-const COLISAO = { celula: 8, colunas: 172, linhas: 96, rle: "0,1548,96,16,156,16,156,16,154,1,1,16,132,9,15,16,49,11,72,9,14,2,3,5,56,11,72,31,58,11,72,28,61,11,72,28,61,11,72,28,61,11,72,28,61,11,72,28,61,11,72,28,61,11,72,28,61,11,49,13,9,29,61,11,49,13,10,50,39,11,49,13,10,50,39,11,49,13,6,54,39,11,49,13,6,13,10,2,7,22,39,11,49,13,8,11,10,2,7,22,39,11,49,13,9,15,5,2,7,22,39,11,49,13,9,15,5,2,7,22,12,38,30,11,8,13,11,13,5,2,7,22,12,38,30,11,8,13,12,12,5,2,7,22,12,38,30,11,8,13,13,11,5,2,7,22,12,38,30,11,8,13,13,11,5,2,7,22,12,38,30,11,34,11,5,2,7,22,12,38,18,23,34,11,5,2,7,22,12,38,18,12,45,12,4,2,7,22,12,38,18,12,45,12,4,2,7,22,7,43,18,12,45,11,5,2,7,22,7,43,18,12,45,11,5,2,7,22,7,43,5,12,1,12,45,11,43,43,5,12,1,12,47,7,45,43,5,12,62,5,45,43,5,12,63,3,46,43,5,12,64,2,46,43,5,12,112,43,5,12,93,62,5,12,93,62,5,12,93,62,43,19,48,62,43,29,38,62,43,29,38,27,24,11,43,29,38,27,24,11,43,29,38,27,24,11,43,29,38,27,24,11,43,29,38,27,24,11,43,29,38,27,24,11,43,29,38,27,24,11,54,18,89,11,54,18,89,11,54,18,89,11,55,6,1,10,89,11,58,2,101,11,161,11,15,15,131,11,15,15,131,11,15,15,131,11,15,33,113,11,15,33,113,59,113,59,113,59,113,59,113,59,113,26,66,11,80,15,66,11,80,15,66,11,80,15,66,11,80,15,66,11,80,15,66,11,80,15,26,16,24,11,80,15,26,16,24,11,80,15,26,16,24,11,80,15,26,16,24,11,80,15,26,16,3,17,4,11,80,15,26,16,3,17,4,11,121,16,3,17,4,11,121,16,3,17,4,11,121,16,3,17,4,11,121,16,3,17,4,11,121,16,3,17,4,11,121,16,3,17,4,11,121,16,3,17,4,11,121,16,3,17,4,11,121,16,3,17,4,11,80" };
+const COLISAO = { celula: 8, colunas: 150, linhas: 112, rle: "0,3342,4,143,6,141,9,139,6,2,4,80,3,53,7,4,3,41,1,3,4,2,3,25,7,46,10,6,3,23,1,15,15,23,7,44,12,7,4,20,4,12,17,5,2,15,8,45,8,11,4,19,5,5,9,3,21,10,7,67,4,23,13,6,21,7,7,70,4,26,4,10,4,6,12,4,8,73,4,39,3,10,20,75,4,37,2,15,17,75,4,36,3,18,15,74,3,36,3,23,12,72,4,35,4,25,11,70,4,35,4,28,11,68,4,34,4,32,10,65,4,34,5,37,8,62,4,34,4,40,9,59,4,33,3,45,6,4,2,54,3,32,3,48,4,3,3,54,3,12,2,1,1,15,4,49,3,2,4,55,1,13,4,14,5,50,7,72,2,13,5,53,2,74,3,11,6,130,8,2,8,130,18,130,18,133,15,135,14,136,4,1,9,134,5,8,4,125,13,8,5,124,12,9,8,121,12,10,9,7,1,110,2,3,8,12,13,110,3,5,3,2,2,13,11,108,2,9,1,6,3,10,10,106,3,21,1,9,9,104,4,33,8,103,3,37,6,101,3,39,7,99,3,40,9,96,2,42,11,138,5,3,4,89,4,44,5,5,4,86,6,43,5,6,4,83,9,42,5,8,4,81,10,42,4,96,7,44,2,98,7,43,1,100,6,145,6,146,5,146,4,83,2,61,5,82,2,61,5,81,2,62,6,79,2,64,5,77,4,65,5,75,4,66,6,74,4,67,6,73,4,8,2,58,7,2,1,69,4,6,4,58,10,71,3,3,4,60,10,70,10,48,2,10,9,72,8,24,2,22,4,8,9,75,7,22,3,21,6,6,9,79,6,20,2,23,5,4,8,85,6,16,3,23,16,88,22,25,13,93,19,26,10,101,11,28,7,140,9,140,8,141,7,139,2,3,4,139,3,4,2,142,2,147,3,1639" };
 // RLE: contagens alternadas de células livres e bloqueadas, começando por livre
 function decodificarGrade({ rle, colunas, linhas }) {
   const grade = new Uint8Array(colunas * linhas);
@@ -156,22 +156,6 @@ const ovos = NINHOS.map(([x, z]) => {
   return g;
 });
 
-// ---- construções (recortes das folhas): ficam de pé no chão, com a base no ponto da imagem; colisão só na base ----
-// [arquivo, base x px, base y px, largura em unidades, altura / largura]
-const PREDIOS = [
-  ['predio-moinho', 150, 300, 6.0, 1.572],
-  ['predio-casa-alta', 930, 150, 8.0, 0.799],
-  ['predio-torre-espiral', 120, 510, 4.5, 1.756],
-  ['predio-casa-mercado', 760, 600, 7.0, 0.775],
-  ['predio-celeiro', 860, 725, 8.0, 0.74],
-  ['predio-cercado', 1240, 700, 8.0, 0.627],
-];
-for (const [nome, bx, by, larg, proporcao] of PREDIOS) {
-  const p = P(bx, by);
-  const alt = larg * proporcao;
-  desenho(nome, p.x, p.z, larg, alt);
-  caixa(p.x - larg * 0.4, p.x + larg * 0.4, p.z - alt * 0.45, p.z);
-}
 
 // ---- Azazel no traje de vilão: andar em vídeo MP4 e parado nas 4 direções (mesmo do jogo principal) ----
 const azazel = criarAzazel('assets/characters/', ALTURA_PERSONAGEM);
@@ -181,7 +165,7 @@ cena.add(jogador);
 
 // ---- entrada: teclado e joystick de toque ----
 const teclas = new Set();
-const INICIO = P(280, 430);                  // início num caminho de terra livre, perto da ponte
+const INICIO = P(500, 400);                  // início na praça central
 const estado = { x: INICIO.x, z: INICIO.z };
 const PRESET = { taverna: P(330, 430), loja: P(1000, 420) };   // posições para conferir visualmente
 if (PRESET[VISAO]) Object.assign(estado, PRESET[VISAO]);

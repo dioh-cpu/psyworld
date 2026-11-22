@@ -53,15 +53,15 @@
 
 <script>
 // grade de colisão: células de 8 px sobre a imagem de 1376 x 768 (172 x 96)
-const LW = 1376, LH = 768, CEL = 8, COL = 172, LIN = 96;
-const RAIO_PERSONAGEM_PX = 0.68 * LW / 54;          // mesmo raio do jogo, convertido para pixels da imagem
+const LW = 1200, LH = 896, CEL = 8, COL = 150, LIN = 112;
+const RAIO_PERSONAGEM_PX = 0.2 * LW / 54;          // mesmo raio do jogo, convertido para pixels da imagem
 const RAIO_CELULAS = RAIO_PERSONAGEM_PX / CEL;      // ~2,16 células
 const CHAVE_RASCUNHO = 'editorColisao.rascunho.grade';
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 const imagem = new Image();
-imagem.src = 'assets/piso-limpo.webp';
+imagem.src = 'assets/piso-montanha.webp';
 
 let mascara = new Uint8Array(COL * LIN);            // 1 = bloqueado
 let desfazer = [];
@@ -331,7 +331,7 @@ document.getElementById('zoom').addEventListener('change', (e) => {
 });
 document.getElementById('btnGerar').onclick = () => {
   const area = document.getElementById('texto');
-  area.value = `const COLISAO = { celula: 8, colunas: 172, linhas: 96, rle: "${codificar(mascara)}" };`;
+  area.value = `const COLISAO = { celula: 8, colunas: 150, linhas: 112, rle: "${codificar(mascara)}" };`;
   document.getElementById('painelTexto').classList.add('aberto');
   area.select();
   try { navigator.clipboard.writeText(area.value).catch(() => {}); } catch (_) {}
