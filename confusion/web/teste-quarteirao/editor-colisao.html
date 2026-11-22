@@ -54,7 +54,7 @@
 <script>
 // grade de colisão: células de 8 px sobre a arte de 1200 x 896 (150 x 112)
 const LW = 1200, LH = 896, CEL = 8, COL = 150, LIN = 112;
-const RAIO_PERSONAGEM_PX = 0.2 * LW / 54;          // mesmo raio do jogo, convertido para pixels da imagem
+const RAIO_PERSONAGEM_PX = 0.15 * LW / 54;          // mesmo raio do jogo, convertido para pixels da imagem
 const RAIO_CELULAS = RAIO_PERSONAGEM_PX / CEL;      // ~2,16 células
 const CHAVE_RASCUNHO = 'editorColisao.rascunho.montanha.1200x896';   // a chave inclui o tamanho: rascunho de outra grade é descartado
 try { localStorage.removeItem('editorColisao.rascunho.grade'); } catch (_) {}

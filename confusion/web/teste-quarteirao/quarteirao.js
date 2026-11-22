@@ -11,7 +11,7 @@ const IMG_W = 1200, IMG_H = 896;                 // tamanho do piso (16:9)
 const LARG = 54;                                 // largura do piso no mundo
 const ALT = LARG * IMG_H / IMG_W;                // altura do piso no mundo
 const ALTURA_PERSONAGEM = 3.8;                   // altura do Azazel no mundo, em proporção ao mapa
-const RAIO = 0.2;                                // raio do corpo para a colisão: cabe nas passagens verdes do desenho
+const RAIO = 0.15;                                // raio do corpo para a colisão: cabe nas passagens verdes do desenho
 const VELOCIDADE = 5.2;
 
 // ponto da imagem (px, py) -> mundo; o topo da imagem é o norte (-z)
