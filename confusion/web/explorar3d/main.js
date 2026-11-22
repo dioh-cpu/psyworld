@@ -1305,7 +1305,7 @@ function terminarLuta() {
   let nivel = 0;
   b.e.aliados.forEach((a, i) => {
     if (vitoria && a.hp <= 0) return;
-    const r = aplicarResultado(time[i], vitoria);
+    const r = aplicarResultado(time[i], vitoria, b.sorteios.length);
     xp += r.xp;
     subiu += r.subiu;
     nivel = Math.max(nivel, r.nivel);

@@ -91,10 +91,10 @@ export function opcoesDeAcao(combate, m) {
   return opcoes;
 }
 
-// XP do monstrinho pela luta, como na versão 2D: vitória dá XP; derrota tira XP, mas nunca abaixo do nível atual.
-export function aplicarResultado(m, vitoria) {
+// XP do monstrinho pela luta: vitória dá XP por inimigo derrotado (x3 com 3 inimigos); derrota tira XP, mas nunca abaixo do nível atual.
+export function aplicarResultado(m, vitoria, inimigos = 1) {
   if (vitoria) {
-    const r = C.ganharXp(m, C.XP_FONTE.batalhaVitoria);
+    const r = C.ganharXp(m, C.XP_FONTE.batalhaVitoria * Math.max(1, inimigos));
     return { xp: r.ganho, subiu: r.subiu, nivel: r.nivel };
   }
   const antesXp = m.xp || 0;

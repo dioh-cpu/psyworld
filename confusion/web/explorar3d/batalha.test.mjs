@@ -118,6 +118,12 @@ test('resultado: vitória dá XP e pode subir de nível; derrota nunca desce aba
   const derrota = timeInicial()[0];
   derrota.xp = C.xpDoNivel(12) + 40; // 40 acima do começo do nível: a derrota tira 25 e ainda fica no nível 12
   const antes = derrota.xp;
+test('XP da vitória: 1 inimigo dá a base; 3 inimigos dão 3 vezes (por aliado)', () => {
+  const r1 = aplicarResultado({ level: 12, xp: 0 }, true, 1);
+  const r3 = aplicarResultado({ level: 12, xp: 0 }, true, 3);
+  assert.equal(r1.xp, C.XP_FONTE.batalhaVitoria);
+  assert.equal(r3.xp, 3 * C.XP_FONTE.batalhaVitoria);
+});
   const d = aplicarResultado(derrota, false);
   assert.equal(d.xp, -C.XP_FONTE.batalhaDerrota);
   assert.equal(derrota.xp, antes - C.XP_FONTE.batalhaDerrota);
