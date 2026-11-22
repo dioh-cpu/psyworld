@@ -155,11 +155,11 @@ const ovos = NINHOS.map(([x, z]) => {
 // [arquivo, base x px, base y px, largura em unidades, altura / largura]
 const PREDIOS = [
   ['predio-moinho', 150, 300, 6.0, 1.572],
-  ['predio-casa-alta', 930, 190, 8.0, 0.799],
+  ['predio-casa-alta', 930, 150, 8.0, 0.799],
   ['predio-torre-espiral', 120, 510, 4.5, 1.756],
   ['predio-casa-mercado', 760, 600, 7.0, 0.775],
   ['predio-celeiro', 860, 725, 8.0, 0.74],
-  ['predio-cercado', 1220, 750, 8.0, 0.627],
+  ['predio-cercado', 1240, 700, 8.0, 0.627],
 ];
 for (const [nome, bx, by, larg, proporcao] of PREDIOS) {
   const p = P(bx, by);
