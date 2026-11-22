@@ -163,6 +163,23 @@ const jogador = new THREE.Group();
 jogador.add(azazel.malha);
 cena.add(jogador);
 
+// sombra de contato: um disco escuro e suave sob os pés, no chão, para o personagem parecer apoiado
+const sombra = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(0,0,0,0.8)');
+  grad.addColorStop(0.6, 'rgba(0,0,0,0.4)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.95).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  cena.add(m);
+  return m;
+})();
+
 // ---- entrada: teclado e joystick de toque ----
 const teclas = new Set();
 const INICIO = P(500, 400);                  // início na praça central
@@ -251,6 +268,7 @@ function quadro(agora) {
   }
 
   jogador.position.set(estado.x, camada(estado.z), estado.z);
+  sombra.position.set(estado.x, camada(estado.z) - 0.005, estado.z);
   jogador.rotation.x = -Math.PI / 2;
   azazel.atualizar(andando, rot, 0);
   const geral = ['topo', 'geral'].includes(VISAO);
