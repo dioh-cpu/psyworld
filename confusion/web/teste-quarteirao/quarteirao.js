@@ -314,7 +314,11 @@ function quadro(agora) {
   jogador.position.set(estado.x, 0, estado.z);
   jogador.quaternion.copy(camera.quaternion);   // o personagem só fica de frente para a câmera (nunca fino)
 
-  if (VISAO === 'geral') {
+  if (VISAO === 'topo') {
+    camera.position.set(4.5, 120, 4.6);
+    camera.lookAt(4.5, 0, 4.5);
+    camera.fov = 40;
+  } else if (VISAO === 'geral') {
     camera.position.set(0, 96, 52);
     camera.lookAt(0, 0, -2);
     camera.fov = 40;
