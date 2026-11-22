@@ -82,8 +82,8 @@ caixa(LARG / 2, 30, -ALT / 2 - 2, ALT / 2 + 2);    // leste
 // obstáculos pintados na imagem: casas, rio, rochas, carroça, barracas, corrimão, fonte e árvores.
 // Cada retângulo é [x0, y0, x1, y1] em pixels da imagem. Ruas, praça, calçadas, escadas e a ponte ficam livres.
 const BLOQUEIOS = [
-  [60, 0, 340, 290], [0, 180, 210, 420], [0, 410, 260, 640], [330, 0, 520, 300], [495, 0, 565, 260],   // casas e pinheiro
-  [560, 110, 640, 230], [600, 220, 690, 330], [440, 400, 575, 500], [240, 540, 390, 600],              // rio
+  [60, 0, 340, 290], [0, 180, 210, 420], [0, 410, 260, 640], [330, 0, 520, 288], [495, 0, 565, 260],   // casas e pinheiro
+  [560, 110, 640, 230], [600, 220, 690, 330], [470, 405, 575, 500], [240, 540, 390, 600],              // rio
   [340, 405, 450, 470], [330, 330, 420, 400],                                                          // rochas e carroça
   [530, 470, 670, 545], [820, 450, 980, 525], [935, 480, 1085, 560], [640, 555, 780, 690], [750, 600, 895, 700], // barracas
   [800, 0, 1120, 320], [1020, 130, 1350, 460], [1150, 0, 1376, 140], [1290, 290, 1376, 520],          // casas e pinheiros da direita
@@ -113,8 +113,8 @@ function objeto(nome, { x, z, y = 0, altura = ALTURA[nome] }) {
   return mesh;
 }
 
-// ---- ninhos da Fazenda dos Ovos: em trechos livres de calçamento; começam vazios ----
-const NINHOS = [P(700, 420), P(705, 520), P(1010, 650), P(1230, 470)].map((p) => [p.x, p.z]);
+// ---- ninhos: removidos desta cidade (a imagem não tem fazenda); a mecânica de ovos fica sem ninhos até haver um lugar ----
+const NINHOS = [];
 NINHOS.forEach(([x, z]) => objeto('ninho', { x, z, altura: ALTURA.ninho }));
 const ovos = NINHOS.map(([x, z]) => {
   const g = objeto('ovo', { x, z, y: 0.3, altura: ALTURA.ovo });
@@ -174,8 +174,6 @@ joyEl.addEventListener('pointermove', (e) => { if (e.pointerId === joyDedo) joyA
 joyEl.addEventListener('pointerup', joyFim);
 joyEl.addEventListener('pointercancel', joyFim);
 
-document.getElementById('btn-ovo').addEventListener('click', () => depositar());
-document.getElementById('btn-recolher').addEventListener('click', () => recolherOvos());
 
 function depositar() {
   let melhor = -1, dist = 3.2;
