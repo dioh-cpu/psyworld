@@ -55,7 +55,9 @@
   #joy-knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; box-sizing: border-box; border-radius: 50%; background: rgba(159, 211, 255, .9); border: 2px solid #eaf5ff; pointer-events: none; }
   .botao { position: fixed; right: 16px; width: 124px; height: 52px; box-sizing: border-box; border: 2px solid #3f8fd6; background: linear-gradient(180deg, rgba(18, 44, 94, .96), rgba(9, 25, 60, .96)); color: #fff; font: 700 15px/1 'Rajdhani', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; touch-action: manipulation; display: none; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
   #btn-centro { bottom: 16px; }
-  #btn-examinar { bottom: 80px; background: #ffd27a; border-color: #ffd27a; color: #0d2350; }
+  #btn-acompanhante { bottom: 80px; }
+  #btn-time { bottom: 144px; }
+  #btn-examinar { bottom: 208px; background: #ffd27a; border-color: #ffd27a; color: #0d2350; }
 
   /* modo foto: some com a interface e deixa só a cena; P ou o botão de baixo voltam */
   #foto-sair { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: none; background: rgba(10, 28, 60, .85); border: 2px solid #3f8fd6; color: #fff; font: 700 15px 'Rajdhani', system-ui, sans-serif; padding: 6px 14px; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
@@ -280,11 +282,14 @@
   <button id="acao-examinar" class="acao" type="button" disabled><span class="tecla">E</span>Examinar</button>
   <button id="acao-centro" class="acao" type="button"><span class="tecla">C</span>Centralizar</button>
   <button id="acao-time" class="acao" type="button"><span class="tecla">T</span>Time</button>
+  <button id="acao-acompanhante" class="acao" type="button"><span class="tecla">G</span>Acompanhante</button>
   <button id="acao-foto" class="acao" type="button"><span class="tecla">P</span>Modo foto</button>
 </div>
 <div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>
 <button id="btn-examinar" class="botao" type="button" hidden>Examinar</button>
 <button id="btn-centro" class="botao" type="button">Centralizar</button>
+<button id="btn-acompanhante" class="botao" type="button">Acompanhante</button>
+<button id="btn-time" class="botao" type="button">Time</button>
 <button id="foto-sair" type="button">Modo foto · P para sair</button>
 <div id="batalha" aria-live="polite"></div>
 <script type="module" src="./main.js"></script>

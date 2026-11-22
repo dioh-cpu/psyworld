@@ -19,7 +19,13 @@ uniform float uBri;
 uniform float uColorir;
 uniform vec3 uTom;
 uniform float uChave;
+uniform float uSRGB;
 varying vec2 vUv;
+// A textura sRGB chega linear. O giro, a saturação e o brilho são feitos no sRGB, como o filtro do CSS dos menus,
+// e por isso a cor da batalha e a dos menus batem. A saída já está em sRGB (ShaderMaterial não converte sozinho).
+vec3 paraSRGB(vec3 c) {
+  return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+}
 vec3 girar(vec3 c, float a) {
   float co = cos(a);
   float si = sin(a);
@@ -36,22 +42,23 @@ void main() {
     t.a *= 1.0 - smoothstep(0.18, 0.34, verde);
     t.g = min(t.g, max(t.r, t.b) + 0.04);
   }
+  // textura de vídeo: o valor já é sRGB (sem a conversão para linear das texturas de imagem)
+  vec3 s = uSRGB > 0.5 ? t.rgb : paraSRGB(t.rgb);
   vec3 c;
   if (uColorir > 0.5) {
     // desenho prateado: a luminância vira a cor da variação
-    float lum = dot(t.rgb, vec3(0.299, 0.587, 0.114));
+    float lum = dot(s, vec3(0.299, 0.587, 0.114));
     c = uTom * lum * 1.6;
   } else {
-    c = girar(t.rgb, uHue);
+    c = girar(s, uHue);
     float lum = dot(c, vec3(0.299, 0.587, 0.114));
     c = mix(vec3(lum), c, uSat) * uBri;
   }
-  c = mix(c, uCor, uFlash);
-  // a textura sRGB é lida como linear; um ShaderMaterial não converte a saída, então a cor volta para sRGB aqui
-  vec3 srgb = mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
-  gl_FragColor = vec4(srgb, t.a * uAlpha);
+  c = mix(c, paraSRGB(uCor), uFlash);
+  gl_FragColor = vec4(clamp(c, 0.0, 1.0), t.a * uAlpha);
   if (gl_FragColor.a < 0.01) discard;
-}`;
+}
+`;
 
 export const NATURAL = { matiz: 0, sat: 1, bri: 1, colorir: false };
 
@@ -76,6 +83,7 @@ export function criarMaterialCor(THREE, textura = null) {
     uColorir: { value: 0 },
     uTom: { value: new THREE.Vector3(1, 1, 1) },
     uChave: { value: 0 },
+    uSRGB: { value: 0 },
   };
   const material = new THREE.ShaderMaterial({
     uniforms, vertexShader: VERT, fragmentShader: FRAG,

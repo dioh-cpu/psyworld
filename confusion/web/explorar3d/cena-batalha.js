@@ -272,12 +272,13 @@ export function criarCenaBatalha(THREE) {
   const aplicarGiro = (l, g) => aplicarGiroCor(THREE, l.uniforms, g);
 
   // Mostra um monstrinho. `giro` é a cor da variação (null é o natural). Com `animar`, a cor vai do natural até a variação.
-  function definir(lado, i, { textura, espelho = false, giro = null, animar = false, dur = 1.4, medidas = null, chave = false }) {
+  function definir(lado, i, { textura, espelho = false, giro = null, animar = false, dur = 1.4, medidas = null, chave = false, srgb = false }) {
     const l = lutadorDo(lado, i);
     l.ativo = true;
     l.derrubado = false;
     l.uniforms.map.value = textura;
     l.uniforms.uChave.value = chave ? 1 : 0;
+    l.uniforms.uSRGB.value = srgb ? 1 : 0;
     l.pronto = false;
     l.medidas = null;
     if (medidas) {

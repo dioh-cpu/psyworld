@@ -350,7 +350,7 @@ function videoDoNoctarn() {
 function visaoDaBatalha(m, lado) {
   if (m.species === 'Noctarn') {
     const vid = videoDoNoctarn();
-    return { textura: vid.tex, espelho: lado === 'aliado', video: vid.v, medidas: VIDEO_NOCTARN.medidas, chave: true };
+    return { textura: vid.tex, espelho: lado === 'aliado', video: vid.v, medidas: VIDEO_NOCTARN.medidas, chave: true, srgb: true };
   }
   if (FOLHAS_DIRECOES[m.species]) return { textura: texturaDeDirecao(m, lado === 'aliado' ? 'direita' : 'esquerda'), espelho: false };
   if (PERFIS_DIREITA[m.species]) return { textura: texturaDeDirecao(m, 'direita'), espelho: lado === 'inimigo' };
@@ -452,6 +452,7 @@ window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyH') alternarAtalhos();
     if (e.code === 'KeyP') alternarFoto();
     if (e.code === 'KeyT') abrirTime();
+    if (e.code === 'KeyG') abrirAcompanhante();
   }
   prevenirSetas(e);
 });
@@ -495,6 +496,9 @@ const acaoExaminar = document.getElementById('acao-examinar');
 const acaoCentro = document.getElementById('acao-centro');
 const acaoTime = document.getElementById('acao-time');
 const acaoFoto = document.getElementById('acao-foto');
+const acaoAcompanhante = document.getElementById('acao-acompanhante');
+const btnTime = document.getElementById('btn-time');
+const btnAcompanhante = document.getElementById('btn-acompanhante');
 const atalhos = document.getElementById('atalhos');
 const fotoSair = document.getElementById('foto-sair');
 const btnExaminar = document.getElementById('btn-examinar');
@@ -503,6 +507,9 @@ acaoAtalhos.addEventListener('click', alternarAtalhos);
 acaoExaminar.addEventListener('click', () => { if (perto()) examinar(); });
 acaoCentro.addEventListener('click', () => { estado.recentralizar = true; });
 acaoTime.addEventListener('click', abrirTime);
+acaoAcompanhante.addEventListener('click', abrirAcompanhante);
+btnTime.addEventListener('click', abrirTime);
+btnAcompanhante.addEventListener('click', abrirAcompanhante);
 acaoFoto.addEventListener('click', alternarFoto);
 fotoSair.addEventListener('click', alternarFoto);
 btnExaminar.addEventListener('click', () => { if (perto()) examinar(); });
@@ -784,7 +791,7 @@ function renderTudo() {
   document.body.classList.toggle('batalha', Boolean(vista || batalha));
   document.body.classList.toggle('vista', Boolean(vista));
   if (vista) {
-    batalhaEl.innerHTML = vista.tipo === 'time' ? htmlTime() : htmlHabilidades();
+    batalhaEl.innerHTML = vista.tipo === 'time' ? htmlTime() : vista.tipo === 'acompanhante' ? htmlAcompanhante() : htmlHabilidades();
     return;
   }
   if (batalha) renderBatalha();
@@ -845,13 +852,41 @@ function membroAcompanhante() {
   const m = time[acompanhante.i];
   return m && m.species === acompanhante.especie ? m : null;
 }
-function alternarAcompanhante(i) {
+function definirAcompanhante(i) {
   const m = time[i];
   if (!m) return;
-  acompanhante = acompanhante && acompanhante.i === i ? null : { i, especie: m.species };
+  acompanhante = { i, especie: m.species };
   salvarAcompanhante();
   trilha.length = 0;
+}
+function alternarAcompanhante(i) {
+  if (acompanhante && acompanhante.i === i) {
+    acompanhante = null;
+    salvarAcompanhante();
+    trilha.length = 0;
+  } else {
+    definirAcompanhante(i);
+  }
   renderTudo();
+}
+// Seletor de acompanhante, como o do Psyworld: a lista do time, com a escolha atual.
+function abrirAcompanhante() {
+  if (batalha) return;
+  const atual = acompanhante ? acompanhante.i : 0;
+  vista = { tipo: 'acompanhante', sel: Math.min(atual, Math.max(0, time.length - 1)) };
+  renderTudo();
+}
+function htmlAcompanhante() {
+  const ac = membroAcompanhante();
+  return `<div class="bat-tela escolha">
+    <h2 class="bat-titulo">Seu parceiro de jornada</h2>
+    <p class="bat-pocoes">Escolha um monstrinho do time para caminhar atrás de você. A escolha não troca o líder da batalha. Atual: ${ac ? esc(ac.species) : 'nenhum'}.</p>
+    <ul class="bat-membros">${time.map((t, i) => cartaoMembro(t, i, i === vista.sel, 'acomp-escolher')).join('')}</ul>
+    <div class="bat-acoes">
+      <button type="button" class="bat-btn" data-bat="acomp-nenhum">Sem acompanhante</button>
+      <button type="button" class="bat-btn primario" data-bat="vista-fechar">Fechar<kbd>Esc</kbd></button>
+    </div>
+  </div>`;
 }
 // Direção da célula do sprite conforme o movimento em relação à câmera (mesma regra dos monstrinhos do mapa).
 function celulaDoAcompanhante(vx, vz) {
@@ -962,14 +997,14 @@ function iniciarBatalha(s) {
   time.slice(0, 3).forEach((m, i) => {
     const giro = giroDoMonstro(m);
     const v = visaoDaBatalha(m, 'aliado');
-    cenaBat.definir('aliado', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.2, medidas: v.medidas, chave: v.chave });
+    cenaBat.definir('aliado', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.2, medidas: v.medidas, chave: v.chave, srgb: v.srgb });
     if (v.video) v.video.play().catch(() => {});
   });
   sorteios.forEach((x, i) => {
     const m = x.monstro;
     const giro = giroDoMonstro(m);
     const v = visaoDaBatalha(m, 'inimigo');
-    cenaBat.definir('inimigo', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.6, medidas: v.medidas, chave: v.chave });
+    cenaBat.definir('inimigo', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.6, medidas: v.medidas, chave: v.chave, srgb: v.srgb });
     if (v.video) v.video.play().catch(() => {});
   });
   cenaBat.mirar('panoramica');
@@ -1235,6 +1270,13 @@ function voltarVista() {
 
 function teclaVista(e) {
   const k = e.code;
+  if (vista.tipo === 'acompanhante') {
+    if (k === 'ArrowUp' || k === 'KeyW') { vista.sel = (vista.sel + time.length - 1) % time.length; renderTudo(); }
+    else if (k === 'ArrowDown' || k === 'KeyS') { vista.sel = (vista.sel + 1) % time.length; renderTudo(); }
+    else if (k === 'Enter' || k === 'Space' || k === 'KeyE') { definirAcompanhante(vista.sel); vista = null; renderTudo(); }
+    else if (k === 'Escape' || k === 'KeyG') { vista = null; renderTudo(); }
+    return;
+  }
   if (vista.tipo === 'time') {
     if (k === 'ArrowUp' || k === 'KeyW') { vista.sel = (vista.sel + time.length - 1) % time.length; renderTudo(); }
     else if (k === 'ArrowDown' || k === 'KeyS') { vista.sel = (vista.sel + 1) % time.length; renderTudo(); }
@@ -1292,6 +1334,8 @@ batalhaEl.addEventListener('click', (e) => {
     else if (acao === 'vista-habilidades') abrirHabilidades('time');
     else if (acao === 'vista-fechar') { vista = null; renderTudo(); }
     else if (acao === 'vista-acompanhar') alternarAcompanhante(vista.sel);
+    else if (acao === 'acomp-escolher') { definirAcompanhante(Number(el.dataset.i)); vista = null; renderTudo(); }
+    else if (acao === 'acomp-nenhum') { acompanhante = null; salvarAcompanhante(); trilha.length = 0; vista = null; renderTudo(); }
     else if (acao === 'vista-voltar') voltarVista();
     else if (acao === 'slot') { vista.slot = Number(el.dataset.i); renderTudo(); }
     else if (acao === 'pool') {
