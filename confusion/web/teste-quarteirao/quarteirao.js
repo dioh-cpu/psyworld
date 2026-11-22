@@ -36,10 +36,15 @@ const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 camera.up.set(0, 0, -1);
 camera.position.y = 18;
 camera.lookAt(0, 0, 0);
+const ALTURA_CAMERA = 12;                        // unidades de altura visíveis em paisagem (antes 18)
 function enquadrar() {
   const aspecto = window.innerWidth / window.innerHeight;
   const geral = ['topo', 'geral'].includes(VISAO);
-  const altura = geral ? Math.max(ALT, LARG / aspecto) : Math.min(18, ALT, LARG / aspecto);
+  // em paisagem, a câmera mostra ALTURA_CAMERA unidades de altura: menor = mais perto, estruturas e personagem maiores
+  // em pé (tela alta) mostra o mapa inteiro, para não ficar apertado na largura
+  const altura = geral ? Math.max(ALT, LARG / aspecto)
+    : aspecto < 1 ? ALT
+    : Math.min(ALTURA_CAMERA, ALT, LARG / aspecto);
   camera.top = altura / 2;
   camera.bottom = -camera.top;
   camera.right = camera.top * aspecto;
