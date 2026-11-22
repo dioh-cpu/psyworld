@@ -156,7 +156,7 @@ cena.add(jogador);
 
 // ---- entrada: teclado e joystick de toque ----
 const teclas = new Set();
-const INICIO = P(300, 460);                  // início num caminho de terra livre, perto da ponte
+const INICIO = P(284, 432);                  // início num caminho de terra livre, perto da ponte
 const estado = { x: INICIO.x, z: INICIO.z };
 const PRESET = { taverna: P(330, 430), loja: P(1000, 420) };   // posições para conferir visualmente
 if (PRESET[VISAO]) Object.assign(estado, PRESET[VISAO]);
