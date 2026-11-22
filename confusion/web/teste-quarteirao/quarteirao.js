@@ -69,7 +69,7 @@ const materialBase = (nome, opts = {}) =>
 // ---- chão: a imagem inteira, sem recorte nem espelho. O topo da imagem fica no norte ----
 {
   const piso = new THREE.Mesh(new THREE.PlaneGeometry(LARG, ALT).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: textura('piso-cidade-1') }));
+    new THREE.MeshBasicMaterial({ map: textura('piso-cidade-2') }));
   cena.add(piso);
 
 }
