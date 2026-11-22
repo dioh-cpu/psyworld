@@ -18,6 +18,7 @@ uniform float uSat;
 uniform float uBri;
 uniform float uColorir;
 uniform vec3 uTom;
+uniform float uChave;
 varying vec2 vUv;
 vec3 girar(vec3 c, float a) {
   float co = cos(a);
@@ -29,6 +30,12 @@ vec3 girar(vec3 c, float a) {
 }
 void main() {
   vec4 t = texture2D(map, vUv);
+  if (uChave > 0.5) {
+    // vídeo com fundo verde: o verde sai pela diferença para o resto; a franja verde é corrigida
+    float verde = t.g - max(t.r, t.b);
+    t.a *= 1.0 - smoothstep(0.18, 0.34, verde);
+    t.g = min(t.g, max(t.r, t.b) + 0.04);
+  }
   vec3 c;
   if (uColorir > 0.5) {
     // desenho prateado: a luminância vira a cor da variação
@@ -68,6 +75,7 @@ export function criarMaterialCor(THREE, textura = null) {
     uBri: { value: 1 },
     uColorir: { value: 0 },
     uTom: { value: new THREE.Vector3(1, 1, 1) },
+    uChave: { value: 0 },
   };
   const material = new THREE.ShaderMaterial({
     uniforms, vertexShader: VERT, fragmentShader: FRAG,

@@ -324,9 +324,34 @@ const PERFIS_DIREITA = {
 // esquerda; quando a arte olha para o lado errado, ela é espelhada.
 const FRENTE_PARA = { Brotavel: 'direita', Ignavor: 'esquerda', Solarin: 'esquerda', Vaelith: 'esquerda' };
 
+// Noctarn na batalha: o vídeo de repouso para o lado esquerdo (fundo verde retirado no sombreador). O aliado usa o espelho,
+// porque ele encara o inimigo. Medidas do desenho no quadro do vídeo (base, centro e altura visível), medidas uma vez.
+const VIDEO_NOCTARN = { arquivo: 'assets/monsters/noctarn/idle-left.mp4', medidas: { aspecto: 960 / 540, yb: 0.937, xc: 0.547, vh: 0.885 } };
+let videoNoctarn = null;
+function videoDoNoctarn() {
+  if (!videoNoctarn) {
+    const v = document.createElement('video');
+    v.src = RAIZ + VIDEO_NOCTARN.arquivo;
+    v.loop = true;
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = 'auto';
+    v.style.display = 'none';
+    document.body.appendChild(v);
+    const tex = new THREE.VideoTexture(v);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    videoNoctarn = { v, tex };
+  }
+  return videoNoctarn;
+}
+
 // Como cada monstro aparece na batalha. Noctarn tem a folha de quatro direções: o aliado usa 'direita' e o inimigo 'esquerda'.
 // As outras espécies usam o perfil de PERFIS_DIREITA (o inimigo espelha). Sem perfil, usam a frente, espelhada se preciso.
 function visaoDaBatalha(m, lado) {
+  if (m.species === 'Noctarn') {
+    const vid = videoDoNoctarn();
+    return { textura: vid.tex, espelho: lado === 'aliado', video: vid.v, medidas: VIDEO_NOCTARN.medidas, chave: true };
+  }
   if (FOLHAS_DIRECOES[m.species]) return { textura: texturaDeDirecao(m, lado === 'aliado' ? 'direita' : 'esquerda'), espelho: false };
   if (PERFIS_DIREITA[m.species]) return { textura: texturaDeDirecao(m, 'direita'), espelho: lado === 'inimigo' };
   const olhaPara = FRENTE_PARA[m.species] ?? 'direita';
@@ -594,6 +619,23 @@ function htmlHabilidades() {
   </div>`;
 }
 
+// Tela de Time: lista do time, acompanhante e habilidades. O acompanhante anda atrás do personagem no mapa.
+function htmlTime() {
+  const ac = membroAcompanhante();
+  const escolhido = Boolean(ac) && acompanhante.i === vista.sel;
+  return `<div class="bat-tela escolha">
+    <h2 class="bat-titulo">Time</h2>
+    <ul class="bat-membros">${time.map((t, i) => cartaoMembro(t, i, i === vista.sel, 'vista-membro')).join('')}</ul>
+    <p class="bat-pocoes">Acompanhante: ${ac ? esc(ac.species) : 'nenhum'}. Ele caminha atrás do personagem pelo mapa e não entra na batalha.</p>
+    <div class="bat-acoes">
+      <button type="button" class="bat-btn" data-bat="vista-acompanhar">${escolhido ? 'Remover acompanhante' : 'Acompanhar'}<kbd>C</kbd></button>
+      <button type="button" class="bat-btn primario" data-bat="vista-habilidades">Habilidades<kbd>Enter</kbd></button>
+      <button type="button" class="bat-btn" data-bat="vista-fechar">Fechar<kbd>Esc</kbd></button>
+    </div>
+    <p class="bat-pocoes">Troque as habilidades dos slots 1 a 4 quando quiser. A batalha usa esses slots no disco de ações.</p>
+  </div>`;
+}
+
 // ---- batalha em equipe: até 3 aliados (o time) contra 1 a 3 inimigos ----
 const ACOES = ['atacar', 'habilidades', 'item'];
 const TEXTO_ACAO = { atacar: 'Atacar', habilidades: 'Habilidades', item: 'Item' };
@@ -768,6 +810,128 @@ const posicaoDoLutador = (ref) => cenaBat.posicaoDoLutador(ref.lado, ref.i);
 const ARTE_BATALHA = new Set(['agua', 'aco', 'dragao', 'eletrico', 'fada', 'fantasma', 'fogo', 'gelo', 'inseto', 'lutador', 'luz', 'neutro', 'pedra', 'planta', 'psiquico', 'terra', 'trevas', 'veneno', 'voador']);
 const arteDaBatalha = (elemento) => (ARTE_BATALHA.has(elemento) ? `${RAIZ}assets/mundo/batalha/${elemento}.webp` : null);
 
+// ---- acompanhante: um membro do time que anda atrás do personagem (não entra na batalha) ----
+const CHAVE_ACOMPANHANTE = 'psy3d-acompanhante';
+const ALTURA_ACOMPANHANTE = 1.6;
+const DISTANCIA_ACOMPANHANTE = 1.2;   // quanto fica para trás, quando ainda não há trilha
+const PASSO_TRILHA = 0.18;            // a trilha guarda um ponto a cada passo deste tamanho
+const ATRASO_ACOMPANHANTE = 6;        // pontos da trilha de atraso: o acompanhante segue o ponto que ficou para trás
+const LADO_ACOMPANHANTE = 0.85;    // quanto fica ao lado do rastro (para não sumir atrás do personagem na câmera)
+let acompanhante = lerAcompanhante();  // { i, especie } ou null
+const trilha = [];
+const acomp = { malha: null, uniforms: null, especie: null, direcoes: null, pronto: false, celula: null, x: 0, z: 0, vx: 0, vz: 0, ativo: false };
+{
+  const m = criarMaterialCor(THREE);
+  acomp.uniforms = m.uniforms;
+  acomp.malha = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), m.material);
+  acomp.malha.visible = false;
+  scene.add(acomp.malha);
+}
+function lerAcompanhante() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CHAVE_ACOMPANHANTE));
+    return v && Number.isInteger(v.i) && typeof v.especie === 'string' ? v : null;
+  } catch { return null; }
+}
+function salvarAcompanhante() {
+  try {
+    if (acompanhante) localStorage.setItem(CHAVE_ACOMPANHANTE, JSON.stringify(acompanhante));
+    else localStorage.removeItem(CHAVE_ACOMPANHANTE);
+  } catch { /* sem armazenamento (aba privada): a escolha vale só nesta sessão */ }
+}
+// O membro do time que acompanha, se ainda estiver no mesmo lugar do time.
+function membroAcompanhante() {
+  if (!acompanhante) return null;
+  const m = time[acompanhante.i];
+  return m && m.species === acompanhante.especie ? m : null;
+}
+function alternarAcompanhante(i) {
+  const m = time[i];
+  if (!m) return;
+  acompanhante = acompanhante && acompanhante.i === i ? null : { i, especie: m.species };
+  salvarAcompanhante();
+  trilha.length = 0;
+  renderTudo();
+}
+// Direção da célula do sprite conforme o movimento em relação à câmera (mesma regra dos monstrinhos do mapa).
+function celulaDoAcompanhante(vx, vz) {
+  const paraCamera = new THREE.Vector3(camera.position.x - acomp.x, 0, camera.position.z - acomp.z).normalize();
+  const direitaCamera = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  direitaCamera.y = 0;
+  direitaCamera.normalize();
+  const emDirecao = vx * paraCamera.x + vz * paraCamera.z;
+  const aoLado = vx * direitaCamera.x + vz * direitaCamera.z;
+  if (Math.abs(emDirecao) >= Math.abs(aoLado)) return emDirecao >= 0 ? 'frente' : 'costas';
+  return aoLado >= 0 ? 'direita' : 'esquerda';
+}
+function atualizarAcompanhante(dt, t) {
+  const m = membroAcompanhante();
+  if (!m || batalha) { acomp.malha.visible = false; acomp.ativo = false; return; }
+  if (acomp.especie !== m.species) {
+    acomp.especie = m.species;
+    acomp.pronto = false;
+    acomp.direcoes = null;
+    acomp.celula = null;
+    trilha.length = 0;
+  }
+  if (!acomp.pronto) {
+    const d = direcoesDoMapa(m.species);
+    if (d) {
+      acomp.direcoes = d.direcoes;
+      acomp.malha.geometry.dispose();
+      acomp.malha.geometry = new THREE.PlaneGeometry(ALTURA_ACOMPANHANTE * d.aspecto, ALTURA_ACOMPANHANTE);
+      acomp.pronto = true;
+    }
+  }
+  // trilha do personagem: um ponto a cada passo
+  const ult = trilha[trilha.length - 1];
+  if (!ult || Math.hypot(estado.pos.x - ult.x, estado.pos.z - ult.z) > PASSO_TRILHA) {
+    trilha.push({ x: estado.pos.x, z: estado.pos.z });
+    if (trilha.length > 90) trilha.shift();
+  }
+  // alvo: o ponto da trilha que ficou para trás; sem trilha suficiente, um ponto atrás do personagem
+  let alvo;
+  // direção do caminho (dos últimos pontos da trilha) e o lado: o acompanhante vai um pouco ao lado do rastro, para não ficar escondido atrás do personagem
+  let dx = -Math.sin(estado.rot);
+  let dz = -Math.cos(estado.rot);
+  if (trilha.length > ATRASO_ACOMPANHANTE + 3) {
+    const a = trilha[trilha.length - 1];
+    const b = trilha[trilha.length - 4];
+    const n = Math.hypot(a.x - b.x, a.z - b.z);
+    if (n > 1e-4) { dx = (a.x - b.x) / n; dz = (a.z - b.z) / n; }
+  }
+  const ladoX = -dz * LADO_ACOMPANHANTE;
+  const ladoZ = dx * LADO_ACOMPANHANTE;
+  if (trilha.length > ATRASO_ACOMPANHANTE) {
+    const p = trilha[trilha.length - 1 - ATRASO_ACOMPANHANTE];
+    alvo = { x: p.x + ladoX, z: p.z + ladoZ };
+  } else {
+    alvo = { x: estado.pos.x - dx * DISTANCIA_ACOMPANHANTE + ladoX, z: estado.pos.z - dz * DISTANCIA_ACOMPANHANTE + ladoZ };
+  }
+  if (!acomp.ativo) { acomp.x = alvo.x; acomp.z = alvo.z; acomp.ativo = true; }
+  const dist = Math.hypot(alvo.x - acomp.x, alvo.z - acomp.z);
+  if (dist > 6) { acomp.x = alvo.x; acomp.z = alvo.z; }   // saltou (teleporte ou troca de lugar): não arrasta
+  const k = 1 - Math.exp(-dt * 9);
+  const antes = { x: acomp.x, z: acomp.z };
+  acomp.x += (alvo.x - acomp.x) * k;
+  acomp.z += (alvo.z - acomp.z) * k;
+  if (dt > 0) {
+    acomp.vx += (((acomp.x - antes.x) / dt) - acomp.vx) * 0.3;
+    acomp.vz += (((acomp.z - antes.z) / dt) - acomp.vz) * 0.3;
+  }
+  const parado = Math.hypot(acomp.vx, acomp.vz) < 0.05;
+  if (acomp.pronto) {
+    const cel = parado ? (acomp.celula ?? 'frente') : celulaDoAcompanhante(acomp.vx, acomp.vz);
+    if (cel !== acomp.celula) {
+      acomp.uniforms.map.value = acomp.direcoes[cel];
+      acomp.celula = cel;
+    }
+  }
+  acomp.malha.visible = acomp.pronto;
+  acomp.malha.position.set(acomp.x, ALTURA_ACOMPANHANTE / 2 + Math.abs(Math.sin(t * 6)) * 0.04, acomp.z);
+  acomp.malha.quaternion.copy(camera.quaternion);
+}
+
 // Um selvagem do mapa é o primeiro inimigo; a batalha traz mais 0 a 2, sorteados na hora. O time (até 3) sempre luta.
 function iniciarBatalha(s) {
   s.ativo = false;
@@ -798,13 +962,15 @@ function iniciarBatalha(s) {
   time.slice(0, 3).forEach((m, i) => {
     const giro = giroDoMonstro(m);
     const v = visaoDaBatalha(m, 'aliado');
-    cenaBat.definir('aliado', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.2 });
+    cenaBat.definir('aliado', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.2, medidas: v.medidas, chave: v.chave });
+    if (v.video) v.video.play().catch(() => {});
   });
   sorteios.forEach((x, i) => {
     const m = x.monstro;
     const giro = giroDoMonstro(m);
     const v = visaoDaBatalha(m, 'inimigo');
-    cenaBat.definir('inimigo', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.6 });
+    cenaBat.definir('inimigo', i, { textura: v.textura, espelho: v.espelho, giro, animar: Boolean(giro), dur: 1.6, medidas: v.medidas, chave: v.chave });
+    if (v.video) v.video.play().catch(() => {});
   });
   cenaBat.mirar('panoramica');
   renderTudo();
@@ -1035,6 +1201,7 @@ function fugir() {
 }
 
 function encerrarBatalha() {
+  if (videoNoctarn) videoNoctarn.v.pause();   // o vídeo só toca durante a luta
   const b = batalha;
   if (!b) return;
   b.s.reaparece = performance.now() + RESPAWN_MS;
@@ -1072,6 +1239,7 @@ function teclaVista(e) {
     if (k === 'ArrowUp' || k === 'KeyW') { vista.sel = (vista.sel + time.length - 1) % time.length; renderTudo(); }
     else if (k === 'ArrowDown' || k === 'KeyS') { vista.sel = (vista.sel + 1) % time.length; renderTudo(); }
     else if (k === 'Enter' || k === 'Space' || k === 'KeyE') abrirHabilidades('time');
+    else if (k === 'KeyC') alternarAcompanhante(vista.sel);
     else if (k === 'Escape' || k === 'KeyT') { vista = null; renderTudo(); }
     return;
   }
@@ -1123,6 +1291,7 @@ batalhaEl.addEventListener('click', (e) => {
     if (acao === 'vista-membro') { vista.sel = Number(el.dataset.i); renderTudo(); }
     else if (acao === 'vista-habilidades') abrirHabilidades('time');
     else if (acao === 'vista-fechar') { vista = null; renderTudo(); }
+    else if (acao === 'vista-acompanhar') alternarAcompanhante(vista.sel);
     else if (acao === 'vista-voltar') voltarVista();
     else if (acao === 'slot') { vista.slot = Number(el.dataset.i); renderTudo(); }
     else if (acao === 'pool') {
@@ -1285,6 +1454,7 @@ function quadro(agora) {
   ultimo = agora;
   atualizar(dt, agora);
   azazel.olharPara(camera);
+  atualizarAcompanhante(dt, agora / 1000);
   if (batalha) {
     const dtBatalha = dt * preferenciasBatalha.velocidade;
     tocarRoteiro(dtBatalha);
@@ -1308,6 +1478,8 @@ window.addEventListener('resize', () => {
 // para testes automáticos: posição do personagem, câmera, localização, teleporte, batalha e time
 window.explorar3d = {
   cenaBatalha: () => cenaBat,   // depuração: a cena 3D da batalha
+  video: () => (videoNoctarn ? { tempo: +videoNoctarn.v.currentTime.toFixed(2), pausado: videoNoctarn.v.paused, pronto: videoNoctarn.v.readyState } : null),
+  acompanhante: () => ({ visivel: acomp.malha.visible, pronto: acomp.pronto, especie: acomp.especie, x: +acomp.x.toFixed(2), z: +acomp.z.toFixed(2), trilha: trilha.length, jogador: { x: +estado.pos.x.toFixed(2), z: +estado.pos.z.toFixed(2) } }),
   jogador: () => ({ x: estado.pos.x, z: estado.pos.z, rot: estado.rot }),
   sprites: () => scene.children.filter((o) => o.isSprite).map((s) => ({ x: s.position.x, z: s.position.z, altura: s.scale.y })),
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: estado.yaw, pitch: estado.pitch }),
