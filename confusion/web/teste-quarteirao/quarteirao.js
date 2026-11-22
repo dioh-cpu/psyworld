@@ -1,7 +1,7 @@
 // Quarteirão de teste da primeira cidade. O chão é uma imagem só (16:9), com rua em cruz, praça de pedra, calçadas
 // nas bordas e o campo da Fazenda dos Ovos à direita da estrada sul. Tudo é posto pelas coordenadas da imagem:
 // P(px, py) converte um ponto da imagem para o mundo. Escala: o Azazel tem 2,55 unidades de altura, como no jogo.
-// Objetos fixos: planos cruzados (não giram com a câmera). Fachadas: volumes com arte na frente.
+// Câmera de cima, estilo Tibia: ângulo fixo, sem girar. Objetos são sprites em pé; fachadas mostram só a frente.
 import * as THREE from 'three';
 import { vetorJoystick } from '../explorar3d/controles.js';
 import { resolverMovimento, fracaoLivreCamera } from '../explorar3d/colisao.js';
@@ -54,7 +54,6 @@ function textura(nome) {
 }
 const materialBase = (nome, opts = {}) =>
   new THREE.MeshBasicMaterial({ map: textura(nome), transparent: true, alphaTest: 0.4, ...opts });
-const materialMadeira = new THREE.MeshBasicMaterial({ color: '#7a5230' });
 
 // ---- chão: a imagem inteira, sem recorte nem espelho. O topo da imagem fica no norte ----
 {
@@ -78,45 +77,20 @@ caixa(-30, 30, ALT / 2, ALT / 2 + 2);              // sul
 caixa(-30, -LARG / 2, -ALT / 2 - 2, ALT / 2 + 2);  // oeste
 caixa(LARG / 2, 30, -ALT / 2 - 2, ALT / 2 + 2);    // leste
 
-// ---- fachadas: volume com a arte da frente voltada para a calçada ----
-// a parede tem 5,4 de altura (2,1 vezes o personagem); a arte tem 906 x 310 px por três peças lado a lado
-const FACHADA_ALTURA = 5.4;
-const COMPRIMENTO_FACHADA = FACHADA_ALTURA * 906 / 310;
-function fachada(nome, { x, z, comprimento, lado }) {
-  const prof = 1.0;
-  const corpo = new THREE.Mesh(new THREE.BoxGeometry(prof, FACHADA_ALTURA, comprimento), materialMadeira);
-  // lado = +1: a frente olha para leste (+x); lado = -1: olha para oeste (-x)
-  corpo.position.set(x - lado * prof / 2, FACHADA_ALTURA / 2, z);
-  cena.add(corpo);
-  const arte = new THREE.Mesh(new THREE.PlaneGeometry(comprimento, FACHADA_ALTURA),
-    new THREE.MeshBasicMaterial({ map: textura(nome) }));
-  arte.position.set(x + lado * 0.02, FACHADA_ALTURA / 2, z);
-  arte.rotation.y = lado > 0 ? Math.PI / 2 : -Math.PI / 2;
-  cena.add(arte);
-  // o volume fica do lado oposto à frente
-  const x0 = lado > 0 ? x - prof : x;
-  const x1 = lado > 0 ? x : x + prof;
-  caixa(x0, x1, z - comprimento / 2, z + comprimento / 2);
-}
-// taverna: borda oeste da imagem, de frente para a calçada (leste); loja: borda leste, de frente para a calçada (oeste)
-fachada('fachada-taverna', { x: -LARG / 2, z: P(0, 280).z, comprimento: COMPRIMENTO_FACHADA, lado: 1 });
-fachada('fachada-loja', { x: LARG / 2, z: P(0, 300).z, comprimento: COMPRIMENTO_FACHADA, lado: -1 });
 
-// ---- objetos fixos: planos cruzados (não giram com a câmera) ----
-function objeto(nome, { x, z, y = 0, altura = ALTURA[nome], cruzado = true, colide = null, giro = 0, doisLados = false }) {
+// ---- objetos: sprites em pé, com a base no chão; giram para a câmera (estilo Tibia) ----
+const sprites = [];
+function objeto(nome, { x, z, y = 0, altura = ALTURA[nome], colide = null, giro = 0, doisLados = false, sprite = true }) {
   const w = largura(nome, altura);
   const mat = materialBase(nome, doisLados ? { side: THREE.DoubleSide } : {});
   const grupo = new THREE.Group();
   grupo.position.set(x, y, z);
   grupo.rotation.y = giro;
-  const planos = cruzado ? [0, Math.PI / 2] : [0];
-  for (const g of planos) {
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, altura), mat);
-    p.position.y = altura / 2;
-    p.rotation.y = g;
-    grupo.add(p);
-  }
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(w, altura), mat);
+  p.position.y = altura / 2;
+  grupo.add(p);
   cena.add(grupo);
+  if (sprite) sprites.push(grupo);
   if (colide) {
     const lado = colide === true ? w * 0.8 : colide;   // colisor = 80% da largura visível do sprite
     caixa(x - lado / 2, x + lado / 2, z - lado / 2, z + lado / 2);
@@ -125,6 +99,21 @@ function objeto(nome, { x, z, y = 0, altura = ALTURA[nome], cruzado = true, coli
 }
 // objeto posto por coordenadas da imagem
 const emImagem = (nome, px, py, extra = {}) => { const p = P(px, py); return objeto(nome, { x: p.x, z: p.z, colide: true, ...extra }); };
+
+// casas: a frente de cada uma, de pé e virada para a câmera (é a única face que aparece de cima)
+const CASA_LARG = 5.4 * 302 / 310, CASA_ALT = 5.4;
+function casa(nome, { x, z }) {
+  const grupo = new THREE.Group();
+  grupo.position.set(x, 0, z);
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(CASA_LARG, CASA_ALT), new THREE.MeshBasicMaterial({ map: textura(nome) }));
+  p.position.y = CASA_ALT / 2;
+  grupo.add(p);
+  cena.add(grupo);
+  sprites.push(grupo);
+  caixa(x - CASA_LARG / 2, x + CASA_LARG / 2, z - 0.5, z + 0.5);   // a base da casa bloqueia a passagem
+}
+casa('casa-taverna', { x: -LARG / 2 + CASA_LARG / 2, z: P(0, 280).z });   // oeste, de frente para a calçada
+casa('casa-loja', { x: LARG / 2 - CASA_LARG / 2, z: P(0, 300).z });       // leste, de frente para a calçada
 
 // ---- Fazenda dos Ovos: cerca no campo à direita da estrada sul (imagem: x 700-1260, y 340-740) ----
 const F = { x0: P(700, 0).x, x1: P(1260, 0).x, z0: P(0, 340).z, z1: P(0, 740).z };
@@ -136,13 +125,16 @@ function pontos(a, b) {
 const TABUA_ALT = 0.74;
 function poste(x, z) { objeto('poste', { x, z, colide: true }); }
 function tabuas(x0, z0, x1, z1, plano) {
-  // plano = 'x' (tábuas ao longo de x, cerca norte/sul) ou 'z' (ao longo de z, cerca leste/oeste)
-  const comp = plano === 'x' ? Math.abs(x1 - x0) : Math.abs(z1 - z0);
+  // tábuas são peças de pé viradas para a câmera; nas laterais leste/oeste ficam estreitas (vistas de cima)
+  const comp = plano === 'x' ? Math.abs(x1 - x0) : 0.5;
   for (const y0 of [0.35, 1.15]) {
+    const grupo = new THREE.Group();
+    grupo.position.set((x0 + x1) / 2, y0, (z0 + z1) / 2);
     const p = new THREE.Mesh(new THREE.PlaneGeometry(comp, TABUA_ALT), materialBase('tabua', { side: THREE.DoubleSide }));
-    p.position.set((x0 + x1) / 2, y0 + TABUA_ALT / 2, (z0 + z1) / 2);
-    if (plano === 'z') p.rotation.y = Math.PI / 2;
-    cena.add(p);
+    p.position.y = TABUA_ALT / 2;
+    grupo.add(p);
+    cena.add(grupo);
+    sprites.push(grupo);
   }
 }
 const postesNS = pontos(F.x0, F.x1);       // norte e sul
@@ -164,26 +156,25 @@ for (let i = 0; i < postesLO.length - 1; i++) {
 // portão: folha presa numa dobradiça no lado norte da abertura. Abre (para dentro do campo) quando o personagem
 // chega perto e fecha ao se afastar; fechado, a folha bloqueia a passagem. Aberto, a passagem fica livre.
 const LARG_PORTAO = largura('portao', ALTURA.portao);   // a folha tem a largura do próprio recorte
-const zDobradica = PORTAO_Z - LARG_PORTAO / 2;
+const zDobradica = PORTAO_Z - LARG_PORTAO / 2;   // início da folha; o colisor do portão fechado começa aqui
+// a folha é uma peça de pé virada para a câmera; some quando o portão está aberto
 const portaoPivo = new THREE.Group();
-portaoPivo.position.set(F.x0, 0, zDobradica);
+portaoPivo.position.set(F.x0, 0, PORTAO_Z);
 cena.add(portaoPivo);
 {
   const folha = new THREE.Mesh(new THREE.PlaneGeometry(LARG_PORTAO, ALTURA.portao),
     materialBase('portao', { side: THREE.DoubleSide }));
-  folha.position.set(0, ALTURA.portao / 2, LARG_PORTAO / 2);
-  folha.rotation.y = Math.PI / 2;     // a folha fica no plano norte-sul, fechada
+  folha.position.y = ALTURA.portao / 2;
   portaoPivo.add(folha);
+  sprites.push(portaoPivo);
 }
 const caixaPortao = { min: { x: F.x0 - 0.2, y: 0, z: zDobradica }, max: { x: F.x0 + 0.2, y: 6, z: zDobradica + LARG_PORTAO } };
-const PORTAO_ABERTO = 1.4;            // radianos (~80°)
 let portaoAberto = false;
 function atualizarPortao(dt) {
   const d = Math.hypot(estado.x - F.x0, estado.z - PORTAO_Z);
   if (!portaoAberto && d < 2.5) portaoAberto = true;
   else if (portaoAberto && d > 3.5) portaoAberto = false;
-  const alvo = portaoAberto ? PORTAO_ABERTO : 0;
-  portaoPivo.rotation.y += (alvo - portaoPivo.rotation.y) * (1 - Math.exp(-dt * 8));
+  portaoPivo.visible = !portaoAberto;
   const existe = caixasAABB.includes(caixaPortao);
   if (!portaoAberto && !existe) caixasAABB.push(caixaPortao);
   if (portaoAberto && existe) caixasAABB.splice(caixasAABB.indexOf(caixaPortao), 1);
@@ -230,12 +221,14 @@ cena.add(jogador);
 const teclas = new Set();
 const ALVO_ALTURA = ALTURA_PERSONAGEM * 0.8;
 const INICIO = P(420, 380);                  // início na estrada oeste
-const estado = { x: INICIO.x, z: INICIO.z, yaw: 0, pitch: 0.5 };
-if (VISAO === 'portao') { estado.x = F.x0 - 2; estado.z = PORTAO_Z; estado.yaw = -Math.PI / 2; }
-if (VISAO === 'taverna') { estado.x = -22; estado.z = P(0, 280).z; estado.yaw = Math.PI / 2; }
-if (VISAO === 'loja') { estado.x = 22; estado.z = P(0, 300).z; estado.yaw = -Math.PI / 2; }
-// câmera suavizada: o ângulo e a posição seguem com amortecimento
-const cam = { yaw: estado.yaw, pitch: estado.pitch, pos: null };
+const estado = { x: INICIO.x, z: INICIO.z };
+if (VISAO === 'portao') { estado.x = F.x0 - 2; estado.z = PORTAO_Z; }
+if (VISAO === 'taverna') { estado.x = -21; estado.z = P(0, 280).z + 3; }
+if (VISAO === 'loja') { estado.x = 21; estado.z = P(0, 300).z + 3; }
+// câmera de cima, estilo Tibia: ângulo fixo, sem girar; segue o personagem com suavidade
+const CAMERA_INCLINACAO = 1.1;               // radianos a partir da horizontal (~63°, quase de cima)
+const CAMERA_DISTANCIA = 18;
+const cam = { pos: null };
 // colisões em caixas (AABB) para o movimento e para a câmera, com a mesma lógica do jogo principal
 const caixasAABB = colisoes.map((b) => ({ min: { x: b.x0, y: 0, z: b.z0 }, max: { x: b.x1, y: 6, z: b.z1 } }));
 
@@ -276,22 +269,6 @@ joyEl.addEventListener('pointermove', (e) => { if (e.pointerId === joyDedo) joyA
 joyEl.addEventListener('pointerup', joyFim);
 joyEl.addEventListener('pointercancel', joyFim);
 
-// arrastar na tela para girar a câmera (igual ao jogo principal)
-let arrastando = null;
-canvas.addEventListener('pointerdown', (e) => {
-  arrastando = { id: e.pointerId, x: e.clientX, y: e.clientY };
-  canvas.setPointerCapture(e.pointerId);
-});
-canvas.addEventListener('pointermove', (e) => {
-  if (!arrastando || e.pointerId !== arrastando.id) return;
-  estado.yaw -= (e.clientX - arrastando.x) * 0.006;
-  estado.pitch = Math.max(0.15, Math.min(1.25, estado.pitch + (e.clientY - arrastando.y) * 0.004));
-  arrastando.x = e.clientX;
-  arrastando.y = e.clientY;
-});
-const soltarArraste = () => { arrastando = null; };
-canvas.addEventListener('pointerup', soltarArraste);
-canvas.addEventListener('pointercancel', soltarArraste);
 
 document.getElementById('btn-ovo').addEventListener('click', () => depositar());
 document.getElementById('btn-recolher').addEventListener('click', () => recolherOvos());
@@ -307,7 +284,6 @@ function depositar() {
 }
 function recolherOvos() { ovos.forEach((o) => { o.visible = false; }); }
 
-const diferencaAngulo = (a, b) => ((b - a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
 
 let ultimo = performance.now();
 function quadro(agora) {
@@ -315,18 +291,14 @@ function quadro(agora) {
   ultimo = agora;
 
   if (VISAO === 'jogo') {
-    if (pressionada('KeyJ')) estado.yaw -= 2.2 * dt;
-    if (pressionada('KeyL')) estado.yaw += 2.2 * dt;
-    if (pressionada('KeyI')) estado.pitch = Math.min(1.25, estado.pitch + 1.2 * dt);
-    if (pressionada('KeyK')) estado.pitch = Math.max(0.15, estado.pitch - 1.2 * dt);
     let ix = joy.x, iz = joy.z;
     if (pressionada('KeyW', 'ArrowUp')) iz += 1;
     if (pressionada('KeyS', 'ArrowDown')) iz -= 1;
     if (pressionada('KeyD', 'ArrowRight')) ix += 1;
     if (pressionada('KeyA', 'ArrowLeft')) ix -= 1;
     const forca = Math.min(1, Math.hypot(ix, iz));
-    const frente = { x: -Math.sin(estado.yaw), z: -Math.cos(estado.yaw) };
-    const direita = { x: Math.cos(estado.yaw), z: -Math.sin(estado.yaw) };
+    const frente = { x: 0, z: -1 };         // câmera fixa: a frente é o norte
+    const direita = { x: 1, z: 0 };
     let dx = frente.x * iz + direita.x * ix;
     let dz = frente.z * iz + direita.z * ix;
     const n = Math.hypot(dx, dz);
@@ -352,14 +324,10 @@ function quadro(agora) {
     camera.lookAt(0, 0, -2);
     camera.fov = 40;
   } else {
-    // ângulos seguem o alvo com amortecimento; a posição da câmera também, e uma parede encurta a distância
-    const k = 1 - Math.exp(-dt * 10);
-    cam.yaw += diferencaAngulo(cam.yaw, estado.yaw) * k;
-    cam.pitch += (estado.pitch - cam.pitch) * k;
+    // a câmera segue o personagem com suavidade, sempre do mesmo ângulo; uma parede encurta a distância
     const alvo = { x: estado.x, y: ALVO_ALTURA, z: estado.z };
-    const d = window.innerWidth < 600 ? 13 : 11;   // mesma distância do jogo
-    const h = d * Math.cos(cam.pitch), v = d * Math.sin(cam.pitch);
-    const desejada = { x: alvo.x + Math.sin(cam.yaw) * h, y: alvo.y + v, z: alvo.z + Math.cos(cam.yaw) * h };
+    const h = CAMERA_DISTANCIA * Math.cos(CAMERA_INCLINACAO), v = CAMERA_DISTANCIA * Math.sin(CAMERA_INCLINACAO);
+    const desejada = { x: alvo.x, y: alvo.y + v, z: alvo.z + h };
     const f = fracaoLivreCamera(alvo, desejada, caixasAABB);
     const destino = {
       x: alvo.x + (desejada.x - alvo.x) * f,
@@ -375,6 +343,9 @@ function quadro(agora) {
     camera.lookAt(alvo.x, alvo.y, alvo.z);
     camera.fov = 55;
   }
+  // sprites em pé: cada um gira para a câmera, com a base no chão
+  for (const s of sprites) s.quaternion.copy(camera.quaternion);
+  jogador.quaternion.copy(camera.quaternion);
   camera.updateProjectionMatrix();
   renderer.render(cena, camera);
   requestAnimationFrame(quadro);
@@ -385,7 +356,7 @@ window.addEventListener('resize', () => {
 });
 // para os testes: posição do personagem, estado dos ovos e geometria da cerca
 window.quarteirao = {
-  estado: () => ({ x: estado.x, z: estado.z, yaw: estado.yaw, pitch: estado.pitch }),
+  estado: () => ({ x: estado.x, z: estado.z }),
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
   ovos: () => ovos.map((o) => o.visible),
   colisoes: () => colisoes.length,
