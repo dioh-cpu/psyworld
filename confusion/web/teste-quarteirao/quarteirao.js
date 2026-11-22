@@ -4,7 +4,8 @@
 // Câmera de cima, estilo Tibia: ângulo fixo, sem girar. Objetos são sprites em pé; fachadas mostram só a frente.
 import * as THREE from 'three';
 import { vetorJoystick } from '../explorar3d/controles.js';
-import { resolverMovimento, fracaoLivreCamera } from '../explorar3d/colisao.js';
+import { resolverMovimento } from '../explorar3d/colisao.js';
+import { criarAzazel } from './azazel.js';
 
 const A = 'assets/';
 const IMG_W = 1376, IMG_H = 768;                 // tamanho do piso (16:9)
@@ -207,14 +208,10 @@ emImagem('vaso', 1185, 120);         // praça, junto da borda
 emImagem('arbusto', 300, 250);       // gramado norte
 emImagem('arbusto', 220, 570);       // gramado sudoeste
 
-// ---- Azazel (sprite de frente da folha de repouso do traje de vilão; acompanha a câmera só na horizontal) ----
-const AZAZEL_LADO = 512 * ESCALA_AZAZEL;
-const azazelMat = new THREE.MeshBasicMaterial({ map: textura('azazel-frente'), transparent: true, alphaTest: 0.4 });
-const azazel = new THREE.Mesh(new THREE.PlaneGeometry(AZAZEL_LADO, AZAZEL_LADO), azazelMat);
-// os pés ficam no chão: a figura começa 11 px acima da borda de baixo da célula da folha
-azazel.position.y = AZAZEL_LADO / 2 - 11 * ESCALA_AZAZEL;
+// ---- Azazel no traje de vilão: andar em vídeo MP4 e parado nas 4 direções (mesmo do jogo principal) ----
+const azazel = criarAzazel('assets/characters/');
 const jogador = new THREE.Group();
-jogador.add(azazel);
+jogador.add(azazel.malha);
 cena.add(jogador);
 
 // ---- entrada: teclado, joystick de toque e arrastar para girar a câmera ----
@@ -290,6 +287,7 @@ function quadro(agora) {
   const dt = Math.min(0.05, (agora - ultimo) / 1000);
   ultimo = agora;
 
+  let andando = false, rot = 0;   // movimento deste quadro, para a animação do Azazel
   if (VISAO === 'jogo') {
     let ix = joy.x, iz = joy.z;
     if (pressionada('KeyW', 'ArrowUp')) iz += 1;
@@ -303,6 +301,8 @@ function quadro(agora) {
     let dz = frente.z * iz + direita.z * ix;
     const n = Math.hypot(dx, dz);
     if (n > 1e-6 && forca > 0) {
+      andando = true;
+      rot = Math.atan2(dx, dz);
       dx = (dx / n) * forca * VELOCIDADE * dt;
       dz = (dz / n) * forca * VELOCIDADE * dt;
       const p = resolverMovimento({ x: estado.x, z: estado.z }, dx, dz, RAIO, caixasAABB);
@@ -313,6 +313,7 @@ function quadro(agora) {
 
   atualizarPortao(dt);
   jogador.position.set(estado.x, 0, estado.z);
+  azazel.atualizar(andando, rot, 0);   // câmera fixa: a frente é o norte
   jogador.quaternion.copy(camera.quaternion);   // o personagem só fica de frente para a câmera (nunca fino)
 
   if (VISAO === 'topo') {
@@ -328,7 +329,7 @@ function quadro(agora) {
     const alvo = { x: estado.x, y: ALVO_ALTURA, z: estado.z };
     const h = CAMERA_DISTANCIA * Math.cos(CAMERA_INCLINACAO), v = CAMERA_DISTANCIA * Math.sin(CAMERA_INCLINACAO);
     const desejada = { x: alvo.x, y: alvo.y + v, z: alvo.z + h };
-    const f = fracaoLivreCamera(alvo, desejada, caixasAABB);
+    const f = 1;   // câmera de cima, à distância fixa: objetos não a aproximam do personagem
     const destino = {
       x: alvo.x + (desejada.x - alvo.x) * f,
       y: alvo.y + (desejada.y - alvo.y) * f,
