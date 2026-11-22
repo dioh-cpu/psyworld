@@ -25,8 +25,8 @@
 <body>
 <div id="topo">
   <b>Editor de colisão</b>
-  <button id="btnPintar" class="ativo">Pintar</button>
-  <button id="btnApagar">Apagar</button>
+  <button id="btnPintar" class="ativo">Caminho (verde)</button>
+  <button id="btnApagar">Bloqueio (vermelho)</button>
   <label>pincel <input type="range" id="pincel" min="0" max="8" value="2" style="width:120px"> <span id="pincelValor">2</span></label>
   <label><input type="checkbox" id="chkImagem" checked> imagem</label>
   <label><input type="checkbox" id="chkRaio" checked> centro do personagem bloqueado</label>
@@ -37,29 +37,31 @@
   <button id="btnGerar">Gerar texto para o quarteirao.js</button>
   <button id="btnColar">Colar texto</button>
   <button id="btnJogo">Usar a grade do jogo</button>
-  <label><input type="checkbox" id="chkAlcance" checked> alcance a partir do início</label>
+  <label><input type="checkbox" id="chkAlcance"> alcance a partir do início</label>
   <button id="btnDestino">Marcar destino</button>
   <button id="btnSemDestino">Tirar destino</button>
   <span id="status" style="color:#facc15"></span>
   <span id="contagem" class="ajuda"></span>
-  <span class="ajuda">esquerdo pinta · direito apaga (ou Apagar) · Ctrl+Z desfaz</span>
+  <span class="ajuda">botão esquerdo: modo ativo · direito: o oposto · Ctrl+Z desfaz</span>
 </div>
 <div id="painelTexto">
   <div class="ajuda">Copie o bloco e substitua o <b>const COLISAO</b> no quarteirao.js. Para trazer uma grade de volta, cole aqui e clique em Aplicar.</div>
   <textarea id="texto"></textarea>
   <div><button id="btnAplicar">Aplicar</button> <button id="btnFechar">Fechar</button></div>
 </div>
-<div id="area"><canvas id="cv" width="1376" height="768"></canvas></div>
+<div id="area"><canvas id="cv" width="1200" height="896"></canvas></div>
 
 <script>
-// grade de colisão: células de 8 px sobre a imagem de 1376 x 768 (172 x 96)
+// grade de colisão: células de 8 px sobre a arte de 1200 x 896 (150 x 112)
 const LW = 1200, LH = 896, CEL = 8, COL = 150, LIN = 112;
 const RAIO_PERSONAGEM_PX = 0.2 * LW / 54;          // mesmo raio do jogo, convertido para pixels da imagem
 const RAIO_CELULAS = RAIO_PERSONAGEM_PX / CEL;      // ~2,16 células
-const CHAVE_RASCUNHO = 'editorColisao.rascunho.grade';
+const CHAVE_RASCUNHO = 'editorColisao.rascunho.montanha.1200x896';   // a chave inclui o tamanho: rascunho de outra grade é descartado
+try { localStorage.removeItem('editorColisao.rascunho.grade'); } catch (_) {}
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
+cv.width = LW; cv.height = LH;   // o canvas tem o tamanho da arte (1200 x 896)
 const imagem = new Image();
 imagem.src = 'assets/piso-montanha.webp';
 
@@ -202,9 +204,10 @@ function desenhar() {
       if (z[l * COL + c] && !mascara[l * COL + c]) ctx.fillRect(c * CEL, l * CEL, CEL, CEL);
     }
   }
-  ctx.fillStyle = 'rgba(255, 40, 40, 0.5)';
+  // verde = caminho livre (como no seu desenho); vermelho = bloqueado
   for (let l = 0; l < LIN; l++) for (let c = 0; c < COL; c++) {
-    if (mascara[l * COL + c]) ctx.fillRect(c * CEL, l * CEL, CEL, CEL);
+    ctx.fillStyle = mascara[l * COL + c] ? 'rgba(239, 68, 68, 0.42)' : 'rgba(34, 197, 94, 0.36)';
+    ctx.fillRect(c * CEL, l * CEL, CEL, CEL);
   }
 
   desenharAlcance();
@@ -259,7 +262,12 @@ function salvarRascunho() {
   try { localStorage.setItem(CHAVE_RASCUNHO, codificar(mascara)); } catch (_) {}
 }
 function lerRascunho() {
-  try { const t = localStorage.getItem(CHAVE_RASCUNHO); return t && /^[0-9,]+$/.test(t) ? t : null; } catch (_) { return null; }
+  try {
+    const t = localStorage.getItem(CHAVE_RASCUNHO);
+    if (!t || !/^[0-9,]+$/.test(t)) return null;
+    const soma = t.split(',').reduce((a, n) => a + Number(n), 0);
+    return soma === COL * LIN ? t : null;      // tamanho errado: descarta
+  } catch (_) { return null; }
 }
 
 cv.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -267,7 +275,8 @@ cv.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   const c = celulaDoEvento(e);
   if (modo === 'destino') { destino = c; definirModo('pintar'); desenhar(); return; }
-  acao = (modo === 'apagar' || e.button === 2) ? 0 : 1;
+  // modo 'bloqueio' pinta vermelho com o botão esquerdo; o direito faz o oposto do modo ativo
+  acao = (modo === 'apagar') !== (e.button === 2) ? 1 : 0;
   guardarDesfazer();
   ultimo = c;
   carimbar(c.c, c.l, acao);
