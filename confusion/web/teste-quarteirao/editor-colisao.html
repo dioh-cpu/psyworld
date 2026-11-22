@@ -33,6 +33,7 @@
   <button id="btnDesfazer">Desfazer</button>
   <button id="btnCopiar">Gerar texto para o quarteirao.js</button>
   <button id="btnColar">Colar lista</button>
+  <button id="btnRecarregar">Usar a lista do jogo</button>
 </div>
 <div id="painelTexto">
   <div class="ajuda">Copie este bloco e substitua o const BLOQUEIOS no quarteirao.js. Para colar uma lista de volta, cole aqui e clique em Aplicar.</div>
@@ -137,6 +138,20 @@ function desenhar() {
     ctx.setLineDash([]);
   }
   atualizarContagem();
+  if (!arrasto) salvarRascunho();
+}
+
+// rascunho automático neste navegador (sobrevive a recarregar a página); se o navegador bloquear, segue sem ele
+const CHAVE_RASCUNHO = 'editorColisao.rascunho.quarteirao';
+function salvarRascunho() {
+  try { localStorage.setItem(CHAVE_RASCUNHO, JSON.stringify(rects)); } catch (_) {}
+}
+function lerRascunho() {
+  try {
+    const t = localStorage.getItem(CHAVE_RASCUNHO);
+    const lista = t ? JSON.parse(t) : null;
+    return Array.isArray(lista) ? lista : null;
+  } catch (_) { return null; }
 }
 
 // interação -------------------------------------------------------------
@@ -225,16 +240,26 @@ document.getElementById('btnAplicar').onclick = () => {
   salvarHistorico(); rects = lista; sel = -1; desenhar();
 };
 document.getElementById('btnFechar').onclick = () => document.getElementById('painelTexto').classList.remove('aberto');
+document.getElementById('btnRecarregar').onclick = async () => {
+  // descarta o rascunho deste navegador e volta à lista que está no quarteirao.js
+  try { localStorage.removeItem(CHAVE_RASCUNHO); } catch (_) {}
+  try {
+    const lista = lerDoQuarteirao(await (await fetch('quarteirao.js')).text());
+    if (lista) { rects = lista; sel = -1; historico = []; desenhar(); }
+  } catch (_) { alert('Não consegui ler o quarteirao.js.'); }
+};
 ['chkLivre', 'chkGrade', 'raio'].forEach((id) => document.getElementById(id).addEventListener('input', desenhar));
 
 // início: a imagem e a lista atual do quarteirao.js -----------------------
 imagem.onload = desenhar;
 imagem.src = 'assets/piso-cidade-2.webp';
+const rascunho = lerRascunho();
 fetch('quarteirao.js').then((r) => r.text()).then((t) => {
   const lista = lerDoQuarteirao(t);
-  if (lista) rects = lista;
+  if (rascunho) rects = rascunho;          // edição não enviada ainda: tem prioridade
+  else if (lista) rects = lista;
   desenhar();
-}).catch(() => desenhar());
+}).catch(() => { if (rascunho) rects = rascunho; desenhar(); });
 window.editorColisao = { rects: () => rects, gerarTexto };
 </script>
 </body>
