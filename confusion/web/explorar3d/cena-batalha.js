@@ -183,6 +183,7 @@ export function criarCenaBatalha(THREE) {
     const d = g.getImageData(0, 0, w, h).data;
     let x0 = w, x1 = -1, y0 = h, y1 = -1;
     let massa = 0, massaX = 0;   // centro de massa horizontal do desenho (o corpo, não a cauda), ponderado pelo alfa
+    const linhas = new Array(h).fill(0);   // desenho por linha: a linha das patas é a última com corpo de verdade
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const alfa = d[(y * w + x) * 4 + 3];
@@ -191,16 +192,23 @@ export function criarCenaBatalha(THREE) {
           if (x > x1) x1 = x;
           if (y < y0) y0 = y;
           if (y > y1) y1 = y;
+          linhas[y]++;
         }
         massa += alfa;
         massaX += alfa * (x + 0.5);
       }
     }
+    // a base é a última linha que ainda tem pelo menos 25% da largura máxima do corpo: cauda e brilho não contam
+    const pico = Math.max(...linhas);
+    let yPatas = y1;
+    for (let y = h - 1; y >= 0; y--) {
+      if (linhas[y] >= 0.25 * pico) { yPatas = y; break; }
+    }
     const medidas = x1 < 0
       ? { aspecto: w / h, yb: 1, xc: 0.5, vh: 1 }
       : {
         aspecto: w / h,
-        yb: (y1 + 1) / h,              // base do desenho, em fração da altura (de cima para baixo)
+        yb: (yPatas + 1) / h,          // base (as patas), em fração da altura (de cima para baixo)
         xc: massaX / massa / w,        // centro de massa do desenho, em fração da largura (fica sobre o disco)
         vh: (y1 - y0 + 1) / h,         // altura do desenho, em fração da altura da imagem
       };
@@ -520,6 +528,7 @@ export function criarCenaBatalha(THREE) {
     if (!tex) {
       tex = carregador.load(url);
       tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
       texturas.set(url, tex);
     }
     chaoMat.map = tex;

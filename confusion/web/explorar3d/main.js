@@ -289,6 +289,7 @@ function texturaDeDirecao(m, direcao) {
   const c = document.createElement('canvas');
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;   // nítida em ângulo, como no chão da arena
   tex.userData.carregada = false;
   if (!caminho) return tex;
   const img = new Image();

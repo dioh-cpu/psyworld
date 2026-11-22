@@ -40,7 +40,9 @@ void main() {
     c = mix(vec3(lum), c, uSat) * uBri;
   }
   c = mix(c, uCor, uFlash);
-  gl_FragColor = vec4(c, t.a * uAlpha);
+  // a textura sRGB é lida como linear; um ShaderMaterial não converte a saída, então a cor volta para sRGB aqui
+  vec3 srgb = mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+  gl_FragColor = vec4(srgb, t.a * uAlpha);
   if (gl_FragColor.a < 0.01) discard;
 }`;
 
