@@ -1,6 +1,6 @@
 // Quarteirão de teste da primeira cidade. O chão é a imagem completa da cidade (1376x768), que já tem as casas, o rio,
-// a ponte, as barracas e a fonte pintados. A colisão segue essa imagem: retângulos marcados em pixels da imagem (BLOQUEIOS)
-// cobrem o que é parede ou obstáculo; ruas, praça, calçada e ponte ficam livres. Escala: o Azazel tem 3,8 de altura no mundo.
+// a ponte, as barracas e a fonte pintados. A colisão é uma grade de células de 8 px pintada no editor-colisao.html
+// (COLISAO): as células bloqueadas viram retângulos no jogo. Escala: o Azazel tem 3,8 de altura no mundo.
 import * as THREE from 'three';
 import { vetorJoystick } from '../explorar3d/controles.js';
 import { resolverMovimento } from '../explorar3d/colisao.js';
@@ -79,21 +79,47 @@ caixa(-30, 30, ALT / 2, ALT / 2 + 2);              // sul
 caixa(-30, -LARG / 2, -ALT / 2 - 2, ALT / 2 + 2);  // oeste
 caixa(LARG / 2, 30, -ALT / 2 - 2, ALT / 2 + 2);    // leste
 
-// obstáculos pintados na imagem: casas, rio, rochas, carroça, barracas, corrimão, fonte e árvores.
-// Cada retângulo é [x0, y0, x1, y1] em pixels da imagem. Ruas, praça, calçadas, escadas e a ponte ficam livres.
-const BLOQUEIOS = [
-  [60, 0, 340, 290], [0, 180, 210, 420], [0, 410, 260, 640], [330, 0, 520, 288], [495, 0, 565, 260],   // casas e pinheiro
-  [560, 110, 640, 230], [600, 220, 690, 330], [470, 405, 575, 500], [240, 540, 390, 600],              // rio
-  [340, 405, 450, 470], [330, 330, 420, 400],                                                          // rochas e carroça
-  [530, 470, 670, 545], [820, 450, 980, 525], [935, 480, 1085, 560], [640, 555, 780, 690], [750, 600, 895, 700], // barracas
-  [800, 0, 1120, 320], [1020, 130, 1350, 460], [1150, 0, 1376, 140], [1290, 290, 1376, 520],          // casas e pinheiros da direita
-  [900, 372, 1095, 396],                                                                               // corrimão da praça
-  [1085, 575, 1230, 700], [1200, 545, 1340, 640],                                                      // fonte e carroça
-  [170, 650, 360, 768], [440, 615, 620, 768], [940, 690, 1100, 768], [1260, 610, 1376, 768],          // casas de baixo
-  [330, 670, 460, 768], [630, 690, 740, 768], [690, 130, 770, 215], [0, 0, 55, 170],                   // árvores
-];
-for (const [px0, py0, px1, py1] of BLOQUEIOS) {
-  const a = P(px0, py0), b = P(px1, py1);
+// obstáculos pintados na imagem: grade de células de 8 px (172 x 96) desenhada no editor de colisão
+// (confusion/web/teste-quarteirao/editor-colisao.html). Cada célula 1 bloqueia. A grade vira retângulos (caixasDaGrade).
+const COLISAO = { celula: 8, colunas: 172, linhas: 96, rle: "0,7,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,63,29,40,4,35,1,72,20,40,4,35,1,72,20,40,4,35,1,72,6,10,4,79,1,72,6,10,4,69,3,7,1,72,6,10,4,69,3,7,1,72,6,10,4,69,3,7,1,72,6,10,4,69,11,72,6,10,4,69,11,72,6,10,4,69,3,80,6,10,4,69,3,80,6,10,4,69,3,80,6,10,4,69,3,80,6,10,4,69,3,80,20,69,3,86,14,69,3,71,4,11,14,69,3,71,4,11,14,69,3,71,4,11,14,69,3,65,10,11,14,69,3,65,10,11,14,69,3,65,10,11,14,69,3,42,33,11,14,69,3,26,49,11,14,98,49,11,14,98,49,11,14,98,49,11,14,98,49,11,42,70,102,70,15,11,76,70,15,11,76,70,15,11,76,70,15,11,76,70,15,11,76,70,15,11,61,85,15,11,61,85,15,11,76,70,102,76,11,13,3,13,56,76,11,13,3,13,56,76,11,13,3,13,56,76,11,13,3,13,56,76,11,13,3,13,56,76,11,13,3,13,31,19,6,76,11,13,3,13,31,19,39,43,11,13,3,13,31,19,39,43,27,25,19,19,39,43,27,25,19,33,25,43,27,25,19,33,25,43,34,18,19,33,25,43,34,18,19,33,25,43,34,18,19,33,25,43,34,18,19,33,36,32,34,18,33,19,36,32,34,18,33,19,36,49,68,19,14,17,5,49,31,17,20,19,14,17,5,49,31,17,53,17,5,49,31,17,53,17,5,49,31,17,39,31,5,49,31,17,39,31,5,49,31,17,39,31,5,32,48,32,24,31,5,32,48,32,24,68,23,22,3,32,24,68,23,22,3,32,24,68,23,22,3,32,24,36,55,22,3,32,24,18,4,14,21,24,10,22,3,32,24,18,4,14,21,24,10,22,3,32,24,18,4,14,21,24,10,22,3,32,24,18,4,14,21,56,3,32,24,18,4,14,21,56,3,32,24,18,4,14,21,56,2,13,2,18,6,36,4,14,21,56,2,13,26,19,21,14,21,56,2,13,26,19,21,14,21,56,2,13,26,19,21,14,21,56,2,13,26,19,21,14,21,56,2,13,26,19,21,14,21,56,2,13,26,19,21,14,21,56,2,13,26,19,21,14,21,56,2,13,26,19,21,14,21,56,2,13,26,19,21,14" };
+// RLE: contagens alternadas de células livres e bloqueadas, começando por livre
+function decodificarGrade({ rle, colunas, linhas }) {
+  const grade = new Uint8Array(colunas * linhas);
+  let pos = 0, valor = 0;
+  for (const n of rle.split(',').map(Number)) {
+    if (valor) grade.fill(1, pos, pos + n);
+    pos += n;
+    valor ^= 1;
+  }
+  return grade;
+}
+// retângulos em células [c0, l0, c1, l1] (c1 e l1 exclusivos), por expansão gulosa para a direita e para baixo
+function caixasDaGrade(grade, colunas, linhas) {
+  const usado = new Uint8Array(grade.length);
+  const retangulos = [];
+  for (let l = 0; l < linhas; l++) {
+    for (let c = 0; c < colunas; c++) {
+      const i = l * colunas + c;
+      if (!grade[i] || usado[i]) continue;
+      let c1 = c;
+      while (c1 + 1 < colunas && grade[l * colunas + c1 + 1] && !usado[l * colunas + c1 + 1]) c1++;
+      let l1 = l;
+      let cresce = true;
+      while (cresce && l1 + 1 < linhas) {
+        for (let k = c; k <= c1; k++) {
+          const j = (l1 + 1) * colunas + k;
+          if (!grade[j] || usado[j]) { cresce = false; break; }
+        }
+        if (cresce) l1++;
+      }
+      for (let y = l; y <= l1; y++) for (let x = c; x <= c1; x++) usado[y * colunas + x] = 1;
+      retangulos.push([c, l, c1 + 1, l1 + 1]);
+    }
+  }
+  return retangulos;
+}
+for (const [c0, l0, c1, l1] of caixasDaGrade(decodificarGrade(COLISAO), COLISAO.colunas, COLISAO.linhas)) {
+  const a = P(c0 * COLISAO.celula, l0 * COLISAO.celula), b = P(c1 * COLISAO.celula, l1 * COLISAO.celula);
   caixa(a.x, b.x, a.z, b.z);
 }
 
