@@ -37,6 +37,10 @@
   <button id="btnGerar">Gerar texto para o quarteirao.js</button>
   <button id="btnColar">Colar texto</button>
   <button id="btnJogo">Usar a grade do jogo</button>
+  <label><input type="checkbox" id="chkAlcance" checked> alcance a partir do início</label>
+  <button id="btnDestino">Marcar destino</button>
+  <button id="btnSemDestino">Tirar destino</button>
+  <span id="status" style="color:#facc15"></span>
   <span id="contagem" class="ajuda"></span>
   <span class="ajuda">esquerdo pinta · direito apaga (ou Apagar) · Ctrl+Z desfaz</span>
 </div>
@@ -120,6 +124,71 @@ function zonaProibida(m) {
   return z;
 }
 
+// alcance: onde o centro do personagem consegue ficar, a partir do início. Mesma regra da zona proibida e vizinhança de 8
+// direções. Os testes de caminho no jogo usam a colisão real; isto mostra o mesmo a olho, antes de publicar.
+let inicio = null;                                  // {c, l}: início lido do quarteirao.js
+let destino = null;                                 // {c, l}: destino marcado com "Marcar destino"
+function calcularAlcance(m) {
+  const z = zonaProibida(m);
+  const dist = new Int32Array(COL * LIN).fill(-1);
+  const pai = new Int32Array(COL * LIN).fill(-1);
+  if (!inicio) return { dist, pai, z, semInicio: true };
+  const s = inicio.l * COL + inicio.c;
+  if (z[s]) return { dist, pai, z, bloqueadoNoInicio: true };
+  const fila = [s];
+  dist[s] = 0;
+  for (let k = 0; k < fila.length; k++) {
+    const i = fila[k], c = i % COL, l = (i - c) / COL;
+    for (let dl = -1; dl <= 1; dl++) for (let dc = -1; dc <= 1; dc++) {
+      if (!dc && !dl) continue;
+      const cc = c + dc, ll = l + dl;
+      if (cc < 0 || cc >= COL || ll < 0 || ll >= LIN) continue;
+      const j = ll * COL + cc;
+      if (z[j] || dist[j] >= 0) continue;
+      dist[j] = dist[i] + 1;
+      pai[j] = i;
+      fila.push(j);
+    }
+  }
+  return { dist, pai, z };
+}
+function desenharAlcance() {
+  if (!inicio || !document.getElementById('chkAlcance').checked) return;
+  const a = calcularAlcance(mascara);
+  ctx.fillStyle = 'rgba(56, 189, 248, 0.30)';
+  for (let i = 0; i < a.dist.length; i++) {
+    if (a.dist[i] >= 0) { const c = i % COL, l = (i - c) / COL; ctx.fillRect(c * CEL, l * CEL, CEL, CEL); }
+  }
+  if (destino) {
+    const d = destino.l * COL + destino.c;
+    if (a.dist[d] >= 0) {
+      const pts = [];
+      for (let i = d; i >= 0; i = a.pai[i]) { const c = i % COL, l = (i - c) / COL; pts.push([c * CEL + CEL / 2, l * CEL + CEL / 2]); }
+      pts.reverse();
+      ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3; ctx.beginPath();
+      pts.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.stroke();
+    }
+    ctx.fillStyle = a.dist[d] >= 0 ? '#facc15' : '#ef4444';
+    ctx.beginPath(); ctx.arc(destino.c * CEL + CEL / 2, destino.l * CEL + CEL / 2, 7, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = '#22c55e';
+  ctx.beginPath(); ctx.arc(inicio.c * CEL + CEL / 2, inicio.l * CEL + CEL / 2, 7, 0, Math.PI * 2); ctx.fill();
+}
+function atualizarStatus() {
+  const el = document.getElementById('status');
+  if (!inicio) { el.textContent = 'início não encontrado no quarteirao.js'; return; }
+  const a = calcularAlcance(mascara);
+  if (a.bloqueadoNoInicio) { el.textContent = 'o início está dentro de área bloqueada'; return; }
+  const n = a.dist.reduce((s, v) => s + (v >= 0 ? 1 : 0), 0);
+  let t = `alcançável a partir do início: ${n} células`;
+  if (destino) {
+    const d = destino.l * COL + destino.c;
+    t += a.dist[d] >= 0 ? ` · destino: sim (${a.dist[d]} passos de célula)` : ' · destino: NÃO alcançável';
+  }
+  el.textContent = t;
+}
+
 // desenho ---------------------------------------------------------------
 function desenhar() {
   ctx.clearRect(0, 0, LW, LH);
@@ -138,6 +207,7 @@ function desenhar() {
     if (mascara[l * COL + c]) ctx.fillRect(c * CEL, l * CEL, CEL, CEL);
   }
 
+  desenharAlcance();
   if (document.getElementById('chkGrade').checked) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
     ctx.lineWidth = 1;
@@ -154,6 +224,7 @@ function desenhar() {
     ctx.strokeRect((cursor.c - r) * CEL, (cursor.l - r) * CEL, (2 * r + 1) * CEL, (2 * r + 1) * CEL);
   }
 
+  atualizarStatus();
   const bloqueadas = mascara.reduce((s, v) => s + v, 0);
   document.getElementById('contagem').textContent = `${bloqueadas} células bloqueadas · ${contarRetangulos(mascara)} retângulos no jogo`;
 }
@@ -195,6 +266,7 @@ cv.addEventListener('contextmenu', (e) => e.preventDefault());
 cv.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   const c = celulaDoEvento(e);
+  if (modo === 'destino') { destino = c; definirModo('pintar'); desenhar(); return; }
   acao = (modo === 'apagar' || e.button === 2) ? 0 : 1;
   guardarDesfazer();
   ultimo = c;
@@ -238,7 +310,10 @@ function definirModo(m) {
   modo = m;
   document.getElementById('btnPintar').classList.toggle('ativo', m === 'pintar');
   document.getElementById('btnApagar').classList.toggle('ativo', m === 'apagar');
+  document.getElementById('btnDestino').classList.toggle('ativo', m === 'destino');
 }
+document.getElementById('btnDestino').onclick = () => definirModo(modo === 'destino' ? 'pintar' : 'destino');
+document.getElementById('btnSemDestino').onclick = () => { destino = null; desenhar(); };
 document.getElementById('btnPintar').onclick = () => definirModo('pintar');
 document.getElementById('btnApagar').onclick = () => definirModo(modo === 'apagar' ? 'pintar' : 'apagar');
 document.getElementById('btnDesfazer').onclick = desfazerUltimo;
@@ -249,7 +324,7 @@ document.getElementById('btnLimpar').onclick = () => {
 document.getElementById('pincel').addEventListener('input', (e) => {
   document.getElementById('pincelValor').textContent = e.target.value; desenhar();
 });
-['chkImagem', 'chkRaio', 'chkGrade'].forEach((id) => document.getElementById(id).addEventListener('change', desenhar));
+['chkImagem', 'chkRaio', 'chkGrade', 'chkAlcance'].forEach((id) => document.getElementById(id).addEventListener('change', desenhar));
 document.getElementById('zoom').addEventListener('change', (e) => {
   const z = parseInt(e.target.value, 10);
   cv.style.width = z === 1 ? '100%' : (LW * z) + 'px';
@@ -290,13 +365,15 @@ imagem.onload = desenhar;
 const rascunho = lerRascunho();
 if (rascunho) mascara = decodificar(rascunho);
 fetch('quarteirao.js').then((r) => r.text()).then((t) => {
-  if (rascunho) return;                                  // edição não enviada tem prioridade
+  const pos = t.match(/const INICIO = P\((\d+),\s*(\d+)\)/);
+  if (pos) inicio = { c: Math.floor(+pos[1] / CEL), l: Math.floor(+pos[2] / CEL) };
+  if (rascunho) { desenhar(); return; }                  // edição não enviada tem prioridade
   const achado = t.match(/rle:\s*"([0-9,]+)"/);
   if (achado) mascara = decodificar(achado[1]);
   desenhar();
 }).catch(() => desenhar());
 desenhar();
-window.editorColisao = { mascara: () => Array.from(mascara), gerar: () => codificar(mascara) };
+window.editorColisao = { mascara: () => Array.from(mascara), gerar: () => codificar(mascara), inicio: () => inicio, destino: () => destino, definirDestino: (c, l) => { destino = { c, l }; desenhar(); } };
 </script>
 </body>
 </html>
