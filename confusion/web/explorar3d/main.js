@@ -229,7 +229,11 @@ let vista = null;     // tela de Time: { tipo: 'time' | 'habilidades', sel, slot
 const carregador = new THREE.TextureLoader();
 const texturas = new Map();
 function texturaDe(arquivo) {
-  if (!texturas.has(arquivo)) texturas.set(arquivo, carregador.load(RAIZ + arquivo));
+  if (!texturas.has(arquivo)) {
+    const t = carregador.load(RAIZ + arquivo);
+    t.colorSpace = THREE.SRGBColorSpace;
+    texturas.set(arquivo, t);
+  }
   return texturas.get(arquivo);
 }
 const arteDe = (m) => E.ESPECIES[m.species]?.arte ?? null;
@@ -254,6 +258,7 @@ function celulasDaFolha(config, imagem) {
     c.height = imagem.height;
     c.getContext('2d').drawImage(imagem, k * largura, 0, largura, imagem.height, 0, 0, largura, imagem.height);
     direcoes[nome] = new THREE.CanvasTexture(c);
+    direcoes[nome].colorSpace = THREE.SRGBColorSpace;
   });
   return direcoes;
 }
@@ -826,7 +831,7 @@ const ATRASO_ACOMPANHANTE = 6;        // pontos da trilha de atraso: o acompanha
 const LADO_ACOMPANHANTE = 0.85;    // quanto fica ao lado do rastro (para não sumir atrás do personagem na câmera)
 let acompanhante = lerAcompanhante();  // { i, especie } ou null
 const trilha = [];
-const acomp = { malha: null, uniforms: null, especie: null, direcoes: null, pronto: false, celula: null, x: 0, z: 0, vx: 0, vz: 0, ativo: false };
+const acomp = { malha: null, uniforms: null, especie: null, direcoes: null, pronto: false, celula: null, celulaFolha: null, arquivoVideo: null, geoFolha: null, x: 0, z: 0, vx: 0, vz: 0, ativo: false };
 {
   const m = criarMaterialCor(THREE);
   acomp.uniforms = m.uniforms;
@@ -899,22 +904,61 @@ function celulaDoAcompanhante(vx, vz) {
   if (Math.abs(emDirecao) >= Math.abs(aoLado)) return emDirecao >= 0 ? 'frente' : 'costas';
   return aoLado >= 0 ? 'direita' : 'esquerda';
 }
+// Vídeos de repouso do Noctarn para o acompanhante: frente, esquerda (a direita é o espelho) e costas.
+// Medidas do desenho em cada quadro: base, centro e altura visível (como os da batalha).
+const VIDEOS_ACOMPANHANTE = {
+  Noctarn: {
+    frente: { arquivo: 'assets/monsters/noctarn/idle-front.mp4', medidas: { aspecto: 960 / 524, yb: 0.969, xc: 0.5225, vh: 0.956 } },
+    esquerda: { arquivo: 'assets/monsters/noctarn/idle-left.mp4', medidas: { aspecto: 960 / 540, yb: 0.937, xc: 0.547, vh: 0.885 } },
+    costas: { arquivo: 'assets/monsters/noctarn/idle-back.mp4', medidas: { aspecto: 960 / 540, yb: 0.948, xc: 0.473, vh: 0.896 } },
+  },
+};
+const videosAcomp = new Map();   // arquivo -> { v, tex }
+function videoAcomp(arquivo) {
+  if (!videosAcomp.has(arquivo)) {
+    const v = document.createElement('video');
+    v.src = RAIZ + arquivo;
+    v.loop = true;
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = 'auto';
+    v.style.display = 'none';
+    document.body.appendChild(v);
+    const tex = new THREE.VideoTexture(v);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    videosAcomp.set(arquivo, { v, tex });
+  }
+  return videosAcomp.get(arquivo);
+}
+// Geometria do quadro de vídeo: o pé na altura 0 e o desenho com a altura de ALTURA_ACOMPANHANTE.
+function geometriaDeVideo(med) {
+  const altura = ALTURA_ACOMPANHANTE / med.vh;
+  const largura = altura * med.aspecto;
+  const g = new THREE.PlaneGeometry(largura, altura);
+  g.translate(-(med.xc - 0.5) * largura, altura * (med.yb - 0.5), 0);
+  return g;
+}
+function pausarVideosAcomp(exceto = null) {
+  for (const [arq, { v }] of videosAcomp) if (arq !== exceto && !v.paused) v.pause();
+}
 function atualizarAcompanhante(dt, t) {
   const m = membroAcompanhante();
-  if (!m || batalha) { acomp.malha.visible = false; acomp.ativo = false; return; }
+  if (!m || batalha) { acomp.malha.visible = false; acomp.ativo = false; pausarVideosAcomp(); return; }
   if (acomp.especie !== m.species) {
     acomp.especie = m.species;
     acomp.pronto = false;
     acomp.direcoes = null;
     acomp.celula = null;
+    acomp.arquivoVideo = null;
     trilha.length = 0;
   }
   if (!acomp.pronto) {
     const d = direcoesDoMapa(m.species);
     if (d) {
       acomp.direcoes = d.direcoes;
+      acomp.geoFolha = new THREE.PlaneGeometry(ALTURA_ACOMPANHANTE * d.aspecto, ALTURA_ACOMPANHANTE);
       acomp.malha.geometry.dispose();
-      acomp.malha.geometry = new THREE.PlaneGeometry(ALTURA_ACOMPANHANTE * d.aspecto, ALTURA_ACOMPANHANTE);
+      acomp.malha.geometry = acomp.geoFolha;
       acomp.pronto = true;
     }
   }
@@ -924,9 +968,7 @@ function atualizarAcompanhante(dt, t) {
     trilha.push({ x: estado.pos.x, z: estado.pos.z });
     if (trilha.length > 90) trilha.shift();
   }
-  // alvo: o ponto da trilha que ficou para trás; sem trilha suficiente, um ponto atrás do personagem
-  let alvo;
-  // direção do caminho (dos últimos pontos da trilha) e o lado: o acompanhante vai um pouco ao lado do rastro, para não ficar escondido atrás do personagem
+  // alvo: o ponto da trilha que ficou para trás, ao lado do rastro; sem trilha suficiente, um ponto atrás do personagem
   let dx = -Math.sin(estado.rot);
   let dz = -Math.cos(estado.rot);
   if (trilha.length > ATRASO_ACOMPANHANTE + 3) {
@@ -937,6 +979,7 @@ function atualizarAcompanhante(dt, t) {
   }
   const ladoX = -dz * LADO_ACOMPANHANTE;
   const ladoZ = dx * LADO_ACOMPANHANTE;
+  let alvo;
   if (trilha.length > ATRASO_ACOMPANHANTE) {
     const p = trilha[trilha.length - 1 - ATRASO_ACOMPANHANTE];
     alvo = { x: p.x + ladoX, z: p.z + ladoZ };
@@ -955,15 +998,49 @@ function atualizarAcompanhante(dt, t) {
     acomp.vz += (((acomp.z - antes.z) / dt) - acomp.vz) * 0.3;
   }
   const parado = Math.hypot(acomp.vx, acomp.vz) < 0.05;
-  if (acomp.pronto) {
-    const cel = parado ? (acomp.celula ?? 'frente') : celulaDoAcompanhante(acomp.vx, acomp.vz);
-    if (cel !== acomp.celula) {
-      acomp.uniforms.map.value = acomp.direcoes[cel];
-      acomp.celula = cel;
+  const cel = parado ? (acomp.celula ?? 'frente') : celulaDoAcompanhante(acomp.vx, acomp.vz);
+  acomp.celula = cel;
+  // com vídeo (Noctarn): o quadro de repouso que corresponde à direção; até o vídeo carregar, usa a folha
+  const vids = VIDEOS_ACOMPANHANTE[m.species];
+  const quadro = vids ? vids[cel === 'direita' ? 'esquerda' : cel] : null;
+  const video = quadro ? videoAcomp(quadro.arquivo) : null;
+  const videoPronto = Boolean(video) && video.v.readyState >= 2;
+  if (videoPronto) {
+    if (acomp.arquivoVideo !== quadro.arquivo) {
+      acomp.arquivoVideo = quadro.arquivo;
+      acomp.uniforms.map.value = video.tex;
+      acomp.uniforms.uChave.value = 1;   // fundo verde sai
+      acomp.uniforms.uSRGB.value = 1;    // o vídeo já é sRGB
+      acomp.malha.geometry.dispose();
+      acomp.malha.geometry = geometriaDeVideo(quadro.medidas);
+      acomp.malha.position.y = 0;
     }
+    video.v.play().catch(() => {});
+    pausarVideosAcomp(quadro.arquivo);
+    acomp.malha.scale.x = cel === 'direita' ? -1 : 1;   // a direita é o espelho da esquerda
+    acomp.malha.position.set(acomp.x, Math.abs(Math.sin(t * 6)) * 0.04, acomp.z);
+    acomp.malha.visible = true;
+  } else if (acomp.pronto) {
+    if (acomp.arquivoVideo) {
+      acomp.arquivoVideo = null;
+      acomp.uniforms.uChave.value = 0;
+      acomp.uniforms.uSRGB.value = 0;
+      acomp.malha.geometry.dispose();
+      acomp.malha.geometry = acomp.geoFolha;
+      acomp.celula = null;
+    }
+    pausarVideosAcomp();
+    const sel = acomp.direcoes[cel] ? cel : 'frente';
+    if (sel !== acomp.celulaFolha) {
+      acomp.uniforms.map.value = acomp.direcoes[sel];
+      acomp.celulaFolha = sel;
+    }
+    acomp.malha.scale.x = 1;
+    acomp.malha.position.set(acomp.x, ALTURA_ACOMPANHANTE / 2 + Math.abs(Math.sin(t * 6)) * 0.04, acomp.z);
+    acomp.malha.visible = true;
+  } else {
+    acomp.malha.visible = false;
   }
-  acomp.malha.visible = acomp.pronto;
-  acomp.malha.position.set(acomp.x, ALTURA_ACOMPANHANTE / 2 + Math.abs(Math.sin(t * 6)) * 0.04, acomp.z);
   acomp.malha.quaternion.copy(camera.quaternion);
 }
 
@@ -1523,7 +1600,7 @@ window.addEventListener('resize', () => {
 window.explorar3d = {
   cenaBatalha: () => cenaBat,   // depuração: a cena 3D da batalha
   video: () => (videoNoctarn ? { tempo: +videoNoctarn.v.currentTime.toFixed(2), pausado: videoNoctarn.v.paused, pronto: videoNoctarn.v.readyState } : null),
-  acompanhante: () => ({ visivel: acomp.malha.visible, pronto: acomp.pronto, especie: acomp.especie, x: +acomp.x.toFixed(2), z: +acomp.z.toFixed(2), trilha: trilha.length, jogador: { x: +estado.pos.x.toFixed(2), z: +estado.pos.z.toFixed(2) } }),
+  acompanhante: () => ({ visivel: acomp.malha.visible, pronto: acomp.pronto, video: acomp.arquivoVideo, celula: acomp.celula, especie: acomp.especie, x: +acomp.x.toFixed(2), z: +acomp.z.toFixed(2), trilha: trilha.length, jogador: { x: +estado.pos.x.toFixed(2), z: +estado.pos.z.toFixed(2) } }),
   jogador: () => ({ x: estado.pos.x, z: estado.pos.z, rot: estado.rot }),
   sprites: () => scene.children.filter((o) => o.isSprite).map((s) => ({ x: s.position.x, z: s.position.z, altura: s.scale.y })),
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw: estado.yaw, pitch: estado.pitch }),
