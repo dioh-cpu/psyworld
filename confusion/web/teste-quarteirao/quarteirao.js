@@ -24,6 +24,8 @@ const largura = (nome, altura = ALTURA[nome]) => altura * PX[nome][0] / PX[nome]
 
 const params = new URLSearchParams(location.search);
 const VISAO = params.get('visao') || 'jogo';
+// teste: ?piso=vilarejo mostra só a imagem nova do vilarejo, sem construções nem a colisão da cena limpa
+const PISO = params.get('piso') === 'vilarejo' ? 'vilarejo' : 'limpo';
 
 const canvas = document.getElementById('cena');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -65,7 +67,7 @@ const materialBase = (nome, opts = {}) =>
 // ---- chão: a imagem inteira da cidade. O topo da imagem fica no norte ----
 {
   const piso = new THREE.Mesh(new THREE.PlaneGeometry(LARG, ALT).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: textura('piso-limpo') }));
+    new THREE.MeshBasicMaterial({ map: textura(PISO === 'vilarejo' ? 'piso-vilarejo-2x' : 'piso-limpo') }));
   cena.add(piso);
 }
 
@@ -121,7 +123,7 @@ function caixasDaGrade(grade, colunas, linhas) {
   }
   return retangulos;
 }
-for (const [c0, l0, c1, l1] of caixasDaGrade(decodificarGrade(COLISAO), COLISAO.colunas, COLISAO.linhas)) {
+for (const [c0, l0, c1, l1] of caixasDaGrade(decodificarGrade(PISO === 'vilarejo' ? { ...COLISAO, rle: String(COLISAO.colunas * COLISAO.linhas) } : COLISAO), COLISAO.colunas, COLISAO.linhas)) {
   const a = P(c0 * COLISAO.celula, l0 * COLISAO.celula), b = P(c1 * COLISAO.celula, l1 * COLISAO.celula);
   caixa(a.x, b.x, a.z, b.z);
 }
@@ -161,7 +163,7 @@ const PREDIOS = [
   ['predio-celeiro', 860, 725, 8.0, 0.74],
   ['predio-cercado', 1220, 750, 8.0, 0.627],
 ];
-for (const [nome, bx, by, larg, proporcao] of PREDIOS) {
+for (const [nome, bx, by, larg, proporcao] of (PISO === 'vilarejo' ? [] : PREDIOS)) {
   const p = P(bx, by);
   const alt = larg * proporcao;
   desenho(nome, p.x, p.z, larg, alt);
@@ -176,7 +178,7 @@ cena.add(jogador);
 
 // ---- entrada: teclado e joystick de toque ----
 const teclas = new Set();
-const INICIO = P(280, 430);                  // início num caminho de terra livre, perto da ponte
+const INICIO = PISO === 'vilarejo' ? P(280, 380) : P(280, 430);                  // início num caminho de terra livre, perto da ponte
 const estado = { x: INICIO.x, z: INICIO.z };
 const PRESET = { taverna: P(330, 430), loja: P(1000, 420) };   // posições para conferir visualmente
 if (PRESET[VISAO]) Object.assign(estado, PRESET[VISAO]);
