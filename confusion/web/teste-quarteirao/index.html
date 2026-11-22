@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quarteirão de teste</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body { margin: 0; height: 100%; background: #1b2a3a; overflow: hidden; font-family: system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #ajuda { position: fixed; left: 10px; top: 10px; background: rgba(9, 25, 60, .85); color: #cfe8ff; padding: 8px 10px;
+           font-size: 12px; line-height: 1.5; border: 1px solid #3f8fd6; max-width: 60vw; }
+  #ajuda b { color: #ffd27a; }
+</style>
+<script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
+</head>
+<body>
+<canvas id="cena"></canvas>
+<div id="ajuda">
+  <b>Quarteirão de teste</b> (separado das áreas jogáveis)<br>
+  WASD andar · IJKL câmera · <b>E</b> depositar ovo no ninho perto · <b>Q</b> recolher ovos<br>
+  Ninhos começam vazios; o ovo é objeto separado.
+</div>
+<script type="module" src="./quarteirao.js"></script>
+</body>
+</html>
