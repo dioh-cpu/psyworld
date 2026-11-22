@@ -14,7 +14,7 @@ export const SINAL = { x: 6, z: 6 };         // placa na praça
 
 // Onde os selvagens rondam: fora das cidades e da praça, espalhados pelos quatro braços.
 export const PONTOS_SELVAGENS = [
-  [-24, -40], [26, -54], [56, -24], [56, 24], [-26, 34],
+  [-24, -40], [26, -54], [60, -24], [56, 24], [-26, 34],
   [26, 34], [0, 34], [-46, -26], [-40, 24], [-70, -2],
 ];
 
@@ -35,10 +35,8 @@ const POSICOES = {
   'Forte Velho': { x: -62, z: -14 }, 'Fazenda Mansa': { x: -50, z: 8 }, 'Lago Espelho': { x: -68, z: 18 },
 };
 
-// Posições das casas em volta da prefeitura (anel de 3 x 3 sem o centro), e cores de paredes.
+// Posições das casas em volta da prefeitura (anel de 3 x 3 sem o centro).
 const ANEL = [[-7, -7], [0, -7], [7, -7], [7, 0], [7, 7], [0, 7], [-7, 7], [-7, 0]];
-const CORES = ['#d9b48f', '#c9d6e3', '#e7c9a9', '#bfd8b0'];
-const TELHADOS = ['#8a4b3a', '#5b5f73', '#6e4a2f', '#7a3e3e'];
 
 // Número pseudo-aleatório determinístico em [0, 1): o mesmo mundo sai igual em todo carregamento.
 function ruido(semente) {
@@ -49,26 +47,57 @@ function ruido(semente) {
   return (h >>> 0) / 4294967296;
 }
 
+// Todos os prédios já colocados, de todas as cidades: um prédio novo não pode encostar num que já está lá.
+const COLOCADOS = [];
+const encosta = (a, b) => Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.z - b.z) < (a.d + b.d) / 2;
 function construirCidade(nome, regiao, i) {
   const { x: cx, z: cz } = POSICOES[nome];
-  const edificios = [{ x: cx, z: cz, w: 5, d: 4, h: 4.5, cor: '#e8d28a', telhado: '#7a3e3e', central: true, cidade: nome }];
+  // o prédio central é a prefeitura: ainda sem arte, não aparece nem bloqueia
+  const central = { x: cx, z: cz, w: 5, d: 4, central: true, cidade: nome };
+  const edificios = [central];
+  COLOCADOS.push(central);
   const inicio = Math.floor(ruido(i * 31 + 1) * ANEL.length);
-  for (let k = 0; k < 6; k++) {
-    const [ax, az] = ANEL[(inicio + k) % ANEL.length];
-    const s = i * 100 + k * 10;
-    edificios.push({
-      x: cx + ax + (ruido(s + 1) - 0.5) * 1.2,
-      z: cz + az + (ruido(s + 2) - 0.5) * 1.2,
-      w: 2.6 + ruido(s + 3) * 0.9,
-      d: 2.6 + ruido(s + 4) * 0.9,
-      h: 2.2 + ruido(s + 5) * 1.6,
-      cor: CORES[Math.floor(ruido(s + 6) * CORES.length)],
-      telhado: TELHADOS[Math.floor(ruido(s + 7) * TELHADOS.length)],
-      central: false,
-      cidade: nome,
-    });
+  let casas = 0;
+  for (let t = 0; t < ANEL.length && casas < 6; t++) {
+    const [ax, az] = ANEL[(inicio + t) % ANEL.length];
+    const tipo = (i + casas) % 2 === 0 ? 'loja' : 'taverna';
+    const predio = predioNaCidade(tipo, cx + ax, cz + az, cx, cz, nome);
+    if (COLOCADOS.some((o) => encosta(o, predio))) continue;   // esta posição do anel encosta em outro prédio: pula
+    COLOCADOS.push(predio);
+    edificios.push(predio);
+    casas += 1;
   }
   return { nome, regiao, x: cx, z: cz, edificios };
+}
+
+// ---- prédios da cidade: loja e taberna. As artes (frente, costas e lateral) ficam em assets/mundo/cidade ----
+export const ALTURA_PREDIO = 5.4;   // do chão à cumeeira: 2,1 vezes o personagem (2,55). Cabe na roda de casas da cidade.
+// Figura recortada de cada arte, em px (cada arquivo tem 4 px de margem transparente em volta da figura)
+const FIGURA = {
+  'loja-frente': [2001, 1385], 'loja-costas': [2001, 1375], 'loja-lateral': [1621, 1778],
+  'taverna-frente': [1656, 1387], 'taverna-costas': [1657, 1384], 'taverna-lateral': [1621, 1778],
+};
+export const figuraDaArte = (tipo, vista) => FIGURA[`${tipo}-${vista}`];
+// Paredes dentro do beiral, como na casa de teste: largura e profundidade (em relação ao beiral) e altura da parede.
+const PAREDE_PREDIO = { x: 0.84, z: 0.725, altura: 0.525 };
+export function predioDoTipo(tipo) {
+  const [fw, fh] = figuraDaArte(tipo, 'frente');
+  const [lw, lh] = figuraDaArte(tipo, 'lateral');
+  const B = (fw / 2) * (ALTURA_PREDIO / fh);   // meia largura da frente, com o beiral
+  const E = (lw / 2) * (ALTURA_PREDIO / lh);   // meia profundidade (o lado), com o beiral
+  return { B, E, W: B * PAREDE_PREDIO.x, D: E * PAREDE_PREDIO.z, A: ALTURA_PREDIO * PAREDE_PREDIO.altura, H: ALTURA_PREDIO };
+}
+// A frente do prédio olha para o centro da cidade, pelo eixo mais próximo: yaw 0 = +z, π = -z, π/2 = +x, -π/2 = -x.
+// A largura e a profundidade guardadas são as da caixa no chão, já girada (w no eixo x, d no eixo z).
+function predioNaCidade(tipo, x, z, cx, cz, nome) {
+  const dx = cx - x;
+  const dz = cz - z;
+  const emZ = Math.abs(dz) >= Math.abs(dx);
+  const yaw = emZ ? (dz >= 0 ? 0 : Math.PI) : (dx >= 0 ? Math.PI / 2 : -Math.PI / 2);
+  const p = predioDoTipo(tipo);
+  const meiaX = emZ ? p.W : p.D;
+  const meiaZ = emZ ? p.D : p.W;
+  return { x, z, yaw, tipo, w: 2 * meiaX, d: 2 * meiaZ, central: false, cidade: nome };
 }
 
 export const CIDADES_MUNDO = CIDADES.map((c, i) => construirCidade(c.nome, c.regiao, i));
@@ -200,10 +229,12 @@ const CAIXA_CASA_TESTE = caixaRetangular(
   CASA_TESTE.x - CASA_TESTE.largura / 2, CASA_TESTE.x + CASA_TESTE.largura / 2,
   CASA_TESTE.z - CASA_TESTE.profundidade / 2, CASA_TESTE.z + CASA_TESTE.profundidade / 2,
 );
-// Colisão: a casa de teste, a costa, árvores, pedras e o lago. As casas das cidades não bloqueiam (estão fora do mapa).
+// Colisão: a casa de teste, a costa, árvores, pedras, o lago e os prédios da cidade (loja e taberna). O prédio central
+// (prefeitura) ainda não tem arte e fica sem colisão.
 export const CAIXAS = [
   CAIXA_CASA_TESTE, ...COSTA.map(caixaDeRetangulo),
   ...ARVORES.map(caixaDeArvore), ...PEDRAS.map(caixaDePedra), ...CAIXAS_LAGO,
+  ...EDIFICIOS.filter((e) => !e.central).map((e) => caixaRetangular(e.x - e.w / 2, e.x + e.w / 2, e.z - e.d / 2, e.z + e.d / 2)),
 ];
 
 // Região de um ponto da ilha, ou null se estiver no mar.

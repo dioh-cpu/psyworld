@@ -2,7 +2,7 @@
 // assets/mundo), pedras e lago em forma simples. A colisão vem de CAIXAS (mundo.js).
 // Chão e céu são desenhados (canvas e pintura), iguais em todo carregamento.
 import * as THREE from 'three';
-import { REGIOES, ARVORES, PEDRAS, LAGO, ESTRADAS, CASA_TESTE, regiaoDe } from './mundo.js';
+import { REGIOES, ARVORES, PEDRAS, LAGO, ESTRADAS, CASA_TESTE, EDIFICIOS, predioDoTipo, figuraDaArte, regiaoDe } from './mundo.js';
 
 export const COR_HORIZONTE = '#cfe8f7';  // névoa e horizonte na mesma cor: mar e chão somem no céu
 const COR_MORTA = '#7a7468';
@@ -315,6 +315,63 @@ function montarCasaTeste(scene, arteDe) {
   face([[-B, A, -E], [-B, H, 0], [B, H, 0], [B, A, -E]], uvCostas, matCostas);
 }
 
+// ---- prédios da cidade (loja e taberna): o mesmo volume da casa de teste, com a arte da frente, das costas e da lateral.
+// Cada face usa a sua arte pela posição no mundo: o prédio é reto e não gira com a câmera.
+const MARGEM_ARTE = 4;   // px de margem transparente em volta da figura (ver assets/mundo/cidade)
+// uv de um ponto (horiz, y) da fachada: a figura inteira ocupa a altura H; sinal -1 espelha (costas e lado direito)
+const uvDaArte = ([fw, fh], horiz, y, H, sinal) => {
+  const K = H / fh;
+  return [
+    (MARGEM_ARTE + fw / 2 + (sinal * horiz) / K) / (fw + 2 * MARGEM_ARTE),
+    1 - (MARGEM_ARTE + fh - y / K) / (fh + 2 * MARGEM_ARTE),
+  ];
+};
+function montarPredio(scene, e, arteDe, material) {
+  const { B, E, W, D, A, H } = predioDoTipo(e.tipo);
+  const textura = (vista) => {
+    const t = carregador.load(arteDe(`cidade/${e.tipo}-${vista}.webp`));
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const fF = figuraDaArte(e.tipo, 'frente');
+  const fC = figuraDaArte(e.tipo, 'costas');
+  const fL = figuraDaArte(e.tipo, 'lateral');
+  const mF = material('#ffffff', textura('frente'));
+  const mC = material('#ffffff', textura('costas'));
+  const mL = material('#ffffff', textura('lateral'));
+  const uvF = (q) => uvDaArte(fF, q[0], q[1], H, +1);
+  const uvC = (q) => uvDaArte(fC, q[0], q[1], H, -1);
+  const uvLE = (q) => uvDaArte(fL, q[2], q[1], H, +1);
+  const uvLD = (q) => uvDaArte(fL, q[2], q[1], H, -1);
+  // o prédio fica num grupo: posição e giro (a frente olha para o centro da cidade) valem para todas as faces
+  const grupo = new THREE.Group();
+  grupo.position.set(e.x, 0, e.z);
+  grupo.rotation.y = e.yaw;
+  scene.add(grupo);
+  const face = (pontos, uv, mat) => {
+    const pos = [];
+    const uvs = [];
+    for (const q of pontos) {
+      pos.push(q[0], q[1], q[2]);
+      uvs.push(...uv(q));
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    g.setIndex(pontos.length === 4 ? [0, 1, 2, 0, 2, 3] : [0, 1, 2]);
+    const malha = new THREE.Mesh(g, mat);
+    grupo.add(malha);   // sem contorno: a cópia escura de uma face plana aparece como tira nas quinas
+  };
+  // paredes: frente (+z), costas (-z) e os dois lados; empenas dos lados; telhado de duas águas (frente e costas)
+  face([[-W, 0, D], [W, 0, D], [W, A, D], [-W, A, D]], uvF, mF);
+  face([[W, 0, -D], [-W, 0, -D], [-W, A, -D], [W, A, -D]], uvC, mC);
+  face([[-W, 0, -D], [-W, 0, D], [-W, A, D], [-W, A, -D]], uvLE, mL);
+  face([[W, 0, D], [W, 0, -D], [W, A, -D], [W, A, D]], uvLD, mL);
+  face([[-W, A, -E], [-W, A, E], [-W, H, 0]], uvLE, mL);
+  face([[W, A, E], [W, A, -E], [W, H, 0]], uvLD, mL);
+  face([[-B, A, E], [B, A, E], [B, H, 0], [-B, H, 0]], uvF, mF);
+  face([[-B, A, -E], [-B, H, 0], [B, H, 0], [B, A, -E]], uvC, mC);
+}
 // ---- partes do mundo ----
 function chao(scene, material) {
   for (const [nome, r] of Object.entries(REGIOES)) {
@@ -452,6 +509,7 @@ export function montarMundo(scene, { material, contorno, raiz = '' }) {
   areia(scene, material);
   estradas(scene, material);
   montarCasaTeste(scene, arteDe);
+  for (const e of EDIFICIOS) if (!e.central) montarPredio(scene, e, arteDe, material);
   lago(scene, material);
   for (const a of ARVORES) arvore(scene, material, contorno, a, arteDe);
   for (const p of PEDRAS) pedra(scene, material, contorno, p);

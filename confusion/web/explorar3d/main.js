@@ -1615,6 +1615,7 @@ window.addEventListener('resize', () => {
 // para testes automáticos: posição do personagem, câmera, localização, teleporte, batalha e time
 window.explorar3d = {
   cenaBatalha: () => cenaBat,   // depuração: a cena 3D da batalha
+  cena: () => scene,   // depuração: a cena do mapa (prédios, chão, céu)
   video: () => (videoNoctarn ? { tempo: +videoNoctarn.v.currentTime.toFixed(2), pausado: videoNoctarn.v.paused, pronto: videoNoctarn.v.readyState } : null),
   acompanhante: () => ({ visivel: acomp.malha.visible, pronto: acomp.pronto, video: acomp.arquivoVideo, celula: acomp.celula, especie: acomp.especie, x: +acomp.x.toFixed(2), z: +acomp.z.toFixed(2), trilha: trilha.length, jogador: { x: +estado.pos.x.toFixed(2), z: +estado.pos.z.toFixed(2) } }),
   jogador: () => ({ x: estado.pos.x, z: estado.pos.z, rot: estado.rot }),
