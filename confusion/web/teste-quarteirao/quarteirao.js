@@ -103,13 +103,13 @@ function objeto(nome, { x, z, y = 0, altura = ALTURA[nome], colide = false }) {
   return mesh;
 }
 const emImagem = (nome, px, py, extra = {}) => objeto(nome, { ...P(px, py), colide: true, ...extra });
-const TAVERNA = P(295, 317), LOJA = P(1160, 336);
+const TAVERNA = P(290, 318), LOJA = P(330, 700);   // âncora = borda de baixo (frente) da casa, no gramado
 function casa(nome, { x, z }, w, h) {
   desenho(nome, x, z, w, h);
   caixa(x - w * 0.46, x + w * 0.46, z - h * 0.70, z - 0.06);
 }
-casa('edificio-taverna', TAVERNA, 8.5, 6.1);
-casa('edificio-loja', LOJA, 6.5, 4.8);
+casa('edificio-taverna', TAVERNA, 17, 12.2);   // o dobro do tamanho anterior (8,5 x 6,1)
+casa('edificio-loja', LOJA, 13, 9.6);   // o dobro do tamanho anterior (6,5 x 4,8)
 
 // ---- Fazenda dos Ovos: cerca no campo à direita da estrada sul (imagem: x 700-1260, y 340-740) ----
 const F = { x0: P(700, 0).x, x1: P(1260, 0).x, z0: P(0, 390).z, z1: P(0, 740).z };
@@ -183,8 +183,8 @@ emImagem('mesa', 1130, 670);
 emImagem('cocho', 770, 370);
 
 // ---- cidade: objetos de calçada, praça e campo ----
-emImagem('lampada', 139, 314, { altura: 2.6 });       // no gramado junto da calçada oeste
-emImagem('placa', 424, 312, { altura: 1.7 });         // ao norte da estrada oeste
+emImagem('lampada', 40, 250, { altura: 2.6 });   // na calçada oeste, fora da casa       // no gramado junto da calçada oeste
+emImagem('placa', 560, 290, { altura: 1.7 });   // ao lado da estrada, fora da casa         // ao norte da estrada oeste
 emImagem('banco', 960, 170);         // praça
 
 // ---- Azazel no traje de vilão: andar em vídeo MP4 e parado nas 4 direções (mesmo do jogo principal) ----
