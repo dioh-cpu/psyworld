@@ -56,7 +56,7 @@ const materialMadeira = new THREE.MeshBasicMaterial({ color: '#7a5230' });
 
 // ---- chão ----
 // Uma célula de chão. O topo da imagem fica no norte; (espelhoX, espelhoY) espelham a arte para emendar.
-function chao(c, r, nome, { espelhoX = false, espelhoY = false, giro = 0 } = {}) {
+function chao(c, r, nome, { espelhoX = false, espelhoY = false, giro = 0, sobre = false } = {}) {
   const g = new THREE.PlaneGeometry(S, S);
   g.rotateX(-Math.PI / 2);
   const uv = g.attributes.uv;
@@ -67,8 +67,9 @@ function chao(c, r, nome, { espelhoX = false, espelhoY = false, giro = 0 } = {})
     if (espelhoY) v = 1 - v;
     uv.setXY(i, u, v);
   }
-  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: textura(nome) }));
-  m.position.set(cx(c), 0, cz(r));
+  // 'sobre': peça com alfa (estrada). A grama ao redor vem da peça de grama que fica por baixo.
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: textura(nome), transparent: sobre, depthWrite: !sobre }));
+  m.position.set(cx(c), sobre ? 0.01 : 0, cz(r));
   m.rotation.y = giro * Math.PI / 2;   // quartos de volta: S→E→N→W
   cena.add(m);
 }
@@ -104,7 +105,8 @@ for (let r = 0; r < 6; r++) {
     const chave = `${c},${r}`;
     if (ESTRADAS[chave]) {
       const [nome, giro] = ESTRADAS[chave];
-      chao(c, r, nome, { giro });
+      chao(c, r, 'grama', mirror);                     // grama por baixo: a estrada só cobre o caminho
+      chao(c, r, nome, { giro, sobre: true });
     } else if (emCelulas(PRACA, c, r)) {
       chao(c, r, 'praca', mirror);
     } else if (emCelulas(CALCADA, c, r)) {
@@ -140,10 +142,10 @@ function fachada(nome, { x, z, comprimento, lado }) {
   const x1 = lado > 0 ? x : x + prof;
   caixa(x0, x1, z - comprimento / 2, z + comprimento / 2);
 }
-// taverna: borda leste da coluna 0, nas linhas 0 e 1 (a calçada fica entre a fachada e a estrada)
-fachada('fachada-taverna', { x: cx(0) + S / 2, z: (cz(0) + cz(1)) / 2, comprimento: 5.4 * 906 / 310, lado: 1 });
-// loja: borda oeste da coluna 5, voltada para a praça
-fachada('fachada-loja', { x: cx(5) - S / 2, z: (cz(0) + cz(1)) / 2, comprimento: 5.4 * 906 / 310, lado: -1 });
+// taverna: borda oeste da coluna 0, de frente para a calçada (leste); a estrada fica do outro lado da calçada
+fachada('fachada-taverna', { x: cx(0) - S / 2, z: (cz(0) + cz(1)) / 2, comprimento: 5.4 * 906 / 310, lado: 1 });
+// loja: borda leste da coluna 5, de frente para a calçada (oeste)
+fachada('fachada-loja', { x: cx(5) + S / 2, z: (cz(0) + cz(1)) / 2, comprimento: 5.4 * 906 / 310, lado: -1 });
 
 // ---- objetos fixos: planos cruzados (não giram com a câmera) ----
 function objeto(nome, { x, z, y = 0, altura = ALTURA[nome], cruzado = true, colide = null, giro = 0, doisLados = false }) {
@@ -160,7 +162,10 @@ function objeto(nome, { x, z, y = 0, altura = ALTURA[nome], cruzado = true, coli
     grupo.add(p);
   }
   cena.add(grupo);
-  if (colide) caixa(x - colide / 2, x + colide / 2, z - colide / 2, z + colide / 2);
+  if (colide) {
+    const lado = colide === true ? w * 0.8 : colide;   // colisor = 80% da largura visível do sprite
+    caixa(x - lado / 2, x + lado / 2, z - lado / 2, z + lado / 2);
+  }
   return grupo;
 }
 
@@ -171,7 +176,7 @@ const PORTAO_Z = (FZ0 + FZ1) / 2;                      // portão no meio do lad
 const TABUA_ALT = 0.74;
 const ALTURA_POSTE = ALTURA.poste;
 
-function poste(x, z) { objeto('poste', { x, z, colide: 0.5 }); }
+function poste(x, z) { objeto('poste', { x, z, colide: true }); }
 function tabuas(x0, z0, x1, z1, plano) {
   // plano = 'x' (tábuas ao longo de x, no fundo da cerca norte/sul) ou 'z' (ao longo de z, cerca leste/oeste)
   const comp = plano === 'x' ? Math.abs(x1 - x0) : Math.abs(z1 - z0);
@@ -189,7 +194,8 @@ for (let x = FX0; x < FX1; x += 3) { tabuas(x, FZ0, x + 3, FZ0, 'x'); tabuas(x, 
 for (let z = FZ0; z <= FZ1 + 1e-6; z += 3) poste(FX1, z);
 for (let z = FZ0; z < FZ1; z += 3) tabuas(FX1, z, FX1, z + 3, 'z');
 // oeste (x = FX0): postes e tábuas, com o portão entre os dois postes do meio
-const ABERTURA = [PORTAO_Z - 1.5, PORTAO_Z + 1.5];
+const LARG_PORTAO = largura('portao', ALTURA.portao);  // a abertura tem a largura do próprio portão
+const ABERTURA = [PORTAO_Z - LARG_PORTAO / 2, PORTAO_Z + LARG_PORTAO / 2];
 const postesOeste = [];
 for (let z = FZ0; z <= FZ1 + 1e-6; z += 3) postesOeste.push(z);
 for (const z of postesOeste) poste(FX0, z);
@@ -218,14 +224,14 @@ objeto('mesa', { x: 19.5, z: 27.5, colide: 2.0 });
 objeto('cocho', { x: 19.8, z: 7.5, colide: 1.4 });
 
 // ---- rua da cidade: objetos de calçada e praça ----
-objeto('lampada', { x: cx(1) - 2.5, z: cz(1) + 2, colide: 0.6 });
-objeto('placa', { x: cx(2) - 2.5, z: cz(1) + 1, colide: 0.5 });
-objeto('banco', { x: cx(3) + 0.5, z: cz(1) + 2.5, altura: ALTURA.banco, colide: 1.6 });
-objeto('banco', { x: cx(4) - 2.5, z: cz(1) + 2.5, altura: ALTURA.banco, colide: 1.6 });
-objeto('vaso', { x: cx(3) - 3, z: cz(0) - 2, colide: 1.2 });
-objeto('vaso', { x: cx(4) + 3, z: cz(0) - 2, colide: 1.2 });
-objeto('arbusto', { x: cx(2) - 1, z: cz(4) + 3.5, colide: 1.6 });
-objeto('arbusto', { x: cx(5) - 1, z: cz(4) + 1.5, colide: 1.6 });
+objeto('lampada', { x: cx(0) + 2.5, z: cz(1) + 2, colide: true });   // na calçada, junto da estrada
+objeto('placa', { x: cx(2) - 2.5, z: cz(1) + 1, colide: true });
+objeto('banco', { x: cx(3) + 0.5, z: cz(1) + 2.5, altura: ALTURA.banco, colide: true });
+objeto('banco', { x: cx(4) - 2.5, z: cz(1) + 2.5, altura: ALTURA.banco, colide: true });
+objeto('vaso', { x: cx(3) - 3, z: cz(0) - 2, colide: true });
+objeto('vaso', { x: cx(4) + 3, z: cz(0) - 2, colide: true });
+objeto('arbusto', { x: cx(2) - 1, z: cz(4) + 3.5, colide: true });
+objeto('arbusto', { x: cx(5) - 1, z: cz(4) + 1.5, colide: true });
 
 // ---- Azazel (sprite de frente da folha de repouso do traje de vilão; acompanha a câmera só na horizontal) ----
 const AZAZEL_LADO = 512 * ESCALA_AZAZEL;
@@ -242,8 +248,8 @@ const teclas = new Set();
 const ALVO_ALTURA = ALTURA_PERSONAGEM * 0.8;
 const estado = { x: cx(1), z: cz(2), yaw: 0, pitch: 0.5 };
 if (VISAO === 'portao') { estado.x = 0; estado.z = cz(4); estado.yaw = -Math.PI / 2; }
-if (VISAO === 'taverna') { estado.x = -11; estado.z = (cz(0) + cz(1)) / 2; estado.yaw = Math.PI / 2; }
-if (VISAO === 'loja') { estado.x = 16; estado.z = (cz(0) + cz(1)) / 2; estado.yaw = -Math.PI / 2; }
+if (VISAO === 'taverna') { estado.x = -19; estado.z = (cz(0) + cz(1)) / 2; estado.yaw = Math.PI / 2; }
+if (VISAO === 'loja') { estado.x = 28; estado.z = (cz(0) + cz(1)) / 2; estado.yaw = -Math.PI / 2; }
 // câmera suavizada: o ângulo e a posição seguem com amortecimento
 const cam = { yaw: estado.yaw, pitch: estado.pitch, pos: null };
 // colisões em caixas (AABB) para o movimento e para a câmera, com a mesma lógica do jogo principal
@@ -398,6 +404,7 @@ window.quarteirao = {
   camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
   ovos: () => ovos.map((o) => o.visible),
   colisoes: () => colisoes.length,
+  caixas: () => caixasAABB,
   mover: (x, z, yaw) => { estado.x = x; estado.z = z; if (yaw !== undefined) estado.yaw = yaw; },
 };
 requestAnimationFrame(quadro);

@@ -24,12 +24,19 @@
 </head>
 <body>
 <canvas id="cena"></canvas>
-<div id="ajuda">
-  <b>Quarteirão de teste</b> (separado das áreas jogáveis)<br>
-  Toque: joystick para andar; arraste na tela para girar a câmera.<br>
-  Teclado: WASD andar · IJKL câmera · <b>E</b> depositar ovo · <b>Q</b> recolher ovos<br>
-  Ninhos começam vazios; o ovo é objeto separado.
-</div>
+<details id="ajuda">
+  <summary><b>Quarteirão de teste</b> · controles</summary>
+  <div class="ajuda-corpo">
+    Separado das áreas jogáveis.<br>
+    Toque: joystick para andar; arraste na tela para girar a câmera.<br>
+    Teclado: WASD andar · IJKL câmera · <b>E</b> depositar ovo · <b>Q</b> recolher ovos<br>
+    Ninhos começam vazios; o ovo é objeto separado.
+  </div>
+</details>
+<script>
+  // no toque a ajuda começa fechada, para não cobrir a fachada
+  document.getElementById('ajuda').open = !matchMedia('(pointer: coarse)').matches;
+</script>
 <div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>
 <div id="acoes">
   <button id="btn-ovo" type="button">Depositar ovo</button>
