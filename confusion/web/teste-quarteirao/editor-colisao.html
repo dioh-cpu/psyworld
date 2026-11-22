@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de colisão do quarteirão</title>
+<style>
+  :root { --bg: #0f172a; --painel: #1e293b; --borda: #334155; --destaque: #38bdf8; --texto: #f8fafc; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--texto); font: 13px system-ui, sans-serif; }
+  #topo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px; background: var(--painel); border-bottom: 1px solid var(--borda); position: sticky; top: 0; z-index: 2; }
+  #topo b { color: var(--destaque); }
+  button, input, textarea { background: #0f172a; color: var(--texto); border: 1px solid var(--borda); border-radius: 4px; padding: 5px 8px; font: inherit; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--destaque); }
+  #area { padding: 8px; overflow: auto; }
+  canvas { display: block; width: 100%; max-width: 1376px; height: auto; background: #000; cursor: crosshair; touch-action: none; }
+  #painelTexto { display: none; padding: 8px; }
+  #painelTexto.aberto { display: block; }
+  textarea { width: 100%; height: 220px; font-family: ui-monospace, monospace; font-size: 12px; }
+  .ajuda { color: #94a3b8; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="topo">
+  <b>Editor de colisão</b>
+  <span class="ajuda">arraste para criar um bloqueio · clique para selecionar · Delete apaga</span>
+  <label><input type="checkbox" id="chkLivre" checked> área livre (raio do personagem)</label>
+  <label><input type="checkbox" id="chkGrade" checked> grade</label>
+  <label>raio px <input type="number" id="raio" value="17.3" step="0.1" style="width:70px"></label>
+  <span id="contagem" class="ajuda"></span>
+  <button id="btnApagar">Apagar selecionado</button>
+  <button id="btnDesfazer">Desfazer</button>
+  <button id="btnCopiar">Gerar texto para o quarteirao.js</button>
+  <button id="btnColar">Colar lista</button>
+</div>
+<div id="painelTexto">
+  <div class="ajuda">Copie este bloco e substitua o const BLOQUEIOS no quarteirao.js. Para colar uma lista de volta, cole aqui e clique em Aplicar.</div>
+  <textarea id="texto"></textarea>
+  <div><button id="btnAplicar">Aplicar</button> <button id="btnFechar">Fechar</button></div>
+</div>
+<div id="area"><canvas id="cv" width="1376" height="768"></canvas></div>
+
+<script>
+const LARG_IMG = 1376, ALT_IMG = 768;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const imagem = new Image();
+let rects = [];          // [x0, y0, x1, y1] em pixels da imagem
+let historico = [];
+let sel = -1;
+let arrasto = null;      // {x0,y0,x1,y1} enquanto desenha
+let desenhando = null;   // ponto inicial do arrasto
+
+function raio() { return Math.max(0, parseFloat(document.getElementById('raio').value) || 0); }
+
+function lerDoQuarteirao(texto) {
+  const bloco = texto.match(/const BLOQUEIOS = \[([\s\S]*?)\n\];/);
+  if (!bloco) return null;
+  const itens = [...bloco[1].matchAll(/\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/g)];
+  return itens.map((m) => [+m[1], +m[2], +m[3], +m[4]]);
+}
+
+function gerarTexto() {
+  const linhas = rects.map((r) => `  [${r.join(', ')}],`).join('\n');
+  return `const BLOQUEIOS = [\n${linhas}\n];`;
+}
+
+function atualizarContagem() {
+  document.getElementById('contagem').textContent = `${rects.length} bloqueios`;
+}
+
+function salvarHistorico() {
+  historico.push(JSON.stringify(rects));
+  if (historico.length > 100) historico.shift();
+}
+
+// desenho ---------------------------------------------------------------
+function ponto(e) {
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) * (LARG_IMG / r.width);
+  const y = (e.clientY - r.top) * (ALT_IMG / r.height);
+  return { x: Math.min(LARG_IMG, Math.max(0, x)), y: Math.min(ALT_IMG, Math.max(0, y)) };
+}
+
+function distanciaAoRetangulo(x, y, [x0, y0, x1, y1]) {
+  const dx = Math.max(x0 - x, 0, x - x1);
+  const dy = Math.max(y0 - y, 0, y - y1);
+  return Math.hypot(dx, dy);
+}
+
+function desenhar() {
+  ctx.clearRect(0, 0, LARG_IMG, ALT_IMG);
+  if (imagem.complete && imagem.naturalWidth) ctx.drawImage(imagem, 0, 0, LARG_IMG, ALT_IMG);
+
+  if (document.getElementById('chkLivre').checked) {
+    const R = raio();
+    const passo = 4;
+    for (let y = 0; y < ALT_IMG; y += passo) {
+      for (let x = 0; x < LARG_IMG; x += passo) {
+        const bloqueado = rects.some((r) => distanciaAoRetangulo(x + passo / 2, y + passo / 2, r) < R);
+        ctx.fillStyle = bloqueado ? 'rgba(255,40,40,0.28)' : 'rgba(40,255,90,0.16)';
+        ctx.fillRect(x, y, passo, passo);
+      }
+    }
+  }
+
+  if (document.getElementById('chkGrade').checked) {
+    ctx.strokeStyle = 'rgba(255,255,0,0.35)';
+    ctx.fillStyle = 'rgba(255,255,0,0.9)';
+    ctx.font = '14px system-ui';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= LARG_IMG; x += 100) {
+      ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, ALT_IMG); ctx.stroke();
+      ctx.fillText(String(x), x + 3, 14);
+    }
+    for (let y = 0; y <= ALT_IMG; y += 100) {
+      ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(LARG_IMG, y + 0.5); ctx.stroke();
+      ctx.fillText(String(y), 3, y + 14);
+    }
+  }
+
+  rects.forEach((r, i) => {
+    const [x0, y0, x1, y1] = r;
+    ctx.fillStyle = i === sel ? 'rgba(56,189,248,0.45)' : 'rgba(255,220,0,0.12)';
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.strokeStyle = i === sel ? '#38bdf8' : 'rgba(255,220,0,0.95)';
+    ctx.lineWidth = i === sel ? 3 : 2;
+    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  });
+
+  if (arrasto) {
+    ctx.strokeStyle = '#ffffff';
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(arrasto.x0, arrasto.y0, arrasto.x1 - arrasto.x0, arrasto.y1 - arrasto.y0);
+    ctx.setLineDash([]);
+  }
+  atualizarContagem();
+}
+
+// interação -------------------------------------------------------------
+function normalizar(a, b) {
+  return [Math.round(Math.min(a.x, b.x)), Math.round(Math.min(a.y, b.y)), Math.round(Math.max(a.x, b.x)), Math.round(Math.max(a.y, b.y))];
+}
+
+function acharRetangulo(p) {
+  // o último desenhado tem prioridade (fica por cima)
+  for (let i = rects.length - 1; i >= 0; i--) {
+    const [x0, y0, x1, y1] = rects[i];
+    if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1) return i;
+  }
+  return -1;
+}
+
+cv.addEventListener('pointerdown', (e) => {
+  const p = ponto(e);
+  desenhando = p;
+  arrasto = null;
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', (e) => {
+  if (!desenhando) return;
+  const p = ponto(e);
+  if (Math.abs(p.x - desenhando.x) + Math.abs(p.y - desenhando.y) > 3) {
+    arrasto = { x0: Math.min(desenhando.x, p.x), y0: Math.min(desenhando.y, p.y), x1: Math.max(desenhando.x, p.x), y1: Math.max(desenhando.y, p.y) };
+    desenhar();
+  }
+});
+cv.addEventListener('pointerup', (e) => {
+  if (!desenhando) return;
+  const p = ponto(e);
+  const movimento = Math.abs(p.x - desenhando.x) + Math.abs(p.y - desenhando.y);
+  if (movimento > 3) {
+    const r = normalizar(desenhando, p);
+    if (r[2] - r[0] >= 2 && r[3] - r[1] >= 2) {
+      salvarHistorico();
+      rects.push(r);
+      sel = rects.length - 1;
+    }
+  } else {
+    sel = acharRetangulo(p);
+  }
+  desenhando = null;
+  arrasto = null;
+  desenhar();
+});
+
+window.addEventListener('keydown', (e) => {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && sel >= 0 && document.activeElement.tagName !== 'TEXTAREA') {
+    salvarHistorico();
+    rects.splice(sel, 1);
+    sel = -1;
+    desenhar();
+  }
+  if (e.key === 'Escape') { sel = -1; desenhar(); }
+});
+
+// botões ----------------------------------------------------------------
+document.getElementById('btnApagar').onclick = () => {
+  if (sel < 0) return;
+  salvarHistorico(); rects.splice(sel, 1); sel = -1; desenhar();
+};
+document.getElementById('btnDesfazer').onclick = () => {
+  if (!historico.length) return;
+  rects = JSON.parse(historico.pop()); sel = -1; desenhar();
+};
+document.getElementById('btnCopiar').onclick = () => {
+  const painel = document.getElementById('painelTexto');
+  const area = document.getElementById('texto');
+  area.value = gerarTexto();
+  painel.classList.add('aberto');
+  area.select();
+  try { navigator.clipboard.writeText(area.value); } catch (_) {}
+};
+document.getElementById('btnColar').onclick = () => {
+  document.getElementById('texto').value = '';
+  document.getElementById('painelTexto').classList.add('aberto');
+};
+document.getElementById('btnAplicar').onclick = () => {
+  const lista = lerDoQuarteirao(document.getElementById('texto').value.includes('const BLOQUEIOS')
+    ? document.getElementById('texto').value
+    : 'const BLOQUEIOS = [\n' + document.getElementById('texto').value + '\n];');
+  if (!lista) { alert('Não encontrei a lista de bloqueios no texto.'); return; }
+  salvarHistorico(); rects = lista; sel = -1; desenhar();
+};
+document.getElementById('btnFechar').onclick = () => document.getElementById('painelTexto').classList.remove('aberto');
+['chkLivre', 'chkGrade', 'raio'].forEach((id) => document.getElementById(id).addEventListener('input', desenhar));
+
+// início: a imagem e a lista atual do quarteirao.js -----------------------
+imagem.onload = desenhar;
+imagem.src = 'assets/piso-cidade-2.webp';
+fetch('quarteirao.js').then((r) => r.text()).then((t) => {
+  const lista = lerDoQuarteirao(t);
+  if (lista) rects = lista;
+  desenhar();
+}).catch(() => desenhar());
+window.editorColisao = { rects: () => rects, gerarTexto };
+</script>
+</body>
+</html>
