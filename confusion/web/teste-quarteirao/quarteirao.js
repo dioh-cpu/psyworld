@@ -41,7 +41,8 @@ camera.lookAt(0, 0, 0);
 function enquadrar() {
   const aspecto = window.innerWidth / window.innerHeight;
   const geral = ['topo', 'geral'].includes(VISAO);
-  const altura = geral ? Math.max(ALT, LARG / aspecto) : Math.min(18, ALT, LARG / aspecto);
+  // em pé (tela alta) a câmera mostra a altura inteira do mapa: a imagem fica nítida no celular; deitado, 18 unidades
+  const altura = geral ? Math.max(ALT, LARG / aspecto) : Math.min(aspecto < 1 ? ALT : 18, ALT, LARG / aspecto);
   camera.top = altura / 2;
   camera.bottom = -camera.top;
   camera.right = camera.top * aspecto;
