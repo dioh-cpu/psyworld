@@ -7,7 +7,8 @@ const A = 'assets/';
 const IMG_W = 1376, IMG_H = 768;                 // tamanho do piso (16:9)
 const LARG = 54;                                 // largura do piso no mundo
 const ALT = LARG * IMG_H / IMG_W;                // altura do piso no mundo
-const RAIO = 0.45;                               // raio do personagem para a colisão
+const ALTURA_PERSONAGEM = 3.8;                   // altura do Azazel no mundo (antes 2,55), em proporção ao mapa
+const RAIO = 0.68;                               // raio do personagem para a colisão (acompanha o tamanho)
 const VELOCIDADE = 5.2;
 
 // ponto da imagem (px, py) -> mundo; o topo da imagem é o norte (-z)
@@ -187,7 +188,7 @@ emImagem('placa', 424, 312, { altura: 1.7 });         // ao norte da estrada oes
 emImagem('banco', 960, 170);         // praça
 
 // ---- Azazel no traje de vilão: andar em vídeo MP4 e parado nas 4 direções (mesmo do jogo principal) ----
-const azazel = criarAzazel('assets/characters/');
+const azazel = criarAzazel('assets/characters/', ALTURA_PERSONAGEM);
 const jogador = new THREE.Group();
 jogador.add(azazel.malha);
 cena.add(jogador);

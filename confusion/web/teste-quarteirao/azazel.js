@@ -6,8 +6,8 @@ import * as THREE from 'three';
 
 export const ALTURA_JOGADOR = 2.55;
 
-export function criarAzazel(base = 'assets/characters/') {
-  const ALTURA = ALTURA_JOGADOR;
+export function criarAzazel(base = 'assets/characters/', altura = ALTURA_JOGADOR) {
+  const ALTURA = altura;
 
   // andar: vídeo de 320x540; a figura vai da linha 26 (topo) até a 533 (pé)
   const VIDEO = { largura: 320, altura: 540, topo: 26, pe: 533 };
