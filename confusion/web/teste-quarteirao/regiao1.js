@@ -7,7 +7,7 @@ import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.
 
 const LARG = 106;
 const ALT = LARG * IMG_H / IMG_W;
-const ALTURA_PERSONAGEM = 3.8;
+const ALTURA_PERSONAGEM = 4.4;
 const RAIO = 0.35;
 const VELOCIDADE = 5.6;
 const VERSAO_ASSETS = 'r1_v1';
@@ -28,15 +28,25 @@ const cena = new THREE.Scene();
 cena.background = new THREE.Color('#0c1522');
 
 const INCLINACAO = THREE.MathUtils.clamp(Number(params.get('inclinacao')) || 50, 30, 80);
-const ALTURA_CAMERA = Number(params.get('altura')) || 13.5;
-const ALTURA_EM_PE = Number(params.get('alturape')) || 28;
 const SEN = Math.sin(THREE.MathUtils.degToRad(INCLINACAO));
 const COS = Math.cos(THREE.MathUtils.degToRad(INCLINACAO));
+const ALTURA_MAX = ALT * SEN;                 // 100% do mapa inteiro na vertical (sem esticar pixels)
+const ALTURA_MIN = 16;                        // limite máximo de aproximação
+let alturaCamera = THREE.MathUtils.clamp(Number(params.get('altura')) || 34, ALTURA_MIN, ALTURA_MAX);
+const ALTURA_EM_PE = Number(params.get('alturape')) || 38;
 const DISTANCIA_CAMERA = 60;
 
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);
 camera.up.set(0, 1, 0);
 const alvoCamera = { x: 0, z: 0 };
+
+const zoomValEl = document.getElementById('zoom-val');
+
+function atualizarLabelZoom() {
+  if (!zoomValEl) return;
+  const pct = Math.round((ALTURA_MAX / alturaCamera) * 100);
+  zoomValEl.textContent = `${pct}%`;
+}
 
 function posicionarCamera() {
   camera.position.set(alvoCamera.x, DISTANCIA_CAMERA * SEN, alvoCamera.z + DISTANCIA_CAMERA * COS);
@@ -45,16 +55,30 @@ function posicionarCamera() {
 
 function enquadrar() {
   const aspecto = window.innerWidth / window.innerHeight;
-  const tela = VISAO === 'geral' ? Math.max(ALT * SEN, LARG / aspecto)
-    : aspecto < 1 ? Math.min(ALTURA_EM_PE, ALT * SEN)
-    : Math.min(ALTURA_CAMERA, ALT * SEN, LARG / aspecto);
+  const tela = VISAO === 'geral' ? Math.max(ALTURA_MAX, LARG / aspecto)
+    : aspecto < 1 ? Math.min(ALTURA_EM_PE, ALTURA_MAX)
+    : Math.min(alturaCamera, ALTURA_MAX, LARG / aspecto);
   camera.top = tela / 2;
   camera.bottom = -camera.top;
   camera.right = camera.top * aspecto;
   camera.left = -camera.right;
   camera.updateProjectionMatrix();
+  atualizarLabelZoom();
 }
 enquadrar();
+
+function definirZoom(novaAltura) {
+  alturaCamera = THREE.MathUtils.clamp(novaAltura, ALTURA_MIN, ALTURA_MAX);
+  enquadrar();
+}
+
+document.getElementById('btn-zoom-menos')?.addEventListener('click', () => definirZoom(alturaCamera + 4));
+document.getElementById('btn-zoom-mais')?.addEventListener('click', () => definirZoom(alturaCamera - 4));
+zoomValEl?.addEventListener('click', () => definirZoom(ALTURA_MAX));
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  definirZoom(alturaCamera + Math.sign(e.deltaY) * 2.5);
+}, { passive: false });
 
 // ---- Piso (1 plano único, sem camada de recorte por cima) ----
 const carregador = new THREE.TextureLoader();
