@@ -673,7 +673,13 @@ cv.onpointerup=cv.onpointercancel=e=>{drag=null;brushEditors.get(brushActiveMap)
   };
   document.getElementById('copiar').onclick=()=>{
     const ativo=brushEditors.get(brushActiveMap)||ed, t=document.getElementById('saida');
-    t.value='data:image/png;base64,'+encodeGrayPngBase64(ativo.walkL()); t.style.display='block'; t.select();
+    // blocos de 4x4 px (300x169): mesma precisão da grade do jogo, texto curto para colar no chat
+    const w=ativo.walkCopy(), BW=300, BH=169, partes=[]; let atual=0,n=0;
+    for(let by=0;by<BH;by++)for(let bx=0;bx<BW;bx++){let soma=0,tot=0;
+      for(let y=by*4;y<Math.min(675,by*4+4);y++)for(let x=bx*4;x<bx*4+4;x++){soma+=w[y*1200+x];tot++;}
+      const v=soma*2>=tot?1:0; if(v===atual)n++; else{partes.push(n);atual=v;n=1;}}
+    partes.push(n);
+    t.value='MASCARA 300x169 '+partes.join(','); t.style.display='block'; t.select();
     try{navigator.clipboard.writeText(t.value).then(()=>aviso('Copiado. Cole no chat.'),()=>aviso('Selecione o texto e copie.'));}catch(_){aviso('Selecione o texto e copie.');}
   };
   document.getElementById('fechar').onclick=()=>parent.postMessage({tipo:'fecharEditor'},'*');
