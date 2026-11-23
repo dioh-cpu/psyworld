@@ -29,13 +29,13 @@ const LARG = 106;
 const ALT = LARG * IMG_H / IMG_W;
 const params = new URLSearchParams(location.search);
 
-const ALTURA_BASE_PERSONAGEM = 3.8;
-const FATOR_ESCALA_PERSONAGEM = Number(params.get('escala')) || 1.30; // +30% sobre a base
+const ALTURA_BASE_PERSONAGEM = 5.54;
+const FATOR_ESCALA_PERSONAGEM = Number(params.get('escala')) || 1.30; // +30% sobre a base -> 7.20 unidades
 const ALTURA_PERSONAGEM = ALTURA_BASE_PERSONAGEM * FATOR_ESCALA_PERSONAGEM;
 const RAIO = 0.35; // colisão preservada conforme especificação
 const VELOCIDADE_BASE = 5.8;
-const MULT_CORRIDA = 1.45;
-const VERSAO_ASSETS = 'r1_48_v1';
+const MULT_CORRIDA = 2.18; // +50% mais rápido na corrida (8.41 -> 12.64 u/s)
+const VERSAO_ASSETS = 'r1_48_v2';
 
 const P = (px, py) => ({ x: (px / IMG_W - 0.5) * LARG, z: (py / IMG_H - 0.5) * ALT });
 const W2P = (x, z) => [
@@ -230,7 +230,7 @@ const sombra = (() => {
   g.fillStyle = grad;
   g.fillRect(0, 0, 64, 64);
   const m = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.35, 1.15).rotateX(-Math.PI / 2),
+    new THREE.PlaneGeometry(3.2, 1.55).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, depthTest: false })
   );
   m.renderOrder = 2;
@@ -434,8 +434,8 @@ function construirEntidadesDoMapa(mapa) {
     if (npc.mapa !== mapa.id) continue;
     const w = P(npc.pos[0], npc.pos[1]);
     const temQuest = Boolean(npc.quest && save.quests[npc.quest] !== 'concluida');
-    const mesh = adicionarBillboard(criarTexturaNpcProvisorio(npc, temQuest), w.x, w.z, 3.8, 4.75, 3);
-    entidadesMapa.push({ tipo: 'npc', dados: npc, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 4.8 });
+    const mesh = adicionarBillboard(criarTexturaNpcProvisorio(npc, temQuest), w.x, w.z, 5.4, 6.75, 3);
+    entidadesMapa.push({ tipo: 'npc', dados: npc, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 5.4 });
   }
 
   // 3. Pistas / Objetos de Quest
@@ -443,8 +443,8 @@ function construirEntidadesDoMapa(mapa) {
     if (p.mapa !== mapa.id) continue;
     const feita = Boolean(save.pistas[p.id]);
     const w = P(p.pos[0], p.pos[1]);
-    const mesh = adicionarBillboard(criarTexturaPista(p.rotulo, feita), w.x, w.z, 4.6, 2.3, 3);
-    entidadesMapa.push({ tipo: 'pista', dados: p, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 4.2 });
+    const mesh = adicionarBillboard(criarTexturaPista(p.rotulo, feita), w.x, w.z, 5.2, 2.6, 3);
+    entidadesMapa.push({ tipo: 'pista', dados: p, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 4.5 });
   }
 
   // 4. Monstros selvagens visíveis nas áreas abertas
@@ -452,8 +452,8 @@ function construirEntidadesDoMapa(mapa) {
     if (m.mapa !== mapa.id || monstrosDerrotadosSessao.has(m.id)) continue;
     const w = P(m.pos[0], m.pos[1]);
     const tex = carregarTextura(m.sprite);
-    const mesh = adicionarBillboard(tex, w.x, w.z, 3.8, 3.8, 3);
-    entidadesMapa.push({ tipo: 'wild', dados: m, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 2.35, raioInteracao: 4.6 });
+    const mesh = adicionarBillboard(tex, w.x, w.z, 6.4, 6.4, 3);
+    entidadesMapa.push({ tipo: 'wild', dados: m, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 3.1, raioInteracao: 5.8 });
   }
 
   // 5. Boss da arena (se ainda não derrotado)
@@ -461,8 +461,8 @@ function construirEntidadesDoMapa(mapa) {
     if (b.mapa !== mapa.id || save.bossesDerrotados[b.id]) continue;
     const w = P(b.pos[0], b.pos[1]);
     const tex = carregarTextura(b.sprite);
-    const mesh = adicionarBillboard(tex, w.x, w.z, 6.2, 6.2, 3);
-    entidadesMapa.push({ tipo: 'boss', dados: b, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 3.4, raioInteracao: 6.2 });
+    const mesh = adicionarBillboard(tex, w.x, w.z, 9.8, 9.8, 3);
+    entidadesMapa.push({ tipo: 'boss', dados: b, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 4.6, raioInteracao: 7.5 });
   }
 }
 
