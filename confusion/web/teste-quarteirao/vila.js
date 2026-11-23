@@ -38,6 +38,7 @@ const INCLINACAO = THREE.MathUtils.clamp(Number(params.get('inclinacao')) || 50,
 const ALTURA_CAMERA = Number(params.get('altura')) || 19.2;   // 30% mais perto que 25
 const SEN = Math.sin(THREE.MathUtils.degToRad(INCLINACAO));
 const COS = Math.cos(THREE.MathUtils.degToRad(INCLINACAO));
+const ALTURA_EM_PE = Number(params.get('alturape')) || 21;   // tela em pé: unidades de altura visíveis (antes mostrava o mapa todo)
 const DISTANCIA_CAMERA = 60;
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);
 camera.up.set(0, 1, 0);
@@ -51,7 +52,7 @@ function enquadrar() {
   // altura da tela, em unidades de tela: paisagem mostra ALTURA_CAMERA; em pé, a profundidade inteira do mapa;
   // 'geral' mostra o mapa todo. A profundidade do chão visível é a altura da tela dividida por SEN.
   const tela = VISAO === 'geral' ? Math.max(ALT * SEN, LARG / aspecto)
-    : aspecto < 1 ? ALT * SEN
+    : aspecto < 1 ? Math.min(ALTURA_EM_PE, ALT * SEN)
     : Math.min(ALTURA_CAMERA, ALT * SEN, LARG / aspecto);
   camera.top = tela / 2;
   camera.bottom = -camera.top;
