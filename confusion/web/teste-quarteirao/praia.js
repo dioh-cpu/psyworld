@@ -143,33 +143,8 @@ const walkInicial = new Uint8Array(gradeInicial.length);
 for (let i = 0; i < gradeInicial.length; i++) walkInicial[i] = gradeInicial[i] ? 0 : 1;
 let sdfAtivo = construirSDF(walkInicial, COLISAO.colunas, COLISAO.linhas, LARG, ALT);
 
-// ---- profundidade por pixel dos objetos em pé (palmeiras, barraca, cabana, barco e pedras; píer fica sempre no chão) ----
-const texObjetos = carregador.load(A + 'praia-objetos.webp');
-texObjetos.anisotropy = 8;
-const texBase = carregador.load(A + 'praia-base.png');
-texBase.magFilter = texBase.minFilter = THREE.NearestFilter;
-texBase.generateMipmaps = false;
+// Camada extra de recorte desativada: o mapa é 1 única imagem de chão e a colisão já impede atravessar objetos.
 const uPes = { value: 0 };
-{
-  const matFrente = new THREE.ShaderMaterial({
-    uniforms: { mapa: { value: texObjetos }, base: { value: texBase }, pesY: uPes },
-    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `uniform sampler2D mapa; uniform sampler2D base; uniform float pesY; varying vec2 vUv;
-      void main() {
-        vec4 c = texture2D(mapa, vUv);
-        vec3 b = texture2D(base, vUv).rgb;
-        if (b.b < 0.5 || c.a < 0.03) discard;
-        float linha = floor(b.r * 255.0 + 0.5) * 256.0 + floor(b.g * 255.0 + 0.5);
-        if (linha <= pesY) discard;
-        gl_FragColor = c;
-      }`,
-    transparent: true, depthTest: false, depthWrite: false,
-  });
-  const camadaFrente = new THREE.Mesh(new THREE.PlaneGeometry(LARG, ALT).rotateX(-Math.PI / 2), matFrente);
-  camadaFrente.position.y = 0.02;
-  camadaFrente.renderOrder = 4;
-  cena.add(camadaFrente);
-}
 
 
 
