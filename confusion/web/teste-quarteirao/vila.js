@@ -27,8 +27,9 @@ const VISAO = params.get('visao') || 'jogo';
 
 const canvas = document.getElementById('cena');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
 renderer.setSize(window.innerWidth, window.innerHeight, false);
+const maxAniso = renderer.capabilities?.getMaxAnisotropy?.() || 16;
 const cena = new THREE.Scene();
 cena.background = new THREE.Color('#cfe8f7');
 // Câmera em ângulo, como nas capturas de referência: ortográfica, com inclinação fixa e sem girar.
@@ -66,9 +67,12 @@ const carregador = new THREE.TextureLoader();
 const texturas = new Map();
 function textura(nome) {
   if (!texturas.has(nome)) {
-    const t = carregador.load(A + nome + '.webp');
+    const t = carregador.load(A + nome + '.webp?v=hd2k');
     t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 8;
+    t.anisotropy = maxAniso;
+    t.minFilter = THREE.LinearFilter;
+    t.magFilter = THREE.LinearFilter;
+    t.generateMipmaps = false;
     texturas.set(nome, t);
   }
   return texturas.get(nome);
