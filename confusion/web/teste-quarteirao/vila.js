@@ -318,6 +318,63 @@ function depositar() {
 }
 function recolherOvos() { ovos.forEach((o) => { o.visible = false; }); }
 
+// ---- saídas da cidade: três estradas que chegam à borda do mapa (posições em pixels da arte) ----
+// 'borda' diz de que lado da imagem a estrada sai; 'de'..'ate' é o trecho caminhável (px) nessa borda.
+const SAIDAS = [
+  { nome: 'Oeste',    borda: 'oeste', de: 774,  ate: 829  },
+  { nome: 'Norte',    borda: 'norte', de: 1615, ate: 2000 },
+  { nome: 'Sudoeste', borda: 'sul',   de: 0,    ate: 221  },
+];
+const PROFUNDIDADE_SAIDA = 3.2;                   // unidades para dentro do mapa em que a saída dispara
+for (const sa of SAIDAS) {
+  const m = (sa.de + sa.ate) / 2;
+  const ponto = { oeste: P(0, m), norte: P(m, 0), sul: P(m, IMG_H) }[sa.borda];
+  sa.centro = ponto;                              // ponto da borda, em coordenadas do mundo
+  const ini = P(sa.borda === 'oeste' ? 0 : sa.de, sa.borda === 'norte' ? 0 : sa.borda === 'sul' ? IMG_H : sa.de);
+  const fim = P(sa.borda === 'oeste' ? 0 : sa.ate, sa.borda === 'norte' ? 0 : sa.borda === 'sul' ? IMG_H : sa.ate);
+  sa.x0 = Math.min(ini.x, fim.x) - (sa.borda === 'oeste' ? 0 : 0); sa.x1 = Math.max(ini.x, fim.x);
+  sa.z0 = Math.min(ini.z, fim.z); sa.z1 = Math.max(ini.z, fim.z);
+  if (sa.borda === 'oeste') { sa.x1 = sa.x0 + PROFUNDIDADE_SAIDA; }
+  if (sa.borda === 'norte') { sa.z1 = sa.z0 + PROFUNDIDADE_SAIDA; }
+  if (sa.borda === 'sul')   { sa.z0 = sa.z1 - PROFUNDIDADE_SAIDA; }
+}
+const avisoSaida = document.createElement('div');
+avisoSaida.style.cssText = 'position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:6;padding:10px 16px;border-radius:8px;background:rgba(9,25,60,.92);border:2px solid #facc15;color:#fff;font:600 15px system-ui;display:none;text-align:center;max-width:80vw';
+document.body.appendChild(avisoSaida);
+let saidaAtual = null, saidaDesde = 0;
+const setas = SAIDAS.map((sa) => {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;z-index:4;pointer-events:none;display:none;transform:translate(-50%,-50%);text-align:center;font:700 12px system-ui;color:#fff;text-shadow:0 0 4px #000,0 0 4px #000';
+  el.innerHTML = '<div class="seta" style="font-size:26px;line-height:1;color:#facc15">&#9650;</div><div>' + sa.nome + '</div>';
+  document.body.appendChild(el);
+  return el;
+});
+const _v = new THREE.Vector3();
+function atualizarSaidas(agora) {
+  const dentro = SAIDAS.find((sa) => estado.x >= sa.x0 && estado.x <= sa.x1 && estado.z >= sa.z0 && estado.z <= sa.z1) || null;
+  if (dentro !== saidaAtual) {
+    saidaAtual = dentro;
+    saidaDesde = agora;
+    avisoSaida.style.display = dentro ? 'block' : 'none';
+    if (dentro) avisoSaida.textContent = 'Saída: ' + dentro.nome + ' (este caminho ainda não leva a lugar nenhum)';
+  }
+  // setas na borda da tela apontando para as saídas que estão fora da vista
+  const L = window.innerWidth, A = window.innerHeight, mx = 38, mt = 64, mb = 150;
+  SAIDAS.forEach((sa, i) => {
+    _v.set(sa.centro.x, 0, sa.centro.z).project(camera);
+    const sx = (_v.x * 0.5 + 0.5) * L, sy = (-_v.y * 0.5 + 0.5) * A;
+    const visivel = sx > mx && sx < L - mx && sy > mt && sy < A - 20;
+    const el = setas[i];
+    if (visivel) { el.style.display = 'none'; return; }
+    const cx = L / 2, cy = A / 2, dx = sx - cx, dy = sy - cy;
+    const k = Math.min((L / 2 - mx) / Math.max(1e-6, Math.abs(dx)), (A / 2 - mt) / Math.max(1e-6, Math.abs(dy)), (A / 2 - mb) / Math.max(1e-6, dy > 0 ? dy : Infinity));
+    el.style.left = (cx + dx * k) + 'px';
+    el.style.top = (cy + dy * k) + 'px';
+    el.querySelector('.seta').style.transform = 'rotate(' + (Math.atan2(dy, dx) * 180 / Math.PI + 90) + 'deg)';
+    el.style.display = 'block';
+  });
+}
+
 let primeiroQuadro = true;
 let ultimo = performance.now();
 function quadro(agora) {
@@ -364,6 +421,7 @@ function quadro(agora) {
     alvoCamera.z += (z - alvoCamera.z) * seguir;
   }
   posicionarCamera();
+  atualizarSaidas(agora);
   // em pé: o personagem é um sprite que encara a câmera (não fica deitado no chão)
   jogador.quaternion.copy(camera.quaternion);
   primeiroQuadro = false;
@@ -382,5 +440,7 @@ window.quarteirao = {
   colisoes: () => colisoes.length,
   caixas: () => caixasAABB,
   mover: (x, z) => { estado.x = x; estado.z = z; },
+  saidas: () => SAIDAS.map((sa) => ({ nome: sa.nome, centro: sa.centro, x0: sa.x0, x1: sa.x1, z0: sa.z0, z1: sa.z1 })),
+  saidaAtual: () => (saidaAtual ? saidaAtual.nome : null),
 };
 requestAnimationFrame(quadro);
