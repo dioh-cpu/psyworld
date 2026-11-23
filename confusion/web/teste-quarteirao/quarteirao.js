@@ -76,10 +76,10 @@ function textura(nome) {
 const materialBase = (nome, opts = {}) =>
   new THREE.MeshBasicMaterial({ map: textura(nome), transparent: true, alphaTest: 0.4, ...opts });
 
-// ---- chão: a imagem inteira da cidade. O topo da imagem fica no norte ----
+// ---- chão: arte da praia colocada por cima para teste, mantendo toda a colisão atual ----
 {
   const piso = new THREE.Mesh(new THREE.PlaneGeometry(LARG, ALT).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: textura('piso-montanha') }));
+    new THREE.MeshBasicMaterial({ map: textura('praia-cena') }));
   cena.add(piso);
 }
 

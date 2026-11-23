@@ -76,10 +76,10 @@ function textura(nome) {
 const materialBase = (nome, opts = {}) =>
   new THREE.MeshBasicMaterial({ map: textura(nome), transparent: true, alphaTest: 0.4, ...opts });
 
-// ---- chão: a imagem inteira da cidade. O topo da imagem fica no norte ----
+// ---- chão: arte da praia colocada por cima para teste, mantendo 100% da colisão atual da vila ----
 {
   const piso = new THREE.Mesh(new THREE.PlaneGeometry(LARG, ALT).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: textura('piso-vila'), depthTest: false, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ map: textura('praia-cena'), depthTest: false, depthWrite: false }));
   piso.renderOrder = 0;
   cena.add(piso);
 }
@@ -148,30 +148,11 @@ const texBase = carregador.load(A + 'vila-base.png');
 texBase.magFilter = texBase.minFilter = THREE.NearestFilter;
 texBase.generateMipmaps = false;
 const uPes = { value: 0 };
-function camadaObjetos(frente, ordem) {
-  const mat = new THREE.ShaderMaterial({
-    uniforms: { mapa: { value: texObjetos }, base: { value: texBase }, pesY: uPes, frente: { value: frente ? 1 : 0 } },
-    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `uniform sampler2D mapa; uniform sampler2D base; uniform float pesY; uniform float frente; varying vec2 vUv;
-      void main() {
-        vec4 c = texture2D(mapa, vUv);
-        vec3 b = texture2D(base, vUv).rgb;
-        if (b.b < 0.5 || c.a < 0.03) discard;
-        float linha = floor(b.r * 255.0 + 0.5) * 256.0 + floor(b.g * 255.0 + 0.5);
-        bool naFrente = linha > pesY;
-        if ((frente > 0.5) != naFrente) discard;
-        gl_FragColor = c;
-      }`,
-    transparent: true, depthTest: false, depthWrite: false,
-  });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(LARG, ALT).rotateX(-Math.PI / 2), mat);
-  m.position.y = 0.02;
-  m.renderOrder = ordem;
-  cena.add(m);
-  return m;
+// Objetos da vila antiga ocultados durante o teste com a arte da praia por cima
+if (false) {
+  camadaObjetos(false, 1);
+  camadaObjetos(true, 4);
 }
-camadaObjetos(false, 1);   // atrás
-camadaObjetos(true, 4);    // na frente
 
 // ---- objetos: peças planas no chão, com a base no ponto de apoio ----
 const camada = z => 0.04 + (z + ALT / 2) * 0.01;
