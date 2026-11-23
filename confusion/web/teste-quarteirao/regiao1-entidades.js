@@ -49,7 +49,7 @@ export const NPCS_REGIAO1 = [
     cor: '#fbbf24',
     quest: 'q_sec_entrega',
     pistaAoFalar: 'npc_mensageiro_c1_falou',
-    dialogo: 'Pode levar esta encomenda até o píer de C0? Se entregar depressa, te ensino a correr pelos caminhos (Shift / botão Correr)!',
+    dialogo: 'Pode levar esta encomenda até o píer de C0? Use o botão Transformar (Conexão Onírica) para virar Onírico e ganhar +100% de velocidade!',
   },
   {
     id: 'npc_maquinista',

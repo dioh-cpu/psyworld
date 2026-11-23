@@ -33,9 +33,9 @@ const ALTURA_BASE_PERSONAGEM = 5.54;
 const FATOR_ESCALA_PERSONAGEM = Number(params.get('escala')) || 1.30; // +30% sobre a base -> 7.20 unidades
 const ALTURA_PERSONAGEM = ALTURA_BASE_PERSONAGEM * FATOR_ESCALA_PERSONAGEM;
 const RAIO = 0.35; // colisão preservada conforme especificação
-const VELOCIDADE_BASE = 5.8;
-const MULT_CORRIDA = 2.18; // +50% mais rápido na corrida (8.41 -> 12.64 u/s)
-const VERSAO_ASSETS = 'r1_48_v2';
+const VELOCIDADE_BASE = 8.7; // +50% sobre a velocidade base anterior (5.8 -> 8.7 u/s)
+const MULT_ONIRICO = 2.0;    // Transformar (Conexão Onírica): +100% de velocidade (17.4 u/s)
+const VERSAO_ASSETS = 'r1_48_v3';
 
 const P = (px, py) => ({ x: (px / IMG_W - 0.5) * LARG, z: (py / IMG_H - 0.5) * ALT });
 const W2P = (x, z) => [
@@ -141,6 +141,9 @@ function salvarEstado() {
 const carregador = new THREE.TextureLoader();
 const cacheTexturas = new Map();
 const cacheSdfs = new Map();
+const cacheGrids = new Map();
+const GRID_W = 128;
+const GRID_H = 71;
 
 function carregarTextura(url) {
   if (!cacheTexturas.has(url)) {
@@ -178,6 +181,17 @@ function carregarSdfMapa(mapa) {
       for (let i = 0; i < walk.length; i++) walk[i] = d[i * 4] >= 128 ? 1 : 0;
       const sdf = construirSDF(walk, sw, sh, LARG, ALT);
       cacheSdfs.set(mapa.id, sdf);
+
+      // Grade leve 128x71 para pathfinding (clique no mapa e Auto-Rota)
+      const g = new Uint8Array(GRID_W * GRID_H);
+      for (let gy = 0; gy < GRID_H; gy++) {
+        const sy = Math.min(sh - 1, Math.floor((gy + 0.5) * sh / GRID_H));
+        for (let gx = 0; gx < GRID_W; gx++) {
+          const sx = Math.min(sw - 1, Math.floor((gx + 0.5) * sw / GRID_W));
+          g[gy * GRID_W + gx] = walk[sy * sw + sx];
+        }
+      }
+      cacheGrids.set(mapa.id, g);
       resolve(sdf);
     };
     im.onerror = () => resolve(null);
@@ -192,7 +206,31 @@ cena.add(piso);
 
 const camada = (z) => 0.04 + (z + ALT / 2) * 0.01;
 
-// ---- Personagens controlados: Noctarn e Azazel (+30% aplicados na mesma altura-base) ----
+// Marcador visual no chão para clique do mouse / destino da Auto-Rota
+const marcadorDestino = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 96;
+  const g = c.getContext('2d');
+  g.strokeStyle = '#38bdf8';
+  g.lineWidth = 6;
+  g.beginPath();
+  g.arc(48, 48, 34, 0, Math.PI * 2);
+  g.stroke();
+  g.fillStyle = 'rgba(56, 189, 248, 0.25)';
+  g.beginPath();
+  g.arc(48, 48, 16, 0, Math.PI * 2);
+  g.fill();
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.2, 3.2).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, depthTest: false })
+  );
+  m.renderOrder = 1;
+  m.visible = false;
+  cena.add(m);
+  return m;
+})();
+
+// ---- Personagens controlados: Noctarn (Conexão Onírica) e Azazel ----
 const azazel = criarAzazel('assets/characters/', ALTURA_PERSONAGEM);
 const noctarn = criarNoctarn('../../../assets/monsters/noctarn/', ALTURA_PERSONAGEM);
 
@@ -207,16 +245,28 @@ jogador.traverse((o) => {
 });
 cena.add(jogador);
 
-const btnForma = document.getElementById('btn-forma');
-function aplicarForma(novaForma) {
+const btnTransformar = document.getElementById('btn-transformar');
+function aplicarForma(novaForma, anunciar = false) {
   save.forma = novaForma === 'azazel' ? 'azazel' : 'noctarn';
-  azazel.malha.visible = save.forma === 'azazel';
-  noctarn.malha.visible = save.forma === 'noctarn';
-  if (save.forma !== 'noctarn') noctarn.pausar();
-  if (btnForma) btnForma.textContent = save.forma === 'azazel' ? 'Forma: Azazel' : 'Forma: Noctarn';
+  const onirico = save.forma === 'noctarn';
+  azazel.malha.visible = !onirico;
+  noctarn.malha.visible = onirico;
+  if (!onirico) noctarn.pausar();
+  if (btnTransformar) {
+    btnTransformar.classList.toggle('ativo', onirico);
+    btnTransformar.textContent = onirico ? '✨ Onírico (+100% Vel.)' : '✨ Transformar';
+  }
+  if (anunciar) {
+    mostrarToast(onirico
+      ? '✨ Conexão Onírica ativa! Transformado em Noctarn (+100% de velocidade).'
+      : 'Conexão Onírica encerrada. De volta à forma humana (Azazel).', 2400);
+  }
   salvarEstado();
 }
-btnForma?.addEventListener('click', () => aplicarForma(save.forma === 'noctarn' ? 'azazel' : 'noctarn'));
+function alternarTransformacao() {
+  aplicarForma(save.forma === 'noctarn' ? 'azazel' : 'noctarn', true);
+}
+btnTransformar?.addEventListener('click', alternarTransformacao);
 
 // Sombra de contato sob os pés (proporcional a +30%)
 const sombra = (() => {
@@ -474,10 +524,12 @@ const cortina = document.getElementById('cortina-transicao');
 const aviso = document.getElementById('aviso-saida');
 const containerSetas = document.getElementById('setas-saidas');
 const btnInteragir = document.getElementById('btn-interagir');
-const btnCorrer = document.getElementById('btn-correr');
 const btnFazenda = document.getElementById('btn-fazenda');
+const questBanner = document.getElementById('quest-banner');
 const qbTitulo = document.getElementById('qb-titulo');
 const qbSub = document.getElementById('qb-sub');
+const qbAuto = document.getElementById('qb-auto');
+let questDestaqueId = null;
 
 for (const id of ORDEM_MAPAS) {
   const m = MAPAS[id];
@@ -498,24 +550,46 @@ function mostrarToast(msg, ms = 3600) {
 function atualizarHudEstado() {
   hudRecursos.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes}💎`;
   btnFazenda.style.display = save.desbloqueios.fazenda ? 'inline-flex' : 'none';
-  btnCorrer.style.display = save.desbloqueios.corrida ? 'block' : 'none';
 
-  // Destaque da primeira quest ativa no banner
-  const ativa = QUESTS_DEFINICOES.find((q) => save.quests[q.id] === 'ativa')
+  // Destaque da quest em auto-rota ou primeira quest ativa no banner
+  const ativa = (autoRotaQuestId && QUESTS_POR_ID[autoRotaQuestId] && save.quests[autoRotaQuestId] !== 'concluida'
+    ? QUESTS_POR_ID[autoRotaQuestId]
+    : null)
+    || QUESTS_DEFINICOES.find((q) => save.quests[q.id] === 'ativa')
     || QUESTS_DEFINICOES.find((q) => save.quests[q.id] === 'disponivel');
+  questDestaqueId = ativa ? ativa.id : null;
   if (ativa) {
     const prog = progressoQuest(save, ativa.id);
     qbTitulo.textContent = `${ativa.titulo} (${prog.feitos}/${prog.total})`;
     qbSub.textContent = `${ativa.mapas.join(' → ')} · ${ativa.resumo.slice(0, 74)}${ativa.resumo.length > 74 ? '…' : ''}`;
+    const rodando = Boolean(autoRotaQuestId);
+    questBanner?.classList.toggle('autorota', rodando);
+    if (qbAuto) qbAuto.textContent = rodando ? '⏹ Parar Rota' : '🧭 Auto-Rota';
   } else {
     qbTitulo.textContent = 'Região 1 concluída!';
     qbSub.textContent = 'Todas as missões ativas foram completadas.';
+    questBanner?.classList.remove('autorota');
+    if (qbAuto) qbAuto.textContent = '✓ Concluído';
   }
 }
 
+questBanner?.addEventListener('click', () => {
+  if (autoRotaQuestId) {
+    pararNavegacao(true);
+    mostrarToast('Auto-Rota pausada.', 1800);
+  } else if (questDestaqueId) {
+    iniciarAutoRota(questDestaqueId);
+  }
+});
+
 // Modais helpers
 function abrirModal(id) { document.getElementById(id)?.classList.add('aberto'); }
-function fecharModal(id) { document.getElementById(id)?.classList.remove('aberto'); }
+function fecharModal(id) {
+  document.getElementById(id)?.classList.remove('aberto');
+  if (id === 'modal-dialogo' && autoRotaQuestId) {
+    setTimeout(() => { if (!algumModalAberto() && autoRotaQuestId) planejarPassoAutoRota(); }, 80);
+  }
+}
 function algumModalAberto() { return Boolean(document.querySelector('.modal-bg.aberto')); }
 
 document.querySelectorAll('[data-fechar]').forEach((btn) => {
@@ -527,12 +601,6 @@ btnFazenda?.addEventListener('click', () => {
     'A Fazenda está liberada! Os monstros capturados na Região 1 podem produzir suprimentos aqui sem interferir na progressão do trem.',
     [{ rotulo: 'Fechar', prim: true, aoClicar: () => fecharModal('modal-dialogo') }]
   );
-});
-
-let correndoToggle = false;
-btnCorrer?.addEventListener('click', () => {
-  correndoToggle = !correndoToggle;
-  btnCorrer.classList.toggle('ativo', correndoToggle);
 });
 
 // ---- Diário de Quests ----
@@ -563,10 +631,14 @@ function renderizarDiario() {
         const ok = Boolean(save.pistas[p]);
         return `<li class="${ok ? 'ok' : ''}">${q.rotulosPistas?.[p] || p}</li>`;
       }).join('');
+      const podeSeguir = st === 'ativa' || st === 'disponivel';
       el.innerHTML = `
         <div class="q-top">
           <b>${q.titulo} <span style="color:#94b3d4;font-weight:500">(${q.mapas.join(' → ')})</span></b>
-          <span class="q-badge ${st}">${st}</span>
+          <div style="display:flex;gap:5px;align-items:center">
+            ${podeSeguir ? `<button class="btn-hud" data-autorota="${q.id}" style="padding:2px 7px;font-size:10.5px;border-color:#38bdf8">🧭 Seguir</button>` : ''}
+            <span class="q-badge ${st}">${st}</span>
+          </div>
         </div>
         <div style="margin-top:3px;color:#cbd5e1">${q.resumo}</div>
         <ul class="q-passos">${passosHtml}</ul>
@@ -574,6 +646,13 @@ function renderizarDiario() {
       lista.appendChild(el);
     }
   }
+  lista.querySelectorAll('[data-autorota]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const qid = btn.getAttribute('data-autorota');
+      fecharModal('modal-diario');
+      iniciarAutoRota(qid);
+    });
+  });
 }
 
 document.getElementById('btn-diario')?.addEventListener('click', () => {
@@ -942,12 +1021,240 @@ async function entrarNoMapa(id, chegadaPx = null, comFade = true) {
     cortina.classList.remove('ativo');
   }
   emTransicao = false;
+  if (autoRotaQuestId) {
+    planejarPassoAutoRota();
+  }
 }
 
 seletorMapa.addEventListener('change', () => {
+  pararNavegacao(true);
   entrarNoMapa(seletorMapa.value, null, true);
   seletorMapa.blur();
 });
+
+// ---- Navegação por Clique no Mapa + Auto-Rota Multi-Mapa (48 áreas) ----
+let waypointsAtuais = []; // [{ x, z }]
+let autoInteragirAoChegar = false;
+let autoRotaQuestId = null;
+
+function pararNavegacao(cancelarAutoRota = true) {
+  waypointsAtuais = [];
+  autoInteragirAoChegar = false;
+  marcadorDestino.visible = false;
+  if (cancelarAutoRota && autoRotaQuestId) {
+    autoRotaQuestId = null;
+    atualizarHudEstado();
+  }
+}
+
+function resolverAlvoDaPista(pistaId) {
+  const p = PISTAS_MUNDO.find((x) => x.id === pistaId);
+  if (p) return { mapa: p.mapa, pos: p.pos, rotulo: p.rotulo, interagir: true };
+
+  const npc = NPCS_REGIAO1.find((n) => n.pistaAoFalar === pistaId);
+  if (npc) return { mapa: npc.mapa, pos: npc.pos, rotulo: npc.nome, interagir: true };
+
+  if (pistaId.startsWith('boss_') && pistaId.endsWith('_derrotado')) {
+    const bossId = pistaId.slice(5, -10);
+    const b = ENTIDADES_BOSS.find((x) => x.id === bossId);
+    if (b) return { mapa: b.mapa, pos: b.pos, rotulo: b.nome, interagir: true };
+  }
+
+  const marcoPorPista = {
+    tp_e8_raizes_limpas: 'E8',
+    tp_d9_sequencia_ok: 'D9',
+    tp_pc7_marcas_alinhadas: 'PC7',
+  };
+  if (marcoPorPista[pistaId]) {
+    const mid = marcoPorPista[pistaId];
+    const m = MAPAS[mid];
+    return { mapa: mid, pos: m.marco.interacao, rotulo: `Marco ${mid}`, interagir: true };
+  }
+
+  if (pistaId === 'trem_desembarque_reino') {
+    const sa = MAPAS.C3.saidas.find((s) => s.tipo === 'trem');
+    const cx = Math.round((sa.rect[0] + sa.rect[2]) / 2);
+    const cy = Math.round((sa.rect[1] + sa.rect[3]) / 2);
+    return { mapa: 'C3', pos: [cx, cy], rotulo: 'Trem para o Reino (C3)', interagir: false };
+  }
+  return null;
+}
+
+function proximoObjetivoQuest(questId) {
+  const q = QUESTS_POR_ID[questId];
+  if (!q) return null;
+  for (const p of q.pistas) {
+    if (!save.pistas[p]) {
+      const alvo = resolverAlvoDaPista(p);
+      if (alvo) return alvo;
+    }
+  }
+  return null;
+}
+
+// BFS no grafo das 48 áreas: devolve a próxima saída do mapaAtual rumo a destinoId
+function proximaSaidaParaMapa(origemId, destinoId) {
+  if (origemId === destinoId) return null;
+  const fila = [origemId];
+  const veioDe = new Map([[origemId, null]]);
+  while (fila.length) {
+    const atual = fila.shift();
+    const m = MAPAS[atual];
+    if (!m) continue;
+    for (const sa of m.saidas) {
+      if (!sa.destino || !MAPAS[sa.destino]) continue;
+      if (sa.tipo === 'trem' && !save.tremLiberado) continue;
+      if (!veioDe.has(sa.destino)) {
+        veioDe.set(sa.destino, { de: atual, saida: sa });
+        if (sa.destino === destinoId) {
+          let cur = destinoId;
+          while (veioDe.get(cur) && veioDe.get(cur).de !== origemId) {
+            cur = veioDe.get(cur).de;
+          }
+          return veioDe.get(cur)?.saida || null;
+        }
+        fila.push(sa.destino);
+      }
+    }
+  }
+  return null;
+}
+
+function celulaCaminhavelMaisProxima(grid, gx0, gy0) {
+  const clampX = (v) => Math.max(0, Math.min(GRID_W - 1, v));
+  const clampY = (v) => Math.max(0, Math.min(GRID_H - 1, v));
+  const sx = clampX(gx0), sy = clampY(gy0);
+  if (grid[sy * GRID_W + sx]) return [sx, sy];
+  for (let r = 1; r <= 24; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+        const nx = sx + dx, ny = sy + dy;
+        if (nx >= 0 && nx < GRID_W && ny >= 0 && ny < GRID_H && grid[ny * GRID_W + nx]) {
+          return [nx, ny];
+        }
+      }
+    }
+  }
+  return [sx, sy];
+}
+
+// Pathfinding BFS leve na grade 128x71 para contornar pedras, lagoas e pedestais
+function calcularCaminhoMundo(destX, destZ) {
+  const grid = mapaAtual ? cacheGrids.get(mapaAtual.id) : null;
+  if (!grid) return [{ x: destX, z: destZ }];
+
+  const w2g = (x, z) => [
+    Math.floor((x / LARG + 0.5) * GRID_W),
+    Math.floor((z / ALT + 0.5) * GRID_H),
+  ];
+  const g2w = (gx, gy) => ({
+    x: ((gx + 0.5) / GRID_W - 0.5) * LARG,
+    z: ((gy + 0.5) / GRID_H - 0.5) * ALT,
+  });
+
+  const [sx0, sy0] = w2g(estado.x, estado.z);
+  const [tx0, ty0] = w2g(destX, destZ);
+  const [sx, sy] = celulaCaminhavelMaisProxima(grid, sx0, sy0);
+  const [tx, ty] = celulaCaminhavelMaisProxima(grid, tx0, ty0);
+
+  if (sx === tx && sy === ty) return [{ x: destX, z: destZ }];
+
+  const total = GRID_W * GRID_H;
+  const pai = new Int32Array(total).fill(-1);
+  const startIdx = sy * GRID_W + sx;
+  const goalIdx = ty * GRID_W + tx;
+  pai[startIdx] = startIdx;
+
+  const fila = new Int32Array(total);
+  let ini = 0, fim = 0;
+  fila[fim++] = startIdx;
+
+  const dirs = [
+    [1, 0], [-1, 0], [0, 1], [0, -1],
+    [1, 1], [1, -1], [-1, 1], [-1, -1],
+  ];
+
+  let achou = false;
+  while (ini < fim) {
+    const cur = fila[ini++];
+    if (cur === goalIdx) { achou = true; break; }
+    const cx = cur % GRID_W;
+    const cy = (cur / GRID_W) | 0;
+    for (const [dx, dy] of dirs) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H) continue;
+      const nIdx = ny * GRID_W + nx;
+      if (pai[nIdx] !== -1 || !grid[nIdx]) continue;
+      // Evita cortar quinas na diagonal
+      if (dx !== 0 && dy !== 0 && (!grid[cy * GRID_W + nx] || !grid[ny * GRID_W + cx])) continue;
+      pai[nIdx] = cur;
+      fila[fim++] = nIdx;
+    }
+  }
+
+  if (!achou) return [{ x: destX, z: destZ }];
+
+  const pts = [];
+  let cur = goalIdx;
+  while (cur !== startIdx) {
+    pts.push(g2w(cur % GRID_W, (cur / GRID_W) | 0));
+    cur = pai[cur];
+  }
+  pts.reverse();
+  // Simplifica mantendo 1 ponto a cada 3 células + destino final exato
+  const simpl = [];
+  for (let i = 0; i < pts.length; i += 3) simpl.push(pts[i]);
+  simpl.push(g2w(tx, ty));
+  return simpl;
+}
+
+function definirDestinoMundo(destX, destZ, interagir = false) {
+  waypointsAtuais = calcularCaminhoMundo(destX, destZ);
+  autoInteragirAoChegar = interagir;
+  const ultimoPt = waypointsAtuais[waypointsAtuais.length - 1] || { x: destX, z: destZ };
+  marcadorDestino.position.set(ultimoPt.x, camada(ultimoPt.z) - 0.008, ultimoPt.z);
+  marcadorDestino.visible = true;
+}
+
+function planejarPassoAutoRota() {
+  if (!autoRotaQuestId || !mapaAtual) return;
+  const obj = proximoObjetivoQuest(autoRotaQuestId);
+  if (!obj) {
+    pararNavegacao(true);
+    mostrarToast('🎯 Objetivo da missão concluído!', 2600);
+    return;
+  }
+  if (obj.mapa === mapaAtual.id) {
+    const w = P(obj.pos[0], obj.pos[1]);
+    definirDestinoMundo(w.x, w.z, obj.interagir);
+    mostrarToast(`🧭 Auto-Rota: indo até ${obj.rotulo} (${obj.mapa})`, 2600);
+    return;
+  }
+  const saida = proximaSaidaParaMapa(mapaAtual.id, obj.mapa);
+  if (!saida) {
+    pararNavegacao(true);
+    mostrarToast(`🧭 Não há rota livre até ${obj.mapa} agora (verifique desbloqueios).`, 3400);
+    return;
+  }
+  const cx = (saida.rect[0] + saida.rect[2]) / 2;
+  const cy = (saida.rect[1] + saida.rect[3]) / 2;
+  const w = P(cx, cy);
+  definirDestinoMundo(w.x, w.z, false);
+  mostrarToast(`🧭 Auto-Rota (${obj.mapa}): seguindo via ${saida.rotulo}`, 2400);
+}
+
+function iniciarAutoRota(questId) {
+  const id = questId || questDestaqueId;
+  if (!id || !QUESTS_POR_ID[id]) return false;
+  if (save.quests[id] === 'disponivel') {
+    aceitarQuest(save, id);
+  }
+  autoRotaQuestId = id;
+  atualizarHudEstado();
+  planejarPassoAutoRota();
+  return true;
+}
 
 // ---- Interação contextual ([E] ou botão flutuante) ----
 function encontrarAlvoInteracao() {
@@ -1000,10 +1307,6 @@ function executarInteracao() {
     if (npc.pistaAoFalar) {
       concluidas.push(...registrarPista(save, npc.pistaAoFalar).concluidas);
     }
-    // Se falou com a pescadora após examinar o bote, permite recuperar forma Azazel naturalmente
-    if (npc.id === 'npc_pescadora' && save.pistas.clue_c0_bote && save.forma === 'noctarn') {
-      mostrarToast('Você pode alternar entre Noctarn e Azazel no topo!', 3800);
-    }
     notificarQuestsConcluidas(concluidas);
     construirEntidadesDoMapa(mapaAtual);
     abrirDialogo(npc.nome, `NPC (${npc.raca}) · ID: ${npc.id}`, npc.dialogo, [
@@ -1030,12 +1333,69 @@ function executarInteracao() {
 
 btnInteragir?.addEventListener('click', executarInteracao);
 
-// ---- Controles: teclado e joystick ----
+// ---- Controles: clique no mapa, teclado e joystick ----
+const _raycaster = new THREE.Raycaster();
+const _planoChao = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const _pontoClique = new THREE.Vector3();
+const _ndc = new THREE.Vector2();
+
+function processarCliqueMapa(clientX, clientY) {
+  if (VISAO !== 'jogo' || emTransicao || algumModalAberto() || !sdfAtivo) return;
+  const rect = canvas.getBoundingClientRect();
+  _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  _raycaster.setFromCamera(_ndc, camera);
+  if (!_raycaster.ray.intersectPlane(_planoChao, _pontoClique)) return;
+
+  const wx = THREE.MathUtils.clamp(_pontoClique.x, -LARG / 2 + RAIO, LARG / 2 - RAIO);
+  const wz = THREE.MathUtils.clamp(_pontoClique.z, -ALT / 2 + RAIO, ALT / 2 - RAIO);
+
+  // Cancelar Auto-Rota anterior ao clicar manualmente no chão
+  pararNavegacao(true);
+
+  // Se clicou perto de um NPC, pista, marco, monstro ou boss, vai até ele e interage ao chegar
+  let clicouEntidade = false;
+  if (mapaAtual?.marco) {
+    const mp = P(mapaAtual.marco.pos[0], mapaAtual.marco.pos[1]);
+    if (Math.hypot(wx - mp.x, wz - mp.z) < 6.5) {
+      const inter = P(mapaAtual.marco.interacao[0], mapaAtual.marco.interacao[1]);
+      definirDestinoMundo(inter.x, inter.z, true);
+      return;
+    }
+  }
+  for (const ent of entidadesMapa) {
+    if (ent.tipo === 'cristal_visual') continue;
+    if (Math.hypot(wx - ent.x, wz - ent.z) < 5.0) {
+      definirDestinoMundo(ent.x, ent.z, true);
+      clicouEntidade = true;
+      break;
+    }
+  }
+  if (!clicouEntidade) {
+    definirDestinoMundo(wx, wz, false);
+  }
+}
+
+let arrastandoClique = false;
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  arrastandoClique = true;
+  processarCliqueMapa(e.clientX, e.clientY);
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!arrastandoClique || e.pointerType === 'touch') return;
+  if (e.buttons & 1) processarCliqueMapa(e.clientX, e.clientY);
+});
+window.addEventListener('pointerup', () => { arrastandoClique = false; });
+
 const teclas = new Set();
 window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   teclas.add(e.code);
   if (e.code === 'KeyE' || e.code === 'Enter') executarInteracao();
+  if (!e.repeat && (e.code === 'KeyT' || e.code === 'ShiftLeft' || e.code === 'ShiftRight')) {
+    if (!algumModalAberto()) alternarTransformacao();
+  }
   if (e.code === 'Escape') {
     ['modal-dialogo', 'modal-diario', 'modal-mapa', 'modal-teleporte'].forEach(fecharModal);
   }
@@ -1115,16 +1475,20 @@ function atualizarSaidasEInteracoes(agora) {
           saidaAvisoAtual = dentro;
           const res = embarcarNoTrem(save);
           if (res.ok) {
+            pararNavegacao(true);
             notificarQuestsConcluidas(res.concluidas);
             mostrarToast(res.mensagem, 5000);
             entrarNoMapa('REINO', dentro.chegada, true);
           } else {
+            pararNavegacao(true);
             mostrarToast(res.mensagem, 4200);
           }
         }
         return;
       }
       if (dentro.destino && MAPAS[dentro.destino]) {
+        waypointsAtuais = [];
+        marcadorDestino.visible = false;
         entrarNoMapa(dentro.destino, dentro.chegada, true);
         return;
       }
@@ -1166,6 +1530,11 @@ function atualizarSaidasEInteracoes(agora) {
 // ---- Loop principal ----
 let ultimo = performance.now();
 
+function velocidadeAtual() {
+  // Forma Onírica (Transformar / Conexão Onírica) = +100% de velocidade (2.0x)
+  return VELOCIDADE_BASE * (save.forma === 'noctarn' ? MULT_ONIRICO : 1);
+}
+
 function quadro(agora) {
   const dt = Math.min(0.05, (agora - ultimo) / 1000);
   ultimo = agora;
@@ -1181,19 +1550,61 @@ function quadro(agora) {
     if (pressionada('KeyD', 'ArrowRight')) ix += 1;
     if (pressionada('KeyA', 'ArrowLeft')) ix -= 1;
     const forca = Math.min(1, Math.hypot(ix, iz));
-    let dx = ix;
-    let dz = -iz;
-    const n = Math.hypot(dx, dz);
-    if (n > 1e-6 && forca > 0) {
+
+    let dx = 0;
+    let dz = 0;
+    const vel = velocidadeAtual();
+
+    if (forca > 1e-3) {
+      // Controle manual cancela clique no chão e Auto-Rota
+      if (waypointsAtuais.length || autoRotaQuestId) pararNavegacao(true);
+      dx = ix;
+      dz = -iz;
+      const n = Math.hypot(dx, dz) || 1;
       andando = true;
       rot = Math.atan2(dx, dz);
-      const correndo = save.desbloqueios.corrida && (correndoToggle || pressionada('ShiftLeft', 'ShiftRight'));
-      const vel = VELOCIDADE_BASE * (correndo ? MULT_CORRIDA : 1);
       dx = (dx / n) * forca * vel * dt;
       dz = (dz / n) * forca * vel * dt;
+    } else if (waypointsAtuais.length > 0) {
+      // Segue waypoints do clique do mouse ou da Auto-Rota
+      while (waypointsAtuais.length > 1) {
+        const d0 = Math.hypot(waypointsAtuais[0].x - estado.x, waypointsAtuais[0].z - estado.z);
+        if (d0 < 1.1) waypointsAtuais.shift();
+        else break;
+      }
+      const alvo = waypointsAtuais[0];
+      const vx = alvo.x - estado.x;
+      const vz = alvo.z - estado.z;
+      const dist = Math.hypot(vx, vz);
+      const tolChegada = autoInteragirAoChegar ? 2.4 : 0.75;
+      if (dist <= tolChegada) {
+        const deveInteragir = autoInteragirAoChegar;
+        waypointsAtuais = [];
+        autoInteragirAoChegar = false;
+        marcadorDestino.visible = false;
+        if (deveInteragir) {
+          executarInteracao();
+          if (autoRotaQuestId && !algumModalAberto()) planejarPassoAutoRota();
+        }
+      } else {
+        andando = true;
+        rot = Math.atan2(vx, vz);
+        const passo = Math.min(dist, vel * dt);
+        dx = (vx / dist) * passo;
+        dz = (vz / dist) * passo;
+      }
+    }
+
+    if (andando) {
+      const antesX = estado.x;
+      const antesZ = estado.z;
       const p = resolverMovimentoSDF({ x: estado.x, z: estado.z }, dx, dz, RAIO, sdfAtivo);
       estado.x = THREE.MathUtils.clamp(p.x, -LARG / 2 + RAIO, LARG / 2 - RAIO);
       estado.z = THREE.MathUtils.clamp(p.z, -ALT / 2 + RAIO, ALT / 2 - RAIO);
+      // Se travou na parede durante clique simples, encerra o alvo
+      if (!autoRotaQuestId && waypointsAtuais.length && Math.hypot(estado.x - antesX, estado.z - antesZ) < 1e-4) {
+        pararNavegacao(false);
+      }
     }
   }
 
@@ -1205,8 +1616,12 @@ function quadro(agora) {
     noctarn.atualizar(andando, rot, 0);
   }
 
-  // Animação suave nos billboards de monstros e pistas + orientação para câmera
+  // Animação suave nos billboards de monstros, pistas e marcador de clique
   const pulso = Math.sin(agora * 0.004);
+  if (marcadorDestino.visible) {
+    const s = 1 + Math.sin(agora * 0.009) * 0.14;
+    marcadorDestino.scale.set(s, s, 1);
+  }
   for (const ent of entidadesMapa) {
     ent.mesh.quaternion.copy(camera.quaternion);
     if (ent.tipo === 'wild' || ent.tipo === 'boss') {
@@ -1254,6 +1669,11 @@ window.regiao1 = {
   resetarSave: () => { localStorage.removeItem(SAVE_KEY_REGIAO1); save = criarEstadoInicial(); salvarEstado(); },
   forma: () => save.forma,
   setForma: (f) => aplicarForma(f),
+  transformar: alternarTransformacao,
+  velocidadeAtual,
+  iniciarAutoRota,
+  pararAutoRota: () => pararNavegacao(true),
+  autoRotaAtiva: () => autoRotaQuestId,
   escalaPersonagem: () => ({ base: ALTURA_BASE_PERSONAGEM, fator: FATOR_ESCALA_PERSONAGEM, final: ALTURA_PERSONAGEM }),
   cameraInfo: () => ({
     retrato: ehRetrato(),

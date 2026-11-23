@@ -343,7 +343,7 @@ export const QUESTS_DEFINICOES = [
     categoria: 'Secundária',
     titulo: 'Entrega da praça ao píer',
     mapas: ['C1', 'C0'],
-    resumo: 'Pegue a encomenda com o mensageiro na praça de C1 e entregue no píer de C0 para liberar a corrida.',
+    resumo: 'Pegue a encomenda com o mensageiro na praça de C1 e entregue no píer de C0 para aprimorar a Conexão Onírica (Transformar).',
     pistas: ['npc_mensageiro_c1_falou', 'clue_c0_entrega_pier'],
     rotulosPistas: { npc_mensageiro_c1_falou: 'Receber encomenda do mensageiro em C1', clue_c0_entrega_pier: 'Entregar encomenda no píer de C0' },
     recompensa: { gold: 90, diamantes: 15, xp: 50 },

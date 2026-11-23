@@ -58,11 +58,20 @@
   }
 
   #quest-banner {
-    position: fixed; left: 10px; top: 52px; z-index: 6; pointer-events: none;
-    background: rgba(9, 18, 36, .78); border-left: 3px solid var(--gold); border-radius: 0 6px 6px 0;
-    padding: 5px 10px; font-size: 11px; max-width: 290px; line-height: 1.35;
+    position: fixed; left: 10px; top: 52px; z-index: 8; pointer-events: auto; cursor: pointer;
+    background: rgba(9, 18, 36, .88); border: 1.5px solid rgba(250, 204, 21, .55); border-left: 4px solid var(--gold);
+    border-radius: 6px; padding: 6px 10px; font-size: 11px; max-width: 310px; line-height: 1.35;
+    box-shadow: 0 3px 12px rgba(0,0,0,.5); transition: border-color .15s, background .15s;
   }
-  #quest-banner b { color: var(--gold); display: block; font-size: 11.5px; }
+  #quest-banner:hover { border-color: var(--gold); background: rgba(15, 29, 54, .95); }
+  #quest-banner.autorota { border-color: var(--cyan); border-left-color: var(--cyan); }
+  #quest-banner .qb-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #quest-banner b { color: var(--gold); font-size: 11.5px; }
+  #qb-auto {
+    background: rgba(56, 189, 248, .18); border: 1px solid var(--cyan); color: #bae6fd;
+    border-radius: 5px; padding: 2px 7px; font: 700 10.5px system-ui; white-space: nowrap;
+  }
+  #quest-banner.autorota #qb-auto { background: #0284c7; color: #fff; }
 
   #aviso-saida {
     position: fixed; left: 50%; top: 56px; transform: translateX(-50%); z-index: 12;
@@ -107,12 +116,14 @@
     border: 2px solid var(--gold); background: rgba(15, 32, 62, .94); color: #fff;
     font: 700 13px system-ui, sans-serif; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.55);
   }
-  #btn-correr {
-    display: none; padding: 8px 14px; border-radius: 10px;
-    border: 2px solid var(--cyan); background: rgba(9, 25, 52, .9); color: var(--cyan);
-    font: 700 12px system-ui, sans-serif; cursor: pointer;
+  #btn-transformar {
+    padding: 9px 14px; border-radius: 10px;
+    border: 2px solid #c084fc; background: rgba(24, 14, 48, .92); color: #e9d5ff;
+    font: 700 12.5px system-ui, sans-serif; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.55);
   }
-  #btn-correr.ativo { background: #0e7490; color: #fff; }
+  #btn-transformar.ativo {
+    background: linear-gradient(135deg, #6d28d9, #0284c7); border-color: #38bdf8; color: #fff;
+  }
 
   /* Modais */
   .modal-bg {
@@ -194,7 +205,6 @@
     <div class="pill"><b id="mapa-titulo">C0 · Praia Inicial</b><span id="hud-recursos" style="color:#94b3d4;font-size:11px">0g</span></div>
     <button id="btn-diario" class="btn-hud gold">Diário</button>
     <button id="btn-mapa" class="btn-hud">Mapa (48)</button>
-    <button id="btn-forma" class="btn-hud" title="Alternar entre Noctarn e Azazel">Noctarn</button>
     <button id="btn-fazenda" class="btn-hud green" style="display:none">🌱 Fazenda</button>
   </div>
   <div class="hud-grp">
@@ -207,14 +217,17 @@
   </div>
 </div>
 
-<div id="quest-banner"><b id="qb-titulo">Pegadas que não são minhas</b><span id="qb-sub">C0 · Explore o píer e o bote</span></div>
+<div id="quest-banner" title="Clique para seguir automaticamente até o objetivo da missão">
+  <div class="qb-head"><b id="qb-titulo">Pegadas que não são minhas</b><span id="qb-auto">🧭 Auto-Rota</span></div>
+  <span id="qb-sub">C0 · Explore o píer e o bote</span>
+</div>
 <div id="aviso-saida" role="status"></div>
 <div id="setas-saidas"></div>
 <div id="cortina-transicao"></div>
 
 <div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>
 <div id="controles-dir">
-  <button id="btn-correr">⚡ Correr</button>
+  <button id="btn-transformar" title="Conexão Onírica (tecla T ou Shift): transforma no Onírico e ganha +100% de velocidade">✨ Transformar</button>
   <button id="btn-interagir">[E] Interagir</button>
 </div>
 
