@@ -3,91 +3,173 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>PSYWORLD · Região 1</title>
+<title>PSYWORLD · Região 1 (48 Áreas)</title>
 <link rel="icon" href="data:,">
 <style>
-  html, body { margin: 0; height: 100%; background: #0c1522; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
+  :root {
+    --bg: #0b1322;
+    --panel: rgba(9, 18, 36, .93);
+    --border: #3f8fd6;
+    --gold: #facc15;
+    --cyan: #38bdf8;
+    --green: #4ade80;
+    --rose: #fb7185;
+    --txt: #e2f1ff;
+    --muted: #94b3d4;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; font-family: system-ui, -apple-system, sans-serif; color: var(--txt); }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
   #hud {
-    position: fixed; left: 10px; right: 10px; top: 10px; z-index: 6;
-    display: flex; align-items: center; justify-content: space-between; gap: 8px; pointer-events: none;
+    position: fixed; left: 8px; right: 8px; top: 8px; z-index: 8;
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    flex-wrap: wrap; pointer-events: none;
   }
-  #mapa-badge {
-    pointer-events: auto; display: flex; align-items: center; gap: 8px;
-    background: rgba(9, 18, 36, .88); border: 1.5px solid #3f8fd6; border-radius: 8px;
-    padding: 6px 12px; color: #e2f1ff; font-size: 13px; box-shadow: 0 2px 10px rgba(0,0,0,.45);
+  .hud-grp { display: flex; align-items: center; gap: 5px; pointer-events: auto; flex-wrap: wrap; }
+  .pill {
+    background: var(--panel); border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 5px 10px; font-size: 12px; color: var(--txt); display: inline-flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.45);
   }
-  #mapa-badge b { color: #facc15; letter-spacing: .2px; }
-  #hud-dir {
-    display: flex; align-items: center; gap: 6px; pointer-events: auto;
+  .pill b { color: var(--gold); }
+  .btn-hud {
+    background: var(--panel); border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 5px 9px; font: 600 12px system-ui, sans-serif; color: var(--txt); cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.4);
   }
+  .btn-hud:hover { border-color: var(--gold); }
+  .btn-hud.gold { border-color: var(--gold); color: var(--gold); }
+  .btn-hud.green { border-color: var(--green); color: var(--green); }
+  .btn-hud.ativo { background: #1e3a5f; border-color: var(--cyan); color: #fff; }
   #zoom-ctrl {
-    display: flex; align-items: center; gap: 2px;
-    background: rgba(9, 18, 36, .92); border: 1.5px solid #3f8fd6; border-radius: 8px; padding: 2px;
+    display: inline-flex; align-items: center; gap: 2px;
+    background: var(--panel); border: 1.5px solid var(--border); border-radius: 8px; padding: 2px;
   }
   #zoom-ctrl button {
-    background: transparent; border: 0; color: #e2f1ff; font: 700 14px system-ui, sans-serif;
-    min-width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+    background: transparent; border: 0; color: var(--txt); font: 700 13px system-ui, sans-serif;
+    min-width: 24px; height: 24px; border-radius: 5px; cursor: pointer;
   }
   #zoom-ctrl button:hover { background: rgba(63, 143, 214, .28); }
-  #zoom-val {
-    color: #93c5fd; font: 600 11px system-ui, sans-serif; min-width: 38px; text-align: center;
-    user-select: none; cursor: pointer;
-  }
+  #zoom-val { color: #93c5fd; font: 600 11px system-ui; min-width: 36px; text-align: center; cursor: pointer; user-select: none; }
   #seletor-mapa {
-    pointer-events: auto; background: rgba(9, 18, 36, .92); color: #e2f1ff;
-    border: 1.5px solid #facc15; border-radius: 8px; padding: 6px 10px;
-    font: 600 13px system-ui, sans-serif; cursor: pointer; max-width: 44vw;
+    background: var(--panel); color: var(--txt); border: 1.5px solid var(--gold); border-radius: 8px;
+    padding: 5px 8px; font: 600 12px system-ui, sans-serif; cursor: pointer; max-width: 42vw;
   }
 
+  #quest-banner {
+    position: fixed; left: 10px; top: 52px; z-index: 6; pointer-events: none;
+    background: rgba(9, 18, 36, .78); border-left: 3px solid var(--gold); border-radius: 0 6px 6px 0;
+    padding: 5px 10px; font-size: 11px; max-width: 290px; line-height: 1.35;
+  }
+  #quest-banner b { color: var(--gold); display: block; font-size: 11.5px; }
+
   #aviso-saida {
-    position: fixed; left: 50%; top: 58px; transform: translateX(-50%); z-index: 7;
-    padding: 10px 16px; border-radius: 8px; background: rgba(9, 18, 36, .94);
-    border: 2px solid #facc15; color: #fff; font: 600 14px system-ui, sans-serif;
-    display: none; text-align: center; max-width: 84vw; line-height: 1.35;
-    box-shadow: 0 4px 16px rgba(0,0,0,.55);
+    position: fixed; left: 50%; top: 56px; transform: translateX(-50%); z-index: 12;
+    padding: 9px 15px; border-radius: 8px; background: rgba(9, 18, 36, .95);
+    border: 2px solid var(--gold); color: #fff; font: 600 13px system-ui, sans-serif;
+    display: none; text-align: center; max-width: 86vw; line-height: 1.35;
+    box-shadow: 0 4px 16px rgba(0,0,0,.6);
   }
 
   #cortina-transicao {
-    position: fixed; inset: 0; z-index: 15; background: #050912; opacity: 0;
-    pointer-events: none; transition: opacity .16s ease;
+    position: fixed; inset: 0; z-index: 20; background: #050912; opacity: 0;
+    pointer-events: none; transition: opacity .15s ease;
   }
   #cortina-transicao.ativo { opacity: 1; }
 
   .seta-ind {
     position: fixed; z-index: 4; pointer-events: none; display: none;
     transform: translate(-50%, -50%); text-align: center;
-    font: 700 11px system-ui, sans-serif; color: #fff;
-    text-shadow: 0 1px 4px #000, 0 0 6px #000; max-width: 110px;
+    font: 700 10.5px system-ui, sans-serif; color: #fff;
+    text-shadow: 0 1px 4px #000, 0 0 6px #000; max-width: 115px;
   }
-  .seta-ind .tri { font-size: 22px; line-height: 1; }
+  .seta-ind .tri { font-size: 20px; line-height: 1; }
   .seta-ind .lbl { margin-top: 1px; white-space: nowrap; }
 
   #joy {
-    position: fixed; left: 16px; bottom: 16px; width: 124px; height: 124px; box-sizing: border-box;
-    border-radius: 50%; background: rgba(10, 28, 60, .55); border: 2px solid #3f8fd6;
-    touch-action: none; user-select: none; display: none; z-index: 5;
+    position: fixed; left: 14px; bottom: 14px; width: 118px; height: 118px;
+    border-radius: 50%; background: rgba(10, 28, 60, .55); border: 2px solid var(--border);
+    touch-action: none; user-select: none; display: none; z-index: 7;
   }
   #joy-knob {
-    position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; border-radius: 50%;
+    position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; border-radius: 50%;
     background: #cfe8ff; transform: translate(-50%, -50%); pointer-events: none;
   }
   @media (pointer: coarse) { #joy { display: block; } }
 
+  #controles-dir {
+    position: fixed; right: 14px; bottom: 16px; z-index: 8;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  }
+  #btn-interagir {
+    display: none; padding: 10px 16px; border-radius: 10px;
+    border: 2px solid var(--gold); background: rgba(15, 32, 62, .94); color: #fff;
+    font: 700 13px system-ui, sans-serif; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.55);
+  }
+  #btn-correr {
+    display: none; padding: 8px 14px; border-radius: 10px;
+    border: 2px solid var(--cyan); background: rgba(9, 25, 52, .9); color: var(--cyan);
+    font: 700 12px system-ui, sans-serif; cursor: pointer;
+  }
+  #btn-correr.ativo { background: #0e7490; color: #fff; }
+
+  /* Modais */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 30; background: rgba(4, 9, 18, .78);
+    display: none; align-items: center; justify-content: center; padding: 14px;
+  }
+  .modal-bg.aberto { display: flex; }
+  .modal-card {
+    background: #0d182d; border: 2px solid var(--border); border-radius: 12px;
+    width: min(560px, 95vw); max-height: 86vh; overflow-y: auto; padding: 16px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.7);
+  }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(63,143,214,.3); padding-bottom: 8px; }
+  .modal-head h3 { margin: 0; font-size: 16px; color: var(--gold); }
+  .btn-fechar { background: transparent; border: 1px solid #475569; color: var(--txt); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 700; }
+  .btn-pri { background: #1d4ed8; border: 1.5px solid var(--cyan); color: #fff; border-radius: 8px; padding: 8px 14px; font: 700 13px system-ui; cursor: pointer; }
+  .btn-sec { background: #1e293b; border: 1.5px solid #475569; color: var(--txt); border-radius: 8px; padding: 8px 14px; font: 600 13px system-ui; cursor: pointer; }
+  .btn-danger { background: #7f1d1d; border: 1.5px solid var(--rose); color: #fff; border-radius: 8px; padding: 6px 12px; font: 600 12px system-ui; cursor: pointer; }
+
+  .q-cat { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--cyan); margin: 12px 0 6px; font-weight: 700; }
+  .q-item { background: rgba(15, 29, 54, .75); border: 1px solid rgba(63,143,214,.25); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; }
+  .q-item.concluida { border-color: rgba(74,222,128,.45); opacity: .82; }
+  .q-item.ativa { border-color: var(--gold); }
+  .q-top { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+  .q-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 99px; text-transform: uppercase; }
+  .q-badge.ativa { background: #854d0e; color: #fef08a; }
+  .q-badge.disponivel { background: #0c4a6e; color: #7dd3fc; }
+  .q-badge.concluida { background: #14532d; color: #86efac; }
+  .q-badge.bloqueada { background: #1e293b; color: #94a3b8; }
+  .q-passos { margin: 5px 0 0; padding-left: 16px; color: var(--muted); }
+  .q-passos li.ok { color: var(--green); text-decoration: line-through; }
+
+  .tp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+  .tp-card {
+    background: #132442; border: 1.5px solid var(--cyan); border-radius: 8px; padding: 10px;
+    color: #fff; text-align: left; cursor: pointer; font: 600 12.5px system-ui;
+  }
+  .tp-card:hover { background: #1c3663; border-color: var(--gold); }
+
+  /* Batalha */
+  .bat-arena { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; margin: 10px 0; }
+  .bat-box { background: rgba(15, 29, 54, .85); border: 1px solid rgba(63,143,214,.35); border-radius: 10px; padding: 10px; text-align: center; }
+  .bat-box img { width: 88px; height: 88px; object-fit: contain; display: block; margin: 0 auto 6px; }
+  .hp-bar { height: 10px; background: #1e293b; border-radius: 99px; overflow: hidden; margin-top: 4px; }
+  .hp-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #86efac); transition: width .2s; }
+  .hp-fill.inimigo { background: linear-gradient(90deg, #ef4444, #fb923c); }
+  .bat-log { background: #070e1c; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #cbd5e1; min-height: 44px; margin: 8px 0; line-height: 1.4; }
+  .bat-acoes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
   #aviso-girar {
-    position: fixed; inset: 0; z-index: 25; background: rgba(9, 14, 28, .94); color: #e2f1ff;
-    display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    position: fixed; inset: 0; z-index: 40; background: rgba(9, 14, 28, .94); color: #e2f1ff;
+    display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
     padding: 24px; text-align: center;
   }
-  #aviso-girar b { font-size: 18px; color: #facc15; }
-  #aviso-girar p { margin: 0; font-size: 14px; color: #b8d4f2; max-width: 320px; line-height: 1.45; }
-  #aviso-girar .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
-  #aviso-girar button {
-    padding: 10px 16px; border-radius: 8px; border: 2px solid #22d3ee; background: #132c52;
-    color: #fff; font: 700 14px system-ui, sans-serif; cursor: pointer;
-  }
-  #aviso-girar button.sec { border-color: #475569; background: rgba(30, 41, 59, .7); font-weight: 600; }
+  #aviso-girar b { font-size: 17px; color: var(--gold); }
+  #aviso-girar p { margin: 0; font-size: 13px; color: #b8d4f2; max-width: 310px; line-height: 1.45; }
+  #aviso-girar .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   @media (orientation: portrait) and (pointer: coarse) {
     body:not(.ignorar-giro) #aviso-girar { display: flex; }
   }
@@ -96,33 +178,123 @@
 </head>
 <body>
 <div id="aviso-girar">
-  <div style="font-size:44px;line-height:1">📱↻</div>
-  <b>Modo Paisagem (Deitado) Recomendado</b>
-  <p>A arte 16:9 da Região 1 fica muito mais nítida com o celular deitado.</p>
+  <div style="font-size:40px;line-height:1">📱↻</div>
+  <b>Modo Paisagem ou Retrato Calibrado</b>
+  <p>Em paisagem a visão lateral é mais ampla; em retrato a câmera já abre espaço à frente.</p>
   <div class="btns">
-    <button id="btn-forcar-paisagem">Tela Cheia Deitado</button>
-    <button id="btn-continuar-pe" class="sec">Continuar assim</button>
+    <button id="btn-forcar-paisagem" class="btn-pri">Tela Cheia Deitado</button>
+    <button id="btn-continuar-pe" class="btn-sec">Jogar em Retrato</button>
   </div>
 </div>
 
 <canvas id="cena"></canvas>
 
 <div id="hud">
-  <div id="mapa-badge"><b id="mapa-titulo">C0 · Praia Inicial</b></div>
-  <div id="hud-dir">
-    <div id="zoom-ctrl" title="Ajustar zoom da câmera (ou use a rodinha do mouse)">
+  <div class="hud-grp">
+    <div class="pill"><b id="mapa-titulo">C0 · Praia Inicial</b><span id="hud-recursos" style="color:#94b3d4;font-size:11px">0g</span></div>
+    <button id="btn-diario" class="btn-hud gold">Diário</button>
+    <button id="btn-mapa" class="btn-hud">Mapa (48)</button>
+    <button id="btn-forma" class="btn-hud" title="Alternar entre Noctarn e Azazel">Noctarn</button>
+    <button id="btn-fazenda" class="btn-hud green" style="display:none">🌱 Fazenda</button>
+  </div>
+  <div class="hud-grp">
+    <div id="zoom-ctrl" title="Ajustar zoom da câmera (ou rodinha do mouse)">
       <button id="btn-zoom-menos" aria-label="Afastar câmera">−</button>
-      <span id="zoom-val" title="Clique para ver o mapa inteiro">100%</span>
+      <span id="zoom-val" title="Clique para restaurar zoom calibrado">100%</span>
       <button id="btn-zoom-mais" aria-label="Aproximar câmera">+</button>
     </div>
-    <select id="seletor-mapa" aria-label="Ir para mapa da Região 1"></select>
+    <select id="seletor-mapa" aria-label="Selecionar área da Região 1"></select>
   </div>
 </div>
 
+<div id="quest-banner"><b id="qb-titulo">Pegadas que não são minhas</b><span id="qb-sub">C0 · Explore o píer e o bote</span></div>
 <div id="aviso-saida" role="status"></div>
 <div id="setas-saidas"></div>
 <div id="cortina-transicao"></div>
+
 <div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>
+<div id="controles-dir">
+  <button id="btn-correr">⚡ Correr</button>
+  <button id="btn-interagir">[E] Interagir</button>
+</div>
+
+<!-- Modal Diálogo / Interação -->
+<div id="modal-dialogo" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="dlg-titulo">NPC</h3>
+      <button class="btn-fechar" data-fechar="modal-dialogo">✕</button>
+    </div>
+    <div id="dlg-sub" style="font-size:11px;color:#38bdf8;margin-bottom:8px"></div>
+    <p id="dlg-texto" style="margin:0 0 14px;font-size:13.5px;line-height:1.5"></p>
+    <div id="dlg-acoes" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"></div>
+  </div>
+</div>
+
+<!-- Modal Diário de Quests -->
+<div id="modal-diario" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Diário da Região 1</h3>
+      <div style="display:flex;gap:6px">
+        <button id="btn-reset-save" class="btn-danger">Resetar Save</button>
+        <button class="btn-fechar" data-fechar="modal-diario">✕</button>
+      </div>
+    </div>
+    <div id="diario-resumo" style="font-size:12px;color:#94b3d4;margin-bottom:8px"></div>
+    <div id="diario-lista"></div>
+  </div>
+</div>
+
+<!-- Modal Mapa Regional -->
+<div id="modal-mapa" class="modal-bg">
+  <div class="modal-card" style="width:min(700px,96vw)">
+    <div class="modal-head">
+      <h3>Mapa da Região 1 (48 Áreas)</h3>
+      <button class="btn-fechar" data-fechar="modal-mapa">✕</button>
+    </div>
+    <div id="mapa-status" style="font-size:12px;color:#cbd5e1;margin-bottom:8px;line-height:1.5"></div>
+    <img src="../../../assets/confusion/regiao-1/MAPA-REGIAO-1.png" alt="Mapa da Região 1" style="width:100%;border-radius:8px;border:1px solid #334155">
+  </div>
+</div>
+
+<!-- Modal Teleporte -->
+<div id="modal-teleporte" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="tp-titulo">Marco de Teleporte</h3>
+      <button class="btn-fechar" data-fechar="modal-teleporte">✕</button>
+    </div>
+    <p id="tp-msg" style="margin:0 0 8px;font-size:13px;color:#cbd5e1"></p>
+    <div id="tp-destinos" class="tp-grid"></div>
+  </div>
+</div>
+
+<!-- Modal Encontro / Batalha -->
+<div id="modal-batalha" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="bat-titulo">Encontro</h3>
+      <button id="btn-fugir-x" class="btn-fechar">Fugir</button>
+    </div>
+    <div class="bat-arena">
+      <div class="bat-box">
+        <img id="bat-img-jog" src="../../../assets/monsters/noctarn/sprite-front.png" alt="Noctarn">
+        <b id="bat-nome-jog">Noctarn (Nv. 10)</b>
+        <div class="hp-bar"><div id="bat-hp-jog" class="hp-fill" style="width:100%"></div></div>
+        <div id="bat-hp-jog-txt" style="font-size:11px;margin-top:3px">140 / 140</div>
+      </div>
+      <div class="bat-box">
+        <img id="bat-img-ini" src="" alt="Inimigo">
+        <b id="bat-nome-ini">Inimigo</b>
+        <div class="hp-bar"><div id="bat-hp-ini" class="hp-fill inimigo" style="width:100%"></div></div>
+        <div id="bat-hp-ini-txt" style="font-size:11px;margin-top:3px">100 / 100</div>
+      </div>
+    </div>
+    <div id="bat-log" class="bat-log"></div>
+    <div id="bat-acoes" class="bat-acoes"></div>
+  </div>
+</div>
 
 <script>
   document.getElementById('btn-forcar-paisagem').onclick = async () => {

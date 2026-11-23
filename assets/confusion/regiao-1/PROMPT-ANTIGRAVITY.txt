@@ -1,0 +1,27 @@
+Integre as artes anexadas da Região 1 ao Confusion no repositório dioh-cpu/psyworld. Trabalhe na branch de desenvolvimento usada para Confusion e gere uma preview. Confira o gráfico MAPA-REGIAO-1.png e associe os mapas aos códigos dos PNGs. O gráfico tem 48 áreas, incluindo o Reino. Reutilize os mapas-base já aprovados e os sistemas atuais de carregamento, câmera, colisão e transição. Os fundos novos estão em 2048 × 1152, 16:9.
+
+Use ligações de ida e volta, com a exceção do primeiro acesso ao Reino, que acontece pela viagem de trem. Preserve os bloqueios X do gráfico. Nos mapas deste ZIP, ligue:
+
+- C0 oeste a E1 leste. E1 oeste a E2 leste. E1 norte a E3 sul. E3 leste a C1 oeste.
+- E1 pelo arco a noroeste a E4 pelo arco a sudeste. E4 norte a E5 sul.
+- E5 norte a E6 sul e E5 oeste a E8 leste. E6 oeste a E9 leste.
+- E8 norte a E9 sul e E8 sul a E7 norte. E9 norte a E10 sul.
+- E10 oeste ao portão leste de BOSS_E. O Espírito da Floresta tem missão individual e a volta da arena é por esse portão.
+- Troque a arte de E2 pela versão anexada, que abre o oeste em direção ao leste de PC1. Preserve a saída leste de E2 para E1.
+- Ligue o sul de PC1 ao norte de PC2 e siga assim sucessivamente até PC9. PC9 sul leva ao norte de BOSS_S, arena da Siren, com missão própria e retorno por PC9.
+- PC6 oeste liga ao leste de CC1, a Caverna Cintilante. Ligue o sul de CC1 ao norte de CC2 e continue até CC9. CC9 sul liga a BOSS_C norte, arena do Golem de Ametista, com missão própria e retorno por CC9.
+- C0 norte liga a C1 sul, C1 norte a C2 sul e C2 norte a C3 sul. Na Floresta de Cogumelos, use as seguintes ligações nos dois sentidos.
+  C0 leste ↔ D1 oeste. C1 leste ↔ D3 oeste. D1 norte ↔ D3 sul. D1 leste ↔ D2 oeste.
+  D2 norte ↔ D4 sul. D3 norte ↔ D6 sul. D3 leste ↔ D4 oeste. D4 norte ↔ D7 sul. D4 leste ↔ D5 oeste.
+  D5 norte ↔ D8 sul. D6 leste ↔ D7 oeste. D7 leste ↔ D8 oeste. D8 leste ↔ D9 oeste.
+  D9 sul ↔ D10 norte. D10 sul ↔ D11 norte. D11 sul ↔ BOSS_D norte. BOSS_D é a arena do Rei Fungo e a volta é por D11. O Craquen fica para o fim da campanha, antes do confronto entre Herói e Vilão.
+
+Alinhe cada gatilho e ponto de chegada à faixa caminhável desenhada. Quando o caminho some sob um arco ou dentro de um túnel, coloque o gatilho no piso logo sob a entrada visível. Recue o ponto de chegada para dentro do mapa e evite reativar o gatilho na entrada. Use as máscaras do sistema atual. Revise areia seca, passarelas e calcário. Bloqueie água profunda, falésias, pilares e cristais. Valide a passagem nos dois sentidos, especialmente E2/PC1, o arco E1/E4, PC6/CC1 e as entradas das arenas. O mapa detalha a topologia, e a posição exata de cada abertura deve seguir a arte.
+
+Os cinco marcos regionais são C1, E8, D9, PC7 e CC7. Descobrir o marco disponibiliza a missão local. C1 oferece sua missão após descobrir E8 ou D9. A ativação de cada marco é independente de chefes. Os marcos das quatro rotas ficam três mapas antes da arena. C1 é o marco da cidade. A viagem só é possível diante de um marco ativo e com destino regional descoberto e ativo. E8.png mostra o cristal cinza e E8-ativo.png o azul luminoso. Use a mesma colisão e a mesma interação para ambos. Use as variantes -ativo.png para D9, PC7 e CC7 quando presentes no pacote e a mesma convenção visual para C1. O cristal de PC7 é parte somente do marco de teleporte. A vegetação e as rochas das praias continuam naturais.
+
+Mantenha a abertura do trem após as vitórias contra o Espírito da Floresta e o Rei Fungo. A primeira viagem abre o acesso e o destino Reino no teleporte. Siren e Golem de Ametista ficam em missões próprias, sem alterar essa trava do trem. Essa é a regra de trabalho até aprovação de uma mudança.
+
+Os monstros selvagens ficam visíveis no cenário como entidades, com encontro no mapa. Distribua-os nas clareiras, longe das entradas, passarelas, áreas de NPCs e marcos. Mantenha elfos nas florestas da esquerda e goblins na Floresta de Cogumelos. Coloque bosses e NPCs como entidades separadas das artes de fundo.
+
+Teste em desktop e mobile. Percorra as conexões liberadas, confirme os X, retorne das arenas, teste os dois estados de E8 e a progressão da estação. Entregue o commit, a branch e o link da preview, indicando as áreas que ainda dependem de arte. Use MANIFESTO.txt para conferir o conteúdo do pacote.

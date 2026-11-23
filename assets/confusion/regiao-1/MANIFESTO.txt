@@ -1,0 +1,15 @@
+PSYWORLD — REGIÃO 1
+
+Fundos em PNG 2048 × 1152 (16:9), redimensionados das gerações originais.
+O gráfico cobre a região completa. C0–C3, E1 e D1 usam suas artes-base. O mapa do Reino aparece no gráfico para integração futura.
+As pranchas BORDAS mostram pares de saídas para comparar o piso e a direção.
+O posicionamento dos gatilhos e as máscaras de colisão ainda precisam de validação no jogo.
+
+Floresta-Sombria
+E3, E4, E5, E6, E7, E8, E8-ativo, E9, E10, BOSS_E
+Praias-Cristalinas
+E2, PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, BOSS_S, PC7-ativo
+Caverna-Cintilante
+CC1, CC2, CC3, CC4, CC5, CC6, CC7, CC8, CC9, BOSS_C, CC7-ativo
+Floresta-de-Cogumelos
+D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, BOSS_D, D9-ativo

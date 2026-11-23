@@ -1,0 +1,261 @@
+// Entidades da Região 1: NPCs (com IDs estáveis para troca de arte), pontos de pista/missão,
+// monstros selvagens visíveis nas clareiras e os 4 Chefes nas arenas.
+
+export const NPCS_REGIAO1 = [
+  // Humanos (Eixo Central + E2 + Reino)
+  {
+    id: 'npc_pescadora',
+    nome: 'Maren, a Pescadora',
+    raca: 'humano',
+    mapa: 'C0',
+    pos: [670, 290],
+    arteProvisoria: true,
+    cor: '#38bdf8',
+    quest: 'q_mare_devolveu',
+    pistaAoFalar: 'npc_pescadora_falou',
+    dialogo: 'Essa tábua é do navio que afundou na tempestade! Um badalo foi levado até a praça de C1 — siga para o norte e veja de perto.',
+  },
+  {
+    id: 'npc_zeladora_c1',
+    nome: 'Helena, a Zeladora',
+    raca: 'humano',
+    mapa: 'C1',
+    pos: [432, 232],
+    arteProvisoria: true,
+    cor: '#60a5fa',
+    quest: 'q_tp_c1',
+    pistaAoFalar: 'npc_zeladora_c1_falou',
+    dialogo: 'O cristal da praça só responde depois que você descobre E8 ou D9. Sintonize as duas runas da praça para ativar o círculo!',
+  },
+  {
+    id: 'npc_jardineira_c1',
+    nome: 'Lívia, a Jardineira',
+    raca: 'humano',
+    mapa: 'C1',
+    pos: [608, 350],
+    arteProvisoria: true,
+    cor: '#4ade80',
+    quest: 'q_sec_canteiro',
+    pistaAoFalar: 'npc_jardineira_c1_falou',
+    dialogo: 'Ajude-me a restaurar o canteiro aqui perto da praça! Assim que estiver recuperado, libero o acesso rápido à Fazenda.',
+  },
+  {
+    id: 'npc_mensageiro_c1',
+    nome: 'Téo, o Mensageiro',
+    raca: 'humano',
+    mapa: 'C1',
+    pos: [418, 365],
+    arteProvisoria: true,
+    cor: '#fbbf24',
+    quest: 'q_sec_entrega',
+    pistaAoFalar: 'npc_mensageiro_c1_falou',
+    dialogo: 'Pode levar esta encomenda até o píer de C0? Se entregar depressa, te ensino a correr pelos caminhos (Shift / botão Correr)!',
+  },
+  {
+    id: 'npc_maquinista',
+    nome: 'Branca, a Maquinista',
+    raca: 'humano',
+    mapa: 'C2',
+    pos: [590, 295],
+    arteProvisoria: true,
+    cor: '#f97316',
+    quest: 'q_ultimo_trem',
+    pistaAoFalar: 'npc_maquinista_falou',
+    dialogo: 'O trem em C3 está parado por dois bloqueios: o Espírito da Floresta a oeste (Floresta Sombria) e o Rei Fungo a leste (Floresta de Cogumelos). Escolha a ordem que preferir!',
+  },
+  {
+    id: 'npc_vigia_e2',
+    nome: 'Garrick, o Vigia',
+    raca: 'humano',
+    mapa: 'E2',
+    pos: [565, 345],
+    arteProvisoria: true,
+    cor: '#eab308',
+    quest: 'q_saida_pedras',
+    pistaAoFalar: 'npc_vigia_e2_falou',
+    dialogo: 'A entrada para a Floresta Sombria fica pelo arco de pedra em E1. Já esta passagem a oeste leva às Praias Cristalinas (PC1)!',
+  },
+  {
+    id: 'npc_guardiao_reino',
+    nome: 'Sentinela Real',
+    raca: 'humano',
+    mapa: 'REINO',
+    pos: [512, 225],
+    arteProvisoria: true,
+    cor: '#c084fc',
+    dialogo: 'Bem-vindo à Praça Real! O marco do Reino já está conectado à sua rede de teleporte regional.',
+  },
+
+  // Elfos (Floresta Sombria — esquerda)
+  {
+    id: 'npc_batedora_elfa',
+    nome: 'Lyra, Batedora Elfa',
+    raca: 'elfo',
+    mapa: 'E4',
+    pos: [445, 295],
+    arteProvisoria: true,
+    cor: '#34d399',
+    quest: 'q_guarda_arco',
+    dialogo: 'Você atravessou o arco vindo de E1. Nosso guarda-florestal seguiu para o norte rumo a E5 e E8, onde as raízes ficaram salgadas.',
+  },
+  {
+    id: 'npc_guarda_elfo',
+    nome: 'Thalion, Guarda-Florestal Elfo',
+    raca: 'elfo',
+    mapa: 'E8',
+    pos: [455, 300],
+    arteProvisoria: true,
+    cor: '#10b981',
+    quest: 'q_sal_raizes',
+    pistaAoFalar: 'npc_guarda_elfo_resgatado',
+    dialogo: 'Obrigado por me libertar das raízes! Limpe o cristal cinza ao lado para ativar o teleporte de E8, e siga ao norte até E9.',
+  },
+  {
+    id: 'npc_espirito_previa',
+    nome: 'Voz da Mata (Espírito)',
+    raca: 'espirito',
+    mapa: 'E9',
+    pos: [460, 270],
+    arteProvisoria: true,
+    cor: '#a7f3d0',
+    quest: 'q_mulher_mata',
+    pistaAoFalar: 'npc_espirito_previa_falou',
+    dialogo: 'A água salgada envenena minhas raízes. Feche a comporta aqui em E9 e prove sua força no santuário além de E10.',
+  },
+  {
+    id: 'npc_sabio_elfo',
+    nome: 'Elowen, Sábio Elfo',
+    raca: 'elfo',
+    mapa: 'E10',
+    pos: [590, 315],
+    arteProvisoria: true,
+    cor: '#6ee7b7',
+    quest: 'q_coracao_mata',
+    dialogo: 'O portão a oeste leva à arena do Espírito da Floresta. Após vencer, o caminho de volta para E10 permanece aberto a pé.',
+  },
+
+  // Goblins (Floresta de Cogumelos — direita)
+  {
+    id: 'npc_coletor_goblin',
+    nome: 'Zik, Coletor Goblin',
+    raca: 'goblin',
+    mapa: 'D4',
+    pos: [425, 290],
+    arteProvisoria: true,
+    cor: '#a3e635',
+    quest: 'q_floresta_respira',
+    pistaAoFalar: 'npc_coletor_goblin_falou',
+    dialogo: 'Hehe! Os cogumelos respiram em sequência! Suba até D7 e observe a ordem do brilho — isso também desperta o cristal do mirante D9.',
+  },
+  {
+    id: 'npc_alquimista_goblin',
+    nome: 'Nixa, Alquimista Goblin',
+    raca: 'goblin',
+    mapa: 'D7',
+    pos: [615, 325],
+    arteProvisoria: true,
+    cor: '#bef264',
+    dialogo: 'A leste por D8 os esporos ficam mais densos, até o mirante D9 onde há um marco de teleporte antigo.',
+  },
+  {
+    id: 'npc_batedor_goblin',
+    nome: 'Ruk, Batedor Goblin',
+    raca: 'goblin',
+    mapa: 'D10',
+    pos: [430, 325],
+    arteProvisoria: true,
+    cor: '#84cc16',
+    quest: 'q_enseada_lanternas',
+    dialogo: 'Abaixo fica a enseada D11 e o arco para o salão do Rei Fungo. Cuidado com os esporos dele!',
+  },
+];
+
+// Pontos de pista / objetos interativos no mapa (registram pistas mesmo antes da missão ser aceita)
+export const PISTAS_MUNDO = [
+  // Campanha central + Secundárias
+  { id: 'clue_c0_pier', mapa: 'C0', pos: [512, 468], rotulo: 'Explorar o píer', texto: 'Pegadas estranhas na madeira do píer… mas não parecem humanas.' },
+  { id: 'clue_c0_bote', mapa: 'C0', pos: [215, 365], rotulo: 'Examinar o bote', texto: 'Você encontrou uma tábua marcada com o brasão do navio naufragado!' },
+  { id: 'clue_c0_entrega_pier', mapa: 'C0', pos: [565, 430], rotulo: 'Caixa de entrega (Píer)', texto: 'Encomenda entregue no píer! Habilidade de Corrida liberada.' },
+  { id: 'clue_c1_badalo', mapa: 'C1', pos: [565, 305], rotulo: 'Badalo do navio', texto: 'O badalo recuperado confirma o naufrágio. A maquinista em C2 sabe dos bloqueios.' },
+  { id: 'clue_c1_circuito_1', mapa: 'C1', pos: [380, 285], rotulo: 'Runa oeste da praça', texto: 'Runa oeste da praça sintonizada com o cristal central!' },
+  { id: 'clue_c1_circuito_2', mapa: 'C1', pos: [645, 285], rotulo: 'Runa leste da praça', texto: 'Runa leste da praça sintonizada com o cristal central!' },
+  { id: 'clue_c1_canteiro', mapa: 'C1', pos: [575, 395], rotulo: 'Canteiro da cidade', texto: 'Canteiro restaurado! O ícone da Fazenda foi liberado no HUD.' },
+
+  // Floresta Sombria
+  { id: 'clue_e1_lanterna', mapa: 'E1', pos: [350, 310], rotulo: 'Lanterna do guarda', texto: 'Lanterna ainda morna perto da trilha para o arco de pedra a noroeste.' },
+  { id: 'clue_e4_marcas', mapa: 'E4', pos: [600, 325], rotulo: 'Marcas no arco', texto: 'As marcas do guarda-florestal seguem pelo caminho ao norte (E5).' },
+  { id: 'clue_e5_nascente', mapa: 'E5', pos: [435, 290], rotulo: 'Nascente salgada', texto: 'Água salobra escorrendo pelas raízes — vem do oeste, perto de E8.' },
+  { id: 'clue_e9_comporta', mapa: 'E9', pos: [585, 295], rotulo: 'Comporta de névoa', texto: 'Você fechou a comporta antiga! O caminho ao norte (E10) clareou.' },
+  { id: 'clue_e10_raizes', mapa: 'E10', pos: [370, 290], rotulo: 'Raízes do santuário', texto: 'As raízes convergem diretamente para o portão oeste de BOSS_E.' },
+
+  // Floresta de Cogumelos
+  { id: 'clue_d1_totem', mapa: 'D1', pos: [745, 360], rotulo: 'Totem da maré', texto: 'O totem e os destroços apontam para a selva costeira a leste (D2).' },
+  { id: 'clue_d2_destrocos', mapa: 'D2', pos: [615, 330], rotulo: 'Destroços na mata', texto: 'Rastros sobem ao norte rumo à encruzilhada fúngica (D4).' },
+  { id: 'clue_d7_sequencia', mapa: 'D7', pos: [452, 275], rotulo: 'Fungos luminosos', texto: 'Sequência gravada: Ciano → Dourado → Violeta! Guarde para o mirante D9.' },
+  { id: 'clue_d8_rastro', mapa: 'D8', pos: [585, 325], rotulo: 'Rastro de esporos', texto: 'Os esporos dourados levam a leste até o mirante D9.' },
+  { id: 'clue_d9_descida', mapa: 'D9', pos: [465, 385], rotulo: 'Trilha da descida', texto: 'A descida rochosa ao sul leva à passagem D10.' },
+  { id: 'clue_d10_posto', mapa: 'D10', pos: [592, 315], rotulo: 'Posto abandonado', texto: 'Diário do coletor indica a entrada do salão fúngico na enseada D11.' },
+  { id: 'clue_d11_entrada', mapa: 'D11', pos: [512, 365], rotulo: 'Arco fúngico', texto: 'A ponte ao sul abre o acesso ao salão do Rei Fungo (BOSS_D).' },
+
+  // Praias Cristalinas
+  { id: 'clue_pc1_chegada', mapa: 'PC1', pos: [460, 320], rotulo: 'Marco do promontório', texto: 'Você chegou às Praias Cristalinas! A ponte ao sul segue para PC2.' },
+  { id: 'clue_pc2_marca', mapa: 'PC2', pos: [445, 295], rotulo: 'Marca da maré (PC2)', texto: 'Símbolo talhado no calcário — primeira referência das marés.' },
+  { id: 'clue_pc3_marca', mapa: 'PC3', pos: [565, 290], rotulo: 'Marca da maré (PC3)', texto: 'Segunda referência das marés alinhada ao recife.' },
+  { id: 'clue_pc4_marca', mapa: 'PC4', pos: [280, 260], rotulo: 'Marca da maré (PC4)', texto: 'Terceira referência junto à lagoa! Útil também no pedestal de PC7.' },
+  { id: 'clue_pc5_canto', mapa: 'PC5', pos: [512, 295], rotulo: 'Eco do canto', texto: 'Um canto melódico ressoa do sul através do recife.' },
+  { id: 'clue_pc6_gruta', mapa: 'PC6', pos: [255, 295], rotulo: 'Boca da gruta', texto: 'A passagem oeste leva à Caverna Cintilante (CC1); o sul segue à Siren.' },
+  { id: 'clue_pc9_entrada', mapa: 'PC9', pos: [570, 330], rotulo: 'Vestíbulo da Siren', texto: 'A ponte de pedra ao sul entra diretamente na arena da Siren (BOSS_S).' },
+
+  // Caverna Cintilante
+  { id: 'clue_cc1_cristais', mapa: 'CC1', pos: [470, 295], rotulo: 'Cristais da entrada', texto: 'Os cristais vibram em sintonia com as câmaras mais profundas ao sul.' },
+  { id: 'clue_cc2_eco', mapa: 'CC2', pos: [445, 285], rotulo: 'Ressonância (CC2)', texto: 'Primeiro eco de quartzo registrado.' },
+  { id: 'clue_cc4_eco', mapa: 'CC4', pos: [575, 285], rotulo: 'Ressonância (CC4)', texto: 'Segundo eco de quartzo — a vibração vem do sul.' },
+  { id: 'clue_cc6_eco', mapa: 'CC6', pos: [450, 295], rotulo: 'Ressonância (CC6)', texto: 'Terceiro eco registrado! A atividade do Golem se concentra após CC7.' },
+  { id: 'clue_cc7_galeria', mapa: 'CC7', pos: [460, 240], rotulo: 'Galeria dos Ecos', texto: 'Galeria identificada; sintonize as 3 formações para ativar o cristal de CC7.' },
+  { id: 'clue_cc7_pulso_1', mapa: 'CC7', pos: [435, 195], rotulo: 'Formação Norte', texto: 'Pulso cristalino norte sintonizado (1/3)!' },
+  { id: 'clue_cc7_pulso_2', mapa: 'CC7', pos: [355, 295], rotulo: 'Formação Oeste', texto: 'Pulso cristalino oeste sintonizado (2/3)!' },
+  { id: 'clue_cc7_pulso_3', mapa: 'CC7', pos: [435, 395], rotulo: 'Formação Sul', texto: 'Pulso cristalino sul sintonizado (3/3)!' },
+  { id: 'clue_cc9_portal', mapa: 'CC9', pos: [512, 360], rotulo: 'Selo do Golem', texto: 'O selo cedeu! A passagem sul entra na arena do Golem de Ametista (BOSS_C).' },
+];
+
+// Monstros selvagens visíveis nas áreas abertas (longe de bordas, NPCs, marcos e passarelas estreitas)
+export const MONSTROS_SELVAGENS = [
+  // Costa e Floresta Sombria
+  { id: 'w_e1_1', mapa: 'E1', especie: 'Noctarn', nivel: 4, pos: [760, 345], sprite: '../../../assets/monsters/noctarn/sprite-front.png' },
+  { id: 'w_e3_1', mapa: 'E3', especie: 'Brotavel', nivel: 5, pos: [445, 285], sprite: '../../../assets/monsters/brotavel/sprite-front.png' },
+  { id: 'w_e5_1', mapa: 'E5', especie: 'Noctarn', nivel: 6, pos: [585, 285], sprite: '../../../assets/monsters/noctarn/sprite-front.png' },
+  { id: 'w_e6_1', mapa: 'E6', especie: 'Brotavel', nivel: 7, pos: [560, 305], sprite: '../../../assets/monsters/brotavel/sprite-front.png' },
+  { id: 'w_e7_1', mapa: 'E7', especie: 'Noctarn', nivel: 8, pos: [512, 330], sprite: '../../../assets/monsters/noctarn/sprite-front.png' },
+  { id: 'w_e9_1', mapa: 'E9', especie: 'Noctarn', nivel: 9, pos: [575, 240], sprite: '../../../assets/monsters/noctarn/sprite-front.png' },
+
+  // Floresta de Cogumelos
+  { id: 'w_d1_1', mapa: 'D1', especie: 'Brotavel', nivel: 4, pos: [330, 355], sprite: '../../../assets/monsters/brotavel/sprite-front.png' },
+  { id: 'w_d3_1', mapa: 'D3', especie: 'Brotavel', nivel: 5, pos: [635, 275], sprite: '../../../assets/monsters/brotavel/sprite-front.png' },
+  { id: 'w_d5_1', mapa: 'D5', especie: 'Ignavor', nivel: 7, pos: [460, 315], sprite: '../../../assets/monsters/ignavor/sprite-front.png' },
+  { id: 'w_d6_1', mapa: 'D6', especie: 'Brotavel', nivel: 7, pos: [460, 260], sprite: '../../../assets/monsters/brotavel/sprite-front.png' },
+  { id: 'w_d8_1', mapa: 'D8', especie: 'Ignavor', nivel: 9, pos: [512, 265], sprite: '../../../assets/monsters/ignavor/sprite-front.png' },
+  { id: 'w_d10_1', mapa: 'D10', especie: 'Brotavel', nivel: 10, pos: [512, 345], sprite: '../../../assets/monsters/brotavel/sprite-front.png' },
+
+  // Praias Cristalinas
+  { id: 'w_pc1_1', mapa: 'PC1', especie: 'Vaelith', nivel: 6, pos: [705, 345], sprite: '../../../assets/monsters/vaelith/sprite-front.png' },
+  { id: 'w_pc2_1', mapa: 'PC2', especie: 'Vaelith', nivel: 7, pos: [610, 295], sprite: '../../../assets/monsters/vaelith/sprite-front.png' },
+  { id: 'w_pc3_1', mapa: 'PC3', especie: 'Solarin', nivel: 8, pos: [415, 300], sprite: '../../../assets/monsters/solarin/sprite-front.png' },
+  { id: 'w_pc4_1', mapa: 'PC4', especie: 'Vaelith', nivel: 9, pos: [725, 300], sprite: '../../../assets/monsters/vaelith/sprite-front.png' },
+  { id: 'w_pc5_1', mapa: 'PC5', especie: 'Vaelith', nivel: 10, pos: [575, 290], sprite: '../../../assets/monsters/vaelith/sprite-front.png' },
+  { id: 'w_pc8_1', mapa: 'PC8', especie: 'Solarin', nivel: 11, pos: [395, 290], sprite: '../../../assets/monsters/solarin/sprite-front.png' },
+
+  // Caverna Cintilante
+  { id: 'w_cc2_1', mapa: 'CC2', especie: 'Solarin', nivel: 10, pos: [575, 300], sprite: '../../../assets/monsters/solarin/sprite-front.png' },
+  { id: 'w_cc3_1', mapa: 'CC3', especie: 'Ignavor', nivel: 11, pos: [512, 295], sprite: '../../../assets/monsters/ignavor/sprite-front.png' },
+  { id: 'w_cc5_1', mapa: 'CC5', especie: 'Noctarn', nivel: 12, pos: [465, 290], sprite: '../../../assets/monsters/noctarn/sprite-front.png' },
+  { id: 'w_cc6_1', mapa: 'CC6', especie: 'Ignavor', nivel: 12, pos: [565, 290], sprite: '../../../assets/monsters/ignavor/sprite-front.png' },
+  { id: 'w_cc8_1', mapa: 'CC8', especie: 'Solarin', nivel: 13, pos: [512, 295], sprite: '../../../assets/monsters/solarin/sprite-front.png' },
+];
+
+// Chefes nas arenas (entidades separadas das artes de fundo)
+export const ENTIDADES_BOSS = [
+  { id: 'BOSS_E', mapa: 'BOSS_E', nome: 'Espírito da Floresta', nivel: 12, pos: [450, 265], cor: '#34d399', sprite: '../../../assets/monsters/brotavel/sprite-front.png', arteProvisoria: true },
+  { id: 'BOSS_D', mapa: 'BOSS_D', nome: 'Rei Fungo', nivel: 12, pos: [512, 320], cor: '#f43f5e', sprite: '../../../assets/monsters/ignavor/sprite-front.png', arteProvisoria: true },
+  { id: 'BOSS_S', mapa: 'BOSS_S', nome: 'Siren', nivel: 14, pos: [512, 325], cor: '#38bdf8', sprite: '../../../assets/monsters/vaelith/sprite-front.png', arteProvisoria: true },
+  { id: 'BOSS_C', mapa: 'BOSS_C', nome: 'Golem de Ametista', nivel: 15, pos: [512, 325], cor: '#a855f7', sprite: '../../../assets/monsters/solarin/sprite-front.png', arteProvisoria: true },
+];
