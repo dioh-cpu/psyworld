@@ -36,10 +36,10 @@ cena.background = new THREE.Color('#cfe8f7');
 // INCLINACAO: graus a partir da horizontal (90 seria de cima). ALTURA_CAMERA: unidades de tela visíveis na vertical.
 // Ajuste pela URL para testar: ?inclinacao=50&altura=25
 const INCLINACAO = THREE.MathUtils.clamp(Number(params.get('inclinacao')) || 50, 30, 80);
-const ALTURA_CAMERA = Number(params.get('altura')) || 19.2;   // 30% mais perto que 25
+const ALTURA_CAMERA = Number(params.get('altura')) || 13.5;  // mais zoom no mapa deitado (antes 19.2)
 const SEN = Math.sin(THREE.MathUtils.degToRad(INCLINACAO));
 const COS = Math.cos(THREE.MathUtils.degToRad(INCLINACAO));
-const ALTURA_EM_PE = Number(params.get('alturape')) || 21;   // tela em pé: unidades de altura visíveis (antes mostrava o mapa todo)
+const ALTURA_EM_PE = Number(params.get('alturape')) || 28;   // em pé: evita super-aproximar uma faixa estreita que estoura os pixels
 const DISTANCIA_CAMERA = 60;
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);
 camera.up.set(0, 1, 0);
