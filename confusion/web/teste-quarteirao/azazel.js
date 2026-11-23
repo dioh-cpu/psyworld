@@ -19,13 +19,28 @@ export function criarAzazel(base = 'assets/characters/', altura = ALTURA_JOGADOR
     v.src = `${base}walk-video-v1/gothic-boy-walk-${nome}.mp4`;
     v.loop = true;
     v.muted = true;
+    v.defaultMuted = true;
     v.playsInline = true;
     v.preload = 'auto';
-    v.style.display = 'none';
+    v.setAttribute('muted', '');
+    v.setAttribute('playsinline', '');
+    // Evita display:none, que pausa decodificação de <video> em Chrome/Safari mobile
+    v.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0.001;pointer-events:none;';
     document.body.appendChild(v);
     videos[nome] = v;
     texturas[nome] = new THREE.VideoTexture(v);
   }
+  // Desbloqueia autoplay de vídeo no primeiro toque/tecla em aparelhos móveis
+  const desbloquear = () => {
+    for (const nome of ['front', 'left', 'back']) {
+      const v = videos[nome];
+      if (v.readyState < 2) {
+        v.play().then(() => { if (ativo !== nome) v.pause(); }).catch(() => {});
+      }
+    }
+  };
+  window.addEventListener('pointerdown', desbloquear, { once: true, passive: true });
+  window.addEventListener('keydown', desbloquear, { once: true, passive: true });
   // o verde do fundo sai no shader: quanto mais verde que o resto, mais transparente; a franja verde é corrigida
   const materialAndar = new THREE.ShaderMaterial({
     uniforms: { map: { value: texturas.front } },

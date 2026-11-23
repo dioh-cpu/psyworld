@@ -37,3 +37,24 @@ test('câmera: encurta quando há parede entre o alvo e a posição desejada', (
   const comParede = C.fracaoLivreCamera(alvo, { x: 6, y: 1.4, z: 0 }, [parede], 0);
   assert.ok(comParede < 1 && comParede >= 0.05);
 });
+
+test('SDF: constrói distância contínua, bloqueia parede e desliza suavemente na diagonal', () => {
+  // Grade 40x40 (mundo 20x20): metade diagonal superior-direita bloqueada (x + z > 2)
+  const w = 40, h = 40, larg = 20, alt = 20;
+  const walk = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const wx = ((x + 0.5) / w - 0.5) * larg;
+      const wz = ((y + 0.5) / h - 0.5) * alt;
+      walk[y * w + x] = (wx + wz < 2) ? 1 : 0;
+    }
+  }
+  const sdf = C.construirSDF(walk, w, h, larg, alt);
+  assert.ok(C.amostrarSDF(sdf, 0, 0) > 1.0);
+  assert.ok(C.amostrarSDF(sdf, 5, 5) < -1.0);
+  // Empurrar reto em +X contra a parede diagonal deve deslizar em -Z sem atravessar
+  let pos = { x: 1.0, z: 0.0 };
+  for (let i = 0; i < 15; i++) pos = C.resolverMovimentoSDF(pos, 0.2, 0, 0.4, sdf);
+  assert.ok(C.amostrarSDF(sdf, pos.x, pos.z) >= 0.35, 'não entra na parede');
+  assert.ok(pos.z < -0.5, 'desliza suavemente ao longo da diagonal');
+});

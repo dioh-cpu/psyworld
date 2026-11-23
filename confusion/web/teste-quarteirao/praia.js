@@ -1,8 +1,8 @@
-// Praia de teste (primeira localidade). O chão é a cena completa (praia-cena); a colisão vem da máscara pintada no editor
-// (praia-walkmask: branco anda). Mapa simples: sem camada de objetos, porque o personagem não passa atrás de nada.
+// Praia de teste (primeira localidade). Chão = cena completa (praia-cena); colisão suave por SDF gerado direto da máscara
+// (praia-walkmask: branco anda); camada de profundidade (praia-objetos + praia-base) faz Azazel passar atrás de barco/barraca/pedras/palmeiras.
 import * as THREE from 'three';
 import { vetorJoystick } from '../explorar3d/controles.js';
-import { resolverMovimento } from '../explorar3d/colisao.js';
+import { resolverMovimento, construirSDF, resolverMovimentoSDF } from '../explorar3d/colisao.js';
 import { criarAzazel } from './azazel.js';
 
 const A = 'assets/';
@@ -95,7 +95,7 @@ caixa(LARG / 2, 80, -ALT / 2 - 2, ALT / 2 + 2);    // leste
 
 // obstáculos pintados na imagem: grade de células de 8 px (172 x 96) desenhada no editor de colisão
 // (confusion/web/teste-quarteirao/editor-colisao.html). Cada célula 1 bloqueia. A grade vira retângulos (caixasDaGrade).
-const COLISAO = { celula: 8, colunas: 344, linhas: 192, rle: "0,164,22,316,28,314,30,313,32,311,34,309,35,308,36,307,38,305,41,302,43,300,44,278,68,275,70,276,70,275,72,254,2,17,74,244,9,18,77,229,18,22,79,212,30,24,84,203,34,24,96,189,36,24,126,157,37,24,132,150,39,23,136,146,39,23,139,140,1,2,39,23,143,135,43,23,145,100,3,29,43,24,146,99,4,28,43,23,148,97,5,26,44,24,148,96,7,24,46,22,150,94,9,24,45,22,150,88,3,2,14,21,44,22,151,85,20,25,42,22,151,82,15,2,5,27,1,2,37,19,155,80,16,3,1,32,39,14,160,78,13,40,39,10,165,76,11,42,43,5,169,73,6,48,45,1,172,71,7,48,221,68,7,44,2,2,222,29,3,2,6,8,1,18,6,45,227,28,12,6,2,17,7,45,228,27,20,17,7,45,3,1,225,26,20,16,9,45,230,10,3,10,21,16,10,43,233,5,7,8,22,15,10,44,247,4,24,16,10,43,275,16,10,41,277,17,10,34,283,19,8,31,286,20,8,21,1,1,293,20,12,8,3,1,300,21,14,2,307,21,323,20,324,13,331,12,332,11,333,4,8596,2,342,3,341,4,340,4,340,3,341,3,341,2,342,2,342,2,342,1,343,1,343,1,343,1,1433,2,339,6,335,9,327,4,1,13,324,21,322,23,320,24,318,27,316,29,313,32,311,33,310,34,308,35,307,36,307,36,309,33,311,32,312,31,314,28,315,28,316,26,317,26,317,26,320,22,323,16,264,3,62,12,265,7,60,11,266,8,328,5,3,14,320,25,316,28,314,30,312,32,312,35,309,36,308,36,308,37,307,37,307,36,309,35,311,33,18,3,290,33,18,5,288,33,17,6,288,32,18,7,155,1,1,2,128,31,19,7,153,6,16,1,112,26,23,8,152,6,15,3,114,19,27,10,150,6,15,3,114,9,36,14,147,6,15,3,115,5,38,16,146,6,14,4,156,21,5,4,134,6,14,4,154,23,5,5,95,5,33,6,15,4,33,2,117,26,3,6,94,8,30,6,15,4,30,6,114,30,2,5,52,3,37,13,13,9,5,6,14,5,27,9,112,33,3,4,50,16,25,45,15,5,16,5,4,11,6,2,103,34,10,3,42,18,26,44,15,6,15,5,3,10,6,7,2,5,90,39,8,4,38,21,28,42,14,8,13,6,2,7,8,17,65,1,21,46,4,3,37,29,19,45,13,10,9,16,5,22,63,3,17,51,2,4,35,32,16,46,14,10,1,51,62,4,11,62,34,95,14,67,25,4,28,77,33,95,17,69,13,13,3,3,22,78,31,95,16,72,7,31,14,100,7,97,16,110,8,210,16,113,2,213,15,329,15,329,15,329,15,329,15,328,17,327,16,328,16,328,17,327,17,327,17,328,16,328,15,334,9,335,9,5325" };
+const COLISAO = { celula: 8, colunas: 344, linhas: 192, rle: "0,160,25,317,28,314,30,313,32,311,33,310,35,308,36,306,39,305,41,301,43,301,44,278,68,276,69,276,70,275,71,274,74,243,9,19,78,229,17,22,78,213,31,23,84,203,34,24,96,189,36,23,127,157,38,23,132,150,39,23,136,146,39,23,139,143,39,23,144,138,39,23,145,137,38,23,147,136,38,23,148,135,38,23,148,135,38,23,149,135,37,22,150,135,38,21,151,135,37,21,153,133,37,20,154,133,38,14,160,133,37,11,164,132,40,5,169,130,42,1,172,129,218,125,220,29,3,2,6,84,221,28,12,5,3,75,221,28,20,75,223,25,21,74,226,10,2,11,21,73,229,5,7,8,22,73,243,4,24,73,271,73,271,73,271,73,271,73,271,21,9,34,280,21,11,30,282,21,14,24,285,20,19,17,288,13,331,12,332,11,333,9,8591,1,343,3,341,3,341,3,341,3,341,3,341,2,342,2,342,2,342,1,343,1,2463,4,337,8,327,4,1,13,325,20,322,23,320,24,318,27,316,29,314,31,311,33,310,34,309,35,306,36,307,36,309,33,311,32,312,31,314,28,315,28,315,27,317,26,318,24,321,22,323,16,264,2,63,13,264,6,62,10,266,8,328,4,3,15,320,24,318,27,314,30,313,31,312,34,310,36,308,36,308,36,308,37,307,36,309,35,311,33,18,3,290,33,17,5,289,33,17,6,288,32,18,7,287,31,19,7,153,4,131,26,23,8,152,4,17,2,114,19,28,9,174,1,114,9,37,12,171,1,115,5,38,16,169,1,117,1,38,21,6,3,157,1,154,23,5,5,95,4,57,1,153,26,3,5,94,9,53,1,31,5,115,30,1,6,53,1,38,12,15,17,16,15,18,8,113,32,3,2,52,15,26,44,16,15,7,4,4,10,7,2,103,34,10,2,43,18,25,44,16,15,6,5,3,10,6,7,2,5,90,39,8,4,38,21,26,43,16,15,5,15,7,18,65,1,21,46,3,4,37,28,20,43,16,15,3,17,4,22,63,3,17,51,1,4,36,31,17,44,16,62,62,4,11,61,35,93,16,67,26,2,29,77,33,94,16,71,13,13,2,5,20,79,30,95,16,73,7,30,14,101,6,97,16,111,7,210,16,114,2,212,16,328,16,328,16,328,16,328,16,328,16,328,16,328,16,328,16,328,16,328,16,328,16,328,16,328,16,328,16,5324" };
 // RLE: contagens alternadas de células livres e bloqueadas, começando por livre
 function decodificarGrade({ rle, colunas, linhas }) {
   const grade = new Uint8Array(colunas * linhas);
@@ -133,9 +133,42 @@ function caixasDaGrade(grade, colunas, linhas) {
   return retangulos;
 }
 const N_BORDAS = colisoes.length;               // muros das bordas, que a máscara não troca
-for (const [c0, l0, c1, l1] of caixasDaGrade(decodificarGrade(COLISAO), COLISAO.colunas, COLISAO.linhas)) {
+const gradeInicial = decodificarGrade(COLISAO);
+for (const [c0, l0, c1, l1] of caixasDaGrade(gradeInicial, COLISAO.colunas, COLISAO.linhas)) {
   const a = P(c0 * COLISAO.celula, l0 * COLISAO.celula), b = P(c1 * COLISAO.celula, l1 * COLISAO.celula);
   caixa(a.x, b.x, a.z, b.z);
+}
+// SDF inicial construído direto da grade (suaviza curvas e diagonais imediatamente, sem travar em degraus de 8px)
+const walkInicial = new Uint8Array(gradeInicial.length);
+for (let i = 0; i < gradeInicial.length; i++) walkInicial[i] = gradeInicial[i] ? 0 : 1;
+let sdfAtivo = construirSDF(walkInicial, COLISAO.colunas, COLISAO.linhas, LARG, ALT);
+
+// ---- profundidade por pixel dos objetos em pé (palmeiras, barraca, cabana, barco e pedras; píer fica sempre no chão) ----
+const texObjetos = carregador.load(A + 'praia-objetos.webp');
+texObjetos.anisotropy = 8;
+const texBase = carregador.load(A + 'praia-base.png');
+texBase.magFilter = texBase.minFilter = THREE.NearestFilter;
+texBase.generateMipmaps = false;
+const uPes = { value: 0 };
+{
+  const matFrente = new THREE.ShaderMaterial({
+    uniforms: { mapa: { value: texObjetos }, base: { value: texBase }, pesY: uPes },
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D mapa; uniform sampler2D base; uniform float pesY; varying vec2 vUv;
+      void main() {
+        vec4 c = texture2D(mapa, vUv);
+        vec3 b = texture2D(base, vUv).rgb;
+        if (b.b < 0.5 || c.a < 0.03) discard;
+        float linha = floor(b.r * 255.0 + 0.5) * 256.0 + floor(b.g * 255.0 + 0.5);
+        if (linha <= pesY) discard;
+        gl_FragColor = c;
+      }`,
+    transparent: true, depthTest: false, depthWrite: false,
+  });
+  const camadaFrente = new THREE.Mesh(new THREE.PlaneGeometry(LARG, ALT).rotateX(-Math.PI / 2), matFrente);
+  camadaFrente.position.y = 0.02;
+  camadaFrente.renderOrder = 4;
+  cena.add(camadaFrente);
 }
 
 
@@ -201,7 +234,7 @@ const PRESET = { atras: P(1124, 640) };   // posição para conferir: atrás de 
 if (PRESET[VISAO]) Object.assign(estado, PRESET[VISAO]);
 // colisões em caixas (AABB) para o movimento, com a mesma lógica do jogo principal
 const caixasAABB = colisoes.map((b) => ({ min: { x: b.x0, y: 0, z: b.z0 }, max: { x: b.x1, y: 6, z: b.z1 } }));
-// máscara de caminho do editor (walk: 1 anda, 0 bloqueia; mw x mh): refaz a grade e as caixas na hora
+// máscara de caminho (walk: 1 anda, 0 bloqueia; mw x mh): refaz a grade AABB e o SDF suave na hora
 function aplicarMascaraCaminho(walk, mw, mh) {
   const { colunas, linhas, celula } = COLISAO;
   const g = new Uint8Array(colunas * linhas);
@@ -217,25 +250,46 @@ function aplicarMascaraCaminho(walk, mw, mh) {
   }
   caixasAABB.length = 0;
   for (const b of colisoes) caixasAABB.push({ min: { x: b.x0, y: 0, z: b.z0 }, max: { x: b.x1, y: 6, z: b.z1 } });
+  // Reconstrói o SDF em resolução até 600x338 (~8 ms) para deslize suave em curvas e diagonais
+  const sw = Math.min(mw, 600);
+  const sh = Math.max(1, Math.round(mh * sw / mw));
+  let walkSdf = walk;
+  if (sw !== mw || sh !== mh) {
+    walkSdf = new Uint8Array(sw * sh);
+    for (let y = 0; y < sh; y++) {
+      const sy = Math.min(mh - 1, Math.floor((y + 0.5) * mh / sh));
+      for (let x = 0; x < sw; x++) {
+        const sx = Math.min(mw - 1, Math.floor((x + 0.5) * mw / sw));
+        walkSdf[y * sw + x] = walk[sy * mw + sx] ? 1 : 0;
+      }
+    }
+  }
+  sdfAtivo = construirSDF(walkSdf, sw, sh, LARG, ALT);
+}
+function carregarMascaraUrl(src) {
+  const im = new Image();
+  im.onload = () => {
+    const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+    const cx = c.getContext('2d'); cx.drawImage(im, 0, 0);
+    const d = cx.getImageData(0, 0, c.width, c.height).data, w = new Uint8Array(c.width * c.height);
+    for (let i = 0; i < w.length; i++) w[i] = d[i * 4] >= 128 ? 1 : 0;
+    aplicarMascaraCaminho(w, c.width, c.height);
+  };
+  im.src = src;
 }
 window.addEventListener('message', (e) => {
   if (e.data && e.data.tipo === 'walkmask') aplicarMascaraCaminho(e.data.walk, e.data.w, e.data.h);
 });
-// edição salva neste aparelho (pelo editor) vale ao abrir a praia
+// edição salva no aparelho (pelo editor) prevalece; caso contrário carrega direto de praia-walkmask.png (sem precisar copiar RLE)
+let usouMascaraLocal = false;
 try {
   const s = localStorage.getItem('praiaWalkmask');
   if (s) {
-    const im = new Image();
-    im.onload = () => {
-      const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
-      const cx = c.getContext('2d'); cx.drawImage(im, 0, 0);
-      const d = cx.getImageData(0, 0, c.width, c.height).data, w = new Uint8Array(c.width * c.height);
-      for (let i = 0; i < w.length; i++) w[i] = d[i * 4] >= 128 ? 1 : 0;
-      aplicarMascaraCaminho(w, c.width, c.height);
-    };
-    im.src = 'data:image/png;base64,' + s;
+    usouMascaraLocal = true;
+    carregarMascaraUrl('data:image/png;base64,' + s);
   }
 } catch (_) {}
+if (!usouMascaraLocal) carregarMascaraUrl(A + 'praia-walkmask.png');
 
 window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
@@ -366,7 +420,9 @@ function quadro(agora) {
       rot = Math.atan2(dx, dz);
       dx = (dx / n) * forca * VELOCIDADE * dt;
       dz = (dz / n) * forca * VELOCIDADE * dt;
-      const p = resolverMovimento({ x: estado.x, z: estado.z }, dx, dz, RAIO, caixasAABB);
+      const p = sdfAtivo
+        ? resolverMovimentoSDF({ x: estado.x, z: estado.z }, dx, dz, RAIO, sdfAtivo)
+        : resolverMovimento({ x: estado.x, z: estado.z }, dx, dz, RAIO, caixasAABB);
       estado.x = p.x;
       estado.z = p.z;
     }
@@ -374,6 +430,7 @@ function quadro(agora) {
 
   jogador.position.set(estado.x, camada(estado.z), estado.z);
   sombra.position.set(estado.x, camada(estado.z) - 0.005, estado.z);
+  uPes.value = (estado.z / ALT + 0.5) * IMG_H;
   azazel.atualizar(andando, rot, 0);
   if (VISAO === 'geral') {
     alvoCamera.x = 0;
@@ -409,5 +466,6 @@ window.quarteirao = {
   mover: (x, z) => { estado.x = x; estado.z = z; },
   saidas: () => SAIDAS.map((sa) => ({ nome: sa.nome, centro: sa.centro, x0: sa.x0, x1: sa.x1, z0: sa.z0, z1: sa.z1 })),
   saidaAtual: () => (saidaAtual ? saidaAtual.nome : null),
+  modoColisao: () => (sdfAtivo ? 'sdf' : 'aabb'),
 };
 requestAnimationFrame(quadro);
