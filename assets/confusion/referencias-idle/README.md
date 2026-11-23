@@ -1,25 +1,25 @@
-# Confusion Waves: Double Perspective — referências de idle
+# Confusion Waves: Double Perspective — referências de Idle
 
-**Estado:** apenas manifesto. O arquivo binário **não foi enviado ao GitHub** nesta operação, pois a conexão disponível não suporta transferir o ZIP grande diretamente. Não interpretar este documento como prova de que as imagens estão no repositório.
+## Estado dos arquivos
+O manifesto está registrado no GitHub, mas os arquivos ZIP de imagem **não foram transferidos para o repositório**. Para acesso às imagens, anexar as três partes ao Antigravity. Cada parte é um ZIP independente; NÃO são volumes de um único arquivo ZIP.
 
-## Pacote original enviado pelo usuário
-- Nome do anexo: `idle referencias.zip`
-- Data: 2026-11-23
-- Conteúdo: **88 imagens PNG**, capturas de tela de jogo em navegador
-- Tamanho ZIP: **65.352.638 bytes** (~62,3 MiB)
-- SHA-256: `3597e576699f8caea9595a380f9fe5566b8f3c373626e09ffa08cc203973c0e8`
-- Estrutura: capturas com nomes `Screenshot_20261123-HHMMSS.Chrome.png`, do horário `155911` até `162425`.
-- Integridade: leitura de todos os 88 arquivos aprovada; nenhum erro CRC.
+## Arquivos divididos em 2026-11-23
 
-## Diretrizes para análise pelo Antigravity
+Pacote original `idle referencias.zip`: 88 PNGs, 65.352.638 bytes; SHA-256 `3597e576699f8caea9595a380f9fe5566b8f3c373626e09ffa08cc203973c0e8`.
 
-1. **Não suponha que os PNGs estão neste branch.** Peça o ZIP original como anexo se não houver um caminho real de download acessível.
-2. Inspecione cada captura e classifique: HUD/UI, exploração e combate idle, inventário, progressão, missões, loja, recompensas, mensagens e telas de interação, conforme o que as imagens mostrarem.
-3. Estude mecânicas e fluxos de experiência, **não copie personagens, ilustrações, marcas, nomes ou layouts protegidos**. Proponha equivalentes originais para Confusion Waves: Double Perspective.
-4. Respeite o conceito de jogo 2D com visão superior; evite sugerir migração para 3D.
-5. Não editar o gameplay ou publicar sem aprovação; primeiro produzir um relatório curto com oportunidades priorizadas e referências ao nome exato da captura correspondente.
-6. Esta branch de referências deriva do commit `933af7500b62197bfce4c274722233bcd9c3c936` da branch `art/confusion-regiao-1`. Não interferir em `main`.
+| Parte | Nome | Capturas | Bytes | SHA-256 |
+|---|---|---:|---:|---|
+| 1/3 | `CONFUSION_IDLE_REFERENCIAS_PARTE_01_DE_03.zip` | 35 | 21.579.122 | `25a08695c561da434cf8ee9cc3b98e79fa07a8285b4faee104aa237600e60eb3` |
+| 2/3 | `CONFUSION_IDLE_REFERENCIAS_PARTE_02_DE_03.zip` | 27 | 22.109.341 | `1dc8fff42b71177c8e65443edb5346e8c89fe56012a25f7be87d5ba1a31d2d28` |
+| 3/3 | `CONFUSION_IDLE_REFERENCIAS_PARTE_03_DE_03.zip` | 26 | 22.007.944 | `ef4af02af443c958946f1ad1b418e66abffcd405ed7961880843dd33f6ff0911` |
 
-## Situação do upload
+As 88 imagens foram mantidas integralmente, preservando nome, conteúdo de bytes e ordem cronológica; os três ZIPs foram validados sem erros de CRC.
 
-O pacote original continua disponível no anexo da conversa do ChatGPT em que foi enviado. Para análise visual no Antigravity, o arquivo `idle referencias.zip` ainda precisa ser anexado lá ou carregado em um local de onde o Antigravity possa realmente baixá-lo.
+## Instruções ao Antigravity
+1. Identificar este manifesto na branch `assets/confusion-idle-referencias-20261123`.
+2. Receber **as três partes anexadas separadamente** e extrair cada ZIP em diretório distinto ou comum: são arquivos independentes, com nomes de PNG distintos.
+3. Comparar as capturas do modo Idle e catalogar funcionalidades e oportunidades para Confusion Waves: Double Perspective; referenciar nomes originais das capturas.
+4. Preservar IP original, mundo e jogabilidade 2D; não copiar personagens, marcas ou artes de jogos de referência.
+5. Só fazer estudo e relatório priorizado, sem modificar o jogo, sem merge e sem deploy.
+
+A branch deriva do commit `933af7500b62197bfce4c274722233bcd9c3c936` do histórico de Região 1; não atualizar `main`.
