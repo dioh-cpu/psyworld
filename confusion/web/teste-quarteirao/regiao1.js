@@ -914,6 +914,9 @@ function encerrarBatalha(vitoria) {
     }
     atualizarHudEstado();
     salvarEstado();
+    if (autoRotaQuestId) {
+      setTimeout(() => { if (autoRotaQuestId && !algumModalAberto()) planejarPassoAutoRota(); }, 450);
+    }
   } else {
     // Afasta levemente da entidade ao recuar para não disparar encontro imediato
     bloqueioEncontroAte = performance.now() + 2500;
@@ -1032,32 +1035,49 @@ seletorMapa.addEventListener('change', () => {
   seletorMapa.blur();
 });
 
-// ---- Navegação por Clique no Mapa + Auto-Rota Multi-Mapa (48 áreas) ----
+// ---- Navegação por Clique no Mapa + Auto-Rota Automática de Missões (48 áreas) ----
 let waypointsAtuais = []; // [{ x, z }]
 let autoInteragirAoChegar = false;
 let autoRotaQuestId = null;
+let objetivoAutoRotaAtual = null;
+let timerAutoDialogo = null;
 
 function pararNavegacao(cancelarAutoRota = true) {
   waypointsAtuais = [];
   autoInteragirAoChegar = false;
+  objetivoAutoRotaAtual = null;
   marcadorDestino.visible = false;
+  clearTimeout(timerAutoDialogo);
+  timerAutoDialogo = null;
   if (cancelarAutoRota && autoRotaQuestId) {
     autoRotaQuestId = null;
     atualizarHudEstado();
   }
 }
 
+function agendarFecharDialogoAuto(ms = 1350) {
+  clearTimeout(timerAutoDialogo);
+  timerAutoDialogo = setTimeout(() => {
+    if (!autoRotaQuestId) return;
+    if (document.getElementById('modal-dialogo')?.classList.contains('aberto')) {
+      fecharModal('modal-dialogo');
+    } else if (!algumModalAberto()) {
+      planejarPassoAutoRota();
+    }
+  }, ms);
+}
+
 function resolverAlvoDaPista(pistaId) {
   const p = PISTAS_MUNDO.find((x) => x.id === pistaId);
-  if (p) return { mapa: p.mapa, pos: p.pos, rotulo: p.rotulo, interagir: true };
+  if (p) return { tipo: 'pista', id: p.id, dados: p, mapa: p.mapa, pos: p.pos, rotulo: p.rotulo, interagir: true };
 
   const npc = NPCS_REGIAO1.find((n) => n.pistaAoFalar === pistaId);
-  if (npc) return { mapa: npc.mapa, pos: npc.pos, rotulo: npc.nome, interagir: true };
+  if (npc) return { tipo: 'npc', id: npc.id, dados: npc, mapa: npc.mapa, pos: npc.pos, rotulo: npc.nome, interagir: true };
 
   if (pistaId.startsWith('boss_') && pistaId.endsWith('_derrotado')) {
     const bossId = pistaId.slice(5, -10);
     const b = ENTIDADES_BOSS.find((x) => x.id === bossId);
-    if (b) return { mapa: b.mapa, pos: b.pos, rotulo: b.nome, interagir: true };
+    if (b) return { tipo: 'boss', id: b.id, dados: b, mapa: b.mapa, pos: b.pos, rotulo: b.nome, interagir: true };
   }
 
   const marcoPorPista = {
@@ -1068,14 +1088,14 @@ function resolverAlvoDaPista(pistaId) {
   if (marcoPorPista[pistaId]) {
     const mid = marcoPorPista[pistaId];
     const m = MAPAS[mid];
-    return { mapa: mid, pos: m.marco.interacao, rotulo: `Marco ${mid}`, interagir: true };
+    return { tipo: 'marco', id: mid, pistaMarco: pistaId, dados: m.marco, mapa: mid, pos: m.marco.interacao, rotulo: `Marco ${mid}`, interagir: true };
   }
 
   if (pistaId === 'trem_desembarque_reino') {
     const sa = MAPAS.C3.saidas.find((s) => s.tipo === 'trem');
     const cx = Math.round((sa.rect[0] + sa.rect[2]) / 2);
     const cy = Math.round((sa.rect[1] + sa.rect[3]) / 2);
-    return { mapa: 'C3', pos: [cx, cy], rotulo: 'Trem para o Reino (C3)', interagir: false };
+    return { tipo: 'trem', id: 'TREM', mapa: 'C3', pos: [cx, cy], rotulo: 'Trem para o Reino (C3)', interagir: false };
   }
   return null;
 }
@@ -1090,6 +1110,71 @@ function proximoObjetivoQuest(questId) {
     }
   }
   return null;
+}
+
+function escolherProximaQuestAutoRota() {
+  // Prioriza missões ativas; depois disponíveis (aceitando automaticamente para continuar a jornada)
+  const prox = QUESTS_DEFINICOES.find((q) => save.quests[q.id] === 'ativa' && proximoObjetivoQuest(q.id))
+    || QUESTS_DEFINICOES.find((q) => save.quests[q.id] === 'disponivel' && proximoObjetivoQuest(q.id));
+  if (!prox) return null;
+  if (save.quests[prox.id] === 'disponivel') {
+    const r = aceitarQuest(save, prox.id);
+    if (r.concluidas.length) notificarQuestsConcluidas(r.concluidas);
+    if (save.quests[prox.id] === 'concluida') return escolherProximaQuestAutoRota();
+  }
+  return prox.id;
+}
+
+function executarObjetivoAutoRota(obj) {
+  if (!obj || emTransicao) return;
+  if (obj.tipo === 'pista') {
+    const p = obj.dados;
+    const res = registrarPista(save, p.id);
+    notificarQuestsConcluidas(res.concluidas);
+    construirEntidadesDoMapa(mapaAtual);
+    atualizarHudEstado();
+    salvarEstado();
+    abrirDialogo(`✦ ${p.rotulo}`, `Coletado automaticamente (${mapaAtual.id})`, p.texto, [
+      { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
+    ]);
+    agendarFecharDialogoAuto(1250);
+    return;
+  }
+  if (obj.tipo === 'npc') {
+    const npc = obj.dados;
+    const concluidas = [];
+    if (npc.quest && save.quests[npc.quest] !== 'concluida') {
+      concluidas.push(...aceitarQuest(save, npc.quest).concluidas);
+    }
+    if (npc.pistaAoFalar) {
+      concluidas.push(...registrarPista(save, npc.pistaAoFalar).concluidas);
+    }
+    notificarQuestsConcluidas(concluidas);
+    construirEntidadesDoMapa(mapaAtual);
+    atualizarHudEstado();
+    salvarEstado();
+    abrirDialogo(npc.nome, `Conversa automática · NPC (${npc.raca})`, npc.dialogo, [
+      { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
+    ]);
+    agendarFecharDialogoAuto(1450);
+    return;
+  }
+  if (obj.tipo === 'marco') {
+    const qId = MARCOS_TELEPORTE[obj.id]?.questId;
+    const r1 = qId ? aceitarQuest(save, qId) : { concluidas: [] };
+    const r2 = registrarPista(save, obj.pistaMarco);
+    notificarQuestsConcluidas([...r1.concluidas, ...r2.concluidas]);
+    mostrarToast(`🔷 Marco ${obj.id} ativado automaticamente! Cristal agora brilha em azul.`, 3000);
+    setTimeout(() => { if (autoRotaQuestId && !algumModalAberto()) planejarPassoAutoRota(); }, 450);
+    return;
+  }
+  if (obj.tipo === 'boss') {
+    if (!save.bossesDerrotados[obj.id]) {
+      iniciarBatalha('boss', obj.dados);
+    } else {
+      planejarPassoAutoRota();
+    }
+  }
 }
 
 // BFS no grafo das 48 áreas: devolve a próxima saída do mapaAtual rumo a destinoId
@@ -1219,16 +1304,31 @@ function definirDestinoMundo(destX, destZ, interagir = false) {
 
 function planejarPassoAutoRota() {
   if (!autoRotaQuestId || !mapaAtual) return;
-  const obj = proximoObjetivoQuest(autoRotaQuestId);
-  if (!obj) {
-    pararNavegacao(true);
-    mostrarToast('🎯 Objetivo da missão concluído!', 2600);
-    return;
+  let obj = proximoObjetivoQuest(autoRotaQuestId);
+
+  // Se a missão atual terminou, avança automaticamente para a próxima missão ativa/disponível!
+  if (!obj || save.quests[autoRotaQuestId] === 'concluida') {
+    const proxId = escolherProximaQuestAutoRota();
+    if (!proxId) {
+      pararNavegacao(true);
+      mostrarToast('🏆 Todas as missões disponíveis da Região 1 foram concluídas!', 4000);
+      return;
+    }
+    autoRotaQuestId = proxId;
+    atualizarHudEstado();
+    obj = proximoObjetivoQuest(autoRotaQuestId);
+    if (!obj) {
+      pararNavegacao(true);
+      return;
+    }
+    mostrarToast(`🧭 Próxima missão automática: ${QUESTS_POR_ID[proxId].titulo}`, 2600);
   }
+
+  objetivoAutoRotaAtual = obj;
   if (obj.mapa === mapaAtual.id) {
     const w = P(obj.pos[0], obj.pos[1]);
     definirDestinoMundo(w.x, w.z, obj.interagir);
-    mostrarToast(`🧭 Auto-Rota: indo até ${obj.rotulo} (${obj.mapa})`, 2600);
+    mostrarToast(`🧭 Auto-Rota: indo até ${obj.rotulo} (${obj.mapa})`, 2400);
     return;
   }
   const saida = proximaSaidaParaMapa(mapaAtual.id, obj.mapa);
@@ -1241,14 +1341,21 @@ function planejarPassoAutoRota() {
   const cy = (saida.rect[1] + saida.rect[3]) / 2;
   const w = P(cx, cy);
   definirDestinoMundo(w.x, w.z, false);
-  mostrarToast(`🧭 Auto-Rota (${obj.mapa}): seguindo via ${saida.rotulo}`, 2400);
+  mostrarToast(`🧭 Auto-Rota (${obj.mapa}): seguindo via ${saida.rotulo}`, 2200);
 }
 
 function iniciarAutoRota(questId) {
-  const id = questId || questDestaqueId;
-  if (!id || !QUESTS_POR_ID[id]) return false;
+  let id = questId || questDestaqueId;
+  if (!id || !QUESTS_POR_ID[id] || save.quests[id] === 'concluida') {
+    id = escolherProximaQuestAutoRota();
+  }
+  if (!id) {
+    mostrarToast('Nenhuma missão pendente para Auto-Rota.', 2400);
+    return false;
+  }
   if (save.quests[id] === 'disponivel') {
-    aceitarQuest(save, id);
+    const r = aceitarQuest(save, id);
+    if (r.concluidas.length) notificarQuestsConcluidas(r.concluidas);
   }
   autoRotaQuestId = id;
   atualizarHudEstado();
@@ -1452,10 +1559,11 @@ function atualizarSaidasEInteracoes(agora) {
     }
   }
 
-  // Encontros por aproximação com monstros selvagens ou Boss
+  // Encontros por aproximação com monstros selvagens ou Boss (durante Auto-Rota, ignora selvagens no caminho)
   if (!emTransicao && !algumModalAberto() && agora >= bloqueioEncontroAte) {
     for (const ent of entidadesMapa) {
       if (ent.tipo !== 'wild' && ent.tipo !== 'boss') continue;
+      if (autoRotaQuestId && ent.tipo === 'wild') continue;
       if (Math.hypot(estado.x - ent.x, estado.z - ent.z) < ent.raio) {
         iniciarBatalha(ent.tipo, ent.dados);
         return;
@@ -1583,8 +1691,11 @@ function quadro(agora) {
         autoInteragirAoChegar = false;
         marcadorDestino.visible = false;
         if (deveInteragir) {
-          executarInteracao();
-          if (autoRotaQuestId && !algumModalAberto()) planejarPassoAutoRota();
+          if (autoRotaQuestId && objetivoAutoRotaAtual && objetivoAutoRotaAtual.mapa === mapaAtual?.id) {
+            executarObjetivoAutoRota(objetivoAutoRotaAtual);
+          } else {
+            executarInteracao();
+          }
         }
       } else {
         andando = true;
