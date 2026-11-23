@@ -268,6 +268,14 @@ export function criarControladorIdleUI(ctx) {
     abrir('modal-atlas');
   }
   $('btn-atlas-rapido')?.addEventListener('click', abrirAtlas);
+  for (const id of ['minimapa-wrap', 'hud-card-domador']) {
+    $(id)?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        event.currentTarget.click();
+      }
+    });
+  }
   $('minimapa-wrap')?.addEventListener('click', abrirAtlas);
   $('atlas-busca')?.addEventListener('input', (e) => { buscaAtlas = e.target.value.trim().toLowerCase(); renderizarAtlas(); });
   $('atlas-bioma')?.addEventListener('change', (e) => { filtroBioma = e.target.value; renderizarAtlas(); });
@@ -297,6 +305,11 @@ export function criarControladorIdleUI(ctx) {
         || especies.some((e) => e.toLowerCase().includes(buscaAtlas));
     });
 
+    $('atlas-total').textContent = `${itens.length} de ${ORDEM_MAPAS.length} áreas`;
+    if (!itens.length) {
+      lista.innerHTML = '<p class="card-row">Nenhuma área encontrada. Ajuste a busca ou o bioma.</p>';
+      return;
+    }
     lista.innerHTML = itens.map(({ m, ws, especies, nvMed }) => {
       const risco = ws.length ? avaliarRiscoArea(st.nivel, nvMed) : { selo: 'Segura / Arena', cor: '#94a3b8', golpes: 0 };
       const visitada = Boolean(garantirEstadoIdle(save).codex.areasVisitadas[m.id]);
@@ -408,6 +421,10 @@ export function criarControladorIdleUI(ctx) {
 
   // ---- Mochila, Atributos do Domador, Relíquias & Status Explicáveis ----
   $('hud-card-domador')?.addEventListener('click', abrirMochila);
+
+  $('modal-mochila')?.querySelectorAll('[data-mochila-secao]').forEach((botao) => {
+    botao.addEventListener('click', () => $(botao.dataset.mochilaSecao)?.scrollIntoView({ block: 'start' }));
+  });
 
   function abrirMochila() {
     const save = ctx.getSave();

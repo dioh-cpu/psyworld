@@ -442,7 +442,7 @@ function render() {
   const costume = S.role ? C.COSTUME[S.role] : 'base';
   $('app').innerHTML = `
   <header>
-    <h1>Confusion Waves</h1>
+    <h1>Confusion Waves : Double Perspective - Idle Game</h1>
     <div class="status">Dia <b>${S.day}</b> · Ponte <b class="${bridge}">${bridge}</b> · Caminho <b>${S.role ? (S.role === 'heroi' ? 'herói' : 'vilão') : 'não escolhido'}</b> · Traje <b>${costume}</b> · Gold <b>${S.gold}</b> · Diamantes <b>${S.diamonds}</b></div>
     <button data-act="reset" class="ghost">Reiniciar piloto</button>
   </header>

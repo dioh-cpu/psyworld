@@ -1,11 +1,11 @@
 {
-  "name": "PSYWORLD — Confusion Waves: Double Perspective",
-  "short_name": "PSYWORLD",
+  "name": "Confusion Waves : Double Perspective - Idle Game",
+  "short_name": "Confusion Waves",
   "description": "RPG Idle 2D de mundo aberto progressivo com Conexão Onírica e dupla perspectiva Herói × Vilão.",
   "start_url": "./regiao1.html",
   "display": "standalone",
-  "background_color": "#0b1322",
-  "theme_color": "#0d182d",
+  "background_color": "#0c1014",
+  "theme_color": "#10171a",
   "orientation": "any",
   "icons": [
     {

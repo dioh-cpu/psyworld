@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>PSYWORLD · Confusion Waves (Região 1 Idle)</title>
+<title>Confusion Waves : Double Perspective - Idle Game</title>
+<meta name="theme-color" content="#10171a">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="data:,">
 <style>
@@ -234,6 +235,7 @@
   #aviso-girar { position: fixed; inset: 0; z-index: 40; background: rgba(9, 14, 28, .94); color: #e2f1ff; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; }
   @media (orientation: portrait) and (pointer: coarse) { body:not(.ignorar-giro) #aviso-girar { display: flex; } }
 </style>
+<link rel="stylesheet" href="./regiao1-interface.css">
 <script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
 </head>
 <body>
@@ -252,7 +254,7 @@
 
 <!-- HUD Compacto Idle -->
 <div id="hud">
-  <div class="hud-card" id="hud-card-domador" title="Toque para abrir Atributos do Domador & Mochila">
+  <div class="hud-card" id="hud-card-domador" role="button" tabindex="0" aria-label="Abrir Domador e Mochila" title="Toque para abrir Atributos do Domador & Mochila">
     <img id="jog-avatar" src="../../../assets/monsters/noctarn/sprite-front.png" alt="Avatar">
     <div class="bars">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
@@ -283,7 +285,7 @@
       </div>
       <span id="mapa-titulo" style="display:none">C0 · Praia Inicial</span>
     </div>
-    <div id="minimapa-wrap" title="Abrir Atlas de Caça (48 áreas)">
+    <div id="minimapa-wrap" role="button" tabindex="0" aria-label="Abrir Atlas de Caça" title="Abrir Atlas de Caça (48 áreas)">
       <canvas id="minimapa-canvas" width="96" height="96"></canvas>
       <div id="minimapa-coord">C0</div>
     </div>
@@ -334,21 +336,29 @@
 <!-- Modal Menu Unificado -->
 <div id="modal-menu" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3>☰ Menu · Confusion Waves</h3><button class="btn-fechar" data-fechar="modal-menu">✕</button></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-      <label class="chk-pill"><input type="checkbox" id="chk-hud-clean"> HUD Clean</label>
-      <label class="chk-pill"><input type="checkbox" id="chk-economia"> 🌙 Economia de Energia</label>
-    </div>
+    <header class="modal-head interface-capa">
+      <h3 aria-label="Confusion Waves : Double Perspective - Idle Game">
+        Confusion Waves
+        <span class="marca-jogo">Double Perspective - Idle Game</span>
+      </h3>
+      <button class="btn-fechar" data-fechar="modal-menu" aria-label="Fechar menu">✕</button>
+    </header>
     <div class="menu-grid">
-      <button class="menu-tile" id="m-atlas"><span>🗺️</span>Atlas de Caça</button>
-      <button class="menu-tile" id="m-autocaca"><span>🤖</span>Auto-Caça</button>
-      <button class="menu-tile" id="m-diario"><span>📜</span>Diário</button>
-      <button class="menu-tile" id="m-mochila"><span>🎒</span>Mochila & Status</button>
-      <button class="menu-tile" id="m-codex"><span>📘</span>Codex</button>
-      <button class="menu-tile" id="m-temporada"><span>🏆</span>Temporada</button>
-      <button class="menu-tile" id="m-mapa48"><span>🧭</span>Mapa (48)</button>
-      <button class="menu-tile" id="m-voto"><span>⭐</span>Vote & Ganhe</button>
-      <button class="menu-tile" id="m-config"><span>⚙️</span>Configurações</button>
+      <button class="menu-tile menu-ilustrado" id="m-atlas"><strong>Atlas de Caça</strong><small>Escolha onde caçar</small></button>
+      <button class="menu-tile menu-ilustrado" id="m-mochila"><strong>Domador</strong><small>Atributos, relíquias e mochila</small></button>
+      <button class="menu-tile menu-ilustrado" id="m-codex"><strong>Codex Onírico</strong><small>Espécies e bônus</small></button>
+      <button class="menu-tile menu-ilustrado" id="m-temporada"><strong>Temporada</strong><small>Passe e missões diárias</small></button>
+    </div>
+    <nav class="menu-atalhos" aria-label="Mais opções">
+      <button class="btn-sec" id="m-diario">Diário</button>
+      <button class="btn-sec" id="m-mapa48">Mapa da região</button>
+      <button class="btn-sec" id="m-autocaca">Auto-Caça</button>
+      <button class="btn-sec" id="m-voto">Vote & Ganhe</button>
+      <button class="btn-sec" id="m-config">Configurações</button>
+    </nav>
+    <div class="menu-preferencias">
+      <label class="chk-pill"><input type="checkbox" id="chk-hud-clean"> HUD limpo</label>
+      <label class="chk-pill"><input type="checkbox" id="chk-economia"> Economia de energia</label>
     </div>
   </div>
 </div>
@@ -356,13 +366,14 @@
 <!-- Modal Atlas de Caça -->
 <div id="modal-atlas" class="modal-bg">
   <div class="modal-card" style="width:min(640px,96vw)">
-    <div class="modal-head"><h3>🗺️ Atlas de Caça (48 Áreas)</h3><button class="btn-fechar" data-fechar="modal-atlas">✕</button></div>
-    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      <input id="atlas-busca" placeholder="Buscar mapa ou monstro (ex: CC8, Vaelith)..." style="flex:1;min-width:160px;padding:7px 10px;border-radius:8px;border:1px solid #3f8fd6;background:#091224;color:#fff">
-      <select id="atlas-bioma" style="padding:7px 10px;border-radius:8px;border:1px solid #3f8fd6;background:#091224;color:#fff">
+    <div class="modal-head"><h3>Atlas de Caça</h3><button class="btn-fechar" data-fechar="modal-atlas" aria-label="Fechar">✕</button></div>
+    <div class="atlas-filtros">
+      <input id="atlas-busca" type="search" aria-label="Buscar no Atlas" placeholder="Buscar mapa ou onírico">
+      <select id="atlas-bioma" aria-label="Bioma">
         <option>Todos</option><option>Eixo Central</option><option>Floresta Sombria</option><option>Floresta de Cogumelos</option><option>Praias Cristalinas</option><option>Caverna Cintilante</option>
       </select>
     </div>
+    <p id="atlas-total" class="sub" aria-live="polite"></p>
     <div id="atlas-lista"></div>
   </div>
 </div>
@@ -370,7 +381,7 @@
 <!-- Modal Configuração Auto-Caça -->
 <div id="modal-autocaca" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3>🤖 Configuração de Auto-Caça</h3><button class="btn-fechar" data-fechar="modal-autocaca">✕</button></div>
+    <div class="modal-head"><h3>Configuração de Auto-Caça</h3><button class="btn-fechar" data-fechar="modal-autocaca" aria-label="Fechar">✕</button></div>
     <div style="display:flex;flex-direction:column;gap:8px">
       <label class="chk-pill"><input type="checkbox" id="ac-toggle"> <b>Ligar Auto-Caça no mapa atual</b></label>
       <label class="chk-pill"><input type="checkbox" id="ac-vantagem"> Preferir habilidade de maior vantagem elemental</label>
@@ -392,7 +403,7 @@
 <!-- Modal Codex -->
 <div id="modal-codex" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3>📘 Codex Onírico (Bônus Permanentes)</h3><button class="btn-fechar" data-fechar="modal-codex">✕</button></div>
+    <div class="modal-head"><h3>Codex Onírico</h3><button class="btn-fechar" data-fechar="modal-codex" aria-label="Fechar">✕</button></div>
     <div id="codex-resumo" class="card-row" style="display:block;line-height:1.5"></div>
     <div id="codex-lista"></div>
   </div>
@@ -401,16 +412,22 @@
 <!-- Modal Mochila & Status Explicáveis -->
 <div id="modal-mochila" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3>🎒 Domador, Relíquias & Mochila</h3><button class="btn-fechar" data-fechar="modal-mochila">✕</button></div>
-    <div class="sec-tit">Pontos de Atributo do Domador (+3 pts por nível)</div>
+    <div class="modal-head"><h3>Domador e Mochila</h3><button class="btn-fechar" data-fechar="modal-mochila" aria-label="Fechar">✕</button></div>
+    <nav class="mochila-atalhos" aria-label="Seções da mochila">
+      <button type="button" class="btn-sec" data-mochila-secao="domador-secao">Atributos</button>
+      <button type="button" class="btn-sec" data-mochila-secao="reliquias-secao">Relíquias</button>
+      <button type="button" class="btn-sec" data-mochila-secao="ovos-secao">Ovos</button>
+      <button type="button" class="btn-sec" data-mochila-secao="esferas-secao">Esferas</button>
+    </nav>
+    <div class="sec-tit" id="domador-secao">Pontos de Atributo do Domador (+3 pts por nível)</div>
     <div id="domador-atributos"></div>
     <div class="sec-tit">Origem dos Atributos</div>
     <div id="status-breakdown"></div>
-    <div class="sec-tit">Relíquias (Equipar / Comprar)</div>
+    <div class="sec-tit" id="reliquias-secao">Relíquias (Equipar / Comprar)</div>
     <div id="mochila-reliquias"></div>
-    <div class="sec-tit">Ovos</div>
+    <div class="sec-tit" id="ovos-secao">Ovos</div>
     <div id="mochila-ovos"></div>
-    <div class="sec-tit">Esferas Psíquicas</div>
+    <div class="sec-tit" id="esferas-secao">Esferas Psíquicas</div>
     <div id="mochila-esferas"></div>
   </div>
 </div>
@@ -418,7 +435,7 @@
 <!-- Modal Temporada, Passe 30 Níveis, Login 7 Dias & Diárias -->
 <div id="modal-temporada" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3>🏆 Temporada, Passe (30 Níveis) & Diárias</h3><button class="btn-fechar" data-fechar="modal-temporada">✕</button></div>
+    <div class="modal-head"><h3>Temporada</h3><button class="btn-fechar" data-fechar="modal-temporada" aria-label="Fechar">✕</button></div>
     <div id="temp-resumo" class="card-row" style="display:block;line-height:1.5"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
       <button class="btn-pri" id="btn-login-diario">🎁 Resgatar Login (7d)</button>
@@ -432,7 +449,7 @@
 <!-- Modal Vote & Ganhe -->
 <div id="modal-voto" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3>⭐ Vote & Ganhe (TopIdle / IdleRank)</h3><button class="btn-fechar" data-fechar="modal-voto">✕</button></div>
+    <div class="modal-head"><h3>Vote & Ganhe</h3><button class="btn-fechar" data-fechar="modal-voto" aria-label="Fechar">✕</button></div>
     <div id="voto-saldo" class="card-row" style="color:#facc15;font-weight:700"></div>
     <div class="card-row"><div><b>TopIdle</b><div class="sub">Ciclo de 12h · +1 Vote Cash</div></div><button class="btn-pri" data-votar="topidle">Votar</button></div>
     <div class="card-row"><div><b>IdleRank</b><div class="sub">Ciclo de 24h · +1 Vote Cash</div></div><button class="btn-pri" data-votar="idlerank">Votar</button></div>
@@ -446,7 +463,7 @@
 <!-- Modal Configurações -->
 <div id="modal-config" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3>⚙️ Configurações & Sistema</h3><button class="btn-fechar" data-fechar="modal-config">✕</button></div>
+    <div class="modal-head"><h3>Configurações</h3><button class="btn-fechar" data-fechar="modal-config" aria-label="Fechar">✕</button></div>
     <div class="card-row"><span>Idioma</span><select id="cfg-idioma" class="btn-sec"><option value="pt">Português</option><option value="en">English</option><option value="es">Español</option></select></div>
     <div class="card-row"><span>Perspectiva da Campanha</span><select id="cfg-perspectiva" class="btn-sec"><option value="vilao">Vilão (Azazel / Trevas)</option><option value="heroi">Herói (Luz)</option></select></div>
     <div class="card-row"><span>Modo de Campanha</span><select id="cfg-modo-camp" class="btn-sec"><option value="completa">Aventura Completa</option><option value="farm">Foco em Farm / Itens</option></select></div>
@@ -468,7 +485,7 @@
 <!-- Modal Recompensa Offline -->
 <div id="modal-offline" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3>⏱️ Recompensas Offline (AFK)</h3><button class="btn-fechar" data-fechar="modal-offline">✕</button></div>
+    <div class="modal-head"><h3>Recompensas Offline</h3><button class="btn-fechar" data-fechar="modal-offline" aria-label="Fechar">✕</button></div>
     <div id="afk-detalhe" style="font-size:13px;line-height:1.6;margin-bottom:12px"></div>
     <button class="btn-pri" id="btn-coletar-afk" style="width:100%">Coletar Tudo</button>
   </div>
@@ -488,9 +505,14 @@
 <!-- Modais existentes (Diálogo, Diário, Mapa 48, Teleporte, Batalha) -->
 <div id="modal-dialogo" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3 id="dlg-titulo">NPC</h3><button class="btn-fechar" data-fechar="modal-dialogo">✕</button></div>
-    <div id="dlg-sub" style="font-size:11px;color:#38bdf8;margin-bottom:8px"></div>
-    <p id="dlg-texto" style="margin:0 0 14px;font-size:13.5px;line-height:1.5"></p>
+    <div class="modal-head"><h3 id="dlg-titulo">NPC</h3><button class="btn-fechar" data-fechar="modal-dialogo" aria-label="Fechar">✕</button></div>
+    <div class="dialogo-corpo">
+      <img id="dlg-retrato" alt="" hidden>
+      <div>
+        <div id="dlg-sub" class="sub"></div>
+        <p id="dlg-texto"></p>
+      </div>
+    </div>
     <div id="dlg-acoes" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"></div>
   </div>
 </div>
@@ -498,10 +520,10 @@
 <div id="modal-diario" class="modal-bg">
   <div class="modal-card">
     <div class="modal-head">
-      <h3>📜 Diário da Região 1</h3>
+      <h3>Diário da Região 1</h3>
       <div style="display:flex;gap:6px">
         <button id="btn-reset-save" class="btn-danger">Resetar Save</button>
-        <button class="btn-fechar" data-fechar="modal-diario">✕</button>
+        <button class="btn-fechar" data-fechar="modal-diario" aria-label="Fechar">✕</button>
       </div>
     </div>
     <div id="diario-resumo" style="font-size:12px;color:#94b3d4;margin-bottom:8px"></div>
@@ -511,15 +533,15 @@
 
 <div id="modal-mapa" class="modal-bg">
   <div class="modal-card" style="width:min(700px,96vw)">
-    <div class="modal-head"><h3>🧭 Mapa da Região 1 (48 Áreas)</h3><button class="btn-fechar" data-fechar="modal-mapa">✕</button></div>
+    <div class="modal-head"><h3>Mapa da Região 1</h3><button class="btn-fechar" data-fechar="modal-mapa" aria-label="Fechar">✕</button></div>
     <div id="mapa-status" style="font-size:12px;color:#cbd5e1;margin-bottom:8px;line-height:1.5"></div>
-    <img src="../../../assets/confusion/regiao-1/MAPA-REGIAO-1.png" alt="Mapa da Região 1" style="width:100%;border-radius:8px;border:1px solid #334155">
+    <img loading="lazy" decoding="async" src="../../../assets/confusion/regiao-1/MAPA-REGIAO-1.png" alt="Mapa da Região 1" style="width:100%;border-radius:8px;border:1px solid #334155">
   </div>
 </div>
 
 <div id="modal-teleporte" class="modal-bg">
   <div class="modal-card">
-    <div class="modal-head"><h3 id="tp-titulo">Marco de Teleporte</h3><button class="btn-fechar" data-fechar="modal-teleporte">✕</button></div>
+    <div class="modal-head"><h3 id="tp-titulo">Marco de Teleporte</h3><button class="btn-fechar" data-fechar="modal-teleporte" aria-label="Fechar">✕</button></div>
     <p id="tp-msg" style="margin:0 0 8px;font-size:13px;color:#cbd5e1"></p>
     <div id="tp-destinos" class="tp-grid"></div>
   </div>

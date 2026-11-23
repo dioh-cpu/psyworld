@@ -1,4 +1,4 @@
-// PSYWORLD — Explorador Completo da Região 1 (48 Áreas, Quests, Teleportes, NPCs, Monstros, Chefes e Save)
+// Confusion Waves — Explorador da Região 1
 import * as THREE from 'three';
 import { vetorJoystick } from '../explorar3d/controles.js';
 import { construirSDF, resolverMovimentoSDF } from '../explorar3d/colisao.js';
@@ -302,78 +302,30 @@ const sombra = (() => {
   return m;
 })();
 
-// ---- Geradores de sprites provisórios (NPCs, Pistas, Cristal C1) ----
-function criarTexturaNpcProvisorio(npc, temQuest) {
+// ---- Texturas dinâmicas de identificação ----
+function criarTexturaNomeNpc(npc, temQuest) {
   const c = document.createElement('canvas');
   c.width = 192;
-  c.height = 240;
+  c.height = 48;
   const g = c.getContext('2d');
-
-  // Placa de nome no topo
-  g.fillStyle = 'rgba(8, 16, 32, 0.88)';
-  g.strokeStyle = npc.cor || '#38bdf8';
-  g.lineWidth = 3;
   g.beginPath();
-  g.roundRect(10, 8, 172, 42, 10);
+  g.roundRect(4, 3, 184, 42, 7);
+  g.fillStyle = '#11191ef0';
   g.fill();
+  g.strokeStyle = temQuest ? '#dab77b' : '#80674c';
+  g.lineWidth = 2;
   g.stroke();
 
-  g.fillStyle = '#fff';
-  g.font = 'bold 14px system-ui';
+  g.fillStyle = '#f3e7db';
+  g.font = '700 20px system-ui';
   g.textAlign = 'center';
-  g.fillText(npc.nome.split(',')[0], 96, 28);
-  g.fillStyle = npc.cor || '#7dd3fc';
-  g.font = '600 11px system-ui';
-  g.fillText(`[${npc.raca.toUpperCase()}]`, 96, 44);
-
+  g.textBaseline = 'middle';
+  const nome = npc.nome.split(',')[0];
+  g.fillText(nome, temQuest ? 84 : 96, 24, temQuest ? 140 : 170);
   if (temQuest) {
-    g.fillStyle = '#facc15';
-    g.font = '900 28px system-ui';
-    g.fillText('!', 164, 34);
+    g.fillStyle = '#f1c784';
+    g.fillText('!', 166, 24);
   }
-
-  // Corpo estilizado provisório (ancorado perto da base y=232)
-  g.fillStyle = 'rgba(0,0,0,0.45)';
-  g.beginPath();
-  g.ellipse(96, 224, 36, 12, 0, 0, Math.PI * 2);
-  g.fill();
-
-  // Manto/túnica
-  g.fillStyle = npc.cor || '#38bdf8';
-  g.beginPath();
-  g.moveTo(64, 220);
-  g.lineTo(74, 125);
-  g.lineTo(118, 125);
-  g.lineTo(128, 220);
-  g.closePath();
-  g.fill();
-  g.strokeStyle = '#0f172a';
-  g.lineWidth = 3;
-  g.stroke();
-
-  // Cabeça + orelhas (elfo / goblin)
-  const pele = npc.raca === 'goblin' ? '#84cc16' : npc.raca === 'espirito' ? '#a7f3d0' : '#f1c29b';
-  g.fillStyle = pele;
-  g.beginPath();
-  g.arc(96, 98, 24, 0, Math.PI * 2);
-  g.fill();
-  g.stroke();
-
-  if (npc.raca === 'elfo' || npc.raca === 'goblin') {
-    const tam = npc.raca === 'goblin' ? 22 : 16;
-    g.beginPath();
-    g.moveTo(73, 96); g.lineTo(73 - tam, 88); g.lineTo(75, 105);
-    g.moveTo(119, 96); g.lineTo(119 + tam, 88); g.lineTo(117, 105);
-    g.fill();
-  }
-
-  // Olhos
-  g.fillStyle = '#0f172a';
-  g.beginPath();
-  g.arc(88, 97, 3, 0, Math.PI * 2);
-  g.arc(104, 97, 3, 0, Math.PI * 2);
-  g.fill();
-
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -461,14 +413,11 @@ function limparEntidades() {
   while (grupoEntidades.children.length) {
     const ch = grupoEntidades.children[0];
     grupoEntidades.remove(ch);
-    ch.geometry?.dispose?.();
-    if (ch.material) {
-      if (ch.material.map && !cacheTexturas.has(ch.material.map)) {
-        // Texturas de canvas locais podem ser descartadas
-        if (ch.material.map.isCanvasTexture) ch.material.map.dispose();
-      }
-      ch.material.dispose();
-    }
+    ch.traverse((obj) => {
+      obj.geometry?.dispose();
+      if (obj.material?.map?.isCanvasTexture) obj.material.map.dispose();
+      obj.material?.dispose();
+    });
   }
   entidadesMapa = [];
 }
@@ -498,7 +447,16 @@ function construirEntidadesDoMapa(mapa) {
     if (npc.mapa !== mapa.id) continue;
     const w = P(npc.pos[0], npc.pos[1]);
     const temQuest = Boolean(npc.quest && save.quests[npc.quest] !== 'concluida');
-    const mesh = adicionarBillboard(criarTexturaNpcProvisorio(npc, temQuest), w.x, w.z, 5.4, 6.75, 3);
+    const mesh = adicionarBillboard(carregarTextura(npc.sprite), w.x, w.z, 5.4, 6.75, 3);
+    const placa = new THREE.Mesh(
+      new THREE.PlaneGeometry(5.4, 1.35),
+      new THREE.MeshBasicMaterial({
+        map: criarTexturaNomeNpc(npc, temQuest), transparent: true, depthTest: false, depthWrite: false,
+      }),
+    );
+    placa.position.y = 3.85;
+    placa.renderOrder = 4;
+    mesh.add(placa);
     entidadesMapa.push({ tipo: 'npc', dados: npc, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 5.4 });
   }
 
@@ -705,7 +663,11 @@ document.getElementById('btn-mapa')?.addEventListener('click', () => {
 });
 
 // ---- Diálogo genérico ----
-function abrirDialogo(titulo, sub, texto, botoes) {
+function abrirDialogo(titulo, sub, texto, botoes, retrato = null) {
+  const imagem = document.getElementById('dlg-retrato');
+  imagem.hidden = !retrato;
+  if (retrato) imagem.src = retrato;
+  else imagem.removeAttribute('src');
   document.getElementById('dlg-titulo').textContent = titulo;
   document.getElementById('dlg-sub').textContent = sub || '';
   document.getElementById('dlg-texto').textContent = texto;
@@ -1492,9 +1454,9 @@ function executarInteracao() {
     }
     notificarQuestsConcluidas(concluidas);
     construirEntidadesDoMapa(mapaAtual);
-    abrirDialogo(npc.nome, `NPC (${npc.raca}) · ID: ${npc.id}`, npc.dialogo, [
+    abrirDialogo(npc.nome, mapaAtual.nome, npc.dialogo, [
       { rotulo: 'Fechar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
-    ]);
+    ], npc.sprite);
     return;
   }
   if (alvo.tipo === 'pista') {
@@ -1573,6 +1535,11 @@ window.addEventListener('pointerup', () => { arrastandoClique = false; });
 
 const teclas = new Set();
 window.addEventListener('keydown', (e) => {
+  const alvo = e.target instanceof Element ? e.target : null;
+  const campo = alvo?.closest('input, select, textarea, [contenteditable]');
+  const botao = alvo?.closest('button, [role="button"]');
+  const ativandoBotao = botao && (e.code === 'Space' || e.code === 'Enter');
+  if (e.code !== 'Escape' && (e.defaultPrevented || campo || ativandoBotao || algumModalAberto())) return;
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   teclas.add(e.code);
   if (e.code === 'KeyE' || e.code === 'Enter') executarInteracao();
