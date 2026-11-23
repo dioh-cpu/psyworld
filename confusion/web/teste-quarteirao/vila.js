@@ -67,7 +67,7 @@ const carregador = new THREE.TextureLoader();
 const texturas = new Map();
 function textura(nome) {
   if (!texturas.has(nome)) {
-    const t = carregador.load(A + nome + '.webp?v=hd2k');
+    const t = carregador.load(A + nome + '.webp?v=3d_hd_v1');
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = maxAniso;
     t.minFilter = THREE.LinearFilter;
