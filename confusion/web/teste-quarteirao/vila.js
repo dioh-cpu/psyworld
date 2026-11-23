@@ -132,6 +132,7 @@ function caixasDaGrade(grade, colunas, linhas) {
   }
   return retangulos;
 }
+const N_BORDAS = colisoes.length;               // muros das bordas, que a máscara não troca
 for (const [c0, l0, c1, l1] of caixasDaGrade(decodificarGrade(COLISAO), COLISAO.colunas, COLISAO.linhas)) {
   const a = P(c0 * COLISAO.celula, l0 * COLISAO.celula), b = P(c1 * COLISAO.celula, l1 * COLISAO.celula);
   caixa(a.x, b.x, a.z, b.z);
@@ -231,6 +232,41 @@ const PRESET = { atras: P(1124, 640) };   // posição para conferir: atrás de 
 if (PRESET[VISAO]) Object.assign(estado, PRESET[VISAO]);
 // colisões em caixas (AABB) para o movimento, com a mesma lógica do jogo principal
 const caixasAABB = colisoes.map((b) => ({ min: { x: b.x0, y: 0, z: b.z0 }, max: { x: b.x1, y: 6, z: b.z1 } }));
+// máscara de caminho do editor (walk: 1 anda, 0 bloqueia; mw x mh): refaz a grade e as caixas na hora
+function aplicarMascaraCaminho(walk, mw, mh) {
+  const { colunas, linhas, celula } = COLISAO;
+  const g = new Uint8Array(colunas * linhas);
+  for (let l = 0; l < linhas; l++) for (let c = 0; c < colunas; c++) {
+    const px = Math.min(mw - 1, Math.floor((c + 0.5) * celula * mw / IMG_W));
+    const py = Math.min(mh - 1, Math.floor((l + 0.5) * celula * mh / IMG_H));
+    g[l * colunas + c] = walk[py * mw + px] ? 0 : 1;
+  }
+  colisoes.length = N_BORDAS;
+  for (const [c0, l0, c1, l1] of caixasDaGrade(g, colunas, linhas)) {
+    const a = P(c0 * celula, l0 * celula), b = P(c1 * celula, l1 * celula);
+    caixa(a.x, b.x, a.z, b.z);
+  }
+  caixasAABB.length = 0;
+  for (const b of colisoes) caixasAABB.push({ min: { x: b.x0, y: 0, z: b.z0 }, max: { x: b.x1, y: 6, z: b.z1 } });
+}
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.tipo === 'walkmask') aplicarMascaraCaminho(e.data.walk, e.data.w, e.data.h);
+});
+// edição salva neste aparelho (pelo editor) vale ao abrir a vila
+try {
+  const s = localStorage.getItem('vilaWalkmask');
+  if (s) {
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+      const cx = c.getContext('2d'); cx.drawImage(im, 0, 0);
+      const d = cx.getImageData(0, 0, c.width, c.height).data, w = new Uint8Array(c.width * c.height);
+      for (let i = 0; i < w.length; i++) w[i] = d[i * 4] >= 128 ? 1 : 0;
+      aplicarMascaraCaminho(w, c.width, c.height);
+    };
+    im.src = 'data:image/png;base64,' + s;
+  }
+} catch (_) {}
 
 window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
