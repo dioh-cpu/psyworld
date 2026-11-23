@@ -24,6 +24,17 @@ import {
   desserializarEstado,
 } from './regiao1-estado.js';
 
+import {
+  garantirEstadoIdle,
+  registrarCodexArea,
+  calcularStatusDetalhado,
+  escolherHabilidadeAuto,
+  resolverAbateAuto,
+  avancarDiaria,
+  registrarLogIdle,
+} from './regiao1-idle.js';
+import { criarControladorIdleUI } from './regiao1-ui-idle.js';
+
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
 const LARG = 106;
 const ALT = LARG * IMG_H / IMG_W;
@@ -35,7 +46,7 @@ const ALTURA_PERSONAGEM = ALTURA_BASE_PERSONAGEM * FATOR_ESCALA_PERSONAGEM;
 const RAIO = 0.35; // colisão preservada conforme especificação
 const VELOCIDADE_BASE = 8.7; // +50% sobre a velocidade base anterior (5.8 -> 8.7 u/s)
 const MULT_ONIRICO = 2.0;    // Transformar (Conexão Onírica): +100% de velocidade (17.4 u/s)
-const VERSAO_ASSETS = 'r1_48_v3';
+const VERSAO_ASSETS = 'r1_48_v4';
 
 const P = (px, py) => ({ x: (px / IMG_W - 0.5) * LARG, z: (py / IMG_H - 0.5) * ALT });
 const W2P = (x, z) => [
@@ -122,15 +133,18 @@ canvas.addEventListener('wheel', (e) => {
   ajustarZoom(Math.sign(e.deltaY) * 2.5);
 }, { passive: false });
 
-// ---- Persistência (save) ----
+// ---- Persistência (save compartilhado entre Modo Idle e Modo Campanha) ----
 let save = criarEstadoInicial();
 try {
   const raw = localStorage.getItem(SAVE_KEY_REGIAO1);
   if (raw && !params.get('novosave')) save = desserializarEstado(raw);
 } catch (_) {}
+garantirEstadoIdle(save);
 
 function salvarEstado() {
   try {
+    const idle = garantirEstadoIdle(save);
+    idle.ultimoTickMs = Date.now();
     save.mapaAtual = mapaAtual ? mapaAtual.id : save.mapaAtual;
     save.posicaoPx = W2P(estado.x, estado.z);
     localStorage.setItem(SAVE_KEY_REGIAO1, serializarEstado(save));
@@ -547,9 +561,11 @@ function mostrarToast(msg, ms = 3600) {
   if (ms > 0) timerAviso = setTimeout(() => { aviso.style.display = 'none'; }, ms);
 }
 
+let idleUI = null;
+
 function atualizarHudEstado() {
-  hudRecursos.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes}💎`;
-  btnFazenda.style.display = save.desbloqueios.fazenda ? 'inline-flex' : 'none';
+  if (hudRecursos) hudRecursos.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes}💎`;
+  if (btnFazenda) btnFazenda.style.display = save.desbloqueios.fazenda ? 'inline-flex' : 'none';
 
   // Destaque da quest em auto-rota ou primeira quest ativa no banner
   const ativa = (autoRotaQuestId && QUESTS_POR_ID[autoRotaQuestId] && save.quests[autoRotaQuestId] !== 'concluida'
@@ -571,6 +587,7 @@ function atualizarHudEstado() {
     questBanner?.classList.remove('autorota');
     if (qbAuto) qbAuto.textContent = '✓ Concluído';
   }
+  idleUI?.atualizarHudIdle();
 }
 
 questBanner?.addEventListener('click', () => {
@@ -897,6 +914,10 @@ function encerrarBatalha(vitoria) {
   if (vitoria) {
     if (b.tipo === 'boss') {
       const res = registrarVitoriaBoss(save, b.entidade.id);
+      const idle = garantirEstadoIdle(save);
+      idle.codex.bosses[b.entidade.id] = true;
+      avancarDiaria(idle, 'bosses', 1);
+      registrarLogIdle(idle, `🏆 Chefe derrotado: ${b.nomeIni}!`, 'farm');
       construirEntidadesDoMapa(mapaAtual);
       notificarQuestsConcluidas(res.concluidas);
       if (res.tremLiberadoAgora) {
@@ -977,6 +998,7 @@ async function entrarNoMapa(id, chegadaPx = null, comFade = true) {
   }
 
   mapaAtual = destino;
+  registrarCodexArea(garantirEstadoIdle(save), destino.id);
 
   // Descoberta automática de marco regional (C1, E8, D9, PC7, CC7)
   if (destino.marco && destino.marco.id !== 'REINO') {
@@ -1357,6 +1379,9 @@ function iniciarAutoRota(questId) {
     const r = aceitarQuest(save, id);
     if (r.concluidas.length) notificarQuestsConcluidas(r.concluidas);
   }
+  if (garantirEstadoIdle(save).autoCaca.ativo) {
+    garantirEstadoIdle(save).autoCaca.ativo = false;
+  }
   autoRotaQuestId = id;
   atualizarHudEstado();
   planejarPassoAutoRota();
@@ -1559,11 +1584,12 @@ function atualizarSaidasEInteracoes(agora) {
     }
   }
 
-  // Encontros por aproximação com monstros selvagens ou Boss (durante Auto-Rota, ignora selvagens no caminho)
+  // Encontros por aproximação com monstros selvagens ou Boss (durante Auto-Rota ou Auto-Caça, não abre modal para selvagens)
   if (!emTransicao && !algumModalAberto() && agora >= bloqueioEncontroAte) {
+    const autoCacaAtivo = Boolean(garantirEstadoIdle(save).autoCaca.ativo);
     for (const ent of entidadesMapa) {
       if (ent.tipo !== 'wild' && ent.tipo !== 'boss') continue;
-      if (autoRotaQuestId && ent.tipo === 'wild') continue;
+      if ((autoRotaQuestId || autoCacaAtivo) && ent.tipo === 'wild') continue;
       if (Math.hypot(estado.x - ent.x, estado.z - ent.z) < ent.raio) {
         iniciarBatalha(ent.tipo, ent.dados);
         return;
@@ -1635,6 +1661,128 @@ function atualizarSaidasEInteracoes(agora) {
   });
 }
 
+// ---- Auto-Caça em Tempo Real no Mapa 2D (Idle Principal) ----
+let alvoAutoCaca = null;
+let proximoGolpeAuto = 0;
+let ultimoMinimapa = 0;
+let ultimoRenderMs = 0;
+const _proj = new THREE.Vector3();
+
+function projetarNaTela(wx, wz) {
+  _proj.set(wx, 2.2, wz).project(camera);
+  return {
+    x: (_proj.x * 0.5 + 0.5) * window.innerWidth,
+    y: (-_proj.y * 0.5 + 0.5) * window.innerHeight,
+  };
+}
+
+function definirAutoCaca(ativo) {
+  const idle = garantirEstadoIdle(save);
+  idle.autoCaca.ativo = Boolean(ativo);
+  if (idle.autoCaca.ativo) {
+    pararNavegacao(true);
+    alvoAutoCaca = null;
+    const temWild = entidadesMapa.some((e) => e.tipo === 'wild');
+    if (!temWild) {
+      mostrarToast('⚔️ Auto-Caça ligado! Use "Caçar" para ir a uma área com monstros.', 3000);
+    } else {
+      mostrarToast('⚔️ Auto-Caça ON! Caçando monstros automaticamente no mapa.', 2400);
+    }
+  } else {
+    alvoAutoCaca = null;
+    waypointsAtuais = [];
+    marcadorDestino.visible = false;
+  }
+  salvarEstado();
+  atualizarHudEstado();
+}
+
+document.getElementById('btn-autocaca')?.addEventListener('click', () => {
+  const idle = garantirEstadoIdle(save);
+  definirAutoCaca(!idle.autoCaca.ativo);
+});
+
+function atualizarAutoCaca(agora, dt, vel) {
+  const idle = garantirEstadoIdle(save);
+  if (!idle.autoCaca.ativo || emTransicao || algumModalAberto() || !sdfAtivo) return { andando: false, rot: 0 };
+
+  // Verifica se o alvo atual ainda existe
+  if (alvoAutoCaca && !entidadesMapa.includes(alvoAutoCaca)) alvoAutoCaca = null;
+
+  if (!alvoAutoCaca) {
+    let melhor = null;
+    let melhorDist = Infinity;
+    for (const ent of entidadesMapa) {
+      if (ent.tipo !== 'wild') continue;
+      if (idle.autoCaca.alvosIgnorados.includes(ent.dados.especie)) continue;
+      const d = Math.hypot(ent.x - estado.x, ent.z - estado.z);
+      if (d < melhorDist) { melhorDist = d; melhor = ent; }
+    }
+    alvoAutoCaca = melhor;
+    if (!alvoAutoCaca) return { andando: false, rot: 0 };
+    if (!alvoAutoCaca._hp) alvoAutoCaca._hp = 50 + alvoAutoCaca.dados.nivel * 12;
+  }
+
+  const vx = alvoAutoCaca.x - estado.x;
+  const vz = alvoAutoCaca.z - estado.z;
+  const dist = Math.hypot(vx, vz);
+  const rot = Math.atan2(vx, vz);
+
+  if (dist > 5.2) {
+    const passo = Math.min(dist - 4.5, vel * dt);
+    const p = resolverMovimentoSDF({ x: estado.x, z: estado.z }, (vx / dist) * passo, (vz / dist) * passo, RAIO, sdfAtivo);
+    estado.x = THREE.MathUtils.clamp(p.x, -LARG / 2 + RAIO, LARG / 2 - RAIO);
+    estado.z = THREE.MathUtils.clamp(p.z, -ALT / 2 + RAIO, ALT / 2 - RAIO);
+    return { andando: true, rot };
+  }
+
+  // Em alcance: ataque em tempo real direto no mapa (sem modal!)
+  if (agora >= proximoGolpeAuto) {
+    proximoGolpeAuto = agora + 680;
+    const st = calcularStatusDetalhado(save);
+    const hab = escolherHabilidadeAuto('Noctarn', alvoAutoCaca.dados.especie, idle.autoCaca.preferirVantagem);
+    const crit = Math.random() < 0.22;
+    const dano = Math.max(12, Math.round(st.atk * hab.mult * (crit ? 1.5 : 1) * (0.9 + Math.random() * 0.2)));
+    alvoAutoCaca._hp -= dano;
+
+    const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
+    idleUI?.spawnFlutuante(pt.x, pt.y - 18, crit ? `⚡ -${dano}!` : `-${dano}`, crit ? '#fb923c' : '#fde047', crit);
+
+    if (alvoAutoCaca._hp <= 0) {
+      const morto = alvoAutoCaca.dados;
+      const res = resolverAbateAuto(save, morto);
+      idleUI?.spawnFlutuante(pt.x, pt.y - 42, `+${res.gold}g  +${res.xp} XP`, '#4ade80', false);
+      if (res.capturado) {
+        idleUI?.spawnFlutuante(pt.x, pt.y - 64, `✨ Capturou ${morto.especie}!`, '#38bdf8', true);
+      }
+      if (res.ovoDrop) {
+        idleUI?.spawnFlutuante(pt.x, pt.y - 84, `🥚 Ovo de ${morto.especie}!`, '#facc15', true);
+      }
+      registrarLogIdle(
+        idle,
+        `⚔️ ${morto.especie} Nv.${morto.nivel} → +${res.gold}g +${res.xp}XP${res.capturado ? ' · ✨Capturado' : ''}${res.ovoDrop ? ' · 🥚Ovo' : ''}`,
+        'farm'
+      );
+      if (res.subiuNivel) {
+        mostrarToast(`🌟 Subiu para o Nível ${res.novoNivel}!`, 2600);
+      }
+      // Remove e agenda respawn automático em 5s para farm contínuo
+      monstrosDerrotadosSessao.add(morto.id);
+      const idRespawn = morto.id;
+      const mapaOrigem = mapaAtual?.id;
+      alvoAutoCaca = null;
+      construirEntidadesDoMapa(mapaAtual);
+      atualizarHudEstado();
+      salvarEstado();
+      setTimeout(() => {
+        monstrosDerrotadosSessao.delete(idRespawn);
+        if (mapaAtual?.id === mapaOrigem) construirEntidadesDoMapa(mapaAtual);
+      }, 5000);
+    }
+  }
+  return { andando: false, rot };
+}
+
 // ---- Loop principal ----
 let ultimo = performance.now();
 
@@ -1644,7 +1792,13 @@ function velocidadeAtual() {
 }
 
 function quadro(agora) {
-  const dt = Math.min(0.05, (agora - ultimo) / 1000);
+  requestAnimationFrame(quadro);
+  const idle = garantirEstadoIdle(save);
+  const minFrameMs = idle.config.economiaEnergia ? 450 : (idle.config.fpsLimite === 30 ? 32 : 0);
+  if (minFrameMs && agora - ultimoRenderMs < minFrameMs) return;
+  ultimoRenderMs = agora;
+
+  const dt = Math.min(0.08, (agora - ultimo) / 1000);
   ultimo = agora;
 
   let andando = false;
@@ -1664,8 +1818,8 @@ function quadro(agora) {
     const vel = velocidadeAtual();
 
     if (forca > 1e-3) {
-      // Controle manual cancela clique no chão e Auto-Rota
       if (waypointsAtuais.length || autoRotaQuestId) pararNavegacao(true);
+      if (idle.autoCaca.ativo) definirAutoCaca(false);
       dx = ix;
       dz = -iz;
       const n = Math.hypot(dx, dz) || 1;
@@ -1674,7 +1828,6 @@ function quadro(agora) {
       dx = (dx / n) * forca * vel * dt;
       dz = (dz / n) * forca * vel * dt;
     } else if (waypointsAtuais.length > 0) {
-      // Segue waypoints do clique do mouse ou da Auto-Rota
       while (waypointsAtuais.length > 1) {
         const d0 = Math.hypot(waypointsAtuais[0].x - estado.x, waypointsAtuais[0].z - estado.z);
         if (d0 < 1.1) waypointsAtuais.shift();
@@ -1704,19 +1857,31 @@ function quadro(agora) {
         dx = (vx / dist) * passo;
         dz = (vz / dist) * passo;
       }
+    } else if (idle.autoCaca.ativo) {
+      const ac = atualizarAutoCaca(agora, dt, vel);
+      andando = ac.andando;
+      rot = ac.rot;
     }
 
-    if (andando) {
+    if (andando && (dx !== 0 || dz !== 0)) {
       const antesX = estado.x;
       const antesZ = estado.z;
       const p = resolverMovimentoSDF({ x: estado.x, z: estado.z }, dx, dz, RAIO, sdfAtivo);
       estado.x = THREE.MathUtils.clamp(p.x, -LARG / 2 + RAIO, LARG / 2 - RAIO);
       estado.z = THREE.MathUtils.clamp(p.z, -ALT / 2 + RAIO, ALT / 2 - RAIO);
-      // Se travou na parede durante clique simples, encerra o alvo
       if (!autoRotaQuestId && waypointsAtuais.length && Math.hypot(estado.x - antesX, estado.z - antesZ) < 1e-4) {
         pararNavegacao(false);
       }
     }
+  }
+
+  // Modo Economia de Energia: mantém farm e HUD leve sem renderizar WebGL
+  if (idle.config.economiaEnergia) {
+    if (agora - ultimoMinimapa > 900) {
+      ultimoMinimapa = agora;
+      idleUI?.atualizarHudIdle();
+    }
+    return;
   }
 
   jogador.position.set(estado.x, camada(estado.z), estado.z);
@@ -1727,7 +1892,6 @@ function quadro(agora) {
     noctarn.atualizar(andando, rot, 0);
   }
 
-  // Animação suave nos billboards de monstros, pistas e marcador de clique
   const pulso = Math.sin(agora * 0.004);
   if (marcadorDestino.visible) {
     const s = 1 + Math.sin(agora * 0.009) * 0.14;
@@ -1760,13 +1924,45 @@ function quadro(agora) {
   jogador.quaternion.copy(camera.quaternion);
   primeiroQuadro = false;
 
+  if (agora - ultimoMinimapa > 220 && mapaAtual) {
+    ultimoMinimapa = agora;
+    const [jpx, jpy] = W2P(estado.x, estado.z);
+    const ws = entidadesMapa.filter((e) => e.tipo === 'wild').map((e) => ({ px: e.dados.pos[0], py: e.dados.pos[1] }));
+    idleUI?.atualizarMinimapa(mapaAtual, jpx, jpy, ws);
+  }
+
   renderer.render(cena, camera);
-  requestAnimationFrame(quadro);
 }
 
 window.addEventListener('resize', () => {
   enquadrar();
   renderer.setSize(window.innerWidth, window.innerHeight, false);
+});
+
+// ---- Controlador de UI Idle (Atlas, Codex, Mochila, Temporada, Vote, Config, AFK, Tutorial) ----
+idleUI = criarControladorIdleUI({
+  getSave: () => save,
+  getMapaAtual: () => mapaAtual,
+  salvar: salvarEstado,
+  mostrarToast,
+  definirAutoCaca,
+  abrirDiario: () => { renderizarDiario(); abrirModal('modal-diario'); },
+  abrirMapa48: () => {
+    const stEl = document.getElementById('mapa-status');
+    const tps = Object.keys(MARCOS_TELEPORTE).map((id) => {
+      const t = save.teleportes[id];
+      return `${t.ativo ? '🔷' : t.descoberto ? '⬜' : '🔒'} ${id}`;
+    }).join(' · ');
+    const bs = Object.values(BOSSES_REGIAO1).map((b) => `${save.bossesDerrotados[b.id] ? '✅' : '⚔️'} ${b.nome}`).join(' · ');
+    if (stEl) stEl.innerHTML = `<b>Área atual:</b> ${mapaAtual?.id} · ${mapaAtual?.nome}<br><b>Marcos:</b> ${tps}<br><b>Chefes:</b> ${bs}`;
+    abrirModal('modal-mapa');
+  },
+  viajarParaMapa: async (mapaId, ligarAuto) => {
+    pararNavegacao(true);
+    await entrarNoMapa(mapaId, null, true);
+    if (ligarAuto) definirAutoCaca(true);
+  },
+  exportarSaveJson: () => serializarEstado(save),
 });
 
 // ---- API de inspeção e testes automatizados ----
@@ -1777,11 +1973,12 @@ window.regiao1 = {
   estado: () => ({ x: estado.x, z: estado.z, px: W2P(estado.x, estado.z) }),
   save: () => save,
   salvar: salvarEstado,
-  resetarSave: () => { localStorage.removeItem(SAVE_KEY_REGIAO1); save = criarEstadoInicial(); salvarEstado(); },
+  resetarSave: () => { localStorage.removeItem(SAVE_KEY_REGIAO1); save = criarEstadoInicial(); garantirEstadoIdle(save); salvarEstado(); },
   forma: () => save.forma,
   setForma: (f) => aplicarForma(f),
   transformar: alternarTransformacao,
   velocidadeAtual,
+  definirAutoCaca,
   iniciarAutoRota,
   pararAutoRota: () => pararNavegacao(true),
   autoRotaAtiva: () => autoRotaQuestId,
@@ -1798,6 +1995,7 @@ window.regiao1 = {
   quests: () => save.quests,
   mapasDisponiveis: () => [...ORDEM_MAPAS],
   vencerBatalhaAtual: () => { if (batalhaAtiva) encerrarBatalha(true); },
+  idleUI,
 };
 
 // Inicialização
@@ -1805,5 +2003,10 @@ aplicarForma(params.get('forma') || save.forma || 'noctarn');
 const inicialParam = params.get('mapa')?.toUpperCase();
 const inicialId = (inicialParam && MAPAS[inicialParam]) ? inicialParam : (MAPAS[save.mapaAtual] ? save.mapaAtual : MAPA_INICIAL);
 const spawnInicial = (!inicialParam && inicialId === save.mapaAtual && save.posicaoPx) ? save.posicaoPx : null;
-entrarNoMapa(inicialId, spawnInicial, false);
+entrarNoMapa(inicialId, spawnInicial, false).then(() => {
+  registrarCodexArea(garantirEstadoIdle(save), inicialId);
+  idleUI.atualizarHudIdle();
+  idleUI.verificarGanhoOffline(false);
+  if (!params.get('semtutorial')) idleUI.iniciarTutorial(false);
+});
 requestAnimationFrame(quadro);

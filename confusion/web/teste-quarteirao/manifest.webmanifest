@@ -1,0 +1,17 @@
+{
+  "name": "PSYWORLD — Confusion Waves: Double Perspective",
+  "short_name": "PSYWORLD",
+  "description": "RPG Idle 2D de mundo aberto progressivo com Conexão Onírica e dupla perspectiva Herói × Vilão.",
+  "start_url": "./regiao1.html",
+  "display": "standalone",
+  "background_color": "#0b1322",
+  "theme_color": "#0d182d",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "../../../assets/monsters/noctarn/sprite-front.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

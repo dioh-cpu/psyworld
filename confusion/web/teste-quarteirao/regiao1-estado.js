@@ -602,6 +602,9 @@ export function desserializarEstado(texto) {
       base.recompensas.diamantes = Number(salvo.recompensas.diamantes) || 0;
       base.recompensas.xp = Number(salvo.recompensas.xp) || 0;
     }
+    if (salvo.idle && typeof salvo.idle === 'object') {
+      base.idle = salvo.idle;
+    }
     return base;
   } catch {
     return base;
