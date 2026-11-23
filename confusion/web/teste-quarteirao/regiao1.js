@@ -604,10 +604,12 @@ function abrirModal(id) { document.getElementById(id)?.classList.add('aberto'); 
 function fecharModal(id) {
   document.getElementById(id)?.classList.remove('aberto');
   if (id === 'modal-dialogo' && autoRotaQuestId) {
-    setTimeout(() => { if (!algumModalAberto() && autoRotaQuestId) planejarPassoAutoRota(); }, 80);
+    setTimeout(() => { if (!batalhaBloqueando() && !dialogoAberto() && autoRotaQuestId) planejarPassoAutoRota(); }, 80);
   }
 }
 function algumModalAberto() { return Boolean(document.querySelector('.modal-bg.aberto')); }
+function batalhaBloqueando() { return Boolean(batalhaAtiva || document.getElementById('modal-batalha')?.classList.contains('aberto')); }
+function dialogoAberto() { return Boolean(document.getElementById('modal-dialogo')?.classList.contains('aberto')); }
 
 document.querySelectorAll('[data-fechar]').forEach((btn) => {
   btn.addEventListener('click', () => fecharModal(btn.getAttribute('data-fechar')));
@@ -721,8 +723,23 @@ function abrirDialogo(titulo, sub, texto, botoes) {
 
 function notificarQuestsConcluidas(concluidas) {
   if (!concluidas || !concluidas.length) return;
+  const idle = garantirEstadoIdle(save);
+  const nvAntes = calcularStatusDetalhado(save).nivel;
+  const xpQuest = concluidas.reduce((acc, q) => acc + (q.recompensa?.xp || 0), 0);
+  if (xpQuest > 0) {
+    idle.jogador.xp = Math.max(idle.jogador.xp + xpQuest, save.recompensas.xp || 0);
+    save.recompensas.xp = idle.jogador.xp;
+  }
+  const stDepois = calcularStatusDetalhado(save);
   const nomes = concluidas.map((q) => `🏆 ${q.titulo}`).join(' · ');
-  mostrarToast(`Missão concluída: ${nomes}`, 4500);
+  if (stDepois.nivel > nvAntes) {
+    const ganhoPts = (stDepois.nivel - nvAntes) * 3;
+    idle.jogador.hp = stDepois.hpMax;
+    registrarLogIdle(idle, `🌟 Domador Nv.${stDepois.nivel}! (+${ganhoPts} pts de atributo)`, 'farm');
+    mostrarToast(`🌟 Missão concluída! Domador subiu para o Nv.${stDepois.nivel} (+${ganhoPts} pts)!`, 5000);
+  } else {
+    mostrarToast(`Missão concluída: ${nomes}`, 4500);
+  }
   // Atualiza textura do mapa imediatamente caso o marco deste mapa tenha sido ativado
   if (mapaAtual?.marco && save.teleportes[mapaAtual.marco.id]?.ativo) {
     matPiso.map = texturaAtualDoMapa(mapaAtual);
@@ -820,16 +837,24 @@ function iniciarBatalha(tipo, entidade) {
   const ehBoss = tipo === 'boss';
   const defBoss = ehBoss ? BOSSES_REGIAO1[entidade.id] : null;
   const maxIni = ehBoss ? defBoss.hp : 65 + entidade.nivel * 8;
+  const idle = garantirEstadoIdle(save);
+  const st = calcularStatusDetalhado(save);
+  const maxJog = st.hpMax;
+  const hpJog = Math.max(Math.round(maxJog * 0.5), Math.min(maxJog, idle.jogador.hp));
   batalhaAtiva = {
     tipo,
     entidade,
-    hpJog: 150,
-    maxJog: 150,
+    hpJog,
+    maxJog,
+    atkJog: st.atk,
+    defJog: st.def,
+    nivelJog: st.nivel,
     hpIni: maxIni,
     maxIni,
     nomeIni: ehBoss ? defBoss.nome : `${entidade.especie} (Nv. ${entidade.nivel})`,
   };
   document.getElementById('bat-titulo').textContent = ehBoss ? `⚔️ Chefe · ${defBoss.nome}` : `⚡ Encontro Selvagem`;
+  document.getElementById('bat-nome-jog').textContent = `Noctarn · Nv.${st.nivel}`;
   document.getElementById('bat-img-ini').src = entidade.sprite;
   document.getElementById('bat-nome-ini').textContent = batalhaAtiva.nomeIni;
   document.getElementById('bat-log').textContent = ehBoss
@@ -849,10 +874,11 @@ function renderizarBatalha() {
 
   const acoes = document.getElementById('bat-acoes');
   acoes.innerHTML = '';
+  const atk = b.atkJog || 22;
   const golpes = [
-    { nome: 'Mordida Umbral', dano: [28, 40] },
-    { nome: 'Chama Violeta', dano: [36, 52] },
-    { nome: 'Véu Noturno (Cura)', cura: 42 },
+    { nome: 'Mordida Umbral', dano: [Math.round(atk * 1.15), Math.round(atk * 1.45)] },
+    { nome: 'Chama Violeta', dano: [Math.round(atk * 1.4), Math.round(atk * 1.85)] },
+    { nome: 'Véu Noturno (Cura)', cura: Math.round(b.maxJog * 0.3) },
   ];
   for (const g of golpes) {
     const btn = document.createElement('button');
@@ -898,7 +924,9 @@ function executarTurno(golpe) {
     return;
   }
 
-  const contra = b.tipo === 'boss' ? 18 : 11;
+  const baseContra = b.tipo === 'boss' ? 24 : 14;
+  const reducao = Math.floor((b.defJog || 10) * 0.35);
+  const contra = Math.max(4, baseContra - reducao);
   b.hpJog = Math.max(1, b.hpJog - contra);
   log.push(`${b.nomeIni} contra-atacou (${contra} de dano).`);
   document.getElementById('bat-log').textContent = log.join(' ');
@@ -908,13 +936,14 @@ function executarTurno(golpe) {
 function encerrarBatalha(vitoria) {
   if (!batalhaAtiva) return;
   const b = batalhaAtiva;
+  const idle = garantirEstadoIdle(save);
+  idle.jogador.hp = Math.max(1, Math.min(b.maxJog, b.hpJog));
   batalhaAtiva = null;
   fecharModal('modal-batalha');
 
   if (vitoria) {
     if (b.tipo === 'boss') {
       const res = registrarVitoriaBoss(save, b.entidade.id);
-      const idle = garantirEstadoIdle(save);
       idle.codex.bosses[b.entidade.id] = true;
       avancarDiaria(idle, 'bosses', 1);
       registrarLogIdle(idle, `🏆 Chefe derrotado: ${b.nomeIni}!`, 'farm');
@@ -927,16 +956,23 @@ function encerrarBatalha(vitoria) {
         mostrarToast(`Vitória contra ${b.nomeIni}! Retorne a pé para ${ret}.`, 4500);
       }
     } else {
+      const nvAntes = calcularStatusDetalhado(save).nivel;
       monstrosDerrotadosSessao.add(b.entidade.id);
       save.recompensas.gold += 25;
-      save.recompensas.xp += 20;
+      idle.jogador.xp += 20;
+      save.recompensas.xp = idle.jogador.xp;
+      const stDepois = calcularStatusDetalhado(save);
       construirEntidadesDoMapa(mapaAtual);
-      mostrarToast(`Vitória sobre ${b.entidade.especie}! (+25g, +20 XP)`, 3000);
+      if (stDepois.nivel > nvAntes) {
+        mostrarToast(`🌟 Vitória sobre ${b.entidade.especie}! Domador Nv.${stDepois.nivel} (+3 pts)!`, 3600);
+      } else {
+        mostrarToast(`Vitória sobre ${b.entidade.especie}! (+25g, +20 XP)`, 3000);
+      }
     }
     atualizarHudEstado();
     salvarEstado();
     if (autoRotaQuestId) {
-      setTimeout(() => { if (autoRotaQuestId && !algumModalAberto()) planejarPassoAutoRota(); }, 450);
+      setTimeout(() => { if (autoRotaQuestId && !batalhaBloqueando() && !dialogoAberto()) planejarPassoAutoRota(); }, 450);
     }
   } else {
     // Afasta levemente da entidade ao recuar para não disparar encontro imediato
@@ -1083,7 +1119,7 @@ function agendarFecharDialogoAuto(ms = 1350) {
     if (!autoRotaQuestId) return;
     if (document.getElementById('modal-dialogo')?.classList.contains('aberto')) {
       fecharModal('modal-dialogo');
-    } else if (!algumModalAberto()) {
+    } else if (!batalhaBloqueando()) {
       planejarPassoAutoRota();
     }
   }, ms);
@@ -1149,17 +1185,26 @@ function escolherProximaQuestAutoRota() {
 
 function executarObjetivoAutoRota(obj) {
   if (!obj || emTransicao) return;
+  const menuAberto = algumModalAberto();
+  const idle = garantirEstadoIdle(save);
+
   if (obj.tipo === 'pista') {
     const p = obj.dados;
     const res = registrarPista(save, p.id);
     notificarQuestsConcluidas(res.concluidas);
     construirEntidadesDoMapa(mapaAtual);
+    registrarLogIdle(idle, `✦ Pista coletada: ${p.rotulo} (${mapaAtual.id})`, 'farm');
     atualizarHudEstado();
     salvarEstado();
-    abrirDialogo(`✦ ${p.rotulo}`, `Coletado automaticamente (${mapaAtual.id})`, p.texto, [
-      { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
-    ]);
-    agendarFecharDialogoAuto(1250);
+    if (menuAberto) {
+      mostrarToast(`✦ Auto-Rota coletou: ${p.rotulo}`, 2200);
+      setTimeout(() => { if (autoRotaQuestId && !batalhaBloqueando()) planejarPassoAutoRota(); }, 350);
+    } else {
+      abrirDialogo(`✦ ${p.rotulo}`, `Coletado automaticamente (${mapaAtual.id})`, p.texto, [
+        { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
+      ]);
+      agendarFecharDialogoAuto(1250);
+    }
     return;
   }
   if (obj.tipo === 'npc') {
@@ -1173,12 +1218,18 @@ function executarObjetivoAutoRota(obj) {
     }
     notificarQuestsConcluidas(concluidas);
     construirEntidadesDoMapa(mapaAtual);
+    registrarLogIdle(idle, `💬 Auto-Rota falou com ${npc.nome}`, 'farm');
     atualizarHudEstado();
     salvarEstado();
-    abrirDialogo(npc.nome, `Conversa automática · NPC (${npc.raca})`, npc.dialogo, [
-      { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
-    ]);
-    agendarFecharDialogoAuto(1450);
+    if (menuAberto) {
+      mostrarToast(`💬 Auto-Rota falou com ${npc.nome}`, 2200);
+      setTimeout(() => { if (autoRotaQuestId && !batalhaBloqueando()) planejarPassoAutoRota(); }, 350);
+    } else {
+      abrirDialogo(npc.nome, `Conversa automática · NPC (${npc.raca})`, npc.dialogo, [
+        { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
+      ]);
+      agendarFecharDialogoAuto(1450);
+    }
     return;
   }
   if (obj.tipo === 'marco') {
@@ -1187,7 +1238,7 @@ function executarObjetivoAutoRota(obj) {
     const r2 = registrarPista(save, obj.pistaMarco);
     notificarQuestsConcluidas([...r1.concluidas, ...r2.concluidas]);
     mostrarToast(`🔷 Marco ${obj.id} ativado automaticamente! Cristal agora brilha em azul.`, 3000);
-    setTimeout(() => { if (autoRotaQuestId && !algumModalAberto()) planejarPassoAutoRota(); }, 450);
+    setTimeout(() => { if (autoRotaQuestId && !batalhaBloqueando()) planejarPassoAutoRota(); }, 450);
     return;
   }
   if (obj.tipo === 'boss') {
@@ -1529,7 +1580,9 @@ window.addEventListener('keydown', (e) => {
     if (!algumModalAberto()) alternarTransformacao();
   }
   if (e.code === 'Escape') {
-    ['modal-dialogo', 'modal-diario', 'modal-mapa', 'modal-teleporte'].forEach(fecharModal);
+    document.querySelectorAll('.modal-bg.aberto').forEach((m) => {
+      if (m.id !== 'modal-batalha') fecharModal(m.id);
+    });
   }
 });
 window.addEventListener('keyup', (e) => teclas.delete(e.code));
@@ -1597,8 +1650,8 @@ function atualizarSaidasEInteracoes(agora) {
     }
   }
 
-  // Transições de borda e Trem
-  if (!emTransicao && !algumModalAberto() && agora >= bloqueioSaidaAte) {
+  // Transições de borda e Trem (Auto-Rota continua atravessando áreas mesmo com menus abertos!)
+  if (!emTransicao && !batalhaBloqueando() && (!algumModalAberto() || Boolean(autoRotaQuestId)) && agora >= bloqueioSaidaAte) {
     const dentro = saidasAtuais.find((sa) =>
       estado.x >= sa.x0 && estado.x <= sa.x1 && estado.z >= sa.z0 && estado.z <= sa.z1
     ) || null;
@@ -1704,7 +1757,7 @@ document.getElementById('btn-autocaca')?.addEventListener('click', () => {
 
 function atualizarAutoCaca(agora, dt, vel) {
   const idle = garantirEstadoIdle(save);
-  if (!idle.autoCaca.ativo || emTransicao || algumModalAberto() || !sdfAtivo) return { andando: false, rot: 0 };
+  if (!idle.autoCaca.ativo || emTransicao || batalhaBloqueando() || !sdfAtivo) return { andando: false, rot: 0 };
 
   // Verifica se o alvo atual ainda existe
   if (alvoAutoCaca && !entidadesMapa.includes(alvoAutoCaca)) alvoAutoCaca = null;
@@ -1745,18 +1798,23 @@ function atualizarAutoCaca(agora, dt, vel) {
     const dano = Math.max(12, Math.round(st.atk * hab.mult * (crit ? 1.5 : 1) * (0.9 + Math.random() * 0.2)));
     alvoAutoCaca._hp -= dano;
 
-    const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
-    idleUI?.spawnFlutuante(pt.x, pt.y - 18, crit ? `⚡ -${dano}!` : `-${dano}`, crit ? '#fb923c' : '#fde047', crit);
+    if (!algumModalAberto()) {
+      const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
+      idleUI?.spawnFlutuante(pt.x, pt.y - 18, crit ? `⚡ -${dano}!` : `-${dano}`, crit ? '#fb923c' : '#fde047', crit);
+    }
 
     if (alvoAutoCaca._hp <= 0) {
       const morto = alvoAutoCaca.dados;
       const res = resolverAbateAuto(save, morto);
-      idleUI?.spawnFlutuante(pt.x, pt.y - 42, `+${res.gold}g  +${res.xp} XP`, '#4ade80', false);
-      if (res.capturado) {
-        idleUI?.spawnFlutuante(pt.x, pt.y - 64, `✨ Capturou ${morto.especie}!`, '#38bdf8', true);
-      }
-      if (res.ovoDrop) {
-        idleUI?.spawnFlutuante(pt.x, pt.y - 84, `🥚 Ovo de ${morto.especie}!`, '#facc15', true);
+      if (!algumModalAberto()) {
+        const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
+        idleUI?.spawnFlutuante(pt.x, pt.y - 42, `+${res.gold}g  +${res.xp} XP`, '#4ade80', false);
+        if (res.capturado) {
+          idleUI?.spawnFlutuante(pt.x, pt.y - 64, `✨ Capturou ${morto.especie}!`, '#38bdf8', true);
+        }
+        if (res.ovoDrop) {
+          idleUI?.spawnFlutuante(pt.x, pt.y - 84, `🥚 Ovo de ${morto.especie}!`, '#facc15', true);
+        }
       }
       registrarLogIdle(
         idle,
@@ -1764,7 +1822,7 @@ function atualizarAutoCaca(agora, dt, vel) {
         'farm'
       );
       if (res.subiuNivel) {
-        mostrarToast(`🌟 Subiu para o Nível ${res.novoNivel}!`, 2600);
+        mostrarToast(`🌟 Domador subiu para o Nível ${res.novoNivel}! (+3 Pontos de Atributo)`, 3400);
       }
       // Remove e agenda respawn automático em 5s para farm contínuo
       monstrosDerrotadosSessao.add(morto.id);
@@ -1804,18 +1862,23 @@ function quadro(agora) {
   let andando = false;
   let rot = 0;
 
-  if (VISAO === 'jogo' && !emTransicao && !algumModalAberto() && sdfAtivo) {
-    let ix = joy.x;
-    let iz = joy.z;
-    if (pressionada('KeyW', 'ArrowUp')) iz += 1;
-    if (pressionada('KeyS', 'ArrowDown')) iz -= 1;
-    if (pressionada('KeyD', 'ArrowRight')) ix += 1;
-    if (pressionada('KeyA', 'ArrowLeft')) ix -= 1;
+  // Auto-Caça e Auto-Rota NÃO pausam ao abrir menus (apenas batalha de Chefe pausa movimento)
+  if (VISAO === 'jogo' && !emTransicao && !batalhaBloqueando() && sdfAtivo) {
+    const modalAberto = algumModalAberto();
+    let ix = modalAberto ? 0 : joy.x;
+    let iz = modalAberto ? 0 : joy.z;
+    if (!modalAberto) {
+      if (pressionada('KeyW', 'ArrowUp')) iz += 1;
+      if (pressionada('KeyS', 'ArrowDown')) iz -= 1;
+      if (pressionada('KeyD', 'ArrowRight')) ix += 1;
+      if (pressionada('KeyA', 'ArrowLeft')) ix -= 1;
+    }
     const forca = Math.min(1, Math.hypot(ix, iz));
 
     let dx = 0;
     let dz = 0;
     const vel = velocidadeAtual();
+    const podeSeguirWaypoints = waypointsAtuais.length > 0 && (autoRotaQuestId ? !dialogoAberto() : !modalAberto);
 
     if (forca > 1e-3) {
       if (waypointsAtuais.length || autoRotaQuestId) pararNavegacao(true);
@@ -1827,7 +1890,7 @@ function quadro(agora) {
       rot = Math.atan2(dx, dz);
       dx = (dx / n) * forca * vel * dt;
       dz = (dz / n) * forca * vel * dt;
-    } else if (waypointsAtuais.length > 0) {
+    } else if (podeSeguirWaypoints) {
       while (waypointsAtuais.length > 1) {
         const d0 = Math.hypot(waypointsAtuais[0].x - estado.x, waypointsAtuais[0].z - estado.z);
         if (d0 < 1.1) waypointsAtuais.shift();

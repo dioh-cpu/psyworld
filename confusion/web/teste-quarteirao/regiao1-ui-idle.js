@@ -9,12 +9,15 @@ import { QUESTS_DEFINICOES } from './regiao1-estado.js';
 import {
   I18N,
   RELIQUIAS_CATALOGO,
+  ATRIBUTOS_DOMADOR,
   ESPECIES,
   PASS_LEVELS,
   SPHERE_PRICE,
   garantirEstadoIdle,
   bonusCodex,
   calcularStatusDetalhado,
+  distribuirAtributoDomador,
+  resetarAtributosDomador,
   avaliarRiscoArea,
   calcularGanhoOffline,
   aplicarGanhoOffline,
@@ -136,6 +139,15 @@ export function criarControladorIdleUI(ctx) {
     if (elSan) elSan.style.width = `${idle.jogador.sanidade}%`;
     if (elSanTxt) elSanTxt.textContent = `SAN ${idle.jogador.sanidade}`;
 
+    const elXp = $('bar-xp-fill');
+    if (elXp) elXp.style.width = `${st.xpPct}%`;
+
+    const elBadgePts = $('badge-pts');
+    if (elBadgePts) {
+      elBadgePts.textContent = `+${st.pontosDisponiveis} pts`;
+      elBadgePts.classList.toggle('visivel', st.pontosDisponiveis > 0);
+    }
+
     const elRec = $('hud-recursos');
     if (elRec) elRec.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes}💎`;
 
@@ -145,7 +157,9 @@ export function criarControladorIdleUI(ctx) {
       btnAuto.textContent = idle.autoCaca.ativo ? `⚔️ ${t.autoOn}` : `⚔️ ${t.autoOff}`;
     }
     const btnMenu = $('btn-menu-geral');
-    if (btnMenu) btnMenu.textContent = `☰ ${t.menu}`;
+    if (btnMenu) {
+      btnMenu.textContent = st.pontosDisponiveis > 0 ? `☰ ${t.menu} •` : `☰ ${t.menu}`;
+    }
     const btnAtlas = $('btn-atlas-rapido');
     if (btnAtlas) btnAtlas.textContent = `🗺️ ${t.atlas}`;
 
@@ -392,11 +406,53 @@ export function criarControladorIdleUI(ctx) {
     abrir('modal-codex');
   }
 
-  // ---- Mochila, Relíquias & Status Explicáveis ----
+  // ---- Mochila, Atributos do Domador, Relíquias & Status Explicáveis ----
+  $('hud-card-domador')?.addEventListener('click', abrirMochila);
+
   function abrirMochila() {
     const save = ctx.getSave();
     const idle = garantirEstadoIdle(save);
     const st = calcularStatusDetalhado(save);
+    const attrs = idle.jogador.atributos || { for: 0, vit: 0, men: 0, vin: 0, sor: 0 };
+    const gastos = (attrs.for || 0) + (attrs.vit || 0) + (attrs.men || 0) + (attrs.vin || 0) + (attrs.sor || 0);
+
+    const domEl = $('domador-atributos');
+    if (domEl) {
+      domEl.innerHTML = `
+        <div class="card-row" style="border-color:rgba(250,204,21,.45)">
+          <div>
+            <b>Nível ${st.nivel}</b> · XP ${st.xpNoNivel}/${st.xpNecessario} (${st.xpPct}%)
+            <div class="sub">Pontos disponíveis: <b style="color:${st.pontosDisponiveis > 0 ? '#facc15' : '#94b3d4'}">${st.pontosDisponiveis}</b> · Investidos: ${gastos}</div>
+          </div>
+          ${gastos > 0 ? '<button class="btn-sec" id="btn-reset-attrs" style="padding:4px 9px;font-size:11px">↺ Resetar</button>' : ''}
+        </div>
+        ${ATRIBUTOS_DOMADOR.map((a) => `
+          <div class="card-row">
+            <div>
+              <b>${a.sigla} · ${a.nome}</b> <span class="tag" style="color:#4ade80;border-color:#4ade80">${attrs[a.id] || 0} pts</span>
+              <div class="sub">${a.desc}</div>
+            </div>
+            <button class="btn-pri" data-add-attr="${a.id}" style="padding:5px 10px;font-size:11.5px;${st.pontosDisponiveis > 0 ? '' : 'opacity:.45;cursor:not-allowed'}" ${st.pontosDisponiveis > 0 ? '' : 'disabled'}>+1</button>
+          </div>
+        `).join('')}
+      `;
+      domEl.querySelectorAll('[data-add-attr]').forEach((b) => {
+        b.onclick = () => {
+          const r = distribuirAtributoDomador(save, b.dataset.addAttr, 1);
+          ctx.mostrarToast(r.ok ? `+1 em ${b.dataset.addAttr.toUpperCase()}! (Restam ${r.restantes} pts)` : r.motivo, 1800);
+          ctx.salvar();
+          atualizarHudIdle();
+          abrirMochila();
+        };
+      });
+      $('btn-reset-attrs')?.addEventListener('click', () => {
+        const r = resetarAtributosDomador(save);
+        ctx.mostrarToast(`Atributos resetados! ${r.disponiveis} pontos devolvidos.`, 2200);
+        ctx.salvar();
+        atualizarHudIdle();
+        abrirMochila();
+      });
+    }
 
     $('status-breakdown').innerHTML = st.fontes.map((f) => `
       <div class="card-row">
@@ -405,12 +461,17 @@ export function criarControladorIdleUI(ctx) {
       </div>
     `).join('');
 
-    $('mochila-esferas').innerHTML = Object.entries(SPHERE_PRICE).map(([rar, preco]) => `
-      <div class="card-row">
-        <div><b>Esfera ${rar}</b> · Você tem: <b style="color:#38bdf8">${idle.mochila.esferas[rar] || 0}</b></div>
-        <button class="btn-pri" style="padding:5px 10px;font-size:11.5px" data-comp-esf="${rar}">Comprar (${preco}g)</button>
-      </div>
-    `).join('');
+    $('mochila-esferas').innerHTML = Object.entries(SPHERE_PRICE).map(([rar, preco]) => {
+      const custoTxt = typeof preco === 'object'
+        ? `${preco.valor}${preco.moeda === 'diamonds' ? '💎' : 'g'}`
+        : `${preco}g`;
+      return `
+        <div class="card-row">
+          <div><b>Esfera ${rar}</b> · Você tem: <b style="color:#38bdf8">${idle.mochila.esferas[rar] || 0}</b></div>
+          <button class="btn-pri" style="padding:5px 10px;font-size:11.5px" data-comp-esf="${rar}">Comprar (${custoTxt})</button>
+        </div>
+      `;
+    }).join('');
     $('mochila-esferas').querySelectorAll('[data-comp-esf]').forEach((b) => {
       b.onclick = () => {
         const r = comprarEsferaIdle(save, b.dataset.compEsf);

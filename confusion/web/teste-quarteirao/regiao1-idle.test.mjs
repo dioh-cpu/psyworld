@@ -7,6 +7,10 @@ import {
   registrarCodexArea,
   registrarCodexEspecie,
   calcularStatusDetalhado,
+  pontosDomadorDisponiveis,
+  distribuirAtributoDomador,
+  resetarAtributosDomador,
+  comprarEsferaIdle,
   avaliarRiscoArea,
   resolverAbateAuto,
   calcularGanhoOffline,
@@ -94,4 +98,38 @@ test('Login 7 dias, Passe (systems.js), Relíquias e Vote & Ganhe funcionam inte
   assert.equal(registrarVotoPortal(s, 'topidle', t0).ok, true);
   assert.equal(registrarVotoPortal(s, 'topidle', t0 + 1000).ok, false);
   assert.equal(resgatarLojaVoto(s, 'esferas').ok, true);
+});
+
+test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos, exibe Sanidade válida e compra Esferas corretamente', () => {
+  const s = criarEstadoInicial();
+  // Simula XP vindo da Campanha (sincronizado automaticamente com Domador)
+  s.recompensas.xp = 400;
+  const st0 = calcularStatusDetalhado(s);
+  assert.ok(st0.nivel >= 3, `esperava nível >= 3, veio ${st0.nivel}`);
+  assert.equal(pontosDomadorDisponiveis(s), (st0.nivel - 1) * 3);
+  assert.ok(st0.bandaSanidade && st0.bandaSanidade !== 'undefined');
+  assert.ok(!st0.fontes.some((f) => String(f.detalhe).includes('undefined')));
+
+  const atkAntes = st0.atk;
+  const hpAntes = st0.hpMax;
+  assert.equal(distribuirAtributoDomador(s, 'for', 2).ok, true);
+  assert.equal(distribuirAtributoDomador(s, 'vit', 1).ok, true);
+  assert.equal(distribuirAtributoDomador(s, 'sor', 1).ok, true);
+
+  const st1 = calcularStatusDetalhado(s);
+  assert.ok(st1.atk >= atkAntes + 6);
+  assert.ok(st1.hpMax >= hpAntes + 15);
+  assert.ok(st1.goldMult > 1);
+
+  const res = resetarAtributosDomador(s);
+  assert.equal(res.ok, true);
+  assert.equal(res.disponiveis, (st0.nivel - 1) * 3);
+
+  // Compra de Esfera comum (gold) e lendária (diamantes)
+  s.recompensas.gold = 50;
+  s.recompensas.diamantes = 2000;
+  assert.equal(comprarEsferaIdle(s, 'comum').ok, true);
+  assert.equal(s.recompensas.gold, 40);
+  assert.equal(comprarEsferaIdle(s, 'lendaria').ok, true);
+  assert.equal(s.recompensas.diamantes, 500);
 });

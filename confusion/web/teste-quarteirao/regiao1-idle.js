@@ -91,6 +91,16 @@ const POOL_MISSOES_DIARIAS = [
   { id: 'dm_boss_1', titulo: 'Enfrentar 1 Chefe de Arena', tipo: 'bosses', meta: 1, xpPasse: 90, gold: 220, mapaSugerido: 'BOSS_E' },
 ];
 
+export const PONTOS_POR_NIVEL = 3;
+
+export const ATRIBUTOS_DOMADOR = [
+  { id: 'for', sigla: 'FOR', nome: 'Força Onírica', desc: '+3 ATK por ponto (aumenta dano de ataques e habilidades)' },
+  { id: 'vit', sigla: 'VIT', nome: 'Vitalidade', desc: '+15 HP Máx e +1 DEF por ponto (mais resistência em áreas difíceis)' },
+  { id: 'men', sigla: 'MEN', nome: 'Mente', desc: '+2 ATK Elemental e +1% proteção mental por ponto' },
+  { id: 'vin', sigla: 'VIN', nome: 'Vínculo', desc: '+2% Chance de Captura e +3% XP ganho por ponto' },
+  { id: 'sor', sigla: 'SOR', nome: 'Sorte', desc: '+3% Gold, +2% Drop de Ovos e +4% Fazenda por ponto' },
+];
+
 export function criarEstadoIdle(agoraMs = Date.now()) {
   return {
     perspectiva: 'vilao', // 'vilao' (Azazel/Trevas) ou 'heroi' (Luz)
@@ -100,6 +110,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
       sanidade: 82,
       abatesTotais: 0,
       capturasTotais: 0,
+      atributos: { for: 0, vit: 0, men: 0, vin: 0, sor: 0 },
     },
     ultimoTickMs: agoraMs,
     autoCaca: {
@@ -160,6 +171,12 @@ function gerarDiariasIniciais(agoraMs) {
 export function garantirEstadoIdle(save, agoraMs = Date.now()) {
   const diaAtual = Math.floor(agoraMs / 86400000);
   if (save.idle && save.idle._pronto) {
+    if (!save.idle.jogador.atributos) {
+      save.idle.jogador.atributos = { for: 0, vit: 0, men: 0, vin: 0, sor: 0 };
+    }
+    if ((save.recompensas?.xp || 0) > (save.idle.jogador.xp || 0)) {
+      save.idle.jogador.xp = save.recompensas.xp;
+    }
     if (!save.idle.diarias || save.idle.diarias.dia !== diaAtual) {
       save.idle.diarias = gerarDiariasIniciais(agoraMs);
     }
@@ -168,12 +185,17 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
   const base = criarEstadoIdle(agoraMs);
   if (!save.idle || typeof save.idle !== 'object') {
     save.idle = base;
+    if ((save.recompensas?.xp || 0) > 0) save.idle.jogador.xp = save.recompensas.xp;
     return save.idle;
   }
   save.idle = {
     ...base,
     ...save.idle,
-    jogador: { ...base.jogador, ...(save.idle.jogador || {}) },
+    jogador: {
+      ...base.jogador,
+      ...(save.idle.jogador || {}),
+      atributos: { ...base.jogador.atributos, ...(save.idle.jogador?.atributos || {}) },
+    },
     autoCaca: { ...base.autoCaca, ...(save.idle.autoCaca || {}) },
     codex: {
       especies: { ...base.codex.especies, ...(save.idle.codex?.especies || {}) },
@@ -201,10 +223,44 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     equipe: Array.isArray(save.idle.equipe) && save.idle.equipe.length ? save.idle.equipe : base.equipe,
     _pronto: true,
   };
+  if ((save.recompensas?.xp || 0) > (save.idle.jogador.xp || 0)) {
+    save.idle.jogador.xp = save.recompensas.xp;
+  }
   if (!save.idle.diarias || save.idle.diarias.dia !== diaAtual) {
     save.idle.diarias = gerarDiariasIniciais(agoraMs);
   }
   return save.idle;
+}
+
+// ---- Pontos de Atributo do Domador (+3 pontos por nível) ----
+export function pontosDomadorDisponiveis(save) {
+  const idle = garantirEstadoIdle(save);
+  const nivel = nivelDeXp(idle.jogador.xp);
+  const total = Math.max(0, (nivel - 1) * PONTOS_POR_NIVEL);
+  const a = idle.jogador.atributos || {};
+  const gastos = (a.for || 0) + (a.vit || 0) + (a.men || 0) + (a.vin || 0) + (a.sor || 0);
+  return Math.max(0, total - gastos);
+}
+
+export function distribuirAtributoDomador(save, attrId, qtd = 1) {
+  const idle = garantirEstadoIdle(save);
+  if (!['for', 'vit', 'men', 'vin', 'sor'].includes(attrId)) return { ok: false, motivo: 'Atributo inválido.' };
+  const disp = pontosDomadorDisponiveis(save);
+  if (disp < qtd) return { ok: false, motivo: 'Sem pontos de Domador disponíveis.' };
+  idle.jogador.atributos[attrId] = (idle.jogador.atributos[attrId] || 0) + qtd;
+  if (attrId === 'vit') {
+    const st = calcularStatusDetalhado(save);
+    idle.jogador.hp = Math.min(st.hpMax, idle.jogador.hp + 15 * qtd);
+  }
+  return { ok: true, restantes: disp - qtd };
+}
+
+export function resetarAtributosDomador(save) {
+  const idle = garantirEstadoIdle(save);
+  idle.jogador.atributos = { for: 0, vit: 0, men: 0, vin: 0, sor: 0 };
+  const st = calcularStatusDetalhado(save);
+  idle.jogador.hp = Math.min(idle.jogador.hp, st.hpMax);
+  return { ok: true, disponiveis: pontosDomadorDisponiveis(save) };
 }
 
 // ---- Codex Onírico: bônus permanentes globais para a conta ----
@@ -246,12 +302,18 @@ export function registrarCodexEspecie(idle, especie, { abate = false, captura = 
   idle.codex.especies[especie] = entry;
 }
 
-// ---- Status Explicáveis (breakdown de cada bônus) ----
+// ---- Status Explicáveis (breakdown de cada bônus + pontos de Domador) ----
 export function calcularStatusDetalhado(save) {
   const idle = garantirEstadoIdle(save);
   const nivel = nivelDeXp(idle.jogador.xp);
+  const xpNivelAtual = xpDoNivel(nivel);
+  const xpNecessario = xpParaProximo(nivel);
+  const xpNoNivel = Math.max(0, idle.jogador.xp - xpNivelAtual);
+  const xpPct = Math.min(100, Math.round((xpNoNivel / Math.max(1, xpNecessario)) * 100));
+
   const codex = bonusCodex(idle);
-  const banda = sanityBand(idle.jogador.sanidade);
+  const banda = sanityBand(idle.jogador.sanidade) || { name: 'Estável' };
+  const a = idle.jogador.atributos || { for: 0, vit: 0, men: 0, vin: 0, sor: 0 };
 
   let relAtk = 0, relDef = 0, relHp = 0, relCap = 0;
   for (const rid of Object.values(idle.mochila.equipada || {})) {
@@ -266,27 +328,43 @@ export function calcularStatusDetalhado(save) {
   const baseHp = 120 + (nivel - 1) * 18;
   const baseAtk = 22 + (nivel - 1) * 4;
   const baseDef = 10 + (nivel - 1) * 2;
-  const hpMax = Math.round((baseHp + relHp) * (1 + codex.hpPct / 100));
-  const atk = Math.round((baseAtk + relAtk) * (1 + codex.atkPct / 100));
-  const def = Math.round(baseDef + relDef);
-  const capturaExtra = relCap + codex.capturaPct / 100;
+  const attrHp = (a.vit || 0) * 15;
+  const attrAtk = (a.for || 0) * 3 + (a.men || 0) * 2;
+  const attrDef = (a.vit || 0) * 1;
+  const attrCap = (a.vin || 0) * 0.02;
+
+  const hpMax = Math.round((baseHp + relHp + attrHp) * (1 + codex.hpPct / 100));
+  const atk = Math.round((baseAtk + relAtk + attrAtk) * (1 + codex.atkPct / 100));
+  const def = Math.round(baseDef + relDef + attrDef);
+  const capturaExtra = relCap + attrCap + codex.capturaPct / 100;
+  const xpMult = 1 + (a.vin || 0) * 0.03;
+  const goldMult = 1 + (a.sor || 0) * 0.03;
+  const dropOvoExtra = (a.sor || 0) * 0.02;
+  const pontosDisponiveis = pontosDomadorDisponiveis(save);
 
   return {
     nivel,
     xpAtual: idle.jogador.xp,
-    xpProximo: xpDoNivel(nivel) + xpParaProximo(nivel),
+    xpNoNivel,
+    xpNecessario,
+    xpPct,
+    pontosDisponiveis,
     hpMax,
     atk,
     def,
     sanidade: idle.jogador.sanidade,
-    bandaSanidade: banda.label,
+    bandaSanidade: banda.name,
     capturaExtra,
+    xpMult,
+    goldMult,
+    dropOvoExtra,
     fontes: [
-      { nome: 'HP Máximo', total: hpMax, detalhe: `Base Nv.${nivel} (${baseHp}) + Relíquias (${relHp}) + Codex (+${codex.hpPct}%)` },
-      { nome: 'Ataque', total: atk, detalhe: `Base Nv.${nivel} (${baseAtk}) + Relíquias (${relAtk}) + Codex (+${codex.atkPct}%)` },
-      { nome: 'Defesa', total: def, detalhe: `Base Nv.${nivel} (${baseDef}) + Relíquias (${relDef})` },
-      { nome: 'Bônus de Captura', total: `+${Math.round(capturaExtra * 100)}%`, detalhe: `Relíquias (+${Math.round(relCap * 100)}%) + Codex (+${codex.capturaPct}%)` },
-      { nome: 'Sanidade', total: `${idle.jogador.sanidade}/100`, detalhe: `Faixa atual: ${banda.label}` },
+      { nome: 'HP Máximo', total: hpMax, detalhe: `Base Nv.${nivel} (${baseHp}) + VIT (${attrHp}) + Relíquias (${relHp}) + Codex (+${codex.hpPct}%)` },
+      { nome: 'Ataque', total: atk, detalhe: `Base Nv.${nivel} (${baseAtk}) + FOR/MEN (${attrAtk}) + Relíquias (${relAtk}) + Codex (+${codex.atkPct}%)` },
+      { nome: 'Defesa', total: def, detalhe: `Base Nv.${nivel} (${baseDef}) + VIT (${attrDef}) + Relíquias (${relDef})` },
+      { nome: 'Bônus de Captura', total: `+${Math.round(capturaExtra * 100)}%`, detalhe: `VIN (+${Math.round(attrCap * 100)}%) + Relíquias (+${Math.round(relCap * 100)}%) + Codex (+${codex.capturaPct}%)` },
+      { nome: 'Multiplicadores (VIN/SOR)', total: `XP ×${xpMult.toFixed(2)} · Gold ×${goldMult.toFixed(2)}`, detalhe: `VIN (+${Math.round((xpMult - 1) * 100)}% XP) · SOR (+${Math.round((goldMult - 1) * 100)}% Gold, +${Math.round(dropOvoExtra * 100)}% Ovos)` },
+      { nome: 'Sanidade', total: `${idle.jogador.sanidade}/100`, detalhe: `Faixa atual: ${banda.name}` },
     ],
   };
 }
@@ -314,8 +392,8 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
   const idle = garantirEstadoIdle(save);
   const st = calcularStatusDetalhado(save);
   const rar = monstro.nivel >= 12 ? 3 : monstro.nivel >= 8 ? 2 : 1;
-  const gold = goldEncontro(rar) + Math.floor(monstro.nivel * 2.5);
-  const xp = 16 + monstro.nivel * 5;
+  const gold = Math.round((goldEncontro(rar) + Math.floor(monstro.nivel * 2.5)) * st.goldMult);
+  const xp = Math.round((16 + monstro.nivel * 5) * st.xpMult);
   const danoRecebido = Math.max(3, Math.round(monstro.nivel * 3.2 - st.def * 0.45));
 
   save.recompensas.gold += gold;
@@ -344,7 +422,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
   }
 
   let ovoDrop = false;
-  if (idle.autoCaca.coletarOvos && dropsEgg({ rarity: rar }, rng(), 0)) {
+  if (idle.autoCaca.coletarOvos && dropsEgg({ rarity: rar }, rng(), st.dropOvoExtra)) {
     ovoDrop = true;
     idle.mochila.ovos.push({ especie: monstro.especie, forma: 'natural', obtidoEm: Date.now() });
     avancarDiaria(idle, 'ovos', 1);
@@ -463,8 +541,14 @@ export function resgatarTudoPasse(save) {
 export function comprarEsferaIdle(save, raridade) {
   const idle = garantirEstadoIdle(save);
   const preco = SPHERE_PRICE[raridade];
-  if (!preco || save.recompensas.gold < preco) return { ok: false, motivo: 'Gold insuficiente.' };
-  save.recompensas.gold -= preco;
+  if (!preco) return { ok: false, motivo: 'Esfera indisponível.' };
+  const ehDiamante = preco.moeda === 'diamonds';
+  const saldo = ehDiamante ? save.recompensas.diamantes : save.recompensas.gold;
+  if (saldo < preco.valor) {
+    return { ok: false, motivo: ehDiamante ? `Precisa de ${preco.valor}💎.` : `Precisa de ${preco.valor}g.` };
+  }
+  if (ehDiamante) save.recompensas.diamantes -= preco.valor;
+  else save.recompensas.gold -= preco.valor;
   idle.mochila.esferas[raridade] = (idle.mochila.esferas[raridade] || 0) + 1;
   return { ok: true, preco };
 }
