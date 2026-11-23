@@ -1,6 +1,7 @@
 // Quarteirão de teste da cidade na montanha. O chão é a arte limpa (piso-montanha, 1200x896), com as construções
 // já pintadas. A colisão vem do desenho em verde (o que pode andar): uma grade de células de 8 px (COLISAO),
-// convertida em retângulos. O corpo do personagem tem raio 0,2 para caber nas passagens verdes.
+// convertida em retângulos. O corpo do personagem tem raio 0,15 para caber nas passagens verdes.
+// A câmera fica num ângulo fixo (INCLINACAO), como nas capturas de referência.
 import * as THREE from 'three';
 import { vetorJoystick } from '../explorar3d/controles.js';
 import { resolverMovimento } from '../explorar3d/colisao.js';
@@ -31,21 +32,29 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 const cena = new THREE.Scene();
 cena.background = new THREE.Color('#cfe8f7');
-// Projeção 2D fixa: X aponta para leste e Z para sul.
-const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
-camera.up.set(0, 0, -1);
-camera.position.y = 18;
-camera.lookAt(0, 0, 0);
-const ALTURA_CAMERA = 12;                        // unidades de altura visíveis em paisagem (antes 18)
+// Câmera em ângulo, como nas capturas de referência: ortográfica, com inclinação fixa e sem girar.
+// INCLINACAO: graus a partir da horizontal (90 seria de cima). ALTURA_CAMERA: unidades de tela visíveis na vertical.
+// Ajuste pela URL para testar: ?inclinacao=50&altura=25
+const INCLINACAO = THREE.MathUtils.clamp(Number(params.get('inclinacao')) || 50, 30, 80);
+const ALTURA_CAMERA = Number(params.get('altura')) || 25;
+const SEN = Math.sin(THREE.MathUtils.degToRad(INCLINACAO));
+const COS = Math.cos(THREE.MathUtils.degToRad(INCLINACAO));
+const DISTANCIA_CAMERA = 60;
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);
+camera.up.set(0, 1, 0);
+const alvoCamera = { x: 0, z: 0 };               // ponto do chão para onde a câmera olha
+function posicionarCamera() {
+  camera.position.set(alvoCamera.x, DISTANCIA_CAMERA * SEN, alvoCamera.z + DISTANCIA_CAMERA * COS);
+  camera.lookAt(alvoCamera.x, 0, alvoCamera.z);
+}
 function enquadrar() {
   const aspecto = window.innerWidth / window.innerHeight;
-  const geral = ['topo', 'geral'].includes(VISAO);
-  // em paisagem, a câmera mostra ALTURA_CAMERA unidades de altura: menor = mais perto, estruturas e personagem maiores
-  // em pé (tela alta) mostra o mapa inteiro, para não ficar apertado na largura
-  const altura = geral ? Math.max(ALT, LARG / aspecto)
-    : aspecto < 1 ? ALT
-    : Math.min(ALTURA_CAMERA, ALT, LARG / aspecto);
-  camera.top = altura / 2;
+  // altura da tela, em unidades de tela: paisagem mostra ALTURA_CAMERA; em pé, a profundidade inteira do mapa;
+  // 'geral' mostra o mapa todo. A profundidade do chão visível é a altura da tela dividida por SEN.
+  const tela = VISAO === 'geral' ? Math.max(ALT * SEN, LARG / aspecto)
+    : aspecto < 1 ? ALT * SEN
+    : Math.min(ALTURA_CAMERA, ALT * SEN, LARG / aspecto);
+  camera.top = tela / 2;
   camera.bottom = -camera.top;
   camera.right = camera.top * aspecto;
   camera.left = -camera.right;
@@ -269,18 +278,22 @@ function quadro(agora) {
 
   jogador.position.set(estado.x, camada(estado.z), estado.z);
   sombra.position.set(estado.x, camada(estado.z) - 0.005, estado.z);
-  jogador.rotation.x = -Math.PI / 2;
   azazel.atualizar(andando, rot, 0);
-  const geral = ['topo', 'geral'].includes(VISAO);
-  if (geral) {
-    camera.position.x = camera.position.z = 0;
+  if (VISAO === 'geral') {
+    alvoCamera.x = 0;
+    alvoCamera.z = 0;
   } else {
+    // a câmera segue o personagem com suavidade; na horizontal e na vertical do chão, não sai do mapa
     const seguir = primeiroQuadro ? 1 : 1 - Math.exp(-dt * 14);
     const x = THREE.MathUtils.clamp(estado.x, -LARG / 2 + camera.right, LARG / 2 - camera.right);
-    const z = THREE.MathUtils.clamp(estado.z, -ALT / 2 + camera.top, ALT / 2 - camera.top);
-    camera.position.x += (x - camera.position.x) * seguir;
-    camera.position.z += (z - camera.position.z) * seguir;
+    const dz = camera.top / SEN;                 // metade da profundidade do chão visível
+    const z = THREE.MathUtils.clamp(estado.z, -ALT / 2 + dz, ALT / 2 - dz);
+    alvoCamera.x += (x - alvoCamera.x) * seguir;
+    alvoCamera.z += (z - alvoCamera.z) * seguir;
   }
+  posicionarCamera();
+  // em pé: o personagem é um sprite que encara a câmera (não fica deitado no chão)
+  jogador.quaternion.copy(camera.quaternion);
   primeiroQuadro = false;
   renderer.render(cena, camera);
   requestAnimationFrame(quadro);
@@ -292,7 +305,7 @@ window.addEventListener('resize', () => {
 // para os testes: posição do personagem, estado dos ovos e colisores
 window.quarteirao = {
   estado: () => ({ x: estado.x, z: estado.z }),
-  camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
+  camera: () => ({ x: alvoCamera.x, z: alvoCamera.z }),
   ovos: () => ovos.map((o) => o.visible),
   colisoes: () => colisoes.length,
   caixas: () => caixasAABB,
