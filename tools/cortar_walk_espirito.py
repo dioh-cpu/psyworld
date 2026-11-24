@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Corta o vídeo de walk (3 colunas: frente, esquerda, costas) em 3 clipes em loop, limpando partículas soltas.
 Uso: cortar_walk_espirito.py VIDEO.mp4 PASTA_TMP PASTA_SAIDA
-Escreve espirito-walk-<direcao>.mp4 e walk-geometria.json (altura/pe de cada clipe para o jogo)."""
+Escolhe o ponto de corte sem fade (o vídeo já costuma fechar em loop). Escreve espirito-walk-<direcao>.mp4 e walk-geometria.json (altura/pe de cada clipe para o jogo)."""
 import sys, os, json, subprocess, glob
 import cv2
 import numpy as np
@@ -52,31 +52,38 @@ for ci, nome in enumerate(nomes):
         sx0, sy0 = max(0, x0), max(0, y0); sx1, sy1 = min(CW, x0 + CROP_W), min(H, y0 + CROP_H)
         canvas[sy0 - y0:sy1 - y0, sx0 - x0:sx1 - x0] = c[sy0:sy1, sx0:sx1]
         clip.append(canvas)
-    sm = [cv2.resize(cv2.cvtColor(c, cv2.COLOR_BGR2GRAY), (96, 128)).astype(float) for c in clip]
-    K, MIN = 10, int(4 * 24)
+    # Escolha do corte SEM fade: o salto do último quadro do loop para o primeiro tem que parecer um passo normal do vídeo,
+    # na cor e na forma do corpo (a máscara pega o comprimento das pontas do cabelo). Prefere loops longos (>= 6 s).
+    gs = np.array([cv2.resize(cv2.cvtColor(c, cv2.COLOR_BGR2GRAY), (160, 206), interpolation=cv2.INTER_AREA) for c in clip]).astype(np.float32).reshape(N, -1)
+    ms = np.array([cv2.resize((np.abs(c.astype(int) - bg).sum(2) > 60).astype(np.uint8), (160, 206), interpolation=cv2.INTER_NEAREST) for c in clip]).astype(np.float32).reshape(N, -1)
+    Dc = np.array([np.abs(gs - gs[i]).mean(1) for i in range(N)]); Dm = np.array([np.abs(ms - ms[i]).mean(1) for i in range(N)])
+    pc = np.mean([Dc[t, t + 1] for t in range(N - 1)]); pm = np.mean([Dm[t, t + 1] for t in range(N - 1)])
+    MIN = int(6 * 24)
     best = None
-    for a in range(K, N // 2):
-        for b in range(a + MIN, N - 1):
-            e = np.mean((sm[a] - sm[b]) ** 2) + np.mean(((sm[a + 1] - sm[a]) - (sm[b + 1] - sm[b])) ** 2)
-            if best is None or e < best[0]:
-                best = (e, a, b)
+    for a in range(0, N - MIN):
+        for b in range(a + MIN, N + 1):
+            j = Dc[b - 1, a] / pc + Dm[b - 1, a] / pm
+            if b < N:
+                j += 0.5 * (Dc[b, a + 1] / pc + Dm[b, a + 1] / pm)
+            else:
+                j *= 1.5   # sem o quadro seguinte para conferir, pesa igual
+            # pequeno bônus para loops mais longos
+            j -= 0.002 * (b - a)
+            if best is None or j < best[0]:
+                best = (j, a, b)
     e, a, b = best; L = b - a
     d = f'{tmp}/loop-{nome}'; os.makedirs(d, exist_ok=True)
     for f in glob.glob(f'{d}/*.png'):
         os.remove(f)
     for j in range(L):
-        fr = clip[a + j].astype(float)
-        if j >= L - K:
-            w = (j - (L - K) + 1) / (K + 1)
-            fr = (1 - w) * clip[a + j] + w * clip[a + j - L]
-        cv2.imwrite(f'{d}/{j:03d}.png', fr.astype(np.uint8))
+        cv2.imwrite(f'{d}/{j:03d}.png', clip[a + j])
     arq = f'{saida}/espirito-walk-{nome}.mp4'
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-framerate', '24', '-i', f'{d}/%03d.png', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
-                    '-crf', '14', '-preset', 'slow', '-g', '24', '-movflags', '+faststart', '-an', arq], check=True)
+                    '-crf', '16', '-preset', 'slow', '-g', '24', '-movflags', '+faststart', '-an', arq], check=True)
     g = [cv2.cvtColor(cv2.imread(f'{d}/{j:03d}.png'), cv2.COLOR_BGR2GRAY).astype(float) for j in range(L)]
     dif = [np.mean(np.abs(g[j] - g[j + 1])) for j in range(L - 1)]
     emenda = np.mean(np.abs(g[-1] - g[0]))
     geo[nome] = {'largura': CROP_W, 'altura': CROP_H, 'topo': topo - y0, 'pe': pe - y0, 'quadros': L,
                  'figura_altura': pe - topo, 'figura_largura': int(np.median(bx[:, 1] - bx[:, 0]))}
-    print(f'{nome}: loop {a}->{b} ({L / 24:.1f}s) emenda {emenda:.2f} vs quadro a quadro {np.mean(dif):.2f}; figura {pe - topo}px de altura; {os.path.getsize(arq) // 1024} KB')
+    print(f'{nome}: loop {a}->{b} ({L / 24:.1f}s) salto na emenda {emenda:.2f} vs passo normal {np.mean(dif):.2f}; figura {pe - topo}px de altura; {os.path.getsize(arq) // 1024} KB')
 json.dump(geo, open(f'{saida}/walk-geometria.json', 'w'), indent=1)
