@@ -4,6 +4,7 @@ import { vetorJoystick } from '../explorar3d/controles.js';
 import { construirSDF, resolverMovimentoSDF } from '../explorar3d/colisao.js';
 import { criarAzazel } from './azazel.js';
 import { criarNoctarn } from './noctarn.js';
+import { criarEspiritoIdle } from './espirito-idle.js';
 import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.js';
 import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import {
@@ -244,12 +245,15 @@ const marcadorDestino = (() => {
   return m;
 })();
 
-// ---- Personagens controlados: Noctarn (Conexão Onírica) e Azazel ----
+// ---- Personagens controlados: forma onírica e Azazel ----
+const testeEspirito = params.get('idle') === 'espirito';
 const azazel = criarAzazel('assets/characters/', ALTURA_PERSONAGEM);
-const noctarn = criarNoctarn('../../../assets/monsters/noctarn/', ALTURA_PERSONAGEM);
+const formaOnirica = testeEspirito
+  ? criarEspiritoIdle(ALTURA_PERSONAGEM)
+  : criarNoctarn('../../../assets/monsters/noctarn/', ALTURA_PERSONAGEM);
 
 const jogador = new THREE.Group();
-jogador.add(azazel.malha, noctarn.malha);
+jogador.add(azazel.malha, formaOnirica.malha);
 jogador.traverse((o) => {
   if (o.material) {
     o.material.depthTest = false;
@@ -264,15 +268,17 @@ function aplicarForma(novaForma, anunciar = false) {
   save.forma = novaForma === 'azazel' ? 'azazel' : 'noctarn';
   const onirico = save.forma === 'noctarn';
   azazel.malha.visible = !onirico;
-  noctarn.malha.visible = onirico;
-  if (!onirico) noctarn.pausar();
+  formaOnirica.malha.visible = onirico;
+  if (!onirico) formaOnirica.pausar();
   if (btnTransformar) {
     btnTransformar.classList.toggle('ativo', onirico);
-    btnTransformar.textContent = onirico ? '✨ Onírico (+100% Vel.)' : '✨ Transformar';
+    btnTransformar.textContent = onirico
+      ? (testeEspirito ? '✨ Espírito da Floresta' : '✨ Onírico (+100% Vel.)')
+      : '✨ Transformar';
   }
   if (anunciar) {
     mostrarToast(onirico
-      ? '✨ Conexão Onírica ativa! Transformado em Noctarn (+100% de velocidade).'
+      ? `✨ Conexão Onírica ativa! Transformado em ${testeEspirito ? 'Espírito da Floresta' : 'Noctarn'} (+100% de velocidade).`
       : 'Conexão Onírica encerrada. De volta à forma humana (Azazel).', 2400);
   }
   salvarEstado();
@@ -1907,6 +1913,7 @@ function quadro(agora) {
 
   // Modo Economia de Energia: mantém farm e HUD leve sem renderizar WebGL
   if (idle.config.economiaEnergia) {
+    if (testeEspirito) formaOnirica.pausar();
     if (agora - ultimoMinimapa > 900) {
       ultimoMinimapa = agora;
       idleUI?.atualizarHudIdle();
@@ -1919,7 +1926,7 @@ function quadro(agora) {
   if (save.forma === 'azazel') {
     azazel.atualizar(andando, rot, 0);
   } else {
-    noctarn.atualizar(andando, rot, 0);
+    formaOnirica.atualizar(andando, rot, 0);
   }
 
   const pulso = Math.sin(agora * 0.004);
@@ -2029,7 +2036,7 @@ window.regiao1 = {
 };
 
 // Inicialização
-aplicarForma(params.get('forma') || save.forma || 'noctarn');
+aplicarForma(params.get('forma') || (testeEspirito ? 'noctarn' : save.forma) || 'noctarn');
 const inicialParam = params.get('mapa')?.toUpperCase();
 const inicialId = (inicialParam && MAPAS[inicialParam]) ? inicialParam : (MAPAS[save.mapaAtual] ? save.mapaAtual : MAPA_INICIAL);
 const spawnInicial = (!inicialParam && inicialId === save.mapaAtual && save.posicaoPx) ? save.posicaoPx : null;
