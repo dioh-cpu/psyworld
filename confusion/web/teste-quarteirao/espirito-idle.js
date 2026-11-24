@@ -1,23 +1,24 @@
 // Espírito da Floresta jogável. Por direção (frente, esquerda, costas) há um MP4 de idle e um de walk (voo), ambos em
-// loop sem emenda e com fundo verde. A direita é o clipe da esquerda espelhado. Parado toca o idle; andando toca o walk
-// da direção do movimento em relação à tela. Cada clipe tem sua própria geometria (tamanho do quadro e linha do pé);
-// a escala em pixels é a mesma para todos, então o personagem mantém o tamanho ao trocar de clipe.
+// loop contínuo sem B-frames, com cauda de 16 quadros (cópia de 0..15) e fundo verde. A direita é o clipe da esquerda
+// espelhado. Cada clipe usa deck duplo de <video> para trocar de volta ao quadro 0 durante a cauda, eliminando 100% da
+// travada/seek do <video loop> nativo em Chrome, Android e Safari.
 import * as THREE from 'three';
 
 const BASE = '../../../assets/confusion/interface/animacoes/';
-const DIRECOES = ['frente', 'esquerda', 'esquerda', 'costas'];   // índice = linha (0 frente, 1 esquerda, 2 direita = esquerda espelhada, 3 costas)
+const VERSAO_CLIPES = 'loop2';
+const DIRECOES = ['frente', 'esquerda', 'esquerda', 'costas'];   // 0 frente, 1 esquerda, 2 direita (= esquerda espelhada), 3 costas
 const WALK = ['frente', 'esquerda', 'costas'];
 
-// Geometria de cada clipe, em pixels do vídeo: tamanho do quadro e linha do pé (o personagem fica centrado na largura).
-// O idle tem 500 px de altura de figura (topo 96, pé 595); isso define a escala em pixels do jogo.
+// Geometria e duração exata do ciclo (sem a cauda de 16 quadros) de cada clipe em 24 fps.
+// O idle tem ~500 px de altura de figura; isso define a escala em pixels do jogo.
 const ALTURA_FIGURA_IDLE = 500;
 const GEO = {
-  'idle-frente':   { largura: 376, altura: 720, pe: 595 },
-  'idle-esquerda': { largura: 376, altura: 720, pe: 595 },
-  'idle-costas':   { largura: 376, altura: 720, pe: 595 },
-  'walk-frente':   { largura: 560, altura: 720, pe: 593 },
-  'walk-esquerda': { largura: 560, altura: 720, pe: 576 },
-  'walk-costas':   { largura: 560, altura: 720, pe: 608 },
+  'idle-frente':   { largura: 376, altura: 720, pe: 595, loopDur: 55 / 24 },
+  'idle-esquerda': { largura: 376, altura: 720, pe: 595, loopDur: 61 / 24 },
+  'idle-costas':   { largura: 376, altura: 720, pe: 595, loopDur: 62 / 24 },
+  'walk-frente':   { largura: 560, altura: 720, pe: 586, loopDur: 82 / 24 },
+  'walk-esquerda': { largura: 560, altura: 720, pe: 576, loopDur: 49 / 24 },
+  'walk-costas':   { largura: 560, altura: 720, pe: 584, loopDur: 48 / 24 },
 };
 
 function criarVideo(src) {
@@ -37,21 +38,111 @@ function criarVideo(src) {
   return v;
 }
 
+// Deck duplo sem costura: o vídeo principal toca 0 -> loopDur; ao entrar na cauda (loopDur .. loopDur + 0.667s,
+// idêntica aos quadros 0..15), o deck reserva já pré-carregado no keyframe 0 começa a tocar em fase e assume assim
+// que decodifica o primeiro quadro — zero engasgo de seek no navegador.
+function criarDeckDuplo(src, loopDur) {
+  const decks = [criarVideo(src), criarVideo(src)];
+  const texturas = decks.map((v) => {
+    const t = new THREE.VideoTexture(v);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  });
+
+  let frente = 0;
+  let tocando = false;
+  let trocando = false;
+
+  const videoFrente = () => decks[frente];
+  const texturaFrente = () => texturas[frente];
+
+  function recuarParaZero(v) {
+    v.pause();
+    try {
+      if (v.currentTime > 0.01) v.currentTime = 0;
+    } catch {}
+  }
+
+  function tocar() {
+    tocando = true;
+    const vf = decks[frente];
+    if (vf.paused) vf.play().catch(() => {});
+    if (!trocando) {
+      const vb = decks[1 - frente];
+      if (!vb.paused || vb.currentTime > 0.02) recuarParaZero(vb);
+    }
+  }
+
+  function pausar() {
+    tocando = false;
+    trocando = false;
+    decks[0].pause();
+    decks[1].pause();
+  }
+
+  function atualizarDeck() {
+    const vf = decks[frente];
+    const vb = decks[1 - frente];
+    if (!tocando) return;
+
+    if (vf.paused) vf.play().catch(() => {});
+
+    // Inicia o deck reserva em 0 exatamente quando o deck da frente cruza loopDur (entrando na cauda)
+    if (!trocando && vf.currentTime >= loopDur) {
+      trocando = true;
+      try {
+        if (vb.currentTime > 0.02) vb.currentTime = 0;
+      } catch {}
+      vb.play().catch(() => {});
+    }
+
+    if (trocando) {
+      if (vb.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !vb.paused && vb.currentTime >= 0.015) {
+        const antigo = vf;
+        frente = 1 - frente;
+        trocando = false;
+        recuarParaZero(antigo);
+      } else if (vf.currentTime < loopDur * 0.5) {
+        // Fallback seguro caso o loop nativo já tenha dado volta antes do reserva acordar
+        trocando = false;
+        recuarParaZero(vb);
+      }
+    }
+  }
+
+  function desbloquear() {
+    for (let i = 0; i < 2; i++) {
+      const v = decks[i];
+      if (v.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+        v.play().then(() => {
+          const ehAtivo = tocando && (i === frente || trocando);
+          if (!ehAtivo) recuarParaZero(v);
+        }).catch(() => {});
+      }
+    }
+    if (tocando && decks[frente].paused) decks[frente].play().catch(() => {});
+  }
+
+  return { decks, texturas, videoFrente, texturaFrente, tocar, pausar, atualizarDeck, desbloquear };
+}
+
 export function criarEspiritoIdle(altura) {
   const nomes = ['frente', 'esquerda', 'costas'];
+  const clipes = {};
   const videos = {};
-  const texturas = {};
   for (const nome of nomes) {
-    videos[`idle-${nome}`] = criarVideo(`${BASE}espirito-idle-${nome}.mp4`);
-    if (WALK.includes(nome)) videos[`walk-${nome}`] = criarVideo(`${BASE}espirito-walk-${nome}.mp4`);
-  }
-  for (const k in videos) {
-    texturas[k] = new THREE.VideoTexture(videos[k]);
-    texturas[k].colorSpace = THREE.SRGBColorSpace;
+    const kIdle = `idle-${nome}`;
+    clipes[kIdle] = criarDeckDuplo(`${BASE}espirito-${kIdle}.mp4?v=${VERSAO_CLIPES}`, GEO[kIdle].loopDur);
+    videos[kIdle] = clipes[kIdle].decks[0];
+    if (WALK.includes(nome)) {
+      const kWalk = `walk-${nome}`;
+      clipes[kWalk] = criarDeckDuplo(`${BASE}espirito-${kWalk}.mp4?v=${VERSAO_CLIPES}`, GEO[kWalk].loopDur);
+      videos[kWalk] = clipes[kWalk].decks[0];
+    }
   }
 
   const material = new THREE.ShaderMaterial({
-    uniforms: { map: { value: texturas['idle-frente'] } },
+    uniforms: { map: { value: clipes['idle-frente'].texturaFrente() } },
     transparent: true,
     depthWrite: false,
     vertexShader: `
@@ -80,6 +171,8 @@ export function criarEspiritoIdle(altura) {
   const escala = altura / ALTURA_FIGURA_IDLE;
   const sprite = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
   let espelhado = false;
+  let chaveExibida = 'idle-frente';
+
   function ajustarGeometria(chave) {
     const g = GEO[chave];
     sprite.scale.set(g.largura * escala * (espelhado ? -1 : 1), g.altura * escala, 1);
@@ -90,37 +183,32 @@ export function criarEspiritoIdle(altura) {
   const malha = new THREE.Group();
   malha.add(sprite);
 
-  let ativo = null;      // chave do vídeo que deve estar tocando
+  let ativo = null;      // chave do clipe que deve estar tocando
   let ultima = 0;        // última direção do movimento
   let pausado = true;
 
   function trocar(chave, espelhar) {
     espelhado = espelhar;
     if (ativo === chave && !pausado) {
-      if (videos[chave].paused) videos[chave].play().catch(() => {});
+      clipes[chave].tocar();
       return;
     }
-    if (ativo && ativo !== chave) videos[ativo].pause();
+    if (ativo && ativo !== chave) clipes[ativo].pausar();
     ativo = chave;
     pausado = false;
-    const v = videos[chave];
-    if (v.paused) v.play().catch(() => {});
+    clipes[chave].tocar();
   }
 
-  // Desbloqueia o autoplay no primeiro toque/tecla e retoma o vídeo ativo se o navegador o pausou
+  // Desbloqueia o autoplay no primeiro toque/tecla e pré-carrega os decks
   function desbloquear() {
-    for (const k in videos) {
-      const v = videos[k];
-      if (v.readyState < 2) v.play().then(() => { if (ativo !== k || pausado) v.pause(); }).catch(() => {});
-    }
-    if (ativo && !pausado && videos[ativo].paused) videos[ativo].play().catch(() => {});
+    for (const k in clipes) clipes[k].desbloquear();
   }
   window.addEventListener('pointerdown', desbloquear, { passive: true });
   window.addEventListener('keydown', desbloquear);
 
   function pausar() {
     pausado = true;
-    for (const k in videos) videos[k].pause();
+    for (const k in clipes) clipes[k].pausar();
   }
 
   // rot: direção do movimento no mundo (atan2(dx, dz)); yaw: ângulo da câmera em volta do personagem.
@@ -141,12 +229,18 @@ export function criarEspiritoIdle(altura) {
     const nome = DIRECOES[ultima];
     const tipo = andando && WALK.includes(nome) ? 'walk' : 'idle';
     trocar(`${tipo}-${nome}`, ultima === 2);
-    // Só troca a imagem quando o clipe novo já tem quadro, e nunca esconde o personagem depois do primeiro quadro:
-    // na volta do loop o navegador faz um seek (readyState cai por ~2 quadros) e antes isso fazia o personagem piscar.
-    if (videos[ativo].readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      material.uniforms.map.value = texturas[ativo];
-      ajustarGeometria(ativo);   // geometria junto com a textura, para não esticar um quadro na troca de clipe
+
+    const clipe = clipes[ativo];
+    clipe.atualizarDeck();
+    const vf = clipe.videoFrente();
+    if (vf.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      material.uniforms.map.value = clipe.texturaFrente();
+      chaveExibida = ativo;
+      ajustarGeometria(chaveExibida);
       sprite.visible = true;
+    } else if (sprite.visible) {
+      // Mantém o espelhamento sincronizado mesmo antes do clipe novo decodificar
+      ajustarGeometria(chaveExibida);
     }
   }
 
@@ -157,5 +251,6 @@ export function criarEspiritoIdle(altura) {
     get direcao() { return ['frente', 'esquerda', 'direita', 'costas'][ultima]; },
     get videoAtivo() { return ativo; },
     videos,
+    clipes,
   };
 }
