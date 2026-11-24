@@ -1,23 +1,21 @@
 // Espírito da Floresta jogável. Por direção (frente, esquerda, costas) há um MP4 de idle e um de walk (voo), ambos em
-// loop sem emenda e com fundo verde. A direita é o clipe da esquerda espelhado. Parado toca o idle; andando toca o walk
-// da direção do movimento em relação à tela. Cada clipe tem sua própria geometria (tamanho do quadro e linha do pé);
-// a escala em pixels é a mesma para todos, então o personagem mantém o tamanho ao trocar de clipe.
+// loop contínuo sem B-frames e com fundo verde. A direita é o clipe da esquerda espelhado. Parado toca o idle; andando
+// toca o walk da direção do movimento em relação à tela. Cada clipe tem sua própria geometria (tamanho do quadro,
+// centro horizontal do tronco, linha do pé e altura de referência) para manter escala e eixo constantes.
 import * as THREE from 'three';
 
 const BASE = '../../../assets/confusion/interface/animacoes/';
-const DIRECOES = ['frente', 'esquerda', 'esquerda', 'costas'];   // índice = linha (0 frente, 1 esquerda, 2 direita = esquerda espelhada, 3 costas)
+const VERSAO_CLIPES = 'loop3';
+const DIRECOES = ['frente', 'esquerda', 'esquerda', 'costas'];   // 0 frente, 1 esquerda, 2 direita (= esquerda espelhada), 3 costas
 const WALK = ['frente', 'esquerda', 'costas'];
 
-// Geometria de cada clipe, em pixels do vídeo: tamanho do quadro e linha do pé (o personagem fica centrado na largura).
-// O idle tem 500 px de altura de figura (topo 96, pé 595); isso define a escala em pixels do jogo.
-const ALTURA_FIGURA_IDLE = 500;
 const GEO = {
-  'idle-frente':   { largura: 376, altura: 720, pe: 595 },
-  'idle-esquerda': { largura: 376, altura: 720, pe: 595 },
-  'idle-costas':   { largura: 376, altura: 720, pe: 595 },
-  'walk-frente':   { largura: 560, altura: 720, pe: 593 },
-  'walk-esquerda': { largura: 560, altura: 720, pe: 576 },
-  'walk-costas':   { largura: 560, altura: 720, pe: 608 },
+  'idle-frente':   { largura: 376, altura: 720, pe: 595, centroX: 188, figRef: 500 },
+  'idle-esquerda': { largura: 376, altura: 720, pe: 595, centroX: 176, figRef: 500 },
+  'idle-costas':   { largura: 376, altura: 720, pe: 595, centroX: 184, figRef: 500 },
+  'walk-frente':   { largura: 560, altura: 720, pe: 582, centroX: 280, figRef: 435 },
+  'walk-esquerda': { largura: 560, altura: 720, pe: 568, centroX: 210, figRef: 425 },
+  'walk-costas':   { largura: 560, altura: 720, pe: 592, centroX: 290, figRef: 450 },
 };
 
 function criarVideo(src) {
@@ -42,8 +40,10 @@ export function criarEspiritoIdle(altura) {
   const videos = {};
   const texturas = {};
   for (const nome of nomes) {
-    videos[`idle-${nome}`] = criarVideo(`${BASE}espirito-idle-${nome}.mp4`);
-    if (WALK.includes(nome)) videos[`walk-${nome}`] = criarVideo(`${BASE}espirito-walk-${nome}.mp4`);
+    videos[`idle-${nome}`] = criarVideo(`${BASE}espirito-idle-${nome}.mp4?v=${VERSAO_CLIPES}`);
+    if (WALK.includes(nome)) {
+      videos[`walk-${nome}`] = criarVideo(`${BASE}espirito-walk-${nome}.mp4?v=${VERSAO_CLIPES}`);
+    }
   }
   for (const k in videos) {
     texturas[k] = new THREE.VideoTexture(videos[k]);
@@ -77,15 +77,19 @@ export function criarEspiritoIdle(altura) {
       }`,
   });
 
-  const escala = altura / ALTURA_FIGURA_IDLE;
   const sprite = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
   let espelhado = false;
-  function ajustarGeometria(chave) {
+  let chaveExibida = 'idle-frente';
+
+  function ajustarGeometria(chave, esp) {
     const g = GEO[chave];
-    sprite.scale.set(g.largura * escala * (espelhado ? -1 : 1), g.altura * escala, 1);
-    sprite.position.set(0, (g.pe - g.altura / 2) * escala, 0);   // o pé fica em y = 0
+    const escala = altura / g.figRef;
+    const sinal = esp ? -1 : 1;
+    sprite.scale.set(g.largura * escala * sinal, g.altura * escala, 1);
+    const dx = (g.largura / 2 - g.centroX) * escala * sinal;
+    sprite.position.set(dx, (g.pe - g.altura / 2) * escala, 0);   // pé em y = 0 e tronco centrado em x = 0
   }
-  ajustarGeometria('idle-frente');
+  ajustarGeometria('idle-frente', false);
   sprite.visible = false;   // aparece no primeiro quadro pronto
   const malha = new THREE.Group();
   malha.add(sprite);
@@ -141,12 +145,15 @@ export function criarEspiritoIdle(altura) {
     const nome = DIRECOES[ultima];
     const tipo = andando && WALK.includes(nome) ? 'walk' : 'idle';
     trocar(`${tipo}-${nome}`, ultima === 2);
-    // Só troca a imagem quando o clipe novo já tem quadro, e nunca esconde o personagem depois do primeiro quadro:
-    // na volta do loop o navegador faz um seek (readyState cai por ~2 quadros) e antes isso fazia o personagem piscar.
+
+    // Só troca a textura quando o clipe novo já tem quadro, e nunca esconde o personagem depois do primeiro quadro
     if (videos[ativo].readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       material.uniforms.map.value = texturas[ativo];
-      ajustarGeometria(ativo);   // geometria junto com a textura, para não esticar um quadro na troca de clipe
+      chaveExibida = ativo;
+      ajustarGeometria(chaveExibida, espelhado);
       sprite.visible = true;
+    } else if (sprite.visible && chaveExibida === ativo) {
+      ajustarGeometria(chaveExibida, espelhado);
     }
   }
 
