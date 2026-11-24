@@ -453,14 +453,15 @@ function construirEntidadesDoMapa(mapa) {
     if (npc.mapa !== mapa.id) continue;
     const w = P(npc.pos[0], npc.pos[1]);
     const temQuest = Boolean(npc.quest && save.quests[npc.quest] !== 'concluida');
-    const mesh = adicionarBillboard(carregarTextura(npc.sprite), w.x, w.z, 5.4, 6.75, 3);
+    const mesh = adicionarBillboard(carregarTextura(npc.sprite), w.x, w.z, npc.altura * 0.8, npc.altura);
+    if (npc.flutua) mesh.position.y += 0.5;
     const placa = new THREE.Mesh(
       new THREE.PlaneGeometry(5.4, 1.35),
       new THREE.MeshBasicMaterial({
         map: criarTexturaNomeNpc(npc, temQuest), transparent: true, depthTest: false, depthWrite: false,
       }),
     );
-    placa.position.y = 3.85;
+    placa.position.y = npc.altura / 2 + 0.5;
     placa.renderOrder = 4;
     mesh.add(placa);
     entidadesMapa.push({ tipo: 'npc', dados: npc, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 5.4 });
@@ -676,16 +677,53 @@ function abrirDialogo(titulo, sub, texto, botoes, retrato = null) {
   else imagem.removeAttribute('src');
   document.getElementById('dlg-titulo').textContent = titulo;
   document.getElementById('dlg-sub').textContent = sub || '';
-  document.getElementById('dlg-texto').textContent = texto;
+  const fala = document.getElementById('dlg-texto');
+  const progresso = document.getElementById('dlg-progresso');
+  const falas = Array.isArray(texto) ? texto : [texto];
+  progresso.hidden = falas.length < 2;
+  if (progresso.hidden) progresso.textContent = '';
   const ac = document.getElementById('dlg-acoes');
-  ac.innerHTML = '';
-  for (const b of botoes) {
+  ac.replaceChildren();
+  const acoesFinais = botoes.map((b) => {
     const btn = document.createElement('button');
     btn.className = b.prim ? 'btn-pri' : 'btn-sec';
     btn.textContent = b.rotulo;
     btn.onclick = b.aoClicar;
-    ac.appendChild(btn);
+    return btn;
+  });
+  if (falas.length > 1) {
+    let pagina = 0;
+    const anterior = document.createElement('button');
+    anterior.className = 'btn-sec';
+    anterior.textContent = 'Anterior';
+    const proxima = document.createElement('button');
+    proxima.className = 'btn-pri';
+    proxima.textContent = 'Próxima fala';
+    const mostrarFala = () => {
+      fala.textContent = falas[pagina];
+      progresso.textContent = `${pagina + 1} de ${falas.length}`;
+      anterior.hidden = pagina === 0;
+      proxima.hidden = pagina === falas.length - 1;
+      for (const btn of acoesFinais) btn.hidden = !proxima.hidden;
+    };
+    anterior.onclick = () => {
+      pagina--;
+      mostrarFala();
+      if (anterior.hidden) proxima.focus();
+    };
+    proxima.onclick = () => {
+      pagina++;
+      mostrarFala();
+      if (proxima.hidden) acoesFinais[0]?.focus();
+    };
+    ac.append(anterior, proxima, ...acoesFinais);
+    mostrarFala();
+    abrirModal('modal-dialogo');
+    proxima.focus();
+    return;
   }
+  fala.textContent = falas[0];
+  ac.append(...acoesFinais);
   abrirModal('modal-dialogo');
 }
 
@@ -1193,9 +1231,9 @@ function executarObjetivoAutoRota(obj) {
       mostrarToast(`💬 Auto-Rota falou com ${npc.nome}`, 2200);
       setTimeout(() => { if (autoRotaQuestId && !batalhaBloqueando()) planejarPassoAutoRota(); }, 350);
     } else {
-      abrirDialogo(npc.nome, `Conversa automática · NPC (${npc.raca})`, npc.dialogo, [
+      abrirDialogo(npc.nome, 'Conversa automática', npc.dialogo.at(-1), [
         { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
-      ]);
+      ], npc.sprite);
       agendarFecharDialogoAuto(1450);
     }
     return;
@@ -2055,7 +2093,7 @@ function quadro(agora) {
   }
   for (const ent of entidadesMapa) {
     ent.mesh.quaternion.copy(camera.quaternion);
-    if (ent.tipo === 'wild' || ent.tipo === 'boss') {
+    if (ent.tipo === 'wild' || ent.tipo === 'boss' || ent.dados.flutua) {
       ent.mesh.position.y = ent.baseY + pulso * 0.14;
     }
   }

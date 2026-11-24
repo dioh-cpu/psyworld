@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Confusion Waves : Double Perspective - Idle Game</title>
-<meta name="theme-color" content="#10171a">
+<meta name="theme-color" content="#24152d">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="data:,">
 <style>
@@ -337,10 +337,13 @@
 <div id="modal-menu" class="modal-bg">
   <div class="modal-card">
     <header class="modal-head interface-capa">
-      <h3 aria-label="Confusion Waves : Double Perspective - Idle Game">
-        Confusion Waves
-        <span class="marca-jogo">Double Perspective - Idle Game</span>
-      </h3>
+      <div class="titulo-menu">
+        <span class="edicao-menu">Halloween</span>
+        <h3 aria-label="Confusion Waves : Double Perspective - Idle Game">
+          Confusion Waves
+          <span class="marca-jogo">Double Perspective - Idle Game</span>
+        </h3>
+      </div>
       <button class="btn-fechar" data-fechar="modal-menu" aria-label="Fechar menu">✕</button>
     </header>
     <div class="menu-grid">
@@ -504,16 +507,19 @@
 
 <!-- Modais existentes (Diálogo, Diário, Mapa 48, Teleporte, Batalha) -->
 <div id="modal-dialogo" class="modal-bg">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dlg-titulo">
     <div class="modal-head"><h3 id="dlg-titulo">NPC</h3><button class="btn-fechar" data-fechar="modal-dialogo" aria-label="Fechar">✕</button></div>
     <div class="dialogo-corpo">
       <img id="dlg-retrato" alt="" hidden>
-      <div>
+      <div class="dialogo-fala">
         <div id="dlg-sub" class="sub"></div>
-        <p id="dlg-texto"></p>
+        <p id="dlg-texto" aria-live="polite" aria-atomic="true"></p>
       </div>
     </div>
-    <div id="dlg-acoes" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"></div>
+    <div class="dialogo-rodape">
+      <span id="dlg-progresso" hidden></span>
+      <div id="dlg-acoes"></div>
+    </div>
   </div>
 </div>
 

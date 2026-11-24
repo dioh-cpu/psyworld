@@ -4,8 +4,8 @@
   "description": "RPG Idle 2D de mundo aberto progressivo com Conexão Onírica e dupla perspectiva Herói × Vilão.",
   "start_url": "./regiao1.html",
   "display": "standalone",
-  "background_color": "#0c1014",
-  "theme_color": "#10171a",
+  "background_color": "#160f1c",
+  "theme_color": "#24152d",
   "orientation": "any",
   "icons": [
     {
