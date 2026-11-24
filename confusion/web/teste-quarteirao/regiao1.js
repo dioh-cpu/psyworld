@@ -1266,9 +1266,10 @@ function celulaCaminhavelMaisProxima(grid, gx0, gy0) {
 }
 
 // Pathfinding BFS leve na grade 128x71 para contornar pedras, lagoas e pedestais
-function calcularCaminhoMundo(destX, destZ) {
-  const grid = mapaAtual ? cacheGrids.get(mapaAtual.id) : null;
-  if (!grid) return [{ x: destX, z: destZ }];
+function calcularCaminhoMundo(destX, destZ, opcoes = {}) {
+  const grid = opcoes.grid || (mapaAtual ? cacheGrids.get(mapaAtual.id) : null);
+  const semCaminho = () => (opcoes.estrito ? null : [{ x: destX, z: destZ }]);
+  if (!grid) return semCaminho();
 
   const w2g = (x, z) => [
     Math.floor((x / LARG + 0.5) * GRID_W),
@@ -1319,7 +1320,7 @@ function calcularCaminhoMundo(destX, destZ) {
     }
   }
 
-  if (!achou) return [{ x: destX, z: destZ }];
+  if (!achou) return semCaminho();
 
   const pts = [];
   let cur = goalIdx;
@@ -1708,6 +1709,8 @@ function definirAutoCaca(ativo) {
   if (idle.autoCaca.ativo) {
     pararNavegacao(true);
     alvoAutoCaca = null;
+    resetarNavAutoCaca();
+    navAutoCaca.bloqueados.clear();
     const temWild = entidadesMapa.some((e) => e.tipo === 'wild');
     if (!temWild) {
       mostrarToast('⚔️ Auto-Caça ligado! Use "Caçar" para ir a uma área com monstros.', 3000);
@@ -1728,89 +1731,205 @@ document.getElementById('btn-autocaca')?.addEventListener('click', () => {
   definirAutoCaca(!idle.autoCaca.ativo);
 });
 
+// Grade de pathfinding com folga de 1 célula em volta das paredes: o personagem tem raio, então um caminho que raspa
+// a quina da máscara trava. Cai para a grade normal se não houver caminho com folga.
+const cacheGradesFolga = new Map();
+function gradeComFolga(mapaId) {
+  if (cacheGradesFolga.has(mapaId)) return cacheGradesFolga.get(mapaId);
+  const g = cacheGrids.get(mapaId);
+  if (!g) return null;
+  const out = new Uint8Array(g.length);
+  for (let y = 0; y < GRID_H; y++) {
+    for (let x = 0; x < GRID_W; x++) {
+      if (!g[y * GRID_W + x]) continue;
+      let livre = true;
+      for (let dy = -1; dy <= 1 && livre; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || nx >= GRID_W || ny < 0 || ny >= GRID_H || !g[ny * GRID_W + nx]) { livre = false; break; }
+        }
+      }
+      out[y * GRID_W + x] = livre ? 1 : 0;
+    }
+  }
+  cacheGradesFolga.set(mapaId, out);
+  return out;
+}
+
+// Caminho até um ponto do mapa: com folga primeiro, grade normal depois; null se o ponto é inalcançável.
+function caminhoAutoCaca(destX, destZ) {
+  if (!mapaAtual) return null;
+  const folga = gradeComFolga(mapaAtual.id);
+  const comFolga = folga && calcularCaminhoMundo(destX, destZ, { grid: folga, estrito: true });
+  if (comFolga) return comFolga;
+  return calcularCaminhoMundo(destX, destZ, { estrito: true });
+}
+
+function comprimentoCaminho(pts) {
+  let c = 0, ax = estado.x, az = estado.z;
+  for (const p of pts) { c += Math.hypot(p.x - ax, p.z - az); ax = p.x; az = p.z; }
+  return c;
+}
+
+// Estado da navegação do auto-caça: rota atual, detecção de travamento e alvos temporariamente descartados.
+const navAutoCaca = { rota: [], ultimaPos: null, ultimoCheck: 0, travado: 0, bloqueados: new Map(), avisouSemAlvo: false };
+const BLOQUEIO_ALVO_MS = 15000;
+
+function resetarNavAutoCaca() {
+  navAutoCaca.rota = [];
+  navAutoCaca.ultimaPos = null;
+  navAutoCaca.travado = 0;
+}
+
+// Escolhe o alvo pelo menor CAMINHO (não pela distância em linha reta) e ignora os inalcançáveis ou descartados.
+function escolherAlvoAutoCaca(agora, idle) {
+  let melhor = null;
+  let melhorComp = Infinity;
+  let melhorRota = null;
+  for (const ent of entidadesMapa) {
+    if (ent.tipo !== 'wild') continue;
+    if (idle.autoCaca.alvosIgnorados.includes(ent.dados.especie)) continue;
+    const ate = navAutoCaca.bloqueados.get(ent.dados.id);
+    if (ate && ate > agora) continue;
+    const rota = caminhoAutoCaca(ent.x, ent.z);
+    if (!rota) { navAutoCaca.bloqueados.set(ent.dados.id, agora + BLOQUEIO_ALVO_MS); continue; }
+    const comp = comprimentoCaminho(rota);
+    if (comp < melhorComp) { melhorComp = comp; melhor = ent; melhorRota = rota; }
+  }
+  if (melhor) {
+    navAutoCaca.rota = melhorRota;
+    navAutoCaca.ultimaPos = { x: estado.x, z: estado.z };
+    navAutoCaca.ultimoCheck = agora;
+    navAutoCaca.travado = 0;
+    navAutoCaca.avisouSemAlvo = false;
+  }
+  return melhor;
+}
+
+// Gancho para as habilidades dos Oníricos usadas FORA da batalha por turnos (auto-caça no mapa). Cada item:
+// { id, pronta(agora, alvo) => boolean, usar(agora, alvo) => { dano, ... } }. Enquanto a lista estiver vazia, vale o golpe normal.
+const habilidadesOniricasForaDaBatalha = [];
+
+function golpearAlvoAuto(agora, idle) {
+  proximoGolpeAuto = agora + 680;
+  const st = calcularStatusDetalhado(save);
+  const hab = escolherHabilidadeAuto('Noctarn', alvoAutoCaca.dados.especie, idle.autoCaca.preferirVantagem);
+  const crit = Math.random() < 0.22;
+  const dano = Math.max(12, Math.round(st.atk * hab.mult * (crit ? 1.5 : 1) * (0.9 + Math.random() * 0.2)));
+  alvoAutoCaca._hp -= dano;
+
+  if (!algumModalAberto()) {
+    const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
+    idleUI?.spawnFlutuante(pt.x, pt.y - 18, crit ? `⚡ -${dano}!` : `-${dano}`, crit ? '#fb923c' : '#fde047', crit);
+  }
+
+  if (alvoAutoCaca._hp <= 0) {
+    const morto = alvoAutoCaca.dados;
+    const res = resolverAbateAuto(save, morto);
+    if (!algumModalAberto()) {
+      const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
+      idleUI?.spawnFlutuante(pt.x, pt.y - 42, `+${res.gold}g  +${res.xp} XP`, '#4ade80', false);
+      if (res.capturado) {
+        idleUI?.spawnFlutuante(pt.x, pt.y - 64, `✨ Capturou ${morto.especie}!`, '#38bdf8', true);
+      }
+      if (res.ovoDrop) {
+        idleUI?.spawnFlutuante(pt.x, pt.y - 84, `🥚 Ovo de ${morto.especie}!`, '#facc15', true);
+      }
+    }
+    registrarLogIdle(
+      idle,
+      `⚔️ ${morto.especie} Nv.${morto.nivel} → +${res.gold}g +${res.xp}XP${res.capturado ? ' · ✨Capturado' : ''}${res.ovoDrop ? ' · 🥚Ovo' : ''}`,
+      'farm'
+    );
+    if (res.subiuNivel) {
+      mostrarToast(`🌟 Domador subiu para o Nível ${res.novoNivel}! (+3 Pontos de Atributo)`, 3400);
+    }
+    // Remove e agenda respawn automático em 5s para farm contínuo
+    monstrosDerrotadosSessao.add(morto.id);
+    const idRespawn = morto.id;
+    const mapaOrigem = mapaAtual?.id;
+    alvoAutoCaca = null;
+    resetarNavAutoCaca();
+    construirEntidadesDoMapa(mapaAtual);
+    atualizarHudEstado();
+    salvarEstado();
+    setTimeout(() => {
+      monstrosDerrotadosSessao.delete(idRespawn);
+      if (mapaAtual?.id === mapaOrigem) construirEntidadesDoMapa(mapaAtual);
+    }, 5000);
+  }
+}
+
 function atualizarAutoCaca(agora, dt, vel) {
   const idle = garantirEstadoIdle(save);
   if (!idle.autoCaca.ativo || emTransicao || batalhaBloqueando() || !sdfAtivo) return { andando: false, rot: 0 };
 
   // Verifica se o alvo atual ainda existe
-  if (alvoAutoCaca && !entidadesMapa.includes(alvoAutoCaca)) alvoAutoCaca = null;
+  if (alvoAutoCaca && !entidadesMapa.includes(alvoAutoCaca)) { alvoAutoCaca = null; resetarNavAutoCaca(); }
 
   if (!alvoAutoCaca) {
-    let melhor = null;
-    let melhorDist = Infinity;
-    for (const ent of entidadesMapa) {
-      if (ent.tipo !== 'wild') continue;
-      if (idle.autoCaca.alvosIgnorados.includes(ent.dados.especie)) continue;
-      const d = Math.hypot(ent.x - estado.x, ent.z - estado.z);
-      if (d < melhorDist) { melhorDist = d; melhor = ent; }
+    alvoAutoCaca = escolherAlvoAutoCaca(agora, idle);
+    if (!alvoAutoCaca) {
+      // Nada alcançável agora: fica parado (animação de parado) em vez de empurrar parede; tenta de novo quando algo nascer
+      if (!navAutoCaca.avisouSemAlvo && entidadesMapa.some((e) => e.tipo === 'wild')) {
+        navAutoCaca.avisouSemAlvo = true;
+        mostrarToast('⚔️ Auto-Caça: os monstros desta área estão fora de alcance. Aguardando…', 2600);
+      }
+      return { andando: false, rot: 0 };
     }
-    alvoAutoCaca = melhor;
-    if (!alvoAutoCaca) return { andando: false, rot: 0 };
     if (!alvoAutoCaca._hp) alvoAutoCaca._hp = 50 + alvoAutoCaca.dados.nivel * 12;
   }
 
   const vx = alvoAutoCaca.x - estado.x;
   const vz = alvoAutoCaca.z - estado.z;
   const dist = Math.hypot(vx, vz);
-  const rot = Math.atan2(vx, vz);
 
   if (dist > 5.2) {
-    const passo = Math.min(dist - 4.5, vel * dt);
-    const p = resolverMovimentoSDF({ x: estado.x, z: estado.z }, (vx / dist) * passo, (vz / dist) * passo, RAIO, sdfAtivo);
+    // Detecção de travamento: se quase não saiu do lugar em ~0,35 s, refaz a rota; travado por ~1 s, descarta o alvo
+    if (!navAutoCaca.ultimaPos) { navAutoCaca.ultimaPos = { x: estado.x, z: estado.z }; navAutoCaca.ultimoCheck = agora; }
+    if (agora - navAutoCaca.ultimoCheck >= 350) {
+      const andou = Math.hypot(estado.x - navAutoCaca.ultimaPos.x, estado.z - navAutoCaca.ultimaPos.z);
+      navAutoCaca.ultimaPos = { x: estado.x, z: estado.z };
+      navAutoCaca.ultimoCheck = agora;
+      if (andou < vel * 0.35 * 0.35) {
+        navAutoCaca.travado++;
+        if (navAutoCaca.travado >= 3) {
+          navAutoCaca.bloqueados.set(alvoAutoCaca.dados.id, agora + BLOQUEIO_ALVO_MS);
+          alvoAutoCaca = null;
+          resetarNavAutoCaca();
+          return { andando: false, rot: 0 };
+        }
+        navAutoCaca.rota = caminhoAutoCaca(alvoAutoCaca.x, alvoAutoCaca.z) || [];
+      } else {
+        navAutoCaca.travado = 0;
+      }
+    }
+    if (!navAutoCaca.rota.length) navAutoCaca.rota = caminhoAutoCaca(alvoAutoCaca.x, alvoAutoCaca.z) || [];
+    if (!navAutoCaca.rota.length) {
+      navAutoCaca.bloqueados.set(alvoAutoCaca.dados.id, agora + BLOQUEIO_ALVO_MS);
+      alvoAutoCaca = null;
+      return { andando: false, rot: 0 };
+    }
+
+    // Segue os pontos da rota; o último ponto é o do alvo, mas para ao chegar no alcance de ataque
+    while (navAutoCaca.rota.length > 1 && Math.hypot(navAutoCaca.rota[0].x - estado.x, navAutoCaca.rota[0].z - estado.z) < 1.1) {
+      navAutoCaca.rota.shift();
+    }
+    const alvoPt = navAutoCaca.rota[0];
+    const wx = alvoPt.x - estado.x;
+    const wz = alvoPt.z - estado.z;
+    const wd = Math.hypot(wx, wz) || 1;
+    const rot = Math.atan2(wx, wz);
+    const passo = Math.min(Math.max(0, dist - 4.5), vel * dt);
+    const p = resolverMovimentoSDF({ x: estado.x, z: estado.z }, (wx / wd) * passo, (wz / wd) * passo, RAIO, sdfAtivo);
     estado.x = THREE.MathUtils.clamp(p.x, -LARG / 2 + RAIO, LARG / 2 - RAIO);
     estado.z = THREE.MathUtils.clamp(p.z, -ALT / 2 + RAIO, ALT / 2 - RAIO);
     return { andando: true, rot };
   }
 
   // Em alcance: ataque em tempo real direto no mapa (sem modal!)
-  if (agora >= proximoGolpeAuto) {
-    proximoGolpeAuto = agora + 680;
-    const st = calcularStatusDetalhado(save);
-    const hab = escolherHabilidadeAuto('Noctarn', alvoAutoCaca.dados.especie, idle.autoCaca.preferirVantagem);
-    const crit = Math.random() < 0.22;
-    const dano = Math.max(12, Math.round(st.atk * hab.mult * (crit ? 1.5 : 1) * (0.9 + Math.random() * 0.2)));
-    alvoAutoCaca._hp -= dano;
-
-    if (!algumModalAberto()) {
-      const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
-      idleUI?.spawnFlutuante(pt.x, pt.y - 18, crit ? `⚡ -${dano}!` : `-${dano}`, crit ? '#fb923c' : '#fde047', crit);
-    }
-
-    if (alvoAutoCaca._hp <= 0) {
-      const morto = alvoAutoCaca.dados;
-      const res = resolverAbateAuto(save, morto);
-      if (!algumModalAberto()) {
-        const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
-        idleUI?.spawnFlutuante(pt.x, pt.y - 42, `+${res.gold}g  +${res.xp} XP`, '#4ade80', false);
-        if (res.capturado) {
-          idleUI?.spawnFlutuante(pt.x, pt.y - 64, `✨ Capturou ${morto.especie}!`, '#38bdf8', true);
-        }
-        if (res.ovoDrop) {
-          idleUI?.spawnFlutuante(pt.x, pt.y - 84, `🥚 Ovo de ${morto.especie}!`, '#facc15', true);
-        }
-      }
-      registrarLogIdle(
-        idle,
-        `⚔️ ${morto.especie} Nv.${morto.nivel} → +${res.gold}g +${res.xp}XP${res.capturado ? ' · ✨Capturado' : ''}${res.ovoDrop ? ' · 🥚Ovo' : ''}`,
-        'farm'
-      );
-      if (res.subiuNivel) {
-        mostrarToast(`🌟 Domador subiu para o Nível ${res.novoNivel}! (+3 Pontos de Atributo)`, 3400);
-      }
-      // Remove e agenda respawn automático em 5s para farm contínuo
-      monstrosDerrotadosSessao.add(morto.id);
-      const idRespawn = morto.id;
-      const mapaOrigem = mapaAtual?.id;
-      alvoAutoCaca = null;
-      construirEntidadesDoMapa(mapaAtual);
-      atualizarHudEstado();
-      salvarEstado();
-      setTimeout(() => {
-        monstrosDerrotadosSessao.delete(idRespawn);
-        if (mapaAtual?.id === mapaOrigem) construirEntidadesDoMapa(mapaAtual);
-      }, 5000);
-    }
-  }
+  const rot = Math.atan2(vx, vz);
+  if (agora >= proximoGolpeAuto) golpearAlvoAuto(agora, idle);
   return { andando: false, rot };
 }
 
