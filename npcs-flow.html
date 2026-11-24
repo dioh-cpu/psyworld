@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PSYWORLD · 16 NPCs 9:16 + Prompts (Google Flow)</title>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --card: #171b24;
+      --border: #2a3142;
+      --text: #eef2ff;
+      --muted: #9aa5b8;
+      --accent: #f59e0b;
+      --green: #10b981;
+      --btn: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px 12px 48px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; color: #fff; }
+    .tips {
+      background: #1c2230;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .tips strong { color: var(--text); }
+    .zip-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 13px;
+      margin-bottom: 18px;
+      border-radius: 10px;
+      background: #273043;
+      border: 1px solid #3c4966;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 16px;
+      transition: opacity 0.2s, border-color 0.2s;
+    }
+    .card.done {
+      border-color: var(--green);
+      opacity: 0.68;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 1.02rem;
+    }
+    .done-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: #10131a;
+      border: 1px solid var(--border);
+    }
+    .done-label input { width: 17px; height: 17px; accent-color: var(--green); }
+    .preview-box {
+      display: flex;
+      justify-content: center;
+      background: #090b0f;
+      border-radius: 10px;
+      padding: 8px;
+      margin-bottom: 12px;
+    }
+    .preview-box img {
+      max-height: 310px;
+      width: auto;
+      max-width: 100%;
+      border-radius: 6px;
+      display: block;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 10px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+    }
+    .btn-dl {
+      background: var(--btn);
+      color: #fff;
+    }
+    .btn-copy {
+      background: var(--accent);
+      color: #111;
+    }
+    .btn-copy.copied {
+      background: var(--green);
+      color: #fff;
+    }
+    textarea {
+      width: 100%;
+      height: 92px;
+      background: #0e1118;
+      color: #cfd8ea;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.8rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🎃 PSYWORLD · 16 NPCs 9:16 (Google Flow)</h1>
+    <div class="tips">
+      <strong>No Google Flow (celular ou PC):</strong><br>
+      1. Modo: <strong>Vídeo → Frames → 9:16</strong><br>
+      2. Modelo: <strong>Veo 3.1 - Quality</strong> ou <strong>Fast</strong><br>
+      3. Suba o PNG no <strong>Frame Inicial</strong> e o <strong>mesmo PNG</strong> no <strong>Frame Final</strong>.
+    </div>
+
+    <a class="zip-btn" href="assets/confusion/npcs-flow-9x16/Todos-16-NPCs-9x16.zip" download="Todos-16-NPCs-9x16.zip">
+      📦 Baixar Todos os 16 PNGs (.zip)
+    </a>
+
+    <div id="list"></div>
+  </div>
+
+  <script>
+    const NPCS = [
+      {
+        id: "01",
+        title: "01 · Pescadora",
+        file: "NPC-01-pescadora-9x16.png",
+        prompt: "Seamless looping idle animation of this single fantasy fisherwoman centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots stay strictly planted in place. Keep exact original face, hands, proportions, and textures with zero morphing: calm steady chest breathing, natural soft eye blink, subtle gentle sway of her green bandana tails, orange waist sash, small pumpkin belt charm, and the hanging orange-wrapped buoy swinging very slightly like a slow pendulum while her hands hold the thick coiled rope steadily. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "02",
+        title: "02 · Matriarca das Chaves",
+        file: "NPC-02-matriarca-chaves-9x16.png",
+        prompt: "Seamless looping idle animation of this single silver-haired noble matron centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots stay strictly planted in place. Keep exact original face, hands, proportions, and textures with zero morphing: poised gentle breathing, subtle confident micro head tilt and soft blink, purple autumn cloak fringes and silver curls swaying lightly in a soft breeze while the brass keyring and small pumpkin charm in her right hand swing gently in place. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "03",
+        title: "03 · Jardineira",
+        file: "NPC-03-jardineira-9x16.png",
+        prompt: "Seamless looping idle animation of this single young curly-haired gardener woman centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots stay strictly planted in place. Keep exact original face, hands, proportions, and textures with zero morphing: gentle cheerful breathing, soft natural blink while gazing fondly upward, cradling the small sprout in her hands as the tiny leaves, orange headscarf, apron hem, and glowing pumpkin hip charm sway softly in a light breeze. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "04",
+        title: "04 · Jovem Carteiro",
+        file: "NPC-04-carteiro-9x16.png",
+        prompt: "Seamless looping idle animation of this single young red-haired courier boy centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots stay strictly planted in place. Keep exact original face, hands, proportions, and textures with zero morphing: relaxed youthful breathing, soft natural blink, holding the twine-wrapped parcel steadily while his orange knit scarf fringes, cap leaf, leather messenger bag, and small glowing pumpkin charm sway gently in a light breeze. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "05",
+        title: "05 · Engenheira",
+        file: "NPC-05-engenheira-9x16.png",
+        prompt: "Seamless looping idle animation of this single braided engineer woman centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots and the bottom of the giant brass wrench stay strictly planted on the ground. Keep exact original face, hands, proportions, and textures with zero morphing: steady confident chest breathing, warm proud expression with a soft blink, silver braids, coat hem, and the warm glowing hip lantern swaying gently while her left hand rests steadily atop the grounded wrench. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "06",
+        title: "06 · Viajante da Lanterna",
+        file: "NPC-06-viajante-lanterna-9x16.png",
+        prompt: "Seamless looping idle animation of this single bearded wanderer in tattered leaf-adorned cloak centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Tall boots stay strictly planted in place. Keep exact original face, hands, proportions, and textures with zero morphing: calm steady breathing, soft blink, tattered autumn cloak and hat feathers billowing gently in a slow rhythmic breeze while the warm glowing lantern in his left hand swings subtly like a slow pendulum with a gentle candle flicker. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "07",
+        title: "07 · Cavaleiro do Escudo",
+        file: "NPC-07-cavaleiro-escudo-9x16.png",
+        prompt: "Seamless looping idle animation of this single armored paladin knight centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Armored boots and the tip of his leaf-crested shield stay strictly planted on the ground. Keep exact original face, armor details, proportions, and textures with zero morphing: deep calm chest breathing making his bronze pauldrons rise and fall subtly, warm steady smile with a soft blink, heavy purple autumn cape swaying slowly at the hem. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "08",
+        title: "08 · Espírito da Floresta",
+        file: "NPC-08-espirito-floresta-9x16.png",
+        prompt: "Seamless looping idle animation of this single floating forest spirit goddess in layered leaf gown centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Keep exact original face, hands, antler crown, proportions, and textures with zero morphing: gentle weightless vertical hovering bob of just a few pixels up and down in place, serene breathing, long wavy hair, trailing vines, hanging amber droplets, and layered autumn leaf dress flowing softly in a mystical breeze. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "09",
+        title: "09 · Arqueira Élfica",
+        file: "NPC-09-arqueira-elfa-9x16.png",
+        prompt: "Seamless looping idle animation of this single red-haired elf ranger girl centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots stay strictly planted in place. Keep exact original face, hands, bow, proportions, and textures with zero morphing: agile relaxed chest breathing, soft natural blink, subtle gentle sway of her red hair strands, leaf skirt fringes, and the small glowing pumpkin lantern hanging at her hip. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "10",
+        title: "10 · Guardião da Lança",
+        file: "NPC-10-guardiao-lanca-9x16.png",
+        prompt: "Seamless looping idle animation of this single dark-haired forest warden holding a spear centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots and the wooden spear butt stay strictly planted on the ground. Keep exact original face, hands, proportions, and textures with zero morphing: calm vigilant chest breathing, soft natural blink, green autumn-lined cloak, red spear ribbons, and warm glowing belt lantern swaying gently in a light breeze. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "11",
+        title: "11 · Sábio Ancião",
+        file: "NPC-11-sabio-anciao-9x16.png",
+        prompt: "Seamless looping idle animation of this single white-bearded elder sage holding a gnarled staff and open book centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Shoes and the bottom of his wooden staff stay strictly planted on the ground. Keep exact original face, hands, proportions, and textures with zero morphing: slow wise breathing, warm smile with a soft blink, long white beard, mossy robe hems, and the glowing pumpkin lantern hanging from the curved staff top swaying gently. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "12",
+        title: "12 · Goblin dos Cogumelos",
+        file: "NPC-12-goblin-cogumelo-9x16.png",
+        prompt: "Seamless looping idle animation of this single cheerful goblin merchant sitting on a wooden crate next to a mushroom basket centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Wooden crate, bare feet, and mushroom basket stay strictly stationary on the ground. Keep exact original face, hands, proportions, and textures with zero morphing: jovial seated breathing, subtle ear twitch and soft blink while admiring the mushroom in his left hand, glowing pumpkin charm dangling from his curved hat tip swinging gently. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "13",
+        title: "13 · Goblin Alquimista",
+        file: "NPC-13-goblin-alquimista-9x16.png",
+        prompt: "Seamless looping idle animation of this single female goblin alchemist in purple coat holding a glowing orange potion flask centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots stay strictly planted in place. Keep exact original face, hands, proportions, and textures with zero morphing: lively curious breathing, soft blink and subtle ear twitch, glowing orange liquid shimmering gently inside the glass flask in her left hand while her purple coat tails and belt vials sway lightly. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "14",
+        title: "14 · Goblin Batedor",
+        file: "NPC-14-goblin-batedor-9x16.png",
+        prompt: "Seamless looping idle animation of this single crouched goblin scout with backpack centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Wrapped bare feet stay strictly planted in place. Keep exact original face, hands, proportions, and textures with zero morphing: sneaky rhythmic breathing in his crouched stance, subtle ear twitch and soft blink, headband autumn feathers, leafy tunic edges, and the small glowing pumpkin charm on his hip bag swaying gently. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "15",
+        title: "15 · Anã Cartógrafa",
+        file: "NPC-15-ana-cartografa-9x16.png",
+        prompt: "Seamless looping idle animation of this single red-braided dwarf cartographer woman in navy coat holding a rolled scroll and brass compass centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Heavy boots stay strictly planted in place. Keep exact original face, hands, proportions, and textures with zero morphing: sturdy grounded chest breathing, observant soft blink, red braids and coat hem swaying subtly while the round brass compass hanging from her right hand and small pumpkin belt charm swing in a slow gentle pendulum arc. Smooth loop returning to the exact starting pose on the final frame."
+      },
+      {
+        id: "16",
+        title: "16 · Artesão da Lanterna",
+        file: "NPC-16-artesao-lanterna-9x16.png",
+        prompt: "Seamless looping idle animation of this single young spectacled artisan man in blue vest and yellow scarf holding a lantern centered in frame, front view. Locked static camera, zero zoom, zero pan, flat solid chroma green background (#00FF00) completely unchanged. Boots stay strictly planted in place. Keep exact original face, glasses, hands, proportions, and textures with zero morphing: relaxed friendly breathing with right hand resting on hip, soft natural blink, yellow knit scarf fringes and belt cloth swaying softly while the warm glowing lantern in his left hand swings gently with a subtle candle flicker. Smooth loop returning to the exact starting pose on the final frame."
+      }
+    ];
+
+    const list = document.getElementById("list");
+    const saved = JSON.parse(localStorage.getItem("psyworld_npcs_done") || "{}");
+
+    NPCS.forEach((npc) => {
+      const imgUrl = `assets/confusion/npcs-flow-9x16/${npc.file}`;
+      const card = document.createElement("div");
+      card.className = "card" + (saved[npc.id] ? " done" : "");
+      card.innerHTML = `
+        <div class="card-head">
+          <div class="card-title">${npc.title}</div>
+          <label class="done-label">
+            <input type="checkbox" ${saved[npc.id] ? "checked" : ""} />
+            Feito
+          </label>
+        </div>
+        <div class="preview-box">
+          <img src="${imgUrl}" alt="${npc.title}" loading="lazy" />
+        </div>
+        <div class="actions">
+          <a class="btn btn-dl" href="${imgUrl}" download="${npc.file}">⬇️ Baixar PNG</a>
+          <button class="btn btn-copy" type="button">📋 Copiar Prompt</button>
+        </div>
+        <textarea readonly onclick="this.select()">${npc.prompt}</textarea>
+      `;
+
+      const cb = card.querySelector("input[type=checkbox]");
+      cb.addEventListener("change", () => {
+        saved[npc.id] = cb.checked;
+        localStorage.setItem("psyworld_npcs_done", JSON.stringify(saved));
+        card.classList.toggle("done", cb.checked);
+      });
+
+      const copyBtn = card.querySelector(".btn-copy");
+      const ta = card.querySelector("textarea");
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(npc.prompt);
+        } catch {
+          ta.select();
+          document.execCommand("copy");
+        }
+        copyBtn.textContent = "✅ Copiado!";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = "📋 Copiar Prompt";
+          copyBtn.classList.remove("copied");
+        }, 1800);
+      });
+
+      list.appendChild(card);
+    });
+  </script>
+</body>
+</html>
