@@ -1,11 +1,14 @@
-// Espírito da Floresta jogável. Quatro MP4 curtos (1280×720, fundo verde), um por direção, cada um em loop
-// (ida e volta em torno do quadro de frente pura daquela direção, então nunca gira para outro lado):
-// frente, esquerda, direita e costas. Andando, toca o clipe da direção do movimento em relação à tela.
-// Parado, continua em loop na última direção. Com ?giro=1 na URL, parado volta ao giro completo de 10 s.
+// Espírito da Floresta jogável. Três MP4 de idle em loop sem emenda (frente, esquerda, costas), 376×720 com fundo verde.
+// A direita é o clipe da esquerda espelhado. Andando ou parado, toca o clipe da direção do movimento em relação à tela
+// e fica em loop na última direção. Quando houver clipes de walk (espirito-walk-<direcao>.mp4), basta listá-los em WALK.
 import * as THREE from 'three';
 
 const BASE = '../../../assets/confusion/interface/animacoes/';
-const DIRECOES = ['frente', 'esquerda', 'direita', 'costas'];   // índice = linha (0 frente, 1 esquerda, 2 direita, 3 costas)
+const DIRECOES = ['frente', 'esquerda', 'esquerda', 'costas'];   // índice = linha (0 frente, 1 esquerda, 2 direita = esquerda espelhada, 3 costas)
+const WALK = [];   // ex.: ['frente', 'esquerda', 'costas'] quando os clipes de walk existirem
+
+// Quadro do clipe: 376 × 720, personagem do topo (linha 96) até o pé (linha 595), centrado na largura.
+const QUADRO = { largura: 376, altura: 720, topo: 96, pe: 595 };
 
 function criarVideo(src) {
   const v = document.createElement('video');
@@ -25,15 +28,20 @@ function criarVideo(src) {
 }
 
 export function criarEspiritoIdle(altura) {
-  const usarGiro = new URLSearchParams(location.search).get('giro') === '1';
+  const nomes = ['frente', 'esquerda', 'costas'];
   const videos = {};
   const texturas = {};
-  for (const nome of DIRECOES) videos[nome] = criarVideo(`${BASE}espirito-${nome}.mp4`);
-  if (usarGiro) videos.giro = criarVideo(`${BASE}espirito-idle.mp4`);
-  for (const nome in videos) texturas[nome] = new THREE.VideoTexture(videos[nome]);
+  for (const nome of nomes) {
+    videos[`idle-${nome}`] = criarVideo(`${BASE}espirito-idle-${nome}.mp4`);
+    if (WALK.includes(nome)) videos[`walk-${nome}`] = criarVideo(`${BASE}espirito-walk-${nome}.mp4`);
+  }
+  for (const k in videos) {
+    texturas[k] = new THREE.VideoTexture(videos[k]);
+    texturas[k].colorSpace = THREE.SRGBColorSpace;
+  }
 
   const material = new THREE.ShaderMaterial({
-    uniforms: { map: { value: texturas.frente } },
+    uniforms: { map: { value: texturas['idle-frente'] } },
     transparent: true,
     depthWrite: false,
     vertexShader: `
@@ -56,35 +64,36 @@ export function criarEspiritoIdle(altura) {
       }`,
   });
 
-  // Escala e âncora fixas para os quadros 1280 × 720 (mesmos dos clipes por direção).
-  const escala = altura / 440;
-  const sprite = new THREE.Mesh(new THREE.PlaneGeometry(1280 * escala, 720 * escala), material);
-  sprite.position.set(20 * escala, (624 - 360) * escala, 0);
+  const escala = altura / (QUADRO.pe - QUADRO.topo);
+  const larguraPlano = QUADRO.largura * escala;
+  const sprite = new THREE.Mesh(new THREE.PlaneGeometry(larguraPlano, QUADRO.altura * escala), material);
+  sprite.position.set(0, (QUADRO.pe - QUADRO.altura / 2) * escala, 0);   // o pé fica em y = 0
   const malha = new THREE.Group();
   malha.add(sprite);
 
-  let ativo = null;      // nome do vídeo que deve estar tocando
+  let ativo = null;      // chave do vídeo que deve estar tocando
   let ultima = 0;        // última direção do movimento
   let pausado = true;
 
-  function trocar(nome) {
-    if (ativo === nome && !pausado) {
-      if (videos[nome].paused) videos[nome].play().catch(() => {});
+  function trocar(chave, espelhar) {
+    sprite.scale.x = espelhar ? -1 : 1;
+    if (ativo === chave && !pausado) {
+      if (videos[chave].paused) videos[chave].play().catch(() => {});
       return;
     }
-    if (ativo && ativo !== nome) videos[ativo].pause();
-    ativo = nome;
+    if (ativo && ativo !== chave) videos[ativo].pause();
+    ativo = chave;
     pausado = false;
-    const v = videos[nome];
+    const v = videos[chave];
     if (v.paused) v.play().catch(() => {});
-    material.uniforms.map.value = texturas[nome];
+    material.uniforms.map.value = texturas[chave];
   }
 
   // Desbloqueia o autoplay no primeiro toque/tecla e retoma o vídeo ativo se o navegador o pausou
   function desbloquear() {
-    for (const nome in videos) {
-      const v = videos[nome];
-      if (v.readyState < 2) v.play().then(() => { if (ativo !== nome || pausado) v.pause(); }).catch(() => {});
+    for (const k in videos) {
+      const v = videos[k];
+      if (v.readyState < 2) v.play().then(() => { if (ativo !== k || pausado) v.pause(); }).catch(() => {});
     }
     if (ativo && !pausado && videos[ativo].paused) videos[ativo].play().catch(() => {});
   }
@@ -93,7 +102,7 @@ export function criarEspiritoIdle(altura) {
 
   function pausar() {
     pausado = true;
-    for (const nome in videos) videos[nome].pause();
+    for (const k in videos) videos[k].pause();
   }
 
   // rot: direção do movimento no mundo (atan2(dx, dz)); yaw: ângulo da câmera em volta do personagem.
@@ -111,7 +120,9 @@ export function criarEspiritoIdle(altura) {
       pausar();
       return;
     }
-    trocar(!andando && usarGiro ? 'giro' : DIRECOES[ultima]);
+    const nome = DIRECOES[ultima];
+    const tipo = andando && WALK.includes(nome) ? 'walk' : 'idle';
+    trocar(`${tipo}-${nome}`, ultima === 2);
     sprite.visible = videos[ativo].readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
   }
 
@@ -119,7 +130,7 @@ export function criarEspiritoIdle(altura) {
     malha,
     atualizar,
     pausar,
-    get direcao() { return DIRECOES[ultima]; },
+    get direcao() { return ['frente', 'esquerda', 'direita', 'costas'][ultima]; },
     get videoAtivo() { return ativo; },
     videos,
   };
