@@ -68,6 +68,7 @@ export function criarEspiritoIdle(altura) {
   const larguraPlano = QUADRO.largura * escala;
   const sprite = new THREE.Mesh(new THREE.PlaneGeometry(larguraPlano, QUADRO.altura * escala), material);
   sprite.position.set(0, (QUADRO.pe - QUADRO.altura / 2) * escala, 0);   // o pé fica em y = 0
+  sprite.visible = false;   // aparece no primeiro quadro pronto
   const malha = new THREE.Group();
   malha.add(sprite);
 
@@ -86,7 +87,6 @@ export function criarEspiritoIdle(altura) {
     pausado = false;
     const v = videos[chave];
     if (v.paused) v.play().catch(() => {});
-    material.uniforms.map.value = texturas[chave];
   }
 
   // Desbloqueia o autoplay no primeiro toque/tecla e retoma o vídeo ativo se o navegador o pausou
@@ -123,7 +123,12 @@ export function criarEspiritoIdle(altura) {
     const nome = DIRECOES[ultima];
     const tipo = andando && WALK.includes(nome) ? 'walk' : 'idle';
     trocar(`${tipo}-${nome}`, ultima === 2);
-    sprite.visible = videos[ativo].readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+    // Só troca a imagem quando o clipe novo já tem quadro, e nunca esconde o personagem depois do primeiro quadro:
+    // na volta do loop o navegador faz um seek (readyState cai por ~2 quadros) e antes isso fazia o personagem piscar.
+    if (videos[ativo].readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      material.uniforms.map.value = texturas[ativo];
+      sprite.visible = true;
+    }
   }
 
   return {
