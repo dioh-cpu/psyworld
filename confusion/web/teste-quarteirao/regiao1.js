@@ -568,6 +568,7 @@ questBanner?.addEventListener('click', () => {
 function abrirModal(id) { document.getElementById(id)?.classList.add('aberto'); }
 function fecharModal(id) {
   document.getElementById(id)?.classList.remove('aberto');
+  if (id === 'modal-dialogo') clearInterval(timerDigitacao);
   if (id === 'modal-dialogo' && autoRotaQuestId) {
     setTimeout(() => { if (!batalhaBloqueando() && !dialogoAberto() && autoRotaQuestId) planejarPassoAutoRota(); }, 80);
   }
@@ -670,14 +671,22 @@ document.getElementById('btn-mapa')?.addEventListener('click', () => {
 });
 
 // ---- Diálogo genérico ----
+let timerDigitacao;
+function retratoNpc(npc, pagina) {
+  return npc.sprite.replace('/npcs/', '/retratos/').replace('.webp', `-${npc.expressoes[pagina]}.webp`);
+}
+
 function abrirDialogo(titulo, sub, texto, botoes, retrato = null) {
+  clearInterval(timerDigitacao);
+  document.getElementById('modal-dialogo').classList.toggle('conversa-npc', Array.isArray(texto));
   const imagem = document.getElementById('dlg-retrato');
   imagem.hidden = !retrato;
-  if (retrato) imagem.src = retrato;
+  if (typeof retrato === 'string') imagem.src = retrato;
   else imagem.removeAttribute('src');
   document.getElementById('dlg-titulo').textContent = titulo;
   document.getElementById('dlg-sub').textContent = sub || '';
   const fala = document.getElementById('dlg-texto');
+  const anuncio = document.getElementById('dlg-anuncio');
   const progresso = document.getElementById('dlg-progresso');
   const falas = Array.isArray(texto) ? texto : [texto];
   progresso.hidden = falas.length < 2;
@@ -699,12 +708,39 @@ function abrirDialogo(titulo, sub, texto, botoes, retrato = null) {
     const proxima = document.createElement('button');
     proxima.className = 'btn-pri';
     proxima.textContent = 'Próxima fala';
-    const mostrarFala = () => {
+    const revelar = document.createElement('button');
+    revelar.className = 'btn-sec';
+    revelar.textContent = 'Mostrar fala';
+    const mostrarTudo = () => {
+      clearInterval(timerDigitacao);
       fala.textContent = falas[pagina];
+      revelar.hidden = true;
+      if (document.activeElement === revelar) {
+        (proxima.hidden ? acoesFinais[0] : proxima)?.focus();
+      }
+    };
+    revelar.onclick = mostrarTudo;
+    const mostrarFala = () => {
+      clearInterval(timerDigitacao);
+      if (typeof retrato === 'function') imagem.src = retrato(pagina);
+      anuncio.textContent = falas[pagina];
       progresso.textContent = `${pagina + 1} de ${falas.length}`;
       anterior.hidden = pagina === 0;
       proxima.hidden = pagina === falas.length - 1;
       for (const btn of acoesFinais) btn.hidden = !proxima.hidden;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        mostrarTudo();
+        return;
+      }
+      const caracteres = Array.from(falas[pagina]);
+      const inicio = performance.now();
+      fala.textContent = '';
+      revelar.hidden = false;
+      timerDigitacao = setInterval(() => {
+        const limite = Math.floor((performance.now() - inicio) / 19);
+        if (limite >= caracteres.length) mostrarTudo();
+        else fala.textContent = caracteres.slice(0, limite).join('');
+      }, 32);
     };
     anterior.onclick = () => {
       pagina--;
@@ -712,17 +748,19 @@ function abrirDialogo(titulo, sub, texto, botoes, retrato = null) {
       if (anterior.hidden) proxima.focus();
     };
     proxima.onclick = () => {
+      if (!revelar.hidden) { mostrarTudo(); return; }
       pagina++;
       mostrarFala();
       if (proxima.hidden) acoesFinais[0]?.focus();
     };
-    ac.append(anterior, proxima, ...acoesFinais);
+    ac.append(anterior, revelar, proxima, ...acoesFinais);
     mostrarFala();
     abrirModal('modal-dialogo');
     proxima.focus();
     return;
   }
   fala.textContent = falas[0];
+  anuncio.textContent = falas[0];
   ac.append(...acoesFinais);
   abrirModal('modal-dialogo');
 }
@@ -1233,7 +1271,7 @@ function executarObjetivoAutoRota(obj) {
     } else {
       abrirDialogo(npc.nome, 'Conversa automática', npc.dialogo.at(-1), [
         { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
-      ], npc.sprite);
+      ], retratoNpc(npc, npc.dialogo.length - 1));
       agendarFecharDialogoAuto(1450);
     }
     return;
@@ -1501,7 +1539,7 @@ function executarInteracao() {
     construirEntidadesDoMapa(mapaAtual);
     abrirDialogo(npc.nome, mapaAtual.nome, npc.dialogo, [
       { rotulo: 'Fechar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
-    ], npc.sprite);
+    ], (pagina) => retratoNpc(npc, pagina));
     return;
   }
   if (alvo.tipo === 'pista') {

@@ -14,6 +14,7 @@ export const NPCS_REGIAO1 = [
     cor: '#38bdf8',
     quest: 'q_mare_devolveu',
     pistaAoFalar: 'npc_pescadora_falou',
+    expressoes: ['neutro', 'serio', 'serio', 'sorriso'],
     dialogo: [
       'Pode trazer essa tábua à luz? Conheço esse encaixe. Meu pai consertava barcos aqui e sempre marcava a madeira com dois riscos junto ao prego. Até hoje sei de qual navio veio cada tábua que a maré devolve.',
       'Na noite da tempestade, ouvi o badalo do navio uma última vez. Depois foi só o mar. Quando amanheceu, acharam o badalo entre as redes e levaram a peça para a praça.',
@@ -32,6 +33,7 @@ export const NPCS_REGIAO1 = [
     cor: '#60a5fa',
     quest: 'q_tp_c1',
     pistaAoFalar: 'npc_zeladora_c1_falou',
+    expressoes: ['neutro', 'serio', 'neutro'],
     dialogo: [
       'A praça é mais antiga que as casas ao redor. Quando eu era menina, achava que o cristal acendia com o sol. Descobri como funciona na primeira vez em que tive de voltar sozinha da floresta.',
       'Ele precisa reconhecer outro marco antes de responder. Os dois que costumo indicar ficam no interior da floresta, em E8, e no mirante dos cogumelos, em D9.',
@@ -49,6 +51,7 @@ export const NPCS_REGIAO1 = [
     cor: '#4ade80',
     quest: 'q_sec_canteiro',
     pistaAoFalar: 'npc_jardineira_c1_falou',
+    expressoes: ['sorriso', 'serio', 'sorriso'],
     dialogo: [
       'Minha avó plantou o primeiro alecrim deste canteiro. Dizia que dava para reconhecer quem vinha pela praça só pelo jeito de pisar perto das mudas. O rapaz das encomendas sempre derrubava dois torrões. Ainda derruba, mas agora jura que foi o vento.',
       'Eu ainda guardo algumas sementes dela. Quero recuperar este pedaço de terra antes de plantar de novo. Se sobrar um tempo entre suas viagens, duas mãos a mais fariam diferença.',
@@ -66,6 +69,7 @@ export const NPCS_REGIAO1 = [
     cor: '#fbbf24',
     quest: 'q_sec_entrega',
     pistaAoFalar: 'npc_mensageiro_c1_falou',
+    expressoes: ['sorriso', 'neutro', 'sorriso'],
     dialogo: [
       'Você vai descer para a praia? Tenho uma encomenda para o píer e outra para o norte. Eu já tentei fazer as duas entregas correndo. Cheguei sem fôlego e ainda deixei cair o pacote.',
       'Com a Conexão Onírica, dá para fazer o percurso bem mais rápido. É o botão Transformar. Eu daria qualquer coisa para ter essa vantagem nas manhãs de chuva.',
@@ -83,6 +87,7 @@ export const NPCS_REGIAO1 = [
     cor: '#f97316',
     quest: 'q_ultimo_trem',
     pistaAoFalar: 'npc_maquinista_falou',
+    expressoes: ['serio', 'serio', 'sorriso', 'neutro'],
     dialogo: [
       'Escute. Quando o trem fica parado assim, consigo ouvir cada peça esfriando. Conferi o freio e contei os lugares três vezes. Relógio da estação? Sou eu, batendo a chave no freio.',
       'O problema está nas rotas. A oeste, o Espírito da Floresta bloqueia a Floresta Sombria. A leste, o Rei Fungo fechou o caminho entre os cogumelos. Com a máquina eu me entendo. Com os dois, já é com você.',
@@ -101,6 +106,7 @@ export const NPCS_REGIAO1 = [
     cor: '#eab308',
     quest: 'q_saida_pedras',
     pistaAoFalar: 'npc_vigia_e2_falou',
+    expressoes: ['neutro', 'serio', 'neutro'],
     dialogo: [
       'Eu conto o tempo pela água batendo nas pedras. É mais seguro do que confiar nas velhas placas. Quando a maré sobe, elas rangem tanto que metade dos viajantes jura ter ouvido alguém chamando na mata.',
       'Se está procurando o caminho da Floresta Sombria, volte a E1 e procure o arco de pedra. Daqui dá para seguir pela costa, com as pedras claras à vista.',
@@ -116,6 +122,7 @@ export const NPCS_REGIAO1 = [
     altura: 7,
     sprite: '../../../assets/confusion/interface/halloween/npcs/guardiao_reino.webp',
     cor: '#c084fc',
+    expressoes: ['neutro', 'sorriso', 'sorriso'],
     dialogo: [
       'Bem-vindo à Praça Real. Passei anos cuidando do portão e aprendi que dá para reconhecer quem vem de trem pelo cheiro de ferro e fumaça no casaco.',
       'A praça costuma encher quando chega uma composição. Se o sino tocar, abra espaço perto do marco. Sempre aparece alguém tentando voltar para casa antes de anoitecer.',
@@ -134,6 +141,7 @@ export const NPCS_REGIAO1 = [
     sprite: '../../../assets/confusion/interface/halloween/npcs/batedora_elfa.webp',
     cor: '#34d399',
     quest: 'q_guarda_arco',
+    expressoes: ['serio', 'serio', 'serio'],
     dialogo: [
       'Pise onde eu piso. As folhas secas aqui denunciam até um coelho. O Thalion me ensinou a atravessar este trecho sem fazer barulho. Hoje eu daria tudo para ouvir o passo dele vindo na direção contrária.',
       'Ele saiu para investigar o sal que apareceu nas raízes. Passou por E5 e seguiu para o norte. Deixei o arco de E1 em vista enquanto pude, mas as árvores escondem a trilha logo adiante.',
@@ -151,6 +159,7 @@ export const NPCS_REGIAO1 = [
     cor: '#10b981',
     quest: 'q_sal_raizes',
     pistaAoFalar: 'npc_guarda_elfo_resgatado',
+    expressoes: ['serio', 'serio', 'sorriso'],
     dialogo: [
       'Deixe-me levar a mão ao chão um instante. Depois de tanto tempo preso, eu precisava sentir a terra firme de novo. Obrigado por me tirar daquelas raízes.',
       'A Voz da Mata costuma ser ouvida mais ao norte. Com tanta água salgada descendo para cá, tenho escutado a floresta estalar a noite toda.',
@@ -169,6 +178,7 @@ export const NPCS_REGIAO1 = [
     cor: '#a7f3d0',
     quest: 'q_mulher_mata',
     pistaAoFalar: 'npc_espirito_previa_falou',
+    expressoes: ['serio', 'serio', 'serio'],
     dialogo: [
       'A água salgada chegou às minhas raízes antes de chegar aos seus pés. Senti cada árvore beber. Algumas ainda se lembram da chuva de ontem. Outras já esqueceram como era abrir as folhas.',
       'Ouço a comporta batendo aqui perto. Enquanto a corrente continuar, a mata só vai apertar as raízes em volta do que conseguir alcançar.',
@@ -185,6 +195,7 @@ export const NPCS_REGIAO1 = [
     sprite: '../../../assets/confusion/interface/halloween/npcs/sabio_elfo.webp',
     cor: '#6ee7b7',
     quest: 'q_coracao_mata',
+    expressoes: ['neutro', 'serio', 'serio'],
     dialogo: [
       'Já ouvi o santuário chamar por pessoas mais corajosas do que eu. Algumas voltaram em silêncio e ficaram olhando para a terra, como se ainda esperassem uma resposta.',
       'Pare no portão e escute. Quando eu era jovem, contei cinco batidas antes de atravessar. Hoje conto seis. Dei a última a um amigo que nunca voltou.',
@@ -204,6 +215,7 @@ export const NPCS_REGIAO1 = [
     cor: '#a3e635',
     quest: 'q_floresta_respira',
     pistaAoFalar: 'npc_coletor_goblin_falou',
+    expressoes: ['sorriso', 'sorriso', 'neutro'],
     dialogo: [
       'Hehe! Você chegou justo quando eles estão respirando. Repare como um cogumelo acende devagar e o vizinho responde. Eu conto baixinho, senão sempre perco a ordem.',
       'Na primeira vez em que segui a sequência, acabei no alto do mirante. Quase deixei cair a cesta quando o cristal respondeu ao brilho.',
@@ -219,6 +231,7 @@ export const NPCS_REGIAO1 = [
     altura: 5,
     sprite: '../../../assets/confusion/interface/halloween/npcs/alquimista_goblin.webp',
     cor: '#bef264',
+    expressoes: ['neutro', 'serio', 'sorriso', 'neutro'],
     dialogo: [
       'Pode chegar perto da bancada. Só deixe os frascos no lugar. Passei a manhã inteira separando os esporos mais leves, e basta um espirro para misturar tudo de novo.',
       'Os que flutuam até aqui vêm do leste. Pelo caminho de D8, eles ficam tão densos que parecem fumaça. Se vir um pó lilás pousando nas lentes, não esfregue. Eu aprendi com o único par que tinha.',
@@ -236,10 +249,43 @@ export const NPCS_REGIAO1 = [
     sprite: '../../../assets/confusion/interface/halloween/npcs/batedor_goblin.webp',
     cor: '#84cc16',
     quest: 'q_enseada_lanternas',
+    expressoes: ['sorriso', 'serio', 'serio'],
     dialogo: [
       'Eu ia jurar que você era um dos meus voltando da enseada. Fiquei tanto tempo contando as lanternas lá embaixo que já enxergo luz até quando fecho os olhos.',
       'Quando o Rei Fungo se mexe, os esporos engrossam perto do arco. Dá para reconhecer a entrada pelas lanternas quando a vista embaça.',
       'Desça até a enseada em D11 e procure o arco para o salão do Rei Fungo. Lá dentro, fique atento aos esporos dele.',
+    ],
+  },
+  {
+    id: 'npc_alda',
+    nome: 'Alda, a Cartógrafa',
+    raca: 'anã',
+    mapa: 'E3',
+    pos: [490, 300],
+    altura: 4.9,
+    sprite: '../../../assets/confusion/interface/halloween/npcs/alda.webp',
+    cor: '#d4a775',
+    expressoes: ['neutro', 'serio', 'sorriso'],
+    dialogo: [
+      'Segure essa ponta do mapa. O vento acabou de levar meu último rascunho, e eu me recuso a desenhar a mesma pedra pela quarta vez.',
+      'Tem uma trilha que some perto das raízes. Prefiro deixar um espaço em branco no mapa a mandá-lo para um lugar que eu mesma não atravessei.',
+      'Pronto, agora posso soltar. Se cruzar com alguém vendendo um mapa desenhado no verso de uma receita, aposto que é o meu.',
+    ],
+  },
+  {
+    id: 'npc_bento',
+    nome: 'Bento, o Lanterneiro',
+    raca: 'humano',
+    mapa: 'C1',
+    pos: [682, 224],
+    altura: 6,
+    sprite: '../../../assets/confusion/interface/halloween/npcs/bento.webp',
+    cor: '#ffc878',
+    expressoes: ['sorriso', 'serio', 'sorriso'],
+    dialogo: [
+      'Quer ver a chama de perto? Cortei o vidro para ficar da cor das abóboras da praça. A primeira que fiz parecia uma gema de ovo.',
+      'Quando a tempestade apagou as luzes do píer, eu só conseguia pensar em quem ainda estava no mar. Desde então, deixo uma lanterna acesa na janela toda noite.',
+      'Se estiver voltando tarde, procure a janela âmbar. Mesmo que eu feche a oficina, deixo a luz lá para quem vem da praia.',
     ],
   },
 ];
