@@ -1,0 +1,29 @@
+{
+ "frente": {
+  "largura": 560,
+  "altura": 720,
+  "topo": 128,
+  "pe": 593,
+  "quadros": 177,
+  "figura_altura": 465,
+  "figura_largura": 440
+ },
+ "esquerda": {
+  "largura": 560,
+  "altura": 720,
+  "topo": 145,
+  "pe": 576,
+  "quadros": 97,
+  "figura_altura": 431,
+  "figura_largura": 520
+ },
+ "costas": {
+  "largura": 560,
+  "altura": 720,
+  "topo": 113,
+  "pe": 608,
+  "quadros": 176,
+  "figura_altura": 495,
+  "figura_largura": 484
+ }
+}
