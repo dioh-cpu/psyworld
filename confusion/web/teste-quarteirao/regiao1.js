@@ -1,5 +1,6 @@
 // Confusion Waves — Explorador da Região 1
 import * as THREE from 'three';
+import { adicionarIdleNpc } from './npc-idle-video.js';
 import { vetorJoystick } from '../explorar3d/controles.js';
 import { construirSDF, resolverMovimentoSDF } from '../explorar3d/colisao.js';
 import { criarAzazel } from './azazel.js';
@@ -419,6 +420,7 @@ function limparEntidades() {
   while (grupoEntidades.children.length) {
     const ch = grupoEntidades.children[0];
     grupoEntidades.remove(ch);
+    ch.userData.limparIdle?.();
     ch.traverse((obj) => {
       obj.geometry?.dispose();
       if (obj.material?.map?.isCanvasTexture) obj.material.map.dispose();
@@ -455,6 +457,7 @@ function construirEntidadesDoMapa(mapa) {
     const temQuest = Boolean(npc.quest && save.quests[npc.quest] !== 'concluida');
     const mesh = adicionarBillboard(carregarTextura(npc.sprite), w.x, w.z, npc.altura * 0.8, npc.altura);
     if (npc.flutua) mesh.position.y += 0.5;
+    if (npc.idle) adicionarIdleNpc(mesh, npc.idle);
     const placa = new THREE.Mesh(
       new THREE.PlaneGeometry(5.4, 1.35),
       new THREE.MeshBasicMaterial({
