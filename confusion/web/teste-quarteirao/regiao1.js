@@ -36,6 +36,7 @@ import {
   registrarLogIdle,
 } from './regiao1-idle.js';
 import { criarControladorIdleUI } from './regiao1-ui-idle.js';
+import { iniciarMundo } from './regiao1-mundo.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
 const LARG = 106;
@@ -2228,6 +2229,12 @@ idleUI = criarControladorIdleUI({
 });
 
 // ---- API de inspeção e testes automatizados ----
+// Mundo: os 50 sistemas ligados ao jogo (painel "Mundo" no menu)
+window.regiaoMundo = iniciarMundo({
+  getSave: () => save, salvar: salvarEstado, mostrarToast, atualizarHud: atualizarHudEstado,
+  getMapaAtual: () => mapaAtual, abrirModal, fecharModal,
+});
+
 window.regiao1 = {
   mapaAtual: () => (mapaAtual ? mapaAtual.id : null),
   irPara: (id, px = null) => entrarNoMapa(id, px, false),
