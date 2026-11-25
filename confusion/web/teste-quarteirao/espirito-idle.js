@@ -36,7 +36,7 @@ function criarVideo(src, adiar = false) {
   return v;
 }
 
-const pedir = (v) => { if (v.preload !== 'auto') { v.preload = 'auto'; v.load(); } };
+const pedir = (v) => { if (v.preload !== 'auto') { v.preload = 'auto'; if (v.readyState === 0 && v.networkState !== 2) v.load(); } };
 
 export function criarEspiritoIdle(altura) {
   const nomes = ['frente', 'esquerda', 'costas'];

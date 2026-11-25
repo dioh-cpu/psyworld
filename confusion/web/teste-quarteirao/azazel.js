@@ -32,7 +32,7 @@ export function criarAzazel(base = 'assets/characters/', altura = ALTURA_JOGADOR
   }
   if (adiar) {
     // 5 MB: só depois que o jogo já está rodando
-    ['front', 'left', 'back'].forEach((nome, i) => setTimeout(() => { const v = videos[nome]; if (v.preload !== 'auto') { v.preload = 'auto'; v.load(); } }, 9000 + i * 3000));
+    ['front', 'left', 'back'].forEach((nome, i) => setTimeout(() => { const v = videos[nome]; if (v.preload !== 'auto') { v.preload = 'auto'; if (v.readyState === 0 && v.networkState !== 2) v.load(); } }, 9000 + i * 3000));
   }
   // Desbloqueia autoplay de vídeo no primeiro toque/tecla em aparelhos móveis
   const desbloquear = () => {
