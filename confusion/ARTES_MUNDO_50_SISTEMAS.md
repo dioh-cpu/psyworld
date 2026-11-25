@@ -1,6 +1,6 @@
 # Artes dos 50 sistemas do mundo
 
-**Total: 317 artes** (50 icone, 50 banner, 63 sprite, 66 cena, 78 marcador, 10 retrato). Prontas: 228.
+**Total: 317 artes** (50 icone, 50 banner, 63 sprite, 66 cena, 78 marcador, 10 retrato). Prontas: 317.
 
 Cada sistema tem um menu próprio no jogo (Menu → Mundo). Cada vaga abaixo já existe no menu como um polígono; **para colocar a arte, salve o arquivo com o nome exato na pasta indicada, em WebP**, e ela aparece sozinha, sem mexer em código.
 
@@ -49,7 +49,7 @@ Pasta: `assets/confusion/interface/mundo/02/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `predador.webp` | sprite | 512×512 | Predador dominante: Silhueta de monstro predador rondando. | sim |
 | `presa.webp` | sprite | 512×512 | Presa abundante: Grupo pequeno de monstros herbívoros. | sim |
-| `proteger.webp` | marcador | 128×128 | Área protegida: Cerca/runa de proteção ao redor de um ninho. | não |
+| `proteger.webp` | marcador | 128×128 | Área protegida: Cerca/runa de proteção ao redor de um ninho. | sim |
 | `cacada.webp` | cena | 1920×1080 | Caçada: Cena de caçada entre monstros. | sim |
 
 ## 03 · Facções 🏳️
@@ -59,9 +59,9 @@ Pasta: `assets/confusion/interface/mundo/03/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `guardioes.webp` | marcador | 128×128 | Guardiões da Luz: Brasão e bandeira da facção de luz. | não |
-| `culto.webp` | marcador | 128×128 | Culto das Sombras: Brasão e bandeira do culto. | não |
-| `guilda.webp` | marcador | 128×128 | Guilda do Porto: Brasão e bandeira da guilda comercial. | não |
+| `guardioes.webp` | marcador | 128×128 | Guardiões da Luz: Brasão e bandeira da facção de luz. | sim |
+| `culto.webp` | marcador | 128×128 | Culto das Sombras: Brasão e bandeira do culto. | sim |
+| `guilda.webp` | marcador | 128×128 | Guilda do Porto: Brasão e bandeira da guilda comercial. | sim |
 | `lider-guardioes.webp` | retrato | 1024×1024 | Líder dos Guardiões: Retrato do líder da facção de luz. | sim |
 | `lider-culto.webp` | retrato | 1024×1024 | Líder do Culto: Retrato do líder do culto. | sim |
 | `lider-guilda.webp` | retrato | 1024×1024 | Líder da Guilda: Retrato do líder da guilda. | sim |
@@ -97,9 +97,9 @@ Pasta: `assets/confusion/interface/mundo/06/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `vinculo-baixo.webp` | sprite | 512×512 | Vínculo baixo: Monstro desconfiado, de costas. | não |
-| `vinculo-medio.webp` | sprite | 512×512 | Vínculo médio: Monstro curioso olhando para o jogador. | não |
-| `vinculo-alto.webp` | sprite | 512×512 | Vínculo alto: Monstro feliz, encostado no jogador. | não |
+| `vinculo-baixo.webp` | sprite | 512×512 | Vínculo baixo: Monstro desconfiado, de costas. | sim |
+| `vinculo-medio.webp` | sprite | 512×512 | Vínculo médio: Monstro curioso olhando para o jogador. | sim |
+| `vinculo-alto.webp` | sprite | 512×512 | Vínculo alto: Monstro feliz, encostado no jogador. | sim |
 | `cuidar.webp` | cena | 1920×1080 | Cuidando: Mão acariciando um monstro. | sim |
 
 ## 07 · Clima, estações e fenômenos 🌦️
@@ -112,11 +112,11 @@ Pasta: `assets/confusion/interface/mundo/07/`
 | `sol.webp` | marcador | 128×128 | Sol: Efeito de clima ensolarado. | sim |
 | `chuva.webp` | marcador | 128×128 | Chuva: Efeito de chuva. | sim |
 | `neblina.webp` | marcador | 128×128 | Neblina: Efeito de neblina roxa. | sim |
-| `tempestade.webp` | marcador | 128×128 | Tempestade: Efeito de raios e vento. | não |
-| `primavera.webp` | marcador | 128×128 | Primavera: Moldura sazonal da primavera. | não |
-| `verao.webp` | marcador | 128×128 | Verão: Moldura sazonal do verão. | não |
-| `outono.webp` | marcador | 128×128 | Outono: Moldura sazonal do outono (folhas e abóboras). | não |
-| `inverno.webp` | marcador | 128×128 | Inverno: Moldura sazonal do inverno. | não |
+| `tempestade.webp` | marcador | 128×128 | Tempestade: Efeito de raios e vento. | sim |
+| `primavera.webp` | marcador | 128×128 | Primavera: Moldura sazonal da primavera. | sim |
+| `verao.webp` | marcador | 128×128 | Verão: Moldura sazonal do verão. | sim |
+| `outono.webp` | marcador | 128×128 | Outono: Moldura sazonal do outono (folhas e abóboras). | sim |
+| `inverno.webp` | marcador | 128×128 | Inverno: Moldura sazonal do inverno. | sim |
 
 ## 08 · Masmorras dinâmicas 🕳️
 Pasta: `assets/confusion/interface/mundo/08/`
@@ -129,7 +129,7 @@ Pasta: `assets/confusion/interface/mundo/08/`
 | `mina.webp` | cena | 1920×1080 | Mina Abandonada: Entrada da mina. | sim |
 | `templo.webp` | cena | 1920×1080 | Templo Submerso: Entrada do templo. | sim |
 | `purificar.webp` | cena | 1920×1080 | Purificação: Luz limpando a masmorra. | sim |
-| `perigo.webp` | marcador | 128×128 | Níveis de perigo: Três selos: baixo, médio, alto. | não |
+| `perigo.webp` | marcador | 128×128 | Níveis de perigo: Três selos: baixo, médio, alto. | sim |
 
 ## 09 · Investigação e mistérios 🔍
 Pasta: `assets/confusion/interface/mundo/09/`
@@ -138,11 +138,11 @@ Pasta: `assets/confusion/interface/mundo/09/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `lupa.webp` | marcador | 128×128 | Lupa: Lupa dourada para pistas. | não |
+| `lupa.webp` | marcador | 128×128 | Lupa: Lupa dourada para pistas. | sim |
 | `quadro.webp` | cena | 1920×1080 | Quadro de pistas: Quadro com fios ligando pistas. | sim |
-| `pista-1.webp` | sprite | 512×512 | Pista 1: Objeto da primeira pista. | não |
-| `pista-2.webp` | sprite | 512×512 | Pista 2: Objeto da segunda pista. | não |
-| `pista-3.webp` | sprite | 512×512 | Pista 3: Objeto da terceira pista. | não |
+| `pista-1.webp` | sprite | 512×512 | Pista 1: Objeto da primeira pista. | sim |
+| `pista-2.webp` | sprite | 512×512 | Pista 2: Objeto da segunda pista. | sim |
+| `pista-3.webp` | sprite | 512×512 | Pista 3: Objeto da terceira pista. | sim |
 
 ## 10 · Economia regional e rotas ⚖️
 Pasta: `assets/confusion/interface/mundo/10/`
@@ -155,7 +155,7 @@ Pasta: `assets/confusion/interface/mundo/10/`
 | `pedra.webp` | marcador | 128×128 | Pedra: Recurso pedra. | sim |
 | `cristal.webp` | marcador | 128×128 | Cristal: Recurso cristal. | sim |
 | `comida.webp` | marcador | 128×128 | Comida: Recurso comida. | sim |
-| `caravana.webp` | sprite | 512×512 | Caravana: Carroça de comércio. | não |
+| `caravana.webp` | sprite | 512×512 | Caravana: Carroça de comércio. | sim |
 | `mercado.webp` | cena | 1920×1080 | Mercado: Cena de mercado regional. | sim |
 
 ## 11 · Chefes persistentes 👑
@@ -168,9 +168,9 @@ Pasta: `assets/confusion/interface/mundo/11/`
 | `guardiao-nevoa.webp` | sprite | 512×512 | Guardião da Névoa: Chefe, corpo inteiro. | sim |
 | `rainha-sombras.webp` | sprite | 512×512 | Rainha das Sombras: Chefe, corpo inteiro. | sim |
 | `espectro.webp` | sprite | 512×512 | Espectro: Terceiro chefe persistente, corpo inteiro. | sim |
-| `purificado.webp` | marcador | 128×128 | Chefe purificado: Selo de luz sobre o chefe. | não |
-| `aprisionado.webp` | marcador | 128×128 | Chefe aprisionado: Selo de correntes. | não |
-| `corrompido.webp` | marcador | 128×128 | Chefe corrompido: Selo de corrupção. | não |
+| `purificado.webp` | marcador | 128×128 | Chefe purificado: Selo de luz sobre o chefe. | sim |
+| `aprisionado.webp` | marcador | 128×128 | Chefe aprisionado: Selo de correntes. | sim |
+| `corrompido.webp` | marcador | 128×128 | Chefe corrompido: Selo de corrupção. | sim |
 
 ## 12 · Herança de monstros 🥚
 Pasta: `assets/confusion/interface/mundo/12/`
@@ -179,9 +179,9 @@ Pasta: `assets/confusion/interface/mundo/12/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `ninhada.webp` | sprite | 512×512 | Ninhada: Ninho com 3 ovos. | não |
-| `ovo-comum.webp` | marcador | 128×128 | Ovo comum: Ovo simples. | não |
-| `ovo-herdado.webp` | marcador | 128×128 | Ovo herdado: Ovo com marcas dos pais. | não |
+| `ninhada.webp` | sprite | 512×512 | Ninhada: Ninho com 3 ovos. | sim |
+| `ovo-comum.webp` | marcador | 128×128 | Ovo comum: Ovo simples. | sim |
+| `ovo-herdado.webp` | marcador | 128×128 | Ovo herdado: Ovo com marcas dos pais. | sim |
 | `arvore.webp` | cena | 1920×1080 | Árvore genealógica: Moldura de árvore com 3 gerações. | sim |
 
 ## 13 · Civilizações subterrâneas 🕯️
@@ -205,8 +205,8 @@ Pasta: `assets/confusion/interface/mundo/14/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `sonho.webp` | cena | 1920×1080 | Cena de sonho: Paisagem onírica suave. | sim |
 | `pesadelo.webp` | cena | 1920×1080 | Cena de pesadelo: Paisagem de pesadelo, tons escuros. | sim |
-| `opcao.webp` | marcador | 128×128 | Moldura de opção: Nuvem de pensamento para a escolha. | não |
-| `acerto.webp` | marcador | 128×128 | Estrela de acerto: Selo de sonho acertado. | não |
+| `opcao.webp` | marcador | 128×128 | Moldura de opção: Nuvem de pensamento para a escolha. | sim |
+| `acerto.webp` | marcador | 128×128 | Estrela de acerto: Selo de sonho acertado. | sim |
 
 ## 15 · Doenças e pragas ☣️
 Pasta: `assets/confusion/interface/mundo/15/`
@@ -218,7 +218,7 @@ Pasta: `assets/confusion/interface/mundo/15/`
 | `praga.webp` | cena | 1920×1080 | Praga: Nuvem de esporos esverdeada. | sim |
 | `doente.webp` | sprite | 512×512 | Monstro doente: Monstro adoecido. | sim |
 | `cura.webp` | marcador | 128×128 | Tratamento: Poção/curativo. | sim |
-| `nivel.webp` | marcador | 128×128 | Níveis da praga: Três selos de gravidade. | não |
+| `nivel.webp` | marcador | 128×128 | Níveis da praga: Três selos de gravidade. | sim |
 
 ## 16 · Espionagem e disfarces 🎭
 Pasta: `assets/confusion/interface/mundo/16/`
@@ -227,11 +227,11 @@ Pasta: `assets/confusion/interface/mundo/16/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `mascara.webp` | marcador | 128×128 | Máscara: Máscara de disfarce. | não |
+| `mascara.webp` | marcador | 128×128 | Máscara: Máscara de disfarce. | sim |
 | `infiltracao.webp` | cena | 1920×1080 | Infiltração: Silhueta se esgueirando em uma cidade. | sim |
-| `suspeita.webp` | marcador | 128×128 | Medidor de suspeita: Olho que se abre. | não |
-| `disfarce-1.webp` | sprite | 512×512 | Disfarce 1: Traje de disfarce 1. | não |
-| `disfarce-2.webp` | sprite | 512×512 | Disfarce 2: Traje de disfarce 2. | não |
+| `suspeita.webp` | marcador | 128×128 | Medidor de suspeita: Olho que se abre. | sim |
+| `disfarce-1.webp` | sprite | 512×512 | Disfarce 1: Traje de disfarce 1. | sim |
+| `disfarce-2.webp` | sprite | 512×512 | Disfarce 2: Traje de disfarce 2. | sim |
 
 ## 17 · Guardiões ancestrais 🗿
 Pasta: `assets/confusion/interface/mundo/17/`
@@ -254,8 +254,8 @@ Pasta: `assets/confusion/interface/mundo/18/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `barco.webp` | sprite | 512×512 | Barco: Barco pequeno. | sim |
 | `ilha.webp` | sprite | 512×512 | Ilha: Ilha visitável. | sim |
-| `mare-alta.webp` | marcador | 128×128 | Maré alta: Marcador de maré alta. | não |
-| `mare-baixa.webp` | marcador | 128×128 | Maré baixa: Marcador de maré baixa. | não |
+| `mare-alta.webp` | marcador | 128×128 | Maré alta: Marcador de maré alta. | sim |
+| `mare-baixa.webp` | marcador | 128×128 | Maré baixa: Marcador de maré baixa. | sim |
 | `navegar.webp` | cena | 1920×1080 | Navegando: Barco em alto-mar à noite. | sim |
 
 ## 19 · Arqueologia e relíquias 🏺
@@ -278,10 +278,10 @@ Pasta: `assets/confusion/interface/mundo/20/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `cozinheiro.webp` | marcador | 128×128 | Cozinheiro: Selo/uniforme da profissão. | não |
-| `ferreiro.webp` | marcador | 128×128 | Ferreiro: Selo/uniforme da profissão. | não |
-| `alquimista.webp` | marcador | 128×128 | Alquimista: Selo/uniforme da profissão. | não |
-| `fazendeiro.webp` | marcador | 128×128 | Fazendeiro: Selo/uniforme da profissão. | não |
+| `cozinheiro.webp` | marcador | 128×128 | Cozinheiro: Selo/uniforme da profissão. | sim |
+| `ferreiro.webp` | marcador | 128×128 | Ferreiro: Selo/uniforme da profissão. | sim |
+| `alquimista.webp` | marcador | 128×128 | Alquimista: Selo/uniforme da profissão. | sim |
+| `fazendeiro.webp` | marcador | 128×128 | Fazendeiro: Selo/uniforme da profissão. | sim |
 | `guilda.webp` | cena | 1920×1080 | Salão da guilda: Interior do salão das guildas. | sim |
 
 ## 21 · Crimes e julgamentos ⚖️
@@ -292,9 +292,9 @@ Pasta: `assets/confusion/interface/mundo/21/`
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `tribunal.webp` | cena | 1920×1080 | Tribunal: Cena de julgamento. | sim |
-| `procurado.webp` | marcador | 128×128 | Cartaz de procurado: Cartaz com o rosto do jogador. | não |
-| `inocente.webp` | marcador | 128×128 | Selo de inocente: Selo de absolvição. | não |
-| `culpado.webp` | marcador | 128×128 | Selo de culpado: Selo de condenação. | não |
+| `procurado.webp` | marcador | 128×128 | Cartaz de procurado: Cartaz com o rosto do jogador. | sim |
+| `inocente.webp` | marcador | 128×128 | Selo de inocente: Selo de absolvição. | sim |
+| `culpado.webp` | marcador | 128×128 | Selo de culpado: Selo de condenação. | sim |
 
 ## 22 · Companheiros com histórias 🤝
 Pasta: `assets/confusion/interface/mundo/22/`
@@ -307,7 +307,7 @@ Pasta: `assets/confusion/interface/mundo/22/`
 | `capitulo-1.webp` | cena | 1920×1080 | Capítulo 1: Cena do primeiro capítulo. | sim |
 | `capitulo-2.webp` | cena | 1920×1080 | Capítulo 2: Cena do segundo capítulo. | sim |
 | `capitulo-3.webp` | cena | 1920×1080 | Capítulo 3: Cena do terceiro capítulo. | sim |
-| `afinidade.webp` | marcador | 128×128 | Medidor de afinidade: Coração em 5 estágios. | não |
+| `afinidade.webp` | marcador | 128×128 | Medidor de afinidade: Coração em 5 estágios. | sim |
 
 ## 23 · Portais dimensionais 🌀
 Pasta: `assets/confusion/interface/mundo/23/`
@@ -328,9 +328,9 @@ Pasta: `assets/confusion/interface/mundo/24/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `cicatriz-1.webp` | marcador | 128×128 | Cicatriz leve: Marca no personagem. | não |
-| `cicatriz-2.webp` | marcador | 128×128 | Cicatriz média: Marca no personagem. | não |
-| `cicatriz-3.webp` | marcador | 128×128 | Cicatriz profunda: Marca no personagem. | não |
+| `cicatriz-1.webp` | marcador | 128×128 | Cicatriz leve: Marca no personagem. | sim |
+| `cicatriz-2.webp` | marcador | 128×128 | Cicatriz média: Marca no personagem. | sim |
+| `cicatriz-3.webp` | marcador | 128×128 | Cicatriz profunda: Marca no personagem. | sim |
 | `superar.webp` | cena | 1920×1080 | Superando: Cena de cura emocional. | sim |
 
 ## 25 · Guerras territoriais e cercos ⚔️
@@ -342,7 +342,7 @@ Pasta: `assets/confusion/interface/mundo/25/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `cerco.webp` | cena | 1920×1080 | Cerco: Cidade cercada por tropas. | sim |
 | `mediar.webp` | cena | 1920×1080 | Mediação: Mesa de negociação entre dois lados. | sim |
-| `tropa.webp` | sprite | 512×512 | Tropa: Soldado de facção. | não |
+| `tropa.webp` | sprite | 512×512 | Tropa: Soldado de facção. | sim |
 | `estandarte.webp` | marcador | 128×128 | Estandarte de guerra: Bandeira de guerra. | sim |
 
 ## 26 · Adaptações ambientais 🧬
@@ -352,10 +352,10 @@ Pasta: `assets/confusion/interface/mundo/26/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `bioma-floresta.webp` | marcador | 128×128 | Adaptação: floresta: Selo de bioma. | não |
-| `bioma-praia.webp` | marcador | 128×128 | Adaptação: praia: Selo de bioma. | não |
-| `bioma-caverna.webp` | marcador | 128×128 | Adaptação: caverna: Selo de bioma. | não |
-| `bioma-cogumelos.webp` | marcador | 128×128 | Adaptação: cogumelos: Selo de bioma. | não |
+| `bioma-floresta.webp` | marcador | 128×128 | Adaptação: floresta: Selo de bioma. | sim |
+| `bioma-praia.webp` | marcador | 128×128 | Adaptação: praia: Selo de bioma. | sim |
+| `bioma-caverna.webp` | marcador | 128×128 | Adaptação: caverna: Selo de bioma. | sim |
+| `bioma-cogumelos.webp` | marcador | 128×128 | Adaptação: cogumelos: Selo de bioma. | sim |
 | `treino.webp` | cena | 1920×1080 | Treinando: Monstro treinando no bioma. | sim |
 
 ## 27 · Eventos históricos provocados 📜
@@ -365,7 +365,7 @@ Pasta: `assets/confusion/interface/mundo/27/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `pergaminho.webp` | marcador | 128×128 | Pergaminho: Registro histórico. | não |
+| `pergaminho.webp` | marcador | 128×128 | Pergaminho: Registro histórico. | sim |
 | `fundacao.webp` | cena | 1920×1080 | Evento: fundação: Cena de fundação. | sim |
 | `revolta.webp` | cena | 1920×1080 | Evento: revolta: Cena de revolta. | sim |
 | `descoberta.webp` | cena | 1920×1080 | Evento: descoberta: Cena de descoberta. | sim |
@@ -378,10 +378,10 @@ Pasta: `assets/confusion/interface/mundo/28/`
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `quadro.webp` | cena | 1920×1080 | Quadro coletivo: Mural de pistas compartilhadas. | sim |
-| `pista-a.webp` | marcador | 128×128 | Pista A: Peça do mistério. | não |
-| `pista-b.webp` | marcador | 128×128 | Pista B: Peça do mistério. | não |
-| `pista-c.webp` | marcador | 128×128 | Pista C: Peça do mistério. | não |
-| `pista-d.webp` | marcador | 128×128 | Pista D: Peça do mistério. | não |
+| `pista-a.webp` | marcador | 128×128 | Pista A: Peça do mistério. | sim |
+| `pista-b.webp` | marcador | 128×128 | Pista B: Peça do mistério. | sim |
+| `pista-c.webp` | marcador | 128×128 | Pista C: Peça do mistério. | sim |
+| `pista-d.webp` | marcador | 128×128 | Pista D: Peça do mistério. | sim |
 
 ## 29 · Memória do Mundo 🌳
 Pasta: `assets/confusion/interface/mundo/29/`
@@ -413,10 +413,10 @@ Pasta: `assets/confusion/interface/mundo/31/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `cidade-nova.webp` | sprite | 512×512 | Cidade nova: Cidade recém-fundada. | não |
-| `cidade-dominada.webp` | sprite | 512×512 | Cidade dominada: Cidade sob domínio do jogador (bandeira). | não |
-| `cidade-surto.webp` | sprite | 512×512 | Cidade em surto: Cidade com zumbis nas ruas. | não |
-| `zumbi.webp` | sprite | 512×512 | Zumbi: Habitante transformado. | não |
+| `cidade-nova.webp` | sprite | 512×512 | Cidade nova: Cidade recém-fundada. | sim |
+| `cidade-dominada.webp` | sprite | 512×512 | Cidade dominada: Cidade sob domínio do jogador (bandeira). | sim |
+| `cidade-surto.webp` | sprite | 512×512 | Cidade em surto: Cidade com zumbis nas ruas. | sim |
+| `zumbi.webp` | sprite | 512×512 | Zumbi: Habitante transformado. | sim |
 | `mapa-campanha.webp` | cena | 1920×1080 | Mapa da campanha: Mapa com as 12 cidades. | sim |
 | `batalha-final.webp` | cena | 1920×1080 | Batalha final: Cena da batalha final. | sim |
 
@@ -427,10 +427,10 @@ Pasta: `assets/confusion/interface/mundo/32/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `espada.webp` | sprite | 512×512 | Espada da Vigília: Espada, estado neutro. | não |
-| `escudo.webp` | sprite | 512×512 | Escudo de Pedra: Escudo, estado neutro. | não |
-| `aura-luz.webp` | marcador | 128×128 | Aura de luz: Brilho de purificação. | não |
-| `aura-sombra.webp` | marcador | 128×128 | Aura de sombra: Brilho de corrupção. | não |
+| `espada.webp` | sprite | 512×512 | Espada da Vigília: Espada, estado neutro. | sim |
+| `escudo.webp` | sprite | 512×512 | Escudo de Pedra: Escudo, estado neutro. | sim |
+| `aura-luz.webp` | marcador | 128×128 | Aura de luz: Brilho de purificação. | sim |
+| `aura-sombra.webp` | marcador | 128×128 | Aura de sombra: Brilho de corrupção. | sim |
 | `forja.webp` | cena | 1920×1080 | Forja: Bancada de purificação/corrupção. | sim |
 
 ## 33 · Magias proibidas 🕳️
@@ -441,8 +441,8 @@ Pasta: `assets/confusion/interface/mundo/33/`
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `vortice.webp` | cena | 1920×1080 | Vórtice negro: Efeito do feitiço. | sim |
-| `marca.webp` | marcador | 128×128 | Marca proibida: Marca no corpo do jogador. | não |
-| `grimorio.webp` | sprite | 512×512 | Grimório: Livro das magias proibidas. | não |
+| `marca.webp` | marcador | 128×128 | Marca proibida: Marca no corpo do jogador. | sim |
+| `grimorio.webp` | sprite | 512×512 | Grimório: Livro das magias proibidas. | sim |
 
 ## 34 · Contratos sobrenaturais 🖋️
 Pasta: `assets/confusion/interface/mundo/34/`
@@ -451,10 +451,10 @@ Pasta: `assets/confusion/interface/mundo/34/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `contrato.webp` | sprite | 512×512 | Contrato: Pergaminho com selo de sangue. | não |
-| `demonio.webp` | retrato | 1024×1024 | Entidade do contrato: Entidade sobrenatural. | não |
+| `contrato.webp` | sprite | 512×512 | Contrato: Pergaminho com selo de sangue. | sim |
+| `demonio.webp` | retrato | 1024×1024 | Entidade do contrato: Entidade sobrenatural. | sim |
 | `cumprir.webp` | cena | 1920×1080 | Cumprindo: Cena de cobrança. | sim |
-| `prazo.webp` | marcador | 128×128 | Relógio do prazo: Ampulheta. | não |
+| `prazo.webp` | marcador | 128×128 | Relógio do prazo: Ampulheta. | sim |
 
 ## 35 · Autômatos e criaturas artificiais 🤖
 Pasta: `assets/confusion/interface/mundo/35/`
@@ -465,7 +465,7 @@ Pasta: `assets/confusion/interface/mundo/35/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `automato.webp` | sprite | 512×512 | Autômato: Criatura artificial de engrenagens. | sim |
 | `oficina.webp` | cena | 1920×1080 | Oficina: Interior da oficina. | sim |
-| `desgaste.webp` | marcador | 128×128 | Medidor de desgaste: Engrenagem em 4 estágios. | não |
+| `desgaste.webp` | marcador | 128×128 | Medidor de desgaste: Engrenagem em 4 estágios. | sim |
 
 ## 36 · Montarias terrestres, aéreas e aquáticas 🐴
 Pasta: `assets/confusion/interface/mundo/36/`
@@ -476,7 +476,7 @@ Pasta: `assets/confusion/interface/mundo/36/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `terrestre.webp` | sprite | 512×512 | Montaria terrestre: Criatura montável terrestre. | sim |
 | `aerea.webp` | sprite | 512×512 | Montaria aérea: Criatura montável aérea. | sim |
-| `aquatica.webp` | sprite | 512×512 | Montaria aquática: Criatura montável aquática. | não |
+| `aquatica.webp` | sprite | 512×512 | Montaria aquática: Criatura montável aquática. | sim |
 | `sela.webp` | marcador | 128×128 | Sela: Item de sela. | sim |
 | `domar.webp` | cena | 1920×1080 | Domando: Cena de doma. | sim |
 
@@ -487,9 +487,9 @@ Pasta: `assets/confusion/interface/mundo/37/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `cartaz.webp` | marcador | 128×128 | Cartaz de recompensa: Cartaz de contrato. | não |
-| `cacador.webp` | retrato | 1024×1024 | Caçador de recompensas: NPC caçador. | não |
-| `alvo.webp` | sprite | 512×512 | Alvo: Silhueta do procurado. | não |
+| `cartaz.webp` | marcador | 128×128 | Cartaz de recompensa: Cartaz de contrato. | sim |
+| `cacador.webp` | retrato | 1024×1024 | Caçador de recompensas: NPC caçador. | sim |
+| `alvo.webp` | sprite | 512×512 | Alvo: Silhueta do procurado. | sim |
 | `quadro-contratos.webp` | cena | 1920×1080 | Quadro de contratos: Quadro de avisos. | sim |
 
 ## 38 · Festivais e culturas 🎃
@@ -500,8 +500,8 @@ Pasta: `assets/confusion/interface/mundo/38/`
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `festa.webp` | cena | 1920×1080 | Festival: Praça em festa com lanternas e abóboras. | sim |
-| `prato.webp` | sprite | 512×512 | Prato da festa: Banquete. | não |
-| `mascara-festa.webp` | marcador | 128×128 | Máscara do festival: Máscara festiva. | não |
+| `prato.webp` | sprite | 512×512 | Prato da festa: Banquete. | sim |
+| `mascara-festa.webp` | marcador | 128×128 | Máscara do festival: Máscara festiva. | sim |
 | `danca.webp` | cena | 1920×1080 | Dança: Cena de dança. | sim |
 
 ## 39 · Idiomas antigos 📖
@@ -511,11 +511,11 @@ Pasta: `assets/confusion/interface/mundo/39/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `livro.webp` | sprite | 512×512 | Livro antigo: Livro de idiomas antigos. | não |
+| `livro.webp` | sprite | 512×512 | Livro antigo: Livro de idiomas antigos. | sim |
 | `inscricao.webp` | cena | 1920×1080 | Inscrição: Parede com glifos. | sim |
-| `glifo-1.webp` | marcador | 128×128 | Glifo 1: Glifo antigo. | não |
-| `glifo-2.webp` | marcador | 128×128 | Glifo 2: Glifo antigo. | não |
-| `glifo-3.webp` | marcador | 128×128 | Glifo 3: Glifo antigo. | não |
+| `glifo-1.webp` | marcador | 128×128 | Glifo 1: Glifo antigo. | sim |
+| `glifo-2.webp` | marcador | 128×128 | Glifo 2: Glifo antigo. | sim |
+| `glifo-3.webp` | marcador | 128×128 | Glifo 3: Glifo antigo. | sim |
 
 ## 40 · Mineração profunda ⛏️
 Pasta: `assets/confusion/interface/mundo/40/`
@@ -527,8 +527,8 @@ Pasta: `assets/confusion/interface/mundo/40/`
 | `camada-rasa.webp` | cena | 1920×1080 | Camada rasa: Corte de terra rasa. | sim |
 | `camada-media.webp` | cena | 1920×1080 | Camada média: Corte de rocha. | sim |
 | `camada-funda.webp` | cena | 1920×1080 | Camada funda: Corte de cristais profundos. | sim |
-| `fossil.webp` | sprite | 512×512 | Fóssil: Fóssil encontrado. | não |
-| `picareta.webp` | marcador | 128×128 | Picareta: Ferramenta. | não |
+| `fossil.webp` | sprite | 512×512 | Fóssil: Fóssil encontrado. | sim |
+| `picareta.webp` | marcador | 128×128 | Picareta: Ferramenta. | sim |
 
 ## 41 · Simbiose e parasitismo 🦠
 Pasta: `assets/confusion/interface/mundo/41/`
@@ -539,7 +539,7 @@ Pasta: `assets/confusion/interface/mundo/41/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `simbiose.webp` | sprite | 512×512 | Simbiose: Dois seres ligados por raízes. | sim |
 | `parasita.webp` | sprite | 512×512 | Parasita: Criatura parasita. | sim |
-| `vinculo.webp` | marcador | 128×128 | Vínculo: Fio entre os dois. | não |
+| `vinculo.webp` | marcador | 128×128 | Vínculo: Fio entre os dois. | sim |
 
 ## 42 · Labirintos temporais ⏳
 Pasta: `assets/confusion/interface/mundo/42/`
@@ -550,7 +550,7 @@ Pasta: `assets/confusion/interface/mundo/42/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `labirinto.webp` | cena | 1920×1080 | Labirinto temporal: Corredores que se repetem. | sim |
 | `eco.webp` | sprite | 512×512 | Eco do passado: Silhueta fantasma. | sim |
-| `passo.webp` | marcador | 128×128 | Passo do labirinto: Marcador de 5 passos. | não |
+| `passo.webp` | marcador | 128×128 | Passo do labirinto: Marcador de 5 passos. | sim |
 
 ## 43 · Reputação lendária 🏅
 Pasta: `assets/confusion/interface/mundo/43/`
@@ -575,7 +575,7 @@ Pasta: `assets/confusion/interface/mundo/44/`
 | `bronze.webp` | marcador | 128×128 | Divisão bronze: Medalha. | sim |
 | `prata.webp` | marcador | 128×128 | Divisão prata: Medalha. | sim |
 | `ouro.webp` | marcador | 128×128 | Divisão ouro: Medalha. | sim |
-| `oponente.webp` | sprite | 512×512 | Oponente: Duelista. | não |
+| `oponente.webp` | sprite | 512×512 | Oponente: Duelista. | sim |
 
 ## 45 · Expedições autônomas de NPCs 🧭
 Pasta: `assets/confusion/interface/mundo/45/`
@@ -585,7 +585,7 @@ Pasta: `assets/confusion/interface/mundo/45/`
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `expedicao.webp` | cena | 1920×1080 | Expedição: Grupo de NPCs partindo. | sim |
-| `mochila.webp` | marcador | 128×128 | Mochila de expedição: Item. | não |
+| `mochila.webp` | marcador | 128×128 | Mochila de expedição: Item. | sim |
 | `retorno.webp` | cena | 1920×1080 | Retorno: Grupo voltando cansado. | sim |
 
 ## 46 · Astronomia e constelações 🔭
@@ -608,7 +608,7 @@ Pasta: `assets/confusion/interface/mundo/47/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `santuario.webp` | sprite | 512×512 | Santuário de memória: Santuário de pedra luminosa. | sim |
 | `catedral.webp` | cena | 1920×1080 | Catedral: Catedral do herói. | sim |
-| `eco.webp` | sprite | 512×512 | Eco: Fantasma do passado. | não |
+| `eco.webp` | sprite | 512×512 | Eco: Fantasma do passado. | sim |
 | `agua-purificada.webp` | marcador | 128×128 | Água purificada: Frasco de água luminosa. | sim |
 
 ## 48 · Engenharia e infraestrutura 🌉
@@ -618,7 +618,7 @@ Pasta: `assets/confusion/interface/mundo/48/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `canal.webp` | sprite | 512×512 | Canal de irrigação: Trecho de canal. | não |
+| `canal.webp` | sprite | 512×512 | Canal de irrigação: Trecho de canal. | sim |
 | `ponte.webp` | sprite | 512×512 | Ponte reforçada: Ponte de pedra. | sim |
 | `obra.webp` | cena | 1920×1080 | Obra: Cena de construção. | sim |
 
@@ -630,8 +630,8 @@ Pasta: `assets/confusion/interface/mundo/49/`
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `treino.webp` | cena | 1920×1080 | Treino: Monstro treinando com o jogador. | sim |
-| `especializado.webp` | marcador | 128×128 | Selo de especialização: Selo em 3 tipos. | não |
-| `mestre.webp` | retrato | 1024×1024 | Mestre: Retrato do mestre de treino. | não |
+| `especializado.webp` | marcador | 128×128 | Selo de especialização: Selo em 3 tipos. | sim |
+| `mestre.webp` | retrato | 1024×1024 | Mestre: Retrato do mestre de treino. | sim |
 
 ## 50 · Evolução autônoma do mundo 🌍
 Pasta: `assets/confusion/interface/mundo/50/`
@@ -643,4 +643,4 @@ Pasta: `assets/confusion/interface/mundo/50/`
 | `marco-30.webp` | cena | 1920×1080 | Marco 30: Cena do mundo no marco 30. | sim |
 | `marco-60.webp` | cena | 1920×1080 | Marco 60: Cena do mundo no marco 60. | sim |
 | `marco-90.webp` | cena | 1920×1080 | Marco 90: Cena do mundo no marco 90. | sim |
-| `selo-irreversivel.webp` | marcador | 128×128 | Selo irreversível: Selo de marco. | não |
+| `selo-irreversivel.webp` | marcador | 128×128 | Selo irreversível: Selo de marco. | sim |
