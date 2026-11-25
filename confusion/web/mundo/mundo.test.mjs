@@ -420,10 +420,22 @@ test('50 evolução do mundo: os marcos chegam em 30, 60 e 90 e são irreversív
 });
 
 // Jogabilidade: correções de travamento (ver commit de ajustes do mundo).
-test('15 pragas: com refúgios a praga ainda pode aparecer (piso de 2%)', () => {
+test('15 pragas: com refúgios a praga ainda pode aparecer (piso de 1%)', () => {
   const est = M.criarMundo();
-  sis('15').dia(est['15'], ctx({ r: () => 0.01, protecaoPragas: 0.6 }));
+  sis('15').dia(est['15'], ctx({ r: () => 0.005, protecaoPragas: 0.6 }));
   assert.equal(est['15'].ativa, true);
+});
+test('15 pragas: a praga passa com o tempo, e refúgios aceleram a recuperação', () => {
+  const dias = (protecao, seed) => {
+    const est = M.criarMundo(); est['15'] = { ativa: true, nivel: 10 };
+    const r = rng(seed); let d = 0;
+    while (est['15'].ativa && d < 400) { sis('15').dia(est['15'], ctx({ r, protecaoPragas: protecao })); d++; }
+    return d;
+  };
+  let sem = 0, com = 0;
+  for (let s = 1; s <= 60; s++) { sem += dias(0, s); com += dias(0.6, s); }
+  assert.ok(sem / 60 < 60, 'sem refúgio a praga passa em menos de 2 meses');
+  assert.ok(com < sem, 'com 3 refúgios passa mais cedo');
 });
 test('31 cidades: sem comida, os moradores partem; com estoque, a população cresce', () => {
   const fome = M.criarMundo();

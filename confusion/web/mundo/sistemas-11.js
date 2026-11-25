@@ -157,10 +157,14 @@ const doencas = {
   criar: () => ({ nivel: 0, ativa: false }),
   dia(est, ctx) {
     const notas = [];
-    // Piso de 2%: refúgios reduzem a chance de praga, mas não a eliminam (com 3 refúgios a praga sumia de vez).
-    const chance = Math.max(0.02, 0.1 - (ctx.protecaoPragas || 0));
+    // Piso de 1%: refúgios reduzem a chance de praga, mas não a eliminam (com 3 refúgios a praga sumia de vez).
+    const chance = Math.max(0.01, 0.035 - (ctx.protecaoPragas || 0) * 0.05);
     if (!est.ativa && ctx.r() < chance) { est.ativa = true; est.nivel = 10; notas.push('Uma praga apareceu nas plantações.'); }
-    if (est.ativa) est.nivel = clamp(est.nivel + 5, 0, 100);
+    if (est.ativa) {
+      est.nivel = clamp(est.nivel + 5, 0, 100);
+      // A praga passa com o tempo (cerca de 2 semanas); refúgios aceleram a recuperação.
+      if (est.nivel >= 30 && ctx.r() < 0.07 + (ctx.protecaoPragas || 0) * 0.4) { est.ativa = false; est.nivel = 0; notas.push('A praga passou.'); }
+    }
     return { notas, efeitos: est.ativa ? { recursos: { comida: -1 } } : {} };
   },
   acoes: {

@@ -9,6 +9,9 @@ import { iniciarMundoNoMapa } from './regiao1-mundo-mapa.js';
 import { ARTES, TIPOS_ARTE, artePorSistema, caminhoArte } from '../mundo/artes.js';
 
 export const DIA_MS = 120000;
+// Armazém: cada recurso tem teto (500, +100 por refúgio ou fortaleza). O excedente se perde, então nada dispara sem fim.
+export const ARMAZEM_BASE = 500;
+export const SANIDADE_PISO_DIA = 10; // perdas diárias (marca, cicatrizes) não passam disso; só ações do jogador podem ir além
 const MAX_DIAS_ATRASO = 5;
 const BIOMA_RECURSOS = {
   Floresta: { madeira: 3, raizes: 2, sementes: 1 },
@@ -53,6 +56,11 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     return { save, idle, meta, mundo: idle.mundo };
   }
 
+  const armazem = (est) => ARMAZEM_BASE + 100 * (est.mundo['05']?.refugios?.length || 0);
+  function somarRecurso(est, k, v) {
+    est.meta.recursos[k] = Math.max(0, Math.min(armazem(est), (est.meta.recursos[k] || 0) + v));
+  }
+
   function contexto({ save, idle, meta }, dia) {
     const equipe = (idle.equipe || []).map((m, i) => ({ id: `${m.especie}-${i}`, species: m.especie, classe: m.raridade >= 4 ? 'raro' : 'comum', nivel: m.nivel }));
     return {
@@ -67,13 +75,18 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
   }
 
   // Aplica os efeitos de um resultado no save e devolve o resumo para mostrar ao jogador.
-  function aplicar(est, res) {
+  function aplicar(est, res, diario = false) {
     const e = res?.efeitos || {};
     const { save, idle, meta } = est;
     if (e.gold) save.recompensas.gold = Math.max(0, save.recompensas.gold + e.gold);
     if (e.diamantes) save.recompensas.diamantes = Math.max(0, save.recompensas.diamantes + e.diamantes);
-    if (e.sanidade && idle.jogador) idle.jogador.sanidade = Math.max(0, Math.min(100, (idle.jogador.sanidade ?? 80) + e.sanidade));
-    for (const [k, v] of Object.entries(e.recursos || {})) meta.recursos[k] = Math.max(0, (meta.recursos[k] || 0) + v);
+    if (e.sanidade && idle.jogador) {
+      const atual = idle.jogador.sanidade ?? 80;
+      const novo = atual + e.sanidade;
+      // perda diária nunca derruba abaixo do piso (mas não sobe o que já está baixo)
+      idle.jogador.sanidade = Math.max(0, Math.min(100, diario && e.sanidade < 0 ? Math.max(novo, Math.min(atual, SANIDADE_PISO_DIA)) : novo));
+    }
+    for (const [k, v] of Object.entries(e.recursos || {})) somarRecurso(est, k, v);
     atualizarHud?.();
     return res?.notas || [];
   }
@@ -82,9 +95,9 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     const { meta, mundo } = est;
     meta.dia += 1;
     const bioma = BIOMA_RECURSOS[biomaDoMapa(getMapaAtual?.())];
-    for (const [k, v] of Object.entries(bioma)) meta.recursos[k] = (meta.recursos[k] || 0) + v;
+    for (const [k, v] of Object.entries(bioma)) somarRecurso(est, k, v);
     const res = diaMundo(mundo, contexto(est, meta.dia));
-    const notas = aplicar(est, res);
+    const notas = aplicar(est, res, true);
     if (nota && notas.length) mostrarToast?.(`🌍 Dia ${meta.dia} do mundo: ${notas[0]}`, 3600);
     return notas;
   }
@@ -267,7 +280,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
       est.meta.coletaMs = agora;
       const bioma = biomaDoMapa(getMapaAtual?.());
       const ganho = {};
-      for (const [k, v] of Object.entries(BIOMA_RECURSOS[bioma])) { ganho[k] = v * 2; est.meta.recursos[k] = (est.meta.recursos[k] || 0) + v * 2; }
+      for (const [k, v] of Object.entries(BIOMA_RECURSOS[bioma])) { ganho[k] = v * 2; somarRecurso(est, k, v * 2); }
       log([`Você coletou na área (${bioma}): ${Object.entries(ganho).map(([k, v]) => `${NOMES_RECURSO[k]} +${v}`).join(', ')}.`]);
       salvar?.(); desenhar(); return;
     }
@@ -319,7 +332,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     const chaves = Object.keys(b);
     const k = chaves[Math.floor(Math.random() * chaves.length)];
     const ganho = rara ? 0 : 1 + (Math.random() < 0.25 ? 1 : 0);
-    if (ganho) est.meta.recursos[k] = (est.meta.recursos[k] || 0) + ganho;
+    if (ganho) somarRecurso(est, k, ganho);
     const m = est.meta; m.abates = (m.abates || 0) + 1;
     if (rara && !m.avisouRaro) { m.avisouRaro = true; mostrarToast?.(`🌍 ${esp} está raro nesta região: a caça rende menos até a população se recuperar.`, 3600); }
     if (m.abates % 10 === 0) salvar?.();
