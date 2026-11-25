@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Ajuste a formação 4×4 da arena de Confusion Waves no celular.">
+  <meta name="theme-color" content="#17101d">
+  <title>Editor da arena · Confusion Waves</title>
+  <link rel="stylesheet" href="./arena-editor.css">
+  <script type="module" src="./regiao1-arena-editor.js"></script>
+</head>
+<body>
+  <main class="editor">
+    <header class="ferramentas">
+      <div>
+        <h1>Editor da arena</h1>
+        <p id="instrucao">Toque e arraste os Oníricos para ajustar a formação 4×4.</p>
+      </div>
+      <div class="acoes">
+        <button type="button" id="restaurar">Restaurar padrão</button>
+        <button type="button" class="primario" id="salvar">Salvar layout</button>
+      </div>
+    </header>
+    <section class="pista" aria-label="Prévia da batalha 4×4">
+      <div id="arena"></div>
+      <p id="selecao" aria-live="polite"></p>
+    </section>
+    <p class="dica-paisagem">Em paisagem, a arena ocupa toda a tela.</p>
+  </main>
+
+  <dialog id="salvo" aria-labelledby="titulo-salvo">
+    <form method="dialog">
+      <h2 id="titulo-salvo">Layout salvo</h2>
+      <p>Copie o código e cole na conversa para aplicar as posições ao jogo.</p>
+      <textarea id="codigo" rows="3" readonly aria-label="Código do layout" spellcheck="false"></textarea>
+      <div class="acoes">
+        <button type="submit">Fechar</button>
+        <button type="button" class="primario" id="copiar">Copiar código</button>
+      </div>
+      <p id="retorno" role="status"></p>
+    </form>
+  </dialog>
+</body>
+</html>

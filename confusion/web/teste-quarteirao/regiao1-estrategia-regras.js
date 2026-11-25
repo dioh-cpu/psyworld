@@ -19,14 +19,14 @@ export const statsDoNivel = (nivel, papel) => {
   if (papel === 'suporte') return { hp: Math.round(base.hp * 0.95), atk: Math.round(base.atk * 0.8), def: Math.round(base.def * 1.0) };
   return { hp: Math.round(base.hp), atk: Math.round(base.atk * 1.15), def: Math.round(base.def) };
 };
-export function criarUnidade({ id, especie, nivel, lado, papeis, bonus = {} }) {
+export function criarUnidade({ id, especie, nivel, lado, papeis, bonus = {}, elemento = ELEMENTO_DA_ESPECIE[especie] || 'neutro' }) {
   const papel = papeis[especie] || 'ataque';
   const s = statsDoNivel(nivel, papel);
   const hpMax = Math.round(s.hp * (1 + (bonus.hp || 0)));
   return {
-    id, especie, nivel, lado, papel, elemento: ELEMENTO_DA_ESPECIE[especie] || 'neutro',
+    id, especie, nivel, lado, papel, elemento,
     habilidades: HABILIDADES_DA_ESPECIE[especie] || ['Golpe'],
-    kit: kitDe(especie, papel, ELEMENTO_DA_ESPECIE[especie] || 'neutro', HABILIDADES_DA_ESPECIE[especie] || []), cd: [0, 0, 0], efeitos: {},
+    kit: kitDe(especie, papel, elemento, HABILIDADES_DA_ESPECIE[especie] || []), cd: [0, 0, 0], efeitos: {},
     hpMax, hp: hpMax, atk: Math.round(s.atk * (1 + (bonus.atk || 0))), def: Math.round(s.def * (1 + (bonus.def || 0))),
     defendendo: false, recarga: 0,
   };

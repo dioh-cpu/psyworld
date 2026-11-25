@@ -958,7 +958,7 @@ function iniciarBatalha(tipo, entidade) {
   const artes = {}; let inimigos;
   if (ehBoss) {
     const nv = Math.max(6, Math.round((defBoss.hp - 58) / 13)); artes[defBoss.nome] = raizDe(entidade.sprite);
-    inimigos = [[defBoss.nome, nv], ['Brotavel', Math.max(3, nv - 4)], ['Noctarn', Math.max(3, nv - 4)]];
+    inimigos = [[defBoss.nome, nv, defBoss.elemento], ['Brotavel', Math.max(3, nv - 4)], ['Noctarn', Math.max(3, nv - 4)]];
   } else {
     artes[entidade.especie] = raizDe(entidade.sprite);
     const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);

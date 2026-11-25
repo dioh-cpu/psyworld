@@ -5,10 +5,18 @@
 import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, EFEITOS } from './regiao1-estrategia-regras.js';
 import { criarCtx, tocarEvento, duracaoEstimada } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE } from '../species.js';
+import { NOME_ELEMENTO } from '../core.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // Colunas espelhadas e escalonadas para deixar visíveis os combatentes das duas fileiras.
-const COLUNAS = { a: [42, 32, 22, 14], i: [58, 68, 78, 86] };
+const COLUNAS = { a: [36, 29, 18, 12], i: [64, 71, 82, 88] };
+const COR_ELEMENTO = {
+  fogo: '#ffa478', agua: '#83cfff', planta: '#a0e38a', terra: '#e5ba87', luz: '#ffe395',
+  trevas: '#c6a9ff', neutro: '#e2d6de', lutador: '#ff9d9c', voador: '#a9cbff',
+  veneno: '#dfacfd', psiquico: '#ffb0dc', inseto: '#d3e480', pedra: '#dbc5a5',
+  fantasma: '#cab1f4', eletrico: '#ffe276', gelo: '#a2e7ec', dragao: '#cab7ff',
+  aco: '#bacddd', fada: '#ffc3ea',
+};
 // Mede a silhueta visível para encaixá-la na vaga com a proporção da arte.
 const bboxCache = new Map();
 function recortar(img) {
@@ -69,7 +77,9 @@ const CSS = `
 .arena .un-hud { position: relative; order: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; width: 68%; min-width: 74px; margin-bottom: 2px; pointer-events: none; z-index: 3; }
 .arena .un-lin { display: flex; align-items: center; gap: 3px; width: 100%; } .arena .un-nv { flex: 0 0 auto; min-width: 22px; padding: 1px 3px; text-align: center; font-weight: 800; font-size: 11px; background: rgba(20,12,30,.85); border: 1px solid #c8b08a; border-radius: 4px; }
 .arena .un-hp { flex: 1; height: 7px; background: rgba(10,5,16,.85); border: 1px solid rgba(255,255,255,.35); border-radius: 4px; overflow: hidden; } .arena .un-hp i { display: block; height: 100%; background: linear-gradient(#6ee7b7, #10b981); transition: width .35s; } .arena .un.i .un-hp i { background: linear-gradient(#fda4af, #e11d48); }
+.arena .un-elemento { padding: 0 6px; border: 1px solid var(--cor-elemento); border-radius: 8px; background: #160e20ef; color: var(--cor-elemento); font-size: clamp(9px, 2.7vh, 12px); font-weight: 750; line-height: 1.15; white-space: nowrap; }
 .arena .un-efs { display: flex; gap: 1px; font-size: 11px; min-height: 13px; filter: drop-shadow(0 1px 1px #000); } .arena .un-efs span { background: rgba(10,5,16,.7); border-radius: 4px; padding: 0 2px; line-height: 13px; }
+.arena .un-efs:empty { display: none; }
 .arena .tb-topo { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: flex-start; gap: 8px; padding: 6px 10px; pointer-events: none; z-index: 40; }
 .arena .tb-topo > * { pointer-events: auto; } .arena .tb-tit { flex: 1; min-width: 0; text-shadow: 0 1px 4px #000; } .arena .tb-tit b { display: block; font: 700 clamp(15px, 3.4vh, 22px) Georgia, serif; } .arena .tb-tit small { opacity: .9; }
 .arena .tb-ordem { display: flex; gap: 4px; justify-content: center; position: absolute; left: 50%; top: 6px; transform: translateX(-50%); } .arena .tb-ordem span { width: clamp(26px, 6.5vh, 40px); height: clamp(26px, 6.5vh, 40px); border-radius: 6px; transform: rotate(45deg) scale(.8); background: rgba(20,12,30,.8) center / 130% no-repeat; border: 2px solid #60a5fa; overflow: hidden; } .arena .tb-ordem span.i { border-color: #fb7185; } .arena .tb-ordem span.cur { border-color: #ffd58c; box-shadow: 0 0 8px #ffd58c; transform: rotate(45deg) scale(1); }
@@ -102,7 +112,7 @@ function spriteNoCampo(u, artes) {
 }
 
 export function criarArena(host, { artes = {} } = {}) {
-  injetar(); window.__recortar = recortar; host.classList.add('arena');
+  injetar(); host.classList.add('arena');
   host.innerHTML = '<div class="tb-campo"></div><div class="tb-topo"><div class="tb-tit"></div><div class="tb-ordem"></div><div class="tb-btns"></div></div><div class="tb-fila"></div><div class="tb-base"></div><div class="tb-sobre"></div>';
   const campo = host.querySelector('.tb-campo'), q = (s) => host.querySelector(s);
   let b = null, nos = new Map(), hpVis = new Map(), pend = new Set(), alvoSel = null, ocupadoAte = 0, ultimoEv = null, rapido = false, opArt = artes, lastSig = '';
@@ -114,9 +124,13 @@ export function criarArena(host, { artes = {} } = {}) {
     const x = COLUNAS[u.lado][vaga] ?? COLUNAS[u.lado][0];
     const frente = vaga % 2 === 1;
     const sprite = spriteNoCampo(u, opArt);
+    const elemento = Object.hasOwn(NOME_ELEMENTO, u.elemento) ? u.elemento : 'neutro';
     const el = document.createElement('button'); el.className = `un ${u.lado}${frente ? ' frente' : ''}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id; el.style.left = `${x}%`;
     if (sprite.escalaAltura !== 1) el.style.setProperty('--escala-altura-sprite', sprite.escalaAltura);
-    el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.escalaX === 1 ? '' : `style="transform:scaleX(${sprite.escalaX})"`} alt="${esc(u.especie)}" onload="window.__recortar && window.__recortar(this)" onerror="this.style.visibility='visible'"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-efs"></span></span>`;
+    el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.escalaX === 1 ? '' : `style="transform:scaleX(${sprite.escalaX})"`} alt="${esc(u.especie)}"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-elemento" style="--cor-elemento:${COR_ELEMENTO[elemento]}">${NOME_ELEMENTO[elemento]}</span><span class="un-efs"></span></span>`;
+    const imagem = el.querySelector('.un-fig img');
+    imagem.addEventListener('load', () => recortar(imagem), { once: true });
+    imagem.addEventListener('error', () => { imagem.style.visibility = 'visible'; }, { once: true });
     campo.append(el); nos.set(u.id, { el, u }); hpVis.set(u.id, u.hp);
     if (entrando) setTimeout(() => el.classList.remove('entrando'), 800);
   }
@@ -194,7 +208,7 @@ export function criarTelaBatalha() {
     cfg = c; auto = c.auto !== false; el.style.display = 'block'; arena = criarArena(el, { artes: c.artes });
     const papeis = c.papeis || {};
     const al = c.aliados.slice(0, 6).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: c.bonus || {} }));
-    const ini = c.inimigos.slice(0, 6).map(([esp, nv], i) => criarUnidade({ id: `i${i}`, especie: esp, nivel: nv, lado: 'i', papeis }));
+    const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento], i) => criarUnidade({ id: `i${i}`, especie: esp, nivel: nv, lado: 'i', papeis, elemento }));
     b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render(); agendar(700);
   }
   function fechar(venceu) { clearTimeout(timer); const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac); }
