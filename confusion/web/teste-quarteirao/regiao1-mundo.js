@@ -24,7 +24,9 @@ const BIOMA_RECURSOS = {
 const NOMES_RECURSO = { madeira: 'Madeira', pedra: 'Pedra', cristal: 'Cristal', comida: 'Comida', peca: 'Peças', sementes: 'Sementes', raizes: 'Raízes' };
 export { ARTES };
 // a página fica 3 pastas abaixo da raiz do repositório
-const arteUrl = (sis, vaga) => `../../../${caminhoArte(sis, vaga)}`;
+// A Mira tem os três retratos completos em mundo-retratos; o mira.webp do catálogo é um recorte curto demais, então usa o neutro
+const ALTERNATIVA = { '22/mira': 'assets/confusion/interface/mundo-retratos/mira/mira-neutro.webp' };
+const arteUrl = (sis, vaga) => `../../../${ALTERNATIVA[`${sis}/${vaga}`] || caminhoArte(sis, vaga)}`;
 const ROTULOS_GRUPO = ['Sistemas 01 a 10', 'Sistemas 11 a 20', 'Sistemas 21 a 30', 'Sistemas 31 a 40', 'Sistemas 41 a 50'];
 
 // aleatório com semente: o mesmo dia do mesmo save sempre sorteia igual (testável e sem trapaça por recarregar)
