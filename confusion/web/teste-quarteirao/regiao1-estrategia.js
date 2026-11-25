@@ -64,7 +64,19 @@ export function iniciarEstrategia({ dados: D, getSave, salvar, mostrarToast, abr
     #modal-estrategia .chip { border: 1px solid var(--line, #6b4a52); background: #24162b; color: inherit; border-radius: 8px; padding: 4px 7px; font-size: 11.5px; cursor: pointer; text-align: left; }
     #modal-estrategia .chip.on { background: #f3a45833; border-color: #f3a458; }
     #modal-estrategia .bat { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
-    #modal-estrategia .bat-lado { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+    #modal-estrategia .est-arena { position: relative; flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 6px; min-height: 230px; border-radius: 8px; background-size: cover; background-position: center; overflow: hidden; }
+    #modal-estrategia .bat-lado { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: min-content; align-content: space-around; gap: 4px; }
+    #modal-estrategia .un { position: relative; max-width: 132px; width: 100%; justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 1px; background: rgba(20,10,28,.35); }
+    #modal-estrategia .un-fig { display: block; width: 100%; height: 54px; } #modal-estrategia .un-fig img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.6)); }
+    #modal-estrategia .bat-lado.i .un-fig img { transform: scaleX(-1); }
+    #modal-estrategia .un .est-poli { font-size: 30px; line-height: 54px; display: block; }
+    #modal-estrategia .un-nome { font-size: 10px; text-shadow: 0 1px 2px #000; } #modal-estrategia .un-hp { font-size: 9.5px; text-shadow: 0 1px 2px #000; } #modal-estrategia .un .hp { width: 100%; }
+    #modal-estrategia .un-num { position: absolute; left: 50%; top: 10px; margin-left: -14px; font: 800 15px system-ui; text-shadow: 0 1px 3px #000; pointer-events: none; font-style: normal; z-index: 9; }
+    #modal-estrategia .un-fx { position: absolute; left: 50%; top: 4px; width: 46px; height: 46px; margin-left: -23px; border-radius: 50%; pointer-events: none; z-index: 8; animation: est-fx .5s ease-out forwards; }
+    #modal-estrategia .un-fx.golpe { background: radial-gradient(#fff, #fb7185 45%, transparent 70%); } #modal-estrategia .un-fx.hab { background: radial-gradient(#fff, #a78bfa 40%, #f3a458 60%, transparent 72%); width: 62px; height: 62px; margin-left: -31px; }
+    #modal-estrategia .un-fx.cura { background: radial-gradient(#fff, #4ade80 45%, transparent 70%); } #modal-estrategia .un-fx.escudo { background: radial-gradient(transparent 50%, #60a5fa 62%, transparent 72%); }
+    #modal-estrategia .un-proj { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(#fff, #a78bfa); box-shadow: 0 0 10px #a78bfa; pointer-events: none; z-index: 7; }
+    @keyframes est-fx { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
     #modal-estrategia .un { background: #24162b; border: 1px solid var(--line, #6b4a52); border-radius: 8px; padding: 4px; font-size: 10.5px; text-align: center; min-width: 0; cursor: default; color: inherit; }
     #modal-estrategia .un.morto { opacity: .35; } #modal-estrategia .un.vez { outline: 2px solid #f3a458; } #modal-estrategia .un.alvo { outline: 2px solid #fb7185; }
     #modal-estrategia .un .hp { height: 5px; background: #12091a; border-radius: 3px; overflow: hidden; margin-top: 3px; } #modal-estrategia .un .hp i { display: block; height: 100%; background: #4ade80; }
@@ -75,6 +87,18 @@ export function iniciarEstrategia({ dados: D, getSave, salvar, mostrarToast, abr
     #estrategia-ind { position: fixed; left: 50%; top: 50px; transform: translateX(-50%); z-index: 8; display: none; align-items: center; gap: 8px; background: rgba(33,19,41,.95); border: 1px solid #c59c67; color: #fff3e7; border-radius: 99px; padding: 5px 8px 5px 12px; font: 600 12px system-ui, sans-serif; max-width: 94vw; }
     #estrategia-ind button { min-height: 28px; padding: 2px 9px; font-size: 11.5px; }`;
   document.head.append(estilo);
+
+  // Empilha os painéis do canto superior esquerdo (HUD → missão → buffs) pela altura real, para um não cobrir o outro
+  (function empilhar() {
+    const hud = document.getElementById('hud'), qb = document.getElementById('quest-banner'), bf = document.getElementById('barra-buffs');
+    if (!hud || !qb) return;
+    const ajustar = () => {
+      const h = hud.getBoundingClientRect(); qb.style.top = `${Math.round(h.bottom + 6)}px`;
+      if (bf) { const q = qb.getBoundingClientRect(); bf.style.top = `${Math.round((getComputedStyle(qb).display === 'none' ? h.bottom : q.bottom) + 6)}px`; }
+    };
+    if (window.ResizeObserver) { const ro = new ResizeObserver(ajustar); [hud, qb].forEach((e) => ro.observe(e)); }
+    addEventListener('resize', ajustar); setInterval(ajustar, 1500); ajustar();
+  })();
 
   const modal = document.createElement('div');
   modal.id = 'modal-estrategia'; modal.className = 'modal-bg';
@@ -291,9 +315,38 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   }
 
   // ---------- combate (tela) ----------
+  const spriteUrl = (esp) => `../../../assets/monsters/${esp.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}/sprite-front.png`;
   function cartao(u, cls, vez) {
     const pct = Math.max(0, Math.round((u.hp / u.hpMax) * 100));
-    return `<button class="un ${cls} ${u.hp <= 0 ? 'morto' : ''} ${vez ? 'vez' : ''} ${alvoSel === u.id ? 'alvo' : ''}" data-un="${u.id}">${PAPEL[u.papel].i} ${esc(u.especie)}<br>nv.${u.nivel}<div class="hp"><i style="width:${pct}%"></i></div>${u.hp}/${u.hpMax}</button>`;
+    return `<button class="un ${cls} ${u.hp <= 0 ? 'morto' : ''} ${vez ? 'vez' : ''} ${alvoSel === u.id ? 'alvo' : ''}" data-un="${u.id}"><span class="un-fig"><img src="${spriteUrl(u.especie)}" alt="${esc(u.especie)}" onerror="this.outerHTML='<span class=&quot;est-poli&quot;>${PAPEL[u.papel].i}</span>'"></span><span class="un-nome">${PAPEL[u.papel].i} ${esc(u.especie)} nv.${u.nivel}</span><span class="hp"><i style="width:${pct}%"></i></span><span class="un-hp">${u.hp}/${u.hpMax}</span></button>`;
+  }
+  const fundoFase = (rota, fase) => `../../../assets/confusion/interface/estrategia/${rota.material === 'pedra' ? 'pedra' : 'madeira'}-0${Math.min(3, fase + 1)}.webp`;
+  // Animação provisória de golpe (substituível por clipes do Flow): usa só o evento devolvido por executar()
+  function animarEvento(el) {
+    const ev = batalha && batalha.evento; if (!ev || ev.mostrado) return; ev.mostrado = true;
+    const q = (id) => el.querySelector(`[data-un="${id}"]`);
+    const A = q(ev.ator), T = q(ev.alvo); if (!A || !T || !A.animate) return;
+    const ar = el.querySelector('.est-arena').getBoundingClientRect(), a = A.getBoundingClientRect(), t = T.getBoundingClientRect();
+    const dx = t.left - a.left, dy = t.top - a.top, fig = A.querySelector('.un-fig');
+    const flutuar = (txt, cor) => { const n = document.createElement('i'); n.className = 'un-num'; n.textContent = txt; n.style.color = cor; T.append(n); n.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-34px)', opacity: 0 }], { duration: 800, easing: 'ease-out' }).onfinish = () => n.remove(); };
+    const fx = (cls) => { const n = document.createElement('i'); n.className = 'un-fx ' + cls; T.append(n); setTimeout(() => n.remove(), 520); };
+    if (ev.tipo === 'atacar' || ev.tipo === 'habilidade') {
+      const perto = ev.tipo === 'atacar' || !ev.distancia;
+      if (perto) {
+        A.style.zIndex = 5;
+        A.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dx * 0.7}px,${dy * 0.7}px) scale(1.12)`, offset: 0.4 }, { transform: 'translate(0,0)' }], { duration: 480, easing: 'ease-in-out' }).onfinish = () => { A.style.zIndex = ''; };
+      } else {
+        A.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dx * 0.12}px,${dy * 0.12}px)`, offset: 0.3 }, { transform: 'translate(0,0)' }], { duration: 420 });
+        const p = document.createElement('i'); p.className = 'un-proj'; p.style.left = `${a.left - ar.left + a.width / 2}px`; p.style.top = `${a.top - ar.top + a.height / 3}px`; el.querySelector('.est-arena').append(p);
+        p.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dx}px,${dy}px)` }], { duration: 320, delay: 120, easing: 'ease-in', fill: 'both' }).onfinish = () => p.remove();
+      }
+      setTimeout(() => { T.animate([{ filter: 'brightness(3)' }, { filter: 'none' }], { duration: 260 }); flutuar(`−${ev.valor}`, '#fb7185'); fx(ev.tipo === 'habilidade' ? 'hab' : 'golpe'); }, perto ? 190 : 400);
+    } else if (ev.tipo === 'curar') {
+      fx('cura'); flutuar(`+${ev.valor}`, '#4ade80');
+      el.querySelectorAll('.un.a:not(.morto)').forEach((u) => u.animate([{ filter: 'drop-shadow(0 0 0 #4ade80)' }, { filter: 'drop-shadow(0 0 8px #4ade80)' }, { filter: 'none' }], { duration: 600 }));
+    } else if (ev.tipo === 'defender') {
+      fx('escudo');
+    }
   }
   function desenharBatalha() {
     const s = estado(), exp = s.exp, rota = exp && rotaDe(exp.rota);
@@ -304,9 +357,11 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const ultima = exp.fase >= rota.fases.length - 1;
     const fimBotao = exp.estado === 'vitoria' ? `<button class="btn-sec" data-equipe="1">Ajustar equipe</button><button class="btn-pri" data-prox="1">Próxima fase</button>` : (['derrota', 'fim'].includes(exp.estado) ? `<button class="btn-pri" data-fim="1">${exp.estado === 'fim' ? 'Concluir rota' : 'Voltar à cidade'}</button>` : '');
     el.innerHTML = `<div class="est-bloco" style="margin:0"><b>${rota.icone} ${esc(rota.nome)}</b> · Fase ${exp.fase + 1}/${rota.fases.length}: ${esc(rota.fases[exp.fase].nome)} · ${estadoTxt(exp)} · ganhos: ${Object.keys(exp.ganhos).length ? custoTxt(exp.ganhos) : 'nenhum'}</div>
-      <div class="bat-lado">${batalha.inimigos.map((x) => cartao(x, 'i', u === x)).join('')}</div>
+      <div class="est-arena" style="background-image:url('${fundoFase(rota, exp.fase)}')">
+        <div class="bat-lado a">${batalha.aliados.map((x) => cartao(x, 'a', u === x)).join('')}</div>
+        <div class="bat-lado i">${batalha.inimigos.map((x) => cartao(x, 'i', u === x)).join('')}</div>
+      </div>
       <div class="bat-log" id="est-log">${batalha.log.slice(-8).map((l) => `<p style="margin:1px 0">${esc(l)}</p>`).join('')}</div>
-      <div class="bat-lado">${batalha.aliados.map((x) => cartao(x, 'a', u === x)).join('')}</div>
       <div class="bat-ctl">
         <label><input type="checkbox" id="est-auto" ${exp.autoAtaque ? 'checked' : ''}> Atacar automaticamente</label>
         <label><input type="checkbox" id="est-autoavanca" ${exp.autoAvancar ? 'checked' : ''}> Avançar automaticamente</label>
@@ -315,6 +370,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
         ${manual ? `<span><b>Vez: ${esc(u.especie)}</b> (toque num alvo)</span><button class="btn-pri" data-acao="atacar">Atacar</button><button class="btn-pri" data-acao="habilidade" ${u.recarga > 0 ? 'disabled' : ''}>Habilidade${u.recarga > 0 ? ` (${u.recarga})` : ''}</button><button class="btn-sec" data-acao="defender">Defender</button>${u.papel === 'suporte' ? '<button class="btn-sec" data-acao="curar">Curar</button>' : ''}` : ''}
       </div>`;
     const lg = el.querySelector('#est-log'); if (lg) lg.scrollTop = lg.scrollHeight;
+    animarEvento(el);
   }
 
   // ---------- indicador (expedição minimizada) ----------

@@ -89,15 +89,18 @@ export function executar(b, acao, rng) {
     a.hp = Math.min(a.hpMax, a.hp + cura);
     for (const o of vivos(aliadosDe(b, u))) if (o !== a) o.hp = Math.min(o.hpMax, o.hp + Math.round(cura * 0.4)); // o grupo também se recupera um pouco
     b.log.push(`${u.especie} curou ${a.especie} (+${cura}) e o grupo um pouco.`);
+    b.evento = { tipo: 'curar', ator: u.id, alvo: a.id, valor: cura };
   } else if (tipo === 'defender') {
     u.defendendo = true;
     b.log.push(`${u.especie} se defende.`);
+    b.evento = { tipo: 'defender', ator: u.id, alvo: u.id };
   } else {
     const alvo = alvoPorId(acao.alvo, inimigosDe(b, u)) || escolherAlvo(b, u, rng);
     const habil = tipo === 'habilidade';
     const d = dano(b, u, alvo, habil ? 1.7 : 1, rng);
     alvo.hp = Math.max(0, alvo.hp - d);
     if (habil) u.recarga = 3;
+    b.evento = { tipo: habil ? 'habilidade' : 'atacar', ator: u.id, alvo: alvo.id, valor: d, morreu: alvo.hp <= 0, distancia: habil && u.papel !== 'defesa' };
     b.log.push(`${u.especie} ${habil ? `usou ${u.habilidades[Math.min(2, u.habilidades.length - 1)]}` : 'atacou'} ${alvo.especie} (−${d})${alvo.hp <= 0 ? ' e o derrotou' : ''}.`);
   }
   b.fila.shift();
