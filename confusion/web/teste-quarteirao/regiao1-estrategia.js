@@ -110,7 +110,8 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     #modal-estrategia .est-painel { width: min(620px, 100%); max-height: 52dvh; margin: 0; padding: 8px 10px 4px; background: rgba(33, 19, 41, .96); border: 1px solid var(--line, #6b4a52); border-bottom: 0; border-radius: 12px 12px 0 0; }
     #modal-estrategia .est-abas { width: 100%; justify-content: center; margin: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); background: rgba(26, 15, 34, .92); gap: 4px; }
     #modal-estrategia .est-abas button { min-height: 34px; font-size: 11.5px; padding: 4px 8px; }
-    #modal-estrategia .bat { position: absolute; inset: 0; padding: 48px 10px 10px; background: #1a0f22; z-index: 7; overflow: auto; }
+    @media (max-height: 520px) { #modal-estrategia .bat .est-bloco { padding: 3px 8px; font-size: 11px; } #modal-estrategia .bat-log { max-height: 7vh; font-size: 10.5px; } #modal-estrategia .est-arena { min-height: 54vh; } #modal-estrategia .bat-ctl button, #modal-estrategia .bat-ctl label { min-height: 28px; padding: 2px 8px; font-size: 11px; } }
+    #modal-estrategia .bat { position: absolute; inset: 0; padding: 44px 10px 6px; gap: 4px; background: #1a0f22; z-index: 7; overflow: auto; }
     #estrategia-ind button { min-height: 28px; padding: 2px 9px; font-size: 11.5px; }`;
   document.head.append(estilo);
 
