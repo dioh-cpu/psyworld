@@ -6,7 +6,7 @@ import * as THREE from 'three';
 
 export const ALTURA_JOGADOR = 2.55;
 
-export function criarAzazel(base = 'assets/characters/', altura = ALTURA_JOGADOR) {
+export function criarAzazel(base = 'assets/characters/', altura = ALTURA_JOGADOR, adiar = false) {
   const ALTURA = altura;
 
   // andar: vídeo de 320x540; a figura vai da linha 26 (topo) até a 533 (pé)
@@ -21,7 +21,7 @@ export function criarAzazel(base = 'assets/characters/', altura = ALTURA_JOGADOR
     v.muted = true;
     v.defaultMuted = true;
     v.playsInline = true;
-    v.preload = 'auto';
+    v.preload = adiar ? 'none' : 'auto'; // adiar: baixa em segundo plano ou quando for usado
     v.setAttribute('muted', '');
     v.setAttribute('playsinline', '');
     // Evita display:none, que pausa decodificação de <video> em Chrome/Safari mobile
@@ -30,11 +30,15 @@ export function criarAzazel(base = 'assets/characters/', altura = ALTURA_JOGADOR
     videos[nome] = v;
     texturas[nome] = new THREE.VideoTexture(v);
   }
+  if (adiar) {
+    // 5 MB: só depois que o jogo já está rodando
+    ['front', 'left', 'back'].forEach((nome, i) => setTimeout(() => { const v = videos[nome]; if (v.preload !== 'auto') { v.preload = 'auto'; v.load(); } }, 9000 + i * 3000));
+  }
   // Desbloqueia autoplay de vídeo no primeiro toque/tecla em aparelhos móveis
   const desbloquear = () => {
     for (const nome of ['front', 'left', 'back']) {
       const v = videos[nome];
-      if (v.readyState < 2) {
+      if (v.preload === 'auto' && v.readyState < 2) {
         v.play().then(() => { if (ativo !== nome) v.pause(); }).catch(() => {});
       }
     }

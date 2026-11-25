@@ -37,6 +37,7 @@ import {
 } from './regiao1-idle.js';
 import { criarControladorIdleUI } from './regiao1-ui-idle.js';
 import { iniciarMundo } from './regiao1-mundo.js';
+import { iniciarLayout } from './regiao1-layout.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
 const LARG = 106;
@@ -139,20 +140,45 @@ canvas.addEventListener('wheel', (e) => {
 
 // ---- Persistência (save compartilhado entre Modo Idle e Modo Campanha) ----
 let save = criarEstadoInicial();
+const CHAVE_BACKUP = `${SAVE_KEY_REGIAO1}.backup`;
+const CHAVE_CORROMPIDO = `${SAVE_KEY_REGIAO1}.corrompido`;
+let avisoSave = null; // mostrado como toast assim que a interface existir
+const saveLegivel = (txt) => { try { const o = JSON.parse(txt); return Boolean(o && typeof o === 'object' && o.mapaAtual); } catch { return false; } };
 try {
   const raw = localStorage.getItem(SAVE_KEY_REGIAO1);
-  if (raw && !params.get('novosave')) save = desserializarEstado(raw);
+  if (!params.get('novosave')) {
+    if (raw && saveLegivel(raw)) save = desserializarEstado(raw);
+    else {
+      // save principal ilegível: guarda a cópia estragada e tenta o backup, em vez de recomeçar do zero em silêncio
+      if (raw) localStorage.setItem(CHAVE_CORROMPIDO, raw);
+      const bk = localStorage.getItem(CHAVE_BACKUP);
+      if (bk && saveLegivel(bk)) { save = desserializarEstado(bk); avisoSave = '⚠️ Seu save estava corrompido. Restauramos o backup mais recente.'; }
+      else if (raw) avisoSave = '⚠️ Seu save estava corrompido e não há backup. Começando do zero (a cópia estragada foi guardada).';
+    }
+  }
 } catch (_) {}
 garantirEstadoIdle(save);
 
+let ultimoBackupMs = 0;
+let avisouFalhaSave = false;
 function salvarEstado() {
   try {
     const idle = garantirEstadoIdle(save);
     idle.ultimoTickMs = Date.now();
     save.mapaAtual = mapaAtual ? mapaAtual.id : save.mapaAtual;
     save.posicaoPx = W2P(estado.x, estado.z);
-    localStorage.setItem(SAVE_KEY_REGIAO1, serializarEstado(save));
-  } catch (_) {}
+    const novo = serializarEstado(save);
+    // backup rotativo: a cada 60 s guarda o save anterior (que estava bom) antes de sobrescrever
+    const agora = Date.now();
+    if (agora - ultimoBackupMs > 60000) {
+      const atual = localStorage.getItem(SAVE_KEY_REGIAO1);
+      if (atual && saveLegivel(atual)) localStorage.setItem(CHAVE_BACKUP, atual);
+      ultimoBackupMs = agora;
+    }
+    localStorage.setItem(SAVE_KEY_REGIAO1, novo);
+  } catch (e) {
+    if (!avisouFalhaSave) { avisouFalhaSave = true; setTimeout(() => mostrarToast?.('⚠️ Não foi possível salvar (armazenamento cheio ou bloqueado). Exporte seu save em Configurações.', 6000), 0); }
+  }
 }
 
 // ---- Piso + Caches ----
@@ -250,7 +276,7 @@ const marcadorDestino = (() => {
 
 // ---- Personagens controlados: forma onírica e Azazel ----
 const testeEspirito = params.get('idle') === 'espirito';
-const azazel = criarAzazel('assets/characters/', ALTURA_PERSONAGEM);
+const azazel = criarAzazel('assets/characters/', ALTURA_PERSONAGEM, true); // adiado: os vídeos baixam depois do início
 const formaOnirica = testeEspirito
   ? criarEspiritoIdle(ALTURA_PERSONAGEM)
   : criarNoctarn('../../../assets/monsters/noctarn/', ALTURA_PERSONAGEM);
@@ -1980,7 +2006,7 @@ function golpearAlvoAuto(agora, idle) {
       monstrosDerrotadosSessao.delete(idRespawn);
       const jaExiste = entidadesMapa.some((e) => e.tipo === 'wild' && e.dados.id === idRespawn);
       if (mapaAtual?.id === mapaOrigem && !jaExiste) criarMonstroSelvagem(morto);
-    }, 5000);
+    }, window.regiaoMundo?.tempoRespawn?.(morto.especie) ?? 5000);
   }
 }
 
@@ -2272,7 +2298,11 @@ window.regiaoMundo = iniciarMundo({
   },
 });
 
+iniciarLayout();
+if (avisoSave) setTimeout(() => mostrarToast(avisoSave, 7000), 1500);
+
 window.regiao1 = {
+  restaurarBackup: () => { const bk = localStorage.getItem(CHAVE_BACKUP); if (!bk || !saveLegivel(bk)) return false; localStorage.setItem(SAVE_KEY_REGIAO1, bk); return true; },
   mapaAtual: () => (mapaAtual ? mapaAtual.id : null),
   irPara: (id, px = null) => entrarNoMapa(id, px, false),
   moverPx: (px, py) => { const w = P(px, py); estado.x = w.x; estado.z = w.z; primeiroQuadro = true; },

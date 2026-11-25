@@ -64,6 +64,54 @@ await teste('mundo: armazém tem teto e save sobrevive a recarregar', async (p) 
   ok(await p.evaluate(() => window.regiaoMundo.estado().meta.dia) === dia, 'o dia do mundo não sobreviveu ao recarregar');
 });
 
+await teste('mundo: tutorial, diário e clima na tela', async (p) => {
+  await p.evaluate(() => window.regiaoMundo.abrir());
+  ok(await p.evaluate(() => /Como funciona o Mundo/.test(document.getElementById('modal-mundo').innerText)), 'tutorial não apareceu na primeira abertura');
+  await p.evaluate(() => document.querySelector('#modal-mundo [data-entendi]').click());
+  ok(!(await p.evaluate(() => /Como funciona o Mundo/.test(document.getElementById('modal-mundo').innerText))), 'tutorial não fechou');
+  await p.evaluate(() => window.regiaoMundo.passarDia(12));
+  await p.evaluate(() => document.getElementById('mundo-diario').click());
+  ok(await p.evaluate(() => /Dia \d+/.test(document.getElementById('mundo-corpo').innerText)), 'diário vazio depois de 12 dias');
+  await p.evaluate(() => document.getElementById('mundo-fechar').click());
+  // chuva: o canvas de clima desenha partículas
+  await p.evaluate(async () => { await window.regiao1.irPara('C0'); window.regiaoMundo.estado().mundo['07'].clima = 'tempestade'; });
+  await p.waitForTimeout(1500);
+  const desenhou = await p.evaluate(() => { const c = document.getElementById('efeito-clima'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n; });
+  ok(desenhou > 500, `o efeito de tempestade não desenhou nada (${desenhou} pixels)`);
+  await p.evaluate(async () => { await window.regiao1.irPara('CC2'); }); await p.waitForTimeout(800);
+  const caverna = await p.evaluate(() => { const c = document.getElementById('efeito-clima'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n; });
+  ok(caverna === 0, `a chuva apareceu dentro da caverna (${caverna} pixels)`);
+});
+
+await teste('mundo: facções, praga, clima e ecossistema mexem na caça', async (p) => {
+  const r = await p.evaluate(() => {
+    const M = window.regiaoMundo, e = M.estado().mundo; e['05'].refugios = [];
+    e['15'] = { ativa: false, nivel: 0 }; e['07'].clima = 'vento'; e['03'] = { guardioes: 0, culto: 0, guilda: 0 };
+    const base = M.modificadores();
+    e['03'] = { guardioes: 65, culto: 35, guilda: 65 };
+    const fac = M.modificadores();
+    e['15'] = { ativa: true, nivel: 100 }; e['07'].clima = 'tempestade';
+    const mal = M.modificadores();
+    e['02'].populacao.Noctarn = 1; const rara = M.tempoRespawn('Noctarn'); e['02'].populacao.Noctarn = 30; const farta = M.tempoRespawn('Noctarn'); e['02'].populacao.Noctarn = 10; const normal = M.tempoRespawn('Noctarn');
+    return { base, fac, mal, rara, farta, normal };
+  });
+  ok(r.base.dano === 1 && r.base.ouro === 1, 'sem efeitos o multiplicador deveria ser 1');
+  ok(r.fac.dano > 1.06 && r.fac.ouro > 1.09, `facções não deram bônus (${JSON.stringify(r.fac)})`);
+  ok(r.mal.dano < r.fac.dano, 'praga e tempestade não reduziram o dano');
+  ok(r.rara > r.normal && r.normal > r.farta, `respawn por população errado (${r.rara}/${r.normal}/${r.farta})`);
+});
+
+await teste('save: corrompido volta pelo backup, sem recomeçar do zero', async (p) => {
+  await p.evaluate(async () => { await window.regiao1.irPara('E3'); window.regiaoMundo.passarDia(7); window.regiao1.salvar(); });
+  await p.evaluate(() => { window.regiao1.salvar(); }); // garante o save bom
+  const dia = await p.evaluate(() => window.regiaoMundo.estado().meta.dia);
+  // força um backup bom e estraga o save principal
+  await p.evaluate(() => { const k = Object.keys(localStorage).find((x) => x.includes('regiao1') && !x.includes('.')) || Object.keys(localStorage).find((x) => /regiao1/i.test(x) && !/backup|corrompido/.test(x)); const bom = localStorage.getItem(k); localStorage.setItem(k + '.backup', bom); localStorage.setItem(k, '{"quebrado":'); });
+  await p.reload({ waitUntil: 'load' }); await p.waitForFunction(() => window.regiaoMundo); await p.waitForTimeout(1500);
+  ok(await p.evaluate(() => window.regiaoMundo.estado().meta.dia) === dia, 'não restaurou o backup (dia do mundo diferente)');
+  ok(await p.evaluate(() => /corrompido/i.test(document.body.innerText)), 'não avisou que o save estava corrompido');
+});
+
 await teste('mundo no mapa: objetos aparecem, bloqueiam e abrem o menu', async (p) => {
   await p.evaluate(() => {
     const m = window.regiaoMundo.estado().mundo;

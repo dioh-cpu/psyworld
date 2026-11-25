@@ -6,6 +6,7 @@
 import { carregarMundo, diaMundo, acaoMundo, SISTEMAS, OPCOES_ACAO } from '../mundo/index.js';
 import { protecaoContraPragas } from '../mundo/sistemas-01.js';
 import { iniciarMundoNoMapa } from './regiao1-mundo-mapa.js';
+import { iniciarClima } from './regiao1-clima.js';
 import { ARTES, TIPOS_ARTE, artePorSistema, caminhoArte } from '../mundo/artes.js';
 
 export const DIA_MS = 120000;
@@ -98,6 +99,9 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     for (const [k, v] of Object.entries(bioma)) somarRecurso(est, k, v);
     const res = diaMundo(mundo, contexto(est, meta.dia));
     const notas = aplicar(est, res, true);
+    meta.diario = meta.diario || [];
+    for (const n of notas) meta.diario.push({ dia: meta.dia, t: n });
+    if (meta.diario.length > 150) meta.diario = meta.diario.slice(-150);
     if (nota && notas.length) mostrarToast?.(`🌍 Dia ${meta.dia} do mundo: ${notas[0]}`, 3600);
     return notas;
   }
@@ -176,7 +180,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
       <div class="mundo-abas" id="mundo-abas" role="tablist"></div>
       <div class="mundo-corpo" id="mundo-corpo"></div>
       <div class="mundo-log" id="mundo-log" aria-live="polite">Escolha um sistema. Cada dia (2 min de jogo) todos eles avançam.</div>
-      <div class="mundo-acoes mundo-rodape" style="margin-top:8px"><button class="btn-sec" id="mundo-dia">Passar 1 dia agora</button><button class="btn-sec" id="mundo-coletar">Coletar recursos da área</button></div>
+      <div class="mundo-acoes mundo-rodape" style="margin-top:8px"><button class="btn-sec" id="mundo-dia">Passar 1 dia agora</button><button class="btn-sec" id="mundo-diario">Diário do mundo</button><button class="btn-sec" id="mundo-coletar">Coletar recursos da área</button></div>
     </div>`;
   document.body.append(painel);
 
@@ -211,11 +215,19 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     painel.querySelector('#mundo-topo').innerHTML = `<span>Dia <b>${est.meta.dia}</b></span><span>${rec}</span><span>Na caça: ${mm.notas.length ? esc(mm.notas.join(', ')) : 'sem efeitos'}</span>`;
     const corpo = painel.querySelector('#mundo-corpo');
     const abas = painel.querySelector('#mundo-abas');
+    if (aberto === 'diario') {
+      abas.hidden = true; painel.querySelector('#mundo-titulo').textContent = 'Mundo · Diário';
+      const itens = [...(est.meta.diario || [])].reverse();
+      let dia = null;
+      corpo.innerHTML = `<button class="btn-sec" data-voltar="1" style="margin-bottom:8px">← Todos os sistemas</button>` + (itens.length ? itens.map((x) => { const cab = x.dia !== dia ? `<h4 style="margin:10px 0 3px;color:var(--gold,#f3c27a);font-size:13px">Dia ${x.dia}</h4>` : ''; dia = x.dia; return `${cab}<p style="margin:2px 0;font-size:12.5px">• ${esc(x.t)}</p>`; }).join('') : '<p class="ref">Nada aconteceu ainda. Os eventos dos sistemas aparecem aqui a cada dia do mundo.</p>');
+      corpo.scrollTop = 0; return;
+    }
     if (aberto) { abas.hidden = true; painel.querySelector('#mundo-titulo').textContent = 'Mundo'; corpo.innerHTML = menuSistemaHtml(est, aberto); corpo.scrollTop = 0; ligarArtes(corpo); return; }
     abas.hidden = false;
     painel.querySelector('#mundo-titulo').textContent = 'Mundo · 50 sistemas';
     abas.innerHTML = ROTULOS_GRUPO.map((r, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${r}</button>`).join('');
-    corpo.innerHTML = `<div class="mundo-grade">${SISTEMAS.slice(aba * 10, aba * 10 + 10).map((sis) => {
+    const tut = est.meta.tutorialVisto ? '' : `<div class="sis-bloco"><h4>Como funciona o Mundo</h4><p>São 50 sistemas vivos: cidades, facções, clima, pragas, chefes, expedições e mais. A cada <b>dia do mundo</b> (2 minutos de jogo) todos eles avançam sozinhos.</p><p>• <b>Toque em um sistema</b> para abrir o menu dele: estado, ações e o que ele rende.</p><p>• <b>Cada abate na caçada</b> alimenta o mundo (recursos do bioma) e tira monstros do ecossistema. Se uma espécie fica rara, a caça rende menos.</p><p>• <b>Praga e clima</b> mexem no seu dano e no seu ouro. Refúgios protegem. O quadro "Na caça" no topo mostra o que está valendo agora.</p><p>• Os recursos têm teto de 500 (+100 por refúgio). O que passa disso se perde: gaste!</p><p>• Alguns sistemas aparecem no mapa. Chegue perto e toque no botão 🌍 para abrir.</p><div class="mundo-acoes" style="margin-top:6px"><button class="btn-pri" data-entendi="1">Entendi</button></div></div>`;
+    corpo.innerHTML = tut + `<div class="mundo-grade">${SISTEMAS.slice(aba * 10, aba * 10 + 10).map((sis) => {
       const arte = artePorSistema(sis.id);
       return `<button class="tile" data-abrir="${sis.id}"><span class="linha"><span class="arte ic" data-sis="${sis.id}" data-vaga="icone"><img src="${arteUrl(sis.id, 'icone')}" alt="" loading="lazy"><template><svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 94,30 94,70 50,94 6,70 6,30" fill="${arte.cor}66" stroke="${arte.cor}" stroke-width="3"/><text x="50" y="62" text-anchor="middle" font-size="40">${arte.emoji}</text></svg></template></span><strong>${sis.id} · ${esc(sis.nome)}</strong></span><small>${esc(sis.resumo(est.mundo[sis.id]))}</small></button>`;
     }).join('')}</div>`;
@@ -270,6 +282,8 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     if (alvo.dataset.aba !== undefined) { aba = Number(alvo.dataset.aba); desenhar(); return; }
     if (alvo.dataset.abrir) { aberto = alvo.dataset.abrir; desenhar(); return; }
     if (alvo.dataset.voltar) { aberto = null; desenhar(); return; }
+    if (alvo.dataset.entendi) { estado().meta.tutorialVisto = true; salvar?.(); desenhar(); return; }
+    if (alvo.id === 'mundo-diario') { aberto = 'diario'; desenhar(); return; }
     const est = estado();
     if (alvo.id === 'mundo-dia') {
       log(passarDia(est, false)); est.meta.ultimoMs = Date.now(); salvar?.(); desenhar(); return;
@@ -317,7 +331,22 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     if (clima === 'tempestade') { dano *= 0.92; notas.push('tempestade −8% dano'); }
     else if (clima === 'neve') { dano *= 0.97; notas.push('neve −3% dano'); }
     else if (clima === 'sol') { ouro *= 1.05; notas.push('sol +5% ouro'); }
+    // Facções (sistema 03): cada uma com reputação alta dá um bônus pequeno e diferente
+    const f = m['03']?.valores || m['03'] || {};
+    const rep = (k) => Number(f[k] ?? 0);
+    const tier = (v) => (v >= 60 ? 2 : v >= 30 ? 1 : 0);
+    const tG = tier(rep('guardioes') || rep('Guardiões da Luz')), tC = tier(rep('culto') || rep('Culto das Sombras')), tP = tier(rep('guilda') || rep('Guilda do Porto'));
+    if (tG) { dano *= 1 + 0.03 * tG; notas.push(`Guardiões +${3 * tG}% dano`); }
+    if (tC) { dano *= 1 + 0.04 * tC; notas.push(`Culto +${4 * tC}% dano`); }
+    if (tP) { ouro *= 1 + 0.05 * tP; notas.push(`Guilda +${5 * tP}% ouro`); }
     return { dano, ouro, notas };
+  }
+
+  // Ecossistema (sistema 02): espécie rara demora mais para voltar ao mapa; abundante volta mais depressa.
+  function tempoRespawn(especie) {
+    const pop = estado().mundo['02']?.populacao;
+    if (!pop || !(especie in pop)) return 5000;
+    return pop[especie] <= POP_RARA ? 15000 : pop[especie] >= 25 ? 3000 : 5000;
   }
 
   // Cada abate alimenta o mundo: o ecossistema perde um monstro e o bioma devolve recursos (menos se a espécie está rara).
@@ -338,9 +367,19 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     if (m.abates % 10 === 0) salvar?.();
   }
 
+  // Clima e hora do dia na tela (sistema 07). Não aparece em cavernas nem com Economia de Energia.
+  const clima = iniciarClima({
+    getClima: () => estado().mundo['07'] || {},
+    interno: () => biomaDoMapa(getMapaAtual?.()) === 'Caverna',
+    fase: () => Math.max(0, Math.min(1, (Date.now() - estado().meta.ultimoMs) / DIA_MS)),
+    desligado: () => Boolean(getSave().idle?.config?.economiaEnergia),
+  });
+
   return {
     noMapa,
+    clima,
     modificadores,
+    tempoRespawn,
     aoAbater,
     abrir,
     abrirSistema: (id) => abrir(id),

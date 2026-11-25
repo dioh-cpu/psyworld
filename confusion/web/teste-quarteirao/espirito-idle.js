@@ -18,14 +18,15 @@ const GEO = {
   'walk-costas':   { largura: 560, altura: 720, pe: 592, centroX: 290, figRef: 450 },
 };
 
-function criarVideo(src) {
+// adiar: o vídeo só baixa quando pedido (pedir) ou em segundo plano depois que o jogo já está rodando
+function criarVideo(src, adiar = false) {
   const v = document.createElement('video');
   v.src = src;
   v.loop = true;
   v.muted = true;
   v.defaultMuted = true;
   v.playsInline = true;
-  v.preload = 'auto';
+  v.preload = adiar ? 'none' : 'auto';
   v.setAttribute('muted', '');
   v.setAttribute('playsinline', '');
   v.setAttribute('aria-hidden', 'true');
@@ -35,6 +36,8 @@ function criarVideo(src) {
   return v;
 }
 
+const pedir = (v) => { if (v.preload !== 'auto') { v.preload = 'auto'; v.load(); } };
+
 export function criarEspiritoIdle(altura) {
   const nomes = ['frente', 'esquerda', 'costas'];
   const videos = {};
@@ -42,9 +45,11 @@ export function criarEspiritoIdle(altura) {
   for (const nome of nomes) {
     videos[`idle-${nome}`] = criarVideo(`${BASE}espirito-idle-${nome}.mp4?v=${VERSAO_CLIPES}`);
     if (WALK.includes(nome)) {
-      videos[`walk-${nome}`] = criarVideo(`${BASE}espirito-walk-${nome}.mp4?v=${VERSAO_CLIPES}`);
+      videos[`walk-${nome}`] = criarVideo(`${BASE}espirito-walk-${nome}.mp4?v=${VERSAO_CLIPES}`, true);
     }
   }
+  // os clipes de walk (9 MB) baixam em segundo plano, um por vez, depois que o idle já está na tela
+  WALK.forEach((nome, i) => setTimeout(() => pedir(videos[`walk-${nome}`]), 3500 + i * 3000));
   for (const k in videos) {
     texturas[k] = new THREE.VideoTexture(videos[k]);
     texturas[k].colorSpace = THREE.SRGBColorSpace;
@@ -110,6 +115,7 @@ export function criarEspiritoIdle(altura) {
     ativo = chave;
     pausado = false;
     const v = videos[chave];
+    pedir(v);
     if (v.paused) v.play().catch(() => {});
   }
 
@@ -117,7 +123,7 @@ export function criarEspiritoIdle(altura) {
   function desbloquear() {
     for (const k in videos) {
       const v = videos[k];
-      if (v.readyState < 2) v.play().then(() => { if (ativo !== k || pausado) v.pause(); }).catch(() => {});
+      if (v.preload === 'auto' && v.readyState < 2) v.play().then(() => { if (ativo !== k || pausado) v.pause(); }).catch(() => {});
     }
     if (ativo && !pausado && videos[ativo].paused) videos[ativo].play().catch(() => {});
   }
