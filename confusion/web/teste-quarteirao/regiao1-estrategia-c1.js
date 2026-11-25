@@ -9,6 +9,16 @@ export const ESTRATEGIA_C1 = {
   prosperidadeBase: 40,
   materiais: { madeira: { nome: 'Madeira', icone: '🪵' }, pedra: { nome: 'Pedra', icone: '🪨' } },
   inicial: { madeira: 0, pedra: 0 },
+  // Gestão: vagas de obra simultâneas, teto de estoque por material, horas máximas que um prédio acumula e receitas da oficina.
+  gestao: {
+    vagasObra: 2, capacidade: { madeira: 150, pedra: 150 }, capProducaoHoras: 8, filaFabricacao: 3,
+    receitas: [
+      { id: 'tabua', nome: 'Tábua', icone: '🪚', insumos: { madeira: 2 }, saida: { tabua: 1 }, seg: 20 },
+      { id: 'bloco', nome: 'Bloco de pedra', icone: '🧱', insumos: { pedra: 2 }, saida: { bloco: 1 }, seg: 25 },
+      { id: 'kit', nome: 'Kit de reparo', icone: '🧰', insumos: { madeira: 3, pedra: 3 }, saida: { kit: 1 }, seg: 40 },
+    ],
+    itens: { tabua: { nome: 'Tábua', icone: '🪚' }, bloco: { nome: 'Bloco de pedra', icone: '🧱' }, kit: { nome: 'Kit de reparo', icone: '🧰' } },
+  },
   vagasIniciais: 2, // vagas de equipe no começo; cada fase vencida pela primeira vez abre mais uma (máximo 6)
 
   // Papel de cada espécie no combate: ataque, defesa (atrai golpes) ou suporte (cura aliados)
@@ -37,22 +47,22 @@ export const ESTRATEGIA_C1 = {
   // Estruturas. custo = nível 1; cada nível seguinte custa +60%. prosperidade = ganho por nível. bonus = por nível.
   estruturas: [
     {
-      id: 'casas', categoria: 'aldeias', nome: 'Casas', emoji: '🏘️', niveis: 3, custo: { madeira: 12, pedra: 3 }, prosperidade: [10, 8, 6],
+      id: 'casas', categoria: 'aldeias', nome: 'Casas', emoji: '🏘️', niveis: 3, custo: { madeira: 12, pedra: 3 }, prosperidade: [10, 8, 6], duracao: [30, 60, 120], producao: { tipo: 'madeira', porHora: 10 },
       beneficio: 'Reconstrói moradias: mais prosperidade e mais moradores voltando à cidade.',
       visual: { vazio: { arte: { sis: '01', vaga: 'vila-ruinas' }, nome: 'Casas em ruínas' }, niveis: [{ arte: { sis: '01', vaga: 'vila-saudavel' }, escala: 1 }, { arte: { sis: '01', vaga: 'vila-saudavel' }, escala: 1.12 }, { arte: { sis: '01', vaga: 'vila-saudavel' }, escala: 1.24 }] },
     },
     {
-      id: 'abrigo', categoria: 'refugios', nome: 'Abrigo', emoji: '🛖', niveis: 2, custo: { madeira: 20, pedra: 14 }, prosperidade: [4, 3], bonus: { hp: 0.05 }, protecaoPraga: true,
+      id: 'abrigo', categoria: 'refugios', nome: 'Abrigo', emoji: '🛖', niveis: 2, custo: { madeira: 20, pedra: 14 }, prosperidade: [4, 3], duracao: [45, 90], producao: { tipo: 'madeira', porHora: 4 }, bonus: { hp: 0.05 }, protecaoPraga: true,
       beneficio: 'Protege a cidade da praga (sistema Refúgios) e dá +5% de vida às equipes por nível.',
       visual: { vazio: { estr: 'terreno', nome: 'Terreno livre' }, niveis: [{ arte: { sis: '05', vaga: 'refugio' }, escala: 1 }, { arte: { sis: '05', vaga: 'fortaleza' }, escala: 1 }] },
     },
     {
-      id: 'quartel', categoria: 'exercitos', nome: 'Quartel', emoji: '⚔️', niveis: 3, custo: { madeira: 14, pedra: 24 }, prosperidade: [3, 3, 3], bonus: { atk: 0.04, def: 0.04 },
+      id: 'quartel', categoria: 'exercitos', nome: 'Quartel', emoji: '⚔️', niveis: 3, custo: { madeira: 14, pedra: 24 }, prosperidade: [3, 3, 3], duracao: [40, 80, 160], producao: { tipo: 'pedra', porHora: 8 }, bonus: { atk: 0.04, def: 0.04 },
       beneficio: 'Treina a guarnição: +4% de ataque e defesa às equipes por nível.',
       visual: { vazio: { estr: 'terreno', nome: 'Terreno livre' }, niveis: [{ estr: 'quartel', escala: 1 }, { estr: 'quartel', escala: 1.12 }, { estr: 'quartel', escala: 1.24 }] },
     },
     {
-      id: 'enfermaria', categoria: 'hospitais', nome: 'Enfermaria', emoji: '🏥', niveis: 3, custo: { madeira: 22, pedra: 18 }, prosperidade: [4, 3, 3], bonus: { cura: 0.12 },
+      id: 'enfermaria', categoria: 'hospitais', nome: 'Enfermaria', emoji: '🏥', niveis: 3, custo: { madeira: 22, pedra: 18 }, prosperidade: [4, 3, 3], duracao: [40, 80, 160], producao: { tipo: 'pedra', porHora: 3 }, bonus: { cura: 0.12 },
       beneficio: 'Trata os feridos: recupera 12% da vida das equipes por nível entre as fases.',
       visual: { vazio: { estr: 'terreno', nome: 'Terreno livre' }, niveis: [{ estr: 'enfermaria', escala: 1 }, { estr: 'enfermaria', escala: 1.12 }, { estr: 'enfermaria', escala: 1.24 }] },
     },

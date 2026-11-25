@@ -2,9 +2,16 @@
 // origem: 'nativa' (nasce no reino), 'visitante' (vinda de outro reino), 'nova' (tipo extra do reino), 'existente' (já no catálogo).
 // forma: nome da forma intermediária (a "atual"), usada em combate. arte: pasta com 01/02/03.png quando já está ilustrada.
 // Nomes das linhagens novas são provisórios. Metal = elemento 'aco' do núcleo.
-const ARTE = '../assets/confusion/interface/estrategia/reinos';
-const L = (nome, elemento, origem, extra = {}) => ({ nome, elemento, origem, ...extra });
-const ilustrada = (reino, pasta) => ({ arte: `assets/confusion/interface/estrategia/reinos/${reino}/oniricos/${pasta}/02.png`, ilustrada: true });
+const RAIZ = 'assets/confusion/interface/estrategia/reinos';
+const slug = (n) => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+// Formas 01/02/03 = base, intermediária, final. Visitantes usam a pasta do reino de origem ({ reino }). Ignavor usa as artes existentes.
+export function formasDaLinhagem(l, reinoAtual = 2) {
+  if (l.nome === 'Ignavor') return [`${RAIZ}/existentes/ignavor/01-brasinha.png`, 'assets/monsters/ignavor/sprite-front.png', `${RAIZ}/existentes/ignavor/03-ignaraz.png`];
+  const r = String(l.reino ?? reinoAtual).padStart(2, '0');
+  return [1, 2, 3].map((n) => `${RAIZ}/${r}/oniricos/${slug(l.nome)}/0${n}.png`);
+}
+const L = (nome, elemento, origem, extra = {}) => { const { reinoPasta, ...resto } = extra; const l = { nome, elemento, origem, ...resto }; const f = formasDaLinhagem(l, reinoPasta); return { ...l, formas: f, arte: f[1], ilustrada: true }; };
+const ilustrada = () => ({});
 
 export const REINOS = {
   1: {
@@ -12,11 +19,11 @@ export const REINOS = {
     tipos: ['inseto', 'planta', 'agua', 'terra', 'pedra'],
     // um tipo por linhagem (atribuição provisória, a confirmar)
     linhagens: [
-      L('Fanalino', 'inseto', 'nativa', ilustrada('01', 'fanalino')),
-      L('Cervomusgo', 'planta', 'nativa'),
-      L('Cobrabúfalo', 'agua', 'nativa', ilustrada('01', 'cobrabufalo')),
-      L('Tatuveludo', 'terra', 'nativa'),
-      L('Xistolim', 'pedra', 'nativa', ilustrada('01', 'xistolim')),
+      L('Fanalino', 'inseto', 'nativa', { reinoPasta: 1 }),
+      L('Cervomusgo', 'planta', 'nativa', { reinoPasta: 1 }),
+      L('Cobrabúfalo', 'agua', 'nativa', { reinoPasta: 1 }),
+      L('Tatuveludo', 'terra', 'nativa', { reinoPasta: 1 }),
+      L('Xistolim', 'pedra', 'nativa', { reinoPasta: 1 }),
     ],
   },
   2: {
@@ -32,19 +39,19 @@ export const REINOS = {
     },
     linhagens: [
       // 5 nativas (ilustradas ou previstas no REINOS.md)
-      L('Melifalcão', 'voador', 'nativa', ilustrada('02', 'melifalcao')),
-      L('Lavândria', 'planta', 'nativa', ilustrada('02', 'lavandria')),
-      L('Calquélon', 'pedra', 'nativa', ilustrada('02', 'calquelon')),
+      L('Melifalcão', 'voador', 'nativa'),
+      L('Lavândria', 'planta', 'nativa'),
+      L('Calquélon', 'pedra', 'nativa'),
       L('Vesprata', 'aco', 'nativa'),
       L('Colmeiro', 'inseto', 'nativa'),
       // 5 visitantes do Reino 1, uma de cada tipo
-      L('Fanalino', 'inseto', 'visitante', { reino: 1, ...ilustrada('01', 'fanalino') }),
+      L('Fanalino', 'inseto', 'visitante', { reino: 1 }),
       L('Cervomusgo', 'planta', 'visitante', { reino: 1 }),
-      L('Cobrabúfalo', 'agua', 'visitante', { reino: 1, ...ilustrada('01', 'cobrabufalo') }),
+      L('Cobrabúfalo', 'agua', 'visitante', { reino: 1 }),
       L('Tatuveludo', 'terra', 'visitante', { reino: 1 }),
-      L('Xistolim', 'pedra', 'visitante', { reino: 1, ...ilustrada('01', 'xistolim') }),
+      L('Xistolim', 'pedra', 'visitante', { reino: 1 }),
       // 10 de tipos novos: 3 fogo, 3 elétrico, 2 voador, 2 metal
-      L('Ignavor', 'fogo', 'existente', { arte: 'assets/monsters/ignavor/sprite-front.png', ilustrada: true }),
+      L('Ignavor', 'fogo', 'existente'),
       L('Cerifogo', 'fogo', 'nova'),
       L('Âmbarasa', 'fogo', 'nova'),
       L('Zunifaísca', 'eletrico', 'nova'),

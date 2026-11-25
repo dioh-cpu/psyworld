@@ -2,24 +2,28 @@
 // Mapa da cidade com locais de construção, cinco menus (Aldeias, Refúgios, Exércitos, Hospitais, Expedições), combate 6 contra 6 por
 // turnos, controles independentes (Atacar automaticamente / Próxima fase / Avançar automaticamente) e expedição minimizada.
 // Estado salvo em save.idle.estrategia[id]. Cada recompensa de vitória é paga uma única vez (exp.pagas).
+import { avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
 import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase } from './regiao1-estrategia-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const PAPEL = { ataque: { i: '⚔️', n: 'Ataque' }, defesa: { i: '🛡️', n: 'Defesa' }, suporte: { i: '💚', n: 'Suporte' } };
 
-export function iniciarEstrategia({ dados: D, getSave, salvar, mostrarToast, abrirModal, fecharModal, atualizarHud }) {
+export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirModal, fecharModal, atualizarHud }) {
+  const REINOS_D = Array.isArray(dados) ? dados : [dados];
+  let D = REINOS_D[0];
   const rng = criarRng(Date.now() % 100000);
   let batalha = null;       // só em memória: ao recarregar, a fase recomeça
   let ritmoMs = 650;
-  let aba = 'aldeias', visao = 'cidade', slotSel = null, confirmar = null, alvoSel = null, minimizado = false;
+  let resumoUlt = null, selObras = new Set(), confAcel = null, loteRec = null, loteQtd = 5;
+  let aba = 'gestao', visao = 'cidade', slotSel = null, confirmar = null, alvoSel = null, minimizado = false;
   let timerTick = null, timerProx = null;
 
   // ---------- estado ----------
-  const estado = () => {
+  const estado = (Dx = D) => {
     const idle = getSave().idle || (getSave().idle = {});
     idle.estrategia = idle.estrategia || {};
-    const s = idle.estrategia[D.id] || (idle.estrategia[D.id] = { materiais: { ...D.inicial }, estruturas: {}, exp: null, recrutados: {}, historico: [], vagas: D.vagasIniciais || 2, inimigosLiberados: {} });
-    s.materiais = { ...D.inicial, ...s.materiais }; s.estruturas = s.estruturas || {}; s.recrutados = s.recrutados || {}; s.historico = s.historico || []; s.vagas = Math.max(1, Math.min(6, s.vagas || D.vagasIniciais || 2)); s.inimigosLiberados = s.inimigosLiberados || {};
+    const s = idle.estrategia[Dx.id] || (idle.estrategia[Dx.id] = { materiais: { ...Dx.inicial }, estruturas: {}, exp: null, recrutados: {}, historico: [], vagas: Dx.vagasIniciais || 2, inimigosLiberados: {} });
+    s.materiais = { ...Dx.inicial, ...s.materiais }; s.estruturas = s.estruturas || {}; s.recrutados = s.recrutados || {}; s.historico = s.historico || []; s.vagas = Math.max(1, Math.min(6, s.vagas || Dx.vagasIniciais || 2)); s.trabalho = s.trabalho || {}; gestaoDe(s); s.inimigosLiberados = s.inimigosLiberados || {};
     return s;
   };
   const roster = () => (getSave().idle.equipe || []).map((m, i) => ({ id: `m${i}`, especie: m.especie, nivel: m.nivel || 1 }));
@@ -103,7 +107,7 @@ export function iniciarEstrategia({ dados: D, getSave, salvar, mostrarToast, abr
   const modal = document.createElement('div');
   modal.id = 'modal-estrategia'; modal.className = 'modal-bg';
   modal.innerHTML = `<div class="modal-card est-card" role="dialog" aria-modal="true">
-    <header class="modal-head"><h3>Estratégia · ${esc(D.titulo)}</h3><button class="btn-fechar" id="est-fechar" aria-label="Fechar">✕</button></header>
+    <header class="modal-head"><h3 id="est-titulo">Estratégia</h3><select id="est-reino" aria-label="Reino" style="margin-left:auto;margin-right:8px"></select><button class="btn-fechar" id="est-fechar" aria-label="Fechar">✕</button></header>
     <div class="est-topo" id="est-topo"></div>
     <div class="est-corpo" id="est-corpo"><div class="est-mapa" id="est-mapa"></div><div class="est-lado"><nav class="est-abas" id="est-abas"></nav><div class="est-painel" id="est-painel"></div></div></div>
     <div class="bat" id="est-bat" hidden></div></div>`;
@@ -151,9 +155,10 @@ export function iniciarEstrategia({ dados: D, getSave, salvar, mostrarToast, abr
   }
 
   // ---------- painéis dos menus ----------
-  const abas = ['aldeias', 'refugios', 'exercitos', 'hospitais', 'expedicoes'];
+  const abas = ['gestao', 'aldeias', 'refugios', 'exercitos', 'hospitais', 'expedicoes'];
+  const rotuloAba = (a) => (a === 'gestao' ? '⚙️ Gestão' : `${D.categorias[a].icone} ${D.categorias[a].nome}`);
   function desenharAbas() {
-    $('#est-abas').innerHTML = abas.map((a) => `<button class="btn-sec" role="tab" aria-selected="${a === aba}" data-aba="${a}">${D.categorias[a].icone} ${esc(D.categorias[a].nome)}</button>`).join('');
+    $('#est-abas').innerHTML = abas.map((a) => `<button class="btn-sec" role="tab" aria-selected="${a === aba}" data-aba="${a}">${esc(rotuloAba(a))}</button>`).join('');
   }
   function painelCategoria() {
     const s = estado(), cat = D.categorias[aba];
@@ -169,9 +174,11 @@ export function iniciarEstrategia({ dados: D, getSave, salvar, mostrarToast, abr
       if (nivel > est.niveis) { h += `<div class="est-bloco"><h4>${esc(rotulo)}</h4><p class="ok">Nível máximo.</p></div>`; continue; }
       const custo = custoDoNivel(est, nivel), f = falta(custo, s.materiais), ok = !Object.keys(f).length;
       const gp = est.prosperidade[nivel - 1];
-      const abrir = confirmar === l.id;
+      const emObra = gestaoDe(s).obras.find((o) => o.loc === l.id);
+      if (emObra) { h += `<div class="est-bloco"><h4>${esc(rotulo)} → nv.${emObra.nivel} em obra</h4><p>⏳ ${dur(emObra.fimEm - Date.now())} restantes.</p></div>`; continue; }
+      const abrir = false;
       h += `<div class="est-bloco"><h4>${esc(rotulo)} → ${at ? 'melhorar para' : 'construir'} nv.${nivel}</h4>
-        <p>Custo: ${custoTxt(custo)}</p><p>Benefício: ${esc(est.beneficio)} <b>+${gp} de prosperidade</b>.</p>
+        <p>Custo: ${custoTxt(custo)} · ⏱️ ${dur(duracaoDaObra(est, nivel))}</p><p>Benefício: ${esc(est.beneficio)} <b>+${gp} de prosperidade</b>.</p>
         <p class="${ok ? 'ok' : 'ruim'}">${ok ? 'Materiais suficientes.' : `Faltam ${custoTxt(f)}.`}</p>
         ${abrir ? `<div class="est-linha"><button class="btn-pri" data-confirmar="${l.id}">Confirmar obra</button><button class="btn-sec" data-cancelar="1">Cancelar</button></div>` : `<div class="est-linha"><button class="btn-pri" data-obra="${l.id}" ${ok ? '' : 'disabled'}>${at ? 'Melhorar' : 'Construir'}</button></div>`}</div>`;
     }
@@ -215,27 +222,125 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
 
   function desenharPainel() {
     desenharAbas();
-    $('#est-painel').innerHTML = aba === 'expedicoes' ? painelExpedicoes() : painelCategoria();
+    $('#est-painel').innerHTML = aba === 'expedicoes' ? painelExpedicoes() : aba === 'gestao' ? painelGestao() : painelCategoria();
+  }
+  function desenharCabecalho() {
+    $('#est-titulo').textContent = `Estratégia · ${D.titulo}`;
+    $('#est-reino').innerHTML = REINOS_D.map((x) => `<option value="${x.id}" ${x === D ? 'selected' : ''}>${desbloqueado(x) ? '' : '🔒 '}${esc(x.titulo)}</option>`).join('');
+    $('#est-reino').hidden = REINOS_D.length < 2;
   }
   function desenhar() {
+    desenharCabecalho();
     $('#est-corpo').hidden = visao !== 'cidade'; $('#est-bat').hidden = visao !== 'batalha';
     desenharTopo();
     if (visao === 'cidade') { desenharMapa(); desenharPainel(); } else desenharBatalha();
   }
 
   // ---------- obra ----------
-  function fazerObra(slotId) {
-    const s = estado(), l = D.locais.find((x) => x.id === slotId), est = D.estruturas.find((e) => e.categoria === l.categoria);
-    const r = construir(s, est, slotId);
-    confirmar = null;
-    if (!r.ok) { mostrarToast(r.motivo + (r.falta ? ` ${custoTxt(r.falta)}` : ''), 3000); desenhar(); return; }
-    // reflete no mundo: prosperidade da Vila do Norte (sistema 01) e abrigos do sistema 05
+  function aoConcluirObra(Dx, o) {
+    const est = Dx.estruturas.find((e) => e.id === o.tipo), pros = est.prosperidade[o.nivel - 1] || 0;
     const mundo = window.regiaoMundo?.estado?.().mundo;
-    const v = mundo?.['01']?.norte; if (v) v.prosperidade = Math.min(100, (v.prosperidade || 0) + r.prosperidade);
-    if (est.protecaoPraga && mundo?.['05']) mundo['05'].refugios.push({ nome: `Abrigo de ${D.titulo}`, abrigados: 0 });
-    diario(`${est.nome} nv.${r.nivel} concluído (+${r.prosperidade} de prosperidade).`);
-    mostrarToast(`🏗️ ${est.nome} nv.${r.nivel} concluído! +${r.prosperidade} de prosperidade`, 3800);
+    if (Dx.id === 'c1') {
+      const v = mundo?.['01']?.norte; if (v) v.prosperidade = Math.min(100, (v.prosperidade || 0) + pros);
+      if (est.protecaoPraga && mundo?.['05']) mundo['05'].refugios.push({ nome: `Abrigo de ${Dx.titulo}`, abrigados: 0 });
+    }
+    const meta = window.regiaoMundo?.estado?.().meta;
+    if (meta) { meta.diario = meta.diario || []; meta.diario.push({ dia: meta.dia, t: `${Dx.titulo}: ${est.nome} nv.${o.nivel} concluído (+${pros} de prosperidade).` }); }
+    return `${est.nome} nv.${o.nivel} (+${pros} de prosperidade)`;
+  }
+  // Atualiza todos os reinos pelo tempo decorrido; cada obra/lote concluído aparece uma única vez
+  function processar(avisar = true) {
+    const feitos = [];
+    for (const Dx of REINOS_D) {
+      const s = estado(Dx), ev = avancar(s, Dx);
+      for (const o of ev.concluidas) feitos.push(`${Dx.id === D.id ? '' : Dx.titulo + ': '}${aoConcluirObra(Dx, o)}`);
+      for (const l of ev.fabricados) feitos.push(`Lote pronto: ${l.qtd}× ${Dx.gestao.receitas.find((r) => r.id === l.receita).nome}`);
+    }
+    if (feitos.length) { salvar(); atualizarHud?.(); if (avisar) mostrarToast(`🏗️ Concluído: ${feitos.join(' · ')}`, 4200); }
+    return feitos;
+  }
+  const dur = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return t >= 3600 ? `${Math.floor(t / 3600)}h${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}` : t >= 60 ? `${Math.floor(t / 60)}min${String(t % 60).padStart(2, '0')}s` : `${t}s`; };
+  const diamantes = { get valor() { return getSave().recompensas?.diamantes || 0; }, set valor(v) { getSave().recompensas.diamantes = v; } };
+  const matTxt = (c, Dx = D) => Object.entries(c).map(([k, v]) => `${Dx.materiais[k]?.icone || Dx.gestao.itens[k]?.icone || ''} ${v} ${Dx.materiais[k]?.nome || Dx.gestao.itens[k]?.nome || k}`).join(' · ') || 'nada';
+  function resumoLote(titulo, partes) { resumoUlt = { titulo, partes }; salvar(); atualizarHud?.(); desenhar(); mostrarToast(`${titulo}: ${partes.map((x) => x.t).join(' | ')}`, 5200); }
+  function fazerObra(slotId) {
+    processar(false);
+    const s = estado(), est = D.estruturas.find((e) => e.categoria === D.locais.find((x) => x.id === slotId).categoria);
+    const r = enfileirarObras(s, D, [slotId]);
+    confirmar = null;
+    if (r.pendentes.length) { mostrarToast(r.pendentes[0].motivo + (r.pendentes[0].falta ? ` ${custoTxt(r.pendentes[0].falta)}` : ''), 3000); desenhar(); return; }
+    const o = r.entraram[0]; selObras.delete(slotId);
+    mostrarToast(`🏗️ ${est.nome} nv.${o.nivel} em obra (${dur(o.fimEm - Date.now())}). Custo: ${custoTxt(o.custo)}.`, 3400);
     salvar(); atualizarHud?.(); desenhar();
+  }
+  function enfileirarSelecionadas() {
+    processar(false);
+    const s = estado(), r = enfileirarObras(s, D, [...selObras]);
+    selObras.clear();
+    resumoLote('Obras', [
+      { t: r.entraram.length ? `entraram ${r.entraram.length}: ${r.entraram.map((o) => `${D.estruturas.find((e) => e.id === o.tipo).nome} nv.${o.nivel}`).join(', ')} (custo ${matTxt(r.custo)})` : 'nenhuma entrou' },
+      ...r.pendentes.map((p) => ({ t: `pendente ${p.loc}: ${p.motivo}${p.falta ? ' ' + custoTxt(p.falta) : ''}` })),
+    ]);
+  }
+  function coletar(todos) {
+    processar(false);
+    const lista = todos ? REINOS_D.filter(desbloqueado) : [D];
+    const rec = {}, pend = {};
+    for (const Dx of lista) {
+      const r = coletarTudo(estado(Dx), Dx);
+      for (const [k, v] of Object.entries(r.recebido)) { const n = `${Dx.materiais[k].icone} ${Dx.materiais[k].nome}`; rec[n] = (rec[n] || 0) + v; }
+      for (const [k, v] of Object.entries(r.pendente)) { const n = `${Dx.materiais[k].icone} ${Dx.materiais[k].nome}`; pend[n] = (pend[n] || 0) + v; }
+    }
+    const f = (o) => Object.entries(o).map(([k, v]) => `${v} ${k}`).join(' · ');
+    const partes = [{ t: Object.keys(rec).length ? `recebido ${f(rec)}` : 'nada pronto para coletar' }];
+    if (Object.keys(pend).length) partes.push({ t: `pendente (estoque cheio): ${f(pend)}` });
+    resumoLote(todos ? 'Coleta de todos os reinos' : 'Coleta', partes);
+  }
+  function fabricar(repetir) {
+    processar(false);
+    const s = estado(), r = repetir ? repetirUltimoLote(s, D) : fabricarLote(s, D, loteRec, loteQtd);
+    if (!r.ok) { mostrarToast(r.motivo + (r.falta ? ` Faltam ${matTxt(r.falta)}.` : ''), 3200); desenhar(); return; }
+    resumoLote('Fabricação', [{ t: `lote na fila: ${matTxt(r.previsao.saida)} (usou ${matTxt(r.previsao.insumos)}, ${dur(r.previsao.duracao)})` }]);
+  }
+  function desbloqueado(Dx) { if (!Dx.desbloqueio) return true; const de = REINOS_D.find((x) => x.id === Dx.desbloqueio.de); return prosperidade(estado(de), de).total >= Dx.desbloqueio.prosperidade; }
+  function trocarReino(id) {
+    const novo = REINOS_D.find((x) => x.id === id); if (!novo || novo === D) return;
+    if (estado().exp) { mostrarToast('Encerre a expedição atual antes de trocar de reino.', 2800); desenhar(); return; }
+    if (!desbloqueado(novo)) { mostrarToast(`🔒 ${novo.desbloqueio.texto}`, 2800); desenhar(); return; }
+    D = novo; slotSel = null; confirmar = null; batalha = null; visao = 'cidade'; desenhar();
+  }
+  function painelGestao() {
+    const s = estado(), g = gestaoDe(s), agora = Date.now(); let h = '';
+    if (resumoUlt) h += `<div class="est-bloco" style="border-color:#f3a458"><h4>Resumo: ${esc(resumoUlt.titulo)}</h4>${resumoUlt.partes.map((x) => `<p>• ${esc(x.t)}</p>`).join('')}</div>`;
+    const pronto = prontoParaColetar(s, D);
+    h += `<div class="est-bloco"><h4>📦 Produção pronta</h4><p>${Object.keys(pronto).length ? Object.entries(pronto).map(([loc, it]) => `${esc(estrDe(s.estruturas[loc].tipo).nome)}: ${D.materiais[it.tipo].icone} ${it.qtd}`).join(' · ') : 'Nada pronto ainda. Os prédios produzem com o tempo, mesmo com o jogo fechado.'}</p><p class="muted">Estoque: ${Object.keys(D.materiais).map((k) => `${D.materiais[k].icone} ${s.materiais[k] || 0}/${capacidade(D, k)}`).join(' · ')}${Object.keys(g.itens).length ? ' · ' + Object.entries(g.itens).map(([k, v]) => `${D.gestao.itens[k]?.icone || ''} ${v}`).join(' · ') : ''}</p>
+      <div class="est-linha"><button class="btn-pri" data-coletar="um">Coletar tudo deste reino</button><button class="btn-sec" data-coletar="todos">Coletar de todos os reinos</button></div></div>`;
+    const cands = candidatasObra(s, D);
+    h += `<div class="est-bloco"><h4>🏗️ Obras (${g.obras.length}/${D.gestao.vagasObra} vagas)</h4>`;
+    for (const o of g.obras) {
+      const est = estrDe(o.tipo), ac = confAcel === o.id;
+      h += `<p>⏳ ${esc(est.nome)} nv.${o.nivel}: ${dur(o.fimEm - agora)} restantes ${ac ? `<button class="btn-pri" data-acel-ok="${o.id}">Gastar ${custoAceleracao(o, agora)}💎</button><button class="btn-sec" data-acel-no="1">Cancelar</button>` : `<button class="btn-sec" data-acel="${o.id}">Acelerar</button>`}</p>`;
+    }
+    const total = {};
+    for (const c of cands) {
+      if (c.maximo) continue;
+      const marcado = selObras.has(c.loc), ok = !Object.keys(falta(c.custo, s.materiais)).length;
+      if (marcado) for (const [k, v] of Object.entries(c.custo)) total[k] = (total[k] || 0) + v;
+      h += `<label class="est-sel" style="display:block;margin:3px 0"><input type="checkbox" data-selobra="${c.loc}" ${marcado ? 'checked' : ''}> ${esc(c.est.nome)} (${c.loc}) → nv.${c.nivel} · ${custoTxt(c.custo)} · ⏱️ ${dur(c.duracao)}${c.emObra ? ' · na fila' : ''}${ok ? '' : ' <span class="ruim">· faltam materiais</span>'}</label>`;
+    }
+    const f = falta(total, s.materiais);
+    h += `<p>Selecionadas: <b>${selObras.size}</b> · custo total ${matTxt(total)}${Object.keys(f).length ? ` <span class="ruim">(faltam ${custoTxt(f)})</span>` : ''}</p><div class="est-linha"><button class="btn-pri" data-enfileirar="1" ${selObras.size ? '' : 'disabled'}>Enfileirar selecionadas</button></div><p class="muted">Cada obra também pode ser feita sozinha na aba do prédio.</p></div>`;
+    if (!loteRec || !D.gestao.receitas.some((r) => r.id === loteRec)) loteRec = D.gestao.receitas[0].id;
+    const pv = previsaoLote(s, D, loteRec, loteQtd);
+    h += `<div class="est-bloco"><h4>🛠️ Oficina (${g.fabricacao.length}/${D.gestao.filaFabricacao} lotes)</h4><div class="est-linha">${D.gestao.receitas.map((r) => `<button class="${r.id === loteRec ? 'btn-pri' : 'btn-sec'}" data-rec="${r.id}">${r.icone} ${esc(r.nome)}</button>`).join('')}</div>
+      <p>Quantidade: <button class="btn-sec" data-qtd="-1">−</button> <b>${loteQtd}</b> <button class="btn-sec" data-qtd="1">+</button> <button class="btn-sec" data-qtd="5">+5</button></p>
+      <p>Produzirá <b>${matTxt(pv.saida)}</b> usando ${matTxt(pv.insumos)} · ⏱️ ${dur(pv.duracao)}</p>${pv.ok ? '' : `<p class="ruim">Faltam ${matTxt(pv.falta)}.</p>`}
+      <div class="est-linha"><button class="btn-pri" data-fabricar="1" ${pv.ok ? '' : 'disabled'}>Fabricar lote</button><button class="btn-sec" data-repetir="1" ${g.ultimoLote ? '' : 'disabled'}>${g.ultimoLote ? `Repetir último lote (${g.ultimoLote.qtd}× ${esc(D.gestao.receitas.find((r) => r.id === g.ultimoLote.receita).nome)})` : 'Repetir último lote'}</button></div>
+      ${g.fabricacao.map((l) => { const rc = D.gestao.receitas.find((r) => r.id === l.receita); return `<p>${l.inicio ? '⚙️' : '⏸️'} ${l.qtd}× ${esc(rc.nome)} ${l.inicio ? `· ${dur(l.inicio + rc.seg * 1000 * l.qtd - agora)} restantes` : '· aguardando'}</p>`; }).join('')}</div>`;
+    const r = roster(); const prods = Object.entries(s.estruturas).filter(([, e]) => estrDe(e.tipo).producao);
+    if (prods.length) h += `<div class="est-bloco"><h4>👷 Oníricos em serviço (+10% de produção)</h4>${prods.map(([loc, e]) => { const m = r.find((x) => x.id === s.trabalho[loc]); return `<p>${esc(estrDe(e.tipo).nome)} (${loc}): <button class="btn-sec" data-trab="${loc}">${m ? esc(m.especie) : 'ninguém'} ▸</button></p>`; }).join('')}<p class="muted">Quem trabalha continua livre para o combate e para outros reinos.</p></div>`;
+    h += `<div class="est-bloco"><h4>Registro</h4>${g.log.slice(-6).reverse().map((x) => `<p class="muted">#${x.id} ${esc(x.t)}</p>`).join('') || '<p class="muted">Sem eventos ainda.</p>'}</div>`;
+    return h;
   }
 
   // ---------- expedição ----------
@@ -253,6 +358,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus }); });
     if (manterHp) al.forEach((u, i) => { const h = manterHp[exp.equipe[i]]; if (h != null) u.hp = Math.max(1, Math.min(u.hpMax, Math.round(h * u.hpMax + u.hpMax * bonus.cura))); });
     batalha = criarBatalha(al, gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)));
+    if (D.arteInimigo) batalha.inimigos.forEach((u) => { u.arte = D.arteInimigo(u.especie, exp.fase); });
     batalha.log.push(`Fase ${exp.fase + 1}: ${fase.nome}. ${batalha.inimigos.length} inimigo(s) à frente.`);
     exp.estado = 'batalha'; alvoSel = null; visao = 'batalha';
     salvar(); iniciarTick(); desenhar();
@@ -318,7 +424,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   const spriteUrl = (esp) => `../../../assets/monsters/${esp.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}/sprite-front.png`;
   function cartao(u, cls, vez) {
     const pct = Math.max(0, Math.round((u.hp / u.hpMax) * 100));
-    return `<button class="un ${cls} ${u.hp <= 0 ? 'morto' : ''} ${vez ? 'vez' : ''} ${alvoSel === u.id ? 'alvo' : ''}" data-un="${u.id}"><span class="un-fig"><img src="${spriteUrl(u.especie)}" alt="${esc(u.especie)}" onerror="this.outerHTML='<span class=&quot;est-poli&quot;>${PAPEL[u.papel].i}</span>'"></span><span class="un-nome">${PAPEL[u.papel].i} ${esc(u.especie)} nv.${u.nivel}</span><span class="hp"><i style="width:${pct}%"></i></span><span class="un-hp">${u.hp}/${u.hpMax}</span></button>`;
+    return `<button class="un ${cls} ${u.hp <= 0 ? 'morto' : ''} ${vez ? 'vez' : ''} ${alvoSel === u.id ? 'alvo' : ''}" data-un="${u.id}"><span class="un-fig"><img src="${u.arte ? `../../../${u.arte}` : spriteUrl(u.especie)}" alt="${esc(u.especie)}" onerror="this.outerHTML='<span class=&quot;est-poli&quot;>${PAPEL[u.papel].i}</span>'"></span><span class="un-nome">${PAPEL[u.papel].i} ${esc(u.especie)} nv.${u.nivel}</span><span class="hp"><i style="width:${pct}%"></i></span><span class="un-hp">${u.hp}/${u.hpMax}</span></button>`;
   }
   const fundoFase = (rota, fase) => `../../../assets/confusion/interface/estrategia/${rota.material === 'pedra' ? 'pedra' : 'madeira'}-0${Math.min(3, fase + 1)}.webp`;
   // Animação provisória de golpe (substituível por clipes do Flow): usa só o evento devolvido por executar()
@@ -386,7 +492,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
 
   // ---------- eventos ----------
   function abrir(cat) {
-    minimizado = false; desenharInd();
+    minimizado = false; desenharInd(); processar();
     const s = estado();
     if (cat) aba = cat;
     visao = s.exp && (['batalha', 'vitoria', 'derrota', 'fim'].includes(s.exp.estado) && batalha) ? 'batalha' : 'cidade';
@@ -403,13 +509,29 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     if (exp) mostrarToast(`🧭 Expedição encerrada. Ganhos mantidos: ${Object.keys(exp.ganhos).length ? custoTxt(exp.ganhos) : 'nenhum'}.`, 3200);
     s.exp = null; batalha = null; minimizado = false; visao = 'cidade'; salvar(); desenharInd(); desenhar();
   }
+  modal.addEventListener('change', (e) => { if (e.target.id === 'est-reino') trocarReino(e.target.value); });
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button, input'); if (!t) return;
     const s = estado();
     if (t.id === 'est-fechar') { minimizar(); return; }
+    if (t.dataset.coletar) { coletar(t.dataset.coletar === 'todos'); return; }
+    if (t.dataset.enfileirar) { enfileirarSelecionadas(); return; }
+    if (t.dataset.fabricar) { fabricar(false); return; }
+    if (t.dataset.repetir) { fabricar(true); return; }
+    if (t.dataset.rec) { loteRec = t.dataset.rec; desenharPainel(); return; }
+    if (t.dataset.qtd) { loteQtd = Math.max(1, Math.min(99, loteQtd + Number(t.dataset.qtd))); desenharPainel(); return; }
+    if (t.dataset.selobra) { if (t.checked) selObras.add(t.dataset.selobra); else selObras.delete(t.dataset.selobra); desenharPainel(); return; }
+    if (t.dataset.acel) { confAcel = t.dataset.acel; desenharPainel(); return; }
+    if (t.dataset.acelNo) { confAcel = null; desenharPainel(); return; }
+    if (t.dataset.acelOk) {
+      const r = acelerarObra(s, D, t.dataset.acelOk, diamantes); confAcel = null;
+      if (!r.ok) mostrarToast(r.motivo, 2800); else { r.concluidas.forEach((o) => aoConcluirObra(D, o)); mostrarToast(`⚡ Obra acelerada por ${r.custo}💎.`, 2800); salvar(); atualizarHud?.(); }
+      desenhar(); return;
+    }
+    if (t.dataset.trab) { const r = roster(); const atual = r.findIndex((m) => m.id === s.trabalho[t.dataset.trab]); const prox = r[atual + 1]; if (prox) s.trabalho[t.dataset.trab] = prox.id; else delete s.trabalho[t.dataset.trab]; salvar(); desenharPainel(); return; }
     if (t.dataset.aba) { aba = t.dataset.aba; confirmar = null; desenharPainel(); return; }
     if (t.dataset.slot) { const l = D.locais.find((x) => x.id === t.dataset.slot); aba = l.categoria; slotSel = l.id; confirmar = null; desenhar(); return; }
-    if (t.dataset.obra) { confirmar = t.dataset.obra; desenharPainel(); return; }
+    if (t.dataset.obra) { fazerObra(t.dataset.obra); return; }
     if (t.dataset.cancelar) { confirmar = null; desenharPainel(); return; }
     if (t.dataset.confirmar) { fazerObra(t.dataset.confirmar); return; }
     if (t.dataset.membro) { const id = t.dataset.membro; const sel = s.equipeSel || []; s.equipeSel = sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id].slice(-s.vagas); if (s.exp?.estado === 'vitoria' || s.exp?.estado === 'preparando') s.exp.equipe = s.equipeSel; salvar(); desenharPainel(); return; }
@@ -434,6 +556,8 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
 
   // ---------- recarregar: fase em andamento recomeça; recompensas já pagas ficam salvas ----------
   (function restaurar() {
+    const volta = processar(false); if (volta.length) setTimeout(() => mostrarToast(`⏱️ Enquanto você esteve fora: ${volta.join(' · ')}`, 5200), 1500);
+    setInterval(() => { processar(); if (modal.classList.contains('aberto') && visao === 'cidade') { desenharTopo(); if ((aba === 'gestao' || aba !== 'expedicoes') && !document.activeElement?.closest?.('input')) desenharPainel(); } }, 1000);
     const s = estado();
     if (s.exp && s.exp.estado === 'batalha') s.exp.estado = 'preparando';
     if (s.exp && ['preparando', 'vitoria', 'derrota', 'fim'].includes(s.exp.estado)) { minimizado = true; desenharInd(); }
@@ -442,8 +566,9 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   function resumo() {
     const s = estado(), p = prosperidade(s, D);
     const obras = Object.entries(s.estruturas).map(([k, e]) => `${estrDe(e.tipo).nome} nv.${e.nivel}`).join(', ') || 'nenhuma';
+    const g = gestaoDe(s), pr = Object.values(prontoParaColetar(s, D)).reduce((a, b) => a + b.qtd, 0);
     const exp = s.exp ? `${rotaDe(s.exp.rota).nome}, fase ${s.exp.fase + 1} (${estadoTxt(s.exp)})` : 'nenhuma em andamento';
-    return { titulo: `Estratégia · ${D.titulo}`, linhas: [`Prosperidade: ${p.total}/100`, `Materiais: ${custoTxt(s.materiais)}`, `Obras: ${obras}`, `Expedição: ${exp}`] };
+    return { titulo: `Estratégia · ${D.titulo}`, linhas: [`Prosperidade: ${p.total}/100`, `Materiais: ${custoTxt(s.materiais)}`, `Obras: ${obras}`, `Expedição: ${exp}`, `Obras na fila: ${g.obras.length} · produção pronta: ${pr} · lotes na oficina: ${g.fabricacao.length}`] };
   }
   return { abrir, resumo, estado, minimizar, encerrar, comecarFase,
     // ajuda de teste e balanceamento

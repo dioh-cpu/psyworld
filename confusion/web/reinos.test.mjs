@@ -22,4 +22,13 @@ test('tipos válidos, catálogo íntegro e todas as áreas têm elenco', () => {
   for (const a of Object.keys(REINOS[2].areas)) assert.ok(elencoDaArea(2, a).length >= 3, a);
   assert.ok(!ESPECIES_BASE.includes('Cerifogo'));
 });
-test('vagas de arte', () => { assert.ok(semArte(2).length > 0); });
+test('todas as formas de arte existem em disco', async () => {
+  const fs = await import('node:fs'); const { fileURLToPath } = await import('node:url');
+  const raiz = fileURLToPath(new URL('../../', import.meta.url));
+  for (const n of [1, 2]) for (const l of linhagensDoReino(n)) for (const f of l.formas) assert.ok(fs.existsSync(raiz + f), `${l.nome}: ${f}`);
+  assert.deepEqual(semArte(2), []);
+});
+test('visitantes usam a arte do reino de origem', () => {
+  const v = linhagensDoReino(2).find((l) => l.nome === 'Cobrabúfalo');
+  assert.match(v.formas[0], /reinos\/01\/oniricos\/cobrabufalo\/01\.png/);
+});
