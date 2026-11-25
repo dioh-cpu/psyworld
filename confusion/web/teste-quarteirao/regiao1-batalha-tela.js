@@ -16,14 +16,20 @@ function recortar(img) {
   if (!b) { const w = 96, h = Math.max(8, Math.round(96 * (img.naturalHeight / Math.max(1, img.naturalWidth)))); const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h); let d; try { d = x.getImageData(0, 0, w, h).data; } catch { return; } let x0 = w, y0 = h, x1 = 0, y1 = 0; for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (d[(j * w + i) * 4 + 3] > 20) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; } if (x1 <= x0 || y1 <= y0) return; b = { x0: x0 / w, y0: y0 / h, x1: (x1 + 1) / w, y1: (y1 + 1) / h, r: ((x1 + 1 - x0) * img.naturalWidth / w) / (((y1 + 1 - y0) * img.naturalHeight) / h) }; bboxCache.set(src, b); }
   img.style.objectViewBox = `inset(${b.y0 * 100}% ${(1 - b.x1) * 100}% ${(1 - b.y1) * 100}% ${b.x0 * 100}%)`; img.style.aspectRatio = String(b.r); img.style.height = 'clamp(56px, 24vh, 170px)'; img.style.width = 'auto'; img.style.visibility = 'visible';
 }
-// Para onde cada arte olha de fábrica. Aliados devem olhar para a direita e inimigos para a esquerda: inverte-se só quando preciso.
-// Artes de frente (ou desconhecidas) não são invertidas.
+// Perfis de batalha associados à arte original, inclusive quando ela vem de uma fase ou chefe.
+const PERFIS_NO_CAMPO = {
+  [ARTE_DA_ESPECIE.Noctarn]: { arquivo: 'assets/confusion/interface/batalha/noctarn-direita.webp', direcao: 'direita' },
+  'assets/confusion/interface/personagens/espirito-boss-atual.webp': {
+    arquivo: 'assets/confusion/interface/batalha/espirito-esquerda.webp',
+    direcao: 'esquerda',
+  },
+};
+// Sentido das demais artes em que o corpo já aparece de lado ou em três quartos.
 const OLHA = {
-  direita: ['Cervomusgo', 'Cobrabúfalo', 'Xistolim', 'Âmbarasa', 'Bronzelo', 'Cerifogo', 'Colmeiro', 'Falesário', 'Latonhorn', 'Trovoresta', 'Ventassol', 'Zunifaísca'],
-  esquerda: ['Fanalino', 'Tatuveludo', 'Calquélon', 'Melifalcão', 'Vesprata', 'Ignavor'],
+  direita: ['Brotavel', 'Cervomusgo', 'Cobrabúfalo', 'Xistolim', 'Âmbarasa', 'Bronzelo', 'Cerifogo', 'Colmeiro', 'Falesário', 'Latonhorn', 'Trovoresta', 'Ventassol', 'Zunifaísca'],
+  esquerda: ['Vaelith', 'Fanalino', 'Tatuveludo', 'Calquélon', 'Melifalcão', 'Vesprata', 'Ignavor'],
 };
 const olhaDe = (esp) => (OLHA.direita.includes(esp) ? 'direita' : OLHA.esquerda.includes(esp) ? 'esquerda' : 'frente');
-const inverter = (u) => { const o = olhaDe(u.especie), quer = u.lado === 'a' ? 'direita' : 'esquerda'; return o !== 'frente' && o !== quer; };
 const CSS = `
 .arena { position: absolute; inset: 0; overflow: hidden; background: #1a0f22; color: #fff3e7; font: 12px system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
 .arena .tb-campo { position: absolute; inset: 0; background: center / cover no-repeat #24162b; will-change: transform; }
@@ -53,7 +59,19 @@ const CSS = `
 .arena .tb-fim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(13,7,19,.78); font-size: 20px; z-index: 60; text-align: center; padding: 20px; }`;
 let cssOk = false;
 const injetar = () => { if (cssOk) return; cssOk = true; const s = document.createElement('style'); s.textContent = CSS; document.head.append(s); };
-const caminho = (esp, arte) => { const p = arte?.[esp] || ARTE_DA_ESPECIE[esp] || `assets/monsters/${String(esp).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}/sprite-front.png`; return `../../../${p}`; };
+const arteRaiz = (esp, arte) => arte?.[esp] || ARTE_DA_ESPECIE[esp] || `assets/monsters/${String(esp).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}/sprite-front.png`;
+const caminho = (esp, arte) => `../../../${arteRaiz(esp, arte)}`;
+
+function spriteNoCampo(u, artes) {
+  const original = arteRaiz(u.especie, artes);
+  const perfil = PERFIS_NO_CAMPO[original];
+  const direcao = perfil?.direcao ?? olhaDe(u.especie);
+  const desejada = u.lado === 'a' ? 'direita' : 'esquerda';
+  return {
+    src: `../../../${perfil?.arquivo ?? original}`,
+    espelhar: direcao !== 'frente' && direcao !== desejada,
+  };
+}
 
 export function criarArena(host, { artes = {} } = {}) {
   injetar(); window.__recortar = recortar; host.classList.add('arena');
@@ -65,8 +83,9 @@ export function criarArena(host, { artes = {} } = {}) {
   function vagaDe(u) { const lista = u.lado === 'a' ? b.aliados : b.inimigos; return Math.max(0, lista.indexOf(u)); }
   function criarNo(u, entrando) {
     const [x, y] = SLOT[u.lado][vagaDe(u)] || SLOT[u.lado][0];
+    const sprite = spriteNoCampo(u, opArt);
     const el = document.createElement('button'); el.className = `un ${u.lado}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id; el.style.cssText = `left:${x}%;top:${y}%;z-index:${Math.round(y)}`;
-    el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${caminho(u.especie, opArt)}" ${inverter(u) ? 'style="transform:scaleX(-1)"' : ''} alt="${esc(u.especie)}" onload="window.__recortar && window.__recortar(this)" onerror="this.style.visibility='visible'"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-efs"></span></span>`;
+    el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.espelhar ? 'style="transform:scaleX(-1)"' : ''} alt="${esc(u.especie)}" onload="window.__recortar && window.__recortar(this)" onerror="this.style.visibility='visible'"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-efs"></span></span>`;
     campo.append(el); nos.set(u.id, { el, u }); hpVis.set(u.id, u.hp);
     if (entrando) setTimeout(() => el.classList.remove('entrando'), 800);
   }
@@ -81,8 +100,9 @@ export function criarArena(host, { artes = {} } = {}) {
     [...b.aliados, ...b.inimigos].forEach((u) => criarNo(u, false)); if (b.evento) b.evento.mostrado = true;
   }
   function atualizar(nova, op = {}) {
+    opArt = op.artes || opArt;
     if (nova !== b) montar(nova);
-    rapido = Boolean(op.auto); opArt = op.artes || opArt;
+    rapido = Boolean(op.auto);
     if (op.arena) campo.style.backgroundImage = `url('../../../${op.arena}')`;
     // unidades novas (reforços) entram na vaga; as demais só atualizam
     for (const u of [...b.aliados, ...b.inimigos]) if (!nos.has(u.id)) criarNo(u, true);
