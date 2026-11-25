@@ -127,6 +127,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     #modal-mundo .modal-head { position: static; flex: 0 0 auto; }
     #modal-mundo .mundo-topo, #modal-mundo .mundo-abas, #modal-mundo .mundo-log, #modal-mundo .mundo-rodape { flex: 0 0 auto; }
     #modal-mundo .mundo-topo { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 0 0 8px; font-size: 13px; }
+    #modal-mundo [hidden] { display: none !important; }
     #modal-mundo b { color: var(--gold, #f3c27a); }
     #modal-mundo .mundo-abas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     #modal-mundo .mundo-abas button[aria-selected="true"] { background: #f3a458; color: #21110c; border-color: #ffc78c; }

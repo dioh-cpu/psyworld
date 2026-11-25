@@ -50,6 +50,8 @@ await teste('mundo: 50 menus abrem, cabem na tela e as ações funcionam', async
     ok(m.top >= 0 && m.bottom <= m.vh + 1, `menu ${id} estoura a tela`);
     for (let i = 0; i < m.btns; i++) { await p.evaluate((i) => document.querySelectorAll('#modal-mundo .mundo-acoes [data-acao]')[i]?.click(), i); acoes++; await p.evaluate((id) => window.regiaoMundo.abrirSistema(id), id); }
   }
+  await p.evaluate(() => window.regiaoMundo.abrirSistema('05'));
+  ok(await p.evaluate(() => getComputedStyle(document.getElementById('mundo-abas')).display === 'none'), 'as abas da grade aparecem dentro do menu de um sistema');
   ok(acoes >= 70, `poucas ações clicadas (${acoes})`);
   const s = await p.evaluate(() => { const v = window.regiao1.save().idle.jogador.sanidade; return v >= 0 && v <= 100 && !/NaN/.test(JSON.stringify(window.regiaoMundo.estado().mundo)); });
   ok(s, 'estado inválido (NaN ou sanidade fora de 0 a 100)');
