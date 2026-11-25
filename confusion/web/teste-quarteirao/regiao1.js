@@ -38,6 +38,8 @@ import {
 import { criarControladorIdleUI } from './regiao1-ui-idle.js';
 import { iniciarMundo } from './regiao1-mundo.js';
 import { iniciarLayout } from './regiao1-layout.js';
+import { iniciarCiclo } from './regiao1-ciclo.js';
+import { CICLO_C1 } from './regiao1-ciclo-c1.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
 const LARG = 106;
@@ -1582,6 +1584,8 @@ function encontrarAlvoInteracao() {
       melhor = { tipo: ent.tipo, dados: ent.dados, rotulo };
     }
   }
+  const ciclo = window.regiaoC1?.alvo(estado.x, estado.z); // coleta, canteiro e pista do ciclo de C1
+  if (ciclo && ciclo.dist < melhorDist) melhor = ciclo;
   return melhor;
 }
 
@@ -1594,6 +1598,7 @@ function executarInteracao() {
     interagirComMarco(alvo.dados);
     return;
   }
+  if (alvo.tipo === 'ciclo') { alvo.executar(); return; }
   if (alvo.tipo === 'npc') {
     const npc = alvo.dados;
     const concluidas = [];
@@ -1605,9 +1610,10 @@ function executarInteracao() {
     }
     notificarQuestsConcluidas(concluidas);
     construirEntidadesDoMapa(mapaAtual);
-    abrirDialogo(npc.nome, mapaAtual.nome, npc.dialogo, [
+    const ciclo = window.regiaoC1?.dialogo(npc); // fala que muda conforme a obra e a investigação
+    abrirDialogo(npc.nome, mapaAtual.nome, ciclo ? ciclo.falas : npc.dialogo, ciclo ? ciclo.botoes : [
       { rotulo: 'Fechar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
-    ], (pagina) => retratoNpc(npc, pagina));
+    ], (pagina) => retratoNpc(npc, Math.min(pagina, npc.expressoes.length - 1)));
     return;
   }
   if (alvo.tipo === 'pista') {
@@ -2298,6 +2304,12 @@ window.regiaoMundo = iniciarMundo({
   },
 });
 
+// Ciclo jogável de C1 (regras genéricas em regiao1-ciclo.js, dados em regiao1-ciclo-c1.js)
+window.regiaoC1 = iniciarCiclo({
+  dados: CICLO_C1, cena, camera, P, camada,
+  getMapaAtual: () => mapaAtual, getJogador: () => ({ x: estado.x, z: estado.z }), getEntidades: () => entidadesMapa,
+  getSave: () => save, salvar: salvarEstado, mostrarToast, abrirDialogo, fecharModal, atualizarHud: atualizarHudEstado,
+});
 iniciarLayout();
 if (avisoSave) setTimeout(() => mostrarToast(avisoSave, 7000), 1500);
 
