@@ -21,4 +21,4 @@ As fazendas usam lotes identificados pelo tipo de terreno e entram no teto de 30
 
 As formas atuais dos Oníricos existentes ficam na posição intermediária. Preserve os nomes já definidos para as linhas existentes. Chefes de campanha continuam com a colocação já combinada, incluindo o Kraken perto do fim do jogo.
 
-Para o Flow, exporte cada forma individualmente em pose neutra de corpo inteiro, com margem para patas, caudas, chifres e asas. Use a folha só como referência da linhagem. Gere referências direcionais individualmente quando a animação exigir.
+Para o Flow, exporte cada forma em PNG transparente individual, em 16:9, de corpo inteiro e com margem para patas, caudas, chifres e asas. Dentro de cada linhagem, mude a postura entre evoluções: posição de patas, distribuição de peso, gesto de asas ou curvatura do corpo. Mantenha um ângulo de câmera comparável. A forma final deve transmitir soberania pela postura e pela silhueta. Use a folha como referência da linhagem e gere vistas direcionais quando a animação exigir.
