@@ -4,6 +4,7 @@
 //   Efeitos dos sistemas: gold e diamantes vão para save.recompensas, sanidade para save.idle.jogador, recursos para
 //   o estoque do mundo (save.idle.mundoMeta.recursos), que o bioma da área onde o jogador está também abastece.
 import { carregarMundo, diaMundo, acaoMundo, SISTEMAS, OPCOES_ACAO } from '../mundo/index.js';
+import { iniciarMundoNoMapa } from './regiao1-mundo-mapa.js';
 import { ARTES, TIPOS_ARTE, artePorSistema, caminhoArte } from '../mundo/artes.js';
 
 export const DIA_MS = 120000;
@@ -40,7 +41,7 @@ function biomaDoMapa(mapa) {
   return 'Central';
 }
 
-export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getMapaAtual, abrirModal, fecharModal }) {
+export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getMapaAtual, abrirModal, fecharModal, mapaCtx }) {
 
   function estado() {
     const save = getSave();
@@ -289,7 +290,9 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
 
   estado();
   setInterval(relogio, 1000);
+  const noMapa = mapaCtx ? iniciarMundoNoMapa({ ...mapaCtx, getMapaAtual, getMundo: () => estado().mundo, abrirSistema: (id) => abrir(id), algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')) }) : null;
   return {
+    noMapa,
     abrir,
     abrirSistema: (id) => abrir(id),
     estado,

@@ -72,3 +72,6 @@ export const ARTES = [
 export const ARTE_BASE = 'assets/confusion/interface/mundo/';
 export const artePorSistema = (id) => ARTES.find((s) => s.id === id);
 export const caminhoArte = (sis, vaga) => `${ARTE_BASE}${sis}/${vaga}.webp`;
+
+// Sistemas com presença física no mapa (protótipo de polígono em regiao1-mundo-mapa.js); os outros 33 só têm menu.
+export const SISTEMAS_NO_MAPA = ['01', '05', '08', '13', '15', '17', '18', '19', '23', '25', '29', '30', '35', '36', '46', '47', '48'];

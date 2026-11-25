@@ -2233,6 +2233,24 @@ idleUI = criarControladorIdleUI({
 window.regiaoMundo = iniciarMundo({
   getSave: () => save, salvar: salvarEstado, mostrarToast, atualizarHud: atualizarHudEstado,
   getMapaAtual: () => mapaAtual, abrirModal, fecharModal,
+  mapaCtx: {
+    cena, camera, P, camada,
+    getJogador: () => ({ x: estado.x, z: estado.z }),
+    // piso livre com folga da colisão (grade 128x71); false se a máscara do mapa ainda não carregou
+    caminhavel: (mapaId, px, py) => {
+      const g = gradeComFolga(mapaId);
+      return Boolean(g && g[Math.min(GRID_H - 1, Math.floor(py / IMG_H * GRID_H)) * GRID_W + Math.min(GRID_W - 1, Math.floor(px / IMG_W * GRID_W))]);
+    },
+    // pontos que o mundo não pode cobrir: saídas, chegadas, spawn, NPCs, pistas, monstros e chefes do mapa
+    ocupados: (mapaId) => {
+      const m = MAPAS[mapaId]; if (!m) return [];
+      const L = [m.spawnPadrao, ...(m.marco ? [m.marco.interacao || m.marco.pos] : [])];
+      for (const sa of m.saidas) L.push([(sa.rect[0] + sa.rect[2]) / 2, (sa.rect[1] + sa.rect[3]) / 2]);
+      for (const o of Object.values(MAPAS)) for (const sa of o.saidas) if (sa.destino === mapaId && sa.chegada) L.push(sa.chegada);
+      for (const l of [NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, ENTIDADES_BOSS]) for (const e of l) if (e.mapa === mapaId) L.push(e.pos);
+      return L;
+    },
+  },
 });
 
 window.regiao1 = {
