@@ -4,6 +4,7 @@
 //   Efeitos dos sistemas: gold e diamantes vão para save.recompensas, sanidade para save.idle.jogador, recursos para
 //   o estoque do mundo (save.idle.mundoMeta.recursos), que o bioma da área onde o jogador está também abastece.
 import { carregarMundo, diaMundo, acaoMundo, SISTEMAS, OPCOES_ACAO } from '../mundo/index.js';
+import { protecaoContraPragas } from '../mundo/sistemas-01.js';
 import { iniciarMundoNoMapa } from './regiao1-mundo-mapa.js';
 import { ARTES, TIPOS_ARTE, artePorSistema, caminhoArte } from '../mundo/artes.js';
 
@@ -193,7 +194,8 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
   function desenhar() {
     const est = estado();
     const rec = Object.entries(est.meta.recursos).map(([k, v]) => `${NOMES_RECURSO[k] || k} <b>${v}</b>`).join(' · ');
-    painel.querySelector('#mundo-topo').innerHTML = `<span>Dia <b>${est.meta.dia}</b></span><span>${rec}</span>`;
+    const mm = modificadores();
+    painel.querySelector('#mundo-topo').innerHTML = `<span>Dia <b>${est.meta.dia}</b></span><span>${rec}</span><span>Na caça: ${mm.notas.length ? esc(mm.notas.join(', ')) : 'sem efeitos'}</span>`;
     const corpo = painel.querySelector('#mundo-corpo');
     const abas = painel.querySelector('#mundo-abas');
     if (aberto) { abas.hidden = true; painel.querySelector('#mundo-titulo').textContent = 'Mundo'; corpo.innerHTML = menuSistemaHtml(est, aberto); corpo.scrollTop = 0; ligarArtes(corpo); return; }
@@ -291,8 +293,42 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
   estado();
   setInterval(relogio, 1000);
   const noMapa = mapaCtx ? iniciarMundoNoMapa({ ...mapaCtx, getMapaAtual, getMundo: () => estado().mundo, abrirSistema: (id) => abrir(id), algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')) }) : null;
+  // Efeitos do mundo sobre a caçada: praga enfraquece (refúgios protegem), clima mexe no dano e no ouro.
+  function modificadores() {
+    const m = estado().mundo;
+    const protecao = protecaoContraPragas(m['05']);
+    let dano = 1, ouro = 1;
+    const notas = [];
+    if (m['15']?.ativa) { const f = (m['15'].nivel || 0) / 400 * (1 - protecao); dano *= 1 - f; if (f > 0.005) notas.push(`praga −${Math.round(f * 100)}% dano`); }
+    const clima = m['07']?.clima;
+    if (clima === 'tempestade') { dano *= 0.92; notas.push('tempestade −8% dano'); }
+    else if (clima === 'neve') { dano *= 0.97; notas.push('neve −3% dano'); }
+    else if (clima === 'sol') { ouro *= 1.05; notas.push('sol +5% ouro'); }
+    return { dano, ouro, notas };
+  }
+
+  // Cada abate alimenta o mundo: o ecossistema perde um monstro e o bioma devolve recursos (menos se a espécie está rara).
+  const POP_RARA = 3;
+  function aoAbater(morto) {
+    const est = estado();
+    const pop = est.mundo['02']?.populacao;
+    const esp = morto?.especie;
+    const rara = pop && esp in pop && pop[esp] <= POP_RARA;
+    if (pop && esp in pop) pop[esp] = Math.max(0, pop[esp] - 1);
+    const b = BIOMA_RECURSOS[biomaDoMapa(getMapaAtual?.())];
+    const chaves = Object.keys(b);
+    const k = chaves[Math.floor(Math.random() * chaves.length)];
+    const ganho = rara ? 0 : 1 + (Math.random() < 0.25 ? 1 : 0);
+    if (ganho) est.meta.recursos[k] = (est.meta.recursos[k] || 0) + ganho;
+    const m = est.meta; m.abates = (m.abates || 0) + 1;
+    if (rara && !m.avisouRaro) { m.avisouRaro = true; mostrarToast?.(`🌍 ${esp} está raro nesta região: a caça rende menos até a população se recuperar.`, 3600); }
+    if (m.abates % 10 === 0) salvar?.();
+  }
+
   return {
     noMapa,
+    modificadores,
+    aoAbater,
     abrir,
     abrirSistema: (id) => abrir(id),
     estado,

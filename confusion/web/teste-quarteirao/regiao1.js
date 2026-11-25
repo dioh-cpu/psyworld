@@ -1371,8 +1371,21 @@ function celulaCaminhavelMaisProxima(grid, gx0, gy0) {
 }
 
 // Pathfinding BFS leve na grade 128x71 para contornar pedras, lagoas e pedestais
+// Zera na grade as células cobertas por objetos sólidos do mundo, para o caminho contorná-los
+function comObstaculosDoMundo(grid) {
+  const cs = window.regiaoMundo?.noMapa?.circulosPx?.();
+  if (!grid || !cs?.length) return grid;
+  const g = grid.slice();
+  for (const c of cs) {
+    for (let gy = 0; gy < GRID_H; gy++) for (let gx = 0; gx < GRID_W; gx++) {
+      if (Math.hypot((gx + 0.5) / GRID_W * IMG_W - c.px, (gy + 0.5) / GRID_H * IMG_H - c.py) < c.r + 6) g[gy * GRID_W + gx] = 0;
+    }
+  }
+  return g;
+}
+
 function calcularCaminhoMundo(destX, destZ, opcoes = {}) {
-  const grid = opcoes.grid || (mapaAtual ? cacheGrids.get(mapaAtual.id) : null);
+  const grid = comObstaculosDoMundo(opcoes.grid || (mapaAtual ? cacheGrids.get(mapaAtual.id) : null));
   const semCaminho = () => (opcoes.estrito ? null : [{ x: destX, z: destZ }]);
   if (!grid) return semCaminho();
 
@@ -1920,7 +1933,8 @@ function golpearAlvoAuto(agora, idle) {
   const st = calcularStatusDetalhado(save);
   const hab = escolherHabilidadeAuto('Noctarn', alvoAutoCaca.dados.especie, idle.autoCaca.preferirVantagem);
   const crit = Math.random() < 0.22;
-  const dano = Math.max(12, Math.round(st.atk * hab.mult * (crit ? 1.5 : 1) * (0.9 + Math.random() * 0.2)));
+  const mundoMod = window.regiaoMundo?.modificadores?.() || { dano: 1, ouro: 1 };
+  const dano = Math.max(12, Math.round(st.atk * hab.mult * mundoMod.dano * (crit ? 1.5 : 1) * (0.9 + Math.random() * 0.2)));
   alvoAutoCaca._hp -= dano;
 
   if (!algumModalAberto()) {
@@ -1931,6 +1945,9 @@ function golpearAlvoAuto(agora, idle) {
   if (alvoAutoCaca._hp <= 0) {
     const morto = alvoAutoCaca.dados;
     const res = resolverAbateAuto(save, morto);
+    const ouroExtra = Math.round(res.gold * (mundoMod.ouro - 1));
+    if (ouroExtra) { save.recompensas.gold = Math.max(0, save.recompensas.gold + ouroExtra); res.gold += ouroExtra; }
+    window.regiaoMundo?.aoAbater?.(morto);
     if (!algumModalAberto()) {
       const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
       idleUI?.spawnFlutuante(pt.x, pt.y - 42, `+${res.gold}g  +${res.xp} XP`, '#4ade80', false);
@@ -2147,6 +2164,8 @@ function quadro(agora) {
     return;
   }
 
+  const emp = window.regiaoMundo?.noMapa?.empurrar(estado.x, estado.z, RAIO); // objetos sólidos do mundo
+  if (emp) { estado.x = emp.x; estado.z = emp.z; }
   jogador.position.set(estado.x, camada(estado.z), estado.z);
   sombra.position.set(estado.x, camada(estado.z) - 0.005, estado.z);
   if (save.forma === 'azazel') {
