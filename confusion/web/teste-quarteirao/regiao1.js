@@ -62,7 +62,8 @@ const SEN = Math.sin(THREE.MathUtils.degToRad(INCLINACAO));
 const COS = Math.cos(THREE.MathUtils.degToRad(INCLINACAO));
 const ALTURA_MAX = ALT * SEN; // ~45.3 (100% do mapa)
 const ALTURA_MIN = 16;
-const ALTURA_PAISAGEM_PADRAO = 28; // calibrado em C0, C1, PC1, CC7 e BOSS_E
+const ZOOM_PADRAO = 1.97;          // 197%: zoom aprovado em teste, padrão em paisagem
+const ALTURA_PAISAGEM_PADRAO = ALTURA_MAX / ZOOM_PADRAO;
 const ALTURA_RETRATO_PADRAO = 32;  // retrato equilibrado com espaço à frente
 const OFFSET_RETRATO_Z = -4.2;     // desloca enquadramento ao norte em retrato para ver o que vem pela frente
 const DISTANCIA_CAMERA = 60;
@@ -439,6 +440,32 @@ function adicionarBillboard(tex, x, z, largura, altura, renderOrder = 3) {
   return m;
 }
 
+// NPCs têm o tamanho do Azazel (ALTURA_PERSONAGEM) +7%; raças pequenas usam `proporcao` (ex.: goblins 0.9)
+const FATOR_NPC = 1.07;
+const alturaDoNpc = (npc) => ALTURA_PERSONAGEM * FATOR_NPC * (npc.proporcao ?? 1);
+
+function criarMonstroSelvagem(m) {
+  const w = P(m.pos[0], m.pos[1]);
+  const tex = carregarTextura(m.sprite);
+  const mesh = adicionarBillboard(tex, w.x, w.z, 6.4, 6.4, 3);
+  const ent = { tipo: 'wild', dados: m, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 3.1, raioInteracao: 5.8 };
+  entidadesMapa.push(ent);
+  return ent;
+}
+
+// Remove só uma entidade (o monstro abatido), sem recriar NPCs e vídeos, que piscavam a cada abate do auto-caça
+function removerEntidade(ent) {
+  const i = entidadesMapa.indexOf(ent);
+  if (i >= 0) entidadesMapa.splice(i, 1);
+  grupoEntidades.remove(ent.mesh);
+  ent.mesh.userData.limparIdle?.();
+  ent.mesh.traverse((obj) => {
+    obj.geometry?.dispose();
+    if (obj.material?.map?.isCanvasTexture) obj.material.map.dispose();
+    obj.material?.dispose();
+  });
+}
+
 function construirEntidadesDoMapa(mapa) {
   limparEntidades();
 
@@ -455,7 +482,8 @@ function construirEntidadesDoMapa(mapa) {
     if (npc.mapa !== mapa.id) continue;
     const w = P(npc.pos[0], npc.pos[1]);
     const temQuest = Boolean(npc.quest && save.quests[npc.quest] !== 'concluida');
-    const mesh = adicionarBillboard(carregarTextura(npc.sprite), w.x, w.z, npc.altura * 0.8, npc.altura);
+    const altNpc = alturaDoNpc(npc);
+    const mesh = adicionarBillboard(carregarTextura(npc.sprite), w.x, w.z, altNpc * 0.8, altNpc);
     if (npc.flutua) mesh.position.y += 0.5;
     if (npc.idle) adicionarIdleNpc(mesh, npc.idle);
     const placa = new THREE.Mesh(
@@ -464,10 +492,10 @@ function construirEntidadesDoMapa(mapa) {
         map: criarTexturaNomeNpc(npc, temQuest), transparent: true, depthTest: false, depthWrite: false,
       }),
     );
-    placa.position.y = npc.altura / 2 + 0.5;
+    placa.position.y = altNpc / 2 + 0.5;
     placa.renderOrder = 4;
     mesh.add(placa);
-    entidadesMapa.push({ tipo: 'npc', dados: npc, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 5.4 });
+    entidadesMapa.push({ tipo: 'npc', dados: npc, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 6.2 });
   }
 
   // 3. Pistas / Objetos de Quest
@@ -482,10 +510,7 @@ function construirEntidadesDoMapa(mapa) {
   // 4. Monstros selvagens visíveis nas áreas abertas
   for (const m of MONSTROS_SELVAGENS) {
     if (m.mapa !== mapa.id || monstrosDerrotadosSessao.has(m.id)) continue;
-    const w = P(m.pos[0], m.pos[1]);
-    const tex = carregarTextura(m.sprite);
-    const mesh = adicionarBillboard(tex, w.x, w.z, 6.4, 6.4, 3);
-    entidadesMapa.push({ tipo: 'wild', dados: m, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 3.1, raioInteracao: 5.8 });
+    criarMonstroSelvagem(m);
   }
 
   // 5. Boss da arena (se ainda não derrotado)
@@ -1927,14 +1952,16 @@ function golpearAlvoAuto(agora, idle) {
     monstrosDerrotadosSessao.add(morto.id);
     const idRespawn = morto.id;
     const mapaOrigem = mapaAtual?.id;
+    const abatido = alvoAutoCaca;
     alvoAutoCaca = null;
     resetarNavAutoCaca();
-    construirEntidadesDoMapa(mapaAtual);
+    removerEntidade(abatido);
     atualizarHudEstado();
     salvarEstado();
     setTimeout(() => {
       monstrosDerrotadosSessao.delete(idRespawn);
-      if (mapaAtual?.id === mapaOrigem) construirEntidadesDoMapa(mapaAtual);
+      const jaExiste = entidadesMapa.some((e) => e.tipo === 'wild' && e.dados.id === idRespawn);
+      if (mapaAtual?.id === mapaOrigem && !jaExiste) criarMonstroSelvagem(morto);
     }, 5000);
   }
 }

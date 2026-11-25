@@ -72,8 +72,12 @@
 #btn-interagir { border-color: var(--gold); color: var(--gold); }
 #btn-transformar.ativo { background: #37284c; border-color: #aa91d5; }
 #btn-autocaca.ativo { background: #235a48; border-color: #7ac8a3; }
-#joy { background: #151d20aa; border-color: #b89b7077; }
-#joy-knob { background: #dac19d; box-shadow: inset 0 0 0 2px #8e5b47, 0 2px 6px #0008; }
+/* Joystick invisível: a área continua recebendo o toque, só não aparece na tela */
+#joy { background: transparent; border-color: transparent; box-shadow: none; -webkit-tap-highlight-color: transparent; }
+#joy-knob { background: transparent; box-shadow: none; opacity: 0; }
+/* Buffs ficam acima da área do joystick para sempre poderem ser tocados */
+#barra-buffs { z-index: 9; }
+.buff-pill { min-height: 28px; }
 #aviso-girar, #overlay-economia { background-color: #0e1619; }
 
 .modal-bg {
@@ -395,4 +399,56 @@ input:not([type="checkbox"]):not([type="range"]), select {
 }
 @media (max-height: 460px) {
   .conversa-npc #dlg-texto { min-height: 5em; }
+}
+
+/* ---- Conversa com NPC em paisagem: tudo cabe na tela, sem rolagem e sem nada escondido ----
+   Cabeçalho e rodapé fixos; o retrato usa a altura que sobra; só o texto rola se a fala for muito longa. */
+@media (orientation: landscape) {
+  #modal-dialogo.conversa-npc .modal-card {
+    width: min(1040px, 100%);
+    min-height: 0;
+    max-height: none;
+    height: calc(100dvh - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)));
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow: hidden;
+    padding: clamp(8px, 2.4dvh, 18px) clamp(12px, 2.4vw, 22px);
+  }
+  #modal-dialogo.conversa-npc .modal-head {
+    position: static;
+    min-height: 0;
+    margin-bottom: clamp(6px, 1.6dvh, 12px);
+    padding: clamp(4px, 1.2dvh, 8px) 10px;
+    align-items: center;
+  }
+  #modal-dialogo.conversa-npc .modal-head h3 { font-size: clamp(17px, 4.6dvh, 28px); padding-top: 0; }
+  #modal-dialogo.conversa-npc .btn-fechar { min-height: 0; height: clamp(32px, 7dvh, 44px); }
+  .conversa-npc .dialogo-corpo {
+    min-height: 0;
+    margin: 0;
+    padding: 2px 0;
+    align-items: stretch;
+    gap: clamp(14px, 3vw, 30px);
+  }
+  .conversa-npc #dlg-retrato:not([hidden]) {
+    flex: 0 0 auto;
+    width: min(40%, 56dvh);
+    height: auto;
+    max-height: 100%;
+    aspect-ratio: 1;
+    min-height: 0;
+    align-self: center;
+    object-fit: cover;
+  }
+  .conversa-npc .dialogo-fala {
+    min-height: 0;
+    overflow-y: auto;
+    align-self: center;
+    max-height: 100%;
+    padding-right: 4px;
+  }
+  .conversa-npc #dlg-texto { min-height: 0; font-size: clamp(15px, 4dvh, 21px); line-height: 1.5; }
+  .conversa-npc #dlg-sub { font-size: clamp(11px, 2.6dvh, 14px); }
+  .conversa-npc .dialogo-rodape { padding-top: clamp(6px, 1.6dvh, 12px); flex-wrap: wrap; }
+  .conversa-npc #dlg-acoes button { min-height: clamp(34px, 8dvh, 46px); }
 }
