@@ -303,6 +303,9 @@ export function registrarCodexEspecie(idle, especie, { abate = false, captura = 
 }
 
 // ---- Status Explicáveis (breakdown de cada bônus + pontos de Domador) ----
+// Ovos são raros: os Oníricos vêm do gacha (diamantes) e do que se choca na fazenda. Ajuste aqui depois de jogar.
+export const OVOS = { fatorDrop: 0.12, abatesPorOvoOffline: 300 };
+
 export function calcularStatusDetalhado(save) {
   const idle = garantirEstadoIdle(save);
   const nivel = nivelDeXp(idle.jogador.xp);
@@ -422,7 +425,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
   }
 
   let ovoDrop = false;
-  if (idle.autoCaca.coletarOvos && dropsEgg({ rarity: rar }, rng(), st.dropOvoExtra)) {
+  if (idle.autoCaca.coletarOvos && rng() < OVOS.fatorDrop && dropsEgg({ rarity: rar }, rng(), st.dropOvoExtra)) {
     ovoDrop = true;
     idle.mochila.ovos.push({ especie: monstro.especie, forma: 'natural', obtidoEm: Date.now() });
     avancarDiaria(idle, 'ovos', 1);
@@ -453,7 +456,7 @@ export function calcularGanhoOffline(save, nivelArea = 6, agoraMs = Date.now()) 
   const abates = Math.max(1, Math.floor(minutos * 1.6));
   const gold = Math.round(abates * (12 + nivelArea * 2.5));
   const xp = Math.round(abates * (14 + nivelArea * 4));
-  const ovos = Math.floor(abates / 22);
+  const ovos = Math.floor(abates / OVOS.abatesPorOvoOffline);
   const colheitaDia = Object.values(gatherDay('minerar', 2)).reduce((a, b) => a + b, 0) || 12;
   const colheitaFazenda = save.desbloqueios?.fazenda
     ? Math.max(1, Math.round(colheitaDia * (minutos / 1440) * (1 + codex.fazendaPct / 100)))

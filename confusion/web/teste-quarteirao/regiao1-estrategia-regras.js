@@ -30,10 +30,11 @@ export function criarUnidade({ id, especie, nivel, lado, papeis, bonus = {} }) {
 }
 
 // ---------- formação inimiga (variável, dentro de faixas previsíveis) ----------
-export function gerarInimigos(fase, papeis, rng) {
+export function gerarInimigos(fase, papeis, rng, extras = []) {
   const n = entre(rng, fase.inimigos[0], fase.inimigos[1]);
   const lista = [];
-  for (let i = 0; i < n; i++) lista.push(criarUnidade({ id: `i${i}`, especie: sorteia(rng, fase.especies), nivel: entre(rng, fase.nivel[0], fase.nivel[1]), lado: 'i', papeis }));
+  const pool = [...fase.especies, ...extras]; // inimigos já avistados voltam a aparecer
+  for (let i = 0; i < n; i++) lista.push(criarUnidade({ id: `i${i}`, especie: sorteia(rng, pool), nivel: entre(rng, fase.nivel[0], fase.nivel[1]), lado: 'i', papeis }));
   return lista;
 }
 

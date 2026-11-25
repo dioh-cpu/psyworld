@@ -9,6 +9,7 @@ export const ESTRATEGIA_C1 = {
   prosperidadeBase: 40,
   materiais: { madeira: { nome: 'Madeira', icone: '🪵' }, pedra: { nome: 'Pedra', icone: '🪨' } },
   inicial: { madeira: 0, pedra: 0 },
+  vagasIniciais: 2, // vagas de equipe no começo; cada fase vencida pela primeira vez abre mais uma (máximo 6)
 
   // Papel de cada espécie no combate: ataque, defesa (atrai golpes) ou suporte (cura aliados)
   papeis: {
@@ -36,7 +37,7 @@ export const ESTRATEGIA_C1 = {
   // Estruturas. custo = nível 1; cada nível seguinte custa +60%. prosperidade = ganho por nível. bonus = por nível.
   estruturas: [
     {
-      id: 'casas', categoria: 'aldeias', nome: 'Casas', emoji: '🏘️', niveis: 3, custo: { madeira: 24, pedra: 5 }, prosperidade: [10, 8, 6],
+      id: 'casas', categoria: 'aldeias', nome: 'Casas', emoji: '🏘️', niveis: 3, custo: { madeira: 12, pedra: 3 }, prosperidade: [10, 8, 6],
       beneficio: 'Reconstrói moradias: mais prosperidade e mais moradores voltando à cidade.',
       visual: { vazio: { arte: { sis: '01', vaga: 'vila-ruinas' }, nome: 'Casas em ruínas' }, niveis: [{ arte: { sis: '01', vaga: 'vila-saudavel' }, escala: 1 }, { arte: { sis: '01', vaga: 'vila-saudavel' }, escala: 1.12 }, { arte: { sis: '01', vaga: 'vila-saudavel' }, escala: 1.24 }] },
     },
@@ -57,22 +58,23 @@ export const ESTRATEGIA_C1 = {
     },
   ],
 
-  // Rotas: 3 fases cada, com dificuldade crescente. Faixas previsíveis; vitória paga uma vez e pode liberar um Onírico novo.
+  // Rotas: 3 fases cada, com dificuldade crescente. Faixas previsíveis. A primeira vitória em cada fase paga uma vez e `libera`:
+  // um Onírico novo passa a aparecer como INIMIGO e abre mais uma vaga na equipe. Oníricos do jogador vêm do gacha e dos ovos.
   rotas: [
     {
       id: 'floresta', nome: 'Trilha da Floresta', icone: '🌲', material: 'madeira', descricao: 'Madeira para as casas. Inimigos de planta, no começo fracos.',
       fases: [
-        { nome: 'Clareira', inimigos: [2, 2], nivel: [1, 1], especies: ['Brotavel', 'Sementil', 'Brotavel', 'Noctarn'], material: { tipo: 'madeira', faixa: [10, 14] }, secundario: { tipo: 'pedra', faixa: [2, 4] }, libera: { especie: 'Ignavor', nivel: 4 } },
-        { nome: 'Bosque denso', inimigos: [2, 3], nivel: [2, 3], especies: ['Brotavel', 'Sementil', 'Ignavor', 'Noctarn'], material: { tipo: 'madeira', faixa: [14, 19] }, secundario: { tipo: 'pedra', faixa: [3, 5] }, libera: { especie: 'Brotavel', nivel: 5 } },
-        { nome: 'Coração da mata', inimigos: [4, 6], nivel: [4, 6], especies: ['Brotavel', 'Florivel', 'Ignavor', 'Noctarn', 'Noctarn'], material: { tipo: 'madeira', faixa: [20, 28] }, secundario: { tipo: 'pedra', faixa: [4, 6] }, libera: { especie: 'Vaelith', nivel: 5 } },
+        { nome: 'Clareira', inimigos: [2, 2], nivel: [1, 1], especies: ['Brotavel', 'Sementil', 'Brotavel', 'Noctarn'], material: { tipo: 'madeira', faixa: [10, 14] }, secundario: { tipo: 'pedra', faixa: [2, 4] }, libera: { inimigo: 'Ignavor' } },
+        { nome: 'Bosque denso', inimigos: [2, 3], nivel: [2, 3], especies: ['Brotavel', 'Sementil', 'Ignavor', 'Noctarn'], material: { tipo: 'madeira', faixa: [14, 19] }, secundario: { tipo: 'pedra', faixa: [3, 5] }, libera: { inimigo: 'Florivel' } },
+        { nome: 'Coração da mata', inimigos: [4, 5], nivel: [3, 5], especies: ['Brotavel', 'Florivel', 'Ignavor', 'Noctarn', 'Noctarn'], material: { tipo: 'madeira', faixa: [20, 28] }, secundario: { tipo: 'pedra', faixa: [4, 6] }, libera: { inimigo: 'Vaelith' } },
       ],
     },
     {
       id: 'pedreira', nome: 'Pedreira da Caverna', icone: '⛏️', material: 'pedra', descricao: 'Pedra para quartel e enfermaria. Inimigos mais resistentes.',
       fases: [
-        { nome: 'Entrada da mina', inimigos: [2, 2], nivel: [2, 3], especies: ['Cristalino', 'Ignavor', 'Noctarn'], material: { tipo: 'pedra', faixa: [10, 14] }, secundario: { tipo: 'madeira', faixa: [2, 4] }, libera: { especie: 'Cristalino', nivel: 5 } },
-        { nome: 'Galeria funda', inimigos: [3, 5], nivel: [4, 6], especies: ['Cristalino', 'Ignavor', 'Noctarn', 'Solarin'], material: { tipo: 'pedra', faixa: [14, 20] }, secundario: { tipo: 'madeira', faixa: [3, 5] }, libera: { especie: 'Solarin', nivel: 6 } },
-        { nome: 'Veio de cristal', inimigos: [5, 6], nivel: [5, 7], especies: ['Cristalino', 'Ignavor', 'Noctarn', 'Solarin', 'Lumivela'], material: { tipo: 'pedra', faixa: [22, 30] }, secundario: { tipo: 'madeira', faixa: [4, 6] }, libera: { especie: 'Lumivela', nivel: 6 } },
+        { nome: 'Entrada da mina', inimigos: [2, 2], nivel: [2, 3], especies: ['Cristalino', 'Ignavor', 'Noctarn'], material: { tipo: 'pedra', faixa: [10, 14] }, secundario: { tipo: 'madeira', faixa: [2, 4] }, libera: { inimigo: 'Cristalino' } },
+        { nome: 'Galeria funda', inimigos: [3, 5], nivel: [4, 6], especies: ['Cristalino', 'Ignavor', 'Noctarn', 'Solarin'], material: { tipo: 'pedra', faixa: [14, 20] }, secundario: { tipo: 'madeira', faixa: [3, 5] }, libera: { inimigo: 'Solarin' } },
+        { nome: 'Veio de cristal', inimigos: [4, 6], nivel: [4, 6], especies: ['Cristalino', 'Ignavor', 'Noctarn', 'Solarin', 'Lumivela'], material: { tipo: 'pedra', faixa: [22, 30] }, secundario: { tipo: 'madeira', faixa: [4, 6] }, libera: { inimigo: 'Lumivela' } },
       ],
     },
   ],
