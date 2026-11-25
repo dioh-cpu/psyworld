@@ -7,14 +7,37 @@ import { criarCtx, tocarEvento, duracaoEstimada } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE } from '../species.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-// pontos (em % do campo) onde cada Onírico pisa: formação em diagonal, como no modelo 4×4
-const SLOT = { a: [[35, 49], [35, 79], [14, 49], [14, 79]], i: [[65, 49], [65, 79], [86, 49], [86, 79]] };
-// Recorta cada arte pela área opaca, para que todos os Oníricos tenham a mesma escala e os pés na mesma linha do chão
+// Colunas espelhadas e escalonadas para deixar visíveis os combatentes das duas fileiras.
+const COLUNAS = { a: [42, 32, 22, 14], i: [58, 68, 78, 86] };
+// Mede a silhueta visível para encaixá-la na vaga com a proporção da arte.
 const bboxCache = new Map();
 function recortar(img) {
-  const src = img.currentSrc || img.src; let b = bboxCache.get(src);
-  if (!b) { const w = 96, h = Math.max(8, Math.round(96 * (img.naturalHeight / Math.max(1, img.naturalWidth)))); const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h); let d; try { d = x.getImageData(0, 0, w, h).data; } catch { return; } let x0 = w, y0 = h, x1 = 0, y1 = 0; for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (d[(j * w + i) * 4 + 3] > 20) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; } if (x1 <= x0 || y1 <= y0) return; b = { x0: x0 / w, y0: y0 / h, x1: (x1 + 1) / w, y1: (y1 + 1) / h, r: ((x1 + 1 - x0) * img.naturalWidth / w) / (((y1 + 1 - y0) * img.naturalHeight) / h) }; bboxCache.set(src, b); }
-  img.style.objectViewBox = `inset(${b.y0 * 100}% ${(1 - b.x1) * 100}% ${(1 - b.y1) * 100}% ${b.x0 * 100}%)`; img.style.aspectRatio = String(b.r); img.style.height = 'clamp(56px, 24vh, 170px)'; img.style.width = 'auto'; img.style.visibility = 'visible';
+  img.style.visibility = 'visible';
+  const src = img.currentSrc || img.src;
+  let b = bboxCache.get(src);
+  if (!b) {
+    const { naturalWidth, naturalHeight } = img;
+    const w = 96, h = Math.max(8, Math.round(w * naturalHeight / naturalWidth));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    let pixels;
+    try { pixels = ctx.getImageData(0, 0, w, h).data; } catch { return; }
+    let x0 = w, y0 = h, x1 = 0, y1 = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (pixels[(y * w + x) * 4 + 3] <= 20) continue;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x);
+      y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+    if (x1 <= x0 || y1 <= y0) return;
+    const largura = (x1 + 1 - x0) * naturalWidth / w;
+    const altura = (y1 + 1 - y0) * naturalHeight / h;
+    b = { x0: x0 / w, y0: y0 / h, x1: (x1 + 1) / w, y1: (y1 + 1) / h, r: largura / altura };
+    bboxCache.set(src, b);
+  }
+  img.style.objectViewBox = `inset(${b.y0 * 100}% ${(1 - b.x1) * 100}% ${(1 - b.y1) * 100}% ${b.x0 * 100}%)`;
+  img.closest('.un')?.style.setProperty('--proporcao-sprite', b.r);
 }
 // Perfis de batalha associados à arte original, inclusive quando ela vem de uma fase ou chefe.
 const PERFIS_NO_CAMPO = {
@@ -22,6 +45,7 @@ const PERFIS_NO_CAMPO = {
   'assets/confusion/interface/personagens/espirito-boss-atual.webp': {
     arquivo: 'assets/confusion/interface/batalha/espirito-esquerda.webp',
     direcao: 'esquerda',
+    largura: 1.18,
   },
 };
 // Sentido das demais artes em que o corpo já aparece de lado ou em três quartos.
@@ -31,16 +55,17 @@ const OLHA = {
 };
 const olhaDe = (esp) => (OLHA.direita.includes(esp) ? 'direita' : OLHA.esquerda.includes(esp) ? 'esquerda' : 'frente');
 const CSS = `
-.arena { position: absolute; inset: 0; overflow: hidden; background: #1a0f22; color: #fff3e7; font: 12px system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
-.arena .tb-campo { position: absolute; inset: 0; background: center / cover no-repeat #24162b; will-change: transform; }
-.arena .un { position: absolute; width: clamp(92px, 16vw, 170px); display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%); background: none; border: 0; padding: 0; color: inherit; cursor: default; transition: opacity .5s; }
-.arena .un-fig { position: relative; display: flex; justify-content: center; align-items: flex-end; width: 100%; order: 2; } .arena .un-fig img { width: auto; height: clamp(56px, 24vh, 170px); max-width: 100%; object-fit: contain; visibility: hidden; filter: drop-shadow(0 4px 3px rgba(0,0,0,.55)); }
-.arena .un-sombra { position: absolute; left: 12%; right: 12%; bottom: -3%; height: 9%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent); }
+.arena { position: absolute; inset: 0; overflow: hidden; background: #1a0f22; color: #fff3e7; font: 12px system-ui, sans-serif; user-select: none; -webkit-user-select: none; --altura-botao: clamp(44px, 12vh, 62px); --espaco-rodape: calc(var(--altura-botao) + 16px + env(safe-area-inset-bottom, 0px)); }
+.arena .tb-campo { position: absolute; inset: 0; background: center bottom / cover no-repeat #24162b; will-change: transform; }
+.arena .un { position: absolute; top: 60%; z-index: 49; width: var(--largura-vaga); display: flex; flex-direction: column; align-items: center; translate: -50% -100%; background: none; border: 0; padding: 0; color: inherit; cursor: default; transition: opacity .5s; --largura-vaga: clamp(80px, 14vw, 170px); --altura-sprite: clamp(55px, 22vh, 156px); --largura-sprite: min(var(--largura-vaga), calc(var(--altura-sprite) * var(--proporcao-sprite, 1))); }
+.arena .un.frente { top: min(86%, calc(100% - var(--espaco-rodape) - 6px)); z-index: 79; --altura-sprite: clamp(58px, 24vh, 170px); }
+.arena .un-fig { position: relative; display: flex; justify-content: center; align-items: flex-end; width: 100%; order: 2; } .arena .un-fig img { width: var(--largura-sprite); height: calc(var(--largura-sprite) / var(--proporcao-sprite, 1)); object-fit: contain; visibility: hidden; filter: drop-shadow(0 4px 3px rgba(0,0,0,.55)); }
+.arena .un-sombra { position: absolute; left: 50%; bottom: -3%; width: calc(var(--largura-sprite) * .76); height: 9%; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent); }
 .arena .un.vez .un-sombra { background: radial-gradient(closest-side, rgba(255,214,140,.0) 60%, #ffd58c 64%, transparent 70%); border: 2px solid #ffd58c; box-shadow: 0 0 10px #ffd58c88; }
 .arena .un.alvo .un-sombra { border: 2px solid #fb7185; background: radial-gradient(closest-side, transparent 60%, #fb7185 64%, transparent 70%); }
 .arena .un.morto { opacity: 0; pointer-events: none; } .arena .un.entrando { animation: tb-entra .7s ease-out; }
-@keyframes tb-entra { from { opacity: 0; transform: translate(calc(-50% + 70px), -100%); } to { opacity: 1; transform: translate(-50%, -100%); } }
-.arena .un-hud { position: relative; order: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; width: 78%; min-width: 78px; margin-bottom: 2px; pointer-events: none; z-index: 3; }
+@keyframes tb-entra { from { opacity: 0; transform: translateX(70px); } to { opacity: 1; transform: translateX(0); } }
+.arena .un-hud { position: relative; order: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; width: 68%; min-width: 74px; margin-bottom: 2px; pointer-events: none; z-index: 3; }
 .arena .un-lin { display: flex; align-items: center; gap: 3px; width: 100%; } .arena .un-nv { flex: 0 0 auto; min-width: 22px; padding: 1px 3px; text-align: center; font-weight: 800; font-size: 11px; background: rgba(20,12,30,.85); border: 1px solid #c8b08a; border-radius: 4px; }
 .arena .un-hp { flex: 1; height: 7px; background: rgba(10,5,16,.85); border: 1px solid rgba(255,255,255,.35); border-radius: 4px; overflow: hidden; } .arena .un-hp i { display: block; height: 100%; background: linear-gradient(#6ee7b7, #10b981); transition: width .35s; } .arena .un.i .un-hp i { background: linear-gradient(#fda4af, #e11d48); }
 .arena .un-efs { display: flex; gap: 1px; font-size: 11px; min-height: 13px; filter: drop-shadow(0 1px 1px #000); } .arena .un-efs span { background: rgba(10,5,16,.7); border-radius: 4px; padding: 0 2px; line-height: 13px; }
@@ -50,9 +75,9 @@ const CSS = `
 .arena .tb-ordem span img { width: 100%; height: 100%; object-fit: contain; transform: rotate(-45deg) scale(1.3); }
 .arena .tb-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; } .arena .tb-btns button { min-height: 32px; padding: 3px 12px; font-size: 12px; border: 1px solid #b89a6b; border-radius: 7px; background: rgba(33,19,41,.85); color: #fff3e7; } .arena .tb-btns button.on { background: #f3a458; color: #21110c; }
 .arena .tb-fila { position: absolute; left: 50%; transform: translateX(-50%); top: clamp(46px, 13vh, 64px); display: none; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(20,12,30,.8); border: 1px solid #6b4a52; border-radius: 8px; z-index: 40; } .arena .tb-fila img { width: clamp(24px, 7vh, 38px); height: clamp(24px, 7vh, 38px); object-fit: contain; }
-.arena .tb-base { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent, rgba(12,6,18,.85) 40%); z-index: 40; }
+.arena .tb-base { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); min-height: var(--espaco-rodape); box-sizing: border-box; background: linear-gradient(transparent, rgba(12,6,18,.85) 40%); z-index: 40; }
 .arena .tb-ativo { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 1 28%; } .arena .tb-ativo img { width: clamp(34px, 11vh, 56px); height: clamp(34px, 11vh, 56px); object-fit: contain; } .arena .tb-ativo b { display: block; font: 700 clamp(14px, 3.4vh, 20px) Georgia, serif; } .arena .tb-ativo small { display: block; opacity: .9; }
-.arena .tb-hab { display: flex; gap: 6px; flex: 1; justify-content: flex-end; } .arena .tb-hab button { position: relative; flex: 0 1 clamp(78px, 17vw, 150px); min-height: clamp(44px, 14vh, 64px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px 5px; border: 1px solid #8e6dbd; border-radius: 9px; background: linear-gradient(#3a2750, #241633); color: #fff3e7; font-size: clamp(10px, 2.6vh, 13px); line-height: 1.15; }
+.arena .tb-hab { display: flex; gap: 6px; flex: 1; justify-content: flex-end; } .arena .tb-hab button { position: relative; flex: 0 1 clamp(78px, 17vw, 150px); min-height: var(--altura-botao); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px 5px; border: 1px solid #8e6dbd; border-radius: 9px; background: linear-gradient(#3a2750, #241633); color: #fff3e7; font-size: clamp(10px, 2.6vh, 13px); line-height: 1.15; }
 .arena .tb-hab button.basico { border-color: #8f8aa8; flex-basis: clamp(60px, 12vw, 100px); } .arena .tb-hab button i { font-style: normal; font-size: clamp(14px, 4vh, 20px); } .arena .tb-hab button small { opacity: .85; font-size: 9.5px; }
 .arena .tb-hab button.dest { background: linear-gradient(#f3d9a4, #c8924a); color: #2a1608; border-color: #ffe2a8; } .arena .tb-hab button:disabled { opacity: .4; filter: grayscale(.6); } .arena .tb-hab button .rc { position: absolute; top: 2px; right: 4px; font-weight: 800; color: #fda4af; }
 .arena .tb-aguarde { opacity: .8; font-size: 12px; margin-left: auto; }
@@ -67,9 +92,10 @@ function spriteNoCampo(u, artes) {
   const perfil = PERFIS_NO_CAMPO[original];
   const direcao = perfil?.direcao ?? olhaDe(u.especie);
   const desejada = u.lado === 'a' ? 'direita' : 'esquerda';
+  const sentido = direcao !== 'frente' && direcao !== desejada ? -1 : 1;
   return {
     src: `../../../${perfil?.arquivo ?? original}`,
-    espelhar: direcao !== 'frente' && direcao !== desejada,
+    escalaX: sentido * (perfil?.largura ?? 1),
   };
 }
 
@@ -82,10 +108,12 @@ export function criarArena(host, { artes = {} } = {}) {
   const sigDe = (u) => `${u.lado}:${u.id}`;
   function vagaDe(u) { const lista = u.lado === 'a' ? b.aliados : b.inimigos; return Math.max(0, lista.indexOf(u)); }
   function criarNo(u, entrando) {
-    const [x, y] = SLOT[u.lado][vagaDe(u)] || SLOT[u.lado][0];
+    const vaga = vagaDe(u);
+    const x = COLUNAS[u.lado][vaga] ?? COLUNAS[u.lado][0];
+    const frente = vaga % 2 === 1;
     const sprite = spriteNoCampo(u, opArt);
-    const el = document.createElement('button'); el.className = `un ${u.lado}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id; el.style.cssText = `left:${x}%;top:${y}%;z-index:${Math.round(y)}`;
-    el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.espelhar ? 'style="transform:scaleX(-1)"' : ''} alt="${esc(u.especie)}" onload="window.__recortar && window.__recortar(this)" onerror="this.style.visibility='visible'"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-efs"></span></span>`;
+    const el = document.createElement('button'); el.className = `un ${u.lado}${frente ? ' frente' : ''}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id; el.style.left = `${x}%`;
+    el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.escalaX === 1 ? '' : `style="transform:scaleX(${sprite.escalaX})"`} alt="${esc(u.especie)}" onload="window.__recortar && window.__recortar(this)" onerror="this.style.visibility='visible'"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-efs"></span></span>`;
     campo.append(el); nos.set(u.id, { el, u }); hpVis.set(u.id, u.hp);
     if (entrando) setTimeout(() => el.classList.remove('entrando'), 800);
   }
