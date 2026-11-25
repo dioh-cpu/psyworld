@@ -16,14 +16,16 @@ export function gestaoDe(s, agora = Date.now()) {
 }
 const registrar = (g, texto, agora) => { g.seq += 1; g.log.push({ id: g.seq, em: agora, t: texto }); if (g.log.length > 40) g.log = g.log.slice(-40); return g.seq; };
 export const estrDoLocal = (D, locId) => { const l = D.locais.find((x) => x.id === locId); return l ? D.estruturas.find((e) => e.categoria === l.categoria) : null; };
-export const duracaoDaObra = (est, nivel) => (est.duracao?.[nivel - 1] ?? 60) * 1000;
+export const duracaoDaObra = (est, nivel) => (est.duracao?.[nivel - 1] ?? (est.duracaoBase ? est.duracaoBase * (1 + (est.duracaoCresc ?? 0.1) * (nivel - 1)) : 60)) * 1000;
+// Terrenos liberados pelo nível da construção principal (sem principal, vale o nível 1)
+export const locaisAtivos = (s, D) => { const nv = Math.max(1, s.estruturas?.[D.principalLote]?.nivel || 1); return D.locais.filter((l) => !l.nivelPrincipal || l.nivelPrincipal <= nv); };
 export const capacidade = (D, tipo) => D.gestao?.capacidade?.[tipo] ?? D.gestao?.capacidadePadrao ?? 200;
 
 // ---------- obras ----------
 // Próximo nível de cada local, ignorando o que já está na fila
 export function candidatasObra(s, D) {
   const g = gestaoDe(s);
-  return D.locais.map((l) => {
+  return locaisAtivos(s, D).map((l) => {
     const est = estrDoLocal(D, l.id); const emObra = g.obras.find((o) => o.loc === l.id);
     const nivel = (s.estruturas[l.id]?.nivel || 0) + 1 + (emObra ? 1 : 0);
     if (!est || nivel > est.niveis) return { loc: l.id, est, maximo: true };

@@ -72,7 +72,7 @@ function texturaPoligono(vaga, sis, rotulo) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
-export function iniciarMundoNoMapa({ cena, camera, P, camada, getMapaAtual, getJogador, caminhavel, ocupados, getMundo, abrirSistema, algumModalAberto }) {
+export function iniciarMundoNoMapa({ cena, camera, P, camada, getMapaAtual, getJogador, caminhavel, ocupados, getMundo, abrirSistema, algumModalAberto, liberado }) {
   const grupo = new THREE.Group();
   cena.add(grupo);
   const loader = new THREE.TextureLoader();
@@ -156,7 +156,7 @@ export function iniciarMundoNoMapa({ cena, camera, P, camada, getMapaAtual, getJ
     const mapa = getMapaAtual();
     if (!mapa) return;
     mapaAtualId = mapa.id;
-    const els = elementosDoMundo(getMundo()).filter((e) => e.mapa === mapa.id);
+    const els = elementosDoMundo(getMundo()).filter((e) => e.mapa === mapa.id && (!liberado || liberado(e.sis)));
     assinatura = `${mapa.id}|${els.map((e) => `${e.chave}:${e.vaga}`).join(',')}`;
     const tamDe = (el) => TAM[el.vaga] || TAM_PADRAO[artePorSistema(el.sis)?.artes.find((a) => a.id === el.vaga)?.tipo] || 5;
     posicoes(mapa.id, els, tamDe);
@@ -200,7 +200,7 @@ export function iniciarMundoNoMapa({ cena, camera, P, camada, getMapaAtual, getJ
   setInterval(() => {
     const mapa = getMapaAtual();
     if (!mapa) return;
-    const els = elementosDoMundo(getMundo()).filter((e) => e.mapa === mapa.id);
+    const els = elementosDoMundo(getMundo()).filter((e) => e.mapa === mapa.id && (!liberado || liberado(e.sis)));
     const sig = `${mapa.id}|${els.map((e) => `${e.chave}:${e.vaga}`).join(',')}`;
     if (sig !== assinatura) construir();
     const j = getJogador();

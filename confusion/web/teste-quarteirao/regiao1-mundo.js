@@ -7,6 +7,7 @@ import { carregarMundo, diaMundo, acaoMundo, SISTEMAS, OPCOES_ACAO } from '../mu
 import { protecaoContraPragas } from '../mundo/sistemas-01.js';
 import { iniciarMundoNoMapa } from './regiao1-mundo-mapa.js';
 import { iniciarClima } from './regiao1-clima.js';
+import { sistemasLiberados, proximaLiberacao, tutorialDoSistema } from './regiao1-liberacao.js';
 import { ARTES, TIPOS_ARTE, artePorSistema, caminhoArte } from '../mundo/artes.js';
 
 export const DIA_MS = 120000;
@@ -189,6 +190,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
 
   let aba = 0;
   let aberto = null; // id do sistema aberto, ou null na grade
+  let revendo = null; // sistema cujo tutorial está sendo revisto
   const pretty = (k) => String(k).replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').toLowerCase();
   function fmt(v, prof = 0) {
     if (v === null || v === undefined) return '-';
@@ -231,7 +233,10 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     abas.innerHTML = ROTULOS_GRUPO.map((r, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${r}</button>`).join('');
     const progresso = [window.regiaoC1, window.regiaoEstrategia].map((m) => m?.resumo()).filter(Boolean).map((cic) => `<div class="sis-bloco"><h4>Diário de progresso · ${esc(cic.titulo)}</h4>${cic.linhas.map((l) => `<p>• ${esc(l)}</p>`).join('')}</div>`).join('');
     const tut = est.meta.tutorialVisto ? '' : `<div class="sis-bloco"><h4>Como funciona o Mundo</h4><p>São 50 sistemas vivos: cidades, facções, clima, pragas, chefes, expedições e mais. A cada <b>dia do mundo</b> (2 minutos de jogo) todos eles avançam sozinhos.</p><p>• <b>Toque em um sistema</b> para abrir o menu dele: estado, ações e o que ele rende.</p><p>• <b>Cada abate na caçada</b> alimenta o mundo (recursos do bioma) e tira monstros do ecossistema. Se uma espécie fica rara, a caça rende menos.</p><p>• <b>Praga e clima</b> mexem no seu dano e no seu ouro. Refúgios protegem. O quadro "Na caça" no topo mostra o que está valendo agora.</p><p>• Os recursos têm teto de 500 (+100 por refúgio). O que passa disso se perde: gaste!</p><p>• Alguns sistemas aparecem no mapa. Chegue perto e toque no botão 🌍 para abrir.</p><div class="mundo-acoes" style="margin-top:6px"><button class="btn-pri" data-entendi="1">Entendi</button></div></div>`;
-    corpo.innerHTML = progresso + tut + `<div class="mundo-grade">${SISTEMAS.slice(aba * 10, aba * 10 + 10).map((sis) => {
+    const lib = sistemasLiberados(getSave()), grupo = SISTEMAS.slice(aba * 10, aba * 10 + 10).filter((x) => lib.has(x.id));
+    const prox = proximaLiberacao(getSave());
+    const dica = `<div class="sis-bloco"><h4>Sistemas liberados: ${lib.size}/50</h4><p>${prox ? `Próxima liberação: conclua <b>${esc(prox.titulo)}</b> na campanha (${prox.sistemas.length} sistema${prox.sistemas.length > 1 ? 's' : ''}).` : 'Todos os sistemas foram liberados.'}</p></div>`;
+    corpo.innerHTML = progresso + dica + tut + (grupo.length ? '' : '<p class="ref">Nenhum sistema deste grupo foi liberado ainda. Avance na campanha.</p>') + `<div class="mundo-grade">${grupo.map((sis) => {
       const arte = artePorSistema(sis.id);
       return `<button class="tile" data-abrir="${sis.id}"><span class="linha"><span class="arte ic" data-sis="${sis.id}" data-vaga="icone"><img src="${arteUrl(sis.id, 'icone')}" alt="" loading="lazy"><template><svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 94,30 94,70 50,94 6,70 6,30" fill="${arte.cor}66" stroke="${arte.cor}" stroke-width="3"/><text x="50" y="62" text-anchor="middle" font-size="40">${arte.emoji}</text></svg></template></span><strong>${sis.id} · ${esc(sis.nome)}</strong></span><small>${esc(sis.resumo(est.mundo[sis.id]))}</small></button>`;
     }).join('')}</div>`;
@@ -250,11 +255,14 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
       return lista.map((o) => `<button class="btn-sec" data-sis="${id}" data-acao="${chave}" data-args="${esc(JSON.stringify(o.args))}">${esc(a.rotulo)}${o.rotulo ? ` · ${esc(o.rotulo)}` : ''}</button>`).join('');
     }).join('') || '<p class="ref">Este sistema é passivo: avança sozinho a cada dia. Acompanhe o estado acima.</p>';
     const logs = (est.meta.logs?.[id] || []).slice(-5).reverse().map((l) => `<p>• ${esc(l)}</p>`).join('') || '<p class="ref">Nenhum evento ainda.</p>';
-    return `<button class="btn-sec" data-voltar="1" style="margin-bottom:8px">← Todos os sistemas</button>
+    const tutVisto = est.meta.tutoriais?.[id], mostrarTut = !tutVisto || revendo === id, tt = tutorialDoSistema(sis);
+    const cartaoTut = mostrarTut ? `<div class="sis-bloco tut-card"><h4>📘 Tutorial · ${esc(sis.nome)}</h4><p><b>Para que serve:</b> ${esc(tt.serve)} ${esc(sis.resumo(st))}</p><p><b>Onde tocar:</b> ${esc(tt.onde)}</p><p><b>${tt.passivo ? 'Para acompanhar' : 'Primeira ação'}:</b> ${esc(tt.primeira)}</p><div class="mundo-acoes"><button class="btn-pri" data-tutok="${id}">Entendi</button></div></div>` : '';
+    const rever = tutVisto && revendo !== id ? `<button class="btn-sec" data-rever="${id}" style="margin:0 0 8px 6px">Rever tutorial</button>` : '';
+    return `<button class="btn-sec" data-voltar="1" style="margin-bottom:8px">← Todos os sistemas</button>${rever}${cartaoTut}
       <div class="sis-banner arte" data-sis="${id}" data-vaga="banner"><img src="${arteUrl(id, 'banner')}" alt="" loading="lazy"><template><svg viewBox="0 0 160 50" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="160" height="50" fill="${arte.cor}33"/><polygon points="0,50 30,14 58,34 92,6 128,30 160,10 160,50" fill="${arte.cor}77"/><text x="146" y="30" text-anchor="middle" font-size="22">${arte.emoji}</text><text x="8" y="26" font-size="9" fill="#fff3e7" font-weight="700">${esc(sis.nome)}</text></svg></template></div>
       <div class="sis-bloco"><h4>${id} · ${esc(sis.nome)}</h4><p>${esc(sis.resumo(st))}</p><p class="ref">Referência: ${esc(sis.referencia)}</p></div>
-      <div class="sis-bloco"><h4>Estado</h4><div class="estado">${linhas}</div></div>
-      <div class="sis-bloco"><h4>Ações</h4><div class="mundo-acoes">${acoes}</div></div>
+      <div class="sis-bloco ${mostrarTut && tt.passivo ? 'tut-destaque' : ''}"><h4>Estado</h4><div class="estado">${linhas}</div></div>
+      <div class="sis-bloco ${mostrarTut && !tt.passivo ? 'tut-destaque' : ''}"><h4>Ações</h4><div class="mundo-acoes">${acoes}</div></div>
       <div class="sis-bloco"><h4>Últimos eventos</h4>${logs}</div>
       <div class="sis-bloco"><h4>Artes deste sistema <span class="ref" id="mundo-falta"></span></h4><div class="vagas">${arte.artes.filter((v) => v.id !== 'banner').map((v) => vagaHtml(id, v, arte)).join('')}</div></div>`;
   }
@@ -285,7 +293,9 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     if (alvo.id === 'mundo-fechar') { fecharModal('modal-mundo'); return; }
     if (alvo.dataset.aba !== undefined) { aba = Number(alvo.dataset.aba); desenhar(); return; }
     if (alvo.dataset.abrir) { aberto = alvo.dataset.abrir; desenhar(); return; }
-    if (alvo.dataset.voltar) { aberto = null; desenhar(); return; }
+    if (alvo.dataset.voltar) { aberto = null; revendo = null; desenhar(); return; }
+    if (alvo.dataset.tutok) { const m = estado().meta; m.tutoriais = m.tutoriais || {}; m.tutoriais[alvo.dataset.tutok] = true; revendo = null; salvar?.(); desenhar(); return; }
+    if (alvo.dataset.rever) { revendo = alvo.dataset.rever; desenhar(); return; }
     if (alvo.dataset.entendi) { estado().meta.tutorialVisto = true; salvar?.(); desenhar(); return; }
     if (alvo.id === 'mundo-estrategia') { fecharModal('modal-mundo'); window.regiaoEstrategia?.abrir(); return; }
     if (alvo.id === 'mundo-diario') { aberto = 'diario'; desenhar(); return; }
@@ -324,7 +334,20 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
 
   estado();
   setInterval(relogio, 1000);
-  const noMapa = mapaCtx ? iniciarMundoNoMapa({ ...mapaCtx, getMapaAtual, getMundo: () => estado().mundo, abrirSistema: (id) => abrir(id), algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')) }) : null;
+  const liberado = (id) => sistemasLiberados(getSave()).has(id);
+  const css = document.createElement('style');
+  css.textContent = '#modal-mundo .tut-card { border-color: #7dd3fc; background: #14304a; } #modal-mundo .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: tutpulso 1.4s ease-in-out infinite; } @keyframes tutpulso { 50% { box-shadow: 0 0 0 8px #f3a45822; } }';
+  document.head.append(css);
+  // avisa sistemas novos uma vez, fora de combate, diálogos e menus (um aviso por vez)
+  setInterval(() => {
+    if (document.querySelector('.modal-bg.aberto')) return;
+    const m = estado().meta; m.avisados = m.avisados || {};
+    const novos = [...sistemasLiberados(getSave())].filter((id) => !m.avisados[id]);
+    if (!novos.length) return;
+    novos.forEach((id) => { m.avisados[id] = true; });
+    salvar?.(); mostrarToast(`🌍 Novo no Mundo: ${novos.map((id) => SISTEMAS.find((x) => x.id === id)?.nome).join(', ')}. Abra Menu → Mundo.`, 5200);
+  }, 2500);
+  const noMapa = mapaCtx ? iniciarMundoNoMapa({ ...mapaCtx, liberado, getMapaAtual, getMundo: () => estado().mundo, abrirSistema: (id) => abrir(id), algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')) }) : null;
   // Efeitos do mundo sobre a caçada: praga enfraquece (refúgios protegem), clima mexe no dano e no ouro.
   function modificadores() {
     const m = estado().mundo;

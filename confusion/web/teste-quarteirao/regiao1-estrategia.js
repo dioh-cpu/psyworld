@@ -2,7 +2,7 @@
 // Mapa da cidade com locais de construção, cinco menus (Aldeias, Refúgios, Exércitos, Hospitais, Expedições), combate 6 contra 6 por
 // turnos, controles independentes (Atacar automaticamente / Próxima fase / Avançar automaticamente) e expedição minimizada.
 // Estado salvo em save.idle.estrategia[id]. Cada recompensa de vitória é paga uma única vez (exp.pagas).
-import { avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
+import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
 import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase } from './regiao1-estrategia-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -15,6 +15,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
   let batalha = null;       // só em memória: ao recarregar, a fase recomeça
   let ritmoMs = 650;
   let resumoUlt = null, selObras = new Set(), confAcel = null, loteRec = null, loteQtd = 5;
+  let drawer = false;
   let aba = 'gestao', visao = 'cidade', slotSel = null, confirmar = null, alvoSel = null, minimizado = false;
   let timerTick = null, timerProx = null;
 
@@ -89,6 +90,26 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     #modal-estrategia .bat-ctl { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     #modal-estrategia .bat-ctl label { display: inline-flex; gap: 5px; align-items: center; font-size: 12px; background: #24162b; border-radius: 6px; padding: 5px 8px; }
     #estrategia-ind { position: fixed; left: 50%; top: 50px; transform: translateX(-50%); z-index: 8; display: none; align-items: center; gap: 8px; background: rgba(33,19,41,.95); border: 1px solid #c59c67; color: #fff3e7; border-radius: 99px; padding: 5px 8px 5px 12px; font: 600 12px system-ui, sans-serif; max-width: 94vw; }
+    /* Tela cheia: mapa ocupa tudo; barras compactas por cima; painéis sob demanda */
+    #modal-estrategia { padding: 0 !important; align-items: stretch !important; justify-content: stretch !important; }
+    #modal-estrategia .est-card { position: fixed; inset: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; border-radius: 0; border: 0; padding: 0; background: #1a0f22; }
+    #modal-estrategia .modal-head { position: absolute; top: 0; left: 0; right: 0; z-index: 6; margin: 0; padding: 4px 10px; background: rgba(26, 15, 34, .86); backdrop-filter: blur(3px); gap: 6px; }
+    #modal-estrategia .modal-head h3 { font-size: 14px; margin: 0; } #modal-estrategia .modal-head select { max-width: 46vw; }
+    #modal-estrategia .est-topo { position: absolute; top: 40px; left: 0; right: 0; z-index: 5; margin: 0; padding: 4px 10px; background: rgba(26, 15, 34, .78); font-size: 11.5px; gap: 2px 12px; }
+    #modal-estrategia .est-corpo { position: absolute; inset: 0; display: block; padding: 0; }
+    #modal-estrategia .est-mapa { position: absolute; inset: 0; min-height: 0; border: 0; border-radius: 0; touch-action: none; cursor: grab; }
+    #modal-estrategia .est-mapa::before { display: none; }
+    #modal-estrategia .est-mundo { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: center / 100% 100% no-repeat #24162b; }
+    #modal-estrategia .est-slot.trancado { opacity: .55; }
+    @media (max-width: 700px) { #modal-estrategia #est-titulo { display: none; } #modal-estrategia .modal-head select { max-width: 52vw; } #modal-estrategia .est-topo { font-size: 10.5px; } #modal-estrategia .est-barra { width: 70px; } }
+    #modal-estrategia .est-zoom { position: absolute; right: 8px; top: 120px; z-index: 5; display: flex; flex-direction: column; gap: 6px; }
+    #modal-estrategia .est-zoom button { width: 38px; height: 38px; padding: 0; font-size: 18px; }
+    #modal-estrategia .est-lado { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+    #modal-estrategia .est-lado > * { pointer-events: auto; }
+    #modal-estrategia .est-painel { width: min(620px, 100%); max-height: 52dvh; margin: 0; padding: 8px 10px 4px; background: rgba(33, 19, 41, .96); border: 1px solid var(--line, #6b4a52); border-bottom: 0; border-radius: 12px 12px 0 0; }
+    #modal-estrategia .est-abas { width: 100%; justify-content: center; margin: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); background: rgba(26, 15, 34, .92); gap: 4px; }
+    #modal-estrategia .est-abas button { min-height: 34px; font-size: 11.5px; padding: 4px 8px; }
+    #modal-estrategia .bat { position: absolute; inset: 0; padding: 48px 10px 10px; background: #1a0f22; z-index: 7; overflow: auto; }
     #estrategia-ind button { min-height: 28px; padding: 2px 9px; font-size: 11.5px; }`;
   document.head.append(estilo);
 
@@ -107,9 +128,9 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
   const modal = document.createElement('div');
   modal.id = 'modal-estrategia'; modal.className = 'modal-bg';
   modal.innerHTML = `<div class="modal-card est-card" role="dialog" aria-modal="true">
-    <header class="modal-head"><h3 id="est-titulo">Estratégia</h3><select id="est-reino" aria-label="Reino" style="margin-left:auto;margin-right:8px"></select><button class="btn-fechar" id="est-fechar" aria-label="Fechar">✕</button></header>
+    <header class="modal-head"><h3 id="est-titulo">Estratégia</h3><select id="est-reino" aria-label="Reino" style="margin-left:auto;margin-right:8px"></select><button class="btn-sec" id="est-voltar" style="margin-right:6px">↩ Campanha</button><button class="btn-fechar" id="est-fechar" aria-label="Fechar">✕</button></header>
     <div class="est-topo" id="est-topo"></div>
-    <div class="est-corpo" id="est-corpo"><div class="est-mapa" id="est-mapa"></div><div class="est-lado"><nav class="est-abas" id="est-abas"></nav><div class="est-painel" id="est-painel"></div></div></div>
+    <div class="est-corpo" id="est-corpo"><div class="est-mapa" id="est-mapa"><div class="est-mundo" id="est-mundo"></div><div class="est-zoom"><button class="btn-sec" data-zoom="1" aria-label="Aproximar">＋</button><button class="btn-sec" data-zoom="-1" aria-label="Afastar">－</button></div></div><div class="est-lado"><div class="est-painel" id="est-painel"></div><nav class="est-abas" id="est-abas"></nav></div></div>
     <div class="bat" id="est-bat" hidden></div></div>`;
   document.body.append(modal);
   const ind = document.createElement('div'); ind.id = 'estrategia-ind'; document.body.append(ind);
@@ -119,7 +140,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
   function proximaObra(s) {
     let melhor = null;
     for (const e of D.estruturas) {
-      const locais = D.locais.filter((l) => l.categoria === e.categoria);
+      const locais = locaisAtivos(s, D).filter((l) => l.categoria === e.categoria);
       for (const l of locais) {
         const at = s.estruturas[l.id]; const nivel = (at?.nivel || 0) + 1;
         if (nivel > e.niveis) continue;
@@ -142,27 +163,67 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     $('#est-topo').innerHTML = `<span>Prosperidade <b>${p.total}</b>/100 <span class="est-barra"><i style="width:${p.total}%"></i></span></span><span>${mat}</span><span>${obra}</span>`;
   }
   function desenharMapa() {
-    const s = estado();
-    const m = $('#est-mapa'); m.style.backgroundImage = `url(../../../${D.fundo})`;
+    const s = estado(), m = $('#est-mundo'), ativos = new Set(locaisAtivos(s, D).map((l) => l.id));
+    m.style.backgroundImage = `url(../../../${D.fundo})`;
     m.innerHTML = D.locais.map((l) => {
-      const at = s.estruturas[l.id], def = at && estrDe(at.tipo);
-      const cat = (D.estruturas.find((e) => e.categoria === l.categoria));
+      const cat = D.estruturas.find((e) => e.categoria === l.categoria);
+      if (!ativos.has(l.id)) return `<button class="est-slot trancado" style="left:${l.pos[0]}%;top:${l.pos[1]}%;--w:44px" data-trancado="${l.id}" aria-label="Terreno bloqueado"><span class="est-poli" style="font-size:20px">🔒</span><span>Prefeitura nv.${l.nivelPrincipal}</span></button>`;
+      const at = s.estruturas[l.id], def = at && estrDe(at.tipo), emObra = gestaoDe(s).obras.find((o) => o.loc === l.id);
       const vis = def ? def.visual.niveis[at.nivel - 1] : cat.visual.vazio;
       const nome = def ? `${def.nome} nv.${at.nivel}` : (cat.visual.vazio.nome || 'Terreno livre');
-      const w = Math.round(78 * (vis.escala || 1));
-      return `<button class="est-slot ${slotSel === l.id ? 'sel' : ''}" style="left:${l.pos[0]}%;top:${l.pos[1]}%;--w:${w}px" data-slot="${l.id}">${img(vis, def ? def.emoji : '⬚', nome)}<span>${esc(nome)}</span></button>`;
+      const w = Math.round(76 * (vis.escala || 1));
+      return `<button class="est-slot ${slotSel === l.id ? 'sel' : ''}" style="left:${l.pos[0]}%;top:${l.pos[1]}%;--w:${w}px" data-slot="${l.id}">${img(vis, def ? def.emoji : '⬚', nome)}<span>${esc(nome)}${emObra ? ' ⏳' : ''}</span></button>`;
     }).join('');
+    ajustarCamera();
   }
+  // Câmera de cima: arrastar move, roda/pinça dá zoom. O mapa sempre cobre a área do jogo.
+  const cam = { x: 0, y: 0, z: 1 };
+  function dimensoes() { const v = $('#est-mapa'); const W = v.clientWidth, H = v.clientHeight; const base = Math.max(W / 1600, H / 900); return { W, H, mw: 1600 * base, mh: 900 * base }; }
+  function ajustarCamera() {
+    const { W, H, mw, mh } = dimensoes(); const m = $('#est-mundo');
+    if (!W || !H) return;
+    const hd = modal.querySelector('.modal-head'), tp = $('#est-topo'); if (hd && tp) tp.style.top = `${hd.offsetHeight}px`;
+    cam.z = Math.max(1, Math.min(3, cam.z));
+    const w = mw * cam.z, h = mh * cam.z;
+    cam.x = Math.min(0, Math.max(W - w, cam.x)); cam.y = Math.min(0, Math.max(H - h, cam.y));
+    m.style.width = `${mw}px`; m.style.height = `${mh}px`;
+    m.style.transform = `translate(${cam.x}px, ${cam.y}px) scale(${cam.z})`;
+  }
+  function zoomEm(fator, cx, cy) {
+    const antes = cam.z; cam.z = Math.max(1, Math.min(3, cam.z * fator)); const k = cam.z / antes;
+    cam.x = cx - (cx - cam.x) * k; cam.y = cy - (cy - cam.y) * k; ajustarCamera();
+  }
+  (function ligarCamera() {
+    const v = $('#est-mapa'); const dedos = new Map(); let moveu = false, dist0 = 0;
+    v.addEventListener('pointerdown', (e) => { dedos.set(e.pointerId, { x: e.clientX, y: e.clientY }); moveu = false; if (dedos.size === 2) { const [a, b] = [...dedos.values()]; dist0 = Math.hypot(a.x - b.x, a.y - b.y); } });
+    v.addEventListener('pointermove', (e) => {
+      const d = dedos.get(e.pointerId); if (!d) return;
+      const dx = e.clientX - d.x, dy = e.clientY - d.y;
+      if (dedos.size === 1) { if (!moveu && Math.hypot(dx, dy) < 6) return; moveu = true; cam.x += dx; cam.y += dy; ajustarCamera(); }
+      else if (dedos.size === 2) {
+        moveu = true; dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const [a, b] = [...dedos.values()], dist = Math.hypot(a.x - b.x, a.y - b.y); const r = v.getBoundingClientRect();
+        if (dist0 > 0) zoomEm(dist / dist0, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top); dist0 = dist; return;
+      }
+      dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    });
+    const solta = (e) => { dedos.delete(e.pointerId); if (dedos.size < 2) dist0 = 0; setTimeout(() => { if (!dedos.size) moveu = false; }, 0); };
+    v.addEventListener('pointerup', solta); v.addEventListener('pointercancel', solta); v.addEventListener('lostpointercapture', solta);
+    v.addEventListener('wheel', (e) => { e.preventDefault(); const r = v.getBoundingClientRect(); zoomEm(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+    // depois de arrastar, o toque que termina o gesto não deve abrir um terreno
+    v.addEventListener('click', (e) => { if (moveu) { e.stopPropagation(); e.preventDefault(); } }, true);
+    window.addEventListener('resize', () => { if (modal.classList.contains('aberto')) ajustarCamera(); });
+  })();
 
   // ---------- painéis dos menus ----------
-  const abas = ['gestao', 'aldeias', 'refugios', 'exercitos', 'hospitais', 'expedicoes'];
+  const abas = ['gestao', 'principal', 'aldeias', 'refugios', 'exercitos', 'hospitais', 'expedicoes'];
   const rotuloAba = (a) => (a === 'gestao' ? '⚙️ Gestão' : `${D.categorias[a].icone} ${D.categorias[a].nome}`);
   function desenharAbas() {
-    $('#est-abas').innerHTML = abas.map((a) => `<button class="btn-sec" role="tab" aria-selected="${a === aba}" data-aba="${a}">${esc(rotuloAba(a))}</button>`).join('');
+    $('#est-abas').innerHTML = `<button class="btn-pri" data-coletar="um" aria-label="Coletar tudo">📦 Coletar tudo</button>` + abas.map((a) => `<button class="btn-sec" role="tab" aria-selected="${drawer && a === aba}" data-aba="${a}">${esc(rotuloAba(a))}</button>`).join('');
   }
   function painelCategoria() {
     const s = estado(), cat = D.categorias[aba];
-    const locais = D.locais.filter((l) => l.categoria === aba);
+    const locais = locaisAtivos(s, D).filter((l) => l.categoria === aba);
     const est = D.estruturas.find((e) => e.categoria === aba);
     let h = `<div class="est-bloco"><h4>${cat.icone} ${esc(cat.nome)}</h4><p>${esc(cat.descricao)}</p><p class="muted">${esc(est.beneficio)}</p></div>`;
     if (aba === 'refugios') { const n = window.regiaoMundo?.estado?.().mundo?.['05']?.refugios?.length || 0; h += `<div class="est-bloco"><h4>Proteção atual</h4><p>${n} abrigo(s) ativo(s): proteção contra a praga <b>${Math.min(60, n * 20)}%</b>. Descanso: as equipes saem com vida extra.</p></div>`; }
@@ -222,11 +283,11 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
 
   function desenharPainel() {
     desenharAbas();
-    $('#est-painel').innerHTML = aba === 'expedicoes' ? painelExpedicoes() : aba === 'gestao' ? painelGestao() : painelCategoria();
+    $('#est-painel').hidden = !drawer; $('#est-painel').innerHTML = !drawer ? '' : aba === 'expedicoes' ? painelExpedicoes() : aba === 'gestao' ? painelGestao() : painelCategoria();
   }
   function desenharCabecalho() {
     $('#est-titulo').textContent = `Estratégia · ${D.titulo}`;
-    $('#est-reino').innerHTML = REINOS_D.map((x) => `<option value="${x.id}" ${x === D ? 'selected' : ''}>${desbloqueado(x) ? '' : `🔒 `}${esc(x.titulo)}${desbloqueado(x) ? '' : ` (${progressoDesbloqueio(x).atual}/${progressoDesbloqueio(x).meta} construções)`}</option>`).join('');
+    $('#est-reino').innerHTML = REINOS_D.map((x) => `<option value="${x.id}" ${x === D ? 'selected' : ''}>${desbloqueado(x) ? '' : `🔒 `}${esc(x.titulo)}${desbloqueado(x) ? '' : ` (${progressoDesbloqueio(x).atual}/${progressoDesbloqueio(x).meta} terrenos)`}</option>`).join('');
     $('#est-reino').hidden = REINOS_D.length < 2;
   }
   function desenhar() {
@@ -240,7 +301,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   function aoConcluirObra(Dx, o) {
     const est = Dx.estruturas.find((e) => e.id === o.tipo), pros = est.prosperidade[o.nivel - 1] || 0;
     const mundo = window.regiaoMundo?.estado?.().mundo;
-    if (Dx.id === 'c1') {
+    if (Dx.id === 'r1') {
       const v = mundo?.['01']?.norte; if (v) v.prosperidade = Math.min(100, (v.prosperidade || 0) + pros);
       if (est.protecaoPraga && mundo?.['05']) mundo['05'].refugios.push({ nome: `Abrigo de ${Dx.titulo}`, abrigados: 0 });
     }
@@ -302,7 +363,8 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     if (!r.ok) { mostrarToast(r.motivo + (r.falta ? ` Faltam ${matTxt(r.falta)}.` : ''), 3200); desenhar(); return; }
     resumoLote('Fabricação', [{ t: `lote na fila: ${matTxt(r.previsao.saida)} (usou ${matTxt(r.previsao.insumos)}, ${dur(r.previsao.duracao)})` }]);
   }
-  function progressoDesbloqueio(Dx) { const de = REINOS_D.find((x) => x.id === Dx.desbloqueio.de); return { atual: gestaoDe(estado(de)).concluidas, meta: Dx.desbloqueio.construcoes }; }
+  function progressoDesbloqueio(Dx) { const de = REINOS_D.find((x) => x.id === Dx.desbloqueio.de); return { atual: Object.keys(estado(de).estruturas).length, meta: Dx.desbloqueio.terrenos }; }
+  function progressoDesbloqueio_(Dx) { return progressoDesbloqueio(Dx); }
   function desbloqueado(Dx) { if (!Dx.desbloqueio) return true; const p = progressoDesbloqueio(Dx); return p.atual >= p.meta; }
   function trocarReino(id) {
     const novo = REINOS_D.find((x) => x.id === id); if (!novo || novo === D) return;
@@ -492,17 +554,19 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   }
 
   // ---------- eventos ----------
-  function abrir(cat) {
+  function abrir(cat, reinoId) {
+    if (reinoId) { const novo = REINOS_D.find((x) => x.id === reinoId); if (novo && desbloqueado(novo) && !estado(D).exp) D = novo; }
     minimizado = false; desenharInd(); processar();
     const s = estado();
-    if (cat) aba = cat;
+    if (cat) { aba = cat; drawer = true; } else drawer = false;
     visao = s.exp && (['batalha', 'vitoria', 'derrota', 'fim'].includes(s.exp.estado) && batalha) ? 'batalha' : 'cidade';
     confirmar = null; desenhar(); abrirModal('modal-estrategia');
+    requestAnimationFrame(() => { cam.x = (dimensoes().W - dimensoes().mw * cam.z) / 2; ajustarCamera(); });
   }
   function minimizar() {
     const s = estado();
     if (s.exp && s.exp.estado !== 'parada') { minimizado = true; mostrarToast('🧭 Expedição minimizada: continua em segundo plano.', 2200); }
-    fecharModal('modal-estrategia'); desenharInd();
+    fecharModal('modal-estrategia'); desenharInd(); api.aoSair?.();
   }
   function encerrar() {
     const s = estado(); const exp = s.exp;
@@ -530,8 +594,11 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
       desenhar(); return;
     }
     if (t.dataset.trab) { const r = roster(); const atual = r.findIndex((m) => m.id === s.trabalho[t.dataset.trab]); const prox = r[atual + 1]; if (prox) s.trabalho[t.dataset.trab] = prox.id; else delete s.trabalho[t.dataset.trab]; salvar(); desenharPainel(); return; }
-    if (t.dataset.aba) { aba = t.dataset.aba; confirmar = null; desenharPainel(); return; }
-    if (t.dataset.slot) { const l = D.locais.find((x) => x.id === t.dataset.slot); aba = l.categoria; slotSel = l.id; confirmar = null; desenhar(); return; }
+    if (t.dataset.aba) { if (drawer && aba === t.dataset.aba) drawer = false; else { aba = t.dataset.aba; drawer = true; } confirmar = null; desenharPainel(); return; }
+    if (t.dataset.zoom) { const r = $('#est-mapa').getBoundingClientRect(); zoomEm(t.dataset.zoom === '1' ? 1.3 : 1 / 1.3, r.width / 2, r.height / 2); return; }
+    if (t.dataset.trancado) { const l = D.locais.find((x) => x.id === t.dataset.trancado); mostrarToast(`🔒 Terreno liberado com a Prefeitura no nível ${l.nivelPrincipal}.`, 2600); return; }
+    if (t.id === 'est-voltar') { minimizar(); return; }
+    if (t.dataset.slot) { const l = D.locais.find((x) => x.id === t.dataset.slot); aba = l.categoria; slotSel = l.id; drawer = true; confirmar = null; desenhar(); return; }
     if (t.dataset.obra) { fazerObra(t.dataset.obra); return; }
     if (t.dataset.cancelar) { confirmar = null; desenharPainel(); return; }
     if (t.dataset.confirmar) { fazerObra(t.dataset.confirmar); return; }
@@ -571,7 +638,9 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const exp = s.exp ? `${rotaDe(s.exp.rota).nome}, fase ${s.exp.fase + 1} (${estadoTxt(s.exp)})` : 'nenhuma em andamento';
     return { titulo: `Estratégia · ${D.titulo}`, linhas: [`Prosperidade: ${p.total}/100`, `Materiais: ${custoTxt(s.materiais)}`, `Obras: ${obras}`, `Expedição: ${exp}`, `Obras na fila: ${g.obras.length} · produção pronta: ${pr} · lotes na oficina: ${g.fabricacao.length}`] };
   }
-  return { abrir, resumo, estado, minimizar, encerrar, comecarFase,
+  const api = { abrir, resumo, estado, minimizar, encerrar, comecarFase, aoSair: null,
+    reinos: () => REINOS_D.map((x) => ({ id: x.id, titulo: x.titulo, aberto: desbloqueado(x), progresso: x.desbloqueio ? progressoDesbloqueio(x) : null, fundo: x.fundo, texto: x.desbloqueio?.texto || '' })),
     // ajuda de teste e balanceamento
     setRitmo: (ms) => { ritmoMs = ms; if (timerTick) iniciarTick(); }, batalha: () => batalha, minimizado: () => minimizado };
+  return api;
 }

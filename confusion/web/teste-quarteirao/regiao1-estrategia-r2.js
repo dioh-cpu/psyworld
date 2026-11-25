@@ -27,7 +27,7 @@ const rotas = Object.entries(REINOS[2].areas).map(([id, a]) => {
 export const ESTRATEGIA_R2 = {
   ...ESTRATEGIA_C1,
   id: 'r2', titulo: 'Altos do Âmbar (Reino 2)', fundo: 'assets/confusion/interface/estrategia/reinos/02/cidade-conceito.webp',
-  desbloqueio: { de: 'c1', construcoes: 30, texto: 'Conclua 30 construções no Reino 1.' },
+  desbloqueio: { de: 'r1', terrenos: 30, texto: 'Tenha 30 terrenos distintos do Reino 1 com prédios concluídos.' },
   prosperidadeBase: 30,
   materiais: { mel: { nome: 'Mel', icone: '🍯' }, cera: { nome: 'Cera', icone: '🕯️' } },
   inicial: { mel: 0, cera: 0 },

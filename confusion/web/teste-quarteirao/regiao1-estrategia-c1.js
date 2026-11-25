@@ -3,9 +3,9 @@
 // `arte`: { sis, vaga } aponta para assets/confusion/interface/mundo/<sis>/<vaga>.webp; `estr:` aponta para
 // assets/confusion/interface/estrategia/<nome>.webp. Sem o arquivo, aparece um polígono com o emoji.
 export const ESTRATEGIA_C1 = {
-  id: 'c1',
-  titulo: 'Cidade (C1)',
-  fundo: 'confusion/web/teste-quarteirao/assets/regiao1/C1.webp',
+  id: 'r1',
+  titulo: 'Vale de Outono (Reino 1)',
+  fundo: 'assets/confusion/interface/estrategia/cidade-expansao-30.webp',
   prosperidadeBase: 40,
   materiais: { madeira: { nome: 'Madeira', icone: '🪵' }, pedra: { nome: 'Pedra', icone: '🪨' } },
   inicial: { madeira: 0, pedra: 0 },
@@ -28,15 +28,43 @@ export const ESTRATEGIA_C1 = {
   },
 
   // Locais da cidade (em % do mapa). Cada local aceita uma categoria de estrutura.
+  // 30 terrenos do Vale de Outono (mapa cidade-expansao-30). `nivelPrincipal`: nível da Prefeitura que libera o terreno (1, 5, 10, 15, 20, 25, 30).
+  principalLote: 'p1',
   locais: [
-    { id: 'a1', categoria: 'aldeias', pos: [30, 42] },
-    { id: 'a2', categoria: 'aldeias', pos: [62, 38] },
-    { id: 'r1', categoria: 'refugios', pos: [20, 70] },
-    { id: 'e1', categoria: 'exercitos', pos: [78, 66] },
-    { id: 'h1', categoria: 'hospitais', pos: [48, 70] },
+    { id: 'a1', categoria: 'aldeias', pos: [39.4, 35.4], nivelPrincipal: 1 },
+    { id: 'p1', categoria: 'principal', pos: [39.4, 49.3], nivelPrincipal: 1 },
+    { id: 'e1', categoria: 'exercitos', pos: [39.4, 63.3], nivelPrincipal: 1 },
+    { id: 'a2', categoria: 'aldeias', pos: [60.5, 35.4], nivelPrincipal: 1 },
+    { id: 'r1', categoria: 'refugios', pos: [60.5, 49.3], nivelPrincipal: 1 },
+    { id: 'h1', categoria: 'hospitais', pos: [60.5, 63.3], nivelPrincipal: 1 },
+    { id: 'a3', categoria: 'aldeias', pos: [39.4, 21.5], nivelPrincipal: 5 },
+    { id: 'r2', categoria: 'refugios', pos: [60.5, 21.5], nivelPrincipal: 5 },
+    { id: 'e2', categoria: 'exercitos', pos: [39.4, 77.3], nivelPrincipal: 5 },
+    { id: 'h2', categoria: 'hospitais', pos: [60.5, 77.3], nivelPrincipal: 5 },
+    { id: 'a4', categoria: 'aldeias', pos: [29.4, 35.4], nivelPrincipal: 10 },
+    { id: 'r3', categoria: 'refugios', pos: [70.6, 35.4], nivelPrincipal: 10 },
+    { id: 'e3', categoria: 'exercitos', pos: [29.4, 63.3], nivelPrincipal: 10 },
+    { id: 'h3', categoria: 'hospitais', pos: [70.6, 63.3], nivelPrincipal: 10 },
+    { id: 'a5', categoria: 'aldeias', pos: [29.4, 21.5], nivelPrincipal: 15 },
+    { id: 'r4', categoria: 'refugios', pos: [70.6, 21.5], nivelPrincipal: 15 },
+    { id: 'e4', categoria: 'exercitos', pos: [29.4, 49.3], nivelPrincipal: 15 },
+    { id: 'h4', categoria: 'hospitais', pos: [70.6, 49.3], nivelPrincipal: 15 },
+    { id: 'a6', categoria: 'aldeias', pos: [29.4, 77.3], nivelPrincipal: 20 },
+    { id: 'r5', categoria: 'refugios', pos: [70.6, 77.3], nivelPrincipal: 20 },
+    { id: 'e5', categoria: 'exercitos', pos: [19.3, 49.3], nivelPrincipal: 20 },
+    { id: 'h5', categoria: 'hospitais', pos: [80.7, 49.3], nivelPrincipal: 20 },
+    { id: 'a7', categoria: 'aldeias', pos: [19.3, 35.4], nivelPrincipal: 25 },
+    { id: 'r6', categoria: 'refugios', pos: [80.7, 35.4], nivelPrincipal: 25 },
+    { id: 'e6', categoria: 'exercitos', pos: [19.3, 63.3], nivelPrincipal: 25 },
+    { id: 'h6', categoria: 'hospitais', pos: [80.7, 63.3], nivelPrincipal: 25 },
+    { id: 'a8', categoria: 'aldeias', pos: [19.3, 21.5], nivelPrincipal: 30 },
+    { id: 'r7', categoria: 'refugios', pos: [80.7, 21.5], nivelPrincipal: 30 },
+    { id: 'e7', categoria: 'exercitos', pos: [19.3, 77.3], nivelPrincipal: 30 },
+    { id: 'h7', categoria: 'hospitais', pos: [80.7, 77.3], nivelPrincipal: 30 },
   ],
 
   categorias: {
+    principal: { nome: 'Prefeitura', icone: '🏛️', descricao: 'A construção principal do reino. Cada nível libera mais terrenos no mapa (níveis 1, 5, 10, 15, 20, 25 e 30).' },
     aldeias: { nome: 'Aldeias', icone: '🏘️', descricao: 'Fundar, reconstruir e melhorar. As obras mudam a aparência da cidade e elevam a prosperidade.' },
     refugios: { nome: 'Refúgios', icone: '🛖', descricao: 'Abrigo e descanso. Protege contra a praga e dá vida extra às equipes nas expedições.' },
     exercitos: { nome: 'Exércitos', icone: '⚔️', descricao: 'Quartel e guarnição. Treina as equipes: mais ataque e defesa nas expedições.' },
@@ -46,6 +74,11 @@ export const ESTRATEGIA_C1 = {
 
   // Estruturas. custo = nível 1; cada nível seguinte custa +60%. prosperidade = ganho por nível. bonus = por nível.
   estruturas: [
+    {
+      id: 'prefeitura', categoria: 'principal', nome: 'Prefeitura', emoji: '🏛️', niveis: 30, custo: { madeira: 6, pedra: 2 }, crescimento: 0.12, prosperidade: Array(30).fill(1), duracaoBase: 20, duracaoCresc: 0.1,
+      beneficio: 'Construção principal: libera novos terrenos nos níveis 5, 10, 15, 20, 25 e 30.',
+      visual: { vazio: { estr: 'terreno', nome: 'Terreno da Prefeitura' }, niveis: Array.from({ length: 30 }, (_, i) => ({ estr: 'aldeia', escala: 1 + Math.min(0.5, i * 0.02) })) },
+    },
     {
       id: 'casas', categoria: 'aldeias', nome: 'Casas', emoji: '🏘️', niveis: 3, custo: { madeira: 12, pedra: 3 }, prosperidade: [10, 8, 6], duracao: [30, 60, 120], producao: { tipo: 'madeira', porHora: 10 },
       beneficio: 'Reconstrói moradias: mais prosperidade e mais moradores voltando à cidade.',

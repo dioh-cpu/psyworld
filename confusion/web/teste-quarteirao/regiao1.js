@@ -41,6 +41,7 @@ import { iniciarLayout } from './regiao1-layout.js';
 import { iniciarCiclo } from './regiao1-ciclo.js';
 import { CICLO_C1 } from './regiao1-ciclo-c1.js';
 import { iniciarEstrategia } from './regiao1-estrategia.js';
+import { iniciarReinos } from './regiao1-reinos.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
 
@@ -591,6 +592,7 @@ let idleUI = null;
 function atualizarHudEstado() {
   if (hudRecursos) hudRecursos.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes}💎`;
   if (btnFazenda) btnFazenda.style.display = save.desbloqueios.fazenda ? 'inline-flex' : 'none';
+  window.regiaoReinos?.botao && (window.regiaoReinos.botao.style.display = save.desbloqueios.fazenda ? 'inline-flex' : 'none');
 
   // Destaque da quest em auto-rota ou primeira quest ativa no banner
   const ativa = (autoRotaQuestId && QUESTS_POR_ID[autoRotaQuestId] && save.quests[autoRotaQuestId] !== 'concluida'
@@ -1682,15 +1684,43 @@ function processarCliqueMapa(clientX, clientY) {
 }
 
 let arrastandoClique = false;
+// Toque no celular: ao soltar decide se foi toque curto (andar/interagir) ou arraste. O arraste usa o ponto inicial como centro de um
+// joystick invisível flutuante. Soltar ou cancelar para o movimento manual sem disparar toque para andar.
+const GESTO = { limiar: 12, maxMs: 380, raio: 56 };
+let gesto = null; // { id, x0, y0, t0, arrasto }
+const joyFlut = { x: 0, z: 0 };
+function gestoFim() { gesto = null; joyFlut.x = 0; joyFlut.z = 0; joy.x = 0; joy.z = 0; }
 canvas.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
+  if (e.pointerType === 'touch') {
+    if (gesto) return; // só um dedo conduz
+    gesto = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), arrasto: false };
+    try { canvas.setPointerCapture(e.pointerId); } catch {}
+    return;
+  }
   arrastandoClique = true;
   processarCliqueMapa(e.clientX, e.clientY);
 });
 canvas.addEventListener('pointermove', (e) => {
+  if (gesto && e.pointerId === gesto.id) {
+    const dx = e.clientX - gesto.x0, dy = e.clientY - gesto.y0;
+    if (!gesto.arrasto && Math.hypot(dx, dy) > GESTO.limiar) { gesto.arrasto = true; pararNavegacao(true); }
+    if (gesto.arrasto) { const v = vetorJoystick(dx, dy, GESTO.raio); joy.x = v.x; joy.z = v.z; }
+    return;
+  }
   if (!arrastandoClique || e.pointerType === 'touch') return;
   if (e.buttons & 1) processarCliqueMapa(e.clientX, e.clientY);
 });
+const gestoSolto = (e) => {
+  if (!gesto || e.pointerId !== gesto.id) return;
+  const curto = !gesto.arrasto && e.type === 'pointerup' && performance.now() - gesto.t0 <= GESTO.maxMs;
+  const x = e.clientX, y = e.clientY;
+  gestoFim();
+  if (curto) processarCliqueMapa(x, y);
+};
+canvas.addEventListener('pointerup', gestoSolto);
+canvas.addEventListener('pointercancel', gestoSolto);
+canvas.addEventListener('lostpointercapture', (e) => { if (gesto && e.pointerId === gesto.id) gestoFim(); });
 window.addEventListener('pointerup', () => { arrastandoClique = false; });
 
 const teclas = new Set();
@@ -2315,6 +2345,13 @@ window.regiaoC1 = iniciarCiclo({
 });
 // Modo Estratégia da cidade (regras em regiao1-estrategia-regras.js, dados por cidade em regiao1-estrategia-c1.js)
 window.regiaoEstrategia = iniciarEstrategia({ dados: [ESTRATEGIA_C1, ESTRATEGIA_R2], getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, atualizarHud: atualizarHudEstado });
+window.regiaoReinos = iniciarReinos({
+  getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal,
+  getMapaId: () => (mapaAtual ? mapaAtual.id : null), getPosPx: () => W2P(estado.x, estado.z),
+  voltarAoPonto: async (r) => { if (mapaAtual?.id !== r.mapa) await entrarNoMapa(r.mapa, [r.px, r.py], false); const w = P(r.px, r.py); estado.x = w.x; estado.z = w.z; primeiroQuadro = true; },
+  estrategia: () => window.regiaoEstrategia,
+});
+window.regiaoEstrategia.aoSair = () => window.regiaoReinos.voltar();
 iniciarLayout();
 if (avisoSave) setTimeout(() => mostrarToast(avisoSave, 7000), 1500);
 

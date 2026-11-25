@@ -145,7 +145,7 @@ export function pagarFase(exp, rota, faseIdx, materiais, rng) {
 }
 
 // ---------- obras ----------
-export const custoDoNivel = (estr, nivel) => Object.fromEntries(Object.entries(estr.custo).map(([k, v]) => [k, Math.round(v * (1 + 0.6 * (nivel - 1)))]));
+export const custoDoNivel = (estr, nivel) => Object.fromEntries(Object.entries(estr.custo).map(([k, v]) => [k, Math.round(v * (1 + (estr.crescimento ?? 0.6) * (nivel - 1)))]));
 export const falta = (custo, materiais) => Object.fromEntries(Object.entries(custo).map(([k, v]) => [k, Math.max(0, v - (materiais[k] || 0))]).filter(([, v]) => v > 0));
 export function construir(estado, estr, slot) {
   const atual = estado.estruturas[slot];
