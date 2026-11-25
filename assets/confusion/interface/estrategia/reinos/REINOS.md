@@ -31,3 +31,24 @@ Além das cinco nativas e das cinco visitantes do Vale de Outono, o elenco inclu
 - Elétrico: `zunifaisca`, `trovoresta`, `voltabelha`.
 - Voador: `falesario`, `ventassol`.
 - Metal: `bronzelo`, `latonhorn`.
+
+## Expansão do Vale de Outono
+
+Use `cidade-expansao-30.webp` como mapa base para a expansão do Reino 1. Há seis colunas de cinco lotes, com a avenida central entre as colunas 3 e 4. A praça da avenida é parte do cenário.
+
+Os centros dos terrenos no mapa estão nestas coordenadas aproximadas, em porcentagem da imagem. Numere linhas e colunas a partir de 1.
+
+- Colunas, da esquerda para a direita: 19,3%, 29,4%, 39,4%, 60,5%, 70,6%, 80,7%.
+- Linhas, de cima para baixo: 21,5%, 35,4%, 49,3%, 63,3%, 77,3%.
+
+| Nível da construção principal | Capacidade | Lotes adicionais neste marco |
+|---|---:|---|
+| 1 | 6 | Colunas 3 e 4, linhas 2, 3 e 4 |
+| 5 | 10 | Colunas 3 e 4, linhas 1 e 5 |
+| 10 | 14 | Colunas 2 e 5, linhas 2 e 4 |
+| 15 | 18 | Colunas 2 e 5, linhas 1 e 3 |
+| 20 | 22 | Colunas 2 e 5 na linha 5, colunas 1 e 6 na linha 3 |
+| 25 | 26 | Colunas 1 e 6, linhas 2 e 4 |
+| 30 | 30 | Colunas 1 e 6, linhas 1 e 5 |
+
+Mantenha o ID de cada terreno ao expandir a área e ajuste o enquadramento para mostrar os lotes desbloqueados. Um terreno ocupado por um prédio concluído conta uma vez para o requisito do Reino 2. Melhorar um prédio mantém o mesmo terreno ocupado.
