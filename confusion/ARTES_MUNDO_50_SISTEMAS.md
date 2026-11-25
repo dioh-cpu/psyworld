@@ -1,6 +1,6 @@
 # Artes dos 50 sistemas do mundo
 
-**Total: 317 artes** (50 icone, 50 banner, 63 sprite, 66 cena, 78 marcador, 10 retrato). Prontas: 216.
+**Total: 317 artes** (50 icone, 50 banner, 63 sprite, 66 cena, 78 marcador, 10 retrato). Prontas: 228.
 
 Cada sistema tem um menu próprio no jogo (Menu → Mundo). Cada vaga abaixo já existe no menu como um polígono; **para colocar a arte, salve o arquivo com o nome exato na pasta indicada, em WebP**, e ela aparece sozinha, sem mexer em código.
 
@@ -88,7 +88,7 @@ Pasta: `assets/confusion/interface/mundo/05/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `refugio.webp` | sprite | 512×512 | Refúgio: Cabana fortificada pequena. | sim |
 | `fortaleza.webp` | sprite | 512×512 | Fortaleza: Fortaleza com muralha e tochas. | sim |
-| `protecao.webp` | marcador | 128×128 | Escudo contra pragas: Cúpula de proteção translúcida. | não |
+| `protecao.webp` | marcador | 128×128 | Escudo contra pragas: Cúpula de proteção translúcida. | sim |
 
 ## 06 · Personalidade e vínculo dos monstros 🐾
 Pasta: `assets/confusion/interface/mundo/06/`
@@ -217,7 +217,7 @@ Pasta: `assets/confusion/interface/mundo/15/`
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `praga.webp` | cena | 1920×1080 | Praga: Nuvem de esporos esverdeada. | sim |
 | `doente.webp` | sprite | 512×512 | Monstro doente: Monstro adoecido. | sim |
-| `cura.webp` | marcador | 128×128 | Tratamento: Poção/curativo. | não |
+| `cura.webp` | marcador | 128×128 | Tratamento: Poção/curativo. | sim |
 | `nivel.webp` | marcador | 128×128 | Níveis da praga: Três selos de gravidade. | não |
 
 ## 16 · Espionagem e disfarces 🎭
@@ -343,7 +343,7 @@ Pasta: `assets/confusion/interface/mundo/25/`
 | `cerco.webp` | cena | 1920×1080 | Cerco: Cidade cercada por tropas. | sim |
 | `mediar.webp` | cena | 1920×1080 | Mediação: Mesa de negociação entre dois lados. | sim |
 | `tropa.webp` | sprite | 512×512 | Tropa: Soldado de facção. | não |
-| `estandarte.webp` | marcador | 128×128 | Estandarte de guerra: Bandeira de guerra. | não |
+| `estandarte.webp` | marcador | 128×128 | Estandarte de guerra: Bandeira de guerra. | sim |
 
 ## 26 · Adaptações ambientais 🧬
 Pasta: `assets/confusion/interface/mundo/26/`
@@ -390,9 +390,9 @@ Pasta: `assets/confusion/interface/mundo/29/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `muda.webp` | sprite | 512×512 | Muda: Árvore recém-plantada. | não |
-| `arvore-crescida.webp` | sprite | 512×512 | Árvore crescida: Árvore grande com memórias. | não |
-| `monumento.webp` | sprite | 512×512 | Monumento: Monumento de pedra. | não |
+| `muda.webp` | sprite | 512×512 | Muda: Árvore recém-plantada. | sim |
+| `arvore-crescida.webp` | sprite | 512×512 | Árvore crescida: Árvore grande com memórias. | sim |
+| `monumento.webp` | sprite | 512×512 | Monumento: Monumento de pedra. | sim |
 | `plantar.webp` | cena | 1920×1080 | Plantando: Mãos plantando. | sim |
 
 ## 30 · Criaturas gigantes exploráveis 🐉
@@ -477,7 +477,7 @@ Pasta: `assets/confusion/interface/mundo/36/`
 | `terrestre.webp` | sprite | 512×512 | Montaria terrestre: Criatura montável terrestre. | sim |
 | `aerea.webp` | sprite | 512×512 | Montaria aérea: Criatura montável aérea. | sim |
 | `aquatica.webp` | sprite | 512×512 | Montaria aquática: Criatura montável aquática. | não |
-| `sela.webp` | marcador | 128×128 | Sela: Item de sela. | não |
+| `sela.webp` | marcador | 128×128 | Sela: Item de sela. | sim |
 | `domar.webp` | cena | 1920×1080 | Domando: Cena de doma. | sim |
 
 ## 37 · Caçadores de recompensas 🎯
@@ -595,9 +595,9 @@ Pasta: `assets/confusion/interface/mundo/46/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `observatorio.webp` | sprite | 512×512 | Observatório: Torre de observação. | não |
+| `observatorio.webp` | sprite | 512×512 | Observatório: Torre de observação. | sim |
 | `constelacao.webp` | cena | 1920×1080 | Constelação: Céu com constelação desenhada. | sim |
-| `ciclo.webp` | marcador | 128×128 | Ciclo celeste: Marcador de ciclo. | não |
+| `ciclo.webp` | marcador | 128×128 | Ciclo celeste: Marcador de ciclo. | sim |
 
 ## 47 · Santuários de memória ⛪
 Pasta: `assets/confusion/interface/mundo/47/`
@@ -606,10 +606,10 @@ Pasta: `assets/confusion/interface/mundo/47/`
 |---|---|---|---|---|
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
-| `santuario.webp` | sprite | 512×512 | Santuário de memória: Santuário de pedra luminosa. | não |
+| `santuario.webp` | sprite | 512×512 | Santuário de memória: Santuário de pedra luminosa. | sim |
 | `catedral.webp` | cena | 1920×1080 | Catedral: Catedral do herói. | sim |
 | `eco.webp` | sprite | 512×512 | Eco: Fantasma do passado. | não |
-| `agua-purificada.webp` | marcador | 128×128 | Água purificada: Frasco de água luminosa. | não |
+| `agua-purificada.webp` | marcador | 128×128 | Água purificada: Frasco de água luminosa. | sim |
 
 ## 48 · Engenharia e infraestrutura 🌉
 Pasta: `assets/confusion/interface/mundo/48/`
@@ -619,7 +619,7 @@ Pasta: `assets/confusion/interface/mundo/48/`
 | `icone.webp` | icone | 256×256 | Ícone: Símbolo do sistema para a grade do menu. | sim |
 | `banner.webp` | banner | 1600×500 | Banner: Cena de abertura do menu deste sistema. | sim |
 | `canal.webp` | sprite | 512×512 | Canal de irrigação: Trecho de canal. | não |
-| `ponte.webp` | sprite | 512×512 | Ponte reforçada: Ponte de pedra. | não |
+| `ponte.webp` | sprite | 512×512 | Ponte reforçada: Ponte de pedra. | sim |
 | `obra.webp` | cena | 1920×1080 | Obra: Cena de construção. | sim |
 
 ## 49 · Criaturas que aprendem com o jogador 🎓
