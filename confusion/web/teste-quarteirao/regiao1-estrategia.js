@@ -2,7 +2,7 @@
 // Mapa da cidade com locais de construção, cinco menus (Aldeias, Refúgios, Exércitos, Hospitais, Expedições), combate 6 contra 6 por
 // turnos, controles independentes (Atacar automaticamente / Próxima fase / Avançar automaticamente) e expedição minimizada.
 // Estado salvo em save.idle.estrategia[id]. Cada recompensa de vitória é paga uma única vez (exp.pagas).
-import { animarEvento as animarEventoFx } from './regiao1-batalha-fx.js';
+import { criarArena } from './regiao1-batalha-tela.js';
 import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
 import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase } from './regiao1-estrategia-regras.js';
 
@@ -18,7 +18,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
   let resumoUlt = null, selObras = new Set(), confAcel = null, loteRec = null, loteQtd = 5;
   let drawer = false;
   let aba = 'gestao', visao = 'cidade', slotSel = null, confirmar = null, alvoSel = null, minimizado = false;
-  let timerTick = null, timerProx = null;
+  let timerTick = null, timerProx = null, arena = null, artesFase = {};
 
   // ---------- estado ----------
   const estado = (Dx = D) => {
@@ -111,6 +111,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     #modal-estrategia .est-abas { width: 100%; justify-content: center; margin: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); background: rgba(26, 15, 34, .92); gap: 4px; }
     #modal-estrategia .est-abas button { min-height: 34px; font-size: 11.5px; padding: 4px 8px; }
     @media (max-height: 520px) { #modal-estrategia .bat .est-bloco { padding: 3px 8px; font-size: 11px; } #modal-estrategia .bat-log { max-height: 7vh; font-size: 10.5px; } #modal-estrategia .est-arena { min-height: 54vh; } #modal-estrategia .bat-ctl button, #modal-estrategia .bat-ctl label { min-height: 28px; padding: 2px 8px; font-size: 11px; } }
+    #modal-estrategia .bat.arena { padding: 0; overflow: hidden; display: block; }
     #modal-estrategia .bat { position: absolute; inset: 0; padding: 44px 10px 6px; gap: 4px; background: #1a0f22; z-index: 7; overflow: auto; }
     #estrategia-ind button { min-height: 28px; padding: 2px 9px; font-size: 11.5px; }`;
   document.head.append(estilo);
@@ -423,7 +424,8 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus }); });
     if (manterHp) al.forEach((u, i) => { const h = manterHp[exp.equipe[i]]; if (h != null) u.hp = Math.max(1, Math.min(u.hpMax, Math.round(h * u.hpMax + u.hpMax * bonus.cura))); });
     batalha = criarBatalha(al, gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)));
-    if (D.arteInimigo) batalha.inimigos.forEach((u) => { u.arte = D.arteInimigo(u.especie, exp.fase); });
+    artesFase = {}; if (D.arteInimigo) for (const u of [...batalha.inimigos, ...batalha.esperaI]) artesFase[u.especie] = D.arteInimigo(u.especie, exp.fase);
+    arena = null;
     batalha.log.push(`Fase ${exp.fase + 1}: ${fase.nome}. ${batalha.inimigos.length} inimigo(s) à frente.`);
     exp.estado = 'batalha'; alvoSel = null; visao = 'batalha';
     salvar(); iniciarTick(); desenhar();
@@ -470,52 +472,39 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     } else s.equipeSel = exp.equipe;
     comecarFase(exp.hpPct);
   }
+  const visivelBat = () => modal.classList.contains('aberto') && visao === 'batalha';
   function iniciarTick() {
-    clearInterval(timerTick);
-    timerTick = setInterval(tick, ritmoMs);
+    clearTimeout(timerTick);
+    const laco = () => { tick(); timerTick = setTimeout(laco, ritmoMs + (visivelBat() && arena ? arena.restante() : 0)); };
+    timerTick = setTimeout(laco, ritmoMs);
   }
   function tick() {
     const s = estado(), exp = s.exp;
     if (!exp || exp.estado !== 'batalha' || !batalha || batalha.fim) return;
     const u = atorAtual(batalha);
-    if (!u) return;
+    if (!u) { if (batalha.fim) terminarFase(); return; }
+    if (visivelBat() && arena?.ocupada()) return;
     if (u.lado === 'i' || exp.autoAtaque) executar(batalha, decidir(batalha, u, rng), rng);
-    else { if (visao === 'batalha') desenharBatalha(); desenharInd(); return; } // espera o jogador
+    else { if (visivelBat()) desenharBatalha(); desenharInd(); return; } // espera o jogador
     if (batalha.fim) terminarFase();
-    else { if (visao === 'batalha' && modal.classList.contains('aberto')) desenharBatalha(); desenharInd(); }
+    else { if (visivelBat()) desenharBatalha(); desenharInd(); }
   }
 
   // ---------- combate (tela) ----------
-  const spriteUrl = (esp) => `../../../assets/monsters/${esp.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}/sprite-front.png`;
-  function cartao(u, cls, vez) {
-    const pct = Math.max(0, Math.round((u.hp / u.hpMax) * 100));
-    return `<button class="un ${cls} ${u.hp <= 0 ? 'morto' : ''} ${vez ? 'vez' : ''} ${alvoSel === u.id ? 'alvo' : ''}" data-un="${u.id}"><span class="un-fig"><img src="${u.arte ? `../../../${u.arte}` : spriteUrl(u.especie)}" alt="${esc(u.especie)}" onerror="this.outerHTML='<span class=&quot;est-poli&quot;>${PAPEL[u.papel].i}</span>'"></span><span class="un-nome">${PAPEL[u.papel].i} ${esc(u.especie)} nv.${u.nivel}</span><span class="hp"><i style="width:${pct}%"></i></span><span class="un-hp">${u.hp}/${u.hpMax}</span></button>`;
-  }
-  const fundoFase = (rota, fase) => rota.arena ? `../../../${rota.arena}` : `../../../assets/confusion/interface/estrategia/${rota.material === 'pedra' ? 'pedra' : 'madeira'}-0${Math.min(3, fase + 1)}.webp`;
-  const animarEvento = (el) => animarEventoFx(el, batalha && batalha.evento, '.est-arena');
+  const fundoRaiz = (rota, fase) => rota.arena || `assets/confusion/interface/estrategia/${rota.material === 'pedra' ? 'pedra' : 'madeira'}-0${Math.min(3, fase + 1)}.webp`;
   function desenharBatalha() {
     const s = estado(), exp = s.exp, rota = exp && rotaDe(exp.rota);
     const el = $('#est-bat');
-    if (!exp || !batalha) { el.innerHTML = `<div class="est-bloco">${exp ? '<p>A expedição foi pausada (a página foi recarregada). Os materiais já ganhos estão salvos.</p><div class="est-linha">${botoesPausa(exp)}<button class="btn-sec" data-parar="1">Encerrar expedição</button></div>' : 'Sem combate em andamento.'}</div>`; return; }
-    const u = batalha.fim ? null : atorAtual(batalha);
-    const manual = u && u.lado === 'a' && !exp.autoAtaque;
-    const ultima = exp.fase >= rota.fases.length - 1;
-    const fimBotao = exp.estado === 'vitoria' ? `<button class="btn-sec" data-equipe="1">Ajustar equipe</button><button class="btn-pri" data-prox="1">Próxima fase</button>` : (['derrota', 'fim'].includes(exp.estado) ? `<button class="btn-pri" data-fim="1">${exp.estado === 'fim' ? 'Concluir rota' : 'Voltar à cidade'}</button>` : '');
-    el.innerHTML = `<div class="est-bloco" style="margin:0"><b>${rota.icone} ${esc(rota.nome)}</b> · Fase ${exp.fase + 1}/${rota.fases.length}: ${esc(rota.fases[exp.fase].nome)} · ${estadoTxt(exp)} · ganhos: ${Object.keys(exp.ganhos).length ? custoTxt(exp.ganhos) : 'nenhum'}</div>
-      <div class="est-arena" style="background-image:url('${fundoFase(rota, exp.fase)}')">
-        <div class="bat-lado a">${batalha.aliados.map((x) => cartao(x, 'a', u === x)).join('')}</div>
-        <div class="bat-lado i">${batalha.inimigos.map((x) => cartao(x, 'i', u === x)).join('')}</div>
-      </div>
-      <div class="bat-log" id="est-log">${batalha.log.slice(-8).map((l) => `<p style="margin:1px 0">${esc(l)}</p>`).join('')}</div>
-      <div class="bat-ctl">
-        <label><input type="checkbox" id="est-auto" ${exp.autoAtaque ? 'checked' : ''}> Atacar automaticamente</label>
-        <label><input type="checkbox" id="est-autoavanca" ${exp.autoAvancar ? 'checked' : ''}> Avançar automaticamente</label>
-        ${fimBotao}
-        <button class="btn-sec" data-min="1">Minimizar</button><button class="btn-sec" data-parar="1">Parar</button>
-        ${manual ? `<span><b>Vez: ${esc(u.especie)}</b> (toque num alvo)</span><button class="btn-pri" data-acao="atacar">Atacar</button><button class="btn-pri" data-acao="habilidade" ${u.recarga > 0 ? 'disabled' : ''}>Habilidade${u.recarga > 0 ? ` (${u.recarga})` : ''}</button><button class="btn-sec" data-acao="defender">Defender</button>${u.papel === 'suporte' ? '<button class="btn-sec" data-acao="curar">Curar</button>' : ''}` : ''}
-      </div>`;
-    const lg = el.querySelector('#est-log'); if (lg) lg.scrollTop = lg.scrollHeight;
-    animarEvento(el);
+    if (!exp || !batalha) { arena = null; el.classList.remove('arena'); el.innerHTML = `<div class="est-bloco">${exp ? '<p>A expedição foi pausada (a página foi recarregada). Os materiais já ganhos estão salvos.</p><div class="est-linha">' + botoesPausa(exp) + '<button class="btn-sec" data-parar="1">Encerrar expedição</button></div>' : 'Sem combate em andamento.'}</div>`; return; }
+    if (!arena || arena.raiz !== el || !el.querySelector('.tb-campo')) arena = criarArena(el);
+    const extra = `<button data-autoavanca="1" class="${exp.autoAvancar ? 'on' : ''}">Avançar auto</button><button data-min="1">Minimizar</button><button data-parar="1">Parar</button>`;
+    const d = arena.atualizar(batalha, { titulo: `${rota.icone} ${rota.nome}`, sub: `Fase ${exp.fase + 1} de ${rota.fases.length} · ${rota.fases[exp.fase].nome}`, auto: exp.autoAtaque, arena: fundoRaiz(rota, exp.fase), artes: artesFase, extraTopo: extra });
+    if (batalha.fim) {
+      const fimBotao = exp.estado === 'vitoria' ? '<button class="btn-sec" data-equipe="1">Ajustar equipe</button><button class="btn-pri" data-prox="1">Próxima fase</button>' : (['derrota', 'fim'].includes(exp.estado) ? `<button class="btn-pri" data-fim="1">${exp.estado === 'fim' ? 'Concluir rota' : 'Voltar ao reino'}</button>` : '');
+      const gan = Object.keys(exp.ganhos).length ? `<small>Ganhos: ${custoTxt(exp.ganhos)}</small>` : '';
+      const marca = `${exp.estado}:${exp.fase}`;
+      if (arena.marca !== marca) { arena.marca = marca; setTimeout(() => { if (arena && batalha?.fim) arena.fim(`<b>${batalha.fim === 'vitoria' ? '🏆 Vitória!' : '💀 Derrota'}</b>${gan}<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">${fimBotao}</div>`); }, d + arena.restante() + 450); }
+    } else if (arena.marca) { arena.marca = null; arena.fim(''); }
   }
 
   // ---------- indicador (expedição minimizada) ----------
@@ -587,12 +576,12 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     if (t.dataset.prox) { clearTimeout(timerProx); proximaFase(false); return; }
     if (t.dataset.fim) { const ex = s.exp; clearInterval(timerTick); s.exp = null; batalha = null; visao = 'cidade'; if (ex) mostrarToast(`Ganhos da expedição: ${Object.keys(ex.ganhos).length ? custoTxt(ex.ganhos) : 'nenhum'}.`, 3200); salvar(); desenhar(); return; }
     if (t.dataset.min) { minimizar(); return; }
-    if (t.id === 'est-auto') { s.exp.autoAtaque = t.checked; salvar(); desenharBatalha(); return; }
-    if (t.id === 'est-autoavanca') { s.exp.autoAvancar = t.checked; salvar(); if (t.checked && s.exp.estado === 'vitoria') timerProx = setTimeout(() => proximaFase(true), 800); return; }
-    if (t.dataset.un) { const id = t.dataset.un; if (batalha && batalha.ordem.find((x) => x.id === id)?.hp > 0) { alvoSel = alvoSel === id ? null : id; desenharBatalha(); } return; }
-    if (t.dataset.acao && batalha && !batalha.fim) {
-      const u = atorAtual(batalha); if (!u || u.lado !== 'a') return;
-      executar(batalha, { tipo: t.dataset.acao, alvo: alvoSel || undefined }, rng); alvoSel = null;
+    if (t.dataset.auto) { s.exp.autoAtaque = !s.exp.autoAtaque; salvar(); desenharBatalha(); return; }
+    if (t.dataset.autoavanca) { s.exp.autoAvancar = !s.exp.autoAvancar; salvar(); desenharBatalha(); if (s.exp.autoAvancar && s.exp.estado === 'vitoria') timerProx = setTimeout(() => proximaFase(true), 800); return; }
+    if (t.dataset.un) { const u = batalha?.ordem.find((x) => x.id === t.dataset.un); if (u?.hp > 0 && u.lado === 'i') arena?.definirAlvo(u.id); return; }
+    if ((t.dataset.hab !== undefined || t.dataset.acao) && batalha && !batalha.fim) {
+      const u = atorAtual(batalha); if (!u || u.lado !== 'a' || arena?.ocupada()) return;
+      executar(batalha, t.dataset.hab !== undefined ? { tipo: 'habilidade', idx: Number(t.dataset.hab), alvo: arena?.alvo() || undefined } : { tipo: t.dataset.acao, alvo: arena?.alvo() || undefined }, rng); arena?.limparAlvo();
       if (batalha.fim) terminarFase(); else desenharBatalha();
     }
   });

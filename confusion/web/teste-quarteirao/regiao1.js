@@ -43,6 +43,8 @@ import { CICLO_C1 } from './regiao1-ciclo-c1.js';
 import { iniciarEstrategia } from './regiao1-estrategia.js';
 import { iniciarReinos } from './regiao1-reinos.js';
 import { golpeCampanha } from './regiao1-batalha-fx.js';
+import { criarTelaBatalha } from './regiao1-batalha-tela.js';
+const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
@@ -944,33 +946,31 @@ function iniciarBatalha(tipo, entidade) {
   if (batalhaAtiva) return;
   const ehBoss = tipo === 'boss';
   const defBoss = ehBoss ? BOSSES_REGIAO1[entidade.id] : null;
-  const maxIni = ehBoss ? defBoss.hp : 65 + entidade.nivel * 8;
   const idle = garantirEstadoIdle(save);
   const st = calcularStatusDetalhado(save);
   const maxJog = st.hpMax;
   const hpJog = Math.max(Math.round(maxJog * 0.5), Math.min(maxJog, idle.jogador.hp));
-  batalhaAtiva = {
-    tipo,
-    entidade,
-    hpJog,
-    maxJog,
-    atkJog: st.atk,
-    defJog: st.def,
-    nivelJog: st.nivel,
-    hpIni: maxIni,
-    maxIni,
-    nomeIni: ehBoss ? defBoss.nome : `${entidade.especie} (Nv. ${entidade.nivel})`,
-  };
-  document.getElementById('bat-titulo').textContent = ehBoss ? `⚔️ Chefe · ${defBoss.nome}` : `⚡ Encontro Selvagem`;
-  document.getElementById('bat-nome-jog').textContent = `Noctarn · Nv.${st.nivel}`;
-  document.getElementById('bat-img-ini').src = entidade.sprite;
-  document.querySelector('#modal-batalha .bat-arena').style.background = `linear-gradient(#20102a22, #170d2166), url(../../../assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp) center / cover`;
-  document.getElementById('bat-nome-ini').textContent = batalhaAtiva.nomeIni;
-  document.getElementById('bat-log').textContent = ehBoss
-    ? `${defBoss.nome} bloqueia a arena! Vença para concluir a missão da rota.`
-    : `Um ${entidade.especie} selvagem surgiu na clareira!`;
-  renderizarBatalha();
-  abrirModal('modal-batalha');
+  const nomeIni = ehBoss ? defBoss.nome : `${entidade.especie} (Nv. ${entidade.nivel})`;
+  batalhaAtiva = { tipo, entidade, hpJog, maxJog, atkJog: st.atk, defJog: st.def, nivelJog: st.nivel, hpIni: 1, maxIni: 1, nomeIni };
+  // Equipe (até 4) contra o inimigo e até 2 reforços na fila; a arena ocupa a tela inteira
+  const aliados = (idle.equipe || []).slice(0, 6).map((m, i) => ({ especie: m.especie, nivel: i === 0 ? st.nivel : (m.nivel || 1) }));
+  const raizDe = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
+  const artes = {}; let inimigos;
+  if (ehBoss) {
+    const nv = Math.max(6, Math.round((defBoss.hp - 58) / 13)); artes[defBoss.nome] = raizDe(entidade.sprite);
+    inimigos = [[defBoss.nome, nv], ['Brotavel', Math.max(3, nv - 4)], ['Noctarn', Math.max(3, nv - 4)]];
+  } else {
+    artes[entidade.especie] = raizDe(entidade.sprite);
+    const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
+    outros.forEach((m) => { artes[m.especie] = raizDe(m.sprite); });
+    inimigos = [[entidade.especie, entidade.nivel], ...outros.map((m) => [m.especie, m.nivel])];
+  }
+  telaBatalha.abrir({
+    titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem', sub: ehBoss ? 'Campanha' : entidade.especie,
+    arena: `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`,
+    aliados, inimigos, artes, ritmo: 420,
+    onFim: (venceu, frac) => { if (batalhaAtiva) { batalhaAtiva.hpJog = Math.max(1, Math.round(batalhaAtiva.maxJog * (venceu ? Math.max(0.3, frac) : 0.5))); } encerrarBatalha(venceu); },
+  });
 }
 
 function renderizarBatalha() {
@@ -1051,6 +1051,7 @@ function encerrarBatalha(vitoria) {
   idle.jogador.hp = Math.max(1, Math.min(b.maxJog, b.hpJog));
   batalhaAtiva = null;
   fecharModal('modal-batalha');
+  if (telaBatalha.aberta()) telaBatalha.encerrarSilencioso();
 
   if (vitoria) {
     if (b.tipo === 'boss') {
@@ -2363,7 +2364,7 @@ const voltarAoPonto = async (r) => { if (mapaAtual?.id !== r.mapa) await entrarN
 window.regiaoExp = iniciarExpansao({
   getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, MAPAS, MONSTROS: MONSTROS_SELVAGENS,
   irParaMapa: (id) => entrarNoMapa(id, null, false), getMapaId: () => (mapaAtual ? mapaAtual.id : null), getPosPx: () => W2P(estado.x, estado.z),
-  voltarAoPonto, batalhaBloqueando,
+  voltarAoPonto, batalhaBloqueando, tela: telaBatalha,
 });
 iniciarLayout();
 if (avisoSave) setTimeout(() => mostrarToast(avisoSave, 7000), 1500);

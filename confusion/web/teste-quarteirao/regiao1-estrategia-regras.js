@@ -4,6 +4,8 @@
 //  - Obras: custo em materiais, efeito visível e prosperidade, com a origem de cada ganho registrada.
 import { ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
 import { multElemento } from '../core.js';
+import { EFEITOS, kitDe } from './regiao1-batalha-habilidades.js';
+export { KITS, kitDe, EFEITOS } from './regiao1-batalha-habilidades.js';
 
 const lcg = (s) => () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
 export const criarRng = (semente) => lcg((semente >>> 0) || 1);
@@ -24,6 +26,7 @@ export function criarUnidade({ id, especie, nivel, lado, papeis, bonus = {} }) {
   return {
     id, especie, nivel, lado, papel, elemento: ELEMENTO_DA_ESPECIE[especie] || 'neutro',
     habilidades: HABILIDADES_DA_ESPECIE[especie] || ['Golpe'],
+    kit: kitDe(especie, papel, ELEMENTO_DA_ESPECIE[especie] || 'neutro', HABILIDADES_DA_ESPECIE[especie] || []), cd: [0, 0, 0], efeitos: {},
     hpMax, hp: hpMax, atk: Math.round(s.atk * (1 + (bonus.atk || 0))), def: Math.round(s.def * (1 + (bonus.def || 0))),
     defendendo: false, recarga: 0,
   };
@@ -39,85 +42,165 @@ export function gerarInimigos(fase, papeis, rng, extras = []) {
 }
 
 // ---------- combate ----------
-export function criarBatalha(aliados, inimigos) {
-  const unidades = [...aliados, ...inimigos];
-  return { aliados, inimigos, rodada: 1, fila: [], log: [], fim: null, ordem: unidades };
+// Até 4 de cada lado em campo; o excedente espera na fila (máx. 2) e entra na vaga quando alguém cai.
+export function criarBatalha(aliados, inimigos, { ativos = 4 } = {}) {
+  const emCampoA = aliados.slice(0, ativos), emCampoI = inimigos.slice(0, ativos);
+  return { aliados: emCampoA, inimigos: emCampoI, esperaA: aliados.slice(ativos, ativos + 2), esperaI: inimigos.slice(ativos, ativos + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0 };
 }
-const vivos = (l) => l.filter((u) => u.hp > 0);
+export const vivos = (l) => l.filter((u) => u.hp > 0);
 const inimigosDe = (b, u) => (u.lado === 'a' ? b.inimigos : b.aliados);
 const aliadosDe = (b, u) => (u.lado === 'a' ? b.aliados : b.inimigos);
+export const temEfeito = (u, id) => Boolean(u.efeitos?.[id]);
+// ataque e defesa efetivos, com buffs e debuffs
+const efetivo = (u, k) => { const alto = temEfeito(u, `${k}_alto`) ? 0.3 : 0, baixo = temEfeito(u, `${k}_baixo`) || temEfeito(u, `${k}_baixa`) ? 0.3 : 0; return Math.max(1, u[k] * (1 + alto - baixo)); };
 
 function iniciarRodada(b) {
   b.fila = vivos(b.ordem).sort((x, y) => (y.nivel + (y.papel === 'suporte' ? 1 : 0)) - (x.nivel + (x.papel === 'suporte' ? 1 : 0))).map((u) => u.id);
-  for (const u of b.ordem) { u.defendendo = false; if (u.recarga > 0) u.recarga--; }
+  for (const u of b.ordem) { u.defendendo = false; u.cd = (u.cd || [0, 0, 0]).map((c) => Math.max(0, c - 1)); u.recarga = Math.max(...u.cd); }
 }
+const antes = (b, e) => { (b.antes ||= []).push(e); };
+// Dano direto: o escudo absorve primeiro. Sono acaba ao apanhar.
+function receberDano(alvo, d) {
+  let abs = 0;
+  if (alvo.efeitos?.escudo) { abs = Math.min(alvo.efeitos.escudo.valor, d); alvo.efeitos.escudo.valor -= abs; if (alvo.efeitos.escudo.valor <= 0) delete alvo.efeitos.escudo; }
+  const perdido = d - abs; alvo.hp = Math.max(0, alvo.hp - perdido);
+  if (perdido > 0 && alvo.efeitos?.sono) delete alvo.efeitos.sono;
+  return { perdido, abs };
+}
+// Aplica um efeito (com chance). Devolve o id aplicado, ou null.
+function aplicarEfeito(alvo, fonte, e, rng) {
+  if (alvo.hp <= 0 || rng() > (e.chance ?? 1)) return null;
+  const def = EFEITOS[e.id]; if (!def) return null;
+  let valor = 0;
+  if (e.id === 'sangramento') valor = Math.max(2, Math.round(fonte.atk * 0.45));
+  else if (e.id === 'queimadura') valor = Math.max(3, Math.round(fonte.atk * 0.6));
+  else if (e.id === 'veneno') valor = Math.max(3, Math.round(alvo.hpMax * 0.05));
+  else if (e.id === 'regeneracao') valor = Math.max(2, Math.round(alvo.hpMax * 0.07));
+  (alvo.efeitos ||= {})[e.id] = { turnos: e.turnos || 2, valor, fonte: fonte.id };
+  return e.id;
+}
+const limpar = (alvo) => { const tirados = []; for (const id of Object.keys(alvo.efeitos || {})) if (EFEITOS[id]?.debuff) { delete alvo.efeitos[id]; tirados.push(id); } return tirados; };
+// Início do turno: energia, dano e cura por turno. Quem está sob controle perde o turno.
+function iniciarTurno(b, u) {
+  for (const [id, e] of Object.entries(u.efeitos || {})) {
+    if (EFEITOS[id]?.dot) { const r = receberDano(u, e.valor); antes(b, { tipo: 'dot', efeito: id, alvo: u.id, valor: r.perdido }); b.log.push(`${u.especie} sofre ${EFEITOS[id].nome.toLowerCase()} (−${r.perdido}).`); }
+    else if (id === 'regeneracao') { const c = Math.min(e.valor, u.hpMax - u.hp); u.hp += c; if (c) antes(b, { tipo: 'regen', alvo: u.id, valor: c }); }
+  }
+}
+function fimDoTurno(u) {
+  for (const [id, e] of Object.entries(u.efeitos || {})) { e.turnos -= 1; if (e.turnos <= 0) delete u.efeitos[id]; }
+}
+const verificarFim = (b) => { if (!vivos(b.inimigos).length && !b.esperaI.length) b.fim = 'vitoria'; else if (!vivos(b.aliados).length && !b.esperaA.length) b.fim = 'derrota'; };
 export function atorAtual(b) {
   if (b.fim) return null;
-  if (!b.fila.length) iniciarRodada(b);
-  while (b.fila.length) {
-    const u = b.ordem.find((x) => x.id === b.fila[0] && x.lado && x.hp > 0);
-    if (u) return u;
-    b.fila.shift();
+  for (let guarda = 0; guarda < 400; guarda++) {
+    if (!b.fila.length) { if (b.jaIniciou) b.rodada++; b.jaIniciou = true; iniciarRodada(b); }
+    const u = b.ordem.find((x) => x.id === b.fila[0] && x.hp > 0);
+    if (!u) { b.fila.shift(); continue; }
+    if (b.iniciado !== `${b.rodada}:${u.id}`) {
+      b.iniciado = `${b.rodada}:${u.id}`; iniciarTurno(b, u); reforcar(b); verificarFim(b);
+      if (b.fim) return null;
+      if (u.hp <= 0) { b.fila.shift(); continue; }
+      const cc = Object.keys(u.efeitos || {}).find((id) => EFEITOS[id]?.cc);
+      if (cc) { antes(b, { tipo: 'pular', alvo: u.id, efeito: cc }); b.log.push(`${u.especie} perde o turno (${EFEITOS[cc].nome.toLowerCase()}).`); fimDoTurno(u); b.fila.shift(); continue; }
+    }
+    return u;
   }
-  b.rodada++; iniciarRodada(b);
-  return atorAtual(b);
+  return null;
 }
 function escolherAlvo(b, u, rng) {
   const alvos = vivos(inimigosDe(b, u));
-  // defesa atrai golpes: peso 4 contra 1
-  const pesos = alvos.map((a) => (a.papel === 'defesa' ? 4 : 1));
+  // provocação atrai com peso 8; defesa, 4; os demais, 1
+  const pesos = alvos.map((a) => (temEfeito(a, 'provocacao') ? 8 : a.papel === 'defesa' ? 4 : 1));
   let t = rng() * pesos.reduce((x, y) => x + y, 0);
   for (let i = 0; i < alvos.length; i++) { t -= pesos[i]; if (t <= 0) return alvos[i]; }
   return alvos[alvos.length - 1];
 }
 function dano(b, u, alvo, mult, rng) {
   const el = multElemento(u.elemento, alvo.elemento);
-  const base = u.atk * mult * el * (0.9 + rng() * 0.2);
-  const reduz = alvo.def * (alvo.defendendo ? 1.1 : 0.55);
+  const base = efetivo(u, 'atk') * mult * el * (0.9 + rng() * 0.2);
+  const reduz = efetivo(alvo, 'def') * (alvo.defendendo ? 1.1 : 0.55);
   return Math.max(2, Math.round(base - reduz));
 }
-// acao: { tipo: 'atacar'|'habilidade'|'defender'|'curar', alvo?: id }
+// acao: { tipo: 'atacar'|'habilidade'|'defender', idx?: 0..2, alvo?: id }. Cada ação gera b.evento (que a tela toca uma vez).
 export function executar(b, acao, rng) {
   const u = atorAtual(b); if (!u) return b;
   const alvoPorId = (id, lista) => lista.find((x) => x.id === id && x.hp > 0);
-  let tipo = acao.tipo;
-  if (tipo === 'curar' && u.papel !== 'suporte') tipo = 'atacar';
-  if (tipo === 'habilidade' && u.recarga > 0) tipo = 'atacar';
-  if (tipo === 'curar') {
-    const a = alvoPorId(acao.alvo, aliadosDe(b, u)) || vivos(aliadosDe(b, u)).sort((x, y) => x.hp / x.hpMax - y.hp / y.hpMax)[0];
-    const cura = Math.round(u.atk * 2.2 + a.hpMax * 0.1);
-    a.hp = Math.min(a.hpMax, a.hp + cura);
-    for (const o of vivos(aliadosDe(b, u))) if (o !== a) o.hp = Math.min(o.hpMax, o.hp + Math.round(cura * 0.4)); // o grupo também se recupera um pouco
-    b.log.push(`${u.especie} curou ${a.especie} (+${cura}) e o grupo um pouco.`);
-    b.evento = { tipo: 'curar', ator: u.id, alvo: a.id, valor: cura };
+  let tipo = acao.tipo, idx = Number.isInteger(acao.idx) ? acao.idx : 1, hab = null;
+  if (tipo === 'habilidade') { hab = u.kit[idx]; if (!hab || (u.cd?.[idx] || 0) > 0 || temEfeito(u, 'silencio')) { tipo = 'atacar'; hab = null; } }
+  b.turnos = (b.turnos || 0) + 1;
+  const ev = { tipo: 'atacar', hab, idx, ator: u.id, alvos: [], antes: b.antes || [] }; b.antes = [];
+  if (hab) { u.cd[idx] = hab.cd; u.recarga = Math.max(...u.cd); }
+  const aliados = vivos(aliadosDe(b, u)), inimigos = vivos(inimigosDe(b, u));
+  if (hab && (hab.tipo === 'cura' || hab.tipo === 'apoio')) {
+    ev.tipo = hab.tipo;
+    const quem = hab.alvo === 'si' ? [u] : hab.alvo === 'aliados' ? aliados : [alvoPorId(acao.alvo, aliados) || [...aliados].sort((x, y) => x.hp / x.hpMax - y.hp / y.hpMax)[0]];
+    for (const a of quem) {
+      const r = { id: a.id, valor: 0, efeitos: [], limpos: [] };
+      const pct = hab.tipo === 'cura' ? hab.mult : (hab.cura || 0);
+      if (pct) { const c = Math.min(a.hpMax - a.hp, Math.round(a.hpMax * pct + u.atk * 0.6)); a.hp += c; r.valor = c; }
+      if (hab.limpa) r.limpos = limpar(a);
+      if (hab.escudo) { a.efeitos ||= {}; a.efeitos.escudo = { turnos: 3, valor: Math.round(a.hpMax * hab.escudo), fonte: u.id }; r.efeitos.push('escudo'); }
+      for (const e of hab.efeitos || []) { const ok = aplicarEfeito(a, u, e, rng); if (ok) r.efeitos.push(ok); }
+      ev.alvos.push(r);
+    }
+    ev.alvo = ev.alvos[0]?.id; ev.valor = ev.alvos[0]?.valor || 0;
+    b.log.push(`${u.especie} usou ${hab.nome}${hab.alvo === 'si' ? '' : hab.alvo === 'aliados' ? ' no grupo' : ''}${ev.valor ? ` (+${ev.valor})` : ''}.`);
   } else if (tipo === 'defender') {
-    u.defendendo = true;
+    u.defendendo = true; ev.tipo = 'defender'; ev.alvo = u.id; ev.alvos = [{ id: u.id, valor: 0, efeitos: [] }];
     b.log.push(`${u.especie} se defende.`);
-    b.evento = { tipo: 'defender', ator: u.id, alvo: u.id };
   } else {
-    const alvo = alvoPorId(acao.alvo, inimigosDe(b, u)) || escolherAlvo(b, u, rng);
-    const habil = tipo === 'habilidade';
-    const d = dano(b, u, alvo, habil ? 1.7 : 1, rng);
-    alvo.hp = Math.max(0, alvo.hp - d);
-    if (habil) u.recarga = 3;
-    b.evento = { tipo: habil ? 'habilidade' : 'atacar', ator: u.id, alvo: alvo.id, valor: d, morreu: alvo.hp <= 0, distancia: habil && u.papel !== 'defesa' };
-    b.log.push(`${u.especie} ${habil ? `usou ${u.habilidades[Math.min(2, u.habilidades.length - 1)]}` : 'atacou'} ${alvo.especie} (−${d})${alvo.hp <= 0 ? ' e o derrotou' : ''}.`);
+    const principal = alvoPorId(acao.alvo, inimigos) || escolherAlvo(b, u, rng);
+    const alvos = hab && hab.alvo === 'todos' ? inimigos : [principal];
+    ev.tipo = hab ? 'habilidade' : 'atacar'; ev.distancia = Boolean(hab?.distancia); ev.area = alvos.length > 1;
+    for (const a of alvos) {
+      const d = dano(b, u, a, hab ? hab.mult : 1, rng); const r = receberDano(a, d);
+      const rr = { id: a.id, valor: r.perdido, absorvido: r.abs, morreu: a.hp <= 0, efeitos: [], limpos: [] };
+      if (a.hp > 0) for (const e of hab?.efeitos || []) { const ok = aplicarEfeito(a, u, e, rng); if (ok) rr.efeitos.push(ok); }
+      ev.alvos.push(rr);
+    }
+    ev.alvo = principal.id; ev.valor = ev.alvos[0].valor; ev.morreu = ev.alvos[0].morreu;
+    b.log.push(`${u.especie} ${hab ? `usou ${hab.nome} em` : 'atacou'} ${alvos.length > 1 ? 'todos os inimigos' : principal.especie} (−${ev.alvos.map((x) => x.valor).join('/−')})${ev.alvos.some((x) => x.morreu) ? ' e derrotou' : ''}.`);
+    if (ev.alvos.some((x) => x.efeitos.length)) b.log.push(`Efeitos: ${ev.alvos.flatMap((x) => x.efeitos).map((id) => EFEITOS[id].nome).join(', ')}.`);
   }
-  b.fila.shift();
-  if (!vivos(b.inimigos).length) b.fim = 'vitoria';
-  else if (!vivos(b.aliados).length) b.fim = 'derrota';
+  b.evento = ev;
+  fimDoTurno(u); b.fila.shift();
+  reforcar(b); verificarFim(b);
   if (b.log.length > 40) b.log = b.log.slice(-40);
   return b;
 }
-// Decisão automática (usada pelos inimigos e pelo "Atacar automaticamente" do jogador)
-export function decidir(b, u, rng) {
-  if (u.papel === 'suporte') {
-    const ferido = vivos(aliadosDe(b, u)).sort((x, y) => x.hp / x.hpMax - y.hp / y.hpMax)[0];
-    if (ferido && ferido.hp / ferido.hpMax < 0.65) return { tipo: 'curar', alvo: ferido.id };
+// O reforço entra na vaga do derrotado, no mesmo ponto do campo
+function reforcar(b) {
+  for (const [lista, espera, nome] of [[b.inimigos, b.esperaI, 'inimigo'], [b.aliados, b.esperaA, 'aliado']]) {
+    for (let i = 0; i < lista.length; i++) {
+      const caido = lista[i];
+      if (caido.hp > 0 || caido.substituido || !espera.length) continue;
+      const novo = espera.shift(); caido.substituido = true; lista[i] = novo; b.ordem.push(novo); novo.entrouNaVaga = i;
+      b.log.push(`Reforço: ${novo.especie} entra no lugar de ${caido.especie}.`);
+      if (b.evento) b.evento.reforco = { sai: caido.id, entra: novo.id, lado: nome, vaga: i }; else antes(b, { tipo: 'reforco', sai: caido.id, entra: novo.id, lado: nome, vaga: i });
+    }
   }
-  if (u.papel === 'defesa' && vivos(aliadosDe(b, u)).some((a) => a.hp / a.hpMax < 0.4) && rng() < 0.5) return { tipo: 'defender' };
-  const fraco = vivos(inimigosDe(b, u)).sort((x, y) => x.hp - y.hp)[0];
-  if (u.recarga === 0 && u.papel !== 'suporte') return { tipo: 'habilidade', alvo: rng() < 0.5 ? fraco.id : undefined };
+}
+// Decisão automática (inimigos e "Atacar automaticamente"): usa a melhor habilidade disponível e acessível
+export function decidir(b, u, rng) {
+  const vivosA = vivos(aliadosDe(b, u)), inim = vivos(inimigosDe(b, u));
+  const pode = (h, i) => (u.cd?.[i] || 0) === 0 && !temEfeito(u, 'silencio');
+  const ferida = vivosA.reduce((m, a) => Math.min(m, a.hp / a.hpMax), 1), debuffs = vivosA.some((a) => Object.keys(a.efeitos || {}).some((id) => EFEITOS[id]?.debuff));
+  let melhor = null;
+  u.kit.forEach((h, i) => {
+    if (!pode(h, i)) return;
+    let pts = 0;
+    if (h.tipo === 'dano') pts = h.mult * (h.alvo === 'todos' ? Math.min(inim.length, 4) * 0.8 : 1) * (1 + 0.15 * (h.efeitos?.length || 0)) + h.cd * 0.1;
+    else if (h.tipo === 'cura') pts = ferida < 0.7 ? (1.2 - ferida) * 3 + (h.alvo === 'aliados' ? 0.5 : 0) + (h.limpa && debuffs ? 0.8 : 0) : 0;
+    else pts = (h.limpa && debuffs ? 2.2 : 0) + (b.turnos < 3 || ferida < 0.8 ? 1.4 : 0.6);
+    if (h.tipo === 'cura' && h.alvo === 'si' && u.hp / u.hpMax > 0.6 && !(h.limpa && Object.keys(u.efeitos || {}).some((id) => EFEITOS[id]?.debuff))) pts = 0;
+    if (pts > 0 && (!melhor || pts > melhor.pts)) melhor = { pts, i, h };
+  });
+  if (melhor && (melhor.h.tipo !== 'dano' || rng() < 0.9)) {
+    const fraco = [...inim].sort((x, y) => x.hp - y.hp)[0], ferido = [...vivosA].sort((x, y) => x.hp / x.hpMax - y.hp / y.hpMax)[0];
+    return { tipo: 'habilidade', idx: melhor.i, alvo: melhor.h.tipo === 'dano' ? (rng() < 0.5 ? fraco?.id : undefined) : ferido?.id };
+  }
+  if (u.papel === 'defesa' && ferida < 0.4 && rng() < 0.5) return { tipo: 'defender' };
   return { tipo: 'atacar' };
 }
 export function passoAuto(b, rng) {

@@ -4,7 +4,6 @@ import * as R from './regiao1-exp-regras.js';
 import { MARCOS, CACADAS, POS_CACADA, FAB, PROFISSOES, CONTRATOS, CALABOUCO, CRISE, HV } from './regiao1-exp-dados.js';
 import { avancar, coletarTudo, prontoParaColetar, candidatasObra, enfileirarObras, previsaoLote, fabricarLote, repetirUltimoLote, gestaoDe, capacidade } from './regiao1-gestao-regras.js';
 import { ARTE_DA_ESPECIE, linhaDaEspecie } from '../species.js';
-import { criarTelaBatalha } from './regiao1-batalha-tela.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -22,11 +21,10 @@ const TUTS = {
   hv: { titulo: 'Herói × Vilão', passos: ['Escolha o capítulo e depois a missão. Cada missão tem diálogo e uma batalha em tela inteira.', 'Na missão 5 você faz uma escolha que muda os objetivos seguintes e o desfecho.'], destaque: '[data-missao]' },
 };
 
-export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fecharModal, MAPAS, MONSTROS, regiao1, irParaMapa, getMapaId, getPosPx, voltarAoPonto, batalhaBloqueando }) {
+export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fecharModal, MAPAS, MONSTROS, regiao1, irParaMapa, getMapaId, getPosPx, voltarAoPonto, batalhaBloqueando, tela }) {
   const save = () => getSave();
   const exp = () => R.expDe(save());
   const fab = () => R.fabEstado(save());
-  const tela = criarTelaBatalha();
 
   // ---------- Caçadas: mapas exclusivos reaproveitando arte e máscara de um mapa existente ----------
   for (const c of CACADAS) {
