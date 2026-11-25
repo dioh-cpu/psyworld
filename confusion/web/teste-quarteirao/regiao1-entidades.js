@@ -568,7 +568,7 @@ export const MONSTROS_SELVAGENS = [
 
 // Chefes nas arenas (entidades separadas das artes de fundo)
 export const ENTIDADES_BOSS = [
-  { id: 'BOSS_E', mapa: 'BOSS_E', nome: 'Espírito da Floresta', nivel: 12, pos: [450, 265], cor: '#34d399', sprite: '../../../assets/confusion/interface/personagens/espirito.webp' },
+  { id: 'BOSS_E', mapa: 'BOSS_E', nome: 'Espírito da Floresta', nivel: 12, pos: [450, 265], cor: '#34d399', sprite: '../../../assets/confusion/interface/personagens/espirito-boss-atual.webp' },
   { id: 'BOSS_D', mapa: 'BOSS_D', nome: 'Rei Fungo', nivel: 12, pos: [512, 320], cor: '#f43f5e', sprite: '../../../assets/confusion/interface/personagens/fungo.webp' },
   { id: 'BOSS_S', mapa: 'BOSS_S', nome: 'Siren', nivel: 14, pos: [512, 325], cor: '#38bdf8', sprite: '../../../assets/confusion/interface/personagens/siren.webp' },
   { id: 'BOSS_C', mapa: 'BOSS_C', nome: 'Golem de Ametista', nivel: 15, pos: [512, 325], cor: '#a855f7', sprite: '../../../assets/confusion/interface/personagens/golem.webp' },

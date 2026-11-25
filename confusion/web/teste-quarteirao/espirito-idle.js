@@ -11,7 +11,7 @@ const WALK = ['frente', 'esquerda', 'costas'];
 
 const GEO = {
   'idle-frente':   { largura: 376, altura: 720, pe: 595, centroX: 188, figRef: 500 },
-  'idle-esquerda': { largura: 376, altura: 720, pe: 595, centroX: 176, figRef: 500 },
+  'idle-esquerda': { largura: 376, altura: 720, pe: 595, centroX: 176, figRef: 500, escalaX: 1.22 },
   'idle-costas':   { largura: 376, altura: 720, pe: 595, centroX: 184, figRef: 500 },
   'walk-frente':   { largura: 560, altura: 720, pe: 582, centroX: 280, figRef: 435 },
   'walk-esquerda': { largura: 560, altura: 720, pe: 568, centroX: 210, figRef: 425 },
@@ -85,8 +85,10 @@ export function criarEspiritoIdle(altura) {
     const g = GEO[chave];
     const escala = altura / g.figRef;
     const sinal = esp ? -1 : 1;
-    sprite.scale.set(g.largura * escala * sinal, g.altura * escala, 1);
-    const dx = (g.largura / 2 - g.centroX) * escala * sinal;
+    // Corrige o perfil parado ao redor do tronco, mantendo altura e linha do pé.
+    const escalaX = escala * (g.escalaX ?? 1) * sinal;
+    sprite.scale.set(g.largura * escalaX, g.altura * escala, 1);
+    const dx = (g.largura / 2 - g.centroX) * escalaX;
     sprite.position.set(dx, (g.pe - g.altura / 2) * escala, 0);   // pé em y = 0 e tronco centrado em x = 0
   }
   ajustarGeometria('idle-frente', false);
