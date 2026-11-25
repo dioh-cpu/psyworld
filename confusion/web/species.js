@@ -9,6 +9,7 @@ export const PUREZAS = ['luz', 'neutra', 'trevas'];
 export const ORIGENS = ['base', 'evento', 'raid', 'linha'];
 export const TAREFAS_APTIDAO = ['plantar', 'colher', 'minerar', 'cortar', 'garimpar', 'transportar', 'cozinhar', 'fabricar'];
 
+import { REINOS } from './reinos.js';
 export const ESPECIES = {
   Noctarn: {
     origem: 'base', pureza: 'trevas', aptidoes: { minerar: 4, garimpar: 2 },
@@ -47,6 +48,16 @@ export const ESPECIES = {
   'Solinho': { origem: 'linha', pureza: 'luz', elemento: 'luz', aptidoes: { cortar: 1, fabricar: 1 }, habilidades: ['Brilho Morno', 'Asinha Quente', 'Faísca Solar', 'Calor Suave'] },
   'Helíssio': { origem: 'linha', pureza: 'luz', elemento: 'luz', aptidoes: { cortar: 4, fabricar: 4, transportar: 2 }, habilidades: ['Sol Coroado', 'Raio Helíaco', 'Asas Radiantes', 'Eclipse Dourado', 'Aurora Ardente'] },
 };
+
+// Linhagens dos reinos (reinos.js): entram no catálogo como formas de linha, fora de encontro, ovo comum e invocação.
+// Habilidades provisórias (nome + tipo) até o desenho de cada uma; aptidões simples por tipo.
+const GOLPE_DO_TIPO = { inseto: 'Ferrão', planta: 'Espinho', agua: 'Jato', terra: 'Pisada', pedra: 'Cascalho', fogo: 'Brasa', eletrico: 'Descarga', voador: 'Rasante', aco: 'Lâmina' };
+const APTIDAO_DO_TIPO = { inseto: { colher: 2 }, planta: { plantar: 2, colher: 2 }, agua: { garimpar: 2 }, terra: { plantar: 2 }, pedra: { minerar: 2 }, fogo: { cozinhar: 2 }, eletrico: { fabricar: 2 }, voador: { transportar: 2 }, aco: { fabricar: 2, minerar: 1 } };
+for (const r of Object.values(REINOS)) for (const l of r.linhagens) {
+  if (ESPECIES[l.nome]) continue;
+  const g = GOLPE_DO_TIPO[l.elemento];
+  ESPECIES[l.nome] = { origem: 'linha', pureza: 'neutra', elemento: l.elemento, aptidoes: APTIDAO_DO_TIPO[l.elemento], habilidades: [`${g} de ${l.nome}`, `${g} Duplo de ${l.nome}`, `Investida de ${l.nome}`, `Guarda de ${l.nome}`], ...(l.arte ? { arte: l.arte } : {}) };
+}
 
 // Lista de problemas de uma espécie. Vazia quando está completa.
 export function validarEspecie(nome, e) {
