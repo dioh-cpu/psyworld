@@ -8,8 +8,8 @@ import { ARTE_DA_ESPECIE } from '../species.js';
 import { NOME_ELEMENTO } from '../core.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-// Colunas espelhadas e escalonadas para deixar visíveis os combatentes das duas fileiras.
-const COLUNAS = { a: [36, 29, 18, 12], i: [64, 71, 82, 88] };
+// Posições dos aliados em porcentagem da arena. Os inimigos espelham apenas o eixo horizontal.
+const POSICOES_ALIADOS = [[42.1, 55.2], [29.4, 82.4], [19.5, 56.2], [8.8, 78.1]];
 const COR_ELEMENTO = {
   fogo: '#ffa478', agua: '#83cfff', planta: '#a0e38a', terra: '#e5ba87', luz: '#ffe395',
   trevas: '#c6a9ff', neutro: '#e2d6de', lutador: '#ff9d9c', voador: '#a9cbff',
@@ -66,8 +66,8 @@ const olhaDe = (esp) => (OLHA.direita.includes(esp) ? 'direita' : OLHA.esquerda.
 const CSS = `
 .arena { position: absolute; inset: 0; overflow: hidden; background: #1a0f22; color: #fff3e7; font: 12px system-ui, sans-serif; user-select: none; -webkit-user-select: none; --altura-botao: clamp(44px, 12vh, 62px); --espaco-rodape: calc(var(--altura-botao) + 16px + env(safe-area-inset-bottom, 0px)); }
 .arena .tb-campo { position: absolute; inset: 0; background: center bottom / cover no-repeat #24162b; will-change: transform; }
-.arena .un { position: absolute; top: 60%; z-index: 49; width: var(--largura-vaga); display: flex; flex-direction: column; align-items: center; translate: -50% -100%; background: none; border: 0; padding: 0; color: inherit; cursor: default; transition: opacity .5s; --largura-vaga: clamp(80px, 14vw, 170px); --altura-base-sprite: clamp(55px, 22vh, 156px); --altura-sprite: calc(var(--altura-base-sprite) * var(--escala-altura-sprite, 1)); --largura-sprite: min(var(--largura-vaga), calc(var(--altura-sprite) * var(--proporcao-sprite, 1))); }
-.arena .un.frente { top: min(86%, calc(100% - var(--espaco-rodape) - 6px)); z-index: 79; --altura-base-sprite: clamp(58px, 24vh, 170px); }
+.arena .un { position: absolute; top: min(var(--posicao-y), calc(100% - var(--espaco-rodape) - 3px)); z-index: 49; width: var(--largura-vaga); display: flex; flex-direction: column; align-items: center; translate: -50% -100%; background: none; border: 0; padding: 0; color: inherit; cursor: default; transition: opacity .5s; --largura-vaga: clamp(80px, 14vw, 170px); --altura-base-sprite: clamp(55px, 22vh, 156px); --altura-sprite: calc(var(--altura-base-sprite) * var(--escala-altura-sprite, 1)); --largura-sprite: min(var(--largura-vaga), calc(var(--altura-sprite) * var(--proporcao-sprite, 1))); }
+.arena .un.frente { z-index: 79; --altura-base-sprite: clamp(58px, 24vh, 170px); }
 .arena .un-fig { position: relative; display: flex; justify-content: center; align-items: flex-end; width: 100%; order: 2; } .arena .un-fig img { width: var(--largura-sprite); height: calc(var(--largura-sprite) / var(--proporcao-sprite, 1)); object-fit: contain; visibility: hidden; filter: drop-shadow(0 4px 3px rgba(0,0,0,.55)); }
 .arena .un-sombra { position: absolute; left: 50%; bottom: -3%; width: calc(var(--largura-sprite) * .76); height: 9%; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent); }
 .arena .un.vez .un-sombra { background: radial-gradient(closest-side, rgba(255,214,140,.0) 60%, #ffd58c 64%, transparent 70%); border: 2px solid #ffd58c; box-shadow: 0 0 10px #ffd58c88; }
@@ -121,11 +121,14 @@ export function criarArena(host, { artes = {} } = {}) {
   function vagaDe(u) { const lista = u.lado === 'a' ? b.aliados : b.inimigos; return Math.max(0, lista.indexOf(u)); }
   function criarNo(u, entrando) {
     const vaga = vagaDe(u);
-    const x = COLUNAS[u.lado][vaga] ?? COLUNAS[u.lado][0];
+    const [coluna, altura] = POSICOES_ALIADOS[vaga] ?? POSICOES_ALIADOS[0];
+    const x = u.lado === 'a' ? coluna : 100 - coluna;
     const frente = vaga % 2 === 1;
     const sprite = spriteNoCampo(u, opArt);
     const elemento = Object.hasOwn(NOME_ELEMENTO, u.elemento) ? u.elemento : 'neutro';
-    const el = document.createElement('button'); el.className = `un ${u.lado}${frente ? ' frente' : ''}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id; el.style.left = `${x}%`;
+    const el = document.createElement('button'); el.className = `un ${u.lado}${frente ? ' frente' : ''}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id;
+    el.style.left = `${x.toFixed(1)}%`;
+    el.style.setProperty('--posicao-y', `${altura}%`);
     if (sprite.escalaAltura !== 1) el.style.setProperty('--escala-altura-sprite', sprite.escalaAltura);
     el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.escalaX === 1 ? '' : `style="transform:scaleX(${sprite.escalaX})"`} alt="${esc(u.especie)}"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-elemento" style="--cor-elemento:${COR_ELEMENTO[elemento]}">${NOME_ELEMENTO[elemento]}</span><span class="un-efs"></span></span>`;
     const imagem = el.querySelector('.un-fig img');
