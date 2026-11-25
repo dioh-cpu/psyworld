@@ -226,7 +226,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   }
   function desenharCabecalho() {
     $('#est-titulo').textContent = `Estratégia · ${D.titulo}`;
-    $('#est-reino').innerHTML = REINOS_D.map((x) => `<option value="${x.id}" ${x === D ? 'selected' : ''}>${desbloqueado(x) ? '' : '🔒 '}${esc(x.titulo)}</option>`).join('');
+    $('#est-reino').innerHTML = REINOS_D.map((x) => `<option value="${x.id}" ${x === D ? 'selected' : ''}>${desbloqueado(x) ? '' : `🔒 `}${esc(x.titulo)}${desbloqueado(x) ? '' : ` (${progressoDesbloqueio(x).atual}/${progressoDesbloqueio(x).meta} construções)`}</option>`).join('');
     $('#est-reino').hidden = REINOS_D.length < 2;
   }
   function desenhar() {
@@ -302,11 +302,12 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     if (!r.ok) { mostrarToast(r.motivo + (r.falta ? ` Faltam ${matTxt(r.falta)}.` : ''), 3200); desenhar(); return; }
     resumoLote('Fabricação', [{ t: `lote na fila: ${matTxt(r.previsao.saida)} (usou ${matTxt(r.previsao.insumos)}, ${dur(r.previsao.duracao)})` }]);
   }
-  function desbloqueado(Dx) { if (!Dx.desbloqueio) return true; const de = REINOS_D.find((x) => x.id === Dx.desbloqueio.de); return prosperidade(estado(de), de).total >= Dx.desbloqueio.prosperidade; }
+  function progressoDesbloqueio(Dx) { const de = REINOS_D.find((x) => x.id === Dx.desbloqueio.de); return { atual: gestaoDe(estado(de)).concluidas, meta: Dx.desbloqueio.construcoes }; }
+  function desbloqueado(Dx) { if (!Dx.desbloqueio) return true; const p = progressoDesbloqueio(Dx); return p.atual >= p.meta; }
   function trocarReino(id) {
     const novo = REINOS_D.find((x) => x.id === id); if (!novo || novo === D) return;
     if (estado().exp) { mostrarToast('Encerre a expedição atual antes de trocar de reino.', 2800); desenhar(); return; }
-    if (!desbloqueado(novo)) { mostrarToast(`🔒 ${novo.desbloqueio.texto}`, 2800); desenhar(); return; }
+    if (!desbloqueado(novo)) { mostrarToast(`🔒 ${novo.desbloqueio.texto} (${progressoDesbloqueio(novo).atual}/${progressoDesbloqueio(novo).meta})`, 2800); desenhar(); return; }
     D = novo; slotSel = null; confirmar = null; batalha = null; visao = 'cidade'; desenhar();
   }
   function painelGestao() {
@@ -426,7 +427,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const pct = Math.max(0, Math.round((u.hp / u.hpMax) * 100));
     return `<button class="un ${cls} ${u.hp <= 0 ? 'morto' : ''} ${vez ? 'vez' : ''} ${alvoSel === u.id ? 'alvo' : ''}" data-un="${u.id}"><span class="un-fig"><img src="${u.arte ? `../../../${u.arte}` : spriteUrl(u.especie)}" alt="${esc(u.especie)}" onerror="this.outerHTML='<span class=&quot;est-poli&quot;>${PAPEL[u.papel].i}</span>'"></span><span class="un-nome">${PAPEL[u.papel].i} ${esc(u.especie)} nv.${u.nivel}</span><span class="hp"><i style="width:${pct}%"></i></span><span class="un-hp">${u.hp}/${u.hpMax}</span></button>`;
   }
-  const fundoFase = (rota, fase) => `../../../assets/confusion/interface/estrategia/${rota.material === 'pedra' ? 'pedra' : 'madeira'}-0${Math.min(3, fase + 1)}.webp`;
+  const fundoFase = (rota, fase) => rota.arena ? `../../../${rota.arena}` : `../../../assets/confusion/interface/estrategia/${rota.material === 'pedra' ? 'pedra' : 'madeira'}-0${Math.min(3, fase + 1)}.webp`;
   // Animação provisória de golpe (substituível por clipes do Flow): usa só o evento devolvido por executar()
   function animarEvento(el) {
     const ev = batalha && batalha.evento; if (!ev || ev.mostrado) return; ev.mostrado = true;

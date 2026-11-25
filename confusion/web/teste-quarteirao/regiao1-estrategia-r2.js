@@ -19,7 +19,7 @@ const NIVEIS = [[3, 4], [4, 6], [6, 8]], QTD = [[2, 3], [3, 4], [4, 5]], FAIXA =
 const rotas = Object.entries(REINOS[2].areas).map(([id, a]) => {
   const cfg = AREAS[id], nomes = elencoDaArea(2, id).map((l) => l.nome);
   return {
-    id, nome: a.nome, icone: a.icone, material: cfg.mat, descricao: `Inimigos de ${a.tipos.join(', ')}. As formas evoluem a cada fase da rota.`,
+    id, nome: a.nome, icone: a.icone, arena: `assets/confusion/interface/estrategia/reinos/02/arena-${id === 'apiarios' ? 'apiarios' : id === 'falesias' ? 'falesias' : id === 'cristas' ? 'cristas' : id === 'fornos' ? 'fornos' : 'ruinas'}.webp`, material: cfg.mat, descricao: `Inimigos de ${a.tipos.join(', ')}. As formas evoluem a cada fase da rota.`,
     fases: cfg.fases.map((nome, i) => ({ nome, inimigos: QTD[i], nivel: NIVEIS[i], especies: nomes, material: { tipo: cfg.mat, faixa: FAIXA[i] }, secundario: { tipo: cfg.sec, faixa: SEC[i] }, libera: { inimigo: nomes[(i * 2) % nomes.length] } })),
   };
 });
@@ -27,7 +27,7 @@ const rotas = Object.entries(REINOS[2].areas).map(([id, a]) => {
 export const ESTRATEGIA_R2 = {
   ...ESTRATEGIA_C1,
   id: 'r2', titulo: 'Altos do Âmbar (Reino 2)', fundo: 'assets/confusion/interface/estrategia/reinos/02/cidade-conceito.webp',
-  desbloqueio: { de: 'c1', prosperidade: 50, texto: 'Alcance 50 de prosperidade no Reino 1.' },
+  desbloqueio: { de: 'c1', construcoes: 30, texto: 'Conclua 30 construções no Reino 1.' },
   prosperidadeBase: 30,
   materiais: { mel: { nome: 'Mel', icone: '🍯' }, cera: { nome: 'Cera', icone: '🕯️' } },
   inicial: { mel: 0, cera: 0 },

@@ -10,6 +10,8 @@ export function gestaoDe(s, agora = Date.now()) {
   const g = s.gestao || (s.gestao = criarGestao());
   g.obras = g.obras || []; g.producao = g.producao || {}; g.itens = g.itens || {}; g.fabricacao = g.fabricacao || []; g.log = g.log || []; g.seq = g.seq || 0;
   if (!g.ts) g.ts = agora;
+  // construções concluídas (obras novas e melhorias; fila e obras em andamento não contam). Saves antigos: níveis já construídos.
+  if (g.concluidas == null) g.concluidas = Object.values(s.estruturas || {}).reduce((a, e) => a + (e.nivel || 0), 0);
   return g;
 }
 const registrar = (g, texto, agora) => { g.seq += 1; g.log.push({ id: g.seq, em: agora, t: texto }); if (g.log.length > 40) g.log = g.log.slice(-40); return g.seq; };
@@ -78,7 +80,7 @@ export function avancar(s, D, agora = Date.now()) {
   for (const o of [...g.obras].sort((a, b) => a.fimEm - b.fimEm)) {
     if (o.fimEm > agora) continue;
     g.obras = g.obras.filter((x) => x.id !== o.id);
-    s.estruturas[o.loc] = { tipo: o.tipo, nivel: o.nivel };
+    s.estruturas[o.loc] = { tipo: o.tipo, nivel: o.nivel }; g.concluidas += 1;
     const est = D.estruturas.find((e) => e.id === o.tipo);
     if (est?.producao && !g.producao[o.loc]) g.producao[o.loc] = { desde: o.fimEm, acum: 0 };
     registrar(g, `Obra concluída: ${est?.nome || o.tipo} nv.${o.nivel}.`, agora);

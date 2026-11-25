@@ -52,3 +52,9 @@ test('Reino 2 tem gestão própria (mel e cera)', () => {
   assert.equal(r.entraram.length, 1); assert.ok(r.custo.mel > 0 && r.custo.madeira === undefined);
   assert.ok(ESTRATEGIA_R2.rotas.every((x) => x.fases.length === 3));
 });
+test('construções concluídas: fila não conta, conclusão conta uma vez; saves antigos contam níveis existentes', () => {
+  const s = novo(); s.estruturas = { a1: { tipo: 'casas', nivel: 2 }, e1: { tipo: 'quartel', nivel: 1 } };
+  assert.equal(gestaoDe(s, T0).concluidas, 3);
+  enfileirarObras(s, D, ['a2'], T0); assert.equal(gestaoDe(s).concluidas, 3);
+  avancar(s, D, T0 + 40_000); avancar(s, D, T0 + 80_000); assert.equal(gestaoDe(s).concluidas, 4);
+});
