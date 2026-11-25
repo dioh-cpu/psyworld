@@ -107,7 +107,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
     jogador: {
       xp: 0,
       hp: 130,
-      sanidade: 82,
+      sanidade: 100,
       abatesTotais: 0,
       capturasTotais: 0,
       atributos: { for: 0, vit: 0, men: 0, vin: 0, sor: 0 },
@@ -304,7 +304,8 @@ export function registrarCodexEspecie(idle, especie, { abate = false, captura = 
 
 // ---- Status Explicáveis (breakdown de cada bônus + pontos de Domador) ----
 // Ovos são raros: os Oníricos vêm do gacha (diamantes) e do que se choca na fazenda. Ajuste aqui depois de jogar.
-export const OVOS = { fatorDrop: 0.12, abatesPorOvoOffline: 300 };
+// Banner = única forma de obter Oníricos novos: ovos não caem mais. Ovos viram ingrediente da Fazenda.
+export const OVOS = { fatorDrop: 0, abatesPorOvoOffline: Infinity };
 
 export function calcularStatusDetalhado(save) {
   const idle = garantirEstadoIdle(save);
@@ -412,7 +413,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
   avancarDiaria(idle, 'abates', 1);
 
   let capturado = false;
-  if (idle.autoCaca.autoCapturar && idle.mochila.esferas.comum > 0 && rng() < 0.28) {
+  if (false && idle.autoCaca.autoCapturar && idle.mochila.esferas.comum > 0 && rng() < 0.28) { // esferas de captura retiradas do fluxo
     const ch = captureChance('comum', { rarity: rar, tier: 1 }, st.capturaExtra);
     idle.mochila.esferas.comum -= 1;
     if (rng() < ch) {
@@ -437,7 +438,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
     idle.jogador.hp = st.hpMax;
     descansou = true;
   }
-  if (idle.jogador.sanidade <= idle.autoCaca.descansarSanidadePct) {
+  if (false && idle.jogador.sanidade <= idle.autoCaca.descansarSanidadePct) { // Sanidade agora é só do Calabouço
     idle.jogador.sanidade = Math.min(100, idle.jogador.sanidade + 20);
     descansou = true;
   }
@@ -542,6 +543,7 @@ export function resgatarTudoPasse(save) {
 
 // ---- Mochila: comprar esferas, equipar relíquias e chocar ovos ----
 export function comprarEsferaIdle(save, raridade) {
+  return { ok: false, motivo: 'As esferas de captura foram retiradas: use o Banner de Oníricos.' };
   const idle = garantirEstadoIdle(save);
   const preco = SPHERE_PRICE[raridade];
   if (!preco) return { ok: false, motivo: 'Esfera indisponível.' };

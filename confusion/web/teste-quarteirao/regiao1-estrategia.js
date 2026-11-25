@@ -2,6 +2,7 @@
 // Mapa da cidade com locais de construção, cinco menus (Aldeias, Refúgios, Exércitos, Hospitais, Expedições), combate 6 contra 6 por
 // turnos, controles independentes (Atacar automaticamente / Próxima fase / Avançar automaticamente) e expedição minimizada.
 // Estado salvo em save.idle.estrategia[id]. Cada recompensa de vitória é paga uma única vez (exp.pagas).
+import { animarEvento as animarEventoFx } from './regiao1-batalha-fx.js';
 import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
 import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase } from './regiao1-estrategia-regras.js';
 
@@ -69,10 +70,10 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     #modal-estrategia .chip { border: 1px solid var(--line, #6b4a52); background: #24162b; color: inherit; border-radius: 8px; padding: 4px 7px; font-size: 11.5px; cursor: pointer; text-align: left; }
     #modal-estrategia .chip.on { background: #f3a45833; border-color: #f3a458; }
     #modal-estrategia .bat { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
-    #modal-estrategia .est-arena { position: relative; flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 6px; min-height: 230px; border-radius: 8px; background-size: cover; background-position: center; overflow: hidden; }
+    #modal-estrategia .est-arena { position: relative; flex: 0 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 6px; min-height: 0; flex: 1 1 auto; border-radius: 8px; background-size: cover; background-position: center; overflow: hidden; }
     #modal-estrategia .bat-lado { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: min-content; align-content: space-around; gap: 4px; }
-    #modal-estrategia .un { position: relative; max-width: 132px; width: 100%; justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 1px; background: rgba(20,10,28,.35); }
-    #modal-estrategia .un-fig { display: block; width: 100%; height: 54px; } #modal-estrategia .un-fig img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.6)); }
+    #modal-estrategia .un { position: relative; max-width: clamp(120px, 22vw, 210px); width: 100%; justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 1px; background: rgba(20,10,28,.35); }
+    #modal-estrategia .un-fig { display: block; width: 100%; height: clamp(64px, 20vh, 170px); } #modal-estrategia .un-fig img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.6)); }
     #modal-estrategia .bat-lado.i .un-fig img { transform: scaleX(-1); }
     #modal-estrategia .un .est-poli { font-size: 30px; line-height: 54px; display: block; }
     #modal-estrategia .un-nome { font-size: 10px; text-shadow: 0 1px 2px #000; } #modal-estrategia .un-hp { font-size: 9.5px; text-shadow: 0 1px 2px #000; } #modal-estrategia .un .hp { width: 100%; }
@@ -86,7 +87,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     #modal-estrategia .un.morto { opacity: .35; } #modal-estrategia .un.vez { outline: 2px solid #f3a458; } #modal-estrategia .un.alvo { outline: 2px solid #fb7185; }
     #modal-estrategia .un .hp { height: 5px; background: #12091a; border-radius: 3px; overflow: hidden; margin-top: 3px; } #modal-estrategia .un .hp i { display: block; height: 100%; background: #4ade80; }
     #modal-estrategia .un.i .hp i { background: #fb7185; }
-    #modal-estrategia .bat-log { flex: 1 1 auto; min-height: 40px; overflow-y: auto; font-size: 11.5px; background: #24162b; border-radius: 6px; padding: 6px; }
+    #modal-estrategia .bat-log { flex: 0 0 auto; max-height: 14vh; min-height: 40px; overflow-y: auto; font-size: 11.5px; background: #24162b; border-radius: 6px; padding: 6px; }
     #modal-estrategia .bat-ctl { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
     #modal-estrategia .bat-ctl label { display: inline-flex; gap: 5px; align-items: center; font-size: 12px; background: #24162b; border-radius: 6px; padding: 5px 8px; }
     #estrategia-ind { position: fixed; left: 50%; top: 50px; transform: translateX(-50%); z-index: 8; display: none; align-items: center; gap: 8px; background: rgba(33,19,41,.95); border: 1px solid #c59c67; color: #fff3e7; border-radius: 99px; padding: 5px 8px 5px 12px; font: 600 12px system-ui, sans-serif; max-width: 94vw; }
@@ -490,33 +491,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     return `<button class="un ${cls} ${u.hp <= 0 ? 'morto' : ''} ${vez ? 'vez' : ''} ${alvoSel === u.id ? 'alvo' : ''}" data-un="${u.id}"><span class="un-fig"><img src="${u.arte ? `../../../${u.arte}` : spriteUrl(u.especie)}" alt="${esc(u.especie)}" onerror="this.outerHTML='<span class=&quot;est-poli&quot;>${PAPEL[u.papel].i}</span>'"></span><span class="un-nome">${PAPEL[u.papel].i} ${esc(u.especie)} nv.${u.nivel}</span><span class="hp"><i style="width:${pct}%"></i></span><span class="un-hp">${u.hp}/${u.hpMax}</span></button>`;
   }
   const fundoFase = (rota, fase) => rota.arena ? `../../../${rota.arena}` : `../../../assets/confusion/interface/estrategia/${rota.material === 'pedra' ? 'pedra' : 'madeira'}-0${Math.min(3, fase + 1)}.webp`;
-  // Animação provisória de golpe (substituível por clipes do Flow): usa só o evento devolvido por executar()
-  function animarEvento(el) {
-    const ev = batalha && batalha.evento; if (!ev || ev.mostrado) return; ev.mostrado = true;
-    const q = (id) => el.querySelector(`[data-un="${id}"]`);
-    const A = q(ev.ator), T = q(ev.alvo); if (!A || !T || !A.animate) return;
-    const ar = el.querySelector('.est-arena').getBoundingClientRect(), a = A.getBoundingClientRect(), t = T.getBoundingClientRect();
-    const dx = t.left - a.left, dy = t.top - a.top, fig = A.querySelector('.un-fig');
-    const flutuar = (txt, cor) => { const n = document.createElement('i'); n.className = 'un-num'; n.textContent = txt; n.style.color = cor; T.append(n); n.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-34px)', opacity: 0 }], { duration: 800, easing: 'ease-out' }).onfinish = () => n.remove(); };
-    const fx = (cls) => { const n = document.createElement('i'); n.className = 'un-fx ' + cls; T.append(n); setTimeout(() => n.remove(), 520); };
-    if (ev.tipo === 'atacar' || ev.tipo === 'habilidade') {
-      const perto = ev.tipo === 'atacar' || !ev.distancia;
-      if (perto) {
-        A.style.zIndex = 5;
-        A.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dx * 0.7}px,${dy * 0.7}px) scale(1.12)`, offset: 0.4 }, { transform: 'translate(0,0)' }], { duration: 480, easing: 'ease-in-out' }).onfinish = () => { A.style.zIndex = ''; };
-      } else {
-        A.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dx * 0.12}px,${dy * 0.12}px)`, offset: 0.3 }, { transform: 'translate(0,0)' }], { duration: 420 });
-        const p = document.createElement('i'); p.className = 'un-proj'; p.style.left = `${a.left - ar.left + a.width / 2}px`; p.style.top = `${a.top - ar.top + a.height / 3}px`; el.querySelector('.est-arena').append(p);
-        p.animate([{ transform: 'translate(0,0)' }, { transform: `translate(${dx}px,${dy}px)` }], { duration: 320, delay: 120, easing: 'ease-in', fill: 'both' }).onfinish = () => p.remove();
-      }
-      setTimeout(() => { T.animate([{ filter: 'brightness(3)' }, { filter: 'none' }], { duration: 260 }); flutuar(`−${ev.valor}`, '#fb7185'); fx(ev.tipo === 'habilidade' ? 'hab' : 'golpe'); }, perto ? 190 : 400);
-    } else if (ev.tipo === 'curar') {
-      fx('cura'); flutuar(`+${ev.valor}`, '#4ade80');
-      el.querySelectorAll('.un.a:not(.morto)').forEach((u) => u.animate([{ filter: 'drop-shadow(0 0 0 #4ade80)' }, { filter: 'drop-shadow(0 0 8px #4ade80)' }, { filter: 'none' }], { duration: 600 }));
-    } else if (ev.tipo === 'defender') {
-      fx('escudo');
-    }
-  }
+  const animarEvento = (el) => animarEventoFx(el, batalha && batalha.evento, '.est-arena');
   function desenharBatalha() {
     const s = estado(), exp = s.exp, rota = exp && rotaDe(exp.rota);
     const el = $('#est-bat');

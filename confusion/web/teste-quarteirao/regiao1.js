@@ -42,6 +42,8 @@ import { iniciarCiclo } from './regiao1-ciclo.js';
 import { CICLO_C1 } from './regiao1-ciclo-c1.js';
 import { iniciarEstrategia } from './regiao1-estrategia.js';
 import { iniciarReinos } from './regiao1-reinos.js';
+import { golpeCampanha } from './regiao1-batalha-fx.js';
+import { iniciarExpansao } from './regiao1-expansao.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
 
@@ -962,6 +964,7 @@ function iniciarBatalha(tipo, entidade) {
   document.getElementById('bat-titulo').textContent = ehBoss ? `⚔️ Chefe · ${defBoss.nome}` : `⚡ Encontro Selvagem`;
   document.getElementById('bat-nome-jog').textContent = `Noctarn · Nv.${st.nivel}`;
   document.getElementById('bat-img-ini').src = entidade.sprite;
+  document.querySelector('#modal-batalha .bat-arena').style.background = `linear-gradient(#20102a22, #170d2166), url(../../../assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp) center / cover`;
   document.getElementById('bat-nome-ini').textContent = batalhaAtiva.nomeIni;
   document.getElementById('bat-log').textContent = ehBoss
     ? `${defBoss.nome} bloqueia a arena! Vença para concluir a missão da rota.`
@@ -993,7 +996,7 @@ function renderizarBatalha() {
     btn.onclick = () => executarTurno(g);
     acoes.appendChild(btn);
   }
-  if (b.tipo === 'wild') {
+  if (b.tipo === 'wild' && false) { // captura retirada: novos Oníricos vêm do Banner
     const cap = document.createElement('button');
     cap.className = 'btn-sec';
     cap.textContent = 'Capturar';
@@ -1015,7 +1018,7 @@ function renderizarBatalha() {
 function executarTurno(golpe) {
   if (!batalhaAtiva) return;
   const b = batalhaAtiva;
-  const log = [];
+  const log = []; const hpIniAntes = b.hpIni, hpJogAntes = b.hpJog;
   if (golpe.cura) {
     b.hpJog = Math.min(b.maxJog, b.hpJog + golpe.cura);
     log.push(`Noctarn usou ${golpe.nome} e recuperou ${golpe.cura} de HP.`);
@@ -1026,7 +1029,8 @@ function executarTurno(golpe) {
   }
 
   if (b.hpIni <= 0) {
-    encerrarBatalha(true);
+    golpeCampanha({ jog: document.getElementById('bat-img-jog'), ini: document.getElementById('bat-img-ini'), danoIni: hpIniAntes - b.hpIni });
+    setTimeout(() => encerrarBatalha(true), 700);
     return;
   }
 
@@ -1036,6 +1040,7 @@ function executarTurno(golpe) {
   b.hpJog = Math.max(1, b.hpJog - contra);
   log.push(`${b.nomeIni} contra-atacou (${contra} de dano).`);
   document.getElementById('bat-log').textContent = log.join(' ');
+  golpeCampanha({ jog: document.getElementById('bat-img-jog'), ini: document.getElementById('bat-img-ini'), danoIni: hpIniAntes - b.hpIni, danoJog: Math.max(0, hpJogAntes + (golpe.cura || 0) - b.hpJog), cura: golpe.cura ? b.hpJog - hpJogAntes + contra : 0, habilidade: golpe.nome.includes('Chama') });
   renderizarBatalha();
 }
 
@@ -2013,6 +2018,7 @@ function golpearAlvoAuto(agora, idle) {
     const ouroExtra = Math.round(res.gold * (mundoMod.ouro - 1));
     if (ouroExtra) { save.recompensas.gold = Math.max(0, save.recompensas.gold + ouroExtra); res.gold += ouroExtra; }
     window.regiaoMundo?.aoAbater?.(morto);
+    window.regiaoExp?.aoAbater?.(morto);
     if (!algumModalAberto()) {
       const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
       idleUI?.spawnFlutuante(pt.x, pt.y - 42, `+${res.gold}g  +${res.xp} XP`, '#4ade80', false);
@@ -2352,6 +2358,13 @@ window.regiaoReinos = iniciarReinos({
   estrategia: () => window.regiaoEstrategia,
 });
 window.regiaoEstrategia.aoSair = () => window.regiaoReinos.voltar();
+const voltarAoPonto = async (r) => { if (mapaAtual?.id !== r.mapa) await entrarNoMapa(r.mapa, [r.px, r.py], false); const w = P(r.px, r.py); estado.x = w.x; estado.z = w.z; primeiroQuadro = true; };
+// Expansão 1: banner, caçadas, guilda, fazenda, oficina, calabouço, crises e herói × vilão (regras em regiao1-exp-regras.js)
+window.regiaoExp = iniciarExpansao({
+  getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, MAPAS, MONSTROS: MONSTROS_SELVAGENS,
+  irParaMapa: (id) => entrarNoMapa(id, null, false), getMapaId: () => (mapaAtual ? mapaAtual.id : null), getPosPx: () => W2P(estado.x, estado.z),
+  voltarAoPonto, batalhaBloqueando,
+});
 iniciarLayout();
 if (avisoSave) setTimeout(() => mostrarToast(avisoSave, 7000), 1500);
 

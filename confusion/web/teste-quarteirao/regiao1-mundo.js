@@ -11,6 +11,8 @@ import { sistemasLiberados, proximaLiberacao, tutorialDoSistema } from './regiao
 import { ARTES, TIPOS_ARTE, artePorSistema, caminhoArte } from '../mundo/artes.js';
 
 export const DIA_MS = 120000;
+// Os 50 sistemas ficam guardados para atualizações futuras. Enquanto MUNDO_ATIVO for falso: sem menu, avisos, objetos no mapa, clima nem efeitos automáticos.
+export const MUNDO_ATIVO = false;
 // Armazém: cada recurso tem teto (500, +100 por refúgio ou fortaleza). O excedente se perde, então nada dispara sem fim.
 export const ARMAZEM_BASE = 500;
 export const SANIDADE_PISO_DIA = 10; // perdas diárias (marca, cicatrizes) não passam disso; só ações do jogador podem ir além
@@ -325,7 +327,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
 
   // Botão no menu principal (e fecha o menu ao abrir)
   const atalhos = document.querySelector('#modal-menu .menu-atalhos');
-  if (atalhos && !document.getElementById('m-mundo')) {
+  if (MUNDO_ATIVO && atalhos && !document.getElementById('m-mundo')) {
     const b = document.createElement('button');
     b.className = 'btn-sec'; b.id = 'm-mundo'; b.textContent = 'Mundo';
     b.addEventListener('click', () => { fecharModal('modal-menu'); abrir(); });
@@ -333,23 +335,24 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
   }
 
   estado();
-  setInterval(relogio, 1000);
+  if (MUNDO_ATIVO) setInterval(relogio, 1000);
   const liberado = (id) => sistemasLiberados(getSave()).has(id);
   const css = document.createElement('style');
   css.textContent = '#modal-mundo .tut-card { border-color: #7dd3fc; background: #14304a; } #modal-mundo .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: tutpulso 1.4s ease-in-out infinite; } @keyframes tutpulso { 50% { box-shadow: 0 0 0 8px #f3a45822; } }';
   document.head.append(css);
   // avisa sistemas novos uma vez, fora de combate, diálogos e menus (um aviso por vez)
   setInterval(() => {
-    if (document.querySelector('.modal-bg.aberto')) return;
+    if (!MUNDO_ATIVO || document.querySelector('.modal-bg.aberto')) return;
     const m = estado().meta; m.avisados = m.avisados || {};
     const novos = [...sistemasLiberados(getSave())].filter((id) => !m.avisados[id]);
     if (!novos.length) return;
     novos.forEach((id) => { m.avisados[id] = true; });
     salvar?.(); mostrarToast(`🌍 Novo no Mundo: ${novos.map((id) => SISTEMAS.find((x) => x.id === id)?.nome).join(', ')}. Abra Menu → Mundo.`, 5200);
   }, 2500);
-  const noMapa = mapaCtx ? iniciarMundoNoMapa({ ...mapaCtx, liberado, getMapaAtual, getMundo: () => estado().mundo, abrirSistema: (id) => abrir(id), algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')) }) : null;
+  const noMapa = mapaCtx && MUNDO_ATIVO ? iniciarMundoNoMapa({ ...mapaCtx, liberado, getMapaAtual, getMundo: () => estado().mundo, abrirSistema: (id) => abrir(id), algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')) }) : null;
   // Efeitos do mundo sobre a caçada: praga enfraquece (refúgios protegem), clima mexe no dano e no ouro.
   function modificadores() {
+    if (!MUNDO_ATIVO) return { dano: 1, ouro: 1, notas: [] };
     const m = estado().mundo;
     const protecao = protecaoContraPragas(m['05']);
     let dano = 1, ouro = 1;
@@ -372,6 +375,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
 
   // Ecossistema (sistema 02): espécie rara demora mais para voltar ao mapa; abundante volta mais depressa.
   function tempoRespawn(especie) {
+    if (!MUNDO_ATIVO) return 5000;
     const pop = estado().mundo['02']?.populacao;
     if (!pop || !(especie in pop)) return 5000;
     return pop[especie] <= POP_RARA ? 15000 : pop[especie] >= 25 ? 3000 : 5000;
@@ -380,6 +384,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
   // Cada abate alimenta o mundo: o ecossistema perde um monstro e o bioma devolve recursos (menos se a espécie está rara).
   const POP_RARA = 3;
   function aoAbater(morto) {
+    if (!MUNDO_ATIVO) return;
     const est = estado();
     const pop = est.mundo['02']?.populacao;
     const esp = morto?.especie;
@@ -400,7 +405,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     getClima: () => estado().mundo['07'] || {},
     interno: () => biomaDoMapa(getMapaAtual?.()) === 'Caverna',
     fase: () => Math.max(0, Math.min(1, (Date.now() - estado().meta.ultimoMs) / DIA_MS)),
-    desligado: () => Boolean(getSave().idle?.config?.economiaEnergia),
+    desligado: () => !MUNDO_ATIVO || Boolean(getSave().idle?.config?.economiaEnergia),
   });
 
   return {
