@@ -22,3 +22,12 @@ As fazendas usam lotes identificados pelo tipo de terreno e entram no teto de 30
 As formas atuais dos Oníricos existentes ficam na posição intermediária. Preserve os nomes já definidos para as linhas existentes. Chefes de campanha continuam com a colocação já combinada, incluindo o Kraken perto do fim do jogo.
 
 Para o Flow, exporte cada forma em PNG transparente individual, em 16:9, de corpo inteiro e com margem para patas, caudas, chifres e asas. Dentro de cada linhagem, mude a postura entre evoluções: posição de patas, distribuição de peso, gesto de asas ou curvatura do corpo. Mantenha um ângulo de câmera comparável. A forma final deve transmitir soberania pela postura e pela silhueta. Use a folha como referência da linhagem e gere vistas direcionais quando a animação exigir.
+
+## Linhagens adicionais de Altos do Âmbar
+
+Além das cinco nativas e das cinco visitantes do Vale de Outono, o elenco inclui Ignavor e nove linhagens com arte em `02/oniricos/<linhagem>/`. Use `01.png` para a forma base, `02.png` para a intermediária e `03.png` para a final.
+
+- Fogo: `cerifogo`, `ambarasa`.
+- Elétrico: `zunifaisca`, `trovoresta`, `voltabelha`.
+- Voador: `falesario`, `ventassol`.
+- Metal: `bronzelo`, `latonhorn`.
