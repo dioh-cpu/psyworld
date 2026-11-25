@@ -40,6 +40,8 @@ import { iniciarMundo } from './regiao1-mundo.js';
 import { iniciarLayout } from './regiao1-layout.js';
 import { iniciarCiclo } from './regiao1-ciclo.js';
 import { CICLO_C1 } from './regiao1-ciclo-c1.js';
+import { iniciarEstrategia } from './regiao1-estrategia.js';
+import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
 const LARG = 106;
@@ -2310,6 +2312,8 @@ window.regiaoC1 = iniciarCiclo({
   getMapaAtual: () => mapaAtual, getJogador: () => ({ x: estado.x, z: estado.z }), getEntidades: () => entidadesMapa,
   getSave: () => save, salvar: salvarEstado, mostrarToast, abrirDialogo, fecharModal, atualizarHud: atualizarHudEstado,
 });
+// Modo Estratégia da cidade (regras em regiao1-estrategia-regras.js, dados por cidade em regiao1-estrategia-c1.js)
+window.regiaoEstrategia = iniciarEstrategia({ dados: ESTRATEGIA_C1, getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, atualizarHud: atualizarHudEstado });
 iniciarLayout();
 if (avisoSave) setTimeout(() => mostrarToast(avisoSave, 7000), 1500);
 

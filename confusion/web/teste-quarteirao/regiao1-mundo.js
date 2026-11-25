@@ -183,7 +183,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
       <div class="mundo-abas" id="mundo-abas" role="tablist"></div>
       <div class="mundo-corpo" id="mundo-corpo"></div>
       <div class="mundo-log" id="mundo-log" aria-live="polite">Escolha um sistema. Cada dia (2 min de jogo) todos eles avançam.</div>
-      <div class="mundo-acoes mundo-rodape" style="margin-top:8px"><button class="btn-sec" id="mundo-dia">Passar 1 dia agora</button><button class="btn-sec" id="mundo-diario">Diário do mundo</button><button class="btn-sec" id="mundo-coletar">Coletar recursos da área</button></div>
+      <div class="mundo-acoes mundo-rodape" style="margin-top:8px"><button class="btn-pri" id="mundo-estrategia">🧭 Estratégia da cidade</button><button class="btn-sec" id="mundo-dia">Passar 1 dia agora</button><button class="btn-sec" id="mundo-diario">Diário do mundo</button><button class="btn-sec" id="mundo-coletar">Coletar recursos da área</button></div>
     </div>`;
   document.body.append(painel);
 
@@ -229,8 +229,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     abas.hidden = false;
     painel.querySelector('#mundo-titulo').textContent = 'Mundo · 50 sistemas';
     abas.innerHTML = ROTULOS_GRUPO.map((r, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${r}</button>`).join('');
-    const cic = window.regiaoC1?.resumo();
-    const progresso = cic ? `<div class="sis-bloco"><h4>Diário de progresso · ${esc(cic.titulo)}</h4>${cic.linhas.map((l) => `<p>• ${esc(l)}</p>`).join('')}</div>` : '';
+    const progresso = [window.regiaoC1, window.regiaoEstrategia].map((m) => m?.resumo()).filter(Boolean).map((cic) => `<div class="sis-bloco"><h4>Diário de progresso · ${esc(cic.titulo)}</h4>${cic.linhas.map((l) => `<p>• ${esc(l)}</p>`).join('')}</div>`).join('');
     const tut = est.meta.tutorialVisto ? '' : `<div class="sis-bloco"><h4>Como funciona o Mundo</h4><p>São 50 sistemas vivos: cidades, facções, clima, pragas, chefes, expedições e mais. A cada <b>dia do mundo</b> (2 minutos de jogo) todos eles avançam sozinhos.</p><p>• <b>Toque em um sistema</b> para abrir o menu dele: estado, ações e o que ele rende.</p><p>• <b>Cada abate na caçada</b> alimenta o mundo (recursos do bioma) e tira monstros do ecossistema. Se uma espécie fica rara, a caça rende menos.</p><p>• <b>Praga e clima</b> mexem no seu dano e no seu ouro. Refúgios protegem. O quadro "Na caça" no topo mostra o que está valendo agora.</p><p>• Os recursos têm teto de 500 (+100 por refúgio). O que passa disso se perde: gaste!</p><p>• Alguns sistemas aparecem no mapa. Chegue perto e toque no botão 🌍 para abrir.</p><div class="mundo-acoes" style="margin-top:6px"><button class="btn-pri" data-entendi="1">Entendi</button></div></div>`;
     corpo.innerHTML = progresso + tut + `<div class="mundo-grade">${SISTEMAS.slice(aba * 10, aba * 10 + 10).map((sis) => {
       const arte = artePorSistema(sis.id);
@@ -288,6 +287,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     if (alvo.dataset.abrir) { aberto = alvo.dataset.abrir; desenhar(); return; }
     if (alvo.dataset.voltar) { aberto = null; desenhar(); return; }
     if (alvo.dataset.entendi) { estado().meta.tutorialVisto = true; salvar?.(); desenhar(); return; }
+    if (alvo.id === 'mundo-estrategia') { fecharModal('modal-mundo'); window.regiaoEstrategia?.abrir(); return; }
     if (alvo.id === 'mundo-diario') { aberto = 'diario'; desenhar(); return; }
     const est = estado();
     if (alvo.id === 'mundo-dia') {

@@ -125,8 +125,8 @@ export function iniciarCiclo({ dados, cena, camera, P, camada, getMapaAtual, get
       rotulo = `🏗️ ${D.obra.antes.rotulo} (${c.progresso + c.carga}/${D.obra.custo})`;
       executar = () => entregar();
     } else {
-      rotulo = `🏘️ ${D.obra.depois.rotulo}`;
-      executar = () => abrirDialogo(D.titulo, 'Obra concluída', D.obra.textoFim, [{ rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') }]);
+      rotulo = window.regiaoEstrategia ? '🧭 Estratégia da cidade' : `🏘️ ${D.obra.depois.rotulo}`;
+      executar = () => (window.regiaoEstrategia ? window.regiaoEstrategia.abrir() : abrirDialogo(D.titulo, 'Obra concluída', D.obra.textoFim, [{ rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') }]));
     }
     return { tipo: 'ciclo', rotulo, dist: md, executar };
   }
