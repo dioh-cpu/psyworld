@@ -88,16 +88,23 @@ export function avancar(s, D, agora = Date.now()) {
     registrar(g, `Obra concluída: ${est?.nome || o.tipo} nv.${o.nivel}.`, agora);
     ev.concluidas.push(o);
   }
-  // fabricação: lotes em sequência; cada unidade termina no seu horário
+  // fabricação: lotes em sequência; cada lote usa seg e extra gravados ao enfileirar
   let cursor = g.fabricacao.length ? (g.fabricacao[0].inicio ?? agora) : agora;
   while (g.fabricacao.length) {
     const l = g.fabricacao[0]; const rec = D.gestao.receitas.find((x) => x.id === l.receita);
+    if (!rec) { g.fabricacao.shift(); continue; }
     if (l.inicio == null) l.inicio = Math.max(cursor, l.enfileirado || agora);
-    const fim = l.inicio + rec.seg * 1000 * l.qtd;
+    const segLote = l.seg ?? rec.seg;
+    const extraLote = l.extra ?? 0;
+    const fim = l.inicio + Math.round(segLote * 1000 * l.qtd);
     if (fim > agora) break;
-    for (const [k, v] of Object.entries(rec.saida)) g.itens[k] = (g.itens[k] || 0) + v * l.qtd;
-    registrar(g, `Lote pronto: ${l.qtd}× ${rec.nome}.`, agora);
-    ev.fabricados.push({ ...l, fim }); g.fabricacao.shift(); cursor = fim;
+    for (const [k, v] of Object.entries(rec.saida)) g.itens[k] = (g.itens[k] || 0) + v * l.qtd + extraLote;
+    if (rec.profissao) {
+      s.profissoes = s.profissoes || {};
+      s.profissoes[rec.profissao] = (s.profissoes[rec.profissao] || 0) + l.qtd * 2;
+    }
+    registrar(g, `Lote pronto: ${l.qtd}× ${rec.nome}${extraLote ? ` (+${extraLote} bônus)` : ''}.`, agora);
+    ev.fabricados.push({ ...l, seg: segLote, extra: extraLote, fim }); g.fabricacao.shift(); cursor = fim;
     if (g.fabricacao[0]) g.fabricacao[0].inicio = fim;
   }
   g.ts = agora;
@@ -121,26 +128,45 @@ export function coletarTudo(s, D, agora = Date.now()) {
     if (leva > 0) { s.materiais[it.tipo] = (s.materiais[it.tipo] || 0) + leva; g.producao[loc].acum -= leva; r.recebido[it.tipo] = (r.recebido[it.tipo] || 0) + leva; }
     if (leva < it.qtd) { r.pendente[it.tipo] = (r.pendente[it.tipo] || 0) + (it.qtd - leva); if (!r.motivos.includes(it.tipo)) r.motivos.push(it.tipo); }
   }
-  if (Object.keys(r.recebido).length) registrar(g, `Coleta: ${Object.entries(r.recebido).map(([k, v]) => `${v} ${k}`).join(', ')}.`, agora);
+  const totalColhido = Object.values(r.recebido).reduce((a, b) => a + b, 0);
+  if (totalColhido > 0) {
+    if (D.id === 'fab') { s.profissoes = s.profissoes || {}; s.profissoes.fazenda = (s.profissoes.fazenda || 0) + Math.max(1, Math.floor(totalColhido / 3)); }
+    registrar(g, `Coleta: ${Object.entries(r.recebido).map(([k, v]) => `${v} ${k}`).join(', ')}.`, agora);
+  }
   return r;
 }
 
-// ---------- fabricação ----------
+// ---------- profissões e fabricação ----------
+export const nivelProfissao = (xp = 0) => Math.floor(Math.sqrt(Math.max(0, xp || 0) / 5)) + 1;
+export function bonusProfissao(xp = 0) {
+  const nivel = nivelProfissao(xp);
+  const reducaoTempo = Math.min(0.4, Math.max(0, nivel - 1) * 0.05);
+  const extraLote = Math.floor(nivel / 3);
+  return { nivel, reducaoTempo, extraLote };
+}
 export function previsaoLote(s, D, receitaId, qtd) {
   const rec = D.gestao.receitas.find((x) => x.id === receitaId); if (!rec) return null;
+  const temProf = Boolean(rec.profissao);
+  const { nivel, reducaoTempo, extraLote } = temProf ? bonusProfissao(s.profissoes?.[rec.profissao] || 0) : { nivel: 1, reducaoTempo: 0, extraLote: 0 };
+  const nivelMin = rec.nivelMin || 1;
+  const nivelOk = nivel >= nivelMin;
+  const seg = Math.round(rec.seg * (1 - reducaoTempo) * 100) / 100;
+  const extra = qtd > 0 ? extraLote : 0;
   const insumos = Object.fromEntries(Object.entries(rec.insumos).map(([k, v]) => [k, v * qtd]));
   const f = falta(insumos, s.materiais);
-  return { rec, qtd, insumos, saida: Object.fromEntries(Object.entries(rec.saida).map(([k, v]) => [k, v * qtd])), duracao: rec.seg * 1000 * qtd, falta: f, ok: Object.keys(f).length === 0 && qtd > 0 };
+  const saida = Object.fromEntries(Object.entries(rec.saida).map(([k, v]) => [k, v * qtd + extra]));
+  return { rec, qtd, seg, extra, nivelProfissao: nivel, nivelMin, nivelOk, reducaoTempo, insumos, saida, duracao: Math.round(seg * 1000 * qtd), falta: f, ok: nivelOk && Object.keys(f).length === 0 && qtd > 0 };
 }
 export function fabricarLote(s, D, receitaId, qtd, agora = Date.now()) {
   const g = gestaoDe(s, agora); avancar(s, D, agora);
   const p = previsaoLote(s, D, receitaId, qtd);
   if (!p) return { ok: false, motivo: 'Receita desconhecida.' };
+  if (!p.nivelOk) return { ok: false, motivo: `Requer ${p.rec.profissao} nível ${p.nivelMin} (atual: ${p.nivelProfissao}).` };
   const max = D.gestao.filaFabricacao ?? 3;
   if (g.fabricacao.length >= max) return { ok: false, motivo: `Fila de fabricação cheia (${max} lotes).` };
   if (!p.ok) return { ok: false, motivo: 'Faltam insumos.', falta: p.falta };
   for (const [k, v] of Object.entries(p.insumos)) s.materiais[k] -= v;
-  g.fabricacao.push({ id: `${receitaId}-${agora}-${g.seq}`, receita: receitaId, qtd, enfileirado: agora, inicio: g.fabricacao.length ? null : agora });
+  g.fabricacao.push({ id: `${receitaId}-${agora}-${g.seq}`, receita: receitaId, qtd, seg: p.seg, extra: p.extra, enfileirado: agora, inicio: g.fabricacao.length ? null : agora });
   g.ultimoLote = { receita: receitaId, qtd };
   registrar(g, `Lote enfileirado: ${qtd}× ${p.rec.nome}.`, agora);
   return { ok: true, previsao: p };

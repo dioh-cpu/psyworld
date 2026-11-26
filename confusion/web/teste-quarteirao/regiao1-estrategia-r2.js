@@ -24,9 +24,47 @@ const rotas = Object.entries(REINOS[2].areas).map(([id, a]) => {
   };
 });
 
+// 30 terrenos de Altos do Âmbar (terraços ao redor da praça hexagonal; preserva todos os ids de ESTRATEGIA_C1; coordenadas ajustáveis conforme REINOS.md)
+export const LOCAIS_R2 = [
+  { id: 'p1', categoria: 'principal', pos: [50.0, 34.0], nivelPrincipal: 1 },
+  { id: 'a1', categoria: 'aldeias', pos: [37.5, 42.0], nivelPrincipal: 1 },
+  { id: 'a2', categoria: 'aldeias', pos: [62.5, 42.0], nivelPrincipal: 1 },
+  { id: 'e1', categoria: 'exercitos', pos: [37.5, 58.0], nivelPrincipal: 1 },
+  { id: 'r1', categoria: 'refugios', pos: [62.5, 58.0], nivelPrincipal: 1 },
+  { id: 'h1', categoria: 'hospitais', pos: [50.0, 66.0], nivelPrincipal: 1 },
+  { id: 'a3', categoria: 'aldeias', pos: [37.5, 26.0], nivelPrincipal: 5 },
+  { id: 'r2', categoria: 'refugios', pos: [62.5, 26.0], nivelPrincipal: 5 },
+  { id: 'e2', categoria: 'exercitos', pos: [37.5, 74.0], nivelPrincipal: 5 },
+  { id: 'h2', categoria: 'hospitais', pos: [62.5, 74.0], nivelPrincipal: 5 },
+  { id: 'a4', categoria: 'aldeias', pos: [26.5, 34.0], nivelPrincipal: 10 },
+  { id: 'r3', categoria: 'refugios', pos: [73.5, 34.0], nivelPrincipal: 10 },
+  { id: 'e3', categoria: 'exercitos', pos: [26.5, 66.0], nivelPrincipal: 10 },
+  { id: 'h3', categoria: 'hospitais', pos: [73.5, 66.0], nivelPrincipal: 10 },
+  { id: 'a5', categoria: 'aldeias', pos: [26.5, 20.0], nivelPrincipal: 15 },
+  { id: 'r4', categoria: 'refugios', pos: [73.5, 20.0], nivelPrincipal: 15 },
+  { id: 'e4', categoria: 'exercitos', pos: [25.5, 50.0], nivelPrincipal: 15 },
+  { id: 'h4', categoria: 'hospitais', pos: [74.5, 50.0], nivelPrincipal: 15 },
+  { id: 'a6', categoria: 'aldeias', pos: [26.5, 80.0], nivelPrincipal: 20 },
+  { id: 'r5', categoria: 'refugios', pos: [73.5, 80.0], nivelPrincipal: 20 },
+  { id: 'e5', categoria: 'exercitos', pos: [50.0, 20.0], nivelPrincipal: 20 },
+  { id: 'h5', categoria: 'hospitais', pos: [50.0, 80.0], nivelPrincipal: 20 },
+  { id: 'a7', categoria: 'aldeias', pos: [15.5, 39.5], nivelPrincipal: 25 },
+  { id: 'r6', categoria: 'refugios', pos: [84.5, 39.5], nivelPrincipal: 25 },
+  { id: 'e6', categoria: 'exercitos', pos: [15.5, 58.5], nivelPrincipal: 25 },
+  { id: 'h6', categoria: 'hospitais', pos: [84.5, 58.5], nivelPrincipal: 25 },
+  { id: 'a8', categoria: 'aldeias', pos: [15.5, 21.5], nivelPrincipal: 30 },
+  { id: 'r7', categoria: 'refugios', pos: [84.5, 21.5], nivelPrincipal: 30 },
+  { id: 'e7', categoria: 'exercitos', pos: [15.5, 77.5], nivelPrincipal: 30 },
+  { id: 'h7', categoria: 'hospitais', pos: [84.5, 77.5], nivelPrincipal: 30 },
+];
+
 export const ESTRATEGIA_R2 = {
   ...ESTRATEGIA_C1,
-  id: 'r2', titulo: 'Altos do Âmbar (Reino 2)', fundo: 'assets/confusion/interface/estrategia/reinos/02/cidade-conceito.webp',
+  id: 'r2',
+  titulo: 'Altos do Âmbar (Reino 2)',
+  fundo: 'assets/confusion/interface/estrategia/reinos/02/cidade-expansao-30.webp',
+  fundoFallback: 'assets/confusion/interface/estrategia/reinos/02/cidade-conceito.webp',
+  locais: LOCAIS_R2,
   desbloqueio: { de: 'r1', terrenos: 30, texto: 'Tenha 30 terrenos distintos do Reino 1 com prédios concluídos.' },
   prosperidadeBase: 30,
   materiais: { mel: { nome: 'Mel', icone: '🍯' }, cera: { nome: 'Cera', icone: '🕯️' } },
