@@ -4,7 +4,7 @@
 //  - Obras: custo em materiais, efeito visível e prosperidade, com a origem de cada ganho registrada.
 import { ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
 import { multElemento } from '../core.js';
-import { EFEITOS, kitDe, PAPEL_PADRAO } from './regiao1-batalha-habilidades.js';
+import { EFEITOS, kitDe, PAPEL_PADRAO, PODER_EXCLUSIVO } from './regiao1-batalha-habilidades.js';
 export { KITS, kitDe, EFEITOS } from './regiao1-batalha-habilidades.js';
 
 const lcg = (s) => () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
@@ -22,6 +22,7 @@ export const statsDoNivel = (nivel, papel) => {
 export function criarUnidade({ id, especie, nivel, lado, papeis, bonus = {}, elemento = ELEMENTO_DA_ESPECIE[especie] || 'neutro' }) {
   const papel = papeis[especie] || PAPEL_PADRAO[especie] || 'ataque';
   const s = statsDoNivel(nivel, papel);
+  const ex = PODER_EXCLUSIVO[especie]; if (ex) bonus = { ...bonus, hp: (bonus.hp || 0) + ex.hp, atk: (bonus.atk || 0) + ex.atk, def: (bonus.def || 0) + ex.def };
   const hpMax = Math.round(s.hp * (1 + (bonus.hp || 0)));
   return {
     id, especie, nivel, lado, papel, elemento,

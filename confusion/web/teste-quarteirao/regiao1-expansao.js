@@ -184,7 +184,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   }
   function iniciarHVBatalha() {
     const m = R.missaoResolvida(save(), cap, hvEstado.n), idle = save().idle;
-    const eq = R.indicesEquipeCombate(idle).map(i => idle.equipe[i]);
+    const eq = R.indicesEquipeCombate(idle).map(i => idle.equipe[i]).map((x) => ({ ...x, bonus: x.tierHW ? { hp: 0.15 * (x.tierHW - 1), atk: 0.15 * (x.tierHW - 1), def: 0.12 * (x.tierHW - 1) } : {} }));
     const artes = { Maregor: HV.chefes.Maregor.arte };
     fecharModal('modal-exp');
     tela.abrir({ titulo: `Herói × Vilão · ${m.titulo}`, arena: m.arena, aliados: eq, inimigos: m.inimigos, artes, onFim: (venceu) => {

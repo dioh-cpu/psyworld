@@ -48,7 +48,7 @@ import { indicesEquipeCombate } from './regiao1-exp-regras.js';
 const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
 import { iniciarHalloween } from './regiao1-halloween.js';
-import { darPocao } from './regiao1-halloween-regras.js';
+import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
 
@@ -958,7 +958,7 @@ function iniciarBatalha(tipo, entidade) {
   // Equipe (até 4) contra o inimigo e até 2 reforços na fila; a arena ocupa a tela inteira
   const aliados = indicesEquipeCombate(idle).map(i => {
     const m = idle.equipe[i];
-    return { especie: m.especie, nivel: i === 0 ? st.nivel : (m.nivel || 1) };
+    return { especie: m.especie, nivel: i === 0 ? st.nivel : (m.nivel || 1), bonus: bonusDoMembro(m) };
   });
   const raizDe = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
   const artes = {}; let inimigos;

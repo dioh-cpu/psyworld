@@ -61,6 +61,8 @@ export const KITS = {
 };
 
 // Papel padrão de espécies que não dependem dos dados de uma região
+// Exclusivos de banner pago (Halloween): poder base maior, para compensar abrir mão dos outros Oníricos no banner
+export const PODER_EXCLUSIVO = { 'Abóborgo': { hp: 0.3, atk: 0.3, def: 0.25 }, 'Candelúmia': { hp: 0.3, atk: 0.3, def: 0.25 }, 'Almaterna': { hp: 0.3, atk: 0.3, def: 0.25 }, 'Sentinoite': { hp: 0.3, atk: 0.3, def: 0.25 }, 'Ceifalume': { hp: 0.3, atk: 0.3, def: 0.25 } };
 export const PAPEL_PADRAO = { 'Abóborgo': 'defesa', 'Candelúmia': 'suporte', 'Almaterna': 'suporte', 'Sentinoite': 'defesa', 'Ceifalume': 'ataque' };
 
 // ---- gerador por arquétipo (papel) e elemento ----

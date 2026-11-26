@@ -31,14 +31,17 @@ export function tierDaPosicao(pos, rng = Math.random, cfg = BANNER_HW) {
   for (const t of [1, 2, 3, 4, 5]) { acc += cfg.chances[t]; if (r < acc) return { tier: t, garantia: null }; }
   return { tier: 1, garantia: null };
 }
+// Bônus de tier de um membro da equipe (zero para quem não é exclusivo)
+export const bonusDoMembro = (m) => (m?.tierHW ? { hp: 0.15 * (m.tierHW - 1), atk: 0.15 * (m.tierHW - 1), def: 0.12 * (m.tierHW - 1) } : {});
 export const proximosMarcos = (n) => ({ ate10: 10 - (n % 10), ate50: 50 - (n % 50), ate100: 100 - (n % 100) });
 export function invocarHW(save, quantos = 1, rng = Math.random, ed = EDICAO) {
   const h = hwDe(save);
   if (h.tickets < quantos) return { ok: false, motivo: `Precisa de ${quantos} Ticket(s) de Halloween (você tem ${h.tickets}).` };
   h.tickets -= quantos; const resultados = [];
   for (let i = 0; i < quantos; i++) { // o lote de 10 é processado em ordem, contando cada invocação
-    const pos = (h.contador[ed.id] || 0) + 1; h.contador[ed.id] = pos;
+    const pos = (h.contador[ed.id] || 0) + 1; h.contador[ed.id] = pos; h.total = (h.total || 0) + 1;
     const { tier, garantia } = tierDaPosicao(pos, rng);
+    if (tier === 5) h.contador[ed.id] = 0; // Tier 5 (sorte ou garantia) reinicia a contagem
     const lin = LINHAGENS_HW.find((l) => l.tier === tier);
     const novo = { especie: lin.especie, nivel: 1, xp: 0, raridade: tier, forma: 'natural', tierHW: tier, evento: ed.id };
     (save.idle.equipe ||= []).push(novo);

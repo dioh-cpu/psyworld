@@ -18,11 +18,11 @@ test('garantias: 100 → T5, demais 50 → T4, demais 10 → T3/T4; outras usam 
   assert.equal(H.tierDaPosicao(100, () => 0.99).tier, 5); assert.equal(H.tierDaPosicao(200, () => 0).tier, 5);
   assert.equal(H.tierDaPosicao(50, () => 0.99).tier, 4); assert.equal(H.tierDaPosicao(150, () => 0).tier, 4);
   assert.equal(H.tierDaPosicao(10, () => 0.5).tier, 3); assert.equal(H.tierDaPosicao(10, () => 0.95).tier, 4);
-  assert.equal(H.tierDaPosicao(7, () => 0.995).tier, 5); assert.equal(H.tierDaPosicao(7, () => 0.1).tier, 1); assert.equal(H.tierDaPosicao(7, () => 0.6).tier, 2);
+  assert.equal(H.tierDaPosicao(7, () => 0.975).tier, 5); assert.equal(H.tierDaPosicao(7, () => 0.1).tier, 1); assert.equal(H.tierDaPosicao(7, () => 0.6).tier, 2); assert.equal(BANNER_HW.chances[5], 0.03);
   const s = novo(); H.hwDe(s).tickets = 100; let t5 = 0, t4 = 0;
   for (let i = 0; i < 10; i++) { const r = H.invocarHW(s, 10, () => 0.01); t5 += r.resultados.filter((x) => x.tier === 5).length; t4 += r.resultados.filter((x) => x.tier === 4).length; }
-  assert.equal(H.hwDe(s).contador[EDICAO.id], 100); assert.equal(t5, 1); assert.equal(t4, 1); // 50 → T4, 100 → T5, múltiplos de 10 com rng baixo → T3
-  assert.deepEqual(H.proximosMarcos(100), { ate10: 10, ate50: 50, ate100: 100 }); assert.equal(s.idle.equipe.length, 101);
+  assert.equal(H.hwDe(s).contador[EDICAO.id], 0); assert.equal(H.hwDe(s).total, 100); assert.equal(t5, 1); // o T5 da posição 100 reinicia assert.equal(t4, 1); // 50 → T4, 100 → T5, múltiplos de 10 com rng baixo → T3
+  assert.deepEqual(H.proximosMarcos(0), { ate10: 10, ate50: 50, ate100: 100 }); assert.equal(s.idle.equipe.length, 101);
   assert.equal(H.invocarHW(s, 1).ok, false);
 });
 test('doces evoluem o tier (custos 1,2,3,5) e mudam a forma nas faixas 1–2 / 3–4 / 5', () => {
@@ -62,3 +62,14 @@ test('habilidades exclusivas: ressurreição na vaga, invencibilidade e dano por
   assert.ok(dn > 5000 && db < dn / 3, `${dn} ${db}`);
 });
 test('as cinco linhagens têm tier, papel e três habilidades', () => { assert.deepEqual(LINHAGENS_HW.map((l) => l.tier), [1, 2, 3, 4, 5]); for (const l of LINHAGENS_HW) assert.equal(M.kitDe(l.especie, l.papel, l.elemento).length, 3); assert.equal(Object.values(BANNER_HW.chances).reduce((a, b) => a + b, 0).toFixed(2), '1.00'); });
+
+test('Tier 5 por sorte (3%) reinicia a contagem; T3/T4 não', () => {
+  const s = novo(); const h = H.hwDe(s); h.tickets = 3; h.contador[EDICAO.id] = 36;
+  H.invocarHW(s, 1, () => 0.5); assert.equal(h.contador[EDICAO.id], 37);
+  const r = H.invocarHW(s, 1, () => 0.99); assert.equal(r.resultados[0].tier, 5); assert.equal(r.resultados[0].garantia, null); assert.equal(h.contador[EDICAO.id], 0);
+  H.invocarHW(s, 1, () => 0.9); assert.equal(h.contador[EDICAO.id], 1);
+});
+test('exclusivos são mais fortes que um Onírico comum do mesmo nível e papel', () => {
+  const a = M.criarUnidade({ id: 'a', especie: 'Ceifalume', nivel: 30, lado: 'a', papeis: {} }), b = M.criarUnidade({ id: 'b', especie: 'Noctarn', nivel: 30, lado: 'a', papeis: {} });
+  assert.ok(a.hpMax > b.hpMax * 1.25 && a.atk > b.atk * 1.25);
+});

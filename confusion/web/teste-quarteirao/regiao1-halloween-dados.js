@@ -1,7 +1,7 @@
 // Evento mensal de Halloween (dados). Números e textos configuráveis. Artes das linhagens pendentes: o caminho esperado fica em `arte`.
 export const EDICAO = { id: 'halloween-2026', nome: 'Banner Mensal de Halloween', inicio: '2026-10-01', fim: '2026-11-30' };
 export const BANNER_HW = {
-  chances: { 1: 0.50, 2: 0.28, 3: 0.15, 4: 0.06, 5: 0.01 },
+  chances: { 1: 0.48, 2: 0.28, 3: 0.15, 4: 0.06, 5: 0.03 }, // T5 também pode sair por sorte (3%); ao sair, o contador reinicia
   garantia10: { 3: 0.8, 4: 0.2 },   // múltiplos de 10 (que não são de 50 nem de 100)
   marco50: 4, marco100: 5,
   pacote: { tickets: 10, diamantes: 2000 },
@@ -23,6 +23,7 @@ export const LINHAGENS_HW = [
 export const formaDoTier = (t) => (t >= 5 ? 2 : t >= 3 ? 1 : 0);
 // Doces de Halloween: evolução de tier e moeda da Loja da Torre
 export const DOCES = { custos: [1, 2, 3, 5], chanceAbate: 0.001, chanceAndar: 0.01 };
+// Ganho por tier (somado ao poder base dos exclusivos, que já é maior que o dos Oníricos comuns: ver PODER_EXCLUSIVO)
 export const BONUS_TIER = (t) => ({ hp: 0.15 * (t - 1), atk: 0.15 * (t - 1), def: 0.12 * (t - 1) });
 export const LOJA_TORRE = [
   { id: 'pocao_xp_p', nome: 'Poção de XP pequena', custo: 1, tipo: 'pocao' },
