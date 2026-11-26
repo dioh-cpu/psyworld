@@ -61,6 +61,7 @@ export function indicesEquipeCombate(idle) {
 export const aberto = (save, modo) => {
   const e = expDe(save);
   switch (modo) {
+    case 'equipe': return true;
     case 'banner': return questFeita(save, MARCOS.banner) || e.tickets > 0 || e.pulls > 0;
     case 'cacadas': return questFeita(save, MARCOS.cacada1);
     case 'guilda': return e.visitouCidade || questFeita(save, MARCOS.cronicas);
@@ -78,8 +79,8 @@ export function concederTickets(save) {
   return n;
 }
 
-// ---- Banner ----
-const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 2], ['epica', 0.07, 3], ['lendaria', 0.01, 4]];
+// ---- Banner (Invocação ×1 e ×10) ----
+const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 3], ['epica', 0.07, 4], ['lendaria', 0.01, 5]];
 export function poolBanner() {
   const vistos = new Set(), pool = [];
   for (const r of Object.values(REINOS)) for (const l of r.linhagens) if (!vistos.has(l.nome)) { vistos.add(l.nome); const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10; pool.push({ especie: l.nome, elemento: l.elemento, raridade: k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria' }); }
@@ -95,8 +96,22 @@ export function invocar(save, rng = Math.random) {
   if (garantia && alvo === 'comum') alvo = 'rara';
   const pool = poolBanner(); let cand = pool.filter((p) => p.raridade === alvo); if (!cand.length) cand = pool;
   const sorteado = cand[Math.floor(rng() * cand.length) % cand.length];
-  const nivel = 1, idle = save.idle; (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, raridade: RARIDADES.find((x) => x[0] === sorteado.raridade)[2], forma: 'natural' });
-  return { ok: true, ...sorteado };
+  const tier = RARIDADES.find((x) => x[0] === sorteado.raridade)?.[2] || 1;
+  const nivel = 1, idle = save.idle;
+  (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, tier, raridade: tier, estrelas: 1, forma: 'natural', uid: `b${e.pulls}_${idle.equipe.length}` });
+  return { ok: true, ...sorteado, tier };
+}
+export function invocarMultiplo(save, qtd = 10, rng = Math.random) {
+  const n = qtd === 10 ? 10 : 1;
+  const e = expDe(save);
+  if (e.tickets < n) return { ok: false, motivo: `Precisa de ${n} ticket${n > 1 ? 's' : ''} (você tem ${e.tickets}).` };
+  const resultados = [];
+  for (let i = 0; i < n; i++) {
+    const r = invocar(save, rng);
+    if (!r.ok) break;
+    resultados.push(r);
+  }
+  return { ok: true, qtd: resultados.length, resultados };
 }
 
 // ---- Guilda e Contratos Diários ----

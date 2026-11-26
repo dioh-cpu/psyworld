@@ -28,11 +28,10 @@ export const PASSE_CFG = {
   ],
   // XP de Passe por atividade, calibrado para ~900 XP por hora de jogo ativo em cada modo
   fontes: {
-    abate: 4,            // caça automática no mapa (~4 abates/min)
+    abate: 1,            // Idle: exatamente 1 XP de Passe por Onírico derrotado
     batalha: 30,         // Campanha na arena (~2 min)
     batalhaChefe: 75,
     derrota: 9,
-    captura: 20,
     torre: 25,           // andar da Torre de Halloween (~100 s)
     calabouco: 20,       // sala de luta vencida no Calabouço (~80 s)
     calaboucoSala: 15,   // sala corrompida ou de tesouro superada no Calabouço
@@ -43,10 +42,20 @@ export const PASSE_CFG = {
     contrato: 100,       // contrato da Guilda entregue (fixo ou diário)
     coleta: 15,          // coleta da Fazenda
     fabricacao: 15,      // lote da Oficina
-    offlineMin: 2.5,     // Idle offline: 150/h, até 1.800 por retorno
-    offlineTeto: 1800,
+    xpPorAbateIdle: 1,   // 1 XP de Passe por abate no Idle (ativo e liquidado ao reabrir)
   },
 };
+
+// Recompensas exclusivas e úteis do Login de 7 dias (painel próprio sobre o Passe; cada dia paga uma vez por ciclo)
+export const LOGIN_7D_CATALOGO = [
+  { dia: 1, tipo: 'diamantes', qtd: 100, icone: '💎', texto: '100 💎' },
+  { dia: 2, tipo: 'tickets', qtd: 2, icone: '🎫', texto: '2 Tickets de Invocação' },
+  { dia: 3, tipo: 'fragmentos', qtd: 10, icone: '🔮', texto: '10 Fragmentos de Sonho (todos os elementos)' },
+  { dia: 4, tipo: 'pocao', id: 'pocao_xp_m', qtd: 2, icone: '🧪', texto: '2 Poções Médias de XP' },
+  { dia: 5, tipo: 'diamantes', qtd: 250, icone: '💎', texto: '250 💎' },
+  { dia: 6, tipo: 'tickets', qtd: 3, icone: '🎫', texto: '3 Tickets de Invocação' },
+  { dia: 7, tipo: 'ovo', tier: 4, especie: 'Vaelith', icone: '🥚', texto: 'Ovo Abençoado T4 (Vaelith)' },
+];
 
 const pad = (n) => String(n).padStart(2, '0');
 const comoData = (agora) => (agora instanceof Date ? agora : new Date(agora));
@@ -102,8 +111,8 @@ export function ganharXpPasse(alvo, fonte, quanto = null, agora = Date.now(), cf
   return { ganho, descartado: bruto - ganho };
 }
 
-// XP de Passe do Idle offline (reduzido em relação ao jogo ativo)
-export const xpPasseOffline = (minutos, cfg = PASSE_CFG) => Math.min(cfg.fontes.offlineTeto, Math.floor(minutos * cfg.fontes.offlineMin));
+// Idle: exatamente 1 XP de Passe por Onírico derrotado (inclusive nos abates liquidados ao reabrir o jogo)
+export const xpPasseOffline = (abates, cfg = PASSE_CFG) => Math.max(0, Math.floor(Number(abates) || 0)) * (cfg.fontes.xpPorAbateIdle ?? 1);
 
 // Prêmio de cada nível (todos os 100 níveis têm prêmio). O nível 100 é o ovo temático T5.
 export function premioNivel(n, tema = PASSE_CFG.temas[0]) {
@@ -218,3 +227,49 @@ export function infoPasse(alvo, agora = Date.now(), cfg = PASSE_CFG) {
     proximaFaixa: liberada >= totalXp(cfg) ? null : { ate: faixaFim, dia: diaQueLibera(faixaFim, ed, cfg), data: dataDe(Math.min(ed.dias, diaQueLibera(faixaFim, ed, cfg))) },
   };
 }
+
+// Trilha navegável dos 100 níveis do Passe com estado de cada degrau (coletado | pronto | liberado | bloqueado)
+export function trilhaPasse(alvo, agora = Date.now(), cfg = PASSE_CFG) {
+  const p = passeDe(alvo, agora, cfg); const ed = edicaoDe(agora, cfg);
+  const liberada = cotaLiberada(ed, cfg); const nv = nivelPasse(p.xp, cfg);
+  const itens = [];
+  for (let n = 1; n <= cfg.niveis; n++) {
+    const premio = premioNivel(n, ed.tema);
+    const coletado = n <= p.resgatado || (n === 100 && !!p.t5Pagos[ed.id]);
+    const alcancado = n <= nv;
+    const liberadoCalendario = n * cfg.xpPorNivel <= liberada;
+    const estado = coletado ? 'coletado' : alcancado ? 'pronto' : liberadoCalendario ? 'liberado' : 'bloqueado';
+    itens.push({ nivel: n, premio, estado, diaAbertura: diaQueLibera(n, ed, cfg) });
+  }
+  return itens;
+}
+
+// ---- Login de 7 Dias (painel próprio sobre o Passe, com recompensas exclusivas e pagamento único por dia) ----
+const diaBr = (agoraMs) => Math.floor((Number(agoraMs) - 3 * 3600000) / 86400000);
+
+export function infoLogin7Dias(alvo, agoraMs = Date.now(), catalogo = LOGIN_7D_CATALOGO) {
+  const idle = idleDe(alvo) || {};
+  const login = idle.login && typeof idle.login === 'object' ? idle.login : { streak: 0, lastDay: -1 };
+  const hoje = diaBr(agoraMs);
+  const jaColetouHoje = login.lastDay === hoje;
+  const streakBase = jaColetouHoje
+    ? Math.max(1, Number(login.streak) || 1)
+    : (login.lastDay === hoje - 1 ? ((Number(login.streak) || 0) % catalogo.length) + 1 : 1);
+  const diaDisponivel = jaColetouHoje ? null : streakBase;
+  const coletados = jaColetouHoje ? streakBase : streakBase - 1;
+  const proximoDia = jaColetouHoje ? (streakBase % catalogo.length) + 1 : streakBase;
+  const dias = catalogo.map((r) => {
+    const estado = r.dia <= coletados ? 'coletado' : r.dia === diaDisponivel ? 'disponivel' : 'proximo';
+    return { ...r, estado };
+  });
+  return {
+    hoje,
+    jaColetouHoje,
+    diaDisponivel,
+    coletados,
+    proximoDia,
+    proximoPremio: catalogo.find((r) => r.dia === proximoDia) || catalogo[0],
+    dias,
+  };
+}
+

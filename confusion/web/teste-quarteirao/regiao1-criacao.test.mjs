@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import { criarEstadoInicial, serializarEstado, desserializarEstado } from './regiao1-estado.js';
 import { garantirEstadoIdle } from './regiao1-idle.js';
 import {
-  ESTRELAS_CFG, TIER_CFG, REPRODUCAO_CFG,
+  ESTRELAS_CFG, TIER_CFG, REPRODUCAO_CFG, EVOLUCAO_CFG,
   custoCopiasEstrela, normalizarUnidade, preverSubirEstrela, subirEstrela, subirTierUnidade,
-  podeReproduzir, tentarReproduzir,
+  podeReproduzir, tentarReproduzir, adicionarFragmentoSonho, arvoreEvolucaoDe, evoluirFormaOnirico, fichaOnirico,
 } from './regiao1-criacao-regras.js';
+import { INICIAIS, prepararContaNova } from './regiao1-conta.js';
+import { aberto, expDe, invocarMultiplo } from './regiao1-exp-regras.js';
 
 test('Estrelas: sequência 1, 2, 4, 8, 10, 15, 20 a partir de 5★→6★, 8º degrau em aberto, preview de cópias e preservação da principal', () => {
   assert.deepEqual(ESTRELAS_CFG.custosCopias, [1, 2, 4, 8, 10, 15, 20]);
@@ -128,3 +130,63 @@ test('Reprodução: mesma espécie (inclusive evento), pais permanecem, falha ap
   assert.equal(podeReproduzir(s, 2, 3, t0 + 119 * 60_000).ok, false);
   assert.equal(podeReproduzir(s, 2, 3, t0 + 120 * 60_000).ok, true);
 });
+
+test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha completa, Equipe separada e Invocação ×1/×10', () => {
+  // 1) Criação de conta apresenta os 5 iniciais na forma base T4 com moldura aprovada
+  assert.equal(INICIAIS.length, 5);
+  assert.ok(INICIAIS.every((i) => i.tier === 4 && i.moldura.endsWith('moldura-4.png')));
+
+  const s = criarEstadoInicial();
+  garantirEstadoIdle(s);
+  prepararContaNova(s, { userId: 'u-test', inicial: 'Penumbrio', novo: true });
+  const ini = s.idle.equipe[0];
+  assert.equal(ini.especie, 'Penumbrio');
+  assert.equal(ini.tier, 4);
+  assert.equal(ini.raridade, 4);
+
+  // 2) Ficha completa do Onírico selecionado (stats, classe, elemento, tier, raridade, estrelas, 3 habilidades e árvore de 3 formas)
+  const f0 = fichaOnirico(ini, s);
+  assert.ok(f0.hp > 0 && f0.ataque > 0 && f0.defesa > 0 && f0.velocidade > 0);
+  assert.equal(f0.tier, 4);
+  assert.equal(f0.raridade, 'epica');
+  assert.equal(f0.estrelas, 1);
+  assert.equal(f0.classe, 'Assassino');
+  assert.equal(f0.habilidades.length, 3);
+  assert.equal(f0.arvore.formas.length, 3);
+  assert.equal(f0.arvore.proxima.custo, 10);
+  assert.equal(f0.arvore.proxima.saldo, 0);
+
+  // 3) Evolução Base → 2ª custa 10 Fragmentos de Sonho elementais (continua T4); 2ª → 3ª custa 30 (sobe para T5)
+  assert.equal(evoluirFormaOnirico(s, 0).ok, false);
+  adicionarFragmentoSonho(s, 'trevas', 40);
+  const e1 = evoluirFormaOnirico(s, 0);
+  assert.equal(e1.ok, true);
+  assert.equal(e1.para, 'Noctarn');
+  assert.equal(ini.tier, 4);
+  assert.equal(e1.saldoRestante, 30);
+
+  const e2 = evoluirFormaOnirico(s, 0);
+  assert.equal(e2.ok, true);
+  assert.equal(e2.para, 'Noctarion');
+  assert.equal(ini.tier, 5);
+  assert.equal(e2.saldoRestante, 0);
+  assert.equal(arvoreEvolucaoDe(ini, s).proxima, null);
+
+  // 4) Restante do catálogo não deriva tier pela posição na árvore
+  const outro = { uid: 'cat1', especie: 'Mortalio', nivel: 10, tier: 2, raridade: 2, estrelas: 1 };
+  assert.equal(fichaOnirico(outro, s).tier, 2);
+  assert.equal(fichaOnirico(outro, s).arvore.linhagemInicial, false);
+
+  // 5) Equipe é menu próprio sempre aberto e Invocação suporta apenas ×1 e ×10
+  assert.equal(aberto(s, 'equipe'), true);
+  const e = expDe(s);
+  e.tickets = 11;
+  const r1 = invocarMultiplo(s, 1, () => 0.5);
+  assert.equal(r1.ok, true);
+  assert.equal(r1.qtd, 1);
+  const r10 = invocarMultiplo(s, 10, () => 0.5);
+  assert.equal(r10.ok, true);
+  assert.equal(r10.qtd, 10);
+  assert.equal(e.tickets, 0);
+});
+

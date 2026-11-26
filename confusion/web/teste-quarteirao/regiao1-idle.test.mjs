@@ -100,7 +100,7 @@ test('Login 7 dias, Passe (systems.js), Relíquias e Vote & Ganhe funcionam inte
   assert.equal(resgatarLojaVoto(s, 'esferas').ok, true);
 });
 
-test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos, exibe Sanidade válida e compra Esferas corretamente', () => {
+test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos e exibe Sanidade válida', () => {
   const s = criarEstadoInicial();
   // Simula XP vindo da Campanha (sincronizado automaticamente com Domador)
   s.recompensas.xp = 400;
@@ -124,12 +124,4 @@ test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos
   const res = resetarAtributosDomador(s);
   assert.equal(res.ok, true);
   assert.equal(res.disponiveis, (st0.nivel - 1) * 3);
-
-  // Esferas de captura foram retiradas do fluxo em favor do Banner de Oníricos
-  s.recompensas.gold = 50;
-  s.recompensas.diamantes = 2000;
-  assert.equal(comprarEsferaIdle(s, 'comum').ok, false);
-  assert.equal(s.recompensas.gold, 50);
-  assert.equal(comprarEsferaIdle(s, 'lendaria').ok, false);
-  assert.equal(s.recompensas.diamantes, 2000);
 });

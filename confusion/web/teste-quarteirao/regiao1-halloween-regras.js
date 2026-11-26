@@ -127,6 +127,7 @@ export function vencerAndar(save, dif, n, rng = Math.random, agora = new Date())
   r.doce = talvezDoce(save, 'andar', rng, agora);
   if (rng() < TORRE.chancePocao) { const id = dif >= 3 ? 'pocao_xp_g' : dif === 2 ? 'pocao_xp_m' : 'pocao_xp_p'; darPocao(save, id); r.pocao = id; }
   ganharXpPasse(save, 'torre', null, agora);
+  for (const m of save.idle?.diarias?.itens || []) if (m.tipo === 'batalhas' && !m.resgatada) m.progresso = Math.min(m.meta, m.progresso + 1);
   t.dif = dif; t.andar = Math.min(100, n + 1);
   return r;
 }

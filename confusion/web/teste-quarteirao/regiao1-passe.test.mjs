@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { criarEstadoInicial, serializarEstado, desserializarEstado } from './regiao1-estado.js';
 import {
   PASSE_CFG, cotaDia, edicaoDe, cotaLiberada, nivelPasse, premioNivel,
-  passeDe, ganharXpPasse, resgatarPasse, comprarNivelPasse, infoPasse,
+  passeDe, ganharXpPasse, resgatarPasse, comprarNivelPasse, infoPasse, trilhaPasse, infoLogin7Dias,
 } from './regiao1-passe-regras.js';
-import { garantirEstadoIdle, resolverAbateAuto, calcularGanhoOffline, aplicarGanhoOffline, resgatarDiaria, chocarPrimeiroOvo } from './regiao1-idle.js';
+import { garantirEstadoIdle, resolverAbateAuto, calcularGanhoOffline, aplicarGanhoOffline, liquidarPeriodoIdle, resgatarDiaria, resgatarLoginDiario, chocarPrimeiroOvo } from './regiao1-idle.js';
 import { darXpCampanha, iniciarCalabouco, avancarSala, resolverLutaCalabouco, aceitarContrato, entregarContrato, fabEstado, concluirMissaoHV, acaoCrise } from './regiao1-exp-regras.js';
 import { vencerAndar } from './regiao1-halloween-regras.js';
 
@@ -205,3 +205,56 @@ test('Simulação de 30 dias com três perfis (~900 XP/h): 4h/dia, maratona no i
   assert.equal(retorno[21].nv, 75);
   assert.equal(retorno[28].nv, 100);
 });
+
+test('Rodada integrada: Idle 1 XP/abate (ao vivo e AFK liquidado), trilha 100 níveis, missões sem captura e Login 7d único', () => {
+  const s = criarEstadoInicial();
+  const d5 = dia(2026, 11, 5); // cota liberada = 5 * 3600 = 18.000
+  const idle = garantirEstadoIdle(s, d5.getTime());
+
+  // 1) Missões diárias não têm captura e todas têm ação clara
+  assert.ok(idle.diarias.itens.length > 0);
+  assert.ok(idle.diarias.itens.every((m) => m.tipo !== 'capturas' && !/captur/i.test(m.titulo)));
+  assert.ok(idle.diarias.itens.every((m) => typeof m.acaoRotulo === 'string' && m.acaoRotulo.length > 0));
+
+  // 2) Idle ao vivo: exatamente 1 XP de Passe por Onírico derrotado
+  const xpAntes = idle.passe.xp;
+  resolverAbateAuto(s, { especie: 'Brotavel', nivel: 5 }, () => 0.9, d5.getTime());
+  assert.equal(idle.passe.xp - xpAntes, 1);
+
+  // 3) Reabertura após página fechada/minimizada (2h fora): liquida abates e dá exatamente 1 XP de Passe por abate
+  idle.ultimoTickMs = d5.getTime() - 2 * 3600000;
+  const liq = liquidarPeriodoIdle(s, { nivelArea: 6, especiePadrao: 'Noctarn', agoraMs: d5.getTime() });
+  assert.ok(liq && liq.minutos === 120);
+  assert.equal(liq.xpPasseGanho, liq.abates);
+  assert.equal(idle.passe.xp, 1 + liq.abates);
+
+  // 4) Trilha navegável tem os 100 níveis com o Ovo de Dinossauro T5 no nível 100
+  const trilha = trilhaPasse(s, d5);
+  assert.equal(trilha.length, 100);
+  assert.equal(trilha[99].nivel, 100);
+  assert.equal(trilha[99].premio.texto, 'Ovo de Dinossauro T5');
+
+  // 5) Login 7 dias paga uma vez por dia, destaca disponível/coletado/próximo e entrega recompensas úteis
+  const lInfo0 = infoLogin7Dias(s, d5.getTime());
+  assert.equal(lInfo0.diaDisponivel, 1);
+  assert.equal(lInfo0.jaColetouHoje, false);
+  const diamAntes = s.recompensas.diamantes;
+  const rLogin1 = resgatarLoginDiario(s, d5.getTime());
+  assert.equal(rLogin1.ok, true);
+  assert.equal(rLogin1.dia, 1);
+  assert.ok(s.recompensas.diamantes > diamAntes);
+  // Segundo clique no mesmo dia não paga novamente
+  assert.equal(resgatarLoginDiario(s, d5.getTime()).ok, false);
+  const lInfo1 = infoLogin7Dias(s, d5.getTime());
+  assert.equal(lInfo1.jaColetouHoje, true);
+  assert.equal(lInfo1.coletados, 1);
+  assert.equal(lInfo1.proximoDia, 2);
+
+  // Dia seguinte (Dia 2): concede 2 Tickets de Invocação
+  const d6 = dia(2026, 11, 6);
+  const rLogin2 = resgatarLoginDiario(s, d6.getTime());
+  assert.equal(rLogin2.ok, true);
+  assert.equal(rLogin2.dia, 2);
+  assert.equal(s.idle.exp.tickets, 2);
+});
+

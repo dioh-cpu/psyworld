@@ -21,12 +21,15 @@ import {
   avaliarRiscoArea,
   calcularGanhoOffline,
   aplicarGanhoOffline,
+  liquidarPeriodoIdle,
   resgatarDiaria,
   trocarMissaoDiaria,
   resgatarLoginDiario,
   resgatarTudoPasse,
   comprarNivelPasse,
   infoPasse,
+  trilhaPasse,
+  infoLogin7Dias,
   comprarEsferaIdle,
   comprarOuEquiparReliquia,
   chocarPrimeiroOvo,
@@ -539,12 +542,85 @@ export function criarControladorIdleUI(ctx) {
     abrir('modal-mochila');
   }
 
-  // ---- Temporada, Passe 100 Níveis, Login 7 Dias & Missões Diárias (com Reroll!) ----
-  function abrirTemporada() {
+  // ---- Temporada, Passe 100 Níveis (trilha navegável), Login 7 Dias (painel próprio) & Missões Diárias ----
+  let trilhaFaixa = 0; // 0: 1..25, 1: 26..50, 2: 51..75, 3: 76..100
+  let trilhaScrollSalvo = 0;
+
+  function renderizarTrilhaPasse(save) {
+    const itens = trilhaPasse(save);
+    const navEl = $('temp-trilha-nav');
+    const trilhaEl = $('temp-trilha');
+    if (!navEl || !trilhaEl) return;
+    const faixas = [[1, 25], [26, 50], [51, 75], [76, 100]];
+    navEl.innerHTML = faixas.map(([a, b], i) => `
+      <button class="btn-sec" data-faixa="${i}" style="padding:3px 9px;font-size:11px;${trilhaFaixa === i ? 'background:#f3a458;color:#21110c;font-weight:700' : ''}">Nv.${a}–${b}</button>
+    `).join('');
+    navEl.querySelectorAll('[data-faixa]').forEach((b) => {
+      b.onclick = () => { trilhaFaixa = Number(b.dataset.faixa); trilhaScrollSalvo = 0; renderizarTrilhaPasse(save); };
+    });
+    const [ini, fim] = faixas[trilhaFaixa] || [1, 25];
+    const corEst = { coletado: '#22c55e', pronto: '#fbbf24', liberado: '#60a5fa', bloqueado: '#64748b' };
+    const rotEst = { coletado: '✓ Coletado', pronto: '★ Resgatar', liberado: 'Disponível', bloqueado: 'Calendário' };
+    trilhaEl.innerHTML = itens.slice(ini - 1, fim).map((it) => `
+      <div style="flex:0 0 112px;background:#24142d;border:2px solid ${corEst[it.estado]};border-radius:8px;padding:6px;font-size:11px;text-align:center">
+        <b>Nv.${it.nivel}</b>${it.nivel === 100 ? ' 🦖' : ''}<br>
+        <div style="min-height:28px;margin:3px 0">${it.premio.texto}</div>
+        <span style="color:${corEst[it.estado]};font-size:10px">${it.estado === 'bloqueado' ? `🔒 Dia ${it.diaAbertura}` : rotEst[it.estado]}</span>
+      </div>
+    `).join('');
+    trilhaEl.scrollLeft = trilhaScrollSalvo;
+  }
+
+  function renderizarPainelLogin7d() {
+    const save = ctx.getSave();
+    const info = infoLogin7Dias(save);
+    const resumoEl = $('login-7d-resumo');
+    const gradeEl = $('login-7d-grade');
+    const btnCol = $('btn-login-7d-coletar');
+    if (!resumoEl || !gradeEl) return;
+    resumoEl.innerHTML = info.jaColetouHoje
+      ? `<b>Login de hoje já coletado!</b> (${info.coletados}/7 dias concluídos) · Próximo prêmio (Dia ${info.proximoDia}): <b>${info.proximoPremio.icone} ${info.proximoPremio.texto}</b>`
+      : `<b>Dia ${info.diaDisponivel}/7 disponível agora!</b> · Coletados: ${info.coletados}/7 · Prêmio de hoje: <b>${info.proximoPremio.icone} ${info.proximoPremio.texto}</b>`;
+    gradeEl.innerHTML = info.dias.map((d) => {
+      const borda = d.estado === 'disponivel' ? '#fbbf24' : d.estado === 'coletado' ? '#22c55e' : '#52335c';
+      const tag = d.estado === 'disponivel' ? '<b style="color:#fbbf24">★ Disponível</b>' : d.estado === 'coletado' ? '<span style="color:#4ade80">✓ Coletado</span>' : `<span class="sub">Dia ${d.dia}</span>`;
+      return `<div style="background:#24142d;border:2px solid ${borda};border-radius:8px;padding:8px;text-align:center;font-size:11.5px">
+        <div><b>Dia ${d.dia}</b></div>
+        <div style="font-size:20px;margin:3px 0">${d.icone}</div>
+        <div style="min-height:28px">${d.texto}</div>
+        <div>${tag}</div>
+      </div>`;
+    }).join('');
+    if (btnCol) {
+      btnCol.disabled = info.jaColetouHoje;
+      btnCol.textContent = info.jaColetouHoje ? '✓ Recompensa de Hoje Coletada' : `🎁 Coletar Dia ${info.diaDisponivel}/7`;
+    }
+  }
+
+  function abrirLogin7dSobrePasse() {
+    const trilhaEl = $('temp-trilha');
+    if (trilhaEl) trilhaScrollSalvo = trilhaEl.scrollLeft;
+    renderizarPainelLogin7d();
+    const p = $('painel-login-7d');
+    if (p) p.style.display = 'block';
+  }
+
+  function fecharLogin7dParaTrilha() {
+    const p = $('painel-login-7d');
+    if (p) p.style.display = 'none';
+    const trilhaEl = $('temp-trilha');
+    if (trilhaEl) trilhaEl.scrollLeft = trilhaScrollSalvo;
+  }
+
+  function abrirTemporada(preservarPosicao = false) {
     const save = ctx.getSave();
     const idle = garantirEstadoIdle(save);
     const ev = resumoEventosAtuais();
     const info = infoPasse(save);
+    const trilhaEl = $('temp-trilha');
+    if (preservarPosicao && trilhaEl) trilhaScrollSalvo = trilhaEl.scrollLeft;
+    else if (!preservarPosicao) trilhaFaixa = Math.min(3, Math.floor(Math.max(0, info.nivel) / 25));
+
     const proxTxt = info.proximo
       ? `<b>Próximo (Passe Nv.${info.proximo.nivel}):</b> ${info.proximo.premio.texto}${info.proximo.premio.tier ? ` (Ovo T${info.proximo.premio.tier} · Onírico nasce Nv.1)` : ''} · Compra: ${info.proximo.preco}💎 (${info.proximo.liberado ? 'disponível hoje' : `abre dia ${info.proximo.dia} · ${info.proximo.data}`})`
       : `<b>Passe Nv.100 concluído!</b> Ovo de ${info.tema} (Tier T5 · Onírico nasce Nv.1) ${info.t5Pago ? 'no inventário/entregue' : 'pronto para coletar'}`;
@@ -554,8 +630,8 @@ export function criarControladorIdleUI(ctx) {
 
     $('temp-resumo').innerHTML = `
       <b>Passe · ${info.tema} (${info.edicao}):</b> Passe Nv.${info.nivel}/${info.niveis} (${info.xp.toLocaleString('pt-BR')} XP · ${info.xpNoNivel}/${info.xpPorNivel}) · Resgatado Nv.${info.resgatado}<br>
-      <b>Marco Nv.100:</b> Ovo T5 (${info.tema}) · Ao abrir: Onírico T5 no Nv.1<br>
-      <b>Calendário (dia ${info.dia}/${info.dias}):</b> cota ${info.liberada.toLocaleString('pt-BR')} XP (Nv.${info.nivelLiberado} · +${info.cotaDia}/dia) · ${info.noTeto ? '<b>Cota atingida</b> (XP extra de Passe não acumula)' : `Recuperável: <b>${info.recuperavel.toLocaleString('pt-BR')} XP</b>`}${faixaTxt}<br>
+      <b>Marco Nv.100:</b> Ovo de Dinossauro T5 · Na eclosão: Onírico T5 no Nv.1<br>
+      <b>Calendário (dia ${info.dia}/${info.dias}):</b> cota ${info.liberada.toLocaleString('pt-BR')} XP (Nv.${info.nivelLiberado} · +${info.cotaDia}/dia) · ${info.noTeto ? '<b>Cota atingida</b> (ouro, XP normal e Idle continuam)' : `Recuperável: <b>${info.recuperavel.toLocaleString('pt-BR')} XP</b>`}${faixaTxt}<br>
       ${proxTxt}<br>
       <b>Evento Semanal:</b> ${ev.semanal.nome} (${ev.semanal.efeito}) · <b>Raid (2h):</b> ${ev.raid.boss.nome} (${ev.raid.aberto ? `ABERTA · ${ev.raid.restanteMin}m` : `em ${ev.raid.abreEmMin}m`})
     `;
@@ -568,6 +644,12 @@ export function criarControladorIdleUI(ctx) {
           ? `💎 Comprar Nv.${info.proximo.nivel} (${info.proximo.preco}💎 · ${info.proximo.premio.texto})`
           : `🔒 Nv.${info.proximo.nivel} abre ${info.proximo.data} (${info.proximo.preco}💎)`;
     }
+    const loginInfo = infoLogin7Dias(save);
+    const btnLogin = $('btn-login-diario');
+    if (btnLogin) {
+      btnLogin.textContent = loginInfo.jaColetouHoje ? `🎁 Login 7d (${loginInfo.coletados}/7)` : `🎁 Login 7d (Dia ${loginInfo.diaDisponivel} pronto!)`;
+    }
+    renderizarTrilhaPasse(save);
 
     $('temp-diarias').innerHTML = `
       <div class="sub" style="margin-bottom:6px">Trocas (reroll) restantes hoje: <b>${idle.diarias.rerollsRestantes}</b></div>
@@ -575,13 +657,13 @@ export function criarControladorIdleUI(ctx) {
         <div class="card-row">
           <div>
             <b>${m.titulo}</b> (${m.progresso}/${m.meta})
-            <div class="sub">+${m.gold}g · +${m.xpPasse} XP Passe</div>
+            <div class="sub">Recompensa: +${m.gold}g · +${m.xpPasse} XP Passe</div>
           </div>
           <div style="display:flex;gap:5px">
             ${!m.resgatada && m.progresso >= m.meta
               ? `<button class="btn-pri" style="padding:4px 9px;font-size:11px" data-resg-dm="${m.id}">Resgatar</button>`
               : !m.resgatada
-                ? `<button class="btn-sec" style="padding:4px 8px;font-size:11px" data-ir-dm="${m.mapaSugerido}">Ir caçar</button>
+                ? `<button class="btn-sec" style="padding:4px 8px;font-size:11px" data-ir-dm="${m.mapaSugerido}">${m.acaoRotulo || 'Ir caçar'}</button>
                    <button class="btn-sec" style="padding:4px 8px;font-size:11px" data-troca-dm="${m.id}">↻ Trocar</button>`
                 : '<span class="tag" style="color:#4ade80">✓ Feita</span>'}
           </div>
@@ -592,7 +674,7 @@ export function criarControladorIdleUI(ctx) {
     $('temp-diarias').querySelectorAll('[data-resg-dm]').forEach((b) => {
       b.onclick = () => {
         const ok = resgatarDiaria(save, b.dataset.resgDm);
-        if (ok) { ctx.mostrarToast(`+${ok.gold}g e +${ok.xpPasse} XP do Passe!`, 2400); ctx.salvar(); atualizarHudIdle(); abrirTemporada(); }
+        if (ok) { ctx.mostrarToast(`+${ok.gold}g e +${ok.xpPasse} XP do Passe!`, 2400); ctx.salvar(); atualizarHudIdle(); abrirTemporada(true); }
       };
     });
     $('temp-diarias').querySelectorAll('[data-troca-dm]').forEach((b) => {
@@ -600,7 +682,7 @@ export function criarControladorIdleUI(ctx) {
         const r = trocarMissaoDiaria(save, b.dataset.trocaDm);
         ctx.mostrarToast(r.ok ? `Nova missão: ${r.nova.titulo}` : r.motivo, 2200);
         ctx.salvar();
-        abrirTemporada();
+        abrirTemporada(true);
       };
     });
     $('temp-diarias').querySelectorAll('[data-ir-dm]').forEach((b) => {
@@ -610,13 +692,19 @@ export function criarControladorIdleUI(ctx) {
     abrir('modal-temporada');
   }
 
-  $('btn-login-diario')?.addEventListener('click', () => {
+  $('btn-login-diario')?.addEventListener('click', abrirLogin7dSobrePasse);
+  $('btn-login-7d-fechar')?.addEventListener('click', fecharLogin7dParaTrilha);
+  $('btn-login-7d-voltar')?.addEventListener('click', fecharLogin7dParaTrilha);
+  $('btn-login-7d-coletar')?.addEventListener('click', () => {
     const save = ctx.getSave();
     const r = resgatarLoginDiario(save);
-    ctx.mostrarToast(r.ok ? `🎁 Login Dia ${r.dia}/7 resgatado!` : r.motivo, 2800);
+    ctx.mostrarToast(r.ok ? `🎁 Login Dia ${r.dia}/7: ${r.recompensa.texto}!` : r.motivo, 2800);
     ctx.salvar();
     atualizarHudIdle();
-    abrirTemporada();
+    renderizarPainelLogin7d();
+    const btnLogin = $('btn-login-diario');
+    const loginInfo = infoLogin7Dias(save);
+    if (btnLogin) btnLogin.textContent = loginInfo.jaColetouHoje ? `🎁 Login 7d (${loginInfo.coletados}/7)` : `🎁 Login 7d (Dia ${loginInfo.diaDisponivel} pronto!)`;
   });
   $('btn-passe-coletar')?.addEventListener('click', () => {
     const save = ctx.getSave();
@@ -627,7 +715,7 @@ export function criarControladorIdleUI(ctx) {
     ctx.mostrarToast(resumo, 3200);
     ctx.salvar();
     atualizarHudIdle();
-    abrirTemporada();
+    abrirTemporada(true);
   });
   $('btn-passe-comprar')?.addEventListener('click', () => {
     const save = ctx.getSave();
@@ -635,7 +723,7 @@ export function criarControladorIdleUI(ctx) {
     ctx.mostrarToast(r.ok ? `Nível ${r.nivel} desbloqueado (-${r.custo}💎)!` : r.motivo, 2800);
     ctx.salvar();
     atualizarHudIdle();
-    abrirTemporada();
+    abrirTemporada(true);
   });
 
   // ---- Vote & Ganhe (TopIdle / IdleRank) ----
@@ -727,17 +815,30 @@ export function criarControladorIdleUI(ctx) {
     ganhoOfflinePendente = { resumo, especie: ws[0]?.especie || 'Noctarn' };
     $('afk-detalhe').innerHTML = `
       <b>Tempo fora:</b> ${Math.floor(resumo.minutos / 60)}h ${resumo.minutos % 60}m<br>
-      ⚔️ Abates estimados: <b>${resumo.abates}</b><br>
+      ⚔️ Abates estimados: <b>${resumo.abates}</b> · 🎟️ Passe: <b>+${resumo.xpPasseBruto ?? resumo.abates} XP</b> (1 XP/abate, sujeito à cota)<br>
       🪙 Gold: <b>+${resumo.gold}g</b> · ⭐ XP: <b>+${resumo.xp}</b><br>
       🥚 Ovos encontrados: <b>${resumo.ovos}</b> ${resumo.colheitaFazenda ? `· 🌱 Fazenda: +${resumo.colheitaFazenda} recursos` : ''}
     `;
     abrir('modal-offline');
   }
+  function liquidarSegundoPlano() {
+    const save = ctx.getSave();
+    const mapa = ctx.getMapaAtual();
+    const ws = MONSTROS_SELVAGENS.filter((w) => w.mapa === mapa?.id);
+    const nvMed = ws.length ? Math.round(ws.reduce((a, b) => a + b.nivel, 0) / ws.length) : 6;
+    const res = liquidarPeriodoIdle(save, { nivelArea: nvMed, especiePadrao: ws[0]?.especie || 'Noctarn' });
+    if (res) {
+      registrarLogIdle(garantirEstadoIdle(save), `⏱️ Segundo plano: +${res.abates} abates, +${res.gold}g, +${res.xpPasseGanho} XP Passe`, 'farm');
+      ctx.salvar();
+      atualizarHudIdle();
+    }
+    return res;
+  }
   $('btn-coletar-afk')?.addEventListener('click', () => {
     if (ganhoOfflinePendente) {
       const save = ctx.getSave();
-      aplicarGanhoOffline(save, ganhoOfflinePendente.resumo, ganhoOfflinePendente.especie);
-      registrarLogIdle(garantirEstadoIdle(save), `⏱️ AFK coletado: +${ganhoOfflinePendente.resumo.gold}g, +${ganhoOfflinePendente.resumo.xp} XP`, 'farm');
+      const res = aplicarGanhoOffline(save, ganhoOfflinePendente.resumo, ganhoOfflinePendente.especie);
+      registrarLogIdle(garantirEstadoIdle(save), `⏱️ AFK coletado: +${ganhoOfflinePendente.resumo.gold}g, +${ganhoOfflinePendente.resumo.xp} XP, +${res?.xpPasseGanho ?? 0} XP Passe`, 'farm');
       ganhoOfflinePendente = null;
       ctx.salvar();
       atualizarHudIdle();
@@ -789,6 +890,7 @@ export function criarControladorIdleUI(ctx) {
     atualizarMinimapa,
     spawnFlutuante,
     verificarGanhoOffline,
+    liquidarSegundoPlano,
     iniciarTutorial,
     abrirAtlas,
     abrirCodex,

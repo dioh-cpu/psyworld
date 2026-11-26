@@ -9,6 +9,7 @@ import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { hwDe } from './regiao1-halloween-regras.js';
 import { POSICOES } from './regiao1-batalha-tela.js';
 import { ganharXpPasse } from './regiao1-passe-regras.js';
+import { fichaOnirico, evoluirFormaOnirico, tierDaUnidade, estrelasDaUnidade, raridadeRotulo, molduraDoTier } from './regiao1-criacao-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -77,10 +78,24 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .hp-eq { height: 10px; background: #12091a; border-radius: 5px; overflow: hidden; margin: 3px 0; } #modal-exp .hp-eq i { display: block; height: 100%; background: linear-gradient(90deg, #10b981, #6ee7b7); transition: width .3s; }
     #modal-exp .hv-dlg { display: flex; gap: 12px; align-items: flex-end; } #modal-exp .hv-busto { width: clamp(68px, 15vw, 108px); height: clamp(86px, 23vh, 140px); object-fit: contain; object-position: bottom; flex: 0 0 auto; filter: drop-shadow(0 3px 6px #000a); }
     #modal-exp .hv-fala { flex: 1; min-width: 0; } #modal-exp .hv-quem { display: inline-block; padding: 1px 7px; border-radius: 6px; background: #f3a45828; border: 1px solid #f3a45888; color: #f3c27a; font-weight: 700; font-size: 11.5px; margin-bottom: 4px; }
-    #modal-exp .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 6px; } #modal-exp .mini { text-align: center; font-size: 10.5px; background: #24162b; border-radius: 8px; padding: 4px; } #modal-exp .mini img { width: 100%; height: 64px; object-fit: contain; }
-    #modal-exp .eq-arena { position: relative; height: clamp(170px, 46vh, 300px); border-radius: 10px; background: center / cover; overflow: hidden; margin: 6px 0; }
-    #modal-exp .eq-vaga { position: absolute; transform: translate(-50%, -100%); width: clamp(70px, 15vw, 120px); display: flex; flex-direction: column; align-items: center; background: rgba(20,10,28,.45); border: 2px dashed #c8b08a; border-radius: 10px; color: #fff3e7; font: 600 10.5px system-ui; padding: 3px; touch-action: none; }
-    #modal-exp .eq-vaga img { width: 100%; height: clamp(44px, 12vh, 84px); object-fit: contain; pointer-events: none; } #modal-exp .eq-vaga.vazia { opacity: .6; min-height: 50px; justify-content: center; } #modal-exp .eq-vaga.sel, #modal-exp .eq-col.sel { outline: 3px solid #fb923c; border-style: solid; }
+    #modal-exp .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; } #modal-exp .mini { text-align: center; font-size: 10.5px; background: #24162b; border: 1px solid #52335c; border-radius: 8px; padding: 5px; color: inherit; cursor: pointer; } #modal-exp .mini img { width: 100%; height: 64px; object-fit: contain; }
+    #modal-exp .mini-mold { position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 7px; background: radial-gradient(circle, #351b42, #160a1e); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 4px; }
+    #modal-exp .mini-mold img.sp { width: 78%; height: 78%; object-fit: contain; z-index: 1; }
+    #modal-exp .mini-mold img.ov { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; }
+    #modal-exp .inv-res { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 6px; }
+    #modal-exp .eq-arena { position: relative; height: clamp(180px, 46vh, 300px); border-radius: 10px; background: center / cover; overflow: hidden; margin: 6px 0; }
+    #modal-exp .eq-vaga { position: absolute; transform: translate(-50%, -100%); width: clamp(76px, 16vw, 124px); display: flex; flex-direction: column; align-items: center; background: rgba(20,10,28,.72); border: 2px dashed #c8b08a; border-radius: 10px; color: #fff3e7; font: 600 10px system-ui; padding: 4px; touch-action: none; }
+    #modal-exp .eq-vaga .mini-mold { width: 62px; height: 74px; margin-bottom: 2px; }
+    #modal-exp .eq-vaga.vazia { opacity: .65; min-height: 54px; justify-content: center; } #modal-exp .eq-vaga.sel, #modal-exp .eq-col.sel { outline: 3px solid #fb923c; border-style: solid; }
+    #modal-exp .ficha-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin: 6px 0; }
+    #modal-exp .ficha-stat { background: #221229; border-radius: 7px; padding: 5px; text-align: center; font-size: 11px; }
+    #modal-exp .ficha-stat b { display: block; font-size: 13px; color: #fde68a; }
+    #modal-exp .hab-item { background: #221229; border-radius: 7px; padding: 6px 8px; margin-bottom: 4px; font-size: 11.5px; }
+    #modal-exp .evo-arvore { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 6px 2px; }
+    #modal-exp .evo-no { flex: 1 1 0; min-width: 90px; text-align: center; background: #221229; border: 2px solid #52335c; border-radius: 8px; padding: 5px; font-size: 11px; }
+    #modal-exp .evo-no.atual { border-color: #fb923c; box-shadow: 0 0 0 2px #fb923c44; background: #341b3f; }
+    #modal-exp .evo-no img { width: 56px; height: 56px; object-fit: contain; display: block; margin: 0 auto 2px; }
+    #modal-exp .evo-seta { font-size: 18px; color: #f3c27a; font-weight: 700; flex: 0 0 auto; }
     #modal-exp .san { height: 14px; background: #12091a; border-radius: 7px; overflow: hidden; } #modal-exp .san i { display: block; height: 100%; background: linear-gradient(90deg, #7c3aed, #38bdf8); transition: width .3s; }
     #exp-crise { position: fixed; inset: 0; z-index: 56; display: none; flex-direction: column; background: #12091a; color: #fff3e7; }
     #exp-crise.vis { display: flex; } #exp-crise .cr-topo { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: rgba(26,15,34,.9); z-index: 3; } #exp-crise .cr-topo b { flex: 1; color: #f3c27a; }
@@ -99,9 +114,15 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const $ = (q) => modal.querySelector(q);
 
   // ---------- estado de tela ----------
-  let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimaInvocacao = null, hvEstado = null; let cap = 'cap1';
-  const PAINEIS = { oniricos: { titulo: '🥚 Oníricos', abas: ['Banner', 'Equipes', 'Evolução'], tut: 'banner' }, cacadas: { titulo: '🏹 Caçadas', abas: ['Caçadas', 'Calabouço'], tut: 'cacadas' }, guilda: { titulo: '🏛️ Guilda dos Aventureiros', abas: ['Contratos', 'Fazenda', 'Oficina', 'Reinos'], tut: 'guilda' }, cronicas: { titulo: '📜 Crônicas', abas: ['Crise', 'Herói × Vilão'], tut: 'crise' } };
-  const tutDaAba = (p, a) => (p === 'guilda' ? ['guilda', 'fazenda', 'oficina', 'reinos'][a] : p === 'cacadas' ? ['cacadas', 'calabouco'][a] : p === 'cronicas' ? ['crise', 'hv'][a] : ['banner', null, null][a]);
+  let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null; let cap = 'cap1';
+  const PAINEIS = {
+    equipe: { titulo: '⚔️ Equipe', abas: ['Formação & Coleção'], tut: null },
+    oniricos: { titulo: '🎫 Invocação', abas: ['Invocação'], tut: 'banner' },
+    cacadas: { titulo: '🏹 Caçadas', abas: ['Caçadas', 'Calabouço'], tut: 'cacadas' },
+    guilda: { titulo: '🏛️ Guilda dos Aventureiros', abas: ['Contratos', 'Fazenda', 'Oficina', 'Reinos'], tut: 'guilda' },
+    cronicas: { titulo: '📜 Crônicas', abas: ['Crise', 'Herói × Vilão'], tut: 'crise' },
+  };
+  const tutDaAba = (p, a) => (p === 'guilda' ? ['guilda', 'fazenda', 'oficina', 'reinos'][a] : p === 'cacadas' ? ['cacadas', 'calabouco'][a] : p === 'cronicas' ? ['crise', 'hv'][a] : p === 'oniricos' ? 'banner' : null);
   function cartaoTut(id) {
     const t = TUTS[id]; if (!t) return '';
     const visto = exp().tut[id]; if (visto && revendo !== id) return '';
@@ -110,41 +131,133 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const destacar = (id) => { const t = TUTS[id]; const vis = t && (!exp().tut[id] || revendo === id); if (!vis || !t.destaque) return; for (const sel of t.destaque.split(',')) { const e = $('#exp-corpo').querySelector(sel.trim()); if (e) { e.classList.add('tut-destaque'); break; } } };
   const fabD = () => FAB;
 
-  // ---------- Banner / Equipe / Evolução ----------
+  // ---------- Invocação (apenas ×1 e ×10) & Equipe (menu próprio + ficha com árvore) ----------
   function artePequena(esp) { const p = ARTE_DA_ESPECIE[esp] || `assets/monsters/${esp.toLowerCase()}/sprite-front.png`; return IMG(p); }
   function abaBanner() {
-    const e = exp(); let h = `<div class="bl"><h4>🎫 Tickets: ${e.tickets}</h4><p>O Banner é a <b>única forma</b> de obter Oníricos novos. Cada missão de história concluída pela primeira vez dá 1 ticket, e os contratos diários da Guilda também pagam tickets. Chances: comum 70% · rara 22% · épica 7% · lendária 1% (a cada 10 invocações, no mínimo rara).</p><div class="ln"><button class="btn-pri" data-invocar="1" ${e.tickets ? '' : 'disabled'}>Invocar (1 ticket)</button></div></div>`;
-    if (ultimaInvocacao) {
-      const mN = MOLDURAS_BANNER[ultimaInvocacao.raridade] || 1;
-      h += `<div class="bl card-on"><div class="card-mold ${mN >= 5 ? 'm5' : ''}" style="--cor-m:${RARO[ultimaInvocacao.raridade]}"><img class="sp" src="${artePequena(ultimaInvocacao.especie)}" alt="${esc(ultimaInvocacao.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><div><h4>${esc(ultimaInvocacao.especie)}</h4><p style="color:${RARO[ultimaInvocacao.raridade]}">${ultimaInvocacao.raridade} · ${esc(ultimaInvocacao.elemento)}</p><p class="mut">Adicionado à coleção (nível 1).</p></div></div>`;
+    const e = exp();
+    let h = `<div class="bl"><h4>🎫 Tickets: ${e.tickets}</h4><p>Chances: comum 70% · rara 22% · épica 7% · lendária 1% (a cada 10 invocações, no mínimo rara).</p>
+      <div class="ln">
+        <button class="btn-pri" data-invocar="1" ${e.tickets >= 1 ? '' : 'disabled'}>Invocar ×1 (1 ticket)</button>
+        <button class="btn-pri" data-invocar="10" ${e.tickets >= 10 ? '' : 'disabled'}>Invocar ×10 (10 tickets)</button>
+      </div></div>`;
+    if (ultimasInvocacoes.length) {
+      h += `<div class="bl"><h4>Resultado (${ultimasInvocacoes.length})</h4><div class="inv-res">${ultimasInvocacoes.map((r) => {
+        const mN = MOLDURAS_BANNER[r.raridade] || r.tier || 1;
+        return `<div class="mini"><div class="mini-mold"><img class="sp" src="${artePequena(r.especie)}" alt="${esc(r.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><b>${esc(r.especie)}</b><br><span style="color:${RARO[r.raridade] || '#cbd5e1'}">T${mN} · ${esc(r.raridade)}</span></div>`;
+      }).join('')}</div></div>`;
     }
-    h += `<div class="bl"><h4>Oníricos no Banner (${R.poolBanner().length})</h4><div class="grade">${R.poolBanner().map((p) => `<div class="mini"><img src="${artePequena(p.especie)}" alt="" loading="lazy">${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">${p.raridade}</span></div>`).join('')}</div></div>`;
+    h += `<div class="bl"><h4>Oníricos no Banner (${R.poolBanner().length})</h4><div class="grade">${R.poolBanner().map((p) => {
+      const mN = MOLDURAS_BANNER[p.raridade] || 1;
+      return `<div class="mini"><div class="mini-mold"><img class="sp" src="${artePequena(p.especie)}" alt="" loading="lazy"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div>${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">${p.raridade}</span></div>`;
+    }).join('')}</div></div>`;
     return h;
   }
-  // Equipes: coleção + 4 vagas nas posições da arena. Toque para colocar/trocar; arraste uma vaga sobre outra para reorganizar.
+
+  // Equipe: menu próprio com até 4 vagas com posições visíveis + cartões com nível, tier, raridade, moldura e estrelas.
+  // Tocar num Onírico abre a ficha completa com stats, até 3 habilidades e árvore conectada das 3 formas.
   let selEq = null; // { tipo: 'col' | 'vaga', uid?, vaga? }
   const arteDe = (m) => (arteDoIndividuo(m) ? `../../../${arteDoIndividuo(m)}` : artePequena(m.especie));
+  function renderFichaOnirico(eq, uid) {
+    const idx = eq.findIndex((o) => o.uid === uid);
+    if (idx < 0) return '';
+    const m = eq[idx];
+    const f = fichaOnirico(m, save());
+    if (!f) return '';
+    const corR = RARO[f.raridade] || '#cbd5e1';
+    const arv = f.arvore;
+    const arvoreHtml = arv.possuiArvore
+      ? `<div style="margin-top:8px"><b>Árvore de Evolução (${esc(arv.elemento)})</b>
+          <div class="evo-arvore">${arv.formas.map((no, i) => `
+            <div class="evo-no ${no.atual ? 'atual' : ''}">
+              <img src="${no.arte ? IMG(no.arte) : artePequena(no.especie)}" alt="${esc(no.especie)}">
+              <b>${esc(no.especie)}</b><br>
+              <span class="mut">${esc(no.rotulo)}${no.tierFixo ? ` · T${no.tierFixo}` : ''}</span>
+              ${no.atual ? '<br><span class="ok">Atual</span>' : ''}
+            </div>${i < arv.formas.length - 1 ? '<span class="evo-seta">→</span>' : ''}
+          `).join('')}</div>
+          ${arv.proxima
+            ? `<div class="ln"><span>Próxima: <b>${esc(arv.proxima.para)}</b> · Custo: <b>${arv.proxima.custo}</b> Fragmentos de Sonho (${esc(arv.proxima.elemento)}) · Saldo: <b>${arv.proxima.saldo}</b></span>
+               <button class="btn-pri" data-evo-forma="${idx}" ${arv.proxima.podeEvoluir ? '' : 'disabled'}>Evoluir</button></div>`
+            : '<p class="ok">Forma final alcançada.</p>'}
+        </div>`
+      : '';
+    return `<div class="bl" id="ficha-onirico" style="border-color:#fb923c">
+      <div class="card-on">
+        <div class="card-mold ${f.tier >= 5 ? 'm5' : ''}" style="--cor-m:${corR}">
+          <img class="sp" src="${arteDe(m)}" alt="${esc(f.especie)}">
+          <img class="ov" src="${IMG(f.moldura)}" alt="" onerror="this.style.display='none'">
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+            <h4>${esc(f.especie)} · Nv.${f.nivel}</h4>
+            <button class="btn-sec" data-ficha-fechar="1">Fechar ficha</button>
+          </div>
+          <p><span style="color:${corR}"><b>T${f.tier}</b> (${esc(f.raridade)})</span> · <b>${f.estrelas}★</b> · ${esc(f.elemento)} · <b>${esc(f.classe)}</b></p>
+          <div class="ficha-grid">
+            <div class="ficha-stat"><span>HP</span><b>${f.hp}</b></div>
+            <div class="ficha-stat"><span>Ataque</span><b>${f.ataque}</b></div>
+            <div class="ficha-stat"><span>Defesa</span><b>${f.defesa}</b></div>
+            <div class="ficha-stat"><span>Velocidade</span><b>${f.velocidade}</b></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:6px"><b>Habilidades (${f.habilidades.length})</b>${f.habilidades.map((hb) => `
+        <div class="hab-item">
+          <b>${hb.icone} ${esc(hb.nome)}</b> · <span class="mut">Recarga: ${hb.recarga} turno${hb.recarga > 1 ? 's' : ''}</span>
+          ${hb.efeitos.length ? `<div>Efeitos: ${hb.efeitos.map((ef) => `${ef.icone} ${esc(ef.nome)} (${ef.turnos}t)`).join(', ')}</div>` : ''}
+        </div>`).join('')}
+      </div>
+      ${arvoreHtml}
+    </div>`;
+  }
   function abaEquipe() {
     const idle = save().idle, eq = idle.equipe || [], f = R.formacaoDe(idle);
     const vagas = POSICOES.a.map(([x, y], v) => {
       const m = eq.find((o) => o.uid === f[v]); const sel = selEq?.tipo === 'vaga' && selEq.vaga === v;
-      return `<button class="eq-vaga ${sel ? 'sel' : ''} ${m ? '' : 'vazia'}" data-eq-vaga="${v}" style="left:${x}%;top:${y}%">${m ? `<img src="${arteDe(m)}" alt=""><span>${esc(m.especie)} · nv.${m.nivel || 1}</span>` : `<span>Vaga ${v + 1}</span>`}</button>`;
+      if (!m) return `<button class="eq-vaga ${sel ? 'sel' : ''} vazia" data-eq-vaga="${v}" style="left:${x}%;top:${y}%"><span>Posição ${v + 1}</span><small class="mut">Vazia</small></button>`;
+      const tier = tierDaUnidade(m), est = estrelasDaUnidade(m), rar = raridadeRotulo(tier);
+      return `<button class="eq-vaga ${sel ? 'sel' : ''}" data-eq-vaga="${v}" style="left:${x}%;top:${y}%">
+        <div class="mini-mold"><img class="sp" src="${arteDe(m)}" alt=""><img class="ov" src="${IMG(molduraDoTier(tier))}" alt="" onerror="this.style.display='none'"></div>
+        <span>${esc(m.especie)} · Nv.${m.nivel || 1}</span>
+        <small>T${tier} · ${esc(rar)} · ${est}★</small>
+      </button>`;
     }).join('');
-    const col = eq.map((m) => { const na = f.indexOf(m.uid); const sel = selEq?.tipo === 'col' && selEq.uid === m.uid; return `<button class="mini eq-col ${sel ? 'sel' : ''}" data-eq-col="${m.uid}"><img src="${arteDe(m)}" alt="" loading="lazy">${esc(m.especie)}<br>nv.${m.nivel || 1}${m.tierHW ? ` · T${m.tierHW}` : ''}${na >= 0 ? `<br><span class="ok">Vaga ${na + 1}</span>` : ''}</button>`; }).join('');
-    const dica = selEq ? (selEq.tipo === 'col' ? 'Toque numa vaga para colocar este Onírico.' : 'Toque noutra vaga para trocar, num Onírico da coleção para substituir, ou retire-o.') : 'Toque num Onírico da coleção e depois numa vaga. Arraste uma vaga sobre outra para reorganizar.';
+    const col = eq.map((m) => {
+      const na = f.indexOf(m.uid); const sel = (selEq?.tipo === 'col' && selEq.uid === m.uid) || fichaUid === m.uid;
+      const tier = tierDaUnidade(m), est = estrelasDaUnidade(m), rar = raridadeRotulo(tier);
+      return `<button class="mini eq-col ${sel ? 'sel' : ''}" data-eq-col="${m.uid}">
+        <div class="mini-mold"><img class="sp" src="${arteDe(m)}" alt="" loading="lazy"><img class="ov" src="${IMG(molduraDoTier(tier))}" alt="" onerror="this.style.display='none'"></div>
+        <b>${esc(m.especie)}</b><br>Nv.${m.nivel || 1} · T${tier} (${esc(rar)})<br><span style="color:#facc15">${est}★</span>${na >= 0 ? `<br><span class="ok">Posição ${na + 1}</span>` : ''}
+      </button>`;
+    }).join('');
+    const dica = selEq ? (selEq.tipo === 'col' ? 'Toque numa posição da arena para escalar este Onírico ou veja a ficha abaixo.' : 'Toque noutra posição para trocar, num Onírico da coleção para substituir, ou retire-o.') : 'Toque num Onírico para abrir a ficha e escalar numa posição. Arraste uma vaga sobre outra para reorganizar.';
     return `<div class="bl"><h4>Formação (${f.filter(Boolean).length}/4)</h4><p class="mut">${dica}</p>
       <div class="eq-arena" style="background-image:url('../../../assets/confusion/interface/estrategia/madeira-01.webp')">${vagas}</div>
-      ${selEq?.tipo === 'vaga' && f[selEq.vaga] ? `<div class="ln"><button class="btn-sec" data-eq-tirar="${selEq.vaga}">Retirar da vaga ${selEq.vaga + 1}</button><button class="btn-sec" data-eq-cancelar="1">Cancelar</button></div>` : ''}
+      ${selEq?.tipo === 'vaga' && f[selEq.vaga] ? `<div class="ln"><button class="btn-sec" data-eq-tirar="${selEq.vaga}">Retirar da posição ${selEq.vaga + 1}</button><button class="btn-sec" data-eq-cancelar="1">Cancelar</button></div>` : ''}
       <p class="mut">A formação vale na Campanha, na Torre, nas expedições da Estratégia e dos Reinos e em Herói × Vilão.</p></div>
+      ${fichaUid ? renderFichaOnirico(eq, fichaUid) : ''}
       <div class="bl"><h4>Coleção (${eq.length})</h4><div class="grade">${col}</div></div>`;
   }
   function tocarEquipe(d) {
     const idle = save().idle;
+    if (d.fichaFechar) { fichaUid = null; return true; }
+    if (d.evoForma !== undefined) {
+      const r = evoluirFormaOnirico(save(), Number(d.evoForma));
+      mostrarToast(r.ok ? `${r.de} evoluiu para ${r.para} (T${r.tier})!` : r.motivo, 2800);
+      if (r.ok) salvar();
+      return true;
+    }
     if (d.eqCancelar) { selEq = null; return true; }
     if (d.eqTirar !== undefined) { if (!R.tirarDaVaga(idle, Number(d.eqTirar))) mostrarToast('Mantenha ao menos um Onírico na formação.', 2200); selEq = null; salvar(); return true; }
-    if (d.eqCol) { if (selEq?.tipo === 'vaga') { R.colocarNaVaga(idle, d.eqCol, selEq.vaga); selEq = null; salvar(); } else selEq = selEq?.uid === d.eqCol ? null : { tipo: 'col', uid: d.eqCol }; return true; }
+    if (d.eqCol) {
+      fichaUid = d.eqCol;
+      if (selEq?.tipo === 'vaga') { R.colocarNaVaga(idle, d.eqCol, selEq.vaga); selEq = null; salvar(); }
+      else selEq = selEq?.uid === d.eqCol ? null : { tipo: 'col', uid: d.eqCol };
+      return true;
+    }
     if (d.eqVaga !== undefined) {
       const v = Number(d.eqVaga), f = R.formacaoDe(idle);
+      if (f[v]) fichaUid = f[v];
       if (selEq?.tipo === 'col') { R.colocarNaVaga(idle, selEq.uid, v); selEq = null; salvar(); }
       else if (selEq?.tipo === 'vaga') { if (selEq.vaga !== v) { R.trocarVagas(idle, selEq.vaga, v); salvar(); } selEq = null; }
       else if (f[v]) selEq = { tipo: 'vaga', vaga: v };
@@ -155,7 +268,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   // arrastar uma vaga sobre outra (toque ou mouse)
   (function arrastoVagas() {
     let de = null, fantasma = null;
-    document.addEventListener('pointerdown', (e) => { const b = e.target.closest?.('#modal-exp .eq-vaga:not(.vazia)'); if (!b) return; de = { vaga: Number(b.dataset.eqVaga), x: e.clientX, y: e.clientY, moveu: false, img: b.querySelector('img')?.src }; });
+    document.addEventListener('pointerdown', (e) => { const b = e.target.closest?.('#modal-exp .eq-vaga:not(.vazia)'); if (!b) return; de = { vaga: Number(b.dataset.eqVaga), x: e.clientX, y: e.clientY, moveu: false, img: b.querySelector('img.sp')?.src }; });
     document.addEventListener('pointermove', (e) => {
       if (!de) return; if (!de.moveu && Math.hypot(e.clientX - de.x, e.clientY - de.y) < 8) return;
       de.moveu = true; if (!fantasma) { fantasma = document.createElement('img'); fantasma.src = de.img || ''; fantasma.style.cssText = 'position:fixed;width:64px;height:64px;object-fit:contain;pointer-events:none;z-index:99;opacity:.85'; document.body.append(fantasma); }
@@ -167,14 +280,6 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       const v = Number(alvo.dataset.eqVaga); if (v !== d.vaga) { R.trocarVagas(save().idle, d.vaga, v); salvar(); } selEq = null; render(); window.__eqArrastou = Date.now();
     });
   })();
-  function proximaForma(m) {
-    const l = linhaDaEspecie(m.especie); if (!l) return null;
-    if (m.especie === l.inicial) return { para: l.atual, nivel: 5 }; if (m.especie === l.atual) return { para: l.evolucao, nivel: 10 }; return null;
-  }
-  function abaEvolucao() {
-    const eq = save().idle.equipe || [];
-    return `<div class="bl"><h4>Evolução</h4><p class="mut">Cada linha evolui em dois degraus (níveis 5 e 10). Só as cinco linhas iniciais têm formas cadastradas por enquanto.</p>${eq.map((m, i) => { const f = proximaForma(m); if (!f) return `<p>${esc(m.especie)} nv.${m.nivel || 1}: <span class="mut">sem evolução disponível</span></p>`; const ok = (m.nivel || 1) >= f.nivel; return `<p>${esc(m.especie)} nv.${m.nivel || 1} → <b>${esc(f.para)}</b> (nv.${f.nivel}) ${ok ? `<button class="btn-pri" data-evoluir="${i}">Evoluir</button>` : '<span class="ruim">nível insuficiente</span>'}</p>`; }).join('')}</div>`;
-  }
 
   // ---------- Caçadas e Calabouço ----------
   function abaCacadas() {
@@ -366,11 +471,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   function render() {
     if (!painel) return; const P = PAINEIS[painel];
     $('#exp-titulo').textContent = P.titulo;
-    $('#exp-abas').innerHTML = P.abas.map((a, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${esc(a)}</button>`).join('');
+    $('#exp-abas').innerHTML = P.abas.length > 1 ? P.abas.map((a, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${esc(a)}</button>`).join('') : '';
     const tid = tutDaAba(painel, aba); const vis = tid && TUTS[tid];
     $('#exp-rever').hidden = !(vis && exp().tut[tid] && revendo !== tid); $('#exp-rever').dataset.tut = tid || '';
     let h = tid ? cartaoTut(tid) : '';
-    if (painel === 'oniricos') h += [abaBanner, abaEquipe, abaEvolucao][aba]();
+    if (painel === 'equipe') h += abaEquipe();
+    if (painel === 'oniricos') h += abaBanner();
     if (painel === 'cacadas') h += [abaCacadas, abaCalabouco][aba]();
     if (painel === 'guilda') h += [abaContratos, abaFazenda, abaOficina, abaReinosGuilda][aba]();
     if (painel === 'cronicas') h += aba === 0 ? abaCrise() : abaHV();
@@ -385,7 +491,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (t.id === 'exp-rever') { revendo = d.tut; render(); return; }
     if (d.tutok) { exp().tut[d.tutok] = true; revendo = null; salvar(); render(); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(); return; }
-    if (d.invocar) { const r = R.invocar(save()); if (r.ok) { ultimaInvocacao = r; salvar(); } else mostrarToast(r.motivo, 2800); render(); return; }
+    if (d.invocar) {
+      const qtd = Number(d.invocar) === 10 ? 10 : 1;
+      const r = R.invocarMultiplo(save(), qtd);
+      if (r.ok) { ultimasInvocacoes = r.resultados; salvar(); } else mostrarToast(r.motivo, 2800);
+      render(); return;
+    }
     if (Date.now() - (window.__eqArrastou || 0) < 300 && d.eqVaga !== undefined) return;
     if (tocarEquipe(d)) { render(); return; }
     if (d.membroCombate !== undefined) {
@@ -397,7 +508,6 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       idle.equipeCombate = selecionado ? ativos.filter(i => i !== indice) : [...ativos, indice];
       salvar(); render(); return;
     }
-    if (d.evoluir) { const m = save().idle.equipe[Number(d.evoluir)], f = proximaForma(m); if (f && (m.nivel || 1) >= f.nivel) { m.especie = f.para; salvar(); mostrarToast(`${f.para}!`, 2200); } render(); return; }
     if (d.entrar) { entrarCacada(d.entrar); return; }
     if (d.calEntrar) { const r = R.iniciarCalabouco(save()); if (!r.ok) mostrarToast(r.motivo, 2800); salvar(); render(); return; }
     if (d.calItem) { const r = R.usarItemCalabouco(save(), d.calItem); if (!r.ok) mostrarToast(r.motivo, 2600); salvar(); render(); return; }
@@ -466,8 +576,8 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     return ev;
   }
   const livre = () => !document.querySelector('.modal-bg.aberto') && !tela.aberta() && !batalhaBloqueando() && !crise.classList.contains('vis');
-  const ROTULOS = { oniricos: '🥚 Oníricos', cacadas: '🏹 Caçadas', guilda: '🏛️ Guilda', reinos: '👑 Reinos', cronicas: '📜 Crônicas' };
-  const MODOS = { oniricos: 'banner', cacadas: 'cacadas', guilda: 'guilda', reinos: 'reinos', cronicas: 'cronicas' };
+  const ROTULOS = { equipe: '⚔️ Equipe', oniricos: '🎫 Invocação', cacadas: '🏹 Caçadas', guilda: '🏛️ Guilda', reinos: '👑 Reinos', cronicas: '📜 Crônicas' };
+  const MODOS = { equipe: 'equipe', oniricos: 'banner', cacadas: 'cacadas', guilda: 'guilda', reinos: 'reinos', cronicas: 'cronicas' };
   function atualizarNav() {
     const e = exp(); const id = getMapaId();
     if (id === 'C1') e.visitouCidade = true;
