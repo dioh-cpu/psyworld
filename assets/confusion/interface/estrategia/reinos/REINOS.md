@@ -52,3 +52,42 @@ Os centros dos terrenos no mapa estão nestas coordenadas aproximadas, em porcen
 | 30 | 30 | Colunas 1 e 6, linhas 1 e 5 |
 
 Mantenha o ID de cada terreno ao expandir a área e ajuste o enquadramento para mostrar os lotes desbloqueados. Um terreno ocupado por um prédio concluído conta uma vez para o requisito do Reino 2. Melhorar um prédio mantém o mesmo terreno ocupado.
+
+## Expansão dos Altos do Âmbar
+
+Use `02/cidade-expansao-30.webp` para o mapa jogável dos Altos do Âmbar e `02/cidade-expansao-30-guia.webp` para conferir a numeração. A guia vai de 1 a 30, da esquerda para a direita e da linha de cima para a de baixo. A origem das coordenadas fica no canto superior esquerdo. A praça hexagonal fica livre entre as colunas 3 e 4.
+
+Os IDs associam os lotes às posições correspondentes do Vale de Outono. A coluna de uso descreve o terreno pintado. As duas colunas externas trazem grama e flores para identificar as áreas de produção dos apiários.
+
+| Nº na guia | ID | Centro X | Centro Y | Terreno |
+|---:|---|---:|---:|---|
+| 1 | `a8` | 19,4% | 18,9% | Produção |
+| 2 | `a5` | 29,3% | 18,9% | Urbano |
+| 3 | `a3` | 39,5% | 18,9% | Urbano |
+| 4 | `r2` | 60,5% | 18,9% | Urbano |
+| 5 | `r4` | 70,5% | 18,9% | Urbano |
+| 6 | `r7` | 80,6% | 18,9% | Produção |
+| 7 | `a7` | 19,4% | 31,1% | Produção |
+| 8 | `a4` | 29,3% | 31,1% | Urbano |
+| 9 | `a1` | 39,5% | 31,1% | Urbano |
+| 10 | `a2` | 60,5% | 31,1% | Urbano |
+| 11 | `r3` | 70,5% | 31,1% | Urbano |
+| 12 | `r6` | 80,6% | 31,1% | Produção |
+| 13 | `e5` | 19,4% | 43,8% | Produção |
+| 14 | `e4` | 29,3% | 43,8% | Urbano |
+| 15 | `p1` | 39,1% | 43,8% | Urbano |
+| 16 | `r1` | 60,9% | 43,8% | Urbano |
+| 17 | `h4` | 70,5% | 43,8% | Urbano |
+| 18 | `h5` | 80,6% | 43,8% | Produção |
+| 19 | `e6` | 19,4% | 56,1% | Produção |
+| 20 | `e3` | 29,3% | 56,1% | Urbano |
+| 21 | `e1` | 39,5% | 56,1% | Urbano |
+| 22 | `h1` | 60,5% | 56,1% | Urbano |
+| 23 | `h3` | 70,5% | 56,1% | Urbano |
+| 24 | `h6` | 80,6% | 56,1% | Produção |
+| 25 | `e7` | 19,4% | 69,0% | Produção |
+| 26 | `a6` | 29,3% | 69,0% | Urbano |
+| 27 | `e2` | 39,5% | 69,0% | Urbano |
+| 28 | `h2` | 60,5% | 69,0% | Urbano |
+| 29 | `r5` | 70,5% | 69,0% | Urbano |
+| 30 | `h7` | 80,6% | 69,0% | Produção |
