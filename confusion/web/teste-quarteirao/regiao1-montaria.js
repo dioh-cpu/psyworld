@@ -21,8 +21,10 @@ export const MONTARIAS = {
 // O Brumacervo é a montaria do domador e dispensa posse. Id sem apresentação cadastrada (ex.: montarias do Passe ainda sem clipes)
 // fica equipado, mas o domador aparece a pé.
 export const montariasPossuidas = (save) => ['brumacervo', ...(Array.isArray(save?.idle?.colecao?.montarias) ? save.idle.colecao.montarias : [])];
-// Sem escolha gravada, o domador usa o Brumacervo (decisão: domador montado visivelmente); null/'' grava a escolha de andar a pé.
-export const montariaEquipada = (save) => { const v = save?.idle?.montaria; const id = v === undefined ? 'brumacervo' : v; return id && montariasPossuidas(save).includes(id) ? id : null; };
+// O save padrão grava montaria: null (regiao1-idle.js); null e undefined significam "sem escolha": o domador usa o Brumacervo (decisão:
+// domador montado visivelmente). Para andar a pé de propósito, grave 'a-pe'. Ids sem posse caem para a pé.
+export const A_PE = 'a-pe';
+export const montariaEquipada = (save) => { const v = save?.idle?.montaria; if (v === A_PE) return null; const id = v || 'brumacervo'; return montariasPossuidas(save).includes(id) ? id : null; };
 export const apresentacaoMontaria = (save) => { const id = montariaEquipada(save); return id && MONTARIAS[id] ? MONTARIAS[id] : null; };
 // Montado de verdade só quando a montaria está equipada e os clipes estão prontos; senão, a pé.
 export const montadoVisivel = (save) => Boolean(apresentacaoMontaria(save)?.clipes);
