@@ -11,6 +11,20 @@ Código do jogo: `confusion/web/teste-quarteirao/` · Artes: `assets/confusion/i
 
 Regras comuns: interface em português; ids de habilidades, espécies e locais nunca mudam (o VFX e as artes dependem deles); nada de segredos no repositório; cada um abre PR para a `main` e não força push em branch alheia.
 
+## Contrato de revelação e animação (Claude → Antigravity)
+
+O Claude é dono de `regiao1-revelacao.js`, `regiao1-conexao-fx.js`, `regiao1-sfx.js` e `regiao1-vfx-motor.js`. O sistema entrega o resultado já gravado; a animação só apresenta.
+
+- **Invocação**: `revelarInvocacao({ edicao, titulo, cartas, revelados, aoRevelar })` devolve uma Promise que resolve ao fechar com `{ revelados }`.
+  - `edicao`: `'halloween' | 'dinossauros' | 'adventurer' | 'elementais' | 'dragoes' | 'padrao'`.
+  - `cartas`: `[{ especie, nome?, tier: 1–5, arte, elemento?, lado?: 'luz'|'sombra' (Dragões), extra?: { nome, arte } (Adventurer) }]`.
+  - Para reabrir o painel no mesmo ponto, passe `revelados` (booleans) e grave o que `aoRevelar(i)` avisar.
+- **Ovo do Passe**: `revelarOvo({ edicao, recompensa, nivel, aberto, aoRevelar })`. O ovo T5 do nível 100 recebe a apresentação máxima. Use `aberto: true` para mostrar direto, já chocado.
+- **Recompensas comuns do Passe**: `mostrarRecompensas([{ nome, icone|arte, qtd }])`, rápida e sem bloquear a tela.
+- **Conexão Onírica**: `tocarConexao({ ponto, para: 'montaria'|'domador', montaria, aoTrocar })`. A troca de sprite acontece dentro de `aoTrocar`, no auge do efeito. Nova montaria = nova entrada em `CONEXAO` (cor, cor2, partícula). Clipes e prompts do Flow em `confusion/FLOW_MONTARIAS.md`.
+- **Preferências** (`regiao1-sfx.js`): `pref.volume`, `pref.reduzir` (segue o sistema por padrão) e `pref.pular`.
+- **Manto Violeta**: `FX_HABILIDADES.manto_violeta` já está cadastrado e lê `MORTALIO_VIOLETA_CFG` quando ele existir. O clipe toca se `clip` carregar; senão, entra a coreografia violeta procedural. O impacto aplica os quatro efeitos no `impactoMs`. Para alvo `'aliados'`, o clipe ancora no centro dos alvos.
+
 ---
 
 ## Prompt 1 — Claude (VFX das habilidades)
@@ -76,19 +90,3 @@ Tarefas:
 7. Crise: trocar as artes emprestadas pelas da pasta `expansao1/crise/` com fallback.
 8. Banner: resultados com a moldura da raridade (`interface/banner/moldura-N.png`).
 9. Antes do PR: `npm test` verde, testes novos para 2, 3 e 4, e um save antigo carregando sem perder nada.
-
----
-
-## Contrato de revelação e animação (Claude → Antigravity)
-
-O Claude é dono de `regiao1-revelacao.js`, `regiao1-conexao-fx.js`, `regiao1-sfx.js` e `regiao1-vfx-motor.js`. O sistema entrega o resultado já gravado; a animação só apresenta.
-
-- **Invocação**: `revelarInvocacao({ edicao, titulo, cartas, revelados, aoRevelar })` devolve uma Promise que resolve ao fechar com `{ revelados }`.
-  - `edicao`: `'halloween' | 'dinossauros' | 'adventurer' | 'elementais' | 'dragoes' | 'padrao'`.
-  - `cartas`: `[{ especie, nome?, tier: 1–5, arte, elemento?, lado?: 'luz'|'sombra' (Dragões), extra?: { nome, arte } (Adventurer) }]`.
-  - Para reabrir o painel no mesmo ponto, passe `revelados` (booleans) e grave o que `aoRevelar(i)` avisar.
-- **Ovo do Passe**: `revelarOvo({ edicao, recompensa, nivel, aberto, aoRevelar })`. O ovo T5 do nível 100 recebe a apresentação máxima. Use `aberto: true` para mostrar direto, já chocado.
-- **Recompensas comuns do Passe**: `mostrarRecompensas([{ nome, icone|arte, qtd }])`, rápida e sem bloquear a tela.
-- **Conexão Onírica**: `tocarConexao({ ponto, para: 'montaria'|'domador', montaria, aoTrocar })`. A troca de sprite acontece dentro de `aoTrocar`, no auge do efeito. Nova montaria = nova entrada em `CONEXAO` (cor, cor2, partícula). Clipes e prompts do Flow em `confusion/FLOW_MONTARIAS.md`.
-- **Preferências** (`regiao1-sfx.js`): `pref.volume`, `pref.reduzir` (segue o sistema por padrão) e `pref.pular`.
-- **Manto Violeta**: `FX_HABILIDADES.manto_violeta` já está cadastrado e lê `MORTALIO_VIOLETA_CFG` quando ele existir. O clipe toca se `clip` carregar; senão, entra a coreografia violeta procedural. O impacto aplica os quatro efeitos no `impactoMs`. Para alvo `'aliados'`, o clipe ancora no centro dos alvos.
