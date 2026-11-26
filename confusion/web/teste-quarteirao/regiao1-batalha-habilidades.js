@@ -67,7 +67,7 @@ export const KITS = {
 // Papel padrão de espécies que não dependem dos dados de uma região
 // Exclusivos de banner pago (Halloween): poder base maior, para compensar abrir mão dos outros Oníricos no banner
 export const PODER_EXCLUSIVO = { 'Abobrisco': { hp: 0.3, atk: 0.3, def: 0.25 }, 'Velalume': { hp: 0.3, atk: 0.3, def: 0.25 }, 'Mortálio': { hp: 0.3, atk: 0.3, def: 0.25 }, 'Vitrarco': { hp: 0.3, atk: 0.3, def: 0.25 }, Abyssar: { hp: 0.3, atk: 0.3, def: 0.25 } };
-export const PAPEL_PADRAO = { 'Abobrisco': 'defesa', 'Velalume': 'suporte', 'Mortálio': 'suporte', 'Vitrarco': 'defesa', Abyssar: 'ataque' };
+export const PAPEL_PADRAO = { Penumbrio: 'ataque', Brasinha: 'ataque', Gotalume: 'suporte', Sementil: 'defesa', Solinho: 'suporte', Noctarn: 'ataque', Ignavor: 'ataque', Vaelith: 'suporte', Brotavel: 'defesa', Solarin: 'suporte', 'Abobrisco': 'defesa', 'Velalume': 'suporte', 'Mortálio': 'suporte', 'Vitrarco': 'defesa', Abyssar: 'ataque' };
 
 // ---- gerador por arquétipo (papel) e elemento ----
 const POR_ELEMENTO = {

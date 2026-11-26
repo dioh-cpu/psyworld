@@ -1,14 +1,22 @@
 // Conta do jogador na versão pública (/jogar): criar conta escolhendo o inicial, entrar ou continuar a campanha.
-// Conta nova: inicial escolhido (forma base, nível 5, Tier 1) na primeira vaga, 20.000 diamantes e 10 dias de VIP, uma única vez.
+// Conta nova: inicial escolhido entre as cinco linhas iniciais (forma base, nível 5, Tier 1) na primeira vaga, 20.000 diamantes e
+// 10 dias de VIP, uma única vez. Os exclusivos de Halloween NÃO são iniciais: só saem no Banner Mensal.
 // O save da Região 1 vai para a nuvem junto com o que a conta já tinha (contas antigas são preservadas).
 import * as A from '../account.js';
-import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
+import { ARTE_DA_ESPECIE } from '../species.js';
 import { xpTotal } from './regiao1-progressao.js';
 
 export const BOAS_VINDAS = { diamantes: 20000, vipDias: 10 };
 const DIA = 86400000;
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const PAPEL = { defesa: 'Vanguarda', suporte: 'Suporte', ataque: 'Finalizador' };
+// As cinco linhas iniciais: começam na forma base
+export const INICIAIS = [
+  { linha: 'Noctarn', especie: 'Penumbrio', elemento: 'Noturno', papel: 'Ataque' },
+  { linha: 'Ignavor', especie: 'Brasinha', elemento: 'Fogo', papel: 'Ataque' },
+  { linha: 'Vaelith', especie: 'Gotalume', elemento: 'Água', papel: 'Suporte' },
+  { linha: 'Brotavel', especie: 'Sementil', elemento: 'Planta', papel: 'Defesa' },
+  { linha: 'Solarin', especie: 'Solinho', elemento: 'Diurno (luz)', papel: 'Suporte' },
+];
 const PENDENTE = 'cw-inicial-pendente', LIBERADO = 'cw-gate-ok';
 
 // ---------- regras puras (testáveis) ----------
@@ -16,12 +24,12 @@ export const vipAtivo = (save, agora = Date.now()) => Boolean(save?.conta?.vipAt
 export const diasVip = (save, agora = Date.now()) => (vipAtivo(save, agora) ? Math.ceil((save.conta.vipAte - agora) / DIA) : 0);
 // Aplica o inicial e o bônus numa conta nova (idempotente: a concessão fica registrada no save)
 export function prepararContaNova(save, { userId, inicial, agora = Date.now(), novo = true }) {
-  const lin = LINHAGENS_HW.find((l) => l.especie === inicial) || LINHAGENS_HW[0];
+  const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial) || INICIAIS[0];
   save.conta = save.conta || {};
   save.conta.uid = userId; save.conta.inicial = lin.especie;
   const idle = save.idle; idle.equipe = idle.equipe || [];
   if (!idle.equipe.some((m) => m.inicial)) {
-    idle.equipe.unshift({ especie: lin.especie, nivel: 5, xp: xpTotal(5), raridade: 1, forma: 'natural', tierHW: 1, inicial: true, uid: 'ini0' });
+    idle.equipe.unshift({ especie: lin.especie, nivel: 5, xp: xpTotal(5), raridade: 1, forma: 'natural', inicial: true, uid: 'ini0' });
     const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== 'ini0');
     idle.formacao = ['ini0', ...resto].slice(0, 4);
     while (idle.formacao.length < 4) idle.formacao.push(null);
@@ -55,7 +63,7 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
   const limparUrl = () => { if (location.pathname.startsWith('/jogar') && (location.hash || location.search)) history.replaceState(null, '', '/jogar'); };
 
   function cartoes() {
-    return `<div class="iniciais">${LINHAGENS_HW.map((l) => `<button type="button" class="ini" aria-pressed="${escolhido === l.especie}" data-ini="${esc(l.especie)}"><img src="../../../${l.arte[0]}" alt="${esc(l.especie)}"><b>${esc(l.especie)}</b><small>${PAPEL[l.papel]}</small></button>`).join('')}</div>`;
+    return `<div class="iniciais">${INICIAIS.map((l) => `<button type="button" class="ini" aria-pressed="${escolhido === l.especie}" data-ini="${esc(l.especie)}"><img src="../../../${ARTE_DA_ESPECIE[l.especie]}" alt="${esc(l.especie)}"><b>${esc(l.especie)}</b><small>linha ${esc(l.linha)} · ${esc(l.elemento)} · ${esc(l.papel)}</small></button>`).join('')}</div>`;
   }
   function desenhar() {
     const email = A.email();

@@ -61,6 +61,9 @@ for (const r of Object.values(REINOS)) for (const l of r.linhagens) {
   ESPECIES[l.nome] = { origem: 'linha', pureza: 'neutra', elemento: l.elemento, aptidoes: APTIDAO_DO_TIPO[l.elemento], habilidades: [`${g} de ${l.nome}`, `${g} Duplo de ${l.nome}`, `Investida de ${l.nome}`, `Guarda de ${l.nome}`], ...(l.arte ? { arte: l.arte } : {}) };
 }
 
+// Formas base e finais das cinco linhas iniciais (artes em estrategia/reinos/existentes)
+const EXIST = 'assets/confusion/interface/estrategia/reinos/existentes';
+for (const [esp, arq] of Object.entries({ Penumbrio: 'noctarn/01-penumbrio', Noctarion: 'noctarn/03-noctarion', Brasinha: 'ignavor/01-brasinha', Ignaraz: 'ignavor/03-ignaraz', Gotalume: 'vaelith/01-gotalume', Vaelirion: 'vaelith/03-vaelirion', Sementil: 'brotavel/01-sementil', Florivel: 'brotavel/03-florivel', Solinho: 'solarin/01-solinho', 'Helíssio': 'solarin/03-helissio' })) if (ESPECIES[esp] && !ESPECIES[esp].arte) ESPECIES[esp].arte = `${EXIST}/${arq}.png`;
 // Exclusivos do Banner Mensal de Halloween (origem 'evento': fora de encontro, ovo comum e invocação base). Habilidades = kit + passiva.
 for (const l of LINHAGENS_HW) {
   if (ESPECIES[l.especie]) { ESPECIES[l.especie].arte = l.arte[0]; ESPECIES[l.especie].elemento ??= l.elemento; continue; } // Abyssar já existia: ganha a arte nova

@@ -99,10 +99,10 @@ test('equipes: vagas por id estável; vaga vazia conserva as outras; trocar e su
 });
 test('conta nova: inicial T1 nível 5 na primeira vaga, 20.000💎 e 10 dias de VIP uma única vez', () => {
   const s = { recompensas: { gold: 0, diamantes: 0 }, idle: { equipe: [{ especie: 'Noctarn', nivel: 5, uid: 'o0' }] } };
-  C.prepararContaNova(s, { userId: 'u1', inicial: 'Vitrarco', agora: 1000 });
-  assert.equal(s.idle.equipe[0].especie, 'Vitrarco'); assert.equal(s.idle.equipe[0].nivel, 5); assert.equal(s.idle.equipe[0].tierHW, 1); assert.equal(s.idle.formacao[0], 'ini0');
+  C.prepararContaNova(s, { userId: 'u1', inicial: 'Brasinha', agora: 1000 });
+  assert.equal(s.idle.equipe[0].especie, 'Brasinha'); assert.equal(s.idle.equipe[0].nivel, 5); assert.equal(s.idle.equipe[0].tierHW, undefined); assert.deepEqual(C.INICIAIS.map((x) => x.linha), ['Noctarn', 'Ignavor', 'Vaelith', 'Brotavel', 'Solarin']); assert.equal(s.idle.formacao[0], 'ini0');
   assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.conta.vipAte, 1000 + 10 * 86400000);
-  C.prepararContaNova(s, { userId: 'u1', inicial: 'Vitrarco', agora: 5000 }); assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.idle.equipe.filter((m) => m.inicial).length, 1);
+  C.prepararContaNova(s, { userId: 'u1', inicial: 'Brasinha', agora: 5000 }); assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.idle.equipe.filter((m) => m.inicial).length, 1);
   assert.equal(C.diasVip(s, 1000), 10); assert.equal(C.vipAtivo(s, 1000 + 11 * 86400000), false);
-  const antiga = { recompensas: { gold: 0, diamantes: 7 }, idle: { equipe: [] } }; C.prepararContaNova(antiga, { userId: 'u2', inicial: 'Abyssar', novo: false }); assert.equal(antiga.recompensas.diamantes, 7); assert.equal(antiga.conta.vipAte, undefined);
+  const antiga = { recompensas: { gold: 0, diamantes: 7 }, idle: { equipe: [] } }; C.prepararContaNova(antiga, { userId: 'u2', inicial: 'Gotalume', novo: false }); assert.equal(antiga.recompensas.diamantes, 7); assert.equal(antiga.conta.vipAte, undefined);
 });
