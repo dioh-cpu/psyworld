@@ -56,7 +56,8 @@ import { migrarHW } from './regiao1-halloween-regras.js';
 import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
-import { multVelocidade, montariaEquipada, montadoVisivel } from './regiao1-montaria.js';
+import { multVelocidade, montariaEquipada, montadoVisivel, apresentacaoMontaria } from './regiao1-montaria.js';
+import { criarDomadorMontado } from './domador-montado.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
 const LARG = 106;
@@ -301,6 +302,20 @@ const azazel = criarAzazel('assets/characters/', ALTURA_PERSONAGEM, true); // ad
 
 const jogador = new THREE.Group();
 jogador.add(azazel.malha);
+// Domador montado: carrega a apresentação da montaria equipada (folhas recortadas) e troca no mesmo ponto dos pés, direção e escala
+let montado = null, montadoId = null;
+async function prepararMontado() {
+  const ap = apresentacaoMontaria(save), id = montariaEquipada(save);
+  if (!ap?.clipes || id === montadoId) return; montadoId = id;
+  try {
+    const meta = await (await fetch(`../../../${ap.base}${ap.clipes.meta}`)).json();
+    if (montado) jogador.remove(montado.malha);
+    montado = criarDomadorMontado(`../../../${ap.base}`, ALTURA_PERSONAGEM * ap.alturaRelativa, meta);
+    montado.malha.traverse((o) => { if (o.material) { o.material.depthTest = false; o.renderOrder = 4; } });
+    jogador.add(montado.malha);
+  } catch { montadoId = null; }
+}
+prepararMontado();
 jogador.traverse((o) => {
   if (o.material) {
     o.material.depthTest = false;
@@ -2245,7 +2260,10 @@ function quadro(agora) {
   if (emp) { estado.x = emp.x; estado.z = emp.z; }
   jogador.position.set(estado.x, camada(estado.z), estado.z);
   sombra.position.set(estado.x, camada(estado.z) - 0.005, estado.z);
-  azazel.atualizar(andando, rot, 0);
+  const montar = Boolean(montado) && montadoVisivel(save);
+  if (montadoVisivel(save) && montariaEquipada(save) !== montadoId) prepararMontado();
+  azazel.malha.visible = !montar; if (montado) montado.malha.visible = montar;
+  if (montar) montado.atualizar(andando, rot, 0); else azazel.atualizar(andando, rot, 0);
 
   const pulso = Math.sin(agora * 0.004);
   if (marcadorDestino.visible) {
