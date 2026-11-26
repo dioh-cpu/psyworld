@@ -8,6 +8,7 @@ import { criarNoctarn } from './noctarn.js';
 import { criarEspiritoIdle } from './espirito-idle.js';
 import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.js';
 import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, ENTIDADES_BOSS } from './regiao1-entidades.js';
+import { reforcosDoChefe } from './regiao1-encontros-regras.js';
 import {
   SAVE_KEY_REGIAO1,
   MARCOS_TELEPORTE,
@@ -978,7 +979,7 @@ function iniciarBatalha(tipo, entidade) {
   const artes = {}; let inimigos;
   if (ehBoss) {
     const nv = Math.max(6, Math.round((defBoss.hp - 58) / 13)); artes[defBoss.nome] = raizDe(entidade.sprite);
-    inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ['Brotavel', Math.max(3, nv - 4)], ['Noctarn', Math.max(3, nv - 4)]];
+    inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ...reforcosDoChefe(defBoss.id, nv).map((r) => [r.especie, r.nivel, r.elemento, { forma: r.forma, arte: r.arteForma }])];
   } else {
     artes[entidade.especie] = raizDe(entidade.sprite);
     const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);

@@ -26,6 +26,7 @@ export const ESTRATEGIA_C1 = {
   papeis: {
     Noctarn: 'ataque', Ignavor: 'ataque', Vaelith: 'suporte', Lumivela: 'suporte', Brotavel: 'defesa', Cristalino: 'defesa',
     Solarin: 'suporte', Sementil: 'defesa', Florivel: 'suporte', Solinho: 'ataque', Helíssio: 'ataque', Brasinha: 'ataque',
+    Fanalino: 'ataque', Cervomusgo: 'suporte', Cobrabúfalo: 'suporte', Tatuveludo: 'defesa', Xistolim: 'defesa',
   },
 
   // Locais da cidade (em % do mapa). Cada local aceita uma categoria de estrutura.
@@ -106,19 +107,19 @@ export const ESTRATEGIA_C1 = {
   // um Onírico novo passa a aparecer como INIMIGO e abre mais uma vaga na equipe. Oníricos do jogador vêm do gacha e dos ovos.
   rotas: [
     {
-      id: 'floresta', nome: 'Trilha da Floresta', icone: '🌲', material: 'madeira', descricao: 'Madeira para as casas. Inimigos de planta, no começo fracos.',
+      id: 'floresta', nome: 'Trilha da Floresta', icone: '🌲', material: 'madeira', descricao: 'Madeira para as casas. Inimigos nativos do Vale de Outono.',
       fases: [
-        { nome: 'Clareira', inimigos: [2, 2], nivel: [1, 1], especies: ['Brotavel', 'Sementil', 'Brotavel', 'Noctarn'], material: { tipo: 'madeira', faixa: [10, 14] }, secundario: { tipo: 'pedra', faixa: [2, 4] }, libera: { inimigo: 'Ignavor' } },
-        { nome: 'Bosque denso', inimigos: [2, 3], nivel: [2, 3], especies: ['Brotavel', 'Sementil', 'Ignavor', 'Noctarn'], material: { tipo: 'madeira', faixa: [14, 19] }, secundario: { tipo: 'pedra', faixa: [3, 5] }, libera: { inimigo: 'Florivel' } },
-        { nome: 'Coração da mata', inimigos: [4, 5], nivel: [3, 5], especies: ['Brotavel', 'Florivel', 'Ignavor', 'Noctarn', 'Noctarn'], material: { tipo: 'madeira', faixa: [20, 28] }, secundario: { tipo: 'pedra', faixa: [4, 6] }, libera: { inimigo: 'Vaelith' } },
+        { nome: 'Clareira', inimigos: [2, 2], nivel: [1, 1], especies: ['Cervomusgo', 'Fanalino', 'Tatuveludo'], material: { tipo: 'madeira', faixa: [10, 14] }, secundario: { tipo: 'pedra', faixa: [2, 4] }, libera: { inimigo: 'Fanalino' } },
+        { nome: 'Bosque denso', inimigos: [2, 3], nivel: [2, 3], especies: ['Cervomusgo', 'Fanalino', 'Tatuveludo', 'Cobrabúfalo'], material: { tipo: 'madeira', faixa: [14, 19] }, secundario: { tipo: 'pedra', faixa: [3, 5] }, libera: { inimigo: 'Cobrabúfalo' } },
+        { nome: 'Coração da mata', inimigos: [4, 5], nivel: [3, 5], especies: ['Cervomusgo', 'Fanalino', 'Tatuveludo', 'Cobrabúfalo', 'Lumivela'], material: { tipo: 'madeira', faixa: [20, 28] }, secundario: { tipo: 'pedra', faixa: [4, 6] }, libera: { inimigo: 'Lumivela' } },
       ],
     },
     {
       id: 'pedreira', nome: 'Pedreira da Caverna', icone: '⛏️', material: 'pedra', descricao: 'Pedra para quartel e enfermaria. Inimigos mais resistentes.',
       fases: [
-        { nome: 'Entrada da mina', inimigos: [2, 2], nivel: [2, 3], especies: ['Cristalino', 'Ignavor', 'Noctarn'], material: { tipo: 'pedra', faixa: [10, 14] }, secundario: { tipo: 'madeira', faixa: [2, 4] }, libera: { inimigo: 'Cristalino' } },
-        { nome: 'Galeria funda', inimigos: [3, 5], nivel: [4, 6], especies: ['Cristalino', 'Ignavor', 'Noctarn', 'Solarin'], material: { tipo: 'pedra', faixa: [14, 20] }, secundario: { tipo: 'madeira', faixa: [3, 5] }, libera: { inimigo: 'Solarin' } },
-        { nome: 'Veio de cristal', inimigos: [4, 6], nivel: [4, 6], especies: ['Cristalino', 'Ignavor', 'Noctarn', 'Solarin', 'Lumivela'], material: { tipo: 'pedra', faixa: [22, 30] }, secundario: { tipo: 'madeira', faixa: [4, 6] }, libera: { inimigo: 'Lumivela' } },
+        { nome: 'Entrada da mina', inimigos: [2, 2], nivel: [2, 3], especies: ['Xistolim', 'Tatuveludo', 'Cristalino'], material: { tipo: 'pedra', faixa: [10, 14] }, secundario: { tipo: 'madeira', faixa: [2, 4] }, libera: { inimigo: 'Cristalino' } },
+        { nome: 'Galeria funda', inimigos: [3, 5], nivel: [4, 6], especies: ['Cristalino', 'Xistolim', 'Tatuveludo', 'Fanalino'], material: { tipo: 'pedra', faixa: [14, 20] }, secundario: { tipo: 'madeira', faixa: [3, 5] }, libera: { inimigo: 'Xistolim' } },
+        { nome: 'Veio de cristal', inimigos: [4, 6], nivel: [4, 6], especies: ['Cristalino', 'Xistolim', 'Tatuveludo', 'Cobrabúfalo', 'Lumivela'], material: { tipo: 'pedra', faixa: [22, 30] }, secundario: { tipo: 'madeira', faixa: [4, 6] }, libera: { inimigo: 'Tatuveludo' } },
       ],
     },
   ],
