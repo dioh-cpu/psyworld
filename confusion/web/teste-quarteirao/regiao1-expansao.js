@@ -17,6 +17,8 @@ import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, co
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
+const MV1 = (p) => IMG(`assets/confusion/interface/menus-v1/${p}`);
+const slugSonho = (el) => { const k = String(el || 'neutro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); return k === 'sombra' ? 'trevas' : k; };
 const dur = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return t >= 3600 ? `${Math.floor(t / 3600)}h${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}` : t >= 60 ? `${Math.floor(t / 60)}min${String(t % 60).padStart(2, '0')}s` : `${t}s`; };
 const RARO = { comum: '#9ca3af', incomum: '#4ade80', rara: '#60a5fa', epica: '#c084fc', lendaria: '#fbbf24' };
 const COR_TIER = { 1: '#9ca3af', 2: '#4ade80', 3: '#60a5fa', 4: '#c084fc', 5: '#fbbf24' };
@@ -97,18 +99,23 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .mini-mold img.ov { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; }
     #modal-exp .inv-res { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 6px; }
     #modal-exp .eq-arena { position: relative; height: clamp(180px, 46vh, 300px); border-radius: 10px; background: center / cover; overflow: hidden; margin: 6px 0; }
-    #modal-exp .eq-vaga { position: absolute; transform: translate(-50%, -100%); width: clamp(76px, 16vw, 124px); display: flex; flex-direction: column; align-items: center; background: rgba(20,10,28,.72); border: 2px dashed #c8b08a; border-radius: 10px; color: #fff3e7; font: 600 10px system-ui; padding: 4px; touch-action: none; }
+    #modal-exp .eq-vaga { position: absolute; transform: translate(-50%, -100%); width: clamp(76px, 16vw, 124px); display: flex; flex-direction: column; align-items: center; background: rgba(20,10,28,.78); border: 2px solid #8a6b52; border-radius: 10px; color: #fff3e7; font: 600 10px system-ui; padding: 4px; touch-action: none; }
     #modal-exp .eq-vaga .mini-mold { width: 62px; height: 74px; margin-bottom: 2px; }
-    #modal-exp .eq-vaga.vazia { opacity: .65; min-height: 54px; justify-content: center; } #modal-exp .eq-vaga.sel, #modal-exp .eq-col.sel { outline: 3px solid #fb923c; border-style: solid; }
+    #modal-exp .eq-vaga.vazia { min-height: 68px; justify-content: center; border: none; background: url('../../../assets/confusion/interface/menus-v1/equipe/vaga-vazia.png') center / 100% 100% no-repeat; }
+    #modal-exp .eq-vaga.sel { border: none; background: url('../../../assets/confusion/interface/menus-v1/equipe/vaga-selecionada.png') center / 100% 100% no-repeat; }
+    #modal-exp .eq-col.sel { outline: 3px solid #fb923c; border-style: solid; }
+    #modal-exp .mv1-ficha { background: linear-gradient(rgba(18,10,28,.82), rgba(18,10,28,.92)), url('../../../assets/confusion/interface/menus-v1/ficha/fundo.webp') center / cover no-repeat; border-color: #fb923c; }
+    #modal-exp .mv1-chefes-topo { background: linear-gradient(rgba(18,10,28,.72), rgba(18,10,28,.9)), url('../../../assets/confusion/interface/menus-v1/chefes/fundo.webp') center / cover no-repeat; }
+    #modal-exp .mv1-receita { background: linear-gradient(rgba(18,10,28,.72), rgba(18,10,28,.85)), url('../../../assets/confusion/interface/menus-v1/chefes/receita.png') center / 100% 100% no-repeat; padding: 6px 8px; border-radius: 8px; margin-top: 5px; }
     #modal-exp .ficha-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin: 6px 0; }
     #modal-exp .ficha-stat { background: #221229; border-radius: 7px; padding: 5px; text-align: center; font-size: 11px; }
     #modal-exp .ficha-stat b { display: block; font-size: 13px; color: #fde68a; }
     #modal-exp .hab-item { background: #221229; border-radius: 7px; padding: 6px 8px; margin-bottom: 4px; font-size: 11.5px; }
     #modal-exp .evo-arvore { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 6px 2px; }
-    #modal-exp .evo-no { flex: 1 1 0; min-width: 90px; text-align: center; background: #221229; border: 2px solid #52335c; border-radius: 8px; padding: 5px; font-size: 11px; }
-    #modal-exp .evo-no.atual { border-color: #fb923c; box-shadow: 0 0 0 2px #fb923c44; background: #341b3f; }
+    #modal-exp .evo-no { flex: 1 1 0; min-width: 94px; text-align: center; background: url('../../../assets/confusion/interface/menus-v1/ficha/forma-bloqueada.png') center / 100% 100% no-repeat; border: none; border-radius: 8px; padding: 8px 6px; font-size: 11px; }
+    #modal-exp .evo-no.atual { background-image: url('../../../assets/confusion/interface/menus-v1/ficha/forma-atual.png'); }
     #modal-exp .evo-no img { width: 56px; height: 56px; object-fit: contain; display: block; margin: 0 auto 2px; }
-    #modal-exp .evo-seta { font-size: 18px; color: #f3c27a; font-weight: 700; flex: 0 0 auto; }
+    #modal-exp .evo-seta { width: 24px; height: 14px; object-fit: contain; flex: 0 0 auto; }
     #modal-exp .san { height: 14px; background: #12091a; border-radius: 7px; overflow: hidden; } #modal-exp .san i { display: block; height: 100%; background: linear-gradient(90deg, #7c3aed, #38bdf8); transition: width .3s; }
     #exp-crise { position: fixed; inset: 0; z-index: 56; display: none; flex-direction: column; background: #12091a; color: #fff3e7; }
     #exp-crise.vis { display: flex; } #exp-crise .cr-topo { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: rgba(26,15,34,.9); z-index: 3; } #exp-crise .cr-topo b { flex: 1; color: #f3c27a; }
@@ -197,15 +204,15 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
               <b>${esc(no.especie)}</b><br>
               <span class="mut">${esc(no.rotulo)}${no.tierFixo ? ` · T${no.tierFixo}` : ''}</span>
               ${no.atual ? '<br><span class="ok">Atual</span>' : ''}
-            </div>${i < arv.formas.length - 1 ? '<span class="evo-seta">→</span>' : ''}
+            </div>${i < arv.formas.length - 1 ? `<img class="evo-seta" src="${MV1('ficha/conexao.png')}" alt="→">` : ''}
           `).join('')}</div>
           ${arv.proxima
-            ? `<div class="ln"><span>Próxima: <b>${esc(arv.proxima.para)}</b> · Custo: <b>${arv.proxima.custo}</b> Fragmentos de Sonho (${esc(arv.proxima.elemento)}) · Saldo: <b>${arv.proxima.saldo}</b></span>
+            ? `<div class="ln"><span><img class="exp-ico" src="${MV1(`ficha/sonho-${slugSonho(arv.proxima.elemento)}.png`)}" alt="" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">Próxima: <b>${esc(arv.proxima.para)}</b> · Custo: <b>${arv.proxima.custo}</b> Fragmentos de Sonho (${esc(arv.proxima.elemento)}) · Saldo: <b>${arv.proxima.saldo}</b></span>
                <button class="btn-pri" data-evo-forma="${idx}" ${arv.proxima.podeEvoluir ? '' : 'disabled'}>Evoluir</button></div>`
             : '<p class="ok">Forma final alcançada.</p>'}
         </div>`
       : '';
-    return `<div class="bl" id="ficha-onirico" style="border-color:#fb923c">
+    return `<div class="bl mv1-ficha" id="ficha-onirico">
       <div class="card-on">
         <div class="card-mold ${f.tier >= 5 ? 'm5' : ''}" style="--cor-m:${corR}">
           <img class="sp" src="${arteDe(m)}" alt="${esc(f.especie)}">
@@ -239,7 +246,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     const idle = save().idle, eq = idle.equipe || [], f = R.formacaoDe(idle);
     const vagas = POSICOES.a.map(([x, y], v) => {
       const m = eq.find((o) => o.uid === f[v]); const sel = selEq?.tipo === 'vaga' && selEq.vaga === v;
-      if (!m) return `<button class="eq-vaga ${sel ? 'sel' : ''} vazia" data-eq-vaga="${v}" style="left:${x}%;top:${y}%"><span>Posição ${v + 1}</span><small class="mut">Vazia</small></button>`;
+      if (!m) return `<button class="eq-vaga ${sel ? 'sel' : ''} vazia" data-eq-vaga="${v}" style="left:${x}%;top:${y}%"><img src="${MV1('equipe/icone-adicionar.png')}" alt="" style="width:20px;height:20px;object-fit:contain;margin-bottom:2px"><span>Posição ${v + 1}</span><small class="mut">Vazia</small></button>`;
       const tier = tierDaUnidade(m), est = estrelasDaUnidade(m), rar = raridadeRotulo(tier);
       return `<button class="eq-vaga ${sel ? 'sel' : ''}" data-eq-vaga="${v}" style="left:${x}%;top:${y}%">
         <div class="mini-mold"><img class="sp" src="${arteDe(m)}" alt=""><img class="ov" src="${IMG(molduraDoTier(tier))}" alt="" onerror="this.style.display='none'"></div>
@@ -257,7 +264,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     }).join('');
     const dica = selEq ? (selEq.tipo === 'col' ? 'Toque numa posição da arena para escalar este Onírico ou veja a ficha abaixo.' : 'Toque noutra posição para trocar, num Onírico da coleção para substituir, ou retire-o.') : 'Toque num Onírico para abrir a ficha e escalar numa posição. Arraste uma vaga sobre outra para reorganizar.';
     return `<div class="bl"><h4>Formação (${f.filter(Boolean).length}/4)</h4><p class="mut">${dica}</p>
-      <div class="eq-arena" style="background-image:url('../../../assets/confusion/interface/estrategia/madeira-01.webp')">${vagas}</div>
+      <div class="eq-arena" style="background-image:url('${MV1('equipe/fundo.webp')}')">${vagas}</div>
       ${selEq?.tipo === 'vaga' && f[selEq.vaga] ? `<div class="ln"><button class="btn-sec" data-eq-tirar="${selEq.vaga}">Retirar da posição ${selEq.vaga + 1}</button><button class="btn-sec" data-eq-cancelar="1">Cancelar</button></div>` : ''}
       <p class="mut">A formação vale na Campanha, na Torre, nas Revanches de Chefes, nas expedições e em Herói × Vilão.</p></div>
       ${fichaUid ? renderFichaOnirico(eq, fichaUid) : ''}
@@ -378,28 +385,30 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     }
   }
 
-  // ---------- Revanche e Criação de Chefes (#59) ----------
+  // ---------- Revanche e Criação de Chefes (#59 + kit visual #63) ----------
   function abaChefes() {
-    let h = '<div class="bl"><h4>👑 Revanche e Criação de Chefes</h4><p class="mut">Derrote um chefe na Campanha para liberar sua Revanche. Cada chefe tem recarga real de <b>10 minutos</b> (velocidade ×2/×3 não acelera). Junte <b>10 fragmentos</b> do mesmo chefe para criá-lo na sua coleção.</p></div>';
+    let h = '<div class="bl mv1-chefes-topo"><h4>👑 Revanche e Criação de Chefes</h4><p class="mut">Derrote um chefe na Campanha para liberar sua Revanche. Cada chefe tem recarga real de <b>10 minutos</b> (velocidade ×2/×3 não acelera). Junte <b>10 fragmentos</b> do mesmo chefe para criá-lo na sua coleção.</p></div>';
     for (const [bossId, def] of Object.entries(CHEFES_REVANCHE_CATALOGO)) {
       const st = statusRevancheChefe(save(), bossId);
       const prev = previsaoCraftChefe(save(), bossId);
       const infoBoss = BOSSES_REGIAO1[bossId];
       const dropsTxt = (def.dropsExclusivos || []).map((d) => `${esc(d.nome)} (${Math.round(d.chance * 100)}%)`).join(', ');
       const statusTxt = !st.liberadoCampanha
-        ? '<span class="ruim">🔒 Derrote na Campanha primeiro</span>'
+        ? `<span class="ruim"><img class="exp-ico" src="${MV1('comum/icone-cadeado.png')}" alt="">Derrote na Campanha primeiro</span>`
         : st.batalhaConcorrente
           ? '<span class="mut">⚔️ Revanche em andamento</span>'
           : st.emCooldown
-            ? `<span class="mut">⏳ Recarga real: ${dur(st.restanteMs)}</span>`
-            : '<span class="ok">✓ Pronto para Revanche</span>';
+            ? `<span class="mut"><img class="exp-ico" src="${MV1('comum/icone-tempo.png')}" alt="">Recarga real: ${dur(st.restanteMs)}</span>`
+            : `<span class="ok"><img class="exp-ico" src="${MV1('comum/icone-resgatado.png')}" alt="">Pronto para Revanche</span>`;
       h += `<div class="bl"><div class="ficha-on">
         <img src="${IMG(def.arte)}" alt="${esc(def.nome)}">
         <div>
           <h4>${esc(def.nome)} · Nv.${infoBoss?.nivel || 12} · ${esc(def.elemento)}</h4>
-          <p>${statusTxt} · Fragmentos: <b>${st.saldoFragmentos}/${st.custoCraft}</b></p>
+          <p>${statusTxt} · <img class="exp-ico" src="${MV1('chefes/fragmento.png')}" alt="">Fragmentos: <b>${st.saldoFragmentos}/${st.custoCraft}</b></p>
           <p class="mut">Vitória garante +${def.fragmentosGarantidos || 1} fragmento · Drops exclusivos: ${dropsTxt || 'nenhum'}</p>
-          <p class="mut">${esc(prev.avisoRegra)}</p>
+          <div class="mv1-receita">
+            <p class="mut" style="margin:0">${esc(prev.avisoRegra)}</p>
+          </div>
           <div class="ln">
             <button class="btn-pri" data-rev-lutar="${bossId}" ${st.podeIniciar ? '' : 'disabled'}>⚔️ Revanche</button>
             <button class="btn-sec" data-rev-craft="${bossId}" ${prev.podeCraftar ? '' : 'disabled'}>🔨 Criar Chefe (${st.saldoFragmentos}/${prev.custoFragmentos})</button>
