@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de colisão do quarteirão</title>
+<style>
+  :root { --bg: #0f172a; --painel: #1e293b; --borda: #334155; --destaque: #38bdf8; --texto: #f8fafc; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--texto); font: 13px system-ui, sans-serif; }
+  #topo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px; background: var(--painel); border-bottom: 1px solid var(--borda); position: sticky; top: 0; z-index: 2; }
+  #topo b { color: var(--destaque); }
+  button, input, select, textarea { background: #0f172a; color: var(--texto); border: 1px solid var(--borda); border-radius: 4px; padding: 5px 8px; font: inherit; }
+  button { cursor: pointer; }
+  button.ativo { border-color: var(--destaque); color: var(--destaque); }
+  button:hover { border-color: var(--destaque); }
+  .ajuda { color: #94a3b8; font-size: 12px; }
+  #area { padding: 8px; overflow: auto; }
+  canvas { display: block; width: 100%; height: auto; background: #000; cursor: none; touch-action: none; }
+  #painelTexto { display: none; padding: 8px; }
+  #painelTexto.aberto { display: block; }
+  textarea { width: 100%; height: 200px; font-family: ui-monospace, monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="topo">
+  <b>Editor de colisão</b>
+  <button id="btnPintar" class="ativo">Caminho (verde)</button>
+  <button id="btnApagar">Bloqueio (vermelho)</button>
+  <label>pincel <input type="range" id="pincel" min="0" max="8" value="2" style="width:120px"> <span id="pincelValor">2</span></label>
+  <label><input type="checkbox" id="chkImagem" checked> imagem</label>
+  <label><input type="checkbox" id="chkRaio" checked> centro do personagem bloqueado</label>
+  <label><input type="checkbox" id="chkGrade"> grade</label>
+  <label>zoom <select id="zoom"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option></select></label>
+  <button id="btnDesfazer">Desfazer</button>
+  <button id="btnLimpar">Limpar tudo</button>
+  <button id="btnGerar">Gerar texto para o quarteirao.js</button>
+  <button id="btnColar">Colar texto</button>
+  <button id="btnJogo">Usar a grade do jogo</button>
+  <label><input type="checkbox" id="chkAlcance"> alcance a partir do início</label>
+  <button id="btnDestino">Marcar destino</button>
+  <button id="btnSemDestino">Tirar destino</button>
+  <span id="status" style="color:#facc15"></span>
+  <span id="contagem" class="ajuda"></span>
+  <span class="ajuda">botão esquerdo: modo ativo · direito: o oposto · Ctrl+Z desfaz</span>
+</div>
+<div id="painelTexto">
+  <div class="ajuda">Copie o bloco e substitua o <b>const COLISAO</b> no quarteirao.js. Para trazer uma grade de volta, cole aqui e clique em Aplicar.</div>
+  <textarea id="texto"></textarea>
+  <div><button id="btnAplicar">Aplicar</button> <button id="btnFechar">Fechar</button></div>
+</div>
+<div id="area"><canvas id="cv" width="1200" height="896"></canvas></div>
+
+<script>
+// grade de colisão: células de 8 px sobre a arte de 1200 x 896 (150 x 112)
+const LW = 1200, LH = 896, CEL = 8, COL = 150, LIN = 112;
+const RAIO_PERSONAGEM_PX = 0.15 * LW / 54;          // mesmo raio do jogo, convertido para pixels da imagem
+const RAIO_CELULAS = RAIO_PERSONAGEM_PX / CEL;      // ~2,16 células
+const CHAVE_RASCUNHO = 'editorColisao.rascunho.montanha.1200x896';   // a chave inclui o tamanho: rascunho de outra grade é descartado
+try { localStorage.removeItem('editorColisao.rascunho.grade'); } catch (_) {}
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+cv.width = LW; cv.height = LH;   // o canvas tem o tamanho da arte (1200 x 896)
+const imagem = new Image();
+imagem.src = 'assets/piso-montanha.webp';
+
+let mascara = new Uint8Array(COL * LIN);            // 1 = bloqueado
+let desfazer = [];
+let acao = null;                                    // 1 pinta, 0 apaga, null sem traço
+let ultimo = null;                                  // última célula do traço
+let cursor = null;                                  // célula sob o mouse, para o círculo do pincel
+let modo = 'pintar';
+
+// codificação: contagens alternadas de células livres e bloqueadas, começando por livre
+function codificar(m) {
+  const partes = []; let atual = 0, n = 0;
+  for (let i = 0; i < m.length; i++) {
+    const v = m[i] ? 1 : 0;
+    if (v === atual) n++; else { partes.push(n); atual = v; n = 1; }
+  }
+  partes.push(n);
+  return partes.join(',');
+}
+function decodificar(rle) {
+  const m = new Uint8Array(COL * LIN);
+  let pos = 0, valor = 0;
+  for (const n of rle.split(',').map(Number)) {
+    if (valor) m.fill(1, pos, pos + n);
+    pos += n; valor ^= 1;
+  }
+  return m;
+}
+// mesma expansão gulosa do jogo: quantos retângulos a grade vira
+function contarRetangulos(m) {
+  const usado = new Uint8Array(m.length);
+  let n = 0;
+  for (let l = 0; l < LIN; l++) for (let c = 0; c < COL; c++) {
+    const i = l * COL + c;
+    if (!m[i] || usado[i]) continue;
+    let c1 = c;
+    while (c1 + 1 < COL && m[l * COL + c1 + 1] && !usado[l * COL + c1 + 1]) c1++;
+    let l1 = l, cresce = true;
+    while (cresce && l1 + 1 < LIN) {
+      for (let k = c; k <= c1; k++) { const j = (l1 + 1) * COL + k; if (!m[j] || usado[j]) { cresce = false; break; } }
+      if (cresce) l1++;
+    }
+    for (let y = l; y <= l1; y++) for (let x = c; x <= c1; x++) usado[y * COL + x] = 1;
+    n++;
+  }
+  return n;
+}
+// células de onde o centro do personagem não pode estar (perto demais de algum bloqueio)
+function zonaProibida(m) {
+  const z = new Uint8Array(m.length);
+  const r = Math.ceil(RAIO_CELULAS);
+  const offs = [];
+  for (let dl = -r; dl <= r; dl++) for (let dc = -r; dc <= r; dc++) if (dc * dc + dl * dl < RAIO_CELULAS * RAIO_CELULAS) offs.push([dc, dl]);
+  for (let l = 0; l < LIN; l++) for (let c = 0; c < COL; c++) {
+    if (!m[l * COL + c]) continue;
+    for (const [dc, dl] of offs) {
+      const cc = c + dc, ll = l + dl;
+      if (cc >= 0 && cc < COL && ll >= 0 && ll < LIN) z[ll * COL + cc] = 1;
+    }
+  }
+  return z;
+}
+
+// alcance: onde o centro do personagem consegue ficar, a partir do início. Mesma regra da zona proibida e vizinhança de 8
+// direções. Os testes de caminho no jogo usam a colisão real; isto mostra o mesmo a olho, antes de publicar.
+let inicio = null;                                  // {c, l}: início lido do quarteirao.js
+let destino = null;                                 // {c, l}: destino marcado com "Marcar destino"
+function calcularAlcance(m) {
+  const z = zonaProibida(m);
+  const dist = new Int32Array(COL * LIN).fill(-1);
+  const pai = new Int32Array(COL * LIN).fill(-1);
+  if (!inicio) return { dist, pai, z, semInicio: true };
+  const s = inicio.l * COL + inicio.c;
+  if (z[s]) return { dist, pai, z, bloqueadoNoInicio: true };
+  const fila = [s];
+  dist[s] = 0;
+  for (let k = 0; k < fila.length; k++) {
+    const i = fila[k], c = i % COL, l = (i - c) / COL;
+    for (let dl = -1; dl <= 1; dl++) for (let dc = -1; dc <= 1; dc++) {
+      if (!dc && !dl) continue;
+      const cc = c + dc, ll = l + dl;
+      if (cc < 0 || cc >= COL || ll < 0 || ll >= LIN) continue;
+      const j = ll * COL + cc;
+      if (z[j] || dist[j] >= 0) continue;
+      dist[j] = dist[i] + 1;
+      pai[j] = i;
+      fila.push(j);
+    }
+  }
+  return { dist, pai, z };
+}
+function desenharAlcance() {
+  if (!inicio || !document.getElementById('chkAlcance').checked) return;
+  const a = calcularAlcance(mascara);
+  ctx.fillStyle = 'rgba(56, 189, 248, 0.30)';
+  for (let i = 0; i < a.dist.length; i++) {
+    if (a.dist[i] >= 0) { const c = i % COL, l = (i - c) / COL; ctx.fillRect(c * CEL, l * CEL, CEL, CEL); }
+  }
+  if (destino) {
+    const d = destino.l * COL + destino.c;
+    if (a.dist[d] >= 0) {
+      const pts = [];
+      for (let i = d; i >= 0; i = a.pai[i]) { const c = i % COL, l = (i - c) / COL; pts.push([c * CEL + CEL / 2, l * CEL + CEL / 2]); }
+      pts.reverse();
+      ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3; ctx.beginPath();
+      pts.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.stroke();
+    }
+    ctx.fillStyle = a.dist[d] >= 0 ? '#facc15' : '#ef4444';
+    ctx.beginPath(); ctx.arc(destino.c * CEL + CEL / 2, destino.l * CEL + CEL / 2, 7, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = '#22c55e';
+  ctx.beginPath(); ctx.arc(inicio.c * CEL + CEL / 2, inicio.l * CEL + CEL / 2, 7, 0, Math.PI * 2); ctx.fill();
+}
+function atualizarStatus() {
+  const el = document.getElementById('status');
+  if (!inicio) { el.textContent = 'início não encontrado no quarteirao.js'; return; }
+  const a = calcularAlcance(mascara);
+  if (a.bloqueadoNoInicio) { el.textContent = 'o início está dentro de área bloqueada'; return; }
+  const n = a.dist.reduce((s, v) => s + (v >= 0 ? 1 : 0), 0);
+  let t = `alcançável a partir do início: ${n} células`;
+  if (destino) {
+    const d = destino.l * COL + destino.c;
+    t += a.dist[d] >= 0 ? ` · destino: sim (${a.dist[d]} passos de célula)` : ' · destino: NÃO alcançável';
+  }
+  el.textContent = t;
+}
+
+// desenho ---------------------------------------------------------------
+function desenhar() {
+  ctx.clearRect(0, 0, LW, LH);
+  if (document.getElementById('chkImagem').checked && imagem.complete && imagem.naturalWidth) ctx.drawImage(imagem, 0, 0, LW, LH);
+  else { ctx.fillStyle = '#111'; ctx.fillRect(0, 0, LW, LH); }
+
+  if (document.getElementById('chkRaio').checked) {
+    const z = zonaProibida(mascara);
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.28)';
+    for (let l = 0; l < LIN; l++) for (let c = 0; c < COL; c++) {
+      if (z[l * COL + c] && !mascara[l * COL + c]) ctx.fillRect(c * CEL, l * CEL, CEL, CEL);
+    }
+  }
+  // verde = caminho livre (como no seu desenho); vermelho = bloqueado
+  for (let l = 0; l < LIN; l++) for (let c = 0; c < COL; c++) {
+    ctx.fillStyle = mascara[l * COL + c] ? 'rgba(239, 68, 68, 0.42)' : 'rgba(34, 197, 94, 0.36)';
+    ctx.fillRect(c * CEL, l * CEL, CEL, CEL);
+  }
+
+  desenharAlcance();
+  if (document.getElementById('chkGrade').checked) {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let c = 0; c <= COL; c++) { ctx.moveTo(c * CEL + 0.5, 0); ctx.lineTo(c * CEL + 0.5, LH); }
+    for (let l = 0; l <= LIN; l++) { ctx.moveTo(0, l * CEL + 0.5); ctx.lineTo(LW, l * CEL + 0.5); }
+    ctx.stroke();
+  }
+
+  if (cursor && modo !== 'nada') {
+    const r = parseInt(document.getElementById('pincel').value, 10);
+    ctx.strokeStyle = modo === 'apagar' ? '#38bdf8' : '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect((cursor.c - r) * CEL, (cursor.l - r) * CEL, (2 * r + 1) * CEL, (2 * r + 1) * CEL);
+  }
+
+  atualizarStatus();
+  const bloqueadas = mascara.reduce((s, v) => s + v, 0);
+  document.getElementById('contagem').textContent = `${bloqueadas} células bloqueadas · ${contarRetangulos(mascara)} retângulos no jogo`;
+}
+
+// pincel ----------------------------------------------------------------
+function carimbar(c, l, valor) {
+  const r = parseInt(document.getElementById('pincel').value, 10);
+  for (let dl = -r; dl <= r; dl++) for (let dc = -r; dc <= r; dc++) {
+    if (dc * dc + dl * dl > r * r + 0.25) continue;
+    const cc = c + dc, ll = l + dl;
+    if (cc >= 0 && cc < COL && ll >= 0 && ll < LIN) mascara[ll * COL + cc] = valor;
+  }
+}
+function tracar(c0, l0, c1, l1, valor) {
+  const n = Math.max(1, Math.ceil(Math.max(Math.abs(c1 - c0), Math.abs(l1 - l0)) * 2));
+  for (let k = 0; k <= n; k++) {
+    const t = k / n;
+    carimbar(Math.round(c0 + (c1 - c0) * t), Math.round(l0 + (l1 - l0) * t), valor);
+  }
+}
+function celulaDoEvento(e) {
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) * (LW / r.width);
+  const y = (e.clientY - r.top) * (LH / r.height);
+  return { c: Math.min(COL - 1, Math.max(0, Math.floor(x / CEL))), l: Math.min(LIN - 1, Math.max(0, Math.floor(y / CEL))) };
+}
+function guardarDesfazer() {
+  desfazer.push(mascara.slice());
+  if (desfazer.length > 100) desfazer.shift();
+}
+function salvarRascunho() {
+  try { localStorage.setItem(CHAVE_RASCUNHO, codificar(mascara)); } catch (_) {}
+}
+function lerRascunho() {
+  try {
+    const t = localStorage.getItem(CHAVE_RASCUNHO);
+    if (!t || !/^[0-9,]+$/.test(t)) return null;
+    const soma = t.split(',').reduce((a, n) => a + Number(n), 0);
+    return soma === COL * LIN ? t : null;      // tamanho errado: descarta
+  } catch (_) { return null; }
+}
+
+cv.addEventListener('contextmenu', (e) => e.preventDefault());
+cv.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  const c = celulaDoEvento(e);
+  if (modo === 'destino') { destino = c; definirModo('pintar'); desenhar(); return; }
+  // modo 'bloqueio' pinta vermelho com o botão esquerdo; o direito faz o oposto do modo ativo
+  acao = (modo === 'apagar') !== (e.button === 2) ? 1 : 0;
+  guardarDesfazer();
+  ultimo = c;
+  carimbar(c.c, c.l, acao);
+  cv.setPointerCapture(e.pointerId);
+  desenhar();
+});
+cv.addEventListener('pointermove', (e) => {
+  const c = celulaDoEvento(e);
+  cursor = c;
+  if (acao === null) { desenhar(); return; }
+  tracar(ultimo.c, ultimo.l, c.c, c.l, acao);
+  ultimo = c;
+  desenhar();
+});
+function terminarTraco() {
+  if (acao === null) return;
+  acao = null;
+  ultimo = null;
+  salvarRascunho();
+  desenhar();
+}
+cv.addEventListener('pointerup', terminarTraco);
+cv.addEventListener('pointercancel', terminarTraco);
+cv.addEventListener('pointerleave', () => { cursor = null; desenhar(); });
+
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && document.activeElement.tagName !== 'TEXTAREA') {
+    e.preventDefault(); desfazerUltimo();
+  }
+});
+function desfazerUltimo() {
+  if (!desfazer.length) return;
+  mascara = desfazer.pop();
+  salvarRascunho();
+  desenhar();
+}
+
+// botões ----------------------------------------------------------------
+function definirModo(m) {
+  modo = m;
+  document.getElementById('btnPintar').classList.toggle('ativo', m === 'pintar');
+  document.getElementById('btnApagar').classList.toggle('ativo', m === 'apagar');
+  document.getElementById('btnDestino').classList.toggle('ativo', m === 'destino');
+}
+document.getElementById('btnDestino').onclick = () => definirModo(modo === 'destino' ? 'pintar' : 'destino');
+document.getElementById('btnSemDestino').onclick = () => { destino = null; desenhar(); };
+document.getElementById('btnPintar').onclick = () => definirModo('pintar');
+document.getElementById('btnApagar').onclick = () => definirModo(modo === 'apagar' ? 'pintar' : 'apagar');
+document.getElementById('btnDesfazer').onclick = desfazerUltimo;
+document.getElementById('btnLimpar').onclick = () => {
+  if (!confirm('Apagar toda a grade de colisão?')) return;
+  guardarDesfazer(); mascara = new Uint8Array(COL * LIN); salvarRascunho(); desenhar();
+};
+document.getElementById('pincel').addEventListener('input', (e) => {
+  document.getElementById('pincelValor').textContent = e.target.value; desenhar();
+});
+['chkImagem', 'chkRaio', 'chkGrade', 'chkAlcance'].forEach((id) => document.getElementById(id).addEventListener('change', desenhar));
+document.getElementById('zoom').addEventListener('change', (e) => {
+  const z = parseInt(e.target.value, 10);
+  cv.style.width = z === 1 ? '100%' : (LW * z) + 'px';
+});
+document.getElementById('btnGerar').onclick = () => {
+  const area = document.getElementById('texto');
+  area.value = `const COLISAO = { celula: 8, colunas: 150, linhas: 112, rle: "${codificar(mascara)}" };`;
+  document.getElementById('painelTexto').classList.add('aberto');
+  area.select();
+  try { navigator.clipboard.writeText(area.value).catch(() => {}); } catch (_) {}
+};
+document.getElementById('btnColar').onclick = () => {
+  document.getElementById('texto').value = '';
+  document.getElementById('painelTexto').classList.add('aberto');
+};
+document.getElementById('btnAplicar').onclick = () => {
+  const t = document.getElementById('texto').value;
+  const achado = t.match(/rle:\s*"([0-9,]+)"/) || (/^\s*[0-9,]+\s*$/.test(t) ? [null, t.trim()] : null);
+  if (!achado) { alert('Não encontrei uma grade (rle) no texto.'); return; }
+  guardarDesfazer();
+  mascara = decodificar(achado[1]);
+  salvarRascunho();
+  desenhar();
+};
+document.getElementById('btnFechar').onclick = () => document.getElementById('painelTexto').classList.remove('aberto');
+document.getElementById('btnJogo').onclick = async () => {
+  // descarta o rascunho e volta à grade que está no quarteirao.js
+  try { localStorage.removeItem(CHAVE_RASCUNHO); } catch (_) {}
+  try {
+    const t = await (await fetch('quarteirao.js')).text();
+    const achado = t.match(/rle:\s*"([0-9,]+)"/);
+    if (achado) { guardarDesfazer(); mascara = decodificar(achado[1]); desenhar(); }
+  } catch (_) { alert('Não consegui ler o quarteirao.js.'); }
+};
+
+// início: a grade salva (rascunho) ou a grade do quarteirao.js ------------
+imagem.onload = desenhar;
+const rascunho = lerRascunho();
+if (rascunho) mascara = decodificar(rascunho);
+fetch('quarteirao.js').then((r) => r.text()).then((t) => {
+  const pos = t.match(/const INICIO = P\((\d+),\s*(\d+)\)/);
+  if (pos) inicio = { c: Math.floor(+pos[1] / CEL), l: Math.floor(+pos[2] / CEL) };
+  if (rascunho) { desenhar(); return; }                  // edição não enviada tem prioridade
+  const achado = t.match(/rle:\s*"([0-9,]+)"/);
+  if (achado) mascara = decodificar(achado[1]);
+  desenhar();
+}).catch(() => desenhar());
+desenhar();
+window.editorColisao = { mascara: () => Array.from(mascara), gerar: () => codificar(mascara), inicio: () => inicio, destino: () => destino, definirDestino: (c, l) => { destino = { c, l }; desenhar(); } };
+</script>
+</body>
+</html>

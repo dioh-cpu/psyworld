@@ -1,0 +1,110 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #17101d;
+  color: #ffedda;
+  --contorno: #574152;
+  --painel: #291d33;
+  --dourado: #f4c886;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+.editor { position: relative; min-height: 100dvh; }
+.ferramentas {
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
+  background: linear-gradient(180deg, #15101aeb, #15101acc 64%, transparent);
+  pointer-events: none;
+}
+.ferramentas > * { pointer-events: auto; }
+h1, h2 { margin: 0; font-family: Georgia, serif; }
+h1 { font-size: clamp(1.125rem, 3.25vw, 1.6rem); }
+h2 { font-size: 1.5rem; }
+.ferramentas p, #salvo p { margin: 3px 0 0; font-size: .875rem; line-height: 1.4; color: #f2dcc7; }
+.acoes { display: flex; gap: 8px; }
+.acoes button {
+  appearance: none;
+  min-height: 44px;
+  padding: 8px 13px;
+  border: 1px solid var(--contorno);
+  border-radius: 7px;
+  background: #281c31f5;
+  color: #ffeedb;
+  font: 650 .875rem/1.2 system-ui, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.acoes .primario { background: var(--dourado); border-color: #ffe0ac; color: #2a1716; }
+.acoes button:focus-visible, #codigo:focus-visible { outline: 2px solid #fff0c9; outline-offset: 3px; }
+.pista { position: absolute; inset: 0; background: #24162b; }
+#arena .tb-topo { display: none; }
+#arena .tb-base { pointer-events: none; opacity: .82; }
+#arena .un { touch-action: none; cursor: grab; }
+#arena .un.arrastando { cursor: grabbing; z-index: 120 !important; }
+#arena .un img { pointer-events: none; }
+#arena .un:focus-visible { outline: 1px dashed #ffe1a1; outline-offset: 4px; border-radius: 8px; }
+#arena .un.selecionada .un-sombra { border: 2px solid #f4c886; box-shadow: 0 0 10px #f4c88685; }
+#selecao {
+  position: absolute;
+  z-index: 1;
+  top: 70px;
+  left: max(16px, env(safe-area-inset-left));
+  padding: 5px 9px;
+  margin: 0;
+  border: 1px solid #715439;
+  border-radius: 7px;
+  background: #241429e3;
+  font: 600 .875rem/1.25 system-ui, sans-serif;
+  pointer-events: none;
+}
+#selecao:empty, .dica-paisagem { display: none; }
+#salvo {
+  margin: auto;
+  width: min(31rem, calc(100vw - 28px));
+  max-height: calc(100dvh - 26px);
+  border: 1px solid #967756;
+  border-radius: 12px;
+  background: #251931;
+  padding: 18px;
+  color: inherit;
+}
+#salvo::backdrop { background: #0e0815ce; }
+#codigo {
+  width: 100%;
+  margin: 12px 0;
+  padding: 10px;
+  resize: vertical;
+  border: 1px solid var(--contorno);
+  border-radius: 6px;
+  background: #140d1c;
+  color: #fff0d9;
+  font-size: .875rem;
+}
+#salvo .acoes { justify-content: flex-end; }
+#retorno { min-height: 20px; }
+@media (orientation: portrait) {
+  .ferramentas { position: relative; align-items: flex-start; flex-direction: column; gap: 10px; background: var(--painel); }
+  .pista { position: relative; container-type: size; height: max(210px, 45vw); }
+  #arena.arena { --altura-botao: 24px; --espaco-rodape: 34px; }
+  #arena .un { --largura-vaga: clamp(42px, 13cqw, 85px); --altura-base-sprite: min(55px, 22cqh); }
+  #arena .un.frente { --altura-base-sprite: min(65px, 24cqh); }
+  #arena .un-hud { min-width: 30px; }
+  #arena .un-nv { min-width: 9px; font-size: 8px; padding: 0 2px; }
+  #arena .un-elemento { font-size: 8px; padding: 0 3px; }
+  #arena .un-hp { height: 5px; }
+  #arena .tb-base { padding: 3px 5px; gap: 6px; }
+  #arena .tb-ativo img { width: 24px; height: 24px; }
+  #arena .tb-ativo b, #arena .tb-ativo small, #arena .tb-hab button { font-size: 8px; }
+  #arena .tb-hab { gap: 3px; }
+  #arena .tb-hab button { padding: 1px 2px; }
+  #arena .tb-hab button i, #arena .tb-hab button small { display: none; }
+  #selecao { top: 6px; }
+  .dica-paisagem { display: block; margin: 12px 16px; font-size: .875rem; color: #d9c6bd; }
+}

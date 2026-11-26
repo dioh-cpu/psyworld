@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Confusion Waves : Double Perspective - Idle Game</title>
+<meta name="theme-color" content="#24152d">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0b1322;
+    --panel: rgba(9, 18, 36, .92);
+    --border: #3f8fd6;
+    --gold: #facc15;
+    --cyan: #38bdf8;
+    --green: #4ade80;
+    --rose: #fb7185;
+    --txt: #e2f1ff;
+    --muted: #94b3d4;
+    --hud-scale: 1;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; font-family: system-ui, -apple-system, sans-serif; color: var(--txt); }
+  canvas#cena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  /* HUD Compacto Idle */
+  #hud {
+    position: fixed; left: 8px; right: 8px; top: 8px; z-index: 9;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    pointer-events: none; transform: scale(var(--hud-scale)); transform-origin: top left;
+  }
+  .hud-card {
+    pointer-events: auto; display: flex; align-items: center; gap: 8px;
+    background: var(--panel); border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 6px 10px; box-shadow: 0 3px 12px rgba(0,0,0,.5); cursor: pointer;
+  }
+  .hud-card:hover { border-color: var(--gold); }
+  #jog-avatar { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--gold); object-fit: cover; background: #132442; }
+  .bars { display: flex; flex-direction: column; gap: 3px; min-width: 132px; }
+  .bar-row { position: relative; height: 11px; background: #1e293b; border-radius: 99px; overflow: hidden; }
+  .bar-row.xp-row { height: 7px; }
+  .bar-fill { height: 100%; transition: width .2s; }
+  .bar-fill.hp { background: linear-gradient(90deg, #dc2626, #f87171); }
+  .bar-fill.san { background: linear-gradient(90deg, #2563eb, #38bdf8); }
+  .bar-fill.xp { background: linear-gradient(90deg, #eab308, #4ade80); }
+  .bar-txt { position: absolute; inset: 0; font: 700 8.5px/11px system-ui; text-align: center; color: #fff; text-shadow: 0 1px 2px #000; }
+  #badge-pts {
+    display: none; background: #facc15; color: #0b1322; font: 800 9.5px/1 system-ui;
+    padding: 2px 6px; border-radius: 99px; box-shadow: 0 0 8px rgba(250,204,21,.65);
+  }
+  #badge-pts.visivel { display: inline-block; }
+
+  .hud-dir { display: flex; align-items: flex-start; gap: 6px; pointer-events: auto; }
+  #minimapa-wrap {
+    width: 74px; height: 74px; border-radius: 50%; border: 2px solid var(--gold);
+    background: #0c1a30; overflow: hidden; position: relative; cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0,0,0,.6); flex-shrink: 0;
+  }
+  #minimapa-canvas { width: 100%; height: 100%; display: block; }
+  #minimapa-coord {
+    position: absolute; left: 0; right: 0; bottom: 0; background: rgba(5,10,20,.82);
+    font: 700 8px system-ui; text-align: center; color: var(--gold); padding: 1px 0;
+  }
+  .btn-hud {
+    background: var(--panel); border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 6px 10px; font: 700 12px system-ui, sans-serif; color: var(--txt); cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.45);
+  }
+  .btn-hud:hover { border-color: var(--gold); }
+  .btn-hud.gold { border-color: var(--gold); color: var(--gold); }
+  .btn-hud.green { border-color: var(--green); color: var(--green); }
+  #zoom-ctrl {
+    display: inline-flex; align-items: center; gap: 2px;
+    background: var(--panel); border: 1.5px solid var(--border); border-radius: 8px; padding: 2px;
+  }
+  #zoom-ctrl button { background: transparent; border: 0; color: var(--txt); font: 700 13px system-ui; min-width: 22px; height: 22px; border-radius: 5px; cursor: pointer; }
+  #zoom-val { color: #93c5fd; font: 600 10.5px system-ui; min-width: 34px; text-align: center; cursor: pointer; user-select: none; }
+  #seletor-mapa {
+    background: var(--panel); color: var(--txt); border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 4px 6px; font: 600 11px system-ui; cursor: pointer; max-width: 145px;
+  }
+
+  /* Banner de Quest (Auto-Rota) + Buffs laterais */
+  #quest-banner {
+    position: fixed; left: 8px; top: 76px; z-index: 8; pointer-events: auto; cursor: pointer;
+    background: rgba(9, 18, 36, .88); border: 1.5px solid rgba(250, 204, 21, .55); border-left: 4px solid var(--gold);
+    border-radius: 6px; padding: 6px 10px; font-size: 11px; max-width: 285px; line-height: 1.3;
+    box-shadow: 0 3px 12px rgba(0,0,0,.5);
+  }
+  #quest-banner.autorota { border-color: var(--cyan); border-left-color: var(--cyan); }
+  #quest-banner .qb-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  #quest-banner b { color: var(--gold); font-size: 11px; }
+  #qb-auto { background: rgba(56, 189, 248, .18); border: 1px solid var(--cyan); color: #bae6fd; border-radius: 5px; padding: 2px 6px; font: 700 10px system-ui; white-space: nowrap; }
+  #quest-banner.autorota #qb-auto { background: #0284c7; color: #fff; }
+
+  #barra-buffs {
+    position: fixed; left: 8px; top: 134px; z-index: 7;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .buff-pill {
+    display: inline-flex; align-items: center; gap: 4px; background: rgba(9,18,36,.84);
+    border: 1px solid rgba(56,189,248,.45); border-radius: 99px; padding: 3px 8px;
+    color: #e2f1ff; font: 600 10px system-ui; cursor: pointer;
+  }
+
+  /* Mini-Log / Farm (recolhível, canto inferior esquerdo) */
+  #minilog-box {
+    position: fixed; left: 8px; bottom: 10px; z-index: 7; width: min(280px, 52vw);
+    background: rgba(7, 14, 28, .82); border: 1px solid rgba(63,143,214,.35); border-radius: 8px;
+    font-size: 10.5px; overflow: hidden;
+  }
+  #minilog-box.recolhido #minilog-corpo { display: none; }
+  .ml-head { display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; background: rgba(15,29,54,.9); border-bottom: 1px solid rgba(63,143,214,.2); }
+  .ml-tabs { display: flex; gap: 4px; }
+  .ml-tabs button { background: transparent; border: 0; color: #94b3d4; font: 700 10px system-ui; padding: 2px 5px; border-radius: 4px; cursor: pointer; }
+  .ml-tabs button.ativo { background: #1e3a5f; color: #fff; }
+  #minilog-corpo { padding: 5px 7px; max-height: 82px; overflow-y: auto; line-height: 1.35; color: #cbd5e1; }
+  .ml-ln { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* HUD Clean oculta painéis secundários */
+  body.hud-clean #quest-banner,
+  body.hud-clean #barra-buffs,
+  body.hud-clean #minilog-box,
+  body.hud-clean #zoom-ctrl,
+  body.hud-clean #seletor-mapa { display: none !important; }
+
+  /* Controles inferiores direitos */
+  #controles-dir {
+    position: fixed; right: 12px; bottom: 14px; z-index: 8;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 7px;
+  }
+  .row-ctrl { display: flex; gap: 6px; align-items: center; }
+  #btn-interagir {
+    display: none; padding: 9px 14px; border-radius: 10px;
+    border: 2px solid var(--gold); background: rgba(15, 32, 62, .94); color: #fff;
+    font: 700 12.5px system-ui; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.55);
+  }
+  #btn-transformar {
+    padding: 8px 13px; border-radius: 10px;
+    border: 2px solid #c084fc; background: rgba(24, 14, 48, .92); color: #e9d5ff;
+    font: 700 12px system-ui; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  }
+  #btn-transformar.ativo { background: linear-gradient(135deg, #6d28d9, #0284c7); border-color: #38bdf8; color: #fff; }
+  #btn-autocaca {
+    padding: 9px 14px; border-radius: 10px;
+    border: 2px solid #475569; background: rgba(15, 23, 42, .92); color: #cbd5e1;
+    font: 800 12.5px system-ui; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  }
+  #btn-autocaca.ativo { background: linear-gradient(135deg, #059669, #0284c7); border-color: #4ade80; color: #fff; }
+  #btn-autocaca-cfg {
+    width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: var(--panel); color: var(--txt); font-size: 16px; cursor: pointer;
+  }
+
+  /* Dano / Drops Flutuantes */
+  #camada-flutuantes { position: fixed; inset: 0; z-index: 6; pointer-events: none; overflow: hidden; }
+  .flut-num {
+    position: absolute; transform: translate(-50%, -50%); font: 900 16px system-ui;
+    text-shadow: 0 2px 4px #000, 0 0 6px #000; animation: subirFade .92s ease-out forwards;
+    white-space: nowrap;
+  }
+  .flut-num.grande { font-size: 20px; }
+  @keyframes subirFade {
+    0% { opacity: 1; transform: translate(-50%, -40%) scale(1.05); }
+    100% { opacity: 0; transform: translate(-50%, -150%) scale(.95); }
+  }
+
+  #aviso-saida {
+    position: fixed; left: 50%; top: 62px; transform: translateX(-50%); z-index: 14;
+    padding: 8px 14px; border-radius: 8px; background: rgba(9, 18, 36, .95);
+    border: 2px solid var(--gold); color: #fff; font: 600 12.5px system-ui;
+    display: none; text-align: center; max-width: 86vw; box-shadow: 0 4px 16px rgba(0,0,0,.6);
+  }
+  #cortina-transicao { position: fixed; inset: 0; z-index: 20; background: #050912; opacity: 0; pointer-events: none; transition: opacity .15s ease; }
+  #cortina-transicao.ativo { opacity: 1; }
+  .seta-ind { position: fixed; z-index: 4; pointer-events: none; display: none; transform: translate(-50%, -50%); text-align: center; font: 700 10.5px system-ui; color: #fff; text-shadow: 0 1px 4px #000; }
+  .seta-ind .tri { font-size: 20px; line-height: 1; }
+
+  #joy { position: fixed; left: 14px; bottom: 104px; width: 112px; height: 112px; border-radius: 50%; background: rgba(10, 28, 60, .48); border: 2px solid var(--border); touch-action: none; user-select: none; display: none; z-index: 7; }
+  #joy-knob { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; border-radius: 50%; background: #cfe8ff; transform: translate(-50%, -50%); pointer-events: none; }
+  @media (pointer: coarse) { #joy { display: block; } }
+
+  /* Overlay Economia de Energia */
+  #overlay-economia {
+    position: fixed; inset: 0; z-index: 45; background: #02050b; color: #94b3d4;
+    display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 24px;
+  }
+  #overlay-economia.ativo { display: flex; }
+
+  /* Modais */
+  .modal-bg { position: fixed; inset: 0; z-index: 30; background: rgba(4, 9, 18, .78); display: none; align-items: center; justify-content: center; padding: 12px; }
+  .modal-bg.aberto { display: flex; }
+  .modal-card { background: #0d182d; border: 2px solid var(--border); border-radius: 12px; width: min(580px, 95vw); max-height: 86vh; overflow-y: auto; padding: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.75); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(63,143,214,.3); padding-bottom: 8px; }
+  .modal-head h3 { margin: 0; font-size: 16px; color: var(--gold); }
+  .btn-fechar { background: transparent; border: 1px solid #475569; color: var(--txt); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 700; }
+  .btn-pri { background: #1d4ed8; border: 1.5px solid var(--cyan); color: #fff; border-radius: 8px; padding: 7px 13px; font: 700 12.5px system-ui; cursor: pointer; }
+  .btn-sec { background: #1e293b; border: 1.5px solid #475569; color: var(--txt); border-radius: 8px; padding: 7px 12px; font: 600 12.5px system-ui; cursor: pointer; }
+  .btn-danger { background: #7f1d1d; border: 1.5px solid var(--rose); color: #fff; border-radius: 8px; padding: 5px 10px; font: 600 11.5px system-ui; cursor: pointer; }
+  .sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; border: 1px solid #475569; color: #cbd5e1; margin-left: 4px; }
+  .card-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: rgba(15,29,54,.78); border: 1px solid rgba(63,143,214,.25); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; }
+  .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .menu-tile { background: #132442; border: 1.5px solid rgba(63,143,214,.4); border-radius: 10px; padding: 12px 6px; text-align: center; color: #fff; font: 700 12px system-ui; cursor: pointer; }
+  .menu-tile:hover { border-color: var(--gold); background: #1c3560; }
+  .menu-tile span { display: block; font-size: 20px; margin-bottom: 4px; }
+  .chk-pill { display: inline-flex; align-items: center; gap: 5px; background: #132442; border: 1px solid #3f8fd6; border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; margin: 3px; }
+  .sec-tit { font-size: 11px; text-transform: uppercase; letter-spacing: .7px; color: var(--cyan); font-weight: 800; margin: 12px 0 6px; }
+
+  .q-cat { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--cyan); margin: 12px 0 6px; font-weight: 700; }
+  .q-item { background: rgba(15, 29, 54, .75); border: 1px solid rgba(63,143,214,.25); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; }
+  .q-item.concluida { border-color: rgba(74,222,128,.45); opacity: .82; }
+  .q-item.ativa { border-color: var(--gold); }
+  .q-top { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+  .q-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 99px; text-transform: uppercase; }
+  .q-badge.ativa { background: #854d0e; color: #fef08a; }
+  .q-badge.disponivel { background: #0c4a6e; color: #7dd3fc; }
+  .q-badge.concluida { background: #14532d; color: #86efac; }
+  .q-badge.bloqueada { background: #1e293b; color: #94a3b8; }
+  .q-passos { margin: 5px 0 0; padding-left: 16px; color: var(--muted); }
+  .q-passos li.ok { color: var(--green); text-decoration: line-through; }
+
+  .tp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 10px; }
+  .tp-card { background: #132442; border: 1.5px solid var(--cyan); border-radius: 8px; padding: 10px; color: #fff; text-align: left; cursor: pointer; font: 600 12.5px system-ui; }
+  .bat-arena { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; margin: 10px 0; }
+  .bat-box { background: rgba(15, 29, 54, .85); border: 1px solid rgba(63,143,214,.35); border-radius: 10px; padding: 10px; text-align: center; }
+  .bat-box img { width: 88px; height: 88px; object-fit: contain; display: block; margin: 0 auto 6px; }
+  .hp-bar { height: 10px; background: #1e293b; border-radius: 99px; overflow: hidden; margin-top: 4px; }
+  .hp-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #86efac); transition: width .2s; }
+  .hp-fill.inimigo { background: linear-gradient(90deg, #ef4444, #fb923c); }
+  .bat-log { background: #070e1c; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #cbd5e1; min-height: 44px; margin: 8px 0; line-height: 1.4; }
+  .bat-acoes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+  #aviso-girar { position: fixed; inset: 0; z-index: 40; background: rgba(9, 14, 28, .94); color: #e2f1ff; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; }
+  @media (orientation: portrait) and (pointer: coarse) { body:not(.ignorar-giro) #aviso-girar { display: flex; } }
+</style>
+<link rel="stylesheet" href="./regiao1-interface.css">
+<script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
+</head>
+<body>
+<div id="aviso-girar">
+  <div style="font-size:40px;line-height:1">📱↻</div>
+  <b style="color:#facc15;font-size:17px">Modo Paisagem ou Retrato Calibrado</b>
+  <p style="margin:0;font-size:13px;color:#b8d4f2;max-width:300px">Em paisagem a visão lateral é mais ampla; em retrato a câmera já abre espaço à frente.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+    <button id="btn-forcar-paisagem" class="btn-pri">Tela Cheia Deitado</button>
+    <button id="btn-continuar-pe" class="btn-sec">Jogar em Retrato</button>
+  </div>
+</div>
+
+<canvas id="cena"></canvas>
+<div id="camada-flutuantes"></div>
+
+<!-- HUD Compacto Idle -->
+<div id="hud">
+  <div class="hud-card" id="hud-card-domador" role="button" tabindex="0" aria-label="Abrir Domador e Mochila" title="Toque para abrir Atributos do Domador & Mochila">
+    <img id="jog-avatar" src="../../../assets/monsters/noctarn/sprite-front.png" alt="Avatar">
+    <div class="bars">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+        <b id="jog-nome" style="font-size:11.5px;color:#facc15">Azazel · Nv.1</b>
+        <span id="badge-pts">+0 pts</span>
+        <span id="hud-recursos" style="font-size:10.5px;color:#93c5fd">0g · 0💎</span>
+      </div>
+      <div class="bar-row"><div id="bar-hp-fill" class="bar-fill hp" style="width:100%"></div><div id="bar-hp-txt" class="bar-txt">HP 130/130</div></div>
+      <div class="bar-row"><div id="bar-san-fill" class="bar-fill san" style="width:82%"></div><div id="bar-san-txt" class="bar-txt">SAN 82</div></div>
+      <div class="bar-row xp-row" title="Progresso de Nível do Domador (+3 pts por nível)"><div id="bar-xp-fill" class="bar-fill xp" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="hud-dir">
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <div style="display:flex;gap:5px;align-items:center">
+        <button id="btn-fazenda" class="btn-hud green" style="display:none">🌱 Fazenda</button>
+        <button id="btn-atlas-rapido" class="btn-hud">🗺️ Caçar</button>
+        <button id="btn-menu-geral" class="btn-hud gold">☰ Menu</button>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center">
+        <div id="zoom-ctrl" title="Zoom da câmera (ou rodinha do mouse)">
+          <button id="btn-zoom-menos">−</button>
+          <span id="zoom-val">100%</span>
+          <button id="btn-zoom-mais">+</button>
+        </div>
+        <select id="seletor-mapa" aria-label="Área da Região 1"></select>
+      </div>
+      <span id="mapa-titulo" style="display:none">C0 · Praia Inicial</span>
+    </div>
+    <div id="minimapa-wrap" role="button" tabindex="0" aria-label="Abrir Atlas de Caça" title="Abrir Atlas de Caça (48 áreas)">
+      <canvas id="minimapa-canvas" width="96" height="96"></canvas>
+      <div id="minimapa-coord">C0</div>
+    </div>
+  </div>
+</div>
+
+<div id="quest-banner" title="Clique para iniciar ou parar Auto-Rota automática de missões">
+  <div class="qb-head"><b id="qb-titulo">Pegadas que não são minhas</b><span id="qb-auto">🧭 Auto-Rota</span></div>
+  <span id="qb-sub">C0 · Explore o píer e o bote</span>
+</div>
+<div id="barra-buffs"></div>
+
+<div id="minilog-box">
+  <div class="ml-head">
+    <div class="ml-tabs">
+      <button class="ativo" data-log-aba="farm">Farm</button>
+      <button data-log-aba="todos">Logs</button>
+    </div>
+    <button id="btn-minilog-toggle" style="background:transparent;border:0;color:#94b3d4;font-size:11px;cursor:pointer">▾</button>
+  </div>
+  <div id="minilog-corpo"></div>
+</div>
+
+<div id="aviso-saida" role="status"></div>
+<div id="setas-saidas"></div>
+<div id="cortina-transicao"></div>
+<div id="joy" aria-label="Joystick para mover"><div id="joy-knob"></div></div>
+
+<div id="controles-dir">
+  <button id="btn-interagir">[E] Interagir</button>
+  <button id="btn-transformar" title="Conexão Onírica (T ou Shift): +100% velocidade">✨ Transformar</button>
+  <div class="row-ctrl">
+    <button id="btn-autocaca-cfg" title="Configurar Auto-Caça">⚙️</button>
+    <button id="btn-autocaca" title="Ligar/Desligar Auto-Caça no mapa">⚔️ Auto · OFF</button>
+  </div>
+</div>
+
+<!-- Overlay Economia de Energia -->
+<div id="overlay-economia">
+  <div style="font-size:40px">🌙</div>
+  <b style="font-size:18px;color:#38bdf8">Modo Economia de Energia</b>
+  <div id="eco-mapa" style="font-size:14px;color:#facc15;font-weight:700"></div>
+  <div id="eco-status" style="font-size:13px"></div>
+  <p class="sub">O farm Auto-Caça continua ativo enquanto a tela economiza bateria.</p>
+  <button id="btn-sair-economia" class="btn-pri">Desbloquear Tela</button>
+</div>
+
+<!-- Modal Menu Unificado -->
+<div id="modal-menu" class="modal-bg">
+  <div class="modal-card">
+    <header class="modal-head interface-capa">
+      <div class="titulo-menu">
+        <span class="edicao-menu">Halloween</span>
+        <h3 aria-label="Confusion Waves : Double Perspective - Idle Game">
+          Confusion Waves
+          <span class="marca-jogo">Double Perspective - Idle Game</span>
+        </h3>
+      </div>
+      <button class="btn-fechar" data-fechar="modal-menu" aria-label="Fechar menu">✕</button>
+    </header>
+    <div class="menu-grid">
+      <button class="menu-tile menu-ilustrado" id="m-atlas"><strong>Atlas de Caça</strong><small>Escolha onde caçar</small></button>
+      <button class="menu-tile menu-ilustrado" id="m-mochila"><strong>Domador</strong><small>Atributos, relíquias e mochila</small></button>
+      <button class="menu-tile menu-ilustrado" id="m-codex"><strong>Codex Onírico</strong><small>Espécies e bônus</small></button>
+      <button class="menu-tile menu-ilustrado" id="m-temporada"><strong>Temporada</strong><small>Passe e missões diárias</small></button>
+    </div>
+    <nav class="menu-atalhos" aria-label="Mais opções">
+      <button class="btn-sec" id="m-diario">Diário</button>
+      <button class="btn-sec" id="m-mapa48">Mapa da região</button>
+      <button class="btn-sec" id="m-autocaca">Auto-Caça</button>
+      <button class="btn-sec" id="m-voto">Vote & Ganhe</button>
+      <button class="btn-sec" id="m-config">Configurações</button>
+    </nav>
+    <div class="menu-preferencias">
+      <label class="chk-pill"><input type="checkbox" id="chk-hud-clean"> HUD limpo</label>
+      <label class="chk-pill"><input type="checkbox" id="chk-economia"> Economia de energia</label>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Atlas de Caça -->
+<div id="modal-atlas" class="modal-bg">
+  <div class="modal-card" style="width:min(640px,96vw)">
+    <div class="modal-head"><h3>Atlas de Caça</h3><button class="btn-fechar" data-fechar="modal-atlas" aria-label="Fechar">✕</button></div>
+    <div class="atlas-filtros">
+      <input id="atlas-busca" type="search" aria-label="Buscar no Atlas" placeholder="Buscar mapa ou onírico">
+      <select id="atlas-bioma" aria-label="Bioma">
+        <option>Todos</option><option>Eixo Central</option><option>Floresta Sombria</option><option>Floresta de Cogumelos</option><option>Praias Cristalinas</option><option>Caverna Cintilante</option>
+      </select>
+    </div>
+    <p id="atlas-total" class="sub" aria-live="polite"></p>
+    <div id="atlas-lista"></div>
+  </div>
+</div>
+
+<!-- Modal Configuração Auto-Caça -->
+<div id="modal-autocaca" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Configuração de Auto-Caça</h3><button class="btn-fechar" data-fechar="modal-autocaca" aria-label="Fechar">✕</button></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label class="chk-pill"><input type="checkbox" id="ac-toggle"> <b>Ligar Auto-Caça no mapa atual</b></label>
+      <label class="chk-pill"><input type="checkbox" id="ac-vantagem"> Preferir habilidade de maior vantagem elemental</label>
+      <label class="chk-pill"><input type="checkbox" id="ac-capturar"> Auto-lançar Esfera Psíquica em encontros elegíveis</label>
+      <label class="chk-pill"><input type="checkbox" id="ac-ovos"> Coletar ovos automaticamente</label>
+      <label class="chk-pill"><input type="checkbox" id="ac-emergencia"> Proteção: recuar se HP cair em perigo</label>
+      <div class="card-row"><span>Descansar quando HP ≤ <b id="ac-hp-val">30%</b></span><input id="ac-hp" type="range" min="10" max="80" value="30"></div>
+      <div class="card-row"><span>Recuperar quando Sanidade ≤ <b id="ac-san-val">25%</b></span><input id="ac-san" type="range" min="10" max="70" value="25"></div>
+      <div class="sec-tit">Alvos da Área Atual</div>
+      <div id="ac-alvos"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+      <button class="btn-sec" data-fechar="modal-autocaca">Cancelar</button>
+      <button class="btn-pri" id="btn-ac-salvar">Salvar & Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Codex -->
+<div id="modal-codex" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Codex Onírico</h3><button class="btn-fechar" data-fechar="modal-codex" aria-label="Fechar">✕</button></div>
+    <div id="codex-resumo" class="card-row" style="display:block;line-height:1.5"></div>
+    <div id="codex-lista"></div>
+  </div>
+</div>
+
+<!-- Modal Mochila & Status Explicáveis -->
+<div id="modal-mochila" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Domador e Mochila</h3><button class="btn-fechar" data-fechar="modal-mochila" aria-label="Fechar">✕</button></div>
+    <nav class="mochila-atalhos" aria-label="Seções da mochila">
+      <button type="button" class="btn-sec" data-mochila-secao="domador-secao">Atributos</button>
+      <button type="button" class="btn-sec" data-mochila-secao="reliquias-secao">Relíquias</button>
+      <button type="button" class="btn-sec" data-mochila-secao="ovos-secao">Ovos</button>
+      <button type="button" class="btn-sec" data-mochila-secao="esferas-secao">Esferas</button>
+    </nav>
+    <div class="sec-tit" id="domador-secao">Pontos de Atributo do Domador (+3 pts por nível)</div>
+    <div id="domador-atributos"></div>
+    <div class="sec-tit">Origem dos Atributos</div>
+    <div id="status-breakdown"></div>
+    <div class="sec-tit" id="reliquias-secao">Relíquias (Equipar / Comprar)</div>
+    <div id="mochila-reliquias"></div>
+    <div class="sec-tit" id="ovos-secao">Ovos</div>
+    <div id="mochila-ovos"></div>
+    <div class="sec-tit" id="esferas-secao">Esferas Psíquicas</div>
+    <div id="mochila-esferas"></div>
+  </div>
+</div>
+
+<!-- Modal Temporada, Passe 30 Níveis, Login 7 Dias & Diárias -->
+<div id="modal-temporada" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Temporada</h3><button class="btn-fechar" data-fechar="modal-temporada" aria-label="Fechar">✕</button></div>
+    <div id="temp-resumo" class="card-row" style="display:block;line-height:1.5"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+      <button class="btn-pri" id="btn-login-diario">🎁 Resgatar Login (7d)</button>
+      <button class="btn-pri" id="btn-passe-coletar" style="background:#0f766e">🏆 Coletar Todos do Passe</button>
+    </div>
+    <div class="sec-tit">Missões Diárias (com Troca / Ir Caçar)</div>
+    <div id="temp-diarias"></div>
+  </div>
+</div>
+
+<!-- Modal Vote & Ganhe -->
+<div id="modal-voto" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Vote & Ganhe</h3><button class="btn-fechar" data-fechar="modal-voto" aria-label="Fechar">✕</button></div>
+    <div id="voto-saldo" class="card-row" style="color:#facc15;font-weight:700"></div>
+    <div class="card-row"><div><b>TopIdle</b><div class="sub">Ciclo de 12h · +1 Vote Cash</div></div><button class="btn-pri" data-votar="topidle">Votar</button></div>
+    <div class="card-row"><div><b>IdleRank</b><div class="sub">Ciclo de 24h · +1 Vote Cash</div></div><button class="btn-pri" data-votar="idlerank">Votar</button></div>
+    <div class="sec-tit">Loja de Votação</div>
+    <div class="card-row"><div><b>3× Esfera Rara</b></div><button class="btn-sec" data-voto-loja="esferas">1 Vote Cash</button></div>
+    <div class="card-row"><div><b>40 Diamantes</b></div><button class="btn-sec" data-voto-loja="diamantes">2 Vote Cash</button></div>
+    <div class="card-row"><div><b>Ovo Abençoado (Solarin)</b></div><button class="btn-sec" data-voto-loja="ovo_evento">3 Vote Cash</button></div>
+  </div>
+</div>
+
+<!-- Modal Configurações -->
+<div id="modal-config" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Configurações</h3><button class="btn-fechar" data-fechar="modal-config" aria-label="Fechar">✕</button></div>
+    <div class="card-row"><span>Idioma</span><select id="cfg-idioma" class="btn-sec"><option value="pt">Português</option><option value="en">English</option><option value="es">Español</option></select></div>
+    <div class="card-row"><span>Perspectiva da Campanha</span><select id="cfg-perspectiva" class="btn-sec"><option value="vilao">Vilão (Azazel / Trevas)</option><option value="heroi">Herói (Luz)</option></select></div>
+    <div class="card-row"><span>Modo de Campanha</span><select id="cfg-modo-camp" class="btn-sec"><option value="completa">Aventura Completa</option><option value="farm">Foco em Farm / Itens</option></select></div>
+    <div class="card-row"><span>Tamanho da HUD (<b id="cfg-hud-escala-val">100%</b>)</span><input id="cfg-hud-escala" type="range" min="80" max="115" value="100"></div>
+    <div class="card-row"><span>Limite de FPS</span><select id="cfg-fps" class="btn-sec"><option value="60">60 FPS</option><option value="30">30 FPS (Economia)</option></select></div>
+    <label class="chk-pill"><input type="checkbox" id="cfg-dano" checked> Mostrar números de dano flutuantes</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn-sec" id="btn-instalar-pwa">📲 Instalar Jogo (PWA)</button>
+      <button class="btn-sec" id="btn-simular-afk">⏱️ Testar 2h Offline</button>
+      <button class="btn-sec" id="btn-refazer-tutorial">📖 Refazer Tutorial</button>
+      <button class="btn-sec" id="btn-exportar-save">☁️ Copiar Save JSON</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+      <button class="btn-pri" id="btn-cfg-salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Recompensa Offline -->
+<div id="modal-offline" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3>Recompensas Offline</h3><button class="btn-fechar" data-fechar="modal-offline" aria-label="Fechar">✕</button></div>
+    <div id="afk-detalhe" style="font-size:13px;line-height:1.6;margin-bottom:12px"></div>
+    <button class="btn-pri" id="btn-coletar-afk" style="width:100%">Coletar Tudo</button>
+  </div>
+</div>
+
+<!-- Modal Tutorial Curto -->
+<div id="modal-tutorial" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3 id="tut-titulo">Bem-vindo</h3><button class="btn-fechar" id="btn-tut-pular">Pular</button></div>
+    <p id="tut-texto" style="font-size:13.5px;line-height:1.5;margin:0 0 14px"></p>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn-pri" id="btn-tut-prox">Próximo →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modais existentes (Diálogo, Diário, Mapa 48, Teleporte, Batalha) -->
+<div id="modal-dialogo" class="modal-bg">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dlg-titulo">
+    <div class="modal-head"><h3 id="dlg-titulo">NPC</h3><button class="btn-fechar" data-fechar="modal-dialogo" aria-label="Fechar">✕</button></div>
+    <div class="dialogo-corpo">
+      <img id="dlg-retrato" alt="" hidden>
+      <div class="dialogo-fala">
+        <div id="dlg-sub" class="sub"></div>
+        <p id="dlg-texto" aria-hidden="true"></p>
+        <span id="dlg-anuncio" class="dialogo-leitor" aria-live="polite" aria-atomic="true"></span>
+      </div>
+    </div>
+    <div class="dialogo-rodape">
+      <span id="dlg-progresso" hidden></span>
+      <div id="dlg-acoes"></div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-diario" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>Diário da Região 1</h3>
+      <div style="display:flex;gap:6px">
+        <button id="btn-reset-save" class="btn-danger">Resetar Save</button>
+        <button class="btn-fechar" data-fechar="modal-diario" aria-label="Fechar">✕</button>
+      </div>
+    </div>
+    <div id="diario-resumo" style="font-size:12px;color:#94b3d4;margin-bottom:8px"></div>
+    <div id="diario-lista"></div>
+  </div>
+</div>
+
+<div id="modal-mapa" class="modal-bg">
+  <div class="modal-card" style="width:min(700px,96vw)">
+    <div class="modal-head"><h3>Mapa da Região 1</h3><button class="btn-fechar" data-fechar="modal-mapa" aria-label="Fechar">✕</button></div>
+    <div id="mapa-status" style="font-size:12px;color:#cbd5e1;margin-bottom:8px;line-height:1.5"></div>
+    <img loading="lazy" decoding="async" src="../../../assets/confusion/regiao-1/MAPA-REGIAO-1.png" alt="Mapa da Região 1" style="width:100%;border-radius:8px;border:1px solid #334155">
+  </div>
+</div>
+
+<div id="modal-teleporte" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3 id="tp-titulo">Marco de Teleporte</h3><button class="btn-fechar" data-fechar="modal-teleporte" aria-label="Fechar">✕</button></div>
+    <p id="tp-msg" style="margin:0 0 8px;font-size:13px;color:#cbd5e1"></p>
+    <div id="tp-destinos" class="tp-grid"></div>
+  </div>
+</div>
+
+<div id="modal-batalha" class="modal-bg">
+  <div class="modal-card">
+    <div class="modal-head"><h3 id="bat-titulo">Encontro</h3><button id="btn-fugir-x" class="btn-fechar">Fugir</button></div>
+    <div class="bat-arena">
+      <div class="bat-box">
+        <img id="bat-img-jog" src="../../../assets/monsters/noctarn/sprite-front.png" alt="Noctarn">
+        <b id="bat-nome-jog">Noctarn</b>
+        <div class="hp-bar"><div id="bat-hp-jog" class="hp-fill" style="width:100%"></div></div>
+        <div id="bat-hp-jog-txt" style="font-size:11px;margin-top:3px">150 / 150</div>
+      </div>
+      <div class="bat-box">
+        <img id="bat-img-ini" src="" alt="Inimigo">
+        <b id="bat-nome-ini">Inimigo</b>
+        <div class="hp-bar"><div id="bat-hp-ini" class="hp-fill inimigo" style="width:100%"></div></div>
+        <div id="bat-hp-ini-txt" style="font-size:11px;margin-top:3px">100 / 100</div>
+      </div>
+    </div>
+    <div id="bat-log" class="bat-log"></div>
+    <div id="bat-acoes" class="bat-acoes"></div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('btn-forcar-paisagem').onclick = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+      if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+    } catch (_) {}
+    document.body.classList.add('ignorar-giro');
+  };
+  document.getElementById('btn-continuar-pe').onclick = () => document.body.classList.add('ignorar-giro');
+</script>
+<script type="module" src="./regiao1.js"></script>
+</body>
+</html>

@@ -1,0 +1,687 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PSYWORLD · Editor de colisão</title><style>*{box-sizing:border-box}body{margin:0;background:#101822;color:white;font:16px system-ui}header{padding:10px;background:#172938}main{height:calc(100dvh - 54px);overflow:auto}canvas{width:100%;display:block;background-size:100% 100%;touch-action:none}button{color-scheme:dark}</style><header style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><b>Colisão da vila</b><button id="aplicar">Aplicar no jogo</button><button id="copiar">Copiar máscara</button><button id="fechar">Voltar ao jogo</button><label style="font-size:12px">ou abrir outra imagem <input type=file id="art" accept="image/*"></label><span id="aviso" style="font-size:12px"></span></header><textarea id="saida" style="display:none;width:100%;height:80px"></textarea><main><canvas width="1200" height="675"></canvas></main><script>
+/* PSYWORLD Anime3Q - nucleo do editor de walkmask (sem UI, sem camera).
+ * Espelha tools/build_walkmasks_v5.py: edt_1d / compute_edt_2d.
+ * Espaco logico 1200x675. walk: Uint8Array (1 = caminhavel, 0 = bloqueado).
+ * SDF exportado: uint8 = clip(round(edt * 4), 0, 255); R = 11 (PLAYER_RADIUS).
+ */
+(function (root) {
+  'use strict';
+  const W = 1200, H = 675, R = 11.0, SDF_SCALE = 4.0;
+  const INF = 1e9;
+
+  // Felzenszwalb & Huttenlocher 1D, quadrado. f: Float64Array(n) -> Float64Array(n) de d^2.
+  function edt1d(f, n, out) {
+    const v = new Int32Array(n);
+    const z = new Float64Array(n + 1);
+    let k = 0;
+    v[0] = 0; z[0] = -1e18; z[1] = 1e18;
+    for (let q = 1; q < n; q++) {
+      let s;
+      for (;;) {
+        const r = v[k];
+        s = ((f[q] + q * q) - (f[r] + r * r)) / (2.0 * (q - r));
+        if (s <= z[k]) k--; else break;
+      }
+      k++;
+      v[k] = q; z[k] = s; z[k + 1] = 1e18;
+    }
+    k = 0;
+    for (let q = 0; q < n; q++) {
+      while (z[k + 1] < q) k++;
+      const r = v[k];
+      const dq = q - r;
+      out[q] = dq * dq + f[r];
+    }
+    return out;
+  }
+
+  // EDT: para cada pixel caminhavel, distancia euclidiana ate o bloqueado mais proximo.
+  // Bloqueados = 0. Retorna Float64Array(W*H) com a distancia (nao quadrada).
+  function computeEdt(walk) {
+    const g = new Float64Array(W * H);
+    for (let i = 0; i < g.length; i++) g[i] = walk[i] ? INF : 0.0;
+    const tmp = new Float64Array(W * H);
+    const col = new Float64Array(H), colOut = new Float64Array(H);
+    for (let x = 0; x < W; x++) {
+      for (let y = 0; y < H; y++) col[y] = g[y * W + x];
+      edt1d(col, H, colOut);
+      for (let y = 0; y < H; y++) tmp[y * W + x] = colOut[y];
+    }
+    const row = new Float64Array(W), rowOut = new Float64Array(W);
+    const out = new Float64Array(W * H);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) row[x] = tmp[y * W + x];
+      edt1d(row, W, rowOut);
+      for (let x = 0; x < W; x++) out[y * W + x] = Math.sqrt(rowOut[x]);
+    }
+    return out;
+  }
+
+  // Quantizacao exportada, identica ao build: uint8 = clip(round(edt*4),0,255).
+  function sdfToU8(edt) {
+    const u = new Uint8Array(W * H);
+    for (let i = 0; i < u.length; i++) {
+      const v = Math.round(edt[i] * SDF_SCALE);
+      u[i] = v < 0 ? 0 : v > 255 ? 255 : v;
+    }
+    return u;
+  }
+
+  // Pincel: carimba um disco (value 1 = caminhavel, 0 = bloqueado) em (cx, cy) logicos.
+  function stamp(walk, cx, cy, radius, value) {
+    const r2 = radius * radius;
+    const x0 = Math.max(0, Math.floor(cx - radius)), x1 = Math.min(W - 1, Math.ceil(cx + radius));
+    const y0 = Math.max(0, Math.floor(cy - radius)), y1 = Math.min(H - 1, Math.ceil(cy + radius));
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
+        if (dx * dx + dy * dy <= r2) walk[y * W + x] = value;
+      }
+    }
+  }
+
+  // Traco entre pontos com espacamento de 1 px (sem falhas entre amostras).
+  function stroke(walk, pts, radius, value) {
+    for (let i = 0; i < pts.length; i++) {
+      const [x, y] = pts[i];
+      if (i === 0) { stamp(walk, x, y, radius, value); continue; }
+      const [ax, ay] = pts[i - 1];
+      const L = Math.hypot(x - ax, y - ay);
+      const steps = Math.max(1, Math.ceil(L));
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        stamp(walk, ax + (x - ax) * t, ay + (y - ay) * t, radius, value);
+      }
+    }
+  }
+
+  // Pre-visualizacao ao vivo: 1 onde o centro do personagem NAO cabe (edt < R) mas e caminhavel,
+  // e 2 onde o centro caberia (edt >= R). Serve para desenhar a linha ciana (SDF=11).
+  function previewClasses(walk, edt) {
+    const c = new Uint8Array(W * H);
+    for (let i = 0; i < c.length; i++) {
+      if (!walk[i]) c[i] = 0;
+      else c[i] = edt[i] >= R ? 2 : 1;
+    }
+    return c;
+  }
+
+  // Walkmask exportavel (L): 255 caminhavel, 0 bloqueado.
+  function walkToL(walk) {
+    const u = new Uint8Array(W * H);
+    for (let i = 0; i < u.length; i++) u[i] = walk[i] ? 255 : 0;
+    return u;
+  }
+
+  // Le uma walkmask L (>=128 = caminhavel), como o build.
+  function walkFromL(lu8) {
+    const w = new Uint8Array(W * H);
+    for (let i = 0; i < w.length; i++) w[i] = lu8[i] >= 128 ? 1 : 0;
+    return w;
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // Camada editavel (navegador). Nao roda em Node: usa document/canvas somente
+  // quando createEditor e chamado com um loader de imagem.
+  // ---------------------------------------------------------------------------
+  const UNDO_MAX = 40;
+  const RECOMPUTE_MS = 120;
+
+  // RGBA da pre-visualizacao: bloqueado (vermelho), caminhavel perto da parede (amarelo),
+  // caminhavel seguro (verde) e a faixa SDF=11 (ciano).
+  function buildPreviewRGBA(walk, edt, out) {
+    for (let i = 0, p = 0; i < W * H; i++, p += 4) {
+      if (!walk[i]) { out[p] = 239; out[p + 1] = 68; out[p + 2] = 68; out[p + 3] = 105; continue; }
+      if (!edt) { out[p] = 34; out[p + 1] = 197; out[p + 2] = 94; out[p + 3] = 60; continue; }
+      const d = edt[i];
+      if (d < R) { out[p] = 250; out[p + 1] = 204; out[p + 2] = 21; out[p + 3] = 110; }
+      else if (d < R + 1) { out[p] = 56; out[p + 1] = 189; out[p + 2] = 248; out[p + 3] = 255; }
+      else { out[p] = 34; out[p + 1] = 197; out[p + 2] = 94; out[p + 3] = 60; }
+    }
+    return out;
+  }
+
+  // loadWalk(url) -> Promise<Uint8Array> (1 = caminhavel), usando canvas do navegador.
+  function loadWalkFromUrl(url) {
+    return new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => {
+        const cv = document.createElement('canvas');
+        cv.width = W; cv.height = H;
+        const cx = cv.getContext('2d', { willReadFrequently: true });
+        cx.drawImage(im, 0, 0, W, H);
+        const raw = cx.getImageData(0, 0, W, H).data;
+        const lum = new Uint8Array(W * H);
+        for (let i = 0, p = 0; i < lum.length; i++, p += 4) lum[i] = raw[p];
+        resolve(walkFromL(lum));
+      };
+      im.onerror = () => reject(new Error('walkmask nao carregou: ' + url));
+      im.src = url;
+    });
+  }
+
+  // Cria um editor para um mapa. opts: { mapId, walk, onSdf(u8), onPreview(rgbaBuffer) }
+  function createEditor(opts) {
+    const st = {
+      mapId: opts.mapId,
+      walk: opts.walk,
+      edt: null,
+      undo: [],
+      tool: 'paint',
+      radius: 6,
+      stroke: null,
+      timer: 0,
+      previewBuf: new Uint8ClampedArray(W * H * 4)
+    };
+
+    function recompute() {
+      st.timer = 0;
+      st.edt = computeEdt(st.walk);
+      if (opts.onSdf) opts.onSdf(sdfToU8(st.edt));
+      if (opts.onPreview) opts.onPreview(buildPreviewRGBA(st.walk, st.edt, st.previewBuf));
+    }
+    function scheduleRecompute() {
+      // Preview ao vivo durante o traco: recalcula no maximo a cada RECOMPUTE_MS.
+      if (opts.onPreview) opts.onPreview(buildPreviewRGBA(st.walk, st.edt, st.previewBuf));
+      if (!st.timer) st.timer = setTimeout(recompute, RECOMPUTE_MS);
+    }
+    function value() { return st.tool === 'paint' ? 1 : 0; }
+    function notifyChange() { if (opts.onChange) opts.onChange(st.walk); }
+
+    return {
+      mapId: st.mapId,
+      setTool(t) { st.tool = t === 'erase' ? 'erase' : 'paint'; },
+      setRadius(r) { st.radius = Math.max(2, Math.min(40, r | 0)); },
+      getTool() { return st.tool; },
+      getRadius() { return st.radius; },
+      isStroking(pid) { return !!st.stroke && st.stroke.pid === pid; },
+      begin(pid, x, y) {
+        if (st.stroke) return false;
+        st.undo.push(st.walk.slice());
+        if (st.undo.length > UNDO_MAX) st.undo.shift();
+        st.stroke = { pid, last: [x, y] };
+        stamp(st.walk, x, y, st.radius, value());
+        scheduleRecompute();
+        return true;
+      },
+      move(pid, x, y) {
+        if (!st.stroke || st.stroke.pid !== pid) return false;
+        stroke(st.walk, [st.stroke.last, [x, y]], st.radius, value());
+        st.stroke.last = [x, y];
+        scheduleRecompute();
+        return true;
+      },
+      end(pid) {
+        if (!st.stroke || st.stroke.pid !== pid) return false;
+        st.stroke = null;
+        if (st.timer) { clearTimeout(st.timer); st.timer = 0; }
+        recompute();
+        notifyChange();
+        return true;
+      },
+      undo() {
+        const prev = st.undo.pop();
+        if (!prev) return false;
+        st.walk = prev;
+        recompute();
+        notifyChange();
+        return true;
+      },
+      replaceWalk(nextWalk, pushUndo = true) {
+        if (!nextWalk || nextWalk.length !== W * H) return false;
+        if (pushUndo) {
+          st.undo.push(st.walk.slice());
+          if (st.undo.length > UNDO_MAX) st.undo.shift();
+        }
+        st.walk = nextWalk instanceof Uint8Array ? nextWalk.slice() : Uint8Array.from(nextWalk);
+        recompute();
+        notifyChange();
+        return true;
+      },
+      canUndo() { return st.undo.length > 0; },
+      sdfU8() { if (!st.edt) st.edt = computeEdt(st.walk); return sdfToU8(st.edt); },
+      walkL() { return walkToL(st.walk); },
+      walkCopy() { return st.walk.slice(); },
+      refresh() { recompute(); }
+    };
+  }
+
+  // Verifica correspondencia matematica exata entre walkmask (0/1) e SDF uint8.
+  function verifyPair(walk, sdfU8) {
+    if (!walk || walk.length !== W * H || !sdfU8 || sdfU8.length !== W * H) {
+      return { ok: false, diff: -1, walkableCount: 0, blockedCount: 0, reason: 'dimensao_invalida' };
+    }
+    const ref = sdfToU8(computeEdt(walk));
+    let diff = 0, walkableCount = 0;
+    for (let i = 0; i < W * H; i++) {
+      if (walk[i]) walkableCount++;
+      if (ref[i] !== sdfU8[i]) diff++;
+    }
+    return { ok: diff === 0, diff, walkableCount, blockedCount: W * H - walkableCount };
+  }
+
+  // Persistencia local de rascunhos em IndexedDB (capacidade adequada para Uint8Array 1200x675).
+  const DB_NAME = 'psyworld_collision_drafts_v1';
+  const DB_STORE = 'drafts';
+  function openDraftDb() {
+    return new Promise((resolve, reject) => {
+      if (typeof indexedDB === 'undefined') return reject(new Error('IndexedDB indisponivel'));
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'mapId' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error('Falha ao abrir IndexedDB'));
+    });
+  }
+  const drafts = {
+    async save(mapId, art, walk) {
+      const db = await openDraftDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        const rec = { mapId, art: art || '', w: W, h: H, walk: walk.slice(), updatedAt: Date.now() };
+        tx.objectStore(DB_STORE).put(rec);
+        tx.oncomplete = () => { db.close(); resolve(rec); };
+        tx.onerror = () => { db.close(); reject(tx.error || new Error('Falha ao salvar rascunho')); };
+      });
+    },
+    async load(mapId) {
+      const db = await openDraftDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).get(mapId);
+        req.onsuccess = () => { db.close(); resolve(req.result || null); };
+        req.onerror = () => { db.close(); reject(req.error || new Error('Falha ao ler rascunho')); };
+      });
+    },
+    async remove(mapId) {
+      const db = await openDraftDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).delete(mapId);
+        tx.oncomplete = () => { db.close(); resolve(true); };
+        tx.onerror = () => { db.close(); reject(tx.error || new Error('Falha ao descartar rascunho')); };
+      });
+    }
+  };
+
+  const api = { W, H, R, SDF_SCALE, edt1d, computeEdt, sdfToU8, stamp, stroke,
+                previewClasses, walkToL, walkFromL,
+                loadWalkFromUrl, createEditor, buildPreviewRGBA, verifyPair, drafts };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.PsyAnime3QBrush = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+const W=window,D=document,LOGICAL_W=1200,LOGICAL_H=675,debugEditorEnabled=true,MAPS=Object.create(null);let debugOverlayVisible=true;
+const brushEditors=new Map();   // mapId -> editor
+const brushPreviews=new Map();  // mapId -> canvas de preview
+const brushLoading=new Set();
+const brushDrafts=new Map();    // mapId -> ultimo rascunho conhecido {art, updatedAt, walk}
+let brushMode='off';            // 'off' | 'pan' | 'paint' | 'erase'
+let brushActiveMap=null, brushPanel=null, brushRadius=6, brushStatusMsg='';
+let panDrag=null, draftTimer=0, discardConfirmUntil=0;
+
+function brushPreviewFor(mapId){
+  if(!debugEditorEnabled)return null;
+  return brushPreviews.get(mapId)||null;
+}
+function ensureBrushLib(){
+  if(W.PsyAnime3QBrush)return Promise.resolve(W.PsyAnime3QBrush);
+  return new Promise((res,rej)=>{
+    const sc=D.createElement('script');
+    sc.src='core/anime3q-walkmask-brush.js?v=2';
+    sc.onload=()=>res(W.PsyAnime3QBrush);
+    sc.onerror=()=>rej(new Error('core/anime3q-walkmask-brush.js nao carregou'));
+    D.head.appendChild(sc);
+  });
+}
+function setStatus(msg){brushStatusMsg=msg||'';updateBrushPanel();}
+async function checkDraftFor(mapId){
+  try{
+    const B=await ensureBrushLib();
+    const rec=await B.drafts.load(mapId);
+    const m=MAPS[mapId];
+    if(rec&&m&&rec.art===m.art&&rec.w===LOGICAL_W&&rec.h===LOGICAL_H&&rec.walk?.length===LOGICAL_W*LOGICAL_H){
+      brushDrafts.set(mapId,rec);
+      const t=new Date(rec.updatedAt||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      setStatus(`Rascunho disponivel (${t}) — Restaurar ou Descartar`);
+    }else{
+      brushDrafts.delete(mapId);
+      updateBrushPanel();
+    }
+  }catch(_){}
+}
+function scheduleDraftSave(mapId,immediate){
+  if(draftTimer){clearTimeout(draftTimer);draftTimer=0;}
+  const run=async()=>{
+    draftTimer=0;
+    const ed=brushEditors.get(mapId),m=MAPS[mapId];
+    if(!ed||!m||!W.PsyAnime3QBrush?.drafts)return;
+    try{
+      const rec=await W.PsyAnime3QBrush.drafts.save(mapId,m.art,ed.walkCopy());
+      brushDrafts.set(mapId,rec);
+      if(immediate)setStatus(`Rascunho salvo (${mapId})`);
+      else updateBrushPanel();
+    }catch(err){
+      setStatus(`Erro ao salvar rascunho: ${err?.message||'armazenamento indisponivel'}`);
+    }
+  };
+  if(immediate)run();else draftTimer=setTimeout(run,800);
+}
+function downloadGray(u8,name){
+  return new Promise(resolve=>{
+    const cv=D.createElement('canvas');cv.width=LOGICAL_W;cv.height=LOGICAL_H;
+    const cx=cv.getContext('2d');const img=cx.createImageData(LOGICAL_W,LOGICAL_H);
+    for(let i=0,p=0;i<u8.length;i++,p+=4){img.data[p]=img.data[p+1]=img.data[p+2]=u8[i];img.data[p+3]=255;}
+    cx.putImageData(img,0,0);
+    cv.toBlob(b=>{
+      const a=D.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
+      setTimeout(()=>{URL.revokeObjectURL(a.href);resolve();},200);
+    },'image/png');
+  });
+}
+function encodeGrayPngBase64(u8){
+  const cv=D.createElement('canvas');cv.width=LOGICAL_W;cv.height=LOGICAL_H;
+  const cx=cv.getContext('2d');const img=cx.createImageData(LOGICAL_W,LOGICAL_H);
+  for(let i=0,p=0;i<u8.length;i++,p+=4){img.data[p]=img.data[p+1]=img.data[p+2]=u8[i];img.data[p+3]=255;}
+  cx.putImageData(img,0,0);
+  return cv.toDataURL('image/png').split(',')[1]||'';
+}
+async function exportBrush(){
+  const ed=brushEditors.get(brushActiveMap),B=W.PsyAnime3QBrush;
+  if(!ed||!B)return;
+  const walk=ed.walkCopy(),sdf=ed.sdfU8();
+  const v=B.verifyPair(walk,sdf);
+  if(!v.ok){setStatus(`Erro na validacao: ${v.diff} px divergentes`);return;}
+  await downloadGray(ed.walkL(),`${brushActiveMap}_walkmask.png`);
+  await new Promise(r=>setTimeout(r,150));
+  await downloadGray(sdf,`${brushActiveMap}_sdf.png`);
+  setStatus(`Exportado OK: ${brushActiveMap} (1200x675, 0 diverg.)`);
+}
+async function exportAllBrush(){
+  const B=W.PsyAnime3QBrush;
+  if(!B)return;
+  const targets=[];
+  for(const mapId of Object.keys(MAPS)){
+    const ed=brushEditors.get(mapId);
+    const rec=brushDrafts.get(mapId);
+    if(ed){
+      targets.push({mapId,walk:ed.walkCopy(),walkL:ed.walkL(),sdf:ed.sdfU8()});
+    }else if(rec?.walk){
+      const tmp=B.create(LOGICAL_W,LOGICAL_H,rec.walk);
+      targets.push({mapId,walk:tmp.walkCopy(),walkL:tmp.walkL(),sdf:tmp.sdfU8()});
+    }
+  }
+  if(!targets.length){setStatus('Edite ou abra um mapa antes de exportar tudo');return;}
+  for(const t of targets){
+    const v=B.verifyPair(t.walk,t.sdf);
+    if(!v.ok){setStatus(`Erro em ${t.mapId}: ${v.diff} px divergentes`);return;}
+  }
+  setStatus(`Exportando ${targets.length} mapa(s)...`);
+  for(let i=0;i<targets.length;i++){
+    const t=targets[i];
+    await downloadGray(t.walkL,`${t.mapId}_walkmask.png`);
+    await new Promise(r=>setTimeout(r,220));
+    await downloadGray(t.sdf,`${t.mapId}_sdf.png`);
+    if(i<targets.length-1)await new Promise(r=>setTimeout(r,220));
+  }
+  setStatus(`Exportar Tudo OK: ${targets.length} mapa(s) (${targets.length*2} arquivos)`);
+}
+function readPngGray(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file);
+    const im=new Image();
+    im.onload=()=>{
+      URL.revokeObjectURL(url);
+      if(im.naturalWidth!==LOGICAL_W||im.naturalHeight!==LOGICAL_H){
+        return reject(new Error(`${file.name}: tamanho ${im.naturalWidth}x${im.naturalHeight}, esperado ${LOGICAL_W}x${LOGICAL_H}`));
+      }
+      const cv=D.createElement('canvas');cv.width=LOGICAL_W;cv.height=LOGICAL_H;
+      const cx=cv.getContext('2d',{willReadFrequently:true});
+      cx.drawImage(im,0,0,LOGICAL_W,LOGICAL_H);
+      const raw=cx.getImageData(0,0,LOGICAL_W,LOGICAL_H).data;
+      const u8=new Uint8Array(LOGICAL_W*LOGICAL_H);
+      for(let i=0,p=0;i<u8.length;i++,p+=4)u8[i]=raw[p];
+      resolve({name:file.name,u8});
+    };
+    im.onerror=()=>{URL.revokeObjectURL(url);reject(new Error(`Nao foi possivel ler ${file.name}`));};
+    im.src=url;
+  });
+}
+async function importBrushFiles(fileList){
+  const ed=brushEditors.get(brushActiveMap),B=W.PsyAnime3QBrush;
+  if(!ed||!B){setStatus('Abra um mapa Anime3Q antes de importar');return;}
+  const files=[...(fileList||[])].filter(Boolean);
+  if(!files.length)return;
+  if(files.length>2){setStatus('Selecione 1 walkmask ou par walkmask + sdf');return;}
+  try{
+    for(const f of files){
+      const known=Object.keys(MAPS).find(id=>f.name.startsWith(id+'_'));
+      if(known&&known!==brushActiveMap){
+        setStatus(`Arquivo de "${known}" nao corresponde a "${brushActiveMap}"`);return;
+      }
+    }
+    const imgs=await Promise.all(files.map(readPngGray));
+    let wImg=imgs.find(x=>/walkmask/i.test(x.name));
+    let sImg=imgs.find(x=>/sdf/i.test(x.name));
+    if(!wImg&&imgs.length===1)wImg=imgs[0];
+    if(!wImg&&imgs.length===2){
+      const isBin=u=>{for(let i=0;i<u.length;i++)if(u[i]!==0&&u[i]!==255)return false;return true;};
+      wImg=imgs.find(x=>isBin(x.u8))||imgs[0];
+      sImg=imgs.find(x=>x!==wImg);
+    }
+    if(!wImg){setStatus('Walkmask nao identificada');return;}
+    for(let i=0;i<wImg.u8.length;i++){
+      if(wImg.u8[i]!==0&&wImg.u8[i]!==255){
+        setStatus(`Walkmask invalida (${wImg.name}): use apenas 0 e 255`);return;
+      }
+    }
+    const walk=B.walkFromL(wImg.u8);
+    if(sImg){
+      const v=B.verifyPair(walk,sImg.u8);
+      if(!v.ok){setStatus(`Par incompativel: ${v.diff} px divergem entre walkmask e SDF`);return;}
+    }
+    ed.replaceWalk(walk,true);
+    setStatus(`Importado OK: ${brushActiveMap}`);
+  }catch(err){
+    setStatus(`Importacao falhou: ${err?.message||'arquivo invalido'}`);
+  }
+}
+function mountBrushPanel(){
+  if(!debugEditorEnabled||brushPanel)return;
+  brushPanel=D.createElement('div');
+  brushPanel.id='a3q-brush-panel';
+  brushPanel.style.cssText='position:fixed;left:8px;bottom:8px;z-index:2147483647;background:#0b1d3a;border:2px solid #facc15;border-radius:10px;padding:5px 7px;font:12px system-ui,sans-serif;color:#f8fafc;display:flex;flex-wrap:wrap;gap:4px;align-items:center;max-width:min(94vw,470px);box-sizing:border-box;box-shadow:0 6px 20px rgba(0,0,0,.45);';
+  brushPanel.innerHTML=
+    '<span data-a="grip" title="Arrastar painel" style="cursor:move;padding:2px 7px;user-select:none;touch-action:none;font-size:15px;">&#10303;</span>'+
+    '<button data-a="toggle" title="Minimizar/expandir" style="min-width:28px">&#8211;</button>'+
+    '<span data-a="mini" style="font-size:11px;opacity:.9">Editor</span>'+
+    '<div data-a="body" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;width:100%;">'+
+      '<button data-a="pan">Navegar</button>'+
+      '<button data-a="paint">Pincel</button>'+
+      '<button data-a="erase">Borracha</button>'+
+      '<button data-a="undo">Desfazer</button>'+
+      '<button data-a="sdf">SDF</button>'+
+      '<label style="display:inline-flex;align-items:center;gap:3px;">raio <input data-a="radius" type="range" min="2" max="40" value="6" style="width:68px"></label>'+
+      '<button data-a="zout" title="Afastar zoom">-</button>'+
+      '<button data-a="zin" title="Aproximar zoom">+</button>'+
+      '<button data-a="zreset" title="Centralizar no treinador">Centro</button>'+
+      '<button data-a="import">Importar</button>'+
+      '<button data-a="export">Exportar</button>'+
+      '<button data-a="exportAll" title="Baixar walkmask e SDF de todos os mapas editados">Exportar Tudo</button>'+
+      '<button data-a="save">Salvar</button>'+
+      '<button data-a="restore">Restaurar</button>'+
+      '<button data-a="discard">Descartar</button>'+
+      '<input data-a="file" type="file" accept="image/png" multiple hidden>'+
+      '<span data-a="status" style="opacity:.88;flex-basis:100%;font-size:11px;line-height:1.25;"></span>'+
+    '</div>';
+  brushPanel.querySelectorAll('button').forEach(b=>{
+    b.style.cssText='padding:5px 7px;border-radius:6px;border:1px solid #38bdf8;background:#13294b;color:#f8fafc;touch-action:manipulation;font-size:11px;cursor:pointer;';
+  });
+  ['pointerdown','pointermove','pointerup','touchstart','wheel'].forEach(ev=>{
+    brushPanel.addEventListener(ev,e=>e.stopPropagation(),{passive:true});
+  });
+
+  const KEY='a3q-brush-panel-state';
+  const saved=(()=>{try{return JSON.parse(W.localStorage.getItem(KEY)||'null');}catch(_){return null;}})();
+  const savePos=()=>{try{
+    const r=brushPanel.getBoundingClientRect();
+    W.localStorage.setItem(KEY,JSON.stringify({x:Math.round(r.left),y:Math.round(r.top),collapsed:!!brushCollapsed}));
+  }catch(_){}};
+  let brushCollapsed=!!saved?.collapsed;
+  function placeInside(x,y){
+    const w=brushPanel.offsetWidth||200,h=brushPanel.offsetHeight||40;
+    const cx=Math.max(0,Math.min(W.innerWidth-w,x));
+    const cy=Math.max(0,Math.min(W.innerHeight-h,y));
+    brushPanel.style.left=cx+'px';brushPanel.style.top=cy+'px';brushPanel.style.bottom='auto';
+  }
+  function applyCollapsed(){
+    brushPanel.querySelector('[data-a="body"]').style.display=brushCollapsed?'none':'flex';
+    brushPanel.querySelector('[data-a="toggle"]').innerHTML=brushCollapsed?'&#43;':'&#8211;';
+    brushPanel.style.width=brushCollapsed?'auto':'';
+  }
+  if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y))placeInside(saved.x,saved.y);
+  applyCollapsed();
+
+  const grip=brushPanel.querySelector('[data-a="grip"]');
+  let drag=null;
+  grip.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    const r=brushPanel.getBoundingClientRect();
+    drag={dx:e.clientX-r.left,dy:e.clientY-r.top,id:e.pointerId};
+    grip.setPointerCapture?.(e.pointerId);
+  });
+  grip.addEventListener('pointermove',e=>{
+    if(!drag||drag.id!==e.pointerId)return;
+    placeInside(e.clientX-drag.dx,e.clientY-drag.dy);
+  });
+  const endDrag=e=>{if(drag&&drag.id===e.pointerId){drag=null;savePos();}};
+  grip.addEventListener('pointerup',endDrag);
+  grip.addEventListener('pointercancel',endDrag);
+  W.addEventListener('resize',()=>{
+    if(!brushPanel)return;
+    const r=brushPanel.getBoundingClientRect();
+    placeInside(r.left,r.top);
+  });
+
+  const act=a=>brushPanel.querySelector(`[data-a="${a}"]`);
+  const setMode=m=>{
+    brushMode=brushMode===m?'off':m;
+    if(brushMode==='paint'||brushMode==='erase')brushEditors.get(brushActiveMap)?.setTool(brushMode);
+    if(brushMode==='pan')W.PsyKantoWorldV2?.setEditorCamera?.({active:true});
+    updateBrushPanel();
+  };
+  act('toggle').onclick=()=>{brushCollapsed=!brushCollapsed;applyCollapsed();savePos();};
+  act('pan').onclick=()=>setMode('pan');
+  act('paint').onclick=()=>setMode('paint');
+  act('erase').onclick=()=>setMode('erase');
+  act('undo').onclick=()=>{brushEditors.get(brushActiveMap)?.undo();updateBrushPanel();};
+  act('sdf').onclick=()=>{debugOverlayVisible=!debugOverlayVisible;updateBrushPanel();};
+  act('zin').onclick=()=>{const c=W.PsyKantoWorldV2?.getEditorCamera?.();if(c){W.PsyKantoWorldV2.setEditorCamera({active:true,zoom:c.zoom*1.25});updateBrushPanel();}};
+  act('zout').onclick=()=>{const c=W.PsyKantoWorldV2?.getEditorCamera?.();if(c){W.PsyKantoWorldV2.setEditorCamera({active:true,zoom:c.zoom*0.8});updateBrushPanel();}};
+  act('zreset').onclick=()=>{W.PsyKantoWorldV2?.setEditorCamera?.({reset:true});if(brushMode==='pan')brushMode='off';updateBrushPanel();};
+  act('import').onclick=()=>{const f=act('file');f.value='';f.click();};
+  act('file').onchange=e=>importBrushFiles(e.target.files);
+  act('export').onclick=exportBrush;
+  act('exportAll').onclick=exportAllBrush;
+  act('save').onclick=()=>{if(brushActiveMap)scheduleDraftSave(brushActiveMap,true);};
+  act('restore').onclick=()=>{
+    const ed=brushEditors.get(brushActiveMap),rec=brushDrafts.get(brushActiveMap);
+    if(!ed||!rec)return;
+    ed.replaceWalk(rec.walk,true);
+    setStatus(`Rascunho restaurado (${brushActiveMap})`);
+  };
+  act('discard').onclick=async()=>{
+    if(!brushActiveMap||!brushDrafts.has(brushActiveMap))return;
+    const now=Date.now();
+    if(now>discardConfirmUntil){
+      discardConfirmUntil=now+4000;
+      updateBrushPanel();
+      setTimeout(()=>{if(Date.now()>=discardConfirmUntil)updateBrushPanel();},4100);
+      return;
+    }
+    discardConfirmUntil=0;
+    try{
+      await W.PsyAnime3QBrush?.drafts?.remove(brushActiveMap);
+      brushDrafts.delete(brushActiveMap);
+      setStatus(`Rascunho descartado (${brushActiveMap})`);
+    }catch(err){setStatus(`Erro ao descartar: ${err?.message||'falha'}`);}
+  };
+  act('radius').oninput=e=>{brushRadius=+e.target.value;brushEditors.get(brushActiveMap)?.setRadius(brushRadius);};
+  (D.getElementById('psy-kanto-world-v2')||D.body).appendChild(brushPanel);
+  updateBrushPanel();
+}
+function updateBrushPanel(){
+  if(!brushPanel)return;
+  const host=D.getElementById('psy-kanto-world-v2');
+  if(host&&brushPanel.parentNode!==host)host.appendChild(brushPanel);
+  const ed=brushEditors.get(brushActiveMap);
+  const hasDraft=brushDrafts.has(brushActiveMap);
+  const st=brushPanel.querySelector('[data-a="status"]');
+  const mini=brushPanel.querySelector('[data-a="mini"]');
+  const on=(a,v)=>{const b=brushPanel.querySelector(`[data-a="${a}"]`);if(b){b.style.background=v?'#facc15':'#13294b';b.style.color=v?'#0b1d3a':'#f8fafc';}};
+  on('pan',brushMode==='pan');
+  on('paint',brushMode==='paint');
+  on('erase',brushMode==='erase');
+  on('sdf',debugOverlayVisible);
+  brushPanel.querySelector('[data-a="export"]').disabled=!ed;
+  brushPanel.querySelector('[data-a="exportAll"]').disabled=!ed&&!brushDrafts.size;
+  brushPanel.querySelector('[data-a="import"]').disabled=!ed;
+  brushPanel.querySelector('[data-a="save"]').disabled=!ed;
+  brushPanel.querySelector('[data-a="undo"]').disabled=!ed?.canUndo();
+  brushPanel.querySelector('[data-a="restore"]').disabled=!ed||!hasDraft;
+  brushPanel.querySelector('[data-a="discard"]').disabled=!hasDraft;
+  const discBtn=brushPanel.querySelector('[data-a="discard"]');
+  discBtn.textContent=Date.now()<=discardConfirmUntil?'Confirmar?':'Descartar';
+  const cam=W.PsyKantoWorldV2?.getEditorCamera?.();
+  const zTxt=cam?.active?` | zoom ${cam.zoom.toFixed(1)}x`:'';
+  mini.textContent=ed?`${brushActiveMap} (${brushMode})`:'Editor';
+  st.textContent=brushStatusMsg||(ed?`${brushActiveMap} | ${brushMode==='off'?'andando':brushMode}${zTxt} | SDF=11 ciano`:'Entre em um mapa Anime3Q para editar');
+}
+const cv=D.querySelector('canvas'),cx=cv.getContext('2d'),view=D.querySelector('main'),images=new Map();let zoom=1,drag=null;
+W.PsyKantoWorldV2={getEditorCamera:()=>({active:true,zoom}),setEditorCamera(c){if(c.zoom||c.reset){zoom=c.reset?1:Math.max(.5,Math.min(6,c.zoom));cv.style.width=zoom*100+'%';if(c.reset)view.scrollTo(0,0)}}};
+mountBrushPanel();
+const sdfBtn=brushPanel.querySelector('[data-a=sdf]');sdfBtn.addEventListener('click',()=>{if(debugOverlayVisible)brushEditors.get(brushActiveMap)?.refresh();else cx.clearRect(0,0,1200,675)});
+art.onchange=async()=>{const f=art.files[0];if(!f)return;const im=new Image(),url=URL.createObjectURL(f);im.src=url;try{await im.decode()}catch{URL.revokeObjectURL(url);setStatus('Imagem inválida');return}
+const id=f.name.replace(/\.[^.]+$/,'')+'-'+f.size;brushActiveMap=id;MAPS[id]={art:f.name+'-'+f.lastModified};cv.style.backgroundImage='url('+url+')';URL.revokeObjectURL(images.get(id)||'');images.set(id,url);
+if(!brushEditors.has(id)){const ed=W.PsyAnime3QBrush.createEditor({mapId:id,walk:new Uint8Array(1200*675),onPreview:rgba=>{if(id===brushActiveMap&&debugOverlayVisible)cx.putImageData(new ImageData(rgba,1200,675),0,0)},onChange:()=>scheduleDraftSave(id,true)});brushEditors.set(id,ed)}
+brushMode='paint';const ed=brushEditors.get(id);ed.setTool('paint');ed.setRadius(brushRadius);ed.refresh();setStatus('Pinte as áreas caminháveis.');await checkDraftFor(id);art.value=''};
+function point(e){const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*1200/r.width,(e.clientY-r.top)*675/r.height].map(Math.floor)}
+cv.onpointerdown=e=>{const ed=brushEditors.get(brushActiveMap);if(!ed)return;cv.setPointerCapture(e.pointerId);if(brushMode==='pan'){drag=[e.clientX,e.clientY,view.scrollLeft,view.scrollTop];return}if(['paint','erase'].includes(brushMode))ed.begin(e.pointerId,...point(e))};
+cv.onpointermove=e=>{if(drag){view.scrollTo(drag[2]+drag[0]-e.clientX,drag[3]+drag[1]-e.clientY);return}brushEditors.get(brushActiveMap)?.move(e.pointerId,...point(e))};
+cv.onpointerup=cv.onpointercancel=e=>{drag=null;brushEditors.get(brushActiveMap)?.end(e.pointerId);updateBrushPanel()};
+</script><script>
+// integração com a vila: abre com a cena e a máscara atual; aplica no jogo e guarda no aparelho
+(async()=>{
+  const ID='vila', CHAVE='vilaWalkmask';
+  const aviso=t=>document.getElementById('aviso').textContent=t;
+  brushActiveMap=ID; MAPS[ID]={art:'vila-cena'};
+  cv.style.backgroundImage='url(assets/vila-cena.webp)';
+  let walk;
+  try{const s=localStorage.getItem(CHAVE); if(s) walk=await W.PsyAnime3QBrush.loadWalkFromUrl('data:image/png;base64,'+s);}catch(_){}
+  if(!walk) walk=await W.PsyAnime3QBrush.loadWalkFromUrl('assets/vila-walkmask.png');
+  const ed=W.PsyAnime3QBrush.createEditor({mapId:ID,walk,onPreview:rgba=>{if(brushActiveMap===ID&&debugOverlayVisible)cx.putImageData(new ImageData(rgba,1200,675),0,0)},onChange:()=>scheduleDraftSave(ID,true)});
+  brushEditors.set(ID,ed); brushMode='paint'; ed.setTool('paint'); ed.setRadius(brushRadius); ed.refresh(); updateBrushPanel();
+  setStatus('Pincel = caminho, Borracha = bloqueio. Depois: Aplicar no jogo.');
+  document.getElementById('aplicar').onclick=()=>{
+    const ativo=brushEditors.get(brushActiveMap)||ed;
+    const b64=encodeGrayPngBase64(ativo.walkL());
+    try{localStorage.setItem(CHAVE,b64);}catch(_){}
+    parent.postMessage({tipo:'walkmask',walk:ativo.walkCopy(),w:1200,h:675},'*');
+    aviso('Aplicado no jogo e salvo neste aparelho.');
+  };
+  document.getElementById('copiar').onclick=()=>{
+    const ativo=brushEditors.get(brushActiveMap)||ed, t=document.getElementById('saida');
+    // blocos de 4x4 px (300x169): mesma precisão da grade do jogo, texto curto para colar no chat
+    const w=ativo.walkCopy(), BW=300, BH=169, partes=[]; let atual=0,n=0;
+    for(let by=0;by<BH;by++)for(let bx=0;bx<BW;bx++){let soma=0,tot=0;
+      for(let y=by*4;y<Math.min(675,by*4+4);y++)for(let x=bx*4;x<bx*4+4;x++){soma+=w[y*1200+x];tot++;}
+      const v=soma*2>=tot?1:0; if(v===atual)n++; else{partes.push(n);atual=v;n=1;}}
+    partes.push(n);
+    t.value='MASCARA 300x169 '+partes.join(','); t.style.display='block'; t.select();
+    try{navigator.clipboard.writeText(t.value).then(()=>aviso('Copiado. Cole no chat.'),()=>aviso('Selecione o texto e copie.'));}catch(_){aviso('Selecione o texto e copie.');}
+  };
+  document.getElementById('fechar').onclick=()=>parent.postMessage({tipo:'fecharEditor'},'*');
+})();
+</script></html>
