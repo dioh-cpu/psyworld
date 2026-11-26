@@ -354,11 +354,12 @@
     </header>
     <div class="menu-grid">
       <button class="menu-tile menu-ilustrado" id="m-atlas"><strong>Atlas de Caça</strong><small>Escolha onde caçar</small></button>
-      <button class="menu-tile menu-ilustrado" id="m-mochila"><strong>Domador</strong><small>Atributos, relíquias e mochila</small></button>
+      <button class="menu-tile menu-ilustrado" id="m-mochila"><strong>Domador &amp; Mochila</strong><small>Atributos, fragmentos e ovos</small></button>
       <button class="menu-tile menu-ilustrado" id="m-codex"><strong>Codex Onírico</strong><small>Espécies e bônus</small></button>
       <button class="menu-tile menu-ilustrado" id="m-temporada"><strong>Temporada</strong><small>Passe e missões diárias</small></button>
     </div>
     <nav class="menu-atalhos" aria-label="Mais opções">
+      <button class="btn-pri" id="m-descanso">🏕️ Área de Descanso</button>
       <button class="btn-sec" id="m-diario">Diário</button>
       <button class="btn-sec" id="m-mapa48">Mapa da região</button>
       <button class="btn-sec" id="m-autocaca">Auto-Caça</button>
@@ -419,41 +420,62 @@
 
 <!-- Modal Mochila & Status Explicáveis -->
 <div id="modal-mochila" class="modal-bg">
-  <div class="modal-card">
-    <div class="modal-head"><h3>Domador e Mochila</h3><button class="btn-fechar" data-fechar="modal-mochila" aria-label="Fechar">✕</button></div>
-    <nav class="mochila-atalhos" aria-label="Seções da mochila">
-      <button type="button" class="btn-sec" data-mochila-secao="domador-secao">Atributos</button>
-      <button type="button" class="btn-sec" data-mochila-secao="fragmentos-secao">Fragmentos</button>
-      <button type="button" class="btn-sec" data-mochila-secao="ovos-secao">Ovos</button>
+  <div class="modal-card modal-flex">
+    <div class="modal-head modal-head-fixo"><h3>Domador e Mochila</h3><button class="btn-fechar" data-fechar="modal-mochila" aria-label="Fechar">✕</button></div>
+    <nav class="mochila-atalhos" id="mochila-cats" aria-label="Categorias da mochila">
+      <button type="button" class="btn-sec" data-mochila-cat="domador" aria-selected="true">👤 Domador</button>
+      <button type="button" class="btn-sec" data-mochila-cat="fragmentos">✨ Fragmentos</button>
+      <button type="button" class="btn-sec" data-mochila-cat="chefes">👑 Chefes</button>
+      <button type="button" class="btn-sec" data-mochila-cat="ovos">🥚 Ovos</button>
+      <button type="button" class="btn-sec" data-mochila-cat="itens">🧪 Itens</button>
     </nav>
-    <div class="sec-tit" id="domador-secao">Pontos de Atributo do Domador (+3 pts por nível)</div>
-    <div id="domador-atributos"></div>
-    <div class="sec-tit">Origem dos Atributos</div>
-    <div id="status-breakdown"></div>
-    <div class="sec-tit" id="fragmentos-secao">Fragmentos de Sonho &amp; Chefes</div>
-    <div id="mochila-fragmentos"></div>
-    <div class="sec-tit" id="ovos-secao">Ovos</div>
-    <div id="mochila-ovos"></div>
+    <div id="mochila-corpo" class="modal-corpo">
+      <div id="mochila-detalhe" class="card-row" style="display:none;border-color:#f3a458;margin-bottom:8px"></div>
+      <div data-cat-pane="domador">
+        <div class="sec-tit" id="domador-secao">Pontos de Atributo do Domador (+3 pts por nível)</div>
+        <div id="domador-atributos"></div>
+        <div class="sec-tit">Origem dos Atributos</div>
+        <div id="status-breakdown"></div>
+      </div>
+      <div data-cat-pane="fragmentos" hidden>
+        <div class="sec-tit" id="fragmentos-secao">Fragmentos de Sonho (Evolução Elemental)</div>
+        <div id="mochila-fragmentos"></div>
+      </div>
+      <div data-cat-pane="chefes" hidden>
+        <div class="sec-tit">Fragmentos &amp; Drops de Chefes</div>
+        <div id="mochila-chefes"></div>
+      </div>
+      <div data-cat-pane="ovos" hidden>
+        <div class="sec-tit" id="ovos-secao">Ovos na Mochila</div>
+        <div id="mochila-ovos"></div>
+      </div>
+      <div data-cat-pane="itens" hidden>
+        <div class="sec-tit">Materiais, Poções &amp; Consumíveis</div>
+        <div id="mochila-itens"></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Modal Temporada, Passe 100 Níveis, Login 7 Dias & Diárias -->
 <div id="modal-temporada" class="modal-bg">
-  <div class="modal-card" style="position:relative">
-    <div class="modal-head"><h3>Temporada</h3><button class="btn-fechar" data-fechar="modal-temporada" aria-label="Fechar">✕</button></div>
-    <div id="temp-resumo" class="card-row" style="display:block;line-height:1.5"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
-      <button class="btn-pri" id="btn-login-diario">🎁 Login 7 Dias</button>
-      <button class="btn-pri" id="btn-passe-coletar" style="background:#0f766e">🏆 Coletar Passe</button>
-      <button class="btn-sec" id="btn-passe-comprar">💎 Comprar Nível (150💎)</button>
+  <div class="modal-card modal-flex" style="position:relative">
+    <div class="modal-head modal-head-fixo"><h3>Temporada &amp; Passe</h3><button class="btn-fechar" data-fechar="modal-temporada" aria-label="Fechar">✕</button></div>
+    <div id="temp-corpo" class="modal-corpo">
+      <div id="temp-resumo" class="card-row" style="display:block;line-height:1.5"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+        <button class="btn-pri" id="btn-login-diario">🎁 Login 7 Dias</button>
+        <button class="btn-pri" id="btn-passe-coletar" style="background:#0f766e">🏆 Coletar Passe</button>
+        <button class="btn-sec" id="btn-passe-comprar">💎 Comprar Nível (150💎)</button>
+      </div>
+      <div class="sec-tit">Trilha do Passe (100 Níveis)</div>
+      <div id="temp-trilha-nav" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"></div>
+      <div id="temp-trilha" style="display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;margin-bottom:8px"></div>
+      <div class="sec-tit">Missões Diárias</div>
+      <div id="temp-diarias"></div>
     </div>
-    <div class="sec-tit">Trilha do Passe (100 Níveis)</div>
-    <div id="temp-trilha-nav" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"></div>
-    <div id="temp-trilha" style="display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;margin-bottom:8px"></div>
-    <div class="sec-tit">Missões Diárias</div>
-    <div id="temp-diarias"></div>
-    <div id="painel-login-7d" style="display:none;position:absolute;inset:0;background:rgba(16,8,24,.96);border-radius:inherit;padding:14px;overflow-y:auto;z-index:10">
-      <div class="modal-head"><h3>🎁 Login de 7 Dias</h3><button class="btn-sec" id="btn-login-7d-fechar">Voltar à trilha</button></div>
+    <div id="painel-login-7d" style="display:none;position:absolute;inset:0;background:rgba(16,8,24,.96);border-radius:inherit;padding:12px;overflow-y:auto;z-index:10">
+      <div class="modal-head modal-head-fixo"><h3>🎁 Login de 7 Dias</h3><button class="btn-sec" id="btn-login-7d-fechar">Voltar à trilha</button></div>
       <div id="login-7d-resumo" class="card-row" style="display:block;line-height:1.45;margin-bottom:8px"></div>
       <div id="login-7d-grade" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">

@@ -20,22 +20,29 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   const save = () => getSave(), hw = () => H.hwDe(save());
   const css = document.createElement('style');
   css.textContent = `
-    #modal-hw .hw-card { width: min(760px, 100%); max-height: calc(100dvh - 16px); overflow: hidden; display: flex; flex-direction: column; padding: 8px 12px; background: linear-gradient(#2a1630, #1c0f22); }
-    #modal-hw .modal-head { position: static; margin-bottom: 4px; padding: 2px 0; } #modal-hw .modal-head h3 { flex: 1; margin: 0; color: #fb923c; }
-    #modal-hw .abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; } #modal-hw .abas button[aria-selected="true"] { background: #fb923c; color: #21110c; }
-    #modal-hw .corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; } #modal-hw .bl { background: #3a1f3f; border: 1px solid #7c4a5a; border-radius: 8px; padding: 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-hw .bl h4 { margin: 0 0 4px; color: #fdba74; font-size: 13px; } #modal-hw .bl p { margin: 2px 0; }
-    #modal-hw .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-hw .mut { opacity: .7; } #modal-hw .ok { color: #4ade80; } #modal-hw .ruim { color: #fb7185; }
+    #modal-hw .hw-card { width: min(860px, 98vw); max-height: calc(100dvh - 14px); overflow: hidden; display: flex; flex-direction: column; padding: 8px 12px; background: linear-gradient(#2a1630, #1c0f22); }
+    #modal-hw .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; } #modal-hw .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); color: #fb923c; }
+    #modal-hw .abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; flex-shrink: 0; } #modal-hw .abas button[aria-selected="true"] { background: #fb923c; color: #21110c; font-weight: 700; }
+    #modal-hw .corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; } #modal-hw .bl { background: #3a1f3f; border: 1px solid #7c4a5a; border-radius: 8px; padding: 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-hw .bl h4 { margin: 0 0 4px; color: #fdba74; font-size: 13.5px; } #modal-hw .bl p { margin: 2px 0; }
+    #modal-hw .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-hw .mut { opacity: .78; } #modal-hw .ok { color: #4ade80; } #modal-hw .ruim { color: #fb7185; }
     #modal-hw .hw-est { color: var(--cor-est, #facc15); font-weight: 600; }
     #modal-hw .hw-est.arco { background: linear-gradient(90deg, #facc15, #f472b6, #c084fc, #38bdf8, #4ade80); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    #modal-hw .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; } #modal-hw .lin { background: #24112a; border-radius: 8px; padding: 6px; font-size: 11.5px; } #modal-hw .lin .ph { font-size: 34px; text-align: center; }
+    #modal-hw .hw-hero { display: grid; grid-template-columns: minmax(150px, 210px) 1fr; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; border: 1px solid #c26a3c; margin-bottom: 8px; background: linear-gradient(95deg, rgba(22,10,30,.72), rgba(22,10,30,.88) 55%, rgba(22,10,30,.94)), url('../../../${ARTES_HW.banner}') center 20% / cover no-repeat; }
+    #modal-hw .hw-hero-fig { display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(251,146,60,.22), rgba(18,9,26,.72)); border: 1px solid #f59e0b66; border-radius: 10px; padding: 6px; height: clamp(148px, 34dvh, 210px); }
+    #modal-hw .hw-hero-fig img { width: 100%; height: calc(100% - 18px); object-fit: contain; object-position: center bottom; filter: drop-shadow(0 4px 10px #000b); }
+    #modal-hw .hw-hero-fig span { font-size: 11px; color: #fde68a; font-weight: 700; margin-top: 2px; }
+    #modal-hw .hw-marcos { display: flex; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
+    #modal-hw .hw-marco { background: rgba(18,9,26,.8); border: 1px solid #fb923c66; border-radius: 6px; padding: 3px 7px; font-size: 11px; }
+    @media (max-width: 560px) { #modal-hw .hw-hero { grid-template-columns: 1fr; } #modal-hw .hw-hero-fig { height: 150px; } }
+    #modal-hw .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 7px; } #modal-hw .lin { background: #24112a; border: 1px solid #5a3466; border-radius: 8px; padding: 7px; font-size: 11.5px; } #modal-hw .lin .ph { font-size: 34px; text-align: center; }
     #modal-hw .res { display: flex; flex-wrap: wrap; gap: 8px; }
-    #modal-hw .res-card { width: 88px; text-align: center; font-size: 10.5px; line-height: 1.25; }
-    #modal-hw .res-mold { position: relative; width: 88px; height: 110px; border-radius: 9px; border: 2px solid var(--cor-m, #9ca3af); background: radial-gradient(circle, #351b42, #180c20); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 3px; }
+    #modal-hw .res-card { width: 96px; text-align: center; font-size: 10.5px; line-height: 1.25; }
+    #modal-hw .res-mold { position: relative; width: 96px; height: 120px; border-radius: 9px; border: 2px solid var(--cor-m, #9ca3af); background: radial-gradient(circle, #351b42, #180c20); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 3px; }
     #modal-hw .res-mold.m5 { box-shadow: 0 0 12px #fbbf2488; animation: hw-ouro 1.8s ease-in-out infinite alternate; }
     @keyframes hw-ouro { from { box-shadow: 0 0 6px #fbbf2466; } to { box-shadow: 0 0 16px #f59e0bcc; } }
-    #modal-hw .res-mold img.sp { width: 78%; height: 78%; object-fit: contain; z-index: 1; }
+    #modal-hw .res-mold img.sp { width: 82%; height: 82%; object-fit: contain; z-index: 1; }
     #modal-hw .res-mold img.ov { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; }
-    #modal-hw img.ph { display: block; width: 100%; height: 96px; object-fit: contain; } #modal-hw .ico { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; } #modal-hw .capa { width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 6px; }
+    #modal-hw img.ph { display: block; width: 100%; height: 114px; object-fit: contain; } #modal-hw .ico { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; } #modal-hw .capa { width: 100%; max-height: 150px; object-fit: cover; object-position: center 25%; border-radius: 8px; display: block; margin-bottom: 6px; }
     #modal-hw table { width: 100%; border-collapse: collapse; font-size: 11.5px; } #modal-hw td, #modal-hw th { padding: 2px 4px; text-align: left; border-bottom: 1px solid #4a2a50; }`;
   document.head.append(css);
   const modal = document.createElement('div'); modal.id = 'modal-hw'; modal.className = 'modal-bg';
@@ -52,13 +59,32 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
 
   function abaBanner() {
     const h = hw(), n = h.contador[EDICAO.id] || 0, m = H.proximosMarcos(n), comuns = save().idle.exp?.tickets || 0;
-    let s = `<img class="capa" src="../../../${ARTES_HW.banner}" alt="Banner de Halloween"><div class="bl"><h4>${esc(EDICAO.nome)} · ${EDICAO.inicio} a ${EDICAO.fim}</h4><p>${I(ARTES_HW.ticket)} Tickets de Halloween: <b>${h.tickets}</b> <span class="mut">(tickets comuns da Campanha: ${comuns}, saldo separado)</span></p>
-      <p>Contador desde o último Tier 5: <b>${n}</b> (total de invocações: ${h.total || 0}) · faltam <b>${m.ate10}</b> para a garantia de 10 (T3/T4), <b>${m.ate50}</b> para a de 50 (T4) e <b>${m.ate100}</b> para a de 100 (T5).</p>
-      <div class="ln"><button class="btn-pri" data-inv="1" ${h.tickets >= 1 ? '' : 'disabled'}>Invocar 1</button><button class="btn-pri" data-inv="10" ${h.tickets >= 10 ? '' : 'disabled'}>Invocar 10</button>${confirmar === 'pacote' ? `<button class="btn-pri" data-pacote-ok="1">Confirmar: ${BANNER_HW.pacote.tickets} tickets por ${BANNER_HW.pacote.diamantes}💎</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-sec" data-pacote="1">Comprar ${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button>`}</div>
-      <p class="mut">Tier 5 também pode sair por sorte (3%); quando sai, a contagem reinicia. Tiers 3 e 4 não reiniciam. Tickets vêm dos marcos da Torre (5 a cada 10 andares) ou da compra. Os Oníricos obtidos continuam na coleção depois do evento; tickets e contador ficam guardados se a edição voltar.</p></div>`;
-    if (ultimos.length) s += `<div class="bl"><h4>Resultado</h4><div class="res">${ultimos.map((r) => { const lin = LINHAGENS_HW.find((l) => l.especie === r.especie); const sp = lin ? lin.arte[formaDoTier(r.tier)] : ''; const cls = infoClasse(lin?.classe || r.especie); return `<div class="res-card" style="color:${COR[r.tier]}"><div class="res-mold ${r.tier >= 5 ? 'm5' : ''}" style="--cor-m:${COR[r.tier]}">${sp ? `<img class="sp" src="../../../${sp}" alt="${esc(r.especie)}">` : ''}<img class="ov" src="../../../assets/confusion/interface/banner/moldura-${r.tier}.png" alt="" onerror="this.style.display='none'"></div><b>#${r.pos} ${esc(r.especie)}</b><br>T${r.tier} · ${r.estrelas || 1}★ · ${esc(cls.nome)}${r.garantia ? `<br>gar.${r.garantia}` : ''}</div>`; }).join('')}</div></div>`;
-    s += `<div class="bl"><h4>Chances</h4><table><tr><th>Tier</th>${[1, 2, 3, 4, 5].map((t) => `<th>T${t}</th>`).join('')}</tr><tr><td>Normal</td>${[1, 2, 3, 4, 5].map((t) => `<td>${(BANNER_HW.chances[t] * 100).toFixed(0)}%</td>`).join('')}</tr><tr><td>A cada 10</td><td>–</td><td>–</td><td>${BANNER_HW.garantia10[3] * 100}%</td><td>${BANNER_HW.garantia10[4] * 100}%</td><td>–</td></tr><tr><td>A cada 50</td><td colspan="3"></td><td>100%</td><td></td></tr><tr><td>A cada 100</td><td colspan="4"></td><td>100%</td></tr></table></div>`;
-    s += `<div class="bl"><h4>Oníricos exclusivos</h4><div class="grade">${LINHAGENS_HW.map((l) => { const cls = infoClasse(l.classe || l.especie); return `<div class="lin">${ph(l, 0)}<b style="color:${COR[l.tier]}">T${l.tier} · ${esc(l.especie)}</b><br><span class="mut">${cls.icone} ${esc(cls.nome)} · ${esc(l.elemento)}</span><p>${esc(l.resumo)}</p>${(KITS[l.especie] || []).map((k) => `<div>${k.icone} ${esc(k.nome)} <span class="mut">⟳${k.cd}</span></div>`).join('')}</div>`; }).join('')}</div></div>`;
+    const abyssar = LINHAGENS_HW.find((l) => l.especie === 'Abyssar') || LINHAGENS_HW[LINHAGENS_HW.length - 1];
+    const arteDestaque = abyssar?.arte?.[2] || abyssar?.arte?.[0] || ARTES_HW.banner;
+    let s = `<div class="hw-hero">
+      <div class="hw-hero-fig">
+        <img src="../../../${arteDestaque}" alt="${esc(abyssar?.especie || 'Abyssar')}">
+        <span>★ Destaque T${abyssar?.tier || 5} · ${esc(abyssar?.especie || 'Abyssar')}</span>
+      </div>
+      <div>
+        <h4 style="margin:0 0 4px;color:#fdba74;font-size:15px">${esc(EDICAO.nome)} · ${EDICAO.inicio} a ${EDICAO.fim}</h4>
+        <p style="margin:2px 0">${I(ARTES_HW.ticket)} Tickets de Halloween: <b>${h.tickets}</b> <span class="mut">(comuns: ${comuns}, saldo separado)</span></p>
+        <div class="hw-marcos">
+          <span class="hw-marco">Contador T5: <b>${n}</b> (total: ${h.total || 0})</span>
+          <span class="hw-marco">10★ T3/T4: faltam <b>${m.ate10}</b></span>
+          <span class="hw-marco">50★ T4: faltam <b>${m.ate50}</b></span>
+          <span class="hw-marco">100★ T5: faltam <b>${m.ate100}</b></span>
+        </div>
+        <div class="ln">
+          <button class="btn-pri" data-inv="1" ${h.tickets >= 1 ? '' : 'disabled'}>Invocar ×1</button>
+          <button class="btn-pri" data-inv="10" ${h.tickets >= 10 ? '' : 'disabled'}>Invocar ×10</button>
+          ${confirmar === 'pacote' ? `<button class="btn-pri" data-pacote-ok="1">Confirmar: ${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-sec" data-pacote="1">Comprar ${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button>`}
+        </div>
+      </div>
+    </div>`;
+    if (ultimos.length) s += `<div class="bl"><h4>Resultado (${ultimos.length})</h4><div class="res">${ultimos.map((r) => { const lin = LINHAGENS_HW.find((l) => l.especie === r.especie); const sp = lin ? lin.arte[formaDoTier(r.tier)] : ''; const cls = infoClasse(lin?.classe || r.especie); return `<div class="res-card" style="color:${COR[r.tier]}"><div class="res-mold ${r.tier >= 5 ? 'm5' : ''}" style="--cor-m:${COR[r.tier]}">${sp ? `<img class="sp" src="../../../${sp}" alt="${esc(r.especie)}">` : ''}<img class="ov" src="../../../assets/confusion/interface/banner/moldura-${r.tier}.png" alt="" onerror="this.style.display='none'"></div><b>#${r.pos} ${esc(r.especie)}</b><br>T${r.tier} · ${r.estrelas || 1}★ · ${esc(cls.nome)}${r.garantia ? `<br>gar.${r.garantia}` : ''}</div>`; }).join('')}</div></div>`;
+    s += `<div class="bl"><h4>Oníricos exclusivos da edição</h4><div class="grade">${LINHAGENS_HW.map((l) => { const cls = infoClasse(l.classe || l.especie); return `<div class="lin">${ph(l, 0)}<b style="color:${COR[l.tier]}">T${l.tier} · ${esc(l.especie)}</b><br><span class="mut">${cls.icone} ${esc(cls.nome)} · ${esc(l.elemento)}</span><p>${esc(l.resumo)}</p>${(KITS[l.especie] || []).map((k) => `<div>${k.icone} ${esc(k.nome)} <span class="mut">⟳${k.cd}</span></div>`).join('')}</div>`; }).join('')}</div></div>`;
+    s += `<div class="bl"><h4>Chances e regras</h4><table><tr><th>Tier</th>${[1, 2, 3, 4, 5].map((t) => `<th>T${t}</th>`).join('')}</tr><tr><td>Normal</td>${[1, 2, 3, 4, 5].map((t) => `<td>${(BANNER_HW.chances[t] * 100).toFixed(0)}%</td>`).join('')}</tr><tr><td>A cada 10</td><td>–</td><td>–</td><td>${BANNER_HW.garantia10[3] * 100}%</td><td>${BANNER_HW.garantia10[4] * 100}%</td><td>–</td></tr><tr><td>A cada 50</td><td colspan="3"></td><td>100%</td><td></td></tr><tr><td>A cada 100</td><td colspan="4"></td><td>100%</td></tr></table><p class="mut" style="margin-top:4px">Tier 5 também pode sair por sorte (3%); quando sai, a contagem reinicia. Tickets e contador ficam guardados se a edição voltar.</p></div>`;
     return s;
   }
   function abaColecao() {
@@ -70,11 +96,11 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
       const lin = LINHAGENS_HW.find((l) => l.especie === m.especie), inf = H.infoEvolucao(m);
       const t = tierDe(m), est = estrelasDe(m), cls = infoClasse(lin?.classe || m.especie);
       const b0 = BONUS_TIER(t), bEst = bonusEstrelas(est), b1 = inf ? BONUS_TIER(inf.para) : null;
-      s += `<div class="bl" style="display:grid;grid-template-columns:96px 1fr;gap:8px"><img class="ph" src="../../../${arteDoIndividuo(m)}" alt=""><div><h4 style="color:${COR[t]}">${esc(m.especie)} · T${t} · forma ${FORMA[formaDoTier(t)]} · nv.${m.nivel || 1}</h4>
+      s += `<div class="bl" style="display:grid;grid-template-columns:112px 1fr;gap:10px"><img class="ph" src="../../../${arteDoIndividuo(m)}" alt=""><div><h4 style="color:${COR[t]}">${esc(m.especie)} · T${t} · forma ${FORMA[formaDoTier(t)]} · nv.${m.nivel || 1}</h4>
         <p>${cls.icone} Classe: <b>${esc(cls.nome)}</b> · Elemento: <b>${esc(lin?.elemento || 'neutro')}</b> · Estrelas: ${htmlEstrelas(est)}</p>
         <p class="mut">Bônus Tier T${t}: ${fmtBonus(b0)} · Bônus ${est}★: ${fmtBonus(bEst)}</p>`;
       if (!inf) s += '<p class="ok">Tier máximo (T5).</p>';
-      else s += `<p>Próxima forma: <b>${FORMA[inf.formaNova]}</b> ${inf.formaNova !== inf.formaAtual ? `<img src="../../../${inf.arteNova}" alt="próxima forma" style="height:56px;vertical-align:middle">` : '(mesma forma)'}</p><p>Custo: <b>${inf.custo}🍬</b> · ganho de tier: vida +${Math.round((b1.hp - b0.hp) * 100)}%, ataque +${Math.round((b1.atk - b0.atk) * 100)}%, defesa +${Math.round((b1.def - b0.def) * 100)}%</p>
+      else s += `<p>Próxima forma: <b>${FORMA[inf.formaNova]}</b> ${inf.formaNova !== inf.formaAtual ? `<img src="../../../${inf.arteNova}" alt="próxima forma" style="height:64px;vertical-align:middle">` : '(mesma forma)'}</p><p>Custo: <b>${inf.custo}🍬</b> · ganho de tier: vida +${Math.round((b1.hp - b0.hp) * 100)}%, ataque +${Math.round((b1.atk - b0.atk) * 100)}%, defesa +${Math.round((b1.def - b0.def) * 100)}%</p>
         <div class="ln">${confirmar === `evo:${i}` ? `<button class="btn-pri" data-evo-ok="${i}">Confirmar evolução (−${inf.custo}🍬)</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-pri" data-evo="${i}" ${h.doces >= inf.custo ? '' : 'disabled'}>Evoluir para T${inf.para}</button>`}</div>`;
       s += '</div></div>';
     }
@@ -107,11 +133,12 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
     }
     return s;
   }
-  function render() {
+  function render(zerarScroll = false) {
     $('#hw-abas').innerHTML = ABAS.map((a, i) => `<button class="btn-sec" aria-selected="${i === aba}" data-aba="${i}">${a}</button>`).join('');
     $('#hw-corpo').innerHTML = (aba === 0 && ultimos.length ? `<div class="ln"><button class="btn-pri" data-rever-hw="1">🃏 ${reveladosHW.length && reveladosHW.every(Boolean) ? 'Rever cartas' : 'Revelar cartas'}</button></div>` : '') + [abaBanner, abaColecao, abaTorre, abaLoja, abaPocoes][aba]();
+    if (zerarScroll) $('#hw-corpo').scrollTop = 0;
   }
-  function abrir(a = aba) { if (batalhaBloqueando() || tela.aberta()) return; aba = a; confirmar = null; render(); abrirModal('modal-hw'); }
+  function abrir(a = aba) { if (batalhaBloqueando() || tela.aberta()) return; aba = a; confirmar = null; render(true); abrirModal('modal-hw'); }
 
   // ---------- Torre: entrar com carregamento e arena em tela inteira ----------
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -154,7 +181,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button, input'); if (!t) return; const d = t.dataset;
     if (t.id === 'hw-fechar') { fecharModal('modal-hw'); return; }
-    if (d.aba !== undefined) { aba = Number(d.aba); confirmar = null; render(); return; }
+    if (d.aba !== undefined) { aba = Number(d.aba); confirmar = null; render(true); return; }
     if (d.cancelar) { confirmar = null; render(); return; }
     if (d.inv) { const r = H.invocarHW(save(), Number(d.inv)); if (!r.ok) mostrarToast(r.motivo, 2800); else { ultimos = r.resultados; salvar(); revelarHW(); } render(); return; }
     if (d.reverHw) { revelarHW(); return; }

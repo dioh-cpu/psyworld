@@ -695,14 +695,27 @@ export function resgatarLojaVoto(save, item) {
   return { ok: true };
 }
 
+function formatarEfeitoEvento(ev, padrao) {
+  if (!ev) return padrao;
+  if (ev.efeito) return ev.efeito;
+  const partes = [];
+  const drop = Math.round((ev.bonus?.drop || 0) * 100);
+  const exp = Math.round((ev.bonus?.xp || ev.bonus?.captura || 0) * 100);
+  if (drop > 0) partes.push(`+${drop}% Drop`);
+  if (exp > 0) partes.push(`+${exp}% Bônus`);
+  return partes.length ? partes.join(' · ') : padrao;
+}
+
 export function resumoEventosAtuais(agoraMs = Date.now()) {
   const ev = activeEvents(agoraMs);
   const r = raidAt(agoraMs);
   const restanteMin = r.aberto ? Math.max(1, Math.ceil((r.inicioMs + 60 * 60000 - agoraMs) / 60000)) : 0;
   const abreEmMin = !r.aberto ? Math.max(1, Math.ceil((r.proximoMs - agoraMs) / 60000)) : 0;
+  const semanalBase = ev.semanal || { nome: 'Lua Prateada', efeito: '+10% XP' };
+  const mensalBase = ev.mensal || { nome: 'Temporada Atual', efeito: 'Bônus mensal' };
   return {
-    semanal: ev.semanal || { nome: 'Lua Prateada', efeito: '+XP' },
-    mensal: ev.mensal || { nome: 'Temporada Atual', efeito: 'Bônus mensal' },
+    semanal: { ...semanalBase, efeito: formatarEfeitoEvento(semanalBase, '+10% Bônus Semanal') },
+    mensal: { ...mensalBase, efeito: formatarEfeitoEvento(mensalBase, 'Bônus mensal') },
     raid: { ...r, restanteMin, abreEmMin },
     passMax: PASS_LEVELS,
     loginCiclo: LOGIN_CYCLE.length,
