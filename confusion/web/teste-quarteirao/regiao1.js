@@ -50,7 +50,7 @@ import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
 import { iniciarHalloween } from './regiao1-halloween.js';
-import { iniciarConta } from './regiao1-conta.js';
+import { iniciarConta, migrarInicialNoctarn } from './regiao1-conta.js';
 import { migrarHW } from './regiao1-halloween-regras.js';
 import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
@@ -177,6 +177,7 @@ try {
 } catch (_) {}
 garantirEstadoIdle(save);
 migrarHW(save); // nomes definitivos dos exclusivos e ids estáveis para Equipes
+const migrouInicialNoctarn = migrarInicialNoctarn(save); // Noctarn inicial antigo vira Penumbrio; cópias de banner são preservadas
 
 let ultimoBackupMs = 0;
 let avisouFalhaSave = false;
@@ -2389,7 +2390,7 @@ window.regiaoReinos = iniciarReinos({
   estrategia: () => window.regiaoEstrategia,
 });
 window.regiaoEstrategia.aoSair = () => window.regiaoReinos.voltar();
-window.regiaoConta = iniciarConta({ getSave: () => save, salvar: salvarEstado, mostrarToast, chaveSave: SAVE_KEY_REGIAO1, resetarSave: () => { save = criarEstadoInicial(); garantirEstadoIdle(save); migrarHW(save); }, serializar: (s) => serializarEstado(s) });
+window.regiaoConta = iniciarConta({ getSave: () => save, salvar: salvarEstado, mostrarToast, chaveSave: SAVE_KEY_REGIAO1, resetarSave: () => { save = criarEstadoInicial(); garantirEstadoIdle(save); migrarHW(save); migrarInicialNoctarn(save); }, serializar: (s) => serializarEstado(s) });
 window.regiaoHW = iniciarHalloween({ getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, tela: telaBatalha, batalhaBloqueando, questFeita: (q) => save.quests?.[q] === 'concluida' });
 const voltarAoPonto = async (r) => { if (mapaAtual?.id !== r.mapa) await entrarNoMapa(r.mapa, [r.px, r.py], false); const w = P(r.px, r.py); estado.x = w.x; estado.z = w.z; primeiroQuadro = true; };
 // Expansão 1: banner, caçadas, guilda, fazenda, oficina, calabouço, crises e herói × vilão (regras em regiao1-exp-regras.js)
@@ -2441,6 +2442,7 @@ const inicialId = (inicialParam && MAPAS[inicialParam]) ? inicialParam : (MAPAS[
 const spawnInicial = (!inicialParam && inicialId === save.mapaAtual && save.posicaoPx) ? save.posicaoPx : null;
 entrarNoMapa(inicialId, spawnInicial, false).then(() => {
   registrarCodexArea(garantirEstadoIdle(save), inicialId);
+  if (migrouInicialNoctarn) salvarEstado();
   idleUI.atualizarHudIdle();
   idleUI.verificarGanhoOffline(false);
   if (!params.get('semtutorial')) idleUI.iniciarTutorial(false);

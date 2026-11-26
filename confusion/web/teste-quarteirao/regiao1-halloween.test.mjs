@@ -100,7 +100,7 @@ test('equipes: vagas por id estável; vaga vazia conserva as outras; trocar e su
 test('conta nova: inicial T1 nível 5 na primeira vaga, 20.000💎 e 10 dias de VIP uma única vez', () => {
   const s = { recompensas: { gold: 0, diamantes: 0 }, idle: { equipe: [{ especie: 'Noctarn', nivel: 5, uid: 'o0' }] } };
   C.prepararContaNova(s, { userId: 'u1', inicial: 'Brasinha', agora: 1000 });
-  assert.equal(s.idle.equipe[0].especie, 'Brasinha'); assert.equal(s.idle.equipe[0].nivel, 5); assert.equal(s.idle.equipe[0].tierHW, undefined); assert.deepEqual(C.INICIAIS.map((x) => x.linha), ['Noctarn', 'Ignavor', 'Vaelith', 'Brotavel', 'Solarin']); assert.equal(s.idle.formacao[0], 'ini0');
+  assert.equal(s.idle.equipe[0].especie, 'Brasinha'); assert.equal(s.idle.equipe[0].nivel, 5); assert.equal(s.idle.equipe[0].tierHW, undefined); assert.deepEqual(C.INICIAIS.map((x) => x.linha), ['Penumbrio', 'Ignavor', 'Vaelith', 'Brotavel', 'Solarin']); assert.equal(s.idle.formacao[0], 'ini0');
   assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.conta.vipAte, 1000 + 10 * 86400000);
   C.prepararContaNova(s, { userId: 'u1', inicial: 'Brasinha', agora: 5000 }); assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.idle.equipe.filter((m) => m.inicial).length, 1);
   assert.equal(C.diasVip(s, 1000), 10); assert.equal(C.vipAtivo(s, 1000 + 11 * 86400000), false);

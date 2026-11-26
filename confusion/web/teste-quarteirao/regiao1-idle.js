@@ -121,7 +121,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
       coletarOvos: true,
     },
     codex: {
-      especies: { Noctarn: { visto: true, abates: 0, capturas: 1 } },
+      especies: { Penumbrio: { visto: true, abates: 0, capturas: 1 } },
       areasVisitadas: { C0: true },
       bosses: {},
       itens: {},
@@ -134,7 +134,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
       ingredientes: { erva_costeira: 3, cristal_bruto: 1 },
     },
     equipe: [
-      { especie: 'Noctarn', nivel: 5, xp: xpDoNivel(5), raridade: 3, forma: 'natural' },
+      { especie: 'Penumbrio', nivel: 5, xp: xpDoNivel(5), raridade: 1, forma: 'natural', inicial: true, origem: 'inicial-padrao', uid: 'ini0' },
     ],
     login: { streak: 0, lastDay: -1 },
     passe: { season: '', xp: 0, premium: false, claimed: 0, claimedPremium: 0 },

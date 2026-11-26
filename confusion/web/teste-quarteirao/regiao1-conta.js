@@ -11,7 +11,7 @@ const DIA = 86400000;
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // As cinco linhas iniciais: começam na forma base
 export const INICIAIS = [
-  { linha: 'Noctarn', especie: 'Penumbrio', elemento: 'Noturno', papel: 'Ataque' },
+  { linha: 'Penumbrio', especie: 'Penumbrio', elemento: 'Noturno', papel: 'Ataque' },
   { linha: 'Ignavor', especie: 'Brasinha', elemento: 'Fogo', papel: 'Ataque' },
   { linha: 'Vaelith', especie: 'Gotalume', elemento: 'Água', papel: 'Suporte' },
   { linha: 'Brotavel', especie: 'Sementil', elemento: 'Planta', papel: 'Defesa' },
@@ -22,14 +22,53 @@ const PENDENTE = 'cw-inicial-pendente', LIBERADO = 'cw-gate-ok';
 // ---------- regras puras (testáveis) ----------
 export const vipAtivo = (save, agora = Date.now()) => Boolean(save?.conta?.vipAte && save.conta.vipAte > agora);
 export const diasVip = (save, agora = Date.now()) => (vipAtivo(save, agora) ? Math.ceil((save.conta.vipAte - agora) / DIA) : 0);
+
+// Migra somente o Noctarn concedido como inicial. Oníricos com origem de banner
+// permanecem na equipe; a forma base desta linhagem é Penumbrio.
+export function migrarInicialNoctarn(save) {
+  const idle = save?.idle;
+  if (!idle || !Array.isArray(idle.equipe)) return false;
+  const eq = idle.equipe;
+  const idxMarcado = eq.findIndex((m) => m?.especie === 'Noctarn' && (m.inicial === true || m.uid === 'ini0') && m.origem !== 'banner' && !m.evento);
+  const idxConta = save.conta?.inicial === 'Noctarn'
+    ? eq.findIndex((m) => m?.especie === 'Noctarn' && m.origem !== 'banner' && !m.evento)
+    : -1;
+  const codexNoctarn = idle.codex?.especies?.Noctarn;
+  const idxDefault = eq.findIndex((m, i) => i === 0 && m?.especie === 'Noctarn' && m.origem !== 'banner' && !m.evento
+    && (m.uid === 'o0' || !m.uid) && m.nivel >= 5 && !m.tierHW
+    && codexNoctarn?.capturas > 0 && !(codexNoctarn.abates > 0));
+  const idx = idxMarcado >= 0 ? idxMarcado : idxConta >= 0 ? idxConta : idxDefault;
+  if (idx < 0) return false;
+
+  const membro = eq[idx];
+  membro.especie = 'Penumbrio';
+  membro.inicial = true;
+  membro.origem = idx === idxDefault ? 'inicial-padrao' : 'inicial';
+  if (save.conta?.inicial === 'Noctarn') save.conta.inicial = 'Penumbrio';
+
+  const especies = idle.codex?.especies;
+  if (especies) {
+    especies.Penumbrio = { ...(especies.Penumbrio || {}), visto: true, capturas: Math.max(1, especies.Penumbrio?.capturas || 0) };
+    if (especies.Noctarn) especies.Noctarn = { ...especies.Noctarn, capturas: eq.some((m) => m?.especie === 'Noctarn') ? Math.max(1, especies.Noctarn.capturas || 0) : 0 };
+  }
+  return true;
+}
 // Aplica o inicial e o bônus numa conta nova (idempotente: a concessão fica registrada no save)
 export function prepararContaNova(save, { userId, inicial, agora = Date.now(), novo = true }) {
   const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial) || INICIAIS[0];
   save.conta = save.conta || {};
   save.conta.uid = userId; save.conta.inicial = lin.especie;
   const idle = save.idle; idle.equipe = idle.equipe || [];
-  if (!idle.equipe.some((m) => m.inicial)) {
-    idle.equipe.unshift({ especie: lin.especie, nivel: 5, xp: xpTotal(5), raridade: 1, forma: 'natural', inicial: true, uid: 'ini0' });
+  migrarInicialNoctarn(save);
+  const padrao = idle.equipe.findIndex((m) => m.origem === 'inicial-padrao');
+  if (novo && padrao >= 0) {
+    const anterior = idle.equipe[padrao];
+    idle.equipe[padrao] = { especie: lin.especie, nivel: 5, xp: xpTotal(5), raridade: 1, forma: 'natural', inicial: true, origem: 'inicial', uid: anterior.uid || 'ini0' };
+    const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== idle.equipe[padrao].uid);
+    idle.formacao = [idle.equipe[padrao].uid, ...resto].slice(0, 4);
+    while (idle.formacao.length < 4) idle.formacao.push(null);
+  } else if (!idle.equipe.some((m) => m.inicial)) {
+    idle.equipe.unshift({ especie: lin.especie, nivel: 5, xp: xpTotal(5), raridade: 1, forma: 'natural', inicial: true, origem: 'inicial', uid: 'ini0' });
     const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== 'ini0');
     idle.formacao = ['ini0', ...resto].slice(0, 4);
     while (idle.formacao.length < 4) idle.formacao.push(null);

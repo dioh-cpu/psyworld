@@ -81,6 +81,7 @@ const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 2], ['epica', 0.07, 3], ['
 export function poolBanner() {
   const vistos = new Set(), pool = [];
   for (const r of Object.values(REINOS)) for (const l of r.linhagens) if (!vistos.has(l.nome)) { vistos.add(l.nome); const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10; pool.push({ especie: l.nome, elemento: l.elemento, raridade: k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria' }); }
+  if (!vistos.has('Noctarn')) pool.push({ especie: 'Noctarn', elemento: 'trevas', raridade: 'epica' });
   return pool;
 }
 export function invocar(save, rng = Math.random) {
@@ -93,7 +94,7 @@ export function invocar(save, rng = Math.random) {
   if (garantia && alvo === 'comum') alvo = 'rara';
   const pool = poolBanner(); let cand = pool.filter((p) => p.raridade === alvo); if (!cand.length) cand = pool;
   const sorteado = cand[Math.floor(rng() * cand.length) % cand.length];
-  const nivel = 1, idle = save.idle; (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, raridade: RARIDADES.find((x) => x[0] === sorteado.raridade)[2], forma: 'natural' });
+  const nivel = 1, idle = save.idle; (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, raridade: RARIDADES.find((x) => x[0] === sorteado.raridade)[2], forma: 'natural', origem: 'banner', fonteBanner: 'adventurer', uid: `b${e.pulls}` });
   return { ok: true, ...sorteado };
 }
 

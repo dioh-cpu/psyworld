@@ -169,11 +169,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   })();
   function proximaForma(m) {
     const l = linhaDaEspecie(m.especie); if (!l) return null;
+    if (m.especie === 'Penumbrio') return { bloqueada: 'Noctarn é exclusivo dos banners.' };
     if (m.especie === l.inicial) return { para: l.atual, nivel: 5 }; if (m.especie === l.atual) return { para: l.evolucao, nivel: 10 }; return null;
   }
   function abaEvolucao() {
     const eq = save().idle.equipe || [];
-    return `<div class="bl"><h4>Evolução</h4><p class="mut">Cada linha evolui em dois degraus (níveis 5 e 10). Só as cinco linhas iniciais têm formas cadastradas por enquanto.</p>${eq.map((m, i) => { const f = proximaForma(m); if (!f) return `<p>${esc(m.especie)} nv.${m.nivel || 1}: <span class="mut">sem evolução disponível</span></p>`; const ok = (m.nivel || 1) >= f.nivel; return `<p>${esc(m.especie)} nv.${m.nivel || 1} → <b>${esc(f.para)}</b> (nv.${f.nivel}) ${ok ? `<button class="btn-pri" data-evoluir="${i}">Evoluir</button>` : '<span class="ruim">nível insuficiente</span>'}</p>`; }).join('')}</div>`;
+    return `<div class="bl"><h4>Evolução</h4><p class="mut">Cada linha evolui em dois degraus (níveis 5 e 10). Só as cinco linhas iniciais têm formas cadastradas por enquanto.</p>${eq.map((m, i) => { const f = proximaForma(m); if (f?.bloqueada) return `<p>${esc(m.especie)} nv.${m.nivel || 1}: <span class="mut">${esc(f.bloqueada)}</span></p>`; if (!f) return `<p>${esc(m.especie)} nv.${m.nivel || 1}: <span class="mut">sem evolução disponível</span></p>`; const ok = (m.nivel || 1) >= f.nivel; return `<p>${esc(m.especie)} nv.${m.nivel || 1} → <b>${esc(f.para)}</b> (nv.${f.nivel}) ${ok ? `<button class="btn-pri" data-evoluir="${i}">Evoluir</button>` : '<span class="ruim">nível insuficiente</span>'}</p>`; }).join('')}</div>`;
   }
 
   // ---------- Caçadas e Calabouço ----------
