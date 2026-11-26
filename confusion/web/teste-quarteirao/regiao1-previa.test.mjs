@@ -241,3 +241,42 @@ test('Ajustes de telas (dioh293): evento semanal sem undefined, Mochila em categ
   assert.equal(hw.includes('hw-hero'), true);
   assert.equal(hw.includes("$('#hw-corpo').scrollTop = 0"), true);
 });
+
+test('Integração descanso-v1 e invocacao-v1 (PR #68): artes presentes em disco, poses de repouso e banners reais sem invenção', () => {
+  const ROOT = path.resolve(DIR, '..', '..', '..');
+  const assetsEsperados = [
+    'assets/confusion/interface/descanso-v1/sala.webp',
+    'assets/confusion/interface/descanso-v1/avatar-azazel.webp',
+    'assets/confusion/interface/descanso-v1/iniciais/brasinha.webp',
+    'assets/confusion/interface/descanso-v1/iniciais/gotalume.webp',
+    'assets/confusion/interface/descanso-v1/iniciais/penumbrio.webp',
+    'assets/confusion/interface/descanso-v1/iniciais/sementil.webp',
+    'assets/confusion/interface/descanso-v1/iniciais/solinho.webp',
+    'assets/confusion/interface/invocacao-v1/palco-adventurer.webp',
+    'assets/confusion/interface/invocacao-v1/palco-halloween.webp',
+    'assets/confusion/interface/invocacao-v1/capas/adventurer.webp',
+    'assets/confusion/interface/invocacao-v1/capas/halloween.webp',
+    'assets/confusion/interface/invocacao-v1/miniaturas/adventurer.webp',
+    'assets/confusion/interface/invocacao-v1/miniaturas/halloween.webp',
+    'assets/confusion/interface/invocacao-v1/tickets/adventurer.png',
+    'assets/confusion/interface/invocacao-v1/tickets/halloween.png',
+    'assets/confusion/interface/invocacao-v1/elenco/abyssar.webp',
+    'assets/confusion/interface/invocacao-v1/elenco/tatuveludo.webp',
+  ];
+  for (const rel of assetsEsperados) {
+    assert.equal(fs.existsSync(path.join(ROOT, rel)), true, `Asset ausente: ${rel}`);
+  }
+  const exp = fs.readFileSync(path.join(DIR, 'regiao1-expansao.js'), 'utf8');
+  const hw = fs.readFileSync(path.join(DIR, 'regiao1-halloween.js'), 'utf8');
+  assert.equal(exp.includes('descanso-v1/sala.webp'), true);
+  assert.equal(exp.includes('arteRepouso'), true);
+  assert.equal(exp.includes('invocacao-v1/palco-adventurer.webp'), true);
+  assert.equal(exp.includes('capas/adventurer.webp'), true);
+  assert.equal(hw.includes('invocacao-v1/palco-halloween.webp'), true);
+  assert.equal(hw.includes('capas/halloween.webp'), true);
+  // Sem banners inventados (Elementais/Quinzenal/Mensal genérico fora das edições reais)
+  assert.equal(exp.includes('miniaturas/quinzenal.webp'), false);
+  assert.equal(exp.includes('miniaturas/elementais.webp'), false);
+  assert.equal(hw.includes('miniaturas/quinzenal.webp'), false);
+  assert.equal(hw.includes('miniaturas/elementais.webp'), false);
+});

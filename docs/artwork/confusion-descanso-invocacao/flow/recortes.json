@@ -1,0 +1,180 @@
+{
+  "colunas": [
+    "penumbrio",
+    "brasinha",
+    "gotalume",
+    "sementil",
+    "solinho"
+  ],
+  "perfil_direito": {
+    "usar": "esquerda",
+    "espelhar_horizontalmente": true
+  },
+  "folhas": [
+    {
+      "arquivo": "01-folha-completa-20.png",
+      "linhas": [
+        {
+          "direcao": "frente",
+          "movimento": "walk"
+        },
+        {
+          "direcao": "costas",
+          "movimento": "idle"
+        },
+        {
+          "direcao": "costas",
+          "movimento": "walk"
+        },
+        {
+          "direcao": "esquerda",
+          "movimento": "idle"
+        }
+      ],
+      "resolucoes": [
+        {
+          "largura": 1920,
+          "altura": 1080,
+          "celula_largura": 384,
+          "celula_altura": 270,
+          "x": [
+            0,
+            384,
+            768,
+            1152,
+            1536
+          ],
+          "y": [
+            0,
+            270,
+            540,
+            810
+          ],
+          "apoio_y_local": 228
+        },
+        {
+          "largura": 1280,
+          "altura": 720,
+          "celula_largura": 256,
+          "celula_altura": 180,
+          "x": [
+            0,
+            256,
+            512,
+            768,
+            1024
+          ],
+          "y": [
+            0,
+            180,
+            360,
+            540
+          ],
+          "apoio_y_local": 152
+        }
+      ]
+    },
+    {
+      "arquivo": "02-caminhadas-10.png",
+      "linhas": [
+        {
+          "direcao": "frente",
+          "movimento": "walk"
+        },
+        {
+          "direcao": "costas",
+          "movimento": "walk"
+        }
+      ],
+      "resolucoes": [
+        {
+          "largura": 1920,
+          "altura": 1080,
+          "celula_largura": 384,
+          "celula_altura": 540,
+          "x": [
+            0,
+            384,
+            768,
+            1152,
+            1536
+          ],
+          "y": [
+            0,
+            540
+          ],
+          "apoio_y_local": 447
+        },
+        {
+          "largura": 1280,
+          "altura": 720,
+          "celula_largura": 256,
+          "celula_altura": 360,
+          "x": [
+            0,
+            256,
+            512,
+            768,
+            1024
+          ],
+          "y": [
+            0,
+            360
+          ],
+          "apoio_y_local": 298
+        }
+      ]
+    },
+    {
+      "arquivo": "03-repousos-10.png",
+      "linhas": [
+        {
+          "direcao": "costas",
+          "movimento": "idle"
+        },
+        {
+          "direcao": "esquerda",
+          "movimento": "idle"
+        }
+      ],
+      "resolucoes": [
+        {
+          "largura": 1920,
+          "altura": 1080,
+          "celula_largura": 384,
+          "celula_altura": 540,
+          "x": [
+            0,
+            384,
+            768,
+            1152,
+            1536
+          ],
+          "y": [
+            0,
+            540
+          ],
+          "apoio_y_local": 447
+        },
+        {
+          "largura": 1280,
+          "altura": 720,
+          "celula_largura": 256,
+          "celula_altura": 360,
+          "x": [
+            0,
+            256,
+            512,
+            768,
+            1024
+          ],
+          "y": [
+            0,
+            360
+          ],
+          "apoio_y_local": 298
+        }
+      ]
+    }
+  ]
+}
