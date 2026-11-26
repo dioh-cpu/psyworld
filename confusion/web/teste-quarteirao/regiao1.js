@@ -9,6 +9,7 @@ import { criarEspiritoIdle } from './espirito-idle.js';
 import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.js';
 import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { reforcosDoChefe } from './regiao1-encontros-regras.js';
+import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
 import {
   SAVE_KEY_REGIAO1,
   MARCOS_TELEPORTE,
@@ -976,16 +977,20 @@ function iniciarBatalha(tipo, entidade) {
   // formação da aba Equipes: cada Onírico na sua vaga, com o próprio nível e a arte do seu tier
   const aliados = membrosFormacao(idle).map(({ m, vaga }) => ({ especie: m.especie, nivel: m.nivel || 1, bonus: bonusDoMembro(m), vaga, arte: arteDoIndividuo(m) }));
   const raizDe = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
-  const artes = {}; let inimigos;
+  const artes = {}; let inimigos; let inimigosDrop;
   if (ehBoss) {
     const nv = Math.max(6, Math.round((defBoss.hp - 58) / 13)); artes[defBoss.nome] = raizDe(entidade.sprite);
     inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ...reforcosDoChefe(defBoss.id, nv).map((r) => [r.especie, r.nivel, r.elemento, { forma: r.forma, arte: r.arteForma }])];
+    inimigosDrop = inimigos;
   } else {
     artes[entidade.especie] = raizDe(entidade.sprite);
     const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
     outros.forEach((m) => { artes[m.especie] = raizDe(m.sprite); });
     inimigos = [[entidade.especie, entidade.nivel, undefined, { forma: entidade.forma, arte: entidade.forma ? entidade.arteForma : undefined }], ...outros.map((m) => [m.especie, m.nivel, undefined, { forma: m.forma, arte: m.forma ? m.arteForma : undefined }])]; // forma definida no encontro
+    inimigosDrop = [entidade, ...outros].map((m) => ({ especie: m.especie, elemento: m.elementoDrop || m.elemento }));
   }
+  batalhaAtiva.batalhaId = `man_${tipo}_${entidade.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  batalhaAtiva.inimigosDrop = inimigosDrop;
   telaBatalha.abrir({
     titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem', sub: ehBoss ? 'Campanha' : entidade.especie,
     arena: `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`,
@@ -1108,6 +1113,12 @@ function encerrarBatalha(vitoria) {
       } else {
         mostrarToast(`Vitória sobre ${b.entidade.especie}! (+25g, +20 XP)`, 3000);
       }
+    }
+    const dropFrag = aplicarDropsBatalhaManual(save, { batalhaId: b.batalhaId, inimigos: b.inimigosDrop || [], vitoria: true });
+    if (dropFrag.totalDropado > 0) {
+      const detalhe = Object.entries(dropFrag.porElemento).map(([el, q]) => `+${q} ${el}`).join(', ');
+      registrarLogIdle(idle, `🔮 Fragmento de Sonho (${detalhe})`, 'farm');
+      mostrarToast(`🔮 Fragmento de Sonho: ${detalhe}!`, 2600);
     }
     atualizarHudEstado();
     salvarEstado();

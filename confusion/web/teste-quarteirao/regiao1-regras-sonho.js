@@ -81,13 +81,17 @@ function marcarDerrotaPaga(save, id, cfg = FRAGMENTOS_SONHO_CFG) {
   }
 }
 
+function elementoDaEspecieResolvido(especie, elemento) {
+  return elemento || ELEMENTO_DA_ESPECIE[especie] || linhagemReinoDe(especie)?.elemento || 'neutro';
+}
+
 // Sorteia drop de 1% do elemento do inimigo derrotado. Cada derrotaId paga no máximo uma vez.
 export function sortearDropFragmentoSonho(
   save,
   { derrotaId = null, especie = null, elemento = null, rng = Math.random } = {},
   cfg = FRAGMENTOS_SONHO_CFG,
 ) {
-  const el = elemento || ELEMENTO_DA_ESPECIE[especie] || 'neutro';
+  const el = elementoDaEspecieResolvido(especie, elemento);
   const itemId = idFragmentoSonho(el);
   if (derrotaId && derrotasPagasDe(save).ids[derrotaId]) {
     return { ok: true, jaPago: true, dropou: false, qtd: 0, elemento: el, itemId, saldo: saldoFragmentoSonho(save, el) };
@@ -120,7 +124,9 @@ export function aplicarDropsOfflineFragmentos(
   let totalDropado = 0;
   for (let i = 0; i < total; i++) {
     const enc = Array.isArray(encontros) && encontros.length ? encontros[i % encontros.length] : null;
-    const el = (typeof enc === 'string' ? ELEMENTO_DA_ESPECIE[enc] || enc : enc?.elemento) || elemento || ELEMENTO_DA_ESPECIE[especie] || 'neutro';
+    const espEnc = typeof enc === 'string' ? enc : enc?.especie || especie;
+    const elEnc = typeof enc === 'string' ? ELEMENTO_DA_ESPECIE[enc] || null : enc?.elementoDrop || enc?.elemento;
+    const el = elementoDaEspecieResolvido(espEnc, elEnc || elemento);
     if (rng() < cfg.chanceDrop) {
       adicionarFragmentoSonho(save, el, 1);
       porElemento[el] = (porElemento[el] || 0) + 1;
@@ -129,6 +135,34 @@ export function aplicarDropsOfflineFragmentos(
   }
   if (loteId) marcarDerrotaPaga(save, loteId, cfg);
   return { ok: true, jaPago: false, totalDropado, porElemento, saldo: { ...fragmentosSonhoDe(save) } };
+}
+
+// Batalha manual: 1% por inimigo derrotado (1 vez por inimigo/batalhaId); derrota/recuo não paga nem consome.
+export function aplicarDropsBatalhaManual(
+  save,
+  { batalhaId = null, inimigos = [], vitoria = true, rng = Math.random } = {},
+  cfg = FRAGMENTOS_SONHO_CFG,
+) {
+  if (!vitoria || !Array.isArray(inimigos) || !inimigos.length) {
+    return { ok: true, jaPago: false, totalDropado: 0, porElemento: {}, resultados: [], saldo: { ...fragmentosSonhoDe(save) } };
+  }
+  const porElemento = {};
+  const resultados = [];
+  let totalDropado = 0;
+  inimigos.forEach((ini, idx) => {
+    const ehTupla = Array.isArray(ini);
+    const especie = ehTupla ? ini[0] : ini?.especie || null;
+    const elExplicito = ehTupla ? ini[2] || null : ini?.elementoDrop || ini?.elemento || null;
+    const derrotaId = (!ehTupla && ini?.derrotaId) || (batalhaId ? `manual:${batalhaId}:i${idx}` : null);
+    const res = sortearDropFragmentoSonho(save, { derrotaId, especie, elemento: elExplicito, rng }, cfg);
+    resultados.push(res);
+    if (res.dropou) {
+      porElemento[res.elemento] = (porElemento[res.elemento] || 0) + 1;
+      totalDropado += 1;
+    }
+  });
+  const jaPago = resultados.length > 0 && resultados.every((r) => r.jaPago);
+  return { ok: true, jaPago, totalDropado, porElemento, resultados, saldo: { ...fragmentosSonhoDe(save) } };
 }
 
 function linhagemReinoDe(especie) {
