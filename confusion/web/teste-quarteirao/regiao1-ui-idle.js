@@ -38,6 +38,8 @@ import {
   resumoEventosAtuais,
   registrarLogIdle,
 } from './regiao1-idle.js';
+import { revelarOvo, mostrarRecompensas } from './regiao1-revelacao.js';
+import { ARTE_DA_ESPECIE } from '../species.js';
 
 export function criarControladorIdleUI(ctx) {
   let promptPwa = null;
@@ -504,16 +506,26 @@ export function criarControladorIdleUI(ctx) {
     });
 
     $('mochila-ovos').innerHTML = idle.mochila.ovos.length
-      ? `<div class="card-row"><div><b>Ovos na Mochila: ${idle.mochila.ovos.length}</b><div class="sub">Próximo: ${idle.mochila.ovos[0].especie} (${idle.mochila.ovos[0].forma})</div></div><button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar</button></div>`
+      ? `<div class="card-row"><div><b>Ovos na Mochila: ${idle.mochila.ovos.length}</b><div class="sub">Próximo: ${idle.mochila.ovos[0].nome || idle.mochila.ovos[0].especie} · T${idle.mochila.ovos[0].tier || 2} (${idle.mochila.ovos[0].forma || 'natural'})</div></div><button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar</button></div>`
       : '<div class="sub">Nenhum ovo na mochila ainda. Caçe monstros ou ligue Auto-Caça para dropar ovos!</div>';
     $('btn-chocar-ovo')?.addEventListener('click', () => {
       const r = chocarPrimeiroOvo(save);
       if (r.ok) {
-        ctx.mostrarToast(`🥚 Nasceu um ${r.ovo.especie} (${r.ovo.forma})!`, 3200);
-        registrarLogIdle(idle, `🥚 Ovo chocado: ${r.ovo.especie}!`, 'farm');
+        const on = r.onirico || { especie: r.ovo.especie, tier: r.ovo.tier || 2, nivel: 1, estrelas: 1 };
+        ctx.mostrarToast(`🥚 Nasceu ${on.especie} (T${on.tier || on.raridade || 2} · Nv.${on.nivel || 1})!`, 3200);
+        registrarLogIdle(idle, `🥚 Ovo chocado: ${on.especie} (T${on.tier || 2} · Nv.${on.nivel || 1})!`, 'farm');
         ctx.salvar();
         atualizarHudIdle();
-        abrirMochila();
+        if (r.ovo.tipo === 'ovoT5' || r.ovo.temporada) {
+          revelarOvo({
+            edicao: r.ovo.tema || 'dinossauros',
+            ovo: { nome: r.ovo.nome || 'Ovo de Dinossauro', tier: r.ovo.tier || 5 },
+            recompensa: { especie: on.especie, tier: on.tier || 5, nivel: on.nivel || 1, estrelas: on.estrelas || 1, arte: ARTE_DA_ESPECIE[on.especie] || '' },
+            nivel: 100,
+          }).then(() => abrirMochila());
+        } else {
+          abrirMochila();
+        }
       }
     });
 
@@ -715,7 +727,13 @@ export function criarControladorIdleUI(ctx) {
     ctx.mostrarToast(resumo, 3200);
     ctx.salvar();
     atualizarHudIdle();
-    abrirTemporada(true);
+    const ovoT5 = r.pagos.find((p) => p.tipo === 'ovoT5');
+    if (ovoT5) {
+      revelarOvo({ edicao: 'dinossauros', ovo: { nome: ovoT5.texto, tier: 5 }, nivel: 100 }).then(() => abrirTemporada(true));
+    } else {
+      if (r.pagos.length) mostrarRecompensas(r.pagos.slice(0, 6).map((p) => ({ nome: p.texto, icone: p.tipo === 'diamantes' ? '💎' : p.tipo === 'tickets' ? '🎫' : p.tipo === 'ovo' ? '🥚' : '🎁', qtd: 1 })));
+      abrirTemporada(true);
+    }
   });
   $('btn-passe-comprar')?.addEventListener('click', () => {
     const save = ctx.getSave();

@@ -10,11 +10,12 @@ import { hwDe } from './regiao1-halloween-regras.js';
 import { POSICOES } from './regiao1-batalha-tela.js';
 import { ganharXpPasse } from './regiao1-passe-regras.js';
 import { fichaOnirico, evoluirFormaOnirico, tierDaUnidade, estrelasDaUnidade, raridadeRotulo, molduraDoTier } from './regiao1-criacao-regras.js';
+import { revelarInvocacao } from './regiao1-revelacao.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
 const dur = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return t >= 3600 ? `${Math.floor(t / 3600)}h${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}` : t >= 60 ? `${Math.floor(t / 60)}min${String(t % 60).padStart(2, '0')}s` : `${t}s`; };
-const RARO = { comum: '#9ca3af', rara: '#60a5fa', epica: '#c084fc', lendaria: '#fbbf24' };
+const RARO = { comum: '#9ca3af', incomum: '#4ade80', rara: '#60a5fa', epica: '#c084fc', lendaria: '#fbbf24' };
 const cacheArte = new Map();
 function resolverArte(principal, fallback) {
   if (!fallback || principal === fallback) return Promise.resolve(principal);
@@ -483,18 +484,25 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     $('#exp-corpo').innerHTML = h; destacar(tid);
   }
   function abaCrise() { const c = R.criseDe(save()); return `<div class="bl"><h4>🧟 ${esc(CRISE.cidade)}: ${esc(CRISE.nomes[c.estado])}</h4><p>Uma crise completa numa só cidade: saudável → contaminada → tomada → purificada → reconstruída. As mudanças aparecem no mapa, com zumbis nas ruas durante o surto. Estado próprio: não altera a Campanha nem os Reinos.</p><div class="ln"><button class="btn-pri" data-crise-abrir="1">Visitar a cidade</button></div></div>`; }
-  function abrir(p, a = 0) { if (batalhaBloqueando() || tela.aberta()) return; painel = p; aba = a; revendo = null; hvEstado = null; render(); abrirModal('modal-exp'); }
+  function abrir(p, a = 0) { if (batalhaBloqueando() || tela.aberta()) return; painel = p; aba = a; revendo = null; hvEstado = null; fichaUid = null; selEq = null; render(); abrirModal('modal-exp'); }
 
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t) return; const d = t.dataset;
-    if (t.id === 'exp-fechar') { fecharModal('modal-exp'); painel = null; return; }
+    if (t.id === 'exp-fechar') { fecharModal('modal-exp'); painel = null; fichaUid = null; selEq = null; return; }
     if (t.id === 'exp-rever') { revendo = d.tut; render(); return; }
     if (d.tutok) { exp().tut[d.tutok] = true; revendo = null; salvar(); render(); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(); return; }
     if (d.invocar) {
       const qtd = Number(d.invocar) === 10 ? 10 : 1;
       const r = R.invocarMultiplo(save(), qtd);
-      if (r.ok) { ultimasInvocacoes = r.resultados; salvar(); } else mostrarToast(r.motivo, 2800);
+      if (r.ok) {
+        ultimasInvocacoes = r.resultados;
+        salvar();
+        const cartas = r.resultados.map((c) => ({ especie: c.especie, tier: MOLDURAS_BANNER[c.raridade] || c.tier || 1, arte: ARTE_DA_ESPECIE[c.especie] || '', elemento: c.elemento }));
+        revelarInvocacao({ titulo: 'Banner de Oníricos', cartas }).then(() => render());
+      } else {
+        mostrarToast(r.motivo, 2800);
+      }
       render(); return;
     }
     if (Date.now() - (window.__eqArrastou || 0) < 300 && d.eqVaga !== undefined) return;

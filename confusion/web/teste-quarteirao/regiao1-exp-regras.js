@@ -215,11 +215,12 @@ export function materiaisDoAbate(cacada, rng = Math.random) {
 }
 
 // ---- Calabouço e Sanidade ----
-const POOL_CALABOUCO = ['Brotavel', 'Cervomusgo', 'Noctarn', 'Xistolim', 'Tatuveludo', 'Fanalino'];
+// Nenhum dos cinco iniciais aparece como inimigo na Região 1
+const POOL_CALABOUCO = ['Cervomusgo', 'Xistolim', 'Tatuveludo', 'Fanalino'];
 function poderLuta(equipe, nivel, rng) {
   const papeis = {};
   const al = equipe.slice(0, 3).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis }));
-  const ini = [0, 1].map((i) => criarUnidade({ id: `i${i}`, especie: 'Noctarn', nivel, lado: 'i', papeis }));
+  const ini = [0, 1].map((i) => criarUnidade({ id: `i${i}`, especie: POOL_CALABOUCO[i % POOL_CALABOUCO.length], nivel, lado: 'i', papeis }));
   const b = criarBatalha(al, ini); let g = 0;
   while (!b.fim && g++ < 200) executar(b, decidir(b, atorAtual(b), rng), rng);
   return { vitoria: b.fim === 'vitoria', hpFinal: al.reduce((a, u) => a + u.hp, 0) / al.reduce((a, u) => a + u.hpMax, 0) };

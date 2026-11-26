@@ -2,7 +2,9 @@
 // (alvos e valores já calculados pelo motor). Partículas, cortes, feixes e ondas vêm de regiao1-vfx-motor.js (canvas, mistura aditiva);
 // cut-in, números, câmera e reações ficam no DOM. Cada habilidade escrita à mão tem coreografia própria em FX_HABILIDADES (com `clip`
 // pronto para clipes do Flow); as geradas por arquétipo usam coreografias por elemento. Ultimates (recarga ≥ 5) têm cut-in.
-import { EFEITOS } from './regiao1-batalha-habilidades.js';
+import * as HAB from './regiao1-batalha-habilidades.js';
+import { pref, tocar } from './regiao1-sfx.js';
+const { EFEITOS } = HAB;
 import { camada, particula, rajada, convergir, onda, luz, corte, feixe, relampago, linhasFoco, circulo, coluna, raiosLuz, rachadura, projetil, livre, R } from './regiao1-vfx-motor.js';
 // Paletas de Halloween: abóbora (laranja + amarelo-vela + violeta de bruxa) e fantasma (verde-ecto + verde-túmulo)
 
@@ -30,6 +32,9 @@ export const FX_HABILIDADES = {
 // Cores do cut-in por linha (abóbora, vela, ecto, vitral, sangue)
 const CUT = { abobora: ['#c2410c', '#fde047'], vela: ['#b45309', '#fef3c7'], ecto: ['#047857', '#a7f3d0'], vitral: ['#5b21b6', '#fde68a'], sangue: ['#7f1d1d', '#ef4444'] };
 for (const [ids, c] of [[['muralha_ramas', 'pancada_abobora', 'casca_encantada'], CUT.abobora], [['procissao_luz'], CUT.vela], [['retorno_alma'], CUT.ecto], [['noite_imaculada'], CUT.vitral], [['facada', 'perseguicao', 'hora_terror'], CUT.sangue]]) for (const id of ids) FX_HABILIDADES[id].cut = c;
+// Manto Violeta do Mortálio (contrato do PR #57): clipe do Flow quando publicado; senão, coreografia violeta procedural.
+const VIOLETA = HAB.MORTALIO_VIOLETA_CFG || { id: 'manto_violeta', clip: 'assets/confusion/interface/vfx/mortalio-violeta.mp4', impactoMs: 520 };
+FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, clip: VIOLETA.clip, impactoMs: VIOLETA.impactoMs, cut: ['#5b21b6', '#ddd6fe'] };
 for (const c of Object.values(FX_HABILIDADES)) { c.clip ??= null; c.impactoMs ??= 500; }
 
 // ---------- utilidades do DOM ----------
@@ -52,9 +57,10 @@ const CSS = `
 .fx-veu{position:absolute;inset:0;pointer-events:none;z-index:3}`;
 const injetar = () => { if (cssOk) return; cssOk = true; const s = document.createElement('style'); s.textContent = CSS; document.head.append(s); };
 
-export function criarCtx({ arena, campo, no, aplicarHp, rapido = false, mobile }) {
+// Velocidade ×1/×2/×3 (preferência do jogador): divide todas as durações. Dano, recarga e resultado não dependem dela.
+export function criarCtx({ arena, campo, no, aplicarHp, rapido = false, mobile, velocidade = pref.velocidade }) {
   const m = mobile ?? (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches);
-  return { arena, campo, no, aplicarHp, rapido, k: rapido ? 0.62 : 1, dens: m ? 0.5 : 1, blur: !m };
+  return { arena, campo, no, aplicarHp, rapido, k: 1 / velocidade, dens: m ? 0.5 : 1, blur: !m, som: !(typeof document !== 'undefined' && document.hidden) };
 }
 const caixa = (ctx, el) => { const a = ctx.arena.getBoundingClientRect(), r = el.getBoundingClientRect(); return { x: r.left + r.width / 2 - a.left, y: r.top + r.height / 2 - a.top, pe: r.bottom - a.top - r.height * 0.06, topo: r.top - a.top, w: r.width, h: r.height, boca: (frente) => ({ x: r.left + r.width / 2 - a.left + frente * r.width * 0.3, y: r.top + r.height * 0.36 - a.top }) }; };
 const corpo = (ctx, el) => caixa(ctx, el.querySelector('.un-fig img') || el);
@@ -183,6 +189,7 @@ function aplicar(ctx, M, el, r, o = {}) {
     numero(ctx, el, `${r.valor}`, o.forte ? '#fff7d6' : (o.corNum || '#ffffff'), { grande: o.forte, dx: o.dx || 0 });
     if (r.absorvido) numero(ctx, el, `🔰 ${r.absorvido}`, '#7dd3fc', { pequeno: true, dy: -22, atraso: 120 });
   }
+  if (ctx.som && !ctx._somT) { tocar(o.cura ? 'cura' : 'golpe', o.forte ? 3 : 1); ctx._somT = setTimeout(() => { ctx._somT = 0; }, 70); }
   ctx.aplicarHp(r.id);
   if (r.morreu) morteFx(ctx, M, c, o.cor);
   (r.efeitos || []).forEach((id, i) => statusFx(ctx, M, el, id, i));
@@ -602,6 +609,23 @@ const FX = {
     al.forEach(({ el, r }, i) => setTimeout(() => { const c = corpo(ctx, el); coluna(M, c.x, c.pe, { cor: '#fde68a', larg: c.w * 0.45, alt: c.h * 2.2, vida: 1 }); aplicar(ctx, M, el, r, { cura: true, forte: true }); }, i * 120 * ctx.k));
     await ESP((700 + al.length * 120) * ctx.k);
   },
+  // ===== Mortálio: Manto Violeta (regeneração, velocidade, defesa e escudo por 3 turnos) =====
+  async mantoVioleta(ctx, M, A, ev) {
+    const al = alvosDe(ctx, ev); if (!al.length) return; const a = corpo(ctx, A);
+    escurecer(ctx, 'rgba(20,6,40,.6)', 1900); circulo(M, a.x, a.pe, { cor: '#8b5cf6', cor2: '#ddd6fe', raio: a.w * 0.9, vida: 1.6, lados: 6 });
+    convergir(M, a.x, a.y, { cor: '#c4b5fd', raio: a.w * 1.1, n: 22, vida: 0.4 });
+    await ESP(380 * ctx.k);
+    const CORES = ['#4ade80', '#a5f3fc', '#60a5fa', '#38bdf8']; // regeneração, velocidade, defesa, escudo
+    for (const { el } of al) { const c = corpo(ctx, el);
+      livre(M, { vida: 0.9, draw(g, u) { const ap = Math.min(1, u / 0.5), al2 = u < 0.8 ? 1 : 1 - (u - 0.8) / 0.2; g.translate(c.x, c.y); g.rotate(u * 5); g.globalAlpha = al2 * 0.85; for (let k = 0; k < 3; k++) { g.rotate(TAU / 3); g.strokeStyle = k % 2 ? '#c4b5fd' : '#6d28d9'; g.lineWidth = 9 - k * 2; g.beginPath(); g.ellipse(0, 0, c.w * 0.56 * (0.5 + 0.5 * ap), c.h * 0.56 * (0.5 + 0.5 * ap), 0, 0, 2.4); g.stroke(); } } });
+      CORES.forEach((cor, k) => livre(M, { vida: 0.85, draw(g, u) { const q = u * TAU * 1.5 + (k * TAU) / 4, r = c.w * 0.75 * (1 - u * 0.9); g.globalAlpha = 1 - Math.max(0, u - 0.85) / 0.15; g.drawImage(brilhoCor(cor), c.x + Math.cos(q) * r - 12, c.y + Math.sin(q) * r * 0.5 - 12, 24, 24); } }));
+      rajada(M, c.x, c.y, { n: 6, forma: 'fumaca', cor: '#4c1d95', tam: 22, tamFim: 40, v: 60, vida: 0.9, blend: 'source-over' });
+    }
+    await ESP(((FX_HABILIDADES[VIOLETA.id]?.impactoMs || 520) + 300) * ctx.k);
+    flash(ctx, '#7c3aed', 160, 0.25);
+    al.forEach(({ el, r }) => { const c = corpo(ctx, el); onda(M, c.x, c.pe, { cor: '#a78bfa', r1: c.w * 1.4, esp: 5, vida: 0.6 }); aplicar(ctx, M, el, r, { cura: true, corCura: '#c084fc' }); });
+    await ESP(700 * ctx.k);
+  },
   // ===== Abobrisco (abóbora de Halloween: laranja, amarelo-vela e violeta de bruxa) =====
   async pancadaAbobora(ctx, M, A, ev) {
     const al = alvosDe(ctx, ev); if (!al.length) return; const T = al[0].el, a = corpo(ctx, A), dir = corpo(ctx, T).x > a.x ? 1 : -1;
@@ -823,7 +847,8 @@ export async function tocarEvento(ctx, ev) {
   const hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], elem = hab?.elemento || 'neutro';
   const E = ELEM[elem] || ELEM.neutro, ult = cfg?.ult || (hab && hab.cd >= 5);
   if (ult && hab) await cutIn(ctx, A, hab, cfg?.cut?.[0] || E.cor, cfg?.cut?.[1] || E.cor2);
-  if (cfg?.clip) await tocarClipe(ctx, M, cfg, ctx.no(ev.alvo) || A, ev);
+  const clip = hab?.clip || cfg?.clip;
+  if (clip && await tocarClipe(ctx, M, cfg || {}, ev, clip)) { /* clipe tocou */ }
   else if (cfg?.fx && FX[cfg.fx]) await FX[cfg.fx](ctx, M, A, ev, hab);
   else if (ev.tipo === 'reviver') await FX.retornoAlma(ctx, M, A, ev, hab);
   else if (ev.tipo === 'atacar') await genCorpo(ctx, M, A, ev, hab, 'neutro');
@@ -835,17 +860,26 @@ export async function tocarEvento(ctx, ev) {
   if (ev.roubo) { const c = corpo(ctx, A); for (const r of ev.alvos || []) { const el = ctx.no(r.id); if (!el) continue; const t = corpo(ctx, el); for (let k = 0; k < M.n(5); k++) projetil(M, t.x + R(-10, 10), t.y + R(-10, 10), c.x, c.y, { tipo: 'orbe', cor: '#dc2626', cor2: '#fecaca', tam: 6, arco: R(20, 60), vida: 0.45, atraso: k * 0.04 }); } numero(ctx, A, `🩸 +${ev.roubo}`, '#86efac', { dy: -20 }); ctx.aplicarHp(ev.ator); }
   return ev;
 }
-// Clipe do Flow: toca o vídeo sobre o alvo e dispara o impacto no tempo configurado
-async function tocarClipe(ctx, M, cfg, alvoEl, ev) {
-  const c = corpo(ctx, alvoEl); const v = document.createElement('video'); v.src = cfg.clip; v.muted = true; v.playsInline = true; v.style.cssText = `position:absolute;left:${c.x}px;top:${c.y}px;width:${c.w * 3}px;transform:translate(-50%,-50%);mix-blend-mode:screen;z-index:87;pointer-events:none`; ctx.campo.append(v);
-  await v.play().catch(() => {}); await ESP(cfg.impactoMs || 500);
+// Clipe do Flow: toca o vídeo sobre o alvo (ou no centro dos alvos, em habilidades de grupo) e aplica o resultado no impactoMs.
+// Devolve false se o vídeo não carregar, para a coreografia procedural assumir.
+const clipesFalhos = new Set(); // não tenta de novo um clipe que não carregou nesta sessão
+async function tocarClipe(ctx, M, cfg, ev, src) {
+  if (clipesFalhos.has(src)) return false;
+  const els = alvosDe(ctx, ev).map((x) => x.el), base = els.length ? els : [ctx.no(ev.alvo) || ctx.no(ev.ator)].filter(Boolean); if (!base.length) return false;
+  const cs = base.map((el) => corpo(ctx, el)), x = cs.reduce((s, c) => s + c.x, 0) / cs.length, y = cs.reduce((s, c) => s + c.y, 0) / cs.length, w = Math.max(...cs.map((c) => c.w)) * (cs.length > 1 ? 2.4 : 3);
+  const v = document.createElement('video'); v.src = src; v.muted = true; v.playsInline = true; v.preload = 'auto';
+  v.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;transform:translate(-50%,-50%);mix-blend-mode:screen;z-index:87;pointer-events:none`;
+  const pronto = await new Promise((ok) => { const t = setTimeout(() => ok(false), 1500); v.addEventListener('canplay', () => { clearTimeout(t); ok(true); }, { once: true }); v.addEventListener('error', () => { clearTimeout(t); ok(false); }, { once: true }); v.load(); });
+  if (!pronto) { clipesFalhos.add(src); return false; }
+  ctx.campo.append(v); await v.play().catch(() => {}); await ESP((cfg.impactoMs || 500) * ctx.k);
   const cura = ev.tipo === 'cura' || ev.tipo === 'apoio' || ev.tipo === 'reviver';
-  for (const x of alvosDe(ctx, ev)) aplicar(ctx, M, x.el, x.r, { cura, cor: '#fff' });
-  await ESP(400); v.remove();
+  for (const a of alvosDe(ctx, ev)) aplicar(ctx, M, a.el, a.r, { cura, cor: '#fff' });
+  await ESP(Math.max(400, ((v.duration || 1) * 1000) - (cfg.impactoMs || 500))); v.remove();
+  return true;
 }
 // Duração aproximada (para o ritmo do automático). Precisa cobrir a coreografia inteira.
-export const duracaoEstimada = (ev, rapido = false) => {
-  if (!ev) return 0; const k = rapido ? 0.62 : 1, hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], n = ev.alvos?.length || 0;
+export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade) => {
+  if (!ev) return 0; const k = 1 / velocidade, hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], n = ev.alvos?.length || 0;
   const ult = cfg?.ult || (hab && hab.cd >= 5);
   let base;
   if (cfg?.fx === 'perseguicao') base = 700 + n * 215 + (ev.repeticoes || 0) * 160;

@@ -56,6 +56,7 @@ import { migrarHW } from './regiao1-halloween-regras.js';
 import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
+import { tocarConexao } from './regiao1-conexao-fx.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
 const LARG = 106;
@@ -332,8 +333,18 @@ function aplicarForma(novaForma, anunciar = false) {
   }
   salvarEstado();
 }
+// Conexão Onírica com efeito (domador → montaria → domador): a troca de sprite acontece no auge do efeito, no ponto dos pés,
+// e a forma nova recebe a mesma direção da anterior.
+let ultimaRot = 0, conectando = false;
+function pontoTelaJogador() {
+  const r = canvas.getBoundingClientRect(), pe = jogador.position.clone().project(camera), cab = jogador.position.clone(); cab.y += ALTURA_PERSONAGEM; const pc = cab.project(camera);
+  const y = r.top + ((1 - pe.y) / 2) * r.height; return { x: r.left + ((pe.x + 1) / 2) * r.width, y, h: Math.abs(y - (r.top + ((1 - pc.y) / 2) * r.height)) };
+}
 function alternarTransformacao() {
-  aplicarForma(save.forma === 'noctarn' ? 'azazel' : 'noctarn', true);
+  if (conectando) return;
+  const nova = save.forma === 'noctarn' ? 'azazel' : 'noctarn'; conectando = true;
+  tocarConexao({ ponto: pontoTelaJogador, para: nova === 'azazel' ? 'domador' : 'montaria', montaria: testeEspirito ? 'espirito' : 'noctarn', aoTrocar: () => { aplicarForma(nova, true); (nova === 'azazel' ? azazel : formaOnirica).atualizar(false, ultimaRot, 0); } })
+    .catch(() => aplicarForma(nova, true)).finally(() => { conectando = false; });
 }
 btnTransformar?.addEventListener('click', alternarTransformacao);
 
@@ -974,12 +985,12 @@ function iniciarBatalha(tipo, entidade) {
     artes[entidade.especie] = raizDe(entidade.sprite);
     const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
     outros.forEach((m) => { artes[m.especie] = raizDe(m.sprite); });
-    inimigos = [[entidade.especie, entidade.nivel], ...outros.map((m) => [m.especie, m.nivel])];
+    inimigos = [[entidade.especie, entidade.nivel, undefined, { forma: entidade.forma, arte: entidade.forma ? entidade.arteForma : undefined }], ...outros.map((m) => [m.especie, m.nivel, undefined, { forma: m.forma, arte: m.forma ? m.arteForma : undefined }])]; // forma definida no encontro
   }
   telaBatalha.abrir({
     titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem', sub: ehBoss ? 'Campanha' : entidade.especie,
     arena: `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`,
-    aliados, inimigos, artes, ritmo: 420,
+    aliados, inimigos, artes, ritmo: 420, regiao: 1,
     onFim: (venceu, frac) => { if (batalhaAtiva) { batalhaAtiva.hpJog = Math.max(1, Math.round(batalhaAtiva.maxJog * (venceu ? Math.max(0.3, frac) : 0.5))); } encerrarBatalha(venceu); },
   });
 }
@@ -2262,6 +2273,7 @@ function quadro(agora) {
   if (emp) { estado.x = emp.x; estado.z = emp.z; }
   jogador.position.set(estado.x, camada(estado.z), estado.z);
   sombra.position.set(estado.x, camada(estado.z) - 0.005, estado.z);
+  ultimaRot = rot;
   if (save.forma === 'azazel') {
     azazel.atualizar(andando, rot, 0);
   } else {

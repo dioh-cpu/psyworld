@@ -5,6 +5,7 @@ import { EDICAO, BANNER_HW, LINHAGENS_HW, LOJA_TORRE, TORRE, formaDoTier, BONUS_
 import { POCOES, nivelDe, aplicarXp } from './regiao1-progressao.js';
 import { KITS } from './regiao1-batalha-habilidades.js';
 import { membrosFormacao } from './regiao1-exp-regras.js';
+import { revelarInvocacao } from './regiao1-revelacao.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const FORMA = ['base', 'segunda', 'final'];
@@ -98,7 +99,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   }
   function render() {
     $('#hw-abas').innerHTML = ABAS.map((a, i) => `<button class="btn-sec" aria-selected="${i === aba}" data-aba="${i}">${a}</button>`).join('');
-    $('#hw-corpo').innerHTML = [abaBanner, abaColecao, abaTorre, abaLoja, abaPocoes][aba]();
+    $('#hw-corpo').innerHTML = (aba === 0 && ultimos.length ? `<div class="ln"><button class="btn-pri" data-rever-hw="1">🃏 ${reveladosHW.length && reveladosHW.every(Boolean) ? 'Rever cartas' : 'Revelar cartas'}</button></div>` : '') + [abaBanner, abaColecao, abaTorre, abaLoja, abaPocoes][aba]();
   }
   function abrir(a = aba) { if (batalhaBloqueando() || tela.aberta()) return; aba = a; confirmar = null; render(); abrirModal('modal-hw'); }
 
@@ -133,12 +134,20 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
     });
   }
 
+  // Revelação animada do resultado gravado (cartas de costas; reabre com o que já foi revelado)
+  let reveladosHW = [];
+  function revelarHW() {
+    if (!ultimos.length) return; if (reveladosHW.length !== ultimos.length) reveladosHW = ultimos.map(() => false);
+    const cartas = ultimos.map((r) => { const lin = LINHAGENS_HW.find((l) => l.especie === r.especie); return { especie: r.especie, tier: r.tier, arte: lin ? lin.arte[formaDoTier(r.tier)] : '', elemento: lin?.elemento }; });
+    revelarInvocacao({ edicao: 'halloween', titulo: `${EDICAO.nome} · ${cartas.length > 1 ? `lote de ${cartas.length}` : 'invocação'}`, cartas, revelados: reveladosHW, aoRevelar: (i) => { reveladosHW[i] = true; } }).then(() => render());
+  }
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button, input'); if (!t) return; const d = t.dataset;
     if (t.id === 'hw-fechar') { fecharModal('modal-hw'); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); confirmar = null; render(); return; }
     if (d.cancelar) { confirmar = null; render(); return; }
-    if (d.inv) { const r = H.invocarHW(save(), Number(d.inv)); if (!r.ok) mostrarToast(r.motivo, 2800); else { ultimos = r.resultados; salvar(); } render(); return; }
+    if (d.inv) { const r = H.invocarHW(save(), Number(d.inv)); if (!r.ok) mostrarToast(r.motivo, 2800); else { ultimos = r.resultados; salvar(); revelarHW(); } render(); return; }
+    if (d.reverHw) { revelarHW(); return; }
     if (d.pacote) { confirmar = 'pacote'; render(); return; }
     if (d.pacoteOk) { const r = H.comprarPacote(save(), true); mostrarToast(r.ok ? `+${BANNER_HW.pacote.tickets} Tickets de Halloween.` : r.motivo, 2800); confirmar = null; salvar(); render(); return; }
     if (d.evo) { confirmar = `evo:${d.evo}`; render(); return; }

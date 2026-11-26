@@ -8,7 +8,8 @@ import {
   podeReproduzir, tentarReproduzir, adicionarFragmentoSonho, arvoreEvolucaoDe, evoluirFormaOnirico, fichaOnirico,
 } from './regiao1-criacao-regras.js';
 import { INICIAIS, prepararContaNova } from './regiao1-conta.js';
-import { aberto, expDe, invocarMultiplo } from './regiao1-exp-regras.js';
+import { aberto, expDe, invocarMultiplo, membrosFormacao, iniciarCalabouco, prepararLutaCalabouco } from './regiao1-exp-regras.js';
+import { LINHAS } from '../species.js';
 
 test('Estrelas: sequência 1, 2, 4, 8, 10, 15, 20 a partir de 5★→6★, 8º degrau em aberto, preview de cópias e preservação da principal', () => {
   assert.deepEqual(ESTRELAS_CFG.custosCopias, [1, 2, 4, 8, 10, 15, 20]);
@@ -188,5 +189,20 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
   assert.equal(r10.ok, true);
   assert.equal(r10.qtd, 10);
   assert.equal(e.tickets, 0);
+
+  // 6) Noctarn permanece como aliado se está na formação salva; nenhum dos cinco iniciais aparece como inimigo na Região 1 (Calabouço)
+  const sAliado = criarEstadoInicial();
+  garantirEstadoIdle(sAliado);
+  assert.equal(membrosFormacao(sAliado.idle)[0].m.especie, 'Noctarn');
+  sAliado.quests = { q_boss_e: 'concluida' };
+  const nomesIniciais = new Set(LINHAS.flatMap((l) => [l.inicial, l.atual, l.evolucao]));
+  for (let k = 0; k < 20; k++) {
+    iniciarCalabouco(sAliado);
+    const luta = prepararLutaCalabouco(sAliado, () => (k % 10) / 10);
+    assert.equal(luta.ok, true);
+    for (const [esp] of luta.luta.inimigos) {
+      assert.equal(nomesIniciais.has(esp), false, `Inicial ${esp} não pode aparecer como inimigo na Região 1`);
+    }
+  }
 });
 

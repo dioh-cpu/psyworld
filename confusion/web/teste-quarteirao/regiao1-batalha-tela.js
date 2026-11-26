@@ -4,7 +4,8 @@
 // é o overlay completo usado por missões e capítulos.
 import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, EFEITOS, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 import { criarCtx, tocarEvento, duracaoEstimada } from './regiao1-vfx.js';
-import { ARTE_DA_ESPECIE } from '../species.js';
+import { ARTE_DA_ESPECIE, LINHAS } from '../species.js';
+import { pref, proximaVelocidade } from './regiao1-sfx.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
 
@@ -136,9 +137,41 @@ let cssOk = false;
 const injetar = () => { if (cssOk) return; cssOk = true; const s = document.createElement('style'); s.textContent = CSS + CSS_AURA; document.head.append(s); };
 const arteRaiz = (esp, arte) => arte?.[esp] || ARTE_DA_ESPECIE[esp] || `assets/monsters/${String(esp).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}/sprite-front.png`;
 const caminho = (esp, arte) => `../../../${arteRaiz(esp, arte)}`;
+const caminhoU = (u, arte) => (u.arte ? `../../../${u.arte}` : caminho(u.especie, arte)); // a forma do encontro vale para sprite, retrato e ordem
+
+// ---------- forma do encontro ----------
+// O encontro define a forma (op.forma: 1–3 ou 'inicial'|'atual'|'evolucao', ou op.arte pronta). Regras dos cinco iniciais:
+// nenhuma forma deles entra como inimiga na Região 1 (troca por um Onírico do Vale de Outono); a terceira forma (T5) só aparece
+// na Região 2 a partir do nível 41 (abaixo disso, cai para a forma atual).
+const FASES = ['inicial', 'atual', 'evolucao'];
+export const SUBSTITUTO_R1 = { noctarn: 'Fanalino', ignavor: 'Cobrabúfalo', vaelith: 'Tatuveludo', brotavel: 'Cervomusgo', solarin: 'Xistolim' };
+export function formaDoEncontro(especie, nivel = 1, op = {}, regiao = 1) {
+  const lin = LINHAS.find((l) => l.inicial === especie || l.atual === especie || l.evolucao === especie);
+  if (lin) {
+    if (regiao <= 1) return { especie: SUBSTITUTO_R1[lin.id], substituido: especie, forma: null, arte: null };
+    const formas = [lin.inicial, lin.atual, lin.evolucao];
+    let i = typeof op.forma === 'number' ? op.forma - 1 : FASES.indexOf(op.forma); if (i < 0 || i > 2) i = formas.indexOf(especie);
+    if (i === 2 && nivel < 41) i = 1;
+    return { especie: formas[i], forma: i + 1, arte: op.arte || null, tier: i === 2 ? 5 : null };
+  }
+  let arte = op.arte || null; const f = typeof op.forma === 'number' ? op.forma : FASES.indexOf(op.forma) + 1;
+  if (!arte && f >= 1 && f <= 3) {
+    const hw = LINHAGENS_HW.find((l) => l.especie === especie);
+    if (hw?.arte) arte = hw.arte[f - 1];
+    else { const base = ARTE_DA_ESPECIE[especie]; if (base && /\/0[123]\.(png|webp)$/.test(base)) arte = base.replace(/\/0[123]\.(png|webp)$/, `/0${f}.$1`); }
+  }
+  return { especie, forma: f >= 1 ? f : null, arte };
+}
+// Ajusta unidades inimigas já criadas (modos que geram inimigos fora da tela, como a Estratégia)
+export function ajustarInimigos(lista, regiao = 1, papeis = {}) {
+  return lista.map((u) => { const f = formaDoEncontro(u.especie, u.nivel, { forma: u.forma, arte: u.arte }, regiao); if (f.especie === u.especie) { if (f.arte) u.arte = f.arte; if (f.forma) u.forma = f.forma; return u; }
+    const n = criarUnidade({ id: u.id, especie: f.especie, nivel: u.nivel, lado: u.lado, papeis }); for (const k of ['vaga', 'chefe']) if (u[k] != null) n[k] = u[k]; if (f.arte) n.arte = f.arte; if (f.forma) n.forma = f.forma; return n; });
+}
+// Botão de velocidade (×1/×2/×3), comum a todos os modos que usam a arena
+if (typeof document !== 'undefined' && !window.__velArena) { window.__velArena = true; document.addEventListener('click', (e) => { const b = e.target.closest?.('.arena [data-vel]'); if (!b) return; e.stopPropagation(); b.textContent = `×${proximaVelocidade()}`; }, true); }
 
 function spriteNoCampo(u, artes) {
-  const original = arteRaiz(u.especie, artes);
+  const original = u.arte || arteRaiz(u.especie, artes);
   const perfil = PERFIS_NO_CAMPO[original];
   const direcao = perfil?.direcao ?? olhaDe(u.especie);
   const desejada = u.lado === 'a' ? 'direita' : 'esquerda';
@@ -255,17 +288,17 @@ export function criarArena(host, { artes = {} } = {}) {
   }
   function desenharTopo(op) {
     q('.tb-tit').innerHTML = `<b>${esc(op.titulo || '')}</b><small>${esc(op.sub || '')}${op.sub ? ' · ' : ''}Turno ${b.rodada}</small>`;
-    q('.tb-btns').innerHTML = `<button data-auto="1" class="${op.auto ? 'on' : ''}">Auto</button>${op.extraTopo || ''}`;
+    q('.tb-btns').innerHTML = `<button data-vel="1" title="Velocidade">×${pref.velocidade}</button><button data-auto="1" class="${op.auto ? 'on' : ''}">Auto</button>${op.extraTopo || ''}`;
     const prox = [...b.fila].map((id) => b.ordem.find((x) => x.id === id)).filter((u) => u && nos.has(u.id) && u.hp > 0).slice(0, 5);
-    q('.tb-ordem').innerHTML = prox.map((u, i) => `<span class="${u.lado === 'a' ? '' : 'i'} ${i === 0 ? 'cur' : ''}"><img src="${caminho(u.especie, opArt)}" alt=""></span>`).join('');
+    q('.tb-ordem').innerHTML = prox.map((u, i) => `<span class="${u.lado === 'a' ? '' : 'i'} ${i === 0 ? 'cur' : ''}"><img src="${caminhoU(u, opArt)}" alt=""></span>`).join('');
     const fila = [...reforcosPendentes(), ...b.esperaI];
-    const f = q('.tb-fila'); f.style.display = fila.length ? 'flex' : 'none'; f.innerHTML = `Fila +${fila.length} ${fila.map((u) => `<img src="${caminho(u.especie, opArt)}" alt="">`).join('')}`;
+    const f = q('.tb-fila'); f.style.display = fila.length ? 'flex' : 'none'; f.innerHTML = `Fila +${fila.length} ${fila.map((u) => `<img src="${caminhoU(u, opArt)}" alt="">`).join('')}`;
   }
   function desenharBase(op, atual) {
     const base = q('.tb-base'); if (b.fim) { base.innerHTML = ''; return; }
     const u = atual && atual.lado === 'a' ? atual : null, manual = Boolean(u) && !op.auto;
     if (!atual) { base.innerHTML = ''; return; }
-    const ativo = `<div class="tb-ativo"><img src="${caminho((u || atual).especie, opArt)}" alt=""><div><b>${esc((u || atual).especie)}</b><small>${(u || atual).hp} / ${(u || atual).hpMax} HP</small></div></div>`;
+    const ativo = `<div class="tb-ativo"><img src="${caminhoU(u || atual, opArt)}" alt=""><div><b>${esc((u || atual).especie)}</b><small>${(u || atual).hp} / ${(u || atual).hpMax} HP</small></div></div>`;
     if (!u) { base.innerHTML = ativo + `<span class="tb-aguarde">${atual.lado === 'i' ? 'Turno do inimigo…' : 'Atacando automaticamente…'}</span>`; return; }
     const btn = (h, i) => { const rc = u.cd?.[i] || 0, bloq = rc > 0 || Object.keys(u.efeitos || {}).includes('silencio'); return `<button data-hab="${i}" ${manual && !bloq ? '' : 'disabled'} class="${!bloq && i === 1 ? 'dest' : ''}" title="${esc(h.nome)}"><i>${h.icone || '✨'}</i>${esc(h.nome)}<small>⟳ recarga ${h.cd}${rc ? ` · aguarde ${rc}` : ''}</small>${rc ? `<span class="rc">${rc}</span>` : ''}</button>`; };
     base.innerHTML = ativo + `<div class="tb-hab"><button data-acao="atacar" class="basico" ${manual ? '' : 'disabled'}><i>⚔️</i>Atacar<small>sem recarga</small></button>${u.kit.map(btn).join('')}<button data-acao="defender" class="basico" ${manual ? '' : 'disabled'}><i>🛡️</i>Defender<small>sem recarga</small></button></div>`;
@@ -277,36 +310,60 @@ export function criarArena(host, { artes = {} } = {}) {
 // ---------- overlay completo (missões e capítulos) ----------
 export function criarTelaBatalha() {
   const el = document.createElement('div'); el.id = 'tela-batalha'; el.style.cssText = 'position:fixed;inset:0;z-index:58;display:none'; document.body.append(el);
-  const rng = criarRng(Date.now() % 100000); let b = null, cfg = null, timer = null, auto = true, arena = null, minimizada = false;
+  let rng = criarRng(Date.now() % 100000); let b = null, cfg = null, timer = null, auto = true, arena = null, minimizada = false;
+  // Segundo plano: com a janela minimizada (ou a aba oculta/suspensa) a luta automática segue pelo tempo decorrido, sem animação.
+  // Ao voltar, a arena é remontada no estado atual (ou mostra o resultado). onFim é chamado uma única vez.
+  let fechado = false, emFundoAntes = false, marca = 0;
+  const vel = () => pref.velocidade;
+  const passoFundo = () => 650 / vel(); // duração real de um turno sem animação
+  const emFundo = () => minimizada || document.hidden;
+  function avancarFundo() {
+    if (!b || b.fim) return; const agora = Date.now(); let n = Math.min(400, Math.floor((agora - marca) / passoFundo()));
+    while (n-- > 0 && !b.fim) { const u = atorAtual(b); if (!u) break; if (u.lado === 'a' && !auto) { marca = agora; break; } executar(b, decidir(b, u, rng), rng); marca += passoFundo(); }
+    if (agora - marca > passoFundo() * 2) marca = agora - passoFundo();
+    b.antes = []; if (b.evento) b.evento.mostrado = true; // eventos pulados não são reanimados ao voltar
+  }
+  function voltarDoFundo() { if (!emFundoAntes) return; emFundoAntes = false; avancarFundo(); if (!minimizada && arena) { arena.montar(b); render(); if (b.fim) terminar(); } }
+  document.addEventListener('visibilitychange', () => { if (!b) return; if (document.hidden) agendar(400); else { if (!minimizada) voltarDoFundo(); agendar(250); } });
   const ind = document.createElement('div'); ind.id = 'tela-ind'; ind.style.cssText = 'position:fixed;left:50%;top:50px;transform:translateX(-50%);z-index:9;display:none;align-items:center;gap:8px;background:rgba(33,19,41,.95);border:1px solid #c59c67;color:#fff3e7;border-radius:99px;padding:5px 8px 5px 12px;font:600 12px system-ui'; document.body.append(ind);
   const extra = () => (typeof cfg.extraTopo === 'function' ? cfg.extraTopo() : cfg.extraTopo) ?? '<button data-fugir="1">Fugir</button>';
   const titulo = () => ({ titulo: typeof cfg.titulo === 'function' ? cfg.titulo() : cfg.titulo, sub: (typeof cfg.sub === 'function' ? cfg.sub() : cfg.sub) || '', auto, extraTopo: extra(), arena: cfg.arena, artes: cfg.artes });
   function render() { if (minimizada) { desenharInd(); return 0; } return arena.atualizar(b, titulo()); }
-  function desenharInd() { ind.style.display = minimizada && b ? 'flex' : 'none'; if (minimizada && b) ind.innerHTML = `<span>${cfg.indicador ? cfg.indicador(b) : 'Combate em segundo plano'}</span><button class="btn-pri" data-ind-abrir="1">Abrir</button>`; }
+  function desenharInd() { ind.style.display = minimizada && b ? 'flex' : 'none'; if (minimizada && b) ind.innerHTML = `<span>${cfg.indicador ? cfg.indicador(b) : b.fim ? (b.fim === 'vitoria' ? '🏆 Vitória concluída' : '💀 Derrota') : `Combate em segundo plano · turno ${b.rodada}`}</span><button class="btn-pri" data-ind-abrir="1">${b.fim ? 'Ver resultado' : 'Abrir'}</button>`; }
   function minimizar() { if (!b) return; minimizada = true; el.style.display = 'none'; desenharInd(); agendar(200); }
-  function restaurar() { if (!b) return; minimizada = false; el.style.display = 'block'; arena = criarArena(el, { artes: cfg.artes }); arena.montar(b); render(); if (b.fim) terminar(); desenharInd(); agendar(300); }
+  function restaurar() { if (!b) return; avancarFundo(); emFundoAntes = false; minimizada = false; el.style.display = 'block'; arena = criarArena(el, { artes: cfg.artes }); arena.montar(b); render(); if (b.fim) terminar(); desenharInd(); agendar(300); }
   ind.addEventListener('click', (e) => { if (e.target.closest('[data-ind-abrir]')) restaurar(); });
   function agendar(delay) { clearTimeout(timer); timer = setTimeout(passo, delay); }
   function passo() {
     if (!b) return;
-    if (!minimizada && arena.ocupada()) { agendar(arena.restante() + 30); return; }
-    if (b.fim) { if (cfg.autoContinuar?.(b)) { setTimeout(() => fechar(b?.fim === 'vitoria'), minimizada ? 50 : 700); return; } if (minimizada) { desenharInd(); return; } terminar(); return; }
+    if (emFundo()) {
+      if (!emFundoAntes) { emFundoAntes = true; marca = Date.now(); }
+      avancarFundo(); desenharInd();
+      if (b.fim) { if (cfg.autoContinuar?.(b)) fechar(b.fim === 'vitoria'); return; } // sem autoContinuar, o resultado espera o jogador voltar
+      agendar(500); return;
+    }
+    if (emFundoAntes) voltarDoFundo();
+    if (arena.ocupada()) { agendar(arena.restante() + 30); return; }
+    if (b.fim) { if (cfg.autoContinuar?.(b)) { setTimeout(() => fechar(b?.fim === 'vitoria'), 700 / vel()); return; } terminar(); return; }
     const u = atorAtual(b);
     if (!u || b.antes?.length) { const d = render(); if (b.fim || u) agendar(d + 120); return; }
-    if (u.lado === 'i' || auto || minimizada) { executar(b, decidir(b, u, rng), rng); const d = render(); agendar(minimizada ? 60 : d + (b.fim ? 350 : (cfg.ritmo || 380) + 120)); }
+    if (u.lado === 'i' || auto) { executar(b, decidir(b, u, rng), rng); const d = render(); agendar(d + (b.fim ? 350 : (cfg.ritmo || 380) + 120) / vel()); }
     else { render(); agendar(300); }
   }
   function terminar() { arena.fim(`<b>${b.fim === 'vitoria' ? '🏆 Vitória!' : '💀 Derrota'}</b><button class="btn-pri" data-continuar="1">Continuar</button>`); }
   function abrir(c) {
-    cfg = c; auto = c.auto !== false; minimizada = false; el.style.display = 'block'; desenharInd(); arena = criarArena(el, { artes: c.artes });
+    cfg = c; auto = c.auto !== false; minimizada = false; fechado = false; emFundoAntes = false; if (c.semente != null) rng = criarRng(c.semente); el.style.display = 'block'; desenharInd(); arena = criarArena(el, { artes: c.artes });
     const papeis = c.papeis || {};
     for (const m of c.aliados) if (m.arte) c.artes = { ...(c.artes || {}), [m.especie]: m.arte }; // arte conforme o tier do indivíduo
     if (arena && c.artes) arena = criarArena(el, { artes: c.artes });
     const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => { const u = criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: { ...(c.bonus || {}), ...(m.bonus || {}) } }); if (Number.isInteger(m.vaga)) u.vaga = m.vaga; return u; });
-    const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento, op], i) => { const u = criarUnidade({ id: `i${i}`, especie: esp, nivel: nv, lado: 'i', papeis, elemento, bonus: op?.bonus || {} }); if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
-    b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render(); agendar(700);
+    const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento, op], i) => {
+      const f = formaDoEncontro(esp, nv, op || {}, c.regiao ?? 1); // forma definida no encontro (e regra dos iniciais)
+      const u = criarUnidade({ id: `i${i}`, especie: f.especie, nivel: nv, lado: 'i', papeis, elemento: f.substituido ? undefined : elemento, bonus: op?.bonus || {} });
+      if (f.arte) u.arte = f.arte; if (f.forma) u.forma = f.forma; if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
+    b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render(); agendar(700 / vel());
   }
-  function fechar(venceu) { clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac); }
+  function fechar(venceu) { if (fechado) return; fechado = true; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac); }
   function encerrarSilencioso() { clearTimeout(timer); el.style.display = 'none'; el.innerHTML = ''; b = null; }
   el.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t || !b) return;
@@ -323,7 +380,7 @@ export function criarTelaBatalha() {
     if (t.dataset.hab !== undefined) executar(b, { tipo: 'habilidade', idx: Number(t.dataset.hab), alvo: arena.alvo() || undefined }, rng);
     else if (t.dataset.acao) executar(b, { tipo: t.dataset.acao, alvo: arena.alvo() || undefined }, rng);
     else return;
-    arena.limparAlvo(); const d = render(); agendar(d + (b.fim ? 350 : 250));
+    arena.limparAlvo(); const d = render(); agendar(d + (b.fim ? 350 : 250) / vel());
   });
   return { abrir, aberta: () => el.style.display === 'block', ativa: () => Boolean(b), batalha: () => b, fechar, encerrarSilencioso, minimizar, restaurar, minimizada: () => minimizada, render };
 }
