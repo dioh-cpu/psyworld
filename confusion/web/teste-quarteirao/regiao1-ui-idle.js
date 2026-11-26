@@ -478,24 +478,39 @@ export function criarControladorIdleUI(ctx) {
       </div>
     `).join('');
 
+    const MV1 = (p) => `../../../assets/confusion/interface/menus-v1/${p}`;
+    const slugSonho = (el) => {
+      const k = String(el || 'neutro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return k === 'sombra' ? 'trevas' : k;
+    };
     const fragEl = $('mochila-fragmentos');
     if (fragEl) {
       const fragsSonho = fragmentosSonhoDe(save);
       const sonhoHtml = Object.entries(fragsSonho).map(([el, qtd]) => `
-        <span class="tag" style="color:#c084fc;border-color:#a855f7">${el}: <b>${qtd}</b></span>
-      `).join(' ');
+        <div class="mv1-slot">
+          <img src="${MV1(`ficha/sonho-${slugSonho(el)}.png`)}" alt="${el}" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">
+          <b>${el}</b>
+          <span style="color:#c084fc">${qtd}</span>
+        </div>
+      `).join('');
       const chefesHtml = Object.entries(CHEFES_REVANCHE_CATALOGO).map(([bossId, def]) => {
         const qtd = saldoFragmentosChefe(save, bossId);
-        return `<div class="card-row"><div><b>${def.nome}</b><div class="sub">10 fragmentos criam este chefe (Nv.1 · T5 · +20%) em Caçadas &amp; Chefes</div></div><b style="color:#fbbf24">${qtd}/10</b></div>`;
+        return `<div class="card-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            <img src="${MV1('chefes/fragmento.png')}" alt="" style="width:28px;height:28px;object-fit:contain">
+            <div><b>${def.nome}</b><div class="sub">10 fragmentos criam este chefe (Nv.1 · T5 · +20%) em Caçadas &amp; Chefes</div></div>
+          </div>
+          <b style="color:#fbbf24">${qtd}/10</b>
+        </div>`;
       }).join('');
       const exclusivos = Object.entries(idle.mochila.itensExclusivosChefe || {}).filter(([, q]) => q > 0);
       const excHtml = exclusivos.length
         ? `<div class="card-row"><div><b>Drops Exclusivos de Chefes</b><div class="sub">${exclusivos.map(([id, q]) => `${id}: ${q}`).join(' · ')}</div></div></div>`
         : '';
       fragEl.innerHTML = `
-        <div class="card-row" style="display:block;line-height:1.6">
+        <div class="card-row" style="display:block;line-height:1.5">
           <div><b>Fragmentos de Sonho</b> <span class="sub">(Evolução na Ficha: 10 Base→2ª · 30 2ª→3ª)</span></div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">${sonhoHtml}</div>
+          <div class="mv1-grade">${sonhoHtml}</div>
         </div>
         ${chefesHtml}
         ${excHtml}
@@ -503,7 +518,13 @@ export function criarControladorIdleUI(ctx) {
     }
 
     $('mochila-ovos').innerHTML = idle.mochila.ovos.length
-      ? `<div class="card-row"><div><b>Ovos na Mochila: ${idle.mochila.ovos.length}</b><div class="sub">Próximo: ${idle.mochila.ovos[0].nome || idle.mochila.ovos[0].especie} · T${idle.mochila.ovos[0].tier || 2} (${idle.mochila.ovos[0].forma || 'natural'})</div></div><button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar</button></div>`
+      ? `<div class="card-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            <img src="${MV1(`passe/ovo-t${Math.max(1, Math.min(5, Number(idle.mochila.ovos[0].tier) || 2))}.png`)}" alt="" style="width:34px;height:34px;object-fit:contain">
+            <div><b>Ovos na Mochila: ${idle.mochila.ovos.length}</b><div class="sub">Próximo: ${idle.mochila.ovos[0].nome || idle.mochila.ovos[0].especie} · T${idle.mochila.ovos[0].tier || 2} (${idle.mochila.ovos[0].forma || 'natural'})</div></div>
+          </div>
+          <button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar</button>
+        </div>`
       : '<div class="sub">Nenhum ovo na mochila ainda. Caçe monstros ou ligue Auto-Caça para dropar ovos!</div>';
     $('btn-chocar-ovo')?.addEventListener('click', () => {
       const r = chocarPrimeiroOvo(save);
@@ -532,12 +553,25 @@ export function criarControladorIdleUI(ctx) {
   // ---- Temporada, Passe 100 Níveis (trilha navegável), Login 7 Dias (painel próprio) & Missões Diárias ----
   let trilhaFaixa = 0; // 0: 1..25, 1: 26..50, 2: 51..75, 3: 76..100
   let trilhaScrollSalvo = 0;
+  const MV1_P = (p) => `../../../assets/confusion/interface/menus-v1/${p}`;
+  function artePremioPasse(premio) {
+    if (!premio) return '';
+    if (premio.tipo === 'ovoT5') return MV1_P('passe/ovo-t5.png');
+    if (premio.tipo === 'ovo') return MV1_P(`passe/ovo-t${Math.max(1, Math.min(5, Number(premio.tier) || 2))}.png`);
+    if (premio.tipo === 'tickets') return MV1_P('passe/ticket-dinossauros.png');
+    if (premio.tipo === 'moldura') return MV1_P('passe/moldura-garras-de-ambar.png');
+    if (premio.tipo === 'acessorio') return MV1_P('passe/colar-dente-fossil.png');
+    if (premio.tipo === 'casa') return MV1_P('passe/samambaia-jurassica.png');
+    if (premio.tipo === 'montaria') return MV1_P('passe/fossil-de-ambar.png');
+    return '';
+  }
 
   function renderizarTrilhaPasse(save) {
     const itens = trilhaPasse(save);
     const navEl = $('temp-trilha-nav');
     const trilhaEl = $('temp-trilha');
     if (!navEl || !trilhaEl) return;
+    trilhaEl.classList.add('mv1-trilha');
     const faixas = [[1, 25], [26, 50], [51, 75], [76, 100]];
     navEl.innerHTML = faixas.map(([a, b], i) => `
       <button class="btn-sec" data-faixa="${i}" style="padding:3px 9px;font-size:11px;${trilhaFaixa === i ? 'background:#f3a458;color:#21110c;font-weight:700' : ''}">Nv.${a}–${b}</button>
@@ -546,15 +580,29 @@ export function criarControladorIdleUI(ctx) {
       b.onclick = () => { trilhaFaixa = Number(b.dataset.faixa); trilhaScrollSalvo = 0; renderizarTrilhaPasse(save); };
     });
     const [ini, fim] = faixas[trilhaFaixa] || [1, 25];
-    const corEst = { coletado: '#22c55e', pronto: '#fbbf24', liberado: '#60a5fa', bloqueado: '#64748b' };
-    const rotEst = { coletado: '✓ Coletado', pronto: '★ Resgatar', liberado: 'Disponível', bloqueado: 'Calendário' };
-    trilhaEl.innerHTML = itens.slice(ini - 1, fim).map((it) => `
-      <div style="flex:0 0 112px;background:#24142d;border:2px solid ${corEst[it.estado]};border-radius:8px;padding:6px;font-size:11px;text-align:center">
-        <b>Nv.${it.nivel}</b>${it.nivel === 100 ? ' 🦖' : ''}<br>
-        <div style="min-height:28px;margin:3px 0">${it.premio.texto}</div>
-        <span style="color:${corEst[it.estado]};font-size:10px">${it.estado === 'bloqueado' ? `🔒 Dia ${it.diaAbertura}` : rotEst[it.estado]}</span>
-      </div>
-    `).join('');
+    const corEst = { coletado: '#22c55e', pronto: '#fbbf24', liberado: '#60a5fa', bloqueado: '#94a3b8' };
+    const bgEst = (it) => (it.nivel === 100
+      ? MV1_P('passe/recompensa-grande-premio.png')
+      : it.estado === 'coletado'
+        ? MV1_P('passe/recompensa-resgatado.png')
+        : it.estado === 'bloqueado'
+          ? MV1_P('passe/recompensa-bloqueado.png')
+          : MV1_P('passe/recompensa-disponivel.png'));
+    const rotEst = {
+      coletado: `<img class="mv1-ico" src="${MV1_P('comum/icone-resgatado.png')}" alt=""> Coletado`,
+      pronto: '★ Resgatar',
+      liberado: 'Disponível',
+      bloqueado: 'Calendário',
+    };
+    trilhaEl.innerHTML = itens.slice(ini - 1, fim).map((it) => {
+      const arte = artePremioPasse(it.premio);
+      return `<div class="mv1-passe-card" style="background-image:url('${bgEst(it)}')">
+        <b>Nv.${it.nivel}</b>
+        ${arte ? `<img class="prem" src="${arte}" alt="">` : ''}
+        <div style="min-height:24px;line-height:1.25">${it.premio.texto}</div>
+        <span style="color:${corEst[it.estado]};font-size:10px">${it.estado === 'bloqueado' ? `<img class="mv1-ico" src="${MV1_P('comum/icone-cadeado.png')}" alt=""> Dia ${it.diaAbertura}` : rotEst[it.estado]}</span>
+      </div>`;
+    }).join('');
     trilhaEl.scrollLeft = trilhaScrollSalvo;
   }
 
@@ -569,12 +617,16 @@ export function criarControladorIdleUI(ctx) {
       ? `<b>Login de hoje já coletado!</b> (${info.coletados}/7 dias concluídos) · Próximo prêmio (Dia ${info.proximoDia}): <b>${info.proximoPremio.icone} ${info.proximoPremio.texto}</b>`
       : `<b>Dia ${info.diaDisponivel}/7 disponível agora!</b> · Coletados: ${info.coletados}/7 · Prêmio de hoje: <b>${info.proximoPremio.icone} ${info.proximoPremio.texto}</b>`;
     gradeEl.innerHTML = info.dias.map((d) => {
-      const borda = d.estado === 'disponivel' ? '#fbbf24' : d.estado === 'coletado' ? '#22c55e' : '#52335c';
-      const tag = d.estado === 'disponivel' ? '<b style="color:#fbbf24">★ Disponível</b>' : d.estado === 'coletado' ? '<span style="color:#4ade80">✓ Coletado</span>' : `<span class="sub">Dia ${d.dia}</span>`;
-      return `<div style="background:#24142d;border:2px solid ${borda};border-radius:8px;padding:8px;text-align:center;font-size:11.5px">
+      const bg = d.estado === 'disponivel' ? MV1_P('login/dia-hoje.png') : d.estado === 'coletado' ? MV1_P('login/dia-recebido.png') : MV1_P('login/dia-futuro.png');
+      const tag = d.estado === 'disponivel'
+        ? '<b style="color:#fbbf24">★ Disponível</b>'
+        : d.estado === 'coletado'
+          ? `<span style="color:#4ade80"><img class="mv1-ico" src="${MV1_P('comum/icone-resgatado.png')}" alt=""> Coletado</span>`
+          : `<span class="sub">Dia ${d.dia}</span>`;
+      return `<div class="mv1-login-card" style="background-image:url('${bg}')">
         <div><b>Dia ${d.dia}</b></div>
-        <div style="font-size:20px;margin:3px 0">${d.icone}</div>
-        <div style="min-height:28px">${d.texto}</div>
+        <img src="${MV1_P('login/icone-presente.png')}" alt="" style="width:28px;height:28px;object-fit:contain">
+        <div style="min-height:28px">${d.icone} ${d.texto}</div>
         <div>${tag}</div>
       </div>`;
     }).join('');

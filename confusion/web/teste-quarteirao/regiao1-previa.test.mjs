@@ -163,7 +163,7 @@ test('Percurso 2 (Save antigo): Equipe/Ficha, Evolução 10/30, Revanche/Craft, 
   assert.equal(choco.onirico.nivel, 1);
 });
 
-test('Interfaces da Prévia: controles de Esferas/Captura/Relíquias removidos e Revanche/Chefes presente', () => {
+test('Interfaces da Prévia: controles de Esferas/Captura/Relíquias removidos, Revanche/Chefes, kit menus-v1 (#63) e montaria (#claude)', () => {
   const html = fs.readFileSync(path.join(DIR, 'regiao1.html'), 'utf8');
   const uiIdle = fs.readFileSync(path.join(DIR, 'regiao1-ui-idle.js'), 'utf8');
   const expansao = fs.readFileSync(path.join(DIR, 'regiao1-expansao.js'), 'utf8');
@@ -172,8 +172,17 @@ test('Interfaces da Prévia: controles de Esferas/Captura/Relíquias removidos e
     assert.equal(html.includes(proibido), false, `HTML não deve mais conter ${proibido}`);
   }
   assert.equal(html.includes('id="mochila-fragmentos"'), true);
+  assert.equal(html.includes('menus-v1/mochila/fundo.webp'), true);
+  assert.equal(html.includes('menus-v1/passe/fundo.webp'), true);
+  assert.equal(html.includes('menus-v1/login/fundo.webp'), true);
   assert.equal(uiIdle.includes('comprarEsferaIdle'), false);
   assert.equal(uiIdle.includes('comprarOuEquiparReliquia'), false);
+  assert.equal(uiIdle.includes('passe/recompensa-grande-premio.png'), true);
+  assert.equal(uiIdle.includes('login/dia-hoje.png'), true);
   assert.equal(expansao.includes('data-rev-lutar'), true);
   assert.equal(expansao.includes('data-rev-craft'), true);
+  assert.equal(expansao.includes('equipe/fundo.webp'), true);
+  assert.equal(expansao.includes('menus-v1/ficha/fundo.webp'), true);
+  assert.equal(expansao.includes('menus-v1/chefes/fundo.webp'), true);
+  assert.equal(fs.existsSync(path.join(DIR, 'regiao1-montaria.js')), true);
 });
