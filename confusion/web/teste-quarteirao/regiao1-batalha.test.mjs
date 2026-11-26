@@ -11,7 +11,7 @@ test('toda espécie tem 3 habilidades só com recarga (sem custo), e mais recarg
     const k = M.kitDe(nome, papel, 'fogo', ESPECIES[nome].habilidades); assert.equal(k.length, 3, nome);
     assert.ok(k[0].cd < k[1].cd && k[1].cd < k[2].cd, `${nome}/${papel}`);
     const forca = (h) => (h.tipo === 'dano' ? h.mult * (h.alvo === 'todos' ? 2 : 1) : h.tipo === 'cura' ? (h.mult + (h.alvo === 'aliados' ? 0.1 : 0)) * 5 : ((h.escudo || 0) + (h.cura || 0)) * 5 + (h.limpa ? 1 : 0.2) + (h.efeitos?.length || 0) * 0.4);
-    if (nome === 'Noctarn') continue; // kit escrito à mão
+    if (M.KITS[nome]) continue; // kits escritos à mão
     assert.ok(forca(k[0]) <= forca(k[1]) + 1e-9 || papel === 'defesa', `${nome}/${papel} s1<=s2`); assert.ok(forca(k[2]) >= forca(k[1]) - 1e-9 || papel === 'defesa', `${nome}/${papel} s3>=s2`);
   }
   const kn = M.kitDe('Noctarn', 'ataque', 'trevas'); assert.deepEqual(kn.map((h) => h.id), ['mordida_umbral', 'chama_violeta', 'veu_noturno']);

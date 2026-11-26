@@ -312,12 +312,13 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     e.avisados = e.avisados || {};
     const abertos = Object.entries(MODOS).filter(([, m]) => R.aberto(save(), m));
     nav.style.display = abertos.length ? 'flex' : 'none';
-    nav.innerHTML = abertos.map(([k]) => `<button class="btn-hud ${e.avisados[k] ? '' : 'novo'}" data-nav="${k}">${ROTULOS[k]}</button>`).join('');
+    nav.innerHTML = abertos.map(([k]) => `<button class="btn-hud ${e.avisados[k] ? '' : 'novo'}" data-nav="${k}">${ROTULOS[k]}</button>`).join('') + (window.regiaoHW?.navHtml?.() || '');
+    if (window.regiaoHW?.liberado?.()) nav.style.display = 'flex';
     if (livre()) { const novo = abertos.find(([k]) => !e.avisados[k]); if (novo && !nav.dataset.aviso) { /* aviso único por modo */ } }
   }
   nav.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return; const k = b.dataset.nav; exp().avisados[k] = true; salvar();
-    if (k === 'reinos') { window.regiaoReinos?.abrirSeletor(); return; } abrir(k);
+    if (k === 'reinos') { window.regiaoReinos?.abrirSeletor(); return; } if (k === 'halloween') { window.regiaoHW?.abrir(); return; } abrir(k);
   });
   let jaAvisou = {};
   setInterval(() => {

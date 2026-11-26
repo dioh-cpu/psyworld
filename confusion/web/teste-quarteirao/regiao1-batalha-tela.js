@@ -136,7 +136,7 @@ export function criarArena(host, { artes = {} } = {}) {
     el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.escalaX === 1 ? '' : `style="transform:scaleX(${sprite.escalaX})"`} alt="${esc(u.especie)}"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-elemento" style="--cor-elemento:${COR_ELEMENTO[elemento]}">${NOME_ELEMENTO[elemento]}</span><span class="un-efs"></span></span>`;
     const imagem = el.querySelector('.un-fig img');
     imagem.addEventListener('load', () => recortar(imagem), { once: true });
-    imagem.addEventListener('error', () => { imagem.style.visibility = 'visible'; }, { once: true });
+    imagem.addEventListener('error', () => { const ph = document.createElement('span'); ph.textContent = '🎃'; ph.title = 'Arte pendente'; ph.style.cssText = 'font-size:clamp(36px,12vh,80px);line-height:1'; imagem.replaceWith(ph); }, { once: true });
     campo.append(el); nos.set(u.id, { el, u, vaga }); hpVis.set(u.id, u.hp);
     if (entrando) setTimeout(() => el.classList.remove('entrando'), 800);
     return el;
@@ -239,31 +239,38 @@ export function criarArena(host, { artes = {} } = {}) {
 export function criarTelaBatalha() {
   const el = document.createElement('div'); el.id = 'tela-batalha'; el.style.cssText = 'position:fixed;inset:0;z-index:58;display:none'; document.body.append(el);
   const rng = criarRng(Date.now() % 100000); let b = null, cfg = null, timer = null, auto = true, arena = null, minimizada = false;
-  const extra = '<button data-fugir="1">Fugir</button>';
-  const titulo = () => ({ titulo: cfg.titulo, sub: cfg.sub || '', auto, extraTopo: extra, arena: cfg.arena, artes: cfg.artes });
-  function render() { return arena.atualizar(b, titulo()); }
+  const ind = document.createElement('div'); ind.id = 'tela-ind'; ind.style.cssText = 'position:fixed;left:50%;top:50px;transform:translateX(-50%);z-index:9;display:none;align-items:center;gap:8px;background:rgba(33,19,41,.95);border:1px solid #c59c67;color:#fff3e7;border-radius:99px;padding:5px 8px 5px 12px;font:600 12px system-ui'; document.body.append(ind);
+  const extra = () => (typeof cfg.extraTopo === 'function' ? cfg.extraTopo() : cfg.extraTopo) ?? '<button data-fugir="1">Fugir</button>';
+  const titulo = () => ({ titulo: typeof cfg.titulo === 'function' ? cfg.titulo() : cfg.titulo, sub: (typeof cfg.sub === 'function' ? cfg.sub() : cfg.sub) || '', auto, extraTopo: extra(), arena: cfg.arena, artes: cfg.artes });
+  function render() { if (minimizada) { desenharInd(); return 0; } return arena.atualizar(b, titulo()); }
+  function desenharInd() { ind.style.display = minimizada && b ? 'flex' : 'none'; if (minimizada && b) ind.innerHTML = `<span>${cfg.indicador ? cfg.indicador(b) : 'Combate em segundo plano'}</span><button class="btn-pri" data-ind-abrir="1">Abrir</button>`; }
+  function minimizar() { if (!b) return; minimizada = true; el.style.display = 'none'; desenharInd(); agendar(200); }
+  function restaurar() { if (!b) return; minimizada = false; el.style.display = 'block'; arena = criarArena(el, { artes: cfg.artes }); arena.montar(b); render(); if (b.fim) terminar(); desenharInd(); agendar(300); }
+  ind.addEventListener('click', (e) => { if (e.target.closest('[data-ind-abrir]')) restaurar(); });
   function agendar(delay) { clearTimeout(timer); timer = setTimeout(passo, delay); }
   function passo() {
     if (!b) return;
-    if (arena.ocupada()) { agendar(arena.restante() + 30); return; }
-    if (b.fim) { terminar(); return; }
+    if (!minimizada && arena.ocupada()) { agendar(arena.restante() + 30); return; }
+    if (b.fim) { if (cfg.autoContinuar?.(b)) { setTimeout(() => fechar(b?.fim === 'vitoria'), minimizada ? 50 : 700); return; } if (minimizada) { desenharInd(); return; } terminar(); return; }
     const u = atorAtual(b);
     if (!u || b.antes?.length) { const d = render(); if (b.fim || u) agendar(d + 120); return; }
-    if (u.lado === 'i' || auto) { executar(b, decidir(b, u, rng), rng); const d = render(); agendar(d + (b.fim ? 350 : (cfg.ritmo || 380) + 120)); }
+    if (u.lado === 'i' || auto || minimizada) { executar(b, decidir(b, u, rng), rng); const d = render(); agendar(minimizada ? 60 : d + (b.fim ? 350 : (cfg.ritmo || 380) + 120)); }
     else { render(); agendar(300); }
   }
   function terminar() { arena.fim(`<b>${b.fim === 'vitoria' ? '🏆 Vitória!' : '💀 Derrota'}</b><button class="btn-pri" data-continuar="1">Continuar</button>`); }
   function abrir(c) {
-    cfg = c; auto = c.auto !== false; el.style.display = 'block'; arena = criarArena(el, { artes: c.artes });
+    cfg = c; auto = c.auto !== false; minimizada = false; el.style.display = 'block'; desenharInd(); arena = criarArena(el, { artes: c.artes });
     const papeis = c.papeis || {};
-    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: c.bonus || {} }));
-    const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento], i) => criarUnidade({ id: `i${i}`, especie: esp, nivel: nv, lado: 'i', papeis, elemento }));
+    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: { ...(c.bonus || {}), ...(m.bonus || {}) } }));
+    const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento, op], i) => { const u = criarUnidade({ id: `i${i}`, especie: esp, nivel: nv, lado: 'i', papeis, elemento, bonus: op?.bonus || {} }); if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
     b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render(); agendar(700);
   }
-  function fechar(venceu) { clearTimeout(timer); const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac); }
+  function fechar(venceu) { clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac); }
   function encerrarSilencioso() { clearTimeout(timer); el.style.display = 'none'; el.innerHTML = ''; b = null; }
   el.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t || !b) return;
+    if (t.dataset.min) { minimizar(); return; }
+    if (cfg.onBotao && cfg.onBotao(t.dataset, { render, b })) return;
     if (t.dataset.auto) { auto = !auto; render(); if (auto) agendar(200); return; }
     if (t.dataset.fugir) { fechar(false); return; }
     if (t.dataset.continuar) { fechar(b.fim === 'vitoria'); return; }
@@ -277,5 +284,5 @@ export function criarTelaBatalha() {
     else return;
     arena.limparAlvo(); const d = render(); agendar(d + (b.fim ? 350 : 250));
   });
-  return { abrir, aberta: () => el.style.display === 'block', batalha: () => b, fechar, encerrarSilencioso, minimizada };
+  return { abrir, aberta: () => el.style.display === 'block', ativa: () => Boolean(b), batalha: () => b, fechar, encerrarSilencioso, minimizar, restaurar, minimizada: () => minimizada, render };
 }

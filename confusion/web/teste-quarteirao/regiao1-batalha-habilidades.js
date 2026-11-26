@@ -17,6 +17,7 @@ export const EFEITOS = {
   regeneracao: { nome: 'Regeneração', icone: '💚', cor: '#4ade80' },
   escudo: { nome: 'Escudo', icone: '🔰', cor: '#38bdf8' },
   provocacao: { nome: 'Provocação', icone: '🎯', cor: '#f97316' },
+  invencivel: { nome: 'Invencível', icone: '✨', cor: '#fde68a' },
 };
 export const DEBUFFS = Object.keys(EFEITOS).filter((k) => EFEITOS[k].debuff);
 
@@ -26,12 +27,41 @@ const ef = (id, turnos = 3, chance = 1, extra = {}) => ({ id, turnos, chance, ..
 // ---- kits escritos à mão ----
 // tipo: 'dano' | 'cura' | 'apoio'. alvo: 'um' | 'todos' | 'aliado' | 'aliados' | 'si'. distancia: projétil (senão, corpo a corpo).
 export const KITS = {
+  // ---- Exclusivos do Banner Mensal de Halloween ----
+  'Abóborgo': [
+    { id: 'pancada_abobora', nome: 'Pancada de Abóbora', icone: '🎃', tipo: 'dano', alvo: 'um', mult: 1.1, cd: 1, elemento: 'planta', efeitos: [ef('provocacao', 2)] },
+    { id: 'casca_encantada', nome: 'Casca Encantada', icone: '🔰', tipo: 'apoio', alvo: 'aliados', cd: 3, elemento: 'planta', escudo: 0.15, efeitos: [ef('defesa_alta', 2)] },
+    { id: 'muralha_ramas', nome: 'Muralha de Ramas', icone: '🛡️', tipo: 'apoio', alvo: 'si', cd: 5, elemento: 'planta', escudo: 0.4, efeitos: [ef('provocacao', 3), ef('defesa_alta', 3)] },
+  ],
+  'Candelúmia': [
+    { id: 'chama_gentil', nome: 'Chama Gentil', icone: '🕯️', tipo: 'cura', alvo: 'aliado', mult: 0.16, cd: 1, elemento: 'luz', efeitos: [ef('regeneracao', 3)] },
+    { id: 'vigilia_velas', nome: 'Vigília de Velas', icone: '🌟', tipo: 'cura', alvo: 'aliados', mult: 0.12, cd: 3, elemento: 'luz', efeitos: [ef('regeneracao', 4)] },
+    { id: 'procissao_luz', nome: 'Procissão de Luz', icone: '☀️', tipo: 'cura', alvo: 'aliados', mult: 0.3, cd: 5, elemento: 'luz', limpa: true, efeitos: [ef('regeneracao', 3)] },
+  ],
+  'Almaterna': [
+    { id: 'sopro_etereo', nome: 'Sopro Etéreo', icone: '👻', tipo: 'dano', alvo: 'um', mult: 1.05, cd: 1, distancia: true, elemento: 'fantasma', efeitos: [ef('ataque_baixo', 2, 0.7)] },
+    { id: 'veu_lamento', nome: 'Véu de Lamento', icone: '💧', tipo: 'cura', alvo: 'aliado', mult: 0.3, cd: 3, elemento: 'fantasma', limpa: true, efeitos: [] },
+    { id: 'retorno_alma', nome: 'Retorno da Alma', icone: '🕊️', tipo: 'cura', alvo: 'aliado', mult: 0.2, cd: 5, elemento: 'fantasma', reviver: 0.5, efeitos: [] },
+  ],
+  'Sentinoite': [
+    { id: 'badalada', nome: 'Badalada Sombria', icone: '🔔', tipo: 'dano', alvo: 'um', mult: 1.15, cd: 1, elemento: 'trevas', efeitos: [ef('defesa_baixa', 2, 0.7)] },
+    { id: 'egide_noturna', nome: 'Égide Noturna', icone: '✨', tipo: 'apoio', alvo: 'aliado', cd: 3, elemento: 'trevas', escudo: 0.12, efeitos: [ef('invencivel', 1)] },
+    { id: 'noite_imaculada', nome: 'Noite Imaculada', icone: '🌙', tipo: 'apoio', alvo: 'aliados', cd: 6, elemento: 'trevas', efeitos: [ef('invencivel', 2)] },
+  ],
+  'Ceifalume': [
+    { id: 'foice_lunar', nome: 'Foice Lunar', icone: '🌘', tipo: 'dano', alvo: 'um', mult: 1.35, cd: 1, elemento: 'trevas', efeitos: [ef('sangramento', 2, 0.8)] },
+    { id: 'colheita_sombria', nome: 'Colheita Sombria', icone: '🌾', tipo: 'dano', alvo: 'todos', mult: 1.1, cd: 3, distancia: true, elemento: 'trevas', efeitos: [ef('ataque_baixo', 2, 0.5)] },
+    { id: 'ceifa_final', nome: 'Ceifa Final', icone: '💀', tipo: 'dano', alvo: 'um', mult: 1.6, cd: 5, elemento: 'trevas', pctVidaMax: 0.28, limiteChefe: 4, efeitos: [] },
+  ],
   Noctarn: [
     { id: 'mordida_umbral', nome: 'Mordida Umbral', icone: '🦷', tipo: 'dano', alvo: 'um', mult: 1.3, cd: 1, elemento: 'trevas', efeitos: [ef('sangramento', 3, 0.85)] },
     { id: 'chama_violeta', nome: 'Chama Violeta', icone: '🔥', tipo: 'dano', alvo: 'um', mult: 2.1, cd: 3, distancia: true, elemento: 'trevas', efeitos: [ef('queimadura', 3, 0.75)] },
     { id: 'veu_noturno', nome: 'Véu Noturno', icone: '🌙', tipo: 'cura', alvo: 'si', mult: 0.34, cd: 5, elemento: 'trevas', limpa: true, escudo: 0.15, efeitos: [ef('regeneracao', 2)] },
   ],
 };
+
+// Papel padrão de espécies que não dependem dos dados de uma região
+export const PAPEL_PADRAO = { 'Abóborgo': 'defesa', 'Candelúmia': 'suporte', 'Almaterna': 'suporte', 'Sentinoite': 'defesa', 'Ceifalume': 'ataque' };
 
 // ---- gerador por arquétipo (papel) e elemento ----
 const POR_ELEMENTO = {

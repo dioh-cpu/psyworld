@@ -4,6 +4,7 @@ import { criarUnidade, criarBatalha, atorAtual, executar, decidir, LIMITE_ALIADO
 import { MARCOS, MISSOES_HISTORIA, CONTRATOS, CALABOUCO, CRISE, HV, FAB } from './regiao1-exp-dados.js';
 import { REINOS } from '../reinos.js';
 import { gestaoDe } from './regiao1-gestao-regras.js';
+import { darPocao } from './regiao1-halloween-regras.js';
 
 export function expDe(save) {
   const idle = save.idle || (save.idle = {});
@@ -226,7 +227,7 @@ export function concluirMissaoHV(save, capId, n) {
   if (n !== h.atual || h.feitas[n]) return { ok: false, motivo: 'Missão já concluída ou bloqueada.' }; // sem pagamento duplo
   if (m.escolha && !h.escolha) return { ok: false, motivo: 'Faça a escolha da missão antes de concluir.' };
   h.feitas[n] = true; h.atual = Math.min(capitulo(capId).missoes.length + 1, n + 1);
-  save.recompensas.gold += m.recompensa.gold || 0; save.recompensas.diamantes += m.recompensa.diamantes || 0;
+  save.recompensas.gold += m.recompensa.gold || 0; save.recompensas.diamantes += m.recompensa.diamantes || 0; darPocao(save, 'pocao_xp_p');
   if (n === capitulo(capId).missoes.length) h.fim = true;
   return { ok: true, recompensa: m.recompensa, fim: h.fim, epilogo: h.fim ? capitulo(capId).missoes[n - 1].epilogo?.[h.escolha] : null };
 }

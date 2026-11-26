@@ -3,6 +3,7 @@
 // turnos, controles independentes (Atacar automaticamente / Próxima fase / Avançar automaticamente) e expedição minimizada.
 // Estado salvo em save.idle.estrategia[id]. Cada recompensa de vitória é paga uma única vez (exp.pagas).
 import { criarArena } from './regiao1-batalha-tela.js';
+import { darPocao } from './regiao1-halloween-regras.js';
 import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
 import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 
@@ -438,6 +439,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const s = estado(), exp = s.exp, rota = rotaDe(exp.rota);
     if (batalha.fim === 'vitoria') {
       const rec = pagarFase(exp, rota, exp.fase, s.materiais, rng); // null se já paga: nunca duplica
+      if (rec && rng() < [0.3, 0.45, 0.6][Math.min(2, exp.fase)]) { const id = exp.fase >= 2 ? 'pocao_xp_m' : 'pocao_xp_p'; darPocao(getSave(), id); batalha.log.push(`Poção de XP encontrada (${id === 'pocao_xp_m' ? 'média' : 'pequena'}).`); }
       const fase = rota.fases[exp.fase];
       if (rec) {
         batalha.log.push(`Vitória! ${custoTxt(rec)}.`);

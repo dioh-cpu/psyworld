@@ -1,12 +1,9 @@
 // Módulo Idle & Progressão da Região 1 — Confusion Waves: Double Perspective.
 // Reaproveita diretamente core.js, systems.js e species.js (sem duplicar regras do núcleo).
 
+import { nivelDe as nivelDeXp, xpPara as xpParaProximo, xpTotal as xpDoNivel } from './regiao1-progressao.js'; // progressão sem teto
 import {
   sanityBand,
-  ganharXp,
-  nivelDeXp,
-  xpParaProximo,
-  xpDoNivel,
   gatherDay,
   multElemento,
 } from '../core.js';
@@ -402,7 +399,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
 
   save.recompensas.gold += gold;
   save.recompensas.xp += xp;
-  const ganho = ganharXp({ xp: idle.jogador.xp }, xp);
+  const nvAntes = nivelDeXp(idle.jogador.xp); const ganho = { xp: idle.jogador.xp + Math.max(0, xp) }; ganho.nivel = nivelDeXp(ganho.xp); ganho.subiu = ganho.nivel - nvAntes;
   idle.jogador.xp = ganho.xp;
   idle.jogador.hp = Math.max(1, Math.min(st.hpMax, idle.jogador.hp - danoRecebido));
   idle.jogador.abatesTotais += 1;

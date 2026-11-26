@@ -10,6 +10,8 @@ export const ORIGENS = ['base', 'evento', 'raid', 'linha'];
 export const TAREFAS_APTIDAO = ['plantar', 'colher', 'minerar', 'cortar', 'garimpar', 'transportar', 'cozinhar', 'fabricar'];
 
 import { REINOS } from './reinos.js';
+import { LINHAGENS_HW } from './teste-quarteirao/regiao1-halloween-dados.js';
+import { KITS } from './teste-quarteirao/regiao1-batalha-habilidades.js';
 export const ESPECIES = {
   Noctarn: {
     origem: 'base', pureza: 'trevas', aptidoes: { minerar: 4, garimpar: 2 },
@@ -57,6 +59,12 @@ for (const r of Object.values(REINOS)) for (const l of r.linhagens) {
   if (ESPECIES[l.nome]) continue;
   const g = GOLPE_DO_TIPO[l.elemento];
   ESPECIES[l.nome] = { origem: 'linha', pureza: 'neutra', elemento: l.elemento, aptidoes: APTIDAO_DO_TIPO[l.elemento], habilidades: [`${g} de ${l.nome}`, `${g} Duplo de ${l.nome}`, `Investida de ${l.nome}`, `Guarda de ${l.nome}`], ...(l.arte ? { arte: l.arte } : {}) };
+}
+
+// Exclusivos do Banner Mensal de Halloween (origem 'evento': fora de encontro, ovo comum e invocação base). Habilidades = kit + passiva.
+for (const l of LINHAGENS_HW) {
+  if (ESPECIES[l.especie]) continue;
+  ESPECIES[l.especie] = { origem: 'evento', pureza: 'neutra', elemento: l.elemento, aptidoes: {}, habilidades: [...(KITS[l.especie] || []).map((h) => h.nome), `Instinto de ${l.especie}`], passiva: { nome: `Aura de ${l.especie}`, texto: l.resumo } };
 }
 
 // Lista de problemas de uma espécie. Vazia quando está completa.

@@ -47,6 +47,8 @@ import { criarTelaBatalha } from './regiao1-batalha-tela.js';
 import { indicesEquipeCombate } from './regiao1-exp-regras.js';
 const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
+import { iniciarHalloween } from './regiao1-halloween.js';
+import { darPocao } from './regiao1-halloween-regras.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
 
@@ -962,7 +964,7 @@ function iniciarBatalha(tipo, entidade) {
   const artes = {}; let inimigos;
   if (ehBoss) {
     const nv = Math.max(6, Math.round((defBoss.hp - 58) / 13)); artes[defBoss.nome] = raizDe(entidade.sprite);
-    inimigos = [[defBoss.nome, nv, defBoss.elemento], ['Brotavel', Math.max(3, nv - 4)], ['Noctarn', Math.max(3, nv - 4)]];
+    inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ['Brotavel', Math.max(3, nv - 4)], ['Noctarn', Math.max(3, nv - 4)]];
   } else {
     artes[entidade.especie] = raizDe(entidade.sprite);
     const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
@@ -1058,6 +1060,8 @@ function encerrarBatalha(vitoria) {
   if (telaBatalha.aberta()) telaBatalha.encerrarSilencioso();
 
   if (vitoria) {
+    for (let k = 0; k < 3; k++) window.regiaoHW?.aoAbater?.(); // doces durante o evento (abates de PvE)
+    if (Math.random() < 0.03) { darPocao(save, b.tipo === 'boss' ? 'pocao_xp_m' : 'pocao_xp_p'); mostrarToast('🧪 Poção de XP encontrada!', 2200); }
     if (b.tipo === 'boss') {
       const res = registrarVitoriaBoss(save, b.entidade.id);
       idle.codex.bosses[b.entidade.id] = true;
@@ -2024,6 +2028,7 @@ function golpearAlvoAuto(agora, idle) {
     if (ouroExtra) { save.recompensas.gold = Math.max(0, save.recompensas.gold + ouroExtra); res.gold += ouroExtra; }
     window.regiaoMundo?.aoAbater?.(morto);
     window.regiaoExp?.aoAbater?.(morto);
+    window.regiaoHW?.aoAbater?.();
     if (!algumModalAberto()) {
       const pt = projetarNaTela(alvoAutoCaca.x, alvoAutoCaca.z);
       idleUI?.spawnFlutuante(pt.x, pt.y - 42, `+${res.gold}g  +${res.xp} XP`, '#4ade80', false);
@@ -2363,6 +2368,7 @@ window.regiaoReinos = iniciarReinos({
   estrategia: () => window.regiaoEstrategia,
 });
 window.regiaoEstrategia.aoSair = () => window.regiaoReinos.voltar();
+window.regiaoHW = iniciarHalloween({ getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, tela: telaBatalha, batalhaBloqueando, questFeita: (q) => save.quests?.[q] === 'concluida' });
 const voltarAoPonto = async (r) => { if (mapaAtual?.id !== r.mapa) await entrarNoMapa(r.mapa, [r.px, r.py], false); const w = P(r.px, r.py); estado.x = w.x; estado.z = w.z; primeiroQuadro = true; };
 // Expansão 1: banner, caçadas, guilda, fazenda, oficina, calabouço, crises e herói × vilão (regras em regiao1-exp-regras.js)
 window.regiaoExp = iniciarExpansao({

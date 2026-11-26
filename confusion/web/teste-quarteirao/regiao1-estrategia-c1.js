@@ -16,8 +16,9 @@ export const ESTRATEGIA_C1 = {
       { id: 'tabua', nome: 'Tábua', icone: '🪚', insumos: { madeira: 2 }, saida: { tabua: 1 }, seg: 20 },
       { id: 'bloco', nome: 'Bloco de pedra', icone: '🧱', insumos: { pedra: 2 }, saida: { bloco: 1 }, seg: 25 },
       { id: 'kit', nome: 'Kit de reparo', icone: '🧰', insumos: { madeira: 3, pedra: 3 }, saida: { kit: 1 }, seg: 40 },
+      { id: 'pocao_xp_p', nome: 'Poção de XP pequena', icone: '🧪', insumos: { madeira: 6, pedra: 4 }, saida: { pocao_xp_p: 1 }, seg: 45 },
     ],
-    itens: { tabua: { nome: 'Tábua', icone: '🪚' }, bloco: { nome: 'Bloco de pedra', icone: '🧱' }, kit: { nome: 'Kit de reparo', icone: '🧰' } },
+    itens: { tabua: { nome: 'Tábua', icone: '🪚' }, bloco: { nome: 'Bloco de pedra', icone: '🧱' }, kit: { nome: 'Kit de reparo', icone: '🧰' }, pocao_xp_p: { nome: 'Poção de XP pequena', icone: '🧪' } },
   },
   vagasIniciais: 2, // A primeira vitória de cada fase libera vagas até o limite de quatro.
 

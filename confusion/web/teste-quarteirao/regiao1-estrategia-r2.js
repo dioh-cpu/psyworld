@@ -39,8 +39,9 @@ export const ESTRATEGIA_R2 = {
     receitas: [
       { id: 'balsamo', nome: 'Bálsamo', icone: '🧴', insumos: { mel: 2, cera: 1 }, saida: { balsamo: 1 }, seg: 30 },
       { id: 'vela', nome: 'Vela de cera', icone: '🕯️', insumos: { cera: 2 }, saida: { vela: 1 }, seg: 20 },
+      { id: 'pocao_xp_m', nome: 'Poção de XP média', icone: '⚗️', insumos: { mel: 8, cera: 6 }, saida: { pocao_xp_m: 1 }, seg: 90 },
     ],
-    itens: { balsamo: { nome: 'Bálsamo', icone: '🧴' }, vela: { nome: 'Vela de cera', icone: '🕯️' } },
+    itens: { balsamo: { nome: 'Bálsamo', icone: '🧴' }, vela: { nome: 'Vela de cera', icone: '🕯️' }, pocao_xp_m: { nome: 'Poção de XP média', icone: '⚗️' } },
   },
   rotas,
   // arte da forma pela fase do encontro
