@@ -9,7 +9,8 @@ const DIRS = ['frente', 'esquerda', 'direita', 'costas']; // mesma ordem de quad
 export function criarDomadorMontado(base, altura, meta) {
   const { celula: { largura: W, altura: H }, colunas: COLS, fps = 24, pe, topo } = meta;
   const k = altura / (pe - topo);                    // altura do conjunto (cabeça do domador até os cascos)
-  const carregar = (arq) => { const t = new THREE.TextureLoader().load(`${base}${arq}`); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.LinearFilter; return t; };
+  // sem mipmaps: a folha é uma grade de quadros, e os níveis reduzidos misturavam quadros vizinhos e borravam a figura
+  const carregar = (arq) => { const t = new THREE.TextureLoader().load(`${base}${arq}`); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearFilter; t.generateMipmaps = false; return t; };
   const andar = {}, parado = {};
   for (const d of DIRS) {
     const n = meta.direcoes[d].quadros, linhas = Math.ceil(n / COLS), t = carregar(`caminhada-${d}.webp`);

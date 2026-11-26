@@ -1,12 +1,13 @@
 {
  "celula": {
-  "largura": 270,
-  "altura": 285
+  "largura": 360,
+  "altura": 380
  },
  "colunas": 6,
  "fps": 24,
- "pe": 276,
- "topo": 9,
+ "pe": 368,
+ "topo": 12,
+ "origem": "docs/artwork/azazel-brumacervo/azazel-montado-1080p.mp4 (janela nativa 360×380, sem redução)",
  "direcoes": {
   "frente": {
    "quadros": 28
