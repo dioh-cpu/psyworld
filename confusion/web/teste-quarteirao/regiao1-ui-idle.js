@@ -8,11 +8,9 @@ import { MONSTROS_SELVAGENS, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { QUESTS_DEFINICOES } from './regiao1-estado.js';
 import {
   I18N,
-  RELIQUIAS_CATALOGO,
   ATRIBUTOS_DOMADOR,
   ESPECIES,
   PASS_LEVELS,
-  SPHERE_PRICE,
   garantirEstadoIdle,
   bonusCodex,
   calcularStatusDetalhado,
@@ -30,14 +28,14 @@ import {
   infoPasse,
   trilhaPasse,
   infoLogin7Dias,
-  comprarEsferaIdle,
-  comprarOuEquiparReliquia,
   chocarPrimeiroOvo,
   registrarVotoPortal,
   resgatarLojaVoto,
   resumoEventosAtuais,
   registrarLogIdle,
 } from './regiao1-idle.js';
+import { fragmentosSonhoDe } from './regiao1-regras-sonho.js';
+import { CHEFES_REVANCHE_CATALOGO, saldoFragmentosChefe } from './regiao1-revanche-regras.js';
 import { revelarOvo, mostrarRecompensas } from './regiao1-revelacao.js';
 import { ARTE_DA_ESPECIE } from '../species.js';
 
@@ -173,7 +171,7 @@ export function criarControladorIdleUI(ctx) {
     const buffsEl = $('barra-buffs');
     if (buffsEl) {
       const buffs = [
-        { ic: '🛡️', nome: 'Escudo 7d', desc: '+10% Captura e +20% Encontros nos primeiros 7 dias.' },
+        { ic: '🛡️', nome: 'Escudo 7d', desc: '+20% Encontros e proteção inicial nos primeiros 7 dias.' },
         { ic: '🌙', nome: ev.semanal.nome, desc: `Evento semanal ativo: ${ev.semanal.efeito}` },
       ];
       if (save.forma === 'noctarn') {
@@ -360,7 +358,6 @@ export function criarControladorIdleUI(ctx) {
     const especiesMapa = [...new Set(MONSTROS_SELVAGENS.filter((w) => w.mapa === mapa?.id).map((w) => w.especie))];
     $('ac-toggle').checked = Boolean(idle.autoCaca.ativo);
     $('ac-vantagem').checked = Boolean(idle.autoCaca.preferirVantagem);
-    $('ac-capturar').checked = Boolean(idle.autoCaca.autoCapturar);
     $('ac-ovos').checked = Boolean(idle.autoCaca.coletarOvos);
     $('ac-emergencia').checked = Boolean(idle.autoCaca.voltarMarcoEmergencia);
     $('ac-hp').value = idle.autoCaca.descansarHpPct;
@@ -384,7 +381,7 @@ export function criarControladorIdleUI(ctx) {
     const idle = garantirEstadoIdle(ctx.getSave());
     idle.autoCaca.ativo = $('ac-toggle').checked;
     idle.autoCaca.preferirVantagem = $('ac-vantagem').checked;
-    idle.autoCaca.autoCapturar = $('ac-capturar').checked;
+    idle.autoCaca.autoCapturar = false;
     idle.autoCaca.coletarOvos = $('ac-ovos').checked;
     idle.autoCaca.voltarMarcoEmergencia = $('ac-emergencia').checked;
     idle.autoCaca.descansarHpPct = Number($('ac-hp').value);
@@ -406,26 +403,26 @@ export function criarControladorIdleUI(ctx) {
     const c = bonusCodex(idle);
     $('codex-resumo').innerHTML = `
       <b>Pontos do Codex:</b> ${c.pontos} · <b>Marcos:</b> ${c.marcos} · <b>Áreas:</b> ${c.nAreas}/48 · <b>Chefes:</b> ${c.nBosses}/4<br>
-      <span style="color:#4ade80">Bônus Permanentes da Conta: +${c.hpPct}% HP · +${c.atkPct}% ATK · +${c.capturaPct}% Captura · +${c.fazendaPct}% Fazenda</span>
+      <span style="color:#4ade80">Bônus Permanentes da Conta: +${c.hpPct}% HP · +${c.atkPct}% ATK · +${c.fazendaPct}% Fazenda</span>
     `;
     const lista = $('codex-lista');
     lista.innerHTML = Object.entries(ESPECIES).slice(0, 12).map(([nome, esp]) => {
       const reg = idle.codex.especies[nome];
-      const status = reg ? `Abates: ${reg.abates} · Capturas: ${reg.capturas}` : 'Ainda não descoberto';
+      const status = reg ? `Abates: ${reg.abates}` : 'Ainda não descoberto';
       return `
         <div class="card-row" style="opacity:${reg ? 1 : 0.55}">
           <div>
             <b>${nome}</b> <span class="tag">${esp.elemento || esp.pureza}</span>
             <div class="sub">${status} · Habilidades: ${esp.habilidades.slice(0, 3).join(', ')}</div>
           </div>
-          <span class="tag" style="color:${reg?.capturas ? '#4ade80' : '#94a3b8'}">${reg?.capturas ? '✓ Capturado' : reg ? 'Visto' : '???'}</span>
+          <span class="tag" style="color:${reg ? '#4ade80' : '#94a3b8'}">${reg ? '✓ Registrado' : '???'}</span>
         </div>
       `;
     }).join('');
     abrir('modal-codex');
   }
 
-  // ---- Mochila, Atributos do Domador, Relíquias & Status Explicáveis ----
+  // ---- Mochila, Atributos do Domador, Fragmentos & Status Explicáveis ----
   $('hud-card-domador')?.addEventListener('click', abrirMochila);
 
   $('modal-mochila')?.querySelectorAll('[data-mochila-secao]').forEach((botao) => {
@@ -484,26 +481,29 @@ export function criarControladorIdleUI(ctx) {
       </div>
     `).join('');
 
-    $('mochila-esferas').innerHTML = Object.entries(SPHERE_PRICE).map(([rar, preco]) => {
-      const custoTxt = typeof preco === 'object'
-        ? `${preco.valor}${preco.moeda === 'diamonds' ? '💎' : 'g'}`
-        : `${preco}g`;
-      return `
-        <div class="card-row">
-          <div><b>Esfera ${rar}</b> · Você tem: <b style="color:#38bdf8">${idle.mochila.esferas[rar] || 0}</b></div>
-          <button class="btn-pri" style="padding:5px 10px;font-size:11.5px" data-comp-esf="${rar}">Comprar (${custoTxt})</button>
+    const fragEl = $('mochila-fragmentos');
+    if (fragEl) {
+      const fragsSonho = fragmentosSonhoDe(save);
+      const sonhoHtml = Object.entries(fragsSonho).map(([el, qtd]) => `
+        <span class="tag" style="color:#c084fc;border-color:#a855f7">${el}: <b>${qtd}</b></span>
+      `).join(' ');
+      const chefesHtml = Object.entries(CHEFES_REVANCHE_CATALOGO).map(([bossId, def]) => {
+        const qtd = saldoFragmentosChefe(save, bossId);
+        return `<div class="card-row"><div><b>${def.nome}</b><div class="sub">10 fragmentos criam este chefe (Nv.1 · T5 · +20%) em Caçadas &amp; Chefes</div></div><b style="color:#fbbf24">${qtd}/10</b></div>`;
+      }).join('');
+      const exclusivos = Object.entries(idle.mochila.itensExclusivosChefe || {}).filter(([, q]) => q > 0);
+      const excHtml = exclusivos.length
+        ? `<div class="card-row"><div><b>Drops Exclusivos de Chefes</b><div class="sub">${exclusivos.map(([id, q]) => `${id}: ${q}`).join(' · ')}</div></div></div>`
+        : '';
+      fragEl.innerHTML = `
+        <div class="card-row" style="display:block;line-height:1.6">
+          <div><b>Fragmentos de Sonho</b> <span class="sub">(Evolução na Ficha: 10 Base→2ª · 30 2ª→3ª)</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">${sonhoHtml}</div>
         </div>
+        ${chefesHtml}
+        ${excHtml}
       `;
-    }).join('');
-    $('mochila-esferas').querySelectorAll('[data-comp-esf]').forEach((b) => {
-      b.onclick = () => {
-        const r = comprarEsferaIdle(save, b.dataset.compEsf);
-        ctx.mostrarToast(r.ok ? `Esfera ${b.dataset.compEsf} comprada!` : r.motivo, 2200);
-        ctx.salvar();
-        atualizarHudIdle();
-        abrirMochila();
-      };
-    });
+    }
 
     $('mochila-ovos').innerHTML = idle.mochila.ovos.length
       ? `<div class="card-row"><div><b>Ovos na Mochila: ${idle.mochila.ovos.length}</b><div class="sub">Próximo: ${idle.mochila.ovos[0].nome || idle.mochila.ovos[0].especie} · T${idle.mochila.ovos[0].tier || 2} (${idle.mochila.ovos[0].forma || 'natural'})</div></div><button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar</button></div>`
@@ -527,28 +527,6 @@ export function criarControladorIdleUI(ctx) {
           abrirMochila();
         }
       }
-    });
-
-    $('mochila-reliquias').innerHTML = RELIQUIAS_CATALOGO.map((r) => {
-      const tem = idle.mochila.reliquiasPossuidas.includes(r.id);
-      const eq = idle.mochila.equipada[r.slot] === r.id;
-      return `
-        <div class="card-row">
-          <div><b>${r.nome}</b> <span class="tag">${r.slot}</span><div class="sub">${r.desc}</div></div>
-          <button class="${eq ? 'btn-sec' : 'btn-pri'}" style="padding:5px 10px;font-size:11.5px" data-rel="${r.id}">
-            ${eq ? '✓ Equipada' : tem ? 'Equipar' : `Comprar (${r.custo}g)`}
-          </button>
-        </div>
-      `;
-    }).join('');
-    $('mochila-reliquias').querySelectorAll('[data-rel]').forEach((b) => {
-      b.onclick = () => {
-        const res = comprarOuEquiparReliquia(save, b.dataset.rel);
-        ctx.mostrarToast(res.ok ? `Relíquia equipada: ${res.reliquia.nome}!` : res.motivo, 2400);
-        ctx.salvar();
-        atualizarHudIdle();
-        abrirMochila();
-      };
     });
 
     abrir('modal-mochila');
@@ -830,7 +808,7 @@ export function criarControladorIdleUI(ctx) {
     const resumo = calcularGanhoOffline(save, nvMed);
     if (!resumo && !forcar) return;
     if (!resumo) return;
-    ganhoOfflinePendente = { resumo, especie: ws[0]?.especie || 'Noctarn' };
+    ganhoOfflinePendente = { resumo, especie: ws[0]?.especie || 'Cervomusgo' };
     $('afk-detalhe').innerHTML = `
       <b>Tempo fora:</b> ${Math.floor(resumo.minutos / 60)}h ${resumo.minutos % 60}m<br>
       ⚔️ Abates estimados: <b>${resumo.abates}</b> · 🎟️ Passe: <b>+${resumo.xpPasseBruto ?? resumo.abates} XP</b> (1 XP/abate, sujeito à cota)<br>
@@ -844,7 +822,7 @@ export function criarControladorIdleUI(ctx) {
     const mapa = ctx.getMapaAtual();
     const ws = MONSTROS_SELVAGENS.filter((w) => w.mapa === mapa?.id);
     const nvMed = ws.length ? Math.round(ws.reduce((a, b) => a + b.nivel, 0) / ws.length) : 6;
-    const res = liquidarPeriodoIdle(save, { nivelArea: nvMed, especiePadrao: ws[0]?.especie || 'Noctarn' });
+    const res = liquidarPeriodoIdle(save, { nivelArea: nvMed, especiePadrao: ws[0]?.especie || 'Cervomusgo' });
     if (res) {
       registrarLogIdle(garantirEstadoIdle(save), `⏱️ Segundo plano: +${res.abates} abates, +${res.gold}g, +${res.xpPasseGanho} XP Passe`, 'farm');
       ctx.salvar();
@@ -869,9 +847,9 @@ export function criarControladorIdleUI(ctx) {
     { tit: '1/6 · Bem-vindo ao Confusion Waves', txt: 'Você está na Região 1 (48 áreas 2D). No topo ficam seu Nível, HP, Sanidade e recursos.' },
     { tit: '2/6 · Auto-Rota Automática', txt: 'Toque no banner da missão (🧭 Auto-Rota) para andar, coletar pistas, falar com NPCs e avançar missões sozinho.' },
     { tit: '3/6 · Conexão Onírica (✨ Transformar)', txt: 'Use Transformar (ou tecla T / Shift) para virar Onírico e ganhar +100% de velocidade de movimento.' },
-    { tit: '4/6 · Modo Idle (⚔️ Auto · ON/OFF)', txt: 'Ligue Auto · ON para caçar monstros direto no mapa com dano flutuante, auto-captura e ganho de XP/Gold.' },
+    { tit: '4/6 · Modo Idle (⚔️ Auto · ON/OFF)', txt: 'Ligue Auto · ON para caçar monstros direto no mapa com dano flutuante, Fragmentos de Sonho e ganho de XP/Gold.' },
     { tit: '5/6 · Atlas de Caça & Codex', txt: 'No botão Caçar (ou minimapa) você vê todas as 48 áreas, o selo de risco e viaja direto. O Codex dá bônus permanentes!' },
-    { tit: '6/6 · Economia de Energia & Menu', txt: 'No Menu (☰) você acessa Passe de Temporada, Mochila/Relíquias, Vote & Ganhe e o Modo Economia de Energia para farmar no celular.' },
+    { tit: '6/6 · Economia de Energia & Menu', txt: 'No Menu (☰) você acessa Passe de Temporada, Mochila e Fragmentos, Vote & Ganhe e o Modo Economia de Energia para farmar no celular.' },
   ];
   let passoTut = 0;
   function iniciarTutorial(forcar = false) {

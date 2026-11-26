@@ -52,7 +52,7 @@ export function tierDaUnidade(u, cfg = TIER_CFG) {
 }
 
 export function estrelasDaUnidade(u, cfg = ESTRELAS_CFG) {
-  const bruto = Number(u?.estrelas ?? 1);
+  const bruto = Number(u?.estrelas ?? u?.stars ?? u?.star ?? 1);
   return clamp(Number.isFinite(bruto) ? Math.floor(bruto) : 1, cfg.min, cfg.max);
 }
 
@@ -216,151 +216,144 @@ export function tentarReproduzir(save, idxA, idxB, rng = Math.random, agoraMs = 
   return { ok: true, sucesso: true, ovo, intervaloMs: check.intervaloMs, proximoEm: agoraMs + check.intervaloMs };
 }
 
-// ---- Evolução por Fragmentos de Sonho elementais, Iniciais (T4→T4→T5) e Ficha do Onírico ----
-import { LINHAS, linhaDaEspecie, ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE, ARTE_DA_ESPECIE } from '../species.js';
-import { statsDoNivel } from './regiao1-estrategia-regras.js';
-import { kitDe, PAPEL_PADRAO, EFEITOS } from './regiao1-batalha-habilidades.js';
+// ---- Evolução por Fragmentos de Sonho elementais (#59), Iniciais (T4→T4→T5) e Ficha unificada (#57 + #58 + #59) ----
+import { LINHAS, linhaDaEspecie, ELEMENTO_DA_ESPECIE, ARTE_DA_ESPECIE } from '../species.js';
+import { REINOS } from '../reinos.js';
+import { criarUnidade } from './regiao1-estrategia-regras.js';
+import { EFEITOS } from './regiao1-batalha-habilidades.js';
+import { tierDe, estrelasDe, faixaEstrela, bonusTier, bonusEstrelas, infoClasse, classeDaEspecie } from './regiao1-progressao.js';
+import {
+  FRAGMENTOS_SONHO_CFG,
+  fragmentosSonhoDe,
+  saldoFragmentoSonho,
+  adicionarFragmentoSonho,
+  consultarEvolucaoForma,
+  evoluirFormaPorFragmentos,
+} from './regiao1-regras-sonho.js';
+
+export { fragmentosSonhoDe, adicionarFragmentoSonho };
+export const saldoFragmentoElemental = saldoFragmentoSonho;
 
 export const EVOLUCAO_CFG = {
-  // Base → segunda custa 10 Fragmentos de Sonho elementais; segunda → terceira custa 30.
-  custoBaseParaSegunda: 10,
-  custoSegundaParaTerceira: 30,
-  // Apenas as cinco linhagens iniciais têm tier ligado à forma (base T4, segunda T4, terceira T5).
-  // O restante do catálogo NÃO deriva tier pela posição na árvore.
+  custoBaseParaSegunda: FRAGMENTOS_SONHO_CFG.custoBaseParaSegunda,
+  custoSegundaParaTerceira: FRAGMENTOS_SONHO_CFG.custoSegundaParaTerceira,
   linhagensIniciais: new Set(LINHAS.map((l) => l.id)),
   tierIniciaisPorFase: { inicial: 4, atual: 4, evolucao: 5 },
 };
 
 export const RARIDADE_DO_TIER = { 1: 'comum', 2: 'incomum', 3: 'rara', 4: 'epica', 5: 'lendaria' };
-export const CLASSE_DO_ONIRICO = {
-  Velalume: 'Suporte', 'Mortálio': 'Mago', Abyssar: 'Assassino', Abobrisco: 'Tanque', Vitrarco: 'Guerreiro',
-  Penumbrio: 'Assassino', Noctarn: 'Assassino', Noctarion: 'Assassino',
-  Brasinha: 'Guerreiro', Ignavor: 'Guerreiro', Ignaraz: 'Guerreiro',
-  Gotalume: 'Suporte', Vaelith: 'Suporte', Vaelirion: 'Suporte',
-  Sementil: 'Tanque', Brotavel: 'Tanque', Florivel: 'Tanque',
-  Solinho: 'Mago', Solarin: 'Mago', 'Helíssio': 'Mago',
-};
 
 export function classeDaUnidade(u) {
   const esp = typeof u === 'string' ? u : u?.especie;
-  if (CLASSE_DO_ONIRICO[esp]) return CLASSE_DO_ONIRICO[esp];
-  const papel = PAPEL_PADRAO[esp] || 'ataque';
-  return papel === 'defesa' ? 'Tanque' : papel === 'suporte' ? 'Suporte' : 'Guerreiro';
+  return infoClasse(esp).nome;
 }
 
 export const raridadeRotulo = (tier) => RARIDADE_DO_TIER[clamp(Number(tier) || 1, 1, 5)] || 'comum';
 export const molduraDoTier = (tier) => `assets/confusion/interface/banner/moldura-${clamp(Number(tier) || 1, 1, 5)}.png`;
 
-export function fragmentosSonhoDe(save) {
-  const idle = save?.idle || (save ? (save.idle = {}) : {});
-  const moch = idle.mochila || (idle.mochila = {});
-  if (!moch.fragmentosSonho || typeof moch.fragmentosSonho !== 'object') {
-    moch.fragmentosSonho = { trevas: 0, fogo: 0, agua: 0, planta: 0, luz: 0, fantasma: 0, neutro: 0 };
+function linhagemReinoPorNome(especie) {
+  for (const r of Object.values(REINOS)) {
+    for (const l of r.linhagens || []) {
+      if (l.nome === especie) return l;
+    }
   }
-  return moch.fragmentosSonho;
+  return null;
 }
 
-export function saldoFragmentoElemental(save, elemento) {
-  const el = elemento || 'neutro';
-  return Number(fragmentosSonhoDe(save)[el]) || 0;
-}
-
-export function adicionarFragmentoSonho(save, elemento, qtd = 1) {
-  const frags = fragmentosSonhoDe(save);
-  const el = elemento || 'neutro';
-  frags[el] = Math.max(0, (Number(frags[el]) || 0) + qtd);
-  return frags[el];
-}
-
-// Árvore conectada com as 3 formas da linhagem, forma atual destacada, custo e saldo da próxima evolução.
-export function arvoreEvolucaoDe(u, save = null, cfg = EVOLUCAO_CFG) {
-  const esp = typeof u === 'string' ? u : u?.especie;
+// Árvore conectada com as 3 formas usando o contrato oficial de regiao1-regras-sonho.js (#59).
+export function arvoreEvolucaoDe(u, save = null) {
+  const obj = typeof u === 'string' ? { especie: u } : u;
+  const esp = obj?.especie;
+  const consulta = consultarEvolucaoForma(save, obj);
   const linha = linhaDaEspecie(esp);
-  const elemento = ELEMENTO_DA_ESPECIE[esp] || u?.elemento || 'neutro';
-  const saldo = save ? saldoFragmentoElemental(save, elemento) : 0;
-  if (!linha) {
+  const reinoLin = linha ? null : linhagemReinoPorNome(esp);
+
+  let formas;
+  if (linha) {
+    formas = [
+      { fase: 'inicial', rotulo: 'Base', especie: linha.inicial, arte: ARTE_DA_ESPECIE[linha.inicial] || null, atual: consulta.faseAtual === 1, tierFixo: 4 },
+      { fase: 'atual', rotulo: '2ª Forma', especie: linha.atual, arte: ARTE_DA_ESPECIE[linha.atual] || null, atual: consulta.faseAtual === 2, tierFixo: 4 },
+      { fase: 'evolucao', rotulo: '3ª Forma', especie: linha.evolucao, arte: ARTE_DA_ESPECIE[linha.evolucao] || null, atual: consulta.faseAtual === 3, tierFixo: 5 },
+    ];
+  } else if (reinoLin) {
+    formas = [
+      { fase: 'inicial', rotulo: 'Base', especie: reinoLin.nome, arte: reinoLin.formas?.[0] || reinoLin.arte || null, atual: consulta.faseAtual === 1 },
+      { fase: 'atual', rotulo: '2ª Forma', especie: reinoLin.nome, arte: reinoLin.formas?.[1] || reinoLin.arte || null, atual: consulta.faseAtual === 2 },
+      { fase: 'evolucao', rotulo: '3ª Forma', especie: reinoLin.nome, arte: reinoLin.formas?.[2] || reinoLin.arte || null, atual: consulta.faseAtual === 3 },
+    ];
+  } else {
     return {
       possuiArvore: false,
       linhagemInicial: false,
-      elemento,
+      elemento: consulta.elemento,
       faseAtual: 'unica',
       indiceAtual: 0,
       formas: [{ fase: 'unica', especie: esp, arte: ARTE_DA_ESPECIE[esp] || null, atual: true }],
       proxima: null,
     };
   }
-  const ehInicial = cfg.linhagensIniciais.has(linha.id);
-  const formas = [
-    { fase: 'inicial', rotulo: 'Base', especie: linha.inicial, arte: ARTE_DA_ESPECIE[linha.inicial] || null, atual: esp === linha.inicial, ...(ehInicial ? { tierFixo: cfg.tierIniciaisPorFase.inicial } : {}) },
-    { fase: 'atual', rotulo: '2ª Forma', especie: linha.atual, arte: ARTE_DA_ESPECIE[linha.atual] || null, atual: esp === linha.atual, ...(ehInicial ? { tierFixo: cfg.tierIniciaisPorFase.atual } : {}) },
-    { fase: 'evolucao', rotulo: '3ª Forma', especie: linha.evolucao, arte: ARTE_DA_ESPECIE[linha.evolucao] || null, atual: esp === linha.evolucao, ...(ehInicial ? { tierFixo: cfg.tierIniciaisPorFase.evolucao } : {}) },
-  ];
-  const indiceAtual = Math.max(0, formas.findIndex((f) => f.atual));
-  const faseAtual = formas[indiceAtual].fase;
-  let proxima = null;
-  if (indiceAtual === 0) {
-    const custo = cfg.custoBaseParaSegunda;
-    proxima = { de: linha.inicial, para: linha.atual, custo, saldo, elemento, podeEvoluir: saldo >= custo, tierNovo: ehInicial ? cfg.tierIniciaisPorFase.atual : null };
-  } else if (indiceAtual === 1) {
-    const custo = cfg.custoSegundaParaTerceira;
-    proxima = { de: linha.atual, para: linha.evolucao, custo, saldo, elemento, podeEvoluir: saldo >= custo, tierNovo: ehInicial ? cfg.tierIniciaisPorFase.evolucao : null };
-  }
+
+  const indiceAtual = Math.max(0, (consulta.faseAtual || 1) - 1);
+  const proxima = consulta.proximaFase
+    ? {
+        de: consulta.de,
+        para: consulta.para,
+        faseNova: consulta.proximaFase,
+        custo: consulta.custo,
+        saldo: consulta.saldo,
+        faltam: consulta.faltam,
+        elemento: consulta.elemento,
+        itemId: consulta.itemId,
+        podeEvoluir: consulta.podeEvoluir,
+        tierNovo: consulta.linhagemInicial ? consulta.tierResultante : null,
+      }
+    : null;
+
   return {
     possuiArvore: true,
-    linhaId: linha.id,
-    linhagemInicial: ehInicial,
-    elemento,
-    faseAtual,
+    linhaId: linha?.id || reinoLin?.nome || null,
+    linhagemInicial: consulta.linhagemInicial,
+    elemento: consulta.elemento,
+    faseAtual: formas[indiceAtual]?.fase || 'inicial',
     indiceAtual,
     formas,
     proxima,
   };
 }
 
-// Evolui a forma do Onírico selecionado consumindo 10 (base→2ª) ou 30 (2ª→3ª) Fragmentos de Sonho elementais.
-// Para as 5 linhagens iniciais: base e 2ª forma são T4 e 3ª forma sobe para T5. Para o restante do catálogo, o tier da unidade não muda pela posição na árvore.
-export function evoluirFormaOnirico(save, idxUnidade, cfg = EVOLUCAO_CFG) {
-  const u = save?.idle?.equipe?.[idxUnidade];
-  if (!u) return { ok: false, motivo: 'Onírico não encontrado.' };
-  normalizarUnidade(u);
-  const arv = arvoreEvolucaoDe(u, save, cfg);
-  if (!arv.proxima) return { ok: false, motivo: 'Este Onírico já está na última forma.' };
-  const { para, custo, saldo, elemento, tierNovo } = arv.proxima;
-  if (saldo < custo) {
-    return { ok: false, motivo: `Faltam Fragmentos de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`, custo, saldo, elemento };
-  }
-  const frags = fragmentosSonhoDe(save);
-  frags[elemento] -= custo;
-  const de = u.especie;
-  u.especie = para;
-  if (arv.linhagemInicial && tierNovo) {
-    u.tier = Math.max(u.tier, tierNovo);
-    u.raridade = u.tier;
-  }
-  return { ok: true, unidade: u, de, para, custo, elemento, saldoRestante: frags[elemento], tier: u.tier };
+// Evolui a forma pela regra única de regiao1-regras-sonho.js (#59).
+export function evoluirFormaOnirico(save, idxUnidade, opcoes = {}) {
+  const res = evoluirFormaPorFragmentos(save, idxUnidade, opcoes);
+  if (!res.ok) return res;
+  return { ...res, saldoRestante: res.saldoDepois };
 }
 
-// Ficha completa do Onírico selecionado: HP, ataque, defesa, velocidade, nível, elemento, classe, tier, raridade, estrelas,
-// até 3 habilidades com efeitos e recargas e árvore conectada com as 3 formas.
-export function fichaOnirico(u, save = null, cfg = EVOLUCAO_CFG) {
+// Ficha completa unificada (#57 estrelas/tier/classe/combate + #58 moldura/habilidades + #59 evolução por Fragmentos de Sonho).
+export function fichaOnirico(u, save = null) {
   if (!u) return null;
-  const tier = tierDaUnidade(u);
-  const estrelas = estrelasDaUnidade(u);
+  const tier = tierDe(u);
+  const estrelas = estrelasDe(u);
+  const faixa = faixaEstrela(estrelas);
   const nivel = Math.max(1, Number(u.nivel) || 1);
   const esp = u.especie;
   const elemento = ELEMENTO_DA_ESPECIE[esp] || u.elemento || 'neutro';
-  const papel = PAPEL_PADRAO[esp] || 'ataque';
-  const classe = classeDaUnidade(u);
-  const base = statsDoNivel(nivel, papel);
-  const multTier = 1 + 0.15 * (tier - 1);
-  const multEstrela = 1 + 0.025 * (estrelas - 1);
-  const mult = multTier * multEstrela;
-  const hp = Math.round(base.hp * mult);
-  const atk = Math.round(base.atk * mult);
-  const def = Math.round(base.def * mult);
-  const velBase = classe === 'Assassino' ? 120 : classe === 'Suporte' || classe === 'Mago' ? 105 : classe === 'Guerreiro' ? 100 : 90;
+  const clsInfo = infoClasse(esp);
+  const unidadeCombate = criarUnidade({
+    id: u.uid || 'ficha',
+    especie: esp,
+    nivel,
+    lado: 'a',
+    tier,
+    estrelas,
+    classe: classeDaEspecie(esp),
+    elemento,
+    categoriaPoder: u.categoriaPoder || null,
+    chefeRecrutado: Boolean(u.chefeRecrutado),
+    exclusivoBanner: Boolean(u.exclusivoBanner),
+  });
+  const velBase = clsInfo.id === 'assassino' ? 120 : clsInfo.id === 'suporte' || clsInfo.id === 'mago' ? 105 : clsInfo.id === 'guerreiro' ? 100 : 90;
   const velocidade = Math.round(velBase + nivel * 1.2 + (estrelas - 1) * 1.5);
-  const kit = kitDe(esp, papel, elemento, HABILIDADES_DA_ESPECIE[esp] || []).slice(0, 3).map((h) => ({
+  const kit = (unidadeCombate.kit || []).slice(0, 3).map((h) => ({
     id: h.id,
     nome: h.nome,
     icone: h.icone || '✨',
@@ -370,25 +363,31 @@ export function fichaOnirico(u, save = null, cfg = EVOLUCAO_CFG) {
     mult: h.mult || null,
     efeitos: (h.efeitos || []).map((e) => ({ id: e.id, nome: EFEITOS[e.id]?.nome || e.id, icone: EFEITOS[e.id]?.icone || '', turnos: e.turnos, chance: e.chance ?? 1 })),
   }));
-  const arvore = arvoreEvolucaoDe(u, save, cfg);
+  const arvore = arvoreEvolucaoDe(u, save);
   return {
     uid: u.uid || null,
     especie: esp,
     nivel,
     xp: Math.max(0, Number(u.xp) || 0),
     elemento,
-    classe,
-    papel,
+    classe: clsInfo.nome,
+    classeInfo: clsInfo,
+    papel: unidadeCombate.papel,
     tier,
     raridade: raridadeRotulo(tier),
     moldura: molduraDoTier(tier),
     estrelas,
-    hp,
-    ataque: atk,
-    defesa: def,
+    faixaEstrela: faixa,
+    bonusTier: bonusTier(tier),
+    bonusEstrelas: bonusEstrelas(estrelas),
+    categoriaPoder: unidadeCombate.categoriaPoder,
+    hp: unidadeCombate.hpMax,
+    ataque: unidadeCombate.atk,
+    defesa: unidadeCombate.def,
     velocidade,
     habilidades: kit,
     arvore,
   };
 }
+
 

@@ -389,7 +389,6 @@
     <div style="display:flex;flex-direction:column;gap:8px">
       <label class="chk-pill"><input type="checkbox" id="ac-toggle"> <b>Ligar Auto-Caça no mapa atual</b></label>
       <label class="chk-pill"><input type="checkbox" id="ac-vantagem"> Preferir habilidade de maior vantagem elemental</label>
-      <label class="chk-pill"><input type="checkbox" id="ac-capturar"> Auto-lançar Esfera Psíquica em encontros elegíveis</label>
       <label class="chk-pill"><input type="checkbox" id="ac-ovos"> Coletar ovos automaticamente</label>
       <label class="chk-pill"><input type="checkbox" id="ac-emergencia"> Proteção: recuar se HP cair em perigo</label>
       <div class="card-row"><span>Descansar quando HP ≤ <b id="ac-hp-val">30%</b></span><input id="ac-hp" type="range" min="10" max="80" value="30"></div>
@@ -419,20 +418,17 @@
     <div class="modal-head"><h3>Domador e Mochila</h3><button class="btn-fechar" data-fechar="modal-mochila" aria-label="Fechar">✕</button></div>
     <nav class="mochila-atalhos" aria-label="Seções da mochila">
       <button type="button" class="btn-sec" data-mochila-secao="domador-secao">Atributos</button>
-      <button type="button" class="btn-sec" data-mochila-secao="reliquias-secao">Relíquias</button>
+      <button type="button" class="btn-sec" data-mochila-secao="fragmentos-secao">Fragmentos</button>
       <button type="button" class="btn-sec" data-mochila-secao="ovos-secao">Ovos</button>
-      <button type="button" class="btn-sec" data-mochila-secao="esferas-secao">Esferas</button>
     </nav>
     <div class="sec-tit" id="domador-secao">Pontos de Atributo do Domador (+3 pts por nível)</div>
     <div id="domador-atributos"></div>
     <div class="sec-tit">Origem dos Atributos</div>
     <div id="status-breakdown"></div>
-    <div class="sec-tit" id="reliquias-secao">Relíquias (Equipar / Comprar)</div>
-    <div id="mochila-reliquias"></div>
+    <div class="sec-tit" id="fragmentos-secao">Fragmentos de Sonho &amp; Chefes</div>
+    <div id="mochila-fragmentos"></div>
     <div class="sec-tit" id="ovos-secao">Ovos</div>
     <div id="mochila-ovos"></div>
-    <div class="sec-tit" id="esferas-secao">Esferas Psíquicas</div>
-    <div id="mochila-esferas"></div>
   </div>
 </div>
 
@@ -471,7 +467,6 @@
     <div class="card-row"><div><b>TopIdle</b><div class="sub">Ciclo de 12h · +1 Vote Cash</div></div><button class="btn-pri" data-votar="topidle">Votar</button></div>
     <div class="card-row"><div><b>IdleRank</b><div class="sub">Ciclo de 24h · +1 Vote Cash</div></div><button class="btn-pri" data-votar="idlerank">Votar</button></div>
     <div class="sec-tit">Loja de Votação</div>
-    <div class="card-row"><div><b>3× Esfera Rara</b></div><button class="btn-sec" data-voto-loja="esferas">1 Vote Cash</button></div>
     <div class="card-row"><div><b>40 Diamantes</b></div><button class="btn-sec" data-voto-loja="diamantes">2 Vote Cash</button></div>
     <div class="card-row"><div><b>Ovo Abençoado (Solarin)</b></div><button class="btn-sec" data-voto-loja="ovo_evento">3 Vote Cash</button></div>
   </div>

@@ -4,17 +4,19 @@
 // O save da Região 1 vai para a nuvem junto com o que a conta já tinha (contas antigas são preservadas).
 import * as A from '../account.js';
 import { ARTE_DA_ESPECIE, LINHAS, ELEMENTO_DA_ESPECIE } from '../species.js';
-import { xpTotal } from './regiao1-progressao.js';
-import { EVOLUCAO_CFG, molduraDoTier, raridadeRotulo, classeDaUnidade } from './regiao1-criacao-regras.js';
+import { xpTotal, estrelasIniciais, infoClasse } from './regiao1-progressao.js';
+import { FRAGMENTOS_SONHO_CFG, criarUnidadeInicial } from './regiao1-regras-sonho.js';
+import { molduraDoTier, raridadeRotulo } from './regiao1-criacao-regras.js';
 
 export const BOAS_VINDAS = { diamantes: 20000, vipDias: 10 };
 const DIA = 86400000;
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const TIER_INICIAL = EVOLUCAO_CFG.tierIniciaisPorFase.inicial; // T4 na forma base das 5 linhagens iniciais
+const TIER_INICIAL = FRAGMENTOS_SONHO_CFG.tierIniciaisPorFase[1]; // T4 na forma base das 5 linhagens iniciais
 const ELEMENTO_ROTULO = { trevas: 'Noturno', fogo: 'Fogo', agua: 'Água', planta: 'Planta', luz: 'Diurno (luz)' };
 // As cinco linhas iniciais derivadas dos dados reais de LINHAS: começam na forma base T4
 export const INICIAIS = LINHAS.map((l) => {
   const el = ELEMENTO_DA_ESPECIE[l.inicial] || 'neutro';
+  const cls = infoClasse(l.inicial);
   return {
     id: l.id,
     linha: l.atual,
@@ -24,7 +26,8 @@ export const INICIAIS = LINHAS.map((l) => {
     moldura: molduraDoTier(TIER_INICIAL),
     elementoId: el,
     elemento: ELEMENTO_ROTULO[el] || el,
-    papel: classeDaUnidade(l.inicial),
+    papel: cls.nome,
+    classe: cls.nome,
     arte: ARTE_DA_ESPECIE[l.inicial] || '',
   };
 });
@@ -40,7 +43,9 @@ export function prepararContaNova(save, { userId, inicial, agora = Date.now(), n
   save.conta.uid = userId; save.conta.inicial = lin.especie;
   const idle = save.idle; idle.equipe = idle.equipe || [];
   if (!idle.equipe.some((m) => m.inicial)) {
-    idle.equipe.unshift({ especie: lin.especie, nivel: 5, xp: xpTotal(5), tier: lin.tier, raridade: lin.tier, estrelas: 1, forma: 'natural', inicial: true, uid: 'ini0' });
+    const u = criarUnidadeInicial(lin.especie, { nivel: 5, uid: 'ini0', estrelas: estrelasIniciais('inicial') });
+    u.xp = xpTotal(5);
+    idle.equipe.unshift(u);
     const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== 'ini0');
     idle.formacao = ['ini0', ...resto].slice(0, 4);
     while (idle.formacao.length < 4) idle.formacao.push(null);

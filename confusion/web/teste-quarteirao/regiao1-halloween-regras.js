@@ -1,15 +1,16 @@
 // Regras do evento de Halloween: banner mensal com contador e garantias, tickets separados, doces e evolução de tier, Torre de 4
 // dificuldades × 100 andares com marcos pagos uma única vez, loja da Torre e poções de XP. Estado em save.idle.hw.
 import { EDICAO, BANNER_HW, LINHAGENS_HW, DOCES, LOJA_TORRE, TORRE, formaDoTier, RENOMEAR_HW } from './regiao1-halloween-dados.js';
-import { aplicarXp, previsaoXp, POCOES, nivelDe, xpTotal } from './regiao1-progressao.js';
+import { aplicarXp, previsaoXp, POCOES, nivelDe, xpTotal, migrarProgressaoOniricos, bonusCombateIndividuo, estrelasIniciais } from './regiao1-progressao.js';
 import { ganharXpPasse } from './regiao1-passe-regras.js';
 
-// Saves anteriores: nomes provisórios viram os definitivos; cada Onírico ganha um id estável (para Equipes)
+// Saves anteriores: nomes provisórios viram os definitivos; preserva estrelas/tier e garante id estável (para Equipes)
 export function migrarHW(save) {
   let mudou = false, n = 0;
   for (const m of save.idle?.equipe || []) { if (RENOMEAR_HW[m.especie]) { m.especie = RENOMEAR_HW[m.especie]; mudou = true; } }
   const usados = new Set((save.idle?.equipe || []).map((m) => m.uid).filter(Boolean));
   for (const m of save.idle?.equipe || []) if (!m.uid) { while (usados.has(`o${n}`)) n++; m.uid = `o${n}`; usados.add(m.uid); mudou = true; }
+  if (migrarProgressaoOniricos(save)) mudou = true;
   return mudou;
 }
 export function hwDe(save) {
@@ -40,8 +41,8 @@ export function tierDaPosicao(pos, rng = Math.random, cfg = BANNER_HW) {
   for (const t of [1, 2, 3, 4, 5]) { acc += cfg.chances[t]; if (r < acc) return { tier: t, garantia: null }; }
   return { tier: 1, garantia: null };
 }
-// Bônus de tier de um membro da equipe (zero para quem não é exclusivo)
-export const bonusDoMembro = (m) => (m?.tierHW ? { hp: 0.15 * (m.tierHW - 1), atk: 0.15 * (m.tierHW - 1), def: 0.12 * (m.tierHW - 1) } : {});
+// Bônus combinado de tier (1–5) + estrelas (1–30) de um membro da equipe
+export const bonusDoMembro = (m) => bonusCombateIndividuo(m);
 export const proximosMarcos = (n) => ({ ate10: 10 - (n % 10), ate50: 50 - (n % 50), ate100: 100 - (n % 100) });
 export function invocarHW(save, quantos = 1, rng = Math.random, ed = EDICAO) {
   const h = hwDe(save);
@@ -52,9 +53,10 @@ export function invocarHW(save, quantos = 1, rng = Math.random, ed = EDICAO) {
     const { tier, garantia } = tierDaPosicao(pos, rng);
     if (tier === 5) h.contador[ed.id] = 0; // Tier 5 (sorte ou garantia) reinicia a contagem
     const lin = LINHAGENS_HW.find((l) => l.tier === tier);
-    const novo = { especie: lin.especie, nivel: 1, xp: 0, raridade: tier, forma: 'natural', tierHW: tier, evento: ed.id, uid: `h${ed.id.slice(-4)}${h.total || 0}_${i}` };
+    const estrelas = estrelasIniciais('bannerHW');
+    const novo = { especie: lin.especie, nivel: 1, xp: 0, tier, raridade: tier, estrelas, forma: 'natural', tierHW: tier, evento: ed.id, uid: `h${ed.id.slice(-4)}${h.total || 0}_${i}` };
     (save.idle.equipe ||= []).push(novo);
-    resultados.push({ pos, tier, garantia, especie: lin.especie });
+    resultados.push({ pos, tier, estrelas, garantia, especie: lin.especie });
   }
   h.historico.push(...resultados.map((r) => `${r.pos}: T${r.tier}${r.garantia ? ` (garantia ${r.garantia})` : ''}`)); if (h.historico.length > 60) h.historico = h.historico.slice(-60);
   return { ok: true, resultados, contador: h.contador[ed.id], marcos: proximosMarcos(h.contador[ed.id]) };
@@ -71,7 +73,7 @@ export function evoluirHW(save, idx) {
   const h = hwDe(save), m = save.idle.equipe?.[idx], inf = infoEvolucao(m);
   if (!inf) return { ok: false, motivo: 'Este Onírico não evolui com doces.' };
   if (h.doces < inf.custo) return { ok: false, motivo: `Faltam doces (${inf.custo}🍬).` };
-  h.doces -= inf.custo; m.tierHW = inf.para; m.raridade = inf.para; return { ok: true, ...inf };
+  h.doces -= inf.custo; m.tierHW = inf.para; m.tier = inf.para; m.raridade = inf.para; return { ok: true, ...inf };
 }
 // Drop de doce (só durante o evento). origem: 'abate' (Campanha, Auto-Caça, Caçadas, Torre) ou 'andar'.
 export function talvezDoce(save, origem, rng = Math.random, agora = new Date()) {
