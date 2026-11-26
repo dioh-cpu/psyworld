@@ -5,7 +5,7 @@
 import { ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
 import { multElemento } from '../core.js';
 import { EFEITOS, kitDe, PAPEL_PADRAO, PODER_EXCLUSIVO } from './regiao1-batalha-habilidades.js';
-export { KITS, kitDe, EFEITOS } from './regiao1-batalha-habilidades.js';
+export { KITS, kitDe, EFEITOS, temKitProprio } from './regiao1-batalha-habilidades.js';
 
 const lcg = (s) => () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
 export const criarRng = (semente) => lcg((semente >>> 0) || 1);

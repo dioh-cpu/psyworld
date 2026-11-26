@@ -11,7 +11,7 @@ test('toda espécie tem 3 habilidades só com recarga (sem custo), e mais recarg
     const k = M.kitDe(nome, papel, 'fogo', ESPECIES[nome].habilidades); assert.equal(k.length, 3, nome);
     assert.ok(k[0].cd < k[1].cd && k[1].cd < k[2].cd, `${nome}/${papel}`);
     const forca = (h) => (h.tipo === 'dano' ? h.mult * (h.alvo === 'todos' ? 2 : 1) : h.tipo === 'cura' ? (h.mult + (h.alvo === 'aliados' ? 0.1 : 0)) * 5 : ((h.escudo || 0) + (h.cura || 0)) * 5 + (h.limpa ? 1 : 0.2) + (h.efeitos?.length || 0) * 0.4);
-    if (M.KITS[nome]) continue; // kits escritos à mão
+    if (M.temKitProprio(nome)) continue; // kits escritos à mão
     assert.ok(forca(k[0]) <= forca(k[1]) + 1e-9 || papel === 'defesa', `${nome}/${papel} s1<=s2`); assert.ok(forca(k[2]) >= forca(k[1]) - 1e-9 || papel === 'defesa', `${nome}/${papel} s3>=s2`);
   }
   const kn = M.kitDe('Noctarn', 'ataque', 'trevas'); assert.deepEqual(kn.map((h) => h.id), ['mordida_umbral', 'chama_violeta', 'veu_noturno']);
@@ -55,7 +55,7 @@ test('recarga, custo de energia e efeitos: sangramento causa dano por turno; ato
 });
 test('área atinge todos; em recarga, a habilidade vira ataque básico', () => {
   const a = u('a0', 'Noctarn', 'a', 30, {}), ini = [0, 1, 2].map((i) => u(`i${i}`, 'Brotavel', 'i', 5));
-  a.kit = M.kitDe('Brotavel', 'ataque', 'fogo', ['A', 'B', 'C']); const b = M.criarBatalha([a], ini); M.atorAtual(b);
+  a.kit = M.kitDe('Genérico', 'ataque', 'fogo', ['A', 'B', 'C']); const b = M.criarBatalha([a], ini); M.atorAtual(b);
   M.executar(b, { tipo: 'habilidade', idx: 1 }, rng); assert.equal(b.evento.alvos.length, 3); assert.ok(b.evento.area);
   const b2 = M.criarBatalha([u('a0', 'Noctarn', 'a', 30)], [u('i0', 'Brotavel', 'i', 5)]); M.atorAtual(b2); b2.aliados[0].cd[2] = 3; M.executar(b2, { tipo: 'habilidade', idx: 2 }, rng); assert.equal(b2.evento.tipo, 'atacar');
 });

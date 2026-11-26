@@ -29,6 +29,27 @@ const ef = (id, turnos = 3, chance = 1, extra = {}) => ({ id, turnos, chance, ..
 // ---- kits escritos à mão ----
 // tipo: 'dano' | 'cura' | 'apoio'. alvo: 'um' | 'todos' | 'aliado' | 'aliados' | 'si'. distancia: projétil (senão, corpo a corpo).
 export const KITS = {
+  // ---- Linhas iniciais (todas as formas da linha usam o kit da linha) ----
+  Ignavor: [
+    { id: 'brasa_imperial', nome: 'Brasa Imperial', icone: '🔥', tipo: 'dano', alvo: 'um', mult: 1.25, cd: 1, elemento: 'fogo', efeitos: [ef('queimadura', 3, 0.7)] },
+    { id: 'juba_flamejante', nome: 'Juba Flamejante', icone: '🦁', tipo: 'dano', alvo: 'todos', mult: 1.0, cd: 3, distancia: true, elemento: 'fogo', efeitos: [ef('queimadura', 2, 0.5)] },
+    { id: 'rugido_dourado', nome: 'Rugido Dourado', icone: '📣', tipo: 'apoio', alvo: 'aliados', cd: 5, elemento: 'fogo', efeitos: [ef('ataque_alto', 2), ef('defesa_alta', 2)] },
+  ],
+  Vaelith: [
+    { id: 'arco_ciano', nome: 'Arco Ciano', icone: '🌊', tipo: 'dano', alvo: 'um', mult: 1.1, cd: 1, distancia: true, elemento: 'agua', efeitos: [ef('ataque_baixo', 2, 0.6)] },
+    { id: 'veu_gelado', nome: 'Véu Gelado', icone: '❄️', tipo: 'cura', alvo: 'aliados', mult: 0.2, cd: 3, elemento: 'agua', limpa: true, efeitos: [] },
+    { id: 'fenda_estelar', nome: 'Fenda Estelar', icone: '✨', tipo: 'dano', alvo: 'todos', mult: 1.2, cd: 5, distancia: true, elemento: 'agua', efeitos: [ef('congelamento', 1, 0.45)] },
+  ],
+  Brotavel: [
+    { id: 'raiz_viva', nome: 'Raiz Viva', icone: '🌱', tipo: 'dano', alvo: 'um', mult: 1.0, cd: 1, elemento: 'planta', efeitos: [ef('provocacao', 2)] },
+    { id: 'espora_verde', nome: 'Espora Verde', icone: '🍃', tipo: 'apoio', alvo: 'aliados', cd: 3, elemento: 'planta', escudo: 0.1, efeitos: [ef('regeneracao', 3)] },
+    { id: 'broto_fertil', nome: 'Broto Fértil', icone: '🌿', tipo: 'dano', alvo: 'todos', mult: 1.1, cd: 5, elemento: 'planta', efeitos: [ef('veneno', 3, 0.7)] },
+  ],
+  Solarin: [
+    { id: 'raio_dourado', nome: 'Raio Dourado', icone: '☀️', tipo: 'dano', alvo: 'um', mult: 1.15, cd: 1, distancia: true, elemento: 'luz', efeitos: [ef('silencio', 1, 0.4)] },
+    { id: 'chama_solar', nome: 'Chama Solar', icone: '🔆', tipo: 'cura', alvo: 'aliado', mult: 0.3, cd: 3, elemento: 'luz', efeitos: [ef('ataque_alto', 2)] },
+    { id: 'aurora', nome: 'Aurora', icone: '🌅', tipo: 'cura', alvo: 'aliados', mult: 0.25, cd: 5, elemento: 'luz', limpa: true, efeitos: [ef('regeneracao', 2)] },
+  ],
   // ---- Exclusivos do Banner Mensal de Halloween ----
   'Abobrisco': [
     { id: 'pancada_abobora', nome: 'Pancada de Abóbora', icone: '🎃', tipo: 'dano', alvo: 'um', mult: 1.1, cd: 1, elemento: 'planta', efeitos: [ef('provocacao', 2)] },
@@ -84,8 +105,12 @@ const POR_ELEMENTO = {
   luz: { dot: 'queimadura', cc: 'silencio', debuff: 'ataque_baixo', buff: 'ataque_alto' },
   neutro: { dot: 'sangramento', cc: 'atordoamento', debuff: 'defesa_baixa', buff: 'ataque_alto' },
 };
+// Formas base e finais usam o kit da linha
+export const LINHA_DO_KIT = { Penumbrio: 'Noctarn', Noctarion: 'Noctarn', Brasinha: 'Ignavor', Ignaraz: 'Ignavor', Gotalume: 'Vaelith', Vaelirion: 'Vaelith', Sementil: 'Brotavel', Florivel: 'Brotavel', Solinho: 'Solarin', 'Helíssio': 'Solarin' };
+export const temKitProprio = (esp) => Boolean(KITS[esp] || KITS[LINHA_DO_KIT[esp]]);
 export function kitDe(especie, papel, elemento, nomes = []) {
   if (KITS[especie]) return KITS[especie];
+  if (KITS[LINHA_DO_KIT[especie]]) return KITS[LINHA_DO_KIT[especie]];
   const E = POR_ELEMENTO[elemento] || POR_ELEMENTO.neutro, n = (i) => nomes[Math.min(i, nomes.length - 1)] || 'Golpe';
   const mk = (i, h) => ({ id: slug(n(i)), nome: n(i), elemento, ...h });
   if (papel === 'defesa') return [
