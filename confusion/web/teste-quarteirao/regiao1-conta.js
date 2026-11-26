@@ -36,6 +36,19 @@ const PENDENTE = 'cw-inicial-pendente', LIBERADO = 'cw-gate-ok';
 // ---------- regras puras (testáveis) ----------
 export const vipAtivo = (save, agora = Date.now()) => Boolean(save?.conta?.vipAte && save.conta.vipAte > agora);
 export const diasVip = (save, agora = Date.now()) => (vipAtivo(save, agora) ? Math.ceil((save.conta.vipAte - agora) / DIA) : 0);
+// Decisão pura de elegibilidade ao bônus de boas-vindas (20.000💎 + 10d VIP) preservando saves existentes.
+export function decidirEntradaConta({ remoto = null, local = null, userId = null } = {}) {
+  if (remoto?.regiao1) {
+    const tRemoto = remoto.regiao1.idle?.ultimoTickMs || 0;
+    const tLocal = local?.idle?.ultimoTickMs || 0;
+    const mesmoUid = Boolean(userId && local?.conta?.uid === userId);
+    return { acao: !mesmoUid || tRemoto > tLocal + 2000 ? 'usar-remoto' : 'liberar', novo: false };
+  }
+  const jaPremiada = Boolean(remoto?.conta?.bonusEm || (userId && local?.conta?.uid === userId && local?.conta?.bonusEm));
+  const outroUidLocal = Boolean(userId && local?.conta?.uid && local.conta.uid !== userId);
+  return { acao: 'preparar', novo: !jaPremiada, resetarLocal: outroUidLocal };
+}
+
 // Aplica o inicial e o bônus numa conta nova (substitui o provisório para que a conta nova receba apenas o inicial escolhido)
 export function prepararContaNova(save, { userId, inicial, agora = Date.now(), novo = true }) {
   const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial || l.id === inicial) || INICIAIS[0];
@@ -65,7 +78,7 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
     #conta-gate .bonus { font-size: 12px; background: #3a1f3f; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; }`;
   document.head.append(css);
   const gate = document.createElement('div'); gate.id = 'conta-gate'; document.body.append(gate);
-  let aba = 'entrar', escolhido = null, versao = 0, ultimoEnviado = '', cloudExtra = {}, logado = false;
+  let aba = 'entrar', escolhido = null, versao = 0, ultimoEnviado = '', cloudExtra = {}, logado = false, sincronizando = false;
   const msg = (t, ok = false) => { const m = gate.querySelector('.msg'); if (m) { m.textContent = t; m.classList.toggle('ok', ok); } };
   const urlJogar = () => `${location.origin}/jogar`;
   const limparUrl = () => { if (location.pathname.startsWith('/jogar') && (location.hash || location.search)) history.replaceState(null, '', '/jogar'); };
@@ -87,34 +100,36 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
   function liberarJogo() { gate.classList.remove('vis'); try { sessionStorage.setItem(LIBERADO, '1'); } catch {} limparUrl(); }
   function trocarSave(obj) { localStorage.setItem(chaveSave, typeof obj === 'string' ? obj : JSON.stringify(obj)); try { sessionStorage.setItem(LIBERADO, '1'); } catch {} location.replace(location.pathname.startsWith('/jogar') ? '/jogar' : location.pathname); }
 
-  // Decide o save ao entrar: nuvem (se mais recente ou de outro aparelho), save local da mesma conta, ou conta nova
+  // Decide o save ao entrar: nuvem (se mais recente ou de outro aparelho), save local da mesma conta, ou conta elegível ao bônus único
   async function sincronizarAoEntrar() {
-    const u = A.user(); if (!u) return;
-    msg('Carregando sua campanha…', true);
-    let remoto = null;
-    try { const r = await A.pull(); remoto = r.save; versao = r.version || 0; } catch (e) { msg('Não foi possível ler o save na nuvem. Tente de novo.'); return; }
-    cloudExtra = remoto && typeof remoto === 'object' ? { ...remoto } : {}; delete cloudExtra.regiao1;
-    const local = getSave(), localDaConta = local.conta?.uid === u.id;
-    if (remoto?.regiao1) {
-      const tRemoto = remoto.regiao1.idle?.ultimoTickMs || 0, tLocal = local.idle?.ultimoTickMs || 0;
-      if (!localDaConta || tRemoto > tLocal + 2000) { trocarSave(remoto.regiao1); return; }
-      logado = true; liberarJogo(); return;
+    const u = A.user(); if (!u || sincronizando) return;
+    sincronizando = true;
+    try {
+      msg('Carregando sua campanha…', true);
+      let remoto = null;
+      try { const r = await A.pull(); remoto = r.save; versao = r.version || 0; } catch (e) { msg('Não foi possível ler o save na nuvem. Tente de novo.'); return; }
+      cloudExtra = remoto && typeof remoto === 'object' ? { ...remoto } : {}; delete cloudExtra.regiao1;
+      const local = getSave();
+      const dec = decidirEntradaConta({ remoto, local, userId: u.id });
+      if (dec.acao === 'usar-remoto') { trocarSave(remoto.regiao1); return; }
+      if (dec.acao === 'liberar') { logado = true; liberarJogo(); return; }
+      const inicial = u.user_metadata?.inicial || localStorage.getItem(PENDENTE) || escolhido;
+      if (!inicial) { aba = 'criar'; escolhido = null; gate.querySelector('.cg').innerHTML = `<h1>Escolha seu inicial</h1><p class="sub">Ele ocupa a primeira vaga da sua equipe.</p>${cartoes()}<div class="ln"><button class="btn-pri" data-acao="confirmar-inicial">Começar</button></div><p class="msg"></p>`; return; }
+      if (dec.resetarLocal) resetarSave();
+      const s = prepararContaNova(getSave(), { userId: u.id, inicial, novo: dec.novo });
+      try { localStorage.removeItem(PENDENTE); } catch {}
+      salvar(); await enviar(true); trocarSave(serializar(s));
+    } finally {
+      sincronizando = false;
     }
-    // Sem save da Região 1 na nuvem: conta nova (nenhum save) ganha o bônus; conta antiga só escolhe o inicial
-    const novo = !remoto; const inicial = u.user_metadata?.inicial || localStorage.getItem(PENDENTE) || escolhido;
-    if (!inicial) { aba = 'criar'; escolhido = null; gate.querySelector('.cg').innerHTML = `<h1>Escolha seu inicial</h1><p class="sub">Ele ocupa a primeira vaga da sua equipe.</p>${cartoes()}<div class="ln"><button class="btn-pri" data-acao="confirmar-inicial">Começar</button></div><p class="msg"></p>`; return; }
-    if (!localDaConta) resetarSave();
-    const s = prepararContaNova(getSave(), { userId: u.id, inicial, novo });
-    try { localStorage.removeItem(PENDENTE); } catch {}
-    salvar(); await enviar(true); trocarSave(serializar(s));
   }
   async function enviar(forcar = false) {
-    if (!A.user()) return;
-    const s = getSave(); if (s.conta?.uid !== A.user().id) return;
-    const txt = serializar(s); if (!forcar && txt === ultimoEnviado) return;
+    if (!A.user()) return false;
+    const s = getSave(); if (s.conta?.uid !== A.user().id) return false;
+    const txt = serializar(s); if (!forcar && txt === ultimoEnviado) return true;
     const doc = { ...cloudExtra, game: 'confusion-waves', regiao1: JSON.parse(txt), conta: s.conta };
-    try { const r = await A.push(doc, versao); versao = r.version; ultimoEnviado = txt; }
-    catch (e) { if (e.status === 409) { try { const r = await A.pull(); versao = r.version || 0; const r2 = await A.push(doc, versao); versao = r2.version; ultimoEnviado = txt; } catch {} } }
+    try { const r = await A.push(doc, versao); versao = r.version; ultimoEnviado = txt; return true; }
+    catch (e) { if (e.status === 409) { try { const r = await A.pull(); versao = r.version || 0; const r2 = await A.push(doc, versao); versao = r2.version; ultimoEnviado = txt; return true; } catch {} } return false; }
   }
   setInterval(() => { if (logado) enviar(); }, 20000);
   document.addEventListener('visibilitychange', () => { if (document.hidden && logado) enviar(); });
@@ -140,8 +155,12 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
         const r = await A.signUp(em, pw, { emailRedirectTo: urlJogar(), data: { inicial: escolhido } });
         if (!r.session) { msg('Conta criada! Confirme pelo link enviado ao seu e-mail; ele volta para esta página.', true); return; }
       } else await A.signIn(em, pw);
-      setTimeout(sincronizarAoEntrar, 300);
+      await sincronizarAoEntrar();
     } catch (err) { msg(err.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : (err.message || 'Falha.')); }
+  });
+
+  A.onChange((event) => {
+    if (event === 'SIGNED_IN' && !logado && !sincronizando && gate.classList.contains('vis')) sincronizarAoEntrar();
   });
 
   const veioDoEmail = /type=(signup|recovery|magiclink)|access_token|code=/.test(location.hash + location.search);

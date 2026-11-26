@@ -212,14 +212,19 @@ export function entregarContrato(save, id, agora = new Date()) {
   save.recompensas.gold += c.recompensa.gold || 0;
   save.recompensas.diamantes += c.recompensa.diamantes || 0;
   if (c.recompensa.tickets) e.tickets += c.recompensa.tickets;
-  if (c.libera === 'fazenda') liberarFazenda(save);
+  if (c.libera === 'fazenda') liberarFazenda(save, agora);
   if (c.libera === 'oficina') e.oficina = true;
   ganharXpPasse(save, 'contrato', null, agora);
   return { ok: true, contrato: c };
 }
-export function liberarFazenda(save) {
-  const e = expDe(save), s = fabEstado(save); if (e.fazenda) return; e.fazenda = true;
-  s.estruturas = { ...s.estruturas, cur: { tipo: 'curral', nivel: 1 }, api: { tipo: 'apiario', nivel: 1 }, gal: { tipo: 'galinheiro', nivel: 1 } };
+export function liberarFazenda(save, agora = Date.now()) {
+  const agoraMs = agora instanceof Date ? agora.getTime() : (Number(agora) || Date.now());
+  const e = expDe(save), s = fabEstado(save);
+  if (!e.fazenda) {
+    e.fazenda = true;
+    s.estruturas = { ...s.estruturas, cur: { tipo: 'curral', nivel: 1 }, api: { tipo: 'apiario', nivel: 1 }, gal: { tipo: 'galinheiro', nivel: 1 } };
+  }
+  avancarGestao(s, FAB, agoraMs);
 }
 
 // ---- Cacadas ----

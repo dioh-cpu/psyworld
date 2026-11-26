@@ -2058,7 +2058,7 @@ function golpearAlvoAuto(agora, idle) {
     }
     registrarLogIdle(
       idle,
-      `⚔️ ${morto.especie} Nv.${morto.nivel} → +${res.gold}g +${res.xp}XP${res.capturado ? ' · ✨Capturado' : ''}${res.ovoDrop ? ' · 🥚Ovo' : ''}`,
+      `⚔️ ${morto.especie} Nv.${morto.nivel} → +${res.gold}g +${res.xp}XP${res.xpOniricos ? ` (Equipe +${res.xpOniricos}XP)` : ''}${res.ovoDrop ? ' · 🥚Ovo' : ''}`,
       'farm'
     );
     if (res.subiuNivel) {

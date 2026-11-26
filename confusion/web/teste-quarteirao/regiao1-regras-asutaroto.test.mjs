@@ -8,6 +8,7 @@ import {
   desserializarEstado,
 } from './regiao1-estado.js';
 import {
+  XP_IDLE_CFG,
   garantirEstadoIdle,
   calcularStatusDetalhado,
   distribuirAtributoDomador,
@@ -39,7 +40,11 @@ import {
   migrarInicialNoctarn,
   aplicarInicialContaNova,
 } from './regiao1-regras-sonho.js';
-import { poolBanner, poolBannerSombra, invocar, expDe } from './regiao1-exp-regras.js';
+import { poolBanner, poolBannerSombra, invocar, expDe, aceitarContrato, entregarContrato, estoqueDaFab, fabEstado, podeEntregar } from './regiao1-exp-regras.js';
+import { CONTRATOS, FAB } from './regiao1-exp-dados.js';
+import { coletarTudo, prontoParaColetar } from './regiao1-gestao-regras.js';
+import { ganharXpPasse, resgatarPasse } from './regiao1-passe-regras.js';
+import { decidirEntradaConta, prepararContaNova } from './regiao1-conta.js';
 import { invocarHW, hwDe } from './regiao1-halloween-regras.js';
 import {
   ESPECIES_INICIAIS_TODAS,
@@ -659,4 +664,159 @@ test('Save da montaria: padrão brumacervo (#66), preservação de escolha a pé
   const regiao1Src = fs.readFileSync(new URL('./regiao1.js', import.meta.url), 'utf8');
   assert.match(regiao1Src, /if\s*\(alvoAutoCaca\._abatido\)\s*return;\s*alvoAutoCaca\._abatido\s*=\s*true;/);
   assert.match(regiao1Src, /resolverAbateAuto\(save,\s*\{\s*\.\.\.morto,\s*derrotaId:/);
+});
+
+test('XP do Idle ativo e offline: Oníricos da formação ganham XP, banco fica intacto e Domador progride mais devagar', () => {
+  const s = novoSave();
+  s.idle.equipe = [
+    criarUnidadeInicial('Brasinha', { nivel: 5, uid: 'f0' }),
+    { especie: 'Fanalino', nivel: 1, xp: 0, tier: 2, raridade: 2, estrelas: 1, forma: 'natural', uid: 'f1' },
+    { especie: 'Cervomusgo', nivel: 1, xp: 0, tier: 1, raridade: 1, estrelas: 1, forma: 'natural', uid: 'res0' }, // fora da formação
+  ];
+  s.idle.formacao = ['f0', 'f1', null, null];
+
+  // 10 minutos de farm ativo (~30 abates Nv.6): Domador lento, formação sobe bem, reserva não recebe
+  const domXpAntes = s.idle.jogador.xp;
+  const f0XpAntes = s.idle.equipe[0].xp;
+  for (let i = 0; i < 30; i++) {
+    const r = resolverAbateAuto(s, { especie: 'Fanalino', nivel: 6, derrotaId: `xp_at_${i}` }, () => 0.9);
+    assert.ok(r.xpOniricos > r.xp, 'Formação deve ganhar mais XP que o Domador por abate');
+  }
+  const ganhoDomAtivo = s.idle.jogador.xp - domXpAntes;
+  const ganhoFormAtivo = s.idle.equipe[0].xp - f0XpAntes;
+  assert.equal(ganhoDomAtivo, 30 * (XP_IDLE_CFG.ativoDomadorBase + 6 * XP_IDLE_CFG.ativoDomadorPorNivel)); // 300 XP (antes era 1380 XP)
+  assert.equal(ganhoFormAtivo, 30 * (XP_IDLE_CFG.ativoOniricoBase + 6 * XP_IDLE_CFG.ativoOniricoPorNivel)); // 1080 XP (antes era 0 XP)
+  assert.ok(s.idle.equipe[0].nivel > 5);
+  assert.ok(s.idle.equipe[1].nivel > 1);
+  assert.equal(s.idle.equipe[2].xp, 0); // reserva fora da formação
+
+  // 10 minutos de farm offline (Nv.6 = 16 abates): Domador recebe 120 XP (antes 608), formação recebe 448 XP (antes 0)
+  const t0 = 50_000_000;
+  s.idle.ultimoTickMs = t0 - 10 * 60_000;
+  const resumo = calcularGanhoOffline(s, 6, t0);
+  assert.equal(resumo.minutos, 10);
+  assert.equal(resumo.abates, 16);
+  assert.equal(resumo.xp, 120);
+  assert.equal(resumo.xpOniricos, 448);
+
+  const domAntesOff = s.idle.jogador.xp;
+  const f1AntesOff = s.idle.equipe[1].xp;
+  const off = aplicarGanhoOffline(s, resumo, 'Fanalino', t0, () => 0.9);
+  assert.equal(s.idle.jogador.xp - domAntesOff, 120);
+  assert.equal(s.idle.equipe[1].xp - f1AntesOff, 448);
+  assert.equal(off.oniricosXp.length, 2);
+  assert.equal(s.idle.equipe[2].xp, 0);
+});
+
+test('Cadastro e boas-vindas (20.000 diamantes): elegibilidade única e preservação de saves existentes', () => {
+  // 1) Conta elegível sem nuvem recebe 20.000 diamantes + 10d VIP uma única vez
+  const decNova = decidirEntradaConta({ remoto: null, local: novoSave(), userId: 'u_novo' });
+  assert.equal(decNova.acao, 'preparar');
+  assert.equal(decNova.novo, true);
+
+  const sNova = novoSave();
+  prepararContaNova(sNova, { userId: 'u_novo', inicial: 'Gotalume', agora: 1_000_000, novo: decNova.novo });
+  assert.equal(sNova.recompensas.diamantes, 20000);
+  assert.equal(sNova.conta.bonusEm, 1_000_000);
+  assert.equal(sNova.conta.vipAte, 1_000_000 + 10 * 86400000);
+
+  // Reentrando com a mesma conta após bônus já pago: não duplica
+  const decDup = decidirEntradaConta({ remoto: { conta: sNova.conta }, local: sNova, userId: 'u_novo' });
+  assert.equal(decDup.novo, false);
+  prepararContaNova(sNova, { userId: 'u_novo', inicial: 'Gotalume', agora: 2_000_000, novo: decDup.novo });
+  assert.equal(sNova.recompensas.diamantes, 20000);
+
+  // 2) Conta que existia no jogo raiz (/) sem save de Região 1 e sem bonusEm: elegível sem perder cloudExtra
+  const decLegadoRaiz = decidirEntradaConta({ remoto: { game: 'confusion-waves', monsters: [{ id: 1 }] }, local: novoSave(), userId: 'u_raiz' });
+  assert.equal(decLegadoRaiz.acao, 'preparar');
+  assert.equal(decLegadoRaiz.novo, true);
+
+  // 3) Save existente em Região 1 na nuvem é preservado (não reseta nem paga bônus de novo)
+  const sExistente = novoSave();
+  sExistente.recompensas.diamantes = 777;
+  sExistente.idle.ultimoTickMs = 5_000_000;
+  sExistente.conta = { uid: 'u_exist', inicial: 'Brasinha', bonusEm: 1000 };
+  const decExist = decidirEntradaConta({ remoto: { regiao1: sExistente, conta: sExistente.conta }, local: novoSave(), userId: 'u_exist' });
+  assert.equal(decExist.acao, 'usar-remoto');
+  assert.equal(decExist.novo, false);
+
+  // 4) Dispositivo compartilhado com outro uid reseta save local anterior; guest local sem uid é preservado
+  const localOutro = novoSave();
+  localOutro.conta = { uid: 'outro_uid', bonusEm: 500 };
+  assert.equal(decidirEntradaConta({ remoto: null, local: localOutro, userId: 'u_novo_2' }).resetarLocal, true);
+
+  const localGuest = novoSave();
+  localGuest.recompensas.gold = 321;
+  const decGuest = decidirEntradaConta({ remoto: null, local: localGuest, userId: 'u_guest_virou_conta' });
+  assert.equal(decGuest.resetarLocal, false);
+  assert.equal(decGuest.novo, true);
+  prepararContaNova(localGuest, { userId: 'u_guest_virou_conta', inicial: 'Solinho', agora: 3_000_000, novo: decGuest.novo });
+  assert.equal(localGuest.recompensas.gold, 321);
+  assert.equal(localGuest.recompensas.diamantes, 20000);
+});
+
+test('Contrato Leite fresco: desbloqueio da Fazenda (g1) → Curral gera leite e Galinheiro gera ovos → coleta abastece Guilda (g2)', () => {
+  const s = novoSave();
+  const t0 = 10_000_000;
+  const fab = fabEstado(s);
+  fab.materiais.fibra = 6;
+
+  // Aceita e conclui g1 ("Fibras para o balcão") -> desbloqueia Fazenda com timestamps iniciais em t0
+  assert.equal(aceitarContrato(s, 'g1', t0).ok, true);
+  const resG1 = entregarContrato(s, 'g1', t0);
+  assert.equal(resG1.ok, true);
+  assert.equal(expDe(s).fazenda, true);
+  assert.equal(fab.estruturas.cur.tipo, 'curral');
+  assert.equal(fab.estruturas.gal.tipo, 'galinheiro');
+  assert.equal(fab.gestao.producao.cur.desde, t0);
+  assert.equal(fab.gestao.producao.gal.desde, t0);
+
+  // Aceita g2 ("Leite fresco"): ainda sem leite suficiente
+  assert.equal(aceitarContrato(s, 'g2', t0).ok, true);
+  assert.equal(podeEntregar(s, CONTRATOS[1]), false);
+
+  // Após 20 minutos: Curral (12/h) gera 4 leites e Galinheiro (10/h) gera 3 ovos de produção
+  const tDepois = t0 + 20 * 60_000;
+  const col = coletarTudo(fab, FAB, tDepois);
+  assert.equal(col.recebido.leite, 4);
+  assert.equal(col.recebido.ovos, 3);
+  assert.equal(Object.keys(prontoParaColetar(fab, FAB)).length, 0);
+
+  // Itens coletados entram exatamente no estoque lido pela Guilda (sem misturar com mochila.ovos de Oníricos)
+  assert.equal(estoqueDaFab(s).mat.leite, 4);
+  assert.equal(estoqueDaFab(s).mat.ovos, 3);
+  assert.equal(s.idle.mochila.ovos.length, 0);
+  assert.equal(podeEntregar(s, CONTRATOS[1]), true);
+
+  // Entrega "Leite fresco" (g2) e libera a Oficina
+  const resG2 = entregarContrato(s, 'g2', tDepois);
+  assert.equal(resG2.ok, true);
+  assert.equal(estoqueDaFab(s).mat.leite, 1); // 4 - 3
+  assert.equal(expDe(s).oficina, true);
+});
+
+test('Passe sem Noctarn em nenhum ovo (novos e legados), preservando cópias obtidas em banner', () => {
+  const s = novoSave();
+  // Coloca 1 cópia obtida em banner + 1 ovo legado de Passe contaminado com Noctarn
+  s.idle.equipe.push({ especie: 'Noctarn', nivel: 12, xp: 1000, tier: 4, raridade: 4, estrelas: 2, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'noc_banner' });
+  s.idle.mochila.ovos.push({ especie: 'Noctarn', forma: 'natural', tier: 1, origem: 'passe-2026-11', obtidoEm: 100 });
+
+  garantirEstadoIdle(s, Date.UTC(2026, 10, 28, 12, 0, 0));
+  assert.notEqual(s.idle.mochila.ovos[0].especie, 'Noctarn');
+  assert.equal(s.idle.equipe.find((m) => m.uid === 'noc_banner')?.especie, 'Noctarn');
+  assert.equal(s.idle.equipe.find((m) => m.uid === 'noc_banner')?.tier, 4);
+
+  // Resgata todos os 100 níveis do Passe e valida que nenhum ovo gerado contém Noctarn
+  ganharXpPasse(s, 'manual', 100_000, new Date(2026, 10, 28, 12, 0, 0));
+  resgatarPasse(s, new Date(2026, 10, 28, 12, 0, 0));
+  assert.ok(s.idle.mochila.ovos.some((o) => o.origem?.startsWith('passe-')));
+  for (const ovo of s.idle.mochila.ovos) {
+    assert.notEqual(ovo.especie, 'Noctarn');
+    assert.equal((ovo.elenco || []).includes('Noctarn'), false);
+  }
+  // Cópia obtida em banner continua preservada intacta
+  const bannerCopia = s.idle.equipe.find((m) => m.uid === 'noc_banner');
+  assert.equal(bannerCopia.especie, 'Noctarn');
+  assert.equal(bannerCopia.tier, 4);
+  assert.equal(bannerCopia.origem, 'banner');
 });
