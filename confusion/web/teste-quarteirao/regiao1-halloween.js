@@ -138,7 +138,10 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
     $('#hw-corpo').innerHTML = (aba === 0 && ultimos.length ? `<div class="ln"><button class="btn-pri" data-rever-hw="1">🃏 ${reveladosHW.length && reveladosHW.every(Boolean) ? 'Rever cartas' : 'Revelar cartas'}</button></div>` : '') + [abaBanner, abaColecao, abaTorre, abaLoja, abaPocoes][aba]();
     if (zerarScroll) $('#hw-corpo').scrollTop = 0;
   }
-  function abrir(a = aba) { if (batalhaBloqueando() || tela.aberta()) return; aba = a; confirmar = null; render(true); abrirModal('modal-hw'); }
+  function abrir(a = aba) {
+    if (emTorre && tela.ativa() && tela.minimizada()) { tela.restaurar(); return; } // voltar à Torre reabre a arena da luta em segundo plano
+    if (batalhaBloqueando() || tela.aberta()) return; aba = a; confirmar = null; render(true); abrirModal('modal-hw');
+  }
 
   // ---------- Torre: entrar com carregamento e arena em tela inteira ----------
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -149,7 +152,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
     lutar(d, n);
     if (tr) { tr.classList.remove('opaco'); await espera(350); tr.classList.remove('vis'); tr.innerHTML = ''; }
   }
-  function lutar(d, n) {
+  function lutar(d, n, minimizada = false) {
     const a = H.andar(d, n); emTorre = { d, n };
     tela.abrir({
       titulo: () => `🎃 Torre · Dificuldade ${d}`, sub: () => `Andar ${n}/100 · recomendado nv.${a.recomendado}`, arena: a.arena, aliados: equipeTorre(), inimigos: a.inimigos, ritmo: 360,
@@ -157,7 +160,9 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
       indicador: (b) => `🎃 Torre D${d} · andar ${n} · ${b.fim ? (b.fim === 'vitoria' ? 'vitória' : 'derrota') : 'em combate'}`,
       onBotao: (ds, { render: r }) => { if (ds.hwAuto) { autoAvancar = !autoAvancar; r(); return true; } return false; },
       autoContinuar: (b) => autoAvancar && b.fim === 'vitoria',
-      onFim: (venceu) => {
+      iniciarMinimizada: minimizada, // o avanço automático continua minimizado se a luta anterior estava minimizada
+      notificarFim: (b) => mostrarToast(b.fim === 'vitoria' ? `🎃 Andar ${n} vencido. Toque no indicador para ver o resultado.` : `💀 Derrota no andar ${n}. Toque no indicador ou volte à Torre.`, 6000),
+      onFim: (venceu, _frac, mini) => {
         // XP da equipe em campo (vitória inteira; derrota rende 30%), sem teto e preservando o excedente
         const xp = Math.round((40 + 12 * a.nivel) * (venceu ? 1 : 0.3)); for (const { m } of membrosFormacao(save().idle)) aplicarXp(m, xp);
         if (!venceu) { emTorre = null; mostrarToast(`Derrota no andar ${n}. Fortaleça a equipe e tente de novo.`, 3200); salvar(); abrir(2); return; }
@@ -166,7 +171,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
         salvar();
         const msg = [`Andar ${n} vencido!`, r.tickets ? `+${r.tickets} 🎫` : '', r.doce + doces ? `+${r.doce + doces} 🍬` : '', r.pocao ? `+1 ${POCOES[r.pocao].nome}` : '', r.liberou ? `Dificuldade ${r.liberou} liberada!` : ''].filter(Boolean).join(' · ');
         mostrarToast(msg, 3800);
-        if (autoAvancar && n < 100) setTimeout(() => lutar(d, n + 1), 600); else { emTorre = null; abrir(2); }
+        if (autoAvancar && n < 100) setTimeout(() => lutar(d, n + 1, Boolean(mini)), 600); else { emTorre = null; abrir(2); }
       },
     });
   }
