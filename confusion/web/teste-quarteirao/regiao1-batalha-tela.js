@@ -9,7 +9,7 @@ import { NOME_ELEMENTO } from '../core.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // Formação aprovada no editor, em porcentagem da arena.
-const POSICOES = {
+export const POSICOES = {
   a: [[42.1, 55.2], [29.4, 82.4], [19.5, 56.2], [8.8, 78.1]],
   i: [[64, 54.8], [74.7, 82.4], [85.9, 52.4], [92, 79.5]],
 };
@@ -122,7 +122,7 @@ export function criarArena(host, { artes = {} } = {}) {
   let animacao = null, ultimaOp = {}, opArt = artes;
   const no = (id) => nos.get(id)?.el;
   const reforcosPendentes = () => b.inimigos.filter(u => !nos.has(u.id));
-  function vagaDe(u) { const lista = u.lado === 'a' ? b.aliados : b.inimigos; return Math.max(0, lista.indexOf(u)); }
+  function vagaDe(u) { if (Number.isInteger(u.vaga)) return u.vaga; const lista = u.lado === 'a' ? b.aliados : b.inimigos; return Math.max(0, lista.indexOf(u)); }
   function criarNo(u, entrando) {
     const vaga = vagaDe(u);
     const [x, altura] = POSICOES[u.lado][vaga];
@@ -261,7 +261,9 @@ export function criarTelaBatalha() {
   function abrir(c) {
     cfg = c; auto = c.auto !== false; minimizada = false; el.style.display = 'block'; desenharInd(); arena = criarArena(el, { artes: c.artes });
     const papeis = c.papeis || {};
-    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: { ...(c.bonus || {}), ...(m.bonus || {}) } }));
+    for (const m of c.aliados) if (m.arte) c.artes = { ...(c.artes || {}), [m.especie]: m.arte }; // arte conforme o tier do indivíduo
+    if (arena && c.artes) arena = criarArena(el, { artes: c.artes });
+    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => { const u = criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: { ...(c.bonus || {}), ...(m.bonus || {}) } }); if (Number.isInteger(m.vaga)) u.vaga = m.vaga; return u; });
     const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento, op], i) => { const u = criarUnidade({ id: `i${i}`, especie: esp, nivel: nv, lado: 'i', papeis, elemento, bonus: op?.bonus || {} }); if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
     b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render(); agendar(700);
   }

@@ -5,6 +5,8 @@ import { MARCOS, CACADAS, POS_CACADA, FAB, PROFISSOES, CONTRATOS, CALABOUCO, CRI
 import { avancar, coletarTudo, prontoParaColetar, candidatasObra, enfileirarObras, previsaoLote, fabricarLote, repetirUltimoLote, gestaoDe, capacidade } from './regiao1-gestao-regras.js';
 import { ARTE_DA_ESPECIE, linhaDaEspecie } from '../species.js';
 import { LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { arteDoIndividuo } from './regiao1-halloween-dados.js';
+import { POSICOES } from './regiao1-batalha-tela.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -51,6 +53,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-exp .ok { color: #4ade80; } #modal-exp .ruim { color: #fb7185; } #modal-exp .mut { opacity: .7; }
     #modal-exp .card-on { display: flex; gap: 10px; align-items: center; } #modal-exp .card-on img { width: 84px; height: 84px; object-fit: contain; }
     #modal-exp .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 6px; } #modal-exp .mini { text-align: center; font-size: 10.5px; background: #24162b; border-radius: 8px; padding: 4px; } #modal-exp .mini img { width: 100%; height: 64px; object-fit: contain; }
+    #modal-exp .eq-arena { position: relative; height: clamp(170px, 46vh, 300px); border-radius: 10px; background: center / cover; overflow: hidden; margin: 6px 0; }
+    #modal-exp .eq-vaga { position: absolute; transform: translate(-50%, -100%); width: clamp(70px, 15vw, 120px); display: flex; flex-direction: column; align-items: center; background: rgba(20,10,28,.45); border: 2px dashed #c8b08a; border-radius: 10px; color: #fff3e7; font: 600 10.5px system-ui; padding: 3px; touch-action: none; }
+    #modal-exp .eq-vaga img { width: 100%; height: clamp(44px, 12vh, 84px); object-fit: contain; pointer-events: none; } #modal-exp .eq-vaga.vazia { opacity: .6; min-height: 50px; justify-content: center; } #modal-exp .eq-vaga.sel, #modal-exp .eq-col.sel { outline: 3px solid #fb923c; border-style: solid; }
     #modal-exp .san { height: 14px; background: #12091a; border-radius: 7px; overflow: hidden; } #modal-exp .san i { display: block; height: 100%; background: linear-gradient(90deg, #7c3aed, #38bdf8); transition: width .3s; }
     #exp-crise { position: fixed; inset: 0; z-index: 56; display: none; flex-direction: column; background: #12091a; color: #fff3e7; }
     #exp-crise.vis { display: flex; } #exp-crise .cr-topo { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: rgba(26,15,34,.9); z-index: 3; } #exp-crise .cr-topo b { flex: 1; color: #f3c27a; }
@@ -70,7 +75,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
 
   // ---------- estado de tela ----------
   let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimaInvocacao = null, hvEstado = null; let cap = 'cap1';
-  const PAINEIS = { oniricos: { titulo: '🥚 Oníricos', abas: ['Banner', 'Equipe', 'Evolução'], tut: 'banner' }, cacadas: { titulo: '🏹 Caçadas', abas: ['Caçadas', 'Calabouço'], tut: 'cacadas' }, guilda: { titulo: '🏛️ Guilda dos Aventureiros', abas: ['Contratos', 'Fazenda', 'Oficina', 'Reinos'], tut: 'guilda' }, cronicas: { titulo: '📜 Crônicas', abas: ['Crise', 'Herói × Vilão'], tut: 'crise' } };
+  const PAINEIS = { oniricos: { titulo: '🥚 Oníricos', abas: ['Banner', 'Equipes', 'Evolução'], tut: 'banner' }, cacadas: { titulo: '🏹 Caçadas', abas: ['Caçadas', 'Calabouço'], tut: 'cacadas' }, guilda: { titulo: '🏛️ Guilda dos Aventureiros', abas: ['Contratos', 'Fazenda', 'Oficina', 'Reinos'], tut: 'guilda' }, cronicas: { titulo: '📜 Crônicas', abas: ['Crise', 'Herói × Vilão'], tut: 'crise' } };
   const tutDaAba = (p, a) => (p === 'guilda' ? ['guilda', 'fazenda', 'oficina', 'reinos'][a] : p === 'cacadas' ? ['cacadas', 'calabouco'][a] : p === 'cronicas' ? ['crise', 'hv'][a] : ['banner', null, null][a]);
   function cartaoTut(id) {
     const t = TUTS[id]; if (!t) return '';
@@ -88,16 +93,52 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     h += `<div class="bl"><h4>Oníricos no Banner (${R.poolBanner().length})</h4><div class="grade">${R.poolBanner().map((p) => `<div class="mini"><img src="${artePequena(p.especie)}" alt="" loading="lazy">${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">${p.raridade}</span></div>`).join('')}</div></div>`;
     return h;
   }
+  // Equipes: coleção + 4 vagas nas posições da arena. Toque para colocar/trocar; arraste uma vaga sobre outra para reorganizar.
+  let selEq = null; // { tipo: 'col' | 'vaga', uid?, vaga? }
+  const arteDe = (m) => (arteDoIndividuo(m) ? `../../../${arteDoIndividuo(m)}` : artePequena(m.especie));
   function abaEquipe() {
-    const idle = save().idle;
-    const equipe = idle.equipe || [];
-    const ativos = R.indicesEquipeCombate(idle);
-    const cards = equipe.map((m, i) => {
-      const selecionado = ativos.includes(i);
-      return `<button class="btn-sec mini membro" data-membro-combate="${i}" aria-pressed="${selecionado}"><img src="${artePequena(m.especie)}" alt="">${esc(m.especie)}<br>nv.${m.nivel || 1}${selecionado ? '<br><span class="ok">Na equipe</span>' : ''}</button>`;
+    const idle = save().idle, eq = idle.equipe || [], f = R.formacaoDe(idle);
+    const vagas = POSICOES.a.map(([x, y], v) => {
+      const m = eq.find((o) => o.uid === f[v]); const sel = selEq?.tipo === 'vaga' && selEq.vaga === v;
+      return `<button class="eq-vaga ${sel ? 'sel' : ''} ${m ? '' : 'vazia'}" data-eq-vaga="${v}" style="left:${x}%;top:${y}%">${m ? `<img src="${arteDe(m)}" alt=""><span>${esc(m.especie)} · nv.${m.nivel || 1}</span>` : `<span>Vaga ${v + 1}</span>`}</button>`;
     }).join('');
-    return `<div class="bl"><h4>Equipe de combate (${ativos.length}/${LIMITE_ALIADOS})</h4><p class="mut">Escolha quem entra na Campanha e em Herói × Vilão.</p><div class="grade">${cards}</div></div>`;
+    const col = eq.map((m) => { const na = f.indexOf(m.uid); const sel = selEq?.tipo === 'col' && selEq.uid === m.uid; return `<button class="mini eq-col ${sel ? 'sel' : ''}" data-eq-col="${m.uid}"><img src="${arteDe(m)}" alt="" loading="lazy">${esc(m.especie)}<br>nv.${m.nivel || 1}${m.tierHW ? ` · T${m.tierHW}` : ''}${na >= 0 ? `<br><span class="ok">Vaga ${na + 1}</span>` : ''}</button>`; }).join('');
+    const dica = selEq ? (selEq.tipo === 'col' ? 'Toque numa vaga para colocar este Onírico.' : 'Toque noutra vaga para trocar, num Onírico da coleção para substituir, ou retire-o.') : 'Toque num Onírico da coleção e depois numa vaga. Arraste uma vaga sobre outra para reorganizar.';
+    return `<div class="bl"><h4>Formação (${f.filter(Boolean).length}/4)</h4><p class="mut">${dica}</p>
+      <div class="eq-arena" style="background-image:url('../../../assets/confusion/interface/estrategia/madeira-01.webp')">${vagas}</div>
+      ${selEq?.tipo === 'vaga' && f[selEq.vaga] ? `<div class="ln"><button class="btn-sec" data-eq-tirar="${selEq.vaga}">Retirar da vaga ${selEq.vaga + 1}</button><button class="btn-sec" data-eq-cancelar="1">Cancelar</button></div>` : ''}
+      <p class="mut">A formação vale na Campanha, na Torre, nas expedições da Estratégia e dos Reinos e em Herói × Vilão.</p></div>
+      <div class="bl"><h4>Coleção (${eq.length})</h4><div class="grade">${col}</div></div>`;
   }
+  function tocarEquipe(d) {
+    const idle = save().idle;
+    if (d.eqCancelar) { selEq = null; return true; }
+    if (d.eqTirar !== undefined) { if (!R.tirarDaVaga(idle, Number(d.eqTirar))) mostrarToast('Mantenha ao menos um Onírico na formação.', 2200); selEq = null; salvar(); return true; }
+    if (d.eqCol) { if (selEq?.tipo === 'vaga') { R.colocarNaVaga(idle, d.eqCol, selEq.vaga); selEq = null; salvar(); } else selEq = selEq?.uid === d.eqCol ? null : { tipo: 'col', uid: d.eqCol }; return true; }
+    if (d.eqVaga !== undefined) {
+      const v = Number(d.eqVaga), f = R.formacaoDe(idle);
+      if (selEq?.tipo === 'col') { R.colocarNaVaga(idle, selEq.uid, v); selEq = null; salvar(); }
+      else if (selEq?.tipo === 'vaga') { if (selEq.vaga !== v) { R.trocarVagas(idle, selEq.vaga, v); salvar(); } selEq = null; }
+      else if (f[v]) selEq = { tipo: 'vaga', vaga: v };
+      return true;
+    }
+    return false;
+  }
+  // arrastar uma vaga sobre outra (toque ou mouse)
+  (function arrastoVagas() {
+    let de = null, fantasma = null;
+    document.addEventListener('pointerdown', (e) => { const b = e.target.closest?.('#modal-exp .eq-vaga:not(.vazia)'); if (!b) return; de = { vaga: Number(b.dataset.eqVaga), x: e.clientX, y: e.clientY, moveu: false, img: b.querySelector('img')?.src }; });
+    document.addEventListener('pointermove', (e) => {
+      if (!de) return; if (!de.moveu && Math.hypot(e.clientX - de.x, e.clientY - de.y) < 8) return;
+      de.moveu = true; if (!fantasma) { fantasma = document.createElement('img'); fantasma.src = de.img || ''; fantasma.style.cssText = 'position:fixed;width:64px;height:64px;object-fit:contain;pointer-events:none;z-index:99;opacity:.85'; document.body.append(fantasma); }
+      fantasma.style.left = `${e.clientX - 32}px`; fantasma.style.top = `${e.clientY - 32}px`;
+    });
+    document.addEventListener('pointerup', (e) => {
+      if (!de) return; const d = de; de = null; fantasma?.remove(); fantasma = null; if (!d.moveu) return;
+      const alvo = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('#modal-exp .eq-vaga'); if (!alvo) return;
+      const v = Number(alvo.dataset.eqVaga); if (v !== d.vaga) { R.trocarVagas(save().idle, d.vaga, v); salvar(); } selEq = null; render(); window.__eqArrastou = Date.now();
+    });
+  })();
   function proximaForma(m) {
     const l = linhaDaEspecie(m.especie); if (!l) return null;
     if (m.especie === l.inicial) return { para: l.atual, nivel: 5 }; if (m.especie === l.atual) return { para: l.evolucao, nivel: 10 }; return null;
@@ -184,7 +225,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   }
   function iniciarHVBatalha() {
     const m = R.missaoResolvida(save(), cap, hvEstado.n), idle = save().idle;
-    const eq = R.indicesEquipeCombate(idle).map(i => idle.equipe[i]).map((x) => ({ ...x, bonus: x.tierHW ? { hp: 0.15 * (x.tierHW - 1), atk: 0.15 * (x.tierHW - 1), def: 0.12 * (x.tierHW - 1) } : {} }));
+    const eq = R.membrosFormacao(idle).map(({ m: x, vaga }) => ({ especie: x.especie, nivel: x.nivel || 1, vaga, arte: arteDoIndividuo(x), bonus: x.tierHW ? { hp: 0.15 * (x.tierHW - 1), atk: 0.15 * (x.tierHW - 1), def: 0.12 * (x.tierHW - 1) } : {} }));
     const artes = { Maregor: HV.chefes.Maregor.arte };
     fecharModal('modal-exp');
     tela.abrir({ titulo: `Herói × Vilão · ${m.titulo}`, arena: m.arena, aliados: eq, inimigos: m.inimigos, artes, onFim: (venceu) => {
@@ -240,6 +281,8 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (d.tutok) { exp().tut[d.tutok] = true; revendo = null; salvar(); render(); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(); return; }
     if (d.invocar) { const r = R.invocar(save()); if (r.ok) { ultimaInvocacao = r; salvar(); } else mostrarToast(r.motivo, 2800); render(); return; }
+    if (Date.now() - (window.__eqArrastou || 0) < 300 && d.eqVaga !== undefined) return;
+    if (tocarEquipe(d)) { render(); return; }
     if (d.membroCombate !== undefined) {
       const idle = save().idle, indice = Number(d.membroCombate);
       if (!Number.isInteger(indice) || !idle.equipe?.[indice]) return;

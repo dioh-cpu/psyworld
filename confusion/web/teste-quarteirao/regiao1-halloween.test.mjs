@@ -26,7 +26,7 @@ test('garantias: 100 → T5, demais 50 → T4, demais 10 → T3/T4; outras usam 
   assert.equal(H.invocarHW(s, 1).ok, false);
 });
 test('doces evoluem o tier (custos 1,2,3,5) e mudam a forma nas faixas 1–2 / 3–4 / 5', () => {
-  const s = novo(); s.idle.equipe.push({ especie: 'Abóborgo', nivel: 1, xp: 0, tierHW: 1 }); const h = H.hwDe(s); h.doces = 11;
+  const s = novo(); s.idle.equipe.push({ especie: 'Abobrisco', nivel: 1, xp: 0, tierHW: 1 }); const h = H.hwDe(s); h.doces = 11;
   const i = s.idle.equipe.length - 1; const custos = [];
   for (let k = 0; k < 4; k++) { const inf = H.infoEvolucao(s.idle.equipe[i]); custos.push(inf.custo); assert.ok(H.evoluirHW(s, i).ok); }
   assert.deepEqual(custos, [1, 2, 3, 5]); assert.equal(s.idle.equipe[i].tierHW, 5); assert.equal(h.doces, 0); assert.equal(H.infoEvolucao(s.idle.equipe[i]), null);
@@ -49,17 +49,17 @@ test('poção: alvo, XP e previsão; acima do nível 300 sobe vários níveis', 
 });
 test('habilidades exclusivas: ressurreição na vaga, invencibilidade e dano por vida máxima limitado em chefes', () => {
   const rng = M.criarRng(3), u = (id, esp, lado, nv = 30) => M.criarUnidade({ id, especie: esp, nivel: nv, lado, papeis: {} });
-  const alm = u('a0', 'Almaterna', 'a'), cai = u('a1', 'Noctarn', 'a'), i0 = u('i0', 'Brotavel', 'i', 5);
+  const alm = u('a0', 'Mortálio', 'a'), cai = u('a1', 'Noctarn', 'a'), i0 = u('i0', 'Brotavel', 'i', 5);
   const b = M.criarBatalha([alm, cai], [i0]); cai.hp = 0; b.fila = [alm.id]; b.jaIniciou = true; b.iniciado = ''; M.atorAtual(b);
   M.executar(b, { tipo: 'habilidade', idx: 2 }, rng); assert.equal(b.evento.tipo, 'reviver'); assert.ok(cai.hp > 0 && cai.hp <= cai.hpMax * 0.5 + 1); assert.equal(b.aliados[1], cai);
-  const sen = u('a0', 'Sentinoite', 'a'), al = u('a1', 'Noctarn', 'a'), ini = u('i0', 'Ignavor', 'i', 60);
+  const sen = u('a0', 'Vitrarco', 'a'), al = u('a1', 'Noctarn', 'a'), ini = u('i0', 'Ignavor', 'i', 60);
   const b2 = M.criarBatalha([sen, al], [ini]); b2.fila = [sen.id]; b2.jaIniciou = true; b2.iniciado = ''; M.atorAtual(b2); M.executar(b2, { tipo: 'habilidade', idx: 2 }, rng);
   assert.ok(al.efeitos.invencivel); const hp = al.hp; b2.fila = [ini.id]; b2.iniciado = ''; M.atorAtual(b2); M.executar(b2, { tipo: 'atacar', alvo: al.id }, rng); assert.equal(al.hp, hp);
-  const cf = u('a0', 'Ceifalume', 'a', 30), boss = u('i0', 'Ignavor', 'i', 30), normal = u('i1', 'Ignavor', 'i', 30); boss.chefe = true; boss.hpMax = boss.hp = 20000; normal.hpMax = normal.hp = 20000;
+  const cf = u('a0', 'Abyssar', 'a', 30), boss = u('i0', 'Ignavor', 'i', 30), normal = u('i1', 'Ignavor', 'i', 30); boss.chefe = true; boss.hpMax = boss.hp = 20000; normal.hpMax = normal.hp = 20000;
   const b3 = M.criarBatalha([cf], [boss, normal]); const z = () => 0.5;
-  b3.fila = [cf.id]; b3.jaIniciou = true; b3.iniciado = ''; M.atorAtual(b3); M.executar(b3, { tipo: 'habilidade', idx: 2, alvo: normal.id }, z); const dn = 20000 - normal.hp;
-  cf.cd = [0, 0, 0]; b3.fila = [cf.id]; b3.iniciado = ''; M.atorAtual(b3); M.executar(b3, { tipo: 'habilidade', idx: 2, alvo: boss.id }, z); const db = 20000 - boss.hp;
-  assert.ok(dn > 5000 && db < dn / 3, `${dn} ${db}`);
+  b3.fila = [cf.id]; b3.jaIniciou = true; b3.iniciado = ''; M.atorAtual(b3); M.executar(b3, { tipo: 'habilidade', idx: 0, alvo: normal.id }, z); const dn = 20000 - normal.hp;
+  cf.cd = [0, 0, 0]; b3.fila = [cf.id]; b3.iniciado = ''; M.atorAtual(b3); M.executar(b3, { tipo: 'habilidade', idx: 0, alvo: boss.id }, z); const db = 20000 - boss.hp;
+  assert.ok(dn > 1800 && db < dn / 2, `${dn} ${db}`);
 });
 test('as cinco linhagens têm tier, papel e três habilidades', () => { assert.deepEqual(LINHAGENS_HW.map((l) => l.tier), [1, 2, 3, 4, 5]); for (const l of LINHAGENS_HW) assert.equal(M.kitDe(l.especie, l.papel, l.elemento).length, 3); assert.equal(Object.values(BANNER_HW.chances).reduce((a, b) => a + b, 0).toFixed(2), '1.00'); });
 
@@ -70,6 +70,39 @@ test('Tier 5 por sorte (3%) reinicia a contagem; T3/T4 não', () => {
   H.invocarHW(s, 1, () => 0.9); assert.equal(h.contador[EDICAO.id], 1);
 });
 test('exclusivos são mais fortes que um Onírico comum do mesmo nível e papel', () => {
-  const a = M.criarUnidade({ id: 'a', especie: 'Ceifalume', nivel: 30, lado: 'a', papeis: {} }), b = M.criarUnidade({ id: 'b', especie: 'Noctarn', nivel: 30, lado: 'a', papeis: {} });
+  const a = M.criarUnidade({ id: 'a', especie: 'Abyssar', nivel: 30, lado: 'a', papeis: {} }), b = M.criarUnidade({ id: 'b', especie: 'Noctarn', nivel: 30, lado: 'a', papeis: {} });
   assert.ok(a.hpMax > b.hpMax * 1.25 && a.atk > b.atk * 1.25);
+});
+
+test('Abyssar: Facada sangra com 200% do ataque; Perseguição dá 5 golpes e reinicia ao derrotar; Hora do Terror rouba vida e sangra', () => {
+  const mk = (id, esp, lado, nv = 30) => M.criarUnidade({ id, especie: esp, nivel: nv, lado, papeis: {} });
+  const ab = mk('a0', 'Abyssar', 'a'), alvo = mk('i0', 'Brotavel', 'i', 30); alvo.hpMax = alvo.hp = 50000;
+  const b = M.criarBatalha([ab], [alvo]); b.fila = [ab.id]; b.jaIniciou = true; b.iniciado = ''; M.atorAtual(b);
+  M.executar(b, { tipo: 'habilidade', idx: 0 }, () => 0.1); assert.equal(alvo.efeitos.sangramento.valor, Math.round(ab.atk * 2)); assert.equal(alvo.efeitos.sangramento.turnos, 3);
+  const ab2 = mk('a0', 'Abyssar', 'a', 60), inim = [0, 1, 2, 3].map((i) => mk(`i${i}`, 'Brotavel', 'i', 5)); inim[2].hpMax = inim[2].hp = 99999; inim[3].hpMax = inim[3].hp = 99999;
+  const b2 = M.criarBatalha([ab2], inim); b2.fila = [ab2.id]; b2.jaIniciou = true; b2.iniciado = ''; M.atorAtual(b2);
+  M.executar(b2, { tipo: 'habilidade', idx: 1 }, M.criarRng(5)); assert.ok(b2.evento.alvos.length >= 5); assert.ok(b2.evento.repeticoes >= 1 && b2.evento.repeticoes <= 3); assert.ok(ab2.efeitos.veloz);
+  const ab3 = mk('a0', 'Abyssar', 'a'), saco = mk('i0', 'Brotavel', 'i', 30); saco.hpMax = saco.hp = 99999; const b3 = M.criarBatalha([ab3], [saco]);
+  b3.fila = [ab3.id]; b3.jaIniciou = true; b3.iniciado = ''; M.atorAtual(b3); M.executar(b3, { tipo: 'habilidade', idx: 2 }, () => 0.1); assert.ok(ab3.efeitos.panico);
+  ab3.hp = Math.round(ab3.hpMax / 2); const hp0 = ab3.hp; b3.fila = [ab3.id]; b3.iniciado = ''; M.atorAtual(b3); M.executar(b3, { tipo: 'atacar' }, () => 0.1);
+  assert.ok(ab3.hp > hp0 && b3.evento.roubo > 0); assert.ok(saco.efeitos.sangramento);
+  assert.deepEqual(M.kitDe('Abyssar').map((h) => h.cd), [1, 4, 6]);
+});
+import * as X from './regiao1-exp-regras.js';
+import * as C from './regiao1-conta.js';
+test('equipes: vagas por id estável; vaga vazia conserva as outras; trocar e substituir', () => {
+  const idle = { equipe: ['A', 'B', 'C', 'D', 'E'].map((e, i) => ({ especie: e, nivel: 5, uid: `u${i}` })) };
+  assert.deepEqual(X.formacaoDe(idle), ['u0', 'u1', 'u2', 'u3']);
+  X.tirarDaVaga(idle, 1); assert.deepEqual(X.membrosFormacao(idle).map((x) => [x.m.especie, x.vaga]), [['A', 0], ['C', 2], ['D', 3]]);
+  X.colocarNaVaga(idle, 'u4', 1); X.trocarVagas(idle, 0, 3); assert.deepEqual(idle.formacao, ['u3', 'u4', 'u2', 'u0']);
+  X.colocarNaVaga(idle, 'u2', 0); assert.deepEqual(idle.formacao, ['u2', 'u4', 'u3', 'u0']);
+});
+test('conta nova: inicial T1 nível 5 na primeira vaga, 20.000💎 e 10 dias de VIP uma única vez', () => {
+  const s = { recompensas: { gold: 0, diamantes: 0 }, idle: { equipe: [{ especie: 'Noctarn', nivel: 5, uid: 'o0' }] } };
+  C.prepararContaNova(s, { userId: 'u1', inicial: 'Vitrarco', agora: 1000 });
+  assert.equal(s.idle.equipe[0].especie, 'Vitrarco'); assert.equal(s.idle.equipe[0].nivel, 5); assert.equal(s.idle.equipe[0].tierHW, 1); assert.equal(s.idle.formacao[0], 'ini0');
+  assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.conta.vipAte, 1000 + 10 * 86400000);
+  C.prepararContaNova(s, { userId: 'u1', inicial: 'Vitrarco', agora: 5000 }); assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.idle.equipe.filter((m) => m.inicial).length, 1);
+  assert.equal(C.diasVip(s, 1000), 10); assert.equal(C.vipAtivo(s, 1000 + 11 * 86400000), false);
+  const antiga = { recompensas: { gold: 0, diamantes: 7 }, idle: { equipe: [] } }; C.prepararContaNova(antiga, { userId: 'u2', inicial: 'Abyssar', novo: false }); assert.equal(antiga.recompensas.diamantes, 7); assert.equal(antiga.conta.vipAte, undefined);
 });

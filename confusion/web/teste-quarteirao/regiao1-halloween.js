@@ -1,9 +1,10 @@
 // Evento de Halloween (interface): Banner Mensal com contador e garantias, coleção e evolução com doces, Torre de 4 × 100 andares,
 // Loja da Torre e poções de XP. Regras em regiao1-halloween-regras.js; dados em regiao1-halloween-dados.js.
 import * as H from './regiao1-halloween-regras.js';
-import { EDICAO, BANNER_HW, LINHAGENS_HW, LOJA_TORRE, TORRE, formaDoTier, BONUS_TIER } from './regiao1-halloween-dados.js';
-import { POCOES, nivelDe } from './regiao1-progressao.js';
+import { EDICAO, BANNER_HW, LINHAGENS_HW, LOJA_TORRE, TORRE, formaDoTier, BONUS_TIER, ARTES_HW, arteDoIndividuo } from './regiao1-halloween-dados.js';
+import { POCOES, nivelDe, aplicarXp } from './regiao1-progressao.js';
 import { KITS } from './regiao1-batalha-habilidades.js';
+import { membrosFormacao } from './regiao1-exp-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const FORMA = ['base', 'segunda', 'final'];
@@ -20,6 +21,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
     #modal-hw .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-hw .mut { opacity: .7; } #modal-hw .ok { color: #4ade80; } #modal-hw .ruim { color: #fb7185; }
     #modal-hw .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; } #modal-hw .lin { background: #24112a; border-radius: 8px; padding: 6px; font-size: 11.5px; } #modal-hw .lin .ph { font-size: 34px; text-align: center; }
     #modal-hw .res { display: flex; flex-wrap: wrap; gap: 4px; } #modal-hw .res span { padding: 2px 6px; border-radius: 6px; background: #24112a; font-size: 11px; }
+    #modal-hw img.ph { display: block; width: 100%; height: 96px; object-fit: contain; } #modal-hw .ico { width: 20px; height: 20px; object-fit: contain; vertical-align: middle; } #modal-hw .capa { width: 100%; max-height: 150px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 6px; }
     #modal-hw table { width: 100%; border-collapse: collapse; font-size: 11.5px; } #modal-hw td, #modal-hw th { padding: 2px 4px; text-align: left; border-bottom: 1px solid #4a2a50; }`;
   document.head.append(css);
   const modal = document.createElement('div'); modal.id = 'modal-hw'; modal.className = 'modal-bg';
@@ -28,13 +30,16 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   const ABAS = ['Banner', 'Coleção', 'Torre', 'Loja', 'Poções'];
   let aba = 0, confirmar = null, ultimos = [], dif = 1, alvoPocao = 'domador', autoAvancar = false, emTorre = null;
 
-  const liberado = () => H.eventoAtivo() && questFeita(TORRE.marco);
+  // Banner abre assim que a conta entra (com a edição ativa); a Torre continua pedindo "O que a maré devolveu"
+  const liberado = () => H.eventoAtivo();
+  const torreAberta = () => questFeita(TORRE.marco);
+  const I = (p, cls = 'ico') => `<img class="${cls}" src="../../../${p}" alt="">`;
   const papelTxt = { defesa: 'Vanguarda', suporte: 'Suporte', ataque: 'Finalizador' };
-  const ph = (lin, forma) => `<div class="ph" title="Arte pendente: ${esc(lin.arte[forma])}">🎃</div>`;
+  const ph = (lin, forma) => `<img class="ph" src="../../../${lin.arte[forma]}" alt="${esc(lin.especie)}" loading="lazy">`;
 
   function abaBanner() {
     const h = hw(), n = h.contador[EDICAO.id] || 0, m = H.proximosMarcos(n), comuns = save().idle.exp?.tickets || 0;
-    let s = `<div class="bl"><h4>${esc(EDICAO.nome)} · ${EDICAO.inicio} a ${EDICAO.fim}</h4><p>🎫 Tickets de Halloween: <b>${h.tickets}</b> <span class="mut">(tickets comuns da Campanha: ${comuns}, saldo separado)</span></p>
+    let s = `<img class="capa" src="../../../${ARTES_HW.banner}" alt="Banner de Halloween"><div class="bl"><h4>${esc(EDICAO.nome)} · ${EDICAO.inicio} a ${EDICAO.fim}</h4><p>${I(ARTES_HW.ticket)} Tickets de Halloween: <b>${h.tickets}</b> <span class="mut">(tickets comuns da Campanha: ${comuns}, saldo separado)</span></p>
       <p>Contador desde o último Tier 5: <b>${n}</b> (total de invocações: ${h.total || 0}) · faltam <b>${m.ate10}</b> para a garantia de 10 (T3/T4), <b>${m.ate50}</b> para a de 50 (T4) e <b>${m.ate100}</b> para a de 100 (T5).</p>
       <div class="ln"><button class="btn-pri" data-inv="1" ${h.tickets >= 1 ? '' : 'disabled'}>Invocar 1</button><button class="btn-pri" data-inv="10" ${h.tickets >= 10 ? '' : 'disabled'}>Invocar 10</button>${confirmar === 'pacote' ? `<button class="btn-pri" data-pacote-ok="1">Confirmar: ${BANNER_HW.pacote.tickets} tickets por ${BANNER_HW.pacote.diamantes}💎</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-sec" data-pacote="1">Comprar ${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button>`}</div>
       <p class="mut">Tier 5 também pode sair por sorte (3%); quando sai, a contagem reinicia. Tiers 3 e 4 não reiniciam. Tickets vêm dos marcos da Torre (5 a cada 10 andares) ou da compra. Os Oníricos obtidos continuam na coleção depois do evento; tickets e contador ficam guardados se a edição voltar.</p></div>`;
@@ -46,22 +51,23 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   function abaColecao() {
     const eq = save().idle.equipe || [], h = hw();
     const lista = eq.map((m, i) => [m, i]).filter(([m]) => H.ehHW(m));
-    let s = `<div class="bl"><h4>🍬 Doces de Halloween: ${h.doces}</h4><p class="mut">Os exclusivos sobem de nível com XP e de tier só com doces (custos 1, 2, 3 e 5). Forma: base nos tiers 1–2, segunda nos 3–4 e final no 5. Doces guardados valem depois do evento.</p></div>`;
+    let s = `<div class="bl"><h4>${I(ARTES_HW.doce)} Doces de Halloween: ${h.doces}</h4><p class="mut">Os exclusivos sobem de nível com XP e de tier só com doces (custos 1, 2, 3 e 5). Forma: base nos tiers 1–2, segunda nos 3–4 e final no 5. Doces guardados valem depois do evento.</p></div>`;
     if (!lista.length) return s + '<div class="bl"><p>Nenhum Onírico de Halloween ainda. Invoque no Banner.</p></div>';
     for (const [m, i] of lista) {
       const lin = LINHAGENS_HW.find((l) => l.especie === m.especie), inf = H.infoEvolucao(m), b0 = BONUS_TIER(m.tierHW), b1 = inf ? BONUS_TIER(inf.para) : null;
-      s += `<div class="bl"><h4 style="color:${COR[m.tierHW]}">${esc(m.especie)} · T${m.tierHW} · forma ${FORMA[formaDoTier(m.tierHW)]} · nv.${m.nivel || 1}</h4>`;
+      s += `<div class="bl" style="display:grid;grid-template-columns:96px 1fr;gap:8px"><img class="ph" src="../../../${arteDoIndividuo(m)}" alt=""><div><h4 style="color:${COR[m.tierHW]}">${esc(m.especie)} · T${m.tierHW} · forma ${FORMA[formaDoTier(m.tierHW)]} · nv.${m.nivel || 1}</h4>`;
       if (!inf) s += '<p class="ok">Tier máximo.</p>';
-      else s += `<p>Próxima forma: <b>${FORMA[inf.formaNova]}</b> ${inf.formaNova !== inf.formaAtual ? `<span class="mut">(arte: ${esc(inf.arteNova)})</span>` : ''}</p><p>Custo: <b>${inf.custo}🍬</b> · ganho: vida +${Math.round((b1.hp - b0.hp) * 100)}%, ataque +${Math.round((b1.atk - b0.atk) * 100)}%, defesa +${Math.round((b1.def - b0.def) * 100)}%</p>
+      else s += `<p>Próxima forma: <b>${FORMA[inf.formaNova]}</b> ${inf.formaNova !== inf.formaAtual ? `<img src="../../../${inf.arteNova}" alt="próxima forma" style="height:56px;vertical-align:middle">` : '(mesma forma)'}</p><p>Custo: <b>${inf.custo}🍬</b> · ganho: vida +${Math.round((b1.hp - b0.hp) * 100)}%, ataque +${Math.round((b1.atk - b0.atk) * 100)}%, defesa +${Math.round((b1.def - b0.def) * 100)}%</p>
         <div class="ln">${confirmar === `evo:${i}` ? `<button class="btn-pri" data-evo-ok="${i}">Confirmar evolução (−${inf.custo}🍬)</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-pri" data-evo="${i}" ${h.doces >= inf.custo ? '' : 'disabled'}>Evoluir para T${inf.para}</button>`}</div>`;
-      s += '</div>'; void lin;
+      s += '</div></div>'; void lin;
     }
     return s;
   }
-  function equipeTorre() { return (save().idle.equipe || []).slice(0, 6).map((m) => ({ especie: m.especie, nivel: m.nivel || 1, bonus: H.bonusDoMembro(m) })); }
+  function equipeTorre() { return membrosFormacao(save().idle).map(({ m, vaga }) => ({ especie: m.especie, nivel: m.nivel || 1, bonus: H.bonusDoMembro(m), vaga, arte: arteDoIndividuo(m) })); }
   function abaTorre() {
     const h = hw(), t = h.torre;
-    let s = `<div class="bl"><h4>Torre de Halloween</h4><p>Quatro dificuldades de 100 andares. A primeira vitória em cada múltiplo de 10 dá <b>5 Tickets de Halloween</b> (50 por dificuldade, 200 no total). Vencer o andar 100 libera a próxima dificuldade.</p><div class="ln">${TORRE.dificuldades.map((d, k) => `<button class="${dif === k + 1 ? 'btn-pri' : 'btn-sec'}" data-dif="${k + 1}" ${k + 1 <= t.liberada ? '' : 'disabled'}>${k + 1 <= t.liberada ? '' : '🔒 '}Dificuldade ${k + 1} (nv. ${d.nivel[0]}–${d.nivel[1]})</button>`).join('')}</div></div>`;
+    if (!torreAberta()) return `<img class="capa" src="../../../${ARTES_HW.torre}" alt="Torre"><div class="bl"><h4>🔒 Torre de Halloween</h4><p>Conclua a missão "O que a maré devolveu" na Campanha para abrir a Torre.</p></div>`;
+    let s = `<img class="capa" src="../../../${ARTES_HW.torre}" alt="Torre"><div class="bl"><h4>Torre de Halloween</h4><p>Quatro dificuldades de 100 andares. A primeira vitória em cada múltiplo de 10 dá <b>5 Tickets de Halloween</b> (50 por dificuldade, 200 no total). Vencer o andar 100 libera a próxima dificuldade.</p><div class="ln">${TORRE.dificuldades.map((d, k) => `<button class="${dif === k + 1 ? 'btn-pri' : 'btn-sec'}" data-dif="${k + 1}" ${k + 1 <= t.liberada ? '' : 'disabled'}>${k + 1 <= t.liberada ? '' : '🔒 '}Dificuldade ${k + 1} (nv. ${d.nivel[0]}–${d.nivel[1]})</button>`).join('')}</div></div>`;
     const maior = t.maior[dif] || 0, prox = Math.min(100, maior + 1), a = H.andar(dif, prox), rec = H.proximaRecompensa(save(), dif);
     const nvEq = Math.max(...equipeTorre().map((m) => m.nivel));
     s += `<div class="bl"><h4>Dificuldade ${dif} · andar ${prox}${maior >= 100 ? ' (concluída)' : ''}</h4><p>Maior andar vencido: <b>${maior}</b>/100 · nível recomendado: <b>${a.recomendado}</b> · sua equipe: nv. ${nvEq} ${nvEq + 5 < a.recomendado ? '<span class="ruim">(abaixo do recomendado)</span>' : ''}</p>
@@ -72,7 +78,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   }
   function abaLoja() {
     const h = hw();
-    return `<div class="bl"><h4>Loja da Torre · saldo 🍬 ${h.doces}</h4><p class="mut">Doces também evoluem os exclusivos: decida entre gastar aqui ou guardar.</p>${LOJA_TORRE.map((it) => `<p>${esc(it.nome)} — <b>${it.custo}🍬</b> <button class="btn-sec" data-loja="${it.id}" ${h.doces >= it.custo ? '' : 'disabled'}>Comprar</button></p>`).join('')}</div>`;
+    return `<img class="capa" src="../../../${ARTES_HW.loja}" alt="Loja"><div class="bl"><h4>Loja da Torre · saldo ${I(ARTES_HW.doce)} ${h.doces}</h4><p class="mut">Doces também evoluem os exclusivos: decida entre gastar aqui ou guardar.</p>${LOJA_TORRE.map((it) => `<p>${esc(it.nome)} — <b>${it.custo}🍬</b> <button class="btn-sec" data-loja="${it.id}" ${h.doces >= it.custo ? '' : 'disabled'}>Comprar</button></p>`).join('')}</div>`;
   }
   function abaPocoes() {
     const h = hw(), eq = save().idle.equipe || [];
@@ -80,7 +86,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
     let s = `<div class="bl"><h4>Poções de XP</h4><p class="mut">Caem em combate, saem da Oficina dos Reinos, das expedições e de missões. O XP excedente é preservado quando sobe vários níveis.</p><p>Alvo: <select id="hw-alvo">${alvos.map(([v, t]) => `<option value="${v}" ${v === alvoPocao ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></p></div>`;
     for (const [id, p] of Object.entries(POCOES)) {
       const n = h.pocoes[id] || 0, pv = H.previsaoPocao(save(), alvoPocao, id);
-      s += `<div class="bl"><p>${p.icone} <b>${esc(p.nome)}</b> × ${n} · +${p.xp.toLocaleString('pt-BR')} XP</p>${pv ? `<p>Previsão: nível <b>${pv.antes} → ${pv.depois}</b> (+${pv.subiu}), sobra ${pv.sobra}/${pv.proximo} XP</p>` : ''}<div class="ln"><button class="btn-pri" data-pocao="${id}" ${n ? '' : 'disabled'}>Usar</button></div></div>`;
+      s += `<div class="bl"><p>${I(ARTES_HW[id] || '', 'ico')} <b>${esc(p.nome)}</b> × ${n} · +${p.xp.toLocaleString('pt-BR')} XP</p>${pv ? `<p>Previsão: nível <b>${pv.antes} → ${pv.depois}</b> (+${pv.subiu}), sobra ${pv.sobra}/${pv.proximo} XP</p>` : ''}<div class="ln"><button class="btn-pri" data-pocao="${id}" ${n ? '' : 'disabled'}>Usar</button></div></div>`;
     }
     return s;
   }
@@ -108,7 +114,8 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
       onBotao: (ds, { render: r }) => { if (ds.hwAuto) { autoAvancar = !autoAvancar; r(); return true; } return false; },
       autoContinuar: (b) => autoAvancar && b.fim === 'vitoria',
       onFim: (venceu) => {
-        const b = tela.batalha?.(); void b;
+        // XP da equipe em campo (vitória inteira; derrota rende 30%), sem teto e preservando o excedente
+        const xp = Math.round((40 + 12 * a.nivel) * (venceu ? 1 : 0.3)); for (const { m } of membrosFormacao(save().idle)) aplicarXp(m, xp);
         if (!venceu) { emTorre = null; mostrarToast(`Derrota no andar ${n}. Fortaleça a equipe e tente de novo.`, 3200); salvar(); abrir(2); return; }
         const r = H.vencerAndar(save(), d, n);
         let doces = 0; for (let k = 0; k < a.inimigos.length; k++) doces += H.talvezDoce(save(), 'abate');

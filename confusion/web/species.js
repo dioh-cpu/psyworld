@@ -63,8 +63,8 @@ for (const r of Object.values(REINOS)) for (const l of r.linhagens) {
 
 // Exclusivos do Banner Mensal de Halloween (origem 'evento': fora de encontro, ovo comum e invocação base). Habilidades = kit + passiva.
 for (const l of LINHAGENS_HW) {
-  if (ESPECIES[l.especie]) continue;
-  ESPECIES[l.especie] = { origem: 'evento', pureza: 'neutra', elemento: l.elemento, aptidoes: {}, habilidades: [...(KITS[l.especie] || []).map((h) => h.nome), `Instinto de ${l.especie}`], passiva: { nome: `Aura de ${l.especie}`, texto: l.resumo } };
+  if (ESPECIES[l.especie]) { ESPECIES[l.especie].arte = l.arte[0]; ESPECIES[l.especie].elemento ??= l.elemento; continue; } // Abyssar já existia: ganha a arte nova
+  ESPECIES[l.especie] = { origem: 'evento', pureza: 'neutra', elemento: l.elemento, aptidoes: {}, habilidades: [...(KITS[l.especie] || []).map((h) => h.nome), `Instinto de ${l.especie}`], passiva: { nome: `Aura de ${l.especie}`, texto: l.resumo }, arte: l.arte[0] };
 }
 
 // Lista de problemas de uma espécie. Vazia quando está completa.

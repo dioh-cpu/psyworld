@@ -4,6 +4,8 @@
 // Estado salvo em save.idle.estrategia[id]. Cada recompensa de vitória é paga uma única vez (exp.pagas).
 import { criarArena } from './regiao1-batalha-tela.js';
 import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
+import { membrosFormacao } from './regiao1-exp-regras.js';
+import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
 import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 
@@ -19,7 +21,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
   let resumoUlt = null, selObras = new Set(), confAcel = null, loteRec = null, loteQtd = 5;
   let drawer = false;
   let aba = 'gestao', visao = 'cidade', slotSel = null, confirmar = null, alvoSel = null, minimizado = false;
-  let timerTick = null, timerProx = null, arena = null, artesFase = {};
+  let timerTick = null, timerProx = null, arena = null, artesFase = {}, artesAliadosFase = {};
 
   // ---------- estado ----------
   const estado = (Dx = D) => {
@@ -259,7 +261,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
   }
   function painelExpedicoes() {
     const s = estado(), exp = s.exp; const { r, ids } = equipeAtual(s);
-    if (!s.equipeSel) s.equipeSel = r.slice(0, s.vagas).map((m) => m.id);
+    if (!s.equipeSel) { const form = membrosFormacao(getSave().idle).map((x) => `m${x.idx}`); s.equipeSel = (form.length ? form : r.map((m) => m.id)).slice(0, s.vagas); }
     const sel = (exp?.equipe || s.equipeSel).filter((id) => r.some((m) => m.id === id));
     let h = `<div class="est-bloco"><h4>🧭 Equipe (${sel.length}/${s.vagas} vagas · máximo ${LIMITE_ALIADOS})</h4><p class="muted">Toque para escolher Oníricos da sua coleção. A primeira vitória de cada fase abre uma vaga até o limite. Suporte cura, defesa atrai golpes, ataque causa dano.</p><div class="est-equipe">${r.map((m) => { const pa = D.papeis[m.especie] || 'ataque'; return `<button class="chip ${sel.includes(m.id) ? 'on' : ''}" data-membro="${m.id}">${PAPEL[pa].i} ${esc(m.especie)} nv.${m.nivel}<br><span class="muted">${PAPEL[pa].n}</span></button>`; }).join('')}</div></div>`;
     if (exp && exp.estado !== 'parada') {
@@ -389,6 +391,8 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     h += `<div class="est-bloco"><h4>🏗️ Obras (${g.obras.length}/${D.gestao.vagasObra} vagas)</h4>`;
     for (const o of g.obras) {
       const est = estrDe(o.tipo), ac = confAcel === o.id;
+      const vipGratis = getSave().conta?.vipAte > agora && o.fimEm - agora <= 600000; // VIP: obras com até 10 min restantes terminam de graça
+      if (vipGratis) { h += `<p>⏳ ${esc(est.nome)} nv.${o.nivel}: ${dur(o.fimEm - agora)} restantes <button class="btn-pri" data-vip-obra="${o.id}">👑 Concluir grátis (VIP)</button></p>`; continue; }
       h += `<p>⏳ ${esc(est.nome)} nv.${o.nivel}: ${dur(o.fimEm - agora)} restantes ${ac ? `<button class="btn-pri" data-acel-ok="${o.id}">Gastar ${custoAceleracao(o, agora)}💎</button><button class="btn-sec" data-acel-no="1">Cancelar</button>` : `<button class="btn-sec" data-acel="${o.id}">Acelerar</button>`}</p>`;
     }
     const total = {};
@@ -426,9 +430,10 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const s = estado(), exp = s.exp, rota = rotaDe(exp.rota), fase = rota.fases[exp.fase], r = roster();
     const bonus = bonusDaCidade(s, D);
     const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); const bt = bonusDoMembro(m); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus: { ...bonus, hp: (bonus.hp || 0) + (bt.hp || 0), atk: (bonus.atk || 0) + (bt.atk || 0), def: (bonus.def || 0) + (bt.def || 0) } }); });
+    artesAliadosFase = {}; { const form = membrosFormacao(getSave().idle); const livres = [0, 1, 2, 3].filter((v) => !form.some((x) => exp.equipe.includes(`m${x.idx}`) && x.vaga === v)); al.forEach((u, i) => { const f = form.find((x) => `m${x.idx}` === exp.equipe[i]); u.vaga = f ? f.vaga : livres.shift(); const mm = getSave().idle.equipe[Number(String(exp.equipe[i]).slice(1))]; const art = mm && arteDoIndividuo(mm); if (art) artesAliadosFase[u.especie] = art; }); }
     if (manterHp) al.forEach((u, i) => { const h = manterHp[exp.equipe[i]]; if (h != null) u.hp = Math.max(1, Math.min(u.hpMax, Math.round(h * u.hpMax + u.hpMax * bonus.cura))); });
     batalha = criarBatalha(al, gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)));
-    artesFase = {}; if (D.arteInimigo) for (const u of [...batalha.inimigos, ...batalha.esperaI]) artesFase[u.especie] = D.arteInimigo(u.especie, exp.fase);
+    artesFase = { ...artesAliadosFase }; if (D.arteInimigo) for (const u of [...batalha.inimigos, ...batalha.esperaI]) artesFase[u.especie] = D.arteInimigo(u.especie, exp.fase);
     arena = null;
     batalha.log.push(`Fase ${exp.fase + 1}: ${fase.nome}. ${batalha.inimigos.length} inimigo(s) à frente.`);
     exp.estado = 'batalha'; alvoSel = null; visao = 'batalha';
@@ -563,6 +568,11 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     if (t.dataset.selobra) { if (t.checked) selObras.add(t.dataset.selobra); else selObras.delete(t.dataset.selobra); desenharPainel(); return; }
     if (t.dataset.acel) { confAcel = t.dataset.acel; desenharPainel(); return; }
     if (t.dataset.acelNo) { confAcel = null; desenharPainel(); return; }
+    if (t.dataset.vipObra) {
+      const o = gestaoDe(s).obras.find((x) => x.id === t.dataset.vipObra);
+      if (o && getSave().conta?.vipAte > Date.now() && o.fimEm - Date.now() <= 600000) { o.fimEm = Date.now(); processar(); mostrarToast('👑 Obra concluída pelo VIP.', 2400); salvar(); }
+      desenhar(); return;
+    }
     if (t.dataset.acelOk) {
       const r = acelerarObra(s, D, t.dataset.acelOk, diamantes); confAcel = null;
       if (!r.ok) mostrarToast(r.motivo, 2800); else { r.concluidas.forEach((o) => aoConcluirObra(D, o)); mostrarToast(`⚡ Obra acelerada por ${r.custo}💎.`, 2800); salvar(); atualizarHud?.(); }

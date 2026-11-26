@@ -58,7 +58,9 @@ export const temEfeito = (u, id) => Boolean(u.efeitos?.[id]);
 const efetivo = (u, k) => { const alto = temEfeito(u, `${k}_alto`) ? 0.3 : 0, baixo = temEfeito(u, `${k}_baixo`) || temEfeito(u, `${k}_baixa`) ? 0.3 : 0; return Math.max(1, u[k] * (1 + alto - baixo)); };
 
 function iniciarRodada(b) {
-  b.fila = vivos(b.ordem).sort((x, y) => (y.nivel + (y.papel === 'suporte' ? 1 : 0)) - (x.nivel + (x.papel === 'suporte' ? 1 : 0))).map((u) => u.id);
+  // velocidade: nível, um pouco a mais para suporte, multiplicado pelos efeitos de velocidade (Perseguição +50%, Pânico +100%)
+  const vel = (u) => (u.nivel + (u.papel === 'suporte' ? 1 : 0)) * (1 + Object.keys(u.efeitos || {}).reduce((a, id) => a + (EFEITOS[id]?.velocidade || 0), 0));
+  b.fila = vivos(b.ordem).sort((x, y) => vel(y) - vel(x)).map((u) => u.id);
   for (const u of b.ordem) { u.defendendo = false; u.cd = (u.cd || [0, 0, 0]).map((c) => Math.max(0, c - 1)); u.recarga = Math.max(...u.cd); }
 }
 const antes = (b, e) => { (b.antes ||= []).push(e); };
@@ -76,11 +78,12 @@ function aplicarEfeito(alvo, fonte, e, rng) {
   if (alvo.hp <= 0 || rng() > (e.chance ?? 1)) return null;
   const def = EFEITOS[e.id]; if (!def) return null;
   let valor = 0;
-  if (e.id === 'sangramento') valor = Math.max(2, Math.round(fonte.atk * 0.45));
+  if (e.id === 'sangramento') valor = Math.max(2, Math.round(fonte.atk * (e.valorMult || 0.45)));
   else if (e.id === 'queimadura') valor = Math.max(3, Math.round(fonte.atk * 0.6));
   else if (e.id === 'veneno') valor = Math.max(3, Math.round(alvo.hpMax * 0.05));
   else if (e.id === 'regeneracao') valor = Math.max(2, Math.round(alvo.hpMax * 0.07));
-  (alvo.efeitos ||= {})[e.id] = { turnos: e.turnos || 2, valor, fonte: fonte.id };
+  // efeito em si mesmo ganha +1 porque o turno de quem usou termina logo em seguida
+  (alvo.efeitos ||= {})[e.id] = { turnos: (e.turnos || 2) + (alvo === fonte ? 1 : 0), valor, fonte: fonte.id };
   return e.id;
 }
 const limpar = (alvo) => { const tirados = []; for (const id of Object.keys(alvo.efeitos || {})) if (EFEITOS[id]?.debuff) { delete alvo.efeitos[id]; tirados.push(id); } return tirados; };
@@ -162,19 +165,44 @@ export function executar(b, acao, rng) {
     b.log.push(`${u.especie} se defende.`);
   } else {
     const principal = alvoPorId(acao.alvo, inimigos) || escolherAlvo(b, u, rng);
-    const alvos = hab && hab.alvo === 'todos' ? inimigos : [principal];
-    ev.tipo = hab ? 'habilidade' : 'atacar'; ev.distancia = Boolean(hab?.distancia); ev.area = alvos.length > 1;
-    for (const a of alvos) {
-      let d = dano(b, u, a, hab ? hab.mult : 1, rng);
-      // dano pela vida máxima do alvo, com limite contra chefes (múltiplos do ataque)
+    ev.tipo = hab ? 'habilidade' : 'atacar'; ev.distancia = Boolean(hab?.distancia); ev.roubo = 0;
+    // Um golpe: dano, parte pela vida máxima (limitada em chefes), efeitos da habilidade e, no modo de pânico, roubo de vida e sangramento
+    const golpear = (a, mult) => {
+      let d = dano(b, u, a, mult, rng);
       if (hab?.pctVidaMax) { let extra = Math.round(a.hpMax * hab.pctVidaMax); if (a.chefe) extra = Math.min(extra, Math.round(u.atk * (hab.limiteChefe || 4))); d += extra; }
       const r = receberDano(a, d);
       const rr = { id: a.id, valor: r.perdido, absorvido: r.abs, morreu: a.hp <= 0, efeitos: [], limpos: [] };
       if (a.hp > 0) for (const e of hab?.efeitos || []) { const ok = aplicarEfeito(a, u, e, rng); if (ok) rr.efeitos.push(ok); }
-      ev.alvos.push(rr);
+      const pan = u.efeitos?.panico && EFEITOS.panico;
+      if (pan) {
+        const c = Math.min(u.hpMax - u.hp, Math.round(r.perdido * pan.rouboVida)); u.hp += c; ev.roubo += c;
+        if (a.hp > 0) { const ok = aplicarEfeito(a, u, { id: 'sangramento', ...pan.sangraNoGolpe }, rng); if (ok && !rr.efeitos.includes(ok)) rr.efeitos.push(ok); }
+      }
+      ev.alvos.push(rr); return rr;
+    };
+    if (hab?.alvo === 'aleatorio') {
+      // Perseguição: N impactos em inimigos vivos sorteados; +X% por vaga inimiga vazia; ao derrotar alguém, reinicia com metade do dano
+      let fator = 1, rep = 0;
+      do {
+        let derrotou = false;
+        for (let g = 0; g < (hab.golpes || 1); g++) {
+          const vivosI = vivos(inimigosDe(b, u)); if (!vivosI.length) break;
+          const vazias = Math.min(3, Math.max(0, 4 - vivosI.length));
+          const a = vivosI[Math.floor(rng() * vivosI.length) % vivosI.length];
+          if (golpear(a, hab.mult * fator * (1 + (hab.bonusVagaVazia || 0) * vazias)).morreu) derrotou = true;
+        }
+        if (!derrotou || !hab.reinicia || rep >= hab.reinicia.max || !vivos(inimigosDe(b, u)).length) break;
+        rep += 1; fator *= hab.reinicia.fator; b.log.push(`${u.especie} reinicia a ${hab.nome} (${Math.round(fator * 100)}% do dano).`);
+      } while (true);
+      ev.repeticoes = rep; ev.area = true;
+    } else {
+      const alvos = hab && hab.alvo === 'todos' ? inimigos : [principal];
+      ev.area = alvos.length > 1;
+      for (const a of alvos) golpear(a, hab ? hab.mult : 1);
     }
-    ev.alvo = principal.id; ev.valor = ev.alvos[0].valor; ev.morreu = ev.alvos[0].morreu;
-    b.log.push(`${u.especie} ${hab ? `usou ${hab.nome} em` : 'atacou'} ${alvos.length > 1 ? 'todos os inimigos' : principal.especie} (−${ev.alvos.map((x) => x.valor).join('/−')})${ev.alvos.some((x) => x.morreu) ? ' e derrotou' : ''}.`);
+    for (const e of hab?.efeitosSi || []) aplicarEfeito(u, u, e, rng);
+    ev.alvo = ev.alvos[0]?.id || principal.id; ev.valor = ev.alvos[0]?.valor || 0; ev.morreu = ev.alvos[0]?.morreu;
+    b.log.push(`${u.especie} ${hab ? `usou ${hab.nome} em` : 'atacou'} ${ev.alvos.length > 1 ? `${ev.alvos.length} golpes` : principal.especie} (−${ev.alvos.map((x) => x.valor).join('/−')})${ev.alvos.some((x) => x.morreu) ? ' e derrotou' : ''}${ev.roubo ? `, roubando ${ev.roubo} de vida` : ''}.`);
     if (ev.alvos.some((x) => x.efeitos.length)) b.log.push(`Efeitos: ${ev.alvos.flatMap((x) => x.efeitos).map((id) => EFEITOS[id].nome).join(', ')}.`);
   }
   b.evento = ev;

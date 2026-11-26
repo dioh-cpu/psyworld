@@ -44,10 +44,13 @@ import { iniciarEstrategia } from './regiao1-estrategia.js';
 import { iniciarReinos } from './regiao1-reinos.js';
 import { golpeCampanha } from './regiao1-batalha-fx.js';
 import { criarTelaBatalha } from './regiao1-batalha-tela.js';
-import { indicesEquipeCombate } from './regiao1-exp-regras.js';
+import { indicesEquipeCombate, membrosFormacao } from './regiao1-exp-regras.js';
+import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
 import { iniciarHalloween } from './regiao1-halloween.js';
+import { iniciarConta } from './regiao1-conta.js';
+import { migrarHW } from './regiao1-halloween-regras.js';
 import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
@@ -171,6 +174,7 @@ try {
   }
 } catch (_) {}
 garantirEstadoIdle(save);
+migrarHW(save); // nomes definitivos dos exclusivos e ids estáveis para Equipes
 
 let ultimoBackupMs = 0;
 let avisouFalhaSave = false;
@@ -597,7 +601,7 @@ function mostrarToast(msg, ms = 3600) {
 let idleUI = null;
 
 function atualizarHudEstado() {
-  if (hudRecursos) hudRecursos.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes}💎`;
+  if (hudRecursos) { const vip = save.conta?.vipAte > Date.now() ? Math.ceil((save.conta.vipAte - Date.now()) / 86400000) : 0; hudRecursos.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes.toLocaleString('pt-BR')}💎${vip ? ` · 👑 VIP ${vip}d` : ''}`; }
   if (btnFazenda) btnFazenda.style.display = save.desbloqueios.fazenda ? 'inline-flex' : 'none';
   window.regiaoReinos?.botao && (window.regiaoReinos.botao.style.display = save.desbloqueios.fazenda ? 'inline-flex' : 'none');
 
@@ -956,10 +960,8 @@ function iniciarBatalha(tipo, entidade) {
   const nomeIni = ehBoss ? defBoss.nome : `${entidade.especie} (Nv. ${entidade.nivel})`;
   batalhaAtiva = { tipo, entidade, hpJog, maxJog, atkJog: st.atk, defJog: st.def, nivelJog: st.nivel, hpIni: 1, maxIni: 1, nomeIni };
   // Equipe (até 4) contra o inimigo e até 2 reforços na fila; a arena ocupa a tela inteira
-  const aliados = indicesEquipeCombate(idle).map(i => {
-    const m = idle.equipe[i];
-    return { especie: m.especie, nivel: i === 0 ? st.nivel : (m.nivel || 1), bonus: bonusDoMembro(m) };
-  });
+  // formação da aba Equipes: cada Onírico na sua vaga, com o próprio nível e a arte do seu tier
+  const aliados = membrosFormacao(idle).map(({ m, vaga }) => ({ especie: m.especie, nivel: m.nivel || 1, bonus: bonusDoMembro(m), vaga, arte: arteDoIndividuo(m) }));
   const raizDe = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
   const artes = {}; let inimigos;
   if (ehBoss) {
@@ -1190,9 +1192,8 @@ async function entrarNoMapa(id, chegadaPx = null, comFade = true) {
   atualizarHudEstado();
   salvarEstado();
 
-  const url = new URL(location.href);
-  url.searchParams.set('mapa', destino.id);
-  history.replaceState(null, '', url.toString());
+  // no endereço público (/jogar) a barra fica limpa; no caminho antigo continua registrando ?mapa=
+  if (!location.pathname.startsWith('/jogar')) { const url = new URL(location.href); url.searchParams.set('mapa', destino.id); history.replaceState(null, '', url.toString()); }
 
   bloqueioSaidaAte = performance.now() + 500;
   bloqueioEncontroAte = performance.now() + 900;
@@ -2368,6 +2369,7 @@ window.regiaoReinos = iniciarReinos({
   estrategia: () => window.regiaoEstrategia,
 });
 window.regiaoEstrategia.aoSair = () => window.regiaoReinos.voltar();
+window.regiaoConta = iniciarConta({ getSave: () => save, salvar: salvarEstado, mostrarToast, chaveSave: SAVE_KEY_REGIAO1, resetarSave: () => { save = criarEstadoInicial(); garantirEstadoIdle(save); migrarHW(save); }, serializar: (s) => serializarEstado(s) });
 window.regiaoHW = iniciarHalloween({ getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, tela: telaBatalha, batalhaBloqueando, questFeita: (q) => save.quests?.[q] === 'concluida' });
 const voltarAoPonto = async (r) => { if (mapaAtual?.id !== r.mapa) await entrarNoMapa(r.mapa, [r.px, r.py], false); const w = P(r.px, r.py); estado.x = w.x; estado.z = w.z; primeiroQuadro = true; };
 // Expansão 1: banner, caçadas, guilda, fazenda, oficina, calabouço, crises e herói × vilão (regras em regiao1-exp-regras.js)

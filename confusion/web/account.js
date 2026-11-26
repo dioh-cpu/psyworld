@@ -33,10 +33,13 @@ export async function init() {
   }
 }
 
-export async function signUp(addr, password) {
-  const { error } = await client.auth.signUp({ email: addr, password });
+// opcoes: { emailRedirectTo, data } (data vai para user_metadata, ex.: o inicial escolhido). Devolve a sessão, se já houver.
+export async function signUp(addr, password, opcoes = {}) {
+  const { data, error } = await client.auth.signUp({ email: addr, password, options: opcoes });
   if (error) throw error;
+  return data;
 }
+export const user = () => session?.user || null;
 export async function signIn(addr, password) {
   const { error } = await client.auth.signInWithPassword({ email: addr, password });
   if (error) throw error;
@@ -45,8 +48,8 @@ export async function signOut() {
   await client.auth.signOut();
   session = null;
 }
-export async function resetPassword(addr) {
-  const { error } = await client.auth.resetPasswordForEmail(addr, { redirectTo: location.href.split('#')[0] });
+export async function resetPassword(addr, redirectTo = location.href.split('#')[0]) {
+  const { error } = await client.auth.resetPasswordForEmail(addr, { redirectTo });
   if (error) throw error;
 }
 export async function setNewPassword(password) {

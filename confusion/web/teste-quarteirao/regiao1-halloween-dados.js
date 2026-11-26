@@ -9,16 +9,26 @@ export const BANNER_HW = {
 // Rotação semanal: calendário, elenco e contador próprios (o elenco será escolhido em outra etapa)
 export const SEMANAL = { ativo: false, calendario: [], elenco: [], contadorId: (semana) => `semanal-${semana}` };
 
-const PASTA = 'assets/events/halloween/oniricos';
+const PASTA = 'assets/confusion/interface/eventos/halloween/oniricos';
 const arte = (slug) => [1, 2, 3].map((n) => `${PASTA}/${slug}/0${n}.png`);
-// Cinco exclusivos, um por tier inicial. Nomes provisórios até as artes ficarem prontas.
+export const ARTES_HW = {
+  banner: 'assets/confusion/interface/eventos/halloween/banner.webp', torre: 'assets/confusion/interface/eventos/halloween/torre.webp', loja: 'assets/confusion/interface/eventos/halloween/loja.webp',
+  ticket: 'assets/confusion/interface/eventos/halloween/itens/ticket.webp', doce: 'assets/confusion/interface/eventos/halloween/itens/doce.webp',
+  pocao_xp_p: 'assets/confusion/interface/eventos/halloween/itens/pocao_xp_p.webp', pocao_xp_m: 'assets/confusion/interface/eventos/halloween/itens/pocao_xp_m.webp', pocao_xp_g: 'assets/confusion/interface/eventos/halloween/itens/pocao_xp_g.webp',
+  arenas: [1, 2, 3, 4].map((n) => `assets/confusion/interface/eventos/halloween/arenas/0${n}.webp`),
+};
+// Cinco exclusivos do Banner Mensal, um por tier inicial (catalogo.json). Também são as cinco opções de inicial no cadastro (T1, nível 5).
 export const LINHAGENS_HW = [
-  { especie: 'Abóborgo', slug: 'aboborgo', tier: 1, papel: 'defesa', elemento: 'planta', resumo: 'Vanguarda: provoca e protege com escudos.', arte: arte('aboborgo') },
-  { especie: 'Candelúmia', slug: 'candelumia', tier: 2, papel: 'suporte', elemento: 'luz', resumo: 'Cura contínua no início do turno de cada aliado.', arte: arte('candelumia') },
-  { especie: 'Almaterna', slug: 'almaterna', tier: 3, papel: 'suporte', elemento: 'fantasma', resumo: 'Traz de volta um aliado caído, na vaga dele.', arte: arte('almaterna') },
-  { especie: 'Sentinoite', slug: 'sentinoite', tier: 4, papel: 'defesa', elemento: 'trevas', resumo: 'Concede invencibilidade temporária.', arte: arte('sentinoite') },
-  { especie: 'Ceifalume', slug: 'ceifalume', tier: 5, papel: 'ataque', elemento: 'trevas', resumo: 'Finalizador: dano pela vida máxima do alvo (limitado em chefes).', arte: arte('ceifalume') },
+  { especie: 'Abobrisco', slug: 'abobrisco', tier: 1, papel: 'defesa', elemento: 'planta', resumo: 'Vanguarda: provoca e protege com escudos.', arte: arte('abobrisco') },
+  { especie: 'Velalume', slug: 'velalume', tier: 2, papel: 'suporte', elemento: 'luz', resumo: 'Cura contínua no início do turno de cada aliado.', arte: arte('velalume') },
+  { especie: 'Mortálio', slug: 'mortalio', tier: 3, papel: 'suporte', elemento: 'fantasma', resumo: 'Traz de volta um aliado caído, na vaga dele.', arte: arte('mortalio') },
+  { especie: 'Vitrarco', slug: 'vitrarco', tier: 4, papel: 'defesa', elemento: 'trevas', resumo: 'Concede invencibilidade temporária.', arte: arte('vitrarco') },
+  { especie: 'Abyssar', slug: 'abyssar', tier: 5, papel: 'ataque', elemento: 'trevas', resumo: 'Finalizador: facada que sangra, perseguição em cadeia e modo de pânico.', arte: arte('abyssar') },
 ];
+// Nomes provisórios de versões anteriores → definitivos (preserva tier, XP e evolução dos já adquiridos)
+export const RENOMEAR_HW = { 'Abóborgo': 'Abobrisco', 'Candelúmia': 'Velalume', 'Almaterna': 'Mortálio', 'Sentinoite': 'Vitrarco', 'Ceifalume': 'Abyssar' };
+export const arteDoIndividuo = (m) => { const l = LINHAGENS_HW.find((x) => x.especie === m.especie); return l ? l.arte[formaDoTierLocal(m.tierHW || 1)] : null; };
+const formaDoTierLocal = (t) => (t >= 5 ? 2 : t >= 3 ? 1 : 0);
 // Forma pela faixa de tier: base (1–2), segunda (3–4), final (5)
 export const formaDoTier = (t) => (t >= 5 ? 2 : t >= 3 ? 1 : 0);
 // Doces de Halloween: evolução de tier e moeda da Loja da Torre
@@ -37,5 +47,5 @@ export const TORRE = {
   marco: 'q_mare_devolveu', // compatível com uma equipe de nível 5
   dificuldades: [{ nivel: [5, 70] }, { nivel: [70, 150] }, { nivel: [150, 220] }, { nivel: [220, 300] }],
   ticketsPorMarco: 5, chancePocao: 0.04,
-  arenas: ['assets/confusion/interface/estrategia/madeira-01.webp', 'assets/confusion/interface/estrategia/madeira-03.webp', 'assets/confusion/interface/estrategia/pedra-02.webp', 'assets/confusion/interface/estrategia/reinos/02/arena-ruinas.webp', 'assets/confusion/interface/estrategia/reinos/01/arena-chefe.webp'],
+  arenas: [1, 2, 3, 4].map((n) => `assets/confusion/interface/eventos/halloween/arenas/0${n}.webp`), // uma arena própria por dificuldade
 };

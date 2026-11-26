@@ -15,7 +15,33 @@ export function expDe(save) {
 }
 export const questFeita = (save, q) => save.quests?.[q] === 'concluida';
 
+// Formação (aba Equipes): 4 vagas com o id estável de cada Onírico (ou vazia). Vaga vazia não desloca as outras.
+export function formacaoDe(idle) {
+  const eq = idle.equipe || [];
+  eq.forEach((m, i) => { if (!m.uid) m.uid = `o${i}_${Date.now() % 100000}`; });
+  if (!Array.isArray(idle.formacao) || idle.formacao.length !== 4) {
+    const salvos = Array.isArray(idle.equipeCombate) ? [...new Set(idle.equipeCombate.filter((i) => Number.isInteger(i) && eq[i]))] : [];
+    const base = (salvos.length ? salvos : eq.slice(0, LIMITE_ALIADOS).map((_, i) => i)).slice(0, 4).map((i) => eq[i].uid);
+    idle.formacao = [...base, null, null, null, null].slice(0, 4);
+  }
+  idle.formacao = idle.formacao.map((u) => (u && eq.some((m) => m.uid === u) ? u : null));
+  if (!idle.formacao.some(Boolean) && eq[0]) idle.formacao[0] = eq[0].uid;
+  return idle.formacao;
+}
+export function membrosFormacao(idle) {
+  const eq = idle.equipe || [];
+  return formacaoDe(idle).map((uid, vaga) => { const idx = eq.findIndex((m) => m.uid === uid); return idx >= 0 ? { m: eq[idx], idx, vaga } : null; }).filter(Boolean);
+}
+export function colocarNaVaga(idle, uid, vaga) {
+  const f = formacaoDe(idle); const de = f.indexOf(uid);
+  if (de === vaga) return f;
+  const ocupante = f[vaga]; f[vaga] = uid; if (de >= 0) f[de] = ocupante ?? null; // troca se já estava em outra vaga
+  return f;
+}
+export function trocarVagas(idle, a, b) { const f = formacaoDe(idle); [f[a], f[b]] = [f[b], f[a]]; return f; }
+export function tirarDaVaga(idle, vaga) { const f = formacaoDe(idle); if (f.filter(Boolean).length <= 1) return false; f[vaga] = null; return true; }
 export function indicesEquipeCombate(idle) {
+  const membros = membrosFormacao(idle); if (membros.length) return membros.map((x) => x.idx);
   const equipe = idle.equipe || [];
   const salvos = Array.isArray(idle.equipeCombate) ? idle.equipeCombate : [];
   const validos = [...new Set(salvos.filter(i => Number.isInteger(i) && equipe[i]))];

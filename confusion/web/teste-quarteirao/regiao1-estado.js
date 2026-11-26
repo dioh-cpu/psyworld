@@ -605,6 +605,11 @@ export function desserializarEstado(texto) {
     if (salvo.idle && typeof salvo.idle === 'object') {
       base.idle = salvo.idle;
     }
+    // conta da versão pública: inicial escolhido, concessão do bônus e validade do VIP
+    if (salvo.conta && typeof salvo.conta === 'object') {
+      const c = salvo.conta;
+      base.conta = { uid: typeof c.uid === 'string' ? c.uid : undefined, inicial: typeof c.inicial === 'string' ? c.inicial : undefined, bonusEm: Number(c.bonusEm) || undefined, vipAte: Number(c.vipAte) || undefined };
+    }
     return base;
   } catch {
     return base;

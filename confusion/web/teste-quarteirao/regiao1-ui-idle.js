@@ -149,7 +149,7 @@ export function criarControladorIdleUI(ctx) {
     }
 
     const elRec = $('hud-recursos');
-    if (elRec) elRec.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes}💎`;
+    if (elRec) { const vip = save.conta?.vipAte > Date.now() ? Math.ceil((save.conta.vipAte - Date.now()) / 86400000) : 0; elRec.textContent = `${save.recompensas.gold}g · ${save.recompensas.diamantes.toLocaleString('pt-BR')}💎${vip ? ` · 👑 VIP ${vip}d` : ''}`; }
 
     const btnAuto = $('btn-autocaca');
     if (btnAuto) {

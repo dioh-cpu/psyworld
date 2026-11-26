@@ -182,6 +182,10 @@ export async function tocarEvento(ctx, ev) {
   else if (ev.tipo === 'defender') { const c = caixa(ctx, A); anel(ctx, c.x, c.y, '#60a5fa', c.w * 1.3, 500, 3); luzChao(ctx, c.x, c.pe, '#60a5fa', 80, 700, 0.6); ctx.aplicarHp(ev.ator); if (hab) await genericoApoio(ctx, A, ev, hab); else await ESP(300 * ctx.k); }
   else await genericoApoio(ctx, A, ev, hab);
   for (const r of ev.alvos || []) ctx.aplicarHp(r.id);
+  // roubo de vida (modo de pânico) e entrada no pânico
+  if (ev.roubo) { numero(ctx, A, `🩸 +${ev.roubo}`, '#86efac'); ctx.aplicarHp(ev.ator); }
+  if (ev.alvos?.some((r) => r.efeitos?.includes('panico'))) { flash(ctx, '#7f1d1d', 260, 0.35); const c = caixa(ctx, A); anel(ctx, c.x, c.y, '#f87171', c.w * 1.6, 700, 4); camera(ctx, { x: c.x, y: c.y }, { zoom: 1.05, tremor: 5 }); }
+  if (ev.repeticoes) numero(ctx, A, `🔁 ×${ev.repeticoes + 1}`, '#fde68a');
   return ev;
 }
 // Clipe do Flow: toca o vídeo sobre o alvo e dispara o impacto no tempo configurado

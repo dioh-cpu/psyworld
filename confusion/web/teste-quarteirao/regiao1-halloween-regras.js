@@ -1,8 +1,16 @@
 // Regras do evento de Halloween: banner mensal com contador e garantias, tickets separados, doces e evolução de tier, Torre de 4
 // dificuldades × 100 andares com marcos pagos uma única vez, loja da Torre e poções de XP. Estado em save.idle.hw.
-import { EDICAO, BANNER_HW, LINHAGENS_HW, DOCES, LOJA_TORRE, TORRE, formaDoTier } from './regiao1-halloween-dados.js';
+import { EDICAO, BANNER_HW, LINHAGENS_HW, DOCES, LOJA_TORRE, TORRE, formaDoTier, RENOMEAR_HW } from './regiao1-halloween-dados.js';
 import { aplicarXp, previsaoXp, POCOES, nivelDe, xpTotal } from './regiao1-progressao.js';
 
+// Saves anteriores: nomes provisórios viram os definitivos; cada Onírico ganha um id estável (para Equipes)
+export function migrarHW(save) {
+  let mudou = false, n = 0;
+  for (const m of save.idle?.equipe || []) { if (RENOMEAR_HW[m.especie]) { m.especie = RENOMEAR_HW[m.especie]; mudou = true; } }
+  const usados = new Set((save.idle?.equipe || []).map((m) => m.uid).filter(Boolean));
+  for (const m of save.idle?.equipe || []) if (!m.uid) { while (usados.has(`o${n}`)) n++; m.uid = `o${n}`; usados.add(m.uid); mudou = true; }
+  return mudou;
+}
 export function hwDe(save) {
   const idle = save.idle || (save.idle = {});
   const h = idle.hw || (idle.hw = {});
@@ -43,7 +51,7 @@ export function invocarHW(save, quantos = 1, rng = Math.random, ed = EDICAO) {
     const { tier, garantia } = tierDaPosicao(pos, rng);
     if (tier === 5) h.contador[ed.id] = 0; // Tier 5 (sorte ou garantia) reinicia a contagem
     const lin = LINHAGENS_HW.find((l) => l.tier === tier);
-    const novo = { especie: lin.especie, nivel: 1, xp: 0, raridade: tier, forma: 'natural', tierHW: tier, evento: ed.id };
+    const novo = { especie: lin.especie, nivel: 1, xp: 0, raridade: tier, forma: 'natural', tierHW: tier, evento: ed.id, uid: `h${ed.id.slice(-4)}${h.total || 0}_${i}` };
     (save.idle.equipe ||= []).push(novo);
     resultados.push({ pos, tier, garantia, especie: lin.especie });
   }
@@ -94,14 +102,15 @@ export const darPocao = (save, id, n = 1) => { const h = hwDe(save); h.pocoes[id
 
 // ---------- Torre ----------
 const POOL = ['Noctarn', 'Ignavor', 'Vaelith', 'Brotavel', 'Fanalino', 'Cervomusgo', 'Cobrabúfalo', 'Tatuveludo', 'Xistolim', 'Melifalcão', 'Lavândria', 'Calquélon', 'Vesprata', 'Colmeiro', 'Cerifogo', 'Âmbarasa', 'Zunifaísca', 'Trovoresta', 'Voltabelha', 'Falesário', 'Ventassol', 'Bronzelo', 'Latonhorn'];
-export function nivelDoAndar(dif, andar) { const [a, b] = TORRE.dificuldades[dif - 1].nivel; return Math.round(a + (b - a) * (andar - 1) / 99); }
+// Curva suave no começo (expoente 1,25) e um alívio nos 10 primeiros andares da Dificuldade 1, para os iniciais chegarem aos primeiros tickets
+export function nivelDoAndar(dif, andar) { const [a, b] = TORRE.dificuldades[dif - 1].nivel; const t = (andar - 1) / 99; const nv = a + (b - a) * Math.pow(t, 1.25); return Math.max(1, Math.round(nv) - (dif === 1 && andar > 1 && andar <= 10 ? 1 : 0)); }
 // Composição varia por andar (determinística): 2 a 6 inimigos (até 4 em campo + 2 na fila). Múltiplos de 10 têm chefe.
 export function andar(dif, n) {
   const nv = nivelDoAndar(dif, n), qtd = Math.min(6, 2 + Math.floor((n - 1) / 20) + (n % 10 === 0 ? 1 : 0) + (dif - 1));
   const sem = (n * 7 + dif * 13) % POOL.length;
   const inimigos = Array.from({ length: qtd }, (_, i) => [POOL[(sem + i * 5) % POOL.length], Math.max(1, nv - (i % 3 === 2 ? 2 : 0))]);
   if (n % 10 === 0) inimigos[0] = [POOL[(sem + 3) % POOL.length], nv + 2, undefined, { chefe: true, bonus: { hp: 2.2, atk: 0.35, def: 0.3 } }];
-  return { dif, n, nivel: nv, recomendado: nv, inimigos, arena: TORRE.arenas[(Math.floor((n - 1) / 25) + dif - 1) % TORRE.arenas.length], marco: n % 10 === 0 };
+  return { dif, n, nivel: nv, recomendado: nv, inimigos, arena: TORRE.arenas[dif - 1], marco: n % 10 === 0 };
 }
 export const proximaRecompensa = (save, dif) => { const h = hwDe(save); const m = h.torre.maior[dif] || 0; const alvo = Math.min(100, (Math.floor(m / 10) + 1) * 10); return h.torre.pagos[`${dif}:${alvo}`] ? null : { andar: alvo, tickets: TORRE.ticketsPorMarco }; };
 // Vitória: registra o andar e paga o marco junto, uma única vez (mesmo recarregando ou repetindo o andar)
