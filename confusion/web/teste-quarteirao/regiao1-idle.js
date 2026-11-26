@@ -143,7 +143,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
     },
     revanches: { cooldowns: {}, emAndamento: null, concluidas: {}, craftsPagos: {} },
     derrotasPagas: { ids: {}, ordem: [] },
-    montaria: null,
+    montaria: 'brumacervo',
     equipe: [
       { especie: 'Penumbrio', nivel: 5, xp: xpDoNivel(5), tier: 4, raridade: 4, estrelas: 1, forma: 'natural', formaFase: 1, inicial: true, origem: 'inicial-padrao', uid: 'ini0' },
     ],
@@ -201,6 +201,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     } else {
       migrarMissoesCaptura(save.idle.diarias);
     }
+    if (save.idle.montaria === undefined) save.idle.montaria = 'brumacervo';
     fragmentosSonhoDe(save);
     revancheDe(save);
     migrarInicialNoctarn(save);
@@ -244,7 +245,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     },
     votos: { ...base.votos, ...(save.idle.votos || {}) },
     config: { ...base.config, ...(save.idle.config || {}) },
-    montaria: save.idle.montaria ?? null,
+    montaria: save.idle.montaria === undefined ? 'brumacervo' : (save.idle.montaria || null),
     logs: Array.isArray(save.idle.logs) ? save.idle.logs.slice(-60) : [],
     equipe: Array.isArray(save.idle.equipe) && save.idle.equipe.length ? save.idle.equipe : base.equipe,
     _pronto: true,

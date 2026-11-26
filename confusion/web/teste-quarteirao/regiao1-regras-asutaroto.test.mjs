@@ -620,3 +620,43 @@ test('Batalha manual: drop de 1% por inimigo derrotado, idempotente e integrado 
   assert.match(regiao1Src, /batalhaAtiva\.batalhaId\s*=/);
   assert.match(regiao1Src, /aplicarDropsBatalhaManual\(save,\s*\{\s*batalhaId:\s*b\.batalhaId,\s*inimigos:\s*b\.inimigosDrop/);
 });
+
+test('Save da montaria: padrão brumacervo (#66), preservação de escolha a pé (null), colecao.montarias e derrotaId no Auto-Caça', () => {
+  // Conta nova começa com brumacervo (#66: sem escolha gravada o domador anda montado)
+  const nova = novoSave();
+  assert.equal(nova.idle.montaria, 'brumacervo');
+
+  // Save antigo sem montaria (sem _pronto e com _pronto: true) migra para brumacervo
+  const antigoSemPronto = criarEstadoInicial();
+  antigoSemPronto.idle = { jogador: { xp: 10, hp: 100 } };
+  garantirEstadoIdle(antigoSemPronto, 3_000_000);
+  assert.equal(antigoSemPronto.idle.montaria, 'brumacervo');
+
+  const antigoComPronto = novoSave();
+  delete antigoComPronto.idle.montaria;
+  garantirEstadoIdle(antigoComPronto, 3_000_000);
+  assert.equal(antigoComPronto.idle.montaria, 'brumacervo');
+
+  // Escolha explícita a pé (null) é preservada após carregar e serializar/desserializar
+  const aPe = novoSave();
+  aPe.idle.montaria = null;
+  const aPeRec = desserializarEstado(serializarEstado(aPe));
+  garantirEstadoIdle(aPeRec, 3_000_000);
+  assert.equal(aPeRec.idle.montaria, null);
+
+  // Montaria do Passe + colecao.montarias preservadas e save válido para nuvem
+  const comPasse = novoSave();
+  comPasse.idle.colecao = { montarias: ['dinossauros-montaria-1'] };
+  comPasse.idle.montaria = 'dinossauros-montaria-1';
+  const comPasseRec = desserializarEstado(serializarEstado(comPasse));
+  garantirEstadoIdle(comPasseRec, 3_000_000);
+  assert.equal(comPasseRec.idle.montaria, 'dinossauros-montaria-1');
+  assert.deepEqual(comPasseRec.idle.colecao.montarias, ['dinossauros-montaria-1']);
+  const val = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(comPasseRec)), conta: comPasseRec.conta });
+  assert.equal(val.ok, true);
+
+  // Checagem estática de Auto-Caça idempotente em regiao1.js
+  const regiao1Src = fs.readFileSync(new URL('./regiao1.js', import.meta.url), 'utf8');
+  assert.match(regiao1Src, /if\s*\(alvoAutoCaca\._abatido\)\s*return;\s*alvoAutoCaca\._abatido\s*=\s*true;/);
+  assert.match(regiao1Src, /resolverAbateAuto\(save,\s*\{\s*\.\.\.morto,\s*derrotaId:/);
+});
