@@ -76,3 +76,18 @@ Tarefas:
 7. Crise: trocar as artes emprestadas pelas da pasta `expansao1/crise/` com fallback.
 8. Banner: resultados com a moldura da raridade (`interface/banner/moldura-N.png`).
 9. Antes do PR: `npm test` verde, testes novos para 2, 3 e 4, e um save antigo carregando sem perder nada.
+
+---
+
+## Coordenação Antigravity ↔ Claude — Habilidade Rara Violeta do Mortálio (`manto_violeta`)
+
+Preparada em `confusion/web/teste-quarteirao/regiao1-batalha-habilidades.js` sem tocar em `regiao1-vfx.js`:
+- **Constante / fábrica exportadas**: `MORTALIO_VIOLETA_CFG`, `habilidadeVioletaMortalio(opcoes)` e `kitMortalio(opcoes)` (também pendurada em `KITS['Mortálio'].preparadaVioleta`).
+- **ID estável da habilidade**: `'manto_violeta'` (`tipo: 'apoio'`, `raridade: 'rara'`, `elemento: 'fantasma'`).
+- **Quatro efeitos aplicados por 3 turnos completos** (em aliado, grupo ou si mesmo): `regeneracao`, `veloz`, `defesa_alta` e `escudo` (`escudoTurnos: 3`).
+- **Em aberto para fechamento antes de ativar no kit**: `MORTALIO_VIOLETA_CFG.alvo` (`'si' | 'aliado' | 'aliados'`), valores (`escudo`, `cura`, `cd`) e `MORTALIO_VIOLETA_CFG.vagaKit` (`null` por enquanto; `0`, `1` ou `2` ativa na vaga correspondente).
+- **Ligação em `regiao1-vfx.js` (Claude)**:
+  1. Importar `MORTALIO_VIOLETA_CFG` de `./regiao1-batalha-habilidades.js`.
+  2. Cadastrar `FX_HABILIDADES[MORTALIO_VIOLETA_CFG.id] = { fx: 'mantoVioleta', ms: 900, clip: MORTALIO_VIOLETA_CFG.clip, impactoMs: MORTALIO_VIOLETA_CFG.impactoMs, cut: ['#5b21b6', '#ddd6fe'] }` com fallback procedural violeta caso o `.mp4` ainda não esteja publicado.
+  3. Em `tocarClipe` (`regiao1-vfx.js`), caso `MORTALIO_VIOLETA_CFG.alvo` seja definido como `'aliados'`, ancorar o clipe no centro da formação aliada (ou iterar `ev.alvos`) além de `ctx.no(ev.alvo)`.
+

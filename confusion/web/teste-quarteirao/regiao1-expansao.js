@@ -3,16 +3,23 @@
 import * as R from './regiao1-exp-regras.js';
 import { MARCOS, CACADAS, POS_CACADA, FAB, PROFISSOES, CONTRATOS, ICONE_CONTRATO, CALABOUCO, CRISE, HV, MOLDURAS_BANNER, arteMoldura } from './regiao1-exp-dados.js';
 import { coletarTudo, prontoParaColetar, candidatasObra, enfileirarObras, previsaoLote, fabricarLote, repetirUltimoLote, gestaoDe, capacidade, bonusProfissao } from './regiao1-gestao-regras.js';
-import { ARTE_DA_ESPECIE, linhaDaEspecie } from '../species.js';
-import { LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { ARTE_DA_ESPECIE, ELEMENTO_DA_ESPECIE, linhaDaEspecie } from '../species.js';
+import { LIMITE_ALIADOS, criarUnidade } from './regiao1-estrategia-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
-import { hwDe } from './regiao1-halloween-regras.js';
+import { hwDe, bonusDoMembro } from './regiao1-halloween-regras.js';
+import { tierDe, estrelasDe, faixaEstrela, bonusTier, bonusEstrelas, infoClasse, custoEvoluirEstrela } from './regiao1-progressao.js';
 import { POSICOES } from './regiao1-batalha-tela.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
 const dur = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return t >= 3600 ? `${Math.floor(t / 3600)}h${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}` : t >= 60 ? `${Math.floor(t / 60)}min${String(t % 60).padStart(2, '0')}s` : `${t}s`; };
 const RARO = { comum: '#9ca3af', rara: '#60a5fa', epica: '#c084fc', lendaria: '#fbbf24' };
+const COR_TIER = { 1: '#9ca3af', 2: '#60a5fa', 3: '#c084fc', 4: '#fbbf24', 5: '#f43f5e' };
+const fmtPct = (b) => `vida +${Math.round((b.hp || 0) * 100)}% · atq +${Math.round((b.atk || 0) * 100)}% · def +${Math.round((b.def || 0) * 100)}%`;
+const badgeEstrelas = (n, curto = false) => {
+  const f = faixaEstrela(n);
+  return `<span class="exp-est ${f.arcoIris ? 'arco' : ''}" style="--cor-est:${f.cor}">${curto ? `${f.estrelas}★` : `${'★'.repeat(f.nivelNaFaixa)}${'☆'.repeat(6 - f.nivelNaFaixa)} ${f.estrelas}★ (${esc(f.nome)})`}</span>`;
+};
 const cacheArte = new Map();
 function resolverArte(principal, fallback) {
   if (!fallback || principal === fallback) return Promise.resolve(principal);
@@ -65,6 +72,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .bl { background: #352238; border: 1px solid #6b4a52; border-radius: 8px; padding: 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-exp .bl h4 { margin: 0 0 4px; font-size: 13px; color: #f3c27a; } #modal-exp .bl p { margin: 2px 0; }
     #modal-exp .tut { border-color: #7dd3fc; background: #14304a; } #modal-exp .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: expnovo 1.4s ease-in-out infinite; }
     #modal-exp .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-exp .ok { color: #4ade80; } #modal-exp .ruim { color: #fb7185; } #modal-exp .mut { opacity: .7; }
+    #modal-exp .exp-est { color: var(--cor-est, #facc15); font-weight: 600; }
+    #modal-exp .exp-est.arco { background: linear-gradient(90deg, #facc15, #f472b6, #c084fc, #38bdf8, #4ade80); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    #modal-exp .ficha-on { display: grid; grid-template-columns: 78px 1fr; gap: 10px; align-items: center; } #modal-exp .ficha-on img { width: 78px; height: 78px; object-fit: contain; background: #24162b; border-radius: 8px; padding: 4px; }
     #modal-exp .exp-ico { width: 18px; height: 18px; object-fit: contain; vertical-align: -3px; margin-right: 2px; }
     #modal-exp .card-on { display: flex; gap: 12px; align-items: center; }
     #modal-exp .card-mold { position: relative; width: 88px; height: 110px; flex: 0 0 88px; border-radius: 10px; border: 2px solid var(--cor-m, #9ca3af); background: radial-gradient(circle, #351b42, #180c20); display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -114,27 +124,45 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   function abaBanner() {
     const e = exp(); let h = `<div class="bl"><h4>🎫 Tickets: ${e.tickets}</h4><p>O Banner é a <b>única forma</b> de obter Oníricos novos. Cada missão de história concluída pela primeira vez dá 1 ticket, e os contratos diários da Guilda também pagam tickets. Chances: comum 70% · rara 22% · épica 7% · lendária 1% (a cada 10 invocações, no mínimo rara).</p><div class="ln"><button class="btn-pri" data-invocar="1" ${e.tickets ? '' : 'disabled'}>Invocar (1 ticket)</button></div></div>`;
     if (ultimaInvocacao) {
-      const mN = MOLDURAS_BANNER[ultimaInvocacao.raridade] || 1;
-      h += `<div class="bl card-on"><div class="card-mold ${mN >= 5 ? 'm5' : ''}" style="--cor-m:${RARO[ultimaInvocacao.raridade]}"><img class="sp" src="${artePequena(ultimaInvocacao.especie)}" alt="${esc(ultimaInvocacao.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><div><h4>${esc(ultimaInvocacao.especie)}</h4><p style="color:${RARO[ultimaInvocacao.raridade]}">${ultimaInvocacao.raridade} · ${esc(ultimaInvocacao.elemento)}</p><p class="mut">Adicionado à coleção (nível 1).</p></div></div>`;
+      const mN = MOLDURAS_BANNER[ultimaInvocacao.raridade] || 1, cls = infoClasse(ultimaInvocacao.especie);
+      h += `<div class="bl card-on"><div class="card-mold ${mN >= 5 ? 'm5' : ''}" style="--cor-m:${RARO[ultimaInvocacao.raridade]}"><img class="sp" src="${artePequena(ultimaInvocacao.especie)}" alt="${esc(ultimaInvocacao.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><div><h4>${esc(ultimaInvocacao.especie)} · T${ultimaInvocacao.tier || mN}</h4><p style="color:${RARO[ultimaInvocacao.raridade]}">${ultimaInvocacao.raridade} · ${cls.icone} ${esc(cls.nome)} · ${esc(ultimaInvocacao.elemento)} · ${badgeEstrelas(ultimaInvocacao.estrelas || 1, true)}</p><p class="mut">Adicionado à coleção (nível 1).</p></div></div>`;
     }
-    h += `<div class="bl"><h4>Oníricos no Banner (${R.poolBanner().length})</h4><div class="grade">${R.poolBanner().map((p) => `<div class="mini"><img src="${artePequena(p.especie)}" alt="" loading="lazy">${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">${p.raridade}</span></div>`).join('')}</div></div>`;
+    h += `<div class="bl"><h4>Oníricos no Banner (${R.poolBanner().length})</h4><div class="grade">${R.poolBanner().map((p) => { const cls = infoClasse(p.especie); return `<div class="mini"><img src="${artePequena(p.especie)}" alt="" loading="lazy">${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">T${p.tier || 1} · ${p.raridade}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`; }).join('')}</div></div>`;
     return h;
   }
-  // Equipes: coleção + 4 vagas nas posições da arena. Toque para colocar/trocar; arraste uma vaga sobre outra para reorganizar.
+  // Equipes: coleção + 4 vagas nas posições da arena + Ficha do Onírico (tier, estrelas, classe e bônus).
   let selEq = null; // { tipo: 'col' | 'vaga', uid?, vaga? }
   const arteDe = (m) => (arteDoIndividuo(m) ? `../../../${arteDoIndividuo(m)}` : artePequena(m.especie));
+  function fichaOnirico(m) {
+    if (!m) return '';
+    const t = tierDe(m), est = estrelasDe(m), cls = infoClasse(m.especie), elem = ELEMENTO_DA_ESPECIE[m.especie] || 'neutro';
+    const bT = bonusTier(t), bE = bonusEstrelas(est), bComb = bonusDoMembro(m);
+    const u = criarUnidade({ id: 'ficha', especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis: {}, bonus: bComb });
+    const proxEst = custoEvoluirEstrela(est);
+    return `<div class="bl"><div class="ficha-on"><img src="${arteDe(m)}" alt="${esc(m.especie)}"><div>
+      <h4 style="color:${COR_TIER[t] || '#f3c27a'}">${esc(m.especie)} · nv.${m.nivel || 1} · T${t}</h4>
+      <p>${cls.icone} Classe: <b>${esc(cls.nome)}</b> · Elemento: <b>${esc(elem)}</b> · Estrelas: ${badgeEstrelas(est)}</p>
+      <p>Combate: ❤️ <b>${u.hpMax}</b> · ⚔️ <b>${u.atk}</b> · 🛡️ <b>${u.def}</b></p>
+      <p class="mut">Bônus Tier T${t}: ${fmtPct(bT)} · Bônus ${est}★: ${fmtPct(bE)}${proxEst ? ` · Próx. (${proxEst.para}★): ${proxEst.fragmentos} frag. + ${proxEst.gold}g` : ' · Estrelas no máximo (30★)'}</p>
+    </div></div></div>`;
+  }
   function abaEquipe() {
     const idle = save().idle, eq = idle.equipe || [], f = R.formacaoDe(idle);
     const vagas = POSICOES.a.map(([x, y], v) => {
       const m = eq.find((o) => o.uid === f[v]); const sel = selEq?.tipo === 'vaga' && selEq.vaga === v;
-      return `<button class="eq-vaga ${sel ? 'sel' : ''} ${m ? '' : 'vazia'}" data-eq-vaga="${v}" style="left:${x}%;top:${y}%">${m ? `<img src="${arteDe(m)}" alt=""><span>${esc(m.especie)} · nv.${m.nivel || 1}</span>` : `<span>Vaga ${v + 1}</span>`}</button>`;
+      return `<button class="eq-vaga ${sel ? 'sel' : ''} ${m ? '' : 'vazia'}" data-eq-vaga="${v}" style="left:${x}%;top:${y}%">${m ? `<img src="${arteDe(m)}" alt=""><span>${esc(m.especie)} · nv.${m.nivel || 1} · T${tierDe(m)} ${badgeEstrelas(estrelasDe(m), true)}</span>` : `<span>Vaga ${v + 1}</span>`}</button>`;
     }).join('');
-    const col = eq.map((m) => { const na = f.indexOf(m.uid); const sel = selEq?.tipo === 'col' && selEq.uid === m.uid; return `<button class="mini eq-col ${sel ? 'sel' : ''}" data-eq-col="${m.uid}"><img src="${arteDe(m)}" alt="" loading="lazy">${esc(m.especie)}<br>nv.${m.nivel || 1}${m.tierHW ? ` · T${m.tierHW}` : ''}${na >= 0 ? `<br><span class="ok">Vaga ${na + 1}</span>` : ''}</button>`; }).join('');
+    const col = eq.map((m) => {
+      const na = f.indexOf(m.uid), sel = selEq?.tipo === 'col' && selEq.uid === m.uid, t = tierDe(m), est = estrelasDe(m), cls = infoClasse(m.especie);
+      return `<button class="mini eq-col ${sel ? 'sel' : ''}" data-eq-col="${m.uid}"><img src="${arteDe(m)}" alt="" loading="lazy">${esc(m.especie)}<br>nv.${m.nivel || 1} · <span style="color:${COR_TIER[t] || '#f3c27a'}">T${t}</span> · ${badgeEstrelas(est, true)}<br><span class="mut">${cls.icone} ${esc(cls.nome)}</span>${na >= 0 ? `<br><span class="ok">Vaga ${na + 1}</span>` : ''}</button>`;
+    }).join('');
+    const foco = selEq?.tipo === 'col' ? eq.find((o) => o.uid === selEq.uid) : selEq?.tipo === 'vaga' ? eq.find((o) => o.uid === f[selEq.vaga]) : (eq.find((o) => o.uid === f.find(Boolean)) || eq[0]);
     const dica = selEq ? (selEq.tipo === 'col' ? 'Toque numa vaga para colocar este Onírico.' : 'Toque noutra vaga para trocar, num Onírico da coleção para substituir, ou retire-o.') : 'Toque num Onírico da coleção e depois numa vaga. Arraste uma vaga sobre outra para reorganizar.';
     return `<div class="bl"><h4>Formação (${f.filter(Boolean).length}/4)</h4><p class="mut">${dica}</p>
       <div class="eq-arena" style="background-image:url('../../../assets/confusion/interface/estrategia/madeira-01.webp')">${vagas}</div>
       ${selEq?.tipo === 'vaga' && f[selEq.vaga] ? `<div class="ln"><button class="btn-sec" data-eq-tirar="${selEq.vaga}">Retirar da vaga ${selEq.vaga + 1}</button><button class="btn-sec" data-eq-cancelar="1">Cancelar</button></div>` : ''}
       <p class="mut">A formação vale na Campanha, na Torre, nas expedições da Estratégia e dos Reinos e em Herói × Vilão.</p></div>
+      ${fichaOnirico(foco)}
       <div class="bl"><h4>Coleção (${eq.length})</h4><div class="grade">${col}</div></div>`;
   }
   function tocarEquipe(d) {
@@ -214,7 +242,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     const idle = save().idle, run = exp().calabouco.run;
     if (!run || !luta) return;
     const membros = R.membrosFormacao(idle);
-    const eq = membros.map(({ m: x, vaga }) => ({ especie: x.especie, nivel: x.nivel || 1, vaga, arte: arteDoIndividuo(x), bonus: x.tierHW ? { hp: 0.15 * (x.tierHW - 1), atk: 0.15 * (x.tierHW - 1), def: 0.12 * (x.tierHW - 1) } : {} }));
+    const eq = membros.map(({ m: x, vaga }) => ({ especie: x.especie, nivel: x.nivel || 1, vaga, arte: arteDoIndividuo(x), bonus: bonusDoMembro(x) }));
     const arena = await resolverArte(luta.arena, luta.arenaFallback);
     const artes = {};
     if (luta.chefe) artes[luta.chefe.nome] = await resolverArte(luta.chefe.arte, luta.chefe.arteFallback);
@@ -323,7 +351,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   }
   function iniciarHVBatalha() {
     const m = R.missaoResolvida(save(), cap, hvEstado.n), idle = save().idle;
-    const eq = R.membrosFormacao(idle).map(({ m: x, vaga }) => ({ especie: x.especie, nivel: x.nivel || 1, vaga, arte: arteDoIndividuo(x), bonus: x.tierHW ? { hp: 0.15 * (x.tierHW - 1), atk: 0.15 * (x.tierHW - 1), def: 0.12 * (x.tierHW - 1) } : {} }));
+    const eq = R.membrosFormacao(idle).map(({ m: x, vaga }) => ({ especie: x.especie, nivel: x.nivel || 1, vaga, arte: arteDoIndividuo(x), bonus: bonusDoMembro(x) }));
     const artes = { Maregor: HV.chefes.Maregor.arte };
     fecharModal('modal-exp');
     tela.abrir({ titulo: `Herói × Vilão · ${m.titulo}`, arena: m.arena, aliados: eq, inimigos: m.inimigos, artes, onFim: (venceu) => {

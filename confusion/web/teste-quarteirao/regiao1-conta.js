@@ -4,18 +4,18 @@
 // O save da Região 1 vai para a nuvem junto com o que a conta já tinha (contas antigas são preservadas).
 import * as A from '../account.js';
 import { ARTE_DA_ESPECIE } from '../species.js';
-import { xpTotal } from './regiao1-progressao.js';
+import { xpTotal, estrelasIniciais, infoClasse } from './regiao1-progressao.js';
 
 export const BOAS_VINDAS = { diamantes: 20000, vipDias: 10 };
 const DIA = 86400000;
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // As cinco linhas iniciais: começam na forma base
 export const INICIAIS = [
-  { linha: 'Noctarn', especie: 'Penumbrio', elemento: 'Noturno', papel: 'Ataque' },
-  { linha: 'Ignavor', especie: 'Brasinha', elemento: 'Fogo', papel: 'Ataque' },
-  { linha: 'Vaelith', especie: 'Gotalume', elemento: 'Água', papel: 'Suporte' },
-  { linha: 'Brotavel', especie: 'Sementil', elemento: 'Planta', papel: 'Defesa' },
-  { linha: 'Solarin', especie: 'Solinho', elemento: 'Diurno (luz)', papel: 'Suporte' },
+  { linha: 'Noctarn', especie: 'Penumbrio', elemento: 'Noturno', papel: 'Ataque', classe: infoClasse('Penumbrio').nome },
+  { linha: 'Ignavor', especie: 'Brasinha', elemento: 'Fogo', papel: 'Ataque', classe: infoClasse('Brasinha').nome },
+  { linha: 'Vaelith', especie: 'Gotalume', elemento: 'Água', papel: 'Suporte', classe: infoClasse('Gotalume').nome },
+  { linha: 'Brotavel', especie: 'Sementil', elemento: 'Planta', papel: 'Defesa', classe: infoClasse('Sementil').nome },
+  { linha: 'Solarin', especie: 'Solinho', elemento: 'Diurno (luz)', papel: 'Suporte', classe: infoClasse('Solinho').nome },
 ];
 const PENDENTE = 'cw-inicial-pendente', LIBERADO = 'cw-gate-ok';
 
@@ -29,7 +29,7 @@ export function prepararContaNova(save, { userId, inicial, agora = Date.now(), n
   save.conta.uid = userId; save.conta.inicial = lin.especie;
   const idle = save.idle; idle.equipe = idle.equipe || [];
   if (!idle.equipe.some((m) => m.inicial)) {
-    idle.equipe.unshift({ especie: lin.especie, nivel: 5, xp: xpTotal(5), raridade: 1, forma: 'natural', inicial: true, uid: 'ini0' });
+    idle.equipe.unshift({ especie: lin.especie, nivel: 5, xp: xpTotal(5), tier: 1, raridade: 1, estrelas: estrelasIniciais('inicial'), forma: 'natural', inicial: true, uid: 'ini0' });
     const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== 'ini0');
     idle.formacao = ['ini0', ...resto].slice(0, 4);
     while (idle.formacao.length < 4) idle.formacao.push(null);

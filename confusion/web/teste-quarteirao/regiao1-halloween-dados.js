@@ -19,11 +19,11 @@ export const ARTES_HW = {
 };
 // Cinco exclusivos do Banner Mensal, um por tier inicial (catalogo.json). Também são as cinco opções de inicial no cadastro (T1, nível 5).
 export const LINHAGENS_HW = [
-  { especie: 'Abobrisco', slug: 'abobrisco', tier: 1, papel: 'defesa', elemento: 'planta', resumo: 'Vanguarda: provoca e protege com escudos.', arte: arte('abobrisco') },
-  { especie: 'Velalume', slug: 'velalume', tier: 2, papel: 'suporte', elemento: 'luz', resumo: 'Cura contínua no início do turno de cada aliado.', arte: arte('velalume') },
-  { especie: 'Mortálio', slug: 'mortalio', tier: 3, papel: 'suporte', elemento: 'fantasma', resumo: 'Traz de volta um aliado caído, na vaga dele.', arte: arte('mortalio') },
-  { especie: 'Vitrarco', slug: 'vitrarco', tier: 4, papel: 'defesa', elemento: 'trevas', resumo: 'Concede invencibilidade temporária.', arte: arte('vitrarco') },
-  { especie: 'Abyssar', slug: 'abyssar', tier: 5, papel: 'ataque', elemento: 'trevas', resumo: 'Finalizador: facada que sangra, perseguição em cadeia e modo de pânico.', arte: arte('abyssar') },
+  { especie: 'Abobrisco', slug: 'abobrisco', tier: 1, classe: 'tanque', papel: 'defesa', elemento: 'planta', resumo: 'Vanguarda: provoca e protege com escudos.', arte: arte('abobrisco') },
+  { especie: 'Velalume', slug: 'velalume', tier: 2, classe: 'suporte', papel: 'suporte', elemento: 'luz', resumo: 'Cura contínua no início do turno de cada aliado.', arte: arte('velalume') },
+  { especie: 'Mortálio', slug: 'mortalio', tier: 3, classe: 'mago', papel: 'suporte', elemento: 'fantasma', resumo: 'Traz de volta um aliado caído, na vaga dele.', arte: arte('mortalio') },
+  { especie: 'Vitrarco', slug: 'vitrarco', tier: 4, classe: 'guerreiro', papel: 'defesa', elemento: 'trevas', resumo: 'Concede invencibilidade temporária.', arte: arte('vitrarco') },
+  { especie: 'Abyssar', slug: 'abyssar', tier: 5, classe: 'assassino', papel: 'ataque', elemento: 'trevas', resumo: 'Finalizador: facada que sangra, perseguição em cadeia e modo de pânico.', arte: arte('abyssar') },
 ];
 // Nomes provisórios de versões anteriores → definitivos (preserva tier, XP e evolução dos já adquiridos)
 export const RENOMEAR_HW = { 'Abóborgo': 'Abobrisco', 'Candelúmia': 'Velalume', 'Almaterna': 'Mortálio', 'Sentinoite': 'Vitrarco', 'Ceifalume': 'Abyssar' };

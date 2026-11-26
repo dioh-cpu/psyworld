@@ -33,7 +33,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     if (s.exp?.equipe?.length > s.vagas) s.exp.equipe = s.exp.equipe.slice(0, s.vagas);
     return s;
   };
-  const roster = () => (getSave().idle.equipe || []).map((m, i) => ({ id: `m${i}`, especie: m.especie, nivel: m.nivel || 1, tierHW: m.tierHW }));
+  const roster = () => (getSave().idle.equipe || []).map((m, i) => ({ id: `m${i}`, especie: m.especie, nivel: m.nivel || 1, tier: m.tier, tierHW: m.tierHW, raridade: m.raridade, estrelas: m.estrelas, inicial: m.inicial }));
   const diario = (t) => { const meta = window.regiaoMundo?.estado?.().meta; if (!meta) return; meta.diario = meta.diario || []; meta.diario.push({ dia: meta.dia, t: `${D.titulo}: ${t}` }); if (meta.diario.length > 150) meta.diario = meta.diario.slice(-150); };
   const rotaDe = (id) => D.rotas.find((r) => r.id === id);
   const estrDe = (id) => D.estruturas.find((e) => e.id === id);
@@ -441,7 +441,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   function comecarFase(manterHp = null) {
     const s = estado(), exp = s.exp, rota = rotaDe(exp.rota), fase = rota.fases[exp.fase], r = roster();
     const bonus = bonusDaCidade(s, D);
-    const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); const bt = bonusDoMembro(m); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus: { ...bonus, hp: (bonus.hp || 0) + (bt.hp || 0), atk: (bonus.atk || 0) + (bt.atk || 0), def: (bonus.def || 0) + (bt.def || 0) } }); });
+    const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); const bt = bonusDoMembro(m); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus: { ...bonus, ...bt, hp: (bonus.hp || 0) + (bt.hp || 0), atk: (bonus.atk || 0) + (bt.atk || 0), def: (bonus.def || 0) + (bt.def || 0) } }); });
     artesAliadosFase = {}; { const form = membrosFormacao(getSave().idle); const livres = [0, 1, 2, 3].filter((v) => !form.some((x) => exp.equipe.includes(`m${x.idx}`) && x.vaga === v)); al.forEach((u, i) => { const f = form.find((x) => `m${x.idx}` === exp.equipe[i]); u.vaga = f ? f.vaga : livres.shift(); const mm = getSave().idle.equipe[Number(String(exp.equipe[i]).slice(1))]; const art = mm && arteDoIndividuo(mm); if (art) artesAliadosFase[u.especie] = art; }); }
     if (manterHp) al.forEach((u, i) => { const h = manterHp[exp.equipe[i]]; if (h != null) u.hp = Math.max(1, Math.min(u.hpMax, Math.round(h * u.hpMax + u.hpMax * bonus.cura))); });
     batalha = criarBatalha(al, gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)));

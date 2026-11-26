@@ -1,7 +1,7 @@
 // Módulo Idle & Progressão da Região 1 — Confusion Waves: Double Perspective.
 // Reaproveita diretamente core.js, systems.js e species.js (sem duplicar regras do núcleo).
 
-import { nivelDe as nivelDeXp, xpPara as xpParaProximo, xpTotal as xpDoNivel } from './regiao1-progressao.js'; // progressão sem teto
+import { nivelDe as nivelDeXp, xpPara as xpParaProximo, xpTotal as xpDoNivel, migrarProgressaoOniricos, estrelasIniciais } from './regiao1-progressao.js'; // progressão sem teto + estrelas/tier
 import {
   sanityBand,
   gatherDay,
@@ -134,7 +134,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
       ingredientes: { erva_costeira: 3, cristal_bruto: 1 },
     },
     equipe: [
-      { especie: 'Noctarn', nivel: 5, xp: xpDoNivel(5), raridade: 3, forma: 'natural' },
+      { especie: 'Noctarn', nivel: 5, xp: xpDoNivel(5), tier: 1, raridade: 3, estrelas: estrelasIniciais('inicial'), forma: 'natural' },
     ],
     login: { streak: 0, lastDay: -1 },
     passe: { season: '', xp: 0, premium: false, claimed: 0, claimedPremium: 0 },
@@ -177,6 +177,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     if (!save.idle.diarias || save.idle.diarias.dia !== diaAtual) {
       save.idle.diarias = gerarDiariasIniciais(agoraMs);
     }
+    migrarProgressaoOniricos(save);
     return save.idle;
   }
   const base = criarEstadoIdle(agoraMs);
@@ -226,6 +227,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
   if (!save.idle.diarias || save.idle.diarias.dia !== diaAtual) {
     save.idle.diarias = gerarDiariasIniciais(agoraMs);
   }
+  migrarProgressaoOniricos(save);
   return save.idle;
 }
 
@@ -572,7 +574,7 @@ export function chocarPrimeiroOvo(save) {
   const idle = garantirEstadoIdle(save);
   if (!idle.mochila.ovos.length) return { ok: false, motivo: 'Nenhum ovo na mochila.' };
   const ovo = idle.mochila.ovos.shift();
-  idle.equipe.push({ especie: ovo.especie, nivel: 1, xp: 0, raridade: 2, forma: ovo.forma || 'natural' });
+  idle.equipe.push({ especie: ovo.especie, nivel: 1, xp: 0, tier: 2, raridade: 2, estrelas: estrelasIniciais('ovo'), forma: ovo.forma || 'natural' });
   registrarCodexEspecie(idle, ovo.especie, { captura: true });
   avancarDiaria(idle, 'ovos', 1);
   return { ok: true, ovo };

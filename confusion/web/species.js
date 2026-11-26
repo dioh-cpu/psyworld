@@ -99,6 +99,10 @@ export const PASSIVA_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).fi
 // Elemento de cada espécie (v1.34). Sem elemento explícito, vale o da pureza: luz, trevas ou neutro.
 const ELEMENTO_PELA_PUREZA = { luz: 'luz', trevas: 'trevas', neutra: 'neutro' };
 export const ELEMENTO_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).map(([k, e]) => [k, e.elemento ?? ELEMENTO_PELA_PUREZA[e.pureza]]));
+import { CLASSES_ONIRICOS, CLASSE_DA_ESPECIE as CLASSE_REGISTRO, classeDaEspecie } from './teste-quarteirao/regiao1-progressao.js';
+for (const [k, e] of Object.entries(ESPECIES)) e.classe = e.classe || classeDaEspecie(k);
+export { CLASSES_ONIRICOS, classeDaEspecie };
+export const CLASSE_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).map(([k, e]) => [k, e.classe || CLASSE_REGISTRO[k] || classeDaEspecie(k)]));
 // Habilidades e passivas com o mesmo nome em mais de uma espécie. Vazio quando todas são únicas.
 export function repetidosNoCatalogo(catalogo = ESPECIES) {
   const vistos = new Map();

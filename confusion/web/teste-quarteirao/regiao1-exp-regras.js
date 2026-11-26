@@ -5,7 +5,7 @@ import { MARCOS, MISSOES_HISTORIA, CONTRATOS, CONTRATOS_DIARIOS_GRUPOS, CALABOUC
 import { REINOS } from '../reinos.js';
 import { gestaoDe, avancar as avancarGestao } from './regiao1-gestao-regras.js';
 import { darPocao, hwDe } from './regiao1-halloween-regras.js';
-import { aplicarXp } from './regiao1-progressao.js';
+import { aplicarXp, estrelasIniciais, classeDaEspecie } from './regiao1-progressao.js';
 
 export function expDe(save) {
   const idle = save.idle || (save.idle = {});
@@ -80,7 +80,7 @@ export function concederTickets(save) {
 const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 2], ['epica', 0.07, 3], ['lendaria', 0.01, 4]];
 export function poolBanner() {
   const vistos = new Set(), pool = [];
-  for (const r of Object.values(REINOS)) for (const l of r.linhagens) if (!vistos.has(l.nome)) { vistos.add(l.nome); const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10; pool.push({ especie: l.nome, elemento: l.elemento, raridade: k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria' }); }
+  for (const r of Object.values(REINOS)) for (const l of r.linhagens) if (!vistos.has(l.nome)) { vistos.add(l.nome); const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10; const raridade = k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria'; const tier = RARIDADES.find((x) => x[0] === raridade)[2]; pool.push({ especie: l.nome, elemento: l.elemento, classe: classeDaEspecie(l.nome), raridade, tier }); }
   return pool;
 }
 export function invocar(save, rng = Math.random) {
@@ -93,8 +93,9 @@ export function invocar(save, rng = Math.random) {
   if (garantia && alvo === 'comum') alvo = 'rara';
   const pool = poolBanner(); let cand = pool.filter((p) => p.raridade === alvo); if (!cand.length) cand = pool;
   const sorteado = cand[Math.floor(rng() * cand.length) % cand.length];
-  const nivel = 1, idle = save.idle; (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, raridade: RARIDADES.find((x) => x[0] === sorteado.raridade)[2], forma: 'natural' });
-  return { ok: true, ...sorteado };
+  const nivel = 1, tier = RARIDADES.find((x) => x[0] === sorteado.raridade)[2], estrelas = estrelasIniciais('banner'), idle = save.idle;
+  (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, tier, raridade: tier, estrelas, forma: 'natural' });
+  return { ok: true, ...sorteado, tier, estrelas };
 }
 
 // ---- Guilda e Contratos Diários ----
