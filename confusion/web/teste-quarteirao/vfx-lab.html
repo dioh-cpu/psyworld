@@ -77,6 +77,7 @@ async function rodar(especie, idx, op = {}) {
     const ev = b.evento; ev.mostrado = true;
     const campo = host.querySelector('.tb-campo');
     const ctx = criarCtx({ arena: host, campo, rapido: Boolean(op.rapido), no: (id) => host.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} });
+    ctx.cinema = Boolean(op.cinema);
     const est = duracaoEstimada(ev, Boolean(op.rapido)), t0 = performance.now();
     await tocarEvento(ctx, ev);
     const real = Math.round(performance.now() - t0);
@@ -85,13 +86,13 @@ async function rodar(especie, idx, op = {}) {
     return { real, estimado: Math.round(est), tipo: ev.tipo, alvos: ev.alvos.length };
   } finally { ocupado = false; }
 }
-painel.innerHTML = `<span>Revelação: ${Object.keys(LOTES).map((k) => `<button data-lote="${k}">${k}</button>`).join('')}<button data-ovo="comum">Ovo T2</button><button data-ovo="max">Ovo T5 nível 100</button><button data-rap="1">Recompensas rápidas</button></span><span>Genéricas: ${Object.entries(GEN).map(([k, h]) => `<button data-gen="${k}">${h.icone} ${h.nome}</button>`).join('')}</span>` + Object.entries(KITS).map(([esp, kit]) => `<span>${esp}: ${kit.map((h, i) => `<button class="${h.cd >= 5 ? 'ult' : ''}" data-esp="${esp}" data-idx="${i}">${h.icone} ${h.nome}</button>`).join('')}</span>`).join('');
-painel.addEventListener('click', (e) => { const t = e.target.closest('button'); if (!t) return; if (t.dataset.lote) { revelar(t.dataset.lote); return; } if (t.dataset.ovo) { ovo(t.dataset.ovo === 'max'); return; } if (t.dataset.rap) { mostrarRecompensas([{ nome: 'Ouro', icone: '🪙', qtd: 500 }, { nome: 'Diamantes', icone: '💎', qtd: 20 }, { nome: 'Poção de XP', icone: '🧪', qtd: 1 }]); return; } if (t.dataset.gen) { rodar(t.dataset.gen === 'manto' ? 'Mortálio' : 'Ignavor', 0, { hab: GEN[t.dataset.gen] }); return; } rodar(t.dataset.esp, Number(t.dataset.idx), { caido: t.dataset.esp === 'Mortálio' && t.dataset.idx === '2' }); });
+painel.innerHTML = `<span>Revelação: ${Object.keys(LOTES).map((k) => `<button data-lote="${k}">${k}</button>`).join('')}<button data-ovo="comum">Ovo T2</button><button data-ovo="max">Ovo T5 nível 100</button><button data-rap="1">Recompensas rápidas</button></span><span>Clipes Flow: <button data-flow="Vaelith:0">🌊 Arco Ciano</button><button data-flow="Solarin:1">🔆 Chama Solar</button><button data-flow="Velalume:2">☀️ Procissão de Luz</button><button data-gen="manto">🔮 Manto Violeta</button><button data-cinema="1">☄️ Meteoros (cinemático)</button></span><span>Genéricas: ${Object.entries(GEN).map(([k, h]) => `<button data-gen="${k}">${h.icone} ${h.nome}</button>`).join('')}</span>` + Object.entries(KITS).map(([esp, kit]) => `<span>${esp}: ${kit.map((h, i) => `<button class="${h.cd >= 5 ? 'ult' : ''}" data-esp="${esp}" data-idx="${i}">${h.icone} ${h.nome}</button>`).join('')}</span>`).join('');
+painel.addEventListener('click', (e) => { const t = e.target.closest('button'); if (!t) return; if (t.dataset.flow) { const [e, i] = t.dataset.flow.split(':'); rodar(e, Number(i)); return; } if (t.dataset.cinema) { rodar('Ignavor', 0, { hab: GEN.meteoros, cinema: true }); return; } if (t.dataset.lote) { revelar(t.dataset.lote); return; } if (t.dataset.ovo) { ovo(t.dataset.ovo === 'max'); return; } if (t.dataset.rap) { mostrarRecompensas([{ nome: 'Ouro', icone: '🪙', qtd: 500 }, { nome: 'Diamantes', icone: '💎', qtd: 20 }, { nome: 'Poção de XP', icone: '🧪', qtd: 1 }]); return; } if (t.dataset.gen) { rodar(t.dataset.gen === 'manto' ? 'Mortálio' : 'Ignavor', 0, { hab: GEN[t.dataset.gen] }); return; } rodar(t.dataset.esp, Number(t.dataset.idx), { caido: t.dataset.esp === 'Mortálio' && t.dataset.idx === '2' }); });
 const revelar = (ed, revelados = []) => revelarInvocacao({ edicao: ed, cartas: LOTES[ed](), revelados });
 // Passe · Nível 100: primeiro o 'Ovo de Dinossauro · T5'; na eclosão, o Onírico temático no Nível 1 (dado do sistema: abrirOvoPasse)
 const ovo = (max, chocar = true) => revelarOvo({ edicao: 'dinossauros', nivel: max ? 100 : 30, ovo: max ? { nome: 'Ovo de Dinossauro', tier: 5 } : { nome: 'Ovo', tier: 2 },
   recompensa: !chocar ? null : max ? { especie: 'Tiranox', tier: 5, nivel: 1, estrelas: 1, arte: AR('Tiranox'), icone: '🦖' } : { especie: 'Brotavel', tier: 2, nivel: 1, estrelas: 1, arte: AR('Brotavel') } });
-window.lab = { rodar, GEN, revelar, ovo, VIOLETA };
+window.lab = { rodar, GEN,  revelar, ovo, VIOLETA };
 arena.atualizar(montar('Noctarn'), { arena: FUNDO, titulo: 'Laboratório de VFX' });
 </script>
 </body>
