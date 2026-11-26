@@ -32,6 +32,7 @@ import {
   saldoFragmentoSonho,
   sortearDropFragmentoSonho,
   aplicarDropsOfflineFragmentos,
+  aplicarDropsBatalhaManual,
   consultarEvolucaoForma,
   evoluirFormaPorFragmentos,
   criarUnidadeInicial,
@@ -565,4 +566,57 @@ test('Percurso 2 (Save antigo): equipe → evolução → revanche 10m → retor
   const finalRec = desserializarEstado(serializarEstado(s));
   const val = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(finalRec)), conta: finalRec.conta });
   assert.equal(val.ok, true);
+});
+
+test('Batalha manual: drop de 1% por inimigo derrotado, idempotente e integrado em regiao1.js', () => {
+  const s = novoSave();
+  const inimigosSelv = [
+    { especie: 'Cervomusgo', elemento: 'planta' },
+    { especie: 'Tatuveludo', elementoDrop: 'terra' },
+    ['Tatuveludo', 10, undefined, { forma: 1 }], // elemento resolvido pelo catálogo de REINOS
+  ];
+
+  // Derrota/recuo não paga nem consome pagamento
+  const derrota = aplicarDropsBatalhaManual(s, { batalhaId: 'bat_man_1', inimigos: inimigosSelv, vitoria: false, rng: () => 0.001 });
+  assert.equal(derrota.totalDropado, 0);
+  assert.equal(derrota.jaPago, false);
+  assert.equal(saldoFragmentoSonho(s, 'planta'), 0);
+  assert.equal(saldoFragmentoSonho(s, 'terra'), 0);
+
+  // Vitória com 3 inimigos sorteia 1% por inimigo derrotado; repetição do mesmo batalhaId não paga duplicado
+  const vit = aplicarDropsBatalhaManual(s, { batalhaId: 'bat_man_1', inimigos: inimigosSelv, vitoria: true, rng: () => 0.009 });
+  assert.equal(vit.jaPago, false);
+  assert.equal(vit.totalDropado, 3);
+  assert.deepEqual(vit.porElemento, { planta: 1, terra: 2 });
+  assert.equal(saldoFragmentoSonho(s, 'planta'), 1);
+  assert.equal(saldoFragmentoSonho(s, 'terra'), 2);
+  assert.deepEqual(s.idle.mochila.fragmentosChefe || {}, {});
+  assert.deepEqual(s.idle.mochila.itensTier || {}, {});
+
+  const dup = aplicarDropsBatalhaManual(s, { batalhaId: 'bat_man_1', inimigos: inimigosSelv, vitoria: true, rng: () => 0.0001 });
+  assert.equal(dup.jaPago, true);
+  assert.equal(dup.totalDropado, 0);
+  assert.equal(saldoFragmentoSonho(s, 'planta'), 1);
+  assert.equal(saldoFragmentoSonho(s, 'terra'), 2);
+
+  // Limite exato de 1% (0.01 não dropa) e suporte a tuplas de chefe + reforços
+  const bossTuplas = [
+    ['Espírito da Floresta', 12, 'planta', { chefe: true }],
+    ['Cervomusgo', 12, 'planta', { forma: 1 }],
+    ['Fanalino', 12, 'inseto', { forma: 1 }],
+  ];
+  const falha = aplicarDropsBatalhaManual(s, { batalhaId: 'bat_man_2', inimigos: bossTuplas, vitoria: true, rng: () => 0.01 });
+  assert.equal(falha.totalDropado, 0);
+  assert.equal(saldoFragmentoSonho(s, 'inseto'), 0);
+
+  // Mesmo sem dropar, bat_man_2 fica marcado como pago e não re-rola
+  const retry = aplicarDropsBatalhaManual(s, { batalhaId: 'bat_man_2', inimigos: bossTuplas, vitoria: true, rng: () => 0.001 });
+  assert.equal(retry.jaPago, true);
+  assert.equal(retry.totalDropado, 0);
+
+  // Verifica integração mínima em regiao1.js (import, batalhaId em iniciarBatalha e aplicação em encerrarBatalha)
+  const regiao1Src = fs.readFileSync(new URL('./regiao1.js', import.meta.url), 'utf8');
+  assert.match(regiao1Src, /import\s*\{\s*aplicarDropsBatalhaManual\s*\}\s*from\s*'\.\/regiao1-regras-sonho\.js'/);
+  assert.match(regiao1Src, /batalhaAtiva\.batalhaId\s*=/);
+  assert.match(regiao1Src, /aplicarDropsBatalhaManual\(save,\s*\{\s*batalhaId:\s*b\.batalhaId,\s*inimigos:\s*b\.inimigosDrop/);
 });
