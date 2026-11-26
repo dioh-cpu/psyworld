@@ -4,9 +4,10 @@
 //  - Obras: custo em materiais, efeito visível e prosperidade, com a origem de cada ganho registrada.
 import { ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
 import { multElemento } from '../core.js';
-import { EFEITOS, kitDe, PAPEL_PADRAO, PODER_EXCLUSIVO } from './regiao1-batalha-habilidades.js';
+import { EFEITOS, kitDe, PAPEL_PADRAO } from './regiao1-batalha-habilidades.js';
 import { bonusCategoriaPoder } from './regiao1-revanche-regras.js';
-export { KITS, kitDe, EFEITOS, temKitProprio } from './regiao1-batalha-habilidades.js';
+import { bonusTier, bonusEstrelas, classeDaEspecie, tierDe, estrelasDe, ESTRELAS_CFG, TIER_CFG } from './regiao1-progressao.js';
+export { KITS, kitDe, EFEITOS, temKitProprio, MORTALIO_VIOLETA_CFG, habilidadeVioletaMortalio, kitMortalio } from './regiao1-batalha-habilidades.js';
 
 const lcg = (s) => () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
 export const criarRng = (semente) => lcg((semente >>> 0) || 1);
@@ -20,19 +21,26 @@ export const statsDoNivel = (nivel, papel) => {
   if (papel === 'suporte') return { hp: Math.round(base.hp * 0.95), atk: Math.round(base.atk * 0.8), def: Math.round(base.def * 1.0) };
   return { hp: Math.round(base.hp), atk: Math.round(base.atk * 1.15), def: Math.round(base.def) };
 };
-export function criarUnidade({ id, especie, nivel, lado, papeis, bonus = {}, elemento = ELEMENTO_DA_ESPECIE[especie] || 'neutro', categoriaPoder = null, chefeRecrutado = false, exclusivoBanner = false }) {
+export function criarUnidade({ id, especie, nivel, lado, papeis = {}, bonus = {}, tier, estrelas, classe, cfgEstrelas = ESTRELAS_CFG, cfgTier = TIER_CFG, elemento = ELEMENTO_DA_ESPECIE[especie] || 'neutro', categoriaPoder = null, chefeRecrutado = false, exclusivoBanner = false }) {
   const papel = papeis[especie] || PAPEL_PADRAO[especie] || 'ataque';
-  const s = statsDoNivel(nivel, papel);
+  const cls = classe || classeDaEspecie(especie);
+  const tEfetivo = tier !== undefined ? tierDe({ tier }, cfgTier) : (bonus._tier ?? 1);
+  const estEfetivas = estrelas !== undefined ? estrelasDe({ estrelas }, cfgEstrelas) : (bonus._estrelas ?? 1);
+  const bt = bonus._jaTemTier ? { hp: 0, atk: 0, def: 0 } : bonusTier(tEfetivo, cfgTier);
+  const be = bonus._jaTemEstrelas ? { hp: 0, atk: 0, def: 0 } : bonusEstrelas(estEfetivas, cfgEstrelas);
   const cat = bonusCategoriaPoder({ especie, categoriaPoder, chefeRecrutado, exclusivoBanner });
-  if (cat.hp || cat.atk || cat.def) {
-    bonus = { ...bonus, hp: (bonus.hp || 0) + cat.hp, atk: (bonus.atk || 0) + cat.atk, def: (bonus.def || 0) + cat.def };
-  }
-  const hpMax = Math.round(s.hp * (1 + (bonus.hp || 0)));
+  const bTotal = {
+    hp: (bonus.hp || 0) + bt.hp + be.hp + cat.hp,
+    atk: (bonus.atk || 0) + bt.atk + be.atk + cat.atk,
+    def: (bonus.def || 0) + bt.def + be.def + cat.def,
+  };
+  const s = statsDoNivel(nivel, papel);
+  const hpMax = Math.round(s.hp * (1 + bTotal.hp));
   return {
-    id, especie, nivel, lado, papel, elemento, categoriaPoder: cat.categoria,
+    id, especie, nivel, lado, papel, classe: cls, tier: tEfetivo, estrelas: estEfetivas, elemento, categoriaPoder: cat.categoria,
     habilidades: HABILIDADES_DA_ESPECIE[especie] || ['Golpe'],
     kit: kitDe(especie, papel, elemento, HABILIDADES_DA_ESPECIE[especie] || []), cd: [0, 0, 0], efeitos: {},
-    hpMax, hp: hpMax, atk: Math.round(s.atk * (1 + (bonus.atk || 0))), def: Math.round(s.def * (1 + (bonus.def || 0))),
+    hpMax, hp: hpMax, atk: Math.round(s.atk * (1 + bTotal.atk)), def: Math.round(s.def * (1 + bTotal.def)),
     defendendo: false, recarga: 0,
   };
 }
@@ -158,7 +166,7 @@ export function executar(b, acao, rng) {
       const pct = hab.tipo === 'cura' ? hab.mult : (hab.cura || 0);
       if (pct) { const c = Math.min(a.hpMax - a.hp, Math.round(a.hpMax * pct + u.atk * 0.6)); a.hp += c; r.valor = c; }
       if (hab.limpa) r.limpos = limpar(a);
-      if (hab.escudo) { a.efeitos ||= {}; a.efeitos.escudo = { turnos: 3, valor: Math.round(a.hpMax * hab.escudo), fonte: u.id }; r.efeitos.push('escudo'); }
+      if (hab.escudo) { a.efeitos ||= {}; a.efeitos.escudo = { turnos: (hab.escudoTurnos || 3) + (a === u ? 1 : 0), valor: Math.round(a.hpMax * hab.escudo), fonte: u.id }; r.efeitos.push('escudo'); }
       for (const e of hab.efeitos || []) { const ok = aplicarEfeito(a, u, e, rng); if (ok) r.efeitos.push(ok); }
       ev.alvos.push(r);
     }

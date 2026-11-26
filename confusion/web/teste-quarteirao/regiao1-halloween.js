@@ -2,7 +2,7 @@
 // Loja da Torre e poções de XP. Regras em regiao1-halloween-regras.js; dados em regiao1-halloween-dados.js.
 import * as H from './regiao1-halloween-regras.js';
 import { EDICAO, BANNER_HW, LINHAGENS_HW, LOJA_TORRE, TORRE, formaDoTier, BONUS_TIER, ARTES_HW, arteDoIndividuo } from './regiao1-halloween-dados.js';
-import { POCOES, nivelDe, aplicarXp } from './regiao1-progressao.js';
+import { POCOES, nivelDe, aplicarXp, tierDe, estrelasDe, faixaEstrela, bonusEstrelas, infoClasse } from './regiao1-progressao.js';
 import { KITS } from './regiao1-batalha-habilidades.js';
 import { membrosFormacao } from './regiao1-exp-regras.js';
 import { revelarInvocacao } from './regiao1-revelacao.js';
@@ -10,6 +10,11 @@ import { revelarInvocacao } from './regiao1-revelacao.js';
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const FORMA = ['base', 'segunda', 'final'];
 const COR = { 1: '#9ca3af', 2: '#60a5fa', 3: '#c084fc', 4: '#fbbf24', 5: '#f43f5e' };
+const fmtBonus = (b) => `vida +${Math.round((b.hp || 0) * 100)}%, ataque +${Math.round((b.atk || 0) * 100)}%, defesa +${Math.round((b.def || 0) * 100)}%`;
+const htmlEstrelas = (n) => {
+  const f = faixaEstrela(n);
+  return `<span class="hw-est ${f.arcoIris ? 'arco' : ''}" style="--cor-est:${f.cor}">${'★'.repeat(f.nivelNaFaixa)}${'☆'.repeat(6 - f.nivelNaFaixa)} <b>${f.estrelas}★</b> (${esc(f.nome)})</span>`;
+};
 
 export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fecharModal, tela, batalhaBloqueando, questFeita }) {
   const save = () => getSave(), hw = () => H.hwDe(save());
@@ -20,6 +25,8 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
     #modal-hw .abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; } #modal-hw .abas button[aria-selected="true"] { background: #fb923c; color: #21110c; }
     #modal-hw .corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; } #modal-hw .bl { background: #3a1f3f; border: 1px solid #7c4a5a; border-radius: 8px; padding: 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-hw .bl h4 { margin: 0 0 4px; color: #fdba74; font-size: 13px; } #modal-hw .bl p { margin: 2px 0; }
     #modal-hw .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-hw .mut { opacity: .7; } #modal-hw .ok { color: #4ade80; } #modal-hw .ruim { color: #fb7185; }
+    #modal-hw .hw-est { color: var(--cor-est, #facc15); font-weight: 600; }
+    #modal-hw .hw-est.arco { background: linear-gradient(90deg, #facc15, #f472b6, #c084fc, #38bdf8, #4ade80); -webkit-background-clip: text; background-clip: text; color: transparent; }
     #modal-hw .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; } #modal-hw .lin { background: #24112a; border-radius: 8px; padding: 6px; font-size: 11.5px; } #modal-hw .lin .ph { font-size: 34px; text-align: center; }
     #modal-hw .res { display: flex; flex-wrap: wrap; gap: 8px; }
     #modal-hw .res-card { width: 88px; text-align: center; font-size: 10.5px; line-height: 1.25; }
@@ -41,7 +48,6 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   const liberado = () => H.eventoAtivo();
   const torreAberta = () => questFeita(TORRE.marco);
   const I = (p, cls = 'ico') => `<img class="${cls}" src="../../../${p}" alt="">`;
-  const papelTxt = { defesa: 'Vanguarda', suporte: 'Suporte', ataque: 'Finalizador' };
   const ph = (lin, forma) => `<img class="ph" src="../../../${lin.arte[forma]}" alt="${esc(lin.especie)}" loading="lazy">`;
 
   function abaBanner() {
@@ -50,23 +56,27 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
       <p>Contador desde o último Tier 5: <b>${n}</b> (total de invocações: ${h.total || 0}) · faltam <b>${m.ate10}</b> para a garantia de 10 (T3/T4), <b>${m.ate50}</b> para a de 50 (T4) e <b>${m.ate100}</b> para a de 100 (T5).</p>
       <div class="ln"><button class="btn-pri" data-inv="1" ${h.tickets >= 1 ? '' : 'disabled'}>Invocar 1</button><button class="btn-pri" data-inv="10" ${h.tickets >= 10 ? '' : 'disabled'}>Invocar 10</button>${confirmar === 'pacote' ? `<button class="btn-pri" data-pacote-ok="1">Confirmar: ${BANNER_HW.pacote.tickets} tickets por ${BANNER_HW.pacote.diamantes}💎</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-sec" data-pacote="1">Comprar ${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button>`}</div>
       <p class="mut">Tier 5 também pode sair por sorte (3%); quando sai, a contagem reinicia. Tiers 3 e 4 não reiniciam. Tickets vêm dos marcos da Torre (5 a cada 10 andares) ou da compra. Os Oníricos obtidos continuam na coleção depois do evento; tickets e contador ficam guardados se a edição voltar.</p></div>`;
-    if (ultimos.length) s += `<div class="bl"><h4>Resultado</h4><div class="res">${ultimos.map((r) => { const lin = LINHAGENS_HW.find((l) => l.especie === r.especie); const sp = lin ? lin.arte[formaDoTier(r.tier)] : ''; return `<div class="res-card" style="color:${COR[r.tier]}"><div class="res-mold ${r.tier >= 5 ? 'm5' : ''}" style="--cor-m:${COR[r.tier]}">${sp ? `<img class="sp" src="../../../${sp}" alt="${esc(r.especie)}">` : ''}<img class="ov" src="../../../assets/confusion/interface/banner/moldura-${r.tier}.png" alt="" onerror="this.style.display='none'"></div><b>#${r.pos} ${esc(r.especie)}</b><br>T${r.tier}${r.garantia ? ` · gar.${r.garantia}` : ''}</div>`; }).join('')}</div></div>`;
+    if (ultimos.length) s += `<div class="bl"><h4>Resultado</h4><div class="res">${ultimos.map((r) => { const lin = LINHAGENS_HW.find((l) => l.especie === r.especie); const sp = lin ? lin.arte[formaDoTier(r.tier)] : ''; const cls = infoClasse(lin?.classe || r.especie); return `<div class="res-card" style="color:${COR[r.tier]}"><div class="res-mold ${r.tier >= 5 ? 'm5' : ''}" style="--cor-m:${COR[r.tier]}">${sp ? `<img class="sp" src="../../../${sp}" alt="${esc(r.especie)}">` : ''}<img class="ov" src="../../../assets/confusion/interface/banner/moldura-${r.tier}.png" alt="" onerror="this.style.display='none'"></div><b>#${r.pos} ${esc(r.especie)}</b><br>T${r.tier} · ${r.estrelas || 1}★ · ${esc(cls.nome)}${r.garantia ? `<br>gar.${r.garantia}` : ''}</div>`; }).join('')}</div></div>`;
     s += `<div class="bl"><h4>Chances</h4><table><tr><th>Tier</th>${[1, 2, 3, 4, 5].map((t) => `<th>T${t}</th>`).join('')}</tr><tr><td>Normal</td>${[1, 2, 3, 4, 5].map((t) => `<td>${(BANNER_HW.chances[t] * 100).toFixed(0)}%</td>`).join('')}</tr><tr><td>A cada 10</td><td>–</td><td>–</td><td>${BANNER_HW.garantia10[3] * 100}%</td><td>${BANNER_HW.garantia10[4] * 100}%</td><td>–</td></tr><tr><td>A cada 50</td><td colspan="3"></td><td>100%</td><td></td></tr><tr><td>A cada 100</td><td colspan="4"></td><td>100%</td></tr></table></div>`;
-    s += `<div class="bl"><h4>Oníricos exclusivos</h4><div class="grade">${LINHAGENS_HW.map((l) => `<div class="lin">${ph(l, 0)}<b style="color:${COR[l.tier]}">T${l.tier} · ${esc(l.especie)}</b><br><span class="mut">${papelTxt[l.papel]} · ${esc(l.elemento)}</span><p>${esc(l.resumo)}</p>${(KITS[l.especie] || []).map((k) => `<div>${k.icone} ${esc(k.nome)} <span class="mut">⟳${k.cd}</span></div>`).join('')}</div>`).join('')}</div></div>`;
+    s += `<div class="bl"><h4>Oníricos exclusivos</h4><div class="grade">${LINHAGENS_HW.map((l) => { const cls = infoClasse(l.classe || l.especie); return `<div class="lin">${ph(l, 0)}<b style="color:${COR[l.tier]}">T${l.tier} · ${esc(l.especie)}</b><br><span class="mut">${cls.icone} ${esc(cls.nome)} · ${esc(l.elemento)}</span><p>${esc(l.resumo)}</p>${(KITS[l.especie] || []).map((k) => `<div>${k.icone} ${esc(k.nome)} <span class="mut">⟳${k.cd}</span></div>`).join('')}</div>`; }).join('')}</div></div>`;
     return s;
   }
   function abaColecao() {
     const eq = save().idle.equipe || [], h = hw();
     const lista = eq.map((m, i) => [m, i]).filter(([m]) => H.ehHW(m));
-    let s = `<div class="bl"><h4>${I(ARTES_HW.doce)} Doces de Halloween: ${h.doces}</h4><p class="mut">Os exclusivos sobem de nível com XP e de tier só com doces (custos 1, 2, 3 e 5). Forma: base nos tiers 1–2, segunda nos 3–4 e final no 5. Doces guardados valem depois do evento.</p></div>`;
+    let s = `<div class="bl"><h4>${I(ARTES_HW.doce)} Doces de Halloween: ${h.doces}</h4><p class="mut">Os exclusivos sobem de nível com XP, de tier (1–5) com doces e de estrelas (1–30) separadamente. Forma: base nos tiers 1–2, segunda nos 3–4 e final no 5.</p></div>`;
     if (!lista.length) return s + '<div class="bl"><p>Nenhum Onírico de Halloween ainda. Invoque no Banner.</p></div>';
     for (const [m, i] of lista) {
-      const lin = LINHAGENS_HW.find((l) => l.especie === m.especie), inf = H.infoEvolucao(m), b0 = BONUS_TIER(m.tierHW), b1 = inf ? BONUS_TIER(inf.para) : null;
-      s += `<div class="bl" style="display:grid;grid-template-columns:96px 1fr;gap:8px"><img class="ph" src="../../../${arteDoIndividuo(m)}" alt=""><div><h4 style="color:${COR[m.tierHW]}">${esc(m.especie)} · T${m.tierHW} · forma ${FORMA[formaDoTier(m.tierHW)]} · nv.${m.nivel || 1}</h4>`;
-      if (!inf) s += '<p class="ok">Tier máximo.</p>';
-      else s += `<p>Próxima forma: <b>${FORMA[inf.formaNova]}</b> ${inf.formaNova !== inf.formaAtual ? `<img src="../../../${inf.arteNova}" alt="próxima forma" style="height:56px;vertical-align:middle">` : '(mesma forma)'}</p><p>Custo: <b>${inf.custo}🍬</b> · ganho: vida +${Math.round((b1.hp - b0.hp) * 100)}%, ataque +${Math.round((b1.atk - b0.atk) * 100)}%, defesa +${Math.round((b1.def - b0.def) * 100)}%</p>
+      const lin = LINHAGENS_HW.find((l) => l.especie === m.especie), inf = H.infoEvolucao(m);
+      const t = tierDe(m), est = estrelasDe(m), cls = infoClasse(lin?.classe || m.especie);
+      const b0 = BONUS_TIER(t), bEst = bonusEstrelas(est), b1 = inf ? BONUS_TIER(inf.para) : null;
+      s += `<div class="bl" style="display:grid;grid-template-columns:96px 1fr;gap:8px"><img class="ph" src="../../../${arteDoIndividuo(m)}" alt=""><div><h4 style="color:${COR[t]}">${esc(m.especie)} · T${t} · forma ${FORMA[formaDoTier(t)]} · nv.${m.nivel || 1}</h4>
+        <p>${cls.icone} Classe: <b>${esc(cls.nome)}</b> · Elemento: <b>${esc(lin?.elemento || 'neutro')}</b> · Estrelas: ${htmlEstrelas(est)}</p>
+        <p class="mut">Bônus Tier T${t}: ${fmtBonus(b0)} · Bônus ${est}★: ${fmtBonus(bEst)}</p>`;
+      if (!inf) s += '<p class="ok">Tier máximo (T5).</p>';
+      else s += `<p>Próxima forma: <b>${FORMA[inf.formaNova]}</b> ${inf.formaNova !== inf.formaAtual ? `<img src="../../../${inf.arteNova}" alt="próxima forma" style="height:56px;vertical-align:middle">` : '(mesma forma)'}</p><p>Custo: <b>${inf.custo}🍬</b> · ganho de tier: vida +${Math.round((b1.hp - b0.hp) * 100)}%, ataque +${Math.round((b1.atk - b0.atk) * 100)}%, defesa +${Math.round((b1.def - b0.def) * 100)}%</p>
         <div class="ln">${confirmar === `evo:${i}` ? `<button class="btn-pri" data-evo-ok="${i}">Confirmar evolução (−${inf.custo}🍬)</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-pri" data-evo="${i}" ${h.doces >= inf.custo ? '' : 'disabled'}>Evoluir para T${inf.para}</button>`}</div>`;
-      s += '</div></div>'; void lin;
+      s += '</div></div>';
     }
     return s;
   }

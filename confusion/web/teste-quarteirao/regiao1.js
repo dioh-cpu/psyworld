@@ -33,6 +33,7 @@ import {
   resolverAbateAuto,
   avancarDiaria,
   registrarLogIdle,
+  ganharXpPasse,
 } from './regiao1-idle.js';
 import { criarControladorIdleUI } from './regiao1-ui-idle.js';
 import { iniciarMundo } from './regiao1-mundo.js';
@@ -180,10 +181,11 @@ migrarHW(save); // nomes definitivos dos exclusivos e ids estáveis para Equipes
 
 let ultimoBackupMs = 0;
 let avisouFalhaSave = false;
+let afkInicialVerificado = false;
 function salvarEstado() {
   try {
     const idle = garantirEstadoIdle(save);
-    idle.ultimoTickMs = Date.now();
+    if (afkInicialVerificado) idle.ultimoTickMs = Date.now();
     save.mapaAtual = mapaAtual ? mapaAtual.id : save.mapaAtual;
     save.posicaoPx = W2P(estado.x, estado.z);
     const novo = serializarEstado(save);
@@ -1043,8 +1045,10 @@ function encerrarBatalha(vitoria) {
   const nvIni = (ehBoss ? BOSSES_REGIAO1[b.entidade.id]?.nivel : b.entidade?.nivel) || 1;
   const xpForm = Math.round((40 + 12 * nvIni) * (ehBoss ? 2 : 1) * (vitoria ? 1 : 0.3));
   for (const { m } of membrosFormacao(idle)) aplicarXp(m, xpForm);
+  ganharXpPasse(idle, vitoria ? (ehBoss ? 'batalhaChefe' : 'batalha') : 'derrota');
 
   if (vitoria) {
+    avancarDiaria(idle, 'batalhas', 1);
     for (let k = 0; k < 3; k++) window.regiaoHW?.aoAbater?.(); // doces durante o evento (abates de PvE)
     if (Math.random() < 0.03) { darPocao(save, b.tipo === 'boss' ? 'pocao_xp_m' : 'pocao_xp_p'); mostrarToast('🧪 Poção de XP encontrada!', 2200); }
     if (b.tipo === 'boss') {
@@ -2398,6 +2402,23 @@ entrarNoMapa(inicialId, spawnInicial, false).then(() => {
   registrarCodexArea(garantirEstadoIdle(save), inicialId);
   idleUI.atualizarHudIdle();
   idleUI.verificarGanhoOffline(false);
+  afkInicialVerificado = true;
   if (!params.get('semtutorial')) idleUI.iniciarTutorial(false);
 });
+
+// Segundo plano (jogo minimizado) e fechamento da página: salva carimbo ao ocultar e liquida período elegível ao retornar
+document.addEventListener('visibilitychange', () => {
+  if (!afkInicialVerificado) return;
+  if (document.hidden) {
+    salvarEstado();
+  } else {
+    idleUI?.liquidarSegundoPlano?.();
+  }
+});
+window.addEventListener('pagehide', () => {
+  if (afkInicialVerificado) salvarEstado();
+});
+setInterval(() => {
+  if (afkInicialVerificado && document.hidden) idleUI?.liquidarSegundoPlano?.();
+}, 60000);
 requestAnimationFrame(quadro);

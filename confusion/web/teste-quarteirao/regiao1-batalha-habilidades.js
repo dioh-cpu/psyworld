@@ -87,8 +87,60 @@ export const KITS = {
 
 // Papel padrão de espécies que não dependem dos dados de uma região
 // Exclusivos de banner pago (Halloween): poder base +30% sobre T5 comum equivalente (HP/ATQ/DEF)
+export { CLASSES_ONIRICOS, CLASSE_DA_ESPECIE, classeDaEspecie, infoClasse } from './regiao1-progressao.js';
 export const PODER_EXCLUSIVO = { 'Abobrisco': { hp: 0.3, atk: 0.3, def: 0.3 }, 'Velalume': { hp: 0.3, atk: 0.3, def: 0.3 }, 'Mortálio': { hp: 0.3, atk: 0.3, def: 0.3 }, 'Vitrarco': { hp: 0.3, atk: 0.3, def: 0.3 }, Abyssar: { hp: 0.3, atk: 0.3, def: 0.3 } };
 export const PAPEL_PADRAO = { Penumbrio: 'ataque', Brasinha: 'ataque', Gotalume: 'suporte', Sementil: 'defesa', Solinho: 'suporte', Noctarn: 'ataque', Ignavor: 'ataque', Vaelith: 'suporte', Brotavel: 'defesa', Solarin: 'suporte', 'Abobrisco': 'defesa', 'Velalume': 'suporte', 'Mortálio': 'suporte', 'Vitrarco': 'defesa', Abyssar: 'ataque' };
+
+// Habilidade rara preparada para o VFX violeta do Mortálio:
+// regeneração, aumento de velocidade, aumento de defesa e escudo por 3 turnos.
+// Alvo ('si' | 'aliado' | 'aliados'), valores (escudo, cura, cd) e vagaKit (null ou 0 | 1 | 2) ficam em aberto para fechamento.
+export const MORTALIO_VIOLETA_CFG = {
+  id: 'manto_violeta',          // id estável para FX_HABILIDADES.manto_violeta em regiao1-vfx.js (Claude)
+  nome: 'Manto Violeta',
+  icone: '🔮',
+  raridade: 'rara',
+  elemento: 'fantasma',
+  vagaKit: null,                // null = preparada fora das 3 vagas ativas; 0, 1 ou 2 substitui a vaga correspondente no kit do Mortálio
+  alvo: 'aliado',               // em aberto: 'si' | 'aliado' | 'aliados'
+  cd: 4,                        // em aberto
+  cura: 0,                      // em aberto (fração opcional do hpMax)
+  escudo: 0.20,                 // em aberto (fração do hpMax do alvo)
+  turnos: 3,                    // 3 turnos para os quatro efeitos
+  clip: 'assets/confusion/interface/vfx/mortalio-violeta.mp4', // caminho previsto para o clipe violeta ligado pelo Claude
+  impactoMs: 520,
+};
+
+export function habilidadeVioletaMortalio(opcoes = {}) {
+  const c = { ...MORTALIO_VIOLETA_CFG, ...opcoes };
+  return {
+    id: c.id,
+    nome: c.nome,
+    icone: c.icone,
+    tipo: 'apoio',
+    raridade: c.raridade,
+    alvo: c.alvo,
+    cd: c.cd,
+    cura: c.cura,
+    elemento: c.elemento,
+    escudo: c.escudo,
+    escudoTurnos: c.turnos,
+    clip: c.clip,
+    impactoMs: c.impactoMs,
+    efeitos: [
+      ef('regeneracao', c.turnos),
+      ef('veloz', c.turnos),
+      ef('defesa_alta', c.turnos),
+    ],
+  };
+}
+
+export function kitMortalio(opcoes = {}) {
+  const base = [...KITS['Mortálio']];
+  const vaga = opcoes.vagaKit !== undefined ? opcoes.vagaKit : MORTALIO_VIOLETA_CFG.vagaKit;
+  if (Number.isInteger(vaga) && vaga >= 0 && vaga < base.length) base[vaga] = habilidadeVioletaMortalio(opcoes);
+  return base;
+}
+KITS['Mortálio'].preparadaVioleta = habilidadeVioletaMortalio();
 
 // ---- gerador por arquétipo (papel) e elemento ----
 const POR_ELEMENTO = {
@@ -109,6 +161,7 @@ const POR_ELEMENTO = {
 export const LINHA_DO_KIT = { Penumbrio: 'Noctarn', Noctarion: 'Noctarn', Brasinha: 'Ignavor', Ignaraz: 'Ignavor', Gotalume: 'Vaelith', Vaelirion: 'Vaelith', Sementil: 'Brotavel', Florivel: 'Brotavel', Solinho: 'Solarin', 'Helíssio': 'Solarin' };
 export const temKitProprio = (esp) => Boolean(KITS[esp] || KITS[LINHA_DO_KIT[esp]]);
 export function kitDe(especie, papel, elemento, nomes = []) {
+  if (especie === 'Mortálio') return Number.isInteger(MORTALIO_VIOLETA_CFG.vagaKit) ? kitMortalio() : KITS['Mortálio'];
   if (KITS[especie]) return KITS[especie];
   if (KITS[LINHA_DO_KIT[especie]]) return KITS[LINHA_DO_KIT[especie]];
   const E = POR_ELEMENTO[elemento] || POR_ELEMENTO.neutro, n = (i) => nomes[Math.min(i, nomes.length - 1)] || 'Golpe';

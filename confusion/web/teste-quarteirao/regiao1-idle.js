@@ -1,7 +1,7 @@
 // Módulo Idle & Progressão da Região 1 — Confusion Waves: Double Perspective.
 // Reaproveita diretamente core.js, systems.js e species.js (sem duplicar regras do núcleo).
 
-import { nivelDe as nivelDeXp, xpPara as xpParaProximo, xpTotal as xpDoNivel } from './regiao1-progressao.js'; // progressão sem teto
+import { nivelDe as nivelDeXp, xpPara as xpParaProximo, xpTotal as xpDoNivel, migrarProgressaoOniricos, estrelasIniciais } from './regiao1-progressao.js'; // progressão sem teto + estrelas/tier
 import {
   sanityBand,
   gatherDay,
@@ -11,12 +11,8 @@ import {
   LOGIN_CYCLE,
   loginRewardFor,
   nextLoginStreak,
-  PASS_LEVELS,
-  passLevel,
   passRewardFor,
   passPremiumRewardFor,
-  claimPass,
-  addPassXp,
   activeEvents,
   raidAt,
   GOLD,
@@ -25,9 +21,29 @@ import {
   captureChance,
   dropsEgg,
 } from '../systems.js';
+import {
+  PASSE_CFG,
+  LOGIN_7D_CATALOGO,
+  passeDe,
+  ganharXpPasse,
+  xpPasseOffline,
+  nivelPasse,
+  premioNivel,
+  resgatarPasse,
+  comprarNivelPasse,
+  infoPasse,
+  trilhaPasse,
+  infoLogin7Dias,
+  abrirOvoPasse,
+} from './regiao1-passe-regras.js';
+import { adicionarFragmentoSonho } from './regiao1-criacao-regras.js';
+import { darPocao } from './regiao1-halloween-regras.js';
 import { ESPECIES, ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
 import { sortearDropFragmentoSonho, aplicarDropsOfflineFragmentos, fragmentosSonhoDe } from './regiao1-regras-sonho.js';
 import { revancheDe } from './regiao1-revanche-regras.js';
+
+const PASS_LEVELS = PASSE_CFG.niveis;
+const passLevel = nivelPasse;
 
 export const I18N = {
   pt: {
@@ -84,12 +100,12 @@ export const RELIQUIAS_CATALOGO = [
 export const MISSOES_CAPTURA_LEGADAS = ['dm_capturas_3'];
 
 const POOL_MISSOES_DIARIAS = [
-  { id: 'dm_abates_15', titulo: 'Caçar 15 monstros selvagens', tipo: 'abates', meta: 15, xpPasse: 45, gold: 90, mapaSugerido: 'E1' },
-  { id: 'dm_abates_30', titulo: 'Caçar 30 monstros selvagens', tipo: 'abates', meta: 30, xpPasse: 80, gold: 160, mapaSugerido: 'PC1' },
-  { id: 'dm_batalhas_3', titulo: 'Vencer 3 batalhas na Campanha ou Torre', tipo: 'batalhas', meta: 3, xpPasse: 60, gold: 120, mapaSugerido: 'D1' },
-  { id: 'dm_areas_5', titulo: 'Explorar 5 áreas diferentes', tipo: 'areas', meta: 5, xpPasse: 50, gold: 100, mapaSugerido: 'C1' },
-  { id: 'dm_ovos_2', titulo: 'Obter ou chocar 2 ovos', tipo: 'ovos', meta: 2, xpPasse: 65, gold: 140, mapaSugerido: 'CC2' },
-  { id: 'dm_boss_1', titulo: 'Enfrentar 1 Chefe de Arena', tipo: 'bosses', meta: 1, xpPasse: 90, gold: 220, mapaSugerido: 'BOSS_E' },
+  { id: 'dm_abates_15', titulo: 'Derrotar 15 Oníricos selvagens', tipo: 'abates', meta: 15, xpPasse: 180, gold: 90, mapaSugerido: 'E1', acaoRotulo: 'Ir caçar' },
+  { id: 'dm_abates_30', titulo: 'Derrotar 30 Oníricos selvagens', tipo: 'abates', meta: 30, xpPasse: 300, gold: 160, mapaSugerido: 'PC1', acaoRotulo: 'Ir caçar' },
+  { id: 'dm_batalhas_3', titulo: 'Vencer 3 batalhas na Campanha ou Torre', tipo: 'batalhas', meta: 3, xpPasse: 240, gold: 120, mapaSugerido: 'D1', acaoRotulo: 'Ir batalhar' },
+  { id: 'dm_areas_5', titulo: 'Explorar 5 áreas diferentes', tipo: 'areas', meta: 5, xpPasse: 200, gold: 100, mapaSugerido: 'C1', acaoRotulo: 'Explorar' },
+  { id: 'dm_ovos_2', titulo: 'Obter ou chocar 2 ovos', tipo: 'ovos', meta: 2, xpPasse: 260, gold: 140, mapaSugerido: 'CC2', acaoRotulo: 'Ir caçar' },
+  { id: 'dm_boss_1', titulo: 'Enfrentar 1 Chefe de Arena', tipo: 'bosses', meta: 1, xpPasse: 360, gold: 220, mapaSugerido: 'BOSS_E', acaoRotulo: 'Desafiar Chefe' },
 ];
 
 export const PONTOS_POR_NIVEL = 3;
@@ -144,10 +160,10 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
     revanches: { cooldowns: {}, emAndamento: null, concluidas: {}, craftsPagos: {} },
     derrotasPagas: { ids: {}, ordem: [] },
     equipe: [
-      { especie: 'Noctarn', nivel: 5, xp: xpDoNivel(5), raridade: 3, forma: 'natural' },
+      { especie: 'Noctarn', nivel: 5, xp: xpDoNivel(5), tier: 1, raridade: 3, estrelas: estrelasIniciais('inicial'), forma: 'natural' },
     ],
     login: { streak: 0, lastDay: -1 },
-    passe: { season: '', xp: 0, premium: false, claimed: 0, claimedPremium: 0 },
+    passe: passeDe({ passe: null }, agoraMs),
     diarias: gerarDiariasIniciais(agoraMs),
     votos: { voteCash: 0, ultimoTopIdle: 0, ultimoIdleRank: 0, totalVotos: 0 },
     config: {
@@ -200,8 +216,10 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     } else {
       migrarMissoesCaptura(save.idle.diarias);
     }
+    passeDe(save.idle, agoraMs);
     fragmentosSonhoDe(save);
     revancheDe(save);
+    migrarProgressaoOniricos(save);
     return save.idle;
   }
   const base = criarEstadoIdle(agoraMs);
@@ -234,18 +252,14 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
       ingredientes: { ...base.mochila.ingredientes, ...(save.idle.mochila?.ingredientes || {}) },
     },
     login: { ...base.login, ...(save.idle.login || {}) },
-    passe: {
-      ...base.passe,
-      ...(save.idle.passe || {}),
-      claimed: Number(save.idle.passe?.claimed) || 0,
-      claimedPremium: Number(save.idle.passe?.claimedPremium) || 0,
-    },
+    passe: save.idle.passe || base.passe,
     votos: { ...base.votos, ...(save.idle.votos || {}) },
     config: { ...base.config, ...(save.idle.config || {}) },
     logs: Array.isArray(save.idle.logs) ? save.idle.logs.slice(-60) : [],
     equipe: Array.isArray(save.idle.equipe) && save.idle.equipe.length ? save.idle.equipe : base.equipe,
     _pronto: true,
   };
+  passeDe(save.idle, agoraMs);
   if ((save.recompensas?.xp || 0) > (save.idle.jogador.xp || 0)) {
     save.idle.jogador.xp = save.recompensas.xp;
   }
@@ -256,6 +270,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
   }
   fragmentosSonhoDe(save);
   revancheDe(save);
+  migrarProgressaoOniricos(save);
   return save.idle;
 }
 
@@ -408,8 +423,8 @@ export function escolherHabilidadeAuto(especieAtacante, especieAlvo, preferirVan
   return { nome: habs[0], mult, critico: false };
 }
 
-export function resolverAbateAuto(save, monstro, rng = Math.random) {
-  const idle = garantirEstadoIdle(save);
+export function resolverAbateAuto(save, monstro, rng = Math.random, agoraMs = Date.now()) {
+  const idle = garantirEstadoIdle(save, agoraMs);
   const st = calcularStatusDetalhado(save);
   const rar = monstro.nivel >= 12 ? 3 : monstro.nivel >= 8 ? 2 : 1;
   const gold = Math.round((goldEncontro(rar) + Math.floor(monstro.nivel * 2.5)) * st.goldMult);
@@ -423,8 +438,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
   idle.jogador.hp = Math.max(1, Math.min(st.hpMax, idle.jogador.hp - danoRecebido));
   idle.jogador.abatesTotais += 1;
 
-  // Alimenta Passe de Batalha (reuso direto de systems.js!)
-  idle.passe = addPassXp(idle.passe, 'batalha', 6);
+  ganharXpPasse(idle, 'abate', null, agoraMs);
   registrarCodexEspecie(idle, monstro.especie, { abate: true });
   avancarDiaria(idle, 'abates', 1);
 
@@ -439,7 +453,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
   let ovoDrop = false;
   if (idle.autoCaca.coletarOvos && rng() < OVOS.fatorDrop && dropsEgg({ rarity: rar }, rng(), st.dropOvoExtra)) {
     ovoDrop = true;
-    idle.mochila.ovos.push({ especie: monstro.especie, forma: 'natural', obtidoEm: Date.now() });
+    idle.mochila.ovos.push({ especie: monstro.especie, forma: 'natural', obtidoEm: agoraMs });
     avancarDiaria(idle, 'ovos', 1);
   }
 
@@ -470,7 +484,7 @@ export function calcularGanhoOffline(save, nivelArea = 6, agoraMs = Date.now()) 
     ? Math.max(1, Math.round(colheitaDia * (minutos / 1440) * (1 + codex.fazendaPct / 100)))
     : 0;
 
-  return { minutos, abates, gold, xp, ovos, colheitaFazenda };
+  return { minutos, abates, gold, xp, ovos, colheitaFazenda, xpPasseBruto: xpPasseOffline(abates) };
 }
 
 export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Fanalino', agoraMs = Date.now(), rng = Math.random) {
@@ -481,17 +495,25 @@ export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Fanalino', ag
   save.recompensas.xp += resumo.xp;
   idle.jogador.xp += resumo.xp;
   idle.jogador.abatesTotais += resumo.abates;
-  idle.passe = addPassXp(idle.passe, 'dia', Math.min(120, Math.floor(resumo.abates / 2)));
+  // Idle concede exatamente 1 XP de Passe por Onírico derrotado, respeitando a cota cumulativa da temporada
+  const passeRes = ganharXpPasse(idle, 'offline', xpPasseOffline(resumo.abates), agoraMs);
   for (let i = 0; i < resumo.ovos; i++) {
     idle.mochila.ovos.push({ especie: especiePadrao, forma: 'natural', obtidoEm: agoraMs });
   }
   const fragmentosSonho = aplicarDropsOfflineFragmentos(save, { loteId, abates: resumo.abates, especie: especiePadrao, rng });
   avancarDiaria(idle, 'abates', resumo.abates);
   idle.ultimoTickMs = agoraMs;
-  return { fragmentosSonho };
+  return { ...resumo, xpPasseGanho: passeRes.ganho, xpPasseDescartado: passeRes.descartado, fragmentosSonho };
 }
 
-// ---- Missões Diárias + Reroll + Passe + Login 7 Dias (reuso de systems.js) ----
+// Liquida automaticamente o tempo elegível em segundo plano (minimizado) ou com a página fechada.
+export function liquidarPeriodoIdle(save, { nivelArea = 6, especiePadrao = 'Fanalino', agoraMs = Date.now(), minMinutos = 1, rng = Math.random } = {}) {
+  const resumo = calcularGanhoOffline(save, nivelArea, agoraMs);
+  if (!resumo || resumo.minutos < minMinutos) return null;
+  return aplicarGanhoOffline(save, resumo, especiePadrao, agoraMs, rng);
+}
+
+// ---- Missões Diárias + Reroll + Passe + Login 7 Dias ----
 export function avancarDiaria(idle, tipo, qtd = 1) {
   if (!idle.diarias?.itens) return;
   for (const m of idle.diarias.itens) {
@@ -501,13 +523,13 @@ export function avancarDiaria(idle, tipo, qtd = 1) {
   }
 }
 
-export function resgatarDiaria(save, id) {
-  const idle = garantirEstadoIdle(save);
+export function resgatarDiaria(save, id, agoraMs = Date.now()) {
+  const idle = garantirEstadoIdle(save, agoraMs);
   const m = idle.diarias.itens.find((x) => x.id === id);
   if (!m || m.resgatada || m.progresso < m.meta) return null;
   m.resgatada = true;
   save.recompensas.gold += m.gold;
-  idle.passe = addPassXp(idle.passe, 'missao', m.xpPasse);
+  ganharXpPasse(idle, 'missao', m.xpPasse, agoraMs);
   return m;
 }
 
@@ -526,27 +548,34 @@ export function trocarMissaoDiaria(save, id) {
 
 export function resgatarLoginDiario(save, agoraMs = Date.now()) {
   const idle = garantirEstadoIdle(save, agoraMs);
-  const prox = nextLoginStreak(idle.login, agoraMs);
-  if (prox === null) return { ok: false, motivo: 'Login de hoje já resgatado!' };
-  const rec = loginRewardFor(prox);
-  idle.login = { streak: prox, lastDay: Math.floor((agoraMs - 3 * 3600000) / 86400000) };
-  save.recompensas.diamantes += rec.diamantes;
-  const tinhaEsfera = Object.values(rec.esferas || {}).some((v) => v > 0);
-  if (tinhaEsfera) save.recompensas.gold += 30;
-  rec.esferas = { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 };
-  if (rec.ovos) idle.mochila.ovos.push({ especie: 'Vaelith', forma: 'abencoada', obtidoEm: agoraMs });
-  return { ok: true, dia: prox, recompensa: rec };
+  const info = infoLogin7Dias(save, agoraMs);
+  if (info.jaColetouHoje || !info.diaDisponivel) return { ok: false, motivo: 'Login de hoje já resgatado!' };
+  const item = LOGIN_7D_CATALOGO.find((x) => x.dia === info.diaDisponivel) || LOGIN_7D_CATALOGO[0];
+  idle.login = { streak: item.dia, lastDay: info.hoje };
+  if (item.tipo === 'diamantes') {
+    save.recompensas.diamantes = (save.recompensas.diamantes || 0) + item.qtd;
+  } else if (item.tipo === 'tickets') {
+    idle.exp = idle.exp || {};
+    idle.exp.tickets = (idle.exp.tickets || 0) + item.qtd;
+  } else if (item.tipo === 'fragmentos') {
+    for (const el of ['trevas', 'fogo', 'agua', 'planta', 'luz']) adicionarFragmentoSonho(save, el, item.qtd);
+  } else if (item.tipo === 'pocao') {
+    for (let i = 0; i < (item.qtd || 1); i++) darPocao(save, item.id || 'pocao_xp_m');
+  } else if (item.tipo === 'ovo') {
+    idle.mochila.ovos.push({ especie: item.especie || 'Vaelith', tier: item.tier || 4, forma: 'abencoada', origem: 'login-7d', obtidoEm: agoraMs });
+  }
+  return {
+    ok: true,
+    dia: item.dia,
+    recompensa: { ...item, esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 } },
+  };
 }
 
-export function resgatarTudoPasse(save) {
-  const idle = garantirEstadoIdle(save);
-  const { reward, claimed, claimedPremium } = claimPass(idle.passe);
-  idle.passe.claimed = claimed;
-  idle.passe.claimedPremium = claimedPremium;
-  save.recompensas.diamantes += reward.diamantes;
-  save.recompensas.gold += reward.gold || 0;
-  reward.esferas = { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 };
-  return { nivel: passLevel(idle.passe.xp), reward };
+export function resgatarTudoPasse(save, agoraMs = Date.now()) {
+  garantirEstadoIdle(save, agoraMs);
+  const { nivel, pagos } = resgatarPasse(save, agoraMs);
+  const diamantes = pagos.filter((p) => p.tipo === 'diamantes').reduce((a, b) => a + b.qtd, 0);
+  return { nivel, pagos, reward: { diamantes, gold: 0, esferas: { comum: 0, rara: 0, epica: 0, lendaria: 0, mitica: 0 } } };
 }
 
 // ---- Mochila: esferas e relíquias compráveis removidas dos fluxos ativos ----
@@ -558,14 +587,17 @@ export function comprarOuEquiparReliquia() {
   return { ok: false, motivo: 'Relíquias compráveis foram removidas dos fluxos ativos.' };
 }
 
-export function chocarPrimeiroOvo(save) {
+export function chocarPrimeiroOvo(save, rng = Math.random) {
   const idle = garantirEstadoIdle(save);
   if (!idle.mochila.ovos.length) return { ok: false, motivo: 'Nenhum ovo na mochila.' };
   const ovo = idle.mochila.ovos.shift();
-  idle.equipe.push({ especie: ovo.especie, nivel: 1, xp: 0, raridade: 2, forma: ovo.forma || 'natural' });
-  registrarCodexEspecie(idle, ovo.especie, { captura: true });
+  const novo = (ovo.tipo === 'ovoT5' || ovo.temporada)
+    ? abrirOvoPasse(ovo, rng)
+    : { especie: ovo.especie, nivel: 1, xp: 0, tier: ovo.tier || 2, raridade: ovo.tier || 2, estrelas: estrelasIniciais('ovo'), forma: ovo.forma || 'natural', ...(ovo.evento ? { evento: ovo.evento } : {}) };
+  idle.equipe.push(novo);
+  registrarCodexEspecie(idle, novo.especie, { captura: true });
   avancarDiaria(idle, 'ovos', 1);
-  return { ok: true, ovo };
+  return { ok: true, ovo, onirico: novo };
 }
 
 // ---- Vote e Ganhe (TopIdle 12h / IdleRank 24h) ----
@@ -613,4 +645,7 @@ export function registrarLogIdle(idle, texto, tipo = 'farm') {
   if (idle.logs.length > 50) idle.logs.shift();
 }
 
-export { ESPECIES, PASS_LEVELS, passLevel, passRewardFor, passPremiumRewardFor, SPHERE_PRICE, GOLD };
+export {
+  ESPECIES, PASS_LEVELS, passLevel, passRewardFor, passPremiumRewardFor, SPHERE_PRICE, GOLD,
+  ganharXpPasse, comprarNivelPasse, infoPasse, premioNivel, trilhaPasse, infoLogin7Dias, LOGIN_7D_CATALOGO,
+};

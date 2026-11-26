@@ -86,8 +86,8 @@ test('Login 7 dias, Passe (systems.js), Relíquias e Vote & Ganhe funcionam inte
   assert.equal(l1.dia, 1);
   assert.equal(resgatarLoginDiario(s, t0).ok, false);
 
-  idle.passe.xp = 200;
-  const p = resgatarTudoPasse(s);
+  idle.passe.xp = 2000;
+  const p = resgatarTudoPasse(s, t0);
   assert.ok(p.nivel >= 2);
 
   s.recompensas.gold = 500;
