@@ -1,0 +1,100 @@
+{
+  "evento": "halloween",
+  "rotacao": "mensal",
+  "oniricos": [
+    {
+      "id": "abobrisco",
+      "nome": "Abobrisco",
+      "tierInicial": 1,
+      "papelVisual": "defesa",
+      "direcao": "direita",
+      "formas": [
+        "assets/confusion/interface/eventos/halloween/oniricos/abobrisco/01.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/abobrisco/02.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/abobrisco/03.png"
+      ],
+      "formaInicial": 1
+    },
+    {
+      "id": "velalume",
+      "nome": "Velalume",
+      "tierInicial": 2,
+      "papelVisual": "cura contínua",
+      "direcao": "direita",
+      "formas": [
+        "assets/confusion/interface/eventos/halloween/oniricos/velalume/01.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/velalume/02.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/velalume/03.png"
+      ],
+      "formaInicial": 1
+    },
+    {
+      "id": "mortalio",
+      "nome": "Mortálio",
+      "tierInicial": 3,
+      "papelVisual": "ressurreição",
+      "direcao": "direita",
+      "formas": [
+        "assets/confusion/interface/eventos/halloween/oniricos/mortalio/01.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/mortalio/02.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/mortalio/03.png"
+      ],
+      "formaInicial": 2
+    },
+    {
+      "id": "vitrarco",
+      "nome": "Vitrarco",
+      "tierInicial": 4,
+      "papelVisual": "proteção",
+      "direcao": "direita",
+      "formas": [
+        "assets/confusion/interface/eventos/halloween/oniricos/vitrarco/01.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/vitrarco/02.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/vitrarco/03.png"
+      ],
+      "formaInicial": 2
+    },
+    {
+      "id": "abyssar",
+      "nome": "Abyssar",
+      "tierInicial": 5,
+      "papelVisual": "dano por vida máxima",
+      "direcao": "direita",
+      "formas": [
+        "assets/confusion/interface/eventos/halloween/oniricos/abyssar/01.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/abyssar/02.png",
+        "assets/confusion/interface/eventos/halloween/oniricos/abyssar/03.png"
+      ],
+      "formaInicial": 3
+    }
+  ],
+  "arenas": [
+    {
+      "dificuldade": 1,
+      "nome": "Pátio das Lanternas",
+      "arquivo": "assets/confusion/interface/eventos/halloween/arenas/01.webp"
+    },
+    {
+      "dificuldade": 2,
+      "nome": "Claustro dos Sussurros",
+      "arquivo": "assets/confusion/interface/eventos/halloween/arenas/02.webp"
+    },
+    {
+      "dificuldade": 3,
+      "nome": "Salão do Vitral Partido",
+      "arquivo": "assets/confusion/interface/eventos/halloween/arenas/03.webp"
+    },
+    {
+      "dificuldade": 4,
+      "nome": "Câmara do Eclipse",
+      "arquivo": "assets/confusion/interface/eventos/halloween/arenas/04.webp"
+    }
+  ],
+  "artes": {
+    "torre": "assets/confusion/interface/eventos/halloween/torre.webp",
+    "banner": "assets/confusion/interface/eventos/halloween/banner.webp",
+    "loja": "assets/confusion/interface/eventos/halloween/loja.webp",
+    "ticket": "assets/confusion/interface/eventos/halloween/itens/ticket.webp",
+    "doce": "assets/confusion/interface/eventos/halloween/itens/doce.webp"
+  }
+}
