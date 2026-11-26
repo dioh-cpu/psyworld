@@ -2020,6 +2020,8 @@ function escolherAlvoAutoCaca(agora, idle) {
 // { id, pronta(agora, alvo) => boolean, usar(agora, alvo) => { dano, ... } }. Enquanto a lista estiver vazia, vale o golpe normal.
 const habilidadesOniricasForaDaBatalha = [];
 
+let seqAbateAuto = 0;
+
 function golpearAlvoAuto(agora, idle) {
   proximoGolpeAuto = agora + 680;
   const st = calcularStatusDetalhado(save);
@@ -2035,8 +2037,10 @@ function golpearAlvoAuto(agora, idle) {
   }
 
   if (alvoAutoCaca._hp <= 0) {
+    if (alvoAutoCaca._abatido) return;
+    alvoAutoCaca._abatido = true;
     const morto = alvoAutoCaca.dados;
-    const res = resolverAbateAuto(save, morto);
+    const res = resolverAbateAuto(save, { ...morto, derrotaId: `auto:${morto.id}:${++seqAbateAuto}` });
     const ouroExtra = Math.round(res.gold * (mundoMod.ouro - 1));
     if (ouroExtra) { save.recompensas.gold = Math.max(0, save.recompensas.gold + ouroExtra); res.gold += ouroExtra; }
     window.regiaoMundo?.aoAbater?.(morto);
