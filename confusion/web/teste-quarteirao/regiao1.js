@@ -34,6 +34,7 @@ import {
   resolverAbateAuto,
   avancarDiaria,
   registrarLogIdle,
+  ganharXpPasse,
 } from './regiao1-idle.js';
 import { criarControladorIdleUI } from './regiao1-ui-idle.js';
 import { iniciarMundo } from './regiao1-mundo.js';
@@ -1066,6 +1067,7 @@ function encerrarBatalha(vitoria) {
   const nvIni = (ehBoss ? BOSSES_REGIAO1[b.entidade.id]?.nivel : b.entidade?.nivel) || 1;
   const xpForm = Math.round((40 + 12 * nvIni) * (ehBoss ? 2 : 1) * (vitoria ? 1 : 0.3));
   for (const { m } of membrosFormacao(idle)) aplicarXp(m, xpForm);
+  ganharXpPasse(idle, vitoria ? (ehBoss ? 'batalhaChefe' : 'batalha') : 'derrota');
 
   if (vitoria) {
     for (let k = 0; k < 3; k++) window.regiaoHW?.aoAbater?.(); // doces durante o evento (abates de PvE)

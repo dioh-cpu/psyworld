@@ -2,6 +2,7 @@
 // dificuldades × 100 andares com marcos pagos uma única vez, loja da Torre e poções de XP. Estado em save.idle.hw.
 import { EDICAO, BANNER_HW, LINHAGENS_HW, DOCES, LOJA_TORRE, TORRE, formaDoTier, RENOMEAR_HW } from './regiao1-halloween-dados.js';
 import { aplicarXp, previsaoXp, POCOES, nivelDe, xpTotal } from './regiao1-progressao.js';
+import { ganharXpPasse } from './regiao1-passe-regras.js';
 
 // Saves anteriores: nomes provisórios viram os definitivos; cada Onírico ganha um id estável (para Equipes)
 export function migrarHW(save) {
@@ -125,6 +126,7 @@ export function vencerAndar(save, dif, n, rng = Math.random, agora = new Date())
   if (n === 100 && dif < TORRE.dificuldades.length && t.liberada <= dif) { t.liberada = dif + 1; r.liberou = dif + 1; }
   r.doce = talvezDoce(save, 'andar', rng, agora);
   if (rng() < TORRE.chancePocao) { const id = dif >= 3 ? 'pocao_xp_g' : dif === 2 ? 'pocao_xp_m' : 'pocao_xp_p'; darPocao(save, id); r.pocao = id; }
+  ganharXpPasse(save, 'torre', null, agora);
   t.dif = dif; t.andar = Math.min(100, n + 1);
   return r;
 }

@@ -86,8 +86,8 @@ test('Login 7 dias, Passe (systems.js), Relíquias e Vote & Ganhe funcionam inte
   assert.equal(l1.dia, 1);
   assert.equal(resgatarLoginDiario(s, t0).ok, false);
 
-  idle.passe.xp = 200;
-  const p = resgatarTudoPasse(s);
+  idle.passe.xp = 2000;
+  const p = resgatarTudoPasse(s, t0);
   assert.ok(p.nivel >= 2);
 
   s.recompensas.gold = 500;
@@ -125,11 +125,11 @@ test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos
   assert.equal(res.ok, true);
   assert.equal(res.disponiveis, (st0.nivel - 1) * 3);
 
-  // Compra de Esfera comum (gold) e lendária (diamantes)
+  // Esferas de captura foram retiradas do fluxo em favor do Banner de Oníricos
   s.recompensas.gold = 50;
   s.recompensas.diamantes = 2000;
-  assert.equal(comprarEsferaIdle(s, 'comum').ok, true);
-  assert.equal(s.recompensas.gold, 40);
-  assert.equal(comprarEsferaIdle(s, 'lendaria').ok, true);
-  assert.equal(s.recompensas.diamantes, 500);
+  assert.equal(comprarEsferaIdle(s, 'comum').ok, false);
+  assert.equal(s.recompensas.gold, 50);
+  assert.equal(comprarEsferaIdle(s, 'lendaria').ok, false);
+  assert.equal(s.recompensas.diamantes, 2000);
 });

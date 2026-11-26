@@ -11,12 +11,8 @@ import {
   LOGIN_CYCLE,
   loginRewardFor,
   nextLoginStreak,
-  PASS_LEVELS,
-  passLevel,
   passRewardFor,
   passPremiumRewardFor,
-  claimPass,
-  addPassXp,
   activeEvents,
   raidAt,
   GOLD,
@@ -25,7 +21,22 @@ import {
   captureChance,
   dropsEgg,
 } from '../systems.js';
+import {
+  PASSE_CFG,
+  passeDe,
+  ganharXpPasse,
+  xpPasseOffline,
+  nivelPasse,
+  premioNivel,
+  resgatarPasse,
+  comprarNivelPasse,
+  infoPasse,
+  abrirOvoPasse,
+} from './regiao1-passe-regras.js';
 import { ESPECIES, ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
+
+const PASS_LEVELS = PASSE_CFG.niveis;
+const passLevel = nivelPasse;
 
 export const I18N = {
   pt: {
@@ -80,12 +91,12 @@ export const RELIQUIAS_CATALOGO = [
 ];
 
 const POOL_MISSOES_DIARIAS = [
-  { id: 'dm_abates_15', titulo: 'Caçar 15 monstros selvagens', tipo: 'abates', meta: 15, xpPasse: 45, gold: 90, mapaSugerido: 'E1' },
-  { id: 'dm_abates_30', titulo: 'Caçar 30 monstros selvagens', tipo: 'abates', meta: 30, xpPasse: 80, gold: 160, mapaSugerido: 'PC1' },
-  { id: 'dm_capturas_3', titulo: 'Capturar 3 Oníricos', tipo: 'capturas', meta: 3, xpPasse: 60, gold: 120, mapaSugerido: 'D1' },
-  { id: 'dm_areas_5', titulo: 'Explorar 5 áreas diferentes', tipo: 'areas', meta: 5, xpPasse: 50, gold: 100, mapaSugerido: 'C1' },
-  { id: 'dm_ovos_2', titulo: 'Obter ou chocar 2 ovos', tipo: 'ovos', meta: 2, xpPasse: 65, gold: 140, mapaSugerido: 'CC2' },
-  { id: 'dm_boss_1', titulo: 'Enfrentar 1 Chefe de Arena', tipo: 'bosses', meta: 1, xpPasse: 90, gold: 220, mapaSugerido: 'BOSS_E' },
+  { id: 'dm_abates_15', titulo: 'Caçar 15 monstros selvagens', tipo: 'abates', meta: 15, xpPasse: 180, gold: 90, mapaSugerido: 'E1' },
+  { id: 'dm_abates_30', titulo: 'Caçar 30 monstros selvagens', tipo: 'abates', meta: 30, xpPasse: 300, gold: 160, mapaSugerido: 'PC1' },
+  { id: 'dm_capturas_3', titulo: 'Capturar 3 Oníricos', tipo: 'capturas', meta: 3, xpPasse: 240, gold: 120, mapaSugerido: 'D1' },
+  { id: 'dm_areas_5', titulo: 'Explorar 5 áreas diferentes', tipo: 'areas', meta: 5, xpPasse: 200, gold: 100, mapaSugerido: 'C1' },
+  { id: 'dm_ovos_2', titulo: 'Obter ou chocar 2 ovos', tipo: 'ovos', meta: 2, xpPasse: 260, gold: 140, mapaSugerido: 'CC2' },
+  { id: 'dm_boss_1', titulo: 'Enfrentar 1 Chefe de Arena', tipo: 'bosses', meta: 1, xpPasse: 360, gold: 220, mapaSugerido: 'BOSS_E' },
 ];
 
 export const PONTOS_POR_NIVEL = 3;
@@ -137,7 +148,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
       { especie: 'Noctarn', nivel: 5, xp: xpDoNivel(5), raridade: 3, forma: 'natural' },
     ],
     login: { streak: 0, lastDay: -1 },
-    passe: { season: '', xp: 0, premium: false, claimed: 0, claimedPremium: 0 },
+    passe: passeDe({ passe: null }, agoraMs),
     diarias: gerarDiariasIniciais(agoraMs),
     votos: { voteCash: 0, ultimoTopIdle: 0, ultimoIdleRank: 0, totalVotos: 0 },
     config: {
@@ -177,6 +188,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     if (!save.idle.diarias || save.idle.diarias.dia !== diaAtual) {
       save.idle.diarias = gerarDiariasIniciais(agoraMs);
     }
+    passeDe(save.idle, agoraMs);
     return save.idle;
   }
   const base = criarEstadoIdle(agoraMs);
@@ -205,21 +217,17 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
       ...(save.idle.mochila || {}),
       esferas: { ...base.mochila.esferas, ...(save.idle.mochila?.esferas || {}) },
       equipada: { ...base.mochila.equipada, ...(save.idle.mochila?.equipada || {}) },
-      ingredientes: { ...base.mochila.ingredientes, ...(save.idle.mochila?.ingredientes || {}) },
+      ingredientes: { ...base.mochila.ingredientes, ...(save.idle.ingredientes || save.idle.mochila?.ingredientes || {}) },
     },
     login: { ...base.login, ...(save.idle.login || {}) },
-    passe: {
-      ...base.passe,
-      ...(save.idle.passe || {}),
-      claimed: Number(save.idle.passe?.claimed) || 0,
-      claimedPremium: Number(save.idle.passe?.claimedPremium) || 0,
-    },
+    passe: save.idle.passe || base.passe,
     votos: { ...base.votos, ...(save.idle.votos || {}) },
     config: { ...base.config, ...(save.idle.config || {}) },
     logs: Array.isArray(save.idle.logs) ? save.idle.logs.slice(-60) : [],
     equipe: Array.isArray(save.idle.equipe) && save.idle.equipe.length ? save.idle.equipe : base.equipe,
     _pronto: true,
   };
+  passeDe(save.idle, agoraMs);
   if ((save.recompensas?.xp || 0) > (save.idle.jogador.xp || 0)) {
     save.idle.jogador.xp = save.recompensas.xp;
   }
@@ -389,8 +397,8 @@ export function escolherHabilidadeAuto(especieAtacante, especieAlvo, preferirVan
   return { nome: habs[0], mult, critico: false };
 }
 
-export function resolverAbateAuto(save, monstro, rng = Math.random) {
-  const idle = garantirEstadoIdle(save);
+export function resolverAbateAuto(save, monstro, rng = Math.random, agoraMs = Date.now()) {
+  const idle = garantirEstadoIdle(save, agoraMs);
   const st = calcularStatusDetalhado(save);
   const rar = monstro.nivel >= 12 ? 3 : monstro.nivel >= 8 ? 2 : 1;
   const gold = Math.round((goldEncontro(rar) + Math.floor(monstro.nivel * 2.5)) * st.goldMult);
@@ -404,8 +412,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
   idle.jogador.hp = Math.max(1, Math.min(st.hpMax, idle.jogador.hp - danoRecebido));
   idle.jogador.abatesTotais += 1;
 
-  // Alimenta Passe de Batalha (reuso direto de systems.js!)
-  idle.passe = addPassXp(idle.passe, 'batalha', 6);
+  ganharXpPasse(idle, 'abate', null, agoraMs);
   registrarCodexEspecie(idle, monstro.especie, { abate: true });
   avancarDiaria(idle, 'abates', 1);
 
@@ -418,14 +425,14 @@ export function resolverAbateAuto(save, monstro, rng = Math.random) {
       idle.jogador.capturasTotais += 1;
       registrarCodexEspecie(idle, monstro.especie, { captura: true });
       avancarDiaria(idle, 'capturas', 1);
-      idle.passe = addPassXp(idle.passe, 'captura', 12);
+      ganharXpPasse(idle, 'captura', null, agoraMs);
     }
   }
 
   let ovoDrop = false;
   if (idle.autoCaca.coletarOvos && rng() < OVOS.fatorDrop && dropsEgg({ rarity: rar }, rng(), st.dropOvoExtra)) {
     ovoDrop = true;
-    idle.mochila.ovos.push({ especie: monstro.especie, forma: 'natural', obtidoEm: Date.now() });
+    idle.mochila.ovos.push({ especie: monstro.especie, forma: 'natural', obtidoEm: agoraMs });
     avancarDiaria(idle, 'ovos', 1);
   }
 
@@ -470,7 +477,7 @@ export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Noctarn', ago
   save.recompensas.xp += resumo.xp;
   idle.jogador.xp += resumo.xp;
   idle.jogador.abatesTotais += resumo.abates;
-  idle.passe = addPassXp(idle.passe, 'dia', Math.min(120, Math.floor(resumo.abates / 2)));
+  ganharXpPasse(idle, 'offline', xpPasseOffline(resumo.minutos), agoraMs);
   for (let i = 0; i < resumo.ovos; i++) {
     idle.mochila.ovos.push({ especie: especiePadrao, forma: 'natural', obtidoEm: agoraMs });
   }
@@ -478,7 +485,7 @@ export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Noctarn', ago
   idle.ultimoTickMs = agoraMs;
 }
 
-// ---- Missões Diárias + Reroll + Passe + Login 7 Dias (reuso de systems.js) ----
+// ---- Missões Diárias + Reroll + Passe + Login 7 Dias ----
 export function avancarDiaria(idle, tipo, qtd = 1) {
   if (!idle.diarias?.itens) return;
   for (const m of idle.diarias.itens) {
@@ -488,13 +495,13 @@ export function avancarDiaria(idle, tipo, qtd = 1) {
   }
 }
 
-export function resgatarDiaria(save, id) {
-  const idle = garantirEstadoIdle(save);
+export function resgatarDiaria(save, id, agoraMs = Date.now()) {
+  const idle = garantirEstadoIdle(save, agoraMs);
   const m = idle.diarias.itens.find((x) => x.id === id);
   if (!m || m.resgatada || m.progresso < m.meta) return null;
   m.resgatada = true;
   save.recompensas.gold += m.gold;
-  idle.passe = addPassXp(idle.passe, 'missao', m.xpPasse);
+  ganharXpPasse(idle, 'missao', m.xpPasse, agoraMs);
   return m;
 }
 
@@ -525,17 +532,11 @@ export function resgatarLoginDiario(save, agoraMs = Date.now()) {
   return { ok: true, dia: prox, recompensa: rec };
 }
 
-export function resgatarTudoPasse(save) {
-  const idle = garantirEstadoIdle(save);
-  const { reward, claimed, claimedPremium } = claimPass(idle.passe);
-  idle.passe.claimed = claimed;
-  idle.passe.claimedPremium = claimedPremium;
-  save.recompensas.diamantes += reward.diamantes;
-  save.recompensas.gold += reward.gold || 0;
-  for (const [k, v] of Object.entries(reward.esferas)) {
-    if (v) idle.mochila.esferas[k] = (idle.mochila.esferas[k] || 0) + v;
-  }
-  return { nivel: passLevel(idle.passe.xp), reward };
+export function resgatarTudoPasse(save, agoraMs = Date.now()) {
+  garantirEstadoIdle(save, agoraMs);
+  const { nivel, pagos } = resgatarPasse(save, agoraMs);
+  const diamantes = pagos.filter((p) => p.tipo === 'diamantes').reduce((a, b) => a + b.qtd, 0);
+  return { nivel, pagos, reward: { diamantes, gold: 0, esferas: {} } };
 }
 
 // ---- Mochila: comprar esferas, equipar relíquias e chocar ovos ----
@@ -568,14 +569,17 @@ export function comprarOuEquiparReliquia(save, reliquiaId) {
   return { ok: true, reliquia: r };
 }
 
-export function chocarPrimeiroOvo(save) {
+export function chocarPrimeiroOvo(save, rng = Math.random) {
   const idle = garantirEstadoIdle(save);
   if (!idle.mochila.ovos.length) return { ok: false, motivo: 'Nenhum ovo na mochila.' };
   const ovo = idle.mochila.ovos.shift();
-  idle.equipe.push({ especie: ovo.especie, nivel: 1, xp: 0, raridade: 2, forma: ovo.forma || 'natural' });
-  registrarCodexEspecie(idle, ovo.especie, { captura: true });
+  const novo = (ovo.tipo === 'ovoT5' || ovo.temporada)
+    ? abrirOvoPasse(ovo, rng)
+    : { especie: ovo.especie, nivel: 1, xp: 0, tier: ovo.tier || 2, raridade: ovo.tier || 2, estrelas: 1, forma: ovo.forma || 'natural', ...(ovo.evento ? { evento: ovo.evento } : {}) };
+  idle.equipe.push(novo);
+  registrarCodexEspecie(idle, novo.especie, { captura: true });
   avancarDiaria(idle, 'ovos', 1);
-  return { ok: true, ovo };
+  return { ok: true, ovo, onirico: novo };
 }
 
 // ---- Vote e Ganhe (TopIdle 12h / IdleRank 24h) ----
@@ -623,4 +627,7 @@ export function registrarLogIdle(idle, texto, tipo = 'farm') {
   if (idle.logs.length > 50) idle.logs.shift();
 }
 
-export { ESPECIES, PASS_LEVELS, passLevel, passRewardFor, passPremiumRewardFor, SPHERE_PRICE, GOLD };
+export {
+  ESPECIES, PASS_LEVELS, passLevel, passRewardFor, passPremiumRewardFor, SPHERE_PRICE, GOLD,
+  ganharXpPasse, comprarNivelPasse, infoPasse, premioNivel,
+};

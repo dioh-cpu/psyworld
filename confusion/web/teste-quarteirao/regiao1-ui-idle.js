@@ -25,6 +25,8 @@ import {
   trocarMissaoDiaria,
   resgatarLoginDiario,
   resgatarTudoPasse,
+  comprarNivelPasse,
+  infoPasse,
   comprarEsferaIdle,
   comprarOuEquiparReliquia,
   chocarPrimeiroOvo,
@@ -32,7 +34,6 @@ import {
   resgatarLojaVoto,
   resumoEventosAtuais,
   registrarLogIdle,
-  passLevel,
 } from './regiao1-idle.js';
 
 export function criarControladorIdleUI(ctx) {
@@ -538,18 +539,35 @@ export function criarControladorIdleUI(ctx) {
     abrir('modal-mochila');
   }
 
-  // ---- Temporada, Passe 30 Níveis, Login 7 Dias & Missões Diárias (com Reroll!) ----
+  // ---- Temporada, Passe 100 Níveis, Login 7 Dias & Missões Diárias (com Reroll!) ----
   function abrirTemporada() {
     const save = ctx.getSave();
     const idle = garantirEstadoIdle(save);
     const ev = resumoEventosAtuais();
-    const nv = passLevel(idle.passe.xp);
+    const info = infoPasse(save);
+    const proxTxt = info.proximo
+      ? `<b>Próximo (Passe Nv.${info.proximo.nivel}):</b> ${info.proximo.premio.texto}${info.proximo.premio.tier ? ` (Ovo T${info.proximo.premio.tier} · Onírico nasce Nv.1)` : ''} · Compra: ${info.proximo.preco}💎 (${info.proximo.liberado ? 'disponível hoje' : `abre dia ${info.proximo.dia} · ${info.proximo.data}`})`
+      : `<b>Passe Nv.100 concluído!</b> Ovo de ${info.tema} (Tier T5 · Onírico nasce Nv.1) ${info.t5Pago ? 'no inventário/entregue' : 'pronto para coletar'}`;
+    const faixaTxt = info.proximaFaixa
+      ? ` · Próxima faixa (Nv.${info.proximaFaixa.ate}) abre dia ${info.proximaFaixa.dia} (${info.proximaFaixa.data})`
+      : ' · Todas as faixas liberadas';
 
     $('temp-resumo').innerHTML = `
-      <b>Passe de Temporada:</b> Nível ${nv}/${PASS_LEVELS} (${idle.passe.xp} XP) · Resgatado até Nv.${idle.passe.claimed}<br>
-      <b>Evento Semanal:</b> ${ev.semanal.nome} (${ev.semanal.efeito}) · <b>Mensal:</b> ${ev.mensal.nome}<br>
-      <b>Próxima Raid (2h):</b> ${ev.raid.boss.nome} (${ev.raid.aberto ? `ABERTA · ${ev.raid.restanteMin}m` : `em ${ev.raid.abreEmMin}m`})
+      <b>Passe · ${info.tema} (${info.edicao}):</b> Passe Nv.${info.nivel}/${info.niveis} (${info.xp.toLocaleString('pt-BR')} XP · ${info.xpNoNivel}/${info.xpPorNivel}) · Resgatado Nv.${info.resgatado}<br>
+      <b>Marco Nv.100:</b> Ovo T5 (${info.tema}) · Ao abrir: Onírico T5 no Nv.1<br>
+      <b>Calendário (dia ${info.dia}/${info.dias}):</b> cota ${info.liberada.toLocaleString('pt-BR')} XP (Nv.${info.nivelLiberado} · +${info.cotaDia}/dia) · ${info.noTeto ? '<b>Cota atingida</b> (XP extra de Passe não acumula)' : `Recuperável: <b>${info.recuperavel.toLocaleString('pt-BR')} XP</b>`}${faixaTxt}<br>
+      ${proxTxt}<br>
+      <b>Evento Semanal:</b> ${ev.semanal.nome} (${ev.semanal.efeito}) · <b>Raid (2h):</b> ${ev.raid.boss.nome} (${ev.raid.aberto ? `ABERTA · ${ev.raid.restanteMin}m` : `em ${ev.raid.abreEmMin}m`})
     `;
+    const btnComprar = $('btn-passe-comprar');
+    if (btnComprar) {
+      btnComprar.disabled = !info.proximo || !info.proximo.liberado;
+      btnComprar.textContent = !info.proximo
+        ? '✓ Nv.100 Concluído'
+        : info.proximo.liberado
+          ? `💎 Comprar Nv.${info.proximo.nivel} (${info.proximo.preco}💎 · ${info.proximo.premio.texto})`
+          : `🔒 Nv.${info.proximo.nivel} abre ${info.proximo.data} (${info.proximo.preco}💎)`;
+    }
 
     $('temp-diarias').innerHTML = `
       <div class="sub" style="margin-bottom:6px">Trocas (reroll) restantes hoje: <b>${idle.diarias.rerollsRestantes}</b></div>
@@ -603,7 +621,18 @@ export function criarControladorIdleUI(ctx) {
   $('btn-passe-coletar')?.addEventListener('click', () => {
     const save = ctx.getSave();
     const r = resgatarTudoPasse(save);
-    ctx.mostrarToast(`Passe Nv.${r.nivel}: +${r.reward.diamantes}💎 resgatados!`, 2800);
+    const resumo = r.pagos.length
+      ? `Passe Nv.${r.nivel}: ${r.pagos.slice(0, 3).map((p) => p.texto).join(', ')}${r.pagos.length > 3 ? ` (+${r.pagos.length - 3})` : ''}!`
+      : `Passe Nv.${r.nivel}: nenhum prêmio pendente.`;
+    ctx.mostrarToast(resumo, 3200);
+    ctx.salvar();
+    atualizarHudIdle();
+    abrirTemporada();
+  });
+  $('btn-passe-comprar')?.addEventListener('click', () => {
+    const save = ctx.getSave();
+    const r = comprarNivelPasse(save);
+    ctx.mostrarToast(r.ok ? `Nível ${r.nivel} desbloqueado (-${r.custo}💎)!` : r.motivo, 2800);
     ctx.salvar();
     atualizarHudIdle();
     abrirTemporada();

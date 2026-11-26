@@ -8,6 +8,7 @@ import { membrosFormacao } from './regiao1-exp-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
 import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { ganharXpPasse } from './regiao1-passe-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const PAPEL = { ataque: { i: '⚔️', n: 'Ataque' }, defesa: { i: '🛡️', n: 'Defesa' }, suporte: { i: '💚', n: 'Suporte' } };
@@ -374,6 +375,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
       for (const [k, v] of Object.entries(r.pendente)) { const n = `${Dx.materiais[k].icone} ${Dx.materiais[k].nome}`; pend[n] = (pend[n] || 0) + v; }
     }
     const f = (o) => Object.entries(o).map(([k, v]) => `${v} ${k}`).join(' · ');
+    if (Object.keys(rec).length) ganharXpPasse(getSave(), 'coleta');
     const partes = [{ t: Object.keys(rec).length ? `recebido ${f(rec)}` : 'nada pronto para coletar' }];
     if (Object.keys(pend).length) partes.push({ t: `pendente (estoque cheio): ${f(pend)}` });
     resumoLote(todos ? 'Coleta de todos os reinos' : 'Coleta', partes);
@@ -382,6 +384,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     processar(false);
     const s = estado(), r = repetir ? repetirUltimoLote(s, D) : fabricarLote(s, D, loteRec, loteQtd);
     if (!r.ok) { mostrarToast(r.motivo + (r.falta ? ` Faltam ${matTxt(r.falta)}.` : ''), 3200); desenhar(); return; }
+    ganharXpPasse(getSave(), 'fabricacao');
     resumoLote('Fabricação', [{ t: `lote na fila: ${matTxt(r.previsao.saida)} (usou ${matTxt(r.previsao.insumos)}, ${dur(r.previsao.duracao)})` }]);
   }
   function progressoDesbloqueio(Dx) { const de = REINOS_D.find((x) => x.id === Dx.desbloqueio.de); return { atual: Object.keys(estado(de).estruturas).length, meta: Dx.desbloqueio.terrenos }; }
@@ -456,6 +459,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const s = estado(), exp = s.exp, rota = rotaDe(exp.rota);
     if (batalha.fim === 'vitoria') {
       const rec = pagarFase(exp, rota, exp.fase, s.materiais, rng); // null se já paga: nunca duplica
+      if (rec) ganharXpPasse(getSave(), 'estrategia');
       if (rec && rng() < [0.3, 0.45, 0.6][Math.min(2, exp.fase)]) { const id = exp.fase >= 2 ? 'pocao_xp_m' : 'pocao_xp_p'; darPocao(getSave(), id); batalha.log.push(`Poção de XP encontrada (${id === 'pocao_xp_m' ? 'média' : 'pequena'}).`); }
       const fase = rota.fases[exp.fase];
       if (rec) {

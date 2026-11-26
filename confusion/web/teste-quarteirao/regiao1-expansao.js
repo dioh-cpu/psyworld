@@ -8,6 +8,7 @@ import { LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { hwDe } from './regiao1-halloween-regras.js';
 import { POSICOES } from './regiao1-batalha-tela.js';
+import { ganharXpPasse } from './regiao1-passe-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -409,11 +410,11 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     }
     if (d.aceitar) { R.aceitarContrato(save(), d.aceitar); salvar(); render(); return; }
     if (d.entregar) { const r = R.entregarContrato(save(), d.entregar); if (r.ok) { mostrarToast(`Contrato entregue! ${r.contrato.fim}`, 4200); salvar(); } else mostrarToast(r.motivo, 2800); render(); return; }
-    if (d.coletar) { processar(false); const r = coletarTudo(fab(), FAB); const f = (o) => Object.entries(o).map(([k, v]) => `${v} ${FAB.materiais[k].nome}`).join(' · '); resumoUlt = { t: 'Coleta', p: [Object.keys(r.recebido).length ? `recebido ${f(r.recebido)}` : 'nada pronto', ...(Object.keys(r.pendente).length ? [`pendente (estoque cheio): ${f(r.pendente)}`] : [])] }; salvar(); render(); return; }
+    if (d.coletar) { processar(false); const r = coletarTudo(fab(), FAB); if (Object.keys(r.recebido).length) ganharXpPasse(save(), 'coleta'); const f = (o) => Object.entries(o).map(([k, v]) => `${v} ${FAB.materiais[k].nome}`).join(' · '); resumoUlt = { t: 'Coleta', p: [Object.keys(r.recebido).length ? `recebido ${f(r.recebido)}` : 'nada pronto', ...(Object.keys(r.pendente).length ? [`pendente (estoque cheio): ${f(r.pendente)}`] : [])] }; salvar(); render(); return; }
     if (d.melhorar) { processar(false); const r = enfileirarObras(fab(), FAB, [d.melhorar]); resumoUlt = { t: 'Melhoria', p: r.entraram.length ? ['obra iniciada'] : r.pendentes.map((p) => `${p.motivo}${p.falta ? ' ' + Object.entries(p.falta).map(([k, v]) => `${v} ${k}`).join(' ') : ''}`) }; salvar(); render(); return; }
     if (d.rec) { loteRec = d.rec; render(); return; }
     if (d.qtd) { loteQtd = Math.max(1, Math.min(30, loteQtd + Number(d.qtd))); render(); return; }
-    if (d.fabricar || d.repetir) { processar(false); const r = d.repetir ? repetirUltimoLote(fab(), FAB) : fabricarLote(fab(), FAB, loteRec, loteQtd); resumoUlt = r.ok ? { t: 'Fabricação', p: [`lote na fila: ${Object.entries(r.previsao.saida).map(([k, v]) => `${v} ${FAB.gestao.itens[k].nome}`).join(', ')} (usou ${Object.entries(r.previsao.insumos).map(([k, v]) => `${v} ${FAB.materiais[k].nome}`).join(', ')})`] } : { t: 'Fabricação', p: [r.motivo] }; salvar(); render(); return; }
+    if (d.fabricar || d.repetir) { processar(false); const r = d.repetir ? repetirUltimoLote(fab(), FAB) : fabricarLote(fab(), FAB, loteRec, loteQtd); if (r.ok) ganharXpPasse(save(), 'fabricacao'); resumoUlt = r.ok ? { t: 'Fabricação', p: [`lote na fila: ${Object.entries(r.previsao.saida).map(([k, v]) => `${v} ${FAB.gestao.itens[k].nome}`).join(', ')} (usou ${Object.entries(r.previsao.insumos).map(([k, v]) => `${v} ${FAB.materiais[k].nome}`).join(', ')})`] } : { t: 'Fabricação', p: [r.motivo] }; salvar(); render(); return; }
     if (d.reinos) { fecharModal('modal-exp'); window.regiaoReinos?.abrirSeletor(); return; }
     if (d.criseAbrir) { fecharModal('modal-exp'); desenharCrise(); return; }
     if (d.cap) { cap = d.cap; render(); return; }

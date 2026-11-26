@@ -6,6 +6,7 @@ import { REINOS } from '../reinos.js';
 import { gestaoDe, avancar as avancarGestao } from './regiao1-gestao-regras.js';
 import { darPocao, hwDe } from './regiao1-halloween-regras.js';
 import { aplicarXp } from './regiao1-progressao.js';
+import { ganharXpPasse } from './regiao1-passe-regras.js';
 
 export function expDe(save) {
   const idle = save.idle || (save.idle = {});
@@ -17,9 +18,10 @@ export function expDe(save) {
 export const questFeita = (save, q) => save.quests?.[q] === 'concluida';
 
 // XP da Campanha para a formação ativa (vitória inteira, derrota 30%, chefe ×2)
-export function darXpCampanha(idle, { nivel = 1, chefe = false, vitoria = true } = {}) {
+export function darXpCampanha(idle, { nivel = 1, chefe = false, vitoria = true } = {}, agora = Date.now()) {
   const xp = Math.round((40 + 12 * Math.max(1, nivel)) * (chefe ? 2 : 1) * (vitoria ? 1 : 0.3));
   const membros = membrosFormacao(idle).map(({ m, idx, vaga }) => ({ idx, vaga, ...aplicarXp(m, xp) }));
+  ganharXpPasse(idle, vitoria ? (chefe ? 'batalhaChefe' : 'batalha') : 'derrota', null, agora);
   return { xp, membros };
 }
 
@@ -182,6 +184,7 @@ export function entregarContrato(save, id, agora = new Date()) {
   if (c.recompensa.tickets) e.tickets += c.recompensa.tickets;
   if (c.libera === 'fazenda') liberarFazenda(save);
   if (c.libera === 'oficina') e.oficina = true;
+  ganharXpPasse(save, 'contrato', null, agora);
   return { ok: true, contrato: c };
 }
 export function liberarFazenda(save) {
@@ -318,6 +321,7 @@ export function resolverLutaCalabouco(save, { vitoria, vida = null, hpFinal = nu
     run.vida ||= {};
     for (const { m } of membrosFormacao(save.idle)) run.vida[m.uid] = 0;
     run.hpMedia = 0;
+    ganharXpPasse(save, 'derrota');
     return { ok: true, run: encerrarCalabouco(save, run, 'derrota') };
   }
   run.vida ||= {};
@@ -332,6 +336,7 @@ export function resolverLutaCalabouco(save, { vitoria, vida = null, hpFinal = nu
   run.hpMedia = mediaVidaFormacao(save, run);
   run.salasPagas[run.sala] = true;
   somar(run, CALABOUCO.recompensas[sala.tipo]);
+  ganharXpPasse(save, sala.tipo === 'chefe' ? 'calaboucoChefe' : 'calabouco');
   run.log.push(`${sala.rotulo}: vitória (${Math.round(run.hpMedia * 100)}% de vida).`);
   run.luta = null; run.sala += 1; run.estado = 'sala';
   if (run.sala >= CALABOUCO.salas.length) return { ok: true, run: encerrarCalabouco(save, run, 'concluido') };
@@ -357,11 +362,13 @@ export function avancarSala(save, rng = Math.random, escolha = null) {
     run.log.push(`${sala.rotulo}: Sanidade ${run.sanidade}${risco ? ' (avançou com risco, ganhos dobrados)' : ''}.`);
     run.sala += 1; run.estado = 'sala';
     if (run.sanidade <= 0) return { ok: true, run: encerrarCalabouco(save, run, 'sanidade') };
+    ganharXpPasse(save, 'calaboucoSala');
     if (run.sala >= CALABOUCO.salas.length) return { ok: true, run: encerrarCalabouco(save, run, 'concluido') };
     return { ok: true, run };
   }
   if (sala.tipo === 'tesouro') {
     somar(run, CALABOUCO.recompensas.tesouro);
+    ganharXpPasse(save, 'calaboucoSala');
     run.log.push(`${sala.rotulo}: baú encontrado!`);
     run.sala += 1; run.estado = 'sala';
     if (run.sala >= CALABOUCO.salas.length) return { ok: true, run: encerrarCalabouco(save, run, 'concluido') };
@@ -390,18 +397,18 @@ export function acaoCrise(save, acao, rng = Math.random, agora = Date.now()) {
   const c = criseDe(save);
   if (acao === 'surto' && c.estado === 'saudavel') { ir(c, 'contaminada'); return { ok: true, msg: 'O surto começou: zumbis nas ruas.' }; }
   if (acao === 'aguardar' && c.estado === 'contaminada') { ir(c, 'tomada'); return { ok: true, msg: 'A vila foi tomada. As ruas são dos zumbis.' }; }
-  if (acao === 'conter' && c.estado === 'contaminada') { if (!gasta(save, CRISE.custos.conter)) return { ok: false, motivo: 'Faltam 2 Tônicos de Lucidez.' }; ir(c, 'purificada'); return { ok: true, msg: 'Surto contido: a vila foi purificada.' }; }
+  if (acao === 'conter' && c.estado === 'contaminada') { if (!gasta(save, CRISE.custos.conter)) return { ok: false, motivo: 'Faltam 2 Tônicos de Lucidez.' }; ir(c, 'purificada'); ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: 'Surto contido: a vila foi purificada.' }; }
   if (acao === 'retomar' && c.estado === 'tomada') {
     if (c.zumbis <= 0) return { ok: false, motivo: 'Não restam zumbis.' };
     const r = poderLuta(save.idle.equipe || [], 5 + c.zumbis, rng);
     if (!r.vitoria) return { ok: false, motivo: 'A equipe foi repelida. Suba o nível dos Oníricos e tente de novo.' };
-    c.zumbis = Math.max(0, c.zumbis - 3); return { ok: true, msg: c.zumbis ? `Rua retomada: restam ${c.zumbis} zumbis.` : 'As ruas estão livres de zumbis.' };
+    c.zumbis = Math.max(0, c.zumbis - 3); ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: c.zumbis ? `Rua retomada: restam ${c.zumbis} zumbis.` : 'As ruas estão livres de zumbis.' };
   }
-  if (acao === 'purificar' && c.estado === 'tomada') { if (c.zumbis > 0) return { ok: false, motivo: 'Retome as ruas antes de purificar.' }; if (!gasta(save, CRISE.custos.purificar)) return { ok: false, motivo: 'Faltam 1 Tônico e 2 Cristais.' }; ir(c, 'purificada'); return { ok: true, msg: 'A vila foi purificada.' }; }
-  if (acao === 'reconstruir' && c.estado === 'purificada') { if (!gasta(save, CRISE.custos.reconstruir)) return { ok: false, motivo: 'Faltam 8 Fibras, 4 Cristais e 100 de ouro.' }; ir(c, 'reconstruida'); c.servicoEm = agora; return { ok: true, msg: 'Reconstruída: o Posto de cura reabriu.' }; }
+  if (acao === 'purificar' && c.estado === 'tomada') { if (c.zumbis > 0) return { ok: false, motivo: 'Retome as ruas antes de purificar.' }; if (!gasta(save, CRISE.custos.purificar)) return { ok: false, motivo: 'Faltam 1 Tônico e 2 Cristais.' }; ir(c, 'purificada'); ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: 'A vila foi purificada.' }; }
+  if (acao === 'reconstruir' && c.estado === 'purificada') { if (!gasta(save, CRISE.custos.reconstruir)) return { ok: false, motivo: 'Faltam 8 Fibras, 4 Cristais e 100 de ouro.' }; ir(c, 'reconstruida'); c.servicoEm = agora; ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: 'Reconstruída: o Posto de cura reabriu.' }; }
   if (acao === 'servico' && c.estado === 'reconstruida') {
     if (agora - c.servicoEm < CRISE.servico.intervaloMs) return { ok: false, motivo: 'O posto ainda está preparando o próximo tônico.' };
-    c.servicoEm = agora; const s = fabEstado(save); (s.gestao ||= { itens: {} }).itens = s.gestao.itens || {}; s.gestao.itens.tonico = (s.gestao.itens.tonico || 0) + 1; c.tonicosDados += 1; return { ok: true, msg: 'O posto entregou 1 Tônico de Lucidez.' };
+    c.servicoEm = agora; const s = fabEstado(save); (s.gestao ||= { itens: {} }).itens = s.gestao.itens || {}; s.gestao.itens.tonico = (s.gestao.itens.tonico || 0) + 1; c.tonicosDados += 1; ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: 'O posto entregou 1 Tônico de Lucidez.' };
   }
   return { ok: false, motivo: 'Ação indisponível neste estado.' };
 }
@@ -439,6 +446,7 @@ export function concluirMissaoHV(save, capId, n) {
   if (m.escolha && !h.escolha) return { ok: false, motivo: 'Faça a escolha da missão antes de concluir.' };
   h.feitas[n] = true; h.atual = Math.min(capitulo(capId).missoes.length + 1, n + 1);
   save.recompensas.gold += m.recompensa.gold || 0; save.recompensas.diamantes += m.recompensa.diamantes || 0; darPocao(save, 'pocao_xp_p');
+  ganharXpPasse(save, 'hv');
   if (n === capitulo(capId).missoes.length) h.fim = true;
   return { ok: true, recompensa: m.recompensa, fim: h.fim, epilogo: h.fim ? capitulo(capId).missoes[n - 1].epilogo?.[h.escolha] : null };
 }
