@@ -5,6 +5,7 @@ import { EDICAO, BANNER_HW, LINHAGENS_HW, LOJA_TORRE, TORRE, formaDoTier, BONUS_
 import { POCOES, nivelDe, aplicarXp } from './regiao1-progressao.js';
 import { KITS } from './regiao1-batalha-habilidades.js';
 import { membrosFormacao } from './regiao1-exp-regras.js';
+import { revelarInvocacao } from './regiao1-revelacao.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const FORMA = ['base', 'segunda', 'final'];
@@ -49,7 +50,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
       <p>Contador desde o último Tier 5: <b>${n}</b> (total de invocações: ${h.total || 0}) · faltam <b>${m.ate10}</b> para a garantia de 10 (T3/T4), <b>${m.ate50}</b> para a de 50 (T4) e <b>${m.ate100}</b> para a de 100 (T5).</p>
       <div class="ln"><button class="btn-pri" data-inv="1" ${h.tickets >= 1 ? '' : 'disabled'}>Invocar 1</button><button class="btn-pri" data-inv="10" ${h.tickets >= 10 ? '' : 'disabled'}>Invocar 10</button>${confirmar === 'pacote' ? `<button class="btn-pri" data-pacote-ok="1">Confirmar: ${BANNER_HW.pacote.tickets} tickets por ${BANNER_HW.pacote.diamantes}💎</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-sec" data-pacote="1">Comprar ${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button>`}</div>
       <p class="mut">Tier 5 também pode sair por sorte (3%); quando sai, a contagem reinicia. Tiers 3 e 4 não reiniciam. Tickets vêm dos marcos da Torre (5 a cada 10 andares) ou da compra. Os Oníricos obtidos continuam na coleção depois do evento; tickets e contador ficam guardados se a edição voltar.</p></div>`;
-    if (ultimos.length) s += `<div class="bl"><h4>Resultado</h4><div class="res">${ultimos.map((r) => { const lin = LINHAGENS_HW.find((l) => l.especie === r.especie); const sp = lin ? lin.arte[formaDoTier(r.tier)] : ''; return `<div class="res-card" style="color:${COR[r.tier]}"><div class="res-mold ${r.tier >= 5 ? 'm5' : ''}" style="--cor-m:${COR[r.tier]}">${sp ? `<img class="sp" src="../../../${sp}" alt="${esc(r.especie)}">` : ''}<img class="ov" src="../../../assets/confusion/interface/banner/moldura-${r.tier}.png" alt="" onerror="this.style.display='none'"></div><b>#${r.pos} ${esc(r.especie)}</b><br>T${r.tier}${r.garantia ? ` · gar.${r.garantia}` : ''}</div>`; }).join('')}</div></div>`;
+    if (ultimos.length) s += `<div class="bl"><h4>Resultado <button class="btn-sec" data-rever-hw="1">${reveladosHW.length && reveladosHW.every(Boolean) ? 'Rever cartas' : 'Revelar cartas'}</button></h4><div class="res">${ultimos.map((r) => { const lin = LINHAGENS_HW.find((l) => l.especie === r.especie); const sp = lin ? lin.arte[formaDoTier(r.tier)] : ''; return `<div class="res-card" style="color:${COR[r.tier]}"><div class="res-mold ${r.tier >= 5 ? 'm5' : ''}" style="--cor-m:${COR[r.tier]}">${sp ? `<img class="sp" src="../../../${sp}" alt="${esc(r.especie)}">` : ''}<img class="ov" src="../../../assets/confusion/interface/banner/moldura-${r.tier}.png" alt="" onerror="this.style.display='none'"></div><b>#${r.pos} ${esc(r.especie)}</b><br>T${r.tier}${r.garantia ? ` · gar.${r.garantia}` : ''}</div>`; }).join('')}</div></div>`;
     s += `<div class="bl"><h4>Chances</h4><table><tr><th>Tier</th>${[1, 2, 3, 4, 5].map((t) => `<th>T${t}</th>`).join('')}</tr><tr><td>Normal</td>${[1, 2, 3, 4, 5].map((t) => `<td>${(BANNER_HW.chances[t] * 100).toFixed(0)}%</td>`).join('')}</tr><tr><td>A cada 10</td><td>–</td><td>–</td><td>${BANNER_HW.garantia10[3] * 100}%</td><td>${BANNER_HW.garantia10[4] * 100}%</td><td>–</td></tr><tr><td>A cada 50</td><td colspan="3"></td><td>100%</td><td></td></tr><tr><td>A cada 100</td><td colspan="4"></td><td>100%</td></tr></table></div>`;
     s += `<div class="bl"><h4>Oníricos exclusivos</h4><div class="grade">${LINHAGENS_HW.map((l) => `<div class="lin">${ph(l, 0)}<b style="color:${COR[l.tier]}">T${l.tier} · ${esc(l.especie)}</b><br><span class="mut">${papelTxt[l.papel]} · ${esc(l.elemento)}</span><p>${esc(l.resumo)}</p>${(KITS[l.especie] || []).map((k) => `<div>${k.icone} ${esc(k.nome)} <span class="mut">⟳${k.cd}</span></div>`).join('')}</div>`).join('')}</div></div>`;
     return s;
@@ -133,12 +134,20 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
     });
   }
 
+  // Revelação animada do resultado gravado (cartas de costas; reabre com o que já foi revelado)
+  let reveladosHW = [];
+  function revelarHW() {
+    if (!ultimos.length) return; if (reveladosHW.length !== ultimos.length) reveladosHW = ultimos.map(() => false);
+    const cartas = ultimos.map((r) => { const lin = LINHAGENS_HW.find((l) => l.especie === r.especie); return { especie: r.especie, tier: r.tier, arte: lin ? lin.arte[formaDoTier(r.tier)] : '', elemento: lin?.elemento }; });
+    revelarInvocacao({ edicao: 'halloween', titulo: `${EDICAO.nome} · ${cartas.length > 1 ? `lote de ${cartas.length}` : 'invocação'}`, cartas, revelados: reveladosHW, aoRevelar: (i) => { reveladosHW[i] = true; } }).then(() => render());
+  }
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button, input'); if (!t) return; const d = t.dataset;
     if (t.id === 'hw-fechar') { fecharModal('modal-hw'); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); confirmar = null; render(); return; }
     if (d.cancelar) { confirmar = null; render(); return; }
-    if (d.inv) { const r = H.invocarHW(save(), Number(d.inv)); if (!r.ok) mostrarToast(r.motivo, 2800); else { ultimos = r.resultados; salvar(); } render(); return; }
+    if (d.inv) { const r = H.invocarHW(save(), Number(d.inv)); if (!r.ok) mostrarToast(r.motivo, 2800); else { ultimos = r.resultados; salvar(); revelarHW(); } render(); return; }
+    if (d.reverHw) { revelarHW(); return; }
     if (d.pacote) { confirmar = 'pacote'; render(); return; }
     if (d.pacoteOk) { const r = H.comprarPacote(save(), true); mostrarToast(r.ok ? `+${BANNER_HW.pacote.tickets} Tickets de Halloween.` : r.motivo, 2800); confirmar = null; salvar(); render(); return; }
     if (d.evo) { confirmar = `evo:${d.evo}`; render(); return; }

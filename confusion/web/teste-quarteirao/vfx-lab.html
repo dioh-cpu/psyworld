@@ -22,6 +22,10 @@ html, body { margin: 0; height: 100%; background: #111; overflow: hidden; }
 import { criarArena } from './regiao1-batalha-tela.js';
 import { criarUnidade, criarBatalha, executar, atorAtual, KITS } from './regiao1-estrategia-regras.js';
 import { tocarEvento, criarCtx, duracaoEstimada } from './regiao1-vfx.js';
+import { revelarInvocacao, revelarOvo, mostrarRecompensas } from './regiao1-revelacao.js';
+import { LINHAGENS_HW, formaDoTier } from './regiao1-halloween-dados.js';
+import { ARTE_DA_ESPECIE } from '../species.js';
+import * as HAB from './regiao1-batalha-habilidades.js';
 
 const host = document.getElementById('host'), painel = document.getElementById('painel'), medida = document.getElementById('medida');
 const arena = criarArena(host);
@@ -35,6 +39,17 @@ const GEN = {
   curaPlanta: { id: 'g_cura_planta', nome: 'Cura Verde', icone: '🌿', tipo: 'cura', alvo: 'aliados', mult: 0.2, cd: 3, elemento: 'planta', efeitos: [{ id: 'regeneracao', turnos: 2 }] },
   curaTrevas: { id: 'g_cura_trevas', nome: 'Cura Sombria', icone: '🌙', tipo: 'cura', alvo: 'aliados', mult: 0.2, cd: 3, elemento: 'trevas', efeitos: [] },
 };
+const HWC = (t) => { const l = LINHAGENS_HW.find((x) => x.tier === t); return { especie: l.especie, tier: t, arte: l.arte[formaDoTier(t)], elemento: l.elemento }; };
+const AR = (e) => ARTE_DA_ESPECIE[e] || '';
+const LOTES = {
+  halloween: () => [1, 2, 1, 3, 1, 2, 4, 1, 5, 2].map(HWC),
+  adventurer: () => ['Noctarn', 'Ignavor', 'Vaelith', 'Brotavel', 'Solarin'].map((e, i) => ({ especie: e, tier: [2, 3, 1, 4, 5][i], arte: AR(e), extra: i === 4 || i === 1 ? { nome: 'Carta de Aventura', arte: AR('Noctarn') } : null })),
+  elementais: () => [['Ignavor', 'fogo'], ['Vaelith', 'agua'], ['Brotavel', 'planta'], ['Solarin', 'luz'], ['Noctarn', 'trevas']].map(([e, el], i) => ({ especie: e, tier: i + 1, arte: AR(e), elemento: el })),
+  dragoes: () => [{ especie: 'Solarin', nome: 'Dragão da Luz', tier: 5, arte: AR('Solarin'), lado: 'luz' }, { especie: 'Noctarn', nome: 'Dragão da Sombra', tier: 5, arte: AR('Noctarn'), lado: 'sombra' }],
+  dinossauros: () => ['Xistolim', 'Tatuveludo', 'Cervomusgo'].map((e, i) => ({ especie: e, tier: [1, 3, 5][i], arte: AR(e) })),
+};
+const VIOLETA = HAB.habilidadeVioletaMortalio ? HAB.habilidadeVioletaMortalio() : { id: 'manto_violeta', nome: 'Manto Violeta', icone: '🔮', tipo: 'apoio', alvo: 'aliado', cd: 4, elemento: 'fantasma', escudo: 0.2, efeitos: ['regeneracao', 'veloz', 'defesa_alta'].map((id) => ({ id, turnos: 3, chance: 1 })) };
+GEN.manto = VIOLETA;
 const COMPANHIA = ['Noctarn', 'Vaelith', 'Brotavel', 'Solarin', 'Ignavor', 'Velalume'];
 const INIMIGOS = ['Fanalino', 'Cervomusgo', 'Xistolim', 'Tatuveludo'];
 let ocupado = false;
@@ -70,9 +85,11 @@ async function rodar(especie, idx, op = {}) {
     return { real, estimado: Math.round(est), tipo: ev.tipo, alvos: ev.alvos.length };
   } finally { ocupado = false; }
 }
-painel.innerHTML = `<span>Genéricas: ${Object.entries(GEN).map(([k, h]) => `<button data-gen="${k}">${h.icone} ${h.nome}</button>`).join('')}</span>` + Object.entries(KITS).map(([esp, kit]) => `<span>${esp}: ${kit.map((h, i) => `<button class="${h.cd >= 5 ? 'ult' : ''}" data-esp="${esp}" data-idx="${i}">${h.icone} ${h.nome}</button>`).join('')}</span>`).join('');
-painel.addEventListener('click', (e) => { const t = e.target.closest('button'); if (!t) return; if (t.dataset.gen) { rodar('Ignavor', 0, { hab: GEN[t.dataset.gen] }); return; } rodar(t.dataset.esp, Number(t.dataset.idx), { caido: t.dataset.esp === 'Mortálio' && t.dataset.idx === '2' }); });
-window.lab = { rodar, GEN };
+painel.innerHTML = `<span>Revelação: ${Object.keys(LOTES).map((k) => `<button data-lote="${k}">${k}</button>`).join('')}<button data-ovo="comum">Ovo T2</button><button data-ovo="max">Ovo T5 nível 100</button><button data-rap="1">Recompensas rápidas</button></span><span>Genéricas: ${Object.entries(GEN).map(([k, h]) => `<button data-gen="${k}">${h.icone} ${h.nome}</button>`).join('')}</span>` + Object.entries(KITS).map(([esp, kit]) => `<span>${esp}: ${kit.map((h, i) => `<button class="${h.cd >= 5 ? 'ult' : ''}" data-esp="${esp}" data-idx="${i}">${h.icone} ${h.nome}</button>`).join('')}</span>`).join('');
+painel.addEventListener('click', (e) => { const t = e.target.closest('button'); if (!t) return; if (t.dataset.lote) { revelar(t.dataset.lote); return; } if (t.dataset.ovo) { ovo(t.dataset.ovo === 'max'); return; } if (t.dataset.rap) { mostrarRecompensas([{ nome: 'Ouro', icone: '🪙', qtd: 500 }, { nome: 'Diamantes', icone: '💎', qtd: 20 }, { nome: 'Poção de XP', icone: '🧪', qtd: 1 }]); return; } if (t.dataset.gen) { rodar(t.dataset.gen === 'manto' ? 'Mortálio' : 'Ignavor', 0, { hab: GEN[t.dataset.gen] }); return; } rodar(t.dataset.esp, Number(t.dataset.idx), { caido: t.dataset.esp === 'Mortálio' && t.dataset.idx === '2' }); });
+const revelar = (ed, revelados = []) => revelarInvocacao({ edicao: ed, cartas: LOTES[ed](), revelados });
+const ovo = (max) => revelarOvo({ edicao: 'adventurer', nivel: max ? 100 : 23, recompensa: max ? { especie: 'Abyssar', tier: 5, arte: HWC(5).arte } : { especie: 'Brotavel', tier: 2, arte: AR('Brotavel') } });
+window.lab = { rodar, GEN, revelar, ovo, VIOLETA };
 arena.atualizar(montar('Noctarn'), { arena: FUNDO, titulo: 'Laboratório de VFX' });
 </script>
 </body>

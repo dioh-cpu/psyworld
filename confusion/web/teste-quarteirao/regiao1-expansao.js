@@ -8,6 +8,7 @@ import { LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { hwDe } from './regiao1-halloween-regras.js';
 import { POSICOES } from './regiao1-batalha-tela.js';
+import { revelarInvocacao } from './regiao1-revelacao.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -384,7 +385,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (t.id === 'exp-rever') { revendo = d.tut; render(); return; }
     if (d.tutok) { exp().tut[d.tutok] = true; revendo = null; salvar(); render(); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(); return; }
-    if (d.invocar) { const r = R.invocar(save()); if (r.ok) { ultimaInvocacao = r; salvar(); } else mostrarToast(r.motivo, 2800); render(); return; }
+    if (d.invocar) { const r = R.invocar(save()); if (r.ok) { ultimaInvocacao = r; salvar(); revelarInvocacao({ titulo: 'Banner de Oníricos', cartas: [{ especie: r.especie, tier: MOLDURAS_BANNER[r.raridade] || 1, arte: ARTE_DA_ESPECIE[r.especie] || '', elemento: r.elemento }] }).then(() => render()); } else mostrarToast(r.motivo, 2800); render(); return; }
     if (Date.now() - (window.__eqArrastou || 0) < 300 && d.eqVaga !== undefined) return;
     if (tocarEquipe(d)) { render(); return; }
     if (d.membroCombate !== undefined) {
