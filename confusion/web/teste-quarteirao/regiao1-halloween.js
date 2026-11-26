@@ -20,20 +20,70 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   const save = () => getSave(), hw = () => H.hwDe(save());
   const css = document.createElement('style');
   css.textContent = `
-    #modal-hw .hw-card { width: min(860px, 98vw); max-height: calc(100dvh - 14px); overflow: hidden; display: flex; flex-direction: column; padding: 8px 12px; background: linear-gradient(#2a1630, #1c0f22); }
-    #modal-hw .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; } #modal-hw .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); color: #fb923c; }
+    #modal-hw .hw-card { width: min(1060px, 99vw); max-height: calc(100dvh - 10px); overflow: hidden; display: flex; flex-direction: column; padding: 7px 10px; background: linear-gradient(#24132b, #160c1f); }
+    #modal-hw .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 2px 2px; align-items: center; gap: 8px; } #modal-hw .modal-head h3 { flex: 1; margin: 0; font-size: clamp(15px, 2.6vw, 21px); color: #fb923c; }
     #modal-hw .abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; flex-shrink: 0; } #modal-hw .abas button[aria-selected="true"] { background: #fb923c; color: #21110c; font-weight: 700; }
     #modal-hw .corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; } #modal-hw .bl { background: #3a1f3f; border: 1px solid #7c4a5a; border-radius: 8px; padding: 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-hw .bl h4 { margin: 0 0 4px; color: #fdba74; font-size: 13.5px; } #modal-hw .bl p { margin: 2px 0; }
     #modal-hw .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-hw .mut { opacity: .78; } #modal-hw .ok { color: #4ade80; } #modal-hw .ruim { color: #fb7185; }
     #modal-hw .hw-est { color: var(--cor-est, #facc15); font-weight: 600; }
     #modal-hw .hw-est.arco { background: linear-gradient(90deg, #facc15, #f472b6, #c084fc, #38bdf8, #4ade80); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    #modal-hw .hw-hero { display: grid; grid-template-columns: minmax(150px, 210px) 1fr; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; border: 1px solid #c26a3c; margin-bottom: 8px; background: linear-gradient(95deg, rgba(22,10,30,.72), rgba(22,10,30,.88) 55%, rgba(22,10,30,.94)), url('../../../${ARTES_HW.banner}') center 20% / cover no-repeat; }
-    #modal-hw .hw-hero-fig { display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(251,146,60,.22), rgba(18,9,26,.72)); border: 1px solid #f59e0b66; border-radius: 10px; padding: 6px; height: clamp(148px, 34dvh, 210px); }
-    #modal-hw .hw-hero-fig img { width: 100%; height: calc(100% - 18px); object-fit: contain; object-position: center bottom; filter: drop-shadow(0 4px 10px #000b); }
-    #modal-hw .hw-hero-fig span { font-size: 11px; color: #fde68a; font-weight: 700; margin-top: 2px; }
-    #modal-hw .hw-marcos { display: flex; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
-    #modal-hw .hw-marco { background: rgba(18,9,26,.8); border: 1px solid #fb923c66; border-radius: 6px; padding: 3px 7px; font-size: 11px; }
-    @media (max-width: 560px) { #modal-hw .hw-hero { grid-template-columns: 1fr; } #modal-hw .hw-hero-fig { height: 150px; } }
+    #modal-hw .hw-hero { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
+    #modal-hw .hw-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    #modal-hw .hw-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    #modal-hw .hw-pill { display: inline-flex; align-items: center; gap: 4px; background: rgba(24,14,34,.88); border: 1px solid rgba(251,146,60,.4); border-radius: 9px; padding: 4px 9px; font-size: 11.5px; font-weight: 700; color: #fff3e7; }
+    #modal-hw .hw-grid { display: grid; grid-template-columns: 136px 1fr; gap: 9px; align-items: stretch; }
+    #modal-hw .hw-rail { display: flex; flex-direction: column; gap: 7px; }
+    #modal-hw .hw-thumb { position: relative; width: 100%; height: 74px; border-radius: 10px; overflow: hidden; border: 2px solid #5a3466; background: #1e0f29; padding: 0; cursor: pointer; text-align: left; color: #fff7ed; }
+    #modal-hw .hw-thumb.ativo { border-color: #fb923c; box-shadow: 0 0 0 2px rgba(251,146,60,.3); }
+    #modal-hw .hw-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #modal-hw .hw-thumb span { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 7px; font-size: 11px; font-weight: 700; background: linear-gradient(transparent, rgba(16,8,24,.92)); }
+    #modal-hw .hw-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    #modal-hw .hw-stage { position: relative; border-radius: 11px; border: 1.5px solid #c26a3c; overflow: hidden; background: #140a1d url('../../../assets/confusion/interface/invocacao-v1/palco-halloween.webp') center 35% / cover no-repeat; min-height: 280px; display: flex; flex-direction: column; justify-content: space-between; padding: 9px 11px 8px; }
+    #modal-hw .hw-stage.capa-modo { background-image: none; background-color: #100818; padding: 6px; justify-content: center; align-items: center; }
+    #modal-hw .hw-stage::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(16,8,24,.68) 0%, rgba(16,8,24,0) 32%, rgba(16,8,24,.18) 72%, rgba(14,7,22,.84) 100%); pointer-events: none; z-index: 1; }
+    #modal-hw .hw-stage.capa-modo::before { display: none; }
+    #modal-hw .hw-capa-full { width: 100%; height: 264px; object-fit: contain; display: block; border-radius: 8px; }
+    #modal-hw .hw-stage-head { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+    #modal-hw .hw-stage-head small { display: block; font-size: 10.5px; color: #fdba74; opacity: .92; }
+    #modal-hw .hw-stage-head b { font-size: clamp(15px, 2.2vw, 22px); color: #fff7ed; font-family: Georgia, serif; text-shadow: 0 2px 8px #000; }
+    #modal-hw .hw-elenco { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; align-items: end; margin-top: auto; padding-top: 4px; }
+    #modal-hw .hw-ator { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+    #modal-hw .hw-ator img { width: 100%; height: 150px; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 6px 9px rgba(0,0,0,.78)); }
+    #modal-hw .hw-ator.hw-hero-fig img { height: 184px; }
+    #modal-hw .hw-ator-info { width: 100%; text-align: center; background: rgba(20,10,28,.84); border: 1px solid rgba(251,146,60,.3); border-radius: 7px; padding: 3px 4px; margin-top: 2px; line-height: 1.18; }
+    #modal-hw .hw-ator-info b { display: block; font-size: 11px; color: #fff7ed; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #modal-hw .hw-ator-info span { font-size: 9.5px; }
+    #modal-hw .hw-bar { display: flex; align-items: center; justify-content: space-between; gap: 7px; flex-wrap: wrap; background: rgba(28,15,38,.92); border: 1px solid #7c4a5a; border-radius: 10px; padding: 6px 9px; }
+    #modal-hw .hw-marcos { display: flex; flex-wrap: wrap; gap: 5px; }
+    #modal-hw .hw-marco { background: rgba(18,9,26,.85); border: 1px solid #fb923c66; border-radius: 6px; padding: 3px 7px; font-size: 11px; }
+    #modal-hw .hw-acoes { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    @media (orientation: landscape) and (max-height: 500px) {
+      #modal-hw .hw-card { padding: 4px 8px; }
+      #modal-hw .modal-head { margin-bottom: 2px; padding: 0 2px; }
+      #modal-hw .modal-head h3 { font-size: 14px; }
+      #modal-hw .modal-head .btn-fechar { position: static; margin: 0; width: 28px; height: 28px; min-width: 28px; min-height: 28px; padding: 0; font-size: 14px; }
+      #modal-hw .abas { margin-bottom: 3px; gap: 4px; }
+      #modal-hw .abas button { min-height: 26px; padding: 2px 8px; font-size: 11px; }
+      #modal-hw .hw-hero { gap: 4px; margin-bottom: 5px; }
+      #modal-hw .hw-pill { padding: 2px 7px; font-size: 10px; }
+      #modal-hw .hw-topo button { min-height: 24px; padding: 2px 7px !important; font-size: 10px !important; }
+      #modal-hw .hw-grid { grid-template-columns: 104px 1fr; gap: 6px; }
+      #modal-hw .hw-thumb { height: 48px; }
+      #modal-hw .hw-thumb span { font-size: 9.5px; padding: 2px 5px; }
+      #modal-hw .hw-stage { min-height: 146px; padding: 4px 7px 3px; }
+      #modal-hw .hw-capa-full { height: 140px; }
+      #modal-hw .hw-stage-head b { font-size: 13.5px; }
+      #modal-hw .hw-stage-head small { font-size: 9px; }
+      #modal-hw .hw-ator img { height: 78px; }
+      #modal-hw .hw-ator.hw-hero-fig img { height: 96px; }
+      #modal-hw .hw-ator-info { padding: 1px 3px; }
+      #modal-hw .hw-ator-info b { font-size: 9.5px; }
+      #modal-hw .hw-ator-info span { font-size: 8.5px; }
+      #modal-hw .hw-bar { padding: 4px 6px; gap: 4px; }
+      #modal-hw .hw-marco { padding: 2px 5px; font-size: 9.5px; }
+      #modal-hw .hw-acoes button { min-height: 28px; padding: 3px 8px; font-size: 11px; }
+    }
+    @media (max-width: 560px) { #modal-hw .hw-grid { grid-template-columns: 1fr; } #modal-hw .hw-rail { flex-direction: row; } #modal-hw .hw-thumb { height: 54px; } }
     #modal-hw .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 7px; } #modal-hw .lin { background: #24112a; border: 1px solid #5a3466; border-radius: 8px; padding: 7px; font-size: 11.5px; } #modal-hw .lin .ph { font-size: 34px; text-align: center; }
     #modal-hw .res { display: flex; flex-wrap: wrap; gap: 8px; }
     #modal-hw .res-card { width: 96px; text-align: center; font-size: 10.5px; line-height: 1.25; }
@@ -49,36 +99,61 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   modal.innerHTML = '<div class="modal-card hw-card" role="dialog" aria-modal="true"><header class="modal-head"><h3>🎃 Halloween</h3><button class="btn-fechar" id="hw-fechar" aria-label="Fechar">✕</button></header><nav class="abas" id="hw-abas"></nav><div class="corpo" id="hw-corpo"></div></div>';
   document.body.append(modal); const $ = (q) => modal.querySelector(q);
   const ABAS = ['Banner', 'Coleção', 'Torre', 'Loja', 'Poções'];
-  let aba = 0, confirmar = null, ultimos = [], dif = 1, alvoPocao = 'domador', autoAvancar = false, emTorre = null;
+  let aba = 0, confirmar = null, ultimos = [], dif = 1, alvoPocao = 'domador', autoAvancar = false, emTorre = null, verCapaHW = false;
 
   // Banner abre assim que a conta entra (com a edição ativa); a Torre continua pedindo "O que a maré devolveu"
   const liberado = () => H.eventoAtivo();
   const torreAberta = () => questFeita(TORRE.marco);
   const I = (p, cls = 'ico') => `<img class="${cls}" src="../../../${p}" alt="">`;
+  const INV_HW = (p) => `../../../assets/confusion/interface/invocacao-v1/${p}`;
   const ph = (lin, forma) => `<img class="ph" src="../../../${lin.arte[forma]}" alt="${esc(lin.especie)}" loading="lazy">`;
 
   function abaBanner() {
-    const h = hw(), n = h.contador[EDICAO.id] || 0, m = H.proximosMarcos(n), comuns = save().idle.exp?.tickets || 0;
-    const abyssar = LINHAGENS_HW.find((l) => l.especie === 'Abyssar') || LINHAGENS_HW[LINHAGENS_HW.length - 1];
-    const arteDestaque = abyssar?.arte?.[2] || abyssar?.arte?.[0] || ARTES_HW.banner;
+    const sv = save(), h = hw(), n = h.contador[EDICAO.id] || 0, m = H.proximosMarcos(n), comuns = sv.idle.exp?.tickets || 0;
+    const gold = Number(sv.recompensas?.gold || 0).toLocaleString('pt-BR');
+    const diamantes = Number(sv.recompensas?.diamantes || 0).toLocaleString('pt-BR');
+    // Ordem real do elenco da edição com Abyssar (T5) centralizado
+    const ordemHW = ['abobrisco', 'velalume', 'abyssar', 'mortalio', 'vitrarco'];
+    const elencoHW = ordemHW.map((sl) => LINHAGENS_HW.find((l) => l.slug === sl)).filter(Boolean);
     let s = `<div class="hw-hero">
-      <div class="hw-hero-fig">
-        <img src="../../../${arteDestaque}" alt="${esc(abyssar?.especie || 'Abyssar')}">
-        <span>★ Destaque T${abyssar?.tier || 5} · ${esc(abyssar?.especie || 'Abyssar')}</span>
-      </div>
-      <div>
-        <h4 style="margin:0 0 4px;color:#fdba74;font-size:15px">${esc(EDICAO.nome)} · ${EDICAO.inicio} a ${EDICAO.fim}</h4>
-        <p style="margin:2px 0">${I(ARTES_HW.ticket)} Tickets de Halloween: <b>${h.tickets}</b> <span class="mut">(comuns: ${comuns}, saldo separado)</span></p>
-        <div class="hw-marcos">
-          <span class="hw-marco">Contador T5: <b>${n}</b> (total: ${h.total || 0})</span>
-          <span class="hw-marco">10★ T3/T4: faltam <b>${m.ate10}</b></span>
-          <span class="hw-marco">50★ T4: faltam <b>${m.ate50}</b></span>
-          <span class="hw-marco">100★ T5: faltam <b>${m.ate100}</b></span>
+      <div class="hw-topo">
+        <div class="hw-pills">
+          <button class="btn-sec" data-hw-refugio="1" style="padding:4px 9px;font-size:11.5px">← Refúgio</button>
+          <span class="hw-pill">🪙 ${gold}</span>
+          <span class="hw-pill">💎 ${diamantes}</span>
+          <span class="hw-pill"><img class="ico" src="${INV_HW('tickets/halloween.png')}" alt="">HW: ${h.tickets} <span class="mut" style="font-weight:400">(comuns: ${comuns})</span></span>
         </div>
-        <div class="ln">
-          <button class="btn-pri" data-inv="1" ${h.tickets >= 1 ? '' : 'disabled'}>Invocar ×1</button>
-          <button class="btn-pri" data-inv="10" ${h.tickets >= 10 ? '' : 'disabled'}>Invocar ×10</button>
-          ${confirmar === 'pacote' ? `<button class="btn-pri" data-pacote-ok="1">Confirmar: ${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-sec" data-pacote="1">Comprar ${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button>`}
+        <button class="btn-sec" data-hw-capa="1" style="padding:4px 9px;font-size:11px">${verCapaHW ? 'Ver Elenco' : 'Ver Capa'}</button>
+      </div>
+      <div class="hw-grid">
+        <div class="hw-rail" role="tablist" aria-label="Banners disponíveis">
+          <button class="hw-thumb ativo" aria-selected="true"><img src="${INV_HW('miniaturas/halloween.webp')}" alt="Banner de Halloween"><span>Halloween</span></button>
+          <button class="hw-thumb" data-hw-adventurer="1"><img src="${INV_HW('miniaturas/adventurer.webp')}" alt="Banner Permanente Adventurer"><span>Adventurer</span></button>
+        </div>
+        <div class="hw-main">
+          <div class="hw-stage ${verCapaHW ? 'capa-modo' : ''}">
+            ${verCapaHW
+              ? `<img class="hw-capa-full" src="${INV_HW('capas/halloween.webp')}" alt="${esc(EDICAO.nome)}">`
+              : `<div class="hw-stage-head"><div><small>Evento · ${EDICAO.inicio} a ${EDICAO.fim}</small><b>${esc(EDICAO.nome)}</b></div></div>
+                 <div class="hw-elenco">${elencoHW.map((l) => `
+                   <div class="hw-ator ${l.slug === 'abyssar' ? 'hw-hero-fig' : ''}">
+                     <img src="${INV_HW(`elenco/${l.slug}.webp`)}" alt="${esc(l.especie)}" onerror="this.src='../../../${l.arte[l.tier >= 5 ? 2 : 0]}'">
+                     <div class="hw-ator-info"><b>${esc(l.especie)}</b><span style="color:${COR[l.tier]}">T${l.tier} · ${esc(l.elemento)}</span></div>
+                   </div>`).join('')}</div>`}
+          </div>
+          <div class="hw-bar">
+            <div class="hw-marcos">
+              <span class="hw-marco">T5: <b>${n}</b> (tot. ${h.total || 0})</span>
+              <span class="hw-marco">10★ T3/T4: <b>${m.ate10}</b></span>
+              <span class="hw-marco">50★ T4: <b>${m.ate50}</b></span>
+              <span class="hw-marco">100★ T5: <b>${m.ate100}</b></span>
+            </div>
+            <div class="hw-acoes">
+              <button class="btn-sec" data-inv="1" ${h.tickets >= 1 ? '' : 'disabled'}>Invocar ×1</button>
+              <button class="btn-pri" data-inv="10" ${h.tickets >= 10 ? '' : 'disabled'}>Invocar ×10</button>
+              ${confirmar === 'pacote' ? `<button class="btn-pri" data-pacote-ok="1">Confirmar ${BANNER_HW.pacote.tickets}t (${BANNER_HW.pacote.diamantes}💎)</button><button class="btn-sec" data-cancelar="1">Cancelar</button>` : `<button class="btn-sec" data-pacote="1">+${BANNER_HW.pacote.tickets} tickets (${BANNER_HW.pacote.diamantes}💎)</button>`}
+            </div>
+          </div>
         </div>
       </div>
     </div>`;
@@ -140,7 +215,7 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   }
   function abrir(a = aba) {
     if (emTorre && tela.ativa() && tela.minimizada()) { tela.restaurar(); return; } // voltar à Torre reabre a arena da luta em segundo plano
-    if (batalhaBloqueando() || tela.aberta()) return; aba = a; confirmar = null; render(true); abrirModal('modal-hw');
+    if (batalhaBloqueando() || tela.aberta()) return; aba = a; confirmar = null; verCapaHW = false; render(true); abrirModal('modal-hw');
   }
 
   // ---------- Torre: entrar com carregamento e arena em tela inteira ----------
@@ -186,6 +261,9 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button, input'); if (!t) return; const d = t.dataset;
     if (t.id === 'hw-fechar') { fecharModal('modal-hw'); return; }
+    if (d.hwRefugio) { fecharModal('modal-hw'); window.regiaoExp?.abrir?.('descanso'); return; }
+    if (d.hwAdventurer) { fecharModal('modal-hw'); window.regiaoExp?.abrir?.('oniricos'); return; }
+    if (d.hwCapa) { verCapaHW = !verCapaHW; render(); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); confirmar = null; render(true); return; }
     if (d.cancelar) { confirmar = null; render(); return; }
     if (d.inv) { const r = H.invocarHW(save(), Number(d.inv)); if (!r.ok) mostrarToast(r.motivo, 2800); else { ultimos = r.resultados; salvar(); revelarHW(); } render(); return; }

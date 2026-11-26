@@ -7,9 +7,9 @@ import { ARTE_DA_ESPECIE, ELEMENTO_DA_ESPECIE, linhaDaEspecie } from '../species
 import { LIMITE_ALIADOS, criarUnidade } from './regiao1-estrategia-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { hwDe, bonusDoMembro } from './regiao1-halloween-regras.js';
-import { tierDe, estrelasDe, faixaEstrela, bonusTier, bonusEstrelas, infoClasse, custoEvoluirEstrela } from './regiao1-progressao.js';
+import { tierDe, estrelasDe, faixaEstrela, bonusTier, bonusEstrelas, infoClasse, custoEvoluirEstrela, nivelDe } from './regiao1-progressao.js';
 import { POSICOES } from './regiao1-batalha-tela.js';
-import { ganharXpPasse } from './regiao1-passe-regras.js';
+import { ganharXpPasse, infoPasse } from './regiao1-passe-regras.js';
 import { fichaOnirico, evoluirFormaOnirico, tierDaUnidade, estrelasDaUnidade, raridadeRotulo, molduraDoTier } from './regiao1-criacao-regras.js';
 import { revelarInvocacao } from './regiao1-revelacao.js';
 import { BOSSES_REGIAO1 } from './regiao1-estado.js';
@@ -18,6 +18,11 @@ import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, co
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
 const MV1 = (p) => IMG(`assets/confusion/interface/menus-v1/${p}`);
+const DESCANSO_V1 = (p) => IMG(`assets/confusion/interface/descanso-v1/${p}`);
+const INV_V1 = (p) => IMG(`assets/confusion/interface/invocacao-v1/${p}`);
+const slugArt = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+const INICIAIS_REPOUSO = new Set(['brasinha', 'gotalume', 'penumbrio', 'sementil', 'solinho']);
+const ELENCO_INV_V1 = new Set(['abobrisco', 'abyssar', 'cervomusgo', 'cobrabufalo', 'fanalino', 'mortalio', 'tatuveludo', 'velalume', 'vitrarco', 'xistolim']);
 const slugSonho = (el) => { const k = String(el || 'neutro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); return k === 'sombra' ? 'trevas' : k; };
 const dur = (ms) => { const t = Math.max(0, Math.ceil(ms / 1000)); return t >= 3600 ? `${Math.floor(t / 3600)}h${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}` : t >= 60 ? `${Math.floor(t / 60)}min${String(t % 60).padStart(2, '0')}s` : `${t}s`; };
 const RARO = { comum: '#9ca3af', incomum: '#4ade80', rara: '#60a5fa', epica: '#c084fc', lendaria: '#fbbf24' };
@@ -97,13 +102,87 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .mini-mold { position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 7px; background: radial-gradient(circle, #351b42, #160a1e); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 4px; }
     #modal-exp .mini-mold img.sp { width: 84%; height: 84%; object-fit: contain; z-index: 1; }
     #modal-exp .mini-mold img.ov { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; }
-    #modal-exp .inv-hero { background: linear-gradient(rgba(18,10,28,.76), rgba(18,10,28,.9)), url('../../../assets/confusion/interface/menus-v1/equipe/fundo.webp') center / cover no-repeat; border: 1px solid #c27848; border-radius: 10px; padding: 10px; margin-bottom: 8px; }
-    #modal-exp .inv-palco { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin: 8px 0; justify-items: center; }
-    #modal-exp .inv-dest { width: 100%; max-width: 132px; text-align: center; background: rgba(20,10,30,.78); border: 1px solid #6b4a52; border-radius: 9px; padding: 6px; font-size: 11px; }
+    #modal-exp .exp-card.modo-cena { position: relative; width: min(1080px, 99vw); height: min(630px, calc(100dvh - 10px)); max-height: calc(100dvh - 10px); padding: 0; border-radius: 14px; overflow: hidden; background: #140c1d; }
+    #modal-exp .exp-card.modo-cena > .modal-head { position: absolute !important; top: 9px !important; right: 10px !important; z-index: 25; margin: 0 !important; padding: 0 !important; width: auto !important; min-height: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+    #modal-exp .exp-card.modo-cena > .modal-head h3 { display: none; }
+    #modal-exp .exp-card.modo-cena #exp-fechar { position: static !important; margin: 0 !important; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; font-size: 15px; line-height: 1; }
+    #modal-exp .exp-card.modo-cena > .exp-abas { display: none; }
+    #modal-exp .exp-card.modo-cena > .exp-corpo { padding: 0; display: flex; flex-direction: column; }
+    #modal-exp .exp-card.modo-refugio > .exp-corpo { overflow: hidden; }
+    #modal-exp .ref-cena { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; height: 100%; background: url('../../../assets/confusion/interface/descanso-v1/sala.webp') center 55% / cover no-repeat; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+    #modal-exp .ref-cena::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(16,9,24,.46) 0%, rgba(16,9,24,0) 24%, rgba(16,9,24,0) 68%, rgba(12,7,18,.78) 100%); pointer-events: none; z-index: 1; }
+    #modal-exp .ref-topo { position: relative; z-index: 8; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 54px 4px 12px; }
+    #modal-exp .ref-perfil { display: flex; align-items: center; gap: 8px; background: rgba(24,14,34,.82); border: 1px solid rgba(243,194,122,.45); border-radius: 999px; padding: 3px 12px 3px 4px; color: #fff3e7; cursor: pointer; text-align: left; }
+    #modal-exp .ref-perfil img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid #f3c27a; background: #1e1129; }
+    #modal-exp .ref-perfil b { display: block; font-size: 12.5px; line-height: 1.15; color: #fde68a; }
+    #modal-exp .ref-perfil small { display: block; font-size: 10.5px; opacity: .85; }
+    #modal-exp .ref-moedas { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    #modal-exp .ref-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(24,14,34,.84); border: 1px solid rgba(243,194,122,.36); border-radius: 10px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: #fff3e7; }
+    #modal-exp .ref-btn-ico { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; background: rgba(24,14,34,.86); border: 1.5px solid rgba(125,211,252,.55); border-radius: 10px; cursor: pointer; padding: 4px; }
+    #modal-exp .ref-btn-ico img { width: 22px; height: 22px; object-fit: contain; }
+    #modal-exp .ref-titulo { position: absolute; left: 14px; top: 58px; z-index: 6; border-left: 3px solid #f3c27a; padding-left: 9px; text-shadow: 0 2px 8px rgba(0,0,0,.85); pointer-events: none; }
+    #modal-exp .ref-titulo small { display: block; font-size: 11px; color: #fde68a; opacity: .92; letter-spacing: .3px; }
+    #modal-exp .ref-titulo h4 { margin: 0; font-size: clamp(16px, 2.4vw, 24px); color: #fff7ed; font-family: Georgia, serif; }
+    #modal-exp .ref-lado { position: absolute; left: 12px; top: 52%; transform: translateY(-50%); z-index: 8; display: flex; flex-direction: column; gap: 6px; }
+    #modal-exp .ref-lado button { width: 64px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px; border-radius: 10px; background: rgba(26,15,36,.84); border: 1px solid rgba(243,194,122,.36); color: #fff3e7; font-size: 10.5px; font-weight: 600; cursor: pointer; }
+    #modal-exp .ref-lado img { width: 22px; height: 22px; object-fit: contain; }
+    #modal-exp .ref-passe { position: absolute; right: 12px; top: 58px; z-index: 8; width: 176px; padding: 8px 10px; border-radius: 11px; text-align: left; cursor: pointer; color: #fff7ed; border: 1px solid rgba(243,194,122,.55); background: linear-gradient(95deg, rgba(20,11,28,.92) 48%, rgba(20,11,28,.36)), url('../../../assets/confusion/interface/menus-v1/passe/fundo.webp') right center / cover no-repeat; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
+    #modal-exp .ref-passe small { display: block; font-size: 9.5px; color: #fde68a; opacity: .92; }
+    #modal-exp .ref-passe b { display: block; font-size: 13px; line-height: 1.2; margin: 1px 0; font-family: Georgia, serif; }
+    #modal-exp .ref-passe span { font-size: 10px; opacity: .86; }
+    #modal-exp .ref-palco { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+    #modal-exp .ref-onirico { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; background: transparent; border: 0; padding: 0; cursor: pointer; pointer-events: auto; }
+    #modal-exp .ref-onirico img.ref-sprite { height: 100%; width: auto; max-width: 240px; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 8px 10px rgba(0,0,0,.7)); animation: refugio-respirar 3.4s ease-in-out infinite; transform-origin: center bottom; }
+    @keyframes refugio-respirar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.028); } }
+    #modal-exp .ref-tag { margin-top: 2px; padding: 2px 9px; border-radius: 7px; background: rgba(20,11,28,.82); border: 1px solid rgba(243,194,122,.4); color: #fff7ed; text-align: center; line-height: 1.15; white-space: nowrap; }
+    #modal-exp .ref-tag b { display: block; font-size: 11.5px; }
+    #modal-exp .ref-tag small { display: block; font-size: 9.5px; color: #fde68a; }
+    #modal-exp .ref-rodape { position: relative; z-index: 9; display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; padding: 6px 12px calc(9px + env(safe-area-inset-bottom, 0px)); }
+    #modal-exp .ref-grupo { display: flex; align-items: stretch; gap: 4px; background: rgba(22,12,32,.86); border: 1px solid rgba(243,194,122,.32); border-radius: 12px; padding: 4px; backdrop-filter: blur(4px); }
+    #modal-exp .ref-dock { min-width: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 5px 8px; border-radius: 9px; background: transparent; border: 1px solid transparent; color: #f6e7d8; font-size: 10.5px; font-weight: 600; cursor: pointer; }
+    #modal-exp .ref-dock img { width: 22px; height: 22px; object-fit: contain; }
+    #modal-exp .ref-dock.destaque { background: rgba(243,164,88,.18); border-color: #f3a458; color: #fde68a; }
+    #modal-exp .ref-dock.pri { background: linear-gradient(180deg, #b8793e, #7c4923); border-color: #fde68a; color: #fff7ed; font-weight: 700; }
+    #modal-exp .ref-dock.ativo-on { border-color: #4ade80; color: #86efac; }
+    #modal-exp .ref-dock[disabled] { opacity: .45; cursor: not-allowed; }
+    #modal-exp .ref-pop { position: absolute; right: 12px; bottom: 72px; z-index: 15; width: min(310px, calc(100% - 24px)); background: rgba(24,13,34,.96); border: 1.5px solid #f3a458; border-radius: 12px; padding: 9px; box-shadow: 0 8px 24px rgba(0,0,0,.72); }
+    #modal-exp .ref-pop.topo { bottom: auto; top: 54px; }
+    #modal-exp .ref-pop h5 { margin: 0 0 6px; color: #fde68a; font-size: 12.5px; display: flex; justify-content: space-between; align-items: center; }
+    #modal-exp .ref-pop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+    #modal-exp .ref-pop-btn { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: 8px; background: #2c1a3c; border: 1px solid #6b4a52; color: #fff3e7; font-size: 11.5px; font-weight: 600; cursor: pointer; text-align: left; }
+    #modal-exp .ref-pop-btn img { width: 20px; height: 20px; object-fit: contain; flex: 0 0 20px; }
+    #modal-exp .inv-v1 { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 10px; background: #170e22; }
+    #modal-exp .inv-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-right: 48px; }
+    #modal-exp .inv-topo-esq { display: flex; align-items: center; gap: 8px; }
+    #modal-exp .inv-topo-esq h4 { margin: 0; font-size: clamp(16px, 2.3vw, 22px); color: #fde68a; font-family: Georgia, serif; }
+    #modal-exp .inv-grid { display: grid; grid-template-columns: 142px 1fr; gap: 10px; align-items: stretch; }
+    #modal-exp .inv-rail { display: flex; flex-direction: column; gap: 7px; }
+    #modal-exp .inv-thumb { position: relative; width: 100%; height: 78px; border-radius: 10px; overflow: hidden; border: 2px solid #52335c; background: #20122c; padding: 0; cursor: pointer; text-align: left; color: #fff7ed; }
+    #modal-exp .inv-thumb.ativo { border-color: #f3c27a; box-shadow: 0 0 0 2px rgba(243,194,122,.28); }
+    #modal-exp .inv-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #modal-exp .inv-thumb span { position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 7px; font-size: 11.5px; font-weight: 700; background: linear-gradient(transparent, rgba(16,8,24,.92)); }
+    #modal-exp .inv-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+    #modal-exp .inv-stage { position: relative; border-radius: 11px; border: 1.5px solid #c27848; overflow: hidden; background: #140b1e url('../../../assets/confusion/interface/invocacao-v1/palco-adventurer.webp') center 45% / cover no-repeat; min-height: 295px; display: flex; flex-direction: column; justify-content: space-between; padding: 10px 12px 8px; }
+    #modal-exp .inv-stage.capa-modo { background-image: none; background-color: #100818; padding: 6px; justify-content: center; align-items: center; }
+    #modal-exp .inv-stage::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(16,8,24,.66) 0%, rgba(16,8,24,0) 32%, rgba(16,8,24,.18) 72%, rgba(14,7,22,.82) 100%); pointer-events: none; z-index: 1; }
+    #modal-exp .inv-stage.capa-modo::before { display: none; }
+    #modal-exp .inv-capa-full { width: 100%; height: 280px; object-fit: contain; display: block; border-radius: 8px; }
+    #modal-exp .inv-stage-head { position: relative; z-index: 3; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    #modal-exp .inv-stage-head small { display: block; font-size: 10.5px; color: #fde68a; opacity: .9; }
+    #modal-exp .inv-stage-head b { font-size: clamp(16px, 2.2vw, 22px); color: #fff7ed; font-family: Georgia, serif; text-shadow: 0 2px 8px #000; }
+    #modal-exp .inv-elenco { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; align-items: end; margin-top: auto; padding-top: 6px; }
+    #modal-exp .inv-ator { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-width: 0; }
+    #modal-exp .inv-ator img { width: 100%; height: 158px; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 6px 8px rgba(0,0,0,.72)); }
+    #modal-exp .inv-ator.centro img { height: 192px; }
+    #modal-exp .inv-ator-info { width: 100%; text-align: center; background: rgba(20,10,28,.82); border: 1px solid rgba(243,194,122,.28); border-radius: 7px; padding: 3px 4px; margin-top: 2px; line-height: 1.18; }
+    #modal-exp .inv-ator-info b { display: block; font-size: 11px; color: #fff7ed; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #modal-exp .inv-ator-info span { font-size: 9.5px; }
+    #modal-exp .inv-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: rgba(28,16,40,.92); border: 1px solid #6b4a52; border-radius: 10px; padding: 7px 10px; }
+    #modal-exp .inv-marcos { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 11.5px; }
+    #modal-exp .inv-marco { background: #190e24; border: 1px solid #8a6b52; border-radius: 6px; padding: 3px 7px; font-size: 11px; }
+    #modal-exp .inv-acoes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     #modal-exp .inv-res { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 7px; margin-top: 6px; }
-    #modal-exp .desc-hero { background: linear-gradient(rgba(16,9,24,.64), rgba(16,9,24,.88)), url('../../../assets/confusion/interface/estrategia/refugio.webp') center / cover no-repeat; border: 1px solid #c27848; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
-    #modal-exp .desc-equipe { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
-    #modal-exp .desc-atalhos { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 6px; margin-top: 8px; }
+    #modal-exp .inv-extra { padding: 0 10px 10px; }
     #modal-exp .eq-arena { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: stretch; padding: 10px; border-radius: 10px; background: linear-gradient(rgba(14,8,22,.45), rgba(14,8,22,.65)), center / cover no-repeat; margin: 6px 0; }
     #modal-exp .eq-vaga { position: relative; width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(20,10,28,.82); border: 2px solid #8a6b52; border-radius: 10px; color: #fff3e7; font: 600 10.5px system-ui; padding: 6px 4px; touch-action: none; cursor: pointer; }
     #modal-exp .eq-vaga .mini-mold { width: min(82px, 100%); height: auto; aspect-ratio: 4 / 5; margin-bottom: 3px; }
@@ -124,16 +203,44 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .evo-seta { width: 24px; height: 14px; object-fit: contain; flex: 0 0 auto; }
     @media (orientation: landscape) and (max-height: 500px) {
       #modal-exp .exp-card { padding: 6px 10px; }
+      #modal-exp .exp-card.modo-cena { height: calc(100dvh - 8px); padding: 0; border-radius: 10px; }
       #modal-exp .eq-arena { padding: 7px; gap: 6px; }
       #modal-exp .eq-vaga .mini-mold { width: 68px; }
       #modal-exp .eq-vaga.vazia { min-height: 92px; }
-      #modal-exp .desc-equipe { gap: 6px; }
-      #modal-exp .inv-hero { padding: 7px 10px; margin-bottom: 6px; }
-      #modal-exp .inv-palco { gap: 6px; margin: 5px 0; }
-      #modal-exp .inv-dest { padding: 4px; font-size: 10px; }
-      #modal-exp .inv-dest .mini-mold { width: 62px; margin: 0 auto 2px; }
-      #modal-exp .inv-hero .ln { margin-top: 4px; }
-      #modal-exp .inv-hero .p { font-size: 11px; line-height: 1.25; }
+      #modal-exp .ref-topo { padding: 6px 46px 2px 10px; }
+      #modal-exp .ref-perfil img { width: 30px; height: 30px; }
+      #modal-exp .ref-perfil b { font-size: 11.5px; }
+      #modal-exp .ref-pill { padding: 3px 8px; font-size: 11px; }
+      #modal-exp .ref-btn-ico { width: 30px; height: 30px; }
+      #modal-exp .ref-titulo { top: 44px; left: 10px; }
+      #modal-exp .ref-titulo h4 { font-size: 16px; }
+      #modal-exp .ref-lado { left: 8px; top: 53%; gap: 4px; }
+      #modal-exp .ref-lado button { width: 52px; padding: 5px 2px; font-size: 9.5px; }
+      #modal-exp .ref-lado img { width: 18px; height: 18px; }
+      #modal-exp .ref-passe { top: 44px; right: 10px; width: 148px; padding: 6px 8px; }
+      #modal-exp .ref-passe b { font-size: 11.5px; }
+      #modal-exp .ref-tag { padding: 1px 6px; }
+      #modal-exp .ref-tag b { font-size: 10px; }
+      #modal-exp .ref-tag small { font-size: 8.5px; }
+      #modal-exp .ref-rodape { padding: 4px 8px 6px; }
+      #modal-exp .ref-dock { min-width: 50px; padding: 4px 6px; font-size: 9.5px; }
+      #modal-exp .ref-dock img { width: 18px; height: 18px; }
+      #modal-exp .ref-pop { bottom: 58px; }
+      #modal-exp .inv-v1 { padding: 5px 8px 6px; gap: 5px; }
+      #modal-exp .inv-topo { padding-right: 40px; }
+      #modal-exp .inv-grid { grid-template-columns: 112px 1fr; gap: 7px; }
+      #modal-exp .inv-thumb { height: 56px; }
+      #modal-exp .inv-thumb span { font-size: 10px; padding: 2px 5px; }
+      #modal-exp .inv-stage { min-height: 206px; padding: 6px 8px 5px; }
+      #modal-exp .inv-capa-full { height: 194px; }
+      #modal-exp .inv-stage-head b { font-size: 15px; }
+      #modal-exp .inv-ator img { height: 110px; }
+      #modal-exp .inv-ator.centro img { height: 132px; }
+      #modal-exp .inv-ator-info { padding: 2px 3px; }
+      #modal-exp .inv-ator-info b { font-size: 9.5px; }
+      #modal-exp .inv-ator-info span { font-size: 8.5px; }
+      #modal-exp .inv-bar { padding: 5px 8px; }
+      #modal-exp .inv-marco { padding: 2px 5px; font-size: 10px; }
     }
     #modal-exp .san { height: 14px; background: #12091a; border-radius: 7px; overflow: hidden; } #modal-exp .san i { display: block; height: 100%; background: linear-gradient(90deg, #7c3aed, #38bdf8); transition: width .3s; }
     #exp-crise { position: fixed; inset: 0; z-index: 56; display: none; flex-direction: column; background: #12091a; color: #fff3e7; }
@@ -153,9 +260,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const $ = (q) => modal.querySelector(q);
 
   // ---------- estado de tela ----------
-  let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null; let cap = 'cap1';
+  let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null, descPop = null, verCapaInv = false; let cap = 'cap1';
   const PAINEIS = {
-    descanso: { titulo: '🏕️ Área de Descanso', abas: ['Acampamento'], tut: null },
+    descanso: { titulo: '🏕️ Refúgio do Farol', abas: ['Refúgio'], tut: null },
     equipe: { titulo: '⚔️ Equipe', abas: ['Formação & Coleção'], tut: null },
     oniricos: { titulo: '🎫 Invocação', abas: ['Invocação'], tut: 'banner' },
     cacadas: { titulo: '🏹 Caçadas & Chefes', abas: ['Caçadas', 'Calabouço', 'Chefes'], tut: 'cacadas' },
@@ -171,8 +278,19 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const destacar = (id) => { const t = TUTS[id]; const vis = t && (!exp().tut[id] || revendo === id); if (!vis || !t.destaque) return; for (const sel of t.destaque.split(',')) { const e = $('#exp-corpo').querySelector(sel.trim()); if (e) { e.classList.add('tut-destaque'); break; } } };
   const fabD = () => FAB;
 
-  // ---------- Área de Descanso, Invocação (×1/×10) & Equipe ----------
+  // ---------- Área de Descanso (Refúgio do Farol), Invocação (×1/×10) & Equipe ----------
   function artePequena(esp) { const p = ARTE_DA_ESPECIE[esp] || `assets/monsters/${esp.toLowerCase()}/sprite-front.png`; return IMG(p); }
+  function arteElencoInv(esp) {
+    const sl = slugArt(esp);
+    if (ELENCO_INV_V1.has(sl)) return INV_V1(`elenco/${sl}.webp`);
+    return artePequena(esp);
+  }
+  function arteRepouso(m) {
+    const sl = slugArt(m?.especie);
+    if (INICIAIS_REPOUSO.has(sl)) return DESCANSO_V1(`iniciais/${sl}.webp`);
+    if (ELENCO_INV_V1.has(sl)) return INV_V1(`elenco/${sl}.webp`);
+    return arteDe(m);
+  }
   function bonusCombateMembro(m) {
     const base = bonusDoMembro(m);
     const cat = bonusCategoriaPoder(m);
@@ -181,83 +299,185 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     }
     return base;
   }
+  function ordenarEquipeRefugio(s, idle) {
+    const ativos = R.membrosFormacao(idle).map((x) => x.m);
+    const base = ativos.length ? ativos.slice(0, 4) : (idle.equipe || []).slice(0, 4);
+    const iniNome = s.conta?.inicial;
+    const idxIni = base.findIndex((m) => m.inicial || (iniNome && m.especie === iniNome));
+    if (idxIni > 0) { const [ini] = base.splice(idxIni, 1); base.unshift(ini); }
+    return base;
+  }
   function abaDescanso() {
-    const s = save(), idle = s.idle || {}, membros = R.membrosFormacao(idle);
+    const s = save(), idle = s.idle || {}, listaEq = ordenarEquipeRefugio(s, idle);
     const mapaAtual = MAPAS[getMapaId()]?.nome || getMapaId() || 'Região 1';
     const autoOn = Boolean(idle.autoCaca?.ativo);
-    const equipeHtml = [0, 1, 2, 3].map((v) => {
-      const hit = membros.find((x) => x.vaga === v);
-      if (!hit) return `<button class="eq-vaga vazia" data-desc-ir="equipe"><img src="${MV1('equipe/icone-adicionar.png')}" alt="" style="width:20px;height:20px;object-fit:contain"><span>Vaga ${v + 1}</span></button>`;
-      const m = hit.m, tier = tierDaUnidade(m), est = estrelasDaUnidade(m), cls = infoClasse(m.especie);
-      return `<button class="eq-vaga" data-desc-ficha="${m.uid}">
-        <div class="mini-mold"><img class="sp" src="${arteDe(m)}" alt="${esc(m.especie)}"><img class="ov" src="${IMG(molduraDoTier(tier))}" alt="" onerror="this.style.display='none'"></div>
-        <span>${esc(m.especie)} · Nv.${m.nivel || 1}</span>
-        <small>T${tier} · ${badgeEstrelas(est, true)} · ${cls.icone}</small>
+    const nvDomador = nivelDe(idle.jogador?.xp || 0);
+    const nomeJogador = s.conta?.nome || 'Azazel';
+    const gold = Number(s.recompensas?.gold || 0).toLocaleString('pt-BR');
+    const diamantes = Number(s.recompensas?.diamantes || 0).toLocaleString('pt-BR');
+    const passe = infoPasse(s);
+    const hwOn = Boolean(window.regiaoHW?.liberado?.());
+    const guildaOn = R.aberto(s, 'guilda');
+    const cacadasOn = R.aberto(s, 'cacadas');
+    const calaboucoOn = R.aberto(s, 'calabouco');
+    const cronicasOn = R.aberto(s, 'cronicas');
+    const reinosOn = R.aberto(s, 'reinos');
+
+    const ancoras = listaEq.length <= 1
+      ? [{ x: 50, y: 78, h: 35, z: 4 }]
+      : listaEq.length === 2
+        ? [{ x: 42, y: 79, h: 34, z: 4 }, { x: 63, y: 76, h: 29, z: 3 }]
+        : listaEq.length === 3
+          ? [{ x: 45, y: 79, h: 34, z: 4 }, { x: 66, y: 75, h: 28, z: 3 }, { x: 26, y: 71, h: 26, z: 2 }]
+          : [{ x: 43, y: 79, h: 34, z: 4 }, { x: 63, y: 77, h: 29, z: 3 }, { x: 27, y: 70, h: 25, z: 2 }, { x: 75, y: 68, h: 25, z: 2 }];
+
+    const palcoHtml = listaEq.map((m, i) => {
+      const p = ancoras[i] || ancoras[ancoras.length - 1];
+      const tier = tierDaUnidade(m);
+      return `<button class="ref-onirico" data-desc-ficha="${m.uid}" style="left:${p.x}%;top:${p.y}%;height:${p.h}%;z-index:${p.z}" title="Abrir ficha de ${esc(m.especie)}">
+        <img class="ref-sprite" style="animation-delay:${(i * 0.45).toFixed(2)}s" src="${arteRepouso(m)}" alt="${esc(m.especie)}">
+        <span class="ref-tag"><b>${esc(m.especie)}</b><small>Nv.${m.nivel || 1} · T${tier}</small></span>
       </button>`;
     }).join('');
-    const modos = [
-      { acao: 'campanha', rotulo: '🗺️ Campanha', sub: `Voltar a ${mapaAtual}`, pri: true },
-      { acao: 'idle', rotulo: autoOn ? '⚔️ Idle (Auto ON)' : '⚔️ Ativar Idle', sub: autoOn ? 'Abrir Atlas / Config' : 'Ligar Auto-Caça', pri: true },
-      { acao: 'equipe', rotulo: '🛡️ Equipe', sub: `${membros.length}/4 em formação` },
-      { acao: 'oniricos', rotulo: '🎫 Invocação', sub: `${exp().tickets} ticket(s)` },
-      { acao: 'mochila', rotulo: '🎒 Mochila', sub: `${idle.mochila?.ovos?.length || 0} ovo(s) e fragmentos` },
-      { acao: 'passe', rotulo: '🏆 Passe & Login', sub: 'Trilha 100 níveis' },
-      ...(R.aberto(s, 'cacadas') ? [{ acao: 'cacadas', rotulo: '🏹 Caçadas & Chefes', sub: 'Revanche e Calabouço' }] : []),
-      ...(R.aberto(s, 'guilda') ? [{ acao: 'guilda', rotulo: '🏛️ Guilda', sub: 'Contratos, Fazenda e Oficina' }] : []),
-      ...(R.aberto(s, 'cronicas') ? [{ acao: 'cronicas', rotulo: '📜 Crônicas', sub: 'Crise e Herói × Vilão' }] : []),
-      ...(window.regiaoHW?.liberado?.() ? [{ acao: 'halloween', rotulo: '🎃 Halloween', sub: 'Banner e Torre' }] : []),
-    ];
-    return `<div class="desc-hero">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-        <h4 style="margin:0;color:#fde68a;font-size:15px">🏕️ Acampamento · Sua Equipe Atual</h4>
-        <span class="mut">📍 ${esc(mapaAtual)} · 🪙 ${s.recompensas?.gold || 0}g · 💎 ${(s.recompensas?.diamantes || 0).toLocaleString('pt-BR')}</span>
+
+    let popHtml = '';
+    if (descPop === 'batalhas') {
+      const modosBat = [
+        { acao: 'atlas', ico: 'cacas.png', tit: 'Atlas de Caça' },
+        { acao: 'idle', ico: 'idle.png', tit: autoOn ? 'Idle (Auto ON)' : 'Ativar Idle' },
+        ...(cacadasOn ? [{ acao: 'cacadas', ico: 'batalhas.png', tit: 'Caçadas & Chefes' }] : []),
+        ...(calaboucoOn ? [{ acao: 'calabouco', ico: 'calabouco.png', tit: 'Calabouço' }] : []),
+        ...(hwOn ? [{ acao: 'torre', ico: 'torre.png', tit: 'Torre Halloween' }] : []),
+        ...(cronicasOn ? [{ acao: 'cronicas', ico: 'cronicas.png', tit: 'Crônicas & H×V' }] : []),
+      ];
+      popHtml = `<div class="ref-pop"><h5><span>⚔️ Modos de Batalha</span><button class="btn-sec" data-desc-pop="" style="padding:2px 7px;font-size:11px">✕</button></h5>
+        <div class="ref-pop-grid">${modosBat.map((b) => `<button class="ref-pop-btn" data-desc-ir="${b.acao}"><img src="${DESCANSO_V1(`icones/${b.ico}`)}" alt=""><span>${esc(b.tit)}</span></button>`).join('')}</div></div>`;
+    } else if (descPop === 'atalhos') {
+      const extras = [
+        { acao: 'passe', ico: 'passe.png', tit: 'Passe & Login' },
+        { acao: 'mochila', ico: 'mochila.png', tit: 'Mochila' },
+        { acao: 'codex', ico: 'colecao.png', tit: 'Codex Onírico' },
+        ...(reinosOn ? [{ acao: 'reinos', ico: 'reinos.png', tit: 'Reinos' }] : []),
+        { acao: 'loja', ico: 'loja.png', tit: hwOn ? 'Loja da Torre' : 'Vote & Ganhe' },
+        { acao: 'menu', ico: 'casa.png', tit: 'Menu Principal' },
+      ];
+      popHtml = `<div class="ref-pop topo"><h5><span>Atalhos do Refúgio</span><button class="btn-sec" data-desc-pop="" style="padding:2px 7px;font-size:11px">✕</button></h5>
+        <div class="ref-pop-grid">${extras.map((b) => `<button class="ref-pop-btn" data-desc-ir="${b.acao}"><img src="${DESCANSO_V1(`icones/${b.ico}`)}" alt=""><span>${esc(b.tit)}</span></button>`).join('')}</div></div>`;
+    }
+
+    return `<div class="ref-cena" data-refugio="1">
+      <div class="ref-topo">
+        <button class="ref-perfil" data-desc-ir="mochila" title="Abrir Domador e Mochila">
+          <img src="${DESCANSO_V1('avatar-azazel.webp')}" alt="${esc(nomeJogador)}">
+          <span><b>${esc(nomeJogador)}</b><small>Domador · Nv.${nvDomador}</small></span>
+        </button>
+        <div class="ref-moedas">
+          <span class="ref-pill">🪙 ${gold}</span>
+          <span class="ref-pill">💎 ${diamantes}</span>
+          <button class="ref-btn-ico" data-desc-pop="${descPop === 'atalhos' ? '' : 'atalhos'}" title="Atalhos" aria-label="Atalhos"><img src="${DESCANSO_V1('icones/atalhos.png')}" alt=""></button>
+        </div>
       </div>
-      <div class="desc-equipe">${equipeHtml}</div>
-      <p class="mut" style="margin:0">Toque em um Onírico da equipe para abrir sua ficha ou escolha um modo abaixo.</p>
-    </div>
-    <div class="bl"><h4>Modos disponíveis</h4><div class="desc-atalhos">${modos.map((m) => `
-      <button class="${m.pri ? 'btn-pri' : 'btn-sec'}" data-desc-ir="${m.acao}" style="display:flex;flex-direction:column;align-items:flex-start;padding:7px 9px;text-align:left">
-        <b>${m.rotulo}</b><small style="opacity:.82;font-weight:400">${esc(m.sub)}</small>
-      </button>`).join('')}</div></div>`;
-  }
-  function abaBanner() {
-    const e = exp(), pool = R.poolBanner();
-    const ate10 = 10 - ((e.pulls || 0) % 10);
-    const destaques = [
-      ...pool.filter((p) => p.raridade === 'lendaria').slice(0, 2),
-      ...pool.filter((p) => p.raridade === 'epica').slice(0, 2),
-      ...pool.filter((p) => p.raridade === 'rara').slice(0, 1),
-    ].slice(0, 5);
-    let h = `<div class="inv-hero">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-        <h4 style="margin:0;color:#fde68a;font-size:15px">🎫 Banner Permanente · Elenco em Destaque</h4>
-        <span><img class="exp-ico" src="${MV1('passe/ticket-dinossauros.png')}" alt="">Saldo: <b>${e.tickets}</b> ticket(s)</span>
+      <div class="ref-titulo"><small>${esc(mapaAtual)}</small><h4>Refúgio do Farol</h4></div>
+      <div class="ref-lado">
+        <button data-desc-ir="eventos"><img src="${DESCANSO_V1('icones/eventos.png')}" alt=""><span>Eventos</span></button>
+        <button data-desc-ir="missoes"><img src="${DESCANSO_V1('icones/missoes.png')}" alt=""><span>Missões</span></button>
       </div>
-      <div class="inv-palco">${destaques.map((p) => {
-        const mN = MOLDURAS_BANNER[p.raridade] || p.tier || 1, cls = infoClasse(p.especie);
-        return `<div class="inv-dest">
-          <div class="mini-mold"><img class="sp" src="${artePequena(p.especie)}" alt="${esc(p.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div>
-          <b>${esc(p.especie)}</b><br><span style="color:${RARO[p.raridade]}">T${p.tier || mN} · ${esc(p.raridade)}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span>
-        </div>`;
-      }).join('')}</div>
-      <p style="margin:4px 0">Marco de garantia: <b>${10 - ate10}/10</b> · faltam <b>${ate10}</b> invocações para no mínimo <b>Rara</b> (total: ${e.pulls || 0}) · Comum 70% · Rara 22% · Épica 7% · Lendária 1%</p>
-      <div class="ln">
-        <button class="btn-pri" data-invocar="1" ${e.tickets >= 1 ? '' : 'disabled'}>Invocar ×1 (1 ticket)</button>
-        <button class="btn-pri" data-invocar="10" ${e.tickets >= 10 ? '' : 'disabled'}>Invocar ×10 (10 tickets)</button>
+      <button class="ref-passe" data-desc-ir="passe">
+        <small>Passe da Temporada</small>
+        <b>${esc(passe.edicao?.tema?.nome || 'Dinossauros')}</b>
+        <span>Nv.${passe.nivel}/${passe.niveis}${passe.aResgatar ? ` · ${passe.aResgatar} pronto(s)` : ''}</span>
+      </button>
+      <div class="ref-palco">${palcoHtml}</div>
+      ${popHtml}
+      <div class="ref-rodape">
+        <div class="ref-grupo">
+          <button class="ref-dock" data-desc-ir="equipe"><img src="${DESCANSO_V1('icones/equipe.png')}" alt=""><span>Equipe</span></button>
+          <button class="ref-dock destaque" data-desc-ir="oniricos"><img src="${DESCANSO_V1('icones/invocacao.png')}" alt=""><span>Invocação</span></button>
+          <button class="ref-dock" data-desc-ir="codex"><img src="${DESCANSO_V1('icones/colecao.png')}" alt=""><span>Coleção</span></button>
+          <button class="ref-dock" data-desc-ir="guilda" ${guildaOn ? '' : 'disabled title="Visite a cidade na Campanha para abrir a Guilda"'}><img src="${DESCANSO_V1('icones/guilda.png')}" alt=""><span>Guilda</span></button>
+          <button class="ref-dock" data-desc-ir="mochila"><img src="${DESCANSO_V1('icones/mochila.png')}" alt=""><span>Mochila</span></button>
+        </div>
+        <div class="ref-grupo">
+          <button class="ref-dock ${autoOn ? 'ativo-on' : ''}" data-desc-ir="idle"><img src="${DESCANSO_V1('icones/idle.png')}" alt=""><span>${autoOn ? 'Idle ON' : 'Idle'}</span></button>
+          <button class="ref-dock ${descPop === 'batalhas' ? 'destaque' : ''}" data-desc-pop="${descPop === 'batalhas' ? '' : 'batalhas'}"><img src="${DESCANSO_V1('icones/batalhas.png')}" alt=""><span>Batalhas</span></button>
+          <button class="ref-dock pri" data-desc-ir="campanha"><img src="${DESCANSO_V1('icones/campanha.png')}" alt=""><span>Campanha</span></button>
+        </div>
       </div>
     </div>`;
+  }
+  function abaBanner() {
+    const s = save(), e = exp(), pool = R.poolBanner();
+    const ate10 = 10 - ((e.pulls || 0) % 10);
+    const gold = Number(s.recompensas?.gold || 0).toLocaleString('pt-BR');
+    const diamantes = Number(s.recompensas?.diamantes || 0).toLocaleString('pt-BR');
+    const hwOn = Boolean(window.regiaoHW?.liberado?.());
+    // Elenco de destaque real do Banner Permanente (com Tatuveludo T5 Lendária centralizado)
+    const ordemPalco = ['Cervomusgo', 'Fanalino', 'Tatuveludo', 'Cobrabúfalo', 'Xistolim'];
+    const destaques = ordemPalco.map((nome) => pool.find((p) => p.especie === nome)).filter(Boolean);
+    const elencoPalco = destaques.length === 5 ? destaques : [
+      ...pool.filter((p) => p.raridade === 'rara').slice(0, 1),
+      ...pool.filter((p) => p.raridade === 'epica').slice(0, 1),
+      ...pool.filter((p) => p.raridade === 'lendaria').slice(0, 1),
+      ...pool.filter((p) => p.raridade === 'epica').slice(1, 2),
+      ...pool.filter((p) => p.raridade === 'comum').slice(0, 1),
+    ].slice(0, 5);
+
+    let h = `<div class="inv-v1">
+      <div class="inv-topo">
+        <div class="inv-topo-esq">
+          <button class="btn-sec" data-desc-ir="descanso">← Refúgio</button>
+          <h4>Invocação</h4>
+        </div>
+        <div class="ref-moedas">
+          <span class="ref-pill">🪙 ${gold}</span>
+          <span class="ref-pill">💎 ${diamantes}</span>
+          <span class="ref-pill"><img class="exp-ico" src="${INV_V1('tickets/adventurer.png')}" alt="">${e.tickets}</span>
+          <button class="btn-sec" data-inv-capa="1" style="padding:4px 8px;font-size:11px">${verCapaInv ? 'Ver Elenco' : 'Ver Capa'}</button>
+        </div>
+      </div>
+      <div class="inv-grid">
+        <div class="inv-rail" role="tablist" aria-label="Banners disponíveis">
+          ${hwOn ? `<button class="inv-thumb" data-desc-ir="halloween"><img src="${INV_V1('miniaturas/halloween.webp')}" alt="Banner de Halloween"><span>Halloween</span></button>` : ''}
+          <button class="inv-thumb ativo" aria-selected="true"><img src="${INV_V1('miniaturas/adventurer.webp')}" alt="Banner Permanente Adventurer"><span>Adventurer</span></button>
+        </div>
+        <div class="inv-main">
+          <div class="inv-stage ${verCapaInv ? 'capa-modo' : ''}">
+            ${verCapaInv
+              ? `<img class="inv-capa-full" src="${INV_V1('capas/adventurer.webp')}" alt="Capa do Banner Permanente Adventurer">`
+              : `<div class="inv-stage-head"><div><small>Banner Permanente · ${pool.length} espécies</small><b>Adventurer</b></div></div>
+                 <div class="inv-elenco">${elencoPalco.map((p, idx) => `
+                   <div class="inv-ator ${idx === 2 ? 'centro' : ''}">
+                     <img src="${arteElencoInv(p.especie)}" alt="${esc(p.especie)}">
+                     <div class="inv-ator-info"><b>${esc(p.especie)}</b><span style="color:${RARO[p.raridade]}">T${p.tier} · ${esc(p.elemento)}</span></div>
+                   </div>`).join('')}</div>`}
+          </div>
+          <div class="inv-bar">
+            <div class="inv-marcos">
+              <span class="inv-marco">Garantia: <b>${10 - ate10}/10</b></span>
+              <span class="inv-marco">Faltam <b>${ate10}</b> p/ Rara+</span>
+              <span class="inv-marco">Total: <b>${e.pulls || 0}</b></span>
+            </div>
+            <div class="inv-acoes">
+              <button class="btn-sec" data-invocar="1" ${e.tickets >= 1 ? '' : 'disabled'}>Invocar ×1</button>
+              <button class="btn-pri" data-invocar="10" ${e.tickets >= 10 ? '' : 'disabled'}>Invocar ×10</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    h += '<div class="inv-extra">';
     if (ultimasInvocacoes.length) {
       h += `<div class="bl"><h4>Resultado (${ultimasInvocacoes.length})</h4><div class="inv-res">${ultimasInvocacoes.map((r) => {
         const mN = MOLDURAS_BANNER[r.raridade] || r.tier || 1;
         const cls = infoClasse(r.especie);
-        return `<div class="mini"><div class="mini-mold"><img class="sp" src="${artePequena(r.especie)}" alt="${esc(r.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><b>${esc(r.especie)}</b><br><span style="color:${RARO[r.raridade] || '#cbd5e1'}">T${r.tier || mN} · ${esc(r.raridade)}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
+        return `<div class="mini"><div class="mini-mold"><img class="sp" src="${arteElencoInv(r.especie)}" alt="${esc(r.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><b>${esc(r.especie)}</b><br><span style="color:${RARO[r.raridade] || '#cbd5e1'}">T${r.tier || mN} · ${esc(r.raridade)}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
       }).join('')}</div></div>`;
     }
-    h += `<div class="bl"><h4>Elenco completo no Banner (${pool.length})</h4><div class="grade">${pool.map((p) => {
+    h += `<div class="bl"><h4>Elenco completo no Banner (${pool.length}) · Comum 70% · Rara 22% · Épica 7% · Lendária 1%</h4><div class="grade">${pool.map((p) => {
       const mN = MOLDURAS_BANNER[p.raridade] || p.tier || 1;
       const cls = infoClasse(p.especie);
-      return `<div class="mini"><div class="mini-mold"><img class="sp" src="${artePequena(p.especie)}" alt="" loading="lazy"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div>${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">T${p.tier || mN} · ${p.raridade}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
-    }).join('')}</div></div>`;
+      return `<div class="mini"><div class="mini-mold"><img class="sp" src="${arteElencoInv(p.especie)}" alt="" loading="lazy"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div>${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">T${p.tier || mN} · ${p.raridade}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
+    }).join('')}</div></div></div>`;
     return h;
   }
 
@@ -661,10 +881,16 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   // ---------- render do painel ----------
   function render(zerarScroll = false) {
     if (!painel) return; const P = PAINEIS[painel];
+    const ehCena = painel === 'descanso' || painel === 'oniricos';
+    const card = $('.exp-card');
+    if (card) {
+      card.classList.toggle('modo-cena', ehCena);
+      card.classList.toggle('modo-refugio', painel === 'descanso');
+    }
     $('#exp-titulo').textContent = P.titulo;
     $('#exp-abas').innerHTML = P.abas.length > 1 ? P.abas.map((a, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${esc(a)}</button>`).join('') : '';
     const tid = tutDaAba(painel, aba); const vis = tid && TUTS[tid];
-    $('#exp-rever').hidden = !(vis && exp().tut[tid] && revendo !== tid); $('#exp-rever').dataset.tut = tid || '';
+    $('#exp-rever').hidden = ehCena || !(vis && exp().tut[tid] && revendo !== tid); $('#exp-rever').dataset.tut = tid || '';
     let h = tid ? cartaoTut(tid) : '';
     if (painel === 'descanso') h += abaDescanso();
     if (painel === 'equipe') h += abaEquipe();
@@ -677,17 +903,20 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     destacar(tid);
   }
   function abaCrise() { const c = R.criseDe(save()); return `<div class="bl"><h4>🧟 ${esc(CRISE.cidade)}: ${esc(CRISE.nomes[c.estado])}</h4><p>Uma crise completa numa só cidade: saudável → contaminada → tomada → purificada → reconstruída. As mudanças aparecem no mapa, com zumbis nas ruas durante o surto. Estado próprio: não altera a Campanha nem os Reinos.</p><div class="ln"><button class="btn-pri" data-crise-abrir="1">Visitar a cidade</button></div></div>`; }
-  function abrir(p, a = 0) { if (batalhaBloqueando() || tela.aberta()) return; painel = p; aba = a; revendo = null; hvEstado = null; fichaUid = null; selEq = null; render(true); abrirModal('modal-exp'); }
+  function abrir(p, a = 0) { if (batalhaBloqueando() || tela.aberta()) return; painel = p; aba = a; revendo = null; hvEstado = null; fichaUid = null; selEq = null; descPop = null; verCapaInv = false; render(true); abrirModal('modal-exp'); }
 
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t) return; const d = t.dataset;
-    if (t.id === 'exp-fechar') { fecharModal('modal-exp'); painel = null; fichaUid = null; selEq = null; return; }
+    if (t.id === 'exp-fechar') { fecharModal('modal-exp'); painel = null; fichaUid = null; selEq = null; descPop = null; return; }
     if (t.id === 'exp-rever') { revendo = d.tut; render(true); return; }
     if (d.tutok) { exp().tut[d.tutok] = true; revendo = null; salvar(); render(); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(true); return; }
-    if (d.descFicha) { painel = 'equipe'; aba = 0; fichaUid = d.descFicha; selEq = null; render(true); return; }
+    if (d.descPop !== undefined) { descPop = d.descPop || null; render(); return; }
+    if (d.invCapa !== undefined) { verCapaInv = !verCapaInv; render(); return; }
+    if (d.descFicha) { painel = 'equipe'; aba = 0; fichaUid = d.descFicha; selEq = null; descPop = null; render(true); return; }
     if (d.descIr) {
       const dest = d.descIr;
+      descPop = null;
       if (dest === 'campanha') { fecharModal('modal-exp'); painel = null; return; }
       if (dest === 'idle') {
         fecharModal('modal-exp'); painel = null;
@@ -697,8 +926,32 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       }
       if (dest === 'mochila') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirMochila?.('domador'); return; }
       if (dest === 'passe') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirTemporada?.(); return; }
+      if (dest === 'codex') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirCodex?.(); return; }
+      if (dest === 'atlas') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirAtlas?.(); return; }
+      if (dest === 'menu') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirMenu?.(); return; }
+      if (dest === 'eventos') {
+        fecharModal('modal-exp'); painel = null;
+        if (window.regiaoHW?.liberado?.()) window.regiaoHW.abrir(0);
+        else window.regiao1?.idleUI?.abrirTemporada?.();
+        return;
+      }
+      if (dest === 'missoes') {
+        fecharModal('modal-exp'); painel = null;
+        const btnD = document.getElementById('m-diario');
+        if (btnD) btnD.click(); else window.regiao1?.idleUI?.abrirTemporada?.();
+        return;
+      }
+      if (dest === 'loja') {
+        fecharModal('modal-exp'); painel = null;
+        if (window.regiaoHW?.liberado?.()) window.regiaoHW.abrir(3);
+        else document.getElementById('m-voto')?.click();
+        return;
+      }
       if (dest === 'halloween') { fecharModal('modal-exp'); painel = null; window.regiaoHW?.abrir?.(0); return; }
-      if (PAINEIS[dest]) { painel = dest; aba = 0; fichaUid = null; selEq = null; render(true); return; }
+      if (dest === 'torre') { fecharModal('modal-exp'); painel = null; window.regiaoHW?.abrir?.(2); return; }
+      if (dest === 'calabouco') { painel = 'cacadas'; aba = 1; fichaUid = null; selEq = null; render(true); return; }
+      if (dest === 'reinos') { fecharModal('modal-exp'); painel = null; window.regiaoReinos?.abrirSeletor?.(); return; }
+      if (PAINEIS[dest]) { painel = dest; aba = 0; fichaUid = null; selEq = null; verCapaInv = false; render(true); return; }
     }
     if (d.invocar) {
       const qtd = Number(d.invocar) === 10 ? 10 : 1;

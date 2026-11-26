@@ -1,0 +1,23 @@
+CONFUSION WAVES · CINCO INICIAIS NO FLOW
+
+Para a melhor nitidez em 720p, faça dois vídeos. No modo Imagem para vídeo, adicione uma PNG como primeiro quadro. Cole o prompt que tem o mesmo nome da imagem. Use paisagem 16:9, 10 segundos se a opção aparecer, e escolha 1080p se o Flow oferecer. Baixe os dois MP4 originais.
+
+1. CAMINHADAS · use 02-caminhadas-10.png
+
+Anime os cinco personagens da linha de cima caminhando de frente, como em uma esteira. Os cinco da linha de baixo caminham de costas, também no lugar. Se estiverem sentados, deixe levantar no primeiro segundo e repetir uma passada natural até o fim. Conserve cada personagem onde está, com o mesmo tamanho e a mesma direção do começo ao fim. Mantenha patas, cascos, chifres, asas e cauda iguais à referência. Câmera parada, corpo inteiro visível, fundo verde sólido #00FF00 e sem áudio.
+
+2. REPOUSOS · use 03-repousos-10.png
+
+Anime os cinco personagens da linha de cima em repouso de costas. Anime os cinco da linha de baixo em repouso de perfil, olhando para a esquerda. Todos ficam no lugar com os apoios plantados. Faça apenas respiração leve e um movimento pequeno de orelhas, folhas ou cauda. Preserve a direção, o tamanho, a aparência e a posição de cada personagem. Câmera parada, corpo inteiro visível, fundo verde sólido #00FF00 e sem áudio.
+
+ALTERNATIVA EM UMA GERAÇÃO · use 01-folha-completa-20.png
+
+Anime os cinco personagens de cada linha, cada um no seu espaço. Linha 1: caminham de frente, no lugar. Linha 2: ficam parados de costas, respirando levemente. Linha 3: caminham de costas, no lugar. Linha 4: ficam parados de perfil esquerdo, respirando levemente. Quem estiver sentado na caminhada se levanta no primeiro segundo e repete uma passada natural. Preserve tamanho, direção e aparência em todas as linhas. Câmera parada, corpo inteiro, fundo verde sólido #00FF00 e sem áudio.
+
+PARA O RECORTE
+
+As colunas vão de Penumbrio, Brasinha, Gotalume, Sementil a Solinho. Cada animação é recortada individualmente, com fundo transparente. A mesma animação de perfil esquerdo espelhada vira o perfil direito.
+
+As duas folhas de dez têm células de 384×540 em 1920×1080 e de 256×360 em 1280×720. A folha de vinte tem células de 384×270 em 1920×1080 e de 256×180 em 1280×720. A grade e o ponto de apoio de cada formato estão em recortes.json.
+
+Recorte um ciclo estável de respiração de 2 a 3 s. Para caminhar, recorte uma passada completa após a criatura se levantar, em geral cerca de 1,2 s. Confira os apoios, o tamanho e a direção de cada figura antes de exportar seu ciclo.
