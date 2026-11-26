@@ -3,6 +3,7 @@
 // cut-in, números, câmera e reações ficam no DOM. Cada habilidade escrita à mão tem coreografia própria em FX_HABILIDADES (com `clip`
 // pronto para clipes do Flow); as geradas por arquétipo usam coreografias por elemento. Ultimates (recarga ≥ 5) têm cut-in.
 import * as HAB from './regiao1-batalha-habilidades.js';
+import { pref, tocar } from './regiao1-sfx.js';
 const { EFEITOS } = HAB;
 import { camada, particula, rajada, convergir, onda, luz, corte, feixe, relampago, linhasFoco, circulo, coluna, raiosLuz, rachadura, projetil, livre, R } from './regiao1-vfx-motor.js';
 // Paletas de Halloween: abóbora (laranja + amarelo-vela + violeta de bruxa) e fantasma (verde-ecto + verde-túmulo)
@@ -56,9 +57,10 @@ const CSS = `
 .fx-veu{position:absolute;inset:0;pointer-events:none;z-index:3}`;
 const injetar = () => { if (cssOk) return; cssOk = true; const s = document.createElement('style'); s.textContent = CSS; document.head.append(s); };
 
-export function criarCtx({ arena, campo, no, aplicarHp, rapido = false, mobile }) {
+// Velocidade ×1/×2/×3 (preferência do jogador): divide todas as durações. Dano, recarga e resultado não dependem dela.
+export function criarCtx({ arena, campo, no, aplicarHp, rapido = false, mobile, velocidade = pref.velocidade }) {
   const m = mobile ?? (typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches);
-  return { arena, campo, no, aplicarHp, rapido, k: rapido ? 0.62 : 1, dens: m ? 0.5 : 1, blur: !m };
+  return { arena, campo, no, aplicarHp, rapido, k: 1 / velocidade, dens: m ? 0.5 : 1, blur: !m, som: !(typeof document !== 'undefined' && document.hidden) };
 }
 const caixa = (ctx, el) => { const a = ctx.arena.getBoundingClientRect(), r = el.getBoundingClientRect(); return { x: r.left + r.width / 2 - a.left, y: r.top + r.height / 2 - a.top, pe: r.bottom - a.top - r.height * 0.06, topo: r.top - a.top, w: r.width, h: r.height, boca: (frente) => ({ x: r.left + r.width / 2 - a.left + frente * r.width * 0.3, y: r.top + r.height * 0.36 - a.top }) }; };
 const corpo = (ctx, el) => caixa(ctx, el.querySelector('.un-fig img') || el);
@@ -187,6 +189,7 @@ function aplicar(ctx, M, el, r, o = {}) {
     numero(ctx, el, `${r.valor}`, o.forte ? '#fff7d6' : (o.corNum || '#ffffff'), { grande: o.forte, dx: o.dx || 0 });
     if (r.absorvido) numero(ctx, el, `🔰 ${r.absorvido}`, '#7dd3fc', { pequeno: true, dy: -22, atraso: 120 });
   }
+  if (ctx.som && !ctx._somT) { tocar(o.cura ? 'cura' : 'golpe', o.forte ? 3 : 1); ctx._somT = setTimeout(() => { ctx._somT = 0; }, 70); }
   ctx.aplicarHp(r.id);
   if (r.morreu) morteFx(ctx, M, c, o.cor);
   (r.efeitos || []).forEach((id, i) => statusFx(ctx, M, el, id, i));
@@ -875,8 +878,8 @@ async function tocarClipe(ctx, M, cfg, ev, src) {
   return true;
 }
 // Duração aproximada (para o ritmo do automático). Precisa cobrir a coreografia inteira.
-export const duracaoEstimada = (ev, rapido = false) => {
-  if (!ev) return 0; const k = rapido ? 0.62 : 1, hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], n = ev.alvos?.length || 0;
+export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade) => {
+  if (!ev) return 0; const k = 1 / velocidade, hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], n = ev.alvos?.length || 0;
   const ult = cfg?.ult || (hab && hab.cd >= 5);
   let base;
   if (cfg?.fx === 'perseguicao') base = 700 + n * 215 + (ev.repeticoes || 0) * 160;

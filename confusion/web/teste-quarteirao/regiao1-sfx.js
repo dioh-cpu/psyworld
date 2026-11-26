@@ -1,6 +1,6 @@
 // Som e preferências dos efeitos (revelação, ovos, conexão). Sons sintetizados com WebAudio: sem arquivos para baixar.
 // Preferências por aparelho (localStorage, com try/catch): volume 0–1, reduzir movimento (segue o sistema por padrão) e pular revelações.
-const CH = { volume: 'cw_fx_volume', reduzir: 'cw_fx_reduzir', pular: 'cw_fx_pular' };
+const CH = { volume: 'cw_fx_volume', reduzir: 'cw_fx_reduzir', pular: 'cw_fx_pular', velocidade: 'cw_batalha_vel' };
 const ler = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } };
 const gravar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem armazenamento */ } };
 const sistemaReduz = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -11,10 +11,14 @@ export const pref = {
   get reduzir() { const v = ler(CH.reduzir, null); return v == null ? sistemaReduz() : Boolean(v); },
   set reduzir(v) { gravar(CH.reduzir, Boolean(v)); },
   get pular() { return Boolean(ler(CH.pular, false)); },
+  // Velocidade das batalhas na arena compartilhada (×1, ×2, ×3): só muda ritmo e duração das animações
+  get velocidade() { const v = Number(ler(CH.velocidade, 1)); return v === 2 || v === 3 ? v : 1; },
+  set velocidade(v) { gravar(CH.velocidade, v === 2 || v === 3 ? v : 1); },
   set pular(v) { gravar(CH.pular, Boolean(v)); },
 };
 // Ciclo do botão de volume: 60% → 30% → mudo → 60%
 export function proximoVolume() { const v = pref.volume; pref.volume = v > 0.45 ? 0.3 : v > 0 ? 0 : 0.6; return pref.volume; }
+export function proximaVelocidade() { pref.velocidade = (pref.velocidade % 3) + 1; return pref.velocidade; }
 export const iconeVolume = () => (pref.volume === 0 ? '🔇' : pref.volume < 0.45 ? '🔉' : '🔊');
 
 let ac = null, mestre = null;
@@ -52,7 +56,9 @@ export function tocar(nome, tier = 1) {
       const notas = [[523], [523, 659], [523, 659, 784], [523, 659, 784, 988], [523, 659, 784, 1047, 1319]][tier - 1];
       notas.forEach((f, i) => tom(a, { f, tipo: 'triangle', t0: 0.04 + i * 0.07, dur: 0.6 + tier * 0.12, g: 0.09 + tier * 0.012 }));
       if (tier >= 4) ruido(a, { t0: 0.02, dur: 0.9 + tier * 0.2, g: 0.08, de: 4000, para: 9000, tipo: 'highpass' });
-    } else if (nome === 'rachar') ruido(a, { dur: 0.12, g: 0.25, de: 2000, para: 600 });
+    } else if (nome === 'golpe') { ruido(a, { dur: 0.09, g: 0.16 + tier * 0.03, de: 2500, para: 500, tipo: 'lowpass' }); tom(a, { f: 150, f2: 60, tipo: 'sine', dur: 0.12, g: 0.12 + tier * 0.03 }); }
+    else if (nome === 'cura') tom(a, { f: 660, f2: 990, tipo: 'sine', dur: 0.25, g: 0.06 });
+    else if (nome === 'rachar') ruido(a, { dur: 0.12, g: 0.25, de: 2000, para: 600 });
     else if (nome === 'conexao') { tom(a, { f: 220, f2: 880, tipo: 'sine', dur: 0.5, g: 0.12 }); ruido(a, { dur: 0.5, g: 0.08, de: 400, para: 4000 }); tom(a, { f: 880, tipo: 'triangle', t0: 0.42, dur: 0.6, g: 0.1 }); tom(a, { f: 1320, tipo: 'triangle', t0: 0.48, dur: 0.6, g: 0.06 }); }
   } catch { /* áudio indisponível */ }
 }

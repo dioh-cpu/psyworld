@@ -65,6 +65,7 @@ const CSS = `
 .rv-ovo .casca{position:absolute;inset:0;border-radius:50% 50% 46% 46%/60% 60% 40% 40%;background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.85) 0,rgba(255,255,255,0) 18%),radial-gradient(circle at 70% 70%,var(--o2) 0,transparent 30%),radial-gradient(circle at 30% 72%,var(--o2) 0,transparent 16%),radial-gradient(circle at 60% 35%,var(--o2) 0,transparent 12%),linear-gradient(160deg,var(--o1),var(--o3));box-shadow:inset -10px -16px 30px rgba(0,0,0,.45),0 0 26px var(--o1)}
 .rv-ovo svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .rv-ovo svg path{fill:none;stroke:#fff8dc;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px var(--o2));stroke-dasharray:400;stroke-dashoffset:400}
+.rv-rotulo{position:absolute;left:50%;top:6%;translate:-50% 0;z-index:5;padding:.25em .9em;border-radius:1em;background:rgba(10,5,16,.8);border:1px solid var(--tc);color:#fff7ed;font:800 clamp(14px,3.4vw,22px)/1.2 system-ui;text-shadow:0 0 10px var(--tc);white-space:nowrap}
 .rv-rapida{position:fixed;left:50%;top:18%;translate:-50% 0;z-index:141;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
 .rv-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(20,10,30,.92);border:1px solid #f3a458;color:#fff7ed;font:700 14px system-ui;box-shadow:0 0 14px rgba(243,164,88,.45)}
 .rv-chip img{width:26px;height:26px;object-fit:contain}
@@ -87,14 +88,15 @@ const centro = (P, alvo) => { const a = P.el.getBoundingClientRect(), r = alvo.g
 function tremerPalco(P, forca, ms) { if (pref.reduzir) return; const n = Math.round(ms / 34), kf = []; for (let i = 0; i <= n; i++) { const q = 1 - i / n, f = forca * q; kf.push({ transform: `translate(${R(-f, f)}px,${R(-f, f) * 0.7}px)` }); } kf[n] = { transform: 'none' }; P.mesa.animate(kf, { duration: ms }); }
 function flashPalco(P, cor, ms = 200, op = 0.5) { const f = document.createElement('i'); f.style.cssText = `position:absolute;inset:0;background:${cor};opacity:0;pointer-events:none;z-index:7`; P.el.append(f); f.animate([{ opacity: op }, { opacity: 0 }], { duration: ms }); setTimeout(() => f.remove(), ms + 40); }
 function faixa(P, txt, cor, ms = 1300) { const f = document.createElement('div'); f.className = 'rv-faixa'; f.style.setProperty('--c2', cor); f.textContent = txt; P.el.append(f); f.animate([{ opacity: 0, letterSpacing: '.5em', transform: 'scaleY(.2)' }, { opacity: 1, letterSpacing: '.06em', transform: 'scaleY(1)', offset: 0.18 }, { opacity: 1, offset: 0.8 }, { opacity: 0, transform: 'scaleY(.6)' }], { duration: ms, fill: 'forwards' }); setTimeout(() => f.remove(), ms + 50); }
-const estrelas = (t) => '★'.repeat(t);
+// Estrelas vêm do dado verdadeiro do Onírico (1–30, mostradas até 6 ícones + número); o tier fica só na moldura
+const estrelas = (n) => (n > 6 ? `★×${n}` : '★'.repeat(n));
 
 // Frente da carta (Onírico, tier, moldura e, no Adventurer, a carta extra)
 function htmlCarta(P, carta, i, ed) {
   const t = Math.max(1, Math.min(5, carta.tier || 1)), pal = paleta(ed, carta), tc = TIER[t].cor, r = P.raiz;
   return `<div class="rv-carta t${t}" data-i="${i}" style="--tc:${tc}"><div class="rv-gira"><div class="rv-face rv-verso" style="background-image:url('${r}${ART_BANNER}/verso.png')"></div>
-    <div class="rv-face rv-frente"><div class="rv-fundo" style="background:radial-gradient(circle at 50% 45%, #fff6 0, ${pal.c2}dd 22%, ${pal.c1} 66%, #07040c 100%)"></div>${carta.arte ? `<img class="rv-arte" src="${r}${esc(carta.arte)}" alt="">` : ''}<img class="rv-moldura" src="${r}${ART_BANNER}/moldura-${t}.png" alt=""><div class="rv-tier">T${t} ${estrelas(t)}</div><div class="rv-nome">${esc(carta.nome || carta.especie)}</div></div></div>
-    ${carta.extra ? `<div class="rv-extra">${carta.extra.arte ? `<img src="${r}${esc(carta.extra.arte)}" alt="">` : ''}<i>+ ${esc(carta.extra.nome || 'Extra')}</i></div>` : ''}</div>`;
+    <div class="rv-face rv-frente"><div class="rv-fundo" style="background:radial-gradient(circle at 50% 45%, #fff6 0, ${pal.c2}dd 22%, ${pal.c1} 66%, #07040c 100%)"></div>${carta.arte ? `<img class="rv-arte" src="${r}${esc(carta.arte)}" alt="">` : `<div class="rv-arte" style="display:grid;place-items:center;font-size:calc(var(--w)*.42)">${esc(carta.icone || '✨')}</div>`}<img class="rv-moldura" src="${r}${ART_BANNER}/moldura-${t}.png" alt="">${carta.estrelas > 0 || carta.nivel ? `<div class="rv-tier">${carta.nivel ? `Nv. ${carta.nivel}` : ''}${carta.nivel && carta.estrelas > 0 ? ' · ' : ''}${carta.estrelas > 0 ? estrelas(carta.estrelas) : ''}</div>` : ''}<div class="rv-nome">${esc(carta.nome || carta.especie)}</div></div></div>
+    ${carta.extra ? `<div class="rv-extra">${carta.arte ? `<img src="${r}${esc(carta.arte)}" alt="">` : ''}<i>+ ${esc(carta.extra.nome || 'Extra')}</i></div>` : ''}</div>`;
 }
 // Partículas próprias da edição
 function especial(M, c, ed, pal, carta, forca) {
@@ -143,7 +145,7 @@ async function virar(P, el, carta, ed, i, rapido = false) {
   el.classList.add('aberta'); el.getAnimations().forEach((a) => a.cancel());
   impactoTier(P, M, centro(P, el), t, ed, pal, carta);
   if (carta.extra) { const x = el.querySelector('.rv-extra'); x.animate([{ opacity: 0, transform: 'scale(.4) rotate(-12deg)' }, { opacity: 1, transform: 'scale(1.15) rotate(6deg)', offset: 0.6 }, { opacity: 1, transform: 'scale(1) rotate(4deg)' }], { duration: pref.reduzir ? 1 : 420, delay: pref.reduzir ? 0 : 260, fill: 'forwards' }); }
-  if (t === 5 && !pref.reduzir && !rapido) faixa(P, `TIER 5 · ${String(carta.nome || carta.especie).toUpperCase()}`, pal.c2);
+  if (t === 5 && !pref.reduzir && !rapido) faixa(P, String(carta.nome || carta.especie).toUpperCase(), pal.c2);
   P.aoRevelar?.(i);
 }
 const abrirSemEfeito = (el, carta, P, i) => { if (el.classList.contains('aberta')) return; el.classList.add('aberta'); if (carta.extra) { const x = el.querySelector('.rv-extra'); x.style.opacity = '1'; x.style.transform = 'scale(1) rotate(4deg)'; } P.aoRevelar?.(i); };
@@ -185,25 +187,31 @@ export function revelarInvocacao({ edicao = 'padrao', titulo, cartas = [], revel
 }
 
 // ---------- ovos do Passe ----------
-// recompensa: { especie?, nome, tier 1–5, arte, elemento?, lado?, extra? }. `nivel` do Passe; nível 100 + T5 recebe a apresentação máxima.
-export function revelarOvo({ edicao = 'padrao', recompensa, nivel = 1, aberto = false, aoRevelar, raiz = '../../../' } = {}) {
+// ovo: { nome ('Ovo de Dinossauro'), tier 1–5 } — mostrado primeiro, com a origem no título ('Passe · Nível N').
+// recompensa (só se houver eclosão): o Onírico que nasce, { especie, nome?, tier, arte, nivel (1), estrelas (dado real), elemento? }.
+// Nível 100 + ovo T5 recebe a apresentação máxima.
+export function revelarOvo({ edicao = 'padrao', ovo: ovoDado, recompensa = null, nivel = 1, aberto = false, aoRevelar, raiz = '../../../' } = {}) {
   return new Promise((fim) => {
-    const t = Math.max(1, Math.min(5, recompensa.tier || 1)), maximo = t === 5 && nivel >= 100, pal = paleta(edicao, recompensa), T = TIER[t];
+    const od = ovoDado || { nome: 'Ovo', tier: recompensa?.tier || 1 };
+    const t = Math.max(1, Math.min(5, od.tier || 1)), maximo = t === 5 && nivel >= 100, pal = paleta(edicao, recompensa || {}), T = TIER[t];
+    if (recompensa) recompensa = { nivel: 1, ...recompensa };
     const P = criarPalco({ titulo: `Passe · Nível ${nivel}`, ed: edicao, raiz }); P.aoRevelar = aoRevelar;
     const w = Math.round(Math.min(innerHeight * 0.36, innerWidth * 0.3));
     P.mesa.innerHTML = `<div class="rv-ovo" style="--w:${w}px;--o1:${T.cor};--o2:${pal.c2};--o3:${pal.c1}"><div class="casca"></div><svg viewBox="0 0 100 128"><path d="M50 10 L44 30 L54 42 L46 58"/><path d="M46 58 L30 66 L22 82"/><path d="M54 42 L70 50 L76 66 L68 80"/><path d="M22 82 L40 90 L58 86 L68 80"/></svg></div>`;
     const ovo = P.mesa.querySelector('.rv-ovo'), trincas = [...ovo.querySelectorAll('path')];
+    const rot = document.createElement('div'); rot.className = 'rv-rotulo'; rot.style.setProperty('--tc', T.cor); rot.textContent = `${od.nome} · T${t}`; P.el.append(rot);
+    rot.animate([{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: pref.reduzir ? 1 : 380, fill: 'backwards' });
     const bFim = document.createElement('button'); bFim.className = 'pri'; bFim.textContent = 'Continuar'; bFim.dataset.fim = '1';
     let feito = false;
     const mostrarCarta = (comEfeito) => {
       const grade = document.createElement('div'); grade.className = 'rv-grade'; grade.style.cssText = `--cols:1;--w:${Math.round(Math.min(w * 1.35, (innerHeight - 110) / 1.25))}px`; grade.innerHTML = htmlCarta(P, recompensa, 0, edicao);
-      ovo.replaceWith(grade); const el = grade.querySelector('.rv-carta'); el.classList.add('aberta');
+      ovo.replaceWith(grade); rot.textContent = `${recompensa.nome || recompensa.especie} · Nível ${recompensa.nivel}`; const el = grade.querySelector('.rv-carta'); el.classList.add('aberta');
       if (recompensa.extra) { const x = el.querySelector('.rv-extra'); x.style.opacity = '1'; x.style.transform = 'scale(1) rotate(4deg)'; }
-      if (comEfeito) { const M = P.M(), c = centro(P, el); impactoTier(P, M, c, t, edicao, pal, recompensa); el.animate([{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1.1)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)' }], { duration: pref.reduzir ? 1 : 420 }); if (maximo && !pref.reduzir) faixa(P, `NÍVEL 100 · ${String(recompensa.nome || recompensa.especie).toUpperCase()}`, pal.c2, 1800); }
+      if (comEfeito) { const M = P.M(), c = centro(P, el); impactoTier(P, M, c, t, edicao, pal, recompensa); el.animate([{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1.1)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)' }], { duration: pref.reduzir ? 1 : 420 }); if (maximo && !pref.reduzir) faixa(P, `${String(recompensa.nome || recompensa.especie).toUpperCase()} · NÍVEL ${recompensa.nivel}`, pal.c2, 1800); }
       P.dica.textContent = ''; P.el.querySelector('[data-pular]')?.remove(); P.el.querySelector('.rv-topo').append(bFim); P.aoRevelar?.(0);
     };
     async function chocar() {
-      if (feito) return; feito = true; const M = P.M(), c = centro(P, ovo);
+      if (feito || !recompensa) return; feito = true; const M = P.M(), c = centro(P, ovo);
       if (pref.reduzir) { mostrarCarta(true); return; }
       const golpes = maximo ? 4 : Math.max(1, Math.ceil(t / 2));
       if (maximo) { const veu = document.createElement('i'); veu.style.cssText = 'position:absolute;inset:0;background:#000;opacity:0;z-index:2;pointer-events:none'; P.el.append(veu); veu.animate([{ opacity: 0 }, { opacity: 0.85, offset: 0.2 }, { opacity: 0.85, offset: 0.85 }, { opacity: 0 }], { duration: 3600, fill: 'forwards' }); setTimeout(() => veu.remove(), 3700);
@@ -224,11 +232,12 @@ export function revelarOvo({ edicao = 'padrao', recompensa, nivel = 1, aberto = 
     }
     P.el.addEventListener('click', (e) => {
       if (e.target.closest('[data-fim]')) { P.el.remove(); fim({ revelado: true }); return; }
-      if (e.target.closest('[data-pular]')) { if (!feito) { feito = true; mostrarCarta(false); } return; }
+      if (e.target.closest('[data-pular]')) { if (!feito && recompensa) { feito = true; mostrarCarta(false); } return; }
       if (e.target.closest('.rv-ovo')) chocar();
     });
     // flutua devagar enquanto espera
     if (!pref.reduzir) ovo.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-6px)' }, { transform: 'translateY(0)' }], { duration: 1800, iterations: Infinity, easing: 'ease-in-out' });
+    if (!recompensa) { P.dica.textContent = 'Ovo guardado: choca na incubadora.'; P.el.querySelector('[data-pular]')?.remove(); P.el.querySelector('.rv-topo').append(bFim); if (!pref.reduzir) { const M = P.M(), c = centro(P, ovo); impactoTier(P, M, c, t, edicao, pal, {}); } P.aoRevelar?.(0); return; }
     P.dica.textContent = maximo ? 'O ovo lendário do nível 100 pulsa… toque para chocar' : 'Toque no ovo para chocar';
     if (aberto || pref.pular) { feito = true; mostrarCarta(false); }
   });

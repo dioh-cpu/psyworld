@@ -983,12 +983,12 @@ function iniciarBatalha(tipo, entidade) {
     artes[entidade.especie] = raizDe(entidade.sprite);
     const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
     outros.forEach((m) => { artes[m.especie] = raizDe(m.sprite); });
-    inimigos = [[entidade.especie, entidade.nivel], ...outros.map((m) => [m.especie, m.nivel])];
+    inimigos = [[entidade.especie, entidade.nivel, undefined, { forma: entidade.forma, arte: entidade.forma ? entidade.arteForma : undefined }], ...outros.map((m) => [m.especie, m.nivel, undefined, { forma: m.forma, arte: m.forma ? m.arteForma : undefined }])]; // forma definida no encontro
   }
   telaBatalha.abrir({
     titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem', sub: ehBoss ? 'Campanha' : entidade.especie,
     arena: `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`,
-    aliados, inimigos, artes, ritmo: 420,
+    aliados, inimigos, artes, ritmo: 420, regiao: 1,
     onFim: (venceu, frac) => { if (batalhaAtiva) { batalhaAtiva.hpJog = Math.max(1, Math.round(batalhaAtiva.maxJog * (venceu ? Math.max(0.3, frac) : 0.5))); } encerrarBatalha(venceu); },
   });
 }

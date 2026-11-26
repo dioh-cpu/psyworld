@@ -2,7 +2,8 @@
 // Mapa da cidade com locais de construção, cinco menus (Aldeias, Refúgios, Exércitos, Hospitais, Expedições), combate 4 contra 4 por
 // turnos, controles independentes (Atacar automaticamente / Próxima fase / Avançar automaticamente) e expedição minimizada.
 // Estado salvo em save.idle.estrategia[id]. Cada recompensa de vitória é paga uma única vez (exp.pagas).
-import { criarArena } from './regiao1-batalha-tela.js';
+import { criarArena, ajustarInimigos } from './regiao1-batalha-tela.js';
+import { pref } from './regiao1-sfx.js';
 import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { membrosFormacao } from './regiao1-exp-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
@@ -444,7 +445,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); const bt = bonusDoMembro(m); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus: { ...bonus, hp: (bonus.hp || 0) + (bt.hp || 0), atk: (bonus.atk || 0) + (bt.atk || 0), def: (bonus.def || 0) + (bt.def || 0) } }); });
     artesAliadosFase = {}; { const form = membrosFormacao(getSave().idle); const livres = [0, 1, 2, 3].filter((v) => !form.some((x) => exp.equipe.includes(`m${x.idx}`) && x.vaga === v)); al.forEach((u, i) => { const f = form.find((x) => `m${x.idx}` === exp.equipe[i]); u.vaga = f ? f.vaga : livres.shift(); const mm = getSave().idle.equipe[Number(String(exp.equipe[i]).slice(1))]; const art = mm && arteDoIndividuo(mm); if (art) artesAliadosFase[u.especie] = art; }); }
     if (manterHp) al.forEach((u, i) => { const h = manterHp[exp.equipe[i]]; if (h != null) u.hp = Math.max(1, Math.min(u.hpMax, Math.round(h * u.hpMax + u.hpMax * bonus.cura))); });
-    batalha = criarBatalha(al, gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)));
+    batalha = criarBatalha(al, ajustarInimigos(gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)), 1, D.papeis)); // Região 1: sem formas dos iniciais como inimigas
     artesFase = { ...artesAliadosFase }; if (D.arteInimigo) for (const u of [...batalha.inimigos, ...batalha.esperaI]) artesFase[u.especie] = D.arteInimigo(u.especie, exp.fase);
     arena = null;
     batalha.log.push(`Fase ${exp.fase + 1}: ${fase.nome}. ${batalha.inimigos.length} inimigo(s) à frente.`);
@@ -477,7 +478,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
       exp.estado = ultima ? 'fim' : 'vitoria';
       if (ultima) diario(`expedição "${rota.nome}" concluída (${custoTxt(exp.ganhos)}).`);
       salvar(); atualizarHud?.();
-      if (!ultima && exp.autoAvancar) { clearTimeout(timerProx); timerProx = setTimeout(() => proximaFase(true), Math.max(150, ritmoMs * 2)); }
+      if (!ultima && exp.autoAvancar) { clearTimeout(timerProx); timerProx = setTimeout(() => proximaFase(true), Math.max(150, (ritmoMs * 2) / pref.velocidade)); }
     } else {
       exp.estado = 'derrota'; diario(`expedição "${rota.nome}" terminou em derrota na fase ${exp.fase + 1}.`);
       salvar();
@@ -497,20 +498,28 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   const visivelBat = () => modal.classList.contains('aberto') && visao === 'batalha';
   function iniciarTick() {
     clearTimeout(timerTick);
-    const laco = () => { tick(); timerTick = setTimeout(laco, ritmoMs + (visivelBat() && arena ? arena.restante() : 0)); };
-    timerTick = setTimeout(laco, ritmoMs);
+    // ×1/×2/×3 no ritmo; em segundo plano (minimizado ou aba oculta/suspensa) recupera os turnos pelo tempo decorrido
+    let marca = Date.now(), fundoAntes = false;
+    const passo = () => ritmoMs / pref.velocidade, fundo = () => minimizado || document.hidden || !visivelBat();
+    const laco = () => {
+      if (fundo()) { if (!fundoAntes) { fundoAntes = true; marca = Date.now(); } let n = Math.min(300, Math.floor((Date.now() - marca) / passo())); while (n-- > 0) { tick(); marca += passo(); if (!batalha || batalha.fim || s0()?.exp?.estado !== 'batalha') break; } if (Date.now() - marca > passo() * 2) marca = Date.now(); if (batalha) { batalha.antes = []; if (batalha.evento) batalha.evento.mostrado = true; } }
+      else { if (fundoAntes) { fundoAntes = false; if (arena && batalha) arena.montar(batalha); } tick(); }
+      timerTick = setTimeout(laco, fundo() ? 500 : passo() + (visivelBat() && arena ? arena.restante() : 0));
+    };
+    timerTick = setTimeout(laco, passo());
   }
   function tick() {
     const s = estado(), exp = s.exp;
-    if (!exp || exp.estado !== 'batalha' || !batalha || (visivelBat() && arena?.ocupada())) return;
+    if (!exp || exp.estado !== 'batalha' || !batalha || (visivelBat() && !document.hidden && arena?.ocupada())) return;
     if (batalha.fim) { terminarFase(); return; }
     const u = atorAtual(batalha);
     if (u && (u.lado === 'i' || exp.autoAtaque) && !(visivelBat() && batalha.antes?.length)) executar(batalha, decidir(batalha, u, rng), rng);
     apresentarTurno();
   }
 
+  const s0 = () => estado();
   function apresentarTurno() {
-    if (visivelBat()) desenharBatalha();
+    if (visivelBat() && !document.hidden) desenharBatalha();
     if (batalha.fim && !(visivelBat() && arena?.ocupada())) terminarFase();
     else desenharInd();
   }
