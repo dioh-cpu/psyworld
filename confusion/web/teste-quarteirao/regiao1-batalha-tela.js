@@ -6,6 +6,7 @@ import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, EFE
 import { criarCtx, tocarEvento, duracaoEstimada } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE } from '../species.js';
 import { NOME_ELEMENTO } from '../core.js';
+import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // Formação aprovada no editor, em porcentagem da arena.
@@ -51,7 +52,11 @@ function recortar(img) {
   img.closest('.un')?.style.setProperty('--proporcao-sprite', b.r);
 }
 // Perfis de batalha associados à arte original, inclusive quando ela vem de uma fase ou chefe.
+// Exclusivos de Halloween (catalogo.json): todas as formas olham para a direita; a forma final do Abyssar é bem maior.
+const ESCALA_HW = { 'Abyssar': [1, 1.3, 1.75] };
+const PERFIS_HW = Object.fromEntries(LINHAGENS_HW.flatMap((l) => l.arte.map((arq, f) => [arq, { arquivo: arq, direcao: 'direita', altura: ESCALA_HW[l.especie]?.[f] ?? [1, 1.08, 1.18][f] }])));
 const PERFIS_NO_CAMPO = {
+  ...PERFIS_HW,
   [ARTE_DA_ESPECIE.Noctarn]: { arquivo: 'assets/confusion/interface/batalha/noctarn-direita.webp', direcao: 'direita' },
   'assets/confusion/interface/personagens/espirito-boss-atual.webp': {
     arquivo: 'assets/confusion/interface/batalha/espirito-esquerda.webp',
