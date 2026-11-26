@@ -4,8 +4,6 @@ import { adicionarIdleNpc } from './npc-idle-video.js';
 import { vetorJoystick } from '../explorar3d/controles.js';
 import { construirSDF, resolverMovimentoSDF } from '../explorar3d/colisao.js';
 import { criarAzazel } from './azazel.js';
-import { criarNoctarn } from './noctarn.js';
-import { criarEspiritoIdle } from './espirito-idle.js';
 import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.js';
 import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { reforcosDoChefe } from './regiao1-encontros-regras.js';
@@ -45,7 +43,7 @@ import { CICLO_C1 } from './regiao1-ciclo-c1.js';
 import { iniciarEstrategia } from './regiao1-estrategia.js';
 import { iniciarReinos } from './regiao1-reinos.js';
 import { golpeCampanha } from './regiao1-batalha-fx.js';
-import { criarTelaBatalha } from './regiao1-batalha-tela.js';
+import { criarTelaBatalha, resolverEncontrosMapa } from './regiao1-batalha-tela.js';
 import { indicesEquipeCombate, membrosFormacao } from './regiao1-exp-regras.js';
 import { aplicarXp } from './regiao1-progressao.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
@@ -57,7 +55,7 @@ import { migrarHW } from './regiao1-halloween-regras.js';
 import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
-import { tocarConexao } from './regiao1-conexao-fx.js';
+import { multVelocidade, montariaEquipada, montadoVisivel } from './regiao1-montaria.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
 const LARG = 106;
@@ -69,7 +67,6 @@ const FATOR_ESCALA_PERSONAGEM = Number(params.get('escala')) || 1.30; // +30% so
 const ALTURA_PERSONAGEM = ALTURA_BASE_PERSONAGEM * FATOR_ESCALA_PERSONAGEM;
 const RAIO = 0.35; // colisão preservada conforme especificação
 const VELOCIDADE_BASE = 8.7; // +50% sobre a velocidade base anterior (5.8 -> 8.7 u/s)
-const MULT_ONIRICO = 2.0;    // Transformar (Conexão Onírica): +100% de velocidade (17.4 u/s)
 const VERSAO_ASSETS = 'r1_48_v4';
 
 const P = (px, py) => ({ x: (px / IMG_W - 0.5) * LARG, z: (py / IMG_H - 0.5) * ALT });
@@ -160,6 +157,8 @@ canvas.addEventListener('wheel', (e) => {
 
 // ---- Persistência (save compartilhado entre Modo Idle e Modo Campanha) ----
 let save = criarEstadoInicial();
+{ const pushOrig = MONSTROS_SELVAGENS.push.bind(MONSTROS_SELVAGENS); MONSTROS_SELVAGENS.push = (...xs) => { resolverEncontrosMapa(xs, 1); return pushOrig(...xs); }; } // encontros adicionados depois (Caçadas) também
+resolverEncontrosMapa(MONSTROS_SELVAGENS, 1); // encontro resolvido uma vez: mapa, idle e arena mostram a mesma entidade (sem iniciais inimigos na Região 1)
 const CHAVE_BACKUP = `${SAVE_KEY_REGIAO1}.backup`;
 const CHAVE_CORROMPIDO = `${SAVE_KEY_REGIAO1}.corrompido`;
 let avisoSave = null; // mostrado como toast assim que a interface existir
@@ -296,15 +295,11 @@ const marcadorDestino = (() => {
   return m;
 })();
 
-// ---- Personagens controlados: forma onírica e Azazel ----
-const testeEspirito = params.get('idle') === 'espirito';
+// ---- Domador (Azazel). A antiga transformação em Onírico foi removida: o domador anda a pé ou montado (regiao1-montaria.js) ----
 const azazel = criarAzazel('assets/characters/', ALTURA_PERSONAGEM, true); // adiado: os vídeos baixam depois do início
-const formaOnirica = testeEspirito
-  ? criarEspiritoIdle(ALTURA_PERSONAGEM)
-  : criarNoctarn('../../../assets/monsters/noctarn/', ALTURA_PERSONAGEM);
 
 const jogador = new THREE.Group();
-jogador.add(azazel.malha, formaOnirica.malha);
+jogador.add(azazel.malha);
 jogador.traverse((o) => {
   if (o.material) {
     o.material.depthTest = false;
@@ -314,40 +309,7 @@ jogador.traverse((o) => {
 });
 cena.add(jogador);
 
-const btnTransformar = document.getElementById('btn-transformar');
-function aplicarForma(novaForma, anunciar = false) {
-  save.forma = novaForma === 'azazel' ? 'azazel' : 'noctarn';
-  const onirico = save.forma === 'noctarn';
-  azazel.malha.visible = !onirico;
-  formaOnirica.malha.visible = onirico;
-  if (!onirico) formaOnirica.pausar();
-  if (btnTransformar) {
-    btnTransformar.classList.toggle('ativo', onirico);
-    btnTransformar.textContent = onirico
-      ? (testeEspirito ? '✨ Espírito da Floresta' : '✨ Onírico (+100% Vel.)')
-      : '✨ Transformar';
-  }
-  if (anunciar) {
-    mostrarToast(onirico
-      ? `✨ Conexão Onírica ativa! Transformado em ${testeEspirito ? 'Espírito da Floresta' : 'Noctarn'} (+100% de velocidade).`
-      : 'Conexão Onírica encerrada. De volta à forma humana (Azazel).', 2400);
-  }
-  salvarEstado();
-}
-// Conexão Onírica com efeito (domador → montaria → domador): a troca de sprite acontece no auge do efeito, no ponto dos pés,
-// e a forma nova recebe a mesma direção da anterior.
-let ultimaRot = 0, conectando = false;
-function pontoTelaJogador() {
-  const r = canvas.getBoundingClientRect(), pe = jogador.position.clone().project(camera), cab = jogador.position.clone(); cab.y += ALTURA_PERSONAGEM; const pc = cab.project(camera);
-  const y = r.top + ((1 - pe.y) / 2) * r.height; return { x: r.left + ((pe.x + 1) / 2) * r.width, y, h: Math.abs(y - (r.top + ((1 - pc.y) / 2) * r.height)) };
-}
-function alternarTransformacao() {
-  if (conectando) return;
-  const nova = save.forma === 'noctarn' ? 'azazel' : 'noctarn'; conectando = true;
-  tocarConexao({ ponto: pontoTelaJogador, para: nova === 'azazel' ? 'domador' : 'montaria', montaria: testeEspirito ? 'espirito' : 'noctarn', aoTrocar: () => { aplicarForma(nova, true); (nova === 'azazel' ? azazel : formaOnirica).atualizar(false, ultimaRot, 0); } })
-    .catch(() => aplicarForma(nova, true)).finally(() => { conectando = false; });
-}
-btnTransformar?.addEventListener('click', alternarTransformacao);
+
 
 // Sombra de contato sob os pés (proporcional a +30%)
 const sombra = (() => {
@@ -504,9 +466,12 @@ const FATOR_NPC = 1.07;
 const alturaDoNpc = (npc) => ALTURA_PERSONAGEM * FATOR_NPC * (npc.proporcao ?? 1);
 
 function criarMonstroSelvagem(m) {
+  resolverEncontrosMapa([m], 1); // entidades criadas depois (Caçadas) também passam pela resolução
   const w = P(m.pos[0], m.pos[1]);
   const tex = carregarTextura(m.sprite);
-  const mesh = adicionarBillboard(tex, w.x, w.z, 6.4, 6.4, 3);
+  const prop = m.proporcaoSprite || (/\/oniricos\//.test(m.sprite || '') ? 16 / 9 : 0); // artes do catálogo vêm em quadro 16:9
+  const alt = prop ? 7.6 : 6.4, larg = prop ? alt * prop : 6.4;
+  const mesh = adicionarBillboard(tex, w.x, w.z, larg, alt, 3);
   const ent = { tipo: 'wild', dados: m, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 3.1, raioInteracao: 5.8 };
   entidadesMapa.push(ent);
   return ent;
@@ -737,7 +702,6 @@ document.getElementById('btn-reset-save')?.addEventListener('click', () => {
   localStorage.removeItem(SAVE_KEY_REGIAO1);
   save = criarEstadoInicial();
   monstrosDerrotadosSessao.clear();
-  aplicarForma('noctarn');
   fecharModal('modal-diario');
   entrarNoMapa('C0', null, true);
   mostrarToast('Save da Região 1 reiniciado.');
@@ -984,9 +948,10 @@ function iniciarBatalha(tipo, entidade) {
     inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ...reforcosDoChefe(defBoss.id, nv).map((r) => [r.especie, r.nivel, r.elemento, { forma: r.forma, arte: r.arteForma }])];
   } else {
     artes[entidade.especie] = raizDe(entidade.sprite);
+    resolverEncontrosMapa(MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa), 1);
     const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
     outros.forEach((m) => { artes[m.especie] = raizDe(m.sprite); });
-    inimigos = [[entidade.especie, entidade.nivel, undefined, { forma: entidade.forma, arte: entidade.forma ? entidade.arteForma : undefined }], ...outros.map((m) => [m.especie, m.nivel, undefined, { forma: m.forma, arte: m.forma ? m.arteForma : undefined }])]; // forma definida no encontro
+    inimigos = [entidade, ...outros].map((m) => [m.especie, m.nivel, m.elemento, { forma: m.forma, arte: m.arteForma }]); // encontro do catálogo (#59): mesma espécie, forma, elemento e arte do mapa
   }
   telaBatalha.abrir({
     titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem', sub: ehBoss ? 'Campanha' : entidade.especie,
@@ -1772,9 +1737,6 @@ window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   teclas.add(e.code);
   if (e.code === 'KeyE' || e.code === 'Enter') executarInteracao();
-  if (!e.repeat && (e.code === 'KeyT' || e.code === 'ShiftLeft' || e.code === 'ShiftRight')) {
-    if (!algumModalAberto()) alternarTransformacao();
-  }
   if (e.code === 'Escape') {
     document.querySelectorAll('.modal-bg.aberto').forEach((m) => {
       if (m.id !== 'modal-batalha') fecharModal(m.id);
@@ -2167,8 +2129,7 @@ function atualizarAutoCaca(agora, dt, vel) {
 let ultimo = performance.now();
 
 function velocidadeAtual() {
-  // Forma Onírica (Transformar / Conexão Onírica) = +100% de velocidade (2.0x)
-  return VELOCIDADE_BASE * (save.forma === 'noctarn' ? MULT_ONIRICO : 1);
+  return VELOCIDADE_BASE * multVelocidade(save); // montado: ganho da montaria; a pé: base
 }
 
 function quadro(agora) {
@@ -2262,7 +2223,6 @@ function quadro(agora) {
 
   // Modo Economia de Energia: mantém farm e HUD leve sem renderizar WebGL
   if (idle.config.economiaEnergia) {
-    if (testeEspirito) formaOnirica.pausar();
     if (agora - ultimoMinimapa > 900) {
       ultimoMinimapa = agora;
       idleUI?.atualizarHudIdle();
@@ -2274,12 +2234,7 @@ function quadro(agora) {
   if (emp) { estado.x = emp.x; estado.z = emp.z; }
   jogador.position.set(estado.x, camada(estado.z), estado.z);
   sombra.position.set(estado.x, camada(estado.z) - 0.005, estado.z);
-  ultimaRot = rot;
-  if (save.forma === 'azazel') {
-    azazel.atualizar(andando, rot, 0);
-  } else {
-    formaOnirica.atualizar(andando, rot, 0);
-  }
+  azazel.atualizar(andando, rot, 0);
 
   const pulso = Math.sin(agora * 0.004);
   if (marcadorDestino.visible) {
@@ -2415,9 +2370,8 @@ window.regiao1 = {
   save: () => save,
   salvar: salvarEstado,
   resetarSave: () => { localStorage.removeItem(SAVE_KEY_REGIAO1); save = criarEstadoInicial(); garantirEstadoIdle(save); salvarEstado(); },
-  forma: () => save.forma,
-  setForma: (f) => aplicarForma(f),
-  transformar: alternarTransformacao,
+  forma: () => 'azazel', // sem transformação: o domador é sempre o personagem do mapa
+  montaria: () => ({ equipada: montariaEquipada(save), visivel: montadoVisivel(save) }),
   velocidadeAtual,
   definirAutoCaca,
   iniciarAutoRota,
@@ -2440,7 +2394,7 @@ window.regiao1 = {
 };
 
 // Inicialização
-aplicarForma(params.get('forma') || (testeEspirito ? 'noctarn' : save.forma) || 'noctarn');
+azazel.malha.visible = true;
 const inicialParam = params.get('mapa')?.toUpperCase();
 const inicialId = (inicialParam && MAPAS[inicialParam]) ? inicialParam : (MAPAS[save.mapaAtual] ? save.mapaAtual : MAPA_INICIAL);
 const spawnInicial = (!inicialParam && inicialId === save.mapaAtual && save.posicaoPx) ? save.posicaoPx : null;

@@ -6,6 +6,7 @@ import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, EFE
 import { criarCtx, tocarEvento, duracaoEstimada } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE, LINHAS } from '../species.js';
 import { pref, proximaVelocidade } from './regiao1-sfx.js';
+import { resolverEncontroCatalogo, SUBSTITUTO_R1 } from './regiao1-encontros-regras.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
 
@@ -144,7 +145,7 @@ const caminhoU = (u, arte) => (u.arte ? `../../../${u.arte}` : caminho(u.especie
 // nenhuma forma deles entra como inimiga na Região 1 (troca por um Onírico do Vale de Outono); a terceira forma (T5) só aparece
 // na Região 2 a partir do nível 41 (abaixo disso, cai para a forma atual).
 const FASES = ['inicial', 'atual', 'evolucao'];
-export const SUBSTITUTO_R1 = { noctarn: 'Fanalino', ignavor: 'Cobrabúfalo', vaelith: 'Tatuveludo', brotavel: 'Cervomusgo', solarin: 'Xistolim' };
+export { SUBSTITUTO_R1 }; // mesma tabela do catálogo (#59)
 export function formaDoEncontro(especie, nivel = 1, op = {}, regiao = 1) {
   const lin = LINHAS.find((l) => l.inicial === especie || l.atual === especie || l.evolucao === especie);
   if (lin) {
@@ -161,6 +162,15 @@ export function formaDoEncontro(especie, nivel = 1, op = {}, regiao = 1) {
     else { const base = ARTE_DA_ESPECIE[especie]; if (base && /\/0[123]\.(png|webp)$/.test(base)) arte = base.replace(/\/0[123]\.(png|webp)$/, `/0${f}.$1`); }
   }
   return { especie, forma: f >= 1 ? f : null, arte };
+}
+// Entidades do mapa: a fonte é o catálogo (resolverEncontroCatalogo, #59). Aqui só passam as que entram depois sem resolução
+// (ex.: Caçadas), com o mesmo resolvedor, para mapa, Idle e arena mostrarem a mesma entidade.
+export function resolverEncontrosMapa(lista, regiao = 1) {
+  for (let i = 0; i < lista.length; i++) {
+    const e = lista[i]; if (e._resolvido || (e.arteForma && e.forma && e.fase)) continue;
+    const r = resolverEncontroCatalogo(e, { regiao }); Object.assign(e, r, { _resolvido: true });
+  }
+  return lista;
 }
 // Ajusta unidades inimigas já criadas (modos que geram inimigos fora da tela, como a Estratégia)
 export function ajustarInimigos(lista, regiao = 1, papeis = {}) {
