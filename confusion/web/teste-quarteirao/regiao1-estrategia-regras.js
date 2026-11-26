@@ -5,6 +5,7 @@
 import { ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
 import { multElemento } from '../core.js';
 import { EFEITOS, kitDe, PAPEL_PADRAO, PODER_EXCLUSIVO } from './regiao1-batalha-habilidades.js';
+import { bonusCategoriaPoder } from './regiao1-revanche-regras.js';
 export { KITS, kitDe, EFEITOS, temKitProprio } from './regiao1-batalha-habilidades.js';
 
 const lcg = (s) => () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
@@ -19,13 +20,16 @@ export const statsDoNivel = (nivel, papel) => {
   if (papel === 'suporte') return { hp: Math.round(base.hp * 0.95), atk: Math.round(base.atk * 0.8), def: Math.round(base.def * 1.0) };
   return { hp: Math.round(base.hp), atk: Math.round(base.atk * 1.15), def: Math.round(base.def) };
 };
-export function criarUnidade({ id, especie, nivel, lado, papeis, bonus = {}, elemento = ELEMENTO_DA_ESPECIE[especie] || 'neutro' }) {
+export function criarUnidade({ id, especie, nivel, lado, papeis, bonus = {}, elemento = ELEMENTO_DA_ESPECIE[especie] || 'neutro', categoriaPoder = null, chefeRecrutado = false, exclusivoBanner = false }) {
   const papel = papeis[especie] || PAPEL_PADRAO[especie] || 'ataque';
   const s = statsDoNivel(nivel, papel);
-  const ex = PODER_EXCLUSIVO[especie]; if (ex) bonus = { ...bonus, hp: (bonus.hp || 0) + ex.hp, atk: (bonus.atk || 0) + ex.atk, def: (bonus.def || 0) + ex.def };
+  const cat = bonusCategoriaPoder({ especie, categoriaPoder, chefeRecrutado, exclusivoBanner });
+  if (cat.hp || cat.atk || cat.def) {
+    bonus = { ...bonus, hp: (bonus.hp || 0) + cat.hp, atk: (bonus.atk || 0) + cat.atk, def: (bonus.def || 0) + cat.def };
+  }
   const hpMax = Math.round(s.hp * (1 + (bonus.hp || 0)));
   return {
-    id, especie, nivel, lado, papel, elemento,
+    id, especie, nivel, lado, papel, elemento, categoriaPoder: cat.categoria,
     habilidades: HABILIDADES_DA_ESPECIE[especie] || ['Golpe'],
     kit: kitDe(especie, papel, elemento, HABILIDADES_DA_ESPECIE[especie] || []), cd: [0, 0, 0], efeitos: {},
     hpMax, hp: hpMax, atk: Math.round(s.atk * (1 + (bonus.atk || 0))), def: Math.round(s.def * (1 + (bonus.def || 0))),

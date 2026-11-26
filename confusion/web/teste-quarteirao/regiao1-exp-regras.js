@@ -216,7 +216,7 @@ export function materiaisDoAbate(cacada, rng = Math.random) {
 
 // ---- Calabouço e Sanidade ----
 // Nenhum dos cinco iniciais aparece como inimigo na Região 1
-const POOL_CALABOUCO = ['Cervomusgo', 'Xistolim', 'Tatuveludo', 'Fanalino'];
+const POOL_CALABOUCO = ['Cervomusgo', 'Xistolim', 'Tatuveludo', 'Fanalino', 'Cobrabúfalo'];
 function poderLuta(equipe, nivel, rng) {
   const papeis = {};
   const al = equipe.slice(0, 3).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis }));

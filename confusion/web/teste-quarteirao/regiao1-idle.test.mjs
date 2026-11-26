@@ -92,15 +92,16 @@ test('Login 7 dias, Passe (systems.js), Relíquias e Vote & Ganhe funcionam inte
 
   s.recompensas.gold = 500;
   const rel = comprarOuEquiparReliquia(s, 'rel_amuleto_cristal');
-  assert.equal(rel.ok, true);
-  assert.equal(idle.mochila.equipada.amuleto, 'rel_amuleto_cristal');
+  assert.equal(rel.ok, false);
+  assert.equal(s.recompensas.gold, 500);
 
   assert.equal(registrarVotoPortal(s, 'topidle', t0).ok, true);
   assert.equal(registrarVotoPortal(s, 'topidle', t0 + 1000).ok, false);
-  assert.equal(resgatarLojaVoto(s, 'esferas').ok, true);
+  assert.equal(resgatarLojaVoto(s, 'esferas').ok, false);
+  assert.equal(resgatarLojaVoto(s, 'diamantes').ok, false); // precisa de 2 Vote Cash
 });
 
-test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos e exibe Sanidade válida', () => {
+test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos, exibe Sanidade válida e bloqueia compra de Esferas', () => {
   const s = criarEstadoInicial();
   // Simula XP vindo da Campanha (sincronizado automaticamente com Domador)
   s.recompensas.xp = 400;
@@ -124,4 +125,12 @@ test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos
   const res = resetarAtributosDomador(s);
   assert.equal(res.ok, true);
   assert.equal(res.disponiveis, (st0.nivel - 1) * 3);
+
+  // Compra de Esfera desabilitada sem gastar gold/diamantes
+  s.recompensas.gold = 50;
+  s.recompensas.diamantes = 2000;
+  assert.equal(comprarEsferaIdle(s, 'comum').ok, false);
+  assert.equal(s.recompensas.gold, 50);
+  assert.equal(comprarEsferaIdle(s, 'lendaria').ok, false);
+  assert.equal(s.recompensas.diamantes, 2000);
 });

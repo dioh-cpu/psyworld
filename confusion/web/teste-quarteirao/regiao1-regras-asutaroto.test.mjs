@@ -1,0 +1,376 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import {
+  criarEstadoInicial,
+  serializarEstado,
+  desserializarEstado,
+} from './regiao1-estado.js';
+import {
+  garantirEstadoIdle,
+  calcularStatusDetalhado,
+  distribuirAtributoDomador,
+  resolverAbateAuto,
+  calcularGanhoOffline,
+  aplicarGanhoOffline,
+  comprarEsferaIdle,
+  comprarOuEquiparReliquia,
+  resgatarLoginDiario,
+  resgatarTudoPasse,
+  resgatarLojaVoto,
+  MISSOES_CAPTURA_LEGADAS,
+} from './regiao1-idle.js';
+import {
+  FRAGMENTOS_SONHO_CFG,
+  IDENTIFICADORES_RECURSOS,
+  idFragmentoSonho,
+  adicionarFragmentoSonho,
+  saldoFragmentoSonho,
+  sortearDropFragmentoSonho,
+  aplicarDropsOfflineFragmentos,
+  consultarEvolucaoForma,
+  evoluirFormaPorFragmentos,
+  criarUnidadeInicial,
+} from './regiao1-regras-sonho.js';
+import {
+  ESPECIES_INICIAIS_TODAS,
+  formaPorNivelCampanha,
+  resolverEncontroCatalogo,
+  REFORCOS_CHEFES_R1,
+  reforcosDoChefe,
+  equipeAliadaPreservada,
+} from './regiao1-encontros-regras.js';
+import {
+  REVANCHE_CFG,
+  CHEFES_REVANCHE_CATALOGO,
+  saldoFragmentosChefe,
+  statusRevancheChefe,
+  iniciarRevancheChefe,
+  concluirRevancheChefe,
+  previsaoCraftChefe,
+  craftarChefe,
+  compararPoderEquivalente,
+  bonusCategoriaPoder,
+} from './regiao1-revanche-regras.js';
+import { MONSTROS_SELVAGENS } from './regiao1-entidades.js';
+import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
+import { CACADAS, CALABOUCO, HV } from './regiao1-exp-dados.js';
+import { criarUnidade } from './regiao1-estrategia-regras.js';
+import { validateSave } from '../../../api/_lib/confusion-save-lib.js';
+
+const novoSave = () => {
+  const s = criarEstadoInicial();
+  garantirEstadoIdle(s, 1_000_000);
+  return s;
+};
+
+test('Save antigo preserva equipe, itens legados, progresso e Vínculo útil sem reativar esferas/captura/relíquias', () => {
+  const antigo = criarEstadoInicial();
+  antigo.mapaAtual = 'C1';
+  antigo.recompensas = { gold: 500, diamantes: 120, xp: 300 };
+  antigo.idle = {
+    jogador: { xp: 300, hp: 120, sanidade: 100, capturasTotais: 7, atributos: { for: 1, vit: 0, men: 0, vin: 4, sor: 0 } },
+    autoCaca: { ativo: false, autoCapturar: true },
+    mochila: {
+      esferas: { comum: 5, rara: 2, epica: 1, lendaria: 0, mitica: 0 },
+      reliquiasPossuidas: ['rel_lamina_sombra', 'rel_selo_onirico'],
+      equipada: { arma: 'rel_lamina_sombra', amuleto: null, selo: 'rel_selo_onirico' },
+      ovos: [{ especie: 'Vaelith', forma: 'natural', obtidoEm: 123 }],
+      ingredientes: { erva_costeira: 4 },
+    },
+    equipe: [
+      { especie: 'Noctarn', nivel: 12, xp: 1000, raridade: 4, tier: 4, estrelas: 3, forma: 'natural', uid: 'ini0' },
+    ],
+    formacao: ['ini0', null, null, null],
+    diarias: {
+      dia: Math.floor(1_000_000 / 86400000),
+      rerollsRestantes: 2,
+      itens: [
+        { id: 'dm_capturas_3', titulo: 'Capturar 3 Oníricos', tipo: 'capturas', meta: 3, progresso: 1, resgatada: false },
+        { id: 'dm_abates_15', titulo: 'Caçar 15 monstros selvagens', tipo: 'abates', meta: 15, progresso: 4, resgatada: false },
+      ],
+    },
+  };
+
+  const carregado = desserializarEstado(serializarEstado(antigo));
+  const idle = garantirEstadoIdle(carregado, 1_000_000);
+
+  // Não apaga itens legados sem política de compensação
+  assert.equal(idle.mochila.esferas.comum, 5);
+  assert.deepEqual(idle.mochila.reliquiasPossuidas, ['rel_lamina_sombra', 'rel_selo_onirico']);
+  assert.equal(idle.mochila.ovos.length, 1);
+  assert.equal(idle.mochila.ingredientes.erva_costeira, 4);
+  assert.equal(idle.equipe[0].especie, 'Noctarn');
+  assert.equal(equipeAliadaPreservada(idle)[0].especie, 'Noctarn');
+
+  // Missão de captura substituída mantendo IDs declarados para dioh293 e preservando outras missões
+  assert.ok(MISSOES_CAPTURA_LEGADAS.includes('dm_capturas_3'));
+  assert.equal(idle.diarias.itens.some((m) => m.id === 'dm_capturas_3' || m.tipo === 'capturas'), false);
+  assert.equal(idle.diarias.itens[0].id, 'dm_batalhas_3');
+  assert.equal(idle.diarias.itens[1].progresso, 4);
+
+  // Vínculo útil (XP), captura e relíquias removidos dos atributos ativos
+  const st = calcularStatusDetalhado(carregado);
+  assert.equal(st.capturaExtra, 0);
+  assert.ok(st.xpMult > 1.1);
+  assert.equal(st.fontes.some((f) => /Captura|Relíquias/i.test(f.nome + f.detalhe)), false);
+
+  // Compra de esfera, relíquia e loja de voto bloqueadas; abate não captura nem gasta esfera
+  assert.equal(comprarEsferaIdle(carregado, 'comum').ok, false);
+  assert.equal(comprarOuEquiparReliquia(carregado, 'rel_amuleto_cristal').ok, false);
+  idle.votos.voteCash = 5;
+  assert.equal(resgatarLojaVoto(carregado, 'esferas').ok, false);
+  const abate = resolverAbateAuto(carregado, { especie: 'Fanalino', nivel: 5 }, () => 0.005);
+  assert.equal(abate.capturado, false);
+  assert.equal(idle.mochila.esferas.comum, 5);
+  assert.equal(idle.jogador.capturasTotais, 7);
+
+  // Login e Passe não entregam esferas novas
+  const login = resgatarLoginDiario(carregado, 1_000_000 + 86400000);
+  if (login.ok) assert.equal(Object.values(login.recompensa.esferas).reduce((a, b) => a + b, 0), 0);
+  idle.passe.xp = 300;
+  const passe = resgatarTudoPasse(carregado);
+  assert.equal(Object.values(passe.reward.esferas).reduce((a, b) => a + b, 0), 0);
+
+  // Save continua válido na nuvem
+  const valid = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(carregado)), conta: carregado.conta });
+  assert.equal(valid.ok, true);
+});
+
+test('Fragmentos de Sonho: drop 1%, idempotência (ativo e Idle offline) e separação de identificadores', () => {
+  const s = novoSave();
+  assert.notEqual(IDENTIFICADORES_RECURSOS.fragmentoSonho.pastaSave, IDENTIFICADORES_RECURSOS.fragmentoChefe.pastaSave);
+  assert.notEqual(IDENTIFICADORES_RECURSOS.fragmentoSonho.prefixo, IDENTIFICADORES_RECURSOS.itensTier.prefixo);
+  assert.equal(idFragmentoSonho('fogo'), 'frag_sonho:fogo');
+
+  // Limite exato de 1%
+  const falha = sortearDropFragmentoSonho(s, { derrotaId: 'd_fail', especie: 'Fanalino', elemento: 'inseto', rng: () => 0.01 });
+  assert.equal(falha.dropou, false);
+  assert.equal(saldoFragmentoSonho(s, 'inseto'), 0);
+  // Mesmo derrotaId não re-rola
+  const retryFail = sortearDropFragmentoSonho(s, { derrotaId: 'd_fail', especie: 'Fanalino', elemento: 'inseto', rng: () => 0.001 });
+  assert.equal(retryFail.jaPago, true);
+  assert.equal(retryFail.dropou, false);
+  assert.equal(saldoFragmentoSonho(s, 'inseto'), 0);
+
+  const sucesso = sortearDropFragmentoSonho(s, { derrotaId: 'd_ok', especie: 'Fanalino', elemento: 'inseto', rng: () => 0.009 });
+  assert.equal(sucesso.dropou, true);
+  assert.equal(saldoFragmentoSonho(s, 'inseto'), 1);
+  // Repetição não paga duas vezes
+  const dup = sortearDropFragmentoSonho(s, { derrotaId: 'd_ok', especie: 'Fanalino', elemento: 'inseto', rng: () => 0.001 });
+  assert.equal(dup.jaPago, true);
+  assert.equal(saldoFragmentoSonho(s, 'inseto'), 1);
+
+  // Idle offline: paga no máximo uma vez por lote e usa elemento dos encontros
+  const off1 = aplicarDropsOfflineFragmentos(s, { loteId: 'off_1', abates: 5, elemento: 'agua', rng: () => 0.005 });
+  assert.equal(off1.totalDropado, 5);
+  assert.equal(saldoFragmentoSonho(s, 'agua'), 5);
+  const offDup = aplicarDropsOfflineFragmentos(s, { loteId: 'off_1', abates: 5, elemento: 'agua', rng: () => 0.005 });
+  assert.equal(offDup.jaPago, true);
+  assert.equal(saldoFragmentoSonho(s, 'agua'), 5);
+
+  // Integração com aplicarGanhoOffline sem duplicar
+  const t0 = 5_000_000;
+  s.idle.ultimoTickMs = t0 - 600_000;
+  const resumo = calcularGanhoOffline(s, 5, t0);
+  const rOff = aplicarGanhoOffline(s, resumo, 'Cobrabúfalo', t0, () => 0.002);
+  assert.equal(rOff.fragmentosSonho.totalDropado, resumo.abates);
+});
+
+test('Evolução de forma: custos 9/10 e 10/10 (29/30 e 30/30), preserva nível/estrelas/tier e promove T4→T5 apenas nos iniciais', () => {
+  const s = novoSave();
+  s.idle.equipe = [
+    criarUnidadeInicial('Brasinha', { nivel: 18, uid: 'ini_b', estrelas: 7 }),
+    { especie: 'Fanalino', nivel: 24, xp: 5000, tier: 2, raridade: 2, estrelas: 4, forma: 'natural', formaFase: 1, uid: 'nat_f' },
+  ];
+
+  // 9/10 falha sem descontar
+  adicionarFragmentoSonho(s, 'fogo', 9);
+  const c9 = consultarEvolucaoForma(s, 0);
+  assert.equal(c9.custo, 10);
+  assert.equal(c9.saldo, 9);
+  assert.equal(c9.podeEvoluir, false);
+  assert.equal(evoluirFormaPorFragmentos(s, 0).ok, false);
+  assert.equal(saldoFragmentoSonho(s, 'fogo'), 9);
+  assert.equal(s.idle.equipe[0].especie, 'Brasinha');
+
+  // 10/10 evolui base→segunda mantendo T4, nível 18 e 7 estrelas
+  adicionarFragmentoSonho(s, 'fogo', 1);
+  const ev1 = evoluirFormaPorFragmentos(s, 0);
+  assert.equal(ev1.ok, true);
+  assert.equal(ev1.para, 'Ignavor');
+  assert.equal(s.idle.equipe[0].especie, 'Ignavor');
+  assert.equal(s.idle.equipe[0].tier, 4);
+  assert.equal(s.idle.equipe[0].nivel, 18);
+  assert.equal(s.idle.equipe[0].estrelas, 7);
+  assert.equal(saldoFragmentoSonho(s, 'fogo'), 0);
+
+  // 29/30 falha; 30/30 evolui segunda→terceira promovendo inicial T4→T5 e preservando nível/estrelas
+  adicionarFragmentoSonho(s, 'fogo', 29);
+  assert.equal(evoluirFormaPorFragmentos(s, 0).ok, false);
+  assert.equal(saldoFragmentoSonho(s, 'fogo'), 29);
+
+  adicionarFragmentoSonho(s, 'fogo', 1);
+  const ev2 = evoluirFormaPorFragmentos(s, 0);
+  assert.equal(ev2.ok, true);
+  assert.equal(s.idle.equipe[0].especie, 'Ignaraz');
+  assert.equal(s.idle.equipe[0].tier, 5);
+  assert.equal(s.idle.equipe[0].nivel, 18);
+  assert.equal(s.idle.equipe[0].estrelas, 7);
+  assert.equal(saldoFragmentoSonho(s, 'fogo'), 0);
+
+  // Não-inicial preserva seu tier T2 ao evoluir de forma!
+  adicionarFragmentoSonho(s, 'inseto', 40);
+  const nf1 = evoluirFormaPorFragmentos(s, 1);
+  const nf2 = evoluirFormaPorFragmentos(s, 1);
+  assert.equal(nf1.ok && nf2.ok, true);
+  assert.equal(s.idle.equipe[1].formaFase, 3);
+  assert.equal(s.idle.equipe[1].tier, 2);
+  assert.equal(s.idle.equipe[1].nivel, 24);
+  assert.equal(s.idle.equipe[1].estrelas, 4);
+});
+
+test('Limites de nível 20/21 e 40/41 e ausência total de iniciais como inimigos na Região 1 (com arte existente em disco)', () => {
+  assert.equal(formaPorNivelCampanha(1), 1);
+  assert.equal(formaPorNivelCampanha(20), 1);
+  assert.equal(formaPorNivelCampanha(21), 2);
+  assert.equal(formaPorNivelCampanha(40), 2);
+  assert.equal(formaPorNivelCampanha(41), 3);
+
+  // Nenhum inicial aparece como inimigo na Região 1 (selvagens, reforços de chefe, Estratégia, Caçadas, Calabouço, HV)
+  for (const m of MONSTROS_SELVAGENS) {
+    assert.equal(ESPECIES_INICIAIS_TODAS.has(m.especie), false, `Inicial selvagem proibido na R1: ${m.id} (${m.especie})`);
+    assert.ok(m.forma === 1 || m.forma === 2, `Forma inválida na R1 em ${m.id}: ${m.forma}`);
+    assert.equal(m.nome, m.especie);
+    assert.equal(m.elementoDrop, m.elemento);
+    assert.ok(m.kit.length === 3);
+  }
+  const segundasR1 = MONSTROS_SELVAGENS.filter((m) => m.forma === 2);
+  assert.ok(segundasR1.length > 0 && segundasR1.length <= 6);
+  assert.ok(segundasR1.every((m) => ['E10', 'D11', 'PC9', 'CC9'].includes(m.mapa)));
+
+  const raiz = fileURLToPath(new URL('../../../', import.meta.url));
+  for (const m of MONSTROS_SELVAGENS) {
+    assert.ok(m.arteForma && fs.existsSync(raiz + m.arteForma), `Arte ausente em disco: ${m.arteForma}`);
+  }
+
+  for (const bossId of Object.keys(REFORCOS_CHEFES_R1)) {
+    const refs = reforcosDoChefe(bossId, 14);
+    assert.equal(refs.length, 2);
+    for (const r of refs) assert.equal(ESPECIES_INICIAIS_TODAS.has(r.especie), false);
+  }
+
+  for (const rota of ESTRATEGIA_C1.rotas) {
+    for (const f of rota.fases) {
+      for (const esp of f.especies) assert.equal(ESPECIES_INICIAIS_TODAS.has(esp), false, esp);
+      assert.equal(ESPECIES_INICIAIS_TODAS.has(f.libera.inimigo), false, f.libera.inimigo);
+    }
+  }
+  for (const c of CACADAS) for (const esp of c.onir) assert.equal(ESPECIES_INICIAIS_TODAS.has(esp), false, esp);
+  assert.equal(ESPECIES_INICIAIS_TODAS.has(CALABOUCO.chefe.especie), false);
+  for (const m of HV.capitulos[0].missoes) {
+    const listas = [m.inimigos || [], ...Object.values(m.porEscolha || {}).map((v) => v.inimigos || [])];
+    for (const lista of listas) {
+      for (const [esp] of lista) assert.equal(ESPECIES_INICIAIS_TODAS.has(esp), false, esp);
+    }
+  }
+
+  // Tentativa explícita de resolver inicial como inimigo na R1 é substituída; na R2 só entra 3ª forma em nível 41+
+  const r1Tent = resolverEncontroCatalogo({ especie: 'Noctarion', nivel: 45, mapa: 'E1' }, { regiao: 1 });
+  assert.equal(ESPECIES_INICIAIS_TODAS.has(r1Tent.especie), false);
+  assert.equal(r1Tent.substituido, 'Noctarion');
+
+  const r2Nv40 = resolverEncontroCatalogo({ especie: 'Noctarion', nivel: 40 }, { regiao: 2 });
+  assert.equal(r2Nv40.especie, 'Noctarn');
+  assert.equal(r2Nv40.forma, 2);
+
+  const r2Nv41 = resolverEncontroCatalogo({ especie: 'Noctarion', nivel: 41 }, { regiao: 2 });
+  assert.equal(r2Nv41.especie, 'Noctarion');
+  assert.equal(r2Nv41.forma, 3);
+
+  // Todos os 5 iniciais do jogador nascem na forma base T4
+  for (const linId of ['noctarn', 'ignavor', 'vaelith', 'brotavel', 'solarin']) {
+    const ini = criarUnidadeInicial(linId);
+    assert.equal(ini.tier, 4);
+    assert.equal(ini.formaFase, 1);
+    assert.equal(ini.nivel, 5);
+  }
+});
+
+test('Revanche de chefe: cooldown 10 min reais independente de ×2/×3, sem concorrência/pagamento duplo e craft 10 fragmentos', () => {
+  const s = novoSave();
+  s.bossesDerrotados.BOSS_E = true;
+  const t0 = 10_000_000;
+
+  const ini = iniciarRevancheChefe(s, 'BOSS_E', { agoraMs: t0, batalhaId: 'bat_e1', velocidade: 3 });
+  assert.equal(ini.ok, true);
+  assert.ok(ini.reforcos.every((r) => !ESPECIES_INICIAIS_TODAS.has(r.especie)));
+
+  // Batalha concorrente bloqueada (mesmo em outro chefe)
+  s.bossesDerrotados.BOSS_D = true;
+  assert.equal(iniciarRevancheChefe(s, 'BOSS_D', { agoraMs: t0 + 1000 }).ok, false);
+
+  // Conclusão com velocidade ×3 aplica exatamente 10 min reais
+  const fim1 = concluirRevancheChefe(s, { batalhaId: 'bat_e1', vitoria: true, agoraMs: t0 + 5000, rng: () => 0.1, velocidade: 3 });
+  assert.equal(fim1.ok, true);
+  assert.equal(fim1.fragmentosGanhos, 1);
+  assert.equal(saldoFragmentosChefe(s, 'BOSS_E'), 1);
+  assert.equal(fim1.drops.length, 1);
+  assert.equal(fim1.cooldownAte, t0 + 5000 + REVANCHE_CFG.cooldownMs);
+
+  // Pagamento duplo bloqueado pelo mesmo batalhaId
+  const dup = concluirRevancheChefe(s, { batalhaId: 'bat_e1', vitoria: true, agoraMs: t0 + 6000, rng: () => 0.1 });
+  assert.equal(dup.jaPago, true);
+  assert.equal(saldoFragmentosChefe(s, 'BOSS_E'), 1);
+
+  // Cooldown persiste após serializar/desserializar; 9m59s bloqueia, 10m00s libera
+  const recarregado = desserializarEstado(serializarEstado(s));
+  garantirEstadoIdle(recarregado, t0 + 5000 + 599_000);
+  assert.equal(statusRevancheChefe(recarregado, 'BOSS_E', t0 + 5000 + 599_000).emCooldown, true);
+  assert.equal(iniciarRevancheChefe(recarregado, 'BOSS_E', { agoraMs: t0 + 5000 + 599_000 }).ok, false);
+  assert.equal(iniciarRevancheChefe(recarregado, 'BOSS_E', { agoraMs: t0 + 5000 + 600_000, batalhaId: 'bat_e2' }).ok, true);
+
+  // Craft de chefe: declara nível 1, exige 10 fragmentos daquele mesmo chefe (sem aceitar de outro)
+  const prev = previsaoCraftChefe(recarregado, 'BOSS_E');
+  assert.equal(prev.nivelInicial, 1);
+  assert.match(prev.avisoRegra, /Nível 1/);
+  recarregado.idle.mochila.fragmentosChefe.BOSS_E = 9;
+  recarregado.idle.mochila.fragmentosChefe.BOSS_D = 10;
+  assert.equal(craftarChefe(recarregado, 'BOSS_E').ok, false);
+
+  recarregado.idle.mochila.fragmentosChefe.BOSS_E = 10;
+  const cr = craftarChefe(recarregado, 'BOSS_E', { agoraMs: t0 + 700_000, operacaoId: 'craft_e1' });
+  assert.equal(cr.ok, true);
+  assert.equal(cr.unidade.nivel, 1);
+  assert.equal(cr.unidade.tier, 5);
+  assert.equal(cr.unidade.chefeRecrutado, true);
+  assert.equal(saldoFragmentosChefe(recarregado, 'BOSS_E'), 0);
+  assert.equal(saldoFragmentosChefe(recarregado, 'BOSS_D'), 10);
+  // Idempotência do craft
+  assert.equal(craftarChefe(recarregado, 'BOSS_E', { operacaoId: 'craft_e1' }).jaAplicado, true);
+  assert.ok(CHEFES_REVANCHE_CATALOGO.BOSS_C);
+});
+
+test('Comparação de poder: chefe recrutado +20% e exclusivo de banner +30% sobre T5 comum equivalente, sem empilhar', () => {
+  const cmp = compararPoderEquivalente({ nivel: 40, forma: 2, estrelas: 5, papel: 'ataque' });
+  assert.ok(Math.abs(cmp.razoes.chefeVsComum.hp - 1.2) < 0.02);
+  assert.ok(Math.abs(cmp.razoes.chefeVsComum.atk - 1.2) < 0.02);
+  assert.ok(Math.abs(cmp.razoes.chefeVsComum.def - 1.2) < 0.02);
+  assert.ok(Math.abs(cmp.razoes.bannerVsComum.hp - 1.3) < 0.02);
+  assert.ok(Math.abs(cmp.razoes.bannerVsComum.atk - 1.3) < 0.02);
+  assert.ok(Math.abs(cmp.razoes.bannerVsComum.def - 1.3) < 0.02);
+
+  // Não empilha os dois bônus (+20% + +30% = +50% proibido)
+  const duplo = bonusCategoriaPoder({ especie: 'Abyssar', chefeRecrutado: true, exclusivoBanner: true });
+  assert.equal(duplo.hp, 0.3);
+  assert.equal(duplo.atk, 0.3);
+  assert.equal(duplo.def, 0.3);
+  assert.equal(duplo.empilhamentoBloqueado, true);
+
+  const uChefe = criarUnidade({ id: 'c', especie: 'Fanalino', nivel: 30, lado: 'a', papeis: {}, chefeRecrutado: true });
+  const uComum = criarUnidade({ id: 'n', especie: 'Fanalino', nivel: 30, lado: 'a', papeis: {} });
+  assert.equal(uChefe.categoriaPoder, 'chefe_recrutado');
+  assert.ok(Math.abs(uChefe.hpMax / uComum.hpMax - 1.2) < 0.02);
+  assert.ok(Math.abs(uChefe.atk / uComum.atk - 1.2) < 0.02);
+});
