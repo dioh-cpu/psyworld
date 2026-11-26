@@ -71,6 +71,34 @@ const OLHA = {
   direita: ['Brotavel', 'Cervomusgo', 'Cobrabúfalo', 'Xistolim', 'Âmbarasa', 'Bronzelo', 'Cerifogo', 'Colmeiro', 'Falesário', 'Latonhorn', 'Trovoresta', 'Ventassol', 'Zunifaísca'],
   esquerda: ['Vaelith', 'Fanalino', 'Tatuveludo', 'Calquélon', 'Melifalcão', 'Vesprata', 'Ignavor'],
 };
+// Aura contínua no sprite pelo efeito mais importante ativo
+const AURA = ['invencivel', 'panico', 'congelamento', 'queimadura', 'veneno', 'sangramento', 'escudo', 'sono', 'atordoamento', 'veloz', 'provocacao', 'regeneracao'];
+const SOMBRA = 'drop-shadow(0 4px 3px rgba(0,0,0,.55))';
+const CSS_AURA = `
+.arena .un[data-aura="invencivel"] .un-fig img { animation: au-inv 1.4s ease-in-out infinite; }
+@keyframes au-inv { 0%,100% { filter: ${SOMBRA} drop-shadow(0 0 5px #fde68a) drop-shadow(0 0 12px #f59e0b) brightness(1.08); } 50% { filter: ${SOMBRA} drop-shadow(0 0 10px #fff7cc) drop-shadow(0 0 22px #fbbf24) brightness(1.22); } }
+.arena .un[data-aura="panico"] .un-fig img { animation: au-pan .55s ease-in-out infinite; }
+@keyframes au-pan { 0%,100% { filter: ${SOMBRA} drop-shadow(0 0 4px #ef4444) brightness(1); } 30% { filter: ${SOMBRA} drop-shadow(0 0 14px #dc2626) drop-shadow(0 0 4px #000) brightness(1.15) contrast(1.15); } }
+/* Pânico: aura demoníaca contínua atrás do corpo */
+.arena .un[data-aura="panico"] .un-fig::before, .arena .un[data-aura="panico"] .un-fig::after { content: ''; position: absolute; left: 50%; bottom: -4%; width: calc(var(--largura-sprite) * 1.15); height: calc(var(--largura-sprite) * 1.05); translate: -50% 0; z-index: -1; pointer-events: none; border-radius: 50% 50% 40% 40%; transform-origin: 50% 100%; }
+.arena .un[data-aura="panico"] .un-fig::before { background: radial-gradient(ellipse 50% 62% at 50% 92%, rgba(239,68,68,.75), rgba(127,29,29,.55) 45%, rgba(20,0,4,.35) 62%, transparent 72%); filter: blur(5px); animation: au-pan-ch .32s ease-in-out infinite alternate; }
+.arena .un[data-aura="panico"] .un-fig::after { background: repeating-conic-gradient(from 180deg at 50% 100%, transparent 0 7deg, rgba(220,38,38,.55) 9deg 12deg, transparent 14deg 22deg); -webkit-mask: radial-gradient(ellipse 48% 95% at 50% 100%, #000 35%, transparent 72%); mask: radial-gradient(ellipse 48% 95% at 50% 100%, #000 35%, transparent 72%); filter: blur(1.5px); animation: au-pan-ch2 .45s steps(3) infinite; }
+@keyframes au-pan-ch { from { transform: scale(.94, .9); opacity: .8; } to { transform: scale(1.05, 1.1); opacity: 1; } }
+@keyframes au-pan-ch2 { 0% { transform: scaleY(.9) skewX(-3deg); } 50% { transform: scaleY(1.12) skewX(3deg); } 100% { transform: scaleY(.98) skewX(0); } }
+.arena .un[data-aura="congelamento"] .un-fig img { filter: ${SOMBRA} sepia(.55) hue-rotate(165deg) saturate(1.5) brightness(1.15) drop-shadow(0 0 6px #7dd3fc); }
+.arena .un[data-aura="queimadura"] .un-fig img { animation: au-fogo .35s steps(2) infinite alternate; }
+@keyframes au-fogo { from { filter: ${SOMBRA} drop-shadow(0 0 4px #f97316) brightness(1.05); } to { filter: ${SOMBRA} drop-shadow(0 -2px 9px #fb923c) drop-shadow(0 0 3px #fde047) brightness(1.12); } }
+.arena .un[data-aura="veneno"] .un-fig img { animation: au-ven 1.6s ease-in-out infinite; }
+@keyframes au-ven { 0%,100% { filter: ${SOMBRA} drop-shadow(0 0 3px #84cc16); } 50% { filter: ${SOMBRA} drop-shadow(0 0 9px #65a30d) sepia(.25) hue-rotate(40deg); } }
+.arena .un[data-aura="sangramento"] .un-fig img { animation: au-san 1.2s ease-in-out infinite; }
+@keyframes au-san { 0%,100% { filter: ${SOMBRA} drop-shadow(0 0 2px #dc2626); } 50% { filter: ${SOMBRA} drop-shadow(0 0 8px #b91c1c); } }
+.arena .un[data-aura="escudo"] .un-fig img { filter: ${SOMBRA} drop-shadow(0 0 2px #e0f2fe) drop-shadow(0 0 8px #38bdf8); }
+.arena .un[data-aura="sono"] .un-fig img, .arena .un[data-aura="atordoamento"] .un-fig img { filter: ${SOMBRA} brightness(.82) saturate(.7); }
+.arena .un[data-aura="veloz"] .un-fig img { filter: ${SOMBRA} drop-shadow(-6px 0 4px rgba(165,243,252,.7)) drop-shadow(-12px 0 6px rgba(165,243,252,.35)); }
+.arena .un[data-aura="provocacao"] .un-fig img { animation: au-pro 1s ease-in-out infinite; }
+@keyframes au-pro { 0%,100% { filter: ${SOMBRA} drop-shadow(0 0 3px #f97316); } 50% { filter: ${SOMBRA} drop-shadow(0 0 10px #fb923c); } }
+.arena .un[data-aura="regeneracao"] .un-fig img { animation: au-reg 1.8s ease-in-out infinite; }
+@keyframes au-reg { 0%,100% { filter: ${SOMBRA} drop-shadow(0 0 2px #4ade80); } 50% { filter: ${SOMBRA} drop-shadow(0 0 8px #86efac); } }`;
 const olhaDe = (esp) => (OLHA.direita.includes(esp) ? 'direita' : OLHA.esquerda.includes(esp) ? 'esquerda' : 'frente');
 const CSS = `
 .arena { position: absolute; inset: 0; overflow: hidden; background: #1a0f22; color: #fff3e7; font: 12px system-ui, sans-serif; user-select: none; -webkit-user-select: none; --altura-botao: clamp(44px, 12vh, 62px); --espaco-rodape: calc(var(--altura-botao) + 16px + env(safe-area-inset-bottom, 0px)); }
@@ -105,7 +133,7 @@ const CSS = `
 .arena .tb-aguarde { opacity: .8; font-size: 12px; margin-left: auto; }
 .arena .tb-fim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(13,7,19,.78); font-size: 20px; z-index: 60; text-align: center; padding: 20px; }`;
 let cssOk = false;
-const injetar = () => { if (cssOk) return; cssOk = true; const s = document.createElement('style'); s.textContent = CSS; document.head.append(s); };
+const injetar = () => { if (cssOk) return; cssOk = true; const s = document.createElement('style'); s.textContent = CSS + CSS_AURA; document.head.append(s); };
 const arteRaiz = (esp, arte) => arte?.[esp] || ARTE_DA_ESPECIE[esp] || `assets/monsters/${String(esp).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}/sprite-front.png`;
 const caminho = (esp, arte) => `../../../${arteRaiz(esp, arte)}`;
 
@@ -156,6 +184,7 @@ export function criarArena(host, { artes = {} } = {}) {
     const u = n.u, hp = hpVis.get(u.id) ?? u.hp; n.el.querySelector('.un-hp i').style.width = `${Math.max(0, Math.round(hp / u.hpMax * 100))}%`;
     n.el.querySelector('.un-efs').innerHTML = Object.entries(u.efeitos || {}).map(([id, e]) => `<span title="${esc(EFEITOS[id]?.nome || id)}">${(EFEITOS[id]?.icone || '').slice(0, 2)}<small>${e.turnos}</small></span>`).join('');
     const morto = u.hp <= 0 && !pend.has(u.id); n.el.classList.toggle('morto', morto);
+    const aura = AURA.find((id) => u.efeitos?.[id]) || ''; if (n.el.dataset.aura !== aura) n.el.dataset.aura = aura;
   }
   function montar(nova) {
     b = nova; campo.querySelectorAll('.un').forEach((e) => e.remove()); nos = new Map(); hpVis = new Map(); pend = new Set(); alvoSel = null; animacao = null;

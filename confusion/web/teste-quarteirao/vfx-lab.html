@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Laboratório de VFX</title>
+<style>
+html, body { margin: 0; height: 100%; background: #111; overflow: hidden; }
+#host { position: fixed; inset: 0; }
+#painel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 300; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; background: rgba(8,4,14,.82); font: 12px system-ui, sans-serif; color: #f5e9ff; max-height: 34vh; overflow: auto; }
+#painel button { background: #2a1838; color: #f5e9ff; border: 1px solid #6b4a82; border-radius: 6px; padding: 4px 7px; font: inherit; cursor: pointer; }
+#painel button.ult { border-color: #f59e0b; }
+#painel b { width: 100%; }
+#medida { position: fixed; top: 6px; right: 8px; z-index: 300; font: 12px monospace; color: #fde68a; background: rgba(0,0,0,.6); padding: 3px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="host"></div>
+<div id="medida"></div>
+<div id="painel"></div>
+<script type="module">
+import { criarArena } from './regiao1-batalha-tela.js';
+import { criarUnidade, criarBatalha, executar, atorAtual, KITS } from './regiao1-estrategia-regras.js';
+import { tocarEvento, criarCtx, duracaoEstimada } from './regiao1-vfx.js';
+
+const host = document.getElementById('host'), painel = document.getElementById('painel'), medida = document.getElementById('medida');
+const arena = criarArena(host);
+const FUNDO = 'assets/confusion/interface/eventos/halloween/arenas/04.webp';
+const GEN = {
+  terremoto: { id: 'g_terremoto', nome: 'Terremoto', icone: '🌋', tipo: 'dano', alvo: 'todos', mult: 1.5, cd: 5, distancia: true, elemento: 'terra', efeitos: [{ id: 'atordoamento', turnos: 1, chance: 0.5 }] },
+  maremoto: { id: 'g_maremoto', nome: 'Maremoto', icone: '🌊', tipo: 'dano', alvo: 'todos', mult: 1.5, cd: 5, distancia: true, elemento: 'agua', efeitos: [] },
+  meteoros: { id: 'g_meteoros', nome: 'Chuva de Meteoros', icone: '☄️', tipo: 'dano', alvo: 'todos', mult: 1.5, cd: 5, distancia: true, elemento: 'fogo', efeitos: [{ id: 'queimadura', turnos: 2, chance: 0.6 }] },
+  raizes: { id: 'g_raizes', nome: 'Raízes Presas', icone: '🌱', tipo: 'dano', alvo: 'todos', mult: 1.1, cd: 3, distancia: true, elemento: 'planta', efeitos: [{ id: 'veneno', turnos: 2, chance: 0.6 }] },
+  curaLuz: { id: 'g_cura_luz', nome: 'Cura Solar', icone: '☀️', tipo: 'cura', alvo: 'aliados', mult: 0.2, cd: 3, elemento: 'luz', efeitos: [] },
+  curaPlanta: { id: 'g_cura_planta', nome: 'Cura Verde', icone: '🌿', tipo: 'cura', alvo: 'aliados', mult: 0.2, cd: 3, elemento: 'planta', efeitos: [{ id: 'regeneracao', turnos: 2 }] },
+  curaTrevas: { id: 'g_cura_trevas', nome: 'Cura Sombria', icone: '🌙', tipo: 'cura', alvo: 'aliados', mult: 0.2, cd: 3, elemento: 'trevas', efeitos: [] },
+};
+const COMPANHIA = ['Noctarn', 'Vaelith', 'Brotavel', 'Solarin', 'Ignavor', 'Velalume'];
+const INIMIGOS = ['Fanalino', 'Cervomusgo', 'Xistolim', 'Tatuveludo'];
+let ocupado = false;
+
+function montar(especie) {
+  const papeis = {};
+  const outros = COMPANHIA.filter((e) => e !== especie).slice(0, 3);
+  const al = [especie, ...outros].map((e, i) => Object.assign(criarUnidade({ id: `a${i}`, especie: e, nivel: 40, lado: 'a', papeis }), { vaga: i }));
+  const ini = INIMIGOS.map((e, i) => Object.assign(criarUnidade({ id: `i${i}`, especie: e, nivel: 40, lado: 'i', papeis }), { vaga: i }));
+  for (const u of ini) { u.hpMax = 99999; u.hp = 99999; }
+  for (const u of al.slice(1)) u.hp = Math.round(u.hpMax * 0.45);
+  return criarBatalha(al, ini);
+}
+async function rodar(especie, idx, op = {}) {
+  if (ocupado) return null; ocupado = true;
+  try {
+    const b = montar(especie); atorAtual(b);
+    if (op.caido) b.aliados[1].hp = 0;
+    if (op.hab) { b.aliados[0].kit = [op.hab, op.hab, op.hab]; b.aliados[0].cd = [0, 0, 0]; }
+    if (op.efeitos) for (const [id, e] of Object.entries(op.efeitos)) (b.inimigos[0].efeitos ||= {})[id] = e;
+    arena.atualizar(b, { arena: FUNDO, titulo: `${especie} · VFX`, sub: KITS[especie]?.[idx]?.nome || '' });
+    await new Promise((r) => setTimeout(r, 450));
+    b.fila = [b.aliados[0].id, ...b.fila.filter((id) => id !== b.aliados[0].id)]; b.iniciado = `${b.rodada}:${b.aliados[0].id}`;
+    executar(b, { tipo: idx < 0 ? 'atacar' : 'habilidade', idx: Math.max(0, idx) }, Math.random);
+    const ev = b.evento; ev.mostrado = true;
+    const campo = host.querySelector('.tb-campo');
+    const ctx = criarCtx({ arena: host, campo, rapido: Boolean(op.rapido), no: (id) => host.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} });
+    const est = duracaoEstimada(ev, Boolean(op.rapido)), t0 = performance.now();
+    await tocarEvento(ctx, ev);
+    const real = Math.round(performance.now() - t0);
+    medida.textContent = `${ev.hab?.nome || ev.tipo}: real ${real} ms · estimado ${Math.round(est)} ms ${real > est ? '⚠️' : '✓'}`;
+    arena.atualizar(b, { arena: FUNDO, titulo: `${especie} · VFX` });
+    return { real, estimado: Math.round(est), tipo: ev.tipo, alvos: ev.alvos.length };
+  } finally { ocupado = false; }
+}
+painel.innerHTML = `<span>Genéricas: ${Object.entries(GEN).map(([k, h]) => `<button data-gen="${k}">${h.icone} ${h.nome}</button>`).join('')}</span>` + Object.entries(KITS).map(([esp, kit]) => `<span>${esp}: ${kit.map((h, i) => `<button class="${h.cd >= 5 ? 'ult' : ''}" data-esp="${esp}" data-idx="${i}">${h.icone} ${h.nome}</button>`).join('')}</span>`).join('');
+painel.addEventListener('click', (e) => { const t = e.target.closest('button'); if (!t) return; if (t.dataset.gen) { rodar('Ignavor', 0, { hab: GEN[t.dataset.gen] }); return; } rodar(t.dataset.esp, Number(t.dataset.idx), { caido: t.dataset.esp === 'Mortálio' && t.dataset.idx === '2' }); });
+window.lab = { rodar, GEN };
+arena.atualizar(montar('Noctarn'), { arena: FUNDO, titulo: 'Laboratório de VFX' });
+</script>
+</body>
+</html>
