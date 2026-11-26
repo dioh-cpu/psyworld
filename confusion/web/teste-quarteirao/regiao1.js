@@ -45,6 +45,7 @@ import { iniciarReinos } from './regiao1-reinos.js';
 import { golpeCampanha } from './regiao1-batalha-fx.js';
 import { criarTelaBatalha } from './regiao1-batalha-tela.js';
 import { indicesEquipeCombate, membrosFormacao } from './regiao1-exp-regras.js';
+import { aplicarXp } from './regiao1-progressao.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
@@ -1061,6 +1062,11 @@ function encerrarBatalha(vitoria) {
   fecharModal('modal-batalha');
   if (telaBatalha.aberta()) telaBatalha.encerrarSilencioso();
 
+  const ehBoss = b.tipo === 'boss';
+  const nvIni = (ehBoss ? BOSSES_REGIAO1[b.entidade.id]?.nivel : b.entidade?.nivel) || 1;
+  const xpForm = Math.round((40 + 12 * nvIni) * (ehBoss ? 2 : 1) * (vitoria ? 1 : 0.3));
+  for (const { m } of membrosFormacao(idle)) aplicarXp(m, xpForm);
+
   if (vitoria) {
     for (let k = 0; k < 3; k++) window.regiaoHW?.aoAbater?.(); // doces durante o evento (abates de PvE)
     if (Math.random() < 0.03) { darPocao(save, b.tipo === 'boss' ? 'pocao_xp_m' : 'pocao_xp_p'); mostrarToast('🧪 Poção de XP encontrada!', 2200); }
@@ -1099,6 +1105,8 @@ function encerrarBatalha(vitoria) {
   } else {
     // Afasta levemente da entidade ao recuar para não disparar encontro imediato
     bloqueioEncontroAte = performance.now() + 2500;
+    atualizarHudEstado();
+    salvarEstado();
   }
 }
 

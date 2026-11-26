@@ -170,9 +170,21 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     }
     $('#est-topo').innerHTML = `<span>Prosperidade <b>${p.total}</b>/100 <span class="est-barra"><i style="width:${p.total}%"></i></span></span><span>${mat}</span><span>${obra}</span>`;
   }
+  const cacheFundo = new Map();
+  function aplicarFundoMapa(el, Dx) {
+    const pri = `../../../${Dx.fundo}`;
+    if (!Dx.fundoFallback) { el.style.backgroundImage = `url(${pri})`; return; }
+    const fb = `../../../${Dx.fundoFallback}`;
+    if (cacheFundo.has(pri)) { el.style.backgroundImage = `url(${cacheFundo.get(pri)})`; return; }
+    el.style.backgroundImage = `url(${pri}), url(${fb})`;
+    const im = new Image();
+    im.onload = () => { cacheFundo.set(pri, pri); if (D === Dx) el.style.backgroundImage = `url(${pri})`; };
+    im.onerror = () => { cacheFundo.set(pri, fb); if (D === Dx) el.style.backgroundImage = `url(${fb})`; };
+    im.src = pri;
+  }
   function desenharMapa() {
     const s = estado(), m = $('#est-mundo'), ativos = new Set(locaisAtivos(s, D).map((l) => l.id));
-    m.style.backgroundImage = `url(../../../${D.fundo})`;
+    aplicarFundoMapa(m, D);
     m.innerHTML = D.locais.map((l) => {
       const cat = D.estruturas.find((e) => e.categoria === l.categoria);
       if (!ativos.has(l.id)) return `<button class="est-slot trancado" style="left:${l.pos[0]}%;top:${l.pos[1]}%;--w:44px" data-trancado="${l.id}" aria-label="Terreno bloqueado"><span class="est-poli" style="font-size:20px">🔒</span><span>Prefeitura nv.${l.nivelPrincipal}</span></button>`;
@@ -410,7 +422,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
       <p>Quantidade: <button class="btn-sec" data-qtd="-1">−</button> <b>${loteQtd}</b> <button class="btn-sec" data-qtd="1">+</button> <button class="btn-sec" data-qtd="5">+5</button></p>
       <p>Produzirá <b>${matTxt(pv.saida)}</b> usando ${matTxt(pv.insumos)} · ⏱️ ${dur(pv.duracao)}</p>${pv.ok ? '' : `<p class="ruim">Faltam ${matTxt(pv.falta)}.</p>`}
       <div class="est-linha"><button class="btn-pri" data-fabricar="1" ${pv.ok ? '' : 'disabled'}>Fabricar lote</button><button class="btn-sec" data-repetir="1" ${g.ultimoLote ? '' : 'disabled'}>${g.ultimoLote ? `Repetir último lote (${g.ultimoLote.qtd}× ${esc(D.gestao.receitas.find((r) => r.id === g.ultimoLote.receita).nome)})` : 'Repetir último lote'}</button></div>
-      ${g.fabricacao.map((l) => { const rc = D.gestao.receitas.find((r) => r.id === l.receita); return `<p>${l.inicio ? '⚙️' : '⏸️'} ${l.qtd}× ${esc(rc.nome)} ${l.inicio ? `· ${dur(l.inicio + rc.seg * 1000 * l.qtd - agora)} restantes` : '· aguardando'}</p>`; }).join('')}</div>`;
+      ${g.fabricacao.map((l) => { const rc = D.gestao.receitas.find((r) => r.id === l.receita); return `<p>${l.inicio ? '⚙️' : '⏸️'} ${l.qtd}× ${esc(rc.nome)} ${l.inicio ? `· ${dur(l.inicio + (l.seg ?? rc.seg) * 1000 * l.qtd - agora)} restantes` : '· aguardando'}</p>`; }).join('')}</div>`;
     const r = roster(); const prods = Object.entries(s.estruturas).filter(([, e]) => estrDe(e.tipo).producao);
     if (prods.length) h += `<div class="est-bloco"><h4>👷 Oníricos em serviço (+10% de produção)</h4>${prods.map(([loc, e]) => { const m = r.find((x) => x.id === s.trabalho[loc]); return `<p>${esc(estrDe(e.tipo).nome)} (${loc}): <button class="btn-sec" data-trab="${loc}">${m ? esc(m.especie) : 'ninguém'} ▸</button></p>`; }).join('')}<p class="muted">Quem trabalha continua livre para o combate e para outros reinos.</p></div>`;
     h += `<div class="est-bloco"><h4>Registro</h4>${g.log.slice(-6).reverse().map((x) => `<p class="muted">#${x.id} ${esc(x.t)}</p>`).join('') || '<p class="muted">Sem eventos ainda.</p>'}</div>`;
@@ -627,7 +639,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     return { titulo: `Estratégia · ${D.titulo}`, linhas: [`Prosperidade: ${p.total}/100`, `Materiais: ${custoTxt(s.materiais)}`, `Obras: ${obras}`, `Expedição: ${exp}`, `Obras na fila: ${g.obras.length} · produção pronta: ${pr} · lotes na oficina: ${g.fabricacao.length}`] };
   }
   const api = { abrir, resumo, estado, minimizar, encerrar, comecarFase, aoSair: null,
-    reinos: () => REINOS_D.map((x) => ({ id: x.id, titulo: x.titulo, aberto: desbloqueado(x), progresso: x.desbloqueio ? progressoDesbloqueio(x) : null, fundo: x.fundo, texto: x.desbloqueio?.texto || '' })),
+    reinos: () => REINOS_D.map((x) => ({ id: x.id, titulo: x.titulo, aberto: desbloqueado(x), progresso: x.desbloqueio ? progressoDesbloqueio(x) : null, fundo: x.fundo, fundoFallback: x.fundoFallback || null, texto: x.desbloqueio?.texto || '' })),
     // ajuda de teste e balanceamento
     setRitmo: (ms) => { ritmoMs = ms; if (timerTick) iniciarTick(); }, batalha: () => batalha, minimizado: () => minimizado };
   return api;

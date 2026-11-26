@@ -59,7 +59,7 @@ export function iniciarReinos({ getSave, salvar, mostrarToast, abrirModal, fecha
     fecharModal('modal-reinos');
     trans.innerHTML = '<div id="rei-t-titulo">Viajando…</div>'; trans.classList.add('vis'); await espera(30); trans.classList.add('opaco'); await espera(380);
     trans.innerHTML = `<div style="font-size:20px">👑 ${esc(reino.titulo)}</div><div class="barra"><i id="rei-prog"></i></div><small id="rei-dica">Carregando o mapa…</small>`;
-    const urls = [`../../../${reino.fundo}`]; const feitos = { n: 0 };
+    const urls = [`../../../${reino.fundo}`, ...(reino.fundoFallback ? [`../../../${reino.fundoFallback}`] : [])]; const feitos = { n: 0 };
     const t0 = performance.now();
     await Promise.all(urls.map((u) => carregarImagem(u).then(() => { feitos.n += 1; })));
     const p = trans.querySelector('#rei-prog'); for (const v of [35, 70, 100]) { if (p) p.style.width = `${v}%`; await espera(260); }
