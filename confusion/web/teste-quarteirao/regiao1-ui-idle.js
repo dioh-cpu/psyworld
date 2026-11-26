@@ -251,6 +251,7 @@ export function criarControladorIdleUI(ctx) {
 
   // Atalhos do Menu Unificado
   const abrirDoMenu = (fn) => { fechar('modal-menu'); fn(); };
+  $('m-descanso')?.addEventListener('click', () => abrirDoMenu(() => window.regiaoExp?.abrir('descanso')));
   $('m-diario')?.addEventListener('click', () => abrirDoMenu(() => ctx.abrirDiario()));
   $('m-atlas')?.addEventListener('click', () => abrirDoMenu(abrirAtlas));
   $('m-autocaca')?.addEventListener('click', () => abrirDoMenu(abrirConfigAutoCaca));
@@ -419,14 +420,37 @@ export function criarControladorIdleUI(ctx) {
     abrir('modal-codex');
   }
 
-  // ---- Mochila, Atributos do Domador, Fragmentos & Status Explicáveis ----
-  $('hud-card-domador')?.addEventListener('click', abrirMochila);
-
-  $('modal-mochila')?.querySelectorAll('[data-mochila-secao]').forEach((botao) => {
-    botao.addEventListener('click', () => $(botao.dataset.mochilaSecao)?.scrollIntoView({ block: 'start' }));
+  // ---- Mochila, Atributos do Domador, Fragmentos, Chefes, Ovos & Itens por categoria ----
+  let mochilaCat = 'domador';
+  function selecionarCatMochila(cat) {
+    mochilaCat = cat || 'domador';
+    $('modal-mochila')?.querySelectorAll('[data-mochila-cat]').forEach((b) => {
+      b.setAttribute('aria-selected', String(b.dataset.mochilaCat === mochilaCat));
+    });
+    $('modal-mochila')?.querySelectorAll('[data-cat-pane]').forEach((p) => {
+      p.hidden = p.dataset.catPane !== mochilaCat;
+    });
+    const det = $('mochila-detalhe');
+    if (det) det.style.display = 'none';
+    const corpo = $('mochila-corpo');
+    if (corpo) corpo.scrollTop = 0;
+  }
+  function mostrarDetalheMochila({ nome, categoria, qtd, desc, icone }) {
+    const det = $('mochila-detalhe');
+    if (!det) return;
+    det.style.display = 'flex';
+    det.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
+      ${icone ? `<img src="${icone}" alt="" style="width:36px;height:36px;object-fit:contain">` : ''}
+      <div><b>${nome}</b> <span class="tag">${categoria}</span> <b style="color:#facc15">×${qtd}</b><div class="sub">${desc}</div></div>
+    </div>`;
+  }
+  $('hud-card-domador')?.addEventListener('click', () => abrirMochila('domador'));
+  $('modal-mochila')?.querySelectorAll('[data-mochila-cat]').forEach((botao) => {
+    botao.addEventListener('click', () => selecionarCatMochila(botao.dataset.mochilaCat));
   });
 
-  function abrirMochila() {
+  function abrirMochila(catInicial = null) {
+    if (typeof catInicial === 'string') mochilaCat = catInicial;
     const save = ctx.getSave();
     const idle = garantirEstadoIdle(save);
     const st = calcularStatusDetalhado(save);
@@ -483,70 +507,134 @@ export function criarControladorIdleUI(ctx) {
       const k = String(el || 'neutro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       return k === 'sombra' ? 'trevas' : k;
     };
+
     const fragEl = $('mochila-fragmentos');
     if (fragEl) {
       const fragsSonho = fragmentosSonhoDe(save);
-      const sonhoHtml = Object.entries(fragsSonho).map(([el, qtd]) => `
-        <div class="mv1-slot">
-          <img src="${MV1(`ficha/sonho-${slugSonho(el)}.png`)}" alt="${el}" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">
+      const totalSonho = Object.values(fragsSonho).reduce((a, b) => a + (Number(b) || 0), 0);
+      const sonhoHtml = Object.entries(fragsSonho).map(([el, qtd]) => {
+        const ic = MV1(`ficha/sonho-${slugSonho(el)}.png`);
+        return `<button type="button" class="mv1-slot" data-item-nome="Fragmento de Sonho (${el})" data-item-cat="Evolução" data-item-qtd="${qtd}" data-item-ic="${ic}" data-item-desc="Evolui Oníricos do elemento ${el} na Ficha: 10 (Base→2ª forma) e 30 (2ª→3ª forma).">
+          <img src="${ic}" alt="${el}" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">
           <b>${el}</b>
           <span style="color:#c084fc">${qtd}</span>
-        </div>
-      `).join('');
+        </button>`;
+      }).join('');
+      fragEl.innerHTML = `
+        <div class="sub" style="margin-bottom:6px">Total: <b>${totalSonho}</b> fragmentos · Toque em um item para ver detalhes de uso.</div>
+        <div class="mv1-grade">${sonhoHtml}</div>
+      `;
+      fragEl.querySelectorAll('.mv1-slot').forEach((btn) => {
+        btn.onclick = () => {
+          fragEl.querySelectorAll('.mv1-slot').forEach((x) => x.classList.remove('ativo'));
+          btn.classList.add('ativo');
+          mostrarDetalheMochila({ nome: btn.dataset.itemNome, categoria: btn.dataset.itemCat, qtd: btn.dataset.itemQtd, desc: btn.dataset.itemDesc, icone: btn.dataset.itemIc });
+        };
+      });
+    }
+
+    const chefesEl = $('mochila-chefes');
+    if (chefesEl) {
       const chefesHtml = Object.entries(CHEFES_REVANCHE_CATALOGO).map(([bossId, def]) => {
         const qtd = saldoFragmentosChefe(save, bossId);
         return `<div class="card-row">
-          <div style="display:flex;align-items:center;gap:8px">
-            <img src="${MV1('chefes/fragmento.png')}" alt="" style="width:28px;height:28px;object-fit:contain">
-            <div><b>${def.nome}</b><div class="sub">10 fragmentos criam este chefe (Nv.1 · T5 · +20%) em Caçadas &amp; Chefes</div></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="${MV1('chefes/fragmento.png')}" alt="" style="width:32px;height:32px;object-fit:contain">
+            <div><b>Fragmento · ${def.nome}</b><div class="sub">Junte 10 para criar ${def.especieRecrutavel} (Nv.1 · T5 · +20%) em Caçadas &amp; Chefes.</div></div>
           </div>
           <b style="color:#fbbf24">${qtd}/10</b>
         </div>`;
       }).join('');
       const exclusivos = Object.entries(idle.mochila.itensExclusivosChefe || {}).filter(([, q]) => q > 0);
       const excHtml = exclusivos.length
-        ? `<div class="card-row"><div><b>Drops Exclusivos de Chefes</b><div class="sub">${exclusivos.map(([id, q]) => `${id}: ${q}`).join(' · ')}</div></div></div>`
-        : '';
-      fragEl.innerHTML = `
-        <div class="card-row" style="display:block;line-height:1.5">
-          <div><b>Fragmentos de Sonho</b> <span class="sub">(Evolução na Ficha: 10 Base→2ª · 30 2ª→3ª)</span></div>
-          <div class="mv1-grade">${sonhoHtml}</div>
-        </div>
-        ${chefesHtml}
-        ${excHtml}
-      `;
+        ? `<div class="sec-tit">Drops Exclusivos</div>${exclusivos.map(([id, q]) => `<div class="card-row"><div><b>${id}</b><div class="sub">Drop exclusivo obtido em Revanche de Chefe.</div></div><b>×${q}</b></div>`).join('')}`
+        : '<div class="sub" style="margin-top:6px">Derrote chefes em Revanche para obter drops exclusivos.</div>';
+      chefesEl.innerHTML = chefesHtml + excHtml;
     }
 
-    $('mochila-ovos').innerHTML = idle.mochila.ovos.length
-      ? `<div class="card-row">
-          <div style="display:flex;align-items:center;gap:8px">
-            <img src="${MV1(`passe/ovo-t${Math.max(1, Math.min(5, Number(idle.mochila.ovos[0].tier) || 2))}.png`)}" alt="" style="width:34px;height:34px;object-fit:contain">
-            <div><b>Ovos na Mochila: ${idle.mochila.ovos.length}</b><div class="sub">Próximo: ${idle.mochila.ovos[0].nome || idle.mochila.ovos[0].especie} · T${idle.mochila.ovos[0].tier || 2} (${idle.mochila.ovos[0].forma || 'natural'})</div></div>
+    const ovosEl = $('mochila-ovos');
+    if (ovosEl) {
+      ovosEl.innerHTML = idle.mochila.ovos.length
+        ? `<div class="card-row" style="border-color:#fbbf2466;margin-bottom:6px">
+            <div><b>Ovos disponíveis: ${idle.mochila.ovos.length}</b><div class="sub">Chocar abre o primeiro ovo da fila e adiciona o Onírico no Nível 1.</div></div>
+            <button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar Próximo</button>
           </div>
-          <button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar</button>
-        </div>`
-      : '<div class="sub">Nenhum ovo na mochila ainda. Caçe monstros ou ligue Auto-Caça para dropar ovos!</div>';
-    $('btn-chocar-ovo')?.addEventListener('click', () => {
-      const r = chocarPrimeiroOvo(save);
-      if (r.ok) {
-        const on = r.onirico || { especie: r.ovo.especie, tier: r.ovo.tier || 2, nivel: 1, estrelas: 1 };
-        ctx.mostrarToast(`🥚 Nasceu ${on.especie} (T${on.tier || on.raridade || 2} · Nv.${on.nivel || 1})!`, 3200);
-        registrarLogIdle(idle, `🥚 Ovo chocado: ${on.especie} (T${on.tier || 2} · Nv.${on.nivel || 1})!`, 'farm');
-        ctx.salvar();
-        atualizarHudIdle();
-        if (r.ovo.tipo === 'ovoT5' || r.ovo.temporada) {
-          revelarOvo({
-            edicao: r.ovo.tema || 'dinossauros',
-            ovo: { nome: r.ovo.nome || 'Ovo de Dinossauro', tier: r.ovo.tier || 5 },
-            recompensa: { especie: on.especie, tier: on.tier || 5, nivel: on.nivel || 1, estrelas: on.estrelas || 1, arte: ARTE_DA_ESPECIE[on.especie] || '' },
-            nivel: 100,
-          }).then(() => abrirMochila());
-        } else {
-          abrirMochila();
+          <div class="mv1-grade">${idle.mochila.ovos.map((o, idx) => {
+            const t = Math.max(1, Math.min(5, Number(o.tier) || 2));
+            const ic = MV1(`passe/ovo-t${t}.png`);
+            const nome = o.nome || o.especie || 'Ovo Onírico';
+            const desc = `Ovo T${t} (${o.forma || 'natural'})${o.temporada ? ` · Temporada ${o.temporada}` : ''}${o.origem ? ` · Origem: ${o.origem}` : ''}.`;
+            return `<button type="button" class="mv1-slot" data-ovo-idx="${idx}" data-item-nome="${nome}" data-item-cat="Ovo T${t}" data-item-qtd="1" data-item-ic="${ic}" data-item-desc="${desc}">
+              <img src="${ic}" alt="${nome}">
+              <b>${nome}</b>
+              <span style="color:#fbbf24">T${t}</span>
+            </button>`;
+          }).join('')}</div>`
+        : '<div class="sub">Nenhum ovo na mochila ainda. Avance no Passe, reproduza Oníricos ou cace no Idle para obter ovos.</div>';
+      ovosEl.querySelectorAll('.mv1-slot').forEach((btn) => {
+        btn.onclick = () => {
+          ovosEl.querySelectorAll('.mv1-slot').forEach((x) => x.classList.remove('ativo'));
+          btn.classList.add('ativo');
+          mostrarDetalheMochila({ nome: btn.dataset.itemNome, categoria: btn.dataset.itemCat, qtd: btn.dataset.itemQtd, desc: btn.dataset.itemDesc, icone: btn.dataset.itemIc });
+        };
+      });
+      $('btn-chocar-ovo')?.addEventListener('click', () => {
+        const r = chocarPrimeiroOvo(save);
+        if (r.ok) {
+          const on = r.onirico || { especie: r.ovo.especie, tier: r.ovo.tier || 2, nivel: 1, estrelas: 1 };
+          ctx.mostrarToast(`🥚 Nasceu ${on.especie} (T${on.tier || on.raridade || 2} · Nv.${on.nivel || 1})!`, 3200);
+          registrarLogIdle(idle, `🥚 Ovo chocado: ${on.especie} (T${on.tier || 2} · Nv.${on.nivel || 1})!`, 'farm');
+          ctx.salvar();
+          atualizarHudIdle();
+          if (r.ovo.tipo === 'ovoT5' || r.ovo.temporada) {
+            revelarOvo({
+              edicao: r.ovo.tema || 'dinossauros',
+              ovo: { nome: r.ovo.nome || 'Ovo de Dinossauro', tier: r.ovo.tier || 5 },
+              recompensa: { especie: on.especie, tier: on.tier || 5, nivel: on.nivel || 1, estrelas: on.estrelas || 1, arte: ARTE_DA_ESPECIE[on.especie] || '' },
+              nivel: 100,
+            }).then(() => abrirMochila('ovos'));
+          } else {
+            abrirMochila('ovos');
+          }
         }
-      }
-    });
+      });
+    }
 
+    const itensEl = $('mochila-itens');
+    if (itensEl) {
+      const fab = idle.estrategia?.fab || {};
+      const mats = Object.entries(fab.materiais || {}).filter(([, q]) => q > 0).map(([k, q]) => ({
+        nome: k[0].toUpperCase() + k.slice(1), cat: 'Material', qtd: q, desc: 'Recurso da Fazenda e Caçadas usado em contratos da Guilda e receitas da Oficina.', ic: '',
+      }));
+      const itensOf = Object.entries(fab.gestao?.itens || {}).filter(([, q]) => q > 0).map(([k, q]) => ({
+        nome: k.replace(/_/g, ' '), cat: 'Oficina', qtd: q, desc: 'Consumível produzido na Oficina para Calabouço, Crise ou contratos.', ic: '',
+      }));
+      const pocoes = Object.entries(idle.hw?.pocoes || {}).filter(([, q]) => q > 0).map(([k, q]) => ({
+        nome: k.replace(/_/g, ' '), cat: 'Poção XP', qtd: q, desc: 'Poção de experiência aplicável ao Domador ou a qualquer Onírico em Halloween → Poções.', ic: '',
+      }));
+      const tickets = [
+        { nome: 'Tickets de Invocação', cat: 'Banner', qtd: idle.exp?.tickets || 0, desc: 'Usados no Banner de Invocação (×1 ou ×10).', ic: MV1('passe/ticket-dinossauros.png') },
+        { nome: 'Tickets de Halloween', cat: 'Evento', qtd: idle.hw?.tickets || 0, desc: 'Saldo separado usado no Banner Mensal de Halloween.', ic: '../../../assets/confusion/interface/eventos/halloween/itens/ticket.png' },
+        { nome: 'Doces de Halloween', cat: 'Evento', qtd: idle.hw?.doces || 0, desc: 'Evoluem exclusivos de Halloween ou compram itens na Loja da Torre.', ic: '../../../assets/confusion/interface/eventos/halloween/itens/doce.png' },
+      ];
+      const listaItens = [...tickets, ...mats, ...itensOf, ...pocoes];
+      itensEl.innerHTML = `<div class="mv1-grade">${listaItens.map((it) => `
+        <button type="button" class="mv1-slot" data-item-nome="${it.nome}" data-item-cat="${it.cat}" data-item-qtd="${it.qtd}" data-item-ic="${it.ic}" data-item-desc="${it.desc}">
+          ${it.ic ? `<img src="${it.ic}" alt="" onerror="this.style.display='none'">` : '<span style="font-size:22px;line-height:32px">📦</span>'}
+          <b>${it.nome}</b>
+          <span style="color:#fde68a">×${it.qtd}</span>
+        </button>
+      `).join('')}</div>`;
+      itensEl.querySelectorAll('.mv1-slot').forEach((btn) => {
+        btn.onclick = () => {
+          itensEl.querySelectorAll('.mv1-slot').forEach((x) => x.classList.remove('ativo'));
+          btn.classList.add('ativo');
+          mostrarDetalheMochila({ nome: btn.dataset.itemNome, categoria: btn.dataset.itemCat, qtd: btn.dataset.itemQtd, desc: btn.dataset.itemDesc, icone: btn.dataset.itemIc });
+        };
+      });
+    }
+
+    selecionarCatMochila(mochilaCat);
     abrir('modal-mochila');
   }
 
@@ -728,6 +816,8 @@ export function criarControladorIdleUI(ctx) {
       b.onclick = () => { fechar('modal-temporada'); ctx.viajarParaMapa(b.dataset.irDm, true); };
     });
 
+    const tempCorpo = $('temp-corpo');
+    if (!preservarPosicao && tempCorpo) tempCorpo.scrollTop = 0;
     abrir('modal-temporada');
   }
 

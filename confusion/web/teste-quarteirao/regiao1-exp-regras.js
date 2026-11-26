@@ -62,6 +62,7 @@ export function indicesEquipeCombate(idle) {
 export const aberto = (save, modo) => {
   const e = expDe(save);
   switch (modo) {
+    case 'descanso':
     case 'equipe': return true;
     case 'banner': return questFeita(save, MARCOS.banner) || e.tickets > 0 || e.pulls > 0;
     case 'cacadas': return questFeita(save, MARCOS.cacada1);

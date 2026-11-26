@@ -216,3 +216,28 @@ test('Regras Noctarn integradas: Penumbrio → Noctarn bloqueada e cópia de ban
   assert.equal(copiaBanner.tier, 4);
   assert.equal(copiaBanner.estrelas, 3);
 });
+
+test('Ajustes de telas (dioh293): evento semanal sem undefined, Mochila em categorias, Passe sem sobreposição, Descanso, Banner e Halloween', async () => {
+  const { resumoEventosAtuais } = await import('./regiao1-idle.js');
+  const { aberto } = await import('./regiao1-exp-regras.js');
+
+  const ev = resumoEventosAtuais(Date.UTC(2026, 6, 15, 12, 0, 0));
+  assert.ok(ev.semanal.nome && ev.semanal.efeito && !String(ev.semanal.efeito).includes('undefined'));
+  assert.ok(ev.mensal.nome && ev.mensal.efeito && !String(ev.mensal.efeito).includes('undefined'));
+
+  const s = criarEstadoInicial();
+  garantirEstadoIdle(s);
+  assert.equal(aberto(s, 'descanso'), true);
+
+  const html = fs.readFileSync(path.join(DIR, 'regiao1.html'), 'utf8');
+  const exp = fs.readFileSync(path.join(DIR, 'regiao1-expansao.js'), 'utf8');
+  const hw = fs.readFileSync(path.join(DIR, 'regiao1-halloween.js'), 'utf8');
+  assert.equal(html.includes('id="mochila-cats"'), true);
+  assert.equal(html.includes('id="mochila-detalhe"'), true);
+  assert.equal(html.includes('id="temp-corpo"'), true);
+  assert.equal(html.includes('id="m-descanso"'), true);
+  assert.equal(exp.includes('function abaDescanso()'), true);
+  assert.equal(exp.includes("$('#exp-corpo').scrollTop = 0"), true);
+  assert.equal(hw.includes('hw-hero'), true);
+  assert.equal(hw.includes("$('#hw-corpo').scrollTop = 0"), true);
+});
