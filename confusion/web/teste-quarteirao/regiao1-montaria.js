@@ -10,17 +10,19 @@ export const MONTARIAS = {
     // Clipes do domador montado (Azazel no Brumacervo): preencher quando o pacote Confusion-Flow-Azazel estiver recortado.
     // Formato esperado (igual ao Azazel a pé): repouso-<dir> e caminhada-<dir> com dir ∈ frente, esquerda, costas (direita = espelho),
     // fundo transparente (WebM VP9 com alfa ou PNG em folha) ou chroma #11E720 com despill; pés/cascos na mesma linha de base.
-    clipes: null,
+    // Recortes do PR #65 (vídeo 1080p, grade 4×2): folhas de caminhada e quadros de repouso com transparência; a grade, o topo e a
+    // linha dos cascos estão em brumacervo.json (gerado no recorte)
+    clipes: { tipo: 'folha', meta: 'brumacervo.json' },
     base: 'assets/characters/montado/brumacervo/',
-    quadro: { largura: 960, altura: 540, topo: 26, pe: 513 }, // topo da cabeça do domador e linha dos cascos
-    alturaRelativa: 1.45, // altura total (domador + montaria) em relação ao domador a pé
+    alturaRelativa: 1.3, // altura do conjunto (cabeça do domador até os cascos) em relação ao domador a pé
   },
 };
 // Equipamento (contrato com as regras): save.idle.montaria = id equipado; posse em save.idle.colecao.montarias (prêmios do Passe, #58).
 // O Brumacervo é a montaria do domador e dispensa posse. Id sem apresentação cadastrada (ex.: montarias do Passe ainda sem clipes)
 // fica equipado, mas o domador aparece a pé.
 export const montariasPossuidas = (save) => ['brumacervo', ...(Array.isArray(save?.idle?.colecao?.montarias) ? save.idle.colecao.montarias : [])];
-export const montariaEquipada = (save) => { const id = save?.idle?.montaria; return id && montariasPossuidas(save).includes(id) ? id : null; };
+// Sem escolha gravada, o domador usa o Brumacervo (decisão: domador montado visivelmente); null/'' grava a escolha de andar a pé.
+export const montariaEquipada = (save) => { const v = save?.idle?.montaria; const id = v === undefined ? 'brumacervo' : v; return id && montariasPossuidas(save).includes(id) ? id : null; };
 export const apresentacaoMontaria = (save) => { const id = montariaEquipada(save); return id && MONTARIAS[id] ? MONTARIAS[id] : null; };
 // Montado de verdade só quando a montaria está equipada e os clipes estão prontos; senão, a pé.
 export const montadoVisivel = (save) => Boolean(apresentacaoMontaria(save)?.clipes);
