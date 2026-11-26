@@ -8,11 +8,9 @@ import { MONSTROS_SELVAGENS, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { QUESTS_DEFINICOES } from './regiao1-estado.js';
 import {
   I18N,
-  RELIQUIAS_CATALOGO,
   ATRIBUTOS_DOMADOR,
   ESPECIES,
   PASS_LEVELS,
-  SPHERE_PRICE,
   garantirEstadoIdle,
   bonusCodex,
   calcularStatusDetalhado,
@@ -21,19 +19,25 @@ import {
   avaliarRiscoArea,
   calcularGanhoOffline,
   aplicarGanhoOffline,
+  liquidarPeriodoIdle,
   resgatarDiaria,
   trocarMissaoDiaria,
   resgatarLoginDiario,
   resgatarTudoPasse,
-  comprarEsferaIdle,
-  comprarOuEquiparReliquia,
+  comprarNivelPasse,
+  infoPasse,
+  trilhaPasse,
+  infoLogin7Dias,
   chocarPrimeiroOvo,
   registrarVotoPortal,
   resgatarLojaVoto,
   resumoEventosAtuais,
   registrarLogIdle,
-  passLevel,
 } from './regiao1-idle.js';
+import { fragmentosSonhoDe } from './regiao1-regras-sonho.js';
+import { CHEFES_REVANCHE_CATALOGO, saldoFragmentosChefe } from './regiao1-revanche-regras.js';
+import { revelarOvo, mostrarRecompensas } from './regiao1-revelacao.js';
+import { ARTE_DA_ESPECIE } from '../species.js';
 
 export function criarControladorIdleUI(ctx) {
   let promptPwa = null;
@@ -167,12 +171,9 @@ export function criarControladorIdleUI(ctx) {
     const buffsEl = $('barra-buffs');
     if (buffsEl) {
       const buffs = [
-        { ic: '🛡️', nome: 'Escudo 7d', desc: '+10% Captura e +20% Encontros nos primeiros 7 dias.' },
+        { ic: '🛡️', nome: 'Escudo 7d', desc: '+20% Encontros e proteção inicial nos primeiros 7 dias.' },
         { ic: '🌙', nome: ev.semanal.nome, desc: `Evento semanal ativo: ${ev.semanal.efeito}` },
       ];
-      if (save.forma === 'noctarn') {
-        buffs.unshift({ ic: '✨', nome: 'Onírico', desc: 'Conexão Onírica ativa: +100% de velocidade de movimento.' });
-      }
       if (ev.raid?.aberto) {
         buffs.push({ ic: '🔥', nome: 'Raid', desc: `Raid aberta: ${ev.raid.boss.nome} (${ev.raid.restanteMin}m)` });
       }
@@ -354,7 +355,6 @@ export function criarControladorIdleUI(ctx) {
     const especiesMapa = [...new Set(MONSTROS_SELVAGENS.filter((w) => w.mapa === mapa?.id).map((w) => w.especie))];
     $('ac-toggle').checked = Boolean(idle.autoCaca.ativo);
     $('ac-vantagem').checked = Boolean(idle.autoCaca.preferirVantagem);
-    $('ac-capturar').checked = Boolean(idle.autoCaca.autoCapturar);
     $('ac-ovos').checked = Boolean(idle.autoCaca.coletarOvos);
     $('ac-emergencia').checked = Boolean(idle.autoCaca.voltarMarcoEmergencia);
     $('ac-hp').value = idle.autoCaca.descansarHpPct;
@@ -378,7 +378,7 @@ export function criarControladorIdleUI(ctx) {
     const idle = garantirEstadoIdle(ctx.getSave());
     idle.autoCaca.ativo = $('ac-toggle').checked;
     idle.autoCaca.preferirVantagem = $('ac-vantagem').checked;
-    idle.autoCaca.autoCapturar = $('ac-capturar').checked;
+    idle.autoCaca.autoCapturar = false;
     idle.autoCaca.coletarOvos = $('ac-ovos').checked;
     idle.autoCaca.voltarMarcoEmergencia = $('ac-emergencia').checked;
     idle.autoCaca.descansarHpPct = Number($('ac-hp').value);
@@ -400,26 +400,26 @@ export function criarControladorIdleUI(ctx) {
     const c = bonusCodex(idle);
     $('codex-resumo').innerHTML = `
       <b>Pontos do Codex:</b> ${c.pontos} · <b>Marcos:</b> ${c.marcos} · <b>Áreas:</b> ${c.nAreas}/48 · <b>Chefes:</b> ${c.nBosses}/4<br>
-      <span style="color:#4ade80">Bônus Permanentes da Conta: +${c.hpPct}% HP · +${c.atkPct}% ATK · +${c.capturaPct}% Captura · +${c.fazendaPct}% Fazenda</span>
+      <span style="color:#4ade80">Bônus Permanentes da Conta: +${c.hpPct}% HP · +${c.atkPct}% ATK · +${c.fazendaPct}% Fazenda</span>
     `;
     const lista = $('codex-lista');
     lista.innerHTML = Object.entries(ESPECIES).slice(0, 12).map(([nome, esp]) => {
       const reg = idle.codex.especies[nome];
-      const status = reg ? `Abates: ${reg.abates} · Capturas: ${reg.capturas}` : 'Ainda não descoberto';
+      const status = reg ? `Abates: ${reg.abates}` : 'Ainda não descoberto';
       return `
         <div class="card-row" style="opacity:${reg ? 1 : 0.55}">
           <div>
             <b>${nome}</b> <span class="tag">${esp.elemento || esp.pureza}</span>
             <div class="sub">${status} · Habilidades: ${esp.habilidades.slice(0, 3).join(', ')}</div>
           </div>
-          <span class="tag" style="color:${reg?.capturas ? '#4ade80' : '#94a3b8'}">${reg?.capturas ? '✓ Capturado' : reg ? 'Visto' : '???'}</span>
+          <span class="tag" style="color:${reg ? '#4ade80' : '#94a3b8'}">${reg ? '✓ Registrado' : '???'}</span>
         </div>
       `;
     }).join('');
     abrir('modal-codex');
   }
 
-  // ---- Mochila, Atributos do Domador, Relíquias & Status Explicáveis ----
+  // ---- Mochila, Atributos do Domador, Fragmentos & Status Explicáveis ----
   $('hud-card-domador')?.addEventListener('click', abrirMochila);
 
   $('modal-mochila')?.querySelectorAll('[data-mochila-secao]').forEach((botao) => {
@@ -478,78 +478,217 @@ export function criarControladorIdleUI(ctx) {
       </div>
     `).join('');
 
-    $('mochila-esferas').innerHTML = Object.entries(SPHERE_PRICE).map(([rar, preco]) => {
-      const custoTxt = typeof preco === 'object'
-        ? `${preco.valor}${preco.moeda === 'diamonds' ? '💎' : 'g'}`
-        : `${preco}g`;
-      return `
-        <div class="card-row">
-          <div><b>Esfera ${rar}</b> · Você tem: <b style="color:#38bdf8">${idle.mochila.esferas[rar] || 0}</b></div>
-          <button class="btn-pri" style="padding:5px 10px;font-size:11.5px" data-comp-esf="${rar}">Comprar (${custoTxt})</button>
+    const MV1 = (p) => `../../../assets/confusion/interface/menus-v1/${p}`;
+    const slugSonho = (el) => {
+      const k = String(el || 'neutro').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return k === 'sombra' ? 'trevas' : k;
+    };
+    const fragEl = $('mochila-fragmentos');
+    if (fragEl) {
+      const fragsSonho = fragmentosSonhoDe(save);
+      const sonhoHtml = Object.entries(fragsSonho).map(([el, qtd]) => `
+        <div class="mv1-slot">
+          <img src="${MV1(`ficha/sonho-${slugSonho(el)}.png`)}" alt="${el}" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">
+          <b>${el}</b>
+          <span style="color:#c084fc">${qtd}</span>
         </div>
+      `).join('');
+      const chefesHtml = Object.entries(CHEFES_REVANCHE_CATALOGO).map(([bossId, def]) => {
+        const qtd = saldoFragmentosChefe(save, bossId);
+        return `<div class="card-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            <img src="${MV1('chefes/fragmento.png')}" alt="" style="width:28px;height:28px;object-fit:contain">
+            <div><b>${def.nome}</b><div class="sub">10 fragmentos criam este chefe (Nv.1 · T5 · +20%) em Caçadas &amp; Chefes</div></div>
+          </div>
+          <b style="color:#fbbf24">${qtd}/10</b>
+        </div>`;
+      }).join('');
+      const exclusivos = Object.entries(idle.mochila.itensExclusivosChefe || {}).filter(([, q]) => q > 0);
+      const excHtml = exclusivos.length
+        ? `<div class="card-row"><div><b>Drops Exclusivos de Chefes</b><div class="sub">${exclusivos.map(([id, q]) => `${id}: ${q}`).join(' · ')}</div></div></div>`
+        : '';
+      fragEl.innerHTML = `
+        <div class="card-row" style="display:block;line-height:1.5">
+          <div><b>Fragmentos de Sonho</b> <span class="sub">(Evolução na Ficha: 10 Base→2ª · 30 2ª→3ª)</span></div>
+          <div class="mv1-grade">${sonhoHtml}</div>
+        </div>
+        ${chefesHtml}
+        ${excHtml}
       `;
-    }).join('');
-    $('mochila-esferas').querySelectorAll('[data-comp-esf]').forEach((b) => {
-      b.onclick = () => {
-        const r = comprarEsferaIdle(save, b.dataset.compEsf);
-        ctx.mostrarToast(r.ok ? `Esfera ${b.dataset.compEsf} comprada!` : r.motivo, 2200);
-        ctx.salvar();
-        atualizarHudIdle();
-        abrirMochila();
-      };
-    });
+    }
 
     $('mochila-ovos').innerHTML = idle.mochila.ovos.length
-      ? `<div class="card-row"><div><b>Ovos na Mochila: ${idle.mochila.ovos.length}</b><div class="sub">Próximo: ${idle.mochila.ovos[0].especie} (${idle.mochila.ovos[0].forma})</div></div><button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar</button></div>`
+      ? `<div class="card-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            <img src="${MV1(`passe/ovo-t${Math.max(1, Math.min(5, Number(idle.mochila.ovos[0].tier) || 2))}.png`)}" alt="" style="width:34px;height:34px;object-fit:contain">
+            <div><b>Ovos na Mochila: ${idle.mochila.ovos.length}</b><div class="sub">Próximo: ${idle.mochila.ovos[0].nome || idle.mochila.ovos[0].especie} · T${idle.mochila.ovos[0].tier || 2} (${idle.mochila.ovos[0].forma || 'natural'})</div></div>
+          </div>
+          <button class="btn-pri" id="btn-chocar-ovo">🥚 Chocar</button>
+        </div>`
       : '<div class="sub">Nenhum ovo na mochila ainda. Caçe monstros ou ligue Auto-Caça para dropar ovos!</div>';
     $('btn-chocar-ovo')?.addEventListener('click', () => {
       const r = chocarPrimeiroOvo(save);
       if (r.ok) {
-        ctx.mostrarToast(`🥚 Nasceu um ${r.ovo.especie} (${r.ovo.forma})!`, 3200);
-        registrarLogIdle(idle, `🥚 Ovo chocado: ${r.ovo.especie}!`, 'farm');
+        const on = r.onirico || { especie: r.ovo.especie, tier: r.ovo.tier || 2, nivel: 1, estrelas: 1 };
+        ctx.mostrarToast(`🥚 Nasceu ${on.especie} (T${on.tier || on.raridade || 2} · Nv.${on.nivel || 1})!`, 3200);
+        registrarLogIdle(idle, `🥚 Ovo chocado: ${on.especie} (T${on.tier || 2} · Nv.${on.nivel || 1})!`, 'farm');
         ctx.salvar();
         atualizarHudIdle();
-        abrirMochila();
+        if (r.ovo.tipo === 'ovoT5' || r.ovo.temporada) {
+          revelarOvo({
+            edicao: r.ovo.tema || 'dinossauros',
+            ovo: { nome: r.ovo.nome || 'Ovo de Dinossauro', tier: r.ovo.tier || 5 },
+            recompensa: { especie: on.especie, tier: on.tier || 5, nivel: on.nivel || 1, estrelas: on.estrelas || 1, arte: ARTE_DA_ESPECIE[on.especie] || '' },
+            nivel: 100,
+          }).then(() => abrirMochila());
+        } else {
+          abrirMochila();
+        }
       }
-    });
-
-    $('mochila-reliquias').innerHTML = RELIQUIAS_CATALOGO.map((r) => {
-      const tem = idle.mochila.reliquiasPossuidas.includes(r.id);
-      const eq = idle.mochila.equipada[r.slot] === r.id;
-      return `
-        <div class="card-row">
-          <div><b>${r.nome}</b> <span class="tag">${r.slot}</span><div class="sub">${r.desc}</div></div>
-          <button class="${eq ? 'btn-sec' : 'btn-pri'}" style="padding:5px 10px;font-size:11.5px" data-rel="${r.id}">
-            ${eq ? '✓ Equipada' : tem ? 'Equipar' : `Comprar (${r.custo}g)`}
-          </button>
-        </div>
-      `;
-    }).join('');
-    $('mochila-reliquias').querySelectorAll('[data-rel]').forEach((b) => {
-      b.onclick = () => {
-        const res = comprarOuEquiparReliquia(save, b.dataset.rel);
-        ctx.mostrarToast(res.ok ? `Relíquia equipada: ${res.reliquia.nome}!` : res.motivo, 2400);
-        ctx.salvar();
-        atualizarHudIdle();
-        abrirMochila();
-      };
     });
 
     abrir('modal-mochila');
   }
 
-  // ---- Temporada, Passe 30 Níveis, Login 7 Dias & Missões Diárias (com Reroll!) ----
-  function abrirTemporada() {
+  // ---- Temporada, Passe 100 Níveis (trilha navegável), Login 7 Dias (painel próprio) & Missões Diárias ----
+  let trilhaFaixa = 0; // 0: 1..25, 1: 26..50, 2: 51..75, 3: 76..100
+  let trilhaScrollSalvo = 0;
+  const MV1_P = (p) => `../../../assets/confusion/interface/menus-v1/${p}`;
+  function artePremioPasse(premio) {
+    if (!premio) return '';
+    if (premio.tipo === 'ovoT5') return MV1_P('passe/ovo-t5.png');
+    if (premio.tipo === 'ovo') return MV1_P(`passe/ovo-t${Math.max(1, Math.min(5, Number(premio.tier) || 2))}.png`);
+    if (premio.tipo === 'tickets') return MV1_P('passe/ticket-dinossauros.png');
+    if (premio.tipo === 'moldura') return MV1_P('passe/moldura-garras-de-ambar.png');
+    if (premio.tipo === 'acessorio') return MV1_P('passe/colar-dente-fossil.png');
+    if (premio.tipo === 'casa') return MV1_P('passe/samambaia-jurassica.png');
+    if (premio.tipo === 'montaria') return MV1_P('passe/fossil-de-ambar.png');
+    return '';
+  }
+
+  function renderizarTrilhaPasse(save) {
+    const itens = trilhaPasse(save);
+    const navEl = $('temp-trilha-nav');
+    const trilhaEl = $('temp-trilha');
+    if (!navEl || !trilhaEl) return;
+    trilhaEl.classList.add('mv1-trilha');
+    const faixas = [[1, 25], [26, 50], [51, 75], [76, 100]];
+    navEl.innerHTML = faixas.map(([a, b], i) => `
+      <button class="btn-sec" data-faixa="${i}" style="padding:3px 9px;font-size:11px;${trilhaFaixa === i ? 'background:#f3a458;color:#21110c;font-weight:700' : ''}">Nv.${a}–${b}</button>
+    `).join('');
+    navEl.querySelectorAll('[data-faixa]').forEach((b) => {
+      b.onclick = () => { trilhaFaixa = Number(b.dataset.faixa); trilhaScrollSalvo = 0; renderizarTrilhaPasse(save); };
+    });
+    const [ini, fim] = faixas[trilhaFaixa] || [1, 25];
+    const corEst = { coletado: '#22c55e', pronto: '#fbbf24', liberado: '#60a5fa', bloqueado: '#94a3b8' };
+    const bgEst = (it) => (it.nivel === 100
+      ? MV1_P('passe/recompensa-grande-premio.png')
+      : it.estado === 'coletado'
+        ? MV1_P('passe/recompensa-resgatado.png')
+        : it.estado === 'bloqueado'
+          ? MV1_P('passe/recompensa-bloqueado.png')
+          : MV1_P('passe/recompensa-disponivel.png'));
+    const rotEst = {
+      coletado: `<img class="mv1-ico" src="${MV1_P('comum/icone-resgatado.png')}" alt=""> Coletado`,
+      pronto: '★ Resgatar',
+      liberado: 'Disponível',
+      bloqueado: 'Calendário',
+    };
+    trilhaEl.innerHTML = itens.slice(ini - 1, fim).map((it) => {
+      const arte = artePremioPasse(it.premio);
+      return `<div class="mv1-passe-card" style="background-image:url('${bgEst(it)}')">
+        <b>Nv.${it.nivel}</b>
+        ${arte ? `<img class="prem" src="${arte}" alt="">` : ''}
+        <div style="min-height:24px;line-height:1.25">${it.premio.texto}</div>
+        <span style="color:${corEst[it.estado]};font-size:10px">${it.estado === 'bloqueado' ? `<img class="mv1-ico" src="${MV1_P('comum/icone-cadeado.png')}" alt=""> Dia ${it.diaAbertura}` : rotEst[it.estado]}</span>
+      </div>`;
+    }).join('');
+    trilhaEl.scrollLeft = trilhaScrollSalvo;
+  }
+
+  function renderizarPainelLogin7d() {
+    const save = ctx.getSave();
+    const info = infoLogin7Dias(save);
+    const resumoEl = $('login-7d-resumo');
+    const gradeEl = $('login-7d-grade');
+    const btnCol = $('btn-login-7d-coletar');
+    if (!resumoEl || !gradeEl) return;
+    resumoEl.innerHTML = info.jaColetouHoje
+      ? `<b>Login de hoje já coletado!</b> (${info.coletados}/7 dias concluídos) · Próximo prêmio (Dia ${info.proximoDia}): <b>${info.proximoPremio.icone} ${info.proximoPremio.texto}</b>`
+      : `<b>Dia ${info.diaDisponivel}/7 disponível agora!</b> · Coletados: ${info.coletados}/7 · Prêmio de hoje: <b>${info.proximoPremio.icone} ${info.proximoPremio.texto}</b>`;
+    gradeEl.innerHTML = info.dias.map((d) => {
+      const bg = d.estado === 'disponivel' ? MV1_P('login/dia-hoje.png') : d.estado === 'coletado' ? MV1_P('login/dia-recebido.png') : MV1_P('login/dia-futuro.png');
+      const tag = d.estado === 'disponivel'
+        ? '<b style="color:#fbbf24">★ Disponível</b>'
+        : d.estado === 'coletado'
+          ? `<span style="color:#4ade80"><img class="mv1-ico" src="${MV1_P('comum/icone-resgatado.png')}" alt=""> Coletado</span>`
+          : `<span class="sub">Dia ${d.dia}</span>`;
+      return `<div class="mv1-login-card" style="background-image:url('${bg}')">
+        <div><b>Dia ${d.dia}</b></div>
+        <img src="${MV1_P('login/icone-presente.png')}" alt="" style="width:28px;height:28px;object-fit:contain">
+        <div style="min-height:28px">${d.icone} ${d.texto}</div>
+        <div>${tag}</div>
+      </div>`;
+    }).join('');
+    if (btnCol) {
+      btnCol.disabled = info.jaColetouHoje;
+      btnCol.textContent = info.jaColetouHoje ? '✓ Recompensa de Hoje Coletada' : `🎁 Coletar Dia ${info.diaDisponivel}/7`;
+    }
+  }
+
+  function abrirLogin7dSobrePasse() {
+    const trilhaEl = $('temp-trilha');
+    if (trilhaEl) trilhaScrollSalvo = trilhaEl.scrollLeft;
+    renderizarPainelLogin7d();
+    const p = $('painel-login-7d');
+    if (p) p.style.display = 'block';
+  }
+
+  function fecharLogin7dParaTrilha() {
+    const p = $('painel-login-7d');
+    if (p) p.style.display = 'none';
+    const trilhaEl = $('temp-trilha');
+    if (trilhaEl) trilhaEl.scrollLeft = trilhaScrollSalvo;
+  }
+
+  function abrirTemporada(preservarPosicao = false) {
     const save = ctx.getSave();
     const idle = garantirEstadoIdle(save);
     const ev = resumoEventosAtuais();
-    const nv = passLevel(idle.passe.xp);
+    const info = infoPasse(save);
+    const trilhaEl = $('temp-trilha');
+    if (preservarPosicao && trilhaEl) trilhaScrollSalvo = trilhaEl.scrollLeft;
+    else if (!preservarPosicao) trilhaFaixa = Math.min(3, Math.floor(Math.max(0, info.nivel) / 25));
+
+    const proxTxt = info.proximo
+      ? `<b>Próximo (Passe Nv.${info.proximo.nivel}):</b> ${info.proximo.premio.texto}${info.proximo.premio.tier ? ` (Ovo T${info.proximo.premio.tier} · Onírico nasce Nv.1)` : ''} · Compra: ${info.proximo.preco}💎 (${info.proximo.liberado ? 'disponível hoje' : `abre dia ${info.proximo.dia} · ${info.proximo.data}`})`
+      : `<b>Passe Nv.100 concluído!</b> Ovo de ${info.tema} (Tier T5 · Onírico nasce Nv.1) ${info.t5Pago ? 'no inventário/entregue' : 'pronto para coletar'}`;
+    const faixaTxt = info.proximaFaixa
+      ? ` · Próxima faixa (Nv.${info.proximaFaixa.ate}) abre dia ${info.proximaFaixa.dia} (${info.proximaFaixa.data})`
+      : ' · Todas as faixas liberadas';
 
     $('temp-resumo').innerHTML = `
-      <b>Passe de Temporada:</b> Nível ${nv}/${PASS_LEVELS} (${idle.passe.xp} XP) · Resgatado até Nv.${idle.passe.claimed}<br>
-      <b>Evento Semanal:</b> ${ev.semanal.nome} (${ev.semanal.efeito}) · <b>Mensal:</b> ${ev.mensal.nome}<br>
-      <b>Próxima Raid (2h):</b> ${ev.raid.boss.nome} (${ev.raid.aberto ? `ABERTA · ${ev.raid.restanteMin}m` : `em ${ev.raid.abreEmMin}m`})
+      <b>Passe · ${info.tema} (${info.edicao}):</b> Passe Nv.${info.nivel}/${info.niveis} (${info.xp.toLocaleString('pt-BR')} XP · ${info.xpNoNivel}/${info.xpPorNivel}) · Resgatado Nv.${info.resgatado}<br>
+      <b>Marco Nv.100:</b> Ovo de Dinossauro T5 · Na eclosão: Onírico T5 no Nv.1<br>
+      <b>Calendário (dia ${info.dia}/${info.dias}):</b> cota ${info.liberada.toLocaleString('pt-BR')} XP (Nv.${info.nivelLiberado} · +${info.cotaDia}/dia) · ${info.noTeto ? '<b>Cota atingida</b> (ouro, XP normal e Idle continuam)' : `Recuperável: <b>${info.recuperavel.toLocaleString('pt-BR')} XP</b>`}${faixaTxt}<br>
+      ${proxTxt}<br>
+      <b>Evento Semanal:</b> ${ev.semanal.nome} (${ev.semanal.efeito}) · <b>Raid (2h):</b> ${ev.raid.boss.nome} (${ev.raid.aberto ? `ABERTA · ${ev.raid.restanteMin}m` : `em ${ev.raid.abreEmMin}m`})
     `;
+    const btnComprar = $('btn-passe-comprar');
+    if (btnComprar) {
+      btnComprar.disabled = !info.proximo || !info.proximo.liberado;
+      btnComprar.textContent = !info.proximo
+        ? '✓ Nv.100 Concluído'
+        : info.proximo.liberado
+          ? `💎 Comprar Nv.${info.proximo.nivel} (${info.proximo.preco}💎 · ${info.proximo.premio.texto})`
+          : `🔒 Nv.${info.proximo.nivel} abre ${info.proximo.data} (${info.proximo.preco}💎)`;
+    }
+    const loginInfo = infoLogin7Dias(save);
+    const btnLogin = $('btn-login-diario');
+    if (btnLogin) {
+      btnLogin.textContent = loginInfo.jaColetouHoje ? `🎁 Login 7d (${loginInfo.coletados}/7)` : `🎁 Login 7d (Dia ${loginInfo.diaDisponivel} pronto!)`;
+    }
+    renderizarTrilhaPasse(save);
 
     $('temp-diarias').innerHTML = `
       <div class="sub" style="margin-bottom:6px">Trocas (reroll) restantes hoje: <b>${idle.diarias.rerollsRestantes}</b></div>
@@ -557,13 +696,13 @@ export function criarControladorIdleUI(ctx) {
         <div class="card-row">
           <div>
             <b>${m.titulo}</b> (${m.progresso}/${m.meta})
-            <div class="sub">+${m.gold}g · +${m.xpPasse} XP Passe</div>
+            <div class="sub">Recompensa: +${m.gold}g · +${m.xpPasse} XP Passe</div>
           </div>
           <div style="display:flex;gap:5px">
             ${!m.resgatada && m.progresso >= m.meta
               ? `<button class="btn-pri" style="padding:4px 9px;font-size:11px" data-resg-dm="${m.id}">Resgatar</button>`
               : !m.resgatada
-                ? `<button class="btn-sec" style="padding:4px 8px;font-size:11px" data-ir-dm="${m.mapaSugerido}">Ir caçar</button>
+                ? `<button class="btn-sec" style="padding:4px 8px;font-size:11px" data-ir-dm="${m.mapaSugerido}">${m.acaoRotulo || 'Ir caçar'}</button>
                    <button class="btn-sec" style="padding:4px 8px;font-size:11px" data-troca-dm="${m.id}">↻ Trocar</button>`
                 : '<span class="tag" style="color:#4ade80">✓ Feita</span>'}
           </div>
@@ -574,7 +713,7 @@ export function criarControladorIdleUI(ctx) {
     $('temp-diarias').querySelectorAll('[data-resg-dm]').forEach((b) => {
       b.onclick = () => {
         const ok = resgatarDiaria(save, b.dataset.resgDm);
-        if (ok) { ctx.mostrarToast(`+${ok.gold}g e +${ok.xpPasse} XP do Passe!`, 2400); ctx.salvar(); atualizarHudIdle(); abrirTemporada(); }
+        if (ok) { ctx.mostrarToast(`+${ok.gold}g e +${ok.xpPasse} XP do Passe!`, 2400); ctx.salvar(); atualizarHudIdle(); abrirTemporada(true); }
       };
     });
     $('temp-diarias').querySelectorAll('[data-troca-dm]').forEach((b) => {
@@ -582,7 +721,7 @@ export function criarControladorIdleUI(ctx) {
         const r = trocarMissaoDiaria(save, b.dataset.trocaDm);
         ctx.mostrarToast(r.ok ? `Nova missão: ${r.nova.titulo}` : r.motivo, 2200);
         ctx.salvar();
-        abrirTemporada();
+        abrirTemporada(true);
       };
     });
     $('temp-diarias').querySelectorAll('[data-ir-dm]').forEach((b) => {
@@ -592,21 +731,44 @@ export function criarControladorIdleUI(ctx) {
     abrir('modal-temporada');
   }
 
-  $('btn-login-diario')?.addEventListener('click', () => {
+  $('btn-login-diario')?.addEventListener('click', abrirLogin7dSobrePasse);
+  $('btn-login-7d-fechar')?.addEventListener('click', fecharLogin7dParaTrilha);
+  $('btn-login-7d-voltar')?.addEventListener('click', fecharLogin7dParaTrilha);
+  $('btn-login-7d-coletar')?.addEventListener('click', () => {
     const save = ctx.getSave();
     const r = resgatarLoginDiario(save);
-    ctx.mostrarToast(r.ok ? `🎁 Login Dia ${r.dia}/7 resgatado!` : r.motivo, 2800);
+    ctx.mostrarToast(r.ok ? `🎁 Login Dia ${r.dia}/7: ${r.recompensa.texto}!` : r.motivo, 2800);
     ctx.salvar();
     atualizarHudIdle();
-    abrirTemporada();
+    renderizarPainelLogin7d();
+    const btnLogin = $('btn-login-diario');
+    const loginInfo = infoLogin7Dias(save);
+    if (btnLogin) btnLogin.textContent = loginInfo.jaColetouHoje ? `🎁 Login 7d (${loginInfo.coletados}/7)` : `🎁 Login 7d (Dia ${loginInfo.diaDisponivel} pronto!)`;
   });
   $('btn-passe-coletar')?.addEventListener('click', () => {
     const save = ctx.getSave();
     const r = resgatarTudoPasse(save);
-    ctx.mostrarToast(`Passe Nv.${r.nivel}: +${r.reward.diamantes}💎 resgatados!`, 2800);
+    const resumo = r.pagos.length
+      ? `Passe Nv.${r.nivel}: ${r.pagos.slice(0, 3).map((p) => p.texto).join(', ')}${r.pagos.length > 3 ? ` (+${r.pagos.length - 3})` : ''}!`
+      : `Passe Nv.${r.nivel}: nenhum prêmio pendente.`;
+    ctx.mostrarToast(resumo, 3200);
     ctx.salvar();
     atualizarHudIdle();
-    abrirTemporada();
+    const ovoT5 = r.pagos.find((p) => p.tipo === 'ovoT5');
+    if (ovoT5) {
+      revelarOvo({ edicao: 'dinossauros', ovo: { nome: ovoT5.texto, tier: 5 }, nivel: 100 }).then(() => abrirTemporada(true));
+    } else {
+      if (r.pagos.length) mostrarRecompensas(r.pagos.slice(0, 6).map((p) => ({ nome: p.texto, icone: p.tipo === 'diamantes' ? '💎' : p.tipo === 'tickets' ? '🎫' : p.tipo === 'ovo' ? '🥚' : '🎁', qtd: 1 })));
+      abrirTemporada(true);
+    }
+  });
+  $('btn-passe-comprar')?.addEventListener('click', () => {
+    const save = ctx.getSave();
+    const r = comprarNivelPasse(save);
+    ctx.mostrarToast(r.ok ? `Nível ${r.nivel} desbloqueado (-${r.custo}💎)!` : r.motivo, 2800);
+    ctx.salvar();
+    atualizarHudIdle();
+    abrirTemporada(true);
   });
 
   // ---- Vote & Ganhe (TopIdle / IdleRank) ----
@@ -695,20 +857,33 @@ export function criarControladorIdleUI(ctx) {
     const resumo = calcularGanhoOffline(save, nvMed);
     if (!resumo && !forcar) return;
     if (!resumo) return;
-    ganhoOfflinePendente = { resumo, especie: ws[0]?.especie || 'Noctarn' };
+    ganhoOfflinePendente = { resumo, especie: ws[0]?.especie || 'Cervomusgo' };
     $('afk-detalhe').innerHTML = `
       <b>Tempo fora:</b> ${Math.floor(resumo.minutos / 60)}h ${resumo.minutos % 60}m<br>
-      ⚔️ Abates estimados: <b>${resumo.abates}</b><br>
+      ⚔️ Abates estimados: <b>${resumo.abates}</b> · 🎟️ Passe: <b>+${resumo.xpPasseBruto ?? resumo.abates} XP</b> (1 XP/abate, sujeito à cota)<br>
       🪙 Gold: <b>+${resumo.gold}g</b> · ⭐ XP: <b>+${resumo.xp}</b><br>
       🥚 Ovos encontrados: <b>${resumo.ovos}</b> ${resumo.colheitaFazenda ? `· 🌱 Fazenda: +${resumo.colheitaFazenda} recursos` : ''}
     `;
     abrir('modal-offline');
   }
+  function liquidarSegundoPlano() {
+    const save = ctx.getSave();
+    const mapa = ctx.getMapaAtual();
+    const ws = MONSTROS_SELVAGENS.filter((w) => w.mapa === mapa?.id);
+    const nvMed = ws.length ? Math.round(ws.reduce((a, b) => a + b.nivel, 0) / ws.length) : 6;
+    const res = liquidarPeriodoIdle(save, { nivelArea: nvMed, especiePadrao: ws[0]?.especie || 'Cervomusgo' });
+    if (res) {
+      registrarLogIdle(garantirEstadoIdle(save), `⏱️ Segundo plano: +${res.abates} abates, +${res.gold}g, +${res.xpPasseGanho} XP Passe`, 'farm');
+      ctx.salvar();
+      atualizarHudIdle();
+    }
+    return res;
+  }
   $('btn-coletar-afk')?.addEventListener('click', () => {
     if (ganhoOfflinePendente) {
       const save = ctx.getSave();
-      aplicarGanhoOffline(save, ganhoOfflinePendente.resumo, ganhoOfflinePendente.especie);
-      registrarLogIdle(garantirEstadoIdle(save), `⏱️ AFK coletado: +${ganhoOfflinePendente.resumo.gold}g, +${ganhoOfflinePendente.resumo.xp} XP`, 'farm');
+      const res = aplicarGanhoOffline(save, ganhoOfflinePendente.resumo, ganhoOfflinePendente.especie);
+      registrarLogIdle(garantirEstadoIdle(save), `⏱️ AFK coletado: +${ganhoOfflinePendente.resumo.gold}g, +${ganhoOfflinePendente.resumo.xp} XP, +${res?.xpPasseGanho ?? 0} XP Passe`, 'farm');
       ganhoOfflinePendente = null;
       ctx.salvar();
       atualizarHudIdle();
@@ -720,10 +895,10 @@ export function criarControladorIdleUI(ctx) {
   const PASSOS_TUTORIAL = [
     { tit: '1/6 · Bem-vindo ao Confusion Waves', txt: 'Você está na Região 1 (48 áreas 2D). No topo ficam seu Nível, HP, Sanidade e recursos.' },
     { tit: '2/6 · Auto-Rota Automática', txt: 'Toque no banner da missão (🧭 Auto-Rota) para andar, coletar pistas, falar com NPCs e avançar missões sozinho.' },
-    { tit: '3/6 · Conexão Onírica (✨ Transformar)', txt: 'Use Transformar (ou tecla T / Shift) para virar Onírico e ganhar +100% de velocidade de movimento.' },
-    { tit: '4/6 · Modo Idle (⚔️ Auto · ON/OFF)', txt: 'Ligue Auto · ON para caçar monstros direto no mapa com dano flutuante, auto-captura e ganho de XP/Gold.' },
+    { tit: '3/6 · Montaria', txt: 'Seu domador anda montado quando uma montaria está equipada; os Oníricos da equipe lutam ao seu lado. Montado, você ganha +100% de velocidade de movimento.' },
+    { tit: '4/6 · Modo Idle (⚔️ Auto · ON/OFF)', txt: 'Ligue Auto · ON para caçar monstros direto no mapa com dano flutuante, Fragmentos de Sonho e ganho de XP/Gold.' },
     { tit: '5/6 · Atlas de Caça & Codex', txt: 'No botão Caçar (ou minimapa) você vê todas as 48 áreas, o selo de risco e viaja direto. O Codex dá bônus permanentes!' },
-    { tit: '6/6 · Economia de Energia & Menu', txt: 'No Menu (☰) você acessa Passe de Temporada, Mochila/Relíquias, Vote & Ganhe e o Modo Economia de Energia para farmar no celular.' },
+    { tit: '6/6 · Economia de Energia & Menu', txt: 'No Menu (☰) você acessa Passe de Temporada, Mochila e Fragmentos, Vote & Ganhe e o Modo Economia de Energia para farmar no celular.' },
   ];
   let passoTut = 0;
   function iniciarTutorial(forcar = false) {
@@ -760,6 +935,7 @@ export function criarControladorIdleUI(ctx) {
     atualizarMinimapa,
     spawnFlutuante,
     verificarGanhoOffline,
+    liquidarSegundoPlano,
     iniciarTutorial,
     abrirAtlas,
     abrirCodex,

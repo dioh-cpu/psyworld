@@ -1,5 +1,7 @@
 # Montarias — ciclo de animação e prompts do Flow
 
+> **Decisão atual (substitui o ciclo abaixo):** não existe mais transformação Azazel ↔ Noctarn. O domador aparece montado visivelmente; montaria e Onírico aliado são entidades separadas. Primeira montaria: **Brumacervo** (`regiao1-montaria.js`, `MONTARIAS.brumacervo`). Equipamento em `save.idle.montaria` (regras). Enquanto os clipes recortados do pacote Confusion-Flow-Azazel não estiverem em `assets/characters/montado/brumacervo/` e `clipes` não for preenchido, o domador anda a pé com o sprite atual (sem MP4 de fundo verde cru). Os prompts e o formato abaixo continuam valendo para os clipes do conjunto montado (repouso e caminhada nas três direções, pés/cascos na mesma linha, sela, estribos e rédeas consistentes).
+
 Primeira montaria validada: **Noctarn** (Conexão Onírica do domador Azazel). As outras montarias reaproveitam o mesmo ciclo, os mesmos tamanhos e o mesmo efeito de conexão, trocando só a arte e a paleta.
 
 ## Ciclo no jogo

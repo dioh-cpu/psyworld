@@ -34,7 +34,21 @@ const CUT = { abobora: ['#c2410c', '#fde047'], vela: ['#b45309', '#fef3c7'], ect
 for (const [ids, c] of [[['muralha_ramas', 'pancada_abobora', 'casca_encantada'], CUT.abobora], [['procissao_luz'], CUT.vela], [['retorno_alma'], CUT.ecto], [['noite_imaculada'], CUT.vitral], [['facada', 'perseguicao', 'hora_terror'], CUT.sangue]]) for (const id of ids) FX_HABILIDADES[id].cut = c;
 // Manto Violeta do Mortálio (contrato do PR #57): clipe do Flow quando publicado; senão, coreografia violeta procedural.
 const VIOLETA = HAB.MORTALIO_VIOLETA_CFG || { id: 'manto_violeta', clip: 'assets/confusion/interface/vfx/mortalio-violeta.mp4', impactoMs: 520 };
-FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, clip: VIOLETA.clip, impactoMs: VIOLETA.impactoMs, cut: ['#5b21b6', '#ddd6fe'] };
+FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, cut: ['#5b21b6', '#ddd6fe'] };
+// Clipes do Flow, lote 1 (PR #61). impactoMs = ataque do pico de áudio do próprio clipe; chao = altura relativa do chão do efeito no
+// quadro (ancorado nos pés do alvo); escala = largura do clipe em relação ao corpo do alvo. Sem o arquivo, vale a coreografia procedural.
+const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/';
+export const CLIPES_FLOW = {
+  manto_violeta: { clip: `${FLOW}mortalio-violeta.mp4`, impactoMs: 1250, chao: 0.86, escala: 3.4, duracaoMs: 3000 },
+  chama_solar: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 }, // Solarin: cura de um aliado (luz)
+  arco_ciano: { clip: `${FLOW}impacto-ciano.mp4`, impactoMs: 1250, chao: 0.88, escala: 3.0, duracaoMs: 3000 }, // Vaelith: golpe de água em um alvo
+  procissao_luz: { clip: `${FLOW}espiral-dourada.mp4`, impactoMs: 1300, chao: 0.86, escala: 2.6, duracaoMs: 3000 }, // Velalume: cura do grupo (ultimate)
+};
+for (const [id, c] of Object.entries(CLIPES_FLOW)) Object.assign(FX_HABILIDADES[id], c, { ms: c.impactoMs + 1550 });
+// Chuva de meteoros (tomada cinematográfica com cenário): começa depois do corte em que o meteoro central some (≈2,0 s) e só entra
+// em combate quando METEOROS_EM_COMBATE for ligado, após revisão; no laboratório pode ser forçada (ctx.cinema).
+export const METEOROS_CINEMA = { clip: `${FLOW}chuva-de-meteoros-original.mp4`, inicio: 2.05, impactoMs: 200, duracaoMs: 2600 };
+export let METEOROS_EM_COMBATE = false;
 for (const c of Object.values(FX_HABILIDADES)) { c.clip ??= null; c.impactoMs ??= 500; }
 
 // ---------- utilidades do DOM ----------
@@ -416,6 +430,12 @@ async function meteoros(ctx, M, A, ev) {
   const al = alvosDe(ctx, ev); if (!al.length) return; const a = corpo(ctx, A), cs = al.map((x) => corpo(ctx, x.el)), dir = cs[0].x > a.x ? 1 : -1;
   const cx = cs.reduce((s, c) => s + c.x, 0) / cs.length; escurecer(ctx, 'rgba(45,10,0,.62)', 1600 + cs.length * 200);
   await preparo(ctx, M, A, '#f97316', { ms: 340, circ: true });
+  if (ctx.cinema || METEOROS_EM_COMBATE) { // tomada cinematográfica do Flow, impacto sincronizado com o som do clipe
+    const cin = await cinemaMeteoros(ctx);
+    if (cin) { const somAntes = ctx.som; if (cin.comSom) ctx.som = false;
+      cs.forEach((c, i) => setTimeout(() => { impacto(ctx, M, c.x, c.y, 'fogo', { forte: true, dir, pe: c.pe }); tremer(ctx, 10, 340); aplicar(ctx, M, al[i].el, al[i].r, { dir, forte: true, cor: '#f97316', forca: 1.5 }); }, i * 160 * ctx.k));
+      await ESP((cs.length * 160 + 200) * ctx.k); ctx.som = somAntes; await cin.fim(); return; }
+  }
   luz(M, cx, -20, { cor: '#f97316', raio: 320, chao: false, vida: 1.6, forca: 0.6 });
   const quedas = [...cs.map((c, i) => ({ c, i })), ...Array.from({ length: 3 }, () => ({ c: { x: cx + R(-200, 200), y: cs[0].pe - 20, pe: cs[0].pe + R(-20, 30), w: 60, h: 60 }, i: -1 }))].sort(() => Math.random() - 0.5);
   quedas.forEach(({ c, i }, k) => setTimeout(() => {
@@ -847,8 +867,9 @@ export async function tocarEvento(ctx, ev) {
   const hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], elem = hab?.elemento || 'neutro';
   const E = ELEM[elem] || ELEM.neutro, ult = cfg?.ult || (hab && hab.cd >= 5);
   if (ult && hab) await cutIn(ctx, A, hab, cfg?.cut?.[0] || E.cor, cfg?.cut?.[1] || E.cor2);
-  const clip = hab?.clip || cfg?.clip;
-  if (clip && await tocarClipe(ctx, M, cfg || {}, ev, clip)) { /* clipe tocou */ }
+  const clip = cfg?.clip || hab?.clip; // o clipe publicado (PR #61) tem prioridade sobre o caminho previsto no kit
+  if (clip && hab?.tipo === 'dano' && !clipesFalhos.has(clip)) await preparo(ctx, M, A, E.cor, { ms: 220 }); // o atacante se prepara antes do clipe no alvo
+  if (clip && await tocarClipe(ctx, M, { ...(cfg || {}), ult }, ev, clip)) { /* clipe tocou */ }
   else if (cfg?.fx && FX[cfg.fx]) await FX[cfg.fx](ctx, M, A, ev, hab);
   else if (ev.tipo === 'reviver') await FX.retornoAlma(ctx, M, A, ev, hab);
   else if (ev.tipo === 'atacar') await genCorpo(ctx, M, A, ev, hab, 'neutro');
@@ -866,16 +887,45 @@ const clipesFalhos = new Set(); // não tenta de novo um clipe que não carregou
 async function tocarClipe(ctx, M, cfg, ev, src) {
   if (clipesFalhos.has(src)) return false;
   const els = alvosDe(ctx, ev).map((x) => x.el), base = els.length ? els : [ctx.no(ev.alvo) || ctx.no(ev.ator)].filter(Boolean); if (!base.length) return false;
-  const cs = base.map((el) => corpo(ctx, el)), x = cs.reduce((s, c) => s + c.x, 0) / cs.length, y = cs.reduce((s, c) => s + c.y, 0) / cs.length, w = Math.max(...cs.map((c) => c.w)) * (cs.length > 1 ? 2.4 : 3);
-  const v = document.createElement('video'); v.src = src; v.muted = true; v.playsInline = true; v.preload = 'auto';
-  v.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;transform:translate(-50%,-50%);mix-blend-mode:screen;z-index:87;pointer-events:none`;
-  const pronto = await new Promise((ok) => { const t = setTimeout(() => ok(false), 1500); v.addEventListener('canplay', () => { clearTimeout(t); ok(true); }, { once: true }); v.addEventListener('error', () => { clearTimeout(t); ok(false); }, { once: true }); v.load(); });
-  if (!pronto) { clipesFalhos.add(src); return false; }
-  ctx.campo.append(v); await v.play().catch(() => {}); await ESP((cfg.impactoMs || 500) * ctx.k);
-  const cura = ev.tipo === 'cura' || ev.tipo === 'apoio' || ev.tipo === 'reviver';
-  for (const a of alvosDe(ctx, ev)) aplicar(ctx, M, a.el, a.r, { cura, cor: '#fff' });
-  await ESP(Math.max(400, ((v.duration || 1) * 1000) - (cfg.impactoMs || 500))); v.remove();
+  const v = await carregarVideo(src); if (!v) return false;
+  // ancora: o chão do efeito nos pés do alvo (grupo: no centro da formação, largura cobrindo todos)
+  const cs = base.map((el) => corpo(ctx, el)), x = cs.reduce((s, c) => s + c.x, 0) / cs.length, pe = Math.max(...cs.map((c) => c.pe));
+  const larg = cs.length > 1 ? (Math.max(...cs.map((c) => c.x + c.w / 2)) - Math.min(...cs.map((c) => c.x - c.w / 2))) * 1.25 : Math.max(...cs.map((c) => c.w)) * (cfg.escala || 3);
+  const alt = larg * (v.videoHeight / v.videoWidth || 9 / 16), top = pe - alt * (cfg.chao ?? 0.86);
+  v.style.cssText = `position:absolute;left:${x - larg / 2}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0`;
+  ligarAudio(ctx, v); ctx.campo.append(v); v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, fill: 'forwards' });
+  await v.play().catch(() => {}); await ESP((cfg.impactoMs || 500) * ctx.k);
+  const cura = ev.tipo === 'cura' || ev.tipo === 'apoio' || ev.tipo === 'reviver', somAntes = ctx.som; if (!v.muted) ctx.som = false; // o clipe já traz o som do impacto
+  for (const a of alvosDe(ctx, ev)) aplicar(ctx, M, a.el, a.r, { cura, cor: '#fff', forte: cfg.ult });
+  ctx.som = somAntes;
+  await ESP(Math.min(1000, Math.max(400, (cfg.duracaoMs || 3000) - (cfg.impactoMs || 500))) * ctx.k);
+  await v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260 * ctx.k, fill: 'forwards' }).finished.catch(() => {}); v.pause(); v.remove();
   return true;
+}
+const blobs = new Map();
+async function carregarVideo(src, inicio = 0) {
+  if (clipesFalhos.has(src)) return null;
+  const url = /^(https?:|\/|\.\.\/|blob:|data:)/.test(src) ? src : `../../../${src}`;
+  let fonte = url; if (inicio) { try { fonte = blobs.get(url) || URL.createObjectURL(await (await fetch(url)).blob()); blobs.set(url, fonte); } catch { clipesFalhos.add(src); return null; } } // em memória, a busca do ponto de início funciona em qualquer servidor
+  const v = document.createElement('video'); v.src = fonte; v.playsInline = true; v.preload = 'auto'; v.muted = true;
+  const ok = await new Promise((fim) => { const t = setTimeout(() => fim(false), 2500); v.addEventListener('canplay', () => { clearTimeout(t); fim(true); }, { once: true }); v.addEventListener('error', () => { clearTimeout(t); fim(false); }, { once: true }); v.load(); });
+  if (!ok) { clipesFalhos.add(src); return null; }
+  if (inicio) { // espera o trecho carregar (servidores sem Range só deixam buscar no que já baixou) e então busca o ponto de início
+    for (let t = 0; t < 40 && !(v.buffered.length && v.buffered.end(v.buffered.length - 1) >= inicio + 0.3); t++) await ESP(50);
+    v.currentTime = inicio; await new Promise((fim) => { v.addEventListener('seeked', fim, { once: true }); setTimeout(fim, 800); });
+    if (v.currentTime < inicio - 0.2) { clipesFalhos.add(src); return null; } // sem conseguir pular o corte, não usa a tomada
+  }
+  return v;
+}
+// Áudio do clipe: volume da preferência, mudo com a aba oculta ou volume zero; ×2/×3 aceleram o clipe junto com o resto
+function ligarAudio(ctx, v) { v.playbackRate = 1 / ctx.k; v.muted = !ctx.som || pref.volume <= 0; v.volume = Math.min(1, pref.volume); v.preservesPitch = true; }
+// Tomada cinematográfica dos meteoros (tela inteira, composição normal por causa do cenário)
+async function cinemaMeteoros(ctx) {
+  const c = METEOROS_CINEMA, v = await carregarVideo(c.clip, c.inicio); if (!v) return null;
+  v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:89;pointer-events:none;opacity:0';
+  ligarAudio(ctx, v); ctx.arena.append(v); v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 * ctx.k, fill: 'forwards' });
+  await v.play().catch(() => {}); await ESP(c.impactoMs * ctx.k);
+  return { fim: async () => { await ESP(Math.max(0, c.duracaoMs - c.impactoMs - 900) * ctx.k); await v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 420 * ctx.k, fill: 'forwards' }).finished.catch(() => {}); v.pause(); v.remove(); }, comSom: !v.muted };
 }
 // Duração aproximada (para o ritmo do automático). Precisa cobrir a coreografia inteira.
 export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade) => {

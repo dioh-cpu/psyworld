@@ -137,12 +137,6 @@
     border: 2px solid var(--gold); background: rgba(15, 32, 62, .94); color: #fff;
     font: 700 12.5px system-ui; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.55);
   }
-  #btn-transformar {
-    padding: 8px 13px; border-radius: 10px;
-    border: 2px solid #c084fc; background: rgba(24, 14, 48, .92); color: #e9d5ff;
-    font: 700 12px system-ui; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.5);
-  }
-  #btn-transformar.ativo { background: linear-gradient(135deg, #6d28d9, #0284c7); border-color: #38bdf8; color: #fff; }
   #btn-autocaca {
     padding: 9px 14px; border-radius: 10px;
     border: 2px solid #475569; background: rgba(15, 23, 42, .92); color: #cbd5e1;
@@ -235,6 +229,18 @@
 
   #aviso-girar { position: fixed; inset: 0; z-index: 40; background: rgba(9, 14, 28, .94); color: #e2f1ff; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; }
   @media (orientation: portrait) and (pointer: coarse) { body:not(.ignorar-giro) #aviso-girar { display: flex; } }
+    /* Kit visual menus-v1 (PR #63) */
+    #modal-mochila .modal-card { background: linear-gradient(rgba(16,9,24,.78), rgba(16,9,24,.9)), url('../../../assets/confusion/interface/menus-v1/mochila/fundo.webp') center / cover no-repeat; }
+    #modal-temporada .modal-card { background: linear-gradient(rgba(16,9,24,.76), rgba(16,9,24,.9)), url('../../../assets/confusion/interface/menus-v1/passe/fundo.webp') center / cover no-repeat; }
+    #painel-login-7d { background: linear-gradient(rgba(16,9,24,.82), rgba(16,9,24,.94)), url('../../../assets/confusion/interface/menus-v1/login/fundo.webp') center / cover no-repeat !important; }
+    .mv1-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 6px; }
+    .mv1-slot { background: url('../../../assets/confusion/interface/menus-v1/mochila/espaco-item.png') center / 100% 100% no-repeat; padding: 8px 6px; text-align: center; font-size: 11px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .mv1-slot img { width: 32px; height: 32px; object-fit: contain; }
+    .mv1-trilha { background: url('../../../assets/confusion/interface/menus-v1/passe/trilha.png') center / 100% 12px repeat-x; }
+    .mv1-passe-card { flex: 0 0 116px; padding: 8px 6px; font-size: 11px; text-align: center; border-radius: 8px; background-size: 100% 100%; background-repeat: no-repeat; display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 118px; }
+    .mv1-passe-card img.prem { width: 36px; height: 36px; object-fit: contain; margin: 2px 0; }
+    .mv1-login-card { padding: 10px 6px; text-align: center; font-size: 11.5px; border-radius: 8px; background-size: 100% 100%; background-repeat: no-repeat; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .mv1-ico { width: 15px; height: 15px; object-fit: contain; vertical-align: -2px; }
 </style>
 <link rel="stylesheet" href="./regiao1-interface.css">
 <script type="importmap">{"imports": {"three": "../vendor/three.module.min.js"}}</script>
@@ -317,7 +323,6 @@
 
 <div id="controles-dir">
   <button id="btn-interagir">[E] Interagir</button>
-  <button id="btn-transformar" title="Conexão Onírica (T ou Shift): +100% velocidade">✨ Transformar</button>
   <div class="row-ctrl">
     <button id="btn-autocaca-cfg" title="Configurar Auto-Caça">⚙️</button>
     <button id="btn-autocaca" title="Ligar/Desligar Auto-Caça no mapa">⚔️ Auto · OFF</button>
@@ -389,7 +394,6 @@
     <div style="display:flex;flex-direction:column;gap:8px">
       <label class="chk-pill"><input type="checkbox" id="ac-toggle"> <b>Ligar Auto-Caça no mapa atual</b></label>
       <label class="chk-pill"><input type="checkbox" id="ac-vantagem"> Preferir habilidade de maior vantagem elemental</label>
-      <label class="chk-pill"><input type="checkbox" id="ac-capturar"> Auto-lançar Esfera Psíquica em encontros elegíveis</label>
       <label class="chk-pill"><input type="checkbox" id="ac-ovos"> Coletar ovos automaticamente</label>
       <label class="chk-pill"><input type="checkbox" id="ac-emergencia"> Proteção: recuar se HP cair em perigo</label>
       <div class="card-row"><span>Descansar quando HP ≤ <b id="ac-hp-val">30%</b></span><input id="ac-hp" type="range" min="10" max="80" value="30"></div>
@@ -419,34 +423,44 @@
     <div class="modal-head"><h3>Domador e Mochila</h3><button class="btn-fechar" data-fechar="modal-mochila" aria-label="Fechar">✕</button></div>
     <nav class="mochila-atalhos" aria-label="Seções da mochila">
       <button type="button" class="btn-sec" data-mochila-secao="domador-secao">Atributos</button>
-      <button type="button" class="btn-sec" data-mochila-secao="reliquias-secao">Relíquias</button>
+      <button type="button" class="btn-sec" data-mochila-secao="fragmentos-secao">Fragmentos</button>
       <button type="button" class="btn-sec" data-mochila-secao="ovos-secao">Ovos</button>
-      <button type="button" class="btn-sec" data-mochila-secao="esferas-secao">Esferas</button>
     </nav>
     <div class="sec-tit" id="domador-secao">Pontos de Atributo do Domador (+3 pts por nível)</div>
     <div id="domador-atributos"></div>
     <div class="sec-tit">Origem dos Atributos</div>
     <div id="status-breakdown"></div>
-    <div class="sec-tit" id="reliquias-secao">Relíquias (Equipar / Comprar)</div>
-    <div id="mochila-reliquias"></div>
+    <div class="sec-tit" id="fragmentos-secao">Fragmentos de Sonho &amp; Chefes</div>
+    <div id="mochila-fragmentos"></div>
     <div class="sec-tit" id="ovos-secao">Ovos</div>
     <div id="mochila-ovos"></div>
-    <div class="sec-tit" id="esferas-secao">Esferas Psíquicas</div>
-    <div id="mochila-esferas"></div>
   </div>
 </div>
 
-<!-- Modal Temporada, Passe 30 Níveis, Login 7 Dias & Diárias -->
+<!-- Modal Temporada, Passe 100 Níveis, Login 7 Dias & Diárias -->
 <div id="modal-temporada" class="modal-bg">
-  <div class="modal-card">
+  <div class="modal-card" style="position:relative">
     <div class="modal-head"><h3>Temporada</h3><button class="btn-fechar" data-fechar="modal-temporada" aria-label="Fechar">✕</button></div>
     <div id="temp-resumo" class="card-row" style="display:block;line-height:1.5"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
-      <button class="btn-pri" id="btn-login-diario">🎁 Resgatar Login (7d)</button>
-      <button class="btn-pri" id="btn-passe-coletar" style="background:#0f766e">🏆 Coletar Todos do Passe</button>
+      <button class="btn-pri" id="btn-login-diario">🎁 Login 7 Dias</button>
+      <button class="btn-pri" id="btn-passe-coletar" style="background:#0f766e">🏆 Coletar Passe</button>
+      <button class="btn-sec" id="btn-passe-comprar">💎 Comprar Nível (150💎)</button>
     </div>
-    <div class="sec-tit">Missões Diárias (com Troca / Ir Caçar)</div>
+    <div class="sec-tit">Trilha do Passe (100 Níveis)</div>
+    <div id="temp-trilha-nav" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"></div>
+    <div id="temp-trilha" style="display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;margin-bottom:8px"></div>
+    <div class="sec-tit">Missões Diárias</div>
     <div id="temp-diarias"></div>
+    <div id="painel-login-7d" style="display:none;position:absolute;inset:0;background:rgba(16,8,24,.96);border-radius:inherit;padding:14px;overflow-y:auto;z-index:10">
+      <div class="modal-head"><h3>🎁 Login de 7 Dias</h3><button class="btn-sec" id="btn-login-7d-fechar">Voltar à trilha</button></div>
+      <div id="login-7d-resumo" class="card-row" style="display:block;line-height:1.45;margin-bottom:8px"></div>
+      <div id="login-7d-grade" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-pri" id="btn-login-7d-coletar">🎁 Coletar Recompensa de Hoje</button>
+        <button class="btn-sec" id="btn-login-7d-voltar">Fechar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -458,7 +472,6 @@
     <div class="card-row"><div><b>TopIdle</b><div class="sub">Ciclo de 12h · +1 Vote Cash</div></div><button class="btn-pri" data-votar="topidle">Votar</button></div>
     <div class="card-row"><div><b>IdleRank</b><div class="sub">Ciclo de 24h · +1 Vote Cash</div></div><button class="btn-pri" data-votar="idlerank">Votar</button></div>
     <div class="sec-tit">Loja de Votação</div>
-    <div class="card-row"><div><b>3× Esfera Rara</b></div><button class="btn-sec" data-voto-loja="esferas">1 Vote Cash</button></div>
     <div class="card-row"><div><b>40 Diamantes</b></div><button class="btn-sec" data-voto-loja="diamantes">2 Vote Cash</button></div>
     <div class="card-row"><div><b>Ovo Abençoado (Solarin)</b></div><button class="btn-sec" data-voto-loja="ovo_evento">3 Vote Cash</button></div>
   </div>

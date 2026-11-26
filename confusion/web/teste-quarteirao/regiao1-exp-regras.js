@@ -5,7 +5,9 @@ import { MARCOS, MISSOES_HISTORIA, CONTRATOS, CONTRATOS_DIARIOS_GRUPOS, CALABOUC
 import { REINOS } from '../reinos.js';
 import { gestaoDe, avancar as avancarGestao } from './regiao1-gestao-regras.js';
 import { darPocao, hwDe } from './regiao1-halloween-regras.js';
-import { aplicarXp } from './regiao1-progressao.js';
+import { aplicarXp, estrelasIniciais, classeDaEspecie } from './regiao1-progressao.js';
+import { ganharXpPasse } from './regiao1-passe-regras.js';
+import { ehElementoForaBannerPermanente, NOCTARN_REGRA } from './regiao1-regras-sonho.js';
 
 export function expDe(save) {
   const idle = save.idle || (save.idle = {});
@@ -17,9 +19,10 @@ export function expDe(save) {
 export const questFeita = (save, q) => save.quests?.[q] === 'concluida';
 
 // XP da Campanha para a formação ativa (vitória inteira, derrota 30%, chefe ×2)
-export function darXpCampanha(idle, { nivel = 1, chefe = false, vitoria = true } = {}) {
+export function darXpCampanha(idle, { nivel = 1, chefe = false, vitoria = true } = {}, agora = Date.now()) {
   const xp = Math.round((40 + 12 * Math.max(1, nivel)) * (chefe ? 2 : 1) * (vitoria ? 1 : 0.3));
   const membros = membrosFormacao(idle).map(({ m, idx, vaga }) => ({ idx, vaga, ...aplicarXp(m, xp) }));
+  ganharXpPasse(idle, vitoria ? (chefe ? 'batalhaChefe' : 'batalha') : 'derrota', null, agora);
   return { xp, membros };
 }
 
@@ -59,6 +62,7 @@ export function indicesEquipeCombate(idle) {
 export const aberto = (save, modo) => {
   const e = expDe(save);
   switch (modo) {
+    case 'equipe': return true;
     case 'banner': return questFeita(save, MARCOS.banner) || e.tickets > 0 || e.pulls > 0;
     case 'cacadas': return questFeita(save, MARCOS.cacada1);
     case 'guilda': return e.visitouCidade || questFeita(save, MARCOS.cronicas);
@@ -76,12 +80,26 @@ export function concederTickets(save) {
   return n;
 }
 
-// ---- Banner ----
-const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 2], ['epica', 0.07, 3], ['lendaria', 0.01, 4]];
+// ---- Banner Permanente (Adventurer: Sombra/trevas e Noctarn ficam fora do permanente) ----
+export const BANNER_PERMANENTE_ID = 'adventurer';
+const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 3], ['epica', 0.07, 4], ['lendaria', 0.01, 5]];
 export function poolBanner() {
   const vistos = new Set(), pool = [];
-  for (const r of Object.values(REINOS)) for (const l of r.linhagens) if (!vistos.has(l.nome)) { vistos.add(l.nome); const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10; pool.push({ especie: l.nome, elemento: l.elemento, raridade: k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria' }); }
+  for (const r of Object.values(REINOS)) {
+    for (const l of r.linhagens) {
+      if (vistos.has(l.nome)) continue;
+      if (ehElementoForaBannerPermanente(l.elemento) || l.nome === NOCTARN_REGRA.especie) continue;
+      vistos.add(l.nome);
+      const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10;
+      const raridade = k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria';
+      const tier = RARIDADES.find((x) => x[0] === raridade)[2];
+      pool.push({ especie: l.nome, elemento: l.elemento, classe: classeDaEspecie(l.nome), raridade, tier });
+    }
+  }
   return pool;
+}
+export function poolBannerSombra() {
+  return [{ especie: NOCTARN_REGRA.especie, elemento: NOCTARN_REGRA.elemento, classe: classeDaEspecie(NOCTARN_REGRA.especie), tier: NOCTARN_REGRA.tier, raridade: 'epica', banner: 'sombra' }];
 }
 export function invocar(save, rng = Math.random) {
   const e = expDe(save);
@@ -93,8 +111,22 @@ export function invocar(save, rng = Math.random) {
   if (garantia && alvo === 'comum') alvo = 'rara';
   const pool = poolBanner(); let cand = pool.filter((p) => p.raridade === alvo); if (!cand.length) cand = pool;
   const sorteado = cand[Math.floor(rng() * cand.length) % cand.length];
-  const nivel = 1, idle = save.idle; (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, raridade: RARIDADES.find((x) => x[0] === sorteado.raridade)[2], forma: 'natural' });
-  return { ok: true, ...sorteado };
+  const tier = RARIDADES.find((x) => x[0] === sorteado.raridade)?.[2] || 1;
+  const nivel = 1, estrelas = estrelasIniciais('banner'), idle = save.idle;
+  (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, tier, raridade: tier, estrelas, forma: 'natural', origem: 'banner', fonteBanner: BANNER_PERMANENTE_ID, uid: `b${e.pulls}_${idle.equipe.length}` });
+  return { ok: true, ...sorteado, tier, estrelas };
+}
+export function invocarMultiplo(save, qtd = 10, rng = Math.random) {
+  const n = qtd === 10 ? 10 : 1;
+  const e = expDe(save);
+  if (e.tickets < n) return { ok: false, motivo: `Precisa de ${n} ticket${n > 1 ? 's' : ''} (você tem ${e.tickets}).` };
+  const resultados = [];
+  for (let i = 0; i < n; i++) {
+    const r = invocar(save, rng);
+    if (!r.ok) break;
+    resultados.push(r);
+  }
+  return { ok: true, qtd: resultados.length, resultados };
 }
 
 // ---- Guilda e Contratos Diários ----
@@ -182,6 +214,7 @@ export function entregarContrato(save, id, agora = new Date()) {
   if (c.recompensa.tickets) e.tickets += c.recompensa.tickets;
   if (c.libera === 'fazenda') liberarFazenda(save);
   if (c.libera === 'oficina') e.oficina = true;
+  ganharXpPasse(save, 'contrato', null, agora);
   return { ok: true, contrato: c };
 }
 export function liberarFazenda(save) {
@@ -197,11 +230,12 @@ export function materiaisDoAbate(cacada, rng = Math.random) {
 }
 
 // ---- Calabouço e Sanidade ----
-const POOL_CALABOUCO = ['Brotavel', 'Cervomusgo', 'Noctarn', 'Xistolim', 'Tatuveludo', 'Fanalino'];
+// Nenhum dos cinco iniciais aparece como inimigo na Região 1
+const POOL_CALABOUCO = ['Cervomusgo', 'Xistolim', 'Tatuveludo', 'Fanalino', 'Cobrabúfalo'];
 function poderLuta(equipe, nivel, rng) {
   const papeis = {};
   const al = equipe.slice(0, 3).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis }));
-  const ini = [0, 1].map((i) => criarUnidade({ id: `i${i}`, especie: 'Noctarn', nivel, lado: 'i', papeis }));
+  const ini = [0, 1].map((i) => criarUnidade({ id: `i${i}`, especie: POOL_CALABOUCO[i % POOL_CALABOUCO.length], nivel, lado: 'i', papeis }));
   const b = criarBatalha(al, ini); let g = 0;
   while (!b.fim && g++ < 200) executar(b, decidir(b, atorAtual(b), rng), rng);
   return { vitoria: b.fim === 'vitoria', hpFinal: al.reduce((a, u) => a + u.hp, 0) / al.reduce((a, u) => a + u.hpMax, 0) };
@@ -318,6 +352,7 @@ export function resolverLutaCalabouco(save, { vitoria, vida = null, hpFinal = nu
     run.vida ||= {};
     for (const { m } of membrosFormacao(save.idle)) run.vida[m.uid] = 0;
     run.hpMedia = 0;
+    ganharXpPasse(save, 'derrota');
     return { ok: true, run: encerrarCalabouco(save, run, 'derrota') };
   }
   run.vida ||= {};
@@ -332,6 +367,7 @@ export function resolverLutaCalabouco(save, { vitoria, vida = null, hpFinal = nu
   run.hpMedia = mediaVidaFormacao(save, run);
   run.salasPagas[run.sala] = true;
   somar(run, CALABOUCO.recompensas[sala.tipo]);
+  ganharXpPasse(save, sala.tipo === 'chefe' ? 'calaboucoChefe' : 'calabouco');
   run.log.push(`${sala.rotulo}: vitória (${Math.round(run.hpMedia * 100)}% de vida).`);
   run.luta = null; run.sala += 1; run.estado = 'sala';
   if (run.sala >= CALABOUCO.salas.length) return { ok: true, run: encerrarCalabouco(save, run, 'concluido') };
@@ -357,11 +393,13 @@ export function avancarSala(save, rng = Math.random, escolha = null) {
     run.log.push(`${sala.rotulo}: Sanidade ${run.sanidade}${risco ? ' (avançou com risco, ganhos dobrados)' : ''}.`);
     run.sala += 1; run.estado = 'sala';
     if (run.sanidade <= 0) return { ok: true, run: encerrarCalabouco(save, run, 'sanidade') };
+    ganharXpPasse(save, 'calaboucoSala');
     if (run.sala >= CALABOUCO.salas.length) return { ok: true, run: encerrarCalabouco(save, run, 'concluido') };
     return { ok: true, run };
   }
   if (sala.tipo === 'tesouro') {
     somar(run, CALABOUCO.recompensas.tesouro);
+    ganharXpPasse(save, 'calaboucoSala');
     run.log.push(`${sala.rotulo}: baú encontrado!`);
     run.sala += 1; run.estado = 'sala';
     if (run.sala >= CALABOUCO.salas.length) return { ok: true, run: encerrarCalabouco(save, run, 'concluido') };
@@ -390,18 +428,18 @@ export function acaoCrise(save, acao, rng = Math.random, agora = Date.now()) {
   const c = criseDe(save);
   if (acao === 'surto' && c.estado === 'saudavel') { ir(c, 'contaminada'); return { ok: true, msg: 'O surto começou: zumbis nas ruas.' }; }
   if (acao === 'aguardar' && c.estado === 'contaminada') { ir(c, 'tomada'); return { ok: true, msg: 'A vila foi tomada. As ruas são dos zumbis.' }; }
-  if (acao === 'conter' && c.estado === 'contaminada') { if (!gasta(save, CRISE.custos.conter)) return { ok: false, motivo: 'Faltam 2 Tônicos de Lucidez.' }; ir(c, 'purificada'); return { ok: true, msg: 'Surto contido: a vila foi purificada.' }; }
+  if (acao === 'conter' && c.estado === 'contaminada') { if (!gasta(save, CRISE.custos.conter)) return { ok: false, motivo: 'Faltam 2 Tônicos de Lucidez.' }; ir(c, 'purificada'); ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: 'Surto contido: a vila foi purificada.' }; }
   if (acao === 'retomar' && c.estado === 'tomada') {
     if (c.zumbis <= 0) return { ok: false, motivo: 'Não restam zumbis.' };
     const r = poderLuta(save.idle.equipe || [], 5 + c.zumbis, rng);
     if (!r.vitoria) return { ok: false, motivo: 'A equipe foi repelida. Suba o nível dos Oníricos e tente de novo.' };
-    c.zumbis = Math.max(0, c.zumbis - 3); return { ok: true, msg: c.zumbis ? `Rua retomada: restam ${c.zumbis} zumbis.` : 'As ruas estão livres de zumbis.' };
+    c.zumbis = Math.max(0, c.zumbis - 3); ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: c.zumbis ? `Rua retomada: restam ${c.zumbis} zumbis.` : 'As ruas estão livres de zumbis.' };
   }
-  if (acao === 'purificar' && c.estado === 'tomada') { if (c.zumbis > 0) return { ok: false, motivo: 'Retome as ruas antes de purificar.' }; if (!gasta(save, CRISE.custos.purificar)) return { ok: false, motivo: 'Faltam 1 Tônico e 2 Cristais.' }; ir(c, 'purificada'); return { ok: true, msg: 'A vila foi purificada.' }; }
-  if (acao === 'reconstruir' && c.estado === 'purificada') { if (!gasta(save, CRISE.custos.reconstruir)) return { ok: false, motivo: 'Faltam 8 Fibras, 4 Cristais e 100 de ouro.' }; ir(c, 'reconstruida'); c.servicoEm = agora; return { ok: true, msg: 'Reconstruída: o Posto de cura reabriu.' }; }
+  if (acao === 'purificar' && c.estado === 'tomada') { if (c.zumbis > 0) return { ok: false, motivo: 'Retome as ruas antes de purificar.' }; if (!gasta(save, CRISE.custos.purificar)) return { ok: false, motivo: 'Faltam 1 Tônico e 2 Cristais.' }; ir(c, 'purificada'); ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: 'A vila foi purificada.' }; }
+  if (acao === 'reconstruir' && c.estado === 'purificada') { if (!gasta(save, CRISE.custos.reconstruir)) return { ok: false, motivo: 'Faltam 8 Fibras, 4 Cristais e 100 de ouro.' }; ir(c, 'reconstruida'); c.servicoEm = agora; ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: 'Reconstruída: o Posto de cura reabriu.' }; }
   if (acao === 'servico' && c.estado === 'reconstruida') {
     if (agora - c.servicoEm < CRISE.servico.intervaloMs) return { ok: false, motivo: 'O posto ainda está preparando o próximo tônico.' };
-    c.servicoEm = agora; const s = fabEstado(save); (s.gestao ||= { itens: {} }).itens = s.gestao.itens || {}; s.gestao.itens.tonico = (s.gestao.itens.tonico || 0) + 1; c.tonicosDados += 1; return { ok: true, msg: 'O posto entregou 1 Tônico de Lucidez.' };
+    c.servicoEm = agora; const s = fabEstado(save); (s.gestao ||= { itens: {} }).itens = s.gestao.itens || {}; s.gestao.itens.tonico = (s.gestao.itens.tonico || 0) + 1; c.tonicosDados += 1; ganharXpPasse(save, 'crise', null, agora); return { ok: true, msg: 'O posto entregou 1 Tônico de Lucidez.' };
   }
   return { ok: false, motivo: 'Ação indisponível neste estado.' };
 }
@@ -439,6 +477,7 @@ export function concluirMissaoHV(save, capId, n) {
   if (m.escolha && !h.escolha) return { ok: false, motivo: 'Faça a escolha da missão antes de concluir.' };
   h.feitas[n] = true; h.atual = Math.min(capitulo(capId).missoes.length + 1, n + 1);
   save.recompensas.gold += m.recompensa.gold || 0; save.recompensas.diamantes += m.recompensa.diamantes || 0; darPocao(save, 'pocao_xp_p');
+  ganharXpPasse(save, 'hv');
   if (n === capitulo(capId).missoes.length) h.fim = true;
   return { ok: true, recompensa: m.recompensa, fim: h.fim, epilogo: h.fim ? capitulo(capId).missoes[n - 1].epilogo?.[h.escolha] : null };
 }

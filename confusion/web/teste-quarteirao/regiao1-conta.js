@@ -1,43 +1,47 @@
 // Conta do jogador na versão pública (/jogar): criar conta escolhendo o inicial, entrar ou continuar a campanha.
-// Conta nova: inicial escolhido entre as cinco linhas iniciais (forma base, nível 5, Tier 1) na primeira vaga, 20.000 diamantes e
+// Conta nova: inicial escolhido entre as cinco linhas iniciais (forma base, nível 5, Tier 4) na primeira vaga, 20.000 diamantes e
 // 10 dias de VIP, uma única vez. Os exclusivos de Halloween NÃO são iniciais: só saem no Banner Mensal.
 // O save da Região 1 vai para a nuvem junto com o que a conta já tinha (contas antigas são preservadas).
 import * as A from '../account.js';
-import { ARTE_DA_ESPECIE } from '../species.js';
-import { xpTotal } from './regiao1-progressao.js';
+import { ARTE_DA_ESPECIE, LINHAS, ELEMENTO_DA_ESPECIE } from '../species.js';
+import { xpTotal, estrelasIniciais, infoClasse } from './regiao1-progressao.js';
+import { FRAGMENTOS_SONHO_CFG, aplicarInicialContaNova } from './regiao1-regras-sonho.js';
+import { molduraDoTier, raridadeRotulo } from './regiao1-criacao-regras.js';
 
 export const BOAS_VINDAS = { diamantes: 20000, vipDias: 10 };
 const DIA = 86400000;
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-// As cinco linhas iniciais: começam na forma base
-export const INICIAIS = [
-  { linha: 'Noctarn', especie: 'Penumbrio', elemento: 'Noturno', papel: 'Ataque' },
-  { linha: 'Ignavor', especie: 'Brasinha', elemento: 'Fogo', papel: 'Ataque' },
-  { linha: 'Vaelith', especie: 'Gotalume', elemento: 'Água', papel: 'Suporte' },
-  { linha: 'Brotavel', especie: 'Sementil', elemento: 'Planta', papel: 'Defesa' },
-  { linha: 'Solarin', especie: 'Solinho', elemento: 'Diurno (luz)', papel: 'Suporte' },
-];
+const TIER_INICIAL = FRAGMENTOS_SONHO_CFG.tierIniciaisPorFase[1]; // T4 na forma base das 5 linhagens iniciais
+const ELEMENTO_ROTULO = { trevas: 'Noturno', fogo: 'Fogo', agua: 'Água', planta: 'Planta', luz: 'Diurno (luz)' };
+// As cinco linhas iniciais derivadas dos dados reais de LINHAS: começam na forma base T4
+export const INICIAIS = LINHAS.map((l) => {
+  const el = ELEMENTO_DA_ESPECIE[l.inicial] || 'neutro';
+  const cls = infoClasse(l.inicial);
+  return {
+    id: l.id,
+    linha: l.atual,
+    especie: l.inicial,
+    tier: TIER_INICIAL,
+    raridade: raridadeRotulo(TIER_INICIAL),
+    moldura: molduraDoTier(TIER_INICIAL),
+    elementoId: el,
+    elemento: ELEMENTO_ROTULO[el] || el,
+    papel: cls.nome,
+    classe: cls.nome,
+    arte: ARTE_DA_ESPECIE[l.inicial] || '',
+  };
+});
 const PENDENTE = 'cw-inicial-pendente', LIBERADO = 'cw-gate-ok';
 
 // ---------- regras puras (testáveis) ----------
 export const vipAtivo = (save, agora = Date.now()) => Boolean(save?.conta?.vipAte && save.conta.vipAte > agora);
 export const diasVip = (save, agora = Date.now()) => (vipAtivo(save, agora) ? Math.ceil((save.conta.vipAte - agora) / DIA) : 0);
-// Aplica o inicial e o bônus numa conta nova (idempotente: a concessão fica registrada no save)
+// Aplica o inicial e o bônus numa conta nova (substitui o provisório para que a conta nova receba apenas o inicial escolhido)
 export function prepararContaNova(save, { userId, inicial, agora = Date.now(), novo = true }) {
-  const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial) || INICIAIS[0];
-  save.conta = save.conta || {};
-  save.conta.uid = userId; save.conta.inicial = lin.especie;
-  const idle = save.idle; idle.equipe = idle.equipe || [];
-  if (!idle.equipe.some((m) => m.inicial)) {
-    idle.equipe.unshift({ especie: lin.especie, nivel: 5, xp: xpTotal(5), raridade: 1, forma: 'natural', inicial: true, uid: 'ini0' });
-    const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== 'ini0');
-    idle.formacao = ['ini0', ...resto].slice(0, 4);
-    while (idle.formacao.length < 4) idle.formacao.push(null);
-  }
-  if (novo && !save.conta.bonusEm) {
-    save.conta.bonusEm = agora; save.conta.vipAte = agora + BOAS_VINDAS.vipDias * DIA;
-    save.recompensas.diamantes = (save.recompensas.diamantes || 0) + BOAS_VINDAS.diamantes;
-  }
+  const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial || l.id === inicial) || INICIAIS[0];
+  aplicarInicialContaNova(save, { userId, inicial: lin.especie, agora, novo });
+  const ini = save.idle?.equipe?.find((m) => m?.inicial);
+  if (ini && !ini.estrelas) ini.estrelas = estrelasIniciais('inicial');
   return save;
 }
 
@@ -51,7 +55,11 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
     #conta-gate .abas { display: flex; gap: 6px; margin-bottom: 10px; } #conta-gate .abas button[aria-selected="true"] { background: #fb923c; color: #21110c; }
     #conta-gate input { width: 100%; box-sizing: border-box; margin: 4px 0 8px; padding: 9px 10px; border-radius: 8px; border: 1px solid #6b4a52; background: #1a0f22; color: #fff3e7; font: inherit; }
     #conta-gate .iniciais { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 6px 0 10px; } @media (max-width: 520px) { #conta-gate .iniciais { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    #conta-gate .ini { background: #24112a; border: 2px solid #4a2a50; border-radius: 10px; padding: 4px; color: inherit; font: inherit; text-align: center; cursor: pointer; } #conta-gate .ini img { width: 100%; height: clamp(54px, 15vh, 110px); object-fit: contain; } #conta-gate .ini b { display: block; font-size: 12px; } #conta-gate .ini small { opacity: .75; font-size: 10.5px; }
+    #conta-gate .ini { background: #24112a; border: 2px solid #4a2a50; border-radius: 10px; padding: 5px; color: inherit; font: inherit; text-align: center; cursor: pointer; }
+    #conta-gate .ini-mold { position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 8px; background: radial-gradient(circle, #3b1c4d, #160a1e); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 4px; }
+    #conta-gate .ini-mold img.sp { width: 78%; height: 78%; object-fit: contain; z-index: 1; }
+    #conta-gate .ini-mold img.ov { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; z-index: 2; }
+    #conta-gate .ini b { display: block; font-size: 12px; } #conta-gate .ini small { opacity: .82; font-size: 10.5px; display: block; }
     #conta-gate .ini[aria-pressed="true"] { border-color: #fb923c; box-shadow: 0 0 0 3px #fb923c55; }
     #conta-gate .ln { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; } #conta-gate .msg { min-height: 18px; font-size: 12.5px; color: #fca5a5; } #conta-gate .ok { color: #86efac; }
     #conta-gate .bonus { font-size: 12px; background: #3a1f3f; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; }`;
@@ -63,7 +71,7 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
   const limparUrl = () => { if (location.pathname.startsWith('/jogar') && (location.hash || location.search)) history.replaceState(null, '', '/jogar'); };
 
   function cartoes() {
-    return `<div class="iniciais">${INICIAIS.map((l) => `<button type="button" class="ini" aria-pressed="${escolhido === l.especie}" data-ini="${esc(l.especie)}"><img src="../../../${ARTE_DA_ESPECIE[l.especie]}" alt="${esc(l.especie)}"><b>${esc(l.especie)}</b><small>linha ${esc(l.linha)} · ${esc(l.elemento)} · ${esc(l.papel)}</small></button>`).join('')}</div>`;
+    return `<div class="iniciais">${INICIAIS.map((l) => `<button type="button" class="ini" aria-pressed="${escolhido === l.especie}" data-ini="${esc(l.especie)}"><div class="ini-mold"><img class="sp" src="../../../${esc(l.arte)}" alt="${esc(l.especie)}"><img class="ov" src="../../../${esc(l.moldura)}" alt="" onerror="this.style.display='none'"></div><b>${esc(l.especie)} · T${l.tier}</b><small>Base (${esc(l.raridade)}) · ${esc(l.elemento)} · ${esc(l.papel)}</small></button>`).join('')}</div>`;
   }
   function desenhar() {
     const email = A.email();

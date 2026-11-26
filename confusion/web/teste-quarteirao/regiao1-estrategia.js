@@ -9,6 +9,7 @@ import { membrosFormacao } from './regiao1-exp-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
 import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { ganharXpPasse } from './regiao1-passe-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const PAPEL = { ataque: { i: '⚔️', n: 'Ataque' }, defesa: { i: '🛡️', n: 'Defesa' }, suporte: { i: '💚', n: 'Suporte' } };
@@ -34,7 +35,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     if (s.exp?.equipe?.length > s.vagas) s.exp.equipe = s.exp.equipe.slice(0, s.vagas);
     return s;
   };
-  const roster = () => (getSave().idle.equipe || []).map((m, i) => ({ id: `m${i}`, especie: m.especie, nivel: m.nivel || 1, tierHW: m.tierHW }));
+  const roster = () => (getSave().idle.equipe || []).map((m, i) => ({ id: `m${i}`, especie: m.especie, nivel: m.nivel || 1, tier: m.tier, tierHW: m.tierHW, raridade: m.raridade, estrelas: m.estrelas, inicial: m.inicial }));
   const diario = (t) => { const meta = window.regiaoMundo?.estado?.().meta; if (!meta) return; meta.diario = meta.diario || []; meta.diario.push({ dia: meta.dia, t: `${D.titulo}: ${t}` }); if (meta.diario.length > 150) meta.diario = meta.diario.slice(-150); };
   const rotaDe = (id) => D.rotas.find((r) => r.id === id);
   const estrDe = (id) => D.estruturas.find((e) => e.id === id);
@@ -375,6 +376,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
       for (const [k, v] of Object.entries(r.pendente)) { const n = `${Dx.materiais[k].icone} ${Dx.materiais[k].nome}`; pend[n] = (pend[n] || 0) + v; }
     }
     const f = (o) => Object.entries(o).map(([k, v]) => `${v} ${k}`).join(' · ');
+    if (Object.keys(rec).length) ganharXpPasse(getSave(), 'coleta');
     const partes = [{ t: Object.keys(rec).length ? `recebido ${f(rec)}` : 'nada pronto para coletar' }];
     if (Object.keys(pend).length) partes.push({ t: `pendente (estoque cheio): ${f(pend)}` });
     resumoLote(todos ? 'Coleta de todos os reinos' : 'Coleta', partes);
@@ -383,6 +385,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     processar(false);
     const s = estado(), r = repetir ? repetirUltimoLote(s, D) : fabricarLote(s, D, loteRec, loteQtd);
     if (!r.ok) { mostrarToast(r.motivo + (r.falta ? ` Faltam ${matTxt(r.falta)}.` : ''), 3200); desenhar(); return; }
+    ganharXpPasse(getSave(), 'fabricacao');
     resumoLote('Fabricação', [{ t: `lote na fila: ${matTxt(r.previsao.saida)} (usou ${matTxt(r.previsao.insumos)}, ${dur(r.previsao.duracao)})` }]);
   }
   function progressoDesbloqueio(Dx) { const de = REINOS_D.find((x) => x.id === Dx.desbloqueio.de); return { atual: Object.keys(estado(de).estruturas).length, meta: Dx.desbloqueio.terrenos }; }
@@ -442,7 +445,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   function comecarFase(manterHp = null) {
     const s = estado(), exp = s.exp, rota = rotaDe(exp.rota), fase = rota.fases[exp.fase], r = roster();
     const bonus = bonusDaCidade(s, D);
-    const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); const bt = bonusDoMembro(m); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus: { ...bonus, hp: (bonus.hp || 0) + (bt.hp || 0), atk: (bonus.atk || 0) + (bt.atk || 0), def: (bonus.def || 0) + (bt.def || 0) } }); });
+    const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); const bt = bonusDoMembro(m); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus: { ...bonus, ...bt, hp: (bonus.hp || 0) + (bt.hp || 0), atk: (bonus.atk || 0) + (bt.atk || 0), def: (bonus.def || 0) + (bt.def || 0) } }); });
     artesAliadosFase = {}; { const form = membrosFormacao(getSave().idle); const livres = [0, 1, 2, 3].filter((v) => !form.some((x) => exp.equipe.includes(`m${x.idx}`) && x.vaga === v)); al.forEach((u, i) => { const f = form.find((x) => `m${x.idx}` === exp.equipe[i]); u.vaga = f ? f.vaga : livres.shift(); const mm = getSave().idle.equipe[Number(String(exp.equipe[i]).slice(1))]; const art = mm && arteDoIndividuo(mm); if (art) artesAliadosFase[u.especie] = art; }); }
     if (manterHp) al.forEach((u, i) => { const h = manterHp[exp.equipe[i]]; if (h != null) u.hp = Math.max(1, Math.min(u.hpMax, Math.round(h * u.hpMax + u.hpMax * bonus.cura))); });
     batalha = criarBatalha(al, ajustarInimigos(gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)), 1, D.papeis)); // Região 1: sem formas dos iniciais como inimigas
@@ -457,6 +460,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     const s = estado(), exp = s.exp, rota = rotaDe(exp.rota);
     if (batalha.fim === 'vitoria') {
       const rec = pagarFase(exp, rota, exp.fase, s.materiais, rng); // null se já paga: nunca duplica
+      if (rec) ganharXpPasse(getSave(), 'estrategia');
       if (rec && rng() < [0.3, 0.45, 0.6][Math.min(2, exp.fase)]) { const id = exp.fase >= 2 ? 'pocao_xp_m' : 'pocao_xp_p'; darPocao(getSave(), id); batalha.log.push(`Poção de XP encontrada (${id === 'pocao_xp_m' ? 'média' : 'pequena'}).`); }
       const fase = rota.fases[exp.fase];
       if (rec) {

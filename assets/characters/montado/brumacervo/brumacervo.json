@@ -1,0 +1,24 @@
+{
+ "celula": {
+  "largura": 270,
+  "altura": 285
+ },
+ "colunas": 6,
+ "fps": 24,
+ "pe": 276,
+ "topo": 9,
+ "direcoes": {
+  "frente": {
+   "quadros": 28
+  },
+  "direita": {
+   "quadros": 18
+  },
+  "costas": {
+   "quadros": 36
+  },
+  "esquerda": {
+   "quadros": 18
+  }
+ }
+}
