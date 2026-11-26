@@ -19,11 +19,14 @@ import {
   resgatarLoginDiario,
   resgatarTudoPasse,
   resgatarLojaVoto,
+  chocarPrimeiroOvo,
   MISSOES_CAPTURA_LEGADAS,
 } from './regiao1-idle.js';
 import {
   FRAGMENTOS_SONHO_CFG,
   IDENTIFICADORES_RECURSOS,
+  NOCTARN_REGRA,
+  ehElementoForaBannerPermanente,
   idFragmentoSonho,
   adicionarFragmentoSonho,
   saldoFragmentoSonho,
@@ -32,7 +35,11 @@ import {
   consultarEvolucaoForma,
   evoluirFormaPorFragmentos,
   criarUnidadeInicial,
+  migrarInicialNoctarn,
+  aplicarInicialContaNova,
 } from './regiao1-regras-sonho.js';
+import { poolBanner, poolBannerSombra, invocar, expDe } from './regiao1-exp-regras.js';
+import { invocarHW, hwDe } from './regiao1-halloween-regras.js';
 import {
   ESPECIES_INICIAIS_TODAS,
   formaPorNivelCampanha,
@@ -81,8 +88,10 @@ test('Save antigo preserva equipe, itens legados, progresso e Vínculo útil sem
     },
     equipe: [
       { especie: 'Noctarn', nivel: 12, xp: 1000, raridade: 4, tier: 4, estrelas: 3, forma: 'natural', uid: 'ini0' },
+      { especie: 'Noctarn', nivel: 7, xp: 300, raridade: 3, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'bn0' },
+      { especie: 'Noctarn', nivel: 9, xp: 500, raridade: 3, forma: 'natural', uid: 'unk0' },
     ],
-    formacao: ['ini0', null, null, null],
+    formacao: ['ini0', 'bn0', null, null],
     diarias: {
       dia: Math.floor(1_000_000 / 86400000),
       rerollsRestantes: 2,
@@ -101,8 +110,18 @@ test('Save antigo preserva equipe, itens legados, progresso e Vínculo útil sem
   assert.deepEqual(idle.mochila.reliquiasPossuidas, ['rel_lamina_sombra', 'rel_selo_onirico']);
   assert.equal(idle.mochila.ovos.length, 1);
   assert.equal(idle.mochila.ingredientes.erva_costeira, 4);
-  assert.equal(idle.equipe[0].especie, 'Noctarn');
-  assert.equal(equipeAliadaPreservada(idle)[0].especie, 'Noctarn');
+  // Inicial identificável (ini0) migra para Penumbrio T4; cópia de banner e cópia sem origem identificável ficam Noctarn T4
+  assert.equal(idle.equipe[0].especie, 'Penumbrio');
+  assert.equal(idle.equipe[0].tier, 4);
+  assert.equal(idle.equipe[0].estrelas, 3);
+  assert.equal(idle.equipe[0].uid, 'ini0');
+  assert.equal(idle.equipe[1].especie, 'Noctarn');
+  assert.equal(idle.equipe[1].tier, 4);
+  assert.equal(idle.equipe[1].origem, 'banner');
+  assert.equal(idle.equipe[2].especie, 'Noctarn');
+  assert.equal(idle.equipe[2].tier, 4);
+  assert.equal(equipeAliadaPreservada(idle)[0].especie, 'Penumbrio');
+  assert.equal(equipeAliadaPreservada(idle)[1].especie, 'Noctarn');
 
   // Missão de captura substituída mantendo IDs declarados para dioh293 e preservando outras missões
   assert.ok(MISSOES_CAPTURA_LEGADAS.includes('dm_capturas_3'));
@@ -373,4 +392,149 @@ test('Comparação de poder: chefe recrutado +20% e exclusivo de banner +30% sob
   assert.equal(uChefe.categoriaPoder, 'chefe_recrutado');
   assert.ok(Math.abs(uChefe.hpMax / uComum.hpMax - 1.2) < 0.02);
   assert.ok(Math.abs(uChefe.atk / uComum.atk - 1.2) < 0.02);
+});
+
+test('Noctarn e Sombra ficam fora do banner permanente (Adventurer); Noctarn é T4 e banner marca origem', () => {
+  const perm = poolBanner();
+  assert.equal(perm.some((p) => p.especie === 'Noctarn'), false);
+  assert.equal(perm.some((p) => ehElementoForaBannerPermanente(p.elemento)), false);
+  assert.equal(NOCTARN_REGRA.tier, 4);
+  assert.equal(NOCTARN_REGRA.noBannerPermanente, false);
+
+  const sombra = poolBannerSombra();
+  assert.equal(sombra[0].especie, 'Noctarn');
+  assert.equal(sombra[0].tier, 4);
+
+  const s = novoSave();
+  expDe(s).tickets = 1;
+  const rAdv = invocar(s, () => 0.1);
+  assert.equal(rAdv.ok, true);
+  assert.notEqual(rAdv.especie, 'Noctarn');
+  const criadoAdv = s.idle.equipe[s.idle.equipe.length - 1];
+  assert.equal(criadoAdv.origem, 'banner');
+  assert.equal(criadoAdv.fonteBanner, 'adventurer');
+
+  hwDe(s).tickets = 1;
+  const rHw = invocarHW(s, 1, () => 0.1);
+  assert.equal(rHw.ok, true);
+  const criadoHw = s.idle.equipe[s.idle.equipe.length - 1];
+  assert.equal(criadoHw.origem, 'banner');
+});
+
+test('Percurso 1 (Conta nova): escolha do inicial → primeira batalha e drop 1% idempotente', () => {
+  const s = criarEstadoInicial();
+  const idle = garantirEstadoIdle(s, 2_000_000);
+  // Offline padrão começa com Penumbrio provisório T4
+  assert.equal(idle.equipe[0].especie, 'Penumbrio');
+  assert.equal(idle.equipe[0].tier, 4);
+
+  // Escolha do inicial na conta nova substitui o provisório sem duplicar vaga inicial
+  aplicarInicialContaNova(s, { userId: 'conta_nova_1', inicial: 'Brasinha', agora: 2_000_000, novo: true });
+  assert.equal(idle.equipe.filter((m) => m.inicial).length, 1);
+  assert.equal(idle.equipe[0].especie, 'Brasinha');
+  assert.equal(idle.equipe[0].tier, 4);
+  assert.equal(idle.formacao[0], idle.equipe[0].uid);
+  assert.equal(s.recompensas.diamantes, 20000);
+
+  // Primeiro encontro selvagem da Região 1 é do catálogo resolvido, nunca inicial, com mesmo sprite/elemento/kit
+  const encontro = MONSTROS_SELVAGENS.find((m) => m.mapa === 'E1');
+  assert.ok(encontro);
+  assert.equal(encontro._resolvido, true);
+  assert.equal(ESPECIES_INICIAIS_TODAS.has(encontro.especie), false);
+
+  const ab1 = resolverAbateAuto(s, { ...encontro, derrotaId: 'p1_bat_1' }, () => 0.005);
+  assert.equal(ab1.fragmentoSonho.dropou, true);
+  assert.equal(saldoFragmentoSonho(s, encontro.elementoDrop), 1);
+
+  const abDup = resolverAbateAuto(s, { ...encontro, derrotaId: 'p1_bat_1' }, () => 0.001);
+  assert.equal(abDup.fragmentoSonho.jaPago, true);
+  assert.equal(saldoFragmentoSonho(s, encontro.elementoDrop), 1);
+
+  const rec = desserializarEstado(serializarEstado(s));
+  const val = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(rec)), conta: rec.conta });
+  assert.equal(val.ok, true);
+});
+
+test('Percurso 2 (Save antigo): equipe → evolução → revanche 10m → retorno Idle → ovo T5 do Passe', () => {
+  const t0 = 20_000_000;
+  const antigo = criarEstadoInicial();
+  antigo.conta = { uid: 'conta_antiga_1', inicial: 'Noctarn', bonusEm: 1000 };
+  antigo.bossesDerrotados.BOSS_E = true;
+  antigo.idle = {
+    jogador: { xp: 400, hp: 140, sanidade: 100, atributos: { for: 2, vit: 1, men: 0, vin: 2, sor: 1 } },
+    ultimoTickMs: t0 - 3 * 3600_000, // 3h fora
+    montaria: 'brumacervo',
+    mochila: {
+      esferas: { comum: 4 },
+      reliquiasPossuidas: ['rel_lamina_sombra'],
+      equipada: { arma: 'rel_lamina_sombra' },
+      ovos: [{ tipo: 'ovoT5', especie: 'Tiranox', tier: 5, temporada: '2026-11', origem: 'passe-100' }],
+    },
+    equipe: [
+      { especie: 'Noctarn', nivel: 12, xp: 1000, raridade: 3, estrelas: 3, forma: 'natural', inicial: true, uid: 'ini0' },
+      { especie: 'Noctarn', nivel: 10, xp: 720, raridade: 3, estrelas: 2, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'bn_sombra' },
+    ],
+    formacao: ['ini0', 'bn_sombra', null, null],
+    passe: { v: 2, edicao: '2026-11', xp: 10000, resgatado: 99, comprados: 0, descartado: 0, t5Pagos: { '2026-11': true } },
+    diarias: {
+      dia: Math.floor(t0 / 86400000),
+      rerollsRestantes: 3,
+      itens: [{ id: 'dm_capturas_3', titulo: 'Capturar 3 Oníricos', tipo: 'capturas', meta: 3, progresso: 0, resgatada: false }],
+    },
+  };
+
+  // 1) Equipe e migração ao carregar
+  const s = desserializarEstado(serializarEstado(antigo));
+  const idle = garantirEstadoIdle(s, t0);
+  assert.equal(idle.montaria, 'brumacervo');
+  assert.equal(idle.equipe[0].especie, 'Penumbrio');
+  assert.equal(idle.equipe[0].tier, 4);
+  assert.equal(idle.equipe[0].estrelas, 3);
+  assert.equal(idle.equipe[1].especie, 'Noctarn');
+  assert.equal(idle.equipe[1].tier, 4);
+  assert.equal(idle.equipe[1].origem, 'banner');
+  assert.equal(idle.diarias.itens[0].id, 'dm_batalhas_3');
+  assert.equal(migrarInicialNoctarn(s).migrou, false); // idempotente
+
+  // 2) Evolução por Fragmentos de Sonho (10 / 30), preservando nível e estrelas
+  adicionarFragmentoSonho(s, 'trevas', 40);
+  const ev1 = evoluirFormaPorFragmentos(s, 0, { operacaoId: 'p2_ev1' });
+  const ev2 = evoluirFormaPorFragmentos(s, 0, { operacaoId: 'p2_ev2' });
+  assert.equal(ev1.ok && ev2.ok, true);
+  assert.equal(idle.equipe[0].especie, 'Noctarion');
+  assert.equal(idle.equipe[0].tier, 5);
+  assert.equal(idle.equipe[0].nivel, 12);
+  assert.equal(idle.equipe[0].estrelas, 3);
+  assert.equal(saldoFragmentoSonho(s, 'trevas'), 0);
+
+  // 3) Revanche com ×3 mantém 10 minutos reais e sem pagamento duplo
+  const revIni = iniciarRevancheChefe(s, 'BOSS_E', { agoraMs: t0, batalhaId: 'p2_rev1', velocidade: 3 });
+  assert.equal(revIni.ok, true);
+  const revFim = concluirRevancheChefe(s, { batalhaId: 'p2_rev1', vitoria: true, agoraMs: t0 + 1000, velocidade: 3 });
+  assert.equal(revFim.fragmentosGanhos, 1);
+  assert.equal(statusRevancheChefe(s, 'BOSS_E', t0 + 1000 + 599_000).emCooldown, true);
+  assert.equal(statusRevancheChefe(s, 'BOSS_E', t0 + 1000 + 600_000).emCooldown, false);
+
+  // 4) Retorno do Idle paga apenas uma vez (inclusive fragmentos 1%)
+  const off = calcularGanhoOffline(s, 6, t0);
+  assert.ok(off && off.abates > 100);
+  const rOff1 = aplicarGanhoOffline(s, off, 'Fanalino', t0, () => 0.004);
+  assert.equal(rOff1.jaPago, false);
+  const fragsInseto = saldoFragmentoSonho(s, 'inseto');
+  assert.equal(fragsInseto, off.abates);
+  const rOff2 = aplicarGanhoOffline(s, off, 'Fanalino', t0, () => 0.004);
+  assert.equal(rOff2.jaPago, true);
+  assert.equal(saldoFragmentoSonho(s, 'inseto'), fragsInseto);
+
+  // 5) Resgate/eclosão do ovo T5 do Passe nasce Nv.1 T5 e valida save final
+  const choc = chocarPrimeiroOvo(s);
+  assert.equal(choc.ok, true);
+  assert.equal(choc.onirico.especie, 'Tiranox');
+  assert.equal(choc.onirico.nivel, 1);
+  assert.equal(choc.onirico.tier, 5);
+  assert.equal(choc.onirico.temporada, '2026-11');
+
+  const finalRec = desserializarEstado(serializarEstado(s));
+  const val = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(finalRec)), conta: finalRec.conta });
+  assert.equal(val.ok, true);
 });

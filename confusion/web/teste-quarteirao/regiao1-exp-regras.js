@@ -6,6 +6,7 @@ import { REINOS } from '../reinos.js';
 import { gestaoDe, avancar as avancarGestao } from './regiao1-gestao-regras.js';
 import { darPocao, hwDe } from './regiao1-halloween-regras.js';
 import { aplicarXp } from './regiao1-progressao.js';
+import { ehElementoForaBannerPermanente, NOCTARN_REGRA } from './regiao1-regras-sonho.js';
 
 export function expDe(save) {
   const idle = save.idle || (save.idle = {});
@@ -76,12 +77,24 @@ export function concederTickets(save) {
   return n;
 }
 
-// ---- Banner ----
-const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 2], ['epica', 0.07, 3], ['lendaria', 0.01, 4]];
+// ---- Banner Permanente (Adventurer: Sombra/trevas e Noctarn ficam fora do permanente) ----
+export const BANNER_PERMANENTE_ID = 'adventurer';
+const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 3], ['epica', 0.07, 4], ['lendaria', 0.01, 5]];
 export function poolBanner() {
   const vistos = new Set(), pool = [];
-  for (const r of Object.values(REINOS)) for (const l of r.linhagens) if (!vistos.has(l.nome)) { vistos.add(l.nome); const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10; pool.push({ especie: l.nome, elemento: l.elemento, raridade: k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria' }); }
+  for (const r of Object.values(REINOS)) {
+    for (const l of r.linhagens) {
+      if (vistos.has(l.nome)) continue;
+      if (ehElementoForaBannerPermanente(l.elemento) || l.nome === NOCTARN_REGRA.especie) continue;
+      vistos.add(l.nome);
+      const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10;
+      pool.push({ especie: l.nome, elemento: l.elemento, raridade: k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria' });
+    }
+  }
   return pool;
+}
+export function poolBannerSombra() {
+  return [{ especie: NOCTARN_REGRA.especie, elemento: NOCTARN_REGRA.elemento, tier: NOCTARN_REGRA.tier, raridade: 'epica', banner: 'sombra' }];
 }
 export function invocar(save, rng = Math.random) {
   const e = expDe(save);
@@ -93,8 +106,10 @@ export function invocar(save, rng = Math.random) {
   if (garantia && alvo === 'comum') alvo = 'rara';
   const pool = poolBanner(); let cand = pool.filter((p) => p.raridade === alvo); if (!cand.length) cand = pool;
   const sorteado = cand[Math.floor(rng() * cand.length) % cand.length];
-  const nivel = 1, idle = save.idle; (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, raridade: RARIDADES.find((x) => x[0] === sorteado.raridade)[2], forma: 'natural' });
-  return { ok: true, ...sorteado };
+  const tier = RARIDADES.find((x) => x[0] === sorteado.raridade)?.[2] || 1;
+  const nivel = 1, idle = save.idle;
+  (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, tier, raridade: tier, estrelas: 1, forma: 'natural', origem: 'banner', fonteBanner: BANNER_PERMANENTE_ID, uid: `b${e.pulls}_${idle.equipe.length}` });
+  return { ok: true, ...sorteado, tier };
 }
 
 // ---- Guilda e Contratos Diários ----

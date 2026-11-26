@@ -26,7 +26,7 @@ import {
   dropsEgg,
 } from '../systems.js';
 import { ESPECIES, ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
-import { sortearDropFragmentoSonho, aplicarDropsOfflineFragmentos, fragmentosSonhoDe } from './regiao1-regras-sonho.js';
+import { sortearDropFragmentoSonho, aplicarDropsOfflineFragmentos, fragmentosSonhoDe, migrarInicialNoctarn, derrotasPagasDe } from './regiao1-regras-sonho.js';
 import { revancheDe } from './regiao1-revanche-regras.js';
 
 export const I18N = {
@@ -125,7 +125,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
       coletarOvos: true,
     },
     codex: {
-      especies: { Noctarn: { visto: true, abates: 0, capturas: 1 } },
+      especies: { Penumbrio: { visto: true, abates: 0, capturas: 1 } },
       areasVisitadas: { C0: true },
       bosses: {},
       itens: {},
@@ -143,8 +143,9 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
     },
     revanches: { cooldowns: {}, emAndamento: null, concluidas: {}, craftsPagos: {} },
     derrotasPagas: { ids: {}, ordem: [] },
+    montaria: null,
     equipe: [
-      { especie: 'Noctarn', nivel: 5, xp: xpDoNivel(5), raridade: 3, forma: 'natural' },
+      { especie: 'Penumbrio', nivel: 5, xp: xpDoNivel(5), tier: 4, raridade: 4, estrelas: 1, forma: 'natural', formaFase: 1, inicial: true, origem: 'inicial-padrao', uid: 'ini0' },
     ],
     login: { streak: 0, lastDay: -1 },
     passe: { season: '', xp: 0, premium: false, claimed: 0, claimedPremium: 0 },
@@ -202,6 +203,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     }
     fragmentosSonhoDe(save);
     revancheDe(save);
+    migrarInicialNoctarn(save);
     return save.idle;
   }
   const base = criarEstadoIdle(agoraMs);
@@ -242,6 +244,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     },
     votos: { ...base.votos, ...(save.idle.votos || {}) },
     config: { ...base.config, ...(save.idle.config || {}) },
+    montaria: save.idle.montaria ?? null,
     logs: Array.isArray(save.idle.logs) ? save.idle.logs.slice(-60) : [],
     equipe: Array.isArray(save.idle.equipe) && save.idle.equipe.length ? save.idle.equipe : base.equipe,
     _pronto: true,
@@ -256,6 +259,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
   }
   fragmentosSonhoDe(save);
   revancheDe(save);
+  migrarInicialNoctarn(save);
   return save.idle;
 }
 
@@ -470,13 +474,16 @@ export function calcularGanhoOffline(save, nivelArea = 6, agoraMs = Date.now()) 
     ? Math.max(1, Math.round(colheitaDia * (minutos / 1440) * (1 + codex.fazendaPct / 100)))
     : 0;
 
-  return { minutos, abates, gold, xp, ovos, colheitaFazenda };
+  return { minutos, abates, gold, xp, ovos, colheitaFazenda, desdeMs: idle.ultimoTickMs || agoraMs, ateMs: agoraMs };
 }
 
 export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Fanalino', agoraMs = Date.now(), rng = Math.random) {
   if (!resumo) return null;
   const idle = garantirEstadoIdle(save, agoraMs);
-  const loteId = `offline:${idle.ultimoTickMs || 0}:${agoraMs}`;
+  const loteId = `offline:${resumo.desdeMs ?? idle.ultimoTickMs ?? 0}:${resumo.ateMs ?? agoraMs}`;
+  if (derrotasPagasDe(save).ids[loteId]) {
+    return { jaPago: true, fragmentosSonho: { ok: true, jaPago: true, totalDropado: 0, porElemento: {} } };
+  }
   save.recompensas.gold += resumo.gold + resumo.colheitaFazenda * 4;
   save.recompensas.xp += resumo.xp;
   idle.jogador.xp += resumo.xp;
@@ -488,7 +495,7 @@ export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Fanalino', ag
   const fragmentosSonho = aplicarDropsOfflineFragmentos(save, { loteId, abates: resumo.abates, especie: especiePadrao, rng });
   avancarDiaria(idle, 'abates', resumo.abates);
   idle.ultimoTickMs = agoraMs;
-  return { fragmentosSonho };
+  return { jaPago: false, fragmentosSonho };
 }
 
 // ---- Missões Diárias + Reroll + Passe + Login 7 Dias (reuso de systems.js) ----
@@ -562,10 +569,23 @@ export function chocarPrimeiroOvo(save) {
   const idle = garantirEstadoIdle(save);
   if (!idle.mochila.ovos.length) return { ok: false, motivo: 'Nenhum ovo na mochila.' };
   const ovo = idle.mochila.ovos.shift();
-  idle.equipe.push({ especie: ovo.especie, nivel: 1, xp: 0, raridade: 2, forma: ovo.forma || 'natural' });
+  const tier = Math.max(1, Math.min(5, Math.floor(Number(ovo.tier) || 2)));
+  const onirico = {
+    especie: ovo.especie,
+    nivel: 1,
+    xp: 0,
+    tier,
+    raridade: tier,
+    estrelas: 1,
+    forma: ovo.forma || 'natural',
+    ...(ovo.temporada ? { temporada: ovo.temporada } : {}),
+    ...(ovo.evento ? { evento: ovo.evento } : {}),
+    ...(ovo.origem ? { origem: ovo.origem } : {}),
+  };
+  idle.equipe.push(onirico);
   registrarCodexEspecie(idle, ovo.especie, { captura: true });
   avancarDiaria(idle, 'ovos', 1);
-  return { ok: true, ovo };
+  return { ok: true, ovo, onirico };
 }
 
 // ---- Vote e Ganhe (TopIdle 12h / IdleRank 24h) ----
