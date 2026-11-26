@@ -7,6 +7,7 @@ import { criarCtx, tocarEvento, duracaoEstimada } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE, LINHAS } from '../species.js';
 import { pref, proximaVelocidade } from './regiao1-sfx.js';
 import { resolverEncontroCatalogo, SUBSTITUTO_R1 } from './regiao1-encontros-regras.js';
+import { arteAtaque, criarPose } from './regiao1-poses.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
 
@@ -217,6 +218,9 @@ export function criarArena(host, { artes = {} } = {}) {
     el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.escalaX === 1 && sprite.zoom === 1 ? '' : `style="transform:scale(${sprite.escalaX * sprite.zoom}, ${sprite.zoom});transform-origin:50% 100%"`} alt="${esc(u.especie)}"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-elemento" style="--cor-elemento:${COR_ELEMENTO[elemento]}">${NOME_ELEMENTO[elemento]}</span><span class="un-efs"></span></span>`;
     const imagem = el.querySelector('.un-fig img');
     imagem.addEventListener('load', () => recortar(imagem), { once: true });
+    // pose de ataque da forma em uso (voltada para a direita; inimigos espelhados), pronta para o momento do golpe
+    const srcAtaque = arteAtaque(u.especie, u.arte || arteRaiz(u.especie, opArt));
+    if (srcAtaque) { el._pose = criarPose({ fig: el.querySelector('.un-fig'), base: imagem, src: srcAtaque, lado: u.lado, escalaX: sprite.escalaX, zoom: sprite.zoom, bbox: () => bboxCache.get(imagem.currentSrc || imagem.src), especie: u.especie }); imagem.addEventListener('load', () => el._pose.preparar(), { once: true }); }
     imagem.addEventListener('error', () => { const ph = document.createElement('span'); ph.textContent = '🎃'; ph.title = 'Arte pendente'; ph.style.cssText = 'font-size:clamp(36px,12vh,80px);line-height:1'; imagem.replaceWith(ph); }, { once: true });
     campo.append(el); nos.set(u.id, { el, u, vaga }); hpVis.set(u.id, u.hp);
     if (entrando) setTimeout(() => el.classList.remove('entrando'), 800);
@@ -323,7 +327,7 @@ export function criarTelaBatalha() {
   let rng = criarRng(Date.now() % 100000); let b = null, cfg = null, timer = null, auto = true, arena = null, minimizada = false;
   // Segundo plano: com a janela minimizada (ou a aba oculta/suspensa) a luta automática segue pelo tempo decorrido, sem animação.
   // Ao voltar, a arena é remontada no estado atual (ou mostra o resultado). onFim é chamado uma única vez.
-  let fechado = false, emFundoAntes = false, marca = 0;
+  let fechado = false, emFundoAntes = false, marca = 0, avisadoFim = false;
   const vel = () => pref.velocidade;
   const passoFundo = () => 650 / vel(); // duração real de um turno sem animação
   const emFundo = () => minimizada || document.hidden;
@@ -349,7 +353,7 @@ export function criarTelaBatalha() {
     if (emFundo()) {
       if (!emFundoAntes) { emFundoAntes = true; marca = Date.now(); }
       avancarFundo(); desenharInd();
-      if (b.fim) { if (cfg.autoContinuar?.(b)) fechar(b.fim === 'vitoria'); return; } // sem autoContinuar, o resultado espera o jogador voltar
+      if (b.fim) { if (cfg.autoContinuar?.(b)) fechar(b.fim === 'vitoria'); else if (!avisadoFim) { avisadoFim = true; cfg.notificarFim?.(b); } return; } // sem autoContinuar, o resultado espera o jogador voltar (com aviso)
       agendar(500); return;
     }
     if (emFundoAntes) voltarDoFundo();
@@ -362,7 +366,7 @@ export function criarTelaBatalha() {
   }
   function terminar() { arena.fim(`<b>${b.fim === 'vitoria' ? '🏆 Vitória!' : '💀 Derrota'}</b><button class="btn-pri" data-continuar="1">Continuar</button>`); }
   function abrir(c) {
-    cfg = c; auto = c.auto !== false; minimizada = false; fechado = false; emFundoAntes = false; if (c.semente != null) rng = criarRng(c.semente); el.style.display = 'block'; desenharInd(); arena = criarArena(el, { artes: c.artes });
+    cfg = c; auto = c.auto !== false; minimizada = Boolean(c.iniciarMinimizada); fechado = false; emFundoAntes = false; avisadoFim = false; if (c.semente != null) rng = criarRng(c.semente); el.style.display = minimizada ? 'none' : 'block'; desenharInd(); arena = criarArena(el, { artes: c.artes });
     const papeis = c.papeis || {};
     for (const m of c.aliados) if (m.arte) c.artes = { ...(c.artes || {}), [m.especie]: m.arte }; // arte conforme o tier do indivíduo
     if (arena && c.artes) arena = criarArena(el, { artes: c.artes });
@@ -373,7 +377,7 @@ export function criarTelaBatalha() {
       if (f.arte) u.arte = f.arte; if (f.forma) u.forma = f.forma; if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
     b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render(); agendar(700 / vel());
   }
-  function fechar(venceu) { if (fechado) return; fechado = true; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac); }
+  function fechar(venceu) { if (fechado) return; fechado = true; const eraMinimizada = minimizada; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac, eraMinimizada); }
   function encerrarSilencioso() { clearTimeout(timer); el.style.display = 'none'; el.innerHTML = ''; b = null; }
   el.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t || !b) return;

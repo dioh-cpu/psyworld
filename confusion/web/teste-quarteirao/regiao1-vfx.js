@@ -93,6 +93,8 @@ function camera(ctx, foco, { zoom = 1.05, tremor = 0, ms = 420 } = {}) {
 }
 // Quadro de impacto (inversão rápida, típico de anime) para golpes pesados
 function quadroImpacto(ctx, forte = true) { ctx.campo.animate([{ filter: 'none' }, { filter: forte ? 'invert(1) contrast(1.8) grayscale(1)' : 'brightness(2.2) contrast(1.3)', offset: 0.2 }, { filter: 'brightness(1.6) saturate(.4)', offset: 0.5 }, { filter: 'none' }], { duration: 150 * ctx.k }); }
+// Pose de ataque no momento do golpe: troca para a imagem de ataque da forma e volta ao repouso sem piscar (regiao1-poses.js)
+function golpePose(ctx, A, ms = 380) { const p = A?._pose; if (p) p.mostrar(true, ms * ctx.k); }
 function reacao(ctx, el, dir, forca = 1, cor = '#fff') { fig(el).animate([{ transform: 'translate(0,0)', filter: 'brightness(4) saturate(0)' }, { transform: `translate(${dir * 16 * forca}px,-5px) rotate(${dir * 5 * forca}deg)`, filter: `brightness(1.9) drop-shadow(0 0 10px ${cor})`, offset: 0.25 }, { transform: `translate(${-dir * 4 * forca}px,0)`, offset: 0.62 }, { transform: 'translate(0,0)', filter: 'none' }], { duration: 430 * ctx.k, easing: 'ease-out' }); }
 function numero(ctx, el, txt, cor, o = {}) {
   injetar(); const b = corpo(ctx, el);
@@ -131,6 +133,7 @@ async function investida(ctx, A, T, { cor = '#fff', frac = 0.84, ms = 280, salto
   const tr = rastro ? setInterval(() => fantasma(ctx, A, cor), 55 * ctx.k) : 0;
   const kf = salto ? [{ transform: 'translate(0,0)' }, { transform: `translate(${dx * 0.5}px,${dy * 0.5 - salto}px) scale(1.06)`, offset: 0.5 }, { transform: `translate(${dx}px,${dy}px) scale(1.08)` }] : [{ transform: 'translate(0,0) scale(1)' }, { transform: `translate(${dx}px,${dy}px) scale(1.08)` }];
   await anim(A, kf, { duration: ms * ctx.k, easing: salto ? 'cubic-bezier(.3,.1,.7,1)' : 'cubic-bezier(.65,0,.9,.45)' }); clearInterval(tr);
+  golpePose(ctx, A, 520); // chegou: pose de ataque durante o golpe
   return async () => { await anim(A, [{ transform: `translate(${dx}px,${dy}px) scale(1.08)` }, { transform: 'translate(0,0) scale(1)' }], { duration: 280 * ctx.k, easing: 'ease-out' }); A.getAnimations().forEach((x) => x.cancel()); };
 }
 // Postura de preparo (abaixa, energia converge, luz no chão)
@@ -140,6 +143,7 @@ async function preparo(ctx, M, A, cor, { circ = false, ms = 380, raio } = {}) {
   convergir(M, a.x, a.y, { cor, raio: a.w * 0.9, vida: ms / 1000, n: 16 });
   fig(A).animate([{ filter: 'none', transform: 'scale(1)' }, { filter: `brightness(1.5) drop-shadow(0 0 12px ${cor})`, transform: 'scale(1.03)', offset: 0.8 }, { filter: 'none', transform: 'scale(1)' }], { duration: (ms + 120) * ctx.k });
   await ESP(ms * ctx.k);
+  if (ctx.poseAtaque) golpePose(ctx, A, 560); // lançamento: pose de ataque enquanto o efeito sai
 }
 
 // ---------- status ----------
@@ -480,7 +484,7 @@ const FX = {
     convergir(M, b.x, b.y, { cor: '#c4b5fd', raio: 110, n: 24, vida: 0.45 });
     const orbe = livre(M, { vida: 0.5, draw(g, u) { const s = 6 + 26 * u * (1 + 0.1 * Math.sin(u * 50)); g.drawImage(brilhoVioleta(), b.x - s * 1.6, b.y - s * 1.6, s * 3.2, s * 3.2); } }); void orbe;
     fig(A).animate([{ transform: 'translateX(0) scale(1)' }, { transform: `translateX(${-dir * 8}px) scale(1.05)`, offset: 0.85 }, { transform: 'translateX(0) scale(1)' }], { duration: 560 * ctx.k });
-    await ESP(480 * ctx.k);
+    await ESP(480 * ctx.k); golpePose(ctx, A, 560);
     await projetil(M, b.x, b.y, t.x, t.y, { tipo: 'cometa', cor: '#8b5cf6', cor2: '#f5d0fe', tam: 24, arco: 40, vida: 0.42 });
     quadroImpacto(ctx, false); flash(ctx, '#7c3aed', 200, 0.3); camera(ctx, t, { zoom: 1.09, tremor: 10, ms: 560 });
     luz(M, t.x, t.y, { cor: '#a855f7', raio: t.w * 1.3, vida: 0.6, chao: false, forca: 1, nucleo: '#fff' });
@@ -543,7 +547,7 @@ const FX = {
     const al = alvosDe(ctx, ev); if (!al.length) return; const a = corpo(ctx, A), t = corpo(ctx, al[0].el), dir = t.x > a.x ? 1 : -1, b = a.boca(dir);
     convergir(M, b.x, b.y, { cor: '#67e8f9', raio: 70, n: 14, vida: 0.32 }); luz(M, a.x, a.pe, { cor: '#22d3ee', raio: 90, vida: 0.7 });
     livre(M, { vida: 0.35, draw(g, u) { g.globalAlpha = 1 - u; g.strokeStyle = '#a5f3fc'; g.lineWidth = 3; g.beginPath(); g.arc(b.x - dir * 10, b.y, 26 + u * 4, dir > 0 ? -1.2 : Math.PI - 1.2, dir > 0 ? 1.2 : Math.PI + 1.2); g.stroke(); } });
-    await ESP(300 * ctx.k);
+    await ESP(300 * ctx.k); golpePose(ctx, A, 560);
     await projetil(M, b.x, b.y, t.x, t.y, { tipo: 'flecha', cor: '#22d3ee', tam: 16, arco: 8, vida: 0.24, ease: 'linear' });
     impacto(ctx, M, t.x, t.y, 'agua', { dir, pe: t.pe }); corte(M, t.x, t.y, { raio: t.w * 0.3, cor: '#67e8f9', esp: 8, ang: dir > 0 ? 0 : Math.PI, abre: 1.4, vida: 0.25 });
     for (const x of al) aplicar(ctx, M, x.el, x.r, { dir, cor: '#22d3ee' });
@@ -605,7 +609,7 @@ const FX = {
   async raioDourado(ctx, M, A, ev) {
     const al = alvosDe(ctx, ev); if (!al.length) return; const a = corpo(ctx, A), t = corpo(ctx, al[0].el), dir = t.x > a.x ? 1 : -1, b = a.boca(dir);
     convergir(M, b.x, b.y, { cor: '#fde047', raio: 80, n: 18, vida: 0.35 }); raiosLuz(M, b.x, b.y, { cor: '#fde047', raio: 80, vida: 0.5, n: 8 });
-    await ESP(340 * ctx.k);
+    await ESP(340 * ctx.k); golpePose(ctx, A, 560);
     feixe(M, b.x, b.y, t.x, t.y, { cor: '#fbbf24', larg: 18, vida: 0.55 }); flash(ctx, '#fffbeb', 120, 0.25);
     await ESP(110 * ctx.k);
     impacto(ctx, M, t.x, t.y, 'luz', { dir, pe: t.pe });
@@ -710,7 +714,7 @@ const FX = {
   async soproEtereo(ctx, M, A, ev) {
     const al = alvosDe(ctx, ev); if (!al.length) return; const a = corpo(ctx, A), t = corpo(ctx, al[0].el), dir = t.x > a.x ? 1 : -1, b = a.boca(dir);
     rajada(M, b.x, b.y, { n: 10, forma: 'fumaca', cor: '#a7f3d0', tam: 14, tamFim: 30, v: 60, vida: 0.7 }); convergir(M, b.x, b.y, { cor: '#34d399', raio: 70, n: 12, vida: 0.32 });
-    await ESP(320 * ctx.k);
+    await ESP(320 * ctx.k); golpePose(ctx, A, 560);
     for (let i = 0; i < 3; i++) onda(M, b.x + dir * i * 30, b.y, { cor: '#6ee7b7', r0: 10, r1: 40 + i * 14, esp: 3, vida: 0.4, chao: false, achata: 1.3, atraso: i * 0.08 });
     await projetil(M, b.x, b.y, t.x, t.y, { tipo: 'caveira', cor: '#34d399', cor2: '#ecfdf5', tam: 18, arco: 30, vida: 0.55, onda: 2.5, ondaAmp: 12 });
     impacto(ctx, M, t.x, t.y, 'fantasma', { dir, pe: t.pe }); rajada(M, t.x, t.y, { n: 5, forma: 'caveira', cor: '#34d399', cor2: '#d1fae5', tam: 7, v: 90, sobe: 120, vida: 1, atrito: 0.6 });
@@ -745,7 +749,7 @@ const FX = {
   async badalada(ctx, M, A, ev) {
     const al = alvosDe(ctx, ev); if (!al.length) return; const a = corpo(ctx, A), t = corpo(ctx, al[0].el), dir = t.x > a.x ? 1 : -1;
     fig(A).animate([{ transform: 'rotate(0)' }, { transform: `rotate(${-dir * 10}deg)`, offset: 0.3 }, { transform: `rotate(${dir * 8}deg)`, offset: 0.6 }, { transform: 'rotate(0)' }], { duration: 520 * ctx.k });
-    await ESP(220 * ctx.k);
+    await ESP(220 * ctx.k); golpePose(ctx, A, 560);
     for (let i = 0; i < 5; i++) { const u0 = i / 5; onda(M, a.x + (t.x - a.x) * u0, a.y + (t.y - a.y) * u0, { cor: i % 2 ? '#c4b5fd' : '#8b5cf6', r0: 14, r1: 50 + i * 12, esp: 4, vida: 0.35, chao: false, achata: 1.2, atraso: i * 0.05 }); }
     const vx = (t.x - a.x) * 1.9, vy = (t.y - a.y) * 1.9; for (let i = 0; i < M.n(12); i++) particula(M, { x: a.x + R(-20, 20), y: a.y + R(-30, 10), vx: vx * R(0.85, 1.1), vy: vy + R(-40, 40), atrito: 0.4, forma: 'morcego', cor: '#12061c', cor2: '#c084fc', tam: R(9, 13), vida: 0.75, atraso: R(0, 0.15), onda: 3, ondaAmp: 2, bate: 30, fadeIn: 0.05 });
     await ESP(380 * ctx.k);
@@ -781,7 +785,7 @@ const FX = {
     await sombraDash(ctx, M, A, a, { x: 0, y: 0 }, ida, 130);
     fig(A).animate([{ transform: 'translateX(0)' }, { transform: `translateX(${dir * 24}px) scaleX(1.06)`, offset: 0.35 }, { transform: 'translateX(0)' }], { duration: 230 * ctx.k });
     await ESP(60 * ctx.k);
-    estocada(M, t, dir); corte(M, t.x, t.y, { raio: t.w * 0.45, cor: '#dc2626', ang: dir > 0 ? -0.5 : Math.PI + 0.5, sentido: dir, abre: 1.8, esp: 14, vida: 0.22 });
+    golpePose(ctx, A, 420); estocada(M, t, dir); corte(M, t.x, t.y, { raio: t.w * 0.45, cor: '#dc2626', ang: dir > 0 ? -0.5 : Math.PI + 0.5, sentido: dir, abre: 1.8, esp: 14, vida: 0.22 });
     if (!ctx.rapido) await ESP(90); // congela no impacto
     quadroImpacto(ctx, true); linhasFoco(M, t.x, t.y, { vida: 0.35, cor: '#fecaca', alfa: 0.5 }); camera(ctx, t, { zoom: 1.07, tremor: 8 });
     sangue(M, t, dir, 1.2);
@@ -803,7 +807,7 @@ const FX = {
       const alvoPos = { x: t.x - d * t.w * 0.42 - a.x, y: t.pe - a.pe };
       await sombraDash(ctx, M, A, a, pos, alvoPos, 95); pos = alvoPos;
       fig(A).animate([{ transform: 'translateX(0)' }, { transform: `translateX(${d * 18}px)`, offset: 0.4 }, { transform: 'translateX(0)' }], { duration: 150 * ctx.k });
-      corte(M, t.x, t.y, { raio: t.w * 0.48, cor: '#dc2626', ang: R(-1.2, 1.2) + (d > 0 ? 0 : Math.PI), sentido: d, abre: 2.2, esp: 15, vida: 0.2 });
+      golpePose(ctx, A, 200); corte(M, t.x, t.y, { raio: t.w * 0.48, cor: '#dc2626', ang: R(-1.2, 1.2) + (d > 0 ? 0 : Math.PI), sentido: d, abre: 2.2, esp: 15, vida: 0.2 });
       if (n % 3 === 0) estocada(M, t, d);
       sangue(M, t, d, 0.7); camera(ctx, t, { zoom: 1.03, tremor: 5, ms: 180 }); combo(ctx, el, n);
       aplicar(ctx, M, el, r, { dir: d, cor: '#ef4444', forca: 0.9, dx: R(-16, 16) });
@@ -861,6 +865,7 @@ function inicioDeTurno(ctx, M, x) {
 // ---------- entrada principal ----------
 export async function tocarEvento(ctx, ev) {
   injetar(); const M = camada(ctx); ctx.corCura = corCura(ev.hab?.elemento);
+  ctx.poseAtaque = ev.hab ? ev.hab.tipo === 'dano' : ev.tipo === 'atacar'; ctx.no(ev.ator)?._pose?.preparar();
   for (const x of ev.antes || []) inicioDeTurno(ctx, M, x);
   if (ev.antes?.length) await ESP(560 * ctx.k);
   const A = ctx.no(ev.ator); if (!A) return;
@@ -879,6 +884,7 @@ export async function tocarEvento(ctx, ev) {
   for (const r of ev.alvos || []) ctx.aplicarHp(r.id);
   // roubo de vida (modo de pânico)
   if (ev.roubo) { const c = corpo(ctx, A); for (const r of ev.alvos || []) { const el = ctx.no(r.id); if (!el) continue; const t = corpo(ctx, el); for (let k = 0; k < M.n(5); k++) projetil(M, t.x + R(-10, 10), t.y + R(-10, 10), c.x, c.y, { tipo: 'orbe', cor: '#dc2626', cor2: '#fecaca', tam: 6, arco: R(20, 60), vida: 0.45, atraso: k * 0.04 }); } numero(ctx, A, `🩸 +${ev.roubo}`, '#86efac', { dy: -20 }); ctx.aplicarHp(ev.ator); }
+  A._pose?.mostrar(false); // garante o retorno ao repouso ao fim do evento
   return ev;
 }
 // Clipe do Flow: toca o vídeo sobre o alvo (ou no centro dos alvos, em habilidades de grupo) e aplica o resultado no impactoMs.
