@@ -30,6 +30,8 @@ test('Percurso 1 (Conta nova): escolha do inicial base T4 até a primeira batalh
   garantirEstadoIdle(save);
   prepararContaNova(save, { userId: 'viajante_1', inicial: 'Brasinha' });
   assert.equal(save.conta.inicial, 'Brasinha');
+  // Conta nova recebe exclusivamente o inicial escolhido (sem Penumbrio/Noctarn extra)
+  assert.equal(save.idle.equipe.length, 1);
 
   const principal = save.idle.equipe[0];
   assert.equal(principal.especie, 'Brasinha');
@@ -184,5 +186,33 @@ test('Interfaces da Prévia: controles de Esferas/Captura/Relíquias removidos, 
   assert.equal(expansao.includes('equipe/fundo.webp'), true);
   assert.equal(expansao.includes('menus-v1/ficha/fundo.webp'), true);
   assert.equal(expansao.includes('menus-v1/chefes/fundo.webp'), true);
+  assert.equal(expansao.includes('arte: rf.arteForma'), true);
   assert.equal(fs.existsSync(path.join(DIR, 'regiao1-montaria.js')), true);
+});
+
+test('Regras Noctarn integradas: Penumbrio → Noctarn bloqueada e cópia de banner preservada em T4', () => {
+  const save = criarEstadoInicial();
+  garantirEstadoIdle(save);
+  prepararContaNova(save, { userId: 'viajante_sombra', inicial: 'Penumbrio' });
+  assert.equal(save.idle.equipe.length, 1);
+  assert.equal(save.idle.equipe[0].especie, 'Penumbrio');
+
+  // Mesmo com fragmentos suficientes, Penumbrio → Noctarn fica bloqueada
+  adicionarFragmentoSonho(save, 'trevas', 50);
+  const fichaPen = fichaOnirico(save.idle.equipe[0], save);
+  assert.equal(fichaPen.arvore.bloqueada, true);
+  assert.ok(fichaPen.arvore.motivoBloqueio);
+  const resEvo = evoluirFormaOnirico(save, 0);
+  assert.equal(resEvo.ok, false);
+  assert.equal(resEvo.bloqueada, true);
+  assert.equal(save.idle.equipe[0].especie, 'Penumbrio');
+
+  // Cópia de Noctarn obtida em banner é preservada em T4 após migração
+  save.idle.equipe.push({ uid: 'ban_noc', especie: 'Noctarn', nivel: 10, xp: 300, tier: 4, estrelas: 3, origem: 'banner', fonteBanner: 'sombra' });
+  garantirEstadoIdle(save);
+  const copiaBanner = save.idle.equipe.find((m) => m.uid === 'ban_noc');
+  assert.ok(copiaBanner);
+  assert.equal(copiaBanner.especie, 'Noctarn');
+  assert.equal(copiaBanner.tier, 4);
+  assert.equal(copiaBanner.estrelas, 3);
 });

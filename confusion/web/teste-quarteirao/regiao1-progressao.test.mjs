@@ -74,7 +74,7 @@ test('save antigo: preserva estrelas existentes (star, stars e estrelas), migra 
   antigo.idle = {
     jogador: { xp: 80, hp: 100, sanidade: 100 },
     equipe: [
-      { especie: 'Noctarn', nivel: 18, xp: P.xpTotal(18), raridade: 2, star: 9, forma: 'natural' },          // campo antigo star
+      { especie: 'Fanalino', nivel: 18, xp: P.xpTotal(18), raridade: 2, star: 9, forma: 'natural' },          // campo antigo star
       { especie: 'Almaterna', nivel: 25, xp: P.xpTotal(25), tierHW: 3, stars: 26, forma: 'natural' },        // campo antigo stars + nome provisório HW
       { especie: 'Vitrarco', nivel: 30, xp: P.xpTotal(30), tier: 4, tierHW: 4, estrelas: 15, forma: 'natural' }, // campo estrelas atual
       { especie: 'Brotavel', nivel: 10, xp: P.xpTotal(10), raridade: 1, forma: 'natural' },                  // sem estrelas salvas

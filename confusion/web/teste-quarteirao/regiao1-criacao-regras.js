@@ -318,6 +318,8 @@ export function arvoreEvolucaoDe(u, save = null) {
     indiceAtual,
     formas,
     proxima,
+    bloqueada: Boolean(consulta.bloqueada),
+    motivoBloqueio: consulta.bloqueada ? consulta.motivo : null,
   };
 }
 

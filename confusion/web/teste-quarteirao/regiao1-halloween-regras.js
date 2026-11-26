@@ -54,7 +54,7 @@ export function invocarHW(save, quantos = 1, rng = Math.random, ed = EDICAO) {
     if (tier === 5) h.contador[ed.id] = 0; // Tier 5 (sorte ou garantia) reinicia a contagem
     const lin = LINHAGENS_HW.find((l) => l.tier === tier);
     const estrelas = estrelasIniciais('bannerHW');
-    const novo = { especie: lin.especie, nivel: 1, xp: 0, tier, raridade: tier, estrelas, forma: 'natural', tierHW: tier, evento: ed.id, uid: `h${ed.id.slice(-4)}${h.total || 0}_${i}` };
+    const novo = { especie: lin.especie, nivel: 1, xp: 0, tier, raridade: tier, estrelas, forma: 'natural', tierHW: tier, evento: ed.id, origem: 'banner', fonteBanner: ed.id, uid: `h${ed.id.slice(-4)}${h.total || 0}_${i}` };
     (save.idle.equipe ||= []).push(novo);
     resultados.push({ pos, tier, estrelas, garantia, especie: lin.especie });
   }

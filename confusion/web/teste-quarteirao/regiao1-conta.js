@@ -5,7 +5,7 @@
 import * as A from '../account.js';
 import { ARTE_DA_ESPECIE, LINHAS, ELEMENTO_DA_ESPECIE } from '../species.js';
 import { xpTotal, estrelasIniciais, infoClasse } from './regiao1-progressao.js';
-import { FRAGMENTOS_SONHO_CFG, criarUnidadeInicial } from './regiao1-regras-sonho.js';
+import { FRAGMENTOS_SONHO_CFG, aplicarInicialContaNova } from './regiao1-regras-sonho.js';
 import { molduraDoTier, raridadeRotulo } from './regiao1-criacao-regras.js';
 
 export const BOAS_VINDAS = { diamantes: 20000, vipDias: 10 };
@@ -36,24 +36,12 @@ const PENDENTE = 'cw-inicial-pendente', LIBERADO = 'cw-gate-ok';
 // ---------- regras puras (testáveis) ----------
 export const vipAtivo = (save, agora = Date.now()) => Boolean(save?.conta?.vipAte && save.conta.vipAte > agora);
 export const diasVip = (save, agora = Date.now()) => (vipAtivo(save, agora) ? Math.ceil((save.conta.vipAte - agora) / DIA) : 0);
-// Aplica o inicial e o bônus numa conta nova (idempotente: a concessão fica registrada no save)
+// Aplica o inicial e o bônus numa conta nova (substitui o provisório para que a conta nova receba apenas o inicial escolhido)
 export function prepararContaNova(save, { userId, inicial, agora = Date.now(), novo = true }) {
-  const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial) || INICIAIS[0];
-  save.conta = save.conta || {};
-  save.conta.uid = userId; save.conta.inicial = lin.especie;
-  const idle = save.idle; idle.equipe = idle.equipe || [];
-  if (!idle.equipe.some((m) => m.inicial)) {
-    const u = criarUnidadeInicial(lin.especie, { nivel: 5, uid: 'ini0', estrelas: estrelasIniciais('inicial') });
-    u.xp = xpTotal(5);
-    idle.equipe.unshift(u);
-    const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== 'ini0');
-    idle.formacao = ['ini0', ...resto].slice(0, 4);
-    while (idle.formacao.length < 4) idle.formacao.push(null);
-  }
-  if (novo && !save.conta.bonusEm) {
-    save.conta.bonusEm = agora; save.conta.vipAte = agora + BOAS_VINDAS.vipDias * DIA;
-    save.recompensas.diamantes = (save.recompensas.diamantes || 0) + BOAS_VINDAS.diamantes;
-  }
+  const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial || l.id === inicial) || INICIAIS[0];
+  aplicarInicialContaNova(save, { userId, inicial: lin.especie, agora, novo });
+  const ini = save.idle?.equipe?.find((m) => m?.inicial);
+  if (ini && !ini.estrelas) ini.estrelas = estrelasIniciais('inicial');
   return save;
 }
 

@@ -174,6 +174,7 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
   let para = null;
   let arteNova = null;
   let linhagemInicial = false;
+  let bloqueada = false;
   let elemento = ELEMENTO_DA_ESPECIE[u.especie] || u.elemento || 'neutro';
   let tierResultante = tierAtual;
 
@@ -184,10 +185,15 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
     elemento = ELEMENTO_DA_ESPECIE[lin.inicial] || elemento;
     linhagemInicial = true;
     if (faseAtual < 3) {
-      proximaFase = faseAtual + 1;
-      para = formas[proximaFase - 1];
-      arteNova = ARTE_DA_ESPECIE[para] || null;
-      tierResultante = Math.max(tierAtual, cfg.tierIniciaisPorFase[proximaFase]);
+      const alvoPara = formas[faseAtual];
+      if (u.especie === NOCTARN_REGRA.evolucaoBloqueadaDe && alvoPara === NOCTARN_REGRA.especie) {
+        bloqueada = true;
+      } else {
+        proximaFase = faseAtual + 1;
+        para = alvoPara;
+        arteNova = ARTE_DA_ESPECIE[para] || null;
+        tierResultante = Math.max(tierAtual, cfg.tierIniciaisPorFase[proximaFase]);
+      }
     }
   } else if (reinoLin) {
     faseAtual = Math.max(1, Math.min(3, Math.floor(Number(u.formaFase ?? 1) || 1)));
@@ -202,15 +208,18 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
   const custo = proximaFase === 2 ? cfg.custoBaseParaSegunda : proximaFase === 3 ? cfg.custoSegundaParaTerceira : null;
   const saldo = saldoFragmentoSonho(save, elemento);
   const faltam = custo != null ? Math.max(0, custo - saldo) : 0;
-  const podeEvoluir = Boolean(custo != null && saldo >= custo);
-  const motivo = !proximaFase
-    ? (lin || reinoLin ? 'Este Onírico já está na 3ª forma.' : 'Esta espécie não possui evolução de forma.')
-    : podeEvoluir
-      ? null
-      : `Faltam ${faltam} Fragmento(s) de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`;
+  const podeEvoluir = Boolean(!bloqueada && custo != null && saldo >= custo);
+  const motivo = bloqueada
+    ? NOCTARN_REGRA.bloqueioMotivo
+    : !proximaFase
+      ? (lin || reinoLin ? 'Este Onírico já está na 3ª forma.' : 'Esta espécie não possui evolução de forma.')
+      : podeEvoluir
+        ? null
+        : `Faltam ${faltam} Fragmento(s) de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`;
 
   return {
     podeEvoluir,
+    bloqueada,
     motivo,
     faseAtual,
     proximaFase,
@@ -281,7 +290,7 @@ export function evoluirFormaPorFragmentos(
 }
 
 // Criação de unidade inicial (regra pura): sempre nasce na forma base T4, sem alterar saves antigos.
-export function criarUnidadeInicial(especieOuLinha, { nivel = 5, uid = 'ini0', estrelas = 1 } = {}) {
+export function criarUnidadeInicial(especieOuLinha, { nivel = 5, uid = 'ini0', estrelas = 1, origem = 'inicial' } = {}) {
   const lin = LINHAS.find((l) => l.id === especieOuLinha || l.inicial === especieOuLinha || l.atual === especieOuLinha || l.evolucao === especieOuLinha) || LINHAS[0];
   const nv = Math.max(1, Math.floor(Number(nivel) || 5));
   const est = Math.max(1, Math.floor(Number(estrelas) || 1));
@@ -295,7 +304,115 @@ export function criarUnidadeInicial(especieOuLinha, { nivel = 5, uid = 'ini0', e
     forma: 'natural',
     formaFase: 1,
     inicial: true,
+    origem,
     uid,
     arte: ARTE_DA_ESPECIE[lin.inicial] || null,
   };
+}
+
+// ---- Regra do Noctarn, exclusão de Sombra no banner permanente e migração segura de saves ----
+export const ELEMENTOS_FORA_BANNER_PERMANENTE = new Set(['trevas', 'sombra']);
+export const ehElementoForaBannerPermanente = (elemento) => ELEMENTOS_FORA_BANNER_PERMANENTE.has(String(elemento || '').toLowerCase());
+
+export const NOCTARN_REGRA = {
+  especie: 'Noctarn',
+  formaBaseInicial: 'Penumbrio',
+  elemento: 'trevas',
+  tier: 4,
+  exclusivoBanner: true,
+  evolucaoBloqueadaDe: 'Penumbrio',
+  bloqueioMotivo: 'Noctarn é exclusivo de banners (Sombra/temáticos, T4) e não pode ser obtido evoluindo Penumbrio.',
+  noBannerPermanente: false,
+  elementosForaPermanente: ['trevas', 'sombra'],
+  bannersPermitidos: ['sombra', 'tematico', 'evento'],
+};
+
+export const ehCopiaDeBanner = (m) => Boolean(m && (m.origem === 'banner' || m.fonteBanner || m.evento || m.tierHW));
+
+// Migra apenas Noctarn antigo cuja origem inicial possa ser identificada; cópias de banner e demais ficam preservadas em T4.
+export function migrarInicialNoctarn(save) {
+  const idle = save?.idle;
+  if (!idle || !Array.isArray(idle.equipe)) return { migrou: false, migradoUid: null, copiasPreservadas: 0 };
+  const eq = idle.equipe;
+  const idxMarcado = eq.findIndex((m) => m?.especie === 'Noctarn' && (m.inicial === true || m.uid === 'ini0') && !ehCopiaDeBanner(m));
+  const idxConta = save.conta?.inicial === 'Noctarn'
+    ? eq.findIndex((m) => m?.especie === 'Noctarn' && !ehCopiaDeBanner(m))
+    : -1;
+  const codexNoctarn = idle.codex?.especies?.Noctarn;
+  const idxDefault = eq.findIndex((m, i) => i === 0 && m?.especie === 'Noctarn' && !ehCopiaDeBanner(m)
+    && (m.uid === 'o0' || !m.uid) && (Number(m.nivel) || 0) >= 5
+    && (codexNoctarn?.capturas || 0) > 0 && !(codexNoctarn?.abates > 0));
+  const idx = idxMarcado >= 0 ? idxMarcado : idxConta >= 0 ? idxConta : idxDefault;
+
+  let migrou = false;
+  let migradoUid = null;
+  if (idx >= 0) {
+    const membro = eq[idx];
+    const t = Math.max(FRAGMENTOS_SONHO_CFG.tierIniciaisPorFase[1], Math.min(5, Math.floor(Number(membro.tier ?? membro.raridade ?? 4) || 4)));
+    membro.especie = NOCTARN_REGRA.formaBaseInicial;
+    membro.inicial = true;
+    membro.origem = idx === idxDefault ? 'inicial-padrao' : 'inicial';
+    membro.formaFase = 1;
+    membro.tier = t;
+    membro.raridade = t;
+    membro.estrelas = Math.max(1, Math.floor(Number(membro.estrelas) || 1));
+    if (save.conta?.inicial === 'Noctarn') save.conta.inicial = NOCTARN_REGRA.formaBaseInicial;
+    const especies = idle.codex?.especies;
+    if (especies) {
+      especies.Penumbrio = { ...(especies.Penumbrio || {}), visto: true, capturas: Math.max(1, especies.Penumbrio?.capturas || 0) };
+      if (especies.Noctarn) {
+        especies.Noctarn = { ...especies.Noctarn, capturas: eq.some((m) => m?.especie === 'Noctarn') ? Math.max(1, especies.Noctarn.capturas || 0) : 0 };
+      }
+    }
+    migrou = true;
+    migradoUid = membro.uid || null;
+  }
+
+  let copiasPreservadas = 0;
+  for (const m of eq) {
+    if (m?.especie !== 'Noctarn') continue;
+    const t = Math.max(NOCTARN_REGRA.tier, Math.min(5, Math.floor(Number(m.tier ?? m.tierHW ?? m.raridade ?? NOCTARN_REGRA.tier) || NOCTARN_REGRA.tier)));
+    m.tier = t;
+    m.raridade = t;
+    m.estrelas = Math.max(1, Math.floor(Number(m.estrelas) || 1));
+    copiasPreservadas += 1;
+  }
+  return { migrou, migradoUid, copiasPreservadas };
+}
+
+// Regra pura para conta nova: substitui o inicial provisório (Penumbrio) pelo escolhido, mantendo T4 e bônus único.
+export function aplicarInicialContaNova(save, { userId, inicial, agora = Date.now(), novo = true } = {}) {
+  const DIA = 86400000;
+  save.conta = save.conta || {};
+  save.idle = save.idle || {};
+  const idle = save.idle;
+  idle.equipe = idle.equipe || [];
+  migrarInicialNoctarn(save);
+
+  const unidade = criarUnidadeInicial(inicial, { nivel: 5, uid: 'ini0', estrelas: 1, origem: 'inicial' });
+  save.conta.uid = userId;
+  save.conta.inicial = unidade.especie;
+
+  const padrao = idle.equipe.findIndex((m) => m?.origem === 'inicial-padrao');
+  if (novo && padrao >= 0) {
+    const uid = idle.equipe[padrao].uid || 'ini0';
+    unidade.uid = uid;
+    idle.equipe[padrao] = unidade;
+    const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== uid);
+    idle.formacao = [uid, ...resto].slice(0, 4);
+    while (idle.formacao.length < 4) idle.formacao.push(null);
+  } else if (!idle.equipe.some((m) => m?.inicial)) {
+    idle.equipe.unshift(unidade);
+    const resto = (idle.formacao?.length ? idle.formacao : idle.equipe.map((m) => m.uid)).filter((x) => x && x !== unidade.uid);
+    idle.formacao = [unidade.uid, ...resto].slice(0, 4);
+    while (idle.formacao.length < 4) idle.formacao.push(null);
+  }
+
+  save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+  if (novo && !save.conta.bonusEm) {
+    save.conta.bonusEm = agora;
+    save.conta.vipAte = agora + 10 * DIA;
+    save.recompensas.diamantes = (save.recompensas.diamantes || 0) + 20000;
+  }
+  return save;
 }

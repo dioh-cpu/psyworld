@@ -206,10 +206,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
               ${no.atual ? '<br><span class="ok">Atual</span>' : ''}
             </div>${i < arv.formas.length - 1 ? `<img class="evo-seta" src="${MV1('ficha/conexao.png')}" alt="→">` : ''}
           `).join('')}</div>
-          ${arv.proxima
-            ? `<div class="ln"><span><img class="exp-ico" src="${MV1(`ficha/sonho-${slugSonho(arv.proxima.elemento)}.png`)}" alt="" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">Próxima: <b>${esc(arv.proxima.para)}</b> · Custo: <b>${arv.proxima.custo}</b> Fragmentos de Sonho (${esc(arv.proxima.elemento)}) · Saldo: <b>${arv.proxima.saldo}</b></span>
-               <button class="btn-pri" data-evo-forma="${idx}" ${arv.proxima.podeEvoluir ? '' : 'disabled'}>Evoluir</button></div>`
-            : '<p class="ok">Forma final alcançada.</p>'}
+          ${arv.bloqueada
+            ? `<p class="ruim"><img class="exp-ico" src="${MV1('comum/icone-cadeado.png')}" alt="">${esc(arv.motivoBloqueio || 'Evolução bloqueada.')}</p>`
+            : arv.proxima
+              ? `<div class="ln"><span><img class="exp-ico" src="${MV1(`ficha/sonho-${slugSonho(arv.proxima.elemento)}.png`)}" alt="" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">Próxima: <b>${esc(arv.proxima.para)}</b> · Custo: <b>${arv.proxima.custo}</b> Fragmentos de Sonho (${esc(arv.proxima.elemento)}) · Saldo: <b>${arv.proxima.saldo}</b></span>
+                 <button class="btn-pri" data-evo-forma="${idx}" ${arv.proxima.podeEvoluir ? '' : 'disabled'}>Evoluir</button></div>`
+              : '<p class="ok">Forma final alcançada.</p>'}
         </div>`
       : '';
     return `<div class="bl mv1-ficha" id="ficha-onirico">
@@ -427,7 +429,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     const nivelChefe = BOSSES_REGIAO1[bossId]?.nivel || 12;
     const inimigos = [
       [r.chefe.nome, nivelChefe, r.chefe.elemento, { chefe: true, nome: r.chefe.nome }],
-      ...(r.reforcos || []).map((rf) => [rf.especie, rf.nivel, rf.elemento]),
+      ...(r.reforcos || []).map((rf) => [rf.especie, rf.nivel, rf.elemento, { forma: rf.forma, arte: rf.arteForma }]), // forma do catálogo
     ];
     const artes = { [r.chefe.nome]: r.chefe.arte };
     fecharModal('modal-exp');

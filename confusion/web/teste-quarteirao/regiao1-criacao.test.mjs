@@ -139,9 +139,10 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
 
   const s = criarEstadoInicial();
   garantirEstadoIdle(s);
-  prepararContaNova(s, { userId: 'u-test', inicial: 'Penumbrio', novo: true });
+  prepararContaNova(s, { userId: 'u-test', inicial: 'Brasinha', novo: true });
+  assert.equal(s.idle.equipe.length, 1);
   const ini = s.idle.equipe[0];
-  assert.equal(ini.especie, 'Penumbrio');
+  assert.equal(ini.especie, 'Brasinha');
   assert.equal(ini.tier, 4);
   assert.equal(ini.raridade, 4);
 
@@ -151,7 +152,6 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
   assert.equal(f0.tier, 4);
   assert.equal(f0.raridade, 'epica');
   assert.equal(f0.estrelas, 1);
-  assert.equal(f0.classe, 'Assassino');
   assert.equal(f0.habilidades.length, 3);
   assert.equal(f0.arvore.formas.length, 3);
   assert.equal(f0.arvore.proxima.custo, 10);
@@ -159,19 +159,26 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
 
   // 3) Evolução Base → 2ª custa 10 Fragmentos de Sonho elementais (continua T4); 2ª → 3ª custa 30 (sobe para T5)
   assert.equal(evoluirFormaOnirico(s, 0).ok, false);
-  adicionarFragmentoSonho(s, 'trevas', 40);
+  adicionarFragmentoSonho(s, 'fogo', 40);
   const e1 = evoluirFormaOnirico(s, 0);
   assert.equal(e1.ok, true);
-  assert.equal(e1.para, 'Noctarn');
+  assert.equal(e1.para, 'Ignavor');
   assert.equal(ini.tier, 4);
   assert.equal(e1.saldoRestante, 30);
 
   const e2 = evoluirFormaOnirico(s, 0);
   assert.equal(e2.ok, true);
-  assert.equal(e2.para, 'Noctarion');
+  assert.equal(e2.para, 'Ignaraz');
   assert.equal(ini.tier, 5);
   assert.equal(e2.saldoRestante, 0);
   assert.equal(arvoreEvolucaoDe(ini, s).proxima, null);
+
+  // Penumbrio → Noctarn permanece bloqueada (Noctarn exclusivo de banner T4)
+  s.idle.equipe.push({ uid: 'pen1', especie: 'Penumbrio', nivel: 5, tier: 4, raridade: 4, estrelas: 1 });
+  adicionarFragmentoSonho(s, 'trevas', 40);
+  const bPen = evoluirFormaOnirico(s, 1);
+  assert.equal(bPen.ok, false);
+  assert.equal(bPen.bloqueada, true);
 
   // 4) Restante do catálogo não deriva tier pela posição na árvore
   const outro = { uid: 'cat1', especie: 'Mortalio', nivel: 10, tier: 2, raridade: 2, estrelas: 1 };
@@ -190,8 +197,12 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
   assert.equal(r10.qtd, 10);
   assert.equal(e.tickets, 0);
 
-  // 6) Noctarn permanece como aliado se está na formação salva; nenhum dos cinco iniciais aparece como inimigo na Região 1 (Calabouço)
+  // 6) Noctarn permanece como aliado se está na formação salva (cópia de banner); nenhum dos cinco iniciais aparece como inimigo na Região 1 (Calabouço)
   const sAliado = criarEstadoInicial();
+  sAliado.idle = {
+    equipe: [{ uid: 'bn_noc', especie: 'Noctarn', nivel: 10, xp: 300, tier: 4, estrelas: 2, origem: 'banner', fonteBanner: 'sombra' }],
+    formacao: ['bn_noc', null, null, null],
+  };
   garantirEstadoIdle(sAliado);
   assert.equal(membrosFormacao(sAliado.idle)[0].m.especie, 'Noctarn');
   sAliado.quests = { q_boss_e: 'concluida' };

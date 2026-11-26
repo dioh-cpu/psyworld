@@ -115,6 +115,8 @@ export function resolverEncontroCatalogo(entrada, { regiao = 1, papelPadrao = nu
     arteForma,
     sprite,
     kit,
+    _resolvido: true,
+    proporcaoSprite: arteForma?.includes('/reinos/') ? 16 / 9 : null,
     ...(substituido ? { substituido } : {}),
   };
 }
