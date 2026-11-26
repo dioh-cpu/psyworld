@@ -37,12 +37,15 @@ export async function init() {
 export async function signUp(addr, password, opcoes = {}) {
   const { data, error } = await client.auth.signUp({ email: addr, password, options: opcoes });
   if (error) throw error;
+  if (data?.session) session = data.session;
   return data;
 }
 export const user = () => session?.user || null;
 export async function signIn(addr, password) {
-  const { error } = await client.auth.signInWithPassword({ email: addr, password });
+  const { data, error } = await client.auth.signInWithPassword({ email: addr, password });
   if (error) throw error;
+  if (data?.session) session = data.session;
+  return data;
 }
 export async function signOut() {
   await client.auth.signOut();

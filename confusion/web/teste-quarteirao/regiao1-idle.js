@@ -1,7 +1,8 @@
 // Módulo Idle & Progressão da Região 1 — Confusion Waves: Double Perspective.
 // Reaproveita diretamente core.js, systems.js e species.js (sem duplicar regras do núcleo).
 
-import { nivelDe as nivelDeXp, xpPara as xpParaProximo, xpTotal as xpDoNivel, migrarProgressaoOniricos, estrelasIniciais } from './regiao1-progressao.js'; // progressão sem teto + estrelas/tier
+import { nivelDe as nivelDeXp, xpPara as xpParaProximo, xpTotal as xpDoNivel, aplicarXp, migrarProgressaoOniricos, estrelasIniciais } from './regiao1-progressao.js'; // progressão sem teto + estrelas/tier
+import { membrosFormacao } from './regiao1-exp-regras.js';
 import {
   sanityBand,
   gatherDay,
@@ -223,6 +224,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     revancheDe(save);
     migrarProgressaoOniricos(save);
     migrarInicialNoctarn(save);
+    limparOvosNoctarnDoPasse(save);
     return save.idle;
   }
   const base = criarEstadoIdle(agoraMs);
@@ -276,7 +278,18 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
   revancheDe(save);
   migrarProgressaoOniricos(save);
   migrarInicialNoctarn(save);
+  limparOvosNoctarnDoPasse(save);
   return save.idle;
+}
+
+function limparOvosNoctarnDoPasse(save) {
+  const ovos = save?.idle?.mochila?.ovos;
+  if (!Array.isArray(ovos)) return;
+  for (const ovo of ovos) {
+    if (ovo && ovo.especie === 'Noctarn' && String(ovo.origem || '').startsWith('passe-')) {
+      ovo.especie = 'Ignavor';
+    }
+  }
 }
 
 // ---- Pontos de Atributo do Domador (+3 pontos por nível) ----
@@ -428,13 +441,27 @@ export function escolherHabilidadeAuto(especieAtacante, especieAlvo, preferirVan
   return { nome: habs[0], mult, critico: false };
 }
 
+export const XP_IDLE_CFG = {
+  ativoOniricoBase: 12,
+  ativoOniricoPorNivel: 4,     // Nv.6 = 36 XP/abate para cada Onírico da formação ativa
+  ativoDomadorBase: 4,
+  ativoDomadorPorNivel: 1,     // Nv.6 = 10 XP/abate (Domador progride bem mais devagar que antes)
+  offlineAbatesPorMinuto: 1.6,
+  offlineOniricoBase: 10,
+  offlineOniricoPorNivel: 3,   // Nv.6 = 28 XP/abate (448 XP em 10 min para a formação)
+  offlineDomadorBase: 3,
+  offlineDomadorPorNivel: 0.75, // Nv.6 = 7,5 XP/abate (120 XP em 10 min offline)
+};
+
 export function resolverAbateAuto(save, monstro, rng = Math.random, agoraMs = Date.now()) {
   const idle = garantirEstadoIdle(save, agoraMs);
   const st = calcularStatusDetalhado(save);
-  const rar = monstro.nivel >= 12 ? 3 : monstro.nivel >= 8 ? 2 : 1;
-  const gold = Math.round((goldEncontro(rar) + Math.floor(monstro.nivel * 2.5)) * st.goldMult);
-  const xp = Math.round((16 + monstro.nivel * 5) * st.xpMult);
-  const danoRecebido = Math.max(3, Math.round(monstro.nivel * 3.2 - st.def * 0.45));
+  const nvMonstro = Math.max(1, Number(monstro?.nivel) || 1);
+  const rar = nvMonstro >= 12 ? 3 : nvMonstro >= 8 ? 2 : 1;
+  const gold = Math.round((goldEncontro(rar) + Math.floor(nvMonstro * 2.5)) * st.goldMult);
+  const xp = Math.max(1, Math.round((XP_IDLE_CFG.ativoDomadorBase + nvMonstro * XP_IDLE_CFG.ativoDomadorPorNivel) * st.xpMult));
+  const xpOniricos = Math.max(1, Math.round((XP_IDLE_CFG.ativoOniricoBase + nvMonstro * XP_IDLE_CFG.ativoOniricoPorNivel) * st.xpMult));
+  const danoRecebido = Math.max(3, Math.round(nvMonstro * 3.2 - st.def * 0.45));
 
   save.recompensas.gold += gold;
   save.recompensas.xp += xp;
@@ -442,6 +469,14 @@ export function resolverAbateAuto(save, monstro, rng = Math.random, agoraMs = Da
   idle.jogador.xp = ganho.xp;
   idle.jogador.hp = Math.max(1, Math.min(st.hpMax, idle.jogador.hp - danoRecebido));
   idle.jogador.abatesTotais += 1;
+
+  const oniricosXp = membrosFormacao(idle).map(({ m, idx, vaga }) => ({
+    idx,
+    vaga,
+    uid: m.uid,
+    especie: m.especie,
+    ...aplicarXp(m, xpOniricos),
+  }));
 
   ganharXpPasse(idle, 'abate', null, agoraMs);
   registrarCodexEspecie(idle, monstro.especie, { abate: true });
@@ -469,7 +504,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random, agoraMs = Da
     descansou = true;
   }
 
-  return { gold, xp, danoRecebido, subiuNivel: ganho.subiu > 0, novoNivel: ganho.nivel, capturado, ovoDrop, descansou, fragmentoSonho };
+  return { gold, xp, xpOniricos, oniricosXp, danoRecebido, subiuNivel: ganho.subiu > 0, novoNivel: ganho.nivel, capturado, ovoDrop, descansou, fragmentoSonho };
 }
 
 // ---- Recompensa Offline (AFK) ----
@@ -479,17 +514,20 @@ export function calcularGanhoOffline(save, nivelArea = 6, agoraMs = Date.now()) 
   const minutos = Math.min(720, Math.floor(diffMs / 60000)); // teto 12h
   if (minutos < 1) return null;
 
+  const st = calcularStatusDetalhado(save);
   const codex = bonusCodex(idle);
-  const abates = Math.max(1, Math.floor(minutos * 1.6));
-  const gold = Math.round(abates * (12 + nivelArea * 2.5));
-  const xp = Math.round(abates * (14 + nivelArea * 4));
+  const nv = Math.max(1, Number(nivelArea) || 1);
+  const abates = Math.max(1, Math.floor(minutos * XP_IDLE_CFG.offlineAbatesPorMinuto));
+  const gold = Math.round(abates * (12 + nv * 2.5));
+  const xp = Math.max(1, Math.round(abates * (XP_IDLE_CFG.offlineDomadorBase + nv * XP_IDLE_CFG.offlineDomadorPorNivel) * st.xpMult));
+  const xpOniricos = Math.max(1, Math.round(abates * (XP_IDLE_CFG.offlineOniricoBase + nv * XP_IDLE_CFG.offlineOniricoPorNivel) * st.xpMult));
   const ovos = Math.floor(abates / OVOS.abatesPorOvoOffline);
   const colheitaDia = Object.values(gatherDay('minerar', 2)).reduce((a, b) => a + b, 0) || 12;
   const colheitaFazenda = save.desbloqueios?.fazenda
     ? Math.max(1, Math.round(colheitaDia * (minutos / 1440) * (1 + codex.fazendaPct / 100)))
     : 0;
 
-  return { minutos, abates, gold, xp, ovos, colheitaFazenda, xpPasseBruto: xpPasseOffline(abates), desdeMs: idle.ultimoTickMs || agoraMs, ateMs: agoraMs };
+  return { minutos, abates, gold, xp, xpOniricos, ovos, colheitaFazenda, xpPasseBruto: xpPasseOffline(abates), desdeMs: idle.ultimoTickMs || agoraMs, ateMs: agoraMs };
 }
 
 export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Fanalino', agoraMs = Date.now(), rng = Math.random) {
@@ -502,6 +540,16 @@ export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Fanalino', ag
   save.recompensas.gold += resumo.gold + resumo.colheitaFazenda * 4;
   save.recompensas.xp += resumo.xp;
   idle.jogador.xp += resumo.xp;
+  const xpOniricos = resumo.xpOniricos ?? Math.max(0, Math.round((resumo.xp || 0) * 3.5));
+  const oniricosXp = xpOniricos > 0
+    ? membrosFormacao(idle).map(({ m, idx, vaga }) => ({
+        idx,
+        vaga,
+        uid: m.uid,
+        especie: m.especie,
+        ...aplicarXp(m, xpOniricos),
+      }))
+    : [];
   idle.jogador.abatesTotais += resumo.abates;
   // Idle concede exatamente 1 XP de Passe por Onírico derrotado, respeitando a cota cumulativa da temporada
   const passeRes = ganharXpPasse(idle, 'offline', xpPasseOffline(resumo.abates), agoraMs);
@@ -511,7 +559,7 @@ export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Fanalino', ag
   const fragmentosSonho = aplicarDropsOfflineFragmentos(save, { loteId, abates: resumo.abates, especie: especiePadrao, rng });
   avancarDiaria(idle, 'abates', resumo.abates);
   idle.ultimoTickMs = agoraMs;
-  return { ...resumo, jaPago: false, xpPasseGanho: passeRes.ganho, xpPasseDescartado: passeRes.descartado, fragmentosSonho };
+  return { ...resumo, xpOniricos, oniricosXp, jaPago: false, xpPasseGanho: passeRes.ganho, xpPasseDescartado: passeRes.descartado, fragmentosSonho };
 }
 
 // Liquida automaticamente o tempo elegível em segundo plano (minimizado) ou com a página fechada.

@@ -148,7 +148,7 @@ export function abrirOvoPasse(ovo, rng = Math.random, cfg = PASSE_CFG) {
   };
 }
 
-const ESPECIES_OVO = ['Noctarn', 'Ignavor', 'Vaelith', 'Brotavel', 'Solarin'];
+const ESPECIES_OVO = ['Ignavor', 'Vaelith', 'Brotavel', 'Solarin'];
 function entregar(save, idle, pr, n, ed, agora) {
   const moch = idle.mochila || (idle.mochila = {}); moch.ovos = moch.ovos || [];
   const col = idle.colecao || (idle.colecao = {});
