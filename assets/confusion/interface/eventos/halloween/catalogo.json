@@ -95,6 +95,9 @@
     "banner": "assets/confusion/interface/eventos/halloween/banner.webp",
     "loja": "assets/confusion/interface/eventos/halloween/loja.webp",
     "ticket": "assets/confusion/interface/eventos/halloween/itens/ticket.webp",
-    "doce": "assets/confusion/interface/eventos/halloween/itens/doce.webp"
+    "doce": "assets/confusion/interface/eventos/halloween/itens/doce.webp",
+    "pocao_xp_p": "assets/confusion/interface/eventos/halloween/itens/pocao_xp_p.webp",
+    "pocao_xp_m": "assets/confusion/interface/eventos/halloween/itens/pocao_xp_m.webp",
+    "pocao_xp_g": "assets/confusion/interface/eventos/halloween/itens/pocao_xp_g.webp"
   }
 }
