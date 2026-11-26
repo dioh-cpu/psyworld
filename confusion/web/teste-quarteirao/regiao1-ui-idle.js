@@ -170,9 +170,6 @@ export function criarControladorIdleUI(ctx) {
         { ic: '🛡️', nome: 'Escudo 7d', desc: '+10% Captura e +20% Encontros nos primeiros 7 dias.' },
         { ic: '🌙', nome: ev.semanal.nome, desc: `Evento semanal ativo: ${ev.semanal.efeito}` },
       ];
-      if (save.forma === 'noctarn') {
-        buffs.unshift({ ic: '✨', nome: 'Onírico', desc: 'Conexão Onírica ativa: +100% de velocidade de movimento.' });
-      }
       if (ev.raid?.aberto) {
         buffs.push({ ic: '🔥', nome: 'Raid', desc: `Raid aberta: ${ev.raid.boss.nome} (${ev.raid.restanteMin}m)` });
       }
@@ -720,7 +717,7 @@ export function criarControladorIdleUI(ctx) {
   const PASSOS_TUTORIAL = [
     { tit: '1/6 · Bem-vindo ao Confusion Waves', txt: 'Você está na Região 1 (48 áreas 2D). No topo ficam seu Nível, HP, Sanidade e recursos.' },
     { tit: '2/6 · Auto-Rota Automática', txt: 'Toque no banner da missão (🧭 Auto-Rota) para andar, coletar pistas, falar com NPCs e avançar missões sozinho.' },
-    { tit: '3/6 · Conexão Onírica (✨ Transformar)', txt: 'Use Transformar (ou tecla T / Shift) para virar Onírico e ganhar +100% de velocidade de movimento.' },
+    { tit: '3/6 · Montaria', txt: 'Seu domador anda montado quando uma montaria está equipada; os Oníricos da equipe lutam ao seu lado. Montado, você ganha +100% de velocidade de movimento.' },
     { tit: '4/6 · Modo Idle (⚔️ Auto · ON/OFF)', txt: 'Ligue Auto · ON para caçar monstros direto no mapa com dano flutuante, auto-captura e ganho de XP/Gold.' },
     { tit: '5/6 · Atlas de Caça & Codex', txt: 'No botão Caçar (ou minimapa) você vê todas as 48 áreas, o selo de risco e viaja direto. O Codex dá bônus permanentes!' },
     { tit: '6/6 · Economia de Energia & Menu', txt: 'No Menu (☰) você acessa Passe de Temporada, Mochila/Relíquias, Vote & Ganhe e o Modo Economia de Energia para farmar no celular.' },

@@ -162,6 +162,26 @@ export function formaDoEncontro(especie, nivel = 1, op = {}, regiao = 1) {
   }
   return { especie, forma: f >= 1 ? f : null, arte };
 }
+// Forma pela faixa de nível dos encontros (base 1–20, segunda 21–40, terceira 41+)
+export const formaPorNivel = (nivel) => (nivel <= 20 ? 1 : nivel <= 40 ? 2 : 3);
+// Resolve o encontro uma vez, antes de desenhar: o mesmo resultado vale para o mapa, o idle e a arena (espécie, forma e arte).
+// Na Região 1 nenhum inicial é inimigo, em nenhuma forma; os substitutos usam a forma da faixa de nível (Região 1 = base).
+export function resolverEncontro(especie, nivel, op = {}, regiao = 1) {
+  let f = formaDoEncontro(especie, nivel, op, regiao);
+  if (f.substituido) { const g = formaDoEncontro(f.especie, nivel, { forma: op.forma && typeof op.forma === 'number' ? op.forma : formaPorNivel(nivel) }, regiao); f = { ...g, substituido: f.substituido }; }
+  return { especie: f.especie, forma: f.forma, arte: f.arte || ARTE_DA_ESPECIE[f.especie] || null, substituido: f.substituido || null };
+}
+// Aplica a resolução nas entidades do mapa (mutação única, guardando a espécie original)
+export function resolverEncontrosMapa(lista, regiao = 1) {
+  for (const e of lista) {
+    if (e._resolvido) continue; e._resolvido = true;
+    const r = resolverEncontro(e.especie, e.nivel || 1, { forma: e.forma, arte: e.arteForma }, regiao);
+    if (!r.substituido) continue;
+    e.especieOriginal = e.especie; e.especie = r.especie; e.forma = r.forma; e.arteForma = r.arte;
+    if (r.arte) { e.sprite = `../../../${r.arte}`; e.proporcaoSprite = 16 / 9; } // artes do catálogo em quadro 16:9
+  }
+  return lista;
+}
 // Ajusta unidades inimigas já criadas (modos que geram inimigos fora da tela, como a Estratégia)
 export function ajustarInimigos(lista, regiao = 1, papeis = {}) {
   return lista.map((u) => { const f = formaDoEncontro(u.especie, u.nivel, { forma: u.forma, arte: u.arte }, regiao); if (f.especie === u.especie) { if (f.arte) u.arte = f.arte; if (f.forma) u.forma = f.forma; return u; }
