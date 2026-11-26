@@ -419,6 +419,28 @@ test('Noctarn e Sombra ficam fora do banner permanente (Adventurer); Noctarn é 
   assert.equal(rHw.ok, true);
   const criadoHw = s.idle.equipe[s.idle.equipe.length - 1];
   assert.equal(criadoHw.origem, 'banner');
+
+  // Penumbrio não evolui para Noctarn (única fonte do Noctarn é banner), mas Noctarn de banner evolui para Noctarion (T5)
+  s.idle.equipe = [
+    criarUnidadeInicial('Penumbrio', { nivel: 15, uid: 'pen0', estrelas: 2 }),
+    { especie: 'Noctarn', nivel: 15, xp: 2000, tier: 4, raridade: 4, estrelas: 2, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'noc_b' },
+  ];
+  adicionarFragmentoSonho(s, 'trevas', 40);
+  const cPen = consultarEvolucaoForma(s, 0);
+  assert.equal(cPen.podeEvoluir, false);
+  assert.equal(cPen.bloqueada, true);
+  const evPen = evoluirFormaPorFragmentos(s, 0);
+  assert.equal(evPen.ok, false);
+  assert.equal(evPen.bloqueada, true);
+  assert.equal(s.idle.equipe[0].especie, 'Penumbrio');
+  assert.equal(saldoFragmentoSonho(s, 'trevas'), 40);
+
+  const evNoc = evoluirFormaPorFragmentos(s, 1);
+  assert.equal(evNoc.ok, true);
+  assert.equal(s.idle.equipe[1].especie, 'Noctarion');
+  assert.equal(s.idle.equipe[1].tier, 5);
+  assert.equal(s.idle.equipe[1].origem, 'banner');
+  assert.equal(saldoFragmentoSonho(s, 'trevas'), 10);
 });
 
 test('Percurso 1 (Conta nova): escolha do inicial → primeira batalha e drop 1% idempotente', () => {
@@ -496,15 +518,21 @@ test('Percurso 2 (Save antigo): equipe → evolução → revanche 10m → retor
   assert.equal(idle.diarias.itens[0].id, 'dm_batalhas_3');
   assert.equal(migrarInicialNoctarn(s).migrou, false); // idempotente
 
-  // 2) Evolução por Fragmentos de Sonho (10 / 30), preservando nível e estrelas
-  adicionarFragmentoSonho(s, 'trevas', 40);
-  const ev1 = evoluirFormaPorFragmentos(s, 0, { operacaoId: 'p2_ev1' });
-  const ev2 = evoluirFormaPorFragmentos(s, 0, { operacaoId: 'p2_ev2' });
-  assert.equal(ev1.ok && ev2.ok, true);
-  assert.equal(idle.equipe[0].especie, 'Noctarion');
-  assert.equal(idle.equipe[0].tier, 5);
-  assert.equal(idle.equipe[0].nivel, 12);
-  assert.equal(idle.equipe[0].estrelas, 3);
+  // 2) Evolução por Fragmentos de Sonho: Penumbrio bloqueado de virar Noctarn; Noctarn de banner evolui 30/30 → Noctarion T5 mantendo nível e estrelas
+  adicionarFragmentoSonho(s, 'trevas', 30);
+  const evPen = evoluirFormaPorFragmentos(s, 0, { operacaoId: 'p2_ev_pen' });
+  assert.equal(evPen.ok, false);
+  assert.equal(evPen.bloqueada, true);
+  assert.equal(idle.equipe[0].especie, 'Penumbrio');
+  assert.equal(saldoFragmentoSonho(s, 'trevas'), 30);
+
+  const evNoc = evoluirFormaPorFragmentos(s, 1, { operacaoId: 'p2_ev_noc' });
+  assert.equal(evNoc.ok, true);
+  assert.equal(idle.equipe[1].especie, 'Noctarion');
+  assert.equal(idle.equipe[1].tier, 5);
+  assert.equal(idle.equipe[1].nivel, 10);
+  assert.equal(idle.equipe[1].estrelas, 2);
+  assert.equal(idle.equipe[1].origem, 'banner');
   assert.equal(saldoFragmentoSonho(s, 'trevas'), 0);
 
   // 3) Revanche com ×3 mantém 10 minutos reais e sem pagamento duplo

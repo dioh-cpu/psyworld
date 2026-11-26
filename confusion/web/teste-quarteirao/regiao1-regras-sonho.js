@@ -174,6 +174,7 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
   let para = null;
   let arteNova = null;
   let linhagemInicial = false;
+  let bloqueada = false;
   let elemento = ELEMENTO_DA_ESPECIE[u.especie] || u.elemento || 'neutro';
   let tierResultante = tierAtual;
 
@@ -184,10 +185,15 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
     elemento = ELEMENTO_DA_ESPECIE[lin.inicial] || elemento;
     linhagemInicial = true;
     if (faseAtual < 3) {
-      proximaFase = faseAtual + 1;
-      para = formas[proximaFase - 1];
-      arteNova = ARTE_DA_ESPECIE[para] || null;
-      tierResultante = Math.max(tierAtual, cfg.tierIniciaisPorFase[proximaFase]);
+      const alvoPara = formas[faseAtual];
+      if (u.especie === NOCTARN_REGRA.evolucaoBloqueadaDe && alvoPara === NOCTARN_REGRA.especie) {
+        bloqueada = true;
+      } else {
+        proximaFase = faseAtual + 1;
+        para = alvoPara;
+        arteNova = ARTE_DA_ESPECIE[para] || null;
+        tierResultante = Math.max(tierAtual, cfg.tierIniciaisPorFase[proximaFase]);
+      }
     }
   } else if (reinoLin) {
     faseAtual = Math.max(1, Math.min(3, Math.floor(Number(u.formaFase ?? 1) || 1)));
@@ -202,15 +208,18 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
   const custo = proximaFase === 2 ? cfg.custoBaseParaSegunda : proximaFase === 3 ? cfg.custoSegundaParaTerceira : null;
   const saldo = saldoFragmentoSonho(save, elemento);
   const faltam = custo != null ? Math.max(0, custo - saldo) : 0;
-  const podeEvoluir = Boolean(custo != null && saldo >= custo);
-  const motivo = !proximaFase
-    ? (lin || reinoLin ? 'Este Onírico já está na 3ª forma.' : 'Esta espécie não possui evolução de forma.')
-    : podeEvoluir
-      ? null
-      : `Faltam ${faltam} Fragmento(s) de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`;
+  const podeEvoluir = Boolean(!bloqueada && custo != null && saldo >= custo);
+  const motivo = bloqueada
+    ? NOCTARN_REGRA.bloqueioMotivo
+    : !proximaFase
+      ? (lin || reinoLin ? 'Este Onírico já está na 3ª forma.' : 'Esta espécie não possui evolução de forma.')
+      : podeEvoluir
+        ? null
+        : `Faltam ${faltam} Fragmento(s) de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`;
 
   return {
     podeEvoluir,
+    bloqueada,
     motivo,
     faseAtual,
     proximaFase,
@@ -310,6 +319,9 @@ export const NOCTARN_REGRA = {
   formaBaseInicial: 'Penumbrio',
   elemento: 'trevas',
   tier: 4,
+  exclusivoBanner: true,
+  evolucaoBloqueadaDe: 'Penumbrio',
+  bloqueioMotivo: 'Noctarn é exclusivo de banners (Sombra/temáticos, T4) e não pode ser obtido evoluindo Penumbrio.',
   noBannerPermanente: false,
   elementosForaPermanente: ['trevas', 'sombra'],
   bannersPermitidos: ['sombra', 'tematico', 'evento'],
