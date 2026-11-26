@@ -53,8 +53,9 @@ function recortar(img) {
 }
 // Perfis de batalha associados à arte original, inclusive quando ela vem de uma fase ou chefe.
 // Exclusivos de Halloween (catalogo.json): todas as formas olham para a direita; a forma final do Abyssar é bem maior.
-const ESCALA_HW = { 'Abyssar': [1, 1.3, 1.75] };
-const PERFIS_HW = Object.fromEntries(LINHAGENS_HW.flatMap((l) => l.arte.map((arq, f) => [arq, { arquivo: arq, direcao: 'direita', altura: ESCALA_HW[l.especie]?.[f] ?? [1, 1.08, 1.18][f] }])));
+// zoom: multiplica a figura inteira (altura e largura), ancorada nos pés. Tier 5 do Abyssar = 2× o tamanho anterior.
+const ESCALA_HW = { 'Abyssar': [1, 1.3, 1.75] }, ZOOM_HW = { 'Abyssar': [1, 1, 2] };
+const PERFIS_HW = Object.fromEntries(LINHAGENS_HW.flatMap((l) => l.arte.map((arq, f) => [arq, { arquivo: arq, direcao: 'direita', altura: ESCALA_HW[l.especie]?.[f] ?? [1, 1.08, 1.18][f], zoom: ZOOM_HW[l.especie]?.[f] ?? 1 }])));
 const PERFIS_NO_CAMPO = {
   ...PERFIS_HW,
   [ARTE_DA_ESPECIE.Noctarn]: { arquivo: 'assets/confusion/interface/batalha/noctarn-direita.webp', direcao: 'direita' },
@@ -74,6 +75,8 @@ const olhaDe = (esp) => (OLHA.direita.includes(esp) ? 'direita' : OLHA.esquerda.
 const CSS = `
 .arena { position: absolute; inset: 0; overflow: hidden; background: #1a0f22; color: #fff3e7; font: 12px system-ui, sans-serif; user-select: none; -webkit-user-select: none; --altura-botao: clamp(44px, 12vh, 62px); --espaco-rodape: calc(var(--altura-botao) + 16px + env(safe-area-inset-bottom, 0px)); }
 .arena .tb-campo { position: absolute; inset: 0; background: center bottom / cover no-repeat #24162b; will-change: transform; }
+/* figura ampliada: o HUD fica no lugar (sempre visível) e por cima do corpo */
+.arena .un .un-hud { z-index: 6; }
 .arena .un { position: absolute; top: min(var(--posicao-y), calc(100% - var(--espaco-rodape) - 3px)); z-index: 49; width: var(--largura-vaga); display: flex; flex-direction: column; align-items: center; translate: -50% -100%; background: none; border: 0; padding: 0; color: inherit; cursor: default; transition: opacity .5s; --largura-vaga: clamp(80px, 14vw, 170px); --altura-base-sprite: clamp(55px, 22vh, 156px); --altura-sprite: calc(var(--altura-base-sprite) * var(--escala-altura-sprite, 1)); --largura-sprite: min(var(--largura-vaga), calc(var(--altura-sprite) * var(--proporcao-sprite, 1))); }
 .arena .un.frente { z-index: 79; --altura-base-sprite: clamp(58px, 24vh, 170px); }
 .arena .un-fig { position: relative; display: flex; justify-content: center; align-items: flex-end; width: 100%; order: 2; } .arena .un-fig img { width: var(--largura-sprite); height: calc(var(--largura-sprite) / var(--proporcao-sprite, 1)); object-fit: contain; visibility: hidden; filter: drop-shadow(0 4px 3px rgba(0,0,0,.55)); }
@@ -116,6 +119,7 @@ function spriteNoCampo(u, artes) {
     src: `../../../${perfil?.arquivo ?? original}`,
     escalaX: sentido * (perfil?.largura ?? 1),
     escalaAltura: perfil?.altura ?? 1,
+    zoom: perfil?.zoom ?? 1,
   };
 }
 
@@ -138,7 +142,8 @@ export function criarArena(host, { artes = {} } = {}) {
     el.style.left = `${x.toFixed(1)}%`;
     el.style.setProperty('--posicao-y', `${altura}%`);
     if (sprite.escalaAltura !== 1) el.style.setProperty('--escala-altura-sprite', sprite.escalaAltura);
-    el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.escalaX === 1 ? '' : `style="transform:scaleX(${sprite.escalaX})"`} alt="${esc(u.especie)}"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-elemento" style="--cor-elemento:${COR_ELEMENTO[elemento]}">${NOME_ELEMENTO[elemento]}</span><span class="un-efs"></span></span>`;
+    if (sprite.zoom !== 1) el.style.setProperty('--zoom-sprite', sprite.zoom);
+    el.innerHTML = `<span class="un-sombra"></span><span class="un-fig"><img src="${sprite.src}" ${sprite.escalaX === 1 && sprite.zoom === 1 ? '' : `style="transform:scale(${sprite.escalaX * sprite.zoom}, ${sprite.zoom});transform-origin:50% 100%"`} alt="${esc(u.especie)}"></span><span class="un-hud"><span class="un-lin"><b class="un-nv">${u.nivel}</b><span class="un-hp"><i style="width:100%"></i></span></span><span class="un-elemento" style="--cor-elemento:${COR_ELEMENTO[elemento]}">${NOME_ELEMENTO[elemento]}</span><span class="un-efs"></span></span>`;
     const imagem = el.querySelector('.un-fig img');
     imagem.addEventListener('load', () => recortar(imagem), { once: true });
     imagem.addEventListener('error', () => { const ph = document.createElement('span'); ph.textContent = '🎃'; ph.title = 'Arte pendente'; ph.style.cssText = 'font-size:clamp(36px,12vh,80px);line-height:1'; imagem.replaceWith(ph); }, { once: true });
