@@ -19,7 +19,7 @@ export const ESTRATEGIA_C1 = {
     ],
     itens: { tabua: { nome: 'Tábua', icone: '🪚' }, bloco: { nome: 'Bloco de pedra', icone: '🧱' }, kit: { nome: 'Kit de reparo', icone: '🧰' } },
   },
-  vagasIniciais: 2, // vagas de equipe no começo; cada fase vencida pela primeira vez abre mais uma (máximo 6)
+  vagasIniciais: 2, // A primeira vitória de cada fase libera vagas até o limite de quatro.
 
   // Papel de cada espécie no combate: ataque, defesa (atrai golpes) ou suporte (cura aliados)
   papeis: {

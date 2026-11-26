@@ -42,10 +42,12 @@ export function gerarInimigos(fase, papeis, rng, extras = []) {
 }
 
 // ---------- combate ----------
-// Até 4 de cada lado em campo; o excedente espera na fila (máx. 2) e entra na vaga quando alguém cai.
-export function criarBatalha(aliados, inimigos, { ativos = 4 } = {}) {
-  const emCampoA = aliados.slice(0, ativos), emCampoI = inimigos.slice(0, ativos);
-  return { aliados: emCampoA, inimigos: emCampoI, esperaA: aliados.slice(ativos, ativos + 2), esperaI: inimigos.slice(ativos, ativos + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0 };
+export const LIMITE_ALIADOS = 4;
+// Até quatro combatentes de cada lado em campo, com dois reforços exclusivos dos inimigos.
+export function criarBatalha(aliados, inimigos, { ativos = LIMITE_ALIADOS } = {}) {
+  const vagas = Math.min(ativos, LIMITE_ALIADOS);
+  const emCampoA = aliados.slice(0, vagas), emCampoI = inimigos.slice(0, vagas);
+  return { aliados: emCampoA, inimigos: emCampoI, esperaI: inimigos.slice(vagas, vagas + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0 };
 }
 export const vivos = (l) => l.filter((u) => u.hp > 0);
 const inimigosDe = (b, u) => (u.lado === 'a' ? b.inimigos : b.aliados);
@@ -90,7 +92,7 @@ function iniciarTurno(b, u) {
 function fimDoTurno(u) {
   for (const [id, e] of Object.entries(u.efeitos || {})) { e.turnos -= 1; if (e.turnos <= 0) delete u.efeitos[id]; }
 }
-const verificarFim = (b) => { if (!vivos(b.inimigos).length && !b.esperaI.length) b.fim = 'vitoria'; else if (!vivos(b.aliados).length && !b.esperaA.length) b.fim = 'derrota'; };
+const verificarFim = (b) => { if (!vivos(b.inimigos).length && !b.esperaI.length) b.fim = 'vitoria'; else if (!vivos(b.aliados).length) b.fim = 'derrota'; };
 export function atorAtual(b) {
   if (b.fim) return null;
   for (let guarda = 0; guarda < 400; guarda++) {
@@ -171,14 +173,17 @@ export function executar(b, acao, rng) {
 }
 // O reforço entra na vaga do derrotado, no mesmo ponto do campo
 function reforcar(b) {
-  for (const [lista, espera, nome] of [[b.inimigos, b.esperaI, 'inimigo'], [b.aliados, b.esperaA, 'aliado']]) {
-    for (let i = 0; i < lista.length; i++) {
-      const caido = lista[i];
-      if (caido.hp > 0 || caido.substituido || !espera.length) continue;
-      const novo = espera.shift(); caido.substituido = true; lista[i] = novo; b.ordem.push(novo); novo.entrouNaVaga = i;
-      b.log.push(`Reforço: ${novo.especie} entra no lugar de ${caido.especie}.`);
-      if (b.evento) b.evento.reforco = { sai: caido.id, entra: novo.id, lado: nome, vaga: i }; else antes(b, { tipo: 'reforco', sai: caido.id, entra: novo.id, lado: nome, vaga: i });
-    }
+  for (let i = 0; i < b.inimigos.length && b.esperaI.length; i++) {
+    const caido = b.inimigos[i];
+    if (caido.hp > 0) continue;
+    const novo = b.esperaI.shift();
+    b.inimigos[i] = novo;
+    b.ordem.push(novo);
+    novo.entrouNaVaga = i;
+    b.log.push(`Reforço: ${novo.especie} entra no lugar de ${caido.especie}.`);
+    const reforco = { sai: caido.id, entra: novo.id, lado: 'inimigo', vaga: i };
+    if (b.evento) b.evento.reforco = reforco;
+    else antes(b, { tipo: 'reforco', ...reforco });
   }
 }
 // Decisão automática (inimigos e "Atacar automaticamente"): usa a melhor habilidade disponível e acessível

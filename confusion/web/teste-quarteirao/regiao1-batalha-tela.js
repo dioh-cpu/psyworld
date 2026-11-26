@@ -2,14 +2,17 @@
 // Onírico, ordem dos turnos, e no rodapé até 3 habilidades do Onírico da vez (ícone, nome, custo e recarga). Os efeitos vêm de
 // regiao1-vfx.js, disparados uma única vez por evento. `criarArena` serve à Estratégia, aos Reinos e à Campanha; `criarTelaBatalha`
 // é o overlay completo usado por missões e capítulos.
-import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, EFEITOS } from './regiao1-estrategia-regras.js';
+import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, EFEITOS, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 import { criarCtx, tocarEvento, duracaoEstimada } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE } from '../species.js';
 import { NOME_ELEMENTO } from '../core.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-// Posições dos aliados em porcentagem da arena. Os inimigos espelham apenas o eixo horizontal.
-const POSICOES_ALIADOS = [[42.1, 55.2], [29.4, 82.4], [19.5, 56.2], [8.8, 78.1]];
+// Formação aprovada no editor, em porcentagem da arena.
+const POSICOES = {
+  a: [[42.1, 55.2], [29.4, 82.4], [19.5, 56.2], [8.8, 78.1]],
+  i: [[64, 54.8], [74.7, 82.4], [85.9, 52.4], [92, 79.5]],
+};
 const COR_ELEMENTO = {
   fogo: '#ffa478', agua: '#83cfff', planta: '#a0e38a', terra: '#e5ba87', luz: '#ffe395',
   trevas: '#c6a9ff', neutro: '#e2d6de', lutador: '#ff9d9c', voador: '#a9cbff',
@@ -115,14 +118,14 @@ export function criarArena(host, { artes = {} } = {}) {
   injetar(); host.classList.add('arena');
   host.innerHTML = '<div class="tb-campo"></div><div class="tb-topo"><div class="tb-tit"></div><div class="tb-ordem"></div><div class="tb-btns"></div></div><div class="tb-fila"></div><div class="tb-base"></div><div class="tb-sobre"></div>';
   const campo = host.querySelector('.tb-campo'), q = (s) => host.querySelector(s);
-  let b = null, nos = new Map(), hpVis = new Map(), pend = new Set(), alvoSel = null, ocupadoAte = 0, ultimoEv = null, rapido = false, opArt = artes, lastSig = '';
+  let b = null, nos = new Map(), hpVis = new Map(), pend = new Set(), alvoSel = null;
+  let animacao = null, ultimaOp = {}, opArt = artes;
   const no = (id) => nos.get(id)?.el;
-  const sigDe = (u) => `${u.lado}:${u.id}`;
+  const reforcosPendentes = () => b.inimigos.filter(u => !nos.has(u.id));
   function vagaDe(u) { const lista = u.lado === 'a' ? b.aliados : b.inimigos; return Math.max(0, lista.indexOf(u)); }
   function criarNo(u, entrando) {
     const vaga = vagaDe(u);
-    const [coluna, altura] = POSICOES_ALIADOS[vaga] ?? POSICOES_ALIADOS[0];
-    const x = u.lado === 'a' ? coluna : 100 - coluna;
+    const [x, altura] = POSICOES[u.lado][vaga];
     const frente = vaga % 2 === 1;
     const sprite = spriteNoCampo(u, opArt);
     const elemento = Object.hasOwn(NOME_ELEMENTO, u.elemento) ? u.elemento : 'neutro';
@@ -134,8 +137,9 @@ export function criarArena(host, { artes = {} } = {}) {
     const imagem = el.querySelector('.un-fig img');
     imagem.addEventListener('load', () => recortar(imagem), { once: true });
     imagem.addEventListener('error', () => { imagem.style.visibility = 'visible'; }, { once: true });
-    campo.append(el); nos.set(u.id, { el, u }); hpVis.set(u.id, u.hp);
+    campo.append(el); nos.set(u.id, { el, u, vaga }); hpVis.set(u.id, u.hp);
     if (entrando) setTimeout(() => el.classList.remove('entrando'), 800);
+    return el;
   }
   const aplicarHp = (id) => { pend.delete(id); const n = nos.get(id); if (!n) return; hpVis.set(id, n.u.hp); pintar(n); };
   function pintar(n) {
@@ -144,40 +148,79 @@ export function criarArena(host, { artes = {} } = {}) {
     const morto = u.hp <= 0 && !pend.has(u.id); n.el.classList.toggle('morto', morto);
   }
   function montar(nova) {
-    b = nova; campo.querySelectorAll('.un').forEach((e) => e.remove()); nos = new Map(); hpVis = new Map(); pend = new Set(); alvoSel = null;
+    b = nova; campo.querySelectorAll('.un').forEach((e) => e.remove()); nos = new Map(); hpVis = new Map(); pend = new Set(); alvoSel = null; animacao = null;
     [...b.aliados, ...b.inimigos].forEach((u) => criarNo(u, false)); if (b.evento) b.evento.mostrado = true;
   }
+  function proximoEfeito() {
+    if (animacao) return null;
+    if (b.evento && !b.evento.mostrado) {
+      b.evento.mostrado = true;
+      return b.evento;
+    }
+    if (!b.antes?.length) return null;
+    const antes = b.antes;
+    b.antes = [];
+    return { antes };
+  }
   function atualizar(nova, op = {}) {
+    ultimaOp = op;
     opArt = op.artes || opArt;
     if (nova !== b) montar(nova);
-    rapido = Boolean(op.auto);
     if (op.arena) campo.style.backgroundImage = `url('../../../${op.arena}')`;
-    // unidades novas (reforços) entram na vaga; as demais só atualizam
-    for (const u of [...b.aliados, ...b.inimigos]) if (!nos.has(u.id)) criarNo(u, true);
-    const ev = b.evento; const novoEv = ev && !ev.mostrado;
-    if (novoEv) { ev.mostrado = true; for (const r of ev.alvos || []) pend.add(r.id); for (const x of ev.antes || []) if (x.alvo) pend.add(x.alvo); if (ev.hab?.tipo === 'cura' || ev.hab?.tipo === 'apoio') pend.add(ev.ator); }
+    const ev = proximoEfeito();
+    if (ev) {
+      for (const r of ev.alvos || []) pend.add(r.id);
+      for (const x of ev.antes || []) if (x.alvo) pend.add(x.alvo);
+      if (ev.hab?.tipo === 'cura' || ev.hab?.tipo === 'apoio') pend.add(ev.ator);
+    }
     const atual = b.fim ? null : atorAtualSemEfeito(b);
     for (const n of nos.values()) { if (!pend.has(n.u.id)) hpVis.set(n.u.id, n.u.hp); pintar(n); n.el.classList.toggle('vez', Boolean(atual) && n.u === atual); n.el.classList.toggle('alvo', alvoSel === n.u.id); }
-    desenharTopo(op, atual); desenharBase(op, atual);
-    if (novoEv) tocar(ev);
-    return novoEv ? duracaoEstimada(ev, rapido) : 0;
+    desenharTopo(op); desenharBase(op, atual);
+    const rapido = Boolean(op.auto);
+    const duracao = ev ? duracaoEstimada(ev, rapido) : 0;
+    if (ev || (!animacao && reforcosPendentes().length)) tocar(ev, rapido, duracao);
+    return duracao;
   }
   // atorAtual pode registrar turnos perdidos; aqui só lemos o primeiro vivo da fila sem avançar o motor
   function atorAtualSemEfeito(bt) { const id = bt.fila[0]; return bt.ordem.find((x) => x.id === id && x.hp > 0) || bt.ordem.find((x) => x.hp > 0 && x.lado === 'a'); }
-  async function tocar(ev) {
-    const t0 = performance.now(), est = duracaoEstimada(ev, rapido); ocupadoAte = t0 + est;
-    const ctx = criarCtx({ arena: host, campo, no, aplicarHp, rapido });
-    try { await tocarEvento(ctx, ev); } catch (e) { console.warn('vfx', e); }
-    for (const n of nos.values()) { pend.delete(n.u.id); hpVis.set(n.u.id, n.u.hp); pintar(n); }
-    if (ev.reforco) { /* o nó do reforço já foi criado por atualizar() */ }
-    ocupadoAte = performance.now();
+  async function tocar(ev, rapido, duracao) {
+    const atual = { ate: performance.now() + duracao };
+    animacao = atual;
+    if (ev) {
+      const ctx = criarCtx({
+        arena: host, campo, rapido,
+        no: id => animacao === atual ? no(id) : null,
+        aplicarHp: id => { if (animacao === atual) aplicarHp(id); },
+      });
+      try { await tocarEvento(ctx, ev); } catch (e) { console.warn('vfx', e); }
+    }
+    if (animacao !== atual || !campo.isConnected) return;
+    for (const id of nos.keys()) aplicarHp(id);
+    // O motor já trocou a vaga. Na tela, espere o corpo anterior sumir antes de inserir o reforço.
+    const reforcos = reforcosPendentes();
+    if (reforcos.length) {
+      const vagas = new Set(reforcos.map(vagaDe));
+      const derrotados = [...nos.values()].filter(n => n.u.lado === 'i' && n.u.hp <= 0 && vagas.has(n.vaga));
+      await Promise.allSettled(derrotados.flatMap(({ el }) => el.getAnimations()
+        .filter(a => a.transitionProperty === 'opacity').map(a => a.finished)));
+      if (animacao !== atual || !campo.isConnected) return;
+      for (const { el, u } of derrotados) { el.remove(); nos.delete(u.id); hpVis.delete(u.id); }
+      const entradas = reforcos.map(u => criarNo(u, true));
+      desenharTopo(ultimaOp);
+      await Promise.allSettled(entradas.flatMap(el => el.getAnimations()
+        .filter(a => a.animationName === 'tb-entra').map(a => a.finished)));
+      if (animacao !== atual || !campo.isConnected) return;
+    }
+    animacao = null;
+    atualizar(b, ultimaOp);
   }
-  function desenharTopo(op, atual) {
+  function desenharTopo(op) {
     q('.tb-tit').innerHTML = `<b>${esc(op.titulo || '')}</b><small>${esc(op.sub || '')}${op.sub ? ' · ' : ''}Turno ${b.rodada}</small>`;
     q('.tb-btns').innerHTML = `<button data-auto="1" class="${op.auto ? 'on' : ''}">Auto</button>${op.extraTopo || ''}`;
-    const prox = [...b.fila].map((id) => b.ordem.find((x) => x.id === id)).filter((u) => u && u.hp > 0).slice(0, 5);
+    const prox = [...b.fila].map((id) => b.ordem.find((x) => x.id === id)).filter((u) => u && nos.has(u.id) && u.hp > 0).slice(0, 5);
     q('.tb-ordem').innerHTML = prox.map((u, i) => `<span class="${u.lado === 'a' ? '' : 'i'} ${i === 0 ? 'cur' : ''}"><img src="${caminho(u.especie, opArt)}" alt=""></span>`).join('');
-    const f = q('.tb-fila'); f.style.display = b.esperaI.length ? 'flex' : 'none'; f.innerHTML = `Fila +${b.esperaI.length} ${b.esperaI.map((u) => `<img src="${caminho(u.especie, opArt)}" alt="">`).join('')}`;
+    const fila = [...reforcosPendentes(), ...b.esperaI];
+    const f = q('.tb-fila'); f.style.display = fila.length ? 'flex' : 'none'; f.innerHTML = `Fila +${fila.length} ${fila.map((u) => `<img src="${caminho(u.especie, opArt)}" alt="">`).join('')}`;
   }
   function desenharBase(op, atual) {
     const base = q('.tb-base'); if (b.fim) { base.innerHTML = ''; return; }
@@ -189,7 +232,7 @@ export function criarArena(host, { artes = {} } = {}) {
     base.innerHTML = ativo + `<div class="tb-hab"><button data-acao="atacar" class="basico" ${manual ? '' : 'disabled'}><i>⚔️</i>Atacar<small>sem recarga</small></button>${u.kit.map(btn).join('')}<button data-acao="defender" class="basico" ${manual ? '' : 'disabled'}><i>🛡️</i>Defender<small>sem recarga</small></button></div>`;
   }
   function fim(html) { q('.tb-sobre').innerHTML = html ? `<div class="tb-fim">${html}</div>` : ''; }
-  return { atualizar, montar, fim, alvo: () => alvoSel, definirAlvo: (id) => { alvoSel = alvoSel === id ? null : id; for (const n of nos.values()) n.el.classList.toggle('alvo', alvoSel === n.u.id); }, limparAlvo: () => { alvoSel = null; }, ocupada: () => performance.now() < ocupadoAte, restante: () => Math.max(0, ocupadoAte - performance.now()), campo, raiz: host };
+  return { atualizar, montar, fim, alvo: () => alvoSel, definirAlvo: (id) => { alvoSel = alvoSel === id ? null : id; for (const n of nos.values()) n.el.classList.toggle('alvo', alvoSel === n.u.id); }, limparAlvo: () => { alvoSel = null; }, ocupada: () => Boolean(animacao), restante: () => animacao ? Math.max(16, animacao.ate - performance.now()) : 0, campo, raiz: host };
 }
 
 // ---------- overlay completo (missões e capítulos) ----------
@@ -201,16 +244,19 @@ export function criarTelaBatalha() {
   function render() { return arena.atualizar(b, titulo()); }
   function agendar(delay) { clearTimeout(timer); timer = setTimeout(passo, delay); }
   function passo() {
-    if (!b || b.fim) return;
-    const u = atorAtual(b); if (!u) { render(); if (b.fim) terminar(); return; }
-    if (u.lado === 'i' || auto) { executar(b, decidir(b, u, rng), rng); const d = render(); if (b.fim) { setTimeout(terminar, d + 350); return; } agendar((cfg.ritmo || 380) + d + 120); }
+    if (!b) return;
+    if (arena.ocupada()) { agendar(arena.restante() + 30); return; }
+    if (b.fim) { terminar(); return; }
+    const u = atorAtual(b);
+    if (!u || b.antes?.length) { const d = render(); if (b.fim || u) agendar(d + 120); return; }
+    if (u.lado === 'i' || auto) { executar(b, decidir(b, u, rng), rng); const d = render(); agendar(d + (b.fim ? 350 : (cfg.ritmo || 380) + 120)); }
     else { render(); agendar(300); }
   }
   function terminar() { arena.fim(`<b>${b.fim === 'vitoria' ? '🏆 Vitória!' : '💀 Derrota'}</b><button class="btn-pri" data-continuar="1">Continuar</button>`); }
   function abrir(c) {
     cfg = c; auto = c.auto !== false; el.style.display = 'block'; arena = criarArena(el, { artes: c.artes });
     const papeis = c.papeis || {};
-    const al = c.aliados.slice(0, 6).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: c.bonus || {} }));
+    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: c.bonus || {} }));
     const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento], i) => criarUnidade({ id: `i${i}`, especie: esp, nivel: nv, lado: 'i', papeis, elemento }));
     b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render(); agendar(700);
   }
@@ -222,11 +268,14 @@ export function criarTelaBatalha() {
     if (t.dataset.fugir) { fechar(false); return; }
     if (t.dataset.continuar) { fechar(b.fim === 'vitoria'); return; }
     if (t.dataset.un) { const u = b.ordem.find((x) => x.id === t.dataset.un); if (u?.hp > 0 && u.lado === 'i') arena.definirAlvo(u.id); return; }
-    const u = atorAtual(b); if (!u || u.lado !== 'a' || arena.ocupada()) return;
+    if (arena.ocupada()) return;
+    const u = atorAtual(b);
+    if (!u || b.antes?.length) { agendar(render() + 120); return; }
+    if (u.lado !== 'a') return;
     if (t.dataset.hab !== undefined) executar(b, { tipo: 'habilidade', idx: Number(t.dataset.hab), alvo: arena.alvo() || undefined }, rng);
     else if (t.dataset.acao) executar(b, { tipo: t.dataset.acao, alvo: arena.alvo() || undefined }, rng);
     else return;
-    arena.limparAlvo(); const d = render(); if (b.fim) setTimeout(terminar, d + 350); else agendar(d + 250);
+    arena.limparAlvo(); const d = render(); agendar(d + (b.fim ? 350 : 250));
   });
   return { abrir, aberta: () => el.style.display === 'block', batalha: () => b, fechar, encerrarSilencioso, minimizada };
 }

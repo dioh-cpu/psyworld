@@ -44,6 +44,7 @@ import { iniciarEstrategia } from './regiao1-estrategia.js';
 import { iniciarReinos } from './regiao1-reinos.js';
 import { golpeCampanha } from './regiao1-batalha-fx.js';
 import { criarTelaBatalha } from './regiao1-batalha-tela.js';
+import { indicesEquipeCombate } from './regiao1-exp-regras.js';
 const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
@@ -953,7 +954,10 @@ function iniciarBatalha(tipo, entidade) {
   const nomeIni = ehBoss ? defBoss.nome : `${entidade.especie} (Nv. ${entidade.nivel})`;
   batalhaAtiva = { tipo, entidade, hpJog, maxJog, atkJog: st.atk, defJog: st.def, nivelJog: st.nivel, hpIni: 1, maxIni: 1, nomeIni };
   // Equipe (até 4) contra o inimigo e até 2 reforços na fila; a arena ocupa a tela inteira
-  const aliados = (idle.equipe || []).slice(0, 6).map((m, i) => ({ especie: m.especie, nivel: i === 0 ? st.nivel : (m.nivel || 1) }));
+  const aliados = indicesEquipeCombate(idle).map(i => {
+    const m = idle.equipe[i];
+    return { especie: m.especie, nivel: i === 0 ? st.nivel : (m.nivel || 1) };
+  });
   const raizDe = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
   const artes = {}; let inimigos;
   if (ehBoss) {

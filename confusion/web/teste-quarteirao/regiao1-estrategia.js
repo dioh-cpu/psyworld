@@ -1,10 +1,10 @@
 // Modo Estratégia (interface). Regras em regiao1-estrategia-regras.js e dados por cidade em regiao1-estrategia-c1.js.
-// Mapa da cidade com locais de construção, cinco menus (Aldeias, Refúgios, Exércitos, Hospitais, Expedições), combate 6 contra 6 por
+// Mapa da cidade com locais de construção, cinco menus (Aldeias, Refúgios, Exércitos, Hospitais, Expedições), combate 4 contra 4 por
 // turnos, controles independentes (Atacar automaticamente / Próxima fase / Avançar automaticamente) e expedição minimizada.
 // Estado salvo em save.idle.estrategia[id]. Cada recompensa de vitória é paga uma única vez (exp.pagas).
 import { criarArena } from './regiao1-batalha-tela.js';
 import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
-import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase } from './regiao1-estrategia-regras.js';
+import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const PAPEL = { ataque: { i: '⚔️', n: 'Ataque' }, defesa: { i: '🛡️', n: 'Defesa' }, suporte: { i: '💚', n: 'Suporte' } };
@@ -25,7 +25,9 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     const idle = getSave().idle || (getSave().idle = {});
     idle.estrategia = idle.estrategia || {};
     const s = idle.estrategia[Dx.id] || (idle.estrategia[Dx.id] = { materiais: { ...Dx.inicial }, estruturas: {}, exp: null, recrutados: {}, historico: [], vagas: Dx.vagasIniciais || 2, inimigosLiberados: {} });
-    s.materiais = { ...Dx.inicial, ...s.materiais }; s.estruturas = s.estruturas || {}; s.recrutados = s.recrutados || {}; s.historico = s.historico || []; s.vagas = Math.max(1, Math.min(6, s.vagas || Dx.vagasIniciais || 2)); s.trabalho = s.trabalho || {}; gestaoDe(s); s.inimigosLiberados = s.inimigosLiberados || {};
+    s.materiais = { ...Dx.inicial, ...s.materiais }; s.estruturas = s.estruturas || {}; s.recrutados = s.recrutados || {}; s.historico = s.historico || []; s.vagas = Math.max(1, Math.min(LIMITE_ALIADOS, s.vagas || Dx.vagasIniciais || 2)); s.trabalho = s.trabalho || {}; gestaoDe(s); s.inimigosLiberados = s.inimigosLiberados || {};
+    if (s.equipeSel?.length > s.vagas) s.equipeSel = s.equipeSel.slice(0, s.vagas);
+    if (s.exp?.equipe?.length > s.vagas) s.exp.equipe = s.exp.equipe.slice(0, s.vagas);
     return s;
   };
   const roster = () => (getSave().idle.equipe || []).map((m, i) => ({ id: `m${i}`, especie: m.especie, nivel: m.nivel || 1 }));
@@ -258,7 +260,7 @@ export function iniciarEstrategia({ dados, getSave, salvar, mostrarToast, abrirM
     const s = estado(), exp = s.exp; const { r, ids } = equipeAtual(s);
     if (!s.equipeSel) s.equipeSel = r.slice(0, s.vagas).map((m) => m.id);
     const sel = (exp?.equipe || s.equipeSel).filter((id) => r.some((m) => m.id === id));
-    let h = `<div class="est-bloco"><h4>🧭 Equipe (${sel.length}/${s.vagas} vagas · máximo 6)</h4><p class="muted">Toque para escolher os Oníricos. Cada fase vencida pela primeira vez abre uma vaga nova. Os Oníricos vêm do gacha e dos ovos. Suporte cura, defesa atrai golpes, ataque causa dano. Níveis e habilidades são os do seu time na Campanha e no Idle.</p><div class="est-equipe">${r.map((m) => { const pa = D.papeis[m.especie] || 'ataque'; return `<button class="chip ${sel.includes(m.id) ? 'on' : ''}" data-membro="${m.id}">${PAPEL[pa].i} ${esc(m.especie)} nv.${m.nivel}<br><span class="muted">${PAPEL[pa].n}</span></button>`; }).join('')}</div></div>`;
+    let h = `<div class="est-bloco"><h4>🧭 Equipe (${sel.length}/${s.vagas} vagas · máximo ${LIMITE_ALIADOS})</h4><p class="muted">Toque para escolher Oníricos da sua coleção. A primeira vitória de cada fase abre uma vaga até o limite. Suporte cura, defesa atrai golpes, ataque causa dano.</p><div class="est-equipe">${r.map((m) => { const pa = D.papeis[m.especie] || 'ataque'; return `<button class="chip ${sel.includes(m.id) ? 'on' : ''}" data-membro="${m.id}">${PAPEL[pa].i} ${esc(m.especie)} nv.${m.nivel}<br><span class="muted">${PAPEL[pa].n}</span></button>`; }).join('')}</div></div>`;
     if (exp && exp.estado !== 'parada') {
       const rota = rotaDe(exp.rota);
       h += `<div class="est-bloco"><h4>${rota.icone} ${esc(rota.nome)} em andamento</h4><p>Fase ${exp.fase + 1}/${rota.fases.length}: ${esc(rota.fases[exp.fase].nome)} · estado: <b>${estadoTxt(exp)}</b></p><p>Ganhos até agora: ${Object.keys(exp.ganhos).length ? custoTxt(exp.ganhos) : 'nenhum'}</p><div class="est-linha">${batalha && exp.estado === 'batalha' ? '<button class="btn-pri" data-ver="1">Ver combate</button>' : botoesPausa(exp)}<button class="btn-sec" data-parar="1">Encerrar expedição</button></div></div>`;
@@ -297,7 +299,8 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     desenharCabecalho();
     $('#est-corpo').hidden = visao !== 'cidade'; $('#est-bat').hidden = visao !== 'batalha';
     desenharTopo();
-    if (visao === 'cidade') { desenharMapa(); desenharPainel(); } else desenharBatalha();
+    if (visao === 'cidade') { desenharMapa(); desenharPainel(); }
+    else if (!minimizado) desenharBatalha();
   }
 
   // ---------- obra ----------
@@ -443,11 +446,11 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
           s.recrutados[chave] = true; // só a primeira vitória de cada fase libera
           const novoInimigo = !s.inimigosLiberados[fase.libera.inimigo];
           s.inimigosLiberados[fase.libera.inimigo] = true;
-          const vagaAntes = s.vagas; s.vagas = Math.min(6, s.vagas + 1);
+          const vagaAntes = s.vagas; s.vagas = Math.min(LIMITE_ALIADOS, s.vagas + 1);
           exp.liberados.push(fase.libera.inimigo);
-          batalha.log.push(`${novoInimigo ? `Novo inimigo avistado: ${fase.libera.inimigo}. ` : ''}${s.vagas > vagaAntes ? `Vaga de equipe liberada (${s.vagas}/6)!` : 'Equipe já está no máximo de vagas.'}`);
-          mostrarToast(`🆕 ${novoInimigo ? `${fase.libera.inimigo} avistado como inimigo. ` : ''}${s.vagas > vagaAntes ? `Vaga de equipe ${s.vagas}/6!` : ''}`, 3800);
-          diario(`${fase.libera.inimigo} avistado; vagas de equipe ${s.vagas}/6.`);
+          batalha.log.push(`${novoInimigo ? `Novo inimigo avistado: ${fase.libera.inimigo}. ` : ''}${s.vagas > vagaAntes ? `Vaga de equipe liberada (${s.vagas}/${LIMITE_ALIADOS})!` : 'Equipe já está no máximo de vagas.'}`);
+          mostrarToast(`🆕 ${novoInimigo ? `${fase.libera.inimigo} avistado como inimigo. ` : ''}${s.vagas > vagaAntes ? `Vaga de equipe ${s.vagas}/${LIMITE_ALIADOS}!` : ''}`, 3800);
+          diario(`${fase.libera.inimigo} avistado; vagas de equipe ${s.vagas}/${LIMITE_ALIADOS}.`);
         }
       }
       exp.hpPct = {}; exp.equipe.forEach((id, i) => { const u = batalha.aliados[i]; exp.hpPct[id] = u.hp > 0 ? u.hp / u.hpMax : 0.5; });
@@ -480,14 +483,17 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   }
   function tick() {
     const s = estado(), exp = s.exp;
-    if (!exp || exp.estado !== 'batalha' || !batalha || batalha.fim) return;
+    if (!exp || exp.estado !== 'batalha' || !batalha || (visivelBat() && arena?.ocupada())) return;
+    if (batalha.fim) { terminarFase(); return; }
     const u = atorAtual(batalha);
-    if (!u) { if (batalha.fim) terminarFase(); return; }
-    if (visivelBat() && arena?.ocupada()) return;
-    if (u.lado === 'i' || exp.autoAtaque) executar(batalha, decidir(batalha, u, rng), rng);
-    else { if (visivelBat()) desenharBatalha(); desenharInd(); return; } // espera o jogador
-    if (batalha.fim) terminarFase();
-    else { if (visivelBat()) desenharBatalha(); desenharInd(); }
+    if (u && (u.lado === 'i' || exp.autoAtaque) && !(visivelBat() && batalha.antes?.length)) executar(batalha, decidir(batalha, u, rng), rng);
+    apresentarTurno();
+  }
+
+  function apresentarTurno() {
+    if (visivelBat()) desenharBatalha();
+    if (batalha.fim && !(visivelBat() && arena?.ocupada())) terminarFase();
+    else desenharInd();
   }
 
   // ---------- combate (tela) ----------
@@ -499,7 +505,7 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     if (!arena || arena.raiz !== el || !el.querySelector('.tb-campo')) arena = criarArena(el);
     const extra = `<button data-autoavanca="1" class="${exp.autoAvancar ? 'on' : ''}">Avançar auto</button><button data-min="1">Minimizar</button><button data-parar="1">Parar</button>`;
     const d = arena.atualizar(batalha, { titulo: `${rota.icone} ${rota.nome}`, sub: `Fase ${exp.fase + 1} de ${rota.fases.length} · ${rota.fases[exp.fase].nome}`, auto: exp.autoAtaque, arena: fundoRaiz(rota, exp.fase), artes: artesFase, extraTopo: extra });
-    if (batalha.fim) {
+    if (batalha.fim && exp.estado !== 'batalha') {
       const fimBotao = exp.estado === 'vitoria' ? '<button class="btn-sec" data-equipe="1">Ajustar equipe</button><button class="btn-pri" data-prox="1">Próxima fase</button>' : (['derrota', 'fim'].includes(exp.estado) ? `<button class="btn-pri" data-fim="1">${exp.estado === 'fim' ? 'Concluir rota' : 'Voltar ao reino'}</button>` : '');
       const gan = Object.keys(exp.ganhos).length ? `<small>Ganhos: ${custoTxt(exp.ganhos)}</small>` : '';
       const marca = `${exp.estado}:${exp.fase}`;
@@ -531,6 +537,8 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   function minimizar() {
     const s = estado();
     if (s.exp && s.exp.estado !== 'parada') { minimizado = true; mostrarToast('🧭 Expedição minimizada: continua em segundo plano.', 2200); }
+    arena = null;
+    $('#est-bat').replaceChildren();
     fecharModal('modal-estrategia'); desenharInd(); api.aoSair?.();
   }
   function encerrar() {
@@ -580,9 +588,12 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
     if (t.dataset.autoavanca) { s.exp.autoAvancar = !s.exp.autoAvancar; salvar(); desenharBatalha(); if (s.exp.autoAvancar && s.exp.estado === 'vitoria') timerProx = setTimeout(() => proximaFase(true), 800); return; }
     if (t.dataset.un) { const u = batalha?.ordem.find((x) => x.id === t.dataset.un); if (u?.hp > 0 && u.lado === 'i') arena?.definirAlvo(u.id); return; }
     if ((t.dataset.hab !== undefined || t.dataset.acao) && batalha && !batalha.fim) {
-      const u = atorAtual(batalha); if (!u || u.lado !== 'a' || arena?.ocupada()) return;
+      if (arena?.ocupada()) return;
+      const u = atorAtual(batalha);
+      if (!u || batalha.antes?.length) { apresentarTurno(); return; }
+      if (u.lado !== 'a') return;
       executar(batalha, t.dataset.hab !== undefined ? { tipo: 'habilidade', idx: Number(t.dataset.hab), alvo: arena?.alvo() || undefined } : { tipo: t.dataset.acao, alvo: arena?.alvo() || undefined }, rng); arena?.limparAlvo();
-      if (batalha.fim) terminarFase(); else desenharBatalha();
+      apresentarTurno();
     }
   });
   ind.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.ind === 'abrir') abrir(); else if (b.dataset.ind === 'parar') encerrar(); });

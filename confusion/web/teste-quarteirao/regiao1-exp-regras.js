@@ -1,6 +1,6 @@
 // Regras puras da Expansão 1: banner/tickets, contratos da Guilda, Calabouço com Sanidade, Crise da cidade e Herói × Vilão.
 // O estado fica em save.idle.exp. Cada recompensa é paga uma única vez (marcadores em exp.concedidos / contratos / hv).
-import { criarUnidade, criarBatalha, atorAtual, executar, decidir } from './regiao1-estrategia-regras.js';
+import { criarUnidade, criarBatalha, atorAtual, executar, decidir, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 import { MARCOS, MISSOES_HISTORIA, CONTRATOS, CALABOUCO, CRISE, HV, FAB } from './regiao1-exp-dados.js';
 import { REINOS } from '../reinos.js';
 import { gestaoDe } from './regiao1-gestao-regras.js';
@@ -13,6 +13,14 @@ export function expDe(save) {
   return e;
 }
 export const questFeita = (save, q) => save.quests?.[q] === 'concluida';
+
+export function indicesEquipeCombate(idle) {
+  const equipe = idle.equipe || [];
+  const salvos = Array.isArray(idle.equipeCombate) ? idle.equipeCombate : [];
+  const validos = [...new Set(salvos.filter(i => Number.isInteger(i) && equipe[i]))];
+  return validos.length ? validos.slice(0, LIMITE_ALIADOS) : equipe.slice(0, LIMITE_ALIADOS).map((_, i) => i);
+}
+
 export const aberto = (save, modo) => {
   const e = expDe(save);
   switch (modo) {

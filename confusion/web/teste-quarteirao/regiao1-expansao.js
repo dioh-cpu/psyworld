@@ -4,6 +4,7 @@ import * as R from './regiao1-exp-regras.js';
 import { MARCOS, CACADAS, POS_CACADA, FAB, PROFISSOES, CONTRATOS, CALABOUCO, CRISE, HV } from './regiao1-exp-dados.js';
 import { avancar, coletarTudo, prontoParaColetar, candidatasObra, enfileirarObras, previsaoLote, fabricarLote, repetirUltimoLote, gestaoDe, capacidade } from './regiao1-gestao-regras.js';
 import { ARTE_DA_ESPECIE, linhaDaEspecie } from '../species.js';
+import { LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -83,13 +84,19 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   function artePequena(esp) { const p = ARTE_DA_ESPECIE[esp] || `assets/monsters/${esp.toLowerCase()}/sprite-front.png`; return IMG(p); }
   function abaBanner() {
     const e = exp(); let h = `<div class="bl"><h4>🎫 Tickets: ${e.tickets}</h4><p>O Banner é a <b>única forma</b> de obter Oníricos novos. Cada missão de história concluída pela primeira vez dá 1 ticket. Chances: comum 70% · rara 22% · épica 7% · lendária 1% (a cada 10 invocações, no mínimo rara).</p><div class="ln"><button class="btn-pri" data-invocar="1" ${e.tickets ? '' : 'disabled'}>Invocar (1 ticket)</button></div></div>`;
-    if (ultimaInvocacao) h += `<div class="bl card-on"><img src="${artePequena(ultimaInvocacao.especie)}" alt=""><div><h4>${esc(ultimaInvocacao.especie)}</h4><p style="color:${RARO[ultimaInvocacao.raridade]}">${ultimaInvocacao.raridade} · ${esc(ultimaInvocacao.elemento)}</p><p class="mut">Adicionado à sua equipe (nível 1).</p></div></div>`;
+    if (ultimaInvocacao) h += `<div class="bl card-on"><img src="${artePequena(ultimaInvocacao.especie)}" alt=""><div><h4>${esc(ultimaInvocacao.especie)}</h4><p style="color:${RARO[ultimaInvocacao.raridade]}">${ultimaInvocacao.raridade} · ${esc(ultimaInvocacao.elemento)}</p><p class="mut">Adicionado à coleção (nível 1).</p></div></div>`;
     h += `<div class="bl"><h4>Oníricos no Banner (${R.poolBanner().length})</h4><div class="grade">${R.poolBanner().map((p) => `<div class="mini"><img src="${artePequena(p.especie)}" alt="" loading="lazy">${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">${p.raridade}</span></div>`).join('')}</div></div>`;
     return h;
   }
   function abaEquipe() {
-    const eq = save().idle.equipe || [];
-    return `<div class="bl"><h4>Sua equipe (${eq.length})</h4><div class="grade">${eq.map((m) => `<div class="mini"><img src="${artePequena(m.especie)}" alt="">${esc(m.especie)}<br>nv.${m.nivel || 1}</div>`).join('')}</div><p class="mut">Os Oníricos já adquiridos e os do save antigo continuam aqui.</p></div>`;
+    const idle = save().idle;
+    const equipe = idle.equipe || [];
+    const ativos = R.indicesEquipeCombate(idle);
+    const cards = equipe.map((m, i) => {
+      const selecionado = ativos.includes(i);
+      return `<button class="btn-sec mini membro" data-membro-combate="${i}" aria-pressed="${selecionado}"><img src="${artePequena(m.especie)}" alt="">${esc(m.especie)}<br>nv.${m.nivel || 1}${selecionado ? '<br><span class="ok">Na equipe</span>' : ''}</button>`;
+    }).join('');
+    return `<div class="bl"><h4>Equipe de combate (${ativos.length}/${LIMITE_ALIADOS})</h4><p class="mut">Escolha quem entra na Campanha e em Herói × Vilão.</p><div class="grade">${cards}</div></div>`;
   }
   function proximaForma(m) {
     const l = linhaDaEspecie(m.especie); if (!l) return null;
@@ -176,7 +183,8 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     return `<div class="bl"><h4>${esc(m.titulo)}</h4><p>Objetivo: ${esc(m.objetivo)}</p><div class="ln"><button class="btn-pri" data-hv-batalha="1">Entrar em batalha</button><button class="btn-sec" data-hv-sair="1">Voltar</button></div></div>`;
   }
   function iniciarHVBatalha() {
-    const m = R.missaoResolvida(save(), cap, hvEstado.n); const eq = (save().idle.equipe || []).slice(0, 6);
+    const m = R.missaoResolvida(save(), cap, hvEstado.n), idle = save().idle;
+    const eq = R.indicesEquipeCombate(idle).map(i => idle.equipe[i]);
     const artes = { Maregor: HV.chefes.Maregor.arte };
     fecharModal('modal-exp');
     tela.abrir({ titulo: `Herói × Vilão · ${m.titulo}`, arena: m.arena, aliados: eq, inimigos: m.inimigos, artes, onFim: (venceu) => {
@@ -232,6 +240,15 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (d.tutok) { exp().tut[d.tutok] = true; revendo = null; salvar(); render(); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(); return; }
     if (d.invocar) { const r = R.invocar(save()); if (r.ok) { ultimaInvocacao = r; salvar(); } else mostrarToast(r.motivo, 2800); render(); return; }
+    if (d.membroCombate !== undefined) {
+      const idle = save().idle, indice = Number(d.membroCombate);
+      if (!Number.isInteger(indice) || !idle.equipe?.[indice]) return;
+      const ativos = R.indicesEquipeCombate(idle), selecionado = ativos.includes(indice);
+      if (selecionado && ativos.length === 1) { mostrarToast('Mantenha ao menos um Onírico na equipe.', 2200); return; }
+      if (!selecionado && ativos.length >= LIMITE_ALIADOS) { mostrarToast('Retire um Onírico para abrir uma vaga.', 2200); return; }
+      idle.equipeCombate = selecionado ? ativos.filter(i => i !== indice) : [...ativos, indice];
+      salvar(); render(); return;
+    }
     if (d.evoluir) { const m = save().idle.equipe[Number(d.evoluir)], f = proximaForma(m); if (f && (m.nivel || 1) >= f.nivel) { m.especie = f.para; salvar(); mostrarToast(`${f.para}!`, 2200); } render(); return; }
     if (d.entrar) { entrarCacada(d.entrar); return; }
     if (d.calEntrar) { const r = R.iniciarCalabouco(save()); if (!r.ok) mostrarToast(r.motivo, 2800); salvar(); render(); return; }
