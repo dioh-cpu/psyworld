@@ -602,8 +602,11 @@ const MONSTROS_SELVAGENS_R2_BRUTOS = [
   { id: 'w_r2_cri_5', mapa: 'R2_CRI', especie: 'Trovoresta', formaCadastrada: 2, nivel: 43, pos: [407, 448] },
 ];
 
+import { MONSTROS_SELVAGENS_R3_R12, BOSSES_REGIOES_3_12 } from './regioes-3-12-mapas.js';
+
 export const MONSTROS_SELVAGENS_R2 = MONSTROS_SELVAGENS_R2_BRUTOS.map((m) => resolverEncontroCatalogo(m, { regiao: 2 }));
-export const TODOS_MONSTROS_SELVAGENS = [...MONSTROS_SELVAGENS, ...MONSTROS_SELVAGENS_R2];
+export { MONSTROS_SELVAGENS_R3_R12, BOSSES_REGIOES_3_12 };
+export const TODOS_MONSTROS_SELVAGENS = [...MONSTROS_SELVAGENS, ...MONSTROS_SELVAGENS_R2, ...MONSTROS_SELVAGENS_R3_R12];
 
 export const BOSSES_REGIAO2 = Object.fromEntries(
   Object.entries(CHEFES_R2).map(([id, chefe]) => [id, { ...chefe, id, regiaoId: 'r2' }]),
@@ -616,4 +619,5 @@ export const ENTIDADES_BOSS = [
   { id: 'BOSS_S', mapa: 'BOSS_S', nome: 'Siren', nivel: 14, pos: [512, 325], cor: '#38bdf8', sprite: '../../../assets/confusion/interface/personagens/siren.webp' },
   { id: 'BOSS_C', mapa: 'BOSS_C', nome: 'Golem de Ametista', nivel: 15, pos: [512, 325], cor: '#a855f7', sprite: '../../../assets/confusion/interface/personagens/golem.webp' },
   ...Object.values(BOSSES_REGIAO2),
+  ...Object.values(BOSSES_REGIOES_3_12),
 ];
