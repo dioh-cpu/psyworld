@@ -8,6 +8,7 @@ import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.
 import { R2_PASTA_ARTES } from './regiao2-altos-ambar.js';
 import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, BOSSES_REGIAO2, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { resolverEncontroCatalogo, reforcosDoChefe } from './regiao1-encontros-regras.js';
+import { CHEFE_POR_NOME } from './regiao1-kits-reinos.js';
 import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
 import { iniciarSeletorRegioes } from './regiao1-regioes.js';
 import {
@@ -1098,6 +1099,13 @@ function iniciarBatalha(tipo, entidade) {
   const artes = {}; let inimigos; let inimigosDrop;
   if (ehBoss) {
     const nv = ehR2 ? (defBoss.nivel || 45) : Math.max(6, Math.round((defBoss.hp - 58) / 13));
+    const kitChefe = CHEFE_POR_NOME[defBoss.nome] || null;
+    const optsChefe = {
+      chefe: true,
+      nome: defBoss.nome,
+      ...(kitChefe?.bonus ? { bonus: { ...kitChefe.bonus } } : {}),
+    };
+    const elemChefe = kitChefe?.elemento || defBoss.elemento;
     artes[defBoss.nome] = raizDe(entidade.sprite);
     if (ehR2) {
       const reforcos = defBoss.reforcos.map((especie, indice) => resolverEncontroCatalogo(
@@ -1105,11 +1113,11 @@ function iniciarBatalha(tipo, entidade) {
         { regiao: 2 },
       ));
       inimigos = [
-        [defBoss.nome, nv, defBoss.elemento, { chefe: true }],
+        [defBoss.nome, nv, elemChefe, optsChefe],
         ...reforcos.map(({ especie, nivel, elemento, forma, arteForma }) => [especie, nivel, elemento, { forma, arte: arteForma }]),
       ];
     } else {
-      inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ...reforcosDoChefe(defBoss.id, nv).map((r) => [r.especie, r.nivel, r.elemento, { forma: r.forma, arte: r.arteForma }])];
+      inimigos = [[defBoss.nome, nv, elemChefe, optsChefe], ...reforcosDoChefe(defBoss.id, nv).map((r) => [r.especie, r.nivel, r.elemento, { forma: r.forma, arte: r.arteForma }])];
     }
     inimigosDrop = inimigos;
   } else {
