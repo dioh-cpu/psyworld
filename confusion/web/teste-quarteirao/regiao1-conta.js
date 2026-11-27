@@ -58,6 +58,24 @@ export function prepararContaNova(save, { userId, inicial, agora = Date.now(), n
   return save;
 }
 
+// Save sem progresso (primeira entrada sem conta): só o inicial provisório, sem XP, ouro nem missão concluída
+export function saveNovo(s) {
+  if (!s || s.conta?.inicial) return false;
+  const eq = s.idle?.equipe || [];
+  if (eq.some((m) => m && m.origem !== 'inicial-padrao')) return false;
+  if ((s.recompensas?.xp || 0) > 0 || (s.recompensas?.gold || 0) > 0) return false;
+  return !Object.values(s.quests || {}).includes('concluida');
+}
+// Entrada sem conta: grava o inicial escolhido (sem o bônus de conta nova) e não repete a escolha nas próximas entradas
+export function prepararInicialLocal(s, inicial, agora = Date.now()) {
+  const conta = { ...(s.conta || {}) }, diamantes = s.recompensas?.diamantes || 0;
+  prepararContaNova(s, { userId: null, inicial, agora, novo: true });
+  s.conta.uid = conta.uid ?? null;
+  if (!conta.bonusEm) { delete s.conta.bonusEm; delete s.conta.vipAte; s.recompensas.diamantes = diamantes; }
+  return s;
+}
+const REFUGIO_PENDENTE = 'cw-refugio-primeiro';
+
 // ---------- interface ----------
 export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetarSave, serializar }) {
   const css = document.createElement('style');
@@ -75,6 +93,7 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
     #conta-gate .ini b { display: block; font-size: 12px; } #conta-gate .ini small { opacity: .82; font-size: 10.5px; display: block; }
     #conta-gate .ini[aria-pressed="true"] { border-color: #fb923c; box-shadow: 0 0 0 3px #fb923c55; }
     #conta-gate .ln { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; } #conta-gate .msg { min-height: 18px; font-size: 12.5px; color: #fca5a5; } #conta-gate .ok { color: #86efac; }
+    body.cw-primeira-entrada #exp-fechar { display: none !important; }
     #conta-gate .bonus { font-size: 12px; background: #3a1f3f; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; }`;
   document.head.append(css);
   const gate = document.createElement('div'); gate.id = 'conta-gate'; document.body.append(gate);
@@ -97,6 +116,22 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
       <div class="ln"><button class="btn-pri" type="submit">${aba === 'criar' ? 'Criar conta e jogar' : 'Entrar'}</button>${aba === 'entrar' ? '<button class="btn-sec" type="button" data-acao="esqueci">Esqueci a senha</button>' : ''}<button class="btn-sec" type="button" data-acao="local">Jogar sem conta</button></div></form>`;
     gate.innerHTML = `<div class="cg"><h1>Confusion Waves: Double Perspective</h1><p class="sub">Idle Game · a campanha começa na Praia Inicial.</p>${corpo}<p class="msg"></p></div>`;
   }
+  // Primeira entrada sem conta: escolha do inicial → Refúgio com o inicial em repouso; a Praia só abre pelo botão Campanha
+  function escolherInicialLocal() {
+    escolhido = null;
+    gate.querySelector('.cg').innerHTML = `<h1>Escolha seu inicial</h1><p class="sub">Ele ocupa a primeira vaga da sua equipe.</p>${cartoes()}<div class="ln"><button class="btn-pri" data-acao="comecar-local">Começar</button></div><p class="msg"></p>`;
+  }
+  function entrarLocal() { if (saveNovo(getSave())) escolherInicialLocal(); else liberarJogo(); }
+  function abrirRefugioPrimeiro() {
+    document.body.classList.add('cw-primeira-entrada');
+    let n = 0; const tentar = () => { if (window.regiaoExp?.abrir) window.regiaoExp.abrir('descanso'); else if (n++ < 50) setTimeout(tentar, 100); };
+    tentar();
+  }
+  document.addEventListener('keydown', (e) => { if (e.code === 'Escape' && document.body.classList.contains('cw-primeira-entrada')) e.stopImmediatePropagation(); }, true);
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest?.('[data-desc-ir="campanha"]')) return;
+    document.body.classList.remove('cw-primeira-entrada'); try { localStorage.removeItem(REFUGIO_PENDENTE); } catch {}
+  }, true);
   function liberarJogo() { gate.classList.remove('vis'); try { sessionStorage.setItem(LIBERADO, '1'); } catch {} limparUrl(); }
   function trocarSave(obj) { localStorage.setItem(chaveSave, typeof obj === 'string' ? obj : JSON.stringify(obj)); try { sessionStorage.setItem(LIBERADO, '1'); } catch {} location.replace(location.pathname.startsWith('/jogar') ? '/jogar' : location.pathname); }
 
@@ -139,7 +174,12 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
     if (t.dataset.aba) { aba = t.dataset.aba; desenhar(); return; }
     if (t.dataset.ini) { escolhido = t.dataset.ini; gate.querySelectorAll('.ini').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.ini === escolhido))); return; }
     const a = t.dataset.acao;
-    if (a === 'local') { liberarJogo(); return; }
+    if (a === 'local') { entrarLocal(); return; }
+    if (a === 'comecar-local') {
+      if (!escolhido) { msg('Escolha um inicial.'); return; }
+      if (saveNovo(getSave())) { prepararInicialLocal(getSave(), escolhido); salvar(); try { localStorage.setItem(REFUGIO_PENDENTE, '1'); } catch {} }
+      liberarJogo(); abrirRefugioPrimeiro(); return;
+    }
     if (a === 'sair') { await A.signOut(); logado = false; desenhar(); return; }
     if (a === 'continuar') { await sincronizarAoEntrar(); return; }
     if (a === 'confirmar-inicial') { if (!escolhido) { msg('Escolha um inicial.'); return; } localStorage.setItem(PENDENTE, escolhido); await sincronizarAoEntrar(); return; }
@@ -169,7 +209,7 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
     await A.init(); limparUrl();
     const u = A.user();
     if (u && getSave().conta?.uid === u.id) { logado = true; try { const r = await A.pull(); versao = r.version || 0; cloudExtra = r.save ? { ...r.save } : {}; delete cloudExtra.regiao1; } catch {} }
-    if (jaLiberado && (!u || logado)) return;
+    if (jaLiberado && (!u || logado)) { try { if (localStorage.getItem(REFUGIO_PENDENTE)) abrirRefugioPrimeiro(); } catch {} return; }
     // voltou da confirmação de e-mail: já tem sessão, então entra direto
     if (u && !logado && veioDoEmail) { gate.classList.add('vis'); desenhar(); await sincronizarAoEntrar(); return; }
     desenhar(); gate.classList.add('vis');
