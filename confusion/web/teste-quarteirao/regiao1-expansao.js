@@ -106,14 +106,14 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #exp-nav button { min-height: 34px; padding: 3px 9px; font-size: 12px; }
     #exp-nav button.novo { animation: expnovo 1.2s ease-in-out infinite; } @keyframes expnovo { 50% { box-shadow: 0 0 0 5px #f3a45855; } }
     #exp-sair-cacada { position: fixed; left: 50%; top: 56px; transform: translateX(-50%); z-index: 8; display: none; }
-    #modal-exp .exp-card { width: min(860px, 98vw); max-height: calc(100dvh - 14px); overflow: hidden; display: flex; flex-direction: column; padding: 8px 12px; }
+    #modal-exp .exp-card { width: min(860px, 98vw); max-height: 100dvh; overflow: hidden; display: flex; flex-direction: column; padding: calc(8px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px)); color: #fff3e7; }
     #modal-exp [hidden] { display: none !important; }
     #modal-exp .exp-card:not(.modo-cena) > .modal-head,
     #modal-exp .exp-card:not(.modo-cena) > .exp-abas,
     #modal-exp .exp-card:not(.modo-cena) > .exp-corpo { max-width: 980px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
-    #modal-exp .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; gap: 6px; } #modal-exp .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); }
+    #modal-exp .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; gap: 6px; flex-shrink: 0; } #modal-exp .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); color: #fde68a; text-shadow: 0 1px 3px rgba(0,0,0,.88); }
     #modal-exp .exp-abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; flex-shrink: 0; } #modal-exp .exp-abas button[aria-selected="true"] { background: #f3a458; color: #21110c; font-weight: 700; }
-    #modal-exp .exp-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    #modal-exp .exp-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     #modal-exp .inv-v1, #modal-exp .inv-extra { max-width: 1080px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .inv-carta-res { border: 2px solid var(--cor-tier, #9ca3af); background: linear-gradient(180deg, rgba(36,22,43,.95), rgba(18,10,28,.98)); animation: invPop .32s ease-out both; }
     #modal-exp .inv-carta-res.tier-4 { box-shadow: 0 0 12px rgba(192,132,252,.45); }
@@ -121,9 +121,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .inv-tier-sel { display: inline-block; padding: 1px 6px; border-radius: 99px; font-size: 9.5px; font-weight: 800; color: #12091a; background: var(--cor-tier, #9ca3af); margin-bottom: 2px; }
     @keyframes invPop { from { opacity: 0; transform: translateY(8px) scale(.92); } to { opacity: 1; transform: none; } }
     #modal-exp .ref-dock.bloqueado { opacity: .55; }
-    #modal-exp .bl { background: rgba(24,14,34,.88); border: 10px solid transparent; border-image: url('../../../assets/confusion/interface/kit-v2/painel-9slice.png') 28 fill stretch; border-radius: 8px; padding: 6px 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-exp .bl h4 { margin: 0 0 4px; font-size: 13.5px; color: #f3c27a; } #modal-exp .bl p { margin: 2px 0; }
+    #modal-exp .bl { background: rgba(20,12,32,.92); border: 1.5px solid rgba(243,194,122,.34); border-radius: 10px; padding: 9px 11px; margin-bottom: 8px; font-size: 12.5px; line-height: 1.45; color: #fff3e7; text-shadow: 0 1px 2px rgba(0,0,0,.78); } #modal-exp .bl h4 { margin: 0 0 4px; font-size: 13.5px; color: #fde68a; text-shadow: 0 1px 3px rgba(0,0,0,.85); } #modal-exp .bl p { margin: 2px 0; color: #d6dbe4; }
     #modal-exp .tut { border-color: #7dd3fc; background: #14304a; } #modal-exp .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: expnovo 1.4s ease-in-out infinite; }
-    #modal-exp .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-exp .ok { color: #4ade80; } #modal-exp .ruim { color: #fb7185; } #modal-exp .mut { opacity: .78; }
+    #modal-exp .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-exp .ok { color: #4ade80; } #modal-exp .ruim { color: #fb7185; } #modal-exp .mut { color: #d6dbe4; opacity: 1; }
     #modal-exp .exp-est { color: var(--cor-est, #facc15); font-weight: 600; }
     #modal-exp .exp-est.arco { background: linear-gradient(90deg, #facc15, #f472b6, #c084fc, #38bdf8, #4ade80); -webkit-background-clip: text; background-clip: text; color: transparent; }
     #modal-exp .ficha-on { display: grid; grid-template-columns: 104px 1fr; gap: 10px; align-items: center; } #modal-exp .ficha-on img { width: 104px; height: 104px; object-fit: contain; background: #24162b; border-radius: 8px; padding: 4px; }
