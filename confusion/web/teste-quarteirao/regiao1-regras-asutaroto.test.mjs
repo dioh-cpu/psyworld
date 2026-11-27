@@ -45,7 +45,7 @@ import { poolBanner, poolBannerSombra, invocar, expDe, aceitarContrato, entregar
 import { CONTRATOS, FAB } from './regiao1-exp-dados.js';
 import { coletarTudo, prontoParaColetar } from './regiao1-gestao-regras.js';
 import { ganharXpPasse, resgatarPasse } from './regiao1-passe-regras.js';
-import { decidirEntradaConta, prepararContaNova } from './regiao1-conta.js';
+import { decidirEntradaConta, prepararContaNova, prepararInicialLocal, ehConvidadoComProgresso, consumirToastBonusBoasVindas } from './regiao1-conta.js';
 import { invocarHW, hwDe } from './regiao1-halloween-regras.js';
 import {
   ESPECIES_INICIAIS_TODAS,
@@ -770,6 +770,27 @@ test('Cadastro e boas-vindas (20.000 diamantes): elegibilidade única e preserva
   prepararContaNova(localGuest, { userId: 'u_guest_virou_conta', inicial: 'Solinho', agora: 3_000_000, novo: decGuest.novo });
   assert.equal(localGuest.recompensas.gold, 321);
   assert.equal(localGuest.recompensas.diamantes, 20000);
+
+  // 5) Convidado que já escolheu inicial e evoluiu/jogou mantém o inicial real, ganha 20.000💎 + 10d VIP 1x e consome toast 1x
+  const sConv = novoSave();
+  prepararInicialLocal(sConv, 'Brasinha', 4_000_000);
+  sConv.idle.equipe[0].nivel = 15;
+  sConv.idle.equipe[0].especie = 'Ignavor';
+  sConv.recompensas.diamantes = 250;
+  sConv.recompensas.gold = 900;
+  assert.equal(ehConvidadoComProgresso(sConv), true);
+
+  prepararContaNova(sConv, { userId: 'u_conv_evoluido', inicial: 'Sementil', agora: 5_000_000, novo: true });
+  assert.equal(sConv.conta.inicial, 'Brasinha'); // mantém o inicial do convidado mesmo se o parâmetro vier diferente
+  assert.equal(sConv.idle.equipe[0].especie, 'Ignavor');
+  assert.equal(sConv.idle.equipe[0].nivel, 15);
+  assert.equal(sConv.recompensas.diamantes, 20250);
+  assert.equal(ehConvidadoComProgresso(sConv), false);
+
+  const memStore = new Map([['cw-bonus-boas-vindas-toast', '1']]);
+  const storageStub = { getItem: (k) => memStore.get(k) ?? null, removeItem: (k) => memStore.delete(k) };
+  assert.equal(consumirToastBonusBoasVindas(storageStub), true);
+  assert.equal(consumirToastBonusBoasVindas(storageStub), false);
 });
 
 test('Contrato Leite fresco: desbloqueio da Fazenda (g1) → Curral gera leite e Galinheiro gera ovos → coleta abastece Guilda (g2)', () => {

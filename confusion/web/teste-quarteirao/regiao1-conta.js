@@ -31,7 +31,23 @@ export const INICIAIS = LINHAS.map((l) => {
     arte: ARTE_DA_ESPECIE[l.inicial] || '',
   };
 });
-const PENDENTE = 'cw-inicial-pendente', LIBERADO = 'cw-gate-ok';
+const PENDENTE = 'cw-inicial-pendente', LIBERADO = 'cw-gate-ok', BONUS_TOAST_PENDENTE = 'cw-bonus-boas-vindas-toast';
+export const MENSAGEM_BONUS_BOAS_VINDAS = '🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.';
+
+export function ehConvidadoComProgresso(save) {
+  return Boolean(save && !save.conta?.uid && save.conta?.inicial && !saveNovo(save));
+}
+
+export function consumirToastBonusBoasVindas(storage) {
+  if (!storage || typeof storage.getItem !== 'function') return false;
+  try {
+    if (storage.getItem(BONUS_TOAST_PENDENTE) !== '1') return false;
+    storage.removeItem?.(BONUS_TOAST_PENDENTE);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // ---------- regras puras (testáveis) ----------
 export const vipAtivo = (save, agora = Date.now()) => Boolean(save?.conta?.vipAte && save.conta.vipAte > agora);
@@ -107,13 +123,19 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
   }
   function desenhar() {
     const email = A.email();
+    const convidado = ehConvidadoComProgresso(getSave());
+    if (aba === 'criar' && convidado && !escolhido) escolhido = getSave().conta.inicial;
     let corpo = '';
     if (!A.isEnabled()) corpo = `<p class="sub">Contas indisponíveis no momento. Você pode jogar com o save deste aparelho.</p><div class="ln"><button class="btn-pri" data-acao="local">Continuar campanha</button></div>`;
     else if (email) corpo = `<p>Conectado como <b>${esc(email)}</b>.</p><div class="ln"><button class="btn-pri" data-acao="continuar">Continuar campanha</button><button class="btn-sec" data-acao="sair">Sair da conta</button></div>`;
     else corpo = `<div class="abas"><button class="btn-sec" aria-selected="${aba === 'entrar'}" data-aba="entrar">Entrar</button><button class="btn-sec" aria-selected="${aba === 'criar'}" data-aba="criar">Criar conta</button></div>
-      ${aba === 'criar' ? `<div class="bonus">🎁 Conta nova: escolha seu inicial e ganhe <b>20.000 💎</b> e <b>10 dias de VIP</b>.</div><label>Escolha seu inicial</label>${cartoes()}` : ''}
+      ${aba === 'criar'
+        ? (convidado
+          ? `<div class="bonus">🎁 Criar conta preserva todo o seu progresso de convidado (inicial <b>${esc(escolhido)}</b>) e libera na hora <b>+20.000 💎</b> e <b>10 dias de VIP</b>.</div>`
+          : `<div class="bonus">🎁 Conta nova: escolha seu inicial e ganhe <b>20.000 💎</b> e <b>10 dias de VIP</b>.</div><label>Escolha seu inicial</label>${cartoes()}`)
+        : ''}
       <form id="cg-form"><label>E-mail<input type="email" id="cg-email" autocomplete="email" required></label><label>Senha<input type="password" id="cg-senha" autocomplete="${aba === 'criar' ? 'new-password' : 'current-password'}" minlength="6" required></label>
-      <div class="ln"><button class="btn-pri" type="submit">${aba === 'criar' ? 'Criar conta e jogar' : 'Entrar'}</button>${aba === 'entrar' ? '<button class="btn-sec" type="button" data-acao="esqueci">Esqueci a senha</button>' : ''}<button class="btn-sec" type="button" data-acao="local">Jogar sem conta</button></div></form>`;
+      <div class="ln"><button class="btn-pri" type="submit">${aba === 'criar' ? 'Criar conta e jogar' : 'Entrar'}</button>${aba === 'entrar' ? '<button class="btn-sec" type="button" data-acao="esqueci">Esqueci a senha</button>' : ''}<button class="btn-sec" type="button" data-acao="local">${convidado ? 'Continuar como convidado' : 'Jogar sem conta'}</button></div></form>`;
     gate.innerHTML = `<div class="cg"><h1>Confusion Waves: Double Perspective</h1><p class="sub">Idle Game · a campanha começa na Praia Inicial.</p>${corpo}<p class="msg"></p></div>`;
   }
   // Primeira entrada sem conta: escolha do inicial → Refúgio com o inicial em repouso; a Praia só abre pelo botão Campanha
@@ -148,10 +170,15 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
       const dec = decidirEntradaConta({ remoto, local, userId: u.id });
       if (dec.acao === 'usar-remoto') { trocarSave(remoto.regiao1); return; }
       if (dec.acao === 'liberar') { logado = true; liberarJogo(); return; }
-      const inicial = u.user_metadata?.inicial || localStorage.getItem(PENDENTE) || escolhido;
+      const inicial = (!dec.resetarLocal && local?.conta?.inicial) || u.user_metadata?.inicial || localStorage.getItem(PENDENTE) || escolhido;
       if (!inicial) { aba = 'criar'; escolhido = null; gate.querySelector('.cg').innerHTML = `<h1>Escolha seu inicial</h1><p class="sub">Ele ocupa a primeira vaga da sua equipe.</p>${cartoes()}<div class="ln"><button class="btn-pri" data-acao="confirmar-inicial">Começar</button></div><p class="msg"></p>`; return; }
       if (dec.resetarLocal) resetarSave();
+      const tinhaBonus = Boolean(getSave().conta?.bonusEm);
       const s = prepararContaNova(getSave(), { userId: u.id, inicial, novo: dec.novo });
+      if (!tinhaBonus && s.conta?.bonusEm) {
+        try { sessionStorage.setItem(BONUS_TOAST_PENDENTE, '1'); } catch {}
+        mostrarToast?.(MENSAGEM_BONUS_BOAS_VINDAS, 6000);
+      }
       try { localStorage.removeItem(PENDENTE); } catch {}
       salvar(); await enviar(true); trocarSave(serializar(s));
     } finally {
@@ -190,9 +217,11 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
     const em = gate.querySelector('#cg-email').value.trim(), pw = gate.querySelector('#cg-senha').value;
     try {
       if (aba === 'criar') {
-        if (!escolhido) { msg('Escolha um inicial.'); return; }
-        localStorage.setItem(PENDENTE, escolhido);
-        const r = await A.signUp(em, pw, { emailRedirectTo: urlJogar(), data: { inicial: escolhido } });
+        const iniEscolhido = escolhido || (!saveNovo(getSave()) ? getSave().conta?.inicial : null);
+        if (!iniEscolhido) { msg('Escolha um inicial.'); return; }
+        escolhido = iniEscolhido;
+        localStorage.setItem(PENDENTE, iniEscolhido);
+        const r = await A.signUp(em, pw, { emailRedirectTo: urlJogar(), data: { inicial: iniEscolhido } });
         if (!r.session) { msg('Conta criada! Confirme pelo link enviado ao seu e-mail; ele volta para esta página.', true); return; }
       } else await A.signIn(em, pw);
       await sincronizarAoEntrar();
@@ -209,7 +238,13 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
     await A.init(); limparUrl();
     const u = A.user();
     if (u && getSave().conta?.uid === u.id) { logado = true; try { const r = await A.pull(); versao = r.version || 0; cloudExtra = r.save ? { ...r.save } : {}; delete cloudExtra.regiao1; } catch {} }
-    if (jaLiberado && (!u || logado)) { try { if (localStorage.getItem(REFUGIO_PENDENTE)) abrirRefugioPrimeiro(); } catch {} return; }
+    if (jaLiberado && (!u || logado)) {
+      if (consumirToastBonusBoasVindas(typeof sessionStorage !== 'undefined' ? sessionStorage : null)) {
+        setTimeout(() => mostrarToast?.(MENSAGEM_BONUS_BOAS_VINDAS, 6000), 250);
+      }
+      try { if (localStorage.getItem(REFUGIO_PENDENTE)) abrirRefugioPrimeiro(); } catch {}
+      return;
+    }
     // voltou da confirmação de e-mail: já tem sessão, então entra direto
     if (u && !logado && veioDoEmail) { gate.classList.add('vis'); desenhar(); await sincronizarAoEntrar(); return; }
     desenhar(); gate.classList.add('vis');

@@ -528,7 +528,8 @@ export function migrarInicialNoctarn(save) {
   return { migrou, migradoUid, copiasPreservadas };
 }
 
-// Regra pura para conta nova: substitui o inicial provisório (Penumbrio) pelo escolhido, mantendo T4 e bônus único.
+// Regra pura para conta nova: substitui o inicial provisório (Penumbrio) pelo escolhido,
+// preserva integralmente o save se vier de convidado já iniciado, e aplica T4 + bônus único (20.000💎 + 10d VIP).
 export function aplicarInicialContaNova(save, { userId, inicial, agora = Date.now(), novo = true } = {}) {
   const DIA = 86400000;
   save.conta = save.conta || {};
@@ -537,12 +538,18 @@ export function aplicarInicialContaNova(save, { userId, inicial, agora = Date.no
   idle.equipe = idle.equipe || [];
   migrarInicialNoctarn(save);
 
-  const unidade = criarUnidadeInicial(inicial, { nivel: 5, uid: 'ini0', estrelas: 1, origem: 'inicial' });
+  const inicialExistente = idle.equipe.find((m) => m?.inicial && m.origem !== 'inicial-padrao');
+  const unidade = criarUnidadeInicial(inicial || save.conta.inicial || inicialExistente?.especie, {
+    nivel: 5,
+    uid: 'ini0',
+    estrelas: 1,
+    origem: 'inicial',
+  });
   save.conta.uid = userId;
-  save.conta.inicial = unidade.especie;
+  save.conta.inicial = inicialExistente ? (save.conta.inicial || inicialExistente.especie) : unidade.especie;
 
   const padrao = idle.equipe.findIndex((m) => m?.origem === 'inicial-padrao');
-  if (novo && padrao >= 0) {
+  if (!inicialExistente && novo && padrao >= 0) {
     const uid = idle.equipe[padrao].uid || 'ini0';
     unidade.uid = uid;
     idle.equipe[padrao] = unidade;

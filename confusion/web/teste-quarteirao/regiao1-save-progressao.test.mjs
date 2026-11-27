@@ -163,3 +163,68 @@ test('Save lotado (200 relíquias +15, 12 caps, 36 paralelas, torres, calabouço
   assert.equal(concluirCalaboucoNivel(rec, 'forja-rubra', 1, { venceu: true }, { batalhaId: 'save_cal_1' }).jaPago, true);
   assert.equal(evoluirFormaPorFragmentos(rec, 0, { operacaoId: 'save_evo_1' }).jaAplicado, true);
 });
+
+test('Convidado -> criar conta -> recarregar -> trocar de aparelho preserva 100% do save e bônus único 20.000💎 + 10d VIP', async () => {
+  const { prepararInicialLocal, decidirEntradaConta, prepararContaNova, vipAtivo } = await import('./regiao1-conta.js');
+  const t0 = 90_000_000;
+  const s = criarEstadoInicial();
+  garantirEstadoIdle(s, t0);
+
+  // 1) Convidado escolhe inicial e progride localmente (sem bônus ainda)
+  prepararInicialLocal(s, 'Gotalume', t0);
+  assert.equal(s.conta.uid, null);
+  assert.equal(s.conta.inicial, 'Gotalume');
+  assert.equal(s.recompensas.diamantes, 0);
+
+  s.recompensas.gold += 850;
+  s.recompensas.diamantes += 120;
+  s.idle.equipe[0].nivel = 18;
+  s.idle.equipe[0].xp = 2100;
+  const rel = concederReliquia(s, { parte: 'coroa', elemento: 'agua', raridade: 'rara', conjunto: 'impeto' }).reliquia;
+  equiparReliquia(s, s.idle.equipe[0].uid, rel.id);
+  const v3 = { fim: 'vitoria', todosVivos: true, classes: { mago: 1 }, elementos: { agua: 2 }, supremasUsadas: 1 };
+  concluirFaseCampanhaMini(s, '1-1', v3, { batalhaId: 'conv_1_1', agoraMs: t0 + 10_000 });
+  s.idle.ultimoTickMs = t0 + 60_000;
+
+  // Recarrega localmente ainda como convidado
+  const aposReloadConvidado = desserializarEstado(serializarEstado(s));
+  assert.equal(aposReloadConvidado.conta.inicial, 'Gotalume');
+  assert.equal(aposReloadConvidado.idle.equipe[0].nivel, 18);
+
+  // 2) Convidado cria conta real: preserva TODO o progresso + paga 20.000💎 e 10d VIP uma única vez
+  const decCriar = decidirEntradaConta({ remoto: null, local: aposReloadConvidado, userId: 'uid_conv_1' });
+  assert.equal(decCriar.acao, 'preparar');
+  assert.equal(decCriar.novo, true);
+  assert.equal(decCriar.resetarLocal, false);
+
+  prepararContaNova(aposReloadConvidado, { userId: 'uid_conv_1', inicial: 'Gotalume', agora: t0 + 120_000, novo: decCriar.novo });
+  assert.equal(aposReloadConvidado.conta.uid, 'uid_conv_1');
+  assert.equal(aposReloadConvidado.conta.inicial, 'Gotalume');
+  assert.equal(aposReloadConvidado.idle.equipe[0].especie, 'Gotalume');
+  assert.equal(aposReloadConvidado.idle.equipe[0].nivel, 18);
+  assert.equal(aposReloadConvidado.idle.reliquias.equipadas[aposReloadConvidado.idle.equipe[0].uid].coroa, rel.id);
+  assert.equal(aposReloadConvidado.idle.campanhaMini.fases['1-1'].vencida, true);
+  assert.equal(aposReloadConvidado.recompensas.gold, 1050);
+  assert.equal(aposReloadConvidado.recompensas.diamantes, 20130); // 120 + 10 (fase 1-1) + 20.000 bônus
+  assert.equal(vipAtivo(aposReloadConvidado, t0 + 120_000), true);
+
+  // 3) Envia para nuvem (validateSave) -> recarrega no mesmo aparelho ('liberar') -> entra num 2º aparelho ('usar-remoto')
+  const payload = { game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(aposReloadConvidado)), conta: aposReloadConvidado.conta };
+  assert.equal(validateSave(payload).ok, true);
+
+  const decReloadConta = decidirEntradaConta({ remoto: payload, local: aposReloadConvidado, userId: 'uid_conv_1' });
+  assert.equal(decReloadConta.acao, 'liberar');
+  assert.equal(decReloadConta.novo, false);
+
+  const outroAparelhoVazio = criarEstadoInicial();
+  garantirEstadoIdle(outroAparelhoVazio, t0 + 300_000);
+  const decOutroAparelho = decidirEntradaConta({ remoto: payload, local: outroAparelhoVazio, userId: 'uid_conv_1' });
+  assert.equal(decOutroAparelho.acao, 'usar-remoto');
+  assert.equal(decOutroAparelho.novo, false);
+
+  const restaurado = desserializarEstado(JSON.stringify(payload.regiao1));
+  assert.equal(restaurado.conta.uid, 'uid_conv_1');
+  assert.equal(restaurado.recompensas.diamantes, 20130);
+  assert.equal(restaurado.idle.equipe[0].nivel, 18);
+  assert.equal(restaurado.idle.campanhaMini.fases['1-1'].vencida, true);
+});
