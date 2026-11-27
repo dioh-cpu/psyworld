@@ -1122,7 +1122,7 @@ function iniciarBatalha(tipo, entidade) {
     inimigosDrop = [entidade, ...outros].map((m) => ({ especie: m.especie, elemento: m.elementoDrop || m.elemento }));
   }
   const arenaUrl = ehR2
-    ? raizDe(MAPAS[entidade.mapa || mapaAtual.id].arte)
+    ? MAPAS[entidade.mapa || mapaAtual.id].arenaBatalha
     : `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`;
   batalhaAtiva.batalhaId = `man_${tipo}_${entidade.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   batalhaAtiva.inimigosDrop = inimigosDrop;

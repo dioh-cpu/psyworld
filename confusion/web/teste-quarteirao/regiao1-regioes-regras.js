@@ -19,7 +19,7 @@ const DEFINICOES_BASE = [
   },
   {
     numero: 2, nome: 'Altos do Âmbar', jogavel: true, mapaEntrada: 'R2_C0',
-    chefe: { id: 'BOSS_R2', nome: 'Rainha da Colmeia Dourada', nivel: 45, elemento: 'inseto', arte: `${RAIZ_REINOS}/02/chefe.webp`, arena: `${R2_PASTA_ARTES}R2_CHEFE.webp` },
+    chefe: { id: 'BOSS_R2', nome: 'Rainha da Colmeia Dourada', nivel: 45, elemento: 'inseto', arte: `${RAIZ_REINOS}/02/chefe.webp`, arena: `${R2_PASTA_ARTES}R2_CHEFE-arena.webp` },
     recompensa: { gold: 900, diamantes: 150, xp: 800 },
   },
   {

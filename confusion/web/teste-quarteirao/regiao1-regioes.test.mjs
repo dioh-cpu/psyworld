@@ -163,7 +163,7 @@ test('Região 2 jogável: portal, mapas, encontros 20–45, chefe Rainha da Colm
     const m = MAPAS[id];
     assert.ok(!m.pisoLivre && !m.arteProvisoria);
     assert.equal(new Set(m.saidas.map((s) => s.id)).size, m.saidas.length);
-    for (const arquivo of [m.arte, m.mascara]) {
+    for (const arquivo of [m.arte, m.mascara, m.arenaBatalha].filter(Boolean)) {
       const rel = arquivo.replace(/^(\.\.\/)+/, '');
       assert.ok(fs.existsSync(RAIZ + rel), `Arquivo da Região 2 ausente: ${rel}`);
     }

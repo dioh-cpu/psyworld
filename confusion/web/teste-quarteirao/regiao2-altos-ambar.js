@@ -1,12 +1,13 @@
 // Planta dos Altos do Âmbar em coordenadas lógicas de 1024 × 571.
 export const R2_PASTA_ARTES = 'assets/confusion/interface/regioes/r2/';
 const R2_ARTES = `../../../${R2_PASTA_ARTES}`;
+const ARENAS_REINO = 'assets/confusion/interface/estrategia/reinos/02/';
 
 const CENTRO = [512, 292];
 
 const ROTAS = [
   {
-    prefixo: 'A', bioma: 'Apiários Dourados', acesso: 'R2_API', direcao: 'L', nivelBase: 21,
+    prefixo: 'A', arena: `${ARENAS_REINO}arena-apiarios.webp`, bioma: 'Apiários Dourados', acesso: 'R2_API', direcao: 'L', nivelBase: 21,
     tabuleiro: [[null, 'BOSS', null], [null, 10, null], [8, 9, 7], [5, 4, 6], [1, 2, 3]],
     areas: [
       ['Ponte do Mel', 0], ['Terraços de Alfazema', 1], ['Pomares do Zângão', 1],
@@ -17,7 +18,7 @@ const ROTAS = [
     fauna: ['Colmeiro', 'Lavândria', 'Fanalino', 'Cerifogo', 'Vesprata', 'Cervomusgo', 'Melifalcão'],
   },
   {
-    prefixo: 'B', bioma: 'Cristas de Âmbar', acesso: 'R2_CRI', direcao: 'N', nivelBase: 28,
+    prefixo: 'B', arena: `${ARENAS_REINO}arena-cristas.webp`, bioma: 'Cristas de Âmbar', acesso: 'R2_CRI', direcao: 'N', nivelBase: 28,
     tabuleiro: [[null, 'BOSS', null], [null, 10, null], [8, 9, 7], [4, 6, 5], [2, 1, 3]],
     areas: [
       ['Estrada dos Cristais', 0], ['Pedreira do Alvorecer', 1], ['Mirante das Cristas', 2],
@@ -28,7 +29,7 @@ const ROTAS = [
     fauna: ['Calquélon', 'Zunifaísca', 'Falesário', 'Xistolim', 'Voltabelha', 'Cobrabúfalo', 'Bronzelo'],
   },
   {
-    prefixo: 'G', bioma: 'Jardins de Resina', acesso: 'R2_ENTRONC', direcao: 'L', nivelBase: 24,
+    prefixo: 'G', arena: `${R2_PASTA_ARTES}arena-jardins.webp`, bioma: 'Jardins de Resina', acesso: 'R2_ENTRONC', direcao: 'L', nivelBase: 24,
     tabuleiro: [[null, 'BOSS', null], [null, 11, null], [10, 9, 8], [5, 6, 7], [3, 2, 4], [null, 1, null]],
     areas: [
       ['Entrada dos Jardins', 0], ['Jardim do Orvalho', 1], ['Alameda de Resina', 2],
@@ -39,7 +40,7 @@ const ROTAS = [
     fauna: ['Lavândria', 'Cervomusgo', 'Melifalcão', 'Cobrabúfalo', 'Âmbarasa', 'Fanalino', 'Ventassol'],
   },
   {
-    prefixo: 'H', bioma: 'Santuário da Colmeia', acesso: 'R2_ENTRONC', direcao: 'O', nivelBase: 34,
+    prefixo: 'H', arena: `${R2_PASTA_ARTES}arena-santuario.webp`, bioma: 'Santuário da Colmeia', acesso: 'R2_ENTRONC', direcao: 'O', nivelBase: 34,
     tabuleiro: [[null, 'BOSS', null], [null, 11, null], [9, 10, 8], [7, 5, 6], [3, 2, 4], [null, 1, null]],
     areas: [
       ['Estrada do Santuário', 0], ['Sacada dos Selos', 1], ['Pavilhão das Cerieiras', 2],
@@ -166,13 +167,14 @@ adicionarSaida('R2_C0', 'O', 'REINO', { rotulo: 'Portal · Região 1 (Praça Rea
 export const ENCONTROS_ALTOS_AMBAR = [];
 
 for (const [indice, rota] of ROTAS.entries()) {
-  const { prefixo, bioma, acesso, direcao, tabuleiro, fauna } = rota;
+  const { prefixo, bioma, acesso, direcao, tabuleiro, fauna, arena } = rota;
   const boss = chefes[indice];
   const grade = tabuleiro.map(linha => linha.map(n => n === 'BOSS' ? boss.mapa : n && idArea(prefixo, n)));
   const baseNivel = rota.nivelBase;
+  if (prefixo === 'A' || prefixo === 'B') areas[acesso].arenaBatalha = arena;
   for (const [i, [nome, subida]] of rota.areas.entries()) {
     const id = idArea(prefixo, i + 1);
-    areas[id] = area(id, nome, bioma);
+    areas[id] = { ...area(id, nome, bioma), arenaBatalha: arena };
     // As passagens de entrada são seguras; áreas de caça começam logo depois.
     if (i === 0 || (prefixo === 'H' && i === 10)) continue;
     const lateral = id === 'R2_B10' || id === 'R2_G11' ? 72 : 145;
@@ -187,7 +189,10 @@ for (const [indice, rota] of ROTAS.entries()) {
     }
   }
   const nomeArena = boss.final ? `Santuário · ${boss.nome}` : `Arena · ${boss.nome}`;
-  areas[boss.mapa] = area(boss.mapa, nomeArena, bioma, [512, 465]);
+  areas[boss.mapa] = {
+    ...area(boss.mapa, nomeArena, bioma, [512, 465]),
+    arenaBatalha: `${R2_PASTA_ARTES}${boss.mapa}-arena.webp`,
+  };
   ligar(acesso, direcao, idArea(prefixo, 1));
   for (const [y, linha] of grade.entries()) {
     for (const [x, id] of linha.entries()) {
