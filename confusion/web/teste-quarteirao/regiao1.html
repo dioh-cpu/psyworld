@@ -188,11 +188,55 @@
   .modal-bg { position: fixed; inset: 0; z-index: 30; background: rgba(4, 9, 18, .78); display: none; align-items: center; justify-content: center; padding: 12px; }
   .modal-bg.aberto { display: flex; }
   /* Telas do jogo ocupam a tela inteira: o mapa da campanha nunca aparece por trás */
-  #modal-exp, #modal-campanha-mini, #modal-estrategia, #modal-hw, #modal-mundo, #modal-regioes, #modal-reinos, #modal-mochila, #modal-codex, #modal-atlas, #modal-temporada, #modal-diario, #modal-config, #modal-mapa, #modal-menu, #modal-batalha { padding: 0 !important; background: #0b0812 !important; }
-  #modal-exp > .modal-card, #modal-campanha-mini > .modal-card, #modal-estrategia > .modal-card, #modal-hw > .modal-card, #modal-mundo > .modal-card, #modal-regioes > .modal-card, #modal-reinos > .modal-card, #modal-mochila > .modal-card, #modal-codex > .modal-card, #modal-atlas > .modal-card, #modal-temporada > .modal-card, #modal-diario > .modal-card, #modal-config > .modal-card, #modal-mapa > .modal-card, #modal-menu > .modal-card, #modal-batalha > .modal-card, #modal-exp > .exp-card, #modal-campanha-mini > .exp-card, #modal-estrategia > .exp-card, #modal-hw > .exp-card, #modal-mundo > .exp-card, #modal-regioes > .exp-card, #modal-reinos > .exp-card, #modal-mochila > .exp-card, #modal-codex > .exp-card, #modal-atlas > .exp-card, #modal-temporada > .exp-card, #modal-diario > .exp-card, #modal-config > .exp-card, #modal-mapa > .exp-card, #modal-menu > .exp-card, #modal-batalha > .exp-card { width: 100vw !important; max-width: 100vw !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; margin: 0 !important; border: 0 !important; box-sizing: border-box; }
+  #modal-exp, #modal-campanha-mini, #modal-estrategia, #modal-hw, #modal-mundo, #modal-regioes, #modal-reinos, #modal-mochila, #modal-codex, #modal-atlas, #modal-temporada, #modal-diario, #modal-config, #modal-mapa, #modal-menu, #modal-batalha, #modal-autocaca, #modal-voto { padding: 0 !important; background: #0b0812 !important; }
+  #modal-exp > .modal-card, #modal-campanha-mini > .modal-card, #modal-estrategia > .modal-card, #modal-hw > .modal-card, #modal-mundo > .modal-card, #modal-regioes > .modal-card, #modal-reinos > .modal-card, #modal-mochila > .modal-card, #modal-codex > .modal-card, #modal-atlas > .modal-card, #modal-temporada > .modal-card, #modal-diario > .modal-card, #modal-config > .modal-card, #modal-mapa > .modal-card, #modal-menu > .modal-card, #modal-batalha > .modal-card, #modal-autocaca > .modal-card, #modal-voto > .modal-card, #modal-exp > .exp-card, #modal-campanha-mini > .exp-card, #modal-estrategia > .exp-card, #modal-hw > .exp-card, #modal-mundo > .exp-card, #modal-regioes > .exp-card, #modal-reinos > .exp-card, #modal-mochila > .exp-card, #modal-codex > .exp-card, #modal-atlas > .exp-card, #modal-temporada > .exp-card, #modal-diario > .exp-card, #modal-config > .exp-card, #modal-mapa > .exp-card, #modal-menu > .exp-card, #modal-batalha > .exp-card, #modal-autocaca > .exp-card, #modal-voto > .exp-card { width: 100vw !important; max-width: 100vw !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; margin: 0 !important; border: 0 !important; box-sizing: border-box; }
+  /* Padrão Refúgio + ganchos telas-v2/ e kit-v2/ (sem 404 enquanto arte de reserva está ativa) */
+  :root {
+    --tela-bg-v2: none;
+    --kit-painel-borda: rgba(243, 194, 122, .35);
+    --rar-t1: #9ca3af;
+    --rar-t2: #4ade80;
+    --rar-t3: #60a5fa;
+    --rar-t4: #c084fc;
+    --rar-t5: #fbbf24;
+  }
+  .modal-bg[data-tela] > .modal-card {
+    background-image: var(--tela-bg-v2), linear-gradient(180deg, rgba(16, 10, 26, .95), rgba(10, 7, 18, .98));
+    background-size: cover, auto;
+    background-position: center, center;
+    background-repeat: no-repeat;
+  }
+  /* Conteúdo centralizado com largura máxima em telas largas (sem caixas soltas esticadas de ponta a ponta) */
+  #modal-mochila > .modal-card > *,
+  #modal-codex > .modal-card > *,
+  #modal-atlas > .modal-card > *,
+  #modal-temporada > .modal-card > *,
+  #modal-diario > .modal-card > *,
+  #modal-config > .modal-card > *,
+  #modal-mapa > .modal-card > *,
+  #modal-menu > .modal-card > *,
+  #modal-autocaca > .modal-card > *,
+  #modal-voto > .modal-card > *,
+  #modal-mundo > .modal-card > *,
+  #modal-regioes > .modal-card > *,
+  #modal-reinos > .modal-card > *,
+  #modal-hw > .modal-card > * {
+    max-width: 980px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+  }
   .modal-card { background: #0d182d; border: 2px solid var(--border); border-radius: 12px; width: min(580px, 95vw); max-height: 86vh; overflow-y: auto; padding: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.75); }
-  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(63,143,214,.3); padding-bottom: 8px; }
-  .modal-head h3 { margin: 0; font-size: 16px; color: var(--gold); flex: 1; min-width: 0; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(63,143,214,.3); padding-bottom: 8px; flex-wrap: wrap; }
+  .modal-head h3 { margin: 0; font-size: 16px; color: var(--gold); flex: 1; min-width: 120px; }
+  .modal-recursos { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .modal-recursos[hidden] { display: none !important; }
+  .modal-rec-pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: rgba(24, 14, 34, .88); border: 1px solid var(--kit-painel-borda);
+    border-radius: 8px; padding: 3px 7px; font: 700 11px system-ui, sans-serif; color: #fff3e7; white-space: nowrap;
+  }
   .btn-voltar-refugio {
     background: rgba(53, 34, 56, .92); border: 1px solid #f3a458; color: #fde68a; border-radius: 7px;
     padding: 4px 9px; cursor: pointer; font: 700 11.5px system-ui, sans-serif; white-space: nowrap; flex-shrink: 0;
