@@ -360,6 +360,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         { acao: 'regioes', ico: 'reinos.png', tit: 'Regiões (12)' },
         ...(reinosOn ? [{ acao: 'reinos', ico: 'reinos.png', tit: 'Reinos' }] : []),
         { acao: 'loja', ico: 'loja.png', tit: hwOn ? 'Loja da Torre' : 'Vote & Ganhe' },
+        { acao: 'config', ico: 'atalhos.png', tit: 'Configurações' },
         { acao: 'menu', ico: 'casa.png', tit: 'Menu Principal' },
       ];
       popHtml = `<div class="ref-pop topo"><h5><span>Atalhos do Refúgio</span><button class="btn-sec" data-desc-pop="" style="padding:2px 7px;font-size:11px">✕</button></h5>
@@ -900,21 +901,37 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (painel === 'guilda') h += [abaContratos, abaFazenda, abaOficina, abaReinosGuilda][aba]();
     if (painel === 'cronicas') h += aba === 0 ? abaCrise() : abaHV();
     $('#exp-corpo').innerHTML = h;
+    const btnVoltarRef = modal.querySelector('.btn-voltar-refugio');
+    if (btnVoltarRef) btnVoltarRef.hidden = (painel === 'descanso');
     if (zerarScroll) $('#exp-corpo').scrollTop = 0;
     destacar(tid);
   }
+  let origemPainelExp = 'campanha';
   function abaCrise() { const c = R.criseDe(save()); return `<div class="bl"><h4>🧟 ${esc(CRISE.cidade)}: ${esc(CRISE.nomes[c.estado])}</h4><p>Uma crise completa numa só cidade: saudável → contaminada → tomada → purificada → reconstruída. As mudanças aparecem no mapa, com zumbis nas ruas durante o surto. Estado próprio: não altera a Campanha nem os Reinos.</p><div class="ln"><button class="btn-pri" data-crise-abrir="1">Visitar a cidade</button></div></div>`; }
-  function abrir(p, a = 0) { if (batalhaBloqueando() || tela.aberta()) return; painel = p; aba = a; revendo = null; hvEstado = null; fichaUid = null; selEq = null; descPop = null; verCapaInv = false; render(true); abrirModal('modal-exp'); }
+  function abrir(p, a = 0, origem = 'campanha') {
+    if (batalhaBloqueando() || tela.aberta()) return;
+    origemPainelExp = p === 'descanso' ? 'campanha' : origem;
+    painel = p; aba = a; revendo = null; hvEstado = null; fichaUid = null; selEq = null; descPop = null; verCapaInv = false;
+    render(true);
+    abrirModal('modal-exp');
+  }
 
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t) return; const d = t.dataset;
-    if (t.id === 'exp-fechar') { fecharModal('modal-exp'); painel = null; fichaUid = null; selEq = null; descPop = null; return; }
+    if (t.id === 'exp-fechar') {
+      if (painel !== 'descanso' && origemPainelExp === 'descanso') {
+        painel = 'descanso'; aba = 0; fichaUid = null; selEq = null; descPop = null; verCapaInv = false;
+        render(true);
+        return;
+      }
+      fecharModal('modal-exp'); painel = null; fichaUid = null; selEq = null; descPop = null; return;
+    }
     if (t.id === 'exp-rever') { revendo = d.tut; render(true); return; }
     if (d.tutok) { exp().tut[d.tutok] = true; revendo = null; salvar(); render(); return; }
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(true); return; }
     if (d.descPop !== undefined) { descPop = d.descPop || null; render(); return; }
     if (d.invCapa !== undefined) { verCapaInv = !verCapaInv; render(); return; }
-    if (d.descFicha) { painel = 'equipe'; aba = 0; fichaUid = d.descFicha; selEq = null; descPop = null; render(true); return; }
+    if (d.descFicha) { origemPainelExp = 'descanso'; painel = 'equipe'; aba = 0; fichaUid = d.descFicha; selEq = null; descPop = null; render(true); return; }
     if (d.descIr) {
       const dest = d.descIr;
       descPop = null;
@@ -925,35 +942,38 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         else window.regiao1?.idleUI?.abrirConfigAutoCaca?.();
         return;
       }
-      if (dest === 'mochila') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirMochila?.('domador'); return; }
-      if (dest === 'passe') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirTemporada?.(); return; }
-      if (dest === 'codex') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirCodex?.(); return; }
-      if (dest === 'atlas') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirAtlas?.(); return; }
-      if (dest === 'regioes') { fecharModal('modal-exp'); painel = null; window.regiaoRegioes?.abrir?.(); return; }
-      if (dest === 'menu') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirMenu?.(); return; }
+      // Menus abertos a partir do Refúgio abrem SOBRE o Refúgio e, ao fechar, voltam ao Refúgio (nunca caem na Campanha)
+      render();
+      if (dest === 'mochila') { window.regiao1?.idleUI?.abrirMochila?.('domador'); return; }
+      if (dest === 'passe') { window.regiao1?.idleUI?.abrirTemporada?.(); return; }
+      if (dest === 'codex') { window.regiao1?.idleUI?.abrirCodex?.(); return; }
+      if (dest === 'atlas') { window.regiao1?.idleUI?.abrirAtlas?.(); return; }
+      if (dest === 'regioes') { window.regiaoRegioes?.abrir?.(); return; }
+      if (dest === 'config') { window.regiao1?.idleUI?.abrirConfig?.(); return; }
+      if (dest === 'menu') { window.regiao1?.idleUI?.abrirMenu?.(); return; }
       if (dest === 'eventos') {
-        fecharModal('modal-exp'); painel = null;
         if (window.regiaoHW?.liberado?.()) window.regiaoHW.abrir(0);
         else window.regiao1?.idleUI?.abrirTemporada?.();
         return;
       }
       if (dest === 'missoes') {
-        fecharModal('modal-exp'); painel = null;
-        const btnD = document.getElementById('m-diario');
-        if (btnD) btnD.click(); else window.regiao1?.idleUI?.abrirTemporada?.();
+        if (window.regiao1?.idleUI?.abrirDiario) window.regiao1.idleUI.abrirDiario();
+        else window.regiao1?.idleUI?.abrirTemporada?.();
         return;
       }
       if (dest === 'loja') {
-        fecharModal('modal-exp'); painel = null;
         if (window.regiaoHW?.liberado?.()) window.regiaoHW.abrir(3);
         else document.getElementById('m-voto')?.click();
         return;
       }
-      if (dest === 'halloween') { fecharModal('modal-exp'); painel = null; window.regiaoHW?.abrir?.(0); return; }
-      if (dest === 'torre') { fecharModal('modal-exp'); painel = null; window.regiaoHW?.abrir?.(2); return; }
-      if (dest === 'calabouco') { painel = 'cacadas'; aba = 1; fichaUid = null; selEq = null; render(true); return; }
-      if (dest === 'reinos') { fecharModal('modal-exp'); painel = null; window.regiaoReinos?.abrirSeletor?.(); return; }
-      if (PAINEIS[dest]) { painel = dest; aba = 0; fichaUid = null; selEq = null; verCapaInv = false; render(true); return; }
+      if (dest === 'halloween') { window.regiaoHW?.abrir?.(0); return; }
+      if (dest === 'torre') { window.regiaoHW?.abrir?.(2); return; }
+      if (dest === 'calabouco') { origemPainelExp = 'descanso'; painel = 'cacadas'; aba = 1; fichaUid = null; selEq = null; render(true); return; }
+      if (dest === 'reinos') { window.regiaoReinos?.abrirSeletor?.(); return; }
+      if (PAINEIS[dest]) {
+        if (painel === 'descanso' && dest !== 'descanso') origemPainelExp = 'descanso';
+        painel = dest; aba = 0; fichaUid = null; selEq = null; verCapaInv = false; render(true); return;
+      }
     }
     if (d.invocar) {
       const qtd = Number(d.invocar) === 10 ? 10 : 1;
@@ -1058,7 +1078,15 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     return ev;
   }
   const livre = () => !document.querySelector('.modal-bg.aberto') && !tela.aberta() && !batalhaBloqueando() && !crise.classList.contains('vis');
-  const ROTULOS = { descanso: '🏕️ Descanso', equipe: '⚔️ Equipe', oniricos: '🎫 Invocação', cacadas: '🏹 Caçadas', guilda: '🏛️ Guilda', reinos: '👑 Reinos', cronicas: '📜 Crônicas' };
+  // Na Campanha, a barra inferior mostra somente os menus compartilhados (Equipe, Mochila, Missões, Config) + botão Refúgio.
+  // Invocação, Batalhas (Torre/Caçadas/Revanches/Calabouço/HV), Halloween/Eventos, Passe, Guilda e Crônicas ficam no Refúgio.
+  const BARRA_CAMPANHA = [
+    { id: 'descanso', rotulo: '🏕️ Refúgio' },
+    { id: 'equipe', rotulo: '⚔️ Equipe' },
+    { id: 'mochila', rotulo: '🎒 Mochila' },
+    { id: 'missoes', rotulo: '📜 Missões' },
+    { id: 'config', rotulo: '⚙️ Config' },
+  ];
   const MODOS = { descanso: 'descanso', equipe: 'equipe', oniricos: 'banner', cacadas: 'cacadas', guilda: 'guilda', reinos: 'reinos', cronicas: 'cronicas' };
   function atualizarNav() {
     const e = exp(); const id = getMapaId();
@@ -1066,22 +1094,23 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (R.concederTickets(save()) > 0) salvar();
     sair.style.display = id?.startsWith('CAC_') ? 'block' : 'none';
     e.avisados = e.avisados || {};
-    const abertos = Object.entries(MODOS).filter(([, m]) => R.aberto(save(), m));
-    nav.style.display = abertos.length ? 'flex' : 'none';
-    nav.innerHTML = abertos.map(([k]) => `<button class="btn-hud ${e.avisados[k] ? '' : 'novo'}" data-nav="${k}">${ROTULOS[k]}</button>`).join('') + (window.regiaoHW?.navHtml?.() || '');
-    if (window.regiaoHW?.liberado?.()) nav.style.display = 'flex';
-    if (livre()) { const novo = abertos.find(([k]) => !e.avisados[k]); if (novo && !nav.dataset.aviso) { /* aviso único por modo */ } }
+    nav.style.display = 'flex';
+    nav.innerHTML = BARRA_CAMPANHA.map((b) => `<button class="btn-hud" data-nav="${b.id}">${b.rotulo}</button>`).join('');
   }
   nav.addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return; const k = b.dataset.nav; exp().avisados[k] = true; salvar();
-    if (k === 'reinos') { window.regiaoReinos?.abrirSeletor(); return; } if (k === 'halloween') { window.regiaoHW?.abrir(); return; } abrir(k);
+    const b = e.target.closest('button'); if (!b) return; const k = b.dataset.nav;
+    if (k === 'descanso') { exp().avisados.descanso = true; salvar(); abrir('descanso', 0, 'campanha'); return; }
+    if (k === 'equipe') { exp().avisados.equipe = true; salvar(); abrir('equipe', 0, 'campanha'); return; }
+    if (k === 'mochila') { window.regiao1?.idleUI?.abrirMochila?.('domador'); return; }
+    if (k === 'missoes') { window.regiao1?.idleUI?.abrirDiario?.(); return; }
+    if (k === 'config') { window.regiao1?.idleUI?.abrirConfig?.(); return; }
   });
   let jaAvisou = {};
   setInterval(() => {
     processar(true); atualizarNav();
     if (!livre()) return; const e = exp();
     const novo = Object.entries(MODOS).find(([k, m]) => R.aberto(save(), m) && !e.avisados[k] && !jaAvisou[k]);
-    if (novo) { jaAvisou[novo[0]] = true; const msg = { oniricos: '🎫 Primeiro ticket! Abra "Oníricos" para invocar.', cacadas: '🏹 Nova Caçada liberada!', guilda: '🏛️ A Guilda dos Aventureiros abriu.', reinos: '👑 Reinos liberados.', cronicas: '📜 Crônicas liberadas: Crise e Herói × Vilão.' }[novo[0]]; mostrarToast(msg, 4200); }
+    if (novo) { jaAvisou[novo[0]] = true; const msg = { oniricos: '🎫 Primeiro ticket! Visite o Refúgio para invocar.', cacadas: '🏹 Nova Caçada liberada no Refúgio!', guilda: '🏛️ A Guilda dos Aventureiros abriu no Refúgio.', reinos: '👑 Reinos liberados.', cronicas: '📜 Crônicas liberadas no Refúgio.' }[novo[0]]; if (msg) mostrarToast(msg, 3600); }
   }, 1500);
   processar(false); atualizarNav();
 

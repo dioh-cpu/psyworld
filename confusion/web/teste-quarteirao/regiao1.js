@@ -707,10 +707,61 @@ questBanner?.addEventListener('click', () => {
   }
 });
 
-// Modais helpers
-function abrirModal(id) { document.getElementById(id)?.classList.add('aberto'); }
+// Pilha unificada de modais: cada menu abre sobre a tela de onde foi chamado e volta para ela ao fechar
+const pilhaModais = [];
+const MODAIS_SEM_REFUGIO = new Set(['modal-dialogo', 'modal-batalha', 'modal-teleporte', 'modal-tutorial', 'modal-offline']);
+
+function voltarAoRefugioDeQualquerMenu() {
+  for (const id of [...pilhaModais]) {
+    if (id !== 'modal-exp' && id !== 'modal-batalha') fecharModal(id);
+  }
+  window.regiaoExp?.abrir?.('descanso');
+}
+
+function garantirBotaoRefugioNoModal(el) {
+  if (!el || MODAIS_SEM_REFUGIO.has(el.id)) return;
+  const head = el.querySelector('.modal-head');
+  if (!head) return;
+  let btn = head.querySelector('.btn-voltar-refugio');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-voltar-refugio';
+    btn.textContent = '← Refúgio';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      voltarAoRefugioDeQualquerMenu();
+    });
+    const fecharBtn = head.querySelector('.btn-fechar');
+    if (fecharBtn) head.insertBefore(btn, fecharBtn);
+    else head.appendChild(btn);
+  }
+  if (el.id === 'modal-exp') {
+    btn.hidden = Boolean(el.querySelector('[data-refugio="1"]'));
+  } else {
+    btn.hidden = false;
+  }
+}
+
+function abrirModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const idx = pilhaModais.indexOf(id);
+  if (idx >= 0) pilhaModais.splice(idx, 1);
+  pilhaModais.push(id);
+  el.style.zIndex = String(40 + pilhaModais.length * 2);
+  garantirBotaoRefugioNoModal(el);
+  el.classList.add('aberto');
+}
+
 function fecharModal(id) {
-  document.getElementById(id)?.classList.remove('aberto');
+  const el = document.getElementById(id);
+  const idx = pilhaModais.indexOf(id);
+  if (idx >= 0) pilhaModais.splice(idx, 1);
+  if (el) {
+    el.classList.remove('aberto');
+    el.style.zIndex = '';
+  }
   if (id === 'modal-dialogo') clearInterval(timerDigitacao);
   if (id === 'modal-dialogo' && autoRotaQuestId) {
     setTimeout(() => { if (!batalhaBloqueando() && !dialogoAberto() && autoRotaQuestId) planejarPassoAutoRota(); }, 80);
@@ -1893,9 +1944,13 @@ window.addEventListener('keydown', (e) => {
   teclas.add(e.code);
   if (e.code === 'KeyE' || e.code === 'Enter') executarInteracao();
   if (e.code === 'Escape') {
-    document.querySelectorAll('.modal-bg.aberto').forEach((m) => {
-      if (m.id !== 'modal-batalha') fecharModal(m.id);
-    });
+    const topo = [...pilhaModais].reverse().find((id) => id !== 'modal-batalha');
+    if (topo) fecharModal(topo);
+    else {
+      const abertos = [...document.querySelectorAll('.modal-bg.aberto')].filter((m) => m.id !== 'modal-batalha');
+      const ult = abertos.at(-1);
+      if (ult) fecharModal(ult.id);
+    }
   }
 });
 window.addEventListener('keyup', (e) => teclas.delete(e.code));
@@ -2495,6 +2550,8 @@ idleUI = criarControladorIdleUI({
   getMapaAtual: () => mapaAtual,
   salvar: salvarEstado,
   mostrarToast,
+  abrirModal,
+  fecharModal,
   definirAutoCaca,
   abrirDiario: () => { renderizarDiario(); abrirModal('modal-diario'); },
   abrirMapa48: () => {
