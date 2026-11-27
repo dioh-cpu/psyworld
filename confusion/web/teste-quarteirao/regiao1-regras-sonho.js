@@ -48,6 +48,38 @@ export const MAPA_DROP_FRAGMENTOS_SONHO = Object.fromEntries(
   }),
 );
 
+// Fontes estruturadas ("Onde conseguir") para Essências (9 pares) e Fragmentos de Sonho (19 elementos)
+export const ONDE_CONSEGUIR_ESSENCIAS = Object.fromEntries(
+  Object.values(ESSENCIAS_PARES).map((par) => [
+    par.id,
+    {
+      id: par.id,
+      nome: par.nome,
+      elementos: [...par.elementos],
+      fontes: [
+        { modo: 'Torre Elemental', local: `Torre ${par.torre} (Andares 1–50)`, detalhe: 'Menor (andares 1–15), Média (16–35) e Maior (36–50); livre de energia.' },
+        { modo: 'Campanha Mini', local: 'Chefes de Capítulo, Baús 3★ e Batalha Rápida', detalhe: 'Drop de Essências do par do capítulo.' },
+        { modo: 'Missões e Passe', local: 'Marcos, Semanais e Passe Premium', detalhe: 'Pacotes extras de Essências na progressão.' },
+      ],
+    },
+  ]),
+);
+
+export const ONDE_CONSEGUIR_FRAGMENTOS = Object.fromEntries(
+  Object.entries(MAPA_DROP_FRAGMENTOS_SONHO).map(([el, info]) => [
+    el,
+    {
+      elemento: el,
+      parEssencia: info.parEssencia,
+      fontes: [
+        { modo: 'Combate e Idle', local: 'Batalhas manuais, Auto-Caça, Idle offline e Campanha Mini', detalhe: info.dropCampanhaIdle },
+        ...(info.torreElemental ? [{ modo: 'Torre Elemental', local: `Torre ${info.torreElemental}`, detalhe: 'Inimigos do elemento para farm contínuo sem custo de energia.' }] : []),
+        { modo: 'Login e Passe', local: 'Login 7 Dias (Dia 3) e Passe Premium', detalhe: 'Entrega direta de Fragmentos de Sonho.' },
+      ],
+    },
+  ]),
+);
+
 export function parEssenciaDoElemento(elOuPar = 'neutro') {
   const k = String(elOuPar || 'neutro').toLowerCase();
   if (ESSENCIAS_PARES[k]) return k;

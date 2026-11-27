@@ -114,7 +114,7 @@ test('Economia da Primeira Hora e curva Nv.5→40 para T5 dos iniciais (#148)', 
 
   const sim = simularEconomiaPrimeiraHora({ comConta: false });
   assert.equal(sim.linhaTempo.length, 5);
-  assert.ok(sim.saldoFinal.energiaAtual > 0);
+  assert.equal(sim.gastosTotais.energia, 0);
   assert.equal(sim.ganhosTotais.invocacoesGratis, 10);
 
   const cas40 = estimarDiasNivel40Inicial('casual');

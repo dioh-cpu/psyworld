@@ -36,10 +36,8 @@ export function sortearRaridadeCalabouco(nivel, rng = Math.random) {
   return entradas[entradas.length - 1][0];
 }
 
-export function energiaCalabouco(nivel) {
-  if (nivel <= 5) return 8;
-  if (nivel <= 10) return 12;
-  return 16;
+export function energiaCalabouco() {
+  return 0;
 }
 
 const DEF_CALABOUCOS = [

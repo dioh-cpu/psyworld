@@ -42,9 +42,9 @@ test('Campanha Mini: 12 capítulos × 10 fases + fase escondida e elenco real do
   for (const cap of CAPITULOS_CAMPANHA_MINI) {
     assert.equal(cap.fases.length, 10);
     assert.equal(cap.fases[4].tipo, 'elite');
-    assert.equal(cap.fases[4].energia, 8);
+    assert.equal(cap.fases[4].energia, 0);
     assert.equal(cap.fases[9].tipo, 'chefe');
-    assert.equal(cap.fases[9].energia, 10);
+    assert.equal(cap.fases[9].energia, 0);
     assert.equal(cap.faseEscondida.escondida, true);
     assert.equal(cap.faseEscondida.requisitoEstrelas, 30);
     assert.equal(cap.fases[9].inimigos[0][3].chefe, true);
@@ -180,12 +180,11 @@ test('Campanha Mini: 3 estrelas via resumoBatalha(b) (reviver conta), liberaçã
   assert.equal(coletarBauCapitulo(s, 1, 30).premios.reliquia.raridade, 'rara');
   assert.equal(coletarBauCapitulo(s, 1, 30).ok, false);
 
-  // Batalha rápida em 3★ gasta energia igual e paga 50%
-  recarregueEnergia(t0 + 60_000);
+  // Batalha rápida em 3★ não gasta energia (livre) e paga 50%
   const enAntes = energiaDe(s, t0 + 60_000).atual;
   const rap = batalhaRapidaCampanhaMini(s, '1-1', { agoraMs: t0 + 60_000, rng: () => 0.1 });
   assert.equal(rap.ok, true);
-  assert.equal(rap.energiaRestante, enAntes - 6);
+  assert.equal(rap.energiaRestante, enAntes);
   assert.equal(rap.premios.ouro, 100);
   assert.equal(rap.premios.essencia.qtd, 1);
 
@@ -202,9 +201,10 @@ test('Campanha Mini: 3 estrelas via resumoBatalha(b) (reviver conta), liberaçã
   assert.equal(statusCapitulo(s, 1).estrelas, 30);
 });
 
-test('Campanha Mini em ondas: fases 1-3 têm 2 ondas, 4-10 e escondida têm 3 ondas, texto de energia presente', async () => {
+test('Campanha Mini em ondas: fases 1-3 têm 2 ondas, 4-10 e escondida têm 3 ondas, sem custo de energia', async () => {
   const { CAPITULOS_CAMPANHA_MINI, ENERGIA_TEXTO_EXPLICATIVO } = await import('./regiao1-campanha-mini-regras.js');
-  assert.ok(ENERGIA_TEXTO_EXPLICATIVO.resumo.includes('6 minutos'));
+  assert.equal(ENERGIA_CFG.ativa, false);
+  assert.ok(ENERGIA_TEXTO_EXPLICATIVO.resumo.includes('livres'));
   assert.ok(ENERGIA_TEXTO_EXPLICATIVO.custos.length >= 4);
   for (const cap of CAPITULOS_CAMPANHA_MINI) {
     for (const f of cap.fases) {
@@ -217,7 +217,7 @@ test('Campanha Mini em ondas: fases 1-3 têm 2 ondas, 4-10 e escondida têm 3 on
   }
 });
 
-test('Dificuldade do Cap.1 calibrada em ondas: 1-1..1-3 >= 95% com inicial solo (Nv.5..9)', async () => {
+test('Dificuldade do Cap.1 calibrada em ondas: 1-1..1-3 >= 95% para CADA um dos 5 iniciais', async () => {
   const { CAPITULOS_CAMPANHA_MINI } = await import('./regiao1-campanha-mini-regras.js');
   const { criarUnidade, criarBatalha, passoAuto, criarRng } = await import('./regiao1-estrategia-regras.js');
   const { criarEstadoDomadorBatalha } = await import('./regiao1-domadores-regras.js');
@@ -226,35 +226,37 @@ test('Dificuldade do Cap.1 calibrada em ondas: 1-1..1-3 >= 95% com inicial solo 
   for (let idx = 0; idx < 3; idx++) {
     const fase = cap1.fases[idx];
     const nvIni = 5 + idx * 2;
-    let wins = 0;
-    for (let s = 0; s < 100; s++) {
-      const rng = criarRng(100 + s * 17 + fase.numero);
-      const sv = novoSave();
-      const dom = criarEstadoDomadorBatalha(sv, 'azazel');
-      const aliados = [criarUnidade({ id: 'a0', especie: INICIAIS[s % 5], nivel: nvIni, lado: 'a', tier: 4, estrelas: 1 })];
-      const ondasUn = fase.ondas.map((o, w) => o.map(([esp, nv, el, opts], i) => criarUnidade({ id: `w${w}_${i}`, especie: esp, nivel: nv, lado: 'i', elemento: el, chefe: Boolean(opts?.chefe), bonus: opts?.bonus || {} })));
-      const b = criarBatalha(aliados, ondasUn[0], { domador: dom, ondas: ondasUn.slice(1) });
-      while (!b.fim) passoAuto(b, rng);
-      if (b.fim === 'vitoria') wins++;
+    for (const ini of INICIAIS) {
+      let wins = 0;
+      for (let s = 0; s < 50; s++) {
+        const rng = criarRng(100 + s * 17 + fase.numero);
+        const sv = novoSave();
+        const dom = criarEstadoDomadorBatalha(sv, 'azazel');
+        const aliados = [criarUnidade({ id: 'a0', especie: ini, nivel: nvIni, lado: 'a', tier: 4, estrelas: 1 })];
+        const ondasUn = fase.ondas.map((o, w) => o.map(([esp, nv, el, opts], i) => criarUnidade({ id: `w${w}_${i}`, especie: esp, nivel: nv, lado: 'i', elemento: el, chefe: Boolean(opts?.chefe), bonus: opts?.bonus || {} })));
+        const b = criarBatalha(aliados, ondasUn[0], { domador: dom, ondas: ondasUn.slice(1) });
+        while (!b.fim) passoAuto(b, rng);
+        if (b.fim === 'vitoria') wins++;
+      }
+      assert.ok(wins >= 48, `Fase ${fase.id} com ${ini} ficou abaixo de 95%: ${wins * 2}%`);
     }
-    assert.ok(wins >= 95, `Fase ${fase.id} ficou abaixo de 95%: ${wins}%`);
   }
 });
 
-test('Campanha Mini: energia (1/6min, máx 120, poção) e whitelist no save/nuvem sem perdas', () => {
+test('Campanha Mini: sem bloqueio de energia e whitelist no save/nuvem sem perdas', () => {
   const s = novoSave();
   const t0 = 100_000_000;
-  const e = energiaDe(s, t0);
-  assert.equal(e.atual, 120);
-  assert.equal(gastarEnergia(s, 18, t0).atual, 102);
-  // 30 minutos = +5 energia
-  assert.equal(energiaDe(s, t0 + 30 * ENERGIA_CFG.intervaloMs / 6).atual, 107);
+  s.idle.energia = { atual: 0, max: 120, pocoes: 0, ultimoTickMs: t0 };
+  const g = gastarEnergia(s, 18, t0);
+  assert.equal(g.ok, true);
+  assert.equal(g.gasto, 0);
+  assert.equal(iniciarFaseCampanhaMini(s, '1-1', { agoraMs: t0 }).ok, true);
 
   // Save serializa, desserializa na whitelist e passa na validação da nuvem
   concluirFaseCampanhaMini(s, '1-1', { fim: 'vitoria', aliados: [{ hp: 10, classe: 'guerreiro', elemento: 'fogo' }], supremas: { a: 1 } }, { batalhaId: 'w1', agoraMs: t0 });
   const rec = desserializarEstado(serializarEstado(s));
   assert.equal(rec.idle.campanhaMini.fases['1-1'].vencida, true);
-  assert.equal(rec.idle.energia.atual, 107);
+  assert.equal(rec.idle.energia.atual, 0);
   assert.ok(saldoEssencia(rec, 'verde') !== undefined);
   const val = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(rec)), conta: rec.conta });
   assert.equal(val.ok, true);
