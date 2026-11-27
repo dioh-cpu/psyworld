@@ -21,7 +21,7 @@ import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.
 import { renderizarPainelCalaboucos, tratarCliqueCalaboucos } from './regiao1-calaboucos-ui.js';
 import { renderizarPainelReliquias, tratarCliqueReliquias } from './regiao1-reliquias-ui.js';
 import { resumoDomadorAtivoHtml, renderizarPainelDomadores, tratarCliqueDomadores } from './regiao1-domadores-ui.js';
-import { renderBalaoTutorialModo, tratarCliqueTutorialModo } from './regiao1-tutoriais-modos.js';
+import { renderBalaoTutorialModo, renderGuiaJogadorNovo, tratarCliqueTutorialModo } from './regiao1-tutoriais-modos.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -417,6 +417,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         </div>
       </div>
       <div class="ref-titulo"><small>${esc(mapaAtual)}</small><h4>Refúgio do Farol</h4></div>
+      ${renderGuiaJogadorNovo(s)}
       <div class="ref-lado">
         <button class="destaque-modo" data-desc-ir="campanhaMini"><img src="${DESCANSO_V1('icones/campanha.png')}" alt=""><span>Campanha Mini</span></button>
         <button data-desc-ir="torres"><img src="${DESCANSO_V1('icones/torre.png')}" alt=""><span>Torres</span></button>

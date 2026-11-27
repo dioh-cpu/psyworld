@@ -204,6 +204,48 @@ export function medirAbertura() {
   };
 }
 
+export const RAIZ_TELAS_V2 = 'assets/confusion/interface/telas-v2';
+
+// Escolhe a versão 1280px no celular (telas-v2/mobile/<tela>.webp) e 2560px no desktop (telas-v2/<tela>.webp),
+// carregando sob demanda apenas a arte da tela que está aberta no momento.
+export function urlFundoTela(telaId, { mobile = ehAmbienteMobile(), fallback = null } = {}) {
+  const slug = String(telaId || '').trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '');
+  if (!slug) return { principal: fallback, alternativo: null, fallback };
+  const desktopUrl = `${RAIZ_TELAS_V2}/${slug}.webp`;
+  const mobileUrl = `${RAIZ_TELAS_V2}/mobile/${slug}.webp`;
+  return {
+    principal: mobile ? mobileUrl : desktopUrl,
+    alternativo: mobile ? desktopUrl : null,
+    fallback,
+  };
+}
+
+const cacheFundoTela = new Map();
+export function aplicarFundoTelaSobDemanda(el, telaId, fallback = null) {
+  if (!el || typeof Image === 'undefined') return Promise.resolve(fallback);
+  const { principal, alternativo } = urlFundoTela(telaId, { fallback });
+  const chave = `${principal}|${alternativo || ''}|${fallback || ''}`;
+  const aplicar = (p) => {
+    if (!p) return p;
+    const url = /^(https?:|\/|\.\.\/|blob:|data:)/.test(p) ? p : `../../../${p}`;
+    el.style.backgroundImage = `url('${url}')`;
+    return p;
+  };
+  if (cacheFundoTela.has(chave)) return Promise.resolve(aplicar(cacheFundoTela.get(chave)));
+  const tentar = (candidatos) => new Promise((resolve) => {
+    if (!candidatos.length) { resolve(fallback); return; }
+    const [atual, ...resto] = candidatos;
+    if (!atual) { resolve(tentar(resto)); return; }
+    const url = /^(https?:|\/|\.\.\/|blob:|data:)/.test(atual) ? atual : `../../../${atual}`;
+    const im = new Image();
+    im.decoding = 'async';
+    im.onload = () => { cacheFundoTela.set(chave, atual); resolve(aplicar(atual)); };
+    im.onerror = () => resolve(tentar(resto));
+    im.src = url;
+  });
+  return tentar([principal, alternativo, fallback].filter(Boolean));
+}
+
 export function iniciarPerfMobile() {
   if (typeof window === 'undefined') return;
   const pool = garantirPool();
@@ -215,5 +257,6 @@ export function iniciarPerfMobile() {
     medirAbertura,
     pool: () => pool.estatisticas(),
     liberarVideos: () => pool.liberarTodos(0),
+    urlFundoTela,
   };
 }
