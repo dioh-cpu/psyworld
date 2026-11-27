@@ -1,6 +1,6 @@
 // Tela de resultado de batalha compartilhada (Campanha Mini, Torres, Calabouços e Regiões)
 // Mostra XP por Onírico da formação, itens e relíquias com moldura de raridade e botão Repetir quando permitido.
-import { membrosFormacao } from './regiao1-exp-regras.js';
+import { membrosFormacao, invocacoesGratisDe, expDe } from './regiao1-exp-regras.js';
 import { PARTES_RELIQUIA, fontesDeReliquia, ONDE_CONSEGUIR_RELIQUIAS } from './regiao1-reliquias-regras.js';
 import { ONDE_CONSEGUIR_ESSENCIAS, ONDE_CONSEGUIR_FRAGMENTOS } from './regiao1-regras-sonho.js';
 import { NOME_ELEMENTO } from '../core.js';
@@ -151,6 +151,17 @@ export function mostrarResultadoBatalha(op = {}) {
       </div>`
     : '';
 
+  const tempoEsgotado = !venceu && (op.tempoEsgotado || op.motivo === 'limite_rodadas' || window.__cwFimMotivo === 'limite_rodadas');
+  window.__cwFimMotivo = null;
+  let gratis = 0;
+  if (!venceu && op.save) { try { gratis = (invocacoesGratisDe(op.save).saldo || 0) + (expDe(op.save).tickets || 0); } catch { gratis = 0; } }
+  const dicasHtml = venceu ? '' : `<div class="rb-sec rb-dicas" style="background:#160c24;border:1px solid #fde68a;border-radius:10px;padding:8px;color:#fff3e7;font-size:12px;line-height:1.4">
+      <div class="rb-sec-tit" style="color:#fde68a">💡 Como ficar mais forte</div>
+      ${tempoEsgotado ? '<div data-rb-tempo="1" style="color:#fff3e7"><b>⏱️ Tempo esgotado</b> — o limite de rodadas acabou antes de vencer. Traga mais dano ou um time mais forte.</div>' : ''}
+      <div style="margin-top:4px">🎫 Use suas invocações grátis (${gratis} disponíveis) <button class="rb-btn" data-rb-ir="oniricos">Invocar</button></div>
+      <div style="margin-top:4px">⚔️ Ligue o Auto ou deixe no AFK para subir de nível <button class="rb-btn" data-rb-ir="afk">Auto / AFK</button></div>
+      <div style="margin-top:4px">💎 Evolua ou equipe relíquias <button class="rb-btn" data-rb-ir="equipe">Equipe</button> <button class="rb-btn" data-rb-ir="reliquias">Relíquias</button></div>
+    </div>`;
   const el = document.createElement('div');
   el.id = 'res-batalha-overlay';
   el.innerHTML = `<div class="rb-card ${venceu ? '' : 'derrota'}">
@@ -159,6 +170,7 @@ export function mostrarResultadoBatalha(op = {}) {
     ${estrelasHtml}
     ${condsHtml}
     ${op.destaqueBanner ? `<div class="rb-destaque">${esc(op.destaqueBanner)}</div>` : ''}
+    ${dicasHtml}
     ${xpHtml}
     <div class="rb-sec">
       <div class="rb-sec-tit">🎁 Recompensas &amp; Relíquias</div>
@@ -176,6 +188,11 @@ export function mostrarResultadoBatalha(op = {}) {
   el.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
+    if (b.dataset.rbIr) {
+      const alvo = b.dataset.rbIr; fecharResultadoBatalha(); op.onVoltar?.();
+      setTimeout(() => { if (alvo === 'afk') document.getElementById('btn-autocaca-cfg')?.click(); else window.regiaoExp?.abrir?.(alvo); }, 60);
+      return;
+    }
     if (b.dataset.rbProx) { fecharResultadoBatalha(); op.onProxima?.(); }
     else if (b.dataset.rbRep) { fecharResultadoBatalha(); op.onRepetir?.(); }
     else if (b.dataset.rbVoltar) { fecharResultadoBatalha(); op.onVoltar?.(); }
