@@ -72,6 +72,7 @@ export const CLIPES_ELEMENTAIS = {
   erupcaoFogo: { clip: `${FLOW3}erupcao-fogo.mp4`, impactoMs: 450, chao: 0.85, escala: 2.4, duracaoMs: 2400 },     // fogo
   eclipse: { clip: `${FLOW3}eclipse.mp4`, impactoMs: 500, centro: 0.49, escala: 2.6, duracaoMs: 2200 },             // trevas
   veneno: { clip: `${FLOW3}veneno.mp4`, impactoMs: 400, centro: 0.49, escala: 2.6, duracaoMs: 2200 },              // planta/inseto com veneno
+  escudoAgua: { clip: 'assets/confusion/interface/vfx/flow-lote-9/escudo-agua.mp4', impactoMs: 600, chao: 0.98, escala: 2.6, duracaoMs: 2400 }, // escudo de água (cúpula de água)
   cupula: { clip: `${FLOW3}cupula-agua.mp4`, impactoMs: 500, chao: 0.95, escala: 2.4, duracaoMs: 2200 },           // escudo (qualquer elemento)
   fenix: { clip: `${FLOW3}fenix.mp4`, impactoMs: 850, chao: 0.8, escala: 2.6, duracaoMs: 2400 },                   // cura e apoio de luz
   curaFogo: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 },        // cura de fogo
@@ -137,7 +138,7 @@ export function clipeElemental(hab) {
   if (!hab || FX_HABILIDADES[hab.id] || hab.clip) return null;
   const C = CLIPES_ELEMENTAIS, efs = (hab.efeitos || []).map((e) => e.id), el = hab.elemento, area = hab.alvo === 'todos', ult = hab.cd >= 5;
   if (hab.reviver) return C.ressurreicao;
-  if (hab.escudo || efs.includes('escudo')) return C.cupula;
+  if (hab.escudo || efs.includes('escudo')) return el === 'agua' ? C.escudoAgua : C.cupula;
   const ehCura = hab.tipo === 'cura' || (hab.tipo === 'apoio' && (hab.cura || efs.includes('regeneracao') && !efs.some((e) => ['ataque_alto', 'defesa_alta', 'veloz', 'invencivel'].includes(e))));
   if (ehCura) return { luz: C.fenix, fogo: C.curaFogo, agua: C.curaAgua, planta: C.curaPlanta, trevas: C.curaTrevas, fantasma: C.curaFantasma, eletrico: C.curaEletrica,
     voador: C.curaVento, terra: C.curaTerra, pedra: C.curaTerra, inseto: C.curaInseto }[el] || C.regeneracao;
@@ -1121,6 +1122,7 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
       larg = cs.length > 1 ? (Math.max(...cs.map((c) => c.x + c.w / 2)) - Math.min(...cs.map((c) => c.x - c.w / 2))) * 1.25 : Math.max(...cs.map((c) => c.w)) * (cfg.escala || 3);
       top = cfg.centro != null ? meio - larg * prop * cfg.centro : pe - larg * prop * (cfg.chao ?? 0.86);
     }
+    if (emArea) { const W = ctx.campo.clientWidth || 0, l0 = x - larg / 2, r0 = x + larg / 2, lim = larg * 0.18; if (W) { if (l0 < 0 && r0 < W) x += Math.min(-l0, W - r0, lim); else if (r0 > W && l0 > 0) x -= Math.min(r0 - W, l0, lim); } }
     const alt = larg * prop;
     const esp = cfg.espelhar && A && corpo(ctx, A).x > x, left = x - larg / 2, el = cfg.chroma ? telaChroma(vid) : vid; // fundo verde: recorte em canvas
     el.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:${cfg.chroma ? 'normal' : 'plus-lighter'};filter:${cfg.chroma ? 'none' : 'contrast(1.18) saturate(1.25)'};z-index:${cfg.atras ? 3 : 87};pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, esp)}${esp ? ';transform:scaleX(-1)' : ''}`;
