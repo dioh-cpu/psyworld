@@ -263,6 +263,7 @@ export function criarArena(host, { artes = {} } = {}) {
     for (const n of nos.values()) { if (!pend.has(n.u.id)) hpVis.set(n.u.id, n.u.hp); pintar(n); n.el.classList.toggle('vez', Boolean(atual) && n.u === atual); n.el.classList.toggle('alvo', alvoSel === n.u.id); }
     desenharTopo(op); desenharBase(op, atual);
     const rapido = Boolean(op.auto);
+    if (ev && !ev.arteAtor) ev.arteAtor = nos.get(ev.ator)?.el.querySelector('.un-fig img')?.getAttribute('src') || ''; // forma do atacante (clipes por forma)
     const duracao = ev ? duracaoEstimada(ev, rapido) : 0;
     if (ev || (!animacao && reforcosPendentes().length)) tocar(ev, rapido, duracao);
     return duracao;

@@ -64,9 +64,16 @@ export const CLIPES_ELEMENTAIS = {
   veneno: { clip: `${FLOW3}veneno.mp4`, impactoMs: 400, centro: 0.49, escala: 2.6, duracaoMs: 2200 },              // planta/inseto com veneno
   cupula: { clip: `${FLOW3}cupula-agua.mp4`, impactoMs: 500, chao: 0.95, escala: 2.4, duracaoMs: 2200 },           // escudo (qualquer elemento)
   fenix: { clip: `${FLOW3}fenix.mp4`, impactoMs: 850, chao: 0.8, escala: 2.6, duracaoMs: 2400 },                   // cura e apoio de luz
+  anelEletrico: { clip: `${FLOW3}anel-eletrico.mp4`, impactoMs: 970, centro: 0.5, escala: 2.6, duracaoMs: 1800 },  // elétrico em área
+  laminasSombrias: { clip: `${FLOW3}laminas-sombrias.mp4`, impactoMs: 650, centro: 0.49, escala: 2.8, duracaoMs: 2400, ult: true }, // suprema de trevas
+  ventoDourado: { clip: `${FLOW3}vento-dourado.mp4`, impactoMs: 600, centro: 0.49, escala: 3.2, duracaoMs: 2400, espelhar: true }, // voador (sopro da esquerda para a direita)
+  cortesRubros: { clip: `${FLOW3}cortes-rubros.mp4`, impactoMs: 940, centro: 0.49, escala: 2.4, duracaoMs: 1900 }, // corpo a corpo com sangramento
 };
 // Abyssar na forma final (T5): a Perseguição vira o clipe dos cortes vermelhos
-export const CLIPE_ABYSSAR_FINAL = { perseguicao: { clip: `${FLOW3}cortes-abissais.mp4`, impactoMs: 700, chao: 0.95, escala: 3.0, duracaoMs: 2400, ult: true } };
+export const CLIPE_ABYSSAR_FINAL = {
+  perseguicao: { clip: `${FLOW3}cortes-abissais.mp4`, impactoMs: 700, chao: 0.95, escala: 3.0, duracaoMs: 2400, ult: true },
+  facada: { clip: `${FLOW3}anel-de-cortes.mp4`, impactoMs: 1080, centro: 0.5, escala: 2.6, duracaoMs: 2000 }, // anel de cortes rubros
+};
 for (const c of [...Object.values(CLIPES_ELEMENTAIS), ...Object.values(CLIPE_ABYSSAR_FINAL)]) c.mascara = true;
 export function clipeElemental(hab) {
   if (!hab || FX_HABILIDADES[hab.id] || hab.clip) return null;
@@ -74,8 +81,14 @@ export function clipeElemental(hab) {
   if (hab.escudo || efs.includes('escudo')) return C.cupula;
   if (hab.tipo === 'cura' || hab.tipo === 'apoio') return hab.elemento === 'luz' ? C.fenix : null;
   if (hab.tipo !== 'dano') return null;
-  return { eletrico: C.raio, luz: C.explosaoDourada, fogo: C.erupcaoFogo, trevas: C.eclipse }[hab.elemento]
-    || ((hab.elemento === 'planta' || hab.elemento === 'inseto') && efs.includes('veneno') ? C.veneno : null);
+  const area = hab.alvo === 'todos';
+  if (hab.elemento === 'trevas' && hab.cd >= 5) return C.laminasSombrias;
+  if (hab.elemento === 'eletrico') return area ? C.anelEletrico : C.raio;
+  const porElemento = { luz: C.explosaoDourada, fogo: C.erupcaoFogo, trevas: C.eclipse, voador: C.ventoDourado }[hab.elemento];
+  if (porElemento) return porElemento;
+  if ((hab.elemento === 'planta' || hab.elemento === 'inseto') && efs.includes('veneno')) return C.veneno;
+  if (!hab.distancia && !area && efs.includes('sangramento')) return C.cortesRubros;
+  return null;
 }
 for (const [id, c] of Object.entries(CLIPES_FLOW)) Object.assign(FX_HABILIDADES[id], c, { ms: c.impactoMs + 1550 });
 // Chuva de meteoros (tomada cinematográfica com cenário): começa depois do corte em que o meteoro central some (≈2,0 s) e só entra
@@ -955,7 +968,7 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   const larg = cs.length > 1 ? (Math.max(...cs.map((c) => c.x + c.w / 2)) - Math.min(...cs.map((c) => c.x - c.w / 2))) * 1.25 : Math.max(...cs.map((c) => c.w)) * (cfg.escala || 3);
   const meio = cs.reduce((s, c) => s + c.y, 0) / cs.length;
   const alt = larg * (v.videoHeight / v.videoWidth || 9 / 16), top = cfg.centro != null ? meio - alt * cfg.centro : pe - alt * (cfg.chao ?? 0.86);
-  v.style.cssText = `position:absolute;left:${x - larg / 2}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0${cfg.mascara ? MASCARA_BORDA : ''}`;
+  v.style.cssText = `position:absolute;left:${x - larg / 2}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0${cfg.mascara ? MASCARA_BORDA : ''}${cfg.espelhar && A && corpo(ctx, A).x > x ? ';transform:scaleX(-1)' : ''}`;
   ligarAudio(ctx, v); ctx.campo.append(v); v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, fill: 'forwards' });
   await v.play().catch(() => {});
   if (cfg.voa && A) { // projétil rápido: o clipe sai da boca do atacante e voa até o alvo, chegando no instante da explosão
@@ -1002,6 +1015,8 @@ async function cinemaMeteoros(ctx) {
 // Duração aproximada (para o ritmo do automático). Precisa cobrir a coreografia inteira.
 export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade) => {
   if (!ev) return 0; const k = 1 / velocidade, hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], n = ev.alvos?.length || 0;
+  const formaFinal = hab && /\/abyssar\/03\./.test(ev.arteAtor || '') && CLIPE_ABYSSAR_FINAL[hab.id];
+  if (formaFinal) return (formaFinal.impactoMs + 220 + Math.min(1000, Math.max(400, formaFinal.duracaoMs - formaFinal.impactoMs)) + 360 + (formaFinal.ult ? 820 : 0) + (ev.antes?.length ? 560 : 0)) * k;
   const ult = cfg?.ult || (hab && hab.cd >= 5);
   let base;
   if (cfg?.fx === 'perseguicao') base = Math.max(700 + n * 215 + (ev.repeticoes || 0) * 160, 2200);
