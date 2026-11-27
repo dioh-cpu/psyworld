@@ -148,6 +148,29 @@ export function simularCapitulo(cap = 1, N = 300) {
   return tabela;
 }
 
+export function simularPrimeiraFaseSolo(N = 300) {
+  // EXCEÇÃO oficial: 1-1 com o INICIAL SOZINHO (Nv.5, T4, 1★, Azazel Nv.1); meta >= 70% para cada um dos 5
+  const f = CM.FASES_CAMPANHA_POR_ID['1-1'];
+  const taxas = {};
+  for (const esp of INICIAIS) {
+    let vit = 0;
+    for (let seed = 1; seed <= N; seed++) {
+      const rng = M.criarRng(seed + 1000);
+      const al = [M.criarUnidade({ id: 'a0', especie: esp, nivel: 5, tier: 4, estrelas: 1, lado: 'a' })];
+      const ondas = f.ondas.map((o, oi) => o.map(([e, nvi, el, op], ei) => M.criarUnidade({
+        id: `i${oi}_${ei}`, especie: e, nivel: nvi, elemento: el, lado: 'i', chefe: Boolean(op?.chefe), bonus: op?.bonus || {},
+      })));
+      const dom = criarEstadoDomadorBatalha({ idle: { domadores: { equipado: 'azazel', colecao: { azazel: { nivel: 1, xp: 0 } } } } });
+      const bat = M.criarBatalha(al, ondas[0], { ondas: ondas.slice(1), domador: dom });
+      for (let s = 0; s < 500 && !bat.fim; s++) M.executar(bat, M.decidir(bat, M.atorAtual(bat), rng), rng);
+      if (bat.fim === 'vitoria') vit++;
+    }
+    taxas[esp] = Number(((vit / N) * 100).toFixed(1));
+  }
+  const media = Number((Object.values(taxas).reduce((a, b) => a + b, 0) / INICIAIS.length).toFixed(1));
+  return { fase: '1-1', metaPct: 70, taxas, mediaPct: media, abaixoMeta: INICIAIS.filter((k) => taxas[k] < 70) };
+}
+
 const arg1 = process.argv[1] || '';
 const isCli = arg1 && (import.meta.url === `file:///${arg1.replace(/\\/g, '/')}` || arg1.endsWith('simular_iniciais_cap1.mjs'));
 if (isCli) {
@@ -186,11 +209,13 @@ if (isCli) {
     }
   } else {
     const tabela = simularCapitulo(cap, N);
+    const solo = cap === 1 ? simularPrimeiraFaseSolo(N) : null;
     if (comoJson) {
-      console.log(JSON.stringify({ capitulo: cap, lutasPorFase: N, iniciais: INICIAIS, tabela }, null, 2));
+      console.log(JSON.stringify({ capitulo: cap, lutasPorFase: N, iniciais: INICIAIS, tabela, ...(solo ? { primeiraFaseSolo: solo } : {}) }, null, 2));
     } else {
       console.log(`| Fase | Time realista | Azazel | Ondas | Meta | ${INICIAIS.join(' | ')} | Média |`);
       console.log(`|---|---|---:|---:|---:|${INICIAIS.map(() => '---:').join('|')}|---:|`);
+      if (solo) console.log(`| 1-1 inicial sozinho | 1× (Nv.5, T4) | Nv.1 | 2 | ≥70% | ${INICIAIS.map((e) => `${solo.taxas[e].toFixed(1)}%`).join(' | ')} | ${solo.mediaPct.toFixed(1)}% |`);
       for (const r of tabela) {
         const metaLabel = r.metaPct === 95 ? '≥95%' : `~${r.metaPct}%`;
         console.log(`| ${r.fase} | ${r.aliados}× (Nv.${r.nivelInicial}) | Nv.${r.nivelAzazel} | ${r.ondas} | ${metaLabel} | ${INICIAIS.map((e) => `${r.taxas[e].toFixed(1)}%`).join(' | ')} | ${r.mediaPct.toFixed(1)}% |`);
