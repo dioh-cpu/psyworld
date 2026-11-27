@@ -78,6 +78,7 @@ import { migrarHW } from './regiao1-halloween-regras.js';
 import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
+import { ESTRATEGIA_R3_R12 } from './regiao1-estrategia-r3-r12.js';
 import { multVelocidade, montariaEquipada, montadoVisivel, apresentacaoMontaria } from './regiao1-montaria.js';
 import { criarDomadorMontado } from './domador-montado.js';
 
@@ -2676,7 +2677,7 @@ window.regiaoC1 = iniciarCiclo({
   getSave: () => save, salvar: salvarEstado, mostrarToast, abrirDialogo, fecharModal, atualizarHud: atualizarHudEstado,
 });
 // Modo Estratégia da cidade (regras em regiao1-estrategia-regras.js, dados por cidade em regiao1-estrategia-c1.js)
-window.regiaoEstrategia = iniciarEstrategia({ dados: [ESTRATEGIA_C1, ESTRATEGIA_R2], getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, atualizarHud: atualizarHudEstado });
+window.regiaoEstrategia = iniciarEstrategia({ dados: [ESTRATEGIA_C1, ESTRATEGIA_R2, ...ESTRATEGIA_R3_R12], getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, atualizarHud: atualizarHudEstado });
 window.regiaoReinos = iniciarReinos({
   getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal,
   getMapaId: () => (mapaAtual ? mapaAtual.id : null), getPosPx: () => W2P(estado.x, estado.z),
