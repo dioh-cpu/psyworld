@@ -18,6 +18,7 @@ import { energiaDe, usarPocaoEnergia, ENERGIA_CFG, essenciasDe, ESSENCIAS_PARES 
 import { renderizarPainelMissoes, tratarCliqueMissoes, temAvisoMissoes } from './regiao1-missoes-ui.js';
 import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.js';
 import { renderizarPainelCalaboucos, tratarCliqueCalaboucos } from './regiao1-calaboucos-ui.js';
+import { renderizarPainelReliquias, tratarCliqueReliquias } from './regiao1-reliquias-ui.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -276,6 +277,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null, descPop = null, verCapaInv = false, capParalela = 1; let cap = 'cap1';
   const torresUi = { torreElId: null, andarEl: 1, torreUnId: null, andarUn: 1 };
   const calaboucosUi = { calId: null, nivel: 1 };
+  const reliquiasUi = { uid: null, parte: null, raridade: null };
   const PAINEIS = {
     descanso: { titulo: '🏕️ Refúgio do Farol', abas: ['Refúgio'], tut: null },
     campanhaMini: { titulo: '🗺️ Campanha Mini', abas: ['Campanha Mini'], tut: null, mostraEnergia: true },
@@ -938,18 +940,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (painel === 'campanhaMini') h += `<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Energia: <b>6</b> (normal), <b>8</b> (elite) e <b>10</b> (chefe).</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
     if (painel === 'torres') h += renderizarPainelTorres(save(), aba, torresUi);
     if (painel === 'calaboucos') h += renderizarPainelCalaboucos(save(), calaboucosUi);
-    if (painel === 'reliquias') {
-      if (aba === 0) {
-        const bolsa = save().idle?.reliquias?.bolsa || [];
-        h += `<div class="bl"><h4>💎 Bolsa de Relíquias (${bolsa.length}/200)</h4><p>4 partes (Coroa, Amuleto, Anel, Talismã) + 5º espaço de Arma Única. Equipe apenas em Oníricos do mesmo elemento.</p>${bolsa.length ? bolsa.slice(0, 20).map((r) => `<p>• <b>${esc(r.parte || 'Relíquia')}</b> (${esc(r.raridade || 'comum')} · ${esc(r.elemento || 'neutro')} · conjunto ${esc(r.conjunto || '—')})</p>`).join('') : '<p class="mut">Nenhuma relíquia obtida ainda. Vença fases elite/escondidas da Campanha Mini ou Calabouços.</p>'}</div>`;
-      } else {
-        const ess = essenciasDe(save());
-        h += Object.values(ESSENCIAS_PARES).map((p) => {
-          const sal = ess[p.id] || { menor: 0, media: 0, maior: 0 };
-          return `<div class="bl"><h4>✨ ${esc(p.nome)} (${p.elementos.join(', ')})</h4><p>Menor: <b>${sal.menor}</b> · Média: <b>${sal.media}</b> · Maior: <b>${sal.maior}</b></p></div>`;
-        }).join('');
-      }
-    }
+    if (painel === 'reliquias') h += renderizarPainelReliquias(save(), aba, reliquiasUi);
     if (painel === 'equipe') h += abaEquipe();
     if (painel === 'oniricos') h += abaBanner();
     if (painel === 'cacadas') h += [abaCacadas, abaCalabouco, abaChefes][aba]();
@@ -1000,6 +991,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (tratarCliqueCalaboucos(d, {
       save: save(), salvar, mostrarToast, render, tela, batalhaBloqueando,
       aliadosDoSave: aliadosAtuais, st: calaboucosUi,
+    })) return;
+    if (tratarCliqueReliquias(d, {
+      save: save(), salvar, mostrarToast, render, st: reliquiasUi,
     })) return;
     if (t.id === 'exp-fechar') {
       if (painel !== 'descanso' && origemPainelExp === 'descanso') {
