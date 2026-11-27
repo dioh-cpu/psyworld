@@ -210,7 +210,7 @@ export function criarArena(host, { artes = {} } = {}) {
     const frente = vaga % 2 === 1;
     const sprite = spriteNoCampo(u, opArt);
     const elemento = Object.hasOwn(NOME_ELEMENTO, u.elemento) ? u.elemento : 'neutro';
-    const el = document.createElement('button'); el.className = `un ${u.lado}${frente ? ' frente' : ''}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id;
+    const el = document.createElement('button'); el.className = `un ${u.lado}${frente ? ' frente' : ''}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id; el.dataset.especie = u.especie;
     el.style.left = `${x.toFixed(1)}%`;
     el.style.setProperty('--posicao-y', `${altura}%`);
     if (sprite.escalaAltura !== 1) el.style.setProperty('--escala-altura-sprite', sprite.escalaAltura);
