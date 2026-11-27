@@ -8,7 +8,9 @@ import { darPocao, bonusDoMembro } from './regiao1-halloween-regras.js';
 import { membrosFormacao } from './regiao1-exp-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { locaisAtivos, avancar, gestaoDe, candidatasObra, enfileirarObras, acelerarObra, custoAceleracao, prontoParaColetar, coletarTudo, previsaoLote, fabricarLote, repetirUltimoLote, capacidade, duracaoDaObra } from './regiao1-gestao-regras.js';
-import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { criarRng, criarUnidade, gerarInimigos, criarBatalha, atorAtual, executar, decidir, novaExpedicao, pagarFase, custoDoNivel, falta, construir, prosperidade, bonusDaCidade, dificuldadeDaFase, statsDoNivel, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { perfilCombateEquipamento } from './regiao1-reliquias-regras.js';
+import { criarEstadoDomadorBatalha } from './regiao1-domadores-regras.js';
 import { ganharXpPasse } from './regiao1-passe-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -445,10 +447,17 @@ const estadoTxt = (exp) => ({ preparando: 'pronta para a próxima fase', batalha
   function comecarFase(manterHp = null) {
     const s = estado(), exp = s.exp, rota = rotaDe(exp.rota), fase = rota.fases[exp.fase], r = roster();
     const bonus = bonusDaCidade(s, D);
-    const al = exp.equipe.map((id, i) => { const m = r.find((x) => x.id === id); const bt = bonusDoMembro(m); return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus: { ...bonus, ...bt, hp: (bonus.hp || 0) + (bt.hp || 0), atk: (bonus.atk || 0) + (bt.atk || 0), def: (bonus.def || 0) + (bt.def || 0) } }); });
-    artesAliadosFase = {}; { const form = membrosFormacao(getSave().idle); const livres = [0, 1, 2, 3].filter((v) => !form.some((x) => exp.equipe.includes(`m${x.idx}`) && x.vaga === v)); al.forEach((u, i) => { const f = form.find((x) => `m${x.idx}` === exp.equipe[i]); u.vaga = f ? f.vaga : livres.shift(); const mm = getSave().idle.equipe[Number(String(exp.equipe[i]).slice(1))]; const art = mm && arteDoIndividuo(mm); if (art) artesAliadosFase[u.especie] = art; }); }
+    const saveAtual = getSave();
+    const al = exp.equipe.map((id, i) => {
+      const m = r.find((x) => x.id === id);
+      const bt = bonusDoMembro(m);
+      const mm = saveAtual?.idle?.equipe?.[Number(String(id).slice(1))];
+      const equip = mm?.uid ? perfilCombateEquipamento(saveAtual, mm.uid, statsDoNivel(m.nivel || 1, D.papeis?.[m.especie])) : null;
+      return criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel, lado: 'a', papeis: D.papeis, bonus: { ...bonus, ...bt, hp: (bonus.hp || 0) + (bt.hp || 0), atk: (bonus.atk || 0) + (bt.atk || 0), def: (bonus.def || 0) + (bt.def || 0) }, equip });
+    });
+    artesAliadosFase = {}; { const form = membrosFormacao(saveAtual.idle); const livres = [0, 1, 2, 3].filter((v) => !form.some((x) => exp.equipe.includes(`m${x.idx}`) && x.vaga === v)); al.forEach((u, i) => { const f = form.find((x) => `m${x.idx}` === exp.equipe[i]); u.vaga = f ? f.vaga : livres.shift(); const mm = saveAtual.idle.equipe[Number(String(exp.equipe[i]).slice(1))]; const art = mm && arteDoIndividuo(mm); if (art) artesAliadosFase[u.especie] = art; }); }
     if (manterHp) al.forEach((u, i) => { const h = manterHp[exp.equipe[i]]; if (h != null) u.hp = Math.max(1, Math.min(u.hpMax, Math.round(h * u.hpMax + u.hpMax * bonus.cura))); });
-    batalha = criarBatalha(al, ajustarInimigos(gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)), 1, D.papeis)); // Região 1: sem formas dos iniciais como inimigas
+    batalha = criarBatalha(al, ajustarInimigos(gerarInimigos(fase, D.papeis, rng, Object.keys(s.inimigosLiberados)), 1, D.papeis), { domador: criarEstadoDomadorBatalha(saveAtual) }); // Região 1: sem formas dos iniciais como inimigas
     artesFase = { ...artesAliadosFase }; if (D.arteInimigo) for (const u of [...batalha.inimigos, ...batalha.esperaI]) artesFase[u.especie] = D.arteInimigo(u.especie, exp.fase);
     arena = null;
     batalha.log.push(`Fase ${exp.fase + 1}: ${fase.nome}. ${batalha.inimigos.length} inimigo(s) à frente.`);

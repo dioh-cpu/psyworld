@@ -137,6 +137,7 @@ export function tratarCliqueCalaboucos(d, { save, salvar, mostrarToast, render, 
       inimigos: ini.nivel.inimigos,
       ritmo: 420,
       regiao: 1,
+      save,
       onFim: (venceu, _f, _m, resumo) => {
         const res = concluirCalaboucoNivel(save, cid, nv, resumo || { venceu: Boolean(venceu), todosVivos: false }, { batalhaId: ini.batalhaId });
         salvar();

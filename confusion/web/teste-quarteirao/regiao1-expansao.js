@@ -999,7 +999,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       return;
     }
     const aliadosAtuais = () => R.membrosFormacao(save().idle).map(({ m: x, vaga }) => ({
-      especie: x.especie, nivel: x.nivel || 1, vaga, arte: x.arte || arteDoIndividuo(x), bonus: bonusCombateMembro(x),
+      uid: x.uid, especie: x.especie, nivel: x.nivel || 1, vaga, arte: x.arte || arteDoIndividuo(x), bonus: bonusCombateMembro(x),
     }));
     if (tratarCliqueMissoes(d, {
       save: save(), salvar, mostrarToast, render, tela, batalhaBloqueando,

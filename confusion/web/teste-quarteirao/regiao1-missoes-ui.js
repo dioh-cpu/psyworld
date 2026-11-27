@@ -168,6 +168,7 @@ export function tratarCliqueMissoes(d, { save, salvar, mostrarToast, render, tel
       inimigos: etapa.inimigos || [['Brumacervo', Math.max(5, p.capitulo * 12), p.recompensa?.reliquiaElemento || 'planta', {}]],
       ritmo: 420,
       regiao: p.capitulo,
+      save,
       onFim: (venceu, _f, _m, resumo) => {
         if (venceu) {
           const r = avancarEtapaParalela(save, p.id, resumo || { venceu: true });

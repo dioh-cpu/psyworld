@@ -208,6 +208,7 @@ export function tratarCliqueTorres(d, { save, salvar, mostrarToast, render, tela
       aliados: aliadosDoSave(),
       inimigos: ini.andar.inimigos,
       ritmo: 420,
+      save,
       regiao: 1,
       onFim: (venceu, _f, _m, resumo) => {
         const res = concluirAndarTorreElemental(save, tid, andarNum, resumo || { venceu: Boolean(venceu) }, { batalhaId: ini.batalhaId });
@@ -246,6 +247,7 @@ export function tratarCliqueTorres(d, { save, salvar, mostrarToast, render, tela
       aliados: aliadosDoSave(),
       inimigos: ini.andar.inimigos,
       ritmo: 420,
+      save,
       regiao: 2,
       onFim: (venceu, _f, _m, resumo) => {
         const res = concluirAndarTorreUnica(save, tid, andarNum, resumo || { venceu: Boolean(venceu) }, { batalhaId: ini.batalhaId });

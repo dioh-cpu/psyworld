@@ -2,7 +2,9 @@
 // Onírico, ordem dos turnos, e no rodapé até 3 habilidades do Onírico da vez (ícone, nome, custo e recarga). Os efeitos vêm de
 // regiao1-vfx.js, disparados uma única vez por evento. `criarArena` serve à Estratégia, aos Reinos e à Campanha; `criarTelaBatalha`
 // é o overlay completo usado por missões e capítulos.
-import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, resumoBatalha, EFEITOS, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, resumoBatalha, statsDoNivel, EFEITOS, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { perfilCombateEquipamento } from './regiao1-reliquias-regras.js';
+import { criarEstadoDomadorBatalha } from './regiao1-domadores-regras.js';
 import { criarCtx, tocarEvento, duracaoEstimada, entradaChefe } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE, LINHAS } from '../species.js';
 import { pref, proximaVelocidade } from './regiao1-sfx.js';
@@ -428,12 +430,18 @@ export function criarTelaBatalha() {
     const papeis = c.papeis || {};
     for (const m of c.aliados) if (m.arte) c.artes = { ...(c.artes || {}), [m.especie]: m.arte }; // arte conforme o tier do indivíduo
     if (arena && c.artes) arena = criarArena(el, { artes: c.artes });
-    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => { const u = criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: { ...(c.bonus || {}), ...(m.bonus || {}) }, equip: m.equip || null }); if (Number.isInteger(m.vaga)) u.vaga = m.vaga; return u; });
+    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => {
+      const equip = m.equip || (c.save && m.uid ? perfilCombateEquipamento(c.save, m.uid, statsDoNivel(m.nivel || 1, papeis[m.especie])) : null);
+      const u = criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: { ...(c.bonus || {}), ...(m.bonus || {}) }, equip });
+      if (Number.isInteger(m.vaga)) u.vaga = m.vaga;
+      return u;
+    });
     const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento, op], i) => {
       const f = formaDoEncontro(esp, nv, op || {}, c.regiao ?? 1); // forma definida no encontro (e regra dos iniciais)
       const u = criarUnidade({ id: `i${i}`, especie: f.especie, nivel: nv, lado: 'i', papeis, elemento: f.substituido ? undefined : elemento, bonus: op?.bonus || {} });
       if (f.arte) u.arte = f.arte; if (f.forma) u.forma = f.forma; if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
-    b = criarBatalha(al, ini, { domador: c.domador || null }); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render();
+    const domador = c.domador || (c.save ? criarEstadoDomadorBatalha(c.save) : null);
+    b = criarBatalha(al, ini, { domador }); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render();
     // entrada do chefe: o primeiro turno espera o clipe (fora do modo minimizado)
     const temChefe = ini.some((u) => u.chefe) && !minimizada;
     if (temChefe) entradaChefe(criarCtx({ arena: el, campo: el.querySelector('.tb-campo') || el, no: (id) => el.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} })).catch(() => {});

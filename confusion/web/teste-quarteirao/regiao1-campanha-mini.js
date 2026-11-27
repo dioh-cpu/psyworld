@@ -397,6 +397,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
     const fase = ini.fase;
     const idle = garantirEstadoIdle(save);
     const aliados = membrosFormacao(idle).map(({ m, vaga }) => ({
+      uid: m.uid,
       especie: m.especie,
       nivel: m.nivel || 1,
       bonus: bonusDoMembro(m),
@@ -412,6 +413,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
       inimigos: fase.inimigos,
       ritmo: 420,
       regiao: fase.capitulo,
+      save,
       onFim: (venceu, _frac, _eraMin, resumo) => {
         const resumoFinal = resumo || { venceu: Boolean(venceu), todosVivos: false, classes: {}, elementos: {}, supremasUsadas: 0 };
         const res = concluirFaseCampanhaMini(getSave(), fase.id, resumoFinal, { batalhaId: ini.batalhaId });
