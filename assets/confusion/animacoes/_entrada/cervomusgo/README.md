@@ -19,3 +19,7 @@ A dupla final de folhas é `03` + `04`; `01` e `02` ficam como referências/alte
 - Preservar o chroma magenta na extração, alinhar os cascos na mesma linha e manter escala coerente. Gerar os formatos/canvases que o jogo já espera e manter a arte estática atual como fallback.
 - Rodar `tools/processar_animacao.py --validar assets/confusion/animacoes/cervomusgo` depois da geração. Corrigir e repetir até validar os quatro sentidos sem cortes, franja magenta ou pulo de escala.
 - Não sobrescrever nem apagar estes MP4s de entrada. Se alguma vista ou anatomia estiver incorreta, relatar o arquivo e a vista antes de integrar.
+
+## Lote novo de caminhada — 2026-11-27
+
+Foram adicionados quatro originais de caminhada em `lote-caminhada-20261127/`, organizados em subpastas `forma-1`, `forma-2` e `forma-3`. A classificação visual foi comparada às artes de catálogo; vistas, hashes, dimensões e instruções de processamento estão no [README do lote](lote-caminhada-20261127/README.md). São fontes brutas, ainda não integradas ao runtime. A forma 3 usa frente/costas e esquerda/direita em dois vídeos separados.
