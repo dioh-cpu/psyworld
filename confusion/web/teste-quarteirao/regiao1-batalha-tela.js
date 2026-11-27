@@ -509,7 +509,7 @@ export function criarTelaBatalha() {
     if (temChefe) entradaChefe(criarCtx({ arena: el, campo: el.querySelector('.tb-campo') || el, no: (id) => el.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} })).catch(() => {});
     agendar((700 + (temChefe ? 2300 : 0)) / vel());
   }
-  function fechar(venceu) { if (fechado) return; fechado = true; const eraMinimizada = minimizada; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; const resumo = b ? resumoBatalha(b) : null; el.style.display = 'none'; el.innerHTML = ''; liberarVideosBatalha(); const f = cfg?.onFim; b = null; f?.(venceu, frac, eraMinimizada, resumo); }
+  function fechar(venceu) { if (fechado) return; fechado = true; const eraMinimizada = minimizada; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; const resumo = b ? resumoBatalha(b) : null; if (resumo && b.motivoFim) resumo.motivoFim = b.motivoFim; window.__cwFimMotivo = b?.motivoFim || null; el.style.display = 'none'; el.innerHTML = ''; liberarVideosBatalha(); const f = cfg?.onFim; b = null; f?.(venceu, frac, eraMinimizada, resumo); }
   function encerrarSilencioso() { clearTimeout(timer); el.style.display = 'none'; el.innerHTML = ''; liberarVideosBatalha(); b = null; }
   el.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t || !b) return;
