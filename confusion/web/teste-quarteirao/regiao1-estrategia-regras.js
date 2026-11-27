@@ -5,6 +5,7 @@
 import { ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
 import { multElemento } from '../core.js';
 import { EFEITOS, kitDe, PAPEL_PADRAO } from './regiao1-batalha-habilidades.js';
+import { CHEFE_POR_NOME } from './regiao1-kits-reinos.js';
 import { bonusCategoriaPoder } from './regiao1-revanche-regras.js';
 import { bonusTier, bonusEstrelas, classeDaEspecie, tierDe, estrelasDe, ESTRELAS_CFG, TIER_CFG } from './regiao1-progressao.js';
 export { KITS, kitDe, EFEITOS, temKitProprio, MORTALIO_VIOLETA_CFG, habilidadeVioletaMortalio, kitMortalio } from './regiao1-batalha-habilidades.js';
@@ -60,7 +61,22 @@ export const LIMITE_ALIADOS = 4;
 export function criarBatalha(aliados, inimigos, { ativos = LIMITE_ALIADOS } = {}) {
   const vagas = Math.min(ativos, LIMITE_ALIADOS);
   const emCampoA = aliados.slice(0, vagas), emCampoI = inimigos.slice(0, vagas);
+  for (const u of [...inimigos, ...aliados]) if (u.chefe && CHEFE_POR_NOME[u.especie] && u.furia == null) u.furia = CHEFE_POR_NOME[u.especie].furia;
   return { aliados: emCampoA, inimigos: emCampoI, esperaI: inimigos.slice(vagas, vagas + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0 };
+}
+// Fúria do chefe (uma vez por batalha): abaixo do limiar, limpa os efeitos negativos, recupera 10% da vida, ganha ataque e
+// defesa elevados por 3 turnos e o golpe especial volta pronto. O evento leva `fases` para o VFX anunciar.
+function verificarFuria(b) {
+  for (const u of b.ordem) {
+    if (!u.chefe || u.furia == null || u.emFuria || u.hp <= 0 || u.hp / u.hpMax > u.furia) continue;
+    u.emFuria = true;
+    for (const id of Object.keys(u.efeitos || {})) if (EFEITOS[id]?.debuff) delete u.efeitos[id];
+    u.hp = Math.min(u.hpMax, u.hp + Math.round(u.hpMax * 0.1));
+    u.efeitos = u.efeitos || {}; u.efeitos.ataque_alto = { turnos: 3 }; u.efeitos.defesa_alta = { turnos: 3 };
+    if (Array.isArray(u.cd)) u.cd[u.cd.length - 1] = 0;
+    b.log.push(`${u.especie} entra em fúria!`);
+    if (b.evento) (b.evento.fases ||= []).push({ id: u.id, nome: u.especie });
+  }
 }
 export const vivos = (l) => l.filter((u) => u.hp > 0);
 const inimigosDe = (b, u) => (u.lado === 'a' ? b.inimigos : b.aliados);
@@ -219,7 +235,7 @@ export function executar(b, acao, rng) {
   }
   b.evento = ev;
   fimDoTurno(u); b.fila.shift();
-  reforcar(b); verificarFim(b);
+  verificarFuria(b); reforcar(b); verificarFim(b);
   if (b.log.length > 40) b.log = b.log.slice(-40);
   return b;
 }

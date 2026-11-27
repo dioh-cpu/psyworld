@@ -70,3 +70,25 @@ export const LINHAGENS_REINOS = [
 
 export const PAPEL_DA_CLASSE = { tanque: 'defesa', suporte: 'suporte', guerreiro: 'ataque', mago: 'ataque', assassino: 'ataque' };
 export const LINHAGEM_DO_REINO = Object.fromEntries(LINHAGENS_REINOS.map((l) => [l.nome, l]));
+
+// Chefes dos Reinos 01–12 (também chefes das Regiões 1–12: região N ↔ reino N). Kit: [golpe (cd 1), técnica em área (cd 3),
+// golpe especial (cd 5)]. Fúria: abaixo de `furia` da vida, o chefe limpa os efeitos negativos, recupera 10% da vida,
+// ganha ataque e defesa elevados e o golpe especial volta pronto (o VFX anuncia a fase).
+// Para a batalha: specChefeReino(reino, nivel) devolve a tupla de inimigo [nome, nível, elemento, { chefe, nome, bonus }].
+const C = (reino, nome, elemento, habilidades, extra = {}) => ({ reino, nome, elemento, habilidades, furia: 0.5, bonus: { hp: 2.4, atk: 0.3, def: 0.25 }, ...extra });
+export const CHEFES_REINOS = [
+  C(1, 'Guardião do Sino', 'luz', ['Badalo Sagrado', 'Eco do Campanário', 'Dobre da Colheita']),
+  C(2, 'Rainha da Colmeia Dourada', 'inseto', ['Ferrão Real', 'Enxame Dourado', 'Decreto da Colmeia']),
+  C(3, 'Basilisco da Crista Rubra', 'fogo', ['Presa Rubra', 'Olhar Petrificante', 'Chama do Basilisco']),
+  C(4, 'Caranguejo Salífero', 'agua', ['Pinça Esmagadora', 'Jato de Salmoura', 'Maré Salífera']),
+  C(5, 'Tecelão do Vendaval', 'voador', ['Fio Navalha', 'Tear de Ventos', 'Vendaval Tecido']),
+  C(6, 'Colosso do Forno Oco', 'terra', ['Punho de Terracota', 'Bafo do Forno', 'Desabamento do Colosso']),
+  C(7, 'Golem de Ametista', 'pedra', ['Soco Cristalino', 'Chuva de Geodos', 'Cataclismo de Ametista']),
+  C(8, 'Abade da Névoa', 'planta', ['Cajado de Ervas', 'Incenso Sonífero', 'Prece da Bruma']),
+  C(9, 'Regente da Escória', 'aco', ['Cetro Fundido', 'Banho de Escória', 'Decreto da Forja']),
+  C(10, 'Urso da Aurora Fraturada', 'agua', ['Patada Glacial', 'Rugido Boreal', 'Aurora Partida']),
+  C(11, 'Esfinge de Vidro', 'trevas', ['Garra Vítrea', 'Enigma Sombrio', 'Juízo da Esfinge']),
+  C(12, 'Sentinela do Farol', 'eletrico', ['Lança do Farol', 'Feixe Varredor', 'Clarão da Sentinela'], { furia: 0.6 }),
+];
+export const CHEFE_POR_NOME = Object.fromEntries(CHEFES_REINOS.map((c) => [c.nome, c]));
+export const specChefeReino = (reino, nivel) => { const c = CHEFES_REINOS.find((x) => x.reino === reino); return c ? [c.nome, nivel, c.elemento, { chefe: true, nome: c.nome, bonus: { ...c.bonus } }] : null; };

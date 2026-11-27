@@ -893,10 +893,24 @@ export async function tocarEvento(ctx, ev) {
   else if (ev.tipo === 'defender') { const c = corpo(ctx, A); bolhaEscudo(M, c, '#60a5fa', 0, 0.9); onda(M, c.x, c.pe, { cor: '#60a5fa', r1: c.w, vida: 0.5 }); numero(ctx, A, '🛡️ Defesa', '#93c5fd', { pequeno: true }); ctx.aplicarHp(ev.ator); await ESP(520 * ctx.k); }
   else await genApoio(ctx, M, A, ev, hab, elem);
   for (const r of ev.alvos || []) ctx.aplicarHp(r.id);
+  for (const f of ev.fases || []) await furiaChefe(ctx, M, f);
   // roubo de vida (modo de pânico)
   if (ev.roubo) { const c = corpo(ctx, A); for (const r of ev.alvos || []) { const el = ctx.no(r.id); if (!el) continue; const t = corpo(ctx, el); for (let k = 0; k < M.n(5); k++) projetil(M, t.x + R(-10, 10), t.y + R(-10, 10), c.x, c.y, { tipo: 'orbe', cor: '#dc2626', cor2: '#fecaca', tam: 6, arco: R(20, 60), vida: 0.45, atraso: k * 0.04 }); } numero(ctx, A, `🩸 +${ev.roubo}`, '#86efac', { dy: -20 }); ctx.aplicarHp(ev.ator); }
   A._pose?.mostrar(false); // garante o retorno ao repouso ao fim do evento
   return ev;
+}
+// Fúria do chefe: tela escurece, faixa com o nome, onda vermelha nos pés, tremor e o número "Fúria!"
+async function furiaChefe(ctx, M, f) {
+  const B = ctx.no(f.id); if (!B) return;
+  ctx.aplicarHp(f.id);
+  const c = corpo(ctx, B);
+  escurecer(ctx, 'rgba(40,0,6,.66)', 1300);
+  await cutIn(ctx, B, { nome: 'Fúria', icone: '👑' }, '#7f1d1d', '#f87171');
+  onda(M, c.x, c.pe, { cor: '#ef4444', r1: c.w * 1.6, vida: 0.7 });
+  onda(M, c.x, c.pe, { cor: '#fca5a5', r1: c.w * 2.4, vida: 0.9 });
+  tremer(ctx, 12, 700); flash(ctx, '#ef4444', 160, 0.3);
+  numero(ctx, B, '👑 Fúria!', '#fca5a5', { grande: true });
+  await ESP(620 * ctx.k);
 }
 // Clipe do Flow: toca o vídeo sobre o alvo (ou no centro dos alvos, em habilidades de grupo) e aplica o resultado no impactoMs.
 // Devolve false se o vídeo não carregar, para a coreografia procedural assumir.
@@ -967,5 +981,5 @@ export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade
   else if (ev.tipo === 'reviver') base = FX_HABILIDADES.retorno_alma.ms;
   else if (ev.tipo === 'defender') base = 650;
   else base = 1250 + n * 90;
-  return (base + (ult ? 820 : 0) + (ev.antes?.length ? 560 : 0)) * k;
+  return (base + (ult ? 820 : 0) + (ev.antes?.length ? 560 : 0) + (ev.fases?.length || 0) * 1430) * k;
 };

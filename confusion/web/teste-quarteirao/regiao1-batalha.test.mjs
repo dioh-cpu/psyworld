@@ -91,3 +91,24 @@ test('reinos 03–12: linhagem nova entra em batalha com o kit e o papel da clas
   rodarAte(b, () => false);
   assert.ok(b.fim);
 });
+test('chefes dos reinos: kit próprio, tupla de batalha e fúria uma única vez', async () => {
+  const H = await import('./regiao1-batalha-habilidades.js');
+  const { CHEFES_REINOS, specChefeReino } = await import('./regiao1-kits-reinos.js');
+  assert.equal(CHEFES_REINOS.length, 12);
+  const ids = new Set([...Object.values(H.KITS), ...Object.values(H.KITS_REINOS)].flat().map((h) => h.id));
+  for (const c of CHEFES_REINOS) for (const h of H.kitDe(c.nome)) { assert.ok(!ids.has(h.id), h.id); ids.add(h.id); }
+  const [nome, nv, el, op] = specChefeReino(3, 40);
+  const chefe = Object.assign(M.criarUnidade({ id: 'x', especie: nome, nivel: nv, lado: 'i', elemento: el, bonus: op.bonus }), { chefe: true });
+  assert.equal(chefe.kit[2].id, 'chama_do_basilisco');
+  const b = M.criarBatalha([u('a', 'Ignavor', 'a', 40), u('b', 'Vaelith', 'a', 40)], [chefe]);
+  assert.equal(chefe.furia, 0.5);
+  chefe.hp = Math.round(chefe.hpMax * 0.51); chefe.efeitos = { veneno: { turnos: 3, valor: 5 } }; chefe.cd = [0, 0, 4];
+  let viu = 0;
+  const passo = () => { const a = M.atorAtual(b); if (!a) return false; M.executar(b, M.decidir(b, a, rng), rng); if (b.evento?.fases) viu += b.evento.fases.length; return true; };
+  while (!chefe.emFuria && passo());
+  assert.equal(viu, 1); assert.ok(chefe.emFuria);
+  assert.ok(!chefe.efeitos.veneno && chefe.efeitos.ataque_alto && chefe.efeitos.defesa_alta);
+  assert.equal(chefe.cd[2], 0);
+  for (let i = 0; i < 400 && passo(););
+  assert.ok(b.fim); assert.equal(viu, 1);
+});
