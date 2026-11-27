@@ -4,6 +4,10 @@ import {
   DOMADORES_CFG,
   CATALOGO_DOMADORES,
   DOMADORES_POR_ID,
+  MARCOS_HABILIDADES_DOMADOR,
+  CURVA_DESBLOQUEIO_DOMADORES,
+  habilidadesEscaladasDomador,
+  rankHabilidadeDomador,
   domadoresDe,
   desbloquearDomador,
   selecionarDomadorAtivo,
@@ -106,4 +110,33 @@ test('Domadores auxiliares: XP próprio (idempotente + poção), passiva crescen
   assert.equal(rec.idle.domadores.progresso.manipulador.nivel, manip.nivel);
   const val = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(rec)), conta: rec.conta });
   assert.equal(val.ok, true);
+});
+
+test('Domadores auxiliares: curva de liberação e escalonamento das habilidades nos marcos 1 / 20 / 45 / 70 / 100', () => {
+  assert.equal(CURVA_DESBLOQUEIO_DOMADORES.length, 2);
+  assert.equal(MARCOS_HABILIDADES_DOMADOR.length, 5);
+  assert.equal(rankHabilidadeDomador(1).rank, 1);
+  assert.equal(rankHabilidadeDomador(20).rank, 2);
+  assert.equal(rankHabilidadeDomador(45).rank, 3);
+  assert.equal(rankHabilidadeDomador(70).rank, 4);
+  assert.equal(rankHabilidadeDomador(100).rank, 5);
+
+  const h1 = habilidadesEscaladasDomador('manipulador', 1);
+  const h45 = habilidadesEscaladasDomador('manipulador', 45);
+  const h100 = habilidadesEscaladasDomador('manipulador', 100);
+  assert.equal(h1[0].mult, 1.3);
+  assert.ok(h45[0].mult > h1[0].mult); // +10% no S1
+  assert.equal(h45[1].cd, 2);           // S2 cd 3 -> 2
+  assert.equal(h45[1].efeitos[0].turnos, 3); // +1 turno buff
+  assert.ok(h100[2].mult > h1[2].mult); // +15% no S3
+  assert.equal(h100[2].cd, 4);          // S3 cd 5 -> 4
+
+  const s = novoSave();
+  s.idle.domadores.progresso.azazel.nivel = 100;
+  const est = criarEstadoDomadorBatalha(s, 'azazel');
+  assert.equal(est.ganhoPorTurnoAliado, 40);
+  assert.equal(est.habilidades[1].cd, 2);
+  assert.equal(est.habilidades[2].cd, 4);
+  carregarBarraDomador(est, 'turno_aliado');
+  assert.equal(est.barraEnergia, 40);
 });

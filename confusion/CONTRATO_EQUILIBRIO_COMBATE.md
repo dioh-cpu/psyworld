@@ -55,4 +55,10 @@ Use `perfilCombateEquipamento(save, unidadeOuUid, statsBase)` de `regiao1-reliqu
 - `bonusPassivoDomadorAtivo(save)`: devolve `{ vidaPct, ataquePct, defesaPct, critico }` aplicados à equipe no início da luta.
   - **Azazel:** `+6%..+15%` vida, `+4%..+10%` ataque; habilidades `Comando Sombrio` (cd 1), `Vínculo Protetor` (cd 3), `Decreto do Domador` (cd 5).
   - **Manipulador das Oito Lâminas:** `+8%..+15%` ataque, `+5%..+10%` crítico; habilidades `Dança das Oito Lâminas` (cd 1), `Sincronia Telecinética` (cd 3), `Tempestade das Oito Lâminas` (cd 5) já cadastradas em `KITS['Manipulador das Oito Lâminas']`.
-- `carregarBarraDomador(estado, 'turno_aliado' | 'dano_recebido')`: `+35` por turno aliado (`~3` turnos base), `+10` ao time sofrer dano; `escolherAcaoDomador(estado)` dispara S3 > S2 > S1 quando `barraEnergia >= 100`.
+- `carregarBarraDomador(estado, 'turno_aliado' | 'dano_recebido')`: `+35` por turno aliado (`~3` turnos base, `+40` no nv. 100), `+10` ao time sofrer dano; `escolherAcaoDomador(estado)` dispara S3 > S2 > S1 quando `barraEnergia >= 100`.
+- **Escalonamento de habilidades por nível (`habilidadesEscaladasDomador` / `MARCOS_HABILIDADES_DOMADOR`):**
+  - **Nv. 1 (Rank 1):** base (`cd: 1 / 3 / 5`, energia `+35/turno`).
+  - **Nv. 20 (Rank 2):** S1 `+10%` multiplicador e `+10%` chance de efeito.
+  - **Nv. 45 (Rank 3):** S2 recarga `-1` (`3 → 2`), `+4%` cura/escudo (Azazel) ou `+1` turno de buff (Manipulador).
+  - **Nv. 70 (Rank 4):** S3 `+15%` multiplicador e `+15%` chance de efeito.
+  - **Nv. 100 (Rank 5):** S3 recarga `-1` (`5 → 4`) e `+5` energia por turno aliado (`35 → 40`).
