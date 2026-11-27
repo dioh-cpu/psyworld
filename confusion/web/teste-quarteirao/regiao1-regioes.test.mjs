@@ -123,6 +123,26 @@ test('50 linhagens dos Reinos 03–12: formas base (01), intermediária (02) e f
   assert.deepEqual(repetidosNoCatalogo(), []);
 });
 
+test('catálogo: nenhum nome de forma (01/02/03) se repete entre linhagens (iniciais + Reinos 03–12)', () => {
+  const norm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const vistos = new Map();
+  const todas = [
+    ...LINHAS.map((l) => ({ id: l.id, formas: [l.inicial, l.atual, l.evolucao] })),
+    ...LINHAS_REINOS.map((l) => ({ id: l.id, formas: [l.inicial, l.atual, l.evolucao] })),
+  ];
+  for (const lin of todas) {
+    for (const nome of lin.formas) {
+      const chave = norm(nome);
+      assert.equal(vistos.has(chave), false, `Nome de forma repetido entre linhagens: "${nome}" (${vistos.get(chave)} e ${lin.id})`);
+      vistos.set(chave, lin.id);
+    }
+  }
+  assert.equal(FORMAS_LINHAGENS_REINOS['Escaravéu'].base, 'Escarabito');
+  assert.equal(FORMAS_LINHAGENS_REINOS.Escorvaz.base, 'Escorita');
+  assert.equal(ELEMENTO_DA_ESPECIE.Escarabito, 'inseto');
+  assert.equal(CLASSE_DA_ESPECIE.Escarabito, 'guerreiro');
+});
+
 test('Região 2 jogável: portal, mapas, encontros 20–45, chefe Rainha da Colmeia Dourada e missões curtas 1x', () => {
   const portal = MAPAS.REINO.saidas.find((s) => s.tipo === 'portal_r2');
   assert.ok(portal && portal.destino === 'R2_C0');

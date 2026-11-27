@@ -65,7 +65,7 @@ export const FORMAS_LINHAGENS_REINOS = {
   Vitralgo: { base: 'Vitrita', final: 'Vitraluz' },
   'Miragél': { base: 'Mirinha', final: 'Miragália' },
   Sabulis: { base: 'Sabulito', final: 'Sabulâmina' },
-  'Escaravéu': { base: 'Escarita', final: 'Escarassol' },
+  'Escaravéu': { base: 'Escarabito', final: 'Escarassol' },
 
   // 12 · Atol do Farol
   Perolumo: { base: 'Perolinha', final: 'Perolfarol' },
