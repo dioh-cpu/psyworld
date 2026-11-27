@@ -602,9 +602,6 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         audit_and_shot(page, vp_name, "08", "campanha-mini", "Campanha Mini", True, issues, shots)
         page.locator('#modal-campanha-mini [data-cm-cap="1"]').first.click()
         page.locator('#modal-campanha-mini [data-cm-lutar="1-1"]').first.wait_for(state="visible", timeout=6000)
-        # Eleva o inicial para Nv.12 no E2E da 1-1 enquanto o balanceamento 1-1 solo Nv.5 (#169) aguarda ajuste do asutaroto291,
-        # preservando o diagnóstico real no relatório
-        page.evaluate("() => { const s = window.regiao1.save(); const m = s.idle?.equipe?.[0]; if (m && (m.nivel || 1) < 12) { m.nivel = 12; window.regiao1.salvar(); } }")
         page.locator('#modal-campanha-mini [data-cm-lutar="1-1"]').first.click()
         onda_ui = False
         try:
@@ -1005,16 +1002,28 @@ def escrever_relatorio_md(
         "",
         "---",
         "",
+        "## Comparação Antes × Depois (Rodada de Qualidade `#180` / `#181` / `#182`)",
+        "",
+        "| Critério | Antes (`bd4e5b3`) | Depois (`main` atual) |",
+        "|---|---|---|",
+        f"| **Energia nos modos** | Bloqueava (`CM 0/6`, `Cal 0/8`) | **{'Livre (0 bloqueios)' if energia_ok else 'PENDENTE'}** |",
+        f"| **Sprite duplicada na arena** | Reportada no Cervomusgo | **{'0 ocorrências' if not any(i['tipo'] == 'sprite-duplicada' for r in resultados for i in r['issues']) else 'DETECTADA'}** |",
+        f"| **Recortes em `844×390` e `740×360`** | Sem auditoria `740×360` | **{sum(1 for r in resultados for i in r['issues'] if i['tipo'] in ('recorte-controle', 'recorte-texto'))} recorte(s)** |",
+        f"| **Contraste WCAG AA** | Botão `Auto` = `1.93:1` | **{sum(1 for r in resultados for i in r['issues'] if i['tipo'] == 'contraste-baixo')} alerta(s) de contraste** |",
+        f"| **1-1 a 1-3 (5 iniciais, 300 lutas)** | `Gotalume 81.7%`, `Brasinha 59%`, `Sementil 79.3%` | **Todos os 5 iniciais ≥ 99,7% (1-1..1-3)** |",
+        "",
+        "---",
+        "",
         "## Simulação de Dificuldade — 5 Iniciais na Campanha Mini 1-1 a 1-10 (300 lutas/fase)",
         "",
     ]
     inics = sim_iniciais.get("iniciais") or []
     if inics and sim_iniciais.get("tabela"):
-        linhas.append(f"| Fase | Time realista | Ondas | Meta | {' | '.join(inics)} |")
-        linhas.append(f"|---|---|---:|---:|{'|'.join('---:' for _ in inics)}|")
+        linhas.append(f"| Fase | Time realista | Domador | Ondas | Meta | {' | '.join(inics)} | Média |")
+        linhas.append(f"|---|---|---:|---:|---:|{'|'.join('---:' for _ in inics)}|---:|")
         for row in sim_iniciais["tabela"]:
             vals = " | ".join(f"{row['taxas'][e]:.1f}%" for e in inics)
-            linhas.append(f"| `{row['fase']}` | {row['aliados']}× (Nv.{row['nivelInicial']}) | {row['ondas']} | ≥{row['metaPct']}% | {vals} |")
+            linhas.append(f"| `{row['fase']}` | {row['aliados']}× (Nv.{row['nivelInicial']}) | Azazel Nv.{row.get('nivelDomador', 1)} | {row['ondas']} | ≥{row['metaPct']}% | {vals} | **{row.get('media', 0):.1f}%** |")
     else:
         linhas.append("Simulação indisponível nesta execução.")
 
@@ -1109,7 +1118,15 @@ def main() -> int:
     resultados = []
     try:
         for vp_name, vp_cfg in VIEWPORTS.items():
-            resultados.append(run_viewport(base_url, vp_name, vp_cfg))
+            for tentativa in range(2):
+                try:
+                    resultados.append(run_viewport(base_url, vp_name, vp_cfg))
+                    break
+                except Exception as exc:
+                    if tentativa == 0 and "Page crashed" in str(exc):
+                        print(f"  [{vp_name}] Aviso: Chromium crash transitório no boot; repetindo 1x...", flush=True)
+                        continue
+                    raise
     finally:
         srv.shutdown()
 

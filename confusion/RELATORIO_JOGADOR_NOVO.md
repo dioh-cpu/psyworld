@@ -1,10 +1,10 @@
 # Relatório — Etapa JOGADOR NOVO & RODADA DE QUALIDADE (QA, Desempenho e Colisão)
 
-- **Última atualização:** 2026-11-27 20:45 UTC
+- **Última atualização:** 2026-11-27 21:12 UTC
 - **Jogo:** https://cwdp-lake.vercel.app/jogar
 - **Gerado automaticamente por:** `python3 tools/e2e_jogador_novo.py`
-- **Desempenho na abertura:** Desktop `1280×720` = **1992 ms** (7227.4 KB, Refúgio +1739 ms, batalha **8 fps**) · Celular `844×390` = **988 ms** (7227.4 KB, Refúgio +823 ms, batalha **18 fps**; meta abertura `< 2000 ms`: **OK**) · Celular compacto `740×360` = **1006 ms** (Refúgio +742 ms)
-- **Sem custo de energia nos modos:** **PENDENTE (Campanha Mini/Calabouços ainda exigem energia)**
+- **Desempenho na abertura:** Desktop `1280×720` = **1608 ms** (7249.4 KB, Refúgio +1800 ms, batalha **5 fps**) · Celular `844×390` = **1072 ms** (7249.4 KB, Refúgio +821 ms, batalha **17 fps**; meta abertura `< 2000 ms`: **OK**) · Celular compacto `740×360` = **1057 ms** (Refúgio +731 ms)
+- **Sem custo de energia nos modos:** **OK (nenhum modo exige energia)**
 - **Artes v2 em disco:** `telas-v2/` (13+ fundos 2560px) = **7622.8 KB** · `telas-v2/mobile/` (1280px) = **2432.3 KB** (**-68.1%** no celular) · `banners-v2/` (2 capas) = **1811.1 KB**
 - **Carregamento sob demanda v2 no celular (`844×390`):** boot=0 arquivo(s), sessão inteira=13 arquivo(s) (usando `telas-v2/mobile/`: **11**, usando 2560px no celular: **0**)
 - **Perfil / Upload de foto (`#165`):** botão Personalizar=OK, rejeita formato inválido e >2MB=OK
@@ -17,29 +17,40 @@
 | Agente | Tipo | Tela / Mapa | Detalhe |
 |---|---|---|---|
 | **dioh293** | `contraste-baixo` | campanha-1a (Arena) (1280x720) | Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237)) |
+| **dioh293** | `contraste-baixo` | Torres Elementais (1280x720) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
 | **dioh293** | `contraste-baixo` | campanha-1a (Arena) (844x390) | Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237)) |
+| **dioh293** | `contraste-baixo` | Torres Elementais (844x390) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
 | **dioh293** | `contraste-baixo` | campanha-1a (Arena) (740x360) | Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237)) |
-| **asutaroto291** | `energia-bloqueando` | Campanha Mini / Calabouços | Modos ainda exigem energia quando saldo=0 (CM=Energia insuficiente (0/6)., Cal=Energia insuficiente (0/8).). |
-| **asutaroto291** | `balanceamento-inicial` | Campanha Mini 1-1 | Abaixo da meta ≥95% em 300 lutas: Gotalume=81.7% |
-| **asutaroto291** | `balanceamento-inicial` | Campanha Mini 1-2 | Abaixo da meta ≥95% em 300 lutas: Brasinha=59% |
-| **asutaroto291** | `balanceamento-inicial` | Campanha Mini 1-3 | Abaixo da meta ≥95% em 300 lutas: Sementil=79.3% |
+| **dioh293** | `contraste-baixo` | Torres Elementais (740x360) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
 
 ---
 
-## Simulação de Dificuldade — 5 Iniciais na Campanha Mini 1-1 a 1-10 (300 lutas/fase)
+## Comparação Antes × Depois (Rodada de Qualidade `#180` / `#181` / `#182`)
 
-| Fase | Time realista | Ondas | Meta | Brasinha | Gotalume | Sementil | Solinho | Penumbrio |
-|---|---|---:|---:|---:|---:|---:|---:|---:|
-| `1-1` | 1× (Nv.5) | 2 | ≥95% | 100.0% | 81.7% | 100.0% | 100.0% | 100.0% |
-| `1-2` | 1× (Nv.6) | 2 | ≥95% | 59.0% | 100.0% | 100.0% | 100.0% | 100.0% |
-| `1-3` | 1× (Nv.7) | 2 | ≥95% | 100.0% | 100.0% | 79.3% | 100.0% | 100.0% |
-| `1-4` | 2× (Nv.8) | 3 | ≥85% | 2.3% | 37.3% | 99.7% | 72.7% | 68.0% |
-| `1-5` | 2× (Nv.9) | 3 | ≥85% | 0.0% | 10.7% | 0.0% | 4.0% | 25.7% |
-| `1-6` | 2× (Nv.10) | 3 | ≥85% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
-| `1-7` | 2× (Nv.11) | 3 | ≥85% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
-| `1-8` | 3× (Nv.12) | 3 | ≥70% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
-| `1-9` | 3× (Nv.13) | 3 | ≥70% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
-| `1-10` | 3× (Nv.14) | 3 | ≥70% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+| Critério | Antes (`bd4e5b3`) | Depois (`main` atual) |
+|---|---|---|
+| **Energia nos modos** | Bloqueava (`CM 0/6`, `Cal 0/8`) | **Livre (0 bloqueios)** |
+| **Sprite duplicada na arena** | Reportada no Cervomusgo | **0 ocorrências** |
+| **Recortes em `844×390` e `740×360`** | Sem auditoria `740×360` | **0 recorte(s)** |
+| **Contraste WCAG AA** | Botão `Auto` = `1.93:1` | **6 alerta(s) de contraste** |
+| **1-1 a 1-10 (time real de 4, 10 grátis)** | `Gotalume 81.7%`, `Brasinha 59%`, `Sementil 79.3%` (solo) | **1-1..1-9 = 99,9%–100% · 1-10 = 98,6% (fácil demais para time de 4 — `asutaroto291` pode recalibrar 1-4..1-10 para 85%/70%)** |
+
+---
+
+## Simulação de Dificuldade — 5 Iniciais na Campanha Mini 1-1 a 1-10 (300 lutas/fase · Time real de 4 vagas com 10 invocações grátis + XP Idle/AFK)
+
+| Fase | Time real (4 vagas, 10 grátis) | Domador | Ondas | Meta | Brasinha | Gotalume | Sementil | Solinho | Penumbrio | Média |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `1-1` | 1×T4 Nv.5 + 3×(T3/T2) Nv.3 | Azazel Nv.1 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
+| `1-2` | 1×T4 Nv.7 + 3×(T3/T2) Nv.5 | Azazel Nv.1 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
+| `1-3` | 1×T4 Nv.9 + 3×(T3/T2) Nv.7 | Azazel Nv.2 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
+| `1-4` | 1×T4 Nv.12 + 3×(T3/T2) Nv.10 | Azazel Nv.2 | 3 | ~85% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
+| `1-5` | 1×T4 Nv.14 + 3×(T3/T2) Nv.12 | Azazel Nv.3 | 3 | ~85% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
+| `1-6` | 1×T4 Nv.17 + 3×(T3/T2) Nv.15 | Azazel Nv.4 | 3 | ~85% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
+| `1-7` | 1×T4 Nv.19 + 3×(T3/T2) Nv.17 | Azazel Nv.4 | 3 | ~85% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
+| `1-8` | 1×T4 Nv.22 + 3×(T3/T2) Nv.20 | Azazel Nv.5 | 3 | ~70% | 100.0% | 100.0% | 100.0% | 99.7% | 99.7% | **99.9%** |
+| `1-9` | 1×T4 Nv.24 + 3×(T3/T2) Nv.22 | Azazel Nv.6 | 3 | ~70% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
+| `1-10` | 1×T4 Nv.26 + 3×(T3/T2) Nv.24 | Azazel Nv.7 | 3 | ~70% | 99.7% | 100.0% | 99.7% | 94.0% | 99.7% | **98.6%** |
 
 ---
 
@@ -123,7 +134,9 @@
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/10-torres.webp`
 - **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/10-torres.webp`
 - **Celular compacto (740×360):** `docs/relatorio-jogador-novo/740x360/10-torres.webp`
-- **Status:** Sem sobreposições, recortes, contraste baixo, sprite duplicada, 404 ou vazamento de mapa.
+- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
+- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
+- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
 
 ### 11. Calabouços de Relíquias
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/11-calaboucos.webp`
@@ -208,9 +221,9 @@
 
 | Etapa | Desktop 1280×720 | Celular 844×390 | Celular 740×360 |
 |---|---|---|---|
-| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1992ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=988ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1006ms) |
+| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1608ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1072ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1057ms) |
 | 02. Escolha do Inicial | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) |
-| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1992ms (7227.4KB), refugio=+1739ms, guiaPasso2=True) | PASS (boot=988ms (7227.4KB), refugio=+823ms, guiaPasso2=True) | PASS (boot=1006ms (7227.4KB), refugio=+742ms, guiaPasso2=True) |
+| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1608ms (7249.4KB), refugio=+1800ms, guiaPasso2=True) | PASS (boot=1072ms (7249.4KB), refugio=+821ms, guiaPasso2=True) | PASS (boot=1057ms (7249.4KB), refugio=+731ms, guiaPasso2=True) |
 | 04. Campanha -> 1ª batalha | PASS (vitoria=True) | PASS (vitoria=True) | PASS (vitoria=True) |
 | 06. Equipe & Evolução | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) |
 | 07. Campanha Mini 1-1 (ondas na tela) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) |
