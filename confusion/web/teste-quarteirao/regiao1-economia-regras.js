@@ -7,14 +7,16 @@ export const PERFIS_ECONOMIA = {
   casual: {
     id: 'casual',
     nome: 'Jogador Casual (~15–20 min/dia)',
-    energiaMaxDia: 120,
-    descricao: '1 login diário (120 energia): 4 fases rápidas da Campanha, Torres Elementais (1ª vitória gratuita + 3× treino diário), 2 andares da Torre Única, 4 calabouços e 1 contrato de Guilda.',
+    energiaMaxDia: 0,
+    semCustoEnergia: true,
+    descricao: '1 login diário sem limite de energia: fases rápidas da Campanha, Torres Elementais, Torres Únicas, Calabouços e Guilda.',
   },
   ativo: {
     id: 'ativo',
     nome: 'Jogador Ativo (~45–60 min/dia)',
-    energiaMaxDia: 240,
-    descricao: 'Usa toda a regeneração natural (240 energia/dia = 1/6min): Campanha + avanço regional, Torres Elementais (1ª vitória gratuita + 3× treino), 4 andares da Torre Única, ~10 calabouços, Passe completo e Guilda.',
+    energiaMaxDia: 0,
+    semCustoEnergia: true,
+    descricao: 'Jogo livre sem energia: Campanha + avanço regional, Torres Elementais, Torres Únicas, Calabouços, Passe completo e Guilda.',
   },
 };
 
@@ -28,7 +30,7 @@ export const CUSTO_REFERENCIA_ECONOMIA = {
 
 export const METAS_ECONOMIA = {
   casual: {
-    energiaMax: 120,
+    energiaMax: 0,
     diamantesMinDia: 120,
     invocacoesEquivMinSemana: 14,
     maxDiasEvolucao1Para2: 3,
@@ -36,7 +38,7 @@ export const METAS_ECONOMIA = {
     maxDiasArmaUnica: 5,
   },
   ativo: {
-    energiaMax: 240,
+    energiaMax: 0,
     diamantesMinDia: 240,
     invocacoesEquivMinSemana: 32,
     maxDiasEvolucao1Para2: 2,
@@ -45,7 +47,7 @@ export const METAS_ECONOMIA = {
   },
 };
 
-// Rendimento diário revisado por modo (recorrente + média mensal de progressão dos modos novos)
+// Rendimento diário revisado por modo (todos os modos livres de energia; energiaDia = 0)
 export const TABELA_ECONOMIA_MODOS = [
   {
     modo: 'diarias_login_passe',
@@ -56,26 +58,26 @@ export const TABELA_ECONOMIA_MODOS = [
   {
     modo: 'campanha_mini',
     nome: 'Campanha Mini (avanço / rápida)',
-    casual: { energiaDia: 24, diamantes: 25, ouro: 1200, ticketsPermanentes: 0.50, ticketsSemanais: 0.17, essenciaMenor: 2, essenciaMedia: 1.5, essenciaMaior: 0.25, fragmentosUnicos: 0, poReforco: 0 },
-    ativo:  { energiaDia: 48, diamantes: 55, ouro: 2800, ticketsPermanentes: 1.43, ticketsSemanais: 0.48, essenciaMenor: 4, essenciaMedia: 2.5, essenciaMaior: 1.0, fragmentosUnicos: 0, poReforco: 0 },
+    casual: { energiaDia: 0, diamantes: 25, ouro: 1200, ticketsPermanentes: 0.50, ticketsSemanais: 0.17, essenciaMenor: 2, essenciaMedia: 1.5, essenciaMaior: 0.25, fragmentosUnicos: 0, poReforco: 0 },
+    ativo:  { energiaDia: 0, diamantes: 55, ouro: 2800, ticketsPermanentes: 1.43, ticketsSemanais: 0.48, essenciaMenor: 4, essenciaMedia: 2.5, essenciaMaior: 1.0, fragmentosUnicos: 0, poReforco: 0 },
   },
   {
     modo: 'torre_elemental',
-    nome: 'Torres Elementais (1ª vit. 0 energ. + 3× treino)',
-    casual: { energiaDia: 24, diamantes: 10, ouro: 600, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 9, essenciaMedia: 3.0, essenciaMaior: 0.5, fragmentosUnicos: 0, poReforco: 0 },
-    ativo:  { energiaDia: 24, diamantes: 30, ouro: 1800, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 6, essenciaMedia: 6.5, essenciaMaior: 3.0, fragmentosUnicos: 0, poReforco: 0 },
+    nome: 'Torres Elementais (livre de energia)',
+    casual: { energiaDia: 0, diamantes: 10, ouro: 600, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 9, essenciaMedia: 3.0, essenciaMaior: 0.5, fragmentosUnicos: 0, poReforco: 0 },
+    ativo:  { energiaDia: 0, diamantes: 30, ouro: 1800, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 6, essenciaMedia: 6.5, essenciaMaior: 3.0, fragmentosUnicos: 0, poReforco: 0 },
   },
   {
     modo: 'torre_unica',
-    nome: 'Torres Únicas (repetição diária 1×/andar)',
-    casual: { energiaDia: 20, diamantes: 0, ouro: 250, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 0, essenciaMedia: 0, essenciaMaior: 0, fragmentosUnicos: 2.0, poReforco: 0 },
-    ativo:  { energiaDia: 40, diamantes: 0, ouro: 600, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 0, essenciaMedia: 0, essenciaMaior: 0, fragmentosUnicos: 4.0, poReforco: 0 },
+    nome: 'Torres Únicas (livre de energia)',
+    casual: { energiaDia: 0, diamantes: 0, ouro: 250, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 0, essenciaMedia: 0, essenciaMaior: 0, fragmentosUnicos: 2.0, poReforco: 0 },
+    ativo:  { energiaDia: 0, diamantes: 0, ouro: 600, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 0, essenciaMedia: 0, essenciaMaior: 0, fragmentosUnicos: 4.0, poReforco: 0 },
   },
   {
     modo: 'calaboucos',
-    nome: 'Calabouços de Relíquias (farm + desmonte)',
-    casual: { energiaDia: 48, diamantes: 0, ouro: 1700, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 0, essenciaMedia: 0, essenciaMaior: 0, fragmentosUnicos: 0, poReforco: 28 },
-    ativo:  { energiaDia: 124, diamantes: 0, ouro: 4600, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 0, essenciaMedia: 0, essenciaMaior: 0, fragmentosUnicos: 0, poReforco: 78 },
+    nome: 'Calabouços de Relíquias (livre de energia)',
+    casual: { energiaDia: 0, diamantes: 0, ouro: 1700, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 0, essenciaMedia: 0, essenciaMaior: 0, fragmentosUnicos: 0, poReforco: 28 },
+    ativo:  { energiaDia: 0, diamantes: 0, ouro: 4600, ticketsPermanentes: 0, ticketsSemanais: 0, essenciaMenor: 0, essenciaMedia: 0, essenciaMaior: 0, fragmentosUnicos: 0, poReforco: 78 },
   },
   {
     modo: 'missoes_marcos_regioes',
@@ -185,36 +187,36 @@ export const TABELA_PRIMEIRA_HORA = [
     bloco: '0–10 min',
     marcos: 'Site → Convidado/Conta → Escolha do Inicial (Nv.5 T4) → Refúgio → 1ª batalha na Praia → Campanha Mini 1-1 e 1-2',
     objetivoAtivo: 'Completar o batismo de combate e abrir a Campanha Mini',
-    ganho: { ouro: 550, diamantes: 65, xpOnirico: 420, energia: 120, essenciaMenor: 0, essenciaMedia: 0, tickets: 0, reliquias: 0, fragmentosSonho: 0 },
-    gasto: { ouro: 0, diamantes: 0, energia: 12, tickets: 0 },
+    ganho: { ouro: 550, diamantes: 65, xpOnirico: 420, energia: 0, essenciaMenor: 0, essenciaMedia: 0, tickets: 0, reliquias: 0, fragmentosSonho: 0 },
+    gasto: { ouro: 0, diamantes: 0, energia: 0, tickets: 0 },
   },
   {
     bloco: '10–20 min',
     marcos: 'Campanha Mini 1-3 a 1-5 (Elite), Torre Elemental 1–3, Marco 1-5 e Paralela par_1_1 (após 1-3)',
     objetivoAtivo: 'Vencer o Guardião 1-5 (1ª relíquia garantida) e juntar Essências na Torre',
-    ganho: { ouro: 1350, diamantes: 150, xpOnirico: 1080, energia: 1, essenciaMenor: 12, essenciaMedia: 0, tickets: 0, reliquias: 2, fragmentosSonho: 1 },
-    gasto: { ouro: 450, diamantes: 0, energia: 20, tickets: 0 },
+    ganho: { ouro: 1350, diamantes: 150, xpOnirico: 1080, energia: 0, essenciaMenor: 12, essenciaMedia: 0, tickets: 0, reliquias: 2, fragmentosSonho: 1 },
+    gasto: { ouro: 450, diamantes: 0, energia: 0, tickets: 0 },
   },
   {
     bloco: '20–30 min',
     marcos: 'Calabouço Nv.1, reforço de relíquia (+3), Torre Elemental 4–5, Baús 3★ 1-1..1-5 e Marco Torre 5',
     objetivoAtivo: 'Equipar e reforçar a 1ª relíquia rara/comum e subir a Torre até o andar 5',
-    ganho: { ouro: 900, diamantes: 140, xpOnirico: 950, energia: 2, essenciaMenor: 11, essenciaMedia: 0, tickets: 0, reliquias: 2, fragmentosSonho: 1 },
-    gasto: { ouro: 825, diamantes: 0, energia: 18, tickets: 0 },
+    ganho: { ouro: 900, diamantes: 140, xpOnirico: 950, energia: 0, essenciaMenor: 11, essenciaMedia: 0, tickets: 0, reliquias: 2, fragmentosSonho: 1 },
+    gasto: { ouro: 825, diamantes: 0, energia: 0, tickets: 0 },
   },
   {
     bloco: '30–45 min',
     marcos: 'Campanha Mini 1-6 a 1-9, Diárias dos modos, Paralela par_1_2 e Login Dia 1',
     objetivoAtivo: 'Avançar até a antecâmara do Chefe 1-10 e fechar as missões diárias',
-    ganho: { ouro: 1850, diamantes: 210, xpOnirico: 1450, energia: 2, essenciaMenor: 5, essenciaMedia: 0, tickets: 1, reliquias: 1, fragmentosSonho: 1 },
-    gasto: { ouro: 600, diamantes: 0, energia: 24, tickets: 0 },
+    ganho: { ouro: 1850, diamantes: 210, xpOnirico: 1450, energia: 0, essenciaMenor: 5, essenciaMedia: 0, tickets: 1, reliquias: 1, fragmentosSonho: 1 },
+    gasto: { ouro: 600, diamantes: 0, energia: 0, tickets: 0 },
   },
   {
     bloco: '45–60 min',
     marcos: 'Chefe 1-10 + Marcos Cap.1 / 30★ + Baú 10★/20★/30★ + 1ª Invocação ×10 no Banner',
     objetivoAtivo: 'Derrotar o Chefe do Cap.1, resgatar os 10 tickets e realizar a 1ª invocação ×10',
-    ganho: { ouro: 1400, diamantes: 300, xpOnirico: 1650, energia: 3, essenciaMenor: 10, essenciaMedia: 3, tickets: 11, reliquias: 1, fragmentosSonho: 1 },
-    gasto: { ouro: 900, diamantes: 0, energia: 10, tickets: 10 },
+    ganho: { ouro: 1400, diamantes: 300, xpOnirico: 1650, energia: 0, essenciaMenor: 10, essenciaMedia: 3, tickets: 11, reliquias: 1, fragmentosSonho: 1 },
+    gasto: { ouro: 900, diamantes: 0, energia: 0, tickets: 10 },
   },
 ];
 

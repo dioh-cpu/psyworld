@@ -173,3 +173,16 @@ test('Relíquias: flats escalam pelo nível/statsBase e crítico entra no ganhoP
   const bComCrit = calcularBonusEquipamentoOnirico(s, 'c1');
   assert.ok(bComCrit.ganhoPoderBruto > bSemCrit.ganhoPoderBruto);
 });
+
+test('Relíquias, Essências e Fragmentos: guia 4 espaços + Arma Única e mapa "Onde conseguir"', async () => {
+  const { GUIA_SISTEMA_RELIQUIAS, ONDE_CONSEGUIR_RELIQUIAS, fontesDeReliquia } = await import('./regiao1-reliquias-regras.js');
+  const { ONDE_CONSEGUIR_ESSENCIAS, ONDE_CONSEGUIR_FRAGMENTOS } = await import('./regiao1-regras-sonho.js');
+  assert.equal(GUIA_SISTEMA_RELIQUIAS.espacosReliquias, 4);
+  assert.equal(GUIA_SISTEMA_RELIQUIAS.espacosArmaUnica, 1);
+  assert.equal(Object.keys(ONDE_CONSEGUIR_RELIQUIAS.conjuntos).length, 13);
+  assert.equal(Object.keys(ONDE_CONSEGUIR_RELIQUIAS.partes).length, 4);
+  assert.ok(fontesDeReliquia('furia').length >= 2);
+  assert.ok(fontesDeReliquia('armaUnica').length >= 2);
+  assert.equal(Object.keys(ONDE_CONSEGUIR_ESSENCIAS).length, 9);
+  assert.equal(Object.keys(ONDE_CONSEGUIR_FRAGMENTOS).length, 19);
+});

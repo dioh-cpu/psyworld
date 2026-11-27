@@ -140,11 +140,11 @@ test('Torres Únicas: 3×30 andares (60..120), 1×/dia/andar, Pó Único para es
   assert.equal(s.idle.armasUnicas.fragmentos.vaelith, 1);
 });
 
-test('Calabouços: 9×13 níveis cobrindo os 18 elementos, energia 8/12/16, pesos de raridade, batalha rápida com todos vivos, loja e save', () => {
+test('Calabouços: 9×13 níveis cobrindo os 18 elementos, sem custo de energia, pesos de raridade, batalha rápida com todos vivos, loja e save', () => {
   assert.equal(CALABOUCOS_CATALOGO.length, 9);
-  assert.equal(energiaCalabouco(1), 8);
-  assert.equal(energiaCalabouco(6), 12);
-  assert.equal(energiaCalabouco(11), 16);
+  assert.equal(energiaCalabouco(1), 0);
+  assert.equal(energiaCalabouco(6), 0);
+  assert.equal(energiaCalabouco(11), 0);
   assert.deepEqual(pesosRaridadePorNivel(1), { comum: 60, incomum: 35, rara: 5, epica: 0, lendaria: 0 });
   assert.deepEqual(pesosRaridadePorNivel(5), { comum: 20, incomum: 45, rara: 30, epica: 5, lendaria: 0 });
   assert.deepEqual(pesosRaridadePorNivel(9), { comum: 0, incomum: 25, rara: 45, epica: 25, lendaria: 5 });
@@ -152,7 +152,7 @@ test('Calabouços: 9×13 níveis cobrindo os 18 elementos, energia 8/12/16, peso
 
   const s = novoSave();
   const t0 = 50_000_000;
-  assert.equal(iniciarCalaboucoNivel(s, 'forja-rubra', 1, { agoraMs: t0, batalhaId: 'c1' }).energiaRestante, 112);
+  assert.equal(iniciarCalaboucoNivel(s, 'forja-rubra', 1, { agoraMs: t0, batalhaId: 'c1' }).energiaRestante, 120);
   // Vitória com baixa -> não libera batalha rápida
   const vBaixa = concluirCalaboucoNivel(s, 'forja-rubra', 1, { venceu: true, todosVivos: false }, { batalhaId: 'c1', rng: () => 0.1 });
   assert.equal(vBaixa.ok, true);

@@ -861,3 +861,82 @@ export function simularTabelaEquilibrioReliquias() {
   }
   return cenarios;
 }
+
+// ---- Guia do Sistema (4 Relíquias + 1 Arma Única) e Fontes ("Onde conseguir") para a UI ----
+export const GUIA_SISTEMA_RELIQUIAS = {
+  titulo: 'Como funciona o Equipamento',
+  espacosReliquias: 4,
+  espacosArmaUnica: 1,
+  partes: ['Coroa (Vida fixa)', 'Amuleto (Ataque fixo)', 'Anel (Atributo variável)', 'Talismã (Atributo variável)'],
+  resumo: 'Cada Onírico equipa 4 Relíquias do próprio elemento (Coroa, Amuleto, Anel e Talismã) + 1 Arma Única exclusiva da sua linhagem.',
+  regras: [
+    'Conjuntos ativam bônus ao equipar 2 ou 4 peças iguais (o bônus de 4 peças substitui o de 2).',
+    'Relíquias só podem ser equipadas em Oníricos do mesmo elemento.',
+    'Reforço vai de +0 até +15 usando Ouro e Pó de Reforço; a cada +3 abre ou fortalece um atributo secundário.',
+    'Recalibração libera no nível 100 do Onírico para trocar um atributo secundário.',
+    'Arma Única (5º espaço): desbloqueada com 10 fragmentos da linhagem nas Torres Únicas ou grátis ao atingir Nv.100, reforçável até +5.',
+    'Todos os modos de farm (Calabouços, Torres e Campanha Mini) são livres de energia.',
+  ],
+};
+
+const NOME_CALABOUCO_POR_ID = {
+  'forja-rubra': 'Forja Rubra (Fogo / Elétrico)',
+  'gruta-mares': 'Gruta das Marés (Água / Voador)',
+  'bosque-cativo': 'Bosque Cativo (Planta / Inseto)',
+  'mina-profunda': 'Mina Profunda (Terra / Pedra / Aço)',
+  'templo-alvorecer': 'Templo do Alvorecer (Luz)',
+  'cripta-velada': 'Cripta Velada (Trevas / Fantasma)',
+  'pico-glacial': 'Pico Glacial (Gelo / Veneno)',
+  'arena-draconica': 'Arena Dracônica (Lutador / Dragão)',
+  'santuario-arcano': 'Santuário Arcano (Psíquico / Fada)',
+};
+
+export const ONDE_CONSEGUIR_RELIQUIAS = {
+  conjuntos: Object.fromEntries(
+    Object.values(CONJUNTOS_RELIQUIAS).map((c) => {
+      const fontes = [];
+      if (c.todosCalaboucos) {
+        fontes.push({ modo: 'Calabouços', local: 'Todos os 9 Calabouços', detalhe: 'Cai em qualquer calabouço de relíquias (Nv.1–13).' });
+      }
+      if (c.calabouco && NOME_CALABOUCO_POR_ID[c.calabouco]) {
+        fontes.push({ modo: 'Calabouço', local: NOME_CALABOUCO_POR_ID[c.calabouco], detalhe: 'Drop dedicado do calabouço e disponível na Loja de Moedas do Calabouço.' });
+      }
+      fontes.push({ modo: 'Campanha Mini', local: 'Fases Elite (X-5), Escondidas e Baú 30★', detalhe: 'Recompensa garantida de primeira vitória e baús de estrelas.' });
+      return [c.id, { id: c.id, nome: c.nome, fontes }];
+    }),
+  ),
+  partes: Object.fromEntries(
+    Object.values(PARTES_RELIQUIA).map((p) => [
+      p.id,
+      {
+        id: p.id,
+        nome: p.nome,
+        fontes: [
+          { modo: 'Calabouços', local: 'Qualquer Calabouço (Nv.1–13)', detalhe: 'Todas as 4 partes (Coroa, Amuleto, Anel, Talismã) dropam igualmente.' },
+          { modo: 'Campanha Mini e Missões', local: 'Fases Elite, Paralelas e Marcos', detalhe: 'Recompensas garantidas na progressão.' },
+        ],
+      },
+    ]),
+  ),
+  poReforco: {
+    nome: 'Pó de Reforço',
+    fontes: [
+      { modo: 'Desmonte', local: 'Bolsa de Relíquias', detalhe: 'Desmonte relíquias não trancadas para obter Pó de Reforço.' },
+      { modo: 'Missões', local: 'Diárias, Semanais e Marcos', detalhe: 'Recompensas de Calabouços e reforço.' },
+    ],
+  },
+  armaUnica: {
+    nome: 'Arma Única e Fragmentos Únicos',
+    fontes: [
+      { modo: 'Torres Únicas', local: '3 Torres Únicas (Ascensão, Legado, Soberania)', detalhe: 'Fragmentos da linhagem e Pó Único (5 Pós = 1 fragmento à escolha).' },
+      { modo: 'Progressão', local: 'Nível 100 do Onírico', detalhe: 'Libera a criação gratuita da Arma Única da linhagem.' },
+    ],
+  },
+};
+
+export function fontesDeReliquia(conjuntoOuTipo) {
+  if (ONDE_CONSEGUIR_RELIQUIAS.conjuntos[conjuntoOuTipo]) return ONDE_CONSEGUIR_RELIQUIAS.conjuntos[conjuntoOuTipo].fontes;
+  if (ONDE_CONSEGUIR_RELIQUIAS.partes[conjuntoOuTipo]) return ONDE_CONSEGUIR_RELIQUIAS.partes[conjuntoOuTipo].fontes;
+  if (ONDE_CONSEGUIR_RELIQUIAS[conjuntoOuTipo]) return ONDE_CONSEGUIR_RELIQUIAS[conjuntoOuTipo].fontes;
+  return [];
+}

@@ -28,8 +28,10 @@ export {
   consumirEssencia,
 };
 
-// ---- Energia global dos modos (1 a cada 6 min, máximo 120, poção +60) ----
+// ---- Sistema de Energia desativado (nenhum modo cobra ou bloqueia por energia; saves antigos continuam compatíveis) ----
 export const ENERGIA_CFG = {
+  ativa: false,
+  semCusto: true,
   max: 120,
   intervaloMs: 6 * 60_000,
   ganhoPocao: 60,
@@ -37,13 +39,13 @@ export const ENERGIA_CFG = {
 };
 
 export const ENERGIA_TEXTO_EXPLICATIVO = {
-  titulo: 'Como funciona a Energia',
-  resumo: 'Regenera 1 de Energia a cada 6 minutos (240/dia), com capacidade máxima de 120. Poções recuperam +60.',
+  titulo: 'Sem custo de Energia',
+  resumo: 'Todos os modos (Campanha Mini, Torres Elementais, Torres Únicas e Calabouços) são livres e não consomem energia.',
   custos: [
-    'Campanha Mini: 6 (normal), 8 (elite), 10 (chefe ou escondida)',
-    'Torres Elementais: 0 na 1ª vitória de cada andar; 8 no treino diário (3×/dia)',
-    'Torres Únicas: 10 por andar (1×/dia)',
-    'Calabouços de Relíquias: 8 (Nv.1–4), 12 (Nv.5–9), 16 (Nv.10–13)',
+    'Campanha Mini: 0 de energia (livre)',
+    'Torres Elementais: 0 de energia (livre)',
+    'Torres Únicas: 0 de energia (livre)',
+    'Calabouços de Relíquias: 0 de energia (livre)',
   ],
 };
 
@@ -75,16 +77,8 @@ export const atualizarEnergia = (save, agoraMs = Date.now()) => energiaDe(save, 
 
 export function gastarEnergia(save, custo, agoraMs = Date.now()) {
   const e = energiaDe(save, agoraMs);
-  const val = Math.max(0, Math.floor(Number(custo) || 0));
-  if (e.atual < val) {
-    const falta = val - e.atual;
-    const msParaProxima = e.atual >= e.max ? 0 : Math.max(0, ENERGIA_CFG.intervaloMs - (agoraMs - e.ultimoTickMs));
-    return { ok: false, motivo: `Energia insuficiente (${e.atual}/${val}).`, falta, atual: e.atual, max: e.max, msParaProxima };
-  }
-  const estavaCheia = e.atual >= e.max;
-  e.atual -= val;
-  if (estavaCheia && e.atual < e.max) e.ultimoTickMs = Math.floor(Number(agoraMs) || Date.now());
-  return { ok: true, gasto: val, atual: e.atual, max: e.max };
+  void custo;
+  return { ok: true, gasto: 0, atual: e.atual, max: e.max, semCustoEnergia: true };
 }
 
 export function darPocaoEnergia(save, qtd = 1) {
@@ -167,7 +161,7 @@ export function concederReliquiaCampanha(save, { elemento = 'planta', raridade =
 export const CAMPANHA_MINI_CFG = {
   capitulos: 12,
   fasesPorCapitulo: 10,
-  energiaPorTipo: { normal: 6, elite: 8, chefe: 10, escondida: 10 },
+  energiaPorTipo: { normal: 0, elite: 0, chefe: 0, escondida: 0 },
   ticketsPorCapitulo: 10,
   ticketsSemanaisCada: 3,
   ticketsSemanaisQtd: 10,
@@ -314,18 +308,18 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
   return tipo === 'elite' || tipo === 'escondida' ? [pick(0), pick(1), pick(2)] : [pick(0), pick(1)];
 }
 
-// Calibração auditada em 300 lutas/fase (Cap. 1): 1-1..1-3 >=95% (inicial solo), 1-4..1-7 ~85%, 1-8..1-10 ~70%.
+// Calibração auditada em 300 lutas/fase por inicial (Cap. 1): 1-1..1-3 >=95% para CADA um dos 5 iniciais, 1-4..1-7 ~85%, 1-8..1-10 ~70%.
 export const CALIBRACAO_ONDAS_CAP1 = {
-  1: { qtds: [1, 1], nvs: [1, 1] },
-  2: { qtds: [1, 1], nvs: [1, 2] },
-  3: { qtds: [1, 1], nvs: [2, 3] },
+  1: { qtds: [1, 1], nvs: [1, 1], especies: [['Tatuveludo'], ['Fanalino']] },
+  2: { qtds: [1, 1], nvs: [1, 1], especies: [['Tatuveludo'], ['Xistolim']] },
+  3: { qtds: [1, 1], nvs: [2, 2], especies: [['Fanalino'], ['Xistolim']] },
   4: { qtds: [1, 2, 2], nvs: [7, 8, 9] },
   5: { qtds: [1, 2, 2], nvs: [8, 9, 10] },
   6: { qtds: [2, 2, 2], nvs: [11, 12, 13] },
   7: { qtds: [2, 2, 2], nvs: [14, 15, 16] },
   8: { qtds: [2, 2, 3], nvs: [17, 18, 19] },
   9: { qtds: [2, 2, 3], nvs: [18, 19, 20] },
-  10: { qtds: [2, 2, 2], nvs: [19, 20, 21] },
+  10: { qtds: [2, 2, 2], nvs: [19, 19, 21] },
 };
 
 function montarOndasFase(cap, faseNum, nivel, tipo, elementoRegiao) {
@@ -340,7 +334,7 @@ function montarOndasFase(cap, faseNum, nivel, tipo, elementoRegiao) {
         if (ehFinal && tipo === 'chefe' && k === 0) {
           lista.push(specChefeReino(1, nv));
         } else {
-          const sp = ESPECIES_R1_SELVAGENS[(faseNum + w * 2 + k) % ESPECIES_R1_SELVAGENS.length];
+          const sp = cfg.especies?.[w]?.[k] || ESPECIES_R1_SELVAGENS[(faseNum + w * 2 + k) % ESPECIES_R1_SELVAGENS.length];
           const el = ELEMENTO_DA_ESPECIE[sp] || elementoRegiao;
           lista.push([sp, nv, el, { forma, ...(ehFinal && tipo === 'elite' && k === 0 ? { elite: true } : {}) }]);
         }

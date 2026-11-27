@@ -39,9 +39,9 @@ export {
 export const TORRES_CFG = {
   maxAndaresElemental: 50,
   treinosDiariosMax: 3,
-  energiaTreinoDiario: 8,
+  energiaTreinoDiario: 0,
   maxAndaresUnica: 30,
-  energiaTorreUnica: 10,
+  energiaTorreUnica: 0,
   custoPoPorFragmento: 5,
   fragmentosParaArma: 10,
   diaMs: 86_400_000,
@@ -63,10 +63,8 @@ export function essenciaDoAndarElemental(parEssencia, andar) {
   return { par: parEssencia, tamanho: 'maior', qtd: 1 };
 }
 
-function energiaDoAndarElemental(andar) {
-  if (andar <= 15) return 6;
-  if (andar <= 35) return 8;
-  return 10;
+function energiaDoAndarElemental() {
+  return 0;
 }
 
 export const slugLinhagem = (nome) => String(nome || '')
