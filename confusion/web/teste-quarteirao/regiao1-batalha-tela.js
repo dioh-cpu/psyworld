@@ -2,7 +2,7 @@
 // Onírico, ordem dos turnos, e no rodapé até 3 habilidades do Onírico da vez (ícone, nome, custo e recarga). Os efeitos vêm de
 // regiao1-vfx.js, disparados uma única vez por evento. `criarArena` serve à Estratégia, aos Reinos e à Campanha; `criarTelaBatalha`
 // é o overlay completo usado por missões e capítulos.
-import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, EFEITOS, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
+import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, resumoBatalha, EFEITOS, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 import { criarCtx, tocarEvento, duracaoEstimada, entradaChefe } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE, LINHAS } from '../species.js';
 import { pref, proximaVelocidade } from './regiao1-sfx.js';
@@ -382,7 +382,7 @@ export function criarTelaBatalha() {
     if (temChefe) entradaChefe(criarCtx({ arena: el, campo: el.querySelector('.tb-campo') || el, no: (id) => el.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} })).catch(() => {});
     agendar((700 + (temChefe ? 2300 : 0)) / vel());
   }
-  function fechar(venceu) { if (fechado) return; fechado = true; const eraMinimizada = minimizada; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac, eraMinimizada); }
+  function fechar(venceu) { if (fechado) return; fechado = true; const eraMinimizada = minimizada; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; const resumo = b ? resumoBatalha(b) : null; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac, eraMinimizada, resumo); }
   function encerrarSilencioso() { clearTimeout(timer); el.style.display = 'none'; el.innerHTML = ''; b = null; }
   el.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t || !b) return;

@@ -71,6 +71,7 @@ import { aplicarXp } from './regiao1-progressao.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
+import { iniciarCampanhaMini } from './regiao1-campanha-mini.js';
 import { iniciarHalloween } from './regiao1-halloween.js';
 import { iniciarConta } from './regiao1-conta.js';
 import { migrarHW } from './regiao1-halloween-regras.js';
@@ -2666,6 +2667,10 @@ window.regiaoExp = iniciarExpansao({
   getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal, MAPAS, MONSTROS: MONSTROS_SELVAGENS,
   irParaMapa: (id) => entrarNoMapa(id, null, false), getMapaId: () => (mapaAtual ? mapaAtual.id : null), getPosPx: () => W2P(estado.x, estado.z),
   voltarAoPonto, batalhaBloqueando, tela: telaBatalha,
+});
+window.regiaoCampanhaMini = iniciarCampanhaMini({
+  getSave: () => save, salvar: salvarEstado, mostrarToast, abrirModal, fecharModal,
+  tela: telaBatalha, batalhaBloqueando, atualizarHud: atualizarHudEstado,
 });
 iniciarLayout();
 if (avisoSave) setTimeout(() => mostrarToast(avisoSave, 7000), 1500);
