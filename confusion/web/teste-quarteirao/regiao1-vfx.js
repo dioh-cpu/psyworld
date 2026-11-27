@@ -99,7 +99,6 @@ export const CLIPE_ABYSSAR_FINAL = {
   hora_terror: { clip: `${FLOW4}abyssar-terror.mp4`, impactoMs: 730, centro: 0.47, escala: 3.0, duracaoMs: 3700, posMs: 2400, ocultarAtor: true, ult: true },
 };
 const CHEFE_ESPECIAL = new Set(Object.values(HAB.KITS_CHEFES || {}).map((k) => k[2]?.id));
-for (const c of [...Object.values(CLIPES_ELEMENTAIS), ...Object.values(CLIPE_ABYSSAR_FINAL)]) c.mascara = true;
 export function clipeElemental(hab) {
   if (!hab || FX_HABILIDADES[hab.id] || hab.clip) return null;
   const C = CLIPES_ELEMENTAIS, efs = (hab.efeitos || []).map((e) => e.id), el = hab.elemento, area = hab.alvo === 'todos', ult = hab.cd >= 5;
@@ -125,7 +124,7 @@ export function clipeElemental(hab) {
     default: return !hab.distancia && !area && efs.includes('sangramento') ? C.cortesRubros : C.esfera;
   }
 }
-for (const [id, c] of Object.entries(CLIPES_FLOW)) Object.assign(FX_HABILIDADES[id], c, { ms: c.impactoMs + 1550 });
+for (const [id, c] of Object.entries(CLIPES_FLOW)) Object.assign(FX_HABILIDADES[id], c, { ms: c.impactoMs + 1300 });
 // Chuva de meteoros (tomada cinematográfica com cenário): começa depois do corte em que o meteoro central some (≈2,0 s) e só entra
 // em combate quando METEOROS_EM_COMBATE for ligado, após revisão; no laboratório pode ser forçada (ctx.cinema).
 export const METEOROS_CINEMA = { clip: `${FLOW}chuva-de-meteoros-original.mp4`, inicio: 2.05, impactoMs: 200, duracaoMs: 2600 };
@@ -992,8 +991,16 @@ async function furiaChefe(ctx, M, f) {
 // Clipe do Flow: toca o vídeo sobre o alvo (ou no centro dos alvos, em habilidades de grupo) e aplica o resultado no impactoMs.
 // Devolve false se o vídeo não carregar, para a coreografia procedural assumir.
 const clipesFalhos = new Set(); // não tenta de novo um clipe que não carregou nesta sessão
-// Bordas suavizadas para clipes cujo efeito encosta na beira do quadro (o preto some no screen, mas o corte reto aparecia)
-const MASCARA_BORDA = ';-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent),linear-gradient(transparent,#000 8%,#000 92%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent),linear-gradient(transparent,#000 8%,#000 92%,transparent);mask-composite:intersect';
+// Bordas suaves em todo clipe: o desvanecer termina na borda do próprio vídeo ou na beira da tela, o que vier antes, para o efeito
+// nunca acabar numa linha reta (nem quando o clipe passa da arena). Coordenadas no espaço do vídeo; espelhado inverte esquerda/direita.
+function mascaraClipe(ctx, left, top, w, h, espelhado) {
+  const W = ctx.campo.clientWidth || w, H = ctx.campo.clientHeight || h;
+  let l = Math.max(0, -left), r = Math.min(w, W - left); const t = Math.max(0, -top), b = Math.min(h, H - top);
+  if (espelhado) [l, r] = [w - r, w - l];
+  const fx = Math.max(24, (r - l) * 0.12), fy = Math.max(20, (b - t) * 0.12);
+  const g = `linear-gradient(90deg,transparent ${l}px,#000 ${l + fx}px,#000 ${r - fx}px,transparent ${r}px),linear-gradient(180deg,transparent ${t}px,#000 ${t + fy}px,#000 ${b - fy}px,transparent ${b}px)`;
+  return `;-webkit-mask-image:${g};-webkit-mask-composite:source-in;mask-image:${g};mask-composite:intersect`;
+}
 async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   if (clipesFalhos.has(src)) return false;
   const els = alvosDe(ctx, ev).map((x) => x.el), base = els.length ? els : [ctx.no(ev.alvo) || ctx.no(ev.ator)].filter(Boolean); if (!base.length) return false;
@@ -1003,7 +1010,8 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   const larg = cs.length > 1 ? (Math.max(...cs.map((c) => c.x + c.w / 2)) - Math.min(...cs.map((c) => c.x - c.w / 2))) * 1.25 : Math.max(...cs.map((c) => c.w)) * (cfg.escala || 3);
   const meio = cs.reduce((s, c) => s + c.y, 0) / cs.length;
   const alt = larg * (v.videoHeight / v.videoWidth || 9 / 16), top = cfg.centro != null ? meio - alt * cfg.centro : pe - alt * (cfg.chao ?? 0.86);
-  v.style.cssText = `position:absolute;left:${x - larg / 2}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0${cfg.mascara ? MASCARA_BORDA : ''}${cfg.espelhar && A && corpo(ctx, A).x > x ? ';transform:scaleX(-1)' : ''}`;
+  const esp = cfg.espelhar && A && corpo(ctx, A).x > x, left = x - larg / 2;
+  v.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, esp)}${esp ? ';transform:scaleX(-1)' : ''}`;
   const figAtor = cfg.ocultarAtor && A ? A.querySelector('.un-fig') : null; if (figAtor) figAtor.style.visibility = 'hidden';
   ligarAudio(ctx, v); ctx.campo.append(v); v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, fill: 'forwards' });
   await v.play().catch(() => {});
@@ -1020,8 +1028,17 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   for (const a of alvosDe(ctx, ev)) aplicar(ctx, M, a.el, a.r, { cura, cor: '#fff', forte: cfg.ult });
   ctx.som = somAntes;
   await ESP((cfg.posMs ?? Math.min(1000, Math.max(400, (cfg.duracaoMs || 3000) - (cfg.impactoMs || 500)))) * ctx.k);
-  await v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260 * ctx.k, fill: 'forwards' }).finished.catch(() => {}); v.pause(); v.remove(); if (figAtor) figAtor.style.visibility = '';
+  dissolverClipe(ctx, v); // o vídeo segue tocando (ou fica no último quadro) enquanto some; o próximo turno não espera
+  if (figAtor) { figAtor.style.visibility = ''; figAtor.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 420 * ctx.k, easing: 'ease-out' }); }
+  await ESP(140 * ctx.k);
   return true;
+}
+// Saída do clipe: perde a opacidade aos poucos, escurecendo e expandindo de leve (dissipação); se o vídeo acabar antes, o último
+// quadro fica parado e desvanece junto. Remove ao terminar.
+function dissolverClipe(ctx, v) {
+  const t = Math.max(0, (v.duration || 0) - v.currentTime) * 1000, ms = Math.max(520, Math.min(900, t || 700)) * ctx.k;
+  const a = v.animate([{ opacity: 1, filter: 'brightness(1)', scale: '1' }, { opacity: 0.55, filter: 'brightness(.8)', scale: '1.02', offset: 0.45 }, { opacity: 0, filter: 'brightness(.55)', scale: '1.05' }], { duration: ms, easing: 'ease-in', fill: 'forwards' });
+  a.finished.catch(() => {}).then(() => { v.pause(); v.remove(); });
 }
 const blobs = new Map();
 async function carregarVideo(src, inicio = 0) {
@@ -1052,12 +1069,13 @@ async function cinemaMeteoros(ctx) {
 export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade) => {
   if (!ev) return 0; const k = 1 / velocidade, hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], n = ev.alvos?.length || 0;
   const formaFinal = hab && /\/abyssar\/03\./.test(ev.arteAtor || '') && CLIPE_ABYSSAR_FINAL[hab.id];
-  if (formaFinal) return (formaFinal.impactoMs + 220 + (formaFinal.posMs ?? Math.min(1000, Math.max(400, formaFinal.duracaoMs - formaFinal.impactoMs))) + 360 + (formaFinal.ult ? 820 : 0) + (ev.antes?.length ? 560 : 0)) * k;
+  if (formaFinal) return (formaFinal.impactoMs + 220 + (formaFinal.posMs ?? Math.min(1000, Math.max(400, formaFinal.duracaoMs - formaFinal.impactoMs))) + 240 + (formaFinal.ult ? 820 : 0) + (ev.antes?.length ? 560 : 0)) * k;
   const ult = cfg?.ult || (hab && hab.cd >= 5);
   let base;
   if (cfg?.fx === 'perseguicao') base = Math.max(700 + n * 215 + (ev.repeticoes || 0) * 160, 2200);
+  else if (cfg?.clip) base = cfg.impactoMs + (cfg.posMs ?? Math.min(1000, Math.max(400, (cfg.duracaoMs || 3000) - cfg.impactoMs))) + 200 + (hab.tipo === 'dano' ? 220 : 0); // clipe: impacto, tempo depois e saída
   else if (cfg) base = cfg.ms + Math.max(0, n - 1) * 130;
-  else if (clipeElemental(hab)) { const c = clipeElemental(hab); base = c.impactoMs + Math.min(1000, Math.max(400, c.duracaoMs - c.impactoMs)) + 360 + (hab.tipo === 'dano' ? 220 : 0); }
+  else if (clipeElemental(hab)) { const c = clipeElemental(hab); base = c.impactoMs + Math.min(1000, Math.max(400, c.duracaoMs - c.impactoMs)) + 240 + (hab.tipo === 'dano' ? 220 : 0); }
   else if (ev.tipo === 'atacar') base = 1250;
   else if (ev.tipo === 'habilidade' && ev.area) { const el = hab?.elemento; base = el === 'terra' || el === 'pedra' ? 1950 : el === 'agua' ? 1800 : el === 'fogo' ? 1250 + n * 170 : el === 'planta' ? 1400 + n * 120 : 1150 + n * 110; }
   else if (ev.tipo === 'habilidade') base = hab?.distancia ? 1400 : 1300;
