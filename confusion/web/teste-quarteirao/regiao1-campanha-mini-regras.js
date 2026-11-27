@@ -3,7 +3,7 @@
 import { REGIOES, CLASSE_DA_ESPECIE, aplicarXp } from './regiao1-progressao.js';
 import { ELEMENTO_DA_ESPECIE } from '../species.js';
 import { CATALOGO_REGIOES } from './regiao1-regioes-regras.js';
-import { LINHAGENS_REINOS, specChefeReino } from './regiao1-kits-reinos.js';
+import { LINHAGENS_REINOS, CHEFES_REINOS, CHEFES_REGIAO, specChefeReino } from './regiao1-kits-reinos.js';
 import { ENCONTROS_ALTOS_AMBAR, CHEFES_R2 } from './regiao2-altos-ambar.js';
 import { FORMAS_LINHAGENS_REINOS } from '../formas-reinos.js';
 import { resolverEncontroCatalogo } from './regiao1-encontros-regras.js';
@@ -218,6 +218,12 @@ export const CAMPANHA_MINI_CFG = {
 const CLASSES_CONDICAO = ['guerreiro', 'tanque', 'mago', 'assassino', 'suporte'];
 const ROTULO_CLASSE = { guerreiro: 'Guerreiro', tanque: 'Tanque', mago: 'Mago', assassino: 'Assassino', suporte: 'Suporte' };
 const ESPECIES_R1_SELVAGENS = ['Fanalino', 'Cervomusgo', 'Cobrabúfalo', 'Tatuveludo', 'Xistolim'];
+const ELEMENTOS_R1 = new Set(['inseto', 'planta', 'agua', 'terra', 'pedra']);
+
+function specChefeRegiao(nome, nivel) {
+  const c = CHEFES_REGIAO.find((x) => x.nome === nome);
+  return c ? [c.nome, nivel, c.elemento, { chefe: true, nome: c.nome, bonus: { ...c.bonus } }] : [nome, nivel, undefined, { chefe: true, nome }];
+}
 
 export const ESPECIES_CAPITULO_2 = [...new Set(ENCONTROS_ALTOS_AMBAR.map((e) => e.especie))];
 
@@ -229,8 +235,11 @@ function condicaoTerceiraEstrela(cap, faseNum, elementoRegiao) {
     return { tipo: 'classe', valor: cls, minimo: 1, texto: `Levar ao menos 1 ${ROTULO_CLASSE[cls]} na equipe` };
   }
   if (tipoIdx === 1) {
-    const elsCap2 = ['inseto', 'fogo', 'eletrico', 'planta', 'pedra', 'aco'];
-    const el = cap === 2 ? elsCap2[faseNum % elsCap2.length] : elementoRegiao;
+    const elsCap2 = ['fogo', 'eletrico', 'voador', 'aco'];
+    const elsNovosReino = [...new Set(LINHAGENS_REINOS.filter((l) => l.reino === cap && !ELEMENTOS_R1.has(l.elemento)).map((l) => l.elemento))];
+    const el = cap === 2
+      ? elsCap2[faseNum % elsCap2.length]
+      : (cap >= 3 && elsNovosReino.length ? elsNovosReino[faseNum % elsNovosReino.length] : elementoRegiao);
     return { tipo: 'elemento', valor: el, minimo: 2, texto: `Levar ao menos 2 Oníricos do elemento ${el}` };
   }
   return { tipo: 'suprema', valor: 1, minimo: 1, texto: 'Usar pelo menos 1 habilidade suprema na batalha' };
@@ -271,28 +280,28 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
     if (faseNum === 3) {
       const ch = CHEFES_R2.BOSS_R2_FERROADA;
       return [
-        [ch.nome, nivel + 1, undefined, { chefe: true, nome: ch.nome }],
+        specChefeRegiao(ch.nome, nivel + 1),
         ...ch.reforcos.map((esp) => [esp, nivel - 1, ELEMENTO_DA_ESPECIE[esp], { forma: 1 }]),
       ];
     }
     if (faseNum === 5) {
       const ch = CHEFES_R2.BOSS_R2_MATRIARCA;
       return [
-        [ch.nome, nivel + 2, undefined, { chefe: true, nome: ch.nome }],
+        specChefeRegiao(ch.nome, nivel + 2),
         ...ch.reforcos.map((esp) => [esp, nivel, ELEMENTO_DA_ESPECIE[esp], { forma: 2 }]),
       ];
     }
     if (faseNum === 8) {
       const ch = CHEFES_R2.BOSS_R2_SENTINELA;
       return [
-        [ch.nome, nivel + 2, undefined, { chefe: true, nome: ch.nome }],
+        specChefeRegiao(ch.nome, nivel + 2),
         ...ch.reforcos.map((esp) => [esp, nivel, ELEMENTO_DA_ESPECIE[esp], { forma: 2 }]),
       ];
     }
     if (tipo === 'escondida') {
       const ch = CHEFES_R2.BOSS_R2_SENTINELA;
       return [
-        [ch.nome, nivel + 2, undefined, { chefe: true, nome: ch.nome }],
+        specChefeRegiao(ch.nome, nivel + 2),
         ['Voltabelha', nivel, ELEMENTO_DA_ESPECIE.Voltabelha, { forma: 2 }],
         ['Latonhorn', nivel, ELEMENTO_DA_ESPECIE.Latonhorn, { forma: 2 }],
       ];
@@ -329,10 +338,13 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
     ];
   }
 
-  const linhagens = LINHAGENS_REINOS.filter((l) => l.reino === cap);
+  // Reinos 3–12: prioriza os elementos novos de cada reino antes dos elementos antigos da R1
+  const linhagens = LINHAGENS_REINOS
+    .filter((l) => l.reino === cap)
+    .sort((a, b) => Number(ELEMENTOS_R1.has(a.elemento)) - Number(ELEMENTOS_R1.has(b.elemento)));
   const forma = nivel <= 20 ? 1 : nivel <= 40 ? 2 : 3;
   const pick = (i) => {
-    const lin = linhagens[(faseNum + i) % linhagens.length];
+    const lin = linhagens[(faseNum + i - 1) % linhagens.length];
     const nome = nomeFormaDoReino(lin.nome, forma);
     return [nome, Math.max(1, nivel - (i === 0 ? 0 : 1)), lin.elemento, { forma, ...(i === 0 && tipo === 'elite' ? { elite: true } : {}) }];
   };
@@ -342,7 +354,8 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
 export const CAPITULOS_CAMPANHA_MINI = REGIOES.map((faixa, idx) => {
   const cap = idx + 1;
   const regInfo = CATALOGO_REGIOES[idx];
-  const elemento = regInfo?.chefe?.elemento || 'neutro';
+  const chefeReino = CHEFES_REINOS.find((c) => c.reino === cap);
+  const elemento = cap === 1 ? (regInfo?.chefe?.elemento || 'planta') : (chefeReino?.elemento || regInfo?.chefe?.elemento || 'neutro');
   const [nvMin, nvMax] = faixa;
   const fases = [];
   for (let num = 1; num <= 10; num++) {

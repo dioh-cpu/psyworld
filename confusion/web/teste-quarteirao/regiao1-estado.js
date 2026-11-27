@@ -668,6 +668,30 @@ export function sanitizarIdleProgressao(idle) {
     };
   }
 
+  if (idle.missoes && typeof idle.missoes === 'object') {
+    const m = idle.missoes;
+    out.missoes = {
+      paralelasAtivas: sanitizarMapaSeguro(m.paralelasAtivas, 60, 'int'),
+      paralelasConcluidas: sanitizarMapaSeguro(m.paralelasConcluidas, 60, 'bool'),
+      enfeitesRefugio: sanitizarMapaSeguro(m.enfeitesRefugio, 24, 'bool'),
+      titulos: sanitizarMapaSeguro(m.titulos, 80, 'bool'),
+      progresso: sanitizarMapaSeguro(m.progresso, 100, 'int'),
+      marcosColetados: sanitizarMapaSeguro(m.marcosColetados, 100, 'bool'),
+    };
+  }
+
+  if (idle.armasUnicas && typeof idle.armasUnicas === 'object') {
+    const a = idle.armasUnicas;
+    out.armasUnicas = {
+      fragmentos: sanitizarMapaSeguro(a.fragmentos, 120, 'int'),
+      possuidas: a.possuidas && typeof a.possuidas === 'object' ? { ...a.possuidas } : {},
+      equipadas: sanitizarMapaSeguro(a.equipadas, 200, 'str'),
+      poUnico: Math.max(0, Math.floor(Number(a.poUnico) || 0)),
+      escolhasPendentes: Math.max(0, Math.floor(Number(a.escolhasPendentes) || 0)),
+      liberadasPorNivel100: sanitizarMapaSeguro(a.liberadasPorNivel100, 120, 'bool'),
+    };
+  }
+
   return out;
 }
 

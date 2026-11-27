@@ -67,11 +67,23 @@ test('Campanha Mini: 12 capítulos × 10 fases + fase escondida e elenco real do
   assert.equal(cap2.fases[5].inimigos.every(([, , , op]) => op.forma === 2), true);
   assert.equal(cap2.fases[8].inimigos.slice(1).every(([, , , op]) => op.forma === 2), true);
 
-  // Fases especiais do Cap 2 e Rainha na fase 10
+  // Fases especiais do Cap 2 e Rainha na fase 10 (alinhados com CHEFES_REGIAO/CHEFES_REINOS do Reino 2)
   assert.equal(cap2.fases[2].inimigos[0][0], 'Ferroada Rubra');
+  assert.equal(cap2.fases[2].inimigos[0][2], 'fogo');
+  assert.equal(cap2.fases[2].inimigos[0][3].chefe, true);
+  assert.ok(cap2.fases[2].inimigos[0][3].bonus?.hp > 0);
   assert.equal(cap2.fases[4].inimigos[0][0], 'Matriarca de Resina');
+  assert.equal(cap2.fases[4].inimigos[0][2], 'voador');
+  assert.equal(cap2.fases[4].inimigos[0][3].chefe, true);
+  assert.ok(cap2.fases[4].inimigos[0][3].bonus?.hp > 0);
   assert.equal(cap2.fases[7].inimigos[0][0], 'Sentinela de Geoda');
+  assert.equal(cap2.fases[7].inimigos[0][2], 'eletrico');
+  assert.equal(cap2.fases[7].inimigos[0][3].chefe, true);
+  assert.ok(cap2.fases[7].inimigos[0][3].bonus?.hp > 0);
   assert.equal(cap2.fases[9].inimigos[0][0], 'Rainha da Colmeia Dourada');
+  assert.equal(cap2.fases[9].inimigos[0][2], 'aco');
+  assert.equal(cap2.fases[9].inimigos[0][3].chefe, true);
+  assert.ok(cap2.fases[9].inimigos[0][3].bonus?.hp > 0);
 });
 
 test('Campanha Mini: 3 estrelas via resumoBatalha(b) (reviver conta), liberação em fila, escondida em 30★ e recompensas únicas', () => {
