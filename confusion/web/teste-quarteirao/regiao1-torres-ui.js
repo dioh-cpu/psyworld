@@ -19,6 +19,7 @@ import {
   resgatarEscolhaFragmentoUnico,
 } from './regiao1-torres-regras.js';
 import { NOME_ELEMENTO } from '../core.js';
+import { mostrarResultadoBatalha } from './regiao1-resultado-ui.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ARENA_FALLBACK = 'assets/confusion/interface/estrategia/reinos/01/arena-chefe.webp';
@@ -211,11 +212,21 @@ export function tratarCliqueTorres(d, { save, salvar, mostrarToast, render, tela
       onFim: (venceu, _f, _m, resumo) => {
         const res = concluirAndarTorreElemental(save, tid, andarNum, resumo || { venceu: Boolean(venceu) }, { batalhaId: ini.batalhaId });
         salvar();
-        if (res.venceu) {
-          st.andarEl = Math.min(TORRES_CFG.maxAndaresElemental, andarNum + 1);
-          mostrarToast(res.primeiraVitoria ? `🏆 Andar ${andarNum} vencido! +${res.premios.diamantes} 💎 + Essência!` : `🏆 Andar ${andarNum} vencido!`);
-        } else mostrarToast(`💀 Derrota no Andar ${andarNum}.`);
+        if (res.venceu) st.andarEl = Math.min(TORRES_CFG.maxAndaresElemental, andarNum + 1);
         render();
+        mostrarResultadoBatalha({
+          titulo: res.venceu ? `🏆 ${ini.torre.nome} · Andar ${andarNum}` : `💀 Derrota no Andar ${andarNum}`,
+          subtitulo: res.primeiraVitoria ? 'Primeira vitória neste andar!' : ini.torre.nome,
+          venceu: Boolean(res.venceu),
+          save,
+          premios: res.premios,
+          podeProxima: Boolean(res.venceu && andarNum < TORRES_CFG.maxAndaresElemental),
+          rotuloProxima: `Andar ${andarNum + 1} →`,
+          onProxima: () => { st.andarEl = andarNum + 1; render(); },
+          podeRepetir: true,
+          onRepetir: () => tratarCliqueTorres({ torLutarEl: `${tid}:${andarNum}` }, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, st }),
+          rotuloVoltar: '🗼 Voltar às Torres',
+        });
       },
     });
     return true;
@@ -239,14 +250,21 @@ export function tratarCliqueTorres(d, { save, salvar, mostrarToast, render, tela
       onFim: (venceu, _f, _m, resumo) => {
         const res = concluirAndarTorreUnica(save, tid, andarNum, resumo || { venceu: Boolean(venceu) }, { batalhaId: ini.batalhaId });
         salvar();
-        if (res.venceu) {
-          st.andarUn = Math.min(TORRES_CFG.maxAndaresUnica, andarNum + 1);
-          const msg = res.premios.virouPoUnico
-            ? `🏆 Andar ${andarNum} vencido! +1 Pó Único (${res.premios.linhagemSorteada})`
-            : `🏆 Andar ${andarNum} vencido! +1 Fragmento de ${res.premios.linhagemSorteada}`;
-          mostrarToast(msg);
-        } else mostrarToast(`💀 Derrota no Andar ${andarNum}.`);
+        if (res.venceu) st.andarUn = Math.min(TORRES_CFG.maxAndaresUnica, andarNum + 1);
         render();
+        mostrarResultadoBatalha({
+          titulo: res.venceu ? `🏆 ${ini.torre.nome} · Andar ${andarNum}` : `💀 Derrota no Andar ${andarNum}`,
+          subtitulo: res.venceu ? '1×/dia concluído neste andar' : ini.torre.nome,
+          venceu: Boolean(res.venceu),
+          save,
+          premios: res.premios,
+          podeProxima: Boolean(res.venceu && andarNum < TORRES_CFG.maxAndaresUnica),
+          rotuloProxima: `Andar ${andarNum + 1} →`,
+          onProxima: () => { st.andarUn = andarNum + 1; render(); },
+          podeRepetir: !res.venceu,
+          onRepetir: () => tratarCliqueTorres({ torLutarUn: `${tid}:${andarNum}` }, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, st }),
+          rotuloVoltar: '⚔️ Voltar às Torres',
+        });
       },
     });
     return true;

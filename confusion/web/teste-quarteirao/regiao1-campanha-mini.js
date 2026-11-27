@@ -19,6 +19,7 @@ import { membrosFormacao } from './regiao1-exp-regras.js';
 import { bonusDoMembro } from './regiao1-halloween-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { NOME_ELEMENTO } from '../core.js';
+import { mostrarResultadoBatalha, fecharResultadoBatalha } from './regiao1-resultado-ui.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -352,49 +353,37 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
   }
 
   function mostrarResultado(fase, res) {
-    fecharResultado();
     const proxId = !fase.escondida && fase.numero < 10 ? `${fase.capitulo}-${fase.numero + 1}` : null;
     const stCap = statusCapitulo(getSave(), fase.capitulo);
-    const proxDesbl = proxId && stCap?.fasesStatus?.some((f) => f.id === proxId && f.desbloqueada);
-    const det = res.detalhesEstrelas || {};
+    const proxDesbl = Boolean(proxId && stCap?.fasesStatus?.some((f) => f.id === proxId && f.desbloqueada));
     const estrelas = res.rapida ? 3 : (res.estrelas || 0);
-    const el = document.createElement('div');
-    el.className = 'cm-res-bg';
-    el.id = 'cm-resultado-overlay';
-    el.innerHTML = `<div class="cm-res-card">
-      <h3 style="margin:0;color:${res.venceu === false ? '#fca5a5' : '#fde047'}">${res.rapida ? '⚡ Batalha Rápida Concluída' : res.venceu ? '🏆 Vitória na Campanha Mini!' : '💀 Derrota'}</h3>
-      <div style="font-size:12px;color:#93c5fd">Fase ${esc(fase.id)} · ${esc(fase.nome)}</div>
-      <div class="cm-res-estrelas">
-        <span class="cm-res-est ${estrelas >= 1 ? 'acessa d1' : ''}">★</span>
-        <span class="cm-res-est ${estrelas >= 2 ? 'acessa d2' : ''}">★</span>
-        <span class="cm-res-est ${estrelas >= 3 ? 'acessa d3' : ''}">★</span>
-      </div>
-      ${!res.rapida ? `<ul class="cm-conds" style="text-align:left;background:#091529;padding:8px 10px;border-radius:8px;border:1px solid #1e3a5f">
-        <li class="${det.estrela1 ? 'ok' : ''}">${det.estrela1 ? '✓' : '✗'} Vencer a batalha</li>
-        <li class="${det.estrela2 ? 'ok' : ''}">${det.estrela2 ? '✓' : '✗'} Todos os aliados vivos</li>
-        <li class="${det.estrela3 ? 'ok' : ''}">${det.estrela3 ? '✓' : '✗'} ${esc(fase.condicaoEstrela3?.texto || '')}</li>
-      </ul>` : ''}
-      ${res.premios?.ticketsPermanentes ? `<div class="cm-res-destaque">🎉 Capítulo ${fase.capitulo} concluído! +${res.premios.ticketsPermanentes} Tickets Permanentes${res.premios.ticketsSemanais ? ` + ${res.premios.ticketsSemanais} Tickets Semanais!` : '!'}</div>` : ''}
-      <div class="cm-res-premios">${formatarPremiosChips(res.premios) || '<span class="cm-tag">Sem recompensas</span>'}</div>
-      <div class="cm-res-bts">
-        ${proxDesbl ? `<button class="cm-btn pri" data-res-prox="${proxId}">Próxima fase →</button>` : ''}
-        <button class="cm-btn" data-res-rep="${fase.id}">🔁 Repetir</button>
-        <button class="cm-btn" data-res-mapa="1">🗺️ Mapa</button>
-      </div>
-    </div>`;
-    el.addEventListener('click', (e) => {
-      const b = e.target.closest('button');
-      if (!b) return;
-      if (b.dataset.resProx) { fecharResultado(); faseSelId = b.dataset.resProx; renderMapa(); }
-      else if (b.dataset.resRep) { fecharResultado(); iniciarLuta(b.dataset.resRep); }
-      else if (b.dataset.resMapa) { fecharResultado(); renderMapa(); }
+    const destaqueBanner = res.premios?.ticketsPermanentes
+      ? `🎉 Capítulo ${fase.capitulo} concluído! +${res.premios.ticketsPermanentes} Tickets Permanentes${res.premios.ticketsSemanais ? ` + ${res.premios.ticketsSemanais} Tickets Semanais!` : '!'}`
+      : null;
+    mostrarResultadoBatalha({
+      titulo: res.rapida ? '⚡ Batalha Rápida Concluída' : res.venceu ? '🏆 Vitória na Campanha Mini!' : '💀 Derrota',
+      subtitulo: `Fase ${fase.id} · ${fase.nome}`,
+      venceu: res.venceu !== false,
+      rapida: Boolean(res.rapida),
+      estrelas,
+      detalhesEstrelas: res.detalhesEstrelas,
+      condicaoEstrela3Texto: fase.condicaoEstrela3?.texto || '',
+      destaqueBanner,
+      save: getSave(),
+      xpPorOnirico: res.premios?.xpFormacao || 0,
+      premios: res.premios,
+      podeProxima: proxDesbl,
+      rotuloProxima: 'Próxima fase →',
+      onProxima: () => { faseSelId = proxId; renderMapa(); },
+      podeRepetir: true,
+      onRepetir: () => iniciarLuta(fase.id),
+      rotuloVoltar: '🗺️ Mapa',
+      onVoltar: () => renderMapa(),
     });
-    document.body.appendChild(el);
-    resultadoOverlay = el;
   }
 
   function fecharResultado() {
-    if (resultadoOverlay) { resultadoOverlay.remove(); resultadoOverlay = null; }
+    fecharResultadoBatalha();
   }
 
   function iniciarLuta(faseId) {

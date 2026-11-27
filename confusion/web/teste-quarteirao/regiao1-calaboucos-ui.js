@@ -12,6 +12,7 @@ import {
   comprarReliquiaLojaCalabouco,
 } from './regiao1-calaboucos-regras.js';
 import { NOME_ELEMENTO } from '../core.js';
+import { mostrarResultadoBatalha } from './regiao1-resultado-ui.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ARENA_FALLBACK = 'assets/confusion/interface/estrategia/reinos/01/arena-chefe.webp';
@@ -100,11 +101,23 @@ export function tratarCliqueCalaboucos(d, { save, salvar, mostrarToast, render, 
   }
   if (d.calRapida) {
     const [cid, nvStr] = d.calRapida.split(':');
-    const r = batalhaRapidaCalabouco(save, cid, Number(nvStr));
+    const nv = Number(nvStr);
+    const cal = CALABOUCOS_POR_ID[cid];
+    const r = batalhaRapidaCalabouco(save, cid, nv);
     if (r.ok) {
       salvar();
-      mostrarToast(`⚡ Rápida concluída! +${r.premios.reliquias.length} Relíquia(s), +${r.premios.moedas} moedas, +${r.premios.ouro} ouro.`);
       render();
+      mostrarResultadoBatalha({
+        titulo: `⚡ ${cal?.nome || 'Calabouço'} · Nv.${nv}`,
+        subtitulo: 'Batalha rápida concluída',
+        venceu: true,
+        rapida: true,
+        save,
+        premios: r.premios,
+        podeRepetir: true,
+        onRepetir: () => tratarCliqueCalaboucos({ calRapida: `${cid}:${nv}` }, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, st }),
+        rotuloVoltar: '🏰 Voltar',
+      });
     } else mostrarToast(r.motivo || 'Batalha rápida indisponível.');
     return true;
   }
@@ -127,11 +140,21 @@ export function tratarCliqueCalaboucos(d, { save, salvar, mostrarToast, render, 
       onFim: (venceu, _f, _m, resumo) => {
         const res = concluirCalaboucoNivel(save, cid, nv, resumo || { venceu: Boolean(venceu), todosVivos: false }, { batalhaId: ini.batalhaId });
         salvar();
-        if (res.venceu) {
-          st.nivel = Math.min(CALABOUCOS_CFG.maxNiveis, nv + 1);
-          mostrarToast(`🏆 Calabouço Nv.${nv} vencido! +${res.premios.reliquias.length} Relíquia(s), +${res.premios.moedas} moedas${res.todosVivos ? ' (⚡ Rápida liberada!)' : ''}`);
-        } else mostrarToast(`💀 Derrota no Calabouço Nv.${nv}.`);
+        if (res.venceu) st.nivel = Math.min(CALABOUCOS_CFG.maxNiveis, nv + 1);
         render();
+        mostrarResultadoBatalha({
+          titulo: res.venceu ? `🏆 ${ini.calabouco.nome} · Nv.${nv}` : `💀 Derrota no Nv.${nv}`,
+          subtitulo: res.todosVivos ? 'Todos vivos · ⚡ Batalha Rápida liberada!' : 'Calabouço de Relíquias',
+          venceu: Boolean(res.venceu),
+          save,
+          premios: res.premios,
+          podeProxima: Boolean(res.venceu && nv < CALABOUCOS_CFG.maxNiveis),
+          rotuloProxima: `Nível ${nv + 1} →`,
+          onProxima: () => { st.nivel = nv + 1; render(); },
+          podeRepetir: true,
+          onRepetir: () => tratarCliqueCalaboucos({ calLutar: `${cid}:${nv}` }, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, st }),
+          rotuloVoltar: '🏰 Voltar',
+        });
       },
     });
     return true;

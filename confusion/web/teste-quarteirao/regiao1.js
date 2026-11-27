@@ -72,6 +72,7 @@ import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 const telaBatalha = criarTelaBatalha();
 import { iniciarExpansao } from './regiao1-expansao.js';
 import { iniciarCampanhaMini } from './regiao1-campanha-mini.js';
+import { mostrarResultadoBatalha } from './regiao1-resultado-ui.js';
 import { iniciarHalloween } from './regiao1-halloween.js';
 import { iniciarConta } from './regiao1-conta.js';
 import { migrarHW } from './regiao1-halloween-regras.js';
@@ -1332,14 +1333,27 @@ function encerrarBatalha(vitoria) {
       }
     }
     const dropFrag = aplicarDropsBatalhaManual(save, { batalhaId: b.batalhaId, inimigos: b.inimigosDrop || [], vitoria: true });
+    const extrasRes = [];
     if (dropFrag.totalDropado > 0) {
       const detalhe = Object.entries(dropFrag.porElemento).map(([el, q]) => `+${q} ${el}`).join(', ');
       registrarLogIdle(idle, `🔮 Fragmento de Sonho (${detalhe})`, 'farm');
       mostrarToast(`🔮 Fragmento de Sonho: ${detalhe}!`, 2600);
+      extrasRes.push(`🔮 Fragmento de Sonho (${detalhe})`);
     }
     atualizarHudEstado();
     salvarEstado();
-    if (autoRotaQuestId) {
+    if (!autoRotaQuestId) {
+      mostrarResultadoBatalha({
+        titulo: ehBoss ? `🏆 Chefe derrotado: ${b.nomeIni}` : `🏆 Vitória sobre ${b.entidade.especie}`,
+        subtitulo: mapaAtual ? `${mapaAtual.id} · ${mapaAtual.nome}` : 'Campanha',
+        venceu: true,
+        save,
+        xpPorOnirico: xpForm,
+        premios: { ouro: ehBoss ? 0 : (regiaoDoMapa(b.entidade.mapa || mapaAtual?.id) === 'r2' ? 60 : 25), extras: extrasRes },
+        podeRepetir: false,
+        rotuloVoltar: 'Continuar',
+      });
+    } else {
       setTimeout(() => { if (autoRotaQuestId && !batalhaBloqueando() && !dialogoAberto()) planejarPassoAutoRota(); }, 450);
     }
   } else {
@@ -1347,6 +1361,17 @@ function encerrarBatalha(vitoria) {
     bloqueioEncontroAte = performance.now() + 2500;
     atualizarHudEstado();
     salvarEstado();
+    mostrarResultadoBatalha({
+      titulo: `💀 Derrota contra ${b.nomeIni}`,
+      subtitulo: mapaAtual ? `${mapaAtual.id} · ${mapaAtual.nome}` : 'Campanha',
+      venceu: false,
+      save,
+      xpPorOnirico: xpForm,
+      premios: {},
+      podeRepetir: true,
+      onRepetir: () => iniciarBatalha(b.tipo, b.entidade),
+      rotuloVoltar: 'Recuar',
+    });
   }
 }
 
