@@ -160,7 +160,12 @@ const POR_ELEMENTO = {
 // Formas base e finais usam o kit da linha
 export const LINHA_DO_KIT = { Penumbrio: 'Noctarn', Noctarion: 'Noctarn', Brasinha: 'Ignavor', Ignaraz: 'Ignavor', Gotalume: 'Vaelith', Vaelirion: 'Vaelith', Sementil: 'Brotavel', Florivel: 'Brotavel', Solinho: 'Solarin', 'Helíssio': 'Solarin' };
 export const temKitProprio = (esp) => Boolean(KITS[esp] || KITS[LINHA_DO_KIT[esp]]);
+// Noctarion (3ª forma): a Chama Violeta evolui para a Chama Noturna, erupção de fogo violeta que atinge todos os inimigos.
+// Mesma recarga; dano por alvo um pouco menor que o golpe único (área), mantendo a queimadura.
+export const CHAMA_NOTURNA = { id: 'chama_noturna', nome: 'Chama Noturna', icone: '🔥', tipo: 'dano', alvo: 'todos', mult: 1.5, cd: 3, distancia: true, elemento: 'trevas', efeitos: [ef('queimadura', 3, 0.6)] };
+export const kitNoctarion = () => KITS.Noctarn.map((h) => (h.id === 'chama_violeta' ? CHAMA_NOTURNA : h));
 export function kitDe(especie, papel, elemento, nomes = []) {
+  if (especie === 'Noctarion') return kitNoctarion();
   if (especie === 'Mortálio') return Number.isInteger(MORTALIO_VIOLETA_CFG.vagaKit) ? kitMortalio() : KITS['Mortálio'];
   if (KITS[especie]) return KITS[especie];
   if (KITS[LINHA_DO_KIT[especie]]) return KITS[LINHA_DO_KIT[especie]];
