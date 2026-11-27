@@ -11,6 +11,7 @@ import { arteAtaque, criarPose } from './regiao1-poses.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
 import { CHEFES_REINOS } from './regiao1-kits-reinos.js';
+import { precarregarVideosBatalha, liberarVideosBatalha } from './regiao1-perf-mobile.js';
 
 const ARTE_CHEFE_REINO = {
   ...Object.fromEntries(
@@ -272,6 +273,7 @@ export function criarArena(host, { artes = {} } = {}) {
   function montar(nova) {
     b = nova; campo.querySelectorAll('.un').forEach((e) => e.remove()); nos = new Map(); hpVis = new Map(); pend = new Set(); alvoSel = null; animacao = null;
     [...b.aliados, ...b.inimigos].forEach((u) => criarNo(u, false)); if (b.evento) b.evento.mostrado = true;
+    precarregarVideosBatalha(b);
   }
   function proximoEfeito() {
     if (animacao) return null;
@@ -437,8 +439,8 @@ export function criarTelaBatalha() {
     if (temChefe) entradaChefe(criarCtx({ arena: el, campo: el.querySelector('.tb-campo') || el, no: (id) => el.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} })).catch(() => {});
     agendar((700 + (temChefe ? 2300 : 0)) / vel());
   }
-  function fechar(venceu) { if (fechado) return; fechado = true; const eraMinimizada = minimizada; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; const resumo = b ? resumoBatalha(b) : null; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac, eraMinimizada, resumo); }
-  function encerrarSilencioso() { clearTimeout(timer); el.style.display = 'none'; el.innerHTML = ''; b = null; }
+  function fechar(venceu) { if (fechado) return; fechado = true; const eraMinimizada = minimizada; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; const resumo = b ? resumoBatalha(b) : null; el.style.display = 'none'; el.innerHTML = ''; liberarVideosBatalha(); const f = cfg?.onFim; b = null; f?.(venceu, frac, eraMinimizada, resumo); }
+  function encerrarSilencioso() { clearTimeout(timer); el.style.display = 'none'; el.innerHTML = ''; liberarVideosBatalha(); b = null; }
   el.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t || !b) return;
     if (t.dataset.min) { minimizar(); return; }

@@ -81,6 +81,7 @@ import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
 import { ESTRATEGIA_R3_R12 } from './regiao1-estrategia-r3-r12.js';
 import { multVelocidade, montariaEquipada, montadoVisivel, apresentacaoMontaria } from './regiao1-montaria.js';
+import { agendarOcioso, mapaCobertoNaAbertura, iniciarPerfMobile } from './regiao1-perf-mobile.js';
 import { criarDomadorMontado } from './domador-montado.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
@@ -372,7 +373,7 @@ async function prepararMontado() {
     jogador.add(montado.malha);
   } catch { montadoId = null; }
 }
-prepararMontado();
+if (!mapaCobertoNaAbertura()) agendarOcioso(() => { if (!mapaCobertoNaAbertura()) prepararMontado(); }, 600);
 jogador.traverse((o) => {
   if (o.material) {
     o.material.depthTest = false;
@@ -1450,12 +1451,17 @@ async function entrarNoMapa(id, chegadaPx = null, comFade = true) {
   matPiso.needsUpdate = true;
 
   const sdfPromise = carregarSdfMapa(destino);
-  for (const sa of destino.saidas) {
-    if (sa.destino && MAPAS[sa.destino]) {
-      carregarTextura(MAPAS[sa.destino].arte);
-      carregarSdfMapa(MAPAS[sa.destino]);
+  const saidasViz = [...destino.saidas];
+  const destinoIdPref = destino.id;
+  agendarOcioso(() => {
+    if (mapaAtual?.id !== destinoIdPref || mapaCobertoNaAbertura()) return;
+    for (const sa of saidasViz) {
+      if (sa.destino && MAPAS[sa.destino]) {
+        carregarTextura(MAPAS[sa.destino].arte);
+        carregarSdfMapa(MAPAS[sa.destino]);
+      }
     }
-  }
+  }, 1500);
   sdfAtivo = await sdfPromise;
 
   const ponto = chegadaPx || destino.spawnPadrao;
@@ -2560,7 +2566,7 @@ function quadro(agora) {
   jogador.position.set(estado.x, camada(estado.z), estado.z);
   sombra.position.set(estado.x, camada(estado.z) - 0.005, estado.z);
   const montar = Boolean(montado) && montadoVisivel(save);
-  if (montadoVisivel(save) && montariaEquipada(save) !== montadoId) prepararMontado();
+  if (!mapaCobertoNaAbertura() && montadoVisivel(save) && montariaEquipada(save) !== montadoId) prepararMontado();
   azazel.malha.visible = !montar; if (montado) montado.malha.visible = montar;
   if (montar) montado.atualizar(andando, rot, 0); else azazel.atualizar(andando, rot, 0);
 
@@ -2724,6 +2730,7 @@ window.regiaoCampanhaMini = iniciarCampanhaMini({
   tela: telaBatalha, batalhaBloqueando, atualizarHud: atualizarHudEstado,
 });
 iniciarLayout();
+iniciarPerfMobile();
 if (avisoSave) setTimeout(() => mostrarToast(avisoSave, 7000), 1500);
 
 window.regiao1 = {
