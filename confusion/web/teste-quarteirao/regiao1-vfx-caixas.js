@@ -110,5 +110,8 @@ export const CAIXAS_CLIPES = {
   'flow-lote-8/veu_lamento.mp4': [0.2, 0.067, 0.8, 0.956],
   'flow-lote-8/vigilia_velas.mp4': [0.125, 0.122, 0.875, 0.944],
   'flow-lote-9/escudo-agua.mp4': [0.1, 0.244, 0.894, 0.989],
+  'flow-lote-3/anel-de-cortes-hd.mp4': [0.1, 0.022, 0.869, 0.978],
+  'flow-lote-3/cortes-rubros-hd.mp4': [0.138, 0.1, 0.814, 0.844],
+  'flow-lote-4/abyssar-terror-hd.mp4': [0.2, 0.078, 0.788, 0.822],
 };
 export const caixaDoClipe = (src) => { const m = /vfx\/(flow-lote-\d+\/[^?#]+)$/.exec(src || ''); return (m && CAIXAS_CLIPES[m[1]]) || [0.2, 0.1, 0.8, 0.9]; };

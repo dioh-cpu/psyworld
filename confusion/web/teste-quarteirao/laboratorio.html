@@ -123,7 +123,7 @@ function montar(it, inimigo) {
 function artesDe(it) {
   const a = {};
   if (it.arte) a[it.especie] = it.arte;
-  if (it.especie === 'Abyssar' && $('#final').checked) a.Abyssar = 'assets/confusion/interface/eventos/halloween/oniricos/abyssar/03.png';
+  if (it.especie === 'Abyssar' && $('#final').checked) a.Abyssar = 'assets/confusion/interface/eventos/halloween/oniricos/abyssar/03-capa.png';
   return a;
 }
 const ctxDe = (rapido) => criarCtx({ arena: host, campo: host.querySelector('.tb-campo'), rapido, no: (id) => host.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} });

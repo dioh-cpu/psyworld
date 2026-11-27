@@ -62,7 +62,8 @@ function recortar(img) {
 // Perfis de batalha associados à arte original, inclusive quando ela vem de uma fase ou chefe.
 // Exclusivos de Halloween (catalogo.json): todas as formas olham para a direita; a forma final do Abyssar é bem maior.
 // zoom: multiplica a figura inteira (altura e largura), ancorada nos pés. Tier 5 do Abyssar = 2× o tamanho anterior.
-const ESCALA_HW = { 'Abyssar': [1, 1.3, 1.75] }, ZOOM_HW = { 'Abyssar': [1, 1, 2] };
+// Abyssar: uma só arte (a da capa) em todas as formas, 15% menor que o tamanho da forma final antiga
+const ESCALA_HW = { 'Abyssar': [1.49, 1.49, 1.49] }, ZOOM_HW = { 'Abyssar': [1.7, 1.7, 1.7] };
 const PERFIS_HW = Object.fromEntries(LINHAGENS_HW.flatMap((l) => l.arte.map((arq, f) => [arq, { arquivo: arq, direcao: 'direita', altura: ESCALA_HW[l.especie]?.[f] ?? [1, 1.08, 1.18][f], zoom: ZOOM_HW[l.especie]?.[f] ?? 1 }])));
 const PERFIS_NO_CAMPO = {
   ...PERFIS_HW,

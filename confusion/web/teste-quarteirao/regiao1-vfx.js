@@ -127,10 +127,10 @@ export const CLIPES_ELEMENTAIS = {
 };
 // Abyssar na forma final (T5): a Perseguição vira o clipe dos cortes vermelhos
 export const CLIPE_ABYSSAR_FINAL = {
-  perseguicao: { clip: `${FLOW3}cortes-rubros.mp4`, impactoMs: 940, centro: 0.49, escala: 2.8, duracaoMs: 2400, ult: true },
-  facada: { clip: `${FLOW3}anel-de-cortes.mp4`, impactoMs: 1080, centro: 0.5, escala: 2.6, duracaoMs: 2000 }, // anel de cortes rubros
+  perseguicao: { clip: `${FLOW3}cortes-rubros-hd.mp4`, impactoMs: 940, centro: 0.49, escala: 3.6, duracaoMs: 2400, ult: true },
+  facada: { clip: `${FLOW3}anel-de-cortes-hd.mp4`, impactoMs: 1080, centro: 0.5, escala: 3.4, duracaoMs: 2000 }, // anel de cortes rubros
   // transformação do modo de pânico: o clipe traz o próprio Abyssar, então o retrato some enquanto ele toca
-  hora_terror: { clip: `${FLOW4}abyssar-terror.mp4`, impactoMs: 730, centro: 0.47, escala: 3.0, duracaoMs: 3700, posMs: 2400, ocultarAtor: true, ult: true },
+  hora_terror: { clip: `${FLOW4}abyssar-terror-hd.mp4`, impactoMs: 730, centro: 0.47, escala: 2.55, duracaoMs: 3700, posMs: 2400, ocultarAtor: true, ult: true },
 };
 const CHEFE_ESPECIAL = new Set(Object.values(HAB.KITS_CHEFES || {}).map((k) => k[2]?.id));
 for (const k of ['purificacao', 'ressurreicao', 'invencivel']) CLIPES_ELEMENTAIS[k].opacidade = 0.72; // brancos: não estourar a cena
@@ -1040,7 +1040,7 @@ export async function tocarEvento(ctx, ev) {
   const hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], elem = hab?.elemento || 'neutro';
   const E = ELEM[elem] || ELEM.neutro, ult = cfg?.ult || (hab && hab.cd >= 5);
   if (ult && hab) await cutIn(ctx, A, hab, cfg?.cut?.[0] || E.cor, cfg?.cut?.[1] || E.cor2);
-  const finalAbyssar = A.dataset.especie === 'Abyssar' && /\/abyssar\/03\./.test(A.querySelector('.un-fig img')?.getAttribute('src') || '');
+  const finalAbyssar = A.dataset.especie === 'Abyssar' && /\/abyssar\/03/.test(A.querySelector('.un-fig img')?.getAttribute('src') || '');
   const varForma = hab && (CLIPES_POR_ESPECIE[A.dataset.especie]?.[hab.id] || (finalAbyssar && CLIPE_ABYSSAR_FINAL[hab.id])); // variação da forma
   const cfgClip = varForma ? { ...(cfg || {}), ...varForma } : cfg || clipeElemental(hab);
   const clip = cfgClip?.clip || hab?.clip; // o clipe publicado tem prioridade sobre o caminho previsto no kit
@@ -1251,7 +1251,7 @@ async function cinemaMeteoros(ctx) {
 // Duração aproximada (para o ritmo do automático). Precisa cobrir a coreografia inteira.
 export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade) => {
   if (!ev) return 0; const k = 1 / velocidade, hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], n = ev.alvos?.length || 0;
-  const formaFinal = hab && /\/abyssar\/03\./.test(ev.arteAtor || '') && CLIPE_ABYSSAR_FINAL[hab.id];
+  const formaFinal = hab && /\/abyssar\/03/.test(ev.arteAtor || '') && CLIPE_ABYSSAR_FINAL[hab.id];
   if (formaFinal) return (formaFinal.impactoMs + 220 + (formaFinal.posMs ?? Math.min(1000, Math.max(400, formaFinal.duracaoMs - formaFinal.impactoMs))) + 240 + (formaFinal.ult ? 820 : 0) + (ev.antes?.length ? 560 : 0)) * k;
   const ult = cfg?.ult || (hab && hab.cd >= 5);
   let base;
