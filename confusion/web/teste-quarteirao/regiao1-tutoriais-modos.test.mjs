@@ -10,7 +10,7 @@ import {
 } from './regiao1-tutoriais-modos.js';
 import { criarEstadoInicial, serializarEstado, desserializarEstado } from './regiao1-estado.js';
 
-test('tutoriais de modos cobrem todos os 7 modos exigidos e exibem uma única vez por conta', () => {
+test('tutoriais de modos cobrem todos os 10 modos exigidos (incluindo energia, ondas e domador) e exibem uma única vez por conta', () => {
   const esperados = [
     'campanha_mini',
     'missoes',
@@ -19,8 +19,11 @@ test('tutoriais de modos cobrem todos os 7 modos exigidos e exibem uma única ve
     'reliquias',
     'evolucao_essencias',
     'domadores',
+    'energia',
+    'ondas',
+    'domador_batalha',
   ];
-  assert.deepEqual(IDS_TUTORIAIS_MODOS.sort(), esperados.sort());
+  assert.deepEqual([...IDS_TUTORIAIS_MODOS].sort(), [...esperados].sort());
 
   const save = criarEstadoInicial();
   for (const id of esperados) {
