@@ -7,6 +7,13 @@ import { REINOS } from '../reinos.js';
 import { LINHAGENS_REINOS } from './regiao1-kits-reinos.js';
 import { ELEMENTO_DA_ESPECIE, LINHAS } from '../species.js';
 import { CHEFES_R2, R2_PASTA_ARTES } from './regiao2-altos-ambar.js';
+import { REGIOES_3_12_POR_ID } from './regiao1-regioes-r3-r12-regras.js';
+import { adicionarEssencia } from './regiao1-regras-sonho.js';
+
+let _geradorReliquiaRegiao = null;
+export function registrarGeradorReliquiaRegiao(fn) {
+  _geradorReliquiaRegiao = typeof fn === 'function' ? fn : null;
+}
 
 const INICIAIS_PROIBIDOS_SELVAGENS = new Set(LINHAS.flatMap((l) => [l.inicial, l.atual, l.evolucao]));
 const RAIZ_REINOS = 'assets/confusion/interface/estrategia/reinos';
@@ -64,12 +71,12 @@ const DEFINICOES_BASE = [
   },
   {
     numero: 11, nome: 'Deserto do Vitral', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R11', nome: 'Esfinge de Vidro', nivel: 285, elemento: 'luz', arte: `${RAIZ_REINOS}/11/chefe.png`, arena: `${RAIZ_REINOS}/11/arena-chefe.webp` },
+    chefe: { id: 'BOSS_R11', nome: 'Esfinge de Vidro', nivel: 285, elemento: 'trevas', arte: `${RAIZ_REINOS}/11/chefe.png`, arena: `${RAIZ_REINOS}/11/arena-chefe.webp` },
     recompensa: { gold: 9800, diamantes: 880, xp: 15000 },
   },
   {
     numero: 12, nome: 'Atol do Farol', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R12', nome: 'Sentinela do Farol', nivel: 300, elemento: 'luz', arte: `${RAIZ_REINOS}/12/chefe.png`, arena: `${RAIZ_REINOS}/12/arena-chefe.webp` },
+    chefe: { id: 'BOSS_R12', nome: 'Sentinela do Farol', nivel: 300, elemento: 'eletrico', arte: `${RAIZ_REINOS}/12/chefe.png`, arena: `${RAIZ_REINOS}/12/arena-chefe.webp` },
     recompensa: { gold: 12000, diamantes: 1200, xp: 20000 },
   },
 ];
@@ -111,6 +118,7 @@ function montarEncontrosDaRegiao(numero, faixa) {
 export const CATALOGO_REGIOES = DEFINICOES_BASE.map((def, idx) => {
   const id = `r${def.numero}`;
   const faixaNivel = [...REGIOES[idx]];
+  const ext = REGIOES_3_12_POR_ID[id];
   const anterior = idx > 0 ? DEFINICOES_BASE[idx - 1] : null;
   const desbloqueio = idx === 0
     ? { tipo: 'inicial', regiaoAnterior: null, chefeId: null, texto: 'Disponível desde o início.' }
@@ -124,10 +132,20 @@ export const CATALOGO_REGIOES = DEFINICOES_BASE.map((def, idx) => {
     nome: def.nome,
     faixaNivel,
     jogavel: def.jogavel,
-    mapaEntrada: def.mapaEntrada,
+    mapaEntrada: ext?.mapaEntrada || def.mapaEntrada,
+    ...(ext ? {
+      mapaChefe: ext.mapaChefe,
+      areas: ext.areas,
+      ordemAreas: ext.ordemAreas,
+      encontrosPorArea: ext.encontrosPorArea,
+      chefeSpec: ext.chefe.spec,
+      recursoEstrategia: ext.recursoEstrategia,
+      npc: ext.npc,
+      missoes: ext.missoes,
+    } : {}),
     desbloqueio,
-    chefe: { ...def.chefe },
-    recompensaPrimeiraVitoria: { ...def.recompensa },
+    chefe: ext ? { ...def.chefe, ...ext.chefe, arte: def.chefe.arte, arena: def.chefe.arena } : { ...def.chefe },
+    recompensaPrimeiraVitoria: ext ? { ...ext.recompensaPrimeiraVitoria, ...def.recompensa } : { ...def.recompensa },
     encontros: montarEncontrosDaRegiao(def.numero, faixaNivel),
   };
 });
@@ -183,7 +201,10 @@ export function garantirEstadoRegioes(save) {
 }
 
 export function regiaoDoMapa(mapaId) {
-  if (typeof mapaId === 'string' && mapaId.startsWith('R2_')) return 'r2';
+  if (typeof mapaId === 'string') {
+    const m = /^R([2-9]|1[0-2])_/.exec(mapaId);
+    if (m) return `r${m[1]}`;
+  }
   return 'r1';
 }
 
@@ -262,7 +283,7 @@ export function sortearEncontroRegiao(regiaoId, rng = Math.random) {
   };
 }
 
-function creditarRecompensaUnica(save, rec) {
+function creditarRecompensaUnica(save, rec, regId = 'regiao') {
   if (!rec) return;
   save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
   save.recompensas.gold = (Number(save.recompensas.gold) || 0) + (rec.gold || 0);
@@ -270,6 +291,22 @@ function creditarRecompensaUnica(save, rec) {
   save.recompensas.xp = (Number(save.recompensas.xp) || 0) + (rec.xp || 0);
   if (save.idle?.jogador) {
     save.idle.jogador.xp = (Number(save.idle.jogador.xp) || 0) + (rec.xp || 0);
+  }
+  if (rec.ticketsPermanentes > 0 && save.idle) {
+    save.idle.exp = save.idle.exp || { nivel: 1, xp: 0, tickets: 0 };
+    save.idle.exp.tickets = (Number(save.idle.exp.tickets) || 0) + rec.ticketsPermanentes;
+  }
+  if (rec.essencias?.par) {
+    for (const tam of ['menor', 'media', 'maior']) {
+      if (rec.essencias[tam] > 0) adicionarEssencia(save, rec.essencias.par, tam, rec.essencias[tam]);
+    }
+  }
+  if (rec.reliquia && _geradorReliquiaRegiao) {
+    _geradorReliquiaRegiao(save, {
+      elemento: rec.reliquia.elemento,
+      raridade: rec.reliquia.raridade,
+      fonte: `regiao:${regId}`,
+    });
   }
 }
 
@@ -285,7 +322,7 @@ export function registrarVitoriaChefeRegiao(save, regiaoId) {
     st.primeiraVitoria[reg.id] = true;
     primeiraVez = true;
     recompensaPaga = { ...reg.recompensaPrimeiraVitoria };
-    creditarRecompensaUnica(save, recompensaPaga);
+    creditarRecompensaUnica(save, recompensaPaga, reg.id);
   }
   const proxId = reg.numero < 12 ? `r${reg.numero + 1}` : null;
   const proximaDesbloqueada = proxId && regiaoDesbloqueada(save, proxId) ? proxId : null;
