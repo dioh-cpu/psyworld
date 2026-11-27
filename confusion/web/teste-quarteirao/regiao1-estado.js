@@ -825,6 +825,32 @@ export function sanitizarIdleProgressao(idle) {
     };
   }
 
+  if (isObj(idle.jogador) && isObj(idle.jogador.perfil)) {
+    const pf = idle.jogador.perfil;
+    const limpaLista = (arr, defVal) => {
+      const base = Array.isArray(arr) ? arr.filter((x) => typeof x === 'string').map((x) => x.slice(0, 48)).slice(0, 100) : [];
+      if (!base.includes(defVal)) base.unshift(defVal);
+      return [...new Set(base)];
+    };
+    const foto = isObj(pf.foto)
+      ? {
+          status: ['nenhuma', 'pendente', 'aprovada', 'reprovada'].includes(pf.foto.status) ? pf.foto.status : 'nenhuma',
+          url: typeof pf.foto.url === 'string' ? pf.foto.url.slice(0, 512) : null,
+          motivo: typeof pf.foto.motivo === 'string' ? pf.foto.motivo.slice(0, 160) : '',
+        }
+      : { status: 'nenhuma', url: null, motivo: '' };
+    out.jogador = {
+      ...idle.jogador,
+      perfil: {
+        moldura: typeof pf.moldura === 'string' ? pf.moldura.slice(0, 48) : 'farol',
+        icone: typeof pf.icone === 'string' ? pf.icone.slice(0, 48) : 'padrao',
+        desbloqueadas: limpaLista(pf.desbloqueadas, 'farol'),
+        iconesDesbloqueados: limpaLista(pf.iconesDesbloqueados, 'padrao'),
+        foto,
+      },
+    };
+  }
+
   return out;
 }
 

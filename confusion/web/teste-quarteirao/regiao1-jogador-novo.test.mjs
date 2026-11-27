@@ -31,7 +31,7 @@ import {
   renderGuiaJogadorNovo,
   tratarCliqueTutorialModo,
 } from './regiao1-tutoriais-modos.js';
-import { urlFundoTela } from './regiao1-perf-mobile.js';
+import { urlFundoTela, urlAnimacaoOnirico, coletarAnimacoesEmCampo } from './regiao1-perf-mobile.js';
 
 const INICIAIS_BANNER = new Set(['Brasinha', 'Gotalume', 'Sementil']);
 const T5_ESPERADOS = new Set(['Ignaraz', 'Vaelirion', 'Florivel']);
@@ -245,4 +245,25 @@ test('urlFundoTela seleciona versão 1280 mobile no celular e 2560 no desktop, c
     );
   }
 });
+
+test('coletarAnimacoesEmCampo carrega apenas os Oníricos em campo (aliados à direita, inimigos à esquerda)', () => {
+  const b = {
+    aliados: [{ especie: 'Brasinha' }, { especie: 'Cervomusgo' }, { especie: 'Brasinha' }],
+    inimigos: [{ especie: 'Abobrisco' }],
+  };
+  const urls = coletarAnimacoesEmCampo(b);
+  assert.deepEqual(urls, [
+    'assets/confusion/animacoes/brasinha/idle-direita.webm',
+    'assets/confusion/animacoes/brasinha/andar-direita.webm',
+    'assets/confusion/animacoes/cervomusgo/idle-direita.webm',
+    'assets/confusion/animacoes/cervomusgo/andar-direita.webm',
+    'assets/confusion/animacoes/abobrisco/idle-esquerda.webm',
+    'assets/confusion/animacoes/abobrisco/andar-esquerda.webm',
+  ]);
+  assert.equal(
+    urlAnimacaoOnirico('Ignavor', 'andar', 'costas', { formato: 'webp' }),
+    'assets/confusion/animacoes/ignavor/andar-costas.webp',
+  );
+});
+
 

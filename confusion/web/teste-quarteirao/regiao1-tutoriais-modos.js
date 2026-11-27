@@ -45,7 +45,25 @@ export const TUTORIAIS_MODOS = {
     id: 'domadores',
     icone: '🛡️',
     titulo: 'Domadores Auxiliares',
-    texto: 'Seu Domador de apoio acompanha os 4 Oníricos sem ocupar vaga, aplica passiva ao time e age com 3 habilidades ao encher a barra.',
+    texto: 'Seu Domador de apoio acompanha os 4 Oníricos sem ocupar vaga, nunca recebe dano e age automaticamente sempre que uma de suas habilidades sai de recarga.',
+  },
+  energia: {
+    id: 'energia',
+    icone: '⚡',
+    titulo: 'Energia',
+    texto: 'Campanha Mini usa 6/8/10 de energia (normal/elite/chefe) e Calabouços 8–16; a 1ª vitória em cada andar da Torre é grátis. A energia recarrega sozinha e pode ser reposta com poções.',
+  },
+  ondas: {
+    id: 'ondas',
+    icone: '🌊',
+    titulo: 'Batalhas em Ondas',
+    texto: 'Fases de Campanha Mini têm 2 a 3 ondas seguidas (ex.: Onda 1/3 → 3/3). Ao vencer uma onda, o time avança mantendo a vida e a vitória só conta ao derrotar a onda final.',
+  },
+  domador_batalha: {
+    id: 'domador_batalha',
+    icone: '⚔️',
+    titulo: 'Domador na Arena',
+    texto: 'O Domador entra com recargas próprias (sem barra de energia), não sofre ataques e dispara sua habilidade pronta automaticamente no turno.',
   },
 };
 

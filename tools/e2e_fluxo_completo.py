@@ -214,7 +214,7 @@ def run_viewport_e2e(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dic
         print(f"  [{vp_name}] {'PASS' if ok else 'FAIL'} {name} — {detail}", flush=True)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True, args=["--disable-dev-shm-usage"])
         context = browser.new_context(
             viewport={"width": vp_cfg["width"], "height": vp_cfg["height"]},
             is_mobile=vp_cfg["is_mobile"],

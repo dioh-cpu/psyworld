@@ -11,6 +11,7 @@ export const PASSE_CFG = {
   diasFolga: 2,           // a conclusão fica nos últimos dias da edição (dias do mês − 2)
   arredondarCota: 100,
   precoNivel: 150,        // diamantes por nível comprado (dentro do que o calendário já liberou)
+  precoPremium: 5000,     // Passe Premium Dinossauros (trilha dupla Nv.1-100)
   primeiraEdicao: '2026-12', // meses anteriores usam o tema da primeira edição
   temas: [
     {
@@ -92,11 +93,16 @@ export function passeDe(alvo, agora = Date.now(), cfg = PASSE_CFG) {
   const ed = edicaoDe(agora, cfg);
   const p = idle.passe && typeof idle.passe === 'object' ? idle.passe : {};
   const t5Pagos = p.t5Pagos && typeof p.t5Pagos === 'object' ? p.t5Pagos : {};
+  const t5PremiumPagos = p.t5PremiumPagos && typeof p.t5PremiumPagos === 'object' ? p.t5PremiumPagos : {};
   if (p.v !== 2 || p.edicao !== ed.id) {
-    idle.passe = { v: 2, edicao: ed.id, xp: 0, resgatado: 0, comprados: 0, descartado: 0, t5Pagos };
+    idle.passe = { v: 2, edicao: ed.id, xp: 0, resgatado: 0, resgatadoPremium: 0, premium: false, premiumPagoEm: null, comprados: 0, descartado: 0, t5Pagos, t5PremiumPagos };
   } else {
     p.xp = Math.max(0, Number(p.xp) || 0); p.resgatado = Math.max(0, Number(p.resgatado) || 0);
-    p.comprados = Number(p.comprados) || 0; p.descartado = Number(p.descartado) || 0; p.t5Pagos = t5Pagos;
+    p.resgatadoPremium = Math.max(0, Number(p.resgatadoPremium) || 0);
+    p.premium = Boolean(p.premium);
+    p.premiumPagoEm = p.premiumPagoEm ? Number(p.premiumPagoEm) : null;
+    p.comprados = Number(p.comprados) || 0; p.descartado = Number(p.descartado) || 0;
+    p.t5Pagos = t5Pagos; p.t5PremiumPagos = t5PremiumPagos;
   }
   return idle.passe;
 }
@@ -130,6 +136,42 @@ export function premioNivel(n, tema = PASSE_CFG.temas[0]) {
   const q = 20 + 5 * Math.floor(n / 20); return { tipo: 'diamantes', qtd: q, texto: `${q} 💎` };
 }
 
+const MOLDURAS_PREMIUM_DINO = { 10: ['ambar-fossil', 'Âmbar Fóssil'], 30: ['ossada-antiga', 'Ossada Antiga'], 60: ['pegadas-no-barro', 'Pegadas no Barro'], 90: ['vulcao-adormecido', 'Vulcão Adormecido'] };
+const ICONES_PREMIUM_DINO = { 20: ['icone-tiranox', 'Ícone Tiranox'], 40: ['icone-tricerax', 'Ícone Tricerax'], 70: ['icone-veloxar', 'Ícone Veloxar'], 80: ['icone-pteronox', 'Ícone Pteronox'] };
+const PARES_EVO_PREMIUM = ['ignea', 'mares', 'verde', 'mineral', 'solar', 'sombria', 'glacial', 'draconica', 'arcana'];
+const ELENCO_T5_BANNER_PERMANENTE = ['Ignaraz', 'Vaelirion', 'Florivel'];
+
+// Trilha Premium (5.000💎): dobro de diamantes da grátis, molduras/ícones exclusivos, materiais de evolução,
+// 20 tickets de evento, 20 de invocação mensal, 20 de banner quinzenal e 2 ovos T5 (Nv.50 Permanente + Nv.100 Dinossauro).
+export function premioNivelPremium(n, tema = PASSE_CFG.temas[0]) {
+  if (n === 50) {
+    return { tipo: 'ovoT5Permanente', tier: 5, especie: ELENCO_T5_BANNER_PERMANENTE[0], elenco: [...ELENCO_T5_BANNER_PERMANENTE], texto: 'Ovo T5 do Banner Permanente' };
+  }
+  if (n === 100) {
+    const elenco = tema.elencoT5?.length ? [...tema.elencoT5] : [tema.especieT5];
+    return { tipo: 'ovoT5Temporada', tier: 5, especie: elenco[0], elenco, texto: tema.ovoNome || `Ovo T5 (${tema.nome})` };
+  }
+  if (MOLDURAS_PREMIUM_DINO[n]) {
+    const [id, nome] = MOLDURAS_PREMIUM_DINO[n];
+    return { tipo: 'molduraPerfil', id, nome, texto: `Moldura: ${nome}` };
+  }
+  if (ICONES_PREMIUM_DINO[n]) {
+    const [id, nome] = ICONES_PREMIUM_DINO[n];
+    return { tipo: 'iconePerfil', id, nome, texto: `Ícone: ${nome}` };
+  }
+  if (n % 10 === 2) return { tipo: 'ticketsEvento', qtd: 2, texto: '2 Tickets de Evento' };
+  if (n % 10 === 4) return { tipo: 'ticketsMensais', qtd: 2, texto: '2 Tickets Mensais' };
+  if (n % 10 === 6) return { tipo: 'ticketsQuinzenais', qtd: 2, texto: '2 Tickets Quinzenais' };
+  const gratis = premioNivel(n, tema);
+  if (gratis.tipo === 'diamantes') {
+    const q = gratis.qtd * 2;
+    return { tipo: 'diamantes', qtd: q, texto: `${q} 💎` };
+  }
+  const par = PARES_EVO_PREMIUM[n % PARES_EVO_PREMIUM.length];
+  if (n % 10 === 8) return { tipo: 'essencia', par, tamanho: n >= 70 ? 'maior' : n >= 35 ? 'media' : 'menor', qtd: n >= 70 ? 2 : n >= 35 ? 4 : 8, texto: `Essências (${par})` };
+  return { tipo: 'fragmentosSonho', elemento: n % 2 === 0 ? 'fogo' : 'terra', qtd: 5, texto: '5 Fragmentos de Sonho' };
+}
+
 // Abre um ovo temático T5 usando a temporada/tema persistidos no próprio ovo (funciona mesmo após o fim da edição).
 export function abrirOvoPasse(ovo, rng = Math.random, cfg = PASSE_CFG) {
   const tema = cfg.temas.find((t) => t.id === ovo?.tema) || cfg.temas[0];
@@ -156,6 +198,36 @@ function entregar(save, idle, pr, n, ed, agora) {
   switch (pr.tipo) {
     case 'diamantes': save.recompensas.diamantes = (save.recompensas.diamantes || 0) + pr.qtd; break;
     case 'tickets': { const e = idle.exp || (idle.exp = {}); e.tickets = (e.tickets || 0) + pr.qtd; break; }
+    case 'ticketsEvento': { const e = idle.exp || (idle.exp = {}); e.ticketsEvento = (e.ticketsEvento || 0) + pr.qtd; break; }
+    case 'ticketsMensais': { const e = idle.exp || (idle.exp = {}); e.ticketsMensais = (e.ticketsMensais || 0) + pr.qtd; break; }
+    case 'ticketsQuinzenais': { const e = idle.exp || (idle.exp = {}); e.ticketsQuinzenais = (e.ticketsQuinzenais || 0) + pr.qtd; break; }
+    case 'essencia': {
+      idle.essencias = idle.essencias || {};
+      const cur = idle.essencias[pr.par] || (idle.essencias[pr.par] = { menor: 0, media: 0, maior: 0 });
+      cur[pr.tamanho] = (cur[pr.tamanho] || 0) + pr.qtd;
+      break;
+    }
+    case 'fragmentosSonho': {
+      moch.fragmentosSonho = moch.fragmentosSonho || {};
+      moch.fragmentosSonho[pr.elemento] = (moch.fragmentosSonho[pr.elemento] || 0) + pr.qtd;
+      break;
+    }
+    case 'molduraPerfil': {
+      add('molduras', pr.id);
+      idle.jogador = idle.jogador || {};
+      idle.jogador.perfil = idle.jogador.perfil || { moldura: 'farol', icone: 'padrao', desbloqueadas: ['farol'], iconesDesbloqueados: ['padrao'] };
+      if (!Array.isArray(idle.jogador.perfil.desbloqueadas)) idle.jogador.perfil.desbloqueadas = ['farol'];
+      if (!idle.jogador.perfil.desbloqueadas.includes(pr.id)) idle.jogador.perfil.desbloqueadas.push(pr.id);
+      break;
+    }
+    case 'iconePerfil': {
+      add('icones', pr.id);
+      idle.jogador = idle.jogador || {};
+      idle.jogador.perfil = idle.jogador.perfil || { moldura: 'farol', icone: 'padrao', desbloqueadas: ['farol'], iconesDesbloqueados: ['padrao'] };
+      if (!Array.isArray(idle.jogador.perfil.iconesDesbloqueados)) idle.jogador.perfil.iconesDesbloqueados = ['padrao'];
+      if (!idle.jogador.perfil.iconesDesbloqueados.includes(pr.id)) idle.jogador.perfil.iconesDesbloqueados.push(pr.id);
+      break;
+    }
     case 'ovo': moch.ovos.push({ especie: ESPECIES_OVO[(n / 10 - 1) % ESPECIES_OVO.length], forma: 'natural', tier: pr.tier, origem: `passe-${ed.id}`, obtidoEm: agora }); break;
     case 'montaria': add('montarias', pr.id); break;
     case 'moldura': add('molduras', pr.id); break;
@@ -192,7 +264,53 @@ export function resgatarPasse(save, agora = Date.now(), cfg = PASSE_CFG) {
     } else { entregar(save, idle, pr, n, ed, agora); pagos.push(pr); }
   }
   p.resgatado = Math.max(p.resgatado, nv);
-  return { nivel: nv, pagos };
+  const pagosPremium = [];
+  if (p.premium) {
+    for (let n = p.resgatadoPremium + 1; n <= nv; n++) {
+      const pr = premioNivelPremium(n, ed.tema);
+      if (pr.tipo === 'ovoT5Permanente' || pr.tipo === 'ovoT5Temporada') {
+        const chave = `${ed.id}:${pr.tipo}`;
+        if (!p.t5PremiumPagos[chave]) {
+          p.t5PremiumPagos[chave] = true;
+          idle.mochila = idle.mochila || {}; idle.mochila.ovos = idle.mochila.ovos || [];
+          idle.mochila.ovos.push({
+            tipo: 'ovoT5',
+            subtipo: pr.tipo,
+            nome: pr.texto,
+            especie: pr.especie,
+            elenco: pr.elenco,
+            forma: 'abencoada',
+            tier: 5,
+            temporada: ed.id,
+            tema: pr.tipo === 'ovoT5Permanente' ? 'permanente' : ed.tema.id,
+            origem: `passe-premium-${ed.id}`,
+            obtidoEm: agora,
+          });
+          pagosPremium.push(pr);
+        }
+      } else {
+        entregar(save, idle, pr, n, ed, agora);
+        pagosPremium.push(pr);
+      }
+    }
+    p.resgatadoPremium = Math.max(p.resgatadoPremium, nv);
+  }
+  return { nivel: nv, pagos, pagosPremium };
+}
+
+export function comprarPassePremium(save, agora = Date.now(), cfg = PASSE_CFG) {
+  const p = passeDe(save, agora, cfg);
+  if (!p) return { ok: false, motivo: 'Save inválido.' };
+  if (p.premium) return { ok: false, jaAtivo: true, motivo: 'Passe Premium já está ativo nesta edição.' };
+  const custo = cfg.precoPremium || 5000;
+  save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+  if ((save.recompensas.diamantes || 0) < custo) {
+    return { ok: false, motivo: `Precisa de ${custo} 💎 para ativar o Passe Premium.` };
+  }
+  save.recompensas.diamantes -= custo;
+  p.premium = true;
+  p.premiumPagoEm = agora;
+  return { ok: true, edicao: p.edicao, custo, premium: true };
 }
 
 // Compra 1 nível por 150 💎, só se o calendário já liberou o XP desse nível (mesmo teto sazonal).
@@ -220,6 +338,8 @@ export function infoPasse(alvo, agora = Date.now(), cfg = PASSE_CFG) {
     nivel: nv, xp: p.xp, xpNoNivel: p.xp - nv * cfg.xpPorNivel, xpPorNivel: cfg.xpPorNivel, niveis: cfg.niveis,
     liberada, nivelLiberado: nivelPasse(liberada, cfg), recuperavel: Math.max(0, liberada - p.xp), noTeto: p.xp >= liberada,
     resgatado: p.resgatado, aResgatar: Math.max(0, nv - p.resgatado), t5Pago: !!p.t5Pagos[ed.id],
+    premium: Boolean(p.premium), precoPremium: cfg.precoPremium || 5000,
+    resgatadoPremium: p.resgatadoPremium || 0, aResgatarPremium: p.premium ? Math.max(0, nv - (p.resgatadoPremium || 0)) : 0,
     proximo: nv >= cfg.niveis ? null : {
       nivel: prox, premio: premioNivel(prox, ed.tema), preco: cfg.precoNivel,
       liberado: prox * cfg.xpPorNivel <= liberada, dia: diaProx, data: dataDe(Math.min(ed.dias, diaProx)),
@@ -235,11 +355,14 @@ export function trilhaPasse(alvo, agora = Date.now(), cfg = PASSE_CFG) {
   const itens = [];
   for (let n = 1; n <= cfg.niveis; n++) {
     const premio = premioNivel(n, ed.tema);
+    const premioPremium = premioNivelPremium(n, ed.tema);
     const coletado = n <= p.resgatado || (n === 100 && !!p.t5Pagos[ed.id]);
     const alcancado = n <= nv;
     const liberadoCalendario = n * cfg.xpPorNivel <= liberada;
     const estado = coletado ? 'coletado' : alcancado ? 'pronto' : liberadoCalendario ? 'liberado' : 'bloqueado';
-    itens.push({ nivel: n, premio, estado, diaAbertura: diaQueLibera(n, ed, cfg) });
+    const coletadoPremium = Boolean(p.premium) && n <= (p.resgatadoPremium || 0);
+    const estadoPremium = !p.premium ? 'bloqueado-premium' : coletadoPremium ? 'coletado' : alcancado ? 'pronto' : liberadoCalendario ? 'liberado' : 'bloqueado';
+    itens.push({ nivel: n, premio, premioPremium, estado, estadoPremium, diaAbertura: diaQueLibera(n, ed, cfg) });
   }
   return itens;
 }

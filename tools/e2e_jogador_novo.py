@@ -247,6 +247,12 @@ def finish_battle(page: Page, vp_name: str, label: str, issues: list[dict[str, A
     page.wait_for_timeout(300)
     if shot_prefix:
         audit_and_shot(page, vp_name, shot_prefix, f"{label}-arena", f"{label} (Arena)", True, issues, shots)
+    fps_medido = None
+    if shot_prefix:
+        try:
+            fps_medido = page.evaluate("async () => (window.regiaoPerf?.medirFpsBatalha ? await window.regiaoPerf.medirFpsBatalha(550) : null)")
+        except Exception:
+            fps_medido = None
 
     vel_btn = page.locator(".arena [data-vel]").first
     for _ in range(3):
@@ -282,7 +288,7 @@ def finish_battle(page: Page, vp_name: str, label: str, issues: list[dict[str, A
         if btn_rb.is_visible():
             btn_rb.click(force=True)
             page.wait_for_timeout(220)
-    return {"vitoria": vitoria, "texto": txt[:140]}
+    return {"vitoria": vitoria, "texto": txt[:140], "fps": fps_medido}
 
 
 def medir_pesos_artes_v2() -> dict[str, Any]:
@@ -602,9 +608,24 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         moch_info = page.evaluate(r"""() => {
           const m = document.getElementById('modal-mochila');
           const abas = [...(m?.querySelectorAll('[data-mochila-cat]') || [])].filter((el) => el.offsetParent !== null);
-          const temUploadFoto = Boolean(m?.querySelector('input[type="file"], [data-personalizar-perfil], [data-foto-perfil]'));
+          const temUploadFoto = Boolean(m?.querySelector('#btn-dom-personalizar, input[type="file"], [data-personalizar-perfil], [data-foto-perfil]'));
           return { abas: abas.length, temUploadFoto };
         }""")
+        # Testa personalização e validação de upload de foto (#165): formato inválido e arquivo > 2 MB
+        foto_val_ok = False
+        if page.locator("#btn-dom-personalizar").first.is_visible():
+            page.locator("#btn-dom-personalizar").first.click(force=True)
+            page.wait_for_timeout(200)
+            inp_foto = page.locator("#dom-input-foto").first
+            if inp_foto.count() > 0:
+                inp_foto.set_input_files({"name": "invalido.txt", "mimeType": "text/plain", "buffer": b"nao-e-imagem"})
+                page.wait_for_timeout(150)
+                inp_foto.set_input_files({"name": "grande.png", "mimeType": "image/png", "buffer": b"\x89PNG\r\n\x1a\n" + (b"\x00" * (2 * 1024 * 1024 + 64))})
+                page.wait_for_timeout(150)
+                foto_val_ok = page.evaluate("() => !window.regiao1?.save?.()?.idle?.perfil?.fotoUrl")
+            page.locator("#btn-dom-personalizar").first.click(force=True)
+            page.wait_for_timeout(120)
+
         # Navega pelas 5 abas da Mochila para auditar estados vazios e botões
         for idx_aba in range(1, min(5, moch_info["abas"])):
             tab_loc = page.locator('#modal-mochila [data-mochila-cat]').nth(idx_aba)
@@ -700,9 +721,11 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         "bootMs": boot_ms,
         "bootKB": boot_kb,
         "refugioMs": refugio_ms,
+        "battleFps": (res_camp.get("fps") or {}).get("fps") if isinstance(res_camp, dict) else None,
         "v2RequestsBoot": sorted(set(v2_requests_boot)),
         "v2RequestsAll": sorted(set(v2_requests_all)),
         "uploadFotoImplementado": moch_info["temUploadFoto"],
+        "fotoValOk": foto_val_ok,
         "steps": steps,
         "issues": issues,
         "shots": shots,
@@ -721,15 +744,18 @@ def escrever_relatorio_md(
     desk = next((r for r in resultados if r["viewport"] == "1280x720"), resultados[0])
     mob = next((r for r in resultados if r["viewport"] == "844x390"), resultados[-1])
 
+    mob_v2_telas = [u for u in mob.get("v2RequestsAll", []) if "telas-v2/" in u]
+    mob_v2_2560 = [u for u in mob_v2_telas if "telas-v2/mobile/" not in u]
     linhas = [
         "# Relatório — Etapa JOGADOR NOVO (QA, Desempenho e Colisão)",
         "",
         f"- **Última atualização:** {agora}",
         "- **Jogo:** https://cwdp-lake.vercel.app/jogar",
         "- **Gerado automaticamente por:** `python3 tools/e2e_jogador_novo.py`",
-        f"- **Desempenho na abertura:** Desktop `1280×720` = **{desk['bootMs']} ms** ({desk['bootKB']} KB, Refúgio +{desk['refugioMs']} ms) · Celular `844×390` = **{mob['bootMs']} ms** ({mob['bootKB']} KB, Refúgio +{mob['refugioMs']} ms; meta `< 2000 ms`: **{'OK' if mob['bootMs'] < 2000 else 'ACIMA'}**)",
+        f"- **Desempenho na abertura:** Desktop `1280×720` = **{desk['bootMs']} ms** ({desk['bootKB']} KB, Refúgio +{desk['refugioMs']} ms, batalha **{desk.get('battleFps') or '—'} fps**) · Celular `844×390` = **{mob['bootMs']} ms** ({mob['bootKB']} KB, Refúgio +{mob['refugioMs']} ms, batalha **{mob.get('battleFps') or '—'} fps**; meta abertura `< 2000 ms`: **{'OK' if mob['bootMs'] < 2000 else 'ACIMA'}**)",
         f"- **Artes v2 em disco:** `telas-v2/` (13 fundos 2560px) = **{pesos_v2['totalDeskKB']} KB** · `telas-v2/mobile/` (13 fundos 1280px) = **{pesos_v2['totalMobKB']} KB** (**-{pesos_v2['economiaMobilePct']}%** no celular) · `banners-v2/` (2 capas) = **{pesos_v2['totalBannersKB']} KB**",
-        f"- **Carregamento sob demanda v2 no celular (`844×390`):** boot={len(mob['v2RequestsBoot'])} arquivo(s), sessão inteira={len(mob['v2RequestsAll'])} arquivo(s)",
+        f"- **Carregamento sob demanda v2 no celular (`844×390`):** boot={len(mob['v2RequestsBoot'])} arquivo(s), sessão inteira={len(mob['v2RequestsAll'])} arquivo(s) (usando `telas-v2/mobile/`: **{len(mob_v2_telas) - len(mob_v2_2560)}**, usando 2560px no celular: **{len(mob_v2_2560)}**)",
+        f"- **Perfil / Upload de foto (`#165`):** botão Personalizar={'OK' if mob.get('uploadFotoImplementado') else 'AUSENTE'}, rejeita formato inválido e >2MB={'OK' if mob.get('fotoValOk') else 'PENDENTE'}",
         f"- **Erros de console / página / 404:** Desktop ({len(desk['consoleErrors'])} console, {len(desk['pageErrors'])} pageerror, {len(desk['httpErrors'])} HTTP 404) · Mobile ({len(mob['consoleErrors'])} console, {len(mob['pageErrors'])} pageerror, {len(mob['httpErrors'])} HTTP 404)",
         "",
         "---",
@@ -752,14 +778,21 @@ def escrever_relatorio_md(
             "tipo": "pendencia-telas-v2",
             "agente": "dioh293",
             "contexto": "telas-v2/ e banners-v2/",
-            "detalhe": "Artes v2 já estão na main (#156) e telas-v2/mobile/ já foi gerado, mas BANNERS_V2_ATIVO ainda está false em regiao1-expansao.js (e busca *-capa.webp em vez de adventurer.webp/halloween.webp) e os fundos telas-v2 ainda não são aplicados via aplicarFundoTelaSobDemanda.",
+            "detalhe": "Nenhuma arte de telas-v2/ ou banners-v2/ foi requisitada no fluxo mobile.",
+        })
+    elif mob_v2_2560:
+        todos_problemas.append({
+            "tipo": "otimizacao-telas-v2-mobile",
+            "agente": "dioh293",
+            "contexto": "telas-v2/ no celular (844x390)",
+            "detalhe": f"{len(mob_v2_2560)} fundo(s) 2560px carregados no celular em vez de telas-v2/mobile/ (1280px, -68,5%): {', '.join(mob_v2_2560[:4])}",
         })
     if not mob.get("uploadFotoImplementado"):
         todos_problemas.append({
             "tipo": "pendencia-upload-foto",
             "agente": "dioh293",
             "contexto": "Mochila → Domador (Perfil)",
-            "detalhe": "Botão Personalizar / upload de foto com moderação e molduras kit-v2/perfil/ ainda não implementado na tela de perfil.",
+            "detalhe": "Botão Personalizar / upload de foto com moderação e molduras kit-v2/perfil/ ainda não encontrado na tela de perfil.",
         })
 
     if not todos_problemas:
