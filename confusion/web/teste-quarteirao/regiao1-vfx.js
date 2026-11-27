@@ -3,6 +3,7 @@
 // cut-in, números, câmera e reações ficam no DOM. Cada habilidade escrita à mão tem coreografia própria em FX_HABILIDADES (com `clip`
 // pronto para clipes do Flow); as geradas por arquétipo usam coreografias por elemento. Ultimates (recarga ≥ 5) têm cut-in.
 import * as HAB from './regiao1-batalha-habilidades.js';
+import { caixaDoClipe } from './regiao1-vfx-caixas.js';
 import { pref, tocar } from './regiao1-sfx.js';
 const { EFEITOS } = HAB;
 import { camada, particula, rajada, convergir, onda, luz, corte, feixe, relampago, linhasFoco, circulo, coluna, raiosLuz, rachadura, projetil, livre, R, recorte, precarregarRecortes } from './regiao1-vfx-motor.js';
@@ -121,7 +122,6 @@ export const CLIPE_ABYSSAR_FINAL = {
   hora_terror: { clip: `${FLOW4}abyssar-terror.mp4`, impactoMs: 730, centro: 0.47, escala: 3.0, duracaoMs: 3700, posMs: 2400, ocultarAtor: true, ult: true },
 };
 const CHEFE_ESPECIAL = new Set(Object.values(HAB.KITS_CHEFES || {}).map((k) => k[2]?.id));
-for (const c of Object.values(CLIPES_ELEMENTAIS)) if (/flow-lote-[56]\//.test(c.clip)) c.conteudo ??= 0.4;
 for (const k of ['purificacao', 'ressurreicao', 'invencivel']) CLIPES_ELEMENTAIS[k].opacidade = 0.72; // brancos: não estourar a cena
 export function clipeElemental(hab) {
   if (!hab || FX_HABILIDADES[hab.id] || hab.clip) return null;
@@ -1045,19 +1045,23 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   const grupos = cfg.porAlvo && base.length > 1 ? base.map((e) => [e]) : [base];
   const vs = [v, ...(await Promise.all(grupos.slice(1).map(() => carregarVideo(src))))].filter(Boolean);
   // Área (todos/aliados): o clipe cai no centro do time inteiro daquele lado (as 4 vagas, vivas ou não) e o EFEITO (não só o quadro
-  // do vídeo) cobre a formação toda; conteudo = fração do quadro que o efeito ocupa.
+  // do vídeo) cobre a formação toda (caixa medida de cada clipe em regiao1-vfx-caixas.js).
   const emArea = grupos.length === 1 && (base.length > 1 || ['todos', 'aliados'].includes(ev.hab?.alvo));
   const ladoArea = base[0]?.classList.contains('i') ? 'i' : 'a';
   const time = emArea ? [...ctx.campo.querySelectorAll(`.un.${ladoArea}`)].filter((e) => e.isConnected) : [];
   const montar = (grupo, vid) => {
     const prop = vid.videoHeight / vid.videoWidth || 9 / 16;
     let x, larg, top;
-    if (emArea && time.length) {
-      const cs = time.map((e) => corpo(ctx, e)), x0 = Math.min(...cs.map((c) => c.x - c.w / 2)), x1 = Math.max(...cs.map((c) => c.x + c.w / 2));
-      const y0 = Math.min(...cs.map((c) => c.topo)), y1 = Math.max(...cs.map((c) => c.pe)), cont = cfg.conteudo ?? 0.55;
-      x = (x0 + x1) / 2; larg = Math.max(((x1 - x0) * 1.1) / cont, ((y1 - y0) * 1.1) / (cont * prop));
-      const alt0 = larg * prop, peMeio = cs.reduce((s, c) => s + c.pe, 0) / cs.length;
-      top = cfg.centro != null ? (y0 + y1) / 2 - alt0 * cfg.centro : peMeio - alt0 * (cfg.chao ?? 0.86);
+    // Cobertura pela caixa real do efeito: em área, a caixa do time inteiro (das cabeças aos pés mais baixos, com margem); no suporte
+    // em um alvo, o corpo todo. Efeito de chão (chao): a base do efeito fica nos pés mais baixos; senão, centralizado.
+    const cobrir = emArea && time.length ? time : (cfg.chao != null && ev.hab && ev.hab.tipo !== 'dano' ? grupo : null);
+    if (cobrir) {
+      const cs = cobrir.map((e) => corpo(ctx, e)), [cx0, cy0, cx1, cy1] = caixaDoClipe(src);
+      const X0 = Math.min(...cs.map((c) => c.x - c.w / 2)), X1 = Math.max(...cs.map((c) => c.x + c.w / 2)), Y0 = Math.min(...cs.map((c) => c.topo)), Y1 = Math.max(...cs.map((c) => c.pe));
+      const mx = (X1 - X0) * 0.08, my = (Y1 - Y0) * 0.1, wT = X1 - X0 + mx * 2, hT = Y1 - Y0 + my * 2;
+      larg = Math.max(wT / (cx1 - cx0), hT / ((cy1 - cy0) * prop)); const alt0 = larg * prop;
+      x = (X0 + X1) / 2 + larg * (0.5 - (cx0 + cx1) / 2);
+      top = cfg.chao != null ? Y1 + my * 0.6 - alt0 * cy1 : (Y0 + Y1) / 2 - alt0 * ((cy0 + cy1) / 2);
     } else {
       const cs = grupo.map((e) => corpo(ctx, e)), pe = Math.max(...cs.map((c) => c.pe)), meio = cs.reduce((s, c) => s + c.y, 0) / cs.length;
       x = cs.reduce((s, c) => s + c.x, 0) / cs.length;
