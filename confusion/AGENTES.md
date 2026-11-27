@@ -1,15 +1,17 @@
 # Confusion Waves — divisão de trabalho entre agentes
 
-Repositório: `dioh-cpu/psyworld` · Produção: https://psyworld-murex.vercel.app/jogar (deploy automático da `main`).
-Código do jogo: `confusion/web/teste-quarteirao/` · Artes: `assets/confusion/interface/` · Testes: `npm test` (323 passando).
+Repositório: `dioh-cpu/psyworld` · Produção (único endereço oficial): https://cwdp-lake.vercel.app/jogar (deploy automático da `main`).
+Código do jogo: `confusion/web/teste-quarteirao/` · Artes: `assets/confusion/interface/` · Testes: `npm test`.
 
-| Agente | Responsabilidade | Branch | Arquivos que só ele edita |
-|---|---|---|---|
-| Claude | VFX das habilidades e dos efeitos de status | `claude/psyworld-login-video-bg-tcrqd2` | `regiao1-vfx.js`, `regiao1-batalha-fx.js`, CSS/animação de `regiao1-batalha-tela.js` |
-| GPT (Codex) | Artes | `codex/artes` | `assets/**` (só adiciona arquivos; não renomeia os existentes) |
-| Antigravity | Sistemas | `antigravity/sistemas` | todo o resto do código e dos testes |
+| Agente | Responsabilidade | Arquivos que só ele edita |
+|---|---|---|
+| **asutaroto291** | Regras, equilíbrio, conteúdo, catálogo, economia, saves e **motor de combate** | `*-regras.js` (incluindo `regiao1-estrategia-regras.js`), catálogos de dados, saves e testes de regras |
+| **dioh293** | Interfaces, HUD, telas, **tela de batalha, VFX e poses/animações no jogo** e integração das artes | `regiao1.html`, `regiao1.js`, `regiao1-ui-idle.js`, `regiao1-expansao.js`, `regiao1-*-ui.js`, `regiao1-campanha-mini.js`, `regiao1-batalha-tela.js`, `regiao1-vfx.js`, `regiao1-poses.js` |
+| **dioh292** | Pipeline de animações (`tools/processar_animacao.py`), QA/E2E, tutoriais e desempenho | `tools/processar_animacao.py`, `tools/e2e_*.py`, `regiao1-perf-mobile.js`, `regiao1-tutoriais-modos.js`, `confusion/RELATORIO_JOGADOR_NOVO.md` |
+| **GPT / Codex** | Produção e organização de artes e upload dos vídeos originais do Flow | `assets/**` (não altera código de runtime, regras, HUD, combate, save nem integração) |
+| **Claude** | Coordenação e prompts | Não altera código |
 
-Regras comuns: interface em português; ids de habilidades, espécies e locais nunca mudam (o VFX e as artes dependem deles); nada de segredos no repositório; cada um abre PR para a `main` e não força push em branch alheia.
+Regras comuns: interface em português; ids de habilidades, espécies e locais nunca mudam (o VFX e as artes dependem deles); nada de segredos no repositório; cada um abre PR para a `main` (máx. 2–3 PRs/dia por causa do limite da Vercel) e valida com `npm test` + E2E em `1280×720` e `844×390`.
 
 ## Contrato de revelação e animação (Claude → Antigravity)
 

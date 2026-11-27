@@ -14,6 +14,7 @@ import { NOME_ELEMENTO } from '../core.js';
 import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
 import { CHEFES_REINOS } from './regiao1-kits-reinos.js';
 import { precarregarVideosBatalha, liberarVideosBatalha } from './regiao1-perf-mobile.js';
+import { renderBalaoTutorialModo, tratarCliqueTutorialModo } from './regiao1-tutoriais-modos.js';
 
 const ARTE_CHEFE_REINO = {
   ...Object.fromEntries(
@@ -475,6 +476,22 @@ export function criarTelaBatalha() {
     const ondas = (c.ondas || []).map((lista, k) => montarInimigos(lista, `w${k + 2}_`)); // ondas seguintes (formato de c.inimigos)
     const domador = c.domador || (c.save ? criarEstadoDomadorBatalha(c.save) : null);
     b = criarBatalha(al, ini, { domador, ondas }); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render();
+    if (c.save && domador && !minimizada) {
+      const tutHtml = renderBalaoTutorialModo(c.save, 'domador_batalha');
+      if (tutHtml) {
+        const box = document.createElement('div');
+        box.className = 'tb-tut-dom';
+        box.style.cssText = 'position:absolute;left:50%;bottom:calc(var(--espaco-rodape, 76px) + 10px);transform:translateX(-50%);z-index:55;width:min(460px,92vw)';
+        box.innerHTML = tutHtml;
+        box.addEventListener('click', (ev) => {
+          const btn = ev.target.closest('button');
+          if (btn && tratarCliqueTutorialModo(btn.dataset, { save: c.save, salvar: () => window.regiao1?.salvar?.(), aoFechar: () => box.remove() })) {
+            ev.stopPropagation();
+          }
+        });
+        el.append(box);
+      }
+    }
     // entrada do chefe: o primeiro turno espera o clipe (fora do modo minimizado)
     const temChefe = ini.some((u) => u.chefe) && !minimizada;
     if (temChefe) entradaChefe(criarCtx({ arena: el, campo: el.querySelector('.tb-campo') || el, no: (id) => el.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} })).catch(() => {});
