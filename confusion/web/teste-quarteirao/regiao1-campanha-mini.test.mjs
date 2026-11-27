@@ -268,3 +268,20 @@ test('Campanha Mini: sem bloqueio de energia e whitelist no save/nuvem sem perda
   assert.equal(val.ok, true);
   assert.equal(avaliarEstrelasFase('1-1', { fim: 'derrota', aliados: [] }).total, 0);
 });
+
+test('Calibração dos Capítulos 2–12 cobre todos os 11 capítulos com bônus válidos nas ondas', async () => {
+  const { CALIBRACAO_CAPITULOS_2_12, CAPITULOS_CAMPANHA_MINI } = await import('./regiao1-campanha-mini-regras.js');
+  for (let cap = 2; cap <= 12; cap++) {
+    const cfg = CALIBRACAO_CAPITULOS_2_12[cap];
+    assert.ok(cfg, `Faltou calibração do Cap. ${cap}`);
+    for (const k of ['inicio', 'meio', 'fim', 'chefe']) assert.equal(typeof cfg[k], 'number');
+    const c = CAPITULOS_CAMPANHA_MINI[cap - 1];
+    for (const f of c.fases) {
+      for (const onda of f.ondas) {
+        for (const [, , , op] of onda) {
+          assert.ok(op && op.bonus && Number.isFinite(op.bonus.hp) && Number.isFinite(op.bonus.atk) && Number.isFinite(op.bonus.def), `Bônus inválido em ${f.id}`);
+        }
+      }
+    }
+  }
+});
