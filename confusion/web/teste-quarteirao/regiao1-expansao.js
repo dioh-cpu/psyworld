@@ -449,7 +449,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     </div>`;
   }
   function abaBanner() {
-    const s = save(), e = exp(), pool = R.poolBanner();
+    const s = save(), e = exp(), pool = R.poolBanner(), gInv = R.invocacoesGratisDe(s);
     const ate10 = 10 - ((e.pulls || 0) % 10);
     const gold = Number(s.recompensas?.gold || 0).toLocaleString('pt-BR');
     const diamantes = Number(s.recompensas?.diamantes || 0).toLocaleString('pt-BR');
@@ -475,6 +475,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           <span class="ref-pill">🪙 ${gold}</span>
           <span class="ref-pill">💎 ${diamantes}</span>
           <span class="ref-pill"><img class="exp-ico" src="${INV_V1('tickets/adventurer.png')}" alt="">${e.tickets}</span>
+          <span class="ref-pill" title="Invocações grátis: +${gInv.porDia} por dia, acumulam até ${gInv.max}">🎁 ${gInv.saldo}/${gInv.max}${gInv.proximaEmMs != null ? ` · +${gInv.porDia} em ${Math.floor(gInv.proximaEmMs / 3600000)}h${String(Math.floor(gInv.proximaEmMs / 60000) % 60).padStart(2, '0')}` : ' · cheio'}</span>
           <button class="btn-sec" data-inv-capa="1" style="padding:4px 8px;font-size:11px">${verCapaInv ? 'Ver Elenco' : 'Ver Capa'}</button>
         </div>
       </div>
@@ -501,8 +502,8 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
               <span class="inv-marco">Total: <b>${e.pulls || 0}</b></span>
             </div>
             <div class="inv-acoes">
-              <button class="btn-sec" data-invocar="1" ${e.tickets >= 1 ? '' : 'disabled'}>Invocar ×1</button>
-              <button class="btn-pri" data-invocar="10" ${e.tickets >= 10 ? '' : 'disabled'}>Invocar ×10</button>
+              <button class="btn-sec" data-invocar="1" ${gInv.saldo + e.tickets >= 1 ? '' : 'disabled'}>Invocar ×1${gInv.saldo >= 1 ? ' (grátis)' : ''}</button>
+              <button class="btn-pri" data-invocar="10" ${gInv.saldo + e.tickets >= 10 ? '' : 'disabled'}>Invocar ×10${gInv.saldo >= 10 ? ' (grátis)' : ''}</button>
             </div>
           </div>
         </div>
