@@ -17,6 +17,7 @@ import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, co
 import { energiaDe, usarPocaoEnergia, ENERGIA_CFG, essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
 import { renderizarPainelMissoes, tratarCliqueMissoes, temAvisoMissoes } from './regiao1-missoes-ui.js';
 import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.js';
+import { renderizarPainelCalaboucos, tratarCliqueCalaboucos } from './regiao1-calaboucos-ui.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -274,6 +275,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   // ---------- estado de tela ----------
   let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null, descPop = null, verCapaInv = false, capParalela = 1; let cap = 'cap1';
   const torresUi = { torreElId: null, andarEl: 1, torreUnId: null, andarUn: 1 };
+  const calaboucosUi = { calId: null, nivel: 1 };
   const PAINEIS = {
     descanso: { titulo: '🏕️ Refúgio do Farol', abas: ['Refúgio'], tut: null },
     campanhaMini: { titulo: '🗺️ Campanha Mini', abas: ['Campanha Mini'], tut: null, mostraEnergia: true },
@@ -935,9 +937,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (painel === 'missoes') h += renderizarPainelMissoes(save(), aba, { capParalela });
     if (painel === 'campanhaMini') h += `<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Energia: <b>6</b> (normal), <b>8</b> (elite) e <b>10</b> (chefe).</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
     if (painel === 'torres') h += renderizarPainelTorres(save(), aba, torresUi);
-    if (painel === 'calaboucos') {
-      h += Object.values(ESSENCIAS_PARES).map((p) => `<div class="bl"><h4>🏰 ${esc(p.calabouco)} (${p.elementos.join(' / ')})</h4><p>13 níveis · Custo: 8 / 12 / 16 de energia · Relíquias garantidas por raridade e moeda de calabouço.</p><p class="mut">Aguardando módulo de regras dos Calabouços (asutaroto291).</p></div>`).join('');
-    }
+    if (painel === 'calaboucos') h += renderizarPainelCalaboucos(save(), calaboucosUi);
     if (painel === 'reliquias') {
       if (aba === 0) {
         const bolsa = save().idle?.reliquias?.bolsa || [];
@@ -996,6 +996,10 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (tratarCliqueTorres(d, {
       save: save(), salvar, mostrarToast, render, tela, batalhaBloqueando,
       aliadosDoSave: aliadosAtuais, st: torresUi,
+    })) return;
+    if (tratarCliqueCalaboucos(d, {
+      save: save(), salvar, mostrarToast, render, tela, batalhaBloqueando,
+      aliadosDoSave: aliadosAtuais, st: calaboucosUi,
     })) return;
     if (t.id === 'exp-fechar') {
       if (painel !== 'descanso' && origemPainelExp === 'descanso') {
