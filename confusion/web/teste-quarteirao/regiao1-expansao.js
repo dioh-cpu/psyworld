@@ -14,7 +14,7 @@ import { fichaOnirico, evoluirFormaOnirico, tierDaUnidade, estrelasDaUnidade, ra
 import { revelarInvocacao } from './regiao1-revelacao.js';
 import { BOSSES_REGIAO1 } from './regiao1-estado.js';
 import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, concluirRevancheChefe, previsaoCraftChefe, craftarChefe, bonusCategoriaPoder } from './regiao1-revanche-regras.js';
-import { energiaDe, usarPocaoEnergia, ENERGIA_CFG, ENERGIA_TEXTO_EXPLICATIVO, essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
+import { essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
 import { consultarEvolucaoForma } from './regiao1-regras-sonho.js';
 import { renderizarPainelMissoes, tratarCliqueMissoes, temAvisoMissoes } from './regiao1-missoes-ui.js';
 import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.js';
@@ -305,7 +305,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const nav = document.createElement('div'); nav.id = 'exp-nav'; document.body.append(nav);
   const sair = document.createElement('button'); sair.id = 'exp-sair-cacada'; sair.className = 'btn-pri'; sair.textContent = '↩ Sair da Caçada'; document.body.append(sair);
   const modal = document.createElement('div'); modal.id = 'modal-exp'; modal.className = 'modal-bg';
-  modal.innerHTML = '<div class="modal-card exp-card" role="dialog" aria-modal="true"><header class="modal-head"><h3 id="exp-titulo"></h3><span id="exp-energia" class="energia-pill" hidden></span><span id="exp-recursos" class="modal-recursos" hidden></span><button class="btn-sec" id="exp-rever" hidden>Rever tutorial</button><button class="btn-fechar" id="exp-fechar" aria-label="Fechar">✕</button></header><nav class="exp-abas" id="exp-abas"></nav><div class="exp-corpo" id="exp-corpo"></div></div>';
+  modal.innerHTML = '<div class="modal-card exp-card" role="dialog" aria-modal="true"><header class="modal-head"><h3 id="exp-titulo"></h3><span id="exp-recursos" class="modal-recursos" hidden></span><button class="btn-sec" id="exp-rever" hidden>Rever tutorial</button><button class="btn-fechar" id="exp-fechar" aria-label="Fechar">✕</button></header><nav class="exp-abas" id="exp-abas"></nav><div class="exp-corpo" id="exp-corpo"></div></div>';
   document.body.append(modal);
   const crise = document.createElement('div'); crise.id = 'exp-crise'; document.body.append(crise);
   const $ = (q) => modal.querySelector(q);
@@ -315,27 +315,20 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const missoesUi = { filtro: 'todas', selId: null };
   const torresUi = { torreElId: null, andarEl: 1, torreUnId: null, andarUn: 1, elementoFiltro: 'todos' };
   const calaboucosUi = { calId: null, nivel: 1, elementoFiltro: 'todos' };
-  const reliquiasUi = { uid: null, parte: null, raridade: null };
+  const reliquiasUi = { uid: null, parte: null, raridade: null, guiaAberto: false, fontesAberto: false };
   const PAINEIS = {
     descanso: { titulo: '🏕️ Refúgio do Farol', abas: ['Refúgio'], tut: null },
-    campanhaMini: { titulo: '🗺️ Campanha Mini', abas: ['Campanha Mini'], tut: null, mostraEnergia: true },
-    torres: { titulo: '🗼 Torres', abas: ['Torres Elementais', 'Torres Únicas'], tut: null, mostraEnergia: true },
-    calaboucos: { titulo: '🏰 Calabouços', abas: ['Calabouços'], tut: null, mostraEnergia: true },
-    reliquias: { titulo: '💎 Relíquias & Essências', abas: ['Relíquias', 'Essências'], tut: null, mostraEnergia: true },
-    missoes: { titulo: '📜 Missões', abas: ['Marcos', 'Paralelas'], tut: null, mostraEnergia: true },
+    campanhaMini: { titulo: '🗺️ Campanha Mini', abas: ['Campanha Mini'], tut: null },
+    torres: { titulo: '🗼 Torres', abas: ['Torres Elementais', 'Torres Únicas'], tut: null },
+    calaboucos: { titulo: '🏰 Calabouços', abas: ['Calabouços'], tut: null },
+    reliquias: { titulo: '💎 Relíquias & Essências', abas: ['Relíquias', 'Essências'], tut: null },
+    missoes: { titulo: '📜 Missões', abas: ['Marcos', 'Paralelas'], tut: null },
     equipe: { titulo: '⚔️ Equipe', abas: ['Formação & Coleção', 'Domadores'], tut: null },
     oniricos: { titulo: '🎫 Invocação', abas: ['Invocação'], tut: 'banner' },
     cacadas: { titulo: '🏹 Caçadas & Chefes', abas: ['Caçadas', 'Calabouço', 'Chefes'], tut: 'cacadas' },
     guilda: { titulo: '🏛️ Guilda dos Aventureiros', abas: ['Contratos', 'Fazenda', 'Oficina', 'Reinos'], tut: 'guilda' },
     cronicas: { titulo: '📜 Crônicas', abas: ['Crise', 'Herói × Vilão'], tut: 'crise' },
   };
-  function energiaTextoHtml(s) {
-    const e = energiaDe(s, Date.now());
-    const faltaMs = e.atual >= e.max ? 0 : Math.max(0, ENERGIA_CFG.intervaloMs - (Date.now() - e.ultimoTickMs));
-    const timer = faltaMs > 0 ? `<small>+1 em ${dur(faltaMs)}</small>` : '<small>cheia</small>';
-    const btnPoc = e.pocoes > 0 ? `<button type="button" data-usar-energia="1" title="Usar 1 Poção de Energia (+${ENERGIA_CFG.ganhoPocao})">+${ENERGIA_CFG.ganhoPocao} (${e.pocoes})</button>` : '';
-    return `⚡ <b>${e.atual}/${e.max}</b> ${timer} ${btnPoc}`;
-  }
   const tutDaAba = (p, a) => (p === 'guilda' ? ['guilda', 'fazenda', 'oficina', 'reinos'][a] : p === 'cacadas' ? ['cacadas', 'calabouco', null][a] : p === 'cronicas' ? ['crise', 'hv'][a] : p === 'oniricos' ? 'banner' : null);
   function cartaoTut(id) {
     const t = TUTS[id]; if (!t) return '';
@@ -444,7 +437,6 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           <span><b>${esc(nomeJogador)}</b><small>Domador · Nv.${nvDomador}</small></span>
         </button>
         <div class="ref-moedas">
-          <span class="energia-pill" data-energia-refugio="1" title="${esc(`${ENERGIA_TEXTO_EXPLICATIVO.resumo} (${ENERGIA_TEXTO_EXPLICATIVO.custos.join(' · ')})`)}">${energiaTextoHtml(s)}</span>
           <span class="ref-pill" title="Ouro: moeda para evoluções, reforço de relíquias e compras na loja"><img class="kit-rec-ico" src="${KIT_V2('recursos/ouro.png')}" alt="Ouro">${gold}</span>
           <span class="ref-pill" title="Diamantes: moeda premium para Passe, invocações e bônus especiais"><img class="kit-rec-ico" src="${KIT_V2('recursos/diamante.png')}" alt="Diamantes">${diamantes}</span>
           <button class="ref-btn-ico" data-desc-pop="${descPop === 'atalhos' ? '' : 'atalhos'}" title="Atalhos" aria-label="Atalhos"><img src="${DESCANSO_V1('icones/atalhos.png')}" alt=""></button>
@@ -995,21 +987,15 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       }
     }
     $('#exp-titulo').textContent = P.titulo;
-    const enEl = $('#exp-energia');
-    if (enEl) {
-      enEl.hidden = !P.mostraEnergia;
-      if (P.mostraEnergia) enEl.innerHTML = energiaTextoHtml(save());
-    }
     const recEl = $('#exp-recursos');
     if (recEl) {
       recEl.hidden = ehCena;
       if (!ehCena) {
         const sAtual = save();
-        const en = energiaDe(sAtual);
         const gold = Number(sAtual.recompensas?.gold || 0).toLocaleString('pt-BR');
         const diam = Number(sAtual.recompensas?.diamantes || 0).toLocaleString('pt-BR');
         const tick = Number(sAtual.expansao?.tickets || 0);
-        recEl.innerHTML = `${!P.mostraEnergia ? `<span class="modal-rec-pill" title="Energia"><img class="kit-rec-ico" src="${KIT_V2('recursos/energia.png')}" alt="">${en.atual}/${en.max}</span>` : ''}<span class="modal-rec-pill" title="Ouro"><img class="kit-rec-ico" src="${KIT_V2('recursos/ouro.png')}" alt="">${gold}</span><span class="modal-rec-pill" title="Diamantes"><img class="kit-rec-ico" src="${KIT_V2('recursos/diamante.png')}" alt="">${diam}</span><span class="modal-rec-pill" title="Tickets"><img class="kit-rec-ico" src="${KIT_V2('recursos/ticket.png')}" alt="">${tick}</span>`;
+        recEl.innerHTML = `<span class="modal-rec-pill" title="Ouro"><img class="kit-rec-ico" src="${KIT_V2('recursos/ouro.png')}" alt="">${gold}</span><span class="modal-rec-pill" title="Diamantes"><img class="kit-rec-ico" src="${KIT_V2('recursos/diamante.png')}" alt="">${diam}</span><span class="modal-rec-pill" title="Tickets"><img class="kit-rec-ico" src="${KIT_V2('recursos/ticket.png')}" alt="">${tick}</span>`;
       }
     }
     $('#exp-abas').innerHTML = P.abas.length > 1 ? P.abas.map((a, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${esc(a)}</button>`).join('') : '';
@@ -1018,7 +1004,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     let h = tid ? cartaoTut(tid) : '';
     if (painel === 'descanso') h += abaDescanso();
     if (painel === 'missoes') h += renderBalaoTutorialModo(save(), 'missoes') + renderizarPainelMissoes(save(), aba, { capParalela, st: missoesUi });
-    if (painel === 'campanhaMini') h += `${renderBalaoTutorialModo(save(), 'campanha_mini')}<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Energia: <b>6</b> (normal), <b>8</b> (elite) e <b>10</b> (chefe).</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
+    if (painel === 'campanhaMini') h += `${renderBalaoTutorialModo(save(), 'campanha_mini')}<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Jogue livremente no seu ritmo.</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
     if (painel === 'torres') h += renderBalaoTutorialModo(save(), 'torres') + renderizarPainelTorres(save(), aba, torresUi);
     if (painel === 'calaboucos') h += renderBalaoTutorialModo(save(), 'calaboucos_rel') + renderizarPainelCalaboucos(save(), calaboucosUi);
     if (painel === 'reliquias') h += renderBalaoTutorialModo(save(), 'reliquias') + renderizarPainelReliquias(save(), aba, reliquiasUi);
@@ -1049,13 +1035,6 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
 
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t) return; const d = t.dataset;
-    if (d.usarEnergia) {
-      const r = usarPocaoEnergia(save(), 1, Date.now());
-      mostrarToast(r.ok ? `⚡ +${r.ganho} de energia (${r.atual}/${r.max}).` : r.motivo, 2600);
-      if (r.ok) salvar();
-      render();
-      return;
-    }
     const aliadosAtuais = () => R.membrosFormacao(save().idle).map(({ m: x, vaga }) => ({
       uid: x.uid, especie: x.especie, nivel: x.nivel || 1, vaga, arte: x.arte || arteDoIndividuo(x), bonus: bonusCombateMembro(x),
     }));

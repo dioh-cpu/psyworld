@@ -59,7 +59,7 @@ export function renderizarPainelCalaboucos(save, st) {
   const niveisBtns = cal.niveis.map((n) => {
     const ok = nivelCalaboucoDesbloqueado(save, cal.id, n.nivel);
     const rap = podeBatalhaRapidaCalabouco(save, cal.id, n.nivel);
-    return `<button class="${n.nivel === nvSel ? 'btn-pri' : 'btn-sec'}" data-cal-nv="${n.nivel}" style="padding:4px 8px;font-size:11px;${ok ? '' : 'opacity:.45'}">Nv.${n.nivel}${rap ? ' ⚡' : ok ? '' : ' 🔒'}</button>`;
+    return `<button class="${n.nivel === nvSel ? 'btn-pri' : 'btn-sec'}" data-cal-nv="${n.nivel}" style="padding:4px 8px;font-size:11px;${ok ? '' : 'opacity:.5'}">Nv.${n.nivel}${rap ? ' ⏩' : ok ? '' : ' 🔒'}</button>`;
   }).join('');
 
   const lojaBtns = cal.conjuntos.map((conj) => `<button class="btn-sec" data-cal-comprar="${esc(cal.id)}:${esc(conj)}" ${c.moedas >= CALABOUCOS_CFG.custoLojaReliquia ? '' : 'disabled'}>🏺 ${esc(conj)} (${CALABOUCOS_CFG.custoLojaReliquia} moedas)</button>`).join('');
@@ -75,19 +75,19 @@ export function renderizarPainelCalaboucos(save, st) {
   <div class="bl">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
       <div>
-        <h4 style="margin:0">${esc(cal.nome)} · Nível ${nvSel}/${CALABOUCOS_CFG.maxNiveis}</h4>
-        <div class="mut" style="font-size:11.5px">Conjuntos: <b>${esc(cal.conjuntos.join(', '))}</b> · Energia: <b>⚡ ${nvDef.energia}</b></div>
-        <div style="font-size:11px;color:#fde68a;margin-top:4px">Chances de raridade: ${esc(resumoPesos(nvDef.pesosRaridade))}</div>
+        <h4 style="margin:0;color:#fde68a">${esc(cal.nome)} · Nível ${nvSel}/${CALABOUCOS_CFG.maxNiveis}</h4>
+        <div class="mut" style="font-size:12px">Conjuntos: <b style="color:#fff3e7">${esc(cal.conjuntos.join(', '))}</b></div>
+        <div style="font-size:11.5px;color:#fde68a;margin-top:4px">Chances de raridade: ${esc(resumoPesos(nvDef.pesosRaridade))}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn-sec" data-cal-rapida="${esc(cal.id)}:${nvSel}" ${rapidaOk ? '' : 'disabled'} title="${rapidaOk ? 'Concluir instantaneamente' : 'Vença este nível com todos vivos para liberar'}">⚡ Rápida (⚡ ${nvDef.energia})</button>
+        <button class="btn-sec" data-cal-rapida="${esc(cal.id)}:${nvSel}" ${rapidaOk ? '' : 'disabled'} title="${rapidaOk ? 'Concluir instantaneamente' : 'Vença este nível com todos vivos para liberar'}">⏩ Rápida</button>
         <button class="btn-pri" data-cal-lutar="${esc(cal.id)}:${nvSel}" ${desbl ? '' : 'disabled'}>⚔️ Lutar Nv.${nvSel}</button>
       </div>
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">${niveisBtns}</div>
   </div>
   <div class="bl">
-    <div style="font-size:12px;font-weight:700;margin-bottom:6px">🛒 Loja do Calabouço · Trocar ${CALABOUCOS_CFG.custoLojaReliquia} moedas por Relíquia Rara/Épica</div>
+    <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#fff3e7">🛒 Loja do Calabouço · Trocar ${CALABOUCOS_CFG.custoLojaReliquia} moedas por Relíquia Rara/Épica</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${lojaBtns}</div>
   </div>`;
 }

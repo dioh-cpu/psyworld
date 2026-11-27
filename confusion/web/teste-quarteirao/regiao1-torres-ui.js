@@ -25,6 +25,7 @@ const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const ARENA_FALLBACK = 'assets/confusion/interface/estrategia/reinos/01/arena-chefe.webp';
 const ELEMENTOS_18 = ['fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'lutador', 'voador', 'veneno', 'psiquico', 'inseto', 'pedra', 'fantasma', 'eletrico', 'gelo', 'dragao', 'aco', 'fada'];
 const icoEl = (el) => `../../../assets/confusion/interface/menus-v1/ficha/sonho-${el === 'sombra' ? 'trevas' : el}.png`;
+const FACHADA_TORRE = (idx) => `../../../assets/confusion/interface/estrategia/reinos/${String(((idx % 12) + 1)).padStart(2, '0')}/cidade-conceito.webp`;
 
 export function renderizarPainelTorres(save, aba, st) {
   const t = torresDe(save);
@@ -37,7 +38,9 @@ export function renderizarPainelTorres(save, aba, st) {
       : TORRES_ELEMENTAIS_CATALOGO.filter((x) => (x.elementos || []).includes(elFiltro));
     const torreId = st.torreElId && TORRES_ELEMENTAIS_POR_ID[st.torreElId] ? st.torreElId : (catalogoFiltrado[0]?.id || TORRES_ELEMENTAIS_CATALOGO[0].id);
     const torre = TORRES_ELEMENTAIS_POR_ID[torreId];
+    const torreIdx = Math.max(0, TORRES_ELEMENTAIS_CATALOGO.findIndex((x) => x.id === torre.id));
     const maior = Number(t.elementais[torre.id]?.maiorAndar) || 0;
+    const pct = Math.min(100, Math.round((maior / Math.max(1, torre.totalAndares)) * 100));
     const proxAndar = Math.min(torre.totalAndares, maior + 1);
     const andarSel = Math.max(1, Math.min(torre.totalAndares, st.andarEl || proxAndar));
     const andarDef = torre.andares[andarSel - 1];
@@ -48,16 +51,22 @@ export function renderizarPainelTorres(save, aba, st) {
     const filtrosEl = `<button class="${elFiltro === 'todos' ? 'btn-pri' : 'btn-sec'}" data-tor-filtro-el="todos" style="padding:3px 7px;font-size:10.5px">Todos (${TORRES_ELEMENTAIS_CATALOGO.length})</button>`
       + ELEMENTOS_18.map((el) => {
         const tem = TORRES_ELEMENTAIS_CATALOGO.some((x) => (x.elementos || []).includes(el));
-        return `<button class="${elFiltro === el ? 'btn-pri' : 'btn-sec'}" data-tor-filtro-el="${el}" style="padding:3px 6px;font-size:10.5px;display:inline-flex;align-items:center;gap:3px;${tem ? '' : 'opacity:.6'}" title="${esc(NOME_ELEMENTO[el] || el)}${tem ? '' : ' (catálogo em expansão)'}"><img src="${icoEl(el)}" alt="" style="width:13px;height:13px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[el] || el)}</button>`;
+        return `<button class="${elFiltro === el ? 'btn-pri' : 'btn-sec'}" data-tor-filtro-el="${el}" style="padding:3px 6px;font-size:10.5px;display:inline-flex;align-items:center;gap:3px;${tem ? '' : 'opacity:.65'}" title="${esc(NOME_ELEMENTO[el] || el)}"><img src="${icoEl(el)}" alt="" style="width:13px;height:13px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[el] || el)}</button>`;
       }).join('');
 
     const seletores = catalogoFiltrado.length
       ? catalogoFiltrado.map((x) => {
         const m = Number(t.elementais[x.id]?.maiorAndar) || 0;
-        const els = x.elementos.map((e) => NOME_ELEMENTO[e] || e).join(' / ');
-        return `<button class="${x.id === torre.id ? 'btn-pri' : 'btn-sec'}" data-tor-el="${esc(x.id)}" style="padding:5px 9px;font-size:11.5px">🗼 ${esc(x.nome)} <small>(${m}/${x.totalAndares})</small><br><span style="font-size:10px;opacity:.85">${esc(els)}</span></button>`;
+        const pCard = Math.min(100, Math.round((m / Math.max(1, x.totalAndares)) * 100));
+        const elsHtml = x.elementos.map((e) => `<span style="display:inline-flex;align-items:center;gap:2px"><img src="${icoEl(e)}" alt="" style="width:12px;height:12px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[e] || e)}</span>`).join(' · ');
+        const ativo = x.id === torre.id;
+        return `<button class="torre-card ${ativo ? 'btn-pri' : 'btn-sec'}" data-tor-el="${esc(x.id)}" data-torre="${esc(x.id)}" style="padding:7px 10px;font-size:11.5px;text-align:left;min-width:142px;flex:1 1 142px;display:flex;flex-direction:column;gap:3px;border:${ativo ? '2px solid #fde68a' : '1px solid rgba(243,194,122,.28)'}">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%"><b>🗼 ${esc(x.nome)}</b><small style="color:#fde68a">${m}/${x.totalAndares}</small></div>
+          <div style="font-size:10px;color:#d6dbe4;display:flex;gap:4px;flex-wrap:wrap">${elsHtml}</div>
+          <div style="width:100%;height:5px;border-radius:999px;background:rgba(0,0,0,.45);overflow:hidden;margin-top:2px"><div style="width:${pCard}%;height:100%;background:linear-gradient(90deg,#f59e0b,#fde047)"></div></div>
+        </button>`;
       }).join('')
-      : `<div class="mut" style="font-size:11.5px;padding:4px 0">Torre elemental de <b>${esc(NOME_ELEMENTO[elFiltro] || elFiltro)}</b> preparada para o catálogo expandido de 18 elementos.</div>`;
+      : `<div class="mut" style="font-size:11.5px;padding:4px 0">Nenhuma torre encontrada para este elemento.</div>`;
 
     const iniIdx = Math.max(1, andarSel - 4);
     const fimIdx = Math.min(torre.totalAndares, iniIdx + 9);
@@ -65,31 +74,42 @@ export function renderizarPainelTorres(save, aba, st) {
     for (let a = iniIdx; a <= fimIdx; a++) {
       const ok = andarTorreElementalDesbloqueado(save, torre.id, a);
       const venc = a <= maior;
-      andaresBtns.push(`<button class="${a === andarSel ? 'btn-pri' : 'btn-sec'}" data-tor-andar-el="${a}" style="padding:4px 8px;font-size:11px;${ok ? '' : 'opacity:.45'}">${a % 10 === 0 ? '👑 ' : ''}${a}${venc ? ' ✓' : ok ? '' : ' 🔒'}</button>`);
+      andaresBtns.push(`<button class="${a === andarSel ? 'btn-pri' : 'btn-sec'}" data-tor-andar-el="${a}" style="padding:4px 8px;font-size:11px;${ok ? '' : 'opacity:.5'}">${a % 10 === 0 ? '👑 ' : ''}${a}${venc ? ' ✓' : ok ? '' : ' 🔒'}</button>`);
     }
 
     const p1 = andarDef.recompensaPrimeiraVitoria;
+    const elsBadges = torre.elementos.map((e) => `<span class="tag" style="display:inline-flex;align-items:center;gap:4px;background:rgba(12,8,24,.82);color:#fff3e7;border-color:rgba(243,194,122,.45)"><img src="${icoEl(e)}" alt="" style="width:14px;height:14px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[e] || e)}</span>`).join('');
     return `<div class="bl">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
-        <b>🗼 Torres Elementais (${TORRES_ELEMENTAIS_CATALOGO.length} × 50 andares · 18 elementos)</b>
-        <span class="tag">Treino diário: ${treinos}/${TORRES_CFG.treinosDiariosMax}</span>
+        <b style="color:#fde68a">🗼 Torres Elementais (${TORRES_ELEMENTAIS_CATALOGO.length} × 50 andares · 18 elementos)</b>
+        <span class="tag">💠 Treino diário de Essência: ${treinos}/${TORRES_CFG.treinosDiariosMax}</span>
       </div>
       <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
     </div>
-    <div class="bl">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-        <div>
-          <h4 style="margin:0">${esc(torre.nome)} · Andar ${andarSel}/${torre.totalAndares} ${andarDef.chefe ? '👑 Chefe' : ''}</h4>
-          <div class="mut" style="font-size:11.5px">Nível recomendado: <b>${andarDef.nivel}</b> · Energia: <b>⚡ ${andarDef.energia}</b></div>
-          <div style="font-size:11.5px;color:#fde68a;margin-top:4px">${pago ? '✓ 1ª vitória já coletada (repetição: 100 ouro)' : `1ª vitória: 💎 ${p1.diamantes} · 🪙 ${p1.ouro} · 💠 Essência ${p1.essencia.tamanho} ×${p1.essencia.qtd}`}</div>
+    <div class="bl" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(14,8,26,.92) 28%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:210px">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+            <h4 style="margin:0;font-size:15px;color:#fde68a;text-shadow:0 1px 3px rgba(0,0,0,.9)">🗼 ${esc(torre.nome)} · Andar ${andarSel}/${torre.totalAndares} ${andarDef.chefe ? '👑 Chefe' : ''}</h4>
+            ${elsBadges}
+          </div>
+          <div style="font-size:12px;color:#fff3e7;text-shadow:0 1px 2px rgba(0,0,0,.85)">Nível recomendado: <b>${andarDef.nivel}</b> · Progresso da torre: <b>${maior}/${torre.totalAndares} (${pct}%)</b></div>
+          <div style="width:100%;max-width:340px;height:7px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(243,194,122,.35);overflow:hidden;margin:6px 0">
+            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#d97706,#fde047)"></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:11.5px">
+            ${pago
+              ? '<span class="tag" style="background:rgba(20,83,45,.75);color:#bbf7d0;border-color:#4ade80">✓ 1ª vitória coletada · Repetição: 🪙 100 ouro</span>'
+              : `<span class="tag" style="background:rgba(120,53,15,.72);color:#fef08a;border-color:#fde047">🏆 1ª vitória: 💎 ${p1.diamantes} · 🪙 ${p1.ouro} · 💠 Essência ${esc(p1.essencia.tamanho)} ×${p1.essencia.qtd}</span>`}
+          </div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn-sec" data-tor-treino="${esc(torre.id)}:${andarSel}" ${andarSel <= maior && treinos > 0 ? '' : 'disabled'}>⚡ Treino (Essência · ⚡ ${TORRES_CFG.energiaTreinoDiario})</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <button class="btn-sec" data-tor-treino="${esc(torre.id)}:${andarSel}" ${andarSel <= maior && treinos > 0 ? '' : 'disabled'}>💠 Treino (Essência)</button>
           <button class="btn-pri" data-tor-lutar-el="${esc(torre.id)}:${andarSel}" ${desbl ? '' : 'disabled'}>⚔️ Lutar Andar ${andarSel}</button>
         </div>
       </div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;align-items:center">
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px;align-items:center">
         <button class="btn-sec" data-tor-andar-el="${Math.max(1, andarSel - 10)}" style="padding:4px 7px;font-size:11px">« -10</button>
         ${andaresBtns.join('')}
         <button class="btn-sec" data-tor-andar-el="${Math.min(torre.totalAndares, andarSel + 10)}" style="padding:4px 7px;font-size:11px">+10 »</button>
@@ -100,7 +120,9 @@ export function renderizarPainelTorres(save, aba, st) {
   // Aba 1: Torres Únicas
   const torreId = st.torreUnId && TORRES_UNICAS_POR_ID[st.torreUnId] ? st.torreUnId : TORRES_UNICAS_CATALOGO[0].id;
   const torre = TORRES_UNICAS_POR_ID[torreId];
+  const torreIdx = Math.max(0, TORRES_UNICAS_CATALOGO.findIndex((x) => x.id === torre.id));
   const maior = Number(t.unicas[torre.id]?.maiorAndar) || 0;
+  const pct = Math.min(100, Math.round((maior / Math.max(1, torre.totalAndares)) * 100));
   const proxAndar = Math.min(torre.totalAndares, maior + 1);
   const andarSel = Math.max(1, Math.min(torre.totalAndares, st.andarUn || proxAndar));
   const andarDef = torre.andares[andarSel - 1];
@@ -109,7 +131,12 @@ export function renderizarPainelTorres(save, aba, st) {
 
   const seletores = TORRES_UNICAS_CATALOGO.map((x) => {
     const m = Number(t.unicas[x.id]?.maiorAndar) || 0;
-    return `<button class="${x.id === torre.id ? 'btn-pri' : 'btn-sec'}" data-tor-un="${esc(x.id)}" style="padding:5px 10px;font-size:11.5px">⚔️ ${esc(x.nome)} <small>(${m}/${x.totalAndares})</small></button>`;
+    const pCard = Math.min(100, Math.round((m / Math.max(1, x.totalAndares)) * 100));
+    const ativo = x.id === torre.id;
+    return `<button class="${ativo ? 'btn-pri' : 'btn-sec'}" data-tor-un="${esc(x.id)}" style="padding:7px 10px;font-size:11.5px;text-align:left;min-width:160px;flex:1 1 160px;display:flex;flex-direction:column;gap:3px;border:${ativo ? '2px solid #fde68a' : '1px solid rgba(243,194,122,.28)'}">
+      <div style="display:flex;justify-content:space-between;width:100%"><b>⚔️ ${esc(x.nome)}</b><small style="color:#fde68a">${m}/${x.totalAndares}</small></div>
+      <div style="width:100%;height:5px;border-radius:999px;background:rgba(0,0,0,.45);overflow:hidden"><div style="width:${pCard}%;height:100%;background:linear-gradient(90deg,#c084fc,#fde047)"></div></div>
+    </button>`;
   }).join('');
 
   const iniIdx = Math.max(1, andarSel - 4);
@@ -118,7 +145,7 @@ export function renderizarPainelTorres(save, aba, st) {
   for (let a = iniIdx; a <= fimIdx; a++) {
     const ok = andarTorreUnicaDesbloqueado(save, torre.id, a);
     const feitoHoje = !podeFazerTorreUnicaHoje(save, torre.id, a);
-    andaresBtns.push(`<button class="${a === andarSel ? 'btn-pri' : 'btn-sec'}" data-tor-andar-un="${a}" style="padding:4px 8px;font-size:11px;${ok ? '' : 'opacity:.45'}">${a % 10 === 0 ? '👑 ' : ''}${a}${feitoHoje ? ' ✓' : ok ? '' : ' 🔒'}</button>`);
+    andaresBtns.push(`<button class="${a === andarSel ? 'btn-pri' : 'btn-sec'}" data-tor-andar-un="${a}" style="padding:4px 8px;font-size:11px;${ok ? '' : 'opacity:.5'}">${a % 10 === 0 ? '👑 ' : ''}${a}${feitoHoje ? ' ✓' : ok ? '' : ' 🔒'}</button>`);
   }
 
   const linhagemAlvo = torre.poolLinhagens[0] || 'brasinha';
@@ -127,21 +154,24 @@ export function renderizarPainelTorres(save, aba, st) {
 
   return `<div class="bl">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-      <b>⚔️ Torres Únicas (3 × 30 andares · Nv. 60–120 · 1×/dia por andar)</b>
+      <b style="color:#fde68a">⚔️ Torres Únicas (3 × 30 andares · Nv. 60–120 · 1×/dia por andar)</b>
       <span class="tag">✨ Pó Único: ${armas.poUnico || 0}${armas.escolhasPendentes ? ` · 🎁 Escolhas: ${armas.escolhasPendentes}` : ''}</span>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
   </div>
-  <div class="bl">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-      <div>
-        <h4 style="margin:0">${esc(torre.nome)} · Andar ${andarSel}/${torre.totalAndares} ${andarDef.chefe ? '👑 Chefe' : ''}</h4>
-        <div class="mut" style="font-size:11.5px">${esc(torre.desc)}</div>
-        <div style="font-size:11.5px;color:#fde68a;margin-top:4px">Nível ${andarDef.nivel} · Energia: ⚡ ${andarDef.energia} · Prêmio: 1 Fragmento de Arma Única (ou 1 Pó Único se ainda não possui a linhagem)</div>
+  <div class="bl" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(18,8,30,.92) 30%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx + 9)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:210px">
+        <h4 style="margin:0;font-size:15px;color:#fde68a;text-shadow:0 1px 3px rgba(0,0,0,.9)">⚔️ ${esc(torre.nome)} · Andar ${andarSel}/${torre.totalAndares} ${andarDef.chefe ? '👑 Chefe' : ''}</h4>
+        <div style="font-size:12px;color:#d6dbe4;margin-top:3px;text-shadow:0 1px 2px rgba(0,0,0,.85)">${esc(torre.desc)}</div>
+        <div style="width:100%;max-width:340px;height:7px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(243,194,122,.35);overflow:hidden;margin:6px 0">
+          <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#c084fc,#fde047)"></div>
+        </div>
+        <div style="font-size:11.5px;color:#fef08a;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.85)">Nível ${andarDef.nivel} · Prêmio: 1 Fragmento de Arma Única (ou 1 Pó Único se ainda não possui a linhagem)</div>
       </div>
       <button class="btn-pri" data-tor-lutar-un="${esc(torre.id)}:${andarSel}" ${desbl && podeHoje ? '' : 'disabled'}>${!desbl ? '🔒 Bloqueado' : !podeHoje ? '✓ Feito hoje' : `⚔️ Lutar Andar ${andarSel}`}</button>
     </div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;align-items:center">
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px;align-items:center">
       <button class="btn-sec" data-tor-andar-un="${Math.max(1, andarSel - 10)}" style="padding:4px 7px;font-size:11px">« -10</button>
       ${andaresBtns.join('')}
       <button class="btn-sec" data-tor-andar-un="${Math.min(torre.totalAndares, andarSel + 10)}" style="padding:4px 7px;font-size:11px">+10 »</button>
@@ -150,7 +180,7 @@ export function renderizarPainelTorres(save, aba, st) {
   <div class="bl">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
       <div>
-        <b>✨ Troca de Pó Único (${TORRES_CFG.custoPoPorFragmento}:1)</b>
+        <b style="color:#fff3e7">✨ Troca de Pó Único (${TORRES_CFG.custoPoPorFragmento}:1)</b>
         <div style="margin-top:4px">${fragLista || '<span class="mut">Nenhum fragmento de arma única obtido ainda.</span>'}</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
