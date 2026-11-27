@@ -15,6 +15,7 @@ import { revelarInvocacao } from './regiao1-revelacao.js';
 import { BOSSES_REGIAO1 } from './regiao1-estado.js';
 import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, concluirRevancheChefe, previsaoCraftChefe, craftarChefe, bonusCategoriaPoder } from './regiao1-revanche-regras.js';
 import { energiaDe, usarPocaoEnergia, ENERGIA_CFG, essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
+import { consultarEvolucaoForma } from './regiao1-regras-sonho.js';
 import { renderizarPainelMissoes, tratarCliqueMissoes, temAvisoMissoes } from './regiao1-missoes-ui.js';
 import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.js';
 import { renderizarPainelCalaboucos, tratarCliqueCalaboucos } from './regiao1-calaboucos-ui.js';
@@ -532,6 +533,17 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     const corR = RARO[f.raridade] || COR_TIER[f.tier] || '#cbd5e1';
     const arv = f.arvore;
     const tagPoder = f.categoriaPoder === 'chefe_recrutado' ? ' · 👑 Chefe (+20%)' : f.categoriaPoder === 'exclusivo_banner' ? ' · 🌟 Exclusivo (+30%)' : '';
+    const evo = consultarEvolucaoForma(save(), idx);
+    const essHtml = evo?.custoEssencias
+      ? ['menor', 'media', 'maior']
+          .filter((t) => (evo.custoEssencias[t] || 0) > 0)
+          .map((t) => {
+            const need = evo.custoEssencias[t];
+            const have = evo.saldoEssencias?.[t] || 0;
+            const rot = t === 'menor' ? 'Menor' : t === 'media' ? 'Média' : 'Maior';
+            return `<span class="tag" style="color:${have >= need ? '#86efac' : '#fca5a5'}">💠 ${esc(evo.essenciaNome)} ${rot}: ${have}/${need}</span>`;
+          }).join(' ')
+      : '';
     const arvoreHtml = arv.possuiArvore
       ? `<div style="margin-top:8px"><b>Árvore de Evolução (${esc(arv.elemento)})</b>
           <div class="evo-arvore">${arv.formas.map((no, i) => `
@@ -545,8 +557,14 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           ${arv.bloqueada
             ? `<p class="ruim"><img class="exp-ico" src="${MV1('comum/icone-cadeado.png')}" alt="">${esc(arv.motivoBloqueio || 'Evolução bloqueada.')}</p>`
             : arv.proxima
-              ? `<div class="ln"><span><img class="exp-ico" src="${MV1(`ficha/sonho-${slugSonho(arv.proxima.elemento)}.png`)}" alt="" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">Próxima: <b>${esc(arv.proxima.para)}</b> · Custo: <b>${arv.proxima.custo}</b> Fragmentos de Sonho (${esc(arv.proxima.elemento)}) · Saldo: <b>${arv.proxima.saldo}</b></span>
-                 <button class="btn-pri" data-evo-forma="${idx}" ${arv.proxima.podeEvoluir ? '' : 'disabled'}>Evoluir</button></div>`
+              ? `<div class="ln" style="flex-direction:column;align-items:flex-start;gap:6px">
+                  <div><img class="exp-ico" src="${MV1(`ficha/sonho-${slugSonho(arv.proxima.elemento)}.png`)}" alt="" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">Próxima: <b>${esc(arv.proxima.para)}</b> · Fragmentos (${esc(arv.proxima.elemento)}): <b style="color:${arv.proxima.saldo >= arv.proxima.custo ? '#86efac' : '#fca5a5'}">${arv.proxima.saldo}/${arv.proxima.custo}</b></div>
+                  ${essHtml ? `<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">${essHtml}</div>` : ''}
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn-pri" data-evo-forma="${idx}" ${evo.podeEvoluir ? '' : 'disabled'}>✨ Evoluir</button>
+                    ${!evo.temEssencias ? '<button class="btn-sec" data-desc-ir="torres">🗼 Farmar Essências</button>' : ''}
+                  </div>
+                </div>`
               : '<p class="ok">Forma final alcançada.</p>'}
         </div>`
       : '';
