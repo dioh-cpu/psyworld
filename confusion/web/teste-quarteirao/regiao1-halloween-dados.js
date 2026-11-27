@@ -23,7 +23,7 @@ export const LINHAGENS_HW = [
   { especie: 'Velalume', slug: 'velalume', tier: 2, classe: 'suporte', papel: 'suporte', elemento: 'luz', resumo: 'Cura contínua no início do turno de cada aliado.', arte: arte('velalume') },
   { especie: 'Mortálio', slug: 'mortalio', tier: 3, classe: 'mago', papel: 'suporte', elemento: 'fantasma', resumo: 'Traz de volta um aliado caído, na vaga dele.', arte: arte('mortalio') },
   { especie: 'Vitrarco', slug: 'vitrarco', tier: 4, classe: 'guerreiro', papel: 'defesa', elemento: 'trevas', resumo: 'Concede invencibilidade temporária.', arte: arte('vitrarco') },
-  { especie: 'Abyssar', slug: 'abyssar', tier: 5, classe: 'assassino', papel: 'ataque', elemento: 'trevas', resumo: 'Finalizador: facada que sangra, perseguição em cadeia e modo de pânico.', arte: arte('abyssar').map(() => `${PASTA}/abyssar/03.png`) /* a forma de quatro patas saiu: o Abyssar é sempre o demônio do banner */ },
+  { especie: 'Abyssar', slug: 'abyssar', tier: 5, classe: 'assassino', papel: 'ataque', elemento: 'trevas', resumo: 'Finalizador: facada que sangra, perseguição em cadeia e modo de pânico.', arte: arte('abyssar').map(() => `${PASTA}/abyssar/03-capa.png`) /* a forma de quatro patas saiu: o Abyssar é sempre o demônio do banner */ },
 ];
 // Nomes provisórios de versões anteriores → definitivos (preserva tier, XP e evolução dos já adquiridos)
 export const RENOMEAR_HW = { 'Abóborgo': 'Abobrisco', 'Candelúmia': 'Velalume', 'Almaterna': 'Mortálio', 'Sentinoite': 'Vitrarco', 'Ceifalume': 'Abyssar' };
