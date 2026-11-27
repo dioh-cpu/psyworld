@@ -2,6 +2,7 @@
 // recarga (em rodadas), sem custo. Quanto maior a recarga, maior o dano, a cura ou o buff. O motor (regiao1-estrategia-regras.js) só lê estes dados.
 
 import { LINHAGENS_REINOS, PAPEL_DA_CLASSE, CHEFES_REINOS } from './regiao1-kits-reinos.js';
+import { FORMAS_LINHAGENS_REINOS } from '../formas-reinos.js';
 // Efeitos de status. dot: dano a cada turno; cc: perde o turno; debuff: removido por purificação.
 export const EFEITOS = {
   sangramento: { nome: 'Sangramento', icone: '🩸', debuff: true, dot: true, cor: '#ef4444' },
@@ -199,7 +200,11 @@ export function kitDaLinhagemReino(l) {
   return MOLDES[l.classe](E).map((h, i) => ({ id: slug(l.habilidades[i]), nome: l.habilidades[i], icone: ICONE_EL[l.elemento] || '⭐', ...h, elemento: l.elemento }));
 }
 export const KITS_REINOS = Object.fromEntries(LINHAGENS_REINOS.map((l) => [l.nome, kitDaLinhagemReino(l)]));
-for (const l of LINHAGENS_REINOS) PAPEL_PADRAO[l.nome] ??= PAPEL_DA_CLASSE[l.classe];
+for (const l of LINHAGENS_REINOS) {
+  PAPEL_PADRAO[l.nome] ??= PAPEL_DA_CLASSE[l.classe];
+  // formas base e final (catálogo em formas-reinos.js) herdam o kit e o papel da linhagem
+  for (const f of Object.values(FORMAS_LINHAGENS_REINOS[l.nome] || {})) { LINHA_DO_KIT[f] ??= l.nome; PAPEL_PADRAO[f] ??= PAPEL_DA_CLASSE[l.classe]; }
+}
 // Chefes dos reinos: golpe com dano contínuo, técnica em área com o enfraquecimento do elemento e golpe especial em área
 // com controle e ataque elevado para o próprio chefe.
 export function kitDoChefeReino(c) {
