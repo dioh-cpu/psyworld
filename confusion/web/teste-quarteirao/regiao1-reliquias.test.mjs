@@ -141,3 +141,35 @@ test('Relíquias: só equipa no mesmo elemento, bolsa 200 vagas, filtros, predef
   const val = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(rec)), conta: rec.conta });
   assert.equal(val.ok, true);
 });
+
+test('Relíquias: flats escalam pelo nível/statsBase e crítico entra no ganhoPoder', () => {
+  const s = novoSave();
+  s.recompensas.gold = 200_000;
+  reliquiasDe(s).poReforco = 10_000;
+
+  const coroa = concederReliquia(s, { parte: 'coroa', elemento: 'agua', raridade: 'lendaria', conjunto: 'vigor', principalAttr: 'vida_flat', rng: () => 0.1 }).reliquia;
+  const amuleto = concederReliquia(s, { parte: 'amuleto', elemento: 'agua', raridade: 'lendaria', conjunto: 'furia', principalAttr: 'ataque_flat', rng: () => 0.1 }).reliquia;
+  for (let i = 0; i < 15; i++) {
+    reforcarReliquia(s, coroa.id, { rng: () => 0.1 });
+    reforcarReliquia(s, amuleto.id, { rng: () => 0.1 });
+  }
+  equiparReliquia(s, 'w0', coroa.id);
+  equiparReliquia(s, 'w0', amuleto.id);
+
+  // w0 é Nv.40: flats precisam ficar bem abaixo do valor bruto de Nv.100 (260 HP / 60 ATQ)
+  const bNv40 = calcularBonusEquipamentoOnirico(s, 'w0');
+  assert.ok(bNv40.atributos.vida_flat < 140 && bNv40.atributos.ataque_flat < 35);
+
+  const bNv100 = calcularBonusEquipamentoOnirico(s, { uid: 'w0', especie: 'Gotalume', nivel: 100 });
+  assert.ok(bNv100.atributos.vida_flat > bNv40.atributos.vida_flat);
+  assert.ok(bNv100.atributos.ataque_flat > bNv40.atributos.ataque_flat);
+
+  // Crítico aumenta ganhoPoderBruto mesmo sem mexer em ataque_pct
+  const bSemCrit = calcularBonusEquipamentoOnirico(s, { uid: 'sem_crit', especie: 'Gotalume', nivel: 100 });
+  const rCrit = concederReliquia(s, { parte: 'anel', elemento: 'agua', raridade: 'lendaria', conjunto: 'precisao', principalAttr: 'critico', rng: () => 0.9 }).reliquia;
+  for (let i = 0; i < 15; i++) reforcarReliquia(s, rCrit.id, { rng: () => 0.9 });
+  s.idle.equipe.push({ uid: 'c1', especie: 'Gotalume', nivel: 100, xp: 0, tier: 4, estrelas: 2 });
+  equiparReliquia(s, 'c1', rCrit.id);
+  const bComCrit = calcularBonusEquipamentoOnirico(s, 'c1');
+  assert.ok(bComCrit.ganhoPoderBruto > bSemCrit.ganhoPoderBruto);
+});

@@ -47,18 +47,24 @@ Use `perfilCombateEquipamento(save, unidadeOuUid, statsBase)` de `regiao1-reliqu
 - `velocidade` principal: **`+25`**
 - `roubo_vida` principal: **`8%` (`0.08`)**
 - Secundários médios: **`4%–8%`** cada.
-- **Teto final garantido:** `simularTabelaEquilibrioReliquias()` comprova que mesmo 4 relíquias lendárias `+15` de `furia` + Arma Única `+5` permanecem em `<= +70%` (`ganhoPoderFinal <= 0.70`).
+- **Teto e calibração de combate (`calcularBonusEquipamentoOnirico` / `simularTabelaEquilibrioReliquias()`):**
+  - `vida_flat` e `ataque_flat` escalam pelo nível ou `statsBase` real da unidade (`statsDoNivel`), evitando inflação em níveis baixos (Nv.50).
+  - `poderRelativoDe` inclui o valor esperado do crítico (`critico × (0,5 + dano_critico)`) multiplicado ao ataque e pesa o ataque em `×1,6` (dano líquido pós-defesa).
+  - Secundários e escala de raridades (`rara = 0,48`, `epica = 0,72`, `lendaria = 1,00`) calibrados nas simulações reais contra `regiao1-estrategia-regras.js`:
+    - `midgame_rara_9`: **+22%** de nível equivalente em Nv.50 (61) e **+22%** em Nv.100 (122) — meta `≈ +20%`.
+    - `lendaria_15_furia_arma5`: **+52%** em Nv.50 (76) e **+48%** em Nv.100 (148) — meta `≈ +50%`.
+    - Todas as 14 builds testadas ficam `ganhoPoderFinal <= 0.70` e nenhuma excede `+65%` de nível equivalente real.
 
 ## 4. Domadores Auxiliares em Combate (`regiao1-domadores-regras.js`)
 
 - `criarEstadoDomadorBatalha(save, domadorId?)`: cria o 5º aliado (`ocupaVaga: false`, `alvejavel: false`).
 - `bonusPassivoDomadorAtivo(save)`: devolve `{ vidaPct, ataquePct, defesaPct, critico }` aplicados à equipe no início da luta.
-  - **Azazel:** `+6%..+15%` vida, `+4%..+10%` ataque; habilidades `Comando Sombrio` (cd 1), `Vínculo Protetor` (cd 3), `Decreto do Domador` (cd 5).
-  - **Manipulador das Oito Lâminas:** `+8%..+15%` ataque, `+5%..+10%` crítico; habilidades `Dança das Oito Lâminas` (cd 1), `Sincronia Telecinética` (cd 3), `Tempestade das Oito Lâminas` (cd 5) já cadastradas em `KITS['Manipulador das Oito Lâminas']`.
-- `carregarBarraDomador(estado, 'turno_aliado' | 'dano_recebido')`: `+35` por turno aliado (`~3` turnos base, `+40` no nv. 100), `+10` ao time sofrer dano; `escolherAcaoDomador(estado)` dispara S3 > S2 > S1 quando `barraEnergia >= 100`.
+  - **Azazel:** `+6%..+15%` vida, `+4%..+10%` ataque; habilidades `Comando Sombrio` (`mult: 0,8`, cd 1), `Vínculo Protetor` (cd 3), `Decreto do Domador` (cd 5).
+  - **Manipulador das Oito Lâminas:** `+8%..+15%` ataque, `+5%..+10%` crítico; habilidades `Dança das Oito Lâminas` (`mult: 0,85`, cd 1), `Sincronia Telecinética` (cd 3), `Tempestade das Oito Lâminas` (`mult: 1,15`, cd 5).
+- `carregarBarraDomador(estado, 'turno_aliado' | 'dano_recebido')`: `+25` por turno aliado (`~4` turnos base, `+30` no nv. 100), `+10` ao time sofrer dano; `escolherAcaoDomador(estado)` dispara S3 > S2 > S1 quando `barraEnergia >= 100`.
 - **Escalonamento de habilidades por nível (`habilidadesEscaladasDomador` / `MARCOS_HABILIDADES_DOMADOR`):**
-  - **Nv. 1 (Rank 1):** base (`cd: 1 / 3 / 5`, energia `+35/turno`).
+  - **Nv. 1 (Rank 1):** base (`cd: 1 / 3 / 5`, energia `+25/turno`).
   - **Nv. 20 (Rank 2):** S1 `+10%` multiplicador e `+10%` chance de efeito.
   - **Nv. 45 (Rank 3):** S2 recarga `-1` (`3 → 2`), `+4%` cura/escudo (Azazel) ou `+1` turno de buff (Manipulador).
   - **Nv. 70 (Rank 4):** S3 `+15%` multiplicador e `+15%` chance de efeito.
-  - **Nv. 100 (Rank 5):** S3 recarga `-1` (`5 → 4`) e `+5` energia por turno aliado (`35 → 40`).
+  - **Nv. 100 (Rank 5):** S3 recarga `-1` (`5 → 4`) e `+5` energia por turno aliado (`25 → 30`).

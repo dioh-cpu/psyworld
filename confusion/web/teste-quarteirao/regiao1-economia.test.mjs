@@ -15,6 +15,9 @@ import {
   resumoEconomiaDiaria,
   estimarDiasEvolucao,
   auditarMetasEconomia,
+  simularEconomiaPrimeiraHora,
+  auditarPrimeiraHora,
+  estimarDiasNivel40Inicial,
 } from './regiao1-economia-regras.js';
 import { iniciarAndarTorreElemental } from './regiao1-torres-regras.js';
 import { criarEstadoInicial } from './regiao1-estado.js';
@@ -99,4 +102,22 @@ test('Tabela de Economia Diária revisada: orçamento de energia, metas Casual v
   assert.equal(aud.ok, true);
   assert.equal(aud.resultados.casual.passou, true);
   assert.equal(aud.resultados.ativo.passou, true);
+});
+
+test('Economia da Primeira Hora e curva Nv.5→40 para T5 dos iniciais (#148)', () => {
+  const h1 = auditarPrimeiraHora();
+  assert.equal(h1.ok, true);
+  assert.equal(h1.convidado.marcosAtingidos.primeiraReliquia30Min, true);
+  assert.equal(h1.convidado.marcosAtingidos.invocacao10xNaHora1, true);
+  assert.equal(h1.convidado.marcosAtingidos.sempreComObjetivo, true);
+  assert.ok(h1.contaNova.ganhosTotais.diamantes >= 20000);
+
+  const sim = simularEconomiaPrimeiraHora({ comConta: false });
+  assert.equal(sim.linhaTempo.length, 5);
+  assert.ok(sim.saldoFinal.energiaAtual > 0);
+
+  const cas40 = estimarDiasNivel40Inicial('casual');
+  assert.equal(cas40.xpNecessario, 8750);
+  assert.equal(cas40.dentroDaMeta3a5Dias, true);
+  assert.ok(cas40.diasJogoNormal >= 3 && cas40.diasJogoNormal <= 5);
 });

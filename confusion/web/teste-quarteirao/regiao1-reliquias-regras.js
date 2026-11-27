@@ -18,7 +18,7 @@ export const RELIQUIAS_CFG = {
 
 export const RARIDADES_ORDEM = ['comum', 'incomum', 'rara', 'epica', 'lendaria'];
 export const SECUNDARIOS_POR_RARIDADE = { comum: 0, incomum: 1, rara: 2, epica: 3, lendaria: 4 };
-const ESCALA_RARIDADE = { comum: 0.50, incomum: 0.62, rara: 0.75, epica: 0.88, lendaria: 1.00 };
+export const ESCALA_RARIDADE = { comum: 0.28, incomum: 0.38, rara: 0.48, epica: 0.72, lendaria: 1.00 };
 const PO_DESMONTE_BASE = { comum: 4, incomum: 8, rara: 16, epica: 32, lendaria: 64 };
 
 export const PARTES_RELIQUIA = {
@@ -47,15 +47,15 @@ const POOL_SECUNDARIOS = [
 ];
 
 const FAIXA_SECUNDARIO = {
-  ataque_pct: [0.03, 0.05, 0.03],
-  vida_pct: [0.03, 0.05, 0.03],
-  defesa_pct: [0.03, 0.05, 0.03],
-  critico: [0.03, 0.05, 0.025],
-  dano_critico: [0.05, 0.08, 0.04],
-  velocidade: [2, 5, 2],
-  precisao_efeito: [0.04, 0.07, 0.03],
-  resistencia: [0.04, 0.07, 0.03],
-  roubo_vida: [0.015, 0.03, 0.015],
+  ataque_pct: [0.02, 0.035, 0.02],
+  vida_pct: [0.02, 0.035, 0.02],
+  defesa_pct: [0.02, 0.035, 0.02],
+  critico: [0.02, 0.035, 0.018],
+  dano_critico: [0.035, 0.055, 0.028],
+  velocidade: [1, 3, 2],
+  precisao_efeito: [0.025, 0.045, 0.02],
+  resistencia: [0.025, 0.045, 0.02],
+  roubo_vida: [0.01, 0.02, 0.01],
 };
 
 // 13 conjuntos como dados puros (Claude aplica em combate)
@@ -696,19 +696,29 @@ export function calcularBonusEquipamentoOnirico(save, unidadeOuUid, statsBase = 
     armaUnicaInfo = { ...def, reforco: ref, valorAtributo: val };
   }
 
-  // Poder relativo simplificado (HP efetivo × Ataque efetivo × Crítico × Velocidade): limitado estritamente a +70%
-  const hpBase = Math.max(100, Number(statsBase.hp) || REF_STATS_NV100.hp);
-  const atkBase = Math.max(20, Number(statsBase.atk) || REF_STATS_NV100.atk);
-  const defBase = Math.max(20, Number(statsBase.def) || REF_STATS_NV100.def);
+  // Flats são calibrados em Nv.100; escalam pelo nível ou stats reais da unidade para não inflar níveis baixos.
+  const hpBase = Math.max(100, Number(statsBase?.hp) || REF_STATS_NV100.hp);
+  const atkBase = Math.max(20, Number(statsBase?.atk) || REF_STATS_NV100.atk);
+  const defBase = Math.max(20, Number(statsBase?.def) || REF_STATS_NV100.def);
+  const usouStatsReais = Boolean(statsBase && statsBase !== REF_STATS_NV100 && Number.isFinite(Number(statsBase.hp)));
+  const fatorNivelFlat = u?.nivel ? Math.max(0.15, Math.min(1, Number(u.nivel) / 100)) : 1;
+  const fatorHpFlat = usouStatsReais ? Math.max(0.15, Math.min(1, hpBase / REF_STATS_NV100.hp)) : fatorNivelFlat;
+  const fatorAtkFlat = usouStatsReais ? Math.max(0.15, Math.min(1, atkBase / REF_STATS_NV100.atk)) : fatorNivelFlat;
+  mods.vida_flat = Math.round(mods.vida_flat * fatorHpFlat);
+  mods.ataque_flat = Math.round(mods.ataque_flat * fatorAtkFlat);
 
+  // Poder relativo em combate: soma valor esperado do crítico ao ataque, pesa ataque ×1,6 (dano líquido pós-defesa)
+  // e mantém todas as builds dentro do teto estrito de +70%.
   const poderRelativoDe = (m) => {
     const multHp = 1 + m.vida_pct + m.vida_flat / hpBase;
     const multAtk = 1 + m.ataque_pct + m.ataque_flat / atkBase;
-    const multDef = 1 + m.defesa_pct * 0.5;
-    const multCrit = 1 + Math.min(0.65, m.critico) * (0.5 + Math.min(0.8, m.dano_critico));
-    const multVel = 1 + (m.velocidade_pct + m.velocidade / 100) * 0.25;
-    const multSust = 1 + m.roubo_vida * 0.5 + m.bonus_cura * 0.25 + (m.precisao_efeito + m.resistencia) * 0.12;
-    return multHp * 0.30 + multAtk * 0.42 + multDef * 0.14 + (multCrit - 1) * 0.35 + (multVel - 1) * 0.25 + (multSust - 1) * 0.20 + 0.14 - 1;
+    const critEV = Math.min(0.65, m.critico) * (0.5 + Math.min(0.8, m.dano_critico));
+    const atkEfetivo = multAtk * (1 + critEV) - 1;
+    const hpEfetivo = multHp - 1;
+    const defEfetiva = m.defesa_pct * 0.5;
+    const velEfetiva = m.velocidade_pct + m.velocidade / 100;
+    const sustEfetiva = m.roubo_vida * 0.5 + m.bonus_cura * 0.25 + (m.precisao_efeito + m.resistencia) * 0.12;
+    return hpEfetivo * 0.48 + atkEfetivo * (0.38 * 1.6) + defEfetiva * 0.34 + velEfetiva * 0.25 + sustEfetiva * 0.22;
   };
 
   let ganhoBruto = poderRelativoDe(mods);

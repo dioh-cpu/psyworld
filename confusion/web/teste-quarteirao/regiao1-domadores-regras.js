@@ -11,9 +11,9 @@ export const DOMADORES_CFG = {
   nivelMax: 100,
   acaoBatalha: {
     barraMax: 100,
-    ganhoPorTurnoAliado: 35,
+    ganhoPorTurnoAliado: 25,
     ganhoAoSofrerDano: 10,
-    turnosBaseSemDano: 3, // 3 × 35 = 105 >= 100
+    turnosBaseSemDano: 4, // 4 × 25 = 100 >= 100
   },
 };
 
@@ -91,7 +91,7 @@ export const CATALOGO_DOMADORES = [
         icone: '🕯️',
         tipo: 'dano',
         alvo: 'um',
-        mult: 1.2,
+        mult: 0.8,
         cd: 1,
         distancia: true,
         elemento: 'trevas',
@@ -166,7 +166,7 @@ export const CATALOGO_DOMADORES = [
         icone: '🗡️',
         tipo: 'dano',
         alvo: 'um',
-        mult: 1.3,
+        mult: 0.85,
         cd: 1,
         distancia: true,
         elemento: 'aco',
@@ -192,7 +192,7 @@ export const CATALOGO_DOMADORES = [
         icone: '⚔️',
         tipo: 'dano',
         alvo: 'todos',
-        mult: 1.7,
+        mult: 1.15,
         cd: 5,
         distancia: true,
         elemento: 'aco',
@@ -328,11 +328,11 @@ export function bonusPassivoDomadorAtivo(save, domadorId = null) {
 }
 
 export const MARCOS_HABILIDADES_DOMADOR = [
-  { rank: 1, nivelMin: 1, titulo: 'Despertar', desc: 'Habilidades base (recargas 1 / 3 / 5, +35 energia por turno aliado).' },
+  { rank: 1, nivelMin: 1, titulo: 'Despertar', desc: 'Habilidades base (recargas 1 / 3 / 5, +25 energia por turno aliado).' },
   { rank: 2, nivelMin: 20, titulo: 'Maestria S1', desc: 'Golpe base (S1) ganha +10% multiplicador e +10% chance de efeito.' },
   { rank: 3, nivelMin: 45, titulo: 'Cadência S2', desc: 'Técnica (S2) reduz 1 turno de recarga (3→2) e amplia cura/escudo ou duração.' },
   { rank: 4, nivelMin: 70, titulo: 'Domínio S3', desc: 'Suprema (S3) ganha +15% multiplicador e +15% chance de efeito.' },
-  { rank: 5, nivelMin: 100, titulo: 'Resonância Máxima', desc: 'Suprema (S3) reduz 1 turno de recarga (5→4) e +5 energia por turno aliado (35→40).' },
+  { rank: 5, nivelMin: 100, titulo: 'Resonância Máxima', desc: 'Suprema (S3) reduz 1 turno de recarga (5→4) e +5 energia por turno aliado (25→30).' },
 ];
 
 export const CURVA_DESBLOQUEIO_DOMADORES = CATALOGO_DOMADORES.map((d) => ({

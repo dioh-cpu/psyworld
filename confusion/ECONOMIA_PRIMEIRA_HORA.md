@@ -1,0 +1,50 @@
+# Economia da Primeira Hora (0–60 min) e Curva até Nível 40 (`asutaroto291`)
+
+Documento de referência da experiência do **jogador novo** em `Confusion Waves` (repo `dioh-cpu/psyworld`), baseado nos valores reais dos módulos de regras (`regiao1-campanha-mini-regras.js`, `regiao1-torres-regras.js`, `regiao1-missoes-regras.js`, `regiao1-reliquias-regras.js`, `regiao1-regras-sonho.js`, `regiao1-idle.js`, `regiao1-progressao.js` e `regiao1-conta.js`).
+
+> Auditado em código via `simularEconomiaPrimeiraHora()` / `auditarPrimeiraHora()` / `estimarDiasNivel40Inicial()` em `regiao1-economia-regras.js`.
+
+---
+
+## 1. Linha do Tempo Minuto a Minuto (Jogador Convidado)
+
+| Bloco | O que o jogador faz | Objetivo ativo | Ouro (+/-) | Diamantes (+/-) | XP Onírico | Energia (+/-) | Essências (M / Méd) | Tickets (+/-) | Relíquias |
+|---|---|---|---:|---:|---:|---:|---|---:|---:|
+| **0–10 min** | Site → Convidado → Inicial (`Nv.5 T4`) → Refúgio → 1ª batalha → Campanha Mini `1-1` e `1-2` | Concluir 1ª batalha e entrar na Campanha Mini | `+550 / 0` | `+65 / 0` | `+420` | `120 → 108` (`+0 / -12`) | `0 / 0` | `0` | `0` |
+| **10–20 min** | Campanha Mini `1-3` a `1-5` (Elite), Torre Elemental `1–3` (1ª vit. `0` energ.), `par_1_1` e `marco_cm_1_5` | Derrotar Guardião `1-5` e coletar 1ª relíquia | `+1.350 / -450` | `+150 / 0` | `+1.080` | `108 → 89` (`+1 / -20`) | `+12 / 0` | `0` | `2` (`comum` + `rara`) |
+| **20–30 min** | Calabouço Nv.1, reforço de relíquia (`+3`), Torre Elemental `4–5`, Baús 3★ `1-1..1-5` | Equipar e reforçar a 1ª relíquia e subir Torre até o andar 5 | `+900 / -825` | `+140 / 0` | `+950` | `89 → 73` (`+2 / -18`) | `+11 / 0` | `0` | `2` |
+| **30–45 min** | Campanha Mini `1-6` a `1-9`, Diárias dos modos, `par_1_2` e Login Dia 1 | Avançar até o chefe `1-10` e fechar diárias | `+1.850 / -600` | `+210 / 0` | `+1.450` | `73 → 51` (`+2 / -24`) | `+5 / 0` | `+1` (`marco_col_10`) | `1` |
+| **45–60 min** | Chefe `1-10`, Marcos (`Cap.1`, `30★`), Baús `10★/20★/30★` e **1ª Invocação `×10`** | Fechar Cap.1, resgatar tickets e rodar Banner `×10` | `+1.400 / -900` | `+300 / 0` | `+1.650` | `51 → 44` (`+3 / -10`) | `+10 / +3` | `+11 / -10` | `1` |
+| **Total 60 min** | **Capítulo 1 fechado + 1ª invocação `×10` + equipe equipada** | Nunca fica sem próximo objetivo | **`+6.050 / -2.775` (saldo `3.275`)** | **`+865 / 0` (saldo `865`)** | **`+5.550`** (~Nv.28–30 com Poções) | **`44 / 120` restantes** | **`38 Menor / 3 Média`** | **`+12 / -10` (saldo `2`)** | **`6`** |
+
+### Diferença Convidado × Conta Criada
+- **Convidado (sem bônus):** depende dos **`10 tickets permanentes`** da conclusão do Capítulo 1 (`1-10`) + **`1 ticket`** de marcos (`30★` ou `10 espécies`), chegando com segurança na **1ª invocação `×10` dentro de 60 minutos**, sem faltar energia (`44/120` sobrando ao fim da hora 1).
+- **Conta criada (ou convidado que cria conta):** recebe **`+20.000 💎`** + **`10 dias de VIP`** em pagamento único imediato, permitindo **até 13 invocações `×10` (1.500 💎 cada)** logo no início, mantendo exatamente o mesmo saldo de progresso, ouro, energia, Essências e tickets ganhos.
+
+---
+
+## 2. Checagem das Metas da 1ª Hora
+
+| Meta solicitada | Situação atual nos dados | Observação |
+|---|---|---|
+| **1ª relíquia por volta dos 30 min** | **Atendida (~20–30 min)** | Elite `1-5` garante relíquia comum, `par_1_1` garante relíquia rara e o Calabouço Nv.1 abre e dropa antes dos 30 min. |
+| **1ª invocação `×10` na 1ª hora** | **Atendida (~45–55 min convidado / imediata com conta)** | Cap.1 (`1-10`) entrega `10 tickets permanentes` + marcos somam `+1 ticket` e `~865 💎`. Com conta criada há `20.000 💎`. |
+| **Nunca ficar sem objetivo** | **Atendida** | Há trilha contínua de `Campanha Mini → Guardião 1-5 → Paralelas/Calabouço/Torre → Chefe 1-10 → Banner ×10 → Capítulo 2`. |
+| **1ª evolução por volta dos 20 min** | **Gargalo identificado (pendente de decisão)** | Evolução `1→2` (`FRAGMENTOS_SONHO_CFG`) exige **`10 Fragmentos de Sonho` + `20 Essência Menor` + `5 Essência Média`** do elemento do inicial. Nos primeiros 20–60 min, o jogador junta **`38 Essência Menor`**, mas apenas **`0–3 Essência Média`** (que hoje só começa no Chefe `1-10` e Torre andar `16`) e **`~1–4 Fragmentos de Sonho`** (1% por abate). Em `ECONOMIA_DIARIA.md`, a 1ª evolução hoje cai em **~2 dias**. *Sugestão caso queiram fechar nos 20 min:* dar um pacote único de introdução à evolução ao concluir `1-5` / marco `marco_cm_1_5` (`10 Fragmentos de Sonho` do inicial + `5 Essências Médias` do par do inicial). |
+
+---
+
+## 3. Curva de Nível 5 → 40 para o T5 dos Iniciais (`#148`)
+
+Com o `#148`, os iniciais começam como **T4 no Nv.5** e exigem **Nv.40** para evoluir à forma final **T5** (`FRAGMENTOS_SONHO_CFG.nivelIniciaisPorFase = { 3: 40 }`).
+
+- **Fórmula de XP dos Oníricos (`regiao1-progressao.js`):**
+  - `xpPara(n) = 30 + 10·n`
+  - `xpTotal(5) = 220` XP
+  - `xpTotal(40) = 8.970` XP
+  - **XP líquido necessário (Nv.5 → Nv.40): `8.750 XP` por inicial.**
+- **Tempo esperado até o Nv.40 (`estimarDiasNivel40Inicial()`):**
+  - **Jogador Casual (~15–20 min/dia de jogo ativo, sem depender de AFK longo):** `~2.250 XP/dia` (Idle ativo + 4 fases da Campanha Mini + poções P distribuídas no time) → **`~3,89 dias`** (**dentro da meta de 3 a 5 dias**).
+  - **Jogador Ativo (~45–60 min/dia):** `~3.800 XP/dia` em jogo ativo → **`~2,30 dias`**.
+  - **Com 8h/dia de Idle Offline (Nv.6 = 1,6 abate/min × 28 XP/abate):** +6.500 a +10.500 XP/dia na formação → **`~0,6 a 1,0 dia`**.
+- **Conclusão sobre ajuste:** **Não foi necessário alterar `xpTotal(n)` nem `XP_IDLE_CFG`**, pois o tempo de jogo normal sem acelerar com AFK fica naturalmente em **~3,9 dias** no perfil casual (dentro da janela de **3 a 5 dias**) e preserva todos os saves existentes.

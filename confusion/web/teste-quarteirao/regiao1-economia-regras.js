@@ -1,3 +1,5 @@
+import { xpTotal } from './regiao1-progressao.js';
+
 // Tabela revisada de economia diária e semanal por modo (Casual vs Ativo), com orçamento de energia e metas auditadas.
 // Regras 100% puras (sem DOM), alinhadas a Campanha Mini, Missões/Marcos, Torres, Calabouços, Regiões 1–12 e Farm/Guilda.
 
@@ -175,4 +177,130 @@ export function auditarMetasEconomia() {
     resultados[perfil] = { passou, checks, eco, dias, meta };
   }
   return { ok, resultados };
+}
+
+// ---- Economia da Primeira Hora (0–60 min) e Curva até Nv.40 (T5 dos iniciais #148) ----
+export const TABELA_PRIMEIRA_HORA = [
+  {
+    bloco: '0–10 min',
+    marcos: 'Site → Convidado/Conta → Escolha do Inicial (Nv.5 T4) → Refúgio → 1ª batalha na Praia → Campanha Mini 1-1 e 1-2',
+    objetivoAtivo: 'Completar o batismo de combate e abrir a Campanha Mini',
+    ganho: { ouro: 550, diamantes: 65, xpOnirico: 420, energia: 120, essenciaMenor: 0, essenciaMedia: 0, tickets: 0, reliquias: 0, fragmentosSonho: 0 },
+    gasto: { ouro: 0, diamantes: 0, energia: 12, tickets: 0 },
+  },
+  {
+    bloco: '10–20 min',
+    marcos: 'Campanha Mini 1-3 a 1-5 (Elite), Torre Elemental 1–3, Marco 1-5 e Paralela par_1_1 (após 1-3)',
+    objetivoAtivo: 'Vencer o Guardião 1-5 (1ª relíquia garantida) e juntar Essências na Torre',
+    ganho: { ouro: 1350, diamantes: 150, xpOnirico: 1080, energia: 1, essenciaMenor: 12, essenciaMedia: 0, tickets: 0, reliquias: 2, fragmentosSonho: 1 },
+    gasto: { ouro: 450, diamantes: 0, energia: 20, tickets: 0 },
+  },
+  {
+    bloco: '20–30 min',
+    marcos: 'Calabouço Nv.1, reforço de relíquia (+3), Torre Elemental 4–5, Baús 3★ 1-1..1-5 e Marco Torre 5',
+    objetivoAtivo: 'Equipar e reforçar a 1ª relíquia rara/comum e subir a Torre até o andar 5',
+    ganho: { ouro: 900, diamantes: 140, xpOnirico: 950, energia: 2, essenciaMenor: 11, essenciaMedia: 0, tickets: 0, reliquias: 2, fragmentosSonho: 1 },
+    gasto: { ouro: 825, diamantes: 0, energia: 18, tickets: 0 },
+  },
+  {
+    bloco: '30–45 min',
+    marcos: 'Campanha Mini 1-6 a 1-9, Diárias dos modos, Paralela par_1_2 e Login Dia 1',
+    objetivoAtivo: 'Avançar até a antecâmara do Chefe 1-10 e fechar as missões diárias',
+    ganho: { ouro: 1850, diamantes: 210, xpOnirico: 1450, energia: 2, essenciaMenor: 5, essenciaMedia: 0, tickets: 1, reliquias: 1, fragmentosSonho: 1 },
+    gasto: { ouro: 600, diamantes: 0, energia: 24, tickets: 0 },
+  },
+  {
+    bloco: '45–60 min',
+    marcos: 'Chefe 1-10 + Marcos Cap.1 / 30★ + Baú 10★/20★/30★ + 1ª Invocação ×10 no Banner',
+    objetivoAtivo: 'Derrotar o Chefe do Cap.1, resgatar os 10 tickets e realizar a 1ª invocação ×10',
+    ganho: { ouro: 1400, diamantes: 300, xpOnirico: 1650, energia: 3, essenciaMenor: 10, essenciaMedia: 3, tickets: 11, reliquias: 1, fragmentosSonho: 1 },
+    gasto: { ouro: 900, diamantes: 0, energia: 10, tickets: 10 },
+  },
+];
+
+export function simularEconomiaPrimeiraHora({ comConta = false } = {}) {
+  const saldo = {
+    ouro: 0,
+    diamantes: comConta ? 20000 : 0,
+    xpOnirico: 0,
+    energiaAtual: 0,
+    essenciaMenor: 0,
+    essenciaMedia: 0,
+    tickets: 0,
+    reliquias: 0,
+    fragmentosSonho: 0,
+  };
+  const ganhosTotais = { ouro: 0, diamantes: saldo.diamantes, xpOnirico: 0, essenciaMenor: 0, essenciaMedia: 0, tickets: 0, reliquias: 0, fragmentosSonho: 0 };
+  const gastosTotais = { ouro: 0, diamantes: 0, energia: 0, tickets: 0 };
+
+  const linhaTempo = TABELA_PRIMEIRA_HORA.map((b) => {
+    for (const k of ['ouro', 'diamantes', 'xpOnirico', 'essenciaMenor', 'essenciaMedia', 'tickets', 'reliquias', 'fragmentosSonho']) {
+      ganhosTotais[k] += b.ganho[k] || 0;
+      saldo[k] += b.ganho[k] || 0;
+    }
+    saldo.energiaAtual = Math.min(120, Math.max(0, saldo.energiaAtual + (b.ganho.energia || 0) - (b.gasto.energia || 0)));
+    for (const k of ['ouro', 'diamantes', 'energia', 'tickets']) {
+      gastosTotais[k] += b.gasto[k] || 0;
+      if (k !== 'energia') saldo[k] -= b.gasto[k] || 0;
+    }
+    return { ...b, saldoApos: { ...saldo } };
+  });
+
+  // Nota: se a evolução 1→2 (~20 min) ainda sofre gargalo sem pacote inicial (10 frag. e 5 essência média vs ~38 menor já ganhas)
+  const evolucao1Para2ViavelNoReino = ganhosTotais.essenciaMenor >= CUSTO_REFERENCIA_ECONOMIA.evolucao1Para2.essenciaMenor
+    && ganhosTotais.essenciaMedia >= CUSTO_REFERENCIA_ECONOMIA.evolucao1Para2.essenciaMedia
+    && ganhosTotais.fragmentosSonho >= CUSTO_REFERENCIA_ECONOMIA.evolucao1Para2.fragmentosSonho;
+
+  return {
+    comConta,
+    linhaTempo,
+    ganhosTotais,
+    gastosTotais,
+    saldoFinal: saldo,
+    marcosAtingidos: {
+      primeiraReliquia30Min: (linhaTempo[1].saldoApos.reliquias + linhaTempo[2].ganho.reliquias) >= 1,
+      invocacao10xNaHora1: comConta ? ganhosTotais.diamantes >= 1500 : ganhosTotais.tickets >= 10,
+      evolucao1Para2Em60MinSemPacote: evolucao1Para2ViavelNoReino,
+      sempreComObjetivo: linhaTempo.every((x) => Boolean(x.objetivoAtivo)),
+    },
+  };
+}
+
+export function auditarPrimeiraHora() {
+  const convidado = simularEconomiaPrimeiraHora({ comConta: false });
+  const contaNova = simularEconomiaPrimeiraHora({ comConta: true });
+  return {
+    convidado,
+    contaNova,
+    ok: convidado.marcosAtingidos.primeiraReliquia30Min
+      && convidado.marcosAtingidos.invocacao10xNaHora1
+      && contaNova.marcosAtingidos.invocacao10xNaHora1
+      && convidado.marcosAtingidos.sempreComObjetivo,
+  };
+}
+
+// Curva real de nível 5 -> 40 para os iniciais atingirem T5 (#148)
+export function estimarDiasNivel40Inicial(perfil = 'casual') {
+  const isAtivo = perfil === 'ativo';
+  const nivelInicial = 5;
+  const nivelAlvo = 40;
+  const xpNecessario = xpTotal(nivelAlvo) - xpTotal(nivelInicial); // 8.750 XP
+  // Jogo ativo normal (sem depender de 12h AFK): Idle ativo (~10-20 min) + fases Campanha Mini + Poções XP distribuídas
+  const xpDiarioJogoNormal = isAtivo ? 3800 : 2250;
+  // Incluindo 8h/dia de Idle offline (Nv.6 = 1,6 abates/min × 28 XP/abate) com foco natural na formação
+  const xpDiarioComOffline8h = xpDiarioJogoNormal + (isAtivo ? 10500 : 6500);
+  const diasJogoNormal = Number((xpNecessario / xpDiarioJogoNormal).toFixed(2));
+  const diasComOffline8h = Number((xpNecessario / xpDiarioComOffline8h).toFixed(2));
+  return {
+    perfil: isAtivo ? 'ativo' : 'casual',
+    nivelInicial,
+    nivelAlvo,
+    xpTotalNivel40: xpTotal(nivelAlvo),
+    xpNecessario,
+    xpDiarioJogoNormal,
+    xpDiarioComOffline8h,
+    diasJogoNormal,
+    diasComOffline8h,
+    dentroDaMeta3a5Dias: diasJogoNormal <= 5,
+  };
 }
