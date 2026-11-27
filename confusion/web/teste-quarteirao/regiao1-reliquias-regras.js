@@ -161,6 +161,9 @@ const CONJUNTO_DEFAULT_POR_PAR = {
   mineral: 'muralha',
   solar: 'precisao',
   sombria: 'sanguessuga',
+  glacial: 'muralha',
+  draconica: 'furia',
+  arcana: 'eco',
 };
 
 const PAR_NOME_ICONE = {
@@ -170,6 +173,9 @@ const PAR_NOME_ICONE = {
   mineral: 'terra-pedra-aco',
   solar: 'luz-neutro',
   sombria: 'trevas-fantasma',
+  glacial: 'agua-voador',
+  draconica: 'fogo-eletrico',
+  arcana: 'luz-neutro',
 };
 
 export function iconeReliquia(parte, elemento) {

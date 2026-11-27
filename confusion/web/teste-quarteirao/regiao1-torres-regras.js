@@ -126,8 +126,11 @@ const DEF_ELEMENTAIS = [
   { id: 'mare', nome: 'Torre da Maré', elementos: ['agua', 'voador'], parEssencia: 'mares', guardiao: 'Guardião das Marés' },
   { id: 'raiz', nome: 'Torre da Raiz', elementos: ['planta', 'inseto'], parEssencia: 'verde', guardiao: 'Guardião da Raiz' },
   { id: 'rocha', nome: 'Torre da Rocha', elementos: ['terra', 'pedra', 'aco'], parEssencia: 'mineral', guardiao: 'Guardião da Rocha' },
-  { id: 'aurora', nome: 'Torre da Aurora', elementos: ['luz', 'neutro'], parEssencia: 'solar', guardiao: 'Guardião da Aurora' },
+  { id: 'aurora', nome: 'Torre da Aurora', elementos: ['luz'], parEssencia: 'solar', guardiao: 'Guardião da Aurora' },
   { id: 'umbra', nome: 'Torre da Umbra', elementos: ['trevas', 'fantasma'], parEssencia: 'sombria', guardiao: 'Guardião da Umbra' },
+  { id: 'geada', nome: 'Torre da Geada', elementos: ['gelo', 'veneno'], parEssencia: 'glacial', guardiao: 'Guardião da Geada' },
+  { id: 'draco', nome: 'Torre Dracônica', elementos: ['lutador', 'dragao'], parEssencia: 'draconica', guardiao: 'Guardião Dracônico' },
+  { id: 'eterea', nome: 'Torre Etérea', elementos: ['psiquico', 'fada'], parEssencia: 'arcana', guardiao: 'Guardião Etéreo' },
 ];
 
 function montarInimigosTorreElemental(def, andar) {
