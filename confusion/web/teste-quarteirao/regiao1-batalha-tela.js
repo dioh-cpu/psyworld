@@ -57,7 +57,10 @@ const COR_ELEMENTO = {
 // Mede a silhueta visível para encaixá-la na vaga com a proporção da arte.
 const bboxCache = new Map();
 function recortar(img) {
-  img.style.visibility = 'visible';
+  const fig = img.closest?.('.un-fig');
+  if (!fig || (fig.dataset.animAtivo !== '1' && fig.dataset.poseAtiva !== '1')) {
+    img.style.visibility = 'visible';
+  }
   const src = img.currentSrc || img.src;
   let b = bboxCache.get(src);
   if (!b) {
@@ -147,6 +150,8 @@ const CSS = `
 .arena .un { position: absolute; top: min(var(--posicao-y), calc(100% - var(--espaco-rodape) - 3px)); z-index: 49; width: var(--largura-vaga); display: flex; flex-direction: column; align-items: center; translate: -50% -100%; background: none; border: 0; padding: 0; color: inherit; cursor: default; transition: opacity .5s; --largura-vaga: clamp(80px, 14vw, 170px); --altura-base-sprite: clamp(55px, 22vh, 156px); --altura-sprite: calc(var(--altura-base-sprite) * var(--escala-altura-sprite, 1)); --largura-sprite: min(var(--largura-vaga), calc(var(--altura-sprite) * var(--proporcao-sprite, 1))); }
 .arena .un.frente { z-index: 79; --altura-base-sprite: clamp(58px, 24vh, 170px); }
 .arena .un-fig { position: relative; display: flex; justify-content: center; align-items: flex-end; width: 100%; order: 2; } .arena .un-fig img { width: var(--largura-sprite); height: calc(var(--largura-sprite) / var(--proporcao-sprite, 1)); object-fit: contain; visibility: hidden; filter: drop-shadow(0 4px 3px rgba(0,0,0,.55)); }
+.arena .un-fig[data-anim-ativo="1"] > img { visibility: hidden !important; opacity: 0 !important; }
+.arena .un-fig[data-pose-ativa="1"] > img:not(.pose-ataque), .arena .un-fig[data-pose-ativa="1"] > video.anim-loop { visibility: hidden !important; opacity: 0 !important; }
 .arena .un-sombra { position: absolute; left: 50%; bottom: -3%; width: calc(var(--largura-sprite) * .76); height: 9%; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent); }
 .arena .un.vez .un-sombra { background: radial-gradient(closest-side, rgba(255,214,140,.0) 60%, #ffd58c 64%, transparent 70%); border: 2px solid #ffd58c; box-shadow: 0 0 10px #ffd58c88; }
 .arena .un.alvo .un-sombra { border: 2px solid #fb7185; background: radial-gradient(closest-side, transparent 60%, #fb7185 64%, transparent 70%); }
@@ -268,7 +273,7 @@ export function criarArena(host, { artes = {} } = {}) {
     const srcAtaque = arteAtaque(u.especie, u.arte || arteRaiz(u.especie, opArt));
     if (srcAtaque) { el._pose = criarPose({ fig: el.querySelector('.un-fig'), base: imagem, src: srcAtaque, lado: u.lado, escalaX: sprite.escalaX, zoom: sprite.zoom, bbox: () => bboxCache.get(imagem.currentSrc || imagem.src), especie: u.especie }); imagem.addEventListener('load', () => el._pose.preparar(), { once: true }); }
     // forma da evolução em uso (1/2/3): pelo save ou pela arte (…/0N.png) — cada forma toca o próprio loop
-    const formaAnim = Number(u.formaFase) || Number(/\/0([123])(?:-[^/]*)?\.(?:png|webp)$/.exec(u.arte || arteRaiz(u.especie, opArt) || '')?.[1]) || null;
+    const formaAnim = Number(u.formaFase) || Number(/(?:\/0([123])(?:-[^/]*)?\.(?:png|webp)$|-f([123])\/)/.exec(u.arte || arteRaiz(u.especie, opArt) || '')?.slice(1).find(Boolean)) || null;
     el._anim = criarLoopAnimacao({ fig: el.querySelector('.un-fig'), base: imagem, especie: u.especie, lado: u.lado, forma: formaAnim });
     el._anim.definirAcao(entrando ? 'andar' : 'idle');
     imagem.addEventListener('error', () => { const ph = document.createElement('span'); ph.textContent = '🎃'; ph.title = 'Arte pendente'; ph.style.cssText = 'font-size:clamp(36px,12vh,80px);line-height:1'; imagem.replaceWith(ph); }, { once: true });

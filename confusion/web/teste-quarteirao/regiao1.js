@@ -10,7 +10,6 @@ import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, 
 import { resolverEncontroCatalogo, reforcosDoChefe } from './regiao1-encontros-regras.js';
 import { CHEFE_POR_NOME } from './regiao1-kits-reinos.js';
 import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
-import { energiaDe, ENERGIA_CFG, ENERGIA_TEXTO_EXPLICATIVO } from './regiao1-campanha-mini-regras.js';
 import { iniciarSeletorRegioes } from './regiao1-regioes.js';
 import {
   criarEstadoPasseio,
@@ -788,12 +787,10 @@ function garantirBotaoRefugioNoModal(el) {
       rec.className = 'modal-recursos';
       head.insertBefore(rec, btn);
     }
-    const en = energiaDe(save);
     const gold = Number(save.recompensas?.gold || 0).toLocaleString('pt-BR');
     const diam = Number(save.recompensas?.diamantes || 0).toLocaleString('pt-BR');
     const tick = Number(save.expansao?.tickets || 0);
-    const tipEnergia = `${ENERGIA_TEXTO_EXPLICATIVO.resumo} (${ENERGIA_TEXTO_EXPLICATIVO.custos.join(' · ')})`;
-    rec.innerHTML = `<span class="modal-rec-pill" title="${tipEnergia.replace(/"/g, '&quot;')}"><img class="kit-rec-ico" src="${KIT_REC('energia')}" alt="Energia">${en.atual}/${en.max}</span><span class="modal-rec-pill" title="Ouro: evoluções, reforço de relíquias e compras"><img class="kit-rec-ico" src="${KIT_REC('ouro')}" alt="Ouro">${gold}</span><span class="modal-rec-pill" title="Diamantes: Passe Premium, invocações e pacotes"><img class="kit-rec-ico" src="${KIT_REC('diamante')}" alt="Diamantes">${diam}</span><span class="modal-rec-pill" title="Tickets de Invocação do Banner Permanente"><img class="kit-rec-ico" src="${KIT_REC('ticket')}" alt="Tickets">${tick}</span>`;
+    rec.innerHTML = `<span class="modal-rec-pill" title="Ouro: evoluções, reforço de relíquias e compras"><img class="kit-rec-ico" src="${KIT_REC('ouro')}" alt="Ouro">${gold}</span><span class="modal-rec-pill" title="Diamantes: Passe Premium, invocações e pacotes"><img class="kit-rec-ico" src="${KIT_REC('diamante')}" alt="Diamantes">${diam}</span><span class="modal-rec-pill" title="Tickets de Invocação do Banner Permanente"><img class="kit-rec-ico" src="${KIT_REC('ticket')}" alt="Tickets">${tick}</span>`;
   }
 }
 
@@ -840,25 +837,7 @@ btnFazenda?.addEventListener('click', () => {
 function renderizarDiario() {
   const resumo = document.getElementById('diario-resumo');
   const lista = document.getElementById('diario-lista');
-  const head = document.querySelector('#modal-diario .modal-head');
-  if (head) {
-    let pill = document.getElementById('diario-energia');
-    if (!pill) {
-      pill = document.createElement('span');
-      pill.id = 'diario-energia';
-      pill.className = 'energia-pill';
-      pill.style.marginLeft = 'auto';
-      pill.style.marginRight = '6px';
-      const acoes = head.querySelector('div');
-      head.insertBefore(pill, acoes || null);
-    }
-    const en = energiaDe(save);
-    pill.textContent = `⚡ ${en.atual}/${en.max}`;
-    const faltaMs = en.atual < en.max ? Math.max(0, ENERGIA_CFG.intervaloMs - (Date.now() - en.ultimoTickMs)) : 0;
-    pill.title = faltaMs > 0
-      ? `Energia: ${en.atual}/${en.max} (+1 em ${Math.ceil(faltaMs / 60000)} min · máx. ${ENERGIA_CFG.max})`
-      : `Energia cheia (${en.atual}/${en.max})`;
-  }
+  document.getElementById('diario-energia')?.remove();
   const concluidas = QUESTS_DEFINICOES.filter((q) => save.quests[q.id] === 'concluida').length;
   const bosses = Object.values(save.bossesDerrotados).filter(Boolean).length;
   const marcosAtivos = Object.values(save.teleportes).filter((t) => t.ativo).length;

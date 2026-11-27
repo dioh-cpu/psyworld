@@ -34,18 +34,40 @@ export function criarPose({ fig, base, src, lado, escalaX = 1, zoom = 1, bbox, e
     if (ov || falhou) return Boolean(ov);
     const im = await carregarPose(caminho);
     if (!im) { falhou = true; SEM_POSE.add(especie); return false; }
-    ov = im.cloneNode(); ov.className = 'pose-ataque'; ov.alt = ''; ov.draggable = false; fig.append(ov); return true;
+    ov = im.cloneNode();
+    ov.className = 'pose-ataque';
+    ov.alt = '';
+    ov.draggable = false;
+    ov.style.visibility = 'hidden';
+    fig.append(ov);
+    return true;
   }
   function mostrar(ligar, ms = 0) {
     clearTimeout(tempo);
+    const animAtivo = fig?.dataset?.animAtivo === '1';
+    if (animAtivo) {
+      // Quando o loop de vídeo estiver tocando, arte parada e pose de ataque permanecem escondidas
+      if (fig?.dataset) delete fig.dataset.poseAtiva;
+      if (ov) ov.style.visibility = 'hidden';
+      if (base) base.style.visibility = 'hidden';
+      return;
+    }
     if (!ov) { if (ligar) preparar(); return; }
-    if (!ligar) { ov.style.visibility = 'hidden'; base.style.visibility = 'visible'; return; }
+    if (!ligar) {
+      if (fig?.dataset) delete fig.dataset.poseAtiva;
+      ov.style.visibility = 'hidden';
+      if (base) base.style.visibility = 'visible';
+      return;
+    }
     const b = bbox(), bw = base.offsetWidth, bh = base.offsetHeight, nw = base.naturalWidth, nh = base.naturalHeight;
     if (!b || !bw || !bh || !nw) return;
     const sx = bw / ((b.x1 - b.x0) * nw), sy = bh / ((b.y1 - b.y0) * nh), W = nw * sx, H = nh * sy, ox = b.x0 * W, oy = b.y0 * H;
     const sinal = lado === 'a' ? 1 : -1;
+    if (fig?.dataset) fig.dataset.poseAtiva = '1';
     ov.style.cssText = `position:absolute;left:${base.offsetLeft - ox}px;top:${base.offsetTop - oy}px;width:${W}px;height:${H}px;max-width:none;object-fit:fill;pointer-events:none;transform-origin:${ox + bw / 2}px ${oy + bh}px;transform:scale(${sinal * Math.abs(escalaX) * zoom},${zoom});visibility:visible`;
     base.style.visibility = 'hidden'; // as duas imagens já estão decodificadas: a troca acontece no mesmo quadro
+    const vLoop = fig?.querySelector?.('video.anim-loop');
+    if (vLoop) vLoop.style.visibility = 'hidden';
     if (ms) tempo = setTimeout(() => mostrar(false), ms);
   }
   return { preparar, mostrar, existe: () => Boolean(ov) };
@@ -107,6 +129,23 @@ export function criarLoopAnimacao({ fig, base, especie, lado = 'a', forma = null
     vid.style.transform = `translateX(-50%)${espelhar ? ' scaleX(-1)' : ''}`;
   }
 
+  function sincronizarVisibilidade(ligado) {
+    ativo = Boolean(ligado);
+    if (ativo) {
+      if (fig?.dataset) {
+        fig.dataset.animAtivo = '1';
+        delete fig.dataset.poseAtiva;
+      }
+      if (vid) { vid.style.display = 'block'; vid.style.visibility = 'visible'; }
+      if (base) base.style.visibility = 'hidden';
+      fig?.querySelectorAll?.('img').forEach((im) => { im.style.visibility = 'hidden'; });
+    } else {
+      if (fig?.dataset) delete fig.dataset.animAtivo;
+      if (vid) { vid.style.display = 'none'; vid.style.visibility = 'hidden'; }
+      if (base && fig?.dataset?.poseAtiva !== '1') base.style.visibility = 'visible';
+    }
+  }
+
   function definirAcao(acao = 'idle', direcao = direcaoPadrao) {
     const res = resolverAnimacaoOnirico(especie, acao, direcao, forma);
     if (!res) return false;
@@ -122,14 +161,14 @@ export function criarLoopAnimacao({ fig, base, especie, lado = 'a', forma = null
       vid.defaultMuted = true;
       vid.playsInline = true;
       // Mesma escala e linha dos pés entre idle e caminhada
-      vid.style.cssText = 'position:absolute;left:50%;bottom:0;height:100%;width:auto;max-width:100%;object-fit:contain;object-position:center bottom;pointer-events:none;transform:translateX(-50%);display:none;z-index:2';
-      vid.addEventListener('canplay', () => {
+      vid.style.cssText = 'position:absolute;left:50%;bottom:0;height:100%;width:auto;max-width:100%;object-fit:contain;object-position:center bottom;pointer-events:none;transform:translateX(-50%);display:none;visibility:hidden;z-index:2';
+      const aoPronto = () => {
         if (!vid) return;
-        ativo = true;
-        vid.style.display = 'block';
-        if (base) base.style.visibility = 'hidden';
+        sincronizarVisibilidade(true);
         vid.play().catch(() => {});
-      });
+      };
+      vid.addEventListener('canplay', aoPronto);
+      vid.addEventListener('playing', aoPronto);
       vid.addEventListener('error', () => {
         if (vid && !tentouFallback && vid.dataset.fallbackSimetrico) {
           tentouFallback = true;
@@ -140,9 +179,7 @@ export function criarLoopAnimacao({ fig, base, especie, lado = 'a', forma = null
           vid.load();
           return;
         }
-        ativo = false;
-        if (vid) vid.style.display = 'none';
-        if (base) base.style.visibility = 'visible';
+        sincronizarVisibilidade(false);
       });
       fig.append(vid);
     }
@@ -158,10 +195,10 @@ export function criarLoopAnimacao({ fig, base, especie, lado = 'a', forma = null
 
   function destruir() {
     if (!vid) return;
+    sincronizarVisibilidade(false);
     try { vid.pause(); vid.removeAttribute('src'); vid.load(); } catch {}
     vid.remove();
     vid = null;
-    ativo = false;
   }
 
   return { definirAcao, destruir, ativo: () => ativo };
