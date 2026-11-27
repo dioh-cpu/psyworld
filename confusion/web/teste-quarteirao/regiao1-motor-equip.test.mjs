@@ -58,3 +58,11 @@ test('velocidade reduz recarga: 50% → −1 turno, 100% (pânico) → −2 turn
   assert.equal(a.cd[1], 2);
   x.cd = [0, 4, 4]; a.kit[2] = { id: 'p', nome: 'P', tipo: 'apoio', alvo: 'aliados', cd: 5, efeitos: [{ id: 'panico', turnos: 2 }] };
 });
+test('ondas: limpa a 1ª, entra a 2ª com evento, aliados mantêm a vida; vitória só no fim', () => {
+  const rng = M.criarRng(8), forte = M.criarUnidade({ id: 'a', especie: esp, nivel: 60, lado: 'a' });
+  const w = (p) => [M.criarUnidade({ id: p + '1', especie: esp, nivel: 3, lado: 'i' })];
+  const b = M.criarBatalha([forte], w('x'), { ondas: [w('y'), w('z')] });
+  assert.equal(b.totalOndas, 3);
+  const ondas = []; for (let i = 0; i < 300 && !b.fim; i++) { M.executar(b, M.decidir(b, M.atorAtual(b), rng), rng); const ev = b.evento?.onda || (b.antes || []).find((e) => e.tipo === 'onda'); if (ev && !ondas.includes(ev.para)) ondas.push(ev.para); }
+  assert.equal(b.fim, 'vitoria'); assert.equal(b.onda, 3); assert.deepEqual(ondas, [2, 3]);
+});

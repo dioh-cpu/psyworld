@@ -79,11 +79,12 @@ export function gerarInimigos(fase, papeis, rng, extras = []) {
 // ---------- combate ----------
 export const LIMITE_ALIADOS = 4;
 // Até quatro combatentes de cada lado em campo, com dois reforços exclusivos dos inimigos.
-export function criarBatalha(aliados, inimigos, { ativos = LIMITE_ALIADOS, domador = null } = {}) {
+// ondas: listas de inimigos das ondas SEGUINTES (a 1ª é `inimigos`). Ao limpar uma onda, a próxima entra; aliados mantêm vida.
+export function criarBatalha(aliados, inimigos, { ativos = LIMITE_ALIADOS, domador = null, ondas = [] } = {}) {
   const vagas = Math.min(ativos, LIMITE_ALIADOS);
   const emCampoA = aliados.slice(0, vagas), emCampoI = inimigos.slice(0, vagas);
   for (const u of [...inimigos, ...aliados]) if (u.chefe && CHEFE_POR_NOME[u.especie] && u.furia == null) u.furia = CHEFE_POR_NOME[u.especie].furia;
-  return { aliados: emCampoA, inimigos: emCampoI, esperaI: inimigos.slice(vagas, vagas + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0, ...(domador ? { domador: prepararDomador(domador) } : {}) };
+  return { aliados: emCampoA, inimigos: emCampoI, esperaI: inimigos.slice(vagas, vagas + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0, ...(domador ? { domador: prepararDomador(domador) } : {}), onda: 1, totalOndas: 1 + ondas.length, ondasRestantes: ondas.map((o) => o.slice(0, vagas)) };
 }
 // Fúria do chefe (uma vez por batalha): abaixo do limiar, limpa os efeitos negativos, recupera 10% da vida, ganha ataque e
 // defesa elevados por 3 turnos e o golpe especial volta pronto. O evento leva `fases` para o VFX anunciar.
@@ -176,7 +177,24 @@ function fimDoTurno(u) {
   u.turnosJogados = (u.turnosJogados || 0) + 1;
   for (const [id, e] of Object.entries(u.efeitos || {})) { e.turnos -= 1; if (e.turnos <= 0) delete u.efeitos[id]; }
 }
-const verificarFim = (b) => { if (!vivos(b.inimigos).length && !b.esperaI.length) b.fim = 'vitoria'; else if (!vivos(b.aliados).length) b.fim = 'derrota'; };
+const verificarFim = (b) => {
+  if (!vivos(b.aliados).length) { b.fim = 'derrota'; return; }
+  if (vivos(b.inimigos).length || b.esperaI.length) return;
+  if (b.ondasRestantes?.length) { proximaOnda(b); return; }
+  b.fim = 'vitoria';
+};
+// Próxima onda: os inimigos novos entram pela direita; aliados vivos seguem com a vida atual. A tela recebe o evento
+// { tipo: 'onda', de, para, total } para tocar a transição (andar para a direita + rolar o cenário).
+function proximaOnda(b) {
+  const nova = b.ondasRestantes.shift(), de = b.onda;
+  b.onda += 1; b.inimigos = nova; b.esperaI = [];
+  for (const u of nova) if (u.chefe && CHEFE_POR_NOME[u.especie] && u.furia == null) u.furia = CHEFE_POR_NOME[u.especie].furia;
+  b.ordem = [...b.aliados, ...nova]; b.fila = [];
+  for (const u of b.aliados) u.defendendo = false;
+  const ev = { tipo: 'onda', de, para: b.onda, total: b.totalOndas, entram: nova.map((u) => u.id) };
+  if (b.evento) b.evento.onda = ev; else antes(b, ev);
+  b.log.push(`Onda ${b.onda}/${b.totalOndas}!`);
+}
 // Resumo para as estrelas da Campanha Mini e para as missões: o time no fim (todos vivos vale mesmo após reviver), classes e
 // elementos do time aliado, supremas usadas por lado e quantos aliados terminaram de pé. Puro: só lê a batalha.
 export function resumoBatalha(b) {
