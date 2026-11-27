@@ -86,9 +86,11 @@ test('Domadores auxiliares: XP próprio (idempotente + poção), passiva crescen
   assert.equal(xpPoc.ok, true);
   assert.ok(xpPoc.nivel > xp1.nivel);
 
-  // Barra de energia em batalha: +35 por turno aliado -> dispara no 3º turno, usando S3 primeiro
+  // Barra de energia em batalha: +25 por turno aliado -> dispara no 4º turno, usando S3 primeiro
   const est = criarEstadoDomadorBatalha(s);
   assert.equal(est.ocupaVaga, false);
+  carregarBarraDomador(est, 'turno_aliado');
+  assert.equal(escolherAcaoDomador(est), null);
   carregarBarraDomador(est, 'turno_aliado');
   assert.equal(escolherAcaoDomador(est), null);
   carregarBarraDomador(est, 'turno_aliado');
@@ -124,7 +126,7 @@ test('Domadores auxiliares: curva de liberação e escalonamento das habilidades
   const h1 = habilidadesEscaladasDomador('manipulador', 1);
   const h45 = habilidadesEscaladasDomador('manipulador', 45);
   const h100 = habilidadesEscaladasDomador('manipulador', 100);
-  assert.equal(h1[0].mult, 1.3);
+  assert.equal(h1[0].mult, 0.85);
   assert.ok(h45[0].mult > h1[0].mult); // +10% no S1
   assert.equal(h45[1].cd, 2);           // S2 cd 3 -> 2
   assert.equal(h45[1].efeitos[0].turnos, 3); // +1 turno buff
@@ -134,9 +136,9 @@ test('Domadores auxiliares: curva de liberação e escalonamento das habilidades
   const s = novoSave();
   s.idle.domadores.progresso.azazel.nivel = 100;
   const est = criarEstadoDomadorBatalha(s, 'azazel');
-  assert.equal(est.ganhoPorTurnoAliado, 40);
+  assert.equal(est.ganhoPorTurnoAliado, 30);
   assert.equal(est.habilidades[1].cd, 2);
   assert.equal(est.habilidades[2].cd, 4);
   carregarBarraDomador(est, 'turno_aliado');
-  assert.equal(est.barraEnergia, 40);
+  assert.equal(est.barraEnergia, 30);
 });
