@@ -72,7 +72,7 @@ const PERFIS_NO_CAMPO = {
 // Sentido das demais artes em que o corpo já aparece de lado ou em três quartos.
 const OLHA = {
   direita: ['Brotavel', 'Cervomusgo', 'Cobrabúfalo', 'Xistolim', 'Âmbarasa', 'Bronzelo', 'Cerifogo', 'Colmeiro', 'Falesário', 'Latonhorn', 'Trovoresta', 'Ventassol', 'Zunifaísca'],
-  esquerda: ['Vaelith', 'Fanalino', 'Tatuveludo', 'Calquélon', 'Melifalcão', 'Vesprata', 'Ignavor'],
+  esquerda: ['Vaelith', 'Fanalino', 'Tatuveludo', 'Calquélon', 'Melifalcão', 'Vesprata', 'Ignavor', 'Penacrista', 'Grifonivo', 'Pedrapica'],
 };
 // Aura contínua no sprite pelo efeito mais importante ativo
 const AURA = ['invencivel', 'panico', 'congelamento', 'queimadura', 'veneno', 'sangramento', 'escudo', 'sono', 'atordoamento', 'veloz', 'provocacao', 'regeneracao'];

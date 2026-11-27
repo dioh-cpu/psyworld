@@ -4,7 +4,10 @@
 import { LINHAS } from '../species.js';
 
 // Caminho da pose de ataque a partir da arte da forma em uso (ou da espécie, nas linhas iniciais). null = sem pose cadastrada.
+// Poses com enquadramento diferente da arte de repouso (o corpo encolhe na troca): ficam desligadas até a arte ser refeita
+const POSE_DESLIGADA = new Set(['Ignavor', 'Brasinha', 'Ignaraz']);
 export function arteAtaque(especie, arte) {
+  if (POSE_DESLIGADA.has(especie)) return null;
   const lin = LINHAS.find((l) => l.inicial === especie || l.atual === especie || l.evolucao === especie);
   if (lin) { const f = [lin.inicial, lin.atual, lin.evolucao].indexOf(especie) + 1; return `assets/confusion/interface/estrategia/reinos/existentes/${lin.id}/ataque-0${f}.png`; }
   const m = /^(.*\/)0([123])(?:-[^/]+)?\.(?:png|webp)$/.exec(arte || '');
