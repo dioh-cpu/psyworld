@@ -2,7 +2,7 @@
 
 As imagens são bases de animação da arena e estão viradas para a direita. Os pés ou cascos têm a mesma linha a **85% da altura**. Use o `frame-base.png` da espécie como primeiro quadro. Gere **um clipe por vez**, em 9:16, 1080×1920, com a câmara fixa. Se o Flow não oferecer a duração indicada, escolha a menor disponível, faça a ação no intervalo descrito e corte o repouso excedente na edição.
 
-A técnica e a suprema incluem movimento do corpo e acentos de luz junto à criatura. Projéteis, efeitos em área e efeitos sobre o alvo ficam em camadas separadas, inclusive Arco Ciano, Chama Violeta e Chama Noturna. Para o **Rugido Dourado**, o efeito separado usa frentes de pressão concêntricas em laranja e cobre, com expansão sonora. 
+A técnica e a suprema incluem movimento do corpo e acentos de luz junto à criatura. Projéteis, efeitos em área e efeitos sobre o alvo ficam em camadas separadas, inclusive Arco Ciano, Chama Violeta e Chama Noturna. Para o **Rugido Dourado**, o efeito separado usa frentes de pressão concêntricas em laranja e cobre, com expansão sonora.
 
 Entregue um MP4 por clipe. Os ciclos de repouso e caminhada fecham na pose de entrada. Ataque, técnica, suprema e reação voltam ao repouso. A derrota termina na pose caída para o último quadro poder ficar congelado na arena.
 
