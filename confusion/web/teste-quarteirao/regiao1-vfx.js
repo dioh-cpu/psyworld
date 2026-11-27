@@ -38,11 +38,13 @@ const VIOLETA = HAB.MORTALIO_VIOLETA_CFG || { id: 'manto_violeta', clip: 'assets
 FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, cut: ['#5b21b6', '#ddd6fe'] };
 // Clipes do Flow, lote 1 (PR #61). impactoMs = ataque do pico de áudio do próprio clipe; chao = altura relativa do chão do efeito no
 // quadro (ancorado nos pés do alvo); escala = largura do clipe em relação ao corpo do alvo. Sem o arquivo, vale a coreografia procedural.
-const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/';
+const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/', FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/';
 export const CLIPES_FLOW = {
   manto_violeta: { clip: `${FLOW}mortalio-violeta.mp4`, impactoMs: 1250, chao: 0.86, escala: 3.4, duracaoMs: 3000 },
-  chama_solar: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 }, // Solarin: cura de um aliado (luz)
-  arco_ciano: { clip: `${FLOW}impacto-ciano.mp4`, impactoMs: 1250, chao: 0.88, escala: 3.0, duracaoMs: 3000 }, // Vaelith: golpe de água em um alvo
+  chama_solar: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 }, // Solarin: cura de um aliado (chama dourada; também é a cura de fogo)
+  // impacto-ciano.mp4 é a cura de água (respingo com símbolos de cura): fica no Véu Gelado; o Arco Ciano volta à coreografia própria
+  veu_gelado: { clip: `${FLOW}impacto-ciano.mp4`, impactoMs: 1250, chao: 0.88, escala: 3.0, duracaoMs: 3000 }, // Vaelith: cura do grupo (água)
+  espora_verde: { clip: `${FLOW3}cura-planta.mp4`, impactoMs: 800, chao: 0.86, escala: 3.0, duracaoMs: 2400 }, // Brotavel: regeneração e escudo (planta)
   procissao_luz: { clip: `${FLOW}espiral-dourada.mp4`, impactoMs: 1300, chao: 0.86, escala: 2.6, duracaoMs: 3000 }, // Velalume: cura do grupo (ultimate)
   // Lote 2 (linha do Noctarn). centro = altura relativa do centro do efeito no quadro, alinhada ao meio do corpo do alvo.
   mordida_umbral: { clip: `${FLOW2}mordida-umbral.mp4`, impactoMs: 1200, centro: 0.5, escala: 2.4, duracaoMs: 2600 },
@@ -55,7 +57,6 @@ export const CLIPES_FLOW = {
 export const CLIPES_POR_ESPECIE = {};
 // Lote 3: clipes elementais para as habilidades sem coreografia própria (kits gerados, Reinos 03–12, chefes). Fundo preto, som
 // do próprio clipe; o início parado foi cortado na codificação. clipeElemental(hab) escolhe pelo tipo, elemento e efeitos.
-const FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/';
 export const CLIPES_ELEMENTAIS = {
   raio: { clip: `${FLOW3}raio-violeta.mp4`, impactoMs: 540, centro: 0.49, escala: 2.6, duracaoMs: 2500 },          // elétrico
   explosaoDourada: { clip: `${FLOW3}explosao-dourada.mp4`, impactoMs: 430, centro: 0.5, escala: 2.6, duracaoMs: 2400 }, // luz
@@ -64,6 +65,9 @@ export const CLIPES_ELEMENTAIS = {
   veneno: { clip: `${FLOW3}veneno.mp4`, impactoMs: 400, centro: 0.49, escala: 2.6, duracaoMs: 2200 },              // planta/inseto com veneno
   cupula: { clip: `${FLOW3}cupula-agua.mp4`, impactoMs: 500, chao: 0.95, escala: 2.4, duracaoMs: 2200 },           // escudo (qualquer elemento)
   fenix: { clip: `${FLOW3}fenix.mp4`, impactoMs: 850, chao: 0.8, escala: 2.6, duracaoMs: 2400 },                   // cura e apoio de luz
+  curaFogo: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 },        // cura de fogo
+  curaAgua: { clip: `${FLOW}impacto-ciano.mp4`, impactoMs: 1250, chao: 0.88, escala: 3.0, duracaoMs: 3000 },       // cura de água
+  curaPlanta: { clip: `${FLOW3}cura-planta.mp4`, impactoMs: 800, chao: 0.86, escala: 3.0, duracaoMs: 2400 },       // cura de planta
   anelEletrico: { clip: `${FLOW3}anel-eletrico.mp4`, impactoMs: 970, centro: 0.5, escala: 2.6, duracaoMs: 1800 },  // elétrico em área
   laminasSombrias: { clip: `${FLOW3}laminas-sombrias.mp4`, impactoMs: 650, centro: 0.49, escala: 2.8, duracaoMs: 2400, ult: true }, // suprema de trevas
   ventoDourado: { clip: `${FLOW3}vento-dourado.mp4`, impactoMs: 600, centro: 0.49, escala: 3.2, duracaoMs: 2400, espelhar: true }, // voador (sopro da esquerda para a direita)
@@ -79,7 +83,8 @@ export function clipeElemental(hab) {
   if (!hab || FX_HABILIDADES[hab.id] || hab.clip) return null;
   const C = CLIPES_ELEMENTAIS, efs = (hab.efeitos || []).map((e) => e.id);
   if (hab.escudo || efs.includes('escudo')) return C.cupula;
-  if (hab.tipo === 'cura' || hab.tipo === 'apoio') return hab.elemento === 'luz' ? C.fenix : null;
+  if (hab.tipo === 'cura' || (hab.tipo === 'apoio' && (hab.cura || efs.includes('regeneracao')))) return { luz: C.fenix, fogo: C.curaFogo, agua: C.curaAgua, planta: C.curaPlanta }[hab.elemento] || null;
+  if (hab.tipo === 'apoio') return hab.elemento === 'luz' ? C.fenix : null;
   if (hab.tipo !== 'dano') return null;
   const area = hab.alvo === 'todos';
   if (hab.elemento === 'trevas' && hab.cd >= 5) return C.laminasSombrias;
