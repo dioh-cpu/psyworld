@@ -1,0 +1,12 @@
+legacy/
+docs/
+tests/
+tools/
+scripts/
+supabase/
+assets/characters/source-video/
+**/*-original.*
+**/*-origem-*
+**/*.test.mjs
+**/*.py
+*.md
