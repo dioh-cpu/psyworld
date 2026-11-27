@@ -20,6 +20,7 @@ import { bonusDoMembro } from './regiao1-halloween-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { mostrarResultadoBatalha, fecharResultadoBatalha } from './regiao1-resultado-ui.js';
+import { renderBalaoTutorialModo, tratarCliqueTutorialModo } from './regiao1-tutoriais-modos.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -241,7 +242,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
         </div>
       </div>`;
     }).join('');
-    body.innerHTML = `<div class="cm-caps">${cards}</div>`;
+    body.innerHTML = `${renderBalaoTutorialModo(save, 'campanha_mini')}<div class="cm-caps">${cards}</div>`;
   }
 
   function renderMapa() {
@@ -430,6 +431,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button, [data-cm-cap]');
     if (!t) return;
+    if (tratarCliqueTutorialModo(t.dataset, { save: getSave(), salvar, aoFechar: () => render() })) return;
     if (t.dataset.cmVoltar) {
       if (visao === 'mapa') { visao = 'capitulos'; renderCapitulos(); }
       else { fecharResultado(); fecharModal('modal-campanha-mini'); window.regiaoExp?.abrir('descanso'); }
