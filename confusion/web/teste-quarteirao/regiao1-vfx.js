@@ -39,6 +39,7 @@ const VIOLETA = HAB.MORTALIO_VIOLETA_CFG || { id: 'manto_violeta', clip: 'assets
 FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, cut: ['#5b21b6', '#ddd6fe'] };
 // Clipes do Flow, lote 1 (PR #61). impactoMs = ataque do pico de áudio do próprio clipe; chao = altura relativa do chão do efeito no
 // quadro (ancorado nos pés do alvo); escala = largura do clipe em relação ao corpo do alvo. Sem o arquivo, vale a coreografia procedural.
+const FLOW8 = 'assets/confusion/interface/vfx/flow-lote-8/';
 const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/', FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/', FLOW4 = 'assets/confusion/interface/vfx/flow-lote-4/', FLOW5 = 'assets/confusion/interface/vfx/flow-lote-5/', FLOW6 = 'assets/confusion/interface/vfx/flow-lote-6/', FLOW7 = 'assets/confusion/interface/vfx/flow-lote-7/';
 export const CLIPES_FLOW = {
   manto_violeta: { clip: `${FLOW}mortalio-violeta.mp4`, impactoMs: 1250, chao: 0.86, escala: 3.4, duracaoMs: 3000 },
@@ -53,6 +54,12 @@ export const CLIPES_FLOW = {
   veu_noturno: { clip: `${FLOW2}veu-noturno.mp4`, impactoMs: 1200, chao: 0.93, escala: 2.2, duracaoMs: 3400 },
   // Noctarion: Chama Noturna, erupção que atinge todos os inimigos (uma erupção larga sobre o grupo, a partir da explosão)
   chama_noturna: { clip: `${FLOW2}chama-noturna.mp4`, impactoMs: 250, chao: 0.93, escala: 3.2, duracaoMs: 2000 },
+  // Lote 8 (lote A do Flow): as habilidades dos kits que ainda eram desenhadas no código. Golpe: centro; projétil: vem da esquerda
+  // (espelhado quando o atacante está à direita); suporte: aura com base nos pés, cobrindo o corpo (ou o time, em grupo).
+  ...Object.fromEntries([...['brasa_imperial', 'raiz_viva', 'badalada', 'pancada_abobora', 'juba_flamejante', 'fenda_estelar', 'broto_fertil'].map((id) => [id, { centro: 0.5, escala: 3.0 }]),
+    ...['arco_ciano', 'raio_dourado', 'sopro_etereo'].map((id) => [id, { centro: 0.5, escala: 3.4, espelhar: true }]),
+    ...['rugido_dourado', 'aurora', 'muralha_ramas', 'noite_imaculada', 'egide_noturna', 'casca_encantada', 'vigilia_velas', 'retorno_alma', 'chama_gentil', 'veu_lamento'].map((id) => [id, { chao: 0.9, escala: 3.8 }])]
+    .map(([id, o]) => [id, { clip: `${FLOW8}${id}.mp4`, impactoMs: 600, duracaoMs: 2400, ...o }])),
 };
 // Variações de clipe por forma (golpes que mudam só no visual); a Chama Noturna agora é uma habilidade própria do kit
 export const CLIPES_POR_ESPECIE = {};
