@@ -20,8 +20,12 @@ import {
   criarArmaUnica,
   reforcarArmaUnica,
   equiparArmaUnica,
+  GUIA_SISTEMA_RELIQUIAS,
+  ONDE_CONSEGUIR_RELIQUIAS,
+  fontesDeReliquia,
 } from './regiao1-reliquias-regras.js';
 import { essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
+import { ONDE_CONSEGUIR_ESSENCIAS } from './regiao1-regras-sonho.js';
 import { TORRES_ELEMENTAIS_CATALOGO } from './regiao1-torres-regras.js';
 import { CALABOUCOS_CATALOGO } from './regiao1-calaboucos-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
@@ -64,24 +68,29 @@ function corRar(r) {
   return COR_RAR[String(r || '').toLowerCase()] || '#cbd5e1';
 }
 
+function renderListaFontes(fontes) {
+  return (fontes || []).map((f) => `• <b style="color:#fff3e7">${esc(f.modo)}</b> — ${esc(f.local)}: ${esc(f.detalhe)}`).join('<br>');
+}
+
 function painelComoFuncionaHtml() {
+  const topicos = Array.isArray(GUIA_SISTEMA_RELIQUIAS?.topicos) ? GUIA_SISTEMA_RELIQUIAS.topicos : [];
   return `<div class="bl" style="border:1.5px solid rgba(253,230,138,.48);background:linear-gradient(180deg,rgba(32,19,48,.96),rgba(14,9,24,.98))">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
-      <b style="color:#fde68a;font-size:13px">📖 Como funcionam as Relíquias e a Arma Única</b>
+      <b style="color:#fde68a;font-size:13px">📖 ${esc(GUIA_SISTEMA_RELIQUIAS?.titulo || 'Como funcionam as Relíquias e a Arma Única')}</b>
       <button class="btn-sec" data-rel-toggle-guia="1" style="padding:2px 8px;font-size:11px">Fechar</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;font-size:11.5px;color:#d6dbe4;line-height:1.45">
       <div style="background:rgba(10,6,20,.78);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 9px">
         <b style="color:#fff3e7">1. 4 Relíquias + 1 Arma Única</b><br>
-        Cada Onírico equipa <b>4 Relíquias</b> (👑 Coroa, 📿 Amuleto, 💍 Anel e 🔮 Talismã) do <b>mesmo elemento</b> + <b>1 Arma Única</b> exclusiva da sua linhagem.
+        ${esc(topicos[0] || 'Cada Onírico equipa 4 Relíquias (Coroa, Amuleto, Anel, Talismã) do mesmo elemento + 1 Arma Única exclusiva.')}
       </div>
       <div style="background:rgba(10,6,20,.78);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 9px">
-        <b style="color:#fff3e7">2. Conjuntos (2 e 4 peças)</b><br>
-        Equipar <b>2 peças</b> do mesmo conjunto ativa o primeiro bônus; <b>4 peças</b> libera o efeito completo do conjunto (ataque, crítico, velocidade, escudo, etc.).
+        <b style="color:#fff3e7">2. Conjuntos (2 e 4 peças) e Reforço</b><br>
+        ${esc(topicos.slice(1, 3).join(' '))}
       </div>
       <div style="background:rgba(10,6,20,.78);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 9px">
-        <b style="color:#fff3e7">3. Reforço (+0 → +15) e Forja</b><br>
-        Use 🪙 Ouro e ✨ Pó de Reforço (desmontando peças sobrando) para subir atributos até +15. A Arma Única é forjada com <b>10 fragmentos</b>.
+        <b style="color:#fff3e7">3. Arma Única e Farm Livre</b><br>
+        ${esc(topicos.slice(3).join(' '))}
       </div>
     </div>
   </div>`;
@@ -91,32 +100,26 @@ function painelOndeConseguirHtml(elMembro) {
   const calMatch = elMembro
     ? CALABOUCOS_CATALOGO.find((c) => (c.elementos || []).includes(elMembro))
     : null;
-  const torreMatch = elMembro
-    ? TORRES_ELEMENTAIS_CATALOGO.find((t) => (t.elementos || []).includes(elMembro))
-    : null;
+  const conjRef = calMatch?.conjuntos?.[0];
+  const fontesRel = conjRef ? fontesDeReliquia(conjRef) : ONDE_CONSEGUIR_RELIQUIAS.partes.coroa.fontes;
   const nomeEl = elMembro ? (NOME_ELEMENTO[elMembro] || elMembro) : 'seu elemento';
   return `<div class="bl" style="border:1.5px solid rgba(125,211,252,.48);background:linear-gradient(180deg,rgba(16,24,48,.96),rgba(10,12,26,.98))">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
-      <b style="color:#7dd3fc;font-size:13px">🗺️ Onde conseguir Relíquias, Armas Únicas e Essências</b>
+      <b style="color:#7dd3fc;font-size:13px">🗺️ Onde conseguir Relíquias, Armas Únicas e Pó de Reforço</b>
       <button class="btn-sec" data-rel-toggle-fontes="1" style="padding:2px 8px;font-size:11px">Fechar</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;font-size:11.5px;color:#d6dbe4;line-height:1.45">
       <div style="background:rgba(10,6,20,.78);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 9px">
         <b style="color:#fde68a">🏺 Relíquias (${esc(nomeEl)})</b><br>
-        ${calMatch ? `• Calabouço: <b>${esc(calMatch.nome)}</b> (conjuntos ${esc(calMatch.conjuntos.join(', '))})<br>` : '• <b>Calabouços de Relíquias</b> (9 calabouços · 13 níveis)<br>'}
-        • <b>Campanha Mini:</b> fases Elite (Comum) e Escondidas 30★ (Rara)<br>
-        • <b>Loja do Calabouço:</b> troca garantida por moedas
+        ${renderListaFontes(fontesRel)}
       </div>
       <div style="background:rgba(10,6,20,.78);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 9px">
-        <b style="color:#fde68a">⚔️ Fragmentos de Arma Única</b><br>
-        • <b>Torres Únicas</b> (3 torres × 30 andares · 1×/dia por andar)<br>
-        • Troca de <b>5 Pó Único → 1 Fragmento</b> na aba Torres Únicas
+        <b style="color:#fde68a">⚔️ ${esc(ONDE_CONSEGUIR_RELIQUIAS.armaUnica.nome)}</b><br>
+        ${renderListaFontes(ONDE_CONSEGUIR_RELIQUIAS.armaUnica.fontes)}
       </div>
       <div style="background:rgba(10,6,20,.78);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:7px 9px">
-        <b style="color:#fde68a">💠 Essências & ✨ Pó de Reforço</b><br>
-        ${torreMatch ? `• <b>${esc(torreMatch.nome)}</b> (andares + Treino diário 3×/dia)<br>` : '• <b>Torres Elementais</b> (9 torres × 50 andares + Treino diário)<br>'}
-        • <b>Campanha Mini:</b> chefes de capítulo e Baús 3★<br>
-        • <b>Pó de Reforço:</b> desmontando relíquias extras na bolsa
+        <b style="color:#fde68a">✨ ${esc(ONDE_CONSEGUIR_RELIQUIAS.poReforco.nome)}</b><br>
+        ${renderListaFontes(ONDE_CONSEGUIR_RELIQUIAS.poReforco.fontes)}
       </div>
     </div>
   </div>`;
@@ -127,7 +130,10 @@ export function renderizarPainelReliquias(save, aba, st) {
     const ess = essenciasDe(save);
     const cards = Object.entries(ESSENCIAS_PARES).map(([id, p]) => {
       const s = ess[id] || { menor: 0, media: 0, maior: 0 };
-      const torre = TORRES_ELEMENTAIS_CATALOGO.find((t) => (t.elementos || []).some((e) => p.elementos.includes(e)));
+      const infoFonte = ONDE_CONSEGUIR_ESSENCIAS[id];
+      const fontesTxt = infoFonte?.fontes?.length
+        ? renderListaFontes(infoFonte.fontes)
+        : 'Torres Elementais · Chefes e Baús 3★ da Campanha Mini';
       const iconsHtml = p.elementos.map((e) => `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(10,6,20,.82);border:1px solid rgba(243,194,122,.32);border-radius:999px;padding:2px 8px;font-size:11px;color:#fff3e7"><img src="${icoEl(e)}" alt="" style="width:15px;height:15px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[e] || e)}</span>`).join(' ');
       return `<div class="bl" style="margin:0;border:1px solid rgba(243,194,122,.35);background:linear-gradient(160deg,rgba(26,16,42,.94),rgba(12,8,24,.97));display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap">
@@ -148,8 +154,8 @@ export function renderizarPainelReliquias(save, aba, st) {
             <div style="font-size:16px;font-weight:800;color:#fde047">${s.maior}</div>
           </div>
         </div>
-        <div style="font-size:11px;color:#d6dbe4;border-top:1px solid rgba(255,255,255,.1);padding-top:6px">
-          <b style="color:#7dd3fc">🗺️ Onde conseguir:</b> ${torre ? `<b>${esc(torre.nome)}</b> (andares e Treino diário)` : 'Torres Elementais'} · Chefes e Baús 3★ da Campanha Mini
+        <div style="font-size:11px;color:#d6dbe4;border-top:1px solid rgba(255,255,255,.1);padding-top:6px;line-height:1.45">
+          <b style="color:#7dd3fc">🗺️ Onde conseguir:</b><br>${fontesTxt}
         </div>
       </div>`;
     }).join('');

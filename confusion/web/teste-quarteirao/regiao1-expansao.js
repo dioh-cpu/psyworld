@@ -15,7 +15,8 @@ import { revelarInvocacao } from './regiao1-revelacao.js';
 import { BOSSES_REGIAO1 } from './regiao1-estado.js';
 import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, concluirRevancheChefe, previsaoCraftChefe, craftarChefe, bonusCategoriaPoder } from './regiao1-revanche-regras.js';
 import { essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
-import { consultarEvolucaoForma } from './regiao1-regras-sonho.js';
+import { consultarEvolucaoForma, ONDE_CONSEGUIR_FRAGMENTOS, ONDE_CONSEGUIR_ESSENCIAS, parEssenciaDoElemento } from './regiao1-regras-sonho.js';
+import { ONDE_CONSEGUIR_RELIQUIAS } from './regiao1-reliquias-regras.js';
 import { renderizarPainelMissoes, tratarCliqueMissoes, temAvisoMissoes } from './regiao1-missoes-ui.js';
 import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.js';
 import { renderizarPainelCalaboucos, tratarCliqueCalaboucos } from './regiao1-calaboucos-ui.js';
@@ -635,6 +636,22 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         </div>`).join('')}
       </div>
       ${arvoreHtml}
+      ${(() => {
+        const elChave = String(m.elemento || f.elemento || 'neutro').toLowerCase();
+        const fontesFrag = ONDE_CONSEGUIR_FRAGMENTOS[elChave]?.fontes || [];
+        const parId = parEssenciaDoElemento(elChave);
+        const infoEss = ONDE_CONSEGUIR_ESSENCIAS[parId];
+        const fontesArma = ONDE_CONSEGUIR_RELIQUIAS?.armaUnica?.fontes || [];
+        const linFrag = fontesFrag.length ? `<div><b style="color:#fde68a">✨ Fragmentos (${esc(f.elemento)}):</b> ${fontesFrag.map((x) => `${esc(x.modo)} (${esc(x.local)})`).join(' · ')}</div>` : '';
+        const linEss = infoEss?.fontes?.length ? `<div><b style="color:#fde68a">💠 ${esc(infoEss.nome)}:</b> ${infoEss.fontes.map((x) => `${esc(x.modo)} (${esc(x.local)})`).join(' · ')}</div>` : '';
+        const linArma = fontesArma.length ? `<div><b style="color:#fde68a">⚔️ Arma Única:</b> ${fontesArma.map((x) => `${esc(x.modo)} (${esc(x.local)})`).join(' · ')}</div>` : '';
+        return (linFrag || linEss || linArma)
+          ? `<div style="margin-top:8px;padding:7px 9px;border-radius:9px;background:rgba(12,18,36,.88);border:1px solid rgba(125,211,252,.38);font-size:11px;color:#d6dbe4;line-height:1.45">
+              <div style="font-weight:700;color:#7dd3fc;margin-bottom:3px">🗺️ Onde conseguir recursos de evolução e equipamento</div>
+              ${linFrag}${linEss}${linArma}
+            </div>`
+          : '';
+      })()}
     </div>`;
   }
   function abaEquipe() {
