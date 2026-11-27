@@ -1223,11 +1223,15 @@ async function enxameInicio(ctx, M, A, ev) {
   await ESP(420 * ctx.k);
   return true;
 }
-const blobs = new Map();
+const blobs = new Map(), BLOBS_MAX = 8; // LRU: guarda os 8 clipes mais recentes e libera a memória dos antigos
+function guardarBlob(url, fonte) {
+  blobs.delete(url); blobs.set(url, fonte);
+  while (blobs.size > BLOBS_MAX) { const [velho, f] = blobs.entries().next().value; blobs.delete(velho); try { URL.revokeObjectURL(f); } catch {} }
+}
 async function carregarVideo(src, inicio = 0) {
   if (clipesFalhos.has(src)) return null;
   const url = /^(https?:|\/|\.\.\/|blob:|data:)/.test(src) ? src : `../../../${src}`;
-  let fonte = url; if (inicio) { try { fonte = blobs.get(url) || URL.createObjectURL(await (await fetch(url)).blob()); blobs.set(url, fonte); } catch { clipesFalhos.add(src); return null; } } // em memória, a busca do ponto de início funciona em qualquer servidor
+  let fonte = url; if (inicio) { try { fonte = blobs.get(url) || URL.createObjectURL(await (await fetch(url)).blob()); guardarBlob(url, fonte); } catch { clipesFalhos.add(src); return null; } } // em memória, a busca do ponto de início funciona em qualquer servidor
   const v = document.createElement('video'); v.src = fonte; v.playsInline = true; v.preload = 'auto'; v.muted = true;
   const ok = await new Promise((fim) => { const t = setTimeout(() => fim(false), 2500); v.addEventListener('canplay', () => { clearTimeout(t); fim(true); }, { once: true }); v.addEventListener('error', () => { clearTimeout(t); fim(false); }, { once: true }); v.load(); });
   if (!ok) { clipesFalhos.add(src); return null; }
