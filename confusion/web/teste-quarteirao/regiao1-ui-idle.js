@@ -47,8 +47,8 @@ export function criarControladorIdleUI(ctx) {
   });
 
   const $ = (id) => document.getElementById(id);
-  const abrir = (id) => $(id)?.classList.add('aberto');
-  const fechar = (id) => $(id)?.classList.remove('aberto');
+  const abrir = (id) => (ctx.abrirModal ? ctx.abrirModal(id) : $(id)?.classList.add('aberto'));
+  const fechar = (id) => (ctx.fecharModal ? ctx.fecharModal(id) : $(id)?.classList.remove('aberto'));
 
   // ---- Dano & Drops flutuantes sobre o canvas ----
   const camadaFlut = $('camada-flutuantes');
@@ -1034,6 +1034,8 @@ export function criarControladorIdleUI(ctx) {
     abrirMochila,
     abrirTemporada,
     abrirConfigAutoCaca,
+    abrirConfig,
+    abrirDiario: () => ctx.abrirDiario?.(),
     abrirMenu: renderizarMenu,
   };
 }
