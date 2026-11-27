@@ -6,7 +6,7 @@ import { construirSDF, resolverMovimentoSDF } from '../explorar3d/colisao.js';
 import { criarAzazel } from './azazel.js';
 import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.js';
 import { R2_PASTA_ARTES } from './regiao2-altos-ambar.js';
-import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, BOSSES_REGIAO2, ENTIDADES_BOSS } from './regiao1-entidades.js';
+import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, MONSTROS_SELVAGENS_R3_R12, BOSSES_REGIAO2, BOSSES_REGIOES_3_12, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { resolverEncontroCatalogo, reforcosDoChefe } from './regiao1-encontros-regras.js';
 import { CHEFE_POR_NOME } from './regiao1-kits-reinos.js';
 import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
@@ -253,11 +253,17 @@ function texturaAtualDoMapa(mapa) {
   return carregarTextura(url);
 }
 
-const monstrosDoMapa = (mapaId) => (regiaoDoMapa(mapaId) === 'r2' ? MONSTROS_SELVAGENS_R2 : MONSTROS_SELVAGENS).filter((m) => m.mapa === mapaId);
-const definicaoBoss = (id) => BOSSES_REGIAO1[id] || BOSSES_REGIAO2[id] || null;
+const monstrosDoMapa = (mapaId) => {
+  const reg = regiaoDoMapa(mapaId);
+  if (reg === 'r2') return MONSTROS_SELVAGENS_R2.filter((m) => m.mapa === mapaId);
+  if (reg !== 'r1') return MONSTROS_SELVAGENS_R3_R12.filter((m) => m.mapa === mapaId);
+  return MONSTROS_SELVAGENS.filter((m) => m.mapa === mapaId);
+};
+const definicaoBoss = (id) => BOSSES_REGIAO1[id] || BOSSES_REGIAO2[id] || BOSSES_REGIOES_3_12[id] || null;
 const bossJaDerrotado = (id) => {
   const def = definicaoBoss(id);
   if (def?.regiaoId === 'r2') return chefeDosAltosDerrotado(save, id);
+  if (def?.regiaoId && def.regiaoId !== 'r1') return Boolean(garantirEstadoRegioes(save).chefesDerrotados?.[def.regiaoId]);
   return Boolean(save?.bossesDerrotados?.[id]);
 };
 
@@ -1106,29 +1112,37 @@ function iniciarBatalha(tipo, entidade) {
   const ehBoss = tipo === 'boss';
   const defBoss = ehBoss ? definicaoBoss(entidade.id) : null;
   if (ehBoss && !defBoss) return;
-  const ehR2 = regiaoDoMapa(entidade.mapa || mapaAtual?.id) === 'r2' || defBoss?.regiaoId === 'r2';
+  const regAtualId = defBoss?.regiaoId || regiaoDoMapa(entidade.mapa || mapaAtual?.id);
+  const regAtualNum = Math.max(1, Number(String(regAtualId || 'r1').replace(/^r/, '')) || 1);
+  const ehR2 = regAtualId === 'r2';
+  const ehR3Mais = regAtualNum >= 3;
   const idle = garantirEstadoIdle(save);
   const st = calcularStatusDetalhado(save);
   const maxJog = st.hpMax;
   const hpJog = Math.max(Math.round(maxJog * 0.5), Math.min(maxJog, idle.jogador.hp));
   const nomeIni = ehBoss ? defBoss.nome : `${entidade.especie} (Nv. ${entidade.nivel})`;
-  batalhaAtiva = { tipo, entidade, hpJog, maxJog, atkJog: st.atk, defJog: st.def, nivelJog: st.nivel, hpIni: 1, maxIni: 1, nomeIni, regiao: ehR2 ? 2 : 1 };
+  batalhaAtiva = { tipo, entidade, hpJog, maxJog, atkJog: st.atk, defJog: st.def, nivelJog: st.nivel, hpIni: 1, maxIni: 1, nomeIni, regiao: regAtualNum };
   // Equipe (até 4) contra o inimigo e até 2 reforços na fila; a arena ocupa a tela inteira
   // formação da aba Equipes: cada Onírico na sua vaga, com o próprio nível e a arte do seu tier
   const aliados = membrosFormacao(idle).map(({ m, vaga }) => ({ especie: m.especie, nivel: m.nivel || 1, bonus: bonusDoMembro(m), vaga, arte: arteDoIndividuo(m) }));
   const raizDe = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
   const artes = {}; let inimigos; let inimigosDrop;
   if (ehBoss) {
-    const nv = ehR2 ? (defBoss.nivel || 45) : Math.max(6, Math.round((defBoss.hp - 58) / 13));
+    const nv = (ehR2 || ehR3Mais) ? (defBoss.nivel || 45) : Math.max(6, Math.round((defBoss.hp - 58) / 13));
     const kitChefe = CHEFE_POR_NOME[defBoss.nome] || null;
     const optsChefe = {
       chefe: true,
       nome: defBoss.nome,
-      ...(kitChefe?.bonus ? { bonus: { ...kitChefe.bonus } } : {}),
+      ...(kitChefe?.bonus ? { bonus: { ...kitChefe.bonus } } : (defBoss.bonus ? { bonus: { ...defBoss.bonus } } : {})),
     };
     const elemChefe = kitChefe?.elemento || defBoss.elemento;
     artes[defBoss.nome] = raizDe(entidade.sprite);
-    if (ehR2) {
+    if (ehR3Mais) {
+      inimigos = [
+        [defBoss.nome, nv, elemChefe, optsChefe],
+        ...(Array.isArray(defBoss.reforcos) ? defBoss.reforcos : []),
+      ];
+    } else if (ehR2) {
       const reforcos = defBoss.reforcos.map((especie, indice) => resolverEncontroCatalogo(
         { especie, nivel: nv - 5 + indice * 2, formaCadastrada: 2 },
         { regiao: 2 },
@@ -1144,22 +1158,22 @@ function iniciarBatalha(tipo, entidade) {
   } else {
     artes[entidade.especie] = raizDe(entidade.sprite);
     const listaArea = monstrosDoMapa(entidade.mapa);
-    if (!ehR2) resolverEncontrosMapa(listaArea, 1);
+    if (!ehR2 && !ehR3Mais) resolverEncontrosMapa(listaArea, 1);
     const outros = listaArea.filter((m) => m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
     outros.forEach((m) => { artes[m.especie] = raizDe(m.sprite); });
     inimigos = [entidade, ...outros].map((m) => [m.especie, m.nivel, m.elemento, { forma: m.forma, arte: m.arteForma }]);
     inimigosDrop = [entidade, ...outros].map((m) => ({ especie: m.especie, elemento: m.elementoDrop || m.elemento }));
   }
-  const arenaUrl = ehR2
-    ? MAPAS[entidade.mapa || mapaAtual.id].arenaBatalha
+  const arenaUrl = (ehR2 || ehR3Mais)
+    ? (MAPAS[entidade.mapa || mapaAtual.id]?.arenaBatalha || defBoss?.arena || `assets/confusion/interface/estrategia/reinos/${String(regAtualNum).padStart(2, '0')}/arena-chefe.webp`)
     : `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`;
   batalhaAtiva.batalhaId = `man_${tipo}_${entidade.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   batalhaAtiva.inimigosDrop = inimigosDrop;
   telaBatalha.abrir({
     titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem',
-    sub: ehBoss ? (ehR2 ? 'Região 2 · Altos do Âmbar' : 'Campanha') : entidade.especie,
+    sub: ehBoss ? (ehR3Mais ? `Região ${regAtualNum}` : ehR2 ? 'Região 2 · Altos do Âmbar' : 'Campanha') : entidade.especie,
     arena: arenaUrl,
-    aliados, inimigos, artes, ritmo: 420, regiao: ehR2 ? 2 : 1,
+    aliados, inimigos, artes, ritmo: 420, regiao: regAtualNum,
     onFim: (venceu, frac) => { if (batalhaAtiva) { batalhaAtiva.hpJog = Math.max(1, Math.round(batalhaAtiva.maxJog * (venceu ? Math.max(0.3, frac) : 0.5))); } encerrarBatalha(venceu); },
   });
 }
@@ -1256,7 +1270,18 @@ function encerrarBatalha(vitoria) {
     for (let k = 0; k < 3; k++) window.regiaoHW?.aoAbater?.(); // doces durante o evento (abates de PvE)
     if (Math.random() < 0.03) { darPocao(save, b.tipo === 'boss' ? 'pocao_xp_m' : 'pocao_xp_p'); mostrarToast('🧪 Poção de XP encontrada!', 2200); }
     if (b.tipo === 'boss') {
-      if (defBoss?.regiaoId === 'r2') {
+      if (defBoss?.regiaoId && defBoss.regiaoId !== 'r1' && defBoss.regiaoId !== 'r2') {
+        const regRes = registrarVitoriaChefeRegiao(save, defBoss.regiaoId);
+        idle.codex.bosses[b.entidade.id] = true;
+        avancarDiaria(idle, 'bosses', 1);
+        registrarLogIdle(idle, `🏆 Chefe derrotado: ${b.nomeIni}!`, 'farm');
+        construirEntidadesDoMapa(mapaAtual);
+        const bonusTxt = regRes.primeiraVez && regRes.recompensaPaga
+          ? ` (+${regRes.recompensaPaga.gold}g, +${regRes.recompensaPaga.diamantes}💎, +${regRes.recompensaPaga.xp} XP · 1ª vitória)`
+          : '';
+        const proxTxt = regRes.proximaDesbloqueada ? ` Região ${regRes.proximaDesbloqueada.slice(1)} desbloqueada no Seletor!` : '';
+        mostrarToast(`👑 Vitória contra ${b.nomeIni}!${bonusTxt}${proxTxt}`, 5500);
+      } else if (defBoss?.regiaoId === 'r2') {
         const regRes = registrarVitoriaChefeDosAltos(save, b.entidade.id);
         idle.codex.bosses[b.entidade.id] = true;
         avancarDiaria(idle, 'bosses', 1);
@@ -2629,7 +2654,7 @@ window.regiaoMundo = iniciarMundo({
       const L = [m.spawnPadrao, ...(m.marco ? [m.marco.interacao || m.marco.pos] : [])];
       for (const sa of m.saidas) L.push([(sa.rect[0] + sa.rect[2]) / 2, (sa.rect[1] + sa.rect[3]) / 2]);
       for (const o of Object.values(MAPAS)) for (const sa of o.saidas) if (sa.destino === mapaId && sa.chegada) L.push(sa.chegada);
-      for (const l of [NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, ENTIDADES_BOSS]) for (const e of l) if (e.mapa === mapaId) L.push(e.pos);
+      for (const l of [NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, MONSTROS_SELVAGENS_R3_R12, ENTIDADES_BOSS]) for (const e of l) if (e.mapa === mapaId) L.push(e.pos);
       return L;
     },
   },

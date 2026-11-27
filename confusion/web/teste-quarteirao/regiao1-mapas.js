@@ -2,6 +2,7 @@
 // Segue rigorosamente MAPA-REGIAO-1.png, MANIFESTO.txt e as pranchas BORDAS-*.jpg.
 
 import { AREAS_ALTOS_AMBAR } from './regiao2-altos-ambar.js';
+import { AREAS_REGIOES_3_12 } from './regioes-3-12-mapas.js';
 
 export const IMG_W = 1024;
 export const IMG_H = 571;
@@ -452,6 +453,7 @@ export const MAPAS = {
   }),
 
   ...AREAS_ALTOS_AMBAR,
+  ...AREAS_REGIOES_3_12,
 };
 
 export const ORDEM_MAPAS = [
@@ -467,4 +469,6 @@ export const ORDEM_MAPAS = [
   'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'BOSS_D',
   // Região 2 — Altos do Âmbar
   ...Object.keys(AREAS_ALTOS_AMBAR),
+  // Regiões 3–12
+  ...Object.keys(AREAS_REGIOES_3_12),
 ];
