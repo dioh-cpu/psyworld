@@ -533,6 +533,7 @@ function criarMonstroSelvagem(m) {
 function removerEntidade(ent) {
   const i = entidadesMapa.indexOf(ent);
   if (i >= 0) entidadesMapa.splice(i, 1);
+  if (!ent.mesh) return;
   grupoEntidades.remove(ent.mesh);
   ent.mesh.userData.limparIdle?.();
   ent.mesh.traverse((obj) => {
@@ -574,13 +575,11 @@ function construirEntidadesDoMapa(mapa) {
     entidadesMapa.push({ tipo: 'npc', dados: npc, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 6.2 });
   }
 
-  // 3. Pistas / Objetos de Quest
+  // 3. Pistas / Objetos de Quest (sem círculos nem plaquinhas flutuantes no chão: a missão guia pela seta da borda e pelo painel)
   for (const p of PISTAS_MUNDO) {
     if (p.mapa !== mapa.id) continue;
-    const feita = Boolean(save.pistas[p.id]);
     const w = P(p.pos[0], p.pos[1]);
-    const mesh = adicionarBillboard(criarTexturaPista(p.rotulo, feita), w.x, w.z, 5.2, 2.6, 3);
-    entidadesMapa.push({ tipo: 'pista', dados: p, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 4.5 });
+    entidadesMapa.push({ tipo: 'pista', dados: p, mesh: null, x: w.x, z: w.z, baseY: 0, raio: 4.5 });
   }
 
   // 4. Monstros selvagens visíveis nas áreas abertas (Região 1 e Região 2)
@@ -1599,8 +1598,12 @@ function definirDestinoMundo(destX, destZ, interagir = false) {
   waypointsAtuais = calcularCaminhoMundo(destX, destZ);
   autoInteragirAoChegar = interagir;
   const ultimoPt = waypointsAtuais[waypointsAtuais.length - 1] || { x: destX, z: destZ };
-  marcadorDestino.position.set(ultimoPt.x, camada(ultimoPt.z) - 0.008, ultimoPt.z);
-  marcadorDestino.visible = true;
+  if (autoRotaQuestId) {
+    marcadorDestino.visible = false;
+  } else {
+    marcadorDestino.position.set(ultimoPt.x, camada(ultimoPt.z) - 0.008, ultimoPt.z);
+    marcadorDestino.visible = true;
+  }
 }
 
 function planejarPassoAutoRota() {
@@ -2379,6 +2382,7 @@ function quadro(agora) {
     marcadorDestino.scale.set(s, s, 1);
   }
   for (const ent of entidadesMapa) {
+    if (!ent.mesh) continue;
     ent.mesh.quaternion.copy(camera.quaternion);
     if (ent.tipo === 'wild' || ent.tipo === 'boss' || ent.dados.flutua) {
       ent.mesh.position.y = ent.baseY + pulso * 0.14;

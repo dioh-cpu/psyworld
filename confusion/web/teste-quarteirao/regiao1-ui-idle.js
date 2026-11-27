@@ -162,7 +162,9 @@ export function criarControladorIdleUI(ctx) {
     }
     const btnMenu = $('btn-menu-geral');
     if (btnMenu) {
+      const selo = btnMenu.querySelector('#menu-selo-mundo');
       btnMenu.textContent = st.pontosDisponiveis > 0 ? `☰ ${t.menu} •` : `☰ ${t.menu}`;
+      if (selo) btnMenu.appendChild(selo);
     }
     const btnAtlas = $('btn-atlas-rapido');
     if (btnAtlas) btnAtlas.textContent = `🗺️ ${t.atlas}`;
