@@ -357,6 +357,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         { acao: 'passe', ico: 'passe.png', tit: 'Passe & Login' },
         { acao: 'mochila', ico: 'mochila.png', tit: 'Mochila' },
         { acao: 'codex', ico: 'colecao.png', tit: 'Codex Onírico' },
+        { acao: 'regioes', ico: 'reinos.png', tit: 'Regiões (12)' },
         ...(reinosOn ? [{ acao: 'reinos', ico: 'reinos.png', tit: 'Reinos' }] : []),
         { acao: 'loja', ico: 'loja.png', tit: hwOn ? 'Loja da Torre' : 'Vote & Ganhe' },
         { acao: 'menu', ico: 'casa.png', tit: 'Menu Principal' },
@@ -928,6 +929,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       if (dest === 'passe') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirTemporada?.(); return; }
       if (dest === 'codex') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirCodex?.(); return; }
       if (dest === 'atlas') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirAtlas?.(); return; }
+      if (dest === 'regioes') { fecharModal('modal-exp'); painel = null; window.regiaoRegioes?.abrir?.(); return; }
       if (dest === 'menu') { fecharModal('modal-exp'); painel = null; window.regiao1?.idleUI?.abrirMenu?.(); return; }
       if (dest === 'eventos') {
         fecharModal('modal-exp'); painel = null;

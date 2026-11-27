@@ -4,15 +4,19 @@
 //   Efeitos dos sistemas: gold e diamantes vão para save.recompensas, sanidade para save.idle.jogador, recursos para
 //   o estoque do mundo (save.idle.mundoMeta.recursos), que o bioma da área onde o jogador está também abastece.
 import { carregarMundo, diaMundo, acaoMundo, SISTEMAS, OPCOES_ACAO } from '../mundo/index.js';
-import { protecaoContraPragas } from '../mundo/sistemas-01.js';
+import { protecaoContraPragas, servicosAtivos, dificuldadeMasmorra, NPCS as NPCS_MUNDO, faseDo } from '../mundo/sistemas-01.js';
 import { iniciarMundoNoMapa } from './regiao1-mundo-mapa.js';
 import { iniciarClima } from './regiao1-clima.js';
 import { sistemasLiberados, proximaLiberacao, tutorialDoSistema } from './regiao1-liberacao.js';
 import { ARTES, TIPOS_ARTE, artePorSistema, caminhoArte } from '../mundo/artes.js';
+import { membrosFormacao } from './regiao1-exp-regras.js';
+import { arteDoIndividuo } from './regiao1-halloween-dados.js';
+import { bonusDoMembro } from './regiao1-halloween-regras.js';
+import { regiaoDesbloqueada } from './regiao1-regioes-regras.js';
 
 export const DIA_MS = 120000;
-// Os 50 sistemas ficam guardados para atualizações futuras. Enquanto MUNDO_ATIVO for falso: sem menu, avisos, objetos no mapa, clima nem efeitos automáticos.
-export const MUNDO_ATIVO = false;
+// Sistemas 01-10 ativos no mapa, na campanha, nos NPCs e no painel Mundo.
+export const MUNDO_ATIVO = true;
 // Armazém: cada recurso tem teto (500, +100 por refúgio ou fortaleza). O excedente se perde, então nada dispara sem fim.
 export const ARMAZEM_BASE = 500;
 export const SANIDADE_PISO_DIA = 10; // perdas diárias (marca, cicatrizes) não passam disso; só ações do jogador podem ir além
@@ -25,6 +29,13 @@ const BIOMA_RECURSOS = {
   Central: { madeira: 1, pedra: 1, comida: 1 },
 };
 const NOMES_RECURSO = { madeira: 'Madeira', pedra: 'Pedra', cristal: 'Cristal', comida: 'Comida', peca: 'Peças', sementes: 'Sementes', raizes: 'Raízes' };
+
+import {
+  NPCS_PISTA_09, CIDADES_ROTA_10, MASMORRAS_MAPA,
+  investigacaoNpcInfo, statusVilaMapa, rotasDisponiveisDaCidade,
+} from './regiao1-mundo-integracao.js';
+export { NPCS_PISTA_09, CIDADES_ROTA_10, investigacaoNpcInfo, statusVilaMapa, rotasDisponiveisDaCidade };
+const MASMORRAS_INFO = Object.fromEntries(MASMORRAS_MAPA.map((m) => [m.id, m]));
 export { ARTES };
 // a página fica 3 pastas abaixo da raiz do repositório
 // A Mira tem os três retratos completos em mundo-retratos; o mira.webp do catálogo é um recorte curto demais, então usa o neutro
@@ -51,7 +62,7 @@ function biomaDoMapa(mapa) {
   return 'Central';
 }
 
-export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getMapaAtual, abrirModal, fecharModal, mapaCtx }) {
+export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getMapaAtual, abrirModal, fecharModal, abrirDialogo, tela, batalhaBloqueando, entrarNoMapa, mapaCtx }) {
 
   function estado() {
     const save = getSave();
@@ -337,6 +348,239 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
   estado();
   if (MUNDO_ATIVO) setInterval(relogio, 1000);
   const liberado = (id) => sistemasLiberados(getSave()).has(id);
+  const liberadoMapa = (id) => liberado(id) || ['01', '04', '05', '08', '10'].includes(id);
+
+  function executarAcaoToast(sis, acao, args = {}) {
+    const est = estado();
+    const res = acaoMundo(est.mundo, sis, acao, args, contexto(est, est.meta.dia));
+    const notas = aplicar(est, res);
+    log(notas, sis);
+    salvar?.();
+    noMapa?.atualizar?.();
+    if (notas.length) mostrarToast?.(`🌍 ${notas.join(' ')}`, 3600);
+    return notas;
+  }
+
+  function abrirVilaMapa(vilaId) {
+    const est = estado();
+    const st = statusVilaMapa(est.mundo, vilaId);
+    if (!st || !abrirDialogo) { abrir('01'); return; }
+    const jaDescansou = est.meta.estalagemDia?.[vilaId] === est.meta.dia;
+    const precoMad = est.mundo['10']?.precos?.madeira ?? 10;
+    const texto = st.servicosAbertos
+      ? `Prosperidade: ${Math.round(st.prosperidade)}/100 · Corrupção: ${Math.round(st.corrupcao)}/100. Os serviços da vila estão ABERTOS: estalagem ativa e comércio local comprando madeira a ${precoMad}g.`
+      : `Prosperidade: ${Math.round(st.prosperidade)}/100 · Corrupção: ${Math.round(st.corrupcao)}/100. SERVIÇOS FECHADOS (exige prosperidade ≥ 40 e corrupção < 70). Reconstrua a vila (30 madeira e 30 pedra) para reabrir os serviços.`;
+    const botoes = [
+      {
+        rotulo: st.servicosAbertos ? (jaDescansou ? '🛏️ Estalagem (usada hoje)' : '🛏️ Estalagem (+15 sanidade)') : '🔒 Estalagem fechada',
+        prim: st.servicosAbertos && !jaDescansou,
+        desativado: !st.servicosAbertos || jaDescansou,
+        aoClicar: () => {
+          const e = estado();
+          e.meta.estalagemDia = e.meta.estalagemDia || {};
+          e.meta.estalagemDia[vilaId] = e.meta.dia;
+          if (e.idle.jogador) e.idle.jogador.sanidade = Math.min(100, (e.idle.jogador.sanidade ?? 80) + 15);
+          atualizarHud?.(); salvar?.();
+          mostrarToast?.(`🛏️ Você descansou na estalagem de ${st.nome} (+15 sanidade).`, 3000);
+          abrirVilaMapa(vilaId);
+        },
+      },
+      {
+        rotulo: st.servicosAbertos ? `🪵 Vender 5 madeira (${Math.floor((5 * precoMad) / 4)}g)` : '🔒 Comércio fechado',
+        desativado: !st.servicosAbertos || (est.meta.recursos.madeira || 0) < 5,
+        aoClicar: () => { executarAcaoToast('10', 'vender_madeira'); abrirVilaMapa(vilaId); },
+      },
+      {
+        rotulo: `🔨 Reconstruir (30 mad · 30 ped)`,
+        prim: !st.servicosAbertos,
+        desativado: (est.meta.recursos.madeira || 0) < 30 || (est.meta.recursos.pedra || 0) < 30,
+        aoClicar: () => { executarAcaoToast('01', 'reconstruir'); abrirVilaMapa(vilaId); },
+      },
+      { rotulo: '🌍 Painel Mundo (01)', aoClicar: () => { fecharModal('modal-dialogo'); abrir('01'); } },
+      { rotulo: 'Fechar', aoClicar: () => fecharModal('modal-dialogo') },
+    ];
+    abrirDialogo(`🏘️ ${st.nome}`, st.servicosAbertos ? 'Sistema 01 · Serviços abertos' : 'Sistema 01 · Serviços fechados', texto, botoes, arteUrl('01', st.vaga));
+  }
+
+  function abrirNpcMundo(npcId) {
+    const est = estado();
+    const def = NPCS_MUNDO.find((n) => n.id === npcId);
+    const st = est.mundo['04']?.[npcId];
+    if (!def || !st || !abrirDialogo) { abrir('04'); return; }
+    const fase = faseDo(est.meta.dia);
+    const disp = def.disponivel.includes(fase);
+    const mem = st.memorias?.length ? `Última lembrança: ${st.memorias.at(-1)}.` : 'Ainda não conversou com você.';
+    const texto = `Fase atual do dia: ${fase}. Confiança: ${st.confianca}/100. ${mem} ${disp ? 'Disponível para conversar agora.' : `Disponível apenas em: ${def.disponivel.join(' ou ')}.`}`;
+    abrirDialogo(`💬 ${def.nome}`, 'Sistema 04 · Rotina e Memória', texto, [
+      { rotulo: disp ? 'Conversar (+6 confiança)' : `Indisponível (${fase})`, prim: disp, desativado: !disp, aoClicar: () => { executarAcaoToast('04', `conversar_${npcId}`); abrirNpcMundo(npcId); } },
+      { rotulo: '🌍 Painel Mundo (04)', aoClicar: () => { fecharModal('modal-dialogo'); abrir('04'); } },
+      { rotulo: 'Fechar', aoClicar: () => fecharModal('modal-dialogo') },
+    ], arteUrl('04', npcId));
+  }
+
+  function abrirRefugioMapa(dados) {
+    const est = estado();
+    const refs = est.mundo['05']?.refugios || [];
+    const prot = Math.round(protecaoContraPragas(est.mundo['05']) * 100);
+    if (!abrirDialogo) { abrir('05'); return; }
+    if (dados?.tipo === 'terreno_refugio') {
+      const pode = (est.meta.recursos.madeira || 0) >= 20 && (est.meta.recursos.pedra || 0) >= 10;
+      abrirDialogo('🏰 Terreno do Refúgio', 'Sistema 05 · Abrigo contra pragas', `Você encontrou um local firme para erguer o primeiro Refúgio (custo: 20 madeira e 10 pedra; você tem ${est.meta.recursos.madeira || 0} madeira e ${est.meta.recursos.pedra || 0} pedra). Cada refúgio aumenta o armazém em +100 e protege contra pragas (+20%).`, [
+        { rotulo: '🔨 Construir Refúgio (20 mad · 10 ped)', prim: true, desativado: !pode, aoClicar: () => { executarAcaoToast('05', 'construir'); fecharModal('modal-dialogo'); } },
+        { rotulo: '🏕️ Abrir Refúgio do Farol', aoClicar: () => { fecharModal('modal-dialogo'); window.regiaoExp?.abrir?.('descanso'); } },
+        { rotulo: 'Fechar', aoClicar: () => fecharModal('modal-dialogo') },
+      ], arteUrl('05', 'refugio'));
+      return;
+    }
+    const r = refs[dados?.indice || 0] || refs[0];
+    const jaDesc = est.meta.refugioDescDia === est.meta.dia;
+    const podeMais = refs.length < 3 && (est.meta.recursos.madeira || 0) >= 20 && (est.meta.recursos.pedra || 0) >= 10;
+    const texto = `${r?.nome || 'Refúgio'} · Abrigados: ${r?.abrigados || 0}/5 · Proteção contra pragas: ${prot}% · Armazém atual: ${armazem(est)}.`;
+    abrirDialogo(`🏰 ${r?.nome || 'Refúgio'}`, 'Sistema 05 · Refúgio no mapa', texto, [
+      { rotulo: '🏕️ Entrar no Refúgio do Farol', prim: true, aoClicar: () => { fecharModal('modal-dialogo'); window.regiaoExp?.abrir?.('descanso'); } },
+      {
+        rotulo: jaDesc ? '🌙 Descansar (usado hoje)' : '🌙 Descansar (+10 sanidade)',
+        desativado: jaDesc,
+        aoClicar: () => {
+          const e = estado();
+          e.meta.refugioDescDia = e.meta.dia;
+          if (e.idle.jogador) e.idle.jogador.sanidade = Math.min(100, (e.idle.jogador.sanidade ?? 80) + 10);
+          atualizarHud?.(); salvar?.();
+          mostrarToast?.('🌙 Descanso no Refúgio: +10 sanidade.', 2800);
+          abrirRefugioMapa(dados);
+        },
+      },
+      { rotulo: '🐾 Cuidar do Onírico (+10 vínculo)', aoClicar: () => { executarAcaoToast('06', 'cuidar'); abrirRefugioMapa(dados); } },
+      ...(refs.length < 3 ? [{ rotulo: `🔨 Erguer Refúgio ${refs.length + 1} (20 mad · 10 ped)`, desativado: !podeMais, aoClicar: () => { executarAcaoToast('05', 'construir'); abrirRefugioMapa(dados); } }] : []),
+      { rotulo: 'Fechar', aoClicar: () => fecharModal('modal-dialogo') },
+    ], arteUrl('05', dados?.vaga || 'refugio'));
+  }
+
+  function abrirMasmorraMapa(masmorraId) {
+    const est = estado();
+    const info = MASMORRAS_INFO[masmorraId];
+    const st = est.mundo['08']?.[masmorraId];
+    if (!info || !st || !abrirDialogo) { abrir('08'); return; }
+    const dif = dificuldadeMasmorra(est.mundo['08'], masmorraId);
+    const nv = dif === 'alta' ? 18 : dif === 'média' ? 12 : 6;
+    const podePurificar = (est.meta.recursos.pedra || 0) >= 10;
+    const texto = `Infestação atual: ${Math.round(st.infestacao)}/100 · Dificuldade: ${dif} (inimigos Nv.${nv}). Vencer a incursão reduz a infestação em −20 e concede o tesouro diário da masmorra.`;
+    abrirDialogo(`🕳️ ${info.nome}`, 'Sistema 08 · Entrada da Masmorra', texto, [
+      {
+        rotulo: `⚔️ Entrar na Masmorra (Nv.${nv})`,
+        prim: true,
+        desativado: Boolean(batalhaBloqueando?.() || !tela),
+        aoClicar: () => {
+          fecharModal('modal-dialogo');
+          const s = getSave();
+          const aliados = membrosFormacao(s.idle).map(({ m, vaga }) => ({ especie: m.especie, nivel: m.nivel || 1, vaga, arte: arteDoIndividuo(m), bonus: bonusDoMembro(m) }));
+          const inimigos = info.inimigos.map((especie) => ({ especie, nivel: nv }));
+          tela.abrir({
+            titulo: `🕳️ ${info.nome}`,
+            sub: `Infestação ${Math.round(st.infestacao)} · risco ${dif}`,
+            arena: caminhoArte('08', masmorraId),
+            aliados: aliados.length ? aliados : [{ especie: s.conta?.inicial || 'Brasinha', nivel: 5, vaga: 0 }],
+            inimigos,
+            onFim: (venceu) => {
+              if (!venceu) { mostrarToast?.(`Derrota em ${info.nome}. Purifique a entrada ou fortaleça a equipe.`, 3200); return; }
+              const e = estado();
+              e.mundo['08'][masmorraId].infestacao = Math.max(0, Math.round(e.mundo['08'][masmorraId].infestacao - 20));
+              e.meta.masmorrasDia = e.meta.masmorrasDia || {};
+              let premioTxt = 'Infestação −20.';
+              if (e.meta.masmorrasDia[masmorraId] !== e.meta.dia) {
+                e.meta.masmorrasDia[masmorraId] = e.meta.dia;
+                for (const [k, v] of Object.entries(info.tesouro)) {
+                  if (k === 'diamantes') e.save.recompensas.diamantes = (e.save.recompensas.diamantes || 0) + v;
+                  else somarRecurso(e, k, v);
+                }
+                premioTxt += ` Tesouro: ${Object.entries(info.tesouro).map(([k, v]) => `+${v} ${NOMES_RECURSO[k] || k}`).join(', ')}.`;
+              }
+              atualizarHud?.(); salvar?.(); noMapa?.atualizar?.();
+              mostrarToast?.(`🕳️ ${info.nome} purgada! ${premioTxt}`, 4000);
+            },
+          });
+        },
+      },
+      { rotulo: '✨ Purificar entrada (10 pedra, −25)', desativado: !podePurificar, aoClicar: () => { executarAcaoToast('08', 'purificar'); abrirMasmorraMapa(masmorraId); } },
+      { rotulo: '🌍 Painel Mundo (08)', aoClicar: () => { fecharModal('modal-dialogo'); abrir('08'); } },
+      { rotulo: 'Fechar', aoClicar: () => fecharModal('modal-dialogo') },
+    ], arteUrl('08', masmorraId));
+  }
+
+  function abrirRotaMapa(cidadeAtual) {
+    const est = estado();
+    const p = est.mundo['10']?.precos || { madeira: 10, pedra: 12, cristal: 40, comida: 8 };
+    const rotas = rotasDisponiveisDaCidade(est.mundo, cidadeAtual);
+    const tempestade = est.mundo['07']?.clima === 'tempestade';
+    if (!abrirDialogo) { abrir('10'); return; }
+    const texto = `Cotações de hoje: Madeira ${p.madeira}g · Pedra ${p.pedra}g · Cristal ${p.cristal}g · Comida ${p.comida}g · Caravanas recebidas: ${est.mundo['10']?.caravanas || 0}. ${tempestade ? '⛈️ Tempestade ativa: viagens de caravana suspensas até o tempo abrir.' : 'Escolha uma cidade conectada para viajar pela rota comercial ou negocie madeira.'}`;
+    const botoes = [
+      {
+        rotulo: `🪵 Vender 5 madeira (${Math.floor((5 * p.madeira) / 4)}g)`,
+        prim: true,
+        desativado: tempestade || (est.meta.recursos.madeira || 0) < 5,
+        aoClicar: () => { executarAcaoToast('10', 'vender_madeira'); abrirRotaMapa(cidadeAtual); },
+      },
+      ...rotas.map((r) => {
+        const regBloq = Boolean(r.regiao && !regiaoDesbloqueada(getSave(), r.regiao));
+        const aberta = r.aberta && !regBloq;
+        const motivo = regBloq ? 'Região 2 bloqueada' : r.motivo;
+        return {
+          rotulo: aberta ? `🛒 Ir para ${r.nome}` : `🔒 ${r.nome} (${motivo})`,
+          desativado: !aberta || !entrarNoMapa,
+          aoClicar: async () => {
+            fecharModal('modal-dialogo');
+            await entrarNoMapa(r.mapa);
+            mostrarToast?.(`🛒 Caravana chegou em ${r.nome}.`, 2800);
+          },
+        };
+      }),
+      { rotulo: '🌍 Painel Mundo (10)', aoClicar: () => { fecharModal('modal-dialogo'); abrir('10'); } },
+      { rotulo: 'Fechar', aoClicar: () => fecharModal('modal-dialogo') },
+    ];
+    abrirDialogo(cidadeAtual === 'C1' ? '⚖️ Mercado Regional' : '🛒 Caravana Comercial', 'Sistema 10 · Rotas entre cidades', texto, botoes, arteUrl('10', cidadeAtual === 'C1' ? 'mercado' : 'caravana'));
+  }
+
+  function interagirElemento(el) {
+    if (!el) return;
+    if (el.dados?.tipo === 'vila') { abrirVilaMapa(el.dados.vilaId); return; }
+    if (el.dados?.tipo === 'npc_mundo') { abrirNpcMundo(el.dados.npcId); return; }
+    if (el.dados?.tipo === 'refugio' || el.dados?.tipo === 'terreno_refugio') { abrirRefugioMapa(el.dados); return; }
+    if (el.dados?.tipo === 'masmorra') { abrirMasmorraMapa(el.dados.masmorraId); return; }
+    if (el.dados?.tipo === 'rota') { abrirRotaMapa(el.dados.cidade); return; }
+    abrir(el.sis);
+  }
+
+  // Pistas do Sistema 09 (Investigação) integradas aos NPCs da campanha
+  function botaoInvestigacaoNpc(npc) {
+    if (!MUNDO_ATIVO || !npc?.id) return null;
+    const est = estado();
+    const info = investigacaoNpcInfo(est.mundo, npc.id);
+    if (!info) return null;
+    return {
+      rotulo: info.correspondente
+        ? `🔍 Investigar pista (${info.encontradas}/${info.total})`
+        : `🔍 Perguntar sobre o caso (${info.encontradas}/${info.total})`,
+      aoClicar: () => {
+        if (!info.correspondente) {
+          abrirDialogo(`🔍 ${npc.nome}`, 'Sistema 09 · Investigação', `"Não vi nada por aqui agora, mas ouvi um boato: ${info.dica}"`, [
+            { rotulo: '🌍 Ver Quadro (09)', aoClicar: () => { fecharModal('modal-dialogo'); abrir('09'); } },
+            { rotulo: 'Fechar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
+          ], arteUrl('09', 'quadro'));
+          return;
+        }
+        const antes = est.mundo['09']?.caso?.encontradas || 0;
+        const notas = executarAcaoToast('09', 'investigar');
+        const depois = estado().mundo['09']?.caso?.encontradas || 0;
+        const arte = depois > antes ? `pista-${Math.min(3, depois)}` : 'lupa';
+        abrirDialogo(`🔍 Investigação · ${npc.nome}`, `Sistema 09 · Pistas ${depois}/${info.total}`, notas.join(' '), [
+          { rotulo: '🌍 Ver Quadro (09)', aoClicar: () => { fecharModal('modal-dialogo'); abrir('09'); } },
+          { rotulo: 'Continuar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
+        ], arteUrl('09', arte));
+      },
+    };
+  }
+
   const css = document.createElement('style');
   css.textContent = '#modal-mundo .tut-card { border-color: #7dd3fc; background: #14304a; } #modal-mundo .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: tutpulso 1.4s ease-in-out infinite; } @keyframes tutpulso { 50% { box-shadow: 0 0 0 8px #f3a45822; } }';
   document.head.append(css);
@@ -349,7 +593,16 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     novos.forEach((id) => { m.avisados[id] = true; });
     salvar?.(); mostrarToast(`🌍 Novo no Mundo: ${novos.map((id) => SISTEMAS.find((x) => x.id === id)?.nome).join(', ')}. Abra Menu → Mundo.`, 5200);
   }, 2500);
-  const noMapa = mapaCtx && MUNDO_ATIVO ? iniciarMundoNoMapa({ ...mapaCtx, liberado, getMapaAtual, getMundo: () => estado().mundo, abrirSistema: (id) => abrir(id), algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')) }) : null;
+  const noMapa = mapaCtx && MUNDO_ATIVO ? iniciarMundoNoMapa({
+    ...mapaCtx,
+    liberado: liberadoMapa,
+    getMapaAtual,
+    getMundo: () => estado().mundo,
+    getMeta: () => estado().meta,
+    abrirSistema: (id) => abrir(id),
+    interagirElemento,
+    algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')),
+  }) : null;
   // Efeitos do mundo sobre a caçada: praga enfraquece (refúgios protegem), clima mexe no dano e no ouro.
   function modificadores() {
     if (!MUNDO_ATIVO) return { dano: 1, ouro: 1, notas: [] };
@@ -416,8 +669,10 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     aoAbater,
     abrir,
     abrirSistema: (id) => abrir(id),
+    interagirElemento,
+    botaoInvestigacaoNpc,
     estado,
-    passarDia: (n = 1) => { const est = estado(); const notas = []; for (let i = 0; i < n; i++) notas.push(...passarDia(est, false)); salvar?.(); return notas; },
-    acao: (sis, acao, args = {}) => { const est = estado(); const res = acaoMundo(est.mundo, sis, acao, args, contexto(est, est.meta.dia)); const notas = aplicar(est, res); salvar?.(); return notas; },
+    passarDia: (n = 1) => { const est = estado(); const notas = []; for (let i = 0; i < n; i++) notas.push(...passarDia(est, false)); salvar?.(); noMapa?.atualizar?.(); return notas; },
+    acao: (sis, acao, args = {}) => { const est = estado(); const res = acaoMundo(est.mundo, sis, acao, args, contexto(est, est.meta.dia)); const notas = aplicar(est, res); salvar?.(); noMapa?.atualizar?.(); return notas; },
   };
 }
