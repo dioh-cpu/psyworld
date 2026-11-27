@@ -15,6 +15,31 @@ export function aplicarXp(obj, xp) {
 }
 export const previsaoXp = (obj, xp) => { const c = { nivel: obj.nivel, xp: obj.xp }; return aplicarXp(c, xp); };
 
+// Curva exclusiva do Domador (mais lenta que a dos Oníricos: Nv.10 exige 3.090 XP, mínimo >= 10 min de história + idle)
+export const xpParaDomador = (n) => {
+  const lv = Math.max(1, Math.floor(Number(n) || 1));
+  const k = lv - 1;
+  return 90 + 35 * k + 5 * k * k;
+};
+export function xpTotalDomador(n) {
+  const lv = Math.max(1, Math.floor(Number(n) || 1));
+  if (lv <= 1) return 0;
+  const m = lv - 1;
+  return 90 * m + (35 * (m - 1) * m) / 2 + (5 * (m - 1) * m * (2 * m - 1)) / 6;
+}
+export function nivelDomadorDe(xp) {
+  const x = Math.max(0, Number(xp) || 0);
+  let lo = 1;
+  let hi = 1;
+  while (xpTotalDomador(hi) <= x) hi *= 2;
+  while (lo + 1 < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (xpTotalDomador(mid) <= x) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
 // Poções de XP (podem cair em combate, ser fabricadas na Oficina dos Reinos e vir de missões)
 export const POCOES = {
   pocao_xp_p: { nome: 'Poção de XP pequena', icone: '🧪', xp: 1500 },
