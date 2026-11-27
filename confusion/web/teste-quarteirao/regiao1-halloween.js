@@ -127,13 +127,13 @@ export function iniciarHalloween({ getSave, salvar, mostrarToast, abrirModal, fe
       </div>
       <div class="hw-grid">
         <div class="hw-rail" role="tablist" aria-label="Banners disponíveis">
-          <button class="hw-thumb ativo" aria-selected="true"><img src="${INV_HW('miniaturas/halloween.webp')}" alt="Banner de Halloween"><span>Halloween</span></button>
-          <button class="hw-thumb" data-hw-adventurer="1"><img src="${INV_HW('miniaturas/adventurer.webp')}" alt="Banner Permanente Adventurer"><span>Adventurer</span></button>
+          <button class="hw-thumb ativo" aria-selected="true"><img src="../../../assets/confusion/interface/banners-v2/halloween.webp" onerror="this.src='${INV_HW('miniaturas/halloween.webp')}'" alt="Banner de Halloween"><span>Halloween</span></button>
+          <button class="hw-thumb" data-hw-adventurer="1"><img src="../../../assets/confusion/interface/banners-v2/adventurer.webp" onerror="this.src='${INV_HW('miniaturas/adventurer.webp')}'" alt="Banner Permanente Adventurer"><span>Adventurer</span></button>
         </div>
         <div class="hw-main">
           <div class="hw-stage ${verCapaHW ? 'capa-modo' : ''}">
             ${verCapaHW
-              ? `<img class="hw-capa-full" src="${INV_HW('capas/halloween.webp')}" alt="${esc(EDICAO.nome)}">`
+              ? `<img class="hw-capa-full" src="../../../assets/confusion/interface/banners-v2/halloween.webp" onerror="this.src='${INV_HW('capas/halloween.webp')}'" alt="${esc(EDICAO.nome)}">`
               : `<div class="hw-stage-head"><div><small>Evento · ${EDICAO.inicio} a ${EDICAO.fim}</small><b>${esc(EDICAO.nome)}</b></div></div>
                  <div class="hw-elenco">${elencoHW.map((l) => `
                    <div class="hw-ator ${l.slug === 'abyssar' ? 'hw-hero-fig' : ''}">

@@ -16,18 +16,25 @@ import { mostrarResultadoBatalha } from './regiao1-resultado-ui.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ARENA_FALLBACK = 'assets/confusion/interface/estrategia/reinos/01/arena-chefe.webp';
+const ELEMENTOS_18 = ['fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'lutador', 'voador', 'veneno', 'psiquico', 'inseto', 'pedra', 'fantasma', 'eletrico', 'gelo', 'dragao', 'aco', 'fada'];
+const icoEl = (el) => `../../../assets/confusion/interface/menus-v1/ficha/sonho-${el === 'sombra' ? 'trevas' : el}.png`;
 
 function resumoPesos(pesos) {
   if (!pesos) return '';
-  return Object.entries(pesos)
-    .filter(([, v]) => v > 0)
-    .map(([k, v]) => `${k}: ${Math.round(v * 100)}%`)
+  const entradas = Object.entries(pesos).filter(([, v]) => Number(v) > 0);
+  const soma = entradas.reduce((acc, [, v]) => acc + Number(v), 0) || 1;
+  return entradas
+    .map(([k, v]) => `${k}: ${Math.round((Number(v) / soma) * 100)}%`)
     .join(' · ');
 }
 
 export function renderizarPainelCalaboucos(save, st) {
   const c = calaboucosDe(save);
-  const calId = st.calId && CALABOUCOS_POR_ID[st.calId] ? st.calId : CALABOUCOS_CATALOGO[0].id;
+  const elFiltro = st.elementoFiltro || 'todos';
+  const catalogoFiltrado = elFiltro === 'todos'
+    ? CALABOUCOS_CATALOGO
+    : CALABOUCOS_CATALOGO.filter((x) => (x.elementos || []).includes(elFiltro));
+  const calId = st.calId && CALABOUCOS_POR_ID[st.calId] ? st.calId : (catalogoFiltrado[0]?.id || CALABOUCOS_CATALOGO[0].id);
   const cal = CALABOUCOS_POR_ID[calId];
   const maior = Number(c.maiorNivel[cal.id]) || 0;
   const nvSel = Math.max(1, Math.min(CALABOUCOS_CFG.maxNiveis, st.nivel || Math.min(CALABOUCOS_CFG.maxNiveis, maior + 1)));
@@ -35,11 +42,19 @@ export function renderizarPainelCalaboucos(save, st) {
   const desbl = nivelCalaboucoDesbloqueado(save, cal.id, nvSel);
   const rapidaOk = podeBatalhaRapidaCalabouco(save, cal.id, nvSel);
 
-  const seletores = CALABOUCOS_CATALOGO.map((x) => {
-    const m = Number(c.maiorNivel[x.id]) || 0;
-    const els = x.elementos.map((e) => NOME_ELEMENTO[e] || e).join(' / ');
-    return `<button class="${x.id === cal.id ? 'btn-pri' : 'btn-sec'}" data-cal-id="${esc(x.id)}" style="padding:5px 9px;font-size:11.5px">🏰 ${esc(x.nome)} <small>(${m}/${CALABOUCOS_CFG.maxNiveis})</small><br><span style="font-size:10px;opacity:.85">${esc(els)}</span></button>`;
-  }).join('');
+  const filtrosEl = `<button class="${elFiltro === 'todos' ? 'btn-pri' : 'btn-sec'}" data-cal-filtro-el="todos" style="padding:3px 7px;font-size:10.5px">Todos (${CALABOUCOS_CATALOGO.length})</button>`
+    + ELEMENTOS_18.map((el) => {
+      const tem = CALABOUCOS_CATALOGO.some((x) => (x.elementos || []).includes(el));
+      return `<button class="${elFiltro === el ? 'btn-pri' : 'btn-sec'}" data-cal-filtro-el="${el}" style="padding:3px 6px;font-size:10.5px;display:inline-flex;align-items:center;gap:3px;${tem ? '' : 'opacity:.6'}" title="${esc(NOME_ELEMENTO[el] || el)}${tem ? '' : ' (catálogo em expansão)'}"><img src="${icoEl(el)}" alt="" style="width:13px;height:13px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[el] || el)}</button>`;
+    }).join('');
+
+  const seletores = catalogoFiltrado.length
+    ? catalogoFiltrado.map((x) => {
+      const m = Number(c.maiorNivel[x.id]) || 0;
+      const els = x.elementos.map((e) => NOME_ELEMENTO[e] || e).join(' / ');
+      return `<button class="${x.id === cal.id ? 'btn-pri' : 'btn-sec'}" data-cal-id="${esc(x.id)}" style="padding:5px 9px;font-size:11.5px">🏰 ${esc(x.nome)} <small>(${m}/${CALABOUCOS_CFG.maxNiveis})</small><br><span style="font-size:10px;opacity:.85">${esc(els)}</span></button>`;
+    }).join('')
+    : `<div class="mut" style="font-size:11.5px;padding:4px 0">Calabouço de <b>${esc(NOME_ELEMENTO[elFiltro] || elFiltro)}</b> preparado para o catálogo expandido de 18 elementos.</div>`;
 
   const niveisBtns = cal.niveis.map((n) => {
     const ok = nivelCalaboucoDesbloqueado(save, cal.id, n.nivel);
@@ -50,10 +65,11 @@ export function renderizarPainelCalaboucos(save, st) {
   const lojaBtns = cal.conjuntos.map((conj) => `<button class="btn-sec" data-cal-comprar="${esc(cal.id)}:${esc(conj)}" ${c.moedas >= CALABOUCOS_CFG.custoLojaReliquia ? '' : 'disabled'}>🏺 ${esc(conj)} (${CALABOUCOS_CFG.custoLojaReliquia} moedas)</button>`).join('');
 
   return `<div class="bl">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-      <b>🏰 Calabouços de Relíquias (6 × ${CALABOUCOS_CFG.maxNiveis} níveis)</b>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      <b>🏰 Calabouços de Relíquias (${CALABOUCOS_CATALOGO.length} × ${CALABOUCOS_CFG.maxNiveis} níveis · 18 elementos)</b>
       <span class="tag">🪙 Moedas de Calabouço: ${c.moedas}</span>
     </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
   </div>
   <div class="bl">
@@ -77,6 +93,17 @@ export function renderizarPainelCalaboucos(save, st) {
 }
 
 export function tratarCliqueCalaboucos(d, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, st }) {
+  if (d.calFiltroEl) {
+    st.elementoFiltro = d.calFiltroEl;
+    const match = d.calFiltroEl === 'todos' ? CALABOUCOS_CATALOGO[0] : CALABOUCOS_CATALOGO.find((x) => (x.elementos || []).includes(d.calFiltroEl));
+    if (match) {
+      st.calId = match.id;
+      const m = Number(calaboucosDe(save).maiorNivel[match.id]) || 0;
+      st.nivel = Math.min(CALABOUCOS_CFG.maxNiveis, m + 1);
+    }
+    render();
+    return true;
+  }
   if (d.calId) {
     st.calId = d.calId;
     const m = Number(calaboucosDe(save).maiorNivel[d.calId]) || 0;

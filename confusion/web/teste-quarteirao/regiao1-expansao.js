@@ -22,19 +22,33 @@ import { renderizarPainelCalaboucos, tratarCliqueCalaboucos } from './regiao1-ca
 import { renderizarPainelReliquias, tratarCliqueReliquias } from './regiao1-reliquias-ui.js';
 import { resumoDomadorAtivoHtml, renderizarPainelDomadores, tratarCliqueDomadores } from './regiao1-domadores-ui.js';
 import { renderBalaoTutorialModo, renderGuiaJogadorNovo, tratarCliqueTutorialModo } from './regiao1-tutoriais-modos.js';
+import { aplicarFundoTelaSobDemanda } from './regiao1-perf-mobile.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
 const MV1 = (p) => IMG(`assets/confusion/interface/menus-v1/${p}`);
 const DESCANSO_V1 = (p) => IMG(`assets/confusion/interface/descanso-v1/${p}`);
 const INV_V1 = (p) => IMG(`assets/confusion/interface/invocacao-v1/${p}`);
-// Ganchos prontos para arte premium do GPT (trocar para true quando telas-v2/ e banners-v2/ entrarem na main)
-const BANNERS_V2_ATIVO = false;
+const KIT_V2 = (p) => IMG(`assets/confusion/interface/kit-v2/${p}`);
+const molduraKitV2 = (tier) => KIT_V2(`moldura-t${Math.max(1, Math.min(5, Number(tier) || 1))}.png`);
+const BANNERS_V2_ATIVO = true;
 const BANNERS_V2 = (p) => IMG(`assets/confusion/interface/banners-v2/${p}`);
 const CAPAS_BANNER_V1 = { adventurer: 'capas/adventurer.webp', halloween: 'capas/halloween.webp' };
 const MINIATURAS_BANNER_V1 = { adventurer: 'miniaturas/adventurer.webp', halloween: 'miniaturas/halloween.webp' };
-const capaBannerAtual = (id) => (BANNERS_V2_ATIVO ? BANNERS_V2(`${id}-capa.webp`) : INV_V1(CAPAS_BANNER_V1[id] || `capas/${id}.webp`));
-const miniaturaBannerAtual = (id) => (BANNERS_V2_ATIVO ? BANNERS_V2(`${id}-thumb.webp`) : INV_V1(MINIATURAS_BANNER_V1[id] || `miniaturas/${id}.webp`));
+const capaBannerAtual = (id) => (BANNERS_V2_ATIVO ? BANNERS_V2(`${id}.webp`) : INV_V1(CAPAS_BANNER_V1[id] || `capas/${id}.webp`));
+const miniaturaBannerAtual = (id) => (BANNERS_V2_ATIVO ? BANNERS_V2(`${id}.webp`) : INV_V1(MINIATURAS_BANNER_V1[id] || `miniaturas/${id}.webp`));
+const TELA_V2_POR_PAINEL = {
+  campanhaMini: 'campanha-mini',
+  torres: 'torres',
+  calaboucos: 'calaboucos',
+  reliquias: 'reliquias',
+  missoes: 'missoes',
+  equipe: 'equipe',
+  oniricos: 'invocacao',
+  cacadas: 'batalhas',
+  guilda: 'guilda',
+  cronicas: 'missoes',
+};
 const slugArt = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
 const INICIAIS_REPOUSO = new Set(['brasinha', 'gotalume', 'penumbrio', 'sementil', 'solinho']);
 const ELENCO_INV_V1 = new Set(['abobrisco', 'abyssar', 'cervomusgo', 'cobrabufalo', 'fanalino', 'mortalio', 'tatuveludo', 'velalume', 'vitrarco', 'xistolim']);
@@ -107,7 +121,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .inv-tier-sel { display: inline-block; padding: 1px 6px; border-radius: 99px; font-size: 9.5px; font-weight: 800; color: #12091a; background: var(--cor-tier, #9ca3af); margin-bottom: 2px; }
     @keyframes invPop { from { opacity: 0; transform: translateY(8px) scale(.92); } to { opacity: 1; transform: none; } }
     #modal-exp .ref-dock.bloqueado { opacity: .55; }
-    #modal-exp .bl { background: #352238; border: 1px solid #6b4a52; border-radius: 8px; padding: 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-exp .bl h4 { margin: 0 0 4px; font-size: 13.5px; color: #f3c27a; } #modal-exp .bl p { margin: 2px 0; }
+    #modal-exp .bl { background: rgba(24,14,34,.88); border: 10px solid transparent; border-image: url('../../../assets/confusion/interface/kit-v2/painel-9slice.png') 28 fill stretch; border-radius: 8px; padding: 6px 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-exp .bl h4 { margin: 0 0 4px; font-size: 13.5px; color: #f3c27a; } #modal-exp .bl p { margin: 2px 0; }
     #modal-exp .tut { border-color: #7dd3fc; background: #14304a; } #modal-exp .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: expnovo 1.4s ease-in-out infinite; }
     #modal-exp .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-exp .ok { color: #4ade80; } #modal-exp .ruim { color: #fb7185; } #modal-exp .mut { opacity: .78; }
     #modal-exp .exp-est { color: var(--cor-est, #facc15); font-weight: 600; }
@@ -298,8 +312,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
 
   // ---------- estado de tela ----------
   let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null, descPop = null, verCapaInv = false, capParalela = 1; let cap = 'cap1';
-  const torresUi = { torreElId: null, andarEl: 1, torreUnId: null, andarUn: 1 };
-  const calaboucosUi = { calId: null, nivel: 1 };
+  const missoesUi = { filtro: 'todas', selId: null };
+  const torresUi = { torreElId: null, andarEl: 1, torreUnId: null, andarUn: 1, elementoFiltro: 'todos' };
+  const calaboucosUi = { calId: null, nivel: 1, elementoFiltro: 'todos' };
   const reliquiasUi = { uid: null, parte: null, raridade: null };
   const PAINEIS = {
     descanso: { titulo: '🏕️ Refúgio do Farol', abas: ['Refúgio'], tut: null },
@@ -537,13 +552,14 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         const tierN = r.tier || mN;
         const cor = COR_TIER[tierN] || RARO[r.raridade] || '#9ca3af';
         const cls = infoClasse(r.especie);
-        return `<div class="mini inv-carta-res tier-${tierN}" style="--cor-tier:${cor};animation-delay:${(idx * 0.05).toFixed(2)}s"><div class="mini-mold"><img class="sp" src="${arteElencoInv(r.especie)}" alt="${esc(r.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><span class="inv-tier-sel">T${tierN}</span><br><b>${esc(r.especie)}</b><br><span style="color:${cor}">${esc(r.raridade)}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
+        return `<div class="mini inv-carta-res tier-${tierN}" style="--cor-tier:${cor};animation-delay:${(idx * 0.05).toFixed(2)}s"><div class="mini-mold"><img class="sp" src="${arteElencoInv(r.especie)}" alt="${esc(r.especie)}"><img class="ov" src="${molduraKitV2(tierN)}" alt="" onerror="this.src='${IMG(arteMoldura(mN))}'"></div><span class="inv-tier-sel">T${tierN}</span><br><b>${esc(r.especie)}</b><br><span style="color:${cor}">${esc(r.raridade)}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
       }).join('')}</div></div>`;
     }
     h += `<div class="bl"><h4>Elenco completo no Banner (${pool.length}) · Comum 68% · Rara (T3) 22% · Épica (T4) 7% · Lendária (T5) 3% · garantias 10/30/50</h4><div class="grade">${pool.map((p) => {
       const mN = MOLDURAS_BANNER[p.raridade] || p.tier || 1;
+      const tierN = p.tier || mN;
       const cls = infoClasse(p.especie);
-      return `<div class="mini"><div class="mini-mold"><img class="sp" src="${arteElencoInv(p.especie)}" alt="" loading="lazy"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div>${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">T${p.tier || mN} · ${p.raridade}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
+      return `<div class="mini"><div class="mini-mold"><img class="sp" src="${arteElencoInv(p.especie)}" alt="" loading="lazy"><img class="ov" src="${molduraKitV2(tierN)}" alt="" onerror="this.src='${IMG(arteMoldura(mN))}'"></div>${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">T${tierN} · ${p.raridade}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
     }).join('')}</div></div></div>`;
     return h;
   }
@@ -600,7 +616,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       <div class="card-on">
         <div class="card-mold ${f.tier >= 5 ? 'm5' : ''}" style="--cor-m:${corR}">
           <img class="sp" src="${arteDe(m)}" alt="${esc(f.especie)}">
-          <img class="ov" src="${IMG(f.moldura)}" alt="" onerror="this.style.display='none'">
+          <img class="ov" src="${molduraKitV2(f.tier)}" alt="" onerror="this.src='${IMG(f.moldura)}'">
         </div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap">
@@ -639,7 +655,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       if (!m) return `<button class="eq-vaga ${sel ? 'sel' : ''} vazia" data-eq-vaga="${v}"><img src="${MV1('equipe/icone-adicionar.png')}" alt="" style="width:22px;height:22px;object-fit:contain;margin-bottom:2px"><span>Posição ${v + 1}</span><small class="mut">Vazia</small></button>`;
       const tier = tierDaUnidade(m), est = estrelasDaUnidade(m), rar = raridadeRotulo(tier);
       return `<button class="eq-vaga ${sel ? 'sel' : ''}" data-eq-vaga="${v}">
-        <div class="mini-mold"><img class="sp" src="${arteDe(m)}" alt=""><img class="ov" src="${IMG(molduraDoTier(tier))}" alt="" onerror="this.style.display='none'"></div>
+        <div class="mini-mold"><img class="sp" src="${arteDe(m)}" alt=""><img class="ov" src="${molduraKitV2(tier)}" alt="" onerror="this.src='${IMG(molduraDoTier(tier))}'"></div>
         <span>${esc(m.especie)} · Nv.${m.nivel || 1}</span>
         <small>T${tier} · ${esc(rar)} · ${badgeEstrelas(est, true)}</small>
       </button>`;
@@ -966,11 +982,17 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   function render(zerarScroll = false) {
     if (!painel) return; const P = PAINEIS[painel];
     const ehCena = painel === 'descanso' || painel === 'oniricos';
-    modal.dataset.tela = painel || 'descanso';
+    const slugTela = TELA_V2_POR_PAINEL[painel] || painel || 'descanso';
+    modal.dataset.tela = slugTela;
     const card = $('.exp-card');
     if (card) {
       card.classList.toggle('modo-cena', ehCena);
       card.classList.toggle('modo-refugio', painel === 'descanso');
+      if (painel === 'descanso') {
+        card.style.backgroundImage = '';
+      } else if (TELA_V2_POR_PAINEL[painel]) {
+        aplicarFundoTelaSobDemanda(card, TELA_V2_POR_PAINEL[painel]);
+      }
     }
     $('#exp-titulo').textContent = P.titulo;
     const enEl = $('#exp-energia');
@@ -987,7 +1009,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         const gold = Number(sAtual.recompensas?.gold || 0).toLocaleString('pt-BR');
         const diam = Number(sAtual.recompensas?.diamantes || 0).toLocaleString('pt-BR');
         const tick = Number(sAtual.expansao?.tickets || 0);
-        recEl.innerHTML = `${!P.mostraEnergia ? `<span class="modal-rec-pill" title="Energia">⚡ ${en.atual}/${en.max}</span>` : ''}<span class="modal-rec-pill" title="Ouro">🪙 ${gold}</span><span class="modal-rec-pill" title="Diamantes">💎 ${diam}</span><span class="modal-rec-pill" title="Tickets">🎟️ ${tick}</span>`;
+        recEl.innerHTML = `${!P.mostraEnergia ? `<span class="modal-rec-pill" title="Energia"><img class="kit-rec-ico" src="${KIT_V2('recursos/energia.png')}" alt="">${en.atual}/${en.max}</span>` : ''}<span class="modal-rec-pill" title="Ouro"><img class="kit-rec-ico" src="${KIT_V2('recursos/ouro.png')}" alt="">${gold}</span><span class="modal-rec-pill" title="Diamantes"><img class="kit-rec-ico" src="${KIT_V2('recursos/diamante.png')}" alt="">${diam}</span><span class="modal-rec-pill" title="Tickets"><img class="kit-rec-ico" src="${KIT_V2('recursos/ticket.png')}" alt="">${tick}</span>`;
       }
     }
     $('#exp-abas').innerHTML = P.abas.length > 1 ? P.abas.map((a, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${esc(a)}</button>`).join('') : '';
@@ -995,7 +1017,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     $('#exp-rever').hidden = ehCena || !(vis && exp().tut[tid] && revendo !== tid); $('#exp-rever').dataset.tut = tid || '';
     let h = tid ? cartaoTut(tid) : '';
     if (painel === 'descanso') h += abaDescanso();
-    if (painel === 'missoes') h += renderBalaoTutorialModo(save(), 'missoes') + renderizarPainelMissoes(save(), aba, { capParalela });
+    if (painel === 'missoes') h += renderBalaoTutorialModo(save(), 'missoes') + renderizarPainelMissoes(save(), aba, { capParalela, st: missoesUi });
     if (painel === 'campanhaMini') h += `${renderBalaoTutorialModo(save(), 'campanha_mini')}<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Energia: <b>6</b> (normal), <b>8</b> (elite) e <b>10</b> (chefe).</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
     if (painel === 'torres') h += renderBalaoTutorialModo(save(), 'torres') + renderizarPainelTorres(save(), aba, torresUi);
     if (painel === 'calaboucos') h += renderBalaoTutorialModo(save(), 'calaboucos_rel') + renderizarPainelCalaboucos(save(), calaboucosUi);
@@ -1040,8 +1062,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (tratarCliqueMissoes(d, {
       save: save(), salvar, mostrarToast, render, tela, batalhaBloqueando,
       aliadosDoSave: aliadosAtuais,
-      setCapParalela: (n) => { capParalela = n; },
+      setCapParalela: (n) => { capParalela = n; missoesUi.selId = null; },
       capParalela,
+      st: missoesUi,
     })) return;
     if (tratarCliqueTorres(d, {
       save: save(), salvar, mostrarToast, render, tela, batalhaBloqueando,

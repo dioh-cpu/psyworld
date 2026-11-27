@@ -42,7 +42,7 @@ export function temAvisoMissoes(save) {
   return temPremioMissaoPendente(save);
 }
 
-export function renderizarPainelMissoes(save, aba, { capParalela = 1 } = {}) {
+export function renderizarPainelMissoes(save, aba, { capParalela = 1, st = {} } = {}) {
   if (aba === 0) {
     const todos = listarMarcos(save);
     const prontos = todos.filter((x) => x.pronto);
@@ -72,43 +72,70 @@ export function renderizarPainelMissoes(save, aba, { capParalela = 1 } = {}) {
     return topo + blocos;
   }
 
-  // Aba 1: Paralelas por Capítulo
+  // Aba 1: Paralelas por Capítulo com filtros de status, lista rolável e detalhe da missão selecionada
+  const filtro = st.filtro || 'todas';
   const seletores = CAPITULOS_CAMPANHA_MINI.map((c) => `<button class="${c.capitulo === capParalela ? 'btn-pri' : 'btn-sec'}" data-mis-cap="${c.capitulo}" style="padding:4px 8px;font-size:11px">Cap.${c.capitulo}</button>`).join('');
-  const lista = listarParalelasCapitulo(save, capParalela);
-  const cards = lista.map((p) => {
-    const etapaTxt = p.concluida
-      ? '✓ Concluída'
-      : p.etapaAtual
-        ? `Etapa ${p.etapaIdx + 1}/${p.etapas.length}: ${p.etapaAtual.texto || p.etapaAtual.tipo}`
-        : '';
-    const acao = p.concluida
-      ? '<span class="tag" style="color:#86efac">✓ Concluída</span>'
-      : !p.desbloqueada
-        ? `<span class="mut" style="font-size:11px">🔒 Vença a fase ${esc(p.faseRequisitoId)}</span>`
-        : p.estado === 'disponivel'
-          ? `<button class="btn-pri" data-mis-par-iniciar="${esc(p.id)}">▶ Iniciar</button>`
-          : p.etapaAtual?.tipo === 'batalha'
-            ? `<button class="btn-pri" data-mis-par-lutar="${esc(p.id)}">⚔️ Lutar etapa</button>`
-            : `<button class="btn-pri" data-mis-par-avancar="${esc(p.id)}">✓ Avançar etapa</button>`;
-    return `<div class="bl">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-        <div>
-          <h4 style="margin:0">${esc(p.titulo)}</h4>
-          <div class="mut" style="font-size:11.5px;margin-top:2px">${esc(etapaTxt)}</div>
-          <div style="font-size:11px;color:#fde68a;margin-top:3px">💎 ${p.recompensa?.diamantes || 0} · 🏺 Relíquia ${esc(p.recompensa?.reliquiaRaridade || '')} · 🏷️ ${esc(p.recompensa?.tituloPerfil || '')}</div>
-        </div>
-        <div>${acao}</div>
-      </div>
-    </div>`;
+  const listaTotal = listarParalelasCapitulo(save, capParalela);
+  const concluidasCap = listaTotal.filter((p) => p.concluida).length;
+  const statusDe = (p) => (p.concluida ? 'concluidas' : !p.desbloqueada ? 'bloqueadas' : p.estado === 'disponivel' ? 'disponiveis' : 'andamento');
+  const lista = filtro === 'todas' ? listaTotal : listaTotal.filter((p) => statusDe(p) === filtro);
+  const sel = lista.find((p) => p.id === st.selId) || lista[0] || null;
+
+  const filtrosHtml = [
+    ['todas', `Todas (${listaTotal.length})`],
+    ['disponiveis', `Disponíveis (${listaTotal.filter((p) => statusDe(p) === 'disponiveis').length})`],
+    ['andamento', `Em andamento (${listaTotal.filter((p) => statusDe(p) === 'andamento').length})`],
+    ['concluidas', `Concluídas (${concluidasCap})`],
+    ['bloqueadas', `Bloqueadas (${listaTotal.filter((p) => statusDe(p) === 'bloqueadas').length})`],
+  ].map(([k, rot]) => `<button class="${filtro === k ? 'btn-pri' : 'btn-sec'}" data-mis-filtro="${k}" style="padding:3px 8px;font-size:10.5px">${esc(rot)}</button>`).join('');
+
+  const acaoDe = (p) => (p.concluida
+    ? '<span class="tag" style="color:#86efac">✓ Concluída</span>'
+    : !p.desbloqueada
+      ? `<span class="mut" style="font-size:11px">🔒 Vença a fase ${esc(p.faseRequisitoId)}</span>`
+      : p.estado === 'disponivel'
+        ? `<button class="btn-pri" data-mis-par-iniciar="${esc(p.id)}">▶ Iniciar</button>`
+        : p.etapaAtual?.tipo === 'batalha'
+          ? `<button class="btn-pri" data-mis-par-lutar="${esc(p.id)}">⚔️ Lutar etapa</button>`
+          : `<button class="btn-pri" data-mis-par-avancar="${esc(p.id)}">✓ Avançar etapa</button>`);
+
+  const itensLista = lista.map((p) => {
+    const ativo = sel && sel.id === p.id;
+    const stTag = p.concluida ? '✓' : !p.desbloqueada ? '🔒' : p.estado === 'disponivel' ? '●' : '▶';
+    return `<button type="button" data-mis-par-sel="${esc(p.id)}" style="display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;text-align:left;padding:7px 9px;margin-bottom:5px;border-radius:8px;cursor:pointer;color:#fff3e7;background:${ativo ? 'rgba(243,164,88,.22)' : 'rgba(18,10,28,.75)'};border:1px solid ${ativo ? '#f3a458' : '#52335c'}">
+      <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:12px">${stTag} ${esc(p.titulo)}</span>
+      <span class="mut" style="font-size:10.5px;flex-shrink:0">${p.concluida ? 'Concluída' : `${(p.etapaIdx || 0) + 1}/${p.etapas?.length || 1}`}</span>
+    </button>`;
   }).join('');
 
+  const detalheHtml = sel ? `<div class="bl" style="margin-bottom:0">
+    <h4 style="margin:0 0 4px">${esc(sel.titulo)}</h4>
+    ${sel.npc ? `<div class="sub" style="margin-bottom:4px">NPC: <b>${esc(sel.npc)}</b></div>` : ''}
+    <div style="font-size:12px;margin-bottom:6px">${sel.concluida
+      ? '<span class="ok">✓ Missão concluída neste capítulo.</span>'
+      : sel.etapaAtual
+        ? `<b>Etapa ${sel.etapaIdx + 1}/${sel.etapas.length}:</b> ${esc(sel.etapaAtual.texto || sel.etapaAtual.tipo)}`
+        : esc(sel.descricao || 'Conclua as etapas para receber as recompensas.')}</div>
+    ${!sel.desbloqueada ? `<div class="ruim" style="font-size:11.5px;margin-bottom:6px">🔒 Requisito: vença a fase ${esc(sel.faseRequisitoId)} na Campanha Mini.</div>` : ''}
+    <div style="font-size:11.5px;color:#fde68a;margin-bottom:8px">Recompensa: 💎 ${sel.recompensa?.diamantes || 0}${sel.recompensa?.ouro ? ` · 🪙 ${sel.recompensa.ouro}` : ''}${sel.recompensa?.reliquiaRaridade ? ` · 🏺 Relíquia ${esc(sel.recompensa.reliquiaRaridade)}` : ''}${sel.recompensa?.tituloPerfil ? ` · 🏷️ ${esc(sel.recompensa.tituloPerfil)}` : ''}</div>
+    <div class="ln">${acaoDe(sel)}</div>
+  </div>` : '<div class="bl"><p class="mut">Nenhuma missão paralela corresponde ao filtro selecionado.</p></div>';
+
   return `<div class="bl">
-    <div style="font-size:12px;font-weight:700;margin-bottom:6px">📜 Missões Paralelas · Capítulo ${capParalela}</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap">${seletores}</div>
-  </div>${cards || '<div class="bl"><p class="mut">Nenhuma paralela cadastrada para este capítulo.</p></div>'}`;
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      <b>📜 Missões Paralelas · Capítulo ${capParalela}</b>
+      <span class="tag">${concluidasCap}/${listaTotal.length} concluídas</span>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">${seletores}</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap">${filtrosHtml}</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;align-items:start">
+    <div class="bl" style="max-height:320px;overflow-y:auto;margin-bottom:0">${itensLista || '<p class="mut">Sem missões neste filtro.</p>'}</div>
+    ${detalheHtml}
+  </div>`;
 }
 
-export function tratarCliqueMissoes(d, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, setCapParalela, capParalela }) {
+export function tratarCliqueMissoes(d, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, setCapParalela, capParalela, st = {} }) {
   if (d.misAbrir === 'diarias') {
     window.regiao1?.idleUI?.abrirTemporada?.();
     return true;
@@ -120,6 +147,17 @@ export function tratarCliqueMissoes(d, { save, salvar, mostrarToast, render, tel
   if (d.misCap) {
     setCapParalela(Number(d.misCap));
     render(true);
+    return true;
+  }
+  if (d.misFiltro) {
+    st.filtro = d.misFiltro;
+    st.selId = null;
+    render();
+    return true;
+  }
+  if (d.misParSel) {
+    st.selId = d.misParSel;
+    render();
     return true;
   }
   if (d.misColetar) {

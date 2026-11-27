@@ -464,6 +464,256 @@ export function criarControladorIdleUI(ctx) {
     botao.addEventListener('click', () => selecionarCatMochila(botao.dataset.mochilaCat));
   });
 
+  const KIT_PERFIL = (arq) => `../../../assets/confusion/interface/kit-v2/perfil/${arq}`;
+  const AVATAR_PADRAO = '../../../assets/confusion/interface/descanso-v1/avatar-azazel.webp';
+  const MOLDURAS_PERFIL = [
+    { id: 'farol', nome: 'Farol', arq: 'farol.png', req: 'Padrão do Domador', check: () => true },
+    { id: 'ignaraz', nome: 'Ignaraz', arq: 'ignaraz.png', req: 'Tenha Ignaraz na coleção', check: (s) => (s.idle?.equipe || []).some((m) => m.especie === 'Ignaraz') },
+    { id: 'vaelirion', nome: 'Vaelirion', arq: 'vaelirion.png', req: 'Tenha Vaelirion na coleção', check: (s) => (s.idle?.equipe || []).some((m) => m.especie === 'Vaelirion') },
+    { id: 'florivel', nome: 'Florivel', arq: 'florivel.png', req: 'Tenha Florivel na coleção', check: (s) => (s.idle?.equipe || []).some((m) => m.especie === 'Florivel') },
+    { id: 'ambar-fossil', nome: 'Âmbar Fóssil', arq: 'ambar-fossil.png', req: 'Passe Dinossauros Nv.10', check: (s) => (infoPasse(s)?.nivel || 0) >= 10 },
+    { id: 'ossada-antiga', nome: 'Ossada Antiga', arq: 'ossada-antiga.png', req: 'Passe Dinossauros Nv.30', check: (s) => (infoPasse(s)?.nivel || 0) >= 30 },
+    { id: 'pegadas-no-barro', nome: 'Pegadas no Barro', arq: 'pegadas-no-barro.png', req: 'Passe Dinossauros Nv.60', check: (s) => (infoPasse(s)?.nivel || 0) >= 60 },
+    { id: 'vulcao-adormecido', nome: 'Vulcão Adormecido', arq: 'vulcao-adormecido.png', req: 'Passe Dinossauros Nv.100', check: (s) => (infoPasse(s)?.nivel || 0) >= 100 },
+  ];
+  let persAberto = false;
+  let previaFotoLocal = null;
+
+  function perfilDomadorDe(save) {
+    const idle = garantirEstadoIdle(save);
+    if (!idle.jogador.perfil || typeof idle.jogador.perfil !== 'object') {
+      idle.jogador.perfil = { moldura: 'farol', icone: 'padrao', foto: { status: 'nenhuma', url: null, motivo: '' } };
+    }
+    const pf = idle.jogador.perfil;
+    if (!pf.moldura) pf.moldura = 'farol';
+    if (!pf.icone) pf.icone = 'padrao';
+    if (!pf.foto || typeof pf.foto !== 'object') pf.foto = { status: 'nenhuma', url: null, motivo: '' };
+    return pf;
+  }
+
+  function molduraDesbloqueada(save, def) {
+    const extras = save.perfil?.moldurasDesbloqueadas || save.idle?.jogador?.perfil?.desbloqueadas || [];
+    return Boolean(def.check(save) || (Array.isArray(extras) && extras.includes(def.id)));
+  }
+
+  function iconesDisponiveisPerfil(save) {
+    const lista = [{ id: 'padrao', nome: 'Azazel', src: AVATAR_PADRAO }];
+    const vistos = new Set(['padrao']);
+    for (const m of (save.idle?.equipe || []).slice(0, 8)) {
+      const id = `esp:${m.especie}`;
+      if (vistos.has(id)) continue;
+      vistos.add(id);
+      const p = ARTE_DA_ESPECIE[m.especie];
+      if (p) lista.push({ id, nome: m.especie, src: `../../../${p}` });
+    }
+    if (save.idle?.hw?.tickets > 0 || save.idle?.hw?.doces > 0) {
+      lista.push({ id: 'ev:halloween', nome: 'Halloween', src: '../../../assets/confusion/interface/eventos/halloween/itens/doce.webp' });
+    }
+    return lista;
+  }
+
+  function imagemAtivaPerfil(save) {
+    const pf = perfilDomadorDe(save);
+    // Foto pessoal só é exibida após aprovação da moderação; enquanto pendente ou reprovada mantém o retrato padrão/ícone
+    if (pf.foto?.status === 'aprovada' && pf.foto.url) return pf.foto.url;
+    const ic = iconesDisponiveisPerfil(save).find((x) => x.id === pf.icone);
+    return ic?.src || AVATAR_PADRAO;
+  }
+
+  function renderizarCardDomador(save, st) {
+    const pf = perfilDomadorDe(save);
+    const moldDef = MOLDURAS_PERFIL.find((m) => m.id === pf.moldura) || MOLDURAS_PERFIL[0];
+    const nome = save.conta?.nome || 'Azazel';
+    const fotoAtiva = imagemAtivaPerfil(save);
+    const stFoto = pf.foto?.status || 'nenhuma';
+    const badgeFoto = stFoto === 'pendente'
+      ? '<div class="tag" style="color:#fde68a;border-color:#f59e0b;margin:4px 0 0">⏳ Foto em moderação</div>'
+      : stFoto === 'reprovada'
+        ? '<div class="tag" style="color:#fca5a5;border-color:#ef4444;margin:4px 0 0">✕ Foto reprovada</div>'
+        : stFoto === 'aprovada'
+          ? '<div class="tag" style="color:#86efac;border-color:#22c55e;margin:4px 0 0">✓ Foto aprovada</div>'
+          : '';
+
+    const cardEl = $('domador-card-perfil');
+    if (cardEl) {
+      cardEl.innerHTML = `
+        <div class="dom-retrato-wrap" data-moldura="${moldDef.id}">
+          <div class="dom-retrato-foto"><img src="${fotoAtiva}" alt="${nome}" onerror="this.src='${AVATAR_PADRAO}'"></div>
+          <img class="dom-retrato-moldura" src="${KIT_PERFIL(moldDef.arq)}" alt="Moldura ${moldDef.nome}">
+        </div>
+        <b style="color:#fde68a;font-size:14px">${nome}</b>
+        <div class="sub">Domador · Nv.${st.nivel} · ${moldDef.nome}</div>
+        ${badgeFoto}
+        <div style="margin-top:8px"><button type="button" class="btn-sec" id="btn-dom-personalizar" style="width:100%;padding:5px 8px;font-size:11.5px">${persAberto ? '✕ Fechar Personalização' : '🎨 Personalizar'}</button></div>
+      `;
+      $('btn-dom-personalizar')?.addEventListener('click', () => {
+        persAberto = !persAberto;
+        renderizarCardDomador(save, st);
+      });
+    }
+
+    const persEl = $('domador-personalizar');
+    if (!persEl) return;
+    persEl.hidden = !persAberto;
+    if (!persAberto) { persEl.innerHTML = ''; return; }
+
+    const icones = iconesDisponiveisPerfil(save);
+    const previaSrc = previaFotoLocal || fotoAtiva;
+    persEl.innerHTML = `
+      <div class="card-row" style="display:block;margin-bottom:10px;border-color:#f3a458">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+          <b style="color:#fde68a">🎨 Personalizar Perfil do Domador</b>
+          <button type="button" class="btn-sec" id="btn-dom-pers-fechar" style="padding:3px 8px;font-size:11px">Fechar</button>
+        </div>
+        <div class="sec-tit" style="margin-top:4px">Molduras (${MOLDURAS_PERFIL.filter((m) => molduraDesbloqueada(save, m)).length}/${MOLDURAS_PERFIL.length})</div>
+        <div class="dom-pers-grade">
+          ${MOLDURAS_PERFIL.map((m) => {
+            const ok = molduraDesbloqueada(save, m);
+            const at = pf.moldura === m.id;
+            return `<button type="button" class="dom-pers-item ${at ? 'ativo' : ''} ${ok ? '' : 'bloqueado'}" data-moldura-id="${m.id}" title="${ok ? m.nome : `Bloqueada: ${m.req}`}">
+              <img src="${KIT_PERFIL(m.arq)}" alt="${m.nome}">
+              <div>${ok ? '' : '🔒 '}${m.nome}</div>
+            </button>`;
+          }).join('')}
+        </div>
+        <div class="sec-tit">Ícones Equipáveis</div>
+        <div class="dom-pers-grade">
+          ${icones.map((ic) => `<button type="button" class="dom-pers-item ${pf.icone === ic.id && pf.foto?.status !== 'aprovada' ? 'ativo' : ''}" data-icone-id="${ic.id}">
+            <img src="${ic.src}" alt="${ic.nome}" style="border-radius:6px;object-fit:cover">
+            <div>${ic.nome}</div>
+          </button>`).join('')}
+        </div>
+        <div class="sec-tit">Foto da Galeria (Moderação obrigatória)</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div class="dom-retrato-wrap" style="width:92px;max-width:92px;margin:0;flex:0 0 92px">
+            <div class="dom-retrato-foto"><img id="dom-previa-foto" src="${previaSrc}" alt="Prévia"></div>
+            <img class="dom-retrato-moldura" src="${KIT_PERFIL(moldDef.arq)}" alt="">
+          </div>
+          <div style="flex:1;min-width:190px">
+            <div class="sub" style="margin-bottom:6px">Centralize o rosto no recorte quadrado (JPG, PNG ou WEBP até 2 MB). Fotos passam por moderação de nudez e conteúdo impróprio antes de aparecer no perfil.</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <label class="btn-sec" style="display:inline-block;cursor:pointer;padding:5px 9px;font-size:11px">📷 Escolher Foto<input type="file" id="dom-input-foto" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+              <button type="button" class="btn-pri" id="btn-dom-enviar-foto" style="padding:5px 10px;font-size:11px" ${previaFotoLocal ? '' : 'disabled'}>Enviar p/ Moderação</button>
+              ${pf.foto?.status && pf.foto.status !== 'nenhuma' ? '<button type="button" class="btn-danger" id="btn-dom-remover-foto" style="padding:5px 9px;font-size:11px">Remover Foto</button>' : ''}
+            </div>
+            <div id="dom-foto-msg" class="sub" style="margin-top:5px;color:${stFoto === 'reprovada' ? '#fca5a5' : stFoto === 'aprovada' ? '#86efac' : '#fde68a'}">${pf.foto?.motivo || ''}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    $('btn-dom-pers-fechar')?.addEventListener('click', () => { persAberto = false; renderizarCardDomador(save, st); });
+    persEl.querySelectorAll('[data-moldura-id]').forEach((b) => {
+      b.onclick = () => {
+        const def = MOLDURAS_PERFIL.find((m) => m.id === b.dataset.molduraId);
+        if (!def) return;
+        if (!molduraDesbloqueada(save, def)) {
+          ctx.mostrarToast(`🔒 ${def.nome}: ${def.req}`, 2600);
+          return;
+        }
+        pf.moldura = def.id;
+        ctx.salvar();
+        ctx.mostrarToast(`Moldura "${def.nome}" equipada!`, 2000);
+        renderizarCardDomador(save, st);
+      };
+    });
+    persEl.querySelectorAll('[data-icone-id]').forEach((b) => {
+      b.onclick = () => {
+        pf.icone = b.dataset.iconeId;
+        if (pf.foto?.status === 'aprovada') pf.foto = { status: 'nenhuma', url: null, motivo: '' };
+        ctx.salvar();
+        ctx.mostrarToast('Ícone de perfil atualizado!', 2000);
+        renderizarCardDomador(save, st);
+      };
+    });
+    $('dom-input-foto')?.addEventListener('change', (ev) => {
+      const file = ev.target.files?.[0];
+      const msgEl = $('dom-foto-msg');
+      if (!file) return;
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        previaFotoLocal = null;
+        if (msgEl) { msgEl.style.color = '#fca5a5'; msgEl.textContent = 'Formato inválido. Use JPG, PNG ou WEBP.'; }
+        ctx.mostrarToast('Formato inválido: use JPG, PNG ou WEBP.', 2600);
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        previaFotoLocal = null;
+        if (msgEl) { msgEl.style.color = '#fca5a5'; msgEl.textContent = 'Arquivo muito grande (máximo 2 MB).'; }
+        ctx.mostrarToast('Arquivo muito grande (máximo 2 MB).', 2600);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        previaFotoLocal = String(reader.result || '');
+        const im = $('dom-previa-foto');
+        if (im) im.src = previaFotoLocal;
+        const btnEnv = $('btn-dom-enviar-foto');
+        if (btnEnv) btnEnv.disabled = false;
+        if (msgEl) { msgEl.style.color = '#fde68a'; msgEl.textContent = 'Prévia pronta. Clique em "Enviar p/ Moderação".'; }
+      };
+      reader.readAsDataURL(file);
+    });
+    $('btn-dom-enviar-foto')?.addEventListener('click', async () => {
+      if (!previaFotoLocal) return;
+      const msgEl = $('dom-foto-msg');
+      if (msgEl) { msgEl.style.color = '#fde68a'; msgEl.textContent = 'Enviando para moderação...'; }
+      try {
+        const token = window.confusionConta?.getToken?.() || localStorage.getItem('confusion_access_token') || '';
+        if (!token) {
+          pf.foto = { status: 'pendente', url: null, motivo: 'Foto em moderação local. Entre em uma conta para enviar ao servidor; o retrato padrão permanece ativo.' };
+          previaFotoLocal = null;
+          ctx.salvar();
+          ctx.mostrarToast('⏳ Foto enviada para moderação (retrato padrão mantido).', 2800);
+          renderizarCardDomador(save, st);
+          return;
+        }
+        const resp = await fetch('/api/perfil-foto', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ dataUrl: previaFotoLocal }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.status === 422 || data.status === 'reprovada') {
+          pf.foto = { status: 'reprovada', url: null, motivo: data.motivo || 'Foto reprovada pela moderação.' };
+          previaFotoLocal = null;
+          ctx.salvar();
+          ctx.mostrarToast('✕ Foto reprovada pela moderação. Retrato padrão mantido.', 3200);
+          renderizarCardDomador(save, st);
+          return;
+        }
+        if (!resp.ok) {
+          if (msgEl) { msgEl.style.color = '#fca5a5'; msgEl.textContent = data.motivo || 'Falha no envio da foto.'; }
+          return;
+        }
+        pf.foto = {
+          status: data.status === 'aprovada' ? 'aprovada' : 'pendente',
+          url: data.status === 'aprovada' ? (data.url || null) : null,
+          motivo: data.motivo || '',
+        };
+        previaFotoLocal = null;
+        ctx.salvar();
+        ctx.mostrarToast(pf.foto.status === 'aprovada' ? '✓ Foto aprovada e aplicada!' : '⏳ Foto em moderação (retrato padrão mantido).', 2800);
+        renderizarCardDomador(save, st);
+      } catch {
+        pf.foto = { status: 'pendente', url: null, motivo: 'Sem conexão com o servidor; foto mantida em análise e retrato padrão ativo.' };
+        previaFotoLocal = null;
+        ctx.salvar();
+        renderizarCardDomador(save, st);
+      }
+    });
+    $('btn-dom-remover-foto')?.addEventListener('click', async () => {
+      const token = window.confusionConta?.getToken?.() || localStorage.getItem('confusion_access_token') || '';
+      if (token) {
+        fetch('/api/perfil-foto', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+      }
+      pf.foto = { status: 'nenhuma', url: null, motivo: '' };
+      previaFotoLocal = null;
+      ctx.salvar();
+      ctx.mostrarToast('Foto removida. Retrato padrão restaurado.', 2200);
+      renderizarCardDomador(save, st);
+    });
+  }
+
   function abrirMochila(catInicial = null) {
     if (typeof catInicial === 'string') mochilaCat = catInicial;
     const save = ctx.getSave();
@@ -471,6 +721,7 @@ export function criarControladorIdleUI(ctx) {
     const st = calcularStatusDetalhado(save);
     const attrs = idle.jogador.atributos || { for: 0, vit: 0, men: 0, vin: 0, sor: 0 };
     const gastos = (attrs.for || 0) + (attrs.vit || 0) + (attrs.men || 0) + (attrs.vin || 0) + (attrs.sor || 0);
+    renderizarCardDomador(save, st);
 
     const domEl = $('domador-atributos');
     if (domEl) {
@@ -629,8 +880,8 @@ export function criarControladorIdleUI(ctx) {
       }));
       const tickets = [
         { nome: 'Tickets de Invocação', cat: 'Banner', qtd: idle.exp?.tickets || 0, desc: 'Usados no Banner de Invocação (×1 ou ×10).', ic: MV1('passe/ticket-dinossauros.png') },
-        { nome: 'Tickets de Halloween', cat: 'Evento', qtd: idle.hw?.tickets || 0, desc: 'Saldo separado usado no Banner Mensal de Halloween.', ic: '../../../assets/confusion/interface/eventos/halloween/itens/ticket.png' },
-        { nome: 'Doces de Halloween', cat: 'Evento', qtd: idle.hw?.doces || 0, desc: 'Evoluem exclusivos de Halloween ou compram itens na Loja da Torre.', ic: '../../../assets/confusion/interface/eventos/halloween/itens/doce.png' },
+        { nome: 'Tickets de Halloween', cat: 'Evento', qtd: idle.hw?.tickets || 0, desc: 'Saldo separado usado no Banner Mensal de Halloween.', ic: '../../../assets/confusion/interface/eventos/halloween/itens/ticket.webp' },
+        { nome: 'Doces de Halloween', cat: 'Evento', qtd: idle.hw?.doces || 0, desc: 'Evoluem exclusivos de Halloween ou compram itens na Loja da Torre.', ic: '../../../assets/confusion/interface/eventos/halloween/itens/doce.webp' },
       ];
       const listaItens = [...tickets, ...mats, ...itensOf, ...pocoes];
       itensEl.innerHTML = `<div class="mv1-grade">${listaItens.map((it) => `
