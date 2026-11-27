@@ -21,7 +21,7 @@ export const TUTORIAIS_MODOS = {
     id: 'torres',
     icone: '🗼',
     titulo: 'Torres Elementais & Únicas',
-    texto: 'Suba andares para farmar Essências do par elemental (1ª vitória grátis em energia) e Pó Único nas Torres Únicas.',
+    texto: 'Suba andares para farmar Essências do par elemental (recompensa especial na 1ª vitória de cada andar) e Pó Único nas Torres Únicas.',
   },
   calaboucos_rel: {
     id: 'calaboucos_rel',
@@ -33,7 +33,7 @@ export const TUTORIAIS_MODOS = {
     id: 'reliquias',
     icone: '💎',
     titulo: 'Relíquias & Conjuntos',
-    texto: 'Cada Onírico equipa até 6 peças do mesmo elemento. Combine 2 ou 4 peças do mesmo conjunto para ativar bônus extras.',
+    texto: 'Cada Onírico equipa 4 Relíquias (Coroa, Amuleto, Anel e Talismã) + 1 Arma Única do mesmo elemento. Combine 2 ou 4 peças do mesmo conjunto para ativar bônus extras.',
   },
   evolucao_essencias: {
     id: 'evolucao_essencias',
@@ -47,12 +47,6 @@ export const TUTORIAIS_MODOS = {
     titulo: 'Domadores Auxiliares',
     texto: 'Seu Domador de apoio acompanha os 4 Oníricos sem ocupar vaga, nunca recebe dano e age automaticamente sempre que uma de suas habilidades sai de recarga.',
   },
-  energia: {
-    id: 'energia',
-    icone: '⚡',
-    titulo: 'Energia',
-    texto: 'Campanha Mini usa 6/8/10 de energia (normal/elite/chefe) e Calabouços 8–16; a 1ª vitória em cada andar da Torre é grátis. A energia recarrega sozinha e pode ser reposta com poções.',
-  },
   ondas: {
     id: 'ondas',
     icone: '🌊',
@@ -63,7 +57,7 @@ export const TUTORIAIS_MODOS = {
     id: 'domador_batalha',
     icone: '⚔️',
     titulo: 'Domador na Arena',
-    texto: 'O Domador entra com recargas próprias (sem barra de energia), não sofre ataques e dispara sua habilidade pronta automaticamente no turno.',
+    texto: 'O Domador entra com recargas próprias (sem barra), não sofre ataques e dispara sua habilidade pronta automaticamente no turno.',
   },
 };
 

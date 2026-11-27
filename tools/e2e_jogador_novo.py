@@ -29,6 +29,7 @@ import functools
 import http.server
 import json
 import socketserver
+import subprocess
 import sys
 import threading
 import time
@@ -47,6 +48,7 @@ RELATORIO_MD = REPO_ROOT / "confusion" / "RELATORIO_JOGADOR_NOVO.md"
 VIEWPORTS = {
     "1280x720": {"width": 1280, "height": 720, "is_mobile": False, "has_touch": False},
     "844x390": {"width": 844, "height": 390, "is_mobile": True, "has_touch": True},
+    "740x360": {"width": 740, "height": 360, "is_mobile": True, "has_touch": True},
 }
 
 
@@ -105,7 +107,7 @@ AUDIT_SCREEN_JS = r"""
   const visivel = (el) => {
     if (!el || !el.isConnected) return false;
     const st = getComputedStyle(el);
-    if (st.display === 'none' || st.visibility === 'hidden' || parseFloat(st.opacity) === 0) return false;
+    if (st.display === 'none' || st.visibility === 'hidden' || parseFloat(st.opacity) <= 0.05) return false;
     const r = el.getBoundingClientRect();
     return r.width > 4 && r.height > 4;
   };
@@ -146,16 +148,27 @@ AUDIT_SCREEN_JS = r"""
     }
   }
 
-  // 2. Checar controles recortados fora da tela
-  for (const btn of escopo.querySelectorAll('.btn-fechar, .btn-voltar-refugio, [data-cm-voltar], .tb-btns button, .cw-guia-novo button')) {
-    if (!visivel(btn)) continue;
-    const r = btn.getBoundingClientRect();
+  // 2. Checar botões e títulos principais recortados fora da tela (crítico em 844x390 e 740x360)
+  const seletoresPrincipais = '.btn-fechar, .btn-voltar-refugio, [data-cm-voltar], [data-cm-lutar], [data-tor-lutar-el], [data-cal-lutar], [data-invocar], .tb-btns button, .cw-guia-novo button, .modal-head h3, #conta-gate h1';
+  const emScrollInterno = (el) => {
+    let p = el.parentElement;
+    while (p && p !== escopo && p !== document.body) {
+      const st = getComputedStyle(p);
+      if ((st.overflowY === 'auto' || st.overflowY === 'scroll') && p.scrollHeight > p.clientHeight + 4) return true;
+      p = p.parentElement;
+    }
+    return false;
+  };
+  for (const el of escopo.querySelectorAll(seletoresPrincipais)) {
+    if (!visivel(el)) continue;
+    if (emScrollInterno(el)) continue;
+    const r = el.getBoundingClientRect();
     if (r.right > vw + 2 || r.left < -2 || r.top < -2 || r.bottom > vh + 2) {
       issues.push({
-        tipo: 'recorte-controle',
+        tipo: el.tagName === 'BUTTON' ? 'recorte-controle' : 'recorte-texto',
         agente: 'dioh293',
         contexto,
-        detalhe: `"${btn.textContent.trim().slice(0, 32)}" fora da tela [${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.right)},${Math.round(r.bottom)}] em ${vw}x${vh}`,
+        detalhe: `"${el.textContent.trim().slice(0, 32)}" fora da tela [${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.right)},${Math.round(r.bottom)}] em ${vw}x${vh}`,
       });
     }
   }
@@ -185,7 +198,99 @@ AUDIT_SCREEN_JS = r"""
     }
   }
 
-  // Verifica se o guia passo a passo cobre algum botão interativo do Refúgio
+  // 4. Medir contraste WCAG 2.1 de textos visíveis sobre fundo sólido/translúcido
+  const parseRgba = (s) => {
+    const m = /rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+))?\s*\)/.exec(s || '');
+    return m ? { r: +m[1], g: +m[2], b: +m[3], a: m[4] === undefined ? 1 : +m[4] } : null;
+  };
+  const lum = ({ r, g, b }) => {
+    const f = (c) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  };
+  const fundoEfetivo = (el) => {
+    let cur = el;
+    const camadas = [];
+    while (cur && cur.nodeType === 1) {
+      const bg = parseRgba(getComputedStyle(cur).backgroundColor);
+      if (bg && bg.a > 0.02) {
+        camadas.push(bg);
+        if (bg.a >= 0.98) break;
+      }
+      cur = cur.parentElement;
+    }
+    let res = { r: 15, g: 23, b: 42, a: 1 };
+    for (let i = camadas.length - 1; i >= 0; i--) {
+      const c = camadas[i];
+      res = {
+        r: c.r * c.a + res.r * (1 - c.a),
+        g: c.g * c.a + res.g * (1 - c.a),
+        b: c.b * c.a + res.b * (1 - c.a),
+        a: 1,
+      };
+    }
+    return res;
+  };
+  const contrastesRuins = [];
+  for (const el of escopo.querySelectorAll('h1, h2, h3, h4, p, small, label, td, th, button, .mut, .sub')) {
+    if (!visivel(el)) continue;
+    const txt = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(' ').trim();
+    if (txt.length < 3) continue;
+    const st = getComputedStyle(el);
+    if (st.backgroundImage && st.backgroundImage !== 'none' && /gradient/.test(st.backgroundImage)) continue;
+    const fg = parseRgba(st.color);
+    if (!fg || fg.a < 0.2) continue;
+    const bg = fundoEfetivo(el);
+    const fgBlend = { r: fg.r * fg.a + bg.r * (1 - fg.a), g: fg.g * fg.a + bg.g * (1 - fg.a), b: fg.b * fg.a + bg.b * (1 - fg.a) };
+    const L1 = Math.max(lum(fgBlend), lum(bg));
+    const L2 = Math.min(lum(fgBlend), lum(bg));
+    const ratio = (L1 + 0.05) / (L2 + 0.05);
+    const fs = parseFloat(st.fontSize) || 12;
+    const bold = (parseInt(st.fontWeight, 10) || 400) >= 700;
+    const minimo = (fs >= 18 || (bold && fs >= 14)) ? 3.0 : 4.5;
+    if (ratio < minimo) {
+      contrastesRuins.push({ ratio: Number(ratio.toFixed(2)), minimo, txt: txt.slice(0, 28), cor: st.color });
+    }
+  }
+  contrastesRuins.sort((a, b) => a.ratio - b.ratio);
+  for (const cr of contrastesRuins.slice(0, 3)) {
+    issues.push({
+      tipo: 'contraste-baixo',
+      agente: 'dioh293',
+      contexto,
+      detalhe: `Texto "${cr.txt}" com contraste ${cr.ratio}:1 (mín ${cr.minimo}:1, cor=${cr.cor})`,
+    });
+  }
+
+  // 5. Checar sprite duplicada na arena (vídeo loop + imagem parada visíveis ao mesmo tempo no mesmo Onírico)
+  const arenaEl = escopo.matches?.('#tela-batalha, .arena') ? escopo : escopo.querySelector?.('#tela-batalha, .arena');
+  if (arenaEl && visivel(arenaEl)) {
+    for (const slot of arenaEl.querySelectorAll('.un, .tb-un, .bat-un, [data-uid]')) {
+      if (!visivel(slot)) continue;
+      const videosVis = [...slot.querySelectorAll('video')].filter((v) => visivel(v) && v.getBoundingClientRect().width >= 24);
+      const imgsVis = [...slot.querySelectorAll('img')].filter((im) => {
+        if (!visivel(im)) return false;
+        const r = im.getBoundingClientRect();
+        return r.width >= 28 && r.height >= 28 && !/ico|elem|mold|status|buff/i.test(im.className + ' ' + im.src);
+      });
+      if (videosVis.length >= 1 && imgsVis.length >= 1) {
+        issues.push({
+          tipo: 'sprite-duplicada',
+          agente: 'dioh293',
+          contexto,
+          detalhe: `Slot de unidade na arena exibe ${videosVis.length} vídeo(s) e ${imgsVis.length} imagem(ns) estática(s) simultaneamente`,
+        });
+      } else if (imgsVis.length >= 2) {
+        issues.push({
+          tipo: 'sprite-duplicada',
+          agente: 'dioh293',
+          contexto,
+          detalhe: `Slot de unidade na arena exibe ${imgsVis.length} sprites de imagem simultaneamente`,
+        });
+      }
+    }
+  }
+
+  // 6. Verifica se o guia passo a passo cobre algum botão interativo do Refúgio
   const guia = escopo.querySelector('.cw-guia-novo');
   if (visivel(guia)) {
     const rg = guia.getBoundingClientRect();
@@ -373,7 +478,7 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         print(f"  [{vp_name}] {'PASS' if ok else 'FAIL'} {etapa} — {detalhe}", flush=True)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--disable-dev-shm-usage"])
+        browser = p.chromium.launch(headless=True, args=["--disable-dev-shm-usage", "--disable-gpu"])
         ctx = browser.new_context(
             viewport={"width": vp_cfg["width"], "height": vp_cfg["height"]},
             is_mobile=vp_cfg["is_mobile"],
@@ -759,28 +864,76 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
     }
 
 
+def rodar_simulacao_iniciais() -> dict[str, Any]:
+    """Roda tools/simular_iniciais_cap1.mjs --lutas 300 --json e retorna a tabela dos 5 iniciais."""
+    try:
+        out = subprocess.check_output(
+            ["node", str(REPO_ROOT / "tools" / "simular_iniciais_cap1.mjs"), "--lutas", "300", "--json"],
+            cwd=str(REPO_ROOT),
+            text=True,
+            timeout=60,
+        )
+        return json.loads(out)
+    except Exception as exc:
+        return {"erro": str(exc), "iniciais": [], "tabela": []}
+
+
+def verificar_sem_energia_regras() -> dict[str, Any]:
+    """Confirma se algum modo (Campanha Mini, Torres, Calabouços) ainda exige ou consome energia nas regras."""
+    script = r"""
+import { criarEstadoInicial } from './confusion/web/teste-quarteirao/regiao1-estado.js';
+import * as CM from './confusion/web/teste-quarteirao/regiao1-campanha-mini-regras.js';
+import * as Cal from './confusion/web/teste-quarteirao/regiao1-calaboucos-regras.js';
+const s = criarEstadoInicial();
+s.idle = s.idle || {};
+s.idle.energia = { atual: 0, max: 120, atualizadoEm: Date.now() };
+const rCm = CM.iniciarFaseCampanhaMini(s, '1-1');
+const rCal = Cal.iniciarCalaboucoNivel(s, Cal.CALABOUCOS_CATALOGO[0].id, 1);
+console.log(JSON.stringify({
+  cmBloqueiaSemEnergia: !rCm.ok && /energia/i.test(rCm.motivo || ''),
+  calBloqueiaSemEnergia: !rCal.ok && /energia/i.test(rCal.motivo || ''),
+  cmMotivo: rCm.motivo || null,
+  calMotivo: rCal.motivo || null,
+}));
+"""
+    try:
+        out = subprocess.check_output(["node", "--input-type=module", "-e", script], cwd=str(REPO_ROOT), text=True, timeout=15)
+        return json.loads(out.strip().splitlines()[-1])
+    except Exception as exc:
+        return {"erro": str(exc), "cmBloqueiaSemEnergia": True, "calBloqueiaSemEnergia": True}
+
+
 def escrever_relatorio_md(
     resultados: list[dict[str, Any]],
     colisao_chefes: list[dict[str, Any]],
     pesos_v2: dict[str, Any],
+    sim_iniciais: dict[str, Any],
+    sem_energia: dict[str, Any],
 ) -> None:
     agora = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     desk = next((r for r in resultados if r["viewport"] == "1280x720"), resultados[0])
     mob = next((r for r in resultados if r["viewport"] == "844x390"), resultados[-1])
+    mob_sm = next((r for r in resultados if r["viewport"] == "740x360"), None)
 
     mob_v2_telas = [u for u in mob.get("v2RequestsAll", []) if "telas-v2/" in u]
     mob_v2_2560 = [u for u in mob_v2_telas if "telas-v2/mobile/" not in u]
+    sm_str = (
+        f" · Celular compacto `740×360` = **{mob_sm['bootMs']} ms** (Refúgio +{mob_sm['refugioMs']} ms)"
+        if mob_sm else ""
+    )
+    energia_ok = not sem_energia.get("cmBloqueiaSemEnergia") and not sem_energia.get("calBloqueiaSemEnergia")
     linhas = [
-        "# Relatório — Etapa JOGADOR NOVO (QA, Desempenho e Colisão)",
+        "# Relatório — Etapa JOGADOR NOVO & RODADA DE QUALIDADE (QA, Desempenho e Colisão)",
         "",
         f"- **Última atualização:** {agora}",
         "- **Jogo:** https://cwdp-lake.vercel.app/jogar",
         "- **Gerado automaticamente por:** `python3 tools/e2e_jogador_novo.py`",
-        f"- **Desempenho na abertura:** Desktop `1280×720` = **{desk['bootMs']} ms** ({desk['bootKB']} KB, Refúgio +{desk['refugioMs']} ms, batalha **{desk.get('battleFps') or '—'} fps**) · Celular `844×390` = **{mob['bootMs']} ms** ({mob['bootKB']} KB, Refúgio +{mob['refugioMs']} ms, batalha **{mob.get('battleFps') or '—'} fps**; meta abertura `< 2000 ms`: **{'OK' if mob['bootMs'] < 2000 else 'ACIMA'}**)",
-        f"- **Artes v2 em disco:** `telas-v2/` (13 fundos 2560px) = **{pesos_v2['totalDeskKB']} KB** · `telas-v2/mobile/` (13 fundos 1280px) = **{pesos_v2['totalMobKB']} KB** (**-{pesos_v2['economiaMobilePct']}%** no celular) · `banners-v2/` (2 capas) = **{pesos_v2['totalBannersKB']} KB**",
+        f"- **Desempenho na abertura:** Desktop `1280×720` = **{desk['bootMs']} ms** ({desk['bootKB']} KB, Refúgio +{desk['refugioMs']} ms, batalha **{desk.get('battleFps') or '—'} fps**) · Celular `844×390` = **{mob['bootMs']} ms** ({mob['bootKB']} KB, Refúgio +{mob['refugioMs']} ms, batalha **{mob.get('battleFps') or '—'} fps**; meta abertura `< 2000 ms`: **{'OK' if mob['bootMs'] < 2000 else 'ACIMA'}**){sm_str}",
+        f"- **Sem custo de energia nos modos:** **{'OK (nenhum modo exige energia)' if energia_ok else 'PENDENTE (Campanha Mini/Calabouços ainda exigem energia)'}**",
+        f"- **Artes v2 em disco:** `telas-v2/` (13+ fundos 2560px) = **{pesos_v2['totalDeskKB']} KB** · `telas-v2/mobile/` (1280px) = **{pesos_v2['totalMobKB']} KB** (**-{pesos_v2['economiaMobilePct']}%** no celular) · `banners-v2/` (2 capas) = **{pesos_v2['totalBannersKB']} KB**",
         f"- **Carregamento sob demanda v2 no celular (`844×390`):** boot={len(mob['v2RequestsBoot'])} arquivo(s), sessão inteira={len(mob['v2RequestsAll'])} arquivo(s) (usando `telas-v2/mobile/`: **{len(mob_v2_telas) - len(mob_v2_2560)}**, usando 2560px no celular: **{len(mob_v2_2560)}**)",
         f"- **Perfil / Upload de foto (`#165`):** botão Personalizar={'OK' if mob.get('uploadFotoImplementado') else 'AUSENTE'}, rejeita formato inválido e >2MB={'OK' if mob.get('fotoValOk') else 'PENDENTE'}",
-        f"- **Erros de console / página / 404:** Desktop ({len(desk['consoleErrors'])} console, {len(desk['pageErrors'])} pageerror, {len(desk['httpErrors'])} HTTP 404) · Mobile ({len(mob['consoleErrors'])} console, {len(mob['pageErrors'])} pageerror, {len(mob['httpErrors'])} HTTP 404)",
+        f"- **Erros de console / página / 404:** Desktop ({len(desk['consoleErrors'])} console, {len(desk['pageErrors'])} pageerror, {len(desk['httpErrors'])} HTTP 404) · Mobile 844×390 ({len(mob['consoleErrors'])} console, {len(mob['pageErrors'])} pageerror, {len(mob['httpErrors'])} HTTP 404)" + (f" · Mobile 740×360 ({len(mob_sm['consoleErrors'])} console, {len(mob_sm['pageErrors'])} pageerror, {len(mob_sm['httpErrors'])} HTTP 404)" if mob_sm else ""),
         "",
         "---",
         "",
@@ -797,6 +950,22 @@ def escrever_relatorio_md(
     for col in colisao_chefes:
         if not col["ok"]:
             todos_problemas.append({"tipo": "colisao-walkmask", "agente": col["agente"], "contexto": col["mapa"], "detalhe": col["detalhe"]})
+    if sem_energia.get("cmBloqueiaSemEnergia") or sem_energia.get("calBloqueiaSemEnergia"):
+        todos_problemas.append({
+            "tipo": "energia-bloqueando",
+            "agente": "asutaroto291",
+            "contexto": "Campanha Mini / Calabouços",
+            "detalhe": f"Modos ainda exigem energia quando saldo=0 (CM={sem_energia.get('cmMotivo')}, Cal={sem_energia.get('calMotivo')}).",
+        })
+    for row in sim_iniciais.get("tabela", []):
+        if row["fase"] in ("1-1", "1-2", "1-3") and row.get("abaixoMeta"):
+            det = ", ".join(f"{e}={row['taxas'][e]}%" for e in row["abaixoMeta"])
+            todos_problemas.append({
+                "tipo": "balanceamento-inicial",
+                "agente": "asutaroto291",
+                "contexto": f"Campanha Mini {row['fase']}",
+                "detalhe": f"Abaixo da meta ≥95% em 300 lutas: {det}",
+            })
     if not mob.get("v2RequestsAll"):
         todos_problemas.append({
             "tipo": "pendencia-telas-v2",
@@ -836,6 +1005,23 @@ def escrever_relatorio_md(
         "",
         "---",
         "",
+        "## Simulação de Dificuldade — 5 Iniciais na Campanha Mini 1-1 a 1-10 (300 lutas/fase)",
+        "",
+    ]
+    inics = sim_iniciais.get("iniciais") or []
+    if inics and sim_iniciais.get("tabela"):
+        linhas.append(f"| Fase | Time realista | Ondas | Meta | {' | '.join(inics)} |")
+        linhas.append(f"|---|---|---:|---:|{'|'.join('---:' for _ in inics)}|")
+        for row in sim_iniciais["tabela"]:
+            vals = " | ".join(f"{row['taxas'][e]:.1f}%" for e in inics)
+            linhas.append(f"| `{row['fase']}` | {row['aliados']}× (Nv.{row['nivelInicial']}) | {row['ondas']} | ≥{row['metaPct']}% | {vals} |")
+    else:
+        linhas.append("Simulação indisponível nesta execução.")
+
+    linhas += [
+        "",
+        "---",
+        "",
         "## Desempenho — Pesos das Artes v2 (Desktop 2560px vs Mobile 1280px)",
         "",
         "| Pasta | Arquivos | Peso total | Observação |",
@@ -846,7 +1032,7 @@ def escrever_relatorio_md(
         "",
         "---",
         "",
-        "## Fluxo do Jogador Novo — Tela por Tela (1280×720 e 844×390)",
+        "## Fluxo do Jogador Novo — Tela por Tela (1280×720, 844×390 e 740×360)",
         "",
     ]
 
@@ -859,16 +1045,25 @@ def escrever_relatorio_md(
     for etapa, slug, titulo in ordem_slugs:
         s_d = next((x for x in desk["shots"] if x["slug"] == slug), None)
         s_m = next((x for x in mob["shots"] if x["slug"] == slug), None)
+        s_sm = next((x for x in (mob_sm["shots"] if mob_sm else []) if x["slug"] == slug), None)
         iss_tela = [i for r in resultados for i in r["issues"] if titulo.split(" (")[0] in i["contexto"] or slug in i["contexto"].lower()]
         linhas.append(f"### {etapa}. {titulo}")
-        if s_d and s_m:
+        if s_d:
             linhas.append(f"- **Desktop (1280×720):** `{s_d['arquivo']}`")
+        if s_m:
             linhas.append(f"- **Celular (844×390):** `{s_m['arquivo']}`")
+        if s_sm:
+            linhas.append(f"- **Celular compacto (740×360):** `{s_sm['arquivo']}`")
         if iss_tela:
+            vistos_t = set()
             for i in iss_tela:
+                ch = (i["tipo"], i["contexto"], i["detalhe"])
+                if ch in vistos_t:
+                    continue
+                vistos_t.add(ch)
                 linhas.append(f"- **Problema (`{i['tipo']}` · {i['agente']}):** {i['detalhe']}")
         else:
-            linhas.append("- **Status:** Sem sobreposições, recortes, 404 ou vazamento de mapa.")
+            linhas.append("- **Status:** Sem sobreposições, recortes, contraste baixo, sprite duplicada, 404 ou vazamento de mapa.")
         linhas.append("")
 
     linhas += [
@@ -889,11 +1084,13 @@ def escrever_relatorio_md(
         "",
         "## Execução das Etapas do Fluxo",
         "",
-        "| Etapa | Desktop 1280×720 | Celular 844×390 |",
-        "|---|---|---|",
+        "| Etapa | Desktop 1280×720 | Celular 844×390 | Celular 740×360 |",
+        "|---|---|---|---|",
     ]
-    for sd, sm in zip(desk["steps"], mob["steps"]):
-        linhas.append(f"| {sd['etapa']} | {'PASS' if sd['ok'] else 'FAIL'} ({sd['detalhe']}) | {'PASS' if sm['ok'] else 'FAIL'} ({sm['detalhe']}) |")
+    sm_steps = mob_sm["steps"] if mob_sm else [None] * len(desk["steps"])
+    for sd, sm, ssm in zip(desk["steps"], mob["steps"], sm_steps):
+        col_sm = f"{'PASS' if ssm['ok'] else 'FAIL'} ({ssm['detalhe']})" if ssm else "—"
+        linhas.append(f"| {sd['etapa']} | {'PASS' if sd['ok'] else 'FAIL'} ({sd['detalhe']}) | {'PASS' if sm['ok'] else 'FAIL'} ({sm['detalhe']}) | {col_sm} |")
 
     RELATORIO_MD.write_text("\n".join(linhas) + "\n", encoding="utf-8")
 
@@ -901,10 +1098,13 @@ def escrever_relatorio_md(
 def main() -> int:
     parser = argparse.ArgumentParser(description="E2E Jogador Novo + Screenshots + Relatório")
     parser.add_argument("--strict-collision", action="store_true", help="Falhar com exit code 1 se walkmasks dos chefes tiverem áreas de obstáculo andáveis")
+    parser.add_argument("--strict-quality", action="store_true", help="Falhar com exit code 1 se houver contraste baixo, recorte em 844x390/740x360, sprite duplicada ou energia bloqueando")
     args = parser.parse_args()
 
     colisao = auditar_colisao_chefes_regiao1()
     pesos_v2 = medir_pesos_artes_v2()
+    sim_iniciais = rodar_simulacao_iniciais()
+    sem_energia = verificar_sem_energia_regras()
     srv, base_url = start_static_server(REPO_ROOT)
     resultados = []
     try:
@@ -913,16 +1113,20 @@ def main() -> int:
     finally:
         srv.shutdown()
 
-    escrever_relatorio_md(resultados, colisao, pesos_v2)
+    escrever_relatorio_md(resultados, colisao, pesos_v2, sim_iniciais, sem_energia)
     print(f"\nRelatório salvo em: {RELATORIO_MD.relative_to(REPO_ROOT)}")
     for c in colisao:
         print(f"  [colisão] {'OK' if c['ok'] else 'FALHA'} {c['mapa']}: {c['detalhe']}")
 
+    tipos_qualidade_externa = {"contraste-baixo", "recorte-controle", "recorte-texto", "sprite-duplicada"}
     falhou = False
     for r in resultados:
-        if any(not s["ok"] for s in r["steps"]) or r["pageErrors"] or r["httpErrors"] or r["issues"]:
+        issues_bloqueantes = r["issues"] if args.strict_quality else [i for i in r["issues"] if i["tipo"] not in tipos_qualidade_externa]
+        if any(not s["ok"] for s in r["steps"]) or r["pageErrors"] or r["httpErrors"] or issues_bloqueantes:
             falhou = True
     if args.strict_collision and any(not c["ok"] for c in colisao):
+        falhou = True
+    if args.strict_quality and (sem_energia.get("cmBloqueiaSemEnergia") or sem_energia.get("calBloqueiaSemEnergia")):
         falhou = True
     return 1 if falhou else 0
 

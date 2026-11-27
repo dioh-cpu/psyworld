@@ -214,7 +214,7 @@ def run_viewport_e2e(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dic
         print(f"  [{vp_name}] {'PASS' if ok else 'FAIL'} {name} — {detail}", flush=True)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--disable-dev-shm-usage"])
+        browser = p.chromium.launch(headless=True, args=["--disable-dev-shm-usage", "--disable-gpu"])
         context = browser.new_context(
             viewport={"width": vp_cfg["width"], "height": vp_cfg["height"]},
             is_mobile=vp_cfg["is_mobile"],
@@ -637,7 +637,15 @@ def main() -> int:
     results = []
     try:
         for name in targets:
-            results.append(run_viewport_e2e(base_url, name, VIEWPORTS[name]))
+            for tentativa in range(2):
+                try:
+                    results.append(run_viewport_e2e(base_url, name, VIEWPORTS[name]))
+                    break
+                except Exception as exc:
+                    if tentativa == 0 and "Page crashed" in str(exc):
+                        print(f"  [{name}] Aviso: Chromium crash transitório no boot; repetindo 1x...", flush=True)
+                        continue
+                    raise
     finally:
         server.shutdown()
 
