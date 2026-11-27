@@ -1,9 +1,9 @@
 # Relatório — Etapa JOGADOR NOVO & RODADA DE QUALIDADE (QA, Desempenho e Colisão)
 
-- **Última atualização:** 2026-11-27 22:10 UTC
+- **Última atualização:** 2026-11-27 22:26 UTC
 - **Jogo:** https://cwdp-lake.vercel.app/jogar
 - **Gerado automaticamente por:** `python3 tools/e2e_jogador_novo.py`
-- **Desempenho na abertura:** Desktop `1280×720` = **1515 ms** (7254.4 KB, Refúgio +1729 ms, batalha **7 fps**) · Celular `844×390` = **1138 ms** (7254.4 KB, Refúgio +826 ms, batalha **14 fps**; meta abertura `< 2000 ms`: **OK**) · Celular compacto `740×360` = **1126 ms** (Refúgio +753 ms)
+- **Desempenho na abertura:** Desktop `1280×720` = **1600 ms** (7258.0 KB, Refúgio +1874 ms, batalha **5 fps**) · Celular `844×390` = **1104 ms** (7258.0 KB, Refúgio +798 ms, batalha **15 fps**; meta abertura `< 2000 ms`: **OK**) · Celular compacto `740×360` = **1021 ms** (Refúgio +725 ms)
 - **Sem custo de energia nos modos:** **OK (nenhum modo exige energia)**
 - **Artes v2 em disco:** `telas-v2/` (13+ fundos 2560px) = **7622.8 KB** · `telas-v2/mobile/` (1280px) = **2432.3 KB** (**-68.1%** no celular) · `banners-v2/` (2 capas) = **1811.1 KB**
 - **Carregamento sob demanda v2 no celular (`844×390`):** boot=0 arquivo(s), sessão inteira=13 arquivo(s) (usando `telas-v2/mobile/`: **11**, usando 2560px no celular: **0**)
@@ -14,11 +14,7 @@
 
 ## Resumo de problemas e pendências reais por agente
 
-| Agente | Tipo | Tela / Mapa | Detalhe |
-|---|---|---|---|
-| **dioh293** | `contraste-baixo` | Torres Elementais (1280x720) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
-| **dioh293** | `contraste-baixo` | Torres Elementais (844x390) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
-| **dioh293** | `contraste-baixo` | Torres Elementais (740x360) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
+Nenhum problema automático aberto nesta rodada.
 
 ---
 
@@ -29,7 +25,7 @@
 | **Energia nos modos** | Bloqueava (`CM 0/6`, `Cal 0/8`) | **Livre (0 bloqueios)** |
 | **Sprite duplicada na arena** | Reportada no Cervomusgo | **0 ocorrências** |
 | **Recortes em `844×390` e `740×360`** | Sem auditoria `740×360` | **0 recorte(s)** |
-| **Contraste WCAG AA** | Botão `Auto` = `1.93:1` | **3 alerta(s) de contraste** |
+| **Contraste WCAG AA** | Botão `Auto` = `1.93:1` | **0 alerta(s) de contraste** |
 | **1-1 a 1-3 (5 iniciais, 300 lutas)** | `Gotalume 81.7%`, `Brasinha 59%`, `Sementil 79.3%` | **Todos os 5 iniciais ≥ 99,7% (1-1..1-3)** |
 
 ---
@@ -47,7 +43,7 @@
 | `1-7` | 4× (Nv.19) | Azazel Nv.1 | 3 | ≥85% | 92.0% | 88.7% | 95.0% | 93.3% | 86.3% | **0.0%** |
 | `1-8` | 4× (Nv.22) | Azazel Nv.1 | 3 | ≥70% | 63.3% | 48.7% | 99.3% | 84.7% | 87.0% | **0.0%** |
 | `1-9` | 4× (Nv.24) | Azazel Nv.1 | 3 | ≥70% | 50.7% | 56.7% | 82.3% | 72.7% | 57.0% | **0.0%** |
-| `1-10` | 4× (Nv.27) | Azazel Nv.1 | 3 | ≥70% | 58.3% | 67.0% | 65.7% | 67.0% | 66.3% | **0.0%** |
+| `1-10` | 4× (Nv.27) | Azazel Nv.1 | 3 | ≥70% | 88.7% | 80.0% | 89.3% | 66.3% | 62.0% | **0.0%** |
 
 ---
 
@@ -127,9 +123,7 @@
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/10-torres.webp`
 - **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/10-torres.webp`
 - **Celular compacto (740×360):** `docs/relatorio-jogador-novo/740x360/10-torres.webp`
-- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
-- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
-- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
+- **Status:** Sem sobreposições, recortes, contraste baixo, sprite duplicada, 404 ou vazamento de mapa.
 
 ### 11. Calabouços de Relíquias
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/11-calaboucos.webp`
@@ -214,16 +208,16 @@
 
 | Etapa | Desktop 1280×720 | Celular 844×390 | Celular 740×360 |
 |---|---|---|---|
-| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1515ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1138ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1126ms) |
+| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1600ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1104ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1021ms) |
 | 02. Escolha do Inicial | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) |
-| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1515ms (7254.4KB), refugio=+1729ms, guiaPasso2=True) | PASS (boot=1138ms (7254.4KB), refugio=+826ms, guiaPasso2=True) | PASS (boot=1126ms (6432.5KB), refugio=+753ms, guiaPasso2=True) |
+| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1600ms (7258.0KB), refugio=+1874ms, guiaPasso2=True) | PASS (boot=1104ms (7258.0KB), refugio=+798ms, guiaPasso2=True) | PASS (boot=1021ms (7258.0KB), refugio=+725ms, guiaPasso2=True) |
 | 04. Campanha -> 1ª batalha | PASS (vitoria=True) | PASS (vitoria=True) | PASS (vitoria=True) |
 | 06. Equipe & Evolução | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) |
 | 07. Campanha Mini 1-1 (ondas na tela) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) |
 | 08. Missões (20 paralelas/cap) | PASS (painel aberto, temParalelas=True) | PASS (painel aberto, temParalelas=True) | PASS (painel aberto, temParalelas=True) |
 | 09. Torres andar 1 (9 Torres) | PASS (vitoria=True, botoesTorre=0) | PASS (vitoria=True, botoesTorre=0) | PASS (vitoria=True, botoesTorre=0) |
 | 10. Calabouços nível 1 (9 Calabouços) | PASS (vitoria=True, botoesCalabouco=9) | PASS (vitoria=True, botoesCalabouco=9) | PASS (vitoria=True, botoesCalabouco=9) |
-| 10b. Tela de derrota (dicas + botões) | PASS (PENDENTE dioh293: dicas ausentes {'invocacoes': False, 'auto_afk': False, 'evoluir': True}) | PASS (PENDENTE dioh293: dicas ausentes {'invocacoes': False, 'auto_afk': False, 'evoluir': True}) | PASS (PENDENTE dioh293: dicas ausentes {'invocacoes': False, 'auto_afk': False, 'evoluir': True}) |
+| 10b. Tela de derrota (dicas + botões) | PASS (dicas={'invocacoes': True, 'auto_afk': True, 'evoluir': True}, botoesDica=4, tempoEsgotado=False) | PASS (dicas={'invocacoes': True, 'auto_afk': True, 'evoluir': True}, botoesDica=4, tempoEsgotado=False) | PASS (dicas={'invocacoes': True, 'auto_afk': True, 'evoluir': True}, botoesDica=4, tempoEsgotado=False) |
 | 11. Relíquias (equipar) | PASS (relíquia equipada na UI) | PASS (relíquia equipada na UI) | PASS (relíquia equipada na UI) |
 | 12. Banner Adventurer (grátis + garantias 10/30/50) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) |
 | 13. Domador (Manipulador) | PASS (ativo=manipulador) | PASS (ativo=manipulador) | PASS (ativo=manipulador) |
