@@ -48,8 +48,31 @@ import {
 import { adicionarFragmentoSonho } from './regiao1-criacao-regras.js';
 import { darPocao } from './regiao1-halloween-regras.js';
 import { ESPECIES, ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
-import { sortearDropFragmentoSonho, aplicarDropsOfflineFragmentos, fragmentosSonhoDe, migrarInicialNoctarn, derrotasPagasDe } from './regiao1-regras-sonho.js';
+import {
+  sortearDropFragmentoSonho,
+  aplicarDropsOfflineFragmentos,
+  fragmentosSonhoDe,
+  migrarInicialNoctarn,
+  derrotasPagasDe,
+  essenciasDe,
+} from './regiao1-regras-sonho.js';
 import { revancheDe } from './regiao1-revanche-regras.js';
+import { energiaDe, campanhaMiniDe } from './regiao1-campanha-mini-regras.js';
+import { missoesDe } from './regiao1-missoes-regras.js';
+import { torresDe } from './regiao1-torres-regras.js';
+import { calaboucosDe } from './regiao1-calaboucos-regras.js';
+import { reliquiasDe, armasUnicasDe } from './regiao1-reliquias-regras.js';
+
+function garantirBlocosProgressao(save, agoraMs) {
+  energiaDe(save, agoraMs);
+  essenciasDe(save);
+  campanhaMiniDe(save);
+  missoesDe(save);
+  torresDe(save);
+  calaboucosDe(save);
+  reliquiasDe(save);
+  armasUnicasDe(save);
+}
 
 const PASS_LEVELS = PASSE_CFG.niveis;
 const passLevel = nivelPasse;
@@ -233,12 +256,14 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
     migrarProgressaoOniricos(save);
     migrarInicialNoctarn(save);
     limparOvosNoctarnDoPasse(save);
+    garantirBlocosProgressao(save, agoraMs);
     return save.idle;
   }
   const base = criarEstadoIdle(agoraMs);
   if (!save.idle || typeof save.idle !== 'object') {
     save.idle = base;
     if ((save.recompensas?.xp || 0) > 0) save.idle.jogador.xp = save.recompensas.xp;
+    garantirBlocosProgressao(save, agoraMs);
     return save.idle;
   }
   save.idle = {
@@ -287,6 +312,7 @@ export function garantirEstadoIdle(save, agoraMs = Date.now()) {
   migrarProgressaoOniricos(save);
   migrarInicialNoctarn(save);
   limparOvosNoctarnDoPasse(save);
+  garantirBlocosProgressao(save, agoraMs);
   return save.idle;
 }
 

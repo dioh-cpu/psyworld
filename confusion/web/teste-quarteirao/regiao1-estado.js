@@ -583,11 +583,16 @@ function sanitizarMapaSeguro(src, limite = 200, tipo = 'bool') {
 }
 
 // Lista branca explícita dos blocos novos em save.idle (mantém campos antigos intactos).
-export function sanitizarIdleProgressao(idle) {
-  if (!idle || typeof idle !== 'object' || Array.isArray(idle)) return {};
-  const out = { ...idle };
+const isObj = (v) => Boolean(v && typeof v === 'object' && !Array.isArray(v));
 
-  if (idle.energia && typeof idle.energia === 'object') {
+export function sanitizarIdleProgressao(idle) {
+  if (!isObj(idle)) return {};
+  const out = { ...idle };
+  for (const k of ['energia', 'essencias', 'campanhaMini', 'reliquias', 'missoes', 'armasUnicas', 'torres', 'calaboucos']) {
+    if (k in out && !isObj(out[k])) delete out[k];
+  }
+
+  if (isObj(idle.energia)) {
     const e = idle.energia;
     const max = Math.max(120, Math.floor(Number(e.max) || 120));
     out.energia = {
@@ -598,11 +603,11 @@ export function sanitizarIdleProgressao(idle) {
     };
   }
 
-  if (idle.essencias && typeof idle.essencias === 'object') {
+  if (isObj(idle.essencias)) {
     const ess = {};
     for (const par of ['ignea', 'mares', 'verde', 'mineral', 'solar', 'sombria']) {
       const cur = idle.essencias[par];
-      if (cur && typeof cur === 'object') {
+      if (isObj(cur)) {
         ess[par] = {
           menor: Math.max(0, Math.floor(Number(cur.menor) || 0)),
           media: Math.max(0, Math.floor(Number(cur.media) || 0)),
@@ -613,7 +618,7 @@ export function sanitizarIdleProgressao(idle) {
     out.essencias = ess;
   }
 
-  if (idle.campanhaMini && typeof idle.campanhaMini === 'object') {
+  if (isObj(idle.campanhaMini)) {
     const cm = idle.campanhaMini;
     const fases = {};
     if (cm.fases && typeof cm.fases === 'object') {
