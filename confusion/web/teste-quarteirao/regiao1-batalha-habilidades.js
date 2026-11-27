@@ -1,6 +1,7 @@
 // Habilidades e efeitos de batalha por turnos (dados + gerador de kits). Cada Onírico tem 3 habilidades; cada uma tem só tempo de
 // recarga (em rodadas), sem custo. Quanto maior a recarga, maior o dano, a cura ou o buff. O motor (regiao1-estrategia-regras.js) só lê estes dados.
 
+import { LINHAGENS_REINOS, PAPEL_DA_CLASSE } from './regiao1-kits-reinos.js';
 // Efeitos de status. dot: dano a cada turno; cc: perde o turno; debuff: removido por purificação.
 export const EFEITOS = {
   sangramento: { nome: 'Sangramento', icone: '🩸', debuff: true, dot: true, cor: '#ef4444' },
@@ -164,11 +165,49 @@ export const temKitProprio = (esp) => Boolean(KITS[esp] || KITS[LINHA_DO_KIT[esp
 // Mesma recarga; dano por alvo um pouco menor que o golpe único (área), mantendo a queimadura.
 export const CHAMA_NOTURNA = { id: 'chama_noturna', nome: 'Chama Noturna', icone: '🔥', tipo: 'dano', alvo: 'todos', mult: 1.5, cd: 3, distancia: true, elemento: 'trevas', efeitos: [ef('queimadura', 3, 0.6)] };
 export const kitNoctarion = () => KITS.Noctarn.map((h) => (h.id === 'chama_violeta' ? CHAMA_NOTURNA : h));
+// Reinos 03–12: kit pela classe da linhagem (molde) e pelos efeitos do elemento (POR_ELEMENTO); nomes e ids em regiao1-kits-reinos.js.
+const ICONE_EL = { fogo: '🔥', planta: '🌿', agua: '🌊', terra: '🪨', pedra: '💎', inseto: '🐞', voador: '🪶', eletrico: '⚡', aco: '⚙️', trevas: '🌑', luz: '✨', neutro: '⭐' };
+const MOLDES = {
+  assassino: (E) => [
+    { icone: '🗡️', tipo: 'dano', alvo: 'um', mult: 1.25, cd: 1, efeitos: [ef(E.dot, 3, 0.7)] },
+    { tipo: 'dano', alvo: 'um', mult: 1.7, cd: 3, efeitos: [ef('defesa_baixa', 2, 0.8)] },
+    { icone: '💢', tipo: 'dano', alvo: 'um', mult: 3.0, cd: 5, efeitos: [ef(E.dot, 3, 1)] },
+  ],
+  guerreiro: (E) => [
+    { icone: '⚔️', tipo: 'dano', alvo: 'um', mult: 1.2, cd: 1, efeitos: [ef(E.dot, 3, 0.6)] },
+    { tipo: 'dano', alvo: 'todos', mult: 1.0, cd: 3, efeitos: [ef(E.debuff, 2, 0.6)] },
+    { icone: '💥', tipo: 'dano', alvo: 'um', mult: 2.6, cd: 5, efeitos: [ef(E.cc, 1, 0.6)] },
+  ],
+  mago: (E) => [
+    { tipo: 'dano', alvo: 'um', mult: 1.1, cd: 1, distancia: true, efeitos: [ef(E.debuff, 2, 0.6)] },
+    { icone: '🌀', tipo: 'dano', alvo: 'todos', mult: 1.1, cd: 3, distancia: true, efeitos: [ef(E.dot, 2, 0.6)] },
+    { icone: '☄️', tipo: 'dano', alvo: 'todos', mult: 1.6, cd: 5, distancia: true, efeitos: [ef(E.cc, 1, 0.5)] },
+  ],
+  tanque: (E) => [
+    { icone: '🛡️', tipo: 'dano', alvo: 'um', mult: 1.1, cd: 1, efeitos: [ef('provocacao', 2)] },
+    { icone: '🔰', tipo: 'apoio', alvo: 'aliados', cd: 3, escudo: 0.12, efeitos: [ef('defesa_alta', 3)] },
+    { tipo: 'dano', alvo: 'todos', mult: 1.4, cd: 5, distancia: true, efeitos: [ef(E.cc, 1, 0.55)] },
+  ],
+  suporte: (E) => [
+    { icone: '💚', tipo: 'cura', alvo: 'aliado', mult: 0.2, cd: 1, efeitos: [] },
+    { tipo: 'cura', alvo: 'aliados', mult: 0.24, cd: 3, efeitos: [ef('regeneracao', 3)] },
+    { icone: '🌟', tipo: 'apoio', alvo: 'aliados', cd: 5, limpa: true, cura: 0.14, efeitos: [ef(E.buff === 'regeneracao' ? 'ataque_alto' : E.buff, 3)] },
+  ],
+};
+export function kitDaLinhagemReino(l) {
+  const E = POR_ELEMENTO[l.elemento] || POR_ELEMENTO.neutro;
+  return MOLDES[l.classe](E).map((h, i) => ({ id: slug(l.habilidades[i]), nome: l.habilidades[i], icone: ICONE_EL[l.elemento] || '⭐', ...h, elemento: l.elemento }));
+}
+export const KITS_REINOS = Object.fromEntries(LINHAGENS_REINOS.map((l) => [l.nome, kitDaLinhagemReino(l)]));
+for (const l of LINHAGENS_REINOS) PAPEL_PADRAO[l.nome] ??= PAPEL_DA_CLASSE[l.classe];
+
 export function kitDe(especie, papel, elemento, nomes = []) {
   if (especie === 'Noctarion') return kitNoctarion();
   if (especie === 'Mortálio') return Number.isInteger(MORTALIO_VIOLETA_CFG.vagaKit) ? kitMortalio() : KITS['Mortálio'];
   if (KITS[especie]) return KITS[especie];
   if (KITS[LINHA_DO_KIT[especie]]) return KITS[LINHA_DO_KIT[especie]];
+  if (KITS_REINOS[especie]) return KITS_REINOS[especie];
+  if (KITS_REINOS[LINHA_DO_KIT[especie]]) return KITS_REINOS[LINHA_DO_KIT[especie]];
   const E = POR_ELEMENTO[elemento] || POR_ELEMENTO.neutro, n = (i) => nomes[Math.min(i, nomes.length - 1)] || 'Golpe';
   const mk = (i, h) => ({ id: slug(n(i)), nome: n(i), elemento, ...h });
   if (papel === 'defesa') return [

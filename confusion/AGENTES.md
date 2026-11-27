@@ -27,6 +27,24 @@ O Claude é dono de `regiao1-revelacao.js`, `regiao1-conexao-fx.js`, `regiao1-sf
 
 ---
 
+## Expansão 1 — divisão atual (12 regiões, Reinos 03–12 e sistemas 01–10)
+
+asutaroto291 está indisponível: catálogo e saves passam para o Antigravity; kits, chefes e equilíbrio de combate, para o Claude.
+
+**Estado de partida:** Região 1 jogável (Praia e C1); faixas de nível das 12 regiões em `REGIOES` (`regiao1-progressao.js`). Reinos 1 e 2 jogáveis no modo Estratégia; artes dos Reinos 03–12 entregues (cidade, chefe, Oníricos), Reino 04 só com a cidade. Sistemas 01–10 com regras prontas em Menu → Mundo e artes prontas, ainda como polígonos no mapa.
+
+| Agente | Entregas |
+|---|---|
+| **Antigravity** (integração, interfaces, catálogo e saves) | 1. Catálogo das 12 regiões (id, nome, faixa, desbloqueio pelo chefe anterior, recompensa de primeira vitória paga uma vez, encontros), em `*-regras.js` com testes. 2. Regiões 2–12 jogáveis (mapa, portal, missões, encontros, chefe), começando pela Região 2 ligada ao Reino 2. 3. Reinos 03–12 no modo Estratégia, no molde de `regiao1-estrategia-r2.js`, com as cadeias do `REINOS.md`; espécie, elemento e classe vêm de `LINHAGENS_REINOS` (`regiao1-kits-reinos.js`). 4. Sistemas 01–10 ligados ao mapa e à campanha, com as artes de `interface/mundo/` e sem recompensa duplicada. 5. Seletor de reinos e regiões com cadeado e progresso. 6. Todo campo novo na lista branca de `desserializarEstado`; save antigo carrega sem perdas, inclusive pela nuvem. |
+| **Claude** (combate, VFX, animação e montaria) | 1. Kits das 50 linhagens dos Reinos 03–12 (**feito**: `regiao1-kits-reinos.js` + `KITS_REINOS`/`kitDe`). 2. Chefes regionais e dos reinos: atributos, kit, fases, entrada, golpe especial e derrota. 3. Equilíbrio de combate por faixa das 12 regiões. 4. VFX em vídeo das 24 habilidades que faltam e VFX por elemento para os kits novos. 5. Azazel montado no Brumacervo (4 direções, repouso e caminhada) quando chegarem os vídeos novos. 6. Poses de ataque das linhagens novas. |
+| **GPT / Codex** (artes) | 1. Mapas jogáveis, arenas e chefes das Regiões 2–12. 2. Reino 04: chefe, arena e as 5 linhagens. 3. Poses de ataque (`ataque-0N.png`) das linhagens dos Reinos 03–12. 4. Pendências do Prompt 2 (molduras do banner, bustos de Herói × Vilão, Crise), se faltarem. |
+
+**Ordem:** Região 2 de ponta a ponta (com Reino 2 e sistemas 01–10) como molde → Regiões e Reinos 3–6 → 7–12 → equilíbrio, VFX dos chefes e testes de save.
+
+**Contrato de kits (Claude → Antigravity):** `LINHAGENS_REINOS` traz `{ reino, nome, elemento, classe, habilidades }` das 50 linhagens; `kitDe(nome)` já devolve o kit e `PAPEL_PADRAO` já tem o papel da classe. Ids das habilidades = slug do nome e não mudam. Formas base/final de cada linhagem entram em `LINHA_DO_KIT` quando o catálogo der nome a elas. O Antigravity não edita `regiao1-batalha-habilidades.js` nem `regiao1-kits-reinos.js`; para mudar kit, chefe ou elemento, pede ao Claude.
+
+**Regras comuns:** um PR por entrega, merge só depois da checagem em celular (844×390) e desktop com `npm test` verde; ids de espécies, habilidades e locais nunca mudam.
+
 ## Prompt 1 — Claude (VFX das habilidades)
 
 Você cuida só do VFX de batalha do Confusion Waves (`confusion/web/teste-quarteirao/`).
