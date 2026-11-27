@@ -308,18 +308,20 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
   return tipo === 'elite' || tipo === 'escondida' ? [pick(0), pick(1), pick(2)] : [pick(0), pick(1)];
 }
 
-// Calibração auditada em 300 lutas/fase por inicial (Cap. 1): 1-1..1-3 >=95% para CADA um dos 5 iniciais, 1-4..1-7 ~85%, 1-8..1-10 ~70%.
+// Calibração auditada em 300 lutas/fase por inicial (Cap. 1) via fonte única tools/simular_iniciais_cap1.mjs
+// (time realista de 4 Oníricos das 10 invocações grátis + Azazel + curva de XP Campanha/Idle AFK):
+// 1-1..1-3 >=95% para CADA um dos 5 iniciais, 1-4..1-7 ~85%, 1-8..1-10 ~70%.
 export const CALIBRACAO_ONDAS_CAP1 = {
-  1: { qtds: [1, 1], nvs: [1, 1], especies: [['Tatuveludo'], ['Fanalino']] },
-  2: { qtds: [1, 1], nvs: [1, 1], especies: [['Tatuveludo'], ['Xistolim']] },
-  3: { qtds: [1, 1], nvs: [2, 2], especies: [['Fanalino'], ['Xistolim']] },
-  4: { qtds: [1, 2, 2], nvs: [7, 8, 9] },
-  5: { qtds: [1, 2, 2], nvs: [8, 9, 10] },
-  6: { qtds: [2, 2, 2], nvs: [11, 12, 13] },
-  7: { qtds: [2, 2, 2], nvs: [14, 15, 16] },
-  8: { qtds: [2, 2, 3], nvs: [17, 18, 19] },
-  9: { qtds: [2, 2, 3], nvs: [18, 19, 20] },
-  10: { qtds: [2, 2, 2], nvs: [19, 19, 21] },
+  1: { qtds: [2, 2], nvs: [4, 5], especies: [['Tatuveludo', 'Fanalino'], ['Xistolim', 'Cervomusgo']] },
+  2: { qtds: [2, 2], nvs: [6, 7], especies: [['Tatuveludo', 'Xistolim'], ['Fanalino', 'Cervomusgo']] },
+  3: { qtds: [2, 3], nvs: [6, 7], especies: [['Fanalino', 'Xistolim'], ['Tatuveludo', 'Cervomusgo', 'Xistolim']] },
+  4: { qtds: [2, 2, 3], nvs: [8, 9, 10], especies: [['Xistolim', 'Cervomusgo'], ['Fanalino', 'Xistolim'], ['Cervomusgo', 'Xistolim', 'Tatuveludo']] },
+  5: { qtds: [2, 2, 3], nvs: [11, 12, 13], especies: [['Cervomusgo', 'Fanalino'], ['Fanalino', 'Xistolim'], ['Cobrabúfalo', 'Cervomusgo', 'Cervomusgo']] },
+  6: { qtds: [2, 2, 3], nvs: [15, 16, 17], especies: [['Cervomusgo', 'Xistolim'], ['Fanalino', 'Cervomusgo'], ['Xistolim', 'Cobrabúfalo', 'Cervomusgo']] },
+  7: { qtds: [2, 2, 3], nvs: [16, 17, 19], especies: [['Fanalino', 'Cervomusgo'], ['Cervomusgo', 'Fanalino'], ['Cobrabúfalo', 'Xistolim', 'Cervomusgo']] },
+  8: { qtds: [2, 3, 3], nvs: [19, 21, 22], especies: [['Xistolim', 'Fanalino'], ['Cervomusgo', 'Xistolim', 'Cervomusgo'], ['Cobrabúfalo', 'Cervomusgo', 'Xistolim']] },
+  9: { qtds: [2, 3, 3], nvs: [21, 23, 24], especies: [['Cervomusgo', 'Xistolim'], ['Fanalino', 'Cervomusgo', 'Xistolim'], ['Cobrabúfalo', 'Cervomusgo', 'Xistolim']] },
+  10: { qtds: [2, 3, 3], nvs: [24, 26, 26], especies: [['Xistolim', 'Cervomusgo'], ['Cervomusgo', 'Fanalino', 'Xistolim'], ['CHEFE', 'Xistolim', 'Cervomusgo']] },
 };
 
 function montarOndasFase(cap, faseNum, nivel, tipo, elementoRegiao) {
