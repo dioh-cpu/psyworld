@@ -23,13 +23,19 @@ import { mostrarResultadoBatalha } from './regiao1-resultado-ui.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ARENA_FALLBACK = 'assets/confusion/interface/estrategia/reinos/01/arena-chefe.webp';
+const ELEMENTOS_18 = ['fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'lutador', 'voador', 'veneno', 'psiquico', 'inseto', 'pedra', 'fantasma', 'eletrico', 'gelo', 'dragao', 'aco', 'fada'];
+const icoEl = (el) => `../../../assets/confusion/interface/menus-v1/ficha/sonho-${el === 'sombra' ? 'trevas' : el}.png`;
 
 export function renderizarPainelTorres(save, aba, st) {
   const t = torresDe(save);
   const armas = save?.idle?.armasUnicas || { fragmentos: {}, poUnico: 0, escolhasPendentes: 0 };
 
   if (aba === 0) {
-    const torreId = st.torreElId && TORRES_ELEMENTAIS_POR_ID[st.torreElId] ? st.torreElId : TORRES_ELEMENTAIS_CATALOGO[0].id;
+    const elFiltro = st.elementoFiltro || 'todos';
+    const catalogoFiltrado = elFiltro === 'todos'
+      ? TORRES_ELEMENTAIS_CATALOGO
+      : TORRES_ELEMENTAIS_CATALOGO.filter((x) => (x.elementos || []).includes(elFiltro));
+    const torreId = st.torreElId && TORRES_ELEMENTAIS_POR_ID[st.torreElId] ? st.torreElId : (catalogoFiltrado[0]?.id || TORRES_ELEMENTAIS_CATALOGO[0].id);
     const torre = TORRES_ELEMENTAIS_POR_ID[torreId];
     const maior = Number(t.elementais[torre.id]?.maiorAndar) || 0;
     const proxAndar = Math.min(torre.totalAndares, maior + 1);
@@ -39,11 +45,19 @@ export function renderizarPainelTorres(save, aba, st) {
     const pago = Boolean(t.elementais[torre.id]?.pagas?.[String(andarSel)]);
     const treinos = usosRestantesTreinoTorre(save);
 
-    const seletores = TORRES_ELEMENTAIS_CATALOGO.map((x) => {
-      const m = Number(t.elementais[x.id]?.maiorAndar) || 0;
-      const els = x.elementos.map((e) => NOME_ELEMENTO[e] || e).join(' / ');
-      return `<button class="${x.id === torre.id ? 'btn-pri' : 'btn-sec'}" data-tor-el="${esc(x.id)}" style="padding:5px 9px;font-size:11.5px">🗼 ${esc(x.nome)} <small>(${m}/${x.totalAndares})</small><br><span style="font-size:10px;opacity:.85">${esc(els)}</span></button>`;
-    }).join('');
+    const filtrosEl = `<button class="${elFiltro === 'todos' ? 'btn-pri' : 'btn-sec'}" data-tor-filtro-el="todos" style="padding:3px 7px;font-size:10.5px">Todos (${TORRES_ELEMENTAIS_CATALOGO.length})</button>`
+      + ELEMENTOS_18.map((el) => {
+        const tem = TORRES_ELEMENTAIS_CATALOGO.some((x) => (x.elementos || []).includes(el));
+        return `<button class="${elFiltro === el ? 'btn-pri' : 'btn-sec'}" data-tor-filtro-el="${el}" style="padding:3px 6px;font-size:10.5px;display:inline-flex;align-items:center;gap:3px;${tem ? '' : 'opacity:.6'}" title="${esc(NOME_ELEMENTO[el] || el)}${tem ? '' : ' (catálogo em expansão)'}"><img src="${icoEl(el)}" alt="" style="width:13px;height:13px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[el] || el)}</button>`;
+      }).join('');
+
+    const seletores = catalogoFiltrado.length
+      ? catalogoFiltrado.map((x) => {
+        const m = Number(t.elementais[x.id]?.maiorAndar) || 0;
+        const els = x.elementos.map((e) => NOME_ELEMENTO[e] || e).join(' / ');
+        return `<button class="${x.id === torre.id ? 'btn-pri' : 'btn-sec'}" data-tor-el="${esc(x.id)}" style="padding:5px 9px;font-size:11.5px">🗼 ${esc(x.nome)} <small>(${m}/${x.totalAndares})</small><br><span style="font-size:10px;opacity:.85">${esc(els)}</span></button>`;
+      }).join('')
+      : `<div class="mut" style="font-size:11.5px;padding:4px 0">Torre elemental de <b>${esc(NOME_ELEMENTO[elFiltro] || elFiltro)}</b> preparada para o catálogo expandido de 18 elementos.</div>`;
 
     const iniIdx = Math.max(1, andarSel - 4);
     const fimIdx = Math.min(torre.totalAndares, iniIdx + 9);
@@ -56,10 +70,11 @@ export function renderizarPainelTorres(save, aba, st) {
 
     const p1 = andarDef.recompensaPrimeiraVitoria;
     return `<div class="bl">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-        <b>🗼 Torres Elementais (6 × 50 andares)</b>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <b>🗼 Torres Elementais (${TORRES_ELEMENTAIS_CATALOGO.length} × 50 andares · 18 elementos)</b>
         <span class="tag">Treino diário: ${treinos}/${TORRES_CFG.treinosDiariosMax}</span>
       </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
     </div>
     <div class="bl">
@@ -147,6 +162,17 @@ export function renderizarPainelTorres(save, aba, st) {
 }
 
 export function tratarCliqueTorres(d, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, st }) {
+  if (d.torFiltroEl) {
+    st.elementoFiltro = d.torFiltroEl;
+    const match = d.torFiltroEl === 'todos' ? TORRES_ELEMENTAIS_CATALOGO[0] : TORRES_ELEMENTAIS_CATALOGO.find((x) => (x.elementos || []).includes(d.torFiltroEl));
+    if (match) {
+      st.torreElId = match.id;
+      const m = Number(torresDe(save).elementais[match.id]?.maiorAndar) || 0;
+      st.andarEl = Math.min(match.totalAndares, m + 1);
+    }
+    render();
+    return true;
+  }
   if (d.torEl) {
     st.torreElId = d.torEl;
     const m = Number(torresDe(save).elementais[d.torEl]?.maiorAndar) || 0;

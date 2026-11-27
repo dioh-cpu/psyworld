@@ -21,12 +21,18 @@ import { arteDoIndividuo } from './regiao1-halloween-dados.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { mostrarResultadoBatalha, fecharResultadoBatalha } from './regiao1-resultado-ui.js';
 import { renderBalaoTutorialModo, tratarCliqueTutorialModo } from './regiao1-tutoriais-modos.js';
+import { aplicarFundoTelaSobDemanda } from './regiao1-perf-mobile.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const pad2 = (n) => String(n).padStart(2, '0');
-const capaCapitulo = (num) => `../../../assets/confusion/interface/estrategia/reinos/${pad2(num)}/cidade-conceito.webp`;
+const KIT_CM = (p) => `../../../assets/confusion/interface/kit-v2/${p}`;
+const CAMPANHA_MINI_V2_ATIVO = false; // ativar quando GPT entregar assets/confusion/interface/campanha-mini-v2/
+const capaCapitulo = (num) => (CAMPANHA_MINI_V2_ATIVO
+  ? `../../../assets/confusion/interface/campanha-mini-v2/cap-${pad2(num)}.webp`
+  : `../../../assets/confusion/interface/estrategia/reinos/${pad2(num)}/cidade-conceito.webp`);
+const COORDS_CM_V2 = {}; // preenchido por campanha-mini-v2/coordenadas.json quando disponível
 
-// Coordenadas automáticas em trilha sinuosa (% do mapa) — prontas para substituir por MAPAS.md quando o GPT entregar.
+// Coordenadas automáticas em trilha sinuosa (% do mapa) — prontas para substituir por campanha-mini-v2/coordenadas.json quando o GPT entregar.
 const PONTOS_TRILHA = [
   [10, 74], [20, 56], [30, 72], [40, 48], [50, 32],
   [60, 56], [69, 74], [78, 52], [86, 66], [92, 34],
@@ -43,16 +49,17 @@ const COR_EL = {
 
 const CSS_CM = `
 #modal-campanha-mini.modal-bg{padding:0!important;z-index:55}
-#modal-campanha-mini .cm-shell{width:100vw;height:100vh;max-width:100vw;max-height:100vh;background:linear-gradient(180deg,#081224,#0d1b33);color:#e2e8f0;display:flex;flex-direction:column;overflow:hidden}
-.cm-top{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(6,13,26,.94);border-bottom:1px solid #1e3a5f;flex-shrink:0}
-.cm-top h3{margin:0;font-size:15px;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cm-top .cm-sub{font-size:11.5px;color:#93c5fd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#modal-campanha-mini .cm-shell{width:100vw;height:100vh;max-width:100vw;max-height:100vh;background:linear-gradient(180deg,rgba(12,8,22,.82),rgba(8,6,18,.94));background-size:cover;background-position:center;color:#e2e8f0;display:flex;flex-direction:column;overflow:hidden}
+.cm-top{display:flex;align-items:center;gap:8px;padding:8px 14px;background:linear-gradient(180deg,rgba(22,12,32,.88),rgba(12,7,20,.94)),url('../../../assets/confusion/interface/kit-v2/cabecalho.png') center / 100% 100% no-repeat;border-bottom:1px solid rgba(243,194,122,.32);flex-shrink:0}
+.cm-top h3{margin:0;font-size:15px;color:#fde68a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm-top .cm-sub{font-size:11.5px;color:#cbd5e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cm-top .cm-dir{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.cm-btn{background:#122544;border:1px solid #38bdf8;color:#e0f2fe;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
-.cm-btn:hover{background:#1b3864}
-.cm-btn.pri{background:linear-gradient(135deg,#0284c7,#2563eb);border-color:#7dd3fc;color:#fff}
-.cm-btn.ouro{background:linear-gradient(135deg,#b45309,#d97706);border-color:#fde68a;color:#fff}
-.cm-btn:disabled{opacity:.42;cursor:not-allowed}
+.cm-btn{background:url('../../../assets/confusion/interface/kit-v2/botao-secundario-normal.png') center / 100% 100% no-repeat,#1b1429;border:0;color:#fff3e7;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+.cm-btn:hover:not(:disabled){background-image:url('../../../assets/confusion/interface/kit-v2/botao-secundario-hover.png')}
+.cm-btn.pri{background:url('../../../assets/confusion/interface/kit-v2/botao-principal-normal.png') center / 100% 100% no-repeat,linear-gradient(135deg,#b8793e,#7c4923);color:#fff7ed}
+.cm-btn.pri:hover:not(:disabled){background-image:url('../../../assets/confusion/interface/kit-v2/botao-principal-hover.png')}
+.cm-btn.ouro{background:url('../../../assets/confusion/interface/kit-v2/botao-principal-normal.png') center / 100% 100% no-repeat,linear-gradient(135deg,#b45309,#d97706);color:#fff7ed}
+.cm-btn:disabled{background-image:url('../../../assets/confusion/interface/kit-v2/botao-secundario-desativado.png');opacity:.52;cursor:not-allowed}
 .cm-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 14px;display:flex;flex-direction:column;gap:10px;max-width:1120px;width:100%;margin:0 auto;box-sizing:border-box}
 .cm-caps{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:10px}
 .cm-cap{position:relative;border-radius:12px;overflow:hidden;border:1px solid #26466d;background:#0f203b;cursor:pointer;display:flex;flex-direction:column;transition:transform .12s,border-color .12s}
@@ -84,9 +91,9 @@ const CSS_CM = `
 .cm-bau{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:8px;border:1px solid #334155;background:#0f1d35;color:#cbd5e1;font-size:11.5px;font-weight:700;cursor:pointer}
 .cm-bau.pronto{border-color:#facc15;background:rgba(180,83,9,.45);color:#fef08a}
 .cm-bau.coletado{border-color:#22c55e;background:rgba(20,83,45,.35);color:#86efac;cursor:default}
-.cm-ficha{background:rgba(10,22,43,.95);border:1px solid #26466d;border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
-.cm-ficha h4{margin:0;font-size:14px;color:#f8fafc;display:flex;justify-content:space-between;align-items:center;gap:6px}
-.cm-box{background:#0b172d;border:1px solid #1e3a5f;border-radius:9px;padding:7px 9px;font-size:11.5px;color:#cbd5e1}
+.cm-ficha{background:rgba(18,10,28,.92);border:12px solid transparent;border-image:url('../../../assets/confusion/interface/kit-v2/painel-9slice.png') 28 fill stretch;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.cm-ficha h4{margin:0;font-size:14px;color:#fde68a;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.cm-box{background:rgba(14,8,22,.82);border:1px solid rgba(243,194,122,.28);border-radius:9px;padding:7px 9px;font-size:11.5px;color:#e2d4c8}
 .cm-box b{color:#f8fafc}
 .cm-ini-lista{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
 .cm-ini-chip{background:#132544;border:1px solid #2c4a73;border-radius:7px;padding:3px 7px;font-size:11px;color:#e2e8f0}
@@ -213,7 +220,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
       const gold = Number(save.recompensas?.gold || 0).toLocaleString('pt-BR');
       const diam = Number(save.recompensas?.diamantes || 0).toLocaleString('pt-BR');
       const tick = Number(save.expansao?.tickets || 0);
-      recEl.innerHTML = `<span class="modal-rec-pill" title="Ouro">🪙 ${gold}</span><span class="modal-rec-pill" title="Diamantes">💎 ${diam}</span><span class="modal-rec-pill" title="Tickets">🎟️ ${tick}</span>`;
+      recEl.innerHTML = `<span class="modal-rec-pill" title="Ouro"><img class="kit-rec-ico" src="${KIT_CM('recursos/ouro.png')}" alt="">${gold}</span><span class="modal-rec-pill" title="Diamantes"><img class="kit-rec-ico" src="${KIT_CM('recursos/diamante.png')}" alt="">${diam}</span><span class="modal-rec-pill" title="Tickets"><img class="kit-rec-ico" src="${KIT_CM('recursos/ticket.png')}" alt="">${tick}</span>`;
     }
   }
 
@@ -336,7 +343,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
           <span class="cm-cap-estrelas">${estrelasTxt(faseSel.estrelas)}</span>
         </h4>
         <div class="cm-box">
-          <div><b>Nível recomendado:</b> ${faseSel.nivel} · <b>Energia:</b> ⚡ ${faseSel.energia}</div>
+          <div><b>Nível recomendado:</b> ${faseSel.nivel} · <b>Energia:</b> ⚡ ${faseSel.energia} · <b>🌊 Ondas:</b> ${Array.isArray(faseSel.ondas) && faseSel.ondas.length ? faseSel.ondas.length : (Number(faseSel.numero || 1) <= 3 ? 2 : 3)}</div>
           <div style="margin-top:4px"><b>Inimigos:</b></div>
           <div class="cm-ini-lista">${inimigosHtml}</div>
         </div>
@@ -508,6 +515,8 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
     } else {
       visao = 'capitulos';
     }
+    const shell = modal.querySelector('.cm-shell');
+    if (shell) aplicarFundoTelaSobDemanda(shell, 'campanha-mini');
     render();
     abrirModal('modal-campanha-mini');
   }

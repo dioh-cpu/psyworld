@@ -81,7 +81,7 @@ import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { ESTRATEGIA_R2 } from './regiao1-estrategia-r2.js';
 import { ESTRATEGIA_R3_R12 } from './regiao1-estrategia-r3-r12.js';
 import { multVelocidade, montariaEquipada, montadoVisivel, apresentacaoMontaria } from './regiao1-montaria.js';
-import { agendarOcioso, mapaCobertoNaAbertura, iniciarPerfMobile } from './regiao1-perf-mobile.js';
+import { agendarOcioso, mapaCobertoNaAbertura, iniciarPerfMobile, aplicarFundoTelaSobDemanda } from './regiao1-perf-mobile.js';
 import { criarDomadorMontado } from './domador-montado.js';
 
 // ---- Constantes de mundo, escala (+30% aplicado uma vez) e câmera calibrada ----
@@ -737,23 +737,29 @@ function voltarAoRefugioDeQualquerMenu() {
 const TELA_POR_MODAL = {
   'modal-mochila': 'mochila',
   'modal-codex': 'colecao',
-  'modal-atlas': 'atlas',
-  'modal-temporada': 'passe',
+  'modal-atlas': 'batalhas',
+  'modal-temporada': 'eventos',
   'modal-diario': 'missoes',
-  'modal-config': 'config',
-  'modal-mapa': 'mapa',
-  'modal-menu': 'menu',
+  'modal-config': 'mochila',
+  'modal-mapa': 'campanha-mini',
+  'modal-menu': 'mochila',
   'modal-autocaca': 'idle',
   'modal-voto': 'eventos',
-  'modal-mundo': 'mundo',
-  'modal-regioes': 'regioes',
-  'modal-reinos': 'reinos',
+  'modal-mundo': 'campanha-mini',
+  'modal-regioes': 'campanha-mini',
+  'modal-reinos': 'campanha-mini',
   'modal-hw': 'eventos',
 };
+const KIT_REC = (id) => `../../../assets/confusion/interface/kit-v2/recursos/${id}.png`;
 
 function garantirBotaoRefugioNoModal(el) {
   if (!el || MODAIS_SEM_REFUGIO.has(el.id)) return;
-  if (TELA_POR_MODAL[el.id]) el.dataset.tela = TELA_POR_MODAL[el.id];
+  const slugTela = TELA_POR_MODAL[el.id];
+  if (slugTela) {
+    el.dataset.tela = slugTela;
+    const card = el.querySelector(':scope > .modal-card');
+    if (card) aplicarFundoTelaSobDemanda(card, slugTela);
+  }
   const head = el.querySelector('.modal-head');
   if (!head) return;
   let btn = head.querySelector('.btn-voltar-refugio');
@@ -786,7 +792,7 @@ function garantirBotaoRefugioNoModal(el) {
     const gold = Number(save.recompensas?.gold || 0).toLocaleString('pt-BR');
     const diam = Number(save.recompensas?.diamantes || 0).toLocaleString('pt-BR');
     const tick = Number(save.expansao?.tickets || 0);
-    rec.innerHTML = `<span class="modal-rec-pill" title="Energia">⚡ ${en.atual}/${en.max}</span><span class="modal-rec-pill" title="Ouro">🪙 ${gold}</span><span class="modal-rec-pill" title="Diamantes">💎 ${diam}</span><span class="modal-rec-pill" title="Tickets">🎟️ ${tick}</span>`;
+    rec.innerHTML = `<span class="modal-rec-pill" title="Energia"><img class="kit-rec-ico" src="${KIT_REC('energia')}" alt="">${en.atual}/${en.max}</span><span class="modal-rec-pill" title="Ouro"><img class="kit-rec-ico" src="${KIT_REC('ouro')}" alt="">${gold}</span><span class="modal-rec-pill" title="Diamantes"><img class="kit-rec-ico" src="${KIT_REC('diamante')}" alt="">${diam}</span><span class="modal-rec-pill" title="Tickets"><img class="kit-rec-ico" src="${KIT_REC('ticket')}" alt="">${tick}</span>`;
   }
 }
 

@@ -228,27 +228,68 @@
     box-sizing: border-box;
   }
   .modal-card { background: #0d182d; border: 2px solid var(--border); border-radius: 12px; width: min(580px, 95vw); max-height: 86vh; overflow-y: auto; padding: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.75); }
-  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(63,143,214,.3); padding-bottom: 8px; flex-wrap: wrap; }
-  .modal-head h3 { margin: 0; font-size: 16px; color: var(--gold); flex: 1; min-width: 120px; }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; border-bottom: 1px solid rgba(243,194,122,.32); padding: 8px 12px; flex-wrap: wrap; background: linear-gradient(180deg, rgba(22,12,32,.86), rgba(14,8,22,.92)), url('../../../assets/confusion/interface/kit-v2/cabecalho.png') center / 100% 100% no-repeat; border-radius: 10px; }
+  .modal-head h3 { margin: 0; font-size: 16px; color: var(--gold); flex: 1; min-width: 120px; text-shadow: 0 2px 6px rgba(0,0,0,.75); }
   .modal-recursos { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   .modal-recursos[hidden] { display: none !important; }
   .modal-rec-pill {
-    display: inline-flex; align-items: center; gap: 3px;
+    display: inline-flex; align-items: center; gap: 4px;
     background: rgba(24, 14, 34, .88); border: 1px solid var(--kit-painel-borda);
     border-radius: 8px; padding: 3px 7px; font: 700 11px system-ui, sans-serif; color: #fff3e7; white-space: nowrap;
   }
+  .kit-rec-ico { width: 15px; height: 15px; object-fit: contain; display: inline-block; vertical-align: middle; }
   .btn-voltar-refugio {
     background: rgba(53, 34, 56, .92); border: 1px solid #f3a458; color: #fde68a; border-radius: 7px;
     padding: 4px 9px; cursor: pointer; font: 700 11.5px system-ui, sans-serif; white-space: nowrap; flex-shrink: 0;
   }
   .btn-voltar-refugio:hover { background: rgba(243, 164, 88, .24); }
-  .btn-fechar { background: transparent; border: 1px solid #475569; color: var(--txt); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 700; flex-shrink: 0; }
-  .btn-pri { background: #1d4ed8; border: 1.5px solid var(--cyan); color: #fff; border-radius: 8px; padding: 7px 13px; font: 700 12.5px system-ui; cursor: pointer; }
-  .btn-sec { background: #1e293b; border: 1.5px solid #475569; color: var(--txt); border-radius: 8px; padding: 7px 12px; font: 600 12.5px system-ui; cursor: pointer; }
+  .btn-fechar { background: rgba(22,12,32,.88); border: 1px solid #6b4a52; color: var(--txt); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 700; flex-shrink: 0; }
+  /* kit-v2: botões nos 4 estados (normal, hover, pressionado, desativado) */
+  .btn-pri {
+    background: url('../../../assets/confusion/interface/kit-v2/botao-principal-normal.png') center / 100% 100% no-repeat, linear-gradient(180deg, #b8793e, #7c4923);
+    border: 0; color: #fff7ed; border-radius: 8px; padding: 7px 14px; font: 700 12.5px system-ui; cursor: pointer; text-shadow: 0 1px 3px rgba(0,0,0,.7);
+  }
+  .btn-pri:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-principal-hover.png'), linear-gradient(180deg, #cf8c4b, #8f5529); }
+  .btn-pri:active:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-principal-pressionado.png'), linear-gradient(180deg, #7c4923, #5a3418); }
+  .btn-pri:disabled { background-image: url('../../../assets/confusion/interface/kit-v2/botao-principal-desativado.png'), linear-gradient(180deg, #3a3444, #262130); opacity: .65; cursor: not-allowed; }
+  .btn-sec {
+    background: url('../../../assets/confusion/interface/kit-v2/botao-secundario-normal.png') center / 100% 100% no-repeat, #1e293b;
+    border: 0; color: #f6e7d8; border-radius: 8px; padding: 7px 13px; font: 600 12.5px system-ui; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,.65);
+  }
+  .btn-sec:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-secundario-hover.png'), #29384f; }
+  .btn-sec:active:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-secundario-pressionado.png'), #152030; }
+  .btn-sec:disabled { background-image: url('../../../assets/confusion/interface/kit-v2/botao-secundario-desativado.png'), #1a1824; opacity: .55; cursor: not-allowed; }
+  /* kit-v2: abas ativa/inativa */
+  .mochila-atalhos button, #modal-exp .exp-abas button {
+    background: url('../../../assets/confusion/interface/kit-v2/aba-inativa.png') center / 100% 100% no-repeat, #24162b;
+    border: 0; color: #e2d4c8; padding: 7px 12px; font-weight: 700;
+  }
+  .mochila-atalhos button[aria-selected="true"], #modal-exp .exp-abas button[aria-selected="true"] {
+    background: url('../../../assets/confusion/interface/kit-v2/aba-ativa.png') center / 100% 100% no-repeat, #f3a458;
+    color: #fff7ed; text-shadow: 0 1px 3px rgba(0,0,0,.75);
+  }
   .btn-danger { background: #7f1d1d; border: 1.5px solid var(--rose); color: #fff; border-radius: 8px; padding: 5px 10px; font: 600 11.5px system-ui; cursor: pointer; }
   .sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
   .tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; border: 1px solid #475569; color: #cbd5e1; margin-left: 4px; }
-  .card-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: rgba(15,29,54,.78); border: 1px solid rgba(63,143,214,.25); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; }
+  /* kit-v2: painel 9-slice */
+  .card-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: rgba(20,12,30,.86); border: 10px solid transparent; border-image: url('../../../assets/confusion/interface/kit-v2/painel-9slice.png') 28 fill stretch; border-radius: 8px; padding: 4px 8px; margin-bottom: 6px; font-size: 12px; }
+  /* Card quadrado do Domador (512x512 com abertura 356x356 em 78,78 = 15.23%) */
+  .dom-grid { display: grid; grid-template-columns: 224px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: start; }
+  .dom-perfil-card { background: rgba(20,12,30,.9); border: 12px solid transparent; border-image: url('../../../assets/confusion/interface/kit-v2/painel-9slice.png') 28 fill stretch; border-radius: 10px; padding: 6px; text-align: center; }
+  .dom-retrato-wrap { position: relative; width: 100%; max-width: 192px; aspect-ratio: 1 / 1; margin: 0 auto 8px; }
+  .dom-retrato-foto { position: absolute; inset: 15.23%; overflow: hidden; border-radius: 6px; background: #140b1e; }
+  .dom-retrato-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .dom-retrato-moldura { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 2; }
+  .dom-pers-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin: 6px 0; }
+  .dom-pers-item { position: relative; background: #1b1028; border: 1.5px solid #52335c; border-radius: 8px; padding: 4px; color: #fff3e7; font-size: 10px; cursor: pointer; text-align: center; }
+  .dom-pers-item.ativo { border-color: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,.45); }
+  .dom-pers-item.bloqueado { opacity: .55; }
+  .dom-pers-item img { width: 52px; height: 52px; object-fit: contain; display: block; margin: 0 auto 2px; }
+  @media (max-width: 780px), (max-height: 430px) {
+    .dom-grid { grid-template-columns: 168px minmax(0, 1fr); }
+    .dom-col-origem { grid-column: 1 / -1; }
+    .dom-retrato-wrap { max-width: 144px; }
+  }
   .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
   .menu-tile { background: #132442; border: 1.5px solid rgba(63,143,214,.4); border-radius: 10px; padding: 12px 6px; text-align: center; color: #fff; font: 700 12px system-ui; cursor: pointer; }
   .menu-tile:hover { border-color: var(--gold); background: #1c3560; }
@@ -485,10 +526,18 @@
     <div id="mochila-corpo" class="modal-corpo">
       <div id="mochila-detalhe" class="card-row" style="display:none;border-color:#f3a458;margin-bottom:8px"></div>
       <div data-cat-pane="domador">
-        <div class="sec-tit" id="domador-secao">Pontos de Atributo do Domador (+3 pts por nível)</div>
-        <div id="domador-atributos"></div>
-        <div class="sec-tit">Origem dos Atributos</div>
-        <div id="status-breakdown"></div>
+        <div id="domador-personalizar" hidden></div>
+        <div class="dom-grid">
+          <div id="domador-card-perfil" class="dom-perfil-card"></div>
+          <div>
+            <div class="sec-tit" id="domador-secao" style="margin-top:0">Pontos de Atributo (+3 pts/nível)</div>
+            <div id="domador-atributos"></div>
+          </div>
+          <div class="dom-col-origem">
+            <div class="sec-tit" style="margin-top:0">Origem dos Atributos</div>
+            <div id="status-breakdown"></div>
+          </div>
+        </div>
       </div>
       <div data-cat-pane="fragmentos" hidden>
         <div class="sec-tit" id="fragmentos-secao">Fragmentos de Sonho (Evolução Elemental)</div>
