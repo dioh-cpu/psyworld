@@ -38,7 +38,7 @@ const VIOLETA = HAB.MORTALIO_VIOLETA_CFG || { id: 'manto_violeta', clip: 'assets
 FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, cut: ['#5b21b6', '#ddd6fe'] };
 // Clipes do Flow, lote 1 (PR #61). impactoMs = ataque do pico de áudio do próprio clipe; chao = altura relativa do chão do efeito no
 // quadro (ancorado nos pés do alvo); escala = largura do clipe em relação ao corpo do alvo. Sem o arquivo, vale a coreografia procedural.
-const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/', FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/', FLOW4 = 'assets/confusion/interface/vfx/flow-lote-4/', FLOW5 = 'assets/confusion/interface/vfx/flow-lote-5/';
+const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/', FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/', FLOW4 = 'assets/confusion/interface/vfx/flow-lote-4/', FLOW5 = 'assets/confusion/interface/vfx/flow-lote-5/', FLOW6 = 'assets/confusion/interface/vfx/flow-lote-6/';
 export const CLIPES_FLOW = {
   manto_violeta: { clip: `${FLOW}mortalio-violeta.mp4`, impactoMs: 1250, chao: 0.86, escala: 3.4, duracaoMs: 3000 },
   chama_solar: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 }, // Solarin: cura de um aliado (chama dourada; também é a cura de fogo)
@@ -102,6 +102,11 @@ export const CLIPES_ELEMENTAIS = {
   planta1: { clip: `${FLOW5}planta.mp4`, impactoMs: 560, centro: 0.5, escala: 3.0, duracaoMs: 2400 },
   luta: { clip: `${FLOW5}luta.mp4`, impactoMs: 680, centro: 0.5, escala: 3.0, duracaoMs: 2300, espelhar: true },     // neutro corpo a corpo
   psiquico: { clip: `${FLOW5}psiquico.mp4`, impactoMs: 890, centro: 0.5, escala: 3.0, duracaoMs: 2300 },            // fantasma em área
+  // Lote 6: suporte (anel no chão e aura subindo em volta do Onírico; nada explode). Ancorados nos pés.
+  ...Object.fromEntries([['curaEletrica', 'cura-eletrica', 750], ['ressurreicao', 'ressurreicao', 800], ['ataque', 'ataque', 800], ['velocidade', 'velocidade', 750],
+    ['curaTerra', 'cura-terra', 800], ['defesa', 'defesa', 800], ['invencivel', 'invencivel', 850], ['curaFantasma', 'cura-fantasma', 700], ['curaInseto', 'cura-inseto', 800],
+    ['provocacao', 'provocacao', 750], ['regeneracao', 'regeneracao', 750], ['curaVento', 'cura-vento', 700], ['curaTrevas', 'cura-trevas', 850], ['purificacao', 'purificacao', 750]]
+    .map(([k, arq, imp]) => [k, { clip: `${FLOW6}${arq}.mp4`, impactoMs: imp, chao: 0.9, escala: 3.8, duracaoMs: 2500 }])),
   pedra1: { clip: `${FLOW5}pedra-verde.mp4`, impactoMs: 810, centro: 0.5, escala: 3.0, duracaoMs: 2400, chroma: true },
   anelEletrico: { clip: `${FLOW3}anel-eletrico.mp4`, impactoMs: 970, centro: 0.5, escala: 2.6, duracaoMs: 1800 },  // elétrico em área
   laminasSombrias: { clip: `${FLOW3}laminas-sombrias.mp4`, impactoMs: 650, centro: 0.49, escala: 2.8, duracaoMs: 2400, ult: true }, // suprema de trevas
@@ -116,12 +121,26 @@ export const CLIPE_ABYSSAR_FINAL = {
   hora_terror: { clip: `${FLOW4}abyssar-terror.mp4`, impactoMs: 730, centro: 0.47, escala: 3.0, duracaoMs: 3700, posMs: 2400, ocultarAtor: true, ult: true },
 };
 const CHEFE_ESPECIAL = new Set(Object.values(HAB.KITS_CHEFES || {}).map((k) => k[2]?.id));
+for (const c of Object.values(CLIPES_ELEMENTAIS)) if (/flow-lote-[56]\//.test(c.clip)) c.conteudo ??= 0.4;
+for (const k of ['purificacao', 'ressurreicao', 'invencivel']) CLIPES_ELEMENTAIS[k].opacidade = 0.72; // brancos: não estourar a cena
 export function clipeElemental(hab) {
   if (!hab || FX_HABILIDADES[hab.id] || hab.clip) return null;
   const C = CLIPES_ELEMENTAIS, efs = (hab.efeitos || []).map((e) => e.id), el = hab.elemento, area = hab.alvo === 'todos', ult = hab.cd >= 5;
+  if (hab.reviver) return C.ressurreicao;
   if (hab.escudo || efs.includes('escudo')) return C.cupula;
-  if (hab.tipo === 'cura' || (hab.tipo === 'apoio' && (hab.cura || efs.includes('regeneracao')))) return { luz: C.fenix, fogo: C.curaFogo, agua: C.curaAgua, planta: C.curaPlanta }[el] || null;
-  if (hab.tipo === 'apoio') return el === 'luz' ? C.fenix : C.fada;
+  const ehCura = hab.tipo === 'cura' || (hab.tipo === 'apoio' && (hab.cura || efs.includes('regeneracao') && !efs.some((e) => ['ataque_alto', 'defesa_alta', 'veloz', 'invencivel'].includes(e))));
+  if (ehCura) return { luz: C.fenix, fogo: C.curaFogo, agua: C.curaAgua, planta: C.curaPlanta, trevas: C.curaTrevas, fantasma: C.curaFantasma, eletrico: C.curaEletrica,
+    voador: C.curaVento, terra: C.curaTerra, pedra: C.curaTerra, inseto: C.curaInseto }[el] || C.regeneracao;
+  if (hab.tipo === 'apoio') {
+    if (efs.includes('invencivel')) return C.invencivel;
+    if (efs.includes('provocacao')) return C.provocacao;
+    if (efs.includes('veloz')) return C.velocidade;
+    if (efs.includes('defesa_alta')) return C.defesa;
+    if (efs.includes('ataque_alto')) return C.ataque;
+    if (efs.includes('regeneracao')) return C.regeneracao;
+    if (hab.limpa) return C.purificacao;
+    return el === 'luz' ? C.fenix : C.fada;
+  }
   if (hab.tipo !== 'dano') return null;
   if (CHEFE_ESPECIAL.has(hab.id)) return C.luaRubra;
   if (efs.includes('veneno')) { if (area) return C.nevoaToxica; if (el === 'planta' || el === 'inseto') return C.veneno1; }
@@ -1022,16 +1041,39 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   if (clipesFalhos.has(src)) return false;
   const els = alvosDe(ctx, ev).map((x) => x.el), base = els.length ? els : [ctx.no(ev.alvo) || ctx.no(ev.ator)].filter(Boolean); if (!base.length) return false;
   const v = await carregarVideo(src); if (!v) return false;
-  // ancora: o chão do efeito nos pés do alvo (grupo: no centro da formação, largura cobrindo todos)
-  const cs = base.map((el) => corpo(ctx, el)), x = cs.reduce((s, c) => s + c.x, 0) / cs.length, pe = Math.max(...cs.map((c) => c.pe));
-  const larg = cs.length > 1 ? (Math.max(...cs.map((c) => c.x + c.w / 2)) - Math.min(...cs.map((c) => c.x - c.w / 2))) * 1.25 : Math.max(...cs.map((c) => c.w)) * (cfg.escala || 3);
-  const meio = cs.reduce((s, c) => s + c.y, 0) / cs.length;
-  const alt = larg * (v.videoHeight / v.videoWidth || 9 / 16), top = cfg.centro != null ? meio - alt * cfg.centro : pe - alt * (cfg.chao ?? 0.86);
-  const esp = cfg.espelhar && A && corpo(ctx, A).x > x, left = x - larg / 2, el = cfg.chroma ? telaChroma(v) : v; // fundo verde: recorte em canvas
-  el.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:${cfg.chroma ? 'normal' : 'screen'};z-index:87;pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, esp)}${esp ? ';transform:scaleX(-1)' : ''}`;
+  // ancora: o chão do efeito nos pés do alvo (grupo: no centro da formação, largura cobrindo todos). porAlvo: um clipe em cada alvo.
+  const grupos = cfg.porAlvo && base.length > 1 ? base.map((e) => [e]) : [base];
+  const vs = [v, ...(await Promise.all(grupos.slice(1).map(() => carregarVideo(src))))].filter(Boolean);
+  // Área (todos/aliados): o clipe cai no centro do time inteiro daquele lado (as 4 vagas, vivas ou não) e o EFEITO (não só o quadro
+  // do vídeo) cobre a formação toda; conteudo = fração do quadro que o efeito ocupa.
+  const emArea = grupos.length === 1 && (base.length > 1 || ['todos', 'aliados'].includes(ev.hab?.alvo));
+  const ladoArea = base[0]?.classList.contains('i') ? 'i' : 'a';
+  const time = emArea ? [...ctx.campo.querySelectorAll(`.un.${ladoArea}`)].filter((e) => e.isConnected) : [];
+  const montar = (grupo, vid) => {
+    const prop = vid.videoHeight / vid.videoWidth || 9 / 16;
+    let x, larg, top;
+    if (emArea && time.length) {
+      const cs = time.map((e) => corpo(ctx, e)), x0 = Math.min(...cs.map((c) => c.x - c.w / 2)), x1 = Math.max(...cs.map((c) => c.x + c.w / 2));
+      const y0 = Math.min(...cs.map((c) => c.topo)), y1 = Math.max(...cs.map((c) => c.pe)), cont = cfg.conteudo ?? 0.55;
+      x = (x0 + x1) / 2; larg = Math.max(((x1 - x0) * 1.1) / cont, ((y1 - y0) * 1.1) / (cont * prop));
+      const alt0 = larg * prop, peMeio = cs.reduce((s, c) => s + c.pe, 0) / cs.length;
+      top = cfg.centro != null ? (y0 + y1) / 2 - alt0 * cfg.centro : peMeio - alt0 * (cfg.chao ?? 0.86);
+    } else {
+      const cs = grupo.map((e) => corpo(ctx, e)), pe = Math.max(...cs.map((c) => c.pe)), meio = cs.reduce((s, c) => s + c.y, 0) / cs.length;
+      x = cs.reduce((s, c) => s + c.x, 0) / cs.length;
+      larg = cs.length > 1 ? (Math.max(...cs.map((c) => c.x + c.w / 2)) - Math.min(...cs.map((c) => c.x - c.w / 2))) * 1.25 : Math.max(...cs.map((c) => c.w)) * (cfg.escala || 3);
+      top = cfg.centro != null ? meio - larg * prop * cfg.centro : pe - larg * prop * (cfg.chao ?? 0.86);
+    }
+    const alt = larg * prop;
+    const esp = cfg.espelhar && A && corpo(ctx, A).x > x, left = x - larg / 2, el = cfg.chroma ? telaChroma(vid) : vid; // fundo verde: recorte em canvas
+    el.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:${cfg.chroma ? 'normal' : 'screen'};z-index:${cfg.atras ? 3 : 87};pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, esp)}${esp ? ';transform:scaleX(-1)' : ''}`;
+    return { el, v: vid, x, top, alt };
+  };
+  const pecas = grupos.slice(0, vs.length).map((g, k) => montar(g, vs[k])), { el, x, top, alt } = pecas[0];
   const figAtor = cfg.ocultarAtor && A ? A.querySelector('.un-fig') : null; if (figAtor) figAtor.style.visibility = 'hidden';
-  ligarAudio(ctx, v); ctx.campo.append(el); if (el !== v) { el._vivo = true; v.style.display = 'none'; ctx.campo.append(v); } el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, fill: 'forwards' });
-  await v.play().catch(() => {});
+  ligarAudio(ctx, v); // o som sai só do primeiro clipe
+  for (const pc of pecas) { ctx.campo.append(pc.el); if (pc.el !== pc.v) { pc.el._vivo = true; pc.v.style.display = 'none'; ctx.campo.append(pc.v); } pc.el.animate([{ opacity: 0 }, { opacity: cfg.opacidade ?? 1 }], { duration: 120, fill: 'forwards' }); }
+  await Promise.all(pecas.map((pc) => pc.v.play().catch(() => {})));
   if (cfg.voa && A) { // projétil rápido: o clipe sai da boca do atacante e voa até o alvo, chegando no instante da explosão
     const a = corpo(ctx, A), dir = x > a.x ? 1 : -1, b = a.boca(dir), voo = Math.max(250, (cfg.impactoMs || 500) - 230);
     const dx = b.x - x, dy = b.y - (top + alt * (cfg.centro ?? 0.5));
@@ -1045,7 +1087,7 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   for (const a of alvosDe(ctx, ev)) aplicar(ctx, M, a.el, a.r, { cura, cor: '#fff', forte: cfg.ult });
   ctx.som = somAntes;
   await ESP((cfg.posMs ?? Math.min(1000, Math.max(400, (cfg.duracaoMs || 3000) - (cfg.impactoMs || 500)))) * ctx.k);
-  dissolverClipe(ctx, el, v); // o vídeo segue tocando (ou fica no último quadro) enquanto some; o próximo turno não espera
+  for (const pc of pecas) dissolverClipe(ctx, pc.el, pc.v); // o vídeo segue tocando (ou fica no último quadro) enquanto some; o próximo turno não espera
   if (figAtor) { figAtor.style.visibility = ''; figAtor.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 420 * ctx.k, easing: 'ease-out' }); }
   await ESP(140 * ctx.k);
   return true;
@@ -1054,7 +1096,8 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
 // quadro fica parado e desvanece junto. Remove ao terminar.
 function dissolverClipe(ctx, el, v = el) {
   const t = Math.max(0, (v.duration || 0) - v.currentTime) * 1000, ms = Math.max(520, Math.min(900, t || 700)) * ctx.k;
-  const a = el.animate([{ opacity: 1, filter: 'brightness(1)', scale: '1' }, { opacity: 0.55, filter: 'brightness(.8)', scale: '1.02', offset: 0.45 }, { opacity: 0, filter: 'brightness(.55)', scale: '1.05' }], { duration: ms, easing: 'ease-in', fill: 'forwards' });
+  const o0 = parseFloat(getComputedStyle(el).opacity) || 1;
+  const a = el.animate([{ opacity: o0, filter: 'brightness(1)', scale: '1' }, { opacity: o0 * 0.55, filter: 'brightness(.8)', scale: '1.02', offset: 0.45 }, { opacity: 0, filter: 'brightness(.55)', scale: '1.05' }], { duration: ms, easing: 'ease-in', fill: 'forwards' });
   a.finished.catch(() => {}).then(() => { v.pause(); v.remove(); el.remove(); });
 }
 // Fundo verde chapado: cada quadro do vídeo vai para um canvas com o verde virando transparência (borda suave) e sem respingo verde
