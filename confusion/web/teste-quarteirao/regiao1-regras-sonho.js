@@ -1,5 +1,6 @@
 // Regras puras de Fragmentos de Sonho elementais, evolução de forma (10 / 30) e iniciais (T4 → T4 → T5).
 // Identificadores e saldos são estritamente separados de fragmentos de chefe, cópias para estrelas e itens de tier.
+import { ELEMENTOS } from '../core.js';
 import { LINHAS, linhaDaEspecie, ELEMENTO_DA_ESPECIE, ARTE_DA_ESPECIE } from '../species.js';
 import { REINOS } from '../reinos.js';
 import { xpTotal } from './regiao1-progressao.js';
@@ -97,7 +98,8 @@ export const idFragmentoSonho = (elemento) => `${IDENTIFICADORES_RECURSOS.fragme
 export const LINHAGENS_INICIAIS_IDS = new Set(LINHAS.map((l) => l.id));
 export const ehLinhagemInicial = (especie) => Boolean(linhaDaEspecie(especie));
 
-const ELEMENTOS_BASE = { trevas: 0, fogo: 0, agua: 0, planta: 0, luz: 0, fantasma: 0, neutro: 0 };
+// Um fragmento por elemento do jogo (os 7 da Região 1 primeiro, depois os demais na ordem de core.js)
+const ELEMENTOS_BASE = Object.fromEntries([...new Set(['trevas', 'fogo', 'agua', 'planta', 'luz', 'fantasma', 'neutro', ...ELEMENTOS])].map((k) => [k, 0]));
 
 function garantirMochila(save) {
   const idle = save?.idle || (save ? (save.idle = {}) : {});

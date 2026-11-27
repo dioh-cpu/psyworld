@@ -36,6 +36,7 @@ import {
   registrarLogIdle,
 } from './regiao1-idle.js';
 import { fragmentosSonhoDe } from './regiao1-regras-sonho.js';
+import { NOME_ELEMENTO } from '../core.js';
 import { CHEFES_REVANCHE_CATALOGO, saldoFragmentosChefe } from './regiao1-revanche-regras.js';
 import { revelarOvo, mostrarRecompensas } from './regiao1-revelacao.js';
 import { ARTE_DA_ESPECIE } from '../species.js';
@@ -530,7 +531,7 @@ export function criarControladorIdleUI(ctx) {
         const ic = MV1(`ficha/sonho-${slugSonho(el)}.png`);
         return `<button type="button" class="mv1-slot" data-item-nome="Fragmento de Sonho (${el})" data-item-cat="Evolução" data-item-qtd="${qtd}" data-item-ic="${ic}" data-item-desc="Evolui Oníricos do elemento ${el} na Ficha: 10 (Base→2ª forma) e 30 (2ª→3ª forma).">
           <img src="${ic}" alt="${el}" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">
-          <b>${el}</b>
+          <b>${NOME_ELEMENTO[el] || el}</b>
           <span style="color:#c084fc">${qtd}</span>
         </button>`;
       }).join('');
