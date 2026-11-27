@@ -19,3 +19,14 @@
 Os PNGs têm canal alfa. Use o mesmo encaixe do [perfil do kit v2](../README-menus-v2.md). A foto ou o ícone preenche a abertura de 356×356 px com origem em (78, 78). A moldura ocupa a caixa de 512×512 px inteira. Aplique a mesma escala às duas camadas.
 
 Os nomes acima identificam os visuais. Nível, vínculo com recompensa, compra e desbloqueio vêm das regras do Passe. O ovo ilustra a recompensa fechada. A arte do Onírico revelado vem do catálogo. A capa deste pacote é da temporada. O pôster do banner de invocação depende do elenco oficial de Dinossauros.
+
+### Avatares das recompensas já cadastradas
+
+| Arquivo | Dimensões | ID de perfil |
+|---|---:|---|
+| `icones/tiranox.png` | 512×512 | `icone-tiranox`, Tiranox Primevo |
+| `icones/tricerax.png` | 512×512 | `icone-tricerax`, Tricerax Blindado |
+| `icones/veloxar.png` | 512×512 | `icone-veloxar`, Veloxar Relâmpago |
+| `icones/pteronox.png` | 512×512 | `icone-pteronox`, Pteronox Celeste |
+
+Use os PNGs desse quadro para as quatro recompensas de perfil do catálogo atual. Os retratos foram ilustrados a partir das descrições de `regiao1-dinossauros-dados.js`. A integração deve conservar os IDs e níveis já publicados. Os outros quatro ícones do pacote são emblemas temáticos; os retratos dos personagens têm arquivos próprios.
