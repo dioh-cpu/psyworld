@@ -1,18 +1,36 @@
 # Relatório — Etapa JOGADOR NOVO (QA, Desempenho e Colisão)
 
-- **Última atualização:** 2026-11-27 16:44 UTC
+- **Última atualização:** 2026-11-27 17:42 UTC
 - **Jogo:** https://cwdp-lake.vercel.app/jogar
 - **Gerado automaticamente por:** `python3 tools/e2e_jogador_novo.py`
-- **Desempenho na abertura:** Desktop `1280×720` = **1544 ms** (Refúgio +1713 ms) · Celular `844×390` = **1004 ms** (Refúgio +879 ms; meta `< 2000 ms`: **OK**)
-- **Erros de console / página / 404:** Desktop (0 console, 0 pageerror, 0 HTTP 404) · Mobile (0 console, 0 pageerror, 0 HTTP 404)
+- **Desempenho na abertura:** Desktop `1280×720` = **1279 ms** (7101.9 KB, Refúgio +1458 ms) · Celular `844×390` = **808 ms** (7101.9 KB, Refúgio +616 ms; meta `< 2000 ms`: **OK**)
+- **Artes v2 em disco:** `telas-v2/` (13 fundos 2560px) = **6822.6 KB** · `telas-v2/mobile/` (13 fundos 1280px) = **2147.5 KB** (**-68.5%** no celular) · `banners-v2/` (2 capas) = **1811.1 KB**
+- **Carregamento sob demanda v2 no celular (`844×390`):** boot=0 arquivo(s), sessão inteira=0 arquivo(s)
+- **Erros de console / página / 404:** Desktop (2 console, 0 pageerror, 2 HTTP 404) · Mobile (2 console, 0 pageerror, 2 HTTP 404)
 
 ---
 
-## Resumo de problemas encontrados por agente
+## Resumo de problemas e pendências reais por agente
 
 | Agente | Tipo | Tela / Mapa | Detalhe |
 |---|---|---|---|
+| **dioh293** | `http-404` | 1280x720 | /assets/confusion/interface/eventos/halloween/itens/doce.png |
+| **dioh293** | `http-404` | 1280x720 | /assets/confusion/interface/eventos/halloween/itens/ticket.png |
+| **dioh293** | `http-404` | 844x390 | /assets/confusion/interface/eventos/halloween/itens/doce.png |
+| **dioh293** | `http-404` | 844x390 | /assets/confusion/interface/eventos/halloween/itens/ticket.png |
 | **dioh293** | `colisao-walkmask` | BOSS_E | Pedra grande e raízes à esquerda da passagem (x=120..300, y=340..500): 59.2% marcado como andável na walkmask (máx. esperado 15%) |
+| **dioh293** | `pendencia-telas-v2` | telas-v2/ e banners-v2/ | Artes v2 já estão na main (#156) e telas-v2/mobile/ já foi gerado, mas BANNERS_V2_ATIVO ainda está false em regiao1-expansao.js (e busca *-capa.webp em vez de adventurer.webp/halloween.webp) e os fundos telas-v2 ainda não são aplicados via aplicarFundoTelaSobDemanda. |
+| **dioh293** | `pendencia-upload-foto` | Mochila → Domador (Perfil) | Botão Personalizar / upload de foto com moderação e molduras kit-v2/perfil/ ainda não implementado na tela de perfil. |
+
+---
+
+## Desempenho — Pesos das Artes v2 (Desktop 2560px vs Mobile 1280px)
+
+| Pasta | Arquivos | Peso total | Observação |
+|---|---:|---:|---|
+| `assets/confusion/interface/telas-v2/` | 13 | 6822.6 KB | Fundos 2560×1440 para desktop |
+| `assets/confusion/interface/telas-v2/mobile/` | 13 | 2147.5 KB | Fundos 1280×720 para celular (-68.5%) |
+| `assets/confusion/interface/banners-v2/` | 2 | 1811.1 KB | Capas `adventurer.webp` e `halloween.webp` (~900 KB cada) |
 
 ---
 
@@ -98,14 +116,34 @@
 - **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/14-domadores.webp`
 - **Status:** Sem sobreposições, recortes, 404 ou vazamento de mapa.
 
-### 15. Mundo (10 Sistemas)
-- **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/15-mundo.webp`
-- **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/15-mundo.webp`
+### 15. Domador e Mochila
+- **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/15-mochila.webp`
+- **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/15-mochila.webp`
 - **Status:** Sem sobreposições, recortes, 404 ou vazamento de mapa.
 
-### 16. Entrada BOSS_E (Colisão)
-- **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/16-colisao-boss-e.webp`
-- **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/16-colisao-boss-e.webp`
+### 16. Coleção (Codex)
+- **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/16-colecao.webp`
+- **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/16-colecao.webp`
+- **Status:** Sem sobreposições, recortes, 404 ou vazamento de mapa.
+
+### 17. Eventos
+- **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/17-eventos.webp`
+- **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/17-eventos.webp`
+- **Status:** Sem sobreposições, recortes, 404 ou vazamento de mapa.
+
+### 18. Guilda
+- **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/18-guilda.webp`
+- **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/18-guilda.webp`
+- **Status:** Sem sobreposições, recortes, 404 ou vazamento de mapa.
+
+### 19. Mundo (10 Sistemas)
+- **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/19-mundo.webp`
+- **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/19-mundo.webp`
+- **Status:** Sem sobreposições, recortes, 404 ou vazamento de mapa.
+
+### 20. Entrada BOSS_E (Colisão)
+- **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/20-colisao-boss-e.webp`
+- **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/20-colisao-boss-e.webp`
 - **Status:** Sem sobreposições, recortes, 404 ou vazamento de mapa.
 
 ---
@@ -125,9 +163,9 @@
 
 | Etapa | Desktop 1280×720 | Celular 844×390 |
 |---|---|---|
-| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1544ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1004ms) |
+| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1279ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=808ms) |
 | 02. Escolha do Inicial | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) |
-| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1544ms, transicaoRefugio=1713ms, guiaPasso2=True) | PASS (boot=1004ms, transicaoRefugio=879ms, guiaPasso2=True) |
+| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1279ms (7101.9KB), refugio=+1458ms, guiaPasso2=True) | PASS (boot=808ms (7101.9KB), refugio=+616ms, guiaPasso2=True) |
 | 04. Campanha -> 1ª batalha | PASS (vitoria=True) | PASS (vitoria=True) |
 | 06. Equipe & Evolução | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) |
 | 07. Campanha Mini 1-1 | PASS (vitoria=True) | PASS (vitoria=True) |
@@ -135,6 +173,9 @@
 | 09. Torres andar 1 | PASS (vitoria=True) | PASS (vitoria=True) |
 | 10. Calabouços nível 1 | PASS (vitoria=True) | PASS (vitoria=True) |
 | 11. Relíquias (equipar) | PASS (relíquia equipada na UI) | PASS (relíquia equipada na UI) |
-| 12. Banner Adventurer (1ª invocação) | PASS (invocou=True) | PASS (invocou=True) |
+| 12. Banner Adventurer (grátis + garantias 10/30/50) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) |
 | 13. Domador (Manipulador) | PASS (ativo=manipulador) | PASS (ativo=manipulador) |
-| 14. Mundo (só 10 sistemas) | PASS (info={'btns': 0, 'tem11a50': False}) | PASS (info={'btns': 0, 'tem11a50': False}) |
+| 14. Menus reformulados (Mochila/Coleção/Eventos/Guilda) | PASS (abasMochila=5, uploadFotoPerfil=False) | PASS (abasMochila=5, uploadFotoPerfil=False) |
+| 15. Mundo (só 10 sistemas) | PASS (info={'btns': 0, 'tem11a50': False}) | PASS (info={'btns': 0, 'tem11a50': False}) |
+| 16. AFK em segundo plano (visibilitychange + toast) | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') |
+| 17. Convidado -> conta (toast 20.000💎 + 10d VIP) | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') |

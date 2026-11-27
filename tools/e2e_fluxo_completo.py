@@ -155,21 +155,28 @@ def wait_and_finish_arena_battle(page: Page, label: str, layout_issues: list[dic
     page.wait_for_timeout(350)
     audit_layout(page, f"arena:{label}", layout_issues)
 
-    # Acelera para ×3 e liga Auto
+    # Acelera para ×3 e liga Auto (tolerando re-render rápido da arena)
     vel_btn = page.locator(".arena [data-vel]").first
     for _ in range(3):
-        if vel_btn.is_visible():
-            txt = (vel_btn.text_content() or "").strip()
+        try:
+            if not vel_btn.is_visible():
+                break
+            txt = (vel_btn.text_content(timeout=1500) or "").strip()
             if "3" in txt:
                 break
-            vel_btn.click(force=True)
+            vel_btn.click(force=True, timeout=1500)
             page.wait_for_timeout(80)
+        except Exception:
+            break
 
     auto_btn = page.locator(".arena [data-auto]").first
-    if auto_btn.is_visible():
-        cls = auto_btn.get_attribute("class") or ""
-        if "on" not in cls.split():
-            auto_btn.click(force=True)
+    try:
+        if auto_btn.is_visible():
+            cls = auto_btn.get_attribute("class", timeout=1500) or ""
+            if "on" not in cls.split():
+                auto_btn.click(force=True, timeout=1500)
+    except Exception:
+        pass
 
     # Espera a tela de fim da batalha (.tb-fim)
     fim = page.locator(".tb-fim").first
