@@ -57,14 +57,16 @@ export function criarPose({ fig, base, src, lado, escalaX = 1, zoom = 1, bbox, e
 // - Vídeos legados de 3 vistas (sem esquerda): espelhar `direita` SOMENTE se a espécie for simétrica.
 // - Mesma escala e linha dos pés (bottom:0 / object-position:center bottom) entre `idle` e `andar`.
 // Espécies sem vídeo publicado mantêm a arte parada + pose de ataque sem disparar 404.
-export const ANIMACOES_V2_ESPECIES = new Set();
+// Por forma: '<slug>-f1'/'-f2'/'-f3' (cada evolução tem o próprio loop); '<slug>' sozinho vale para todas as formas
+export const ANIMACOES_V2_ESPECIES = new Set(['cervomusgo-f1', 'cervomusgo-f2', 'cervomusgo-f3']);
 // Metadados por slug: { temEsquerda?: boolean, simetrica?: boolean } (padrão: temEsquerda=true, simetrica=true)
 export const ANIMACOES_V2_META = new Map();
 
 const slugAnim = (esp) => String(esp || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-export function resolverAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita') {
-  const sl = slugAnim(especie);
+export function resolverAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita', forma = null) {
+  const base = slugAnim(especie), comForma = forma ? `${base}-f${forma}` : null;
+  const sl = comForma && ANIMACOES_V2_ESPECIES.has(comForma) ? comForma : base; // nunca usa o loop de outra forma
   if (!sl || !ANIMACOES_V2_ESPECIES.has(sl)) return null;
   const meta = ANIMACOES_V2_META.get(sl) || {};
   const temEsquerda = meta.temEsquerda !== false;
@@ -92,11 +94,11 @@ export function resolverAnimacaoOnirico(especie, acao = 'idle', direcao = 'direi
   };
 }
 
-export function urlAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita') {
-  return resolverAnimacaoOnirico(especie, acao, direcao)?.url || null;
+export function urlAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita', forma = null) {
+  return resolverAnimacaoOnirico(especie, acao, direcao, forma)?.url || null;
 }
 
-export function criarLoopAnimacao({ fig, base, especie, lado = 'a' }) {
+export function criarLoopAnimacao({ fig, base, especie, lado = 'a', forma = null }) {
   let vid = null, acaoAtual = null, ativo = false, tentouFallback = false;
   const direcaoPadrao = lado === 'i' ? 'esquerda' : 'direita';
 
@@ -106,7 +108,7 @@ export function criarLoopAnimacao({ fig, base, especie, lado = 'a' }) {
   }
 
   function definirAcao(acao = 'idle', direcao = direcaoPadrao) {
-    const res = resolverAnimacaoOnirico(especie, acao, direcao);
+    const res = resolverAnimacaoOnirico(especie, acao, direcao, forma);
     if (!res) return false;
     if (acaoAtual === `${acao}:${direcao}` && vid && ativo) return true;
     acaoAtual = `${acao}:${direcao}`;

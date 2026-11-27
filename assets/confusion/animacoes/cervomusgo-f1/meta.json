@@ -1,0 +1,62 @@
+{
+  "especie": "cervomusgo-f1",
+  "tamanho": 256,
+  "fps": 12,
+  "chroma": "magenta",
+  "margemPesPx": 15,
+  "escalaReferencia": 0.362916,
+  "acoes": {
+    "idle": {
+      "frente": {
+        "webpKB": 391.4,
+        "webmKB": 47.0,
+        "frames": 48,
+        "origem": "direta"
+      },
+      "direita": {
+        "webpKB": 468.0,
+        "webmKB": 51.7,
+        "frames": 48,
+        "origem": "direta"
+      },
+      "costas": {
+        "webpKB": 341.5,
+        "webmKB": 33.9,
+        "frames": 48,
+        "origem": "direta"
+      },
+      "esquerda": {
+        "webpKB": 467.4,
+        "webmKB": 51.8,
+        "frames": 48,
+        "origem": "espelhada"
+      }
+    },
+    "andar": {
+      "frente": {
+        "webpKB": 143.1,
+        "webmKB": 47.7,
+        "frames": 19,
+        "origem": "direta"
+      },
+      "direita": {
+        "webpKB": 177.8,
+        "webmKB": 58.3,
+        "frames": 19,
+        "origem": "direta"
+      },
+      "costas": {
+        "webpKB": 133.7,
+        "webmKB": 41.7,
+        "frames": 19,
+        "origem": "direta"
+      },
+      "esquerda": {
+        "webpKB": 177.5,
+        "webmKB": 58.7,
+        "frames": 19,
+        "origem": "espelhada"
+      }
+    }
+  }
+}
