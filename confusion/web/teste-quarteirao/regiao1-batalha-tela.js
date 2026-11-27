@@ -405,12 +405,12 @@ export function criarTelaBatalha() {
     const papeis = c.papeis || {};
     for (const m of c.aliados) if (m.arte) c.artes = { ...(c.artes || {}), [m.especie]: m.arte }; // arte conforme o tier do indivíduo
     if (arena && c.artes) arena = criarArena(el, { artes: c.artes });
-    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => { const u = criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: { ...(c.bonus || {}), ...(m.bonus || {}) } }); if (Number.isInteger(m.vaga)) u.vaga = m.vaga; return u; });
+    const al = c.aliados.slice(0, LIMITE_ALIADOS).map((m, i) => { const u = criarUnidade({ id: `a${i}`, especie: m.especie, nivel: m.nivel || 1, lado: 'a', papeis, bonus: { ...(c.bonus || {}), ...(m.bonus || {}) }, equip: m.equip || null }); if (Number.isInteger(m.vaga)) u.vaga = m.vaga; return u; });
     const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento, op], i) => {
       const f = formaDoEncontro(esp, nv, op || {}, c.regiao ?? 1); // forma definida no encontro (e regra dos iniciais)
       const u = criarUnidade({ id: `i${i}`, especie: f.especie, nivel: nv, lado: 'i', papeis, elemento: f.substituido ? undefined : elemento, bonus: op?.bonus || {} });
       if (f.arte) u.arte = f.arte; if (f.forma) u.forma = f.forma; if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
-    b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render();
+    b = criarBatalha(al, ini, { domador: c.domador || null }); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render();
     // entrada do chefe: o primeiro turno espera o clipe (fora do modo minimizado)
     const temChefe = ini.some((u) => u.chefe) && !minimizada;
     if (temChefe) entradaChefe(criarCtx({ arena: el, campo: el.querySelector('.tb-campo') || el, no: (id) => el.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} })).catch(() => {});
