@@ -642,7 +642,25 @@ export function sanitizarIdleProgressao(idle) {
     const r = idle.reliquias;
     const cap = Math.max(200, Math.min(500, Math.floor(Number(r.capacidade) || 200)));
     const bolsa = Array.isArray(r.bolsa)
-      ? r.bolsa.slice(0, cap).filter((x) => x && typeof x === 'object' && typeof x.id === 'string')
+      ? r.bolsa.slice(0, cap).filter((x) => x && typeof x === 'object' && typeof x.id === 'string').map((x) => ({
+          id: String(x.id).slice(0, 32),
+          parte: String(x.parte || 'coroa').slice(0, 16),
+          conjunto: String(x.conjunto || 'cacador').slice(0, 24),
+          elemento: String(x.elemento || 'planta').slice(0, 16),
+          raridade: String(x.raridade || 'comum').slice(0, 16),
+          reforco: Math.max(0, Math.min(15, Math.floor(Number(x.reforco) || 0))),
+          principal: x.principal && typeof x.principal === 'object'
+            ? { attr: String(x.principal.attr || 'vida_flat').slice(0, 24), valor: Number.isFinite(Number(x.principal.valor)) ? Number(x.principal.valor) : 0 }
+            : { attr: 'vida_flat', valor: 0 },
+          secundarios: Array.isArray(x.secundarios)
+            ? x.secundarios.slice(0, 4).filter((s) => s && typeof s === 'object').map((s) => ({
+                attr: String(s.attr || 'ataque_pct').slice(0, 24),
+                valor: Number.isFinite(Number(s.valor)) ? Number(s.valor) : 0,
+              }))
+            : [],
+          trancada: Boolean(x.trancada),
+          fonte: String(x.fonte || '').slice(0, 40),
+        }))
       : [];
     const equipadas = {};
     if (r.equipadas && typeof r.equipadas === 'object') {
@@ -654,8 +672,14 @@ export function sanitizarIdleProgressao(idle) {
     }
     const predefinicoes = {};
     if (r.predefinicoes && typeof r.predefinicoes === 'object') {
-      for (const [uid, list] of Object.entries(r.predefinicoes).slice(0, 120)) {
-        if (list && typeof list === 'object') predefinicoes[String(uid).slice(0, 64)] = list;
+      for (const [uid, sets] of Object.entries(r.predefinicoes).slice(0, 120)) {
+        if (sets && typeof sets === 'object') {
+          const clean = {};
+          for (const [nome, slots] of Object.entries(sets).slice(0, 8)) {
+            if (slots && typeof slots === 'object') clean[String(nome).slice(0, 32)] = sanitizarMapaSeguro(slots, 6, 'str');
+          }
+          predefinicoes[String(uid).slice(0, 64)] = clean;
+        }
       }
     }
     out.reliquias = {
@@ -682,9 +706,20 @@ export function sanitizarIdleProgressao(idle) {
 
   if (idle.armasUnicas && typeof idle.armasUnicas === 'object') {
     const a = idle.armasUnicas;
+    const possuidas = {};
+    if (a.possuidas && typeof a.possuidas === 'object') {
+      for (const [slug, st] of Object.entries(a.possuidas).slice(0, 120)) {
+        if (st && typeof st === 'object') {
+          possuidas[String(slug).slice(0, 32)] = {
+            reforco: Math.max(0, Math.min(5, Math.floor(Number(st.reforco) || 0))),
+            viaNivel100: Boolean(st.viaNivel100),
+          };
+        }
+      }
+    }
     out.armasUnicas = {
       fragmentos: sanitizarMapaSeguro(a.fragmentos, 120, 'int'),
-      possuidas: a.possuidas && typeof a.possuidas === 'object' ? { ...a.possuidas } : {},
+      possuidas,
       equipadas: sanitizarMapaSeguro(a.equipadas, 200, 'str'),
       poUnico: Math.max(0, Math.floor(Number(a.poUnico) || 0)),
       escolhasPendentes: Math.max(0, Math.floor(Number(a.escolhasPendentes) || 0)),
