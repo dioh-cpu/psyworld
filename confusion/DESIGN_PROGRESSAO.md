@@ -157,24 +157,34 @@ Calabouços: Forja Rubra (Fúria, Destruição), Gruta das Marés (Ímpeto, Eco)
 
 ## 9. Divisão de tarefas
 
-### dioh293 / Antigravity (sistemas e interfaces)
-1. `regiao1-campanha-mini-regras.js`: capítulos, fases, liberação, estrelas (vencer, **todos vivos no fim**, condição de classe/elemento/suprema via `resumoBatalha(b)`), recompensas (§1), fases escondidas; testes.
-2. Missões paralelas (§2) e missões de marco (§3): dados, progresso, coleta única; painel no Refúgio.
-3. Energia (§8), Torres Elementais (§4), Calabouços (§5), Torres Únicas (§7): regras, andares/níveis, drops com as tabelas acima, recompensa única por andar; testes.
-4. Relíquias (§6): item, partes, principal/secundários, reforço, recalibrar, desmontar, bolsa, filtros, predefinições; equipar só no elemento certo; save na lista branca de `desserializarEstado`.
-5. Interfaces em tela cheia de todos esses modos, com "← Refúgio".
-6. Evolução pedindo Essência do elemento (§4).
+asutaroto291 voltou: regras puras, dados, economia e save ficam com ele; dioh293 fica com integração e interfaces. Contrato entre os dois: as regras ficam em `*-regras.js` puros (sem DOM), com testes; a interface só chama essas funções.
+
+### asutaroto291 (regras, catálogo, economia e saves)
+1. `regiao1-campanha-mini-regras.js`: 12 capítulos × 10 fases (elenco real de Altos do Âmbar no capítulo 2), liberação em fila, fases escondidas, estrelas (vencer, **todos vivos no fim**, classe/elemento/suprema via `resumoBatalha(b)`), recompensas e prêmios de capítulo (§1); testes.
+2. `regiao1-missoes-regras.js`: missões paralelas (§2) e missões de marco (§3) com progresso e coleta única; ganchos de progresso que os modos chamam (ex.: `registrarMarco(save, 'calabouco', { elemento, nivel })`).
+3. `regiao1-torres-regras.js` e `regiao1-calaboucos-regras.js`: andares, níveis, energia (§8), drops com as tabelas do §5, recompensa única por andar, Torres Únicas e Pó Único (§7).
+4. `regiao1-reliquias-regras.js`: gerar relíquia (parte, raridade, principal, secundários), reforço +0→+15, recalibrar, desmontar, equipar só no elemento certo, bônus de conjunto como dados (o Claude aplica no combate); teto de +70% de poder testado.
+5. Evolução pedindo Essência do elemento (§4) e balanço da economia (diamantes, ouro, tickets por semana de jogo), com uma tabela de quanto se ganha por dia em cada modo.
+6. Save: todos os campos novos na lista branca de `desserializarEstado`, saves antigos e nuvem sem perdas; testes.
+
+### dioh293 / Antigravity (integração e interfaces)
+1. Ligar as regras do asutaroto ao jogo: botões no Refúgio, energia no topo, batalhas de cada modo usando o motor e a arena atuais.
+2. Telas em tela cheia (padrão novo, com "← Refúgio"): seletor de capítulos e mapa da Campanha Mini (nós, cadeado, estrelas), ficha da fase, resultado com as 3 estrelas; missões paralelas e painel de marcos; Torres (andares) e Calabouços (níveis, chefe, drops); bolsa de relíquias, ficha de equipamento do Onírico, Salão de Reforço, Torres Únicas e fabricação da arma única.
+3. Integrar as artes do GPT (com reserva para as atuais) e os efeitos do Claude quando chegarem.
+4. Vercel: só a main gera build (`git.deploymentEnabled` no `vercel.json`).
+5. Depois: Regiões 3–12 jogáveis no molde de Altos do Âmbar.
 
 ### GPT / Codex (artes)
-1. Campanha Mini: capas e mapas dos 12 capítulos, nós, estrelas, baús, fundos (lista já enviada).
-2. Calabouços: 6 entradas e 6 arenas de chefe **diferentes das torres** (ruínas, caverna, templo, mina, cripta, bosque), 6 chefes.
+1. Campanha Mini: capas e mapas dos 12 capítulos (com as 10 clareiras em `campanha-mini/MAPAS.md`), nós, estrelas, baús, fundos.
+2. Calabouços: 6 entradas e 6 arenas de chefe **diferentes das torres** (forja, gruta, bosque, mina, templo, cripta) e os 6 chefes.
 3. Torres: 6 Torres Elementais (fachada + arena por faixa de 10 andares) e 3 Torres Únicas.
-4. Ícones: 4 partes de relíquia × 6 elementos-par, molduras por raridade (5), ícones dos 13 conjuntos, ícones de Essência (6 × 3 tamanhos), fragmento e Pó Único, energia.
-5. Armas únicas: um ícone por linhagem (começar pelas 10 linhagens iniciais e de Halloween).
+4. Ícones: 4 partes de relíquia × 6 pares de elementos, molduras por raridade (5), 13 conjuntos, Essências (6 × 3 tamanhos), fragmento, Pó Único e energia.
+5. Armas únicas: um ícone por linhagem (começar pelas 10 iniciais e de Halloween).
+6. Regiões 3–12: composições realmente variadas entre áreas (não repetir o padrão de Altos do Âmbar).
 
 ### Claude (combate e VFX)
-1. `resumoBatalha(b)` no motor: time no fim (todos vivos), classes e elementos do time, supremas usadas; testes.
-2. Atributos novos no motor: crítico e dano crítico, velocidade por relíquia, roubo de vida, contra-ataque, eco de recarga, imunidade inicial, bônus de cura/escudo, efeitos das armas únicas; testes.
-3. Chefes e mecânicas dos 6 calabouços, chefes de andar das torres e kits dos 3 chefes novos da Região 2.
-4. Equilíbrio: simulações de batalha para validar o teto de +70%, as curvas de nível das torres e as tabelas de drop.
-5. Prompts do Flow dos efeitos novos (estrela, liberação de fase, baú, crítico, contra-ataque, arma única ativando) e integração.
+1. `resumoBatalha(b)`: time no fim (todos vivos), classes e elementos do time, supremas usadas; testes.
+2. Motor: crítico e dano crítico, velocidade, roubo de vida, contra-ataque, eco de recarga, imunidade inicial, bônus de cura/escudo, aplicando os bônus de conjunto e as armas únicas que o asutaroto entregar como dados; testes.
+3. Chefes e mecânicas dos 6 calabouços, chefes das torres e kits dos 3 chefes novos da Região 2.
+4. Simulações de equilíbrio (teto de +70%, curvas das torres, tabelas de drop), junto com o asutaroto.
+5. Prompts do Flow dos efeitos novos (estrela, liberação de fase, baú, crítico, contra-ataque, arma única) e integração.
