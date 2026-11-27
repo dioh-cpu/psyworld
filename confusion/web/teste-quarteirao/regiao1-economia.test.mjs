@@ -20,6 +20,9 @@ import { iniciarAndarTorreElemental } from './regiao1-torres-regras.js';
 import { criarEstadoInicial } from './regiao1-estado.js';
 import { garantirEstadoIdle } from './regiao1-idle.js';
 import './regiao1-missoes-regras.js';
+import { FRAGMENTOS_SONHO_CFG as __CFG_SONHO } from './regiao1-regras-sonho.js';
+// Estes testes são anteriores à trava de nível 40 para a forma T5 dos iniciais (coberta em regiao1-banner-iniciais.test.mjs)
+__CFG_SONHO.nivelIniciaisPorFase = {};
 
 const novoSave = () => {
   const s = criarEstadoInicial();

@@ -3,6 +3,7 @@
 import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 import { MARCOS, MISSOES_HISTORIA, CONTRATOS, CONTRATOS_DIARIOS_GRUPOS, CALABOUCO, CRISE, HV, FAB } from './regiao1-exp-dados.js';
 import { REINOS } from '../reinos.js';
+import { ELEMENTO_DA_ESPECIE } from '../species.js';
 import { gestaoDe, avancar as avancarGestao } from './regiao1-gestao-regras.js';
 import { darPocao, hwDe } from './regiao1-halloween-regras.js';
 import { aplicarXp, estrelasIniciais, classeDaEspecie } from './regiao1-progressao.js';
@@ -96,6 +97,11 @@ export function poolBanner() {
       const tier = RARIDADES.find((x) => x[0] === raridade)[2];
       pool.push({ especie: l.nome, elemento: l.elemento, classe: classeDaEspecie(l.nome), raridade, tier });
     }
+  }
+  // Linhas iniciais no banner permanente (forma inicial, T4 como o inicial escolhido; viram T5 na forma final, no nível 40)
+  for (const especie of ['Brasinha', 'Gotalume', 'Sementil']) if (!vistos.has(especie)) {
+    vistos.add(especie);
+    pool.push({ especie, elemento: ELEMENTO_DA_ESPECIE[especie], classe: classeDaEspecie(especie), raridade: 'epica', tier: 4, inicial: true });
   }
   return pool;
 }
