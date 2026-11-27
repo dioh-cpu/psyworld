@@ -126,7 +126,7 @@ export const CLIPES_ELEMENTAIS = {
 };
 // Abyssar na forma final (T5): a Perseguição vira o clipe dos cortes vermelhos
 export const CLIPE_ABYSSAR_FINAL = {
-  perseguicao: { clip: `${FLOW3}cortes-abissais.mp4`, impactoMs: 700, chao: 0.95, escala: 3.0, duracaoMs: 2400, ult: true },
+  perseguicao: { clip: `${FLOW3}cortes-rubros.mp4`, impactoMs: 940, centro: 0.49, escala: 2.8, duracaoMs: 2400, ult: true },
   facada: { clip: `${FLOW3}anel-de-cortes.mp4`, impactoMs: 1080, centro: 0.5, escala: 2.6, duracaoMs: 2000 }, // anel de cortes rubros
   // transformação do modo de pânico: o clipe traz o próprio Abyssar, então o retrato some enquanto ele toca
   hora_terror: { clip: `${FLOW4}abyssar-terror.mp4`, impactoMs: 730, centro: 0.47, escala: 3.0, duracaoMs: 3700, posMs: 2400, ocultarAtor: true, ult: true },
@@ -1054,6 +1054,9 @@ export async function tocarEvento(ctx, ev) {
   else if (ev.tipo === 'defender') { const c = corpo(ctx, A); bolhaEscudo(M, c, '#60a5fa', 0, 0.9); onda(M, c.x, c.pe, { cor: '#60a5fa', r1: c.w, vida: 0.5 }); numero(ctx, A, '🛡️ Defesa', '#93c5fd', { pequeno: true }); ctx.aplicarHp(ev.ator); await ESP(520 * ctx.k); }
   else await genApoio(ctx, M, A, ev, hab, elem);
   for (const r of ev.alvos || []) ctx.aplicarHp(r.id);
+  if (hab?.tipo === 'dano' && (hab.efeitos || []).some((e) => e.id === 'provocacao') && CLIPES_ELEMENTAIS.provocacao) {
+    const pc = CLIPES_ELEMENTAIS.provocacao; tocarClipe(ctx, M, { ...pc, impactoMs: 500 }, { tipo: 'apoio', alvos: [], ator: ev.ator, hab: { alvo: 'si', tipo: 'apoio' } }, pc.clip, A).catch(() => {});
+  }
   for (const f of ev.fases || []) await furiaChefe(ctx, M, f);
   for (const r of ev.alvos || []) { const n = r.morreu ? ctx.no(r.id) : null; if (n?.dataset?.chefe) await derrotaChefe(ctx, n); }
   // roubo de vida (modo de pânico)
@@ -1120,7 +1123,7 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
     }
     const alt = larg * prop;
     const esp = cfg.espelhar && A && corpo(ctx, A).x > x, left = x - larg / 2, el = cfg.chroma ? telaChroma(vid) : vid; // fundo verde: recorte em canvas
-    el.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:${cfg.chroma ? 'normal' : 'screen'};z-index:${cfg.atras ? 3 : 87};pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, esp)}${esp ? ';transform:scaleX(-1)' : ''}`;
+    el.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:${cfg.chroma ? 'normal' : 'plus-lighter'};filter:${cfg.chroma ? 'none' : 'contrast(1.18) saturate(1.25)'};z-index:${cfg.atras ? 3 : 87};pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, esp)}${esp ? ';transform:scaleX(-1)' : ''}`;
     return { el, v: vid, x, top, alt };
   };
   const pecas = grupos.slice(0, vs.length).map((g, k) => montar(g, vs[k])), { el, x, top, alt } = pecas[0];
@@ -1185,7 +1188,7 @@ async function clipeNoCorpo(ctx, el, arq, { ms = 2000, chao = true, escala = 1.2
   const c = corpo(ctx, el), [cx0, cy0, cx1, cy1] = caixaDoClipe(src), prop = v.videoHeight / v.videoWidth || 9 / 16;
   const wT = c.w * escala, hT = c.h * escala, larg = Math.max(wT / (cx1 - cx0), hT / ((cy1 - cy0) * prop)), alt = larg * prop;
   const left = c.x + larg * (0.5 - (cx0 + cx1) / 2) - larg / 2, top = chao ? c.pe + c.h * 0.04 - alt * cy1 : c.y - alt * ((cy0 + cy1) / 2);
-  v.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, false)}`;
+  v.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:plus-lighter;filter:contrast(1.18) saturate(1.25);z-index:87;pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, false)}`;
   ligarAudio(ctx, v); ctx.campo.append(v); v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, fill: 'forwards' });
   await v.play().catch(() => {}); await ESP(ms * ctx.k); dissolverClipe(ctx, v);
 }
