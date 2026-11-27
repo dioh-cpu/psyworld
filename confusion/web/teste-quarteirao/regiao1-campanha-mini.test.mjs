@@ -217,22 +217,28 @@ test('Campanha Mini em ondas: fases 1-3 têm 2 ondas, 4-10 e escondida têm 3 on
   }
 });
 
-test('Dificuldade do Cap.1 calibrada em ondas: 1-1..1-3 >= 95% para CADA um dos 5 iniciais', async () => {
+test('Dificuldade do Cap.1 calibrada em ondas: 1-1..1-3 >= 95% para CADA um dos 5 iniciais (time realista de 4)', async () => {
   const { CAPITULOS_CAMPANHA_MINI } = await import('./regiao1-campanha-mini-regras.js');
   const { criarUnidade, criarBatalha, passoAuto, criarRng } = await import('./regiao1-estrategia-regras.js');
   const { criarEstadoDomadorBatalha } = await import('./regiao1-domadores-regras.js');
   const INICIAIS = ['Brasinha', 'Gotalume', 'Sementil', 'Solinho', 'Penumbrio'];
+  const NIVEIS_INICIAL = [5, 7, 8]; // alinhado a tools/simular_iniciais_cap1.mjs e ECONOMIA_PRIMEIRA_HORA.md
   const cap1 = CAPITULOS_CAMPANHA_MINI[0];
   for (let idx = 0; idx < 3; idx++) {
     const fase = cap1.fases[idx];
-    const nvIni = 5 + idx * 2;
+    const nvIni = NIVEIS_INICIAL[idx];
     for (const ini of INICIAIS) {
       let wins = 0;
       for (let s = 0; s < 50; s++) {
         const rng = criarRng(100 + s * 17 + fase.numero);
         const sv = novoSave();
         const dom = criarEstadoDomadorBatalha(sv, 'azazel');
-        const aliados = [criarUnidade({ id: 'a0', especie: ini, nivel: nvIni, lado: 'a', tier: 4, estrelas: 1 })];
+        const aliados = [
+          criarUnidade({ id: 'a0', especie: ini, nivel: nvIni, lado: 'a', tier: 4, estrelas: 1 }),
+          criarUnidade({ id: 'a1', especie: 'Cervomusgo', nivel: Math.max(3, nvIni - 1), lado: 'a', tier: 3, estrelas: 1 }),
+          criarUnidade({ id: 'a2', especie: 'Tatuveludo', nivel: Math.max(2, nvIni - 2), lado: 'a', tier: 2, estrelas: 1 }),
+          criarUnidade({ id: 'a3', especie: 'Fanalino', nivel: Math.max(2, nvIni - 2), lado: 'a', tier: 2, estrelas: 1 }),
+        ];
         const ondasUn = fase.ondas.map((o, w) => o.map(([esp, nv, el, opts], i) => criarUnidade({ id: `w${w}_${i}`, especie: esp, nivel: nv, lado: 'i', elemento: el, chefe: Boolean(opts?.chefe), bonus: opts?.bonus || {} })));
         const b = criarBatalha(aliados, ondasUn[0], { domador: dom, ondas: ondasUn.slice(1) });
         while (!b.fim) passoAuto(b, rng);
