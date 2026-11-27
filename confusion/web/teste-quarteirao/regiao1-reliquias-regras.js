@@ -743,3 +743,105 @@ export function calcularBonusEquipamentoOnirico(save, unidadeOuUid, statsBase = 
     fatorTeto,
   };
 }
+
+// Contrato direto para o motor de combate do Claude (regiao1-estrategia-regras.js)
+export function perfilCombateEquipamento(save, unidadeOuUid, statsBase = REF_STATS_NV100) {
+  const res = calcularBonusEquipamentoOnirico(save, unidadeOuUid, statsBase);
+  const a = res.atributos;
+  const e = res.efeitosEspeciais || {};
+  return {
+    vidaFlat: a.vida_flat,
+    ataqueFlat: a.ataque_flat,
+    vidaPct: a.vida_pct,
+    ataquePct: a.ataque_pct,
+    defesaPct: a.defesa_pct,
+    velocidadeFlat: a.velocidade,
+    velocidadePct: a.velocidade_pct,
+    critico: a.critico,
+    danoCritico: a.dano_critico,
+    rouboVida: a.roubo_vida,
+    precisaoEfeito: a.precisao_efeito,
+    resistenciaEfeito: a.resistencia,
+    bonusCuraEscudo: Number(((a.bonus_cura || 0) + (e.bonusCuraEscudo || 0)).toFixed(4)),
+    contraAtaque: e.contraAtaqueChance || 0,
+    ecoRecarga: e.ecoReducaoCdChance || 0,
+    imunidadeTurnos: e.imunidadePrimeiroTurno ? 1 : 0,
+    panicoContido: e.panicoContido ? { ...e.panicoContido } : null,
+    farmBonus: {
+      xpMult: e.xpMult || 0,
+      ouroMult: e.ouroMult || 0,
+      dropRaroExtra: e.dropRaroExtra || 0,
+    },
+    armaUnica: res.armaUnica,
+    conjuntosAtivos: res.conjuntosAtivos,
+    ganhoPoderBruto: res.ganhoPoderBruto,
+    ganhoPoderFinal: res.ganhoPoderFinal,
+    fatorTetoAplicado: res.fatorTetoAplicado,
+    fatorTeto: res.fatorTeto,
+  };
+}
+
+// Simula arquétipos de build (+9 rara, +12 épica, +15 lendária × conjuntos + Arma Única +5) para calibração do motor
+export function simularTabelaEquilibrioReliquias() {
+  const simular = (nomeBuild, { raridade = 'lendaria', nivel = 15, conjuntos = ['furia', 'furia', 'furia', 'furia'], comArma = true } = {}) => {
+    const mock = {
+      recompensas: { gold: 9_999_999, diamantes: 0, xp: 0 },
+      idle: {
+        equipe: [{ uid: 'sim0', especie: 'Ignaraz', nivel: 100, xp: 0, tier: 5, estrelas: 6 }],
+        reliquias: { bolsa: [], equipadas: {}, predefinicoes: {}, capacidade: 200, poReforco: 999_999, seq: 0 },
+        armasUnicas: { fragmentos: {}, possuidas: {}, equipadas: {}, poUnico: 0, escolhasPendentes: 0, liberadasPorNivel100: { ignavor: true } },
+        missoes: { paralelasAtivas: {}, paralelasConcluidas: {}, enfeitesRefugio: {}, titulos: {}, progresso: {}, marcosColetados: {} },
+      },
+    };
+    const partes = [
+      ['coroa', 'vida_flat'],
+      ['amuleto', 'ataque_flat'],
+      ['anel', 'ataque_pct'],
+      ['talisma', 'velocidade'],
+    ];
+    if (nivel > 0 || raridade !== 'nenhuma') {
+      partes.forEach(([parte, attr], i) => {
+        const rel = concederReliquia(mock, {
+          parte,
+          elemento: 'fogo',
+          raridade,
+          conjunto: conjuntos[i % conjuntos.length],
+          principalAttr: attr,
+          rng: () => 0.75,
+        }).reliquia;
+        for (let k = 0; k < nivel; k++) reforcarReliquia(mock, rel.id, { rng: () => 0.75 });
+        equiparReliquia(mock, 'sim0', rel.id);
+      });
+    }
+    if (comArma) {
+      mock.idle.armasUnicas.fragmentos.ignavor = 20;
+      criarArmaUnica(mock, 'Ignaraz');
+      for (let k = 0; k < 5; k++) reforcarArmaUnica(mock, 'Ignaraz');
+      equiparArmaUnica(mock, 'sim0', 'Ignaraz');
+    }
+    const perfil = perfilCombateEquipamento(mock, 'sim0');
+    return {
+      build: nomeBuild,
+      conjuntos,
+      raridade,
+      nivelReforco: nivel,
+      comArmaUnica: comArma,
+      ganhoPoderBruto: perfil.ganhoPoderBruto,
+      ganhoPoderFinal: perfil.ganhoPoderFinal,
+      fatorTetoAplicado: perfil.fatorTetoAplicado,
+      perfil,
+    };
+  };
+
+  const cenarios = [
+    simular('sem_equipamento', { nivel: 0, raridade: 'nenhuma', conjuntos: [], comArma: false }),
+    simular('midgame_rara_9', { raridade: 'rara', nivel: 9, conjuntos: ['furia', 'furia', 'precisao', 'precisao'], comArma: false }),
+    simular('epica_12_precisao_imunidade', { raridade: 'epica', nivel: 12, conjuntos: ['precisao', 'precisao', 'imunidade', 'imunidade'], comArma: true }),
+    simular('lendaria_15_cacador_farm', { raridade: 'lendaria', nivel: 15, conjuntos: ['cacador', 'cacador', 'cacador', 'cacador'], comArma: false }),
+  ];
+
+  for (const cid of ['furia', 'destruicao', 'impeto', 'muralha', 'vigor', 'sanguessuga', 'contra-ataque', 'eco', 'vinculo', 'panico-contido']) {
+    cenarios.push(simular(`lendaria_15_${cid}_arma5`, { raridade: 'lendaria', nivel: 15, conjuntos: [cid, cid, cid, cid], comArma: true }));
+  }
+  return cenarios;
+}
