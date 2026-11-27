@@ -140,7 +140,15 @@ const CSS = `
 .arena .tb-hab button.basico { border-color: #8f8aa8; flex-basis: clamp(60px, 12vw, 100px); } .arena .tb-hab button i { font-style: normal; font-size: clamp(14px, 4vh, 20px); } .arena .tb-hab button small { opacity: .85; font-size: 9.5px; }
 .arena .tb-hab button.dest { background: linear-gradient(#f3d9a4, #c8924a); color: #2a1608; border-color: #ffe2a8; } .arena .tb-hab button:disabled { opacity: .4; filter: grayscale(.6); } .arena .tb-hab button .rc { position: absolute; top: 2px; right: 4px; font-weight: 800; color: #fda4af; }
 .arena .tb-aguarde { opacity: .8; font-size: 12px; margin-left: auto; }
-.arena .tb-fim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(13,7,19,.78); font-size: 20px; z-index: 60; text-align: center; padding: 20px; }`;
+.arena .tb-fim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(13,7,19,.78); font-size: 20px; z-index: 60; text-align: center; padding: 20px; }
+.arena .tb-domador { position: absolute; left: 10px; top: clamp(50px, 14vh, 72px); z-index: 42; display: flex; align-items: center; gap: 7px; padding: 5px 9px 5px 6px; border-radius: 10px; background: rgba(14, 10, 26, .88); border: 1px solid #c8924a; box-shadow: 0 3px 12px rgba(0,0,0,.55); max-width: min(230px, 42vw); pointer-events: none; }
+.arena .tb-domador[hidden] { display: none; }
+.arena .tb-domador img { width: clamp(28px, 8vh, 42px); height: clamp(28px, 8vh, 42px); border-radius: 50%; object-fit: cover; border: 1.5px solid #ffd58c; flex: 0 0 auto; }
+.arena .tb-domador-info { min-width: 0; flex: 1; }
+.arena .tb-domador-tit { font-size: clamp(10px, 2.5vh, 12px); font-weight: 800; color: #fff3e7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arena .tb-domador-bar { height: 6px; margin-top: 3px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; }
+.arena .tb-domador-bar i { display: block; height: 100%; background: linear-gradient(90deg, #38bdf8, #facc15); transition: width .28s ease; }
+.arena .tb-domador-hab { margin-top: 3px; font-size: clamp(9.5px, 2.2vh, 11px); font-weight: 700; color: #fde047; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`;
 let cssOk = false;
 const injetar = () => { if (cssOk) return; cssOk = true; const s = document.createElement('style'); s.textContent = CSS + CSS_AURA; document.head.append(s); };
 const arteRaiz = (esp, arte) => arte?.[esp] || ARTE_DA_ESPECIE[esp] || ARTE_CHEFE_REINO[esp] || `assets/monsters/${String(esp).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}/sprite-front.png`;
@@ -203,7 +211,7 @@ function spriteNoCampo(u, artes) {
 
 export function criarArena(host, { artes = {} } = {}) {
   injetar(); host.classList.add('arena');
-  host.innerHTML = '<div class="tb-campo"></div><div class="tb-topo"><div class="tb-tit"></div><div class="tb-ordem"></div><div class="tb-btns"></div></div><div class="tb-fila"></div><div class="tb-base"></div><div class="tb-sobre"></div>';
+  host.innerHTML = '<div class="tb-campo"></div><div class="tb-topo"><div class="tb-tit"></div><div class="tb-ordem"></div><div class="tb-btns"></div></div><div class="tb-domador" hidden></div><div class="tb-fila"></div><div class="tb-base"></div><div class="tb-sobre"></div>';
   const campo = host.querySelector('.tb-campo'), q = (s) => host.querySelector(s);
   let b = null, nos = new Map(), hpVis = new Map(), pend = new Set(), alvoSel = null;
   let animacao = null, ultimaOp = {}, opArt = artes;
@@ -268,7 +276,7 @@ export function criarArena(host, { artes = {} } = {}) {
     }
     const atual = b.fim ? null : atorAtualSemEfeito(b);
     for (const n of nos.values()) { if (!pend.has(n.u.id)) hpVis.set(n.u.id, n.u.hp); pintar(n); n.el.classList.toggle('vez', Boolean(atual) && n.u === atual); n.el.classList.toggle('alvo', alvoSel === n.u.id); }
-    desenharTopo(op); desenharBase(op, atual);
+    desenharTopo(op); desenharDomador(op); desenharBase(op, atual);
     const rapido = Boolean(op.auto);
     if (ev && !ev.arteAtor) ev.arteAtor = nos.get(ev.ator)?.el.querySelector('.un-fig img')?.getAttribute('src') || ''; // forma do atacante (clipes por forma)
     const duracao = ev ? duracaoEstimada(ev, rapido) : 0;
@@ -315,6 +323,25 @@ export function criarArena(host, { artes = {} } = {}) {
     q('.tb-ordem').innerHTML = prox.map((u, i) => `<span class="${u.lado === 'a' ? '' : 'i'} ${i === 0 ? 'cur' : ''}"><img src="${caminhoU(u, opArt)}" alt=""></span>`).join('');
     const fila = [...reforcosPendentes(), ...b.esperaI];
     const f = q('.tb-fila'); f.style.display = fila.length ? 'flex' : 'none'; f.innerHTML = `Fila +${fila.length} ${fila.map((u) => `<img src="${caminhoU(u, opArt)}" alt="">`).join('')}`;
+  }
+  function desenharDomador(op) {
+    const elDom = q('.tb-domador');
+    if (!elDom) return;
+    const dom = b?.domador || op?.domador || null;
+    if (!dom) { elDom.hidden = true; return; }
+    elDom.hidden = false;
+    const retrato = dom.id === 'azazel'
+      ? '../../../assets/confusion/interface/descanso-v1/avatar-azazel.webp'
+      : `../../../${dom.arte?.retrato || dom.retrato || 'assets/confusion/interface/descanso-v1/avatar-azazel.webp'}`;
+    const maxB = Math.max(1, Number(dom.barraMax ?? dom.energiaMax ?? 100) || 100);
+    const atualB = Math.max(0, Math.min(maxB, Number(dom.barra ?? dom.energia ?? 0) || 0));
+    const pct = Math.round((atualB / maxB) * 100);
+    const habNome = (b?.evento?.ator === 'domador' && b.evento?.hab?.nome)
+      || b?.evento?.domador?.hab?.nome
+      || dom.habilidadeAtiva
+      || dom.ultimaHabilidade
+      || '';
+    elDom.innerHTML = `<img src="${retrato}" alt="${esc(dom.nome || 'Domador')}"><div class="tb-domador-info"><div class="tb-domador-tit">${esc(dom.nome || 'Domador')} · Nv.${dom.nivel || 1}</div><div class="tb-domador-bar"><i style="width:${pct}%"></i></div>${habNome ? `<div class="tb-domador-hab">✨ ${esc(habNome)}</div>` : ''}</div>`;
   }
   function desenharBase(op, atual) {
     const base = q('.tb-base'); if (b.fim) { base.innerHTML = ''; return; }
