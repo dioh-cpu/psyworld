@@ -43,6 +43,8 @@ export { ARTES };
 const ALTERNATIVA = { '22/mira': 'assets/confusion/interface/mundo-retratos/mira/mira-neutro.webp' };
 const arteUrl = (sis, vaga) => `../../../${ALTERNATIVA[`${sis}/${vaga}`] || caminhoArte(sis, vaga)}`;
 const ROTULOS_GRUPO = ['Sistemas 01 a 10', 'Sistemas 11 a 20', 'Sistemas 21 a 30', 'Sistemas 31 a 40', 'Sistemas 41 a 50'];
+// Lançamento: só os 10 primeiros sistemas existem para o jogador (os outros 40 entram em expansões)
+const SISTEMAS_LANCAMENTO = 10;
 
 // aleatório com semente: o mesmo dia do mesmo save sempre sorteia igual (testável e sem trapaça por recarregar)
 function aleatorio(semente) {
@@ -191,7 +193,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
   painel.innerHTML = `
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mundo-titulo">
       <header class="modal-head">
-        <h3 id="mundo-titulo">Mundo · 50 sistemas</h3>
+        <h3 id="mundo-titulo">Mundo</h3>
         <button class="btn-fechar" id="mundo-fechar" aria-label="Fechar">✕</button>
       </header>
       <div class="mundo-topo" id="mundo-topo"></div>
@@ -242,14 +244,15 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
       corpo.scrollTop = 0; return;
     }
     if (aberto) { abas.hidden = true; painel.querySelector('#mundo-titulo').textContent = 'Mundo'; corpo.innerHTML = menuSistemaHtml(est, aberto); corpo.scrollTop = 0; ligarArtes(corpo); return; }
-    abas.hidden = false;
-    painel.querySelector('#mundo-titulo').textContent = 'Mundo · 50 sistemas';
-    abas.innerHTML = ROTULOS_GRUPO.map((r, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${r}</button>`).join('');
+    abas.hidden = SISTEMAS_LANCAMENTO <= 10; aba = Math.min(aba, Math.ceil(SISTEMAS_LANCAMENTO / 10) - 1);
+    painel.querySelector('#mundo-titulo').textContent = `Mundo · ${SISTEMAS_LANCAMENTO} sistemas`;
+    abas.innerHTML = ROTULOS_GRUPO.slice(0, Math.ceil(SISTEMAS_LANCAMENTO / 10)).map((r, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${r}</button>`).join('');
     const progresso = [window.regiaoC1, window.regiaoEstrategia].map((m) => m?.resumo()).filter(Boolean).map((cic) => `<div class="sis-bloco"><h4>Diário de progresso · ${esc(cic.titulo)}</h4>${cic.linhas.map((l) => `<p>• ${esc(l)}</p>`).join('')}</div>`).join('');
-    const tut = est.meta.tutorialVisto ? '' : `<div class="sis-bloco"><h4>Como funciona o Mundo</h4><p>São 50 sistemas vivos: cidades, facções, clima, pragas, chefes, expedições e mais. A cada <b>dia do mundo</b> (2 minutos de jogo) todos eles avançam sozinhos.</p><p>• <b>Toque em um sistema</b> para abrir o menu dele: estado, ações e o que ele rende.</p><p>• <b>Cada abate na caçada</b> alimenta o mundo (recursos do bioma) e tira monstros do ecossistema. Se uma espécie fica rara, a caça rende menos.</p><p>• <b>Praga e clima</b> mexem no seu dano e no seu ouro. Refúgios protegem. O quadro "Na caça" no topo mostra o que está valendo agora.</p><p>• Os recursos têm teto de 500 (+100 por refúgio). O que passa disso se perde: gaste!</p><p>• Alguns sistemas aparecem no mapa. Chegue perto e toque no botão 🌍 para abrir.</p><div class="mundo-acoes" style="margin-top:6px"><button class="btn-pri" data-entendi="1">Entendi</button></div></div>`;
-    const lib = sistemasLiberados(getSave()), grupo = SISTEMAS.slice(aba * 10, aba * 10 + 10).filter((x) => lib.has(x.id));
-    const prox = proximaLiberacao(getSave());
-    const dica = `<div class="sis-bloco"><h4>Sistemas liberados: ${lib.size}/50</h4><p>${prox ? `Próxima liberação: conclua <b>${esc(prox.titulo)}</b> na campanha (${prox.sistemas.length} sistema${prox.sistemas.length > 1 ? 's' : ''}).` : 'Todos os sistemas foram liberados.'}</p></div>`;
+    const tut = est.meta.tutorialVisto ? '' : `<div class="sis-bloco"><h4>Como funciona o Mundo</h4><p>São ${SISTEMAS_LANCAMENTO} sistemas vivos: cidades, facções, clima, pragas, chefes, expedições e mais. A cada <b>dia do mundo</b> (2 minutos de jogo) todos eles avançam sozinhos.</p><p>• <b>Toque em um sistema</b> para abrir o menu dele: estado, ações e o que ele rende.</p><p>• <b>Cada abate na caçada</b> alimenta o mundo (recursos do bioma) e tira monstros do ecossistema. Se uma espécie fica rara, a caça rende menos.</p><p>• <b>Praga e clima</b> mexem no seu dano e no seu ouro. Refúgios protegem. O quadro "Na caça" no topo mostra o que está valendo agora.</p><p>• Os recursos têm teto de 500 (+100 por refúgio). O que passa disso se perde: gaste!</p><p>• Alguns sistemas aparecem no mapa. Chegue perto e toque no botão 🌍 para abrir.</p><div class="mundo-acoes" style="margin-top:6px"><button class="btn-pri" data-entendi="1">Entendi</button></div></div>`;
+    const doLanc = new Set(SISTEMAS.slice(0, SISTEMAS_LANCAMENTO).map((x) => x.id));
+    const lib = new Set([...sistemasLiberados(getSave())].filter((id) => doLanc.has(id))), grupo = SISTEMAS.slice(aba * 10, aba * 10 + 10).filter((x) => lib.has(x.id));
+    const px = proximaLiberacao(getSave()), prox = px && px.sistemas.some((id) => doLanc.has(id)) ? { ...px, sistemas: px.sistemas.filter((id) => doLanc.has(id)) } : null;
+    const dica = `<div class="sis-bloco"><h4>Sistemas liberados: ${lib.size}/${SISTEMAS_LANCAMENTO}</h4><p>${prox ? `Próxima liberação: conclua <b>${esc(prox.titulo)}</b> na campanha (${prox.sistemas.length} sistema${prox.sistemas.length > 1 ? 's' : ''}).` : lib.size >= SISTEMAS_LANCAMENTO ? 'Todos os sistemas foram liberados.' : 'Avance na campanha para liberar os próximos.'}</p></div>`;
     corpo.innerHTML = progresso + dica + tut + (grupo.length ? '' : '<p class="ref">Nenhum sistema deste grupo foi liberado ainda. Avance na campanha.</p>') + `<div class="mundo-grade">${grupo.map((sis) => {
       const arte = artePorSistema(sis.id);
       return `<button class="tile" data-abrir="${sis.id}"><span class="linha"><span class="arte ic" data-sis="${sis.id}" data-vaga="icone"><img src="${arteUrl(sis.id, 'icone')}" alt="" loading="lazy"><template><svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,6 94,30 94,70 50,94 6,70 6,30" fill="${arte.cor}66" stroke="${arte.cor}" stroke-width="3"/><text x="50" y="62" text-anchor="middle" font-size="40">${arte.emoji}</text></svg></template></span><strong>${sis.id} · ${esc(sis.nome)}</strong></span><small>${esc(sis.resumo(est.mundo[sis.id]))}</small></button>`;
