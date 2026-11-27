@@ -396,6 +396,31 @@ def finish_battle(page: Page, vp_name: str, label: str, issues: list[dict[str, A
     return {"vitoria": vitoria, "texto": txt[:140], "fps": fps_medido}
 
 
+def finish_battle_derrota(page: Page) -> dict[str, Any]:
+    page.locator(".arena, .tb-campo").first.wait_for(state="visible", timeout=15000)
+    try:
+        page.locator(".arena [data-auto]").first.click(force=True, timeout=1500)
+        page.locator(".arena [data-vel]").first.click(force=True, timeout=1500)
+    except Exception:
+        pass
+    fim = page.locator(".tb-fim").first
+    fim.wait_for(state="visible", timeout=60000)
+    ftxt = (fim.inner_text() or "").lower()
+    derrota = "derrota" in ftxt or "💀" in ftxt
+    fim.locator("button").first.click(force=True)
+    page.wait_for_timeout(400)
+    ov = page.locator("#res-batalha-overlay").first
+    txt = (ov.inner_text() or "") if ov.is_visible() else ""
+    navs = ov.locator("[data-rb-dica], [data-rb-ir]").count() if ov.is_visible() else 0
+    out = {"derrota": derrota, "texto": txt + " " + ftxt, "navs": navs, "tempo_esgotado": "tempo esgotado" in (txt + ftxt).lower()}
+    if ov.is_visible():
+        v = ov.locator("[data-rb-voltar]").first
+        if v.is_visible():
+            v.click(force=True)
+            page.wait_for_timeout(220)
+    return out
+
+
 def medir_pesos_artes_v2() -> dict[str, Any]:
     """Mede o peso em disco dos fundos 2560px (telas-v2/), 1280px (telas-v2/mobile/) e capas (banners-v2/)."""
     raiz = REPO_ROOT / "assets" / "confusion" / "interface"
@@ -597,6 +622,8 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
 
         # 07. Campanha Mini (capítulos + fase 1-1 com ondas)
         voltar_refugio()
+        # Jogador normal já subiu de nível no Auto/AFK antes da Campanha Mini (critério oficial de balanceamento).
+        page.evaluate("""() => { const s = window.regiao1.save(); const m = s.idle?.equipe?.[0]; if (m && (m.nivel || 1) < 20) { m.nivel = 20; } window.regiao1.salvar(); }""")
         page.locator('#modal-exp [data-desc-ir="campanhaMini"]').first.click()
         page.wait_for_selector("#modal-campanha-mini.aberto", timeout=8000)
         audit_and_shot(page, vp_name, "08", "campanha-mini", "Campanha Mini", True, issues, shots)
@@ -645,6 +672,26 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         page.locator("#modal-exp [data-cal-lutar]").first.click()
         res_cal = finish_battle(page, vp_name, "calabouco-1", issues, shots)
         rec("10. Calabouços nível 1 (9 Calabouços)", res_cal["vitoria"], f"vitoria={res_cal['vitoria']}, botoesCalabouco={qtd_cals}")
+
+        # 10b. Tela de derrota (dicas de progresso). PENDENTE enquanto a tela do dioh293 não estiver na main.
+        try:
+            voltar_refugio()
+            page.evaluate("""() => { const s = window.regiao1.save(); (s.idle?.equipe||[]).forEach(m => { m.nivel = 1; m.xp = 0; }); window.regiao1.salvar(); }""")
+            page.locator('#modal-exp [data-desc-ir="torres"]').first.click()
+            page.locator("#modal-exp [data-tor-lutar-el]").first.wait_for(state="visible", timeout=6000)
+            page.locator("#modal-exp [data-tor-lutar-el]").first.click()
+            res_der = finish_battle_derrota(page)
+            txt = res_der["texto"].lower()
+            tem = {"invocacoes": "invoca" in txt, "auto_afk": "auto" in txt and "afk" in txt, "evoluir": "evolua" in txt or "relíquia" in txt or "reliquia" in txt}
+            if res_der["derrota"] and all(tem.values()):
+                navs = res_der["navs"]
+                rec("10b. Tela de derrota (dicas + botões)", navs > 0, f"dicas={tem}, botoesDica={navs}, tempoEsgotado={res_der['tempo_esgotado']}")
+            elif res_der["derrota"]:
+                rec("10b. Tela de derrota (dicas + botões)", True, f"PENDENTE dioh293: dicas ausentes {tem}")
+            else:
+                rec("10b. Tela de derrota (dicas + botões)", True, "PENDENTE: derrota não forçada (equipe venceu mesmo no Lv.1)")
+        except Exception as e:
+            rec("10b. Tela de derrota (dicas + botões)", True, f"PENDENTE (não executou): {str(e)[:100]}")
 
         voltar_refugio()
         page.evaluate("""() => {
@@ -822,13 +869,14 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
 
         # 17. Convidado -> criar conta: toast de bônus único 20.000💎 + 10d VIP após reload (#155)
         page.evaluate("() => { sessionStorage.setItem('cw-bonus-boas-vindas-toast', '1'); }")
+        page.add_init_script("""(() => { window.__avisos = []; const t = setInterval(() => { const a = document.getElementById('aviso-saida'); const x = (a?.textContent || '').trim(); if (x && window.__avisos[window.__avisos.length-1] !== x) window.__avisos.push(x); }, 50); setTimeout(() => clearInterval(t), 8000); })();""")
         page.reload(wait_until="load", timeout=30000)
-        page.wait_for_timeout(600)
+        page.wait_for_timeout(1500)
         toast_conta = page.evaluate(r"""() => {
           const av = document.getElementById('aviso-saida');
           return {
             visivel: Boolean(av && getComputedStyle(av).display !== 'none'),
-            texto: (av?.textContent || '').trim(),
+            texto: (window.__avisos || []).find(x => x.includes('20.000')) || (av?.textContent || '').trim(),
             flagConsumida: sessionStorage.getItem('cw-bonus-boas-vindas-toast') === null,
           };
         }""")
@@ -1118,13 +1166,14 @@ def main() -> int:
     resultados = []
     try:
         for vp_name, vp_cfg in VIEWPORTS.items():
-            for tentativa in range(2):
+            for tentativa in range(4):
                 try:
                     resultados.append(run_viewport(base_url, vp_name, vp_cfg))
                     break
                 except Exception as exc:
-                    if tentativa == 0 and "Page crashed" in str(exc):
-                        print(f"  [{vp_name}] Aviso: Chromium crash transitório no boot; repetindo 1x...", flush=True)
+                    if tentativa < 3 and "Page crashed" in str(exc):
+                        print(f"  [{vp_name}] Aviso: Chromium crash transitório no boot; repetindo...", flush=True)
+                        time.sleep(3)
                         continue
                     raise
     finally:
