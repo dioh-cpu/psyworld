@@ -602,10 +602,11 @@ const MONSTROS_SELVAGENS_R2_BRUTOS = [
   { id: 'w_r2_cri_5', mapa: 'R2_CRI', especie: 'Trovoresta', formaCadastrada: 2, nivel: 43, pos: [407, 448] },
 ];
 
-import { MONSTROS_SELVAGENS_R3_R12, BOSSES_REGIOES_3_12 } from './regioes-3-12-mapas.js';
+import { MONSTROS_SELVAGENS_R3_R12, BOSSES_REGIOES_3_12, NPCS_REGIOES_3_12 } from './regioes-3-12-mapas.js';
+NPCS_REGIAO1.push(...NPCS_REGIOES_3_12);
 
 export const MONSTROS_SELVAGENS_R2 = MONSTROS_SELVAGENS_R2_BRUTOS.map((m) => resolverEncontroCatalogo(m, { regiao: 2 }));
-export { MONSTROS_SELVAGENS_R3_R12, BOSSES_REGIOES_3_12 };
+export { MONSTROS_SELVAGENS_R3_R12, BOSSES_REGIOES_3_12, NPCS_REGIOES_3_12 };
 export const TODOS_MONSTROS_SELVAGENS = [...MONSTROS_SELVAGENS, ...MONSTROS_SELVAGENS_R2, ...MONSTROS_SELVAGENS_R3_R12];
 
 export const BOSSES_REGIAO2 = Object.fromEntries(
