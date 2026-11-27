@@ -20,6 +20,7 @@ import { renderizarPainelMissoes, tratarCliqueMissoes, temAvisoMissoes } from '.
 import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.js';
 import { renderizarPainelCalaboucos, tratarCliqueCalaboucos } from './regiao1-calaboucos-ui.js';
 import { renderizarPainelReliquias, tratarCliqueReliquias } from './regiao1-reliquias-ui.js';
+import { resumoDomadorAtivoHtml, renderizarPainelDomadores, tratarCliqueDomadores } from './regiao1-domadores-ui.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -286,7 +287,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     calaboucos: { titulo: '🏰 Calabouços', abas: ['Calabouços'], tut: null, mostraEnergia: true },
     reliquias: { titulo: '💎 Relíquias & Essências', abas: ['Relíquias', 'Essências'], tut: null, mostraEnergia: true },
     missoes: { titulo: '📜 Missões', abas: ['Marcos', 'Paralelas'], tut: null, mostraEnergia: true },
-    equipe: { titulo: '⚔️ Equipe', abas: ['Formação & Coleção'], tut: null },
+    equipe: { titulo: '⚔️ Equipe', abas: ['Formação & Coleção', 'Domadores'], tut: null },
     oniricos: { titulo: '🎫 Invocação', abas: ['Invocação'], tut: 'banner' },
     cacadas: { titulo: '🏹 Caçadas & Chefes', abas: ['Caçadas', 'Calabouço', 'Chefes'], tut: 'cacadas' },
     guilda: { titulo: '🏛️ Guilda dos Aventureiros', abas: ['Contratos', 'Fazenda', 'Oficina', 'Reinos'], tut: 'guilda' },
@@ -959,7 +960,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (painel === 'torres') h += renderizarPainelTorres(save(), aba, torresUi);
     if (painel === 'calaboucos') h += renderizarPainelCalaboucos(save(), calaboucosUi);
     if (painel === 'reliquias') h += renderizarPainelReliquias(save(), aba, reliquiasUi);
-    if (painel === 'equipe') h += abaEquipe();
+    if (painel === 'equipe') h += aba === 1 ? renderizarPainelDomadores(save()) : (resumoDomadorAtivoHtml(save()) + abaEquipe());
     if (painel === 'oniricos') h += abaBanner();
     if (painel === 'cacadas') h += [abaCacadas, abaCalabouco, abaChefes][aba]();
     if (painel === 'guilda') h += [abaContratos, abaFazenda, abaOficina, abaReinosGuilda][aba]();
@@ -1012,6 +1013,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     })) return;
     if (tratarCliqueReliquias(d, {
       save: save(), salvar, mostrarToast, render, st: reliquiasUi,
+    })) return;
+    if (tratarCliqueDomadores(d, {
+      save: save(), salvar, mostrarToast, render,
     })) return;
     if (t.id === 'exp-fechar') {
       if (painel !== 'descanso' && origemPainelExp === 'descanso') {
