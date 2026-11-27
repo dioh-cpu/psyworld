@@ -327,6 +327,61 @@ export function bonusPassivoDomadorAtivo(save, domadorId = null) {
   };
 }
 
+export const MARCOS_HABILIDADES_DOMADOR = [
+  { rank: 1, nivelMin: 1, titulo: 'Despertar', desc: 'Habilidades base (recargas 1 / 3 / 5, +35 energia por turno aliado).' },
+  { rank: 2, nivelMin: 20, titulo: 'Maestria S1', desc: 'Golpe base (S1) ganha +10% multiplicador e +10% chance de efeito.' },
+  { rank: 3, nivelMin: 45, titulo: 'Cadência S2', desc: 'Técnica (S2) reduz 1 turno de recarga (3→2) e amplia cura/escudo ou duração.' },
+  { rank: 4, nivelMin: 70, titulo: 'Domínio S3', desc: 'Suprema (S3) ganha +15% multiplicador e +15% chance de efeito.' },
+  { rank: 5, nivelMin: 100, titulo: 'Resonância Máxima', desc: 'Suprema (S3) reduz 1 turno de recarga (5→4) e +5 energia por turno aliado (35→40).' },
+];
+
+export const CURVA_DESBLOQUEIO_DOMADORES = CATALOGO_DOMADORES.map((d) => ({
+  id: d.id,
+  nome: d.nome,
+  obtencao: d.obtencao,
+  marcoCampanha: d.obtencao.capituloRequisito ? `Conclusão do Capítulo ${d.obtencao.capituloRequisito}` : 'Início da Campanha (Cap. 1)',
+}));
+
+export function rankHabilidadeDomador(nivel) {
+  const lv = Math.max(1, Math.min(DOMADORES_CFG.nivelMax, Math.floor(Number(nivel) || 1)));
+  let atual = MARCOS_HABILIDADES_DOMADOR[0];
+  for (const m of MARCOS_HABILIDADES_DOMADOR) {
+    if (lv >= m.nivelMin) atual = m;
+  }
+  return atual;
+}
+
+export function habilidadesEscaladasDomador(domadorId, nivel = 1) {
+  const def = DOMADORES_POR_ID[domadorId];
+  if (!def) return [];
+  const lv = Math.max(1, Math.min(DOMADORES_CFG.nivelMax, Math.floor(Number(nivel) || 1)));
+  return def.habilidades.map((base, idx) => {
+    const h = {
+      ...base,
+      efeitos: Array.isArray(base.efeitos) ? base.efeitos.map((ef) => ({ ...ef })) : [],
+    };
+    if (idx === 0 && lv >= 20) {
+      if (typeof h.mult === 'number') h.mult = Number((h.mult * 1.10).toFixed(3));
+      h.efeitos = h.efeitos.map((ef) => (typeof ef.chance === 'number' ? { ...ef, chance: Math.min(1, Number((ef.chance + 0.10).toFixed(2))) } : ef));
+    } else if (idx === 1 && lv >= 45) {
+      h.cd = Math.max(1, (h.cd || 3) - 1);
+      if (typeof h.cura === 'number') h.cura = Number((h.cura + 0.04).toFixed(3));
+      h.efeitos = h.efeitos.map((ef) => {
+        if (typeof ef.pct === 'number') return { ...ef, pct: Number((ef.pct + 0.04).toFixed(3)) };
+        if (typeof ef.turnos === 'number') return { ...ef, turnos: ef.turnos + 1 };
+        return ef;
+      });
+    } else if (idx === 2 && lv >= 70) {
+      if (typeof h.mult === 'number') h.mult = Number((h.mult * 1.15).toFixed(3));
+      h.efeitos = h.efeitos.map((ef) => (typeof ef.chance === 'number' ? { ...ef, chance: Math.min(1, Number((ef.chance + 0.15).toFixed(2))) } : ef));
+    }
+    if (idx === 2 && lv >= 100) {
+      h.cd = Math.max(1, (h.cd || 5) - 1);
+    }
+    return h;
+  });
+}
+
 export function listarDomadores(save) {
   const st = domadoresDe(save);
   return CATALOGO_DOMADORES.map((def) => {
@@ -344,6 +399,9 @@ export function listarDomadores(save) {
       xpFaltanteProximoNivel: proxXp,
       stats: statsDoDomador(prog.nivel),
       passivaAtual: def.calcularPassiva(prog.nivel),
+      rankHabilidade: rankHabilidadeDomador(prog.nivel),
+      habilidades: habilidadesEscaladasDomador(def.id, prog.nivel),
+      marcosHabilidades: MARCOS_HABILIDADES_DOMADOR,
     };
   });
 }
@@ -353,6 +411,9 @@ export function fichaDomadorCombate(save, domadorId = null) {
   const id = domadorId && st.desbloqueados[domadorId] ? domadorId : st.ativo;
   const def = DOMADORES_POR_ID[id] || CATALOGO_DOMADORES[0];
   const nivel = st.progresso[def.id]?.nivel || 1;
+  const ganhoTurno = nivel >= 100
+    ? DOMADORES_CFG.acaoBatalha.ganhoPorTurnoAliado + 5
+    : DOMADORES_CFG.acaoBatalha.ganhoPorTurnoAliado;
   return {
     id: def.id,
     nome: def.nome,
@@ -361,10 +422,12 @@ export function fichaDomadorCombate(save, domadorId = null) {
     nivel,
     ocupaVaga: false,
     alvejavel: false,
-    acaoRegra: { ...DOMADORES_CFG.acaoBatalha },
+    acaoRegra: { ...DOMADORES_CFG.acaoBatalha, ganhoPorTurnoAliado: ganhoTurno },
+    ganhoPorTurnoAliado: ganhoTurno,
     stats: statsDoDomador(nivel),
     passiva: def.calcularPassiva(nivel),
-    habilidades: def.habilidades.map((h) => ({ ...h })),
+    rankHabilidade: rankHabilidadeDomador(nivel),
+    habilidades: habilidadesEscaladasDomador(def.id, nivel),
     arte: { ...def.arte },
   };
 }
@@ -382,9 +445,10 @@ export function criarEstadoDomadorBatalha(save, domadorId = null) {
 
 export function carregarBarraDomador(estado, evento = 'turno_aliado') {
   if (!estado) return estado;
+  const ganhoTurno = estado.ganhoPorTurnoAliado || DOMADORES_CFG.acaoBatalha.ganhoPorTurnoAliado;
   if (evento === 'turno_aliado') {
     estado.recargas = (estado.recargas || [0, 0, 0]).map((cd) => Math.max(0, cd - 1));
-    estado.barraEnergia = Math.min(estado.barraMax, (estado.barraEnergia || 0) + DOMADORES_CFG.acaoBatalha.ganhoPorTurnoAliado);
+    estado.barraEnergia = Math.min(estado.barraMax, (estado.barraEnergia || 0) + ganhoTurno);
   } else if (evento === 'dano_recebido') {
     estado.barraEnergia = Math.min(estado.barraMax, (estado.barraEnergia || 0) + DOMADORES_CFG.acaoBatalha.ganhoAoSofrerDano);
   }
