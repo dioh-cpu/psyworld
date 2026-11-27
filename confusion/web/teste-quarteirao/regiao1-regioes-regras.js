@@ -24,52 +24,52 @@ const DEFINICOES_BASE = [
   },
   {
     numero: 3, nome: 'Crista da Alvorada', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R3', nome: 'Basilisco da Crista Rubra', nivel: 70, elemento: 'fogo', arte: `${RAIZ_REINOS}/03/chefe.webp`, arena: `${RAIZ_REINOS}/03/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R3', nome: 'Basilisco da Crista Rubra', nivel: 70, elemento: 'fogo', arte: `${RAIZ_REINOS}/03/chefe.webp`, arena: `${RAIZ_REINOS}/03/arena-chefe.webp` },
     recompensa: { gold: 1400, diamantes: 200, xp: 1400 },
   },
   {
     numero: 4, nome: 'Manguezal do Sal', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R4', nome: 'Caranguejo Salífero', nivel: 95, elemento: 'agua', arte: `${RAIZ_REINOS}/04/chefe.webp`, arena: `${RAIZ_REINOS}/04/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R4', nome: 'Caranguejo Salífero', nivel: 95, elemento: 'agua', arte: `${RAIZ_REINOS}/04/chefe.png`, arena: `${RAIZ_REINOS}/04/arena-chefe.webp` },
     recompensa: { gold: 2000, diamantes: 260, xp: 2200 },
   },
   {
     numero: 5, nome: 'Serras do Linho', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R5', nome: 'Tecelão do Vendaval', nivel: 120, elemento: 'voador', arte: `${RAIZ_REINOS}/05/chefe.webp`, arena: `${RAIZ_REINOS}/05/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R5', nome: 'Tecelão do Vendaval', nivel: 120, elemento: 'voador', arte: `${RAIZ_REINOS}/05/chefe.png`, arena: `${RAIZ_REINOS}/05/arena-chefe.webp` },
     recompensa: { gold: 2700, diamantes: 320, xp: 3200 },
   },
   {
     numero: 6, nome: 'Degraus de Terracota', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R6', nome: 'Colosso do Forno Oco', nivel: 150, elemento: 'terra', arte: `${RAIZ_REINOS}/06/chefe.webp`, arena: `${RAIZ_REINOS}/06/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R6', nome: 'Colosso do Forno Oco', nivel: 150, elemento: 'terra', arte: `${RAIZ_REINOS}/06/chefe.png`, arena: `${RAIZ_REINOS}/06/arena-chefe.webp` },
     recompensa: { gold: 3500, diamantes: 400, xp: 4500 },
   },
   {
     numero: 7, nome: 'Bacia da Ametista', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R7', nome: 'Golem de Ametista', nivel: 180, elemento: 'pedra', arte: `${RAIZ_REINOS}/07/chefe.webp`, arena: `${RAIZ_REINOS}/07/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R7', nome: 'Golem de Ametista', nivel: 180, elemento: 'pedra', arte: `${RAIZ_REINOS}/07/chefe.png`, arena: `${RAIZ_REINOS}/07/arena-chefe.webp` },
     recompensa: { gold: 4500, diamantes: 480, xp: 6000 },
   },
   {
     numero: 8, nome: 'Jardins da Bruma', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R8', nome: 'Abade da Névoa', nivel: 210, elemento: 'planta', arte: `${RAIZ_REINOS}/08/chefe.webp`, arena: `${RAIZ_REINOS}/08/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R8', nome: 'Abade da Névoa', nivel: 210, elemento: 'planta', arte: `${RAIZ_REINOS}/08/chefe.png`, arena: `${RAIZ_REINOS}/08/arena-chefe.webp` },
     recompensa: { gold: 5600, diamantes: 560, xp: 7800 },
   },
   {
     numero: 9, nome: 'Caldeira do Ferro', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R9', nome: 'Regente da Escória', nivel: 240, elemento: 'aco', arte: `${RAIZ_REINOS}/09/chefe.webp`, arena: `${RAIZ_REINOS}/09/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R9', nome: 'Regente da Escória', nivel: 240, elemento: 'aco', arte: `${RAIZ_REINOS}/09/chefe.png`, arena: `${RAIZ_REINOS}/09/arena-chefe.webp` },
     recompensa: { gold: 6800, diamantes: 650, xp: 9800 },
   },
   {
     numero: 10, nome: 'Geada Alta', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R10', nome: 'Urso da Aurora Fraturada', nivel: 265, elemento: 'agua', arte: `${RAIZ_REINOS}/10/chefe.webp`, arena: `${RAIZ_REINOS}/10/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R10', nome: 'Urso da Aurora Fraturada', nivel: 265, elemento: 'agua', arte: `${RAIZ_REINOS}/10/chefe.png`, arena: `${RAIZ_REINOS}/10/arena-chefe.webp` },
     recompensa: { gold: 8200, diamantes: 750, xp: 12000 },
   },
   {
     numero: 11, nome: 'Deserto do Vitral', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R11', nome: 'Esfinge de Vidro', nivel: 285, elemento: 'luz', arte: `${RAIZ_REINOS}/11/chefe.webp`, arena: `${RAIZ_REINOS}/11/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R11', nome: 'Esfinge de Vidro', nivel: 285, elemento: 'luz', arte: `${RAIZ_REINOS}/11/chefe.png`, arena: `${RAIZ_REINOS}/11/arena-chefe.webp` },
     recompensa: { gold: 9800, diamantes: 880, xp: 15000 },
   },
   {
     numero: 12, nome: 'Atol do Farol', jogavel: false, mapaEntrada: null,
-    chefe: { id: 'BOSS_R12', nome: 'Sentinela do Farol', nivel: 300, elemento: 'luz', arte: `${RAIZ_REINOS}/12/chefe.webp`, arena: `${RAIZ_REINOS}/12/cidade-conceito.webp` },
+    chefe: { id: 'BOSS_R12', nome: 'Sentinela do Farol', nivel: 300, elemento: 'luz', arte: `${RAIZ_REINOS}/12/chefe.png`, arena: `${RAIZ_REINOS}/12/arena-chefe.webp` },
     recompensa: { gold: 12000, diamantes: 1200, xp: 20000 },
   },
 ];
