@@ -5,11 +5,11 @@
 import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, resumoBatalha, statsDoNivel, EFEITOS, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
 import { perfilCombateEquipamento } from './regiao1-reliquias-regras.js';
 import { criarEstadoDomadorBatalha } from './regiao1-domadores-regras.js';
-import { criarCtx, tocarEvento, duracaoEstimada, entradaChefe } from './regiao1-vfx.js';
+import { criarCtx, tocarEvento, tocarEventoDomador, duracaoEstimada, entradaChefe } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE, LINHAS } from '../species.js';
 import { pref, proximaVelocidade } from './regiao1-sfx.js';
 import { resolverEncontroCatalogo, SUBSTITUTO_R1 } from './regiao1-encontros-regras.js';
-import { arteAtaque, criarPose } from './regiao1-poses.js';
+import { arteAtaque, criarPose, criarLoopAnimacao } from './regiao1-poses.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
 import { CHEFES_REINOS } from './regiao1-kits-reinos.js';
@@ -157,22 +157,23 @@ const CSS = `
 .arena .un-elemento { padding: 0 6px; border: 1px solid var(--cor-elemento); border-radius: 8px; background: #160e20ef; color: var(--cor-elemento); font-size: clamp(9px, 2.7vh, 12px); font-weight: 750; line-height: 1.15; white-space: nowrap; }
 .arena .un-efs { display: flex; gap: 1px; font-size: 11px; min-height: 13px; filter: drop-shadow(0 1px 1px #000); } .arena .un-efs span { background: rgba(10,5,16,.7); border-radius: 4px; padding: 0 2px; line-height: 13px; }
 .arena .un-efs:empty { display: none; }
-.arena .tb-topo { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: flex-start; gap: 8px; padding: 6px 10px; pointer-events: none; z-index: 40; }
-.arena .tb-topo > * { pointer-events: auto; } .arena .tb-tit { flex: 1; min-width: 0; text-shadow: 0 1px 4px #000; } .arena .tb-tit b { display: block; font: 700 clamp(15px, 3.4vh, 22px) Georgia, serif; } .arena .tb-tit small { opacity: .9; }
-.arena .tb-ordem { display: flex; gap: 4px; justify-content: center; position: absolute; left: 50%; top: 6px; transform: translateX(-50%); } .arena .tb-ordem span { width: clamp(26px, 6.5vh, 40px); height: clamp(26px, 6.5vh, 40px); border-radius: 6px; transform: rotate(45deg) scale(.8); background: rgba(20,12,30,.8) center / 130% no-repeat; border: 2px solid #60a5fa; overflow: hidden; } .arena .tb-ordem span.i { border-color: #fb7185; } .arena .tb-ordem span.cur { border-color: #ffd58c; box-shadow: 0 0 8px #ffd58c; transform: rotate(45deg) scale(1); }
+.arena .tb-topo { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: flex-start; gap: 8px; padding: 6px 10px; pointer-events: none; z-index: 40; background: linear-gradient(180deg, rgba(16,9,24,.78), transparent); }
+.arena .tb-topo > * { pointer-events: auto; } .arena .tb-tit { flex: 1; min-width: 0; text-shadow: 0 2px 6px #000; } .arena .tb-tit b { display: block; font: 700 clamp(15px, 3.4vh, 22px) Georgia, serif; color: #fde68a; } .arena .tb-tit small { color: #cbd5e1; }
+.arena .tb-ordem { display: flex; gap: 4px; justify-content: center; position: absolute; left: 50%; top: 6px; transform: translateX(-50%); } .arena .tb-ordem span { width: clamp(26px, 6.5vh, 40px); height: clamp(26px, 6.5vh, 40px); border-radius: 6px; transform: rotate(45deg) scale(.8); background: rgba(20,12,30,.88) center / 130% no-repeat; border: 2px solid #60a5fa; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.6); } .arena .tb-ordem span.i { border-color: #fb7185; } .arena .tb-ordem span.cur { border-color: #ffd58c; box-shadow: 0 0 10px #ffd58c; transform: rotate(45deg) scale(1); }
 .arena .tb-ordem span img { width: 100%; height: 100%; object-fit: contain; transform: rotate(-45deg) scale(1.3); }
-.arena .tb-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; } .arena .tb-btns button { min-height: 32px; padding: 3px 12px; font-size: 12px; border: 1px solid #b89a6b; border-radius: 7px; background: rgba(33,19,41,.85); color: #fff3e7; } .arena .tb-btns button.on { background: #f3a458; color: #21110c; }
-.arena .tb-fila { position: absolute; left: 50%; transform: translateX(-50%); top: clamp(46px, 13vh, 64px); display: none; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(20,12,30,.8); border: 1px solid #6b4a52; border-radius: 8px; z-index: 40; } .arena .tb-fila img { width: clamp(24px, 7vh, 38px); height: clamp(24px, 7vh, 38px); object-fit: contain; }
-.arena .tb-base { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); min-height: var(--espaco-rodape); box-sizing: border-box; background: linear-gradient(transparent, rgba(12,6,18,.85) 40%); z-index: 40; }
-.arena .tb-ativo { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 1 28%; } .arena .tb-ativo img { width: clamp(34px, 11vh, 56px); height: clamp(34px, 11vh, 56px); object-fit: contain; } .arena .tb-ativo b { display: block; font: 700 clamp(14px, 3.4vh, 20px) Georgia, serif; } .arena .tb-ativo small { display: block; opacity: .9; }
-.arena .tb-hab { display: flex; gap: 6px; flex: 1; justify-content: flex-end; } .arena .tb-hab button { position: relative; flex: 0 1 clamp(78px, 17vw, 150px); min-height: var(--altura-botao); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px 5px; border: 1px solid #8e6dbd; border-radius: 9px; background: linear-gradient(#3a2750, #241633); color: #fff3e7; font-size: clamp(10px, 2.6vh, 13px); line-height: 1.15; }
-.arena .tb-hab button.basico { border-color: #8f8aa8; flex-basis: clamp(60px, 12vw, 100px); } .arena .tb-hab button i { font-style: normal; font-size: clamp(14px, 4vh, 20px); } .arena .tb-hab button small { opacity: .85; font-size: 9.5px; }
-.arena .tb-hab button.dest { background: linear-gradient(#f3d9a4, #c8924a); color: #2a1608; border-color: #ffe2a8; } .arena .tb-hab button:disabled { opacity: .4; filter: grayscale(.6); } .arena .tb-hab button .rc { position: absolute; top: 2px; right: 4px; font-weight: 800; color: #fda4af; }
-.arena .tb-aguarde { opacity: .8; font-size: 12px; margin-left: auto; }
-.arena .tb-fim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(13,7,19,.78); font-size: 20px; z-index: 60; text-align: center; padding: 20px; }
-.arena .tb-domador { position: absolute; left: 10px; top: clamp(50px, 14vh, 72px); z-index: 42; display: flex; align-items: center; gap: 7px; padding: 5px 9px 5px 6px; border-radius: 10px; background: rgba(14, 10, 26, .88); border: 1px solid #c8924a; box-shadow: 0 3px 12px rgba(0,0,0,.55); max-width: min(230px, 42vw); pointer-events: none; }
+.arena .tb-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; } .arena .tb-btns button { min-height: 32px; padding: 3px 12px; font-size: 12px; font-weight: 700; border: 0; border-radius: 7px; background: url('../../../assets/confusion/interface/kit-v2/botao-secundario-normal.png') center / 100% 100% no-repeat, rgba(33,19,41,.9); color: #fff3e7; cursor: pointer; text-shadow: 0 1px 2px #000; } .arena .tb-btns button.on { background: url('../../../assets/confusion/interface/kit-v2/botao-principal-normal.png') center / 100% 100% no-repeat, #f3a458; color: #fff7ed; }
+.arena .tb-fila { position: absolute; left: 50%; transform: translateX(-50%); top: clamp(46px, 13vh, 64px); display: none; align-items: center; gap: 4px; padding: 3px 8px; background: rgba(20,12,30,.86); border: 1px solid rgba(243,194,122,.45); border-radius: 8px; z-index: 40; } .arena .tb-fila img { width: clamp(24px, 7vh, 38px); height: clamp(24px, 7vh, 38px); object-fit: contain; }
+.arena .tb-base { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 10px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px)); min-height: var(--espaco-rodape); box-sizing: border-box; background: linear-gradient(transparent, rgba(14,8,22,.92) 38%), url('../../../assets/confusion/interface/kit-v2/cabecalho.png') center bottom / 100% 100% no-repeat; z-index: 40; }
+.arena .tb-ativo { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 1 28%; text-shadow: 0 1px 4px #000; } .arena .tb-ativo img { width: clamp(34px, 11vh, 56px); height: clamp(34px, 11vh, 56px); object-fit: contain; } .arena .tb-ativo b { display: block; font: 700 clamp(14px, 3.4vh, 20px) Georgia, serif; color: #fde68a; } .arena .tb-ativo small { display: block; color: #cbd5e1; }
+.arena .tb-hab { display: flex; gap: 6px; flex: 1; justify-content: flex-end; } .arena .tb-hab button { position: relative; flex: 0 1 clamp(78px, 17vw, 150px); min-height: var(--altura-botao); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px 6px; border: 0; border-radius: 9px; background: url('../../../assets/confusion/interface/kit-v2/botao-secundario-normal.png') center / 100% 100% no-repeat, linear-gradient(#3a2750, #241633); color: #fff3e7; font-size: clamp(10px, 2.6vh, 13px); font-weight: 700; line-height: 1.15; cursor: pointer; text-shadow: 0 1px 3px rgba(0,0,0,.75); }
+.arena .tb-hab button:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-secundario-hover.png'), linear-gradient(#4a3266, #2d1c42); }
+.arena .tb-hab button.basico { flex-basis: clamp(60px, 12vw, 100px); } .arena .tb-hab button i { font-style: normal; font-size: clamp(14px, 4vh, 20px); } .arena .tb-hab button small { color: #cbd5e1; font-size: 9.5px; }
+.arena .tb-hab button.dest { background: url('../../../assets/confusion/interface/kit-v2/botao-principal-normal.png') center / 100% 100% no-repeat, linear-gradient(#f3d9a4, #c8924a); color: #fff7ed; } .arena .tb-hab button.dest:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-principal-hover.png'), linear-gradient(#f8e2b2, #d49d54); } .arena .tb-hab button:disabled { background-image: url('../../../assets/confusion/interface/kit-v2/botao-secundario-desativado.png'); opacity: .48; filter: grayscale(.45); cursor: not-allowed; } .arena .tb-hab button .rc { position: absolute; top: 2px; right: 5px; font-weight: 800; color: #fda4af; text-shadow: 0 1px 2px #000; }
+.arena .tb-aguarde { color: #cbd5e1; font-size: 12px; margin-left: auto; text-shadow: 0 1px 3px #000; }
+.arena .tb-fim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(13,7,19,.82); font-size: 20px; z-index: 60; text-align: center; padding: 20px; }
+.arena .tb-domador { position: absolute; left: 10px; top: clamp(50px, 14vh, 72px); z-index: 42; display: flex; align-items: center; gap: 7px; padding: 4px 8px 4px 5px; border-radius: 10px; background: rgba(14, 10, 26, .9); border: 8px solid transparent; border-image: url('../../../assets/confusion/interface/kit-v2/painel-9slice.png') 28 fill stretch; box-shadow: 0 3px 12px rgba(0,0,0,.55); max-width: min(230px, 42vw); pointer-events: none; }
 .arena .tb-domador[hidden] { display: none; }
-.arena .tb-domador img { width: clamp(28px, 8vh, 42px); height: clamp(28px, 8vh, 42px); border-radius: 50%; object-fit: cover; border: 1.5px solid #ffd58c; flex: 0 0 auto; }
+.arena .tb-domador img { width: clamp(28px, 8vh, 42px); height: clamp(28px, 8vh, 42px); border-radius: 8px; object-fit: cover; border: 1.5px solid #ffd58c; flex: 0 0 auto; }
 .arena .tb-domador-info { min-width: 0; flex: 1; }
 .arena .tb-domador-tit { font-size: clamp(10px, 2.5vh, 12px); font-weight: 800; color: #fff3e7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .arena .tb-domador-bar { height: 6px; margin-top: 3px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; }
@@ -265,9 +266,11 @@ export function criarArena(host, { artes = {} } = {}) {
     // pose de ataque da forma em uso (voltada para a direita; inimigos espelhados), pronta para o momento do golpe
     const srcAtaque = arteAtaque(u.especie, u.arte || arteRaiz(u.especie, opArt));
     if (srcAtaque) { el._pose = criarPose({ fig: el.querySelector('.un-fig'), base: imagem, src: srcAtaque, lado: u.lado, escalaX: sprite.escalaX, zoom: sprite.zoom, bbox: () => bboxCache.get(imagem.currentSrc || imagem.src), especie: u.especie }); imagem.addEventListener('load', () => el._pose.preparar(), { once: true }); }
+    el._anim = criarLoopAnimacao({ fig: el.querySelector('.un-fig'), base: imagem, especie: u.especie, lado: u.lado });
+    el._anim.definirAcao(entrando ? 'andar' : 'idle');
     imagem.addEventListener('error', () => { const ph = document.createElement('span'); ph.textContent = '🎃'; ph.title = 'Arte pendente'; ph.style.cssText = 'font-size:clamp(36px,12vh,80px);line-height:1'; imagem.replaceWith(ph); }, { once: true });
     campo.append(el); nos.set(u.id, { el, u, vaga }); hpVis.set(u.id, u.hp);
-    if (entrando) setTimeout(() => el.classList.remove('entrando'), 800);
+    if (entrando) setTimeout(() => { el.classList.remove('entrando'); el._anim?.definirAcao('idle'); }, 800);
     return el;
   }
   const aplicarHp = (id) => { pend.delete(id); const n = nos.get(id); if (!n) return; hpVis.set(id, n.u.hp); pintar(n); };
@@ -278,7 +281,7 @@ export function criarArena(host, { artes = {} } = {}) {
     const aura = AURA.find((id) => u.efeitos?.[id]) || ''; if (n.el.dataset.aura !== aura) n.el.dataset.aura = aura;
   }
   function montar(nova) {
-    b = nova; campo.querySelectorAll('.un').forEach((e) => e.remove()); nos = new Map(); hpVis = new Map(); pend = new Set(); alvoSel = null; animacao = null;
+    b = nova; campo.querySelectorAll('.un').forEach((e) => { e._anim?.destruir?.(); e.remove(); }); nos = new Map(); hpVis = new Map(); pend = new Set(); alvoSel = null; animacao = null;
     [...b.aliados, ...b.inimigos].forEach((u) => criarNo(u, false)); if (b.evento) b.evento.mostrado = true;
     precarregarVideosBatalha(b);
   }
@@ -318,13 +321,20 @@ export function criarArena(host, { artes = {} } = {}) {
   async function tocar(ev, rapido, duracao) {
     const atual = { ate: performance.now() + duracao };
     animacao = atual;
+    const ctx = criarCtx({
+      arena: host, campo, rapido,
+      no: id => animacao === atual ? no(id) : null,
+      aplicarHp: id => { if (animacao === atual) aplicarHp(id); },
+    });
     if (ev) {
-      const ctx = criarCtx({
-        arena: host, campo, rapido,
-        no: id => animacao === atual ? no(id) : null,
-        aplicarHp: id => { if (animacao === atual) aplicarHp(id); },
-      });
       try { await tocarEvento(ctx, ev); } catch (e) { console.warn('vfx', e); }
+    }
+    if (animacao !== atual || !campo.isConnected) return;
+    if (b?.eventoDomador) {
+      const evDom = b.eventoDomador;
+      b.eventoDomador = null;
+      desenharDomador(ultimaOp);
+      try { await tocarEventoDomador(ctx, evDom); } catch (e) { console.warn('vfx-domador', e); }
     }
     if (animacao !== atual || !campo.isConnected) return;
     for (const id of nos.keys()) aplicarHp(id);
@@ -339,7 +349,7 @@ export function criarArena(host, { artes = {} } = {}) {
       await Promise.allSettled(derrotados.flatMap(({ el }) => el.getAnimations()
         .filter(a => a.transitionProperty === 'opacity').map(a => a.finished)));
       if (animacao !== atual || !campo.isConnected) return;
-      for (const { el, u } of derrotados) { el.remove(); nos.delete(u.id); hpVis.delete(u.id); }
+      for (const { el, u } of derrotados) { el._anim?.destruir?.(); el.remove(); nos.delete(u.id); hpVis.delete(u.id); }
       const entradas = reforcos.map(u => criarNo(u, true));
       desenharTopo(ultimaOp);
       await Promise.allSettled(entradas.flatMap(el => el.getAnimations()
@@ -351,15 +361,15 @@ export function criarArena(host, { artes = {} } = {}) {
   }
   async function transicaoOnda(o, rapido) {
     const t = rapido ? 650 : 1300, espera = (ms) => new Promise((r) => setTimeout(r, ms));
-    for (const [id, n] of [...nos]) if (n.u.lado === 'i' && n.u.hp <= 0) { n.el.remove(); nos.delete(id); hpVis.delete(id); }
+    for (const [id, n] of [...nos]) if (n.u.lado === 'i' && n.u.hp <= 0) { n.el._anim?.destruir?.(); n.el.remove(); nos.delete(id); hpVis.delete(id); }
     const faixa = document.createElement('div'); faixa.className = 'tb-onda'; faixa.innerHTML = `<b>Onda ${o.para}/${o.total}</b>`; host.append(faixa);
     const aliados = [...nos.values()].filter((n) => n.u.lado === 'a' && n.u.hp > 0);
-    aliados.forEach((n) => n.el.classList.add('andando'));
+    aliados.forEach((n) => { n.el.classList.add('andando'); n.el._anim?.definirAcao('andar'); });
     const pos = (campo.style.backgroundPositionX || '0%'); const alvo = `${Math.min(100, (o.para - 1) * (100 / Math.max(1, o.total - 1)))}%`;
     campo.animate([{ backgroundPositionX: pos }, { backgroundPositionX: alvo }], { duration: t, easing: 'ease-in-out', fill: 'forwards' });
     campo.style.backgroundPositionX = alvo;
     await espera(t);
-    aliados.forEach((n) => n.el.classList.remove('andando'));
+    aliados.forEach((n) => { n.el.classList.remove('andando'); n.el._anim?.definirAcao('idle'); });
     setTimeout(() => faixa.remove(), t);
   }
   function desenharTopo(op) {

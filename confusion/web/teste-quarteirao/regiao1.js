@@ -792,7 +792,7 @@ function garantirBotaoRefugioNoModal(el) {
     const gold = Number(save.recompensas?.gold || 0).toLocaleString('pt-BR');
     const diam = Number(save.recompensas?.diamantes || 0).toLocaleString('pt-BR');
     const tick = Number(save.expansao?.tickets || 0);
-    rec.innerHTML = `<span class="modal-rec-pill" title="Energia"><img class="kit-rec-ico" src="${KIT_REC('energia')}" alt="">${en.atual}/${en.max}</span><span class="modal-rec-pill" title="Ouro"><img class="kit-rec-ico" src="${KIT_REC('ouro')}" alt="">${gold}</span><span class="modal-rec-pill" title="Diamantes"><img class="kit-rec-ico" src="${KIT_REC('diamante')}" alt="">${diam}</span><span class="modal-rec-pill" title="Tickets"><img class="kit-rec-ico" src="${KIT_REC('ticket')}" alt="">${tick}</span>`;
+    rec.innerHTML = `<span class="modal-rec-pill" title="Energia usada na Campanha Mini, Torres e Calabouços"><img class="kit-rec-ico" src="${KIT_REC('energia')}" alt="Energia">${en.atual}/${en.max}</span><span class="modal-rec-pill" title="Ouro: evoluções, reforço de relíquias e compras"><img class="kit-rec-ico" src="${KIT_REC('ouro')}" alt="Ouro">${gold}</span><span class="modal-rec-pill" title="Diamantes: Passe Premium, invocações e pacotes"><img class="kit-rec-ico" src="${KIT_REC('diamante')}" alt="Diamantes">${diam}</span><span class="modal-rec-pill" title="Tickets de Invocação do Banner Permanente"><img class="kit-rec-ico" src="${KIT_REC('ticket')}" alt="Tickets">${tick}</span>`;
   }
 }
 
