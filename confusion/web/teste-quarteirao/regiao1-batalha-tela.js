@@ -136,6 +136,11 @@ const olhaDe = (esp) => (OLHA.direita.includes(esp) ? 'direita' : OLHA.esquerda.
 const CSS = `
 .arena { position: absolute; inset: 0; overflow: hidden; background: #1a0f22; color: #fff3e7; font: 12px system-ui, sans-serif; user-select: none; -webkit-user-select: none; --altura-botao: clamp(44px, 12vh, 62px); --espaco-rodape: calc(var(--altura-botao) + 16px + env(safe-area-inset-bottom, 0px)); }
 .arena .tb-campo { position: absolute; inset: 0; background: center bottom / cover no-repeat #24162b; will-change: transform; }
+.arena .tb-onda { position: absolute; left: 50%; top: 32%; translate: -50% 0; z-index: 60; pointer-events: none; padding: 8px 26px; border-radius: 10px; background: linear-gradient(90deg, transparent, rgba(14,10,26,.85) 20%, rgba(14,10,26,.85) 80%, transparent); animation: tb-onda 1.3s ease-out both; }
+.arena .tb-onda b { font: 800 clamp(20px, 5vh, 34px) Georgia, serif; color: #fde68a; text-shadow: 0 2px 6px #000, 0 0 14px #f59e0b88; letter-spacing: .04em; }
+@keyframes tb-onda { 0% { opacity: 0; scale: .7; } 25% { opacity: 1; scale: 1.05; } 80% { opacity: 1; scale: 1; } 100% { opacity: 0; } }
+.arena .un.andando .un-fig { animation: tb-andar .32s ease-in-out infinite alternate; }
+@keyframes tb-andar { from { translate: 0 0; } to { translate: 6px -5px; } }
 /* figura ampliada: o HUD fica no lugar (sempre visível) e por cima do corpo */
 .arena .un .un-hud { z-index: 6; translate: 0 calc((1 - var(--zoom-sprite, 1)) * var(--largura-sprite) / var(--proporcao-sprite, 1)); }
 .arena .un { position: absolute; top: min(var(--posicao-y), calc(100% - var(--espaco-rodape) - 3px)); z-index: 49; width: var(--largura-vaga); display: flex; flex-direction: column; align-items: center; translate: -50% -100%; background: none; border: 0; padding: 0; color: inherit; cursor: default; transition: opacity .5s; --largura-vaga: clamp(80px, 14vw, 170px); --altura-base-sprite: clamp(55px, 22vh, 156px); --altura-sprite: calc(var(--altura-base-sprite) * var(--escala-altura-sprite, 1)); --largura-sprite: min(var(--largura-vaga), calc(var(--altura-sprite) * var(--proporcao-sprite, 1))); }
@@ -323,6 +328,9 @@ export function criarArena(host, { artes = {} } = {}) {
     }
     if (animacao !== atual || !campo.isConnected) return;
     for (const id of nos.keys()) aplicarHp(id);
+    // Troca de onda: some o que caiu, aliados "andam" para a direita, o cenário rola e os novos inimigos entram pela direita
+    const ondaEv = ev?.onda || ev?.antes?.find?.((x) => x.tipo === 'onda');
+    if (ondaEv) { await transicaoOnda(ondaEv, rapido); if (animacao !== atual || !campo.isConnected) return; }
     // O motor já trocou a vaga. Na tela, espere o corpo anterior sumir antes de inserir o reforço.
     const reforcos = reforcosPendentes();
     if (reforcos.length) {
@@ -340,6 +348,19 @@ export function criarArena(host, { artes = {} } = {}) {
     }
     animacao = null;
     atualizar(b, ultimaOp);
+  }
+  async function transicaoOnda(o, rapido) {
+    const t = rapido ? 650 : 1300, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (const [id, n] of [...nos]) if (n.u.lado === 'i' && n.u.hp <= 0) { n.el.remove(); nos.delete(id); hpVis.delete(id); }
+    const faixa = document.createElement('div'); faixa.className = 'tb-onda'; faixa.innerHTML = `<b>Onda ${o.para}/${o.total}</b>`; host.append(faixa);
+    const aliados = [...nos.values()].filter((n) => n.u.lado === 'a' && n.u.hp > 0);
+    aliados.forEach((n) => n.el.classList.add('andando'));
+    const pos = (campo.style.backgroundPositionX || '0%'); const alvo = `${Math.min(100, (o.para - 1) * (100 / Math.max(1, o.total - 1)))}%`;
+    campo.animate([{ backgroundPositionX: pos }, { backgroundPositionX: alvo }], { duration: t, easing: 'ease-in-out', fill: 'forwards' });
+    campo.style.backgroundPositionX = alvo;
+    await espera(t);
+    aliados.forEach((n) => n.el.classList.remove('andando'));
+    setTimeout(() => faixa.remove(), t);
   }
   function desenharTopo(op) {
     q('.tb-tit').innerHTML = `<b>${esc(op.titulo || '')}</b><small>${esc(op.sub || '')}${op.sub ? ' · ' : ''}Turno ${b.rodada}</small>`;
@@ -436,12 +457,14 @@ export function criarTelaBatalha() {
       if (Number.isInteger(m.vaga)) u.vaga = m.vaga;
       return u;
     });
-    const ini = c.inimigos.slice(0, 6).map(([esp, nv, elemento, op], i) => {
+    const montarInimigos = (lista, pre) => lista.slice(0, 6).map(([esp, nv, elemento, op], i) => {
       const f = formaDoEncontro(esp, nv, op || {}, c.regiao ?? 1); // forma definida no encontro (e regra dos iniciais)
-      const u = criarUnidade({ id: `i${i}`, especie: f.especie, nivel: nv, lado: 'i', papeis, elemento: f.substituido ? undefined : elemento, bonus: op?.bonus || {} });
+      const u = criarUnidade({ id: `${pre}${i}`, especie: f.especie, nivel: nv, lado: 'i', papeis, elemento: f.substituido ? undefined : elemento, bonus: op?.bonus || {} });
       if (f.arte) u.arte = f.arte; if (f.forma) u.forma = f.forma; if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
+    const ini = montarInimigos(c.inimigos, 'i');
+    const ondas = (c.ondas || []).map((lista, k) => montarInimigos(lista, `w${k + 2}_`)); // ondas seguintes (formato de c.inimigos)
     const domador = c.domador || (c.save ? criarEstadoDomadorBatalha(c.save) : null);
-    b = criarBatalha(al, ini, { domador }); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render();
+    b = criarBatalha(al, ini, { domador, ondas }); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render();
     // entrada do chefe: o primeiro turno espera o clipe (fora do modo minimizado)
     const temChefe = ini.some((u) => u.chefe) && !minimizada;
     if (temChefe) entradaChefe(criarCtx({ arena: el, campo: el.querySelector('.tb-campo') || el, no: (id) => el.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} })).catch(() => {});

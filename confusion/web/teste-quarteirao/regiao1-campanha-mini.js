@@ -420,13 +420,15 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
       vaga,
       arte: arteDoIndividuo(m),
     }));
-    const arenaUrl = fase.arena || `assets/confusion/interface/estrategia/reinos/${pad2(fase.capitulo)}/cidade-conceito.webp`;
+    // Fundo da LUTA (não o mapa do capítulo): arena do reino até chegarem os panoramas batalha-v2 do GPT
+    const arenaUrl = fase.arena || `assets/confusion/interface/estrategia/reinos/${pad2(fase.capitulo)}/arena-chefe.webp`;
     tela.abrir({
       titulo: `Campanha Mini · ${fase.id}`,
       sub: fase.nome,
       arena: arenaUrl,
       aliados,
-      inimigos: fase.inimigos,
+      inimigos: fase.ondas?.[0] || fase.inimigos,
+      ondas: fase.ondas?.slice(1) || [], // asutaroto: fase.ondas = [[onda1], [onda2], [onda3]]
       ritmo: 420,
       regiao: fase.capitulo,
       save,
