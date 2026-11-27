@@ -12,9 +12,30 @@ import { NOME_ELEMENTO } from '../core.js';
 import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
 import { CHEFES_REINOS } from './regiao1-kits-reinos.js';
 
-const ARTE_CHEFE_REINO = Object.fromEntries(
-  CHEFES_REINOS.map((c) => [c.nome, `assets/confusion/interface/estrategia/reinos/${String(c.reino).padStart(2, '0')}/chefe.${c.reino <= 3 ? 'webp' : 'png'}`]),
-);
+const ARTE_CHEFE_REINO = {
+  ...Object.fromEntries(
+    CHEFES_REINOS.map((c) => [c.nome, `assets/confusion/interface/estrategia/reinos/${String(c.reino).padStart(2, '0')}/chefe.${c.reino <= 3 ? 'webp' : 'png'}`]),
+  ),
+  // Chefes de Raids, Calabouços e Torres (artes de reserva por elemento até chegarem as exclusivas do Flow)
+  'Titã de Cinza': 'assets/confusion/interface/estrategia/reinos/03/chefe.webp',
+  'Serpe do Abismo': 'assets/confusion/interface/estrategia/reinos/11/chefe.png',
+  'Coroa Solar': 'assets/confusion/interface/estrategia/reinos/01/chefe.webp',
+  'Salamandra-forja': 'assets/confusion/interface/estrategia/reinos/09/chefe.png',
+  'Leviatã de coral': 'assets/confusion/interface/estrategia/reinos/04/chefe.png',
+  'Rainha-espora': 'assets/confusion/interface/estrategia/reinos/08/chefe.png',
+  'Golem de minério': 'assets/confusion/interface/estrategia/reinos/07/chefe.png',
+  'Arauto solar': 'assets/confusion/interface/estrategia/reinos/12/chefe.png',
+  'Ceifador velado': 'assets/confusion/interface/estrategia/reinos/11/chefe.png',
+  'Guardião da Chama': 'assets/confusion/interface/estrategia/reinos/03/chefe.webp',
+  'Guardião das Marés': 'assets/confusion/interface/estrategia/reinos/10/chefe.png',
+  'Guardião da Raiz': 'assets/confusion/interface/estrategia/reinos/08/chefe.png',
+  'Guardião da Rocha': 'assets/confusion/interface/estrategia/reinos/06/chefe.png',
+  'Guardião da Aurora': 'assets/confusion/interface/estrategia/reinos/12/chefe.png',
+  'Guardião da Umbra': 'assets/confusion/interface/estrategia/reinos/11/chefe.png',
+  'Soberano de Torre da Ascensão': 'assets/confusion/interface/estrategia/reinos/05/chefe.png',
+  'Soberano de Torre do Abismo': 'assets/confusion/interface/estrategia/reinos/09/chefe.png',
+  'Soberano de Torre do Eclipse': 'assets/confusion/interface/estrategia/reinos/02/chefe.webp',
+};
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // Formação aprovada no editor, em porcentagem da arena.
