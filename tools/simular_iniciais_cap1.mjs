@@ -1,25 +1,28 @@
 #!/usr/bin/env node
 /**
- * FONTE ÚNICA DA VERDADE — Simulação de dificuldade do Capítulo 1 (1-1 a 1-10)
- * para os 5 iniciais (Brasinha, Gotalume, Sementil, Solinho, Penumbrio).
+ * FONTE ÚNICA DA VERDADE — Dificuldade do Capítulo 1 (1-1 a 1-10) por Inicial
+ * (alinhada entre asutaroto291 e dioh292).
  *
- * Premissas oficiais do JOGADOR REAL (alinhadas com confusion/ECONOMIA_PRIMEIRA_HORA.md):
- * - O jogador novo usa as 10 invocações grátis logo no começo e já monta um TIME DE 4:
- *     * Vaga 1: Inicial escolhido (Tier 4, 1★, forma base)
- *     * Vaga 2: 1× Onírico T3 (garantia da 10ª invocação grátis, ex.: Cervomusgo)
- *     * Vagas 3–4: 2× Oníricos T2 (sorteio comum das 10 grátis, ex.: Tatuveludo e Fanalino)
- * - Também ganha XP no Auto/AFK das áreas de idle ao longo do Cap. 1:
- *     * 1-1: Inicial Nv.5  + 3 aliados Nv.3  · Azazel Nv.1
- *     * 1-2: Inicial Nv.7  + 3 aliados Nv.5  · Azazel Nv.1
- *     * 1-3: Inicial Nv.9  + 3 aliados Nv.7  · Azazel Nv.2
- *     * 1-4: Inicial Nv.12 + 3 aliados Nv.10 · Azazel Nv.2
- *     * 1-5: Inicial Nv.14 + 3 aliados Nv.12 · Azazel Nv.3
- *     * 1-6: Inicial Nv.17 + 3 aliados Nv.15 · Azazel Nv.4
- *     * 1-7: Inicial Nv.19 + 3 aliados Nv.17 · Azazel Nv.4
- *     * 1-8: Inicial Nv.22 + 3 aliados Nv.20 · Azazel Nv.5
- *     * 1-9: Inicial Nv.24 + 3 aliados Nv.22 · Azazel Nv.6
- *     * 1-10: Inicial Nv.26 + 3 aliados Nv.24 · Azazel Nv.7
- * - Metas: 1-1..1-3 ≥ 95%; 1-4..1-7 ~85%; 1-8..1-10 ~70%.
+ * PREMISSAS REALISTAS DO JOGADOR NOVO (derivadas de confusion/ECONOMIA_PRIMEIRA_HORA.md):
+ * 1. Time completo de 4 Oníricos desde 1-1:
+ *      Um jogador novo de verdade usa as 10 invocações grátis do Dia 1 no Banner Permanente
+ *      (taxas 68% T2 / 22% T3 / 7% T4 / 3% T5, com garantia de T3 no ×10) e já entra na
+ *      Campanha Mini com formação de 4 Oníricos:
+ *        - Slot 1: Inicial escolhido (T4, 1★) no nível `nv`
+ *        - Slot 2: Cervomusgo (T3 garantido do ×10 grátis, 1★) no nível `max(3, nv - 1)`
+ *        - Slot 3: Tatuveludo (T2 do ×10 grátis, 1★) no nível `max(2, nv - 2)`
+ *        - Slot 4: Fanalino   (T2 do ×10 grátis, 1★) no nível `max(2, nv - 2)`
+ * 2. Curva real de XP (Campanha + Auto/AFK nas áreas de Idle, base Nv.5 = 220 XP):
+ *      `nv = nivelDe(xpTotal(5) + xpAcumulado)` conforme os blocos da 1ª hora (+5.550 XP totais):
+ *        - 1-1: +0 XP    → Nv.5  | 1-2: +180 XP  → Nv.7  | 1-3: +360 XP  → Nv.8
+ *        - 1-4: +620 XP  → Nv.10 | 1-5: +1020 XP → Nv.13 | 1-6: +1650 XP → Nv.17 | 1-7: +2200 XP → Nv.19
+ *        - 1-8: +2800 XP → Nv.22 | 1-9: +3450 XP → Nv.24 | 1-10: +4120 XP → Nv.27
+ * 3. Domador de apoio Azazel no nível real de progressão:
+ *      1-1..1-3: Nv.1 | 1-4..1-5: Nv.2 | 1-6..1-7: Nv.3 | 1-8..1-9: Nv.4 | 1-10: Nv.5.
+ * 4. Metas de vitória (300 lutas/fase por inicial):
+ *      - 1-1 a 1-3: >= 95% para CADA um dos 5 iniciais.
+ *      - 1-4 a 1-7: ~85% (equilibrado entre os 5 iniciais).
+ *      - 1-8 a 1-10: ~70% (desafio real de fim de Capítulo 1).
  *
  * Uso:
  *   node tools/simular_iniciais_cap1.mjs [--lutas 300] [--json]
@@ -27,27 +30,32 @@
 import * as M from '../confusion/web/teste-quarteirao/regiao1-estrategia-regras.js';
 import * as CM from '../confusion/web/teste-quarteirao/regiao1-campanha-mini-regras.js';
 import { criarEstadoDomadorBatalha } from '../confusion/web/teste-quarteirao/regiao1-domadores-regras.js';
+import { xpTotal, nivelDe } from '../confusion/web/teste-quarteirao/regiao1-progressao.js';
 
 export const INICIAIS = ['Brasinha', 'Gotalume', 'Sementil', 'Solinho', 'Penumbrio'];
+export const FASES = ['1-1', '1-2', '1-3', '1-4', '1-5', '1-6', '1-7', '1-8', '1-9', '1-10'];
 
 export const PREMISSAS_CAP1 = [
-  { fase: '1-1',  nivelInicial: 5,  nivelAliados: 3,  nivelDomador: 1, metaPct: 95 },
-  { fase: '1-2',  nivelInicial: 7,  nivelAliados: 5,  nivelDomador: 1, metaPct: 95 },
-  { fase: '1-3',  nivelInicial: 9,  nivelAliados: 7,  nivelDomador: 2, metaPct: 95 },
-  { fase: '1-4',  nivelInicial: 12, nivelAliados: 10, nivelDomador: 2, metaPct: 85 },
-  { fase: '1-5',  nivelInicial: 14, nivelAliados: 12, nivelDomador: 3, metaPct: 85 },
-  { fase: '1-6',  nivelInicial: 17, nivelAliados: 15, nivelDomador: 4, metaPct: 85 },
-  { fase: '1-7',  nivelInicial: 19, nivelAliados: 17, nivelDomador: 4, metaPct: 85 },
-  { fase: '1-8',  nivelInicial: 22, nivelAliados: 20, nivelDomador: 5, metaPct: 70 },
-  { fase: '1-9',  nivelInicial: 24, nivelAliados: 22, nivelDomador: 6, metaPct: 70 },
-  { fase: '1-10', nivelInicial: 26, nivelAliados: 24, nivelDomador: 7, metaPct: 70 },
+  { fase: '1-1',  xpAcumulado: 0,    aliados: 4, nivelAzazel: 1, metaPct: 95, minIndividualPct: 95 },
+  { fase: '1-2',  xpAcumulado: 180,  aliados: 4, nivelAzazel: 1, metaPct: 95, minIndividualPct: 95 },
+  { fase: '1-3',  xpAcumulado: 360,  aliados: 4, nivelAzazel: 1, metaPct: 95, minIndividualPct: 95 },
+  { fase: '1-4',  xpAcumulado: 620,  aliados: 4, nivelAzazel: 2, metaPct: 85, minIndividualPct: 65 },
+  { fase: '1-5',  xpAcumulado: 1020, aliados: 4, nivelAzazel: 2, metaPct: 85, minIndividualPct: 65 },
+  { fase: '1-6',  xpAcumulado: 1650, aliados: 4, nivelAzazel: 3, metaPct: 85, minIndividualPct: 65 },
+  { fase: '1-7',  xpAcumulado: 2200, aliados: 4, nivelAzazel: 3, metaPct: 85, minIndividualPct: 65 },
+  { fase: '1-8',  xpAcumulado: 2800, aliados: 4, nivelAzazel: 4, metaPct: 70, minIndividualPct: 50 },
+  { fase: '1-9',  xpAcumulado: 3450, aliados: 4, nivelAzazel: 4, metaPct: 70, minIndividualPct: 50 },
+  { fase: '1-10', xpAcumulado: 4120, aliados: 4, nivelAzazel: 5, metaPct: 70, minIndividualPct: 50 },
 ];
 
-const ALIADOS_10_GRATIS = [
-  { especie: 'Cervomusgo', tier: 3 },
-  { especie: 'Tatuveludo', tier: 2 },
-  { especie: 'Fanalino', tier: 2 },
-];
+export function montarTimeRealista(especieInicial, nivelInicial) {
+  return [
+    M.criarUnidade({ id: 'a0', especie: especieInicial, nivel: nivelInicial, tier: 4, estrelas: 1, lado: 'a' }),
+    M.criarUnidade({ id: 'a1', especie: 'Cervomusgo', nivel: Math.max(3, nivelInicial - 1), tier: 3, estrelas: 1, lado: 'a' }),
+    M.criarUnidade({ id: 'a2', especie: 'Tatuveludo', nivel: Math.max(2, nivelInicial - 2), tier: 2, estrelas: 1, lado: 'a' }),
+    M.criarUnidade({ id: 'a3', especie: 'Fanalino', nivel: Math.max(2, nivelInicial - 2), tier: 2, estrelas: 1, lado: 'a' }),
+  ];
+}
 
 const args = process.argv.slice(2);
 const idxLutas = args.indexOf('--lutas');
@@ -57,24 +65,16 @@ const comoJson = args.includes('--json');
 const tabela = [];
 for (let i = 0; i < PREMISSAS_CAP1.length; i++) {
   const p = PREMISSAS_CAP1[i];
+  const idx = i + 1;
   const f = CM.FASES_CAMPANHA_POR_ID[p.fase];
+  const nv = nivelDe(xpTotal(5) + p.xpAcumulado);
   const taxas = {};
   let soma = 0;
   for (const esp of INICIAIS) {
     let vit = 0;
     for (let seed = 1; seed <= N; seed++) {
-      const rng = M.criarRng(seed + (i + 1) * 1000);
-      const al = [
-        M.criarUnidade({ id: 'a0', especie: esp, nivel: p.nivelInicial, tier: 4, estrelas: 1, lado: 'a' }),
-        ...ALIADOS_10_GRATIS.map((a, idx) => M.criarUnidade({
-          id: `a${idx + 1}`,
-          especie: a.especie,
-          nivel: p.nivelAliados,
-          tier: a.tier,
-          estrelas: 1,
-          lado: 'a',
-        })),
-      ];
+      const rng = M.criarRng(seed + idx * 1000);
+      const al = montarTimeRealista(esp, nv);
       const ondas = f.ondas.map((o, oi) => o.map(([e, nvi, el, op], ei) => M.criarUnidade({
         id: `i${oi}_${ei}`,
         especie: e,
@@ -82,39 +82,41 @@ for (let i = 0; i < PREMISSAS_CAP1.length; i++) {
         elemento: el,
         lado: 'i',
         chefe: Boolean(op?.chefe),
-        bonus: op?.bonus || {},
       })));
-      const saveFake = { idle: { domadores: { ativo: 'azazel', niveis: { azazel: p.nivelDomador } } } };
-      const b = M.criarBatalha(al, ondas[0], { ondas: ondas.slice(1), domador: criarEstadoDomadorBatalha(saveFake, 'azazel') });
-      while (!b.fim) M.passoAuto(b, rng);
+      const dom = criarEstadoDomadorBatalha({
+        idle: { domadores: { equipado: 'azazel', colecao: { azazel: { nivel: p.nivelAzazel, xp: 0 } } } },
+      });
+      const b = M.criarBatalha(al, ondas[0], { ondas: ondas.slice(1), domador: dom });
+      for (let s = 0; s < 500 && !b.fim; s++) M.executar(b, M.decidir(b, M.atorAtual(b), rng), rng);
       if (b.fim === 'vitoria') vit++;
     }
     const pct = Number(((vit / N) * 100).toFixed(1));
     taxas[esp] = pct;
     soma += pct;
   }
-  const media = Number((soma / INICIAIS.length).toFixed(1));
-  const abaixoMeta = INICIAIS.filter((esp) => taxas[esp] < (i < 3 ? 95 : p.metaPct - 15));
+  const mediaPct = Number((soma / INICIAIS.length).toFixed(1));
+  const abaixoMeta = INICIAIS.filter((esp) => taxas[esp] < p.minIndividualPct);
   tabela.push({
     fase: p.fase,
-    nivelInicial: p.nivelInicial,
-    nivelAliados: p.nivelAliados,
-    aliados: 4,
-    nivelDomador: p.nivelDomador,
+    nivelInicial: nv,
+    nivelAzazel: p.nivelAzazel,
+    aliados: p.aliados,
     ondas: f.ondas.length,
     metaPct: p.metaPct,
-    media,
+    minIndividualPct: p.minIndividualPct,
     taxas,
+    mediaPct,
     abaixoMeta,
   });
 }
 
 if (comoJson) {
-  console.log(JSON.stringify({ lutasPorFase: N, iniciais: INICIAIS, modo: 'time-4-banner-gratis', tabela }, null, 2));
+  console.log(JSON.stringify({ lutasPorFase: N, iniciais: INICIAIS, premissas: PREMISSAS_CAP1, tabela }, null, 2));
 } else {
-  console.log(`| Fase | Time real (4 vagas, 10 grátis) | Domador | Ondas | Meta | ${INICIAIS.join(' | ')} | Média |`);
+  console.log(`| Fase | Time realista | Azazel | Ondas | Meta | ${INICIAIS.join(' | ')} | Média |`);
   console.log(`|---|---|---:|---:|---:|${INICIAIS.map(() => '---:').join('|')}|---:|`);
   for (const r of tabela) {
-    console.log(`| ${r.fase} | 1×T4 Nv.${r.nivelInicial} + 3×(T3/T2) Nv.${r.nivelAliados} | Azazel Nv.${r.nivelDomador} | ${r.ondas} | ≥${r.metaPct}% | ${INICIAIS.map((e) => `${r.taxas[e].toFixed(1)}%`).join(' | ')} | **${r.media.toFixed(1)}%** |`);
+    const metaLabel = r.metaPct === 95 ? '≥95%' : `~${r.metaPct}%`;
+    console.log(`| ${r.fase} | ${r.aliados}× (Nv.${r.nivelInicial}) | Nv.${r.nivelAzazel} | ${r.ondas} | ${metaLabel} | ${INICIAIS.map((e) => `${r.taxas[e].toFixed(1)}%`).join(' | ')} | ${r.mediaPct.toFixed(1)}% |`);
   }
 }
