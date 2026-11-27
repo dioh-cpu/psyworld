@@ -6,6 +6,11 @@ import {
   encontrosDaAreaRegiao,
   sortearEncontroAreaRegiao,
   encontroChefeRegiao,
+  npcDaRegiao,
+  dialogoNpcRegiao,
+  listarMissoesRegiao,
+  registrarProgressoMissaoRegiao,
+  concluirMissaoRegiao,
 } from './regiao1-regioes-r3-r12-regras.js';
 import {
   CATALOGO_REGIOES,
@@ -17,8 +22,9 @@ import { saldoEssencia } from './regiao1-regras-sonho.js';
 import { expDe } from './regiao1-exp-regras.js';
 import { LINHAS, ESPECIES } from '../species.js';
 import { LINHAGENS_REINOS, CHEFES_REINOS } from './regiao1-kits-reinos.js';
-import { criarEstadoInicial } from './regiao1-estado.js';
+import { criarEstadoInicial, serializarEstado, desserializarEstado } from './regiao1-estado.js';
 import { garantirEstadoIdle } from './regiao1-idle.js';
+import { validateSave } from '../../../api/_lib/confusion-save-lib.js';
 
 const INICIAIS = new Set(LINHAS.flatMap((l) => [l.inicial, l.atual, l.evolucao]));
 
@@ -99,4 +105,38 @@ test('Regiões 3–12: recompensa estendida de 1ª vitória (gold, diamantes, ti
   assert.equal(v2.primeiraVez, false);
   assert.equal(expDe(s).tickets, tickets0 + REGIOES_3_12_POR_ID.r3.recompensaPrimeiraVitoria.ticketsPermanentes);
   assert.equal(s.idle.reliquias.bolsa.length, bolsas0 + 1);
+});
+
+test('Regiões 3–12: 10 NPCs de área segura com diálogos + 40 missões curtas com coleta única e nuvem', () => {
+  const s = criarEstadoInicial();
+  garantirEstadoIdle(s, 75_000_000);
+
+  let totalMissoes = 0;
+  for (const reg of CATALOGO_REGIOES_3_12) {
+    const npc = npcDaRegiao(reg.id);
+    assert.ok(npc && npc.mapa === reg.mapaEntrada && npc.dialogos.length >= 3);
+    assert.equal(reg.missoes.length, 4);
+    totalMissoes += reg.missoes.length;
+    assert.ok(dialogoNpcRegiao(s, reg.id).falaAtual.includes(npc.nome));
+  }
+  assert.equal(totalMissoes, 40);
+
+  // Avança diálogo e patrulha na Região 3, coleta uma vez e valida serialização/nuvem
+  assert.equal(concluirMissaoRegiao(s, 'r3', 'm_r3_patrulha').ok, false);
+  registrarProgressoMissaoRegiao(s, 'r3', 'dialogo', 1);
+  registrarProgressoMissaoRegiao(s, 'r3', 'abates', 5);
+  const listaAntes = listarMissoesRegiao(s, 'r3');
+  assert.equal(listaAntes.find((m) => m.id === 'm_r3_chegada').pronta, true);
+  assert.equal(listaAntes.find((m) => m.id === 'm_r3_patrulha').pronta, true);
+
+  const c1 = concluirMissaoRegiao(s, 'r3', 'm_r3_chegada');
+  const c2 = concluirMissaoRegiao(s, 'r3', 'm_r3_patrulha');
+  assert.equal(c1.ok && c2.ok, true);
+  assert.ok(saldoEssencia(s, 'fogo', 'menor') >= 4);
+
+  const rec = desserializarEstado(serializarEstado(s));
+  assert.equal(concluirMissaoRegiao(rec, 'r3', 'm_r3_chegada').jaConcluida, true);
+  assert.equal(concluirMissaoRegiao(rec, 'r3', 'm_r3_patrulha').jaConcluida, true);
+  const val = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(rec)), conta: rec.conta });
+  assert.equal(val.ok, true);
 });

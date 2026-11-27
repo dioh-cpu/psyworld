@@ -881,6 +881,7 @@ export function desserializarEstado(texto) {
         }
         base.regioes.missoes = out;
       }
+      base.regioes.progressoMissoes = sanitizarMapaSeguro(reg.progressoMissoes, 120, 'int');
       base.regioes.abatesR2 = Math.max(0, Math.floor(Number(reg.abatesR2) || 0));
     }
     if (base.tremLiberado || (base.bossesDerrotados.BOSS_E && base.bossesDerrotados.BOSS_D)) {

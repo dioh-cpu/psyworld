@@ -4,7 +4,7 @@ import { REGIOES, CLASSE_DA_ESPECIE } from './regiao1-progressao.js';
 import { LINHAGENS_REINOS, CHEFES_REINOS, specChefeReino } from './regiao1-kits-reinos.js';
 import { FORMAS_LINHAGENS_REINOS } from '../formas-reinos.js';
 import { ELEMENTO_DA_ESPECIE } from '../species.js';
-import { parEssenciaDoElemento } from './regiao1-regras-sonho.js';
+import { adicionarEssencia, parEssenciaDoElemento } from './regiao1-regras-sonho.js';
 
 const pad2 = (n) => String(n).padStart(2, '0');
 const PASTA_REINOS = 'assets/confusion/interface/estrategia/reinos';
@@ -300,18 +300,78 @@ export const CATALOGO_REGIOES_3_12 = Array.from({ length: 10 }, (_, idx) => {
     ordemAreas: idsAreas,
     encontrosPorArea,
     encontros,
+    npcAreaSegura: {
+      id: `npc_${id}`,
+      nome: tema.npc,
+      mapa: c0,
+      recurso: tema.recurso,
+      saudacao: `Bem-vindo a ${tema.nome}! Aqui a cadeia de ${tema.recurso} mantém o reino de pé.`,
+      dialogos: [
+        `As trilhas de ${tema.biomas[1]} e ${tema.biomas[2]} estão agitadas pelas espécies locais (${linhagens.map((l) => l.nome).join(', ')}).`,
+        `Se quiser evoluir sua equipe nesta região, colete ${parEss} nas Torres Elementais ou derrote os guardiões das áreas finais.`,
+        `Quando estiver pronto, avance até ${bossMapa} e enfrente ${chefeReino.nome} (${chefeReino.elemento}).`,
+      ],
+      dicaChefe: `${chefeReino.nome} fica ainda mais perigoso abaixo de ${Math.round((chefeReino.furia || 0.5) * 100)}% de vida: leve um suporte ou controle de fúria.`,
+      despedida: `As portas de ${c0} ficam abertas sempre que precisar se recompor.`,
+    },
     missoes: [
       {
         id: `m_${id}_chegada`,
+        regiao: id,
+        ordem: 1,
         titulo: `Reconhecimento em ${tema.nome}`,
-        resumo: `Converse com ${tema.npc} em ${c0} e vença 3 batalhas na região.`,
-        recompensa: { gold: Math.round(gold * 0.4), diamantes: 40 + numero * 5, xp: Math.round(xp * 0.35) },
+        texto: `Converse com ${tema.npc} na área segura (${c0}) para liberar o roteiro da região.`,
+        resumo: `Converse com ${tema.npc} em ${c0}.`,
+        npc: tema.npc,
+        tipo: 'dialogo',
+        meta: 1,
+        recompensa: { gold: Math.round(gold * 0.25), diamantes: 30 + numero * 3, xp: Math.round(xp * 0.2) },
+      },
+      {
+        id: `m_${id}_patrulha`,
+        regiao: id,
+        ordem: 2,
+        titulo: `Patrulha em ${tema.biomas[0]}`,
+        texto: `Enfrente e derrote 5 Oníricos selvagens pelas rotas de ${tema.nome}.`,
+        resumo: `Derrote 5 Oníricos selvagens em ${tema.nome}.`,
+        npc: tema.npc,
+        tipo: 'abates',
+        meta: 5,
+        recompensa: {
+          gold: Math.round(gold * 0.35),
+          diamantes: 35 + numero * 4,
+          xp: Math.round(xp * 0.3),
+          essencias: { par: parEss, menor: numero <= 5 ? 4 : 0, media: numero <= 8 ? 3 : 4, maior: numero >= 7 ? 2 : 0 },
+        },
+      },
+      {
+        id: `m_${id}_rotas`,
+        regiao: id,
+        ordem: 3,
+        titulo: `Mapeamento de ${tema.biomas[1]}`,
+        texto: `Explore 4 áreas diferentes entre ${a01} e ${c02}.`,
+        resumo: `Visite 4 áreas em ${tema.nome}.`,
+        npc: tema.npc,
+        tipo: 'explorar',
+        meta: 4,
+        recompensa: { gold: Math.round(gold * 0.35), diamantes: 40 + numero * 4, xp: Math.round(xp * 0.3) },
       },
       {
         id: `m_${id}_chefe`,
+        regiao: id,
+        ordem: 4,
         titulo: `Soberano de ${tema.nome}`,
+        texto: `Entre em ${bossMapa} e derrote ${chefeReino.nome} pela primeira vez.`,
         resumo: `Derrote ${chefeReino.nome} em ${bossMapa}.`,
-        recompensa: { gold: Math.round(gold * 0.6), diamantes: 60 + numero * 10, xp: Math.round(xp * 0.5) },
+        npc: tema.npc,
+        tipo: 'chefe',
+        meta: 1,
+        recompensa: {
+          gold: Math.round(gold * 0.6),
+          diamantes: 60 + numero * 10,
+          xp: Math.round(xp * 0.5),
+          ticketsPermanentes: 1,
+        },
       },
     ],
   };
@@ -348,4 +408,101 @@ export function encontroChefeRegiao(regiaoId) {
     chefe: reg.chefe,
     inimigos: [reg.chefe.spec, ...reg.chefe.reforcos],
   };
+}
+
+function garantirRegioesSave(save) {
+  if (!save || typeof save !== 'object') return null;
+  save.regioes = save.regioes && typeof save.regioes === 'object' ? save.regioes : {};
+  save.regioes.missoes ||= {};
+  save.regioes.progressoMissoes ||= {};
+  save.regioes.chefesDerrotados ||= {};
+  return save.regioes;
+}
+
+export function npcDaRegiao(regiaoId) {
+  return REGIOES_3_12_POR_ID[regiaoId]?.npcAreaSegura || null;
+}
+
+export function dialogoNpcRegiao(save, regiaoId) {
+  const reg = REGIOES_3_12_POR_ID[regiaoId];
+  if (!reg) return null;
+  const npc = reg.npcAreaSegura;
+  const st = garantirRegioesSave(save);
+  const chefeDerrotado = Boolean(st?.chefesDerrotados?.[regiaoId]);
+  const missoes = listarMissoesRegiao(save, regiaoId);
+  const concluidas = missoes.filter((m) => m.concluida).length;
+  return {
+    ...npc,
+    regiaoId,
+    chefeDerrotado,
+    missoesConcluidas: concluidas,
+    missoesTotal: missoes.length,
+    falaAtual: chefeDerrotado
+      ? `${npc.nome}: Você já venceu ${reg.chefe.nome}! ${npc.despedida}`
+      : `${npc.nome}: ${npc.saudacao} ${npc.dicaChefe}`,
+  };
+}
+
+export function listarMissoesRegiao(save, regiaoId) {
+  const reg = REGIOES_3_12_POR_ID[regiaoId];
+  if (!reg) return [];
+  const st = save?.regioes || {};
+  return reg.missoes.map((m) => {
+    const concluida = st.missoes?.[m.id] === 'concluida';
+    const rawProg = Number(st.progressoMissoes?.[m.id]) || 0;
+    const progresso = concluida ? m.meta : Math.min(m.meta, rawProg);
+    return {
+      ...m,
+      progresso,
+      concluida,
+      pronta: !concluida && progresso >= m.meta,
+    };
+  });
+}
+
+export function registrarProgressoMissaoRegiao(save, regiaoId, tipo, qtd = 1) {
+  const reg = REGIOES_3_12_POR_ID[regiaoId];
+  if (!reg) return { ok: false, motivo: 'Região inválida.' };
+  const st = garantirRegioesSave(save);
+  const inc = Math.max(1, Math.floor(Number(qtd) || 1));
+  const atualizadas = [];
+  for (const m of reg.missoes) {
+    if (m.tipo !== tipo || st.missoes[m.id] === 'concluida') continue;
+    const novo = Math.min(m.meta, (Number(st.progressoMissoes[m.id]) || 0) + inc);
+    st.progressoMissoes[m.id] = novo;
+    atualizadas.push({ id: m.id, progresso: novo, meta: m.meta, pronta: novo >= m.meta });
+  }
+  return { ok: true, atualizadas };
+}
+
+export function concluirMissaoRegiao(save, regiaoId, missaoId) {
+  const reg = REGIOES_3_12_POR_ID[regiaoId];
+  const m = reg?.missoes?.find((x) => x.id === missaoId);
+  if (!m) return { ok: false, motivo: 'Missão da região não encontrada.' };
+  const st = garantirRegioesSave(save);
+  if (st.missoes[m.id] === 'concluida') {
+    return { ok: false, jaConcluida: true, motivo: 'Missão já resgatada.' };
+  }
+  const prog = Number(st.progressoMissoes[m.id]) || 0;
+  if (prog < m.meta) {
+    return { ok: false, motivo: `Objetivo pendente (${prog}/${m.meta}).` };
+  }
+
+  st.missoes[m.id] = 'concluida';
+  const rec = m.recompensa;
+  save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+  save.recompensas.gold = (Number(save.recompensas.gold) || 0) + (rec.gold || 0);
+  save.recompensas.diamantes = (Number(save.recompensas.diamantes) || 0) + (rec.diamantes || 0);
+  save.recompensas.xp = (Number(save.recompensas.xp) || 0) + (rec.xp || 0);
+  if (save.idle?.jogador) save.idle.jogador.xp = (Number(save.idle.jogador.xp) || 0) + (rec.xp || 0);
+  if (rec.ticketsPermanentes > 0 && save.idle) {
+    save.idle.exp = save.idle.exp || { nivel: 1, xp: 0, tickets: 0 };
+    save.idle.exp.tickets = (Number(save.idle.exp.tickets) || 0) + rec.ticketsPermanentes;
+  }
+  if (rec.essencias?.par) {
+    for (const tam of ['menor', 'media', 'maior']) {
+      if (rec.essencias[tam] > 0) adicionarEssencia(save, rec.essencias.par, tam, rec.essencias[tam]);
+    }
+  }
+  return { ok: true, missao: m, recompensa: rec };
 }
