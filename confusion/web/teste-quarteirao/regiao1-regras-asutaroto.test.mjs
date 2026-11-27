@@ -72,6 +72,9 @@ import { ESTRATEGIA_C1 } from './regiao1-estrategia-c1.js';
 import { CACADAS, CALABOUCO, HV } from './regiao1-exp-dados.js';
 import { criarUnidade } from './regiao1-estrategia-regras.js';
 import { validateSave } from '../../../api/_lib/confusion-save-lib.js';
+import { FRAGMENTOS_SONHO_CFG as __CFG_SONHO } from './regiao1-regras-sonho.js';
+// Estes testes são anteriores à trava de nível 40 para a forma T5 dos iniciais (coberta em regiao1-banner-iniciais.test.mjs)
+__CFG_SONHO.nivelIniciaisPorFase = {};
 
 const novoSave = () => {
   const s = criarEstadoInicial();

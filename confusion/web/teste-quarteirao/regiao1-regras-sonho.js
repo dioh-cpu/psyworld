@@ -82,6 +82,7 @@ export const FRAGMENTOS_SONHO_CFG = {
     3: { menor: 0, media: 30, maior: 10 },
   },
   tierIniciaisPorFase: { 1: 4, 2: 4, 3: 5 }, // exclusivo das 5 linhagens iniciais
+  nivelIniciaisPorFase: { 3: 40 }, // a forma final (T5) dos iniciais só no nível 40
   maxDerrotasHistorico: 500,
 };
 
@@ -331,11 +332,15 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
   const temEssencias = Boolean(
     custoEssencias && faltamEssencias.menor === 0 && faltamEssencias.media === 0 && faltamEssencias.maior === 0,
   );
-  const podeEvoluir = Boolean(!bloqueada && custo != null && saldo >= custo && temEssencias);
+  const nivelMinimo = linhagemInicial && proximaFase ? (cfg.nivelIniciaisPorFase?.[proximaFase] || 0) : 0;
+  const nivelAtual = Math.max(1, Math.floor(Number(u?.nivel) || 1)), faltaNivel = Math.max(0, nivelMinimo - nivelAtual);
+  const podeEvoluir = Boolean(!bloqueada && custo != null && saldo >= custo && temEssencias && !faltaNivel);
   const motivo = bloqueada
     ? NOCTARN_REGRA.bloqueioMotivo
     : !proximaFase
       ? (lin || reinoLin ? 'Este Onírico já está na 3ª forma.' : 'Esta espécie não possui evolução de forma.')
+      : faltaNivel > 0
+        ? `A forma final (T5) exige nível ${nivelMinimo}.`
       : faltam > 0
         ? `Faltam ${faltam} Fragmento(s) de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`
         : !temEssencias
@@ -344,6 +349,8 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
 
   return {
     podeEvoluir,
+    nivelMinimo,
+    faltaNivel,
     bloqueada,
     motivo,
     faseAtual,

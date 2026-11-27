@@ -17,6 +17,9 @@ import { fichaOnirico, evoluirFormaOnirico, adicionarFragmentoSonho } from './re
 import { adicionarEssencia } from './regiao1-regras-sonho.js';
 import { iniciarRevancheChefe, concluirRevancheChefe, previsaoCraftChefe, craftarChefe, REVANCHE_CFG } from './regiao1-revanche-regras.js';
 import { ganharXpPasse } from './regiao1-passe-regras.js';
+import { FRAGMENTOS_SONHO_CFG as __CFG_SONHO } from './regiao1-regras-sonho.js';
+// Estes testes são anteriores à trava de nível 40 para a forma T5 dos iniciais (coberta em regiao1-banner-iniciais.test.mjs)
+__CFG_SONHO.nivelIniciaisPorFase = {};
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 

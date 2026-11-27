@@ -11,6 +11,9 @@ import {
 import { INICIAIS, prepararContaNova } from './regiao1-conta.js';
 import { aberto, expDe, invocarMultiplo, membrosFormacao, iniciarCalabouco, prepararLutaCalabouco } from './regiao1-exp-regras.js';
 import { LINHAS } from '../species.js';
+import { FRAGMENTOS_SONHO_CFG as __CFG_SONHO } from './regiao1-regras-sonho.js';
+// Estes testes são anteriores à trava de nível 40 para a forma T5 dos iniciais (coberta em regiao1-banner-iniciais.test.mjs)
+__CFG_SONHO.nivelIniciaisPorFase = {};
 
 test('Estrelas: sequência 1, 2, 4, 8, 10, 15, 20 a partir de 5★→6★, 8º degrau em aberto, preview de cópias e preservação da principal', () => {
   assert.deepEqual(ESTRELAS_CFG.custosCopias, [1, 2, 4, 8, 10, 15, 20]);
