@@ -109,8 +109,8 @@ const NOMES_EF = { atk: ['ataque_alto', 'ataque_baixo'], def: ['defesa_alta', 'd
 const efetivo = (u, k) => { const [na, nb] = NOMES_EF[k] || [`${k}_alto`, `${k}_baixo`]; const alto = temEfeito(u, na) || temEfeito(u, `${k}_alto`) ? 0.3 : 0, baixo = temEfeito(u, nb) || temEfeito(u, `${k}_baixo`) || temEfeito(u, `${k}_baixa`) ? 0.3 : 0; return Math.max(1, u[k] * (1 + alto - baixo)); };
 
 function iniciarRodada(b) {
-  // ordem do turno: nível (+1 para suporte) e bônus de equipamento. Efeitos de velocidade reduzem recarga (aplicarEfeito), não a ordem
-  const vel = (u) => (u.nivel + (u.papel === 'suporte' ? 1 : 0)) * (1 + (u.velBonus || 0));
+  // ordem do turno: nível (+1 para suporte). Velocidade de efeitos e de equipamento reduz recarga (#163), não muda a ordem
+  const vel = (u) => u.nivel + (u.papel === 'suporte' ? 1 : 0);
   b.fila = vivos(b.ordem).sort((x, y) => vel(y) - vel(x)).map((u) => u.id);
   tickDomador(b);
   for (const u of b.ordem) { u.defendendo = false; u.cd = (u.cd || [0, 0, 0]).map((c) => Math.max(0, c - 1)); u.recarga = Math.max(...u.cd); }
@@ -303,7 +303,10 @@ export function executar(b, acao, rng) {
   b.turnos = (b.turnos || 0) + 1;
   const ev = { tipo: 'atacar', hab, idx, ator: u.id, alvos: [], antes: b.antes || [] }; b.antes = [];
   u.idxEmUso = hab ? idx : null;
-  if (hab) { u.cd[idx] = hab.cd; u.recarga = Math.max(...u.cd); if (hab.cd >= 5) { b.supremas ||= { a: 0, i: 0 }; b.supremas[u.lado] += 1; }
+  if (hab) {
+    const redVelEquip = Math.floor((u.velBonus || 0) / 0.5 + 1e-9);
+    u.cd[idx] = hab.cd > 0 ? Math.max(1, hab.cd - redVelEquip) : 0;
+    u.recarga = Math.max(...u.cd); if (hab.cd >= 5) { b.supremas ||= { a: 0, i: 0 }; b.supremas[u.lado] += 1; }
     // Eco (4p): chance de -1 recarga em outra habilidade em recarga
     if (u.equip?.ecoRecarga && rng() < u.equip.ecoRecarga) { const outra = u.cd.findIndex((c, i) => i !== idx && c > 0); if (outra >= 0) { u.cd[outra] -= 1; ev.eco = outra; } }
   }

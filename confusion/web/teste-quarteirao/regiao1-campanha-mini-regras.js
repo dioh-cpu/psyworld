@@ -36,6 +36,17 @@ export const ENERGIA_CFG = {
   maxHistoricoBatalhas: 300,
 };
 
+export const ENERGIA_TEXTO_EXPLICATIVO = {
+  titulo: 'Como funciona a Energia',
+  resumo: 'Regenera 1 de Energia a cada 6 minutos (240/dia), com capacidade máxima de 120. Poções recuperam +60.',
+  custos: [
+    'Campanha Mini: 6 (normal), 8 (elite), 10 (chefe ou escondida)',
+    'Torres Elementais: 0 na 1ª vitória de cada andar; 8 no treino diário (3×/dia)',
+    'Torres Únicas: 10 por andar (1×/dia)',
+    'Calabouços de Relíquias: 8 (Nv.1–4), 12 (Nv.5–9), 16 (Nv.10–13)',
+  ],
+};
+
 export function energiaDe(save, agoraMs = Date.now()) {
   const idle = save?.idle || (save ? (save.idle = {}) : {});
   const tAgora = Number.isFinite(Number(agoraMs)) ? Math.floor(Number(agoraMs)) : Date.now();
@@ -303,6 +314,27 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
   return tipo === 'elite' || tipo === 'escondida' ? [pick(0), pick(1), pick(2)] : [pick(0), pick(1)];
 }
 
+function montarOndasFase(cap, faseNum, nivel, tipo, elementoRegiao) {
+  const ondaFinal = montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao);
+  const totalOndas = !tipo || tipo === 'normal' ? (faseNum <= 3 ? 2 : 3) : 3;
+  const poolCap = cap === 1
+    ? ESPECIES_R1_SELVAGENS
+    : cap === 2
+      ? ESPECIES_CAPITULO_2
+      : LINHAGENS_REINOS.filter((l) => l.reino === cap).map((l) => l.nome);
+  const formaBase = cap === 1 ? (faseNum >= 9 ? 2 : 1) : (nivel <= 20 ? 1 : nivel <= 40 ? 2 : 3);
+  const criarMob = (offset, deltaNv) => {
+    const raw = poolCap[(faseNum * 3 + offset) % poolCap.length] || 'Fanalino';
+    const nome = cap >= 3 ? nomeFormaDoReino(raw, formaBase) : raw;
+    const el = ELEMENTO_DA_ESPECIE[nome] || ELEMENTO_DA_ESPECIE[raw] || elementoRegiao;
+    return [nome, Math.max(1, nivel - deltaNv), el, { forma: formaBase }];
+  };
+  const onda1 = [criarMob(0, 2), criarMob(1, 2)];
+  if (totalOndas === 2) return [onda1, ondaFinal];
+  const onda2 = [criarMob(2, 1), criarMob(3, 1), criarMob(4, 2)];
+  return [onda1, onda2, ondaFinal];
+}
+
 export const CAPITULOS_CAMPANHA_MINI = REGIOES.map((faixa, idx) => {
   const cap = idx + 1;
   const regInfo = CATALOGO_REGIOES[idx];
@@ -318,6 +350,7 @@ export const CAPITULOS_CAMPANHA_MINI = REGIOES.map((faixa, idx) => {
     const nomeEspecialCap2 = cap === 2
       ? (num === 3 ? '2-3 · Ferroada Rubra' : num === 5 ? '2-5 · Matriarca de Resina' : num === 8 ? '2-8 · Sentinela de Geoda' : num === 10 ? '2-10 · Rainha da Colmeia Dourada' : null)
       : null;
+    const ondas = montarOndasFase(cap, num, nivel, tipo, elemento);
     fases.push({
       id,
       capitulo: cap,
@@ -328,11 +361,13 @@ export const CAPITULOS_CAMPANHA_MINI = REGIOES.map((faixa, idx) => {
       nivel,
       energia: CAMPANHA_MINI_CFG.energiaPorTipo[tipo],
       coord: [x, y],
-      inimigos: montarInimigosFase(cap, num, nivel, tipo, elemento),
+      ondas,
+      inimigos: ondas[ondas.length - 1],
       condicaoEstrela3: condicaoTerceiraEstrela(cap, num, elemento),
     });
   }
   const nivelEsc = nvMax + 3;
+  const ondasEsc = montarOndasFase(cap, 11, nivelEsc, 'escondida', elemento);
   const escondida = {
     id: `${cap}-escondida`,
     capitulo: cap,
@@ -344,7 +379,8 @@ export const CAPITULOS_CAMPANHA_MINI = REGIOES.map((faixa, idx) => {
     energia: CAMPANHA_MINI_CFG.energiaPorTipo.escondida,
     coord: [...CAMPANHA_MINI_CFG.coordenadaEscondida],
     requisitoEstrelas: 30,
-    inimigos: montarInimigosFase(cap, 11, nivelEsc, 'escondida', elemento),
+    ondas: ondasEsc,
+    inimigos: ondasEsc[ondasEsc.length - 1],
     condicaoEstrela3: condicaoTerceiraEstrela(cap, 11, elemento),
     reliquiaGarantida: 'rara',
   };
@@ -538,35 +574,38 @@ export function concluirFaseCampanhaMini(save, faseId, batalhaOuResumo, { batalh
   save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
   const premios = { ouro: 0, diamantes: 0, xpFormacao: 0, pocoes: {}, essencias: {}, reliquias: [], ticketsPermanentes: 0, ticketsSemanais: 0 };
 
+  const fatorOndasXp = (fase.ondas?.length || 2) >= 3 ? 1.35 : 1.15;
+  const fatorOndasOuro = (fase.ondas?.length || 2) >= 3 ? 1.15 : 1;
+
   if (!cm.primeiraVitoriaPagas[fase.id]) {
     cm.primeiraVitoriaPagas[fase.id] = true;
     if (fase.tipo === 'normal') {
-      premios.ouro = 200 * fase.capitulo;
+      premios.ouro = Math.round(200 * fase.capitulo * fatorOndasOuro);
       premios.diamantes = 10;
       premios.pocoes.pocao_xp_p = 1;
     } else if (fase.tipo === 'elite') {
-      premios.ouro = 400 * fase.capitulo;
+      premios.ouro = Math.round(400 * fase.capitulo * fatorOndasOuro);
       premios.diamantes = 20;
       premios.pocoes.pocao_xp_p = 2;
       const r = concederReliquiaCampanha(save, { elemento: cap.elemento, raridade: 'comum', fonte: `cm:${fase.id}`, rng });
       if (r.ok) premios.reliquias.push(r.reliquia);
     } else if (fase.tipo === 'chefe') {
-      premios.ouro = 600 * fase.capitulo;
+      premios.ouro = Math.round(600 * fase.capitulo * fatorOndasOuro);
       premios.diamantes = 30;
       premios.pocoes.pocao_xp_m = 1;
       premios.essencias = { par: cap.parEssencia, menor: 5, media: 2 };
     } else if (fase.tipo === 'escondida') {
-      premios.ouro = 600 * fase.capitulo;
+      premios.ouro = Math.round(600 * fase.capitulo * fatorOndasOuro);
       premios.diamantes = 30;
       premios.pocoes.pocao_xp_m = 1;
       const r = concederReliquiaCampanha(save, { elemento: cap.elemento, raridade: 'rara', fonte: `cm:${fase.id}`, rng });
       if (r.ok) premios.reliquias.push(r.reliquia);
     }
-    premios.xpFormacao = 60 + fase.nivel * 8;
+    premios.xpFormacao = Math.round((60 + fase.nivel * 8) * fatorOndasXp);
   } else {
     // Repetição manual da fase dá recompensa base reduzida (sem repetir prêmios únicos)
-    premios.ouro = Math.round(100 * fase.capitulo);
-    premios.xpFormacao = 30 + fase.nivel * 4;
+    premios.ouro = Math.round(100 * fase.capitulo * fatorOndasOuro);
+    premios.xpFormacao = Math.round((30 + fase.nivel * 4) * fatorOndasXp);
   }
 
   // Conclusão de capítulo (vencer fase 10 pela 1ª vez): 10 tickets permanentes + 10 semanais a cada 3 capítulos

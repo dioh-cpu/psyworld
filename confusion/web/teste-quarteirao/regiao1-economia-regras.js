@@ -218,6 +218,13 @@ export const TABELA_PRIMEIRA_HORA = [
   },
 ];
 
+export const BANNER_REGRAS_RESUMO = {
+  taxas: { comum: 0.68, rara: 0.22, epica: 0.07, lendaria: 0.03 },
+  garantias: { rara: 10, epica: 30, lendaria: 50 },
+  gratisPorDia: 10,
+  gratisAcumuloMax: 100,
+};
+
 export function simularEconomiaPrimeiraHora({ comConta = false } = {}) {
   const saldo = {
     ouro: 0,
@@ -227,10 +234,21 @@ export function simularEconomiaPrimeiraHora({ comConta = false } = {}) {
     essenciaMenor: 0,
     essenciaMedia: 0,
     tickets: 0,
+    invocacoesGratis: BANNER_REGRAS_RESUMO.gratisPorDia,
     reliquias: 0,
     fragmentosSonho: 0,
   };
-  const ganhosTotais = { ouro: 0, diamantes: saldo.diamantes, xpOnirico: 0, essenciaMenor: 0, essenciaMedia: 0, tickets: 0, reliquias: 0, fragmentosSonho: 0 };
+  const ganhosTotais = {
+    ouro: 0,
+    diamantes: saldo.diamantes,
+    xpOnirico: 0,
+    essenciaMenor: 0,
+    essenciaMedia: 0,
+    tickets: 0,
+    invocacoesGratis: BANNER_REGRAS_RESUMO.gratisPorDia,
+    reliquias: 0,
+    fragmentosSonho: 0,
+  };
   const gastosTotais = { ouro: 0, diamantes: 0, energia: 0, tickets: 0 };
 
   const linhaTempo = TABELA_PRIMEIRA_HORA.map((b) => {
