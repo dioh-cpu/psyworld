@@ -692,6 +692,55 @@ export function sanitizarIdleProgressao(idle) {
     };
   }
 
+  if (idle.torres && typeof idle.torres === 'object') {
+    const t = idle.torres;
+    const elementais = {};
+    if (t.elementais && typeof t.elementais === 'object') {
+      for (const [id, v] of Object.entries(t.elementais).slice(0, 12)) {
+        if (v && typeof v === 'object') {
+          elementais[String(id).slice(0, 24)] = {
+            maiorAndar: Math.max(0, Math.min(50, Math.floor(Number(v.maiorAndar) || 0))),
+            pagas: sanitizarMapaSeguro(v.pagas, 60, 'bool'),
+          };
+        }
+      }
+    }
+    const unicas = {};
+    if (t.unicas && typeof t.unicas === 'object') {
+      for (const [id, v] of Object.entries(t.unicas).slice(0, 8)) {
+        if (v && typeof v === 'object') {
+          unicas[String(id).slice(0, 24)] = { maiorAndar: Math.max(0, Math.min(30, Math.floor(Number(v.maiorAndar) || 0))) };
+        }
+      }
+    }
+    const unicasDiarias = {};
+    if (t.unicasDiarias && typeof t.unicasDiarias === 'object') {
+      for (const [id, v] of Object.entries(t.unicasDiarias).slice(0, 8)) {
+        if (v && typeof v === 'object') unicasDiarias[String(id).slice(0, 24)] = sanitizarMapaSeguro(v, 35, 'int');
+      }
+    }
+    out.torres = {
+      elementais,
+      treinoDiario: {
+        dia: Math.max(0, Math.floor(Number(t.treinoDiario?.dia) || 0)),
+        usos: Math.max(0, Math.min(10, Math.floor(Number(t.treinoDiario?.usos) || 0))),
+      },
+      unicas,
+      unicasDiarias,
+      batalhasPagas: sanitizarMapaSeguro(t.batalhasPagas, 300, 'bool'),
+    };
+  }
+
+  if (idle.calaboucos && typeof idle.calaboucos === 'object') {
+    const c = idle.calaboucos;
+    out.calaboucos = {
+      maiorNivel: sanitizarMapaSeguro(c.maiorNivel, 12, 'int'),
+      todosVivos: sanitizarMapaSeguro(c.todosVivos, 120, 'bool'),
+      moedas: Math.max(0, Math.floor(Number(c.moedas) || 0)),
+      batalhasPagas: sanitizarMapaSeguro(c.batalhasPagas, 300, 'bool'),
+    };
+  }
+
   return out;
 }
 
