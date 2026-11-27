@@ -565,6 +565,112 @@ export function progressoQuest(estado, questId) {
   return { feitos, total: q.pistas.length };
 }
 
+function sanitizarMapaSeguro(src, limite = 200, tipo = 'bool') {
+  const out = {};
+  if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
+  for (const [k, v] of Object.entries(src).slice(0, limite)) {
+    const key = String(k).slice(0, 64);
+    if (tipo === 'bool') {
+      if (v) out[key] = true;
+    } else if (tipo === 'int') {
+      const n = Math.floor(Number(v) || 0);
+      if (n > 0) out[key] = n;
+    } else if (typeof v === 'string') {
+      out[key] = v.slice(0, 120);
+    }
+  }
+  return out;
+}
+
+// Lista branca explícita dos blocos novos em save.idle (mantém campos antigos intactos).
+export function sanitizarIdleProgressao(idle) {
+  if (!idle || typeof idle !== 'object' || Array.isArray(idle)) return {};
+  const out = { ...idle };
+
+  if (idle.energia && typeof idle.energia === 'object') {
+    const e = idle.energia;
+    const max = Math.max(120, Math.floor(Number(e.max) || 120));
+    out.energia = {
+      atual: Math.max(0, Math.min(max, Number.isFinite(Number(e.atual)) ? Math.floor(Number(e.atual)) : max)),
+      max,
+      pocoes: Math.max(0, Math.floor(Number(e.pocoes) || 0)),
+      ultimoTickMs: Math.max(0, Math.floor(Number(e.ultimoTickMs) || 0)),
+    };
+  }
+
+  if (idle.essencias && typeof idle.essencias === 'object') {
+    const ess = {};
+    for (const par of ['ignea', 'mares', 'verde', 'mineral', 'solar', 'sombria']) {
+      const cur = idle.essencias[par];
+      if (cur && typeof cur === 'object') {
+        ess[par] = {
+          menor: Math.max(0, Math.floor(Number(cur.menor) || 0)),
+          media: Math.max(0, Math.floor(Number(cur.media) || 0)),
+          maior: Math.max(0, Math.floor(Number(cur.maior) || 0)),
+        };
+      }
+    }
+    out.essencias = ess;
+  }
+
+  if (idle.campanhaMini && typeof idle.campanhaMini === 'object') {
+    const cm = idle.campanhaMini;
+    const fases = {};
+    if (cm.fases && typeof cm.fases === 'object') {
+      for (const [k, v] of Object.entries(cm.fases).slice(0, 160)) {
+        if (v && typeof v === 'object') {
+          fases[String(k).slice(0, 32)] = {
+            vencida: Boolean(v.vencida),
+            estrelas: Math.max(0, Math.min(3, Math.floor(Number(v.estrelas) || 0))),
+            concluidas: Math.max(0, Math.floor(Number(v.concluidas) || 0)),
+          };
+        }
+      }
+    }
+    out.campanhaMini = {
+      fases,
+      primeiraVitoriaPagas: sanitizarMapaSeguro(cm.primeiraVitoriaPagas, 160, 'bool'),
+      bausFasePagos: sanitizarMapaSeguro(cm.bausFasePagos, 160, 'bool'),
+      bausCapituloPagos: sanitizarMapaSeguro(cm.bausCapituloPagos, 60, 'bool'),
+      capitulosConcluidos: sanitizarMapaSeguro(cm.capitulosConcluidos, 24, 'bool'),
+      semanaisPagos: sanitizarMapaSeguro(cm.semanaisPagos, 24, 'bool'),
+      batalhasPagas: sanitizarMapaSeguro(cm.batalhasPagas, 300, 'bool'),
+    };
+  }
+
+  if (idle.reliquias && typeof idle.reliquias === 'object') {
+    const r = idle.reliquias;
+    const cap = Math.max(200, Math.min(500, Math.floor(Number(r.capacidade) || 200)));
+    const bolsa = Array.isArray(r.bolsa)
+      ? r.bolsa.slice(0, cap).filter((x) => x && typeof x === 'object' && typeof x.id === 'string')
+      : [];
+    const equipadas = {};
+    if (r.equipadas && typeof r.equipadas === 'object') {
+      for (const [uid, eq] of Object.entries(r.equipadas).slice(0, 200)) {
+        if (eq && typeof eq === 'object') {
+          equipadas[String(uid).slice(0, 64)] = sanitizarMapaSeguro(eq, 8, 'str');
+        }
+      }
+    }
+    const predefinicoes = {};
+    if (r.predefinicoes && typeof r.predefinicoes === 'object') {
+      for (const [uid, list] of Object.entries(r.predefinicoes).slice(0, 120)) {
+        if (list && typeof list === 'object') predefinicoes[String(uid).slice(0, 64)] = list;
+      }
+    }
+    out.reliquias = {
+      bolsa,
+      equipadas,
+      predefinicoes,
+      capacidade: cap,
+      poReforco: Math.max(0, Math.floor(Number(r.poReforco) || 0)),
+      seq: Math.max(0, Math.floor(Number(r.seq) || 0)),
+    };
+  }
+
+  return out;
+}
+
 export function serializarEstado(estado) {
   return JSON.stringify(estado);
 }
@@ -644,7 +750,7 @@ export function desserializarEstado(texto) {
       base.regioes.chefesDerrotados.r1 = true;
     }
     if (salvo.idle && typeof salvo.idle === 'object') {
-      base.idle = salvo.idle;
+      base.idle = sanitizarIdleProgressao(salvo.idle);
     }
     // conta da versão pública: inicial escolhido, concessão do bônus e validade do VIP
     if (salvo.conta && typeof salvo.conta === 'object') {
