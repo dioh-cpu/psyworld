@@ -17,9 +17,11 @@ Documento de referência da experiência do **jogador novo** em `Confusion Waves
 | **45–60 min** | Chefe `1-10`, Marcos (`Cap.1`, `30★`), Baús `10★/20★/30★` e **1ª Invocação `×10`** | Fechar Cap.1, resgatar tickets e rodar Banner `×10` | `+1.400 / -900` | `+300 / 0` | `+1.650` | `51 → 44` (`+3 / -10`) | `+10 / +3` | `+11 / -10` | `1` |
 | **Total 60 min** | **Capítulo 1 fechado + 1ª invocação `×10` + equipe equipada** | Nunca fica sem próximo objetivo | **`+6.050 / -2.775` (saldo `3.275`)** | **`+865 / 0` (saldo `865`)** | **`+5.550`** (~Nv.28–30 com Poções) | **`44 / 120` restantes** | **`38 Menor / 3 Média`** | **`+12 / -10` (saldo `2`)** | **`6`** |
 
-### Diferença Convidado × Conta Criada
-- **Convidado (sem bônus):** depende dos **`10 tickets permanentes`** da conclusão do Capítulo 1 (`1-10`) + **`1 ticket`** de marcos (`30★` ou `10 espécies`), chegando com segurança na **1ª invocação `×10` dentro de 60 minutos**, sem faltar energia (`44/120` sobrando ao fim da hora 1).
-- **Conta criada (ou convidado que cria conta):** recebe **`+20.000 💎`** + **`10 dias de VIP`** em pagamento único imediato, permitindo **até 13 invocações `×10` (1.500 💎 cada)** logo no início, mantendo exatamente o mesmo saldo de progresso, ouro, energia, Essências e tickets ganhos.
+### Diferença Convidado × Conta Criada e Regras Atuais do Banner (`#150`, `#153`)
+- **Banner Permanente (Adventurer):** taxas **`68% T2 / 22% T3 / 7% T4 / 3% T5`** (T5 = Ignaraz, Vaelirion, Florivel), garantias **`10→T3 / 30→T4 / 50→T5`** e **`10 invocações grátis por dia acumulando até 100`**.
+- **Convidado (sem bônus):** já começa o Dia 1 com **`10 invocações grátis`** (garante T3 na 1ª ×10) + ganha **`10 tickets permanentes`** ao concluir o Capítulo 1 (`1-10`, agora em 2 ondas nas fases 1–3 e 3 ondas nas fases 4–10, com XP rebalanceado `+15%/+35%`) + `1 ticket` de marcos (`30★` ou `10 espécies`), totalizando **2× multi `×10` na 1ª hora**, sem faltar energia (`44/120` sobrando).
+- **Conta criada (ou convidado que cria conta):** recebe **`+20.000 💎`** + **`10 dias de VIP`** em pagamento único imediato (com toast), somando **até 13 invocações `×10` extras** (garantindo T4 em 30 e T5 em 50 já na estreia).
+- **Energia (`ENERGIA_TEXTO_EXPLICATIVO`):** regenera **`1` a cada `6` min (`240/dia`)**, máximo **`120`**, poção **`+60`**. Custos: Campanha Mini `6/8/10`, Torres Elementais **`0` na 1ª vitória** (`8` treino 3×/dia), Torres Únicas `10`, Calabouços `8/12/16`. Na 1ª hora o jogador gasta `84` de `128` disponíveis — ritmo folgado sem travar.
 
 ---
 
