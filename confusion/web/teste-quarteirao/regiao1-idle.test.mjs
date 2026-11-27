@@ -134,3 +134,40 @@ test('Nível do Domador concede +3 pontos por nível, distribui/reseta atributos
   assert.equal(comprarEsferaIdle(s, 'lendaria').ok, false);
   assert.equal(s.recompensas.diamantes, 2000);
 });
+
+test('XP do Domador: nível 10 exige no mínimo 10 minutos de história + idle (sem alterar curva dos Oníricos)', async () => {
+  const { QUESTS_DEFINICOES } = await import('./regiao1-estado.js');
+  const { xpTotal, nivelDe, xpTotalDomador, nivelDomadorDe } = await import('./regiao1-progressao.js');
+
+  // Curva dos Oníricos preservada intacta
+  assert.equal(xpTotal(10), 720);
+  assert.equal(nivelDe(720), 10);
+
+  // Cenário 1: 5 minutos de história inicial (6 primeiras missões) + 5 min de Auto-Caça ativo (15 abates Nv.6)
+  const s5 = criarEstadoInicial();
+  garantirEstadoIdle(s5);
+  const xpHistoria5m = QUESTS_DEFINICOES.slice(0, 6).reduce((a, q) => a + (q.recompensa?.xp || 0), 0);
+  s5.recompensas.xp += xpHistoria5m;
+  s5.idle.jogador.xp += xpHistoria5m;
+  for (let i = 0; i < 15; i++) {
+    resolverAbateAuto(s5, { especie: 'Fanalino', nivel: 6, derrotaId: `d5_${i}` }, () => 0.9);
+  }
+  const st5 = calcularStatusDetalhado(s5);
+  assert.ok(st5.nivel < 10, `Domador atingiu Nv.${st5.nivel} em apenas 5 min de história + idle!`);
+
+  // Cenário 2: 9 minutos de história acelerada (15 missões incluindo chefes) + 9 min de Auto-Caça ativo (27 abates Nv.6) + 5 batalhas manuais
+  const s9 = criarEstadoInicial();
+  garantirEstadoIdle(s9);
+  const xpHistoria9m = QUESTS_DEFINICOES.slice(0, 15).reduce((a, q) => a + (q.recompensa?.xp || 0), 0) + 5 * 20;
+  s9.recompensas.xp += xpHistoria9m;
+  s9.idle.jogador.xp += xpHistoria9m;
+  for (let i = 0; i < 27; i++) {
+    resolverAbateAuto(s9, { especie: 'Fanalino', nivel: 6, derrotaId: `d9_${i}` }, () => 0.9);
+  }
+  const st9 = calcularStatusDetalhado(s9);
+  assert.ok(st9.nivel < 10, `Domador atingiu Nv.${st9.nivel} antes de 10 min (${s9.idle.jogador.xp} XP, meta Nv.10=${xpTotalDomador(10)})!`);
+
+  // Cenário 3: >= 10 minutos (campanha completa da R1 + 10 min de idle ativo) atinge Nv.10
+  const xpTodasMissoes = QUESTS_DEFINICOES.reduce((a, q) => a + (q.recompensa?.xp || 0), 0);
+  assert.ok(nivelDomadorDe(xpTodasMissoes + 300) >= 10, 'Após campanha completa + 10 min de idle deve alcançar Nv.10');
+});

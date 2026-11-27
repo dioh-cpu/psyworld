@@ -1,7 +1,15 @@
 // Módulo Idle & Progressão da Região 1 — Confusion Waves: Double Perspective.
 // Reaproveita diretamente core.js, systems.js e species.js (sem duplicar regras do núcleo).
 
-import { nivelDe as nivelDeXp, xpPara as xpParaProximo, xpTotal as xpDoNivel, aplicarXp, migrarProgressaoOniricos, estrelasIniciais } from './regiao1-progressao.js'; // progressão sem teto + estrelas/tier
+import {
+  nivelDomadorDe as nivelDeXp,
+  xpParaDomador as xpParaProximo,
+  xpTotalDomador as xpDoNivel,
+  xpTotal as xpTotalOnirico,
+  aplicarXp,
+  migrarProgressaoOniricos,
+  estrelasIniciais,
+} from './regiao1-progressao.js'; // progressão sem teto + curva exclusiva do Domador + estrelas/tier
 import { membrosFormacao } from './regiao1-exp-regras.js';
 import {
   sanityBand,
@@ -162,7 +170,7 @@ export function criarEstadoIdle(agoraMs = Date.now()) {
     derrotasPagas: { ids: {}, ordem: [] },
     montaria: 'brumacervo',
     equipe: [
-      { especie: 'Penumbrio', nivel: 5, xp: xpDoNivel(5), tier: 4, raridade: 4, estrelas: estrelasIniciais('inicial'), forma: 'natural', formaFase: 1, inicial: true, origem: 'inicial-padrao', uid: 'ini0' },
+      { especie: 'Penumbrio', nivel: 5, xp: xpTotalOnirico(5), tier: 4, raridade: 4, estrelas: estrelasIniciais('inicial'), forma: 'natural', formaFase: 1, inicial: true, origem: 'inicial-padrao', uid: 'ini0' },
     ],
     login: { streak: 0, lastDay: -1 },
     passe: passeDe({ passe: null }, agoraMs),
