@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Laboratório de Habilidades</title>
+<style>
+:root { --bg: #120a18; --painel: #1d1026; --linha: #4b2f5c; --texto: #f5e9ff; --suave: #c9b6d8; --acento: #f59e0b; --botao: #2a1838; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--texto); font: 13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+body { display: grid; grid-template-rows: minmax(260px, 62vh) 1fr; overflow: hidden; }
+#host { position: relative; overflow: hidden; }
+#medida { position: absolute; top: 6px; right: 8px; z-index: 300; font: 12px ui-monospace, monospace; color: #fde68a; background: rgba(0,0,0,.6); padding: 3px 7px; border-radius: 4px; pointer-events: none; }
+#painel { overflow: auto; padding: 8px max(10px, env(safe-area-inset-left, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-right, 0px)); background: var(--painel); border-top: 1px solid var(--linha); display: grid; gap: 8px; align-content: start; }
+.linha { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+h1 { font: 700 15px Georgia, serif; color: var(--acento); margin: 0 8px 0 0; }
+select, button, label.op { background: var(--botao); color: var(--texto); border: 1px solid var(--linha); border-radius: 8px; padding: 6px 9px; font: inherit; }
+select { min-width: 0; max-width: 100%; }
+button { cursor: pointer; }
+button:hover, select:hover { border-color: var(--acento); }
+button.hab { display: grid; gap: 1px; text-align: left; min-width: 150px; }
+button.hab small { color: var(--suave); font-size: 11px; }
+button.ult { border-color: #f59e0b; }
+button:disabled { opacity: .45; cursor: wait; }
+label.op { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+.sub { color: var(--suave); font-size: 12px; }
+@media (max-width: 640px) { body { grid-template-rows: minmax(220px, 48vh) 1fr; } button.hab { min-width: calc(50% - 6px); } }
+</style>
+</head>
+<body>
+<div id="host"></div>
+<div id="medida">Escolha um Onírico e uma habilidade</div>
+<div id="painel">
+  <div class="linha"><h1>Laboratório de Habilidades</h1><span class="sub">Confusion Waves · todas as habilidades com os efeitos do jogo</span></div>
+  <div class="linha">
+    <select id="grupo" aria-label="Grupo"></select>
+    <select id="oni" aria-label="Onírico"></select>
+    <label class="op"><input type="checkbox" id="inimigo"> Usar pelo lado inimigo</label>
+    <label class="op"><input type="checkbox" id="final"> Forma final (Abyssar T5)</label>
+    <label class="op"><input type="checkbox" id="rapido"> Rápido</label>
+  </div>
+  <div class="linha" id="habs"></div>
+  <div class="linha" id="extras"></div>
+  <div class="sub" id="info"></div>
+</div>
+<script type="module">
+import { criarArena } from './regiao1-batalha-tela.js';
+import { criarUnidade, criarBatalha, executar, atorAtual, decidir } from './regiao1-estrategia-regras.js';
+import { tocarEvento, criarCtx, duracaoEstimada, entradaChefe } from './regiao1-vfx.js';
+import * as HAB from './regiao1-batalha-habilidades.js';
+import { LINHAGENS_REINOS, CHEFES_REINOS, CHEFES_REGIAO, specChefeReino } from './regiao1-kits-reinos.js';
+import { CHEFES_R2 } from './regiao2-altos-ambar.js';
+import { REINOS } from '../reinos.js';
+import { ARTE_DA_ESPECIE, ELEMENTO_DA_ESPECIE } from '../species.js';
+
+const $ = (s) => document.querySelector(s);
+const host = $('#host'), medida = $('#medida');
+let arena = criarArena(host), ocupado = false;
+const FUNDO = 'assets/confusion/interface/eventos/halloween/arenas/04.webp';
+const pad = (n) => String(n).padStart(2, '0');
+const arteChefeReino = (r) => `assets/confusion/interface/estrategia/reinos/${pad(r)}/chefe.${r <= 3 ? 'webp' : 'png'}`;
+const raiz = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
+const NOMES_EL = { fogo: 'Fogo', agua: 'Água', planta: 'Planta', terra: 'Terra', pedra: 'Pedra', inseto: 'Inseto', voador: 'Voador', eletrico: 'Elétrico', aco: 'Aço', trevas: 'Trevas', luz: 'Luz', fantasma: 'Fantasma', neutro: 'Neutro' };
+
+// ---- catálogo de quem testar ----
+const GRUPOS = [];
+const DOMADORES = ['Manipulador das Oito Lâminas'];
+GRUPOS.push({ nome: 'Domadores auxiliares', itens: [{ especie: 'Manipulador das Oito Lâminas', elemento: 'aco', arte: 'assets/confusion/interface/personagens/oito-laminas/idle-com-laminas.webp' }] });
+GRUPOS.push({ nome: 'Iniciais e Halloween (habilidades próprias)', itens: [...Object.keys(HAB.KITS).filter((e) => !DOMADORES.includes(e)), 'Noctarion'].map((e) => ({ especie: e })) });
+for (let r = 3; r <= 12; r++) GRUPOS.push({ nome: `Reino ${pad(r)} · linhagens`, itens: LINHAGENS_REINOS.filter((l) => l.reino === r).map((l) => ({ especie: l.nome, elemento: l.elemento })) });
+for (const r of [1, 2]) if (REINOS[r]) GRUPOS.push({ nome: `Reino ${pad(r)} · ${REINOS[r].nome}`, itens: REINOS[r].linhagens.filter((l) => !HAB.KITS[l.nome]).map((l) => ({ especie: l.nome, elemento: l.elemento })) });
+const r2 = Object.values(CHEFES_R2).reduce((m, c) => (m[c.nome] = raiz(c.sprite), m), {});
+GRUPOS.push({ nome: 'Chefes dos reinos', itens: CHEFES_REINOS.map((c) => ({ especie: c.nome, elemento: c.elemento, chefe: true, arte: r2[c.nome] || arteChefeReino(c.reino), reino: c.reino })) });
+GRUPOS.push({ nome: 'Chefes da Região 2 (circuitos)', itens: CHEFES_REGIAO.map((c) => ({ especie: c.nome, elemento: c.elemento, chefe: true, arte: r2[c.nome] })) });
+const GEN = [
+  ['Cura Solar', 'cura', 'aliados', 'luz'], ['Cura Verde', 'cura', 'aliados', 'planta'], ['Cura Sombria', 'cura', 'aliados', 'trevas'], ['Cura Ígnea', 'cura', 'aliados', 'fogo'],
+  ['Escudo do Grupo', 'apoio', 'aliados', 'agua', { escudo: 0.12 }], ['Defesa do Grupo', 'apoio', 'aliados', 'pedra', { efeitos: [{ id: 'defesa_alta', turnos: 2, chance: 1 }] }],
+  ['Velocidade', 'apoio', 'aliados', 'voador', { efeitos: [{ id: 'veloz', turnos: 2, chance: 1 }] }], ['Invencível', 'apoio', 'aliado', 'neutro', { efeitos: [{ id: 'invencivel', turnos: 1, chance: 1 }] }],
+  ['Ataque Elevado', 'apoio', 'aliado', 'fogo', { efeitos: [{ id: 'ataque_alto', turnos: 2, chance: 1 }] }], ['Purificação', 'apoio', 'aliados', 'neutro', { limpa: true }],
+  ['Provocação', 'apoio', 'si', 'pedra', { efeitos: [{ id: 'provocacao', turnos: 2, chance: 1 }] }], ['Veneno em área', 'dano', 'todos', 'inseto', { mult: 1, distancia: true, efeitos: [{ id: 'veneno', turnos: 2, chance: 1 }] }],
+].map(([nome, tipo, alvo, elemento, extra = {}], i) => ({ id: `lab_${i}`, nome, icone: '✨', tipo, alvo, elemento, cd: 3, mult: tipo === 'dano' ? 1.2 : 0.2, efeitos: [], ...extra }));
+GRUPOS.push({ nome: 'Efeitos genéricos (suporte e status)', itens: [{ especie: 'Solarin', generico: true }] });
+
+const COMPANHIA = ['Noctarn', 'Vaelith', 'Brotavel', 'Solarin', 'Ignavor', 'Velalume'];
+const INIMIGOS = ['Fanalino', 'Cervomusgo', 'Xistolim', 'Tatuveludo'];
+const selGrupo = $('#grupo'), selOni = $('#oni');
+selGrupo.innerHTML = GRUPOS.map((g, i) => `<option value="${i}">${g.nome} (${g.itens.length})</option>`).join('');
+function itemAtual() { return GRUPOS[selGrupo.value].itens[selOni.value || 0]; }
+function preencherOni() { const g = GRUPOS[selGrupo.value]; selOni.innerHTML = g.itens.map((it, i) => `<option value="${i}">${it.generico ? 'Efeitos de suporte e status' : it.especie}${it.elemento ? ` · ${NOMES_EL[it.elemento] || it.elemento}` : ''}</option>`).join(''); preencherHabs(); }
+function kitDe(it) {
+  if (it.generico) return GEN;
+  const el = it.elemento || ELEMENTO_DA_ESPECIE[it.especie] || 'neutro';
+  return criarUnidade({ id: 'k', especie: it.especie, nivel: 50, lado: 'a', elemento: el }).kit;
+}
+function preencherHabs() {
+  const it = itemAtual(), kit = kitDe(it);
+  $('#habs').innerHTML = (it.generico ? '' : `<button class="hab" data-i="-1"><b>⚔️ Atacar</b><small>golpe básico</small></button>`) + kit.map((h, i) => `<button class="hab ${h.cd >= 5 ? 'ult' : ''}" data-i="${i}"><b>${h.icone || '✨'} ${h.nome}</b><small>${h.tipo} · ${h.alvo}${h.cd ? ` · recarga ${h.cd}` : ''}${h.enxame ? ' · enxame 3 rodadas' : ''}</small></button>`).join('');
+  $('#extras').innerHTML = it.chefe ? '<button data-x="entrada">👑 Entrada do chefe</button><button data-x="derrota">💀 Derrota do chefe</button>' : '';
+  $('#info').textContent = it.chefe ? 'Chefe: abaixo de metade da vida entra em fúria. Use "Derrota do chefe" para ver a queda.' : (it.especie === 'Abyssar' ? 'Marque "Forma final" para ver os vídeos do Abyssar T5.' : '');
+}
+selGrupo.addEventListener('change', () => { selOni.value = 0; preencherOni(); });
+selOni.addEventListener('change', preencherHabs);
+
+function montar(it, inimigo) {
+  const papeis = {}, el = it.elemento || ELEMENTO_DA_ESPECIE[it.especie];
+  const mk = (id, esp, lado, vaga, extra = {}) => Object.assign(criarUnidade({ id, especie: esp, nivel: 50, lado, papeis, ...(esp === it.especie && el ? { elemento: el } : {}) }), { vaga }, extra);
+  const ator = it.generico ? 'Solarin' : it.especie;
+  const outros = COMPANHIA.filter((e) => e !== ator).slice(0, 3);
+  let al, ini;
+  if (inimigo) {
+    al = COMPANHIA.slice(0, 4).map((e, i) => mk(`a${i}`, e, 'a', i));
+    ini = [ator, ...INIMIGOS.slice(0, 3)].map((e, i) => mk(`i${i}`, e, 'i', i, i === 0 && it.chefe ? { chefe: true } : {}));
+    for (const u of al) { u.hpMax = 99999; u.hp = 99999; }
+  } else {
+    al = [ator, ...outros].map((e, i) => mk(`a${i}`, e, 'a', i, i === 0 && it.chefe ? { chefe: true } : {}));
+    ini = INIMIGOS.map((e, i) => mk(`i${i}`, e, 'i', i));
+    for (const u of ini) { u.hpMax = 99999; u.hp = 99999; }
+    for (const u of al.slice(1)) u.hp = Math.round(u.hpMax * 0.45);
+    al[2].hp = 0; // um aliado caído para testar ressurreição
+  }
+  return criarBatalha(al, ini);
+}
+function artesDe(it) {
+  const a = {};
+  if (it.arte) a[it.especie] = it.arte;
+  if (it.especie === 'Abyssar' && $('#final').checked) a.Abyssar = 'assets/confusion/interface/eventos/halloween/oniricos/abyssar/03.png';
+  return a;
+}
+const ctxDe = (rapido) => criarCtx({ arena: host, campo: host.querySelector('.tb-campo'), rapido, no: (id) => host.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} });
+async function preparar(it, inimigo) {
+  arena = criarArena(host, { artes: artesDe(it) });
+  const b = montar(it, inimigo); atorAtual(b);
+  arena.atualizar(b, { arena: it.reino ? `assets/confusion/interface/estrategia/reinos/${pad(it.reino)}/arena-chefe.webp` : FUNDO, titulo: it.generico ? 'Efeitos genéricos' : it.especie });
+  await new Promise((r) => setTimeout(r, 350));
+  return b;
+}
+async function rodar(i) {
+  if (ocupado) return; ocupado = true; document.querySelectorAll('#painel button').forEach((x) => (x.disabled = true));
+  try {
+    const it = itemAtual(), inimigo = $('#inimigo').checked, rapido = $('#rapido').checked;
+    const b = await preparar(it, inimigo), ator = inimigo ? b.inimigos[0] : b.aliados[0];
+    if (it.generico) { ator.kit = [GEN[i], GEN[i], GEN[i]]; i = 0; }
+    ator.cd = [0, 0, 0];
+    b.fila = [ator.id, ...b.fila.filter((id) => id !== ator.id)]; b.iniciado = `${b.rodada}:${ator.id}`;
+    const hab = i >= 0 ? ator.kit[i] : null;
+    const alvo = hab && (hab.tipo === 'cura' || hab.tipo === 'apoio') ? (hab.reviver ? (inimigo ? undefined : 'a2') : undefined) : (inimigo ? 'a0' : 'i0');
+    executar(b, { tipo: i < 0 ? 'atacar' : 'habilidade', idx: Math.max(0, i), alvo }, Math.random);
+    const ev = b.evento; ev.mostrado = true; ev.arteAtor = host.querySelector(`[data-un="${ator.id}"] .un-fig img`)?.getAttribute('src') || '';
+    const est = duracaoEstimada(ev, rapido), t0 = performance.now();
+    await tocarEvento(ctxDe(rapido), ev);
+    // Enxame: mostra também as picadas das rodadas seguintes
+    if (hab?.enxame) for (let n = 0; n < 12 && b.campos?.length; n++) { const at = atorAtual(b); if (!at) break; executar(b, decidir(b, at, Math.random), Math.random); arena.atualizar(b, { titulo: it.especie }); await tocarEvento(ctxDe(rapido), b.evento); }
+    const real = Math.round(performance.now() - t0);
+    medida.textContent = `${hab?.nome || 'Atacar'}: ${real} ms`;
+    arena.atualizar(b, { titulo: it.generico ? 'Efeitos genéricos' : it.especie });
+  } catch (e) { medida.textContent = `Erro: ${e.message}`; console.error(e); }
+  finally { ocupado = false; document.querySelectorAll('#painel button').forEach((x) => (x.disabled = false)); }
+}
+async function extra(tipo) {
+  if (ocupado) return; ocupado = true;
+  try {
+    const it = itemAtual(), b = await preparar(it, true), chefe = b.inimigos[0];
+    if (tipo === 'entrada') { await entradaChefe(ctxDe(false)); medida.textContent = 'Entrada do chefe'; }
+    else {
+      chefe.hp = 1; chefe.emFuria = true; b.fila = ['a0', ...b.fila.filter((id) => id !== 'a0')]; b.iniciado = `${b.rodada}:a0`;
+      executar(b, { tipo: 'atacar', alvo: chefe.id }, Math.random); await tocarEvento(ctxDe(false), b.evento); medida.textContent = 'Derrota do chefe';
+    }
+  } catch (e) { medida.textContent = `Erro: ${e.message}`; console.error(e); }
+  finally { ocupado = false; }
+}
+$('#habs').addEventListener('click', (e) => { const t = e.target.closest('button'); if (t) rodar(Number(t.dataset.i)); });
+$('#extras').addEventListener('click', (e) => { const t = e.target.closest('button'); if (t) extra(t.dataset.x); });
+preencherOni();
+arena.atualizar(montar(itemAtual(), false), { arena: FUNDO, titulo: 'Laboratório de Habilidades' });
+window.labHab = { GRUPOS, rodar, extra, selGrupo, selOni, preencherOni, GEN };
+</script>
+</body>
+</html>

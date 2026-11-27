@@ -19,6 +19,7 @@ export const ELEM = {
 };
 // Configuração por habilidade (id): fx (coreografia), ult (cut-in), ms (duração para o ritmo do automático), clip (vídeo do Flow) e impactoMs.
 export const FX_HABILIDADES = {
+  danca_oito_laminas: { fx: 'oitoLaminas', ms: 1900 }, sincronia_telecinetica: { fx: 'oitoLaminas', ms: 1900 }, tempestade_oito_laminas: { fx: 'oitoLaminas', ult: true, ms: 2300 },
   chama_noturna: { fx: null, ms: 1800 }, // sem o clipe, cai na área genérica de trevas
   mordida_umbral: { fx: 'mordida', ms: 1144 }, chama_violeta: { fx: 'chamaVioleta', ms: 1641 }, veu_noturno: { fx: 'veuNoturno', ult: true, ms: 1986 },
   brasa_imperial: { fx: 'brasaImperial', ms: 1285 }, juba_flamejante: { fx: 'jubaFlamejante', ms: 1092 }, rugido_dourado: { fx: 'rugidoDourado', ult: true, ms: 1491 },
@@ -594,7 +595,37 @@ async function raizesArea(ctx, M, A, ev, hab) {
 }
 
 // ---------- coreografias próprias ----------
+// Manipulador das Oito Lâminas: as 8 lâminas (arte própria) saem em órbita do domador e cortam por telecinese; o retrato troca para a
+// pose da habilidade enquanto ela dura.
+const OITO = 'assets/confusion/interface/personagens/oito-laminas/';
+const POSE_OITO = { danca_oito_laminas: 'danca-das-oito-laminas.webp', sincronia_telecinetica: 'sincronia-telecinetica.webp', tempestade_oito_laminas: 'tempestade-das-oito-laminas.webp' };
+function laminaEl(ctx, x, y, w) { const e = document.createElement('img'); e.src = `../../../${OITO}lamina.webp`; e.alt = ''; e.style.cssText = `position:absolute;left:${x - w / 2}px;top:${y - w * 0.16}px;width:${w}px;pointer-events:none;z-index:88;filter:drop-shadow(0 0 6px #e2e8f0) drop-shadow(0 0 12px #94a3b8)`; ctx.campo.append(e); return e; }
+async function fxOitoLaminas(ctx, M, A, ev, hab) {
+  const img = A.querySelector('.un-fig img'), orig = img?.getAttribute('src');
+  if (img && POSE_OITO[hab.id]) img.setAttribute('src', `../../../${OITO}${POSE_OITO[hab.id]}`);
+  const a = corpo(ctx, A), w = a.w * 0.55, alvos = alvosDe(ctx, ev), apoio = hab.tipo !== 'dano';
+  const lams = Array.from({ length: 8 }, (_, k) => { const ang = (k / 8) * TAU; return { e: laminaEl(ctx, a.x, a.y, w), ang }; });
+  const orb = (t) => lams.forEach(({ e, ang }) => { const g = ang + t * 6; e.style.transform = `translate(${Math.cos(g) * a.w * 0.75}px,${Math.sin(g) * a.h * 0.32}px) rotate(${g * 57.3 + 90}deg)`; });
+  for (let t = 0; t < 1; t += 0.05) { orb(t); await ESP(22 * ctx.k); }
+  if (apoio) {
+    await Promise.all(lams.map(({ e }, k) => { const al = alvos[k % alvos.length]; if (!al) return null; const c = corpo(ctx, al.el); return e.animate([{ transform: e.style.transform }, { transform: `translate(${c.x - a.x}px,${c.y - a.y}px) rotate(${720 + k * 45}deg)` }], { duration: 420 * ctx.k, fill: 'forwards', easing: 'ease-out' }).finished.catch(() => {}); }));
+    for (const al of alvos) { const c = corpo(ctx, al.el); onda(M, c.x, c.pe, { cor: '#cbd5e1', r1: c.w, vida: 0.5 }); aplicar(ctx, M, al.el, al.r, { cura: true }); }
+  } else {
+    for (let k = 0; k < 8; k++) {
+      const al = alvos[k % alvos.length]; if (!al) break; const c = corpo(ctx, al.el), { e } = lams[k];
+      e.animate([{ transform: e.style.transform, opacity: 1 }, { transform: `translate(${c.x - a.x}px,${c.y - a.y}px) rotate(${Math.atan2(c.y - a.y, c.x - a.x) * 57.3}deg)`, opacity: 1 }], { duration: 160 * ctx.k, fill: 'forwards', easing: 'ease-in' });
+      await ESP(120 * ctx.k);
+      corte(M, c.x, c.y, { raio: c.w * 0.35, cor: '#e2e8f0', esp: 6, ang: R(-1.2, 1.2), vida: 0.22 }); rajada(M, c.x, c.y, { n: 8, forma: 'faisca', cor: '#f8fafc', tam: 3, v: 260, vida: 0.35 });
+      if (k >= 8 - alvos.length) { const r = al.r; aplicar(ctx, M, al.el, r, { forte: hab.cd >= 5, cor: '#e2e8f0' }); }
+    }
+    if (hab.cd >= 5) tremer(ctx, 10, 420);
+  }
+  await ESP(260 * ctx.k);
+  for (const { e } of lams) e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 * ctx.k, fill: 'forwards' }).finished.then(() => e.remove());
+  if (img && orig) setTimeout(() => img.setAttribute('src', orig), 300 * ctx.k);
+}
 const FX = {
+  oitoLaminas: fxOitoLaminas,
   // ===== Noctarn (trevas violeta) =====
   async mordida(ctx, M, A, ev) {
     const al = alvosDe(ctx, ev); if (!al.length) return; const T = al[0].el, a = corpo(ctx, A), dir = corpo(ctx, T).x > a.x ? 1 : -1;

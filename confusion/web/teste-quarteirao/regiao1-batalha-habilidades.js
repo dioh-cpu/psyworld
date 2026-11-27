@@ -74,6 +74,12 @@ export const KITS = {
     { id: 'noite_imaculada', nome: 'Noite Imaculada', icone: '🌙', tipo: 'apoio', alvo: 'aliados', cd: 6, elemento: 'trevas', efeitos: [ef('invencivel', 2)] },
   ],
   // Abyssar: valores configuráveis em ABYSSAR (recargas 1, 4 e 6; velocidade 2 turnos; pânico 3 turnos)
+  // Domador auxiliar: Manipulador das Oito Lâminas (aço). Controla 8 lâminas por telecinese.
+  'Manipulador das Oito Lâminas': [
+    { id: 'danca_oito_laminas', nome: 'Dança das Oito Lâminas', icone: '🗡️', tipo: 'dano', alvo: 'um', mult: 1.3, cd: 1, distancia: true, elemento: 'aco', efeitos: [ef('sangramento', 2, 0.6)] },
+    { id: 'sincronia_telecinetica', nome: 'Sincronia Telecinética', icone: '🌀', tipo: 'apoio', alvo: 'aliados', cd: 3, elemento: 'aco', efeitos: [ef('ataque_alto', 2), ef('veloz', 2)] },
+    { id: 'tempestade_oito_laminas', nome: 'Tempestade das Oito Lâminas', icone: '⚔️', tipo: 'dano', alvo: 'todos', mult: 1.7, cd: 5, distancia: true, elemento: 'aco', efeitos: [ef('sangramento', 3, 0.7)] },
+  ],
   Abyssar: [
     { id: 'facada', nome: 'Facada', icone: '🔪', tipo: 'dano', alvo: 'um', mult: 1.0, cd: 1, elemento: 'trevas', pctVidaMax: 0.10, limiteChefe: 4, efeitos: [{ id: 'sangramento', turnos: 3, chance: 0.5, valorMult: 2.0 }] },
     { id: 'perseguicao', nome: 'Perseguição', icone: '🏃', tipo: 'dano', alvo: 'aleatorio', golpes: 5, mult: 2.0, bonusVagaVazia: 0.2, reinicia: { fator: 0.5, max: 3 }, cd: 4, elemento: 'trevas', distancia: true, efeitosSi: [{ id: 'veloz', turnos: 2 }], efeitos: [] },
