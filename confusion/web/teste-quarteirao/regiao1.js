@@ -1127,7 +1127,7 @@ function iniciarBatalha(tipo, entidade) {
   batalhaAtiva = { tipo, entidade, hpJog, maxJog, atkJog: st.atk, defJog: st.def, nivelJog: st.nivel, hpIni: 1, maxIni: 1, nomeIni, regiao: regAtualNum };
   // Equipe (até 4) contra o inimigo e até 2 reforços na fila; a arena ocupa a tela inteira
   // formação da aba Equipes: cada Onírico na sua vaga, com o próprio nível e a arte do seu tier
-  const aliados = membrosFormacao(idle).map(({ m, vaga }) => ({ especie: m.especie, nivel: m.nivel || 1, bonus: bonusDoMembro(m), vaga, arte: arteDoIndividuo(m) }));
+  const aliados = membrosFormacao(idle).map(({ m, vaga }) => ({ uid: m.uid, especie: m.especie, nivel: m.nivel || 1, bonus: bonusDoMembro(m), vaga, arte: arteDoIndividuo(m) }));
   const raizDe = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
   const artes = {}; let inimigos; let inimigosDrop;
   if (ehBoss) {
@@ -1176,7 +1176,7 @@ function iniciarBatalha(tipo, entidade) {
     titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem',
     sub: ehBoss ? (ehR3Mais ? `Região ${regAtualNum}` : ehR2 ? 'Região 2 · Altos do Âmbar' : 'Campanha') : entidade.especie,
     arena: arenaUrl,
-    aliados, inimigos, artes, ritmo: 420, regiao: regAtualNum,
+    aliados, inimigos, artes, ritmo: 420, regiao: regAtualNum, save,
     onFim: (venceu, frac) => { if (batalhaAtiva) { batalhaAtiva.hpJog = Math.max(1, Math.round(batalhaAtiva.maxJog * (venceu ? Math.max(0.3, frac) : 0.5))); } encerrarBatalha(venceu); },
   });
 }
