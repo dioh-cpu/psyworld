@@ -79,6 +79,40 @@ class TestProcessarAnimacao(unittest.TestCase):
             self.assertTrue(val["ok"], f"Validação falhou: {val['erros']}")
             self.assertEqual(val["erros"], [])
 
+    def test_par_duas_vistas_sem_espelhar_esquerda(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cw_test_2v_") as td:
+            raiz = Path(td)
+            dir_lat = raiz / "in_lat"
+            dir_fc = raiz / "in_fc"
+            dir_lat.mkdir()
+            dir_fc.mkdir()
+
+            for i, dy in enumerate((0, -2, -2, 0), start=1):
+                # 2 vistas laterais (esquerda + direita) com detalhe diferente para provar que esquerda NÃO foi espelhada
+                im_lat = Image.new("RGB", (260, 160), (255, 0, 255))
+                dr = ImageDraw.Draw(im_lat)
+                dr.rectangle([40, 50 + dy, 95, 140], fill=(160, 90, 45))
+                dr.rectangle([165, 50 + dy, 220, 140], fill=(160, 90, 45))
+                dr.rectangle([195, 65 + dy, 215, 85 + dy], fill=(240, 180, 40))  # marca só na direita
+                im_lat.save(dir_lat / f"f{i:02d}.png")
+
+                im_fc = Image.new("RGB", (260, 160), (255, 0, 255))
+                dr2 = ImageDraw.Draw(im_fc)
+                dr2.rectangle([40, 50 + dy, 95, 140], fill=(150, 85, 45))
+                dr2.rectangle([165, 50 + dy, 220, 140], fill=(150, 85, 45))
+                im_fc.save(dir_fc / f"f{i:02d}.png")
+
+            saida = raiz / "animacoes"
+            MOD.processar_animacao(dir_lat, "par2v", "idle", saida_raiz=saida, fps=8, tamanho=128, vistas=("esquerda", "direita"))
+            meta = MOD.processar_animacao(dir_fc, "par2v", "idle", saida_raiz=saida, fps=8, tamanho=128, vistas=("frente", "costas"))
+            self.assertEqual(meta["acoes"]["idle"]["esquerda"]["origem"], "direta")
+            self.assertEqual(meta["acoes"]["idle"]["direita"]["origem"], "direta")
+            self.assertEqual(meta["acoes"]["idle"]["frente"]["origem"], "direta")
+            self.assertEqual(meta["acoes"]["idle"]["costas"]["origem"], "direta")
+
+            val = MOD.validar_pasta_especie(saida / "par2v")
+            self.assertTrue(val["ok"], f"Validação 2 vistas falhou: {val['erros']}")
+
 
 if __name__ == "__main__":
     unittest.main()
