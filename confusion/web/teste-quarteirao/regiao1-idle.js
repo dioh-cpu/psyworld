@@ -62,6 +62,7 @@ import { missoesDe } from './regiao1-missoes-regras.js';
 import { torresDe } from './regiao1-torres-regras.js';
 import { calaboucosDe } from './regiao1-calaboucos-regras.js';
 import { reliquiasDe, armasUnicasDe } from './regiao1-reliquias-regras.js';
+import { domadoresDe } from './regiao1-domadores-regras.js';
 
 function garantirBlocosProgressao(save, agoraMs) {
   energiaDe(save, agoraMs);
@@ -72,6 +73,7 @@ function garantirBlocosProgressao(save, agoraMs) {
   calaboucosDe(save);
   reliquiasDe(save);
   armasUnicasDe(save);
+  domadoresDe(save);
 }
 
 const PASS_LEVELS = PASSE_CFG.niveis;
