@@ -236,3 +236,48 @@ export function projetil(M, x0, y0, x1, y1, o = {}) {
 // Item livre (desenho próprio)
 export const livre = (M, o) => M.add(o);
 export const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---------- Recortes do Flow (folhas 4×4 em tons de cinza, fundo preto) ----------
+// Extraídos de vídeos mestres do Flow; tingidos pela cor do elemento e somados à cena (blend 'lighter'), então não precisam de alfa.
+// pe: altura do ponto de apoio na célula (0 = topo, 1 = base). Uma folha tingida fica em cache por cor (menor no celular).
+export const RECORTES = {
+  explosao: { arq: 'explosao.webp', pe: 0.5 },
+  erupcao: { arq: 'erupcao.webp', pe: 0.85 },
+};
+const BASE_RECORTES = new URL('../../../assets/confusion/interface/vfx/recortes/', import.meta.url).href;
+const imgsRecorte = {}, tingidos = new Map();
+function imgRecorte(nome) {
+  let im = imgsRecorte[nome];
+  if (!im) { im = new Image(); im.decoding = 'async'; im.src = BASE_RECORTES + RECORTES[nome].arq; imgsRecorte[nome] = im; }
+  return im.complete && im.naturalWidth ? im : null;
+}
+export const precarregarRecortes = () => Object.keys(RECORTES).forEach(imgRecorte);
+// A camada de efeitos fica sobre a cena (canvas próprio): o brilho do recorte vira alfa, a cor vem do elemento e o núcleo clareia.
+const cinzas = {};
+function tingido(nome, cor) {
+  const ch = `${nome}|${cor}`; if (tingidos.has(ch)) return tingidos.get(ch);
+  const im = imgRecorte(nome); if (!im) return null;
+  const movel = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches, L = movel ? 512 : 1024;
+  const c = document.createElement('canvas'); c.width = c.height = L; const g = c.getContext('2d', { willReadFrequently: true });
+  let cz = cinzas[`${nome}|${L}`];
+  if (!cz) { g.drawImage(im, 0, 0, L, L); const d = g.getImageData(0, 0, L, L).data; cz = new Uint8Array(L * L); for (let i = 0; i < cz.length; i++) cz[i] = d[i * 4]; cinzas[`${nome}|${L}`] = cz; }
+  const n = parseInt(cor.slice(1).padEnd(6, '0'), 16), r = (n >> 16) & 255, gr = (n >> 8) & 255, b = n & 255;
+  const out = g.createImageData(L, L), o = out.data;
+  for (let i = 0; i < cz.length; i++) { const v = cz[i] / 255, w = v * v * 0.75, j = i * 4; o[j] = r + (255 - r) * w; o[j + 1] = gr + (255 - gr) * w; o[j + 2] = b + (255 - b) * w; o[j + 3] = Math.min(255, cz[i] * 1.15); }
+  g.putImageData(out, 0, 0);
+  if (tingidos.size > 14) tingidos.delete(tingidos.keys().next().value);
+  tingidos.set(ch, c); return c;
+}
+// Toca uma folha: tam = largura na tela; vida em s; fadeIn/fadeOut em fração da vida; ini/fim = quadros usados (0–16).
+export function recorte(M, nome, x, y, o = {}) {
+  const def = RECORTES[nome]; if (!def) return null;
+  const ini = o.ini ?? 0, fim = o.fim ?? 16, tam = o.tam ?? 200, fo = o.fadeOut ?? 0.25, fi = o.fadeIn ?? 0, pe = o.pe ?? def.pe;
+  return M.add({ vida: o.vida ?? 0.8, atraso: o.atraso, chao: Boolean(o.chao), draw(g, u) {
+    const f = tingido(nome, o.cor || '#ffffff'); if (!f) return;
+    const q = Math.min(fim - 1, ini + Math.floor(u * (fim - ini))), cel = f.width / 4;
+    g.globalAlpha = (o.alfa ?? 1) * Math.min(1, fi ? u / fi : 1, fo ? (1 - u) / fo : 1);
+    g.translate(x, y); if (o.rot) g.rotate(o.rot); if (o.espelho) g.scale(-1, 1);
+    const h = tam * (o.achata ?? 1);
+    g.drawImage(f, (q % 4) * cel, Math.floor(q / 4) * cel, cel, cel, -tam / 2, -h * pe, tam, h);
+  } });
+}
