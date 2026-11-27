@@ -444,9 +444,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           <span><b>${esc(nomeJogador)}</b><small>Domador · Nv.${nvDomador}</small></span>
         </button>
         <div class="ref-moedas">
-          <span class="energia-pill" data-energia-refugio="1">${energiaTextoHtml(s)}</span>
-          <span class="ref-pill">🪙 ${gold}</span>
-          <span class="ref-pill">💎 ${diamantes}</span>
+          <span class="energia-pill" data-energia-refugio="1" title="Energia usada na Campanha Mini, Torres e Calabouços (regenera automaticamente)">${energiaTextoHtml(s)}</span>
+          <span class="ref-pill" title="Ouro: moeda para evoluções, reforço de relíquias e compras na loja"><img class="kit-rec-ico" src="${KIT_V2('recursos/ouro.png')}" alt="Ouro">${gold}</span>
+          <span class="ref-pill" title="Diamantes: moeda premium para Passe, invocações e bônus especiais"><img class="kit-rec-ico" src="${KIT_V2('recursos/diamante.png')}" alt="Diamantes">${diamantes}</span>
           <button class="ref-btn-ico" data-desc-pop="${descPop === 'atalhos' ? '' : 'atalhos'}" title="Atalhos" aria-label="Atalhos"><img src="${DESCANSO_V1('icones/atalhos.png')}" alt=""></button>
         </div>
       </div>
@@ -507,9 +507,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           <h4>Invocação</h4>
         </div>
         <div class="ref-moedas">
-          <span class="ref-pill">🪙 ${gold}</span>
-          <span class="ref-pill">💎 ${diamantes}</span>
-          <span class="ref-pill"><img class="exp-ico" src="${INV_V1('tickets/adventurer.png')}" alt="">${e.tickets}</span>
+          <span class="ref-pill" title="Ouro: evoluções, reforço de relíquias e compras"><img class="kit-rec-ico" src="${KIT_V2('recursos/ouro.png')}" alt="Ouro">${gold}</span>
+          <span class="ref-pill" title="Diamantes: Passe Premium, invocações e bônus especiais"><img class="kit-rec-ico" src="${KIT_V2('recursos/diamante.png')}" alt="Diamantes">${diamantes}</span>
+          <span class="ref-pill" title="Tickets do Banner Permanente Adventurer"><img class="exp-ico" src="${INV_V1('tickets/adventurer.png')}" alt="Tickets">${e.tickets}</span>
           <span class="ref-pill" title="Invocações grátis: +${gInv.porDia} por dia, acumulam até ${gInv.max}">🎁 ${gInv.saldo}/${gInv.max}${gInv.proximaEmMs != null ? ` · +${gInv.porDia} em ${Math.floor(gInv.proximaEmMs / 3600000)}h${String(Math.floor(gInv.proximaEmMs / 60000) % 60).padStart(2, '0')}` : ' · cheio'}</span>
           <button class="btn-sec" data-inv-capa="1" style="padding:4px 8px;font-size:11px">${verCapaInv ? 'Ver Elenco' : 'Ver Capa'}</button>
         </div>

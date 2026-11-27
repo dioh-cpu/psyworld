@@ -934,7 +934,7 @@ export function criarControladorIdleUI(ctx) {
       b.onclick = () => { trilhaFaixa = Number(b.dataset.faixa); trilhaScrollSalvo = 0; renderizarTrilhaPasse(save); };
     });
     const [ini, fim] = faixas[trilhaFaixa] || [1, 25];
-    const corEst = { coletado: '#22c55e', pronto: '#fbbf24', liberado: '#60a5fa', bloqueado: '#94a3b8' };
+    const corEst = { coletado: '#4ade80', pronto: '#fbbf24', liberado: '#7dd3fc', bloqueado: '#cbd5e1' };
     const bgEst = (it) => (it.nivel === 100
       ? MV1_P('passe/recompensa-grande-premio.png')
       : it.estado === 'coletado'
@@ -948,13 +948,31 @@ export function criarControladorIdleUI(ctx) {
       liberado: 'Disponível',
       bloqueado: 'Calendário',
     };
+    const premiumAtivo = Boolean(save.idle?.passe?.premium || save.passe?.premium);
+    const premioPremiumTexto = (it) => {
+      if (it.premioPremium?.texto) return it.premioPremium.texto;
+      if (it.nivel === 100) return '🥚 Ovo T5 Dinossauro + T5 Permanente';
+      if (it.nivel === 10) return '🖼️ Moldura Âmbar Fóssil';
+      if (it.nivel === 30) return '🖼️ Moldura Ossada Antiga';
+      if (it.nivel === 60) return '🖼️ Moldura Pegadas no Barro';
+      if (it.nivel % 10 === 0) return '🎟️ +4 Tickets Especiais';
+      if (it.premio?.diamantes) return `💎 ${it.premio.diamantes * 2} (2×)`;
+      return '💎 2× + Materiais';
+    };
     trilhaEl.innerHTML = itens.slice(ini - 1, fim).map((it) => {
       const arte = artePremioPasse(it.premio);
-      return `<div class="mv1-passe-card" style="background-image:url('${bgEst(it)}')">
-        <b>Nv.${it.nivel}</b>
-        ${arte ? `<img class="prem" src="${arte}" alt="">` : ''}
-        <div style="min-height:24px;line-height:1.25">${it.premio.texto}</div>
-        <span style="color:${corEst[it.estado]};font-size:10px">${it.estado === 'bloqueado' ? `<img class="mv1-ico" src="${MV1_P('comum/icone-cadeado.png')}" alt=""> Dia ${it.diaAbertura}` : rotEst[it.estado]}</span>
+      return `<div class="passe-col-dupla">
+        <div class="mv1-passe-card" style="background-image:url('${bgEst(it)}')">
+          <span class="mv1-passe-tag gratis">Grátis · Nv.${it.nivel}</span>
+          ${arte ? `<img class="prem" src="${arte}" alt="">` : ''}
+          <div style="min-height:24px;line-height:1.25">${it.premio.texto}</div>
+          <span style="color:${corEst[it.estado]};font-size:10px">${it.estado === 'bloqueado' ? `<img class="mv1-ico" src="${MV1_P('comum/icone-cadeado.png')}" alt=""> Dia ${it.diaAbertura}` : rotEst[it.estado]}</span>
+        </div>
+        <div class="mv1-passe-card premium ${premiumAtivo ? '' : 'bloq'}" title="${premiumAtivo ? 'Trilha Premium ativa' : 'Passe Premium Dinossauros (5.000 💎)'}">
+          <span class="mv1-passe-tag prem">👑 Premium</span>
+          <div style="min-height:30px;line-height:1.25;margin:4px 0;color:#fde68a">${premioPremiumTexto(it)}</div>
+          <span style="color:${premiumAtivo ? '#fde68a' : '#cbd5e1'};font-size:10px">${premiumAtivo ? (it.estado === 'coletado' ? '✓ Liberado' : rotEst[it.estado]) : '🔒 5.000 💎'}</span>
+        </div>
       </div>`;
     }).join('');
     trilhaEl.scrollLeft = trilhaScrollSalvo;
