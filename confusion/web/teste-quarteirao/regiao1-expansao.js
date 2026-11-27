@@ -15,6 +15,7 @@ import { revelarInvocacao } from './regiao1-revelacao.js';
 import { BOSSES_REGIAO1 } from './regiao1-estado.js';
 import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, concluirRevancheChefe, previsaoCraftChefe, craftarChefe, bonusCategoriaPoder } from './regiao1-revanche-regras.js';
 import { energiaDe, usarPocaoEnergia, ENERGIA_CFG, essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
+import { renderizarPainelMissoes, tratarCliqueMissoes, temAvisoMissoes } from './regiao1-missoes-ui.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -270,13 +271,14 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const $ = (q) => modal.querySelector(q);
 
   // ---------- estado de tela ----------
-  let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null, descPop = null, verCapaInv = false; let cap = 'cap1';
+  let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null, descPop = null, verCapaInv = false, capParalela = 1; let cap = 'cap1';
   const PAINEIS = {
     descanso: { titulo: '🏕️ Refúgio do Farol', abas: ['Refúgio'], tut: null },
     campanhaMini: { titulo: '🗺️ Campanha Mini', abas: ['Campanha Mini'], tut: null, mostraEnergia: true },
     torres: { titulo: '🗼 Torres', abas: ['Torres Elementais', 'Torres Únicas'], tut: null, mostraEnergia: true },
     calaboucos: { titulo: '🏰 Calabouços', abas: ['Calabouços'], tut: null, mostraEnergia: true },
     reliquias: { titulo: '💎 Relíquias & Essências', abas: ['Relíquias', 'Essências'], tut: null, mostraEnergia: true },
+    missoes: { titulo: '📜 Missões', abas: ['Marcos', 'Paralelas'], tut: null, mostraEnergia: true },
     equipe: { titulo: '⚔️ Equipe', abas: ['Formação & Coleção'], tut: null },
     oniricos: { titulo: '🎫 Invocação', abas: ['Invocação'], tut: 'banner' },
     cacadas: { titulo: '🏹 Caçadas & Chefes', abas: ['Caçadas', 'Calabouço', 'Chefes'], tut: 'cacadas' },
@@ -409,7 +411,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         <button data-desc-ir="torres"><img src="${DESCANSO_V1('icones/torre.png')}" alt=""><span>Torres</span></button>
         <button data-desc-ir="calaboucos"><img src="${DESCANSO_V1('icones/calabouco.png')}" alt=""><span>Calabouços</span></button>
         <button data-desc-ir="reliquias"><img src="${DESCANSO_V1('icones/mochila.png')}" alt=""><span>Relíquias</span></button>
-        <button data-desc-ir="missoes"><img src="${DESCANSO_V1('icones/missoes.png')}" alt=""><span>Missões</span></button>
+        <button data-desc-ir="missoes"><img src="${DESCANSO_V1('icones/missoes.png')}" alt=""><span>Missões${temAvisoMissoes(save()) ? ' ●' : ''}</span></button>
         <button data-desc-ir="eventos"><img src="${DESCANSO_V1('icones/eventos.png')}" alt=""><span>Eventos</span></button>
       </div>
       <button class="ref-passe" data-desc-ir="passe">
@@ -928,6 +930,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     $('#exp-rever').hidden = ehCena || !(vis && exp().tut[tid] && revendo !== tid); $('#exp-rever').dataset.tut = tid || '';
     let h = tid ? cartaoTut(tid) : '';
     if (painel === 'descanso') h += abaDescanso();
+    if (painel === 'missoes') h += renderizarPainelMissoes(save(), aba, { capParalela });
     if (painel === 'campanhaMini') h += `<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Energia: <b>6</b> (normal), <b>8</b> (elite) e <b>10</b> (chefe).</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
     if (painel === 'torres') {
       const lista = aba === 0
@@ -984,6 +987,15 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       render();
       return;
     }
+    const aliadosAtuais = () => R.membrosFormacao(save().idle).map(({ m: x, vaga }) => ({
+      especie: x.especie, nivel: x.nivel || 1, vaga, arte: x.arte || arteDoIndividuo(x), bonus: bonusCombateMembro(x),
+    }));
+    if (tratarCliqueMissoes(d, {
+      save: save(), salvar, mostrarToast, render, tela, batalhaBloqueando,
+      aliadosDoSave: aliadosAtuais,
+      setCapParalela: (n) => { capParalela = n; },
+      capParalela,
+    })) return;
     if (t.id === 'exp-fechar') {
       if (painel !== 'descanso' && origemPainelExp === 'descanso') {
         painel = 'descanso'; aba = 0; fichaUid = null; selEq = null; descPop = null; verCapaInv = false;
@@ -1019,11 +1031,6 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       if (dest === 'menu') { window.regiao1?.idleUI?.abrirMenu?.(); return; }
       if (dest === 'eventos') {
         if (window.regiaoHW?.liberado?.()) window.regiaoHW.abrir(0);
-        else window.regiao1?.idleUI?.abrirTemporada?.();
-        return;
-      }
-      if (dest === 'missoes') {
-        if (window.regiao1?.idleUI?.abrirDiario) window.regiao1.idleUI.abrirDiario();
         else window.regiao1?.idleUI?.abrirTemporada?.();
         return;
       }
