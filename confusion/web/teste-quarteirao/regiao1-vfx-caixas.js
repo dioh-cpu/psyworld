@@ -87,6 +87,7 @@ export const CAIXAS_CLIPES = {
   'flow-lote-7/entrada-vento.mp4': [0.294, 0.078, 0.706, 0.900],
   'flow-lote-7/fogo.mp4': [0.212, 0.100, 0.787, 0.878],
   'flow-lote-7/terra.mp4': [0.225, 0.167, 0.787, 0.867],
+  'flow-lote-7/enxame-loop.mp4': [0.244, 0.033, 0.731, 0.744],
   'flow-lote-7/trevas-estilhaco.mp4': [0.256, 0.133, 0.750, 0.878],
 };
 export const caixaDoClipe = (src) => { const m = /vfx\/(flow-lote-\d+\/[^?#]+)$/.exec(src || ''); return (m && CAIXAS_CLIPES[m[1]]) || [0.2, 0.1, 0.8, 0.9]; };
