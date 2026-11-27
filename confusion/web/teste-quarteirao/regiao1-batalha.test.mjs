@@ -59,3 +59,35 @@ test('área atinge todos; em recarga, a habilidade vira ataque básico', () => {
   M.executar(b, { tipo: 'habilidade', idx: 1 }, rng); assert.equal(b.evento.alvos.length, 3); assert.ok(b.evento.area);
   const b2 = M.criarBatalha([u('a0', 'Noctarn', 'a', 30)], [u('i0', 'Brotavel', 'i', 5)]); M.atorAtual(b2); b2.aliados[0].cd[2] = 3; M.executar(b2, { tipo: 'habilidade', idx: 2 }, rng); assert.equal(b2.evento.tipo, 'atacar');
 });
+
+// Expansão 1 · kits das linhagens dos Reinos 03–12
+test('reinos 03–12: 50 linhagens, 5 por reino, cada uma com kit próprio de 3 habilidades e ids únicos', async () => {
+  const H = await import('./regiao1-batalha-habilidades.js');
+  const { LINHAGENS_REINOS } = await import('./regiao1-kits-reinos.js');
+  assert.equal(LINHAGENS_REINOS.length, 50);
+  for (let r = 3; r <= 12; r++) {
+    const doReino = LINHAGENS_REINOS.filter((l) => l.reino === r);
+    assert.equal(doReino.length, 5, `reino ${r}`);
+    assert.ok(doReino.some((l) => l.classe === 'tanque') && doReino.some((l) => l.classe === 'suporte'), `reino ${r} tem tanque e suporte`);
+  }
+  const ids = new Set(Object.values(H.KITS).flat().map((h) => h.id));
+  for (const l of LINHAGENS_REINOS) {
+    const kit = H.kitDe(l.nome, 'ataque', 'neutro');
+    assert.equal(kit, H.KITS_REINOS[l.nome]);
+    assert.deepEqual(kit.map((h) => h.cd), [1, 3, 5]);
+    for (const h of kit) {
+      assert.match(h.id, /^[a-z0-9_]+$/);
+      assert.ok(!ids.has(h.id), `id repetido: ${h.id}`); ids.add(h.id);
+      assert.equal(h.elemento, l.elemento);
+      for (const e of h.efeitos) assert.ok(H.EFEITOS[e.id], `${h.id}: efeito ${e.id}`);
+    }
+    assert.equal(H.PAPEL_PADRAO[l.nome], { tanque: 'defesa', suporte: 'suporte' }[l.classe] || 'ataque');
+  }
+});
+test('reinos 03–12: linhagem nova entra em batalha com o kit e o papel da classe', () => {
+  const b = M.criarBatalha([u('a', 'Pedrapica', 'a', 30), u('b', 'Corujalva', 'a', 30)], [u('x', 'Magmora', 'i', 30), u('y', 'Mantaré', 'i', 30)]);
+  assert.equal(b.aliados[0].papel, 'defesa'); assert.equal(b.aliados[0].kit[0].id, 'bico_de_pedra');
+  assert.equal(b.inimigos[0].kit[2].id, 'erupcao_da_caldeira');
+  rodarAte(b, () => false);
+  assert.ok(b.fim);
+});
