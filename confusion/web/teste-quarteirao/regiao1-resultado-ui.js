@@ -1,22 +1,23 @@
 // Tela de resultado de batalha compartilhada (Campanha Mini, Torres, Calabouços e Regiões)
 // Mostra XP por Onírico da formação, itens e relíquias com moldura de raridade e botão Repetir quando permitido.
 import { membrosFormacao } from './regiao1-exp-regras.js';
-import { PARTES_RELIQUIA } from './regiao1-reliquias-regras.js';
+import { PARTES_RELIQUIA, fontesDeReliquia, ONDE_CONSEGUIR_RELIQUIAS } from './regiao1-reliquias-regras.js';
+import { ONDE_CONSEGUIR_ESSENCIAS, ONDE_CONSEGUIR_FRAGMENTOS } from './regiao1-regras-sonho.js';
 import { NOME_ELEMENTO } from '../core.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 const COR_RAR = {
-  comum: '#94a3b8',
+  comum: '#cbd5e1',
   incomum: '#4ade80',
   rara: '#38bdf8',
   epica: '#c084fc',
-  lendaria: '#facc15',
+  lendaria: '#fde047',
 };
 
 const CSS_RES = `
-#res-batalha-overlay{position:fixed;inset:0;background:rgba(2,6,23,.84);z-index:80;display:flex;align-items:center;justify-content:center;padding:10px}
-.rb-card{width:min(490px,96vw);max-height:92vh;overflow-y:auto;background:linear-gradient(180deg,#0f2242,#09152b);border:2px solid #38bdf8;border-radius:16px;padding:14px 16px;color:#e2e8f0;display:flex;flex-direction:column;gap:10px;box-shadow:0 18px 44px rgba(0,0,0,.68);text-align:center}
+#res-batalha-overlay{position:fixed;inset:0;background:rgba(2,6,23,.84);z-index:80;display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top,0px)) calc(10px + env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) calc(10px + env(safe-area-inset-left,0px))}
+.rb-card{width:min(510px,96vw);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#1a1230,#0c0818);border:2px solid #fde68a;border-radius:16px;padding:14px 16px;color:#fff3e7;display:flex;flex-direction:column;gap:10px;box-shadow:0 18px 44px rgba(0,0,0,.68);text-align:center}
 .rb-card.derrota{border-color:#f87171}
 .rb-estrelas{display:flex;justify-content:center;gap:10px;font-size:32px;line-height:1}
 .rb-est{opacity:.22;transform:scale(.65);filter:grayscale(1)}
@@ -88,15 +89,37 @@ export function mostrarResultadoBatalha(op = {}) {
   const reliquias = Array.isArray(premios.reliquias) ? premios.reliquias : [];
   const relHtml = reliquias.length
     ? `<div class="rb-rel-grid">${reliquias.map((r) => {
-        const cor = COR_RAR[r.raridade] || '#94a3b8';
+        const cor = COR_RAR[r.raridade] || '#cbd5e1';
         const parte = PARTES_RELIQUIA[r.parte]?.nome || r.parte || 'Relíquia';
         const elNome = NOME_ELEMENTO[r.elemento] || r.elemento || '';
-        return `<div class="rb-rel" style="--cor-rar:${cor}">
+        const fontesR = fontesDeReliquia(r.conjunto || r.parte || 'coroa');
+        const ondeR = fontesR.length ? fontesR[0].local : 'Calabouços e Campanha Mini';
+        return `<div class="rb-rel" style="--cor-rar:${cor}" title="${esc(fontesR.map((f) => `${f.modo}: ${f.local}`).join(' · '))}">
           <div class="rb-rel-rar">${esc(r.raridade || 'comum')} · ${esc(elNome)}</div>
           <div><b>🏺 ${esc(parte)}</b></div>
-          <div style="color:#cbd5e1;font-size:10.5px">Conjunto: ${esc(r.conjunto || '—')}</div>
+          <div style="color:#d6dbe4;font-size:10.5px">Conjunto: ${esc(r.conjunto || '—')}</div>
+          <div style="color:#7dd3fc;font-size:10px;margin-top:2px">🗺️ ${esc(ondeR)}</div>
         </div>`;
       }).join('')}</div>`
+    : '';
+
+  const dicasFontes = [];
+  if (premios.essencia || premios.essencias?.menor || premios.essencias?.media || premios.essencias?.maior) {
+    const parEss = premios.essencia?.par || premios.parEssencia;
+    const fEss = parEss && ONDE_CONSEGUIR_ESSENCIAS[parEss]?.fontes?.[0];
+    dicasFontes.push(`💠 Essências: ${fEss ? `${fEss.modo} (${fEss.local})` : 'Torres Elementais (1–50) e Campanha Mini'}`);
+  }
+  if (premios.fragmentoSonho || premios.fragmentosSonho) {
+    const elFrag = String(premios.fragmentoSonho?.elemento || '').toLowerCase();
+    const fFrag = elFrag && ONDE_CONSEGUIR_FRAGMENTOS[elFrag]?.fontes?.[0];
+    dicasFontes.push(`✨ Fragmentos: ${fFrag ? `${fFrag.modo} (${fFrag.local})` : 'Combate, Idle, Campanha Mini e Torres Elementais'}`);
+  }
+  if (premios.fragmentoArma || premios.poUnico) {
+    const fArma = ONDE_CONSEGUIR_RELIQUIAS?.armaUnica?.fontes?.[0];
+    dicasFontes.push(`⚔️ Arma Única: ${fArma ? `${fArma.modo} (${fArma.local})` : 'Torres Únicas (Ascensão, Legado, Soberania)'}`);
+  }
+  const fontesResumoHtml = dicasFontes.length
+    ? `<div style="margin-top:6px;padding-top:5px;border-top:1px solid rgba(255,255,255,.12);font-size:10.5px;color:#d6dbe4;line-height:1.4"><b style="color:#7dd3fc">🗺️ Onde conseguir mais:</b> ${dicasFontes.map((x) => esc(x)).join(' · ')}</div>`
     : '';
 
   // XP por Onírico da formação
@@ -122,9 +145,9 @@ export function mostrarResultadoBatalha(op = {}) {
 
   const condsHtml = op.detalhesEstrelas && !op.rapida
     ? `<div class="rb-sec" style="font-size:11.5px">
-        <div style="color:${op.detalhesEstrelas.estrela1 ? '#fde047' : '#94a3b8'}">${op.detalhesEstrelas.estrela1 ? '✓' : '✗'} Vencer a batalha</div>
-        <div style="color:${op.detalhesEstrelas.estrela2 ? '#fde047' : '#94a3b8'}">${op.detalhesEstrelas.estrela2 ? '✓' : '✗'} Todos os aliados vivos</div>
-        <div style="color:${op.detalhesEstrelas.estrela3 ? '#fde047' : '#94a3b8'}">${op.detalhesEstrelas.estrela3 ? '✓' : '✗'} ${esc(op.condicaoEstrela3Texto || '')}</div>
+        <div style="color:${op.detalhesEstrelas.estrela1 ? '#fde047' : '#d6dbe4'}">${op.detalhesEstrelas.estrela1 ? '✓' : '✗'} Vencer a batalha</div>
+        <div style="color:${op.detalhesEstrelas.estrela2 ? '#fde047' : '#d6dbe4'}">${op.detalhesEstrelas.estrela2 ? '✓' : '✗'} Todos os aliados vivos</div>
+        <div style="color:${op.detalhesEstrelas.estrela3 ? '#fde047' : '#d6dbe4'}">${op.detalhesEstrelas.estrela3 ? '✓' : '✗'} ${esc(op.condicaoEstrela3Texto || '')}</div>
       </div>`
     : '';
 
@@ -139,8 +162,9 @@ export function mostrarResultadoBatalha(op = {}) {
     ${xpHtml}
     <div class="rb-sec">
       <div class="rb-sec-tit">🎁 Recompensas &amp; Relíquias</div>
-      <div class="rb-premios">${chips.length ? chips.map((c) => `<span class="rb-chip">${esc(c)}</span>`).join('') : '<span style="font-size:11.5px;color:#94a3b8">Sem recompensas extras.</span>'}</div>
+      <div class="rb-premios">${chips.length ? chips.map((c) => `<span class="rb-chip">${esc(c)}</span>`).join('') : '<span style="font-size:11.5px;color:#d6dbe4">Sem recompensas extras.</span>'}</div>
       ${relHtml}
+      ${fontesResumoHtml}
     </div>
     <div class="rb-bts">
       ${op.podeProxima ? `<button class="rb-btn pri" data-rb-prox="1">${esc(op.rotuloProxima || 'Próxima →')}</button>` : ''}

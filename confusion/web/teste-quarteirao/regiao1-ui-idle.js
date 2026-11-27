@@ -45,7 +45,7 @@ import {
   resumoEventosAtuais,
   registrarLogIdle,
 } from './regiao1-idle.js';
-import { fragmentosSonhoDe } from './regiao1-regras-sonho.js';
+import { fragmentosSonhoDe, ONDE_CONSEGUIR_FRAGMENTOS } from './regiao1-regras-sonho.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { CHEFES_REVANCHE_CATALOGO, saldoFragmentosChefe } from './regiao1-revanche-regras.js';
 import { revelarOvo, mostrarRecompensas } from './regiao1-revelacao.js';
@@ -749,14 +749,19 @@ export function criarControladorIdleUI(ctx) {
       const totalSonho = Object.values(fragsSonho).reduce((a, b) => a + (Number(b) || 0), 0);
       const sonhoHtml = Object.entries(fragsSonho).map(([el, qtd]) => {
         const ic = MV1(`ficha/sonho-${slugSonho(el)}.png`);
-        return `<button type="button" class="mv1-slot" data-item-nome="Fragmento de Sonho (${el})" data-item-cat="Evolução" data-item-qtd="${qtd}" data-item-ic="${ic}" data-item-desc="Evolui Oníricos do elemento ${el} na Ficha: 10 (Base→2ª forma) e 30 (2ª→3ª forma).">
+        const fontes = ONDE_CONSEGUIR_FRAGMENTOS[el]?.fontes || [];
+        const ondeTxt = fontes.length
+          ? ` Onde conseguir: ${fontes.map((f) => `${f.modo} (${f.local})`).join(' · ')}.`
+          : '';
+        const descCompleta = `Evolui Oníricos do elemento ${NOME_ELEMENTO[el] || el} na Ficha: 10 (Base→2ª forma) e 30 (2ª→3ª forma).${ondeTxt}`;
+        return `<button type="button" class="mv1-slot" title="${descCompleta.replace(/"/g, '&quot;')}" data-item-nome="Fragmento de Sonho (${NOME_ELEMENTO[el] || el})" data-item-cat="Evolução" data-item-qtd="${qtd}" data-item-ic="${ic}" data-item-desc="${descCompleta.replace(/"/g, '&quot;')}">
           <img src="${ic}" alt="${el}" onerror="this.src='${MV1('ficha/sonho-neutro.png')}'">
           <b>${NOME_ELEMENTO[el] || el}</b>
-          <span style="color:#c084fc">${qtd}</span>
+          <span style="color:#d8b4fe">${qtd}</span>
         </button>`;
       }).join('');
       fragEl.innerHTML = `
-        <div class="sub" style="margin-bottom:6px">Total: <b>${totalSonho}</b> fragmentos · Toque em um item para ver detalhes de uso.</div>
+        <div class="sub" style="margin-bottom:6px">Total: <b>${totalSonho}</b> fragmentos · Toque em um fragmento para ver uso e <b>onde conseguir</b>.</div>
         <div class="mv1-grade">${sonhoHtml}</div>
       `;
       fragEl.querySelectorAll('.mv1-slot').forEach((btn) => {
