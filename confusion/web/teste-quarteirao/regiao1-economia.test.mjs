@@ -11,9 +11,12 @@ import {
 } from './regiao1-regras-sonho.js';
 import {
   TABELA_ECONOMIA_MODOS,
+  METAS_ECONOMIA,
   resumoEconomiaDiaria,
   estimarDiasEvolucao,
+  auditarMetasEconomia,
 } from './regiao1-economia-regras.js';
+import { iniciarAndarTorreElemental } from './regiao1-torres-regras.js';
 import { criarEstadoInicial } from './regiao1-estado.js';
 import { garantirEstadoIdle } from './regiao1-idle.js';
 import './regiao1-missoes-regras.js';
@@ -68,20 +71,29 @@ test('Evolução exige Essências do elemento (1→2: 20m+5méd; 2→3: 30méd+1
   assert.equal(s.idle.missoes.progresso.evolucoes, 2);
 });
 
-test('Tabela de Economia Diária: breakdown por modo para casual vs ativo', () => {
-  assert.ok(TABELA_ECONOMIA_MODOS.length >= 6);
+test('Tabela de Economia Diária revisada: orçamento de energia, metas Casual vs Ativo e 1ª vitória da Torre sem gasto de energia', () => {
+  assert.ok(TABELA_ECONOMIA_MODOS.length >= 7);
+  const s = novoSave();
+  const iniTorre = iniciarAndarTorreElemental(s, 'chama', 1, { agoraMs: 40_000_000 });
+  assert.equal(iniTorre.ok, true);
+  assert.equal(iniTorre.custoEnergia, 0);
+  assert.equal(iniTorre.energiaRestante, 120);
+
   const casual = resumoEconomiaDiaria('casual');
   const ativo = resumoEconomiaDiaria('ativo');
-
-  assert.equal(casual.diamantesDia, 130);
-  assert.equal(ativo.diamantesDia, 250);
-  assert.ok(ativo.ouroDia > casual.ouroDia);
-  assert.ok(ativo.ticketsPermanentesDia > casual.ticketsPermanentesDia);
-  assert.ok(ativo.ticketsSemanaisDia > casual.ticketsSemanaisDia);
+  assert.ok(casual.energiaDia <= METAS_ECONOMIA.casual.energiaMax);
+  assert.ok(ativo.energiaDia <= METAS_ECONOMIA.ativo.energiaMax);
+  assert.equal(casual.diamantesDia, 135);
+  assert.equal(ativo.diamantesDia, 260);
   assert.ok(ativo.invocacoesEquivalentesSemana > casual.invocacoesEquivalentesSemana);
 
   const diasCas = estimarDiasEvolucao('casual');
   const diasAtv = estimarDiasEvolucao('ativo');
   assert.ok(diasAtv.dias1Para2 <= diasCas.dias1Para2);
   assert.ok(diasAtv.dias2Para3 < diasCas.dias2Para3);
+
+  const aud = auditarMetasEconomia();
+  assert.equal(aud.ok, true);
+  assert.equal(aud.resultados.casual.passou, true);
+  assert.equal(aud.resultados.ativo.passou, true);
 });
