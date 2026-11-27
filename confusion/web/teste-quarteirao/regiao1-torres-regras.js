@@ -292,9 +292,18 @@ export function iniciarAndarTorreElemental(save, torreId, andar, { agoraMs = Dat
   const andarDef = torre?.andares?.[andar - 1];
   if (!andarDef) return { ok: false, motivo: 'Andar de Torre Elemental inválido.' };
   if (!andarTorreElementalDesbloqueado(save, torreId, andar)) return { ok: false, motivo: 'Andar ainda bloqueado.' };
-  const g = gastarEnergia(save, andarDef.energia, agoraMs);
+  const jaVencido = Boolean(torresDe(save).elementais[torreId]?.pagas?.[String(andar)]);
+  const custo = jaVencido ? andarDef.energia : 0; // DESIGN §8: Torres (1ª vitória) não gastam energia
+  const g = custo > 0 ? gastarEnergia(save, custo, agoraMs) : { ok: true, atual: energiaDe(save, agoraMs).atual };
   if (!g.ok) return g;
-  return { ok: true, batalhaId: batalhaId || `te_${torreId}_${andar}_${agoraMs}`, torre, andar: andarDef, energiaRestante: g.atual };
+  return {
+    ok: true,
+    batalhaId: batalhaId || `te_${torreId}_${andar}_${agoraMs}`,
+    torre,
+    andar: andarDef,
+    custoEnergia: custo,
+    energiaRestante: g.atual,
+  };
 }
 
 export function concluirAndarTorreElemental(save, torreId, andar, resultado = { venceu: true }, { batalhaId = null, agoraMs = Date.now() } = {}) {
