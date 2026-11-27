@@ -1,7 +1,7 @@
 // Habilidades e efeitos de batalha por turnos (dados + gerador de kits). Cada Onírico tem 3 habilidades; cada uma tem só tempo de
 // recarga (em rodadas), sem custo. Quanto maior a recarga, maior o dano, a cura ou o buff. O motor (regiao1-estrategia-regras.js) só lê estes dados.
 
-import { LINHAGENS_REINOS, PAPEL_DA_CLASSE } from './regiao1-kits-reinos.js';
+import { LINHAGENS_REINOS, PAPEL_DA_CLASSE, CHEFES_REINOS } from './regiao1-kits-reinos.js';
 // Efeitos de status. dot: dano a cada turno; cc: perde o turno; debuff: removido por purificação.
 export const EFEITOS = {
   sangramento: { nome: 'Sangramento', icone: '🩸', debuff: true, dot: true, cor: '#ef4444' },
@@ -200,12 +200,25 @@ export function kitDaLinhagemReino(l) {
 }
 export const KITS_REINOS = Object.fromEntries(LINHAGENS_REINOS.map((l) => [l.nome, kitDaLinhagemReino(l)]));
 for (const l of LINHAGENS_REINOS) PAPEL_PADRAO[l.nome] ??= PAPEL_DA_CLASSE[l.classe];
+// Chefes dos reinos: golpe com dano contínuo, técnica em área com o enfraquecimento do elemento e golpe especial em área
+// com controle e ataque elevado para o próprio chefe.
+export function kitDoChefeReino(c) {
+  const E = POR_ELEMENTO[c.elemento] || POR_ELEMENTO.neutro, ic = ICONE_EL[c.elemento] || '👑';
+  return [
+    { icone: ic, tipo: 'dano', alvo: 'um', mult: 1.3, cd: 1, efeitos: [ef(E.dot, 3, 0.7)] },
+    { icone: '🌀', tipo: 'dano', alvo: 'todos', mult: 1.15, cd: 3, distancia: true, efeitos: [ef(E.debuff, 2, 0.7)] },
+    { icone: '👑', tipo: 'dano', alvo: 'todos', mult: 1.9, cd: 5, distancia: true, efeitos: [ef(E.cc, 1, 0.6)], efeitosSi: [ef('ataque_alto', 2)] },
+  ].map((h, i) => ({ id: slug(c.habilidades[i]), nome: c.habilidades[i], ...h, elemento: c.elemento }));
+}
+export const KITS_CHEFES = Object.fromEntries(CHEFES_REINOS.map((c) => [c.nome, kitDoChefeReino(c)]));
+for (const c of CHEFES_REINOS) PAPEL_PADRAO[c.nome] ??= 'ataque';
 
 export function kitDe(especie, papel, elemento, nomes = []) {
   if (especie === 'Noctarion') return kitNoctarion();
   if (especie === 'Mortálio') return Number.isInteger(MORTALIO_VIOLETA_CFG.vagaKit) ? kitMortalio() : KITS['Mortálio'];
   if (KITS[especie]) return KITS[especie];
   if (KITS[LINHA_DO_KIT[especie]]) return KITS[LINHA_DO_KIT[especie]];
+  if (KITS_CHEFES[especie]) return KITS_CHEFES[especie];
   if (KITS_REINOS[especie]) return KITS_REINOS[especie];
   if (KITS_REINOS[LINHA_DO_KIT[especie]]) return KITS_REINOS[LINHA_DO_KIT[especie]];
   const E = POR_ELEMENTO[elemento] || POR_ELEMENTO.neutro, n = (i) => nomes[Math.min(i, nomes.length - 1)] || 'Golpe';
