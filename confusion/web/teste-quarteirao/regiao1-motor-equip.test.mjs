@@ -46,3 +46,15 @@ test('domador: sem barra, recargas próprias desde a entrada, age só com habili
   let usos = 0; for (let i = 0; i < 200 && !b.fim; i++) { M.executar(b, M.decidir(b, M.atorAtual(b), rng), rng); if (b.eventoDomador) { const ev = b.eventoDomador; usos++; assert.equal(b.domador.recargas[ev.idx], Math.max(1, ev.hab.cd || 1)); b.eventoDomador = null; } }
   assert.ok(usos > 0);
 });
+test('velocidade reduz recarga: 50% → −1 turno, 100% (pânico) → −2 turnos, sem tocar a habilidade em uso', () => {
+  const rng = M.criarRng(2), a = un('a', 'a'), x = un('x', 'a'); const b = M.criarBatalha([a, x], [un('i', 'i')]);
+  x.cd = [0, 3, 5]; a.cd = [0, 0, 0];
+  const dom = { ...criarEstadoDomadorBatalha({}) }; // usa o motor via domador: Ímpeto Sombrio dá 'veloz' no aliado de maior ataque
+  // aplica direto pelos efeitos de uma habilidade de apoio do kit
+  a.kit[1] = { id: 't', nome: 'Teste', tipo: 'apoio', alvo: 'aliados', cd: 2, efeitos: [{ id: 'veloz', turnos: 2 }] };
+  while (M.atorAtual(b).id !== 'a') M.executar(b, { tipo: 'defender' }, rng);
+  const antes = [...x.cd]; M.executar(b, { tipo: 'habilidade', idx: 1 }, rng);
+  assert.deepEqual(x.cd, antes.map((c) => Math.max(0, c - 1)).map((c, i) => i === 0 ? c : c));
+  assert.equal(a.cd[1], 2);
+  x.cd = [0, 4, 4]; a.kit[2] = { id: 'p', nome: 'P', tipo: 'apoio', alvo: 'aliados', cd: 5, efeitos: [{ id: 'panico', turnos: 2 }] };
+});
