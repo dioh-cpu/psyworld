@@ -79,7 +79,7 @@ const C = (reino, nome, elemento, habilidades, extra = {}) => ({ reino, nome, el
 export const CHEFES_REINOS = [
   C(1, 'Guardião do Sino', 'luz', ['Badalo Sagrado', 'Eco do Campanário', 'Dobre da Colheita']),
   // Enxame Dourado: as abelhas ficam sobre o time alvo por 3 rodadas, picando todos (35% do ataque) com 40% de chance de veneno
-  C(2, 'Rainha da Colmeia Dourada', 'inseto', ['Ferrão Real', 'Enxame Dourado', 'Decreto da Colmeia'], { enxame: { turnos: 3, mult: 0.35, chance: 0.4 } }),
+  C(2, 'Rainha da Colmeia Dourada', 'aco', ['Ferrão Real', 'Enxame Dourado', 'Decreto da Colmeia'], { enxame: { turnos: 3, mult: 0.35, chance: 0.4 } }), // armadura de favo dourado; Reino 2 = fogo, elétrico, voador, aço
   C(3, 'Basilisco da Crista Rubra', 'fogo', ['Presa Rubra', 'Olhar Petrificante', 'Chama do Basilisco']),
   C(4, 'Caranguejo Salífero', 'agua', ['Pinça Esmagadora', 'Jato de Salmoura', 'Maré Salífera']),
   C(5, 'Tecelão do Vendaval', 'voador', ['Fio Navalha', 'Tear de Ventos', 'Vendaval Tecido']),
@@ -91,5 +91,11 @@ export const CHEFES_REINOS = [
   C(11, 'Esfinge de Vidro', 'trevas', ['Garra Vítrea', 'Enigma Sombrio', 'Juízo da Esfinge']),
   C(12, 'Sentinela do Farol', 'eletrico', ['Lança do Farol', 'Feixe Varredor', 'Clarão da Sentinela'], { furia: 0.6 }),
 ];
-export const CHEFE_POR_NOME = Object.fromEntries(CHEFES_REINOS.map((c) => [c.nome, c]));
+// Chefes de circuito da Região 2 (Altos do Âmbar), com os elementos novos do reino. bonus menor que o do chefe do reino.
+export const CHEFES_REGIAO = [
+  C(2, 'Ferroada Rubra', 'fogo', ['Ferrão em Brasa', 'Favo Incandescente', 'Ferroada Final'], { bonus: { hp: 1.9, atk: 0.22, def: 0.18 } }),      // Apiários Dourados, Nv. 30
+  C(2, 'Matriarca de Resina', 'voador', ['Asa de Resina', 'Vendaval de Pólen', 'Tempestade Âmbar'], { bonus: { hp: 2.0, atk: 0.24, def: 0.2 } }),  // Jardins de Resina, Nv. 34
+  C(2, 'Sentinela de Geoda', 'eletrico', ['Punho de Geoda', 'Descarga Prismática', 'Coração de Raios'], { bonus: { hp: 2.1, atk: 0.26, def: 0.22 } }), // Cristas de Âmbar, Nv. 37
+].map((c) => ({ ...c, circuito: true }));
+export const CHEFE_POR_NOME = Object.fromEntries([...CHEFES_REINOS, ...CHEFES_REGIAO].map((c) => [c.nome, c]));
 export const specChefeReino = (reino, nivel) => { const c = CHEFES_REINOS.find((x) => x.reino === reino); return c ? [c.nome, nivel, c.elemento, { chefe: true, nome: c.nome, bonus: { ...c.bonus } }] : null; };

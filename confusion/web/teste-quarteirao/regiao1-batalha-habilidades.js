@@ -1,7 +1,7 @@
 // Habilidades e efeitos de batalha por turnos (dados + gerador de kits). Cada Onírico tem 3 habilidades; cada uma tem só tempo de
 // recarga (em rodadas), sem custo. Quanto maior a recarga, maior o dano, a cura ou o buff. O motor (regiao1-estrategia-regras.js) só lê estes dados.
 
-import { LINHAGENS_REINOS, PAPEL_DA_CLASSE, CHEFES_REINOS } from './regiao1-kits-reinos.js';
+import { LINHAGENS_REINOS, PAPEL_DA_CLASSE, CHEFES_REINOS, CHEFES_REGIAO } from './regiao1-kits-reinos.js';
 import { FORMAS_LINHAGENS_REINOS } from '../formas-reinos.js';
 // Efeitos de status. dot: dano a cada turno; cc: perde o turno; debuff: removido por purificação.
 export const EFEITOS = {
@@ -215,8 +215,8 @@ export function kitDoChefeReino(c) {
     { icone: '👑', tipo: 'dano', alvo: 'todos', mult: 1.9, cd: 5, distancia: true, efeitos: [ef(E.cc, 1, 0.6)], efeitosSi: [ef('ataque_alto', 2)] },
   ].map((h, i) => ({ id: slug(c.habilidades[i]), nome: c.habilidades[i], ...h, elemento: c.elemento, ...(i === 1 && c.enxame ? { enxame: { ...c.enxame } } : {}) }));
 }
-export const KITS_CHEFES = Object.fromEntries(CHEFES_REINOS.map((c) => [c.nome, kitDoChefeReino(c)]));
-for (const c of CHEFES_REINOS) PAPEL_PADRAO[c.nome] ??= 'ataque';
+export const KITS_CHEFES = Object.fromEntries([...CHEFES_REINOS, ...CHEFES_REGIAO].map((c) => [c.nome, kitDoChefeReino(c)]));
+for (const c of [...CHEFES_REINOS, ...CHEFES_REGIAO]) PAPEL_PADRAO[c.nome] ??= 'ataque';
 
 export function kitDe(especie, papel, elemento, nomes = []) {
   if (especie === 'Noctarion') return kitNoctarion();
