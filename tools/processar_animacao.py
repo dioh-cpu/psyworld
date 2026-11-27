@@ -273,6 +273,109 @@ def _recortar_loop_compativel(frames: list[Image.Image], min_frac: float = 0.55)
     return frames[i0:j0]
 
 
+LAYOUTS_VALIDOS = ("lado-a-lado", "lateral-topo")
+ALTURA_TOPO_REF = 560 / 1080  # folha 1920x1080: lateral na faixa de cima (1920x560)
+LATERAIS = ("direita", "esquerda")
+
+
+def bbox_unificado_regiao(frames_rgba: list[Image.Image], regiao: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    """Caixa envolvente (left, top, right, bottom, em coordenadas da folha) de uma vista dentro de uma região 2D."""
+    x0, y0, x1, y1 = regiao
+    min_x, min_y, max_x, max_y = x1, y1, x0, y0
+    achou = False
+    for fr in frames_rgba:
+        bb = fr.crop(regiao).getbbox()
+        if bb:
+            achou = True
+            min_x, min_y = min(min_x, x0 + bb[0]), min(min_y, y0 + bb[1])
+            max_x, max_y = max(max_x, x0 + bb[2]), max(max_y, y0 + bb[3])
+    return (min_x, min_y, max_x, max_y) if achou else regiao
+
+
+def regioes_lateral_topo(frames_rgba: list[Image.Image], lateral: str) -> dict[str, tuple[int, int, int, int]]:
+    """Layout 3 vistas numa folha: lateral sozinha em cima; frente (metade esquerda) e costas (direita) embaixo."""
+    w, h = frames_rgba[0].size
+    linhas = [False] * h
+    for fr in frames_rgba:
+        alfa = fr.getchannel("A").tobytes()
+        for y in range(h):
+            if not linhas[y]:
+                off = y * w
+                if any(alfa[off + x] > 128 for x in range(0, w, 3)):
+                    linhas[y] = True
+    # maior vazio horizontal entre 25% e 75% da altura separa a faixa de cima da de baixo
+    melhor, ini = (0, None), None
+    for y in range(int(h * 0.25), int(h * 0.75)):
+        if not linhas[y]:
+            ini = y if ini is None else ini
+            if y - ini + 1 > melhor[0]:
+                melhor = (y - ini + 1, ini)
+        else:
+            ini = None
+    corte = melhor[1] + melhor[0] // 2 if melhor[0] >= 4 and melhor[1] is not None else round(h * ALTURA_TOPO_REF)
+    meio = w // 2
+    return {lateral: (0, 0, w, corte), "frente": (0, corte, meio, h), "costas": (meio, corte, w, h)}
+
+
+def detectar_direcao_cabeca(frames_rgba: list[Image.Image], regiao: tuple[int, int, int, int]) -> tuple[str | None, float]:
+    """Para onde a cabeça aponta numa vista lateral. A cauda é a ponta comprida e fina: a ponta mais grossa é a cabeça.
+
+    Retorna (direcao | None, confianca). Sem confiança (< 1.25 de razão de espessura) devolve None.
+    """
+    x0, y0, x1, y1 = regiao
+    alturas: dict[int, int] = {}
+    for fr in frames_rgba:
+        rec = fr.crop(regiao)
+        alfa = rec.getchannel("A").point(lambda v: 255 if v > 128 else 0)
+        dados = alfa.tobytes()
+        for x in range(0, rec.width, 2):
+            n = sum(1 for y in range(rec.height) if dados[y * rec.width + x])
+            if n:
+                alturas[x] = max(alturas.get(x, 0), n)
+    if len(alturas) < 20:
+        return None, 1.0
+    xs = sorted(alturas)
+    larg = xs[-1] - xs[0] + 1
+    ponta = max(4, int(larg * 0.2))
+    esq = [alturas[x] for x in xs if x < xs[0] + ponta]
+    dire = [alturas[x] for x in xs if x > xs[-1] - ponta]
+    if not esq or not dire:
+        return None, 1.0
+    me, md = sum(esq) / len(esq), sum(dire) / len(dire)
+    razao = max(me, md) / max(1.0, min(me, md))
+    if razao < 1.25:
+        return None, razao
+    return ("esquerda" if me > md else "direita"), razao
+
+
+def _escolher_trecho(frames: list[Image.Image], min_frac: float, peso_estabilidade: float = 0.0) -> tuple[int, int]:
+    """Escolhe [i, j) com o par de quadros mais parecido; opcionalmente prefere trechos de forma estável (cauda)."""
+    n = len(frames)
+    min_len = max(6, int(n * min_frac))
+    if n <= min_len + 1:
+        return (0, n)
+    thumbs = [fr.resize((48, 48), Image.Resampling.BILINEAR).convert("LA") for fr in frames]
+    larguras = []
+    for fr in frames:
+        bb = fr.getchannel("A").getbbox()
+        larguras.append((bb[2] - bb[0]) if bb else 0)
+    melhor, par = float("inf"), (0, n)
+    max_ini = min(n - min_len - 1, max(1, n // 3))
+    for i in range(0, max_ini + 1):
+        for j in range(i + min_len, n):
+            diff = ImageChops.difference(thumbs[i], thumbs[j]).tobytes()
+            score = sum(diff) / len(diff)
+            if peso_estabilidade:
+                seg = larguras[i:j]
+                media = sum(seg) / max(1, len(seg))
+                if media > 0:
+                    var = (sum((v - media) ** 2 for v in seg) / len(seg)) ** 0.5
+                    score += peso_estabilidade * 100.0 * var / media
+            if score < melhor:
+                melhor, par = score, (i, j)
+    return par
+
+
 def processar_animacao(
     entrada: Path,
     especie: str,
@@ -285,6 +388,8 @@ def processar_animacao(
     vistas: tuple[str, ...] | list[str] = VISTAS_ENTRADA,
     espelhar_esquerda: bool = True,
     fechar_loop: bool | None = None,
+    layout: str = "lado-a-lado",
+    lateral_aponta: str | None = None,
 ) -> dict[str, Any]:
     """Executa o pipeline completo de 1 vídeo (2 ou 3 vistas, idle ou andar) para .webm + .webp.
 
@@ -308,16 +413,49 @@ def processar_animacao(
         tmp = Path(td)
         brutos = extrair_frames_entrada(entrada, fps, tmp)
         rgba = [remover_chroma_rgba(fr, chroma=chroma) for fr in brutos]
-        faixas = detectar_faixas_horizontais(rgba, qtd_vistas=len(lista_vistas))
-        bboxes = {nome: bbox_unificado_faixa(rgba, x0, x1) for nome, (x0, x1) in zip(lista_vistas, faixas)}
+        if layout not in LAYOUTS_VALIDOS:
+            raise ValueError(f"Layout inválido: {layout} (permitidos: {LAYOUTS_VALIDOS})")
+        if layout == "lateral-topo":
+            lat = next((v for v in lista_vistas if v in LATERAIS), None)
+            if lat is None or set(lista_vistas) != {lat, "frente", "costas"}:
+                raise ValueError("Layout lateral-topo exige as vistas: <direita|esquerda>,frente,costas")
+            regioes = regioes_lateral_topo(rgba, lat)
+        else:
+            faixas = detectar_faixas_horizontais(rgba, qtd_vistas=len(lista_vistas))
+            hh = rgba[0].size[1]
+            regioes = {nome: (x0, 0, x1, hh) for nome, (x0, x1) in zip(lista_vistas, faixas)}
+        bboxes = {nome: bbox_unificado_regiao(rgba, regioes[nome]) for nome in lista_vistas}
+
+        # DIREÇÃO: a arte oficial aponta para a direita; vira a lateral que veio para o lado errado
+        inversoes: dict[str, Any] = {}
+        viradas: set[str] = set()
+        for nome in lista_vistas:
+            if nome not in LATERAIS:
+                continue  # frente e costas nunca são espelhadas
+            if lateral_aponta in LATERAIS:
+                aponta, conf, fonte = lateral_aponta, None, "forcada"
+            else:
+                aponta, conf = detectar_direcao_cabeca(rgba, regioes[nome]); fonte = "detectada"
+            if aponta is not None and aponta != nome:
+                viradas.add(nome)
+                inversoes[nome] = {"apontavaPara": aponta, "esperado": nome, "fonte": fonte, "confianca": None if conf is None else round(conf, 2)}
+
+        # ESCALA: iguala frente/costas à altura do corpo da lateral (Flow costuma gerar frente/costas 10-15% maiores)
+        altura = {n: max(1, bb[3] - bb[1]) for n, bb in bboxes.items()}
+        ref_nome = next((n for n in lista_vistas if n in LATERAIS), lista_vistas[0])
+        fator = {n: 1.0 for n in lista_vistas}
+        if len(lista_vistas) > 1:
+            for n in lista_vistas:
+                if n != ref_nome and n not in LATERAIS:
+                    fator[n] = min(1.15, max(0.7, altura[ref_nome] / altura[n]))
 
         margem_pes_px = max(4, round(tamanho * MARGEM_PES_RATIO))
         area_util_w = tamanho - 16
         area_util_h = tamanho - margem_pes_px - 12
 
         # Escala única compartilhada (reutiliza meta.json para manter mesma escala entre pares 03+04 e entre idle/andar)
-        max_w = max(max(1, bb[2] - bb[0]) for bb in bboxes.values())
-        max_h = max(max(1, bb[3] - bb[1]) for bb in bboxes.values())
+        max_w = max(max(1, bb[2] - bb[0]) * fator[n] for n, bb in bboxes.items())
+        max_h = max(max(1, bb[3] - bb[1]) * fator[n] for n, bb in bboxes.items())
         escala_calc = min(area_util_w / max_w, area_util_h / max_h)
         escala = float(meta_existente.get("escalaReferencia", escala_calc))
         if max_w * escala > tamanho - 4 or max_h * escala > tamanho - margem_pes_px - 2:
@@ -328,14 +466,23 @@ def processar_animacao(
         origens: dict[str, str] = {}
         for nome in lista_vistas:
             bb = bboxes[nome]
-            seq = [
-                enquadrar_alinhado_pes(fr.crop(bb), tamanho, escala, margem_pes_px)
-                for fr in rgba
-            ]
-            if usar_fechar:
-                seq = _recortar_loop_compativel(seq)
+            seq = []
+            for fr in rgba:
+                rec = fr.crop(bb)
+                if nome in viradas:
+                    rec = rec.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+                seq.append(enquadrar_alinhado_pes(rec, tamanho, escala * fator[nome], margem_pes_px))
             sequencias[nome] = seq
-            origens[nome] = "direta"
+            origens[nome] = "invertida" if nome in viradas else "direta"
+
+        # LOOP: um único trecho [i,j) para todas as vistas (ficam sincronizadas)
+        # idle -> par de quadros mais parecido; andar -> trecho de forma estável (cauda) com emenda sem pulo
+        trecho = (0, len(rgba))
+        if usar_fechar or acao == "idle":
+            ref_seq = sequencias[ref_nome]
+            trecho = _escolher_trecho(ref_seq, 0.55, 0.15) if acao == "andar" else _escolher_trecho(ref_seq, 0.8, 0.0)
+            for nome in lista_vistas:
+                sequencias[nome] = sequencias[nome][trecho[0]:trecho[1]]
 
         # Só espelha direita -> esquerda se esquerda NÃO veio pronta no vídeo
         if espelhar_esquerda and "direita" in sequencias and "esquerda" not in sequencias:
@@ -358,7 +505,11 @@ def processar_animacao(
             }
 
         acoes_prev = dict(meta_existente.get("acoes") or {})
+        for _d in gerados.values():
+            _d["trecho"] = [trecho[0], trecho[1]]
         acoes_prev[acao] = {**(acoes_prev.get(acao) or {}), **gerados}
+        pipeline_prev = dict(meta_existente.get("pipeline") or {})
+        pipeline_prev[acao] = {"layout": layout, "inversoes": inversoes, "fatorEscala": {n: round(f, 3) for n, f in fator.items()}, "trecho": [trecho[0], trecho[1]]}
         meta_novo = {
             **meta_existente,
             "especie": slug,
@@ -368,6 +519,7 @@ def processar_animacao(
             "margemPesPx": margem_pes_px,
             "escalaReferencia": round(escala, 6),
             "acoes": acoes_prev,
+            "pipeline": pipeline_prev,
         }
         meta_path.write_text(json.dumps(meta_novo, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         return meta_novo
@@ -513,10 +665,13 @@ def main(argv: list[str] | None = None) -> int:
         default="frente,direita,costas",
         help="Vistas da esquerda para a direita separadas por vírgula (ex.: frente,direita,costas | esquerda,direita | frente,costas)",
     )
+    parser.add_argument("--layout", choices=LAYOUTS_VALIDOS, default="lado-a-lado", help="lado-a-lado (vistas em colunas) ou lateral-topo (lateral em cima; frente e costas embaixo)")
+    parser.add_argument("--lateral", choices=LATERAIS, default=None, help="Força para onde a lateral da folha aponta (README do lote: 'lateral: esquerda'); omitido = detectar")
     parser.add_argument("--chroma", choices=("magenta", "verde"), default="magenta", help="Cor do fundo chroma")
     parser.add_argument("--fps", type=int, default=12, help="Quadros por segundo de saída (padrão: 12)")
     parser.add_argument("--tamanho", type=int, default=256, help="Tamanho quadrado do canvas em px (padrão: 256)")
     parser.add_argument("--saida", type=Path, default=SAIDA_PADRAO, help="Pasta raiz de saída")
+    parser.add_argument("--sem-espelhar", action="store_true", help="Não espelha direita->esquerda (criaturas assimétricas)")
     parser.add_argument("--sem-validar", action="store_true", help="Não roda --validar ao final (útil no 1º vídeo de um par 2+2 vistas)")
     parser.add_argument("--validar", type=Path, help="Valida uma pasta de espécie já gerada")
     args = parser.parse_args(argv)
@@ -539,6 +694,9 @@ def main(argv: list[str] | None = None) -> int:
         fps=args.fps,
         tamanho=args.tamanho,
         vistas=vistas_tuple,
+        espelhar_esquerda=not args.sem_espelhar,
+        layout=args.layout,
+        lateral_aponta=args.lateral,
     )
     pasta = args.saida / meta["especie"]
     if args.sem_validar:
