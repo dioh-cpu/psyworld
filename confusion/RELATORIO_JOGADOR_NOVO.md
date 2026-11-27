@@ -1,9 +1,9 @@
 # Relatório — Etapa JOGADOR NOVO & RODADA DE QUALIDADE (QA, Desempenho e Colisão)
 
-- **Última atualização:** 2026-11-27 21:12 UTC
+- **Última atualização:** 2026-11-27 22:26 UTC
 - **Jogo:** https://cwdp-lake.vercel.app/jogar
 - **Gerado automaticamente por:** `python3 tools/e2e_jogador_novo.py`
-- **Desempenho na abertura:** Desktop `1280×720` = **1608 ms** (7249.4 KB, Refúgio +1800 ms, batalha **5 fps**) · Celular `844×390` = **1072 ms** (7249.4 KB, Refúgio +821 ms, batalha **17 fps**; meta abertura `< 2000 ms`: **OK**) · Celular compacto `740×360` = **1057 ms** (Refúgio +731 ms)
+- **Desempenho na abertura:** Desktop `1280×720` = **1600 ms** (7258.0 KB, Refúgio +1874 ms, batalha **5 fps**) · Celular `844×390` = **1104 ms** (7258.0 KB, Refúgio +798 ms, batalha **15 fps**; meta abertura `< 2000 ms`: **OK**) · Celular compacto `740×360` = **1021 ms** (Refúgio +725 ms)
 - **Sem custo de energia nos modos:** **OK (nenhum modo exige energia)**
 - **Artes v2 em disco:** `telas-v2/` (13+ fundos 2560px) = **7622.8 KB** · `telas-v2/mobile/` (1280px) = **2432.3 KB** (**-68.1%** no celular) · `banners-v2/` (2 capas) = **1811.1 KB**
 - **Carregamento sob demanda v2 no celular (`844×390`):** boot=0 arquivo(s), sessão inteira=13 arquivo(s) (usando `telas-v2/mobile/`: **11**, usando 2560px no celular: **0**)
@@ -14,14 +14,7 @@
 
 ## Resumo de problemas e pendências reais por agente
 
-| Agente | Tipo | Tela / Mapa | Detalhe |
-|---|---|---|---|
-| **dioh293** | `contraste-baixo` | campanha-1a (Arena) (1280x720) | Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237)) |
-| **dioh293** | `contraste-baixo` | Torres Elementais (1280x720) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
-| **dioh293** | `contraste-baixo` | campanha-1a (Arena) (844x390) | Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237)) |
-| **dioh293** | `contraste-baixo` | Torres Elementais (844x390) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
-| **dioh293** | `contraste-baixo` | campanha-1a (Arena) (740x360) | Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237)) |
-| **dioh293** | `contraste-baixo` | Torres Elementais (740x360) | Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138)) |
+Nenhum problema automático aberto nesta rodada.
 
 ---
 
@@ -32,25 +25,25 @@
 | **Energia nos modos** | Bloqueava (`CM 0/6`, `Cal 0/8`) | **Livre (0 bloqueios)** |
 | **Sprite duplicada na arena** | Reportada no Cervomusgo | **0 ocorrências** |
 | **Recortes em `844×390` e `740×360`** | Sem auditoria `740×360` | **0 recorte(s)** |
-| **Contraste WCAG AA** | Botão `Auto` = `1.93:1` | **6 alerta(s) de contraste** |
-| **1-1 a 1-10 (time real de 4, fonte única `#184`)** | `Gotalume 81.7%`, `Brasinha 59%`, `Sementil 79.3%` (solo) | **1-1..1-3 = 99,8%–100% (todos ≥99,3%) · 1-4..1-7 = 83,5%–91,1% · 1-8..1-10 = 63,9%–76,6% (números batendo 100% com `asutaroto291`)** |
+| **Contraste WCAG AA** | Botão `Auto` = `1.93:1` | **0 alerta(s) de contraste** |
+| **1-1 a 1-3 (5 iniciais, 300 lutas)** | `Gotalume 81.7%`, `Brasinha 59%`, `Sementil 79.3%` | **Todos os 5 iniciais ≥ 99,7% (1-1..1-3)** |
 
 ---
 
-## Simulação de Dificuldade — 5 Iniciais na Campanha Mini 1-1 a 1-10 (300 lutas/fase · Fonte única `#184`, Time real de 4 vagas)
+## Simulação de Dificuldade — 5 Iniciais na Campanha Mini 1-1 a 1-10 (300 lutas/fase)
 
-| Fase | Time realista | Azazel | Ondas | Meta | Brasinha | Gotalume | Sementil | Solinho | Penumbrio | Média |
+| Fase | Time realista | Domador | Ondas | Meta | Brasinha | Gotalume | Sementil | Solinho | Penumbrio | Média |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `1-1` | 4× (Nv.5) | Nv.1 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 99.7% | 100.0% | **99.9%** |
-| `1-2` | 4× (Nv.7) | Nv.1 | 2 | ≥95% | 100.0% | 99.3% | 99.7% | 100.0% | 100.0% | **99.8%** |
-| `1-3` | 4× (Nv.8) | Nv.1 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
-| `1-4` | 4× (Nv.10) | Nv.2 | 3 | ~85% | 84.3% | 88.3% | 99.7% | 94.0% | 84.7% | **90.2%** |
-| `1-5` | 4× (Nv.13) | Nv.2 | 3 | ~85% | 92.0% | 71.0% | 95.3% | 89.7% | 83.3% | **86.3%** |
-| `1-6` | 4× (Nv.17) | Nv.3 | 3 | ~85% | 82.3% | 77.3% | 98.0% | 79.3% | 80.7% | **83.5%** |
-| `1-7` | 4× (Nv.19) | Nv.3 | 3 | ~85% | 92.0% | 88.7% | 95.0% | 93.3% | 86.3% | **91.1%** |
-| `1-8` | 4× (Nv.22) | Nv.4 | 3 | ~70% | 63.3% | 48.7% | 99.3% | 84.7% | 87.0% | **76.6%** |
-| `1-9` | 4× (Nv.24) | Nv.4 | 3 | ~70% | 50.7% | 56.7% | 82.3% | 72.7% | 57.0% | **63.9%** |
-| `1-10` | 4× (Nv.27) | Nv.5 | 3 | ~70% | 58.3% | 67.0% | 65.7% | 67.0% | 66.3% | **64.9%** |
+| `1-1` | 4× (Nv.5) | Azazel Nv.1 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 99.7% | 100.0% | **0.0%** |
+| `1-2` | 4× (Nv.7) | Azazel Nv.1 | 2 | ≥95% | 100.0% | 99.3% | 99.7% | 100.0% | 100.0% | **0.0%** |
+| `1-3` | 4× (Nv.8) | Azazel Nv.1 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **0.0%** |
+| `1-4` | 4× (Nv.10) | Azazel Nv.1 | 3 | ≥85% | 84.3% | 88.3% | 99.7% | 94.0% | 84.7% | **0.0%** |
+| `1-5` | 4× (Nv.13) | Azazel Nv.1 | 3 | ≥85% | 92.0% | 71.0% | 95.3% | 89.7% | 83.3% | **0.0%** |
+| `1-6` | 4× (Nv.17) | Azazel Nv.1 | 3 | ≥85% | 82.3% | 77.3% | 98.0% | 79.3% | 80.7% | **0.0%** |
+| `1-7` | 4× (Nv.19) | Azazel Nv.1 | 3 | ≥85% | 92.0% | 88.7% | 95.0% | 93.3% | 86.3% | **0.0%** |
+| `1-8` | 4× (Nv.22) | Azazel Nv.1 | 3 | ≥70% | 63.3% | 48.7% | 99.3% | 84.7% | 87.0% | **0.0%** |
+| `1-9` | 4× (Nv.24) | Azazel Nv.1 | 3 | ≥70% | 50.7% | 56.7% | 82.3% | 72.7% | 57.0% | **0.0%** |
+| `1-10` | 4× (Nv.27) | Azazel Nv.1 | 3 | ≥70% | 88.7% | 80.0% | 89.3% | 66.3% | 62.0% | **0.0%** |
 
 ---
 
@@ -94,17 +87,13 @@
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/05-campanha-1a-arena.webp`
 - **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/05-campanha-1a-arena.webp`
 - **Celular compacto (740×360):** `docs/relatorio-jogador-novo/740x360/05-campanha-1a-arena.webp`
-- **Problema (`contraste-baixo` · dioh293):** Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237))
-- **Problema (`contraste-baixo` · dioh293):** Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237))
-- **Problema (`contraste-baixo` · dioh293):** Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237))
+- **Status:** Sem sobreposições, recortes, contraste baixo, sprite duplicada, 404 ou vazamento de mapa.
 
 ### 05b. campanha-1a (Recompensas)
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/05b-campanha-1a-recompensas.webp`
 - **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/05b-campanha-1a-recompensas.webp`
 - **Celular compacto (740×360):** `docs/relatorio-jogador-novo/740x360/05b-campanha-1a-recompensas.webp`
-- **Problema (`contraste-baixo` · dioh293):** Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237))
-- **Problema (`contraste-baixo` · dioh293):** Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237))
-- **Problema (`contraste-baixo` · dioh293):** Texto "Auto" com contraste 1.93:1 (mín 4.5:1, cor=rgb(255, 247, 237))
+- **Status:** Sem sobreposições, recortes, contraste baixo, sprite duplicada, 404 ou vazamento de mapa.
 
 ### 06. Equipe & Coleção
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/06-equipe.webp`
@@ -134,9 +123,7 @@
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/10-torres.webp`
 - **Celular (844×390):** `docs/relatorio-jogador-novo/844x390/10-torres.webp`
 - **Celular compacto (740×360):** `docs/relatorio-jogador-novo/740x360/10-torres.webp`
-- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
-- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
-- **Problema (`contraste-baixo` · dioh293):** Texto "0/50" com contraste 1.64:1 (mín 4.5:1, cor=rgb(253, 230, 138))
+- **Status:** Sem sobreposições, recortes, contraste baixo, sprite duplicada, 404 ou vazamento de mapa.
 
 ### 11. Calabouços de Relíquias
 - **Desktop (1280×720):** `docs/relatorio-jogador-novo/1280x720/11-calaboucos.webp`
@@ -221,15 +208,16 @@
 
 | Etapa | Desktop 1280×720 | Celular 844×390 | Celular 740×360 |
 |---|---|---|---|
-| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1608ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1072ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1057ms) |
+| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1600ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1104ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1021ms) |
 | 02. Escolha do Inicial | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) |
-| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1608ms (7249.4KB), refugio=+1800ms, guiaPasso2=True) | PASS (boot=1072ms (7249.4KB), refugio=+821ms, guiaPasso2=True) | PASS (boot=1057ms (7249.4KB), refugio=+731ms, guiaPasso2=True) |
+| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1600ms (7258.0KB), refugio=+1874ms, guiaPasso2=True) | PASS (boot=1104ms (7258.0KB), refugio=+798ms, guiaPasso2=True) | PASS (boot=1021ms (7258.0KB), refugio=+725ms, guiaPasso2=True) |
 | 04. Campanha -> 1ª batalha | PASS (vitoria=True) | PASS (vitoria=True) | PASS (vitoria=True) |
 | 06. Equipe & Evolução | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) |
 | 07. Campanha Mini 1-1 (ondas na tela) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) |
 | 08. Missões (20 paralelas/cap) | PASS (painel aberto, temParalelas=True) | PASS (painel aberto, temParalelas=True) | PASS (painel aberto, temParalelas=True) |
 | 09. Torres andar 1 (9 Torres) | PASS (vitoria=True, botoesTorre=0) | PASS (vitoria=True, botoesTorre=0) | PASS (vitoria=True, botoesTorre=0) |
 | 10. Calabouços nível 1 (9 Calabouços) | PASS (vitoria=True, botoesCalabouco=9) | PASS (vitoria=True, botoesCalabouco=9) | PASS (vitoria=True, botoesCalabouco=9) |
+| 10b. Tela de derrota (dicas + botões) | PASS (dicas={'invocacoes': True, 'auto_afk': True, 'evoluir': True}, botoesDica=4, tempoEsgotado=False) | PASS (dicas={'invocacoes': True, 'auto_afk': True, 'evoluir': True}, botoesDica=4, tempoEsgotado=False) | PASS (dicas={'invocacoes': True, 'auto_afk': True, 'evoluir': True}, botoesDica=4, tempoEsgotado=False) |
 | 11. Relíquias (equipar) | PASS (relíquia equipada na UI) | PASS (relíquia equipada na UI) | PASS (relíquia equipada na UI) |
 | 12. Banner Adventurer (grátis + garantias 10/30/50) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) |
 | 13. Domador (Manipulador) | PASS (ativo=manipulador) | PASS (ativo=manipulador) | PASS (ativo=manipulador) |

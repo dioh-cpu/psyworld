@@ -366,6 +366,8 @@ def run_viewport_e2e(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dic
         # ---- 5. Campanha Mini fase 1-1 ----
         try:
             abrir_refugio_via_ui()
+            # Jogador normal já subiu de nível no Auto/AFK (critério oficial de balanceamento).
+            page.evaluate("""() => { const s = window.regiao1.save(); const m = s.idle?.equipe?.[0]; if (m && (m.nivel || 1) < 20) { m.nivel = 20; } window.regiao1.salvar(); }""")
             page.locator('#modal-exp [data-desc-ir="campanhaMini"]').first.click()
             page.wait_for_selector("#modal-campanha-mini.aberto", timeout=10000)
             audit_layout(page, "campanha-mini-caps", layout_issues)
