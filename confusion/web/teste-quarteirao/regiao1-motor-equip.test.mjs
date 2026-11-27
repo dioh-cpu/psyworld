@@ -66,3 +66,22 @@ test('ondas: limpa a 1ª, entra a 2ª com evento, aliados mantêm a vida; vitór
   const ondas = []; for (let i = 0; i < 300 && !b.fim; i++) { M.executar(b, M.decidir(b, M.atorAtual(b), rng), rng); const ev = b.evento?.onda || (b.antes || []).find((e) => e.tipo === 'onda'); if (ev && !ondas.includes(ev.para)) ondas.push(ev.para); }
   assert.equal(b.fim, 'vitoria'); assert.equal(b.onda, 3); assert.deepEqual(ondas, [2, 3]);
 });
+test('velocidade de equipamento reduz recarga (50% → −1, 100% → −2) sem mudar ordem de turno', () => {
+  const rng = M.criarRng(13);
+  const lento = M.criarUnidade({ id: 'l', especie: esp, nivel: 30, lado: 'a' });
+  const equip50 = M.criarUnidade({ id: 'e50', especie: esp, nivel: 20, lado: 'a', equip: { velocidadePct: 0.25, velocidadeFlat: 25 } });
+  const equip100 = M.criarUnidade({ id: 'e100', especie: esp, nivel: 20, lado: 'a', equip: { velocidadePct: 0.60, velocidadeFlat: 40 } });
+  const b = M.criarBatalha([lento, equip50, equip100], [M.criarUnidade({ id: 'i', especie: esp, nivel: 10, lado: 'i' })]);
+  // Ordem de turno segue nível (lento Nv.30 age antes de equip100 Nv.20)
+  assert.equal(M.atorAtual(b).id, 'l');
+  M.executar(b, { tipo: 'defender' }, rng);
+  // equip50 usa suprema (cd 5) -> entra em cd 4 (-1)
+  assert.equal(M.atorAtual(b).id, 'e50');
+  M.executar(b, { tipo: 'habilidade', idx: 2, alvo: 'i' }, rng);
+  assert.equal(equip50.cd[2], Math.max(1, equip50.kit[2].cd - 1));
+  // equip100 usa suprema (cd 5) -> entra em cd 3 (-2)
+  if (!b.fim && M.atorAtual(b)?.id === 'e100') {
+    M.executar(b, { tipo: 'habilidade', idx: 2, alvo: 'i' }, rng);
+    assert.equal(equip100.cd[2], Math.max(1, equip100.kit[2].cd - 2));
+  }
+});

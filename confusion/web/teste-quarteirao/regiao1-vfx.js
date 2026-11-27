@@ -1054,7 +1054,31 @@ export async function tocarEvento(ctx, ev) {
   else if (ev.tipo === 'habilidade') { if (ev.area) await genArea(ctx, M, A, ev, hab, elem); else if (hab?.distancia) await genTiro(ctx, M, A, ev, hab, elem); else await genCorpo(ctx, M, A, ev, hab, elem); }
   else if (ev.tipo === 'defender') { const c = corpo(ctx, A); bolhaEscudo(M, c, '#60a5fa', 0, 0.9); onda(M, c.x, c.pe, { cor: '#60a5fa', r1: c.w, vida: 0.5 }); numero(ctx, A, '🛡️ Defesa', '#93c5fd', { pequeno: true }); ctx.aplicarHp(ev.ator); await ESP(520 * ctx.k); }
   else await genApoio(ctx, M, A, ev, hab, elem);
-  for (const r of ev.alvos || []) ctx.aplicarHp(r.id);
+  for (const r of ev.alvos || []) {
+    ctx.aplicarHp(r.id);
+    const elAlvo = ctx.no(r.id);
+    if (!elAlvo) continue;
+    if (r.critico) {
+      const ca = corpo(ctx, elAlvo);
+      onda(M, ca.x, ca.y, { cor: '#fde047', r1: ca.w * 1.4, vida: 0.45 });
+      flash(ctx, '#fde047', 110, 0.24);
+      tremer(ctx, 8, 220);
+      numero(ctx, elAlvo, '💥 CRÍTICO!', '#fde047', { grande: true, dy: -26 });
+    }
+    if (r.contra) {
+      const ca = corpo(ctx, elAlvo);
+      onda(M, ca.x, ca.y, { cor: '#38bdf8', r1: ca.w * 1.15, vida: 0.4 });
+      numero(ctx, elAlvo, `⚔️ Contra −${r.contra}`, '#7dd3fc', { dy: -16 });
+    }
+  }
+  for (const caEv of ev.contraAtaques || []) {
+    const elAlvo = ctx.no(caEv.alvoId || caEv.id);
+    if (!elAlvo) continue;
+    const ca = corpo(ctx, elAlvo);
+    onda(M, ca.x, ca.y, { cor: '#38bdf8', r1: ca.w * 1.25, vida: 0.45 });
+    numero(ctx, elAlvo, `⚔️ Contra-ataque${caEv.dano ? ` −${caEv.dano}` : '!'}`, '#7dd3fc', { grande: true, dy: -20 });
+    ctx.aplicarHp(caEv.alvoId || caEv.id);
+  }
   if (hab?.tipo === 'dano' && (hab.efeitos || []).some((e) => e.id === 'provocacao') && CLIPES_ELEMENTAIS.provocacao) {
     const pc = CLIPES_ELEMENTAIS.provocacao; tocarClipe(ctx, M, { ...pc, impactoMs: 500 }, { tipo: 'apoio', alvos: [], ator: ev.ator, hab: { alvo: 'si', tipo: 'apoio' } }, pc.clip, A).catch(() => {});
   }
@@ -1064,6 +1088,34 @@ export async function tocarEvento(ctx, ev) {
   if (ev.roubo) { const c = corpo(ctx, A); for (const r of ev.alvos || []) { const el = ctx.no(r.id); if (!el) continue; const t = corpo(ctx, el); for (let k = 0; k < M.n(5); k++) projetil(M, t.x + R(-10, 10), t.y + R(-10, 10), c.x, c.y, { tipo: 'orbe', cor: '#dc2626', cor2: '#fecaca', tam: 6, arco: R(20, 60), vida: 0.45, atraso: k * 0.04 }); } numero(ctx, A, `🩸 +${ev.roubo}`, '#86efac', { dy: -20 }); ctx.aplicarHp(ev.ator); }
   A._pose?.mostrar(false); // garante o retorno ao repouso ao fim do evento
   return ev;
+}
+
+// VFX dedicado à ação automática do Domador (b.eventoDomador): pulso no retrato, ondas nos alvos e números flutuantes.
+export async function tocarEventoDomador(ctx, evDom) {
+  if (!evDom) return;
+  injetar();
+  const M = camada(ctx);
+  const elDom = ctx.arena?.querySelector?.('.tb-domador');
+  if (elDom) {
+    elDom.animate([
+      { boxShadow: '0 0 0 0 rgba(251,191,36,.85)', transform: 'scale(1)' },
+      { boxShadow: '0 0 22px 4px rgba(251,191,36,.75)', transform: 'scale(1.06)', offset: 0.35 },
+      { boxShadow: '0 3px 12px rgba(0,0,0,.55)', transform: 'scale(1)' },
+    ], { duration: Math.round(520 * ctx.k) });
+  }
+  flash(ctx, '#f59e0b', 120, 0.16);
+  for (const r of evDom.alvos || []) {
+    const elAlvo = ctx.no(r.id);
+    if (!elAlvo) continue;
+    const c = corpo(ctx, elAlvo);
+    const ehCura = (r.cura || 0) > 0 || r.tipo === 'buff';
+    const cor = ehCura ? '#4ade80' : '#fbbf24';
+    onda(M, c.x, c.y, { cor, r1: c.w * 1.25, vida: 0.5 });
+    const txt = r.dano ? `✨ −${r.dano}` : r.cura ? `✨ +${r.cura}` : `✨ ${evDom.hab?.nome || 'Apoio'}`;
+    numero(ctx, elAlvo, txt, cor, { grande: Boolean(r.dano), dy: -14 });
+    ctx.aplicarHp(r.id);
+  }
+  await ESP(360 * ctx.k);
 }
 // Fúria do chefe: tela escurece, faixa com o nome, onda vermelha nos pés, tremor e o número "Fúria!"
 async function furiaChefe(ctx, M, f) {

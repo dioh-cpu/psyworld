@@ -29,8 +29,8 @@ const novoSave = () => {
   return s;
 };
 
-test('Missões paralelas: 3 por capítulo liberadas nas fases 3/6/9, diálogo + batalhas, relíquia rara + título + enfeite do Refúgio', () => {
-  assert.equal(MISSOES_PARALELAS_CATALOGO.length, 36);
+test('Missões paralelas: 20 por capítulo (240 total), diálogo + batalhas, relíquia rara + título + enfeite do Refúgio', () => {
+  assert.equal(MISSOES_PARALELAS_CATALOGO.length, 240);
   const s = novoSave();
   assert.equal(iniciarParalela(s, 'par_2_1').ok, false);
 
@@ -43,13 +43,15 @@ test('Missões paralelas: 3 por capítulo liberadas nas fases 3/6/9, diálogo + 
   cm.fases['2-9'] = { vencida: true, estrelas: 3 };
 
   const listaCap2 = listarParalelasCapitulo(s, 2);
+  assert.equal(listaCap2.length, 20);
   assert.equal(listaCap2[0].titulo, 'O apicultor desaparecido');
   assert.equal(listaCap2[1].titulo, 'Resina nas Cristas');
   assert.equal(listaCap2[2].titulo, 'O sino de bronze');
-  assert.equal(listaCap2.every((p) => p.estado === 'disponivel'), true);
+  assert.equal(listaCap2.slice(0, 3).every((p) => p.estado === 'disponivel'), true);
+  assert.ok(listaCap2.every((p) => Boolean(p.titulo && p.objetivo && p.faseRequisitoId)));
 
-  // Executa as 3 paralelas do Cap 2: derrota não avança, diálogo + vitórias avançam, paga uma única vez
-  for (const p of listaCap2) {
+  // Executa as 3 paralelas principais do Cap 2: derrota não avança, diálogo + vitórias avançam, paga uma única vez
+  for (const p of listaCap2.slice(0, 3)) {
     const ini = iniciarParalela(s, p.id);
     assert.equal(ini.ok, true);
     assert.equal(ini.etapaAtual.tipo, 'dialogo');

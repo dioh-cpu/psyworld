@@ -202,6 +202,21 @@ test('Campanha Mini: 3 estrelas via resumoBatalha(b) (reviver conta), liberaçã
   assert.equal(statusCapitulo(s, 1).estrelas, 30);
 });
 
+test('Campanha Mini em ondas: fases 1-3 têm 2 ondas, 4-10 e escondida têm 3 ondas, texto de energia presente', async () => {
+  const { CAPITULOS_CAMPANHA_MINI, ENERGIA_TEXTO_EXPLICATIVO } = await import('./regiao1-campanha-mini-regras.js');
+  assert.ok(ENERGIA_TEXTO_EXPLICATIVO.resumo.includes('6 minutos'));
+  assert.ok(ENERGIA_TEXTO_EXPLICATIVO.custos.length >= 4);
+  for (const cap of CAPITULOS_CAMPANHA_MINI) {
+    for (const f of cap.fases) {
+      const esp = f.numero <= 3 ? 2 : 3;
+      assert.equal(f.ondas.length, esp, `Fase ${f.id} deveria ter ${esp} ondas`);
+      assert.ok(f.ondas.every((o) => Array.isArray(o) && o.length >= 2));
+      assert.deepEqual(f.inimigos, f.ondas[f.ondas.length - 1]);
+    }
+    assert.equal(cap.faseEscondida.ondas.length, 3);
+  }
+});
+
 test('Campanha Mini: energia (1/6min, máx 120, poção) e whitelist no save/nuvem sem perdas', () => {
   const s = novoSave();
   const t0 = 100_000_000;

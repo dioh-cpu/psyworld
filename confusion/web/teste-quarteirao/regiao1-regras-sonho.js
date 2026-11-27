@@ -17,13 +17,36 @@ export const ESSENCIAS_PARES = {
   mineral: { id: 'mineral', nome: 'Essência Mineral', torre: 'rocha', calabouco: 'mina-profunda', elementos: ['terra', 'pedra', 'aco'] },
   solar: { id: 'solar', nome: 'Essência Solar', torre: 'aurora', calabouco: 'templo-alvorecer', elementos: ['luz', 'neutro'] },
   sombria: { id: 'sombria', nome: 'Essência Sombria', torre: 'umbra', calabouco: 'cripta-velada', elementos: ['trevas', 'fantasma'] },
+  glacial: { id: 'glacial', nome: 'Essência Glacial', torre: 'geada', calabouco: 'pico-glacial', elementos: ['gelo', 'veneno'] },
+  draconica: { id: 'draconica', nome: 'Essência Dracônica', torre: 'draco', calabouco: 'arena-draconica', elementos: ['lutador', 'dragao'] },
+  arcana: { id: 'arcana', nome: 'Essência Arcana', torre: 'eterea', calabouco: 'santuario-arcano', elementos: ['psiquico', 'fada'] },
 };
+
+export const ELEMENTOS_TORRES_CALABOUCOS = [
+  'fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'lutador', 'voador', 'veneno',
+  'psiquico', 'inseto', 'pedra', 'fantasma', 'eletrico', 'gelo', 'dragao', 'aco', 'fada',
+];
 
 const PAR_POR_ELEMENTO = {};
 for (const def of Object.values(ESSENCIAS_PARES)) {
   for (const el of def.elementos) PAR_POR_ELEMENTO[el] = def.id;
 }
 PAR_POR_ELEMENTO.sombra = 'sombria';
+
+// Onde cada um dos 19 Fragmentos de Sonho (#149) dropa (1% por inimigo derrotado do elemento + modos temáticos)
+export const MAPA_DROP_FRAGMENTOS_SONHO = Object.fromEntries(
+  ['neutro', ...ELEMENTOS_TORRES_CALABOUCOS].map((el) => {
+    const parId = PAR_POR_ELEMENTO[el] || 'solar';
+    const par = ESSENCIAS_PARES[parId];
+    return [el, {
+      elemento: el,
+      parEssencia: parId,
+      torreElemental: el === 'neutro' ? null : par.torre,
+      calabouco: el === 'neutro' ? null : par.calabouco,
+      dropCampanhaIdle: `1% por inimigo ${el} derrotado em batalhas manuais, Auto-Caça, Idle offline e Campanha Mini`,
+    }];
+  }),
+);
 
 export function parEssenciaDoElemento(elOuPar = 'neutro') {
   const k = String(elOuPar || 'neutro').toLowerCase();

@@ -53,14 +53,37 @@ const ENFEITES_POR_CAPITULO = [
   'Miniatura do Farol',
 ];
 
-const TITULO_PARALELA = (capNome, ordem) => [`Batedor de ${capNome}`, `Sentinela de ${capNome}`, `Campeão de ${capNome}`][ordem - 1];
+const TITULO_PARALELA = (capNome, ordem) => [
+  `Batedor de ${capNome}`, `Sentinela de ${capNome}`, `Campeão de ${capNome}`,
+  `Rastreador de ${capNome}`, `Vigia de ${capNome}`, `Desbravador de ${capNome}`,
+][((ordem - 1) % 6)];
+
+const MODELOS_PARALELAS_EXTRA = [
+  { sufixo: 'Patrulha da Fronteira', obj: 'Limpar a trilha inicial e conter batedores errantes', req: 1, diam: 15, ouro: 250 },
+  { sufixo: 'Eco nas Ruínas', obj: 'Investigar os ecos estranhos nas pedras antigas', req: 2, diam: 15, ouro: 300 },
+  { sufixo: 'Caravana Interrompida', obj: 'Escoltar suprimentos pela estrada principal', req: 2, diam: 20, ouro: 350 },
+  { sufixo: 'Sinais na Neblina', obj: 'Rastrear pegadas elementais pela clareira', req: 3, diam: 20, ouro: 400 },
+  { sufixo: 'Ponte dos Ventos', obj: 'Liberar a travessia tomada por criaturas selvagens', req: 4, diam: 20, ouro: 450 },
+  { sufixo: 'Colheita Ameaçada', obj: 'Proteger os moradores locais durante a coleta', req: 4, diam: 20, ouro: 450 },
+  { sufixo: 'Relíquia Enterrada', obj: 'Recuperar um artefato perdido antes dos invasores', req: 5, diam: 25, ouro: 500 },
+  { sufixo: 'Vigia do Desfiladeiro', obj: 'Vencer a emboscada na passagem estreita', req: 5, diam: 25, ouro: 550 },
+  { sufixo: 'Fenda Elemental', obj: 'Estabilizar o foco de energia fora de controle', req: 6, diam: 25, ouro: 600 },
+  { sufixo: 'Mensageiro Perdido', obj: 'Resgatar o mensageiro cercado na rota secundária', req: 6, diam: 25, ouro: 600 },
+  { sufixo: 'Altar Esquecido', obj: 'Derrotar os guardiões que despertaram no altar', req: 7, diam: 30, ouro: 650 },
+  { sufixo: 'Ronda Noturna', obj: 'Patrulhar os arredores da área segura ao anoitecer', req: 7, diam: 30, ouro: 700 },
+  { sufixo: 'Bando em Fúria', obj: 'Conter o bando agitado próximo ao acampamento', req: 8, diam: 30, ouro: 750 },
+  { sufixo: 'Passagem Subterrânea', obj: 'Explorar o atalho oculto sob as rochas', req: 8, diam: 30, ouro: 800 },
+  { sufixo: 'Escudo do Povo', obj: 'Repelir a investida contra o posto avançado', req: 9, diam: 35, ouro: 850 },
+  { sufixo: 'Desafio da Elite', obj: 'Provar força frente à guarda de elite do capítulo', req: 9, diam: 35, ouro: 900 },
+  { sufixo: 'Crônica Final do Reino', obj: 'Encerrar a última ameaça remanescente após o chefe', req: 10, diam: 40, ouro: 1000 },
+];
 
 export const MISSOES_PARALELAS_CATALOGO = CAPITULOS_CAMPANHA_MINI.flatMap((cap) => {
   const cNum = cap.capitulo;
   const esp = PARALELAS_ESPECIFICAS[cNum];
   const npcPadrao = NPCS_POR_CAPITULO[cNum] || `Emissário de ${cap.nome}`;
   const reqFases = [3, 6, 9];
-  return [1, 2, 3].map((ordem) => {
+  const base3 = [1, 2, 3].map((ordem) => {
     const reqNum = reqFases[ordem - 1];
     const meta = esp?.[ordem - 1] || {
       titulo: `Crônica ${cNum}.${ordem} · ${cap.nome}`,
@@ -83,6 +106,7 @@ export const MISSOES_PARALELAS_CATALOGO = CAPITULOS_CAMPANHA_MINI.flatMap((cap) 
       ordem,
       faseRequisitoId: `${cNum}-${reqNum}`,
       titulo: meta.titulo,
+      objetivo: meta.fala,
       npc: meta.npc,
       elemento: cap.elemento,
       etapas,
@@ -98,6 +122,40 @@ export const MISSOES_PARALELAS_CATALOGO = CAPITULOS_CAMPANHA_MINI.flatMap((cap) 
       },
     };
   });
+
+  const extras17 = MODELOS_PARALELAS_EXTRA.map((mod, idx) => {
+    const ordem = idx + 4;
+    const reqNum = mod.req;
+    const fBase = cap.fases[Math.min(cap.fases.length - 1, reqNum - 1)];
+    const titulo = `${mod.sufixo} · ${cap.nome}`;
+    return {
+      id: `par_${cNum}_${ordem}`,
+      capitulo: cNum,
+      ordem,
+      faseRequisitoId: `${cNum}-${reqNum}`,
+      titulo,
+      objetivo: `${mod.obj} em ${cap.nome} (requer fase ${cNum}-${reqNum}).`,
+      npc: npcPadrao,
+      elemento: cap.elemento,
+      etapas: [
+        { id: 'npc', tipo: 'dialogo', npc: npcPadrao, texto: `${mod.obj} em ${cap.nome}.` },
+        { id: 'b1', tipo: 'batalha', titulo: `${titulo} — Confronto`, inimigos: fBase.inimigos.slice(0, 2) },
+      ],
+      recompensa: {
+        diamantes: mod.diam,
+        ouro: mod.ouro * cNum,
+        reliquiaRaridade: ordem % 5 === 0 ? 'rara' : null,
+        reliquiaElemento: cap.elemento,
+        tituloPerfil: ordem === 20 ? `Lenda de ${cap.nome}` : null,
+      },
+      enfeiteCapitulo: {
+        id: `enf_cap_${cNum}`,
+        nome: ENFEITES_POR_CAPITULO[cNum - 1],
+      },
+    };
+  });
+
+  return [...base3, ...extras17];
 });
 
 export const PARALELAS_POR_ID = Object.fromEntries(MISSOES_PARALELAS_CATALOGO.map((m) => [m.id, m]));
@@ -258,17 +316,20 @@ export function avancarEtapaParalela(save, missaoId, resultadoBatalha = null) {
   delete m.paralelasAtivas[missaoId];
   m.paralelasConcluidas[missaoId] = true;
   save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
-  save.recompensas.diamantes += def.recompensa.diamantes;
-  const relRes = concederReliquiaCampanha(save, {
-    elemento: def.recompensa.reliquiaElemento,
-    raridade: def.recompensa.reliquiaRaridade,
-    fonte: `par:${def.id}`,
-  });
-  m.titulos[def.recompensa.tituloPerfil] = true;
+  save.recompensas.diamantes += def.recompensa.diamantes || 0;
+  if (def.recompensa.ouro) save.recompensas.gold += def.recompensa.ouro;
+  const relRes = def.recompensa.reliquiaRaridade
+    ? concederReliquiaCampanha(save, {
+        elemento: def.recompensa.reliquiaElemento,
+        raridade: def.recompensa.reliquiaRaridade,
+        fonte: `par:${def.id}`,
+      })
+    : { reliquia: null };
+  if (def.recompensa.tituloPerfil) m.titulos[def.recompensa.tituloPerfil] = true;
 
-  const paralelasCap = MISSOES_PARALELAS_CATALOGO.filter((x) => x.capitulo === def.capitulo);
+  const paralelasPrincipaisCap = MISSOES_PARALELAS_CATALOGO.filter((x) => x.capitulo === def.capitulo && x.ordem <= 3);
   let enfeiteLiberado = null;
-  if (paralelasCap.every((x) => m.paralelasConcluidas[x.id]) && !m.enfeitesRefugio[def.enfeiteCapitulo.id]) {
+  if (paralelasPrincipaisCap.every((x) => m.paralelasConcluidas[x.id]) && !m.enfeitesRefugio[def.enfeiteCapitulo.id]) {
     m.enfeitesRefugio[def.enfeiteCapitulo.id] = true;
     enfeiteLiberado = def.enfeiteCapitulo;
   }
@@ -277,9 +338,10 @@ export function avancarEtapaParalela(save, missaoId, resultadoBatalha = null) {
     ok: true,
     concluida: true,
     premios: {
-      diamantes: def.recompensa.diamantes,
+      diamantes: def.recompensa.diamantes || 0,
+      ouro: def.recompensa.ouro || 0,
       reliquia: relRes.reliquia || null,
-      tituloPerfil: def.recompensa.tituloPerfil,
+      tituloPerfil: def.recompensa.tituloPerfil || null,
       enfeiteLiberado,
     },
   };

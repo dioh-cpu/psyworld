@@ -50,3 +50,67 @@ export function criarPose({ fig, base, src, lado, escalaX = 1, zoom = 1, bbox, e
   }
   return { preparar, mostrar, existe: () => Boolean(ov) };
 }
+
+// Animações em vídeo transparente (WebM VP9 com alfa) entregues em assets/confusion/animacoes/<especie>/{idle,andar}-{frente,direita,costas,esquerda}.webm.
+// Espécies sem vídeo publicado mantêm a arte parada + pose de ataque sem disparar 404.
+export const ANIMACOES_V2_ESPECIES = new Set();
+
+const slugAnim = (esp) => String(esp || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+export function urlAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita') {
+  const sl = slugAnim(especie);
+  if (!sl || !ANIMACOES_V2_ESPECIES.has(sl)) return null;
+  const dir = direcao === 'esquerda' ? 'direita' : direcao; // esquerda = direita espelhada
+  return `../../../assets/confusion/animacoes/${sl}/${acao}-${dir}.webm`;
+}
+
+export function criarLoopAnimacao({ fig, base, especie, lado = 'a' }) {
+  let vid = null, acaoAtual = null, ativo = false;
+  const espelhar = lado === 'i';
+
+  function definirAcao(acao = 'idle') {
+    const src = urlAnimacaoOnirico(especie, acao, 'direita');
+    if (!src) return false;
+    if (acaoAtual === acao && vid && ativo) return true;
+    acaoAtual = acao;
+    if (!vid) {
+      vid = document.createElement('video');
+      vid.className = 'anim-loop';
+      vid.autoplay = true;
+      vid.loop = true;
+      vid.muted = true;
+      vid.defaultMuted = true;
+      vid.playsInline = true;
+      vid.style.cssText = `position:absolute;left:50%;bottom:0;height:100%;width:auto;max-width:100%;object-fit:contain;object-position:center bottom;pointer-events:none;transform:translateX(-50%)${espelhar ? ' scaleX(-1)' : ''};display:none;z-index:2`;
+      vid.addEventListener('canplay', () => {
+        if (!vid) return;
+        ativo = true;
+        vid.style.display = 'block';
+        if (base) base.style.visibility = 'hidden';
+        vid.play().catch(() => {});
+      });
+      vid.addEventListener('error', () => {
+        ativo = false;
+        if (vid) vid.style.display = 'none';
+        if (base) base.style.visibility = 'visible';
+      });
+      fig.append(vid);
+    }
+    if (vid.getAttribute('src') !== src) {
+      vid.setAttribute('src', src);
+      vid.load();
+    }
+    return true;
+  }
+
+  function destruir() {
+    if (!vid) return;
+    try { vid.pause(); vid.removeAttribute('src'); vid.load(); } catch {}
+    vid.remove();
+    vid = null;
+    ativo = false;
+  }
+
+  return { definirAcao, destruir, ativo: () => ativo };
+}
+

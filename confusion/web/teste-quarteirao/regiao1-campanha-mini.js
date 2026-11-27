@@ -220,7 +220,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
       const gold = Number(save.recompensas?.gold || 0).toLocaleString('pt-BR');
       const diam = Number(save.recompensas?.diamantes || 0).toLocaleString('pt-BR');
       const tick = Number(save.expansao?.tickets || 0);
-      recEl.innerHTML = `<span class="modal-rec-pill" title="Ouro"><img class="kit-rec-ico" src="${KIT_CM('recursos/ouro.png')}" alt="">${gold}</span><span class="modal-rec-pill" title="Diamantes"><img class="kit-rec-ico" src="${KIT_CM('recursos/diamante.png')}" alt="">${diam}</span><span class="modal-rec-pill" title="Tickets"><img class="kit-rec-ico" src="${KIT_CM('recursos/ticket.png')}" alt="">${tick}</span>`;
+      recEl.innerHTML = `<span class="modal-rec-pill" title="Ouro: evoluções, reforço de relíquias e compras"><img class="kit-rec-ico" src="${KIT_CM('recursos/ouro.png')}" alt="Ouro">${gold}</span><span class="modal-rec-pill" title="Diamantes: Passe Premium, invocações e pacotes"><img class="kit-rec-ico" src="${KIT_CM('recursos/diamante.png')}" alt="Diamantes">${diam}</span><span class="modal-rec-pill" title="Tickets de Invocação do Banner Permanente"><img class="kit-rec-ico" src="${KIT_CM('recursos/ticket.png')}" alt="Tickets">${tick}</span>`;
     }
   }
 
@@ -420,8 +420,12 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
       vaga,
       arte: arteDoIndividuo(m),
     }));
-    // Fundo da LUTA (não o mapa do capítulo): arena do reino até chegarem os panoramas batalha-v2 do GPT
-    const arenaUrl = fase.arena || `assets/confusion/interface/estrategia/reinos/${pad2(fase.capitulo)}/arena-chefe.webp`;
+    // Fundo da LUTA (não o mapa do capítulo): pronto para batalha-v2/cap-XX-panorama.webp (e cap-XX-chefe.webp) quando o GPT entregar
+    const BATALHA_V2_ATIVO = false;
+    const arenaV2 = fase.tipo === 'chefe'
+      ? `assets/confusion/interface/batalha-v2/cap-${pad2(fase.capitulo)}-chefe.webp`
+      : `assets/confusion/interface/batalha-v2/cap-${pad2(fase.capitulo)}-panorama.webp`;
+    const arenaUrl = fase.arena || (BATALHA_V2_ATIVO ? arenaV2 : `assets/confusion/interface/estrategia/reinos/${pad2(fase.capitulo)}/arena-chefe.webp`);
     tela.abrir({
       titulo: `Campanha Mini · ${fase.id}`,
       sub: fase.nome,

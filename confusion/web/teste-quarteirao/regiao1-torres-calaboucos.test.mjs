@@ -39,8 +39,19 @@ const novoSave = () => {
   return s;
 };
 
-test('Torres Elementais: 6 torres × 50 andares, níveis, 1ª vitória única e treino 3×/dia só Essências', () => {
-  assert.equal(TORRES_ELEMENTAIS_CATALOGO.length, 6);
+test('Torres Elementais: 9 torres × 50 andares cobrindo os 18 elementos (sem Normal), níveis, 1ª vitória única e treino 3×/dia só Essências', async () => {
+  const { ELEMENTOS_TORRES_CALABOUCOS, MAPA_DROP_FRAGMENTOS_SONHO } = await import('./regiao1-regras-sonho.js');
+  assert.equal(TORRES_ELEMENTAIS_CATALOGO.length, 9);
+  assert.equal(CALABOUCOS_CATALOGO.length, 9);
+  const cobTorres = new Set(TORRES_ELEMENTAIS_CATALOGO.flatMap((t) => t.elementos));
+  const cobCal = new Set(CALABOUCOS_CATALOGO.flatMap((c) => c.elementos));
+  for (const el of ELEMENTOS_TORRES_CALABOUCOS) {
+    assert.ok(cobTorres.has(el), `Falta elemento ${el} nas Torres Elementais`);
+    assert.ok(cobCal.has(el), `Falta elemento ${el} nos Calabouços`);
+  }
+  assert.equal(cobTorres.has('neutro'), false);
+  assert.equal(cobCal.has('neutro'), false);
+  assert.equal(Object.keys(MAPA_DROP_FRAGMENTOS_SONHO).length, 19);
   for (const t of TORRES_ELEMENTAIS_CATALOGO) {
     assert.equal(t.andares.length, 50);
     assert.equal(t.andares[9].chefe, true);
@@ -129,8 +140,8 @@ test('Torres Únicas: 3×30 andares (60..120), 1×/dia/andar, Pó Único para es
   assert.equal(s.idle.armasUnicas.fragmentos.vaelith, 1);
 });
 
-test('Calabouços: 6×13 níveis, energia 8/12/16, pesos de raridade, batalha rápida com todos vivos, loja e save', () => {
-  assert.equal(CALABOUCOS_CATALOGO.length, 6);
+test('Calabouços: 9×13 níveis cobrindo os 18 elementos, energia 8/12/16, pesos de raridade, batalha rápida com todos vivos, loja e save', () => {
+  assert.equal(CALABOUCOS_CATALOGO.length, 9);
   assert.equal(energiaCalabouco(1), 8);
   assert.equal(energiaCalabouco(6), 12);
   assert.equal(energiaCalabouco(11), 16);
