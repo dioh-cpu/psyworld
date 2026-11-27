@@ -28,6 +28,13 @@ const IMG = (p) => `../../../${p}`;
 const MV1 = (p) => IMG(`assets/confusion/interface/menus-v1/${p}`);
 const DESCANSO_V1 = (p) => IMG(`assets/confusion/interface/descanso-v1/${p}`);
 const INV_V1 = (p) => IMG(`assets/confusion/interface/invocacao-v1/${p}`);
+// Ganchos prontos para arte premium do GPT (trocar para true quando telas-v2/ e banners-v2/ entrarem na main)
+const BANNERS_V2_ATIVO = false;
+const BANNERS_V2 = (p) => IMG(`assets/confusion/interface/banners-v2/${p}`);
+const CAPAS_BANNER_V1 = { adventurer: 'capas/adventurer.webp', halloween: 'capas/halloween.webp' };
+const MINIATURAS_BANNER_V1 = { adventurer: 'miniaturas/adventurer.webp', halloween: 'miniaturas/halloween.webp' };
+const capaBannerAtual = (id) => (BANNERS_V2_ATIVO ? BANNERS_V2(`${id}-capa.webp`) : INV_V1(CAPAS_BANNER_V1[id] || `capas/${id}.webp`));
+const miniaturaBannerAtual = (id) => (BANNERS_V2_ATIVO ? BANNERS_V2(`${id}-thumb.webp`) : INV_V1(MINIATURAS_BANNER_V1[id] || `miniaturas/${id}.webp`));
 const slugArt = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
 const INICIAIS_REPOUSO = new Set(['brasinha', 'gotalume', 'penumbrio', 'sementil', 'solinho']);
 const ELENCO_INV_V1 = new Set(['abobrisco', 'abyssar', 'cervomusgo', 'cobrabufalo', 'fanalino', 'mortalio', 'tatuveludo', 'velalume', 'vitrarco', 'xistolim']);
@@ -86,9 +93,20 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #exp-nav button.novo { animation: expnovo 1.2s ease-in-out infinite; } @keyframes expnovo { 50% { box-shadow: 0 0 0 5px #f3a45855; } }
     #exp-sair-cacada { position: fixed; left: 50%; top: 56px; transform: translateX(-50%); z-index: 8; display: none; }
     #modal-exp .exp-card { width: min(860px, 98vw); max-height: calc(100dvh - 14px); overflow: hidden; display: flex; flex-direction: column; padding: 8px 12px; }
+    #modal-exp [hidden] { display: none !important; }
+    #modal-exp .exp-card:not(.modo-cena) > .modal-head,
+    #modal-exp .exp-card:not(.modo-cena) > .exp-abas,
+    #modal-exp .exp-card:not(.modo-cena) > .exp-corpo { max-width: 980px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; gap: 6px; } #modal-exp .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); }
     #modal-exp .exp-abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; flex-shrink: 0; } #modal-exp .exp-abas button[aria-selected="true"] { background: #f3a458; color: #21110c; font-weight: 700; }
     #modal-exp .exp-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    #modal-exp .inv-v1, #modal-exp .inv-extra { max-width: 1080px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+    #modal-exp .inv-carta-res { border: 2px solid var(--cor-tier, #9ca3af); background: linear-gradient(180deg, rgba(36,22,43,.95), rgba(18,10,28,.98)); animation: invPop .32s ease-out both; }
+    #modal-exp .inv-carta-res.tier-4 { box-shadow: 0 0 12px rgba(192,132,252,.45); }
+    #modal-exp .inv-carta-res.tier-5 { box-shadow: 0 0 16px rgba(251,191,36,.65); }
+    #modal-exp .inv-tier-sel { display: inline-block; padding: 1px 6px; border-radius: 99px; font-size: 9.5px; font-weight: 800; color: #12091a; background: var(--cor-tier, #9ca3af); margin-bottom: 2px; }
+    @keyframes invPop { from { opacity: 0; transform: translateY(8px) scale(.92); } to { opacity: 1; transform: none; } }
+    #modal-exp .ref-dock.bloqueado { opacity: .55; }
     #modal-exp .bl { background: #352238; border: 1px solid #6b4a52; border-radius: 8px; padding: 9px; margin-bottom: 7px; font-size: 12.5px; line-height: 1.45; } #modal-exp .bl h4 { margin: 0 0 4px; font-size: 13.5px; color: #f3c27a; } #modal-exp .bl p { margin: 2px 0; }
     #modal-exp .tut { border-color: #7dd3fc; background: #14304a; } #modal-exp .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: expnovo 1.4s ease-in-out infinite; }
     #modal-exp .ln { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; } #modal-exp .ok { color: #4ade80; } #modal-exp .ruim { color: #fb7185; } #modal-exp .mut { opacity: .78; }
@@ -273,7 +291,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const nav = document.createElement('div'); nav.id = 'exp-nav'; document.body.append(nav);
   const sair = document.createElement('button'); sair.id = 'exp-sair-cacada'; sair.className = 'btn-pri'; sair.textContent = '↩ Sair da Caçada'; document.body.append(sair);
   const modal = document.createElement('div'); modal.id = 'modal-exp'; modal.className = 'modal-bg';
-  modal.innerHTML = '<div class="modal-card exp-card" role="dialog" aria-modal="true"><header class="modal-head"><h3 id="exp-titulo"></h3><span id="exp-energia" class="energia-pill" hidden></span><button class="btn-sec" id="exp-rever" hidden>Rever tutorial</button><button class="btn-fechar" id="exp-fechar" aria-label="Fechar">✕</button></header><nav class="exp-abas" id="exp-abas"></nav><div class="exp-corpo" id="exp-corpo"></div></div>';
+  modal.innerHTML = '<div class="modal-card exp-card" role="dialog" aria-modal="true"><header class="modal-head"><h3 id="exp-titulo"></h3><span id="exp-energia" class="energia-pill" hidden></span><span id="exp-recursos" class="modal-recursos" hidden></span><button class="btn-sec" id="exp-rever" hidden>Rever tutorial</button><button class="btn-fechar" id="exp-fechar" aria-label="Fechar">✕</button></header><nav class="exp-abas" id="exp-abas"></nav><div class="exp-corpo" id="exp-corpo"></div></div>';
   document.body.append(modal);
   const crise = document.createElement('div'); crise.id = 'exp-crise'; document.body.append(crise);
   const $ = (q) => modal.querySelector(q);
@@ -390,6 +408,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         <div class="ref-pop-grid">${modosBat.map((b) => `<button class="ref-pop-btn" data-desc-ir="${b.acao}"><img src="${DESCANSO_V1(`icones/${b.ico}`)}" alt=""><span>${esc(b.tit)}</span></button>`).join('')}</div></div>`;
     } else if (descPop === 'atalhos') {
       const extras = [
+        { acao: 'mundo', ico: 'reinos.png', tit: 'Mundo (10 sistemas)' },
         { acao: 'passe', ico: 'passe.png', tit: 'Passe & Login' },
         { acao: 'mochila', ico: 'mochila.png', tit: 'Mochila' },
         { acao: 'codex', ico: 'colecao.png', tit: 'Codex Onírico' },
@@ -437,7 +456,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           <button class="ref-dock" data-desc-ir="equipe"><img src="${DESCANSO_V1('icones/equipe.png')}" alt=""><span>Equipe</span></button>
           <button class="ref-dock destaque" data-desc-ir="oniricos"><img src="${DESCANSO_V1('icones/invocacao.png')}" alt=""><span>Invocação</span></button>
           <button class="ref-dock" data-desc-ir="codex"><img src="${DESCANSO_V1('icones/colecao.png')}" alt=""><span>Coleção</span></button>
-          <button class="ref-dock" data-desc-ir="guilda" ${guildaOn ? '' : 'disabled title="Visite a cidade na Campanha para abrir a Guilda"'}><img src="${DESCANSO_V1('icones/guilda.png')}" alt=""><span>Guilda</span></button>
+          <button class="ref-dock ${guildaOn ? '' : 'bloqueado'}" data-desc-ir="guilda" title="${guildaOn ? 'Abrir Guilda dos Aventureiros' : 'Visite a Cidade (C1) na Campanha para abrir a Guilda'}"><img src="${DESCANSO_V1('icones/guilda.png')}" alt=""><span>Guilda</span></button>
           <button class="ref-dock" data-desc-ir="mochila"><img src="${DESCANSO_V1('icones/mochila.png')}" alt=""><span>Mochila</span></button>
         </div>
         <div class="ref-grupo">
@@ -481,13 +500,13 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       </div>
       <div class="inv-grid">
         <div class="inv-rail" role="tablist" aria-label="Banners disponíveis">
-          ${hwOn ? `<button class="inv-thumb" data-desc-ir="halloween"><img src="${INV_V1('miniaturas/halloween.webp')}" alt="Banner de Halloween"><span>Halloween</span></button>` : ''}
-          <button class="inv-thumb ativo" aria-selected="true"><img src="${INV_V1('miniaturas/adventurer.webp')}" alt="Banner Permanente Adventurer"><span>Adventurer</span></button>
+          ${hwOn ? `<button class="inv-thumb" data-desc-ir="halloween"><img src="${miniaturaBannerAtual('halloween')}" alt="Banner de Halloween"><span>Halloween</span></button>` : ''}
+          <button class="inv-thumb ativo" aria-selected="true"><img src="${miniaturaBannerAtual('adventurer')}" alt="Banner Permanente Adventurer"><span>Adventurer</span></button>
         </div>
         <div class="inv-main">
           <div class="inv-stage ${verCapaInv ? 'capa-modo' : ''}">
             ${verCapaInv
-              ? `<img class="inv-capa-full" src="${INV_V1('capas/adventurer.webp')}" alt="Capa do Banner Permanente Adventurer">`
+              ? `<img class="inv-capa-full" src="${capaBannerAtual('adventurer')}" alt="Capa do Banner Permanente Adventurer">`
               : `<div class="inv-stage-head"><div><small>Banner Permanente · ${pool.length} espécies</small><b>Adventurer</b></div></div>
                  <div class="inv-elenco">${elencoPalco.map((p, idx) => `
                    <div class="inv-ator ${idx === 2 ? 'centro' : ''}">
@@ -511,10 +530,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     </div>`;
     h += '<div class="inv-extra">';
     if (ultimasInvocacoes.length) {
-      h += `<div class="bl"><h4>Resultado (${ultimasInvocacoes.length})</h4><div class="inv-res">${ultimasInvocacoes.map((r) => {
+      h += `<div class="bl"><h4>Resultado (${ultimasInvocacoes.length})</h4><div class="inv-res">${ultimasInvocacoes.map((r, idx) => {
         const mN = MOLDURAS_BANNER[r.raridade] || r.tier || 1;
+        const tierN = r.tier || mN;
+        const cor = COR_TIER[tierN] || RARO[r.raridade] || '#9ca3af';
         const cls = infoClasse(r.especie);
-        return `<div class="mini"><div class="mini-mold"><img class="sp" src="${arteElencoInv(r.especie)}" alt="${esc(r.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><b>${esc(r.especie)}</b><br><span style="color:${RARO[r.raridade] || '#cbd5e1'}">T${r.tier || mN} · ${esc(r.raridade)}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
+        return `<div class="mini inv-carta-res tier-${tierN}" style="--cor-tier:${cor};animation-delay:${(idx * 0.05).toFixed(2)}s"><div class="mini-mold"><img class="sp" src="${arteElencoInv(r.especie)}" alt="${esc(r.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><span class="inv-tier-sel">T${tierN}</span><br><b>${esc(r.especie)}</b><br><span style="color:${cor}">${esc(r.raridade)}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
       }).join('')}</div></div>`;
     }
     h += `<div class="bl"><h4>Elenco completo no Banner (${pool.length}) · Comum 70% · Rara 22% · Épica 7% · Lendária 1%</h4><div class="grade">${pool.map((p) => {
@@ -943,6 +964,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   function render(zerarScroll = false) {
     if (!painel) return; const P = PAINEIS[painel];
     const ehCena = painel === 'descanso' || painel === 'oniricos';
+    modal.dataset.tela = painel || 'descanso';
     const card = $('.exp-card');
     if (card) {
       card.classList.toggle('modo-cena', ehCena);
@@ -953,6 +975,18 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (enEl) {
       enEl.hidden = !P.mostraEnergia;
       if (P.mostraEnergia) enEl.innerHTML = energiaTextoHtml(save());
+    }
+    const recEl = $('#exp-recursos');
+    if (recEl) {
+      recEl.hidden = ehCena;
+      if (!ehCena) {
+        const sAtual = save();
+        const en = energiaDe(sAtual);
+        const gold = Number(sAtual.recompensas?.gold || 0).toLocaleString('pt-BR');
+        const diam = Number(sAtual.recompensas?.diamantes || 0).toLocaleString('pt-BR');
+        const tick = Number(sAtual.expansao?.tickets || 0);
+        recEl.innerHTML = `${!P.mostraEnergia ? `<span class="modal-rec-pill" title="Energia">⚡ ${en.atual}/${en.max}</span>` : ''}<span class="modal-rec-pill" title="Ouro">🪙 ${gold}</span><span class="modal-rec-pill" title="Diamantes">💎 ${diam}</span><span class="modal-rec-pill" title="Tickets">🎟️ ${tick}</span>`;
+      }
     }
     $('#exp-abas').innerHTML = P.abas.length > 1 ? P.abas.map((a, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${esc(a)}</button>`).join('') : '';
     const tid = tutDaAba(painel, aba); const vis = tid && TUTS[tid];
@@ -1046,8 +1080,14 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         else window.regiao1?.idleUI?.abrirConfigAutoCaca?.();
         return;
       }
+      if (dest === 'guilda' && !R.aberto(save(), 'guilda')) {
+        mostrarToast('🔒 Visite a Cidade (C1) na Campanha para abrir a Guilda.', 3000);
+        render();
+        return;
+      }
       // Menus abertos a partir do Refúgio abrem SOBRE o Refúgio e, ao fechar, voltam ao Refúgio (nunca caem na Campanha)
       render();
+      if (dest === 'mundo') { window.regiaoMundo?.abrir?.(); return; }
       if (dest === 'mochila') { window.regiao1?.idleUI?.abrirMochila?.('domador'); return; }
       if (dest === 'passe') { window.regiao1?.idleUI?.abrirTemporada?.(); return; }
       if (dest === 'codex') { window.regiao1?.idleUI?.abrirCodex?.(); return; }

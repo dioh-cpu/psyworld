@@ -53,7 +53,7 @@ const CSS_CM = `
 .cm-btn.pri{background:linear-gradient(135deg,#0284c7,#2563eb);border-color:#7dd3fc;color:#fff}
 .cm-btn.ouro{background:linear-gradient(135deg,#b45309,#d97706);border-color:#fde68a;color:#fff}
 .cm-btn:disabled{opacity:.42;cursor:not-allowed}
-.cm-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.cm-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 14px;display:flex;flex-direction:column;gap:10px;max-width:1120px;width:100%;margin:0 auto;box-sizing:border-box}
 .cm-caps{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:10px}
 .cm-cap{position:relative;border-radius:12px;overflow:hidden;border:1px solid #26466d;background:#0f203b;cursor:pointer;display:flex;flex-direction:column;transition:transform .12s,border-color .12s}
 .cm-cap:hover{transform:translateY(-2px);border-color:#38bdf8}
@@ -138,6 +138,7 @@ function garantirModal() {
   m = document.createElement('div');
   m.id = 'modal-campanha-mini';
   m.className = 'modal-bg';
+  m.dataset.tela = 'campanha-mini';
   m.innerHTML = `<div class="cm-shell">
     <div class="cm-top">
       <button class="cm-btn" data-cm-voltar="1">← Refúgio</button>
@@ -145,6 +146,7 @@ function garantirModal() {
       <div class="cm-dir">
         <span id="cm-energia" class="energia-pill">⚡ 120/120</span>
         <button class="cm-btn" id="cm-usar-pocao" data-cm-pocao="1" style="display:none">+60 ⚡</button>
+        <span id="cm-recursos" class="modal-recursos"></span>
       </div>
     </div>
     <div class="cm-body" id="cm-body"></div>
@@ -184,6 +186,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
   const subEl = modal.querySelector('#cm-sub');
   const enEl = modal.querySelector('#cm-energia');
   const pocBtn = modal.querySelector('#cm-usar-pocao');
+  const recEl = modal.querySelector('#cm-recursos');
   const body = modal.querySelector('#cm-body');
   const voltarBtn = modal.querySelector('[data-cm-voltar]');
 
@@ -205,6 +208,12 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
       pocBtn.textContent = `🧪 +60 ⚡ (${en.pocoes})`;
     } else {
       pocBtn.style.display = 'none';
+    }
+    if (recEl) {
+      const gold = Number(save.recompensas?.gold || 0).toLocaleString('pt-BR');
+      const diam = Number(save.recompensas?.diamantes || 0).toLocaleString('pt-BR');
+      const tick = Number(save.expansao?.tickets || 0);
+      recEl.innerHTML = `<span class="modal-rec-pill" title="Ouro">🪙 ${gold}</span><span class="modal-rec-pill" title="Diamantes">💎 ${diam}</span><span class="modal-rec-pill" title="Tickets">🎟️ ${tick}</span>`;
     }
   }
 

@@ -733,8 +733,26 @@ function voltarAoRefugioDeQualquerMenu() {
   window.regiaoExp?.abrir?.('descanso');
 }
 
+const TELA_POR_MODAL = {
+  'modal-mochila': 'mochila',
+  'modal-codex': 'colecao',
+  'modal-atlas': 'atlas',
+  'modal-temporada': 'passe',
+  'modal-diario': 'missoes',
+  'modal-config': 'config',
+  'modal-mapa': 'mapa',
+  'modal-menu': 'menu',
+  'modal-autocaca': 'idle',
+  'modal-voto': 'eventos',
+  'modal-mundo': 'mundo',
+  'modal-regioes': 'regioes',
+  'modal-reinos': 'reinos',
+  'modal-hw': 'eventos',
+};
+
 function garantirBotaoRefugioNoModal(el) {
   if (!el || MODAIS_SEM_REFUGIO.has(el.id)) return;
+  if (TELA_POR_MODAL[el.id]) el.dataset.tela = TELA_POR_MODAL[el.id];
   const head = el.querySelector('.modal-head');
   if (!head) return;
   let btn = head.querySelector('.btn-voltar-refugio');
@@ -753,8 +771,21 @@ function garantirBotaoRefugioNoModal(el) {
   }
   if (el.id === 'modal-exp') {
     btn.hidden = Boolean(el.querySelector('[data-refugio="1"]'));
-  } else {
-    btn.hidden = false;
+    return;
+  }
+  btn.hidden = false;
+  if (typeof save !== 'undefined' && save && !head.classList.contains('interface-capa')) {
+    let rec = head.querySelector('.modal-recursos');
+    if (!rec) {
+      rec = document.createElement('span');
+      rec.className = 'modal-recursos';
+      head.insertBefore(rec, btn);
+    }
+    const en = energiaDe(save);
+    const gold = Number(save.recompensas?.gold || 0).toLocaleString('pt-BR');
+    const diam = Number(save.recompensas?.diamantes || 0).toLocaleString('pt-BR');
+    const tick = Number(save.expansao?.tickets || 0);
+    rec.innerHTML = `<span class="modal-rec-pill" title="Energia">⚡ ${en.atual}/${en.max}</span><span class="modal-rec-pill" title="Ouro">🪙 ${gold}</span><span class="modal-rec-pill" title="Diamantes">💎 ${diam}</span><span class="modal-rec-pill" title="Tickets">🎟️ ${tick}</span>`;
   }
 }
 
