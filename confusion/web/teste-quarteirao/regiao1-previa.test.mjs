@@ -14,6 +14,7 @@ import { criarUnidade, criarBatalha, passoAuto } from './regiao1-estrategia-regr
 import { resolverEncontroCatalogo, ehEspecieInicial } from './regiao1-encontros-regras.js';
 import { garantirEstadoIdle, liquidarPeriodoIdle, resgatarTudoPasse, chocarPrimeiroOvo, comprarEsferaIdle, comprarOuEquiparReliquia, resgatarLojaVoto } from './regiao1-idle.js';
 import { fichaOnirico, evoluirFormaOnirico, adicionarFragmentoSonho } from './regiao1-criacao-regras.js';
+import { adicionarEssencia } from './regiao1-regras-sonho.js';
 import { iniciarRevancheChefe, concluirRevancheChefe, previsaoCraftChefe, craftarChefe, REVANCHE_CFG } from './regiao1-revanche-regras.js';
 import { ganharXpPasse } from './regiao1-passe-regras.js';
 
@@ -102,8 +103,11 @@ test('Percurso 2 (Save antigo): Equipe/Ficha, Evolução 10/30, Revanche/Craft, 
   assert.ok(fichaGot.bonusEstrelas.hp > 0);
   assert.equal(fichaGot.arvore.proxima.custo, 10);
 
-  // Evolução por Fragmentos de Sonho: 10 (Base→2ª, mantém T4) e 30 (2ª→3ª, promove T4→T5)
+  // Evolução por Fragmentos de Sonho (10/30) + Essências elementais (20m+5med / 30med+10M)
   adicionarFragmentoSonho(save, 'agua', 40);
+  adicionarEssencia(save, 'agua', 'menor', 20);
+  adicionarEssencia(save, 'agua', 'media', 35);
+  adicionarEssencia(save, 'agua', 'maior', 10);
   const evo1 = evoluirFormaOnirico(save, 0);
   assert.equal(evo1.ok, true);
   assert.equal(idle.equipe[0].especie, 'Vaelith');
@@ -116,6 +120,8 @@ test('Percurso 2 (Save antigo): Equipe/Ficha, Evolução 10/30, Revanche/Craft, 
 
   // Não-inicial preserva tier ao evoluir forma
   adicionarFragmentoSonho(save, 'planta', 10);
+  adicionarEssencia(save, 'planta', 'menor', 20);
+  adicionarEssencia(save, 'planta', 'media', 5);
   const evoReino = evoluirFormaOnirico(save, 2);
   assert.equal(evoReino.ok, true);
   assert.equal(idle.equipe[2].tier, 2);

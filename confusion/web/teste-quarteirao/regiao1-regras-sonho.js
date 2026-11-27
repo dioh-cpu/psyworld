@@ -4,10 +4,83 @@ import { LINHAS, linhaDaEspecie, ELEMENTO_DA_ESPECIE, ARTE_DA_ESPECIE } from '..
 import { REINOS } from '../reinos.js';
 import { xpTotal } from './regiao1-progressao.js';
 
+let _ganchoMarcoEvolucao = null;
+export function registrarGanchoMarcoEvolucao(fn) {
+  _ganchoMarcoEvolucao = typeof fn === 'function' ? fn : null;
+}
+
+export const ESSENCIAS_PARES = {
+  ignea: { id: 'ignea', nome: 'Essência Ígnea', torre: 'chama', calabouco: 'forja-rubra', elementos: ['fogo', 'eletrico'] },
+  mares: { id: 'mares', nome: 'Essência das Marés', torre: 'mare', calabouco: 'gruta-mares', elementos: ['agua', 'voador'] },
+  verde: { id: 'verde', nome: 'Essência Verde', torre: 'raiz', calabouco: 'bosque-cativo', elementos: ['planta', 'inseto'] },
+  mineral: { id: 'mineral', nome: 'Essência Mineral', torre: 'rocha', calabouco: 'mina-profunda', elementos: ['terra', 'pedra', 'aco'] },
+  solar: { id: 'solar', nome: 'Essência Solar', torre: 'aurora', calabouco: 'templo-alvorecer', elementos: ['luz', 'neutro'] },
+  sombria: { id: 'sombria', nome: 'Essência Sombria', torre: 'umbra', calabouco: 'cripta-velada', elementos: ['trevas', 'fantasma'] },
+};
+
+const PAR_POR_ELEMENTO = {};
+for (const def of Object.values(ESSENCIAS_PARES)) {
+  for (const el of def.elementos) PAR_POR_ELEMENTO[el] = def.id;
+}
+PAR_POR_ELEMENTO.sombra = 'sombria';
+
+export function parEssenciaDoElemento(elOuPar = 'neutro') {
+  const k = String(elOuPar || 'neutro').toLowerCase();
+  if (ESSENCIAS_PARES[k]) return k;
+  return PAR_POR_ELEMENTO[k] || 'solar';
+}
+
+export function essenciasDe(save) {
+  const idle = save?.idle || (save ? (save.idle = {}) : {});
+  if (!idle.essencias || typeof idle.essencias !== 'object') idle.essencias = {};
+  for (const par of Object.keys(ESSENCIAS_PARES)) {
+    const cur = idle.essencias[par];
+    idle.essencias[par] = {
+      menor: Math.max(0, Math.floor(Number(cur?.menor) || 0)),
+      media: Math.max(0, Math.floor(Number(cur?.media) || 0)),
+      maior: Math.max(0, Math.floor(Number(cur?.maior) || 0)),
+    };
+  }
+  return idle.essencias;
+}
+
+export function saldoEssencia(save, elOuPar, tamanho = null) {
+  const par = parEssenciaDoElemento(elOuPar);
+  const s = essenciasDe(save)[par];
+  return tamanho ? (s[tamanho] || 0) : { ...s };
+}
+
+export function adicionarEssencia(save, elOuPar, tamanho = 'menor', qtd = 1) {
+  const par = parEssenciaDoElemento(elOuPar);
+  const tam = ['menor', 'media', 'maior'].includes(tamanho) ? tamanho : 'menor';
+  const n = Math.max(0, Math.floor(Number(qtd) || 0));
+  const e = essenciasDe(save);
+  e[par][tam] += n;
+  return e[par][tam];
+}
+
+export function consumirEssencia(save, elOuPar, custos = {}) {
+  const par = parEssenciaDoElemento(elOuPar);
+  const e = essenciasDe(save);
+  for (const tam of ['menor', 'media', 'maior']) {
+    const nec = Math.max(0, Math.floor(Number(custos[tam]) || 0));
+    if ((e[par][tam] || 0) < nec) return { ok: false, par, motivo: `Faltam essências (${ESSENCIAS_PARES[par].nome}).` };
+  }
+  for (const tam of ['menor', 'media', 'maior']) {
+    const nec = Math.max(0, Math.floor(Number(custos[tam]) || 0));
+    e[par][tam] -= nec;
+  }
+  return { ok: true, par, saldo: { ...e[par] } };
+}
+
 export const FRAGMENTOS_SONHO_CFG = {
   chanceDrop: 0.01, // 1% de chance por Onírico inimigo derrotado
   custoBaseParaSegunda: 10,
   custoSegundaParaTerceira: 30,
+  essenciasPorFase: {
+    2: { menor: 20, media: 5, maior: 0 },
+    3: { menor: 0, media: 30, maior: 10 },
+  },
   tierIniciaisPorFase: { 1: 4, 2: 4, 3: 5 }, // exclusivo das 5 linhagens iniciais
   maxDerrotasHistorico: 500,
 };
@@ -242,14 +315,32 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
   const custo = proximaFase === 2 ? cfg.custoBaseParaSegunda : proximaFase === 3 ? cfg.custoSegundaParaTerceira : null;
   const saldo = saldoFragmentoSonho(save, elemento);
   const faltam = custo != null ? Math.max(0, custo - saldo) : 0;
-  const podeEvoluir = Boolean(!bloqueada && custo != null && saldo >= custo);
+  const parEssencia = parEssenciaDoElemento(elemento);
+  const essenciaNome = ESSENCIAS_PARES[parEssencia]?.nome || parEssencia;
+  const custoEssencias = proximaFase
+    ? { menor: 0, media: 0, maior: 0, ...(cfg.essenciasPorFase?.[proximaFase] || (proximaFase === 2 ? { menor: 20, media: 5 } : { media: 30, maior: 10 })) }
+    : null;
+  const saldoEssencias = save ? saldoEssencia(save, parEssencia) : { menor: 0, media: 0, maior: 0 };
+  const faltamEssencias = custoEssencias
+    ? {
+        menor: Math.max(0, (custoEssencias.menor || 0) - (saldoEssencias.menor || 0)),
+        media: Math.max(0, (custoEssencias.media || 0) - (saldoEssencias.media || 0)),
+        maior: Math.max(0, (custoEssencias.maior || 0) - (saldoEssencias.maior || 0)),
+      }
+    : null;
+  const temEssencias = Boolean(
+    custoEssencias && faltamEssencias.menor === 0 && faltamEssencias.media === 0 && faltamEssencias.maior === 0,
+  );
+  const podeEvoluir = Boolean(!bloqueada && custo != null && saldo >= custo && temEssencias);
   const motivo = bloqueada
     ? NOCTARN_REGRA.bloqueioMotivo
     : !proximaFase
       ? (lin || reinoLin ? 'Este Onírico já está na 3ª forma.' : 'Esta espécie não possui evolução de forma.')
-      : podeEvoluir
-        ? null
-        : `Faltam ${faltam} Fragmento(s) de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`;
+      : faltam > 0
+        ? `Faltam ${faltam} Fragmento(s) de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`
+        : !temEssencias
+          ? `Faltam essências elementais (${essenciaNome}).`
+          : null;
 
   return {
     podeEvoluir,
@@ -266,6 +357,12 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
     custo,
     saldo,
     faltam,
+    parEssencia,
+    essenciaNome,
+    custoEssencias,
+    saldoEssencias,
+    faltamEssencias,
+    temEssencias,
     nivel,
     tierAtual,
     tierResultante,
@@ -273,7 +370,7 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
   };
 }
 
-// Evolui forma consumindo 10 (base→2ª) ou 30 (2ª→3ª) Fragmentos de Sonho do elemento da linhagem.
+// Evolui forma consumindo Fragmentos de Sonho (10/30) + Essências elementais (20 menor+5 média / 30 média+10 maior).
 // Preserva nível, XP, estrelas e (para não-iniciais) tier. Iniciais: base/2ª = T4, 3ª = T5.
 export function evoluirFormaPorFragmentos(
   save,
@@ -288,6 +385,10 @@ export function evoluirFormaPorFragmentos(
   const consulta = consultarEvolucaoForma(save, idxUnidade, cfg);
   if (!consulta.podeEvoluir) {
     return { ok: false, jaAplicado: false, ...consulta };
+  }
+  const consEss = consumirEssencia(save, consulta.parEssencia, consulta.custoEssencias);
+  if (!consEss.ok) {
+    return { ok: false, jaAplicado: false, ...consulta, motivo: consEss.motivo };
   }
   const u = save.idle.equipe[idxUnidade];
   const frags = fragmentosSonhoDe(save);
@@ -304,6 +405,7 @@ export function evoluirFormaPorFragmentos(
   u.raridade = u.tier;
 
   if (operacaoId) marcarDerrotaPaga(save, operacaoId, cfg);
+  if (_ganchoMarcoEvolucao) _ganchoMarcoEvolucao(save, 'evolucao', { especie: consulta.para, faseNova: consulta.proximaFase, qtd: 1 });
   return {
     ok: true,
     jaAplicado: false,
@@ -316,6 +418,9 @@ export function evoluirFormaPorFragmentos(
     custo: consulta.custo,
     saldoAntes,
     saldoDepois,
+    parEssencia: consulta.parEssencia,
+    custoEssencias: consulta.custoEssencias,
+    saldoEssenciasDepois: consEss.saldo,
     nivel: u.nivel,
     tier: u.tier,
     estrelas: u.estrelas,
