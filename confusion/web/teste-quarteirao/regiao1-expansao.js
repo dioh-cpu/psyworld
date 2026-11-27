@@ -21,6 +21,7 @@ import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.
 import { renderizarPainelCalaboucos, tratarCliqueCalaboucos } from './regiao1-calaboucos-ui.js';
 import { renderizarPainelReliquias, tratarCliqueReliquias } from './regiao1-reliquias-ui.js';
 import { resumoDomadorAtivoHtml, renderizarPainelDomadores, tratarCliqueDomadores } from './regiao1-domadores-ui.js';
+import { renderBalaoTutorialModo, tratarCliqueTutorialModo } from './regiao1-tutoriais-modos.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -546,7 +547,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           }).join(' ')
       : '';
     const arvoreHtml = arv.possuiArvore
-      ? `<div style="margin-top:8px"><b>Árvore de Evolução (${esc(arv.elemento)})</b>
+      ? `<div style="margin-top:8px">${renderBalaoTutorialModo(save(), 'evolucao_essencias')}<b>Árvore de Evolução (${esc(arv.elemento)})</b>
           <div class="evo-arvore">${arv.formas.map((no, i) => `
             <div class="evo-no ${no.atual ? 'atual' : ''}">
               <img src="${no.arte ? IMG(no.arte) : artePequena(no.especie)}" alt="${esc(no.especie)}">
@@ -955,12 +956,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     $('#exp-rever').hidden = ehCena || !(vis && exp().tut[tid] && revendo !== tid); $('#exp-rever').dataset.tut = tid || '';
     let h = tid ? cartaoTut(tid) : '';
     if (painel === 'descanso') h += abaDescanso();
-    if (painel === 'missoes') h += renderizarPainelMissoes(save(), aba, { capParalela });
-    if (painel === 'campanhaMini') h += `<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Energia: <b>6</b> (normal), <b>8</b> (elite) e <b>10</b> (chefe).</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
-    if (painel === 'torres') h += renderizarPainelTorres(save(), aba, torresUi);
-    if (painel === 'calaboucos') h += renderizarPainelCalaboucos(save(), calaboucosUi);
-    if (painel === 'reliquias') h += renderizarPainelReliquias(save(), aba, reliquiasUi);
-    if (painel === 'equipe') h += aba === 1 ? renderizarPainelDomadores(save()) : (resumoDomadorAtivoHtml(save()) + abaEquipe());
+    if (painel === 'missoes') h += renderBalaoTutorialModo(save(), 'missoes') + renderizarPainelMissoes(save(), aba, { capParalela });
+    if (painel === 'campanhaMini') h += `${renderBalaoTutorialModo(save(), 'campanha_mini')}<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Energia: <b>6</b> (normal), <b>8</b> (elite) e <b>10</b> (chefe).</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
+    if (painel === 'torres') h += renderBalaoTutorialModo(save(), 'torres') + renderizarPainelTorres(save(), aba, torresUi);
+    if (painel === 'calaboucos') h += renderBalaoTutorialModo(save(), 'calaboucos_rel') + renderizarPainelCalaboucos(save(), calaboucosUi);
+    if (painel === 'reliquias') h += renderBalaoTutorialModo(save(), 'reliquias') + renderizarPainelReliquias(save(), aba, reliquiasUi);
+    if (painel === 'equipe') h += aba === 1 ? (renderBalaoTutorialModo(save(), 'domadores') + renderizarPainelDomadores(save())) : (resumoDomadorAtivoHtml(save()) + abaEquipe());
     if (painel === 'oniricos') h += abaBanner();
     if (painel === 'cacadas') h += [abaCacadas, abaCalabouco, abaChefes][aba]();
     if (painel === 'guilda') h += [abaContratos, abaFazenda, abaOficina, abaReinosGuilda][aba]();
@@ -1027,6 +1028,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     }
     if (t.id === 'exp-rever') { revendo = d.tut; render(true); return; }
     if (d.tutok) { exp().tut[d.tutok] = true; revendo = null; salvar(); render(); return; }
+    if (tratarCliqueTutorialModo(d, { save: save(), salvar, aoFechar: () => render() })) return;
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(true); return; }
     if (d.descPop !== undefined) { descPop = d.descPop || null; render(); return; }
     if (d.invCapa !== undefined) { verCapaInv = !verCapaInv; render(); return; }
