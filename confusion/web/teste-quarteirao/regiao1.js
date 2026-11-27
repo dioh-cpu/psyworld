@@ -10,6 +10,13 @@ import { reforcosDoChefe } from './regiao1-encontros-regras.js';
 import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
 import { iniciarSeletorRegioes } from './regiao1-regioes.js';
 import {
+  criarEstadoPasseio,
+  atualizarPasseioSelvagem,
+  obterFolhaSelvagem,
+  quadroFolha4Dir,
+  registrarFolhaSelvagem,
+} from './regiao1-movimento-selvagens.js';
+import {
   garantirEstadoRegioes,
   regiaoDoMapa,
   regiaoDesbloqueada,
@@ -518,13 +525,42 @@ const FATOR_NPC = 1.07;
 const alturaDoNpc = (npc) => ALTURA_PERSONAGEM * FATOR_NPC * (npc.proporcao ?? 1);
 
 function criarMonstroSelvagem(m) {
-  resolverEncontrosMapa([m], 1); // entidades criadas depois (Caçadas) também passam pela resolução
+  if (regiaoDoMapa(m.mapa) !== 'r2') resolverEncontrosMapa([m], 1); // entidades criadas depois (Caçadas) também passam pela resolução
   const w = P(m.pos[0], m.pos[1]);
   const tex = carregarTextura(m.sprite);
   const prop = m.proporcaoSprite || (/\/oniricos\//.test(m.sprite || '') ? 16 / 9 : 0); // artes do catálogo vêm em quadro 16:9
   const alt = prop ? 7.6 : 6.4, larg = prop ? alt * prop : 6.4;
   const mesh = adicionarBillboard(tex, w.x, w.z, larg, alt, 3);
-  const ent = { tipo: 'wild', dados: m, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 3.1, raioInteracao: 5.8 };
+  const ent = {
+    tipo: 'wild',
+    dados: m,
+    mesh,
+    x: w.x,
+    z: w.z,
+    altura: alt,
+    baseY: mesh.position.y,
+    raio: 3.1,
+    raioInteracao: 5.8,
+    passeio: criarEstadoPasseio(w.x, w.z),
+    folha4Dir: null,
+    folhaTex: null,
+  };
+  const cfgFolha = obterFolhaSelvagem(m.especie);
+  if (cfgFolha) {
+    texLoader.load(cfgFolha.url, (tFolha) => {
+      if (!entidadesMapa.includes(ent)) { tFolha.dispose(); return; }
+      tFolha.colorSpace = THREE.SRGBColorSpace;
+      tFolha.wrapS = THREE.RepeatWrapping;
+      tFolha.wrapT = THREE.RepeatWrapping;
+      tFolha.repeat.set(1 / cfgFolha.cols, 1 / cfgFolha.rows);
+      ent.folha4Dir = cfgFolha;
+      ent.folhaTex = tFolha;
+      mesh.material.map = tFolha;
+      mesh.material.needsUpdate = true;
+    }, undefined, () => {
+      // Fallback silencioso para o sprite atual se a folha ainda não estiver disponível
+    });
+  }
   entidadesMapa.push(ent);
   return ent;
 }
@@ -2381,10 +2417,39 @@ function quadro(agora) {
     const s = 1 + Math.sin(agora * 0.009) * 0.14;
     marcadorDestino.scale.set(s, s, 1);
   }
+  const gradeAtual = mapaAtual ? gradeComFolga(mapaAtual.id) : null;
+  const podeAndarSelvagem = (wx, wz) => {
+    if (!gradeAtual) return true;
+    const [px, py] = W2P(wx, wz);
+    if (px < 24 || px > IMG_W - 24 || py < 24 || py > IMG_H - 24) return false;
+    const gx = Math.min(GRID_W - 1, Math.max(0, Math.floor((px / IMG_W) * GRID_W)));
+    const gy = Math.min(GRID_H - 1, Math.max(0, Math.floor((py / IMG_H) * GRID_H)));
+    return Boolean(gradeAtual[gy * GRID_W + gx]);
+  };
   for (const ent of entidadesMapa) {
     if (!ent.mesh) continue;
     ent.mesh.quaternion.copy(camera.quaternion);
-    if (ent.tipo === 'wild' || ent.tipo === 'boss' || ent.dados.flutua) {
+    if (ent.tipo === 'wild' && ent.passeio) {
+      const mov = atualizarPasseioSelvagem(ent.passeio, ent, dt, { podeIr: podeAndarSelvagem });
+      ent.x = mov.x;
+      ent.z = mov.z;
+      ent.baseY = camada(ent.z) + (ent.altura || 6.4) * 0.45;
+      const passoBob = mov.andando ? Math.abs(Math.sin(ent.passeio.tempoAnim * 8)) * 0.24 : pulso * 0.1;
+      ent.mesh.position.set(ent.x, ent.baseY + passoBob, ent.z);
+      if (ent.folha4Dir && ent.folhaTex) {
+        const q = quadroFolha4Dir(ent.folha4Dir, mov.dir, mov.andando, ent.passeio.tempoAnim);
+        ent.folhaTex.offset.set(q.offsetX, q.offsetY);
+        ent.mesh.scale.x = 1;
+      } else {
+        ent.mesh.scale.x = mov.dir === 'esquerda' ? -1 : 1;
+      }
+    } else if (ent.tipo === 'npc') {
+      // NPCs permanecem estáticos no ponto fixo, com animação idle (.mp4) ou respiração discreta
+      if (!ent.dados.idle) {
+        ent.mesh.scale.y = 1 + Math.sin(agora * 0.0025 + ent.x) * 0.012;
+      }
+      if (ent.dados.flutua) ent.mesh.position.y = ent.baseY + pulso * 0.14;
+    } else if (ent.tipo === 'boss' || ent.dados.flutua) {
       ent.mesh.position.y = ent.baseY + pulso * 0.14;
     }
   }
@@ -2541,6 +2606,15 @@ window.regiao1 = {
   quests: () => save.quests,
   mapasDisponiveis: () => [...ORDEM_MAPAS],
   vencerBatalhaAtual: () => { if (batalhaAtiva) encerrarBatalha(true); },
+  selvagensInfo: () => entidadesMapa.filter((e) => e.tipo === 'wild').map((e) => ({
+    id: e.dados.id,
+    especie: e.dados.especie,
+    dir: e.passeio?.dir || 'frente',
+    andando: Boolean(e.passeio?.andando),
+    moveu: Boolean(e.passeio?.moveu),
+    folha4Dir: Boolean(e.folha4Dir),
+  })),
+  registrarFolhaSelvagem,
   idleUI,
 };
 
