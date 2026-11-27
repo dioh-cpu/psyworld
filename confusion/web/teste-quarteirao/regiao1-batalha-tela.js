@@ -334,7 +334,7 @@ export function criarArena(host, { artes = {} } = {}) {
       ? '../../../assets/confusion/interface/descanso-v1/avatar-azazel.webp'
       : `../../../${dom.arte?.retrato || dom.retrato || 'assets/confusion/interface/descanso-v1/avatar-azazel.webp'}`;
     const maxB = Math.max(1, Number(dom.barraMax ?? dom.energiaMax ?? 100) || 100);
-    const atualB = Math.max(0, Math.min(maxB, Number(dom.barra ?? dom.energia ?? 0) || 0));
+    const atualB = Math.max(0, Math.min(maxB, Number(dom.barraEnergia ?? dom.barra ?? dom.energia ?? 0) || 0));
     const pct = Math.round((atualB / maxB) * 100);
     const habNome = (b?.evento?.ator === 'domador' && b.evento?.hab?.nome)
       || b?.evento?.domador?.hab?.nome

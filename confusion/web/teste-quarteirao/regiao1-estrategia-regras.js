@@ -250,7 +250,7 @@ function agirDomador(b, rng) {
       ev.alvos.push(rr);
     }
   }
-  b.log.push(`${acao.nomeDomador} usou ${h.nome}.`);
+  b.domador.ultimaHabilidade = h.nome; b.log.push(`${acao.nomeDomador} usou ${h.nome}.`);
   b.eventoDomador = ev; verificarFim(b);
 }
 // acao: { tipo: 'atacar'|'habilidade'|'defender', idx?: 0..2, alvo?: id }. Cada ação gera b.evento (que a tela toca uma vez).
