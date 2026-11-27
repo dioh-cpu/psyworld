@@ -1,6 +1,8 @@
 // Registro completo das 48 áreas da Região 1 (referência 1024x571 px por mapa).
 // Segue rigorosamente MAPA-REGIAO-1.png, MANIFESTO.txt e as pranchas BORDAS-*.jpg.
 
+import { AREAS_ALTOS_AMBAR } from './regiao2-altos-ambar.js';
+
 export const IMG_W = 1024;
 export const IMG_H = 571;
 export const MAPA_INICIAL = 'C0';
@@ -35,8 +37,6 @@ function mapaBase(id, nome, bioma, opcoes = {}) {
     saidas: opcoes.saidas || [],
   };
 }
-
-const R2_ART = '../../../assets/confusion/interface/estrategia/reinos/02/';
 
 export const MAPAS = {
   // ==================== EIXO CENTRAL (5 áreas) ====================
@@ -83,7 +83,7 @@ export const MAPAS = {
     marco: { id: 'REINO', pos: [735, 240], interacao: [650, 275], raio: 72 },
     saidas: [
       { id: 'TREM_VOLTA', rotulo: '🚂 Trem → C3 Estação', borda: 'oeste', tipo: 'trem_volta', rect: [85, 210, 180, 370], destino: 'C3', chegada: [512, 320] },
-      { id: 'PORTAL_R2', rotulo: '✨ Portal · Região 2 (Altos do Âmbar)', borda: 'leste', tipo: 'portal_r2', rect: [870, 210, 995, 370], destino: 'R2_C0', chegada: [160, 410] },
+      { id: 'PORTAL_R2', rotulo: '✨ Portal · Região 2 (Altos do Âmbar)', borda: 'leste', tipo: 'portal_r2', rect: [870, 210, 995, 370], destino: 'R2_C0', chegada: [122, 353] },
     ],
   }),
 
@@ -451,59 +451,7 @@ export const MAPAS = {
     ],
   }),
 
-  // ==================== REGIÃO 2 · ALTOS DO ÂMBAR (4 áreas · artes provisórias) ====================
-  R2_C0: mapaBase('R2_C0', 'Altos do Âmbar · Praça', 'Altos do Âmbar', {
-    regiao: 'r2',
-    arte: `${R2_ART}cidade-conceito.webp`,
-    mascara: null,
-    pisoLivre: true,
-    arteProvisoria: true,
-    spawnPadrao: [512, 410],
-    saidas: [
-      { id: 'PORTAL_R1', rotulo: '✨ Portal · Região 1 (Praça Real)', borda: 'oeste', tipo: 'arco', rect: [0, 310, 72, 490], destino: 'REINO', chegada: [760, 290] },
-      { id: 'L', rotulo: 'R2_API · Apiários Dourados (Nv. 20–35)', borda: 'leste', rect: [945, 310, 1024, 490], destino: 'R2_API', chegada: [130, 410] },
-      { id: 'N', rotulo: 'R2_CRI · Cristas de Âmbar (Nv. 30–42)', borda: 'norte', rect: [445, 250, 585, 310], destino: 'R2_CRI', chegada: [512, 470] },
-    ],
-  }),
-
-  R2_API: mapaBase('R2_API', 'Apiários Dourados', 'Altos do Âmbar', {
-    regiao: 'r2',
-    arte: `${R2_ART}arena-apiarios.webp`,
-    mascara: null,
-    pisoLivre: true,
-    arteProvisoria: true,
-    spawnPadrao: [512, 410],
-    saidas: [
-      { id: 'O', rotulo: 'R2_C0 · Altos do Âmbar', borda: 'oeste', rect: [0, 310, 72, 490], destino: 'R2_C0', chegada: [880, 410] },
-      { id: 'N', rotulo: 'R2_CRI · Cristas de Âmbar', borda: 'norte', rect: [445, 250, 585, 310], destino: 'R2_CRI', chegada: [512, 470] },
-    ],
-  }),
-
-  R2_CRI: mapaBase('R2_CRI', 'Cristas de Âmbar', 'Altos do Âmbar', {
-    regiao: 'r2',
-    arte: `${R2_ART}arena-cristas.webp`,
-    mascara: null,
-    pisoLivre: true,
-    arteProvisoria: true,
-    spawnPadrao: [512, 420],
-    saidas: [
-      { id: 'S', rotulo: 'R2_C0 · Altos do Âmbar', borda: 'sul', rect: [445, 510, 585, 571], destino: 'R2_C0', chegada: [512, 360] },
-      { id: 'L', rotulo: 'R2_API · Apiários Dourados', borda: 'leste', rect: [945, 310, 1024, 490], destino: 'R2_API', chegada: [140, 410] },
-      { id: 'N', rotulo: '👑 R2_CHEFE · Rainha da Colmeia Dourada (Nv. 45)', borda: 'norte', tipo: 'arco', rect: [445, 250, 585, 310], destino: 'R2_CHEFE', chegada: [512, 460] },
-    ],
-  }),
-
-  R2_CHEFE: mapaBase('R2_CHEFE', 'Santuário · Rainha da Colmeia Dourada', 'Altos do Âmbar', {
-    regiao: 'r2',
-    arte: `${R2_ART}arena-chefe.webp`,
-    mascara: null,
-    pisoLivre: true,
-    arteProvisoria: true,
-    spawnPadrao: [512, 455],
-    saidas: [
-      { id: 'S', rotulo: 'R2_CRI · Cristas de Âmbar', borda: 'sul', tipo: 'arco', rect: [445, 510, 585, 571], destino: 'R2_CRI', chegada: [512, 360] },
-    ],
-  }),
+  ...AREAS_ALTOS_AMBAR,
 };
 
 export const ORDEM_MAPAS = [
@@ -518,5 +466,5 @@ export const ORDEM_MAPAS = [
   // Floresta de Cogumelos
   'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'BOSS_D',
   // Região 2 — Altos do Âmbar
-  'R2_C0', 'R2_API', 'R2_CRI', 'R2_CHEFE',
+  ...Object.keys(AREAS_ALTOS_AMBAR),
 ];

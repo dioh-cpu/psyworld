@@ -4,8 +4,9 @@
 // Economia de Energia, Recompensa Offline, Dano Flutuante, Buffs, Mini-Log, PWA e Tutorial guiado.
 
 import { MAPAS, ORDEM_MAPAS } from './regiao1-mapas.js';
-import { MONSTROS_SELVAGENS, ENTIDADES_BOSS } from './regiao1-entidades.js';
+import { MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { QUESTS_DEFINICOES } from './regiao1-estado.js';
+import { regiaoDesbloqueada } from './regiao1-regioes-regras.js';
 import {
   I18N,
   ATRIBUTOS_DOMADOR,
@@ -264,7 +265,16 @@ export function criarControladorIdleUI(ctx) {
   $('m-voto')?.addEventListener('click', () => abrirDoMenu(abrirVoto));
   $('m-config')?.addEventListener('click', () => abrirDoMenu(abrirConfig));
 
-  // ---- Atlas de Caça (48 áreas pesquisável) ----
+  // ---- Atlas de Caça ----
+  const biomas = $('atlas-bioma');
+  if (biomas) {
+    biomas.replaceChildren(...['Todos', ...new Set(ORDEM_MAPAS.map(id => MAPAS[id].bioma))]
+      .map(bioma => new Option(bioma)));
+  }
+  const selvagensDaArea = (mapa) => {
+    const lista = mapa?.regiao === 'r2' ? MONSTROS_SELVAGENS_R2 : MONSTROS_SELVAGENS;
+    return lista.filter(w => w.mapa === mapa?.id);
+  };
   let filtroBioma = 'Todos';
   let buscaAtlas = '';
   function abrirAtlas() {
@@ -290,10 +300,11 @@ export function criarControladorIdleUI(ctx) {
     const save = ctx.getSave();
     const st = calcularStatusDetalhado(save);
     const wildsPorMapa = {};
-    for (const w of MONSTROS_SELVAGENS) {
+    for (const w of [...MONSTROS_SELVAGENS, ...MONSTROS_SELVAGENS_R2]) {
       (wildsPorMapa[w.mapa] ||= []).push(w);
     }
 
+    const r2Liberada = regiaoDesbloqueada(save, 'r2');
     const itens = ORDEM_MAPAS.map((id) => {
       const m = MAPAS[id];
       const ws = wildsPorMapa[id] || [];
@@ -317,6 +328,7 @@ export function criarControladorIdleUI(ctx) {
     lista.innerHTML = itens.map(({ m, ws, especies, nvMed }) => {
       const risco = ws.length ? avaliarRiscoArea(st.nivel, nvMed) : { selo: 'Segura / Arena', cor: '#94a3b8', golpes: 0 };
       const visitada = Boolean(garantirEstadoIdle(save).codex.areasVisitadas[m.id]);
+      const bloqueada = m.regiao === 'r2' && !r2Liberada;
       const boss = ENTIDADES_BOSS.find((b) => b.mapa === m.id);
       const sub = boss ? `⚔️ Chefe: ${boss.nome} (Nv.${boss.nivel})`
         : ws.length ? `${ws.length} monstros (Nv.${nvMed}) · ${especies.join(', ')} · Aguenta ~${risco.golpes} golpes`
@@ -330,8 +342,8 @@ export function criarControladorIdleUI(ctx) {
             <div class="sub">${sub}</div>
           </div>
           <div style="display:flex;gap:5px">
-            <button class="btn-sec" style="padding:5px 9px;font-size:11.5px" data-ir-mapa="${m.id}">Ir</button>
-            ${ws.length ? `<button class="btn-pri" style="padding:5px 9px;font-size:11.5px" data-cacar-mapa="${m.id}">Caçar</button>` : ''}
+            <button class="btn-sec" style="padding:5px 9px;font-size:11.5px" data-ir-mapa="${m.id}" ${bloqueada ? 'disabled' : ''}>${bloqueada ? 'Bloqueada' : 'Ir'}</button>
+            ${ws.length && !bloqueada ? `<button class="btn-pri" style="padding:5px 9px;font-size:11.5px" data-cacar-mapa="${m.id}">Caçar</button>` : ''}
           </div>
         </div>
       `;
@@ -355,7 +367,7 @@ export function criarControladorIdleUI(ctx) {
   function abrirConfigAutoCaca() {
     const idle = garantirEstadoIdle(ctx.getSave());
     const mapa = ctx.getMapaAtual();
-    const especiesMapa = [...new Set(MONSTROS_SELVAGENS.filter((w) => w.mapa === mapa?.id).map((w) => w.especie))];
+    const especiesMapa = [...new Set(selvagensDaArea(mapa).map((w) => w.especie))];
     $('ac-toggle').checked = Boolean(idle.autoCaca.ativo);
     $('ac-vantagem').checked = Boolean(idle.autoCaca.preferirVantagem);
     $('ac-ovos').checked = Boolean(idle.autoCaca.coletarOvos);
@@ -402,7 +414,7 @@ export function criarControladorIdleUI(ctx) {
     const idle = garantirEstadoIdle(save);
     const c = bonusCodex(idle);
     $('codex-resumo').innerHTML = `
-      <b>Pontos do Codex:</b> ${c.pontos} · <b>Marcos:</b> ${c.marcos} · <b>Áreas:</b> ${c.nAreas}/48 · <b>Chefes:</b> ${c.nBosses}/4<br>
+      <b>Pontos do Codex:</b> ${c.pontos} · <b>Marcos:</b> ${c.marcos} · <b>Áreas:</b> ${c.nAreas}/${ORDEM_MAPAS.length} · <b>Chefes:</b> ${c.nBosses}/${ENTIDADES_BOSS.length}<br>
       <span style="color:#4ade80">Bônus Permanentes da Conta: +${c.hpPct}% HP · +${c.atkPct}% ATK · +${c.fazendaPct}% Fazenda</span>
     `;
     const lista = $('codex-lista');
@@ -944,7 +956,7 @@ export function criarControladorIdleUI(ctx) {
   function verificarGanhoOffline(forcar = false) {
     const save = ctx.getSave();
     const mapa = ctx.getMapaAtual();
-    const ws = MONSTROS_SELVAGENS.filter((w) => w.mapa === mapa?.id);
+    const ws = selvagensDaArea(mapa);
     const nvMed = ws.length ? Math.round(ws.reduce((a, b) => a + b.nivel, 0) / ws.length) : 6;
     const resumo = calcularGanhoOffline(save, nvMed);
     if (!resumo && !forcar) return;
@@ -961,7 +973,7 @@ export function criarControladorIdleUI(ctx) {
   function liquidarSegundoPlano() {
     const save = ctx.getSave();
     const mapa = ctx.getMapaAtual();
-    const ws = MONSTROS_SELVAGENS.filter((w) => w.mapa === mapa?.id);
+    const ws = selvagensDaArea(mapa);
     const nvMed = ws.length ? Math.round(ws.reduce((a, b) => a + b.nivel, 0) / ws.length) : 6;
     const res = liquidarPeriodoIdle(save, { nivelArea: nvMed, especiePadrao: ws[0]?.especie || 'Cervomusgo' });
     if (res) {
@@ -989,7 +1001,7 @@ export function criarControladorIdleUI(ctx) {
     { tit: '2/6 · Auto-Rota Automática', txt: 'Toque no banner da missão (🧭 Auto-Rota) para andar, coletar pistas, falar com NPCs e avançar missões sozinho.' },
     { tit: '3/6 · Montaria', txt: 'Seu domador anda montado quando uma montaria está equipada; os Oníricos da equipe lutam ao seu lado. Montado, você ganha +100% de velocidade de movimento.' },
     { tit: '4/6 · Modo Idle (⚔️ Auto · ON/OFF)', txt: 'Ligue Auto · ON para caçar monstros direto no mapa com dano flutuante, Fragmentos de Sonho e ganho de XP/Gold.' },
-    { tit: '5/6 · Atlas de Caça & Codex', txt: 'No botão Caçar (ou minimapa) você vê todas as 48 áreas, o selo de risco e viaja direto. O Codex dá bônus permanentes!' },
+    { tit: '5/6 · Atlas de Caça & Codex', txt: 'No botão Caçar (ou minimapa) você vê as áreas da campanha, o selo de risco e viaja direto. O Codex dá bônus permanentes!' },
     { tit: '6/6 · Economia de Energia & Menu', txt: 'No Menu (☰) você acessa Passe de Temporada, Mochila e Fragmentos, Vote & Ganhe e o Modo Economia de Energia para farmar no celular.' },
   ];
   let passoTut = 0;

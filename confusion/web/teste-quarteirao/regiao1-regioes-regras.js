@@ -6,6 +6,7 @@ import { REGIOES, CLASSE_DA_ESPECIE } from './regiao1-progressao.js';
 import { REINOS } from '../reinos.js';
 import { LINHAGENS_REINOS } from './regiao1-kits-reinos.js';
 import { ELEMENTO_DA_ESPECIE, LINHAS } from '../species.js';
+import { CHEFES_R2, R2_PASTA_ARTES } from './regiao2-altos-ambar.js';
 
 const INICIAIS_PROIBIDOS_SELVAGENS = new Set(LINHAS.flatMap((l) => [l.inicial, l.atual, l.evolucao]));
 const RAIZ_REINOS = 'assets/confusion/interface/estrategia/reinos';
@@ -18,7 +19,7 @@ const DEFINICOES_BASE = [
   },
   {
     numero: 2, nome: 'Altos do Âmbar', jogavel: true, mapaEntrada: 'R2_C0',
-    chefe: { id: 'BOSS_R2', nome: 'Rainha da Colmeia Dourada', nivel: 45, elemento: 'inseto', arte: `${RAIZ_REINOS}/02/chefe.webp`, arena: `${RAIZ_REINOS}/02/arena-chefe.webp` },
+    chefe: { id: 'BOSS_R2', nome: 'Rainha da Colmeia Dourada', nivel: 45, elemento: 'inseto', arte: `${RAIZ_REINOS}/02/chefe.webp`, arena: `${R2_PASTA_ARTES}R2_CHEFE-arena.webp` },
     recompensa: { gold: 900, diamantes: 150, xp: 800 },
   },
   {
@@ -88,7 +89,11 @@ function montarEncontrosDaRegiao(numero, faixa) {
         nivelMin: minNv,
         nivelMax: Math.max(minNv, maxNv - 2),
         forma: formaPadrao,
-      }));
+      }))
+      .flatMap((encontro) => numero === 2 ? [
+        { ...encontro, nivelMax: 30 },
+        { ...encontro, nivelMin: 21, forma: 2, peso: encontro.peso * 2 },
+      ] : [encontro]);
   }
   return LINHAGENS_REINOS
     .filter((l) => l.reino === numero && !INICIAIS_PROIBIDOS_SELVAGENS.has(l.nome))
@@ -139,7 +144,7 @@ export const MISSOES_REGIAO2 = [
   {
     id: 'm_r2_apiarios',
     titulo: 'Zumbido nos Apiários',
-    resumo: 'Vença 3 encontros selvagens nos Apiários Dourados ou Cristas de Âmbar.',
+    resumo: 'Vença 3 encontros selvagens nos Altos do Âmbar.',
     metaAbates: 3,
     recompensa: { gold: 400, diamantes: 50, xp: 320 },
   },
@@ -286,6 +291,21 @@ export function registrarVitoriaChefeRegiao(save, regiaoId) {
   const proximaDesbloqueada = proxId && regiaoDesbloqueada(save, proxId) ? proxId : null;
   if (reg.id === 'r2') concluirMissaoRegiao2(save, 'm_r2_rainha');
   return { ok: true, primeiraVez, recompensaPaga, proximaDesbloqueada };
+}
+
+export function chefeDosAltosDerrotado(save, id) {
+  const chefe = CHEFES_R2[id];
+  return Boolean(chefe && save?.regioes?.chefesDerrotados?.[chefe.final ? 'r2' : id]);
+}
+
+export function registrarVitoriaChefeDosAltos(save, id) {
+  const chefe = CHEFES_R2[id];
+  if (!chefe) return { ok: false, primeiraVez: false };
+  if (chefe.final) return registrarVitoriaChefeRegiao(save, 'r2');
+  const derrotados = garantirEstadoRegioes(save).chefesDerrotados;
+  const primeiraVez = !derrotados[id];
+  derrotados[id] = true;
+  return { ok: true, primeiraVez };
 }
 
 export function concluirMissaoRegiao2(save, missaoId) {

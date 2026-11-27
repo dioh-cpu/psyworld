@@ -5,8 +5,9 @@ import { vetorJoystick } from '../explorar3d/controles.js';
 import { construirSDF, resolverMovimentoSDF } from '../explorar3d/colisao.js';
 import { criarAzazel } from './azazel.js';
 import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.js';
+import { R2_PASTA_ARTES } from './regiao2-altos-ambar.js';
 import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, BOSSES_REGIAO2, ENTIDADES_BOSS } from './regiao1-entidades.js';
-import { reforcosDoChefe } from './regiao1-encontros-regras.js';
+import { resolverEncontroCatalogo, reforcosDoChefe } from './regiao1-encontros-regras.js';
 import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
 import { iniciarSeletorRegioes } from './regiao1-regioes.js';
 import {
@@ -21,6 +22,8 @@ import {
   regiaoDoMapa,
   regiaoDesbloqueada,
   registrarVitoriaChefeRegiao,
+  chefeDosAltosDerrotado,
+  registrarVitoriaChefeDosAltos,
   concluirMissaoRegiao2,
   registrarAbateRegiao2,
 } from './regiao1-regioes-regras.js';
@@ -251,7 +254,7 @@ const monstrosDoMapa = (mapaId) => (regiaoDoMapa(mapaId) === 'r2' ? MONSTROS_SEL
 const definicaoBoss = (id) => BOSSES_REGIAO1[id] || BOSSES_REGIAO2[id] || null;
 const bossJaDerrotado = (id) => {
   const def = definicaoBoss(id);
-  if (def?.regiaoId) return Boolean(save?.regioes?.chefesDerrotados?.[def.regiaoId]);
+  if (def?.regiaoId === 'r2') return chefeDosAltosDerrotado(save, id);
   return Boolean(save?.bossesDerrotados?.[id]);
 };
 
@@ -849,19 +852,25 @@ document.getElementById('btn-reset-save')?.addEventListener('click', () => {
 });
 
 // ---- Mapa Regional ----
-document.getElementById('btn-mapa')?.addEventListener('click', () => {
+function abrirMapaRegional() {
+  const ehR2 = mapaAtual?.regiao === 'r2';
   const stEl = document.getElementById('mapa-status');
+  const titulo = ehR2 ? 'Mapa de Altos do Âmbar' : 'Mapa da Região 1';
+  document.getElementById('mapa-titulo').textContent = titulo;
+  const imagem = document.getElementById('mapa-ilustracao');
+  imagem.src = ehR2 ? `../../../${R2_PASTA_ARTES}mapa-altos-do-ambar.webp` : '../../../assets/confusion/regiao-1/MAPA-REGIAO-1.png';
+  imagem.alt = titulo;
+
   const tps = Object.keys(MARCOS_TELEPORTE).map((id) => {
     const t = save.teleportes[id];
-    const ic = t.ativo ? '🔷' : t.descoberto ? '⬜' : '🔒';
-    return `${ic} ${id}`;
+    return `${t.ativo ? '🔷' : t.descoberto ? '⬜' : '🔒'} ${id}`;
   }).join(' · ');
-  const bs = Object.values(BOSSES_REGIAO1).map((b) =>
-    `${save.bossesDerrotados[b.id] ? '✅' : '⚔️'} ${b.nome}`
-  ).join(' · ');
-  stEl.innerHTML = `<b>Área atual:</b> ${mapaAtual?.id} · ${mapaAtual?.nome}<br><b>Marcos:</b> ${tps}<br><b>Chefes:</b> ${bs}`;
+  const chefes = ehR2 ? BOSSES_REGIAO2 : BOSSES_REGIAO1;
+  const bs = Object.values(chefes).map((b) => `${bossJaDerrotado(b.id) ? '✅' : '⚔️'} ${b.nome}`).join(' · ');
+  stEl.innerHTML = `<b>Área atual:</b> ${mapaAtual?.id} · ${mapaAtual?.nome}${ehR2 ? '' : `<br><b>Marcos:</b> ${tps}`}<br><b>Chefes:</b> ${bs}`;
   abrirModal('modal-mapa');
-});
+}
+document.getElementById('btn-mapa')?.addEventListener('click', abrirMapaRegional);
 
 // ---- Diálogo genérico ----
 let timerDigitacao;
@@ -1091,10 +1100,13 @@ function iniciarBatalha(tipo, entidade) {
     const nv = ehR2 ? (defBoss.nivel || 45) : Math.max(6, Math.round((defBoss.hp - 58) / 13));
     artes[defBoss.nome] = raizDe(entidade.sprite);
     if (ehR2) {
+      const reforcos = defBoss.reforcos.map((especie, indice) => resolverEncontroCatalogo(
+        { especie, nivel: nv - 5 + indice * 2, formaCadastrada: 2 },
+        { regiao: 2 },
+      ));
       inimigos = [
         [defBoss.nome, nv, defBoss.elemento, { chefe: true }],
-        ['Colmeiro', Math.max(35, nv - 5), 'inseto', { forma: 2 }],
-        ['Vesprata', Math.max(38, nv - 3), 'aco', { forma: 3 }],
+        ...reforcos.map(({ especie, nivel, elemento, forma, arteForma }) => [especie, nivel, elemento, { forma, arte: arteForma }]),
       ];
     } else {
       inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ...reforcosDoChefe(defBoss.id, nv).map((r) => [r.especie, r.nivel, r.elemento, { forma: r.forma, arte: r.arteForma }])];
@@ -1110,7 +1122,7 @@ function iniciarBatalha(tipo, entidade) {
     inimigosDrop = [entidade, ...outros].map((m) => ({ especie: m.especie, elemento: m.elementoDrop || m.elemento }));
   }
   const arenaUrl = ehR2
-    ? `assets/confusion/interface/estrategia/reinos/02/${ehBoss ? 'arena-chefe' : (entidade.mapa === 'R2_CRI' ? 'arena-cristas' : 'arena-apiarios')}.webp`
+    ? MAPAS[entidade.mapa || mapaAtual.id].arenaBatalha
     : `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`;
   batalhaAtiva.batalhaId = `man_${tipo}_${entidade.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   batalhaAtiva.inimigosDrop = inimigosDrop;
@@ -1215,11 +1227,11 @@ function encerrarBatalha(vitoria) {
     for (let k = 0; k < 3; k++) window.regiaoHW?.aoAbater?.(); // doces durante o evento (abates de PvE)
     if (Math.random() < 0.03) { darPocao(save, b.tipo === 'boss' ? 'pocao_xp_m' : 'pocao_xp_p'); mostrarToast('🧪 Poção de XP encontrada!', 2200); }
     if (b.tipo === 'boss') {
-      if (defBoss?.regiaoId) {
-        const regRes = registrarVitoriaChefeRegiao(save, defBoss.regiaoId);
+      if (defBoss?.regiaoId === 'r2') {
+        const regRes = registrarVitoriaChefeDosAltos(save, b.entidade.id);
         idle.codex.bosses[b.entidade.id] = true;
         avancarDiaria(idle, 'bosses', 1);
-        registrarLogIdle(idle, `🏆 Chefe regional derrotado: ${b.nomeIni}!`, 'farm');
+        registrarLogIdle(idle, `🏆 Chefe derrotado: ${b.nomeIni}!`, 'farm');
         construirEntidadesDoMapa(mapaAtual);
         const bonusTxt = regRes.primeiraVez && regRes.recompensaPaga
           ? ` (+${regRes.recompensaPaga.gold}g, +${regRes.recompensaPaga.diamantes}💎, +${regRes.recompensaPaga.xp} XP · 1ª vitória)`
@@ -1328,6 +1340,11 @@ function prepararSaidas(mapa) {
 async function entrarNoMapa(id, chegadaPx = null, comFade = true) {
   const destino = MAPAS[id] || MAPAS[MAPA_INICIAL];
   if (!destino || emTransicao) return;
+  if (destino.regiao === 'r2' && !regiaoDesbloqueada(save, 'r2')) {
+    seletorMapa.value = mapaAtual?.id || MAPA_INICIAL;
+    mostrarToast('🔒 Derrote Espírito da Floresta e Rei Fungo para viajar para Altos do Âmbar.', 4200);
+    return;
+  }
   emTransicao = true;
   saidaAvisoAtual = null;
 
@@ -2554,20 +2571,11 @@ idleUI = criarControladorIdleUI({
   fecharModal,
   definirAutoCaca,
   abrirDiario: () => { renderizarDiario(); abrirModal('modal-diario'); },
-  abrirMapa48: () => {
-    const stEl = document.getElementById('mapa-status');
-    const tps = Object.keys(MARCOS_TELEPORTE).map((id) => {
-      const t = save.teleportes[id];
-      return `${t.ativo ? '🔷' : t.descoberto ? '⬜' : '🔒'} ${id}`;
-    }).join(' · ');
-    const bs = Object.values(BOSSES_REGIAO1).map((b) => `${save.bossesDerrotados[b.id] ? '✅' : '⚔️'} ${b.nome}`).join(' · ');
-    if (stEl) stEl.innerHTML = `<b>Área atual:</b> ${mapaAtual?.id} · ${mapaAtual?.nome}<br><b>Marcos:</b> ${tps}<br><b>Chefes:</b> ${bs}`;
-    abrirModal('modal-mapa');
-  },
+  abrirMapa48: abrirMapaRegional,
   viajarParaMapa: async (mapaId, ligarAuto) => {
     pararNavegacao(true);
     await entrarNoMapa(mapaId, null, true);
-    if (ligarAuto) definirAutoCaca(true);
+    if (ligarAuto && mapaAtual?.id === mapaId) definirAutoCaca(true);
   },
   exportarSaveJson: () => serializarEstado(save),
 });
@@ -2678,7 +2686,9 @@ window.regiao1 = {
 // Inicialização
 azazel.malha.visible = true;
 const inicialParam = params.get('mapa')?.toUpperCase();
-const inicialId = (inicialParam && MAPAS[inicialParam]) ? inicialParam : (MAPAS[save.mapaAtual] ? save.mapaAtual : MAPA_INICIAL);
+const inicialId = [inicialParam, save.mapaAtual].find((id) =>
+  MAPAS[id] && (MAPAS[id].regiao !== 'r2' || regiaoDesbloqueada(save, 'r2')),
+) || MAPA_INICIAL;
 const spawnInicial = (!inicialParam && inicialId === save.mapaAtual && save.posicaoPx) ? save.posicaoPx : null;
 entrarNoMapa(inicialId, spawnInicial, false).then(() => {
   registrarCodexArea(garantirEstadoIdle(save), inicialId);
