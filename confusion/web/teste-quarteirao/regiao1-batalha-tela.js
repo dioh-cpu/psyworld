@@ -10,6 +10,11 @@ import { resolverEncontroCatalogo, SUBSTITUTO_R1 } from './regiao1-encontros-reg
 import { arteAtaque, criarPose } from './regiao1-poses.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { LINHAGENS_HW } from './regiao1-halloween-dados.js';
+import { CHEFES_REINOS } from './regiao1-kits-reinos.js';
+
+const ARTE_CHEFE_REINO = Object.fromEntries(
+  CHEFES_REINOS.map((c) => [c.nome, `assets/confusion/interface/estrategia/reinos/${String(c.reino).padStart(2, '0')}/chefe.${c.reino <= 3 ? 'webp' : 'png'}`]),
+);
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // Formação aprovada no editor, em porcentagem da arena.
@@ -137,7 +142,7 @@ const CSS = `
 .arena .tb-fim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(13,7,19,.78); font-size: 20px; z-index: 60; text-align: center; padding: 20px; }`;
 let cssOk = false;
 const injetar = () => { if (cssOk) return; cssOk = true; const s = document.createElement('style'); s.textContent = CSS + CSS_AURA; document.head.append(s); };
-const arteRaiz = (esp, arte) => arte?.[esp] || ARTE_DA_ESPECIE[esp] || `assets/monsters/${String(esp).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}/sprite-front.png`;
+const arteRaiz = (esp, arte) => arte?.[esp] || ARTE_DA_ESPECIE[esp] || ARTE_CHEFE_REINO[esp] || `assets/monsters/${String(esp).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}/sprite-front.png`;
 const caminho = (esp, arte) => `../../../${arteRaiz(esp, arte)}`;
 const caminhoU = (u, arte) => (u.arte ? `../../../${u.arte}` : caminho(u.especie, arte)); // a forma do encontro vale para sprite, retrato e ordem
 
