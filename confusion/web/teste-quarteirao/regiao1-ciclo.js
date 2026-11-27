@@ -66,7 +66,7 @@ export function iniciarCiclo({ dados, cena, camera, P, camada, getMapaAtual, get
     return it;
   }
   function limpar() {
-    for (const it of itens) { grupo.remove(it.mesh); it.mesh.material.map?.dispose(); it.mesh.material.dispose(); it.mesh.geometry.dispose(); }
+    for (const it of itens) { if (!it.mesh) continue; grupo.remove(it.mesh); it.mesh.material.map?.dispose(); it.mesh.material.dispose(); it.mesh.geometry.dispose(); }
     itens = [];
   }
 
@@ -88,7 +88,10 @@ export function iniciarCiclo({ dados, cena, camera, P, camada, getMapaAtual, get
     });
     const o = D.obra, v = c.obra ? o.depois : o.antes;
     criar('obra', o.local[0], o.local[1], o.tam, v.arte, c.obra ? '🏘️' : '🏗️', c.obra ? '#8e5b47' : '#6b6b6b', v.rotulo);
-    if (c.invest === 'ativa') criar('pista', D.investigacao.pista.local[0], D.investigacao.pista.local[1], D.investigacao.pista.tam, D.investigacao.pista.arte, '🔍', '#8e7a4a', D.investigacao.pista.rotulo);
+    if (c.invest === 'ativa') {
+      const w = P(D.investigacao.pista.local[0], D.investigacao.pista.local[1]);
+      itens.push({ tipo: 'pista', mesh: null, x: w.x, z: w.z, tam: D.investigacao.pista.tam });
+    }
     assinatura = `${D.mapa}:${visiveis()}`;
   }
 
@@ -211,7 +214,7 @@ export function iniciarCiclo({ dados, cena, camera, P, camada, getMapaAtual, get
   }
 
   // ---------- laços ----------
-  function quadro() { for (const it of itens) it.mesh.quaternion.copy(camera.quaternion); requestAnimationFrame(quadro); }
+  function quadro() { for (const it of itens) if (it.mesh) it.mesh.quaternion.copy(camera.quaternion); requestAnimationFrame(quadro); }
   requestAnimationFrame(quadro);
   setInterval(() => {
     const m = getMapaAtual()?.id;

@@ -15,8 +15,9 @@ import { bonusDoMembro } from './regiao1-halloween-regras.js';
 import { regiaoDesbloqueada } from './regiao1-regioes-regras.js';
 
 export const DIA_MS = 120000;
-// Sistemas 01-10 ativos no mapa, na campanha, nos NPCs e no painel Mundo.
+// Sistemas 01-10 ativos no painel Menu → Mundo e nos diálogos dos NPCs; sem construções soltas sobre o caminho da campanha.
 export const MUNDO_ATIVO = true;
+export const MUNDO_NO_MAPA = false;
 // Armazém: cada recurso tem teto (500, +100 por refúgio ou fortaleza). O excedente se perde, então nada dispara sem fim.
 export const ARMAZEM_BASE = 500;
 export const SANIDADE_PISO_DIA = 10; // perdas diárias (marca, cicatrizes) não passam disso; só ações do jogador podem ir além
@@ -334,7 +335,44 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     }
   });
 
-  function abrir(id = null) { aberto = id; desenhar(); abrirModal('modal-mundo'); }
+  let seloMenuEl = null;
+  let seloBotaoMundoEl = null;
+  function atualizarSeloMundo() {
+    const m = estado().meta;
+    const qtd = Math.max(0, Number(m.novosNaoLidos) || 0);
+    const btnMenu = document.getElementById('btn-menu-geral');
+    if (seloMenuEl) {
+      if (btnMenu && !seloMenuEl.isConnected) {
+        btnMenu.style.position = 'relative';
+        btnMenu.appendChild(seloMenuEl);
+      }
+      seloMenuEl.textContent = qtd > 9 ? '9+' : String(qtd);
+      seloMenuEl.hidden = qtd <= 0;
+    }
+    if (seloBotaoMundoEl) {
+      seloBotaoMundoEl.textContent = qtd > 0 ? `Mundo (${qtd})` : 'Mundo';
+      seloBotaoMundoEl.classList.toggle('tem-novo', qtd > 0);
+    }
+  }
+
+  function abrir(id = null) {
+    const m = estado().meta;
+    if (m.novosNaoLidos) { m.novosNaoLidos = 0; salvar?.(); }
+    atualizarSeloMundo();
+    aberto = id; desenhar(); abrirModal('modal-mundo');
+  }
+
+  // Selo discreto no botão Menu (substitui o toast "Novo no Mundo" no centro da tela)
+  const btnMenuGeral = document.getElementById('btn-menu-geral');
+  if (MUNDO_ATIVO && btnMenuGeral && !document.getElementById('menu-selo-mundo')) {
+    btnMenuGeral.style.position = 'relative';
+    seloMenuEl = document.createElement('span');
+    seloMenuEl.id = 'menu-selo-mundo';
+    seloMenuEl.className = 'menu-selo-mundo';
+    seloMenuEl.setAttribute('aria-label', 'Novos sistemas liberados em Menu → Mundo');
+    seloMenuEl.hidden = true;
+    btnMenuGeral.appendChild(seloMenuEl);
+  }
 
   // Botão no menu principal (e fecha o menu ao abrir)
   const atalhos = document.querySelector('#modal-menu .menu-atalhos');
@@ -343,6 +381,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     b.className = 'btn-sec'; b.id = 'm-mundo'; b.textContent = 'Mundo';
     b.addEventListener('click', () => { fecharModal('modal-menu'); abrir(); });
     atalhos.prepend(b);
+    seloBotaoMundoEl = b;
   }
 
   estado();
@@ -582,18 +621,21 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
   }
 
   const css = document.createElement('style');
-  css.textContent = '#modal-mundo .tut-card { border-color: #7dd3fc; background: #14304a; } #modal-mundo .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: tutpulso 1.4s ease-in-out infinite; } @keyframes tutpulso { 50% { box-shadow: 0 0 0 8px #f3a45822; } }';
+  css.textContent = '#modal-mundo .tut-card { border-color: #7dd3fc; background: #14304a; } #modal-mundo .tut-destaque { outline: 2px solid #f3a458; box-shadow: 0 0 0 4px #f3a45844; animation: tutpulso 1.4s ease-in-out infinite; } @keyframes tutpulso { 50% { box-shadow: 0 0 0 8px #f3a45822; } } .menu-selo-mundo { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #f59e0b; color: #1b0f21; font: 800 10px/16px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 2px #1b0f21; pointer-events: none; } #m-mundo.tem-novo { border-color: #f59e0b; color: #fcd34d; }';
   document.head.append(css);
-  // avisa sistemas novos uma vez, fora de combate, diálogos e menus (um aviso por vez)
+  atualizarSeloMundo();
+  // Marca sistemas novos com um selo discreto no botão Menu (sem toast central cobrindo a tela)
   setInterval(() => {
-    if (!MUNDO_ATIVO || document.querySelector('.modal-bg.aberto')) return;
+    if (!MUNDO_ATIVO) return;
     const m = estado().meta; m.avisados = m.avisados || {};
     const novos = [...sistemasLiberados(getSave())].filter((id) => !m.avisados[id]);
     if (!novos.length) return;
     novos.forEach((id) => { m.avisados[id] = true; });
-    salvar?.(); mostrarToast(`🌍 Novo no Mundo: ${novos.map((id) => SISTEMAS.find((x) => x.id === id)?.nome).join(', ')}. Abra Menu → Mundo.`, 5200);
+    m.novosNaoLidos = (Number(m.novosNaoLidos) || 0) + novos.length;
+    salvar?.();
+    atualizarSeloMundo();
   }, 2500);
-  const noMapa = mapaCtx && MUNDO_ATIVO ? iniciarMundoNoMapa({
+  const noMapa = (mapaCtx && MUNDO_ATIVO && MUNDO_NO_MAPA) ? iniciarMundoNoMapa({
     ...mapaCtx,
     liberado: liberadoMapa,
     getMapaAtual,
@@ -602,7 +644,7 @@ export function iniciarMundo({ getSave, salvar, mostrarToast, atualizarHud, getM
     abrirSistema: (id) => abrir(id),
     interagirElemento,
     algumModalAberto: () => Boolean(document.querySelector('.modal-bg.aberto')),
-  }) : null;
+  }) : { atualizar: () => {}, empurrar: () => null, circulosPx: () => [], elementos: () => [], interagir: () => false };
   // Efeitos do mundo sobre a caçada: praga enfraquece (refúgios protegem), clima mexe no dano e no ouro.
   function modificadores() {
     if (!MUNDO_ATIVO) return { dano: 1, ouro: 1, notas: [] };
