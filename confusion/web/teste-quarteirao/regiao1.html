@@ -91,8 +91,9 @@
   }
   #quest-banner.autorota { border-color: var(--cyan); border-left-color: var(--cyan); }
   #quest-banner .qb-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-  #quest-banner b { color: var(--gold); font-size: 11px; }
-  #qb-auto { background: rgba(56, 189, 248, .18); border: 1px solid var(--cyan); color: #bae6fd; border-radius: 5px; padding: 2px 6px; font: 700 10px system-ui; white-space: nowrap; }
+  #quest-banner b { color: var(--gold); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #qb-sub { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 262px; opacity: .92; }
+  #qb-auto { background: rgba(56, 189, 248, .18); border: 1px solid var(--cyan); color: #bae6fd; border-radius: 5px; padding: 2px 6px; font: 700 10px system-ui; white-space: nowrap; flex-shrink: 0; }
   #quest-banner.autorota #qb-auto { background: #0284c7; color: #fff; }
 
   #barra-buffs {

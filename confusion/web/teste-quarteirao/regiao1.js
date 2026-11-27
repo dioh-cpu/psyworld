@@ -681,14 +681,18 @@ function atualizarHudEstado() {
   questDestaqueId = ativa ? ativa.id : null;
   if (ativa) {
     const prog = progressoQuest(save, ativa.id);
+    const proxObj = proximoObjetivoQuest(ativa.id);
+    const linhaCurta = proxObj
+      ? `${proxObj.mapa} · ${proxObj.rotulo}`
+      : `${ativa.mapas[0] || ''} · ${ativa.resumo.split('.')[0]}`;
     qbTitulo.textContent = `${ativa.titulo} (${prog.feitos}/${prog.total})`;
-    qbSub.textContent = `${ativa.mapas.join(' → ')} · ${ativa.resumo.slice(0, 74)}${ativa.resumo.length > 74 ? '…' : ''}`;
+    qbSub.textContent = linhaCurta.slice(0, 56) + (linhaCurta.length > 56 ? '…' : '');
     const rodando = Boolean(autoRotaQuestId);
     questBanner?.classList.toggle('autorota', rodando);
     if (qbAuto) qbAuto.textContent = rodando ? '⏹ Parar Rota' : '🧭 Auto-Rota';
   } else {
     qbTitulo.textContent = 'Região 1 concluída!';
-    qbSub.textContent = 'Todas as missões ativas foram completadas.';
+    qbSub.textContent = 'Todas as missões concluídas.';
     questBanner?.classList.remove('autorota');
     if (qbAuto) qbAuto.textContent = '✓ Concluído';
   }
@@ -698,7 +702,6 @@ function atualizarHudEstado() {
 questBanner?.addEventListener('click', () => {
   if (autoRotaQuestId) {
     pararNavegacao(true);
-    mostrarToast('Auto-Rota pausada.', 1800);
   } else if (questDestaqueId) {
     iniciarAutoRota(questDestaqueId);
   }
@@ -1661,27 +1664,24 @@ function planejarPassoAutoRota() {
       pararNavegacao(true);
       return;
     }
-    mostrarToast(`🧭 Próxima missão automática: ${QUESTS_POR_ID[proxId].titulo}`, 2600);
   }
 
   objetivoAutoRotaAtual = obj;
   if (obj.mapa === mapaAtual.id) {
     const w = P(obj.pos[0], obj.pos[1]);
     definirDestinoMundo(w.x, w.z, obj.interagir);
-    mostrarToast(`🧭 Auto-Rota: indo até ${obj.rotulo} (${obj.mapa})`, 2400);
     return;
   }
   const saida = proximaSaidaParaMapa(mapaAtual.id, obj.mapa);
   if (!saida) {
     pararNavegacao(true);
-    mostrarToast(`🧭 Não há rota livre até ${obj.mapa} agora (verifique desbloqueios).`, 3400);
+    mostrarToast(`🧭 Rota bloqueada até ${obj.mapa}.`, 2800);
     return;
   }
   const cx = (saida.rect[0] + saida.rect[2]) / 2;
   const cy = (saida.rect[1] + saida.rect[3]) / 2;
   const w = P(cx, cy);
   definirDestinoMundo(w.x, w.z, false);
-  mostrarToast(`🧭 Auto-Rota (${obj.mapa}): seguindo via ${saida.rotulo}`, 2200);
 }
 
 function iniciarAutoRota(questId) {
