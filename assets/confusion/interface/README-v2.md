@@ -64,6 +64,8 @@ Mantenha a proporção das capas para mostrar a ilustração inteira, inclusive 
 
 Os controles são imagens com transparência. Sobreponha os rótulos como texto da interface para conservar legibilidade e acessibilidade.
 
+O [mapa de reformulação dos menus](README-menus-v2.md) inclui os componentes quadrados do perfil e sua integração visual.
+
 ## Repasse da regra Adventurer
 
 Com tickets comuns, os marcos pedidos são T3 na 10ª, T4 na 30ª e um T5 aleatório na 50ª invocação. O trio T5 em destaque é Ignaraz, Vaelirion e Florivel. Antes do marco, a chance indicada é de 3% no total por invocação para sortear um dos três. O contador pertence ao Adventurer. Ao definir o elenco obtível, observe que Noctarn tem uma exclusividade anterior no banner Sombra.
