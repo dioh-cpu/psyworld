@@ -108,10 +108,23 @@ export function poolBanner() {
 export function poolBannerSombra() {
   return [{ especie: NOCTARN_REGRA.especie, elemento: NOCTARN_REGRA.elemento, classe: classeDaEspecie(NOCTARN_REGRA.especie), tier: NOCTARN_REGRA.tier, raridade: 'epica', banner: 'sombra' }];
 }
-export function invocar(save, rng = Math.random) {
-  const e = expDe(save);
-  if (e.tickets < 1) return { ok: false, motivo: 'Sem tickets. Eles vêm da primeira conclusão das missões de história.' };
-  e.tickets -= 1; e.pulls += 1;
+// ---- Invocações grátis diárias: +10 por dia (meia-noite local), acumulam até 100 se não forem usadas ----
+export const INVOCACOES_GRATIS_CFG = { porDia: 10, max: 100 };
+const diaNum = (agora) => { const d = new Date(agora); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); };
+export function invocacoesGratisDe(save, agora = Date.now(), cfg = INVOCACOES_GRATIS_CFG) {
+  const e = expDe(save), hoje = diaNum(agora);
+  const g = e.gratis || (e.gratis = { saldo: 0, dia: hoje - 1 });
+  const dias = Math.max(0, hoje - (Number(g.dia) || hoje - 1));
+  if (dias) { g.saldo = Math.min(cfg.max, (Number(g.saldo) || 0) + dias * cfg.porDia); g.dia = hoje; }
+  const amanha = new Date(agora); amanha.setHours(24, 0, 0, 0);
+  return { saldo: g.saldo, max: cfg.max, porDia: cfg.porDia, proximaEmMs: g.saldo >= cfg.max ? null : amanha.getTime() - agora };
+}
+export function invocar(save, rng = Math.random, agora = Date.now()) {
+  const e = expDe(save), g = invocacoesGratisDe(save, agora);
+  if (g.saldo < 1 && e.tickets < 1) return { ok: false, motivo: 'Sem invocações grátis nem tickets. Amanhã chegam mais 10 grátis.' };
+  let gratis = false;
+  if (g.saldo >= 1) { e.gratis.saldo -= 1; gratis = true; } else e.tickets -= 1;
+  e.pulls += 1;
   const garantia = e.pulls % 10 === 0; // a cada 10 invocações, pelo menos rara
   let r = rng(), alvo = 'comum', acc = 0;
   for (const [nome, taxa] of RARIDADES) { acc += taxa; if (r < acc) { alvo = nome; break; } }
@@ -121,12 +134,12 @@ export function invocar(save, rng = Math.random) {
   const tier = RARIDADES.find((x) => x[0] === sorteado.raridade)?.[2] || 1;
   const nivel = 1, estrelas = estrelasIniciais('banner'), idle = save.idle;
   (idle.equipe = idle.equipe || []).push({ especie: sorteado.especie, nivel, xp: 0, tier, raridade: tier, estrelas, forma: 'natural', origem: 'banner', fonteBanner: BANNER_PERMANENTE_ID, uid: `b${e.pulls}_${idle.equipe.length}` });
-  return { ok: true, ...sorteado, tier, estrelas };
+  return { ok: true, ...sorteado, tier, estrelas, gratis };
 }
 export function invocarMultiplo(save, qtd = 10, rng = Math.random) {
   const n = qtd === 10 ? 10 : 1;
-  const e = expDe(save);
-  if (e.tickets < n) return { ok: false, motivo: `Precisa de ${n} ticket${n > 1 ? 's' : ''} (você tem ${e.tickets}).` };
+  const e = expDe(save), g = invocacoesGratisDe(save);
+  if (g.saldo + e.tickets < n) return { ok: false, motivo: `Precisa de ${n} invocações (grátis ${g.saldo} + tickets ${e.tickets}).` };
   const resultados = [];
   for (let i = 0; i < n; i++) {
     const r = invocar(save, rng);

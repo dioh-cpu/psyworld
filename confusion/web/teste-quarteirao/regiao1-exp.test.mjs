@@ -11,6 +11,7 @@ const novo = (quests = {}) => ({ quests, desbloqueios: {}, recompensas: { gold: 
 const rngSeq = (...v) => { let i = 0; return () => v[i++ % v.length]; };
 test('tickets: 1 por missão de história, só na primeira conclusão; banner adiciona Onírico', () => {
   const s = novo({ q_pegadas: 'concluida', q_sec_canteiro: 'concluida' });
+  R.expDe(s).gratis = { saldo: 0, dia: 1e9 }; // sem as grátis diárias: testa só os tickets
   assert.equal(R.concederTickets(s), 1); assert.equal(R.concederTickets(s), 0); assert.equal(R.expDe(s).tickets, 1);
   const r = R.invocar(s, rngSeq(0.1, 0.1)); assert.ok(r.ok); assert.equal(s.idle.equipe.length, 2); assert.equal(R.expDe(s).tickets, 0);
   assert.equal(R.invocar(s).ok, false);
@@ -257,4 +258,16 @@ test('save antigo carrega sem perder nada e passa na validação de /api/confusi
   assert.equal(redondo.idle.exp.calabouco.run.sanidade, 100);
   const nuvem = validateSave({ game: 'confusion-waves', regiao1: JSON.parse(serializarEstado(redondo)), conta: redondo.conta });
   assert.equal(nuvem.ok, true);
+});
+
+test('invocações grátis: +10 por dia, acumulam até 100 e são usadas antes dos tickets', () => {
+  const s = novo(), d0 = new Date(2026, 10, 27, 10).getTime(), dia = 86400000;
+  assert.equal(R.invocacoesGratisDe(s, d0).saldo, 10);
+  assert.equal(R.invocacoesGratisDe(s, d0 + 3600000).saldo, 10);
+  assert.equal(R.invocacoesGratisDe(s, d0 + dia).saldo, 20);
+  assert.equal(R.invocacoesGratisDe(s, d0 + 30 * dia).saldo, 100);
+  const g = R.invocacoesGratisDe(s, d0 + 30 * dia); assert.equal(g.proximaEmMs, null);
+  R.expDe(s).tickets = 1; const r = R.invocar(s, () => 0.5, d0 + 30 * dia);
+  assert.ok(r.ok && r.gratis); assert.equal(R.expDe(s).tickets, 1); assert.equal(R.invocacoesGratisDe(s, d0 + 30 * dia).saldo, 99);
+  assert.ok(R.invocacoesGratisDe(s, d0 + 30 * dia).proximaEmMs > 0);
 });

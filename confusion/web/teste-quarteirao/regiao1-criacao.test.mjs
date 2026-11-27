@@ -199,7 +199,7 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
   // 5) Equipe é menu próprio sempre aberto e Invocação suporta apenas ×1 e ×10
   assert.equal(aberto(s, 'equipe'), true);
   const e = expDe(s);
-  e.tickets = 11;
+  e.tickets = 11; e.gratis = { saldo: 0, dia: 1e9 }; // sem as grátis diárias: testa só os tickets
   const r1 = invocarMultiplo(s, 1, () => 0.5);
   assert.equal(r1.ok, true);
   assert.equal(r1.qtd, 1);
