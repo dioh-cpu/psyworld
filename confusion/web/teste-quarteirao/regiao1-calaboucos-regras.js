@@ -78,7 +78,7 @@ const DEF_CALABOUCOS = [
   {
     id: 'templo-alvorecer',
     nome: 'Templo do Alvorecer',
-    elementos: ['luz', 'neutro'],
+    elementos: ['luz'],
     chefe: 'Arauto solar',
     mecanica: 'Inicia com imunidade a efeitos negativos e pune quem demora para quebrar o escudo.',
     conjuntosExclusivos: ['precisao', 'imunidade'],
@@ -90,6 +90,30 @@ const DEF_CALABOUCOS = [
     chefe: 'Ceifador velado',
     mecanica: 'Drena vida dos aliados feridos e ganha fúria extrema abaixo de 30% de vida.',
     conjuntosExclusivos: ['sanguessuga', 'panico-contido'],
+  },
+  {
+    id: 'pico-glacial',
+    nome: 'Pico Glacial',
+    elementos: ['gelo', 'veneno'],
+    chefe: 'Hidra Gélida',
+    mecanica: 'Congela aliados lentos e espalha toxina glacial que escala a cada rodada.',
+    conjuntosExclusivos: ['muralha', 'imunidade'],
+  },
+  {
+    id: 'arena-draconica',
+    nome: 'Arena Dracônica',
+    elementos: ['lutador', 'dragao'],
+    chefe: 'Campeão Dracônico',
+    mecanica: 'Ganha fúria cumulativa ao receber golpes diretos e responde com contra-ataques brutais.',
+    conjuntosExclusivos: ['furia', 'contra-ataque'],
+  },
+  {
+    id: 'santuario-arcano',
+    nome: 'Santuário Arcano',
+    elementos: ['psiquico', 'fada'],
+    chefe: 'Oráculo Feérico',
+    mecanica: 'Reduz as próprias recargas com ilusões arcanas e amplifica curas e escudos dos guardas.',
+    conjuntosExclusivos: ['eco', 'vinculo'],
   },
 ];
 

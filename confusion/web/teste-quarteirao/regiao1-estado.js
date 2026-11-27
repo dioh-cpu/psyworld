@@ -605,7 +605,7 @@ export function sanitizarIdleProgressao(idle) {
 
   if (isObj(idle.essencias)) {
     const ess = {};
-    for (const par of ['ignea', 'mares', 'verde', 'mineral', 'solar', 'sombria']) {
+    for (const par of ['ignea', 'mares', 'verde', 'mineral', 'solar', 'sombria', 'glacial', 'draconica', 'arcana']) {
       const cur = idle.essencias[par];
       if (isObj(cur)) {
         ess[par] = {
@@ -700,10 +700,10 @@ export function sanitizarIdleProgressao(idle) {
   if (idle.missoes && typeof idle.missoes === 'object') {
     const m = idle.missoes;
     out.missoes = {
-      paralelasAtivas: sanitizarMapaSeguro(m.paralelasAtivas, 60, 'int'),
-      paralelasConcluidas: sanitizarMapaSeguro(m.paralelasConcluidas, 60, 'bool'),
+      paralelasAtivas: sanitizarMapaSeguro(m.paralelasAtivas, 300, 'int'),
+      paralelasConcluidas: sanitizarMapaSeguro(m.paralelasConcluidas, 300, 'bool'),
       enfeitesRefugio: sanitizarMapaSeguro(m.enfeitesRefugio, 24, 'bool'),
-      titulos: sanitizarMapaSeguro(m.titulos, 80, 'bool'),
+      titulos: sanitizarMapaSeguro(m.titulos, 300, 'bool'),
       progresso: sanitizarMapaSeguro(m.progresso, 100, 'int'),
       marcosColetados: sanitizarMapaSeguro(m.marcosColetados, 100, 'bool'),
     };
@@ -774,8 +774,8 @@ export function sanitizarIdleProgressao(idle) {
   if (isObj(idle.calaboucos)) {
     const c = idle.calaboucos;
     out.calaboucos = {
-      maiorNivel: sanitizarMapaSeguro(c.maiorNivel, 12, 'int'),
-      todosVivos: sanitizarMapaSeguro(c.todosVivos, 120, 'bool'),
+      maiorNivel: sanitizarMapaSeguro(c.maiorNivel, 16, 'int'),
+      todosVivos: sanitizarMapaSeguro(c.todosVivos, 200, 'bool'),
       moedas: Math.max(0, Math.floor(Number(c.moedas) || 0)),
       batalhasPagas: sanitizarMapaSeguro(c.batalhasPagas, 300, 'bool'),
     };
