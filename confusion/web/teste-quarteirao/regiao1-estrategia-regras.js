@@ -90,6 +90,22 @@ function iniciarRodada(b) {
   const vel = (u) => (u.nivel + (u.papel === 'suporte' ? 1 : 0)) * (1 + Object.keys(u.efeitos || {}).reduce((a, id) => a + (EFEITOS[id]?.velocidade || 0), 0));
   b.fila = vivos(b.ordem).sort((x, y) => vel(y) - vel(x)).map((u) => u.id);
   for (const u of b.ordem) { u.defendendo = false; u.cd = (u.cd || [0, 0, 0]).map((c) => Math.max(0, c - 1)); u.recarga = Math.max(...u.cd); }
+  tickCampos(b);
+}
+// Campos persistentes (Enxame Dourado): a cada rodada, dano em todos os vivos do lado e chance de veneno; some após N rodadas
+function tickCampos(b) {
+  if (!b.campos?.length) return;
+  const rng = b.rngCampo || Math.random;
+  for (const c of [...b.campos]) {
+    const fonte = b.ordem.find((x) => x.id === c.fonte), alvos = vivos(c.lado === 'a' ? b.aliados : b.inimigos);
+    if (fonte) for (const a of alvos) {
+      const r = receberDano(a, dano(b, fonte, a, c.mult, rng)); const ok = r.perdido && a.hp > 0 ? aplicarEfeito(a, fonte, { id: 'veneno', turnos: 3, chance: c.chance }, rng) : null;
+      antes(b, { tipo: 'dot', efeito: 'enxame', alvo: a.id, valor: r.perdido, veneno: Boolean(ok), morreu: a.hp <= 0 });
+    }
+    if (alvos.length) b.log.push(`${c.nome} pica ${alvos.length} alvo(s).`);
+    c.turnos -= 1;
+    if (c.turnos <= 0 || !alvos.length) { b.campos = b.campos.filter((x) => x !== c); antes(b, { tipo: 'enxameFim', id: c.id }); }
+  }
 }
 const antes = (b, e) => { (b.antes ||= []).push(e); };
 // Dano direto: o escudo absorve primeiro. Sono acaba ao apanhar.
@@ -229,6 +245,8 @@ export function executar(b, acao, rng) {
       for (const a of alvos) golpear(a, hab ? hab.mult : 1);
     }
     for (const e of hab?.efeitosSi || []) aplicarEfeito(u, u, e, rng);
+    // Enxame: fica sobre o time alvo e causa dano em todos no começo de cada rodada seguinte, com chance de veneno
+    if (hab?.enxame) { const id = `enx${b.turnos}_${u.id}`; (b.campos ||= []).push({ id, lado: u.lado === 'a' ? 'i' : 'a', fonte: u.id, turnos: hab.enxame.turnos, mult: hab.enxame.mult, chance: hab.enxame.chance, nome: hab.nome }); ev.enxame = { id, lado: u.lado === 'a' ? 'i' : 'a' }; }
     ev.alvo = ev.alvos[0]?.id || principal.id; ev.valor = ev.alvos[0]?.valor || 0; ev.morreu = ev.alvos[0]?.morreu;
     b.log.push(`${u.especie} ${hab ? `usou ${hab.nome} em` : 'atacou'} ${ev.alvos.length > 1 ? `${ev.alvos.length} golpes` : principal.especie} (−${ev.alvos.map((x) => x.valor).join('/−')})${ev.alvos.some((x) => x.morreu) ? ' e derrotou' : ''}${ev.roubo ? `, roubando ${ev.roubo} de vida` : ''}.`);
     if (ev.alvos.some((x) => x.efeitos.length)) b.log.push(`Efeitos: ${ev.alvos.flatMap((x) => x.efeitos).map((id) => EFEITOS[id].nome).join(', ')}.`);

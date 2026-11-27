@@ -213,7 +213,7 @@ export function kitDoChefeReino(c) {
     { icone: ic, tipo: 'dano', alvo: 'um', mult: 1.3, cd: 1, efeitos: [ef(E.dot, 3, 0.7)] },
     { icone: '🌀', tipo: 'dano', alvo: 'todos', mult: 1.15, cd: 3, distancia: true, efeitos: [ef(E.debuff, 2, 0.7)] },
     { icone: '👑', tipo: 'dano', alvo: 'todos', mult: 1.9, cd: 5, distancia: true, efeitos: [ef(E.cc, 1, 0.6)], efeitosSi: [ef('ataque_alto', 2)] },
-  ].map((h, i) => ({ id: slug(c.habilidades[i]), nome: c.habilidades[i], ...h, elemento: c.elemento }));
+  ].map((h, i) => ({ id: slug(c.habilidades[i]), nome: c.habilidades[i], ...h, elemento: c.elemento, ...(i === 1 && c.enxame ? { enxame: { ...c.enxame } } : {}) }));
 }
 export const KITS_CHEFES = Object.fromEntries(CHEFES_REINOS.map((c) => [c.nome, kitDoChefeReino(c)]));
 for (const c of CHEFES_REINOS) PAPEL_PADRAO[c.nome] ??= 'ataque';

@@ -123,3 +123,23 @@ test('reinos 03–12: formas base e final herdam o kit e o papel da linhagem', a
   }
   assert.equal(M.criarUnidade({ id: 'q', especie: 'Rocacrista', nivel: 50, lado: 'a' }).kit[2].id, 'avalanche_da_crista');
 });
+test('Enxame Dourado: pica todos do time alvo por 3 rodadas, com chance de veneno, e some', async () => {
+  const { specChefeReino } = await import('./regiao1-kits-reinos.js');
+  const [nome, nv, el, op] = specChefeReino(2, 40);
+  const rainha = Object.assign(M.criarUnidade({ id: 'x', especie: nome, nivel: nv, lado: 'i', elemento: el, bonus: op.bonus }), { chefe: true });
+  assert.equal(rainha.kit[1].nome, 'Enxame Dourado'); assert.deepEqual(rainha.kit[1].enxame, { turnos: 3, mult: 0.35, chance: 0.4 });
+  const time = ['Ignavor', 'Vaelith', 'Brotavel', 'Solarin'].map((e, i) => u(`a${i}`, e, 'a', 40));
+  for (const a of time) { a.hpMax *= 50; a.hp = a.hpMax; }
+  const b = M.criarBatalha(time, [rainha]); M.atorAtual(b);
+  b.fila = ['x', ...b.fila.filter((id) => id !== 'x')]; b.iniciado = `${b.rodada}:x`;
+  M.executar(b, { tipo: 'habilidade', idx: 1 }, rng);
+  assert.ok(b.evento.enxame); assert.equal(b.campos.length, 1); assert.equal(b.campos[0].lado, 'a');
+  let picadas = 0, fim = 0, rodadas = 0, r0 = b.rodada;
+  for (let i = 0; i < 200 && !fim; i++) {
+    const at = M.atorAtual(b); if (!at) break;
+    for (const e of b.antes || []) { if (e.efeito === 'enxame') picadas++; if (e.tipo === 'enxameFim') fim++; }
+    b.antes = []; rodadas = b.rodada - r0;
+    M.executar(b, M.decidir(b, at, rng), rng);
+  }
+  assert.equal(fim, 1); assert.equal(rodadas, 3); assert.equal(picadas, 12); assert.equal(b.campos.length, 0);
+});

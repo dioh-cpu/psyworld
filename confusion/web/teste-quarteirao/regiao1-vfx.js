@@ -971,6 +971,12 @@ function vitral(M, c, atraso = 0, vida = 1.2) { livre(M, { vida, atraso, draw(g,
 
 // ---------- início de turno (dano/cura contínuos, turno perdido) ----------
 function inicioDeTurno(ctx, M, x) {
+  if (x.tipo === 'enxameFim') { const v = ctx.campo.querySelector(`[data-enxame="${x.id}"]`); if (v) { v.loop = false; dissolverClipe(ctx, v); } return; }
+  if (x.efeito === 'enxame') { // picadas do enxame no começo da rodada
+    const el = ctx.no(x.alvo); if (!el) return; const c = corpo(ctx, el);
+    rajada(M, c.x, c.y, { n: 12, forma: 'brilho', cor: '#facc15', tam: 3.5, v: 180, vida: 0.5, onda: 4, ondaAmp: 3 });
+    reacao(ctx, el, 1, 0.35, '#facc15'); numero(ctx, el, `🐝 ${x.valor}`, '#fde047'); if (x.veneno) numero(ctx, el, '☠️ Veneno', '#a3e635', { pequeno: true, dy: -18 }); ctx.aplicarHp(x.alvo); return;
+  }
   const el = ctx.no(x.alvo); if (!el) return; const c = corpo(ctx, el), d = EFEITOS[x.efeito] || {};
   if (x.tipo === 'dot') {
     if (x.efeito === 'queimadura') { rajada(M, c.x, c.pe - c.h * 0.2, { n: 16, forma: 'brasa', cor: '#f97316', cor2: '#fde047', tam: 9, v: 120, sobe: 160, vida: 0.7 }); luz(M, c.x, c.pe, { cor: '#f97316', raio: c.w * 0.8, vida: 0.6 }); }
@@ -999,8 +1005,10 @@ export async function tocarEvento(ctx, ev) {
   const varForma = hab && (CLIPES_POR_ESPECIE[A.dataset.especie]?.[hab.id] || (finalAbyssar && CLIPE_ABYSSAR_FINAL[hab.id])); // variação da forma
   const cfgClip = varForma ? { ...(cfg || {}), ...varForma } : cfg || clipeElemental(hab);
   const clip = cfgClip?.clip || hab?.clip; // o clipe publicado tem prioridade sobre o caminho previsto no kit
-  if (clip && hab?.tipo === 'dano' && !clipesFalhos.has(clip)) await preparo(ctx, M, A, E.cor, { ms: 220 }); // o atacante se prepara antes do clipe no alvo
-  if (clip && await tocarClipe(ctx, M, { ...(cfgClip || {}), ult }, ev, clip, A)) { /* clipe tocou */ }
+  const enx = Boolean(hab?.enxame && ev.enxame) && await enxameInicio(ctx, M, A, ev); // abelhas em loop sobre o time alvo
+  if (!enx && clip && hab?.tipo === 'dano' && !clipesFalhos.has(clip)) await preparo(ctx, M, A, E.cor, { ms: 220 }); // o atacante se prepara antes do clipe no alvo
+  if (enx) { /* enxame já aplicou o golpe */ }
+  else if (clip && await tocarClipe(ctx, M, { ...(cfgClip || {}), ult }, ev, clip, A)) { /* clipe tocou */ }
   else if (cfg?.fx && FX[cfg.fx]) await FX[cfg.fx](ctx, M, A, ev, hab);
   else if (ev.tipo === 'reviver') await FX.retornoAlma(ctx, M, A, ev, hab);
   else if (ev.tipo === 'atacar') await genCorpo(ctx, M, A, ev, hab, 'neutro');
@@ -1152,6 +1160,26 @@ async function derrotaChefe(ctx, el) {
   const fig = el.querySelector('.un-fig'); if (fig) fig.animate([{ opacity: 1, filter: 'brightness(1)' }, { opacity: 0, filter: 'brightness(2.2)' }], { duration: 900 * ctx.k, fill: 'forwards', easing: 'ease-in' });
   await clipeNoCorpo(ctx, el, DERROTA_ESCURA.has(el.dataset.elemento) ? 'trevas-estilhaco' : 'derrota-luz', { ms: DURACAO_DERROTA_CHEFE - 200, chao: false, escala: 1.15 });
 }
+// Enxame Dourado: o trecho das abelhas voando (enxame-loop.mp4, emenda sem corte) fica em loop sobre o time alvo, cobrindo os 4,
+// até o motor avisar que o enxame acabou (enxameFim). O golpe imediato é aplicado quando o enxame chega.
+async function enxameInicio(ctx, M, A, ev) {
+  const src = `${FLOW7}enxame-loop.mp4`; const v = await carregarVideo(src); if (!v) return false;
+  const lado = ev.enxame.lado, time = [...ctx.campo.querySelectorAll(`.un.${lado}`)]; if (!time.length) return false;
+  const cs = time.map((e) => corpo(ctx, e)), [cx0, cy0, cx1, cy1] = caixaDoClipe(src), prop = v.videoHeight / v.videoWidth || 9 / 16;
+  const X0 = Math.min(...cs.map((c) => c.x - c.w / 2)), X1 = Math.max(...cs.map((c) => c.x + c.w / 2)), Y0 = Math.min(...cs.map((c) => c.topo)), Y1 = Math.max(...cs.map((c) => c.pe));
+  const larg = Math.max(((X1 - X0) * 1.12) / (cx1 - cx0), ((Y1 - Y0) * 1.15) / ((cy1 - cy0) * prop)), alt = larg * prop;
+  const left = (X0 + X1) / 2 - larg * ((cx0 + cx1) / 2), top = (Y0 + Y1) / 2 - alt * ((cy0 + cy1) / 2);
+  ctx.campo.querySelector(`[data-enxame="${ev.enxame.id}"]`)?.remove();
+  v.dataset.enxame = ev.enxame.id; v.loop = true;
+  v.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:86;pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, false)}`;
+  ctx.campo.append(v); v.animate([{ opacity: 0 }, { opacity: 0.95 }], { duration: 380 * ctx.k, fill: 'forwards' });
+  await v.play().catch(() => {});
+  if (A) await preparo(ctx, M, A, '#facc15', { ms: 220 });
+  await ESP(380 * ctx.k);
+  for (const a of alvosDe(ctx, ev)) aplicar(ctx, M, a.el, a.r, { cor: '#facc15' });
+  await ESP(420 * ctx.k);
+  return true;
+}
 const blobs = new Map();
 async function carregarVideo(src, inicio = 0) {
   if (clipesFalhos.has(src)) return null;
@@ -1185,6 +1213,7 @@ export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade
   const ult = cfg?.ult || (hab && hab.cd >= 5);
   let base;
   if (cfg?.fx === 'perseguicao') base = Math.max(700 + n * 215 + (ev.repeticoes || 0) * 160, 2200);
+  else if (hab?.enxame && ev.enxame) base = 1450;
   else if (cfg?.clip) base = cfg.impactoMs + (cfg.posMs ?? Math.min(1000, Math.max(400, (cfg.duracaoMs || 3000) - cfg.impactoMs))) + 200 + (hab.tipo === 'dano' ? 220 : 0); // clipe: impacto, tempo depois e saída
   else if (cfg) base = cfg.ms + Math.max(0, n - 1) * 130;
   else if (clipeElemental(hab)) { const c = clipeElemental(hab); base = c.impactoMs + Math.min(1000, Math.max(400, c.duracaoMs - c.impactoMs)) + 240 + (hab.tipo === 'dano' ? 220 : 0); }

@@ -78,7 +78,8 @@ export const LINHAGEM_DO_REINO = Object.fromEntries(LINHAGENS_REINOS.map((l) => 
 const C = (reino, nome, elemento, habilidades, extra = {}) => ({ reino, nome, elemento, habilidades, furia: 0.5, bonus: { hp: 2.4, atk: 0.3, def: 0.25 }, ...extra });
 export const CHEFES_REINOS = [
   C(1, 'Guardião do Sino', 'luz', ['Badalo Sagrado', 'Eco do Campanário', 'Dobre da Colheita']),
-  C(2, 'Rainha da Colmeia Dourada', 'inseto', ['Ferrão Real', 'Enxame Dourado', 'Decreto da Colmeia']),
+  // Enxame Dourado: as abelhas ficam sobre o time alvo por 3 rodadas, picando todos (35% do ataque) com 40% de chance de veneno
+  C(2, 'Rainha da Colmeia Dourada', 'inseto', ['Ferrão Real', 'Enxame Dourado', 'Decreto da Colmeia'], { enxame: { turnos: 3, mult: 0.35, chance: 0.4 } }),
   C(3, 'Basilisco da Crista Rubra', 'fogo', ['Presa Rubra', 'Olhar Petrificante', 'Chama do Basilisco']),
   C(4, 'Caranguejo Salífero', 'agua', ['Pinça Esmagadora', 'Jato de Salmoura', 'Maré Salífera']),
   C(5, 'Tecelão do Vendaval', 'voador', ['Fio Navalha', 'Tear de Ventos', 'Vendaval Tecido']),
