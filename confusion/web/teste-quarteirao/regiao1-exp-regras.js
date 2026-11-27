@@ -84,7 +84,10 @@ export function concederTickets(save) {
 
 // ---- Banner Permanente (Adventurer: Sombra/trevas e Noctarn ficam fora do permanente) ----
 export const BANNER_PERMANENTE_ID = 'adventurer';
-const RARIDADES = [['comum', 0.70, 1], ['rara', 0.22, 3], ['epica', 0.07, 4], ['lendaria', 0.01, 5]];
+// T5 (lendária, 3%) = só as formas finais das 3 linhas iniciais. Garantias: 10 sem T3+ → T3, 30 sem T4+ → T4, 50 sem T5 → T5
+const RARIDADES = [['comum', 0.68, 1], ['rara', 0.22, 3], ['epica', 0.07, 4], ['lendaria', 0.03, 5]];
+export const T5_BANNER = ['Ignaraz', 'Vaelirion', 'Florivel'];
+export const GARANTIAS_BANNER = { rara: 10, epica: 30, lendaria: 50 };
 export function poolBanner() {
   const vistos = new Set(), pool = [];
   for (const r of Object.values(REINOS)) {
@@ -93,7 +96,7 @@ export function poolBanner() {
       if (ehElementoForaBannerPermanente(l.elemento) || l.nome === NOCTARN_REGRA.especie) continue;
       vistos.add(l.nome);
       const k = [...l.nome].reduce((a, c) => a + c.charCodeAt(0), 0) % 10;
-      const raridade = k < 6 ? 'comum' : k < 8 ? 'rara' : k < 9 ? 'epica' : 'lendaria';
+      const raridade = k < 6 ? 'comum' : k < 8 ? 'rara' : 'epica';
       const tier = RARIDADES.find((x) => x[0] === raridade)[2];
       pool.push({ especie: l.nome, elemento: l.elemento, classe: classeDaEspecie(l.nome), raridade, tier });
     }
@@ -102,6 +105,10 @@ export function poolBanner() {
   for (const especie of ['Brasinha', 'Gotalume', 'Sementil']) if (!vistos.has(especie)) {
     vistos.add(especie);
     pool.push({ especie, elemento: ELEMENTO_DA_ESPECIE[especie], classe: classeDaEspecie(especie), raridade: 'epica', tier: 4, inicial: true });
+  }
+  for (const especie of T5_BANNER) if (!vistos.has(especie)) {
+    vistos.add(especie);
+    pool.push({ especie, elemento: ELEMENTO_DA_ESPECIE[especie], classe: classeDaEspecie(especie), raridade: 'lendaria', tier: 5, inicial: true });
   }
   return pool;
 }
@@ -125,10 +132,15 @@ export function invocar(save, rng = Math.random, agora = Date.now()) {
   let gratis = false;
   if (g.saldo >= 1) { e.gratis.saldo -= 1; gratis = true; } else e.tickets -= 1;
   e.pulls += 1;
-  const garantia = e.pulls % 10 === 0; // a cada 10 invocações, pelo menos rara
+  const gar = e.garantias || (e.garantias = { rara: 0, epica: 0, lendaria: 0 });
   let r = rng(), alvo = 'comum', acc = 0;
   for (const [nome, taxa] of RARIDADES) { acc += taxa; if (r < acc) { alvo = nome; break; } }
-  if (garantia && alvo === 'comum') alvo = 'rara';
+  const ordem = ['comum', 'rara', 'epica', 'lendaria'], minimo = (n) => { if (ordem.indexOf(alvo) < ordem.indexOf(n)) alvo = n; };
+  if (gar.lendaria + 1 >= GARANTIAS_BANNER.lendaria) minimo('lendaria');
+  else if (gar.epica + 1 >= GARANTIAS_BANNER.epica) minimo('epica');
+  else if (gar.rara + 1 >= GARANTIAS_BANNER.rara) minimo('rara');
+  const nv = ordem.indexOf(alvo);
+  gar.rara = nv >= 1 ? 0 : gar.rara + 1; gar.epica = nv >= 2 ? 0 : gar.epica + 1; gar.lendaria = nv >= 3 ? 0 : gar.lendaria + 1;
   const pool = poolBanner(); let cand = pool.filter((p) => p.raridade === alvo); if (!cand.length) cand = pool;
   const sorteado = cand[Math.floor(rng() * cand.length) % cand.length];
   const tier = RARIDADES.find((x) => x[0] === sorteado.raridade)?.[2] || 1;

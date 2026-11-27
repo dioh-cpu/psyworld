@@ -497,8 +497,9 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           </div>
           <div class="inv-bar">
             <div class="inv-marcos">
-              <span class="inv-marco">Garantia: <b>${10 - ate10}/10</b></span>
-              <span class="inv-marco">Faltam <b>${ate10}</b> p/ Rara+</span>
+              <span class="inv-marco">T3 garantido em <b>${R.GARANTIAS_BANNER.rara - (e.garantias?.rara || 0)}</b></span>
+              <span class="inv-marco">T4 em <b>${R.GARANTIAS_BANNER.epica - (e.garantias?.epica || 0)}</b></span>
+              <span class="inv-marco">T5 em <b>${R.GARANTIAS_BANNER.lendaria - (e.garantias?.lendaria || 0)}</b> · 3% por invocação</span>
               <span class="inv-marco">Total: <b>${e.pulls || 0}</b></span>
             </div>
             <div class="inv-acoes">
@@ -517,7 +518,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         return `<div class="mini"><div class="mini-mold"><img class="sp" src="${arteElencoInv(r.especie)}" alt="${esc(r.especie)}"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div><b>${esc(r.especie)}</b><br><span style="color:${RARO[r.raridade] || '#cbd5e1'}">T${r.tier || mN} · ${esc(r.raridade)}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
       }).join('')}</div></div>`;
     }
-    h += `<div class="bl"><h4>Elenco completo no Banner (${pool.length}) · Comum 70% · Rara 22% · Épica 7% · Lendária 1%</h4><div class="grade">${pool.map((p) => {
+    h += `<div class="bl"><h4>Elenco completo no Banner (${pool.length}) · Comum 68% · Rara (T3) 22% · Épica (T4) 7% · Lendária (T5) 3% · garantias 10/30/50</h4><div class="grade">${pool.map((p) => {
       const mN = MOLDURAS_BANNER[p.raridade] || p.tier || 1;
       const cls = infoClasse(p.especie);
       return `<div class="mini"><div class="mini-mold"><img class="sp" src="${arteElencoInv(p.especie)}" alt="" loading="lazy"><img class="ov" src="${IMG(arteMoldura(mN))}" alt="" onerror="this.style.display='none'"></div>${esc(p.especie)}<br><span style="color:${RARO[p.raridade]}">T${p.tier || mN} · ${p.raridade}</span><br><span class="mut">${cls.icone} ${esc(cls.nome)}</span></div>`;
