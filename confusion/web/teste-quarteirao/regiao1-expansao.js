@@ -1037,6 +1037,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       if (dest === 'calabouco') { origemPainelExp = 'descanso'; painel = 'cacadas'; aba = 1; fichaUid = null; selEq = null; render(true); return; }
       if (dest === 'reinos') { window.regiaoReinos?.abrirSeletor?.(); return; }
       if (dest === 'campanhaMini' && window.regiaoCampanhaMini?.abrir) {
+        fecharModal('modal-exp');
         window.regiaoCampanhaMini.abrir();
         return;
       }
