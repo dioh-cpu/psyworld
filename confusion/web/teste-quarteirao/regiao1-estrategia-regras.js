@@ -227,6 +227,7 @@ function posDano(b, a, perdido, rr) {
 // Domador: 5º aliado fora do campo (não ocupa vaga, não é alvo, não recebe dano). Sem barra: cada habilidade tem a própria
 // recarga, que já começa contando na entrada da batalha e desce 1 por rodada. Age logo após um turno aliado quando alguma está
 // pronta (prioridade Suprema → Técnica → Golpe). Gera b.eventoDomador para a tela tocar.
+export const DOMADOR_BALANCO = { dano: 0.2, apoio: 0.4, turnosBuff: 1 };
 function prepararDomador(d) {
   d.recargas = (d.habilidades || []).map((h) => Math.max(1, h.cd || 1));
   d.recargasMax = [...d.recargas]; atualizarBarraDomador(d); return d;
@@ -242,7 +243,9 @@ function agirDomador(b, rng) {
   const hab = d.habilidades[idx]; d.recargas[idx] = d.recargasMax[idx] = Math.max(1, hab.cd || 1); d.acoesFeitas = (d.acoesFeitas || 0) + 1; atualizarBarraDomador(d);
   const acao = { domadorId: d.id, nomeDomador: d.nome, indiceHabilidade: idx, habilidade: hab, atk: d.stats?.atk || 50, poderApoio: d.stats?.poderApoio || 1 };
   const h = acao.habilidade, poder = acao.poderApoio || 1, ev = { tipo: 'domador', domador: acao.domadorId, nome: acao.nomeDomador, hab: h, idx: acao.indiceHabilidade, alvos: [] };
-  const fonte = { id: `dom_${acao.domadorId}`, atk: acao.atk, elemento: h.elemento || b.domador.elemento || 'neutro', lado: 'a', efeitos: {} };
+  // Força relativa ao time (não a um valor fixo): o golpe usa a média de ataque dos aliados vivos × DOMADOR_BALANCO.dano
+  const vivosA = vivos(b.aliados), atkTime = vivosA.reduce((t, x) => t + efetivo(x, 'atk'), 0) / Math.max(1, vivosA.length);
+  const fonte = { id: `dom_${acao.domadorId}`, atk: Math.max(1, Math.round(atkTime * DOMADOR_BALANCO.dano * (acao.poderApoio || 1))), elemento: h.elemento || b.domador.elemento || 'neutro', lado: 'a', efeitos: {} };
   if (h.tipo === 'dano') {
     const inim = vivos(b.inimigos); const alvos = h.alvo === 'todos' ? inim : [escolherAlvo(b, { ...fonte, lado: 'a' }, rng) || inim[0]].filter(Boolean);
     for (const a of alvos) {
@@ -251,12 +254,14 @@ function agirDomador(b, rng) {
       ev.alvos.push(rr);
     }
   } else {
+    // Buffs de atributo do domador vão só para o aliado de maior ataque (no time todo desequilibravam a luta)
+    const focoBuff = [...vivos(b.aliados)].sort((x, y) => efetivo(y, 'atk') - efetivo(x, 'atk'))[0];
     for (const a of vivos(b.aliados)) {
       const rr = { id: a.id, valor: 0, efeitos: [] };
-      if (h.cura) { const c = Math.min(a.hpMax - a.hp, Math.round(a.hpMax * h.cura * poder)); a.hp += c; rr.valor = c; }
+      if (h.cura) { const c = Math.min(a.hpMax - a.hp, Math.round(a.hpMax * h.cura * poder * DOMADOR_BALANCO.apoio)); a.hp += c; rr.valor = c; }
       for (const e of h.efeitos || []) {
-        if (e.id === 'escudo') { (a.efeitos ||= {}).escudo = { turnos: e.turnos || 2, valor: Math.round(a.hpMax * (e.pct || 0.1) * poder), fonte: fonte.id }; rr.efeitos.push('escudo'); }
-        else { const ok = aplicarEfeito(a, fonte, e, rng); if (ok) rr.efeitos.push(ok); }
+        if (e.id === 'escudo') { (a.efeitos ||= {}).escudo = { turnos: e.turnos || 2, valor: Math.round(a.hpMax * (e.pct || 0.1) * poder * DOMADOR_BALANCO.apoio), fonte: fonte.id }; rr.efeitos.push('escudo'); }
+        else { const ok = aplicarEfeito(a, fonte, { ...e, turnos: Math.min(e.turnos || 2, DOMADOR_BALANCO.turnosBuff), chance: a === focoBuff ? e.chance : 0 }, rng); if (ok) rr.efeitos.push(ok); }
       }
       ev.alvos.push(rr);
     }
