@@ -187,30 +187,14 @@ export function iniciarCiclo({ dados, cena, camera, P, camada, getMapaAtual, get
     return { falas: e.falas, botoes };
   }
 
-  // ---------- rotina dos NPCs ----------
-  const posNpc = new Map(); // id -> { ent, x, z } (a posição sobrevive quando o mapa reconstrói as entidades)
-  let ultimoRot = performance.now();
+  // ---------- NPCs estáticos (permanecem parados no ponto fixo, com idle/respiração) ----------
+  const posNpc = new Map();
   function rotina() {
-    const agora = performance.now(), dt = Math.min(0.2, (agora - ultimoRot) / 1000); ultimoRot = agora;
     if (getMapaAtual()?.id !== D.mapa || document.hidden) return;
-    const meta = window.regiaoMundo?.estado?.().meta;
-    const fase = (window.__cicloFase ?? (meta ? ((Date.now() - meta.ultimoMs) / DIA_MS) % 1 : 0));
-    const noite = fase >= 0.5;
     for (const ent of getEntidades()) {
       if (ent.tipo !== 'npc' || !D.rotina.npcs.includes(ent.dados.id)) continue;
-      let reg = posNpc.get(ent.dados.id);
-      if (!reg) { reg = { ent, x: ent.x, z: ent.z }; posNpc.set(ent.dados.id, reg); }
-      if (reg.ent !== ent) { reg.ent = ent; moverPara(ent, reg.x, reg.z); } // entidades reconstruídas: volta para onde estava
-      const alvoPx = noite ? D.rotina.noite[ent.dados.id] : ent.dados.pos;
-      const a = P(alvoPx[0], alvoPx[1]);
-      const dx = a.x - reg.x, dz = a.z - reg.z, d = Math.hypot(dx, dz);
-      if (d > 0.05) { const passo = Math.min(d, 2.6 * dt); reg.x += (dx / d) * passo; reg.z += (dz / d) * passo; moverPara(ent, reg.x, reg.z); }
+      posNpc.set(ent.dados.id, { ent, x: ent.x, z: ent.z });
     }
-  }
-  function moverPara(ent, x, z) {
-    const yOff = ent.mesh.position.y - camada(ent.z);
-    ent.x = x; ent.z = z;
-    ent.mesh.position.set(x, camada(z) + yOff, z);
   }
 
   // ---------- laços ----------
