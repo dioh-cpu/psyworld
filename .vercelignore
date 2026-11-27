@@ -5,6 +5,7 @@ tools/
 scripts/
 supabase/
 assets/characters/source-video/
+assets/confusion/animacoes/_entrada/
 **/*-original.*
 **/*-origem-*
 **/*.test.mjs

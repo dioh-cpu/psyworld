@@ -98,8 +98,12 @@ def remover_chroma_rgba(img: Image.Image, chroma: str = "magenta") -> Image.Imag
     return res
 
 
-def detectar_faixas_horizontais(frames_rgba: list[Image.Image], minimo_largura: int = 16) -> list[tuple[int, int]]:
-    """Encontra as 3 faixas horizontais (frente, direita, costas) unindo a máscara alfa de todos os frames."""
+def detectar_faixas_horizontais(
+    frames_rgba: list[Image.Image],
+    qtd_vistas: int = 3,
+    minimo_largura: int = 16,
+) -> list[tuple[int, int]]:
+    """Encontra N faixas horizontais (ex.: 2 ou 3 vistas) unindo a máscara alfa de todos os frames."""
     w, h = frames_rgba[0].size
     col_ativa = [False] * w
     for fr in frames_rgba:
@@ -122,10 +126,10 @@ def detectar_faixas_horizontais(frames_rgba: list[Image.Image], minimo_largura: 
     if ini is not None and w - ini >= minimo_largura:
         faixas.append((ini, w))
 
-    # Se não separou exatamente em 3 (ex.: sombras próximas), divide em 3 terços iguais
-    if len(faixas) != 3:
-        terco = w // 3
-        return [(0, terco), (terco, terco * 2), (terco * 2, w)]
+    # Se não separou exatamente em qtd_vistas (ex.: sombras próximas), divide em fatias iguais
+    if len(faixas) != qtd_vistas:
+        passo = w // max(1, qtd_vistas)
+        return [(i * passo, w if i == qtd_vistas - 1 else (i + 1) * passo) for i in range(qtd_vistas)]
     return faixas
 
 
@@ -247,6 +251,28 @@ def exportar_webm_alfa(frames: list[Image.Image], destino: Path, fps: int, tmp_d
     return round(destino.stat().st_size / 1024.0, 1)
 
 
+def _recortar_loop_compativel(frames: list[Image.Image], min_frac: float = 0.55) -> list[Image.Image]:
+    """Seleciona o sub-ciclo [i..j) mais compatível para fechar caminhada/loop sem pulo na emenda."""
+    n = len(frames)
+    min_len = max(6, int(n * min_frac))
+    if n <= min_len + 1:
+        return frames
+    thumbs = [fr.resize((48, 48), Image.Resampling.BILINEAR).convert("LA") for fr in frames]
+    melhor_score = float("inf")
+    melhor_par = (0, n)
+    # Limita busca ao início (primeiro terço) e fim (último terço) para manter ~2-3s contínuos
+    max_ini = min(n - min_len - 1, max(1, n // 3))
+    for i in range(0, max_ini + 1):
+        for j in range(i + min_len, n):
+            diff = ImageChops.difference(thumbs[i], thumbs[j]).tobytes()
+            score = sum(diff) / len(diff)
+            if score < melhor_score:
+                melhor_score = score
+                melhor_par = (i, j)
+    i0, j0 = melhor_par
+    return frames[i0:j0]
+
+
 def processar_animacao(
     entrada: Path,
     especie: str,
@@ -256,10 +282,21 @@ def processar_animacao(
     fps: int = 12,
     tamanho: int = 256,
     limite_kb: int = LIMITE_KB_CELULAR,
+    vistas: tuple[str, ...] | list[str] = VISTAS_ENTRADA,
+    espelhar_esquerda: bool = True,
+    fechar_loop: bool | None = None,
 ) -> dict[str, Any]:
-    """Executa o pipeline completo de 1 vídeo (idle ou andar) para 4 direções (.webm + .webp)."""
+    """Executa o pipeline completo de 1 vídeo (2 ou 3 vistas, idle ou andar) para .webm + .webp.
+
+    Quando `esquerda` já está em `vistas` (ex.: vídeo de 2 vistas `esquerda,direita`), não espelha `direita`.
+    Quando um par de vídeos (ex.: `esquerda,direita` + `frente,costas`) é processado em chamadas sucessivas,
+    as direções são mescladas em `meta.json` com a mesma escala e linha dos pés.
+    """
     if acao not in ACOES_VALIDAS:
         raise ValueError(f"Ação inválida: {acao} (esperado: {ACOES_VALIDAS})")
+    lista_vistas = tuple(v.strip().lower() for v in vistas if v.strip())
+    if not lista_vistas or any(v not in TODAS_DIRECOES for v in lista_vistas):
+        raise ValueError(f"Vistas inválidas: {lista_vistas} (permitidas: {TODAS_DIRECOES})")
 
     slug = "".join(c for c in especie.strip().lower() if c.isalnum() or c in ("-", "_"))
     pasta_saida = saida_raiz / slug
@@ -271,43 +308,57 @@ def processar_animacao(
         tmp = Path(td)
         brutos = extrair_frames_entrada(entrada, fps, tmp)
         rgba = [remover_chroma_rgba(fr, chroma=chroma) for fr in brutos]
-        faixas = detectar_faixas_horizontais(rgba)
-        bboxes = {nome: bbox_unificado_faixa(rgba, x0, x1) for nome, (x0, x1) in zip(VISTAS_ENTRADA, faixas)}
+        faixas = detectar_faixas_horizontais(rgba, qtd_vistas=len(lista_vistas))
+        bboxes = {nome: bbox_unificado_faixa(rgba, x0, x1) for nome, (x0, x1) in zip(lista_vistas, faixas)}
 
         margem_pes_px = max(4, round(tamanho * MARGEM_PES_RATIO))
         area_util_w = tamanho - 16
         area_util_h = tamanho - margem_pes_px - 12
 
-        # Escala única para todas as 3 vistas; reutiliza escala do idle (meta.json) para manter mesma escala no andar
+        # Escala única compartilhada (reutiliza meta.json para manter mesma escala entre pares 03+04 e entre idle/andar)
         max_w = max(max(1, bb[2] - bb[0]) for bb in bboxes.values())
         max_h = max(max(1, bb[3] - bb[1]) for bb in bboxes.values())
         escala_calc = min(area_util_w / max_w, area_util_h / max_h)
         escala = float(meta_existente.get("escalaReferencia", escala_calc))
-        # Garante que nenhuma vista estoure o canvas mesmo reutilizando escala de referência
         if max_w * escala > tamanho - 4 or max_h * escala > tamanho - margem_pes_px - 2:
             escala = min(escala, escala_calc)
 
+        usar_fechar = (acao == "andar") if fechar_loop is None else bool(fechar_loop)
         sequencias: dict[str, list[Image.Image]] = {}
-        for nome in VISTAS_ENTRADA:
+        origens: dict[str, str] = {}
+        for nome in lista_vistas:
             bb = bboxes[nome]
-            sequencias[nome] = [
+            seq = [
                 enquadrar_alinhado_pes(fr.crop(bb), tamanho, escala, margem_pes_px)
                 for fr in rgba
             ]
-        # Esquerda = direita espelhada horizontalmente
-        sequencias["esquerda"] = [
-            fr.transpose(Image.Transpose.FLIP_LEFT_RIGHT) for fr in sequencias["direita"]
-        ]
+            if usar_fechar:
+                seq = _recortar_loop_compativel(seq)
+            sequencias[nome] = seq
+            origens[nome] = "direta"
+
+        # Só espelha direita -> esquerda se esquerda NÃO veio pronta no vídeo
+        if espelhar_esquerda and "direita" in sequencias and "esquerda" not in sequencias:
+            sequencias["esquerda"] = [
+                fr.transpose(Image.Transpose.FLIP_LEFT_RIGHT) for fr in sequencias["direita"]
+            ]
+            origens["esquerda"] = "espelhada"
 
         gerados: dict[str, Any] = {}
-        for direcao in TODAS_DIRECOES:
-            frames_dir = sequencias[direcao]
+        for direcao, frames_dir in sequencias.items():
             webp_path = pasta_saida / f"{acao}-{direcao}.webp"
             webm_path = pasta_saida / f"{acao}-{direcao}.webm"
             kb_webp = exportar_webp_animado(frames_dir, webp_path, fps=fps, limite_kb=limite_kb)
             kb_webm = exportar_webm_alfa(frames_dir, webm_path, fps=fps, tmp_dir=tmp, limite_kb=limite_kb)
-            gerados[direcao] = {"webpKB": kb_webp, "webmKB": kb_webm, "frames": len(frames_dir)}
+            gerados[direcao] = {
+                "webpKB": kb_webp,
+                "webmKB": kb_webm,
+                "frames": len(frames_dir),
+                "origem": origens[direcao],
+            }
 
+        acoes_prev = dict(meta_existente.get("acoes") or {})
+        acoes_prev[acao] = {**(acoes_prev.get(acao) or {}), **gerados}
         meta_novo = {
             **meta_existente,
             "especie": slug,
@@ -316,7 +367,7 @@ def processar_animacao(
             "chroma": chroma,
             "margemPesPx": margem_pes_px,
             "escalaReferencia": round(escala, 6),
-            "acoes": {**(meta_existente.get("acoes") or {}), acao: gerados},
+            "acoes": acoes_prev,
         }
         meta_path.write_text(json.dumps(meta_novo, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         return meta_novo
@@ -415,16 +466,27 @@ def validar_pasta_especie(pasta: Path, limite_kb: int = LIMITE_KB_CELULAR) -> di
                     "webpKB": round(p_webp.stat().st_size / 1024.0, 1),
                 }
 
-        # Confere espelhamento direita <-> esquerda
+        # Confere espelhamento direita <-> esquerda apenas quando esquerda foi espelhada (quando veio direta, valida escala e linha dos pés)
+        origem_esq = ((meta.get("acoes") or {}).get(ac) or {}).get("esquerda", {}).get("origem", "espelhada")
         p_dir = pasta / f"{ac}-direita.webp"
         p_esq = pasta / f"{ac}-esquerda.webp"
         if p_dir.exists() and p_esq.exists():
-            f_dir = _carregar_frames_webp(p_dir)[0].transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-            f_esq = _carregar_frames_webp(p_esq)[0]
-            d_esp = ImageChops.difference(f_dir, f_esq).convert("L").histogram()
-            diff_esp = sum(v * c for v, c in enumerate(d_esp)) / max(1, f_dir.width * f_dir.height * 255.0)
-            if diff_esp > 0.03:
-                erros.append(f"{ac}: esquerda não espelha direita (diff={diff_esp:.3f})")
+            if origem_esq == "direta":
+                m_dir = metricas[ac].get("direita", {})
+                m_esq = metricas[ac].get("esquerda", {})
+                if m_dir.get("alturaUtil") and m_esq.get("alturaUtil"):
+                    ratio_lat = abs(m_esq["alturaUtil"] - m_dir["alturaUtil"]) / m_dir["alturaUtil"]
+                    if ratio_lat > 0.12:
+                        erros.append(f"{ac}: altura divergente entre direita ({m_dir['alturaUtil']}px) e esquerda direta ({m_esq['alturaUtil']}px)")
+                if abs(m_esq.get("yPes", 0) - m_dir.get("yPes", 0)) > 8:
+                    erros.append(f"{ac}: linha dos pés desalinhada entre direita e esquerda direta")
+            else:
+                f_dir = _carregar_frames_webp(p_dir)[0].transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+                f_esq = _carregar_frames_webp(p_esq)[0]
+                d_esp = ImageChops.difference(f_dir, f_esq).convert("L").histogram()
+                diff_esp = sum(v * c for v, c in enumerate(d_esp)) / max(1, f_dir.width * f_dir.height * 255.0)
+                if diff_esp > 0.03:
+                    erros.append(f"{ac}: esquerda não espelha direita (diff={diff_esp:.3f})")
 
     # Confere mesma escala e linha dos pés entre idle e andar
     if "idle" in metricas and "andar" in metricas and "frente" in metricas["idle"] and "frente" in metricas["andar"]:
@@ -444,11 +506,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Pipeline de animações de Oníricos (Flow -> WebM alfa + WebP animado)")
     parser.add_argument("--entrada", type=Path, help="Vídeo MP4/WebM do Flow ou pasta de frames PNG")
     parser.add_argument("--especie", type=str, help="Slug da espécie (ex.: cervomusgo, brasinha)")
-    parser.add_argument("--acao", choices=ACOES_VALIDAS, default="idle", help="Tipo de loop: idle (4s) ou andar (2s)")
+    parser.add_argument("--acao", choices=ACOES_VALIDAS, default="idle", help="Tipo de loop: idle (3-4s) ou andar (2s)")
+    parser.add_argument(
+        "--vistas",
+        type=str,
+        default="frente,direita,costas",
+        help="Vistas da esquerda para a direita separadas por vírgula (ex.: frente,direita,costas | esquerda,direita | frente,costas)",
+    )
     parser.add_argument("--chroma", choices=("magenta", "verde"), default="magenta", help="Cor do fundo chroma")
     parser.add_argument("--fps", type=int, default=12, help="Quadros por segundo de saída (padrão: 12)")
     parser.add_argument("--tamanho", type=int, default=256, help="Tamanho quadrado do canvas em px (padrão: 256)")
     parser.add_argument("--saida", type=Path, default=SAIDA_PADRAO, help="Pasta raiz de saída")
+    parser.add_argument("--sem-validar", action="store_true", help="Não roda --validar ao final (útil no 1º vídeo de um par 2+2 vistas)")
     parser.add_argument("--validar", type=Path, help="Valida uma pasta de espécie já gerada")
     args = parser.parse_args(argv)
 
@@ -460,6 +529,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.entrada or not args.especie:
         parser.error("Informe --entrada e --especie (ou use --validar <pasta>).")
 
+    vistas_tuple = tuple(v.strip().lower() for v in args.vistas.split(",") if v.strip())
     meta = processar_animacao(
         entrada=args.entrada,
         especie=args.especie,
@@ -468,8 +538,12 @@ def main(argv: list[str] | None = None) -> int:
         chroma=args.chroma,
         fps=args.fps,
         tamanho=args.tamanho,
+        vistas=vistas_tuple,
     )
     pasta = args.saida / meta["especie"]
+    if args.sem_validar:
+        print(json.dumps({"meta": meta}, indent=2, ensure_ascii=False))
+        return 0
     val = validar_pasta_especie(pasta)
     print(json.dumps({"meta": meta, "validacao": val}, indent=2, ensure_ascii=False))
     return 0 if val["ok"] else 1

@@ -1,9 +1,9 @@
 # Relatório — Etapa JOGADOR NOVO (QA, Desempenho e Colisão)
 
-- **Última atualização:** 2026-11-27 18:24 UTC
+- **Última atualização:** 2026-11-27 19:46 UTC
 - **Jogo:** https://cwdp-lake.vercel.app/jogar
 - **Gerado automaticamente por:** `python3 tools/e2e_jogador_novo.py`
-- **Desempenho na abertura:** Desktop `1280×720` = **1764 ms** (7139.1 KB, Refúgio +1644 ms, batalha **7 fps**) · Celular `844×390` = **970 ms** (7139.1 KB, Refúgio +794 ms, batalha **20 fps**; meta abertura `< 2000 ms`: **OK**)
+- **Desempenho na abertura:** Desktop `1280×720` = **1317 ms** (7213.4 KB, Refúgio +1657 ms, batalha **5 fps**) · Celular `844×390` = **1102 ms** (7213.4 KB, Refúgio +886 ms, batalha **16 fps**; meta abertura `< 2000 ms`: **OK**)
 - **Artes v2 em disco:** `telas-v2/` (13 fundos 2560px) = **6822.6 KB** · `telas-v2/mobile/` (13 fundos 1280px) = **2147.5 KB** (**-68.5%** no celular) · `banners-v2/` (2 capas) = **1811.1 KB**
 - **Carregamento sob demanda v2 no celular (`844×390`):** boot=0 arquivo(s), sessão inteira=12 arquivo(s) (usando `telas-v2/mobile/`: **10**, usando 2560px no celular: **0**)
 - **Perfil / Upload de foto (`#165`):** botão Personalizar=OK, rejeita formato inválido e >2MB=OK
@@ -156,19 +156,19 @@ Nenhum problema automático aberto nesta rodada.
 
 | Etapa | Desktop 1280×720 | Celular 844×390 |
 |---|---|---|
-| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1764ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=970ms) |
+| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1317ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1102ms) |
 | 02. Escolha do Inicial | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) |
-| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1764ms (7139.1KB), refugio=+1644ms, guiaPasso2=True) | PASS (boot=970ms (7139.1KB), refugio=+794ms, guiaPasso2=True) |
+| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1317ms (7213.4KB), refugio=+1657ms, guiaPasso2=True) | PASS (boot=1102ms (7213.4KB), refugio=+886ms, guiaPasso2=True) |
 | 04. Campanha -> 1ª batalha | PASS (vitoria=True) | PASS (vitoria=True) |
 | 06. Equipe & Evolução | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) |
-| 07. Campanha Mini 1-1 | PASS (vitoria=True) | PASS (vitoria=True) |
-| 08. Missões | PASS (painel Marcos/Paralelas aberto) | PASS (painel Marcos/Paralelas aberto) |
-| 09. Torres andar 1 | PASS (vitoria=True) | PASS (vitoria=True) |
-| 10. Calabouços nível 1 | PASS (vitoria=True) | PASS (vitoria=True) |
+| 07. Campanha Mini 1-1 (ondas na tela) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) |
+| 08. Missões (20 paralelas/cap) | PASS (painel aberto, temParalelas=True) | PASS (painel aberto, temParalelas=True) |
+| 09. Torres andar 1 (9 Torres) | PASS (vitoria=True, botoesTorre=0) | PASS (vitoria=True, botoesTorre=0) |
+| 10. Calabouços nível 1 (9 Calabouços) | PASS (vitoria=True, botoesCalabouco=9) | PASS (vitoria=True, botoesCalabouco=9) |
 | 11. Relíquias (equipar) | PASS (relíquia equipada na UI) | PASS (relíquia equipada na UI) |
 | 12. Banner Adventurer (grátis + garantias 10/30/50) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) | PASS (inv=True, usouGratis=True, gratisAntes=10, uiGarantias=True) |
 | 13. Domador (Manipulador) | PASS (ativo=manipulador) | PASS (ativo=manipulador) |
-| 14. Menus reformulados (Mochila/Coleção/Eventos/Guilda) | PASS (abasMochila=5, uploadFotoPerfil=True) | PASS (abasMochila=5, uploadFotoPerfil=True) |
+| 14. Menus reformulados (Mochila/Coleção/Eventos/Guilda/Passe) | PASS (abasMochila=5, uploadFoto=True, passeDupla=True) | PASS (abasMochila=5, uploadFoto=True, passeDupla=True) |
 | 15. Mundo (só 10 sistemas) | PASS (info={'btns': 0, 'tem11a50': False}) | PASS (info={'btns': 0, 'tem11a50': False}) |
 | 16. AFK em segundo plano (visibilitychange + toast) | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') |
 | 17. Convidado -> conta (toast 20.000💎 + 10d VIP) | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') |

@@ -266,4 +266,20 @@ test('coletarAnimacoesEmCampo carrega apenas os Oníricos em campo (aliados à d
   );
 });
 
+test('Cervomusgo: animações idle e andar nas 4 direções (.webm + .webp) prontas em assets/confusion/animacoes/cervomusgo/ e abaixo de 600 KB', () => {
+  const dir = path.join(REPO_ROOT, 'assets/confusion/animacoes/cervomusgo');
+  assert.ok(fs.existsSync(dir), 'Pasta assets/confusion/animacoes/cervomusgo/ deve existir');
+  for (const ac of ['idle', 'andar']) {
+    for (const d of ['frente', 'direita', 'costas', 'esquerda']) {
+      for (const ext of ['webm', 'webp']) {
+        const p = path.join(dir, `${ac}-${d}.${ext}`);
+        assert.ok(fs.existsSync(p), `Falta ${p}`);
+        const kb = fs.statSync(p).size / 1024;
+        assert.ok(kb > 1 && kb <= 600, `${path.basename(p)} deve pesar <= 600 KB (atual: ${kb.toFixed(1)} KB)`);
+      }
+    }
+  }
+});
+
+
 

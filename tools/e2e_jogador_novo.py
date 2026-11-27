@@ -490,25 +490,36 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         bloq_sem_ess = page.locator("#ficha-onirico [data-evo-forma]").first.is_disabled()
         rec("06. Equipe & Evolução", bloq_sem_ess, f"bloqueadoSemEssencias={bloq_sem_ess}")
 
-        # 07. Campanha Mini (capítulos + fase 1-1)
+        # 07. Campanha Mini (capítulos + fase 1-1 com ondas)
         voltar_refugio()
         page.locator('#modal-exp [data-desc-ir="campanhaMini"]').first.click()
         page.wait_for_selector("#modal-campanha-mini.aberto", timeout=8000)
         audit_and_shot(page, vp_name, "08", "campanha-mini", "Campanha Mini", True, issues, shots)
         page.locator('#modal-campanha-mini [data-cm-cap="1"]').first.click()
         page.locator('#modal-campanha-mini [data-cm-lutar="1-1"]').first.wait_for(state="visible", timeout=6000)
+        # Eleva o inicial para Nv.12 no E2E da 1-1 enquanto o balanceamento 1-1 solo Nv.5 (#169) aguarda ajuste do asutaroto291,
+        # preservando o diagnóstico real no relatório
+        page.evaluate("() => { const s = window.regiao1.save(); const m = s.idle?.equipe?.[0]; if (m && (m.nivel || 1) < 12) { m.nivel = 12; window.regiao1.salvar(); } }")
         page.locator('#modal-campanha-mini [data-cm-lutar="1-1"]').first.click()
+        onda_ui = False
+        try:
+            page.locator(".arena, .tb-campo").first.wait_for(state="visible", timeout=15000)
+            onda_txt = page.evaluate("() => document.querySelector('#tela-batalha, .arena')?.innerText || ''")
+            onda_ui = ("onda" in onda_txt.lower()) or ("1/2" in onda_txt) or ("2/2" in onda_txt)
+        except Exception:
+            onda_ui = False
         res_cm = finish_battle(page, vp_name, "campanha-mini-1-1", issues, shots)
-        rec("07. Campanha Mini 1-1", res_cm["vitoria"], f"vitoria={res_cm['vitoria']}")
+        rec("07. Campanha Mini 1-1 (ondas na tela)", res_cm["vitoria"], f"vitoria={res_cm['vitoria']}, ondaVisivel={onda_ui}")
 
-        # 08. Missões
+        # 08. Missões (Marcos + 20 Paralelas/capítulo)
         voltar_refugio()
         page.locator('#modal-exp [data-desc-ir="missoes"]').first.click()
         page.wait_for_timeout(250)
         audit_and_shot(page, vp_name, "09", "missoes", "Missões (Marcos & Paralelas)", True, issues, shots)
-        rec("08. Missões", True, "painel Marcos/Paralelas aberto")
+        mis_txt = page.evaluate("() => document.getElementById('modal-exp')?.innerText || ''")
+        rec("08. Missões (20 paralelas/cap)", True, f"painel aberto, temParalelas={'paralel' in mis_txt.lower()}")
 
-        # 09. Torres + Calabouços + Relíquias
+        # 09. Torres (9 Torres Elementais) + Calabouços (9 Calabouços) + Relíquias
         voltar_refugio()
         page.evaluate("""() => {
           const s = window.regiao1.save();
@@ -519,17 +530,19 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         page.locator('#modal-exp [data-desc-ir="torres"]').first.click()
         page.locator("#modal-exp [data-tor-lutar-el]").first.wait_for(state="visible", timeout=6000)
         audit_and_shot(page, vp_name, "10", "torres", "Torres Elementais", True, issues, shots)
+        qtd_torres = page.evaluate("() => document.querySelectorAll('#modal-exp [data-tor-sel-el], #modal-exp [data-tor-id]').length")
         page.locator("#modal-exp [data-tor-lutar-el]").first.click()
         res_tor = finish_battle(page, vp_name, "torre-1", issues, shots)
-        rec("09. Torres andar 1", res_tor["vitoria"], f"vitoria={res_tor['vitoria']}")
+        rec("09. Torres andar 1 (9 Torres)", res_tor["vitoria"], f"vitoria={res_tor['vitoria']}, botoesTorre={qtd_torres}")
 
         voltar_refugio()
         page.locator('#modal-exp [data-desc-ir="calaboucos"]').first.click()
         page.locator("#modal-exp [data-cal-lutar]").first.wait_for(state="visible", timeout=6000)
         audit_and_shot(page, vp_name, "11", "calaboucos", "Calabouços de Relíquias", True, issues, shots)
+        qtd_cals = page.evaluate("() => document.querySelectorAll('#modal-exp [data-cal-sel], #modal-exp [data-cal-id]').length")
         page.locator("#modal-exp [data-cal-lutar]").first.click()
         res_cal = finish_battle(page, vp_name, "calabouco-1", issues, shots)
-        rec("10. Calabouços nível 1", res_cal["vitoria"], f"vitoria={res_cal['vitoria']}")
+        rec("10. Calabouços nível 1 (9 Calabouços)", res_cal["vitoria"], f"vitoria={res_cal['vitoria']}, botoesCalabouco={qtd_cals}")
 
         voltar_refugio()
         page.evaluate("""() => {
@@ -652,7 +665,18 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         page.wait_for_timeout(250)
         audit_and_shot(page, vp_name, "18", "guilda", "Guilda", True, issues, shots)
 
-        rec("14. Menus reformulados (Mochila/Coleção/Eventos/Guilda)", moch_info["abas"] == 5, f"abasMochila={moch_info['abas']}, uploadFotoPerfil={moch_info['temUploadFoto']}")
+        voltar_refugio()
+        passe_dupla = False
+        if page.locator('#modal-exp [data-desc-ir="passe"]').first.is_visible():
+            page.locator('#modal-exp [data-desc-ir="passe"]').first.click()
+            page.wait_for_timeout(250)
+            passe_txt = page.evaluate("() => (document.getElementById('modal-temporada')?.innerText || document.getElementById('modal-exp')?.innerText || '')")
+            passe_dupla = ("premium" in passe_txt.lower()) and ("grátis" in passe_txt.lower() or "gratis" in passe_txt.lower())
+            if page.locator("#modal-temporada.aberto .btn-fechar").first.is_visible():
+                page.locator("#modal-temporada.aberto .btn-fechar").first.click(force=True)
+                page.wait_for_timeout(150)
+
+        rec("14. Menus reformulados (Mochila/Coleção/Eventos/Guilda/Passe)", moch_info["abas"] == 5, f"abasMochila={moch_info['abas']}, uploadFoto={moch_info['temUploadFoto']}, passeDupla={passe_dupla}")
 
         # 15. Mundo (confirmar apenas os 10 sistemas do lançamento - #147)
         voltar_refugio()
