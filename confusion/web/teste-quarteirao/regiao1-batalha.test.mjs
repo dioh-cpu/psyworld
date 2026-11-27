@@ -143,3 +143,28 @@ test('Enxame Dourado: pica todos do time alvo por 3 rodadas, com chance de venen
   }
   assert.equal(fim, 1); assert.equal(rodadas, 3); assert.equal(picadas, 12); assert.equal(b.campos.length, 0);
 });
+test('resumoBatalha: todos vivos no fim (reviver conta), classes, elementos e supremas do time', async () => {
+  const time = ['Ignavor', 'Vaelith', 'Brotavel', 'Solarin'].map((e, i) => u(`a${i}`, e, 'a', 60));
+  const b = M.criarBatalha(time, [u('x', 'Fanalino', 'i', 5)]);
+  b.aliados[1].hp = 0; // caiu
+  b.aliados[1].hp = 50; // revivido antes do fim
+  b.inimigos[0].hp = 0; b.fim = 'vitoria'; b.supremas = { a: 2, i: 1 };
+  const r = M.resumoBatalha(b);
+  assert.equal(r.venceu, true); assert.equal(r.todosVivos, true); assert.equal(r.vivosNoFim, 4); assert.equal(r.supremasUsadas, 2);
+  assert.equal(Object.values(r.classes).reduce((a, n) => a + n, 0), 4); assert.equal(r.elementos.fogo, 1); assert.equal(r.elementos.agua, 1);
+  b.aliados[2].hp = 0; assert.equal(M.resumoBatalha(b).todosVivos, false);
+  // supremas contadas pelo motor ao usar habilidade de recarga 5
+  const b2 = M.criarBatalha([u('s', 'Solarin', 'a', 40)], [u('y', 'Fanalino', 'i', 40)]); M.atorAtual(b2);
+  b2.fila = ['s', ...b2.fila.filter((id) => id !== 's')]; b2.iniciado = `${b2.rodada}:s`;
+  M.executar(b2, { tipo: 'habilidade', idx: 2 }, rng);
+  assert.equal(M.resumoBatalha(b2).supremasUsadas, 1);
+});
+test('chefes da Região 2 com elementos do Reino 2 e kits próprios', async () => {
+  const H = await import('./regiao1-batalha-habilidades.js');
+  const { CHEFES_REGIAO, CHEFE_POR_NOME, specChefeReino } = await import('./regiao1-kits-reinos.js');
+  assert.deepEqual(CHEFES_REGIAO.map((c) => [c.nome, c.elemento]), [['Ferroada Rubra', 'fogo'], ['Matriarca de Resina', 'voador'], ['Sentinela de Geoda', 'eletrico']]);
+  assert.equal(specChefeReino(2, 45)[2], 'aco');
+  const ids = new Set([...Object.values(H.KITS), ...Object.values(H.KITS_REINOS)].flat().map((h) => h.id));
+  for (const nome of Object.keys(H.KITS_CHEFES)) for (const h of H.KITS_CHEFES[nome]) { assert.ok(!ids.has(h.id), h.id); ids.add(h.id); }
+  for (const c of CHEFES_REGIAO) { assert.equal(H.kitDe(c.nome)[0].elemento, c.elemento); assert.equal(CHEFE_POR_NOME[c.nome].furia, 0.5); }
+});

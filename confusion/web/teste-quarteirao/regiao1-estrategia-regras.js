@@ -142,6 +142,18 @@ function fimDoTurno(u) {
   for (const [id, e] of Object.entries(u.efeitos || {})) { e.turnos -= 1; if (e.turnos <= 0) delete u.efeitos[id]; }
 }
 const verificarFim = (b) => { if (!vivos(b.inimigos).length && !b.esperaI.length) b.fim = 'vitoria'; else if (!vivos(b.aliados).length) b.fim = 'derrota'; };
+// Resumo para as estrelas da Campanha Mini e para as missões: o time no fim (todos vivos vale mesmo após reviver), classes e
+// elementos do time aliado, supremas usadas por lado e quantos aliados terminaram de pé. Puro: só lê a batalha.
+export function resumoBatalha(b) {
+  const time = [...b.aliados], conta = (campo) => time.reduce((m, u) => { const k = u[campo] || 'neutro'; m[k] = (m[k] || 0) + 1; return m; }, {});
+  const vivosNoFim = time.filter((u) => u.hp > 0).length;
+  return {
+    venceu: b.fim === 'vitoria', derrota: b.fim === 'derrota', rodadas: b.rodada || 1, turnos: b.turnos || 0,
+    todosVivos: b.fim === 'vitoria' && vivosNoFim === time.length, vivosNoFim, tamanhoTime: time.length,
+    classes: conta('classe'), elementos: conta('elemento'), especies: time.map((u) => u.especie),
+    supremasUsadas: b.supremas?.a || 0, supremasInimigas: b.supremas?.i || 0,
+  };
+}
 export function atorAtual(b) {
   if (b.fim) return null;
   for (let guarda = 0; guarda < 400; guarda++) {
@@ -181,7 +193,7 @@ export function executar(b, acao, rng) {
   if (tipo === 'habilidade') { hab = u.kit[idx]; if (!hab || (u.cd?.[idx] || 0) > 0 || temEfeito(u, 'silencio')) { tipo = 'atacar'; hab = null; } }
   b.turnos = (b.turnos || 0) + 1;
   const ev = { tipo: 'atacar', hab, idx, ator: u.id, alvos: [], antes: b.antes || [] }; b.antes = [];
-  if (hab) { u.cd[idx] = hab.cd; u.recarga = Math.max(...u.cd); }
+  if (hab) { u.cd[idx] = hab.cd; u.recarga = Math.max(...u.cd); if (hab.cd >= 5) { b.supremas ||= { a: 0, i: 0 }; b.supremas[u.lado] += 1; } }
   const aliados = vivos(aliadosDe(b, u)), inimigos = vivos(inimigosDe(b, u));
   if (hab && (hab.tipo === 'cura' || hab.tipo === 'apoio')) {
     ev.tipo = hab.tipo;
