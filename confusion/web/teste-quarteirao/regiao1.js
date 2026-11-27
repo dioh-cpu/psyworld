@@ -212,7 +212,8 @@ let afkInicialVerificado = false;
 function salvarEstado() {
   try {
     const idle = garantirEstadoIdle(save);
-    if (afkInicialVerificado) idle.ultimoTickMs = Date.now();
+    // Em segundo plano o relógio do AFK só anda pela liquidação (liquidarSegundoPlano); salvar não pode zerá-lo
+    if (afkInicialVerificado && !document.hidden) idle.ultimoTickMs = Date.now();
     save.mapaAtual = mapaAtual ? mapaAtual.id : save.mapaAtual;
     save.posicaoPx = W2P(estado.x, estado.z);
     const novo = serializarEstado(save);
@@ -2793,9 +2794,10 @@ entrarNoMapa(inicialId, spawnInicial, false).then(() => {
 document.addEventListener('visibilitychange', () => {
   if (!afkInicialVerificado) return;
   if (document.hidden) {
+    const idle = garantirEstadoIdle(save); idle.ultimoTickMs = Date.now(); // marca a saída
     salvarEstado();
   } else {
-    idleUI?.liquidarSegundoPlano?.();
+    idleUI?.liquidarSegundoPlano?.({ avisar: true });
   }
 });
 window.addEventListener('pagehide', () => {

@@ -971,7 +971,7 @@ export function criarControladorIdleUI(ctx) {
     `;
     abrir('modal-offline');
   }
-  function liquidarSegundoPlano() {
+  function liquidarSegundoPlano({ avisar = false } = {}) {
     const save = ctx.getSave();
     const mapa = ctx.getMapaAtual();
     const ws = selvagensDaArea(mapa);
@@ -979,6 +979,7 @@ export function criarControladorIdleUI(ctx) {
     const res = liquidarPeriodoIdle(save, { nivelArea: nvMed, especiePadrao: ws[0]?.especie || 'Cervomusgo' });
     if (res) {
       registrarLogIdle(garantirEstadoIdle(save), `⏱️ Segundo plano: +${res.abates} abates, +${res.gold}g, +${res.xpPasseGanho} XP Passe`, 'farm');
+      if (avisar || document.visibilityState === 'visible') ctx.mostrarToast?.(`⏱️ Enquanto você estava fora: +${res.abates} abates, +${res.gold}g`, 4200);
       ctx.salvar();
       atualizarHudIdle();
     }
