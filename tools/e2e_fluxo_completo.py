@@ -181,7 +181,16 @@ def wait_and_finish_arena_battle(page: Page, label: str, layout_issues: list[dic
     # Clica no botão principal de sair/continuar dentro de .tb-fim
     btn_fim = fim.locator("button").first
     btn_fim.click(force=True)
-    page.wait_for_timeout(400)
+    page.wait_for_timeout(350)
+
+    # Se abrir a tela rica de resultado (#res-batalha-overlay), audita o layout e clica em Continuar
+    res_ov = page.locator("#res-batalha-overlay").first
+    if res_ov.is_visible():
+        audit_layout(page, f"resultado:{label}", layout_issues)
+        btn_rb = res_ov.locator("[data-rb-voltar]").first
+        if btn_rb.is_visible():
+            btn_rb.click(force=True)
+            page.wait_for_timeout(250)
     return {"vitoria": vitoria, "texto": texto_fim[:160]}
 
 

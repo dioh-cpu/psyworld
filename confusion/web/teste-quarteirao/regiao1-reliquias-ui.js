@@ -45,7 +45,7 @@ export function renderizarPainelReliquias(save, aba, st) {
 
   const rel = reliquiasDe(save);
   const armas = armasUnicasDe(save);
-  const col = save?.idle?.colecao || [];
+  const col = Array.isArray(save?.idle?.equipe) ? save.idle.equipe : [];
   if (!st.uid || !col.some((m) => m.uid === st.uid)) st.uid = col[0]?.uid || null;
   const membro = col.find((m) => m.uid === st.uid) || null;
   const elMembro = membro ? (membro.elemento || ELEMENTO_DA_ESPECIE[membro.especie] || 'neutro') : null;
@@ -55,7 +55,7 @@ export function renderizarPainelReliquias(save, aba, st) {
     return `<button class="${m.uid === st.uid ? 'btn-pri' : 'btn-sec'}" data-rel-uid="${esc(m.uid)}" style="padding:4px 8px;font-size:11px">${esc(m.especie)} <small>(${esc(NOME_ELEMENTO[el] || el)})</small></button>`;
   }).join('');
 
-  let equipHtml = '<div class="bl"><p class="mut">Nenhum Onírico na coleção.</p></div>';
+  let equipHtml = '<div class="bl"><p class="mut">Nenhum Onírico na equipe.</p></div>';
   if (membro) {
     const eqMap = rel.equipadas[membro.uid] || {};
     const conjAtivos = conjuntosAtivosDoOnirico(save, membro.uid);
@@ -106,6 +106,11 @@ export function renderizarPainelReliquias(save, aba, st) {
   const filtrosRar = [['', 'Todas'], ...RARIDADES_ORDEM.map((r) => [r, r])]
     .map(([v, rot]) => `<button class="${(st.raridade || '') === v ? 'btn-pri' : 'btn-sec'}" data-rel-frar="${esc(v)}" style="padding:3px 7px;font-size:11px">${esc(rot)}</button>`).join('');
 
+  const equipadasPorId = new Map();
+  for (const [uid, slots] of Object.entries(rel.equipadas || {})) {
+    for (const rid of Object.values(slots || {})) if (rid) equipadasPorId.set(rid, uid);
+  }
+
   const itens = filtrarReliquias(save, {
     ...(st.parte ? { parte: st.parte } : {}),
     ...(st.raridade ? { raridade: st.raridade } : {}),
@@ -113,18 +118,20 @@ export function renderizarPainelReliquias(save, aba, st) {
 
   const listaHtml = itens.slice(0, 40).map((it) => {
     const custo = custoReforcoReliquia(it.reforco || 0);
-    const podeEq = membro && it.elemento === elMembro;
+    const donoUid = equipadasPorId.get(it.id) || null;
+    const equipadaNoAtual = Boolean(membro && donoUid === membro.uid);
+    const podeEq = Boolean(membro && it.elemento === elMembro && !equipadaNoAtual);
     const secs = (it.secundarios || []).map((s) => fmtAttr(s.attr, s.valor)).join(' · ');
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid rgba(255,255,255,.08);flex-wrap:wrap">
       <div style="font-size:11.5px;min-width:180px;flex:1">
-        <b>${esc(PARTES_RELIQUIA[it.parte]?.nome || it.parte)} +${it.reforco || 0}</b> · <span class="tag">${esc(it.raridade)}</span> · <span class="tag">${esc(NOME_ELEMENTO[it.elemento] || it.elemento)}</span> · <span class="mut">${esc(it.conjunto)}</span>
+        <b>${esc(PARTES_RELIQUIA[it.parte]?.nome || it.parte)} +${it.reforco || 0}</b> · <span class="tag">${esc(it.raridade)}</span> · <span class="tag">${esc(NOME_ELEMENTO[it.elemento] || it.elemento)}</span> · <span class="mut">${esc(it.conjunto)}</span>${donoUid ? ' · <span class="ok">✓ Equipada</span>' : ''}
         <div style="color:#fde68a;margin-top:2px">${esc(fmtAttr(it.principal?.attr, it.principal?.valor))}${secs ? ` <span class="mut">| ${esc(secs)}</span>` : ''}</div>
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn-pri" data-rel-eq="${esc(it.id)}" ${podeEq ? '' : 'disabled'} title="${podeEq ? 'Equipar no Onírico selecionado' : 'Só equipa em Onírico do mesmo elemento'}">Equipar</button>
+        <button class="btn-pri" data-rel-eq="${esc(it.id)}" ${podeEq ? '' : 'disabled'} title="${equipadaNoAtual ? 'Já equipada neste Onírico' : podeEq ? 'Equipar no Onírico selecionado' : 'Só equipa em Onírico do mesmo elemento'}">${equipadaNoAtual ? '✓ Equipada' : 'Equipar'}</button>
         <button class="btn-sec" data-rel-ref="${esc(it.id)}" ${(it.reforco || 0) >= 15 ? 'disabled' : ''}>⬆️ +1 (${custo.ouro}🪙/${custo.po}✨)</button>
         <button class="btn-sec" data-rel-trancar="${esc(it.id)}">${it.trancada ? '🔒' : '🔓'}</button>
-        <button class="btn-sec" data-rel-desm="${esc(it.id)}" ${it.trancada || it.equipadoEm ? 'disabled' : ''}>🗑️</button>
+        <button class="btn-sec" data-rel-desm="${esc(it.id)}" ${it.trancada || donoUid ? 'disabled' : ''}>🗑️</button>
       </div>
     </div>`;
   }).join('');
