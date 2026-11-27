@@ -588,7 +588,7 @@ const isObj = (v) => Boolean(v && typeof v === 'object' && !Array.isArray(v));
 export function sanitizarIdleProgressao(idle) {
   if (!isObj(idle)) return {};
   const out = { ...idle };
-  for (const k of ['energia', 'essencias', 'campanhaMini', 'reliquias', 'missoes', 'armasUnicas', 'torres', 'calaboucos', 'domadores']) {
+  for (const k of ['energia', 'essencias', 'campanhaMini', 'reliquias', 'missoes', 'missoesRotacao', 'armasUnicas', 'torres', 'calaboucos', 'domadores']) {
     if (k in out && !isObj(out[k])) delete out[k];
   }
 
@@ -802,6 +802,26 @@ export function sanitizarIdleProgressao(idle) {
       desbloqueados,
       progresso,
       eventosPagos: sanitizarMapaSeguro(d.eventosPagos, 300, 'bool'),
+    };
+  }
+
+  if (isObj(idle.missoesRotacao)) {
+    const r = idle.missoesRotacao;
+    const dia = isObj(r.diaria) ? r.diaria : {};
+    const sem = isObj(r.semanal) ? r.semanal : {};
+    out.missoesRotacao = {
+      diaria: {
+        dia: Math.max(0, Math.floor(Number(dia.dia) || 0)),
+        progresso: sanitizarMapaSeguro(dia.progresso, 24, 'int'),
+        coletadas: sanitizarMapaSeguro(dia.coletadas, 24, 'bool'),
+        bauColetado: Boolean(dia.bauColetado),
+      },
+      semanal: {
+        semana: Math.max(0, Math.floor(Number(sem.semana) || 0)),
+        progresso: sanitizarMapaSeguro(sem.progresso, 24, 'int'),
+        coletadas: sanitizarMapaSeguro(sem.coletadas, 24, 'bool'),
+        bauColetado: Boolean(sem.bauColetado),
+      },
     };
   }
 
