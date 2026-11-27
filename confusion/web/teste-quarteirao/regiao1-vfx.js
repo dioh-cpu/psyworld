@@ -37,12 +37,20 @@ const VIOLETA = HAB.MORTALIO_VIOLETA_CFG || { id: 'manto_violeta', clip: 'assets
 FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, cut: ['#5b21b6', '#ddd6fe'] };
 // Clipes do Flow, lote 1 (PR #61). impactoMs = ataque do pico de áudio do próprio clipe; chao = altura relativa do chão do efeito no
 // quadro (ancorado nos pés do alvo); escala = largura do clipe em relação ao corpo do alvo. Sem o arquivo, vale a coreografia procedural.
-const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/';
+const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/';
 export const CLIPES_FLOW = {
   manto_violeta: { clip: `${FLOW}mortalio-violeta.mp4`, impactoMs: 1250, chao: 0.86, escala: 3.4, duracaoMs: 3000 },
   chama_solar: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 }, // Solarin: cura de um aliado (luz)
   arco_ciano: { clip: `${FLOW}impacto-ciano.mp4`, impactoMs: 1250, chao: 0.88, escala: 3.0, duracaoMs: 3000 }, // Vaelith: golpe de água em um alvo
   procissao_luz: { clip: `${FLOW}espiral-dourada.mp4`, impactoMs: 1300, chao: 0.86, escala: 2.6, duracaoMs: 3000 }, // Velalume: cura do grupo (ultimate)
+  // Lote 2 (linha do Noctarn). centro = altura relativa do centro do efeito no quadro, alinhada ao meio do corpo do alvo.
+  mordida_umbral: { clip: `${FLOW2}mordida-umbral.mp4`, impactoMs: 1200, centro: 0.5, escala: 2.4, duracaoMs: 2600 },
+  chama_violeta: { clip: `${FLOW2}chama-violeta.mp4`, impactoMs: 650, centro: 0.5, escala: 2.6, duracaoMs: 2400, voa: true }, // projétil rápido: a esfera voa até o alvo e explode
+  veu_noturno: { clip: `${FLOW2}veu-noturno.mp4`, impactoMs: 1200, chao: 0.93, escala: 2.2, duracaoMs: 3400 },
+};
+// Variações por forma: a Noctarion (3ª forma) usa a erupção Chama Noturna no lugar da Chama Violeta (mesmo golpe do kit)
+export const CLIPES_POR_ESPECIE = {
+  Noctarion: { chama_violeta: { clip: `${FLOW2}chama-noturna.mp4`, impactoMs: 250, chao: 0.93, escala: 3.2, duracaoMs: 2000, voa: false, centro: undefined } },
 };
 for (const [id, c] of Object.entries(CLIPES_FLOW)) Object.assign(FX_HABILIDADES[id], c, { ms: c.impactoMs + 1550 });
 // Chuva de meteoros (tomada cinematográfica com cenário): começa depois do corte em que o meteoro central some (≈2,0 s) e só entra
@@ -872,9 +880,11 @@ export async function tocarEvento(ctx, ev) {
   const hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], elem = hab?.elemento || 'neutro';
   const E = ELEM[elem] || ELEM.neutro, ult = cfg?.ult || (hab && hab.cd >= 5);
   if (ult && hab) await cutIn(ctx, A, hab, cfg?.cut?.[0] || E.cor, cfg?.cut?.[1] || E.cor2);
-  const clip = cfg?.clip || hab?.clip; // o clipe publicado (PR #61) tem prioridade sobre o caminho previsto no kit
+  const varForma = hab && CLIPES_POR_ESPECIE[A.dataset.especie]?.[hab.id]; // variação da forma (ex.: Noctarion → Chama Noturna)
+  const cfgClip = varForma ? { ...(cfg || {}), ...varForma } : cfg;
+  const clip = cfgClip?.clip || hab?.clip; // o clipe publicado tem prioridade sobre o caminho previsto no kit
   if (clip && hab?.tipo === 'dano' && !clipesFalhos.has(clip)) await preparo(ctx, M, A, E.cor, { ms: 220 }); // o atacante se prepara antes do clipe no alvo
-  if (clip && await tocarClipe(ctx, M, { ...(cfg || {}), ult }, ev, clip)) { /* clipe tocou */ }
+  if (clip && await tocarClipe(ctx, M, { ...(cfgClip || {}), ult }, ev, clip, A)) { /* clipe tocou */ }
   else if (cfg?.fx && FX[cfg.fx]) await FX[cfg.fx](ctx, M, A, ev, hab);
   else if (ev.tipo === 'reviver') await FX.retornoAlma(ctx, M, A, ev, hab);
   else if (ev.tipo === 'atacar') await genCorpo(ctx, M, A, ev, hab, 'neutro');
@@ -890,17 +900,27 @@ export async function tocarEvento(ctx, ev) {
 // Clipe do Flow: toca o vídeo sobre o alvo (ou no centro dos alvos, em habilidades de grupo) e aplica o resultado no impactoMs.
 // Devolve false se o vídeo não carregar, para a coreografia procedural assumir.
 const clipesFalhos = new Set(); // não tenta de novo um clipe que não carregou nesta sessão
-async function tocarClipe(ctx, M, cfg, ev, src) {
+async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   if (clipesFalhos.has(src)) return false;
   const els = alvosDe(ctx, ev).map((x) => x.el), base = els.length ? els : [ctx.no(ev.alvo) || ctx.no(ev.ator)].filter(Boolean); if (!base.length) return false;
   const v = await carregarVideo(src); if (!v) return false;
   // ancora: o chão do efeito nos pés do alvo (grupo: no centro da formação, largura cobrindo todos)
   const cs = base.map((el) => corpo(ctx, el)), x = cs.reduce((s, c) => s + c.x, 0) / cs.length, pe = Math.max(...cs.map((c) => c.pe));
   const larg = cs.length > 1 ? (Math.max(...cs.map((c) => c.x + c.w / 2)) - Math.min(...cs.map((c) => c.x - c.w / 2))) * 1.25 : Math.max(...cs.map((c) => c.w)) * (cfg.escala || 3);
-  const alt = larg * (v.videoHeight / v.videoWidth || 9 / 16), top = pe - alt * (cfg.chao ?? 0.86);
+  const meio = cs.reduce((s, c) => s + c.y, 0) / cs.length;
+  const alt = larg * (v.videoHeight / v.videoWidth || 9 / 16), top = cfg.centro != null ? meio - alt * cfg.centro : pe - alt * (cfg.chao ?? 0.86);
   v.style.cssText = `position:absolute;left:${x - larg / 2}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0`;
   ligarAudio(ctx, v); ctx.campo.append(v); v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, fill: 'forwards' });
-  await v.play().catch(() => {}); await ESP((cfg.impactoMs || 500) * ctx.k);
+  await v.play().catch(() => {});
+  if (cfg.voa && A) { // projétil rápido: o clipe sai da boca do atacante e voa até o alvo, chegando no instante da explosão
+    const a = corpo(ctx, A), dir = x > a.x ? 1 : -1, b = a.boca(dir), voo = Math.max(250, (cfg.impactoMs || 500) - 230);
+    const dx = b.x - x, dy = b.y - (top + alt * (cfg.centro ?? 0.5));
+    v.style.transformOrigin = `50% ${(cfg.centro ?? 0.5) * 100}%`;
+    v.animate([{ transform: `translate(${dx}px,${dy}px) scale(.35)`, clipPath: 'inset(0 0 42% 0)' }, { transform: 'translate(0,0) scale(1)', clipPath: 'inset(0 0 42% 0)', offset: 0.97 }, { transform: 'translate(0,0) scale(1)', clipPath: 'inset(0 0 0 0)' }], { duration: voo * ctx.k, easing: 'cubic-bezier(.55,0,.85,.4)', fill: 'forwards' });
+    projetil(M, b.x, b.y, x, top + alt * (cfg.centro ?? 0.5), { tipo: 'cometa', cor: '#8b5cf6', cor2: '#f5d0fe', tam: 14, arco: 0, vida: voo / 1000, ease: 'linear' }); // rastro do deslocamento
+    for (let i = 0; i < 4; i++) setTimeout(() => fantasma(ctx, A, '#8b5cf6'), i * 40 * ctx.k);
+  }
+  await ESP((cfg.impactoMs || 500) * ctx.k);
   const cura = ev.tipo === 'cura' || ev.tipo === 'apoio' || ev.tipo === 'reviver', somAntes = ctx.som; if (!v.muted) ctx.som = false; // o clipe já traz o som do impacto
   for (const a of alvosDe(ctx, ev)) aplicar(ctx, M, a.el, a.r, { cura, cor: '#fff', forte: cfg.ult });
   ctx.som = somAntes;
