@@ -376,6 +376,14 @@ export function criarEstadoInicial() {
     viagemTremConcluida: false,
     desbloqueios: { fazenda: false, corrida: false },
     recompensas: { gold: 0, diamantes: 0, xp: 0 },
+    regioes: {
+      atual: 'r1',
+      chefesDerrotados: {},
+      primeiraVitoria: {},
+      missoes: {},
+      pistas: {},
+      abatesR2: 0,
+    },
   };
 }
 
@@ -512,6 +520,10 @@ export function registrarVitoriaBoss(estado, bossId) {
   // Apenas Espírito da Floresta (BOSS_E) + Rei Fungo (BOSS_D) liberam o trem, em qualquer ordem
   if (estado.bossesDerrotados.BOSS_E && estado.bossesDerrotados.BOSS_D) {
     estado.tremLiberado = true;
+    if (estado.regioes && typeof estado.regioes === 'object') {
+      estado.regioes.chefesDerrotados = estado.regioes.chefesDerrotados || {};
+      estado.regioes.chefesDerrotados.r1 = true;
+    }
     if (estado.quests.q_primeira_partida === 'bloqueada' || estado.quests.q_primeira_partida === 'disponivel') {
       estado.quests.q_primeira_partida = 'ativa';
     }
@@ -601,6 +613,35 @@ export function desserializarEstado(texto) {
       base.recompensas.gold = Number(salvo.recompensas.gold) || 0;
       base.recompensas.diamantes = Number(salvo.recompensas.diamantes) || 0;
       base.recompensas.xp = Number(salvo.recompensas.xp) || 0;
+    }
+    if (salvo.regioes && typeof salvo.regioes === 'object') {
+      const reg = salvo.regioes;
+      if (typeof reg.atual === 'string' && /^r([1-9]|1[0-2])$/.test(reg.atual)) {
+        base.regioes.atual = reg.atual;
+      }
+      const copiarBoolMap = (src) => {
+        const out = {};
+        if (src && typeof src === 'object') {
+          for (const [k, v] of Object.entries(src).slice(0, 100)) {
+            if (v) out[String(k).slice(0, 64)] = true;
+          }
+        }
+        return out;
+      };
+      base.regioes.chefesDerrotados = copiarBoolMap(reg.chefesDerrotados);
+      base.regioes.primeiraVitoria = copiarBoolMap(reg.primeiraVitoria);
+      base.regioes.pistas = copiarBoolMap(reg.pistas);
+      if (reg.missoes && typeof reg.missoes === 'object') {
+        const out = {};
+        for (const [k, v] of Object.entries(reg.missoes).slice(0, 100)) {
+          if (['disponivel', 'ativa', 'concluida'].includes(v)) out[String(k).slice(0, 64)] = v;
+        }
+        base.regioes.missoes = out;
+      }
+      base.regioes.abatesR2 = Math.max(0, Math.floor(Number(reg.abatesR2) || 0));
+    }
+    if (base.tremLiberado || (base.bossesDerrotados.BOSS_E && base.bossesDerrotados.BOSS_D)) {
+      base.regioes.chefesDerrotados.r1 = true;
     }
     if (salvo.idle && typeof salvo.idle === 'object') {
       base.idle = salvo.idle;

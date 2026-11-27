@@ -34,6 +34,9 @@ export const CLASSES_ONIRICOS = {
   suporte:   { id: 'suporte',   nome: 'Suporte',   icone: '🕯️' },
 };
 
+import { LINHAGENS_REINOS } from './regiao1-kits-reinos.js';
+import { FORMAS_LINHAGENS_REINOS } from '../formas-reinos.js';
+
 export const CLASSE_DA_ESPECIE = {
   // Exclusivos de Halloween
   Velalume: 'suporte',
@@ -50,12 +53,20 @@ export const CLASSE_DA_ESPECIE = {
   // Outras espécies do catálogo e chefes de raid
   Lumivela: 'suporte', Cristalino: 'mago',
   'Titã de Cinza': 'tanque', 'Serpe do Abismo': 'assassino', 'Coroa Solar': 'mago',
-  // Linhagens dos Reinos
+  // Linhagens dos Reinos 01–02
   Fanalino: 'suporte', Cervomusgo: 'tanque', 'Cobrabúfalo': 'guerreiro', Tatuveludo: 'tanque', Xistolim: 'guerreiro',
   'Melifalcão': 'assassino', 'Lavândria': 'suporte', 'Calquélon': 'tanque', Vesprata: 'assassino', Colmeiro: 'tanque',
   Cerifogo: 'mago', 'Âmbarasa': 'guerreiro', 'Zunifaísca': 'assassino', Trovoresta: 'mago', Voltabelha: 'mago',
   'Falesário': 'guerreiro', Ventassol: 'suporte', Bronzelo: 'tanque', Latonhorn: 'guerreiro',
 };
+
+// Preenche as 50 linhagens dos Reinos 03–12 (formas base, intermediária e final) a partir de LINHAGENS_REINOS
+for (const lin of LINHAGENS_REINOS) {
+  CLASSE_DA_ESPECIE[lin.nome] = lin.classe;
+  const formas = FORMAS_LINHAGENS_REINOS[lin.nome];
+  if (formas?.base) CLASSE_DA_ESPECIE[formas.base] = lin.classe;
+  if (formas?.final) CLASSE_DA_ESPECIE[formas.final] = lin.classe;
+}
 
 const ORDEM_CLASSES = ['guerreiro', 'mago', 'tanque', 'assassino', 'suporte'];
 export function classeDaEspecie(especie) {

@@ -256,6 +256,7 @@ function reforcar(b) {
 }
 // Decisão automática (inimigos e "Atacar automaticamente"): usa a melhor habilidade disponível e acessível
 export function decidir(b, u, rng) {
+  if (!u) return { tipo: 'atacar' };
   const vivosA = vivos(aliadosDe(b, u)), inim = vivos(inimigosDe(b, u));
   const pode = (h, i) => (u.cd?.[i] || 0) === 0 && !temEfeito(u, 'silencio');
   const ferida = vivosA.reduce((m, a) => Math.min(m, a.hp / a.hpMax), 1), debuffs = vivosA.some((a) => Object.keys(a.efeitos || {}).some((id) => EFEITOS[id]?.debuff));

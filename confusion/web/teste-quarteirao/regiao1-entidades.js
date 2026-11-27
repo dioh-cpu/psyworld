@@ -136,6 +136,23 @@ export const NPCS_REGIAO1 = [
       'O marco do Reino já está ligado à sua rede de teleporte regional. Você pode usá-lo na praça.',
     ],
   },
+  {
+    id: 'npc_r2_melissa',
+    nome: 'Melissa, a Apicultora',
+    raca: 'humano',
+    mapa: 'R2_C0',
+    pos: [512, 375],
+    altura: 6.2,
+    sprite: '../../../assets/confusion/interface/halloween/npcs/jardineira_c1.webp',
+    cor: '#f59e0b',
+    missaoR2: 'm_r2_chegada',
+    expressoes: ['sorriso', 'serio', 'sorriso'],
+    dialogo: [
+      'Bem-vindo aos Altos do Âmbar! As caravanas trouxeram notícias da sua travessia pela Região 1.',
+      'Os apiários a leste estão agitados e, ao norte, nas Cristas de Âmbar, a Rainha da Colmeia Dourada despertou. Vença 3 encontros pelos apiários ou cristas para acalmar os enxames.',
+      'Quando estiver pronto, atravesse as Cristas de Âmbar até o Santuário da Colmeia e desafie a Rainha da Colmeia Dourada (Nv. 45).',
+    ],
+  },
 
   // Elfos (Floresta Sombria — esquerda)
   {
@@ -569,10 +586,41 @@ const MONSTROS_SELVAGENS_BRUTOS = [
 
 export const MONSTROS_SELVAGENS = MONSTROS_SELVAGENS_BRUTOS.map((m) => resolverEncontroCatalogo(m, { regiao: 1 }));
 
+// Encontros selvagens da Região 2 (Altos do Âmbar, faixa de nível 20–45, sem iniciais)
+const MONSTROS_SELVAGENS_R2_BRUTOS = [
+  { id: 'w_r2_api_1', mapa: 'R2_API', especie: 'Colmeiro', nivel: 22, pos: [260, 390] },
+  { id: 'w_r2_api_2', mapa: 'R2_API', especie: 'Lavândria', nivel: 25, pos: [470, 445] },
+  { id: 'w_r2_api_3', mapa: 'R2_API', especie: 'Melifalcão', nivel: 28, pos: [680, 395] },
+  { id: 'w_r2_api_4', mapa: 'R2_API', especie: 'Vesprata', nivel: 31, pos: [810, 460] },
+  { id: 'w_r2_api_5', mapa: 'R2_API', especie: 'Cerifogo', nivel: 34, pos: [350, 495] },
+  { id: 'w_r2_cri_1', mapa: 'R2_CRI', especie: 'Zunifaísca', nivel: 32, pos: [240, 405] },
+  { id: 'w_r2_cri_2', mapa: 'R2_CRI', especie: 'Calquélon', nivel: 35, pos: [460, 435] },
+  { id: 'w_r2_cri_3', mapa: 'R2_CRI', especie: 'Voltabelha', nivel: 38, pos: [690, 400] },
+  { id: 'w_r2_cri_4', mapa: 'R2_CRI', especie: 'Bronzelo', nivel: 41, pos: [820, 465] },
+  { id: 'w_r2_cri_5', mapa: 'R2_CRI', especie: 'Trovoresta', nivel: 43, pos: [360, 490] },
+];
+
+export const MONSTROS_SELVAGENS_R2 = MONSTROS_SELVAGENS_R2_BRUTOS.map((m) => resolverEncontroCatalogo(m, { regiao: 2 }));
+export const TODOS_MONSTROS_SELVAGENS = [...MONSTROS_SELVAGENS, ...MONSTROS_SELVAGENS_R2];
+
+export const BOSSES_REGIAO2 = {
+  BOSS_R2: {
+    id: 'BOSS_R2',
+    regiaoId: 'r2',
+    nome: 'Rainha da Colmeia Dourada',
+    rota: 'principal',
+    mapaRetorno: 'R2_CRI',
+    hp: 420,
+    nivel: 45,
+    elemento: 'inseto',
+  },
+};
+
 // Chefes nas arenas (entidades separadas das artes de fundo)
 export const ENTIDADES_BOSS = [
   { id: 'BOSS_E', mapa: 'BOSS_E', nome: 'Espírito da Floresta', nivel: 12, pos: [450, 265], cor: '#34d399', sprite: '../../../assets/confusion/interface/personagens/espirito-boss-atual.webp' },
   { id: 'BOSS_D', mapa: 'BOSS_D', nome: 'Rei Fungo', nivel: 12, pos: [512, 320], cor: '#f43f5e', sprite: '../../../assets/confusion/interface/personagens/fungo.webp' },
   { id: 'BOSS_S', mapa: 'BOSS_S', nome: 'Siren', nivel: 14, pos: [512, 325], cor: '#38bdf8', sprite: '../../../assets/confusion/interface/personagens/siren.webp' },
   { id: 'BOSS_C', mapa: 'BOSS_C', nome: 'Golem de Ametista', nivel: 15, pos: [512, 325], cor: '#a855f7', sprite: '../../../assets/confusion/interface/personagens/golem.webp' },
+  { id: 'BOSS_R2', mapa: 'R2_CHEFE', regiaoId: 'r2', nome: 'Rainha da Colmeia Dourada', nivel: 45, elemento: 'inseto', pos: [512, 365], cor: '#f59e0b', sprite: '../../../assets/confusion/interface/estrategia/reinos/02/chefe.webp' },
 ];

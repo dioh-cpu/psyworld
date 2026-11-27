@@ -10,6 +10,8 @@ export const ORIGENS = ['base', 'evento', 'raid', 'linha'];
 export const TAREFAS_APTIDAO = ['plantar', 'colher', 'minerar', 'cortar', 'garimpar', 'transportar', 'cozinhar', 'fabricar'];
 
 import { REINOS } from './reinos.js';
+import { FORMAS_LINHAGENS_REINOS } from './formas-reinos.js';
+import { LINHAGENS_REINOS } from './teste-quarteirao/regiao1-kits-reinos.js';
 import { LINHAGENS_HW } from './teste-quarteirao/regiao1-halloween-dados.js';
 import { KITS } from './teste-quarteirao/regiao1-batalha-habilidades.js';
 export const ESPECIES = {
@@ -53,12 +55,46 @@ export const ESPECIES = {
 
 // Linhagens dos reinos (reinos.js): entram no catálogo como formas de linha, fora de encontro, ovo comum e invocação.
 // Habilidades provisórias (nome + tipo) até o desenho de cada uma; aptidões simples por tipo.
-const GOLPE_DO_TIPO = { inseto: 'Ferrão', planta: 'Espinho', agua: 'Jato', terra: 'Pisada', pedra: 'Cascalho', fogo: 'Brasa', eletrico: 'Descarga', voador: 'Rasante', aco: 'Lâmina' };
-const APTIDAO_DO_TIPO = { inseto: { colher: 2 }, planta: { plantar: 2, colher: 2 }, agua: { garimpar: 2 }, terra: { plantar: 2 }, pedra: { minerar: 2 }, fogo: { cozinhar: 2 }, eletrico: { fabricar: 2 }, voador: { transportar: 2 }, aco: { fabricar: 2, minerar: 1 } };
+const GOLPE_DO_TIPO = { inseto: 'Ferrão', planta: 'Espinho', agua: 'Jato', terra: 'Pisada', pedra: 'Cascalho', fogo: 'Brasa', eletrico: 'Descarga', voador: 'Rasante', aco: 'Lâmina', luz: 'Clarão', trevas: 'Sombra', neutro: 'Impacto', fantasma: 'Espectro' };
+const APTIDAO_DO_TIPO = { inseto: { colher: 2 }, planta: { plantar: 2, colher: 2 }, agua: { garimpar: 2 }, terra: { plantar: 2 }, pedra: { minerar: 2 }, fogo: { cozinhar: 2 }, eletrico: { fabricar: 2 }, voador: { transportar: 2 }, aco: { fabricar: 2, minerar: 1 }, luz: { fabricar: 2 }, trevas: { garimpar: 2 }, neutro: { transportar: 2 }, fantasma: { garimpar: 2 } };
 for (const r of Object.values(REINOS)) for (const l of r.linhagens) {
   if (ESPECIES[l.nome]) continue;
-  const g = GOLPE_DO_TIPO[l.elemento];
-  ESPECIES[l.nome] = { origem: 'linha', pureza: 'neutra', elemento: l.elemento, aptidoes: APTIDAO_DO_TIPO[l.elemento], habilidades: [`${g} de ${l.nome}`, `${g} Duplo de ${l.nome}`, `Investida de ${l.nome}`, `Guarda de ${l.nome}`], ...(l.arte ? { arte: l.arte } : {}) };
+  const g = GOLPE_DO_TIPO[l.elemento] || 'Golpe';
+  ESPECIES[l.nome] = { origem: 'linha', pureza: 'neutra', elemento: l.elemento, aptidoes: APTIDAO_DO_TIPO[l.elemento] || { transportar: 2 }, habilidades: [`${g} de ${l.nome}`, `${g} Duplo de ${l.nome}`, `Investida de ${l.nome}`, `Guarda de ${l.nome}`], ...(l.arte ? { arte: l.arte } : {}) };
+}
+
+// Linhagens dos Reinos 03–12 (Expansão 1): registra as 50 linhas (forma base 01, intermediária 02 e final 03)
+const RAIZ_REINOS = 'assets/confusion/interface/estrategia/reinos';
+const slugReino = (n) => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const purezaPorElemento = (el) => (el === 'luz' ? 'luz' : el === 'trevas' ? 'trevas' : 'neutra');
+export const LINHAS_REINOS = [];
+for (const lin of LINHAGENS_REINOS) {
+  const formas = FORMAS_LINHAGENS_REINOS[lin.nome];
+  if (!formas) continue;
+  const rStr = String(lin.reino).padStart(2, '0');
+  const pasta = `${RAIZ_REINOS}/${rStr}/oniricos/${slugReino(lin.nome)}`;
+  const g = GOLPE_DO_TIPO[lin.elemento] || 'Golpe';
+  const apt = APTIDAO_DO_TIPO[lin.elemento] || { transportar: 2 };
+  const pur = purezaPorElemento(lin.elemento);
+  const trio = [
+    { nome: formas.base, fase: 1, habs: [`${g} de ${formas.base}`, `${g} Breve de ${formas.base}`, `Investida de ${formas.base}`, `Guarda de ${formas.base}`] },
+    { nome: lin.nome, fase: 2, habs: [...lin.habilidades, `Instinto de ${lin.nome}`] },
+    { nome: formas.final, fase: 3, habs: [`${g} Supremo de ${formas.final}`, `${g} Duplo de ${formas.final}`, `Investida de ${formas.final}`, `Guarda de ${formas.final}`] },
+  ];
+  for (const f of trio) {
+    if (ESPECIES[f.nome]) continue;
+    ESPECIES[f.nome] = {
+      origem: 'linha',
+      pureza: pur,
+      elemento: lin.elemento,
+      classe: lin.classe,
+      reino: lin.reino,
+      aptidoes: apt,
+      habilidades: f.habs,
+      arte: `${pasta}/0${f.fase}.png`,
+    };
+  }
+  LINHAS_REINOS.push({ id: slugReino(lin.nome), reino: lin.reino, inicial: formas.base, atual: lin.nome, evolucao: formas.final });
 }
 
 // Formas base e finais das cinco linhas iniciais (artes em estrategia/reinos/existentes)
@@ -130,7 +166,8 @@ export const REQUISITOS_EVOLUCAO = {
   inicial: { vinculo: 40, nivel: 5 },   // forma inicial -> atual
   atual: { vinculo: 70, nivel: 10 },    // atual -> evolução
 };
-export const linhaDaEspecie = (nome) => LINHAS.find((l) => l.inicial === nome || l.atual === nome || l.evolucao === nome) ?? null;
+const TODAS_LINHAS = [...LINHAS, ...LINHAS_REINOS];
+export const linhaDaEspecie = (nome) => TODAS_LINHAS.find((l) => l.inicial === nome || l.atual === nome || l.evolucao === nome) ?? null;
 export function faseDaEspecie(nome) {
   const l = linhaDaEspecie(nome);
   if (!l) return null;

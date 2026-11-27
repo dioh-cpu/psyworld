@@ -5,9 +5,18 @@ import { vetorJoystick } from '../explorar3d/controles.js';
 import { construirSDF, resolverMovimentoSDF } from '../explorar3d/colisao.js';
 import { criarAzazel } from './azazel.js';
 import { IMG_W, IMG_H, MAPA_INICIAL, ORDEM_MAPAS, MAPAS } from './regiao1-mapas.js';
-import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, ENTIDADES_BOSS } from './regiao1-entidades.js';
+import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, BOSSES_REGIAO2, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { reforcosDoChefe } from './regiao1-encontros-regras.js';
 import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
+import { iniciarSeletorRegioes } from './regiao1-regioes.js';
+import {
+  garantirEstadoRegioes,
+  regiaoDoMapa,
+  regiaoDesbloqueada,
+  registrarVitoriaChefeRegiao,
+  concluirMissaoRegiao2,
+  registrarAbateRegiao2,
+} from './regiao1-regioes-regras.js';
 import {
   SAVE_KEY_REGIAO1,
   MARCOS_TELEPORTE,
@@ -231,8 +240,35 @@ function texturaAtualDoMapa(mapa) {
   return carregarTextura(url);
 }
 
+const monstrosDoMapa = (mapaId) => (regiaoDoMapa(mapaId) === 'r2' ? MONSTROS_SELVAGENS_R2 : MONSTROS_SELVAGENS).filter((m) => m.mapa === mapaId);
+const definicaoBoss = (id) => BOSSES_REGIAO1[id] || BOSSES_REGIAO2[id] || null;
+const bossJaDerrotado = (id) => {
+  const def = definicaoBoss(id);
+  if (def?.regiaoId) return Boolean(save?.regioes?.chefesDerrotados?.[def.regiaoId]);
+  return Boolean(save?.bossesDerrotados?.[id]);
+};
+
+function construirSdfPisoLivre(mapaId) {
+  const sw = 128, sh = 71;
+  const walk = new Uint8Array(sw * sh);
+  const yMin = Math.floor(sh * 0.42);
+  const yMax = Math.floor(sh * 0.96);
+  const xMin = Math.floor(sw * 0.03);
+  const xMax = Math.floor(sw * 0.97);
+  for (let y = yMin; y <= yMax; y++) {
+    for (let x = xMin; x <= xMax; x++) walk[y * sw + x] = 1;
+  }
+  const sdf = construirSDF(walk, sw, sh, LARG, ALT);
+  cacheSdfs.set(mapaId, sdf);
+  cacheGrids.set(mapaId, walk);
+  return sdf;
+}
+
 function carregarSdfMapa(mapa) {
   if (cacheSdfs.has(mapa.id)) return Promise.resolve(cacheSdfs.get(mapa.id));
+  if (mapa.pisoLivre || !mapa.mascara) {
+    return Promise.resolve(construirSdfPisoLivre(mapa.id));
+  }
   return new Promise((resolve) => {
     const im = new Image();
     im.onload = () => {
@@ -261,7 +297,7 @@ function carregarSdfMapa(mapa) {
       cacheGrids.set(mapa.id, g);
       resolve(sdf);
     };
-    im.onerror = () => resolve(null);
+    im.onerror = () => resolve(construirSdfPisoLivre(mapa.id));
     im.src = `${mapa.mascara}?v=${VERSAO_ASSETS}`;
   });
 }
@@ -547,15 +583,15 @@ function construirEntidadesDoMapa(mapa) {
     entidadesMapa.push({ tipo: 'pista', dados: p, mesh, x: w.x, z: w.z, baseY: mesh.position.y, raio: 4.5 });
   }
 
-  // 4. Monstros selvagens visíveis nas áreas abertas
-  for (const m of MONSTROS_SELVAGENS) {
-    if (m.mapa !== mapa.id || monstrosDerrotadosSessao.has(m.id)) continue;
+  // 4. Monstros selvagens visíveis nas áreas abertas (Região 1 e Região 2)
+  for (const m of monstrosDoMapa(mapa.id)) {
+    if (monstrosDerrotadosSessao.has(m.id)) continue;
     criarMonstroSelvagem(m);
   }
 
   // 5. Boss da arena (se ainda não derrotado)
   for (const b of ENTIDADES_BOSS) {
-    if (b.mapa !== mapa.id || save.bossesDerrotados[b.id]) continue;
+    if (b.mapa !== mapa.id || bossJaDerrotado(b.id)) continue;
     const w = P(b.pos[0], b.pos[1]);
     const tex = carregarTextura(b.sprite);
     const mesh = adicionarBillboard(tex, w.x, w.z, 9.8, 9.8, 3);
@@ -765,6 +801,7 @@ function abrirDialogo(titulo, sub, texto, botoes, retrato = null) {
     const btn = document.createElement('button');
     btn.className = b.prim ? 'btn-pri' : 'btn-sec';
     btn.textContent = b.rotulo;
+    if (b.desativado) btn.disabled = true;
     btn.onclick = b.aoClicar;
     return btn;
   });
@@ -947,36 +984,52 @@ let batalhaAtiva = null;
 function iniciarBatalha(tipo, entidade) {
   if (batalhaAtiva) return;
   const ehBoss = tipo === 'boss';
-  const defBoss = ehBoss ? BOSSES_REGIAO1[entidade.id] : null;
+  const defBoss = ehBoss ? definicaoBoss(entidade.id) : null;
+  if (ehBoss && !defBoss) return;
+  const ehR2 = regiaoDoMapa(entidade.mapa || mapaAtual?.id) === 'r2' || defBoss?.regiaoId === 'r2';
   const idle = garantirEstadoIdle(save);
   const st = calcularStatusDetalhado(save);
   const maxJog = st.hpMax;
   const hpJog = Math.max(Math.round(maxJog * 0.5), Math.min(maxJog, idle.jogador.hp));
   const nomeIni = ehBoss ? defBoss.nome : `${entidade.especie} (Nv. ${entidade.nivel})`;
-  batalhaAtiva = { tipo, entidade, hpJog, maxJog, atkJog: st.atk, defJog: st.def, nivelJog: st.nivel, hpIni: 1, maxIni: 1, nomeIni };
+  batalhaAtiva = { tipo, entidade, hpJog, maxJog, atkJog: st.atk, defJog: st.def, nivelJog: st.nivel, hpIni: 1, maxIni: 1, nomeIni, regiao: ehR2 ? 2 : 1 };
   // Equipe (até 4) contra o inimigo e até 2 reforços na fila; a arena ocupa a tela inteira
   // formação da aba Equipes: cada Onírico na sua vaga, com o próprio nível e a arte do seu tier
   const aliados = membrosFormacao(idle).map(({ m, vaga }) => ({ especie: m.especie, nivel: m.nivel || 1, bonus: bonusDoMembro(m), vaga, arte: arteDoIndividuo(m) }));
   const raizDe = (p) => String(p || '').replace(/^(\.\.\/)+/, '');
   const artes = {}; let inimigos; let inimigosDrop;
   if (ehBoss) {
-    const nv = Math.max(6, Math.round((defBoss.hp - 58) / 13)); artes[defBoss.nome] = raizDe(entidade.sprite);
-    inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ...reforcosDoChefe(defBoss.id, nv).map((r) => [r.especie, r.nivel, r.elemento, { forma: r.forma, arte: r.arteForma }])];
+    const nv = ehR2 ? (defBoss.nivel || 45) : Math.max(6, Math.round((defBoss.hp - 58) / 13));
+    artes[defBoss.nome] = raizDe(entidade.sprite);
+    if (ehR2) {
+      inimigos = [
+        [defBoss.nome, nv, defBoss.elemento, { chefe: true }],
+        ['Colmeiro', Math.max(35, nv - 5), 'inseto', { forma: 2 }],
+        ['Vesprata', Math.max(38, nv - 3), 'aco', { forma: 3 }],
+      ];
+    } else {
+      inimigos = [[defBoss.nome, nv, defBoss.elemento, { chefe: true }], ...reforcosDoChefe(defBoss.id, nv).map((r) => [r.especie, r.nivel, r.elemento, { forma: r.forma, arte: r.arteForma }])];
+    }
     inimigosDrop = inimigos;
   } else {
     artes[entidade.especie] = raizDe(entidade.sprite);
-    resolverEncontrosMapa(MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa), 1);
-    const outros = MONSTROS_SELVAGENS.filter((m) => m.mapa === entidade.mapa && m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
+    const listaArea = monstrosDoMapa(entidade.mapa);
+    if (!ehR2) resolverEncontrosMapa(listaArea, 1);
+    const outros = listaArea.filter((m) => m.id !== entidade.id && !monstrosDerrotadosSessao.has(m.id)).slice(0, 2);
     outros.forEach((m) => { artes[m.especie] = raizDe(m.sprite); });
-    inimigos = [entidade, ...outros].map((m) => [m.especie, m.nivel, m.elemento, { forma: m.forma, arte: m.arteForma }]); // encontro do catálogo (#59): mesma espécie, forma, elemento e arte do mapa
+    inimigos = [entidade, ...outros].map((m) => [m.especie, m.nivel, m.elemento, { forma: m.forma, arte: m.arteForma }]);
     inimigosDrop = [entidade, ...outros].map((m) => ({ especie: m.especie, elemento: m.elementoDrop || m.elemento }));
   }
+  const arenaUrl = ehR2
+    ? `assets/confusion/interface/estrategia/reinos/02/${ehBoss ? 'arena-chefe' : (entidade.mapa === 'R2_CRI' ? 'arena-cristas' : 'arena-apiarios')}.webp`
+    : `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`;
   batalhaAtiva.batalhaId = `man_${tipo}_${entidade.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   batalhaAtiva.inimigosDrop = inimigosDrop;
   telaBatalha.abrir({
-    titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem', sub: ehBoss ? 'Campanha' : entidade.especie,
-    arena: `assets/confusion/interface/estrategia/${ehBoss ? 'reinos/01/arena-chefe' : 'madeira-02'}.webp`,
-    aliados, inimigos, artes, ritmo: 420, regiao: 1,
+    titulo: ehBoss ? `Chefe · ${defBoss.nome}` : 'Encontro selvagem',
+    sub: ehBoss ? (ehR2 ? 'Região 2 · Altos do Âmbar' : 'Campanha') : entidade.especie,
+    arena: arenaUrl,
+    aliados, inimigos, artes, ritmo: 420, regiao: ehR2 ? 2 : 1,
     onFim: (venceu, frac) => { if (batalhaAtiva) { batalhaAtiva.hpJog = Math.max(1, Math.round(batalhaAtiva.maxJog * (venceu ? Math.max(0.3, frac) : 0.5))); } encerrarBatalha(venceu); },
   });
 }
@@ -1062,7 +1115,8 @@ function encerrarBatalha(vitoria) {
   if (telaBatalha.aberta()) telaBatalha.encerrarSilencioso();
 
   const ehBoss = b.tipo === 'boss';
-  const nvIni = (ehBoss ? BOSSES_REGIAO1[b.entidade.id]?.nivel : b.entidade?.nivel) || 1;
+  const defBoss = ehBoss ? definicaoBoss(b.entidade.id) : null;
+  const nvIni = (ehBoss ? defBoss?.nivel : b.entidade?.nivel) || 1;
   const xpForm = Math.round((40 + 12 * nvIni) * (ehBoss ? 2 : 1) * (vitoria ? 1 : 0.3));
   for (const { m } of membrosFormacao(idle)) aplicarXp(m, xpForm);
   ganharXpPasse(idle, vitoria ? (ehBoss ? 'batalhaChefe' : 'batalha') : 'derrota');
@@ -1072,30 +1126,53 @@ function encerrarBatalha(vitoria) {
     for (let k = 0; k < 3; k++) window.regiaoHW?.aoAbater?.(); // doces durante o evento (abates de PvE)
     if (Math.random() < 0.03) { darPocao(save, b.tipo === 'boss' ? 'pocao_xp_m' : 'pocao_xp_p'); mostrarToast('🧪 Poção de XP encontrada!', 2200); }
     if (b.tipo === 'boss') {
-      const res = registrarVitoriaBoss(save, b.entidade.id);
-      idle.codex.bosses[b.entidade.id] = true;
-      avancarDiaria(idle, 'bosses', 1);
-      registrarLogIdle(idle, `🏆 Chefe derrotado: ${b.nomeIni}!`, 'farm');
-      construirEntidadesDoMapa(mapaAtual);
-      notificarQuestsConcluidas(res.concluidas);
-      if (res.tremLiberadoAgora) {
-        mostrarToast('🚂 Espírito da Floresta e Rei Fungo derrotados! O trem em C3 foi liberado!', 5500);
+      if (defBoss?.regiaoId) {
+        const regRes = registrarVitoriaChefeRegiao(save, defBoss.regiaoId);
+        idle.codex.bosses[b.entidade.id] = true;
+        avancarDiaria(idle, 'bosses', 1);
+        registrarLogIdle(idle, `🏆 Chefe regional derrotado: ${b.nomeIni}!`, 'farm');
+        construirEntidadesDoMapa(mapaAtual);
+        const bonusTxt = regRes.primeiraVez && regRes.recompensaPaga
+          ? ` (+${regRes.recompensaPaga.gold}g, +${regRes.recompensaPaga.diamantes}💎, +${regRes.recompensaPaga.xp} XP · 1ª vitória)`
+          : '';
+        const proxTxt = regRes.proximaDesbloqueada ? ` Região ${regRes.proximaDesbloqueada.slice(1)} desbloqueada no Seletor!` : '';
+        mostrarToast(`👑 Vitória contra ${b.nomeIni}!${bonusTxt}${proxTxt}`, 5500);
       } else {
-        const ret = BOSSES_REGIAO1[b.entidade.id].mapaRetorno;
-        mostrarToast(`Vitória contra ${b.nomeIni}! Retorne a pé para ${ret}.`, 4500);
+        const res = registrarVitoriaBoss(save, b.entidade.id);
+        idle.codex.bosses[b.entidade.id] = true;
+        avancarDiaria(idle, 'bosses', 1);
+        registrarLogIdle(idle, `🏆 Chefe derrotado: ${b.nomeIni}!`, 'farm');
+        construirEntidadesDoMapa(mapaAtual);
+        notificarQuestsConcluidas(res.concluidas);
+        if (res.tremLiberadoAgora) {
+          registrarVitoriaChefeRegiao(save, 'r1');
+          mostrarToast('🚂 Espírito da Floresta e Rei Fungo derrotados! Trem em C3 e Portal da Região 2 liberados!', 5500);
+        } else {
+          const ret = BOSSES_REGIAO1[b.entidade.id].mapaRetorno;
+          mostrarToast(`Vitória contra ${b.nomeIni}! Retorne a pé para ${ret}.`, 4500);
+        }
       }
     } else {
       const nvAntes = calcularStatusDetalhado(save).nivel;
       monstrosDerrotadosSessao.add(b.entidade.id);
-      save.recompensas.gold += 25;
-      idle.jogador.xp += 20;
+      const ehR2 = regiaoDoMapa(b.entidade.mapa || mapaAtual?.id) === 'r2';
+      const ouroGanho = ehR2 ? 60 : 25;
+      const xpGanho = ehR2 ? 55 : 20;
+      save.recompensas.gold += ouroGanho;
+      idle.jogador.xp += xpGanho;
       save.recompensas.xp = idle.jogador.xp;
       const stDepois = calcularStatusDetalhado(save);
       construirEntidadesDoMapa(mapaAtual);
+      if (ehR2) {
+        const ab = registrarAbateRegiao2(save);
+        if (ab.concluidaAgora) {
+          mostrarToast(`🐝 Missão da Região 2 concluída: ${ab.missao.titulo}! (+${ab.recompensa.gold}g, +${ab.recompensa.diamantes}💎)`, 4600);
+        }
+      }
       if (stDepois.nivel > nvAntes) {
         mostrarToast(`🌟 Vitória sobre ${b.entidade.especie}! Domador Nv.${stDepois.nivel} (+3 pts)!`, 3600);
       } else {
-        mostrarToast(`Vitória sobre ${b.entidade.especie}! (+25g, +20 XP)`, 3000);
+        mostrarToast(`Vitória sobre ${b.entidade.especie}! (+${ouroGanho}g, +${xpGanho} XP)`, 3000);
       }
     }
     const dropFrag = aplicarDropsBatalhaManual(save, { batalhaId: b.batalhaId, inimigos: b.inimigosDrop || [], vitoria: true });
@@ -1150,7 +1227,7 @@ function prepararSaidas(mapa) {
       z1: Math.max(a.z, b.z),
     };
     const el = document.createElement('div');
-    const cor = sa.tipo === 'trem' || sa.tipo === 'trem_volta' ? '#fb923c' : sa.tipo === 'arco' ? '#4ade80' : '#facc15';
+    const cor = sa.tipo === 'trem' || sa.tipo === 'trem_volta' ? '#fb923c' : sa.tipo === 'portal_r2' ? '#f59e0b' : sa.tipo === 'arco' ? '#4ade80' : '#facc15';
     el.className = 'seta-ind';
     el.innerHTML = `<div class="tri" style="color:${cor}">&#9650;</div><div class="lbl">${sa.rotulo}</div>`;
     containerSetas.appendChild(el);
@@ -1171,6 +1248,7 @@ async function entrarNoMapa(id, chegadaPx = null, comFade = true) {
   }
 
   mapaAtual = destino;
+  garantirEstadoRegioes(save).atual = regiaoDoMapa(destino.id);
   registrarCodexArea(garantirEstadoIdle(save), destino.id);
 
   // Descoberta automática de marco regional (C1, E8, D9, PC7, CC7)
@@ -1643,12 +1721,24 @@ function executarInteracao() {
     if (npc.pistaAoFalar) {
       concluidas.push(...registrarPista(save, npc.pistaAoFalar).concluidas);
     }
+    if (npc.missaoR2) {
+      const mRes = concluirMissaoRegiao2(save, npc.missaoR2);
+      if (mRes.concluidaAgora) {
+        mostrarToast(`🐝 Missão concluída: ${mRes.missao.titulo}! (+${mRes.recompensa.gold}g, +${mRes.recompensa.diamantes}💎)`, 4200);
+        atualizarHudEstado();
+        salvarEstado();
+      }
+    }
     notificarQuestsConcluidas(concluidas);
     construirEntidadesDoMapa(mapaAtual);
     const ciclo = window.regiaoC1?.dialogo(npc); // fala que muda conforme a obra e a investigação
-    abrirDialogo(npc.nome, mapaAtual.nome, ciclo ? ciclo.falas : npc.dialogo, ciclo ? ciclo.botoes : [
+    const btnInv09 = window.regiaoMundo?.botaoInvestigacaoNpc?.(npc);
+    const botoesNpc = ciclo ? [...ciclo.botoes] : [
+      ...(npc.missaoR2 ? [{ rotulo: '🗺️ Seletor de Regiões', aoClicar: () => { fecharModal('modal-dialogo'); window.regiaoRegioes?.abrir?.(); } }] : []),
       { rotulo: 'Fechar', prim: true, aoClicar: () => fecharModal('modal-dialogo') },
-    ], (pagina) => retratoNpc(npc, Math.min(pagina, npc.expressoes.length - 1)));
+    ];
+    if (btnInv09) botoesNpc.unshift(btnInv09);
+    abrirDialogo(npc.nome, mapaAtual.nome, ciclo ? ciclo.falas : npc.dialogo, botoesNpc, (pagina) => retratoNpc(npc, Math.min(pagina, npc.expressoes.length - 1)));
     return;
   }
   if (alvo.tipo === 'pista') {
@@ -1853,6 +1943,20 @@ function atualizarSaidasEInteracoes(agora) {
           } else {
             pararNavegacao(true);
             mostrarToast(res.mensagem, 4200);
+          }
+        }
+        return;
+      }
+      if (dentro.tipo === 'portal_r2') {
+        if (saidaAvisoAtual !== dentro) {
+          saidaAvisoAtual = dentro;
+          if (!regiaoDesbloqueada(save, 'r2')) {
+            pararNavegacao(true);
+            mostrarToast('🔒 Portal da Região 2 bloqueado: derrote Espírito da Floresta e Rei Fungo primeiro.', 4200);
+          } else {
+            waypointsAtuais = [];
+            marcadorDestino.visible = false;
+            entrarNoMapa(dentro.destino, dentro.chegada, true);
           }
         }
         return;
@@ -2343,10 +2447,11 @@ idleUI = criarControladorIdleUI({
 });
 
 // ---- API de inspeção e testes automatizados ----
-// Mundo: os 50 sistemas ligados ao jogo (painel "Mundo" no menu)
+// Mundo: os 50 sistemas ligados ao jogo (Sistemas 01-10 ativos no mapa, campanha, NPCs e painel "Mundo")
 window.regiaoMundo = iniciarMundo({
   getSave: () => save, salvar: salvarEstado, mostrarToast, atualizarHud: atualizarHudEstado,
-  getMapaAtual: () => mapaAtual, abrirModal, fecharModal,
+  getMapaAtual: () => mapaAtual, abrirModal, fecharModal, abrirDialogo, tela: telaBatalha, batalhaBloqueando,
+  entrarNoMapa: (id) => entrarNoMapa(id, null, false),
   mapaCtx: {
     cena, camera, P, camada,
     getJogador: () => ({ x: estado.x, z: estado.z }),
@@ -2361,10 +2466,19 @@ window.regiaoMundo = iniciarMundo({
       const L = [m.spawnPadrao, ...(m.marco ? [m.marco.interacao || m.marco.pos] : [])];
       for (const sa of m.saidas) L.push([(sa.rect[0] + sa.rect[2]) / 2, (sa.rect[1] + sa.rect[3]) / 2]);
       for (const o of Object.values(MAPAS)) for (const sa of o.saidas) if (sa.destino === mapaId && sa.chegada) L.push(sa.chegada);
-      for (const l of [NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, ENTIDADES_BOSS]) for (const e of l) if (e.mapa === mapaId) L.push(e.pos);
+      for (const l of [NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, ENTIDADES_BOSS]) for (const e of l) if (e.mapa === mapaId) L.push(e.pos);
       return L;
     },
   },
+});
+
+window.regiaoRegioes = iniciarSeletorRegioes({
+  getSave: () => save,
+  salvar: salvarEstado,
+  mostrarToast,
+  abrirModal,
+  fecharModal,
+  entrarNoMapa,
 });
 
 // Ciclo jogável de C1 (regras genéricas em regiao1-ciclo.js, dados em regiao1-ciclo-c1.js)
