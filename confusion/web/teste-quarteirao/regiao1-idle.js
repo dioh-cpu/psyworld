@@ -63,12 +63,14 @@ import { torresDe } from './regiao1-torres-regras.js';
 import { calaboucosDe } from './regiao1-calaboucos-regras.js';
 import { reliquiasDe, armasUnicasDe } from './regiao1-reliquias-regras.js';
 import { domadoresDe } from './regiao1-domadores-regras.js';
+import { rotacaoMissoesDe } from './regiao1-diarias-semanais-regras.js';
 
 function garantirBlocosProgressao(save, agoraMs) {
   energiaDe(save, agoraMs);
   essenciasDe(save);
   campanhaMiniDe(save);
   missoesDe(save);
+  rotacaoMissoesDe(save, agoraMs);
   torresDe(save);
   calaboucosDe(save);
   reliquiasDe(save);
