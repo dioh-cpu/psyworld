@@ -52,27 +52,65 @@ export function criarPose({ fig, base, src, lado, escalaX = 1, zoom = 1, bbox, e
 }
 
 // Animações em vídeo transparente (WebM VP9 com alfa) entregues em assets/confusion/animacoes/<especie>/{idle,andar}-{frente,direita,costas,esquerda}.webm.
+// Padrão de animações v2:
+// - Preferência: 4 vistas (esquerda, direita, frente, costas) — NÃO espelhar quando esquerda existir.
+// - Vídeos legados de 3 vistas (sem esquerda): espelhar `direita` SOMENTE se a espécie for simétrica.
+// - Mesma escala e linha dos pés (bottom:0 / object-position:center bottom) entre `idle` e `andar`.
 // Espécies sem vídeo publicado mantêm a arte parada + pose de ataque sem disparar 404.
 export const ANIMACOES_V2_ESPECIES = new Set();
+// Metadados por slug: { temEsquerda?: boolean, simetrica?: boolean } (padrão: temEsquerda=true, simetrica=true)
+export const ANIMACOES_V2_META = new Map();
 
 const slugAnim = (esp) => String(esp || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-export function urlAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita') {
+export function resolverAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita') {
   const sl = slugAnim(especie);
   if (!sl || !ANIMACOES_V2_ESPECIES.has(sl)) return null;
-  const dir = direcao === 'esquerda' ? 'direita' : direcao; // esquerda = direita espelhada
-  return `../../../assets/confusion/animacoes/${sl}/${acao}-${dir}.webm`;
+  const meta = ANIMACOES_V2_META.get(sl) || {};
+  const temEsquerda = meta.temEsquerda !== false;
+  const simetrica = meta.simetrica !== false;
+  const dir = ['frente', 'costas', 'direita', 'esquerda'].includes(direcao) ? direcao : 'direita';
+  if (dir === 'esquerda') {
+    if (temEsquerda) {
+      return {
+        url: `../../../assets/confusion/animacoes/${sl}/${acao}-esquerda.webm`,
+        espelhar: false,
+        fallbackSimetrico: simetrica ? `../../../assets/confusion/animacoes/${sl}/${acao}-direita.webm` : null,
+      };
+    }
+    if (!simetrica) return null; // criatura assimétrica sem vista esquerda dedicada: não espelhar
+    return {
+      url: `../../../assets/confusion/animacoes/${sl}/${acao}-direita.webm`,
+      espelhar: true,
+      fallbackSimetrico: null,
+    };
+  }
+  return {
+    url: `../../../assets/confusion/animacoes/${sl}/${acao}-${dir}.webm`,
+    espelhar: false,
+    fallbackSimetrico: null,
+  };
+}
+
+export function urlAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita') {
+  return resolverAnimacaoOnirico(especie, acao, direcao)?.url || null;
 }
 
 export function criarLoopAnimacao({ fig, base, especie, lado = 'a' }) {
-  let vid = null, acaoAtual = null, ativo = false;
-  const espelhar = lado === 'i';
+  let vid = null, acaoAtual = null, ativo = false, tentouFallback = false;
+  const direcaoPadrao = lado === 'i' ? 'esquerda' : 'direita';
 
-  function definirAcao(acao = 'idle') {
-    const src = urlAnimacaoOnirico(especie, acao, 'direita');
-    if (!src) return false;
-    if (acaoAtual === acao && vid && ativo) return true;
-    acaoAtual = acao;
+  function aplicarTransform(espelhar) {
+    if (!vid) return;
+    vid.style.transform = `translateX(-50%)${espelhar ? ' scaleX(-1)' : ''}`;
+  }
+
+  function definirAcao(acao = 'idle', direcao = direcaoPadrao) {
+    const res = resolverAnimacaoOnirico(especie, acao, direcao);
+    if (!res) return false;
+    if (acaoAtual === `${acao}:${direcao}` && vid && ativo) return true;
+    acaoAtual = `${acao}:${direcao}`;
+    tentouFallback = false;
     if (!vid) {
       vid = document.createElement('video');
       vid.className = 'anim-loop';
@@ -81,7 +119,8 @@ export function criarLoopAnimacao({ fig, base, especie, lado = 'a' }) {
       vid.muted = true;
       vid.defaultMuted = true;
       vid.playsInline = true;
-      vid.style.cssText = `position:absolute;left:50%;bottom:0;height:100%;width:auto;max-width:100%;object-fit:contain;object-position:center bottom;pointer-events:none;transform:translateX(-50%)${espelhar ? ' scaleX(-1)' : ''};display:none;z-index:2`;
+      // Mesma escala e linha dos pés entre idle e caminhada
+      vid.style.cssText = 'position:absolute;left:50%;bottom:0;height:100%;width:auto;max-width:100%;object-fit:contain;object-position:center bottom;pointer-events:none;transform:translateX(-50%);display:none;z-index:2';
       vid.addEventListener('canplay', () => {
         if (!vid) return;
         ativo = true;
@@ -90,14 +129,26 @@ export function criarLoopAnimacao({ fig, base, especie, lado = 'a' }) {
         vid.play().catch(() => {});
       });
       vid.addEventListener('error', () => {
+        if (vid && !tentouFallback && vid.dataset.fallbackSimetrico) {
+          tentouFallback = true;
+          const fb = vid.dataset.fallbackSimetrico;
+          delete vid.dataset.fallbackSimetrico;
+          aplicarTransform(true);
+          vid.setAttribute('src', fb);
+          vid.load();
+          return;
+        }
         ativo = false;
         if (vid) vid.style.display = 'none';
         if (base) base.style.visibility = 'visible';
       });
       fig.append(vid);
     }
-    if (vid.getAttribute('src') !== src) {
-      vid.setAttribute('src', src);
+    aplicarTransform(res.espelhar);
+    if (res.fallbackSimetrico) vid.dataset.fallbackSimetrico = res.fallbackSimetrico;
+    else delete vid.dataset.fallbackSimetrico;
+    if (vid.getAttribute('src') !== res.url) {
+      vid.setAttribute('src', res.url);
       vid.load();
     }
     return true;
