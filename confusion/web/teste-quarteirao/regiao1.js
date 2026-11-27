@@ -10,7 +10,7 @@ import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, 
 import { resolverEncontroCatalogo, reforcosDoChefe } from './regiao1-encontros-regras.js';
 import { CHEFE_POR_NOME } from './regiao1-kits-reinos.js';
 import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
-import { energiaDe, ENERGIA_CFG } from './regiao1-campanha-mini-regras.js';
+import { energiaDe, ENERGIA_CFG, ENERGIA_TEXTO_EXPLICATIVO } from './regiao1-campanha-mini-regras.js';
 import { iniciarSeletorRegioes } from './regiao1-regioes.js';
 import {
   criarEstadoPasseio,
@@ -738,7 +738,7 @@ const TELA_POR_MODAL = {
   'modal-mochila': 'mochila',
   'modal-codex': 'colecao',
   'modal-atlas': 'batalhas',
-  'modal-temporada': 'eventos',
+  'modal-temporada': 'passe',
   'modal-diario': 'missoes',
   'modal-config': 'mochila',
   'modal-mapa': 'campanha-mini',
@@ -792,7 +792,8 @@ function garantirBotaoRefugioNoModal(el) {
     const gold = Number(save.recompensas?.gold || 0).toLocaleString('pt-BR');
     const diam = Number(save.recompensas?.diamantes || 0).toLocaleString('pt-BR');
     const tick = Number(save.expansao?.tickets || 0);
-    rec.innerHTML = `<span class="modal-rec-pill" title="Energia usada na Campanha Mini, Torres e Calabouços"><img class="kit-rec-ico" src="${KIT_REC('energia')}" alt="Energia">${en.atual}/${en.max}</span><span class="modal-rec-pill" title="Ouro: evoluções, reforço de relíquias e compras"><img class="kit-rec-ico" src="${KIT_REC('ouro')}" alt="Ouro">${gold}</span><span class="modal-rec-pill" title="Diamantes: Passe Premium, invocações e pacotes"><img class="kit-rec-ico" src="${KIT_REC('diamante')}" alt="Diamantes">${diam}</span><span class="modal-rec-pill" title="Tickets de Invocação do Banner Permanente"><img class="kit-rec-ico" src="${KIT_REC('ticket')}" alt="Tickets">${tick}</span>`;
+    const tipEnergia = `${ENERGIA_TEXTO_EXPLICATIVO.resumo} (${ENERGIA_TEXTO_EXPLICATIVO.custos.join(' · ')})`;
+    rec.innerHTML = `<span class="modal-rec-pill" title="${tipEnergia.replace(/"/g, '&quot;')}"><img class="kit-rec-ico" src="${KIT_REC('energia')}" alt="Energia">${en.atual}/${en.max}</span><span class="modal-rec-pill" title="Ouro: evoluções, reforço de relíquias e compras"><img class="kit-rec-ico" src="${KIT_REC('ouro')}" alt="Ouro">${gold}</span><span class="modal-rec-pill" title="Diamantes: Passe Premium, invocações e pacotes"><img class="kit-rec-ico" src="${KIT_REC('diamante')}" alt="Diamantes">${diam}</span><span class="modal-rec-pill" title="Tickets de Invocação do Banner Permanente"><img class="kit-rec-ico" src="${KIT_REC('ticket')}" alt="Tickets">${tick}</span>`;
   }
 }
 

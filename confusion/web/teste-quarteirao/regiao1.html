@@ -326,7 +326,7 @@
     /* Kit visual menus-v1 (PR #63) */
     #modal-mochila .modal-card { background: linear-gradient(rgba(16,9,24,.78), rgba(16,9,24,.9)), url('../../../assets/confusion/interface/menus-v1/mochila/fundo.webp') center / cover no-repeat; }
     #modal-temporada .modal-card { background: linear-gradient(rgba(16,9,24,.76), rgba(16,9,24,.9)), url('../../../assets/confusion/interface/menus-v1/passe/fundo.webp') center / cover no-repeat; }
-    #painel-login-7d { background: linear-gradient(rgba(16,9,24,.82), rgba(16,9,24,.94)), url('../../../assets/confusion/interface/menus-v1/login/fundo.webp') center / cover no-repeat !important; }
+    #painel-login-7d { background-color: rgba(16,9,24,.94); background-image: linear-gradient(rgba(16,9,24,.82), rgba(16,9,24,.94)), url('../../../assets/confusion/interface/menus-v1/login/fundo.webp'); background-position: center; background-size: cover; background-repeat: no-repeat; box-shadow: inset 0 0 0 2000px rgba(10, 6, 18, .56); }
     .mv1-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 6px; }
     .mv1-slot { background: url('../../../assets/confusion/interface/menus-v1/mochila/espaco-item.png') center / 100% 100% no-repeat; padding: 8px 6px; text-align: center; font-size: 11px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .mv1-slot img { width: 32px; height: 32px; object-fit: contain; }
@@ -576,6 +576,7 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
         <button class="btn-pri" id="btn-login-diario">🎁 Login 7 Dias</button>
         <button class="btn-pri" id="btn-passe-coletar" style="background:#0f766e">🏆 Coletar Passe</button>
+        <button class="btn-pri" id="btn-passe-premium">👑 Ativar Premium (5.000 💎)</button>
         <button class="btn-sec" id="btn-passe-comprar">💎 Comprar Nível (150💎)</button>
       </div>
       <div class="sec-tit">Trilha do Passe (100 Níveis)</div>
@@ -584,7 +585,7 @@
       <div class="sec-tit">Missões Diárias</div>
       <div id="temp-diarias"></div>
     </div>
-    <div id="painel-login-7d" style="display:none;position:absolute;inset:0;background:rgba(16,8,24,.96);border-radius:inherit;padding:12px;overflow-y:auto;z-index:10">
+    <div id="painel-login-7d" style="display:none;position:absolute;inset:0;border-radius:inherit;padding:12px;overflow-y:auto;z-index:10">
       <div class="modal-head modal-head-fixo"><h3>🎁 Login de 7 Dias</h3><button class="btn-sec" id="btn-login-7d-fechar">Voltar à trilha</button></div>
       <div id="login-7d-resumo" class="card-row" style="display:block;line-height:1.45;margin-bottom:8px"></div>
       <div id="login-7d-grade" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-bottom:10px"></div>

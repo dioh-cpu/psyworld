@@ -7,6 +7,16 @@ import { MAPAS, ORDEM_MAPAS } from './regiao1-mapas.js';
 import { MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import { QUESTS_DEFINICOES } from './regiao1-estado.js';
 import { regiaoDesbloqueada } from './regiao1-regioes-regras.js';
+import { comprarPassePremium, PASSE_CFG } from './regiao1-passe-regras.js';
+import {
+  listarMoldurasPerfil,
+  listarIconesPerfil,
+  equiparMolduraPerfil,
+  equiparIconePerfil,
+  sincronizarDesbloqueiosPerfil,
+  perfilDomadorDe,
+} from './regiao1-perfil-regras.js';
+import { aplicarFundoTelaSobDemanda } from './regiao1-perf-mobile.js';
 import {
   I18N,
   ATRIBUTOS_DOMADOR,
@@ -464,67 +474,35 @@ export function criarControladorIdleUI(ctx) {
     botao.addEventListener('click', () => selecionarCatMochila(botao.dataset.mochilaCat));
   });
 
-  const KIT_PERFIL = (arq) => `../../../assets/confusion/interface/kit-v2/perfil/${arq}`;
   const AVATAR_PADRAO = '../../../assets/confusion/interface/descanso-v1/avatar-azazel.webp';
-  const MOLDURAS_PERFIL = [
-    { id: 'farol', nome: 'Farol', arq: 'farol.png', req: 'Padrão do Domador', check: () => true },
-    { id: 'ignaraz', nome: 'Ignaraz', arq: 'ignaraz.png', req: 'Tenha Ignaraz na coleção', check: (s) => (s.idle?.equipe || []).some((m) => m.especie === 'Ignaraz') },
-    { id: 'vaelirion', nome: 'Vaelirion', arq: 'vaelirion.png', req: 'Tenha Vaelirion na coleção', check: (s) => (s.idle?.equipe || []).some((m) => m.especie === 'Vaelirion') },
-    { id: 'florivel', nome: 'Florivel', arq: 'florivel.png', req: 'Tenha Florivel na coleção', check: (s) => (s.idle?.equipe || []).some((m) => m.especie === 'Florivel') },
-    { id: 'ambar-fossil', nome: 'Âmbar Fóssil', arq: 'ambar-fossil.png', req: 'Passe Dinossauros Nv.10', check: (s) => (infoPasse(s)?.nivel || 0) >= 10 },
-    { id: 'ossada-antiga', nome: 'Ossada Antiga', arq: 'ossada-antiga.png', req: 'Passe Dinossauros Nv.30', check: (s) => (infoPasse(s)?.nivel || 0) >= 30 },
-    { id: 'pegadas-no-barro', nome: 'Pegadas no Barro', arq: 'pegadas-no-barro.png', req: 'Passe Dinossauros Nv.60', check: (s) => (infoPasse(s)?.nivel || 0) >= 60 },
-    { id: 'vulcao-adormecido', nome: 'Vulcão Adormecido', arq: 'vulcao-adormecido.png', req: 'Passe Dinossauros Nv.100', check: (s) => (infoPasse(s)?.nivel || 0) >= 100 },
-  ];
+  const AVATAR_ICONE_170 = {
+    padrao: AVATAR_PADRAO,
+    'icone-tiranox': '../../../assets/confusion/interface/passe-dinossauros-v2/icones/tiranox.png',
+    'icone-tricerax': '../../../assets/confusion/interface/passe-dinossauros-v2/icones/tricerax.png',
+    'icone-veloxar': '../../../assets/confusion/interface/passe-dinossauros-v2/icones/veloxar.png',
+    'icone-pteronox': '../../../assets/confusion/interface/passe-dinossauros-v2/icones/pteronox.png',
+  };
+  const srcIconePerfil = (ic) => AVATAR_ICONE_170[ic.id] || (ic.arq ? `../../../${ic.arq}` : AVATAR_PADRAO);
+  const srcMolduraPerfil = (m) => (m.arq ? `../../../${m.arq}` : '../../../assets/confusion/interface/kit-v2/perfil/farol.png');
   let persAberto = false;
   let previaFotoLocal = null;
 
-  function perfilDomadorDe(save) {
-    const idle = garantirEstadoIdle(save);
-    if (!idle.jogador.perfil || typeof idle.jogador.perfil !== 'object') {
-      idle.jogador.perfil = { moldura: 'farol', icone: 'padrao', foto: { status: 'nenhuma', url: null, motivo: '' } };
-    }
-    const pf = idle.jogador.perfil;
-    if (!pf.moldura) pf.moldura = 'farol';
-    if (!pf.icone) pf.icone = 'padrao';
-    if (!pf.foto || typeof pf.foto !== 'object') pf.foto = { status: 'nenhuma', url: null, motivo: '' };
-    return pf;
-  }
-
-  function molduraDesbloqueada(save, def) {
-    const extras = save.perfil?.moldurasDesbloqueadas || save.idle?.jogador?.perfil?.desbloqueadas || [];
-    return Boolean(def.check(save) || (Array.isArray(extras) && extras.includes(def.id)));
-  }
-
-  function iconesDisponiveisPerfil(save) {
-    const lista = [{ id: 'padrao', nome: 'Azazel', src: AVATAR_PADRAO }];
-    const vistos = new Set(['padrao']);
-    for (const m of (save.idle?.equipe || []).slice(0, 8)) {
-      const id = `esp:${m.especie}`;
-      if (vistos.has(id)) continue;
-      vistos.add(id);
-      const p = ARTE_DA_ESPECIE[m.especie];
-      if (p) lista.push({ id, nome: m.especie, src: `../../../${p}` });
-    }
-    if (save.idle?.hw?.tickets > 0 || save.idle?.hw?.doces > 0) {
-      lista.push({ id: 'ev:halloween', nome: 'Halloween', src: '../../../assets/confusion/interface/eventos/halloween/itens/doce.webp' });
-    }
-    return lista;
-  }
-
-  function imagemAtivaPerfil(save) {
+  function imagemAtivaPerfil(save, icones) {
     const pf = perfilDomadorDe(save);
     // Foto pessoal só é exibida após aprovação da moderação; enquanto pendente ou reprovada mantém o retrato padrão/ícone
     if (pf.foto?.status === 'aprovada' && pf.foto.url) return pf.foto.url;
-    const ic = iconesDisponiveisPerfil(save).find((x) => x.id === pf.icone);
-    return ic?.src || AVATAR_PADRAO;
+    const ic = icones.find((x) => x.equipado || x.id === pf.icone);
+    return ic ? srcIconePerfil(ic) : AVATAR_PADRAO;
   }
 
   function renderizarCardDomador(save, st) {
+    sincronizarDesbloqueiosPerfil(save);
     const pf = perfilDomadorDe(save);
-    const moldDef = MOLDURAS_PERFIL.find((m) => m.id === pf.moldura) || MOLDURAS_PERFIL[0];
+    const molduras = listarMoldurasPerfil(save);
+    const icones = listarIconesPerfil(save);
+    const moldDef = molduras.find((m) => m.equipada) || molduras[0];
     const nome = save.conta?.nome || 'Azazel';
-    const fotoAtiva = imagemAtivaPerfil(save);
+    const fotoAtiva = imagemAtivaPerfil(save, icones);
     const stFoto = pf.foto?.status || 'nenhuma';
     const badgeFoto = stFoto === 'pendente'
       ? '<div class="tag" style="color:#fde68a;border-color:#f59e0b;margin:4px 0 0">⏳ Foto em moderação</div>'
@@ -539,7 +517,7 @@ export function criarControladorIdleUI(ctx) {
       cardEl.innerHTML = `
         <div class="dom-retrato-wrap" data-moldura="${moldDef.id}">
           <div class="dom-retrato-foto"><img src="${fotoAtiva}" alt="${nome}" onerror="this.src='${AVATAR_PADRAO}'"></div>
-          <img class="dom-retrato-moldura" src="${KIT_PERFIL(moldDef.arq)}" alt="Moldura ${moldDef.nome}">
+          <img class="dom-retrato-moldura" src="${srcMolduraPerfil(moldDef)}" alt="Moldura ${moldDef.nome}">
         </div>
         <b style="color:#fde68a;font-size:14px">${nome}</b>
         <div class="sub">Domador · Nv.${st.nivel} · ${moldDef.nome}</div>
@@ -557,7 +535,6 @@ export function criarControladorIdleUI(ctx) {
     persEl.hidden = !persAberto;
     if (!persAberto) { persEl.innerHTML = ''; return; }
 
-    const icones = iconesDisponiveisPerfil(save);
     const previaSrc = previaFotoLocal || fotoAtiva;
     persEl.innerHTML = `
       <div class="card-row" style="display:block;margin-bottom:10px;border-color:#f3a458">
@@ -565,29 +542,25 @@ export function criarControladorIdleUI(ctx) {
           <b style="color:#fde68a">🎨 Personalizar Perfil do Domador</b>
           <button type="button" class="btn-sec" id="btn-dom-pers-fechar" style="padding:3px 8px;font-size:11px">Fechar</button>
         </div>
-        <div class="sec-tit" style="margin-top:4px">Molduras (${MOLDURAS_PERFIL.filter((m) => molduraDesbloqueada(save, m)).length}/${MOLDURAS_PERFIL.length})</div>
+        <div class="sec-tit" style="margin-top:4px">Molduras (${molduras.filter((m) => m.desbloqueada).length}/${molduras.length})</div>
         <div class="dom-pers-grade">
-          ${MOLDURAS_PERFIL.map((m) => {
-            const ok = molduraDesbloqueada(save, m);
-            const at = pf.moldura === m.id;
-            return `<button type="button" class="dom-pers-item ${at ? 'ativo' : ''} ${ok ? '' : 'bloqueado'}" data-moldura-id="${m.id}" title="${ok ? m.nome : `Bloqueada: ${m.req}`}">
-              <img src="${KIT_PERFIL(m.arq)}" alt="${m.nome}">
-              <div>${ok ? '' : '🔒 '}${m.nome}</div>
-            </button>`;
-          }).join('')}
+          ${molduras.map((m) => `<button type="button" class="dom-pers-item ${m.equipada ? 'ativo' : ''} ${m.desbloqueada ? '' : 'bloqueado'}" data-moldura-id="${m.id}" title="${m.desbloqueada ? m.nome : `Bloqueada: ${m.req}`}">
+              <img src="${srcMolduraPerfil(m)}" alt="${m.nome}">
+              <div>${m.desbloqueada ? '' : '🔒 '}${m.nome}</div>
+            </button>`).join('')}
         </div>
-        <div class="sec-tit">Ícones Equipáveis</div>
+        <div class="sec-tit">Ícones Equipáveis (${icones.filter((ic) => ic.desbloqueado).length}/${icones.length})</div>
         <div class="dom-pers-grade">
-          ${icones.map((ic) => `<button type="button" class="dom-pers-item ${pf.icone === ic.id && pf.foto?.status !== 'aprovada' ? 'ativo' : ''}" data-icone-id="${ic.id}">
-            <img src="${ic.src}" alt="${ic.nome}" style="border-radius:6px;object-fit:cover">
-            <div>${ic.nome}</div>
+          ${icones.map((ic) => `<button type="button" class="dom-pers-item ${ic.equipado && pf.foto?.status !== 'aprovada' ? 'ativo' : ''} ${ic.desbloqueado ? '' : 'bloqueado'}" data-icone-id="${ic.id}" title="${ic.desbloqueado ? ic.nome : `Bloqueado: ${ic.req}`}">
+            <img src="${srcIconePerfil(ic)}" alt="${ic.nome}" style="border-radius:6px;object-fit:cover" onerror="this.src='${AVATAR_PADRAO}'">
+            <div>${ic.desbloqueado ? '' : '🔒 '}${ic.nome}</div>
           </button>`).join('')}
         </div>
         <div class="sec-tit">Foto da Galeria (Moderação obrigatória)</div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <div class="dom-retrato-wrap" style="width:92px;max-width:92px;margin:0;flex:0 0 92px">
             <div class="dom-retrato-foto"><img id="dom-previa-foto" src="${previaSrc}" alt="Prévia"></div>
-            <img class="dom-retrato-moldura" src="${KIT_PERFIL(moldDef.arq)}" alt="">
+            <img class="dom-retrato-moldura" src="${srcMolduraPerfil(moldDef)}" alt="">
           </div>
           <div style="flex:1;min-width:190px">
             <div class="sub" style="margin-bottom:6px">Centralize o rosto no recorte quadrado (JPG, PNG ou WEBP até 2 MB). Fotos passam por moderação de nudez e conteúdo impróprio antes de aparecer no perfil.</div>
@@ -605,24 +578,20 @@ export function criarControladorIdleUI(ctx) {
     $('btn-dom-pers-fechar')?.addEventListener('click', () => { persAberto = false; renderizarCardDomador(save, st); });
     persEl.querySelectorAll('[data-moldura-id]').forEach((b) => {
       b.onclick = () => {
-        const def = MOLDURAS_PERFIL.find((m) => m.id === b.dataset.molduraId);
-        if (!def) return;
-        if (!molduraDesbloqueada(save, def)) {
-          ctx.mostrarToast(`🔒 ${def.nome}: ${def.req}`, 2600);
-          return;
-        }
-        pf.moldura = def.id;
+        const r = equiparMolduraPerfil(save, b.dataset.molduraId);
+        if (!r.ok) { ctx.mostrarToast(`🔒 ${r.motivo}`, 2600); return; }
         ctx.salvar();
-        ctx.mostrarToast(`Moldura "${def.nome}" equipada!`, 2000);
+        ctx.mostrarToast(`Moldura "${r.moldura.nome}" equipada!`, 2000);
         renderizarCardDomador(save, st);
       };
     });
     persEl.querySelectorAll('[data-icone-id]').forEach((b) => {
       b.onclick = () => {
-        pf.icone = b.dataset.iconeId;
+        const r = equiparIconePerfil(save, b.dataset.iconeId);
+        if (!r.ok) { ctx.mostrarToast(`🔒 ${r.motivo}`, 2600); return; }
         if (pf.foto?.status === 'aprovada') pf.foto = { status: 'nenhuma', url: null, motivo: '' };
         ctx.salvar();
-        ctx.mostrarToast('Ícone de perfil atualizado!', 2000);
+        ctx.mostrarToast(`Ícone "${r.icone.nome}" equipado!`, 2000);
         renderizarCardDomador(save, st);
       };
     });
@@ -1013,7 +982,10 @@ export function criarControladorIdleUI(ctx) {
     if (trilhaEl) trilhaScrollSalvo = trilhaEl.scrollLeft;
     renderizarPainelLogin7d();
     const p = $('painel-login-7d');
-    if (p) p.style.display = 'block';
+    if (p) {
+      p.style.display = 'block';
+      aplicarFundoTelaSobDemanda(p, 'login-7-dias');
+    }
   }
 
   function fecharLogin7dParaTrilha() {
@@ -1100,10 +1072,27 @@ export function criarControladorIdleUI(ctx) {
       b.onclick = () => { fechar('modal-temporada'); ctx.viajarParaMapa(b.dataset.irDm, true); };
     });
 
+    const btnPrem = $('btn-passe-premium');
+    if (btnPrem) {
+      const ativoPrem = Boolean(info.premium);
+      btnPrem.disabled = ativoPrem;
+      btnPrem.textContent = ativoPrem ? '👑 Passe Premium Ativo' : `👑 Ativar Premium (${(PASSE_CFG.custoPremium || 5000).toLocaleString('pt-BR')} 💎)`;
+    }
     const tempCorpo = $('temp-corpo');
     if (!preservarPosicao && tempCorpo) tempCorpo.scrollTop = 0;
     abrir('modal-temporada');
   }
+
+  $('btn-passe-premium')?.addEventListener('click', () => {
+    const save = ctx.getSave();
+    const r = comprarPassePremium(save);
+    ctx.mostrarToast(r.ok ? `👑 Passe Premium Dinossauros ativado (-${r.custo}💎)!` : (r.motivo || 'Diamantes insuficientes.'), 3200);
+    if (r.ok) {
+      ctx.salvar();
+      atualizarHudIdle();
+      abrirTemporada(true);
+    }
+  });
 
   $('btn-login-diario')?.addEventListener('click', abrirLogin7dSobrePasse);
   $('btn-login-7d-fechar')?.addEventListener('click', fecharLogin7dParaTrilha);

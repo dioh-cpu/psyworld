@@ -2,6 +2,7 @@
 // Conectada às regras puras em regiao1-campanha-mini-regras.js e à arena existente (telaBatalha).
 import {
   ENERGIA_CFG,
+  ENERGIA_TEXTO_EXPLICATIVO,
   energiaDe,
   usarPocaoEnergia,
   CAPITULOS_CAMPANHA_MINI,
@@ -207,9 +208,8 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
     const en = energiaDe(save);
     enEl.textContent = `⚡ ${en.atual}/${en.max}`;
     const faltaMs = en.atual < en.max ? Math.max(0, ENERGIA_CFG.intervaloMs - (Date.now() - en.ultimoTickMs)) : 0;
-    enEl.title = faltaMs > 0
-      ? `Energia ${en.atual}/${en.max} (+1 em ${Math.ceil(faltaMs / 60000)} min · máx. ${ENERGIA_CFG.max})`
-      : `Energia cheia (${en.atual}/${en.max})`;
+    enEl.title = `${ENERGIA_TEXTO_EXPLICATIVO.resumo} (${ENERGIA_TEXTO_EXPLICATIVO.custos.join(' · ')})`
+      + (faltaMs > 0 ? ` · +1 em ${Math.ceil(faltaMs / 60000)} min` : ' · Energia cheia');
     if (en.pocoes > 0) {
       pocBtn.style.display = 'inline-block';
       pocBtn.textContent = `🧪 +60 ⚡ (${en.pocoes})`;
@@ -258,7 +258,7 @@ export function iniciarCampanhaMini({ getSave, salvar, mostrarToast, abrirModal,
         </div>
       </div>`;
     }).join('');
-    body.innerHTML = `${renderBalaoTutorialModo(save, 'campanha_mini')}<div class="cm-caps">${cards}</div>`;
+    body.innerHTML = `${renderBalaoTutorialModo(save, 'campanha_mini')}${renderBalaoTutorialModo(save, 'energia')}${renderBalaoTutorialModo(save, 'ondas')}<div class="cm-caps">${cards}</div>`;
   }
 
   function renderMapa() {

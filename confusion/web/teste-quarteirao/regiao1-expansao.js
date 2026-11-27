@@ -14,7 +14,7 @@ import { fichaOnirico, evoluirFormaOnirico, tierDaUnidade, estrelasDaUnidade, ra
 import { revelarInvocacao } from './regiao1-revelacao.js';
 import { BOSSES_REGIAO1 } from './regiao1-estado.js';
 import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, concluirRevancheChefe, previsaoCraftChefe, craftarChefe, bonusCategoriaPoder } from './regiao1-revanche-regras.js';
-import { energiaDe, usarPocaoEnergia, ENERGIA_CFG, essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
+import { energiaDe, usarPocaoEnergia, ENERGIA_CFG, ENERGIA_TEXTO_EXPLICATIVO, essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
 import { consultarEvolucaoForma } from './regiao1-regras-sonho.js';
 import { renderizarPainelMissoes, tratarCliqueMissoes, temAvisoMissoes } from './regiao1-missoes-ui.js';
 import { renderizarPainelTorres, tratarCliqueTorres } from './regiao1-torres-ui.js';
@@ -444,7 +444,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           <span><b>${esc(nomeJogador)}</b><small>Domador · Nv.${nvDomador}</small></span>
         </button>
         <div class="ref-moedas">
-          <span class="energia-pill" data-energia-refugio="1" title="Energia usada na Campanha Mini, Torres e Calabouços (regenera automaticamente)">${energiaTextoHtml(s)}</span>
+          <span class="energia-pill" data-energia-refugio="1" title="${esc(`${ENERGIA_TEXTO_EXPLICATIVO.resumo} (${ENERGIA_TEXTO_EXPLICATIVO.custos.join(' · ')})`)}">${energiaTextoHtml(s)}</span>
           <span class="ref-pill" title="Ouro: moeda para evoluções, reforço de relíquias e compras na loja"><img class="kit-rec-ico" src="${KIT_V2('recursos/ouro.png')}" alt="Ouro">${gold}</span>
           <span class="ref-pill" title="Diamantes: moeda premium para Passe, invocações e bônus especiais"><img class="kit-rec-ico" src="${KIT_V2('recursos/diamante.png')}" alt="Diamantes">${diamantes}</span>
           <button class="ref-btn-ico" data-desc-pop="${descPop === 'atalhos' ? '' : 'atalhos'}" title="Atalhos" aria-label="Atalhos"><img src="${DESCANSO_V1('icones/atalhos.png')}" alt=""></button>
