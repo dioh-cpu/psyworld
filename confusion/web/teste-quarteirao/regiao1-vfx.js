@@ -38,7 +38,7 @@ const VIOLETA = HAB.MORTALIO_VIOLETA_CFG || { id: 'manto_violeta', clip: 'assets
 FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, cut: ['#5b21b6', '#ddd6fe'] };
 // Clipes do Flow, lote 1 (PR #61). impactoMs = ataque do pico de áudio do próprio clipe; chao = altura relativa do chão do efeito no
 // quadro (ancorado nos pés do alvo); escala = largura do clipe em relação ao corpo do alvo. Sem o arquivo, vale a coreografia procedural.
-const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/', FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/';
+const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/', FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/', FLOW4 = 'assets/confusion/interface/vfx/flow-lote-4/';
 export const CLIPES_FLOW = {
   manto_violeta: { clip: `${FLOW}mortalio-violeta.mp4`, impactoMs: 1250, chao: 0.86, escala: 3.4, duracaoMs: 3000 },
   chama_solar: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 }, // Solarin: cura de um aliado (chama dourada; também é a cura de fogo)
@@ -68,6 +68,24 @@ export const CLIPES_ELEMENTAIS = {
   curaFogo: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 },        // cura de fogo
   curaAgua: { clip: `${FLOW}impacto-ciano.mp4`, impactoMs: 1250, chao: 0.88, escala: 3.0, duracaoMs: 3000 },       // cura de água
   curaPlanta: { clip: `${FLOW3}cura-planta.mp4`, impactoMs: 800, chao: 0.86, escala: 3.0, duracaoMs: 2400 },       // cura de planta
+  // Lote 4: um clipe por elemento (18 do Flow, fundo preto)
+  tornado: { clip: `${FLOW4}tornado-branco.mp4`, impactoMs: 1000, centro: 0.49, escala: 2.6, duracaoMs: 1600 },      // voador em área
+  folhas: { clip: `${FLOW4}folhas-espiral.mp4`, impactoMs: 1000, centro: 0.52, escala: 2.6, duracaoMs: 2000 },       // planta
+  bencao: { clip: `${FLOW4}bencao-rosa.mp4`, impactoMs: 770, centro: 0.49, escala: 2.4, duracaoMs: 2600 },          // apoio (bônus) fora de luz
+  cruzAco: { clip: `${FLOW4}cruz-aco.mp4`, impactoMs: 720, centro: 0.5, escala: 2.4, duracaoMs: 2600 },             // aço
+  gelo: { clip: `${FLOW4}gelo-cristais.mp4`, impactoMs: 600, centro: 0.49, escala: 2.6, duracaoMs: 2400 },          // água em área ou com congelamento
+  enxame: { clip: `${FLOW4}enxame-verde.mp4`, impactoMs: 630, centro: 0.51, escala: 2.6, duracaoMs: 2400 },         // inseto
+  espiralFogo: { clip: `${FLOW4}espiral-fogo.mp4`, impactoMs: 800, centro: 0.49, escala: 2.4, duracaoMs: 2300 },    // fogo em um alvo
+  nevoaToxica: { clip: `${FLOW4}nevoa-toxica.mp4`, impactoMs: 900, centro: 0.48, escala: 2.6, duracaoMs: 2600 },   // veneno em área
+  luaRubra: { clip: `${FLOW4}lua-rubra.mp4`, impactoMs: 820, chao: 0.8, escala: 2.8, duracaoMs: 2700, ult: true },  // golpe especial dos chefes
+  aneis: { clip: `${FLOW4}aneis-magenta.mp4`, impactoMs: 650, centro: 0.52, escala: 2.6, duracaoMs: 2400 },         // fantasma
+  garras: { clip: `${FLOW4}garras-sombrias.mp4`, impactoMs: 730, centro: 0.5, escala: 2.4, duracaoMs: 2400 },       // trevas corpo a corpo
+  dragao: { clip: `${FLOW4}dragao-raio.mp4`, impactoMs: 1000, centro: 0.53, escala: 3.2, duracaoMs: 1800, espelhar: true, ult: true }, // suprema elétrica
+  galaxia: { clip: `${FLOW4}galaxia-violeta.mp4`, impactoMs: 925, centro: 0.49, escala: 2.6, duracaoMs: 1800 },    // trevas em área
+  rochas: { clip: `${FLOW4}rochas.mp4`, impactoMs: 780, centro: 0.5, escala: 2.6, duracaoMs: 2200 },               // terra e pedra
+  esfera: { clip: `${FLOW4}esfera-branca.mp4`, impactoMs: 500, centro: 0.49, escala: 2.4, duracaoMs: 2400 },        // neutro
+  explosaoRubra: { clip: `${FLOW4}explosao-rubra.mp4`, impactoMs: 300, centro: 0.5, escala: 2.8, duracaoMs: 2400, ult: true }, // suprema de fogo
+  tromba: { clip: `${FLOW4}tromba-agua.mp4`, impactoMs: 700, chao: 0.85, escala: 2.4, duracaoMs: 2400 },           // água em um alvo
   anelEletrico: { clip: `${FLOW3}anel-eletrico.mp4`, impactoMs: 970, centro: 0.5, escala: 2.6, duracaoMs: 1800 },  // elétrico em área
   laminasSombrias: { clip: `${FLOW3}laminas-sombrias.mp4`, impactoMs: 650, centro: 0.49, escala: 2.8, duracaoMs: 2400, ult: true }, // suprema de trevas
   ventoDourado: { clip: `${FLOW3}vento-dourado.mp4`, impactoMs: 600, centro: 0.49, escala: 3.2, duracaoMs: 2400, espelhar: true }, // voador (sopro da esquerda para a direita)
@@ -77,23 +95,35 @@ export const CLIPES_ELEMENTAIS = {
 export const CLIPE_ABYSSAR_FINAL = {
   perseguicao: { clip: `${FLOW3}cortes-abissais.mp4`, impactoMs: 700, chao: 0.95, escala: 3.0, duracaoMs: 2400, ult: true },
   facada: { clip: `${FLOW3}anel-de-cortes.mp4`, impactoMs: 1080, centro: 0.5, escala: 2.6, duracaoMs: 2000 }, // anel de cortes rubros
+  // transformação do modo de pânico: o clipe traz o próprio Abyssar, então o retrato some enquanto ele toca
+  hora_terror: { clip: `${FLOW4}abyssar-terror.mp4`, impactoMs: 730, centro: 0.47, escala: 3.0, duracaoMs: 3700, posMs: 2400, ocultarAtor: true, ult: true },
 };
+const CHEFE_ESPECIAL = new Set(Object.values(HAB.KITS_CHEFES || {}).map((k) => k[2]?.id));
 for (const c of [...Object.values(CLIPES_ELEMENTAIS), ...Object.values(CLIPE_ABYSSAR_FINAL)]) c.mascara = true;
 export function clipeElemental(hab) {
   if (!hab || FX_HABILIDADES[hab.id] || hab.clip) return null;
-  const C = CLIPES_ELEMENTAIS, efs = (hab.efeitos || []).map((e) => e.id);
+  const C = CLIPES_ELEMENTAIS, efs = (hab.efeitos || []).map((e) => e.id), el = hab.elemento, area = hab.alvo === 'todos', ult = hab.cd >= 5;
   if (hab.escudo || efs.includes('escudo')) return C.cupula;
-  if (hab.tipo === 'cura' || (hab.tipo === 'apoio' && (hab.cura || efs.includes('regeneracao')))) return { luz: C.fenix, fogo: C.curaFogo, agua: C.curaAgua, planta: C.curaPlanta }[hab.elemento] || null;
-  if (hab.tipo === 'apoio') return hab.elemento === 'luz' ? C.fenix : null;
+  if (hab.tipo === 'cura' || (hab.tipo === 'apoio' && (hab.cura || efs.includes('regeneracao')))) return { luz: C.fenix, fogo: C.curaFogo, agua: C.curaAgua, planta: C.curaPlanta }[el] || null;
+  if (hab.tipo === 'apoio') return el === 'luz' ? C.fenix : C.bencao;
   if (hab.tipo !== 'dano') return null;
-  const area = hab.alvo === 'todos';
-  if (hab.elemento === 'trevas' && hab.cd >= 5) return C.laminasSombrias;
-  if (hab.elemento === 'eletrico') return area ? C.anelEletrico : C.raio;
-  const porElemento = { luz: C.explosaoDourada, fogo: C.erupcaoFogo, trevas: C.eclipse, voador: C.ventoDourado }[hab.elemento];
-  if (porElemento) return porElemento;
-  if ((hab.elemento === 'planta' || hab.elemento === 'inseto') && efs.includes('veneno')) return C.veneno;
-  if (!hab.distancia && !area && efs.includes('sangramento')) return C.cortesRubros;
-  return null;
+  if (CHEFE_ESPECIAL.has(hab.id)) return C.luaRubra;
+  if (efs.includes('veneno') && area) return C.nevoaToxica;
+  if ((el === 'planta' || el === 'inseto') && efs.includes('veneno')) return C.veneno;
+  switch (el) {
+    case 'eletrico': return ult ? C.dragao : area ? C.anelEletrico : C.raio;
+    case 'fogo': return ult ? C.explosaoRubra : area ? C.erupcaoFogo : C.espiralFogo;
+    case 'trevas': return ult ? C.laminasSombrias : area ? C.galaxia : hab.distancia ? C.eclipse : C.garras;
+    case 'luz': return C.explosaoDourada;
+    case 'voador': return area ? C.tornado : C.ventoDourado;
+    case 'agua': return area || efs.includes('congelamento') ? C.gelo : C.tromba;
+    case 'planta': return C.folhas;
+    case 'inseto': return C.enxame;
+    case 'terra': case 'pedra': return C.rochas;
+    case 'aco': return C.cruzAco;
+    case 'fantasma': return C.aneis;
+    default: return !hab.distancia && !area && efs.includes('sangramento') ? C.cortesRubros : C.esfera;
+  }
 }
 for (const [id, c] of Object.entries(CLIPES_FLOW)) Object.assign(FX_HABILIDADES[id], c, { ms: c.impactoMs + 1550 });
 // Chuva de meteoros (tomada cinematográfica com cenário): começa depois do corte em que o meteoro central some (≈2,0 s) e só entra
@@ -974,6 +1004,7 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   const meio = cs.reduce((s, c) => s + c.y, 0) / cs.length;
   const alt = larg * (v.videoHeight / v.videoWidth || 9 / 16), top = cfg.centro != null ? meio - alt * cfg.centro : pe - alt * (cfg.chao ?? 0.86);
   v.style.cssText = `position:absolute;left:${x - larg / 2}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0${cfg.mascara ? MASCARA_BORDA : ''}${cfg.espelhar && A && corpo(ctx, A).x > x ? ';transform:scaleX(-1)' : ''}`;
+  const figAtor = cfg.ocultarAtor && A ? A.querySelector('.un-fig') : null; if (figAtor) figAtor.style.visibility = 'hidden';
   ligarAudio(ctx, v); ctx.campo.append(v); v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, fill: 'forwards' });
   await v.play().catch(() => {});
   if (cfg.voa && A) { // projétil rápido: o clipe sai da boca do atacante e voa até o alvo, chegando no instante da explosão
@@ -988,8 +1019,8 @@ async function tocarClipe(ctx, M, cfg, ev, src, A = null) {
   const cura = ev.tipo === 'cura' || ev.tipo === 'apoio' || ev.tipo === 'reviver', somAntes = ctx.som; if (!v.muted) ctx.som = false; // o clipe já traz o som do impacto
   for (const a of alvosDe(ctx, ev)) aplicar(ctx, M, a.el, a.r, { cura, cor: '#fff', forte: cfg.ult });
   ctx.som = somAntes;
-  await ESP(Math.min(1000, Math.max(400, (cfg.duracaoMs || 3000) - (cfg.impactoMs || 500))) * ctx.k);
-  await v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260 * ctx.k, fill: 'forwards' }).finished.catch(() => {}); v.pause(); v.remove();
+  await ESP((cfg.posMs ?? Math.min(1000, Math.max(400, (cfg.duracaoMs || 3000) - (cfg.impactoMs || 500)))) * ctx.k);
+  await v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260 * ctx.k, fill: 'forwards' }).finished.catch(() => {}); v.pause(); v.remove(); if (figAtor) figAtor.style.visibility = '';
   return true;
 }
 const blobs = new Map();
@@ -1021,7 +1052,7 @@ async function cinemaMeteoros(ctx) {
 export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade) => {
   if (!ev) return 0; const k = 1 / velocidade, hab = ev.hab, cfg = hab && FX_HABILIDADES[hab.id], n = ev.alvos?.length || 0;
   const formaFinal = hab && /\/abyssar\/03\./.test(ev.arteAtor || '') && CLIPE_ABYSSAR_FINAL[hab.id];
-  if (formaFinal) return (formaFinal.impactoMs + 220 + Math.min(1000, Math.max(400, formaFinal.duracaoMs - formaFinal.impactoMs)) + 360 + (formaFinal.ult ? 820 : 0) + (ev.antes?.length ? 560 : 0)) * k;
+  if (formaFinal) return (formaFinal.impactoMs + 220 + (formaFinal.posMs ?? Math.min(1000, Math.max(400, formaFinal.duracaoMs - formaFinal.impactoMs))) + 360 + (formaFinal.ult ? 820 : 0) + (ev.antes?.length ? 560 : 0)) * k;
   const ult = cfg?.ult || (hab && hab.cd >= 5);
   let base;
   if (cfg?.fx === 'perseguicao') base = Math.max(700 + n * 215 + (ev.repeticoes || 0) * 160, 2200);
