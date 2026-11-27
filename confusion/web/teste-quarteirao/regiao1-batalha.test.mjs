@@ -112,3 +112,14 @@ test('chefes dos reinos: kit próprio, tupla de batalha e fúria uma única vez'
   for (let i = 0; i < 400 && passo(););
   assert.ok(b.fim); assert.equal(viu, 1);
 });
+test('reinos 03–12: formas base e final herdam o kit e o papel da linhagem', async () => {
+  const H = await import('./regiao1-batalha-habilidades.js');
+  const { FORMAS_LINHAGENS_REINOS } = await import('../formas-reinos.js');
+  const { LINHAGENS_REINOS } = await import('./regiao1-kits-reinos.js');
+  assert.equal(Object.keys(FORMAS_LINHAGENS_REINOS).length, 50);
+  for (const l of LINHAGENS_REINOS) {
+    const f = FORMAS_LINHAGENS_REINOS[l.nome]; assert.ok(f, l.nome);
+    for (const n of [f.base, f.final]) { assert.equal(H.kitDe(n, 'ataque', 'neutro'), H.KITS_REINOS[l.nome], n); assert.equal(H.PAPEL_PADRAO[n], H.PAPEL_PADRAO[l.nome]); }
+  }
+  assert.equal(M.criarUnidade({ id: 'q', especie: 'Rocacrista', nivel: 50, lado: 'a' }).kit[2].id, 'avalanche_da_crista');
+});
