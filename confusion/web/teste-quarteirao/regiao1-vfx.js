@@ -18,6 +18,7 @@ export const ELEM = {
 };
 // Configuração por habilidade (id): fx (coreografia), ult (cut-in), ms (duração para o ritmo do automático), clip (vídeo do Flow) e impactoMs.
 export const FX_HABILIDADES = {
+  chama_noturna: { fx: null, ms: 1800 }, // sem o clipe, cai na área genérica de trevas
   mordida_umbral: { fx: 'mordida', ms: 1144 }, chama_violeta: { fx: 'chamaVioleta', ms: 1641 }, veu_noturno: { fx: 'veuNoturno', ult: true, ms: 1986 },
   brasa_imperial: { fx: 'brasaImperial', ms: 1285 }, juba_flamejante: { fx: 'jubaFlamejante', ms: 1092 }, rugido_dourado: { fx: 'rugidoDourado', ult: true, ms: 1491 },
   arco_ciano: { fx: 'arcoCiano', ms: 1086 }, veu_gelado: { fx: 'veuGelado', ms: 1491 }, fenda_estelar: { fx: 'fendaEstelar', ult: true, ms: 1872 },
@@ -47,11 +48,11 @@ export const CLIPES_FLOW = {
   mordida_umbral: { clip: `${FLOW2}mordida-umbral.mp4`, impactoMs: 1200, centro: 0.5, escala: 2.4, duracaoMs: 2600 },
   chama_violeta: { clip: `${FLOW2}chama-violeta.mp4`, impactoMs: 650, centro: 0.5, escala: 2.6, duracaoMs: 2400, voa: true }, // projétil rápido: a esfera voa até o alvo e explode
   veu_noturno: { clip: `${FLOW2}veu-noturno.mp4`, impactoMs: 1200, chao: 0.93, escala: 2.2, duracaoMs: 3400 },
+  // Noctarion: Chama Noturna, erupção que atinge todos os inimigos (uma erupção larga sobre o grupo, a partir da explosão)
+  chama_noturna: { clip: `${FLOW2}chama-noturna.mp4`, impactoMs: 250, chao: 0.93, escala: 3.2, duracaoMs: 2000 },
 };
-// Variações por forma: a Noctarion (3ª forma) usa a erupção Chama Noturna no lugar da Chama Violeta (mesmo golpe do kit)
-export const CLIPES_POR_ESPECIE = {
-  Noctarion: { chama_violeta: { clip: `${FLOW2}chama-noturna.mp4`, impactoMs: 250, chao: 0.93, escala: 3.2, duracaoMs: 2000, voa: false, centro: undefined } },
-};
+// Variações de clipe por forma (golpes que mudam só no visual); a Chama Noturna agora é uma habilidade própria do kit
+export const CLIPES_POR_ESPECIE = {};
 for (const [id, c] of Object.entries(CLIPES_FLOW)) Object.assign(FX_HABILIDADES[id], c, { ms: c.impactoMs + 1550 });
 // Chuva de meteoros (tomada cinematográfica com cenário): começa depois do corte em que o meteoro central some (≈2,0 s) e só entra
 // em combate quando METEOROS_EM_COMBATE for ligado, após revisão; no laboratório pode ser forçada (ctx.cinema).
