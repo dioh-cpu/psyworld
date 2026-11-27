@@ -109,5 +109,6 @@ export const CAIXAS_CLIPES = {
   'flow-lote-8/sopro_etereo.mp4': [0.094, 0.122, 0.762, 0.867],
   'flow-lote-8/veu_lamento.mp4': [0.2, 0.067, 0.8, 0.956],
   'flow-lote-8/vigilia_velas.mp4': [0.125, 0.122, 0.875, 0.944],
+  'flow-lote-9/escudo-agua.mp4': [0.1, 0.244, 0.894, 0.989],
 };
 export const caixaDoClipe = (src) => { const m = /vfx\/(flow-lote-\d+\/[^?#]+)$/.exec(src || ''); return (m && CAIXAS_CLIPES[m[1]]) || [0.2, 0.1, 0.8, 0.9]; };

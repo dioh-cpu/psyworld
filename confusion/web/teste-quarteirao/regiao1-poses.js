@@ -8,6 +8,7 @@ import { LINHAS } from '../species.js';
 const POSE_DESLIGADA = new Set(['Ignavor', 'Brasinha', 'Ignaraz']);
 export function arteAtaque(especie, arte) {
   if (POSE_DESLIGADA.has(especie)) return null;
+  if (especie === 'Abyssar') return 'assets/confusion/interface/eventos/halloween/oniricos/abyssar/ataque-03.png';
   const lin = LINHAS.find((l) => l.inicial === especie || l.atual === especie || l.evolucao === especie);
   if (lin) { const f = [lin.inicial, lin.atual, lin.evolucao].indexOf(especie) + 1; return `assets/confusion/interface/estrategia/reinos/existentes/${lin.id}/ataque-0${f}.png`; }
   const m = /^(.*\/)0([123])(?:-[^/]+)?\.(?:png|webp)$/.exec(arte || '');
