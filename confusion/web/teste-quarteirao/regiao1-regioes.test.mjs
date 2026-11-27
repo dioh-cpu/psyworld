@@ -23,11 +23,13 @@ import {
   listarRegioes,
   sortearEncontroRegiao,
   registrarVitoriaChefeRegiao,
+  chefeDosAltosDerrotado,
+  registrarVitoriaChefeDosAltos,
   concluirMissaoRegiao2,
   registrarAbateRegiao2,
   progressoMissoesRegiao2,
 } from './regiao1-regioes-regras.js';
-import { MAPAS } from './regiao1-mapas.js';
+import { MAPAS, ORDEM_MAPAS } from './regiao1-mapas.js';
 import { NPCS_REGIAO1, MONSTROS_SELVAGENS_R2, ENTIDADES_BOSS } from './regiao1-entidades.js';
 import {
   criarEstadoInicial,
@@ -146,16 +148,30 @@ test('catálogo: nenhum nome de forma (01/02/03) se repete entre linhagens (inic
 test('Região 2 jogável: portal, mapas, encontros 20–45, chefe Rainha da Colmeia Dourada e missões curtas 1x', () => {
   const portal = MAPAS.REINO.saidas.find((s) => s.tipo === 'portal_r2');
   assert.ok(portal && portal.destino === 'R2_C0');
-  for (const id of ['R2_C0', 'R2_API', 'R2_CRI', 'R2_CHEFE']) {
+  const mapasR2 = ORDEM_MAPAS.filter((id) => MAPAS[id].regiao === 'r2');
+  assert.equal(mapasR2.length, 50);
+  assert.equal(new Set(mapasR2).size, mapasR2.length);
+  const visitados = new Set(['R2_C0']);
+  for (const id of visitados) {
+    for (const { destino } of MAPAS[id].saidas) {
+      assert.ok(MAPAS[destino]?.saidas.some((saida) => saida.destino === id), `Saída sem volta: ${id} → ${destino}`);
+      if (MAPAS[destino].regiao === 'r2') visitados.add(destino);
+    }
+  }
+  assert.deepEqual(visitados, new Set(mapasR2));
+  for (const id of mapasR2) {
     const m = MAPAS[id];
-    assert.ok(m, `Mapa da Região 2 ausente: ${id}`);
-    assert.equal(m.regiao, 'r2');
-    assert.equal(m.pisoLivre, true);
-    const rel = m.arte.replace(/^(\.\.\/)+/, '');
-    assert.ok(fs.existsSync(RAIZ + rel), `Arte provisória da Região 2 ausente em disco: ${rel}`);
+    assert.ok(!m.pisoLivre && !m.arteProvisoria);
+    assert.equal(new Set(m.saidas.map((s) => s.id)).size, m.saidas.length);
+    for (const arquivo of [m.arte, m.mascara]) {
+      const rel = arquivo.replace(/^(\.\.\/)+/, '');
+      assert.ok(fs.existsSync(RAIZ + rel), `Arquivo da Região 2 ausente: ${rel}`);
+    }
   }
   assert.ok(NPCS_REGIAO1.some((n) => n.id === 'npc_r2_melissa' && n.mapa === 'R2_C0'));
-  assert.ok(MONSTROS_SELVAGENS_R2.length >= 8);
+  assert.ok(MONSTROS_SELVAGENS_R2.some((m) => m.mapa === 'R2_API' && m.forma === 2));
+  assert.deepEqual(new Set(MONSTROS_SELVAGENS_R2.map((m) => m.forma)), new Set([1, 2]));
+  assert.equal(new Set(MONSTROS_SELVAGENS_R2.map((m) => m.mapa)).size, 39);
   for (const m of MONSTROS_SELVAGENS_R2) {
     assert.ok(m.nivel >= 20 && m.nivel <= 45, `Nível fora da faixa 20–45 em ${m.id}: ${m.nivel}`);
     assert.equal(INICIAIS.has(m.especie), false);
@@ -164,6 +180,20 @@ test('Região 2 jogável: portal, mapas, encontros 20–45, chefe Rainha da Colm
   const bossR2 = ENTIDADES_BOSS.find((b) => b.id === 'BOSS_R2');
   assert.ok(bossR2 && bossR2.mapa === 'R2_CHEFE' && bossR2.nivel === 45);
   assert.ok(fs.existsSync(RAIZ + bossR2.sprite.replace(/^(\.\.\/)+/, '')));
+
+  const chefes = ENTIDADES_BOSS.filter((b) => b.regiaoId === 'r2');
+  assert.equal(chefes.length, 4);
+  const saveChefes = criarEstadoInicial();
+  for (const chefe of chefes.filter((b) => b.id !== 'BOSS_R2')) {
+    assert.ok(fs.existsSync(RAIZ + chefe.sprite.replace(/^(\.\.\/)+/, '')));
+    assert.equal(registrarVitoriaChefeDosAltos(saveChefes, chefe.id).primeiraVez, true);
+    assert.equal(registrarVitoriaChefeDosAltos(saveChefes, chefe.id).primeiraVez, false);
+    assert.equal(chefeDosAltosDerrotado(desserializarEstado(serializarEstado(saveChefes)), chefe.id), true);
+    assert.equal(regiaoDesbloqueada(saveChefes, 'r3'), false);
+  }
+  assert.equal(chefeDosAltosDerrotado(saveChefes, 'BOSS_R2'), false);
+  assert.equal(registrarVitoriaChefeDosAltos(saveChefes, 'BOSS_R2').proximaDesbloqueada, 'r3');
+  assert.equal(chefeDosAltosDerrotado(saveChefes, 'BOSS_R2'), true);
 
   // Missões curtas da Região 2 pagas 1x
   const save = criarEstadoInicial();

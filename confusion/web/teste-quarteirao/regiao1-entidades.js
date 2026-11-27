@@ -1,3 +1,4 @@
+import { CHEFES_R2, ENCONTROS_ALTOS_AMBAR } from './regiao2-altos-ambar.js';
 import { resolverEncontroCatalogo } from './regiao1-encontros-regras.js';
 // Entidades da Região 1: NPCs, pontos de pista/missão,
 // monstros selvagens visíveis nas clareiras e os 4 Chefes nas arenas.
@@ -588,33 +589,25 @@ export const MONSTROS_SELVAGENS = MONSTROS_SELVAGENS_BRUTOS.map((m) => resolverE
 
 // Encontros selvagens da Região 2 (Altos do Âmbar, faixa de nível 20–45, sem iniciais)
 const MONSTROS_SELVAGENS_R2_BRUTOS = [
-  { id: 'w_r2_api_1', mapa: 'R2_API', especie: 'Colmeiro', nivel: 22, pos: [260, 390] },
-  { id: 'w_r2_api_2', mapa: 'R2_API', especie: 'Lavândria', nivel: 25, pos: [470, 445] },
-  { id: 'w_r2_api_3', mapa: 'R2_API', especie: 'Melifalcão', nivel: 28, pos: [680, 395] },
-  { id: 'w_r2_api_4', mapa: 'R2_API', especie: 'Vesprata', nivel: 31, pos: [810, 460] },
-  { id: 'w_r2_api_5', mapa: 'R2_API', especie: 'Cerifogo', nivel: 34, pos: [350, 495] },
-  { id: 'w_r2_cri_1', mapa: 'R2_CRI', especie: 'Zunifaísca', nivel: 32, pos: [240, 405] },
-  { id: 'w_r2_cri_2', mapa: 'R2_CRI', especie: 'Calquélon', nivel: 35, pos: [460, 435] },
-  { id: 'w_r2_cri_3', mapa: 'R2_CRI', especie: 'Voltabelha', nivel: 38, pos: [690, 400] },
-  { id: 'w_r2_cri_4', mapa: 'R2_CRI', especie: 'Bronzelo', nivel: 41, pos: [820, 465] },
-  { id: 'w_r2_cri_5', mapa: 'R2_CRI', especie: 'Trovoresta', nivel: 43, pos: [360, 490] },
+  ...ENCONTROS_ALTOS_AMBAR,
+  { id: 'w_r2_api_1', mapa: 'R2_API', especie: 'Colmeiro', formaCadastrada: 2, nivel: 22, pos: [260, 390] },
+  { id: 'w_r2_api_2', mapa: 'R2_API', especie: 'Lavândria', formaCadastrada: 1, nivel: 25, pos: [470, 445] },
+  { id: 'w_r2_api_3', mapa: 'R2_API', especie: 'Melifalcão', formaCadastrada: 2, nivel: 28, pos: [680, 395] },
+  { id: 'w_r2_api_4', mapa: 'R2_API', especie: 'Vesprata', formaCadastrada: 2, nivel: 31, pos: [810, 460] },
+  { id: 'w_r2_api_5', mapa: 'R2_API', especie: 'Cerifogo', formaCadastrada: 2, nivel: 34, pos: [350, 495] },
+  { id: 'w_r2_cri_1', mapa: 'R2_CRI', especie: 'Zunifaísca', formaCadastrada: 2, nivel: 32, pos: [240, 405] },
+  { id: 'w_r2_cri_2', mapa: 'R2_CRI', especie: 'Calquélon', formaCadastrada: 2, nivel: 35, pos: [460, 435] },
+  { id: 'w_r2_cri_3', mapa: 'R2_CRI', especie: 'Voltabelha', formaCadastrada: 2, nivel: 38, pos: [690, 400] },
+  { id: 'w_r2_cri_4', mapa: 'R2_CRI', especie: 'Bronzelo', formaCadastrada: 2, nivel: 41, pos: [820, 465] },
+  { id: 'w_r2_cri_5', mapa: 'R2_CRI', especie: 'Trovoresta', formaCadastrada: 2, nivel: 43, pos: [407, 448] },
 ];
 
 export const MONSTROS_SELVAGENS_R2 = MONSTROS_SELVAGENS_R2_BRUTOS.map((m) => resolverEncontroCatalogo(m, { regiao: 2 }));
 export const TODOS_MONSTROS_SELVAGENS = [...MONSTROS_SELVAGENS, ...MONSTROS_SELVAGENS_R2];
 
-export const BOSSES_REGIAO2 = {
-  BOSS_R2: {
-    id: 'BOSS_R2',
-    regiaoId: 'r2',
-    nome: 'Rainha da Colmeia Dourada',
-    rota: 'principal',
-    mapaRetorno: 'R2_CRI',
-    hp: 420,
-    nivel: 45,
-    elemento: 'inseto',
-  },
-};
+export const BOSSES_REGIAO2 = Object.fromEntries(
+  Object.entries(CHEFES_R2).map(([id, chefe]) => [id, { ...chefe, id, regiaoId: 'r2' }]),
+);
 
 // Chefes nas arenas (entidades separadas das artes de fundo)
 export const ENTIDADES_BOSS = [
@@ -622,5 +615,5 @@ export const ENTIDADES_BOSS = [
   { id: 'BOSS_D', mapa: 'BOSS_D', nome: 'Rei Fungo', nivel: 12, pos: [512, 320], cor: '#f43f5e', sprite: '../../../assets/confusion/interface/personagens/fungo.webp' },
   { id: 'BOSS_S', mapa: 'BOSS_S', nome: 'Siren', nivel: 14, pos: [512, 325], cor: '#38bdf8', sprite: '../../../assets/confusion/interface/personagens/siren.webp' },
   { id: 'BOSS_C', mapa: 'BOSS_C', nome: 'Golem de Ametista', nivel: 15, pos: [512, 325], cor: '#a855f7', sprite: '../../../assets/confusion/interface/personagens/golem.webp' },
-  { id: 'BOSS_R2', mapa: 'R2_CHEFE', regiaoId: 'r2', nome: 'Rainha da Colmeia Dourada', nivel: 45, elemento: 'inseto', pos: [512, 365], cor: '#f59e0b', sprite: '../../../assets/confusion/interface/estrategia/reinos/02/chefe.webp' },
+  ...Object.values(BOSSES_REGIAO2),
 ];
