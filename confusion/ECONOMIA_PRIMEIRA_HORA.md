@@ -58,7 +58,9 @@ Fonte única da verdade: `node tools/simular_iniciais_cap1.mjs` (motor `regiao1-
 | `1-7` | `4× (Nv.19)` | `Nv.3` | `2+2+3` | `16/17/19` | 92,0% | 88,7% | 95,0% | 93,3% | 86,3% | **91,1%** | `~85%` |
 | `1-8` | `4× (Nv.22)` | `Nv.4` | `2+3+3` | `19/21/22` | 63,3% | 48,7% | 99,3% | 84,7% | 87,0% | **76,6%** | `~70%` |
 | `1-9` | `4× (Nv.24)` | `Nv.4` | `2+3+3` | `21/23/24` | 50,7% | 56,7% | 82,3% | 72,7% | 57,0% | **63,9%** | `~70%` |
-| `1-10` | `4× (Nv.27)` | `Nv.5` | `2+3+3` | `24/26/26` | 58,3% | 67,0% | 65,7% | 67,0% | 66,3% | **64,9%** | `~70%` |
+| `1-10` | `4× (Nv.27)` | `Nv.5` | `2+3+3` | `23/24/24` | 88,7% | 80,0% | 89,3% | 66,3% | 62,0% | **77,3%** | `~70%` |
+
+- **Capítulos 2 a 12 + auditoria do Idle/AFK:** veja a tabela completa de progressão em `confusion/ECONOMIA_PROGRESSAO.md` (`node tools/simular_iniciais_cap1.mjs --todos`).
 
 - **Limite de rodadas no motor (`LIMITE_RODADAS_BATALHA = 60`):** elimina lutas infinitas em Calabouços.
 - **Produção:** https://cwdp-lake.vercel.app/jogar

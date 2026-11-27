@@ -321,8 +321,43 @@ export const CALIBRACAO_ONDAS_CAP1 = {
   7: { qtds: [2, 2, 3], nvs: [16, 17, 19], especies: [['Fanalino', 'Cervomusgo'], ['Cervomusgo', 'Fanalino'], ['Cobrabúfalo', 'Xistolim', 'Cervomusgo']] },
   8: { qtds: [2, 3, 3], nvs: [19, 21, 22], especies: [['Xistolim', 'Fanalino'], ['Cervomusgo', 'Xistolim', 'Cervomusgo'], ['Cobrabúfalo', 'Cervomusgo', 'Xistolim']] },
   9: { qtds: [2, 3, 3], nvs: [21, 23, 24], especies: [['Cervomusgo', 'Xistolim'], ['Fanalino', 'Cervomusgo', 'Xistolim'], ['Cobrabúfalo', 'Cervomusgo', 'Xistolim']] },
-  10: { qtds: [2, 3, 3], nvs: [24, 26, 26], especies: [['Xistolim', 'Cervomusgo'], ['Cervomusgo', 'Fanalino', 'Xistolim'], ['CHEFE', 'Xistolim', 'Cervomusgo']] },
+  10: { qtds: [2, 3, 3], nvs: [23, 24, 24], especies: [['Xistolim', 'Cervomusgo'], ['Cervomusgo', 'Fanalino', 'Xistolim'], ['CHEFE', 'Xistolim', 'Cervomusgo']] },
 };
+
+// Calibração auditada para Capítulos 2–12 via fonte única tools/simular_iniciais_cap1.mjs --todos
+// (time realista de 4 Oníricos com invocações grátis acumuladas, evoluções T4/T5, relíquias e Azazel):
+// metas oficiais por capítulo: fases 1–3 ~95%, 4–7 ~85%, 8–10 ~70%.
+export const CALIBRACAO_CAPITULOS_2_12 = {
+  2:  { inicio: -0.13, meio: -0.13, fim: 0.49, chefe: 0.04 },
+  3:  { inicio:  0.68, meio:  0.54, fim: 0.77, chefe: 0.43 },
+  4:  { inicio:  1.72, meio:  1.05, fim: 1.53, chefe: 0.94 },
+  5:  { inicio:  1.95, meio:  0.99, fim: 1.25, chefe: 0.88 },
+  6:  { inicio:  2.93, meio:  1.84, fim: 2.06, chefe: 1.58 },
+  7:  { inicio:  2.09, meio:  1.70, fim: 1.92, chefe: 1.61 },
+  8:  { inicio:  1.86, meio:  1.58, fim: 1.81, chefe: 1.22 },
+  9:  { inicio:  2.76, meio:  2.06, fim: 2.17, chefe: 1.95 },
+  10: { inicio:  2.23, meio:  1.53, fim: 2.06, chefe: 1.39 },
+  11: { inicio:  2.57, meio:  1.78, fim: 2.12, chefe: 1.53 },
+  12: { inicio:  2.45, meio:  1.75, fim: 2.12, chefe: 1.53 },
+};
+
+function aplicarCalibracaoCap2a12(ondas, cap, faseNum, tipo) {
+  const cfg = CALIBRACAO_CAPITULOS_2_12[cap];
+  if (!cfg || tipo === 'escondida') return ondas;
+  const bVal = faseNum <= 3 ? cfg.inicio : faseNum <= 7 ? cfg.meio : faseNum <= 9 ? cfg.fim : cfg.chefe;
+  return ondas.map((onda) => onda.map(([nome, nv, el, op]) => {
+    const baseOp = op || {};
+    const baseB = baseOp.bonus || {};
+    const scale = baseOp.chefe ? 0.65 : 1;
+    const bonus = {
+      ...baseB,
+      hp: Number(Math.max(-0.5, (baseB.hp || 0) + bVal * scale).toFixed(3)),
+      atk: Number(Math.max(-0.5, (baseB.atk || 0) + bVal * 0.85 * scale).toFixed(3)),
+      def: Number(Math.max(-0.5, (baseB.def || 0) + bVal * 0.5 * scale).toFixed(3)),
+    };
+    return [nome, nv, el, { ...baseOp, bonus }];
+  }));
+}
 
 function montarOndasFase(cap, faseNum, nivel, tipo, elementoRegiao) {
   if (cap === 1 && tipo !== 'escondida' && CALIBRACAO_ONDAS_CAP1[faseNum]) {
@@ -359,9 +394,10 @@ function montarOndasFase(cap, faseNum, nivel, tipo, elementoRegiao) {
     return [nome, Math.max(1, nivel - deltaNv), el, { forma: formaBase }];
   };
   const onda1 = [criarMob(0, 2), criarMob(1, 2)];
-  if (totalOndas === 2) return [onda1, ondaFinal];
-  const onda2 = [criarMob(2, 1), criarMob(3, 1), criarMob(4, 2)];
-  return [onda1, onda2, ondaFinal];
+  const bruto = totalOndas === 2
+    ? [onda1, ondaFinal]
+    : [onda1, [criarMob(2, 1), criarMob(3, 1), criarMob(4, 2)], ondaFinal];
+  return cap >= 2 ? aplicarCalibracaoCap2a12(bruto, cap, faseNum, tipo) : bruto;
 }
 
 export const CAPITULOS_CAMPANHA_MINI = REGIOES.map((faixa, idx) => {
