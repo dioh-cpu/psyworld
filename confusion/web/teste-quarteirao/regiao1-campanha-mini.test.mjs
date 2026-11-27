@@ -217,6 +217,26 @@ test('Campanha Mini em ondas: fases 1-3 têm 2 ondas, 4-10 e escondida têm 3 on
   }
 });
 
+test('1-1 vencível com o INICIAL SOZINHO (Nv.5, T4): >= 70% para CADA um dos 5 iniciais', async () => {
+  const { CAPITULOS_CAMPANHA_MINI } = await import('./regiao1-campanha-mini-regras.js');
+  const { criarUnidade, criarBatalha, passoAuto, criarRng } = await import('./regiao1-estrategia-regras.js');
+  const { criarEstadoDomadorBatalha } = await import('./regiao1-domadores-regras.js');
+  const fase = CAPITULOS_CAMPANHA_MINI[0].fases[0];
+  for (const ini of ['Brasinha', 'Gotalume', 'Sementil', 'Solinho', 'Penumbrio']) {
+    let wins = 0;
+    for (let s = 0; s < 100; s++) {
+      const rng = criarRng(1000 + s + 1);
+      const dom = criarEstadoDomadorBatalha(novoSave(), 'azazel');
+      const aliados = [criarUnidade({ id: 'a0', especie: ini, nivel: 5, lado: 'a', tier: 4, estrelas: 1 })];
+      const ondasUn = fase.ondas.map((o, w) => o.map(([esp, nv, el, opts], i) => criarUnidade({ id: `w${w}_${i}`, especie: esp, nivel: nv, lado: 'i', elemento: el, chefe: Boolean(opts?.chefe), bonus: opts?.bonus || {} })));
+      const b = criarBatalha(aliados, ondasUn[0], { domador: dom, ondas: ondasUn.slice(1) });
+      while (!b.fim) passoAuto(b, rng);
+      if (b.fim === 'vitoria') wins++;
+    }
+    assert.ok(wins >= 70, `1-1 com ${ini} sozinho ficou abaixo de 70%: ${wins}%`);
+  }
+});
+
 test('Dificuldade do Cap.1 calibrada em ondas: 1-1..1-3 >= 95% para CADA um dos 5 iniciais (time realista de 4)', async () => {
   const { CAPITULOS_CAMPANHA_MINI } = await import('./regiao1-campanha-mini-regras.js');
   const { criarUnidade, criarBatalha, passoAuto, criarRng } = await import('./regiao1-estrategia-regras.js');

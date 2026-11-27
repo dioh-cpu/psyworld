@@ -311,8 +311,11 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
 // Calibração auditada em 300 lutas/fase por inicial (Cap. 1) via fonte única tools/simular_iniciais_cap1.mjs
 // (time realista de 4 Oníricos das 10 invocações grátis + Azazel + curva de XP Campanha/Idle AFK):
 // 1-1..1-3 >=95% para CADA um dos 5 iniciais, 1-4..1-7 ~85%, 1-8..1-10 ~70%.
+// EXCEÇÃO oficial: a 1-1 é vencível com o INICIAL SOZINHO (Nv.5, T4, ~70%+ para os 5 iniciais);
+// da 1-2 em diante vale o time de 4 após as 10 invocações grátis.
+// 1-1: Xistolim (onda 1) + Tatuveludo (onda 2), Nv.1: cobre as fraquezas elementais de Brasinha e Sementil.
 export const CALIBRACAO_ONDAS_CAP1 = {
-  1: { qtds: [2, 2], nvs: [4, 5], especies: [['Tatuveludo', 'Fanalino'], ['Xistolim', 'Cervomusgo']] },
+  1: { qtds: [1, 1], nvs: [1, 1], especies: [['Xistolim'], ['Tatuveludo']] },
   2: { qtds: [2, 2], nvs: [6, 7], especies: [['Tatuveludo', 'Xistolim'], ['Fanalino', 'Cervomusgo']] },
   3: { qtds: [2, 3], nvs: [6, 7], especies: [['Fanalino', 'Xistolim'], ['Tatuveludo', 'Cervomusgo', 'Xistolim']] },
   4: { qtds: [2, 2, 3], nvs: [8, 9, 10], especies: [['Xistolim', 'Cervomusgo'], ['Fanalino', 'Xistolim'], ['Cervomusgo', 'Xistolim', 'Tatuveludo']] },
