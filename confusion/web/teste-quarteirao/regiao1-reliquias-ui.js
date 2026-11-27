@@ -201,7 +201,8 @@ export function renderizarPainelReliquias(save, aba, st) {
 
     const esqSlots = partes.slice(0, 2).map(renderSlot).join('');
     const dirSlots = partes.slice(2, 4).map(renderSlot).join('');
-    const retratoUrl = IMG(membro.arte || arteDoIndividuo(membro));
+    const arteM = membro.arte || arteDoIndividuo(membro);
+    const retratoUrl = arteM ? IMG(arteM) : '';
 
     const armaDef = armaUnicaDaLinhagem(membro.especie);
     const armaKey = armaDef?.linhagem;
@@ -237,7 +238,7 @@ export function renderizarPainelReliquias(save, aba, st) {
       <div style="display:grid;grid-template-columns:minmax(145px,1fr) minmax(115px,155px) minmax(145px,1fr);gap:8px;align-items:center">
         <div style="display:flex;flex-direction:column;gap:8px">${esqSlots}</div>
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,rgba(168,85,247,.25),rgba(10,6,20,.88));border:1.5px solid rgba(243,194,122,.4);border-radius:12px;padding:8px;min-height:156px;text-align:center">
-          <img src="${retratoUrl}" alt="${esc(membro.especie)}" style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.7))" onerror="this.style.display='none'">
+          ${retratoUrl ? `<img src="${retratoUrl}" alt="${esc(membro.especie)}" style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.7))" onerror="this.style.display='none'">` : '<div style="font-size:42px;line-height:96px">🐾</div>'}
           <div style="font-size:11px;font-weight:700;color:#fff3e7;margin-top:4px">${esc(membro.especie)} · Nv.${membro.nivel || 1}</div>
           <div style="font-size:10px;color:#d6dbe4">4 Relíquias + 1 Arma</div>
         </div>

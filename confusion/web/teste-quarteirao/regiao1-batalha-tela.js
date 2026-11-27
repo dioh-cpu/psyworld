@@ -273,7 +273,7 @@ export function criarArena(host, { artes = {} } = {}) {
     const srcAtaque = arteAtaque(u.especie, u.arte || arteRaiz(u.especie, opArt));
     if (srcAtaque) { el._pose = criarPose({ fig: el.querySelector('.un-fig'), base: imagem, src: srcAtaque, lado: u.lado, escalaX: sprite.escalaX, zoom: sprite.zoom, bbox: () => bboxCache.get(imagem.currentSrc || imagem.src), especie: u.especie }); imagem.addEventListener('load', () => el._pose.preparar(), { once: true }); }
     // forma da evolução em uso (1/2/3): pelo save ou pela arte (…/0N.png) — cada forma toca o próprio loop
-    const formaAnim = Number(u.formaFase) || Number(/\/0([123])(?:-[^/]*)?\.(?:png|webp)$/.exec(u.arte || arteRaiz(u.especie, opArt) || '')?.[1]) || null;
+    const formaAnim = Number(u.formaFase) || Number(/(?:\/0([123])(?:-[^/]*)?\.(?:png|webp)$|-f([123])\/)/.exec(u.arte || arteRaiz(u.especie, opArt) || '')?.slice(1).find(Boolean)) || null;
     el._anim = criarLoopAnimacao({ fig: el.querySelector('.un-fig'), base: imagem, especie: u.especie, lado: u.lado, forma: formaAnim });
     el._anim.definirAcao(entrando ? 'andar' : 'idle');
     imagem.addEventListener('error', () => { const ph = document.createElement('span'); ph.textContent = '🎃'; ph.title = 'Arte pendente'; ph.style.cssText = 'font-size:clamp(36px,12vh,80px);line-height:1'; imagem.replaceWith(ph); }, { once: true });
