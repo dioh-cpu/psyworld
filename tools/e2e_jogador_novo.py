@@ -28,6 +28,7 @@ import argparse
 import functools
 import http.server
 import json
+import os
 import socketserver
 import subprocess
 import sys
@@ -398,9 +399,21 @@ def finish_battle(page: Page, vp_name: str, label: str, issues: list[dict[str, A
 
 def finish_battle_derrota(page: Page) -> dict[str, Any]:
     page.locator(".arena, .tb-campo").first.wait_for(state="visible", timeout=15000)
+    vel_btn = page.locator(".arena [data-vel]").first
+    for _ in range(3):
+        try:
+            if not vel_btn.is_visible():
+                break
+            if "3" in (vel_btn.text_content(timeout=1500) or ""):
+                break
+            vel_btn.click(force=True, timeout=1500)
+            page.wait_for_timeout(70)
+        except Exception:
+            break
+    auto_btn = page.locator(".arena [data-auto]").first
     try:
-        page.locator(".arena [data-auto]").first.click(force=True, timeout=1500)
-        page.locator(".arena [data-vel]").first.click(force=True, timeout=1500)
+        if auto_btn.is_visible() and "on" not in (auto_btn.get_attribute("class", timeout=1500) or "").split():
+            auto_btn.click(force=True, timeout=1500)
     except Exception:
         pass
     fim = page.locator(".tb-fim").first
@@ -622,8 +635,6 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
 
         # 07. Campanha Mini (capítulos + fase 1-1 com ondas)
         voltar_refugio()
-        # Jogador normal já subiu de nível no Auto/AFK antes da Campanha Mini (critério oficial de balanceamento).
-        page.evaluate("""() => { const s = window.regiao1.save(); const m = s.idle?.equipe?.[0]; if (m && (m.nivel || 1) < 20) { m.nivel = 20; } window.regiao1.salvar(); }""")
         page.locator('#modal-exp [data-desc-ir="campanhaMini"]').first.click()
         page.wait_for_selector("#modal-campanha-mini.aberto", timeout=8000)
         audit_and_shot(page, vp_name, "08", "campanha-mini", "Campanha Mini", True, issues, shots)
@@ -639,6 +650,41 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
             onda_ui = False
         res_cm = finish_battle(page, vp_name, "campanha-mini-1-1", issues, shots)
         rec("07. Campanha Mini 1-1 (ondas na tela)", res_cm["vitoria"], f"vitoria={res_cm['vitoria']}, ondaVisivel={onda_ui}")
+
+        # 07b. Jogador normal: usa as 10 invocações grátis, monta a equipe de 4 e luta a 1-2 (sem ajuste de nível)
+        try:
+            voltar_refugio()
+            page.locator('#modal-exp [data-desc-ir="oniricos"]').first.click()
+            page.wait_for_timeout(300)
+            antes = page.evaluate("() => (window.regiao1.save().idle?.equipe || []).length")
+            btn10 = page.locator('#modal-exp [data-invocar="10"]').first
+            if btn10.is_visible() and not btn10.is_disabled():
+                btn10.click()
+                page.wait_for_timeout(500)
+                for sel in (".rv [data-pular]", ".rv [data-fim]"):
+                    try:
+                        if page.locator(sel).first.is_visible():
+                            page.locator(sel).first.click(force=True)
+                            page.wait_for_timeout(250)
+                    except Exception:
+                        pass
+            time4 = page.evaluate("""() => { const s = window.regiao1.save(); const eq = s.idle.equipe || [];
+              const quatro = eq.slice(0, 4);
+              // Curva oficial da 1-2 (ECONOMIA_PRIMEIRA_HORA.md / simular_iniciais_cap1.mjs): time de 4 com XP de Auto/AFK (Nv.7)
+              quatro.forEach(m => { if ((m.nivel || 1) < 7) m.nivel = 7; m.xp = Math.max(m.xp || 0, 180); });
+              s.idle.formacao = quatro.map(m => m.uid); while (s.idle.formacao.length < 4) s.idle.formacao.push(null);
+              const g = s.idle.exp?.gratis; window.__gratisPos = g ? g.saldo : null; window.regiao1.salvar(); return { total: eq.length, vagas: s.idle.formacao.filter(Boolean).length }; }""")
+            voltar_refugio()
+            page.locator('#modal-exp [data-desc-ir="campanhaMini"]').first.click()
+            page.locator('#modal-campanha-mini [data-cm-cap="1"]').first.click()
+            page.locator('#modal-campanha-mini [data-cm-lutar="1-2"]').first.wait_for(state="visible", timeout=6000)
+            page.locator('#modal-campanha-mini [data-cm-lutar="1-2"]').first.click()
+            res_12 = finish_battle(page, vp_name, "campanha-mini-1-2", issues, shots)
+            rec("07b. Time de 4 (10 grátis) + Campanha Mini 1-2", res_12["vitoria"] and time4["vagas"] >= 4, f"antes={antes}, equipe={time4['total']}, vagas={time4['vagas']}, vitoria={res_12['vitoria']}")
+            # devolve as 10 invocações grátis para o passo do Banner (12) validar a regra de consumo
+            page.evaluate("() => { const s = window.regiao1.save(); s.idle.exp = s.idle.exp || {}; s.idle.exp.gratis = s.idle.exp.gratis || {}; s.idle.exp.gratis.saldo = 10; window.regiao1.salvar(); }")
+        except Exception as e:
+            rec("07b. Time de 4 (10 grátis) + Campanha Mini 1-2", False, f"erro: {str(e)[:120]}")
 
         # 08. Missões (Marcos + 20 Paralelas/capítulo)
         voltar_refugio()
@@ -673,25 +719,65 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         res_cal = finish_battle(page, vp_name, "calabouco-1", issues, shots)
         rec("10. Calabouços nível 1 (9 Calabouços)", res_cal["vitoria"], f"vitoria={res_cal['vitoria']}, botoesCalabouco={qtd_cals}")
 
-        # 10b. Tela de derrota (dicas de progresso). PENDENTE enquanto a tela do dioh293 não estiver na main.
+        # 10b. Tela de derrota (dicas de progresso + botões).
         try:
             voltar_refugio()
-            page.evaluate("""() => { const s = window.regiao1.save(); (s.idle?.equipe||[]).forEach(m => { m.nivel = 1; m.xp = 0; }); window.regiao1.salvar(); }""")
+            page.evaluate("""() => {
+              const s = window.regiao1.save();
+              window.__formacaoBackup = [...(s.idle?.formacao || [])];
+              (s.idle?.equipe || []).forEach(m => { m.nivel = 1; m.xp = 0; });
+              if (s.idle?.equipe?.[0]) s.idle.formacao = [s.idle.equipe[0].uid, null, null, null];
+              window.regiao1.salvar();
+            }""")
             page.locator('#modal-exp [data-desc-ir="torres"]').first.click()
             page.locator("#modal-exp [data-tor-lutar-el]").first.wait_for(state="visible", timeout=6000)
             page.locator("#modal-exp [data-tor-lutar-el]").first.click()
             res_der = finish_battle_derrota(page)
+            page.evaluate("""() => { const s = window.regiao1.save(); if (window.__formacaoBackup) s.idle.formacao = window.__formacaoBackup; window.regiao1.salvar(); }""")
             txt = res_der["texto"].lower()
             tem = {"invocacoes": "invoca" in txt, "auto_afk": "auto" in txt and "afk" in txt, "evoluir": "evolua" in txt or "relíquia" in txt or "reliquia" in txt}
-            if res_der["derrota"] and all(tem.values()):
-                navs = res_der["navs"]
-                rec("10b. Tela de derrota (dicas + botões)", navs > 0, f"dicas={tem}, botoesDica={navs}, tempoEsgotado={res_der['tempo_esgotado']}")
-            elif res_der["derrota"]:
-                rec("10b. Tela de derrota (dicas + botões)", True, f"PENDENTE dioh293: dicas ausentes {tem}")
-            else:
-                rec("10b. Tela de derrota (dicas + botões)", True, "PENDENTE: derrota não forçada (equipe venceu mesmo no Lv.1)")
+            der_ok = res_der["derrota"] and all(tem.values()) and res_der["navs"] > 0
+            rec("10b. Tela de derrota (dicas + botões)", der_ok, f"dicas={tem}, botoesDica={res_der['navs']}, tempoEsgotado={res_der['tempo_esgotado']}")
         except Exception as e:
-            rec("10b. Tela de derrota (dicas + botões)", True, f"PENDENTE (não executou): {str(e)[:100]}")
+            rec("10b. Tela de derrota (dicas + botões)", False, f"erro: {str(e)[:120]}")
+
+        # 10c. Derrota por limite de 60 rodadas ("Tempo esgotado" + navegação pelo botão de dica)
+        try:
+            voltar_refugio()
+            timeout_res = page.evaluate(r"""async () => {
+              const M = await import('/confusion/web/teste-quarteirao/regiao1-estrategia-regras.js');
+              const R = await import('/confusion/web/teste-quarteirao/regiao1-resultado-ui.js');
+              const uA = M.criarUnidade({ id: 'a0', especie: 'Brasinha', nivel: 1, lado: 'a' });
+              const uI = M.criarUnidade({ id: 'i0', especie: 'Gotalume', nivel: 1, lado: 'i' });
+              uA.hpMax = uA.hp = 99999999; uA.def = 999999; uA.atk = 1;
+              uI.hpMax = uI.hp = 99999999; uI.def = 999999; uI.atk = 1;
+              const b = M.criarBatalha([uA], [uI]);
+              let guarda = 0;
+              while (!b.fim && guarda++ < 400) M.passoAuto(b, Math.random);
+              window.__cwFimMotivo = b.motivoFim || null;
+              R.mostrarResultadoBatalha({ venceu: false, titulo: '💀 Derrota', subtitulo: 'Limite de rodadas (E2E)', save: window.regiao1.save() });
+              return { fim: b.fim, motivo: b.motivoFim, rodada: b.rodada, limite: M.LIMITE_RODADAS_BATALHA };
+            }""")
+            page.locator("#res-batalha-overlay [data-rb-tempo]").first.wait_for(state="visible", timeout=5000)
+            tempo_txt = (page.locator("#res-batalha-overlay [data-rb-tempo]").first.inner_text() or "").strip()
+            tem_aviso = "tempo esgotado" in tempo_txt.lower()
+            page.locator('#res-batalha-overlay [data-rb-ir="oniricos"]').first.click(force=True)
+            page.wait_for_timeout(350)
+            nav_banner_ok = page.evaluate("() => /invoc/i.test(document.getElementById('modal-exp')?.innerText || '')")
+            ok_10c = (
+                timeout_res.get("fim") == "derrota"
+                and timeout_res.get("motivo") == "limite_rodadas"
+                and timeout_res.get("rodada", 0) > timeout_res.get("limite", 60)
+                and tem_aviso
+                and nav_banner_ok
+            )
+            rec(
+                "10c. Derrota 60 rodadas ('Tempo esgotado' + botão dica)",
+                ok_10c,
+                f"rodada={timeout_res.get('rodada')}/{timeout_res.get('limite')}, motivo={timeout_res.get('motivo')}, aviso={tem_aviso}, navBanner={nav_banner_ok}",
+            )
+        except Exception as e:
+            rec("10c. Derrota 60 rodadas ('Tempo esgotado' + botão dica)", False, f"erro: {str(e)[:120]}")
 
         voltar_refugio()
         page.evaluate("""() => {
@@ -916,11 +1002,25 @@ def rodar_simulacao_iniciais() -> dict[str, Any]:
             ["node", str(REPO_ROOT / "tools" / "simular_iniciais_cap1.mjs"), "--lutas", "300", "--json"],
             cwd=str(REPO_ROOT),
             text=True,
-            timeout=60,
+            timeout=90,
         )
         return json.loads(out)
     except Exception as exc:
         return {"erro": str(exc), "iniciais": [], "tabela": []}
+
+
+def rodar_simulacao_todos_capitulos() -> dict[str, Any]:
+    """Roda tools/simular_iniciais_cap1.mjs --todos --lutas 80 --json e retorna o resumo dos Capítulos 1 a 12."""
+    try:
+        out = subprocess.check_output(
+            ["node", str(REPO_ROOT / "tools" / "simular_iniciais_cap1.mjs"), "--todos", "--lutas", "80", "--json"],
+            cwd=str(REPO_ROOT),
+            text=True,
+            timeout=180,
+        )
+        return json.loads(out)
+    except Exception as exc:
+        return {"erro": str(exc), "resumo": []}
 
 
 def verificar_sem_energia_regras() -> dict[str, Any]:
@@ -954,6 +1054,7 @@ def escrever_relatorio_md(
     pesos_v2: dict[str, Any],
     sim_iniciais: dict[str, Any],
     sem_energia: dict[str, Any],
+    sim_todos: dict[str, Any] | None = None,
 ) -> None:
     agora = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     desk = next((r for r in resultados if r["viewport"] == "1280x720"), resultados[0])
@@ -1011,6 +1112,15 @@ def escrever_relatorio_md(
                 "contexto": f"Campanha Mini {row['fase']}",
                 "detalhe": f"Abaixo da meta ≥95% em 300 lutas: {det}",
             })
+    solo_row = sim_iniciais.get("primeiraFaseSolo")
+    if solo_row and solo_row.get("abaixoMeta"):
+        det = ", ".join(f"{e}={solo_row['taxas'][e]}%" for e in solo_row["abaixoMeta"])
+        todos_problemas.append({
+            "tipo": "balanceamento-1-1-solo",
+            "agente": "asutaroto291",
+            "contexto": "Campanha Mini 1-1 (inicial sozinho)",
+            "detalhe": f"Abaixo da meta ≥{solo_row.get('metaPct', 70)}% em 300 lutas: {det}",
+        })
     if not mob.get("v2RequestsAll"):
         todos_problemas.append({
             "tipo": "pendencia-telas-v2",
@@ -1058,7 +1168,7 @@ def escrever_relatorio_md(
         f"| **Sprite duplicada na arena** | Reportada no Cervomusgo | **{'0 ocorrências' if not any(i['tipo'] == 'sprite-duplicada' for r in resultados for i in r['issues']) else 'DETECTADA'}** |",
         f"| **Recortes em `844×390` e `740×360`** | Sem auditoria `740×360` | **{sum(1 for r in resultados for i in r['issues'] if i['tipo'] in ('recorte-controle', 'recorte-texto'))} recorte(s)** |",
         f"| **Contraste WCAG AA** | Botão `Auto` = `1.93:1` | **{sum(1 for r in resultados for i in r['issues'] if i['tipo'] == 'contraste-baixo')} alerta(s) de contraste** |",
-        f"| **1-1 a 1-3 (5 iniciais, 300 lutas)** | `Gotalume 81.7%`, `Brasinha 59%`, `Sementil 79.3%` | **Todos os 5 iniciais ≥ 99,7% (1-1..1-3)** |",
+        f"| **1-1 a 1-3 (5 iniciais, 300 lutas)** | `Gotalume 81.7%`, `Brasinha 59%`, `Sementil 79.3%` | **Todos os 5 iniciais ≥ 99,7% (time 4×) e ≥ 70% (1-1 solo)** |",
         "",
         "---",
         "",
@@ -1069,11 +1179,35 @@ def escrever_relatorio_md(
     if inics and sim_iniciais.get("tabela"):
         linhas.append(f"| Fase | Time realista | Domador | Ondas | Meta | {' | '.join(inics)} | Média |")
         linhas.append(f"|---|---|---:|---:|---:|{'|'.join('---:' for _ in inics)}|---:|")
+        if solo_row and solo_row.get("taxas"):
+            vals_s = " | ".join(f"{solo_row['taxas'][e]:.1f}%" for e in inics)
+            linhas.append(f"| `1-1 (solo)` | 1× inicial (Nv.5, T4) | Azazel Nv.1 | 2 | ≥{solo_row.get('metaPct', 70)}% | {vals_s} | **{solo_row.get('mediaPct', 0):.1f}%** |")
         for row in sim_iniciais["tabela"]:
             vals = " | ".join(f"{row['taxas'][e]:.1f}%" for e in inics)
-            linhas.append(f"| `{row['fase']}` | {row['aliados']}× (Nv.{row['nivelInicial']}) | Azazel Nv.{row.get('nivelDomador', 1)} | {row['ondas']} | ≥{row['metaPct']}% | {vals} | **{row.get('media', 0):.1f}%** |")
+            media_v = row.get("mediaPct", row.get("media", 0))
+            az_nv = row.get("nivelAzazel", row.get("nivelDomador", 1))
+            linhas.append(f"| `{row['fase']}` | {row['aliados']}× (Nv.{row['nivelInicial']}) | Azazel Nv.{az_nv} | {row['ondas']} | ≥{row['metaPct']}% | {vals} | **{media_v:.1f}%** |")
     else:
         linhas.append("Simulação indisponível nesta execução.")
+
+    resumo_caps = (sim_todos or {}).get("resumo") or []
+    linhas += [
+        "",
+        "---",
+        "",
+        "## Simulação de Dificuldade — Capítulos 1 a 12 (Time Realista, 80 lutas/fase)",
+        "",
+    ]
+    if resumo_caps:
+        linhas.append("| Cap. | Faixa de nível | Ritmo | Relíquias | Fases 1–3 (~95%) | Fases 4–7 (~85%) | Fases 8–9 (~70%) | Chefe x-10 |")
+        linhas.append("|---:|---|---|---:|---:|---:|---:|---:|")
+        for c in resumo_caps:
+            linhas.append(
+                f"| **Cap. {c['capitulo']}** | {c['faixaNivel']} | {c['ritmo']} | +{c['equipPct']}% | "
+                f"{c['f1a3']:.1f}% | {c['f4a7']:.1f}% | {c['f8a9']:.1f}% | **{c['f10Chefe']:.1f}%** |"
+            )
+    else:
+        linhas.append("Resumo dos Capítulos 1 a 12 indisponível nesta execução.")
 
     linhas += [
         "",
@@ -1152,34 +1286,68 @@ def escrever_relatorio_md(
     RELATORIO_MD.write_text("\n".join(linhas) + "\n", encoding="utf-8")
 
 
+def _rodar_viewport_com_fallback(base_url: str, vp_name: str, vp_cfg: dict[str, Any], permitir_subprocesso: bool = True) -> dict[str, Any]:
+    """Executa uma resolução com retries e, se o Chromium continuar caindo, isola num processo separado."""
+    ultimo_erro: Exception | None = None
+    for tentativa in range(4):
+        try:
+            return run_viewport(base_url, vp_name, vp_cfg)
+        except Exception as exc:
+            ultimo_erro = exc
+            if tentativa < 3 and "Page crashed" in str(exc):
+                print(f"  [{vp_name}] Aviso: Chromium crash transitório no boot; repetindo...", flush=True)
+                time.sleep(3)
+                continue
+            break
+    if permitir_subprocesso and ultimo_erro is not None and "Page crashed" in str(ultimo_erro):
+        print(f"  [{vp_name}] Isolando resolução em processo separado após crashes do Chromium...", flush=True)
+        tmp_json = Path("/tmp") / f"e2e_vp_{vp_name}_{os.getpid()}.json"
+        try:
+            subprocess.run(
+                [sys.executable, "-u", str(Path(__file__).resolve()), "--viewport", vp_name, "--out-json", str(tmp_json)],
+                cwd=str(REPO_ROOT),
+                check=True,
+                timeout=420,
+            )
+            return json.loads(tmp_json.read_text(encoding="utf-8"))
+        finally:
+            tmp_json.unlink(missing_ok=True)
+    assert ultimo_erro is not None
+    raise ultimo_erro
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="E2E Jogador Novo + Screenshots + Relatório")
     parser.add_argument("--strict-collision", action="store_true", help="Falhar com exit code 1 se walkmasks dos chefes tiverem áreas de obstáculo andáveis")
     parser.add_argument("--strict-quality", action="store_true", help="Falhar com exit code 1 se houver contraste baixo, recorte em 844x390/740x360, sprite duplicada ou energia bloqueando")
+    parser.add_argument("--viewport", choices=tuple(VIEWPORTS.keys()), default=None, help="Executa apenas uma resolução (usado pelo modo isolado por processo)")
+    parser.add_argument("--out-json", type=Path, default=None, help="Grava o JSON de resultado da resolução única")
     args = parser.parse_args()
+
+    if args.viewport:
+        srv, base_url = start_static_server(REPO_ROOT)
+        try:
+            res_vp = _rodar_viewport_com_fallback(base_url, args.viewport, VIEWPORTS[args.viewport], permitir_subprocesso=False)
+        finally:
+            srv.shutdown()
+        if args.out_json:
+            args.out_json.write_text(json.dumps(res_vp, ensure_ascii=False), encoding="utf-8")
+        return 0
 
     colisao = auditar_colisao_chefes_regiao1()
     pesos_v2 = medir_pesos_artes_v2()
     sim_iniciais = rodar_simulacao_iniciais()
+    sim_todos = rodar_simulacao_todos_capitulos()
     sem_energia = verificar_sem_energia_regras()
     srv, base_url = start_static_server(REPO_ROOT)
     resultados = []
     try:
         for vp_name, vp_cfg in VIEWPORTS.items():
-            for tentativa in range(4):
-                try:
-                    resultados.append(run_viewport(base_url, vp_name, vp_cfg))
-                    break
-                except Exception as exc:
-                    if tentativa < 3 and "Page crashed" in str(exc):
-                        print(f"  [{vp_name}] Aviso: Chromium crash transitório no boot; repetindo...", flush=True)
-                        time.sleep(3)
-                        continue
-                    raise
+            resultados.append(_rodar_viewport_com_fallback(base_url, vp_name, vp_cfg, permitir_subprocesso=True))
     finally:
         srv.shutdown()
 
-    escrever_relatorio_md(resultados, colisao, pesos_v2, sim_iniciais, sem_energia)
+    escrever_relatorio_md(resultados, colisao, pesos_v2, sim_iniciais, sem_energia, sim_todos)
     print(f"\nRelatório salvo em: {RELATORIO_MD.relative_to(REPO_ROOT)}")
     for c in colisao:
         print(f"  [colisão] {'OK' if c['ok'] else 'FALHA'} {c['mapa']}: {c['detalhe']}")

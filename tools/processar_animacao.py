@@ -671,6 +671,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fps", type=int, default=12, help="Quadros por segundo de saída (padrão: 12)")
     parser.add_argument("--tamanho", type=int, default=256, help="Tamanho quadrado do canvas em px (padrão: 256)")
     parser.add_argument("--saida", type=Path, default=SAIDA_PADRAO, help="Pasta raiz de saída")
+    parser.add_argument("--sem-espelhar", action="store_true", help="Não espelha direita->esquerda (criaturas assimétricas)")
     parser.add_argument("--sem-validar", action="store_true", help="Não roda --validar ao final (útil no 1º vídeo de um par 2+2 vistas)")
     parser.add_argument("--validar", type=Path, help="Valida uma pasta de espécie já gerada")
     args = parser.parse_args(argv)
@@ -693,6 +694,7 @@ def main(argv: list[str] | None = None) -> int:
         fps=args.fps,
         tamanho=args.tamanho,
         vistas=vistas_tuple,
+        espelhar_esquerda=not args.sem_espelhar,
         layout=args.layout,
         lateral_aponta=args.lateral,
     )

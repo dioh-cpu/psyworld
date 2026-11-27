@@ -366,8 +366,6 @@ def run_viewport_e2e(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dic
         # ---- 5. Campanha Mini fase 1-1 ----
         try:
             abrir_refugio_via_ui()
-            # Jogador normal já subiu de nível no Auto/AFK (critério oficial de balanceamento).
-            page.evaluate("""() => { const s = window.regiao1.save(); const m = s.idle?.equipe?.[0]; if (m && (m.nivel || 1) < 20) { m.nivel = 20; } window.regiao1.salvar(); }""")
             page.locator('#modal-exp [data-desc-ir="campanhaMini"]').first.click()
             page.wait_for_selector("#modal-campanha-mini.aberto", timeout=10000)
             audit_layout(page, "campanha-mini-caps", layout_issues)
@@ -639,15 +637,31 @@ def main() -> int:
     results = []
     try:
         for name in targets:
-            for tentativa in range(2):
+            ultimo_erro: Exception | None = None
+            for tentativa in range(4):
                 try:
                     results.append(run_viewport_e2e(base_url, name, VIEWPORTS[name]))
+                    ultimo_erro = None
                     break
                 except Exception as exc:
-                    if tentativa == 0 and "Page crashed" in str(exc):
-                        print(f"  [{name}] Aviso: Chromium crash transitório no boot; repetindo 1x...", flush=True)
+                    ultimo_erro = exc
+                    if tentativa < 3 and "Page crashed" in str(exc):
+                        print(f"  [{name}] Aviso: Chromium crash transitório no boot; repetindo...", flush=True)
+                        time.sleep(3)
                         continue
-                    raise
+                    break
+            if ultimo_erro is not None:
+                if len(targets) > 1 and "Page crashed" in str(ultimo_erro):
+                    import subprocess
+                    tmp_j = Path("/tmp") / f"e2e_fluxo_{name}_{os.getpid()}.json"
+                    print(f"  [{name}] Isolando resolução em processo separado após crashes do Chromium...", flush=True)
+                    try:
+                        subprocess.run([sys.executable, "-u", str(Path(__file__).resolve()), "--viewport", name, "--json-out", str(tmp_j)], check=True, timeout=420)
+                        results.extend(json.loads(tmp_j.read_text(encoding="utf-8")))
+                    finally:
+                        tmp_j.unlink(missing_ok=True)
+                else:
+                    raise ultimo_erro
     finally:
         server.shutdown()
 
