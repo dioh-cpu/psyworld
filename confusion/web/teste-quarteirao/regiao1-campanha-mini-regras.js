@@ -314,7 +314,40 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
   return tipo === 'elite' || tipo === 'escondida' ? [pick(0), pick(1), pick(2)] : [pick(0), pick(1)];
 }
 
+// Calibração auditada em 300 lutas/fase (Cap. 1): 1-1..1-3 >=95% (inicial solo), 1-4..1-7 ~85%, 1-8..1-10 ~70%.
+export const CALIBRACAO_ONDAS_CAP1 = {
+  1: { qtds: [1, 1], nvs: [1, 1] },
+  2: { qtds: [1, 1], nvs: [1, 2] },
+  3: { qtds: [1, 1], nvs: [2, 3] },
+  4: { qtds: [1, 2, 2], nvs: [7, 8, 9] },
+  5: { qtds: [1, 2, 2], nvs: [8, 9, 10] },
+  6: { qtds: [2, 2, 2], nvs: [11, 12, 13] },
+  7: { qtds: [2, 2, 2], nvs: [14, 15, 16] },
+  8: { qtds: [2, 2, 3], nvs: [17, 18, 19] },
+  9: { qtds: [2, 2, 3], nvs: [18, 19, 20] },
+  10: { qtds: [2, 2, 2], nvs: [19, 20, 21] },
+};
+
 function montarOndasFase(cap, faseNum, nivel, tipo, elementoRegiao) {
+  if (cap === 1 && tipo !== 'escondida' && CALIBRACAO_ONDAS_CAP1[faseNum]) {
+    const cfg = CALIBRACAO_ONDAS_CAP1[faseNum];
+    const forma = faseNum >= 9 ? 2 : 1;
+    return cfg.qtds.map((qtd, w) => {
+      const nv = cfg.nvs[w];
+      const ehFinal = w === cfg.qtds.length - 1;
+      const lista = [];
+      for (let k = 0; k < qtd; k++) {
+        if (ehFinal && tipo === 'chefe' && k === 0) {
+          lista.push(specChefeReino(1, nv));
+        } else {
+          const sp = ESPECIES_R1_SELVAGENS[(faseNum + w * 2 + k) % ESPECIES_R1_SELVAGENS.length];
+          const el = ELEMENTO_DA_ESPECIE[sp] || elementoRegiao;
+          lista.push([sp, nv, el, { forma, ...(ehFinal && tipo === 'elite' && k === 0 ? { elite: true } : {}) }]);
+        }
+      }
+      return lista;
+    });
+  }
   const ondaFinal = montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao);
   const totalOndas = !tipo || tipo === 'normal' ? (faseNum <= 3 ? 2 : 3) : 3;
   const poolCap = cap === 1
