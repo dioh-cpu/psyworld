@@ -199,7 +199,7 @@ export function executar(b, acao, rng) {
       let d = dano(b, u, a, mult, rng);
       if (hab?.pctVidaMax) { let extra = Math.round(a.hpMax * hab.pctVidaMax); if (a.chefe) extra = Math.min(extra, Math.round(u.atk * (hab.limiteChefe || 4))); d += extra; }
       const r = receberDano(a, d);
-      const rr = { id: a.id, valor: r.perdido, absorvido: r.abs, morreu: a.hp <= 0, efeitos: [], limpos: [] };
+      const rr = { id: a.id, valor: r.perdido, absorvido: r.abs, morreu: a.hp <= 0, chefe: Boolean(a.chefe), efeitos: [], limpos: [] };
       if (a.hp > 0) for (const e of hab?.efeitos || []) { const ok = aplicarEfeito(a, u, e, rng); if (ok) rr.efeitos.push(ok); }
       const pan = u.efeitos?.panico && EFEITOS.panico;
       if (pan) {

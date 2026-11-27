@@ -39,7 +39,7 @@ const VIOLETA = HAB.MORTALIO_VIOLETA_CFG || { id: 'manto_violeta', clip: 'assets
 FX_HABILIDADES[VIOLETA.id] = { fx: 'mantoVioleta', ult: true, ms: 1750, cut: ['#5b21b6', '#ddd6fe'] };
 // Clipes do Flow, lote 1 (PR #61). impactoMs = ataque do pico de áudio do próprio clipe; chao = altura relativa do chão do efeito no
 // quadro (ancorado nos pés do alvo); escala = largura do clipe em relação ao corpo do alvo. Sem o arquivo, vale a coreografia procedural.
-const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/', FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/', FLOW4 = 'assets/confusion/interface/vfx/flow-lote-4/', FLOW5 = 'assets/confusion/interface/vfx/flow-lote-5/', FLOW6 = 'assets/confusion/interface/vfx/flow-lote-6/';
+const FLOW = 'assets/confusion/interface/vfx/flow-lote-1/', FLOW2 = 'assets/confusion/interface/vfx/flow-lote-2/', FLOW3 = 'assets/confusion/interface/vfx/flow-lote-3/', FLOW4 = 'assets/confusion/interface/vfx/flow-lote-4/', FLOW5 = 'assets/confusion/interface/vfx/flow-lote-5/', FLOW6 = 'assets/confusion/interface/vfx/flow-lote-6/', FLOW7 = 'assets/confusion/interface/vfx/flow-lote-7/';
 export const CLIPES_FLOW = {
   manto_violeta: { clip: `${FLOW}mortalio-violeta.mp4`, impactoMs: 1250, chao: 0.86, escala: 3.4, duracaoMs: 3000 },
   chama_solar: { clip: `${FLOW}cura-dourada.mp4`, impactoMs: 1200, chao: 0.86, escala: 3.0, duracaoMs: 3000 }, // Solarin: cura de um aliado (chama dourada; também é a cura de fogo)
@@ -108,6 +108,8 @@ export const CLIPES_ELEMENTAIS = {
     ['curaTerra', 'cura-terra', 800], ['defesa', 'defesa', 800], ['invencivel', 'invencivel', 850], ['curaFantasma', 'cura-fantasma', 700], ['curaInseto', 'cura-inseto', 800],
     ['provocacao', 'provocacao', 750], ['regeneracao', 'regeneracao', 750], ['curaVento', 'cura-vento', 700], ['curaTrevas', 'cura-trevas', 850], ['purificacao', 'purificacao', 750]]
     .map(([k, arq, imp]) => [k, { clip: `${FLOW6}${arq}.mp4`, impactoMs: imp, chao: 0.9, escala: 3.8, duracaoMs: 2500 }])),
+  fogo1: { clip: `${FLOW7}fogo.mp4`, impactoMs: 350, centro: 0.5, escala: 3.0, duracaoMs: 2300 },  // fogo em um alvo (lote 7)
+  terra1: { clip: `${FLOW7}terra.mp4`, impactoMs: 430, centro: 0.5, escala: 3.0, duracaoMs: 2300 }, // terra em um alvo (lote 7)
   pedra1: { clip: `${FLOW5}pedra-verde.mp4`, impactoMs: 810, centro: 0.5, escala: 3.0, duracaoMs: 2400, chroma: true },
   anelEletrico: { clip: `${FLOW3}anel-eletrico.mp4`, impactoMs: 970, centro: 0.5, escala: 2.6, duracaoMs: 1800 },  // elétrico em área
   laminasSombrias: { clip: `${FLOW3}laminas-sombrias.mp4`, impactoMs: 650, centro: 0.49, escala: 2.8, duracaoMs: 2400, ult: true }, // suprema de trevas
@@ -147,14 +149,15 @@ export function clipeElemental(hab) {
   const perto = !hab.distancia;
   switch (el) {
     case 'eletrico': return ult ? C.dragao : area ? C.anelEletrico : C.eletrico1;
-    case 'fogo': return ult ? C.explosaoRubra : area ? C.erupcaoFogo : C.espiralFogo;
+    case 'fogo': return ult ? C.explosaoRubra : area ? C.erupcaoFogo : C.fogo1;
     case 'trevas': return ult ? C.laminasSombrias : area ? C.galaxia : perto ? C.garras : C.trevas1;
     case 'luz': return C.explosaoDourada;
     case 'voador': return area ? C.tornado : C.voador1;
     case 'agua': return ult ? C.dragaoAgua : area ? C.gelo : efs.includes('congelamento') ? C.gelo1 : C.agua1;
     case 'planta': return area ? C.folhas : C.planta1;
     case 'inseto': return area ? C.enxame : C.inseto1;
-    case 'terra': case 'pedra': return area ? C.rochas : C.pedra1;
+    case 'terra': return area ? C.rochas : C.terra1;
+    case 'pedra': return area ? C.rochas : C.pedra1;
     case 'aco': return area ? C.cruzAco : C.aco1;
     case 'fantasma': return area ? C.psiquico : C.fantasma1;
     default: return area ? C.esfera : perto ? (efs.includes('sangramento') ? C.cortesRubros : C.luta) : C.normal1;
@@ -1006,6 +1009,7 @@ export async function tocarEvento(ctx, ev) {
   else await genApoio(ctx, M, A, ev, hab, elem);
   for (const r of ev.alvos || []) ctx.aplicarHp(r.id);
   for (const f of ev.fases || []) await furiaChefe(ctx, M, f);
+  for (const r of ev.alvos || []) { const n = r.morreu ? ctx.no(r.id) : null; if (n?.dataset?.chefe) await derrotaChefe(ctx, n); }
   // roubo de vida (modo de pânico)
   if (ev.roubo) { const c = corpo(ctx, A); for (const r of ev.alvos || []) { const el = ctx.no(r.id); if (!el) continue; const t = corpo(ctx, el); for (let k = 0; k < M.n(5); k++) projetil(M, t.x + R(-10, 10), t.y + R(-10, 10), c.x, c.y, { tipo: 'orbe', cor: '#dc2626', cor2: '#fecaca', tam: 6, arco: R(20, 60), vida: 0.45, atraso: k * 0.04 }); } numero(ctx, A, `🩸 +${ev.roubo}`, '#86efac', { dy: -20 }); ctx.aplicarHp(ev.ator); }
   A._pose?.mostrar(false); // garante o retorno ao repouso ao fim do evento
@@ -1123,6 +1127,31 @@ function telaChroma(v) {
   };
   requestAnimationFrame(passo); return c;
 }
+// ---------- Chefes: entrada (quando a batalha começa) e derrota (quando cai) ----------
+// Clipes do lote 7 por elemento; a caixa do efeito cobre o corpo inteiro do chefe (base nos pés). Sem clipe, nada acontece.
+const ENTRADA_CHEFE = { luz: 'entrada-luz', eletrico: 'entrada-luz', inseto: 'entrada-inseto', fogo: 'entrada-fogo', agua: 'entrada-agua', voador: 'entrada-vento',
+  terra: 'entrada-terra', pedra: 'entrada-pedra', planta: 'entrada-planta', aco: 'entrada-aco', trevas: 'trevas-estilhaco', gelo: 'entrada-gelo', neutro: 'entrada-planta-2', fantasma: 'trevas-estilhaco' };
+const ENTRADA_POR_NOME = { 'Urso da Aurora Fraturada': 'entrada-gelo' };
+const DERROTA_ESCURA = new Set(['trevas', 'agua', 'pedra', 'aco', 'fantasma']);
+export const DURACAO_ENTRADA_CHEFE = 2300, DURACAO_DERROTA_CHEFE = 1700;
+async function clipeNoCorpo(ctx, el, arq, { ms = 2000, chao = true, escala = 1.25 } = {}) {
+  const src = `${FLOW7}${arq}.mp4`; const v = await carregarVideo(src); if (!v || !el?.isConnected) return;
+  const c = corpo(ctx, el), [cx0, cy0, cx1, cy1] = caixaDoClipe(src), prop = v.videoHeight / v.videoWidth || 9 / 16;
+  const wT = c.w * escala, hT = c.h * escala, larg = Math.max(wT / (cx1 - cx0), hT / ((cy1 - cy0) * prop)), alt = larg * prop;
+  const left = c.x + larg * (0.5 - (cx0 + cx1) / 2) - larg / 2, top = chao ? c.pe + c.h * 0.04 - alt * cy1 : c.y - alt * ((cy0 + cy1) / 2);
+  v.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${larg}px;height:${alt}px;mix-blend-mode:screen;z-index:87;pointer-events:none;opacity:0${mascaraClipe(ctx, left, top, larg, alt, false)}`;
+  ligarAudio(ctx, v); ctx.campo.append(v); v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, fill: 'forwards' });
+  await v.play().catch(() => {}); await ESP(ms * ctx.k); dissolverClipe(ctx, v);
+}
+export async function entradaChefe(ctx) {
+  injetar(); const chefes = [...ctx.campo.querySelectorAll('.un[data-chefe]')]; if (!chefes.length) return 0;
+  await Promise.all(chefes.map((el) => clipeNoCorpo(ctx, el, ENTRADA_POR_NOME[el.dataset.especie] || ENTRADA_CHEFE[el.dataset.elemento] || 'entrada-planta-2', { ms: DURACAO_ENTRADA_CHEFE - 300 })));
+  return DURACAO_ENTRADA_CHEFE;
+}
+async function derrotaChefe(ctx, el) {
+  const fig = el.querySelector('.un-fig'); if (fig) fig.animate([{ opacity: 1, filter: 'brightness(1)' }, { opacity: 0, filter: 'brightness(2.2)' }], { duration: 900 * ctx.k, fill: 'forwards', easing: 'ease-in' });
+  await clipeNoCorpo(ctx, el, DERROTA_ESCURA.has(el.dataset.elemento) ? 'trevas-estilhaco' : 'derrota-luz', { ms: DURACAO_DERROTA_CHEFE - 200, chao: false, escala: 1.15 });
+}
 const blobs = new Map();
 async function carregarVideo(src, inicio = 0) {
   if (clipesFalhos.has(src)) return null;
@@ -1165,5 +1194,5 @@ export const duracaoEstimada = (ev, rapido = false, velocidade = pref.velocidade
   else if (ev.tipo === 'reviver') base = FX_HABILIDADES.retorno_alma.ms;
   else if (ev.tipo === 'defender') base = 650;
   else base = 1250 + n * 90;
-  return (base + (ult ? 820 : 0) + (ev.antes?.length ? 560 : 0) + (ev.fases?.length || 0) * 1430) * k;
+  return (base + (ult ? 820 : 0) + (ev.antes?.length ? 560 : 0) + (ev.fases?.length || 0) * 1430 + (ev.alvos || []).filter((r) => r.morreu && r.chefe).length * DURACAO_DERROTA_CHEFE) * k;
 };
