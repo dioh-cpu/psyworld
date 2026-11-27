@@ -588,7 +588,7 @@ const isObj = (v) => Boolean(v && typeof v === 'object' && !Array.isArray(v));
 export function sanitizarIdleProgressao(idle) {
   if (!isObj(idle)) return {};
   const out = { ...idle };
-  for (const k of ['energia', 'essencias', 'campanhaMini', 'reliquias', 'missoes', 'armasUnicas', 'torres', 'calaboucos']) {
+  for (const k of ['energia', 'essencias', 'campanhaMini', 'reliquias', 'missoes', 'armasUnicas', 'torres', 'calaboucos', 'domadores']) {
     if (k in out && !isObj(out[k])) delete out[k];
   }
 
@@ -771,13 +771,37 @@ export function sanitizarIdleProgressao(idle) {
     };
   }
 
-  if (idle.calaboucos && typeof idle.calaboucos === 'object') {
+  if (isObj(idle.calaboucos)) {
     const c = idle.calaboucos;
     out.calaboucos = {
       maiorNivel: sanitizarMapaSeguro(c.maiorNivel, 12, 'int'),
       todosVivos: sanitizarMapaSeguro(c.todosVivos, 120, 'bool'),
       moedas: Math.max(0, Math.floor(Number(c.moedas) || 0)),
       batalhasPagas: sanitizarMapaSeguro(c.batalhasPagas, 300, 'bool'),
+    };
+  }
+
+  if (isObj(idle.domadores)) {
+    const d = idle.domadores;
+    const progresso = {};
+    if (isObj(d.progresso)) {
+      for (const [id, v] of Object.entries(d.progresso).slice(0, 12)) {
+        if (isObj(v)) {
+          progresso[String(id).slice(0, 24)] = {
+            nivel: Math.max(1, Math.min(100, Math.floor(Number(v.nivel) || 1))),
+            xp: Math.max(0, Math.floor(Number(v.xp) || 0)),
+          };
+        }
+      }
+    }
+    const desbloqueados = sanitizarMapaSeguro(d.desbloqueados, 12, 'bool');
+    desbloqueados.azazel = true;
+    const ativo = typeof d.ativo === 'string' && d.ativo.slice(0, 24) || 'azazel';
+    out.domadores = {
+      ativo: desbloqueados[ativo] ? ativo : 'azazel',
+      desbloqueados,
+      progresso,
+      eventosPagos: sanitizarMapaSeguro(d.eventosPagos, 300, 'bool'),
     };
   }
 
