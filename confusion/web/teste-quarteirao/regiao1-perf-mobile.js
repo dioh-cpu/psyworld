@@ -246,6 +246,73 @@ export function aplicarFundoTelaSobDemanda(el, telaId, fallback = null) {
   return tentar([principal, alternativo, fallback].filter(Boolean));
 }
 
+export const RAIZ_ANIMACOES_ONIRICOS = 'assets/confusion/animacoes';
+
+export function slugEspecieAnimacao(especie) {
+  return String(especie || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9_-]+/g, '');
+}
+
+export function urlAnimacaoOnirico(especie, acao = 'idle', direcao = 'direita', { formato = 'webm' } = {}) {
+  const slug = slugEspecieAnimacao(especie);
+  if (!slug) return null;
+  const ac = acao === 'andar' ? 'andar' : 'idle';
+  const dir = ['frente', 'direita', 'costas', 'esquerda'].includes(direcao) ? direcao : 'direita';
+  const ext = formato === 'webp' ? 'webp' : 'webm';
+  return `${RAIZ_ANIMACOES_ONIRICOS}/${slug}/${ac}-${dir}.${ext}`;
+}
+
+// Coleta apenas as animações (idle/andar) dos Oníricos efetivamente em campo na batalha atual (aliados + inimigos da onda atual),
+// evitando pré-carregar o catálogo inteiro no celular.
+export function coletarAnimacoesEmCampo(b, { incluirAndar = true, formato = 'webm' } = {}) {
+  if (!b) return [];
+  const vistos = new Set();
+  const urls = [];
+  const adicionar = (esp, direcao) => {
+    const uIdle = urlAnimacaoOnirico(esp, 'idle', direcao, { formato });
+    if (uIdle && !vistos.has(uIdle)) { vistos.add(uIdle); urls.push(uIdle); }
+    if (incluirAndar) {
+      const uAndar = urlAnimacaoOnirico(esp, 'andar', direcao, { formato });
+      if (uAndar && !vistos.has(uAndar)) { vistos.add(uAndar); urls.push(uAndar); }
+    }
+  };
+  for (const a of (Array.isArray(b.aliados) ? b.aliados : [])) {
+    if (a?.especie) adicionar(a.especie, 'direita');
+  }
+  for (const i of (Array.isArray(b.inimigos) ? b.inimigos : [])) {
+    if (i?.especie) adicionar(i.especie, 'esquerda');
+  }
+  return urls;
+}
+
+export function medirFpsBatalha(duracaoMs = 900) {
+  if (typeof requestAnimationFrame === 'undefined' || typeof performance === 'undefined') {
+    return Promise.resolve({ fps: 0, quadros: 0, duracaoMs: 0 });
+  }
+  return new Promise((resolve) => {
+    const inicio = performance.now();
+    let quadros = 0;
+    function passo(agora) {
+      quadros += 1;
+      const decorrido = agora - inicio;
+      if (decorrido >= duracaoMs) {
+        resolve({
+          fps: Math.round((quadros * 1000) / Math.max(1, decorrido)),
+          quadros,
+          duracaoMs: Math.round(decorrido),
+        });
+        return;
+      }
+      requestAnimationFrame(passo);
+    }
+    requestAnimationFrame(passo);
+  });
+}
+
 export function iniciarPerfMobile() {
   if (typeof window === 'undefined') return;
   const pool = garantirPool();
@@ -258,5 +325,8 @@ export function iniciarPerfMobile() {
     pool: () => pool.estatisticas(),
     liberarVideos: () => pool.liberarTodos(0),
     urlFundoTela,
+    urlAnimacaoOnirico,
+    coletarAnimacoesEmCampo,
+    medirFpsBatalha,
   };
 }

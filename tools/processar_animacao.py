@@ -1,0 +1,479 @@
+#!/usr/bin/env python3
+"""
+Pipeline de animações de Oníricos (Confusion Waves — dioh292).
+
+Converte vídeos do Flow (3 vistas lado a lado: frente, direita, costas, em fundo chroma magenta ou verde)
+ou pastas de frames PNG em loops padronizados com transparência, prontos para o dioh293 em:
+  assets/confusion/animacoes/<especie>/{idle,andar}-{frente,direita,costas,esquerda}.webm
+  assets/confusion/animacoes/<especie>/{idle,andar}-{frente,direita,costas,esquerda}.webp
+
+Recursos:
+  - Remoção de chroma (magenta ou verde) com despill fiel a tools/recortar_folha.py (sem manchar marrons/vermelhos)
+    e suavização de borda para eliminar franja.
+  - Recorte estável das 3 vistas usando a caixa envolvente unificada de todos os frames (sem pulo de câmera).
+  - Espelhamento automático de direita -> esquerda.
+  - Padronização de canvas, escala compartilhada entre idle e andar (via meta.json) e alinhamento da linha dos pés.
+  - Controle automático de peso: meta < 600 KB por loop no celular (ajusta CRF/qualidade se necessário).
+  - Modo de conferência (--validar): checa peso < 600 KB, loop sem pulo, ausência de franja de chroma,
+    escala/linha dos pés entre idle e andar e espelhamento direita/esquerda.
+
+Uso:
+  python3 tools/processar_animacao.py --entrada video.mp4 --especie cervomusgo --acao idle [--chroma magenta|verde] [--fps 12] [--tamanho 256]
+  python3 tools/processar_animacao.py --validar assets/confusion/animacoes/cervomusgo
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import Any
+
+from PIL import Image, ImageChops, ImageFilter
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SAIDA_PADRAO = REPO_ROOT / "assets" / "confusion" / "animacoes"
+VISTAS_ENTRADA = ("frente", "direita", "costas")
+TODAS_DIRECOES = ("frente", "direita", "costas", "esquerda")
+ACOES_VALIDAS = ("idle", "andar")
+LIMITE_KB_CELULAR = 600
+MARGEM_PES_RATIO = 0.06  # 6% de folga inferior para a linha dos pés
+
+
+def remover_chroma_rgba(img: Image.Image, chroma: str = "magenta") -> Image.Image:
+    """Remove fundo chroma (magenta ou verde) com despill sem manchar marrons/vermelhos (fiel a recortar_folha.py)."""
+    rgb = img.convert("RGB")
+    w, h = rgb.size
+    src = rgb.tobytes()
+    out = bytearray(w * h * 4)
+
+    if chroma == "verde":
+        for i in range(0, len(src), 3):
+            r, g, b = src[i], src[i + 1], src[i + 2]
+            mx = r if r >= b else b
+            fundo = g - mx
+            a = 255 - (fundo - 40) * 4
+            if a < 0:
+                a = 0
+            elif a > 255:
+                a = 255
+            ng = mx if g > mx else g
+            j = (i // 3) * 4
+            out[j] = r
+            out[j + 1] = ng
+            out[j + 2] = b
+            out[j + 3] = a
+    else:
+        for i in range(0, len(src), 3):
+            r, g, b = src[i], src[i + 1], src[i + 2]
+            mn = r if r <= b else b
+            fundo = mn - g
+            a = 255 - (fundo - 40) * 4
+            if a < 0:
+                a = 0
+            elif a > 255:
+                a = 255
+            if b > g:
+                nb = g
+                lim_r = g + (r - b if r > b else 0) + 30
+                nr = lim_r if r > lim_r else r
+                if nr > 255:
+                    nr = 255
+            else:
+                nr = r
+                nb = b
+            j = (i // 3) * 4
+            out[j] = nr
+            out[j + 1] = g
+            out[j + 2] = nb
+            out[j + 3] = a
+
+    res = Image.frombytes("RGBA", (w, h), bytes(out))
+    # Erosão leve + desfoque no canal alfa para eliminar franja residual
+    alfa = res.getchannel("A").filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.6))
+    res.putalpha(alfa)
+    return res
+
+
+def detectar_faixas_horizontais(frames_rgba: list[Image.Image], minimo_largura: int = 16) -> list[tuple[int, int]]:
+    """Encontra as 3 faixas horizontais (frente, direita, costas) unindo a máscara alfa de todos os frames."""
+    w, h = frames_rgba[0].size
+    col_ativa = [False] * w
+    for fr in frames_rgba:
+        alfa = fr.getchannel("A").tobytes()
+        for y in range(0, h, 2):
+            off = y * w
+            for x in range(w):
+                if not col_ativa[x] and alfa[off + x] > 128:
+                    col_ativa[x] = True
+
+    faixas: list[tuple[int, int]] = []
+    ini: int | None = None
+    for x, ativo in enumerate(col_ativa):
+        if ativo and ini is None:
+            ini = x
+        elif not ativo and ini is not None:
+            if x - ini >= minimo_largura:
+                faixas.append((ini, x))
+            ini = None
+    if ini is not None and w - ini >= minimo_largura:
+        faixas.append((ini, w))
+
+    # Se não separou exatamente em 3 (ex.: sombras próximas), divide em 3 terços iguais
+    if len(faixas) != 3:
+        terco = w // 3
+        return [(0, terco), (terco, terco * 2), (terco * 2, w)]
+    return faixas
+
+
+def bbox_unificado_faixa(frames_rgba: list[Image.Image], x0: int, x1: int) -> tuple[int, int, int, int]:
+    """Calcula a caixa envolvente (left, top, right, bottom) unificada de uma vista ao longo de todo o loop."""
+    h = frames_rgba[0].size[1]
+    min_x, min_y, max_x, max_y = x1, h, x0, 0
+    encontrou = False
+    for fr in frames_rgba:
+        rec = fr.crop((x0, 0, x1, h))
+        bb = rec.getbbox()
+        if bb:
+            encontrou = True
+            min_x = min(min_x, x0 + bb[0])
+            min_y = min(min_y, bb[1])
+            max_x = max(max_x, x0 + bb[2])
+            max_y = max(max_y, bb[3])
+    if not encontrou:
+        return (x0, 0, x1, h)
+    return (min_x, min_y, max_x, max_y)
+
+
+def enquadrar_alinhado_pes(
+    recorte: Image.Image,
+    tamanho: int,
+    escala: float,
+    margem_pes_px: int,
+) -> Image.Image:
+    """Redimensiona mantendo proporção e alinha a base do personagem na linha fixa dos pés."""
+    nw = max(1, round(recorte.width * escala))
+    nh = max(1, round(recorte.height * escala))
+    red = recorte.resize((nw, nh), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGBA", (tamanho, tamanho), (0, 0, 0, 0))
+    px = (tamanho - nw) // 2
+    py = (tamanho - margem_pes_px) - nh
+    canvas.paste(red, (px, py), red)
+    return canvas
+
+
+def extrair_frames_entrada(entrada: Path, fps: int, tmp_dir: Path) -> list[Image.Image]:
+    """Extrai frames de um vídeo via ffmpeg ou lê frames PNG/WebP ordenados de uma pasta."""
+    if entrada.is_dir():
+        arqs = sorted(p for p in entrada.iterdir() if p.is_file() and p.suffix.lower() in {".png", ".webp", ".jpg", ".jpeg"})
+        if not arqs:
+            raise FileNotFoundError(f"Nenhum frame encontrado em {entrada}")
+        return [Image.open(p).convert("RGBA") for p in arqs]
+
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("ffmpeg não encontrado no PATH; instale ffmpeg ou passe uma pasta de frames PNG.")
+
+    padrao = tmp_dir / "in_%04d.png"
+    cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(entrada), "-vf", f"fps={fps}", str(padrao)]
+    subprocess.run(cmd, check=True)
+    arqs = sorted(tmp_dir.glob("in_*.png"))
+    if not arqs:
+        raise RuntimeError(f"ffmpeg não extraiu frames de {entrada}")
+    return [Image.open(p).convert("RGBA") for p in arqs]
+
+
+def exportar_webp_animado(frames: list[Image.Image], destino: Path, fps: int, limite_kb: int = LIMITE_KB_CELULAR) -> float:
+    """Salva sequência RGBA como WebP animado em loop respeitando o limite de peso em KB."""
+    dur_ms = max(20, round(1000 / max(1, fps)))
+    for qualidade in (82, 72, 62, 50, 38):
+        frames[0].save(
+            destino,
+            format="WEBP",
+            save_all=True,
+            append_images=frames[1:],
+            duration=dur_ms,
+            loop=0,
+            quality=qualidade,
+            method=4,
+            lossless=False,
+        )
+        kb = destino.stat().st_size / 1024.0
+        if kb <= limite_kb:
+            return round(kb, 1)
+    return round(destino.stat().st_size / 1024.0, 1)
+
+
+def exportar_webm_alfa(frames: list[Image.Image], destino: Path, fps: int, tmp_dir: Path, limite_kb: int = LIMITE_KB_CELULAR) -> float | None:
+    """Salva sequência RGBA como WebM VP9 com canal alfa (yuva420p) respeitando o limite de peso em KB."""
+    if not shutil.which("ffmpeg"):
+        return None
+    sub = tmp_dir / f"seq_{destino.stem}"
+    sub.mkdir(parents=True, exist_ok=True)
+    for idx, fr in enumerate(frames, start=1):
+        fr.save(sub / f"f_{idx:04d}.png", format="PNG")
+
+    padrao = sub / "f_%04d.png"
+    for crf in (30, 36, 42, 48):
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-framerate",
+            str(fps),
+            "-i",
+            str(padrao),
+            "-c:v",
+            "libvpx-vp9",
+            "-pix_fmt",
+            "yuva420p",
+            "-b:v",
+            "0",
+            "-crf",
+            str(crf),
+            "-auto-alt-ref",
+            "0",
+            "-an",
+            str(destino),
+        ]
+        subprocess.run(cmd, check=True)
+        kb = destino.stat().st_size / 1024.0
+        if kb <= limite_kb:
+            return round(kb, 1)
+    return round(destino.stat().st_size / 1024.0, 1)
+
+
+def processar_animacao(
+    entrada: Path,
+    especie: str,
+    acao: str,
+    saida_raiz: Path = SAIDA_PADRAO,
+    chroma: str = "magenta",
+    fps: int = 12,
+    tamanho: int = 256,
+    limite_kb: int = LIMITE_KB_CELULAR,
+) -> dict[str, Any]:
+    """Executa o pipeline completo de 1 vídeo (idle ou andar) para 4 direções (.webm + .webp)."""
+    if acao not in ACOES_VALIDAS:
+        raise ValueError(f"Ação inválida: {acao} (esperado: {ACOES_VALIDAS})")
+
+    slug = "".join(c for c in especie.strip().lower() if c.isalnum() or c in ("-", "_"))
+    pasta_saida = saida_raiz / slug
+    pasta_saida.mkdir(parents=True, exist_ok=True)
+    meta_path = pasta_saida / "meta.json"
+    meta_existente = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+
+    with tempfile.TemporaryDirectory(prefix="cw_anim_") as td:
+        tmp = Path(td)
+        brutos = extrair_frames_entrada(entrada, fps, tmp)
+        rgba = [remover_chroma_rgba(fr, chroma=chroma) for fr in brutos]
+        faixas = detectar_faixas_horizontais(rgba)
+        bboxes = {nome: bbox_unificado_faixa(rgba, x0, x1) for nome, (x0, x1) in zip(VISTAS_ENTRADA, faixas)}
+
+        margem_pes_px = max(4, round(tamanho * MARGEM_PES_RATIO))
+        area_util_w = tamanho - 16
+        area_util_h = tamanho - margem_pes_px - 12
+
+        # Escala única para todas as 3 vistas; reutiliza escala do idle (meta.json) para manter mesma escala no andar
+        max_w = max(max(1, bb[2] - bb[0]) for bb in bboxes.values())
+        max_h = max(max(1, bb[3] - bb[1]) for bb in bboxes.values())
+        escala_calc = min(area_util_w / max_w, area_util_h / max_h)
+        escala = float(meta_existente.get("escalaReferencia", escala_calc))
+        # Garante que nenhuma vista estoure o canvas mesmo reutilizando escala de referência
+        if max_w * escala > tamanho - 4 or max_h * escala > tamanho - margem_pes_px - 2:
+            escala = min(escala, escala_calc)
+
+        sequencias: dict[str, list[Image.Image]] = {}
+        for nome in VISTAS_ENTRADA:
+            bb = bboxes[nome]
+            sequencias[nome] = [
+                enquadrar_alinhado_pes(fr.crop(bb), tamanho, escala, margem_pes_px)
+                for fr in rgba
+            ]
+        # Esquerda = direita espelhada horizontalmente
+        sequencias["esquerda"] = [
+            fr.transpose(Image.Transpose.FLIP_LEFT_RIGHT) for fr in sequencias["direita"]
+        ]
+
+        gerados: dict[str, Any] = {}
+        for direcao in TODAS_DIRECOES:
+            frames_dir = sequencias[direcao]
+            webp_path = pasta_saida / f"{acao}-{direcao}.webp"
+            webm_path = pasta_saida / f"{acao}-{direcao}.webm"
+            kb_webp = exportar_webp_animado(frames_dir, webp_path, fps=fps, limite_kb=limite_kb)
+            kb_webm = exportar_webm_alfa(frames_dir, webm_path, fps=fps, tmp_dir=tmp, limite_kb=limite_kb)
+            gerados[direcao] = {"webpKB": kb_webp, "webmKB": kb_webm, "frames": len(frames_dir)}
+
+        meta_novo = {
+            **meta_existente,
+            "especie": slug,
+            "tamanho": tamanho,
+            "fps": fps,
+            "chroma": chroma,
+            "margemPesPx": margem_pes_px,
+            "escalaReferencia": round(escala, 6),
+            "acoes": {**(meta_existente.get("acoes") or {}), acao: gerados},
+        }
+        meta_path.write_text(json.dumps(meta_novo, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        return meta_novo
+
+
+def _carregar_frames_webp(caminho: Path) -> list[Image.Image]:
+    frames: list[Image.Image] = []
+    with Image.open(caminho) as im:
+        n = getattr(im, "n_frames", 1)
+        for i in range(n):
+            im.seek(i)
+            frames.append(im.convert("RGBA"))
+    return frames
+
+
+def _taxa_franja_chroma(img: Image.Image, chroma: str = "magenta") -> float:
+    """Retorna a fração de pixels visíveis (a > 64) ainda com forte dominante de chroma na borda."""
+    raw = img.convert("RGBA").tobytes()
+    visiveis = 0
+    manchados = 0
+    for i in range(0, len(raw), 4):
+        a = raw[i + 3]
+        if a <= 64:
+            continue
+        visiveis += 1
+        r, g, b = raw[i], raw[i + 1], raw[i + 2]
+        if chroma == "verde":
+            if g - max(r, b) > 55:
+                manchados += 1
+        else:
+            if min(r, b) - g > 55:
+                manchados += 1
+    return (manchados / visiveis) if visiveis else 0.0
+
+
+def _metricas_bbox(img: Image.Image) -> tuple[int, int]:
+    """Retorna (altura_util, y_base_pes) do conteúdo visível de um frame."""
+    bb = img.getbbox()
+    if not bb:
+        return (0, 0)
+    return (bb[3] - bb[1], bb[3])
+
+
+def validar_pasta_especie(pasta: Path, limite_kb: int = LIMITE_KB_CELULAR) -> dict[str, Any]:
+    """Confere qualidade das animações geradas: peso, loop sem pulo, sem franja, escala/pés e espelhamento."""
+    erros: list[str] = []
+    avisos: list[str] = []
+    meta_path = pasta / "meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    chroma = meta.get("chroma", "magenta")
+
+    acoes_encontradas = [
+        ac for ac in ACOES_VALIDAS
+        if any((pasta / f"{ac}-{d}.webp").exists() or (pasta / f"{ac}-{d}.webm").exists() for d in TODAS_DIRECOES)
+    ]
+    if not acoes_encontradas:
+        erros.append(f"Nenhuma animação encontrada em {pasta}")
+        return {"ok": False, "erros": erros, "avisos": avisos, "metricas": {}}
+
+    metricas: dict[str, Any] = {}
+    for ac in acoes_encontradas:
+        metricas[ac] = {}
+        for d in TODAS_DIRECOES:
+            p_webp = pasta / f"{ac}-{d}.webp"
+            p_webm = pasta / f"{ac}-{d}.webm"
+            if not p_webp.exists() and not p_webm.exists():
+                erros.append(f"Falta direção obrigatória: {ac}-{d}.{{webm,webp}}")
+                continue
+            for p_arq in (p_webm, p_webp):
+                if p_arq.exists():
+                    kb = round(p_arq.stat().st_size / 1024.0, 1)
+                    if kb > limite_kb:
+                        erros.append(f"{p_arq.name} pesa {kb} KB (limite celular: {limite_kb} KB)")
+
+            if p_webp.exists():
+                frs = _carregar_frames_webp(p_webp)
+                franja = _taxa_franja_chroma(frs[0], chroma=chroma)
+                if franja > 0.02:
+                    erros.append(f"{p_webp.name}: franja de chroma residual ({franja * 100:.1f}% > 2%)")
+                alt, y_pes = _metricas_bbox(frs[0])
+                diff_loop = 0.0
+                if len(frs) >= 2:
+                    d_img = ImageChops.difference(frs[0], frs[-1])
+                    hist = d_img.convert("L").histogram()
+                    total_px = frs[0].width * frs[0].height
+                    diff_loop = sum(val * cnt for val, cnt in enumerate(hist)) / max(1, total_px * 255.0)
+                    if diff_loop > 0.18:
+                        avisos.append(f"{p_webp.name}: possível pulo no loop (diff primeiro×último = {diff_loop:.3f})")
+                metricas[ac][d] = {
+                    "frames": len(frs),
+                    "franjaPct": round(franja * 100, 2),
+                    "alturaUtil": alt,
+                    "yPes": y_pes,
+                    "diffLoop": round(diff_loop, 4),
+                    "webmKB": round(p_webm.stat().st_size / 1024.0, 1) if p_webm.exists() else None,
+                    "webpKB": round(p_webp.stat().st_size / 1024.0, 1),
+                }
+
+        # Confere espelhamento direita <-> esquerda
+        p_dir = pasta / f"{ac}-direita.webp"
+        p_esq = pasta / f"{ac}-esquerda.webp"
+        if p_dir.exists() and p_esq.exists():
+            f_dir = _carregar_frames_webp(p_dir)[0].transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+            f_esq = _carregar_frames_webp(p_esq)[0]
+            d_esp = ImageChops.difference(f_dir, f_esq).convert("L").histogram()
+            diff_esp = sum(v * c for v, c in enumerate(d_esp)) / max(1, f_dir.width * f_dir.height * 255.0)
+            if diff_esp > 0.03:
+                erros.append(f"{ac}: esquerda não espelha direita (diff={diff_esp:.3f})")
+
+    # Confere mesma escala e linha dos pés entre idle e andar
+    if "idle" in metricas and "andar" in metricas and "frente" in metricas["idle"] and "frente" in metricas["andar"]:
+        m_i = metricas["idle"]["frente"]
+        m_a = metricas["andar"]["frente"]
+        if m_i["alturaUtil"] > 0:
+            ratio = abs(m_a["alturaUtil"] - m_i["alturaUtil"]) / m_i["alturaUtil"]
+            if ratio > 0.12:
+                erros.append(f"Escala divergente entre idle ({m_i['alturaUtil']}px) e andar ({m_a['alturaUtil']}px)")
+        if abs(m_a["yPes"] - m_i["yPes"]) > 8:
+            erros.append(f"Linha dos pés desalinhada entre idle (y={m_i['yPes']}) e andar (y={m_a['yPes']})")
+
+    return {"ok": len(erros) == 0, "erros": erros, "avisos": avisos, "metricas": metricas}
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Pipeline de animações de Oníricos (Flow -> WebM alfa + WebP animado)")
+    parser.add_argument("--entrada", type=Path, help="Vídeo MP4/WebM do Flow ou pasta de frames PNG")
+    parser.add_argument("--especie", type=str, help="Slug da espécie (ex.: cervomusgo, brasinha)")
+    parser.add_argument("--acao", choices=ACOES_VALIDAS, default="idle", help="Tipo de loop: idle (4s) ou andar (2s)")
+    parser.add_argument("--chroma", choices=("magenta", "verde"), default="magenta", help="Cor do fundo chroma")
+    parser.add_argument("--fps", type=int, default=12, help="Quadros por segundo de saída (padrão: 12)")
+    parser.add_argument("--tamanho", type=int, default=256, help="Tamanho quadrado do canvas em px (padrão: 256)")
+    parser.add_argument("--saida", type=Path, default=SAIDA_PADRAO, help="Pasta raiz de saída")
+    parser.add_argument("--validar", type=Path, help="Valida uma pasta de espécie já gerada")
+    args = parser.parse_args(argv)
+
+    if args.validar:
+        res = validar_pasta_especie(args.validar)
+        print(json.dumps(res, indent=2, ensure_ascii=False))
+        return 0 if res["ok"] else 1
+
+    if not args.entrada or not args.especie:
+        parser.error("Informe --entrada e --especie (ou use --validar <pasta>).")
+
+    meta = processar_animacao(
+        entrada=args.entrada,
+        especie=args.especie,
+        acao=args.acao,
+        saida_raiz=args.saida,
+        chroma=args.chroma,
+        fps=args.fps,
+        tamanho=args.tamanho,
+    )
+    pasta = args.saida / meta["especie"]
+    val = validar_pasta_especie(pasta)
+    print(json.dumps({"meta": meta, "validacao": val}, indent=2, ensure_ascii=False))
+    return 0 if val["ok"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
