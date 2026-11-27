@@ -145,6 +145,7 @@ export const CATALOGO_REGIOES = DEFINICOES_BASE.map((def, idx) => {
     } : {}),
     desbloqueio,
     chefe: ext ? { ...def.chefe, ...ext.chefe, arte: def.chefe.arte, arena: def.chefe.arena } : { ...def.chefe },
+    ...(ext?.npcAreaSegura ? { npcAreaSegura: ext.npcAreaSegura } : {}),
     recompensaPrimeiraVitoria: ext ? { ...ext.recompensaPrimeiraVitoria, ...def.recompensa } : { ...def.recompensa },
     encontros: montarEncontrosDaRegiao(def.numero, faixaNivel),
   };
@@ -180,6 +181,7 @@ export function criarEstadoRegioesInicial() {
     chefesDerrotados: {},
     primeiraVitoria: {},
     missoes: {},
+    progressoMissoes: {},
     pistas: {},
     abatesR2: 0,
   };
@@ -195,6 +197,7 @@ export function garantirEstadoRegioes(save) {
   if (!r.chefesDerrotados || typeof r.chefesDerrotados !== 'object') r.chefesDerrotados = {};
   if (!r.primeiraVitoria || typeof r.primeiraVitoria !== 'object') r.primeiraVitoria = {};
   if (!r.missoes || typeof r.missoes !== 'object') r.missoes = {};
+  if (!r.progressoMissoes || typeof r.progressoMissoes !== 'object') r.progressoMissoes = {};
   if (!r.pistas || typeof r.pistas !== 'object') r.pistas = {};
   if (!Number.isFinite(Number(r.abatesR2)) || Number(r.abatesR2) < 0) r.abatesR2 = 0;
   return r;
