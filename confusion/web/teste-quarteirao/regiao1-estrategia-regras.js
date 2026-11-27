@@ -6,7 +6,6 @@ import { ELEMENTO_DA_ESPECIE, HABILIDADES_DA_ESPECIE } from '../species.js';
 import { multElemento } from '../core.js';
 import { EFEITOS, kitDe, PAPEL_PADRAO } from './regiao1-batalha-habilidades.js';
 import { CHEFE_POR_NOME } from './regiao1-kits-reinos.js';
-import { carregarBarraDomador, escolherAcaoDomador } from './regiao1-domadores-regras.js';
 import { bonusCategoriaPoder } from './regiao1-revanche-regras.js';
 import { bonusTier, bonusEstrelas, classeDaEspecie, tierDe, estrelasDe, ESTRELAS_CFG, TIER_CFG } from './regiao1-progressao.js';
 export { KITS, kitDe, EFEITOS, temKitProprio, MORTALIO_VIOLETA_CFG, habilidadeVioletaMortalio, kitMortalio } from './regiao1-batalha-habilidades.js';
@@ -84,7 +83,7 @@ export function criarBatalha(aliados, inimigos, { ativos = LIMITE_ALIADOS, domad
   const vagas = Math.min(ativos, LIMITE_ALIADOS);
   const emCampoA = aliados.slice(0, vagas), emCampoI = inimigos.slice(0, vagas);
   for (const u of [...inimigos, ...aliados]) if (u.chefe && CHEFE_POR_NOME[u.especie] && u.furia == null) u.furia = CHEFE_POR_NOME[u.especie].furia;
-  return { aliados: emCampoA, inimigos: emCampoI, esperaI: inimigos.slice(vagas, vagas + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0, ...(domador ? { domador } : {}) };
+  return { aliados: emCampoA, inimigos: emCampoI, esperaI: inimigos.slice(vagas, vagas + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0, ...(domador ? { domador: prepararDomador(domador) } : {}) };
 }
 // Fúria do chefe (uma vez por batalha): abaixo do limiar, limpa os efeitos negativos, recupera 10% da vida, ganha ataque e
 // defesa elevados por 3 turnos e o golpe especial volta pronto. O evento leva `fases` para o VFX anunciar.
@@ -112,6 +111,7 @@ function iniciarRodada(b) {
   // velocidade: nível, um pouco a mais para suporte, multiplicado pelos efeitos de velocidade (Perseguição +50%, Pânico +100%)
   const vel = (u) => (u.nivel + (u.papel === 'suporte' ? 1 : 0)) * (1 + (u.velBonus || 0) + Object.keys(u.efeitos || {}).reduce((a, id) => a + (EFEITOS[id]?.velocidade || 0), 0));
   b.fila = vivos(b.ordem).sort((x, y) => vel(y) - vel(x)).map((u) => u.id);
+  tickDomador(b);
   for (const u of b.ordem) { u.defendendo = false; u.cd = (u.cd || [0, 0, 0]).map((c) => Math.max(0, c - 1)); u.recarga = Math.max(...u.cd); }
   tickCampos(b);
 }
@@ -223,13 +223,24 @@ function posDano(b, a, perdido, rr) {
     pc.usos += 1; (a.efeitos ||= {}).ataque_alto = { turnos: pc.turnos || 2, valor: 0, fonte: a.id };
     if (rr) rr.panicoContido = true; antes(b, { tipo: 'panicoContido', alvo: a.id }); b.log.push(`${a.especie} entra em Pânico Contido!`);
   }
-  if (b.domador && a.lado === 'a') carregarBarraDomador(b.domador, 'dano_recebido');
 }
-// Domador: 5º aliado fora do campo (não ocupa vaga, não é alvo). Com a barra cheia age logo após o turno aliado.
-// Gera b.eventoDomador para a tela tocar (habilidade, alvos e valores).
+// Domador: 5º aliado fora do campo (não ocupa vaga, não é alvo, não recebe dano). Sem barra: cada habilidade tem a própria
+// recarga, que já começa contando na entrada da batalha e desce 1 por rodada. Age logo após um turno aliado quando alguma está
+// pronta (prioridade Suprema → Técnica → Golpe). Gera b.eventoDomador para a tela tocar.
+function prepararDomador(d) {
+  d.recargas = (d.habilidades || []).map((h) => Math.max(1, h.cd || 1));
+  d.recargasMax = [...d.recargas]; atualizarBarraDomador(d); return d;
+}
+function atualizarBarraDomador(d) { // HUD: progresso até a próxima habilidade ficar pronta
+  const i = d.recargas.reduce((m, c, k) => (c < d.recargas[m] ? k : m), 0);
+  d.barraMax = 100; d.barraEnergia = Math.round(100 * (1 - d.recargas[i] / Math.max(1, d.recargasMax[i])));
+}
+function tickDomador(b) { const d = b.domador; if (!d) return; d.recargas = d.recargas.map((c) => Math.max(0, c - 1)); atualizarBarraDomador(d); }
 function agirDomador(b, rng) {
   if (b.fim || !vivos(b.aliados).length) return;
-  const acao = escolherAcaoDomador(b.domador); if (!acao) return;
+  const d = b.domador, idx = [2, 1, 0].find((i) => d.habilidades?.[i] && d.recargas[i] === 0); if (idx == null) return;
+  const hab = d.habilidades[idx]; d.recargas[idx] = d.recargasMax[idx] = Math.max(1, hab.cd || 1); d.acoesFeitas = (d.acoesFeitas || 0) + 1; atualizarBarraDomador(d);
+  const acao = { domadorId: d.id, nomeDomador: d.nome, indiceHabilidade: idx, habilidade: hab, atk: d.stats?.atk || 50, poderApoio: d.stats?.poderApoio || 1 };
   const h = acao.habilidade, poder = acao.poderApoio || 1, ev = { tipo: 'domador', domador: acao.domadorId, nome: acao.nomeDomador, hab: h, idx: acao.indiceHabilidade, alvos: [] };
   const fonte = { id: `dom_${acao.domadorId}`, atk: acao.atk, elemento: h.elemento || b.domador.elemento || 'neutro', lado: 'a', efeitos: {} };
   if (h.tipo === 'dano') {
@@ -357,7 +368,7 @@ export function executar(b, acao, rng) {
   }
   b.evento = ev;
   fimDoTurno(u); b.fila.shift();
-  if (b.domador && u.lado === 'a') { carregarBarraDomador(b.domador, 'turno_aliado'); agirDomador(b, rng); }
+  if (b.domador && u.lado === 'a') agirDomador(b, rng);
   verificarFuria(b); reforcar(b); verificarFim(b);
   if (b.log.length > 40) b.log = b.log.slice(-40);
   return b;
