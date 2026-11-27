@@ -24,6 +24,7 @@ import { renderizarPainelReliquias, tratarCliqueReliquias } from './regiao1-reli
 import { resumoDomadorAtivoHtml, renderizarPainelDomadores, tratarCliqueDomadores } from './regiao1-domadores-ui.js';
 import { renderBalaoTutorialModo, renderGuiaJogadorNovo, tratarCliqueTutorialModo } from './regiao1-tutoriais-modos.js';
 import { aplicarFundoTelaSobDemanda } from './regiao1-perf-mobile.js';
+import { aplicarCamadasTela } from './regiao1-skins-v2.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -994,6 +995,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     const slugTela = TELA_V2_POR_PAINEL[painel] || painel || 'descanso';
     modal.dataset.tela = slugTela;
     const card = $('.exp-card');
+    aplicarCamadasTela(card, slugTela);
     if (card) {
       card.classList.toggle('modo-cena', ehCena);
       card.classList.toggle('modo-refugio', painel === 'descanso');
