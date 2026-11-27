@@ -38,3 +38,11 @@ test('batalha equipada termina sem erro', () => {
   const rng = M.criarRng(11), q = { critico: 0.3, danoCritico: 0.4, rouboVida: 0.1, ecoRecarga: 0.2, contraAtaque: 0.2, bonusCuraEscudo: 0.2, armaUnica: { efeitoHabilidade: { alvo: 'suprema', tipo: 'amplificar_suprema', valor: 0.15 } } };
   const b = M.criarBatalha([un('a', 'a', q), un('b', 'a', q)], [un('i', 'i', q), un('j', 'i')]); rodar(b, rng); assert.ok(b.fim);
 });
+test('domador: sem barra, recargas próprias desde a entrada, age só com habilidade pronta e não está no campo', () => {
+  const rng = M.criarRng(4), dom = criarEstadoDomadorBatalha({});
+  const b = M.criarBatalha([un('a', 'a')], [un('i', 'i'), un('j', 'i')], { domador: dom });
+  assert.deepEqual(b.domador.recargas, dom.habilidades.map((h) => Math.max(1, h.cd || 1)));
+  assert.ok(!b.ordem.includes(b.domador) && !b.aliados.includes(b.domador));
+  let usos = 0; for (let i = 0; i < 200 && !b.fim; i++) { M.executar(b, M.decidir(b, M.atorAtual(b), rng), rng); if (b.eventoDomador) { const ev = b.eventoDomador; usos++; assert.equal(b.domador.recargas[ev.idx], Math.max(1, ev.hab.cd || 1)); b.eventoDomador = null; } }
+  assert.ok(usos > 0);
+});
