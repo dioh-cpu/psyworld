@@ -1,6 +1,7 @@
 // Relíquias (+0→+15, recalibração nv.100, 13 conjuntos), Bolsa 200 vagas e Armas Únicas (5º espaço).
 // Regras 100% puras (sem DOM). Teto testado de +70% de poder sobre o Onírico.
 import { registrarGeradorReliquiaCampanha, parEssenciaDoElemento } from './regiao1-campanha-mini-regras.js';
+import { registrarGeradorReliquiaRegiao } from './regiao1-regioes-regras.js';
 import { registrarMarco } from './regiao1-missoes-regras.js';
 import { linhagemArmaUnicaDe, LINHAGENS_ARMAS_UNICAS, TORRES_CFG } from './regiao1-torres-regras.js';
 import { ELEMENTO_DA_ESPECIE } from '../species.js';
@@ -264,8 +265,9 @@ export function concederReliquia(save, opts = {}) {
   return { ok: true, reliquia };
 }
 
-// Registra gerador real na Campanha Mini e Calabouços
+// Registra gerador real na Campanha Mini, Calabouços e Regiões 3–12
 registrarGeradorReliquiaCampanha(concederReliquia);
+registrarGeradorReliquiaRegiao(concederReliquia);
 
 function acharReliquia(save, relId) {
   return reliquiasDe(save).bolsa.find((x) => x.id === relId) || null;
