@@ -3,7 +3,7 @@
 // regiao1-vfx.js, disparados uma única vez por evento. `criarArena` serve à Estratégia, aos Reinos e à Campanha; `criarTelaBatalha`
 // é o overlay completo usado por missões e capítulos.
 import { criarRng, criarUnidade, criarBatalha, atorAtual, executar, decidir, EFEITOS, LIMITE_ALIADOS } from './regiao1-estrategia-regras.js';
-import { criarCtx, tocarEvento, duracaoEstimada } from './regiao1-vfx.js';
+import { criarCtx, tocarEvento, duracaoEstimada, entradaChefe } from './regiao1-vfx.js';
 import { ARTE_DA_ESPECIE, LINHAS } from '../species.js';
 import { pref, proximaVelocidade } from './regiao1-sfx.js';
 import { resolverEncontroCatalogo, SUBSTITUTO_R1 } from './regiao1-encontros-regras.js';
@@ -210,7 +210,7 @@ export function criarArena(host, { artes = {} } = {}) {
     const frente = vaga % 2 === 1;
     const sprite = spriteNoCampo(u, opArt);
     const elemento = Object.hasOwn(NOME_ELEMENTO, u.elemento) ? u.elemento : 'neutro';
-    const el = document.createElement('button'); el.className = `un ${u.lado}${frente ? ' frente' : ''}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id; el.dataset.especie = u.especie;
+    const el = document.createElement('button'); el.className = `un ${u.lado}${frente ? ' frente' : ''}${entrando ? ' entrando' : ''}`; el.dataset.un = u.id; el.dataset.especie = u.especie; if (u.chefe) { el.dataset.chefe = '1'; el.dataset.elemento = elemento; }
     el.style.left = `${x.toFixed(1)}%`;
     el.style.setProperty('--posicao-y', `${altura}%`);
     if (sprite.escalaAltura !== 1) el.style.setProperty('--escala-altura-sprite', sprite.escalaAltura);
@@ -376,7 +376,11 @@ export function criarTelaBatalha() {
       const f = formaDoEncontro(esp, nv, op || {}, c.regiao ?? 1); // forma definida no encontro (e regra dos iniciais)
       const u = criarUnidade({ id: `i${i}`, especie: f.especie, nivel: nv, lado: 'i', papeis, elemento: f.substituido ? undefined : elemento, bonus: op?.bonus || {} });
       if (f.arte) u.arte = f.arte; if (f.forma) u.forma = f.forma; if (op?.chefe) { u.chefe = true; u.especie = op.nome || u.especie; } return u; });
-    b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render(); agendar(700 / vel());
+    b = criarBatalha(al, ini); b.log.push(`${c.titulo}: ${ini.length} inimigo(s).`); arena.montar(b); render();
+    // entrada do chefe: o primeiro turno espera o clipe (fora do modo minimizado)
+    const temChefe = ini.some((u) => u.chefe) && !minimizada;
+    if (temChefe) entradaChefe(criarCtx({ arena: el, campo: el.querySelector('.tb-campo') || el, no: (id) => el.querySelector(`[data-un="${id}"]`), aplicarHp: () => {} })).catch(() => {});
+    agendar((700 + (temChefe ? 2300 : 0)) / vel());
   }
   function fechar(venceu) { if (fechado) return; fechado = true; const eraMinimizada = minimizada; clearTimeout(timer); minimizada = false; ind.style.display = 'none'; const frac = b ? b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + Math.max(0, u.hp), 0) / Math.max(1, b.ordem.filter((u) => u.lado === 'a').reduce((a, u) => a + u.hpMax, 0)) : 1; el.style.display = 'none'; el.innerHTML = ''; const f = cfg?.onFim; b = null; f?.(venceu, frac, eraMinimizada); }
   function encerrarSilencioso() { clearTimeout(timer); el.style.display = 'none'; el.innerHTML = ''; b = null; }
