@@ -85,3 +85,36 @@ test('velocidade de equipamento reduz recarga (50% → −1, 100% → −2) sem 
     assert.equal(equip100.cd[2], Math.max(1, equip100.kit[2].cd - 2));
   }
 });
+test('limite de rodadas encerra luta infinita (dano mínimo contra cura/escudo no Calabouço)', () => {
+  const rng = M.criarRng(77);
+  const a = M.criarUnidade({ id: 'a', especie: 'Solarin', nivel: 5, lado: 'a' });
+  const chefe = M.criarUnidade({ id: 'c', especie: 'Brotavel', nivel: 35, lado: 'i', bonus: { hp: 3, def: 2 } });
+  const b = M.criarBatalha([a], [chefe], { maxRodadas: 15 });
+  // Força cura/escudo constantes simulando impasse de calabouço
+  a.atk = 5; chefe.atk = 5;
+  a.efeitos.regeneracao = { turnos: 99, valor: 500 };
+  chefe.efeitos.regeneracao = { turnos: 99, valor: 500 };
+  for (let i = 0; i < 400 && !b.fim; i++) M.passoAuto(b, rng);
+  assert.equal(b.fim, 'derrota');
+  assert.equal(b.motivoFim, 'limite_rodadas');
+  assert.ok(b.rodada > 15);
+});
+test('ondas: recargas do domador e velocidade (equipamento + veloz) continuam corretas entre ondas sem travar', () => {
+  const rng = M.criarRng(31);
+  const dom = criarEstadoDomadorBatalha({});
+  const a1 = M.criarUnidade({ id: 'a1', especie: 'Ignavor', nivel: 35, lado: 'a', equip: { velocidadePct: 0.5 } });
+  const a2 = M.criarUnidade({ id: 'a2', especie: 'Solarin', nivel: 35, lado: 'a' });
+  const w = (p, nv) => [M.criarUnidade({ id: p + '1', especie: 'Fanalino', nivel: nv, lado: 'i' }), M.criarUnidade({ id: p + '2', especie: 'Cervomusgo', nivel: nv, lado: 'i' })];
+  const b = M.criarBatalha([a1, a2], w('w1', 15), { domador: dom, ondas: [w('w2', 16), w('w3', 17)] });
+  const ondasAcaoDomador = new Set();
+  for (let i = 0; i < 400 && !b.fim; i++) {
+    M.passoAuto(b, rng);
+    if (b.eventoDomador) { ondasAcaoDomador.add(b.onda); b.eventoDomador = null; }
+    for (const c of a1.cd) assert.ok(Number.isFinite(c) && c >= 0);
+    for (const c of b.domador.recargas) assert.ok(Number.isFinite(c) && c >= 0);
+  }
+  assert.equal(b.fim, 'vitoria');
+  assert.equal(b.onda, 3);
+  assert.ok(ondasAcaoDomador.size >= 2, 'Domador deve continuar agindo entre ondas');
+  assert.equal(a1.idxEmUso, null);
+});

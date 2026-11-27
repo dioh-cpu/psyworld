@@ -78,13 +78,14 @@ export function gerarInimigos(fase, papeis, rng, extras = []) {
 
 // ---------- combate ----------
 export const LIMITE_ALIADOS = 4;
+export const LIMITE_RODADAS_BATALHA = 60;
 // Até quatro combatentes de cada lado em campo, com dois reforços exclusivos dos inimigos.
 // ondas: listas de inimigos das ondas SEGUINTES (a 1ª é `inimigos`). Ao limpar uma onda, a próxima entra; aliados mantêm vida.
-export function criarBatalha(aliados, inimigos, { ativos = LIMITE_ALIADOS, domador = null, ondas = [] } = {}) {
+export function criarBatalha(aliados, inimigos, { ativos = LIMITE_ALIADOS, domador = null, ondas = [], maxRodadas = LIMITE_RODADAS_BATALHA } = {}) {
   const vagas = Math.min(ativos, LIMITE_ALIADOS);
   const emCampoA = aliados.slice(0, vagas), emCampoI = inimigos.slice(0, vagas);
   for (const u of [...inimigos, ...aliados]) if (u.chefe && CHEFE_POR_NOME[u.especie] && u.furia == null) u.furia = CHEFE_POR_NOME[u.especie].furia;
-  return { aliados: emCampoA, inimigos: emCampoI, esperaI: inimigos.slice(vagas, vagas + 2), rodada: 1, fila: [], log: [], fim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0, ...(domador ? { domador: prepararDomador(domador) } : {}), onda: 1, totalOndas: 1 + ondas.length, ondasRestantes: ondas.map((o) => o.slice(0, vagas)) };
+  return { aliados: emCampoA, inimigos: emCampoI, esperaI: inimigos.slice(vagas, vagas + 2), rodada: 1, maxRodadas: Math.max(1, Math.floor(Number(maxRodadas) || LIMITE_RODADAS_BATALHA)), fila: [], log: [], fim: null, motivoFim: null, ordem: [...emCampoA, ...emCampoI], turnos: 0, ...(domador ? { domador: prepararDomador(domador) } : {}), onda: 1, totalOndas: 1 + ondas.length, ondasRestantes: ondas.map((o) => o.slice(0, vagas)) };
 }
 // Fúria do chefe (uma vez por batalha): abaixo do limiar, limpa os efeitos negativos, recupera 10% da vida, ganha ataque e
 // defesa elevados por 3 turnos e o golpe especial volta pronto. O evento leva `fases` para o VFX anunciar.
@@ -175,6 +176,7 @@ function iniciarTurno(b, u) {
 }
 function fimDoTurno(u) {
   u.turnosJogados = (u.turnosJogados || 0) + 1;
+  u.idxEmUso = null;
   for (const [id, e] of Object.entries(u.efeitos || {})) { e.turnos -= 1; if (e.turnos <= 0) delete u.efeitos[id]; }
 }
 const verificarFim = (b) => {
@@ -190,7 +192,16 @@ function proximaOnda(b) {
   b.onda += 1; b.inimigos = nova; b.esperaI = [];
   for (const u of nova) if (u.chefe && CHEFE_POR_NOME[u.especie] && u.furia == null) u.furia = CHEFE_POR_NOME[u.especie].furia;
   b.ordem = [...b.aliados, ...nova]; b.fila = [];
-  for (const u of b.aliados) u.defendendo = false;
+  for (const u of b.aliados) {
+    u.defendendo = false;
+    u.idxEmUso = null;
+    u.cd = (u.cd || [0, 0, 0]).map((c) => Math.max(0, Math.floor(Number(c) || 0)));
+    u.recarga = Math.max(...u.cd);
+  }
+  if (b.domador?.recargas) {
+    b.domador.recargas = b.domador.recargas.map((c) => Math.max(0, Math.floor(Number(c) || 0)));
+    atualizarBarraDomador(b.domador);
+  }
   const ev = { tipo: 'onda', de, para: b.onda, total: b.totalOndas, entram: nova.map((u) => u.id) };
   if (b.evento) b.evento.onda = ev; else antes(b, ev);
   b.log.push(`Onda ${b.onda}/${b.totalOndas}!`);
@@ -209,8 +220,19 @@ export function resumoBatalha(b) {
 }
 export function atorAtual(b) {
   if (b.fim) return null;
+  const maxRod = b.maxRodadas || LIMITE_RODADAS_BATALHA;
   for (let guarda = 0; guarda < 400; guarda++) {
-    if (!b.fila.length) { if (b.jaIniciou) b.rodada++; b.jaIniciou = true; iniciarRodada(b); }
+    if (!b.fila.length) {
+      if (b.jaIniciou) b.rodada++;
+      if (b.rodada > maxRod) {
+        b.fim = 'derrota';
+        b.motivoFim = 'limite_rodadas';
+        b.log.push(`Limite de ${maxRod} rodadas atingido — batalha encerrada.`);
+        return null;
+      }
+      b.jaIniciou = true;
+      iniciarRodada(b);
+    }
     const u = b.ordem.find((x) => x.id === b.fila[0] && x.hp > 0);
     if (!u) { b.fila.shift(); continue; }
     if (b.iniciado !== `${b.rodada}:${u.id}`) {

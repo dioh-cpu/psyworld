@@ -50,3 +50,26 @@ Com o `#148`, os iniciais começam como **T4 no Nv.5** e exigem **Nv.40** para e
   - **Jogador Ativo (~45–60 min/dia):** `~3.800 XP/dia` em jogo ativo → **`~2,30 dias`**.
   - **Com 8h/dia de Idle Offline (Nv.6 = 1,6 abate/min × 28 XP/abate):** +6.500 a +10.500 XP/dia na formação → **`~0,6 a 1,0 dia`**.
 - **Conclusão sobre ajuste:** **Não foi necessário alterar `xpTotal(n)` nem `XP_IDLE_CFG`**, pois o tempo de jogo normal sem acelerar com AFK fica naturalmente em **~3,9 dias** no perfil casual (dentro da janela de **3 a 5 dias**) e preserva todos os saves existentes.
+
+---
+
+## 4. Calibração de Dificuldade da Campanha Mini Cap. 1 (`1-1` a `1-10`, 300 lutas/fase)
+
+Simulação executada direto no motor (`regiao1-estrategia-regras.js`) com Azazel Domador e times realistas (rodando igualmente os 5 iniciais `Brasinha`, `Gotalume`, `Sementil`, `Solinho`, `Penumbrio`; `300` lutas por fase):
+
+| Fase | Time realista do jogador | Ondas (qtd) | Níveis por onda | Vitória antes | Vitória depois | Meta |
+|---|---|---|---:|---:|---:|---|
+| `1-1` | Inicial solo Nv.5 (T4) | `1 + 1` | `1 / 1` | 60,3% | **97,3%** | `≥ 95%` |
+| `1-2` | Inicial solo Nv.7 (T4) | `1 + 1` | `1 / 2` | 57,0% | **98,0%** | `≥ 95%` |
+| `1-3` | Inicial solo Nv.9 (T4) | `1 + 1` | `2 / 3` | 47,3% | **100,0%** | `≥ 95%` |
+| `1-4` | Inicial Nv.10 + 1 Onírico Nv.9 | `1 + 2 + 2` | `7 / 8 / 9` | 17,0% | **84,0%** | `~85%` |
+| `1-5` | Inicial Nv.12 + 1 Onírico Nv.11 (Elite) | `1 + 2 + 2` | `8 / 9 / 10` | 1,3% | **83,0%** | `~85%` |
+| `1-6` | Inicial Nv.14 + 2 Oníricos (Nv.13/12) | `2 + 2 + 2` | `11 / 12 / 13` | 59,3% | **90,3%** | `~85%` |
+| `1-7` | Inicial Nv.16 + 2 Oníricos (Nv.15/14) | `2 + 2 + 2` | `14 / 15 / 16` | 21,0% | **85,7%** | `~85%` |
+| `1-8` | Inicial Nv.18 + 3 Oníricos (Nv.17..15) | `2 + 2 + 3` | `17 / 18 / 19` | 66,0% | **65,0%** | `~70%` |
+| `1-9` | Inicial Nv.20 + 3 Oníricos (Nv.19..17) | `2 + 2 + 3` | `18 / 19 / 20` | 25,3% | **80,0%** | `~70%` |
+| `1-10` | Inicial Nv.22 + 3 Oníricos (Chefe) | `2 + 2 + 2` | `19 / 20 / 21` | 0,0% | **63,3%** | `~70%` |
+
+- **Limite de rodadas no motor (`LIMITE_RODADAS_BATALHA = 60`):** evita lutas infinitas em Calabouços (dano mínimo `2` vs cura/escudo/regeneração), encerrando a batalha com `b.fim = 'derrota'` e `b.motivoFim = 'limite_rodadas'`.
+- **Produção:** https://cwdp-lake.vercel.app/jogar
+
