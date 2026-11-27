@@ -10,6 +10,7 @@ import { NPCS_REGIAO1, PISTAS_MUNDO, MONSTROS_SELVAGENS, MONSTROS_SELVAGENS_R2, 
 import { resolverEncontroCatalogo, reforcosDoChefe } from './regiao1-encontros-regras.js';
 import { CHEFE_POR_NOME } from './regiao1-kits-reinos.js';
 import { aplicarDropsBatalhaManual } from './regiao1-regras-sonho.js';
+import { energiaDe, ENERGIA_CFG } from './regiao1-campanha-mini-regras.js';
 import { iniciarSeletorRegioes } from './regiao1-regioes.js';
 import {
   criarEstadoPasseio,
@@ -737,7 +738,7 @@ function garantirBotaoRefugioNoModal(el) {
       voltarAoRefugioDeQualquerMenu();
     });
     const fecharBtn = head.querySelector('.btn-fechar');
-    if (fecharBtn) head.insertBefore(btn, fecharBtn);
+    if (fecharBtn && fecharBtn.parentElement) fecharBtn.parentElement.insertBefore(btn, fecharBtn);
     else head.appendChild(btn);
   }
   if (el.id === 'modal-exp') {
@@ -790,6 +791,25 @@ btnFazenda?.addEventListener('click', () => {
 function renderizarDiario() {
   const resumo = document.getElementById('diario-resumo');
   const lista = document.getElementById('diario-lista');
+  const head = document.querySelector('#modal-diario .modal-head');
+  if (head) {
+    let pill = document.getElementById('diario-energia');
+    if (!pill) {
+      pill = document.createElement('span');
+      pill.id = 'diario-energia';
+      pill.className = 'energia-pill';
+      pill.style.marginLeft = 'auto';
+      pill.style.marginRight = '6px';
+      const acoes = head.querySelector('div');
+      head.insertBefore(pill, acoes || null);
+    }
+    const en = energiaDe(save);
+    pill.textContent = `⚡ ${en.atual}/${en.max}`;
+    const faltaMs = en.atual < en.max ? Math.max(0, ENERGIA_CFG.intervaloMs - (Date.now() - en.ultimoTickMs)) : 0;
+    pill.title = faltaMs > 0
+      ? `Energia: ${en.atual}/${en.max} (+1 em ${Math.ceil(faltaMs / 60000)} min · máx. ${ENERGIA_CFG.max})`
+      : `Energia cheia (${en.atual}/${en.max})`;
+  }
   const concluidas = QUESTS_DEFINICOES.filter((q) => save.quests[q.id] === 'concluida').length;
   const bosses = Object.values(save.bossesDerrotados).filter(Boolean).length;
   const marcosAtivos = Object.values(save.teleportes).filter((t) => t.ativo).length;

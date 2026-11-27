@@ -14,6 +14,7 @@ import { fichaOnirico, evoluirFormaOnirico, tierDaUnidade, estrelasDaUnidade, ra
 import { revelarInvocacao } from './regiao1-revelacao.js';
 import { BOSSES_REGIAO1 } from './regiao1-estado.js';
 import { CHEFES_REVANCHE_CATALOGO, statusRevancheChefe, iniciarRevancheChefe, concluirRevancheChefe, previsaoCraftChefe, craftarChefe, bonusCategoriaPoder } from './regiao1-revanche-regras.js';
+import { energiaDe, usarPocaoEnergia, ENERGIA_CFG, essenciasDe, ESSENCIAS_PARES } from './regiao1-campanha-mini-regras.js';
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const IMG = (p) => `../../../${p}`;
@@ -123,9 +124,18 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .ref-titulo { position: absolute; left: 14px; top: 58px; z-index: 6; border-left: 3px solid #f3c27a; padding-left: 9px; text-shadow: 0 2px 8px rgba(0,0,0,.85); pointer-events: none; }
     #modal-exp .ref-titulo small { display: block; font-size: 11px; color: #fde68a; opacity: .92; letter-spacing: .3px; }
     #modal-exp .ref-titulo h4 { margin: 0; font-size: clamp(16px, 2.4vw, 24px); color: #fff7ed; font-family: Georgia, serif; }
-    #modal-exp .ref-lado { position: absolute; left: 12px; top: 52%; transform: translateY(-50%); z-index: 8; display: flex; flex-direction: column; gap: 6px; }
-    #modal-exp .ref-lado button { width: 64px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px; border-radius: 10px; background: rgba(26,15,36,.84); border: 1px solid rgba(243,194,122,.36); color: #fff3e7; font-size: 10.5px; font-weight: 600; cursor: pointer; }
-    #modal-exp .ref-lado img { width: 22px; height: 22px; object-fit: contain; }
+    #modal-exp .ref-lado { position: absolute; left: 12px; top: 56%; transform: translateY(-50%); z-index: 8; display: grid; grid-template-columns: repeat(2, 68px); gap: 5px; }
+    #modal-exp .ref-lado button { width: 68px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 3px; border-radius: 10px; background: rgba(26,15,36,.86); border: 1px solid rgba(243,194,122,.4); color: #fff3e7; font-size: 9.5px; font-weight: 700; cursor: pointer; line-height: 1.15; text-align: center; }
+    #modal-exp .ref-lado button.destaque-modo { border-color: #f59e0b; background: rgba(66,34,20,.9); color: #fde68a; }
+    #modal-exp .ref-lado img { width: 20px; height: 20px; object-fit: contain; }
+    #modal-exp .energia-pill, .energia-pill-global { display: inline-flex; align-items: center; gap: 5px; background: rgba(24,14,34,.9); border: 1px solid rgba(56,189,248,.55); border-radius: 10px; padding: 4px 9px; font-size: 11.5px; font-weight: 700; color: #bae6fd; white-space: nowrap; }
+    #modal-exp .energia-pill button { background: #0284c7; color: #fff; border: 0; border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 700; cursor: pointer; }
+    #modal-exp .energia-pill small { font-weight: 500; opacity: .82; font-size: 10px; }
+    @media (max-height: 430px) {
+      #modal-exp .ref-lado { top: 56%; grid-template-columns: repeat(2, 62px); gap: 4px; }
+      #modal-exp .ref-lado button { width: 62px; padding: 4px 2px; font-size: 9px; }
+      #modal-exp .ref-lado img { width: 17px; height: 17px; }
+    }
     #modal-exp .ref-passe { position: absolute; right: 12px; top: 58px; z-index: 8; width: 176px; padding: 8px 10px; border-radius: 11px; text-align: left; cursor: pointer; color: #fff7ed; border: 1px solid rgba(243,194,122,.55); background: linear-gradient(95deg, rgba(20,11,28,.92) 48%, rgba(20,11,28,.36)), url('../../../assets/confusion/interface/menus-v1/passe/fundo.webp') right center / cover no-repeat; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
     #modal-exp .ref-passe small { display: block; font-size: 9.5px; color: #fde68a; opacity: .92; }
     #modal-exp .ref-passe b { display: block; font-size: 13px; line-height: 1.2; margin: 1px 0; font-family: Georgia, serif; }
@@ -254,7 +264,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   const nav = document.createElement('div'); nav.id = 'exp-nav'; document.body.append(nav);
   const sair = document.createElement('button'); sair.id = 'exp-sair-cacada'; sair.className = 'btn-pri'; sair.textContent = '↩ Sair da Caçada'; document.body.append(sair);
   const modal = document.createElement('div'); modal.id = 'modal-exp'; modal.className = 'modal-bg';
-  modal.innerHTML = '<div class="modal-card exp-card" role="dialog" aria-modal="true"><header class="modal-head"><h3 id="exp-titulo"></h3><button class="btn-sec" id="exp-rever" hidden>Rever tutorial</button><button class="btn-fechar" id="exp-fechar" aria-label="Fechar">✕</button></header><nav class="exp-abas" id="exp-abas"></nav><div class="exp-corpo" id="exp-corpo"></div></div>';
+  modal.innerHTML = '<div class="modal-card exp-card" role="dialog" aria-modal="true"><header class="modal-head"><h3 id="exp-titulo"></h3><span id="exp-energia" class="energia-pill" hidden></span><button class="btn-sec" id="exp-rever" hidden>Rever tutorial</button><button class="btn-fechar" id="exp-fechar" aria-label="Fechar">✕</button></header><nav class="exp-abas" id="exp-abas"></nav><div class="exp-corpo" id="exp-corpo"></div></div>';
   document.body.append(modal);
   const crise = document.createElement('div'); crise.id = 'exp-crise'; document.body.append(crise);
   const $ = (q) => modal.querySelector(q);
@@ -263,12 +273,23 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   let painel = null, aba = 0, revendo = null, resumoUlt = null, loteRec = 'tonico', loteQtd = 3, ultimasInvocacoes = [], hvEstado = null, fichaUid = null, descPop = null, verCapaInv = false; let cap = 'cap1';
   const PAINEIS = {
     descanso: { titulo: '🏕️ Refúgio do Farol', abas: ['Refúgio'], tut: null },
+    campanhaMini: { titulo: '🗺️ Campanha Mini', abas: ['Campanha Mini'], tut: null, mostraEnergia: true },
+    torres: { titulo: '🗼 Torres', abas: ['Torres Elementais', 'Torres Únicas'], tut: null, mostraEnergia: true },
+    calaboucos: { titulo: '🏰 Calabouços', abas: ['Calabouços'], tut: null, mostraEnergia: true },
+    reliquias: { titulo: '💎 Relíquias & Essências', abas: ['Relíquias', 'Essências'], tut: null, mostraEnergia: true },
     equipe: { titulo: '⚔️ Equipe', abas: ['Formação & Coleção'], tut: null },
     oniricos: { titulo: '🎫 Invocação', abas: ['Invocação'], tut: 'banner' },
     cacadas: { titulo: '🏹 Caçadas & Chefes', abas: ['Caçadas', 'Calabouço', 'Chefes'], tut: 'cacadas' },
     guilda: { titulo: '🏛️ Guilda dos Aventureiros', abas: ['Contratos', 'Fazenda', 'Oficina', 'Reinos'], tut: 'guilda' },
     cronicas: { titulo: '📜 Crônicas', abas: ['Crise', 'Herói × Vilão'], tut: 'crise' },
   };
+  function energiaTextoHtml(s) {
+    const e = energiaDe(s, Date.now());
+    const faltaMs = e.atual >= e.max ? 0 : Math.max(0, ENERGIA_CFG.intervaloMs - (Date.now() - e.ultimoTickMs));
+    const timer = faltaMs > 0 ? `<small>+1 em ${dur(faltaMs)}</small>` : '<small>cheia</small>';
+    const btnPoc = e.pocoes > 0 ? `<button type="button" data-usar-energia="1" title="Usar 1 Poção de Energia (+${ENERGIA_CFG.ganhoPocao})">+${ENERGIA_CFG.ganhoPocao} (${e.pocoes})</button>` : '';
+    return `⚡ <b>${e.atual}/${e.max}</b> ${timer} ${btnPoc}`;
+  }
   const tutDaAba = (p, a) => (p === 'guilda' ? ['guilda', 'fazenda', 'oficina', 'reinos'][a] : p === 'cacadas' ? ['cacadas', 'calabouco', null][a] : p === 'cronicas' ? ['crise', 'hv'][a] : p === 'oniricos' ? 'banner' : null);
   function cartaoTut(id) {
     const t = TUTS[id]; if (!t) return '';
@@ -343,10 +364,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     let popHtml = '';
     if (descPop === 'batalhas') {
       const modosBat = [
+        { acao: 'campanhaMini', ico: 'campanha.png', tit: 'Campanha Mini' },
+        { acao: 'torres', ico: 'torre.png', tit: 'Torres' },
+        { acao: 'calaboucos', ico: 'calabouco.png', tit: 'Calabouços' },
         { acao: 'atlas', ico: 'cacas.png', tit: 'Atlas de Caça' },
         { acao: 'idle', ico: 'idle.png', tit: autoOn ? 'Idle (Auto ON)' : 'Ativar Idle' },
         ...(cacadasOn ? [{ acao: 'cacadas', ico: 'batalhas.png', tit: 'Caçadas & Chefes' }] : []),
-        ...(calaboucoOn ? [{ acao: 'calabouco', ico: 'calabouco.png', tit: 'Calabouço' }] : []),
         ...(hwOn ? [{ acao: 'torre', ico: 'torre.png', tit: 'Torre Halloween' }] : []),
         ...(cronicasOn ? [{ acao: 'cronicas', ico: 'cronicas.png', tit: 'Crônicas & H×V' }] : []),
       ];
@@ -374,6 +397,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           <span><b>${esc(nomeJogador)}</b><small>Domador · Nv.${nvDomador}</small></span>
         </button>
         <div class="ref-moedas">
+          <span class="energia-pill" data-energia-refugio="1">${energiaTextoHtml(s)}</span>
           <span class="ref-pill">🪙 ${gold}</span>
           <span class="ref-pill">💎 ${diamantes}</span>
           <button class="ref-btn-ico" data-desc-pop="${descPop === 'atalhos' ? '' : 'atalhos'}" title="Atalhos" aria-label="Atalhos"><img src="${DESCANSO_V1('icones/atalhos.png')}" alt=""></button>
@@ -381,8 +405,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       </div>
       <div class="ref-titulo"><small>${esc(mapaAtual)}</small><h4>Refúgio do Farol</h4></div>
       <div class="ref-lado">
-        <button data-desc-ir="eventos"><img src="${DESCANSO_V1('icones/eventos.png')}" alt=""><span>Eventos</span></button>
+        <button class="destaque-modo" data-desc-ir="campanhaMini"><img src="${DESCANSO_V1('icones/campanha.png')}" alt=""><span>Campanha Mini</span></button>
+        <button data-desc-ir="torres"><img src="${DESCANSO_V1('icones/torre.png')}" alt=""><span>Torres</span></button>
+        <button data-desc-ir="calaboucos"><img src="${DESCANSO_V1('icones/calabouco.png')}" alt=""><span>Calabouços</span></button>
+        <button data-desc-ir="reliquias"><img src="${DESCANSO_V1('icones/mochila.png')}" alt=""><span>Relíquias</span></button>
         <button data-desc-ir="missoes"><img src="${DESCANSO_V1('icones/missoes.png')}" alt=""><span>Missões</span></button>
+        <button data-desc-ir="eventos"><img src="${DESCANSO_V1('icones/eventos.png')}" alt=""><span>Eventos</span></button>
       </div>
       <button class="ref-passe" data-desc-ir="passe">
         <small>Passe da Temporada</small>
@@ -890,11 +918,38 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       card.classList.toggle('modo-refugio', painel === 'descanso');
     }
     $('#exp-titulo').textContent = P.titulo;
+    const enEl = $('#exp-energia');
+    if (enEl) {
+      enEl.hidden = !P.mostraEnergia;
+      if (P.mostraEnergia) enEl.innerHTML = energiaTextoHtml(save());
+    }
     $('#exp-abas').innerHTML = P.abas.length > 1 ? P.abas.map((a, i) => `<button class="btn-sec" role="tab" aria-selected="${i === aba}" data-aba="${i}">${esc(a)}</button>`).join('') : '';
     const tid = tutDaAba(painel, aba); const vis = tid && TUTS[tid];
     $('#exp-rever').hidden = ehCena || !(vis && exp().tut[tid] && revendo !== tid); $('#exp-rever').dataset.tut = tid || '';
     let h = tid ? cartaoTut(tid) : '';
     if (painel === 'descanso') h += abaDescanso();
+    if (painel === 'campanhaMini') h += `<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Energia: <b>6</b> (normal), <b>8</b> (elite) e <b>10</b> (chefe).</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
+    if (painel === 'torres') {
+      const lista = aba === 0
+        ? Object.values(ESSENCIAS_PARES).map((p) => `<div class="bl"><h4>🗼 Torre · ${esc(p.nome)}</h4><p>50 andares · Elementos: <b>${p.elementos.join(', ')}</b> · Recompensas de 1ª vitória + Essências elementais e treino diário (3×/dia).</p><p class="mut">Aguardando módulo de regras das Torres (asutaroto291).</p></div>`).join('')
+        : ['Ascensão', 'Abismo', 'Eclipse'].map((n) => `<div class="bl"><h4>⚔️ Torre Única · ${n}</h4><p>30 andares (Nv. 60–120) · Fragmentos de Arma Única e Pó Único.</p><p class="mut">Aguardando módulo de regras das Torres (asutaroto291).</p></div>`).join('');
+      h += lista;
+    }
+    if (painel === 'calaboucos') {
+      h += Object.values(ESSENCIAS_PARES).map((p) => `<div class="bl"><h4>🏰 ${esc(p.calabouco)} (${p.elementos.join(' / ')})</h4><p>13 níveis · Custo: 8 / 12 / 16 de energia · Relíquias garantidas por raridade e moeda de calabouço.</p><p class="mut">Aguardando módulo de regras dos Calabouços (asutaroto291).</p></div>`).join('');
+    }
+    if (painel === 'reliquias') {
+      if (aba === 0) {
+        const bolsa = save().idle?.reliquias?.bolsa || [];
+        h += `<div class="bl"><h4>💎 Bolsa de Relíquias (${bolsa.length}/200)</h4><p>4 partes (Coroa, Amuleto, Anel, Talismã) + 5º espaço de Arma Única. Equipe apenas em Oníricos do mesmo elemento.</p>${bolsa.length ? bolsa.slice(0, 20).map((r) => `<p>• <b>${esc(r.parte || 'Relíquia')}</b> (${esc(r.raridade || 'comum')} · ${esc(r.elemento || 'neutro')} · conjunto ${esc(r.conjunto || '—')})</p>`).join('') : '<p class="mut">Nenhuma relíquia obtida ainda. Vença fases elite/escondidas da Campanha Mini ou Calabouços.</p>'}</div>`;
+      } else {
+        const ess = essenciasDe(save());
+        h += Object.values(ESSENCIAS_PARES).map((p) => {
+          const sal = ess[p.id] || { menor: 0, media: 0, maior: 0 };
+          return `<div class="bl"><h4>✨ ${esc(p.nome)} (${p.elementos.join(', ')})</h4><p>Menor: <b>${sal.menor}</b> · Média: <b>${sal.media}</b> · Maior: <b>${sal.maior}</b></p></div>`;
+        }).join('');
+      }
+    }
     if (painel === 'equipe') h += abaEquipe();
     if (painel === 'oniricos') h += abaBanner();
     if (painel === 'cacadas') h += [abaCacadas, abaCalabouco, abaChefes][aba]();
@@ -910,6 +965,10 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   function abaCrise() { const c = R.criseDe(save()); return `<div class="bl"><h4>🧟 ${esc(CRISE.cidade)}: ${esc(CRISE.nomes[c.estado])}</h4><p>Uma crise completa numa só cidade: saudável → contaminada → tomada → purificada → reconstruída. As mudanças aparecem no mapa, com zumbis nas ruas durante o surto. Estado próprio: não altera a Campanha nem os Reinos.</p><div class="ln"><button class="btn-pri" data-crise-abrir="1">Visitar a cidade</button></div></div>`; }
   function abrir(p, a = 0, origem = 'campanha') {
     if (batalhaBloqueando() || tela.aberta()) return;
+    if (p === 'campanhaMini' && window.regiaoCampanhaMini?.abrir) {
+      window.regiaoCampanhaMini.abrir();
+      return;
+    }
     origemPainelExp = p === 'descanso' ? 'campanha' : origem;
     painel = p; aba = a; revendo = null; hvEstado = null; fichaUid = null; selEq = null; descPop = null; verCapaInv = false;
     render(true);
@@ -918,6 +977,13 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
 
   modal.addEventListener('click', (e) => {
     const t = e.target.closest('button'); if (!t) return; const d = t.dataset;
+    if (d.usarEnergia) {
+      const r = usarPocaoEnergia(save(), 1, Date.now());
+      mostrarToast(r.ok ? `⚡ +${r.ganho} de energia (${r.atual}/${r.max}).` : r.motivo, 2600);
+      if (r.ok) salvar();
+      render();
+      return;
+    }
     if (t.id === 'exp-fechar') {
       if (painel !== 'descanso' && origemPainelExp === 'descanso') {
         painel = 'descanso'; aba = 0; fichaUid = null; selEq = null; descPop = null; verCapaInv = false;
@@ -970,6 +1036,10 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       if (dest === 'torre') { window.regiaoHW?.abrir?.(2); return; }
       if (dest === 'calabouco') { origemPainelExp = 'descanso'; painel = 'cacadas'; aba = 1; fichaUid = null; selEq = null; render(true); return; }
       if (dest === 'reinos') { window.regiaoReinos?.abrirSeletor?.(); return; }
+      if (dest === 'campanhaMini' && window.regiaoCampanhaMini?.abrir) {
+        window.regiaoCampanhaMini.abrir();
+        return;
+      }
       if (PAINEIS[dest]) {
         if (painel === 'descanso' && dest !== 'descanso') origemPainelExp = 'descanso';
         painel = dest; aba = 0; fichaUid = null; selEq = null; verCapaInv = false; render(true); return;
