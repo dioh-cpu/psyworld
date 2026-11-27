@@ -117,6 +117,8 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .exp-card.modo-cena > .exp-abas { display: none; }
     #modal-exp .exp-card.modo-cena > .exp-corpo { padding: 0; display: flex; flex-direction: column; }
     #modal-exp .exp-card.modo-refugio > .exp-corpo { overflow: hidden; }
+    #modal-exp:has(.exp-card.modo-refugio) { padding: 0 !important; background: #140c1d !important; align-items: stretch; justify-content: stretch; }
+    #modal-exp .exp-card.modo-refugio { width: 100vw !important; max-width: 100vw !important; height: 100dvh !important; max-height: 100dvh !important; border-radius: 0 !important; margin: 0 !important; }
     #modal-exp .ref-cena { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; height: 100%; background: url('../../../assets/confusion/interface/descanso-v1/sala.webp') center 55% / cover no-repeat; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
     #modal-exp .ref-cena::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(16,9,24,.46) 0%, rgba(16,9,24,0) 24%, rgba(16,9,24,0) 68%, rgba(12,7,18,.78) 100%); pointer-events: none; z-index: 1; }
     #modal-exp .ref-topo { position: relative; z-index: 8; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 54px 4px 12px; }
