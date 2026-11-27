@@ -114,5 +114,64 @@ class TestProcessarAnimacao(unittest.TestCase):
             self.assertTrue(val["ok"], f"Validação 2 vistas falhou: {val['erros']}")
 
 
+
+def _folha_lateral_topo(cabeca: str, w: int = 480, h: int = 270, frente_h: int = 60) -> Image.Image:
+    """Lateral em cima (corpo grosso + cauda longa e fina), frente e costas embaixo (maiores que a lateral)."""
+    im = Image.new("RGB", (w, h), (255, 0, 255))
+    dr = ImageDraw.Draw(im)
+    corte = round(h * 560 / 1080)  # ~140
+    y1 = corte - 10
+    # corpo/cabeça (40 de altura, 100 de largura) + cauda (6 de altura, 160 de largura)
+    if cabeca == "esquerda":
+        dr.rectangle([100, y1 - 40, 200, y1], fill=(190, 90, 40)); dr.rectangle([200, y1 - 8, 360, y1 - 2], fill=(190, 90, 40))
+    else:
+        dr.rectangle([280, y1 - 40, 380, y1], fill=(190, 90, 40)); dr.rectangle([120, y1 - 8, 280, y1 - 2], fill=(190, 90, 40))
+    base = h - 8
+    dr.rectangle([w // 4 - 25, base - frente_h, w // 4 + 25, base], fill=(165, 92, 48))
+    dr.rectangle([3 * w // 4 - 25, base - frente_h, 3 * w // 4 + 25, base], fill=(150, 80, 40))
+    return im
+
+
+class TestLayoutLateralTopo(unittest.TestCase):
+    def _rodar(self, cabeca: str, **kw):
+        with tempfile.TemporaryDirectory(prefix="cw_test_lt_") as td:
+            raiz = Path(td); ent = raiz / "in"; ent.mkdir()
+            for i in range(8):
+                _folha_lateral_topo(cabeca).save(ent / f"f{i:02d}.png")
+            meta = MOD.processar_animacao(ent, "lagartoteste", "idle", saida_raiz=raiz / "out", fps=8, tamanho=128,
+                                          vistas=("direita", "frente", "costas"), layout="lateral-topo", **kw)
+            return meta
+
+    def test_lateral_virada_para_esquerda_e_invertida_e_registrada(self) -> None:
+        meta = self._rodar("esquerda")
+        self.assertIn("direita", meta["pipeline"]["idle"]["inversoes"])
+        self.assertEqual(meta["acoes"]["idle"]["direita"]["origem"], "invertida")
+        self.assertEqual(meta["acoes"]["idle"]["esquerda"]["origem"], "espelhada")
+        self.assertEqual(meta["acoes"]["idle"]["frente"]["origem"], "direta")  # frente/costas nunca espelhadas
+
+    def test_lateral_virada_para_direita_nao_inverte(self) -> None:
+        meta = self._rodar("direita")
+        self.assertEqual(meta["pipeline"]["idle"]["inversoes"], {})
+        self.assertEqual(meta["acoes"]["idle"]["direita"]["origem"], "direta")
+
+    def test_forcar_lateral_pelo_readme(self) -> None:
+        meta = self._rodar("direita", lateral_aponta="esquerda")
+        inv = meta["pipeline"]["idle"]["inversoes"]["direita"]
+        self.assertEqual(inv["fonte"], "forcada")
+
+    def test_frente_e_costas_maiores_sao_reduzidas_para_altura_da_lateral(self) -> None:
+        fator = self._rodar("direita")["pipeline"]["idle"]["fatorEscala"]
+        self.assertEqual(fator["direita"], 1.0)
+        self.assertLess(fator["frente"], 1.0)  # frente 60px vs lateral 40px => reduzida (limite 0.7)
+        self.assertLess(fator["costas"], 1.0)
+
+    def test_detector_de_direcao_da_cabeca(self) -> None:
+        for cab in ("esquerda", "direita"):
+            im = MOD.remover_chroma_rgba(_folha_lateral_topo(cab), "magenta")
+            aponta, conf = MOD.detectar_direcao_cabeca([im], (0, 0, im.width, 130))
+            self.assertEqual(aponta, cab)
+            self.assertGreater(conf, 1.25)
+
+
 if __name__ == "__main__":
     unittest.main()
