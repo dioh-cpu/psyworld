@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { criarEstadoInicial, serializarEstado, desserializarEstado } from './regiao1-estado.js';
 import { garantirEstadoIdle } from './regiao1-idle.js';
+import { adicionarEssencia } from './regiao1-regras-sonho.js';
 import {
   ESTRELAS_CFG, TIER_CFG, REPRODUCAO_CFG, EVOLUCAO_CFG,
   custoCopiasEstrela, normalizarUnidade, preverSubirEstrela, subirEstrela, subirTierUnidade,
@@ -157,9 +158,14 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
   assert.equal(f0.arvore.proxima.custo, 10);
   assert.equal(f0.arvore.proxima.saldo, 0);
 
-  // 3) Evolução Base → 2ª custa 10 Fragmentos de Sonho elementais (continua T4); 2ª → 3ª custa 30 (sobe para T5)
+  // 3) Evolução Base → 2ª custa 10 Fragmentos + 20 Essências menores + 5 médias (T4); 2ª → 3ª custa 30 + 30 médias + 10 maiores (sobe T5)
   assert.equal(evoluirFormaOnirico(s, 0).ok, false);
   adicionarFragmentoSonho(s, 'fogo', 40);
+  // Sem Essências elementais ainda bloqueia sem consumir fragmentos
+  assert.equal(evoluirFormaOnirico(s, 0).ok, false);
+  adicionarEssencia(s, 'fogo', 'menor', 20);
+  adicionarEssencia(s, 'fogo', 'media', 35);
+  adicionarEssencia(s, 'fogo', 'maior', 10);
   const e1 = evoluirFormaOnirico(s, 0);
   assert.equal(e1.ok, true);
   assert.equal(e1.para, 'Ignavor');
@@ -176,6 +182,8 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
   // Penumbrio → Noctarn permanece bloqueada (Noctarn exclusivo de banner T4)
   s.idle.equipe.push({ uid: 'pen1', especie: 'Penumbrio', nivel: 5, tier: 4, raridade: 4, estrelas: 1 });
   adicionarFragmentoSonho(s, 'trevas', 40);
+  adicionarEssencia(s, 'trevas', 'menor', 20);
+  adicionarEssencia(s, 'trevas', 'media', 5);
   const bPen = evoluirFormaOnirico(s, 1);
   assert.equal(bPen.ok, false);
   assert.equal(bPen.bloqueada, true);

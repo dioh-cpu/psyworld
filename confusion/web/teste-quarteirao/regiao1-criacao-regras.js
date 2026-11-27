@@ -304,6 +304,12 @@ export function arvoreEvolucaoDe(u, save = null) {
         faltam: consulta.faltam,
         elemento: consulta.elemento,
         itemId: consulta.itemId,
+        parEssencia: consulta.parEssencia,
+        essenciaNome: consulta.essenciaNome,
+        custoEssencias: consulta.custoEssencias,
+        saldoEssencias: consulta.saldoEssencias,
+        faltamEssencias: consulta.faltamEssencias,
+        temEssencias: consulta.temEssencias,
         podeEvoluir: consulta.podeEvoluir,
         tierNovo: consulta.linhagemInicial ? consulta.tierResultante : null,
       }

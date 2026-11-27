@@ -36,6 +36,7 @@ import {
   aplicarDropsBatalhaManual,
   consultarEvolucaoForma,
   evoluirFormaPorFragmentos,
+  adicionarEssencia,
   criarUnidadeInicial,
   migrarInicialNoctarn,
   aplicarInicialContaNova,
@@ -220,8 +221,13 @@ test('Evolução de forma: custos 9/10 e 10/10 (29/30 e 30/30), preserva nível/
   assert.equal(saldoFragmentoSonho(s, 'fogo'), 9);
   assert.equal(s.idle.equipe[0].especie, 'Brasinha');
 
-  // 10/10 evolui base→segunda mantendo T4, nível 18 e 7 estrelas
+  // 10/10 evolui base→segunda com Essências (20 menores + 5 médias) mantendo T4, nível 18 e 7 estrelas
   adicionarFragmentoSonho(s, 'fogo', 1);
+  // Sem Essências não evolui
+  assert.equal(evoluirFormaPorFragmentos(s, 0).ok, false);
+  adicionarEssencia(s, 'fogo', 'menor', 20);
+  adicionarEssencia(s, 'fogo', 'media', 35);
+  adicionarEssencia(s, 'fogo', 'maior', 10);
   const ev1 = evoluirFormaPorFragmentos(s, 0);
   assert.equal(ev1.ok, true);
   assert.equal(ev1.para, 'Ignavor');
@@ -247,6 +253,9 @@ test('Evolução de forma: custos 9/10 e 10/10 (29/30 e 30/30), preserva nível/
 
   // Não-inicial preserva seu tier T2 ao evoluir de forma!
   adicionarFragmentoSonho(s, 'inseto', 40);
+  adicionarEssencia(s, 'inseto', 'menor', 20);
+  adicionarEssencia(s, 'inseto', 'media', 35);
+  adicionarEssencia(s, 'inseto', 'maior', 10);
   const nf1 = evoluirFormaPorFragmentos(s, 1);
   const nf2 = evoluirFormaPorFragmentos(s, 1);
   assert.equal(nf1.ok && nf2.ok, true);
@@ -432,6 +441,8 @@ test('Noctarn e Sombra ficam fora do banner permanente (Adventurer); Noctarn é 
     { especie: 'Noctarn', nivel: 15, xp: 2000, tier: 4, raridade: 4, estrelas: 2, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'noc_b' },
   ];
   adicionarFragmentoSonho(s, 'trevas', 40);
+  adicionarEssencia(s, 'trevas', 'media', 30);
+  adicionarEssencia(s, 'trevas', 'maior', 10);
   const cPen = consultarEvolucaoForma(s, 0);
   assert.equal(cPen.podeEvoluir, false);
   assert.equal(cPen.bloqueada, true);
@@ -524,8 +535,11 @@ test('Percurso 2 (Save antigo): equipe → evolução → revanche 10m → retor
   assert.equal(idle.diarias.itens[0].id, 'dm_batalhas_3');
   assert.equal(migrarInicialNoctarn(s).migrou, false); // idempotente
 
-  // 2) Evolução por Fragmentos de Sonho: Penumbrio bloqueado de virar Noctarn; Noctarn de banner evolui 30/30 → Noctarion T5 mantendo nível e estrelas
+  // 2) Evolução por Fragmentos de Sonho + Essências: Penumbrio bloqueado de virar Noctarn; Noctarn de banner evolui 30/30 → Noctarion T5 mantendo nível e estrelas
   adicionarFragmentoSonho(s, 'trevas', 30);
+  adicionarEssencia(s, 'trevas', 'menor', 20);
+  adicionarEssencia(s, 'trevas', 'media', 30);
+  adicionarEssencia(s, 'trevas', 'maior', 10);
   const evPen = evoluirFormaPorFragmentos(s, 0, { operacaoId: 'p2_ev_pen' });
   assert.equal(evPen.ok, false);
   assert.equal(evPen.bloqueada, true);

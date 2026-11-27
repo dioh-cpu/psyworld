@@ -10,6 +10,7 @@ import {
 } from './regiao1-campanha-mini-regras.js';
 import { darPocao } from './regiao1-halloween-regras.js';
 import { expDe } from './regiao1-exp-regras.js';
+import { registrarGanchoMarcoEvolucao } from './regiao1-regras-sonho.js';
 
 const PARALELAS_ESPECIFICAS = {
   1: [
@@ -456,5 +457,6 @@ export function coletarMarco(save, marcoId, rng = Math.random) {
   return { ok: true, marco: def, premio: entregue };
 }
 
-// Registra o gancho automático na Campanha Mini sem criar dependência circular.
+// Registra os ganchos automáticos na Campanha Mini e na Evolução sem criar dependência circular.
 registrarGanchoMarcoCampanha(registrarMarco);
+registrarGanchoMarcoEvolucao(registrarMarco);

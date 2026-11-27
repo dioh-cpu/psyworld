@@ -10,6 +10,23 @@ import { resolverEncontroCatalogo } from './regiao1-encontros-regras.js';
 import { darPocao } from './regiao1-halloween-regras.js';
 import { expDe, membrosFormacao } from './regiao1-exp-regras.js';
 import * as EstrategiaRegras from './regiao1-estrategia-regras.js';
+import {
+  ESSENCIAS_PARES,
+  parEssenciaDoElemento,
+  essenciasDe,
+  saldoEssencia,
+  adicionarEssencia,
+  consumirEssencia,
+} from './regiao1-regras-sonho.js';
+
+export {
+  ESSENCIAS_PARES,
+  parEssenciaDoElemento,
+  essenciasDe,
+  saldoEssencia,
+  adicionarEssencia,
+  consumirEssencia,
+};
 
 // ---- Energia global dos modos (1 a cada 6 min, máximo 120, poção +60) ----
 export const ENERGIA_CFG = {
@@ -74,71 +91,6 @@ export function usarPocaoEnergia(save, qtd = 1, agoraMs = Date.now(), cfg = ENER
   e.atual = Math.min(e.max, e.atual + n * cfg.ganhoPocao);
   if (e.atual >= e.max) e.ultimoTickMs = Math.floor(Number(agoraMs) || Date.now());
   return { ok: true, ganho: n * cfg.ganhoPocao, atual: e.atual, max: e.max, pocoesRestantes: e.pocoes };
-}
-
-// ---- Essências elementais (6 pares cobrindo os 12 elementos × 3 tamanhos) ----
-export const ESSENCIAS_PARES = {
-  ignea: { id: 'ignea', nome: 'Essência Ígnea', torre: 'chama', calabouco: 'forja-rubra', elementos: ['fogo', 'eletrico'] },
-  mares: { id: 'mares', nome: 'Essência das Marés', torre: 'mare', calabouco: 'gruta-mares', elementos: ['agua', 'voador'] },
-  verde: { id: 'verde', nome: 'Essência Verde', torre: 'raiz', calabouco: 'bosque-cativo', elementos: ['planta', 'inseto'] },
-  mineral: { id: 'mineral', nome: 'Essência Mineral', torre: 'rocha', calabouco: 'mina-profunda', elementos: ['terra', 'pedra', 'aco'] },
-  solar: { id: 'solar', nome: 'Essência Solar', torre: 'aurora', calabouco: 'templo-alvorecer', elementos: ['luz', 'neutro'] },
-  sombria: { id: 'sombria', nome: 'Essência Sombria', torre: 'umbra', calabouco: 'cripta-velada', elementos: ['trevas', 'fantasma'] },
-};
-
-const PAR_POR_ELEMENTO = {};
-for (const def of Object.values(ESSENCIAS_PARES)) {
-  for (const el of def.elementos) PAR_POR_ELEMENTO[el] = def.id;
-}
-PAR_POR_ELEMENTO.sombra = 'sombria';
-
-export function parEssenciaDoElemento(elOuPar = 'neutro') {
-  const k = String(elOuPar || 'neutro').toLowerCase();
-  if (ESSENCIAS_PARES[k]) return k;
-  return PAR_POR_ELEMENTO[k] || 'solar';
-}
-
-export function essenciasDe(save) {
-  const idle = save?.idle || (save ? (save.idle = {}) : {});
-  if (!idle.essencias || typeof idle.essencias !== 'object') idle.essencias = {};
-  for (const par of Object.keys(ESSENCIAS_PARES)) {
-    const cur = idle.essencias[par];
-    idle.essencias[par] = {
-      menor: Math.max(0, Math.floor(Number(cur?.menor) || 0)),
-      media: Math.max(0, Math.floor(Number(cur?.media) || 0)),
-      maior: Math.max(0, Math.floor(Number(cur?.maior) || 0)),
-    };
-  }
-  return idle.essencias;
-}
-
-export function saldoEssencia(save, elOuPar, tamanho = null) {
-  const par = parEssenciaDoElemento(elOuPar);
-  const s = essenciasDe(save)[par];
-  return tamanho ? (s[tamanho] || 0) : { ...s };
-}
-
-export function adicionarEssencia(save, elOuPar, tamanho = 'menor', qtd = 1) {
-  const par = parEssenciaDoElemento(elOuPar);
-  const tam = ['menor', 'media', 'maior'].includes(tamanho) ? tamanho : 'menor';
-  const n = Math.max(0, Math.floor(Number(qtd) || 0));
-  const e = essenciasDe(save);
-  e[par][tam] += n;
-  return e[par][tam];
-}
-
-export function consumirEssencia(save, elOuPar, custos = {}) {
-  const par = parEssenciaDoElemento(elOuPar);
-  const e = essenciasDe(save);
-  for (const tam of ['menor', 'media', 'maior']) {
-    const nec = Math.max(0, Math.floor(Number(custos[tam]) || 0));
-    if ((e[par][tam] || 0) < nec) return { ok: false, par, motivo: `Faltam essências (${ESSENCIAS_PARES[par].nome}).` };
-  }
-  for (const tam of ['menor', 'media', 'maior']) {
-    const nec = Math.max(0, Math.floor(Number(custos[tam]) || 0));
-    e[par][tam] -= nec;
-  }
-  return { ok: true, par, saldo: { ...e[par] } };
 }
 
 // ---- Ganchos modulares (preenchidos por regiao1-reliquias-regras.js e regiao1-missoes-regras.js sem ciclos) ----
