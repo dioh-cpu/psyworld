@@ -108,8 +108,8 @@ const NOMES_EF = { atk: ['ataque_alto', 'ataque_baixo'], def: ['defesa_alta', 'd
 const efetivo = (u, k) => { const [na, nb] = NOMES_EF[k] || [`${k}_alto`, `${k}_baixo`]; const alto = temEfeito(u, na) || temEfeito(u, `${k}_alto`) ? 0.3 : 0, baixo = temEfeito(u, nb) || temEfeito(u, `${k}_baixo`) || temEfeito(u, `${k}_baixa`) ? 0.3 : 0; return Math.max(1, u[k] * (1 + alto - baixo)); };
 
 function iniciarRodada(b) {
-  // velocidade: nível, um pouco a mais para suporte, multiplicado pelos efeitos de velocidade (Perseguição +50%, Pânico +100%)
-  const vel = (u) => (u.nivel + (u.papel === 'suporte' ? 1 : 0)) * (1 + (u.velBonus || 0) + Object.keys(u.efeitos || {}).reduce((a, id) => a + (EFEITOS[id]?.velocidade || 0), 0));
+  // ordem do turno: nível (+1 para suporte) e bônus de equipamento. Efeitos de velocidade reduzem recarga (aplicarEfeito), não a ordem
+  const vel = (u) => (u.nivel + (u.papel === 'suporte' ? 1 : 0)) * (1 + (u.velBonus || 0));
   b.fila = vivos(b.ordem).sort((x, y) => vel(y) - vel(x)).map((u) => u.id);
   tickDomador(b);
   for (const u of b.ordem) { u.defendendo = false; u.cd = (u.cd || [0, 0, 0]).map((c) => Math.max(0, c - 1)); u.recarga = Math.max(...u.cd); }
@@ -155,6 +155,13 @@ function aplicarEfeito(alvo, fonte, e, rng) {
   else if (e.id === 'regeneracao') valor = Math.max(2, Math.round(alvo.hpMax * 0.07));
   // efeito em si mesmo ganha +1 porque o turno de quem usou termina logo em seguida
   (alvo.efeitos ||= {})[e.id] = { turnos: (e.turnos || 2) + (alvo === fonte ? 1 : 0), valor, fonte: fonte.id };
+  // Velocidade = redução de recarga na hora: a cada 50% tira 1 turno das habilidades em recarga do alvo (100% = 2 turnos).
+  // A habilidade que está sendo usada agora não conta (senão o próprio buff se recarregaria).
+  if (def.velocidade && alvo.cd) {
+    const menos = Math.floor(def.velocidade / 0.5 + 1e-9);
+    alvo.cd = alvo.cd.map((c, i) => (alvo === fonte && i === fonte.idxEmUso ? c : Math.max(0, c - menos)));
+    alvo.recarga = Math.max(...alvo.cd);
+  }
   return e.id;
 }
 const limpar = (alvo) => { const tirados = []; for (const id of Object.keys(alvo.efeitos || {})) if (EFEITOS[id]?.debuff) { delete alvo.efeitos[id]; tirados.push(id); } return tirados; };
@@ -277,6 +284,7 @@ export function executar(b, acao, rng) {
   if (tipo === 'habilidade') { hab = u.kit[idx]; if (!hab || (u.cd?.[idx] || 0) > 0 || temEfeito(u, 'silencio')) { tipo = 'atacar'; hab = null; } }
   b.turnos = (b.turnos || 0) + 1;
   const ev = { tipo: 'atacar', hab, idx, ator: u.id, alvos: [], antes: b.antes || [] }; b.antes = [];
+  u.idxEmUso = hab ? idx : null;
   if (hab) { u.cd[idx] = hab.cd; u.recarga = Math.max(...u.cd); if (hab.cd >= 5) { b.supremas ||= { a: 0, i: 0 }; b.supremas[u.lado] += 1; }
     // Eco (4p): chance de -1 recarga em outra habilidade em recarga
     if (u.equip?.ecoRecarga && rng() < u.equip.ecoRecarga) { const outra = u.cd.findIndex((c, i) => i !== idx && c > 0); if (outra >= 0) { u.cd[outra] -= 1; ev.eco = outra; } }
