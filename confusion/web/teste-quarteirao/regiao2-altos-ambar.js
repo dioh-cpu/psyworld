@@ -93,22 +93,22 @@ const PORTAS_LOCAIS = {
 
 export const CHEFES_R2 = {
   BOSS_R2_FERROADA: {
-    mapa: 'R2_A_BOSS', nome: 'Ferroada Rubra', nivel: 30, elemento: 'inseto',
+    mapa: 'R2_A_BOSS', nome: 'Ferroada Rubra', nivel: 30, elemento: 'fogo',
     pos: [512, 310], cor: '#fb923c', sprite: `${R2_ARTES}chefe-ferroada.webp`,
     reforcos: ['Cerifogo', 'Colmeiro'], mapaRetorno: 'R2_A10',
   },
   BOSS_R2_SENTINELA: {
-    mapa: 'R2_B_BOSS', nome: 'Sentinela de Geoda', nivel: 37, elemento: 'pedra',
+    mapa: 'R2_B_BOSS', nome: 'Sentinela de Geoda', nivel: 37, elemento: 'eletrico',
     pos: [512, 310], cor: '#facc15', sprite: `${R2_ARTES}chefe-sentinela.webp`,
     reforcos: ['Calquélon', 'Bronzelo'], mapaRetorno: 'R2_B10',
   },
   BOSS_R2_MATRIARCA: {
-    mapa: 'R2_G_BOSS', nome: 'Matriarca de Resina', nivel: 34, elemento: 'planta',
+    mapa: 'R2_G_BOSS', nome: 'Matriarca de Resina', nivel: 34, elemento: 'voador',
     pos: [512, 310], cor: '#a3e635', sprite: `${R2_ARTES}chefe-matriarca.webp`,
     reforcos: ['Lavândria', 'Melifalcão'], mapaRetorno: 'R2_G11',
   },
   BOSS_R2: {
-    mapa: 'R2_CHEFE', nome: 'Rainha da Colmeia Dourada', nivel: 45, elemento: 'inseto',
+    mapa: 'R2_CHEFE', nome: 'Rainha da Colmeia Dourada', nivel: 45, elemento: 'aco',
     pos: [512, 365], cor: '#f59e0b', sprite: '../../../assets/confusion/interface/estrategia/reinos/02/chefe.webp',
     reforcos: ['Colmeiro', 'Vesprata'], mapaRetorno: 'R2_H11', final: true,
   },
