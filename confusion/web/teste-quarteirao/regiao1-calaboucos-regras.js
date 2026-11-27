@@ -1,6 +1,7 @@
 // 6 Calabouços de Relíquias (13 níveis cada), raridades escalonadas, batalha rápida com todos vivos e loja.
 // Regras 100% puras (sem DOM).
 import { ENERGIA_CFG, gastarEnergia, concederReliquiaCampanha } from './regiao1-campanha-mini-regras.js';
+import './regiao1-reliquias-regras.js'; // garante gerador real de relíquias plugado mesmo se importado isoladamente
 import { registrarMarco } from './regiao1-missoes-regras.js';
 import { ELEMENTO_DA_ESPECIE } from '../species.js';
 import * as EstrategiaRegras from './regiao1-estrategia-regras.js';

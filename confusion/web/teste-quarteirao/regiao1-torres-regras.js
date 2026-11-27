@@ -85,8 +85,9 @@ for (const lin of LINHAS) {
   MAPA_LINHAGEM_CANONICA.set(slugLinhagem(lin.evolucao), canon);
 }
 for (const h of LINHAGENS_HW) {
-  const canon = slugLinhagem(h.nome);
+  const canon = h.slug || slugLinhagem(h.especie || h.nome);
   MAPA_LINHAGEM_CANONICA.set(canon, canon);
+  if (h.especie) MAPA_LINHAGEM_CANONICA.set(slugLinhagem(h.especie), canon);
 }
 for (const r of LINHAGENS_REINOS) {
   const canon = slugLinhagem(r.nome);
@@ -103,7 +104,7 @@ export function linhagemArmaUnicaDe(especieOuSlug) {
 
 export const LINHAGENS_ARMAS_UNICAS = [
   'noctarn', 'ignavor', 'vaelith', 'brotavel', 'solarin',
-  ...LINHAGENS_HW.map((h) => slugLinhagem(h.nome)),
+  ...LINHAGENS_HW.map((h) => h.slug || slugLinhagem(h.especie || h.nome)),
   'fanalino', 'cervomusgo', 'cobrabufalo', 'tatuveludo', 'xistolim',
   ...[...new Set(ENCONTROS_ALTOS_AMBAR.map((e) => slugLinhagem(e.especie)))],
   ...LINHAGENS_REINOS.map((l) => slugLinhagem(l.nome)),
@@ -112,7 +113,7 @@ export const LINHAGENS_ARMAS_UNICAS = [
 const LINHAGENS_POR_ELEMENTO = {};
 for (const slug of LINHAGENS_ARMAS_UNICAS) {
   const orig = LINHAS.find((l) => slugLinhagem(l.atual) === slug)?.atual
-    || LINHAGENS_HW.find((h) => slugLinhagem(h.nome) === slug)?.nome
+    || LINHAGENS_HW.find((h) => (h.slug || slugLinhagem(h.especie)) === slug)?.especie
     || LINHAGENS_REINOS.find((r) => slugLinhagem(r.nome) === slug)?.nome
     || ENCONTROS_ALTOS_AMBAR.find((e) => slugLinhagem(e.especie) === slug)?.especie
     || Object.keys(ELEMENTO_DA_ESPECIE).find((k) => slugLinhagem(k) === slug);
