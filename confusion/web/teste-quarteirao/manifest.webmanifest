@@ -9,7 +9,7 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "../../../assets/monsters/noctarn/sprite-front.png",
+      "src": "../../../assets/confusion/interface/estrategia/reinos/existentes/noctarn/02-noctarn.png",
       "sizes": "512x512",
       "type": "image/png"
     }

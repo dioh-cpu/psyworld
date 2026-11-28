@@ -6,7 +6,7 @@ const RAIZ = 'assets/confusion/interface/estrategia/reinos';
 const slug = (n) => n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 // Formas 01/02/03 = base, intermediária, final. Visitantes usam a pasta do reino de origem ({ reino }). Ignavor usa as artes existentes.
 export function formasDaLinhagem(l, reinoAtual = 2) {
-  if (l.nome === 'Ignavor') return [`${RAIZ}/existentes/ignavor/01-brasinha.png`, 'assets/monsters/ignavor/sprite-front.png', `${RAIZ}/existentes/ignavor/03-ignaraz.png`];
+  if (l.nome === 'Ignavor') return [`${RAIZ}/existentes/ignavor/01-brasinha.png`, 'assets/confusion/interface/estrategia/reinos/existentes/ignavor/02-ignavor.png', `${RAIZ}/existentes/ignavor/03-ignaraz.png`];
   const r = String(l.reino ?? reinoAtual).padStart(2, '0');
   return [1, 2, 3].map((n) => `${RAIZ}/${r}/oniricos/${slug(l.nome)}/0${n}.png`);
 }
