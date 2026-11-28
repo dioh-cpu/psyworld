@@ -115,6 +115,32 @@ export function poolBanner() {
 export function poolBannerSombra() {
   return [{ especie: NOCTARN_REGRA.especie, elemento: NOCTARN_REGRA.elemento, classe: classeDaEspecie(NOCTARN_REGRA.especie), tier: NOCTARN_REGRA.tier, raridade: 'epica', banner: 'sombra' }];
 }
+// ---- Catálogo oficial de Banners separados por cadência ----
+export const CATALOGO_BANNERS = {
+  permanente: { id: 'permanente', nome: 'Banner Permanente', cadencia: 'permanente', custoLote10: 1000, custoUnitario: 100, rollsGratisDia: 10 },
+  semanal:    { id: 'semanal',    nome: 'Banner Semanal',    cadencia: 'semanal',    custoLote10: 2000, custoUnitario: 200, rollsGratisDia: 0 },
+  quinzenal:  { id: 'quinzenal',  nome: 'Banner Quinzenal',  cadencia: 'quinzenal',  custoLote10: 2000, custoUnitario: 200, rollsGratisDia: 0 },
+  mensal:     { id: 'mensal',     nome: 'Banner Mensal (Passe)', cadencia: 'mensal', dePasse: true, custoLote10: 2000, custoUnitario: 200, rollsGratisDia: 0 },
+  tematico:   { id: 'tematico',   nome: 'Banner Temático',   cadencia: 'tematico',   custoLote10: 2000, custoUnitario: 200, rollsGratisDia: 0, temas: ['halloween', 'natal', 'ano_novo', 'pascoa'] },
+};
+
+export function comprarPacoteBanner(save, tipo = 'permanente') {
+  const cfg = CATALOGO_BANNERS[tipo];
+  if (!cfg) return { ok: false, motivo: 'Tipo de banner inválido.' };
+  save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+  if ((save.recompensas.diamantes || 0) < cfg.custoLote10) {
+    return { ok: false, motivo: `Faltam diamantes (${cfg.custoLote10}💎 para 10 invocações).` };
+  }
+  save.recompensas.diamantes -= cfg.custoLote10;
+  const e = expDe(save);
+  if (tipo === 'permanente') e.tickets = (e.tickets || 0) + 10;
+  else {
+    e.ticketsPorBanner ||= {};
+    e.ticketsPorBanner[tipo] = (e.ticketsPorBanner[tipo] || 0) + 10;
+  }
+  return { ok: true, tipo, custoDiamantes: cfg.custoLote10, ticketsGanhos: 10 };
+}
+
 // ---- Invocações grátis diárias: +10 por dia (meia-noite local), acumulam até 100 se não forem usadas ----
 export const INVOCACOES_GRATIS_CFG = { porDia: 10, max: 100 };
 const diaNum = (agora) => { const d = new Date(agora); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); };

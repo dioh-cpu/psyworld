@@ -788,8 +788,19 @@ export function sanitizarIdleProgressao(idle) {
         if (v && typeof v === 'object') {
           sazonais[String(id).slice(0, 24)] = {
             ciclo: Math.max(0, Math.floor(Number(v.ciclo) || 0)),
-            maiorAndar: Math.max(0, Math.min(50, Math.floor(Number(v.maiorAndar) || 0))),
-            pagas: sanitizarMapaSeguro(v.pagas, 60, 'bool'),
+            maiorAndar: Math.max(0, Math.min(100, Math.floor(Number(v.maiorAndar) || 0))),
+            pagas: sanitizarMapaSeguro(v.pagas, 120, 'bool'),
+          };
+        }
+      }
+    }
+    const comprasTickets = {};
+    if (t.comprasTickets && typeof t.comprasTickets === 'object') {
+      for (const [id, v] of Object.entries(t.comprasTickets).slice(0, 32)) {
+        if (v && typeof v === 'object') {
+          comprasTickets[String(id).slice(0, 24)] = {
+            dia: Math.max(0, Math.floor(Number(v.dia) || 0)),
+            qtd: Math.max(0, Math.min(20, Math.floor(Number(v.qtd) || 0))),
           };
         }
       }
@@ -804,6 +815,8 @@ export function sanitizarIdleProgressao(idle) {
       unicasDiarias,
       sazonais,
       recompensasUnicas: sanitizarMapaSeguro(t.recompensasUnicas, 16, 'int'),
+      tickets: sanitizarMapaSeguro(t.tickets, 32, 'int'),
+      comprasTickets,
       batalhasPagas: sanitizarMapaSeguro(t.batalhasPagas, 300, 'bool'),
     };
   }

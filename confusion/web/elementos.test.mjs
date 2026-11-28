@@ -64,7 +64,7 @@ test('elementos: cada espécie tem um elemento válido', () => {
   }
   assert.equal(E.ELEMENTO_DA_ESPECIE.Ignavor, 'fogo');
   assert.equal(E.ELEMENTO_DA_ESPECIE.Noctarn, 'trevas');
-  assert.equal(E.ELEMENTO_DA_ESPECIE.Cristalino, 'neutro');
+  assert.equal(E.ELEMENTO_DA_ESPECIE.Cristalino, 'gelo');
 });
 
 test('passe: custo do nível k = 30 + 6k e acumulado = soma (3k² + 33k)', () => {

@@ -52,23 +52,37 @@ export function consumirToastBonusBoasVindas(storage) {
 // ---------- regras puras (testáveis) ----------
 export const vipAtivo = (save, agora = Date.now()) => Boolean(save?.conta?.vipAte && save.conta.vipAte > agora);
 export const diasVip = (save, agora = Date.now()) => (vipAtivo(save, agora) ? Math.ceil((save.conta.vipAte - agora) / DIA) : 0);
+// Bônus de boas-vindas (20.000💎 + 10d VIP) para TODOS os jogadores (contas novas ou antigas), pago uma única vez.
+export function garantirBonusBoasVindasTodos(save, agora = Date.now()) {
+  if (!save || typeof save !== 'object') return { creditado: false, diamantes: 0 };
+  save.conta = save.conta || {};
+  save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+  if (save.conta.bonusEm) return { creditado: false, diamantes: save.recompensas.diamantes || 0 };
+  save.conta.bonusEm = agora;
+  save.conta.vipAte = Math.max(Number(save.conta.vipAte) || 0, agora) + BOAS_VINDAS.vipDias * DIA;
+  save.recompensas.diamantes = (Number(save.recompensas.diamantes) || 0) + BOAS_VINDAS.diamantes;
+  return { creditado: true, diamantes: save.recompensas.diamantes, vipAte: save.conta.vipAte };
+}
+
 // Decisão pura de elegibilidade ao bônus de boas-vindas (20.000💎 + 10d VIP) preservando saves existentes.
 export function decidirEntradaConta({ remoto = null, local = null, userId = null } = {}) {
   if (remoto?.regiao1) {
     const tRemoto = remoto.regiao1.idle?.ultimoTickMs || 0;
     const tLocal = local?.idle?.ultimoTickMs || 0;
     const mesmoUid = Boolean(userId && local?.conta?.uid === userId);
-    return { acao: !mesmoUid || tRemoto > tLocal + 2000 ? 'usar-remoto' : 'liberar', novo: false };
+    const jaPremiada = Boolean(remoto.regiao1?.conta?.bonusEm || remoto?.conta?.bonusEm);
+    return { acao: !mesmoUid || tRemoto > tLocal + 2000 ? 'usar-remoto' : 'liberar', novo: false, elegivelBonus: !jaPremiada };
   }
   const jaPremiada = Boolean(remoto?.conta?.bonusEm || (userId && local?.conta?.uid === userId && local?.conta?.bonusEm));
   const outroUidLocal = Boolean(userId && local?.conta?.uid && local.conta.uid !== userId);
-  return { acao: 'preparar', novo: !jaPremiada, resetarLocal: outroUidLocal };
+  return { acao: 'preparar', novo: !jaPremiada, elegivelBonus: !jaPremiada, resetarLocal: outroUidLocal };
 }
 
-// Aplica o inicial e o bônus numa conta nova (substitui o provisório para que a conta nova receba apenas o inicial escolhido)
+// Aplica o inicial e o bônus numa conta (nova ou antiga ainda sem bônus), uma única vez.
 export function prepararContaNova(save, { userId, inicial, agora = Date.now(), novo = true }) {
   const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial || l.id === inicial) || INICIAIS[0];
   aplicarInicialContaNova(save, { userId, inicial: lin.especie, agora, novo });
+  garantirBonusBoasVindasTodos(save, agora);
   const ini = save.idle?.equipe?.find((m) => m?.inicial);
   if (ini && !ini.estrelas) ini.estrelas = estrelasIniciais('inicial');
   return save;

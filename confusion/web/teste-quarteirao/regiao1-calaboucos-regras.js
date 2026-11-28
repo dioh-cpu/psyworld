@@ -149,6 +149,10 @@ export const CALABOUCOS_CATALOGO = DEF_CALABOUCOS.map((def) => {
 });
 
 export const CALABOUCOS_POR_ID = Object.fromEntries(CALABOUCOS_CATALOGO.map((c) => [c.id, c]));
+export const CALABOUCOS_POR_ELEMENTO = Object.fromEntries(
+  CALABOUCOS_CATALOGO.flatMap((c) => c.elementos.map((el) => [el, c])),
+);
+export const calaboucoDoElemento = (el) => CALABOUCOS_POR_ELEMENTO[String(el || '').toLowerCase()] || null;
 
 export function calaboucosDe(save) {
   const idle = save?.idle || (save ? (save.idle = {}) : {});

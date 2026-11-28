@@ -33,7 +33,7 @@ export const ESPECIES = {
   // Exclusivos de evento (nomes e habilidades provisórios).
   Lumivela: { origem: 'evento', pureza: 'luz', aptidoes: { colher: 2, transportar: 2 }, habilidades: ['Pétala Lunar', 'Brilho Sereno', 'Véu Prateado', 'Canto da Lua', 'Orvalho Astral'], passiva: { nome: 'Luz da Lua', texto: 'Vencer um andar da zona dá 5 XP a mais.' } },
   Brotavel: { arte: 'assets/monsters/brotavel/sprite-front.png', origem: 'evento', pureza: 'luz', elemento: 'planta', aptidoes: { plantar: 3, colher: 2 }, habilidades: ['Raiz Viva', 'Espora Verde', 'Broto Fértil', 'Chuva Doce', 'Casca Firme'], passiva: { nome: 'Raiz Generosa', texto: 'A coleta da fazenda rende 10% a mais.' } },
-  Cristalino: { origem: 'evento', pureza: 'neutra', aptidoes: { garimpar: 3, minerar: 2 }, habilidades: ['Lasca Prismática', 'Eco Glacial', 'Facetas', 'Brilho Frio', 'Núcleo Puro'], passiva: { nome: 'Prisma', texto: 'O garimpo rende 10% a mais.' } },
+  Cristalino: { origem: 'evento', pureza: 'neutra', elemento: 'gelo', aptidoes: { garimpar: 3, minerar: 2 }, habilidades: ['Lasca Prismática', 'Eco Glacial', 'Facetas', 'Brilho Frio', 'Núcleo Puro'], passiva: { nome: 'Prisma', texto: 'O garimpo rende 10% a mais.' } },
   Abyssar: { origem: 'evento', pureza: 'trevas', aptidoes: { minerar: 2, cortar: 2 }, habilidades: ['Sombra Funda', 'Fenda Negra', 'Garra Abissal', 'Sussurro', 'Maré Escura'], passiva: { nome: 'Sombra Faminta', texto: 'Ganha 1 de vínculo por dia.' } },
   Solarin: { arte: 'assets/monsters/solarin/sprite-front.png', origem: 'evento', pureza: 'luz', elemento: 'luz', aptidoes: { cortar: 2, fabricar: 2 }, habilidades: ['Chama Solar', 'Raio Dourado', 'Asas de Sol', 'Calor Lento', 'Aurora'], passiva: { nome: 'Sol Permanente', texto: 'Dá 1 de sanidade ao dono por dia.' } },
   // Bosses de raid (v1.33): ovos de raid saem com essas espécies. Não aparecem em encontro, ovo comum nem invocação.
@@ -132,6 +132,16 @@ export const HABILIDADES_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES
 export const APTIDOES_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).map(([k, e]) => [k, e.aptidoes || {}]));
 export const ARTE_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).filter(([, e]) => e.arte).map(([k, e]) => [k, e.arte]));
 export const PASSIVA_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).filter(([, e]) => e.passiva).map(([k, e]) => [k, e.passiva]));
+// Auditoria de elementos por coerência com nome/arte (Reino 10: linhagens de gelo/neve)
+const CORRECAO_ELEMENTO_ESPECIE = {
+  Geadinha: 'gelo', Geadante: 'gelo', Geadaurora: 'gelo',
+  Uivinho: 'gelo', 'Uiválgido': 'gelo', Uivaneve: 'gelo',
+  Glacita: 'gelo', Glacivra: 'gelo', 'Glacivípera': 'gelo',
+  Nevita: 'gelo', Nevascaio: 'gelo', 'Nevascário': 'gelo',
+};
+for (const [k, el] of Object.entries(CORRECAO_ELEMENTO_ESPECIE)) {
+  if (ESPECIES[k]) ESPECIES[k].elemento = el;
+}
 // Elemento de cada espécie (v1.34). Sem elemento explícito, vale o da pureza: luz, trevas ou neutro.
 const ELEMENTO_PELA_PUREZA = { luz: 'luz', trevas: 'trevas', neutra: 'neutro' };
 export const ELEMENTO_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).map(([k, e]) => [k, e.elemento ?? ELEMENTO_PELA_PUREZA[e.pureza]]));

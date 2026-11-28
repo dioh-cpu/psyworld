@@ -8,7 +8,7 @@ const novo = () => ({ quests: {}, recompensas: { gold: 0, diamantes: 5000 }, idl
 test('progressão sem teto: igual ao núcleo até 20, continua depois e preserva o excedente', () => {
   for (const n of [1, 2, 5, 12, 20]) assert.equal(P.xpTotal(n), xpDoNivel(n));
   assert.equal(P.nivelDe(P.xpTotal(301)), 301); assert.equal(P.nivelDe(P.xpTotal(301) - 1), 300);
-  const o = { nivel: 300, xp: P.xpTotal(300) + 10 }; const r = P.aplicarXp(o, 90000); assert.ok(r.depois > 300 && r.subiu > 1); assert.equal(o.xp, P.xpTotal(300) + 10 + 90000); assert.ok(r.sobra >= 0 && r.sobra < P.xpPara(r.depois));
+  const o = { nivel: 300, xp: P.xpTotal(300) + 10 }; const r = P.aplicarXp(o, 2500000); assert.ok(r.depois > 300 && r.subiu > 1); assert.equal(o.xp, P.xpTotal(300) + 10 + 2500000); assert.ok(r.sobra >= 0 && r.sobra < P.xpPara(r.depois));
 });
 test('pacote de tickets pede confirmação e custa 2000💎; saldo separado dos tickets comuns', () => {
   const s = novo(); assert.equal(H.comprarPacote(s, false).precisaConfirmar, true);
@@ -31,21 +31,21 @@ test('doces evoluem o tier (custos 1,2,3,5) e mudam a forma nas faixas 1–2 / 3
   for (let k = 0; k < 4; k++) { const inf = H.infoEvolucao(s.idle.equipe[i]); custos.push(inf.custo); assert.ok(H.evoluirHW(s, i).ok); }
   assert.deepEqual(custos, [1, 2, 3, 5]); assert.equal(s.idle.equipe[i].tierHW, 5); assert.equal(h.doces, 0); assert.equal(H.infoEvolucao(s.idle.equipe[i]), null);
 });
-test('torre: marco de 10 paga 5 tickets uma única vez; andar 100 libera a próxima; níveis por faixa', () => {
+test('torre: marco de 10 paga 3 tickets uma única vez; andar 100 libera a próxima; níveis por faixa', () => {
   const s = novo(); const h = H.hwDe(s);
   assert.equal(H.nivelDoAndar(1, 1), 5); assert.equal(H.nivelDoAndar(1, 100), 70); assert.equal(H.nivelDoAndar(4, 100), 300);
   assert.equal(H.vencerAndar(s, 1, 2).ok, false);
   for (let n = 1; n <= 10; n++) H.vencerAndar(s, 1, n, () => 0.5);
-  assert.equal(h.tickets, 5); H.vencerAndar(s, 1, 10, () => 0.5); assert.equal(h.tickets, 5);
-  h.torre.maior[1] = 99; const r = H.vencerAndar(s, 1, 100, () => 0.5); assert.equal(r.liberou, 2); assert.equal(h.torre.liberada, 2); assert.equal(h.tickets, 10);
+  assert.equal(h.tickets, 3); H.vencerAndar(s, 1, 10, () => 0.5); assert.equal(h.tickets, 3);
+  h.torre.maior[1] = 99; const r = H.vencerAndar(s, 1, 100, () => 0.5); assert.equal(r.liberou, 2); assert.equal(h.torre.liberada, 2); assert.equal(h.tickets, 6);
   assert.ok(H.andar(1, 10).inimigos[0][3].chefe); assert.ok(H.andar(4, 100).inimigos.length >= 5);
 });
-test('total da torre: 200 tickets (50 por dificuldade) alcançam a garantia de Tier 5 após as duas primeiras', () => {
-  assert.equal(4 * 10 * 5, 200); assert.ok(2 * 50 >= 100);
+test('total da torre: 120 tickets (30 por dificuldade) alcançam a garantia de Tier 5', () => {
+  assert.equal(4 * 10 * 3, 120); assert.ok(4 * 30 >= 100);
 });
-test('poção: alvo, XP e previsão; acima do nível 300 sobe vários níveis', () => {
+test('poção: alvo, XP e previsão; preserva excedente e mantém Nv.300+ lento', () => {
   const s = novo(); s.idle.equipe[0].nivel = 305; s.idle.equipe[0].xp = P.xpTotal(305); H.darPocao(s, 'pocao_xp_g', 1);
-  const prev = H.previsaoPocao(s, 0, 'pocao_xp_g'); const r = H.usarPocao(s, 0, 'pocao_xp_g'); assert.ok(r.ok); assert.equal(r.depois, prev.depois); assert.ok(r.depois > 306); assert.equal(s.idle.equipe[0].nivel, r.depois);
+  const prev = H.previsaoPocao(s, 0, 'pocao_xp_g'); const r = H.usarPocao(s, 0, 'pocao_xp_g'); assert.ok(r.ok); assert.equal(r.depois, prev.depois); assert.equal(s.idle.equipe[0].nivel, r.depois);
 });
 test('habilidades exclusivas: ressurreição na vaga, invencibilidade e dano por vida máxima limitado em chefes', () => {
   const rng = M.criarRng(3), u = (id, esp, lado, nv = 30) => M.criarUnidade({ id, especie: esp, nivel: nv, lado, papeis: {} });
@@ -97,12 +97,12 @@ test('equipes: vagas por id estável; vaga vazia conserva as outras; trocar e su
   X.colocarNaVaga(idle, 'u4', 1); X.trocarVagas(idle, 0, 3); assert.deepEqual(idle.formacao, ['u3', 'u4', 'u2', 'u0']);
   X.colocarNaVaga(idle, 'u2', 0); assert.deepEqual(idle.formacao, ['u2', 'u4', 'u3', 'u0']);
 });
-test('conta nova: inicial T1 nível 5 na primeira vaga, 20.000💎 e 10 dias de VIP uma única vez', () => {
+test('conta nova e antiga: 20.000💎 e 10 dias de VIP uma única vez para todos', () => {
   const s = { recompensas: { gold: 0, diamantes: 0 }, idle: { equipe: [{ especie: 'Noctarn', nivel: 5, uid: 'o0' }] } };
   C.prepararContaNova(s, { userId: 'u1', inicial: 'Brasinha', agora: 1000 });
   assert.equal(s.idle.equipe[0].especie, 'Brasinha'); assert.equal(s.idle.equipe[0].nivel, 5); assert.equal(s.idle.equipe[0].tierHW, undefined); assert.deepEqual(C.INICIAIS.map((x) => x.linha), ['Noctarn', 'Ignavor', 'Vaelith', 'Brotavel', 'Solarin']); assert.equal(s.idle.formacao[0], 'ini0');
   assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.conta.vipAte, 1000 + 10 * 86400000);
   C.prepararContaNova(s, { userId: 'u1', inicial: 'Brasinha', agora: 5000 }); assert.equal(s.recompensas.diamantes, 20000); assert.equal(s.idle.equipe.filter((m) => m.inicial).length, 1);
   assert.equal(C.diasVip(s, 1000), 10); assert.equal(C.vipAtivo(s, 1000 + 11 * 86400000), false);
-  const antiga = { recompensas: { gold: 0, diamantes: 7 }, idle: { equipe: [] } }; C.prepararContaNova(antiga, { userId: 'u2', inicial: 'Gotalume', novo: false }); assert.equal(antiga.recompensas.diamantes, 7); assert.equal(antiga.conta.vipAte, undefined);
+  const antiga = { recompensas: { gold: 0, diamantes: 7 }, idle: { equipe: [] } }; C.prepararContaNova(antiga, { userId: 'u2', inicial: 'Gotalume', novo: false }); assert.equal(antiga.recompensas.diamantes, 20007);
 });

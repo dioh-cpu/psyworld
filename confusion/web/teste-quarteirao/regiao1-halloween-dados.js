@@ -32,20 +32,45 @@ const formaDoTierLocal = (t) => (t >= 5 ? 2 : t >= 3 ? 1 : 0);
 // Forma pela faixa de tier: base (1–2), segunda (3–4), final (5)
 export const formaDoTier = (t) => (t >= 5 ? 2 : t >= 3 ? 1 : 0);
 // Doces de Halloween: evolução de tier e moeda da Loja da Torre
-export const DOCES = { custos: [1, 2, 3, 5], chanceAbate: 0.001, chanceAndar: 0.01 };
+export const DOCES = {
+  custos: [1, 2, 3, 5],
+  chanceBase: 0.05,      // 5% por Onírico derrotado (Campanha, Torre, Calabouço, batalhas)
+  chanceIdle: 0.025,     // 2,5% no Idle, AFK e Auto ON
+  tetoChance: 0.10,      // teto de 10% (Campanha e Idle/AFK/Auto)
+  qtdMin: 1,
+  qtdMax: 2,
+  chanceAbate: 0.05,
+  chanceAndar: 0.05,
+};
 // Ganho por tier (somado ao poder base dos exclusivos, que já é maior que o dos Oníricos comuns: ver PODER_EXCLUSIVO)
 export const BONUS_TIER = (t) => ({ hp: 0.15 * (t - 1), atk: 0.15 * (t - 1), def: 0.12 * (t - 1) });
 export const LOJA_TORRE = [
-  { id: 'pocao_xp_p', nome: 'Poção de XP pequena', custo: 1, tipo: 'pocao' },
-  { id: 'pocao_xp_m', nome: 'Poção de XP média', custo: 3, tipo: 'pocao' },
-  { id: 'pocao_xp_g', nome: 'Poção de XP grande', custo: 8, tipo: 'pocao' },
-  { id: 'acelerador', nome: 'Acelerador de obra (15 min)', custo: 2, tipo: 'acelerador' },
-  { id: 'materiais', nome: 'Caixa de materiais (20 madeira + 20 pedra)', custo: 2, tipo: 'materiais' },
+  { id: 'ouro_50k', nome: '50.000 de Ouro', custo: 10, moeda: 'doces', tipo: 'ouro', qtd: 50000 },
+  { id: 'buff_xp_20', nome: 'Buff +20% XP (temporário)', custo: 50, moeda: 'doces', tipo: 'buff', efeito: 'xp', bonusPct: 20, duracaoMs: 3600000 },
+  { id: 'buff_drop_20', nome: 'Buff +20% Drop/Loot (temporário)', custo: 50, moeda: 'doces', tipo: 'buff', efeito: 'drop', bonusPct: 20, duracaoMs: 3600000 },
+  { id: 'buff_ouro_20', nome: 'Buff +20% Ouro (temporário)', custo: 50, moeda: 'doces', tipo: 'buff', efeito: 'ouro', bonusPct: 20, duracaoMs: 3600000 },
+  { id: 'icone_evento', nome: 'Ícone temático do evento', custo: 100, moeda: 'doces', tipo: 'cosmetico', subtipo: 'icone' },
+  { id: 'moldura_evento', nome: 'Moldura temática do evento', custo: 100, moeda: 'doces', tipo: 'cosmetico', subtipo: 'moldura' },
+  { id: 'ovo_t1', nome: 'Ovo T1 do evento', custo: 200, moeda: 'doces', tipo: 'ovo', tier: 1 },
+  { id: 'ovo_t2', nome: 'Ovo T2 do evento', custo: 400, moeda: 'doces', tipo: 'ovo', tier: 2 },
+  { id: 'ovo_t4', nome: 'Ovo T4 do evento', custo: 800, moeda: 'doces', tipo: 'ovo', tier: 4, limiteConta: 1 },
+  { id: 'ovo_t5', nome: 'Ovo T5 do evento', custo: 1600, moeda: 'doces', tipo: 'ovo', tier: 5, limiteConta: 1 },
+  { id: 'ticket_torre_diario', nome: 'Ticket diário da Torre', custo: 100, moeda: 'diamantes', tipo: 'ticket_torre', qtd: 1, limiteDiario: 10 },
+  { id: 'pocao_xp_p', nome: 'Poção de XP pequena', custo: 1, moeda: 'doces', tipo: 'pocao' },
+  { id: 'pocao_xp_m', nome: 'Poção de XP média', custo: 3, moeda: 'doces', tipo: 'pocao' },
+  { id: 'pocao_xp_g', nome: 'Poção de XP grande', custo: 8, moeda: 'doces', tipo: 'pocao' },
+  { id: 'acelerador', nome: 'Acelerador de obra (15 min)', custo: 2, moeda: 'doces', tipo: 'acelerador' },
+  { id: 'materiais', nome: 'Caixa de materiais (20 madeira + 20 pedra)', custo: 2, moeda: 'doces', tipo: 'materiais' },
 ];
 // Torre de Halloween: 4 dificuldades de 100 andares
 export const TORRE = {
   marco: 'q_mare_devolveu', // compatível com uma equipe de nível 5
   dificuldades: [{ nivel: [5, 70] }, { nivel: [70, 150] }, { nivel: [150, 220] }, { nivel: [220, 300] }],
-  ticketsPorMarco: 5, chancePocao: 0.04,
+  totalAndares: 100,
+  diamantesPorAndar: 10,
+  ticketsPorMarco: 3, // 3 tickets do evento a cada 10 andares (30 no total)
+  limiteTicketsDiarios: 10,
+  precoTicketDiamantes: 100,
+  chancePocao: 0.04,
   arenas: [1, 2, 3, 4].map((n) => `assets/confusion/interface/eventos/halloween/arenas/0${n}.webp`), // uma arena própria por dificuldade
 };
