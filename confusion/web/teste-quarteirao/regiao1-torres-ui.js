@@ -83,7 +83,7 @@ export function renderizarPainelTorres(save, aba, st) {
 
     const p1 = andarDef.recompensaPrimeiraVitoria;
     const elsBadges = torre.elementos.map((e) => `<span class="tag" style="display:inline-flex;align-items:center;gap:4px;background:rgba(12,8,24,.82);color:#fff3e7;border-color:rgba(243,194,122,.45)"><img src="${icoEl(e)}" alt="" style="width:14px;height:14px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[e] || e)}</span>`).join('');
-    return `<div class="bl">
+    return `<div class="bl torres-lista">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
         <b style="color:#fde68a">🗼 Torres Elementais (${TORRES_ELEMENTAIS_CATALOGO.length} × 50 andares · 18 elementos)</b>
         <span class="tag">💠 Treino diário de Essência: ${treinos}/${TORRES_CFG.treinosDiariosMax}</span>
@@ -91,7 +91,7 @@ export function renderizarPainelTorres(save, aba, st) {
       <div class="torre-filtros" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
       <div class="torre-seletores" style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
     </div>
-    <div class="bl" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(14,8,26,.92) 28%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
+    <div class="bl torres-detalhe" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(14,8,26,.92) 28%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:210px">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
