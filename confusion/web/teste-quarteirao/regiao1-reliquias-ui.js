@@ -37,6 +37,18 @@ const icoEl = (el) => `../../../assets/confusion/interface/menus-v1/ficha/sonho-
 const IMG = (p) => `../../../${p}`;
 
 const ICO_PARTE = { coroa: '👑', amuleto: '📿', anel: '💍', talisma: '🔮' };
+const IMG_LOOT = '../../../assets/confusion/interface/feedback-rodada/icones-loot';
+function iconeReliquia(parte, raridade) {
+  const p = Object.hasOwn(ICO_PARTE, parte) ? parte : null;
+  if (!p) return '💎';
+  const r = ['comum', 'incomum', 'rara', 'epica', 'lendaria', 'mitica'].includes(raridade) ? raridade : null;
+  const caminho = r ? `${IMG_LOOT}/raridades/${p}-${r}.png` : `${IMG_LOOT}/${p}-base.png`;
+  return `<img src="${caminho}" alt="" style="width:24px;height:24px;object-fit:contain;vertical-align:middle" onerror="this.replaceWith(document.createTextNode('${ICO_PARTE[p]}'))">`;
+}
+function iconeEssencia(tamanho) {
+  return `<img src="${IMG_LOOT}/essencia-${tamanho}.png" alt="" style="width:24px;height:24px;object-fit:contain;vertical-align:middle" onerror="this.style.display='none'">`;
+}
+
 const COR_RAR = {
   comum: '#cbd5e1',
   incomum: '#4ade80',
@@ -142,15 +154,15 @@ export function renderizarPainelReliquias(save, aba, st) {
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
           <div style="background:rgba(10,6,20,.85);border:1px solid rgba(203,213,225,.28);border-radius:8px;padding:6px;text-align:center">
-            <div style="font-size:10.5px;color:#d6dbe4">Menor</div>
+            <div style="font-size:10.5px;color:#d6dbe4">${iconeEssencia('menor')} Menor</div>
             <div style="font-size:16px;font-weight:800;color:#fff3e7">${s.menor}</div>
           </div>
           <div style="background:rgba(10,6,20,.85);border:1px solid rgba(56,189,248,.38);border-radius:8px;padding:6px;text-align:center">
-            <div style="font-size:10.5px;color:#7dd3fc">Média</div>
+            <div style="font-size:10.5px;color:#7dd3fc">${iconeEssencia('media')} Média</div>
             <div style="font-size:16px;font-weight:800;color:#fff3e7">${s.media}</div>
           </div>
           <div style="background:rgba(10,6,20,.85);border:1px solid rgba(253,224,71,.45);border-radius:8px;padding:6px;text-align:center">
-            <div style="font-size:10.5px;color:#fde68a">Maior</div>
+            <div style="font-size:10.5px;color:#fde68a">${iconeEssencia('maior')} Maior</div>
             <div style="font-size:16px;font-weight:800;color:#fde047">${s.maior}</div>
           </div>
         </div>
@@ -192,7 +204,7 @@ export function renderizarPainelReliquias(save, aba, st) {
       const cor = item ? corRar(item.raridade) : 'rgba(243,194,122,.28)';
       return `<div style="background:linear-gradient(160deg,rgba(16,12,30,.94),rgba(9,7,18,.98));border:1.5px solid ${cor};border-radius:10px;padding:7px 9px;font-size:11px;min-height:74px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:${item ? `0 0 12px ${cor}26` : 'none'}">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
-          <span style="font-weight:700;color:#fff3e7">${ICO_PARTE[p.id] || '💎'} ${esc(p.nome)}</span>
+          <span style="font-weight:700;color:#fff3e7">${iconeReliquia(p.id, item?.raridade)} ${esc(p.nome)}</span>
           ${item ? `<span style="font-size:10px;font-weight:800;color:${cor}">${esc(NOME_RAR[item.raridade] || item.raridade)} +${item.reforco || 0}</span>` : '<span style="font-size:10px;color:#d6dbe4">Vazio</span>'}
         </div>
         ${item
@@ -241,7 +253,7 @@ export function renderizarPainelReliquias(save, aba, st) {
           <button class="btn-sec" data-rel-preset-load="${esc(membro.uid)}">📥 Aplicar</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:minmax(145px,1fr) minmax(115px,155px) minmax(145px,1fr);gap:8px;align-items:center">
+      <div class="rel-equip-grade" style="display:grid;grid-template-columns:minmax(145px,1fr) minmax(115px,155px) minmax(145px,1fr);gap:8px;align-items:center">
         <div style="display:flex;flex-direction:column;gap:8px">${esqSlots}</div>
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,rgba(168,85,247,.25),rgba(10,6,20,.88));border:1.5px solid rgba(243,194,122,.4);border-radius:12px;padding:8px;min-height:156px;text-align:center">
           ${retratoUrl ? `<img src="${retratoUrl}" alt="${esc(membro.especie)}" style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.7))" onerror="this.style.display='none'">` : '<div style="font-size:42px;line-height:96px">🐾</div>'}
@@ -278,7 +290,7 @@ export function renderizarPainelReliquias(save, aba, st) {
     const cor = corRar(it.raridade);
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;margin-top:6px;border-radius:9px;background:rgba(12,8,24,.86);border:1px solid rgba(255,255,255,.14);border-left:4px solid ${cor};flex-wrap:wrap">
       <div style="font-size:11.5px;min-width:180px;flex:1">
-        <b style="color:#fff3e7">${ICO_PARTE[it.parte] || '💎'} ${esc(PARTES_RELIQUIA[it.parte]?.nome || it.parte)} +${it.reforco || 0}</b>
+        <b style="color:#fff3e7">${iconeReliquia(it.parte, it.raridade)} ${esc(PARTES_RELIQUIA[it.parte]?.nome || it.parte)} +${it.reforco || 0}</b>
         · <span class="tag" style="color:${cor};border-color:${cor}">${esc(NOME_RAR[it.raridade] || it.raridade)}</span>
         · <span class="tag">${esc(NOME_ELEMENTO[it.elemento] || it.elemento)}</span>
         · <span style="color:#d6dbe4">${esc(CONJUNTOS_RELIQUIAS[it.conjunto]?.nome || it.conjunto)}</span>${donoUid ? ' · <span style="color:#4ade80;font-weight:700">✓ Equipada</span>' : ''}
