@@ -1039,12 +1039,19 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     destacar(tid);
   }
   let origemPainelExp = 'campanha';
+  const historicoExp = [];
   function abaCrise() { const c = R.criseDe(save()); return `<div class="bl"><h4>🧟 ${esc(CRISE.cidade)}: ${esc(CRISE.nomes[c.estado])}</h4><p>Uma crise completa numa só cidade: saudável → contaminada → tomada → purificada → reconstruída. As mudanças aparecem no mapa, com zumbis nas ruas durante o surto. Estado próprio: não altera a Campanha nem os Reinos.</p><div class="ln"><button class="btn-pri" data-crise-abrir="1">Visitar a cidade</button></div></div>`; }
   function abrir(p, a = 0, origem = 'campanha') {
     if (batalhaBloqueando() || tela.aberta()) return;
     if (p === 'campanhaMini' && window.regiaoCampanhaMini?.abrir) {
       window.regiaoCampanhaMini.abrir();
       return;
+    }
+    if (modal.classList.contains('aberto') && painel && painel !== p) {
+      historicoExp.push({ painel, aba, fichaUid });
+      if (historicoExp.length > 20) historicoExp.shift();
+    } else if (!modal.classList.contains('aberto')) {
+      historicoExp.length = 0;
     }
     origemPainelExp = p === 'descanso' ? 'campanha' : origem;
     painel = p; aba = a; revendo = null; hvEstado = null; fichaUid = null; selEq = null; descPop = null; verCapaInv = false;
@@ -1079,6 +1086,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       save: save(), salvar, mostrarToast, render,
     })) return;
     if (t.id === 'exp-fechar') {
+      if (historicoExp.length) {
+        const ant = historicoExp.pop();
+        painel = ant.painel; aba = ant.aba || 0; fichaUid = ant.fichaUid || null; selEq = null; descPop = null; verCapaInv = false;
+        render(true);
+        return;
+      }
       if (painel !== 'descanso' && origemPainelExp === 'descanso') {
         painel = 'descanso'; aba = 0; fichaUid = null; selEq = null; descPop = null; verCapaInv = false;
         render(true);
@@ -1092,7 +1105,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (d.aba !== undefined) { aba = Number(d.aba); revendo = null; hvEstado = null; render(true); return; }
     if (d.descPop !== undefined) { descPop = d.descPop || null; render(); return; }
     if (d.invCapa !== undefined) { verCapaInv = !verCapaInv; render(); return; }
-    if (d.descFicha) { origemPainelExp = 'descanso'; painel = 'equipe'; aba = 0; fichaUid = d.descFicha; selEq = null; descPop = null; render(true); return; }
+    if (d.descFicha) { if (painel) historicoExp.push({ painel, aba, fichaUid }); origemPainelExp = 'descanso'; painel = 'equipe'; aba = 0; fichaUid = d.descFicha; selEq = null; descPop = null; render(true); return; }
     if (d.descIr) {
       const dest = d.descIr;
       descPop = null;
