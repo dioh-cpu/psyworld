@@ -43,3 +43,5 @@ São artes independentes para revisão, com áreas centrais transparentes. A apl
 - `moldura-campanha.png`: 1536 × 1024, pergaminhos, bússola e mapas.
 
 Centro e canto superior esquerdo destes dois PNGs têm alfa zero; a checagem integral dos contornos e a adaptação em tela seguem pendentes.
+- `moldura-invocacao.png`: 1672 × 941, astrolábios e luz celestial.
+- `moldura-equipe.png`: 1672 × 941, salão de treino, armas e estandartes.
