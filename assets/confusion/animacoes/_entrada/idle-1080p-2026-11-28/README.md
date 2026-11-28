@@ -1,6 +1,17 @@
 # Idles originais 1080p
 
-Arquivos originais enviados pelo usuário. Identificação de espécie e forma deve ser confirmada antes do processamento. Brasinha, criatura azul e tatu em fundo magenta apresentam cortes de borda.
+Arquivos originais enviados pelo usuário. Identificações por comparação visual com as referências do catálogo e com as caminhadas. Formas assinaladas como prováveis devem ser confirmadas antes do processamento. Brasinha, criatura azul e tatu em fundo magenta apresentam cortes de borda.
+
+| Final do nome | Identificação | Situação |
+|---|---|---|
+| `fa33ed9a` | Tatu em fundo magenta, provável Xistolim F1 | Idle original 1080p; há reparo derivado de versão 720p. Conferir cortes e forma. |
+| `60344e2b` | Brasinha F1 | Idle original 1080p; reparo disponível, conferir visualmente antes de processar. |
+| `b5bd1d24` | Felino azul, provável Gotalume F1 | Idle original 1080p; reparo disponível, conferir pose e cortes. |
+| `1ee912b9` | Cervo de madeira, provável Sementil F1 | Idle original 1080p; confirmar forma. |
+| `1e6a50c4` | Felino prateado alado em fundo verde, provável Solinho F1 | Idle original 1080p; confirmar forma. |
+| `991b6170` | Tatu em fundo verde, provável Xistolim F2 | Idle original 1080p; confirmar forma. |
+
+As caminhadas correspondentes estão em `../walk-lote2-2026-11-28/`. Os arquivos em `../reparo-lote-2026-11-28/` são versões modificadas e ainda precisam de conferência visual e processamento.
 
 | Arquivo | Bytes | SHA-256 |
 |---|---:|---|
