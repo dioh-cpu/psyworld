@@ -156,8 +156,8 @@ test('convidado -> criar conta: preserva progresso, paga bônus único 20.000�
   save.recompensas.gold = 350;
   save.recompensas.xp = 120;
   assert.equal(ehConvidadoComProgresso(save), true);
-  assert.equal(save.recompensas.diamantes || 0, 0);
-  assert.equal(vipAtivo(save, agora), false);
+  assert.equal(save.recompensas.diamantes, BOAS_VINDAS.diamantes);
+  assert.equal(vipAtivo(save, agora), true);
 
   const dec1 = decidirEntradaConta({ remoto: null, local: save, userId: 'usr-qa-1' });
   assert.equal(dec1.acao, 'preparar');

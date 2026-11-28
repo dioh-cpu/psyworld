@@ -18,7 +18,7 @@ import { registrarMarco } from './regiao1-missoes-regras.js';
 import { aplicarXp } from './regiao1-progressao.js';
 import { membrosFormacao, expDe } from './regiao1-exp-regras.js';
 import { adicionarFragmentoSonho } from './regiao1-regras-sonho.js';
-import { hwDe, docesGraduaisAndar } from './regiao1-halloween-regras.js';
+import { hwDe, docesGraduaisAndar, talvezDoce } from './regiao1-halloween-regras.js';
 import { LINHAGENS_REINOS } from './regiao1-kits-reinos.js';
 import { FORMAS_LINHAGENS_REINOS } from '../formas-reinos.js';
 import { LINHAS, ELEMENTO_DA_ESPECIE } from '../species.js';
@@ -462,13 +462,14 @@ export function concluirAndarTorreElemental(save, torreId, andar, resultado = { 
     premios.xpFormacao = creditarXpFormacaoTorre(save, Math.round(xpBase * 0.5));
   }
 
-  // Drop real de Fragmentos de Evolução (Sonho) dos inimigos do elemento da torre (+1 garantido em andares chefes múltiplos de 10)
+  // Drop real de Fragmentos de Evolução (Sonho) e Doces dos inimigos derrotados da torre (+1 fragmento garantido em chefes múltiplos de 10)
   for (const inim of andarDef.inimigos || []) {
     const el = inim?.[2] || torre.elementos[0];
     if (rng() < 0.01) {
       adicionarFragmentoSonho(save, el, 1);
       premios.fragmentosSonho[el] = (premios.fragmentosSonho[el] || 0) + 1;
     }
+    premios.doces += talvezDoce(save, 'torre', rng, new Date(agoraMs));
   }
   if (andar % 10 === 0) {
     const elChefe = torre.elementos[(Math.ceil(andar / 10) - 1) % torre.elementos.length];
@@ -538,23 +539,46 @@ export function iniciarAndarTorreUnica(save, torreId, andar, { agoraMs = Date.no
   const andarDef = torre?.andares?.[andar - 1];
   if (!andarDef) return { ok: false, motivo: 'Andar da Torre Única inválido.' };
   if (!andarTorreUnicaDesbloqueado(save, torreId, andar)) return { ok: false, motivo: 'Andar ainda bloqueado.' };
-  if (!podeFazerTorreUnicaHoje(save, torreId, andar, agoraMs)) {
-    return { ok: false, limiteDiario: true, motivo: 'Este andar da Torre Única já foi concluído hoje (1×/dia por andar).' };
+  const t = torresDe(save);
+  const jaVencido = Boolean(t.unicas[torreId]?.pagas?.[String(andar)]);
+  const feitoHoje = !podeFazerTorreUnicaHoje(save, torreId, andar, agoraMs);
+  let gastouTicket = false;
+  if (jaVencido || feitoHoje) {
+    if (saldoTicketTorre(save, torreId) < 1) {
+      return {
+        ok: false,
+        precisaTicket: true,
+        limiteDiario: feitoHoje,
+        motivo: feitoHoje
+          ? 'Este andar da Torre Única já foi concluído hoje. Use 1 Ticket desta torre para repetir.'
+          : 'Repetir andar já vencido exige 1 Ticket desta torre.',
+      };
+    }
+    t.tickets[torreId] -= 1;
+    gastouTicket = true;
   }
   const g = gastarEnergia(save, andarDef.energia, agoraMs);
   if (!g.ok) return g;
-  return { ok: true, batalhaId: batalhaId || `tu_${torreId}_${andar}_${agoraMs}`, torre, andar: andarDef, energiaRestante: g.atual };
+  return {
+    ok: true,
+    batalhaId: batalhaId || `tu_${torreId}_${andar}_${agoraMs}`,
+    torre,
+    andar: andarDef,
+    gastouTicket,
+    ticketsRestantes: saldoTicketTorre(save, torreId),
+    energiaRestante: g.atual,
+  };
 }
 
-export function concluirAndarTorreUnica(save, torreId, andar, resultado = { venceu: true }, { agoraMs = Date.now(), batalhaId = null, rng = Math.random } = {}) {
+export function concluirAndarTorreUnica(save, torreId, andar, resultado = { venceu: true }, { agoraMs = Date.now(), batalhaId = null, rng = Math.random, comTicket = false } = {}) {
   const torre = TORRES_UNICAS_POR_ID[torreId];
   const andarDef = torre?.andares?.[andar - 1];
   if (!andarDef) return { ok: false, motivo: 'Andar da Torre Única inválido.' };
   if (!andarTorreUnicaDesbloqueado(save, torreId, andar)) return { ok: false, motivo: 'Andar ainda bloqueado.' };
   const t = torresDe(save);
   if (batalhaId && t.batalhasPagas[batalhaId]) return { ok: true, jaPago: true, venceu: false, premios: {} };
-  if (!podeFazerTorreUnicaHoje(save, torreId, andar, agoraMs)) {
-    return { ok: false, limiteDiario: true, motivo: 'Andar já concluído hoje (1×/dia por andar).' };
+  if (!comTicket && !podeFazerTorreUnicaHoje(save, torreId, andar, agoraMs)) {
+    return { ok: false, limiteDiario: true, motivo: 'Andar já concluído hoje (use 1 Ticket da torre para repetir).' };
   }
 
   const xpBase = xpAndarTorre(andar);

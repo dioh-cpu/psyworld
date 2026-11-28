@@ -762,8 +762,8 @@ export function sanitizarIdleProgressao(idle) {
       for (const [id, v] of Object.entries(t.elementais).slice(0, 12)) {
         if (v && typeof v === 'object') {
           elementais[String(id).slice(0, 24)] = {
-            maiorAndar: Math.max(0, Math.min(50, Math.floor(Number(v.maiorAndar) || 0))),
-            pagas: sanitizarMapaSeguro(v.pagas, 60, 'bool'),
+            maiorAndar: Math.max(0, Math.min(100, Math.floor(Number(v.maiorAndar) || 0))),
+            pagas: sanitizarMapaSeguro(v.pagas, 120, 'bool'),
           };
         }
       }
@@ -772,14 +772,17 @@ export function sanitizarIdleProgressao(idle) {
     if (t.unicas && typeof t.unicas === 'object') {
       for (const [id, v] of Object.entries(t.unicas).slice(0, 8)) {
         if (v && typeof v === 'object') {
-          unicas[String(id).slice(0, 24)] = { maiorAndar: Math.max(0, Math.min(30, Math.floor(Number(v.maiorAndar) || 0))) };
+          unicas[String(id).slice(0, 24)] = {
+            maiorAndar: Math.max(0, Math.min(100, Math.floor(Number(v.maiorAndar) || 0))),
+            pagas: sanitizarMapaSeguro(v.pagas, 120, 'bool'),
+          };
         }
       }
     }
     const unicasDiarias = {};
     if (t.unicasDiarias && typeof t.unicasDiarias === 'object') {
       for (const [id, v] of Object.entries(t.unicasDiarias).slice(0, 8)) {
-        if (v && typeof v === 'object') unicasDiarias[String(id).slice(0, 24)] = sanitizarMapaSeguro(v, 35, 'int');
+        if (v && typeof v === 'object') unicasDiarias[String(id).slice(0, 24)] = sanitizarMapaSeguro(v, 120, 'int');
       }
     }
     const sazonais = {};
@@ -818,6 +821,44 @@ export function sanitizarIdleProgressao(idle) {
       tickets: sanitizarMapaSeguro(t.tickets, 32, 'int'),
       comprasTickets,
       batalhasPagas: sanitizarMapaSeguro(t.batalhasPagas, 300, 'bool'),
+    };
+  }
+
+  if (isObj(idle.exp) && isObj(idle.exp.ticketsPorBanner)) {
+    out.exp = { ...idle.exp, ticketsPorBanner: sanitizarMapaSeguro(idle.exp.ticketsPorBanner, 16, 'int') };
+  }
+
+  if (isObj(idle.hw)) {
+    const h = idle.hw;
+    const lojaDiaria = {};
+    if (isObj(h.lojaDiaria)) {
+      for (const [id, v] of Object.entries(h.lojaDiaria).slice(0, 32)) {
+        if (isObj(v)) lojaDiaria[String(id).slice(0, 32)] = { dia: Math.max(0, Math.floor(Number(v.dia) || 0)), qtd: Math.max(0, Math.min(50, Math.floor(Number(v.qtd) || 0))) };
+      }
+    }
+    const buffsAtivos = {};
+    if (isObj(h.buffsAtivos)) {
+      for (const [id, v] of Object.entries(h.buffsAtivos).slice(0, 16)) {
+        if (isObj(v)) buffsAtivos[String(id).slice(0, 24)] = { bonusPct: Math.max(0, Math.min(500, Number(v.bonusPct) || 0)), ateMs: Math.max(0, Math.floor(Number(v.ateMs) || 0)) };
+      }
+    }
+    const torreHw = isObj(h.torre) ? {
+      ...h.torre,
+      liberada: Math.max(1, Math.min(4, Math.floor(Number(h.torre.liberada) || 1))),
+      dif: Math.max(1, Math.min(4, Math.floor(Number(h.torre.dif) || 1))),
+      andar: Math.max(1, Math.min(100, Math.floor(Number(h.torre.andar) || 1))),
+      tickets: Math.max(0, Math.floor(Number(h.torre.tickets) || 0)),
+      maior: sanitizarMapaSeguro(h.torre.maior, 8, 'int'),
+      pagos: sanitizarMapaSeguro(h.torre.pagos, 80, 'bool'),
+      andaresPagos: sanitizarMapaSeguro(h.torre.andaresPagos, 450, 'bool'),
+    } : h.torre;
+    out.hw = {
+      ...h,
+      torre: torreHw,
+      lojaDiaria,
+      ovos: sanitizarMapaSeguro(h.ovos, 32, 'int'),
+      buffsAtivos,
+      cosmeticos: sanitizarMapaSeguro(h.cosmeticos, 64, 'bool'),
     };
   }
 

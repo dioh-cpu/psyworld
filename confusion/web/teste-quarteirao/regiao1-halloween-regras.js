@@ -163,6 +163,23 @@ export function andar(dif, n) {
   return { dif, n, nivel: nv, recomendado: nv, inimigos, arena: TORRE.arenas[dif - 1], marco: n % 10 === 0, diamantes: TORRE.diamantesPorAndar, doces: docesGraduaisAndar(n, 100) };
 }
 export const proximaRecompensa = (save, dif) => { const h = hwDe(save); const m = h.torre.maior[dif] || 0; const alvo = Math.min(100, (Math.floor(m / 10) + 1) * 10); return h.torre.pagos[`${dif}:${alvo}`] ? null : { andar: alvo, tickets: TORRE.ticketsPorMarco }; };
+export function iniciarAndarHW(save, dif, n) {
+  const h = hwDe(save), t = h.torre;
+  if (dif > t.liberada) return { ok: false, motivo: 'Dificuldade bloqueada.' };
+  if (n > (t.maior[dif] || 0) + 1) return { ok: false, motivo: 'Vença o andar anterior primeiro.' };
+  t.andaresPagos ||= {};
+  const jaVencido = Boolean(t.andaresPagos[`${dif}:a:${n}`]);
+  let gastouTicket = false;
+  if (jaVencido) {
+    const saldo = Math.max(0, Math.floor(Number(t.tickets) || 0));
+    if (saldo < 1) {
+      return { ok: false, precisaTicket: true, motivo: 'Repetir andar já vencido na Torre de Halloween exige 1 Ticket desta torre.' };
+    }
+    t.tickets = saldo - 1;
+    gastouTicket = true;
+  }
+  return { ok: true, andar: andar(dif, n), gastouTicket, ticketsRestantes: Math.max(0, Math.floor(Number(t.tickets) || 0)) };
+}
 // Vitória: registra o andar e paga o marco junto, uma única vez (mesmo recarregando ou repetindo o andar)
 export function vencerAndar(save, dif, n, rng = Math.random, agora = new Date()) {
   const h = hwDe(save), t = h.torre;

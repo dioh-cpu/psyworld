@@ -170,11 +170,11 @@ test('Convidado -> criar conta -> recarregar -> trocar de aparelho preserva 100%
   const s = criarEstadoInicial();
   garantirEstadoIdle(s, t0);
 
-  // 1) Convidado escolhe inicial e progride localmente (sem bônus ainda)
+  // 1) Convidado escolhe inicial e já recebe o bônus único de 20.000💎 + 10d VIP (para todos)
   prepararInicialLocal(s, 'Gotalume', t0);
   assert.equal(s.conta.uid, null);
   assert.equal(s.conta.inicial, 'Gotalume');
-  assert.equal(s.recompensas.diamantes, 0);
+  assert.equal(s.recompensas.diamantes, 20000);
 
   s.recompensas.gold += 850;
   s.recompensas.diamantes += 120;

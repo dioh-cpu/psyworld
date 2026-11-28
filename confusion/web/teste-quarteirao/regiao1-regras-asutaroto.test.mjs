@@ -780,7 +780,7 @@ test('Cadastro e boas-vindas (20.000 diamantes): elegibilidade única e preserva
   prepararInicialLocal(sConv, 'Brasinha', 4_000_000);
   sConv.idle.equipe[0].nivel = 15;
   sConv.idle.equipe[0].especie = 'Ignavor';
-  sConv.recompensas.diamantes = 250;
+  sConv.recompensas.diamantes += 250;
   sConv.recompensas.gold = 900;
   assert.equal(ehConvidadoComProgresso(sConv), true);
 

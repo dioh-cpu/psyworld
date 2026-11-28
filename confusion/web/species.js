@@ -132,15 +132,27 @@ export const HABILIDADES_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES
 export const APTIDOES_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).map(([k, e]) => [k, e.aptidoes || {}]));
 export const ARTE_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).filter(([, e]) => e.arte).map(([k, e]) => [k, e.arte]));
 export const PASSIVA_DA_ESPECIE = Object.fromEntries(Object.entries(ESPECIES).filter(([, e]) => e.passiva).map(([k, e]) => [k, e.passiva]));
-// Auditoria de elementos por coerência com nome/arte (Reino 10: linhagens de gelo/neve)
+// Auditoria de elementos por coerência com nome/arte (Reino 10: linhagens de gelo/neve + linha Foquinha)
 const CORRECAO_ELEMENTO_ESPECIE = {
   Geadinha: 'gelo', Geadante: 'gelo', Geadaurora: 'gelo',
   Uivinho: 'gelo', 'Uiválgido': 'gelo', Uivaneve: 'gelo',
   Glacita: 'gelo', Glacivra: 'gelo', 'Glacivípera': 'gelo',
   Nevita: 'gelo', Nevascaio: 'gelo', 'Nevascário': 'gelo',
+  Foquinha: 'gelo', Focanil: 'gelo', Focanorte: 'gelo',
 };
 for (const [k, el] of Object.entries(CORRECAO_ELEMENTO_ESPECIE)) {
   if (ESPECIES[k]) ESPECIES[k].elemento = el;
+}
+// Espécies nativas para elementos sem representante próprio (lutador, veneno, psiquico, dragao, fada)
+const ESPECIES_NATIVAS_ELEMENTOS = {
+  Pugilume:  { origem: 'linha', pureza: 'neutra', elemento: 'lutador',  classe: 'guerreiro', aptidoes: { cortar: 2, minerar: 2 },   habilidades: ['Punho Firme', 'Chute Giratório', 'Guarda de Ferro', 'Impacto Marcial'] },
+  'Peçonhito': { origem: 'linha', pureza: 'trevas', elemento: 'veneno', classe: 'assassino', aptidoes: { colher: 2, garimpar: 2 },  habilidades: ['Ferroada Tóxica', 'Névoa Ácida', 'Esporo Venenoso', 'Picada Lenta'] },
+  'Mentálio': { origem: 'linha', pureza: 'luz',    elemento: 'psiquico', classe: 'mago',     aptidoes: { fabricar: 2, garimpar: 2 }, habilidades: ['Onda Mental', 'Pulso Telepático', 'Barreira Psíquica', 'Clarividência'] },
+  Dracovelo: { origem: 'linha', pureza: 'neutra', elemento: 'dragao',   classe: 'guerreiro', aptidoes: { transportar: 3, cortar: 2 }, habilidades: ['Sopro Dracônico', 'Garra de Escama', 'Voo Ancestral', 'Rugido Wyrm'] },
+  'Silfélia': { origem: 'linha', pureza: 'luz',   elemento: 'fada',     classe: 'suporte',   aptidoes: { plantar: 2, cozinhar: 2 },  habilidades: ['Pólen Feérico', 'Brisa Encantada', 'Véu de Fada', 'Canto Silvestre'] },
+};
+for (const [nome, def] of Object.entries(ESPECIES_NATIVAS_ELEMENTOS)) {
+  if (!ESPECIES[nome]) ESPECIES[nome] = def;
 }
 // Elemento de cada espécie (v1.34). Sem elemento explícito, vale o da pureza: luz, trevas ou neutro.
 const ELEMENTO_PELA_PUREZA = { luz: 'luz', trevas: 'trevas', neutra: 'neutro' };

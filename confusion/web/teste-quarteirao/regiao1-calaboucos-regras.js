@@ -3,6 +3,7 @@
 import { ENERGIA_CFG, gastarEnergia, concederReliquiaCampanha } from './regiao1-campanha-mini-regras.js';
 import './regiao1-reliquias-regras.js'; // garante gerador real de relíquias plugado mesmo se importado isoladamente
 import { registrarMarco } from './regiao1-missoes-regras.js';
+import { talvezDoce } from './regiao1-halloween-regras.js';
 import { ELEMENTO_DA_ESPECIE } from '../species.js';
 import * as EstrategiaRegras from './regiao1-estrategia-regras.js';
 
@@ -251,6 +252,11 @@ export function concluirCalaboucoNivel(save, calaboucoId, nivel, batalhaOuResumo
   if (desfecho.todosVivos) c.todosVivos[`${calaboucoId}:${nivel}`] = true;
 
   const premios = sortearRecompensasCalabouco(save, cal, nivel, rng);
+  let docesDrop = 0;
+  for (let i = 0; i < (nvDef.inimigos?.length || 1); i++) {
+    docesDrop += talvezDoce(save, 'calabouco', rng, new Date(agoraMs));
+  }
+  premios.doces = docesDrop;
   if (batalhaId) marcarBatalhaCalaboucoPaga(c, batalhaId);
   registrarMarco(save, 'calabouco', { calabouco: calaboucoId, nivel, qtd: 1 });
   return {
@@ -274,6 +280,11 @@ export function batalhaRapidaCalabouco(save, calaboucoId, nivel, { agoraMs = Dat
   const g = gastarEnergia(save, nvDef.energia, agoraMs);
   if (!g.ok) return g;
   const premios = sortearRecompensasCalabouco(save, cal, nivel, rng);
+  let docesDrop = 0;
+  for (let i = 0; i < (nvDef.inimigos?.length || 1); i++) {
+    docesDrop += talvezDoce(save, 'calabouco', rng, new Date(agoraMs));
+  }
+  premios.doces = docesDrop;
   registrarMarco(save, 'calabouco', { calabouco: calaboucoId, nivel, qtd: 1 });
   return { ok: true, rapida: true, energiaRestante: g.atual, premios };
 }

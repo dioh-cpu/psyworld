@@ -120,9 +120,10 @@ test('Torres Únicas: 3×100 andares (60..200), 1×/dia/andar, Pó Único para e
   // Não permite repetir o mesmo andar no mesmo dia
   assert.equal(iniciarAndarTorreUnica(s, 'ascensao', 1, { agoraMs: t0 + 3600_000 }).limiteDiario, true);
 
-  // Dia seguinte permite repetir o andar 1 (e sorteando 'ignavor' que o jogador possui em Brasinha)
+  // Dia seguinte permite repetir o andar 1 com 1 Ticket da torre (e sorteando 'ignavor' que o jogador possui em Brasinha)
   const idxIgnavor = pool.indexOf('ignavor');
   const rngIgnavor = () => (idxIgnavor + 0.1) / pool.length;
+  s.idle.torres.tickets = { ...(s.idle.torres.tickets || {}), ascensao: 1 };
   assert.equal(iniciarAndarTorreUnica(s, 'ascensao', 1, { agoraMs: t0 + 86_400_000, batalhaId: 'tu_2' }).ok, true);
   const res2 = concluirAndarTorreUnica(s, 'ascensao', 1, { venceu: true }, { agoraMs: t0 + 86_400_000, batalhaId: 'tu_2', rng: rngIgnavor });
   assert.equal(res2.premios.virouPoUnico, false);

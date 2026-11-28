@@ -11,6 +11,7 @@ import {
   estrelasIniciais,
 } from './regiao1-progressao.js'; // progressão sem teto + curva exclusiva do Domador + estrelas/tier
 import { membrosFormacao } from './regiao1-exp-regras.js';
+import { talvezDoce } from './regiao1-halloween-regras.js';
 import {
   sanityBand,
   gatherDay,
@@ -528,6 +529,7 @@ export function resolverAbateAuto(save, monstro, rng = Math.random, agoraMs = Da
     elemento: monstro.elementoDrop || monstro.elemento,
     rng,
   });
+  const docesIdle = talvezDoce(save, 'idle', rng, new Date(agoraMs));
 
   let ovoDrop = false;
   if (idle.autoCaca.coletarOvos && rng() < OVOS.fatorDrop && dropsEgg({ rarity: rar }, rng(), st.dropOvoExtra)) {
@@ -596,9 +598,14 @@ export function aplicarGanhoOffline(save, resumo, especiePadrao = 'Fanalino', ag
     idle.mochila.ovos.push({ especie: especiePadrao, forma: 'natural', obtidoEm: agoraMs });
   }
   const fragmentosSonho = aplicarDropsOfflineFragmentos(save, { loteId, abates: resumo.abates, especie: especiePadrao, rng });
+  let docesAfk = 0;
+  const dataAfk = new Date(agoraMs);
+  for (let i = 0; i < Math.min(2000, Math.max(0, Math.floor(Number(resumo.abates) || 0))); i++) {
+    docesAfk += talvezDoce(save, 'afk', rng, dataAfk);
+  }
   avancarDiaria(idle, 'abates', resumo.abates);
   idle.ultimoTickMs = agoraMs;
-  return { ...resumo, xpOniricos, oniricosXp, jaPago: false, xpPasseGanho: passeRes.ganho, xpPasseDescartado: passeRes.descartado, fragmentosSonho };
+  return { ...resumo, xpOniricos, oniricosXp, jaPago: false, xpPasseGanho: passeRes.ganho, xpPasseDescartado: passeRes.descartado, fragmentosSonho, doces: docesAfk };
 }
 
 // Liquida automaticamente o tempo elegível em segundo plano (minimizado) ou com a página fechada.
