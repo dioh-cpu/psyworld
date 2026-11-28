@@ -41,7 +41,7 @@ Branches verificadas: `main`, `codex/reparo-frames-lote2`, `codex/rodada4-flow-o
 - Cobrabúfalo F2, Tatuveludo F2, Melifalcão F2, Lavândria F2, Calquélon F2, Vesprata F2, Colmeiro F2, Âmbarasa F2, Zunifaísca F2, Trovoresta F2, Voltabelha F2, Falesário F2, Ventassol F2, Bronzelo F2, Latonhorn F2, Ignavor F2
 - Ignaraz F3, Vaelirion F3, Florivel F3
 
-As artes dessas formas vêm do ZIP do banner (`Oniricos-Banner-Pendentes.zip`), que não estava disponível no ambiente ao fazer esta conferência.
+As 19 artes estão no ZIP do banner (`Oniricos-Banner-Pendentes.zip`, 19 PNGs em `01-palco/`, `02-outros-do-banner/` e `03-evolucoes-de-iniciais/`). A lista do ZIP coincide com as 19 formas acima. Segundo o `LEIA-ME.txt` do ZIP, Fanalino F2, Xistolim F2 e Cerifogo F2 já têm idle e caminhada e foram removidos da lista.
 
 ## Pendências de identificação
 
