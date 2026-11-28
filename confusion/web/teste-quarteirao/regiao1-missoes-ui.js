@@ -201,7 +201,7 @@ export function tratarCliqueMissoes(d, { save, salvar, mostrarToast, render, tel
     tela.abrir({
       titulo: `Missão · ${p.titulo}`,
       sub: etapa.texto || 'Batalha de missão paralela',
-      arena: `assets/confusion/interface/estrategia/reinos/${capPad}/cidade-conceito.webp`,
+      arena: `assets/confusion/interface/estrategia/reinos/${capPad}/arena-chefe.webp`,
       aliados: aliadosDoSave(),
       inimigos: etapa.inimigos || [['Brumacervo', Math.max(5, p.capitulo * 12), p.recompensa?.reliquiaElemento || 'planta', {}]],
       ritmo: 420,

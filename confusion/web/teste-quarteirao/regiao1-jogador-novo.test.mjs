@@ -80,26 +80,28 @@ test('banner Adventurer: invocar até sair um inicial (Brasinha, Gotalume ou Sem
     adicionarEssencia(save, par, 'maior', 30);
   }
 
-  // Evolui forma 1 (base) -> forma 2 (intermediária) no nível 20
-  unidade.nivel = 20;
+  // Evolui forma 1 (base) -> forma 2 (intermediária) a partir do nível 41
+  unidade.nivel = 40;
+  assert.equal(consultarEvolucaoForma(save, idx).podeEvoluir, false);
+  unidade.nivel = 41;
   const cBase = consultarEvolucaoForma(save, idx);
   assert.equal(cBase.podeEvoluir, true);
   const ev1 = evoluirFormaOnirico(save, idx);
   assert.equal(ev1.ok, true);
 
-  // Forma 2 -> forma final T5 bloqueada no nível 39 mesmo com recursos sobrando
-  unidade.nivel = 39;
-  const c39 = consultarEvolucaoForma(save, idx);
-  assert.equal(c39.podeEvoluir, false);
-  assert.equal(c39.faltaNivel, 1);
-  assert.match(c39.motivo, /nível 40/i);
+  // Forma 2 -> forma final T5 bloqueada no nível 80 mesmo com recursos sobrando
+  unidade.nivel = 80;
+  const c80 = consultarEvolucaoForma(save, idx);
+  assert.equal(c80.podeEvoluir, false);
+  assert.equal(c80.faltaNivel, 1);
+  assert.match(c80.motivo, /nível 81/i);
   assert.equal(evoluirFormaOnirico(save, idx).ok, false);
 
-  // No nível 40 libera e evolui para T5
-  unidade.nivel = 40;
-  const c40 = consultarEvolucaoForma(save, idx);
-  assert.equal(c40.podeEvoluir, true);
-  assert.equal(c40.faltaNivel, 0);
+  // No nível 81 libera e evolui para T5
+  unidade.nivel = 81;
+  const c81 = consultarEvolucaoForma(save, idx);
+  assert.equal(c81.podeEvoluir, true);
+  assert.equal(c81.faltaNivel, 0);
   const ev2 = evoluirFormaOnirico(save, idx);
   assert.equal(ev2.ok, true);
 });

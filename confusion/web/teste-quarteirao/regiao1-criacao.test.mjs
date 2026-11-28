@@ -161,7 +161,8 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
   assert.equal(f0.arvore.proxima.custo, 10);
   assert.equal(f0.arvore.proxima.saldo, 0);
 
-  // 3) Evolução Base → 2ª custa 10 Fragmentos + 20 Essências menores + 5 médias (T4); 2ª → 3ª custa 30 + 30 médias + 10 maiores (sobe T5)
+  // 3) Evolução Base → 2ª (Nv.41+) custa 10 Fragmentos + 20 Essências menores + 5 médias (T4); 2ª → 3ª (Nv.81+) custa 30 + 30 médias + 10 maiores (sobe T5)
+  ini.nivel = 41;
   assert.equal(evoluirFormaOnirico(s, 0).ok, false);
   adicionarFragmentoSonho(s, 'fogo', 40);
   // Sem Essências elementais ainda bloqueia sem consumir fragmentos
@@ -175,6 +176,7 @@ test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha com
   assert.equal(ini.tier, 4);
   assert.equal(e1.saldoRestante, 30);
 
+  ini.nivel = 81;
   const e2 = evoluirFormaOnirico(s, 0);
   assert.equal(e2.ok, true);
   assert.equal(e2.para, 'Ignaraz');

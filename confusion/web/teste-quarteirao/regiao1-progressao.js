@@ -111,15 +111,39 @@ export const TIER_MAX = 5;
 export const TIER_CFG = {
   min: TIER_MIN,
   max: TIER_MAX,
-  ganhoPorTier: { hp: 0.15, atk: 0.15, def: 0.12 }, // idêntico ao BONUS_TIER histórico
+  ganhoPorTier: { hp: 0.15, atk: 0.15, def: 0.12 }, // mantido para compatibilidade
+  // Curva crescente de poder por Tier: T5 Lendário tem salto nítido (+85% vs +50% do T4 = +23,3% real)
+  bonusPorTier: {
+    1: { hp: 0.00, atk: 0.00, def: 0.00 },
+    2: { hp: 0.12, atk: 0.12, def: 0.10 },
+    3: { hp: 0.28, atk: 0.28, def: 0.24 },
+    4: { hp: 0.50, atk: 0.50, def: 0.42 },
+    5: { hp: 0.85, atk: 0.85, def: 0.70 },
+  },
 };
+
+export const BONUS_FORMA_CFG = {
+  1: { hp: 0.00, atk: 0.00, def: 0.00 },
+  2: { hp: 0.12, atk: 0.12, def: 0.10 }, // 2ª forma (Nv.41+)
+  3: { hp: 0.28, atk: 0.28, def: 0.22 }, // 3ª forma (Nv.81+)
+};
+
+export function bonusForma(forma = 1) {
+  const f = clampInt(forma, 1, 3);
+  return { ...(BONUS_FORMA_CFG[f] || BONUS_FORMA_CFG[1]) };
+}
 
 export function tierDe(m, cfg = TIER_CFG) {
   const bruto = m?.tier ?? m?.tierHW ?? (m?.inicial ? 1 : m?.raridade) ?? cfg.min;
   return clampInt(bruto, cfg.min, cfg.max);
 }
 export function bonusTier(tier, cfg = TIER_CFG) {
-  const k = clampInt(tier, cfg.min, cfg.max) - 1;
+  const t = clampInt(tier, cfg.min, cfg.max);
+  if (cfg.bonusPorTier?.[t]) {
+    const b = cfg.bonusPorTier[t];
+    return { hp: r4(b.hp), atk: r4(b.atk), def: r4(b.def) };
+  }
+  const k = t - 1;
   return { hp: r4(cfg.ganhoPorTier.hp * k), atk: r4(cfg.ganhoPorTier.atk * k), def: r4(cfg.ganhoPorTier.def * k) };
 }
 
@@ -153,13 +177,13 @@ export const ESTRELAS_CFG = {
     laranja:     { fragmentos: 5, gold: 1000 },
     'arco-iris': { fragmentos: 8, gold: 2000 },
   },
-  // Ganho crescente por estrela adicional (1★ = base +0%; cada estrela seguinte soma cada vez mais nas faixas superiores)
+  // Ganho crescente e perceptível por estrela adicional (1★ = base +0%; cada estrela faz diferença real em combate)
   ganhoPorFaixa: {
-    dourada:     { hp: 0.020, atk: 0.020, def: 0.016 }, // ★2..★6
-    vermelha:    { hp: 0.025, atk: 0.025, def: 0.020 }, // ★7..★12
-    roxa:        { hp: 0.030, atk: 0.030, def: 0.024 }, // ★13..★18
-    laranja:     { hp: 0.035, atk: 0.035, def: 0.028 }, // ★19..★24
-    'arco-iris': { hp: 0.045, atk: 0.045, def: 0.036 }, // ★25..★30
+    dourada:     { hp: 0.050, atk: 0.050, def: 0.040 }, // ★2..★6  (+25% em 6★)
+    vermelha:    { hp: 0.060, atk: 0.060, def: 0.048 }, // ★7..★12
+    roxa:        { hp: 0.070, atk: 0.070, def: 0.056 }, // ★13..★18
+    laranja:     { hp: 0.080, atk: 0.080, def: 0.064 }, // ★19..★24
+    'arco-iris': { hp: 0.100, atk: 0.100, def: 0.080 }, // ★25..★30
   },
 };
 

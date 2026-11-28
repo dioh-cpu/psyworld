@@ -48,36 +48,69 @@ export const MAPA_DROP_FRAGMENTOS_SONHO = Object.fromEntries(
   }),
 );
 
+const NOME_TORRE_POR_ID = {
+  chama: 'Torre da Chama',
+  mare: 'Torre da Maré',
+  raiz: 'Torre da Raiz',
+  rocha: 'Torre da Rocha',
+  aurora: 'Torre da Aurora',
+  umbra: 'Torre da Umbra',
+  geada: 'Torre da Geada',
+  draco: 'Torre Dracônica',
+  eterea: 'Torre Etérea',
+};
+
+const NOME_FRAGMENTO_POR_ELEMENTO = {
+  luz: 'Fragmento Diurno',
+  trevas: 'Fragmento Noturno',
+};
+
 // Fontes estruturadas ("Onde conseguir") para Essências (9 pares) e Fragmentos de Sonho (19 elementos)
 export const ONDE_CONSEGUIR_ESSENCIAS = Object.fromEntries(
-  Object.values(ESSENCIAS_PARES).map((par) => [
-    par.id,
-    {
-      id: par.id,
-      nome: par.nome,
-      elementos: [...par.elementos],
-      fontes: [
-        { modo: 'Torre Elemental', local: `Torre ${par.torre} (Andares 1–50)`, detalhe: 'Menor (andares 1–15), Média (16–35) e Maior (36–50); livre de energia.' },
-        { modo: 'Campanha Mini', local: 'Chefes de Capítulo, Baús 3★ e Batalha Rápida', detalhe: 'Drop de Essências do par do capítulo.' },
-        { modo: 'Missões e Passe', local: 'Marcos, Semanais e Passe Premium', detalhe: 'Pacotes extras de Essências na progressão.' },
-      ],
-    },
-  ]),
+  Object.values(ESSENCIAS_PARES).map((par) => {
+    const torreNome = NOME_TORRE_POR_ID[par.torre] || `Torre ${par.torre}`;
+    return [
+      par.id,
+      {
+        id: par.id,
+        nome: par.nome,
+        torreId: par.torre,
+        torreNome,
+        elementos: [...par.elementos],
+        taxasTorre: {
+          menor: { andares: '1–15', chance: 1.0, qtd: 3 },
+          media: { andares: '16–35', chance: 1.0, qtd: 2 },
+          maior: { andares: '36–50', chance: 1.0, qtd: 1 },
+        },
+        fontes: [
+          { modo: 'Torre Elemental', local: `${torreNome} (Andares 1–50)`, detalhe: '100% garantida: Menor ×3 (andares 1–15), Média ×2 (16–35) e Maior ×1 (36–50); livre de energia.' },
+          { modo: 'Campanha Mini', local: 'Chefes de Capítulo, Baús 3★ e Batalha Rápida', detalhe: 'Drop de Essências do par do capítulo.' },
+          { modo: 'Missões e Passe', local: 'Marcos, Semanais e Passe Premium', detalhe: 'Pacotes extras de Essências na progressão.' },
+        ],
+      },
+    ];
+  }),
 );
 
 export const ONDE_CONSEGUIR_FRAGMENTOS = Object.fromEntries(
-  Object.entries(MAPA_DROP_FRAGMENTOS_SONHO).map(([el, info]) => [
-    el,
-    {
-      elemento: el,
-      parEssencia: info.parEssencia,
-      fontes: [
-        { modo: 'Combate e Idle', local: 'Batalhas manuais, Auto-Caça, Idle offline e Campanha Mini', detalhe: info.dropCampanhaIdle },
-        ...(info.torreElemental ? [{ modo: 'Torre Elemental', local: `Torre ${info.torreElemental}`, detalhe: 'Inimigos do elemento para farm contínuo sem custo de energia.' }] : []),
-        { modo: 'Login e Passe', local: 'Login 7 Dias (Dia 3) e Passe Premium', detalhe: 'Entrega direta de Fragmentos de Sonho.' },
-      ],
-    },
-  ]),
+  Object.entries(MAPA_DROP_FRAGMENTOS_SONHO).map(([el, info]) => {
+    const torreNome = info.torreElemental ? (NOME_TORRE_POR_ID[info.torreElemental] || `Torre ${info.torreElemental}`) : null;
+    return [
+      el,
+      {
+        elemento: el,
+        nome: NOME_FRAGMENTO_POR_ELEMENTO[el] || `Fragmento de Sonho (${el})`,
+        parEssencia: info.parEssencia,
+        torreId: info.torreElemental || null,
+        torreNome,
+        fontes: [
+          { modo: 'Combate e Idle', local: 'Batalhas manuais, Auto-Caça, Idle offline e Campanha Mini', detalhe: info.dropCampanhaIdle },
+          ...(torreNome ? [{ modo: 'Torre Elemental', local: torreNome, detalhe: `Inimigos do elemento ${el} na ${torreNome} (1% por abate) + Essência ${ESSENCIAS_PARES[info.parEssencia]?.nome || info.parEssencia} garantida por andar.` }] : []),
+          { modo: 'Login e Passe', local: 'Login 7 Dias (Dia 3) e Passe Premium', detalhe: 'Entrega direta de Fragmentos de Sonho.' },
+        ],
+      },
+    ];
+  }),
 );
 
 export function parEssenciaDoElemento(elOuPar = 'neutro') {
@@ -138,7 +171,8 @@ export const FRAGMENTOS_SONHO_CFG = {
     3: { menor: 0, media: 30, maior: 10 },
   },
   tierIniciaisPorFase: { 1: 4, 2: 4, 3: 5 }, // exclusivo das 5 linhagens iniciais
-  nivelIniciaisPorFase: { 3: 40 }, // a forma final (T5) dos iniciais só no nível 40
+  nivelPorFase: { 2: 41, 3: 81 }, // 2ª forma a partir do Nv.41; 3ª forma a partir do Nv.81
+  nivelIniciaisPorFase: { 2: 41, 3: 81 }, // alias compatível com callers antigos
   maxDerrotasHistorico: 500,
 };
 
@@ -389,7 +423,7 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
   const temEssencias = Boolean(
     custoEssencias && faltamEssencias.menor === 0 && faltamEssencias.media === 0 && faltamEssencias.maior === 0,
   );
-  const nivelMinimo = linhagemInicial && proximaFase ? (cfg.nivelIniciaisPorFase?.[proximaFase] || 0) : 0;
+  const nivelMinimo = proximaFase ? (cfg.nivelPorFase?.[proximaFase] ?? cfg.nivelIniciaisPorFase?.[proximaFase] ?? 0) : 0;
   const nivelAtual = Math.max(1, Math.floor(Number(u?.nivel) || 1)), faltaNivel = Math.max(0, nivelMinimo - nivelAtual);
   const podeEvoluir = Boolean(!bloqueada && custo != null && saldo >= custo && temEssencias && !faltaNivel);
   const motivo = bloqueada
@@ -397,7 +431,7 @@ export function consultarEvolucaoForma(save, unidadeOuIdx, cfg = FRAGMENTOS_SONH
     : !proximaFase
       ? (lin || reinoLin ? 'Este Onírico já está na 3ª forma.' : 'Esta espécie não possui evolução de forma.')
       : faltaNivel > 0
-        ? `A forma final (T5) exige nível ${nivelMinimo}.`
+        ? (proximaFase === 2 ? `A 2ª forma exige nível ${nivelMinimo}.` : `A 3ª forma${linhagemInicial ? ' (T5)' : ''} exige nível ${nivelMinimo}.`)
       : faltam > 0
         ? `Faltam ${faltam} Fragmento(s) de Sonho (${elemento}): precisa de ${custo}, saldo ${saldo}.`
         : !temEssencias

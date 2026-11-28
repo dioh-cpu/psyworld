@@ -480,15 +480,16 @@ export function escolherHabilidadeAuto(especieAtacante, especieAlvo, preferirVan
 }
 
 export const XP_IDLE_CFG = {
-  ativoOniricoBase: 12,
-  ativoOniricoPorNivel: 4,     // Nv.6 = 36 XP/abate para cada Onírico da formação ativa
+  // Reduzido para ficar abaixo do XP da Campanha Mini e manter os Oníricos sincronizados com o nível do Domador
+  ativoOniricoBase: 4,
+  ativoOniricoPorNivel: 0.6,    // Nv.6 = 8 XP/abate (antes: 36 XP/abate; Campanha Mini 1-1 = ~78 XP)
   ativoDomadorBase: 4,
-  ativoDomadorPorNivel: 1,     // Nv.6 = 10 XP/abate (Domador progride bem mais devagar que antes)
+  ativoDomadorPorNivel: 0.8,    // Nv.6 = 9 XP/abate (Domador acompanha os Oníricos sem defasagem de 70 níveis)
   offlineAbatesPorMinuto: 1.6,
-  offlineOniricoBase: 10,
-  offlineOniricoPorNivel: 3,   // Nv.6 = 28 XP/abate (448 XP em 10 min para a formação)
+  offlineOniricoBase: 3,
+  offlineOniricoPorNivel: 0.45, // Nv.6 = 6 XP/abate (~92 XP em 10 min offline)
   offlineDomadorBase: 3,
-  offlineDomadorPorNivel: 0.75, // Nv.6 = 7,5 XP/abate (120 XP em 10 min offline)
+  offlineDomadorPorNivel: 0.6,  // Nv.6 = 7 XP/abate
 };
 
 export function resolverAbateAuto(save, monstro, rng = Math.random, agoraMs = Date.now()) {

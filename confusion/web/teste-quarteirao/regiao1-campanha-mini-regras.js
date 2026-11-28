@@ -224,7 +224,7 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
     const pool = cap === 1 ? ESPECIES_R1_SELVAGENS : LINHAGENS_REINOS.filter((l) => l.reino === cap).map((l) => l.nome);
     const r1 = pool[0] || 'Fanalino';
     const r2 = pool[1 % pool.length] || r1;
-    const formaRef = cap === 1 ? 1 : nivel <= 20 ? 1 : nivel <= 40 ? 2 : 3;
+    const formaRef = cap === 1 ? 1 : nivel <= 40 ? 1 : nivel <= 80 ? 2 : 3;
     return [
       chefe,
       [r1, Math.max(1, nivel - 2), ELEMENTO_DA_ESPECIE[r1] || elementoRegiao, { forma: formaRef }],
@@ -299,7 +299,7 @@ function montarInimigosFase(cap, faseNum, nivel, tipo, elementoRegiao) {
   const linhagens = LINHAGENS_REINOS
     .filter((l) => l.reino === cap)
     .sort((a, b) => Number(ELEMENTOS_R1.has(a.elemento)) - Number(ELEMENTOS_R1.has(b.elemento)));
-  const forma = nivel <= 20 ? 1 : nivel <= 40 ? 2 : 3;
+  const forma = nivel <= 40 ? 1 : nivel <= 80 ? 2 : 3;
   const pick = (i) => {
     const lin = linhagens[(faseNum + i - 1) % linhagens.length];
     const nome = nomeFormaDoReino(lin.nome, forma);
@@ -389,7 +389,7 @@ function montarOndasFase(cap, faseNum, nivel, tipo, elementoRegiao) {
     : cap === 2
       ? ESPECIES_CAPITULO_2
       : LINHAGENS_REINOS.filter((l) => l.reino === cap).map((l) => l.nome);
-  const formaBase = cap === 1 ? (faseNum >= 9 ? 2 : 1) : (nivel <= 20 ? 1 : nivel <= 40 ? 2 : 3);
+  const formaBase = cap === 1 ? (faseNum >= 9 ? 2 : 1) : (nivel <= 40 ? 1 : nivel <= 80 ? 2 : 3);
   const criarMob = (offset, deltaNv) => {
     const raw = poolCap[(faseNum * 3 + offset) % poolCap.length] || 'Fanalino';
     const nome = cap >= 3 ? nomeFormaDoReino(raw, formaBase) : raw;
@@ -627,8 +627,11 @@ export function concluirFaseCampanhaMini(save, faseId, batalhaOuResumo, { batalh
 
   const aval = avaliarEstrelasFase(fase, batalhaOuResumo);
   if (!aval.estrela1) {
+    // Oníricos que morrem na batalha também ganham XP (30% na derrota, igual para vivos e derrotados da formação)
+    const xpDerrota = Math.max(5, Math.round((60 + fase.nivel * 8) * 0.3));
+    creditarXpFormacao(save, xpDerrota);
     if (batalhaId) marcarBatalhaPaga(cm, batalhaId);
-    return { ok: true, jaPago: false, venceu: false, estrelas: 0, detalhesEstrelas: aval, premios: {} };
+    return { ok: true, jaPago: false, venceu: false, estrelas: 0, detalhesEstrelas: aval, premios: { xpFormacao: xpDerrota } };
   }
 
   const cap = CAPITULOS_CAMPANHA_MINI[fase.capitulo - 1];

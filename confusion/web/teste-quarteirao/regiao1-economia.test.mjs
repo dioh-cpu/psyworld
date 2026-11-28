@@ -41,6 +41,7 @@ test('Evolução exige Essências do elemento (1→2: 20m+5méd; 2→3: 30méd+1
   assert.deepEqual(FRAGMENTOS_SONHO_CFG.essenciasPorFase[3], { menor: 0, media: 30, maior: 10 });
 
   const s = novoSave();
+  s.idle.equipe[0].nivel = 41;
   adicionarFragmentoSonho(s, 'fogo', 40);
 
   // Com fragmentos mas sem essências -> bloqueia e preserva fragmentos
@@ -67,7 +68,8 @@ test('Evolução exige Essências do elemento (1→2: 20m+5méd; 2→3: 30méd+1
   assert.equal(saldoFragmentoSonho(s, 'fogo'), 30);
   assert.equal(saldoEssencia(s, 'fogo', 'media'), 30);
 
-  // +1 maior -> evolui 2→3, promove T4→T5 e registra marco de evolução
+  // +1 maior -> evolui 2→3 no nível 81, promove T4→T5 e registra marco de evolução
+  s.idle.equipe[0].nivel = 81;
   adicionarEssencia(s, 'fogo', 'maior', 1);
   const ev2 = evoluirFormaPorFragmentos(s, 0);
   assert.equal(ev2.ok, true);
