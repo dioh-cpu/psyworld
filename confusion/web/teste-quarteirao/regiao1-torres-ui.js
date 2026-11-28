@@ -83,10 +83,7 @@ export function renderizarPainelTorres(save, aba, st) {
 
     const p1 = andarDef.recompensaPrimeiraVitoria;
     const elsBadges = torre.elementos.map((e) => `<span class="tag" style="display:inline-flex;align-items:center;gap:4px;background:rgba(12,8,24,.82);color:#fff3e7;border-color:rgba(243,194,122,.45)"><img src="${icoEl(e)}" alt="" style="width:14px;height:14px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[e] || e)}</span>`).join('');
-    const rp = torre.recompensaPropria;
-  const rpTxt = rp ? ` · Recompensa própria: ${esc(rp.nome)} (+${rp.ouroBase || 0} 🪙)` : '';
-
-  return `${subAbasHtml}<div class="bl">
+    return `<div class="bl">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
         <b style="color:#fde68a">🗼 Torres Elementais (${TORRES_ELEMENTAIS_CATALOGO.length} × 50 andares · 18 elementos)</b>
         <span class="tag">💠 Treino diário de Essência: ${treinos}/${TORRES_CFG.treinosDiariosMax}</span>
