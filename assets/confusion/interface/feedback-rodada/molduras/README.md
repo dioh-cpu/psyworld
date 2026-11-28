@@ -45,3 +45,5 @@ São artes independentes para revisão, com áreas centrais transparentes. A apl
 Centro e canto superior esquerdo destes dois PNGs têm alfa zero; a checagem integral dos contornos e a adaptação em tela seguem pendentes.
 - `moldura-invocacao.png`: 1672 × 941, astrolábios e luz celestial.
 - `moldura-equipe.png`: 1672 × 941, salão de treino, armas e estandartes.
+- `moldura-mochila.png`: 1536 × 1024, couro, fivelas e frascos.
+- `moldura-missoes.png`: 1536 × 1024, livro, pergaminhos e pena.
