@@ -112,7 +112,7 @@ export function renderizarPainelTorres(save, aba, st) {
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <button class="btn-sec" data-tor-treino="${esc(torre.id)}:${andarSel}" ${andarSel <= maior && treinos > 0 ? '' : 'disabled'}>💠 Treino (Essência)</button>
+          <button class="btn-sec" data-tor-treino="${esc(torre.id)}:${andarSel}" ${andarSel <= maior && treinos > 0 ? '' : 'disabled'} title="Custo: Grátis · Recompensa: Essência do elemento · Limite: ${treinos}/${TORRES_CFG.treinosDiariosMax} hoje">💠 Treino (Essência · Grátis · ${treinos}/${TORRES_CFG.treinosDiariosMax}/dia)</button>
           <button class="btn-pri" data-tor-lutar-el="${esc(torre.id)}:${andarSel}" ${desbl ? '' : 'disabled'}>⚔️ Lutar Andar ${andarSel}</button>
         </div>
       </div>
