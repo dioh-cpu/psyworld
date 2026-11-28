@@ -25,3 +25,10 @@ A moldura acompanha o perímetro completo do elemento ao qual pertence: o botão
 - `moldura-painel-luxo.png`: 1774 × 887, borda para painel horizontal.
 
 Ambas são PNG RGBA com amostra do centro e do canto superior esquerdo totalmente transparente. A avaliação da borda completa e o teste de legibilidade nos menus ainda são necessários.
+
+## Temas por sistema
+
+- `moldura-torres.png`: Torres, arquitetura e cristais elementais.
+- `moldura-reliquias.png`: Relíquias, joias e objetos arcanos.
+
+Cada sistema deverá ter identidade própria. As duas molduras preservam o centro transparente; a adequação da largura do contorno e a legibilidade no celular ainda exigem teste na interface.
