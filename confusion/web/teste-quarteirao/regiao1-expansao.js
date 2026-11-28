@@ -123,6 +123,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp[data-tela="torres"] .btn-pri:active:not(:disabled), #modal-exp[data-tela="torres"] .btn-sec:active:not(:disabled) { filter: brightness(.8); }
     #modal-exp[data-tela="torres"] button:disabled { opacity: .6; }
     #modal-exp .torres-arte > .bl { border: 14px solid transparent; border-image: url('../../../assets/confusion/interface/feedback-rodada/painel-horizontal.png') 150 70 60 fill / 28px 14px 14px stretch !important; padding: 36px 14px 14px !important; }
+    #modal-exp .torres-arte .torre-card { border-image: url('../../../assets/confusion/interface/feedback-rodada/painel-horizontal.png') 150 70 60 fill / 14px 8px 8px stretch !important; padding: 16px 10px 8px !important; }
     @media (orientation: portrait) and (max-width: 600px) {
       #modal-exp .torres-arte { padding: 4px; }
       #modal-exp .torres-arte .torre-filtros, #modal-exp .torres-arte .torre-seletores { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 6px; }
