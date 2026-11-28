@@ -115,6 +115,46 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .exp-card:not(.modo-cena) > .exp-corpo { max-width: 980px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; gap: 6px; flex-shrink: 0; } #modal-exp .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); color: #fde68a; text-shadow: 0 1px 3px rgba(0,0,0,.88); }
     #modal-exp .exp-abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; flex-shrink: 0; } #modal-exp .exp-abas button[aria-selected="true"] { background: #f3a458; color: #21110c; font-weight: 700; }
+    #modal-exp .torres-arte { padding: 8px; background: linear-gradient(rgba(15,8,26,.84),rgba(15,8,26,.9)), url('../../../assets/confusion/interface/telas-v2/torres.webp') center / cover fixed; border-radius: 12px; }
+    #modal-exp[data-tela="torres"] .btn-pri, #modal-exp[data-tela="torres"] .btn-sec { background-image: none !important; color: #fff3e7; text-shadow: 0 1px 2px #000; }
+    #modal-exp[data-tela="torres"] .btn-pri { background-color: #8a4b20; border: 1px solid #f2c078; }
+    #modal-exp[data-tela="torres"] .btn-sec { background-color: #28172f; border: 1px solid #86634c; }
+    #modal-exp[data-tela="torres"] .btn-pri:hover:not(:disabled), #modal-exp[data-tela="torres"] .btn-sec:hover:not(:disabled) { filter: brightness(1.18); }
+    #modal-exp[data-tela="torres"] .btn-pri:active:not(:disabled), #modal-exp[data-tela="torres"] .btn-sec:active:not(:disabled) { filter: brightness(.8); }
+    #modal-exp[data-tela="torres"] button:disabled { opacity: .6; }
+    #modal-exp .torres-arte > .bl { border: 14px solid transparent; border-image: url('../../../assets/confusion/interface/feedback-rodada/painel-horizontal.png') 150 70 60 fill / 28px 14px 14px stretch !important; padding: 36px 14px 14px !important; }
+    #modal-exp .torres-arte .torre-card { border-image: url('../../../assets/confusion/interface/feedback-rodada/painel-horizontal.png') 150 70 60 fill / 14px 8px 8px stretch !important; padding: 16px 10px 8px !important; }
+    #modal-exp .torres-arte .torre-card.btn-pri { outline: 2px solid #fff0a5; outline-offset: -3px; }
+    @media (orientation: portrait) and (max-width: 600px) {
+      #modal-exp .torres-arte { padding: 4px; }
+      #modal-exp .torres-arte .torre-filtros, #modal-exp .torres-arte .torre-seletores { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 6px; }
+      #modal-exp .torres-arte .torre-filtros button { flex: 0 0 auto; min-height: 36px; }
+      #modal-exp .torres-arte .torre-seletores button { flex: 0 0 148px !important; }
+      #modal-exp .torres-arte button[data-tor-lutar-el], #modal-exp .torres-arte button[data-tor-lutar-un], #modal-exp .torres-arte button[data-tor-lutar-saz] { min-height: 44px; }
+      #modal-exp .torres-detalhe > div:first-child > div:last-child { order: -1; }
+      #modal-exp .torres-detalhe [data-tor-lutar-el] { order: -1; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+      #modal-exp .torres-arte:has(.torres-lista), #modal-exp .torres-arte:has(.torres-unicas-lista) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+      #modal-exp .torres-arte:has(.torres-unicas-lista) > .torres-subabas, #modal-exp .torres-arte:has(.torres-unicas-lista) > .bl:last-child { grid-column: 1 / -1; }
+      #modal-exp[data-tela="torres"] .cw-tut-balao { padding: 3px 8px; margin-bottom: 3px; font-size: 10px; line-height: 1.2; }
+      #modal-exp[data-tela="torres"] .cw-tut-balao-txt > div { display: inline; }
+      #modal-exp[data-tela="torres"] .cw-tut-balao-tit { margin-right: 6px; }
+      #modal-exp .torres-arte:has(.torres-unicas-lista) { padding: 3px; gap: 3px; }
+      #modal-exp .torres-arte:has(.torres-unicas-lista) > .torres-subabas { margin-bottom: 0 !important; }
+      #modal-exp .torres-arte .torres-unicas-lista, #modal-exp .torres-arte .torres-unicas-detalhe { padding-top: 29px !important; }
+      #modal-exp .torres-unicas-lista > div:first-child { gap: 2px !important; margin-bottom: 2px !important; }
+      #modal-exp .torres-unicas-lista > div:first-child b, #modal-exp .torres-unicas-lista > div:first-child .tag { font-size: 10px; line-height: 1.1; }
+      #modal-exp .torres-unicas-lista .torre-seletores { overflow-x: visible; }
+      #modal-exp .torres-unicas-lista .torre-seletores .torre-card { flex: 1 1 0 !important; min-width: 0 !important; font-size: 10px !important; padding-left: 7px !important; padding-right: 7px !important; }
+      #modal-exp .torres-unicas-lista .torre-card small { padding: 1px 3px !important; }
+      #modal-exp .torres-unicas-detalhe > div:first-child > [data-tor-lutar-un] { order: -1; }
+      #modal-exp .torres-arte .torre-filtros, #modal-exp .torres-arte .torre-seletores { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
+      #modal-exp .torres-arte .torre-filtros button { flex: 0 0 auto; }
+      #modal-exp .torres-arte .torre-seletores button { flex: 0 0 142px !important; }
+      #modal-exp .torres-detalhe > div:first-child > div:last-child { order: -1; }
+      #modal-exp .torres-detalhe [data-tor-lutar-el] { order: -1; }
+    }
     #modal-exp .exp-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     #modal-exp .inv-v1, #modal-exp .inv-extra { max-width: 1080px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .inv-carta-res { border: 2px solid var(--cor-tier, #9ca3af); background: linear-gradient(180deg, rgba(36,22,43,.95), rgba(18,10,28,.98)); animation: invPop .32s ease-out both; }
@@ -1024,7 +1064,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (painel === 'descanso') h += abaDescanso();
     if (painel === 'missoes') h += renderBalaoTutorialModo(save(), 'missoes') + renderizarPainelMissoes(save(), aba, { capParalela, st: missoesUi });
     if (painel === 'campanhaMini') h += `${renderBalaoTutorialModo(save(), 'campanha_mini')}<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Jogue livremente no seu ritmo.</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
-    if (painel === 'torres') h += renderBalaoTutorialModo(save(), 'torres') + renderizarPainelTorres(save(), aba, torresUi);
+    if (painel === 'torres') h += renderBalaoTutorialModo(save(), 'torres') + `<div class="torres-arte">${renderizarPainelTorres(save(), aba, torresUi)}</div>`;
     if (painel === 'calaboucos') h += renderBalaoTutorialModo(save(), 'calaboucos_rel') + renderizarPainelCalaboucos(save(), calaboucosUi);
     if (painel === 'reliquias') h += renderBalaoTutorialModo(save(), 'reliquias') + renderizarPainelReliquias(save(), aba, reliquiasUi);
     if (painel === 'equipe') h += aba === 1 ? (renderBalaoTutorialModo(save(), 'domadores') + renderizarPainelDomadores(save())) : (resumoDomadorAtivoHtml(save()) + abaEquipe());

@@ -28,7 +28,7 @@ import { mostrarResultadoBatalha } from './regiao1-resultado-ui.js';
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ARENA_FALLBACK = 'assets/confusion/interface/estrategia/reinos/01/arena-chefe.webp';
 const ELEMENTOS_18 = ['fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'lutador', 'voador', 'veneno', 'psiquico', 'inseto', 'pedra', 'fantasma', 'eletrico', 'gelo', 'dragao', 'aco', 'fada'];
-const icoEl = (el) => `../../../assets/confusion/interface/menus-v1/ficha/sonho-${el === 'sombra' ? 'trevas' : el}.png`;
+const icoEl = (el) => `../../../assets/confusion/interface/feedback-rodada/elementos-glamour/individuais/${el === 'sombra' ? 'trevas' : el}.png`;
 const FACHADA_TORRE = (idx) => `../../../assets/confusion/interface/estrategia/reinos/${String(((idx % 12) + 1)).padStart(2, '0')}/cidade-conceito.webp`;
 
 export function renderizarPainelTorres(save, aba, st) {
@@ -83,15 +83,15 @@ export function renderizarPainelTorres(save, aba, st) {
 
     const p1 = andarDef.recompensaPrimeiraVitoria;
     const elsBadges = torre.elementos.map((e) => `<span class="tag" style="display:inline-flex;align-items:center;gap:4px;background:rgba(12,8,24,.82);color:#fff3e7;border-color:rgba(243,194,122,.45)"><img src="${icoEl(e)}" alt="" style="width:14px;height:14px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[e] || e)}</span>`).join('');
-    return `<div class="bl">
+    return `<div class="bl torres-lista">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
         <b style="color:#fde68a">🗼 Torres Elementais (${TORRES_ELEMENTAIS_CATALOGO.length} × 50 andares · 18 elementos)</b>
         <span class="tag">💠 Treino diário de Essência: ${treinos}/${TORRES_CFG.treinosDiariosMax}</span>
       </div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
+      <div class="torre-filtros" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
+      <div class="torre-seletores" style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
     </div>
-    <div class="bl" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(14,8,26,.92) 28%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
+    <div class="bl torres-detalhe" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(14,8,26,.92) 28%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <div style="flex:1;min-width:210px">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
@@ -123,7 +123,7 @@ export function renderizarPainelTorres(save, aba, st) {
 
   // Aba 1: Torres Únicas + Torres Sazonais (Quinzenal e Mensal)
   const subTorre = st.subTorre || 'unicas';
-  const subAbasHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+  const subAbasHtml = `<div class="torres-subabas" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
     <button class="${subTorre === 'unicas' ? 'btn-pri' : 'btn-sec'}" data-tor-sub="unicas" style="padding:5px 10px;font-size:11.5px">⚔️ Únicas</button>
     ${TORRES_SAZONAIS_CATALOGO.map((s) => `<button class="${subTorre === s.id ? 'btn-pri' : 'btn-sec'}" data-tor-sub="${esc(s.id)}" style="padding:5px 10px;font-size:11.5px">${s.id === 'quinzenal' ? '🗓️ Quinzenal' : '🌙 Mensal'}</button>`).join('')}
   </div>`;
@@ -182,7 +182,7 @@ export function renderizarPainelTorres(save, aba, st) {
     const m = Number(t.unicas[x.id]?.maiorAndar) || 0;
     const pCard = Math.min(100, Math.round((m / Math.max(1, x.totalAndares)) * 100));
     const ativo = x.id === torre.id;
-    return `<button class="${ativo ? 'btn-pri' : 'btn-sec'}" data-tor-un="${esc(x.id)}" style="padding:7px 10px;font-size:11.5px;text-align:left;min-width:160px;flex:1 1 160px;display:flex;flex-direction:column;gap:3px;border:${ativo ? '2px solid #fde68a' : '1px solid rgba(243,194,122,.28)'};${ativo ? 'background:#2a1840;color:#fff3e7' : ''}">
+    return `<button class="torre-card ${ativo ? 'btn-pri' : 'btn-sec'}" data-tor-un="${esc(x.id)}" style="padding:7px 10px;font-size:11.5px;text-align:left;min-width:160px;flex:1 1 160px;display:flex;flex-direction:column;gap:3px;border:${ativo ? '2px solid #fde68a' : '1px solid rgba(243,194,122,.28)'};${ativo ? 'background:#2a1840;color:#fff3e7' : ''}">
       <div style="display:flex;justify-content:space-between;width:100%"><b>⚔️ ${esc(x.nome)}</b><small style="background:#160c24;color:#fff3e7;padding:1px 7px;border-radius:999px">${m}/${x.totalAndares}</small></div>
       <div style="width:100%;height:5px;border-radius:999px;background:rgba(0,0,0,.45);overflow:hidden"><div style="width:${pCard}%;height:100%;background:linear-gradient(90deg,#c084fc,#fde047)"></div></div>
     </button>`;
@@ -204,14 +204,14 @@ export function renderizarPainelTorres(save, aba, st) {
   const rp = torre.recompensaPropria;
   const rpTxt = rp ? ` · Recompensa própria: ${esc(rp.nome)} (+${rp.ouroBase || 0} 🪙)` : '';
 
-  return `${subAbasHtml}<div class="bl">
+  return `${subAbasHtml}<div class="bl torres-unicas-lista">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <b style="color:#fde68a">⚔️ Torres Únicas (3 × 30 andares · Nv. 60–120 · 1×/dia por andar)</b>
       <span class="tag">✨ Pó Único: ${armas.poUnico || 0}${armas.escolhasPendentes ? ` · 🎁 Escolhas: ${armas.escolhasPendentes}` : ''}</span>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
+    <div class="torre-seletores" style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
   </div>
-  <div class="bl" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(18,8,30,.92) 30%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx + 9)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
+  <div class="bl torres-unicas-detalhe" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(18,8,30,.92) 30%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx + 9)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
       <div style="flex:1;min-width:210px">
         <h4 style="margin:0;font-size:15px;color:#fde68a;text-shadow:0 1px 3px rgba(0,0,0,.9)">⚔️ ${esc(torre.nome)} · Andar ${andarSel}/${torre.totalAndares} ${andarDef.chefe ? '👑 Chefe' : ''}</h4>
