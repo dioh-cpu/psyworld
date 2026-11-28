@@ -250,21 +250,35 @@
   }
   .btn-voltar-refugio:hover { background: rgba(243, 164, 88, .24); }
   .btn-fechar { background: rgba(22,12,32,.88); border: 1px solid #6b4a52; color: var(--txt); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 700; flex-shrink: 0; }
-  /* kit-v2: botões nos 4 estados (normal, hover, pressionado, desativado) */
+  /* glamour (feedback-rodada): botões nos 4 estados (normal, hover, pressionado, desabilitado) */
   .btn-pri {
-    background: url('../../../assets/confusion/interface/kit-v2/botao-principal-normal.png') center / 100% 100% no-repeat, linear-gradient(180deg, #b8793e, #7c4923);
+    background: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-primario-normal.png') center / 100% 100% no-repeat, linear-gradient(180deg, #b8793e, #7c4923);
     border: 0; color: #fff7ed; border-radius: 8px; padding: 7px 14px; font: 700 12.5px system-ui; cursor: pointer; text-shadow: 0 1px 3px rgba(0,0,0,.7);
   }
-  .btn-pri:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-principal-hover.png'), linear-gradient(180deg, #cf8c4b, #8f5529); }
-  .btn-pri:active:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-principal-pressionado.png'), linear-gradient(180deg, #7c4923, #5a3418); }
-  .btn-pri:disabled { background-image: url('../../../assets/confusion/interface/kit-v2/botao-principal-desativado.png'), linear-gradient(180deg, #3a3444, #262130); opacity: .65; cursor: not-allowed; }
+  .btn-pri:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-primario-hover.png'), linear-gradient(180deg, #cf8c4b, #8f5529); }
+  .btn-pri:active:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-primario-pressionado.png'), linear-gradient(180deg, #7c4923, #5a3418); }
+  .btn-pri:disabled { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-primario-desabilitado.png'), linear-gradient(180deg, #3a3444, #262130); opacity: .72; cursor: not-allowed; }
   .btn-sec {
-    background: url('../../../assets/confusion/interface/kit-v2/botao-secundario-normal.png') center / 100% 100% no-repeat, #1e293b;
+    background: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-secundario-normal.png') center / 100% 100% no-repeat, #1e293b;
     border: 0; color: #f6e7d8; border-radius: 8px; padding: 7px 13px; font: 600 12.5px system-ui; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,.65);
   }
-  .btn-sec:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-secundario-hover.png'), #29384f; }
-  .btn-sec:active:not(:disabled) { background-image: url('../../../assets/confusion/interface/kit-v2/botao-secundario-pressionado.png'), #152030; }
-  .btn-sec:disabled { background-image: url('../../../assets/confusion/interface/kit-v2/botao-secundario-desativado.png'), #1a1824; opacity: .55; cursor: not-allowed; }
+  .btn-sec:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-secundario-hover.png'), #29384f; }
+  .btn-sec:active:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-secundario-pressionado.png'), #152030; }
+  .btn-sec:disabled { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-secundario-desabilitado.png'), #1a1824; opacity: .72; cursor: not-allowed; }
+  .btn-danger {
+    background: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-perigo-normal.png') center / 100% 100% no-repeat, #7f1d1d;
+    border: 0; color: #fff1f2; border-radius: 8px; padding: 7px 13px; font: 700 12.5px system-ui; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,.7);
+  }
+  .btn-danger:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-perigo-hover.png'), #991b1b; }
+  .btn-danger:active:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-perigo-pressionado.png'), #5f1313; }
+  .btn-danger:disabled { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-perigo-desabilitado.png'), #2d1b22; opacity: .72; cursor: not-allowed; }
+  .btn-cinza {
+    background: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-cinza-normal.png') center / 100% 100% no-repeat, #334155;
+    border: 0; color: #f1f5f9; border-radius: 8px; padding: 7px 13px; font: 600 12.5px system-ui; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,.65);
+  }
+  .btn-cinza:hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-cinza-hover.png'), #475569; }
+  .btn-cinza:active:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-cinza-pressionado.png'), #1e293b; }
+  .btn-cinza:disabled { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-cinza-desabilitado.png'), #1e293b; opacity: .72; cursor: not-allowed; }
   /* kit-v2: abas ativa/inativa */
   .mochila-atalhos button, #modal-exp .exp-abas button {
     background: url('../../../assets/confusion/interface/kit-v2/aba-inativa.png') center / 100% 100% no-repeat, #24162b;
