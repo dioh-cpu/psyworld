@@ -47,3 +47,5 @@ Centro e canto superior esquerdo destes dois PNGs têm alfa zero; a checagem int
 - `moldura-equipe.png`: 1672 × 941, salão de treino, armas e estandartes.
 - `moldura-mochila.png`: 1536 × 1024, couro, fivelas e frascos.
 - `moldura-missoes.png`: 1536 × 1024, livro, pergaminhos e pena.
+- `moldura-colecao.png`: 1672 × 941, biblioteca e vitrines de espécimes.
+- `moldura-passe-dinossauros.png`: 1672 × 941, fósseis, âmbar e vegetação.
