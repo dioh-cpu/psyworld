@@ -135,6 +135,34 @@ export function mostrarResultadoBatalha(op = {}) {
       </div>`
     : '';
 
+  // Gráfico de dano e destaques (mais dano, mais cura, mais escudo)
+  const stats = op.estatisticas || op.resumo?.estatisticas || [];
+  const listaStats = Array.isArray(stats) && stats.length
+    ? stats
+    : formacao.map(({ m }) => ({ nome: m.especie, dano: m.danoCausado || 0, cura: m.curaFeita || 0, escudo: m.escudoDado || 0 }));
+  const maxDano = Math.max(1, ...listaStats.map((s) => Number(s.dano) || 0));
+  const topDano = [...listaStats].sort((a, b) => (b.dano || 0) - (a.dano || 0))[0];
+  const topCura = [...listaStats].sort((a, b) => (b.cura || 0) - (a.cura || 0))[0];
+  const topEscudo = [...listaStats].sort((a, b) => (b.escudo || 0) - (a.escudo || 0))[0];
+  const statsHtml = listaStats.length
+    ? `<div class="rb-sec">
+        <div class="rb-sec-tit">📊 Desempenho da Batalha</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;font-size:11px">
+          ${topDano ? `<span class="rb-chip">⚔️ Mais dano: ${esc(topDano.nome)} (${topDano.dano || 0})</span>` : ''}
+          ${topCura && topCura.cura > 0 ? `<span class="rb-chip">💚 Mais cura: ${esc(topCura.nome)} (${topCura.cura})</span>` : ''}
+          ${topEscudo && topEscudo.escudo > 0 ? `<span class="rb-chip">🛡️ Mais escudo: ${esc(topEscudo.nome)} (${topEscudo.escudo})</span>` : ''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">${listaStats.map((s) => {
+          const pct = Math.min(100, Math.round(((Number(s.dano) || 0) / maxDano) * 100));
+          return `<div style="display:flex;align-items:center;gap:6px;font-size:11px">
+            <span style="width:92px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.nome)}</span>
+            <div style="flex:1;height:7px;background:#0a1528;border-radius:999px;overflow:hidden"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#f59e0b,#fde047)"></div></div>
+            <span style="width:44px;text-align:right;color:#fde68a">${s.dano || 0}</span>
+          </div>`;
+        }).join('')}</div>
+      </div>`
+    : '';
+
   const estrelasHtml = typeof op.estrelas === 'number'
     ? `<div class="rb-estrelas">
         <span class="rb-est ${op.estrelas >= 1 ? 'on d1' : ''}">★</span>
@@ -162,6 +190,7 @@ export function mostrarResultadoBatalha(op = {}) {
       <div style="margin-top:4px">⚔️ Ligue o Auto ou deixe no AFK para subir de nível <button class="rb-btn" data-rb-ir="afk">Auto / AFK</button></div>
       <div style="margin-top:4px">💎 Evolua ou equipe relíquias <button class="rb-btn" data-rb-ir="equipe">Equipe</button> <button class="rb-btn" data-rb-ir="reliquias">Relíquias</button></div>
     </div>`;
+  const autoAtivo = typeof localStorage !== 'undefined' && localStorage.getItem('cw_auto_prox') === '1';
   const el = document.createElement('div');
   el.id = 'res-batalha-overlay';
   el.innerHTML = `<div class="rb-card ${venceu ? '' : 'derrota'}">
@@ -172,22 +201,71 @@ export function mostrarResultadoBatalha(op = {}) {
     ${op.destaqueBanner ? `<div class="rb-destaque">${esc(op.destaqueBanner)}</div>` : ''}
     ${dicasHtml}
     ${xpHtml}
+    ${statsHtml}
     <div class="rb-sec">
       <div class="rb-sec-tit">🎁 Recompensas &amp; Relíquias</div>
       <div class="rb-premios">${chips.length ? chips.map((c) => `<span class="rb-chip">${esc(c)}</span>`).join('') : '<span style="font-size:11.5px;color:#d6dbe4">Sem recompensas extras.</span>'}</div>
       ${relHtml}
       ${fontesResumoHtml}
     </div>
+    ${op.podeProxima ? `<div id="rb-auto-box" style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:11.5px">
+      <button class="rb-btn ${autoAtivo ? 'pri' : ''}" data-rb-toggle-auto="1">${autoAtivo ? '⚡ Batalha automática: ATIVA' : '⚡ Habilitar batalha automática'}</button>
+      <span id="rb-auto-timer" style="color:#fde047;font-weight:700"></span>
+      ${autoAtivo ? '<button class="rb-btn" data-rb-cancelar-auto="1">✕ Cancelar</button>' : ''}
+    </div>` : ''}
     <div class="rb-bts">
-      ${op.podeProxima ? `<button class="rb-btn pri" data-rb-prox="1">${esc(op.rotuloProxima || 'Próxima →')}</button>` : ''}
+      ${op.podeProxima ? `<button class="rb-btn pri" data-rb-prox="1">${esc(op.rotuloProxima || 'Próxima fase agora →')}</button>` : ''}
       ${op.podeRepetir ? `<button class="rb-btn" data-rb-rep="1">🔁 Repetir</button>` : ''}
-      <button class="rb-btn ${op.podeProxima ? '' : 'pri'}" data-rb-voltar="1">${esc(op.rotuloVoltar || 'Continuar')}</button>
+      <button class="rb-btn ${op.podeProxima ? '' : 'pri'}" data-rb-voltar="1">${esc(op.rotuloVoltar || '🏠 Voltar ao Refúgio')}</button>
     </div>
   </div>`;
+
+  let timerId = null;
+  let segRestantes = 3;
+  const pararTimer = () => {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+    const tEl = el.querySelector('#rb-auto-timer');
+    if (tEl) tEl.textContent = '';
+  };
+  const iniciarTimer = () => {
+    pararTimer();
+    if (!op.podeProxima || !venceu) return;
+    segRestantes = 3;
+    const tEl = el.querySelector('#rb-auto-timer');
+    if (tEl) tEl.textContent = `Próxima fase em ${segRestantes}s...`;
+    timerId = setInterval(() => {
+      segRestantes -= 1;
+      if (segRestantes <= 0) {
+        pararTimer();
+        fecharResultadoBatalha();
+        op.onProxima?.();
+      } else if (tEl) {
+        tEl.textContent = `Próxima fase em ${segRestantes}s...`;
+      }
+    }, 1000);
+  };
+  if (autoAtivo && op.podeProxima && venceu) iniciarTimer();
 
   el.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
+    if (b.dataset.rbToggleAuto) {
+      const novo = !(typeof localStorage !== 'undefined' && localStorage.getItem('cw_auto_prox') === '1');
+      try { localStorage.setItem('cw_auto_prox', novo ? '1' : '0'); } catch {}
+      b.textContent = novo ? '⚡ Batalha automática: ATIVA' : '⚡ Habilitar batalha automática';
+      b.classList.toggle('pri', novo);
+      if (novo) iniciarTimer(); else pararTimer();
+      return;
+    }
+    if (b.dataset.rbCancelarAuto) {
+      pararTimer();
+      try { localStorage.setItem('cw_auto_prox', '0'); } catch {}
+      const tog = el.querySelector('[data-rb-toggle-auto]');
+      if (tog) { tog.textContent = '⚡ Habilitar batalha automática'; tog.classList.remove('pri'); }
+      b.remove();
+      return;
+    }
+    pararTimer();
     if (b.dataset.rbIr) {
       const alvo = b.dataset.rbIr; fecharResultadoBatalha(); op.onVoltar?.();
       setTimeout(() => { if (alvo === 'afk') document.getElementById('btn-autocaca-cfg')?.click(); else window.regiaoExp?.abrir?.(alvo); }, 60);
