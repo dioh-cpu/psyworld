@@ -133,6 +133,14 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       #modal-exp .torres-arte .torre-seletores button { flex: 0 0 148px !important; }
       #modal-exp .torres-arte button[data-tor-lutar-el], #modal-exp .torres-arte button[data-tor-lutar-un], #modal-exp .torres-arte button[data-tor-lutar-saz] { min-height: 44px; }
     }
+    @media (orientation: landscape) and (max-height: 500px) {
+      #modal-exp .torres-arte:has(.torres-lista) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+      #modal-exp .torres-arte .torre-filtros, #modal-exp .torres-arte .torre-seletores { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
+      #modal-exp .torres-arte .torre-filtros button { flex: 0 0 auto; }
+      #modal-exp .torres-arte .torre-seletores button { flex: 0 0 142px !important; }
+      #modal-exp .torres-detalhe > div:first-child > div:last-child { order: -1; }
+      #modal-exp .torres-detalhe [data-tor-lutar-el] { order: -1; }
+    }
     #modal-exp .exp-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     #modal-exp .inv-v1, #modal-exp .inv-extra { max-width: 1080px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .inv-carta-res { border: 2px solid var(--cor-tier, #9ca3af); background: linear-gradient(180deg, rgba(36,22,43,.95), rgba(18,10,28,.98)); animation: invPop .32s ease-out both; }
