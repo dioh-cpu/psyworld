@@ -67,6 +67,8 @@ Entregar:
 
 Você produz as artes que faltam no Confusion Waves. Estilo: o mesmo das artes atuais (anime HD, vista 3/4, pintura limpa, cores saturadas de outono), sem texto nem logotipos dentro das imagens. Cenários em `.webp` (qualidade ~85); personagens, ícones e molduras em `.png` com fundo transparente e margem para caudas, asas e chifres. Personagens virados para a DIREITA (o jogo espelha os inimigos). Arenas de batalha 1920×1080, horizontais, sem personagens, com chão livre nos 45% de baixo para uma formação 4×4. Commit na branch `codex/artes`, listando no commit o caminho de cada arquivo. Não renomeie nem apague artes existentes.
 
+Em novos Oníricos, desenhe os elementos dos dois lados em pares ou no eixo central. Preserve marcas, cores, apoios e proporções ao espelhar. Para animações de direção, entregue frente, costas e um perfil lateral espelhável para o lado oposto. [Guia visual dos Oníricos](../docs/artwork/confusion-descanso-invocacao/README.md#direções-e-animações-dos-oníricos)
+
 Prioridade 1 (sistemas já prontos esperando arte):
 1. Calabouço “Ruínas Rastejantes” — pasta `assets/confusion/interface/expansao1/calabouco/`:
    - `fundo.webp` 1920×1080 (entrada do calabouço, ruínas sob a floresta, raízes e pedra rachada).
