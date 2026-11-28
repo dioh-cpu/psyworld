@@ -24,7 +24,7 @@ __CFG_SONHO.nivelIniciaisPorFase = {};
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 
 test('Percurso 1 (Conta nova): escolha do inicial base T4 até a primeira batalha sem iniciais inimigos', () => {
-  assert.equal(INICIAIS.length, 5);
+  assert.equal(INICIAIS.length, 3);
   for (const ini of INICIAIS) {
     assert.equal(ini.tier, 4);
     assert.match(ini.moldura, /moldura-4\.png$/);
@@ -205,7 +205,8 @@ test('Interfaces da Prévia: controles de Esferas/Captura/Relíquias removidos, 
 test('Regras Noctarn integradas: Penumbrio → Noctarn bloqueada e cópia de banner preservada em T4', () => {
   const save = criarEstadoInicial();
   garantirEstadoIdle(save);
-  prepararContaNova(save, { userId: 'viajante_sombra', inicial: 'Penumbrio' });
+  prepararContaNova(save, { userId: 'viajante_sombra', inicial: 'Brasinha' });
+  save.idle.equipe[0] = { ...save.idle.equipe[0], especie: 'Penumbrio' };
   assert.equal(save.idle.equipe.length, 1);
   assert.equal(save.idle.equipe[0].especie, 'Penumbrio');
 

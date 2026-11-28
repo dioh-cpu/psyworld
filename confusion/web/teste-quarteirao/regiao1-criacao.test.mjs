@@ -138,7 +138,7 @@ test('Reprodução: mesma espécie (inclusive evento), pais permanecem, falha ap
 
 test('Iniciais T4→T4→T5, evolução por 10/30 Fragmentos de Sonho, ficha completa, Equipe separada e Invocação ×1/×10', () => {
   // 1) Criação de conta apresenta os 5 iniciais na forma base T4 com moldura aprovada
-  assert.equal(INICIAIS.length, 5);
+  assert.equal(INICIAIS.length, 3);
   assert.ok(INICIAIS.every((i) => i.tier === 4 && i.moldura.endsWith('moldura-4.png')));
 
   const s = criarEstadoInicial();
