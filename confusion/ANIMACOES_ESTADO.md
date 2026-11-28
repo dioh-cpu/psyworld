@@ -18,14 +18,14 @@ Nenhuma forma está "concluída" fora da lista de **Processado**.
 
 | Forma | Idle | Caminhada | Branch |
 |---|---|---|---|
-| Cerifogo F2 | `_entrada/cerifogo/forma-2/idle/rodada4-2026-11-27/447062181_1795819307107602.mp4` | `_entrada/cerifogo/forma-2/andar/rodada4-2026-11-27/203308603_1795819090812020.mp4` | `codex/rodada4-flow-originais` |
+| Cerifogo F2 | `_entrada/cerifogo/forma-2/idle/rodada4-2026-11-27/447062181_1795819307107602.mp4` | `_entrada/cerifogo/forma-2/andar/rodada4-2026-11-27/203308603_1795819090812020.mp4` | `codex/rodada4-flow-originais` e cópia em `codex/reparo-frames-lote2` (commit `7d1d097`) |
 | Xistolim F1 | `idle-1080p-2026-11-28/Animate_creature_idle_loop_fa33ed9a_1080p.mp4` (tatu magenta, cortes de borda) | `walk-lote2-2026-11-28/206273094_1795856310522496.mp4` (magenta) | `codex/reparo-frames-lote2` |
 | Xistolim F2 | `idle-1080p-2026-11-28/Animate_creature_idle_loop_991b6170_1080p.mp4` (tatu verde) | `walk-lote2-2026-11-28/149626540_1795856308392234.mp4` (verde) | `codex/reparo-frames-lote2` |
 | Brasinha F1 | `idle-1080p-2026-11-28/Animate_creature_image_idle_loop_60344e2b_1080p.mp4` (cortes) | `walk-lote2-2026-11-28/633410113_1795856306916584.mp4` | `codex/reparo-frames-lote2` |
 | Gotalume F1 | `idle-1080p-2026-11-28/Animate_creature_image_idle_loop_b5bd1d24_1080p.mp4` (felino azul, cortes) | `walk-lote2-2026-11-28/607261356_1795856304346650.mp4` | `codex/reparo-frames-lote2` |
 | Sementil F1 | `idle-1080p-2026-11-28/Creature_animating_calm_idle_loop_1ee912b9_1080p.mp4` | `walk-lote2-2026-11-28/871645892_1795856312096028.mp4` | `codex/reparo-frames-lote2` |
 | Solinho F1 | `idle-1080p-2026-11-28/Animate_creature_with_calm_idle_1e6a50c4_1080p.mp4` (felino prateado alado, fundo verde) | `walk-lote2-2026-11-28/383178597_1795856305751271.mp4` | `codex/reparo-frames-lote2` |
-| Fanalino F2 | `reparo-lote-2026-11-28/fanalino-f2-idle.mp4` (idle confirmado pelo usuário) | **Duas opções**: `reparo-lote-2026-11-28/fanalino-f2-walk.mp4` e `walk-lote2-2026-11-28/Creature_walking_in_place_1de11b9a.mp4` | `codex/reparo-frames-lote2` |
+| Fanalino F2 | `reparo-lote-2026-11-28/fanalino-f2-idle.mp4` (idle confirmado pelo usuário) | **Duas opções**: `reparo-lote-2026-11-28/fanalino-f2-walk.mp4` e `walk-lote2-2026-11-28/Creature_walking_in_place_1de11b9a.mp4` | `codex/reparo-frames-lote2` (commit `7d1d097` reúne os originais) |
 
 ## Reparado (conferir antes de processar)
 
