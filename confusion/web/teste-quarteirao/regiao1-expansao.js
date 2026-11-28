@@ -242,6 +242,20 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .eq-vaga.vazia { min-height: 112px; justify-content: center; border: none; background: url('../../../assets/confusion/interface/menus-v1/equipe/vaga-vazia.png') center / 100% 100% no-repeat; }
     #modal-exp .eq-vaga.sel { border: none; background: url('../../../assets/confusion/interface/menus-v1/equipe/vaga-selecionada.png') center / 100% 100% no-repeat; }
     #modal-exp .eq-col.sel { outline: 3px solid #fb923c; border-style: solid; }
+    @media (orientation: landscape) and (max-height: 500px) {
+      #modal-exp[data-tela="equipe"] .equipe-layout:has(.equipe-formacao) { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 5px; align-items: start; }
+      #modal-exp[data-tela="equipe"] .equipe-layout > .bl:first-child { grid-column: 1 / -1; padding: 4px 8px; margin: 0; }
+      #modal-exp[data-tela="equipe"] .equipe-formacao, #modal-exp[data-tela="equipe"] .equipe-colecao { min-width: 0; padding: 5px 7px; margin: 0; }
+      #modal-exp[data-tela="equipe"] .equipe-formacao p { font-size: 10px; line-height: 1.15; }
+      #modal-exp[data-tela="equipe"] .eq-arena { padding: 4px; gap: 4px; margin: 3px 0; }
+      #modal-exp[data-tela="equipe"] .eq-vaga { min-width: 0; padding: 3px 2px; font-size: 9px; overflow-wrap: anywhere; }
+      #modal-exp[data-tela="equipe"] .eq-vaga .mini-mold { width: 38px; }
+      #modal-exp[data-tela="equipe"] .eq-vaga.vazia { min-height: 68px; }
+      #modal-exp[data-tela="equipe"] .equipe-colecao .grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+      #modal-exp[data-tela="equipe"] .eq-col { min-width: 0; font-size: 9px; padding: 3px; overflow-wrap: anywhere; }
+      #modal-exp[data-tela="equipe"] .eq-col .mini-mold { max-width: 50px; margin: 0 auto 2px; }
+    }
+
     @media (orientation: portrait) and (max-width: 600px) {
       #modal-exp[data-tela="equipe"] .grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
       #modal-exp[data-tela="equipe"] .eq-col { min-width: 0; padding: 4px; font-size: 10px; overflow-wrap: anywhere; }
@@ -690,7 +704,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     }).join('');
     const dica = selEq ? (selEq.tipo === 'col' ? 'Toque numa posição acima para escalar este Onírico ou toque em "Abrir Ficha".' : 'Toque noutra posição para trocar, num Onírico da coleção para substituir, ou abra a Ficha.') : 'Toque em uma vaga ou Onírico para escalar/reorganizar ou abrir a Ficha completa.';
     const uidFoco = selEq?.tipo === 'col' ? selEq.uid : selEq?.tipo === 'vaga' ? f[selEq.vaga] : null;
-    return `<div class="bl"><h4>Formação (${f.filter(Boolean).length}/4)</h4><p class="mut">${dica}</p>
+    return `<div class="bl equipe-formacao"><h4>Formação (${f.filter(Boolean).length}/4)</h4><p class="mut">${dica}</p>
       <div class="eq-arena" style="background-image:linear-gradient(rgba(14,8,22,.45), rgba(14,8,22,.65)), url('${MV1('equipe/fundo.webp')}')">${vagas}</div>
       <div class="ln">
         ${uidFoco ? `<button class="btn-pri" data-ficha-abrir="${uidFoco}">📋 Abrir Ficha &amp; Evolução</button>` : ''}
@@ -698,7 +712,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         ${selEq ? '<button class="btn-sec" data-eq-cancelar="1">Cancelar seleção</button>' : ''}
       </div>
       <p class="mut">A formação vale na Campanha, Idle, Torre, Revanches de Chefes, expedições e Herói × Vilão.</p></div>
-      <div class="bl"><h4>Coleção (${eq.length})</h4><div class="grade">${col}</div></div>`;
+      <div class="bl equipe-colecao"><h4>Coleção (${eq.length})</h4><div class="grade">${col}</div></div>`;
   }
   function tocarEquipe(d) {
     const idle = save().idle;
@@ -1037,7 +1051,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (painel === 'torres') h += renderBalaoTutorialModo(save(), 'torres') + renderizarPainelTorres(save(), aba, torresUi);
     if (painel === 'calaboucos') h += renderBalaoTutorialModo(save(), 'calaboucos_rel') + renderizarPainelCalaboucos(save(), calaboucosUi);
     if (painel === 'reliquias') h += renderBalaoTutorialModo(save(), 'reliquias') + renderizarPainelReliquias(save(), aba, reliquiasUi);
-    if (painel === 'equipe') h += aba === 1 ? (renderBalaoTutorialModo(save(), 'domadores') + renderizarPainelDomadores(save())) : (resumoDomadorAtivoHtml(save()) + abaEquipe());
+    if (painel === 'equipe') h += aba === 1 ? (renderBalaoTutorialModo(save(), 'domadores') + renderizarPainelDomadores(save())) : (`<div class="equipe-layout">${resumoDomadorAtivoHtml(save())}${abaEquipe()}</div>`);
     if (painel === 'oniricos') h += abaBanner();
     if (painel === 'cacadas') h += [abaCacadas, abaCalabouco, abaChefes][aba]();
     if (painel === 'guilda') h += [abaContratos, abaFazenda, abaOficina, abaReinosGuilda][aba]();
