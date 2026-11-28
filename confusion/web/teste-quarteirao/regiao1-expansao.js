@@ -6,8 +6,8 @@ import { coletarTudo, prontoParaColetar, candidatasObra, enfileirarObras, previs
 import { ARTE_DA_ESPECIE, ELEMENTO_DA_ESPECIE, linhaDaEspecie } from '../species.js';
 import { LIMITE_ALIADOS, criarUnidade } from './regiao1-estrategia-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
-import { hwDe, bonusDoMembro } from './regiao1-halloween-regras.js';
-import { tierDe, estrelasDe, faixaEstrela, bonusTier, bonusEstrelas, infoClasse, custoEvoluirEstrela, nivelDe } from './regiao1-progressao.js';
+import { hwDe, bonusDoMembro, usarPocao } from './regiao1-halloween-regras.js';
+import { tierDe, estrelasDe, faixaEstrela, bonusTier, bonusEstrelas, infoClasse, custoEvoluirEstrela, nivelDe, POCOES } from './regiao1-progressao.js';
 import { POSICOES } from './regiao1-batalha-tela.js';
 import { ganharXpPasse, infoPasse } from './regiao1-passe-regras.js';
 import { fichaOnirico, evoluirFormaOnirico, tierDaUnidade, estrelasDaUnidade, raridadeRotulo, molduraDoTier } from './regiao1-criacao-regras.js';
@@ -654,6 +654,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           </div>
         </div>
       </div>
+      <div class="ln" aria-label="Poções de XP para ${esc(f.especie)}">
+        ${Object.entries(POCOES).map(([id, p]) => {
+          const qtd = hwDe(save()).pocoes[id] || 0;
+          return `<button class="btn-sec" data-eq-pocao="${esc(id)}" ${qtd ? '' : 'disabled'} title="${esc(p.nome)} · +${p.xp} XP">🧪 ${esc(p.nome)} ×${qtd}</button>`;
+        }).join('')}
+      </div>
       <div style="margin-top:6px"><b>Habilidades (${f.habilidades.length})</b>${f.habilidades.map((hb) => `
         <div class="hab-item">
           <b>${hb.icone} ${esc(hb.nome)}</b> · <span class="mut">Recarga: ${hb.recarga} turno${hb.recarga > 1 ? 's' : ''}</span>
@@ -716,6 +722,14 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
   }
   function tocarEquipe(d) {
     const idle = save().idle;
+    if (d.eqPocao) {
+      const idx = (idle.equipe || []).findIndex((m) => m.uid === fichaUid);
+      if (idx < 0 || !Object.hasOwn(POCOES, d.eqPocao)) return true;
+      const resultado = usarPocao(save(), String(idx), d.eqPocao);
+      mostrarToast(resultado.ok ? `Nível ${resultado.antes} → ${resultado.depois}` : resultado.motivo, 3000);
+      if (resultado.ok) salvar();
+      return true;
+    }
     if (d.fichaFechar) { fichaUid = null; $('#exp-corpo').scrollTop = 0; return true; }
     if (d.fichaAbrir) { fichaUid = d.fichaAbrir; $('#exp-corpo').scrollTop = 0; return true; }
     if (d.fichaEscalar) { fichaUid = null; selEq = { tipo: 'col', uid: d.fichaEscalar }; $('#exp-corpo').scrollTop = 0; return true; }
