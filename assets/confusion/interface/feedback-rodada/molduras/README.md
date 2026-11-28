@@ -18,3 +18,10 @@ O brilho é estático nos PNGs. Camada de reflexo animável, versões específic
 A moldura acompanha o perímetro completo do elemento ao qual pertence: o botão inteiro ou o painel inteiro, em largura e altura, não apenas a área ocupada pelo texto. O texto e o ícone ficam por cima, dentro da área livre. Preserve cantos e proporções; confira a borda nos quatro lados em retrato e paisagem e não deixe ornamentos cobrirem os rótulos. Os filtros de elementos nas Torres não devem receber uma moldura apertada em torno de cada palavra.
 
 `referencia-retangulo-inteiro.png`: referência de composição, não é moldura transparente nem arquivo pronto para aplicação direta.
+
+## Linha de acabamento aprovada
+
+- `moldura-retrato-luxo.png`: 1024 × 1536, borda para painel em celular retrato.
+- `moldura-painel-luxo.png`: 1774 × 887, borda para painel horizontal.
+
+Ambas são PNG RGBA com amostra do centro e do canto superior esquerdo totalmente transparente. A avaliação da borda completa e o teste de legibilidade nos menus ainda são necessários.
