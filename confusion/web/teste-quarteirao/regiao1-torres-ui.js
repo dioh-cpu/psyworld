@@ -182,7 +182,7 @@ export function renderizarPainelTorres(save, aba, st) {
     const m = Number(t.unicas[x.id]?.maiorAndar) || 0;
     const pCard = Math.min(100, Math.round((m / Math.max(1, x.totalAndares)) * 100));
     const ativo = x.id === torre.id;
-    return `<button class="${ativo ? 'btn-pri' : 'btn-sec'}" data-tor-un="${esc(x.id)}" style="padding:7px 10px;font-size:11.5px;text-align:left;min-width:160px;flex:1 1 160px;display:flex;flex-direction:column;gap:3px;border:${ativo ? '2px solid #fde68a' : '1px solid rgba(243,194,122,.28)'};${ativo ? 'background:#2a1840;color:#fff3e7' : ''}">
+    return `<button class="torre-card ${ativo ? 'btn-pri' : 'btn-sec'}" data-tor-un="${esc(x.id)}" style="padding:7px 10px;font-size:11.5px;text-align:left;min-width:160px;flex:1 1 160px;display:flex;flex-direction:column;gap:3px;border:${ativo ? '2px solid #fde68a' : '1px solid rgba(243,194,122,.28)'};${ativo ? 'background:#2a1840;color:#fff3e7' : ''}">
       <div style="display:flex;justify-content:space-between;width:100%"><b>⚔️ ${esc(x.nome)}</b><small style="background:#160c24;color:#fff3e7;padding:1px 7px;border-radius:999px">${m}/${x.totalAndares}</small></div>
       <div style="width:100%;height:5px;border-radius:999px;background:rgba(0,0,0,.45);overflow:hidden"><div style="width:${pCard}%;height:100%;background:linear-gradient(90deg,#c084fc,#fde047)"></div></div>
     </button>`;
