@@ -32,3 +32,10 @@ Ambas são PNG RGBA com amostra do centro e do canto superior esquerdo totalment
 - `moldura-reliquias.png`: Relíquias, joias e objetos arcanos.
 
 Cada sistema deverá ter identidade própria. As duas molduras preservam o centro transparente; a adequação da largura do contorno e a legibilidade no celular ainda exigem teste na interface.
+
+### Variantes por identidade
+
+- `moldura-torres-arquitetura.png`: torres, arcos e cristais elementais; variante de Torres.
+- `moldura-reliquias-joalheria.png`: bancada, joias, correntes e veludo; variante de Relíquias.
+
+São artes independentes para revisão, com áreas centrais transparentes. A aplicação responsiva e a legibilidade permanecem sem teste.
