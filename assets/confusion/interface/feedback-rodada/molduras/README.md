@@ -12,3 +12,7 @@ PNGs RGBA com centro e canto superior esquerdo transparentes, conferidos por lei
 O brilho é estático nos PNGs. Camada de reflexo animável, versões específicas de menus, estados do botão, testes em tela e validação da transparência em todo o contorno ainda pendem. Não esticar sem conferir deformação; o centro precisa permanecer livre para o conteúdo.
 
 `reflexo-dourado.png` é uma camada estática com alfa para a equipe de interface experimentar um reflexo suave. O movimento ainda precisa ser implementado e testado; reduzir a intensidade se necessário. Na área central de 30% × 30% das molduras de botão e faixa, respectivamente 1,06% e 2,08% dos pixels têm alfa acima de 16 por causa dos ornamentos. Os quatro limites externos não apresentam pixels com alfa acima de 16.
+
+## Aplicação no retângulo inteiro
+
+A moldura acompanha o perímetro completo do elemento ao qual pertence: o botão inteiro ou o painel inteiro, em largura e altura, não apenas a área ocupada pelo texto. O texto e o ícone ficam por cima, dentro da área livre. Preserve cantos e proporções; confira a borda nos quatro lados em retrato e paisagem e não deixe ornamentos cobrirem os rótulos. Os filtros de elementos nas Torres não devem receber uma moldura apertada em torno de cada palavra.
