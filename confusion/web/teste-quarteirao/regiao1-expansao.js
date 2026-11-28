@@ -6,8 +6,8 @@ import { coletarTudo, prontoParaColetar, candidatasObra, enfileirarObras, previs
 import { ARTE_DA_ESPECIE, ELEMENTO_DA_ESPECIE, linhaDaEspecie } from '../species.js';
 import { LIMITE_ALIADOS, criarUnidade } from './regiao1-estrategia-regras.js';
 import { arteDoIndividuo } from './regiao1-halloween-dados.js';
-import { hwDe, bonusDoMembro } from './regiao1-halloween-regras.js';
-import { tierDe, estrelasDe, faixaEstrela, bonusTier, bonusEstrelas, infoClasse, custoEvoluirEstrela, nivelDe } from './regiao1-progressao.js';
+import { hwDe, bonusDoMembro, usarPocao } from './regiao1-halloween-regras.js';
+import { tierDe, estrelasDe, faixaEstrela, bonusTier, bonusEstrelas, infoClasse, custoEvoluirEstrela, nivelDe, POCOES } from './regiao1-progressao.js';
 import { POSICOES } from './regiao1-batalha-tela.js';
 import { ganharXpPasse, infoPasse } from './regiao1-passe-regras.js';
 import { fichaOnirico, evoluirFormaOnirico, tierDaUnidade, estrelasDaUnidade, raridadeRotulo, molduraDoTier } from './regiao1-criacao-regras.js';
@@ -242,6 +242,30 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .eq-vaga.vazia { min-height: 112px; justify-content: center; border: none; background: url('../../../assets/confusion/interface/menus-v1/equipe/vaga-vazia.png') center / 100% 100% no-repeat; }
     #modal-exp .eq-vaga.sel { border: none; background: url('../../../assets/confusion/interface/menus-v1/equipe/vaga-selecionada.png') center / 100% 100% no-repeat; }
     #modal-exp .eq-col.sel { outline: 3px solid #fb923c; border-style: solid; }
+    @media (orientation: landscape) and (max-height: 500px) {
+      #modal-exp[data-tela="equipe"] .equipe-layout:has(.equipe-formacao) { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 5px; align-items: start; }
+      #modal-exp[data-tela="equipe"] .equipe-layout > .bl:first-child { grid-column: 1 / -1; padding: 4px 8px; margin: 0; }
+      #modal-exp[data-tela="equipe"] .equipe-formacao, #modal-exp[data-tela="equipe"] .equipe-colecao { min-width: 0; padding: 5px 7px; margin: 0; }
+      #modal-exp[data-tela="equipe"] .equipe-formacao p { font-size: 10px; line-height: 1.15; }
+      #modal-exp[data-tela="equipe"] .eq-arena { padding: 4px; gap: 4px; margin: 3px 0; }
+      #modal-exp[data-tela="equipe"] .eq-vaga { min-width: 0; padding: 3px 2px; font-size: 9px; overflow-wrap: anywhere; }
+      #modal-exp[data-tela="equipe"] .eq-vaga .mini-mold { width: 38px; }
+      #modal-exp[data-tela="equipe"] .eq-vaga.vazia { min-height: 68px; }
+      #modal-exp[data-tela="equipe"] .equipe-colecao .grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+      #modal-exp[data-tela="equipe"] .eq-col { min-width: 0; font-size: 9px; padding: 3px; overflow-wrap: anywhere; }
+      #modal-exp[data-tela="equipe"] .eq-col .mini-mold { max-width: 50px; margin: 0 auto 2px; }
+    }
+
+    @media (orientation: portrait) and (max-width: 600px) {
+      #modal-exp[data-tela="equipe"] .grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+      #modal-exp[data-tela="equipe"] .eq-col { min-width: 0; padding: 4px; font-size: 10px; overflow-wrap: anywhere; }
+      #modal-exp[data-tela="equipe"] .eq-col .mini-mold { max-width: 65px; margin: 0 auto 3px; }
+      #modal-exp[data-tela="equipe"] .eq-arena { gap: 4px; padding: 6px; }
+      #modal-exp[data-tela="equipe"] .eq-vaga { padding: 4px 2px; font-size: 10px; overflow-wrap: anywhere; }
+      #modal-exp[data-tela="equipe"] .eq-vaga .mini-mold { width: min(60px, 100%); }
+      #modal-exp[data-tela="equipe"] .eq-vaga.vazia { min-height: 92px; }
+    }
+
     #modal-exp .mv1-ficha { background: linear-gradient(rgba(18,10,28,.82), rgba(18,10,28,.92)), url('../../../assets/confusion/interface/menus-v1/ficha/fundo.webp') center / cover no-repeat; border-color: #fb923c; }
     #modal-exp .mv1-chefes-topo { background: linear-gradient(rgba(18,10,28,.72), rgba(18,10,28,.9)), url('../../../assets/confusion/interface/menus-v1/chefes/fundo.webp') center / cover no-repeat; }
     #modal-exp .mv1-receita { background: linear-gradient(rgba(18,10,28,.72), rgba(18,10,28,.85)), url('../../../assets/confusion/interface/menus-v1/chefes/receita.png') center / 100% 100% no-repeat; padding: 6px 8px; border-radius: 8px; margin-top: 5px; }
@@ -630,6 +654,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
           </div>
         </div>
       </div>
+      <div class="ln" aria-label="Poções de XP para ${esc(f.especie)}">
+        ${Object.entries(POCOES).map(([id, p]) => {
+          const qtd = hwDe(save()).pocoes[id] || 0;
+          return `<button class="btn-sec" data-eq-pocao="${esc(id)}" ${qtd ? '' : 'disabled'} title="${esc(p.nome)} · +${p.xp} XP">🧪 ${esc(p.nome)} ×${qtd}</button>`;
+        }).join('')}
+      </div>
       <div style="margin-top:6px"><b>Habilidades (${f.habilidades.length})</b>${f.habilidades.map((hb) => `
         <div class="hab-item">
           <b>${hb.icone} ${esc(hb.nome)}</b> · <span class="mut">Recarga: ${hb.recarga} turno${hb.recarga > 1 ? 's' : ''}</span>
@@ -680,7 +710,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     }).join('');
     const dica = selEq ? (selEq.tipo === 'col' ? 'Toque numa posição acima para escalar este Onírico ou toque em "Abrir Ficha".' : 'Toque noutra posição para trocar, num Onírico da coleção para substituir, ou abra a Ficha.') : 'Toque em uma vaga ou Onírico para escalar/reorganizar ou abrir a Ficha completa.';
     const uidFoco = selEq?.tipo === 'col' ? selEq.uid : selEq?.tipo === 'vaga' ? f[selEq.vaga] : null;
-    return `<div class="bl"><h4>Formação (${f.filter(Boolean).length}/4)</h4><p class="mut">${dica}</p>
+    return `<div class="bl equipe-formacao"><h4>Formação (${f.filter(Boolean).length}/4)</h4><p class="mut">${dica}</p>
       <div class="eq-arena" style="background-image:linear-gradient(rgba(14,8,22,.45), rgba(14,8,22,.65)), url('${MV1('equipe/fundo.webp')}')">${vagas}</div>
       <div class="ln">
         ${uidFoco ? `<button class="btn-pri" data-ficha-abrir="${uidFoco}">📋 Abrir Ficha &amp; Evolução</button>` : ''}
@@ -688,10 +718,18 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
         ${selEq ? '<button class="btn-sec" data-eq-cancelar="1">Cancelar seleção</button>' : ''}
       </div>
       <p class="mut">A formação vale na Campanha, Idle, Torre, Revanches de Chefes, expedições e Herói × Vilão.</p></div>
-      <div class="bl"><h4>Coleção (${eq.length})</h4><div class="grade">${col}</div></div>`;
+      <div class="bl equipe-colecao"><h4>Coleção (${eq.length})</h4><div class="grade">${col}</div></div>`;
   }
   function tocarEquipe(d) {
     const idle = save().idle;
+    if (d.eqPocao) {
+      const idx = (idle.equipe || []).findIndex((m) => m.uid === fichaUid);
+      if (idx < 0 || !Object.hasOwn(POCOES, d.eqPocao)) return true;
+      const resultado = usarPocao(save(), String(idx), d.eqPocao);
+      mostrarToast(resultado.ok ? `Nível ${resultado.antes} → ${resultado.depois}` : resultado.motivo, 3000);
+      if (resultado.ok) salvar();
+      return true;
+    }
     if (d.fichaFechar) { fichaUid = null; $('#exp-corpo').scrollTop = 0; return true; }
     if (d.fichaAbrir) { fichaUid = d.fichaAbrir; $('#exp-corpo').scrollTop = 0; return true; }
     if (d.fichaEscalar) { fichaUid = null; selEq = { tipo: 'col', uid: d.fichaEscalar }; $('#exp-corpo').scrollTop = 0; return true; }
@@ -1027,7 +1065,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (painel === 'torres') h += renderBalaoTutorialModo(save(), 'torres') + renderizarPainelTorres(save(), aba, torresUi);
     if (painel === 'calaboucos') h += renderBalaoTutorialModo(save(), 'calaboucos_rel') + renderizarPainelCalaboucos(save(), calaboucosUi);
     if (painel === 'reliquias') h += renderBalaoTutorialModo(save(), 'reliquias') + renderizarPainelReliquias(save(), aba, reliquiasUi);
-    if (painel === 'equipe') h += aba === 1 ? (renderBalaoTutorialModo(save(), 'domadores') + renderizarPainelDomadores(save())) : (resumoDomadorAtivoHtml(save()) + abaEquipe());
+    if (painel === 'equipe') h += aba === 1 ? (renderBalaoTutorialModo(save(), 'domadores') + renderizarPainelDomadores(save())) : (`<div class="equipe-layout">${resumoDomadorAtivoHtml(save())}${abaEquipe()}</div>`);
     if (painel === 'oniricos') h += abaBanner();
     if (painel === 'cacadas') h += [abaCacadas, abaCalabouco, abaChefes][aba]();
     if (painel === 'guilda') h += [abaContratos, abaFazenda, abaOficina, abaReinosGuilda][aba]();
