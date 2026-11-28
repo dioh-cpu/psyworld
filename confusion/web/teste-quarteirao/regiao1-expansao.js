@@ -116,22 +116,21 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; gap: 6px; flex-shrink: 0; } #modal-exp .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); color: #fde68a; text-shadow: 0 1px 3px rgba(0,0,0,.88); }
     #modal-exp .exp-abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; flex-shrink: 0; } #modal-exp .exp-abas button[aria-selected="true"] { background: #f3a458; color: #21110c; font-weight: 700; }
     #modal-exp .torres-arte { padding: 8px; background: linear-gradient(rgba(15,8,26,.84),rgba(15,8,26,.9)), url('../../../assets/confusion/interface/telas-v2/torres.webp') center / cover fixed; border-radius: 12px; }
-    #modal-exp .torres-arte > .bl { background-image: linear-gradient(rgba(15,8,26,.87),rgba(15,8,26,.87)), url('../../../assets/confusion/interface/feedback-rodada/painel-horizontal.png'); background-size: 100% 100%; }
-    #modal-exp .torres-arte button.btn-pri, #modal-exp .torres-arte button.btn-sec { background-size: 100% 100%; background-repeat: no-repeat; color: #fff; text-shadow: 0 1px 3px #000; }
-    #modal-exp .torres-arte button.btn-pri:not(.torre-card) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-primario-normal.png'); }
-    #modal-exp .torres-arte button.btn-pri:not(.torre-card):hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-primario-hover.png'); }
-    #modal-exp .torres-arte button.btn-pri:not(.torre-card):active:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-primario-pressionado.png'); }
-    #modal-exp .torres-arte button.btn-pri:not(.torre-card):disabled { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-primario-desabilitado.png'); }
-    #modal-exp .torres-arte button.btn-sec:not(.torre-card) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-secundario-normal.png'); }
-    #modal-exp .torres-arte button.btn-sec:not(.torre-card):hover:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-secundario-hover.png'); }
-    #modal-exp .torres-arte button.btn-sec:not(.torre-card):active:not(:disabled) { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-secundario-pressionado.png'); }
-    #modal-exp .torres-arte button.btn-sec:not(.torre-card):disabled { background-image: url('../../../assets/confusion/interface/feedback-rodada/glamour/botao-secundario-desabilitado.png'); }
+    #modal-exp[data-tela="torres"] .btn-pri, #modal-exp[data-tela="torres"] .btn-sec { background-image: none !important; color: #fff3e7; text-shadow: 0 1px 2px #000; }
+    #modal-exp[data-tela="torres"] .btn-pri { background-color: #8a4b20; border: 1px solid #f2c078; }
+    #modal-exp[data-tela="torres"] .btn-sec { background-color: #28172f; border: 1px solid #86634c; }
+    #modal-exp[data-tela="torres"] .btn-pri:hover:not(:disabled), #modal-exp[data-tela="torres"] .btn-sec:hover:not(:disabled) { filter: brightness(1.18); }
+    #modal-exp[data-tela="torres"] .btn-pri:active:not(:disabled), #modal-exp[data-tela="torres"] .btn-sec:active:not(:disabled) { filter: brightness(.8); }
+    #modal-exp[data-tela="torres"] button:disabled { opacity: .6; }
+    #modal-exp .torres-arte > .bl { border: 14px solid transparent; border-image: url('../../../assets/confusion/interface/feedback-rodada/painel-horizontal.png') 150 70 60 fill / 28px 14px 14px stretch !important; padding: 36px 14px 14px !important; }
     @media (orientation: portrait) and (max-width: 600px) {
       #modal-exp .torres-arte { padding: 4px; }
       #modal-exp .torres-arte .torre-filtros, #modal-exp .torres-arte .torre-seletores { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 6px; }
       #modal-exp .torres-arte .torre-filtros button { flex: 0 0 auto; min-height: 36px; }
       #modal-exp .torres-arte .torre-seletores button { flex: 0 0 148px !important; }
       #modal-exp .torres-arte button[data-tor-lutar-el], #modal-exp .torres-arte button[data-tor-lutar-un], #modal-exp .torres-arte button[data-tor-lutar-saz] { min-height: 44px; }
+      #modal-exp .torres-detalhe > div:first-child > div:last-child { order: -1; }
+      #modal-exp .torres-detalhe [data-tor-lutar-el] { order: -1; }
     }
     @media (orientation: landscape) and (max-height: 500px) {
       #modal-exp .torres-arte:has(.torres-lista) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
