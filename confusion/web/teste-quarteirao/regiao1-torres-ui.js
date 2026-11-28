@@ -17,6 +17,10 @@ import {
   concluirAndarTorreUnica,
   trocarPoUnicoPorFragmento,
   resgatarEscolhaFragmentoUnico,
+  TORRES_SAZONAIS_CATALOGO,
+  estadoTorreSazonal,
+  iniciarAndarTorreSazonal,
+  concluirAndarTorreSazonal,
 } from './regiao1-torres-regras.js';
 import { NOME_ELEMENTO } from '../core.js';
 import { mostrarResultadoBatalha } from './regiao1-resultado-ui.js';
@@ -79,7 +83,10 @@ export function renderizarPainelTorres(save, aba, st) {
 
     const p1 = andarDef.recompensaPrimeiraVitoria;
     const elsBadges = torre.elementos.map((e) => `<span class="tag" style="display:inline-flex;align-items:center;gap:4px;background:rgba(12,8,24,.82);color:#fff3e7;border-color:rgba(243,194,122,.45)"><img src="${icoEl(e)}" alt="" style="width:14px;height:14px;object-fit:contain" onerror="this.style.display='none'">${esc(NOME_ELEMENTO[e] || e)}</span>`).join('');
-    return `<div class="bl">
+    const rp = torre.recompensaPropria;
+  const rpTxt = rp ? ` · Recompensa própria: ${esc(rp.nome)} (+${rp.ouroBase || 0} 🪙)` : '';
+
+  return `${subAbasHtml}<div class="bl">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
         <b style="color:#fde68a">🗼 Torres Elementais (${TORRES_ELEMENTAIS_CATALOGO.length} × 50 andares · 18 elementos)</b>
         <span class="tag">💠 Treino diário de Essência: ${treinos}/${TORRES_CFG.treinosDiariosMax}</span>
@@ -117,7 +124,52 @@ export function renderizarPainelTorres(save, aba, st) {
     </div>`;
   }
 
-  // Aba 1: Torres Únicas
+  // Aba 1: Torres Únicas + Torres Sazonais (Quinzenal e Mensal)
+  const subTorre = st.subTorre || 'unicas';
+  const subAbasHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+    <button class="${subTorre === 'unicas' ? 'btn-pri' : 'btn-sec'}" data-tor-sub="unicas" style="padding:5px 10px;font-size:11.5px">⚔️ Únicas</button>
+    ${TORRES_SAZONAIS_CATALOGO.map((s) => `<button class="${subTorre === s.id ? 'btn-pri' : 'btn-sec'}" data-tor-sub="${esc(s.id)}" style="padding:5px 10px;font-size:11.5px">${s.id === 'quinzenal' ? '🗓️ Quinzenal' : '🌙 Mensal'}</button>`).join('')}
+  </div>`;
+
+  if (subTorre === 'quinzenal' || subTorre === 'mensal') {
+    const est = estadoTorreSazonal(save, subTorre);
+    const total = est.totalAndares || est.andares?.length || 1;
+    const maiorSaz = Number(est.maiorAndar) || 0;
+    const proxSaz = Math.min(total, maiorSaz + 1);
+    const andarSaz = Math.max(1, Math.min(total, st.andarSaz || proxSaz));
+    const andarDefSaz = est.andares?.[andarSaz - 1] || {};
+    const desblSaz = andarSaz <= maiorSaz + 1;
+    const dias = Math.floor((est.restanteMs || 0) / 86_400_000);
+    const horas = Math.floor(((est.restanteMs || 0) % 86_400_000) / 3_600_000);
+    const pctSaz = Math.min(100, Math.round((maiorSaz / Math.max(1, total)) * 100));
+    const iniSaz = Math.max(1, andarSaz - 4);
+    const fimSaz = Math.min(total, iniSaz + 9);
+    const btnsSaz = [];
+    for (let a = iniSaz; a <= fimSaz; a++) {
+      const ok = a <= maiorSaz + 1;
+      const venc = a <= maiorSaz;
+      btnsSaz.push(`<button class="${a === andarSaz ? 'btn-pri' : 'btn-sec'}" data-tor-andar-saz="${a}" style="padding:4px 8px;font-size:11px;${ok ? '' : 'opacity:.5'}">${a % 10 === 0 ? '👑 ' : ''}${a}${venc ? ' ✓' : ok ? '' : ' 🔒'}</button>`);
+    }
+    return `${subAbasHtml}<div class="bl">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+        <b style="color:#fde68a">${est.id === 'quinzenal' ? '🗓️' : '🌙'} ${esc(est.nome)} · Ciclo #${est.ciclo}</b>
+        <span class="tag">⏳ Tempo restante: ${dias}d ${horas}h</span>
+      </div>
+      <div style="font-size:12px;color:#fff3e7">Andar ${andarSaz}/${total} · Nível ${andarDefSaz.nivel || 1} · Progresso: <b>${maiorSaz}/${total} (${pctSaz}%)</b></div>
+      <div style="width:100%;max-width:340px;height:7px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(243,194,122,.35);overflow:hidden;margin:6px 0">
+        <div style="width:${pctSaz}%;height:100%;background:linear-gradient(90deg,#38bdf8,#fde047)"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">
+        <button class="btn-pri" data-tor-lutar-saz="${esc(est.id)}:${andarSaz}" ${desblSaz ? '' : 'disabled'}>${desblSaz ? `⚔️ Lutar Andar ${andarSaz}` : '🔒 Bloqueado'}</button>
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:10px;align-items:center">
+        <button class="btn-sec" data-tor-andar-saz="${Math.max(1, andarSaz - 10)}" style="padding:4px 7px;font-size:11px">« -10</button>
+        ${btnsSaz.join('')}
+        <button class="btn-sec" data-tor-andar-saz="${Math.min(total, andarSaz + 10)}" style="padding:4px 7px;font-size:11px">+10 »</button>
+      </div>
+    </div>`;
+  }
+
   const torreId = st.torreUnId && TORRES_UNICAS_POR_ID[st.torreUnId] ? st.torreUnId : TORRES_UNICAS_CATALOGO[0].id;
   const torre = TORRES_UNICAS_POR_ID[torreId];
   const torreIdx = Math.max(0, TORRES_UNICAS_CATALOGO.findIndex((x) => x.id === torre.id));
@@ -152,7 +204,10 @@ export function renderizarPainelTorres(save, aba, st) {
   const fragLista = Object.entries(armas.fragmentos || {}).filter(([, q]) => q > 0).slice(0, 8)
     .map(([k, q]) => `<span class="tag">${esc(k)}: ${q}</span>`).join(' ');
 
-  return `<div class="bl">
+  const rp = torre.recompensaPropria;
+  const rpTxt = rp ? ` · Recompensa própria: ${esc(rp.nome)} (+${rp.ouroBase || 0} 🪙)` : '';
+
+  return `${subAbasHtml}<div class="bl">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <b style="color:#fde68a">⚔️ Torres Únicas (3 × 30 andares · Nv. 60–120 · 1×/dia por andar)</b>
       <span class="tag">✨ Pó Único: ${armas.poUnico || 0}${armas.escolhasPendentes ? ` · 🎁 Escolhas: ${armas.escolhasPendentes}` : ''}</span>
@@ -167,7 +222,7 @@ export function renderizarPainelTorres(save, aba, st) {
         <div style="width:100%;max-width:340px;height:7px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(243,194,122,.35);overflow:hidden;margin:6px 0">
           <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#c084fc,#fde047)"></div>
         </div>
-        <div style="font-size:11.5px;color:#fef08a;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.85)">Nível ${andarDef.nivel} · Prêmio: 1 Fragmento de Arma Única (ou 1 Pó Único se ainda não possui a linhagem)</div>
+        <div style="font-size:11.5px;color:#fef08a;margin-top:4px;text-shadow:0 1px 2px rgba(0,0,0,.85)">Nível ${andarDef.nivel} · Prêmio: 1 Fragmento de Arma Única (ou 1 Pó Único se ainda não possui a linhagem)${rpTxt}</div>
       </div>
       <button class="btn-pri" data-tor-lutar-un="${esc(torre.id)}:${andarSel}" ${desbl && podeHoje ? '' : 'disabled'}>${!desbl ? '🔒 Bloqueado' : !podeHoje ? '✓ Feito hoje' : `⚔️ Lutar Andar ${andarSel}`}</button>
     </div>
@@ -192,6 +247,52 @@ export function renderizarPainelTorres(save, aba, st) {
 }
 
 export function tratarCliqueTorres(d, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, st }) {
+  if (d.torSub) {
+    st.subTorre = d.torSub;
+    render();
+    return true;
+  }
+  if (d.torAndarSaz) {
+    st.andarSaz = Number(d.torAndarSaz);
+    render(true);
+    return true;
+  }
+  if (d.torLutarSaz) {
+    if (batalhaBloqueando?.()) { mostrarToast('Já existe uma batalha em andamento.'); return true; }
+    const [tid, aStr] = d.torLutarSaz.split(':');
+    const andarNum = Number(aStr);
+    const ini = iniciarAndarTorreSazonal(save, tid, andarNum);
+    if (!ini.ok) { mostrarToast(ini.motivo || 'Não foi possível iniciar o andar.'); render(); return true; }
+    salvar();
+    render();
+    tela.abrir({
+      titulo: `${ini.torre.nome} · Andar ${andarNum}`,
+      sub: `Ciclo #${ini.torre.ciclo} · Nível ${ini.andar.nivel}`,
+      arena: ARENA_FALLBACK,
+      aliados: aliadosDoSave(),
+      inimigos: ini.andar.inimigos,
+      ritmo: 420,
+      save,
+      regiao: 2,
+      onFim: (venceu, _f, _m, resumo) => {
+        const res = concluirAndarTorreSazonal(save, tid, andarNum, resumo || { venceu: Boolean(venceu) }, { batalhaId: ini.batalhaId });
+        salvar();
+        if (res.venceu) st.andarSaz = Math.min(ini.torre.totalAndares || 30, andarNum + 1);
+        render();
+        mostrarResultadoBatalha({
+          titulo: res.venceu ? `🏆 ${ini.torre.nome} · Andar ${andarNum}` : `💀 Derrota no Andar ${andarNum}`,
+          subtitulo: ini.torre.nome,
+          venceu: Boolean(res.venceu),
+          save,
+          premios: res.premios,
+          podeRepetir: !res.venceu,
+          onRepetir: () => tratarCliqueTorres({ torLutarSaz: `${tid}:${andarNum}` }, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, st }),
+          rotuloVoltar: '⚔️ Voltar às Torres',
+        });
+      },
+    });
+    return true;
+  }
   if (d.torFiltroEl) {
     st.elementoFiltro = d.torFiltroEl;
     const match = d.torFiltroEl === 'todos' ? TORRES_ELEMENTAIS_CATALOGO[0] : TORRES_ELEMENTAIS_CATALOGO.find((x) => (x.elementos || []).includes(d.torFiltroEl));

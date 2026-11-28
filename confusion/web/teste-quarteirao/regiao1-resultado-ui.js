@@ -16,8 +16,8 @@ const COR_RAR = {
 };
 
 const CSS_RES = `
-#res-batalha-overlay{position:fixed;inset:0;background:rgba(2,6,23,.84);z-index:80;display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top,0px)) calc(10px + env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) calc(10px + env(safe-area-inset-left,0px))}
-.rb-card{width:min(510px,96vw);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#1a1230,#0c0818);border:2px solid #fde68a;border-radius:16px;padding:14px 16px;color:#fff3e7;display:flex;flex-direction:column;gap:10px;box-shadow:0 18px 44px rgba(0,0,0,.68);text-align:center}
+#res-batalha-overlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(2,6,23,.72),rgba(2,6,23,.88)),url('../../../assets/confusion/interface/feedback-rodada/fundo-proxima-fase.png') center / cover no-repeat;z-index:80;display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top,0px)) calc(10px + env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) calc(10px + env(safe-area-inset-left,0px))}
+.rb-card{width:min(540px,96vw);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,rgba(26,18,48,.88),rgba(12,8,24,.94)),url('../../../assets/confusion/interface/feedback-rodada/glamour/painel-resultados.png') center / 100% 100% no-repeat;border:2px solid #fde68a;border-radius:16px;padding:14px 16px;color:#fff3e7;display:flex;flex-direction:column;gap:10px;box-shadow:0 18px 44px rgba(0,0,0,.68);text-align:center}
 .rb-card.derrota{border-color:#f87171}
 .rb-estrelas{display:flex;justify-content:center;gap:10px;font-size:32px;line-height:1}
 .rb-est{opacity:.22;transform:scale(.65);filter:grayscale(1)}

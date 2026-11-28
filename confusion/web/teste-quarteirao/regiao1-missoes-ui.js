@@ -7,7 +7,10 @@ import {
   listarParalelasCapitulo,
   iniciarParalela,
   avancarEtapaParalela,
+  registrarAcaoParalela,
+  MISSOES_CAMPANHA_NPC_CATALOGO,
 } from './regiao1-missoes-regras.js';
+import { validarContatoInteracao } from './regiao1-estado.js';
 import { CAPITULOS_CAMPANHA_MINI } from './regiao1-campanha-mini-regras.js';
 
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -67,7 +70,12 @@ export function renderizarPainelMissoes(save, aba, { capParalela = 1, st = {} } 
           <button class="${m.pronto ? 'btn-pri' : 'btn-sec'}" data-mis-coletar="${esc(m.id)}" ${m.pronto ? '' : 'disabled'}>${m.coletado ? '✓ Coletado' : m.pronto ? '🎁 Coletar' : 'Em progresso'}</button>
         </div>`;
       }).join('');
-      return `<div class="bl"><h4>${esc(ROTULO_CAT[cat] || cat)}</h4>${linhas}</div>`;
+      const npcsHtml = `<div class="bl" style="margin-top:8px">
+    <b>🧭 Missões de NPC da Campanha (${MISSOES_CAMPANHA_NPC_CATALOGO.length})</b>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${MISSOES_CAMPANHA_NPC_CATALOGO.slice(0, 6).map((n) => `<span class="tag">${esc(n.npc || n.titulo)} · ${esc(n.tipoAcao || n.acao || 'contato')}</span>`).join('')}</div>
+  </div>`;
+
+  return `<div class="bl"><h4>${esc(ROTULO_CAT[cat] || cat)}</h4>${linhas}</div>`;
     }).join('');
     return topo + blocos;
   }
@@ -121,6 +129,11 @@ export function renderizarPainelMissoes(save, aba, { capParalela = 1, st = {} } 
     <div class="ln">${acaoDe(sel)}</div>
   </div>` : '<div class="bl"><p class="mut">Nenhuma missão paralela corresponde ao filtro selecionado.</p></div>';
 
+  const npcsHtml = `<div class="bl" style="margin-top:8px">
+    <b>🧭 Missões de NPC da Campanha (${MISSOES_CAMPANHA_NPC_CATALOGO.length})</b>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${MISSOES_CAMPANHA_NPC_CATALOGO.slice(0, 6).map((n) => `<span class="tag">${esc(n.npc || n.titulo)} · ${esc(n.tipoAcao || n.acao || 'contato')}</span>`).join('')}</div>
+  </div>`;
+
   return `<div class="bl">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
       <b>📜 Missões Paralelas · Capítulo ${capParalela}</b>
@@ -132,7 +145,7 @@ export function renderizarPainelMissoes(save, aba, { capParalela = 1, st = {} } 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;align-items:start">
     <div class="bl" style="max-height:320px;overflow-y:auto;margin-bottom:0">${itensLista || '<p class="mut">Sem missões neste filtro.</p>'}</div>
     ${detalheHtml}
-  </div>`;
+  </div>${npcsHtml}`;
 }
 
 export function tratarCliqueMissoes(d, { save, salvar, mostrarToast, render, tela, batalhaBloqueando, aliadosDoSave, setCapParalela, capParalela, st = {} }) {
@@ -183,6 +196,11 @@ export function tratarCliqueMissoes(d, { save, salvar, mostrarToast, render, tel
     return true;
   }
   if (d.misParAvancar) {
+    if (d.distanciaPx != null && !validarContatoInteracao({ distanciaPx: Number(d.distanciaPx) })) {
+      mostrarToast('Aproxime-se do NPC/objeto para interagir.');
+      return true;
+    }
+    if (d.acaoParalela) registrarAcaoParalela(save, d.acaoParalela, 1);
     const r = avancarEtapaParalela(save, d.misParAvancar);
     if (r.ok) {
       salvar();
@@ -201,7 +219,7 @@ export function tratarCliqueMissoes(d, { save, salvar, mostrarToast, render, tel
     tela.abrir({
       titulo: `Missão · ${p.titulo}`,
       sub: etapa.texto || 'Batalha de missão paralela',
-      arena: `assets/confusion/interface/estrategia/reinos/${capPad}/arena-chefe.webp`,
+      arena: p.capitulo === 1 ? 'assets/confusion/interface/feedback-rodada/cenario-missao-capitulo1.png' : `assets/confusion/interface/estrategia/reinos/${capPad}/arena-chefe.webp`,
       aliados: aliadosDoSave(),
       inimigos: etapa.inimigos || [['Brumacervo', Math.max(5, p.capitulo * 12), p.recompensa?.reliquiaElemento || 'planta', {}]],
       ritmo: 420,
