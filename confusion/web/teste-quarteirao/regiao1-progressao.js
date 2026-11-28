@@ -1,10 +1,30 @@
-// Progressão sem teto (Domador e Oníricos). Até o nível 20 a curva é idêntica à do núcleo, então os saves antigos ficam no mesmo nível.
-// Depois do 20 a curva continua crescendo de forma linear, sem limite. O nível 300 é a referência do último andar da Torre.
-export const xpPara = (n) => 30 + 10 * n;                                   // XP entre o nível n e o seguinte
-export const xpTotal = (n) => (n <= 1 ? 0 : 30 * (n - 1) + 5 * (n - 1) * n);  // soma fechada de xpPara(1..n-1)
-export function nivelDe(xp) {                                               // inverso de xpTotal (sem laço longo)
-  const x = Math.max(0, xp || 0); let n = Math.max(1, Math.floor((-25 + Math.sqrt(625 + 20 * x)) / 10) + 1);
-  while (xpTotal(n + 1) <= x) n++; while (n > 1 && xpTotal(n) > x) n--; return n;
+// Progressão sem teto (Domador e Oníricos). Até o nível 20 a curva é idêntica à do núcleo (saves antigos no mesmo nível).
+// A partir do nível 21 cresce de forma quadrática (+8*(n-20)^2) para evitar saltos rápidos (50 níveis em 10 min) e manter 150+ lento.
+export const xpPara = (n) => {
+  const lv = Math.max(1, Math.floor(Number(n) || 1));
+  if (lv <= 20) return 30 + 10 * lv;
+  const k = lv - 20;
+  return 30 + 10 * lv + 8 * k * k;
+};
+export function xpTotal(n) {
+  const lv = Math.max(1, Math.floor(Number(n) || 1));
+  if (lv <= 1) return 0;
+  const linear = 30 * (lv - 1) + 5 * (lv - 1) * lv;
+  if (lv <= 21) return linear;
+  const m = lv - 21; // soma de 8 * k^2 para k = 1..m
+  return linear + (8 * m * (m + 1) * (2 * m + 1)) / 6;
+}
+export function nivelDe(xp) {                                               // inverso exato de xpTotal via busca binária
+  const x = Math.max(0, Number(xp) || 0);
+  let lo = 1;
+  let hi = 1;
+  while (xpTotal(hi) <= x) hi *= 2;
+  while (lo + 1 < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (xpTotal(mid) <= x) lo = mid;
+    else hi = mid;
+  }
+  return lo;
 }
 // Soma XP preservando o excedente: sobe quantos níveis couberem e guarda o resto
 export function aplicarXp(obj, xp) {

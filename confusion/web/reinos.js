@@ -40,7 +40,7 @@ export const REINOS = {
     linhagens: [
       // 5 nativas (ilustradas ou previstas no REINOS.md)
       L('Melifalcão', 'voador', 'nativa'),
-      L('Lavândria', 'planta', 'nativa'),
+      L('Lavândria', 'inseto', 'nativa'),
       L('Calquélon', 'pedra', 'nativa'),
       L('Vesprata', 'aco', 'nativa'),
       L('Colmeiro', 'inseto', 'nativa'),

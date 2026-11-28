@@ -17,6 +17,8 @@ import {
 import { registrarMarco } from './regiao1-missoes-regras.js';
 import { aplicarXp } from './regiao1-progressao.js';
 import { membrosFormacao, expDe } from './regiao1-exp-regras.js';
+import { adicionarFragmentoSonho } from './regiao1-regras-sonho.js';
+import { hwDe, docesGraduaisAndar, talvezDoce } from './regiao1-halloween-regras.js';
 import { LINHAGENS_REINOS } from './regiao1-kits-reinos.js';
 import { FORMAS_LINHAGENS_REINOS } from '../formas-reinos.js';
 import { LINHAS, ELEMENTO_DA_ESPECIE } from '../species.js';
@@ -36,14 +38,21 @@ export {
   saldoEssencia,
   adicionarEssencia,
   consumirEssencia,
+  docesGraduaisAndar,
 };
 
 export const TORRES_CFG = {
-  maxAndaresElemental: 50,
+  maxAndaresElemental: 100,
   treinosDiariosMax: 3,
   energiaTreinoDiario: 0,
-  maxAndaresUnica: 30,
+  maxAndaresUnica: 100,
   energiaTorreUnica: 0,
+  diamantesPorAndar: 10,
+  marcoIntervalo: 10,
+  marcoTicketsEvento: 3,
+  ticketsDiariosLimite: 10,
+  precoTicketDiamantes: 100,
+  xpMaxFracaoCampanha: 0.10,
   custoPoPorFragmento: 5,
   fragmentosParaArma: 10,
   diaMs: 86_400_000,
@@ -51,18 +60,24 @@ export const TORRES_CFG = {
 
 export function nivelAndarTorreElemental(andar) {
   const a = Math.max(1, Math.min(TORRES_CFG.maxAndaresElemental, Math.floor(Number(andar) || 1)));
-  return Math.round(5 + a * 1.9);
+  return Math.round(5 + (a - 1) * 1.95);
 }
 
 export function nivelAndarTorreUnica(andar) {
   const a = Math.max(1, Math.min(TORRES_CFG.maxAndaresUnica, Math.floor(Number(andar) || 1)));
-  return Math.round(60 + ((a - 1) * 60) / (TORRES_CFG.maxAndaresUnica - 1));
+  return Math.round(60 + ((a - 1) * 140) / (TORRES_CFG.maxAndaresUnica - 1));
 }
 
 export function essenciaDoAndarElemental(parEssencia, andar) {
-  if (andar <= 15) return { par: parEssencia, tamanho: 'menor', qtd: 3 };
-  if (andar <= 35) return { par: parEssencia, tamanho: 'media', qtd: 2 };
+  if (andar <= 30) return { par: parEssencia, tamanho: 'menor', qtd: 3 };
+  if (andar <= 70) return { par: parEssencia, tamanho: 'media', qtd: 2 };
   return { par: parEssencia, tamanho: 'maior', qtd: 1 };
+}
+
+export function xpAndarTorre(andar) {
+  // No máximo 10% do XP da Campanha Mini / Idle
+  const a = Math.max(1, Math.floor(Number(andar) || 1));
+  return Math.max(5, Math.round(8 + a * 0.7));
 }
 
 function energiaDoAndarElemental() {
@@ -183,6 +198,10 @@ export const TORRES_ELEMENTAIS_CATALOGO = DEF_ELEMENTAIS.map((def) => ({
 }));
 
 export const TORRES_ELEMENTAIS_POR_ID = Object.fromEntries(TORRES_ELEMENTAIS_CATALOGO.map((t) => [t.id, t]));
+export const TORRES_POR_ELEMENTO = Object.fromEntries(
+  TORRES_ELEMENTAIS_CATALOGO.flatMap((t) => t.elementos.map((el) => [el, t])),
+);
+export const torreDoElemento = (el) => TORRES_POR_ELEMENTO[String(el || '').toLowerCase()] || null;
 
 // Taxas oficiais de Essência por Torre Elemental (documentadas para UI e relatório)
 export const TAXAS_ESSENCIA_TORRES = TORRES_ELEMENTAIS_CATALOGO.map((t) => ({
@@ -191,6 +210,9 @@ export const TAXAS_ESSENCIA_TORRES = TORRES_ELEMENTAIS_CATALOGO.map((t) => ({
   elementos: [...t.elementos],
   parEssencia: t.parEssencia,
   essenciaNome: ESSENCIAS_PARES[t.parEssencia]?.nome || t.parEssencia,
+  andares1a30: { tamanho: 'menor', qtd: 3, taxa: 1.0 },
+  andares31a70: { tamanho: 'media', qtd: 2, taxa: 1.0 },
+  andares71a100: { tamanho: 'maior', qtd: 1, taxa: 1.0 },
   andares1a15: { tamanho: 'menor', qtd: 3, taxa: 1.0 },
   andares16a35: { tamanho: 'media', qtd: 2, taxa: 1.0 },
   andares36a50: { tamanho: 'maior', qtd: 1, taxa: 1.0 },
@@ -283,8 +305,36 @@ export function torresDe(save) {
   t.unicasDiarias ||= {};
   t.sazonais ||= {};
   t.recompensasUnicas ||= {};
+  t.tickets ||= {};
+  t.comprasTickets ||= {};
   t.batalhasPagas ||= {};
   return t;
+}
+
+export function saldoTicketTorre(save, torreId) {
+  return Math.max(0, Math.floor(Number(torresDe(save).tickets?.[torreId]) || 0));
+}
+
+export function comprarTicketTorre(save, torreId, qtd = 1, { agoraMs = Date.now() } = {}) {
+  const n = Math.max(1, Math.floor(Number(qtd) || 1));
+  if (!torreId) return { ok: false, motivo: 'Torre inválida.' };
+  const t = torresDe(save);
+  const dia = Math.floor(agoraMs / TORRES_CFG.diaMs);
+  const reg = t.comprasTickets[torreId] || { dia, qtd: 0 };
+  if (reg.dia !== dia) { reg.dia = dia; reg.qtd = 0; }
+  if (reg.qtd + n > TORRES_CFG.ticketsDiariosLimite) {
+    return { ok: false, limiteDiario: true, restantesHoje: Math.max(0, TORRES_CFG.ticketsDiariosLimite - reg.qtd), motivo: `Limite de ${TORRES_CFG.ticketsDiariosLimite} tickets por dia atingido.` };
+  }
+  const custo = n * TORRES_CFG.precoTicketDiamantes;
+  save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+  if ((save.recompensas.diamantes || 0) < custo) {
+    return { ok: false, motivo: `Faltam diamantes (${custo}💎).` };
+  }
+  save.recompensas.diamantes -= custo;
+  reg.qtd += n;
+  t.comprasTickets[torreId] = reg;
+  t.tickets[torreId] = saldoTicketTorre(save, torreId) + n;
+  return { ok: true, torreId, comprados: n, custoDiamantes: custo, saldo: t.tickets[torreId], restantesHoje: TORRES_CFG.ticketsDiariosLimite - reg.qtd };
 }
 
 function creditarXpFormacaoTorre(save, xp) {
@@ -341,7 +391,16 @@ export function iniciarAndarTorreElemental(save, torreId, andar, { agoraMs = Dat
   const andarDef = torre?.andares?.[andar - 1];
   if (!andarDef) return { ok: false, motivo: 'Andar de Torre Elemental inválido.' };
   if (!andarTorreElementalDesbloqueado(save, torreId, andar)) return { ok: false, motivo: 'Andar ainda bloqueado.' };
-  const jaVencido = Boolean(torresDe(save).elementais[torreId]?.pagas?.[String(andar)]);
+  const t = torresDe(save);
+  const jaVencido = Boolean(t.elementais[torreId]?.pagas?.[String(andar)]);
+  let gastouTicket = false;
+  if (jaVencido) {
+    if (saldoTicketTorre(save, torreId) < 1) {
+      return { ok: false, precisaTicket: true, motivo: 'Repetir andar já vencido exige 1 Ticket desta torre.' };
+    }
+    t.tickets[torreId] -= 1;
+    gastouTicket = true;
+  }
   const custo = jaVencido ? andarDef.energia : 0; // DESIGN §8: Torres (1ª vitória) não gastam energia
   const g = custo > 0 ? gastarEnergia(save, custo, agoraMs) : { ok: true, atual: energiaDe(save, agoraMs).atual };
   if (!g.ok) return g;
@@ -351,11 +410,13 @@ export function iniciarAndarTorreElemental(save, torreId, andar, { agoraMs = Dat
     torre,
     andar: andarDef,
     custoEnergia: custo,
+    gastouTicket,
+    ticketsRestantes: saldoTicketTorre(save, torreId),
     energiaRestante: g.atual,
   };
 }
 
-export function concluirAndarTorreElemental(save, torreId, andar, resultado = { venceu: true }, { batalhaId = null, agoraMs = Date.now() } = {}) {
+export function concluirAndarTorreElemental(save, torreId, andar, resultado = { venceu: true }, { batalhaId = null, agoraMs = Date.now(), rng = Math.random } = {}) {
   const torre = TORRES_ELEMENTAIS_POR_ID[torreId];
   const andarDef = torre?.andares?.[andar - 1];
   if (!andarDef) return { ok: false, motivo: 'Andar inválido.' };
@@ -363,7 +424,7 @@ export function concluirAndarTorreElemental(save, torreId, andar, resultado = { 
   const t = torresDe(save);
   if (batalhaId && t.batalhasPagas[batalhaId]) return { ok: true, jaPago: true, venceu: false, premios: {} };
 
-  const xpBase = 45 + andar * 12;
+  const xpBase = xpAndarTorre(andar);
   const venceu = Boolean(resultado?.venceu || resultado?.fim === 'vitoria');
   if (!venceu) {
     const xpDerrota = creditarXpFormacaoTorre(save, Math.round(xpBase * 0.3));
@@ -375,23 +436,45 @@ export function concluirAndarTorreElemental(save, torreId, andar, resultado = { 
   est.maiorAndar = Math.max(est.maiorAndar || 0, andar);
   est.pagas ||= {};
   const chave = String(andar);
-  const premios = { ouro: 0, diamantes: 0, essencia: null, xpFormacao: 0 };
+  const premios = { ouro: 0, diamantes: 0, doces: 0, ticketsEvento: 0, essencia: null, fragmentosSonho: {}, xpFormacao: 0 };
   save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
 
   if (!est.pagas[chave]) {
     est.pagas[chave] = true;
     const p1 = andarDef.recompensaPrimeiraVitoria;
-    premios.diamantes = p1.diamantes;
+    premios.diamantes = TORRES_CFG.diamantesPorAndar;
     premios.ouro = p1.ouro;
     premios.essencia = { ...p1.essencia };
-    save.recompensas.diamantes += p1.diamantes;
+    save.recompensas.diamantes += premios.diamantes;
     save.recompensas.gold += p1.ouro;
     adicionarEssencia(save, p1.essencia.par, p1.essencia.tamanho, p1.essencia.qtd);
+    const doces = docesGraduaisAndar(andar, torre.totalAndares);
+    hwDe(save).doces += doces;
+    premios.doces = doces;
+    if (andar % TORRES_CFG.marcoIntervalo === 0) {
+      hwDe(save).tickets += TORRES_CFG.marcoTicketsEvento;
+      premios.ticketsEvento = TORRES_CFG.marcoTicketsEvento;
+    }
     premios.xpFormacao = creditarXpFormacaoTorre(save, xpBase);
   } else {
     premios.ouro = 100;
     save.recompensas.gold += 100;
     premios.xpFormacao = creditarXpFormacaoTorre(save, Math.round(xpBase * 0.5));
+  }
+
+  // Drop real de Fragmentos de Evolução (Sonho) e Doces dos inimigos derrotados da torre (+1 fragmento garantido em chefes múltiplos de 10)
+  for (const inim of andarDef.inimigos || []) {
+    const el = inim?.[2] || torre.elementos[0];
+    if (rng() < 0.01) {
+      adicionarFragmentoSonho(save, el, 1);
+      premios.fragmentosSonho[el] = (premios.fragmentosSonho[el] || 0) + 1;
+    }
+    premios.doces += talvezDoce(save, 'torre', rng, new Date(agoraMs));
+  }
+  if (andar % 10 === 0) {
+    const elChefe = torre.elementos[(Math.ceil(andar / 10) - 1) % torre.elementos.length];
+    adicionarFragmentoSonho(save, elChefe, 1);
+    premios.fragmentosSonho[elChefe] = (premios.fragmentosSonho[elChefe] || 0) + 1;
   }
 
   if (batalhaId) marcarBatalhaTorrePaga(t, batalhaId);
@@ -456,26 +539,49 @@ export function iniciarAndarTorreUnica(save, torreId, andar, { agoraMs = Date.no
   const andarDef = torre?.andares?.[andar - 1];
   if (!andarDef) return { ok: false, motivo: 'Andar da Torre Única inválido.' };
   if (!andarTorreUnicaDesbloqueado(save, torreId, andar)) return { ok: false, motivo: 'Andar ainda bloqueado.' };
-  if (!podeFazerTorreUnicaHoje(save, torreId, andar, agoraMs)) {
-    return { ok: false, limiteDiario: true, motivo: 'Este andar da Torre Única já foi concluído hoje (1×/dia por andar).' };
+  const t = torresDe(save);
+  const jaVencido = Boolean(t.unicas[torreId]?.pagas?.[String(andar)]);
+  const feitoHoje = !podeFazerTorreUnicaHoje(save, torreId, andar, agoraMs);
+  let gastouTicket = false;
+  if (jaVencido || feitoHoje) {
+    if (saldoTicketTorre(save, torreId) < 1) {
+      return {
+        ok: false,
+        precisaTicket: true,
+        limiteDiario: feitoHoje,
+        motivo: feitoHoje
+          ? 'Este andar da Torre Única já foi concluído hoje. Use 1 Ticket desta torre para repetir.'
+          : 'Repetir andar já vencido exige 1 Ticket desta torre.',
+      };
+    }
+    t.tickets[torreId] -= 1;
+    gastouTicket = true;
   }
   const g = gastarEnergia(save, andarDef.energia, agoraMs);
   if (!g.ok) return g;
-  return { ok: true, batalhaId: batalhaId || `tu_${torreId}_${andar}_${agoraMs}`, torre, andar: andarDef, energiaRestante: g.atual };
+  return {
+    ok: true,
+    batalhaId: batalhaId || `tu_${torreId}_${andar}_${agoraMs}`,
+    torre,
+    andar: andarDef,
+    gastouTicket,
+    ticketsRestantes: saldoTicketTorre(save, torreId),
+    energiaRestante: g.atual,
+  };
 }
 
-export function concluirAndarTorreUnica(save, torreId, andar, resultado = { venceu: true }, { agoraMs = Date.now(), batalhaId = null, rng = Math.random } = {}) {
+export function concluirAndarTorreUnica(save, torreId, andar, resultado = { venceu: true }, { agoraMs = Date.now(), batalhaId = null, rng = Math.random, comTicket = false } = {}) {
   const torre = TORRES_UNICAS_POR_ID[torreId];
   const andarDef = torre?.andares?.[andar - 1];
   if (!andarDef) return { ok: false, motivo: 'Andar da Torre Única inválido.' };
   if (!andarTorreUnicaDesbloqueado(save, torreId, andar)) return { ok: false, motivo: 'Andar ainda bloqueado.' };
   const t = torresDe(save);
   if (batalhaId && t.batalhasPagas[batalhaId]) return { ok: true, jaPago: true, venceu: false, premios: {} };
-  if (!podeFazerTorreUnicaHoje(save, torreId, andar, agoraMs)) {
-    return { ok: false, limiteDiario: true, motivo: 'Andar já concluído hoje (1×/dia por andar).' };
+  if (!comTicket && !podeFazerTorreUnicaHoje(save, torreId, andar, agoraMs)) {
+    return { ok: false, limiteDiario: true, motivo: 'Andar já concluído hoje (use 1 Ticket da torre para repetir).' };
   }
 
-  const xpBase = 80 + andar * 15;
+  const xpBase = xpAndarTorre(andar);
   const venceu = Boolean(resultado?.venceu || resultado?.fim === 'vitoria');
   if (!venceu) {
     const xpDerrota = creditarXpFormacaoTorre(save, Math.round(xpBase * 0.3));
@@ -484,7 +590,11 @@ export function concluirAndarTorreUnica(save, torreId, andar, resultado = { venc
   }
 
   const dia = Math.floor(agoraMs / TORRES_CFG.diaMs);
-  t.unicas[torreId] = { maiorAndar: Math.max(Number(t.unicas[torreId]?.maiorAndar) || 0, andar) };
+  const estUnica = (t.unicas[torreId] ||= { maiorAndar: 0, pagas: {} });
+  estUnica.pagas ||= {};
+  const primeiraVezUnica = !estUnica.pagas[String(andar)];
+  estUnica.maiorAndar = Math.max(Number(estUnica.maiorAndar) || 0, andar);
+  estUnica.pagas[String(andar)] = true;
   (t.unicasDiarias[torreId] ||= {})[String(andar)] = dia;
 
   const pool = torre.poolLinhagens;
@@ -505,11 +615,25 @@ export function concluirAndarTorreUnica(save, torreId, andar, resultado = { venc
     xpFormacao: creditarXpFormacaoTorre(save, xpBase),
     ouro: ouroGanho,
     diamantes: 0,
+    doces: 0,
+    ticketsEvento: 0,
     poReforco: 0,
     essencia: null,
     escolhaFragmento: 0,
     recompensaTorre: { id: rp.id, nome: rp.nome, qtd: 1 },
   };
+
+  if (primeiraVezUnica) {
+    save.recompensas.diamantes += TORRES_CFG.diamantesPorAndar;
+    premios.diamantes += TORRES_CFG.diamantesPorAndar;
+    const doces = docesGraduaisAndar(andar, torre.totalAndares);
+    hwDe(save).doces += doces;
+    premios.doces = doces;
+    if (andar % TORRES_CFG.marcoIntervalo === 0) {
+      hwDe(save).tickets += TORRES_CFG.marcoTicketsEvento;
+      premios.ticketsEvento = TORRES_CFG.marcoTicketsEvento;
+    }
+  }
 
   if (possui) {
     armas.fragmentos[linhagemSorteada] = (armas.fragmentos[linhagemSorteada] || 0) + 1;
@@ -521,7 +645,7 @@ export function concluirAndarTorreUnica(save, torreId, andar, resultado = { venc
 
   // Bônus específico por Torre Única (Ascensão ≠ Abismo ≠ Eclipse)
   if (rp.essenciaPar) {
-    const tam = andar <= 10 ? 'menor' : andar <= 20 ? 'media' : 'maior';
+    const tam = andar <= 30 ? 'menor' : andar <= 70 ? 'media' : 'maior';
     adicionarEssencia(save, rp.essenciaPar, tam, 1);
     premios.essencia = { par: rp.essenciaPar, tamanho: tam, qtd: 1 };
   }
@@ -533,7 +657,7 @@ export function concluirAndarTorreUnica(save, torreId, andar, resultado = { venc
   }
   if (rp.diamantes) {
     save.recompensas.diamantes += rp.diamantes;
-    premios.diamantes = rp.diamantes;
+    premios.diamantes += rp.diamantes;
   }
   if (rp.escolhaACadaAndares && andar % rp.escolhaACadaAndares === 0) {
     armas.escolhasPendentes += 1;
@@ -569,27 +693,27 @@ export function resgatarEscolhaFragmentoUnico(save, especieOuLinhagem) {
   return { ok: true, linhagem, saldoFragmentos: armas.fragmentos[linhagem], escolhasRestantes: armas.escolhasPendentes };
 }
 
-// ---- Torres Sazonais: Quinzenal (15 dias) e Mensal (30 dias) ----
+// ---- Torres Sazonais: Quinzenal (15 dias) e Mensal (30 dias) — 100 andares cada ----
 export const TORRES_SAZONAIS_CFG = {
   quinzenal: {
     id: 'quinzenal',
     nome: 'Torre Quinzenal da Convergência',
     cicloDias: 15,
     cicloMs: 15 * TORRES_CFG.diaMs,
-    totalAndares: 20,
+    totalAndares: 100,
     nivelBase: 15,
-    nivelPorAndar: 4,
-    desc: 'Reinicia a cada 15 dias. Foco em Tickets Permanentes, Diamantes, Ouro e Essências.',
+    nivelPorAndar: 2,
+    desc: 'Reinicia a cada 15 dias (100 andares). Foco em Tickets Permanentes, 10 💎/andar, Doces graduais e Essências.',
   },
   mensal: {
     id: 'mensal',
     nome: 'Torre Mensal do Zênite',
     cicloDias: 30,
     cicloMs: 30 * TORRES_CFG.diaMs,
-    totalAndares: 30,
+    totalAndares: 100,
     nivelBase: 25,
-    nivelPorAndar: 5,
-    desc: 'Reinicia a cada 30 dias. Foco em Tickets Semanais/Especiais, Tickets Permanentes, Diamantes e Escolhas de Arma Única.',
+    nivelPorAndar: 2.5,
+    desc: 'Reinicia a cada 30 dias (100 andares). Foco em Tickets de Evento, 10 💎/andar, Doces graduais e Escolhas de Arma Única.',
   },
 };
 
@@ -597,8 +721,8 @@ export const TORRES_SAZONAIS_CATALOGO = Object.values(TORRES_SAZONAIS_CFG).map((
   ...cfg,
   andares: Array.from({ length: cfg.totalAndares }, (_, idx) => {
     const andar = idx + 1;
-    const nivel = cfg.nivelBase + (andar - 1) * cfg.nivelPorAndar;
-    const chefe = andar % 5 === 0;
+    const nivel = Math.round(cfg.nivelBase + (andar - 1) * cfg.nivelPorAndar);
+    const chefe = andar % 10 === 0;
     const isMensal = cfg.id === 'mensal';
     return {
       andar,
@@ -607,11 +731,13 @@ export const TORRES_SAZONAIS_CATALOGO = Object.values(TORRES_SAZONAIS_CFG).map((
       energia: 0,
       recompensa: {
         ouro: (isMensal ? 500 : 350) + andar * (isMensal ? 90 : 60),
-        diamantes: chefe ? (isMensal ? 80 : 50) : (isMensal ? 25 : 15),
+        diamantes: TORRES_CFG.diamantesPorAndar,
+        doces: docesGraduaisAndar(andar, cfg.totalAndares),
+        ticketsEvento: chefe ? TORRES_CFG.marcoTicketsEvento : 0,
         ticketsPermanentes: chefe ? (isMensal ? 2 : 1) : 0,
-        ticketsSemanais: isMensal && andar % 10 === 0 ? 2 : 0,
+        ticketsSemanais: isMensal && chefe ? 2 : 0,
         escolhaFragmento: isMensal && andar === cfg.totalAndares ? 1 : 0,
-        xpFormacao: (isMensal ? 90 : 65) + andar * 14,
+        xpFormacao: xpAndarTorre(andar),
       },
     };
   }),
@@ -648,12 +774,24 @@ export function iniciarAndarTorreSazonal(save, torreId, andar, { agoraMs = Date.
   const andarDef = est?.andares?.[andar - 1];
   if (!est || !andarDef) return { ok: false, motivo: 'Andar da Torre Sazonal inválido.' };
   if (andar > 1 && andar > est.maiorAndar + 1) return { ok: false, motivo: 'Andar ainda bloqueado neste ciclo.' };
+  const t = torresDe(save);
+  const jaVencido = Boolean(est.pagas?.[String(andar)]);
+  let gastouTicket = false;
+  if (jaVencido) {
+    if (saldoTicketTorre(save, torreId) < 1) {
+      return { ok: false, precisaTicket: true, motivo: 'Repetir andar já vencido exige 1 Ticket desta torre.' };
+    }
+    t.tickets[torreId] -= 1;
+    gastouTicket = true;
+  }
   return {
     ok: true,
     batalhaId: batalhaId || `ts_${torreId}_c${est.ciclo}_a${andar}_${agoraMs}`,
     torre: est,
     andar: andarDef,
     custoEnergia: 0,
+    gastouTicket,
+    ticketsRestantes: saldoTicketTorre(save, torreId),
   };
 }
 
@@ -676,7 +814,7 @@ export function concluirAndarTorreSazonal(save, torreId, andar, resultado = { ve
   const slot = t.sazonais[torreId];
   slot.maiorAndar = Math.max(slot.maiorAndar || 0, andar);
   const chave = String(andar);
-  const premios = { ouro: 0, diamantes: 0, ticketsPermanentes: 0, ticketsSemanais: 0, escolhaFragmento: 0, xpFormacao: 0 };
+  const premios = { ouro: 0, diamantes: 0, doces: 0, ticketsEvento: 0, ticketsPermanentes: 0, ticketsSemanais: 0, escolhaFragmento: 0, xpFormacao: 0 };
   save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
 
   if (!slot.pagas[chave]) {
@@ -684,11 +822,15 @@ export function concluirAndarTorreSazonal(save, torreId, andar, resultado = { ve
     const r = andarDef.recompensa;
     premios.ouro = r.ouro;
     premios.diamantes = r.diamantes;
+    premios.doces = r.doces;
+    premios.ticketsEvento = r.ticketsEvento;
     premios.ticketsPermanentes = r.ticketsPermanentes;
     premios.ticketsSemanais = r.ticketsSemanais;
     premios.escolhaFragmento = r.escolhaFragmento;
     save.recompensas.gold += r.ouro;
     save.recompensas.diamantes += r.diamantes;
+    hwDe(save).doces += r.doces;
+    if (r.ticketsEvento) hwDe(save).tickets += r.ticketsEvento;
     const e = expDe(save);
     if (r.ticketsPermanentes) e.tickets = (e.tickets || 0) + r.ticketsPermanentes;
     if (r.ticketsSemanais) e.ticketsSemanais = (e.ticketsSemanais || 0) + r.ticketsSemanais;

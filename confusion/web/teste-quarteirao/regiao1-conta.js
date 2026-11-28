@@ -52,23 +52,37 @@ export function consumirToastBonusBoasVindas(storage) {
 // ---------- regras puras (testáveis) ----------
 export const vipAtivo = (save, agora = Date.now()) => Boolean(save?.conta?.vipAte && save.conta.vipAte > agora);
 export const diasVip = (save, agora = Date.now()) => (vipAtivo(save, agora) ? Math.ceil((save.conta.vipAte - agora) / DIA) : 0);
+// Bônus de boas-vindas (20.000💎 + 10d VIP) para TODOS os jogadores (contas novas ou antigas), pago uma única vez.
+export function garantirBonusBoasVindasTodos(save, agora = Date.now()) {
+  if (!save || typeof save !== 'object') return { creditado: false, diamantes: 0 };
+  save.conta = save.conta || {};
+  save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+  if (save.conta.bonusEm) return { creditado: false, diamantes: save.recompensas.diamantes || 0 };
+  save.conta.bonusEm = agora;
+  save.conta.vipAte = Math.max(Number(save.conta.vipAte) || 0, agora) + BOAS_VINDAS.vipDias * DIA;
+  save.recompensas.diamantes = (Number(save.recompensas.diamantes) || 0) + BOAS_VINDAS.diamantes;
+  return { creditado: true, diamantes: save.recompensas.diamantes, vipAte: save.conta.vipAte };
+}
+
 // Decisão pura de elegibilidade ao bônus de boas-vindas (20.000💎 + 10d VIP) preservando saves existentes.
 export function decidirEntradaConta({ remoto = null, local = null, userId = null } = {}) {
   if (remoto?.regiao1) {
     const tRemoto = remoto.regiao1.idle?.ultimoTickMs || 0;
     const tLocal = local?.idle?.ultimoTickMs || 0;
     const mesmoUid = Boolean(userId && local?.conta?.uid === userId);
-    return { acao: !mesmoUid || tRemoto > tLocal + 2000 ? 'usar-remoto' : 'liberar', novo: false };
+    const jaPremiada = Boolean(remoto.regiao1?.conta?.bonusEm || remoto?.conta?.bonusEm);
+    return { acao: !mesmoUid || tRemoto > tLocal + 2000 ? 'usar-remoto' : 'liberar', novo: false, elegivelBonus: !jaPremiada };
   }
   const jaPremiada = Boolean(remoto?.conta?.bonusEm || (userId && local?.conta?.uid === userId && local?.conta?.bonusEm));
   const outroUidLocal = Boolean(userId && local?.conta?.uid && local.conta.uid !== userId);
-  return { acao: 'preparar', novo: !jaPremiada, resetarLocal: outroUidLocal };
+  return { acao: 'preparar', novo: !jaPremiada, elegivelBonus: !jaPremiada, resetarLocal: outroUidLocal };
 }
 
-// Aplica o inicial e o bônus numa conta nova (substitui o provisório para que a conta nova receba apenas o inicial escolhido)
+// Aplica o inicial e o bônus numa conta (nova ou antiga ainda sem bônus), uma única vez.
 export function prepararContaNova(save, { userId, inicial, agora = Date.now(), novo = true }) {
   const lin = INICIAIS.find((l) => l.especie === inicial || l.linha === inicial || l.id === inicial) || INICIAIS[0];
   aplicarInicialContaNova(save, { userId, inicial: lin.especie, agora, novo });
+  garantirBonusBoasVindasTodos(save, agora);
   const ini = save.idle?.equipe?.find((m) => m?.inicial);
   if (ini && !ini.estrelas) ini.estrelas = estrelasIniciais('inicial');
   return save;
@@ -82,12 +96,12 @@ export function saveNovo(s) {
   if ((s.recompensas?.xp || 0) > 0 || (s.recompensas?.gold || 0) > 0) return false;
   return !Object.values(s.quests || {}).includes('concluida');
 }
-// Entrada sem conta: grava o inicial escolhido (sem o bônus de conta nova) e não repete a escolha nas próximas entradas
+// Entrada sem conta: grava o inicial escolhido e garante o bônus único de 20.000💎 + 10d VIP para todos
 export function prepararInicialLocal(s, inicial, agora = Date.now()) {
-  const conta = { ...(s.conta || {}) }, diamantes = s.recompensas?.diamantes || 0;
+  const conta = { ...(s.conta || {}) };
   prepararContaNova(s, { userId: null, inicial, agora, novo: true });
   s.conta.uid = conta.uid ?? null;
-  if (!conta.bonusEm) { delete s.conta.bonusEm; delete s.conta.vipAte; s.recompensas.diamantes = diamantes; }
+  garantirBonusBoasVindasTodos(s, agora);
   return s;
 }
 const REFUGIO_PENDENTE = 'cw-refugio-primeiro';
@@ -168,8 +182,26 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
       cloudExtra = remoto && typeof remoto === 'object' ? { ...remoto } : {}; delete cloudExtra.regiao1;
       const local = getSave();
       const dec = decidirEntradaConta({ remoto, local, userId: u.id });
-      if (dec.acao === 'usar-remoto') { trocarSave(remoto.regiao1); return; }
-      if (dec.acao === 'liberar') { logado = true; liberarJogo(); return; }
+      if (dec.acao === 'usar-remoto') {
+        const b = garantirBonusBoasVindasTodos(remoto.regiao1);
+        if (b.creditado) {
+          try { sessionStorage.setItem(BONUS_TOAST_PENDENTE, '1'); } catch {}
+          mostrarToast?.(MENSAGEM_BONUS_BOAS_VINDAS, 6000);
+        }
+        trocarSave(remoto.regiao1);
+        return;
+      }
+      if (dec.acao === 'liberar') {
+        const b = garantirBonusBoasVindasTodos(local);
+        if (b.creditado) {
+          salvar();
+          try { sessionStorage.setItem(BONUS_TOAST_PENDENTE, '1'); } catch {}
+          mostrarToast?.(MENSAGEM_BONUS_BOAS_VINDAS, 6000);
+        }
+        logado = true;
+        liberarJogo();
+        return;
+      }
       const inicial = (!dec.resetarLocal && local?.conta?.inicial) || u.user_metadata?.inicial || localStorage.getItem(PENDENTE) || escolhido;
       if (!inicial) { aba = 'criar'; escolhido = null; gate.querySelector('.cg').innerHTML = `<h1>Escolha seu inicial</h1><p class="sub">Ele ocupa a primeira vaga da sua equipe.</p>${cartoes()}<div class="ln"><button class="btn-pri" data-acao="confirmar-inicial">Começar</button></div><p class="msg"></p>`; return; }
       if (dec.resetarLocal) resetarSave();

@@ -53,12 +53,12 @@ test('Torres Elementais: 9 torres × 50 andares cobrindo os 18 elementos (sem No
   assert.equal(cobCal.has('neutro'), false);
   assert.equal(Object.keys(MAPA_DROP_FRAGMENTOS_SONHO).length, 19);
   for (const t of TORRES_ELEMENTAIS_CATALOGO) {
-    assert.equal(t.andares.length, 50);
+    assert.equal(t.andares.length, 100);
     assert.equal(t.andares[9].chefe, true);
-    assert.equal(t.andares[49].chefe, true);
+    assert.equal(t.andares[99].chefe, true);
   }
-  assert.equal(nivelAndarTorreElemental(1), Math.round(5 + 1.9));
-  assert.equal(nivelAndarTorreElemental(50), Math.round(5 + 50 * 1.9));
+  assert.equal(nivelAndarTorreElemental(1), 5);
+  assert.equal(nivelAndarTorreElemental(100), Math.round(5 + 99 * 1.95));
 
   const s = novoSave();
   const t0 = 86_400_000 * 50;
@@ -97,10 +97,10 @@ test('Torres Elementais: 9 torres × 50 andares cobrindo os 18 elementos (sem No
   assert.equal(saldoEssencia(s, 'fogo', 'menor'), 12); // 3 da 1ª + 3*3 treino
 });
 
-test('Torres Únicas: 3×30 andares (60..120), 1×/dia/andar, Pó Único para espécie não possuída e troca 5:1', () => {
+test('Torres Únicas: 3×100 andares (60..200), 1×/dia/andar, Pó Único para espécie não possuída e troca 5:1', () => {
   assert.equal(TORRES_UNICAS_CATALOGO.length, 3);
   assert.equal(nivelAndarTorreUnica(1), 60);
-  assert.equal(nivelAndarTorreUnica(30), 120);
+  assert.equal(nivelAndarTorreUnica(100), 200);
 
   const s = novoSave();
   const t0 = 86_400_000 * 100;
@@ -120,9 +120,10 @@ test('Torres Únicas: 3×30 andares (60..120), 1×/dia/andar, Pó Único para es
   // Não permite repetir o mesmo andar no mesmo dia
   assert.equal(iniciarAndarTorreUnica(s, 'ascensao', 1, { agoraMs: t0 + 3600_000 }).limiteDiario, true);
 
-  // Dia seguinte permite repetir o andar 1 (e sorteando 'ignavor' que o jogador possui em Brasinha)
+  // Dia seguinte permite repetir o andar 1 com 1 Ticket da torre (e sorteando 'ignavor' que o jogador possui em Brasinha)
   const idxIgnavor = pool.indexOf('ignavor');
   const rngIgnavor = () => (idxIgnavor + 0.1) / pool.length;
+  s.idle.torres.tickets = { ...(s.idle.torres.tickets || {}), ascensao: 1 };
   assert.equal(iniciarAndarTorreUnica(s, 'ascensao', 1, { agoraMs: t0 + 86_400_000, batalhaId: 'tu_2' }).ok, true);
   const res2 = concluirAndarTorreUnica(s, 'ascensao', 1, { venceu: true }, { agoraMs: t0 + 86_400_000, batalhaId: 'tu_2', rng: rngIgnavor });
   assert.equal(res2.premios.virouPoUnico, false);

@@ -78,12 +78,12 @@ export const ONDE_CONSEGUIR_ESSENCIAS = Object.fromEntries(
         torreNome,
         elementos: [...par.elementos],
         taxasTorre: {
-          menor: { andares: '1–15', chance: 1.0, qtd: 3 },
-          media: { andares: '16–35', chance: 1.0, qtd: 2 },
-          maior: { andares: '36–50', chance: 1.0, qtd: 1 },
+          menor: { andares: '1–30', chance: 1.0, qtd: 3 },
+          media: { andares: '31–70', chance: 1.0, qtd: 2 },
+          maior: { andares: '71–100', chance: 1.0, qtd: 1 },
         },
         fontes: [
-          { modo: 'Torre Elemental', local: `${torreNome} (Andares 1–50)`, detalhe: '100% garantida: Menor ×3 (andares 1–15), Média ×2 (16–35) e Maior ×1 (36–50); livre de energia.' },
+          { modo: 'Torre Elemental', local: `${torreNome} (Andares 1–100)`, detalhe: '100% garantida: Menor ×3 (andares 1–30), Média ×2 (31–70) e Maior ×1 (71–100); livre de energia.' },
           { modo: 'Campanha Mini', local: 'Chefes de Capítulo, Baús 3★ e Batalha Rápida', detalhe: 'Drop de Essências do par do capítulo.' },
           { modo: 'Missões e Passe', local: 'Marcos, Semanais e Passe Premium', detalhe: 'Pacotes extras de Essências na progressão.' },
         ],

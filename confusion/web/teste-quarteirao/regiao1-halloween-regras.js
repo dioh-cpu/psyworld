@@ -75,17 +75,64 @@ export function evoluirHW(save, idx) {
   if (h.doces < inf.custo) return { ok: false, motivo: `Faltam doces (${inf.custo}🍬).` };
   h.doces -= inf.custo; m.tierHW = inf.para; m.tier = inf.para; m.raridade = inf.para; return { ok: true, ...inf };
 }
-// Drop de doce (só durante o evento). origem: 'abate' (Campanha, Auto-Caça, Caçadas, Torre) ou 'andar'.
-export function talvezDoce(save, origem, rng = Math.random, agora = new Date()) {
-  if (!eventoAtivo(agora)) return 0;
-  const p = origem === 'andar' ? DOCES.chanceAndar : DOCES.chanceAbate;
-  if (rng() < p) { hwDe(save).doces += 1; return 1; } return 0;
+// Chance de drop de doce: 5% normal, 2,5% em Idle/AFK/Auto ON. Com 200% de bônus dobra (2,5%→5%; 5%→10%). Teto de 10% em ambos.
+export function chanceDropDoce({ modo = 'campanha', bonusDropPct = 0 } = {}) {
+  const m = String(modo || 'campanha').toLowerCase();
+  const base = (m === 'idle' || m === 'afk' || m === 'auto') ? DOCES.chanceIdle : DOCES.chanceBase;
+  const b = Math.max(0, Number(bonusDropPct) || 0);
+  const mult = b >= 100 ? b / 100 : 1 + b / 100;
+  return Math.min(DOCES.tetoChance, Number((base * mult).toFixed(6)));
 }
-export function comprarLoja(save, id, aplicar = {}) {
-  const h = hwDe(save), it = LOJA_TORRE.find((x) => x.id === id); if (!it) return { ok: false, motivo: 'Item inexistente.' };
-  if (h.doces < it.custo) return { ok: false, motivo: `Faltam doces (${it.custo}🍬).` };
-  h.doces -= it.custo; h.loja[id] = (h.loja[id] || 0) + 1;
-  if (it.tipo === 'pocao') h.pocoes[id] = (h.pocoes[id] || 0) + 1; else aplicar[it.tipo]?.(it);
+// Drop de doce (1 ou 2 doces por Onírico derrotado em qualquer recurso de batalha).
+export function talvezDoce(save, origem = 'campanha', rng = Math.random, agora = new Date(), { bonusDropPct = 0 } = {}) {
+  if (!eventoAtivo(agora)) return 0;
+  const p = chanceDropDoce({ modo: origem, bonusDropPct });
+  if (rng() < p) {
+    const qtd = rng() < 0.5 ? DOCES.qtdMin : DOCES.qtdMax;
+    hwDe(save).doces += qtd;
+    return qtd;
+  }
+  return 0;
+}
+export function docesGraduaisAndar(n, total = 100) {
+  const a = Math.max(1, Math.min(total, Math.floor(Number(n) || 1)));
+  return Math.max(1, Math.min(20, Math.round(1 + ((a - 1) * 19) / Math.max(1, total - 1))));
+}
+export function comprarLoja(save, id, aplicar = {}, { agoraMs = Date.now() } = {}) {
+  const h = hwDe(save), it = LOJA_TORRE.find((x) => x.id === id);
+  if (!it) return { ok: false, motivo: 'Item inexistente.' };
+  const comprados = Number(h.loja[id]) || 0;
+  if (it.limiteConta && comprados >= it.limiteConta) {
+    return { ok: false, limiteConta: true, motivo: `Limite de ${it.limiteConta} por conta atingido para ${it.nome}.` };
+  }
+  const diaAtual = Math.floor(agoraMs / 86400000);
+  if (it.limiteDiario) {
+    h.lojaDiaria ||= {};
+    const reg = h.lojaDiaria[id] || { dia: diaAtual, qtd: 0 };
+    if (reg.dia !== diaAtual) { reg.dia = diaAtual; reg.qtd = 0; }
+    if (reg.qtd >= it.limiteDiario) {
+      return { ok: false, limiteDiario: true, motivo: `Limite diário de ${it.limiteDiario} atingido hoje.` };
+    }
+    h.lojaDiaria[id] = reg;
+  }
+  const moeda = it.moeda || 'doces';
+  if (moeda === 'diamantes') {
+    save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+    if ((save.recompensas.diamantes || 0) < it.custo) return { ok: false, motivo: `Faltam diamantes (${it.custo}💎).` };
+    save.recompensas.diamantes -= it.custo;
+  } else {
+    if (h.doces < it.custo) return { ok: false, motivo: `Faltam doces (${it.custo}🍬).` };
+    h.doces -= it.custo;
+  }
+  h.loja[id] = comprados + 1;
+  if (it.limiteDiario) h.lojaDiaria[id].qtd += 1;
+  if (it.tipo === 'pocao') h.pocoes[id] = (h.pocoes[id] || 0) + 1;
+  else if (it.tipo === 'ouro') { save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 }; save.recompensas.gold += it.qtd || 50000; }
+  else if (it.tipo === 'buff') { h.buffsAtivos ||= {}; h.buffsAtivos[it.efeito] = { bonusPct: it.bonusPct, ateMs: agoraMs + (it.duracaoMs || 3600000) }; }
+  else if (it.tipo === 'cosmetico') { h.cosmeticos ||= {}; h.cosmeticos[id] = true; }
+  else if (it.tipo === 'ovo') { h.ovos ||= {}; h.ovos[id] = (h.ovos[id] || 0) + 1; }
+  else if (it.tipo === 'ticket_torre') { h.torre.tickets = (h.torre.tickets || 0) + (it.qtd || 1); }
+  else aplicar[it.tipo]?.(it);
   return { ok: true, item: it };
 }
 
@@ -113,20 +160,49 @@ export function andar(dif, n) {
   const sem = (n * 7 + dif * 13) % POOL.length;
   const inimigos = Array.from({ length: qtd }, (_, i) => [POOL[(sem + i * 5) % POOL.length], Math.max(1, nv - (i % 3 === 2 ? 2 : 0))]);
   if (n % 10 === 0) inimigos[0] = [POOL[(sem + 3) % POOL.length], nv + 2, undefined, { chefe: true, bonus: { hp: 2.2, atk: 0.35, def: 0.3 } }];
-  return { dif, n, nivel: nv, recomendado: nv, inimigos, arena: TORRE.arenas[dif - 1], marco: n % 10 === 0 };
+  return { dif, n, nivel: nv, recomendado: nv, inimigos, arena: TORRE.arenas[dif - 1], marco: n % 10 === 0, diamantes: TORRE.diamantesPorAndar, doces: docesGraduaisAndar(n, 100) };
 }
 export const proximaRecompensa = (save, dif) => { const h = hwDe(save); const m = h.torre.maior[dif] || 0; const alvo = Math.min(100, (Math.floor(m / 10) + 1) * 10); return h.torre.pagos[`${dif}:${alvo}`] ? null : { andar: alvo, tickets: TORRE.ticketsPorMarco }; };
+export function iniciarAndarHW(save, dif, n) {
+  const h = hwDe(save), t = h.torre;
+  if (dif > t.liberada) return { ok: false, motivo: 'Dificuldade bloqueada.' };
+  if (n > (t.maior[dif] || 0) + 1) return { ok: false, motivo: 'Vença o andar anterior primeiro.' };
+  t.andaresPagos ||= {};
+  const jaVencido = Boolean(t.andaresPagos[`${dif}:a:${n}`]);
+  let gastouTicket = false;
+  if (jaVencido) {
+    const saldo = Math.max(0, Math.floor(Number(t.tickets) || 0));
+    if (saldo < 1) {
+      return { ok: false, precisaTicket: true, motivo: 'Repetir andar já vencido na Torre de Halloween exige 1 Ticket desta torre.' };
+    }
+    t.tickets = saldo - 1;
+    gastouTicket = true;
+  }
+  return { ok: true, andar: andar(dif, n), gastouTicket, ticketsRestantes: Math.max(0, Math.floor(Number(t.tickets) || 0)) };
+}
 // Vitória: registra o andar e paga o marco junto, uma única vez (mesmo recarregando ou repetindo o andar)
 export function vencerAndar(save, dif, n, rng = Math.random, agora = new Date()) {
   const h = hwDe(save), t = h.torre;
   if (dif > t.liberada) return { ok: false, motivo: 'Dificuldade bloqueada.' };
   if (n > (t.maior[dif] || 0) + 1) return { ok: false, motivo: 'Vença o andar anterior primeiro.' };
+  const chaveAndar = `${dif}:a:${n}`;
+  t.andaresPagos ||= {};
+  const primeiraVez = !t.andaresPagos[chaveAndar];
   t.maior[dif] = Math.max(t.maior[dif] || 0, n);
-  const r = { ok: true, tickets: 0, doce: 0, pocao: null, liberou: null };
+  const r = { ok: true, tickets: 0, diamantes: 0, doce: 0, pocao: null, liberou: null };
+  if (primeiraVez) {
+    t.andaresPagos[chaveAndar] = true;
+    save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+    save.recompensas.diamantes += TORRE.diamantesPorAndar;
+    r.diamantes = TORRE.diamantesPorAndar;
+    const docesAndar = docesGraduaisAndar(n, 100);
+    h.doces += docesAndar;
+    r.doce += docesAndar;
+  }
   const chave = `${dif}:${n}`;
   if (n % 10 === 0 && !t.pagos[chave]) { t.pagos[chave] = true; h.tickets += TORRE.ticketsPorMarco; r.tickets = TORRE.ticketsPorMarco; }
   if (n === 100 && dif < TORRE.dificuldades.length && t.liberada <= dif) { t.liberada = dif + 1; r.liberou = dif + 1; }
-  r.doce = talvezDoce(save, 'andar', rng, agora);
+  r.doce += talvezDoce(save, 'andar', rng, agora);
   if (rng() < TORRE.chancePocao) { const id = dif >= 3 ? 'pocao_xp_g' : dif === 2 ? 'pocao_xp_m' : 'pocao_xp_p'; darPocao(save, id); r.pocao = id; }
   ganharXpPasse(save, 'torre', null, agora);
   for (const m of save.idle?.diarias?.itens || []) if (m.tipo === 'batalhas' && !m.resgatada) m.progresso = Math.min(m.meta, m.progresso + 1);

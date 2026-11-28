@@ -7,7 +7,7 @@ import { LINHAGENS_REINOS, CHEFES_REINOS, CHEFES_REGIAO, specChefeReino } from '
 import { ENCONTROS_ALTOS_AMBAR, CHEFES_R2 } from './regiao2-altos-ambar.js';
 import { FORMAS_LINHAGENS_REINOS } from '../formas-reinos.js';
 import { resolverEncontroCatalogo } from './regiao1-encontros-regras.js';
-import { darPocao } from './regiao1-halloween-regras.js';
+import { darPocao, talvezDoce } from './regiao1-halloween-regras.js';
 import { expDe, membrosFormacao } from './regiao1-exp-regras.js';
 import * as EstrategiaRegras from './regiao1-estrategia-regras.js';
 import {
@@ -643,7 +643,11 @@ export function concluirFaseCampanhaMini(save, faseId, batalhaOuResumo, { batalh
   cm.fases[fase.id] = prev;
 
   save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
-  const premios = { ouro: 0, diamantes: 0, xpFormacao: 0, pocoes: {}, essencias: {}, reliquias: [], ticketsPermanentes: 0, ticketsSemanais: 0 };
+  const premios = { ouro: 0, diamantes: 0, doces: 0, xpFormacao: 0, pocoes: {}, essencias: {}, reliquias: [], ticketsPermanentes: 0, ticketsSemanais: 0 };
+  const totalInimigosFase = (fase.ondas || []).reduce((acc, onda) => acc + (onda?.length || 0), 0) || (fase.inimigos?.length || 1);
+  for (let i = 0; i < totalInimigosFase; i++) {
+    premios.doces += talvezDoce(save, 'campanha', rng, new Date(agoraMs));
+  }
 
   const fatorOndasXp = (fase.ondas?.length || 2) >= 3 ? 1.35 : 1.15;
   const fatorOndasOuro = (fase.ondas?.length || 2) >= 3 ? 1.15 : 1;

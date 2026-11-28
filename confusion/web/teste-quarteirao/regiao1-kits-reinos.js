@@ -87,7 +87,7 @@ export const CHEFES_REINOS = [
   C(7, 'Golem de Ametista', 'pedra', ['Soco Cristalino', 'Chuva de Geodos', 'Cataclismo de Ametista']),
   C(8, 'Abade da Névoa', 'planta', ['Cajado de Ervas', 'Incenso Sonífero', 'Prece da Bruma']),
   C(9, 'Regente da Escória', 'aco', ['Cetro Fundido', 'Banho de Escória', 'Decreto da Forja']),
-  C(10, 'Urso da Aurora Fraturada', 'agua', ['Patada Glacial', 'Rugido Boreal', 'Aurora Partida']),
+  C(10, 'Urso da Aurora Fraturada', 'gelo', ['Patada Glacial', 'Rugido Boreal', 'Aurora Partida']),
   C(11, 'Esfinge de Vidro', 'trevas', ['Garra Vítrea', 'Enigma Sombrio', 'Juízo da Esfinge']),
   C(12, 'Sentinela do Farol', 'eletrico', ['Lança do Farol', 'Feixe Varredor', 'Clarão da Sentinela'], { furia: 0.6 }),
 ];

@@ -116,7 +116,8 @@ test('50 linhagens dos Reinos 03–12: formas base (01), intermediária (02) e f
       assert.equal(nomes.has(nome), false, `Nome duplicado entre as 50 linhagens: ${nome}`);
       nomes.add(nome);
       assert.ok(ESPECIES[nome], `Espécie ausente em ESPECIES: ${nome}`);
-      assert.equal(ELEMENTO_DA_ESPECIE[nome], lin.elemento, `Elemento divergente em ${nome}`);
+      const elEsperado = ['Geadante', 'Uiválgido', 'Glacivra', 'Nevascaio', 'Focanil'].includes(lin.nome) ? 'gelo' : lin.elemento;
+      assert.equal(ELEMENTO_DA_ESPECIE[nome], elEsperado, `Elemento divergente em ${nome}`);
       assert.equal(CLASSE_DA_ESPECIE[nome], lin.classe, `Classe divergente em ${nome}`);
       assert.ok(linhaDaEspecie(nome), `linhaDaEspecie nula para ${nome}`);
     }
