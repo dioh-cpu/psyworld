@@ -28,7 +28,7 @@ import { mostrarResultadoBatalha } from './regiao1-resultado-ui.js';
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ARENA_FALLBACK = 'assets/confusion/interface/estrategia/reinos/01/arena-chefe.webp';
 const ELEMENTOS_18 = ['fogo', 'agua', 'planta', 'terra', 'luz', 'trevas', 'lutador', 'voador', 'veneno', 'psiquico', 'inseto', 'pedra', 'fantasma', 'eletrico', 'gelo', 'dragao', 'aco', 'fada'];
-const icoEl = (el) => `../../../assets/confusion/interface/menus-v1/ficha/sonho-${el === 'sombra' ? 'trevas' : el}.png`;
+const icoEl = (el) => `../../../assets/confusion/interface/feedback-rodada/elementos-glamour/individuais/${el === 'sombra' ? 'trevas' : el}.png`;
 const FACHADA_TORRE = (idx) => `../../../assets/confusion/interface/estrategia/reinos/${String(((idx % 12) + 1)).padStart(2, '0')}/cidade-conceito.webp`;
 
 export function renderizarPainelTorres(save, aba, st) {
@@ -88,8 +88,8 @@ export function renderizarPainelTorres(save, aba, st) {
         <b style="color:#fde68a">🗼 Torres Elementais (${TORRES_ELEMENTAIS_CATALOGO.length} × 50 andares · 18 elementos)</b>
         <span class="tag">💠 Treino diário de Essência: ${treinos}/${TORRES_CFG.treinosDiariosMax}</span>
       </div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
+      <div class="torre-filtros" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
+      <div class="torre-seletores" style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
     </div>
     <div class="bl" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(14,8,26,.92) 28%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
@@ -209,7 +209,7 @@ export function renderizarPainelTorres(save, aba, st) {
       <b style="color:#fde68a">⚔️ Torres Únicas (3 × 30 andares · Nv. 60–120 · 1×/dia por andar)</b>
       <span class="tag">✨ Pó Único: ${armas.poUnico || 0}${armas.escolhasPendentes ? ` · 🎁 Escolhas: ${armas.escolhasPendentes}` : ''}</span>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
+    <div class="torre-seletores" style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
   </div>
   <div class="bl" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(18,8,30,.92) 30%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx + 9)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
