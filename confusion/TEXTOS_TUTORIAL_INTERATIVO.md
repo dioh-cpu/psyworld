@@ -35,4 +35,3 @@
 **Na Equipe:** Selecione o Onírico que você quer fortalecer e toque em **Usar poção de XP**.
 
 **Após usar:** Pronto! Seu Onírico recebeu XP. Continue sua aventura.
-
