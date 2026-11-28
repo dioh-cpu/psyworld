@@ -39,14 +39,15 @@ test('sistema de 30 estrelas: 5 faixas históricas de cor, bônus crescente conf
   const passoArcoIris = P.bonusEstrelas(30).atk - P.bonusEstrelas(29).atk;
   assert.ok(passoArcoIris > passoDourada);
 
-  // Bônus de tier 1–5 preservado integralmente
-  for (const t of [1, 2, 3, 4, 5]) {
-    assert.deepEqual(P.bonusTier(t), {
-      hp: Math.round(BONUS_TIER(t).hp * 10000) / 10000,
-      atk: Math.round(BONUS_TIER(t).atk * 10000) / 10000,
-      def: Math.round(BONUS_TIER(t).def * 10000) / 10000,
-    });
+  // Bônus de tier 1–5 com salto claro para T5 Lendário (+85% vs +50% do T4)
+  let antT = P.bonusTier(1);
+  assert.deepEqual(antT, { hp: 0, atk: 0, def: 0 });
+  for (const t of [2, 3, 4, 5]) {
+    const curT = P.bonusTier(t);
+    assert.ok(curT.hp > antT.hp && curT.atk > antT.atk && curT.def > antT.def, `tier ${t}`);
+    antT = curT;
   }
+  assert.ok(P.bonusTier(5).atk - P.bonusTier(4).atk >= 0.30, 'T5 deve ter salto nítido sobre T4');
 
   // Origem, custos de evolução e valores configuráveis para balanceamento
   const cfgCustom = {

@@ -106,13 +106,15 @@ test('Percurso 2 (Save antigo): Equipe/Ficha, Evolução 10/30, Revanche/Craft, 
   assert.ok(fichaGot.bonusEstrelas.hp > 0);
   assert.equal(fichaGot.arvore.proxima.custo, 10);
 
-  // Evolução por Fragmentos de Sonho (10/30) + Essências elementais (20m+5med / 30med+10M)
+  // Evolução por Fragmentos de Sonho (10/30) + Essências elementais (20m+5med / 30med+10M) com níveis 41 e 81
+  idle.equipe[0].nivel = 41;
   adicionarFragmentoSonho(save, 'agua', 40);
   adicionarEssencia(save, 'agua', 'menor', 20);
   adicionarEssencia(save, 'agua', 'media', 35);
   adicionarEssencia(save, 'agua', 'maior', 10);
   const evo1 = evoluirFormaOnirico(save, 0);
   assert.equal(evo1.ok, true);
+  idle.equipe[0].nivel = 81;
   assert.equal(idle.equipe[0].especie, 'Vaelith');
   assert.equal(idle.equipe[0].tier, 4);
   assert.equal(idle.equipe[0].estrelas, 6);
@@ -121,7 +123,8 @@ test('Percurso 2 (Save antigo): Equipe/Ficha, Evolução 10/30, Revanche/Craft, 
   assert.equal(idle.equipe[0].especie, 'Vaelirion');
   assert.equal(idle.equipe[0].tier, 5);
 
-  // Não-inicial preserva tier ao evoluir forma
+  // Não-inicial preserva tier ao evoluir forma (Nv.41+)
+  idle.equipe[2].nivel = 41;
   adicionarFragmentoSonho(save, 'planta', 10);
   adicionarEssencia(save, 'planta', 'menor', 20);
   adicionarEssencia(save, 'planta', 'media', 5);

@@ -35,29 +35,14 @@ Calibração aplicada em `regiao1-campanha-mini-regras.js` (`CALIBRACAO_ONDAS_CA
 
 ---
 
-## 3. Auditoria de XP das Áreas de Idle / AFK (`regiao1-idle.js`)
+## 3. Auditoria de XP das Áreas de Idle / AFK (`regiao1-idle.js`) e Ajustes Consolidados
 
 Curva de XP dos Oníricos (`regiao1-progressao.js`): `xpPara(n) = 30 + 10n`.  
-Rendimento do Idle (`XP_IDLE_CFG` em `regiao1-idle.js`):
-- **Auto-Caça ativa:** `12 + 4 × nvArea` XP/abate para cada um dos 4 Oníricos da formação.
-- **Offline / AFK (`1,6 abates/min`, teto 12h):** `10 + 3 × nvArea` XP/abate para cada Onírico da formação.
+Rendimento do Idle revisado (`XP_IDLE_CFG` em `regiao1-idle.js`) — reduzido para ficar **abaixo da Campanha Mini** e evitar disparidade entre nível dos Oníricos e do Domador:
+- **Auto-Caça ativa:** `4 + 0,6 × nvArea` XP/abate por Onírico (`Nv.6 = 8 XP`, `Nv.10 = 10 XP`, contra `~78–140 XP` da Campanha Mini); Domador: `4 + 0,8 × nvArea` XP/abate (acompanha os Oníricos).
+- **Offline / AFK (`1,6 abates/min`, teto 12h):** `3 + 0,45 × nvArea` XP/abate por Onírico (`Nv.6 = 6 XP`, `~92 XP` em 10 min offline); Domador: `3 + 0,6 × nvArea` XP/abate.
+- **Evolução de Forma:** 2ª forma a partir do **Nv.41**; 3ª forma (e T5 dos iniciais) a partir do **Nv.81**.
+- **Tiers e Estrelas (`regiao1-progressao.js`):** `T1 +0% / T2 +12% / T3 +28% / T4 +50% / T5 +85%` (salto real de `+23,3%` do T5 Lendário sobre o T4); estrelas douradas `+5%/★` (subindo até `+10%/★` na faixa arco-íris).
+- **Relíquias (Gold obrigatório + teto por raridade):** `comum +10 / incomum +20 / rara +30 / epica +50 / lendaria +80 / mitica +100`. Custo em Gold por nível `k`: `150 + 75k` até `+15`, depois `1.275 + 120×(k-15)` (×1,15 na mítica).
 
-Como ambos crescem linearmente com o nível da área, o tempo necessário de AFK para cruzar toda a faixa de nível de cada capítulo permanece constante e confortável (sem parede de farm):
-
-| Cap. | Faixa Nv. | XP da faixa (`xpTotal`) | Nv. médio área | XP em 8h AFK | Tempo só AFK (dias de 8h) | Conclusão |
-|---:|---|---:|---:|---:|---:|---|
-| 1 | `1–25` | `3.720` | `13` | `37.632` | `0,10` (~48 min) | Acompanha com folga |
-| 2 | `20–45` | `8.750` | `33` | `83.712` | `0,10` (~50 min) | Acompanha com folga |
-| 3 | `40–70` | `17.250` | `55` | `134.400` | `0,13` (~62 min) | Acompanha com folga |
-| 4 | `65–95` | `24.750` | `80` | `192.000` | `0,13` (~62 min) | Acompanha com folga |
-| 5 | `90–120` | `32.250` | `105` | `249.600` | `0,13` (~62 min) | Acompanha com folga |
-| 6 | `115–150` | `47.250` | `133` | `314.112` | `0,15` (~72 min) | Acompanha com folga |
-| 7 | `145–180` | `57.750` | `163` | `383.232` | `0,15` (~72 min) | Acompanha com folga |
-| 8 | `175–210` | `68.250` | `193` | `452.352` | `0,15` (~72 min) | Acompanha com folga |
-| 9 | `205–240` | `78.750` | `223` | `521.472` | `0,15` (~72 min) | Acompanha com folga |
-| 10 | `235–265` | `75.750` | `250` | `583.680` | `0,13` (~62 min) | Acompanha com folga |
-| 11 | `260–285` | `68.750` | `273` | `636.672` | `0,11` (~52 min) | Acompanha com folga |
-| 12 | `280–300` | `58.500` | `290` | `675.840` | `0,09` (~42 min) | Acompanha com folga |
-
-- **Veredito:** As áreas de Idle/AFK entregam XP mais que suficiente (~45–72 min de AFK por capítulo, ou ~15–25 min de Auto-Caça ativa + Poções/Campanha) para acompanhar todos os 12 capítulos sem exigir farm repetitivo.
 - **Produção:** https://cwdp-lake.vercel.app/jogar

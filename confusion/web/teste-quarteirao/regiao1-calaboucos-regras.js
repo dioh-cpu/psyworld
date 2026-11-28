@@ -122,8 +122,8 @@ function montarInimigosCalabouco(def, nivelNum) {
   const e2 = pool[(nivelNum + 1) % pool.length] || e1;
   return [
     [def.chefe, nivel + 4, def.elementos[0], { chefe: true, nome: def.chefe, bonus: { hp: 2.1, atk: 0.25, def: 0.2 } }],
-    [e1[0], nivel, e1[1], { forma: nivel <= 20 ? 1 : nivel <= 40 ? 2 : 3 }],
-    [e2[0], nivel, e2[1], { forma: nivel <= 20 ? 1 : nivel <= 40 ? 2 : 3 }],
+    [e1[0], nivel, e1[1], { forma: nivel <= 40 ? 1 : nivel <= 80 ? 2 : 3 }],
+    [e2[0], nivel, e2[1], { forma: nivel <= 40 ? 1 : nivel <= 80 ? 2 : 3 }],
   ];
 }
 

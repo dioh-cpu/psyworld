@@ -439,7 +439,17 @@ export function aceitarQuest(estado, questId) {
   return { ok: true, concluidas };
 }
 
-export function registrarPista(estado, pistaId) {
+export function validarContatoInteracao({ distanciaPx = null, raioPx = 56, encostou = false } = {}) {
+  if (encostou === true) return true;
+  if (Number.isFinite(Number(distanciaPx))) return Number(distanciaPx) <= Math.max(1, Number(raioPx) || 56);
+  return false;
+}
+
+export function registrarPista(estado, pistaId, opcoes = {}) {
+  // Regra de ação real: entrar no mapa NÃO conta como pegar item ou falar com NPC; exige encostar no alvo.
+  if (opcoes && (opcoes.origem === 'entrada_mapa' || opcoes.encostou === false)) {
+    return { nova: false, bloqueadaSemContato: true, motivo: 'Aproxime-se e encoste no objeto ou NPC para contar a missão.', concluidas: [] };
+  }
   const jaTinha = Boolean(estado.pistas[pistaId]);
   estado.pistas[pistaId] = true;
   // Auto-ativa missões disponíveis que dependem diretamente desta pista se o jogador já interagiu no local
@@ -653,7 +663,7 @@ export function sanitizarIdleProgressao(idle) {
           conjunto: String(x.conjunto || 'cacador').slice(0, 24),
           elemento: String(x.elemento || 'planta').slice(0, 16),
           raridade: String(x.raridade || 'comum').slice(0, 16),
-          reforco: Math.max(0, Math.min(15, Math.floor(Number(x.reforco) || 0))),
+          reforco: Math.max(0, Math.min(100, Math.floor(Number(x.reforco) || 0))),
           principal: x.principal && typeof x.principal === 'object'
             ? { attr: String(x.principal.attr || 'vida_flat').slice(0, 24), valor: Number.isFinite(Number(x.principal.valor)) ? Number(x.principal.valor) : 0 }
             : { attr: 'vida_flat', valor: 0 },
@@ -699,9 +709,22 @@ export function sanitizarIdleProgressao(idle) {
 
   if (idle.missoes && typeof idle.missoes === 'object') {
     const m = idle.missoes;
+    const campanhaNpcs = {};
+    if (m.campanhaNpcs && typeof m.campanhaNpcs === 'object') {
+      for (const [id, v] of Object.entries(m.campanhaNpcs).slice(0, 60)) {
+        if (v && typeof v === 'object') {
+          campanhaNpcs[String(id).slice(0, 32)] = {
+            estado: ['disponivel', 'ativa', 'pronta', 'concluida'].includes(v.estado) ? v.estado : 'disponivel',
+            progresso: Math.max(0, Math.floor(Number(v.progresso) || 0)),
+          };
+        }
+      }
+    }
     out.missoes = {
       paralelasAtivas: sanitizarMapaSeguro(m.paralelasAtivas, 300, 'int'),
       paralelasConcluidas: sanitizarMapaSeguro(m.paralelasConcluidas, 300, 'bool'),
+      acoesParalelas: sanitizarMapaSeguro(m.acoesParalelas, 40, 'int'),
+      campanhaNpcs,
       enfeitesRefugio: sanitizarMapaSeguro(m.enfeitesRefugio, 24, 'bool'),
       titulos: sanitizarMapaSeguro(m.titulos, 300, 'bool'),
       progresso: sanitizarMapaSeguro(m.progresso, 100, 'int'),
@@ -759,6 +782,18 @@ export function sanitizarIdleProgressao(idle) {
         if (v && typeof v === 'object') unicasDiarias[String(id).slice(0, 24)] = sanitizarMapaSeguro(v, 35, 'int');
       }
     }
+    const sazonais = {};
+    if (t.sazonais && typeof t.sazonais === 'object') {
+      for (const [id, v] of Object.entries(t.sazonais).slice(0, 8)) {
+        if (v && typeof v === 'object') {
+          sazonais[String(id).slice(0, 24)] = {
+            ciclo: Math.max(0, Math.floor(Number(v.ciclo) || 0)),
+            maiorAndar: Math.max(0, Math.min(50, Math.floor(Number(v.maiorAndar) || 0))),
+            pagas: sanitizarMapaSeguro(v.pagas, 60, 'bool'),
+          };
+        }
+      }
+    }
     out.torres = {
       elementais,
       treinoDiario: {
@@ -767,6 +802,8 @@ export function sanitizarIdleProgressao(idle) {
       },
       unicas,
       unicasDiarias,
+      sazonais,
+      recompensasUnicas: sanitizarMapaSeguro(t.recompensasUnicas, 16, 'int'),
       batalhasPagas: sanitizarMapaSeguro(t.batalhasPagas, 300, 'bool'),
     };
   }
