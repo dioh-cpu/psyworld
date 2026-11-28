@@ -386,7 +386,8 @@ export function criarArena(host, { artes = {} } = {}) {
     setTimeout(() => faixa.remove(), t);
   }
   function desenharTopo(op) {
-    q('.tb-tit').innerHTML = `<b>${esc(op.titulo || '')}</b><small>${esc(op.sub || '')}${op.sub ? ' · ' : ''}Turno ${b.rodada}</small>`;
+    const ondas = b.totalOndas > 1 ? ` · Onda ${Number(b.onda) || 1}/${Number(b.totalOndas)}` : '';
+    q('.tb-tit').innerHTML = `<b>${esc(op.titulo || '')}</b><small>${esc(op.sub || '')}${op.sub ? ' · ' : ''}Turno ${b.rodada}${ondas}</small>`;
     q('.tb-btns').innerHTML = `<button data-vel="1" title="Velocidade">×${pref.velocidade}</button><button data-auto="1" class="${op.auto ? 'on' : ''}">Auto</button>${op.extraTopo || ''}`;
     const prox = [...b.fila].map((id) => b.ordem.find((x) => x.id === id)).filter((u) => u && nos.has(u.id) && u.hp > 0).slice(0, 5);
     q('.tb-ordem').innerHTML = prox.map((u, i) => `<span class="${u.lado === 'a' ? '' : 'i'} ${i === 0 ? 'cur' : ''}"><img src="${caminhoU(u, opArt)}" alt=""></span>`).join('');
