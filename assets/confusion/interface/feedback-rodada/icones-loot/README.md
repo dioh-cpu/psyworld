@@ -1,7 +1,3 @@
-# Ícones de loot — artes base
+# Ícones de loot
 
-Sete PNGs individuais gerados para coroa, amuleto, anel, talismã, arma única, essência e fragmento. Os arquivos são artes base em resolução original e com canal alfa. Verificar bordas e contraste ao aplicar na interface.
-
-As variações de raridade e de tamanhos de essência ainda não estão prontas.
-
-As folhas `*-raridades-referencia.png` mostram as seis raridades em ordem comum, incomum, rara, épica, lendária e mítica. Elas têm fundo e servem como referência visual. Ainda precisam de recorte e remoção do fundo para uso como ícones individuais.
+As artes base individuais representam coroa, amuleto, anel, talismã, arma única, essência e fragmento. A pasta `raridades/` contém os 24 PNGs individuais das quatro relíquias em seis raridades. `essencia-menor.png`, `essencia-media.png` e `essencia-maior.png` são as três essências. As folhas de referência preservam o visual original. Conferir as bordas e legibilidade na integração.
