@@ -12,4 +12,4 @@ Cópias corrigidas de quadros com extremidades cortadas. O reparo reconstrói ap
 | `xistolim-f1-idle.mp4` | 2273682 | 1408x792x4.000000 | `99ef4b5f2ab95593cadca07e451d9b93be0b8b5de62d177c31683f5e9cbc6d07` |
 | `xistolim-f1-walk.mp4` | 2315979 | 1408x792x4.000000 | `a3a0a304978a4075ed84cdb59a7ad07ff5547fdf59c895ace81c83df5c64089f` |
 
-O lote contém somente correções do Brasinha, Gotalume, Fanalino e Xistolim. Não inclui os clipes do lagarto de fogo nem outros Oníricos do banner. A imagem `Lote2-MP4-Antes-e-Depois.jpg` mostra as áreas reparadas.
+O lote contém correções do Brasinha, Gotalume, Fanalino e Xistolim. O Fanalino F2 tem agora os dois arquivos: `fanalino-f2-idle.mp4` (original enviado pelo usuário, SHA-256 `3e34101319bc0e587f7412c60b377d64870b370370377e21c9ab77864ee6a99d`) e `fanalino-f2-walk.mp4` (walk corrigido). A identificação do idle como Fanalino F2 foi confirmada pelo usuário. A imagem `Lote2-MP4-Antes-e-Depois.jpg` mostra as áreas reparadas. Não inclui o lagarto de fogo.
