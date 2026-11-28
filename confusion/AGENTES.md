@@ -1,6 +1,6 @@
 # Confusion Waves — divisão de trabalho entre agentes
 
-Repositório: `dioh-cpu/psyworld` · Produção (único endereço oficial): https://cwdp-lake.vercel.app/jogar (deploy automático da `main`).
+Repositório: `dioh-cpu/psyworld` · Produção (único endereço oficial): https://cwdp-lake.vercel.app/jogar (publicação somente pelo usuário via Deploy Hook).
 Código do jogo: `confusion/web/teste-quarteirao/` · Artes: `assets/confusion/interface/` · Testes: `npm test`.
 
 | Agente | Responsabilidade | Arquivos que só ele edita |
@@ -11,7 +11,7 @@ Código do jogo: `confusion/web/teste-quarteirao/` · Artes: `assets/confusion/i
 | **GPT / Codex** | Produção e organização de artes e upload dos vídeos originais do Flow | `assets/**` (não altera código de runtime, regras, HUD, combate, save nem integração) |
 | **Claude** | Coordenação e prompts | Não altera código |
 
-Regras comuns: interface em português; ids de habilidades, espécies e locais nunca mudam (o VFX e as artes dependem deles); nada de segredos no repositório; cada um abre PR para a `main` (máx. 2–3 PRs/dia por causa do limite da Vercel) e valida com `npm test` + E2E em `1280×720` e `844×390`.
+Regras comuns: interface em português; ids de habilidades, espécies e locais nunca mudam (o VFX e as artes dependem deles); nada de segredos no repositório. A regra vigente de branches, validação e merge está no fim deste arquivo.
 
 ## Contrato de revelação e animação (Claude → Antigravity)
 
@@ -29,7 +29,11 @@ O Claude é dono de `regiao1-revelacao.js`, `regiao1-conexao-fx.js`, `regiao1-sf
 
 ---
 
-## Expansão 1 — divisão atual (12 regiões, Reinos 03–12 e sistemas 01–10)
+## Registros anteriores — Expansão 1 e prompts
+
+As seções abaixo preservam histórico e contratos técnicos. Onde mencionarem responsáveis, iniciais, branches, testes ou publicação, prevalece a regra vigente ao fim deste arquivo.
+
+### Expansão 1 (12 regiões, Reinos 03–12 e sistemas 01–10)
 
 asutaroto291 está indisponível: catálogo e saves passam para o Antigravity; kits, chefes e equilíbrio de combate, para o Claude.
 
@@ -128,26 +132,11 @@ Preparada em `confusion/web/teste-quarteirao/regiao1-batalha-habilidades.js` sem
   3. Em `tocarClipe` (`regiao1-vfx.js`), caso `MORTALIO_VIOLETA_CFG.alvo` seja definido como `'aliados'`, ancorar o clipe no centro da formação aliada (ou iterar `ev.alvos`) além de `ctx.no(ev.alvo)`.
 
 
-## Regra de merge e ordem de trabalho (vigente)
+## Regra vigente desta rodada
 
-**Nada entra na `main` até o usuário liberar** o conjunto de artes de todos os menus que ele quer. Até lá:
-- Todo PR fica aberto ou em rascunho, sem merge, mesmo com testes verdes.
-- Trabalho em branch própria; atualize o PR.
-- Dúvida sobre o que entra na main: pergunte ao usuário antes de agir.
-
-**Dono por tela.** Uma tela tem um dono por vez, para evitar conflito:
-- Torres e Relíquias: Bia (integração), após o GPT entregar a arte.
-- Refúgio, Equipe, Mochila, cards de Onírico, Campanha Mini, Missões e Batalha: dioh291.
-- Regras e economia (torres, doces, bônus, elementos): asutaroto291 (PR #200).
-- QA e E2E: dioh292.
-- Conferência visual: Luna.
-- Artes PNG: GPT.
-- Documentação: Codex 291.
-
-**Ordem:**
-1. Já em paralelo, sem depender de arte: dioh291 (filtros, escalação, editar formação), asutaroto291 (#200), dioh292 (baseline E2E da `main`), Codex 291 (documentação).
-2. GPT entrega a arte de um menu por vez, na ordem: Torres, Relíquias, Calabouços, Campanha Mini, Missões, Invocação, Equipe/Ficha, Mochila, Batalha e Resultado, demais menus.
-3. Para cada menu com arte pronta, Bia integra e Luna confere, nas 3 resoluções.
-4. Quando todos os menus combinados estiverem integrados e conferidos, dioh292 roda o E2E completo e o usuário decide o merge.
-
-**Relatório:** comece a mensagem com "Eu <nome> — parte concluída:", com o link do PR e as pendências.
+- **Iniciais previstos para a escolha:** Brasinha, Gotalume e Sementil. Penumbrio e Solinho deixam de ser opções iniciais; a implementação é responsabilidade de asutaroto291 e do dono da UI. Esta é uma decisão de produto, não uma afirmação de que já esteja implementada na `lab`.
+- Trabalhe em branch própria e abra PR para `lab`. Entregas aprovadas vão para `lab`; nenhum agente faz merge na `main`. Só o usuário decide quando a versão vai para a `main` e somente ele dispara o Deploy Hook.
+- Antes de qualquer merge na `lab`, `npm test` deve passar; para telas, também é necessário E2E em 1280×720, 844×390 e 740×360. Se não for possível executar, registre no PR e não marque como concluído.
+- Priorize celular em retrato: botões acessíveis e menus encontráveis sem rolagem; depois confira paisagem. A validação em celular real é uma etapa separada da emulação.
+- Um dono por tela de cada vez. Torres e Relíquias: Bia; Refúgio, Equipe, Mochila, cards, Campanha Mini, Missões e Batalha: dioh291, sujeito à confirmação do usuário; regras: asutaroto291; QA/E2E: dioh292; documentação, textos e conferência em celular: Luna; artes: GPT. Se o dono da UI não estiver ativo, o usuário redistribui essa parte.
+- O tutorial deve seguir a ordem: invocar 10 vezes, abrir a Campanha Mini e usar a primeira poção de XP em um Onírico escolhido pelo jogador. Os textos propostos estão em `confusion/TEXTOS_TUTORIAL_INTERATIVO.md`; regras da poção e implementação permanecem pendentes dos responsáveis.
