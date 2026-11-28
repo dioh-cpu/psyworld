@@ -115,6 +115,16 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .exp-card:not(.modo-cena) > .exp-corpo { max-width: 980px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; gap: 6px; flex-shrink: 0; } #modal-exp .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); color: #fde68a; text-shadow: 0 1px 3px rgba(0,0,0,.88); }
     #modal-exp .exp-abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; flex-shrink: 0; } #modal-exp .exp-abas button[aria-selected="true"] { background: #f3a458; color: #21110c; font-weight: 700; }
+    @media (max-width: 880px) {
+      #modal-exp .cal-filtros, #modal-exp .cal-seletores { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 5px; }
+      #modal-exp .cal-filtros button, #modal-exp .cal-seletores button { flex: 0 0 auto; min-height: 40px; }
+      #modal-exp .cal-detalhe > div:first-child > div:last-child { order: -1; }
+      #modal-exp .cal-detalhe [data-cal-lutar] { order: -1; min-height: 44px; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+      #modal-exp .calaboucos-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+      #modal-exp .calaboucos-layout > .bl:last-child { grid-column: 1 / -1; }
+    }
     #modal-exp .exp-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     #modal-exp .inv-v1, #modal-exp .inv-extra { max-width: 1080px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .inv-carta-res { border: 2px solid var(--cor-tier, #9ca3af); background: linear-gradient(180deg, rgba(36,22,43,.95), rgba(18,10,28,.98)); animation: invPop .32s ease-out both; }
@@ -1025,7 +1035,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     if (painel === 'missoes') h += renderBalaoTutorialModo(save(), 'missoes') + renderizarPainelMissoes(save(), aba, { capParalela, st: missoesUi });
     if (painel === 'campanhaMini') h += `${renderBalaoTutorialModo(save(), 'campanha_mini')}<div class="bl"><h4>🗺️ Campanha Mini (12 Capítulos)</h4><p>10 fases por capítulo + fase escondida ao chegar a 30★. Jogue livremente no seu ritmo.</p><div class="ln"><button class="btn-pri" data-desc-ir="descanso">← Voltar ao Refúgio</button></div></div>`;
     if (painel === 'torres') h += renderBalaoTutorialModo(save(), 'torres') + renderizarPainelTorres(save(), aba, torresUi);
-    if (painel === 'calaboucos') h += renderBalaoTutorialModo(save(), 'calaboucos_rel') + renderizarPainelCalaboucos(save(), calaboucosUi);
+    if (painel === 'calaboucos') h += renderBalaoTutorialModo(save(), 'calaboucos_rel') + `<div class="calaboucos-layout">${renderizarPainelCalaboucos(save(), calaboucosUi)}</div>`;
     if (painel === 'reliquias') h += renderBalaoTutorialModo(save(), 'reliquias') + renderizarPainelReliquias(save(), aba, reliquiasUi);
     if (painel === 'equipe') h += aba === 1 ? (renderBalaoTutorialModo(save(), 'domadores') + renderizarPainelDomadores(save())) : (resumoDomadorAtivoHtml(save()) + abaEquipe());
     if (painel === 'oniricos') h += abaBanner();
