@@ -16,3 +16,5 @@ O brilho é estático nos PNGs. Camada de reflexo animável, versões específic
 ## Aplicação no retângulo inteiro
 
 A moldura acompanha o perímetro completo do elemento ao qual pertence: o botão inteiro ou o painel inteiro, em largura e altura, não apenas a área ocupada pelo texto. O texto e o ícone ficam por cima, dentro da área livre. Preserve cantos e proporções; confira a borda nos quatro lados em retrato e paisagem e não deixe ornamentos cobrirem os rótulos. Os filtros de elementos nas Torres não devem receber uma moldura apertada em torno de cada palavra.
+
+`referencia-retangulo-inteiro.png`: referência de composição, não é moldura transparente nem arquivo pronto para aplicação direta.
