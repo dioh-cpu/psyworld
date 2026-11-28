@@ -1,0 +1,12 @@
+# Idles originais 1080p
+
+Arquivos originais enviados pelo usuário. Identificação de espécie e forma deve ser confirmada antes do processamento. Brasinha, criatura azul e tatu em fundo magenta apresentam cortes de borda.
+
+| Arquivo | Bytes | SHA-256 |
+|---|---:|---|
+| `Animate_creature_idle_loop_fa33ed9a_1080p.mp4` | 2294677 | `274443fb27313a735a32f6c7f52360410127bf7780930713b2a2657004d13654` |
+| `Animate_creature_image_idle_loop_60344e2b_1080p.mp4` | 1477358 | `bccad22d6072e752a83fc3921af7b966d740c4c3d0611f9bac6d1aa9bfe908a9` |
+| `Animate_creature_image_idle_loop_b5bd1d24_1080p.mp4` | 2046466 | `9c6718015ed3d54f92b1a6684b4318cfb36564a513d3247100023b1a8aabcf95` |
+| `Creature_animating_calm_idle_loop_1ee912b9_1080p.mp4` | 2511908 | `74d52721fe71bc97551d0451d24ffd764f6e7f804c4eb234f64ad72784f77d4d` |
+| `Animate_creature_with_calm_idle_1e6a50c4_1080p.mp4` | 2330062 | `a7ab4b7513d1ec62b16bd98e3fbc3b8106bf3bfed5f464b632ee2d6aef5b8c91` |
+| `Animate_creature_idle_loop_991b6170_1080p.mp4` | 1682523 | `72d505669fb0b472ec90e2daf7f7a252bdcbd12e0df8e50713d6f86b78fd0673` |
