@@ -242,6 +242,16 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .eq-vaga.vazia { min-height: 112px; justify-content: center; border: none; background: url('../../../assets/confusion/interface/menus-v1/equipe/vaga-vazia.png') center / 100% 100% no-repeat; }
     #modal-exp .eq-vaga.sel { border: none; background: url('../../../assets/confusion/interface/menus-v1/equipe/vaga-selecionada.png') center / 100% 100% no-repeat; }
     #modal-exp .eq-col.sel { outline: 3px solid #fb923c; border-style: solid; }
+    @media (orientation: portrait) and (max-width: 600px) {
+      #modal-exp[data-tela="equipe"] .grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+      #modal-exp[data-tela="equipe"] .eq-col { min-width: 0; padding: 4px; font-size: 10px; overflow-wrap: anywhere; }
+      #modal-exp[data-tela="equipe"] .eq-col .mini-mold { max-width: 86px; margin: 0 auto 3px; }
+      #modal-exp[data-tela="equipe"] .eq-arena { gap: 4px; padding: 6px; }
+      #modal-exp[data-tela="equipe"] .eq-vaga { padding: 4px 2px; font-size: 10px; overflow-wrap: anywhere; }
+      #modal-exp[data-tela="equipe"] .eq-vaga .mini-mold { width: min(60px, 100%); }
+      #modal-exp[data-tela="equipe"] .eq-vaga.vazia { min-height: 92px; }
+    }
+
     #modal-exp .mv1-ficha { background: linear-gradient(rgba(18,10,28,.82), rgba(18,10,28,.92)), url('../../../assets/confusion/interface/menus-v1/ficha/fundo.webp') center / cover no-repeat; border-color: #fb923c; }
     #modal-exp .mv1-chefes-topo { background: linear-gradient(rgba(18,10,28,.72), rgba(18,10,28,.9)), url('../../../assets/confusion/interface/menus-v1/chefes/fundo.webp') center / cover no-repeat; }
     #modal-exp .mv1-receita { background: linear-gradient(rgba(18,10,28,.72), rgba(18,10,28,.85)), url('../../../assets/confusion/interface/menus-v1/chefes/receita.png') center / 100% 100% no-repeat; padding: 6px 8px; border-radius: 8px; margin-top: 5px; }
