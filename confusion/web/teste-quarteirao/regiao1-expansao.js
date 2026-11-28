@@ -115,6 +115,12 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .exp-card:not(.modo-cena) > .exp-corpo { max-width: 980px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .modal-head { position: static; min-height: 0; margin-bottom: 4px; padding: 4px 2px; align-items: center; gap: 6px; flex-shrink: 0; } #modal-exp .modal-head h3 { flex: 1; margin: 0; font-size: clamp(16px, 3vw, 22px); color: #fde68a; text-shadow: 0 1px 3px rgba(0,0,0,.88); }
     #modal-exp .exp-abas { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; flex-shrink: 0; } #modal-exp .exp-abas button[aria-selected="true"] { background: #f3a458; color: #21110c; font-weight: 700; }
+    @media (orientation: portrait) and (max-width: 600px) {
+      #modal-exp .rel-equip-grade { grid-template-columns: minmax(0,1fr) minmax(56px,.6fr) minmax(0,1fr) !important; gap: 4px !important; }
+      #modal-exp .rel-equip-grade > div { min-width: 0; overflow-wrap: anywhere; }
+      #modal-exp .rel-equip-grade > div:nth-child(2) { padding: 4px !important; }
+      #modal-exp .rel-equip-grade > div:nth-child(2) img { max-width: 100%; height: auto !important; }
+    }
     #modal-exp .exp-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     #modal-exp .inv-v1, #modal-exp .inv-extra { max-width: 1080px; width: 100%; margin-left: auto; margin-right: auto; box-sizing: border-box; }
     #modal-exp .inv-carta-res { border: 2px solid var(--cor-tier, #9ca3af); background: linear-gradient(180deg, rgba(36,22,43,.95), rgba(18,10,28,.98)); animation: invPop .32s ease-out both; }
