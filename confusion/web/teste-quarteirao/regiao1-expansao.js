@@ -124,6 +124,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp[data-tela="torres"] button:disabled { opacity: .6; }
     #modal-exp .torres-arte > .bl { border: 14px solid transparent; border-image: url('../../../assets/confusion/interface/feedback-rodada/painel-horizontal.png') 150 70 60 fill / 28px 14px 14px stretch !important; padding: 36px 14px 14px !important; }
     #modal-exp .torres-arte .torre-card { border-image: url('../../../assets/confusion/interface/feedback-rodada/painel-horizontal.png') 150 70 60 fill / 14px 8px 8px stretch !important; padding: 16px 10px 8px !important; }
+    #modal-exp .torres-arte .torre-card.btn-pri { outline: 2px solid #fff0a5; outline-offset: -3px; }
     @media (orientation: portrait) and (max-width: 600px) {
       #modal-exp .torres-arte { padding: 4px; }
       #modal-exp .torres-arte .torre-filtros, #modal-exp .torres-arte .torre-seletores { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 6px; }
@@ -134,7 +135,20 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
       #modal-exp .torres-detalhe [data-tor-lutar-el] { order: -1; }
     }
     @media (orientation: landscape) and (max-height: 500px) {
-      #modal-exp .torres-arte:has(.torres-lista) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+      #modal-exp .torres-arte:has(.torres-lista), #modal-exp .torres-arte:has(.torres-unicas-lista) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+      #modal-exp .torres-arte:has(.torres-unicas-lista) > .torres-subabas, #modal-exp .torres-arte:has(.torres-unicas-lista) > .bl:last-child { grid-column: 1 / -1; }
+      #modal-exp[data-tela="torres"] .cw-tut-balao { padding: 3px 8px; margin-bottom: 3px; font-size: 10px; line-height: 1.2; }
+      #modal-exp[data-tela="torres"] .cw-tut-balao-txt > div { display: inline; }
+      #modal-exp[data-tela="torres"] .cw-tut-balao-tit { margin-right: 6px; }
+      #modal-exp .torres-arte:has(.torres-unicas-lista) { padding: 3px; gap: 3px; }
+      #modal-exp .torres-arte:has(.torres-unicas-lista) > .torres-subabas { margin-bottom: 0 !important; }
+      #modal-exp .torres-arte .torres-unicas-lista, #modal-exp .torres-arte .torres-unicas-detalhe { padding-top: 29px !important; }
+      #modal-exp .torres-unicas-lista > div:first-child { gap: 2px !important; margin-bottom: 2px !important; }
+      #modal-exp .torres-unicas-lista > div:first-child b, #modal-exp .torres-unicas-lista > div:first-child .tag { font-size: 10px; line-height: 1.1; }
+      #modal-exp .torres-unicas-lista .torre-seletores { overflow-x: visible; }
+      #modal-exp .torres-unicas-lista .torre-seletores .torre-card { flex: 1 1 0 !important; min-width: 0 !important; font-size: 10px !important; padding-left: 7px !important; padding-right: 7px !important; }
+      #modal-exp .torres-unicas-lista .torre-card small { padding: 1px 3px !important; }
+      #modal-exp .torres-unicas-detalhe > div:first-child > [data-tor-lutar-un] { order: -1; }
       #modal-exp .torres-arte .torre-filtros, #modal-exp .torres-arte .torre-seletores { flex-wrap: nowrap !important; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 4px; }
       #modal-exp .torres-arte .torre-filtros button { flex: 0 0 auto; }
       #modal-exp .torres-arte .torre-seletores button { flex: 0 0 142px !important; }
