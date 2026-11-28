@@ -518,3 +518,98 @@ export function concluirMissaoHV(save, capId, n) {
   if (n === capitulo(capId).missoes.length) h.fim = true;
   return { ok: true, recompensa: m.recompensa, fim: h.fim, epilogo: h.fim ? capitulo(capId).missoes[n - 1].epilogo?.[h.escolha] : null };
 }
+
+// ---- Auto formar com melhores Oníricos para a fase (elementos da fase + força, tipagem, nível, estrelas e tier) ----
+import { multElemento } from '../core.js';
+
+export function extrairElementosFase(faseOuInimigos) {
+  const els = [];
+  const pushEl = (e) => {
+    const s = String(e || '').toLowerCase().trim();
+    if (s && s !== 'neutro') els.push(s);
+  };
+  const lerListaInimigos = (lista) => {
+    if (!Array.isArray(lista)) return;
+    for (const item of lista) {
+      if (Array.isArray(item)) {
+        const el = item[2] || ELEMENTO_DA_ESPECIE[item[0]];
+        pushEl(el);
+      } else if (item && typeof item === 'object') {
+        pushEl(item.elemento || ELEMENTO_DA_ESPECIE[item.especie]);
+      } else if (typeof item === 'string') {
+        pushEl(ELEMENTO_DA_ESPECIE[item] || item);
+      }
+    }
+  };
+  if (Array.isArray(faseOuInimigos)) {
+    lerListaInimigos(faseOuInimigos);
+  } else if (faseOuInimigos && typeof faseOuInimigos === 'object') {
+    if (Array.isArray(faseOuInimigos.ondas)) {
+      for (const onda of faseOuInimigos.ondas) lerListaInimigos(onda);
+    }
+    if (Array.isArray(faseOuInimigos.inimigos)) lerListaInimigos(faseOuInimigos.inimigos);
+    if (Array.isArray(faseOuInimigos.elementos)) {
+      for (const el of faseOuInimigos.elementos) pushEl(el);
+    }
+    if (faseOuInimigos.elemento) pushEl(faseOuInimigos.elemento);
+  }
+  return [...new Set(els)];
+}
+
+export function pontuarOniricoParaFase(m, elementosFase = []) {
+  const el = String(m?.elemento || ELEMENTO_DA_ESPECIE[m?.especie] || 'neutro').toLowerCase();
+  const nivel = Math.max(1, Math.floor(Number(m?.nivel) || 1));
+  const tier = Math.max(1, Math.min(5, Math.floor(Number(m?.tier ?? m?.tierHW ?? m?.raridade) || 1)));
+  const estrelas = Math.max(1, Math.min(30, Math.floor(Number(m?.estrelas) || 1)));
+
+  let vantagemMedia = 1;
+  if (elementosFase.length > 0) {
+    let soma = 0;
+    for (const elInim of elementosFase) {
+      const atkMult = multElemento(el, elInim);
+      const defMult = multElemento(elInim, el);
+      soma += atkMult * 0.7 + (defMult <= 0.5 ? 1.4 : defMult >= 2 ? 0.6 : 1.0) * 0.3;
+    }
+    vantagemMedia = soma / elementosFase.length;
+  }
+
+  const forcaBase = nivel * 12 + (tier - 1) * 35 + (estrelas - 1) * 14;
+  const score = Math.round(forcaBase * vantagemMedia * 100) / 100;
+  return { score, forcaBase, vantagemMedia: Math.round(vantagemMedia * 100) / 100, elemento: el, nivel, tier, estrelas };
+}
+
+export function autoFormarParaFase(save, faseOuInimigos, { aplicar = true, maxVagas = 4 } = {}) {
+  const idle = save?.idle;
+  const equipe = Array.isArray(idle?.equipe) ? idle.equipe : [];
+  const elementosFase = extrairElementosFase(faseOuInimigos);
+  if (!equipe.length) {
+    return { ok: false, motivo: 'Nenhum Onírico disponível na equipe.', elementosFase, formacao: [null, null, null, null], selecionados: [] };
+  }
+
+  const candidatos = equipe
+    .map((m, idx) => {
+      if (!m) return null;
+      const uid = m.uid || `o${idx}`;
+      if (!m.uid) m.uid = uid;
+      const aval = pontuarOniricoParaFase(m, elementosFase);
+      return { uid, idx, especie: m.especie, ...aval };
+    })
+    .filter(Boolean);
+
+  candidatos.sort((a, b) =>
+    b.score - a.score
+    || b.nivel - a.nivel
+    || b.tier - a.tier
+    || b.estrelas - a.estrelas
+    || a.idx - b.idx
+  );
+
+  const escolhidos = candidatos.slice(0, Math.max(1, Math.min(4, maxVagas)));
+  const formacao = escolhidos.map((c) => c.uid);
+  while (formacao.length < 4) formacao.push(null);
+
+  if (aplicar && idle) {
+    idle.formacao = [...formacao];
+  }
+  return { ok: true, elementosFase, formacao, selecionados: escolhidos };
+}

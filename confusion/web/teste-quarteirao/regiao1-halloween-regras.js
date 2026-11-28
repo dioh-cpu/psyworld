@@ -89,17 +89,44 @@ export function comprarLoja(save, id, aplicar = {}) {
   return { ok: true, item: it };
 }
 
-// ---------- poções de XP (Domador ou Onírico), preservando o excedente ----------
+// ---------- poções de XP (Domador ou qualquer Onírico da equipe/banco, por índice ou uid), preservando o excedente ----------
 export function alvoXp(save, alvo) {
   if (alvo === 'domador') { const j = save.idle.jogador; return { obj: { nivel: nivelDe(j.xp), xp: j.xp }, salvar: (o) => { j.xp = o.xp; } }; }
-  const m = save.idle.equipe?.[Number(alvo)]; if (!m) return null;
+  let m = null;
+  if (typeof alvo === 'string' && !/^\d+$/.test(alvo)) {
+    m = (save.idle?.equipe || []).find((u) => u?.uid === alvo)
+      || (save.idle?.banco || []).find((u) => u?.uid === alvo)
+      || null;
+  } else {
+    m = save.idle?.equipe?.[Number(alvo)] || null;
+  }
+  if (!m) return null;
   return { obj: { nivel: m.nivel || 1, xp: Math.max(m.xp || 0, xpTotal(m.nivel || 1)) }, salvar: (o) => { m.xp = o.xp; m.nivel = o.nivel; } };
 }
-export const previsaoPocao = (save, alvo, pocao) => { const a = alvoXp(save, alvo); return a && POCOES[pocao] ? previsaoXp(a.obj, POCOES[pocao].xp) : null; };
-export function usarPocao(save, alvo, pocao) {
-  const h = hwDe(save); if (!(h.pocoes[pocao] > 0)) return { ok: false, motivo: 'Você não tem essa poção.' };
-  const a = alvoXp(save, alvo); if (!a) return { ok: false, motivo: 'Alvo inválido.' };
-  h.pocoes[pocao] -= 1; const r = aplicarXp(a.obj, POCOES[pocao].xp); a.salvar(a.obj); return { ok: true, ...r };
+export const previsaoPocao = (save, alvo, pocao, qtd = 1) => {
+  const a = alvoXp(save, alvo);
+  const n = Math.max(1, Math.floor(Number(qtd) || 1));
+  return a && POCOES[pocao] ? previsaoXp(a.obj, POCOES[pocao].xp * n) : null;
+};
+export function podeUsarPocao(save, alvo, pocao, qtd = 1) {
+  const n = Math.max(1, Math.floor(Number(qtd) || 1));
+  const h = hwDe(save);
+  const saldo = Math.max(0, Math.floor(Number(h.pocoes[pocao]) || 0));
+  if (!POCOES[pocao]) return { ok: false, motivo: 'Poção inválida.', saldo };
+  if (saldo < n) return { ok: false, motivo: `Faltam poções (precisa ${n}, saldo ${saldo}).`, saldo };
+  const a = alvoXp(save, alvo);
+  if (!a) return { ok: false, motivo: 'Alvo inválido.', saldo };
+  return { ok: true, saldo, qtd: n, xpTotal: POCOES[pocao].xp * n, previsao: previsaoXp(a.obj, POCOES[pocao].xp * n) };
+}
+export function usarPocao(save, alvo, pocao, qtd = 1) {
+  const chk = podeUsarPocao(save, alvo, pocao, qtd);
+  if (!chk.ok) return { ok: false, motivo: chk.motivo };
+  const h = hwDe(save);
+  const a = alvoXp(save, alvo);
+  h.pocoes[pocao] -= chk.qtd;
+  const r = aplicarXp(a.obj, chk.xpTotal);
+  a.salvar(a.obj);
+  return { ok: true, qtdUsada: chk.qtd, xpAplicado: chk.xpTotal, saldoRestante: h.pocoes[pocao], ...r };
 }
 export const darPocao = (save, id, n = 1) => { const h = hwDe(save); h.pocoes[id] = (h.pocoes[id] || 0) + n; };
 

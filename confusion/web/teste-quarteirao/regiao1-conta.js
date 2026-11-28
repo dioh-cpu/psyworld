@@ -13,8 +13,10 @@ const DIA = 86400000;
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const TIER_INICIAL = FRAGMENTOS_SONHO_CFG.tierIniciaisPorFase[1]; // T4 na forma base das 5 linhagens iniciais
 const ELEMENTO_ROTULO = { trevas: 'Noturno', fogo: 'Fogo', agua: 'Água', planta: 'Planta', luz: 'Diurno (luz)' };
-// As cinco linhas iniciais derivadas dos dados reais de LINHAS: começam na forma base T4
-export const INICIAIS = LINHAS.map((l) => {
+// Escolhas iniciais oficiais: apenas Brasinha (Ignavor), Gotalume (Vaelith) e Sementil (Brotavel).
+// Penumbrio (Noctarn) e Solinho (Solarin) foram removidos das escolhas iniciais.
+export const INICIAIS_ESCOLHA_IDS = ['ignavor', 'vaelith', 'brotavel'];
+export const INICIAIS = LINHAS.filter((l) => INICIAIS_ESCOLHA_IDS.includes(l.id)).map((l) => {
   const el = ELEMENTO_DA_ESPECIE[l.inicial] || 'neutro';
   const cls = infoClasse(l.inicial);
   return {

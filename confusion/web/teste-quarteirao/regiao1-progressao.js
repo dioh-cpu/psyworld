@@ -46,6 +46,14 @@ export const POCOES = {
   pocao_xp_m: { nome: 'Poção de XP média', icone: '⚗️', xp: 12000 },
   pocao_xp_g: { nome: 'Poção de XP grande', icone: '🍶', xp: 90000 },
 };
+// Regra oficial de uso das Poções de XP: sem limite diário (limitado pelo saldo), elegível para qualquer Onírico possuído (equipe/banco) ou Domador.
+export const POCOES_XP_CFG = {
+  usosPorDia: null,
+  maxPorClique: 50,
+  alvosElegiveis: 'qualquer_onirico_ou_domador',
+  preservaExcedente: true,
+  pocoes: POCOES,
+};
 // Faixas de nível das 12 regiões planejadas (configuráveis): cada região aumenta a dificuldade
 export const REGIOES = [[1, 25], [20, 45], [40, 70], [65, 95], [90, 120], [115, 150], [145, 180], [175, 210], [205, 240], [235, 265], [260, 285], [280, 300]];
 export const nivelDaRegiao = (r, t) => { const [a, b] = REGIOES[Math.max(0, Math.min(REGIOES.length - 1, r - 1))]; return Math.round(a + (b - a) * Math.max(0, Math.min(1, t))); };
