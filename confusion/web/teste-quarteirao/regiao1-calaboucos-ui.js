@@ -64,15 +64,15 @@ export function renderizarPainelCalaboucos(save, st) {
 
   const lojaBtns = cal.conjuntos.map((conj) => `<button class="btn-sec" data-cal-comprar="${esc(cal.id)}:${esc(conj)}" ${c.moedas >= CALABOUCOS_CFG.custoLojaReliquia ? '' : 'disabled'}>🏺 ${esc(conj)} (${CALABOUCOS_CFG.custoLojaReliquia} moedas)</button>`).join('');
 
-  return `<div class="bl">
+  return `<div class="bl cal-lista">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
       <b>🏰 Calabouços de Relíquias (${CALABOUCOS_CATALOGO.length} × ${CALABOUCOS_CFG.maxNiveis} níveis · 18 elementos)</b>
       <span class="tag">🪙 Moedas de Calabouço: ${c.moedas}</span>
     </div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
+    <div class="cal-filtros" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px">${filtrosEl}</div>
+    <div class="cal-seletores" style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
   </div>
-  <div class="bl">
+  <div class="bl cal-detalhe">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
       <div>
         <h4 style="margin:0;color:#fde68a">${esc(cal.nome)} · Nível ${nvSel}/${CALABOUCOS_CFG.maxNiveis}</h4>
