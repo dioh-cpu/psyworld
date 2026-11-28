@@ -39,3 +39,7 @@ Cada sistema deverá ter identidade própria. As duas molduras preservam o centr
 - `moldura-reliquias-joalheria.png`: bancada, joias, correntes e veludo; variante de Relíquias.
 
 São artes independentes para revisão, com áreas centrais transparentes. A aplicação responsiva e a legibilidade permanecem sem teste.
+- `moldura-calaboucos.png`: 1536 × 1024, pedra, grades e correntes.
+- `moldura-campanha.png`: 1536 × 1024, pergaminhos, bússola e mapas.
+
+Centro e canto superior esquerdo destes dois PNGs têm alfa zero; a checagem integral dos contornos e a adaptação em tela seguem pendentes.
