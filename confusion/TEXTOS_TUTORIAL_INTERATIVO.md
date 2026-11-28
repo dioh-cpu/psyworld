@@ -1,7 +1,5 @@
 # Textos do tutorial interativo
 
-Proposta para a interface, em ordem. A navegação e a validação das ações são responsabilidade do dono da UI; os efeitos e as condições de uso da poção dependem da regra de asutaroto291.
-
 ## 1. Invocação
 
 **Título:** Conheça seus Oníricos
@@ -38,8 +36,3 @@ Proposta para a interface, em ordem. A navegação e a validação das ações s
 
 **Após usar:** Pronto! Seu Onírico recebeu XP. Continue sua aventura.
 
-## Para implementação
-
-- A terceira etapa aparece quando o jogador receber a primeira poção de XP, depois das duas etapas anteriores.
-- A etapa termina após o uso efetivo; abrir a Equipe ou selecionar um Onírico, por si só, não a conclui.
-- Não fixar quantidade de XP, número de usos ou elegibilidade até asutaroto291 definir a regra. Os rótulos dos botões devem acompanhar os nomes finais da interface.
