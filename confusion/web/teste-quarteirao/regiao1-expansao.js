@@ -259,7 +259,7 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     @media (orientation: portrait) and (max-width: 600px) {
       #modal-exp[data-tela="equipe"] .grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
       #modal-exp[data-tela="equipe"] .eq-col { min-width: 0; padding: 4px; font-size: 10px; overflow-wrap: anywhere; }
-      #modal-exp[data-tela="equipe"] .eq-col .mini-mold { max-width: 86px; margin: 0 auto 3px; }
+      #modal-exp[data-tela="equipe"] .eq-col .mini-mold { max-width: 65px; margin: 0 auto 3px; }
       #modal-exp[data-tela="equipe"] .eq-arena { gap: 4px; padding: 6px; }
       #modal-exp[data-tela="equipe"] .eq-vaga { padding: 4px 2px; font-size: 10px; overflow-wrap: anywhere; }
       #modal-exp[data-tela="equipe"] .eq-vaga .mini-mold { width: min(60px, 100%); }
