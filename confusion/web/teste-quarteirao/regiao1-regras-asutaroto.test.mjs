@@ -210,8 +210,8 @@ test('Fragmentos de Sonho: drop 1%, idempotência (ativo e Idle offline) e separ
 test('Evolução de forma: custos 9/10 e 10/10 (29/30 e 30/30), preserva nível/estrelas/tier e promove T4→T5 apenas nos iniciais', () => {
   const s = novoSave();
   s.idle.equipe = [
-    criarUnidadeInicial('Brasinha', { nivel: 18, uid: 'ini_b', estrelas: 7 }),
-    { especie: 'Fanalino', nivel: 24, xp: 5000, tier: 2, raridade: 2, estrelas: 4, forma: 'natural', formaFase: 1, uid: 'nat_f' },
+    criarUnidadeInicial('Brasinha', { nivel: 41, uid: 'ini_b', estrelas: 7 }),
+    { especie: 'Fanalino', nivel: 41, xp: 5000, tier: 2, raridade: 2, estrelas: 4, forma: 'natural', formaFase: 1, uid: 'nat_f' },
   ];
 
   // 9/10 falha sem descontar
@@ -236,11 +236,12 @@ test('Evolução de forma: custos 9/10 e 10/10 (29/30 e 30/30), preserva nível/
   assert.equal(ev1.para, 'Ignavor');
   assert.equal(s.idle.equipe[0].especie, 'Ignavor');
   assert.equal(s.idle.equipe[0].tier, 4);
-  assert.equal(s.idle.equipe[0].nivel, 18);
+  assert.equal(s.idle.equipe[0].nivel, 41);
   assert.equal(s.idle.equipe[0].estrelas, 7);
   assert.equal(saldoFragmentoSonho(s, 'fogo'), 0);
 
-  // 29/30 falha; 30/30 evolui segunda→terceira promovendo inicial T4→T5 e preservando nível/estrelas
+  // 29/30 falha; 30/30 evolui segunda→terceira no Nv.81 promovendo inicial T4→T5 e preservando nível/estrelas
+  s.idle.equipe[0].nivel = 81;
   adicionarFragmentoSonho(s, 'fogo', 29);
   assert.equal(evoluirFormaPorFragmentos(s, 0).ok, false);
   assert.equal(saldoFragmentoSonho(s, 'fogo'), 29);
@@ -250,7 +251,7 @@ test('Evolução de forma: custos 9/10 e 10/10 (29/30 e 30/30), preserva nível/
   assert.equal(ev2.ok, true);
   assert.equal(s.idle.equipe[0].especie, 'Ignaraz');
   assert.equal(s.idle.equipe[0].tier, 5);
-  assert.equal(s.idle.equipe[0].nivel, 18);
+  assert.equal(s.idle.equipe[0].nivel, 81);
   assert.equal(s.idle.equipe[0].estrelas, 7);
   assert.equal(saldoFragmentoSonho(s, 'fogo'), 0);
 
@@ -260,11 +261,12 @@ test('Evolução de forma: custos 9/10 e 10/10 (29/30 e 30/30), preserva nível/
   adicionarEssencia(s, 'inseto', 'media', 35);
   adicionarEssencia(s, 'inseto', 'maior', 10);
   const nf1 = evoluirFormaPorFragmentos(s, 1);
+  s.idle.equipe[1].nivel = 81;
   const nf2 = evoluirFormaPorFragmentos(s, 1);
   assert.equal(nf1.ok && nf2.ok, true);
   assert.equal(s.idle.equipe[1].formaFase, 3);
   assert.equal(s.idle.equipe[1].tier, 2);
-  assert.equal(s.idle.equipe[1].nivel, 24);
+  assert.equal(s.idle.equipe[1].nivel, 81);
   assert.equal(s.idle.equipe[1].estrelas, 4);
 });
 
@@ -438,10 +440,10 @@ test('Noctarn e Sombra ficam fora do banner permanente (Adventurer); Noctarn é 
   const criadoHw = s.idle.equipe[s.idle.equipe.length - 1];
   assert.equal(criadoHw.origem, 'banner');
 
-  // Penumbrio não evolui para Noctarn (única fonte do Noctarn é banner), mas Noctarn de banner evolui para Noctarion (T5)
+  // Penumbrio não evolui para Noctarn (única fonte do Noctarn é banner), mas Noctarn de banner evolui para Noctarion (T5) no Nv.81
   s.idle.equipe = [
-    criarUnidadeInicial('Penumbrio', { nivel: 15, uid: 'pen0', estrelas: 2 }),
-    { especie: 'Noctarn', nivel: 15, xp: 2000, tier: 4, raridade: 4, estrelas: 2, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'noc_b' },
+    criarUnidadeInicial('Penumbrio', { nivel: 41, uid: 'pen0', estrelas: 2 }),
+    { especie: 'Noctarn', nivel: 81, xp: 2000, tier: 4, raridade: 4, estrelas: 2, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'noc_b' },
   ];
   adicionarFragmentoSonho(s, 'trevas', 40);
   adicionarEssencia(s, 'trevas', 'media', 30);
@@ -514,7 +516,7 @@ test('Percurso 2 (Save antigo): equipe → evolução → revanche 10m → retor
     },
     equipe: [
       { especie: 'Noctarn', nivel: 12, xp: 1000, raridade: 3, estrelas: 3, forma: 'natural', inicial: true, uid: 'ini0' },
-      { especie: 'Noctarn', nivel: 10, xp: 720, raridade: 3, estrelas: 2, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'bn_sombra' },
+      { especie: 'Noctarn', nivel: 81, xp: 720, raridade: 3, estrelas: 2, forma: 'natural', origem: 'banner', fonteBanner: 'sombra', uid: 'bn_sombra' },
     ],
     formacao: ['ini0', 'bn_sombra', null, null],
     passe: { v: 2, edicao: '2026-11', xp: 10000, resgatado: 99, comprados: 0, descartado: 0, t5Pagos: { '2026-11': true } },
@@ -553,7 +555,7 @@ test('Percurso 2 (Save antigo): equipe → evolução → revanche 10m → retor
   assert.equal(evNoc.ok, true);
   assert.equal(idle.equipe[1].especie, 'Noctarion');
   assert.equal(idle.equipe[1].tier, 5);
-  assert.equal(idle.equipe[1].nivel, 10);
+  assert.equal(idle.equipe[1].nivel, 81);
   assert.equal(idle.equipe[1].estrelas, 2);
   assert.equal(idle.equipe[1].origem, 'banner');
   assert.equal(saldoFragmentoSonho(s, 'trevas'), 0);
@@ -697,30 +699,32 @@ test('XP do Idle ativo e offline: Oníricos da formação ganham XP, banco fica 
   const f0XpAntes = s.idle.equipe[0].xp;
   for (let i = 0; i < 30; i++) {
     const r = resolverAbateAuto(s, { especie: 'Fanalino', nivel: 6, derrotaId: `xp_at_${i}` }, () => 0.9);
-    assert.ok(r.xpOniricos > r.xp, 'Formação deve ganhar mais XP que o Domador por abate');
+    assert.ok(r.xpOniricos > 0 && r.xpOniricos <= 12, 'XP do Idle por abate deve ser reduzido (abaixo da Campanha Mini)');
   }
   const ganhoDomAtivo = s.idle.jogador.xp - domXpAntes;
   const ganhoFormAtivo = s.idle.equipe[0].xp - f0XpAntes;
-  assert.equal(ganhoDomAtivo, 30 * (XP_IDLE_CFG.ativoDomadorBase + 6 * XP_IDLE_CFG.ativoDomadorPorNivel)); // 300 XP (antes era 1380 XP)
-  assert.equal(ganhoFormAtivo, 30 * (XP_IDLE_CFG.ativoOniricoBase + 6 * XP_IDLE_CFG.ativoOniricoPorNivel)); // 1080 XP (antes era 0 XP)
+  assert.equal(ganhoDomAtivo, 30 * Math.round(XP_IDLE_CFG.ativoDomadorBase + 6 * XP_IDLE_CFG.ativoDomadorPorNivel));
+  assert.equal(ganhoFormAtivo, 30 * Math.round(XP_IDLE_CFG.ativoOniricoBase + 6 * XP_IDLE_CFG.ativoOniricoPorNivel));
   assert.ok(s.idle.equipe[0].nivel > 5);
   assert.ok(s.idle.equipe[1].nivel > 1);
   assert.equal(s.idle.equipe[2].xp, 0); // reserva fora da formação
 
-  // 10 minutos de farm offline (Nv.6 = 16 abates): Domador recebe 120 XP (antes 608), formação recebe 448 XP (antes 0)
+  // 10 minutos de farm offline (Nv.6 = 16 abates): XP reduzido em sincronia com Domador e abaixo da Campanha Mini
   const t0 = 50_000_000;
   s.idle.ultimoTickMs = t0 - 10 * 60_000;
   const resumo = calcularGanhoOffline(s, 6, t0);
+  const xpOffDomEsp = Math.round(16 * (XP_IDLE_CFG.offlineDomadorBase + 6 * XP_IDLE_CFG.offlineDomadorPorNivel));
+  const xpOffOniEsp = Math.round(16 * (XP_IDLE_CFG.offlineOniricoBase + 6 * XP_IDLE_CFG.offlineOniricoPorNivel));
   assert.equal(resumo.minutos, 10);
   assert.equal(resumo.abates, 16);
-  assert.equal(resumo.xp, 120);
-  assert.equal(resumo.xpOniricos, 448);
+  assert.equal(resumo.xp, xpOffDomEsp);
+  assert.equal(resumo.xpOniricos, xpOffOniEsp);
 
   const domAntesOff = s.idle.jogador.xp;
   const f1AntesOff = s.idle.equipe[1].xp;
   const off = aplicarGanhoOffline(s, resumo, 'Fanalino', t0, () => 0.9);
-  assert.equal(s.idle.jogador.xp - domAntesOff, 120);
-  assert.equal(s.idle.equipe[1].xp - f1AntesOff, 448);
+  assert.equal(s.idle.jogador.xp - domAntesOff, xpOffDomEsp);
+  assert.equal(s.idle.equipe[1].xp - f1AntesOff, xpOffOniEsp);
   assert.equal(off.oniricosXp.length, 2);
   assert.equal(s.idle.equipe[2].xp, 0);
 });

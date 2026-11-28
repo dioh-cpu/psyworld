@@ -58,24 +58,33 @@ const TITULO_PARALELA = (capNome, ordem) => [
   `Rastreador de ${capNome}`, `Vigia de ${capNome}`, `Desbravador de ${capNome}`,
 ][((ordem - 1) % 6)];
 
+const ACOES_PARALELAS_MODELOS = [
+  { tipoAcao: 'fortalecer_reliquia', metaBase: 5, texto: (m) => `Fortalecer relíquias ${m} vezes` },
+  { tipoAcao: 'subir_nivel_onirico', metaBase: 3, texto: (m) => `Subir o nível de Oníricos ${m} vezes` },
+  { tipoAcao: 'vencer_batalha_campanha', metaBase: 2, texto: (m) => `Vencer ${m} batalhas na Campanha Mini` },
+  { tipoAcao: 'vencer_andar_torre', metaBase: 2, texto: (m) => `Concluir ${m} andares nas Torres` },
+  { tipoAcao: 'vencer_calabouco', metaBase: 1, texto: (m) => `Concluir ${m} descida(s) em Calabouços de Relíquias` },
+  { tipoAcao: 'invocar_banner', metaBase: 1, texto: (m) => `Realizar ${m} invocação(ões) no Banner` },
+];
+
 const MODELOS_PARALELAS_EXTRA = [
-  { sufixo: 'Patrulha da Fronteira', obj: 'Limpar a trilha inicial e conter batedores errantes', req: 1, diam: 15, ouro: 250 },
-  { sufixo: 'Eco nas Ruínas', obj: 'Investigar os ecos estranhos nas pedras antigas', req: 2, diam: 15, ouro: 300 },
-  { sufixo: 'Caravana Interrompida', obj: 'Escoltar suprimentos pela estrada principal', req: 2, diam: 20, ouro: 350 },
-  { sufixo: 'Sinais na Neblina', obj: 'Rastrear pegadas elementais pela clareira', req: 3, diam: 20, ouro: 400 },
-  { sufixo: 'Ponte dos Ventos', obj: 'Liberar a travessia tomada por criaturas selvagens', req: 4, diam: 20, ouro: 450 },
-  { sufixo: 'Colheita Ameaçada', obj: 'Proteger os moradores locais durante a coleta', req: 4, diam: 20, ouro: 450 },
-  { sufixo: 'Relíquia Enterrada', obj: 'Recuperar um artefato perdido antes dos invasores', req: 5, diam: 25, ouro: 500 },
-  { sufixo: 'Vigia do Desfiladeiro', obj: 'Vencer a emboscada na passagem estreita', req: 5, diam: 25, ouro: 550 },
-  { sufixo: 'Fenda Elemental', obj: 'Estabilizar o foco de energia fora de controle', req: 6, diam: 25, ouro: 600 },
-  { sufixo: 'Mensageiro Perdido', obj: 'Resgatar o mensageiro cercado na rota secundária', req: 6, diam: 25, ouro: 600 },
-  { sufixo: 'Altar Esquecido', obj: 'Derrotar os guardiões que despertaram no altar', req: 7, diam: 30, ouro: 650 },
-  { sufixo: 'Ronda Noturna', obj: 'Patrulhar os arredores da área segura ao anoitecer', req: 7, diam: 30, ouro: 700 },
-  { sufixo: 'Bando em Fúria', obj: 'Conter o bando agitado próximo ao acampamento', req: 8, diam: 30, ouro: 750 },
-  { sufixo: 'Passagem Subterrânea', obj: 'Explorar o atalho oculto sob as rochas', req: 8, diam: 30, ouro: 800 },
-  { sufixo: 'Escudo do Povo', obj: 'Repelir a investida contra o posto avançado', req: 9, diam: 35, ouro: 850 },
-  { sufixo: 'Desafio da Elite', obj: 'Provar força frente à guarda de elite do capítulo', req: 9, diam: 35, ouro: 900 },
-  { sufixo: 'Crônica Final do Reino', obj: 'Encerrar a última ameaça remanescente após o chefe', req: 10, diam: 40, ouro: 1000 },
+  { sufixo: 'Forja de Relíquias', obj: 'Fortalecer uma relíquia 5 vezes na aba Relíquias', req: 1, diam: 15, ouro: 250, acaoIdx: 0 },
+  { sufixo: 'Treino da Equipe', obj: 'Subir o nível de Oníricos 3 vezes em batalhas ou poções', req: 2, diam: 15, ouro: 300, acaoIdx: 1 },
+  { sufixo: 'Marcha na Campanha', obj: 'Vencer 2 batalhas na Campanha Mini do capítulo', req: 2, diam: 20, ouro: 350, acaoIdx: 2 },
+  { sufixo: 'Ascensão nas Torres', obj: 'Concluir 2 andares nas Torres Elementais', req: 3, diam: 20, ouro: 400, acaoIdx: 3 },
+  { sufixo: 'Caça às Relíquias', obj: 'Concluir 1 Calabouço de Relíquias', req: 4, diam: 20, ouro: 450, acaoIdx: 4 },
+  { sufixo: 'Chamado do Banner', obj: 'Realizar 1 invocação no Banner Permanente', req: 4, diam: 20, ouro: 450, acaoIdx: 5 },
+  { sufixo: 'Reforço de Elite', obj: 'Fortalecer relíquias 5 vezes', req: 5, diam: 25, ouro: 500, acaoIdx: 0 },
+  { sufixo: 'Evolução de Equipe', obj: 'Subir o nível de Oníricos 3 vezes', req: 5, diam: 25, ouro: 550, acaoIdx: 1 },
+  { sufixo: 'Fenda Elemental', obj: 'Vencer 2 batalhas na Campanha Mini', req: 6, diam: 25, ouro: 600, acaoIdx: 2 },
+  { sufixo: 'Escalada Elemental', obj: 'Concluir 2 andares nas Torres', req: 6, diam: 25, ouro: 600, acaoIdx: 3 },
+  { sufixo: 'Altar das Relíquias', obj: 'Concluir 1 Calabouço de Relíquias', req: 7, diam: 30, ouro: 650, acaoIdx: 4 },
+  { sufixo: 'Ronda de Invocação', obj: 'Realizar 1 invocação no Banner', req: 7, diam: 30, ouro: 700, acaoIdx: 5 },
+  { sufixo: 'Oficina de Ouro', obj: 'Fortalecer relíquias 5 vezes', req: 8, diam: 30, ouro: 750, acaoIdx: 0 },
+  { sufixo: 'Treino Intenso', obj: 'Subir o nível de Oníricos 3 vezes', req: 8, diam: 30, ouro: 800, acaoIdx: 1 },
+  { sufixo: 'Escudo do Povo', obj: 'Vencer 2 batalhas na Campanha Mini', req: 9, diam: 35, ouro: 850, acaoIdx: 2 },
+  { sufixo: 'Desafio da Torre', obj: 'Concluir 2 andares nas Torres', req: 9, diam: 35, ouro: 900, acaoIdx: 3 },
+  { sufixo: 'Crônica Final do Reino', obj: 'Concluir 1 Calabouço após o chefe', req: 10, diam: 40, ouro: 1000, acaoIdx: 4 },
 ];
 
 export const MISSOES_PARALELAS_CATALOGO = CAPITULOS_CAMPANHA_MINI.flatMap((cap) => {
@@ -128,17 +137,19 @@ export const MISSOES_PARALELAS_CATALOGO = CAPITULOS_CAMPANHA_MINI.flatMap((cap) 
     const reqNum = mod.req;
     const fBase = cap.fases[Math.min(cap.fases.length - 1, reqNum - 1)];
     const titulo = `${mod.sufixo} · ${cap.nome}`;
+    const acaoMod = ACOES_PARALELAS_MODELOS[mod.acaoIdx % ACOES_PARALELAS_MODELOS.length];
     return {
       id: `par_${cNum}_${ordem}`,
       capitulo: cNum,
       ordem,
       faseRequisitoId: `${cNum}-${reqNum}`,
       titulo,
-      objetivo: `${mod.obj} em ${cap.nome} (requer fase ${cNum}-${reqNum}).`,
+      objetivo: `${acaoMod.texto(acaoMod.metaBase)} em ${cap.nome} (requer fase ${cNum}-${reqNum}).`,
       npc: npcPadrao,
       elemento: cap.elemento,
+      acaoObrigatoria: { tipo: acaoMod.tipoAcao, meta: acaoMod.metaBase, desc: acaoMod.texto(acaoMod.metaBase) },
       etapas: [
-        { id: 'npc', tipo: 'dialogo', npc: npcPadrao, texto: `${mod.obj} em ${cap.nome}.` },
+        { id: 'acao', tipo: 'acao', tipoAcao: acaoMod.tipoAcao, meta: acaoMod.metaBase, titulo: acaoMod.texto(acaoMod.metaBase) },
         { id: 'b1', tipo: 'batalha', titulo: `${titulo} — Confronto`, inimigos: fBase.inimigos.slice(0, 2) },
       ],
       recompensa: {
@@ -232,11 +243,21 @@ export function missoesDe(save) {
   const m = idle.missoes;
   m.paralelasAtivas ||= {};
   m.paralelasConcluidas ||= {};
+  m.acoesParalelas ||= {};
+  m.campanhaNpcs ||= {};
   m.enfeitesRefugio ||= {};
   m.titulos ||= {};
   m.progresso ||= {};
   m.marcosColetados ||= {};
   return m;
+}
+
+export function registrarAcaoParalela(save, tipoAcao, qtd = 1) {
+  if (!tipoAcao) return 0;
+  const m = missoesDe(save);
+  const n = Math.max(1, Math.floor(Number(qtd) || 1));
+  m.acoesParalelas[tipoAcao] = (Number(m.acoesParalelas[tipoAcao]) || 0) + n;
+  return m.acoesParalelas[tipoAcao];
 }
 
 function armasUnicasBasico(save) {
@@ -301,6 +322,21 @@ export function avancarEtapaParalela(save, missaoId, resultadoBatalha = null) {
   const idx = m.paralelasAtivas[missaoId];
   const etapa = def.etapas[idx];
   if (!etapa) return { ok: false, motivo: 'Etapa inválida.' };
+  if (etapa.tipo === 'acao') {
+    const feito = Number(m.acoesParalelas?.[etapa.tipoAcao]) || 0;
+    if (feito < (etapa.meta || 1)) {
+      return {
+        ok: false,
+        acaoPendente: true,
+        progresso: feito,
+        meta: etapa.meta || 1,
+        motivo: `Objetivo pendente: ${etapa.titulo} (${feito}/${etapa.meta || 1}).`,
+      };
+    }
+  }
+  if (etapa.tipo === 'dialogo' && resultadoBatalha?.exigirContato && !resultadoBatalha?.encostou) {
+    return { ok: false, semContato: true, motivo: 'Encoste no NPC para iniciar a missão.' };
+  }
   if (etapa.tipo === 'batalha') {
     const venceu = Boolean(resultadoBatalha?.venceu || resultadoBatalha?.fim === 'vitoria');
     if (!venceu) return { ok: false, motivo: 'Vença a batalha para avançar.' };
@@ -452,6 +488,18 @@ export function registrarMarco(save, tipo, dados = {}) {
       break;
   }
 
+  // Registra ações reais automaticamente para Missões Paralelas (sem concluir clicando sem fazer nada)
+  const mapaAcao = {
+    campanha_fase: 'vencer_batalha_campanha',
+    calabouco: 'vencer_calabouco',
+    torre_elemental: 'vencer_andar_torre',
+    torre_unica: 'vencer_andar_torre',
+    nivel_onirico: 'subir_nivel_onirico',
+    reliquia_reforco: 'fortalecer_reliquia',
+    invocacao: 'invocar_banner',
+  };
+  if (mapaAcao[tipo]) registrarAcaoParalela(save, mapaAcao[tipo], qtd);
+
   return sincronizarMarcosDoSave(save);
 }
 
@@ -517,6 +565,88 @@ export function coletarMarco(save, marcoId, rng = Math.random) {
     entregue.fragmentoEscolha = pr.fragmentoEscolha;
   }
   return { ok: true, marco: def, premio: entregue };
+}
+
+// ---- Missões da Campanha com NPC: falar (encostar) -> cumprir no local -> voltar ao NPC para entregar ----
+export const MISSOES_CAMPANHA_NPC_CATALOGO = [
+  {
+    id: 'camp_npc_r1_praia',
+    regiao: 1,
+    npcId: 'npc_pescadora_maren',
+    npcNome: 'Maren, a Pescadora',
+    npcMapa: 'C1',
+    localObjetivo: 'E1',
+    objetivo: 'Derrotar 5 Oníricos selvagens na Trilha E1 e voltar à Maren em C1.',
+    meta: 5,
+    premio: { ouro: 350, diamantes: 30 },
+  },
+  {
+    id: 'camp_npc_r1_cogumelos',
+    regiao: 1,
+    npcId: 'npc_coletor_goblin',
+    npcNome: 'Coletor Goblin',
+    npcMapa: 'D4',
+    localObjetivo: 'D7',
+    objetivo: 'Derrotar 6 Oníricos na Floresta de Cogumelos (D7) e retornar ao Coletor Goblin em D4.',
+    meta: 6,
+    premio: { ouro: 450, diamantes: 40 },
+  },
+  {
+    id: 'camp_npc_r2_colmeia',
+    regiao: 2,
+    npcId: 'npc_melissa_apicultora',
+    npcNome: 'Melissa, a Apicultora',
+    npcMapa: 'R2_PRACA',
+    localObjetivo: 'R2_TERRACOS',
+    objetivo: 'Derrotar 8 Oníricos nos Terraços Dourados e entregar a missão para Melissa.',
+    meta: 8,
+    premio: { ouro: 700, diamantes: 60 },
+  },
+];
+
+export const MISSOES_CAMPANHA_NPC_POR_ID = Object.fromEntries(MISSOES_CAMPANHA_NPC_CATALOGO.map((x) => [x.id, x]));
+
+export function aceitarMissaoCampanhaNpc(save, missaoId, { encostouNpc = false } = {}) {
+  const def = MISSOES_CAMPANHA_NPC_POR_ID[missaoId];
+  if (!def) return { ok: false, motivo: 'Missão de campanha não encontrada.' };
+  if (!encostouNpc) return { ok: false, semContato: true, motivo: `Aproxime-se e encoste em ${def.npcNome} para aceitar a missão.` };
+  const m = missoesDe(save);
+  const cur = m.campanhaNpcs[missaoId];
+  if (cur?.estado === 'concluida') return { ok: false, jaConcluida: true, motivo: 'Missão já entregue.' };
+  if (cur?.estado === 'ativa' || cur?.estado === 'pronta') return { ok: true, missao: def, estado: cur };
+  m.campanhaNpcs[missaoId] = { estado: 'ativa', progresso: 0 };
+  return { ok: true, missao: def, estado: m.campanhaNpcs[missaoId] };
+}
+
+export function registrarProgressoMissaoCampanhaNpc(save, missaoId, { localAtual = null, abates = 1 } = {}) {
+  const def = MISSOES_CAMPANHA_NPC_POR_ID[missaoId];
+  if (!def) return { ok: false, motivo: 'Missão de campanha não encontrada.' };
+  const m = missoesDe(save);
+  const cur = m.campanhaNpcs[missaoId];
+  if (!cur || cur.estado !== 'ativa') return { ok: false, motivo: 'Aceite a missão com o NPC antes.' };
+  if (localAtual !== def.localObjetivo) {
+    return { ok: false, localIncorreto: true, motivo: `Vá até ${def.localObjetivo} para cumprir este objetivo.` };
+  }
+  cur.progresso = Math.min(def.meta, (cur.progresso || 0) + Math.max(1, Math.floor(Number(abates) || 1)));
+  if (cur.progresso >= def.meta) cur.estado = 'pronta';
+  return { ok: true, missao: def, progresso: cur.progresso, meta: def.meta, prontaParaEntregar: cur.estado === 'pronta' };
+}
+
+export function entregarMissaoCampanhaNpc(save, missaoId, { encostouNpc = false } = {}) {
+  const def = MISSOES_CAMPANHA_NPC_POR_ID[missaoId];
+  if (!def) return { ok: false, motivo: 'Missão de campanha não encontrada.' };
+  if (!encostouNpc) return { ok: false, semContato: true, motivo: `Volte e encoste em ${def.npcNome} para entregar a missão.` };
+  const m = missoesDe(save);
+  const cur = m.campanhaNpcs[missaoId];
+  if (!cur || cur.estado === 'concluida') return { ok: false, jaConcluida: cur?.estado === 'concluida', motivo: 'Missão indisponível para entrega.' };
+  if (cur.estado !== 'pronta' || (cur.progresso || 0) < def.meta) {
+    return { ok: false, motivo: `Objetivo incompleto (${cur.progresso || 0}/${def.meta}).` };
+  }
+  cur.estado = 'concluida';
+  save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
+  save.recompensas.gold += def.premio.ouro || 0;
+  save.recompensas.diamantes += def.premio.diamantes || 0;
+  return { ok: true, missao: def, premio: { ...def.premio } };
 }
 
 // Registra os ganchos automáticos na Campanha Mini e na Evolução sem criar dependência circular.

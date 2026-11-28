@@ -11,15 +11,28 @@ import { LINHAGENS_REINOS } from './regiao1-kits-reinos.js';
 export const RELIQUIAS_CFG = {
   capacidadeBase: 200,
   capacidadeMax: 500,
-  reforcoMax: 15,
+  reforcoMax: 100, // teto absoluto (mítica); cada raridade respeita TETO_NIVEL_RELIQUIA_POR_RARIDADE
   nivelRecalibrarMin: 100,
   tetoPoderTotal: 0.70,
 };
 
-export const RARIDADES_ORDEM = ['comum', 'incomum', 'rara', 'epica', 'lendaria'];
-export const SECUNDARIOS_POR_RARIDADE = { comum: 0, incomum: 1, rara: 2, epica: 3, lendaria: 4 };
-export const ESCALA_RARIDADE = { comum: 0.28, incomum: 0.38, rara: 0.48, epica: 0.72, lendaria: 1.00 };
-const PO_DESMONTE_BASE = { comum: 4, incomum: 8, rara: 16, epica: 32, lendaria: 64 };
+export const TETO_NIVEL_RELIQUIA_POR_RARIDADE = {
+  comum: 10,
+  incomum: 20,
+  rara: 30,
+  epica: 50,
+  lendaria: 80,
+  mitica: 100,
+};
+
+export function nivelMaximoReliquia(raridade = 'comum') {
+  return TETO_NIVEL_RELIQUIA_POR_RARIDADE[raridade] || TETO_NIVEL_RELIQUIA_POR_RARIDADE.comum;
+}
+
+export const RARIDADES_ORDEM = ['comum', 'incomum', 'rara', 'epica', 'lendaria', 'mitica'];
+export const SECUNDARIOS_POR_RARIDADE = { comum: 0, incomum: 1, rara: 2, epica: 3, lendaria: 4, mitica: 4 };
+export const ESCALA_RARIDADE = { comum: 0.28, incomum: 0.38, rara: 0.48, epica: 0.72, lendaria: 1.00, mitica: 1.12 };
+const PO_DESMONTE_BASE = { comum: 4, incomum: 8, rara: 16, epica: 32, lendaria: 64, mitica: 120 };
 
 export const PARTES_RELIQUIA = {
   coroa: { id: 'coroa', nome: 'Coroa', fixo: true, opcoesPrincipais: ['vida_flat'] },
@@ -199,8 +212,9 @@ export function reliquiasDe(save) {
 export function valorPrincipalNoNivel(attr, raridade, reforco = 0) {
   const curva = CURVA_PRINCIPAL_LENDARIA[attr] || CURVA_PRINCIPAL_LENDARIA.ataque_pct;
   const esc = ESCALA_RARIDADE[raridade] || 0.5;
-  const nv = Math.max(0, Math.min(RELIQUIAS_CFG.reforcoMax, Number(reforco) || 0));
-  const bruto = (curva.base + ((curva.max - curva.base) * nv) / RELIQUIAS_CFG.reforcoMax) * esc;
+  const maxNv = nivelMaximoReliquia(raridade);
+  const nv = Math.max(0, Math.min(maxNv, Number(reforco) || 0));
+  const bruto = (curva.base + ((curva.max - curva.base) * nv) / maxNv) * esc;
   return curva.inteiro ? Math.round(bruto) : Number(bruto.toFixed(4));
 }
 
@@ -298,20 +312,24 @@ function findEquippedOwner(r, relId) {
   return null;
 }
 
-export function custoReforcoReliquia(reforcoAtual) {
+export function custoReforcoReliquia(reforcoAtual, raridade = 'comum') {
   const prox = Math.floor(Number(reforcoAtual) || 0) + 1;
-  return { ouro: 150 + prox * 75, poReforco: prox * 2 };
+  // Gold é requisito obrigatório em todos os níveis; até +15 mantém a curva clássica (150 + 75*k), depois escala +120/nível
+  const ouroBase = prox <= 15 ? 150 + prox * 75 : 1275 + (prox - 15) * 120;
+  const multRar = { comum: 1, incomum: 1, rara: 1, epica: 1, lendaria: 1, mitica: 1.15 }[raridade] || 1;
+  return { ouro: Math.round(ouroBase * multRar), poReforco: prox <= 15 ? prox * 2 : 30 + (prox - 15) * 3 };
 }
 
 export function reforcarReliquia(save, relId, { rng = Math.random } = {}) {
   const r = reliquiasDe(save);
   const rel = acharReliquia(save, relId);
   if (!rel) return { ok: false, motivo: 'Relíquia não encontrada.' };
-  if ((rel.reforco || 0) >= RELIQUIAS_CFG.reforcoMax) {
-    return { ok: false, jaMaximo: true, motivo: 'Relíquia já está em +15.' };
+  const teto = nivelMaximoReliquia(rel.raridade);
+  if ((rel.reforco || 0) >= teto) {
+    return { ok: false, jaMaximo: true, teto, motivo: `Relíquia ${rel.raridade} já está no nível máximo (+${teto}).` };
   }
 
-  const custo = custoReforcoReliquia(rel.reforco || 0);
+  const custo = custoReforcoReliquia(rel.reforco || 0, rel.raridade);
   save.recompensas = save.recompensas || { gold: 0, diamantes: 0, xp: 0 };
   if ((save.recompensas.gold || 0) < custo.ouro) {
     return { ok: false, motivo: `Ouro insuficiente (precisa ${custo.ouro}, saldo ${save.recompensas.gold || 0}).` };

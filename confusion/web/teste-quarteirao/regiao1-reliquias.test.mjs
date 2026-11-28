@@ -36,34 +36,33 @@ const novoSave = () => {
   return s;
 };
 
-test('Relíquias: partes fixas/variáveis, lendária +15 exata, reforço +0→+15, recalibração nv.100, trancar e desmontar', () => {
+test('Relíquias: teto por raridade (10/20/30/50/80/100), Gold obrigatório, lendária +80 exata, recalibração nv.100, trancar e desmontar', () => {
   assert.equal(Object.keys(CONJUNTOS_RELIQUIAS).length, 13);
-  assert.equal(valorPrincipalNoNivel('ataque_pct', 'lendaria', 15), 0.30);
-  assert.equal(valorPrincipalNoNivel('critico', 'lendaria', 15), 0.20);
-  assert.equal(valorPrincipalNoNivel('velocidade', 'lendaria', 15), 25);
-  assert.equal(valorPrincipalNoNivel('roubo_vida', 'lendaria', 15), 0.08);
+  assert.equal(valorPrincipalNoNivel('ataque_pct', 'lendaria', 80), 0.30);
+  assert.equal(valorPrincipalNoNivel('critico', 'lendaria', 80), 0.20);
+  assert.equal(valorPrincipalNoNivel('velocidade', 'lendaria', 80), 25);
+  assert.equal(valorPrincipalNoNivel('roubo_vida', 'lendaria', 80), 0.08);
   assert.equal(SECUNDARIOS_POR_RARIDADE.comum, 0);
   assert.equal(SECUNDARIOS_POR_RARIDADE.lendaria, 4);
 
   const s = novoSave();
-  s.recompensas.gold = 100_000;
-  reliquiasDe(s).poReforco = 5_000;
+  s.recompensas.gold = 5_000_000;
+  reliquiasDe(s).poReforco = 50_000;
 
   const rCom = concederReliquia(s, { parte: 'coroa', elemento: 'fogo', raridade: 'comum', conjunto: 'furia' }).reliquia;
   assert.equal(rCom.principal.attr, 'vida_flat');
   assert.equal(rCom.secundarios.length, 0);
-  // +3 no comum abre o 1º secundário
-  assert.equal(reforcarReliquia(s, rCom.id).ok, true);
-  assert.equal(reforcarReliquia(s, rCom.id).ok, true);
-  assert.equal(reforcarReliquia(s, rCom.id).ok, true);
-  assert.equal(rCom.reforco, 3);
-  assert.equal(rCom.secundarios.length, 1);
+  // +3 no comum abre o 1º secundário; teto do comum = +10
+  for (let k = 0; k < 10; k++) assert.equal(reforcarReliquia(s, rCom.id).ok, true);
+  assert.equal(rCom.reforco, 10);
+  assert.equal(reforcarReliquia(s, rCom.id).jaMaximo, true);
 
   const rLen = concederReliquia(s, { parte: 'anel', elemento: 'fogo', raridade: 'lendaria', conjunto: 'furia', principalAttr: 'ataque_pct' }).reliquia;
   assert.equal(rLen.secundarios.length, 4);
-  for (let k = 0; k < 15; k++) assert.equal(reforcarReliquia(s, rLen.id).ok, true);
-  assert.equal(rLen.reforco, 15);
+  for (let k = 0; k < 80; k++) assert.equal(reforcarReliquia(s, rLen.id).ok, true);
+  assert.equal(rLen.reforco, 80);
   assert.equal(rLen.principal.valor, 0.30);
+  assert.equal(reforcarReliquia(s, rLen.id).jaMaximo, true);
 
   // Recalibrar bloqueado abaixo do nível 100; liberado em nível 100
   assert.equal(recalibrarReliquia(s, rLen.id, 0, 'w0').ok, false);

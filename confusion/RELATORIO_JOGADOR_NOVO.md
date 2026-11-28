@@ -247,3 +247,37 @@ Nenhum problema automático aberto nesta rodada.
 | 15. Mundo (só 10 sistemas) | PASS (info={'btns': 0, 'tem11a50': False}) | PASS (info={'btns': 0, 'tem11a50': False}) | PASS (info={'btns': 0, 'tem11a50': False}) |
 | 16. AFK em segundo plano (visibilitychange + toast) | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') |
 | 17. Convidado -> conta (toast 20.000💎 + 10d VIP) | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') |
+
+---
+
+## Tabela Oficial de Recompensas das Torres (`asutaroto291`)
+
+### 1. Torres Elementais (9 Torres × 50 andares · sem custo de energia · dão XP para toda a formação, vivos e mortos)
+
+| Torre | Elementos | Essência dropada | Andares 1–15 | Andares 16–35 | Andares 36–50 | 1ª Vitória / Andar | Drop de Fragmento de Sonho |
+|---|---|---|---|---|---|---|---:|
+| **Torre da Chama** | Fogo, Elétrico | Essência Ígnea | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
+| **Torre da Maré** | Água, Voador | Essência das Marés | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
+| **Torre da Raiz** | Planta, Inseto | Essência Verde | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
+| **Torre da Rocha** | Terra, Pedra, Aço | Essência Mineral | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
+| **Torre da Aurora** | Luz | Essência Solar | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% **Fragmento Diurno** |
+| **Torre da Umbra** | Trevas, Fantasma | Essência Sombria | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% **Fragmento Noturno** |
+| **Torre da Geada** | Gelo, Veneno | Essência Glacial | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
+| **Torre Dracônica** | Lutador, Dragão | Essência Dracônica | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
+| **Torre Etérea** | Psíquico, Fada | Essência Arcana | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
+
+### 2. Torres Únicas (3 Torres × 30 andares · recompensa própria por torre · 1×/dia por andar + XP da equipe)
+
+| Torre | Linhagens / Elementos | Recompensa Própria | Bônus Exclusivo por Vitória | XP da Formação |
+|---|---|---|---|---:|
+| **Torre da Ascensão** | Iniciais, Fogo, Luz, Planta, Água, Vento | **Brasa da Ascensão** + Fragmento de Arma Única | `+1` Essência Solar (`menor/média/maior`) + `450+35n` Ouro | `80+15n` XP |
+| **Torre do Abismo** | Trevas, Fantasma, Aço, Terra, Pedra, Inseto | **Núcleo do Abismo** + Fragmento de Arma Única | `+12` Pó de Reforço de Relíquias + `500+35n` Ouro | `80+15n` XP |
+| **Torre do Eclipse** | Todas as linhagens em rotação mista | **Prisma do Eclipse** + Fragmento de Arma Única | `+15 💎` + `+1` Escolha Livre a cada 5 andares + `550+35n` Ouro | `80+15n` XP |
+
+### 3. Torres Sazonais (Quinzenal e Mensal — reset automático por ciclo)
+
+| Torre | Ciclo | Andares | Prêmios de Invocação & Marcos | Ouro / Diamantes por Andar | XP da Formação |
+|---|---:|---:|---|---|---:|
+| **Torre Quinzenal da Convergência** | **15 dias** | 20 | `+1` Ticket Permanente a cada 5 andares (4 tickets/ciclo) | `350+60n` Ouro · `15 💎` (`50 💎` chefe) | `65+14n` XP |
+| **Torre Mensal do Zênite** | **30 dias** | 30 | `+2` Tickets Permanentes a cada 5 andares (12/mês) + `+2` Tickets Semanais nos andares 10/20/30 (6/mês) + `1` Escolha de Arma Única no andar 30 | `500+90n` Ouro · `25 💎` (`80 💎` chefe) | `90+14n` XP |
+| **Torre de Halloween** *(proposta para aprovação)* | Sazonal | 30 | Doces de Halloween + Tickets de Invocação (aguardando aprovação do usuário) | — | — |
