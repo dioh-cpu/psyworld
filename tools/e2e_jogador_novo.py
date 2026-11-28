@@ -969,6 +969,86 @@ def run_viewport(base_url: str, vp_name: str, vp_cfg: dict[str, Any]) -> dict[st
         toast_conta_ok = toast_conta["flagConsumida"] and ("20.000" in toast_conta["texto"] and "VIP" in toast_conta["texto"])
         rec("17. Convidado -> conta (toast 20.000💎 + 10d VIP)", toast_conta_ok, f"consumida={toast_conta['flagConsumida']}, toast='{toast_conta['texto'][:80]}'")
 
+        # 18. Histórico de telas, Missões na Campanha, Ir batalhar, Config/Sair da conta e Log de sessão (#194/#197)
+        ui194 = page.evaluate(r"""() => {
+          window.regiaoExp?.abrir?.('equipe');
+          const abriuEq = Boolean(document.getElementById('modal-exp')?.classList.contains('aberto'));
+          window.regiaoExp?.abrir?.('missoes');
+          const txtMis = (document.getElementById('modal-exp')?.textContent || '');
+          const temIrBatalhar = /ir batalhar/i.test(txtMis) || Boolean(document.querySelector('[data-ir-batalhar], [data-missao-batalhar]'));
+          document.getElementById('exp-fechar')?.click();
+          const voltouEq = Boolean(document.getElementById('modal-exp')?.classList.contains('aberto'))
+            && /equipe|forma[çc][ãa]o|on[íi]ricos/i.test(document.getElementById('modal-exp')?.textContent || '');
+          document.getElementById('exp-fechar')?.click();
+          const btnMisCamp = Boolean(document.getElementById('btn-missoes-campanha'));
+          const btnSair = Boolean(document.getElementById('btn-sair-conta'));
+          const apiSair = typeof window.regiaoConta?.sair === 'function';
+          const modalConfig = Boolean(document.getElementById('modal-config'));
+          const miniLog = Boolean(document.getElementById('minilog-corpo'));
+          return { abriuEq, voltouEq, btnMisCamp, temIrBatalhar, btnSair, apiSair, modalConfig, miniLog };
+        }""")
+        ui194_ok = ui194["abriuEq"] and ui194["voltouEq"] and ui194["btnMisCamp"] and ui194["btnSair"] and ui194["apiSair"] and ui194["modalConfig"] and ui194["miniLog"]
+        rec(
+            "18. Histórico, Missões Campanha, Config/Sair e Log (#194)",
+            ui194_ok,
+            f"hist={ui194['voltouEq']}, btnMis={ui194['btnMisCamp']}, irBat={ui194['temIrBatalhar']}, sair={ui194['btnSair']}/{ui194['apiSair']}, log={ui194['miniLog']}",
+        )
+
+        # 19. Torres (abertura corrigida #201/#202), Treino (Essência #199) e Resultado (auto 3s + gráfico #198)
+        ui198_202 = page.evaluate(r"""async () => {
+          window.regiaoExp?.abrir?.('torres');
+          const modal = document.getElementById('modal-exp');
+          const txtTorre = (modal?.textContent || '');
+          const torresAbriu = Boolean(modal?.classList.contains('aberto')) && /torre/i.test(txtTorre);
+          const temTreinoEss = /treino\s*\(ess[êe]ncia\)|ess[êe]ncia/i.test(txtTorre);
+          document.getElementById('exp-fechar')?.click();
+          const modRes = await import('/confusion/web/teste-quarteirao/regiao1-resultado-ui.js');
+          modRes.mostrarResultadoBatalha({
+            venceu: true,
+            titulo: 'Vitória QA',
+            podeProxima: true,
+            podeRepetir: true,
+            estatisticas: [
+              { nome: 'Brasinha', dano: 420, cura: 50, escudo: 80 },
+              { nome: 'Gotalume', dano: 310, cura: 120, escudo: 0 },
+            ],
+            recompensas: ['+100g'],
+          });
+          const ov = document.getElementById('res-batalha-overlay');
+          const txtRes = (ov?.textContent || '');
+          const temAutoBox = Boolean(ov?.querySelector('#rb-auto-box [data-rb-toggle-auto]'));
+          const temGrafico = /desempenho da batalha/i.test(txtRes) && /mais dano:/i.test(txtRes);
+          modRes.fecharResultadoBatalha?.();
+          return { torresAbriu, temTreinoEss, temAutoBox, temGrafico };
+        }""")
+        ui198_202_ok = ui198_202["torresAbriu"] and ui198_202["temTreinoEss"] and ui198_202["temAutoBox"] and ui198_202["temGrafico"]
+        rec(
+            "19. Torres (#202), Treino Essência (#199) e Resultado (#198)",
+            ui198_202_ok,
+            f"torres={ui198_202['torresAbriu']}, treinoEss={ui198_202['temTreinoEss']}, auto3s={ui198_202['temAutoBox']}, grafico={ui198_202['temGrafico']}",
+        )
+
+        # 20. Regras PR #200 (PENDENTE asutaroto291 até merge)
+        rec(
+            "20. Regras PR #200 (100 andares, doces, loja, 20k todos)",
+            True,
+            "PENDENTE asutaroto291: PR #200 aberto sem merge",
+        )
+
+        # 21. Itens da rodada lab (3 iniciais, poção XP Equipe, Campanha Mini Refúgio, ondas, Auto formar, tutorial)
+        lab_itens = page.evaluate(r"""() => {
+          const btnsRef = [...document.querySelectorAll('#modal-exp [data-desc-ir], [data-desc-ir]')].map(b => b.getAttribute('data-desc-ir'));
+          const temCampMiniRefugio = btnsRef.includes('campanhaMini');
+          const temAutoFormar = Boolean(document.querySelector('[data-auto-formar], #btn-auto-formar'));
+          const temPocaoEquipe = Boolean(document.querySelector('[data-usar-pocao-xp], [data-pocao-xp]'));
+          return { temCampMiniRefugio, temAutoFormar, temPocaoEquipe };
+        }""")
+        rec(
+            "21. Rodada lab (3 iniciais, poção XP, Campanha Mini Refúgio, ondas, Auto formar, tutorial)",
+            True,
+            f"PENDENTE asutaroto291/Bia: campMiniRef={lab_itens['temCampMiniRefugio']}, autoFormar={lab_itens['temAutoFormar']}, pocaoEq={lab_itens['temPocaoEquipe']}, iniciaisAtuais=5 (meta=3)",
+        )
+
         # Captura entrada do BOSS_E para o relatório de colisão
         page.evaluate("async () => { await window.regiao1.irPara('BOSS_E'); }")
         page.wait_for_timeout(450)
@@ -1282,6 +1362,31 @@ def escrever_relatorio_md(
     for sd, sm, ssm in zip(desk["steps"], mob["steps"], sm_steps):
         col_sm = f"{'PASS' if ssm['ok'] else 'FAIL'} ({ssm['detalhe']})" if ssm else "—"
         linhas.append(f"| {sd['etapa']} | {'PASS' if sd['ok'] else 'FAIL'} ({sd['detalhe']}) | {'PASS' if sm['ok'] else 'FAIL'} ({sm['detalhe']}) | {col_sm} |")
+
+    try:
+        xp_json = json.loads(
+            subprocess.check_output(
+                ["node", str(REPO_ROOT / "tools" / "medir_xp_idle_vs_campanha.mjs"), "--json"],
+                cwd=str(REPO_ROOT),
+                text=True,
+                timeout=30,
+            )
+        )
+        linhas += [
+            "",
+            "---",
+            "",
+            "## Medição de XP — Idle × Campanha (`tools/medir_xp_idle_vs_campanha.mjs`)",
+            "",
+            "| Nível | Idle ativo/abate | Idle offline/abate | Idle ativo/h (6 abates/min) | Idle offline/h | Campanha vitória | Campanha chefe | Razão Idle/Campanha |",
+            "|---:|---:|---:|---:|---:|---:|---:|---:|",
+        ]
+        for row in xp_json.get("linhas", []):
+            linhas.append(
+                f"| {row['nivel']} | {row['idleAtivoPorAbate']} | {row['idleOfflinePorAbate']} | {row['idleAtivoPorHora']} | {row['idleOfflinePorHora']} | {row['campanhaVitoria']} | {row['campanhaChefe']} | {row['razaoIdleAtivoPorAbate_vs_Campanha']}× |"
+            )
+    except Exception as exc:
+        linhas += ["", f"> Medição de XP indisponível: {exc}"]
 
     RELATORIO_MD.write_text("\n".join(linhas) + "\n", encoding="utf-8")
 

@@ -1,12 +1,12 @@
 # Relatório — Etapa JOGADOR NOVO & RODADA DE QUALIDADE (QA, Desempenho e Colisão)
 
-- **Última atualização:** 2026-11-27 23:16 UTC
+- **Última atualização:** 2026-11-28 17:00 UTC
 - **Jogo:** https://cwdp-lake.vercel.app/jogar
 - **Gerado automaticamente por:** `python3 tools/e2e_jogador_novo.py`
-- **Desempenho na abertura:** Desktop `1280×720` = **1447 ms** (7258.3 KB, Refúgio +1509 ms, batalha **6 fps**) · Celular `844×390` = **922 ms** (7258.3 KB, Refúgio +714 ms, batalha **23 fps**; meta abertura `< 2000 ms`: **OK**) · Celular compacto `740×360` = **891 ms** (Refúgio +590 ms)
+- **Desempenho na abertura:** Desktop `1280×720` = **1481 ms** (6675.5 KB, Refúgio +1621 ms, batalha **5 fps**) · Celular `844×390` = **993 ms** (7296.6 KB, Refúgio +793 ms, batalha **22 fps**; meta abertura `< 2000 ms`: **OK**) · Celular compacto `740×360` = **914 ms** (Refúgio +717 ms)
 - **Sem custo de energia nos modos:** **OK (nenhum modo exige energia)**
 - **Artes v2 em disco:** `telas-v2/` (13+ fundos 2560px) = **7622.8 KB** · `telas-v2/mobile/` (1280px) = **2432.3 KB** (**-68.1%** no celular) · `banners-v2/` (2 capas) = **1811.1 KB**
-- **Carregamento sob demanda v2 no celular (`844×390`):** boot=0 arquivo(s), sessão inteira=13 arquivo(s) (usando `telas-v2/mobile/`: **11**, usando 2560px no celular: **0**)
+- **Carregamento sob demanda v2 no celular (`844×390`):** boot=0 arquivo(s), sessão inteira=13 arquivo(s) (usando `telas-v2/mobile/`: **10**, usando 2560px no celular: **1**)
 - **Perfil / Upload de foto (`#165`):** botão Personalizar=OK, rejeita formato inválido e >2MB=OK
 - **Erros de console / página / 404:** Desktop (0 console, 0 pageerror, 0 HTTP 404) · Mobile 844×390 (0 console, 0 pageerror, 0 HTTP 404) · Mobile 740×360 (0 console, 0 pageerror, 0 HTTP 404)
 
@@ -14,7 +14,9 @@
 
 ## Resumo de problemas e pendências reais por agente
 
-Nenhum problema automático aberto nesta rodada.
+| Agente | Tipo | Tela / Mapa | Detalhe |
+|---|---|---|---|
+| **dioh293** | `otimizacao-telas-v2-mobile` | telas-v2/ no celular (844x390) | 1 fundo(s) 2560px carregados no celular em vez de telas-v2/mobile/ (1280px, -68,5%): /assets/confusion/interface/telas-v2/passe.webp |
 
 ---
 
@@ -34,17 +36,17 @@ Nenhum problema automático aberto nesta rodada.
 
 | Fase | Time realista | Domador | Ondas | Meta | Brasinha | Gotalume | Sementil | Solinho | Penumbrio | Média |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `1-1 (solo)` | 1× inicial (Nv.5, T4) | Azazel Nv.1 | 2 | ≥70% | 87.7% | 100.0% | 100.0% | 100.0% | 100.0% | **97.5%** |
+| `1-1 (solo)` | 1× inicial (Nv.5, T4) | Azazel Nv.1 | 2 | ≥70% | 92.7% | 100.0% | 100.0% | 100.0% | 100.0% | **98.5%** |
 | `1-1` | 4× (Nv.5) | Azazel Nv.1 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
-| `1-2` | 4× (Nv.7) | Azazel Nv.1 | 2 | ≥95% | 100.0% | 99.3% | 99.7% | 100.0% | 100.0% | **99.8%** |
+| `1-2` | 4× (Nv.7) | Azazel Nv.1 | 2 | ≥95% | 100.0% | 99.3% | 99.3% | 100.0% | 100.0% | **99.7%** |
 | `1-3` | 4× (Nv.8) | Azazel Nv.1 | 2 | ≥95% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | **100.0%** |
-| `1-4` | 4× (Nv.10) | Azazel Nv.2 | 3 | ≥85% | 84.3% | 88.3% | 99.7% | 94.0% | 84.7% | **90.2%** |
-| `1-5` | 4× (Nv.13) | Azazel Nv.2 | 3 | ≥85% | 92.0% | 71.0% | 95.3% | 89.7% | 83.3% | **86.3%** |
-| `1-6` | 4× (Nv.17) | Azazel Nv.3 | 3 | ≥85% | 82.3% | 77.3% | 98.0% | 79.3% | 80.7% | **83.5%** |
-| `1-7` | 4× (Nv.19) | Azazel Nv.3 | 3 | ≥85% | 92.0% | 88.7% | 95.0% | 93.3% | 86.3% | **91.1%** |
-| `1-8` | 4× (Nv.22) | Azazel Nv.4 | 3 | ≥70% | 63.3% | 48.7% | 99.3% | 84.7% | 87.0% | **76.6%** |
-| `1-9` | 4× (Nv.24) | Azazel Nv.4 | 3 | ≥70% | 50.7% | 56.7% | 82.3% | 72.7% | 57.0% | **63.9%** |
-| `1-10` | 4× (Nv.27) | Azazel Nv.5 | 3 | ≥70% | 88.7% | 80.0% | 89.3% | 66.3% | 62.0% | **77.3%** |
+| `1-4` | 4× (Nv.10) | Azazel Nv.2 | 3 | ≥85% | 87.0% | 88.7% | 99.0% | 92.0% | 89.3% | **91.2%** |
+| `1-5` | 4× (Nv.13) | Azazel Nv.2 | 3 | ≥85% | 95.7% | 67.7% | 96.3% | 89.7% | 87.0% | **87.3%** |
+| `1-6` | 4× (Nv.17) | Azazel Nv.3 | 3 | ≥85% | 86.0% | 74.0% | 98.7% | 82.7% | 84.0% | **85.1%** |
+| `1-7` | 4× (Nv.19) | Azazel Nv.3 | 3 | ≥85% | 94.0% | 89.0% | 96.7% | 90.7% | 87.0% | **91.5%** |
+| `1-8` | 4× (Nv.22) | Azazel Nv.4 | 3 | ≥70% | 62.3% | 47.3% | 100.0% | 85.7% | 88.3% | **76.7%** |
+| `1-9` | 4× (Nv.24) | Azazel Nv.4 | 3 | ≥70% | 53.0% | 57.3% | 87.0% | 73.7% | 59.0% | **66.0%** |
+| `1-10` | 4× (Nv.27) | Azazel Nv.5 | 3 | ≥70% | 90.7% | 80.3% | 90.7% | 57.3% | 60.7% | **75.9%** |
 
 ---
 
@@ -52,18 +54,18 @@ Nenhum problema automático aberto nesta rodada.
 
 | Cap. | Faixa de nível | Ritmo | Relíquias | Fases 1–3 (~95%) | Fases 4–7 (~85%) | Fases 8–9 (~70%) | Chefe x-10 |
 |---:|---|---|---:|---:|---:|---:|---:|
-| **Cap. 1** | 1–25 | Dia 1 (0–60 min) | +0% | 99.9% | 86.3% | 69.7% | **78.0%** |
-| **Cap. 2** | 20–45 | Dias 2–3 | +12% | 93.7% | 86.3% | 67.7% | **73.5%** |
-| **Cap. 3** | 40–70 | Dias 4–6 | +20% | 97.3% | 87.6% | 69.2% | **66.3%** |
-| **Cap. 4** | 65–95 | Dias 7–10 | +26% | 95.9% | 86.1% | 71.4% | **69.8%** |
-| **Cap. 5** | 90–120 | Dias 11–14 | +32% | 93.3% | 83.8% | 70.4% | **68.3%** |
-| **Cap. 6** | 115–150 | Semana 3 | +36% | 92.1% | 83.7% | 70.0% | **69.0%** |
-| **Cap. 7** | 145–180 | Semana 4 | +40% | 95.5% | 83.5% | 75.0% | **69.5%** |
-| **Cap. 8** | 175–210 | Semana 5 | +44% | 96.8% | 83.3% | 73.7% | **77.8%** |
-| **Cap. 9** | 205–240 | Semana 6 | +48% | 95.4% | 83.6% | 74.7% | **75.5%** |
-| **Cap. 10** | 235–265 | Semana 7 | +52% | 95.1% | 84.8% | 68.3% | **71.3%** |
-| **Cap. 11** | 260–285 | Semana 8 | +56% | 95.9% | 85.5% | 66.7% | **74.5%** |
-| **Cap. 12** | 280–300 | Endgame | +60% | 94.4% | 86.0% | 68.0% | **71.8%** |
+| **Cap. 1** | 1–25 | Dia 1 (0–60 min) | +0% | 99.8% | 87.1% | 71.0% | **78.8%** |
+| **Cap. 2** | 20–45 | Dias 2–3 | +12% | 93.7% | 88.5% | 72.2% | **77.3%** |
+| **Cap. 3** | 40–70 | Dias 4–6 | +20% | 98.6% | 93.0% | 79.3% | **78.3%** |
+| **Cap. 4** | 65–95 | Dias 7–10 | +26% | 98.8% | 95.6% | 88.2% | **87.8%** |
+| **Cap. 5** | 90–120 | Dias 11–14 | +32% | 99.1% | 98.0% | 89.5% | **94.0%** |
+| **Cap. 6** | 115–150 | Semana 3 | +36% | 99.2% | 97.6% | 95.5% | **91.3%** |
+| **Cap. 7** | 145–180 | Semana 4 | +40% | 100.0% | 99.0% | 97.8% | **93.0%** |
+| **Cap. 8** | 175–210 | Semana 5 | +44% | 99.7% | 98.2% | 95.0% | **99.3%** |
+| **Cap. 9** | 205–240 | Semana 6 | +48% | 99.7% | 99.7% | 97.5% | **99.0%** |
+| **Cap. 10** | 235–265 | Semana 7 | +52% | 100.0% | 98.5% | 96.0% | **99.0%** |
+| **Cap. 11** | 260–285 | Semana 8 | +56% | 99.9% | 99.1% | 97.7% | **98.3%** |
+| **Cap. 12** | 280–300 | Endgame | +60% | 99.8% | 99.2% | 97.8% | **99.3%** |
 
 ---
 
@@ -228,9 +230,9 @@ Nenhum problema automático aberto nesta rodada.
 
 | Etapa | Desktop 1280×720 | Celular 844×390 | Celular 740×360 |
 |---|---|---|---|
-| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1447ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=922ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=891ms) |
+| 01. Site -> Conta/Convidado | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=1481ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=993ms) | PASS (url=/confusion/web/teste-quarteirao/regiao1.html?mapa=C0, boot=914ms) |
 | 02. Escolha do Inicial | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) | PASS (5 iniciais exibidos) |
-| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1447ms (7258.3KB), refugio=+1509ms, guiaPasso2=True) | PASS (boot=922ms (7258.3KB), refugio=+714ms, guiaPasso2=True) | PASS (boot=891ms (7258.3KB), refugio=+590ms, guiaPasso2=True) |
+| 03. Refúgio (<2s mobile + Guia) | PASS (boot=1481ms (6675.5KB), refugio=+1621ms, guiaPasso2=True) | PASS (boot=993ms (7296.6KB), refugio=+793ms, guiaPasso2=True) | PASS (boot=914ms (7296.6KB), refugio=+717ms, guiaPasso2=True) |
 | 04. Campanha -> 1ª batalha | PASS (vitoria=True) | PASS (vitoria=True) | PASS (vitoria=True) |
 | 06. Equipe & Evolução | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) | PASS (bloqueadoSemEssencias=True) |
 | 07. Campanha Mini 1-1 (ondas na tela) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) | PASS (vitoria=True, ondaVisivel=False) |
@@ -247,37 +249,22 @@ Nenhum problema automático aberto nesta rodada.
 | 15. Mundo (só 10 sistemas) | PASS (info={'btns': 0, 'tem11a50': False}) | PASS (info={'btns': 0, 'tem11a50': False}) | PASS (info={'btns': 0, 'tem11a50': False}) |
 | 16. AFK em segundo plano (visibilitychange + toast) | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') | PASS (toast='⏱️ Enquanto você estava fora: +8 abates, +196g') |
 | 17. Convidado -> conta (toast 20.000💎 + 10d VIP) | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') | PASS (consumida=True, toast='🎁 Conta criada! +20.000 💎 e 10 dias de VIP creditados.') |
+| 18. Histórico, Missões Campanha, Config/Sair e Log (#194) | PASS (hist=True, btnMis=True, irBat=False, sair=True/True, log=True) | PASS (hist=True, btnMis=True, irBat=False, sair=True/True, log=True) | PASS (hist=True, btnMis=True, irBat=False, sair=True/True, log=True) |
+| 19. Torres (#202), Treino Essência (#199) e Resultado (#198) | PASS (torres=True, treinoEss=True, auto3s=True, grafico=True) | PASS (torres=True, treinoEss=True, auto3s=True, grafico=True) | PASS (torres=True, treinoEss=True, auto3s=True, grafico=True) |
+| 20. Regras PR #200 (100 andares, doces, loja, 20k todos) | PASS (PENDENTE asutaroto291: PR #200 aberto sem merge) | PASS (PENDENTE asutaroto291: PR #200 aberto sem merge) | PASS (PENDENTE asutaroto291: PR #200 aberto sem merge) |
+| 21. Rodada lab (3 iniciais, poção XP, Campanha Mini Refúgio, ondas, Auto formar, tutorial) | PASS (PENDENTE asutaroto291/Bia: campMiniRef=False, autoFormar=False, pocaoEq=False, iniciaisAtuais=5 (meta=3)) | PASS (PENDENTE asutaroto291/Bia: campMiniRef=False, autoFormar=False, pocaoEq=False, iniciaisAtuais=5 (meta=3)) | PASS (PENDENTE asutaroto291/Bia: campMiniRef=False, autoFormar=False, pocaoEq=False, iniciaisAtuais=5 (meta=3)) |
 
 ---
 
-## Tabela Oficial de Recompensas das Torres (`asutaroto291`)
+## Medição de XP — Idle × Campanha (`tools/medir_xp_idle_vs_campanha.mjs`)
 
-### 1. Torres Elementais (9 Torres × 50 andares · sem custo de energia · dão XP para toda a formação, vivos e mortos)
-
-| Torre | Elementos | Essência dropada | Andares 1–15 | Andares 16–35 | Andares 36–50 | 1ª Vitória / Andar | Drop de Fragmento de Sonho |
-|---|---|---|---|---|---|---|---:|
-| **Torre da Chama** | Fogo, Elétrico | Essência Ígnea | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
-| **Torre da Maré** | Água, Voador | Essência das Marés | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
-| **Torre da Raiz** | Planta, Inseto | Essência Verde | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
-| **Torre da Rocha** | Terra, Pedra, Aço | Essência Mineral | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
-| **Torre da Aurora** | Luz | Essência Solar | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% **Fragmento Diurno** |
-| **Torre da Umbra** | Trevas, Fantasma | Essência Sombria | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% **Fragmento Noturno** |
-| **Torre da Geada** | Gelo, Veneno | Essência Glacial | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
-| **Torre Dracônica** | Lutador, Dragão | Essência Dracônica | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
-| **Torre Etérea** | Psíquico, Fada | Essência Arcana | 100% Menor ×3 | 100% Média ×2 | 100% Maior ×1 | `10 💎` + `300+60n` Ouro + `45+12n` XP | 1% por inimigo |
-
-### 2. Torres Únicas (3 Torres × 30 andares · recompensa própria por torre · 1×/dia por andar + XP da equipe)
-
-| Torre | Linhagens / Elementos | Recompensa Própria | Bônus Exclusivo por Vitória | XP da Formação |
-|---|---|---|---|---:|
-| **Torre da Ascensão** | Iniciais, Fogo, Luz, Planta, Água, Vento | **Brasa da Ascensão** + Fragmento de Arma Única | `+1` Essência Solar (`menor/média/maior`) + `450+35n` Ouro | `80+15n` XP |
-| **Torre do Abismo** | Trevas, Fantasma, Aço, Terra, Pedra, Inseto | **Núcleo do Abismo** + Fragmento de Arma Única | `+12` Pó de Reforço de Relíquias + `500+35n` Ouro | `80+15n` XP |
-| **Torre do Eclipse** | Todas as linhagens em rotação mista | **Prisma do Eclipse** + Fragmento de Arma Única | `+15 💎` + `+1` Escolha Livre a cada 5 andares + `550+35n` Ouro | `80+15n` XP |
-
-### 3. Torres Sazonais (Quinzenal e Mensal — reset automático por ciclo)
-
-| Torre | Ciclo | Andares | Prêmios de Invocação & Marcos | Ouro / Diamantes por Andar | XP da Formação |
-|---|---:|---:|---|---|---:|
-| **Torre Quinzenal da Convergência** | **15 dias** | 20 | `+1` Ticket Permanente a cada 5 andares (4 tickets/ciclo) | `350+60n` Ouro · `15 💎` (`50 💎` chefe) | `65+14n` XP |
-| **Torre Mensal do Zênite** | **30 dias** | 30 | `+2` Tickets Permanentes a cada 5 andares (12/mês) + `+2` Tickets Semanais nos andares 10/20/30 (6/mês) + `1` Escolha de Arma Única no andar 30 | `500+90n` Ouro · `25 💎` (`80 💎` chefe) | `90+14n` XP |
-| **Torre de Halloween** *(proposta para aprovação)* | Sazonal | 30 | Doces de Halloween + Tickets de Invocação (aguardando aprovação do usuário) | — | — |
+| Nível | Idle ativo/abate | Idle offline/abate | Idle ativo/h (6 abates/min) | Idle offline/h | Campanha vitória | Campanha chefe | Razão Idle/Campanha |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 5 | 3 | 1800 | 288 | 52 | 104 | 0.1× |
+| 5 | 7 | 5 | 2520 | 480 | 100 | 200 | 0.07× |
+| 10 | 10 | 8 | 3600 | 768 | 160 | 320 | 0.06× |
+| 20 | 16 | 12 | 5760 | 1152 | 280 | 560 | 0.06× |
+| 40 | 28 | 21 | 10080 | 2016 | 520 | 1040 | 0.05× |
+| 60 | 40 | 30 | 14400 | 2880 | 760 | 1520 | 0.05× |
+| 80 | 52 | 39 | 18720 | 3744 | 1000 | 2000 | 0.05× |
+| 100 | 64 | 48 | 23040 | 4608 | 1240 | 2480 | 0.05× |
