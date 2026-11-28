@@ -123,7 +123,7 @@ export function renderizarPainelTorres(save, aba, st) {
 
   // Aba 1: Torres Únicas + Torres Sazonais (Quinzenal e Mensal)
   const subTorre = st.subTorre || 'unicas';
-  const subAbasHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+  const subAbasHtml = `<div class="torres-subabas" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
     <button class="${subTorre === 'unicas' ? 'btn-pri' : 'btn-sec'}" data-tor-sub="unicas" style="padding:5px 10px;font-size:11.5px">⚔️ Únicas</button>
     ${TORRES_SAZONAIS_CATALOGO.map((s) => `<button class="${subTorre === s.id ? 'btn-pri' : 'btn-sec'}" data-tor-sub="${esc(s.id)}" style="padding:5px 10px;font-size:11.5px">${s.id === 'quinzenal' ? '🗓️ Quinzenal' : '🌙 Mensal'}</button>`).join('')}
   </div>`;
@@ -204,14 +204,14 @@ export function renderizarPainelTorres(save, aba, st) {
   const rp = torre.recompensaPropria;
   const rpTxt = rp ? ` · Recompensa própria: ${esc(rp.nome)} (+${rp.ouroBase || 0} 🪙)` : '';
 
-  return `${subAbasHtml}<div class="bl">
+  return `${subAbasHtml}<div class="bl torres-unicas-lista">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <b style="color:#fde68a">⚔️ Torres Únicas (3 × 30 andares · Nv. 60–120 · 1×/dia por andar)</b>
       <span class="tag">✨ Pó Único: ${armas.poUnico || 0}${armas.escolhasPendentes ? ` · 🎁 Escolhas: ${armas.escolhasPendentes}` : ''}</span>
     </div>
     <div class="torre-seletores" style="display:flex;gap:6px;flex-wrap:wrap">${seletores}</div>
   </div>
-  <div class="bl" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(18,8,30,.92) 30%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx + 9)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
+  <div class="bl torres-unicas-detalhe" style="position:relative;overflow:hidden;background:linear-gradient(120deg,rgba(18,8,30,.92) 30%,rgba(14,8,26,.72) 100%),url('${FACHADA_TORRE(torreIdx + 9)}') center / cover no-repeat;border:2px solid rgba(243,194,122,.45);padding:12px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
       <div style="flex:1;min-width:210px">
         <h4 style="margin:0;font-size:15px;color:#fde68a;text-shadow:0 1px 3px rgba(0,0,0,.9)">⚔️ ${esc(torre.nome)} · Andar ${andarSel}/${torre.totalAndares} ${andarDef.chefe ? '👑 Chefe' : ''}</h4>
