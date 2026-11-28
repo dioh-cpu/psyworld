@@ -132,10 +132,18 @@ const CSS_CM = `
   .cm-box{padding:5px 7px;font-size:10.5px}
   .cm-btn{padding:5px 8px;font-size:11px}
 }
+@media (orientation:landscape) and (max-height:500px){
+  .cm-acoes{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  .cm-acoes .cm-btn.full{grid-column:auto}
+  .cm-acoes .cm-btn{min-width:0;min-height:40px;padding:4px 2px;font-size:10px;white-space:normal;line-height:1.1}
+}
 @media (max-width:680px){
   .cm-mapa-wrap{grid-template-columns:1fr;overflow-y:auto}
   .cm-mapa-canvas{min-height:190px;flex:none}
   .cm-ficha{overflow:visible}
+  .cm-acoes{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  .cm-acoes .cm-btn.full{grid-column:auto}
+  .cm-acoes .cm-btn{min-width:0;min-height:44px;padding:5px 3px;font-size:10px;white-space:normal;line-height:1.1}
 }
 `;
 
