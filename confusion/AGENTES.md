@@ -127,3 +127,27 @@ Preparada em `confusion/web/teste-quarteirao/regiao1-batalha-habilidades.js` sem
   2. Cadastrar `FX_HABILIDADES[MORTALIO_VIOLETA_CFG.id] = { fx: 'mantoVioleta', ms: 900, clip: MORTALIO_VIOLETA_CFG.clip, impactoMs: MORTALIO_VIOLETA_CFG.impactoMs, cut: ['#5b21b6', '#ddd6fe'] }` com fallback procedural violeta caso o `.mp4` ainda não esteja publicado.
   3. Em `tocarClipe` (`regiao1-vfx.js`), caso `MORTALIO_VIOLETA_CFG.alvo` seja definido como `'aliados'`, ancorar o clipe no centro da formação aliada (ou iterar `ev.alvos`) além de `ctx.no(ev.alvo)`.
 
+
+## Regra de merge e ordem de trabalho (vigente)
+
+**Nada entra na `main` até o usuário liberar** o conjunto de artes de todos os menus que ele quer. Até lá:
+- Todo PR fica aberto ou em rascunho, sem merge, mesmo com testes verdes.
+- Trabalho em branch própria; atualize o PR.
+- Dúvida sobre o que entra na main: pergunte ao usuário antes de agir.
+
+**Dono por tela.** Uma tela tem um dono por vez, para evitar conflito:
+- Torres e Relíquias: Bia (integração), após o GPT entregar a arte.
+- Refúgio, Equipe, Mochila, cards de Onírico, Campanha Mini, Missões e Batalha: dioh291.
+- Regras e economia (torres, doces, bônus, elementos): asutaroto291 (PR #200).
+- QA e E2E: dioh292.
+- Conferência visual: Luna.
+- Artes PNG: GPT.
+- Documentação: Codex 291.
+
+**Ordem:**
+1. Já em paralelo, sem depender de arte: dioh291 (filtros, escalação, editar formação), asutaroto291 (#200), dioh292 (baseline E2E da `main`), Codex 291 (documentação).
+2. GPT entrega a arte de um menu por vez, na ordem: Torres, Relíquias, Calabouços, Campanha Mini, Missões, Invocação, Equipe/Ficha, Mochila, Batalha e Resultado, demais menus.
+3. Para cada menu com arte pronta, Bia integra e Luna confere, nas 3 resoluções.
+4. Quando todos os menus combinados estiverem integrados e conferidos, dioh292 roda o E2E completo e o usuário decide o merge.
+
+**Relatório:** comece a mensagem com "Eu <nome> — parte concluída:", com o link do PR e as pendências.
