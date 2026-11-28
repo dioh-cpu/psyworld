@@ -249,5 +249,19 @@ export function iniciarConta({ getSave, salvar, mostrarToast, chaveSave, resetar
     if (u && !logado && veioDoEmail) { gate.classList.add('vis'); desenhar(); await sincronizarAoEntrar(); return; }
     desenhar(); gate.classList.add('vis');
   })();
-  return { vipAtivo: () => vipAtivo(getSave()), diasVip: () => diasVip(getSave()), enviar, abrir: () => { desenhar(); gate.classList.add('vis'); } };
+  const apiConta = {
+    vipAtivo: () => vipAtivo(getSave()),
+    diasVip: () => diasVip(getSave()),
+    enviar,
+    abrir: () => { desenhar(); gate.classList.add('vis'); },
+    estaLogado: () => Boolean(logado),
+    sair: async () => {
+      if (logado) { try { await A.signOut(); } catch {} logado = false; }
+      desenhar();
+      gate.classList.add('vis');
+      return true;
+    },
+  };
+  window.regiaoConta = apiConta;
+  return apiConta;
 }

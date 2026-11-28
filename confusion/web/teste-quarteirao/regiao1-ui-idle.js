@@ -217,14 +217,24 @@ export function criarControladorIdleUI(ctx) {
   }
 
   let abaLogAtiva = 'farm';
+  const logSessao = [];
+  const logVistos = new Set();
+  function sincronizarLogSessao(logs) {
+    for (const l of (logs || [])) {
+      const k = `${l.ts || ''}|${l.tipo || ''}|${l.texto || ''}`;
+      if (!logVistos.has(k)) { logVistos.add(k); logSessao.push(l); }
+    }
+  }
   function renderizarMiniLog() {
     const corpo = $('minilog-corpo');
     if (!corpo) return;
     const idle = garantirEstadoIdle(ctx.getSave());
-    const filtrados = idle.logs.filter((l) => abaLogAtiva === 'todos' || l.tipo === abaLogAtiva).slice(-6);
+    sincronizarLogSessao(idle.logs);
+    const filtrados = logSessao.filter((l) => abaLogAtiva === 'todos' || l.tipo === abaLogAtiva);
     corpo.innerHTML = filtrados.length
       ? filtrados.map((l) => `<div class="ml-ln">${l.texto}</div>`).join('')
       : '<div class="ml-ln" style="color:#64748b">Ligue Auto · ON ou cace monstros para ver o registro.</div>';
+    corpo.scrollTop = corpo.scrollHeight;
   }
 
   document.querySelectorAll('[data-log-aba]').forEach((btn) => {
@@ -267,6 +277,17 @@ export function criarControladorIdleUI(ctx) {
   const abrirDoMenu = (fn) => { fechar('modal-menu'); fn(); };
   $('m-descanso')?.addEventListener('click', () => abrirDoMenu(() => window.regiaoExp?.abrir('descanso')));
   $('m-diario')?.addEventListener('click', () => abrirDoMenu(() => ctx.abrirDiario()));
+  $('m-missoes')?.addEventListener('click', () => abrirDoMenu(() => window.regiaoExp?.abrir?.('missoes')));
+  $('btn-missoes-campanha')?.addEventListener('click', () => window.regiaoExp?.abrir?.('missoes'));
+  $('btn-sair-conta')?.addEventListener('click', async () => {
+    fechar('modal-config');
+    if (window.regiaoConta?.sair) {
+      await window.regiaoConta.sair();
+      ctx.mostrarToast('Sessão encerrada. Seu progresso local continua salvo neste navegador.', 3200);
+    } else {
+      ctx.mostrarToast('Modo convidado: seu progresso local continua salvo neste navegador.', 2800);
+    }
+  });
   $('m-atlas')?.addEventListener('click', () => abrirDoMenu(abrirAtlas));
   $('m-autocaca')?.addEventListener('click', () => abrirDoMenu(abrirConfigAutoCaca));
   $('m-mochila')?.addEventListener('click', () => abrirDoMenu(abrirMochila));
@@ -1074,7 +1095,12 @@ export function criarControladorIdleUI(ctx) {
       };
     });
     $('temp-diarias').querySelectorAll('[data-ir-dm]').forEach((b) => {
-      b.onclick = () => { fechar('modal-temporada'); ctx.viajarParaMapa(b.dataset.irDm, true); };
+      b.onclick = async () => {
+        fechar('modal-temporada');
+        fechar('modal-exp');
+        await ctx.viajarParaMapa(b.dataset.irDm, true);
+        setTimeout(() => { window.regiao1?.interagir?.(); }, 350);
+      };
     });
 
     const btnPrem = $('btn-passe-premium');

@@ -112,7 +112,7 @@
     background: rgba(7, 14, 28, .82); border: 1px solid rgba(63,143,214,.35); border-radius: 8px;
     font-size: 10.5px; overflow: hidden;
   }
-  #minilog-box.recolhido #minilog-corpo { display: none; }
+  #minilog-box.recolhido #minilog-corpo { max-height: 140px; overflow-y: auto;  display: none; }
   .ml-head { display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; background: rgba(15,29,54,.9); border-bottom: 1px solid rgba(63,143,214,.2); }
   .ml-tabs { display: flex; gap: 4px; }
   .ml-tabs button { background: transparent; border: 0; color: #94b3d4; font: 700 10px system-ui; padding: 2px 5px; border-radius: 4px; cursor: pointer; }
@@ -387,6 +387,7 @@
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div style="display:flex;gap:5px;align-items:center">
         <button id="btn-fazenda" class="btn-hud green" style="display:none">🌱 Fazenda</button>
+        <button id="btn-missoes-campanha" class="btn-hud">📜 Missões</button>
         <button id="btn-atlas-rapido" class="btn-hud">🗺️ Caçar</button>
         <button id="btn-menu-geral" class="btn-hud gold">☰ Menu</button>
       </div>
@@ -468,6 +469,7 @@
     </div>
     <nav class="menu-atalhos" aria-label="Mais opções">
       <button class="btn-pri" id="m-descanso">🏕️ Refúgio</button>
+      <button class="btn-sec" id="m-missoes">📜 Missões</button>
       <button class="btn-sec" id="m-diario">Diário</button>
       <button class="btn-sec" id="m-mapa48">Mapa da região</button>
       <button class="btn-sec" id="m-autocaca">Auto-Caça</button>
@@ -625,12 +627,13 @@
     <div class="card-row"><span>Modo de Campanha</span><select id="cfg-modo-camp" class="btn-sec"><option value="completa">Aventura Completa</option><option value="farm">Foco em Farm / Itens</option></select></div>
     <div class="card-row"><span>Tamanho da HUD (<b id="cfg-hud-escala-val">100%</b>)</span><input id="cfg-hud-escala" type="range" min="80" max="115" value="100"></div>
     <div class="card-row"><span>Limite de FPS</span><select id="cfg-fps" class="btn-sec"><option value="60">60 FPS</option><option value="30">30 FPS (Economia)</option></select></div>
-    <label class="chk-pill"><input type="checkbox" id="cfg-dano" checked> Mostrar números de dano flutuantes</label>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+    <label class="chk-pill" style="white-space:normal;text-align:left;max-width:100%;box-sizing:border-box;width:100%"><input type="checkbox" id="cfg-dano" checked> Mostrar números de dano flutuantes</label>
+    <div class="cfg-acoes" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px;width:100%">
       <button class="btn-sec" id="btn-instalar-pwa">📲 Instalar Jogo (PWA)</button>
       <button class="btn-sec" id="btn-simular-afk">⏱️ Testar 2h Offline</button>
       <button class="btn-sec" id="btn-refazer-tutorial">📖 Refazer Tutorial</button>
       <button class="btn-sec" id="btn-exportar-save">☁️ Copiar Save JSON</button>
+      <button class="btn-sec" id="btn-sair-conta" style="border-color:#f87171;color:#fca5a5">🚪 Sair da conta</button>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
       <button class="btn-pri" id="btn-cfg-salvar">Salvar</button>
