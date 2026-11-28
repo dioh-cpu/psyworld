@@ -198,6 +198,15 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     #modal-exp .ref-dock.pri { background: linear-gradient(180deg, #b8793e, #7c4923); border-color: #fde68a; color: #fff7ed; font-weight: 700; }
     #modal-exp .ref-dock.ativo-on { border-color: #4ade80; color: #86efac; }
     #modal-exp .ref-dock[disabled] { opacity: .45; cursor: not-allowed; }
+    @media (orientation: portrait) and (max-width: 600px) {
+      #modal-exp .ref-rodape { flex-direction: column; align-items: stretch; gap: 3px; padding: 4px 8px calc(6px + env(safe-area-inset-bottom, 0px)); }
+      #modal-exp .ref-grupo { width: 100%; box-sizing: border-box; gap: 2px; padding: 2px; }
+      #modal-exp .ref-dock { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 4px 1px; font-size: 9px; }
+      #modal-exp .ref-dock img { width: 19px; height: 19px; }
+      #modal-exp .ref-lado { left: 8px; grid-template-columns: repeat(3, 64px); gap: 4px; }
+      #modal-exp .ref-lado button { width: 64px; min-height: 44px; padding: 4px 2px; }
+    }
+
     #modal-exp .ref-pop { position: absolute; right: 12px; bottom: 72px; z-index: 15; width: min(310px, calc(100% - 24px)); background: rgba(24,13,34,.96); border: 1.5px solid #f3a458; border-radius: 12px; padding: 9px; box-shadow: 0 8px 24px rgba(0,0,0,.72); }
     #modal-exp .ref-pop.topo { bottom: auto; top: 54px; }
     #modal-exp .ref-pop h5 { margin: 0 0 6px; color: #fde68a; font-size: 12.5px; display: flex; justify-content: space-between; align-items: center; }
@@ -405,7 +414,6 @@ export function iniciarExpansao({ getSave, salvar, mostrarToast, abrirModal, fec
     let popHtml = '';
     if (descPop === 'batalhas') {
       const modosBat = [
-        { acao: 'campanhaMini', ico: 'campanha.png', tit: 'Campanha Mini' },
         { acao: 'torres', ico: 'torre.png', tit: 'Torres' },
         { acao: 'calaboucos', ico: 'calabouco.png', tit: 'Calabouços' },
         { acao: 'atlas', ico: 'cacas.png', tit: 'Atlas de Caça' },
